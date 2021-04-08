@@ -28,9 +28,13 @@ addGraphOption[GraphLegend, None];
 Unprotect[Graph];
 FormatValues[Graph] = {};
 
+PackageScope["$currentVertexCount"]
+
+$currentVertexCount = 1;
+
 $graphLegendOuter = True;
-Graph /: MakeBoxes[g_Graph ? GraphQ, StandardForm] /; AnnotationValue[g, GraphLegend] =!= $Failed && $graphLegendOuter :=
-  Block[{$graphLegendOuter = False},
+Graph /: MakeBoxes[g_Graph ? GraphQ, StandardForm] /; !MatchQ[AnnotationValue[g, GraphLegend], None | $Failed] && $graphLegendOuter :=
+  Block[{$graphLegendOuter = False, $currentVertexCount = VertexCount[g]},
     Construct[MakeBoxes, Legended[g, AnnotationValue[g, GraphLegend]]]
   ];
 
@@ -38,6 +42,16 @@ Graph /: MakeBoxes[g_Graph ? GraphQ, StandardForm] /; AnnotationValue[g, GraphPl
   Construct[MakeBoxes, AnnotationValue[g, GraphPlottingFunction][g]];
 
 Protect[Graph];
+
+
+PackageExport["AttachAnnotation"]
+
+AttachAnnotation[graph_, key_ -> None] :=
+  If[AnnotationValue[graph, key] === $Failed, graph,
+    AnnotationDelete[graph, key]];
+
+AttachAnnotation[graph_, key_ -> value_] :=
+  Annotate[graph, key -> value];
 
 
 PackageExport["GraphEmbeddingGallery"]

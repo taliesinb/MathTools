@@ -4,11 +4,28 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
+PackageScope["$EdgeHead"]
+
+$EdgeHead = DirectedEdge | UndirectedEdge;
+
+
+PackageScope["summaryItem"]
+
+summaryItem[a_, b_] := BoxForm`SummaryItem[{a <> ": ", b}];
+
+PackageExport["SafePrint"]
+
+SafePrint = print;
+
+PackageExport["SafeTap"]
+PackageExport["UnsafeTap"]
+
+
 PackageScope["print"]
 PackageScope["echo"]
 PackageScope["echoAs"]
 
-$maxPrintRate = 10;
+$maxPrintRate = 20;
 $printCount = 0;
 $nextPrintTime = 0;
 
@@ -28,6 +45,25 @@ echo[e_] := If[shouldPrint["echo"], Echo[e], e];
 
 SetHoldAll[echoAs];
 echoAs[label_][e_] := If[shouldPrint["echo"], Echo[e, label], e];
+
+Format[seqForm[a_], StandardForm] := a;
+Format[seqForm[args___], StandardForm] := Row[{args}, ","];
+
+UnsafeTap[f_][args___] :=
+  Module[{temp = f[args]}, Echo[RightTeeArrow[seqForm[args], temp]]; temp]
+
+SafeTap[f_][args___] := If[shouldPrint["tap"],
+  Module[{temp = f[args]}, Echo[RightTeeArrow[seqForm[args], temp]]; temp],
+  f[args]
+];
+
+
+PackageExport["EchoIn"]
+
+SetHoldFirst[EchoIn];
+
+EchoIn[f_[args___]] :=
+  Module[{temp = f[args]}, Echo[RightTeeArrow[seqForm[args], temp]]; temp];
 
 
 PackageExport["EdgePairs"]

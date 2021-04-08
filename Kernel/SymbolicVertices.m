@@ -9,6 +9,7 @@ SetUsage @ "
 LatticeVertex[coords$] represents a vertex in a lattice graph with lattice coordinates coords$.
 LatticeVertex[coords$, type$] represents a vertex in a lattice graph with type type$.
 "
+
 formatInteger[a_] := Style[If[Negative[a], UnderBar[Abs[a]], a], FontFamily -> "Avenir"];
 formatLVertex[args:{__Integer}] := Row[formatInteger /@ args, "\[ThinSpace]"];
 formatLVertex[args_] := args;

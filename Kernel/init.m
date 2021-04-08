@@ -6,7 +6,10 @@ If[$VersionNumber < 12.2,
 
   System`Negated;
 
+  ClearAll["GraphTools`*"];
+  ClearAll["GraphTools`**`*"];
+
   (*If[Contexts["ArrayTools`"] === {}, Get["~/git/taliesinb/ArrayTools/Kernel/init.m"]];*)
   (*Get["~/git/GraphTools/Kernel/init.m"];*)
-  Get @ FileNameJoin[{FileNameDrop @ $InputFileName, "Utilities.m"}];
+  Get @ FileNameJoin[{FileNameDrop @ $InputFileName, "AUtilities.m"}];
 ];
