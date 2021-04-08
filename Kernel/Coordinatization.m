@@ -12,7 +12,12 @@ findCoordinatizationFunction[matrices_] := Scope[
     pos |-> findSubCoordinatization[DiagonalBlock[matrices, pos], pos],
     positions
   ];
-  {types, First /* (ApplyThrough @ functions)}
+  isRedundant = False;
+  If[Length[matrices] >= 3,
+    g12 = Dot @@ Take[matrices, 2]; g12i = Inverse[g12];
+    isRedundant = AnyTrue[Drop[matrices, 2], SameQ[#, g12] || SameQ[#, g12i]&];
+  ];
+  {types, First /* (ApplyThrough @ functions), isRedundant}
 ];
 
 findSubCoordinatization[matrices_, {m_, n_}] := Scope[
@@ -25,7 +30,7 @@ findSubCoordinatization[matrices_, {m_, n_}] := Scope[
         Extract[{m, m}] /* GetRootPower
       },
     AllTrue[matrices, AbelianMatrixQ],
-      type = If[ContainsQ[matrices, -1], "RedundantInfinite", "Infinite"];
+      type = "Infinite";
       Splice @ Table[{type, Extract[{row, n}]}, {row, m, n-1}],
     True,
       {None, DiagonalBlock[{m, n}] /* RepresentationElement}
@@ -46,34 +51,45 @@ torusPoint[r1_, r2_, omega1_, omega2_][{a_, b_}] := With[
   }
 ];
 
-chooseLatticeCoordinatization[{{"Cyclic", m_}, {"Cyclic", n_}}] /; m <= n :=
+
+(* i think these things have to be in a special relationship, so that moving in direction a finite
+number of times brings us back to 'a', and same for the other directions. but since we can't move FOREVER
+in any direction since it is a finite group that gives us a constraint *)
+chooseLatticeCoordinatization[{c1:{"Cyclic", m_}, c2:{"Cyclic", n_}, c3:{"Cyclic", p_}}, True] :=
+  composeWith[$abc] @ chooseLatticeCoordinatization[{GCD[c1, c2, ], GCD[c2, c3]}, False];
+
+chooseLatticeCoordinatization[{{"Cyclic", m_}, {"Cyclic", n_}}, redundant_] /; m <= n :=
   {True, torusPoint[1, 3, N[2 * Pi / m], N[2 * Pi / n]]};
 
-chooseLatticeCoordinatization[spec:{{"Cyclic", _}, {"Cyclic", _}}] := flipSpec[spec];
+chooseLatticeCoordinatization[spec:{{"Cyclic", _}, {"Cyclic", _}}, redundant_] :=
+  flipSpec[spec, redundant];
 
 tubePoint[r_, omega_][{a_, b_}] := {Sin[a * omega], Cos[a * omega], b};
 
-chooseLatticeCoordinatization[{{"Cyclic", n_}, "Infinite"}] :=
+chooseLatticeCoordinatization[{{"Cyclic", n_}, "Infinite"}, redundant_] :=
   {True, tubePoint[m, N[2 * Pi / n]]};
 
-chooseLatticeCoordinatization[spec:{"Infinite", {"Cyclic", _}}] := flipSpec[spec];
+chooseLatticeCoordinatization[spec:{"Infinite", {"Cyclic", _}}, redundant_] :=
+  flipSpec[spec, redundant];
 
-chooseLatticeCoordinatization[{Repeated["Infinite", 2]}] :=
+chooseLatticeCoordinatization[{Repeated["Infinite", 2]}, _] :=
   {False, Identity};
 
-chooseLatticeCoordinatization[{Repeated["Infinite", 3]}] :=
+chooseLatticeCoordinatization[{Repeated["Infinite", 3]}, False] :=
   {True, Identity};
 
 $abc = Transpose @ N @ {{Sqrt[3]/2, -(1/2)}, {0, 1}, {-(Sqrt[3]/2), -(1/2)}};
-chooseLatticeCoordinatization[{Repeated["RedundantInfinite", 3]}] :=
-  {False, Dot[$abc, #]&};
+dotABC[e_] := Dot[$abc, e];
 
-flipSpec[spec_] := Scope[
-  {is3D, res} = chooseLatticeCoordinatization[Reverse @ spec];
-  {is3D, Reverse /* res}
-];
+chooseLatticeCoordinatization[{Repeated["Infinite", 3]}, True] :=
+  {False, dotABC};
+
+composeWith[f_][res_] := MapAt[If[# === None, None, f /* #]&, res, 2];
+
+flipSpec[spec_, redundant_] :=
+  composeWith[Reverse] @ chooseLatticeCoordinatization[Reverse @ spec, redundant];
 
 (* Todo: 3D redundant *)
 
-chooseLatticeCoordinatization[types_] := {Length[types] >= 3, None};
+chooseLatticeCoordinatization[types_, _] := {Length[types] >= 3, None};
 

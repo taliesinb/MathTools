@@ -213,6 +213,7 @@ makeCardinalQuiver[vertices_, edges_, oldOpts_, newOpts_] := Scope[
     GraphLayout -> "SpringElectricalEmbedding",
     EdgeStyle -> Directive[LightGray, Opacity[1], Arrowheads[{{Automatic, .5}}]],
     ContentSelectable -> False, Editable -> False,
+    ImagePadding -> 3,
     oldOpts
   ];
   legend = Lookup[newOpts, GraphLegend, Automatic];

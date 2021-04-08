@@ -337,14 +337,9 @@ GroupRepresentation[group$] returns a RepresentationObject of a group group$.
 GroupRepresentation::notgroup = "First argument to GroupRepresentation should be a group."
 General::badintcode = "Internal code returned inconsistent matrix dimensions: ``."
 
-getGroupMatrices[group_] := Developer`ToPackedArray /@ Normal /@ If[customGroupQ[group],
-    customGroupMatrices[group],
-    permutationGroupMatrices[group]
-  ];
-
 GroupRepresentation[group_] := Scope[
   If[!GroupQ[group], ReturnFailed["notgroup"]];
-  matrices = getGroupMatrices[group];
+  matrices = Developer`ToPackedArray /@ Normal /@ makeGenerators[group];
   dims = Dimensions[matrices];
   If[!MatchQ[dims, {_, _, _}], ReturnFailed["badintcode", Dimensions /@ matrices]];
   dim = Part[dims, 2];
@@ -357,6 +352,11 @@ GroupRepresentation[group_] := Scope[
   |>;
   constructGroupRepresentation[repData]
 ]
+
+PackageScope["makeGenerators"]
+
+(* this is the fallback for groups that don't have specific implementations *)
+makeGenerators[group_] := permutationGroupMatrices[group];
 
 permutationGroupMatrices[group_] := Scope[
   generators = GroupGenerators[group];
@@ -375,10 +375,6 @@ CyclesToPermutationMatrix[Cycles[cycles_], n_] := Scope[
   SparseArray[Flatten @ {edges, stableEdges}, {n, n}]
 ];
 
-getGroupMatrices[CyclicGroup[n_Integer]] := {{{UnitRoot[n]}}};
-
-getGroupMatrices[AbelianGroup[n:{__Integer}]] := unitRootAbelianMatrices[n];
-
 complexAbelianMatrices[dims_] := Scope[
   n = Length[dims];
   Table[
@@ -393,4 +389,39 @@ unitRootAbelianMatrices[dims_] := Scope[
     DiagonalMatrix @ ReplacePart[Ones[n], i -> UnitRoot[Part[dims, i]]],
     {i, n}
   ]
+];
+
+
+PackageExport["TransformGenerators"]
+
+SetUsage @ "
+TransformGenerators[representation$, transformation$] transforms the generators of a RepresentationObject[$$], \
+returning a new RepresentationObject[$$].
+* transformation$ can be the string 'Redundant', which forms Dot[g$i, Inverse[g$j]] for j$ = i$ + 1 (mod n$).
+* transformation$ can be a function taking n$ matrices, where n$ is the number of existing generators. It should return \
+a new list of matrices.
+"
+
+TransformGenerators::notrep = "The first argument should be a valid RepresentationObject, or a group.";
+TransformGenerators::namedtrans = "The transformation `` is not a known named transformation.";
+TransformGenerators::badtrans = "The transformation returned an object of dimensions ``, instead of a list of square matrices.";
+
+TransformGenerators[rep_, trans_] := Scope[
+  rep = toRepresentation[rep, None];
+  If[!RepresentationObjectQ[rep], ReturnFailed["notrep"]];
+  data = getRepData[rep];
+  gens = First /@ data["Generators"]; n = Length[gens];
+  gens = Which[
+    trans === "Redundant",
+      shape = Length @ First @ First[gens];
+      Table[Dot[gens[[i]], Inverse[gens[[Mod[i + 1, n, 1]]]]], {i, n}],
+    StringQ[trans],
+      ReturnFailed["namedtrans", trans],
+    True,
+      trans @@ gens
+  ];
+  dims = Dimensions[gens];
+  If[!MatchQ[dims, {_, z_, z_}], ReturnFailed["badtrans", dims]];
+  data["Generators"] = RepresentationElement /@ gens;
+  constructGroupRepresentation[data]
 ];

@@ -38,10 +38,10 @@ GenerateQuiverLattice[quiverRepresentation_, opts:OptionsPattern[]] := Scope[
   istate = {LatticeVertex[id, firstVertex]};
   (* If[NumberQ[maxNorm], function = function /* Select[LatticeVertexNorm[#, normFunction] <= maxNorm&]]; *)
   UnpackOptions[maxDepth, vertexCoordinatizationFunction, latticeLayout];
-  coordTypes = None;
+  coordTypes = None; isRedundant = False;
   Switch[vertexCoordinatizationFunction,
     Automatic,
-      {coordTypes, coordFunc} = findCoordinatizationFunction[First /@ baseRep["Generators"]],
+      {coordTypes, coordFunc, isRedundant} = findCoordinatizationFunction[First /@ baseRep["Generators"]],
     None,
       coordFunc = Identity,
     _,
@@ -49,7 +49,7 @@ GenerateQuiverLattice[quiverRepresentation_, opts:OptionsPattern[]] := Scope[
   ];
 
   If[latticeLayout === Automatic && FreeQ[coordTypes, None],
-    {is3D, coordinateLayoutFunc} = chooseLatticeCoordinatization[coordTypes];
+    {is3D, coordinateLayoutFunc} = chooseLatticeCoordinatization[coordTypes, isRedundant];
   ,
     is3D = False; coordinateLayoutFunc = None;
   ];

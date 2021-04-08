@@ -4,27 +4,19 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
-PackageScope["customGroupMatrices"]
-PackageScope["getGroupMatrices"]
-PackageScope["customGroupQ"]
+PackageScope["makeGenerators"]
 
 
-PackageExport["AbelianGroupQ"]
+$posIntOrInfinity = (_Integer ? Positive) | Infinity;
 
-SetUsage @ "
-AbelianGroupQ[group$] returns True if group$ is an Abelian group.
-"
-
-AbelianGroupQ[group_] := MatchQ[group,
-  CyclicGroup[_Integer] | AbelianGroup[{__Integer}] | InfiniteAbelianGroup[_Integer] |
-  GroupDirectProduct[list_List /; VectorQ[list, AbelianGroupQ]]
-];
+$IntZ = TemplateBox[{}, "Integers"] // RawBoxes;
 
 GroupOrder;
 Unprotect[GroupOrder];
-GroupOrder[None] := None;
-Protect[GroupOrder];
 
+(* since we are adding Infinity support to CyclicGroup and AbelianGroup, we must
+prevent these RuleCondition-based messages *)
+GroupTheory`PermutationGroups`Private`CheckGroupDegree[GroupOrder] := False;
 
 PackageExport["GroupQ"]
 
@@ -35,55 +27,87 @@ GroupQ[group$] returns True if group$ is a valid group.
 GroupQ[HoldPattern @ PermutationGroup[{__Cycles}]] := True;
 GroupQ[e_] := GroupTheory`PermutationGroups`Private`NamedGroupQ[e];
 
-customGroupQ[_] := False;
-customGroupMatrices[_] := $Failed;
 
-declareCustomGroup[pattern_ :> {generators_, order_:Infinity}] := (
-    GroupQ[HoldPattern @ pattern] := True;
-    customGroupQ[HoldPattern @ pattern] := True;
-    customGroupMatrices[HoldPattern @ pattern] := generators;
-    GroupOrder[HoldPattern @ pattern] ^:= order;
-);
+PackageExport["AbelianGroupQ"]
 
-declareCustomGroup[rules__RuleDelayed] := Scan[declareCustomGroup, {rules}];
+SetUsage @ "
+AbelianGroupQ[group$] returns True if group$ is an Abelian group.
+"
 
-declareCustomGroup::badrules = "Encountered bad rules.";
-
-declareCustomGroup[_] := Message[declareCustomGroup::badrules];
-declareCustomGroup[___] := Message[declareCustomGroup::badrules];
-
-
-getHead[Verbatim[Condition][e_, _]] := getHead[e];
-getHead[Verbatim[PatternTest][e_, _]] := getHead[e];
-getHead[Verbatim[Blank][h_]] := h;
-getHead[e_] := Head[e];
-
-declareCustomGroupFormat[lhs_ :> rhs_] := (
-  Format[lhs, StandardForm] := rhs;
-  Format[lhs, TraditionalForm] := rhs;
-);
-
-declareBuiltinGroupFormat[lhs_ :> rhs_] :=
-  With[{head = getHead[lhs]},
-    Unprotect[head];
-    Format[lhs, StandardForm] := rhs;
-    Format[lhs, TraditionalForm] := rhs;
-    Protect[head];
-  ];
-
-declareBuiltinGroupFormat[rules__] := Scan[declareBuiltinGroupFormat, {rules}];
-
-declareBuiltinGroupFormat[
-  CyclicGroup[n_Integer] :> makeAbelianSymbol[n],
-  AlternatingGroup[n_Integer] :> Subscript[Style["A", Italic], n],
-  SymmetricGroup[n_Integer] :> Subscript[Style["S", Italic], n],
-  DihedralGroup[n_Integer] :> Subscript["Di", n],
-  AbelianGroup[n:{__Integer}] :> Row[makeAbelianSymbol /@ n, "\[CirclePlus]"]
+AbelianGroupQ[group_] := MatchQ[group,
+  CyclicGroup[$posIntOrInfinity] | AbelianGroup[{Repeated[$posIntOrInfinity]}] | InfiniteAbelianGroup[_Integer] |
+  GroupDirectProduct[list_List /; VectorQ[list, AbelianGroupQ]]
 ];
 
-$IntZ = "\[DoubleStruckCapitalZ]";
-$IntZ = TemplateBox[{}, "Integers"] // RawBoxes;
+
+(* Framework to set up custom groups *)
+
+declareGroup[rules__RuleDelayed] := Scan[declareGroup, {rules}];
+declareGroup[pattern_ :> {"Generators" :> generators_, "Order" :> order_, "Format" :> format_}] := (
+  GroupQ[HoldPattern @ pattern] := True;
+  makeGenerators[HoldPattern @ pattern] := generators;
+  GroupOrder[HoldPattern @ pattern] := order;
+  declareGroupFormatting[pattern :> format]
+);
+
+declareGroupFormatting[rules__RuleDelayed] := Scan[declareGroupFormatting, {rules}];
+declareGroupFormatting[lhs_ :> rhs_] :=
+  With[{head = First @ PatternHead[lhs]}, {isProtected = ProtectedFunctionQ[head]},
+    If[isProtected, Unprotect[head]];
+    Format[lhs, StandardForm] := rhs;
+    Format[lhs, TraditionalForm] := rhs;
+    If[isProtected, Protect[head]];
+  ];
+
+declareGroup::badrules = "Encountered bad rules.";
+
+declareGroup[_] := Message[declareCustomGroup::badrules];
+declareGroup[___] := Message[declareCustomGroup::badrules];
+
+
+(* Add support to AbelianGroup for Infinity *)
+
+declareGroup[
+  AbelianGroup[orders:{Repeated[$posIntOrInfinity]}] :> {
+    "Generators" :> constructDirectProductGenerators[Apply[makeAbelianGeneratorBlocks, orders]],
+    "Order" :> RuleCondition[Infinity, MemberQ[orders, Infinity]],
+    "Format" :> Row[makeAbelianSymbol /@ orders, "\[CirclePlus]"]
+  }
+]
+
+makeAbelianGeneratorBlocks[n_Integer, rest___] :=
+  Prepend[makeAbelianGeneratorBlocks[rest], makeCylicGenerators[n]];
+
+makeAbelianGeneratorBlocks[infs:Longest[Infinity..], rest___] :=
+  Prepend[makeAbelianGeneratorBlocks[rest], makeInfiniteAbelianGenerators[Length[{infs}]]]
+
+makeAbelianGeneratorBlocks[] := {};
+
+
+(* Add support to CyclicGroup for Infinity *)
+
+declareGroup[
+  CyclicGroup[n:$posIntOrInfinity] :> {
+    "Generators" :> makeCylicGenerators[n],
+    "Order" :> n,
+    "Format" :> makeAbelianSymbol[n]
+  }
+];
+
 makeAbelianSymbol[n_Integer] := Subscript[$IntZ, n];
+makeAbelianSymbol[Infinity] := $IntZ;
+
+makeCylicGenerators[n_Integer] := {{{UnitRoot[n]}}};
+makeCylicGenerators[Infinity] := makeInfiniteAbelianGenerators[1];
+
+
+(* add formating for some existing groups *)
+
+declareGroupFormatting[
+  AlternatingGroup[n_Integer] :> Subscript[Style["A", Italic], n],
+  SymmetricGroup[n_Integer] :> Subscript[Style["S", Italic], n],
+  DihedralGroup[n_Integer] :> Subscript["Di", n]
+];
 
 
 PackageExport["GroupDirectProduct"]
@@ -95,10 +119,11 @@ GroupDirectProduct[{g$1, $$, g$n}] represents the product of several groups.
 * GroupDirectProduct does not work with the other group theory functions.
 ";
 
-declareCustomGroup[
-  GroupDirectProduct[g:{Repeated[_ ? GroupQ]}] :> {
-    constructDirectProductGenerators[getGroupMatrices /@ g],
-    Times @@ Map[GroupOrder, g]
+declareGroup[
+  GroupDirectProduct[groups:{Repeated[_ ? GroupQ]}] :> {
+    "Generators" :> constructDirectProductGenerators[makeGenerators /@ g],
+    "Order" :> Times @@ Map[GroupOrder, g],
+    "Format" :> Apply[If[VectorQ[list, AbelianGroupQ], CirclePlus, CircleTimes], Map[maybeBracket, groups]]
   }
 ];
 
@@ -118,11 +143,6 @@ maybeBracket /: MakeBoxes[maybeBracket[e_], form:StandardForm | TraditionalForm]
   If[MatchQ[subbox, TemplateBox[_, "RowWithSeparators"]], RowBox[{"(", subbox, ")"}], subbox]
 ];
 
-declareCustomGroupFormat[
-  GroupDirectProduct[list_List] :> formatDirectProduct[list]
-];
-
-formatDirectProduct[list_List] := If[VectorQ[list, AbelianGroupQ], CirclePlus, CircleTimes] @@ Map[maybeBracket, list];
 
 
 PackageExport["DiscreteHeisenbergGroup"]
@@ -132,14 +152,13 @@ DiscreteHeisenbergGroup[] represents the Heisenberg group of 3 \[Times] 3 upper-
 * DiscreteHeisenbergGroup works with GroupRepresentation.
 * DiscreteHeisenbergGroup does not work with the other group theory functions, since it has no finite permutation representation.
 "
-declareCustomGroup[
-  DiscreteHeisenbergGroup[] :> {
-    Map[UnitAffineMatrix[3, #]&, {{1, 2}, {2, 3}, {1, 3}}]
-  }
-];
 
-declareCustomGroupFormat[
-  DiscreteHeisenbergGroup[] :> Style["H", Italic]
+declareGroup[
+  DiscreteHeisenbergGroup[] :> {
+    "Generators" :> Map[UnitAffineMatrix[3, #]&, {{1, 2}, {2, 3}, {1, 3}}],
+    "Order" :> Infinity,
+    "Format" :> Style["H", Italic]
+  }
 ];
 
 
@@ -151,19 +170,19 @@ InfiniteAbelianGroup[n$] represents an infinite Abelian group on n$ generators.
 * InfiniteAbelianGroup does not work with the other group theory functions, since it has no finite permutation representation.
 "
 
-declareCustomGroup[
+declareGroup[
   InfiniteAbelianGroup[n_ ? Internal`PositiveIntegerQ] :> {
-    Table[makeAffineUnitMatrix[i, n+1], {i, n}]
+    "Generators" :> makeInfiniteAbelianGenerators[n],
+    "Order" :> Infinity,
+    "Format" :> If[n === 1, $IntZ, Superscript[$IntZ, n]]
   }
 ];
 
+makeInfiniteAbelianGenerators[n_] :=
+  Table[makeAffineUnitMatrix[i, n+1], {i, n}];
+
 makeAffineUnitMatrix[i_, n_] :=
   ReplacePart[IdentityMatrix[n], {i, n} -> 1];
-
-
-declareCustomGroupFormat[
-  InfiniteAbelianGroup[n_Integer] :> Superscript[$IntZ, n]
-];
 
 
 
