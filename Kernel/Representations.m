@@ -151,11 +151,9 @@ RepresentationElement /: InverseFunction[RepresentationElement[matrix_]] := Repr
 RepresentationElement /: Normal[RepresentationElement[matrix_]] :=
   If[Developer`PackedArrayQ[matrix], matrix, ExpandUnitRoots @ matrix];
 
-Format[RepresentationElement[matrix_?MatrixQ], StandardForm] :=
-  renderRepresentationMatrix[matrix, False];
-
-Format[RepresentationElement[matrix_?MatrixQ], TraditionalForm] :=
-  renderRepresentationMatrix[matrix, True];
+declareFormatting[
+  RepresentationElement[matrix_?MatrixQ] :> renderRepresentationMatrix[matrix, $isTraditionalForm]
+];
 
 splitImag[e_] := If[ContainsQ[e, _Complex], fmtComplexRow[Re @ e, Im @ e], e];
 
@@ -256,6 +254,7 @@ PackageScope["toRepresentation"]
 toRepresentation["Abelian", n_] := GroupRepresentation[InfiniteAbelianGroup[n]];
 toRepresentation["Redundant", n_] := RedundantAbelianRepresentation[n-1];
 toRepresentation[r_RepresentationObject ? System`Private`HoldNoEntryQ, _] := r;
+toRepresentation[cq_CardinalQuiverRepresentationObject ? System`Private`HoldNoEntryQ, _] := cq["Representation"];
 toRepresentation[group_ ? GroupQ, _] := GroupRepresentation[group];
 toRepresentation[_, _] := $Failed;
 
@@ -314,12 +313,12 @@ RedundantAbelianRepresentation[n_Integer] := If[n < 2,
 PackageExport["RepresentationGenerators"]
 
 SetUsage @ "
-RepresentationGenerators[group$] returns a list of RepresentationElement objects \
-for the generators of group$.
-RepresentationGenerators[rep$] gives the generators for a RepresentationObject.
+RepresentationGenerators[obj$] returns a list of RepresentationElement objects \
+for the generators of a group, RepresentationObject, or CardinalQuiverRepresentationObject.
 "
 
-RepresentationGenerators::notrepgroup = "First argument should be a RepresentationObject or a group."
+RepresentationGenerators::notrep =
+  "First argument should be a RepresentationObject, CardinalQuiverRepresentationObject, or group."
 
 RepresentationGenerators[obj_] := Scope[
   rep = toRepresentation[obj, None];

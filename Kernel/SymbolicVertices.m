@@ -12,13 +12,14 @@ LatticeVertex[coords$, type$] represents a vertex in a lattice graph with type t
 
 formatInteger[a_] := Style[If[Negative[a], UnderBar[Abs[a]], a], FontFamily -> "Avenir"];
 formatLVertex[args:{__Integer}] := Row[formatInteger /@ args, "\[ThinSpace]"];
+formatLVertex[args_List] := Row[args, " "];
 formatLVertex[args_] := args;
-formatLVertex[args_, type_] := Row[{formatLVertex[args], " (", type, ")"}];
+formatLVertex[args_, type_] := Overscript[formatLVertex[args], type];
 
-Format[LatticeVertex[args_List], StandardForm] := formatLVertex[args];
-Format[LatticeVertex[args_List], TraditionalForm] := formatLVertex[args];
-Format[LatticeVertex[args_List, type_], StandardForm] := formatLVertex[args, type];
-Format[LatticeVertex[args_List, type_], TraditionalForm] := formatLVertex[args, type];
+declareFormatting[
+  LatticeVertex[args_List] :> formatLVertex[args],
+  LatticeVertex[args_List, type_] :> formatLVertex[args, type]
+];
 
 
 PackageExport["ProductVertex"]
@@ -27,9 +28,9 @@ SetUsage @ "
 ProductVertex[a$, b$] represents a product of two vertices a$ and b$.
 "
 
-Format[ProductVertex[a_, b_], StandardForm] := CircleTimes[a, b];
-Format[ProductVertex[a_, b_], TraditionalForm] := CircleTimes[a, b];
-
+declareFormatting[
+  ProductVertex[a_, b_] :> CircleTimes[a, b]
+];
 
 PackageExport["ProductVertices"]
 
@@ -47,8 +48,10 @@ ContractedVertex[{v$1, v$2, $$}] represents a vertex formed by contracting sever
 ContractedVertex[vlist$, name$] represents a vertex formed by contraction with new name name$.
 "
 
-Format[ContractedVertex[v_]] := CirclePlus @@ v;
-Format[ContractedVertex[v_, name_]] := Subscript[name, "+"];
+declareFormatting[
+  ContractedVertex[v_] :> CirclePlus @@ v,
+  ContractedVertex[v_, name_] :> Subscript[name, "+"]
+];
 
 
 PackageExport["SumVertex"]
@@ -59,4 +62,6 @@ SumVertex[v$, g$] represents a vertex v$ from graph g$ in a sum of graphs.
 
 SumVertex[i_][e_] := SumVertex[e, i];
 
-Format[SumVertex[v_, g_]] := Subscript[v, g];
+declareFormatting[
+  SumVertex[v_, g_] :> Subscript[v, g]
+];

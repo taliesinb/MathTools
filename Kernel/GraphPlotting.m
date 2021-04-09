@@ -32,26 +32,56 @@ PackageScope["$currentVertexCount"]
 
 $currentVertexCount = 1;
 
-$graphLegendOuter = True;
-Graph /: MakeBoxes[g_Graph ? GraphQ, StandardForm] /; !MatchQ[AnnotationValue[g, GraphLegend], None | $Failed] && $graphLegendOuter :=
-  Block[{$graphLegendOuter = False, $currentVertexCount = VertexCount[g]},
-    Construct[MakeBoxes, Legended[g, AnnotationValue[g, GraphLegend]]]
-  ];
+$graphOverrideOuter = True;
 
-Graph /: MakeBoxes[g_Graph ? GraphQ, StandardForm] /; AnnotationValue[g, GraphPlottingFunction] =!= $Failed :=
-  Construct[MakeBoxes, AnnotationValue[g, GraphPlottingFunction][g]];
+Graph /: MakeBoxes[g_Graph ? GraphQ, StandardForm] /;
+  (HasAnnotationQ[g, GraphLegend] || HasAnnotationQ[g, GraphPlottingFunction]) && $graphOverrideOuter :=
+    customMakeGraphBoxes[g];
 
 Protect[Graph];
+
+customMakeGraphBoxes[graph_Graph] := Scope[
+  $currentVertexCount = VertexCount[graph];
+
+  {plotFunc, legend} = Replace[
+    AnnotationValue[graph, {GraphPlottingFunction, GraphLegend}],
+    $Failed -> None, {1}
+  ];
+
+  If[plotFunc =!= None, graph = plotFunc[graph]];
+
+  boxes = Block[{$graphOverrideOuter = False}, RawBoxes @ Construct[MakeBoxes, graph]];
+  graph = applyLegend[boxes, legend];
+  (* graph = applyLabel[graph, label]; *)
+
+  Construct[MakeBoxes, graph]
+];
+
+applyLegend[expr_, None] := expr;
+applyLegend[expr_, legend_] := Legended[expr, legend];
+
+applyLabel[expr_, Placed[label_, pos_]] := Labeled[expr, label, pos];
+applyLabel[expr_, label_] := Labeled[expr, label];
+applyLabel[expr_, None] := expr;
+
+
+PackageExport["HasAnnotationQ"]
+
+HasAnnotationQ[obj_, key_] :=
+  !MatchQ[AnnotationValue[obj, key], None | $Failed];
 
 
 PackageExport["AttachAnnotation"]
 
-AttachAnnotation[graph_, key_ -> None] :=
-  If[AnnotationValue[graph, key] === $Failed, graph,
-    AnnotationDelete[graph, key]];
+AttachAnnotation[obj_, key_ -> None] :=
+  If[AnnotationValue[obj, key] === $Failed, obj,
+    AnnotationDelete[obj, key]];
 
-AttachAnnotation[graph_, key_ -> value_] :=
-  Annotate[graph, key -> value];
+AttachAnnotation[obj_, key_ -> value_] :=
+  Annotate[obj, key -> value];
+
+AttachAnnotation[obj_, rules_List] :=
+  Fold[AttachAnnotation, obj, rules];
 
 
 PackageExport["GraphEmbeddingGallery"]

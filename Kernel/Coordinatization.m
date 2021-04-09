@@ -56,7 +56,7 @@ torusPoint[r1_, r2_, omega1_, omega2_][{a_, b_}] := With[
 number of times brings us back to 'a', and same for the other directions. but since we can't move FOREVER
 in any direction since it is a finite group that gives us a constraint *)
 chooseLatticeCoordinatization[{c1:{"Cyclic", m_}, c2:{"Cyclic", n_}, c3:{"Cyclic", p_}}, True] :=
-  composeWith[$abc] @ chooseLatticeCoordinatization[{GCD[c1, c2, ], GCD[c2, c3]}, False];
+  composeWith[$abc] @ chooseLatticeCoordinatization[{GCD[c1, c2], GCD[c2, c3]}, False];
 
 chooseLatticeCoordinatization[{{"Cyclic", m_}, {"Cyclic", n_}}, redundant_] /; m <= n :=
   {True, torusPoint[1, 3, N[2 * Pi / m], N[2 * Pi / n]]};

@@ -47,22 +47,10 @@ declareGroup[pattern_ :> {"Generators" :> generators_, "Order" :> order_, "Forma
   GroupQ[HoldPattern @ pattern] := True;
   makeGenerators[HoldPattern @ pattern] := generators;
   GroupOrder[HoldPattern @ pattern] := order;
-  declareGroupFormatting[pattern :> format]
+  declareFormatting[pattern :> format]
 );
 
-declareGroupFormatting[rules__RuleDelayed] := Scan[declareGroupFormatting, {rules}];
-declareGroupFormatting[lhs_ :> rhs_] :=
-  With[{head = First @ PatternHead[lhs]}, {isProtected = ProtectedFunctionQ[head]},
-    If[isProtected, Unprotect[head]];
-    Format[lhs, StandardForm] := rhs;
-    Format[lhs, TraditionalForm] := rhs;
-    If[isProtected, Protect[head]];
-  ];
-
-declareGroup::badrules = "Encountered bad rules.";
-
-declareGroup[_] := Message[declareCustomGroup::badrules];
-declareGroup[___] := Message[declareCustomGroup::badrules];
+declareGroup[___] := Panic["BadDeclareGroup"];
 
 
 (* Add support to AbelianGroup for Infinity *)
@@ -103,7 +91,7 @@ makeCylicGenerators[Infinity] := makeInfiniteAbelianGenerators[1];
 
 (* add formating for some existing groups *)
 
-declareGroupFormatting[
+declareFormatting[
   AlternatingGroup[n_Integer] :> Subscript[Style["A", Italic], n],
   SymmetricGroup[n_Integer] :> Subscript[Style["S", Italic], n],
   DihedralGroup[n_Integer] :> Subscript["Di", n]

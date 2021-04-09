@@ -66,6 +66,21 @@ EchoIn[f_[args___]] :=
   Module[{temp = f[args]}, Echo[RightTeeArrow[seqForm[args], temp]]; temp];
 
 
+PackageScope["declareFormatting"]
+PackageScope["$isTraditionalForm"]
+
+declareFormatting[rules__RuleDelayed] := Scan[declareFormatting, {rules}];
+declareFormatting[lhs_ :> rhs_] :=
+  With[{head = First @ PatternHead[lhs]}, {isProtected = ProtectedFunctionQ[head]},
+    If[isProtected, Unprotect[head]];
+    Format[lhs, StandardForm] := Block[{$isTraditionalForm = False}, rhs];
+    Format[lhs, TraditionalForm] := Block[{$isTraditionalForm = True}, rhs];
+    If[isProtected, Protect[head]];
+  ];
+
+declareFormatting[___] := Panic["BadFormatting"]
+
+
 PackageExport["EdgePairs"]
 
 SetUsage @ "

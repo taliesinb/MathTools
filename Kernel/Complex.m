@@ -23,8 +23,9 @@ UnitRoot[n$] represents the first n$'th root of unity, and stands in for a compl
 UnitRoot[2] := -1;
 UnitRoot /: Power[UnitRoot[n_], k_Integer] /; (k >= n) || Negative[k] := Power[UnitRoot[n], Mod[k, n]];
 
-Format[UnitRoot[n_], StandardForm] := Subscript["\[Xi]", n];
-Format[UnitRoot[n_], TraditionalForm] := Subscript["\[Xi]", n];
+declareFormatting[
+  UnitRoot[n_] :> Subscript["\[Xi]", n]
+];
 
 
 PackageScope["GetRootPower"]
