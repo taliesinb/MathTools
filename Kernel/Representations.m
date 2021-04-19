@@ -21,6 +21,7 @@ constructGroupRepresentation[data_] := Scope[
   matrices = Normal /@ data["Generators"];
   matrices = ExpandUnitRoots[matrices];
   type = Which[
+    TranslationGroupQ[group], "Translation",
     AnyTrue[matrices, ComplexMatrixQ], Which[
       AllTrue[matrices, UnitaryMatrixQ], "Unitary",
       AllTrue[matrices, HermitianMatrixQ], "Hermitian",
@@ -29,7 +30,7 @@ constructGroupRepresentation[data_] := Scope[
     AllTrue[matrices, UpperUnitriangularMatrixQ], "Unitriangular",
     AllTrue[matrices, UpperTriangularMatrixQ], "Triangular",
     AllTrue[matrices, PermutationMatrixQ], "Permutation",
-    AbelianGroupQ[group] || AllTrue[matrices, AbelianMatrixQ], "Abelian",
+    AbelianGroupQ[group] || AllTrue[matrices, TranslationMatrixQ], "Abelian",
     True, "Mixed"
   ];
   System`Private`ConstructNoEntry[RepresentationObject, Append[data, "Type" -> type]]
@@ -56,34 +57,26 @@ RepresentationObject /: MakeBoxes[object:RepresentationObject[data_Association] 
   ]
 ];
 
-getRepData[RepresentationObject[data_Association]] := data;
+declareObjectPropertyDispatch[RepresentationObject, representationProperty];
 
-(rep_RepresentationObject ? System`Private`HoldNoEntryQ)[key_String] :=
-  getRepProperty[getRepData[rep], key];
-
-getRepProperty[assoc_, "Identity"] :=
+representationProperty[assoc_, "Identity"] :=
   RepresentationElement @ IdentityMatrix[assoc["Dimension"]];
 
-(rep_RepresentationObject ? System`Private`HoldNoEntryQ)[key_String, opts__Rule] :=
-  getRepProperty[getRepData[rep], key, {opts}];
+representationProperty[assoc_, "CayleyGraph"] :=
+  computeCayleyQuiver[assoc];
 
-getRepProperty[assoc_, "CayleyGraph"] := computeCayleyQuiver[assoc];
+representationProperty[assoc_, "CayleyFunction", opts___Rule] :=
+  computeCayleyFunction[assoc, opts];
 
-getRepProperty[assoc_, "CayleyFunction"] := computeCayleyFunction[assoc, False, False];
-
-getRepProperty[assoc_, "CayleyFunction", opts_] :=
-  computeCayleyFunction[assoc, Lookup[opts, "Symmetric", False], Lookup[opts, "Labeled", False]];
-
-getRepProperty[assoc_, key_] :=
-  Lookup[assoc, key];
-
-computeCayleyFunction[data_, isSymmetric_, isLabeled_] := Scope[
+Options[computeCayleyFunction] = {"Symmetric" -> True, "Labeled" -> True};
+computeCayleyFunction[data_, OptionsPattern[]] := Scope[
   UnpackAssociation[data, generators];
+  UnpackOptions[symmetric, labeled];
   list = Flatten @ MapIndexed[
     {gen, index} |-> {
-      If[isLabeled, Labeled[First @ index], Identity] @ gen,
-      If[isSymmetric && (igen = InverseFunction[gen]) =!= gen,
-        If[isLabeled, Labeled[Negated @ First @ index], Identity] @ igen,
+      If[labeled, Labeled[First @ index], Identity] @ gen,
+      If[symmetric && (igen = InverseFunction[gen]) =!= gen,
+        If[labeled, Labeled[Negated @ First @ index], Identity] @ igen,
         Nothing
       ]
     },
@@ -96,39 +89,55 @@ computeCayleyFunction[data_, isSymmetric_, isLabeled_] := Scope[
 PackageExport["CayleyFunction"]
 
 SetUsage @ "
-CayleyFunction[rep$] returns the function that takes an element of rep$ and \
-returns a list of successors, labeled by the generator of rep$ that produced them.
-* rep can be a CardinalQuiverRepresentationObject or a RepresentationObject.
+CayleyFunction[obj$] returns the function that takes an element of obj$ and \
+returns a list of successors elements that represent the action of generators of obj$ on the element.
+* rep can be a group, RepresentationObject, QuiverRerpresentationObject, or RootSystem.
+CayleyFunction takes the following options:
+| 'Symmetric' | True | whether to include the action of the inverses of the generators |
+| 'Labeled' | True | whether to yield successors that are Labeled with the name of the corresponding generator |
+* For 'Symmetric' -> True and 'Labeled' -> True, the inverses successors are labeled with Negated[gen$].
 "
 
 CayleyFunction::badrep =
-  "First arguemnt to CayleyFunction should be a valid RepresentationObject or CardinalQuiverRepresentationObject."
-CayleyFunction[re ? RepresentationObjectQ] := re["SymmetricCayleyFunction"]
+  "First argument to CayleyFunction should be a group, RepresentationObject, QuiverRepresentationObject, or RootSystem."
+
+CayleyFunction[object_, OptionsPattern[]] := Scope[
+  UnpackOptions[labeled, symmetric];
+  rep = Which[
+    QuiverRepresentationObjectQ[object], object,
+    RepresentationObject[object], object,
+    GroupQ[object], GroupRepresentation[object],
+    RootSystemQ[object], object,
+    True, ReturnFailed["badrep"]
+  ];
+  rep["CayleyFunction", "Labeled" -> symmetric, "Symmetric" -> symmetric]
+];
 
 CayleyFunction[_] := (Message[CayleyFunction::badrep]; $Failed);
 
 
-PackageExport["CayleyCardinalQuiver"]
+PackageExport["CayleyQuiver"]
 
 SetUsage @ "
-CayleyCardinalQuiver[obj$] returns the cardinal quiver representing the Cayley graph of a RepresentationObject or Group.
+CayleyQuiver[obj$] returns the cardinal quiver representing the Cayley graph of a RepresentationObject or Group.
 "
 
-CayleyCardinalQuiver::incomplete = "Cayley graph is incomplete."
-CayleyCardinalQuiver::notrep = "First argument should be a valid RepresentationObject or group."
+CayleyQuiver::incomplete = "Cayley graph is incomplete."
+CayleyQuiver::notrep = "First argument should be a valid RepresentationObject or group."
 
-CayleyCardinalQuiver[rep_] := Scope[
+CayleyQuiver[rep_] := Scope[
   rep = toRepresentation[rep, None];
   If[FailureQ[rep], ReturnFailed["notrep"]];
-  computeCayleyQuiver @ getRepData @ rep
+  computeCayleyQuiver @ getObjectData @ rep
 ];
 
 computeCayleyQuiver[data_] := Scope[
-  cfunc = computeCayleyFunction[data, True, True];
-  istate = List @ getRepProperty[data, "Identity"];
-  {graph, reason} = StateTransitionGraph[cfunc, istate, {"Graph", "TerminationReason"}, MaxDepth -> 8];
-  If[reason =!= "Complete", Message[CayleyCardinalQuiver::incomplete]];
-  CardinalQuiver[graph]
+  cfunc = computeCayleyFunction[data, "Labeled" -> True, "Symmetric" -> True];
+  istate = List @ representationProperty[data, "Identity"];
+  {edges, reason} = StateTransitionGraph[cfunc, istate, {"EdgeList", "TerminationReason"}, MaxDepth -> 8, MaxVertices -> 100];
+  If[reason =!= "Complete", Message[CayleyQuiver::incomplete]];
+  edges = DeleteDuplicates @ edges;
+  Quiver[edges]
 ];
 
 Unprotect[Labeled];
@@ -160,8 +169,10 @@ splitImag[e_] := If[ContainsQ[e, _Complex], fmtComplexRow[Re @ e, Im @ e], e];
 fmtComplexRow[0, im_] := Row[{im, $imagStr}];
 fmtComplexRow[re_, im_] := Row[{re, "+", im, $imagStr}];
 
-RepresentationElement[elem1_][RepresentationElement[elem2_]] :=
-  RepresentationElement[Dot[elem1, elem2]];
+RepresentationElement[elem1_][RepresentationElement[elem2_]] := With[
+  {res = Dot[elem1, elem2]},
+  RepresentationElement @ If[Developer`PackedArrayQ[res], res, Expand @ res]
+];
 
 $blankNum = Style["\[CenterDot]", Gray];
 
@@ -175,86 +186,14 @@ scriptStr[n_, minus_, assoc_] := If[Negative[n], minus, ""] <> StringJoin[Lookup
 supStr[n_] := scriptStr[n, "⁻", $supStrs];
 subStr[n_] := scriptStr[n, "₋", $subStrs];
 
-PackageExport["ToNumberString"]
-
-ToNumberString[e_] := numStr[e];
-
-numStr = MatchValues[
-  1/2 := "1/2";
-  i_Integer := TextString[i];
-  Sqrt[b_] := $squareRootStr <> brackStr[b];
-  a_/Sqrt[b_] := brackStr[a] <> $squareRootStr <> brackStr[b];
-  Rational[a_, b_] := brackStr[a] <> "/" <> brackStr[b];
-  r_Real := TextString[NumberForm[r, 2]];
-  p_Plus := plusStr[Map[numStr, List @@ p]];
-  Power[e_, -1] := numStr[e] <> supStr[-1];
-  Power[e_, k_Integer] := numStr[e] <> supStr[k];
-  UnitRoot[n_] := "\[Xi]" <> subStr[n];
-  Times[-1, negated_] := "-" <> brackStr[negated];
-  Times[r_Rational, Sqrt[b_]] := $squareRootStr <> brackStr[r^2 * b];
-  Times[Complex[0, r_Rational], b_] := numStr[r * b] <> $imagStr;
-  Times[complex_Complex, other_] := brackStr[other] <> "(" <> numStr @ complex <> ")";
-  Complex[0, Rational[1, b_]] := $imagStr <> "/" <> brackStr[b];
-  Complex[0, imag_] := brackStr[imag] <> $imagStr;
-  Complex[real_, 0] := real;
-  Complex[real_, imag_] := plusStr[{numStr @ real, brackStr[imag] <> $imagStr}];
-  i_ := TextString[i];
-];
-
-plusStr[parts_] := StringRiffle[parts, If[AllTrue[parts, StringFreeQ[" "]], "+", " + "]]
-
-brackStr[e_] := Scope[
-  s = numStr[e];
-  If[StringContainsQ[s, " "], "(" <> s <> ")", s]
-];
-
-possiblyBracket[s_String] := If[StringContainsQ[s, " "], "(" <> s <> ")", s];
-
-algStr = MatchValues[
-  Power[e_, n_] := Superscript[e, n];
-  e_ := e
-];
-
-posNegCol[e_] := If[Negative[e], Red, Black];
-compCol[e_] := Hue[Arg[e]/(2 Pi)+.05, Min[Sqrt[Abs[N @ e]],1], .85];
-
-colNumStr[cfunc_][elem_] := Which[
-  ContainsUnitRootsQ[elem], algStr @ elem,
-  elem == 0, $blankNum,
-  True, Style[numStr @ Abs[elem], cfunc[elem]]
-];
-
-$matrixElementStyle = {FontFamily -> "Source Code Pro", FontSize -> 12, TextAlignment -> Left};
-matrixGridStyle[wspacing_] := {Spacings -> {{{wspacing}}, {0.8,{0.3},0.5}}, FrameStyle -> LightGray, Frame -> True};
-
-PackageScope["renderRepresentationMatrix"]
-
-renderRepresentationMatrix[matrix_, isTraditional_] := Scope[
-  wspacing = If[Developer`PackedArrayQ[matrix], 0.8, 0.6];
-  If[isTraditional,
-    If[ContainsQ[matrix, _Complex], matrix = Map[splitImag, matrix, {2}]];
-    entries = matrix;
-  ,
-    cfunc = If[ContainsQ[matrix, _Complex], compCol, posNegCol];
-    entries = Map[colNumStr[cfunc], matrix, {2}]
-  ];
-  width = Max @ Cases[entries, s_String :> StringLength[s], {2}];
-  If[IntegerQ[width] && width > 1,
-    entries = Replace[entries, s_String :> StringPadLeft[s, width], {2}]];
-  Grid[entries,
-    ItemSize -> Full,
-    BaseStyle -> $matrixElementStyle,
-    Sequence @@ matrixGridStyle[wspacing]
-  ]
-];
-
 
 PackageScope["toRepresentation"]
 
 toRepresentation["Abelian", n_] := GroupRepresentation[InfiniteAbelianGroup[n]];
 toRepresentation["Redundant", n_] := RedundantAbelianRepresentation[n-1];
 toRepresentation[r_RepresentationObject ? System`Private`HoldNoEntryQ, _] := r;
-toRepresentation[cq_CardinalQuiverRepresentationObject ? System`Private`HoldNoEntryQ, _] := cq["Representation"];
+toRepresentation[cq_QuiverRepresentationObject ? System`Private`HoldNoEntryQ, _] := cq["Representation"];
+toRepresentation[rs_RootSystemObject ? System`Private`HoldNoEntryQ, _] := GroupRepresentation[TranslationGroup[rs]];
 toRepresentation[group_ ? GroupQ, _] := GroupRepresentation[group];
 toRepresentation[_, _] := $Failed;
 
@@ -288,6 +227,27 @@ CustomRepresentation[matrices_, group_:None] := Scope[
 ];
 
 
+PackageExport["RootSystemRepresentation"]
+
+SetUsage @ "
+RootSystemRepresentation[RootSystem[$$]] creates a representation of the Abelian group with generators \
+given by the positive roots of the given root system, and where the group operation is vector addition.
+"
+
+RootSystemRepresentation::notrs = "First argument should be a valid RootSystemObject."
+
+RootSystemRepresentation[rs_] := Scope[
+  If[!RootSystemObjectQ[rs], ReturnFailed["notrs"]];
+  roots = Normal /@ rs["SimpleRoots"];
+  generators = TranslationMatrix /@ roots;
+  CustomRepresentation[
+    generators,
+    InfiniteAbelianGroup @ Length @ First @ roots
+  ]
+];
+
+
+
 PackageExport["RedundantAbelianRepresentation"]
 
 SetUsage @ "
@@ -314,11 +274,11 @@ PackageExport["RepresentationGenerators"]
 
 SetUsage @ "
 RepresentationGenerators[obj$] returns a list of RepresentationElement objects \
-for the generators of a group, RepresentationObject, or CardinalQuiverRepresentationObject.
+for the generators of a group, RepresentationObject, or QuiverRepresentationObject.
 "
 
 RepresentationGenerators::notrep =
-  "First argument should be a RepresentationObject, CardinalQuiverRepresentationObject, or group."
+  "First argument should be a RepresentationObject, QuiverRepresentationObject, or group."
 
 RepresentationGenerators[obj_] := Scope[
   rep = toRepresentation[obj, None];
@@ -408,7 +368,7 @@ TransformGenerators::badtrans = "The transformation returned an object of dimens
 TransformGenerators[rep_, trans_] := Scope[
   rep = toRepresentation[rep, None];
   If[!RepresentationObjectQ[rep], ReturnFailed["notrep"]];
-  data = getRepData[rep];
+  data = getObjectData[rep];
   gens = First /@ data["Generators"]; n = Length[gens];
   gens = Which[
     trans === "Redundant",
@@ -424,3 +384,4 @@ TransformGenerators[rep_, trans_] := Scope[
   data["Generators"] = RepresentationElement /@ gens;
   constructGroupRepresentation[data]
 ];
+

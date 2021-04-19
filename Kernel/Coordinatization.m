@@ -6,7 +6,14 @@ PackageImport["GeneralUtilities`"]
 
 PackageScope["findCoordinatizationFunction"]
 
-findCoordinatizationFunction[matrices_] := Scope[
+findCoordinatizationFunction[matrices_, group_] := Scope[
+  If[TranslationGroupQ[group],
+    translationVectors = ExtractTranslationVector /@ matrices;
+    rank = MatrixRank[translationVectors];
+    taker = If[rank === Length[translationVectors], Identity, TakeOperator[rank]];
+    types = Table["Infinite", rank];
+    Return @ {types, First /* ExtractTranslationVector /* taker, False};
+  ];
   positions = FindDiagonalBlockPositions[matrices];
   {types, functions} = Transpose @ Map[
     pos |-> findSubCoordinatization[DiagonalBlock[matrices, pos], pos],
@@ -29,7 +36,7 @@ findSubCoordinatization[matrices_, {m_, n_}] := Scope[
       {{"Cyclic", FirstCase[matrices, UnitRoot[k_] :> k, None, Infinity]},
         Extract[{m, m}] /* GetRootPower
       },
-    AllTrue[matrices, AbelianMatrixQ],
+    AllTrue[matrices, TranslationMatrixQ],
       type = "Infinite";
       Splice @ Table[{type, Extract[{row, n}]}, {row, m, n-1}],
     True,

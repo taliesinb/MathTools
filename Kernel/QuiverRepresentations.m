@@ -4,40 +4,42 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
-PackageExport["CardinalQuiverRepresentation"]
+PackageExport["QuiverRepresentation"]
 
 SetUsage @ "
-CardinalQuiverRepresentation[quiver$, cardinals$ -> representation$] attachs a representation to a quiver, returning \
-a CardinalQuiverRepresentationObject.
+QuiverRepresentation[quiver$, cardinals$ -> representation$] attachs a representation to a quiver, returning \
+a QuiverRepresentationObject.
 * The list cardinals$ is matched with the generators of representation$ in order.
 * The list cardinals$ can also be given as a single string whose letters are the cardinals.
 * If no cardinals are provided, the cardinals present in quiver$ will be used, in sorted order.
-CardinalQuiverRepresentation[quiver$] chooses a representation based on the names of the cardinals in quiver$.
+QuiverRepresentation[quiver$] chooses a representation based on the names of the cardinals in quiver$.
 * For cardinals {'x', 'y'} or {'x', 'y', 'z'}, a representation of InfiniteAbelianGroup is used.
 * For cardinals {'a', 'b', 'c'}, RedundantAbelianRepresentation[3] is used.
 "
 
-CardinalQuiverRepresentation::notquiver =
-  "The first argument to CardinalQuiverRepresentation should be a cardinal quiver Graph."
+QuiverRepresentation::notquiver =
+  "The first argument to QuiverRepresentation should be a cardinal quiver Graph."
 
-CardinalQuiverRepresentation::notrep =
-  "The second argument to CardinalQuiverRepresentation should be a RepresentationObject or one of the forms documented in ?CardinalQuiverRepresentation."
+QuiverRepresentation::notrep =
+  "The second argument to QuiverRepresentation should be a RepresentationObject or one of the forms documented in ?QuiverRepresentation."
 
-CardinalQuiverRepresentation::noautorep =
+QuiverRepresentation::noautorep =
   "No automatic representation is defined for the cardinal set ``.";
 
-CardinalQuiverRepresentation::gencount =
+QuiverRepresentation::gencount =
   "The number of generators in the representation (``) did not match the number of cardinals in the graph (``).";
 
 parseRepresentationSpec = MatchValues[
   Automatic         := {Automatic, Automatic};
   "Abelian"         := {Automatic, "Abelian"};
   "Redundant"       := {Automatic, "Redundant"};
-  s_String          := {Characters[s], Automatic};
-  s_String -> rep_  := {Characters[s], rep};
+  s_String          := {carChars[s], Automatic};
+  s_String -> rep_  := {carChars[s], rep};
   list_List -> rep_ := {list, rep};
   rep_              := {Automatic, rep}
 ];
+
+carChars[str_] := Characters[str] /. "_" -> None;
 
 chooseAutoRepresentation[cardinalList_] :=
   Switch[
@@ -47,17 +49,21 @@ chooseAutoRepresentation[cardinalList_] :=
       {"x", "y"}, InfiniteAbelianGroup[2],
       {"x", "y", "z"}, InfiniteAbelianGroup[3],
       {"w", "x", "y", "z"}, InfiniteAbelianGroup[4],
-      _, Message[CardinalQuiverRepresentation::noautorep, cardinalList]; Return[$Failed, Block]
+      _, Message[QuiverRepresentation::noautorep, cardinalList]; Return[$Failed, Block]
   ];
 
-CardinalQuiverRepresentation[quiver_, representation_:Automatic] := Scope[
-  If[!CardinalQuiverQ[quiver = toCardinalQuiver[quiver]], ReturnFailed["notquiver"]];
-  {cardinalList, representation} = parseRepresentationSpec[representation];
+QuiverRepresentation[quiver_, representation_:Automatic] := Scope[
+  If[!QuiverQ[quiver = toQuiver[quiver]], ReturnFailed["notquiver"]];
+  {cardinalListSpec, representation} = parseRepresentationSpec[representation];
+  cardinalList = DeleteNone[cardinalListSpec];
   SetAutomatic[cardinalList, CardinalList[quiver]];
   SetAutomatic[representation, chooseAutoRepresentation[cardinalList]];
   If[FailureQ[representation = toRepresentation[representation, Length[cardinalList]]],
     ReturnFailed["notrep"]];
   generatorList = representation["Generators"];
+  If[ContainsQ[cardinalListSpec, None],
+    generatorList = Part[generatorList, SelectIndices[cardinalListSpec, # =!= None&]];
+  ];
   If[Length[cardinalList] =!= Length[generatorList],
     ReturnFailed["gencount", Length[generatorList], Length[cardinalList]]];
   generators = AssociationThread[cardinalList, generatorList];
@@ -67,11 +73,11 @@ CardinalQuiverRepresentation[quiver_, representation_:Automatic] := Scope[
     "Generators" -> generators,
     "Representation" -> representation
   ];
-  constructCardinalQuiverRepresentationObject[assoc]
+  constructQuiverRepresentationObject[assoc]
 ];
 
-constructCardinalQuiverRepresentationObject[assoc_] :=
-  System`Private`ConstructNoEntry[CardinalQuiverRepresentationObject, assoc];
+constructQuiverRepresentationObject[assoc_] :=
+  System`Private`ConstructNoEntry[QuiverRepresentationObject, assoc];
 
 Format[RepresentationObject[matrix_?MatrixQ], StandardForm] :=
   renderRepresentationMatrix[matrix];
@@ -89,17 +95,32 @@ cardinalIcon[graph_] :=
     BaseStyle -> {}
   ];
 
+PackageExport["QuiverRepresentationPlot"]
 
-PackageExport["CardinalQuiverRepresentationObjectQ"]
+QuiverRepresentationPlot[qrep_, opts:OptionsPattern[Quiver]] := Scope[
+  If[!QuiverRepresentationObjectQ[qrep], ReturnFailed[]];
+
+  quiver = qrep["Quiver"];
+  quiverPlot = Quiver[quiver, opts, ImageSize -> Tiny, GraphLegend -> None];
+
+  colors = CardinalColors[quiver];
+  labeledGenerators = KeyValueMap[
+    Labeled[#2, Row[{ColoredArrowhead[colors[#1], 10], " ", #1}]]&,
+    qrep["Generators"]];
+  Row[{quiverPlot, "  ", Row[labeledGenerators, " "]}]
+];
+
+
+PackageExport["QuiverRepresentationObjectQ"]
 
 SetUsage @ "
-CardinalQuiverRepresentationObjectQ[obj$] returns True if obj$ is a valid CardinalQuiverRepresentationObject.
+QuiverRepresentationObjectQ[obj$] returns True if obj$ is a valid QuiverRepresentationObject.
 "
 
-CardinalQuiverRepresentationObjectQ[_CardinalQuiverRepresentationObject ? System`Private`HoldNoEntryQ] := True;
-CardinalQuiverRepresentationObjectQ[_] := False;
+QuiverRepresentationObjectQ[_QuiverRepresentationObject ? System`Private`HoldNoEntryQ] := True;
+QuiverRepresentationObjectQ[_] := False;
 
-CardinalQuiverRepresentationObject /: MakeBoxes[object:CardinalQuiverRepresentationObject[data_Association] ? System`Private`HoldNoEntryQ, format_] := ModuleScope[
+QuiverRepresentationObject /: MakeBoxes[object:QuiverRepresentationObject[data_Association] ? System`Private`HoldNoEntryQ, format_] := ModuleScope[
   UnpackAssociation[data, quiver, cardinals, generators, representation];
   dimension = representation["Dimension"];
   group = representation["Group"];
@@ -109,7 +130,7 @@ CardinalQuiverRepresentationObject /: MakeBoxes[object:CardinalQuiverRepresentat
   edges = EdgeCount[quiver];
   order = GroupOrder[group];
   BoxForm`ArrangeSummaryBox[
-    CardinalQuiverRepresentationObject, object, icon,
+    QuiverRepresentationObject, object, icon,
     (* Always displayed *)
     {
      {summaryItem["Group", group], summaryItem["Cardinals", Row[cardinals, ","]]},
@@ -123,43 +144,55 @@ CardinalQuiverRepresentationObject /: MakeBoxes[object:CardinalQuiverRepresentat
   ]
 ];
 
-(CardinalQuiverRepresentationObject[data_Association] ? System`Private`HoldNoEntryQ)[property_String] :=
-  getCqrProperty[data, property];
 
-getCqrProperty[data_, prop_String] := Lookup[data, prop];
+declareObjectPropertyDispatch[QuiverRepresentationObject, quiverRepresentationProperty];
 
-getCqrProperty[data_, "Identity"] := data["Representation"]["Identity"];
+quiverRepresentationProperty[data_, "Identity"] := QuiverElement[
+  First @ VertexList @ data["Quiver"],
+  data["Representation"]["Identity"]
+];
 
-getCqrProperty[data_, "SymmetricCayleyFunction"] := computeCayleyFunction[data];
+quiverRepresentationProperty[data_, "CayleyFunction", opts___Rule] :=
+  computeCayleyFunction[data, opts];
 
-CayleyFunction[cqrep_ ? CardinalQuiverRepresentationObjectQ] := cqrep["SymmetricCayleyFunction"];
+quiverRepresentationProperty[data_, other___] := Print[other];
 
-computeCayleyFunction[data_] := Scope[
+
+makeQuiverElementRule[inVertex_, outVertex_, gen_, cardinal_] :=
+  QuiverElement[inVertex, \[FormalR] : _] :> Labeled[QuiverElement[outVertex, gen[\[FormalR]]], cardinal];
+
+Options[computeCayleyFunction] = {"Symmetric" -> True, "Labeled" -> True};
+
+computeCayleyFunction[data_, OptionsPattern[]] := Scope[
   UnpackAssociation[data, generators, quiver];
+  UnpackOptions[symmetric, labeled];
   quiverEdges = EdgeList[quiver];
-  cayleyComponents = Apply[
+  rules = Flatten @ Apply[
     {inVertex, outVertex, cardinal} |-> {
-      gen = generators[cardinal]; igen = InverseFunction[gen];
-      inVertex -> Labeled[LatticeVertex[gen[$arg1], outVertex], cardinal],
-      If[igen =!= gen, outVertex -> Labeled[LatticeVertex[igen[$arg1], inVertex], Negated[cardinal]], Nothing]
+      gen = generators[cardinal];
+      makeQuiverElementRule[inVertex, outVertex, gen, cardinal],
+      If[symmetric && (igen = InverseFunction[gen]) =!= gen,
+        makeQuiverElementRule[outVertex, inVertex, igen, Negated @ cardinal]],
+        Nothing
     },
     quiverEdges, {1}
   ];
-  switch = $switch[$arg2, Sequence @@ KeyValueMap[Sequence, Merge[cayleyComponents, Identity]]];
-  func = Construct[Function, switch] //. {
-    $arg1 -> Construct[Slot, 1],
-    $arg2 -> Construct[Slot, 2],
-    $switch[_, _, b_] :> b,
-    $switch -> Switch
-  };
-  Apply @ func
+  If[!labeled, rules = rules /. Labeled[g_, _] :> g];
+  ReplaceList[rules]
 ];
 
 
-PackageExport["CardinalQuiverRepresentationObject"]
+PackageExport["QuiverElement"]
 
 SetUsage @ "
-CardinalQuiverRepresentationObject[$$] represents a CardinalQuiver with an associated representation.
+QuiverElement[v$, state$] represents a quiver vertex v$ with associated state state$.
+"
+
+
+PackageExport["QuiverRepresentationObject"]
+
+SetUsage @ "
+QuiverRepresentationObject[$$] represents a Quiver with an associated representation.
 "
 
 

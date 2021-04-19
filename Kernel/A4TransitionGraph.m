@@ -2,6 +2,7 @@ Package["GraphTools`"]
 
 PackageImport["GeneralUtilities`"]
 
+
 PackageExport["MaxVertices"]
 PackageExport["MaxVerticesPerComponent"]
 PackageExport["MaxEdges"]
@@ -21,9 +22,10 @@ ProgressFunction::usage = "ProgressFunction is an option to StateTransitionGraph
 MaxNorm::usage = "MaxNorm is an option to StateTransitionGraph.";
 IncludeFrontier::usage = "IncludeFrontier is an option to StateTransitionGraph.";
 
+
 PackageExport["StateTransitionGraph"]
 
-Options[StateTransitionGraph] = Join[
+Options[StateTransitionGraph] = JoinOptions[
   List[
     MaxVertices -> Infinity,
     MaxEdges -> Infinity,
@@ -37,7 +39,7 @@ Options[StateTransitionGraph] = Join[
     MaxNorm -> None,
     IncludeFrontier -> True
   ],
-  DeleteCases[Options[Graph], DirectedEdges -> _]
+  $simpleGraphOptionRules
 ];
 
 stackPushList[stack_, list_] := Scan[item |-> stack["Push", item], list];
@@ -92,7 +94,7 @@ Labeled[f$, label$] or f$ -> label$ to attach a custom label label$ instead.
 | 'Time' | the number of seconds since exploration began |
 | 'EdgeCount' | the number of edges seen so far |
 | 'VertexCount' | the number of vertices seen so far |
-* If MaxDeph -> <|label$1 -> d$1, $$, label$n -> d$n|> is specified, a per-label maximum depth will be applied, so \
+* If MaxDepth -> <|label$1 -> d$1, $$, label$n -> d$n|> is specified, a per-label maximum depth will be applied, so \
 that a vertex will be explored as long as it can be reached in under d$i steps of edges labeled label$i.
 "
 
@@ -104,7 +106,7 @@ $vertexDepthElements = {
   "VertexDepthList", "VertexDepthAssociation", "VertexTagDepthList", "VertexTagDepthAssociation"
 };
 
-$graphExploreElements = {
+$stgElements = {
   "TransitionLists", "IndexTransitionLists",
   "EdgeList", "IndexEdgeList",
   "VertexList",
@@ -115,7 +117,7 @@ $graphExploreElements = {
   "Elements"
 };
 
-$graphExploreElementsPattern = Alternatives @@ $graphExploreElements;
+$stgElementsPattern = Alternatives @@ $stgElements;
 
 StateTransitionGraph::badlimit = "The setting for `` should be a positive integer or infinity.";
 StateTransitionGraph::badinitstates = "The initial states spec should be a non-empty list of states."
@@ -128,11 +130,7 @@ StateTransitionGraph::undedgelabels = "Cannot obtain element \"EdgeLabels\" when
 StateTransitionGraph[f_, initialVertices_, opts:OptionsPattern[]] :=
   StateTransitionGraph[f, initialVertices, "Graph", opts];
 
-If[$Notebooks,
-  With[{elems = $graphExploreElements},
-    FE`Evaluate[FEPrivate`AddSpecialArgCompletion["StateTransitionGraph" -> {0, 0, elems}]]
-  ];
-];
+declareFunctionAutocomplete[StateTransitionGraph, {0, 0, $stgElements}];
 
 checkNorm[r_ ? NonNegative] := r;
 checkNorm[_] := (Message[StateTransitionGraph::badnorm]; Return[$Failed, Module]);
@@ -153,8 +151,8 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
 
   initialVertices = DeleteDuplicates[initialVertices];
 
-  If[!MatchQ[result, $graphExploreElementsPattern | {Repeated[$graphExploreElementsPattern]}],
-    ReturnFailed["badelement", result, TextString[Row[$graphExploreElements, ", "]]];
+  If[!MatchQ[result, $stgElementsPattern | {Repeated[$stgElementsPattern]}],
+    ReturnFailed["badelement", result, TextString[Row[$stgElements, ", "]]];
   ];
 
   Scan[
@@ -169,7 +167,7 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
     depthLabels = DeepCases[f, Labeled[_, label_] :> label];
     depthLabels = DeleteDuplicates @ Replace[depthLabels, Negated[c_] :> c, {1}];
     If[depthLabels === {}, ReturnFailed["badmaxdepth"]];
-    maxDepth' = ConstantAssociation[depthLabels, First @ maxDepth];
+    maxDepth = ConstantAssociation[depthLabels, First @ maxDepth];
   ];
 
   Switch[maxDepth,
@@ -491,11 +489,11 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
     "VertexTagDepthList" :> tagDepths,
     "VertexTagDepthAssociation" :> Map[AssociationThread[vertices, #]&, tagDepths],
     "LabeledGraph" :> Graph[graph, VertexLabels -> Automatic],
-    "CayleyGraph" :> CardinalQuiver[graph],
+    "CayleyGraph" :> Quiver[graph],
     "IndexGraph" :> indexGraph,
     "EdgeLabels" :> edgeLabels,
     "TerminationReason" :> terminationReason,
-    "Elements" :> $graphExploreElements
+    "Elements" :> $stgElements
   |>;
 
   Lookup[resultsAssoc, result, $Failed]

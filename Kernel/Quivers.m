@@ -18,6 +18,17 @@ ArrowheadLegend[assoc_Association] := Scope[
   Grid[rows, BaseStyle -> {FontFamily -> "Avenir"}, Spacings -> {.5, 0.5}]
 ]
 
+
+PackageExport["ColoredArrowhead"]
+
+ColoredArrowhead[color_, sz_:12] := Scope[
+  $arrowheadSize = sz * {1, 1};
+  Append[
+    makeBaseArrowhead[color] /. p_Polygon :> Rotate[p, Pi/2],
+    BaselinePosition -> Scaled[0.1]
+  ]
+];
+
 makeBaseArrowhead[color_] :=
   Graphics[{
     Opacity[1.0], FaceForm[color], EdgeForm[Darker[color, .2]],
@@ -26,22 +37,25 @@ makeBaseArrowhead[color_] :=
     PlotRangeClipping -> False
   ];
 
-estimateGraphicsWidth[] := Clip[Sqrt[$currentVertexCount] * 3, {5, 35}];
-
-cardinalEdgePlot[colorMap_, _][coords_, DirectedEdge[a_, b_] | UndirectedEdge[a_, b_]] :=
+cardinalEdgePlot[colorMap_, _, _][coords_, DirectedEdge[a_, b_] | UndirectedEdge[a_, b_]] :=
   Line[coords];
 
-$lastMax = 0;
-cardinalEdgePlot[colorMap_, arrowSize_][coords_, DirectedEdge[a_, b_, c_]] := Scope[
+cardinalEdgePlot[colorMap_, arrowSize_, arrowGraphic_, gwidth_][coords_, DirectedEdge[a_, b_, c_]] := Scope[
   If[Head[c] === Negated, c = First[c]];
-  len = EuclideanDistance[First[coords], Last[coords]];
-  color = colorMap[c];
-  arrowPos = If[NumberQ[arrowSize], Clip[0.5 + estimateGraphicsWidth[] * arrowSize / len, {0.5, 0.85}], 0.5];
-  arrowheads = Arrowheads[{{arrowSize, arrowPos, makeBaseArrowhead[color]}}];
+  len = EuclideanDistance[First[coords], Last[coords]] + 0.01;
+  color = colorMap[c]; arrowPos = 0.5;
+  arrowGraphic = Switch[arrowGraphic,
+    Automatic,
+      arrowPos = If[NumberQ[arrowSize], Clip[0.5 + (5000 / (200 + gwidth)) * arrowSize / len, {0.5, 0.85}], 0.5];
+      Global`$z ^= makeBaseArrowhead[color],
+    _Graphic, arrowGraphic,
+    _Association, arrowGraphic[c]
+  ];
+  arrowheads = Arrowheads[{{arrowSize, arrowPos, arrowGraphic}}];
   {{Opacity[.2], Black, arrowheads, Arrow[coords]}}
 ];
 
-fastCardinalEdgePlot[colorMap_, arrowSize_][coords_, DirectedEdge[a_, b_, c_]] :=
+fastCardinalEdgePlot[colorMap_, arrowSize_, arrowGraphic_, _][coords_, DirectedEdge[a_, b_, c_]] :=
   {colorMap[Replace[c, Negated[z_] :> z]], Line[coords]};
 
 cardinalVertexPlot[pos_, _, _] :=
@@ -50,77 +64,74 @@ cardinalVertexPlot[pos_, _, _] :=
 NiceTooltip[g_, None] := g;
 NiceTooltip[g_, e_] := Tooltip[g, Pane[e, BaseStyle -> {FontSize -> 15, "Output"}, ImageMargins -> 5]];
 
-$cardinalColors = {
-  RGBColor[0.91, 0.23, 0.14], RGBColor[0.24, 0.78, 0.37], RGBColor[0.21, 0.53, 0.86],
-  RGBColor[1, 0.59, 0.25], RGBColor[0.87, 0.19, 0.75], RGBColor[0, 0.75, 0.74], GrayLevel[0.53]
-};
-
 $cardinalNameSets = Characters /@ {"RGB", "AB", "ABC", "ABCD", "ABCDE", "XY", "XYZ", "UV", "UVW"};
 
 cardinalsToColorMap[cardinals_] := Scope[
   Do[
     If[Sort[ToUpperCase @ set] == Sort[cardinals],
-      Return @ AssociationThread[set, Take[$cardinalColors, Length[set]]]],
+      Return @ AssociationThread[set, Take[$ColorPalette, Length[set]]]],
     {set, $cardinalNameSets}
   ];
-  AssociationThread[cardinals, Take[$cardinalColors, Length[cardinals]]]
+  AssociationThread[cardinals, Take[$ColorPalette, Length[cardinals]]]
 ];
 
 
 PackageExport["GraphLegend"]
 
 SetUsage @ "
-GraphLegend is an option to CardinalQuiver that creates a legend for the graph.
+GraphLegend is an option to Quiver that creates a legend for the graph.
 * GraphLegend -> None specifies no additional legend
 * GraphLegend -> Automatic uses a legend for the cardinals
 * GraphLegend -> legend$ specifies a particular legend
 "
 
 
-PackageExport["CardinalQuiver"]
+PackageExport["Quiver"]
 
 SetUsage @ "
-CardinalQuiver[graph$] constructs a cardinal quiver from a graph.
-CardinalQuiver[edges$] constructs a cardinal quiver from a list of edges.
-CardinalQuiver[vertices$, edges$] constructs a cardinal quiver from a list of vertices and edges.
+Quiver[graph$] constructs a cardinal quiver from a graph.
+Quiver[edges$] constructs a cardinal quiver from a list of edges.
+Quiver[vertices$, edges$] constructs a cardinal quiver from a list of vertices and edges.
 * The edges of graph$ should be tagged with cardinals.
 * The edges incident to one vertex should not be tagged with a cardinal more than once.
 * The resulting graph will display with a legend showing the cardinals associated with each edge.
 "
 
 PackageExport["ArrowheadSize"]
+PackageExport["ArrowheadStyle"]
 
 SetUsage @ "
-ArrowheadSize is an option to CardinalQuiver.
+ArrowheadSize is an option to Quiver.
+ArrowheadStyle is an option to Quiver.
 "
 
-Options[CardinalQuiver] = Join[
-  {ArrowheadSize -> Automatic, PlotLabel -> None},
+Options[Quiver] = Join[
+  {ArrowheadSize -> Automatic, ArrowheadStyle -> Automatic},
   Options[Graph]
 ];
 
-CardinalQuiver[edges_, opts:OptionsPattern[]] :=
-  CardinalQuiver[Automatic, edges, opts];
+Quiver[edges_, opts:OptionsPattern[]] :=
+  Quiver[Automatic, edges, opts];
 
-CardinalQuiver[graph_Graph, newOpts:OptionsPattern[]] := Scope[
+Quiver[graph_Graph, newOpts:OptionsPattern[]] := Scope[
   oldOpts = Options[Graph];
   edges = EdgeList[graph];
   vertices = VertexList[graph];
-  makeCardinalQuiver[vertices, edges, oldOpts, {newOpts}]
+  makeQuiver[vertices, edges, oldOpts, {newOpts}]
 ];
 
-CardinalQuiver[vertices_, edges_, newOpts:OptionsPattern[]] :=
-  makeCardinalQuiver[vertices, edges, {}, {newOpts}];
+Quiver[vertices_, edges_, newOpts:OptionsPattern[]] :=
+  makeQuiver[vertices, edges, {}, {newOpts}];
 
-CardinalQuiver::invedge = "The edge specification `` is not valid."
+Quiver::invedge = "The edge specification `` is not valid."
 
 processEdge[edge_, _] :=
-  (Message[CardinalQuiver::invedge]; $Failed);
+  (Message[Quiver::invedge, edge]; $Failed);
 
-CardinalQuiver::nakededge = "The edge `` is not labeled with a cardinal.";
+Quiver::nakededge = "The edge `` is not labeled with a cardinal.";
 
 processEdge[edge:(_Rule | DirectedEdge[_, _]), None] :=
-  (Message[CardinalQuiver::nakededge, edge]; $Failed);
+  (Message[Quiver::nakededge, edge]; $Failed);
 
 processEdge[Labeled[edges_, label_], _] :=
   processEdge[edges, label];
@@ -143,10 +154,40 @@ processEdge[Labeled[e_, label_], _] := processEdge[e, label];
 
 processEdge[list_List, label_] := Map[processEdge[#, label]&, list];
 
-$maxVertexCount = 150;
-makeCardinalQuiver[vertices_, edges_, oldOpts_, newOpts_] := Scope[
+processArrowheadStyle[e_] := e;
+processArrowheadStyle[a_Association] := Map[toArrowheadGraphic, a];
 
-  edges = Flatten @ processEdge[edges, None];
+toArrowheadGraphic[g_] := None;
+toArrowheadGraphic[g_Graphics] := g;
+toArrowheadGraphic[Placed[img_Image, pos_]] := toGraphics[img, pos];
+toArrowheadGraphic[img_Image] := toGraphics[img, {0, 1}];
+
+toGraphics[img_, pos_] := ImageToGraphics[ImageResize[img, 50], pos, Replace[arrowheadSize, Tiny -> .1]];
+
+chooseImageSize[diam_] := Which[
+  diam < 3, Tiny,
+  diam < 8, Small,
+  diam < 12, MediumSmall,
+  diam < 16, Medium,
+  diam < 32, MediumLarge,
+  True, Large
+];
+
+PackageScope["chooseGraphImageSize"]
+
+chooseGraphImageSize[graph_Graph] :=
+  If[VertexCount[graph] > 1000, Large,
+    chooseGraphImageSize @ EdgeList[graph]];
+
+chooseGraphImageSize[edges_List] :=
+  If[Sqrt[Length[edges]] > 2000, Large,
+    toStandardImageSize @ chooseImageSize @ GraphDiameter @ ReplaceAll[edges, DirectedEdge -> UndirectedEdge]
+  ];
+
+$maxVertexCount = 150;
+makeQuiver[vertices_, edges_, oldOpts_, newOpts_] := Scope[
+
+  edges = Flatten @ List @ processEdge[edges, None];
   If[ContainsQ[edges, $Failed], ReturnFailed[]];
   If[!validCardinalEdgesQ[edges],
     reportDuplicateCardinals[edges];
@@ -162,18 +203,24 @@ makeCardinalQuiver[vertices_, edges_, oldOpts_, newOpts_] := Scope[
   vertexPlotter = cardinalVertexPlot;
   arrowheadSize = Lookup[newOpts, ArrowheadSize, Automatic];
   SetAutomatic[arrowheadSize, If[is3D, 0.01, Tiny]];
+
+  imageSize = Lookup[newOpts, ImageSize, Lookup[oldOpts, ImageSize, Automatic]];
+  SetAutomatic[imageSize, If[Length[vertices] > 1000, Large, chooseGraphImageSize @ edges]];
+
+  arrowheadStyle = processArrowheadStyle @ Lookup[newOpts, ArrowheadStyle, Automatic];
+  graphicsWidth = toNumericImageSize[imageSize];
   edgePlotter = If[Length[vertices] > $maxVertexCount, fastCardinalEdgePlot,
-    cardinalEdgePlot][colorMap, arrowheadSize];
+    cardinalEdgePlot][colorMap, arrowheadSize, arrowheadStyle, graphicsWidth];
 
   graph = Graph[vertices, edges,
     EdgeShapeFunction -> edgePlotter,
     VertexShapeFunction -> vertexPlotter,
-    DeleteCases[newOpts, (GraphLegend | ArrowheadSize) -> _],
+    DeleteOptions[newOpts, {GraphLegend, ArrowheadSize, ArrowheadStyle, ImageSize}],
     VertexStyle -> Directive[FaceForm[GrayLevel[0.4]], EdgeForm[None]],
     GraphLayout -> "SpringElectricalEmbedding",
     EdgeStyle -> Directive[LightGray, Opacity[1], Arrowheads[{{Automatic, .5}}]],
     ContentSelectable -> False, Editable -> False,
-    ImagePadding -> 3,
+    ImagePadding -> 3, ImageSize -> imageSize,
     oldOpts
   ];
 
@@ -187,11 +234,11 @@ makeCardinalQuiver[vertices_, edges_, oldOpts_, newOpts_] := Scope[
   AttachAnnotation[graph, GraphLegend -> legend]
 ]
 
-PackageScope["toCardinalQuiver"]
+PackageScope["toQuiver"]
 
-toCardinalQuiver[g_Graph] := CardinalQuiver[g];
-toCardinalQuiver[edges_List] := CardinalQuiver[edges];
-toCardinalQuiver[_] := $Failed;
+toQuiver[g_Graph] := Quiver[g];
+toQuiver[edges_List] := Quiver[edges];
+toQuiver[_] := $Failed;
 
 
 PackageExport["BouquetQuiver"]
@@ -206,27 +253,24 @@ Options[BouquetQuiver] = Options[Graph];
 BouquetQuiver[str_String, opts:OptionsPattern[]] := BouquetQuiver[Characters[str], opts];
 
 BouquetQuiver[cardinals_List, opts:OptionsPattern[]] :=
-  CardinalQuiver[Map[c |-> Labeled[1 -> 1, c], cardinals], opts]
+  Quiver[Map[c |-> Labeled[1 -> 1, c], cardinals], opts]
 
 
-PackageExport["CardinalQuiverQ"]
+PackageExport["QuiverQ"]
 
 SetUsage @ "
-CardinalQuiverQ[graph$] returns True if graph$ represents a cardinal quiver.
+QuiverQ[graph$] returns True if graph$ represents a cardinal quiver.
 * A cardinal quiver must have a cardinal associated with every edge.
 * A cardinal quiver should contain only directed edges.
 * A cardinal should not be present on more than one edge incident to a vertex.
 "
 
-CardinalQuiverQ[g_] := GraphQ[g] && validCardinalEdgesQ[EdgeList[g]];
+QuiverQ[g_] := GraphQ[g] && validCardinalEdgesQ[EdgeList[g]];
 
 validCardinalEdgesQ[edges_] := And[
   MatchQ[edges, {DirectedEdge[_, _, _]..}],
   AllTrue[GroupBy[edges, Last], checkForDuplicateCardinals]
 ];
-
-srcVertices[edges_] := edges[[All, 1]];
-dstVertices[edges_] := edges[[All, 2]];
 
 checkForDuplicateCardinals[edges_] :=
   DuplicateFreeQ[srcVertices @ edges] && DuplicateFreeQ[dstVertices @ edges];
@@ -235,17 +279,18 @@ reportDuplicateCardinals[edges_] := (
   KeyValueScan[checkEdgeGroup, GroupBy[edges, Last]];
 )
 
-CardinalQuiver::dupcardinal = "The cardinal `` is present on the following incident edges: ``."
+Quiver::dupcardinal = "The cardinal `` is present on the following incident edges: ``."
 checkEdgeGroup[tag_, edges_] /; !checkForDuplicateCardinals[edges] := Scope[
   {srcDup, dstDup} = Apply[Alternatives, FindDuplicates[#]]& /@ {srcVertices[edges], dstVertices[edges]};
-  dupEdges = Cases[edges, DirectedEdge[srcDup, _, _] | DirectedEdge[_, dstDup, _]];
-  Message[CardinalQuiver::dupcardinal, tag, Take[dupEdges, All, 2]];
+  dupEdges = Cases[edges, DirectedEdge[srcDup, _, _]];
+  If[dupEdges === {}, dupEdges = Cases[edges, DirectedEdge[_, dstDup, _]]];
+  Message[Quiver::dupcardinal, tag, Take[dupEdges, All, 2]];
 ];
 
-PackageExport["FreeCardinalQuiver"]
+PackageExport["FreeQuiver"]
 
 SetUsage @ "
-FreeCardinalQuiver[graph$] returns a cardinal quiver for graph$, assigning a unique formal symbol \
+FreeQuiver[graph$] returns a cardinal quiver for graph$, assigning a unique formal symbol \
 to each edge in the graph$.
 * Undirected edges are transformed into pairs of opposite directed edges.
 "
@@ -261,9 +306,9 @@ toQuiverEdge[UndirectedEdge[a_, b_]] := Splice[{
 }];
 
 
-FreeCardinalQuiver[graph_] := Scope[
+FreeQuiver[graph_] := Scope[
   $count = 1;
-  makeCardinalQuiver[VertexList @ graph, Map[toQuiverEdge, EdgeList @ graph], {}, {}]
+  makeQuiver[VertexList @ graph, Map[toQuiverEdge, EdgeList @ graph], {}, {}]
 ];
 
 
@@ -284,6 +329,21 @@ CardinalList[edges_List] := Scope[
 ];
 
 
+PackageExport["CardinalColors"]
+
+CardinalColors[graph_Graph] :=
+  FirstCase[Options[graph], cardinalEdgePlot[cmap_, _, _] :> cmap, None, Infinity];
+
+CardinalColors[_] := $Failed;
 
 
 
+PackageExport["RemoveCardinals"]
+
+RemoveCardinals[g_Graph] := Scope[
+  coords = LookupOption[g, VertexCoordinates];
+  Graph[
+    VertexList[g], Take[EdgeList[g], All, 2],
+    VertexCoordinates -> coords
+  ]
+];

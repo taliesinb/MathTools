@@ -4,6 +4,11 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
+PackageExport["TakeOperator"]
+
+TakeOperator[spec___][e_] := Take[e, spec];
+
+
 PackageExport["Ones"]
 PackageExport["Zeros"]
 
@@ -51,20 +56,20 @@ UnitAffineMatrix[n$, {i$, j$}] represents the identity n$ \[Times] n$ matrix wit
 UnitAffineMatrix[n_, {i_, j_}] := ReplacePart[IdentityMatrix[n], {i, j} -> 1];
 
 
-PackageExport["AbelianMatrixQ"]
+PackageExport["TranslationMatrixQ"]
 
-AbelianMatrixQ[matrix_] :=
+TranslationMatrixQ[matrix_] :=
   UpperUnitriangularMatrixQ[matrix] && ZeroMatrixQ[matrix[[;;-2, ;;-2]] - IdentityMatrix[Length[matrix] - 1]];
 
 
-PackageExport["AbelianVector"]
+PackageExport["ExtractTranslationVector"]
 
-AbelianVector[matrix_] := matrix[[;;-2, -1]];
+ExtractTranslationVector[matrix_] := matrix[[;;-2, -1]];
 
 
-PackageExport["AbelianMatrix"]
+PackageExport["TranslationMatrix"]
 
-AbelianMatrix[vector_] := Scope[
+TranslationMatrix[vector_] := Scope[
   matrix = IdentityMatrix[Length[vector] + 1];
   matrix[[;;-2, -1]] = vector;
   matrix
@@ -135,3 +140,23 @@ DiagonalBlock[matrixList_ /; VectorQ[matrixList, MatrixQ], {i_, j_}] := Part[mat
 DiagonalBlock[obj_, list:{__List}] := Map[DiagonalBlock[obj, #]&, list];
 
 DiagonalBlock[part_][obj_] := DiagonalBlock[obj, part];
+
+
+
+PackageExport["FindIndependentVectors"]
+
+FindIndependentVectors[vectors_] := Scope[
+  rowReduced = RowReduce @ Transpose @ vectors;
+  pivotPositions = Flatten[Position[#, Except[0, _ ? NumericQ], 1, 1]& /@ rowReduced];
+  Part[vectors,  pivotPositions]
+]
+
+
+PackageExport["MatrixSimplify"]
+
+MatrixSimplify[matrix_] := Scope[
+  entries = Flatten[matrix];
+  gcd = PolynomialGCD[Sequence @@ entries];
+  If[gcd === 1, Return[{matrix, 1}]];
+  {Simplify @ Cancel[matrix / gcd], gcd}
+];

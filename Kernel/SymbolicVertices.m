@@ -10,9 +10,11 @@ LatticeVertex[coords$] represents a vertex in a lattice graph with lattice coord
 LatticeVertex[coords$, type$] represents a vertex in a lattice graph with type type$.
 "
 
+$thinGap = Style["\[CenterDot]", Gray];
+$thickGap = Style[" \[CenterDot] ", Gray];
 formatInteger[a_] := Style[If[Negative[a], UnderBar[Abs[a]], a], FontFamily -> "Avenir"];
-formatLVertex[args:{__Integer}] := Row[formatInteger /@ args, "\[ThinSpace]"];
-formatLVertex[args_List] := Row[args, " "];
+formatLVertex[args:{__Integer}] := Row[formatInteger /@ args, $thinGap];
+formatLVertex[args_List] := Row[args, $thickGap];
 formatLVertex[args_] := args;
 formatLVertex[args_, type_] := Overscript[formatLVertex[args], type];
 
