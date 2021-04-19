@@ -242,17 +242,28 @@ PackageExport["LatticeGraph"]
 
 SetUsage @ "
 LatticeGraph['name$', d$] generates the lattice graph for the named lattice 'name$' to depth d$.
-* Named lattices include:
-| 'Square' | square lattice |
-| 'Triangular' | triangular lattice |
-| 'Hexagonal' | hexagonal lattice |
+LatticeGraph['name$'] uses a default depth of 6.
+* Named lattices (and their corresponding tilings) include:
+| 'Square' | square tiling, aka quadrille |
+| 'Cubic' | cubic tiling |
+| 'Triangular' | triangular tiling, aka deltille |
+| 'Hexagonal' | hexagonal lattice, aka hextille |
+| 'SnubHextille' | snub hextille tiling, aka snub trihexagonal |
 | 'Rhombille' | rhombille lattice |
-| 'Rhombihexadeltille' | rhombihexadeltille lattice |
-| 'SnubHextille' | snub hextille lattice |
-The following options are supported:
+| 'Rhombihexadeltille' | rhombihexadeltille tiling, aka rhombitrihexagonal |
+* The following options are supported:
 | VertexNaming | 'SpiralIndex' | how to name vertices |
 | DirectedEdges | False | whether the graph should be directed |
-To obtain cardinal tags on the edges, use the function LatticeQuiver.
+| VertexLabels | None | whether to plot vertices with their labels |
+| ImageSize | Automatic | size to plot the graph |
+* To plot vertex labels, pass VertexLabels -> Automatic.
+* To obtain cardinal tags on the edges, use the function LatticeQuiver.
+* VertexNaming accepts the following settings:
+| 'SpiralIndex' | number starting at 1 for the origin, spiralling first clockwise then outward (default) |
+| 'RasterIndex' | number vertices starting at the top left, moving right then down |
+| 'Coordinates' | name vertices based on their automatically extracted coordinates |
+| 'Index' | number vertices using the order produced by GenerateQuiverLattice |
+| None | do not rename the vertices, meaning they will be LatticeVertex objects |
 "
 
 Options[LatticeGraph] = JoinOptions[{
@@ -265,7 +276,7 @@ LatticeGraph::badlatticename = "The specified name `` is not a known name for a 
 LatticeGraph::baddepth = "The specified depth `` is not a positive integer."
 LatticeGraph::badvertnaming = "Unknown setting `` for VertexNaming.";
 
-$latticeNames = Keys[$latticeQuiverRepresentations];
+$latticeNames = Sort @ Keys[$latticeQuiverRepresentations];
 declareFunctionAutocomplete[LatticeGraph, {$latticeNames, 0}];
 
 LatticeGraph[name_, opts:OptionsPattern[]] := LatticeGraph[name, 6, opts];
@@ -294,11 +305,16 @@ LatticeGraph[name_, depth_, opts:OptionsPattern[]] := Scope[
 
   is3D = Length[First @ vertexCoordinates] === 3;
 
+  edgeStyle = If[directedEdges,
+    {Opacity[0.8], GrayLevel[0.8], Arrowheads[{{Medium, 0.7}}]},
+    {Opacity[0.5], GrayLevel[0.6]}
+  ];
+
   Graph[vertices, edges,
     Sequence @@ DeleteOptions[TakeOptions[{opts}, $simpleGraphOptions], ImageSize],
     VertexCoordinates -> vertexCoordinates,
     VertexStyle -> Directive[Opacity[1], EdgeForm[None], GrayLevel[If[is3D, 0, 0.5]]],
-    EdgeStyle -> Directive[Opacity[0.5], GrayLevel[0.6]],
+    EdgeStyle -> Apply[Directive, edgeStyle],
     Sequence @@ If[is3D, {VertexShapeFunction -> "Point", EdgeShapeFunction -> "Line"}, {}],
     ImageSize -> LookupOption[graph, ImageSize]
   ]
@@ -317,14 +333,14 @@ vecSorter[v_] /; Length[v] == 1 := {Norm[v], v};
 toRenamingRule["SpiralIndex", vertices_] :=
   AssociationThread[vertices, Ordering @ Ordering @ Map[vecSorter, N @ vertices[[All, 1]]]];
 
-toRenamingRule["Raster", vertices_] :=
+toRenamingRule["RasterIndex", vertices_] :=
   AssociationThread[vertices, Ordering @ Ordering @ ({-#2, #1}& @@@ vertexCoordinates)];
-
-toRenamingRule["Index", _] :=
-  AssociationRange[vertices];
 
 toRenamingRule["Coordinates", _] :=
   LatticeVertex[v_, _] :> v;
+
+toRenamingRule["DefaultIndex", _] :=
+  AssociationRange[vertices];
 
 toRenamingRule[None, _] := {};
 
