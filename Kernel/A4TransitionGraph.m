@@ -25,6 +25,8 @@ IncludeFrontier::usage = "IncludeFrontier is an option to StateTransitionGraph."
 
 PackageExport["StateTransitionGraph"]
 
+DeclareArgumentCount[StateTransitionGraph, 2];
+
 Options[StateTransitionGraph] = JoinOptions[
   List[
     MaxVertices -> Infinity,

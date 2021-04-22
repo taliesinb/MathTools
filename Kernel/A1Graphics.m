@@ -3,20 +3,22 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
-PackageExport["OklabColor"]
 PackageExport["$ColorPattern"]
 
-$ColorPattern = (_GrayLevel | XYZColor | CMYKColor | Hue | XYZColor | LABColor | LCHColor | LUVColor);
+$ColorPattern = _RGBColor | _GrayLevel | _CMYKColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor;
 
-(*
-Typeset`MakeBoxes[ Triangle[a__], fmt_, Graphics] := TagBox[PolygonBox[a] // AddCache[{True}], "Triangle"]
+SetUsage @ "
+$ColorPattern is a pattern that matches a valid color, like RGBColor[$$] etc.
+"
 
-Begin["`System`Dump`"];
-ValidColor[OklabColor[{_?ValidNumber, _?ValidNumber, _?ValidNumber}]] := True;
-ValidDirective[x_OklabColor] := True] := True;
-End[];
-*)
-s
+PackageExport["OklabColor"]
+
+SetUsage @ "
+OklabColor[l$, a$, b$] returns an RGBColor[$$] corresponding to the given color in the OkLAB colorspace.
+"
+
+DeclareArgumentCount[OklabColor, 3];
+
 $OklabToLMS = {
   {+1, +0.3963377774, +0.2158037573},
   {+1, -0.1055613458, -0.0638541728},
@@ -82,10 +84,26 @@ ToRGB[e_] := ReplaceAll[e, $toRGBRules];
 
 PackageExport["OklabBlend"]
 
+SetUsage @ "
+OklabBlend[colors$] blends a list of ordinary colors, but in OkLAB colorspace.
+"
+
+DeclareArgumentCount[OklabBlend, 1];
+
 OklabBlend[colors_List] := FromOklab @ Mean @ ToOklab[colors];
 
 
 PackageExport["BlendFunction"]
+
+SetUsage @ "
+BlendFunction[{v$1, $$, v$n}, {c$1, $$, c$n}] returns a function that will take a value \
+in the range [v$1, v$n] and interpolate a corresponding color based on the matching colors \
+c$1 to c$n.
+* Colors are blended in the OkLAB colorspace.
+* BlendFunction returns a ColorFunctinoObject[$$].
+"
+
+DeclareArgumentCount[BlendFunction, 2];
 
 BlendFunction[values_, colors_] := Scope[
   okLabValues = ToOklab[colors];
@@ -95,6 +113,10 @@ BlendFunction[values_, colors_] := Scope[
 
 
 PackageExport["ColorFunctionObject"]
+
+SetUsage @ "
+ColorFunctionObject[$$] represents a function that takes values and returns colors.
+"
 
 Format[cf:ColorFunctionObject[_List, func_, "Linear"|"Log"], StandardForm] :=
   formatColorFunction[cf];
@@ -121,6 +143,11 @@ toBalancedGradientColorMap[{0, max_}] := BlendFunction[{0, max}, {White, Red}];
 
 PackageExport["GraphicsPlotRange"]
 
+SetUsage @ "
+GraphicsPlotRange[graphics$] yields the PlotRange that will be used when graphics$ is rendered.
+* graphics$ can be a Graphics[$$] or GraphicsBox[$$] expression.
+"
+
 expandMultiArrowInGC[g_] := g /.
   Arrow[segments:{{__Integer}..}, opts___] :> RuleCondition[Map[Arrow[#, opts]&, segments]];
 
@@ -130,7 +157,7 @@ expandGC[g_] := g /.
 GraphicsPlotRange[g_Graphics] := Scope[
   {{l, r}, {b, t}} = plotRange = PlotRange @ expandGC @ g;
   w = r - l; h = t - b;
-  padding = OptionLookup[g, PlotRangePadding];
+  padding = LookupOption[g, PlotRangePadding];
   SetAutomatic[padding, Scaled[0.02]];
   Switch[padding,
     Scaled[_],
@@ -155,14 +182,13 @@ $boxSymbolToOrdinarySymbol = AssociationMap[Symbol[StringDrop[SymbolName[#], -3]
 $graphicsBoxReplacements = Dispatch @ Normal @ $boxSymbolToOrdinarySymbol;
 
 
-
 PackageExport["$Red"]
 PackageExport["$Green"]
 PackageExport["$Blue"]
 PackageExport["$Orange"]
 PackageExport["$Pink"]
 PackageExport["$Cyan"]
-PackageExport["$Gray"];
+PackageExport["$Gray"]
 
 $Red = RGBColor[0.91, 0.23, 0.14];
 $Green = RGBColor[0.24, 0.78, 0.37];
@@ -178,98 +204,6 @@ PackageExport["$ColorPalette"]
 $ColorPalette = {$Red, $Green, $Blue, $Orange, $Pink, $Gray};
 
 
-(*
-With[{bBox = GeneralUtilities`Graphics`PackagePrivate`bBox},
-
-bBox[Annulus[pos_, {_, rout_}]] := bBox[Disk[pos, rout]];
-bBox[Circle[pos_, r_]] := bBox[Disk[pos, r]];
-bBox[Disk[pos_, 0|0.]] := bBox[pos];
-bBox[gc:GraphicsComplex[pos_,___]] := bBox[Normal[gc]];
-
-$graphicsBoxSymbols = {
-  TooltipBox, StyleBox, GraphicsBox, GraphicsGroupBox, RectangleBox, DiskBox, CircleBox, TextBox, PointBox,
-  LineBox, ArrowBox, PolygonBox, BSplineCurveBox, BezierCurveBox, RasterBox, GraphicsComplexBox
-};
-
-$boxSymbolToOrdinarySymbol = AssociationMap[Symbol[StringDrop[SymbolName[#], -3]]&, $graphicsBoxSymbols];
-
-$graphicsBoxReplacements = Dispatch @ Normal @ $graphicsBoxSymbols;
-
-bBox[expr_] /; KeyExistsQ[$boxSymbolToOrdinarySymbol, Head[expr]] :=
-  bBox[$boxSymbolToOrdinarySymbol[Head[expr]] @@ expr];
-
-]; *)
-
-
-PackageExport["ToNumberString"]
-
-ToNumberString[e_] := numStr[e];
-
-$blankNum = Style["\[CenterDot]", Gray];
-
-$squareRootStr = "\[DoublePrime]";
-$imagStr = "\[ImaginaryI]"
-
-$supStrs = AssociationThread[Range[0, 9], Characters @ "⁰¹²³⁴⁵⁶⁷⁸⁹"];
-$subStrs = AssociationThread[Range[0, 9], Characters @ "₀₁₂₃₄₅₆₇₈₉"];
-
-scriptStr[n_, minus_, assoc_] := If[Negative[n], minus, ""] <> StringJoin[Lookup[assoc, IntegerDigits @ n]];
-supStr[n_] := scriptStr[n, "⁻", $supStrs];
-subStr[n_] := scriptStr[n, "₋", $subStrs];
-
-numStr = MatchValues[
-  1/2 := "1/2";
-  i_Integer := TextString[i];
-  Sqrt[b_] := $squareRootStr <> brackStr[b];
-  a_/Sqrt[b_] := brackStr[a] <> $squareRootStr <> brackStr[b];
-  Rational[a_, b_] := brackStr[a] <> "/" <> brackStr[b];
-  r_Real := TextString[NumberForm[r, 2]];
-  p_Plus := plusStr[Map[numStr, List @@ p]];
-  Power[e_, -1] := numStr[e] <> supStr[-1];
-  Power[e_, k_Integer] := numStr[e] <> supStr[k];
-  UnitRoot[n_] := "\[Xi]" <> subStr[n];
-  Times[-1, negated_] := "-" <> brackStr[negated];
-  Times[r_Rational, Sqrt[b_]] := $squareRootStr <> brackStr[r^2 * b];
-  Times[Complex[0, r_Rational], b_] := numStr[r * b] <> $imagStr;
-  Times[complex_Complex, other_] := brackStr[other] <> "(" <> numStr @ complex <> ")";
-  Complex[0, Rational[1, b_]] := $imagStr <> "/" <> brackStr[b];
-  Complex[0, imag_] := brackStr[imag] <> $imagStr;
-  Complex[real_, 0] := real;
-  Complex[real_, imag_] := plusStr[{numStr @ real, brackStr[imag] <> $imagStr}];
-  i_ := TextString[i];
-];
-
-plusStr[parts_] := StringRiffle[parts, If[AllTrue[parts, StringFreeQ[" "]], "+", " + "]]
-
-brackStr[e_] := Scope[
-  s = numStr[e];
-  If[StringContainsQ[s, " "], "(" <> s <> ")", s]
-];
-
-possiblyBracket[s_String] := If[StringContainsQ[s, " "], "(" <> s <> ")", s];
-
-algStr = MatchValues[
-  Power[e_, n_] := Superscript[e, n];
-  e_ := e
-];
-
-posNegCol[e_] := If[Negative[e], Red, Black];
-compCol[e_] := Hue[Arg[e]/(2*Pi) + .05, Min[Sqrt[Abs[N @ e]],1], .85];
-
-colNumStr[cfunc_][elem_] := Which[
-  ContainsUnitRootsQ[elem], algStr @ elem,
-  elem == 0, $blankNum,
-  True, Style[numStr @ Abs[elem], cfunc[elem]]
-];
-
-
-PackageExport["$ColorPattern"]
-
-$ColorPattern = _RGBColor | _GrayLevel | _CMYKColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor;
-
-
-PackageExport["LookupImageSize"]
-
 PackageExport["MediumSmall"]
 PackageExport["MediumLarge"]
 PackageExport["Huge"]
@@ -277,6 +211,29 @@ PackageExport["Huge"]
 SetUsage @ "MediumSmall represents a size betwen Small and Medium."
 SetUsage @ "MediumLarge represents a size betwen Medium and Large."
 SetUsage @ "Huge represents a size greater than Large."
+
+
+PackageExport["LookupImageSize"]
+
+SetUsage @ "
+LookupImageSize[object$] returns the ImageSize that a given object will use when rendered.
+* A numeric hard-coded size will be returned as-is.
+* Symbolic sizes like Tiny, Small, Medium, Large will be converted to their numeric equivalents.
+* The size is returned as a pair {width$, height$}.
+"
+
+DeclareArgumentCount[LookupImageSize, 1];
+
+LookupImageSize[obj_] := Scope[
+  size = LookupOption[obj, ImageSize];
+  Switch[size,
+    {_ ? NumberQ, Automatic | (_ ? NumberQ)}, size,
+    _ ? NumberQ, {size, Automatic},
+    s_Symbol, {Lookup[$ImageWidthTable, s], Automatic},
+    _, {720, Automatic}
+  ]
+];
+
 
 $ImageWidthTable = <|
   Tiny -> 100,
@@ -298,14 +255,3 @@ PackageScope["toNumericImageSize"]
 toNumericImageSize[sym_Symbol] := Lookup[$ImageWidthTable, sym, 360];
 toNumericImageSize[w_] := w;
 toNumericImageSize[{w_, h_}] := w;
-
-LookupImageSize[obj_] := Scope[
-  size = OptionLookup[obj, ImageSize];
-  Switch[size,
-    {_ ? NumberQ, Automatic | (_ ? NumberQ)}, size,
-    _ ? NumberQ, {size, Automatic},
-    s_Symbol, {Lookup[$ImageWidthTable, s], Automatic},
-    _, {720, Automatic}
-  ]
-];
-

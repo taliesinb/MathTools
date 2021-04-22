@@ -47,7 +47,7 @@ cardinalEdgePlot[colorMap_, arrowSize_, arrowGraphic_, gwidth_][coords_, Directe
   arrowGraphic = Switch[arrowGraphic,
     Automatic,
       arrowPos = If[NumberQ[arrowSize], Clip[0.5 + (5000 / (200 + gwidth)) * arrowSize / len, {0.5, 0.85}], 0.5];
-      Global`$z ^= makeBaseArrowhead[color],
+      makeBaseArrowhead[color],
     _Graphic, arrowGraphic,
     _Association, arrowGraphic[c]
   ];
@@ -74,16 +74,6 @@ cardinalsToColorMap[cardinals_] := Scope[
   ];
   AssociationThread[cardinals, Take[$ColorPalette, Length[cardinals]]]
 ];
-
-
-PackageExport["GraphLegend"]
-
-SetUsage @ "
-GraphLegend is an option to Quiver that creates a legend for the graph.
-* GraphLegend -> None specifies no additional legend
-* GraphLegend -> Automatic uses a legend for the cardinals
-* GraphLegend -> legend$ specifies a particular legend
-"
 
 
 PackageExport["Quiver"]
@@ -234,11 +224,34 @@ makeQuiver[vertices_, edges_, oldOpts_, newOpts_] := Scope[
   AttachAnnotation[graph, GraphLegend -> legend]
 ]
 
-PackageScope["toQuiver"]
+reportDuplicateCardinals[edges_] := (
+  KeyValueScan[checkEdgeGroup, GroupBy[edges, Last]];
+)
 
-toQuiver[g_Graph] := Quiver[g];
-toQuiver[edges_List] := Quiver[edges];
-toQuiver[_] := $Failed;
+Quiver::dupcardinal = "The cardinal `` is present on the following incident edges: ``."
+checkEdgeGroup[tag_, edges_] /; !checkForDuplicateCardinals[edges] := Scope[
+  {srcDup, dstDup} = Apply[Alternatives, FindDuplicates[#]]& /@ {InVertices[edges], OutVertices[edges]};
+  dupEdges = Cases[edges, DirectedEdge[srcDup, _, _]];
+  If[dupEdges === {}, dupEdges = Cases[edges, DirectedEdge[_, dstDup, _]]];
+  Message[Quiver::dupcardinal, tag, Take[dupEdges, All, 2]];
+];
+
+
+PackageExport["ToQuiver"]
+
+SetUsage @ "
+ToQuiver[obj$] attempts to convert obj$ to a quiver Graph[$$] object.
+* If obj$ is already a quiver graph, it is returned unchanged.
+* If obj$ is a list of rules, it is converted to a quiver graph.
+* Otherwise, $Failed is returned.
+"
+
+ToQuiver = MatchValues[
+  graph_Graph := If[QuiverQ @ graph, graph, Quiet @ Quiver @ graph];
+  edges_List := Quiet @ Quiver @ edges;
+  str_String := BouquetQuiver @ str;
+  _ := $Failed;
+];
 
 
 PackageExport["BouquetQuiver"]
@@ -273,19 +286,8 @@ validCardinalEdgesQ[edges_] := And[
 ];
 
 checkForDuplicateCardinals[edges_] :=
-  DuplicateFreeQ[srcVertices @ edges] && DuplicateFreeQ[dstVertices @ edges];
+  DuplicateFreeQ[InVertices @ edges] && DuplicateFreeQ[OutVertices @ edges];
 
-reportDuplicateCardinals[edges_] := (
-  KeyValueScan[checkEdgeGroup, GroupBy[edges, Last]];
-)
-
-Quiver::dupcardinal = "The cardinal `` is present on the following incident edges: ``."
-checkEdgeGroup[tag_, edges_] /; !checkForDuplicateCardinals[edges] := Scope[
-  {srcDup, dstDup} = Apply[Alternatives, FindDuplicates[#]]& /@ {srcVertices[edges], dstVertices[edges]};
-  dupEdges = Cases[edges, DirectedEdge[srcDup, _, _]];
-  If[dupEdges === {}, dupEdges = Cases[edges, DirectedEdge[_, dstDup, _]]];
-  Message[Quiver::dupcardinal, tag, Take[dupEdges, All, 2]];
-];
 
 PackageExport["FreeQuiver"]
 

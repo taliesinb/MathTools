@@ -143,7 +143,7 @@ DiscreteHeisenbergGroup[] represents the Heisenberg group of 3 \[Times] 3 upper-
 
 declareGroup[
   DiscreteHeisenbergGroup[] :> {
-    "Generators" :> Map[UnitAffineMatrix[3, #]&, {{1, 2}, {2, 3}, {1, 3}}],
+    "Generators" :> Map[UnitAffineMatrix[3, #]&, {{1, 2}, {1, 3}, {2, 3}}],
     "Order" :> Infinity,
     "Format" :> Style["H", Italic]
   }

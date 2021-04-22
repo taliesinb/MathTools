@@ -4,17 +4,19 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
-PackageExport["RepresentationObjectQ"]
+PackageExport["RepresentationObject"]
 
 SetUsage @ "
-RepresentationObjectQ[rep$] returns True if rep$ is a valid RepresentationObject[$$].
+RepresentationObject[$$] represents a group representation.
+* It has the following properties, accessible via rep$['prop$']:
+| 'CayleyGraph' | Cayley graph for the representation |
+| 'Dimension' | size of the representation matrices |
+| 'Generators' | a list of RepresentationElement objects |
+| 'Group' | group being represented |
+| 'GroupOrder' | order of the group being represented |
+| 'Identity' | the RepresentationElement for the identity |
+| 'Type' | the type of representation, as a string  |
 "
-
-RepresentationObjectQ[_RepresentationObject ? System`Private`HoldNoEntryQ] := True;
-RepresentationObjectQ[_] := False;
-
-
-PackageExport["RepresentationObject"]
 
 constructGroupRepresentation[data_] := Scope[
   group = data["Group"];
@@ -86,6 +88,16 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
 ];
 
 
+PackageExport["RepresentationObjectQ"]
+
+SetUsage @ "
+RepresentationObjectQ[rep$] returns True if rep$ is a valid RepresentationObject[$$].
+"
+
+RepresentationObjectQ[_RepresentationObject ? System`Private`HoldNoEntryQ] := True;
+RepresentationObjectQ[_] := False;
+
+
 PackageExport["CayleyFunction"]
 
 SetUsage @ "
@@ -98,8 +110,12 @@ CayleyFunction takes the following options:
 * For 'Symmetric' -> True and 'Labeled' -> True, the inverses successors are labeled with Negated[gen$].
 "
 
-CayleyFunction::badrep =
-  "First argument to CayleyFunction should be a group, RepresentationObject, QuiverRepresentationObject, or RootSystem."
+Options[CayleyFunction] = {
+  "Symmetric" -> True,
+  "Labeled" -> True
+};
+
+DeclareArgumentCount[CayleyFunction, 1];
 
 CayleyFunction[object_, OptionsPattern[]] := Scope[
   UnpackOptions[labeled, symmetric];
@@ -113,14 +129,14 @@ CayleyFunction[object_, OptionsPattern[]] := Scope[
   rep["CayleyFunction", "Labeled" -> symmetric, "Symmetric" -> symmetric]
 ];
 
-CayleyFunction[_] := (Message[CayleyFunction::badrep]; $Failed);
-
 
 PackageExport["CayleyQuiver"]
 
 SetUsage @ "
 CayleyQuiver[obj$] returns the cardinal quiver representing the Cayley graph of a RepresentationObject or Group.
 "
+
+DeclareArgumentCount[CayleyQuiver, 1];
 
 CayleyQuiver::incomplete = "Cayley graph is incomplete."
 CayleyQuiver::notrep = "First argument should be a valid RepresentationObject or group."
@@ -152,7 +168,10 @@ Protect[Labeled];
 PackageExport["RepresentationElement"]
 
 SetUsage @ "
-RepresentationElement[matrix$] labels an element of a representation.
+RepresentationElement[matrix$] is the matrix representation of a group element.
+* RepresentationElements are produced by a RepresentationObject[$$].
+* RepresentationElement will format as a compact matrix.
+* rep$1[rep$2] will return the RepresentationElement for g$1 \[CircleDot] g$2.
 "
 
 RepresentationElement /: InverseFunction[RepresentationElement[matrix_]] := RepresentationElement[Inverse[matrix]];
@@ -174,28 +193,31 @@ RepresentationElement[elem1_][RepresentationElement[elem2_]] := With[
   RepresentationElement @ If[Developer`PackedArrayQ[res], res, Expand @ res]
 ];
 
-$blankNum = Style["\[CenterDot]", Gray];
 
-$squareRootStr = "\[DoublePrime]";
-$imagStr = "\[ImaginaryI]"
+PackageExport["ToRepresentation"]
 
-$supStrs = AssociationThread[Range[0, 9], Characters @ "⁰¹²³⁴⁵⁶⁷⁸⁹"];
-$subStrs = AssociationThread[Range[0, 9], Characters @ "₀₁₂₃₄₅₆₇₈₉"];
+SetUsage @ "
+ToRepresentation[obj$] attempts to convert obj$ to a RepresentationObject.
+* If obj$ is already a RepresentationObject, it is returned unchanged.
+* If obj$ is a group or QuiverRepresentation, its base representation is returned.
+* If obj$ is a RootSystem, its TranslationGroup representation is returned.
+* Otherwise, $Failed is returned.
+"
 
-scriptStr[n_, minus_, assoc_] := If[Negative[n], minus, ""] <> StringJoin[Lookup[assoc, IntegerDigits @ n]];
-supStr[n_] := scriptStr[n, "⁻", $supStrs];
-subStr[n_] := scriptStr[n, "₋", $subStrs];
+ToRepresentation = MatchValues[
+  r_RepresentationObject ? System`Private`HoldNoEntryQ := r;
+  cq_QuiverRepresentationObject ? System`Private`HoldNoEntryQ := cq["Representation"];
+  rs_RootSystemObject ? System`Private`HoldNoEntryQ := GroupRepresentation @ TranslationGroup @ rs;
+  g_ ? GroupQ := GroupRepresentation @ g;
+  _ := $Failed;
+];
 
 
 PackageScope["toRepresentation"]
 
 toRepresentation["Abelian", n_] := GroupRepresentation[InfiniteAbelianGroup[n]];
 toRepresentation["Redundant", n_] := RedundantAbelianRepresentation[n-1];
-toRepresentation[r_RepresentationObject ? System`Private`HoldNoEntryQ, _] := r;
-toRepresentation[cq_QuiverRepresentationObject ? System`Private`HoldNoEntryQ, _] := cq["Representation"];
-toRepresentation[rs_RootSystemObject ? System`Private`HoldNoEntryQ, _] := GroupRepresentation[TranslationGroup[rs]];
-toRepresentation[group_ ? GroupQ, _] := GroupRepresentation[group];
-toRepresentation[_, _] := $Failed;
+toRepresentation[spec_, _] :=  ToRepresentation @ spec;
 
 
 PackageExport["CustomRepresentation"]
@@ -206,6 +228,8 @@ returns a RepresentationObject[$$].
 CustomRepresentation[matrices$, group$] specifies that the representation is \
 of the group group$.
 "
+
+DeclareArgumentCount[CustomRepresentation, {1, 2}];
 
 CustomRepresentation::notmat = "First argument should be a list of matrices."
 CustomRepresentation::badrepmat = "Matrices have inconsistent dimensions: ``."
@@ -227,34 +251,16 @@ CustomRepresentation[matrices_, group_:None] := Scope[
 ];
 
 
-PackageExport["RootSystemRepresentation"]
-
-SetUsage @ "
-RootSystemRepresentation[RootSystem[$$]] creates a representation of the Abelian group with generators \
-given by the positive roots of the given root system, and where the group operation is vector addition.
-"
-
-RootSystemRepresentation::notrs = "First argument should be a valid RootSystemObject."
-
-RootSystemRepresentation[rs_] := Scope[
-  If[!RootSystemObjectQ[rs], ReturnFailed["notrs"]];
-  roots = Normal /@ rs["SimpleRoots"];
-  generators = TranslationMatrix /@ roots;
-  CustomRepresentation[
-    generators,
-    InfiniteAbelianGroup @ Length @ First @ roots
-  ]
-];
-
-
-
 PackageExport["RedundantAbelianRepresentation"]
 
 SetUsage @ "
-RedundantAbelianRepresentation[n$] produces a RepresentationObject whose n$ generators are affine matrices with a \
-single 1 and a following neighboring -1 in the final column.
+RedundantAbelianRepresentation[n$] produces a RepresentationObject whose n$ generators are translation \
+matrices, namely upper unitriangular matrices with a single 1 and a following neighboring -1 in the \
+final column.
 * This representation is the representation of an Abelian group for which g$1 g$2 = g$3, g$2 g$3 = g$4, etc.
 "
+
+DeclareArgumentCount[RedundantAbelianRepresentation, 1];
 
 makeRedundantAffineUnitMatrix[i_, n_] :=
   ReplacePart[IdentityMatrix[n], {{i, n} -> 1, {Mod[i+1, n-1, 1], n} -> -1}];
@@ -277,12 +283,10 @@ RepresentationGenerators[obj$] returns a list of RepresentationElement objects \
 for the generators of a group, RepresentationObject, or QuiverRepresentationObject.
 "
 
-RepresentationGenerators::notrep =
-  "First argument should be a RepresentationObject, QuiverRepresentationObject, or group."
+DeclareArgumentCount[RepresentationGenerators, 1];
 
 RepresentationGenerators[obj_] := Scope[
-  rep = toRepresentation[obj, None];
-  If[FailureQ[rep], ReturnFailed["notrepgroup"]];
+  rep = CheckRepArg[1];
   rep["Generators"]
 ]
 
@@ -293,11 +297,12 @@ SetUsage @ "
 GroupRepresentation[group$] returns a RepresentationObject of a group group$.
 "
 
-GroupRepresentation::notgroup = "First argument to GroupRepresentation should be a group."
+DeclareArgumentCount[GroupRepresentation, 1];
+
 General::badintcode = "Internal code returned inconsistent matrix dimensions: ``."
 
 GroupRepresentation[group_] := Scope[
-  If[!GroupQ[group], ReturnFailed["notgroup"]];
+  If[!GroupQ[group], ReturnFailed["notgroup", group]];
   matrices = Developer`ToPackedArray /@ Normal /@ makeGenerators[group];
   dims = Dimensions[matrices];
   If[!MatchQ[dims, {_, _, _}], ReturnFailed["badintcode", Dimensions /@ matrices]];
@@ -311,6 +316,7 @@ GroupRepresentation[group_] := Scope[
   |>;
   constructGroupRepresentation[repData]
 ]
+
 
 PackageScope["makeGenerators"]
 
@@ -361,13 +367,13 @@ returning a new RepresentationObject[$$].
 a new list of matrices.
 "
 
-TransformGenerators::notrep = "The first argument should be a valid RepresentationObject, or a group.";
+DeclareArgumentCount[TransformGenerators, 2];
+
 TransformGenerators::namedtrans = "The transformation `` is not a known named transformation.";
 TransformGenerators::badtrans = "The transformation returned an object of dimensions ``, instead of a list of square matrices.";
 
 TransformGenerators[rep_, trans_] := Scope[
-  rep = toRepresentation[rep, None];
-  If[!RepresentationObjectQ[rep], ReturnFailed["notrep"]];
+  rep = CheckRepArg[1];
   data = getObjectData[rep];
   gens = First /@ data["Generators"]; n = Length[gens];
   gens = Which[

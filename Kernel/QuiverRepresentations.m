@@ -17,11 +17,7 @@ QuiverRepresentation[quiver$] chooses a representation based on the names of the
 * For cardinals {'a', 'b', 'c'}, RedundantAbelianRepresentation[3] is used.
 "
 
-QuiverRepresentation::notquiver =
-  "The first argument to QuiverRepresentation should be a cardinal quiver Graph."
-
-QuiverRepresentation::notrep =
-  "The second argument to QuiverRepresentation should be a RepresentationObject or one of the forms documented in ?QuiverRepresentation."
+DeclareArgumentCount[QuiverRepresentation, {1, 2}];
 
 QuiverRepresentation::noautorep =
   "No automatic representation is defined for the cardinal set ``.";
@@ -53,13 +49,13 @@ chooseAutoRepresentation[cardinalList_] :=
   ];
 
 QuiverRepresentation[quiver_, representation_:Automatic] := Scope[
-  If[!QuiverQ[quiver = toQuiver[quiver]], ReturnFailed["notquiver"]];
+  quiver = CheckQuiverArg[1];
   {cardinalListSpec, representation} = parseRepresentationSpec[representation];
   cardinalList = DeleteNone[cardinalListSpec];
   SetAutomatic[cardinalList, CardinalList[quiver]];
   SetAutomatic[representation, chooseAutoRepresentation[cardinalList]];
   If[FailureQ[representation = toRepresentation[representation, Length[cardinalList]]],
-    ReturnFailed["notrep"]];
+    ReturnFailed["notrep", "second"]];
   generatorList = representation["Generators"];
   If[ContainsQ[cardinalListSpec, None],
     generatorList = Part[generatorList, SelectIndices[cardinalListSpec, # =!= None&]];
@@ -95,9 +91,13 @@ cardinalIcon[graph_] :=
     BaseStyle -> {}
   ];
 
+
 PackageExport["QuiverRepresentationPlot"]
 
+DeclareArgumentCount[QuiverRepresentationPlot, 1];
+
 QuiverRepresentationPlot[qrep_, opts:OptionsPattern[Quiver]] := Scope[
+
   If[!QuiverRepresentationObjectQ[qrep], ReturnFailed[]];
 
   quiver = qrep["Quiver"];
@@ -111,14 +111,11 @@ QuiverRepresentationPlot[qrep_, opts:OptionsPattern[Quiver]] := Scope[
 ];
 
 
-PackageExport["QuiverRepresentationObjectQ"]
+PackageExport["QuiverRepresentationObject"]
 
 SetUsage @ "
-QuiverRepresentationObjectQ[obj$] returns True if obj$ is a valid QuiverRepresentationObject.
+QuiverRepresentationObject[$$] represents a Quiver with an associated representation.
 "
-
-QuiverRepresentationObjectQ[_QuiverRepresentationObject ? System`Private`HoldNoEntryQ] := True;
-QuiverRepresentationObjectQ[_] := False;
 
 QuiverRepresentationObject /: MakeBoxes[object:QuiverRepresentationObject[data_Association] ? System`Private`HoldNoEntryQ, format_] := ModuleScope[
   UnpackAssociation[data, quiver, cardinals, generators, representation];
@@ -163,24 +160,6 @@ makeQuiverElementRule[inVertex_, outVertex_, gen_, cardinal_] :=
 
 Options[computeCayleyFunction] = {"Symmetric" -> True, "Labeled" -> True};
 
-computeCayleyFunction[data_, OptionsPattern[]] := Scope[
-  UnpackAssociation[data, generators, quiver];
-  UnpackOptions[symmetric, labeled];
-  quiverEdges = EdgeList[quiver];
-  rules = Flatten @ Apply[
-    {inVertex, outVertex, cardinal} |-> {
-      gen = generators[cardinal];
-      makeQuiverElementRule[inVertex, outVertex, gen, cardinal],
-      If[symmetric && (igen = InverseFunction[gen]) =!= gen,
-        makeQuiverElementRule[outVertex, inVertex, igen, Negated @ cardinal]],
-        Nothing
-    },
-    quiverEdges, {1}
-  ];
-  If[!labeled, rules = rules /. Labeled[g_, _] :> g];
-  ReplaceList[rules]
-];
-
 
 PackageExport["QuiverElement"]
 
@@ -189,10 +168,36 @@ QuiverElement[v$, state$] represents a quiver vertex v$ with associated state st
 "
 
 
-PackageExport["QuiverRepresentationObject"]
+computeCayleyFunction[data_, OptionsPattern[]] := Scope[
+  UnpackAssociation[data, generators, quiver];
+  UnpackOptions[symmetric, labeled];
+  quiverEdges = EdgeList[quiver];
+  rules = Flatten @ Apply[
+    {inVertex, outVertex, cardinal} |-> (
+      gen = generators[cardinal];
+      If[MissingQ[gen], Nothing, {
+        makeQuiverElementRule[inVertex, outVertex, gen, cardinal],
+        If[symmetric && (igen = InverseFunction[gen]) =!= gen,
+          makeQuiverElementRule[outVertex, inVertex, igen, Negated @ cardinal],
+          Nothing
+        ]
+      }]
+    ),
+    quiverEdges, {1}
+  ];
+  If[!labeled, rules = rules /. Labeled[g_, _] :> g];
+  ReplaceList[rules]
+];
+
+
+PackageExport["QuiverRepresentationObjectQ"]
 
 SetUsage @ "
-QuiverRepresentationObject[$$] represents a Quiver with an associated representation.
+QuiverRepresentationObjectQ[obj$] returns True if obj$ is a valid QuiverRepresentationObject.
 "
+
+QuiverRepresentationObjectQ[_QuiverRepresentationObject ? System`Private`HoldNoEntryQ] := True;
+QuiverRepresentationObjectQ[_] := False;
+
 
 

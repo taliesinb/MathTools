@@ -4,22 +4,21 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
-PackageExport["RootSystemObjectQ"]
-
-SetUsage @ "
-RootSystemObjectQ[obj$] represents True if obj$ is a valid RootSystemObject[$$].
-"
-
-RootSystemObjectQ[_RootSystemObject ? System`Private`NoEntryQ] := True;
-RootSystemObjectQ[_] := False;
-
-
 PackageExport["RootSystemObject"]
 
 SetUsage @ "
 RootSystemObject[$$] represents a root system.
-* The roots, in the form of RootVector[$$] objects, can be obtained by system$['RootVectors'].
-* Particular named root systems can be obtained with RootSystemObject['name$'].
+* Particular named root systems can be obtained with RootSystem['name$'].
+* The following properties of a RootSystemObject can be accessed via obj$['prop$']:
+| 'RootVectors' | all the root vectors |
+| 'PositiveRootVectors' | the positive root vectors |
+| 'SimpleRootVectors' | the simple root vectors |
+| 'CoordinateFunction' | function taking an arbitrary vector and returning simple root coefficients |
+| 'Dimension' | the dimension of the root system |
+| 'Count' | the number of roots in total |
+* The '*Vectors' poperties will return a list of RootVector[$$] objects. Corresponding properties \
+without the 'Vectors' suffice will return vectors as ordinary lists.
+* Use TranslationGroup and ReflectionGroup to obtain these groups for a root system.
 "
 
 RootSystemObject /: Normal[rs_RootSystemObject] := rs["Roots"];
@@ -68,11 +67,21 @@ declareFormatting[
 
 RootVector /: Normal[RootVector[vec_]] := vec;
 
+
+PackageExport["RootSystemObjectQ"]
+
+SetUsage @ "
+RootSystemObjectQ[obj$] represents True if obj$ is a valid RootSystemObject[$$].
+"
+
+RootSystemObjectQ[_RootSystemObject ? System`Private`NoEntryQ] := True;
+RootSystemObjectQ[_] := False;
+
+
 declareObjectPropertyDispatch[RootSystemObject, rootSystemProperty];
 
 rootSystemProperty[data_, "CoordinateFunction"] :=
   rootsCoordinateFunction @ data["SimpleRoots"];
-
 
 PackageScope["rootsCoordinateFunction"]
 
@@ -80,8 +89,6 @@ rootsCoordinateFunction[simpleRoots_] := With[
   {inverseMatrix = Transpose @ PseudoInverse @ simpleRoots},
   Function[\[FormalV], Dot[inverseMatrix, \[FormalV]]]
 ];
-
-rootSystemProperty[data_, "CayleyFunction", opts___] := computeCayleyFunction[data, opts];
 
 rootSystemProperty[data_, "RootVectors"] := Map[RootVector, data["Roots"]]
 rootSystemProperty[data_, "PositiveRootVectors"] := Map[RootVector, data["PositiveRoots"]]
@@ -119,7 +126,14 @@ plotRootSystemObject[data_] := Scope[
 
 $rootPlotStyle = Sequence[PlotRangePadding -> Scaled[0.1], FrameStyle -> Gray, FrameTicks -> None];
 
+
 PackageExport["RootPlot"]
+
+SetUsage @ "
+RootPlot[roots$] will plot a list of roots in a small 2D or 3D Graphics object.
+* Positive roots will be highlighted Red.
+* Roots will be labeled with their position in the list.
+"
 
 RootPlot[roots_, opts___] := Scope[
   i = 1; dim = Length @ First @ roots;
@@ -153,15 +167,6 @@ rootPlot3D[tuples_, norm_, opts___] := Graphics3D[
 ];
 
 
-Options[computeCayleyFunction] = {"Symmetric" -> True, "Labeled" -> True};
-computeCayleyFunction[data_, OptionsPattern[]] := Scope[
-  UnpackOptions[labeled, symmetric];
-
-];
-
-
-
-
 PackageExport["VectorReflect"]
 
 SetUsage @ "
@@ -179,11 +184,15 @@ RotateBy45[vector_] := Dot[{{1/Sqrt[2], -(1/Sqrt[2])}, {1/Sqrt[2], 1/Sqrt[2]}}, 
 
 PackageExport["RootSystem"]
 
-SetListable[rangle];
-rangle[angle_] := AngleVector[angle * 2 * Pi];
+SetUsage @ "
+RootSystem['name$'] returns a RootSystemObject[$$] for the root system named 'name$'.
+"
 
-$sq2 = Sqrt[2];
-$sq3 = Sqrt[3];
+DeclareArgumentCount[RootSystem, 1];
+
+PackageExport["$NamedRootSystems"]
+
+$NamedRootSystems = StringSplit["A1 D2 A2 B2 G2 C2 B3"];
 
 RootSystem["A1"] := Memoized @ makeRootSystemObject @ rangle[{0}];
 RootSystem["D2"] := Memoized @ makeRootSystemObject @ rangle[{0, 1/4}];
@@ -194,10 +203,10 @@ RootSystem["C2"] := Memoized @ makeRootSystemObject @ {$sq2 * rangle[0], rangle[
 
 RootSystem["B3"] := Memoized @ makeRootSystemObject @ {$sq2 * {1, -1, 0}, $sq2 * {0, 1, -1}, {0, 0, 1}}
 
+$sq2 = Sqrt[2];
+$sq3 = Sqrt[3];
 
-PackageExport["$NamedRootSystems"]
-
-$NamedRootSystems = StringSplit["A1 D2 A2 B2 G2 C2 B3"];
-
+SetListable[rangle];
+rangle[angle_] := AngleVector[angle * 2 * Pi];
 
 declareFunctionAutocomplete[RootSystem, {$NamedRootSystems}];

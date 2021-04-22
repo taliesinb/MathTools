@@ -3,46 +3,11 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
+PackageExport["GraphRegionElementQ"]
 
-PackageExport["GraphRegion"]
-
-
-PackageExport["HighlightGraphRegion"]
-
-Options[HighlightGraphRegion] = {
-  DirectedEdges -> False
-};
-
-HighlightGraphRegion::notgraph = "The first argument to HighlightGraphRegion should be a valid Graph."
-
-$highlightArrowheads = Arrowheads[{{Medium, .85}}];
-$reverseHighlightArrowheads = Arrowheads[{{-Medium, 0.25}}];
-
-HighlightGraphRegion[graph_, region_, OptionsPattern[]] := Scope[
-  UnpackOptions[directedEdges];
-  If[!GraphQ[graph], ReturnFailed["notgraph"]];
-  result = GraphRegion[graph, region];
-  Print[result];
-  If[FailureQ[result], Return[graph]];
-  hstyle = "DehighlightFade";
-  If[AssociationQ[result],
-    i = 1;
-    result = Map[
-      Style[Join[#1, #2], $ColorPalette[[i++]], $highlightArrowheads]&,
-      Values @ result
-    ];
-    hstyle = Automatic;
-  ,
-    result = Style[result, First @ $ColorPalette, $highlightArrowheads];
-  ];
-  result = result /. {
-    Negated[d_DirectedEdge] :> Style[d, $reverseHighlightArrowheads],
-    Negated[d_UndirectedEdge] :> d
-  };
-
-  HighlightGraph[graph, result, GraphHighlightStyle -> hstyle]
-];
-
+SetUsage @ "
+GraphRegionElementQ[elem$] returns True if elem$ is an expression describing a graph region.
+"
 
 PackageExport["VertexPattern"]
 PackageExport["EdgePattern"]
@@ -53,35 +18,30 @@ VertexPattern[pattern$] represent a vertex that matches pattern$.
 "
 
 SetUsage @ "
-EdgePattern[src$, dst$] represents an edge that matches pattern.
+EdgePattern[src$, dst$] represents an edge that matches src$ \[DirectedEdge] dst$.
 "
 
+PackageExport["GraphRegion"]
 
 SetUsage @ "
 GraphRegion[graph$, region$] gives a subgraph of graph$ described by region$, which can be one or more of the following:
-| {$$} | a list of edges and/or vertices |
-| Line[{v$1, v$2}] | the geodesic between v$1 and v$2
-| Line[{v$1, v$2}, c$] | start at v$1, move in cardinal direction c$, and end when v$2 is reached. |
-| Line[{v$1, $$, v$n}] | the geodesic path between v$1 and v$2, v$2 and v$3, etc. |
-| Path[v$, {c$1, $$, c$n} ] | starting at v$, walking along the path defined by cardinals c$i. |
-| HalfLine[v$, c$] | a geodesic starting at v$ and continuing in the cardinal direction c$. |
-| HalfLine[{v$1, v$2}] | a geodesic starting at v$1 and continuing through v$2. |
-| InfiniteLine[v$, c$] | a geodesic with midpoint v$, and continuing in directions c$ and Negated[c$]. |
-| InfiniteLine[{v$1, v$2}] | a geodesic intersecting v$1 and v$2. |
-| Polygon[{v$1, $$, v$n}] | all vertices surrounded by the given vertices, and their mutual edges. |
-| Disk[v$, r$] | all vertices reachable in up to r$ edges from v$, and their mutual edges. |
-| Circle[v$, r$] | all vertices exactly r$ edges from v$, and their mutual edges. |
-* In the specifications above, a cardinal c$ can also be a list {c$1, ..., c$n}, which indicates that the \
-geodesic should take the cardinals c$1, c$2, $$, c$n, c$1, c$2, $$.
+<*$GraphRegionTable*>
 * The returned value is a pair of {vertices$, edges$} in the graph region.
 * In addition if region$ is an assocation whose values are regions, an association of results will be produced.
 "
 
-GraphRegion::notgraph = "The first argument to GraphRegion should be a valid Graph."
+SetArgumentCount[GraphRegion, 2];
+
+GraphRegion::empty = "The specified region is empty."
 
 GraphRegion[graph_, region_] := Scope[
-  If[!GraphQ[graph], ReturnFailed["notgraph"]];
-  GraphScope[graph, iGraphRegion[region]]
+  CheckGraphArg[1];
+  result = GraphScope[graph, iGraphRegion @ region];
+  If[FailureQ[result], ReturnFailed[]];
+  {vertices, edges} = result;
+  If[vertices === edges === {}, ReturnFailed["empty"]];
+  vertices = DeleteDuplicates @ Join[vertices, AllVertices @ edges];
+  ExtendedSubgraph[graph, vertices, edges]
 ];
 
 iGraphRegion[region_Association] :=
@@ -91,7 +51,7 @@ iGraphRegion[region_] := Scope[
   {vertices, edges, negations} = processRegionSpec[region];
   List[
     Part[$GraphVertexList, vertices],
-    applyNegations[Part[$GraphEdgeList, edges], negations]
+    Part[$GraphEdgeList, edges]
   ]
 ];
 
@@ -162,6 +122,15 @@ findEdgePattern[a_, b_, c_] := Scope @ Which[
 findEdgePattern[a_, b_, Negated[c_]] :=
   Negated @ findEdgePattern[b, a, c];
 
+findStrictEdgePattern[a_, b_, c_] := Scope @ Which[
+  IntegerQ[i = FirstIndex[$GraphEdgeList, DirectedEdge[a, b, c]]], i,
+  IntegerQ[i = FirstIndex[$GraphEdgeList, UndirectedEdge[a, b, c] | UndirectedEdge[b, a, c]]], i,
+  True, $Failed
+];
+
+findStrictEdgePattern[a_, b_, Negated[c_]] :=
+  Negated @ findStrictEdgePattern[b, a, c];
+
 sowEdge[_] := False;
 
 findEdge[v1_, v2_] :=
@@ -184,6 +153,8 @@ GraphRegion::malformedrspec = "The region specification `` was malformed.";
 processRegion[spec_] :=
   If[Not @ sowVertex @ $GraphVertexIndices @ spec, fail["badrspec", spec]]
 
+GraphRegionElementQ[_Rule | _TwoWayRule | _DirectedEdge | _UndirectedEdge] := True;
+
 processRegion[rule:((Rule|TwoWayRule|DirectedEdge|UndirectedEdge)[l_, r_])] := Scope[
   {l, r} = Lookup[$GraphVertexIndices, {l, r}];
   If[Not @ findAndSowEdge[l, r], fail["nfedge", rule]]
@@ -195,8 +166,12 @@ processRegion[edge:(_DirectedEdge | _UndirectedEdge)] :=
 (********************************************)
 (** vertex or edge patterns                **)
 
+GraphRegionElementQ[EdgePattern[_, __]] := True;
+
 processRegion[p:EdgePattern[a_, b_]] := sowEdge @ findEdgePattern[a, b, _];
 processRegion[p:EdgePattern[a_, b_, c_]] := sowEdge @ findEdgePattern[a, b, c];
+
+GraphRegionElementQ[VertexPattern[_]] := True;
 
 processRegion[p:VertexPattern[v_]] :=
   If[Not @ sowVertex @ FirstIndex[$GraphVertexList, v], fail["nfvertex", p]];
@@ -205,11 +180,8 @@ processRegion[p:VertexPattern[v_]] :=
 (** complex region specifications          **)
 (********************************************)
 
-mapStaggered[f_, list_] := f @@@ Partition[list, 2, 1];
-
-
 sowPathEdges[v1_, v2_] :=
-  mapStaggered[findAndSowEdge, $GraphFindShortestPath[v1, v2]];
+  MapStaggered[findAndSowEdge, $GraphFindShortestPath[v1, v2]];
 
 GraphRegion::invv = "The region ``[...] contained an invalid vertex specification ``.";
 
@@ -227,6 +199,8 @@ findVertices[spec_] := Lookup[$GraphVertexIndices, spec,
 
 (********************************************)
 (** Path[...]                              **)
+
+GraphRegionElementQ[Path[_, _]] := True;
 
 toCardinals[path_String] /; StringLength[path] > 1 := Scope[
   chars = Characters[path];
@@ -248,7 +222,7 @@ processRegion[Path[start_, path_]] := Scope[
   sowVertex[id];
   Do[
     vert = Part[$GraphVertexList, id];
-    edgeIndex = findEdgePattern[vert, _, c];
+    edgeIndex = findStrictEdgePattern[vert, _, c];
     If[FailureQ[edgeIndex], failAuto["nocard", c, vert]];
     edge = Part[$GraphEdgeList, StripNegated @ edgeIndex];
     isFlipped = First[edge] =!= vert;
@@ -264,13 +238,17 @@ processRegion[Path[start_, path_]] := Scope[
 (********************************************)
 (** Line[...]                              **)
 
+GraphRegionElementQ[Line[_]] := True;
+
 processRegion[Line[vertices_]] :=
-  mapStaggered[sowPathEdges, findVertices @ vertices]
+  MapStaggered[sowPathEdges, findVertices @ vertices]
 
 processRegion[s_Line] := failAuto["malformedrspec", s];
 
 (********************************************)
 (** Disk[...]                              **)
+
+GraphRegionElementQ[Disk[_, _]] := True;
 
 sowSubgraphEdges[vertices_] :=
   Do[findAndSowEdge[v1, v2], {v1, vertices}, {v2, vertices}];
@@ -288,10 +266,12 @@ processRegion[s_Disk] := failAuto["malformedrspec", s];
 (********************************************)
 (** Circle[...]                            **)
 
+GraphRegionElementQ[Circle[_, _]] := True;
+
 sowOuterPath[v1_, v2_] := Scope[
   minDist = GraphDistance[annulusGraph, v1, v2];
   pathListVertices = FindPath[annulusGraph, v1, v2, {minDist}, All];
-  mapStaggered[findAndSowEdge // Tap, MinimumBy[pathListVertices, -Mean[Part[distances, #]]&]]
+  MapStaggered[findAndSowEdge, MinimumBy[pathListVertices, -Mean[Part[distances, #]]&]]
 ]
 
 GraphRegion::trivcircle = "The circle defined by `` is trivial."
@@ -312,7 +292,6 @@ processRegion[c:Circle[center_, r_]] := Scope[
   Do[
     nextIndex = MinimumIndexBy[vertices, GraphDistance[annulusGraph, vertex, #]&];
     nextVertex = Part[vertices, nextIndex]; vertices //= Delete[nextIndex];
-    Print[vertex -> nextVertex];
     sowOuterPath[vertex, nextVertex];
     vertex = nextVertex
   ,
@@ -322,3 +301,27 @@ processRegion[c:Circle[center_, r_]] := Scope[
 ];
 
 processRegion[s_Circle] := failAuto["malformedrspec", s];
+
+
+PackageExport["HighlightGraphRegion"]
+
+SetUsage @ "
+HighlightGraphRegion[graph$, highlights$] highlights regions of graph$ according to highlights$.
+<*$GraphRegionHighlightUsage*>
+* HighlightGraphRegion returns a Graph in which the option GraphRegionHighlight has been set to \
+highlghts$. Any pre-existing highlights are preserved.
+"
+
+DeclareArgumentCount[HighlightGraphRegion, 2];
+
+Options[HighlightGraphRegion] = {
+  DirectedEdges -> False
+};
+
+$highlightArrowheads = Arrowheads[{{Medium, .85}}];
+$reverseHighlightArrowheads = Arrowheads[{{-Medium, 0.25}}];
+
+HighlightGraphRegion[graph_, region_] :=
+  AppendEpilog[graph, region]
+
+
