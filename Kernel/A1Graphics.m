@@ -3,6 +3,8 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
+(**************************************************************************************************)
+
 PackageExport["$ColorPattern"]
 
 $ColorPattern = _RGBColor | _GrayLevel | _CMYKColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor;
@@ -10,6 +12,8 @@ $ColorPattern = _RGBColor | _GrayLevel | _CMYKColor | _Hue | _XYZColor | _LABCol
 SetUsage @ "
 $ColorPattern is a pattern that matches a valid color, like RGBColor[$$] etc.
 "
+
+(**************************************************************************************************)
 
 PackageExport["OklabColor"]
 
@@ -81,6 +85,7 @@ normalizeLightness[colors_] := Scope[
 
 ToRGB[e_] := ReplaceAll[e, $toRGBRules];
 
+(**************************************************************************************************)
 
 PackageExport["OklabBlend"]
 
@@ -92,6 +97,7 @@ DeclareArgumentCount[OklabBlend, 1];
 
 OklabBlend[colors_List] := FromOklab @ Mean @ ToOklab[colors];
 
+(**************************************************************************************************)
 
 PackageExport["BlendFunction"]
 
@@ -111,6 +117,7 @@ BlendFunction[values_, colors_] := Scope[
   ColorFunctionObject[values, interp /* OklabToRGB, "Linear"]
 ];
 
+(**************************************************************************************************)
 
 PackageExport["ColorFunctionObject"]
 
@@ -140,6 +147,7 @@ toBalancedGradientColorMap[{min_, max_}] := Scope[
 
 toBalancedGradientColorMap[{0, max_}] := BlendFunction[{0, max}, {White, Red}];
 
+(**************************************************************************************************)
 
 PackageExport["GraphicsPlotRange"]
 
@@ -181,6 +189,7 @@ $boxSymbolToOrdinarySymbol = AssociationMap[Symbol[StringDrop[SymbolName[#], -3]
 
 $graphicsBoxReplacements = Dispatch @ Normal @ $boxSymbolToOrdinarySymbol;
 
+(**************************************************************************************************)
 
 PackageExport["$Red"]
 PackageExport["$Green"]
@@ -198,11 +207,13 @@ $Pink = RGBColor[0.87, 0.19, 0.75];
 $Cyan = RGBColor[0, 0.75, 0.74];
 $Gray = GrayLevel[0.53];
 
+(**************************************************************************************************)
 
 PackageExport["$ColorPalette"]
 
 $ColorPalette = {$Red, $Green, $Blue, $Orange, $Pink, $Gray};
 
+(**************************************************************************************************)
 
 PackageExport["MediumSmall"]
 PackageExport["MediumLarge"]
@@ -212,6 +223,8 @@ SetUsage @ "MediumSmall represents a size betwen Small and Medium."
 SetUsage @ "MediumLarge represents a size betwen Medium and Large."
 SetUsage @ "Huge represents a size greater than Large."
 
+
+(**************************************************************************************************)
 
 PackageExport["LookupImageSize"]
 
@@ -255,3 +268,27 @@ PackageScope["toNumericImageSize"]
 toNumericImageSize[sym_Symbol] := Lookup[$ImageWidthTable, sym, 360];
 toNumericImageSize[w_] := w;
 toNumericImageSize[{w_, h_}] := w;
+
+(**************************************************************************************************)
+
+PackageExport["ApplyEpilog"]
+
+ApplyEpilog[graphics_, None | {}] := graphics;
+
+ApplyEpilog[graphics_Graphics, epilog_] :=
+  UpdateOptions[graphics, Epilog, Function[Append[Developer`ToList @ #1, epilog]]];
+
+(**************************************************************************************************)
+
+PackageExport["ApplyLegend"]
+
+ApplyLegend[expr_, None | Automatic] := expr;
+
+ApplyLegend[expr_, legend_] := Legended[expr, legend];
+
+(**************************************************************************************************)
+
+NiceTooltip[g_, None] := g;
+
+NiceTooltip[g_, e_] :=
+  Tooltip[g, Pane[e, BaseStyle -> {FontSize -> 15, "Output"}, ImageMargins -> 5]];

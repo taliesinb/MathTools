@@ -120,7 +120,8 @@ ImageToGraphics[img_, {xalign_, yalign_}, size_] := Scope[
 
 PackageExport["LookupOption"]
 
-LookupOption[obj_, opt_] := Quiet @ Lookup[Options[obj, opt], opt];
+LookupOption[obj_, opt_, default_:Automatic] :=
+  Quiet @ Lookup[Options[obj, opt], opt, default];
 
 
 PackageExport["JoinOptions"]
@@ -194,6 +195,15 @@ AttachAnnotation[obj_, key_ -> value_] :=
 
 AttachAnnotation[obj_, rules_List] :=
   Fold[AttachAnnotation, obj, rules];
+
+
+PackageExport["LookupAnnotation"]
+
+LookupAnnotation[obj_, key_, default_:Automatic] :=
+  Replace[AnnotationValue[obj, key], $Failed -> default];
+
+LookupAnnotation[obj_, key_List, default_:Automatic] :=
+  Replace[AnnotationValue[obj, key], $Failed -> default, {1}];
 
 
 

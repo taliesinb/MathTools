@@ -3,23 +3,7 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
-PackageExport["GraphRegionElementQ"]
-
-SetUsage @ "
-GraphRegionElementQ[elem$] returns True if elem$ is an expression describing a graph region.
-"
-
-PackageExport["VertexPattern"]
-PackageExport["EdgePattern"]
-PackageExport["Path"]
-
-SetUsage @ "
-VertexPattern[pattern$] represent a vertex that matches pattern$.
-"
-
-SetUsage @ "
-EdgePattern[src$, dst$] represents an edge that matches src$ \[DirectedEdge] dst$.
-"
+(**************************************************************************************************)
 
 PackageExport["GraphRegion"]
 
@@ -58,7 +42,34 @@ iGraphRegion[region_] := Scope[
 applyNegations[edges_, {}] := edges;
 applyNegations[edges_, neg_] := MapAt[Negated, edges, List /@ neg];
 
+(**************************************************************************************************)
 
+PackageExport["GraphRegionElementQ"]
+
+SetUsage @ "
+GraphRegionElementQ[elem$] returns True if elem$ is an expression describing a graph region.
+"
+
+(**************************************************************************************************)
+
+PackageExport["VertexPattern"]
+PackageExport["EdgePattern"]
+PackageExport["Path"]
+
+SetUsage @ "
+VertexPattern[pattern$] represent a vertex that matches pattern$.
+"
+
+SetUsage @ "
+EdgePattern[src$, dst$] represents an edge that matches src$ \[DirectedEdge] dst$.
+"
+
+SetUsage @ "
+Path[src$, {c$1, $$, c$n}] represents a path starting at src$ and taking cardinals c$i in tern.
+Path[src$, 'cards$'] interpreted the characters of 'cards$' as cardinals.
+"
+
+(**************************************************************************************************)
 
 PackageScope["processRegionSpec"]
 
@@ -301,27 +312,3 @@ processRegion[c:Circle[center_, r_]] := Scope[
 ];
 
 processRegion[s_Circle] := failAuto["malformedrspec", s];
-
-
-PackageExport["HighlightGraphRegion"]
-
-SetUsage @ "
-HighlightGraphRegion[graph$, highlights$] highlights regions of graph$ according to highlights$.
-<*$GraphRegionHighlightUsage*>
-* HighlightGraphRegion returns a Graph in which the option GraphRegionHighlight has been set to \
-highlghts$. Any pre-existing highlights are preserved.
-"
-
-DeclareArgumentCount[HighlightGraphRegion, 2];
-
-Options[HighlightGraphRegion] = {
-  DirectedEdges -> False
-};
-
-$highlightArrowheads = Arrowheads[{{Medium, .85}}];
-$reverseHighlightArrowheads = Arrowheads[{{-Medium, 0.25}}];
-
-HighlightGraphRegion[graph_, region_] :=
-  AppendEpilog[graph, region]
-
-

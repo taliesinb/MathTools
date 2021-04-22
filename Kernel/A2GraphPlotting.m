@@ -3,24 +3,52 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
-addGraphOption[symbol_, dvalue_] := (
-  Unprotect[Graph];
-  Options[Graph] = DeleteDuplicatesBy[Append[Options[Graph], symbol -> dvalue], First];
-  (*Graph[graph_Graph ? GraphQ, symbol -> f_] := Annotate[graph, symbol -> f];*)
-  Graph[lopts___, symbol -> f_, ropts___] := applyAnnotation[{lopts, ropts}, symbol -> f];
-  Protect[Graph];
-);
+(**************************************************************************************************)
 
-applyAnnotation[opts_, symbol_ -> None] :=
-  Graph @@ DeleteCases[opts, symbol -> _];
+$novelGraphOptionsRules = {
+  GraphPlottingFunction -> None,
+  GraphRegionHighlight -> None,
+  GraphLegend -> None,
+  ArrowheadSize -> Automatic,
+  ArrowheadStyle -> Automatic,
+  VertexColorFunction -> None,
+  VertexSizeFunction -> None
+};
 
-applyAnnotation[opts_, symbol_ -> value_] :=
-  Annotate[Graph @@ DeleteCases[opts, symbol -> _], symbol -> value];
+$novelGraphOptionSymbols = Keys @ $novelGraphOptionsRules;
 
-addGraphOption[GraphPlottingFunction, None];
-addGraphOption[GraphRegionHighlight, None];
-addGraphOption[GraphLegend, None];
+$novelGraphOptionRulePattern = Rule[Alternatives @@ $novelGraphOptionSymbols, _];
 
+$notIntercepted = True;
+
+Unprotect[Graph];
+Options[Graph] = JoinOptions[Graph, $novelGraphOptionsRules];
+g:Graph[___] /; MemberQ[Unevaluated @ g, $novelGraphOptionRulePattern] && $notIntercepted :=
+  Block[{$notIntercepted = False}, interceptedGraphConstructor[g]];
+Protect[Graph];
+
+SetHoldAllComplete[interceptedGraphConstructor];
+
+interceptedGraphConstructor[Graph[Shortest[args__], options__Rule]] := Scope[
+  annotations = Cases[{options}, $novelGraphOptionRulePattern];
+  newOptions = DeleteCases[{options}, $novelGraphOptionRulePattern];
+  result = Graph[args, newOptions];
+  If[!GraphQ[result], ReturnFailed[]];
+  Annotate[result, annotations]
+];
+
+interceptedGraphConstructor[e_] := e;
+
+(**************************************************************************************************)
+
+PackageExport["ArrowheadSize"]
+PackageExport["ArrowheadStyle"]
+PackageExport["ArrowheadSize"]
+
+SetUsage @ "ArrowheadSize is an option to Quiver.";
+SetUsage @ "ArrowheadStyle is an option to Quiver.";
+
+(**************************************************************************************************)
 
 PackageExport["GraphPlottingFunction"]
 
@@ -28,9 +56,10 @@ SetUsage @ "
 GraphPlottingFunction is an option to Graph that specifies a custom function to apply to \
 the graph to produce a graphical representation.
 * Various global variables are temporarily set during the application that allow properties \
-of the graph to be accessed.
+of the graph to be accessed. See GraphPlotScope for more info.
 "
 
+(**************************************************************************************************)
 
 PackageScope["$GraphRegionTable"]
 
@@ -68,6 +97,8 @@ Each region$ can be one or more of the following:
 <*$GraphRegionTable*>
 "
 
+(**************************************************************************************************)
+
 PackageExport["GraphRegionHighlight"]
 
 SetUsage @ "
@@ -76,6 +107,7 @@ specific regions of the graph when it is displayed.
 <*$GraphRegionHighlightUsage*>
 "
 
+(**************************************************************************************************)
 
 PackageExport["GraphLegend"]
 
@@ -85,6 +117,8 @@ GraphLegend is an option to Quiver that creates a legend for the graph.
 * GraphLegend -> Automatic uses a legend for the cardinals
 * GraphLegend -> legend$ specifies a particular legend
 "
+
+(**************************************************************************************************)
 
 Unprotect[Graph];
 FormatValues[Graph] = {};
@@ -104,34 +138,38 @@ Scan[form |-> (
 
 Protect[Graph];
 
+customMakeGraphBoxes[graph_Graph] :=
+  stripDynamicModule @ ToBoxes @ ExtendedGraphPlotDispatch @ graph;
+
+stripDynamicModule[boxes_] := ReplaceAll[boxes,
+  NamespaceBox[
+    "NetworkGraphics",
+    HoldPattern[DynamicModuleBox[{Typeset`graph = _}, TagBox[subBoxes_, _], ___]]
+  ] :> subBoxes
+];
+
+(**************************************************************************************************)
 
 PackageScope["$GraphVertexCoordinates"]
 PackageScope["$GraphVertexCoordinateListsAssociation"]
 PackageScope["$GraphVertexCoordinateDistanceMatrix"]
-
 PackageScope["$GraphEdgeCoordinateLists"]
 PackageScope["$GraphEdgeCoordinateListsAssociation"]
-
+PackageScope["$GraphIs3D"]
 PackageScope["$GraphPlotRange"]
+PackageScope["$GraphPlotAspectRatio"]
 PackageScope["$GraphPlotImageSize"]
 PackageScope["$GraphMaxSafeVertexSize"]
-
 PackageScope["$GraphMaxSafeVertexSize"]
 PackageScope["$GraphMaxSafeVertexSizeScaled"]
 
+PackageExport["GraphPlotScope"]
 
-PackageExport["ExtendedGraphPlot"]
+SetHoldRest[GraphPlotScope];
 
-ExtendedGraphPlot[graph_] := Scope[
+GraphPlotScope[graph_, body_] := Scope[
 
   If[!GraphQ[graph], ReturnFailed[]];
-
-  {plottingFunction, graphLegend, graphEpilog} = Replace[
-    AnnotationValue[graph, {GraphPlottingFunction, GraphLegend, GraphRegionHighlight}],
-    $Failed -> None, {1}
-  ];
-
-  SetNone[plottingFunction, GraphComputation`GraphDrawing];
 
   GraphScope[graph,
 
@@ -152,19 +190,46 @@ ExtendedGraphPlot[graph_] := Scope[
     $GraphEdgeCoordinateListsAssociation := $GraphEdgeCoordinateListsAssociation = AssociationThread[$GraphEdgeList, $GraphEdgeCoordinateLists];
 
     (* before we have called the user function, guess the range based on the vertex and edge coordinates *)
+    $GraphIs3D := $GraphIs3D = MatchQ[Dimensions @ $GraphVertexCoordinates, {_, 3}];
     $GraphPlotRange := $GraphPlotRange = CoordinateBounds[{$GraphVertexCoordinates, $GraphEdgeCoordinateLists}];
     $GraphPlotSize := $GraphPlotSize = rangeSize[$GraphPlotRange];
+    $GraphPlotAspectRatio := Last[$GraphPlotSize] / First[$GraphPlotSize];
     $GraphMaxSafeVertexSizeScaled := $GraphMaxSafeVertexSize / First[$GraphPlotSize];
     $GraphMaxSafeVertexSize := $GraphMaxSafeVertexSize = computeMaxSafeVertexSize[];
 
+    body
+  ]
+];
+
+(**************************************************************************************************)
+
+PackageExport["ExtendedGraphPlotDispatch"]
+
+ExtendedGraphPlotDispatch[graph_] := Scope[
+
+  If[!GraphQ[graph], ReturnFailed[]];
+
+  {plottingFunction, graphLegend, graphRegionHighlight} =
+    LookupAnnotation[graph, {GraphPlottingFunction, GraphLegend, GraphRegionHighlight}, None];
+
+  SetNone[plottingFunction, GraphComputation`GraphDrawing];
+
+  GraphPlotScope[graph,
+
     graphics = plottingFunction[$Graph];
 
+    If[MatchQ[graphics, _Legended],
+      If[MatchQ[graphLegend, None | Automatic | Placed[Automatic, _]], graphLegend = Last[graphics]];
+      graphics = First[graphics];
+    ];
+
+    (* recompute these with the results of plottingFunction, for the benefit of GraphRegionHighlight *)
     $GraphPlotRange := $GraphPlotRange = GraphicsPlotRange @ graphics;
     $GraphPlotSize := $GraphPlotSize = rangeSize[$GraphPlotRange];
     $GraphMaxSafeVertexSize := $GraphMaxSafeVertexSize = computeMaxSafeVertexSize[];
 
-    graphics = applyGraphRegionHighlight[graphics, graphEpilog];
-    graphics = applyLegend[graphics, graphLegend];
+    graphics = ApplyEpilog[graphics, graphRegionHighlight];
+    graphics = ApplyLegend[graphics, graphLegend];
 
     graphics
   ]
@@ -182,155 +247,7 @@ computeMaxSafeVertexSize[] := Scope[
   Min[borderDistance, minDistance / 2]
 ];
 
-customMakeGraphBoxes[graph_Graph] :=
-  stripDynamicModule @ ToBoxes @ ExtendedGraphPlot[graph];
-
-(*
-customMakeGraphBoxes[graph_Graph] := Scope[
-
-  {plotFunc, legend, graphEpilog} = Replace[
-    AnnotationValue[graph, {GraphPlottingFunction, GraphLegend, GraphRegionHighlight}],
-    $Failed -> None, {1}
-  ];
-
-  {vertexCoordinates, graphLayout} = Lookup[
-    Options[graph, {VertexCoordinates, GraphLayout}],
-    {VertexCoordinates, GraphLayout}, Automatic
-  ];
-
-  If[vertexCoordinates === Automatic,
-    vertexCoordinates = GraphEmbedding[graph, graphLayout];
-    graph = Graph[graph, VertexCoordinates -> vertexCoordinates];
-  ];
-
-  GraphScope[graph,
-
-      $GraphVertexCoordinates = vertexCoordinates;
-      $GraphVertexCoordinatesAssociation := AssociationThread[$GraphVertexList, $GraphVertexCoordinates];
-      $GraphVertexCoordinateDistanceMatrix = DistanceMatrix[vertexCoordinates];
-      $GraphVertexCoordinateBoundingBox := $GraphVertexCoordinateBoundingBox = CoordinateBoundingBox[vertexCoordinates];
-
-      $GraphEdgeCoordinateLists := $GraphEdgeCoordinateLists = captureEdgeCoordinateLists[];
-      $GraphEdgeCoordinateListsAssociation := $GraphEdgeCoordinateListsAssociation = AssociationThread[$GraphEdgeList, $GraphEdgeCoordinateLists];
-
-    If[plotFunc =!= None,
-      graph = plotFunc[graph]];
-
-    boxes = Block[{$graphOverrideOuter = False}, stripDynamicModule @ RawBoxes @ Construct[MakeBoxes, graph]];
-
-    $GraphPlotRange := $GraphPlotRange = GraphicsPlotRange @ First @ boxes;
-    $GraphPlotImageSize := $GraphPlotImageSize := LookupImageSize[boxes];
-    $GraphPlotSize := $GraphPlotSize = (#2 - #1& @@@ $GraphPlotRange);
-
-    $GraphMaxSafeVertexSize := $GraphMaxSafeVertexSize = computeMaxSafeVertexSize[];
-    $GraphMaxSafeVertexSizeScaled := $GraphMaxSafeVertexSizeScaled = $GraphMaxSafeVertexSize / First[$GraphPlotSize];
-
-    boxes = applyGraphRegionHighlight[boxes, graphEpilog];
-    If[FreeQ[boxes, Graphics3DBox], With[{plotRange = $GraphPlotRange},
-      boxes = boxes /. GraphicsBox[args___] :> GraphicsBox[args,
-        PlotRange -> plotRange, PlotRangePadding -> 0,
-        ImagePadding -> 3,
-        PlotRangeClipping -> False]
-    ]];
-    graph = applyLegend[boxes, legend];
-  ];
-
-  Construct[MakeBoxes, graph]
-];
-*)
-
-stripDynamicModule[boxes_] := ReplaceAll[boxes,
-  NamespaceBox[
-    "NetworkGraphics",
-    HoldPattern[DynamicModuleBox[{Typeset`graph = _}, TagBox[subBoxes_, _], ___]]
-  ] :> subBoxes
-];
-
-applyLegend[expr_, None] := expr;
-applyLegend[expr_, legend_] := Legended[expr, legend];
-
-applyLabel[expr_, Placed[label_, pos_]] := Labeled[expr, label, pos];
-applyLabel[expr_, label_] := Labeled[expr, label];
-applyLabel[expr_, None] := expr;
-
-applyGraphRegionHighlight[graphics_, None | {}] := graphics;
-applyGraphRegionHighlight[graphics_, elem_] := applyGraphRegionHighlight[graphics, {elem}];
-applyGraphRegionHighlight[graphics_, list_List] := Scope[
-  $epilogBag = Internal`Bag[];
-  Scan[processHighlightSpec, list];
-  epilog = Internal`BagPart[$epilogBag, All];
-  AppendEpilog[graphics, epilog]
-];
-
-(********************************************)
-(** highlight processing code              **)
-(********************************************)
-
-sowEpilog[g_] := Internal`StuffBag[$epilogBag, g];
-
-$baseHighlightStyle := $baseHighlightStyle = Opacity[.5, First @ $ColorPalette];
-
-Options[CustomHighlightedOptions] = {
-  Background -> Automatic
-};
-
-GraphRegionHighlight::badelem = "Unknown highlight element ``.";
-
-processHighlightSpec[other_] := Message[GraphRegionHighlight::badelem, Shallow[other]];
-
-processHighlightSpec[Framed] :=
-  sowEpilog @ {EdgeForm[{Red, Dashed}], FaceForm[None], Rectangle @@ (Transpose @ $GraphPlotRange)}
-
-processHighlightSpec[expr_ ? GraphRegionElementQ] :=
-  processHighlightSpec @ Highlighted @ expr;
-
-processHighlightSpec[Highlighted[elems_, color:$ColorPattern:Automatic]] := Scope[
-
-  {vertices, edges, negations} = processRegionSpec[elems];
-  If[edges =!= {}, vertices = Complement[vertices, AllVertices @ Part[$IndexGraphEdgeList, edges]]];
-
-  r = $GraphMaxSafeVertexSizeScaled * 1.5;
-
-  style = color;
-  SetAutomatic[style, $baseHighlightStyle];
-
-  If[vertices =!= {},
-    sowEpilog[{style, PointSize[r], Point @ Part[$GraphVertexCoordinates, vertices]}]];
-
-  If[edges =!= {},
-    sowEpilog[{style, JoinForm["Round"], CapForm["Round"], Thickness[r],
-      edgeCoords = Part[$GraphEdgeCoordinateLists, edges];
-      If[False && negations =!= {}, edgeCoords //= MapAt[Reverse, List /@ negations]];
-      toJoinedCurve @ edgeCoords
-    }]
-  ];
-];
-
-toJoinedCurve[{a_}] := Line[a];
-
-flipToMatch[a_, b_] := If[First[a] === First[b], Reverse @ a, a];
-flipCoordinateLists[line_] := flipToMatch @@@ Partition[line, 2, 1, 1];
-
-toJoinedCurve[list_List] := toSingleLine /@ Split[flipCoordinateLists @ list, Last[#1] == First[#2]&];
-
-toSingleLine[edgeCoords_] := Line[Append[edgeCoords[[All, 1]], edgeCoords[[-1, 2]]]];
-
-(* joinedCurveGroup[{a_}] := Line[a];
-joinedCurveGroup[segments_] := JoinedCurve[Line /@ segments];
- *)
-
-
-PackageExport["AppendEpilog"]
-
-AppendEpilog[graph_Graph, epilog_] := Scope[
-  oldEpilog = AnnotationValue[graph, GraphRegionHighlight];
-  oldEpilog = If[FailureQ[oldEpilog], {}, Developer`ToList @ oldEpilog];
-  Annotate[graph, GraphRegionHighlight -> Join[oldEpilog, Developer`ToList @ epilog]]
-];
-
-AppendEpilog[graphics_Graphics, epilog_] :=
-  UpdateOptions[graphics, Epilog, Function[Append[Developer`ToList @ #1, epilog]]];
-
+(**************************************************************************************************)
 
 PackageExport["GraphEmbeddingGallery"]
 
@@ -341,17 +258,7 @@ $layouts = {
 
 GraphEmbeddingGallery[g_Graph] := Table[Graph[g, GraphLayout -> layout, PlotLabel -> layout], {layout, $layouts}]
 
-
-
-PackageExport["FastGraph3D"]
-
-FastGraph3D[g_, opts___] := Graph3D[
-  VertexList[g], EdgeList[g],
-  VertexStyle -> Directive[Opacity[1], EdgeForm[None], GrayLevel[0]],
-  EdgeStyle -> Directive[Opacity[0.5], GrayLevel[0.6]],
-  EdgeShapeFunction -> "Line", VertexShapeFunction -> "Point"
-]
-
+(**************************************************************************************************)
 
 PackageExport["ShowLabels"]
 PackageExport["VertexLabelForm"]
@@ -361,16 +268,7 @@ ShowLabels[e_] := VertexLabelForm[e];
 VertexLabelForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, VertexLabels -> "Name", ImagePadding -> 20];
 VertexTooltipForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, VertexLabels -> Placed["Name", Tooltip]];
 
-
-PackageExport["GraphComponentPlot"]
-
-GraphComponentPlot[graph_] := Map[GraphPlot[#, ImageSize -> 400]&, ConnectedGraphComponents[graph]];
-
-
-PackageExport["GraphComponentPlot3D"]
-
-GraphComponentPlot3D[graph_] := Map[GraphPlot3D[#, ImageSize -> 400]&, ConnectedGraphComponents[graph]];
-
+(**************************************************************************************************)
 
 PackageExport["PlotGraphVector"]
 
@@ -386,6 +284,7 @@ PlotGraphVector[graph_Graph, vector_, opts___Rule] := GraphPlot[graph,
   opts, VertexLabels -> None
 ];
 
+(**************************************************************************************************)
 
 PackageExport["TransformGraphCoordinates"]
 

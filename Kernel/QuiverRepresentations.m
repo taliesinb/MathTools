@@ -103,7 +103,7 @@ QuiverRepresentationPlot[qrep_, opts:OptionsPattern[Quiver]] := Scope[
   quiver = qrep["Quiver"];
   quiverPlot = Quiver[quiver, opts, ImageSize -> Tiny, GraphLegend -> None];
 
-  colors = CardinalColors[quiver];
+  colors = LookupCardinalColors[quiver];
   labeledGenerators = KeyValueMap[
     Labeled[#2, Row[{ColoredArrowhead[colors[#1], 10], " ", #1}]]&,
     qrep["Generators"]];

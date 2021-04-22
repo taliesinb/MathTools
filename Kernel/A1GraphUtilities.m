@@ -4,6 +4,8 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
+(**************************************************************************************************)
+
 PackageExport["VertexEdgeList"]
 
 SetUsage @ "
@@ -15,6 +17,7 @@ VertexEdgeList[graph_] := {
   EdgeList[graph]
 }
 
+(**************************************************************************************************)
 
 PackageExport["EdgePairs"]
 
@@ -25,6 +28,7 @@ vertex with index u$i is connected to vertex with index v$i.
 
 EdgePairs[graph_] := AdjacencyMatrix[graph]["NonzeroPositions"];
 
+(**************************************************************************************************)
 
 PackageExport["VertexOutTable"]
 PackageExport["VertexInTable"]
@@ -42,6 +46,7 @@ indices of the vertices that are have a connection to vertex i$.
 VertexOutTable[graph_] := AdjacencyMatrix[graph]["AdjacencyLists"];
 VertexInTable[graph_] := Transpose[AdjacencyMatrix[graph]]["AdjacencyLists"];
 
+(**************************************************************************************************)
 
 PackageExport["VertexInOutTable"]
 
@@ -56,16 +61,19 @@ VertexInOutTable[graph_] := Scope[
   Transpose[{adj["AdjacencyLists"], Transpose[adj]["AdjacencyLists"]}]
 ];
 
+(**************************************************************************************************)
 
 PackageExport["VertexIndexAssociation"]
 
 VertexIndexAssociation[graph_] := AssociationRange @ VertexList @ graph;
 
+(**************************************************************************************************)
 
 PackageExport["EdgeIndexAssociation"]
 
 EdgeIndexAssociation[graph_] := AssociationRange @ EdgeList @ graph;
 
+(**************************************************************************************************)
 
 PackageExport["VertexOrientedOutTable"]
 
@@ -87,6 +95,8 @@ VertexOrientedOutTable[graph_] := Scope[
   }
 ];
 
+(**************************************************************************************************)
+
 PackageExport["FromVertexOrientedOutTable"]
 
 SetUsage @ "
@@ -94,6 +104,8 @@ FromVertexOrientedOutTable[{{dout$1, uout$1}, {dout$2, uout$2}, $$}, {v$1, v$2, 
 vertex v$i is connected to v$j if j is an element of dout$i or uout$i.
 * This function is the inverse of VertexOrientedOutTable.
 "
+
+(**************************************************************************************************)
 
 PackageExport["VertexOutAssociation"]
 PackageExport["VertexInAssociation"]
@@ -119,6 +131,7 @@ VertexOutAssociation[graph_] :=
 VertexInAssociation[graph_] :=
   tableToAssoc[VertexList @ graph, VertexInTable @ vertices];
 
+(**************************************************************************************************)
 
 PackageExport["VertexInOutAssociation"]
 
@@ -136,6 +149,7 @@ VertexInOutAssociation[graph_] := Scope[
   ]
 ];
 
+(**************************************************************************************************)
 
 PackageExport["InVertices"]
 PackageExport["OutVertices"]
@@ -145,6 +159,7 @@ InVertices[edges_] := edges[[All, 1]];
 OutVertices[edges_] := edges[[All, 2]];
 AllVertices[edges_] := Join[InVertices @ edges, OutVertices @ edges];
 
+(**************************************************************************************************)
 
 PackageExport["GraphCorners"]
 
@@ -154,6 +169,7 @@ GraphCorners[graph_] := Scope[
   SortBy[vertices, LatticeVertexAngle]
 ];
 
+(**************************************************************************************************)
 
 PackageScope["integersToVertices"]
 
@@ -163,6 +179,7 @@ integersToVertices[graph_Graph, expr_] :=
 integersToVertices[vertices_List, expr_] :=
   expr /. {i:{__Integer} :> Part[vertices, i], i_Integer :> Part[vertices, i]};
 
+(**************************************************************************************************)
 
 PackageExport["ToGraph"]
 
@@ -181,6 +198,7 @@ ToGraph = MatchValues[
   _ := $Failed
 ];
 
+(**************************************************************************************************)
 
 PackageScope["$simpleGraphOptions"]
 PackageScope["$simpleGraphOptionRules"]
@@ -194,13 +212,18 @@ $simpleGraphOptions = {
 
 $simpleGraphOptionRules = TakeOptions[Graph, $simpleGraphOptions];
 
+(**************************************************************************************************)
+
 PackageScope["GraphScope"]
 
 PackageScope["$Graph"]
 PackageScope["$GraphVertexList"]
 PackageScope["$GraphEdgeList"]
+PackageScope["$GraphEdgeTags"]
 PackageScope["$GraphVertexIndices"]
 PackageScope["$GraphEdgeIndices"]
+PackageScope["$GraphVertexCount"]
+PackageScope["$GraphEdgeCount"]
 
 PackageScope["$IndexGraph"]
 PackageScope["$IndexGraphEdgeList"]
@@ -221,8 +244,11 @@ The following variables are blocked during the execution of GraphScope:
 | $Graph | graph$ |
 | $GraphVertexList | VertexList[graph$] |
 | $GraphEdgeList | EdgeList[graph$] |
+| $GraphEdgeTags | EdgeTags[graph$] |
 | $GraphVertexIndices | association mapping a vertex to its index |
 | $GraphEdgesIndices | association mapping an edge to its index |
+| $GraphVertexCount | GraphVertexCount[$graph] |
+| $GraphEdgeCount | GraphEdgeCount[$graph] |
 | $IndexGraph | IndexGraph[graph$] |
 | $SymmetricIndexGraph | undirected version of $IndexGraph |
 | $GraphIOIndexToEdgeIndex | an association mapping the vertex index pair {i$, o$} to the \
@@ -241,8 +267,12 @@ GraphScope[graph_, body_] := Block[
     $Graph = graph,
     $GraphVertexList := $GraphVertexList = VertexList[$Graph],
     $GraphEdgeList := $GraphEdgeList = EdgeList[$Graph],
+    $GraphEdgeTags := $GraphEdgeTags = EdgeTags[$Graph],
     $GraphVertexIndices := $GraphVertexIndices = VertexIndexAssociation[$Graph],
     $GraphEdgeIndices := $GraphEdgeIndices = EdgeIndexAssociation[$Graph],
+
+    $GraphVertexCount = VertexCount[$Graph],
+    $GraphEdgeCount = EdgeCount[$Graph],
 
     $IndexGraph := $IndexGraph = IndexGraph[$Graph],
     $IndexGraphEdgeList := $IndexGraphEdgeList = EdgeList[$IndexGraph],
@@ -258,6 +288,7 @@ GraphScope[graph_, body_] := Block[
   body
 ];
 
+(**************************************************************************************************)
 
 PackageExport["ExtendedSubgraph"]
 
