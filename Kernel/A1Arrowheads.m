@@ -7,16 +7,9 @@ PackageImport["GeneralUtilities`"]
 
 PackageExport["ArrowheadLegend"]
 
-$arrowheadPoints = With[{adx = 4/3, offx = 0}, {{-adx + offx, -1}, {-adx + offx, 1}, {adx + offx, 0}}];
-$arrowheadSize = 12 * {1, 1};
-
 ArrowheadLegend[assoc_Association] := Scope[
-  $arrowheadSize = 10 * {1, 1};
-  rows = KeyValueMap[{name, color} |-> {" ",
-    Append[makeBaseArrowhead[color] /. p_FilledCurve :> Rotate[p, Pi/2], BaselinePosition -> Scaled[0.1]],
-    name
-  }, assoc];
-  Grid[rows, BaseStyle -> {FontFamily -> "Avenir"}, Spacings -> {.5, 0.5}]
+  rows = KeyValueMap[{name, color} |-> {" ", ColoredArrowhead[color, 11], name}, assoc];
+  Grid[rows, BaseStyle -> $LegendLabelStyle, Spacings -> {.4, 0.5}]
 ]
 
 (**************************************************************************************************)
@@ -24,10 +17,9 @@ ArrowheadLegend[assoc_Association] := Scope[
 PackageExport["ColoredArrowhead"]
 
 ColoredArrowhead[color_, sz_:12] := Scope[
-  $arrowheadSize = sz * {1, 1};
-  Append[
-    makeBaseArrowhead[color] /. p_Polygon :> Rotate[p, Pi/2],
-    BaselinePosition -> Scaled[0.1]
+  ReplaceOptions[
+    makeBaseArrowhead[color] /. p_FilledCurve :> Rotate[p, Pi/2],
+    {BaselinePosition -> Scaled[-0.0], ImageSize -> sz}
   ]
 ];
 
@@ -44,7 +36,7 @@ $baseShortArrowhead = FilledCurve[
     {-0.6666528591843921`, -0.3333333333333333`},
     {-0.533327810340424`, 6.903741136987662`*^-6},
     {-0.6666528591843921`, 0.3333333333333333`},
-    {0.`, 6.903741136987662`*^-6}
+    {(* 0.` *) -0.1, 6.903741136987662`*^-6}
   }}
 ];
 
@@ -72,6 +64,6 @@ PackageScope["makeBaseArrowhead"]
 makeBaseArrowhead[color_] :=
   Graphics[
     {Opacity[1.0], FaceForm[color], EdgeForm[None], $baseShortArrowhead},
-    ImageSize -> $arrowheadSize, AspectRatio -> 1,
+    AspectRatio -> 1,
     PlotRangeClipping -> False
   ];

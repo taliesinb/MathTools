@@ -69,6 +69,11 @@ toListOfLists = MatchValues[
 ];
 
 
+PackageExport["RangeQ"]
+
+RangeQ[list_] := VectorQ[list, IntegerQ] && MinMax[list] == {1, Length @ list};
+
+
 PackageExport["MapStaggered"]
 
 MapStaggered[f_, list_] := f @@@ Partition[list, 2, 1];
@@ -165,7 +170,7 @@ ReplaceOptions[obj_, key_ -> value_] := If[
 ];
 
 ReplaceOptions[obj_, rules_List] :=
-  Fold[ReplaceOption, obj, rules];
+  Fold[ReplaceOptions, obj, rules];
 
 
 PackageExport["UpdateOptions"]
@@ -176,12 +181,6 @@ UpdateOptions[obj_, option_, func_] :=
 
 General::noobjprop = "There is no property named \"``\". Valid properties include: ``.";
 General::noobjoptprop = "There is no property named \"``\" that accepts options. Such properties include: ``.";
-
-
-PackageExport["HasAnnotationQ"]
-
-HasAnnotationQ[obj_, key_] :=
-  !MatchQ[AnnotationValue[obj, key], None | $Failed];
 
 
 PackageExport["AttachAnnotation"]
@@ -246,6 +245,7 @@ getValidOptProps[symbol_] := Union @
 
 
 PackageScope["declareFunctionAutocomplete"]
+PackageScope["declareSyntaxInfo"]
 
 If[$Notebooks,
 
@@ -255,8 +255,17 @@ declareFunctionAutocomplete[function_Symbol, spec_] := With[
   ];
 declareFunctionAutocomplete[___] := Panic["BadArgs"];
 
+toOptionName[sym_Symbol] := SymbolName[sym];
+toOptionName[str_String] := str;
+
+declareSyntaxInfo[function_Symbol, argPatterns_List] := Scope[
+  info = {"ArgumentsPattern" -> argPatterns};
+  If[ContainsQ[argPatterns, Verbatim[OptionsPattern[]]],
+    AppendTo[info, "OptionNames" -> Map[toOptionName, Keys @ Options @ function]]];
+  SyntaxInformation[function] = info;
 ];
 
+];
 
 PackageScope["CheckQuiverArg"]
 PackageScope["CheckGraphArg"]
@@ -302,8 +311,8 @@ PackageScope["SetUsage"]
 toUsageStr[list:{__String}] := commaString[list];
 toUsageStr[e_] := TextString[e];
 
-subsituteUsageSlots[s_String] :=
+substituteUsageSlots[s_String] :=
   StringReplace[s, "<*" ~~ Shortest[slot___] ~~ "*>" :> toUsageStr[ToExpression[slot, InputForm]]]
 
 SetUsage[str_String] :=
-  GeneralUtilities`SetUsage @ Evaluate @ FixedPoint[subsituteUsageSlots, str];
+  GeneralUtilities`SetUsage @ Evaluate @ FixedPoint[substituteUsageSlots, str];

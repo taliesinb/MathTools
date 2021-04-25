@@ -16,6 +16,8 @@ highlghts$. Any pre-existing highlights are preserved.
 
 DeclareArgumentCount[HighlightGraphRegion, 2];
 
+declareSyntaxInfo[HighlightGraphRegion, {_, _, OptionsPattern[]}];
+
 HighlightGraphRegion[graph_, highlights_] := Scope[
   oldHighlights = AnnotationValue[graph, GraphRegionHighlight];
   oldHighlights = If[FailureQ[oldHighlights], {}, Developer`ToList @ oldHighlights];
@@ -54,7 +56,7 @@ resolveGraphRegionHighlightGraphics[elem_] :=
 resolveGraphRegionHighlightGraphics[list_List] := Scope[
   $highlightsBag = Internal`Bag[];
   Scan[processHighlightSpec, list];
-  Internal`BagPart[$highlightsBag, All];
+  Internal`BagPart[$highlightsBag, All]
 ];
 
 (********************************************)

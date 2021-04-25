@@ -9,6 +9,11 @@ PackageExport["TakeOperator"]
 TakeOperator[spec___][e_] := Take[e, spec];
 
 
+PackageExport["PartOperator"]
+
+PartOperator[spec___][e_] := Part[e, spec];
+
+
 PackageExport["Ones"]
 PackageExport["Zeros"]
 
@@ -25,6 +30,16 @@ PackageExport["ZerosQ"]
 
 OnesQ[m_] := MinMax[m] === {1, 1};
 ZerosQ[m_] := MinMax[m] === {0, 0};
+
+
+PackageExport["Coordinates3DQ"]
+
+Coordinates3DQ[matrix_] := MatrixQ[matrix] && Last[Dimensions[matrix]] === 3;
+
+
+PackageExport["Coordinates2DQ"]
+
+Coordinates2DQ[matrix_] := MatrixQ[matrix] && Last[Dimensions[matrix]] === 2;
 
 
 PackageExport["UpperUnitriangularMatrixQ"]

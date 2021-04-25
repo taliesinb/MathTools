@@ -4,6 +4,92 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
+PackageExport["VertexAnnotations"]
+
+(**************************************************************************************************)
+
+$extendedGraphOptionsRules = {
+  GraphPlottingFunction -> None,
+  GraphRegionHighlight -> None,
+  GraphLegend -> None,
+  ArrowheadSize -> Automatic,
+  ArrowheadStyle -> Automatic,
+  VertexColorFunction -> None,
+  VertexAnnotations -> None
+};
+
+$extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
+
+$extendedGraphOptionSymbolPattern = Alternatives @@ $extendedGraphOptionSymbols;
+
+$extendedGraphOptionRulePattern = Rule[$extendedGraphOptionSymbolPattern, _];
+
+$notIntercepted = True;
+
+Graph;
+
+Unprotect[Graph];
+Options[Graph] = Sort @ JoinOptions[Graph, $extendedGraphOptionsRules];
+SyntaxInformation[Graph] = ReplaceOptions[SyntaxInformation[Graph], "OptionNames" -> Map[SymbolName, Keys[Options[Graph]]]];
+g:Graph[___] /; MemberQ[Unevaluated @ g, $extendedGraphOptionRulePattern] && $notIntercepted :=
+  Block[{$notIntercepted = False}, interceptedGraphConstructor[g]];
+Protect[Graph];
+
+SetHoldAllComplete[interceptedGraphConstructor];
+
+interceptedGraphConstructor[Graph[Shortest[args__], options__Rule]] := Scope[
+  annotations = TakeOptions[{options}, $extendedGraphOptionSymbols];
+  newOptions = DeleteOptions[{options}, $extendedGraphOptionSymbols];
+  result = Graph[args, Sequence @@ newOptions];
+  If[!GraphQ[result], ReturnFailed[]];
+  Annotate[result, DeleteDuplicatesBy[annotations, First]]
+];
+
+interceptedGraphConstructor[e_] := e;
+
+(**************************************************************************************************)
+
+PackageExport["ExtendedGraphQ"]
+
+ExtendedGraphQ[g_Graph ? GraphQ] :=
+  Count[AnnotationValue[g, $extendedGraphOptionSymbols], $Failed] =!= Length[$extendedGraphOptionSymbols];
+
+ExtendedGraphQ[_] := False;
+
+(**************************************************************************************************)
+
+PackageScope["LookupExtendedGraphAnnotations"]
+
+LookupExtendedGraphAnnotations[graph_, keys_List] :=
+  MapThread[
+    If[#1 === $Failed, #2, #1]&,
+    {AnnotationValue[graph, keys], Lookup[$extendedGraphOptionsRules, keys]}
+  ];
+
+(**************************************************************************************************)
+
+PackageScope["ExtendedGraphAnnotations"]
+
+ExtendedGraphAnnotations[graph_] :=
+  Normal @ DeleteCases[$Failed] @ AssociationThread[
+    $extendedGraphOptionSymbols,
+    AnnotationValue[graph, $extendedGraphOptionSymbols]
+  ];
+
+(**************************************************************************************************)
+
+PackageScope["$simpleGraphOptions"]
+PackageScope["$simpleGraphOptionRules"]
+
+$simpleGraphOptionRules = JoinOptions[{
+  EdgeLabels -> None, GraphLayout -> Automatic, ImagePadding -> All,
+  ImageSize -> Automatic, VertexCoordinates -> Automatic,
+  VertexLabels -> None, VertexSize -> Automatic},
+  Rest @ $extendedGraphOptionsRules
+]
+
+$simpleGraphOptions = Keys @ $simpleGraphOptionRules;
+
 (**************************************************************************************************)
 
 PackageExport["VertexEdgeList"]
@@ -200,21 +286,51 @@ ToGraph = MatchValues[
 
 (**************************************************************************************************)
 
-PackageScope["$simpleGraphOptions"]
-PackageScope["$simpleGraphOptionRules"]
+PackageExport["AttachVertexAnnotations"]
 
-$simpleGraphOptions = {
-  ImageSize, ImagePadding, GraphLayout, VertexCoordinates,
-  VertexLabels, EdgeLabels,
-  GraphLegend, GraphRegionHighlight,
-  DirectedEdges
-};
+AttachVertexAnnotations[graph_, annotations_] := Scope[
+  CheckGraphArg[1];
+  oldAnnotations = LookupAnnotation[graph, VertexAnnotations, None];
+  SetNone[oldAnnotations, <||>];
+  Annotate[graph, VertexAnnotations -> Join[oldAnnotations, annotations]]
+];
 
-$simpleGraphOptionRules = TakeOptions[Graph, $simpleGraphOptions];
+(**************************************************************************************************)
+
+PackageExport["ExtendedSubgraph"]
+
+ExtendedSubgraph[oldGraph_, newVertices_, newEdges_] := Scope[
+  options = Options[oldGraph];
+  annotations = ExtendedGraphAnnotations[oldGraph];
+  vertexCoords = Lookup[options, VertexCoordinates, Automatic];
+  oldVertices = VertexList[oldGraph];
+  newVertexIndices = Map[IndexOf[oldVertices, #]&, newVertices];
+  newVertexOrdering = Ordering[newVertexIndices];
+  newVertices = Part[newVertices, newVertexOrdering];
+  vertexAnnotations = LookupAnnotation[oldGraph, VertexAnnotations, None];
+  sortedNewVertexIndices = Sort @ newVertexIndices;
+  If[ListQ[vertexCoords],
+    vertexCoords = Part[vertexCoords, sortedNewVertexIndices];
+    options = ReplaceOptions[options, VertexCoordinates -> vertexCoords];
+  ];
+  If[AssociationQ[vertexAnnotations],
+    vertexAnnotations //= Map[Part[#, sortedNewVertexIndices]&];
+    annotations = ReplaceOptions[annotations, VertexAnnotations -> vertexAnnotations];
+  ];
+  If[newEdges === Automatic,
+    newEdges = Select[EdgeList @ oldGraph, MemberQ[newVertices, Part[#, 1]] && MemberQ[newVertices, Part[#, 2]]&]
+  ];
+  graph = Graph[newVertices, newEdges, options];
+  Annotate[graph, annotations]
+];
 
 (**************************************************************************************************)
 
 PackageScope["GraphScope"]
+
+PackageScope["NotInGraphScopeOfQ"]
+
+NotInGraphScopeOfQ[graph_] := !GraphQ[$Graph] || (graph =!= $Graph)
 
 PackageScope["$Graph"]
 PackageScope["$GraphVertexList"]
@@ -267,7 +383,7 @@ GraphScope[graph_, body_] := Block[
     $Graph = graph,
     $GraphVertexList := $GraphVertexList = VertexList[$Graph],
     $GraphEdgeList := $GraphEdgeList = EdgeList[$Graph],
-    $GraphEdgeTags := $GraphEdgeTags = EdgeTags[$Graph],
+    $GraphEdgeTags := $GraphEdgeTags = Replace[EdgeTags[$Graph], {} -> None],
     $GraphVertexIndices := $GraphVertexIndices = VertexIndexAssociation[$Graph],
     $GraphEdgeIndices := $GraphEdgeIndices = EdgeIndexAssociation[$Graph],
 
@@ -288,22 +404,3 @@ GraphScope[graph_, body_] := Block[
   body
 ];
 
-(**************************************************************************************************)
-
-PackageExport["ExtendedSubgraph"]
-
-ExtendedSubgraph[oldGraph_, newVertices_, newEdges_] := Scope[
-  options = Options[oldGraph];
-  vertexCoords = Lookup[options, VertexCoordinates, Automatic];
-  oldVertices = VertexList[oldGraph];
-  newVertexIndices = Map[IndexOf[oldVertices, #]&, newVertices];
-  newVertexOrdering = Ordering[newVertexIndices];
-  newVertices = Part[newVertices, newVertexOrdering];
-  If[ListQ[vertexCoords],
-    vertexCoords = Part[vertexCoords, Sort @ newVertexIndices];
-    options = ReplaceOptions[options, VertexCoordinates -> vertexCoords];
-  ];
-  If[newEdges === Automatic,
-    newEdges = Select[EdgeList @ oldGraph, MemberQ[newVertices, Part[#, 1]] && MemberQ[newVertices, Part[#, 2]]&]];
-  Graph[newVertices, newEdges, options]
-];

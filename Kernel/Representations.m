@@ -231,6 +231,8 @@ of the group group$.
 
 DeclareArgumentCount[CustomRepresentation, {1, 2}];
 
+declareSyntaxInfo[CustomRepresentation, {_, _.}];
+
 CustomRepresentation::notmat = "First argument should be a list of matrices."
 CustomRepresentation::badrepmat = "Matrices have inconsistent dimensions: ``."
 
@@ -300,6 +302,8 @@ GroupRepresentation[group$] returns a RepresentationObject of a group group$.
 DeclareArgumentCount[GroupRepresentation, 1];
 
 General::badintcode = "Internal code returned inconsistent matrix dimensions: ``."
+
+declareSyntaxInfo[GroupRepresentation, {_}];
 
 GroupRepresentation[group_] := Scope[
   If[!GroupQ[group], ReturnFailed["notgroup", group]];
@@ -371,6 +375,8 @@ DeclareArgumentCount[TransformGenerators, 2];
 
 TransformGenerators::namedtrans = "The transformation `` is not a known named transformation.";
 TransformGenerators::badtrans = "The transformation returned an object of dimensions ``, instead of a list of square matrices.";
+
+declareSyntaxInfo[TransformGenerators, {_, _}];
 
 TransformGenerators[rep_, trans_] := Scope[
   rep = CheckRepArg[1];

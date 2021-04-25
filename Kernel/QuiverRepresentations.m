@@ -19,6 +19,8 @@ QuiverRepresentation[quiver$] chooses a representation based on the names of the
 
 DeclareArgumentCount[QuiverRepresentation, {1, 2}];
 
+declareSyntaxInfo[QuiverRepresentation, {_, _.}];
+
 QuiverRepresentation::noautorep =
   "No automatic representation is defined for the cardinal set ``.";
 

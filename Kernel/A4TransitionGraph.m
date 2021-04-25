@@ -27,6 +27,8 @@ PackageExport["StateTransitionGraph"]
 
 DeclareArgumentCount[StateTransitionGraph, 2];
 
+declareSyntaxInfo[StateTransitionGraph, {_, _, OptionsPattern[]}];
+
 Options[StateTransitionGraph] = JoinOptions[
   List[
     MaxVertices -> Infinity,

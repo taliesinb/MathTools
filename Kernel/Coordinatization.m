@@ -88,6 +88,10 @@ chooseLatticeCoordinatization[{Repeated["Infinite", 3]}, False] :=
 $abc = Transpose @ N @ {{Sqrt[3]/2, -(1/2)}, {0, 1}, {-(Sqrt[3]/2), -(1/2)}};
 dotABC[e_] := Dot[$abc, e];
 
+PackageExport["DotABC"]
+
+DotABC[e_] := Dot[$abc, e];
+
 chooseLatticeCoordinatization[{Repeated["Infinite", 3]}, True] :=
   {False, dotABC};
 

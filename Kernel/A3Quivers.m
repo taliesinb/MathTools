@@ -17,16 +17,20 @@ Quiver[vertices$, edges$] constructs a cardinal quiver from a list of vertices a
 * The resulting graph will display with a legend showing the cardinals associated with each edge.
 "
 
+DeclareArgumentCount[Quiver, {1, 2}];
+
 Options[Quiver] = Join[
   {ArrowheadSize -> Automatic, ArrowheadStyle -> Automatic},
   Options[Graph]
 ];
 
+declareSyntaxInfo[Quiver, {_, _., OptionsPattern[]}];
+
 Quiver[edges_, opts:OptionsPattern[]] :=
   Quiver[Automatic, edges, opts];
 
 Quiver[graph_Graph, newOpts:OptionsPattern[]] := Scope[
-  oldOpts = Options[Graph];
+  oldOpts = Options[graph];
   edges = EdgeList[graph];
   vertices = VertexList[graph];
   makeQuiver[vertices, edges, oldOpts, {newOpts}]
@@ -81,14 +85,12 @@ makeQuiver[vertices_, edges_, oldOpts_, newOpts_] := Scope[
 
   Graph[
     vertices, edges,
-    DeleteOptions[newOpts, {GraphLegend}],
+    Sequence @@ DeleteOptions[newOpts, {GraphLegend}],
     GraphLegend -> Lookup[newOpts, GraphLegend, Automatic],
-    GraphPlottingFunction -> QuiverPlot,
-    oldOpts
+    GraphPlottingFunction -> ExtendedGraphPlottingFunction,
+    Sequence @@ oldOpts
   ]
 ]
-
-
 
 reportDuplicateCardinals[edges_] := (
   KeyValueScan[checkEdgeGroup, GroupBy[edges, Last]];
@@ -101,9 +103,6 @@ checkEdgeGroup[tag_, edges_] /; !checkForDuplicateCardinals[edges] := Scope[
   If[dupEdges === {}, dupEdges = Cases[edges, DirectedEdge[_, dstDup, _]]];
   Message[Quiver::dupcardinal, tag, Take[dupEdges, All, 2]];
 ];
-
-PackageExport["QuiverPlot"]
-
 
 (**************************************************************************************************)
 
@@ -132,7 +131,11 @@ BouquetQuiver[cardinals$] creates a Bouquet cardinal quiver graph with the given
 BouquetQuiver['string$'] uses the characters of 'string$' as cardinals.
 "
 
+DeclareArgumentCount[BouquetQuiver, 1];
+
 Options[BouquetQuiver] = Options[Graph];
+
+declareSyntaxInfo[FreeQuiver, {_, OptionsPattern[]}];
 
 BouquetQuiver[str_String, opts:OptionsPattern[]] := BouquetQuiver[Characters[str], opts];
 
@@ -179,6 +182,10 @@ toQuiverEdge[UndirectedEdge[a_, b_]] := Splice[{
   toQuiverEdge[DirectedEdge[a, b]],
   toQuiverEdge[DirectedEdge[b, a]]
 }];
+
+DeclareArgumentCount[FreeQuiver, 1];
+
+declareSyntaxInfo[FreeQuiver, {_}];
 
 FreeQuiver[graph_] := Scope[
   $count = 1;

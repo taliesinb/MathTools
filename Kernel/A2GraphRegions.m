@@ -14,9 +14,11 @@ GraphRegion[graph$, region$] gives a subgraph of graph$ described by region$, wh
 * In addition if region$ is an assocation whose values are regions, an association of results will be produced.
 "
 
-SetArgumentCount[GraphRegion, 2];
-
 GraphRegion::empty = "The specified region is empty."
+
+DeclareArgumentCount[GraphRegion, 2];
+
+declareSyntaxInfo[GraphRegion, {_, _, OptionsPattern[]}];
 
 GraphRegion[graph_, region_] := Scope[
   CheckGraphArg[1];
@@ -64,7 +66,7 @@ SetUsage @ "
 EdgePattern[src$, dst$] represents an edge that matches src$ \[DirectedEdge] dst$.
 "
 
-SetUsage @ "
+zSetUsage @ "
 Path[src$, {c$1, $$, c$n}] represents a path starting at src$ and taking cardinals c$i in tern.
 Path[src$, 'cards$'] interpreted the characters of 'cards$' as cardinals.
 "
