@@ -60,7 +60,7 @@ makeRootSystemObject[generators_] := Scope[
 ];
 
 declareFormatting[
-  rs_RootSystemObject ? System`Private`NoEntryQ :>
+  rs_RootSystemObject ? System`Private`HoldNoEntryQ :>
     plotRootSystemObject @ getObjectData @ rs,
   RootVector[vec_List] :> renderRootVector @ vec
 ];

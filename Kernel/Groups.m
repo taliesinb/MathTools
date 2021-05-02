@@ -11,12 +11,18 @@ $posIntOrInfinity = (_Integer ? Positive) | Infinity;
 
 $IntZ = TemplateBox[{}, "Integers"] // RawBoxes;
 
+supNo1[str_, 1] := str;
+supNo1[str_, n_] := Superscript[str, n];
+
 GroupOrder;
 Unprotect[GroupOrder];
 
 (* since we are adding Infinity support to CyclicGroup and AbelianGroup, we must
 prevent these RuleCondition-based messages *)
-GroupTheory`PermutationGroups`Private`CheckGroupDegree[GroupOrder] := False;
+GroupTheory`PermutationGroups`Private`CheckGroupDegree[head_][customGroup_ ? CustomGroupQ] :=
+  CustomGroupOrder[customGroup];
+
+(**************************************************************************************************)
 
 PackageExport["GroupQ"]
 
@@ -27,6 +33,9 @@ GroupQ[group$] returns True if group$ is a valid group.
 GroupQ[HoldPattern @ PermutationGroup[{__Cycles}]] := True;
 GroupQ[e_] := GroupTheory`PermutationGroups`Private`NamedGroupQ[e];
 
+CustomGroupQ[_] := False;
+
+(**************************************************************************************************)
 
 PackageExport["AbelianGroupQ"]
 
@@ -39,21 +48,25 @@ AbelianGroupQ[group_] := MatchQ[group,
   GroupDirectProduct[list_List /; VectorQ[list, AbelianGroupQ]]
 ];
 
+(**************************************************************************************************)
 
 (* Framework to set up custom groups *)
 
 declareGroup[rules__RuleDelayed] := Scan[declareGroup, {rules}];
 declareGroup[pattern_ :> {"Generators" :> generators_, "Order" :> order_, "Format" :> format_}] := (
+  CustomGroupQ[HoldPattern @ pattern] := True;
   GroupQ[HoldPattern @ pattern] := True;
   makeGenerators[HoldPattern @ pattern] := generators;
   GroupOrder[HoldPattern @ pattern] := order;
+  CustomGroupOrder[HoldPattern @ pattern] := order;
   declareFormatting[pattern :> format]
 );
 
 declareGroup[___] := Panic["BadDeclareGroup"];
 
+(**************************************************************************************************)
 
-(* Add support to AbelianGroup for Infinity *)
+(* Adds support to AbelianGroup for Infinity *)
 
 declareGroup[
   AbelianGroup[orders:{Repeated[$posIntOrInfinity]}] :> {
@@ -71,8 +84,9 @@ makeAbelianGeneratorBlocks[infs:Longest[Infinity..], rest___] :=
 
 makeAbelianGeneratorBlocks[] := {};
 
+(**************************************************************************************************)
 
-(* Add support to CyclicGroup for Infinity *)
+(* Adds support to CyclicGroup for Infinity *)
 
 declareGroup[
   CyclicGroup[n:$posIntOrInfinity] :> {
@@ -94,9 +108,10 @@ makeCylicGenerators[Infinity] := makeInfiniteAbelianGenerators[1];
 declareFormatting[
   AlternatingGroup[n_Integer] :> Subscript[Style["A", Italic], n],
   SymmetricGroup[n_Integer] :> Subscript[Style["S", Italic], n],
-  DihedralGroup[n_Integer] :> Subscript["Di", n]
+  DihedralGroup[n_Integer] :> Subscript["Dih", n]
 ];
 
+(**************************************************************************************************)
 
 PackageExport["GroupDirectProduct"]
 
@@ -131,7 +146,7 @@ maybeBracket /: MakeBoxes[maybeBracket[e_], form:StandardForm | TraditionalForm]
   If[MatchQ[subbox, TemplateBox[_, "RowWithSeparators"]], RowBox[{"(", subbox, ")"}], subbox]
 ];
 
-
+(**************************************************************************************************)
 
 PackageExport["DiscreteHeisenbergGroup"]
 
@@ -143,17 +158,19 @@ DiscreteHeisenbergGroup[] represents the Heisenberg group of 3 \[Times] 3 upper-
 
 declareGroup[
   DiscreteHeisenbergGroup[] :> {
-    "Generators" :> Map[UnitAffineMatrix[3, #]&, {{1, 2}, {1, 3}, {2, 3}}],
+    "Generators" :> Map[AugmentedIdentityMatrix[3, #]&, {{1, 2}, {1, 3}, {2, 3}}],
     "Order" :> Infinity,
     "Format" :> Style["H", Italic]
   }
 ];
 
+(**************************************************************************************************)
 
 PackageExport["InfiniteAbelianGroup"]
 
 SetUsage @ "
 InfiniteAbelianGroup[n$] represents an infinite Abelian group on n$ generators.
+InfiniteAbelianGroup[n$, 'Redundant'] uses a redundant representation by forming pairs of generators cyclically.
 * InfiniteAbelianGroup works with GroupRepresentation.
 * InfiniteAbelianGroup does not work with the other group theory functions, since it has no finite permutation representation.
 "
@@ -162,17 +179,46 @@ declareGroup[
   InfiniteAbelianGroup[n_ ? Internal`PositiveIntegerQ] :> {
     "Generators" :> makeInfiniteAbelianGenerators[n],
     "Order" :> Infinity,
-    "Format" :> If[n === 1, $IntZ, Superscript[$IntZ, n]]
+    "Format" :> supNo1[$IntZ, n]
+  },
+  InfiniteAbelianGroup[n_ ? Internal`PositiveIntegerQ, "Redundant"] :> {
+    "Generators" :> makeInfiniteRedundantAbelianGenerators[n],
+    "Order" :> Infinity,
+    "Format" :> supNo1[Row[{$IntZ, "*"}], n]
   }
 ];
 
 makeInfiniteAbelianGenerators[n_] :=
-  Table[makeAffineUnitMatrix[i, n+1], {i, n}];
+  UnitTranslationMatrix[n, #]& /@ Range[n];
 
-makeAffineUnitMatrix[i_, n_] :=
-  ReplacePart[IdentityMatrix[n], {i, n} -> 1];
+makeInfiniteRedundantAbelianGenerators[n_] :=
+  RedundantUnitTranslationMatrix[n, #]& /@ Range[n];
 
+(**************************************************************************************************)
 
+PackageExport["InfiniteDihedralGroup"]
+
+SetUsage @ "
+InfiniteDihedralGroup[n$] represents an infinite dihedral group on n$ generators.
+InfiniteDihedralGroup[n$, 'Redundant'] uses a redundant representation by forming pairs of generators cyclically.
+* InfiniteDihedralGroup works with GroupRepresentation.
+* InfiniteDihedralGroup does not work with the other group theory functions, since it has no finite permutation representation.
+"
+
+declareGroup[
+  InfiniteDihedralGroup[n_ ? Internal`PositiveIntegerQ] :> {
+    "Generators" :> MakeDihedralTranslationMatrices @ makeInfiniteAbelianGenerators[n],
+    "Order" :> Infinity,
+    "Format" :> supNo1[Subscript["Dih", Infinity], n]
+  },
+  InfiniteDihedralGroup[n_ ? Internal`PositiveIntegerQ, "Redundant"] :> {
+    "Generators" :> MakeDihedralTranslationMatrices @ makeInfiniteRedundantAbelianGenerators[n],
+    "Order" :> Infinity,
+    "Format" :> supNo1[Subscript["Dih*", Infinity], n]
+  }
+];
+
+(**************************************************************************************************)
 
 PackageExport["GroupGeneratorElements"]
 
@@ -194,40 +240,90 @@ QuaternionGroup[] represents the group of unit quaternions.
 "
  *)
 
-
+(**************************************************************************************************)
 
 PackageExport["TranslationGroup"]
 
 SetUsage @ "
 TranslationGroup[vectors$] represents an Abelian translation group generated by the translation vectors vectors$.
 TranslationGroup[RootSystem[$$]] uses the simple roots of a given root system.
+TranslationGroup[$$, 'Redundant'] uses a redundant representation by forming pairs of translations cyclically.
 * The group operation is given by composing translations.
 * A generator acts by translating: adding its corresponding vector to its operand.
+* In one dimension this is the InfiniteAbelianGroup[1].
 "
+
+TranslationGroup[rs_ ? RootSystemObjectQ] :=
+  TranslationGroup @ rs["TranslationMatrices"];
+
+TranslationGroup[vecs_ ? MatrixQ, "Redundant"] :=
+  TranslationGroup @ MakeRedundantTranslations @ vecs;
+
 
 declareGroup[
   TranslationGroup[vecs_ ? MatrixQ] :> {
     "Generators" :> Map[TranslationMatrix, vecs],
     "Order" :> Infinity,
     "Format" :> Subsuperscript["T", Length @ vecs, Length @ First @ vecs]
-  },
-  TranslationGroup[rs_ ? RootSystemObjectQ] :> {
-    "Generators" :> rs["TranslationMatrices"],
-    "Order" :> Infinity,
-    "Format" :> Tooltip[Subsuperscript["T", rs["Count"], rs["Dimension"]], rs]
   }
 ];
 
+(**************************************************************************************************)
 
 PackageExport["TranslationGroupQ"]
 
 SetUsage @ "
-TranslationGroupQ[group$] returns True if group$ is a ReflectionGroup.
+TranslationGroupQ[group$] returns True if group$ is a TranslationGroup.
 "
 
 TranslationGroupQ[_TranslationGroup] := True;
 TranslationGroupQ[_] := False;
 
+
+(**************************************************************************************************)
+
+PackageExport["DihedralTranslationGroupQ"]
+
+SetUsage @ "
+DihedralTranslationGroupQ[group$] returns True if group$ is a DihedralTranslationGroup.
+"
+
+DihedralTranslationGroupQ[_DihedralTranslationGroup | _InfiniteDihedralGroup] := True;
+DihedralTranslationGroupQ[_] := False;
+
+
+(**************************************************************************************************)
+
+PackageExport["DihedralTranslationGroup"]
+
+SetUsage @ "
+DihedralTranslationGroup[vectors$] represents an 'improper' translation group generated by the translation
+vectors vectors$, where the generators also invert the translations of subsequent group elements.
+DihedralTranslationGroup[RootSystem[$$]] uses the simple roots of a given root system.
+DihedralTranslationGroup[$$, 'Redundant'] uses a redundant representation by forming pairs of translations \
+cyclically.
+* The group operation is given by composing translations.
+* A generator acts by translating: adding its corresponding vector to its operand, and flipping
+the direction of future translations.
+In one dimension this is the InfiniteDihedralGroup[1].
+"
+
+DihedralTranslationGroup[rs_ ? RootSystemObjectQ] :=
+  DihedralTranslationGroup @ rs["TranslationMatrices"];
+
+DihedralTranslationGroup[vecs_ ? MatrixQ, "Redundant"] :=
+  DihedralTranslationGroup @ MakeRedundantTranslations @ vecs;
+
+declareGroup[
+  DihedralTranslationGroup[vecs_ ? MatrixQ] :> {
+    "Generators" :> MakeDihedralTranslationMatrices @ Map[TranslationMatrix, vecs],
+    "Order" :> Infinity,
+    "Format" :> Subsuperscript["TDih", Length @ vecs, Length @ First @ vecs]
+  }
+];
+
+
+(**************************************************************************************************)
 
 PackageExport["ReflectionGroup"]
 
@@ -250,6 +346,8 @@ declareGroup[
     "Format" :> Tooltip[Subsuperscript["R", rs["Count"]/2, rs["Dimension"]], rs]
   }
 ];
+
+(**************************************************************************************************)
 
 PackageExport["ReflectionGroupQ"]
 

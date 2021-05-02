@@ -4,9 +4,18 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
+(**************************************************************************************************)
+(** Operators useful for Matrices                                                                 *)
+(**************************************************************************************************)
+
 PackageExport["TakeOperator"]
 
 TakeOperator[spec___][e_] := Take[e, spec];
+
+
+PackageExport["DropOperator"]
+
+DropOperator[spec___][e_] := Drop[e, spec];
 
 
 PackageExport["PartOperator"]
@@ -14,32 +23,45 @@ PackageExport["PartOperator"]
 PartOperator[spec___][e_] := Part[e, spec];
 
 
-PackageExport["Ones"]
-PackageExport["Zeros"]
+PackageExport["DotOperator"]
 
-Ones[i_] := ConstantArray[1, i];
-Zeros[i_] := ConstantArray[0, i];
+DotOperator[matrix_][other_] := Dot[matrix, other]
+
+
+PackageExport["InnerDimension"]
+
+InnerDimension[array_] := Last @ Dimensions @ array;
+
+
+(**************************************************************************************************)
+(** Common matrix predicates                                                                      *)
+(**************************************************************************************************)
+
+PackageExport["OnesQ"]
+
+OnesQ[m_] := MinMax[m] === {1, 1};
+
+
+PackageExport["ZerosQ"]
+
+ZerosQ[m_] := MinMax[m] === {0, 0};
+
+
+PackageExport["CoordinateMatrixQ"]
+
+CoordinateMatrixQ[matrix_, n_:2|3] :=
+  MatrixQ[matrix] && MatchQ[InnerDimension @ matrix, n];
+
+
+PackageExport["CoordinateArrayQ"]
+
+CoordinateArrayQ[array_, n_:2|3] :=
+  ArrayQ[array, 3] && MatchQ[InnerDimension @ array, n];
+
 
 PackageExport["ComplexMatrixQ"]
 
 ComplexMatrixQ[e_] := ContainsQ[e, _Complex] && MatrixQ[e];
-
-
-PackageExport["OnesQ"]
-PackageExport["ZerosQ"]
-
-OnesQ[m_] := MinMax[m] === {1, 1};
-ZerosQ[m_] := MinMax[m] === {0, 0};
-
-
-PackageExport["Coordinates3DQ"]
-
-Coordinates3DQ[matrix_] := MatrixQ[matrix] && Last[Dimensions[matrix]] === 3;
-
-
-PackageExport["Coordinates2DQ"]
-
-Coordinates2DQ[matrix_] := MatrixQ[matrix] && Last[Dimensions[matrix]] === 2;
 
 
 PackageExport["UpperUnitriangularMatrixQ"]
@@ -48,38 +70,27 @@ UpperUnitriangularMatrixQ[matrix_] :=
   UpperTriangularMatrixQ[matrix] && OnesQ[Diagonal[matrix]];
 
 
+PackageExport["IdentityMatrixQ"]
+
+IdentityMatrixQ[matrix_] :=
+  DiagonalMatrixQ[matrix] && OnesQ[Diagonal[matrix]];
+
+
 PackageExport["ZeroMatrixQ"]
 
 ZeroMatrixQ[matrix_] := MatrixQ[matrix] && ZerosQ[matrix];
 
 
-PackageExport["ZeroMatrix"]
+PackageExport["PermutationMatrixQ"]
 
-SetUsage @ "
-ZeroMatrix[n$] represents the zero n$ \[Times] n$ matrix.
-"
-
-ZeroMatrix[n_] := ConstantArray[0, {n, n}];
+PermutationMatrixQ[matrix_] :=
+  SquareMatrixQ[matrix] && MinMax[matrix] == {0, 1} && Count[matrix, 1, 2] == Length[matrix] &&
+    OnesQ[Total[matrix, {1}]] && OnesQ[Total[matrix, {2}]];
 
 
-PackageExport["UnitAffineMatrix"]
-
-SetUsage @ "
-UnitAffineMatrix[n$, {i$, j$}] represents the identity n$ \[Times] n$ matrix with an additional one at position ($i, $j).
-"
-
-UnitAffineMatrix[n_, {i_, j_}] := ReplacePart[IdentityMatrix[n], {i, j} -> 1];
-
-
-PackageExport["TranslationMatrixQ"]
-
-TranslationMatrixQ[matrix_] :=
-  UpperUnitriangularMatrixQ[matrix] && ZeroMatrixQ[matrix[[;;-2, ;;-2]] - IdentityMatrix[Length[matrix] - 1]];
-
-
-PackageExport["ExtractTranslationVector"]
-
-ExtractTranslationVector[matrix_] := matrix[[;;-2, -1]];
+(**************************************************************************************************)
+(** Translations matrix functions                                                                 *)
+(**************************************************************************************************)
 
 
 PackageExport["TranslationMatrix"]
@@ -90,6 +101,105 @@ TranslationMatrix[vector_] := Scope[
   matrix
 ];
 
+PackageExport["UnitTranslationMatrix"]
+
+UnitTranslationMatrix[n_, k_] :=
+  AugmentedIdentityMatrix[n + 1, {k, n + 1}]
+
+
+PackageExport["RedundantUnitTranslationMatrix"]
+
+RedundantUnitTranslationMatrix[n_, k_] :=
+  ReplacePart[IdentityMatrix[n + 1], {{k, n + 1} -> 1, {Mod[k + 1, n, 1], n + 1} -> -1}];
+
+
+PackageExport["TranslationMatrixQ"]
+
+TranslationMatrixQ[matrix_] := And[
+  UpperUnitriangularMatrixQ[matrix],
+  IdentityMatrixQ @ DiagonalBlock[matrix, {1, -2}]
+];
+
+
+(**************************************************************************************************)
+
+PackageScope["MakeDihedralTranslationMatrices"]
+
+MakeDihedralTranslationMatrices[matrices_] :=
+  ReplacePart[{-1, -1} -> -1] /@ matrices;
+
+
+PackageExport["DihedralTranslationMatrixQ"]
+
+DihedralTranslationMatrixQ[matrix_] := And[
+  UpperUnitriangularMatrixQ @ ReplaceDiagonalPart[matrix, -1 -> 1],
+  IdentityMatrixQ @ DiagonalBlock[matrix, {1, -2}]
+];
+
+(**************************************************************************************************)
+
+PackageScope["MakeRedundantTranslations"]
+
+MakeRedundantTranslations[vec_] :=
+  Subtract @@ Partition[vec, 2, 1, 1];
+
+
+PackageExport["ExtractTranslationVector"]
+
+ExtractTranslationVector[matrix_] := matrix[[;;-2, -1]];
+
+
+(**************************************************************************************************)
+(** Common constructors                                                                          **)
+(**************************************************************************************************)
+
+PackageExport["ZeroMatrix"]
+
+SetUsage @ "
+ZeroMatrix[n$] represents the zero n$ \[Times] n$ matrix.
+"
+
+ZeroMatrix[n_] := ConstantArray[0, {n, n}];
+
+
+PackageExport["Ones"]
+
+Ones[i_] := ConstantArray[1, i];
+
+
+PackageExport["Zeros"]
+
+Zeros[i_] := ConstantArray[0, i];
+
+
+PackageExport["BasisScalingMatrix"]
+
+BasisScalingMatrix[n_, rules_] :=
+  ReplaceDiagonalPart[IdentityMatrix @ n, rules];
+
+
+PackageExport["ReplaceDiagonalPart"]
+
+ReplaceDiagonalPart[matrix_, rules_List] :=
+  ReplacePart[matrix, {#1, #1} -> #2& @@@ rules];
+
+ReplaceDiagonalPart[matrix_, i_ -> v_] :=
+  ReplacePart[matrix, {i, i} -> v];
+
+
+PackageExport["AugmentedIdentityMatrix"]
+
+SetUsage @ "
+AugmentedIdentityMatrix[n$, {i$, j$}] represents the identity n$ \[Times] n$ matrix with an additional one at position ($i, $j).
+AugmentedIdentityMatrix[n$, {{i$1, j$1}, {i$2, j$2}, $$}}] puts additional ones at several positions.
+"
+
+AugmentedIdentityMatrix[n_, {i_, j_}] := ReplacePart[IdentityMatrix[n], {i, j} -> 1];
+AugmentedIdentityMatrix[n_, list_List] := ReplacePart[IdentityMatrix[n], list -> 1];
+
+(**************************************************************************************************)
+(** Block matrix functions                                                                        *)
+(**************************************************************************************************)
 
 PackageExport["BlockDiagonalMatrix"]
 
@@ -99,13 +209,6 @@ BlockDiagonalMatrix[blocks_] := Scope[
   superMatrix = DiagonalMatrix[range] /. MapThread[Rule, {range, blocks}];
   Developer`ToPackedArray @ ArrayFlatten[superMatrix, 2]
 ];
-
-
-PackageExport["PermutationMatrixQ"]
-
-PermutationMatrixQ[matrix_] :=
-  SquareMatrixQ[matrix] && MinMax[matrix] == {0, 1} && Count[matrix, 1, 2] == Length[matrix] &&
-    OnesQ[Total[matrix, {1}]] && OnesQ[Total[matrix, {2}]];
 
 
 PackageExport["FindDiagonalBlockPositions"]
@@ -157,6 +260,9 @@ DiagonalBlock[obj_, list:{__List}] := Map[DiagonalBlock[obj, #]&, list];
 DiagonalBlock[part_][obj_] := DiagonalBlock[obj, part];
 
 
+(**************************************************************************************************)
+(** Misc utilities                                                                               **)
+(**************************************************************************************************)
 
 PackageExport["FindIndependentVectors"]
 

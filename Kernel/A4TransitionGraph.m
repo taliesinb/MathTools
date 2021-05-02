@@ -12,6 +12,7 @@ PackageExport["MaxFunctionEvaluations"]
 PackageExport["MaxNorm"]
 PackageExport["ProgressFunction"]
 PackageExport["IncludeFrontier"]
+PackageExport["DepthTermination"]
 
 MaxVertices::usage = "MaxVertices is an option to StateTransitionGraph."
 MaxVerticesPerComponent::usage = "MaxVerticesPerComponent is an option to StateTransitionGraph."
@@ -21,7 +22,7 @@ MaxTime::usage = "MaxTime is an option to StateTransitionGraph.";
 ProgressFunction::usage = "ProgressFunction is an option to StateTransitionGraph.";
 MaxNorm::usage = "MaxNorm is an option to StateTransitionGraph.";
 IncludeFrontier::usage = "IncludeFrontier is an option to StateTransitionGraph.";
-
+DepthTermination::usage = "DepthTermination is an option to StateTransitionGraph."
 
 PackageExport["StateTransitionGraph"]
 
@@ -41,7 +42,8 @@ Options[StateTransitionGraph] = JoinOptions[
     ProgressFunction -> None,
     NormFunction -> Automatic,
     MaxNorm -> None,
-    IncludeFrontier -> True
+    IncludeFrontier -> True,
+    DepthTermination -> "Immediate"
   ],
   $simpleGraphOptionRules
 ];
@@ -90,6 +92,7 @@ Labeled[f$, label$] or f$ -> label$ to attach a custom label label$ instead.
 | DirectedEdges | True | whether to return a directed or undirected graph |
 | MaxVerticesPerComponent | Infinity | how many vertices per graph component |
 | IncludeFrontier | True | whether to include edges to vertices beyond maximum depth |
+| DepthTermination | 'Immediate' | specifies when termination take effect |
 | ProgressFunction | None | a function to call with an association with information about the exploration |
 * For ProgressFunction -> p$, p$ will be called with an association containing the following keys:
 | 'State' | the current state being explored |
@@ -98,6 +101,7 @@ Labeled[f$, label$] or f$ -> label$ to attach a custom label label$ instead.
 | 'Time' | the number of seconds since exploration began |
 | 'EdgeCount' | the number of edges seen so far |
 | 'VertexCount' | the number of vertices seen so far |
+* For DepthTermination -> 'Delayed', the depth currently being explored will be finished before termination occurs.
 * If MaxDepth -> <|label$1 -> d$1, $$, label$n -> d$n|> is specified, a per-label maximum depth will be applied, so \
 that a vertex will be explored as long as it can be reached in under d$i steps of edges labeled label$i.
 "
@@ -146,7 +150,8 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
   UnpackOptions[
     directedEdges, ProgressFunction, normFunction,
     maxVertices, maxVerticesPerComponent, maxEdges, maxDepth,
-    maxTime, maxFunctionEvaluations, maxNorm, includeFrontier
+    maxTime, maxFunctionEvaluations, maxNorm,
+    includeFrontier, depthTermination
   ];
 
   If[!ListQ[initialVertices] || Length[initialVertices] == 0,
@@ -245,7 +250,6 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
     mergeDcs = {id1, id2} |-> If[id1 =!= id2, With[
       {dcVertexSet1 = Part[dcVertexSets, id1]},
       {dcVertexSet2 = Part[dcVertexSets, id2]},
-      (* echo["Merging ", id1, " ", id2]; *)
       dcVertexSet1["Union", Normal @ dcVertexSet2];
       mergedDcId[[mergedDcChildren[id2]]] = id1;
       JoinTo[mergedDcChildren[id1], mergedDcChildren[id2]];
@@ -370,13 +374,23 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
     )
   ];
 
+  $condition := And[Length[vertexIndex] <= maxVertices, edgeCount <= maxEdges, $timeCondition, evaluations < maxFunctionEvaluations];
+  If[depthTermination === "Immediate",
+    $loopCondition := $condition;
+    $generationCondition = True;
+  ,
+    $loopCondition = True;
+    $generationCondition := $condition;
+  ];
+
   (* main loop *)
   edgeGenerations = {}; edgeCount = 0; lastCount = 0; generation = 1; evaluations = 0; maxDepthReached = False;
-  While[And[Length[vertexIndex] <= maxVertices, edgeCount <= maxEdges, $timeCondition, evaluations < maxFunctionEvaluations],
+  While[$loopCondition,
 
     (* whenever we reach the end of this generation, move to the next generation *)
     If[thisGenVertices["EmptyQ"],
       If[generation >= maxDepth, maxDepthReached = True; Break[]];
+      If[!$generationCondition, Break[]];
       If[nextGenVertices["EmptyQ"], Break[]];
       Swap[thisGenVertices, nextGenVertices];
       generation += 1;
@@ -384,7 +398,7 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
     ];
 
     (* obtain a vertex to explore *)
-    {vertexId, vertex, dcId} = (* echoAs["pop"] @  *)thisGenVertices["Pop"];
+    {vertexId, vertex, dcId} = thisGenVertices["Pop"];
     If[trackDCs, dcId = mergedDcId[[dcId]]];
 
     (* call the successor function to obtain successor vertices *)
@@ -404,14 +418,14 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
 
     (* strip labels *)
     labeledSuccessors = successors;
-    successors = (* echoAs["successors"] @  *)Replace[successors, Labeled[z_, _] :> z, {1}];
+    successors = Replace[successors, Labeled[z_, _] :> z, {1}];
 
     (* detect new vertices, and obtain all the Ids of successor vertices *)
     lastCount = Length[vertexIndex];
 
     If[isLastGeneration, $excludeFrontierBlock];
 
-    successorsIds = (* echoAs["successorsIds"] @  *)Map[
+    successorsIds = Map[
       succ |-> Lookup[vertexIndex, Key[succ],
         vertexArray["Append", succ];
         vertexIndex[succ] = Length[vertexIndex] + 1
@@ -435,7 +449,7 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
 
     If[!trackDCs || dcActive[[dcId]],
       (* add all new vertices to the next generation *)
-      stackPushList[nextGenVertices, (* echoAs["next"] @  *)
+      stackPushList[nextGenVertices,
         If[!DuplicateFreeQ[successorsIds],
           KeyValueMap[removeStaleSuccessors, AssociationThread[successorsIds, successors]],
           MapThread[removeStaleSuccessors, {successorsIds, successors}]
@@ -454,9 +468,18 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
     True, "Complete"
   ];
 
+  (* trim edges if we collected too many *)
+  If[edgeCount > maxEdges && !finishGeneration,
+    extraCount = edgeCount - maxEdges;
+    edgeTrimmer = MapAt[DropOperator[-extraCount], -1];
+    labelTrimer = DropOperator[-extraCount];
+  ,
+    edgeTrimmer = labelTrimmer = Identity;
+  ];
+
   (* calculate results *)
-  transitionLists := transitionLists = Internal`BagPart[transitionListsBag, All];
-  indexTransitionLists := indexTransitionLists = Internal`BagPart[indexTransitionListsBag, All];
+  transitionLists := transitionLists = edgeTrimmer @ Internal`BagPart[transitionListsBag, All];
+  indexTransitionLists := indexTransitionLists = edgeTrimmer @ Internal`BagPart[indexTransitionListsBag, All];
 
   vertices := Normal[vertexArray];
 
@@ -473,7 +496,7 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
     indexTransitionLists, {1}
   ];
 
-  edgeLabels := Internal`BagPart[edgeLabelsBag, All];
+  edgeLabels := edgeLabels = labelTrimer @ Internal`BagPart[edgeLabelsBag, All];
 
   graph := Graph[edges, GeneralUtilities`FilterOptions[opts]];
   indexGraph := Graph[indexEdges, GeneralUtilities`FilterOptions[opts]];

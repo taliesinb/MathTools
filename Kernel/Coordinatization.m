@@ -7,7 +7,7 @@ PackageImport["GeneralUtilities`"]
 PackageScope["findCoordinatizationFunction"]
 
 findCoordinatizationFunction[matrices_, group_] := Scope[
-  If[TranslationGroupQ[group],
+  If[TranslationGroupQ[group](*  || DihedralTranslationGroupQ[group] *),
     translationVectors = ExtractTranslationVector /@ matrices;
     rank = MatrixRank[translationVectors];
     taker = If[rank === Length[translationVectors], Identity, TakeOperator[rank]];
@@ -21,9 +21,13 @@ findCoordinatizationFunction[matrices_, group_] := Scope[
   ];
   isRedundant = False;
   If[Length[matrices] >= 3,
+    matrices = matrices;
+    If[DihedralTranslationGroupQ[group],
+      matrices[[All, -1, -1]] = 1];
     g12 = Dot @@ Take[matrices, 2]; g12i = Inverse[g12];
     isRedundant = AnyTrue[Drop[matrices, 2], SameQ[#, g12] || SameQ[#, g12i]&];
   ];
+
   {types, First /* (ApplyThrough @ functions), isRedundant}
 ];
 
@@ -36,7 +40,7 @@ findSubCoordinatization[matrices_, {m_, n_}] := Scope[
       {{"Cyclic", FirstCase[matrices, UnitRoot[k_] :> k, None, Infinity]},
         Extract[{m, m}] /* GetRootPower
       },
-    AllTrue[matrices, TranslationMatrixQ],
+    AllTrue[matrices, DihedralTranslationMatrixQ],
       type = "Infinite";
       Splice @ Table[{type, Extract[{row, n}]}, {row, m, n-1}],
     True,

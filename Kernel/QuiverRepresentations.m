@@ -4,6 +4,8 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
+(**************************************************************************************************)
+
 PackageExport["QuiverRepresentation"]
 
 SetUsage @ "
@@ -14,7 +16,7 @@ a QuiverRepresentationObject.
 * If no cardinals are provided, the cardinals present in quiver$ will be used, in sorted order.
 QuiverRepresentation[quiver$] chooses a representation based on the names of the cardinals in quiver$.
 * For cardinals {'x', 'y'} or {'x', 'y', 'z'}, a representation of InfiniteAbelianGroup is used.
-* For cardinals {'a', 'b', 'c'}, RedundantAbelianRepresentation[3] is used.
+* For cardinals {'a', 'b', 'c'}, {'a', 'b', 'c', 'd'}, a redundant representation of an InfiniteAbelianGroup is used.
 "
 
 DeclareArgumentCount[QuiverRepresentation, {1, 2}];
@@ -27,14 +29,15 @@ QuiverRepresentation::noautorep =
 QuiverRepresentation::gencount =
   "The number of generators in the representation (``) did not match the number of cardinals in the graph (``).";
 
+$namedRep = "Abelian" | "Dihedral" | "Redundant" | "RedundantDihedral";
+
 parseRepresentationSpec = MatchValues[
-  Automatic         := {Automatic, Automatic};
-  "Abelian"         := {Automatic, "Abelian"};
-  "Redundant"       := {Automatic, "Redundant"};
-  s_String          := {carChars[s], Automatic};
-  s_String -> rep_  := {carChars[s], rep};
-  list_List -> rep_ := {list, rep};
-  rep_              := {Automatic, rep}
+  Automatic          := {Automatic, Automatic};
+  name:$namedRep     := {Automatic, name};
+  s_String           := {carChars[s], Automatic};
+  s_String -> rep_   := {carChars[s], rep};
+  list_List -> rep_  := {list, rep};
+  rep_               := {Automatic, rep}
 ];
 
 carChars[str_] := Characters[str] /. "_" -> None;
@@ -42,11 +45,11 @@ carChars[str_] := Characters[str] /. "_" -> None;
 chooseAutoRepresentation[cardinalList_] :=
   Switch[
     ToLowerCase @ Sort @ cardinalList,
-      {"a", "b", "c"}, RedundantAbelianRepresentation[2],
-      {"a", "b", "c", "d"}, RedundantAbelianRepresentation[3],
       {"x", "y"}, InfiniteAbelianGroup[2],
       {"x", "y", "z"}, InfiniteAbelianGroup[3],
       {"w", "x", "y", "z"}, InfiniteAbelianGroup[4],
+      {"a", "b", "c"}, InfiniteAbelianGroup[2, "Redundant"],
+      {"a", "b", "c", "d"}, InfiniteAbelianGroup[3, "Redundant"],
       _, Message[QuiverRepresentation::noautorep, cardinalList]; Return[$Failed, Block]
   ];
 
@@ -93,6 +96,7 @@ cardinalIcon[graph_] :=
     BaseStyle -> {}
   ];
 
+(**************************************************************************************************)
 
 PackageExport["QuiverRepresentationPlot"]
 
@@ -112,6 +116,7 @@ QuiverRepresentationPlot[qrep_, opts:OptionsPattern[Quiver]] := Scope[
   Row[{quiverPlot, "  ", Row[labeledGenerators, " "]}]
 ];
 
+(**************************************************************************************************)
 
 PackageExport["QuiverRepresentationObject"]
 
@@ -127,7 +132,7 @@ QuiverRepresentationObject /: MakeBoxes[object:QuiverRepresentationObject[data_A
   icon = Insert[icon, AspectRatio -> All, 2];
   vertices = VertexCount[quiver];
   edges = EdgeCount[quiver];
-  order = GroupOrder[group];
+  order = representation["GroupOrder"];
   BoxForm`ArrangeSummaryBox[
     QuiverRepresentationObject, object, icon,
     (* Always displayed *)
@@ -163,12 +168,13 @@ makeQuiverElementRule[inVertex_, outVertex_, gen_, cardinal_] :=
 Options[computeCayleyFunction] = {"Symmetric" -> True, "Labeled" -> True};
 
 
+(**************************************************************************************************)
+
 PackageExport["QuiverElement"]
 
 SetUsage @ "
 QuiverElement[v$, state$] represents a quiver vertex v$ with associated state state$.
 "
-
 
 computeCayleyFunction[data_, OptionsPattern[]] := Scope[
   UnpackAssociation[data, generators, quiver];
@@ -191,6 +197,7 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
   ReplaceList[rules]
 ];
 
+(**************************************************************************************************)
 
 PackageExport["QuiverRepresentationObjectQ"]
 

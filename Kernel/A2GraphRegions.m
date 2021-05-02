@@ -194,7 +194,7 @@ processRegion[p:VertexPattern[v_]] :=
 (********************************************)
 
 sowPathEdges[v1_, v2_] :=
-  MapStaggered[findAndSowEdge, $GraphFindShortestPath[v1, v2]];
+  MapStaggered[findAndSowEdge, $LatticeFindShortestPath[v1, v2]];
 
 GraphRegion::invv = "The region ``[...] contained an invalid vertex specification ``.";
 
@@ -268,9 +268,9 @@ sowSubgraphEdges[vertices_] :=
 
 processRegion[Disk[center_, r_]] := Scope[
   centerInd = findVertex @ center;
-  distances = $GraphDistanceMatrix[[centerInd, All]];
+  distances = $LatticeDistance[centerInd, All];
   vertices = SelectIndices[distances, LessEqualThan[r]];
-  sowSubgraphEdges @ vertices;
+  zsowSubgraphEdges @ vertices;
   sowVertexList @ vertices;
 ];
 
@@ -292,7 +292,7 @@ GraphRegion::discircle = "The circle defined by `` is disconnected."
 
 processRegion[c:Circle[center_, r_]] := Scope[
   centerInd = findVertex @ center;
-  distances = $GraphDistanceMatrix[[centerInd, All]];
+  distances = $LatticeDistance[centerInd, All];
   vertices = SelectIndices[distances, EqualTo[r]];
   If[Length[vertices] <= 1, fail["trivcircle", c]];
   annulusVertices = SelectIndices[distances, Between[{r, r + 2}]];

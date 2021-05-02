@@ -23,7 +23,8 @@ constructGroupRepresentation[data_] := Scope[
   matrices = Normal /@ data["Generators"];
   matrices = ExpandUnitRoots[matrices];
   type = Which[
-    TranslationGroupQ[group], "Translation",
+    TranslationGroupQ[group] || AllTrue[matrices, TranslationMatrixQ], "Translation",
+    AllTrue[matrices, DihedralTranslationMatrixQ], "DihedralTranslation",
     AnyTrue[matrices, ComplexMatrixQ], Which[
       AllTrue[matrices, UnitaryMatrixQ], "Unitary",
       AllTrue[matrices, HermitianMatrixQ], "Hermitian",
@@ -87,6 +88,7 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
   ApplyThrough[list]
 ];
 
+(**************************************************************************************************)
 
 PackageExport["RepresentationObjectQ"]
 
@@ -97,6 +99,7 @@ RepresentationObjectQ[rep$] returns True if rep$ is a valid RepresentationObject
 RepresentationObjectQ[_RepresentationObject ? System`Private`HoldNoEntryQ] := True;
 RepresentationObjectQ[_] := False;
 
+(**************************************************************************************************)
 
 PackageExport["CayleyFunction"]
 
@@ -129,6 +132,7 @@ CayleyFunction[object_, OptionsPattern[]] := Scope[
   rep["CayleyFunction", "Labeled" -> symmetric, "Symmetric" -> symmetric]
 ];
 
+(**************************************************************************************************)
 
 PackageExport["CayleyQuiver"]
 
@@ -164,6 +168,7 @@ Labeled[f_, label_][input___] := Labeled[f[input], label];
 
 Protect[Labeled];
 
+(**************************************************************************************************)
 
 PackageExport["RepresentationElement"]
 
@@ -193,6 +198,7 @@ RepresentationElement[elem1_][RepresentationElement[elem2_]] := With[
   RepresentationElement @ If[Developer`PackedArrayQ[res], res, Expand @ res]
 ];
 
+(**************************************************************************************************)
 
 PackageExport["ToRepresentation"]
 
@@ -215,10 +221,13 @@ ToRepresentation = MatchValues[
 
 PackageScope["toRepresentation"]
 
-toRepresentation["Abelian", n_] := GroupRepresentation[InfiniteAbelianGroup[n]];
-toRepresentation["Redundant", n_] := RedundantAbelianRepresentation[n-1];
+toRepresentation["Abelian", n_] := GroupRepresentation @ InfiniteAbelianGroup[n];
+toRepresentation["Redundant", n_] := GroupRepresentation @ InfiniteAbelianGroup[n, "Redundant"];
+toRepresentation["Dihedral", n_] := GroupRepresentation @ InfiniteDihedralGroup[n];
+toRepresentation["RedundantDihedral", n_] := GroupRepresentation @ InfiniteDihedralGroup[n, "Redundant"];
 toRepresentation[spec_, _] :=  ToRepresentation @ spec;
 
+(**************************************************************************************************)
 
 PackageExport["CustomRepresentation"]
 
@@ -243,40 +252,17 @@ CustomRepresentation[matrices_, group_:None] := Scope[
   If[!MatchQ[dims, {_, _, _}], ReturnFailed["badintcode", Dimensions /@ matrices]];
   dim = Part[dims, 2];
   generators = RepresentationElement /@ matrices;
+  order = If[group === None, Infinity, GroupOrder[group]];
   repData = <|
     "Group" -> group,
-    "GroupOrder" -> GroupOrder[group],
+    "GroupOrder" -> order,
     "Generators" -> generators,
     "Dimension" -> dim
   |>;
   constructGroupRepresentation[repData]
 ];
 
-
-PackageExport["RedundantAbelianRepresentation"]
-
-SetUsage @ "
-RedundantAbelianRepresentation[n$] produces a RepresentationObject whose n$ generators are translation \
-matrices, namely upper unitriangular matrices with a single 1 and a following neighboring -1 in the \
-final column.
-* This representation is the representation of an Abelian group for which g$1 g$2 = g$3, g$2 g$3 = g$4, etc.
-"
-
-DeclareArgumentCount[RedundantAbelianRepresentation, 1];
-
-makeRedundantAffineUnitMatrix[i_, n_] :=
-  ReplacePart[IdentityMatrix[n], {{i, n} -> 1, {Mod[i+1, n-1, 1], n} -> -1}];
-
-RedundantAbelianRepresentation::badrepdim = "The provided dimension `` should be >= 2."
-
-RedundantAbelianRepresentation[n_Integer] := If[n < 2,
-  Message[RedundantAbelianRepresentation::badrepdim, n],
-  CustomRepresentation[
-    Table[makeRedundantAffineUnitMatrix[i, n+2], {i, n+1}],
-    InfiniteAbelianGroup[n]
-  ]
-]
-
+(**************************************************************************************************)
 
 PackageExport["RepresentationGenerators"]
 
@@ -292,6 +278,7 @@ RepresentationGenerators[obj_] := Scope[
   rep["Generators"]
 ]
 
+(**************************************************************************************************)
 
 PackageExport["GroupRepresentation"]
 
@@ -360,20 +347,19 @@ unitRootAbelianMatrices[dims_] := Scope[
   ]
 ];
 
+(**************************************************************************************************)
 
 PackageExport["TransformGenerators"]
 
 SetUsage @ "
 TransformGenerators[representation$, transformation$] transforms the generators of a RepresentationObject[$$], \
 returning a new RepresentationObject[$$].
-* transformation$ can be the string 'Redundant', which forms Dot[g$i, Inverse[g$j]] for j$ = i$ + 1 (mod n$).
-* transformation$ can be a function taking n$ matrices, where n$ is the number of existing generators. It should return \
-a new list of matrices.
+* transformation$ should be a function taking a list of n$ matrices, where n$ is the number of existing \
+generators, and returning a new list of matrices.
 "
 
 DeclareArgumentCount[TransformGenerators, 2];
 
-TransformGenerators::namedtrans = "The transformation `` is not a known named transformation.";
 TransformGenerators::badtrans = "The transformation returned an object of dimensions ``, instead of a list of square matrices.";
 
 declareSyntaxInfo[TransformGenerators, {_, _}];
@@ -381,19 +367,11 @@ declareSyntaxInfo[TransformGenerators, {_, _}];
 TransformGenerators[rep_, trans_] := Scope[
   rep = CheckRepArg[1];
   data = getObjectData[rep];
-  gens = First /@ data["Generators"]; n = Length[gens];
-  gens = Which[
-    trans === "Redundant",
-      shape = Length @ First @ First[gens];
-      Table[Dot[gens[[i]], Inverse[gens[[Mod[i + 1, n, 1]]]]], {i, n}],
-    StringQ[trans],
-      ReturnFailed["namedtrans", trans],
-    True,
-      trans @@ gens
-  ];
-  dims = Dimensions[gens];
+  gens = First /@ data["Generators"];
+  newGens = trans @ gens;
+  dims = Dimensions[newGens];
   If[!MatchQ[dims, {_, z_, z_}], ReturnFailed["badtrans", dims]];
-  data["Generators"] = RepresentationElement /@ gens;
+  data["Generators"] = RepresentationElement /@ newGens;
   constructGroupRepresentation[data]
 ];
 

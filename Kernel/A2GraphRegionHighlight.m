@@ -63,9 +63,9 @@ resolveGraphRegionHighlightGraphics[list_List] := Scope[
 (** highlight processing code              **)
 (********************************************)
 
-sowEpilog[g_] := Internal`StuffBag[$highlightsBag, g];
+sowHighlight[g_] := Internal`StuffBag[$highlightsBag, g];
 
-$baseHighlightStyle := $baseHighlightStyle = Opacity[.5, First @ $ColorPalette];
+$baseHighlightStyle := $baseHighlightStyle = Opacity[1.0, First @ $LightColorPalette];
 
 Options[CustomHighlightedOptions] = {
   Background -> Automatic
@@ -76,7 +76,7 @@ GraphRegionHighlight::badelem = "Unknown highlight element ``.";
 processHighlightSpec[other_] := Message[GraphRegionHighlight::badelem, Shallow[other]];
 
 processHighlightSpec[Framed] :=
-  sowEpilog @ {EdgeForm[{Red, Dashed}], FaceForm[None], Rectangle @@ (Transpose @ $GraphPlotRange)}
+  sowHighlight @ {EdgeForm[{Red, Dashed}], FaceForm[None], Rectangle @@ (Transpose @ $GraphPlotRange)}
 
 processHighlightSpec[expr_ ? GraphRegionElementQ] :=
   processHighlightSpec @ Highlighted @ expr;
@@ -92,10 +92,10 @@ processHighlightSpec[Highlighted[elems_, color:$ColorPattern:Automatic]] := Scop
   SetAutomatic[style, $baseHighlightStyle];
 
   If[vertices =!= {},
-    sowEpilog[{style, PointSize[r], Point @ Part[$GraphVertexCoordinates, vertices]}]];
+    sowHighlight[{style, PointSize[r], Point @ Part[$GraphVertexCoordinates, vertices]}]];
 
   If[edges =!= {},
-    sowEpilog[{style, JoinForm["Round"], CapForm["Round"], Thickness[r],
+    sowHighlight[{style, JoinForm["Round"], CapForm["Round"], Thickness[r],
       edgeCoords = Part[$GraphEdgeCoordinateLists, edges];
       If[False && negations =!= {}, edgeCoords //= MapAt[Reverse, List /@ negations]];
       toJoinedCurve @ edgeCoords

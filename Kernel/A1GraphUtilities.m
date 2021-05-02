@@ -5,6 +5,8 @@ PackageImport["GeneralUtilities`"]
 
 
 PackageExport["VertexAnnotations"]
+PackageExport["VertexPairAnnotations"]
+PackageExport["LayoutDimension"]
 
 (**************************************************************************************************)
 
@@ -15,7 +17,9 @@ $extendedGraphOptionsRules = {
   ArrowheadSize -> Automatic,
   ArrowheadStyle -> Automatic,
   VertexColorFunction -> None,
-  VertexAnnotations -> None
+  VertexAnnotations -> None,
+  VertexPairAnnotations -> None,
+  LayoutDimension -> Automatic
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -39,10 +43,15 @@ SetHoldAllComplete[interceptedGraphConstructor];
 
 interceptedGraphConstructor[Graph[Shortest[args__], options__Rule]] := Scope[
   annotations = TakeOptions[{options}, $extendedGraphOptionSymbols];
-  newOptions = DeleteOptions[{options}, $extendedGraphOptionSymbols];
+  newOptions = Map[collapseStyleLists] @ DeleteOptions[{options}, $extendedGraphOptionSymbols];
   result = Graph[args, Sequence @@ newOptions];
   If[!GraphQ[result], ReturnFailed[]];
   Annotate[result, DeleteDuplicatesBy[annotations, First]]
+];
+
+collapseStyleLists = MatchValues[
+  Rule[sym:(EdgeStyle|VertexStyle), val_] := Rule[sym, toDirective[val]];
+  other_ := other;
 ];
 
 interceptedGraphConstructor[e_] := e;
@@ -84,7 +93,10 @@ PackageScope["$simpleGraphOptionRules"]
 $simpleGraphOptionRules = JoinOptions[{
   EdgeLabels -> None, GraphLayout -> Automatic, ImagePadding -> All,
   ImageSize -> Automatic, VertexCoordinates -> Automatic,
-  VertexLabels -> None, VertexSize -> Automatic},
+  VertexLabels -> None, VertexSize -> Automatic,
+  VertexStyle -> Automatic, EdgeStyle -> Automatic,
+  VertexShapeFunction -> Automatic
+  },
   Rest @ $extendedGraphOptionsRules
 ]
 
@@ -105,14 +117,62 @@ VertexEdgeList[graph_] := {
 
 (**************************************************************************************************)
 
+PackageExport["ToIndexGraph"]
+
+ToIndexGraph[graph_ ? IndexGraphQ] := graph;
+ToIndexGraph[graph_] := IndexGraph @ graph;
+
+(**************************************************************************************************)
+
+PackageExport["VertexRange"]
+
+SetUsage @ "
+VertexRange[graph$] returns {1, 2, $$, n$} where n$ is the number of vertices in graph.
+"
+
+VertexRange[graph_] := Range @ VertexCount @ graph;
+
+(**************************************************************************************************)
+
+PackageExport["AdjacentPairs"]
+
+SetUsage @ "
+AdjacentPairs[graph$] gives the list of {{u$1, v$1}, {u$2, v$2}, $$}} such that \
+vertex with index u$i is adjacent to vertex with index v$i.
+* Note that AdjacentPairs is not given in the same order as EdgeList[graph$], and \
+in general might have fewer values when there are multiple edges between the same \
+pair of vertices.
+* The relation is undirected, so that a$ \[DirectedEdge] b$ generates both {a$, b$} and {b$, a$}.
+* Use AdjacentPairs[graph, 'Directed'] to obtain the directed form.
+"
+
+AdjacentPairs[graph_] := AdjacencyMatrix[graph]["NonzeroPositions"];
+
+AdjacentPairs[graph_ ? DirectedGraphQ] := Scope[
+  adj = AdjacencyMatrix[graph];
+  (adj + Transpose[adj])["NonzeroPositions"]
+];
+
+AdjacentPairs[graph_, "Undirected"] := AdjacentPairs[graph];
+AdjacentPairs[graph_, "Directed"] := AdjacencyMatrix[graph]["NonzeroPositions"];
+
+(**************************************************************************************************)
+
 PackageExport["EdgePairs"]
 
 SetUsage @ "
 EdgePairs[graph$] gives the list of {{u$1, v$1}, {u$2, v$2}, $$}} such that \
-vertex with index u$i is connected to vertex with index v$i.
+these is an vertex with index u$i is connected to vertex with index v$i.
+* EdgePairs[graph$] has the same length and order as EdgeList[graph$].
+* If the correspondence with EdgeList does not matter, consider using AdjacentPairs,
+which is faster.
 "
 
-EdgePairs[graph_] := AdjacencyMatrix[graph]["NonzeroPositions"];
+(* todo: find a better way of obtaining these than via indexgraph! it seems like
+vertex renaming might be expensive, and there is all the option processing that goes along with it.
+unfortunately i can't find a way of extracting the list of edges in indexed form directly. *)
+EdgePairs[graph_ ? EdgeTaggedGraphQ] := {#1, #2}& @@@ EdgeList @ ToIndexGraph @ graph;
+EdgePairs[graph_] := List @@@ EdgeList @ ToIndexGraph @ graph;
 
 (**************************************************************************************************)
 
@@ -121,12 +181,12 @@ PackageExport["VertexInTable"]
 
 SetUsage @ "
 VertexOutTable[graph$] returns a list of lists {out$1, out$2, $$} where out$i is a list of the \
-indices of the vertices that are have a connection from vertex i$.
+indices of the vertices that are have a connection from vertex v$i.
 "
 
 SetUsage @ "
 VertexInTable[graph$] returns a list of lists {in$1, in$2, $$} where in$i consists of the \
-indices of the vertices that are have a connection to vertex i$.
+indices of the vertices that are have a connection to vertex v$i.
 "
 
 VertexOutTable[graph_] := AdjacencyMatrix[graph]["AdjacencyLists"];
@@ -138,8 +198,8 @@ PackageExport["VertexInOutTable"]
 
 SetUsage @ "
 VertexInOutTable[graph$] returns a list of pairs of lists {{in$1, out$1}, {in$2, out$2}, $$} where in$i \
-is the list of indices of vertices that are have a connection to vertex i$, and out$i is the \
-list of indices of vertices that have a connection from vertex i$.
+is the list of indices of vertices that are have an edge to vertex v$i, and out$i is the \
+list of indices of vertices that have a edge from vertex v$i.
 "
 
 VertexInOutTable[graph_] := Scope[
@@ -147,6 +207,77 @@ VertexInOutTable[graph_] := Scope[
   Transpose[{adj["AdjacencyLists"], Transpose[adj]["AdjacencyLists"]}]
 ];
 
+(**************************************************************************************************)
+
+PackageExport["VertexAdjacencyTable"]
+
+SetUsage @ "
+VertexAdjacencyTable[graph$] returns a list of lists {adj$1, adj$2, $$} where adj$i \
+is the list of indices of vertices that are have a connection to vertex v$i.
+"
+
+VertexAdjacencyTable[graph_] := Scope[
+  adj = AdjacencyMatrix[graph];
+  MapThread[Union, {adj["AdjacencyLists"], Transpose[adj]["AdjacencyLists"]}]
+];
+
+(**************************************************************************************************)
+
+PackageExport["VertexOutEdgeTable"]
+PackageExport["VertexInEdgeTable"]
+
+SetUsage @ "
+VertexOutEdgeTable[graph$] returns a list of lists {out$1, out$2, $$} where out$i is a list of the \
+indices of edges whose origin is the vertex v$i.
+"
+
+SetUsage @ "
+VertexInEdgeTable[graph$] returns a list of lists {in$1, in$2, $$} where in$i is a list of the \
+indices of edges whose destination is the vertex v$i.
+"
+
+VertexOutEdgeTable[graph_] :=
+  Lookup[PositionIndex @ FirstColumn @ EdgePairs @ graph, VertexRange @ graph, {}];
+
+VertexInEdgeTable[graph_] :=
+  Lookup[PositionIndex @ LastColumn @ EdgePairs @ graph, VertexRange @ graph, {}];
+
+(**************************************************************************************************)
+
+PackageExport["VertexInOutEdgeTable"]
+
+SetUsage @ "
+VertexInOutEdgeTable[graph$] returns a list of lists {{in$1, out$1}, {in$2, out$2}, $$}  where in$i \
+is a list of the indices of edges whose destination is the vertex v$i, and out$i is a list of the \
+indices of edges whose origin is the vertex v$i.
+"
+
+VertexInOutEdgeTable[graph_] := Scope[
+  pairs = EdgePairs @ graph;
+  vertices = VertexRange @ graph;
+  Transpose[{
+    Lookup[PositionIndex @ FirstColumn @ pairs, vertices, {}],
+    Lookup[PositionIndex @ LastColumn @ pairs, vertices, {}]
+  }]
+];
+
+(**************************************************************************************************)
+
+PackageExport["VertexAdjacentEdgeTable"]
+
+SetUsage @ "
+VertexAdjacentEdgeTable[graph$] returns a list of lists {adj$1, adj$2, $$}  where adj$i \
+is a list of the indices of edges which begin or end at vertex v$i.
+"
+
+VertexAdjacentEdgeTable[graph_] := Scope[
+  pairs = EdgePairs @ graph;
+  vertices = VertexRange @ graph;
+  MapThread[Union, {
+    Lookup[PositionIndex @ FirstColumn @ EdgePairs @ graph, vertices, {}],
+    Lookup[PositionIndex @ LastColumn @ EdgePairs @ graph, vertices, {}]
+  }]
+];
 (**************************************************************************************************)
 
 PackageExport["VertexIndexAssociation"]
@@ -257,6 +388,13 @@ GraphCorners[graph_] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["GraphVertexCoordinates"]
+
+GraphVertexCoordinates[graph_Graph] :=
+  GraphEmbedding[graph];
+
+(**************************************************************************************************)
+
 PackageScope["integersToVertices"]
 
 integersToVertices[graph_Graph, expr_] :=
@@ -290,9 +428,22 @@ PackageExport["AttachVertexAnnotations"]
 
 AttachVertexAnnotations[graph_, annotations_] := Scope[
   CheckGraphArg[1];
-  oldAnnotations = LookupAnnotation[graph, VertexAnnotations, None];
+  joinAnnotation[graph, VertexAnnotations, annotations]
+];
+
+PackageExport["AttachVertexPairAnnotations"]
+
+AttachVertexPairAnnotations[graph_, annotations_] := Scope[
+  CheckGraphArg[1];
+  joinAnnotation[graph, VertexPairAnnotations, annotations]
+];
+
+(**************************************************************************************************)
+
+joinAnnotation[graph_, key_, newAnnotations_] := Scope[
+  oldAnnotations = LookupAnnotation[graph, key, None];
   SetNone[oldAnnotations, <||>];
-  Annotate[graph, VertexAnnotations -> Join[oldAnnotations, annotations]]
+  Annotate[graph, key -> Join[oldAnnotations, newAnnotations]]
 ];
 
 (**************************************************************************************************)
@@ -326,6 +477,92 @@ ExtendedSubgraph[oldGraph_, newVertices_, newEdges_] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["IndexGraphQ"]
+
+IndexGraphQ[g_Graph ? GraphQ] :=
+  RangeQ @ VertexList @ g;
+
+IndexGraphQ[_] := False;
+
+(**************************************************************************************************)
+
+PackageExport["CanonicalizeEdges"]
+
+CanonicalizeEdges[edges_] := Map[sortUE, edges];
+sortUE[UndirectedEdge[a_, b_, tag___]] /; Order[a, b] === 1 := UndirectedEdge[b, a, tag];
+sortUE[other_] := other;
+
+(**************************************************************************************************)
+
+PackageExport["ExtractGraphPrimitiveCoordinates"]
+
+SetUsage @ "
+ExtractGraphPrimitiveCoordinates[graph$] returns the pair {vcoords$, ecoords$}, where \
+vcoords$ is a list of coordinate tuples in the same order as VertexList[graph$], and \
+ecoords$ is a list of coordinate matrices in the same order as EdgeList[graph$].
+"
+
+ExtractGraphPrimitiveCoordinates[graph_] := Scope[
+
+  If[!GraphQ[graph], ReturnFailed[]];
+  graph = ToIndexGraph[graph];
+
+  graphLayout = LookupOption[graph, GraphLayout];
+  layoutDimension = AnnotationValue[graph, LayoutDimension];
+  SetAutomatic[graphLayout, {}];
+  is3D = ContainsQ[graphLayout, "Dimension" -> 3] || layoutDimension === 3;
+
+  vertexCoordinates = ConstantArray[If[is3D, {0, 0, 0}, {0, 0}], VertexCount @ graph];
+
+  edgeList = EdgeList @ graph;
+  edgeCoordinateLists = ConstantArray[{}, Length @ edgeList];
+  If[UndirectedGraphQ[graph] || MixedGraphQ[graph],
+    edgeList //= CanonicalizeEdges];
+
+  isMulti = MultigraphQ[graph];
+  If[isMulti,
+    edgeIndices = PositionIndex[edgeList];
+    edgeIndexOffset = ConstantAssociation[edgeList, 1];
+    edgeCaptureFunction = storeMultiEdgeCoords;
+  ,
+    edgeIndices = AssociationRange[edgeList];
+    edgeCaptureFunction = storeEdgeCoords;
+  ];
+
+  If[isMulti || !DuplicateFreeQ[edgeList],
+    graphLayout = Developer`ToList[graphLayout, "MultiEdgeDistance" -> 0.3];
+  ];
+
+  GraphComputation`GraphDrawing @ If[is3D, Graph3D, Graph][
+    graph,
+    VertexShapeFunction -> captureVertexCoordinates,
+    EdgeShapeFunction -> Function[edgeCaptureFunction[#1, sortUE[#2]];],
+    GraphLayout -> graphLayout
+  ];
+
+  {Developer`ToPackedArray @ vertexCoordinates, toPackedArrayOfArrays @ edgeCoordinateLists}
+];
+
+captureVertexCoordinates[coords_, vertex_, _] :=
+  Part[vertexCoordinates, vertex] = coords;
+
+storeEdgeCoords[coords_, edge_] :=
+  Part[edgeCoordinateLists, edgeIndices @ edge] = coords;
+
+storeMultiEdgeCoords[coords_, edge_] :=
+  Part[edgeCoordinateLists, Part[edgeIndices @ edge, edgeIndexOffset[edge]++]] = coords;
+
+toPackedArrayOfArrays[array_ ? Developer`PackedArrayQ] := array;
+
+toPackedArrayOfArrays[array_] := Scope[
+  array = Developer`ToPackedArray[array];
+  If[!Developer`PackedArrayQ[array],
+    array = Map[Developer`ToPackedArray, array]];
+  array
+];
+
+(**************************************************************************************************)
+
 PackageScope["GraphScope"]
 
 PackageScope["NotInGraphScopeOfQ"]
@@ -340,6 +577,8 @@ PackageScope["$GraphVertexIndices"]
 PackageScope["$GraphEdgeIndices"]
 PackageScope["$GraphVertexCount"]
 PackageScope["$GraphEdgeCount"]
+PackageScope["$LatticeDistance"]
+PackageScope["$LatticeFindShortestPath"]
 
 PackageScope["$IndexGraph"]
 PackageScope["$IndexGraphEdgeList"]
@@ -397,10 +636,11 @@ GraphScope[graph_, body_] := Block[
     $SymmetricIndexGraph := $SymmetricIndexGraph = Graph[VertexList[$IndexGraph], UndirectedEdge @@@ EdgeList[$IndexGraph]],
 
     $GraphDistanceMatrix := $GraphDistanceMatrix = GraphDistanceMatrix[$SymmetricIndexGraph],
+    $LatticeDistance := $LatticeDistance = LatticeDistance[$SymmetricIndexGraph],
     $GraphDistance = {v1, v2} |-> Extract[$GraphDistanceMatrix, {v1, v2}],
     $GraphFindShortestPath := $GraphFindShortestPath = FindShortestPath[$SymmetricIndexGraph, All, All],
+    $LatticeFindShortestPath := $LatticeFindShortestPath = FindShortestLatticePath[$SymmetricIndexGraph, All, All],
     $GraphFindPath = Function[FindPath[$SymmetricIndexGraph, ##]]
   },
   body
 ];
-

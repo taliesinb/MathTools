@@ -108,6 +108,8 @@ LookupImageSize[obj_] := Scope[
 ];
 
 
+PackageScope["$ImageWidthTable"]
+
 $ImageWidthTable = <|
   Tiny -> 100,
   Small -> 180,
@@ -131,12 +133,78 @@ toNumericImageSize[{w_, h_}] := w;
 
 (**************************************************************************************************)
 
+$colorNormalizationRules = {
+  Red -> $Red, Orange -> $Orange, Green -> $Green, Yellow -> $Yellow, Blue -> $Blue, Purple -> $Purple, Pink -> $Pink
+};
+
+(**************************************************************************************************)
+
+PackageExport["VeryTransparent"]
+PackageExport["HalfTransparent"]
+PackageExport["PartlyTransparent"]
+PackageExport["Opaque"]
+
+$opacityNormalizationRules = {
+  VeryTransparent -> Opacity[0.2],
+  HalfTransparent -> Opacity[0.5],
+  PartlyTransparent -> Opacity[0.8],
+  Opaque -> Opacity[1.0]
+};
+
+(**************************************************************************************************)
+
+PackageExport["VeryThick"]
+PackageExport["MediumThick"]
+PackageExport["MediumThin"]
+PackageExport["VeryThin"]
+
+(* how AbsoluteThickness works:
+  Thin/AT[Tiny] = AT[0.25],
+  Small = AT[0.5],
+  Medium = AT[1],
+  Large / Thick is AT[2] *)
+
+$thicknessNormalizationRules = {
+  VeryThin -> AbsoluteThickness[0.1],
+  MediumThin -> AbsoluteThickness[0.5],
+  MediumThick -> AbsoluteThickness[1.5],
+  VeryThick -> AbsoluteThickness[3]
+};
+
+(**************************************************************************************************)
+
+PackageScope["toDirective"]
+
+toDirective[e_List] := normalizeStyles @ Directive @ Flatten @ e;
+toDirective[e_] := normalizeStyles @ e;
+
+$styleNormalizationRules = Dispatch @ Flatten @ {
+  $colorNormalizationRules,
+  $opacityNormalizationRules,
+  $thicknessNormalizationRules
+};
+
+PackageScope["normalizeStyles"]
+
+normalizeStyles[e_] := ReplaceAll[e, $styleNormalizationRules];
+
+(**************************************************************************************************)
+
 PackageExport["ApplyEpilog"]
 
 ApplyEpilog[graphics_, None | {}] := graphics;
 
 ApplyEpilog[graphics_Graphics, epilog_] :=
   UpdateOptions[graphics, Epilog, Function[Append[Developer`ToList @ #1, epilog]]];
+
+(**************************************************************************************************)
+
+PackageExport["ApplyProlog"]
+
+ApplyProlog[graphics_, None | {}] := graphics;
+
+ApplyProlog[graphics_Graphics, prolog_] :=
+  UpdateOptions[graphics, Prolog, Function[Append[Developer`ToList @ #1, prolog]]];
 
 (**************************************************************************************************)
 
@@ -165,3 +233,21 @@ NiceTooltip[g_, e_] :=
     ],
     TooltipStyle -> {Background -> White, CellFrameColor -> None, CellFrame -> 0}
   ];
+
+(**************************************************************************************************)
+
+PackageExport["LabeledMatrixForm"]
+
+declareFormatting[
+  LabeledMatrixForm[expr_] :> formatLabeledMatrices[expr]
+];
+
+formatLabeledMatrices[expr_] := ReplaceAll[expr,
+  matrix_ /; MatrixQ[Unevaluated @ matrix] /; Length[Unevaluated @ matrix] =!= 1 :> RuleCondition @ formatLabeledMatrix @ matrix
+]
+
+formatLabeledMatrix[matrix_] := Scope[
+  tooltips = MapIndexed[Tooltip, matrix, {2}];
+  MatrixForm[tooltips, TableHeadings -> Automatic]
+];
+

@@ -190,7 +190,7 @@ PackageExport["$Gray"]
 {$Blue, $Red, $Green, $Pink, $Teal, $Yellow, $Orange, $Purple, $Gray} =
   Map[RGBColor, StringSplit @ "#3e81c3 #e1432d #4ea82a #c74883 #47a5a7 #f6e259 #dc841a #8b7ebe #929292"]
 
-$ColorPalette = {$Red, $Blue, $Green, $Teal, $Orange, $Purple, $Gray, $Pink}
+$ColorPalette = {$Red, $Blue, $Green, $Teal, $Orange, $Purple, $Gray, $Pink, $Yellow};
 
 PackageExport["$DarkColorPalette"]
 
@@ -201,8 +201,9 @@ PackageExport["$DarkPink"]
 PackageExport["$DarkTeal"]
 PackageExport["$DarkOrange"]
 PackageExport["$DarkPurple"]
+PackageExport["$DarkGray"]
 
-{$DarkRed, $DarkBlue, $DarkGreen, $DarkTeal, $DarkOrange, $DarkPurple, $DarkGray, $DarkPink} =
+{$DarkRed, $DarkBlue, $DarkGreen, $DarkTeal, $DarkOrange, $DarkPurple, $DarkGray, $DarkPink, $DarkYellow} =
   $DarkColorPalette = OklabDarker[$ColorPalette, .2];
 
 PackageExport["$LightColorPalette"]
@@ -214,8 +215,9 @@ PackageExport["$LightPink"]
 PackageExport["$LightTeal"]
 PackageExport["$LightOrange"]
 PackageExport["$LightPurple"]
+PackageExport["$LightGray"]
 
-{$LightRed, $LightBlue, $LightGreen, $LightTeal, $LightOrange, $LightPurple, $LightGray, $LightPink} =
+{$LightRed, $LightBlue, $LightGreen, $LightTeal, $LightOrange, $LightPurple, $LightGray, $LightPink, $LightYellow} =
   $LightColorPalette = OklabLighter[$ColorPalette, .2];
 
 (**************************************************************************************************)
@@ -378,7 +380,7 @@ getNormalCF[ColorFunctionObject["Discrete", assoc_]] := assoc;
 (**************************************************************************************************)
 
 declareFormatting[
-  cf_ColorFunctionObject ? System`Private`NoEntryQ :> formatColorFunction[cf]
+  cf_ColorFunctionObject ? System`Private`HoldNoEntryQ :> formatColorFunction[cf]
 ];
 
 makeGradientRaster[values_, func_, size_, transposed_] := Scope[
@@ -407,7 +409,7 @@ formatColorFunction[ColorFunctionObject["Discrete", assoc_]] :=
   ];
 
 declareFormatting[
-  LegendForm[cf_ColorFunctionObject ? System`Private`NoEntryQ] :>
+  LegendForm[cf_ColorFunctionObject ? System`Private`HoldNoEntryQ] :>
     colorFunctionLegend[cf]
 ];
 
@@ -670,9 +672,12 @@ ApplyColoring[data_List] := Scope[
       DiscreteColorFunction[uniqueValues, {Gray}],
     RangeQ[uniqueValues] && count <= 12,
       DiscreteColorFunction[uniqueValues, Automatic],
-    VectorQ[nUniqueValues = N[uniqueValues], NumberQ],
+    RealVectorQ[nUniqueValues = N[uniqueValues]],
       ContinuousColorFunction[nUniqueValues, Automatic],
-    MatrixQ[nUniqueValues, NumberQ],
+    ComplexVectorQ[nUniqueValues],
+      nUniqueValues //= Re;
+      ColorFunctionCompose[ContinuousColorFunction[nUniqueValues, Automatic], Re],
+    MatrixQ[nUniqueValues, Internal`RealValuedNumericQ],
       norms = Norm /@ nUniqueValues;
       ColorFunctionCompose[ContinuousColorFunction[norms, Automatic], Norm],
     True,
@@ -683,3 +688,4 @@ ApplyColoring[data_List] := Scope[
   colors = Map[normalFunction, uniqueValues];
   {Merge[MapThread[Rule, {colors, Values @ posIndex}], Catenate], colorFunction}
 ];
+

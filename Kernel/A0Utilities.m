@@ -24,6 +24,73 @@ declareFormatting[lhs_ :> rhs_] :=
 declareFormatting[___] := Panic["BadFormatting"]
 
 
+PackageExport["RealVectorQ"]
+
+RealVectorQ[list_] := VectorQ[list, Internal`RealValuedNumberQ];
+
+
+PackageExport["RealMatrixQ"]
+
+RealMatrixQ[list_] := MatrixQ[list, Internal`RealValuedNumberQ];
+
+
+PackageExport["ComplexVectorQ"]
+
+ComplexVectorQ[list_] := VectorQ[list, NumericQ] && !FreeQ[list, Complex];
+
+
+PackageExport["RuleRange"]
+
+RuleRange[labels_] := MapIndexed[#1 -> First[#2]&, labels];
+
+
+PackageExport["ArrayLabelIndices"]
+
+ArrayLabelIndices[array_, labels_] :=
+  Replace[array, RuleRange @ labels, {1}];
+
+ArrayLabelIndices[array_, labels_, level_] :=
+  Replace[array, RuleRange @ labels, List[level]];
+
+
+PackageExport["ArrayLabeling"]
+
+ArrayLabeling[array_, level_:1] := Scope[
+  assoc = <||>;
+  List[
+    Map[
+      e |-> Lookup[assoc, Key @ e, assoc[e] = Length[assoc] + 1],
+      array, {level}
+    ],
+    assoc
+  ]
+];
+
+ExtractIndices[array_, indices_ /; VectorQ[indices, Internal`NonNegativeMachineIntegerQ]] :=
+  Part[array, indices];
+
+ExtractIndices[array_, indices_List] := Map[Part[array, #]&, indices, {-1}]
+
+PackageExport["FirstColumn"]
+
+FirstColumn[matrix_] := Part[matrix, All, 1];
+
+
+PackageExport["LastColumn"]
+
+LastColumn[matrix_] := Part[matrix, All, -1];
+
+
+PackageExport["MostColumns"]
+
+MostColumns[matrix_] := Part[matrix, All, All ;; -2];
+
+
+PackageExport["RestColumns"]
+
+RestColumns[matrix_] := Part[matrix, All, 2 ;; All];
+
+
 PackageExport["FirstRest"]
 
 FirstRest[list_] := {First @ list, Rest @ list};
@@ -83,6 +150,13 @@ PackageExport["NegatedQ"]
 
 NegatedQ[_Negated] = True;
 NegatedQ[_] = False;
+
+
+PackageExport["AtLeast"]
+
+SetUsage @ "
+AtLeast[n$] is a symbolic expression indicating that at least n$ values should be obtained.
+"
 
 
 PackageExport["Negated"]
@@ -304,6 +378,13 @@ mUnpackOptionsAs[head_, opts_, syms_] :=
       GeneralUtilities`Control`PackagePrivate`capFirst /@ Map[HoldSymbolName, Unevaluated[syms]]
     ]
   ];
+
+
+PackageScope["FunctionSection"]
+
+DefineMacro[FunctionSection,
+FunctionSection[expr_] := Quoted[expr]
+];
 
 
 PackageScope["SetUsage"]

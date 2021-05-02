@@ -4,9 +4,6 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
-PackageExport["$LatticeNames"]
-
-
 PackageExport["AbstractCoordinateFunction"]
 PackageExport["VertexCoordinateFunction"]
 PackageExport["VertexNameFunction"]
@@ -18,11 +15,14 @@ SetUsage @ "VertexNameFunction is an option to QuiverLattice and QuiverGraph."
 $baseLatticeUsage = "
 * The following options are supported:
 | AbstractCoordinateFunction | Automatic | function to obtain abstract vertex coordinates from representation matrices |
-| VertexCoordinateFunction | Automatic | function to obtain layout coordinates from vertex coordinates |
-| VertexNameFunction | 'SpiralIndex' | function to rename vertices after coordinatization |
+| VertexCoordinateFunction | Automatic | function to obtain graphical vertex coordinates from abstract coordinates |
+| VertexNameFunction | 'SpiralIndex' | function to rename vertices after abstract coordinatization |
 | GraphLayout | None | the overall layout method to use for vertices and edges |
+| LayoutDimension | Automatic | number of dimensions of the graph layout |
 | VertexLabels | None | whether to plot vertices with their labels |
 | ImageSize | Automatic | size to plot the graph |
+| MaxVertices | Infinity | maximum number of lattice vertices to obtain |
+| MaxEdges | Infinity | maximum number of lattice edges to obtain |
 | MaxNorm | Infinity | drop vertices with larger norm |
 | NormFunction | Automatic | function to compute norm from abstract vertex coordinates |
 | GraphRegionHighlight | None | regions of the graph to highlight |
@@ -31,21 +31,19 @@ $baseLatticeUsage = "
 * AbstractCoordinateFunction extracts abstract vertex coordinates from RepresentationElements, and accepts these settings:
 | Automatic | pick coordinates based on the structure of the group (default) |
 | None | use the entire RepresentationElement as the coordinate |
-| f$ | apply f$ to the contents of each RepresentationElement |
+| f$ | apply f$ to the contents of each RepresentationElement (a matrix) |
 
-* VertexCoordinateFunction determines the graphical coordinates of each vertex, and accepts the following settings:
+* VertexCoordinateFunction determines the graphical coordinates, and accepts the following settings:
 | Automatic | convert representation coords to spatial coords based on the structure of the group (default) |
-| None | use automatic layout of the vertices |
+| None | use Graph's automatic layout of the vertices |
 | f$ | apply f$ to the representation coordinates produced by AbstractCoordinateFunction |
 
 * VertexNameFunction determines the final names given to vertices, and accepts these settings:
 | 'SpiralIndex' | number vertices starting at 1 for the origin, proceeding clockwise then outward (default) |
 | 'RasterIndex' | number vertices starting at the top left, proceeding right then down |
-| 'LayoutCoordinates' | use layout coordinates as names |
-| 'VertexCoordinates' | use abstract vertex coordinates as names |
-| 'Representation' | use the original RepresentationElement[$$] objects as names |
-* For non-number namings, the resulting vertices will be of the form LatticeVertex[coord$, type$], where type$ \
-is the name of the corresponding vertex of the quiver.
+| 'Coordinates' | use abstract coordinates directly as names |
+| 'Representation' | use the original RepresentationElement[$$] objects directly as names |
+| None | use LatticeVertex[abstract$, type$] as names |
 
 * GraphLayout accepts these settings:
 | None | use the layout provided by VertexCoordinateFunction |
@@ -77,7 +75,9 @@ $baseGenerateLatticeOptions = JoinOptions[{
   GraphLegend -> Automatic,
   MaxNorm -> Infinity,
   NormFunction -> Automatic,
-  CardinalColors -> Automatic},
+  CardinalColors -> Automatic,
+  MaxVertices -> Infinity, MaxEdges -> Infinity,
+  DepthTermination -> Automatic, IncludeFrontier -> Automatic},
   $simpleGraphOptionRules
 ];
 
@@ -93,12 +93,12 @@ Options[iGenerateLattice] = $baseGenerateLatticeOptions;
 
 iGenerateLattice[head_, quiverRepresentation_, maxDepth_, directedEdges_, opts:OptionsPattern[]] := Scope[
 
-  defaultDepth = 6;
+  defaultDepth = Infinity;
   depth = maxDepth;
 
   If[StringQ[quiverRepresentation],
-    quiverRepresentation = Lookup[$latticeQuiverRepresentations, quiverRepresentation, $Failed];
-    If[FailureQ[qrep], ReturnFailed[head::badlatticename, name, commaString @ $LatticeNames]];
+    quiverRepresentation = LatticeQuiverData[quiverRepresentation, "Representation"];
+    If[QuiverRepresentationObjectQ[qrep], ReturnFailed[head::badlatticename, name, commaString @ $LatticeQuiverNames]];
   ];
 
   If[MatchQ[quiverRepresentation, {_String, __}],
@@ -109,20 +109,15 @@ iGenerateLattice[head_, quiverRepresentation_, maxDepth_, directedEdges_, opts:O
     {defaultDepth, quiverRepresentation} = result;
   ];
 
-  SetAutomatic[depth, defaultDepth];
-  If[!IntegerQ[depth] || !Positive[depth], ReturnFailed[head::badlatticedepth, depth]];
-
   If[RuleQ[quiverRepresentation],
     quiverRepresentation = QuiverRepresentation @@ quiverRepresentation;
     If[FailureQ[quiverRepresentation], ReturnFailed[]];
   ];
 
   If[QuiverQ[quiverRepresentation],
-    quiverRepresentation = Quiet @ QuiverRepresentation[quiverRepresentation];
-    If[FailureQ[quiverRepresentation], ReturnFailed[head::notquivrep]];
-  ];
+    quiverRepresentation = Quiet @ QuiverRepresentation[quiverRepresentation]];
 
-  If[Head[quiverRepresentation] =!= QuiverRepresentationObject,
+  If[!QuiverRepresentationObjectQ[quiverRepresentation],
     ReturnFailed[head::notquivrep]];
 
   function = quiverStateToLatticeVertex @ quiverRepresentation["CayleyFunction", "Symmetric" -> True, "Labeled" -> True];
@@ -135,7 +130,22 @@ iGenerateLattice[head_, quiverRepresentation_, maxDepth_, directedEdges_, opts:O
     maxNorm, normFunction,
     abstractCoordinateFunction, vertexCoordinateFunction,
     graphLayout,
-    graphLegend, imageSize, vertexNameFunction, arrowheadStyle
+    graphLegend, imageSize, vertexNameFunction, arrowheadStyle,
+    maxVertices, maxEdges, depthTermination, includeFrontier
+  ];
+
+  SetAutomatic[depth, If[maxVertices === Infinity, maxVertices = AtLeast[32]]; Infinity];
+
+  If[MatchQ[maxVertices, AtLeast[_Integer]],
+    maxVertices //= First;
+    SetAutomatic[includeFrontier, False];
+    SetAutomatic[depthTermination, "Complete"];
+  ];
+
+  SetAutomatic[depthTermination, "Immediate"];
+
+  If[!MatchQ[depth, (_Integer ? Positive) | Infinity],
+    ReturnFailed[head::badlatticedepth, depth];
   ];
 
   $quiverLabel := Quiver[quiver, ImageSize -> Tiny,
@@ -172,7 +182,10 @@ iGenerateLattice[head_, quiverRepresentation_, maxDepth_, directedEdges_, opts:O
   (* do the exploration *)
   {vertexList, indexEdgeList, reason} = StateTransitionGraph[function, istate,
     {"VertexList", "IndexEdgeList", "TerminationReason"},
-    MaxDepth -> depth, IncludeFrontier -> False, DirectedEdges -> True
+    DirectedEdges -> True,
+    MaxDepth -> depth,
+    IncludeFrontier -> includeFrontier, DepthTermination -> depthTermination,
+    MaxVertices -> maxVertices, MaxEdges -> maxEdges
   ];
 
   (* rewrite the vertices via the coordinate function *)
@@ -205,31 +218,20 @@ iGenerateLattice[head_, quiverRepresentation_, maxDepth_, directedEdges_, opts:O
     layoutDimension = Switch[Length @ First @ vertexCoordinates, 2, 2, 3, 3, _, Automatic];
   ,
     vertexCoordinates = Automatic;
-    Switch[graphLayout,
-      "2D", vertexLayout = "SpringElectricalEmbedding"; layoutDimension = 2,
-      "3D", vertexLayout = "SpringElectricalEmbedding"; layoutDimension = 3,
-      Automatic, vertexLayout = "SpringElectricalEmbedding",
-      _String, vertexLayout = graphLayout,
-      _, ReturnFailed[];
-    ];
-  ];
-
-  graphLayout = {"VertexLayout" -> vertexLayout, "Dimension" -> layoutDimension};
-
-  If[head === LatticeGraph && layoutDimension === Automatic,
-    (* for non-quiver graphs, we need to decide if the graph is 3D before we construct it,
-    since it will change what shape function we use etc. *)
-    SetAutomatic[vertexCoordinates, GraphEmbedding[Graph[abstractVertexList, edgeList], graphLayout]];
-    graphLayout[[2, 2]] = layoutDimension = Last @ Dimensions @ vertexCoordinates;
+    vertexLayout = "SpringElectricalEmbedding";
   ];
 
   (* apply the final vertex and edge relabeling *)
-  renamingRule = toRenamingRule[vertexNameFunction, abstractVertexList];
+  renamingRule = toRenamingRule[vertexNameFunction, abstractVertexList, vertexList];
   If[FailureQ[renamingRule], ReturnFailed[head::badvertnaming, vertexNameFunction]];
   {finalVertexList, edgeList} = {abstractVertexList, edgeList} /. renamingRule;
-  If[VectorQ[finalVertexList, IntegerQ] && MinMax[finalVertexList] == {1, Length @ vertices},
-    finalVertexList = Developer`ToPackedArray @ Sort @ finalVertexList;
-    If[ListQ[vertexCoordinates], vertexCoordinates = Part[vertexCoordinates, Ordering @ vertices]];
+  If[RangeQ[finalVertexList],
+    (* if we renamed to integers 1..n, reorder to make sure they occur in the natural order *)
+    ordering = Ordering @ finalVertexList;
+    finalVertexList = Developer`ToPackedArray @ Part[finalVertexList, ordering];
+    vertexList = Part[vertexList, ordering];
+    abstractVertexList = Part[abstractVertexList, ordering];
+    If[ListQ[vertexCoordinates], vertexCoordinates = Part[vertexCoordinates, ordering]];
     edgeList //= Sort;
   ];
 
@@ -238,7 +240,7 @@ iGenerateLattice[head_, quiverRepresentation_, maxDepth_, directedEdges_, opts:O
     graph = Graph[
       finalVertexList, edgeList,
       GraphLegend -> graphLegend, GraphPlottingFunction -> Automatic,
-      ImageSize -> imageSize,
+      ImageSize -> imageSize, ArrowheadStyle -> "Plain",
       GraphLayout -> graphLayout, VertexCoordinates -> vertexCoordinates,
       simpleOptions
     ]
@@ -270,246 +272,24 @@ vecSorter[v_] /; Length[v] == 3 := {Norm[v], vecAngle @ Dot[$abc, v]};
 vecSorter[v_] /; Length[v] == 2 := {Norm[v], vecAngle @ v};
 vecSorter[v_] /; Length[v] == 1 := {Norm[v], v};
 
-toRenamingRule["SpiralIndex", vertices_] :=
+toRenamingRule["SpiralIndex", vertices_, origVertices_] :=
   AssociationThread[vertices, Ordering @ Ordering @ Map[vecSorter, N @ vertices[[All, 1]]]];
 
-toRenamingRule["RasterIndex", vertices_] :=
+toRenamingRule["RasterIndex", vertices_, origVertices_] :=
   AssociationThread[vertices, Ordering @ Ordering @ ({-#2, #1}& @@@ N[vertexCoordinates])];
 
-toRenamingRule["Coordinates", _] :=
+toRenamingRule["Representation", _, _] :=
+  AssociationThread[vertices,  origVertices[[All, 1]]];
+
+toRenamingRule["Coordinates", _, _] :=
   LatticeVertex[v_, _] :> v;
 
-toRenamingRule["Index", _] :=
+toRenamingRule["Index", _, _] :=
   AssociationRange[vertices];
 
 toRenamingRule[None, _] := {};
 
 toRenamingRule[_, _] := $Failed;
-
-(**************************************************************************************************)
-
-$latticeQuiverRepresentations = <||>;
-$LatticeNames = {};
-
-SetHoldRest[declareLattice];
-declareLattice[names_List, rep_] := (
-  AppendTo[$LatticeNames, First @ names];
-  Scan[
-    name |-> SetDelayed[$latticeQuiverRepresentations[name], rep],
-    names
-  ]
-);
-
-(**************************************************************************************************)
-
-$squareQuiver := $squareQuiver =
-  BouquetQuiver["xy"];
-
-$squareQRep := $squareQRep =
-  QuiverRepresentation[
-    $squareQuiver,
-    "Abelian"
-  ];
-
-declareLattice[{"Square", "Quadrille"}, $squareQRep];
-
-(**************************************************************************************************)
-
-$cubicQuiver := $cubicQuiver =
-  BouquetQuiver["xyz"];
-
-$cubicQRep := $cubicQRep =
-  QuiverRepresentation[
-    $cubicQuiver,
-    "Abelian"
-  ];
-
-declareLattice[{"Cubic"}, $cubicQRep];
-
-(**************************************************************************************************)
-
-$triangularQuiver := $triangularQuiver =
-  BouquetQuiver["abc"];
-
-$triangularQRep := $triangularQRep =
-  QuiverRepresentation[
-    $triangularQuiver,
-    "Redundant"
-  ];
-
-declareLattice[{"Triangular", "Deltille"}, $triangularQRep];
-
-(**************************************************************************************************)
-
-$hexagonalQuiver := $hexagonalQuiver =
-  Quiver[{DirectedEdge[1, 2, "a" | "b" | "c"]}];
-
-$hexagonalQRep := $hexagonalQRep =
-  QuiverRepresentation[
-    $hexagonalQuiver,
-    "Redundant"
-  ];
-
-declareLattice[{"Hexagonal", "Hextille"}, $hexagonalQRep];
-
-(**************************************************************************************************)
-
-$rhombilleQuiver := $rhombilleQuiver =
-  Quiver[{DirectedEdge[1, 2, "a" | "b" | "c"], DirectedEdge[2, 3, "a" | "b" | "c"]}];
-
-$rhombilleQRep := $rhombilleQRep =
-  QuiverRepresentation[
-    $rhombilleQuiver,
-    "Redundant"
-  ];
-
-declareLattice[{"Rhombille"}, $rhombilleQRep];
-
-(**************************************************************************************************)
-
-vecAngle2[{x_, y_}] := ArcTan[-y + $MachineEpsilon, -x - $MachineEpsilon];
-sortAngle[vecs_] := SortBy[vecs, vecAngle2];
-Rotate90[{a_, b_}] := {b, -a};
-
-$rhombitrihexagonalQuiver := $rhombitrihexagonalQuiver = Quiver[{
-  Labeled[{1 -> 2, 5 -> 4}, 6], Labeled[{6 -> 4, 1 -> 3}, 1], Labeled[{2 -> 6, 3 -> 5}, 5],
-  Labeled[{6 -> 1, 4 -> 3}, 4], Labeled[{1 -> 5, 2 -> 4}, 3],
-  Labeled[{2 -> 3, 6 -> 5}, Negated @ 2]}
-];
-
-$tgroup12 := $tgroup12 = Module[{circle6a, circle6b, circle},
-  circle6a = sortAngle @ CirclePoints[6];
-  circle6b = Rotate90 /@ circle6a;
-  circle = sortAngle @ Join[circle6a, circle6b];
-  TranslationGroup[Take[circle, 6]]
-];
-
-$rhombitrihexagonalQRep := $rhombitrihexagonalQRep =
-  QuiverRepresentation[
-    $rhombitrihexagonalQuiver,
-    $tgroup12
-  ];
-
-declareLattice[{"Rhombitrihexagonal", "Rhombihexadeltille"}, $rhombitrihexagonalQRep];
-
-(**************************************************************************************************)
-
-$trihexagonalQuiver := $trihexagonalQuiver = Quiver[{
-    Labeled[{1 -> 3, 3 -> 1}, "a"],
-    Labeled[{1 -> 2 ,2 -> 1}, "b"],
-    Labeled[{2 -> 3, 3 -> 2}, "c"]
-  }];
-
-$trihexagonalQRep := $trihexagonalQRep =
-  QuiverRepresentation[
-    $trihexagonalQuiver,
-    "Redundant"
-  ];
-
-declareLattice[{"Trihexagonal", "Hexadeltille"}, $trihexagonalQRep];
-
-(**************************************************************************************************)
-
-$snubTrihexagonalQuiver := $snubTrihexagonalQuiver = Quiver[{
-  Labeled[{{3 -> 2, 5 -> 6}, {1 -> 5, 2 -> 4, 6 -> 3}}, "a"],
-  Labeled[{{6 -> 1, 4 -> 3}, {1 -> 4, 2 -> 6, 3 -> 5}}, Negated @ "b"],
-  Labeled[{{1 -> 2, 5 -> 4}, {2 -> 5, 3 -> 1, 4 -> 6}}, "c"]
-}];
-
-$snubTrihexagonalQRep := $snubTrihexagonalQRep =
-  QuiverRepresentation[
-    $snubTrihexagonalQuiver,
-    "cab" -> "Redundant"
-  ];
-
-declareLattice[{"SnubTrihexagonal", "SnubHextille"}, $snubTrihexagonalQRep];
-
-(**************************************************************************************************)
-
-$truncatedSquareQuiver := $truncatedSquareQuiver = Quiver[{
-  Labeled[{1 -> 2}, "a"],
-  Labeled[{4 -> 3}, "b"],
-  Labeled[{3 -> 1, 2 -> 4}, "c"],
-  Labeled[{1 -> 4, 3 -> 2}, "d"]
-}];
-
-$truncatedSquareQRep := $truncatedSquareQRep = QuiverRepresentation[
-  $truncatedSquareQuiver,
-  TranslationGroup[{{1, 0}, {0, 1}, {1, 1}/2, {-1, 1}/2}]
-];
-
-declareLattice[{"TruncatedSquare", "TruncatedQuadrille"}, $truncatedSquareQRep];
-
-(**************************************************************************************************)
-
-$truncatedTrihexagonalQuiver := $truncatedTrihexagonalQuiver =
-  Quiver[{
-    Labeled[{2 -> 3, 9 -> 8, 5 -> 12, 6 -> 11}, Negated @ "a"],
-    Labeled[{3 -> 4, 10 -> 9}, Negated @ "b"],
-    Labeled[{5 -> 4, 10 -> 11, 1 -> 8, 2 -> 7}, "c"],
-    Labeled[{6 -> 5, 11 -> 12}, "d"],
-    Labeled[{7 -> 6, 12 -> 1, 3 -> 10, 4 -> 9}, "e"],
-    Labeled[{1 -> 2, 8 -> 7}, "f"]
-  }];
-
-$truncatedTrihexagonalQRep := $truncatedTrihexagonalQRep =
-  QuiverRepresentation[$truncatedTrihexagonalQuiver, $tgroup12];
-
-declareLattice[{"TruncatedTrihexagonal", "TruncatedHexadeltille"}, $truncatedTrihexagonalQRep];
-
-(**************************************************************************************************)
-
-$parameterizedLatticeQuiverRepresentations = <||>;
-$parameterizedLatticeNames = {};
-
-declareParameterizedLattice[name_String, func_] := (
-  AppendTo[$parameterizedLatticeNames, name];
-  $parameterizedLatticeQuiverRepresentations[name] = func;
-);
-
-declareParameterizedLattice["SquareTorus", squareTorusQRep];
-
-squareTorusQRep[m_Integer ? Positive, n_Integer ? Positive] := Scope[
-  qrep = QuiverRepresentation[
-    $squareQuiver,
-    AbelianGroup[{m, n}]
-  ];
-  {m + n, qrep}
-];
-
-(**************************************************************************************************)
-
-$namedLatticeUsage = StringTrim @ "
-* Named lattices (and their corresponding tilings) include:
-| 'Square' | square tiling, aka quadrille |
-| 'TruncatedSquare' | truncated square tiling, aka truncated quadrille |
-| 'Cubic' | cubic tiling |
-| 'Triangular' | triangular tiling, aka deltille |
-| 'Hexagonal' | hexagonal tiling, aka hextille |
-| 'Rhombille' | rhombille tiling |
-| 'Rhombitrihexagonal' | rhombitrihexagonal tiling, aka rhombihexadeltille |
-| 'Trihexagonal' | trihexagonal tiling, aka hexadeltille |
-| 'SnubTrihexagonal' | snub trihexagonal tiling, aka snub hextille |
-| 'TruncatedTrihexagonal' | truncated trihexagonal tiling, aka truncated hexadeltille |
-";
-
-(**************************************************************************************************)
-
-PackageExport["LatticeQuiverRepresentation"]
-
-SetUsage @ "
-LatticeQuiverRepresentation['name$'] returns the QuiverRepresentation[$$] object for the named latice \
-'name$'.
-<*$namedLatticeUsage*>
-"
-
-DeclareArgumentCount[LatticeQuiverRepresentation, 1];
-
-declareFunctionAutocomplete[LatticeQuiverRepresentation, {$LatticeNames}];
-
-LatticeQuiverRepresentation[name_] := Scope[
-  Lookup[$latticeQuiverRepresentations, name, $Failed]
-];
 
 (**************************************************************************************************)
 
@@ -530,7 +310,7 @@ Options[LatticeGraph] = JoinOptions[
   $baseGenerateLatticeOptions
 ];
 
-declareFunctionAutocomplete[LatticeGraph, {$LatticeNames, 0}];
+declareFunctionAutocomplete[LatticeGraph, {$LatticeQuiverNames, 0}];
 
 declareSyntaxInfo[LatticeGraph, {_, _., OptionsPattern[]}];
 
@@ -561,7 +341,7 @@ DeclareArgumentCount[LatticeQuiver, {1, 2}];
 
 Options[LatticeQuiver] = $baseGenerateLatticeOptions;
 
-declareFunctionAutocomplete[LatticeQuiver, {$LatticeNames, 0}];
+declareFunctionAutocomplete[LatticeQuiver, {$LatticeQuiverNames, 0}];
 
 declareSyntaxInfo[LatticeQuiver, {_, _., OptionsPattern[]}];
 
@@ -570,4 +350,3 @@ LatticeQuiver[name_, opts:OptionsPattern[]] :=
 
 LatticeQuiver[spec_, depth_, opts:OptionsPattern[]] :=
   iGenerateLattice[LatticeQuiver, spec, depth, True, opts];
-

@@ -46,23 +46,35 @@ processEdge[edge_, _] :=
 
 Quiver::nakededge = "The edge `` is not labeled with a cardinal.";
 
-processEdge[edge:(_Rule | DirectedEdge[_, _]), None] :=
+processEdge[edge:(_Rule | _TwoWayRule | DirectedEdge[_, _] | UndirectedEdge[_, _]), None] :=
   (Message[Quiver::nakededge, edge]; $Failed);
 
 processEdge[Labeled[edges_, label_], _] :=
   processEdge[edges, label];
 
-processEdge[e_, Verbatim[Alternatives][args__]] := Map[processEdge[e, #]& /@ {args}];
-processEdge[l_ -> r_, Negated[c_]] := DirectedEdge[r, l, c];
-processEdge[l_ -> r_, label_] := DirectedEdge[l, r, label];
+processEdge[e_, Verbatim[Alternatives][args__]] :=
+  Map[processEdge[e, #]&, {args}];
+
+processEdge[l_ <-> r_, label_] := {
+  DirectedEdge[l, r, label],
+  DirectedEdge[r, l, label]
+};
+
+processEdge[l_ -> r_, label_] :=
+  DirectedEdge[l, r, label];
 
 processEdge[DirectedEdge[l_, r_, Verbatim[Alternatives][args__]], z_] :=
   processEdge[DirectedEdge[l, r, #], z]& /@ {args};
 
-processEdge[DirectedEdge[l_, r_], Negated[c_]] := DirectedEdge[r, l, c];
-processEdge[DirectedEdge[l_, r_], c_] := DirectedEdge[l, r, c];
+processEdge[DirectedEdge[l_, r_], c_] :=
+  DirectedEdge[l, r, c];
 
-processEdge[DirectedEdge[l_, r_, Negated[c_]], _] := DirectedEdge[r, l, c];
+processEdge[UndirectedEdge[a_, b_], c_] :=
+  {DirectedEdge[a, b, c], DirectedEdge[b, a, c]};
+
+processEdge[UndirectedEdge[a_, b_, c_], _] :=
+  {DirectedEdge[a, b, c], DirectedEdge[b, a, c]};
+
 processEdge[de:DirectedEdge[_, _, _], _] := de;
 
 processEdge[assoc_Association, _] := KeyValueMap[processEdge[#2, #1]&, assoc];
@@ -74,14 +86,17 @@ processEdge[list_List, label_] := Map[processEdge[#, label]&, list];
 $maxVertexCount = 150;
 makeQuiver[vertices_, edges_, oldOpts_, newOpts_] := Scope[
 
-  edges = Flatten @ List @ processEdge[edges, None];
-  If[ContainsQ[edges, $Failed], ReturnFailed[]];
+  If[!MatchQ[edges, {DirectedEdge[_, _, Except[_Alternatives]]..}],
+    edges = Flatten @ List @ processEdge[edges, None];
+    If[ContainsQ[edges, $Failed], ReturnFailed[]];
+  ];
+
   If[!validCardinalEdgesQ[edges],
     reportDuplicateCardinals[edges];
     ReturnFailed[];
   ];
 
-  If[vertices === Automatic, vertices = Union[edges[[All, 1]], edges[[All, 2]]]];
+  If[vertices === Automatic, vertices = Union[InVertices @ edges, OutVertices @ edges]];
 
   Graph[
     vertices, edges,
@@ -135,7 +150,7 @@ DeclareArgumentCount[BouquetQuiver, 1];
 
 Options[BouquetQuiver] = Options[Graph];
 
-declareSyntaxInfo[FreeQuiver, {_, OptionsPattern[]}];
+declareSyntaxInfo[BouquetQuiver, {_, OptionsPattern[]}];
 
 BouquetQuiver[str_String, opts:OptionsPattern[]] := BouquetQuiver[Characters[str], opts];
 
@@ -175,13 +190,8 @@ to each edge in the graph$.
 
 $formalSymbols = Map[letter |-> Symbol["\\" <> "[Formal" <> letter <> "]"], CharacterRange["A", "Z"]];
 
-toQuiverEdge[DirectedEdge[a_, b_]] :=
-  DirectedEdge[a, b, $formalSymbols[[$count++]]];
-
-toQuiverEdge[UndirectedEdge[a_, b_]] := Splice[{
-  toQuiverEdge[DirectedEdge[a, b]],
-  toQuiverEdge[DirectedEdge[b, a]]
-}];
+toFreeQuiverEdge[head_[a_, b_]] :=
+  head[a, b, $formalSymbols[[$count++]]];
 
 DeclareArgumentCount[FreeQuiver, 1];
 
@@ -189,7 +199,7 @@ declareSyntaxInfo[FreeQuiver, {_}];
 
 FreeQuiver[graph_] := Scope[
   $count = 1;
-  makeQuiver[VertexList @ graph, Map[toQuiverEdge, EdgeList @ graph], {}, {}]
+  makeQuiver[VertexList @ graph, Map[toFreeQuiverEdge, EdgeList @ graph], {}, {}]
 ];
 
 (**************************************************************************************************)
@@ -205,7 +215,7 @@ CardinalList[quiver$] returns the list of cardinals in a quiver.
 CardinalList[graph_Graph] := None;
 
 CardinalList[graph_Graph ? EdgeTaggedGraphQ] :=
-  DeleteCases[Null] @ Union @ EdgeTags @ graph;
+  DeleteCases[Union @ EdgeTags @ graph, Null];
 
 CardinalList[edges_List] :=
   UniqueCases[edges, DirectedEdge[_, _, c_] :> c];
