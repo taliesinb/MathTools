@@ -190,13 +190,13 @@ metricFail[head_, msgname_, args___] := (
   Return[$Failed, Block];
 );
 
-General::notetaggraph = "First argument should be an edge-tagged graph.";
+General::nottaggraph = "First argument should be an edge-tagged graph.";
 General::badtagspec = "Tag specification `` is not All, a tag, or a list of tags in the graph."
 
 processTagSpec[head_, graph_, tagSpec_] := Module[
   {allTags, tagList},
 
-  If[!EdgeTaggedGraph[graph], metricFail[head, "nottagged"]];
+  If[!EdgeTaggedGraphQ[graph], metricFail[head, "nottaggraph"]];
 
   allTags = CardinalList @ graph;
   $stripList = False;
@@ -205,6 +205,7 @@ processTagSpec[head_, graph_, tagSpec_] := Module[
     _List, tagSpec,
     _, $stripList = True; List @ tagSpec
   ];
+
   If[!SubsetQ[allTags, tagList], metricFail[head, "badtagspec", tagSpec]];
 
   {tagList, EdgeTags @ graph}

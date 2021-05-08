@@ -377,7 +377,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope[
     If[labelGraphics =!= Nothing, imagePadding += {{0, 0}, {0, 10}}];
 
     (* for graphs with cardinals, create an automatic legend when asked *)
-    If[cardinalColors =!= None,
+    If[cardinalColors =!= None && arrowheadStyle =!= None,
       automaticLegends["Cardinals"] := ArrowheadLegend[cardinalColors];
     ];
 

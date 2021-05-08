@@ -73,7 +73,7 @@ resolveGraphRegionHighlightGraphics[list_List] := Scope[
 
 sowHighlight[g_] := Internal`StuffBag[$highlightsBag, g];
 
-$defaultBaseHighlightStyle := $defaultBaseHighlightStyle = Opacity[0.2, $Green];
+$defaultBaseHighlightStyle := $defaultBaseHighlightStyle = Opacity[0.6, $Green];
 
 $customHighlightedOptions = {
   Background -> Automatic,

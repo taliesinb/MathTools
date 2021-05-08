@@ -131,7 +131,8 @@ iGenerateLattice[head_, quiverRepresentation_, maxDepth_, directedEdges_, opts:O
     abstractCoordinateFunction, vertexCoordinateFunction,
     graphLayout,
     graphLegend, imageSize, vertexNameFunction, arrowheadStyle,
-    maxVertices, maxEdges, depthTermination, includeFrontier
+    maxVertices, maxEdges, depthTermination, includeFrontier,
+    graphMetric
   ];
 
   SetAutomatic[depth, If[maxVertices === Infinity, maxVertices = AtLeast[32]]; Infinity];
@@ -195,6 +196,7 @@ iGenerateLattice[head_, quiverRepresentation_, maxDepth_, directedEdges_, opts:O
   edgeList = DeleteDuplicates[indexEdgeList] /.
     DirectedEdge[i_, j_, c_] :> DirectedEdge[Part[abstractVertexList, i], Part[abstractVertexList, j], c];
 
+  If[graphMetric === "Quadratic", directedEdges = True];
   If[directedEdges === False, edgeList = UndirectedEdge[#1, #2]& @@@ edgeList];
 
   (* the coordinitization might have collapsed some vertices *)
