@@ -215,10 +215,10 @@ CardinalList[quiver$] returns the list of cardinals in a quiver.
 CardinalList[graph_Graph] := None;
 
 CardinalList[graph_Graph ? EdgeTaggedGraphQ] :=
-  DeleteCases[Union @ EdgeTags @ graph, Null];
+  DeleteCases[Union @ SpliceCardinalSets @ EdgeTags @ graph, Null];
 
 CardinalList[edges_List] :=
-  UniqueCases[edges, DirectedEdge[_, _, c_] :> c];
+  SpliceCardinalSets @ UniqueCases[edges, DirectedEdge[_, _, c_] :> c];
 
 (**************************************************************************************************)
 

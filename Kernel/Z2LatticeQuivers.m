@@ -86,7 +86,7 @@ General::badvcoords = "VertexCoordinateFunction did not return vectors of consis
 General::badlatticename = "The specified name `` is not a known name for a lattice. Known names are: ``."
 General::badparamlatticename = "The specified name `` is not a known name for a parameterized lattice. Known names are: ``."
 General::badlatticedepth = "The specified depth `` is not a positive integer."
-General::badvertnaming = "Unknown setting `` for VertexNameFunction.";
+General::badvertnaming = "Unknown setting `` for VertexNameFunction. Valid renaming rules are ``.";
 General::renamenotquiv = "The vertex coordinates yielded a quiver with incompatible cardinal edges. Use LatticeGraph instead.";
 
 Options[iGenerateLattice] = $baseGenerateLatticeOptions;
@@ -148,7 +148,7 @@ iGenerateLattice[head_, quiverRepresentation_, maxDepth_, directedEdges_, opts:O
     ReturnFailed[head::badlatticedepth, depth];
   ];
 
-  $quiverLabel := Quiver[quiver, ImageSize -> Tiny,
+  $quiverLabel := Quiver[quiver, ImageSize -> 50,
     ArrowheadStyle -> arrowheadStyle,
     GraphLegend -> Placed[Automatic, Left]];
 
@@ -223,7 +223,7 @@ iGenerateLattice[head_, quiverRepresentation_, maxDepth_, directedEdges_, opts:O
 
   (* apply the final vertex and edge relabeling *)
   renamingRule = toRenamingRule[vertexNameFunction, abstractVertexList, vertexList];
-  If[FailureQ[renamingRule], ReturnFailed[head::badvertnaming, vertexNameFunction]];
+  If[FailureQ[renamingRule], ReturnFailed[head::badvertnaming, vertexNameFunction, commaString @ $validRenamingRules]];
   {finalVertexList, edgeList} = {abstractVertexList, edgeList} /. renamingRule;
   If[RangeQ[finalVertexList],
     (* if we renamed to integers 1..n, reorder to make sure they occur in the natural order *)
@@ -240,7 +240,7 @@ iGenerateLattice[head_, quiverRepresentation_, maxDepth_, directedEdges_, opts:O
     graph = Graph[
       finalVertexList, edgeList,
       GraphLegend -> graphLegend, GraphPlottingFunction -> Automatic,
-      ImageSize -> imageSize, ArrowheadStyle -> "Plain",
+      ImageSize -> imageSize, ArrowheadStyle -> None,
       GraphLayout -> graphLayout, VertexCoordinates -> vertexCoordinates,
       simpleOptions
     ]
@@ -272,6 +272,8 @@ vecSorter[v_] /; Length[v] == 3 := {Norm[v], vecAngle @ Dot[$abc, v]};
 vecSorter[v_] /; Length[v] == 2 := {Norm[v], vecAngle @ v};
 vecSorter[v_] /; Length[v] == 1 := {Norm[v], v};
 
+$validRenamingRules = {"SpiralIndex", "RasterIndex", "Representation", "Coordinates", "Index"};
+
 toRenamingRule["SpiralIndex", vertices_, origVertices_] :=
   AssociationThread[vertices, Ordering @ Ordering @ Map[vecSorter, N @ vertices[[All, 1]]]];
 
@@ -287,9 +289,9 @@ toRenamingRule["Coordinates", _, _] :=
 toRenamingRule["Index", _, _] :=
   AssociationRange[vertices];
 
-toRenamingRule[None, _] := {};
+toRenamingRule[None, _, _] := {};
 
-toRenamingRule[_, _] := $Failed;
+toRenamingRule[_, _, _] := $Failed;
 
 (**************************************************************************************************)
 

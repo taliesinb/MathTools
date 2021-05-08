@@ -23,8 +23,8 @@ without the 'Vectors' suffice will return vectors as ordinary lists.
 
 RootSystemObject /: Normal[rs_RootSystemObject] := rs["Roots"];
 
-reachableStates[func_, initialStates_] :=
-  StateTransitionGraph[func, initialStates, "VertexList", MaxVertices -> 20];
+reachableStates[func_, initialStates_, maxStates_:20] :=
+  StateTransitionGraph[func, initialStates, "VertexList", MaxVertices -> maxStates];
 
 setValidIfNormlized[e_] := If[Norm[e] == 1, System`Private`SetValid[e]];
 

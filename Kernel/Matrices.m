@@ -264,6 +264,7 @@ DiagonalBlock[part_][obj_] := DiagonalBlock[obj, part];
 (** Misc utilities                                                                               **)
 (**************************************************************************************************)
 
+
 PackageExport["FindIndependentVectors"]
 
 FindIndependentVectors[vectors_] := Scope[
@@ -281,3 +282,18 @@ MatrixSimplify[matrix_] := Scope[
   If[gcd === 1, Return[{matrix, 1}]];
   {Simplify @ Cancel[matrix / gcd], gcd}
 ];
+
+
+PackageExport["SquaredDistanceMatrix"]
+
+SquaredDistanceMatrix[points_] := (
+  $loadDM; $distanceMatrixFunction[points, $squaredEuclideanDistanceCode, False]
+);
+
+$loadDM := (
+  DistanceMatrix[{{1,2}},{{3,4}}, DistanceFunction -> "SquaredEuclideanDistance"];
+  $squaredEuclideanDistanceCode := NumericArrayUtilities`DistanceMatrix`PackagePrivate`$extractLLDMMethod["SquaredEuclideanDistance"];
+  $distanceMatrixFunction = NumericArrayUtilities`DistanceMatrix`PackagePrivate`mTensorDistanceMatrix1Arg;
+  Clear[$loadDM];
+);
+

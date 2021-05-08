@@ -49,9 +49,9 @@ RepresentationObject /: MakeBoxes[object:RepresentationObject[data_Association] 
     RepresentationObject, object, $representationIcon; None,
     (* Always displayed *)
     {
-     {BoxForm`SummaryItem[{"Group: ", group}], SpanFromLeft},
-     {BoxForm`SummaryItem[{"Order: ", groupOrder}], BoxForm`SummaryItem[{"Type: ", type}]},
-     {BoxForm`SummaryItem[{"Generators: ", Length[generators]}], BoxForm`SummaryItem[{"Dimension: ", dimension}]}
+     {summaryItem["Group", group], SpanFromLeft},
+     {summaryItem["Order", groupOrder], summaryItem["Type", type]},
+     {summaryItem["Generators", Length[generators]], summaryItem["Dimension", dimension]}
      },
     (* Displayed on request *)
     {{Row[generators, "  "], SpanFromLeft}},
@@ -78,7 +78,7 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
   list = Flatten @ MapIndexed[
     {gen, index} |-> {
       If[labeled, Labeled[First @ index], Identity] @ gen,
-      If[symmetric && (igen = InverseFunction[gen]) =!= gen,
+      If[symmetric && (igen = ToInverseFunction[gen]) =!= gen,
         If[labeled, Labeled[Negated @ First @ index], Identity] @ igen,
         Nothing
       ]
@@ -143,11 +143,9 @@ CayleyQuiver[obj$] returns the cardinal quiver representing the Cayley graph of 
 DeclareArgumentCount[CayleyQuiver, 1];
 
 CayleyQuiver::incomplete = "Cayley graph is incomplete."
-CayleyQuiver::notrep = "First argument should be a valid RepresentationObject or group."
 
 CayleyQuiver[rep_] := Scope[
-  rep = toRepresentation[rep, None];
-  If[FailureQ[rep], ReturnFailed["notrep"]];
+  rep = CoerceToRep[1];
   computeCayleyQuiver @ getObjectData @ rep
 ];
 
@@ -162,6 +160,7 @@ computeCayleyQuiver[data_] := Scope[
 
 Unprotect[Labeled];
 
+Labeled[Nothing, _] := Nothing;
 Labeled[None] := Identity;
 Labeled[label_][g_] := Labeled[g, label];
 Labeled[f_, label_][input___] := Labeled[f[input], label];
@@ -179,7 +178,8 @@ RepresentationElement[matrix$] is the matrix representation of a group element.
 * rep$1[rep$2] will return the RepresentationElement for g$1 \[CircleDot] g$2.
 "
 
-RepresentationElement /: InverseFunction[RepresentationElement[matrix_]] := RepresentationElement[Inverse[matrix]];
+ToInverseFunction[RepresentationElement[matrix_]] :=
+  RepresentationElement[Inverse[matrix]];
 
 RepresentationElement /: Normal[RepresentationElement[matrix_]] :=
   If[Developer`PackedArrayQ[matrix], matrix, ExpandUnitRoots @ matrix];
@@ -274,7 +274,7 @@ for the generators of a group, RepresentationObject, or QuiverRepresentationObje
 DeclareArgumentCount[RepresentationGenerators, 1];
 
 RepresentationGenerators[obj_] := Scope[
-  rep = CheckRepArg[1];
+  rep = CoerceToRep[1];
   rep["Generators"]
 ]
 
@@ -365,7 +365,7 @@ TransformGenerators::badtrans = "The transformation returned an object of dimens
 declareSyntaxInfo[TransformGenerators, {_, _}];
 
 TransformGenerators[rep_, trans_] := Scope[
-  rep = CheckRepArg[1];
+  rep = CoerceToRep[1];
   data = getObjectData[rep];
   gens = First /@ data["Generators"];
   newGens = trans @ gens;

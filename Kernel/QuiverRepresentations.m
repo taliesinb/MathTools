@@ -54,7 +54,7 @@ chooseAutoRepresentation[cardinalList_] :=
   ];
 
 QuiverRepresentation[quiver_, representation_:Automatic] := Scope[
-  quiver = CheckQuiverArg[1];
+  quiver = CoerceToQuiver[1];
   {cardinalListSpec, representation} = parseRepresentationSpec[representation];
   cardinalList = DeleteNone[cardinalListSpec];
   SetAutomatic[cardinalList, CardinalList[quiver]];
@@ -185,7 +185,7 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
       gen = generators[cardinal];
       If[MissingQ[gen], Nothing, {
         makeQuiverElementRule[inVertex, outVertex, gen, cardinal],
-        If[symmetric && (igen = InverseFunction[gen]) =!= gen,
+        If[symmetric && (igen = ToInverseFunction[gen]) =!= gen,
           makeQuiverElementRule[outVertex, inVertex, igen, Negated @ cardinal],
           Nothing
         ]

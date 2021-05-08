@@ -25,6 +25,9 @@ declareFormatting[
   LegendForm[e_] :> e
 ];
 
+(* fix a bug in mathematica *)
+DownValues[WrappersDump`makeLabeledCore] = ReplaceAll[DownValues[WrappersDump`makeLabeledCore], "SkipImageSizeLevel" -> "ZSkipImageSizeLevel"];
+
 (**************************************************************************************************)
 
 PackageExport["$LegendLabelStyle"]
@@ -33,12 +36,123 @@ $LegendLabelStyle = {FontFamily -> "Avenir", FontSize -> 12};
 
 (**************************************************************************************************)
 
+PackageScope["ImageToGraphics"]
+
+ImageToGraphics[img_, {xalign_, yalign_}, size_] := Scope[
+  {w, h} = ImageDimensions[img];
+  yrat = h / w;
+  x = (xalign - 1)/2;
+  y = yrat * (yalign - 1)/2;
+  Graphics[
+    {Opacity[1], Raster[Reverse[ImageData @ img, {1}], {{x, y}, {x + 1, y + yrat}} * size]},
+    ImageSize -> size, AspectRatio -> 1, PlotRangePadding -> None
+  ]
+];
+
+(**************************************************************************************************)
+
+PackageExport["GraphicsQ"]
+
+SetUsage @ "
+GraphicsQ[object$] returns True if object$ is a Graphics[$$] or Graphics3D[$$] expression.
+"
+
+GraphicsQ[_Graphics | _Graphics3D] := True;
+GraphicsQ[_] := False;
+
+(**************************************************************************************************)
+
+PackageExport["ImageSizePad"]
+
+SetUsage @ "
+ImageSizePad[size$, padding$] expands the image size size$ by padding it according to padding$.
+* padding$ can be any of the specifications supported by ImagePadding.
+"
+
+ImageSizePad::badpadding = "`` is not a valid padding spec.";
+
+ImageSizePad[imageSize_, paddingSpec_] := Scope[
+  If[!MatchQ[imageSize, {_ ? NumericQ, _ ? NumericQ}], ReturnFailed[]];
+  {pw, ph} = padding = processPadding[ImageSizePad, paddingSpec];
+  {w, h} = imageSize;
+  {w + Total[pw], h + Total[ph]}
+];
+
+processPadding[head_, paddingSpec_] := Scope[
+  padding = Ceiling @ toPadding @ paddingSpec;
+  If[RealMatrixQ[padding] && Dimensions[padding] === {2, 2},
+    padding,
+    ReturnFailed[MessageName[head, "badpadding"], paddingSpec]
+  ]
+];
+
+toPadding = MatchValues[
+  p_ ? NumericQ := {{p, p}, {p, p}};
+  {pw_ ? NumericQ, ph_ ? NumericQ} := {{pw, pw}, {ph, ph}};
+  other_ := other;
+];
+
+(**************************************************************************************************)
+
+PackageExport["NormalizePlotRange"]
+
+SetUsage @ "
+NormalizePlotRange[graphics$] updates the value of PlotRange to span all elements in graphics$.
+* graphics$ can be a Graphics[$$] or Graphics3D[$$] expression.
+* The value of PlotRangePadding is taken into account, and PlotRangePadding is set to zero in the result.
+* Providing the option PlotRangePadding will override the PlotRangePadding present in graphics$.
+"
+
+Options[NormalizePlotRange] = {
+  PlotRangePadding -> Inherited,
+  ExternalPadding -> None
+};
+
+NormalizePlotRange[graphics_, OptionsPattern[]] := Scope[
+  CheckIsGraphics[1];
+  UnpackOptions[plotRangePadding];
+  plotRange = iGraphicsPlotRange[graphics];
+  ReplaceOptions[graphics, {
+    PlotRangePadding -> 0,
+    PlotRange -> plotRange
+  }]
+];
+
+(**************************************************************************************************)
+
 PackageExport["GraphicsPlotRange"]
 
 SetUsage @ "
 GraphicsPlotRange[graphics$] yields the PlotRange that will be used when graphics$ is rendered.
-* graphics$ can be a Graphics[$$] or GraphicsBox[$$] expression.
+* graphics$ can be a Graphics[$$], Graphics3D[$$], their box equivalents, or a list of graphics primitives.
+* Legended, Labeled, etc will be skipped.
+* The option PlotRangePadding specifies whether padding should be included in the resulting range, \
+and has the following settings:
+| None | do not include any padding (default) |
+| Inherited | apply the padding specified in the graphics object |
+| custom$ | apply the custom padding |
+* Padding is applied used PlotRangePad.
 "
+
+Options[GraphicsPlotRange] = {
+  PlotRangePadding -> None
+};
+
+GraphicsPlotRange[expr_, OptionsPattern[]] := Scope[
+  UnpackOptions[plotRangePadding];
+  iGraphicsPlotRange[expr]
+];
+
+iGraphicsPlotRange = MatchValues[
+  g:(_Graphics | _Graphics3D) := Scope[
+    plotRange = PlotRange @ expandGC @ g;
+    If[plotRangePadding === None, Return @ plotRange];
+    PlotRangePad[plotRange, Replace[plotRangePadding, Inherited :> LookupOption[g, PlotRangePadding]]]
+  ];
+  g:(_GraphicsBox | _Graphics3DBox) := %[g /. $graphicsBoxReplacements];
+  (Labeled|Legended)[e_, ___] := %[g];
+  elems_ := %[Graphics @ elems];
+];
 
 expandMultiArrowInGC[g_] := g /.
   Arrow[segments:{{__Integer}..}, opts___] :> RuleCondition[Map[Arrow[#, opts]&, segments]];
@@ -46,32 +160,77 @@ expandMultiArrowInGC[g_] := g /.
 expandGC[g_] := g /.
   gc_GraphicsComplex :> RuleCondition[Normal @ expandMultiArrowInGC @ gc];
 
-GraphicsPlotRange[g_Graphics] := Scope[
-  {{l, r}, {b, t}} = plotRange = PlotRange @ expandGC @ g;
-  w = r - l; h = t - b;
-  padding = LookupOption[g, PlotRangePadding];
-  SetAutomatic[padding, Scaled[0.02]];
-  Switch[padding,
-    Scaled[_],
-      scale = First[padding];
-      factor = scale / (1 - 2 * scale); dw = dh = Max[{w, h} * factor];
-      {{l - dw, r + dw}, {b - dh, t + dh}},
-    _, plotRange
-  ]
-];
-
-GraphicsPlotRange[g_GraphicsBox] := GraphicsPlotRange @ ReplaceAll[g, $graphicsBoxReplacements];
-
-GraphicsPlotRange[elems_] := PlotRange @ Graphics[elems, PlotRange -> Automatic];
-
 $graphicsBoxSymbols = {
-  TooltipBox, StyleBox, GraphicsBox, GraphicsGroupBox, RectangleBox, DiskBox, CircleBox, TextBox, PointBox,
-  LineBox, ArrowBox, PolygonBox, BSplineCurveBox, BezierCurveBox, RasterBox, GraphicsComplexBox
+  PointBox, CircleBox, DiskBox, RectangleBox, PolygonBox,
+  LineBox, ArrowBox,
+  TextBox, TooltipBox, StyleBox, InsetBox, RotationBox, GeometricTransformationBox,
+  GraphicsBox, GraphicsGroupBox, RasterBox, GraphicsComplexBox,
+  BSplineCurveBox, BezierCurveBox, FilledCurveBox, JoinedCurveBox,
+  SphereBox, CylinderBox, TubeBox, ConeBox, CuboidBox
 };
 
-$boxSymbolToOrdinarySymbol = AssociationMap[Symbol[StringDrop[SymbolName[#], -3]]&, $graphicsBoxSymbols];
+$boxSymbolToOrdinarySymbol := $boxSymbolToOrdinarySymbol =
+  AssociationMap[Symbol[StringDrop[SymbolName[#], -3]]&, $graphicsBoxSymbols];
 
-$graphicsBoxReplacements = Dispatch @ Normal @ $boxSymbolToOrdinarySymbol;
+$graphicsBoxReplacements := $graphicsBoxReplacements =
+  Dispatch @ Normal @ $boxSymbolToOrdinarySymbol;
+
+(**************************************************************************************************)
+
+PackageExport["PlotRangePad"]
+
+SetUsage @ "
+PlotRangePad[range$, padding$] expands the plot range range$ by the amount padding$.
+* padding$ can be None, Automatic, Scaled[r$], or {{l$, r$}, {b$, t$}}.
+"
+
+PlotRangePad[range_, None | 0 | 0.] :=
+  range;
+
+PlotRangePad[range_, Automatic] :=
+  PlotRangePad[range, Scaled[0.02]];
+
+PlotRangePad[range_, Scaled[s_]] :=
+  PlotRangePad[range, Max @ scaleToPadding[s, PlotRangeSize @ range]]
+
+PlotRangePad[range_, padding_ ? NumericQ] :=
+  Map[expandRange[#, padding]&, range];
+
+PlotRangePad[range_, padding_List] :=
+  MapThread[expandRange, {range, padding}];
+
+
+expandRange[ab_, None|0|0.] :=
+  ab;
+
+expandRange[ab_, Automatic] :=
+  expandRange[ab, Scaled[0.02]];
+
+expandRange[{a_, b_}, dx_] :=
+  {a - dx, b + dx};
+
+expandRange[{a_, b_}, {da_, db_}] :=
+  {a - da, b + db};
+
+expandRange[ab:{a_, b_}, Scaled @ s_] :=
+  expandRange[ab, scaleToPadding[s, b - a]];
+
+expandRange[ab:{a_, b_}, {Scaled @ sa_, Scaled @ sb_}] :=
+  expandRange[ab, scaleToPadding[{sa, sb}, b - a]];
+
+
+scaleToPadding[s_, w_] := w * (s / (1 - 2 * Min[s, 0.45]));
+scaleToPadding[s:{_, _}, w_] := w * s / (1 - Min[Total @ s, 0.45]);
+
+(**************************************************************************************************)
+
+PackageExport["PlotRangeSize"]
+
+SetUsage @ "
+PlotRangeSize[range$] returns the size of the plot range.
+"
+
+PlotRangeSize[range_] := EuclideanDistance @@@ range;
 
 (**************************************************************************************************)
 
@@ -83,30 +242,48 @@ SetUsage @ "MediumSmall represents a size betwen Small and Medium."
 SetUsage @ "MediumLarge represents a size betwen Medium and Large."
 SetUsage @ "Huge represents a size greater than Large."
 
-
 (**************************************************************************************************)
 
 PackageExport["LookupImageSize"]
 
 SetUsage @ "
 LookupImageSize[object$] returns the ImageSize that a given object will use when rendered.
+* object$ can be a Graphics[$$] or Graphics3D[$$] object.
 * A numeric hard-coded size will be returned as-is.
 * Symbolic sizes like Tiny, Small, Medium, Large will be converted to their numeric equivalents.
-* The size is returned as a pair {width$, height$}.
+* The size is returned as a pair {width$, height$}, where height$ may be Automatic.
 "
 
 DeclareArgumentCount[LookupImageSize, 1];
 
 LookupImageSize[obj_] := Scope[
-  size = LookupOption[obj, ImageSize];
-  Switch[size,
-    {_ ? NumberQ, Automatic | (_ ? NumberQ)}, size,
-    _ ? NumberQ, {size, Automatic},
-    s_Symbol, {Lookup[$ImageWidthTable, s], Automatic},
-    _, {720, Automatic}
-  ]
+  CheckIsGraphics[1];
+  resolveRawImageSize @ LookupOption[obj, ImageSize]
 ];
 
+resolveRawImageSize = MatchValues[
+  sz:{_ ? NumberQ, Automatic | (_ ? NumberQ)} := sz;
+  w_ ? NumberQ := {w, Automatic};
+  s_Symbol := {Lookup[$ImageWidthTable, s], Automatic};
+  _ := {720, Automatic};
+];
+
+(**************************************************************************************************)
+
+PackageExport["ToNumericImageSize"]
+
+SetUsage @ "
+ToNumericImageSize[spec$, ratio$] resolves an ImageSize specificiaton spec$ using a target aspect ratio, \
+returning {w$, h$}.
+"
+
+ToNumericImageSize[imageSize_, aspectRatio_] := Scope[
+  {width, height} = resolveRawImageSize[imageSize];
+  SetAutomatic[height, width * aspectRatio];
+  {width, height}
+];
+
+(**************************************************************************************************)
 
 PackageScope["$ImageWidthTable"]
 
@@ -124,12 +301,6 @@ PackageScope["toStandardImageSize"]
 
 toStandardImageSize[sym:(MediumSmall|MediumLarge|Huge)] := Lookup[$ImageWidthTable, sym];
 toStandardImageSize[other_] := other;
-
-PackageScope["toNumericImageSize"]
-
-toNumericImageSize[sym_Symbol] := Lookup[$ImageWidthTable, sym, 360];
-toNumericImageSize[w_] := w;
-toNumericImageSize[{w_, h_}] := w;
 
 (**************************************************************************************************)
 
@@ -155,6 +326,8 @@ $opacityNormalizationRules = {
 
 PackageExport["VeryThick"]
 PackageExport["MediumThick"]
+PackageExport["SlightlyThick"]
+PackageExport["SlightlyThin"]
 PackageExport["MediumThin"]
 PackageExport["VeryThin"]
 
@@ -167,6 +340,8 @@ PackageExport["VeryThin"]
 $thicknessNormalizationRules = {
   VeryThin -> AbsoluteThickness[0.1],
   MediumThin -> AbsoluteThickness[0.5],
+  SlightlyThin -> AbsoluteThickness[0.8],
+  SlightlyThick -> AbsoluteThickness[1.2],
   MediumThick -> AbsoluteThickness[1.5],
   VeryThick -> AbsoluteThickness[3]
 };
@@ -228,7 +403,7 @@ NiceTooltip[g_, None] := g;
 NiceTooltip[g_, e_] :=
   Tooltip[g,
     Pane[e, 20, BaseStyle -> {FontSize -> 15, "Output"},
-      ImageMargins -> 5, ImageSize -> {{30, 300}, {30, 300}},
+      ImageMargins -> {{10, 10}, {5, 5}}, ImageSize -> {{30, 300}, {30, 300}},
       Alignment -> Center
     ],
     TooltipStyle -> {Background -> White, CellFrameColor -> None, CellFrame -> 0}
@@ -236,18 +411,7 @@ NiceTooltip[g_, e_] :=
 
 (**************************************************************************************************)
 
-PackageExport["LabeledMatrixForm"]
+PackageScope["ColorFramed"]
 
-declareFormatting[
-  LabeledMatrixForm[expr_] :> formatLabeledMatrices[expr]
-];
-
-formatLabeledMatrices[expr_] := ReplaceAll[expr,
-  matrix_ /; MatrixQ[Unevaluated @ matrix] /; Length[Unevaluated @ matrix] =!= 1 :> RuleCondition @ formatLabeledMatrix @ matrix
-]
-
-formatLabeledMatrix[matrix_] := Scope[
-  tooltips = MapIndexed[Tooltip, matrix, {2}];
-  MatrixForm[tooltips, TableHeadings -> Automatic]
-];
+ColorFramed[boxes_, color_] := Framed[boxes, ContentPadding -> False, FrameStyle -> color];
 

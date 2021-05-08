@@ -43,7 +43,8 @@ Options[StateTransitionGraph] = JoinOptions[
     NormFunction -> Automatic,
     MaxNorm -> None,
     IncludeFrontier -> True,
-    DepthTermination -> "Immediate"
+    DepthTermination -> "Immediate",
+    SelfLoops -> True
   ],
   $simpleGraphOptionRules
 ];
@@ -90,6 +91,7 @@ Labeled[f$, label$] or f$ -> label$ to attach a custom label label$ instead.
 | MaxNorm | Infinity | ignore states with norm greater than this |
 | NormFunction | Automatic | function that evaluates the norm of a given state |
 | DirectedEdges | True | whether to return a directed or undirected graph |
+| SelfLoops | True | whether to include transitions from a state to itself |
 | MaxVerticesPerComponent | Infinity | how many vertices per graph component |
 | IncludeFrontier | True | whether to include edges to vertices beyond maximum depth |
 | DepthTermination | 'Immediate' | specifies when termination take effect |
@@ -148,10 +150,10 @@ $posIntOrInfinityP = _Integer ? Positive | Infinity;
 StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[]] := Scope[
 
   UnpackOptions[
-    directedEdges, ProgressFunction, normFunction,
+    directedEdges, progressFunction, normFunction,
     maxVertices, maxVerticesPerComponent, maxEdges, maxDepth,
     maxTime, maxFunctionEvaluations, maxNorm,
-    includeFrontier, depthTermination
+    includeFrontier, depthTermination, selfLoops
   ];
 
   If[!ListQ[initialVertices] || Length[initialVertices] == 0,
@@ -259,14 +261,14 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
     ]];
   ];
 
-  Switch[ProgressFunction,
+  Switch[progressFunction,
     None,
       progress = None,
     _,
       startTime = SessionTime[];
       $currentTime := (SessionTime[] - startTime);
       $currentVertexCount := Length[vertexIndex];
-      progress := ProgressFunction[<|
+      progress := progressFunction[<|
         "State" -> vertex, "Successors" -> successors,
         "Depth" -> generation, "Time" -> $currentTime,
         "EdgeCount" -> edgeCount, "VertexCount" -> $currentVertexCount
@@ -366,6 +368,12 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
     );
   ];
 
+  If[!selfLoops,
+    $removeSelfLoopsBlock := (
+      successors //= DeleteCases[vertex | Labeled[vertex, _]];
+    );
+  ];
+
   If[!includeFrontier,
     $excludeFrontierBlock := (
       interiorMask = UnsameQ[#, $notFound]& /@ Lookup[vertexIndex, successors, $notFound];
@@ -408,6 +416,7 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
     If[MissingQ[successors], successors = {}];
     If[!ListQ[successors], Message[StateTransitionGraph::notlist, vertex, generation, Head[successors]]; Break[]];
     If[successors === {}, Continue[]];
+    $removeSelfLoopsBlock;
 
     (* add the transitions lists to its bag *)
     Internal`StuffBag[transitionListsBag, {vertex, successors}];
@@ -482,6 +491,7 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
   indexTransitionLists := indexTransitionLists = edgeTrimmer @ Internal`BagPart[indexTransitionListsBag, All];
 
   vertices := Normal[vertexArray];
+  vertexCount := vertexArray["Length"];
 
   edgeSymbol = If[directedEdges, toDirectedEdge, toUndirectedEdge];
   deduper = If[directedEdges, Identity, DeleteDuplicatesBy[Sort]];
@@ -498,8 +508,8 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
 
   edgeLabels := edgeLabels = labelTrimer @ Internal`BagPart[edgeLabelsBag, All];
 
-  graph := Graph[edges, GeneralUtilities`FilterOptions[opts]];
-  indexGraph := Graph[indexEdges, GeneralUtilities`FilterOptions[opts]];
+  graph := ExtendedGraph[vertices, edges, FilterOptions @ opts];
+  indexGraph := Graph[Range @ vertexCount, indexEdges, FilterOptions @ opts];
 
   depths := Map[Total, Values @ depthVectorAssoc];
   tagDepths := AssociationThread[Append[depthLabels, None], Transpose @ Values @ depthVectorAssoc];
@@ -516,7 +526,7 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
     "VertexTagDepthList" :> tagDepths,
     "VertexTagDepthAssociation" :> Map[AssociationThread[vertices, #]&, tagDepths],
     "LabeledGraph" :> Graph[graph, VertexLabels -> Automatic],
-    "CayleyGraph" :> Quiver[graph],
+    "CayleyGraph" :> ExtendedGraph[CombineMultiedges @ graph, GraphLegend -> "Cardinals", GraphLayout -> "SpringElectricalEmbedding"],
     "IndexGraph" :> indexGraph,
     "EdgeLabels" :> edgeLabels,
     "TerminationReason" :> terminationReason,

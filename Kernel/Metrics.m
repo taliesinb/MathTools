@@ -21,7 +21,8 @@ $latticeNormUsage = "
 $latticeMetricFunctionOptions = {
   DirectedEdges -> False,
   NormFunction -> Automatic,
-  MaxDepth -> Infinity
+  MaxDepth -> Infinity,
+  MetricSignature -> Automatic
 };
 
 
@@ -34,7 +35,7 @@ Options[LatticeDistanceMatrix] = $latticeMetricFunctionOptions;
 LatticeDistanceMatrix[graph_, opts:OptionsPattern[]] := Scope[
   result = TaggedGraphDistanceMatrix[graph, FilterOptions @ opts];
   If[FailureQ[result], ReturnFailed[]];
-  toLatticeMetric[LatticeDistanceMatrix, result, OptionValue[{MetricSignature, MetricNormFunction}]]
+  toLatticeMetric[LatticeDistanceMatrix, result, OptionValue[{MetricSignature, NormFunction}]]
 ];
 
 (**************************************************************************************************)
@@ -49,12 +50,12 @@ LatticeDistance[graph_][args___] := LatticeDistance[graph, args];
 LatticeDistance[graph_, vertex1_, Optional[vertex2:Except[_Rule]], opts:OptionsPattern[]] := Scope[
   result = TaggedGraphDistance[graph, vertex1, vertex2, FilterOptions @ opts];
   If[FailureQ[result], ReturnFailed[]];
-  toLatticeMetric[LatticeDistance, result, OptionValue[{MetricSignature, MetricNormFunction}]]
+  toLatticeMetric[LatticeDistance, result, OptionValue[{MetricSignature, NormFunction}]]
 ];
 
 (**************************************************************************************************)
 
-toLatticeMetric[_, distances_, Automatic] := RootTotalSquare @ distances;
+toLatticeMetric[_, distances_, {Automatic, Automatic}] := RootTotalSquare @ distances;
 
 General::badsignature = "The setting MetricSignature -> `` should be either Automatic or a list matching the number of cardinals (``).";
 
@@ -70,16 +71,9 @@ toLatticeMetric[head_, distances_, {signature_, normFunction_}] := Module[{},
 
 (**************************************************************************************************)
 
-NormVector[array_, p_] :=Surd[Total @ Power[N @ Values @ array, p], p];
-
+NormVector[array_, p_] := Surd[Total @ Power[N @ Values @ array, p], p];
 
 RootTotalSquare[array_] := Sqrt @ Total @ Power[N @ Values @ array, 2];
-
-RootTotalSquare[array_] := CubeRoot @ Total @ Power[N @ Values @ array, 3];
-
-RootTotalSquare[array_] := Surd[Total @ Power[N @ Values @ array, $n], $n];
-
-zRootTotalSquare[array_] := MapThread[Max, N @ Values @ array] * 3;
 
 RootTotalSquare[array_, signature_] := Sqrt @ Total @ Times[signature, Power[N @ Values @ array, 2]];
 

@@ -24,6 +24,28 @@ GroupTheory`PermutationGroups`Private`CheckGroupDegree[head_][customGroup_ ? Cus
 
 (**************************************************************************************************)
 
+PackageExport["GroupGeneratorElements"]
+
+SetUsage @ "
+GroupGeneratorElements[group$] returns the RepresentationElement[$$] objects corresponding to its generators.
+"
+
+GroupGeneratorElements[group_] := Scope[
+  rep = GroupRepresentation[group];
+  If[!RepresentationObjectQ[rep], ReturnFailed[]];
+  rep["Generators"]
+];
+
+
+(* PackageExport["QuaternionGroup"]
+
+SetUsage @ "
+QuaternionGroup[] represents the group of unit quaternions.
+"
+ *)
+
+(**************************************************************************************************)
+
 PackageExport["GroupQ"]
 
 SetUsage @ "
@@ -220,28 +242,6 @@ declareGroup[
 
 (**************************************************************************************************)
 
-PackageExport["GroupGeneratorElements"]
-
-SetUsage @ "
-GroupGeneratorElements[group$] returns the RepresentationElement[$$] objects corresponding to its generators.
-"
-
-GroupGeneratorElements[group_] := Scope[
-  rep = GroupRepresentation[group];
-  If[!RepresentationObjectQ[rep], ReturnFailed[]];
-  rep["Generators"]
-];
-
-
-(* PackageExport["QuaternionGroup"]
-
-SetUsage @ "
-QuaternionGroup[] represents the group of unit quaternions.
-"
- *)
-
-(**************************************************************************************************)
-
 PackageExport["TranslationGroup"]
 
 SetUsage @ "
@@ -282,18 +282,6 @@ TranslationGroupQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["DihedralTranslationGroupQ"]
-
-SetUsage @ "
-DihedralTranslationGroupQ[group$] returns True if group$ is a DihedralTranslationGroup.
-"
-
-DihedralTranslationGroupQ[_DihedralTranslationGroup | _InfiniteDihedralGroup] := True;
-DihedralTranslationGroupQ[_] := False;
-
-
-(**************************************************************************************************)
-
 PackageExport["DihedralTranslationGroup"]
 
 SetUsage @ "
@@ -321,6 +309,18 @@ declareGroup[
     "Format" :> Subsuperscript["TDih", Length @ vecs, Length @ First @ vecs]
   }
 ];
+
+(**************************************************************************************************)
+
+PackageExport["DihedralTranslationGroupQ"]
+
+SetUsage @ "
+DihedralTranslationGroupQ[group$] returns True if group$ is a DihedralTranslationGroup.
+"
+
+DihedralTranslationGroupQ[_DihedralTranslationGroup | _InfiniteDihedralGroup] := True;
+DihedralTranslationGroupQ[_] := False;
+
 
 
 (**************************************************************************************************)

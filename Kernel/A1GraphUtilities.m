@@ -7,6 +7,7 @@ PackageImport["GeneralUtilities`"]
 PackageExport["VertexAnnotations"]
 PackageExport["VertexPairAnnotations"]
 PackageExport["LayoutDimension"]
+PackageExport["GraphMetric"]
 
 (**************************************************************************************************)
 
@@ -16,10 +17,13 @@ $extendedGraphOptionsRules = {
   GraphLegend -> None,
   ArrowheadSize -> Automatic,
   ArrowheadStyle -> Automatic,
+  ArrowheadShape -> Automatic,
+  ArrowheadPosition -> Automatic,
   VertexColorFunction -> None,
   VertexAnnotations -> None,
   VertexPairAnnotations -> None,
-  LayoutDimension -> Automatic
+  LayoutDimension -> Automatic,
+  GraphMetric -> "Uniform"
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -31,6 +35,8 @@ $extendedGraphOptionRulePattern = Rule[$extendedGraphOptionSymbolPattern, _];
 $notIntercepted = True;
 
 Graph;
+SyntaxInformation[Graph];
+Options[Graph];
 
 Unprotect[Graph];
 Options[Graph] = Sort @ JoinOptions[Graph, $extendedGraphOptionsRules];
@@ -45,9 +51,15 @@ interceptedGraphConstructor[Graph[Shortest[args__], options__Rule]] := Scope[
   annotations = TakeOptions[{options}, $extendedGraphOptionSymbols];
   newOptions = Map[collapseStyleLists] @ DeleteOptions[{options}, $extendedGraphOptionSymbols];
   result = Graph[args, Sequence @@ newOptions];
+  If[!GraphQ[result], result = makeNewGraph[args, newOptions]];
   If[!GraphQ[result], ReturnFailed[]];
-  Annotate[result, DeleteDuplicatesBy[annotations, First]]
+  Annotate[result, checkGraphAnnotations @ DeleteDuplicatesBy[annotations, First]]
 ];
+
+makeNewGraph[graph_Graph ? GraphQ, newOptions_List] :=
+  Graph[VertexList @ graph, EdgeList @ graph, Sequence @@ newOptions, Sequence @@ Options @ graph];
+
+makeNewGraph[___] := $Failed;
 
 collapseStyleLists = MatchValues[
   Rule[sym:(EdgeStyle|VertexStyle), val_] := Rule[sym, toDirective[val]];
@@ -55,6 +67,56 @@ collapseStyleLists = MatchValues[
 ];
 
 interceptedGraphConstructor[e_] := e;
+
+(**************************************************************************************************)
+
+$extendedGraphOptionPatterns = <|
+  ArrowheadSize -> $arrowheadSizePattern,
+  VertexAnnotations -> $vertexAnnotationsPattern,
+  LayoutDimension -> $layoutDimensionPattern,
+  GraphMetric -> $graphMetricPattern
+|>;
+
+checkGraphAnnotations[rules_List] := Map[checkGraphAnnotationRule, rules];
+
+General::badextopt = "The extended option `` -> `` is invalid and will be ignored."
+
+checkGraphAnnotationRule[key_ -> value_] /; And[
+  KeyExistsQ[$extendedGraphOptionPatterns, key],
+  !MatchQ[value, $extendedGraphOptionPatterns @ key]] := (
+    Message[Graph::badextopt, key, value];
+    Nothing
+  );
+
+checkGraphAnnotationRule[rule_] := rule;
+
+$arrowheadSizePattern = Alternatives[
+  _ ? NumericQ, Scaled[_ ? NumericQ],
+  sym_Symbol /; KeyExistsQ[$ImageWidthTable, sym],
+  Automatic | None
+];
+
+$vertexAnnotationsPattern = Alternatives[
+  Association[RepeatedNull[_String -> _List]],
+  None
+];
+
+$layoutDimensionPattern = Alternatives[
+  Automatic, None, 2, 3
+];
+
+$graphMetricPattern = Alternatives[
+  Automatic, "Uniform", "Quadratic", _QuadraticForm ? QuadraticFormQ
+];
+
+(**************************************************************************************************)
+
+PackageExport["AttachGraphOptions"]
+
+AttachGraphOptions[graph_Graph ? GraphQ, opts___] := Scope[
+  result = Graph[graph, opts];
+  If[GraphQ[result], result, makeNewGraph[graph, {opts}]]
+];
 
 (**************************************************************************************************)
 
@@ -95,12 +157,20 @@ $simpleGraphOptionRules = JoinOptions[{
   ImageSize -> Automatic, VertexCoordinates -> Automatic,
   VertexLabels -> None, VertexSize -> Automatic,
   VertexStyle -> Automatic, EdgeStyle -> Automatic,
-  VertexShapeFunction -> Automatic
+  VertexShapeFunction -> Automatic, PlotLabel -> None
   },
   Rest @ $extendedGraphOptionsRules
 ]
 
 $simpleGraphOptions = Keys @ $simpleGraphOptionRules;
+
+(**************************************************************************************************)
+
+PackageExport["ExtendedGraph"]
+
+Options[ExtendedGraph] = $simpleGraphOptionRules;
+ExtendedGraph[args___] :=
+  interceptedGraphConstructor[Graph[args, GraphPlottingFunction -> ExtendedGraphPlottingFunction]];
 
 (**************************************************************************************************)
 
@@ -121,6 +191,51 @@ PackageExport["ToIndexGraph"]
 
 ToIndexGraph[graph_ ? IndexGraphQ] := graph;
 ToIndexGraph[graph_] := IndexGraph @ graph;
+
+(**************************************************************************************************)
+
+PackageExport["CombineMultiedges"]
+
+SetUsage @ "
+CombineMultiedges[graph$] combines edges that share the same endpoints into
+single edges, combining any cardinals they have.
+"
+
+CombineMultiedges[graph_] := Scope[
+  {vertices, edges} = VertexEdgeList[graph];
+  {edges, tags} = Transpose @ Map[separateTag, edges];
+  edgeGroups = PositionIndex[edges];
+  If[Length[edgeGroups] === Length[edges], Return @ graph];
+  edges = KeyValueMap[
+    {edge, indices} |-> reattachTag[edge, DeleteNone @ Part[tags, indices]],
+    edgeGroups
+  ];
+  opts = Options[graph];
+  Graph[vertices, edges, opts]
+];
+
+separateTag = MatchValues[
+  DirectedEdge[a_, b_, t_] /; Order[a, b] == -1 := {DirectedEdge[b, a], Negated @ t};
+  DirectedEdge[a_, b_, t_] := {DirectedEdge[a, b], t};
+  UndirectedEdge[a_, b_, t_] := {Sort @ UndirectedEdge[a, b], t};
+  edge_ := {Sort @ edge, None}
+];
+
+reattachTag[edge_, {}] := edge;
+reattachTag[edge_, {tag_}] := Append[edge, tag];
+reattachTag[edge_, tags_List] := Append[edge, CardinalSet @ tags];
+
+(**************************************************************************************************)
+
+PackageExport["CardinalSet"]
+
+SetUsage @ "
+CardinalSet[cardinals$] represents a set of cardinals that is simultaneously present on an edge.
+"
+
+PackageScope["SpliceCardinalSets"]
+
+SpliceCardinalSets[e_] := ReplaceAll[ReplaceAll[e, CardinalSet -> Splice], Negated[z_] :> z];
 
 (**************************************************************************************************)
 
@@ -427,14 +542,14 @@ ToGraph = MatchValues[
 PackageExport["AttachVertexAnnotations"]
 
 AttachVertexAnnotations[graph_, annotations_] := Scope[
-  CheckGraphArg[1];
+  CheckIsGraph[1];
   joinAnnotation[graph, VertexAnnotations, annotations]
 ];
 
 PackageExport["AttachVertexPairAnnotations"]
 
 AttachVertexPairAnnotations[graph_, annotations_] := Scope[
-  CheckGraphArg[1];
+  CheckIsGraph[1];
   joinAnnotation[graph, VertexPairAnnotations, annotations]
 ];
 
@@ -505,21 +620,22 @@ ecoords$ is a list of coordinate matrices in the same order as EdgeList[graph$].
 ExtractGraphPrimitiveCoordinates[graph_] := Scope[
 
   If[!GraphQ[graph], ReturnFailed[]];
-  graph = ToIndexGraph[graph];
+  igraph = ToIndexGraph[graph];
+  If[!GraphQ[igraph], ReturnFailed[]];
 
-  graphLayout = LookupOption[graph, GraphLayout];
+  graphLayout = LookupOption[igraph, GraphLayout];
   layoutDimension = AnnotationValue[graph, LayoutDimension];
   SetAutomatic[graphLayout, {}];
   is3D = ContainsQ[graphLayout, "Dimension" -> 3] || layoutDimension === 3;
 
-  vertexCoordinates = ConstantArray[If[is3D, {0, 0, 0}, {0, 0}], VertexCount @ graph];
+  vertexCoordinates = ConstantArray[If[is3D, {0, 0, 0}, {0, 0}], VertexCount @ igraph];
 
-  edgeList = EdgeList @ graph;
+  edgeList = EdgeList @ igraph;
   edgeCoordinateLists = ConstantArray[{}, Length @ edgeList];
-  If[UndirectedGraphQ[graph] || MixedGraphQ[graph],
+  If[UndirectedGraphQ[igraph] || MixedGraphQ[igraph],
     edgeList //= CanonicalizeEdges];
 
-  isMulti = MultigraphQ[graph];
+  isMulti = MultigraphQ[igraph];
   If[isMulti,
     edgeIndices = PositionIndex[edgeList];
     edgeIndexOffset = ConstantAssociation[edgeList, 1];
@@ -533,12 +649,14 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     graphLayout = Developer`ToList[graphLayout, "MultiEdgeDistance" -> 0.3];
   ];
 
-  GraphComputation`GraphDrawing @ If[is3D, Graph3D, Graph][
-    graph,
+  newGraph = If[is3D, Graph3D, Graph][
+    VertexList @ igraph, EdgeList @ igraph,
     VertexShapeFunction -> captureVertexCoordinates,
-    EdgeShapeFunction -> Function[edgeCaptureFunction[#1, sortUE[#2]];],
-    GraphLayout -> graphLayout
+    EdgeShapeFunction -> ({coords, edge} |-> edgeCaptureFunction[coords, sortUE @ edge]),
+    GraphLayout -> graphLayout, VertexCoordinates -> LookupOption[igraph, VertexCoordinates]
   ];
+
+  GraphComputation`GraphDrawing @ newGraph;
 
   {Developer`ToPackedArray @ vertexCoordinates, toPackedArrayOfArrays @ edgeCoordinateLists}
 ];
@@ -583,8 +701,12 @@ PackageScope["$LatticeFindShortestPath"]
 PackageScope["$IndexGraph"]
 PackageScope["$IndexGraphEdgeList"]
 PackageScope["$IndexGraphVertexList"]
-PackageScope["$GraphIOIndexToEdgeIndex"]
+PackageScope["$GraphVertexInOutEdgeTable"]
+PackageScope["$GraphVertexInEdgeTable"]
+PackageScope["$GraphVertexOutEdgeTable"]
 PackageScope["$SymmetricIndexGraph"]
+
+PackageScope["$GraphMetric"]
 PackageScope["$GraphDistanceMatrix"]
 PackageScope["$GraphDistance"]
 PackageScope["$GraphFindShortestPath"]
@@ -632,14 +754,18 @@ GraphScope[graph_, body_] := Block[
     $IndexGraph := $IndexGraph = IndexGraph[$Graph],
     $IndexGraphEdgeList := $IndexGraphEdgeList = EdgeList[$IndexGraph],
     $IndexGraphVertexList := $IndexGraphVertexList = Range @ VertexCount @ $IndexGraph,
-    $GraphIOIndexToEdgeIndex := $GraphIOIndexToEdgeIndex = AssociationRange[{#1, #2}& @@@ $IndexGraphEdgeList],
+    $GraphVertexInOutEdgeTable := $GraphVertexInOutEdgeTable = VertexInOutEdgeTable @ $IndexGraph,
+    $GraphVertexInEdgeTable := $GraphVertexInEdgeTable = FirstColumn @ $GraphVertexInOutEdgeTable,
+    $GraphVertexOutEdgeTable := $GraphVertexOutEdgeTable = LastColumn @ $GraphVertexInOutEdgeTable,
+
     $SymmetricIndexGraph := $SymmetricIndexGraph = Graph[VertexList[$IndexGraph], UndirectedEdge @@@ EdgeList[$IndexGraph]],
 
+    $GraphMetric := $GraphMetric = LookupAnnotation[$Graph, GraphMetric, Automatic],
     $GraphDistanceMatrix := $GraphDistanceMatrix = GraphDistanceMatrix[$SymmetricIndexGraph],
     $LatticeDistance := $LatticeDistance = LatticeDistance[$SymmetricIndexGraph],
-    $GraphDistance = {v1, v2} |-> Extract[$GraphDistanceMatrix, {v1, v2}],
-    $GraphFindShortestPath := $GraphFindShortestPath = FindShortestPath[$SymmetricIndexGraph, All, All],
+    $GraphDistance = {v1, v2} |-> Part[$GraphDistanceMatrix, v1, v2],
     $LatticeFindShortestPath := $LatticeFindShortestPath = FindShortestLatticePath[$SymmetricIndexGraph, All, All],
+    $GraphFindShortestPath := $GraphFindShortestPath = FindShortestPath[$SymmetricIndexGraph, All, All],
     $GraphFindPath = Function[FindPath[$SymmetricIndexGraph, ##]]
   },
   body

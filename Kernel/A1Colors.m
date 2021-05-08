@@ -15,6 +15,34 @@ $ColorPattern is a pattern that matches a valid color, like RGBColor[$$] etc.
 
 (**************************************************************************************************)
 
+PackageExport["SetColorOpacity"]
+
+$setColorOpacityRules = Dispatch[{
+  RGBColor[r_, g_, b_] :> RGBColor[r, g, b, $opacity],
+  RGBColor[{r_, g_, b_}] :> RGBColor[r, g, b, $opacity],
+  GrayLevel[g_] :> GrayLevel[g, $opacity],
+  Hue[h_] :> Hue[h, 1, 1, $opacity],
+  c:(_Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Length[c] === 3 :> Append[c, $opacity]
+}];
+
+SetColorOpacity[expr_, opacity_] :=
+  expr /. $setColorOpacityRules /. ($opacity -> opacity)
+
+(**************************************************************************************************)
+
+PackageExport["ContainsOpacityColorsQ"]
+
+$opacityColorsPattern = Alternatives[
+  RGBColor[{_, _, _, _}],
+  GrayLevel[_, _],
+  _Opacity,
+  c:(_RGBColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Length[c] === 4
+];
+
+ContainsOpacityColorsQ[expr_] := !FreeQ[expr, $opacityColorsPattern];
+
+(**************************************************************************************************)
+
 PackageExport["ColorVectorQ"]
 
 ColorVectorQ[e_] := VectorQ[e, ColorQ];
@@ -190,7 +218,7 @@ PackageExport["$Gray"]
 {$Blue, $Red, $Green, $Pink, $Teal, $Yellow, $Orange, $Purple, $Gray} =
   Map[RGBColor, StringSplit @ "#3e81c3 #e1432d #4ea82a #c74883 #47a5a7 #f6e259 #dc841a #8b7ebe #929292"]
 
-$ColorPalette = {$Red, $Blue, $Green, $Teal, $Orange, $Purple, $Gray, $Pink, $Yellow};
+$ColorPalette = {$Red, $Blue, $Green, $Orange, $Purple, $Teal, $Gray, $Pink, $Yellow};
 
 PackageExport["$DarkColorPalette"]
 

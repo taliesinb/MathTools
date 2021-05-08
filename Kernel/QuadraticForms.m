@@ -36,3 +36,9 @@ formatQuadraticForm[QuadraticFormObject[matrix_]] :=
 
 formatQuadraticFormMatrix[matrix_] :=
   renderRepresentationMatrix[matrix, False, FrameStyle -> $LightBlue]
+
+
+PackageExport["QuadraticFormQ"]
+
+QuadraticFormQ[_QuadraticFormObject ? System`Private`HoldNoEntryQ] := True;
+QuadraticFormQ[_] := False;

@@ -4,10 +4,13 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
+(**************************************************************************************************)
+
 PackageScope["summaryItem"]
 
 summaryItem[a_, b_] := BoxForm`SummaryItem[{a <> ": ", b}];
 
+(**************************************************************************************************)
 
 PackageScope["declareFormatting"]
 PackageScope["$isTraditionalForm"]
@@ -23,26 +26,48 @@ declareFormatting[lhs_ :> rhs_] :=
 
 declareFormatting[___] := Panic["BadFormatting"]
 
+(**************************************************************************************************)
+
+PackageExport["OrList"]
+PackageExport["AndList"]
+
+OrList = Apply[Or];
+AndList = Apply[And];
+
+(**************************************************************************************************)
+
+PackageScope["declareBoxFormatting"]
+
+declareBoxFormatting[rules__RuleDelayed] := Scan[declareBoxFormatting, {rules}];
+declareBoxFormatting[lhs_ :> rhs_] :=
+  With[{head = First @ PatternHead[lhs]}, {isProtected = ProtectedFunctionQ[head]},
+    If[isProtected, Unprotect[head]];
+    MakeBoxes[lhs, StandardForm] := Block[{$isTraditionalForm = False}, rhs];
+    MakeBoxes[lhs, TraditionalForm] := Block[{$isTraditionalForm = True}, rhs];
+    If[isProtected, Protect[head]];
+  ];
+
+declareBoxFormatting[___] := Panic["BadFormatting"]
+
+(**************************************************************************************************)
 
 PackageExport["RealVectorQ"]
 
 RealVectorQ[list_] := VectorQ[list, Internal`RealValuedNumberQ];
 
+(**************************************************************************************************)
 
 PackageExport["RealMatrixQ"]
 
 RealMatrixQ[list_] := MatrixQ[list, Internal`RealValuedNumberQ];
 
+(**************************************************************************************************)
 
 PackageExport["ComplexVectorQ"]
 
 ComplexVectorQ[list_] := VectorQ[list, NumericQ] && !FreeQ[list, Complex];
 
-
-PackageExport["RuleRange"]
-
-RuleRange[labels_] := MapIndexed[#1 -> First[#2]&, labels];
-
+(**************************************************************************************************)
 
 PackageExport["ArrayLabelIndices"]
 
@@ -52,6 +77,7 @@ ArrayLabelIndices[array_, labels_] :=
 ArrayLabelIndices[array_, labels_, level_] :=
   Replace[array, RuleRange @ labels, List[level]];
 
+(**************************************************************************************************)
 
 PackageExport["ArrayLabeling"]
 
@@ -71,54 +97,71 @@ ExtractIndices[array_, indices_ /; VectorQ[indices, Internal`NonNegativeMachineI
 
 ExtractIndices[array_, indices_List] := Map[Part[array, #]&, indices, {-1}]
 
+(**************************************************************************************************)
+
 PackageExport["FirstColumn"]
 
 FirstColumn[matrix_] := Part[matrix, All, 1];
 
+(**************************************************************************************************)
 
 PackageExport["LastColumn"]
 
 LastColumn[matrix_] := Part[matrix, All, -1];
 
+(**************************************************************************************************)
 
 PackageExport["MostColumns"]
 
 MostColumns[matrix_] := Part[matrix, All, All ;; -2];
 
+(**************************************************************************************************)
 
 PackageExport["RestColumns"]
 
 RestColumns[matrix_] := Part[matrix, All, 2 ;; All];
 
+(**************************************************************************************************)
 
 PackageExport["FirstRest"]
 
 FirstRest[list_] := {First @ list, Rest @ list};
 
+(**************************************************************************************************)
 
 PackageExport["AssociationRange"]
 
 AssociationRange[list_] :=
   AssociationThread[list, Range @ Length @ list];
 
+(**************************************************************************************************)
+
+PackageExport["RuleRange"]
+
+RuleRange[labels_] := MapIndexed[#1 -> First[#2]&, labels];
+
+(**************************************************************************************************)
 
 PackageExport["MinimumIndexBy"]
 
 MinimumIndexBy[list_, f_] :=
   First @ Ordering[f /@ list, 1];
 
+(**************************************************************************************************)
 
 PackageExport["MinimumIndex"]
 
 MinimumIndex[list_] :=
   First @ Ordering[list, 1];
 
+(**************************************************************************************************)
 
 PackageExport["MinimumBy"]
 
 MinimumBy[list_, f_] :=
   Part[list, First @ Ordering[f /@ list, 1]];
 
+(**************************************************************************************************)
 
 PackageExport["FirstIndex"]
 
@@ -126,6 +169,7 @@ SetAttributes[FirstIndex, HoldRest];
 FirstIndex[list_, pattern_, default_:None] :=
   First @ FirstPosition[list, pattern, {default}, 1, Heads -> False]
 
+(**************************************************************************************************)
 
 PackageScope["toListOfLists"]
 
@@ -135,22 +179,19 @@ toListOfLists = MatchValues[
   _ := $Failed;
 ];
 
+(**************************************************************************************************)
 
 PackageExport["RangeQ"]
 
 RangeQ[list_] := VectorQ[list, IntegerQ] && MinMax[list] == {1, Length @ list};
 
+(**************************************************************************************************)
 
 PackageExport["MapStaggered"]
 
 MapStaggered[f_, list_] := f @@@ Partition[list, 2, 1];
 
-
-PackageExport["NegatedQ"]
-
-NegatedQ[_Negated] = True;
-NegatedQ[_] = False;
-
+(**************************************************************************************************)
 
 PackageExport["AtLeast"]
 
@@ -158,6 +199,25 @@ SetUsage @ "
 AtLeast[n$] is a symbolic expression indicating that at least n$ values should be obtained.
 "
 
+(**************************************************************************************************)
+
+PackageExport["ToInverseFunction"]
+
+SetUsage @ "
+ToInverseFunction[f$] returns InverseFunction[f$].
+* ToInverseFunction exists to enable a fast-path for GraphTools-specific functions.
+"
+
+ToInverseFunction[e_] := InverseFunction[e];
+
+(**************************************************************************************************)
+
+PackageExport["NegatedQ"]
+
+NegatedQ[_Negated] = True;
+NegatedQ[_] = False;
+
+(**************************************************************************************************)
 
 PackageExport["Negated"]
 
@@ -173,35 +233,32 @@ Negated[Negated[e_]] := e;
 Negated /: DirectedEdge[a_, b_, Negated[c_]] := DirectedEdge[b, a, c];
 
 declareFormatting[
-  Negated[e_] :> OverBar[e]
+  Negated[e_] :> NegatedForm[e]
 ];
 
+(**************************************************************************************************)
+
+PackageExport["NegatedForm"]
+
+declareBoxFormatting[
+  NegatedForm[e_] :> OverscriptBox[ToBoxes @ e, "_"]
+];
+
+(**************************************************************************************************)
 
 PackageScope["StripNegated"]
 
 StripNegated[Negated[e_]] := e;
 StripNegated[e_] := e;
 
-
-PackageScope["ImageToGraphics"]
-
-ImageToGraphics[img_, {xalign_, yalign_}, size_] := Scope[
-  {w, h} = ImageDimensions[img];
-  yrat = h / w;
-  x = (xalign - 1)/2;
-  y = yrat * (yalign - 1)/2;
-  Graphics[
-    {Opacity[1], Raster[Reverse[ImageData@img, {1}], {{x, y}, {x + 1, y + yrat}} * size]},
-    ImageSize -> size, AspectRatio -> 1, PlotRangePadding -> None
-  ]
-];
-
+(**************************************************************************************************)
 
 PackageExport["LookupOption"]
 
 LookupOption[obj_, opt_, default_:Automatic] :=
   Quiet @ Lookup[Options[obj, opt], opt, default];
 
+(**************************************************************************************************)
 
 PackageExport["JoinOptions"]
 
@@ -210,6 +267,7 @@ JoinOptions[opts___] := DeleteDuplicatesBy[
   First
 ];
 
+(**************************************************************************************************)
 
 PackageExport["DeleteOptions"]
 
@@ -219,6 +277,7 @@ DeleteOptions[opts_, keys_List] :=
 DeleteOptions[opts_, key_] :=
   DeleteCases[opts, key -> _];
 
+(**************************************************************************************************)
 
 PackageExport["TakeOptions"]
 
@@ -231,6 +290,7 @@ TakeOptions[opts_List, keys_List] :=
 TakeOptions[opts_List, key_] :=
   Cases[opts, Verbatim[Rule][key, _]];
 
+(**************************************************************************************************)
 
 PackageExport["ReplaceOptions"]
 
@@ -246,6 +306,7 @@ ReplaceOptions[obj_, key_ -> value_] := If[
 ReplaceOptions[obj_, rules_List] :=
   Fold[ReplaceOptions, obj, rules];
 
+(**************************************************************************************************)
 
 PackageExport["UpdateOptions"]
 
@@ -256,19 +317,7 @@ UpdateOptions[obj_, option_, func_] :=
 General::noobjprop = "There is no property named \"``\". Valid properties include: ``.";
 General::noobjoptprop = "There is no property named \"``\" that accepts options. Such properties include: ``.";
 
-
-PackageExport["AttachAnnotation"]
-
-AttachAnnotation[obj_, key_ -> None] :=
-  If[AnnotationValue[obj, key] === $Failed, obj,
-    AnnotationDelete[obj, key]];
-
-AttachAnnotation[obj_, key_ -> value_] :=
-  Annotate[obj, key -> value];
-
-AttachAnnotation[obj_, rules_List] :=
-  Fold[AttachAnnotation, obj, rules];
-
+(**************************************************************************************************)
 
 PackageExport["LookupAnnotation"]
 
@@ -278,7 +327,7 @@ LookupAnnotation[obj_, key_, default_:Automatic] :=
 LookupAnnotation[obj_, key_List, default_:Automatic] :=
   Replace[AnnotationValue[obj, key], $Failed -> default, {1}];
 
-
+(**************************************************************************************************)
 
 PackageScope["commaString"]
 
@@ -286,6 +335,7 @@ qs[s_String] := "\"" <> s <> "\"";
 qs[e_] := e;
 commaString[list_List] := TextString[Row[Map[qs, list], ", "]];
 
+(**************************************************************************************************)
 
 PackageScope["declareObjectPropertyDispatch"]
 PackageScope["getObjectData"]
@@ -298,25 +348,25 @@ declareObjectPropertyDispatch[head_Symbol, dispatch_Symbol] := (
   (obj:Blank[head] ? System`Private`NoEntryQ)[key_String, opts___Rule] := Block[{$SelfObject = obj},
     dispatch[getObjectData @ obj, key, opts]
   ];
-  dispatch[data_, key_String] :=
-    Lookup[data, key,
-      Message[MessageName[head, "noobjprop"], key, commaString @ getValidProps[dispatch, data]];
-      $Failed
-    ];
-  dispatch[data_, key_String, opts___Rule] := (
-      Message[MessageName[head, "noobjoptprop"], key, commaString @ getValidOptProps[dispatch]];
-      $Failed
-    );
+  dispatch[data_, key_String] := Block[{res = Lookup[data, key, $Failed]}, res /; res =!= $Failed];
+  dispatch[args___] := failDispatch[head, dispatch][args];
 );
+
+failDispatch[head_, dispatch_][data_, key_String] :=
+  Message[MessageName[head, "noobjprop"], key, commaString @ getValidProps[dispatch, data]];
+
+failDispatch[head_, dispatch_][data_, key_String, __Rule] :=
+  Message[MessageName[head, "noobjoptprop"], key, commaString @ getValidOptProps @ dispatch];
 
 getValidProps[symbol_, data_] := Union[
   Cases[DownValues[symbol], HoldPattern[Verbatim[HoldPattern][symbol[_, key_String]] :> _] :> key],
   Keys @ data
 ];
 
-getValidOptProps[symbol_] := Union @
-  Cases[DownValues[symbol], HoldPattern[Verbatim[HoldPattern][symbol[_, key_String, __]] :> _] :> key];
+getValidOptProps[symbol_] := getValidOptProps[symbol] =
+  Union @ Cases[DownValues[symbol], HoldPattern[Verbatim[HoldPattern][symbol[_, key_String, __]] :> _] :> key];
 
+(**************************************************************************************************)
 
 PackageScope["declareFunctionAutocomplete"]
 PackageScope["declareSyntaxInfo"]
@@ -341,29 +391,68 @@ declareSyntaxInfo[function_Symbol, argPatterns_List] := Scope[
 
 ];
 
-PackageScope["CheckQuiverArg"]
-PackageScope["CheckGraphArg"]
-PackageScope["CheckRepArg"]
-
-General::notgroup = "`` is not a valid group.";
-General::notquiver = "The `` argument should be a quiver graph.";
-General::notgraph = "The `` argument should be a Graph.";
-General::notrep = "The `` argument should be a group, RepresentationObject, QuiverRepresentationObject, or RootSystem.";
+(**************************************************************************************************)
 
 $numNames = <|1 -> "first", 2 -> "second", 3 -> "third", 4 -> "fourth"|>;
 
-defineCheckArgMacro[macroName_Symbol, msgName_String, test_] :=
-  DefineMacro[macroName,
-    macroName[n_] := With[
-      {nthArg = Part[$LHSPatternSymbols, n], numStr = $numNames[n]},
-      Quoted @ Replace[test[nthArg], $Failed :> ReturnFailed[MessageName[$LHSHead, msgName], numStr]]
-    ]
-  ];
+defineCheckArgMacro[checkMacro_Symbol, checker_, msgName_String] := DefineMacro[coerceMacro,
+  coerceMacro[n_] := With[
+    {nthArg = Part[$LHSPatternSymbols, n], numStr = $numNames[n]},
+    Quoted @ Replace[coercer[nthArg], $Failed :> ReturnFailed[MessageName[$LHSHead, msgName], numStr]]
+  ]
+];
 
-defineCheckArgMacro[CheckQuiverArg, "notquiver", ToQuiver];
-defineCheckArgMacro[CheckGraphArg, "notgraph", ToGraph];
-defineCheckArgMacro[CheckRepArg, "notrep", ToRepresentation];
+defineCoerceArgMacro[coerceMacro_Symbol, coercer_, msgName_String] := DefineMacro[coerceMacro,
+  coerceMacro[n_] := With[
+    {nthArg = Part[$LHSPatternSymbols, n], numStr = $numNames[n]},
+    Quoted @ Replace[coercer[nthArg], $Failed :> ReturnFailed[MessageName[$LHSHead, msgName], numStr]]
+  ]
+];
 
+_defineCheckArgMacro := Panic["BadArgMacro"];
+_defineCoerceArgMacro := Panic["BadArgMacro"];
+
+(**************************************************************************************************)
+
+PackageScope["CheckIsQuiver"]
+PackageScope["CoerceToQuiver"]
+
+General::notquiver = "The `` argument should be a quiver.";
+General::notquiverc = "The `` argument should be a quiver or list of quiver edges.";
+defineCheckArgMacro[CheckIsQuiver, QuiverQ, "notquiver"];
+defineCoerceArgMacro[CoerceToQuiver, ToQuiver, "notquiverc"];
+
+
+PackageScope["CheckIsGraph"]
+PackageScope["CoerceToGraph"]
+
+General::notgraph = "The `` argument should be a Graph.";
+General::notgraphc = "The `` argument should be a Graph or list of edges.";
+defineCheckArgMacro[CheckIsGraph, GraphQ, "notgraph"];
+defineCoerceArgMacro[CoerceToGraph, ToGraph, "notgraphc"];
+
+
+PackageScope["CheckIsRep"]
+PackageScope["CoerceToRep"]
+
+General::notrep = "The `` argument should be a RepresentationObject.";
+General::notrepc = "The `` argument should be a group, groupoid, RepresentationObject, QuiverRepresentationObject, or RootSystem.";
+defineCheckArgMacro[CheckIsRep, RepresentationObjectQ, "notrep"];
+defineCoerceArgMacro[CoerceToRep, ToRepresentation, "notrepc"];
+
+
+PackageScope["CheckIsGroup"]
+
+General::notgroup = "`` is not a valid group.";
+defineCheckArgMacro[CheckIsGroup, GroupQ, "notgroup"];
+
+
+PackageScope["CheckIsGraphics"]
+
+General::notgraphics = "The `` argument should be a Graphics or Graphics3D expression."
+defineCheckArgMacro[CheckIsGraphics, GraphicsQ, "notgraphics"];
+
+(**************************************************************************************************)
 
 PackageScope["UnpackOptionsAs"]
 
@@ -379,6 +468,7 @@ mUnpackOptionsAs[head_, opts_, syms_] :=
     ]
   ];
 
+(**************************************************************************************************)
 
 PackageScope["FunctionSection"]
 
@@ -386,6 +476,23 @@ DefineMacro[FunctionSection,
 FunctionSection[expr_] := Quoted[expr]
 ];
 
+(**************************************************************************************************)
+
+PackageScope["SetAutomatic"]
+PackageScope["SetMissing"]
+PackageScope["SetNone"]
+PackageScope["SetAll"]
+PackageScope["SetInherited"]
+
+DefineLiteralMacro[SetAutomatic, SetAutomatic[lhs_, rhs_] := If[lhs === Automatic, lhs = rhs, lhs]];
+DefineLiteralMacro[SetMissing, SetMissing[lhs_, rhs_] := If[MissingQ[lhs], lhs = rhs, lhs]];
+DefineLiteralMacro[SetNone, SetNone[lhs_, rhs_] := If[lhs === None, lhs = rhs, lhs]];
+DefineLiteralMacro[SetAll, SetAll[lhs_, rhs_] := If[lhs === All, lhs = rhs, lhs]];
+DefineLiteralMacro[SetInherited, SetInherited[lhs_, rhs_] := If[lhs === Inherited, lhs = rhs, lhs]];
+
+SetHoldAll[SetAutomatic, SetMissing, SetNone, SetAll, SetInherited];
+
+(**************************************************************************************************)
 
 PackageScope["SetUsage"]
 

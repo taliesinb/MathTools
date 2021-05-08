@@ -3,8 +3,13 @@ Package["GraphTools`"]
 
 PackageImport["GeneralUtilities`"]
 
+
+(**************************************************************************************************)
+
 $vertLineBox = AdjustmentBox["\[VerticalLine]", BoxBaselineShift -> -0.2];
 $horLineBox = "\[HorizontalLine]";
+
+(**************************************************************************************************)
 
 PackageExport["LeftBar"]
 
@@ -16,6 +21,7 @@ MakeBoxes[LeftBar[x_], form_] := leftbarBox @ MakeBoxes[x, form]
 
 leftbarBox[box_] := RowBox[{$vertLineBox, box}];
 
+(**************************************************************************************************)
 
 PackageExport["RightBar"]
 
@@ -27,6 +33,7 @@ MakeBoxes[RightBar[x_], form_] := rightbarBox @ MakeBoxes[x, form];
 
 rightbarBox[box_] := RowBox[{box, $vertLineBox}];
 
+(**************************************************************************************************)
 
 $minusNegation = True;
 $overbarNegation = $underbarNegation = $leftbarNegation = $barNegation = $colorNegation = False;
@@ -292,12 +299,10 @@ SetUsage @ "
 InversionStyle is an option to CompactNumberForm and other functions.
 "
 
-
 $compactNumberOptions = {
   NegationStyle -> "Color",
   InversionStyle -> UnderBar
 };
-
 
 $sqrtSupBox = StyleBox[$minus, FontWeight -> "Bold"];
 
@@ -345,7 +350,6 @@ processStyleSpec = MatchValues[
 General::confstylespec =
   "The specifications `` for negation and `` for inversion conflict."
 
-PackageScope["blockNumberFormatting"]
 
 SetAttributes[blockNumberFormatting, HoldRest];
 
@@ -365,6 +369,7 @@ blockNumberFormatting[head_, {negationStyle_, inversionStyle_}, body_] := Scope[
   body
 ];
 
+(**************************************************************************************************)
 
 PackageExport["CompactNumberBox"]
 
@@ -381,6 +386,7 @@ CompactNumberBox[expr_, OptionsPattern[]] := Scope[
 
 iCompactNumberBox[expr_] := numBox[expr] // simplifyNumBoxes;
 
+(**************************************************************************************************)
 
 PackageExport["CompactNumberForm"]
 
@@ -402,12 +408,13 @@ MakeBoxes[CompactNumberForm[expr_, opts:OptionsPattern[]], form_] := Scope[
   MakeBoxes @@ held
 ];
 
+(**************************************************************************************************)
 
 PackageExport["CompactMatrixBox"]
 
 $compactMatrixOptions = JoinOptions[
   $compactNumberOptions,
-  {ItemSize -> Automatic, FrameStyle -> GrayLevel[0.85]}
+  {ItemSize -> Automatic, FrameStyle -> GrayLevel[0.85], "Factor" -> True}
 ];
 
 Options[CompactMatrixBox] = $compactMatrixOptions;
@@ -420,16 +427,16 @@ expandItemSize[num:{_ ? NumericQ, _ ? NumericQ}, _] := {num, num};
 expandItemSize[_, _] := {0.6, 0.3};
 
 CompactMatrixBox[matrix_, OptionsPattern[]] := Scope[
-  UnpackOptions[negationStyle, inversionStyle, itemSize, frameStyle];
+  UnpackOptions[negationStyle, inversionStyle, itemSize, frameStyle, factor];
 
   blockNumberFormatting[CompactMatrixBox, {negationStyle, inversionStyle},
     $zero = $grayDot;
-    iCompactMatrixBox[matrix, itemSize, frameStyle]
+    iCompactMatrixBox[matrix, itemSize, frameStyle, factor]
   ]
 ];
 
-iCompactMatrixBox[matrix_, itemSize_, frameStyle_] := Scope[
-  {matrix, factor} = MatrixSimplify[matrix];
+iCompactMatrixBox[matrix_, itemSize_, frameStyle_, shouldFactor_] := Scope[
+  {matrix, factor} = If[shouldFactor && Dimensions[matrix] =!= {1, 1}, MatrixSimplify[matrix], {matrix, 1}];
   entries = Map[numBox, matrix, {2}] // simplifyNumBoxes;
   matrixBoxes = matrixGridBoxes[entries, expandItemSize[itemSize, matrix], frameStyle];
   If[factor === 1, matrixBoxes,
@@ -446,6 +453,8 @@ matrixGridBoxes[entries_, {w_, h_}, frameStyle_] := GridBox[entries,
   FrameStyle -> frameStyle
 ];
 
+(**************************************************************************************************)
+
 PackageExport["CompactMatrixForm"]
 
 SetUsage @ "
@@ -456,20 +465,43 @@ Options[CompactMatrixForm] = $compactMatrixOptions;
 
 MakeBoxes[CompactMatrixForm[e_, opts:OptionsPattern[]], StandardForm] := Scope[
 
-  {negationStyle, inversionStyle, itemSize, frameStyle} =
-    OptionValue[CompactMatrixForm, {opts}, {NegationStyle, InversionStyle, ItemSize, FrameStyle}];
+  {negationStyle, inversionStyle, itemSize, frameStyle, factor} =
+    OptionValue[CompactMatrixForm, {opts}, {NegationStyle, InversionStyle, ItemSize, FrameStyle, "Factor"}];
 
   blockNumberFormatting[CompactMatrixForm, {negationStyle, inversionStyle},
     $zero = $grayDot;
-    held = Hold[e] /. m_List ? MatrixQ :> RuleCondition[RawBoxes @ iCompactMatrixBox[e, itemSize, frameStyle]];
+    If[MatrixQ[Unevaluated[e]],
+      held = RawBoxes @ iCompactMatrixBox[e, itemSize, frameStyle, factor]
+    ,
+      held = Hold[e] /. m_List /; MatrixQ[Unevaluated[m]] :>
+        RuleCondition[RawBoxes @ iCompactMatrixBox[e, itemSize, frameStyle, factor]];
+    ]
   ];
 
   MakeBoxes @@ held
 ];
 
-
+(**************************************************************************************************)
 
 PackageScope["renderRepresentationMatrix"]
 
 renderRepresentationMatrix[matrix_, isTraditional_:False, opts___] :=
   RawBoxes @ CompactMatrixBox[matrix, opts];
+
+
+(**************************************************************************************************)
+
+PackageExport["LabeledMatrixForm"]
+
+declareFormatting[
+  LabeledMatrixForm[expr_] :> formatLabeledMatrices[expr]
+];
+
+formatLabeledMatrices[expr_] := ReplaceAll[expr,
+  matrix_ /; MatrixQ[Unevaluated @ matrix] /; Length[Unevaluated @ matrix] =!= 1 :> RuleCondition @ formatLabeledMatrix @ matrix
+]
+
+formatLabeledMatrix[matrix_] := Scope[
+  tooltips = MapIndexed[Tooltip, matrix, {2}];
+  MatrixForm[tooltips, TableHeadings -> Automatic]
+];
