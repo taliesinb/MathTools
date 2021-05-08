@@ -308,6 +308,8 @@ processRegion[list_List /; VectorQ[list, GraphRegionElementQ]] :=
 
 GraphRegion::invv = "The region ``[...] contained an invalid vertex specification ``.";
 
+findVertex[RandomPoint] := RandomInteger[{1, $GraphVertexCount}];
+
 findVertex[spec_] := Lookup[$GraphVertexIndices, Key[spec],
   failAuto["invv", spec]];
 
@@ -319,7 +321,10 @@ findVertex[p:VertexPattern[v_]] :=
 
 GraphRegion::notlist = "The region ``[...] required a list of vertices, but got `` instead."
 
-findVertices[spec_] := Lookup[$GraphVertexIndices, spec, resolveComplexVertexList @ spec];
+findVertices[spec_] := Scope[
+  res = Lookup[$GraphVertexIndices, spec, $Failed];
+  If[FreeQ[res, $Failed], res, resolveComplexVertexList @ spec]
+];
 
 resolveComplexVertexList[spec_] := Which[
   vertexPatternQ[spec], MatchIndices[$GraphVertexList, spec],
