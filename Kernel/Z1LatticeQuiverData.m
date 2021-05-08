@@ -261,6 +261,8 @@ squareTorusQRep[m_Integer ? Positive, n_Integer ? Positive] := Scope[
  *)
 (**************************************************************************************************)
 
+PackageScope["$namedLatticeUsage"]
+
 $namedLatticeUsage = StringTrim @ "
 * Named two-dimensional lattices (and their corresponding tilings) include:
 | 'Square' | square tiling, aka quadrille |
@@ -277,8 +279,6 @@ $namedLatticeUsage = StringTrim @ "
 | 'FaceCenteredCubic' | face centered cubic, aka FCC, cubic close-packed |
 | 'BodyCenteredCubic' | body centered cubic, aka BCC, |
 | 'HexagonalClosePacked' | hexagonal closed packed, aka HCP |
-* The FCC, BCC, and HCP lattices are topologically identical to 'Cubic', but have \
-different vertex coordinates.
 ";
 
 (**************************************************************************************************)
