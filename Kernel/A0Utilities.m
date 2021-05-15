@@ -6,6 +6,31 @@ PackageImport["GeneralUtilities`"]
 
 (**************************************************************************************************)
 
+PackageExport["Tau"]
+
+Tau = 2 * Pi;
+
+(**************************************************************************************************)
+
+PackageScope["ToPacked"]
+
+ToPacked = Developer`ToPackedArray;
+
+PackageScope["ToPackedReal"]
+
+ToPackedReal[e_] := Developer`ToPackedArray[e, Real];
+
+PackageScope["ToPackedRealArrays"]
+
+ToPackedRealArrays[array_ ? Developer`PackedArrayQ] := array;
+
+ToPackedRealArrays[array_] := Scope[
+  array = ToPackedReal[array];
+  If[Developer`PackedArrayQ[array], array, Map[ToPackedRealArrays, array]]
+];
+
+(**************************************************************************************************)
+
 PackageScope["summaryItem"]
 
 summaryItem[a_, b_] := BoxForm`SummaryItem[{a <> ": ", b}];
@@ -36,6 +61,12 @@ AndList = Apply[And];
 
 (**************************************************************************************************)
 
+PackageScope["$posIntOrInfinityP"]
+
+$posIntOrInfinityP = _Integer ? Positive | Infinity;
+
+(**************************************************************************************************)
+
 PackageScope["declareBoxFormatting"]
 
 declareBoxFormatting[rules__RuleDelayed] := Scan[declareBoxFormatting, {rules}];
@@ -48,6 +79,19 @@ declareBoxFormatting[lhs_ :> rhs_] :=
   ];
 
 declareBoxFormatting[___] := Panic["BadFormatting"]
+
+(**************************************************************************************************)
+
+PackageExport["Interpolated"]
+
+Interpolated[a_, b_, n_] := Table[b * i + a * (1 - i), {i, 0, 1, 1/(n-1)}];
+
+(**************************************************************************************************)
+
+PackageExport["AngleInterpolated"]
+
+AngleInterpolated[a_, b_, n_] := NestList[PlusOperator[angleDelta[a, b] / (n-1)], a, n-1];
+angleDelta[a_, b_] := If[Abs[b - a] > Pi, Mod[b, 2 Pi] - Mod[a, 2 Pi], b - a];
 
 (**************************************************************************************************)
 
@@ -66,6 +110,18 @@ RealMatrixQ[list_] := MatrixQ[list, Internal`RealValuedNumberQ];
 PackageExport["ComplexVectorQ"]
 
 ComplexVectorQ[list_] := VectorQ[list, NumericQ] && !FreeQ[list, Complex];
+
+(**************************************************************************************************)
+
+PackageExport["ContainsComplexQ"]
+
+ContainsComplexQ[expr_] := !FreeQ[expr, Complex];
+
+(**************************************************************************************************)
+
+PackageExport["ContainsNegativeQ"]
+
+ContainsNegativeQ[expr_] := !FreeQ[expr, n_Real | n_Rational | n_Integer ? Negative];
 
 (**************************************************************************************************)
 
@@ -147,6 +203,11 @@ PackageExport["MinimumIndexBy"]
 MinimumIndexBy[list_, f_] :=
   First @ Ordering[f /@ list, 1];
 
+PackageExport["MaximumIndexBy"]
+
+MaximumIndexBy[list_, f_] :=
+  First @ Ordering[f /@ list, -1];
+
 (**************************************************************************************************)
 
 PackageExport["MinimumIndex"]
@@ -154,12 +215,22 @@ PackageExport["MinimumIndex"]
 MinimumIndex[list_] :=
   First @ Ordering[list, 1];
 
+PackageExport["MaximumIndex"]
+
+MaximumIndex[list_] :=
+  First @ Ordering[list, -1];
+
 (**************************************************************************************************)
 
 PackageExport["MinimumBy"]
 
 MinimumBy[list_, f_] :=
   Part[list, First @ Ordering[f /@ list, 1]];
+
+PackageExport["MaximumBy"]
+
+MaximumBy[list_, f_] :=
+  Part[list, First @ Ordering[f /@ list, -1]];
 
 (**************************************************************************************************)
 
@@ -306,6 +377,8 @@ ReplaceOptions[obj_, key_ -> value_] := If[
 ReplaceOptions[obj_, rules_List] :=
   Fold[ReplaceOptions, obj, rules];
 
+ReplaceOptions[rules_][obj_] := ReplaceOptions[obj, rules];
+
 (**************************************************************************************************)
 
 PackageExport["UpdateOptions"]
@@ -321,11 +394,13 @@ General::noobjoptprop = "There is no property named \"``\" that accepts options.
 
 PackageExport["LookupAnnotation"]
 
+SetHoldRest[LookupAnnotation];
+
 LookupAnnotation[obj_, key_, default_:Automatic] :=
-  Replace[AnnotationValue[obj, key], $Failed -> default];
+  Replace[AnnotationValue[obj, key], $Failed :> default];
 
 LookupAnnotation[obj_, key_List, default_:Automatic] :=
-  Replace[AnnotationValue[obj, key], $Failed -> default, {1}];
+  Replace[AnnotationValue[obj, key], $Failed :> default, {1}];
 
 (**************************************************************************************************)
 
@@ -504,3 +579,15 @@ substituteUsageSlots[s_String] :=
 
 SetUsage[str_String] :=
   GeneralUtilities`SetUsage @ Evaluate @ FixedPoint[substituteUsageSlots, str];
+
+(**************************************************************************************************)
+
+With[{fmv := GeneralUtilities`Control`PackagePrivate`findMutatedVariables},
+  If[FreeQ[DownValues[fmv], ApplyTo],
+    DownValues[fmv] = Insert[
+      DownValues[fmv],
+      Unevaluated @ ApplyTo[GeneralUtilities`Control`PackagePrivate`lhs_Symbol, _],
+      {1, 2, 1, 1, 2, 1, 1, 2}
+    ]
+  ];
+];

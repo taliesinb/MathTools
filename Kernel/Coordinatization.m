@@ -4,9 +4,22 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
-PackageScope["findCoordinatizationFunction"]
+PackageExport["FindCoordinatizationFunction"]
 
-findCoordinatizationFunction[matrices_, group_] := Scope[
+Options[FindCoordinatizationFunction] = {"Group" -> None, Modulus -> None};
+
+FindCoordinatizationFunction[qr_QuiverRepresentationObject] :=
+  FindCoordinatizationFunction[qr["Representation"]];
+
+FindCoordinatizationFunction[rep_RepresentationObject, opts:OptionsPattern[]] := Scope[
+  generators = rep["Generators"];
+  gen = First @ generators;
+  modulus = If[MatchQ[gen, RepresentationElement[_, _]], Last[gen], None];
+  FindCoordinatizationFunction[First /@ generators, "Group" -> rep["Group"], Modulus -> modulus]
+];
+
+FindCoordinatizationFunction[matrices_List, OptionsPattern[]] := Scope[
+  UnpackOptions[group, modulus];
   If[TranslationGroupQ[group](*  || DihedralTranslationGroupQ[group] *),
     translationVectors = ExtractTranslationVector /@ matrices;
     rank = MatrixRank[translationVectors];
@@ -27,12 +40,20 @@ findCoordinatizationFunction[matrices_, group_] := Scope[
     g12 = Dot @@ Take[matrices, 2]; g12i = Inverse[g12];
     isRedundant = AnyTrue[Drop[matrices, 2], SameQ[#, g12] || SameQ[#, g12i]&];
   ];
-
   {types, First /* (ApplyThrough @ functions), isRedundant}
 ];
 
+getTranslationCyclicity[n_] := Match[modulus,
+  None :> "Infinite",
+  z_Integer :> {"Cyclic", z},
+  matrix_List :> Scope[
+    mod = matrix[[n, -1]];
+    If[1 < mod < Infinity, {"Cyclic", mod}, "Infinite"]
+  ]
+]
+
 findSubCoordinatization[matrices_, {m_, n_}] := Scope[
-  size = n - m + 1;
+  size = n - m + 1; num = Length[matrices];
   Which[
     (size == 1) && Count[matrices, {{-1}}] == 1,
       {{"Cyclic", 2}, Extract[{m, m}] /* Function[# + 1]},
@@ -40,48 +61,38 @@ findSubCoordinatization[matrices_, {m_, n_}] := Scope[
       {{"Cyclic", FirstCase[matrices, UnitRoot[k_] :> k, None, Infinity]},
         Extract[{m, m}] /* GetRootPower
       },
-    AllTrue[matrices, DihedralTranslationMatrixQ],
-      type = "Infinite";
-      Splice @ Table[{type, Extract[{row, n}]}, {row, m, n-1}],
+    Count[matrices, _ ? BasisInversionMatrixQ] == 1 && Count[matrices, _ ? TranslationMatrixQ] == (num - 1),
+      i = 1;
+      Splice @ Table[
+        {"Infinite", Extract[{row, n}] /* If[BasisInversionMatrixQ @ Part[matrices, i++], # / 2&, Identity]},
+        {row, m, n}
+      ],
+    AllTrue[matrices, DihedralTranslationMatrixQ[#] || TranslationMatrixQ[#]&],
+      Splice @ Table[{getTranslationCyclicity[row], Extract[{row, n}]}, {row, m, n-1}],
     True,
-      {None, DiagonalBlock[{m, n}] /* RepresentationElement}
+      {None, DiagonalBlock[{m, n}]}
   ]
 ];
+
+BasisInversionMatrixQ[matrix_] :=
+  IdentityMatrixQ[Abs @ matrix] && Count[Diagonal @ matrix, -1] == 1;
 
 PackageScope["chooseLatticeCoordinatization"]
 
 (* this should return {is3D, func}, where func takes a coordinate vector
 and produces a 2D or 3D coordinate *)
 
-torusPoint[r1_, r2_, omega1_, omega2_][{a_, b_}] := With[
-  {p = r2 + r1 * Cos[a * omega1]},
-  {
-    p * Cos[b * omega2],
-    p * Sin[b * omega2],
-    r1 * Sin[a * omega1]
-  }
-];
+chooseLatticeCoordinatization[{"Infinite", {"Cyclic", n_}}, _] :=
+  {True, TimesOperator[{1, Tau / n}] /* TubeVector[n / Tau]};
 
+chooseLatticeCoordinatization[{{"Cyclic", m_}, {"Cyclic", n_}}, _] /; m <= n :=
+  {True, TimesOperator[Tau / {m, n}] /* TorusVector[{m / Tau, (n + m) / Tau}]};
 
-(* i think these things have to be in a special relationship, so that moving in direction a finite
-number of times brings us back to 'a', and same for the other directions. but since we can't move FOREVER
-in any direction since it is a finite group that gives us a constraint *)
-chooseLatticeCoordinatization[{c1:{"Cyclic", m_}, c2:{"Cyclic", n_}, c3:{"Cyclic", p_}}, True] :=
-  composeWith[$abc] @ chooseLatticeCoordinatization[{GCD[c1, c2], GCD[c2, c3]}, False];
+chooseLatticeCoordinatization[spec:{{"Cyclic", _}, {"Cyclic", _}}, redundant_] := flipSpec[spec, redundant];
+chooseLatticeCoordinatization[spec:{{"Cyclic", _}, "Infinite"}, redundant_] := flipSpec[spec, redundant];
 
-chooseLatticeCoordinatization[{{"Cyclic", m_}, {"Cyclic", n_}}, redundant_] /; m <= n :=
-  {True, torusPoint[1, 3, N[2 * Pi / m], N[2 * Pi / n]]};
-
-chooseLatticeCoordinatization[spec:{{"Cyclic", _}, {"Cyclic", _}}, redundant_] :=
-  flipSpec[spec, redundant];
-
-tubePoint[r_, omega_][{a_, b_}] := {Sin[a * omega], Cos[a * omega], b};
-
-chooseLatticeCoordinatization[{{"Cyclic", n_}, "Infinite"}, redundant_] :=
-  {True, tubePoint[m, N[2 * Pi / n]]};
-
-chooseLatticeCoordinatization[spec:{"Infinite", {"Cyclic", _}}, redundant_] :=
-  flipSpec[spec, redundant];
+chooseLatticeCoordinatization[{"Infinite"}, _] :=
+  {False, Append[0]};
 
 chooseLatticeCoordinatization[{Repeated["Infinite", 2]}, _] :=
   {False, Identity};

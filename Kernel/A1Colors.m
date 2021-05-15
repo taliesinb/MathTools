@@ -25,6 +25,9 @@ $setColorOpacityRules = Dispatch[{
   c:(_Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Length[c] === 3 :> Append[c, $opacity]
 }];
 
+SetColorOpacity[expr_, None] :=
+  expr;
+
 SetColorOpacity[expr_, opacity_] :=
   expr /. $setColorOpacityRules /. ($opacity -> opacity)
 
@@ -40,6 +43,18 @@ $opacityColorsPattern = Alternatives[
 ];
 
 ContainsOpacityColorsQ[expr_] := !FreeQ[expr, $opacityColorsPattern];
+
+(**************************************************************************************************)
+
+PackageExport["ExtractFirstOpacity"]
+
+$opacityRule = Alternatives[
+  RGBColor[{_, _, _, o_}], GrayLevel[_, o_], Opacity[o_], Opacity[o_, _],
+  RGBColor[_, _, _, o_], Hue[_, _, _, o_], XYZColor[_, _, _, o_], LABColor[_, _, _, o_],
+  LCHColor[_, _, _, o_], LUVColor[_, _, _, o_]
+] :> o;
+
+ExtractFirstOpacity[expr_] := FirstCase[expr, $opacityRule, None, {0, Infinity}];
 
 (**************************************************************************************************)
 
@@ -247,6 +262,16 @@ PackageExport["$LightGray"]
 
 {$LightRed, $LightBlue, $LightGreen, $LightTeal, $LightOrange, $LightPurple, $LightGray, $LightPink, $LightYellow} =
   $LightColorPalette = OklabLighter[$ColorPalette, .2];
+
+(**************************************************************************************************)
+
+PackageExport["Paletted"]
+
+SetUsage @ "
+Paletted[f$, palette$] indictes that a color function f$ should be applied using the color palette
+palette$.
+* palette$ can be an explicit list of colors or the following string names: 'Light', 'Regular', 'Dark'.
+"
 
 (**************************************************************************************************)
 
@@ -475,14 +500,15 @@ colorFunctionLegend[ColorFunctionObject["Linear", values_, func_, ticks_]] := Sc
     ];
     paddingRight += 5 * maxTickWidth;
   ];
-  imageWidth = $colorLegendWidth + paddingRight;
+  paddingLeft = 0;
+  imageWidth = $colorLegendWidth + paddingRight + paddingLeft;
   imageHeight = $colorLegendHeight + paddingAbove + paddingBelow;
   graphics = Graphics[
     {raster, GraphicsGroup @ tickPrimitives},
     ImageSize -> {imageWidth, imageHeight},
     PlotRangePadding -> 0, PlotRange -> {{0, 1}, {min, max}},
     PlotRangeClipping -> False,
-    ImagePadding -> {{0, paddingRight}, {paddingBelow, paddingAbove}},
+    ImagePadding -> {{paddingLeft, paddingRight}, {paddingBelow, paddingAbove}},
     BaselinePosition -> Scaled[0.05], AspectRatio -> Full,
     BaseStyle -> {ScriptSizeMultipliers -> 0.2, ScriptMinSize -> 7}
   ];
@@ -600,8 +626,9 @@ addPlus[str_] := "+" <> str;
 
 colorFunctionLegend[ColorFunctionObject["Discrete", assoc_]] :=
   Grid[
-    KeyValueMap[{val, color} |-> {simpleColorSquare @ color, val}, assoc],
-    Spacings -> {{0.2, {0.6}}, {{0.5}}}
+    KeyValueMap[{val, color} |-> {"", simpleColorSquare @ color, val}, assoc],
+    Spacings -> {{0., {0.6}, 5}, {{0.5}}},
+    BaseStyle -> $LegendLabelStyle
   ]
 
 simpleColorSquare[color_] := Graphics[
@@ -714,6 +741,7 @@ ApplyColoring[data_List] := Scope[
   If[FailureQ[colorFunction], Return @ {$Failed, $Failed}];
   normalFunction = Normal @ colorFunction;
   colors = Map[normalFunction, uniqueValues];
-  {Merge[MapThread[Rule, {colors, Values @ posIndex}], Catenate], colorFunction}
+  colorsValues = Transpose[{colors, uniqueValues}];
+  {Merge[MapThread[Rule, {colorsValues, Values @ posIndex}], Catenate], colorFunction}
 ];
 

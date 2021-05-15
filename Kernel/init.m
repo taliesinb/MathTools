@@ -7,5 +7,7 @@ If[$VersionNumber < 12.2,
   ClearAll["GraphTools`*"];
   ClearAll["GraphTools`**`*"];
 
-  Get @ FileNameJoin[{FileNameDrop @ $InputFileName, "A0Utilities.m"}];
+  Block[{Echo = Identity, Print = Hold},
+    Get @ FileNameJoin[{FileNameDrop @ $InputFileName, "A0Utilities.m"}]
+  ];
 ];

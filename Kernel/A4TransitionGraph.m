@@ -145,8 +145,6 @@ declareFunctionAutocomplete[StateTransitionGraph, {0, 0, $stgElements}];
 checkNorm[r_ ? NonNegative] := r;
 checkNorm[_] := (Message[StateTransitionGraph::badnorm]; Return[$Failed, Module]);
 
-$posIntOrInfinityP = _Integer ? Positive | Infinity;
-
 StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[]] := Scope[
 
   UnpackOptions[

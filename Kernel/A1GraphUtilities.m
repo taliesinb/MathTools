@@ -5,9 +5,12 @@ PackageImport["GeneralUtilities`"]
 
 
 PackageExport["VertexAnnotations"]
-PackageExport["VertexPairAnnotations"]
 PackageExport["LayoutDimension"]
 PackageExport["GraphMetric"]
+PackageExport["GraphOrigin"]
+PackageExport["Cardinals"]
+PackageExport["ViewOptions"]
+PackageExport["CoordinateTransformFunction"]
 
 (**************************************************************************************************)
 
@@ -21,9 +24,13 @@ $extendedGraphOptionsRules = {
   ArrowheadPosition -> Automatic,
   VertexColorFunction -> None,
   VertexAnnotations -> None,
-  VertexPairAnnotations -> None,
   LayoutDimension -> Automatic,
-  GraphMetric -> "Uniform"
+  GraphMetric -> Automatic,
+  GraphOrigin -> None,
+  Cardinals -> Automatic,
+  CardinalColors -> Automatic,
+  ViewOptions -> Automatic,
+  CoordinateTransformFunction -> None
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -50,11 +57,17 @@ SetHoldAllComplete[interceptedGraphConstructor];
 interceptedGraphConstructor[Graph[Shortest[args__], options__Rule]] := Scope[
   annotations = TakeOptions[{options}, $extendedGraphOptionSymbols];
   newOptions = Map[collapseStyleLists] @ DeleteOptions[{options}, $extendedGraphOptionSymbols];
+  newOptions //= ReplaceAll[$optionFixupRules];
   result = Graph[args, Sequence @@ newOptions];
   If[!GraphQ[result], result = makeNewGraph[args, newOptions]];
   If[!GraphQ[result], ReturnFailed[]];
   Annotate[result, checkGraphAnnotations @ DeleteDuplicatesBy[annotations, First]]
 ];
+
+$optionFixupRules = {
+  Rule[VertexSize, r:{__Rule}] :> Rule[VertexSize, Association @ r],
+  Rule[GraphHighlightStyle, l_List] :> Rule[GraphHighlightStyle, Directive[l]]
+};
 
 makeNewGraph[graph_Graph ? GraphQ, newOptions_List] :=
   Graph[VertexList @ graph, EdgeList @ graph, Sequence @@ newOptions, Sequence @@ Options @ graph];
@@ -70,11 +83,38 @@ interceptedGraphConstructor[e_] := e;
 
 (**************************************************************************************************)
 
+$arrowheadSizePattern = Alternatives[
+  _ ? NumericQ, Scaled[_ ? NumericQ],
+  sym_Symbol /; KeyExistsQ[$ImageWidthTable, sym],
+  _Association,
+  Automatic | None
+];
+
+$vertexAnnotationsPattern = Alternatives[
+  Association[RepeatedNull[_String -> _List]],
+  None
+];
+
+$layoutDimensionPattern = Alternatives[
+  Automatic, None, 2, 3
+];
+
+$graphMetricPattern = Alternatives[
+  Automatic, "Euclidean", _QuadraticFormObject, _List, _Integer, _ ? System`Private`MightEvaluateWhenAppliedQ
+];
+
+$viewOptionKeysPattern = Alternatives[
+  ViewPoint, ViewCenter, ViewVertical, ViewVector, ViewMatrix, ViewProjection, ViewAngle
+];
+
+$viewOptionsRulePattern = Automatic | {RepeatedNull[$viewOptionKeysPattern -> _]};
+
 $extendedGraphOptionPatterns = <|
   ArrowheadSize -> $arrowheadSizePattern,
   VertexAnnotations -> $vertexAnnotationsPattern,
   LayoutDimension -> $layoutDimensionPattern,
-  GraphMetric -> $graphMetricPattern
+  GraphMetric -> $graphMetricPattern,
+  ViewOptions -> $viewOptionsRulePattern
 |>;
 
 checkGraphAnnotations[rules_List] := Map[checkGraphAnnotationRule, rules];
@@ -89,25 +129,6 @@ checkGraphAnnotationRule[key_ -> value_] /; And[
   );
 
 checkGraphAnnotationRule[rule_] := rule;
-
-$arrowheadSizePattern = Alternatives[
-  _ ? NumericQ, Scaled[_ ? NumericQ],
-  sym_Symbol /; KeyExistsQ[$ImageWidthTable, sym],
-  Automatic | None
-];
-
-$vertexAnnotationsPattern = Alternatives[
-  Association[RepeatedNull[_String -> _List]],
-  None
-];
-
-$layoutDimensionPattern = Alternatives[
-  Automatic, None, 2, 3
-];
-
-$graphMetricPattern = Alternatives[
-  Automatic, "Uniform", "Quadratic", _QuadraticForm ? QuadraticFormQ
-];
 
 (**************************************************************************************************)
 
@@ -137,6 +158,9 @@ LookupExtendedGraphAnnotations[graph_, keys_List] :=
     {AnnotationValue[graph, keys], Lookup[$extendedGraphOptionsRules, keys]}
   ];
 
+LookupExtendedGraphAnnotations[graph_, key_Symbol] :=
+  LookupAnnotation[graph, key, Lookup[$extendedGraphOptionsRules, key]];
+
 (**************************************************************************************************)
 
 PackageScope["ExtendedGraphAnnotations"]
@@ -157,7 +181,9 @@ $simpleGraphOptionRules = JoinOptions[{
   ImageSize -> Automatic, VertexCoordinates -> Automatic,
   VertexLabels -> None, VertexSize -> Automatic,
   VertexStyle -> Automatic, EdgeStyle -> Automatic,
-  VertexShapeFunction -> Automatic, PlotLabel -> None
+  VertexShapeFunction -> Automatic, EdgeShapeFunction -> Automatic, PlotLabel -> None,
+  GraphHighlightStyle -> Automatic, VertexLabelStyle -> Automatic,
+  Epilog -> {}
   },
   Rest @ $extendedGraphOptionsRules
 ]
@@ -171,6 +197,55 @@ PackageExport["ExtendedGraph"]
 Options[ExtendedGraph] = $simpleGraphOptionRules;
 ExtendedGraph[args___] :=
   interceptedGraphConstructor[Graph[args, GraphPlottingFunction -> ExtendedGraphPlottingFunction]];
+
+(**************************************************************************************************)
+
+PackageExport["GraphCache"]
+
+SetUsage @ "
+GraphCache[sym$] represents a cache of computed properties of a graph that stores cached properties \
+in sym$.
+";
+
+SetHoldAllComplete[GraphCache];
+
+
+PackageScope["declareGraphCacheFriendly"]
+
+declareGraphCacheFriendly[sym_] := (
+  System`Private`SetValid[sym];
+  System`Private`SetNoEntry[sym];
+);
+declareGraphCacheFriendly[syms__] := Scan[declareGraphCacheFriendly, {syms}];
+
+MakeBoxes[GraphCache[_, sym_Symbol], StandardForm] :=
+  RowBox[{"GraphCache", "[", "{", RowBox @ Flatten @ Riffle[ToBoxes /@ Keys @ sym, ","], "}", "]"}];
+
+SetHoldRest[CreateGraphCache];
+CreateGraphCache[graph_Graph, symbol_Symbol] := (
+  symbol = Data`UnorderedAssociation[];
+  GraphCache[graph, symbol]
+);
+
+(* for ordinary functions, evaluate them on the raw graph *)
+GraphCache /: f_Symbol[GraphCache[graph_, sym_], args___] /; System`Private`HasDownEvaluationsQ[f] && System`Private`NotValidQ[f] :=
+  f[graph, args];
+
+(* for cache-friendly functions, which have the entryq flag set if they are not in the process of evaluating,
+first check the cache, and if not present, mark them as being evaluated, compute the result by passing in the GraphCache,
+then cache the result *)
+GraphCache /: f_Symbol[gc:GraphCache[_, sym_], args___] /; System`Private`ValidQ[f] && System`Private`NoEntryQ[f] :=
+  Lookup[sym, Key @ {f, args}, evaluateWithoutRecursion[sym, f, gc, args]];
+
+SetHoldFirst[evaluateWithoutRecursion];
+evaluateWithoutRecursion[sym_, f_, gc_, args___] := Block[{res},
+  System`Private`SetNoEntry[f, False];
+  sym[{f, args}] = res = f[gc, args];
+  System`Private`SetNoEntry[f];
+  res
+];
+
+$graphCacheEnabled = True;
 
 (**************************************************************************************************)
 
@@ -393,6 +468,29 @@ VertexAdjacentEdgeTable[graph_] := Scope[
     Lookup[PositionIndex @ LastColumn @ EdgePairs @ graph, vertices, {}]
   }]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["TagIndices"]
+
+TagIndices[graph_] := PositionIndex @ EdgeTags @ graph;
+
+(**************************************************************************************************)
+
+PackageExport["TagVertexAdjacentEdgeTable"]
+
+TagVertexAdjacentEdgeTable[graph_] := Scope[
+  outTable = VertexOutEdgeTable @ graph;
+  inTable = VertexInEdgeTable @ graph;
+  Association @ KeyValueMap[
+    {key, edgeIndices} |-> {
+      key ->          Map[First[Intersection[#, edgeIndices], None]&, outTable],
+      Negated[key] -> Map[First[Intersection[#, edgeIndices], None]&, inTable]
+    },
+    TagIndices @ graph
+  ]
+];
+
 (**************************************************************************************************)
 
 PackageExport["VertexIndexAssociation"]
@@ -426,16 +524,6 @@ VertexOrientedOutTable[graph_] := Scope[
     toOutTable[count, Join[undir, Reverse[undir, 2]], 1]
   }
 ];
-
-(**************************************************************************************************)
-
-PackageExport["FromVertexOrientedOutTable"]
-
-SetUsage @ "
-FromVertexOrientedOutTable[{{dout$1, uout$1}, {dout$2, uout$2}, $$}, {v$1, v$2, $$}] returns a graph in which
-vertex v$i is connected to v$j if j is an element of dout$i or uout$i.
-* This function is the inverse of VertexOrientedOutTable.
-"
 
 (**************************************************************************************************)
 
@@ -546,13 +634,6 @@ AttachVertexAnnotations[graph_, annotations_] := Scope[
   joinAnnotation[graph, VertexAnnotations, annotations]
 ];
 
-PackageExport["AttachVertexPairAnnotations"]
-
-AttachVertexPairAnnotations[graph_, annotations_] := Scope[
-  CheckIsGraph[1];
-  joinAnnotation[graph, VertexPairAnnotations, annotations]
-];
-
 (**************************************************************************************************)
 
 joinAnnotation[graph_, key_, newAnnotations_] := Scope[
@@ -623,12 +704,18 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
   igraph = ToIndexGraph[graph];
   If[!GraphQ[igraph], ReturnFailed[]];
 
-  graphLayout = LookupOption[igraph, GraphLayout];
-  layoutDimension = AnnotationValue[graph, LayoutDimension];
-  SetAutomatic[graphLayout, {}];
-  is3D = ContainsQ[graphLayout, "Dimension" -> 3] || layoutDimension === 3;
+  {graphLayout, vertexCoordinates} =
+    LookupOption[igraph, {GraphLayout, VertexCoordinates}];
 
-  vertexCoordinates = ConstantArray[If[is3D, {0, 0, 0}, {0, 0}], VertexCount @ igraph];
+  {layoutDimension, viewOptions, coordinateTransformFunction} =
+    LookupExtendedGraphAnnotations[graph, {LayoutDimension, ViewOptions, CoordinateTransformFunction}];
+
+  actualDim = If[ContainsQ[graphLayout, "Dimension" -> 3] || CoordinateMatrixQ[vertexCoordinates, 3], 3, 2];
+  SetAutomatic[layoutDimension, actualDim];
+
+  SetAutomatic[graphLayout, {}];
+
+  vertexCoordinates = ConstantArray[0., {VertexCount @ igraph, actualDim}];
 
   edgeList = EdgeList @ igraph;
   edgeCoordinateLists = ConstantArray[{}, Length @ edgeList];
@@ -649,7 +736,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     graphLayout = Developer`ToList[graphLayout, "MultiEdgeDistance" -> 0.3];
   ];
 
-  newGraph = If[is3D, Graph3D, Graph][
+  newGraph = If[actualDim == 3, Graph3D, Graph][
     VertexList @ igraph, EdgeList @ igraph,
     VertexShapeFunction -> captureVertexCoordinates,
     EdgeShapeFunction -> ({coords, edge} |-> edgeCaptureFunction[coords, sortUE @ edge]),
@@ -658,7 +745,19 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
 
   GraphComputation`GraphDrawing @ newGraph;
 
-  {Developer`ToPackedArray @ vertexCoordinates, toPackedArrayOfArrays @ edgeCoordinateLists}
+  vertexCoordinates = ToPackedReal @ vertexCoordinates;
+
+  applyCoordinateTransform[coordinateTransformFunction];
+
+  If[CoordinateMatrixQ[vertexCoordinates, 3] && layoutDimension == 2,
+    SetAutomatic[viewOptions, $automaticViewOptions];
+    viewOptions = Association[PlotRange -> CoordinateBounds[vertexCoordinates], viewOptions];
+    viewTransform = ConstructGraphicsViewTransform[viewOptions];
+    vertexCoordinates //= viewTransform;
+    edgeCoordinateLists //= Map[viewTransform];
+  ];
+
+  {ToPackedReal @ vertexCoordinates, ToPackedRealArrays @ edgeCoordinateLists}
 ];
 
 captureVertexCoordinates[coords_, vertex_, _] :=
@@ -670,14 +769,41 @@ storeEdgeCoords[coords_, edge_] :=
 storeMultiEdgeCoords[coords_, edge_] :=
   Part[edgeCoordinateLists, Part[edgeIndices @ edge, edgeIndexOffset[edge]++]] = coords;
 
-toPackedArrayOfArrays[array_ ? Developer`PackedArrayQ] := array;
+(**************************************************************************************************)
 
-toPackedArrayOfArrays[array_] := Scope[
-  array = Developer`ToPackedArray[array];
-  If[!Developer`PackedArrayQ[array],
-    array = Map[Developer`ToPackedArray, array]];
-  array
+ExtendedGraphPlot::badwrappedshape = "CoordinateTransformFunction -> ProjectionOnto[...] contains an invalid shape.";
+ExtendedGraphPlot::badedgeshape = "CoordinateTransformFunction -> `` is not a valid specification.";
+
+applyCoordinateTransform[Automatic|None] :=
+  Null
+
+applyCoordinateTransform[spec_] :=
+  Message[ExtendedGraphPlot::badedgeshape, spec];
+
+applyCoordinateTransform[ProjectionOnto[shape_]] := Block[{$rnf},
+  $rnf = BoundaryProjection @ shape;
+  If[FailureQ[$rnf], Message[ExtendedGraphPlot::badwrappedshape]; Return @ $Failed];
+  vertexCoordinates //= $rnf;
+  edgeCoordinateLists //= Map[projectLineOntoRNF];
 ];
+
+projectLineOntoRNF = MatchValues[
+  {a_, b_} ? CoordinateMatrixQ /; (Head[$rnf] === RegionNearestFunction) :=
+    $rnf @ Interpolated[a, b, 6];
+  points_List ? CoordinateMatrixQ :=
+    $rnf @ points;
+  points_List := Print[points]; (* projectLineOntoRNF /@ points; *)
+];
+
+
+(**************************************************************************************************)
+
+PackageExport["ToSymmetricGraph"]
+
+ToSymmetricGraph[graph_ ? DirectedGraphQ] :=
+  Graph[VertexList @ graph, EdgeList[graph] /. DirectedEdge -> UndirectedEdge];
+
+ToSymmetricGraph[graph_] := graph;
 
 (**************************************************************************************************)
 
@@ -688,85 +814,60 @@ PackageScope["NotInGraphScopeOfQ"]
 NotInGraphScopeOfQ[graph_] := !GraphQ[$Graph] || (graph =!= $Graph)
 
 PackageScope["$Graph"]
-PackageScope["$GraphVertexList"]
-PackageScope["$GraphEdgeList"]
-PackageScope["$GraphEdgeTags"]
-PackageScope["$GraphVertexIndices"]
-PackageScope["$GraphEdgeIndices"]
-PackageScope["$GraphVertexCount"]
-PackageScope["$GraphEdgeCount"]
-PackageScope["$LatticeDistance"]
-PackageScope["$LatticeFindShortestPath"]
+PackageScope["$VertexList"]
+PackageScope["$EdgeList"]
+PackageScope["$EdgeTags"]
+PackageScope["$VertexIndex"]
+PackageScope["$VertexCount"]
+PackageScope["$EdgeCount"]
 
 PackageScope["$IndexGraph"]
 PackageScope["$IndexGraphEdgeList"]
-PackageScope["$IndexGraphVertexList"]
-PackageScope["$GraphVertexInOutEdgeTable"]
-PackageScope["$GraphVertexInEdgeTable"]
-PackageScope["$GraphVertexOutEdgeTable"]
-PackageScope["$SymmetricIndexGraph"]
 
+PackageScope["$MetricGraphCache"]
 PackageScope["$GraphMetric"]
-PackageScope["$GraphDistanceMatrix"]
-PackageScope["$GraphDistance"]
-PackageScope["$GraphFindShortestPath"]
-PackageScope["$GraphFindPath"]
 
 SetAttributes[GraphScope, HoldRest];
 
 SetUsage @ "
-GraphScope[graph$, body$] sets up various dynamically scoped variables that make it easy to
+GraphScope[graph$, body$] sets up some dynamically scoped variables that make it easy to
 access properties and computed results from a single graph.
 The following variables are blocked during the execution of GraphScope:
 | $Graph | graph$ |
-| $GraphVertexList | VertexList[graph$] |
-| $GraphEdgeList | EdgeList[graph$] |
-| $GraphEdgeTags | EdgeTags[graph$] |
-| $GraphVertexIndices | association mapping a vertex to its index |
-| $GraphEdgesIndices | association mapping an edge to its index |
-| $GraphVertexCount | GraphVertexCount[$graph] |
-| $GraphEdgeCount | GraphEdgeCount[$graph] |
+| $VertexList | VertexList[graph$] |
+| $EdgeList | EdgeList[graph$] |
+| $EdgeTags | EdgeTags[graph$] |
+| $VertexIndex | VertexIndexAssociation[graph$] |
+| $VertexCount | VertexCount[$graph] |
+| $EdgeCount | EdgeCount[$graph] |
 | $IndexGraph | IndexGraph[graph$] |
-| $SymmetricIndexGraph | undirected version of $IndexGraph |
-| $GraphIOIndexToEdgeIndex | an association mapping the vertex index pair {i$, o$} to the \
-index of the first edge matching it.
-| $GraphDistanceMatrix | GraphDistanceMatrix[$SymmetricIndexGraph] |
-| $GraphDistance | function looking up distance between a pair of vertex indices |
-| $GraphFindShortestPath | function returning shortest path from a pair of vertex indices |
-| $GraphFindPath | FindPath[$SymmetricIndexGraph, $$] |
+| $IndexGraphEdgeList | EdgeList[$IndexGraph] |
+| $MetricGraphCache | GraphCache[$$] object for a symmetric version of the index graph |
+| $GraphMetric | the current graph metric |
 * All of the expensive properties are computed (and then cached) on first use.
-* Functions like $GraphDistance, $GraphFindPath, etc. take and return vertex *indices*. You can use \
-Lookup[$GraphVertexIndices, list$] to obtain these indices quickly.
 "
 
 GraphScope[graph_, body_] := Block[
   {
     $Graph = graph,
-    $GraphVertexList := $GraphVertexList = VertexList[$Graph],
-    $GraphEdgeList := $GraphEdgeList = EdgeList[$Graph],
-    $GraphEdgeTags := $GraphEdgeTags = Replace[EdgeTags[$Graph], {} -> None],
-    $GraphVertexIndices := $GraphVertexIndices = VertexIndexAssociation[$Graph],
-    $GraphEdgeIndices := $GraphEdgeIndices = EdgeIndexAssociation[$Graph],
+    $VertexList := $VertexList = VertexList @ $Graph,
+    $EdgeList := $EdgeList = EdgeList @ $Graph,
+    $EdgeTags := $EdgeTags = Replace[EdgeTags @ $Graph, {} -> None],
+    $VertexIndex := $VertexIndex = VertexIndexAssociation @ $Graph,
+    $VertexCount = VertexCount @ $Graph,
+    $EdgeCount = EdgeCount @ $Graph,
 
-    $GraphVertexCount = VertexCount[$Graph],
-    $GraphEdgeCount = EdgeCount[$Graph],
+    $IndexGraph := $IndexGraph = ToIndexGraph @ $Graph,
+    $IndexGraphEdgeList := $IndexGraphEdgeList = EdgeList @ $IndexGraph,
 
-    $IndexGraph := $IndexGraph = IndexGraph[$Graph],
-    $IndexGraphEdgeList := $IndexGraphEdgeList = EdgeList[$IndexGraph],
-    $IndexGraphVertexList := $IndexGraphVertexList = Range @ VertexCount @ $IndexGraph,
-    $GraphVertexInOutEdgeTable := $GraphVertexInOutEdgeTable = VertexInOutEdgeTable @ $IndexGraph,
-    $GraphVertexInEdgeTable := $GraphVertexInEdgeTable = FirstColumn @ $GraphVertexInOutEdgeTable,
-    $GraphVertexOutEdgeTable := $GraphVertexOutEdgeTable = LastColumn @ $GraphVertexInOutEdgeTable,
-
-    $SymmetricIndexGraph := $SymmetricIndexGraph = Graph[VertexList[$IndexGraph], UndirectedEdge @@@ EdgeList[$IndexGraph]],
-
-    $GraphMetric := $GraphMetric = LookupAnnotation[$Graph, GraphMetric, Automatic],
-    $GraphDistanceMatrix := $GraphDistanceMatrix = GraphDistanceMatrix[$SymmetricIndexGraph],
-    $LatticeDistance := $LatticeDistance = LatticeDistance[$SymmetricIndexGraph],
-    $GraphDistance = {v1, v2} |-> Part[$GraphDistanceMatrix, v1, v2],
-    $LatticeFindShortestPath := $LatticeFindShortestPath = FindShortestLatticePath[$SymmetricIndexGraph, All, All],
-    $GraphFindShortestPath := $GraphFindShortestPath = FindShortestPath[$SymmetricIndexGraph, All, All],
-    $GraphFindPath = Function[FindPath[$SymmetricIndexGraph, ##]]
+    $metricGraphCacheSymbol = Null,
+    $MetricGraphCache := $MetricGraphCache = createMetricGraphCache[],
+    $GraphMetric = Inherited
   },
   body
+];
+
+createMetricGraphCache[] := CreateGraphCache[
+  Annotate[ToSymmetricGraph @ $IndexGraph, GraphMetric -> LookupAnnotation[$Graph, GraphMetric, Automatic]],
+  $metricGraphCacheSymbol
 ];

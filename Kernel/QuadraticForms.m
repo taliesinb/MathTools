@@ -22,7 +22,10 @@ QuadraticForm[spec_, OptionsPattern[]] := Scope[
   System`Private`ConstructNoEntry[QuadraticFormObject, matrix]
 ];
 
-(QuadraticFormObject[matrix_] ? System`Private`HoldNoEntryQ)[arg_] := Dot[Conjugate @ arg, matrix, arg];
+MatrixTranspose[matrix_ ? MatrixQ] := Transpose[matrix];
+MatrixTranspose[vector_] := vector;
+
+(QuadraticFormObject[matrix_] ? System`Private`HoldNoEntryQ)[arg_] := Dot[MatrixTranspose @ arg, matrix, arg];
 
 declareFormatting[
   qf_QuadraticFormObject ? System`Private`HoldNoEntryQ :> formatQuadraticForm @ qf

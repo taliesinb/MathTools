@@ -155,7 +155,7 @@ declareSyntaxInfo[BouquetQuiver, {_, OptionsPattern[]}];
 BouquetQuiver[str_String, opts:OptionsPattern[]] := BouquetQuiver[Characters[str], opts];
 
 BouquetQuiver[cardinals_List, opts:OptionsPattern[]] :=
-  Quiver[Map[c |-> Labeled[1 -> 1, c], cardinals], opts]
+  Quiver[Map[c |-> Labeled[1 -> 1, c], cardinals], Cardinals -> cardinals, opts]
 
 (**************************************************************************************************)
 
@@ -214,11 +214,15 @@ CardinalList[quiver$] returns the list of cardinals in a quiver.
 
 CardinalList[graph_Graph] := None;
 
-CardinalList[graph_Graph ? EdgeTaggedGraphQ] :=
-  DeleteCases[Union @ SpliceCardinalSets @ EdgeTags @ graph, Null];
+CardinalList[graph_Graph ? EdgeTaggedGraphQ] := Replace[
+  AnnotationValue[graph, Cardinals],
+  ($Failed | Automatic) :> extractCardinals[graph]
+];
 
 CardinalList[edges_List] :=
   SpliceCardinalSets @ UniqueCases[edges, DirectedEdge[_, _, c_] :> c];
+
+extractCardinals[graph_] := DeleteCases[Union @ SpliceCardinalSets @ EdgeTags @ graph, Null];
 
 (**************************************************************************************************)
 
@@ -236,13 +240,18 @@ LookupCardinalColors[graph_Graph] := None;
 LookupCardinalColors[graph_Graph ? EdgeTaggedGraphQ] :=
   Replace[
     AnnotationValue[graph, CardinalColors],
-    ($Failed | Automatic) :> Module[{cardinals},
-      cardinals = CardinalList[graph];
-      AssociationThread[Sort @ cardinals, Take[$ColorPalette, Length @ cardinals]]
-    ]
+    ($Failed | Automatic) :> ChooseCardinalColors @ CardinalList @ graph
   ];
 
 LookupCardinalColors[_] := $Failed;
+
+
+PackageScope["ChooseCardinalColors"]
+
+ChooseCardinalColors[cardinals_List] :=
+  AssociationThread[cardinals, Take[$ColorPalette, Length @ cardinals]];
+
+
 
 (**************************************************************************************************)
 

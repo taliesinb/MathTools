@@ -4,121 +4,134 @@ Package["GraphTools`"]
 PackageImport["GeneralUtilities`"]
 
 
+PackageExport["ChessboardNorm"]
+
+ChessboardNorm[e_] := Max @ Abs @ e;
+
 (**************************************************************************************************)
 
-PackageExport["MetricSignature"]
+$metricDistanceOptions = {
+  GraphMetric -> Inherited
+};
 
-SetUsage @ "MetricSignature is an option to LatticeNorm and EuclideanNorm."
+$metricUsage = StringTrim @ "
+* The setting of GraphMetric determines how the metric is computed:
+| Inherited | use the GraphMetric present in graph$ (default) |
+| Automatic | length of the shortest path in graph$ |
+| 'Euclidean' | square root of sum of squares per-cardinal distances |
+| {s$1, s$2, $$} | signature of the metric, of same length as cardinals |
+| QuadraticForm[$$] | apply the quadratic form to the per-cardinal distances |
+| func$ | apply func$ to an association of per-cardinal distances |
+";
 
-$latticeNormUsage = "
-* NormFunction takes the following options:
-| QuadrationForm[%%] | |
-| HomogenousForm[%%] | |
-| None | use the ordinary graph distance |
+(**************************************************************************************************)
+
+PackageExport["MetricDistance"]
+
+SetUsage @ "
+MetricDistance[graph$, v$1, v$2] computes a graph distance between v$1 and v$2.
+* If either v$1 or v$2 is All, a function will be returned.
+<*$metricUsage*>
 "
+
+declareGraphCacheFriendly[MetricDistance]
+
+Options[MetricDistance] = $metricDistanceOptions;
+
+Default[MetricDistance, 3] = All;
+
+MetricDistance[graph_, vertex1_, Optional[vertex2:Except[_Rule]], OptionsPattern[]] := Scope[
+
+  metric = chooseMetric[graph, OptionValue @ GraphMetric];
+  If[metric === Automatic,
+    Return @ GraphDistance[graph, vertex1, Replace[vertex2, All -> Sequence[]]]];
+
+  If[!EdgeTaggedGraphQ[graph], ReturnFailed["nottaggraph"]];
+
+  toMetricDistanceOperator[metric] @ TaggedGraphDistance[graph, vertex1, vertex2]
+]
+
+chooseMetric[graph_, Inherited] := LookupAnnotation[graph, GraphMetric, Automatic];
+chooseMetric[graph_, value_] := value;
+
 (**************************************************************************************************)
 
-$latticeMetricFunctionOptions = {
-  DirectedEdges -> False,
-  NormFunction -> Automatic,
-  MaxDepth -> Infinity,
-  MetricSignature -> Automatic
-};
+PackageExport["MetricDistanceMatrix"]
 
+SetUsage @ "
+MetricDistanceMatrix[graph$] returns a matrix giving the distances between every pair \
+of vertices.
+<*$metricUsage*>
+"
 
-(**************************************************************************************************)
+declareGraphCacheFriendly[MetricDistanceMatrix]
 
-PackageExport["LatticeDistanceMatrix"]
+Options[MetricDistanceMatrix] = $metricDistanceOptions;
 
-Options[LatticeDistanceMatrix] = $latticeMetricFunctionOptions;
+MetricDistanceMatrix[graph_, OptionsPattern[]] := Scope[
 
-LatticeDistanceMatrix[graph_, opts:OptionsPattern[]] := Scope[
-  result = TaggedGraphDistanceMatrix[graph, FilterOptions @ opts];
-  If[FailureQ[result], ReturnFailed[]];
-  toLatticeMetric[LatticeDistanceMatrix, result, OptionValue[{MetricSignature, NormFunction}]]
+  metric = chooseMetric[graph, OptionValue @ GraphMetric];
+  If[metric === Automatic, Return @ GraphDistanceMatrix @ graph];
+
+  If[!EdgeTaggedGraphQ[graph], ReturnFailed["nottaggraph"]];
+
+  toMetricDistanceOperator[metric] @ TaggedGraphDistanceMatrix[graph]
 ];
 
 (**************************************************************************************************)
 
-PackageExport["LatticeDistance"]
+PackageExport["MetricFindShortestPath"]
 
-Options[LatticeDistance] = $latticeMetricFunctionOptions;
+SetUsage @ "
+MetricFindShortestPath[graph$, v$1, v$2] returns the shortest path between v$1 and v$2.
+* If either or both v$1 and v$2 are All, a MetricShortestPathFunction will be returned.
+<*$metricUsage*>
+"
 
-Default[LatticeDistance, 3] = All;
+Options[MetricFindShortestPath] = $metricDistanceOptions;
 
-LatticeDistance[graph_][args___] := LatticeDistance[graph, args];
-LatticeDistance[graph_, vertex1_, Optional[vertex2:Except[_Rule]], opts:OptionsPattern[]] := Scope[
-  result = TaggedGraphDistance[graph, vertex1, vertex2, FilterOptions @ opts];
-  If[FailureQ[result], ReturnFailed[]];
-  toLatticeMetric[LatticeDistance, result, OptionValue[{MetricSignature, NormFunction}]]
-];
+declareGraphCacheFriendly[MetricFindShortestPath]
 
-(**************************************************************************************************)
+MetricFindShortestPath[graph_, start_, end_, OptionsPattern[]] := Scope[
 
-toLatticeMetric[_, distances_, {Automatic, Automatic}] := RootTotalSquare @ distances;
+  metric = chooseMetric[graph, OptionValue @ GraphMetric];
+  If[metric === Automatic, Return @ FindShortestPath[graph, start, end]];
 
-General::badsignature = "The setting MetricSignature -> `` should be either Automatic or a list matching the number of cardinals (``).";
+  If[!EdgeTaggedGraphQ[graph], ReturnFailed["nottaggraph"]];
 
-(**************************************************************************************************)
+  (* distance matrix and adjacency table *)
+  data = {
+    toMetricDistanceOperator[metric] @ TaggedGraphDistanceMatrix[graph],
+    VertexAdjacencyTable[graph]
+  };
 
-PackageExport["LatticeNorm"]
-PackageExport["EuclideanNorm"]
-
-toLatticeMetric[head_, distances_, {signature_, normFunction_}] := Module[{},
-  If[!ListQ[signature] || Length[distances] =!= Length[signature], metricFail[head, "badsignature", signature, Length @ distances]];
-  RootTotalSquare[distances, signature]
-];
-
-(**************************************************************************************************)
-
-NormVector[array_, p_] := Surd[Total @ Power[N @ Values @ array, p], p];
-
-RootTotalSquare[array_] := Sqrt @ Total @ Power[N @ Values @ array, 2];
-
-RootTotalSquare[array_, signature_] := Sqrt @ Total @ Times[signature, Power[N @ Values @ array, 2]];
-
-(**************************************************************************************************)
-
-PackageExport["FindShortestLatticePath"]
-
-Options[FindShortestLatticePath] = $latticeMetricFunctionOptions;
-
-computeShortestPathData[graph_, opts___] := {
-  LatticeDistanceMatrix[graph, opts],
-  VertexAdjacencyTable[graph]
-};
-
-FindShortestLatticePath[graph_, start_, end_, opts:OptionsPattern[]] := Scope[
-  System`Private`ConstructNoEntry[
-    LatticeShortestPathFunction, {start, end}, computeShortestPathData[graph, opts]
+  If[start =!= All && end =!= All,
+    findShortestPath[start, end, data],
+    System`Private`ConstructNoEntry[MetricShortestPathFunction, {start, end}, data]
   ]
 ];
 
-FindShortestLatticePath[graph_, start:Except[All], end:Except[All], opts:OptionsPattern[]] := Scope[
-  findShortestPath[{start, end}, computeShortestPathData[graph, opts]]
-];
-
 (**************************************************************************************************)
 
-PackageExport["LatticeShortestPathFunction"]
+PackageExport["MetricShortestPathFunction"]
 
 declareFormatting[
-  LatticeShortestPathFunction[spec_, data_] ? System`Private`HoldNoEntryQ :>
-    LatticeShortestPathFunction[spec, Skeleton @ Length @ First @ data]
+  MetricShortestPathFunction[spec_, data_] ? System`Private`HoldNoEntryQ :>
+    MetricShortestPathFunction[spec, Skeleton @ Length @ First @ data]
 ];
 
-fsp_LatticeShortestPathFunction[args__] := fspEval1[fsp, args];
+fsp_MetricShortestPathFunction[args__] := fspEval1[fsp, args];
 
-fspEval1[LatticeShortestPathFunction[{All, All}, data_], v1_, v2_] :=
-  findShortestPath[{v1, v2}, data];
+fspEval1[MetricShortestPathFunction[{All, All}, data_], v1_, v2_] :=
+  findShortestPath[v1, v2, data];
 
-fspEval1[LatticeShortestPathFunction[{All, v2_}, data_], v1_] :=
-  findShortestPath[{v1, v2}, data];
+fspEval1[MetricShortestPathFunction[{All, v2_}, data_], v1_] :=
+  findShortestPath[v1, v2, data];
 
-fspEval1[LatticeShortestPathFunction[{v1_, All}, data_], v2_] :=
-  findShortestPath[{v1, v2}, data];
+fspEval1[MetricShortestPathFunction[{v1_, All}, data_], v2_] :=
+  findShortestPath[v1, v2, data];
 
-findShortestPath[{start_, end_}, {distanceMatrix_, adjacencyTable_}] := Scope[
+findShortestPath[start_, end_, {distanceMatrix_, adjacencyTable_}] := Scope[
   vertex = start;
   pathBag = Internal`Bag[{start}];
   While[vertex =!= end,
@@ -129,26 +142,75 @@ findShortestPath[{start_, end_}, {distanceMatrix_, adjacencyTable_}] := Scope[
   Internal`BagPart[pathBag, All]
 ];
 
+(**************************************************************************************************)
+
+toMetricDistanceOperator = MatchValues[
+  "Euclidean" :=
+    RootSumSquare;
+  qf_QuadraticFormObject :=
+    Values /* ToPacked /* qf;
+  list_List ? RealVectorQ :=
+    SignatureMetric[list];
+  func_ ? System`Private`MightEvaluateWhenAppliedQ :=
+    func /* checkMetricNumeric;
+  n_Integer :=
+    PowerMetric[n];
+  expr_ :=
+    Message[General::badgmetricfn, expr];
+];
+
+General::badgmetricfn =
+  "Setting GraphMetric -> `` should be either Automatic, \"Euclidean\", QuadraticForm[...], {...}, or a function that will evaluate when applied."
+
+General::badgmetricfnres =
+  "GraphMetric function returned a non-numeric result."
+
+checkMetricNumeric[value_] /; NumericQ[value] || RealVectorQ[value] := value;
+checkMetricNumeric[_] := (Message[General::badgmetricfnres]; 0);
 
 (**************************************************************************************************)
 
-$metricFunctionOptions = {
+PackageExport["SignatureMetric"]
+
+SignatureMetric[list_List][array_] := Sqrt @ Dot[list, Power[N @ Values @ array, 2]];
+
+(**************************************************************************************************)
+
+PackageExport["RootSumSquare"]
+
+RootSumSquare[assoc_Association] := RootSumSquare @ Values @ assoc;
+RootSumSquare[array_] := Sqrt @ Total @ Power[N @ array, 2];
+
+PowerMetric[n_][array_] := Surd[Total @ Power[N @ Values @ array, n], n];
+
+(**************************************************************************************************)
+
+PackageExport["QuadraticFormMetric"]
+
+QuadraticFormMetric[matrix_][vectors_ ? MatrixQ] := Sqrt @ Dot[Transpose @ vectors, matrix, vectors];
+QuadraticFormMetric[matrix_][vector_ ? VectorQ] := Sqrt @ Dot[vector, matrix, vector];
+
+(**************************************************************************************************)
+
+$taggedDistanceOptions = {
   DirectedEdges -> False,
   MaxDepth -> Infinity
 };
 
 PackageExport["TaggedGraphDistance"]
 
-Options[TaggedGraphDistance] = $metricFunctionOptions;
+Options[TaggedGraphDistance] = $taggedDistanceOptions;
 
 Default[TaggedGraphDistance, 3] = All;
 Default[TaggedGraphDistance, 4] = All;
+
+declareGraphCacheFriendly[TaggedGraphDistance]
 
 TaggedGraphDistance[graph_, vertex1_, vertex2_., tagSpec_., OptionsPattern[]] := Scope[
 
   {tagList, edgeTags} = processTagSpec[TaggedGraphDistance, graph, tagSpec];
 
-  graph = toPossiblyUndirectedGraph[graph, OptionValue[DirectedEdges]];
+  If[!directedEdges, graph = ToSymmetricGraph @ graph];
   dfunc = If[vertex2 === All, GraphDistance[#, vertex1]&, GraphDistance[#, vertex1, vertex2]&];
 
   result = AssociationMap[
@@ -163,9 +225,11 @@ TaggedGraphDistance[graph_, vertex1_, vertex2_., tagSpec_., OptionsPattern[]] :=
 
 PackageExport["TaggedGraphDistanceMatrix"]
 
-Options[TaggedGraphDistanceMatrix] = $metricFunctionOptions;
+Options[TaggedGraphDistanceMatrix] = $taggedDistanceOptions;
 
 Default[TaggedGraphDistanceMatrix, 2] = All;
+
+declareGraphCacheFriendly[TaggedGraphDistanceMatrix]
 
 TaggedGraphDistanceMatrix[graph_, tagSpec_., OptionsPattern[]] := Scope[
 
@@ -173,7 +237,7 @@ TaggedGraphDistanceMatrix[graph_, tagSpec_., OptionsPattern[]] := Scope[
 
   UnpackOptions[maxDepth, directedEdges];
 
-  graph = toPossiblyUndirectedGraph[graph, directedEdges];
+  If[!directedEdges, graph = ToSymmetricGraph @ graph];
 
   result = AssociationMap[
     tag |-> GraphDistanceMatrix[toMaskWeightedGraph[graph, edgeTags, tag], maxDepth],
@@ -214,107 +278,3 @@ processTagSpec[head_, graph_, tagSpec_] := Module[
 (* TODO: cache these using a weak expression table in case *)
 toMaskWeightedGraph[graph_, edgeTags_, tag_] :=
   Graph[graph, EdgeWeight -> Boole[Thread[edgeTags != tag]]];
-
-toPossiblyUndirectedGraph[graph_ ? DirectedGraphQ, False] :=
-    Graph[VertexList[graph], EdgeList[graph] /. DirectedEdge -> UndirectedEdge];
-
-toPossiblyUndirectedGraph[graph_, _] := graph;
-
-
-(**************************************************************************************************)
-
-PackageScope["AllPairsShortestTaggedPaths"]
-
-SetUsage @ "
-AllPairsShortestTaggedPaths[quiver$] returns {distances$, moves$}, where distances$ is an array of \
-shape (n$, n$, c$, 2), and moves$ is a matrix of shape (n$, n$, c$), where n$ is the number of vertices \
-and c$ is the number of cardinals.
-The option DirectedEdges (which defaults to False) controls whether edge orientation is respected.
-"
-
-Options[AllPairsShortestTaggedPaths] = $metricFunctionOptions;
-
-AllPairsShortestTaggedPaths[graph_, OptionsPattern[]] := Scope[
-  If[!EdgeTaggedGraph[graph], ReturnFailed["nottagged"]];
-
-  tagList = CardinalList[graph];
-  If[!ListQ[tagList], ReturnFailed["nottagged"]];
-  numTags = Length @ tagList;
-
-  numVertices = VertexCount[graph];
-
-  max = 2^30;
-  shape = {numTags, numVertices, numVertices};
-  moves = ConstantArray[0, shape];
-  tDists = ConstantArray[max, shape];
-  uDists = ConstantArray[max, shape];
-
-  Do[
-    (* you can reach any vertex from itself in 0 steps by moving to itself *)
-    Part[moves, All, i, i] = i;
-    Part[uDists, All, i, i] = 0;
-    Part[tDists, All, i, i] = 0;
-  ,
-    {i, numVertices}
-  ];
-
-  UnpackOptions[directedEdges];
-  indexEdgeList = EdgeList @ IndexGraph @ graph;
-  indexEdgeList[[All, 3]] = ArrayLabelIndices[EdgeTags @ graph, tagList];
-  edgeTuples = Flatten[
-    If[Not[directedEdges] && DirectedGraphQ[graph],
-      Function[{a, b, t}, {{a, b, t}, {b, a, t}}] @@@ indexEdgeList
-    ,
-      ReplaceAll[indexEdgeList, {
-        DirectedEdge[a_, b_, t_] :> {{a, b, t}},
-        UndirectedEdge[a_, b_, t_] :> {{a, b, t}, {b, a, t}}
-      }]
-    ],
-    1
-  ];
-
-  Scan[setupNonTagDistanceForEdge, edgeTuples];
-  Scan[setupTagDistanceForEdge, edgeTuples];
-
-  {tDists, uDists, moves} = $compiledAPSTPLoop[tDists, uDists, moves, numVertices, numTags];
-
-  AssociationThread[tagList, #]& /@ {tDists, uDists, moves}
-];
-
-setupNonTagDistanceForEdge[{i_, j_, t_}] := (
-  Part[tDists, All, i, j] = 0;
-  Part[uDists, All, i, j] = 1;
-  Part[moves, All, i, j] = j;
-);
-
-setupTagDistanceForEdge[{i_, j_, t_}] := (
-  Part[tDists, t, i, j] = 1;
-  Part[moves, t, i, j] = j;
-);
-
-$compiledAPSTPLoop = Compile[
-  {{tDistsIn, _Integer, 3}, {uDistsIn, _Integer, 3}, {movesIn, _Integer, 3}, {numVertices, _Integer}, {numTags, _Integer}}, Module[
-  {tDists = tDistsIn, uDists = uDistsIn, moves = movesIn, uij, tij, uikj, tikj},
-  Do[
-    Do[
-      tij = Part[tDists, t, i, j]; tikj = Part[tDists, t, i, k] + Part[tDists, t, k, j];
-      If[(tikj < tij) || (tikj == tij),
-        uij = Part[uDists, t, i, j]; uikj = Part[uDists, t, i, k] + Part[uDists, t, k, j];
-        If[(uikj < uij),
-          Part[uDists, t, i, j] = uikj;
-          Part[tDists, t, i, j] = tikj;
-          Part[moves, t, i, j] = Part[moves, t, i, k];
-        ];
-      ];
-    ,
-      {i, numVertices}, {j, numVertices}, {t, numTags}
-    ];
-  ,
-    {k, numVertices}
-  ];
-  {
-    tDists,
-    uDists,
-    moves
-  }
-]];

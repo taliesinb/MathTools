@@ -28,6 +28,16 @@ PackageExport["DotOperator"]
 DotOperator[matrix_][other_] := Dot[matrix, other]
 
 
+PackageExport["TimesOperator"]
+
+TimesOperator[a_][b_] := a * b;
+
+
+PackageExport["PlusOperator"]
+
+PlusOperator[a_][b_] := a + b;
+
+
 PackageExport["InnerDimension"]
 
 InnerDimension[array_] := Last @ Dimensions @ array;
@@ -39,12 +49,20 @@ InnerDimension[array_] := Last @ Dimensions @ array;
 
 PackageExport["OnesQ"]
 
-OnesQ[m_] := MinMax[m] === {1, 1};
+OnesQ[m_] := FreeQ[m, Complex] && MinMax[m] === {1, 1};
 
 
 PackageExport["ZerosQ"]
 
-ZerosQ[m_] := MinMax[m] === {0, 0};
+ZerosQ[m_] := FreeQ[m, Complex] && MinMax[m] === {0, 0};
+
+
+PackageExport["CoordinateVectorQ"]
+
+CoordinateVectorQ[{Repeated[_ ? NumericQ, {2, 3}]}] := True;
+CoordinateVectorQ[{_ ? NumericQ, _ ? NumericQ}, 2] := True;
+CoordinateVectorQ[{_ ? NumericQ, _ ? NumericQ, _ ? NumericQ}, 3] := True;
+CoordinateVectorQ[_, _] := False;
 
 
 PackageExport["CoordinateMatrixQ"]
@@ -84,7 +102,7 @@ ZeroMatrixQ[matrix_] := MatrixQ[matrix] && ZerosQ[matrix];
 PackageExport["PermutationMatrixQ"]
 
 PermutationMatrixQ[matrix_] :=
-  SquareMatrixQ[matrix] && MinMax[matrix] == {0, 1} && Count[matrix, 1, 2] == Length[matrix] &&
+  SquareMatrixQ[matrix] && RealMatrixQ[matrix] @@ MinMax[matrix] == {0, 1} && Count[matrix, 1, 2] == Length[matrix] &&
     OnesQ[Total[matrix, {1}]] && OnesQ[Total[matrix, {2}]];
 
 
@@ -100,6 +118,16 @@ TranslationMatrix[vector_] := Scope[
   matrix[[;;-2, -1]] = vector;
   matrix
 ];
+
+TranslationMatrix[vector_, mod_] :=
+  ModForm[TranslationMatrix @ vector, mod];
+
+TranslationMatrix[vector_, mod_List] := Scope[
+  modMatrix = ZeroMatrix[Length[vector] + 1] + Infinity;
+  modMatrix[[;;-2, -1]] = mod;
+  ModForm[TranslationMatrix @ vector, modMatrix]
+];
+
 
 PackageExport["UnitTranslationMatrix"]
 
@@ -132,6 +160,7 @@ MakeDihedralTranslationMatrices[matrices_] :=
 PackageExport["DihedralTranslationMatrixQ"]
 
 DihedralTranslationMatrixQ[matrix_] := And[
+  Part[matrix, -1, -1] === -1,
   UpperUnitriangularMatrixQ @ ReplaceDiagonalPart[matrix, -1 -> 1],
   IdentityMatrixQ @ DiagonalBlock[matrix, {1, -2}]
 ];
@@ -165,6 +194,22 @@ ZeroMatrix[n_] := ConstantArray[0, {n, n}];
 PackageExport["Ones"]
 
 Ones[i_] := ConstantArray[1, i];
+
+
+PackageExport["AppendOnes"]
+
+typedOne = MatchValues[
+  _Real :=  1.;
+  _ :=      1;
+];
+
+AppendOnes = MatchValues[
+  array_ ? VectorQ :=
+    Append[array, typedOne @ Part[array, 1]];
+  array_ ? MatrixQ :=
+    ToPacked @ ArrayFlatten @ {{array, typedOne @ Part[array, 1, 1]}};
+  _ := $Failed;
+];
 
 
 PackageExport["Zeros"]
@@ -207,7 +252,7 @@ BlockDiagonalMatrix[blocks_] := Scope[
   range = Range @ Length @ blocks;
   If[!MatchQ[blocks, {Repeated[_ ? MatrixQ]}], ReturnFailed[]];
   superMatrix = DiagonalMatrix[range] /. MapThread[Rule, {range, blocks}];
-  Developer`ToPackedArray @ ArrayFlatten[superMatrix, 2]
+  ToPacked @ ArrayFlatten[superMatrix, 2]
 ];
 
 
@@ -287,13 +332,18 @@ MatrixSimplify[matrix_] := Scope[
 PackageExport["SquaredDistanceMatrix"]
 
 SquaredDistanceMatrix[points_] := (
-  $loadDM; $distanceMatrixFunction[points, $squaredEuclideanDistanceCode, False]
+  $loadDM; $distanceMatrixFunction1[points, $squaredEuclideanDistanceCode, False]
+);
+
+SquaredDistanceMatrix[points1_, points2_] := (
+  $loadDM; $distanceMatrixFunction2[points1, points2, $squaredEuclideanDistanceCode, False]
 );
 
 $loadDM := (
   DistanceMatrix[{{1,2}},{{3,4}}, DistanceFunction -> "SquaredEuclideanDistance"];
   $squaredEuclideanDistanceCode := NumericArrayUtilities`DistanceMatrix`PackagePrivate`$extractLLDMMethod["SquaredEuclideanDistance"];
-  $distanceMatrixFunction = NumericArrayUtilities`DistanceMatrix`PackagePrivate`mTensorDistanceMatrix1Arg;
+  $distanceMatrixFunction1 = NumericArrayUtilities`DistanceMatrix`PackagePrivate`mTensorDistanceMatrix1Arg;
+  $distanceMatrixFunction2 = NumericArrayUtilities`DistanceMatrix`PackagePrivate`mTensorDistanceMatrix2Arg;
   Clear[$loadDM];
 );
 

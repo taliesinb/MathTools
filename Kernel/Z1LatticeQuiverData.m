@@ -6,12 +6,14 @@ PackageImport["GeneralUtilities`"]
 
 (**************************************************************************************************)
 
-PackageScope["$LatticeQuiverData"]
-PackageScope["$LatticeQuiverNames"]
+PackageScope["$LatticeData"]
+PackageScope["$LatticeNames"]
+PackageScope["$LatticeClassNames"]
+PackageScope["$latticeNameAliases"]
 
-$LatticeQuiverData = <||>
-$LatticeQuiverNames = {};
-
+$LatticeData = <||>
+$LatticeNames = {};
+$LatticeClassNames = {"2D", "3D"};
 
 PackageExport["DefineLatticeQuiver"]
 
@@ -33,7 +35,9 @@ $requiredLatticeQuiverFields = {
 };
 
 DefineLatticeQuiver::missingfields = "Required fields are ``."
-DefineLatticeQuiver::badfield = "Value for field \"``\" is not a valid ``."
+DefineLatticeQuiver::badfield = "Error defining ``: Value for field \"``\" is not a valid ``."
+DefineLatticeQuiver::badrep = "Error defining ``: could not build representation.";
+
 DefineLatticeQuiver[rawFields__] := Scope[
 
   fields = Association[rawFields];
@@ -43,20 +47,30 @@ DefineLatticeQuiver[rawFields__] := Scope[
   {canonicalName, aliases} = FirstRest @ Lookup[fields, "Names"];
 
   UnpackAssociation[fields, quiver, group];
-  If[!QuiverQ[quiver], ReturnFailed["badfield", "Quiver", "quiver"]];
-  If[!GroupQ[group], ReturnFailed["badfield", "Group", "group"]];
+  If[!QuiverQ[quiver], ReturnFailed["badfield", canonicalName, "Quiver", "quiver"]];
+  If[!GroupQ[group], ReturnFailed["badfield", canonicalName, "Group", "group"]];
 
   representation = QuiverRepresentation[quiver, group];
-  If[!QuiverRepresentationObjectQ[representation], ReturnFailed[]];
+  If[!QuiverRepresentationObjectQ[representation],
+    ReturnFailed["badrep", canonicalName]];
 
   fields["Representation"] = representation;
-  AppendTo[$LatticeQuiverNames, canonicalName];
-  Do[followAliases[alias] ^= canonicalName, {alias, aliases}];
+  AppendTo[$LatticeNames, canonicalName];
+  Do[$latticeNameAliases[alias] ^= canonicalName, {alias, aliases}];
 
-  AssociateTo[$LatticeQuiverData, canonicalName -> fields];
+  AssociateTo[$LatticeData, canonicalName -> fields];
 ];
 
-followAliases[name_] := name;
+$latticeNameAliases[name_] := name;
+
+(**************************************************************************************************)
+
+DefineLatticeQuiver[
+  "Names" -> {"Line"},
+  "Quiver" -> BouquetQuiver @ "x",
+  "Group" -> InfiniteAbelianGroup[1],
+  "Dimension" -> 1
+];
 
 (**************************************************************************************************)
 
@@ -238,27 +252,7 @@ DefineLatticeQuiver[
   "Group" -> $FCCGroup,
   "Dimension" -> 3
 ];
-(**************************************************************************************************)
 
-(*
-$parameterizedLatticeQuiverRepresentations = <||>;
-$parameterizedLatticeNames = {};
-
-declareParameterizedLattice[name_String, func_] := (
-  AppendTo[$parameterizedLatticeNames, name];
-  $parameterizedLatticeQuiverRepresentations[name] = func;
-);
-
-declareParameterizedLattice["SquareTorus", squareTorusQRep];
-
-squareTorusQRep[m_Integer ? Positive, n_Integer ? Positive] := Scope[
-  qrep = QuiverRepresentation[
-    $squareQuiver,
-    AbelianGroup[{m, n}]
-  ];
-  {m + n, qrep}
-];
- *)
 (**************************************************************************************************)
 
 PackageScope["$namedLatticeUsage"]
@@ -280,55 +274,3 @@ $namedLatticeUsage = StringTrim @ "
 | 'BodyCenteredCubic' | body centered cubic, aka BCC, |
 | 'HexagonalClosePacked' | hexagonal closed packed, aka HCP |
 ";
-
-(**************************************************************************************************)
-
-PackageExport["LatticeQuiverRepresentation"]
-
-SetUsage @ "
-LatticeQuiverRepresentation['name$'] returns the QuiverRepresentation[$$] object for the named latice \
-'name$'.
-<*$namedLatticeUsage*>
-"
-
-DeclareArgumentCount[LatticeQuiverRepresentation, 1];
-
-declareFunctionAutocomplete[LatticeQuiverRepresentation, {$LatticeQuiverNames}];
-
-LatticeQuiverRepresentation[name_] := $Failed;
-
-(**************************************************************************************************)
-
-PackageExport["LatticeQuiverData"]
-
-SetUsage @ "
-LatticeQuiverData['name$'] gives information about the quiver lattice given by 'name$'.
-LatticeQuiverData['name$', 'prop$'] gives the specific property 'prop$'.
-LatticeQuiverData['class$'] returns a list of names that fall into a particular class.
-LatticeQuiverData[] returns a list of the names of all known lattices.
-* The following properties are present:
-| 'Names' | the full list of names of the lattice |
-| 'Representation' | the QuiverRepresentation[$$] object that generates the lattice |
-| 'Dimension' | the dimension of its natural coordinitization |
-* The following classes are supported:
-| '2D' | lattices whose dimension is 2 |
-| '3D' | lattices whose dimension is 3 |
-* Custom quiver lattices can be defined using DefineLatticeQuiver.
-"
-
-DeclareArgumentCount[LatticeQuiverData, {1, 2}];
-
-$latticeQuiverProperties = {
-  "Names", "Representatoin", "Dimension"
-};
-
-declareFunctionAutocomplete[LatticeQuiverData, {$LatticeQuiverNames, $latticeQuiverProperties}];
-
-pickNamesWithPropertyEqualTo[prop_, value_] :=
-  KeyValueMap[If[Lookup[#2, prop] === value, #1, Nothing]&, $LatticeQuiverData];
-
-LatticeQuiverData["2D"] := pickNamesWithPropertyEqualTo["Dimension", 2];
-LatticeQuiverData["3D"] := pickNamesWithPropertyEqualTo["Dimension", 3];
-LatticeQuiverData[name_String] := Lookup[$LatticeQuiverData, followAliases @ name, None];
-LatticeQuiverData[name_String, prop_String] := Part[$LatticeQuiverData, Key @ followAliases @ name, prop];
-LatticeQuiverData[] := $LatticeQuiverNames;

@@ -63,10 +63,10 @@ in their reverse direction.
 
 $boxColor = GrayLevel[0.9];
 declareBoxFormatting[
-  GraphRegionData[v:{___Integer}, e:{___Integer}] :>
-    skeletonBox["GraphRegionData", $boxColor, Length /@ {v, e}],
-  GraphPathData[v:{__Integer}, e:{___Integer}, {___Integer}] :>
-    skeletonBox["GraphRegionData", $boxColor, Length /@ {v, e}]
+  g:GraphRegionData[v:{___Integer}, e:{___Integer}] :>
+    Construct[InterpretationBox, skeletonBox["GraphRegionData", $boxColor, Length /@ {v, e}], g],
+  GraphPathData[v:{__Integer}, e:{___Integer}, c:{___Integer}] :>
+    Construct[InterpretationBox, skeletonBox["GraphPathData", $boxColor, Length /@ {v, e, c}], g]
 ];
 
 colorBox[box_, color_] := StyleBox[box, Background -> color];
@@ -84,6 +84,16 @@ regionDataListEdges[regionDataElements_] :=
 
 pathToRegion[GraphPathData[a_, b_, c_]] :=
   GraphRegionData[a, b];
+
+(**************************************************************************************************)
+
+PackageExport["TakePath"]
+
+TakePath[GraphPathData[v_, e_, c_], n_] := Scope[
+  v2 = Take[v, n]; e2 = Take[e, n];
+  c2 = Take[SparseArray[Thread[c -> 1], Length @ e], n]["NonzeroPositions"] // Flatten;
+  GraphPathData[v2, e2, c2]
+];
 
 (**************************************************************************************************)
 
@@ -116,8 +126,13 @@ Path[src$, 'cards$'] interpreted the characters of 'cards$' as cardinals.
 
 PackageScope["processRegionSpec"]
 
-processRegionSpec[region_] :=
+processRegionSpec[region_] := Scope[
+  $VertexInEdgeTable := $VertexInEdgeTable = VertexInEdgeTable[$Graph];
+  $VertexOutEdgeTable := $VertexOutEdgeTable = VertexOutEdgeTable[$Graph];
+  $TagVertexAdjacentEdgeTable := $TagVertexAdjacentEdgeTable = TagVertexAdjacentEdgeTable[$Graph];
+  $EdgePairs := $EdgePairs = EdgePairs[$Graph];
   Map[outerProcessRegion, Developer`ToList @ region]
+]
 
 outerProcessRegion[region_] := Scope[
   $currentRegionHead = Head[region];
@@ -162,7 +177,7 @@ sowEdge[i_Integer] := (Internal`StuffBag[$edgeBag, i]; True);
 
 sowEdge[Negated[i_Integer]] := (
   Internal`StuffBag[$edgeBag, i];
-  Internal`StuffBag[$edgeNegationBag, Internal`BagLength[$edgeBag]];
+  Internal`StuffBag[$negationBag, Internal`BagLength[$edgeBag]];
   True
 );
 
@@ -172,22 +187,11 @@ sowEdgeList[i_List] := Internal`StuffBag[$edgeBag, i, 1];
 
 (********************************************)
 
-findStrictEdgePattern[a_, b_, c_] := Scope @ Which[
-  IntegerQ[i = FirstIndex[$GraphEdgeList, DirectedEdge[a, b, c]]], i,
-  IntegerQ[i = FirstIndex[$GraphEdgeList, UndirectedEdge[a, b, c] | UndirectedEdge[b, a, c]]], i,
-  True, $Failed
-];
-
-findStrictEdgePattern[a_, b_, Negated[c_]] :=
-  Negated @ findStrictEdgePattern[b, a, c];
-
-(********************************************)
-
 SetHoldRest[findStrictEdge];
 findStrictEdge[v1_, v2_, else_:None] := First[
   Intersection[
-    Part[$GraphVertexInEdgeTable, v2],
-    Part[$GraphVertexOutEdgeTable, v1]
+    Part[$VertexInEdgeTable, v2],
+    Part[$VertexOutEdgeTable, v1]
   ],
   else
 ];
@@ -252,11 +256,11 @@ processRegion[EdgePattern[a_, b_, Negated[c_]]] :=
 
 findEdgeIndices[p:EdgePattern[a_, b_, c___]] := Scope[
   Which[
-    Developer`NotEmptyQ[i = MatchIndices[$GraphEdgeList, DirectedEdge[a, b, c]]],
+    Developer`NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[a, b, c]]],
       i,
-    Developer`NotEmptyQ[i = MatchIndices[$GraphEdgeList, DirectedEdge[b, a, c]]],
+    Developer`NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[b, a, c]]],
       Negated /@ i,
-    Developer`NotEmptyQ[i = MatchIndices[$GraphEdgeList, UndirectedEdge[a, b, c] | UndirectedEdge[b, a, c]]],
+    Developer`NotEmptyQ[i = MatchIndices[$EdgeList, UndirectedEdge[a, b, c] | UndirectedEdge[b, a, c]]],
       i,
     True,
       fail["nfedge", p]
@@ -291,7 +295,7 @@ processRegion[lv_LatticeVertex ? vertexPatternQ] :=
   processRegion @ VertexPattern @ lv;
 
 processRegion[p:VertexPattern[v_]] := Scope[
-  indices = MatchIndices[$GraphVertexList, v];
+  indices = MatchIndices[$VertexList, v];
   If[indices === {}, fail["nfvertex", p]];
   GraphRegionData[indices, {}]
 ];
@@ -308,30 +312,42 @@ processRegion[list_List /; VectorQ[list, GraphRegionElementQ]] :=
 
 GraphRegion::invv = "The region ``[...] contained an invalid vertex specification ``.";
 
-findVertex[RandomPoint] := RandomInteger[{1, $GraphVertexCount}];
+findVertex[GraphOrigin] := 1;
 
-findVertex[spec_] := Lookup[$GraphVertexIndices, Key[spec],
+findVertex[RandomPoint] := RandomInteger[{1, $VertexCount}];
+
+findVertex[Offset[v_, path_]] := offsetWalk[findVertex[v], path];
+
+findVertex[spec_] := Lookup[$VertexIndex, Key[spec],
   failAuto["invv", spec]];
 
 findVertex[lv_LatticeVertex ? vertexPatternQ] :=
   findVertex @ VertexPattern @ lv;
 
 findVertex[p:VertexPattern[v_]] :=
-  FirstIndex[$GraphVertexList, v, failAuto["invv", p]];
+  FirstIndex[$VertexList, v, failAuto["invv", p]];
 
 GraphRegion::notlist = "The region ``[...] required a list of vertices, but got `` instead."
 
 findVertices[spec_] := Scope[
-  res = Lookup[$GraphVertexIndices, spec, $Failed];
+  res = Lookup[$VertexIndex, spec, $Failed];
   If[FreeQ[res, $Failed], res, resolveComplexVertexList @ spec]
 ];
 
 resolveComplexVertexList[spec_] := Which[
-  vertexPatternQ[spec], MatchIndices[$GraphVertexList, spec],
+  vertexPatternQ[spec], MatchIndices[$VertexList, spec],
   ListQ[spec] && !Developer`EmptyQ[spec], Map[findVertex, spec],
   True, failAuto["notlist", spec]
 ];
 
+(********************************************)
+(** GraphRegionData|GraphPathData[...]     **)
+
+GraphRegionElementQ[GraphRegionData[_List, _List]] := True;
+GraphRegionElementQ[GraphPathData[_List, _List, _List]] := True;
+
+processRegion[g_GraphRegionData] := g;
+processRegion[g_GraphPathData] := g;
 
 (********************************************)
 
@@ -349,6 +365,8 @@ processRegion[spec:$metricRegionHeads[__, GraphMetric -> metric_]] := Scope[
 
 GraphRegionElementQ[Path[_, _]] := True;
 
+PackageScope["parseCardinalWord"]
+
 parseCardinalWord[path_String] /; StringLength[path] > 1 := Scope[
   chars = Characters[path];
   str = StringReplace[StringRiffle[chars, " "], " '" -> "'"];
@@ -361,49 +379,66 @@ parseCardinalWord[path_String] /; StringLength[path] > 1 := Scope[
 parseCardinalWord[path_String] := {path};
 parseCardinalWord[list_List] := list;
 
-GraphRegion::nocard = "The region ``[...] specified a cardinal '``' path step at vertex ``, but none exists."
-
 processRegion[Path[start_, path_]] :=
   collectPathData @ sowPath[start, path, False];
 
 (********************************************)
 
 sowPath[start_, path_, repeating_] := Scope[
-  id = findVertex @ start;
-  cardList = parseCardinalWord[path];
-  numCards = Length @ cardList;
-  sowVertex[id];
-  i = 1; n = If[repeating, 10^6, numCards];
-  Do[
-    card = Part[cardList, Mod[i, numCards, 1]];
-    vert = Part[$GraphVertexList, id];
-    edgeIndex = findStrictEdgePattern[vert, _, card];
-    If[!FreeQ[edgeIndex, $Failed], If[!repeating, failAuto["nocard", card, vert], Break[]]];
-    edge = Part[$GraphEdgeList, StripNegated @ edgeIndex];
-    isFlipped = First[edge] =!= vert;
-    other = Part[edge, If[isFlipped, 1, 2]];
-    id = $GraphVertexIndices[other];
-    sowEdge[edgeIndex];
-    sowVertex[id];
-  ,
-    {i, 1, n}
+  startId = findVertex @ start;
+  pathWord = parseCardinalWord[path];
+  sowVertex[startId];
+  doWalk[
+    startId, pathWord, repeating,
+    {vertex, edge} |-> (
+      sowVertex[vertex];
+      sowEdge[edge];
+    )
   ];
 ];
 
-GraphRegion::badmetric = "`` is not a valid setting for GraphMetric."
+(********************************************)
 
-$MetricFindShortestPath := Switch[$GraphMetric,
-  None | Automatic | "Uniform", $GraphFindShortestPath,
-  "Quadratic", $LatticeFindShortestPath,
-  True, fail["badmetric", $GraphMetric]
+GraphRegion::notdir = "The region ``[...] includes a path ``, but paths cannot be defined on undirected graphs."
+
+GraphRegion::nocard = "The region ``[...] specified a cardinal '``' path step at vertex ``, but the only available \
+cardinals are: ``"
+
+doWalk[startId_, pathWord_, shouldRepeat_, func_] := Scope[
+  If[!DirectedGraphQ[$Graph], failAuto["notdir", path]];
+  wordLen = Length @ pathWord;
+  vertexId = startId;
+  totalLen = If[shouldRepeat, 10^6, wordLen];
+  Do[
+    cardinal = Part[pathWord, Mod[i, wordLen, 1]];
+    negatedQ = NegatedQ[cardinal];
+    edgeId = Part[$TagVertexAdjacentEdgeTable, Key @ cardinal, vertexId];
+    If[edgeId === None,
+      If[shouldRepeat, Break[]];
+      failWalk[cardinal, vertexId]];
+    vertexId = Part[$EdgePairs, edgeId, If[negatedQ, 1, 2]];
+    func[vertexId, If[negatedQ, Negated @ edgeId, edgeId]];
+    If[vertexId == startId, Break[]];
+  ,
+    {i, 1, totalLen}
+  ];
+  vertexId
 ];
 
-$MetricDistance := Switch[$GraphMetric,
-  None | Automatic | "Uniform", $GraphDistance,
-  "Quadratic", $LatticeDistance,
-  True, fail["badmetric", $GraphMetric]
+failWalk[cardinal_, vertexId_] := Scope[
+  available = Join[
+    Part[$EdgeTags, Part[$VertexOutEdgeTable, vertexId]],
+    Negated /@ Part[$EdgeTags, Part[$VertexInEdgeTable, vertexId]]
+  ];
+  failAuto["nocard", cardinal, Part[$VertexList, vertexId], available];
 ];
 
+(********************************************)
+
+offsetWalk[start_, path_] := Scope[
+  cardList = parseCardinalWord[path];
+  doWalk[startId, pathWord, False, Null&]
+];
 
 (********************************************)
 (** Line[...]                              **)
@@ -414,7 +449,7 @@ processRegion[Line[vertices_]] :=
   collectPathData @ MapStaggered[findAndSowGeodesic, findVertices @ vertices]
 
 findAndSowGeodesic[v1_, v2_] := Scope[
-  geodesicVertices = $MetricFindShortestPath[v1, v2];
+  geodesicVertices = MetricFindShortestPath[$MetricGraphCache, v1, v2, GraphMetric -> $GraphMetric];
   sowVertexList[geodesicVertices];
   MapStaggered[findAndSowEdge, geodesicVertices]
 ];
@@ -425,30 +460,50 @@ findAndSowGeodesic[v1_, v2_] := Scope[
 
 GraphRegionElementQ[HalfLine[{_, _}] | HalfLine[_, _]] := True;
 
+(* we must work around an automatic rewriting that HalfLine does here *)
+processRegion[HalfLine[{v1_, v2_}] | HalfLine[{0, 0}, {v1_, v2_}]] := Scope[
+  v1 //= findVertex; v2 //= findVertex;
+  word = findWordBetween[v1, v2];
+  processRegion @ HalfLine[v1, word]
+];
+
 processRegion[HalfLine[v_, dir_]] :=
   collectPathData @ sowPath[v, dir, True];
 
-processRegion[HalfLine[{v1_, v2_}]] := Scope[
-  None;
+processRegion[hf_HalfLine] := Print[hf];
+
+findWordBetween[v1_, v2_] := Scope[
+  geodesicVertices = MetricFindShortestPath[$MetricGraphCache, v1, v2, GraphMetric -> $GraphMetric];
+  MapStaggered[findCardinalBetween, geodesicVertices]
 ];
 
+GraphRegion::grinterror = "An internal error occurred while procession region ``[...].";
+
+findCardinalBetween[v1_, v2_] := Scope[
+  edgeIndex = findEdge[v1, v2];
+  If[edgeIndex === None, failAuto["grinterror"]];
+  If[NegatedQ[edgeIndex],
+    Negated @ Part[$EdgeTags, StripNegated @ edgeIndex],
+    Part[$EdgeTags, edgeIndex]
+  ]
+];
 
 (********************************************)
-(** InfiniteLine[...]                              **)
+(** InfiniteLine[...]                      **)
 
 GraphRegionElementQ[InfiniteLine[{_, _}] | InfiniteLine[_, _]] := True;
 
 processRegion[InfiniteLine[v_, dir_]] := Scope[
   cardinalWord = parseCardinalWord[dir];
   {posVerts, posEdges, posNegations} = List @@ processRegion @ HalfLine[v, cardinalWord];
-  {negVerts, negEdges, negNegations} = List @@ processRegion @ HalfLine[v, Negated /@ Reverse @  cardinalWord];
+  {negVerts, negEdges, negNegations} = List @@ processRegion @ HalfLine[v, Negated /@ Reverse @ cardinalWord];
+  negEdgeLen = Length[negEdges];
   GraphPathData[
-    Join[Reverse @ negVerts, posVerts],
+    Join[Reverse @ Rest @ negVerts, posVerts],
     Join[Reverse @ negEdges, posEdges],
-    Join[Complement[Range @ Length @ negEdges, negNegations], posNegations]
+    Join[Complement[Range @ negEdgeLen, negEdgeLen + 1 - negNegations], negEdgeLen + posNegations]
   ]
 ];
-
 
 (********************************************)
 (** Polygon[...]                           **)
@@ -498,19 +553,25 @@ two distances to differ by up to \[CapitalDelta].
 GraphRegionElementQ[Locus[_ ? GraphRegionElementQ, _ ? GraphRegionElementQ]] := True;
 GraphRegionElementQ[Locus[_ ? GraphRegionElementQ, _ ? GraphRegionElementQ, _ ? NumericQ]] := True;
 
-processRegion[Locus[r1_, r2_, d_:0 ? NumericQ]] := Scope[
+processRegion[l:Locus[r1_, r2_, d_:0 ? NumericQ]] := Scope[
   r1 = First @ processRegion @ r1;
   r2 = First @ processRegion @ r2;
-  d1 = extractDistanceVectors @ r1;
-  d2 = extractDistanceVectors @ r2;
-  Panic["NotImplemented"];
+  If[r1 === {} || r2 === {}, fail["emptyarea", l]];
+  d1 = extractDistanceToRegion @ r1;
+  d2 = extractDistanceToRegion @ r2;
+  indices = SelectIndices[
+    Transpose @ {d1, d2},
+    Apply[Abs[#1 - #2] <= d&]
+  ];
+  If[indices === {}, fail["emptyarea", l]];
+  subgraphRegionData[indices]
 ];
 
-extractDistanceVectors[{v_}] :=
-  List @ $MetricDistance[v, All];
+extractDistanceToRegion[{v_}] :=
+  MetricDistance[$MetricGraphCache, v, All, GraphMetric -> $GraphMetric];
 
-extractDistanceVectors[v_List] :=
-  List @ $MetricDistance[v, All];
+extractDistanceToRegion[v_List] :=
+  Min /@ Part[MetricDistanceMatrix[$MetricGraphCache, GraphMetric -> $GraphMetric], All, v];
 
 (********************************************)
 (** Disk[...]                              **)
@@ -538,23 +599,47 @@ GraphRegionElementQ[Circle[_, _ ? NumericQ]] := True;
 processRegion[c:Circle[center_, r_ ? NumericQ]] :=
   circularRegionData[c, center, ApproxEqualTo[r]];
 
-ApproxEqualTo[e_][r_] := Round[e] == Round[r];
+ApproxEqualTo[e_][r_] := Abs[e - r] < 0.5;
 
 (********************************************)
 
 GraphRegion::emptyarea = "The area defined by `` contains no points."
 
+extendedConditionQ[cond_] := ContainsComplexQ[cond] || ContainsNegativeQ[cond];
+
+complexToVector[z_] := AngleVector @ AbsArg @ z;
+
+leftOf[z_][e_] := Dot[z - e, z] >= 0;
+rightOf[z_][e_] := Dot[z - e, z] <= 0;
+andOperator[f_, g_][e_] := f[e] && g[e];
+
+toComplexCond = MatchValues[
+  LessEqualThan[n_] := leftOf @ complexToVector @ n;
+  ApproxEqualTo[n_] := ApproxEqualTo[complexToVector @ n];
+  Between[{a_, b_}] := andOperator[leftOf @ complexToVector @ a, rightOf @ complexToVector @ b];
+];
+
 circularRegionData[spec_, center_, condition_] := Scope[
   centerInd = findVertex @ center;
-  distances = $MetricDistance[centerInd, All];
-  vertices = SelectIndices[distances, condition];
+  distances = MetricDistance[$MetricGraphCache, centerInd, All, GraphMetric -> $GraphMetric];
+  cond = condition;
+  Which[
+    ContainsComplexQ[distances] && !extendedConditionQ[cond],
+      distances //= Re,
+    extendedConditionQ[cond],
+      cond //= toComplexCond;
+      distances //=  Map[complexToVector],
+    True,
+      Null
+  ];
+  vertices = SelectIndices[distances, cond];
   If[vertices === {}, fail["emptyarea", spec]];
   subgraphRegionData @ vertices
 ];
 
 subgraphRegionData[vertices_] := Scope[
-  forward = Flatten @ Part[$GraphVertexOutEdgeTable, vertices];
-  backward = Flatten @ Part[$GraphVertexInEdgeTable, vertices];
+  forward = Flatten @ Part[$VertexOutEdgeTable, vertices];
+  backward = Flatten @ Part[$VertexInEdgeTable, vertices];
   GraphRegionData[
     vertices,
     Intersection[forward, backward]

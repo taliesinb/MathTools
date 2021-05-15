@@ -48,8 +48,8 @@ chooseAutoRepresentation[cardinalList_] :=
       {"x", "y"}, InfiniteAbelianGroup[2],
       {"x", "y", "z"}, InfiniteAbelianGroup[3],
       {"w", "x", "y", "z"}, InfiniteAbelianGroup[4],
-      {"a", "b", "c"}, InfiniteAbelianGroup[2, "Redundant"],
-      {"a", "b", "c", "d"}, InfiniteAbelianGroup[3, "Redundant"],
+      {"a", "b", "c"}, InfiniteAbelianGroup[3, "Redundant"],
+      {"a", "b", "c", "d"}, InfiniteAbelianGroup[4, "Redundant"],
       _, Message[QuiverRepresentation::noautorep, cardinalList]; Return[$Failed, Block]
   ];
 
@@ -83,19 +83,6 @@ constructQuiverRepresentationObject[assoc_] :=
 Format[RepresentationObject[matrix_?MatrixQ], StandardForm] :=
   renderRepresentationMatrix[matrix];
 
-$representationIcon =
- Framed[Style["R", FontSize -> 20], FrameStyle -> Gray,
-  ImageSize -> {35, 35}, Alignment -> Center]
-
-$cardinalIconSize = 50 * {1, 1};
-cardinalIcon[graph_] :=
-  GraphPlot[Global`$g = graph,
-    EdgeShapeFunction -> Automatic,
-    ImageSize -> $cardinalIconSize,
-    ImagePadding -> 2, PlotRangePadding -> 0,
-    BaseStyle -> {}
-  ];
-
 (**************************************************************************************************)
 
 PackageExport["QuiverRepresentationPlot"]
@@ -110,11 +97,21 @@ QuiverRepresentationPlot[qrep_, opts:OptionsPattern[Quiver]] := Scope[
   quiverPlot = Quiver[quiver, opts, ImageSize -> Tiny, GraphLegend -> None];
 
   colors = LookupCardinalColors[quiver];
-  labeledGenerators = KeyValueMap[
-    Labeled[#2, Row[{ColoredArrowhead[colors[#1], 10], " ", #1}]]&,
-    qrep["Generators"]];
-  Row[{quiverPlot, "  ", Row[labeledGenerators, " "]}]
+  labeledGenerators = makeLabeledGenerators[qrep["Generators"], colors];
+
+  Row[{quiverPlot, "  ", labeledGenerators}]
 ];
+
+PackageScope["makeLabeledGenerators"]
+
+makeLabeledGenerators[generators_, cardinalColors_] :=
+  Row[
+    KeyValueMap[
+      Labeled[#2, Row[{makeLegendArrowheadGraphic[cardinalColors @ #1, "Arrow"], " ", #1}]]&,
+      generators
+    ],
+    "  ", BaseStyle -> $LegendLabelStyle
+  ];
 
 (**************************************************************************************************)
 
@@ -125,24 +122,28 @@ QuiverRepresentationObject[$$] represents a Quiver with an associated representa
 "
 
 QuiverRepresentationObject /: MakeBoxes[object:QuiverRepresentationObject[data_Association] ? System`Private`HoldNoEntryQ, format_] := ModuleScope[
-  UnpackAssociation[data, quiver, cardinals, generators, representation];
+  UnpackAssociation[data, quiver, generators, representation];
   dimension = representation["Dimension"];
   group = representation["Group"];
-  icon = cardinalIcon[quiver];
-  icon = Insert[icon, AspectRatio -> All, 2];
+  icon = ExtendedGraphPlot @ ExtendedGraph[quiver, ImageSize -> {60, 50}, GraphLegend -> None];
+  cardinalColors = LookupCardinalColors @ quiver;
+  coloredCardinals = KeyValueMap[Style[#1, Bold, #2]&, cardinalColors];
   vertices = VertexCount[quiver];
   edges = EdgeCount[quiver];
   order = representation["GroupOrder"];
+  labeledGenerators = makeLabeledGenerators[generators, cardinalColors];
   BoxForm`ArrangeSummaryBox[
     QuiverRepresentationObject, object, icon,
     (* Always displayed *)
     {
-     {summaryItem["Group", group], summaryItem["Cardinals", Row[cardinals, ","]]},
+     {summaryItem["Group", group], summaryItem["Cardinals", Row[coloredCardinals, ","]]},
      {summaryItem["Dimension", dimension], summaryItem["Vertices", vertices]},
      {summaryItem["Order", order], summaryItem["Edges", edges]}
      },
     (* Displayed on request *)
-    {},
+    {
+      {labeledGenerators, SpanFromLeft}
+    },
     format,
     "Interpretable" -> Automatic
   ]
@@ -152,7 +153,7 @@ QuiverRepresentationObject /: MakeBoxes[object:QuiverRepresentationObject[data_A
 declareObjectPropertyDispatch[QuiverRepresentationObject, quiverRepresentationProperty];
 
 quiverRepresentationProperty[data_, "Identity"] := QuiverElement[
-  First @ VertexList @ data["Quiver"],
+  Part[VertexList[data["Quiver"]], MaximumIndex[BetweennessCentrality @ data["Quiver"]]],
   data["Representation"]["Identity"]
 ];
 

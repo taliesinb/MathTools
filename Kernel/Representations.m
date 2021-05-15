@@ -19,9 +19,19 @@ RepresentationObject[$$] represents a group representation.
 "
 
 constructGroupRepresentation[data_] := Scope[
+  data = data;
   group = data["Group"];
   matrices = Normal /@ data["Generators"];
   matrices = ExpandUnitRoots[matrices];
+  mod = Match[
+    First @ data["Generators"],
+    RepresentationElement[_, m_] :> m,
+    None
+  ];
+  data["Identity"] = If[mod =!= None,
+    RepresentationElement[IdentityMatrix @ dim, ToPacked @ mod],
+    RepresentationElement @ IdentityMatrix @ dim
+  ];
   type = Which[
     TranslationGroupQ[group] || AllTrue[matrices, TranslationMatrixQ], "Translation",
     AllTrue[matrices, DihedralTranslationMatrixQ], "DihedralTranslation",
@@ -61,9 +71,6 @@ RepresentationObject /: MakeBoxes[object:RepresentationObject[data_Association] 
 ];
 
 declareObjectPropertyDispatch[RepresentationObject, representationProperty];
-
-representationProperty[assoc_, "Identity"] :=
-  RepresentationElement @ IdentityMatrix[assoc["Dimension"]];
 
 representationProperty[assoc_, "CayleyGraph"] :=
   computeCayleyQuiver[assoc];
@@ -173,6 +180,7 @@ PackageExport["RepresentationElement"]
 
 SetUsage @ "
 RepresentationElement[matrix$] is the matrix representation of a group element.
+RepresentationElement[matrix$, mod$] is a matrix representation applied modulo mod$.
 * RepresentationElements are produced by a RepresentationObject[$$].
 * RepresentationElement will format as a compact matrix.
 * rep$1[rep$2] will return the RepresentationElement for g$1 \[CircleDot] g$2.
@@ -181,11 +189,22 @@ RepresentationElement[matrix$] is the matrix representation of a group element.
 ToInverseFunction[RepresentationElement[matrix_]] :=
   RepresentationElement[Inverse[matrix]];
 
-RepresentationElement /: Normal[RepresentationElement[matrix_]] :=
+ToInverseFunction[RepresentationElement[matrix_, mod_]] :=
+  RepresentationElement[Inverse[matrix], mod];
+
+ModForm /: RepresentationElement[ModForm[matrix_, mod_]] :=
+  RepresentationElement[matrix, mod];
+
+RepresentationElement /: Normal[RepresentationElement[matrix_, ___]] :=
   If[Developer`PackedArrayQ[matrix], matrix, ExpandUnitRoots @ matrix];
 
 declareFormatting[
-  RepresentationElement[matrix_?MatrixQ] :> renderRepresentationMatrix[matrix, $isTraditionalForm]
+  RepresentationElement[matrix_ ? MatrixQ] :>
+    renderRepresentationMatrix[matrix, $isTraditionalForm],
+  RepresentationElement[matrix_ ? MatrixQ, mod_ ? MatrixQ] :>
+    RepresentationElement @ MapThread[ModForm, {matrix, mod}, 2],
+  RepresentationElement[matrix_ ? MatrixQ, mod_Integer] :>
+    ModForm[RepresentationElement[matrix], mod]
 ];
 
 splitImag[e_] := If[ContainsQ[e, _Complex], fmtComplexRow[Re @ e, Im @ e], e];
@@ -196,6 +215,11 @@ fmtComplexRow[re_, im_] := Row[{re, "+", im, $imagStr}];
 RepresentationElement[elem1_][RepresentationElement[elem2_]] := With[
   {res = Dot[elem1, elem2]},
   RepresentationElement @ If[Developer`PackedArrayQ[res], res, Expand @ res]
+];
+
+RepresentationElement[elem1_, mod_][RepresentationElement[elem2_, _]] := With[
+  {res = Mod[Expand @ Dot[elem1, elem2], mod]},
+  RepresentationElement[If[Developer`PackedArrayQ[res], res, Expand @ res], mod]
 ];
 
 (**************************************************************************************************)
@@ -236,18 +260,19 @@ CustomRepresentation[{matrix$1, $$, matrix$n}] takes a list of matrices and \
 returns a RepresentationObject[$$].
 CustomRepresentation[matrices$, group$] specifies that the representation is \
 of the group group$.
+CustomRepresentation[matrices$, group$, mod$] constructs representations modulo mod$.
 "
 
 DeclareArgumentCount[CustomRepresentation, {1, 2}];
 
-declareSyntaxInfo[CustomRepresentation, {_, _.}];
+declareSyntaxInfo[CustomRepresentation, {_, _., _.}];
 
 CustomRepresentation::notmat = "First argument should be a list of matrices."
 CustomRepresentation::badrepmat = "Matrices have inconsistent dimensions: ``."
 
 CustomRepresentation[matrices_, group_:None] := Scope[
   If[!VectorQ[matrices, MatrixQ], ReturnFailed["notmat"]];
-  matrices = Developer`ToPackedArray /@ Normal /@ matrices;
+  matrices = ToPacked /@ Normal /@ matrices;
   dims = Dimensions[matrices];
   If[!MatchQ[dims, {_, _, _}], ReturnFailed["badintcode", Dimensions /@ matrices]];
   dim = Part[dims, 2];
@@ -257,10 +282,12 @@ CustomRepresentation[matrices_, group_:None] := Scope[
     "Group" -> group,
     "GroupOrder" -> order,
     "Generators" -> generators,
-    "Dimension" -> dim
+    "Dimension" -> dim,
+    "Identity" -> identity
   |>;
   constructGroupRepresentation[repData]
 ];
+
 
 (**************************************************************************************************)
 
@@ -294,8 +321,8 @@ declareSyntaxInfo[GroupRepresentation, {_}];
 
 GroupRepresentation[group_] := Scope[
   If[!GroupQ[group], ReturnFailed["notgroup", group]];
-  matrices = Developer`ToPackedArray /@ Normal /@ makeGenerators[group];
-  dims = Dimensions[matrices];
+  matrices = ToPacked /@ Normal /@ makeGenerators[group];
+  dims = Dimensions[matrices /. ModForm[m_, _] :> m];
   If[!MatchQ[dims, {_, _, _}], ReturnFailed["badintcode", Dimensions /@ matrices]];
   dim = Part[dims, 2];
   generators = RepresentationElement /@ matrices;
@@ -303,7 +330,8 @@ GroupRepresentation[group_] := Scope[
     "Group" -> group,
     "GroupOrder" -> GroupOrder[group],
     "Generators" -> generators,
-    "Dimension" -> dim
+    "Dimension" -> dim,
+    "Identity" -> RepresentationElement @ IdentityMatrix @ dim
   |>;
   constructGroupRepresentation[repData]
 ]

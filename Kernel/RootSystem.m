@@ -29,7 +29,7 @@ reachableStates[func_, initialStates_, maxStates_:20] :=
 setValidIfNormlized[e_] := If[Norm[e] == 1, System`Private`SetValid[e]];
 
 toCheckedAndPacked[e_] := Scope[
-  e2 = Developer`ToPackedArray[List @@ e];
+  e2 = ToPacked[List @@ e];
   If[Norm[e2] == 1, System`Private`SetValid[e2]];
   e2
 ];
