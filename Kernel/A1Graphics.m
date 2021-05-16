@@ -318,8 +318,11 @@ toNumericSizeScale = MatchValues[
 
 (**************************************************************************************************)
 
+PackageScope["$colorNormalizationRules"]
+
 $colorNormalizationRules = {
-  Red -> $Red, Orange -> $Orange, Green -> $Green, Yellow -> $Yellow, Blue -> $Blue, Purple -> $Purple, Pink -> $Pink
+  Red -> $Red, Orange -> $Orange, Yellow -> $Yellow, Green -> $Green, Blue -> $Blue, Purple -> $Purple, Pink -> $Pink, Cyan -> $Teal,
+  LightRed -> $LightRed, LightYellow -> $LightYellow, LightGreen -> $LightGreen, LightBlue -> $LightBlue, LightPink -> $LightPink, LightPurple -> $LightPurple, LightCyan -> $LightTeal
 };
 
 (**************************************************************************************************)
@@ -375,10 +378,12 @@ $thicknessNormalizationRules = {
 
 PackageScope["toDirective"]
 
-toDirective[Automatic] := Automatic;
-toDirective[{d_Directive}] := toDirective @ d;
-toDirective[e_List] := normalizeStyles @ Directive @ Flatten @ e;
-toDirective[e_] := normalizeStyles @ e;
+toDirective = MatchValues[
+  Automatic := Automatic;
+  {d_Directive} := toDirective @ d;
+  e_List := normalizeStyles @ Directive @ Flatten @ e;
+  e_ := normalizeStyles @ e
+];
 
 $styleNormalizationRules = Dispatch @ Flatten @ {
   $colorNormalizationRules,

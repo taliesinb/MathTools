@@ -11,6 +11,7 @@ PackageExport["GraphOrigin"]
 PackageExport["Cardinals"]
 PackageExport["ViewOptions"]
 PackageExport["CoordinateTransformFunction"]
+PackageExport["LabelCardinals"]
 
 (**************************************************************************************************)
 
@@ -30,6 +31,7 @@ $extendedGraphOptionsRules = {
   Cardinals -> Automatic,
   CardinalColors -> Automatic,
   ViewOptions -> Automatic,
+  LabelCardinals -> False,
   CoordinateTransformFunction -> None
 };
 
@@ -64,9 +66,9 @@ interceptedGraphConstructor[Graph[Shortest[args__], options__Rule]] := Scope[
   Annotate[result, checkGraphAnnotations @ DeleteDuplicatesBy[annotations, First]]
 ];
 
-$optionFixupRules = {
+$optionFixupRules = Dispatch @ {
   Rule[VertexSize, r:{__Rule}] :> Rule[VertexSize, Association @ r],
-  Rule[GraphHighlightStyle, l_List] :> Rule[GraphHighlightStyle, Directive[l]]
+  Rule[GraphHighlightStyle, l_List] :> Rule[GraphHighlightStyle, Directive @ l]
 };
 
 makeNewGraph[graph_Graph ? GraphQ, newOptions_List] :=
@@ -307,6 +309,9 @@ PackageExport["CardinalSet"]
 SetUsage @ "
 CardinalSet[cardinals$] represents a set of cardinals that is simultaneously present on an edge.
 "
+
+MakeBoxes[CardinalSet[set_List], TraditionalForm] :=
+  RowBox @ Riffle[MakeBoxes[#, TraditionalForm]& /@ set, " "];
 
 PackageScope["SpliceCardinalSets"]
 

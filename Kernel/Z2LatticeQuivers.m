@@ -428,6 +428,10 @@ toACFunction = MatchValues[
 
 (**************************************************************************************************)
 
+$LatticeQuiverAutocomplete = Join[$LatticeNames, $ParameterizedLatticeNames, $LatticeClassNames];
+
+(**************************************************************************************************)
+
 PackageExport["LatticeGraph"]
 
 SetUsage @ "
@@ -459,10 +463,6 @@ LatticeGraph[spec_, depth_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[directedEdges];
   iGenerateLattice[LatticeGraph, spec, depth, directedEdges, FilterOptions @ opts]
 ];
-
-(**************************************************************************************************)
-
-$LatticeQuiverAutocomplete = Join[$LatticeNames, $ParameterizedLatticeNames, $LatticeClassNames];
 
 (**************************************************************************************************)
 

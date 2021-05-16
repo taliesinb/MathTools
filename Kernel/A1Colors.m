@@ -69,10 +69,10 @@ PackageExport["$ExtendedColorsGrouped"]
 
 $ExtendedColorsGrouped = <|
   "Basic" -> <|
-    "VeryLight" -> <|"Blue" -> "#60aff0", "Cyan" -> "#98f8ea", "Green" -> "#a5f56a", "Orange" -> "#fffb7f", "Red" -> "#f09b91", "Purple" -> "#f094c4"|>,
-    "Light"     -> <|"Blue" -> "#45a0f7", "Cyan" -> "#6be1ce", "Green" -> "#81d454", "Orange" -> "#f6e259", "Red" -> "#ed6d56", "Purple" -> "#dd69a5"|>,
-    "Medium"    -> <|"Blue" -> "#3175b6", "Cyan" -> "#4aa59d", "Green" -> "#54ae32", "Orange" -> "#eebb40", "Red" -> "#da3b26", "Purple" -> "#ba3b78"|>,
-    "Dark"      -> <|"Blue" -> "#1d4d7d", "Cyan" -> "#357a76", "Green" -> "#316f1d", "Orange" -> "#f19837", "Red" -> "#a62a17", "Purple" -> "#8d275e"|>,
+    "VeryLight" -> <|"Red" -> "#f09b91", "Orange" -> "#fffb7f", "Green" -> "#a5f56a", "Cyan" -> "#98f8ea", "Blue" -> "#60aff0", "Purple" -> "#f094c4"|>,
+    "Light"     -> <|"Red" -> "#ed6d56", "Orange" -> "#f6e259", "Green" -> "#81d454", "Cyan" -> "#6be1ce", "Blue" -> "#45a0f7", "Purple" -> "#dd69a5"|>,
+    "Medium"    -> <|"Red" -> "#da3b26", "Orange" -> "#eebb40", "Green" -> "#54ae32", "Cyan" -> "#4aa59d", "Blue" -> "#3175b6", "Purple" -> "#ba3b78"|>,
+    "Dark"      -> <|"Red" -> "#a62a17", "Orange" -> "#f19837", "Green" -> "#316f1d", "Cyan" -> "#357a76", "Blue" -> "#1d4d7d", "Purple" -> "#8d275e"|>,
     ""          -> <|"White" -> "#ffffff", "LightGray" -> "#d5d5d5", "Gray" -> "#929292", "DarkGray" -> "#646464", "Black" -> "#000000"|>
   |>,
   "Cool" -> <|
@@ -167,7 +167,7 @@ PackageExport["OklabLighter"]
 
 timesMatrix[vec1_, vec2_] := If[MatrixQ[vec2], vec1 * #& /@ vec2, vec1 * vec2];
 OklabDarker[color_, amount_:.2] := FromOklab @ timesMatrix[{1 - amount, 1, 1}, ToOklab @ color];
-OklabLighter[color_, amount_:.2] := OklabDarker[color, -amount];
+OklabLighter[color_, amount_:.25] := OklabDarker[color, -amount];
 
 
 PackageExport["OklabPaler"]
@@ -233,9 +233,7 @@ PackageExport["$Gray"]
 {$Blue, $Red, $Green, $Pink, $Teal, $Yellow, $Orange, $Purple, $Gray} =
   Map[RGBColor, StringSplit @ "#3e81c3 #e1432d #4ea82a #c74883 #47a5a7 #f6e259 #dc841a #8b7ebe #929292"]
 
-$ColorPalette = {$Red, $Blue, $Green, $Orange, $Purple, $Teal, $Gray, $Pink, $Yellow};
-
-PackageExport["$DarkColorPalette"]
+$ColorPalette = $MediumColorPalette = {$Red, $Blue, $Green, $Orange, $Purple, $Teal, $Gray, $Pink, $Yellow};
 
 PackageExport["$DarkBlue"]
 PackageExport["$DarkRed"]
@@ -246,10 +244,8 @@ PackageExport["$DarkOrange"]
 PackageExport["$DarkPurple"]
 PackageExport["$DarkGray"]
 
-{$DarkRed, $DarkBlue, $DarkGreen, $DarkTeal, $DarkOrange, $DarkPurple, $DarkGray, $DarkPink, $DarkYellow} =
-  $DarkColorPalette = OklabDarker[$ColorPalette, .2];
-
-PackageExport["$LightColorPalette"]
+{$DarkRed, $DarkBlue, $DarkGreen, $DarkOrange, $DarkPurple, $DarkTeal, $DarkGray, $DarkPink, $DarkYellow} =
+  $DarkColorPalette = OklabDarker @ $ColorPalette;
 
 PackageExport["$LightBlue"]
 PackageExport["$LightRed"]
@@ -260,18 +256,65 @@ PackageExport["$LightOrange"]
 PackageExport["$LightPurple"]
 PackageExport["$LightGray"]
 
-{$LightRed, $LightBlue, $LightGreen, $LightTeal, $LightOrange, $LightPurple, $LightGray, $LightPink, $LightYellow} =
-  $LightColorPalette = OklabLighter[$ColorPalette, .2];
+{$LightRed, $LightBlue, $LightGreen, $LightOrange, $LightPurple, $LightTeal, $LightGray, $LightPink, $LightYellow} =
+  $LightColorPalette = OklabLighter @ $ColorPalette;
 
 (**************************************************************************************************)
 
 PackageExport["Paletted"]
 
+$paletteUsageString = StringTrim @ "
+* palette$ can be an one of the following:
+| Automatic | the default color palette |
+| 'Light', 'Dark' | a lighter or darker version of the default palette |
+| {spec$, 'Light'} | a lighter version of spec$ |
+| {spec$, 'Dark'} | a darker version of spec$ |
+| {c$1, c$2, $$} | an explicit list of colors |
+| 'Basic', 'Cool', 'Subdued' | a named palette |
+| {'set$', 'variant$'} | a lightness variant of 'set$' |
+* Lightness variants are 'VeryLight', 'Light', 'Medium', 'Dark'.
+";
+
 SetUsage @ "
 Paletted[f$, palette$] indictes that a color function f$ should be applied using the color palette
 palette$.
-* palette$ can be an explicit list of colors or the following string names: 'Light', 'Regular', 'Dark'.
+<*$paletteUsageString*>
 "
+
+(**************************************************************************************************)
+
+PackageExport["ToColorPalette"]
+
+SetUsage @ "
+ToColorPalette[palette$] returns an explicit list of colors from a palette specification.
+ToColorPalette[palette$, n$] returns exactly n$ colors from the palette.
+<*$paletteUsageString*>
+"
+
+ToColorPalette = MatchValues[
+  Automatic | "Medium"          := $MediumColorPalette;
+  "Light"                       := $LightColorPalette;
+  "Dark"                        := $DarkColorPalette;
+  {spec_, "Light"}              := OklabLighter @ % @ spec;
+  {spec_, "Dark"}               := OklabDarker @ % @ spec;
+  set_String                    := getNamedColorSet[set, "Medium"];
+  {set_String, variant_String}  := getNamedColorSet[set, variant];
+  list_List ? ColorVectorQ      := list /. $colorNormalizationRules;
+  Offset[spec_, n_Integer]      := RotateLeft[% @ spec, n];
+  _                             := $Failed
+];
+
+getNamedColorSet[set_, variant_] := Scope[
+  colors = $ExtendedColorsGrouped[set, variant];
+  If[MissingQ[colors], ReturnFailed[]];
+  Values @ colors
+];
+
+ToColorPalette[spec_, n_Integer] := Scope[
+  colors = ToColorPalette[spec];
+  If[FailureQ[colors] || Length[colors] < n, ReturnFailed[]];
+  Take[colors, n]
+];
 
 (**************************************************************************************************)
 
@@ -382,7 +425,7 @@ DiscreteColorFunction[values_List, Automatic] := Scope[
     Length[values] <= Length[$ColorPalette],
       colors = Take[$ColorPalette, count],
     Length[values] <= 2 * Length[$ColorPalette],
-      colors = Take[Join[$LightColorPalette, $DarkColorPalette], count],
+      colors = Take[Join[OklabLighter @ $ColorPalette, OklabDarker @ $ColorPalette], count],
     True,
       ReturnFailed["toobig", count]
   ];
@@ -719,7 +762,25 @@ pickNice[val_, dx_, func_] := Scope[
 
 PackageExport["ApplyColoring"]
 
-ApplyColoring[data_List] := Scope[
+SetUsage @ "
+ApplyColoring[list$] determines an automatic coloring for items of list, returning a pair \
+{groups$, cfunc$}, where groups$ is an association from colors to positions of list$ at \
+which they occur, and cfunc$ is a color function that can be applied to new values.
+ApplyColoring[list$, palette$] uses a palette specification to choose colors.
+* See ToColorPalette for allowed settings of palette$ (the default used here is 'Basic'.
+* cfunc$ will be either a ContinuousColorFunction or a DiscreteColorFunction.
+"
+
+ApplyColoring::badpalette = "The palette `` was not a valid form."
+
+coloringColorPalette = MatchValues[
+  Automatic := Part[ToColorPalette["Basic"], {1, 2, 3, 5, 4, 6}];
+  other_ := ToColorPalette[other];
+];
+
+ApplyColoring[data_List, palette_:Automatic] := Scope[
+  $ColorPalette = coloringColorPalette[palette];
+  If[FailureQ[$ColorPalette], ReturnFailed["badpalette", palette]];
   posIndex = KeySort @ PositionIndex @ data;
   uniqueValues = Keys @ posIndex; count = Length @ uniqueValues;
   colorFunction = Which[

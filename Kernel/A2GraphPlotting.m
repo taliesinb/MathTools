@@ -235,18 +235,28 @@ computeMaxSafeVertexSize[] := Scope[
 ];
 
 computeMaxSafeArrowheadSize[] := Scope[
-  distances = DeleteCases[Flatten @ DistanceMatrix[Median /@ $GraphEdgeCoordinateLists], 0|0.];
+  distances = DeleteCases[Flatten @ DistanceMatrix[lineCenter /@ $GraphEdgeCoordinateLists], 0|0.];
   minDistance = If[distances === {}, Infinity, rankedMean @ distances];
   minDistance = Max[minDistance, $GraphMaxSafeVertexSize/Sqrt[2]];
   Min[$GraphMaxSafeVertexSize, minDistance, Max[$GraphPlotSize] / 3]
 ];
 
+lineCenter = MatchValues[
+  pair:{_, _} := Mean @ pair;
+  list_List := Scope[
+    n = Length[list]; n2 = (n + 1) / 2;
+    If[IntegerQ[n2],
+      Part[list, n2],
+      Mean @ Part[list, {Floor @ n2, Ceiling @ n2}]
+    ]
+  ]
+];
 
 (**************************************************************************************************)
 
 PackageExport["ExtendedGraphPlottingFunction"]
 
-Quiver::badcolors = "CardinalColors should be an association from cardinals to colors.";
+ExtendedGraphPlot::badcolors = "CardinalColors should be an association from cardinals to colors.";
 
 ExtendedGraphPlottingFunction[___] := $Failed;
 
@@ -259,14 +269,18 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
   (* process options *)
   FunctionSection[
-    {graphLayout, imageSize, vertexSize, vertexStyle, edgeStyle, vertexLabelStyle, edgeLabelStyle, vertexShapeFunction, edgeShapeFunction} =
-      LookupOption[graph, {GraphLayout, ImageSize, VertexSize, VertexStyle, EdgeStyle, VertexLabelStyle, EdgeLabelStyle, VertexShapeFunction, EdgeShapeFunction}, Automatic];
+    {graphLayout,
+     imageSize, vertexSize, vertexStyle, edgeStyle, vertexLabelStyle, edgeLabelStyle,
+     vertexShapeFunction, edgeShapeFunction} =
+      LookupOption[graph, {GraphLayout,
+        ImageSize, VertexSize, VertexStyle, EdgeStyle, VertexLabelStyle, EdgeLabelStyle,
+        VertexShapeFunction, EdgeShapeFunction}, Automatic];
 
     {vertexLabels, edgeLabels, plotLabel, epilog, imagePadding} =
       LookupOption[graph, {VertexLabels, EdgeLabels, PlotLabel, Epilog, ImagePadding}, None];
 
-    {arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, viewOptions} =
-      LookupExtendedGraphAnnotations[graph, {ArrowheadShape, ArrowheadStyle, ArrowheadSize, ArrowheadPosition, ViewOptions}];
+    {arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, labelCardinals, viewOptions} =
+      LookupExtendedGraphAnnotations[graph, {ArrowheadShape, ArrowheadStyle, ArrowheadSize, ArrowheadPosition, LabelCardinals, ViewOptions}];
 
     {graphLegend, vertexColorFunction, vertexAnnotations} =
       LookupExtendedGraphAnnotations[graph, {GraphLegend, VertexColorFunction, VertexAnnotations}];
@@ -275,7 +289,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   (* initial processing of global options *)
   FunctionSection[
     cardinalColors = LookupCardinalColors[graph];
-    If[!MatchQ[cardinalColors, None | _Association], ReturnFailed["badcolors"]];
+    If[!MatchQ[cardinalColors, None | _Association], failPlot["badcolors"]];
 
     SetNone[vertexAnnotations, <||>];
 
@@ -303,6 +317,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       RealMatrixQ[imagePadding], N[imagePadding],
       True, {{1, 1}, {1, 1}}
     ];
+
+    edgeCenters = lineCenter /@ $GraphEdgeCoordinateLists;
   ];
 
   (* create graphics for vertices *)
@@ -341,9 +357,11 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         toColorVertexDrawFunc[vertexDrawFunc]
       ];
 
+      palette = Automatic;
+      vertexColorFunction //= Replace[Paletted[d_, p_] :> (palette = p; d)];
       vertexColorFunctionData = toColorFunctionData[vertexColorFunction];
       If[FailureQ[vertexColorFunctionData], failPlot["badcolvals"]];
-      {colorGroups, colorFunctionObject} = ApplyColoring[vertexColorFunctionData];
+      {colorGroups, colorFunctionObject} = ApplyColoring[vertexColorFunctionData, palette];
       If[FailureQ[colorFunctionObject], failPlot["badcolvals"]];
       automaticLegends["Colors"] := colorFunctionObject;
 
@@ -376,7 +394,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         arrowheadSize //= ReplaceAll[Scaled[r_ ? NumericQ] :> baseArrowheadSize * r];
 
         SetAutomatic[arrowheadShape, "Arrow"];
-        $twoWayStyle = None;
+        $twoWayStyle = "ArrowDoubleIn";
         If[ListQ[arrowheadShape],
           {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
           Scan[scanArrowheadShapeOpts, arrowheadShapeOpts]];
@@ -384,7 +402,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         SetAutomatic[arrowheadPosition, If[$GraphIs3D && arrowheadShape =!= "Cone", 0.65, 0.5]];
 
         arrowheadBounds = CoordinateBounds[
-          Median /@ $GraphEdgeCoordinateLists,
+          edgeCenters,
           Max[arrowheadSize * $GraphPlotSizeX] * 0.5
         ];
         extendPaddingToInclude[arrowheadBounds];
@@ -422,8 +440,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     edgeLabels //= removeSingleton;
     If[edgeLabels =!= None,
       edgeLabelItems = generateLabelPrimitives[
-        edgeLabels, $EdgeList, Median /@ $GraphEdgeCoordinateLists,
-        Max[arrowheadSize]/2, edgeLabelStyle, <||>
+        edgeLabels, $EdgeList, edgeCenters,
+        Max[arrowheadSize] * $GraphPlotSizeX, edgeLabelStyle, <||>
       ];
       AppendTo[labelGraphics, edgeLabelItems]];
 
@@ -525,7 +543,7 @@ toColorVertexDrawFuncWithTooltip[vertexDrawFunc_] :=
 PackageExport["TwoWayStyle"]
 
 scanArrowheadShapeOpts = MatchValues[
-  TwoWayStyle -> s:("Out"|"In"|"OutClose") := $twoWayStyle ^= arrowheadShape <> "Double" <> s;
+  TwoWayStyle -> s:("Out"|"In"|"OutClose"|"InClose") := $twoWayStyle ^= arrowheadShape <> "Double" <> s;
   TwoWayStyle -> s:("Square"|"Ball"|"Disk"|"Diamond"|None) := $twoWayStyle ^= s;
   rule_ := failPlot["badsubopt", rule, ArrowheadShape];
 ];
@@ -574,8 +592,15 @@ drawArrowheadEdges[CardinalSet[cardinals_], edgeCoords_] := Scope[
 makeArrowheadsElement[cardinal_] := Scope[
   {shape, size, style, position} = lookupTagSpec[cardinal];
   size //= Replace[Scaled[s_] :> s * baseArrowheadSize];
-  SetNone[style, $Gray];
-  {size, position, makeArrowheadShape[shape, style]}
+  shape = If[shape === "Cardinal",
+    SetNone[style, Black];
+    makeArrowheadLabelShape[cardinal, style, size]
+  ,
+    SetNone[style, $Gray];
+    makeArrowheadShape[shape, style]
+  ];
+  If[labelCardinals, shape = attachArrowheadLabel[shape, cardinal, size]];
+  {size, position, shape}
 ];
 
 lookupTagSpec[other_, cardinal_] := other;
@@ -591,6 +616,38 @@ lookupTagSpec[TwoWay[cardinal_]] :=
 lookupTagSpec[cardinal_] := Map[
   lookupTagSpec[#, cardinal]&,
   {arrowheadShape, arrowheadSize, arrowheadStyle, arrowheadPosition}
+];
+
+(**************************************************************************************************)
+
+attachArrowheadLabel[g:Graphics[primitives_, opts___], cardinal_, size_] := Scope[
+  cardinal //= Replace[TwoWay[c_] :> Row[{c, Negated[c]}]];
+  label = makeArrowheadLabel[cardinal, size];
+  {{xl, xh}, {yl, yh}} = GraphicsPlotRange[g];
+  labelPrimitives = {Opacity[1], Inset[label, {0., xl - 0.25}, {0, 0}, Automatic, None]};
+  Graphics[{primitives, labelPrimitives}, opts]
+];
+
+attachArrowheadLabel[other_, _, _] := other;
+
+(**************************************************************************************************)
+
+makeArrowheadLabel[cardinal_, size_] := Scope[
+  fontSize = Clip[Round[size * imageSize[[1]] / 4], {10, 15}];
+  Style[cardinal, FontSize -> fontSize, $LegendLabelStyle, Background -> GrayLevel[1.0, 0.8]]
+];
+
+makeArrowheadLabelShape[TwoWay[cardinal_], style_, size_] := Scope[
+  label = makeArrowheadLabel[cardinal, size];
+  Graphics[{Opacity[1], style,
+    Text[label, {0, 0}, {0, -1}],
+    Text[label, {0, 0}, {0, -1}, {-1, 0}]
+  }]
+];
+
+makeArrowheadLabelShape[cardinal_, style_, size_] := Scope[
+  label = makeArrowheadLabel[cardinal, size * 1.75];
+  Graphics[{Opacity[1], style, Text[label, {0, 0}, {0, -0.9}]}]
 ];
 
 (**************************************************************************************************)
@@ -627,6 +684,11 @@ $arrowheads2D = Association[
       {{+0.4, -0.3}, {+0.1, 0.}, {+0.4, 0.3}},
       {{-0.4, -0.3}, {-0.1, 0.}, {-0.4, 0.3}}
     },
+  "LineDoubleInClose" ->
+    Line @ ToPacked @ {
+      {{+0.3, -0.3}, {0., 0.}, {+0.3, 0.3}},
+      {{-0.3, -0.3}, {0., 0.}, {-0.3, 0.3}}
+    },
   "Arrow" ->
     FilledCurve[
       {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
@@ -659,6 +721,15 @@ $arrowheads2D = Association[
       {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
       ToPacked @ {{{+0.45, -0.33}, {+0.05, 0.}, {+0.45, 0.33}, {+0.35, 0.}}}
     ]},
+  "ArrowDoubleInClose" -> {
+    FilledCurve[
+      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
+      ToPacked @ {{{-0.4, -0.33}, {0., 0.}, {-0.4, 0.33}, {-0.30, 0.}}}
+    ],
+    FilledCurve[
+      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
+      ToPacked @ {{{+0.4, -0.33}, {0, 0.}, {+0.4, 0.33}, {+0.3, 0.}}}
+    ]},
   "Disk" ->
     Disk[ToPacked @ {0., 0.}, .2],
   "Square" ->
@@ -690,7 +761,7 @@ PackageScope["abs3DColor"]
 
 abs3DColor[c_] := Directive[Glow @ c, Black, Specularity @ 0];
 
-$namedArrowheads = Union[Keys @ $arrowheads2D, Keys @ $arrowheads3D];
+$namedArrowheads = Union[Keys @ $arrowheads2D, Keys @ $arrowheads3D, {"Cardinal"}];
 
 (**************************************************************************************************)
 
@@ -742,6 +813,7 @@ ExtendedGraphPlot::badarrowhead = "ArrowheadShape -> `` should be None, Automati
 
 PackageExport["ArrowheadLegend"]
 
+ArrowheadLegend[assoc_, "Cardinal"] := "";
 ArrowheadLegend[assoc_Association, shape_:"Arrow"] := Scope[
   rows = KeyValueMap[
     {name, color} |-> {makeLegendArrowheadGraphic[color, shape], name},
@@ -970,7 +1042,7 @@ PackageExport["LabelPosition"]
 
 generateLabelPrimitives[spec_, names_, coordinates_, size_, labelStyle_, annotations_] := Scope[
   $annotationKeys = Keys[annotations];
-  $labelNames = names; $annotations = annotations; $elemSize = size / 2; $spacings = 0;
+  $labelNames = names; $annotations = annotations; $labeledElemSize = size / 2; $spacings = 0;
   $labelSizeScale = 1; $labelY = -1; $labelX = 0; $labelBackground = GrayLevel[1.0, 0.6];
   labelStyle //= removeSingleton;
   labelStyle //= toDirectiveOptScan[setLabelStyleGlobals];
@@ -1056,12 +1128,12 @@ getName[i_] := Part[$labelNames, i];
 getCardinal[i_] := Part[$EdgeTags, i];
 getAnnotation[name_][i_] := Part[$annotations, name, i];
 
-placeTooltipAt[label_, pos_] := NiceTooltip[{Transparent, If[$GraphIs3D, Sphere, Disk][pos, 1.1*$elemSize]}, label];
+placeTooltipAt[label_, pos_] := NiceTooltip[{Transparent, If[$GraphIs3D, Sphere, Disk][pos, 1.1*$labeledElemSize]}, label];
 placeTooltipAt[None | _Missing, _] := Nothing;
 
 placeLabelAt[label_, pos_] := Text[
   $magnifier @ label,
-  pos + If[$GraphIs3D, 0, -$elemSize * {$labelX, $labelY} * (1 + $spacings)],
+  pos  + If[$GraphIs3D, 0, -$labeledElemSize * {$labelX, $labelY} * (1 + $spacings)],
   {$labelX, $labelY} * 0.95,
   Background -> $labelBackground
 ];

@@ -239,8 +239,10 @@ LookupCardinalColors[graph_Graph] := None;
 
 LookupCardinalColors[graph_Graph ? EdgeTaggedGraphQ] :=
   Replace[
-    AnnotationValue[graph, CardinalColors],
-    ($Failed | Automatic) :> ChooseCardinalColors @ CardinalList @ graph
+    AnnotationValue[graph, CardinalColors], {
+      ($Failed | Automatic) :> ChooseCardinalColors @ CardinalList @ graph,
+      palette:(_String | {_, _String} | _Offset) :> ChooseCardinalColors[CardinalList @ graph, palette]
+    }
   ];
 
 LookupCardinalColors[_] := $Failed;
@@ -248,8 +250,8 @@ LookupCardinalColors[_] := $Failed;
 
 PackageScope["ChooseCardinalColors"]
 
-ChooseCardinalColors[cardinals_List] :=
-  AssociationThread[cardinals, Take[$ColorPalette, Length @ cardinals]];
+ChooseCardinalColors[cardinals_List, palette_:Automatic] :=
+  AssociationThread[cardinals, ToColorPalette[palette, Length @ cardinals]];
 
 
 
