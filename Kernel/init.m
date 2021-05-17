@@ -3,11 +3,10 @@ If[$VersionNumber < 12.2,
   General::packagewlversion = "Package `` requires Wolfram Langauge version `` or later to operate.";
   Message[General::packagewlversion, "GraphTools`", 12.2]
 ,
+  If[!IntegerQ[GraphToolsPackageLoader`$LoadCount],
+    Get[FileNameJoin[{FileNameDrop @ $InputFileName, "Loader.m"}]]];
 
-  ClearAll["GraphTools`*"];
-  ClearAll["GraphTools`**`*"];
+  GraphToolsPackageLoader`Load[];
 
-  Block[{Echo = Identity, Print = Hold},
-    Get @ FileNameJoin[{FileNameDrop @ $InputFileName, "A0Utilities.m"}]
-  ];
+  If[!MemberQ[$ContextPath, "GraphTools`"], AppendTo[$ContextPath, "GraphTools`"]];
 ];
