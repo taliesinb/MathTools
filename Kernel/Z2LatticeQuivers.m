@@ -70,6 +70,8 @@ $baseLatticeUsage = "
 | expr$ | use a custom legend given by expr$ |
 "
 
+PackageExport["InitialStates"]
+
 $baseGenerateLatticeOptions = JoinOptions[{
   AbstractCoordinateFunction -> Automatic,
   VertexCoordinateFunction -> Automatic,
@@ -81,7 +83,9 @@ $baseGenerateLatticeOptions = JoinOptions[{
   MaxVertices -> Infinity, MaxEdges -> Infinity,
   DepthTermination -> Automatic, IncludeFrontier -> Automatic,
   IncludeRepresentationMatrices -> False,
-  CombineMultiedges -> True
+  CombineMultiedges -> True,
+  SelfLoops -> True,
+  InitialStates -> Automatic
   },
   $simpleGraphOptionRules
 ];
@@ -128,9 +132,14 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
   If[QuiverQ[representation],
     representation = Quiet @ QuiverRepresentation[representation]];
 
+  If[GroupoidObjectQ[representation],
+    representation = AssociationMap[representation, {"CayleyFunction", "InitialStates"}];
+  ];
+
   If[AssociationQ[representation] && Sort[Keys @ representation] === {"CayleyFunction", "InitialStates"},
 
     UnpackAssociation[representation, cayleyFunction, initialStates];
+    repInitialStates = initialStates;
     cardinalList = Union[StripNegated /@ DeepCases[cayleyFunction, Labeled[_, c_] :> c]];
     If[cardinalList === {}, cardinalList = Automatic];
   ,
@@ -139,7 +148,7 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
 
     cayleyFunction = quiverStateToLatticeVertex @ representation["CayleyFunction", "Symmetric" -> True, "Labeled" -> True];
     baseRep = representation["Representation"];
-    initialStates = List @ quiverStateToLatticeVertex @ representation["Identity"];
+    repInitialStates = List @ quiverStateToLatticeVertex @ representation["Identity"];
 
     quiver = representation["Quiver"];
     cardinalList = CardinalList @ quiver;
@@ -153,8 +162,11 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
     maxVertices, maxEdges, depthTermination, includeFrontier,
     graphMetric, combineMultiedges,
     includeRepresentationMatrices,
-    graphRegionHighlight, plotLabel
+    graphRegionHighlight, plotLabel,
+    selfLoops, initialStates
   ];
+
+  SetAutomatic[initialStates, repInitialStates];
 
   simpleOptions = TakeOptions[{opts}, $simpleGraphOptions];
 
@@ -203,6 +215,8 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
         SetAutomatic[vertexCoordinateFunction, proposedVertexCoordinateFunction];
       ];
       layoutDimension = If[is3D, 3, 2],
+    Automatic /; AssociationQ[representation],
+      abstractCoordinateFunction = Identity,
     None,
       abstractCoordinateFunction = Identity,
     _,
@@ -217,7 +231,7 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
     DirectedEdges -> True,
     MaxDepth -> depth,
     IncludeFrontier -> includeFrontier, DepthTermination -> depthTermination,
-    MaxVertices -> maxVertices, MaxEdges -> maxEdges
+    MaxVertices -> maxVertices, MaxEdges -> maxEdges, SelfLoops -> selfLoops
   ];
 
   (* rewrite the vertices via the coordinate function *)
@@ -275,6 +289,7 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
   ];
 
   (* apply the final vertex and edge relabeling *)
+  If[AssociationQ[representation] && vertexNameFunction === "SpiralIndex", vertexNameFunction = "Index"];
   renamingRule = toRenamingRule[vertexNameFunction, abstractVertexList, vertexList];
   If[FailureQ[renamingRule], ReturnFailed[head::badvertnaming, vertexNameFunction, commaString @ $validRenamingRules]];
   {ivertex, finalVertexList, edgeList} = {ivertex, abstractVertexList, edgeList} /. renamingRule;
@@ -318,7 +333,7 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
   If[combineMultiedges, graph //= CombineMultiedges];
 
   AttachVertexAnnotations[graph, <|
-    "GeneratingVertex" -> vertexList[[All, 2]],
+    If[Length[First @ vertexList] == 2, "GeneratingVertex" -> vertexList[[All, 2]], {}],
     "AbstractCoordinates" -> abstractVertexList[[All, 1]],
     If[includeRepresentationMatrices, "RepresentationMatrix" -> vertexList[[All, 1]], {}],
     If[norms =!= None, "Norm" -> norms, {}]

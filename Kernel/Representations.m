@@ -187,7 +187,7 @@ RepresentationElement[matrix$, mod$] is a matrix representation applied modulo m
 "
 
 ToInverseFunction[RepresentationElement[matrix_]] :=
-  RepresentationElement[Inverse[matrix]];
+  Quiet @ Check[RepresentationElement[Inverse[matrix]], None]
 
 ToInverseFunction[RepresentationElement[matrix_, mod_]] :=
   RepresentationElement[Inverse[matrix], mod];

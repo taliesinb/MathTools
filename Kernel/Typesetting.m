@@ -537,12 +537,22 @@ Gallery[elems_, w_:1000] := Scope[
   n = Length[elems];
   elems = Map[graphToGraphics, elems];
   size = estimateItemSize @ First @ elems;
-  m = SelectFirst[{4, 5, 6, 7, 2, 3}, Divisible[n, #] && (size * #) < w&, Floor[N[w / size]]];
+  If[n > 16,
+    m = Floor[N[w / size]],
+    m = SelectFirst[{10, 9, 8, 7, 6, 5, 4, 3, 2, 2}, Divisible[n, #] && (size * #) < w&, Floor[N[w / size]]];
+  ];
   Grid[
-    Partition[elems, UpTo[m]]
+    Partition[attachEventHandlers @ elems, UpTo[m]],
+    Alignment -> {Center, Top}
   ]
 ];
 
+attachEventHandlers[elems_] := MapIndexed[
+  EventHandler[#, {"MouseClicked" :> Print[First @ #2]}]&,
+  elems
+];
+
+graphToGraphics[Labeled[g_, x_]] := Labeled[graphToGraphics @ g, x];
 graphToGraphics[g_Graph] := ExtendedGraphPlot @ g;
 graphToGraphics[e_] := e;
 

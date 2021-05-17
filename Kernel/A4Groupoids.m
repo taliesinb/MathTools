@@ -73,14 +73,15 @@ MakeBoxes[go_GroupoidObject ? System`Private`HoldNoEntryQ, form_] :=
   groupoidObjectBoxes[go, form];
 
 groupoidObjectBoxes[object:GroupoidObject[data_], form_] := Scope[
-  UnpackAssociation[data, type, generators, states];
+  UnpackAssociation[data, type, generators, states, initialStates];
   BoxForm`ArrangeSummaryBox[
     GroupoidObject, object, None,
     (* Always displayed *)
     {
      {summaryItem["Type", type], SpanFromLeft},
      {summaryItem["Generators", Length @ generators]},
-     {summaryItem["States", Length @ states]}
+     {summaryItem["Initial states", Length @ initialStates]},
+     If[states =!= Indeterminate, {summaryItem["States", Length @ states]}, Nothing]
      },
     (* Displayed on request *)
     {{Column[generators], SpanFromLeft}},

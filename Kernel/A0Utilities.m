@@ -31,6 +31,37 @@ ToPackedRealArrays[array_] := Scope[
 
 (**************************************************************************************************)
 
+PackageScope["SetUsage"]
+
+toUsageStr[list:{__String}] := commaString[list];
+toUsageStr[e_] := TextString[e];
+
+substituteUsageSlots[s_String] :=
+  StringReplace[s, "<*" ~~ Shortest[slot___] ~~ "*>" :> Block[
+    {$ContextPath = {"System`", "GraphTools`", "GraphTools`PackageScope`"}},
+    toUsageStr[ToExpression[slot, InputForm]]
+  ]];
+
+$fmtUsageOuter = True;
+
+(* this speeds up the processing of usage string messages, which are otherwise quite expensive *)
+If[!AssociationQ[GeneralUtilities`Private`$SetUsageFormatCache],
+  GeneralUtilities`Private`$SetUsageFormatCache = Data`UnorderedAssociation[];
+  GeneralUtilities`Code`PackagePrivate`fmtUsageString[str_String] /; $fmtUsageOuter :=
+    Block[{$fmtUsageOuter = False},
+      GeneralUtilities`CacheTo[GeneralUtilities`Private`$SetUsageFormatCache, Hash[str],
+        GeneralUtilities`Code`PackagePrivate`fmtUsageString[str]]];
+];
+
+
+SetUsage[usageString_String] :=
+  GeneralUtilities`SetUsage[Evaluate @ FixedPoint[substituteUsageSlots, usageString]];
+
+SetUsage[symbol_Symbol, usageString_String] :=
+  GeneralUtilities`SetUsage[symbol, Evaluate @ FixedPoint[substituteUsageSlots, usageString]];
+
+(**************************************************************************************************)
+
 PackageScope["summaryItem"]
 
 summaryItem[a_, b_] := BoxForm`SummaryItem[{a <> ": ", b}];
@@ -566,19 +597,6 @@ DefineLiteralMacro[SetAll, SetAll[lhs_, rhs_] := If[lhs === All, lhs = rhs, lhs]
 DefineLiteralMacro[SetInherited, SetInherited[lhs_, rhs_] := If[lhs === Inherited, lhs = rhs, lhs]];
 
 SetHoldAll[SetAutomatic, SetMissing, SetNone, SetAll, SetInherited];
-
-(**************************************************************************************************)
-
-PackageScope["SetUsage"]
-
-toUsageStr[list:{__String}] := commaString[list];
-toUsageStr[e_] := TextString[e];
-
-substituteUsageSlots[s_String] :=
-  StringReplace[s, "<*" ~~ Shortest[slot___] ~~ "*>" :> toUsageStr[ToExpression[slot, InputForm]]]
-
-SetUsage[str_String] :=
-  GeneralUtilities`SetUsage @ Evaluate @ FixedPoint[substituteUsageSlots, str];
 
 (**************************************************************************************************)
 
