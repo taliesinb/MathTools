@@ -58,26 +58,23 @@ SetHoldAllComplete[interceptedGraphConstructor];
 
 interceptedGraphConstructor[Graph[Shortest[args__], options__Rule]] := Scope[
   annotations = TakeOptions[{options}, $extendedGraphOptionSymbols];
-  newOptions = Map[collapseStyleLists] @ DeleteOptions[{options}, $extendedGraphOptionSymbols];
-  newOptions //= ReplaceAll[$optionFixupRules];
+  newOptions = Map[optionFixup] @ DeleteOptions[{options}, $extendedGraphOptionSymbols];
   result = Graph[args, Sequence @@ newOptions];
   If[!GraphQ[result], result = makeNewGraph[args, newOptions]];
   If[!GraphQ[result], ReturnFailed[]];
   Annotate[result, checkGraphAnnotations @ DeleteDuplicatesBy[annotations, First]]
 ];
 
-$optionFixupRules = Dispatch @ {
-  Rule[VertexSize, r:{__Rule}] :> Rule[VertexSize, Association @ r],
-  Rule[GraphHighlightStyle, l_List] :> Rule[GraphHighlightStyle, Directive @ l]
-};
-
 makeNewGraph[graph_Graph ? GraphQ, newOptions_List] :=
   Graph[VertexList @ graph, EdgeList @ graph, Sequence @@ newOptions, Sequence @@ Options @ graph];
 
 makeNewGraph[___] := $Failed;
 
-collapseStyleLists = MatchValues[
+(* these compensate for a weird extra level of list that Graph adds *)
+optionFixup = MatchValues[
+  Rule[VertexSize, r:{__Rule}] := Rule[VertexSize, Association @ r];
   Rule[sym:(EdgeStyle|VertexStyle), val_] := Rule[sym, toDirective[val]];
+  Rule[sym:(GraphHighlightStyle|VertexLabelStyle|EdgeLabelStyle), elem_] := Rule[sym, toDirective[elem]];
   other_ := other;
 ];
 
@@ -279,6 +276,7 @@ single edges, combining any cardinals they have.
 "
 
 CombineMultiedges[graph_] := Scope[
+  If[EdgeCount[graph] === 0, Return @ graph];
   {vertices, edges} = VertexEdgeList[graph];
   {edges, tags} = Transpose @ Map[separateTag, edges];
   edgeGroups = PositionIndex[edges];

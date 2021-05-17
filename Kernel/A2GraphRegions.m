@@ -530,9 +530,10 @@ with geodesics.
 
 GraphRegionElementQ[StarPolygon[_List]] := True;
 
+(* this needs to find *all* paths of equal length between the vertices *)
 processRegion[StarPolygon[vertices_]] := Scope[
   vertices = findVertices @ vertices;
-  pathToRegion @ collectPathData[
+  collectPathData[
     findAndSowGeodesic @@@ Tuples[vertices, {2}]
   ]
 ];

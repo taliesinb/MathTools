@@ -139,7 +139,7 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
   If[AssociationQ[representation] && Sort[Keys @ representation] === {"CayleyFunction", "InitialStates"},
 
     UnpackAssociation[representation, cayleyFunction, initialStates];
-    repInitialStates = initialStates;
+    repInitialStates = Developer`ToList[initialStates];
     cardinalList = Union[StripNegated /@ DeepCases[cayleyFunction, Labeled[_, c_] :> c]];
     If[cardinalList === {}, cardinalList = Automatic];
   ,
@@ -173,6 +173,8 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
   SetAutomatic[depth, Which[
     maxNorm =!= Infinity, maxNorm * Length[cardinalList],
     maxVertices =!= Infinity, Infinity,
+    AssociationQ[representation],
+      Infinity,
     True,
       maxNorm = If[MemberQ[$sparseLatticeNames, latticeName], 5, 3];
       maxNorm * Length[cardinalList]
@@ -413,12 +415,12 @@ toRenamingRule["RasterIndex", vertices_, origVertices_] :=
   AssociationThread[vertices, Ordering @ Ordering @ ({-#2, #1}& @@@ N[vertexCoordinates])];
 
 toRenamingRule["Representation", _, _] :=
-  AssociationThread[vertices,  origVertices[[All, 1]]];
+  AssociationThread[vertices, origVertices[[All, 1]]];
 
 toRenamingRule["Coordinates", _, _] :=
   LatticeVertex[v_, _] :> v;
 
-toRenamingRule["Index", _, _] :=
+toRenamingRule["Index", vertices_, _] :=
   AssociationRange[vertices];
 
 toRenamingRule[None, _, _] := {};

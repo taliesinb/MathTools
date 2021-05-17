@@ -336,6 +336,11 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     lighting = None;
 
     vertexShapeFunction //= removeSingleton;
+    If[vertexShapeFunction === None,
+      vertexGraphics = Nothing; setbackDistance = 0;
+      Goto[skipVertices];
+    ];
+
     {defaultVertexColor, vertexBaseStyle, setbackDistance, rawVertexDrawFunc, vertexPadding} =
       processVertexShapeFunction[vertexShapeFunction];
     SetNone[vertexBaseStyle, Nothing];
@@ -372,6 +377,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ];
     vertexGraphics = makeGraphicsGroup @ {vertexBaseStyle, vertexStyle, vertexItems};
   ];
+  Label[skipVertices];
 
   (* create graphics for edges *)
   FunctionSection[
@@ -379,47 +385,49 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     edgeStyle //= toDirectiveOptScan[setEdgeStyleGlobals];
 
     If[edgeStyle === None,
-      edgeGraphics = {}
+      edgeGraphics = Nothing;
+      Goto[skipEdges];
+    ];
+
+    If[arrowheadShape === None || zeroQ[arrowheadSize] || UndirectedGraphQ[$Graph],
+      edgeGraphics = makeGraphicsGroup @ {edgeStyle, setback[Line, setbackDistance] @ $GraphEdgeCoordinateLists};
     ,
-      If[arrowheadShape === None || zeroQ[arrowheadSize] || UndirectedGraphQ[$Graph],
-        edgeGraphics = makeGraphicsGroup @ {edgeStyle, setback[Line, setbackDistance] @ $GraphEdgeCoordinateLists};
-      ,
-        SetAutomatic[arrowheadStyle, Which[
-          cardinalColors =!= None, cardinalColors,
-          vertexColorFunction =!= None, LightGray,
-          True, Gray
-        ]];
-        baseArrowheadSize := baseArrowheadSize = If[$GraphIs3D, 0.45, 0.8] * ($GraphMaxSafeArrowheadSize / $GraphPlotSizeX);
-        arrowheadSize //= Replace[$arrowheadSizeRules];
-        arrowheadSize //= ReplaceAll[Scaled[r_ ? NumericQ] :> baseArrowheadSize * r];
+      SetAutomatic[arrowheadStyle, Which[
+        cardinalColors =!= None, cardinalColors,
+        vertexColorFunction =!= None, LightGray,
+        True, Gray
+      ]];
+      baseArrowheadSize := baseArrowheadSize = If[$GraphIs3D, 0.45, 0.8] * ($GraphMaxSafeArrowheadSize / $GraphPlotSizeX);
+      arrowheadSize //= Replace[$arrowheadSizeRules];
+      arrowheadSize //= ReplaceAll[Scaled[r_ ? NumericQ] :> baseArrowheadSize * r];
 
-        SetAutomatic[arrowheadShape, "Arrow"];
-        $twoWayStyle = "ArrowDoubleIn";
-        If[ListQ[arrowheadShape],
-          {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
-          Scan[scanArrowheadShapeOpts, arrowheadShapeOpts]];
-        SetAutomatic[arrowheadSize, baseArrowheadSize];
-        SetAutomatic[arrowheadPosition, If[$GraphIs3D && arrowheadShape =!= "Cone", 0.65, 0.5]];
+      SetAutomatic[arrowheadShape, "Arrow"];
+      $twoWayStyle = "ArrowDoubleIn";
+      If[ListQ[arrowheadShape],
+        {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
+        Scan[scanArrowheadShapeOpts, arrowheadShapeOpts]];
+      SetAutomatic[arrowheadSize, baseArrowheadSize];
+      SetAutomatic[arrowheadPosition, If[$GraphIs3D && arrowheadShape =!= "Cone", 0.65, 0.5]];
 
-        arrowheadBounds = CoordinateBounds[
-          edgeCenters,
-          Max[arrowheadSize * $GraphPlotSizeX] * 0.5
-        ];
-        extendPaddingToInclude[arrowheadBounds];
-
-        edgeTagGroups = If[$EdgeTags === None,
-          <|All -> Range[$EdgeCount]|>,
-          edgeTagGroups = PositionIndex[$EdgeTags]
-        ];
-
-        edgeGraphics = KeyValueMap[
-          {card, indices} |-> drawArrowheadEdges[card, Part[$GraphEdgeCoordinateLists, indices]],
-          edgeTagGroups
-        ];
-        edgeGraphics = makeGraphicsGroup @ {edgeStyle, edgeGraphics};
+      arrowheadBounds = CoordinateBounds[
+        edgeCenters,
+        Max[arrowheadSize * $GraphPlotSizeX] * 0.5
       ];
+      extendPaddingToInclude[arrowheadBounds];
+
+      edgeTagGroups = If[$EdgeTags === None,
+        <|All -> Range[$EdgeCount]|>,
+        edgeTagGroups = PositionIndex[$EdgeTags]
+      ];
+
+      edgeGraphics = KeyValueMap[
+        {card, indices} |-> drawArrowheadEdges[card, Part[$GraphEdgeCoordinateLists, indices]],
+        edgeTagGroups
+      ];
+      edgeGraphics = makeGraphicsGroup @ {edgeStyle, edgeGraphics};
     ];
   ];
+  Label[skipEdges];
 
   (* create labels for vertices and edges *)
   FunctionSection[
@@ -1044,6 +1052,7 @@ generateLabelPrimitives[spec_, names_, coordinates_, size_, labelStyle_, annotat
   $annotationKeys = Keys[annotations];
   $labelNames = names; $annotations = annotations; $labeledElemSize = size / 2; $spacings = 0;
   $labelSizeScale = 1; $labelY = -1; $labelX = 0; $labelBackground = GrayLevel[1.0, 0.6];
+  $labelBaseStyle = Inherited;
   labelStyle //= removeSingleton;
   labelStyle //= toDirectiveOptScan[setLabelStyleGlobals];
   labelStyle //= DeleteCases[sspec:$sizePattern /; ($labelSizeScale = toNumericSizeScale @ sspec; True)];
@@ -1064,12 +1073,13 @@ toDirectiveOptScan[f_][e_List | e_Directive] := (
   toDirective @ DeleteCases[e, _Rule]
 )
 
-ExtendedGraphPlot::badsubopt = "`` is not a recognized option to ``."
+ExtendedGraphPlot::badsubopt = "`` is not a recognized option to ``. Recognized options are ItemSize, BaseStyle, Background, LabelPosition, Spacings."
 
 setLabelStyleGlobals = MatchValues[
   ItemSize -> size:$sizePattern := $labelSizeScale ^= toNumericSizeScale @ size;
   Background -> o:$opacityPattern := $labelBackground ^= GrayLevel[1.0, toNumericOpacity @ o];
   Background -> c:$ColorPattern := $labelBackground ^= c;
+  BaseStyle -> s_ := $labelBaseStyle ^= s;
   LabelPosition -> Top|Above := $labelY ^= -1;
   LabelPosition -> Bottom|Below := $labelY ^= 1;
   LabelPosition -> Center := $labelX ^= $labelY ^= 0;
@@ -1135,7 +1145,8 @@ placeLabelAt[label_, pos_] := Text[
   $magnifier @ label,
   pos  + If[$GraphIs3D, 0, -$labeledElemSize * {$labelX, $labelY} * (1 + $spacings)],
   {$labelX, $labelY} * 0.95,
-  Background -> $labelBackground
+  Background -> $labelBackground,
+  BaseStyle -> $labelBaseStyle
 ];
 
 placeLabelAt[None | _Missing, _] := Nothing;

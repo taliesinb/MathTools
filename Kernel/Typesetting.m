@@ -530,9 +530,28 @@ formatLabeledMatrix[matrix_] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["SpacedRow"]
+
+SpacedRow[elems__] :=
+  Row[Flatten @ List @ elems, Spacer[20]];
+
+SpacedRow[elems__Rule] := Scope[
+  {labels, items} = KeysValues @ Flatten @ List @ elems;
+  Grid[{items, Style[#, $LegendLabelStyle]& /@ labels}, Alignment -> {Center, {Center, Top}}, Spacings -> {2, {0}}]
+];
+
+(**************************************************************************************************)
+
 PackageExport["Gallery"]
 
-Gallery[elems_, w_:1000] := Scope[
+Options[Gallery] = {
+  ImageSize -> 1000,
+  Spacings -> Automatic
+};
+
+Gallery[elems_, OptionsPattern[]] := Scope[
+  UnpackOptions[imageSize, spacings];
+  {w, h} = ToNumericImageSize[imageSize, 1];
   elems = Flatten @ List @ elems;
   n = Length[elems];
   elems = Map[graphToGraphics, elems];
@@ -543,7 +562,8 @@ Gallery[elems_, w_:1000] := Scope[
   ];
   Grid[
     Partition[attachEventHandlers @ elems, UpTo[m]],
-    Alignment -> {Center, Top}
+    Alignment -> {Center, Top},
+    Spacings -> spacings
   ]
 ];
 

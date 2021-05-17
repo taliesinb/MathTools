@@ -380,8 +380,9 @@ PackageScope["toDirective"]
 
 toDirective = MatchValues[
   Automatic := Automatic;
-  {d_Directive} := toDirective @ d;
-  e_List := normalizeStyles @ Directive @ Flatten @ e;
+  {d_Directive} := % @ d;
+  e_List := normalizeStyles @ Directive @@ Flatten @ e;
+  Directive[e_List] := %[e];
   e_ := normalizeStyles @ e
 ];
 

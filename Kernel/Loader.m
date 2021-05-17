@@ -132,6 +132,7 @@ readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
 ];
 
 loadFileContents[path_, context_] := Module[{str, contents},
+  $loadedFileCount++;
   str = fileStringUTF8 @ path;
   contents = Quiet @ Check[Package`ToPackageExpression @ str, $Failed];
   If[FailureQ[contents], handleSyntaxError[path]];
@@ -144,8 +145,8 @@ handleSyntaxError[path_] := Scope[
   Beep[];
   If[errors =!= {},
     Print["Aborting; syntax errors:"];
-    Scan[Print, Take[errors, UpTo[5]];
-    SystemOpen @ Part[errors, 1, 1]];
+    Scan[Print, Take[errors, UpTo[5]]];
+    SystemOpen @ Part[errors, 1, 1];
   ];
   failRead[];
 ];
@@ -180,8 +181,6 @@ GraphToolsPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result
   },
 
-  Construct[ClearAll, mainContext <> "*", mainContext <> "**`*"];
-
   $directory = AbsoluteFileName @ ExpandFileName @ mainPath;
   $mainContext = mainContext;
   $mainPathLength = StringLength[$directory];
@@ -194,6 +193,7 @@ GraphToolsPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
 
   $packageExports = Internal`Bag[];
   $packageScopes = Internal`Bag[];
+  $loadedFileCount = 0;
 
   result = Catch[
     $packageExpressions = Map[
@@ -210,6 +210,9 @@ GraphToolsPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
     failRead
   ];
   If[result === $Failed, Return[$Failed]];
+
+  If[$loadedFileCount == 0, Return["Unchanged"]];
+  Construct[ClearAll, mainContext <> "*", mainContext <> "**`*"];
 
   $packageExports = DeleteDuplicates @ Internal`BagPart[$packageExports, All];
   $packageScopes = DeleteDuplicates @ Internal`BagPart[$packageScopes, All];
@@ -279,8 +282,9 @@ GraphToolsPackageLoader`Read[] :=
 GraphToolsPackageLoader`Load[] := Scope[
   packages = GraphToolsPackageLoader`Read[];
   If[FailureQ[packages], ReturnFailed[]];
+  If[packages === "Unchanged", Return[None]];
   GraphToolsPackageLoader`$LoadCount++;
-  GraphToolsPackageLoader`EvaluatePackages @ packages
+  GraphToolsPackageLoader`EvaluatePackages @ packages;
 ];
 
 GraphToolsPackageLoader`$LoadCount = 0;
