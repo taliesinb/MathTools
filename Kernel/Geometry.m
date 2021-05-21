@@ -92,8 +92,8 @@ TorusNearestFunction[spec_][{v1_List, v2_List}] :=
 TorusInterpolated[spec_, v1_, v2_] := Scope[
   {theta1, phi1} = TorusAngles[spec, v1];
   {theta2, phi2} = TorusAngles[spec, v2];
-  thetas = AngleInterpolated[theta1, theta2, 8];
-  phis = AngleInterpolated[phi1, phi2, 8];
+  thetas = AngleRange[theta1, theta2, Into @ 8];
+  phis = AngleRange[phi1, phi2, Into @ 8];
   If[EuclideanDistance[v1, v2] > 1.8, Capture[zTorusInterpolated[spec, v1, v2]]];
   TorusVector[spec] /@ Transpose[{thetas, phis}]
 ]
@@ -122,7 +122,7 @@ PointDilationGraphics[points_, r_] := Scope[
   points = ToPacked[points];
   If[Length[points] < 1500 && minimumSquaredDistance[points] > (2r)^2,
     GraphicsComplex[points, Disk[#, r]& /@ Range[Length @ points]],
-    RegionPolygon @ PointDilationRegion[points, r]
+    RegionPolygon @ pointDilationRegion[points, r]
   ]
 ];
 
@@ -154,4 +154,5 @@ PackageExport["VectorBetween"]
 
 VectorBetween[x_, {l_, h_}] := And @@ MapThread[LessEqual, {l, x, h}];
 VectorBetween[{x_, y_}, {{xl_, xh_}, {yl_, yh_}}] := xl <= x <= xh && yl <= y <= yh;
+VectorBetween[{x_, y_, z_}, {{xl_, xh_}, {yl_, yh_}, {zl_, zh_}}] := xl <= x <= xh && yl <= y <= yh && zl <= z <= zh;
 VectorBetween[lh_][x_] := VectorBetween[x, lh];

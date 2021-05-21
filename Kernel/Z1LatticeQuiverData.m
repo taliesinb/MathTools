@@ -258,6 +258,7 @@ DefineLatticeQuiver[
 PackageScope["$namedLatticeUsage"]
 
 $namedLatticeUsage = StringTrim @ "
+## Named lattices
 * Named two-dimensional lattices (and their corresponding tilings) include:
 | 'Square' | square tiling, aka quadrille |
 | 'TruncatedSquare' | truncated square tiling, aka truncated quadrille |

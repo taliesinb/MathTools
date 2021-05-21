@@ -31,10 +31,19 @@ ToPackedRealArrays[array_] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["SetUsage"]
+With[{fmv := GeneralUtilities`Control`PackagePrivate`findMutatedVariables},
+  If[FreeQ[DownValues[fmv], ApplyTo],
+    DownValues[fmv] = Insert[
+      DownValues[fmv],
+      Unevaluated @ ApplyTo[GeneralUtilities`Control`PackagePrivate`lhs_Symbol, _],
+      {1, 2, 1, 1, 2, 1, 1, 2}
+    ]
+  ];
+];
 
-toUsageStr[list:{__String}] := commaString[list];
-toUsageStr[e_] := TextString[e];
+(**************************************************************************************************)
+
+$slotRegularExpression = RegularExpression["<\\*([^*]+)\\*>"];
 
 substituteUsageSlots[s_String] :=
   StringReplace[s, "<*" ~~ Shortest[slot___] ~~ "*>" :> Block[
@@ -42,23 +51,139 @@ substituteUsageSlots[s_String] :=
     toUsageStr[ToExpression[slot, InputForm]]
   ]];
 
+toUsageStr[list:{__String}] := commaString[list];
+toUsageStr[e_] := TextString[e];
+
+(**************************************************************************************************)
+
+$literalStringRegex = RegularExpression["'[A-Z][a-zA-Z]+'"];
+$literalStringColor = RGBColor[{0.4, 0.4, 0.4}];
+
+$literalSymbolRegex = RegularExpression["(Automatic|True|False|None|Inherited|Left|Right|Above|Below|Center|Top|Bottom|Infinity|Scaled|Tiny|Small|Medium|Large|Negated)"];
+$literalSymbolColor = RGBColor[{0.15, 0.15, 0.15}];
+
+$mainSymbolRegdx = RegularExpression["^\\$?[A-Za-z][A-Za-z]*"];
+$mainSymbolColor = RGBColor[{0.71, 0.03, 0.}];
+
+colorLiterals[usageString_] := Scope[
+  usageString //= StringTrim;
+  mainSymbol = First @ StringCases[usageString, $mainSymbolRegdx, 1];
+  StringReplace[
+    usageString, {
+      WordBoundary ~~ mainSymbol ~~ WordBoundary :> makeStyleBox[mainSymbol,
+        FontColor -> $mainSymbolColor,
+        FontWeight -> "Medium"],
+      string:$literalStringRegex :> makeStyleBox[
+        "\\\"" <> StringTake[string, {2, -2}] <> "\\\"",
+        FontColor -> $literalStringColor, ShowStringCharacters -> True,
+        FontWeight -> "Medium"],
+      literal:$literalSymbolRegex :> makeStyleBox[
+        literal,
+        FontColor -> $literalSymbolColor,
+        FontWeight -> "Medium"]
+    }
+  ]
+];
+
+(**************************************************************************************************)
+
+$optionSymbolColor = RGBColor[{0.086, 0.367, 0.615}];
+
+colorOptionSymbols[usageString_] := StringReplace[
+  usageString, {
+    "%%" ~~ w:WordCharacter.. :>
+      makeStyleBox[w, FontColor -> $literalSymbolColor, FontWeight -> "Medium"],
+    "%" ~~ w:WordCharacter.. :>
+      makeStyleBox[w, FontColor -> $optionSymbolColor, FontWeight -> "Medium"]
+  }
+];
+
+makeStyleBox[str_, opts___] := StringJoin[
+  "\!\(\*StyleBox[\"", str, "\", ", StringTake[ToString[{opts}, InputForm], {2, -2}], "]\)"
+];
+
+(**************************************************************************************************)
+
+$headerLineRegex = RegularExpression["(?m)^## ([^\n]*)$"];
+
+addHeaderLines[usageString_] := StringReplace[
+  usageString, {
+    $headerLineRegex :>
+      addInlinePane @ makeStyleBox["$1", FontWeight -> "Bold"],
+    "\n\n" :>
+      "\!\(\*PaneBox[\"\", FrameMargins -> {{0,0}, {5, 0}}]\)\n"
+  }
+];
+
+addInlinePane[str_String] := StringJoin[
+  "\!\(\*PaneBox[",
+  StringTake[str, {4, -3}],
+  "], FrameMargins -> {{0, 0}, {1, 4}}]\)"
+];
+
+(**************************************************************************************************)
+
+$gridBoxL = "\(\*TagBox[GridBox[";
+$gridBoxR = ", \"Grid\"]\)";
+$shorterGridBoxL = "\(\*PaneBox[GridBox[";
+$shorterGridBoxR = ", Rule[ImageMargins, List[List[0,0], List[-5,-5]]], Rule[FrameMargins, List[List[0,0], List[-3,-6]]]]\)";
+$shorterGridBoxR = ", Rule[ImageMargins, List[List[0,0], List[$BOT, $TOP]]]]\)";
+
+shortenGridBoxes[usageString_] := StringReplace[
+  usageString,
+  $gridBoxL ~~ Shortest[content__] ~~ $gridBoxR :> Block[{offset, bot, top},
+    offset = StringCount[content, "{\""];
+    bot = TextString @ Round[ - 0.5*offset];
+    top = TextString @ Round[ - 0.5*offset];
+    $shorterGridBoxL <> content <> StringReplace[$shorterGridBoxR, {"$BOT" -> bot, "$TOP" -> top}]
+  ]
+];
+
+(**************************************************************************************************)
+
 $fmtUsageOuter = True;
+
+PackageExport["ClearUsageCache"]
+
+ClearUsageCache[] := Clear[GeneralUtilities`Private`$SetUsageFormatCache];
 
 (* this speeds up the processing of usage string messages, which are otherwise quite expensive *)
 If[!AssociationQ[GeneralUtilities`Private`$SetUsageFormatCache],
   GeneralUtilities`Private`$SetUsageFormatCache = Data`UnorderedAssociation[];
-  GeneralUtilities`Code`PackagePrivate`fmtUsageString[str_String] /; $fmtUsageOuter :=
-    Block[{$fmtUsageOuter = False},
-      GeneralUtilities`CacheTo[GeneralUtilities`Private`$SetUsageFormatCache, Hash[str],
-        GeneralUtilities`Code`PackagePrivate`fmtUsageString[str]]];
+  GeneralUtilities`Code`PackagePrivate`fmtUsageString[str_String] /; $fmtUsageOuter := Block[
+    {$fmtUsageOuter = False},
+    GeneralUtilities`CacheTo[
+      GeneralUtilities`Private`$SetUsageFormatCache, Hash[str],
+      Compose[
+        addHeaderLines, shortenGridBoxes,
+        GeneralUtilities`Code`PackagePrivate`fmtUsageString,
+        colorOptionSymbols, colorLiterals, str
+      ]
+    ]
+  ];
 ];
 
+(**************************************************************************************************)
+
+(* the default behavior of System`InformationDump` will introduce LineSpacing that messes up
+my SetUsage inline tables, so remove it. *)
+
+dummy::usage = "Dummy";
+ToBoxes[Information[dummy]];
+System`InformationDump`subtitleStyled[sub_] := Style[sub, "InformationUsageText"];
+
+(**************************************************************************************************)
+
+PackageScope["SetUsage"]
+
+preprocessUsageString[usageString_] :=
+  FixedPoint[substituteUsageSlots, usageString]
 
 SetUsage[usageString_String] :=
-  GeneralUtilities`SetUsage[Evaluate @ FixedPoint[substituteUsageSlots, usageString]];
+  GeneralUtilities`SetUsage[Evaluate @ preprocessUsageString @ usageString];
 
 SetUsage[symbol_Symbol, usageString_String] :=
-  GeneralUtilities`SetUsage[symbol, Evaluate @ FixedPoint[substituteUsageSlots, usageString]];
+  GeneralUtilities`SetUsage[symbol, Evaluate @ preprocessUsageString @ usageString];
 
 (**************************************************************************************************)
 
@@ -113,16 +238,31 @@ declareBoxFormatting[___] := Panic["BadFormatting"]
 
 (**************************************************************************************************)
 
-PackageExport["Interpolated"]
+PackageExport["PlusVector"]
 
-Interpolated[a_, b_, n_] := Table[b * i + a * (1 - i), {i, 0, 1, 1/(n-1)}];
+PlusVector[matrix_, 0|0.|{0.,0.}] := matrix;
+PlusVector[matrix_, v_] := v + #& /@ matrix;
+PlusVector[v_][matrix_] := PlusVector[matrix, v];
 
 (**************************************************************************************************)
 
-PackageExport["AngleInterpolated"]
+Unprotect[Into];
+Into /: Range[a_, b_, Into[n_]] := Table[b * i + a * (1 - i), {i, 0, 1, 1/(n-1)}];
+Protect[Into];
 
-AngleInterpolated[a_, b_, n_] := NestList[PlusOperator[angleDelta[a, b] / (n-1)], a, n-1];
-angleDelta[a_, b_] := If[Abs[b - a] > Pi, Mod[b, 2 Pi] - Mod[a, 2 Pi], b - a];
+(**************************************************************************************************)
+
+PackageExport["AngleRange"]
+
+AngleRange[a_, b_, Into[0]] := {};
+AngleRange[a_, b_, Into[1]] := {Mod[(a + b), Tau] / 2};
+AngleRange[a_, b_, Into[n_]] := NestList[PlusOperator[AngleDifference[a, b] / (n-1)], a, n-1];
+AngleRange[a_, b_, da_] := AngleRange[a, b, Into[Ceiling[1 + Abs[AngleDifference[a, b]] / da]]];
+
+
+PackageExport["AngleDifference"]
+
+AngleDifference[a_, b_] := If[Abs[b - a] > Pi, Mod[Mod[b, Tau] - Mod[a, Tau], Tau, -Pi], b - a];
 
 (**************************************************************************************************)
 
@@ -216,6 +356,12 @@ FirstRest[list_] := {First @ list, Rest @ list};
 
 (**************************************************************************************************)
 
+PackageExport["FirstLast"]
+
+FirstLast[list_] := {First @ list, Last @ list};
+
+(**************************************************************************************************)
+
 PackageExport["AssociationRange"]
 
 AssociationRange[list_] :=
@@ -238,6 +384,13 @@ PackageExport["MaximumIndexBy"]
 
 MaximumIndexBy[list_, f_] :=
   First @ Ordering[f /@ list, -1];
+
+(**************************************************************************************************)
+
+PackageExport["MinimumIndices"]
+
+MinimumIndices[list_] :=
+  MinimalBy[Range @ Length @ list, Part[list, #]&];
 
 (**************************************************************************************************)
 
@@ -289,6 +442,12 @@ RangeQ[list_] := VectorQ[list, IntegerQ] && MinMax[list] == {1, Length @ list};
 
 (**************************************************************************************************)
 
+PackageExport["DropWhile"]
+
+DropWhile[list_, f_] := Drop[list, LengthWhile[list, f]];
+
+(**************************************************************************************************)
+
 PackageExport["MapStaggered"]
 
 MapStaggered[f_, list_] := f @@@ Partition[list, 2, 1];
@@ -306,7 +465,7 @@ AtLeast[n$] is a symbolic expression indicating that at least n$ values should b
 PackageExport["ToInverseFunction"]
 
 SetUsage @ "
-ToInverseFunction[f$] returns InverseFunction[f$].
+ToInverseFunction[f$] returns %InverseFunction[f$].
 * ToInverseFunction exists to enable a fast-path for GraphTools-specific functions.
 "
 
@@ -326,9 +485,9 @@ PackageExport["Negated"]
 SetUsage @ "
 Negated[elem$] represents the negation of elem$.
 * Negated[a$ \[DirectedEdge] b$] represents the edge a$ \[DirectedEdge] b$ traversed in the reverse direction.
-* DirectedEdge[a$, b$, Negated[c$]] evaluates to DirectedEdge[b$, a$, c$].
+* %DirectedEdge[a$, b$, Negated[c$]] evaluates to %DirectedEdge[b$, a$, c$].
 * Negated[Negated[c$]] evaluates to c$.
-* Negated[c$] display as OverBar[c$].
+* Negated[c$] display as %OverBar[c$].
 "
 
 Negated[Negated[e_]] := e;
@@ -597,15 +756,3 @@ DefineLiteralMacro[SetAll, SetAll[lhs_, rhs_] := If[lhs === All, lhs = rhs, lhs]
 DefineLiteralMacro[SetInherited, SetInherited[lhs_, rhs_] := If[lhs === Inherited, lhs = rhs, lhs]];
 
 SetHoldAll[SetAutomatic, SetMissing, SetNone, SetAll, SetInherited];
-
-(**************************************************************************************************)
-
-With[{fmv := GeneralUtilities`Control`PackagePrivate`findMutatedVariables},
-  If[FreeQ[DownValues[fmv], ApplyTo],
-    DownValues[fmv] = Insert[
-      DownValues[fmv],
-      Unevaluated @ ApplyTo[GeneralUtilities`Control`PackagePrivate`lhs_Symbol, _],
-      {1, 2, 1, 1, 2, 1, 1, 2}
-    ]
-  ];
-];

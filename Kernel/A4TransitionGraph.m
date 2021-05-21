@@ -543,3 +543,21 @@ toDirectedEdge[from_, to_] := DirectedEdge[from, to];
 
 toUndirectedEdge[from_, Labeled[to_, label_]] := UndirectedEdge[from, to, label];
 toUndirectedEdge[from_, to_] := UndirectedEdge[from, to];
+
+
+PackageScope["CachedStateTransitionGraph"]
+
+$LastHash = None;
+$LastResult = None;
+
+CachedStateTransitionGraph[args___] := Scope[
+  hash = Hash[{args}];
+  If[hash === $LastHash, Return @ $LastResult];
+  result = StateTransitionGraph[args];
+  If[!FailureQ[result],
+    $LastHash ^= hash;
+    $LastResult ^= result;
+  ];
+  result
+];
+

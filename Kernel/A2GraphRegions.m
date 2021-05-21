@@ -9,7 +9,7 @@ PackageExport["RegionSubgraph"]
 
 SetUsage @ "
 RegionSubgraph[graph$, region$] gives a subgraph of graph$ described by region$, which can be one or more of the following:
-<*$GraphRegionTable*>
+<*$graphRegionTable*>
 "
 
 RegionSubgraph::empty = "The specified region is empty."
@@ -34,9 +34,9 @@ RegionSubgraph[graph_, region_] := Scope[
 PackageExport["GraphRegion"]
 
 SetUsage @ "
-GraphRegion[graph$, region$] returns a list of GraphRegionData and GraphPathData objects, which represent \
-the results of computing regions on the graph, according to:
-<*$GraphRegionTable*>
+GraphRegion[graph$, region$] returns a list of %GraphRegionData and %GraphPathData objects, representing \
+the computed regions of graph$.
+<*$graphRegionTable*>
 "
 
 GraphRegion[graph_, region_] := Scope[
@@ -45,6 +45,12 @@ GraphRegion[graph_, region_] := Scope[
 ]
 
 (**************************************************************************************************)
+
+PackageExport["GraphRegionCollection"]
+
+SetUsage @ "
+GraphRegionCollection[<|name$1 -> region$1, $$|>] represents a collection of named regions.
+"
 
 PackageExport["GraphRegionData"]
 
@@ -59,6 +65,13 @@ SetUsage @ "
 GraphPathData[vertices$, edges$, negations$] represents a path in a graph with vertex indices \
 vertices$, edge indices edges$, and a list of indices into edges$ of which edges were traversed \
 in their reverse direction.
+"
+
+PackageExport["GraphRegionAnnotation"]
+
+SetUsage @ "
+GraphRegionAnnotation[data$, anno$] is a wrapper around %GraphPathData and %GraphRegionData \
+that attaches additional annotations anno$ for interpretation by GraphRegionHighlights etc.
 "
 
 $boxColor = GrayLevel[0.9];
@@ -107,7 +120,6 @@ GraphRegionElementQ[elem$] returns True if elem$ is an expression describing a g
 
 PackageExport["VertexPattern"]
 PackageExport["EdgePattern"]
-PackageExport["Path"]
 
 SetUsage @ "
 VertexPattern[pattern$] represent a vertex that matches pattern$.
@@ -117,11 +129,11 @@ SetUsage @ "
 EdgePattern[src$, dst$] represents an edge that matches src$ \[DirectedEdge] dst$.
 "
 
-zSetUsage @ "
+(* zSetUsage @ "
 Path[src$, {c$1, $$, c$n}] represents a path starting at src$ and taking cardinals c$i in tern.
 Path[src$, 'cards$'] interpreted the characters of 'cards$' as cardinals.
 "
-
+ *)
 (**************************************************************************************************)
 
 PackageScope["processRegionSpec"]
@@ -129,8 +141,10 @@ PackageScope["processRegionSpec"]
 processRegionSpec[region_] := Scope[
   $VertexInEdgeTable := $VertexInEdgeTable = VertexInEdgeTable[$Graph];
   $VertexOutEdgeTable := $VertexOutEdgeTable = VertexOutEdgeTable[$Graph];
+  $VertexAdjacencyTable := $VertexAdjacencyTable = VertexAdjacencyTable[$Graph];
   $TagVertexAdjacentEdgeTable := $TagVertexAdjacentEdgeTable = TagVertexAdjacentEdgeTable[$Graph];
   $EdgePairs := $EdgePairs = EdgePairs[$Graph];
+  $Cardinals := $Cardinals = CardinalList[$Graph];
   Map[outerProcessRegion, Developer`ToList @ region]
 ]
 
@@ -157,14 +171,9 @@ fail[msgName_, args___] := (
 
 SetHoldFirst[collectRegionData, collectPathData];
 
-(* collectRegionData[body_] := Scope[
-  CollectTo[{$vertexBag, $edgeBag}, body];
-  GraphRegionData[Union @ $vertexBag, Union @ $edgeBag]
-];
- *)
 collectPathData[body_] := Scope[
   CollectTo[{$vertexBag, $edgeBag, $negationBag}, body];
-  GraphPathData[Union @ $vertexBag, $edgeBag, $negationBag]
+  GraphPathData[$vertexBag, $edgeBag, $negationBag]
 ];
 
 (********************************************)
@@ -222,6 +231,12 @@ processRegion[spec_] := If[MatchQ[Head @ spec, $regionHeads],
   fail["malformedrspec", spec],
   GraphRegionData[{findVertex @ spec}, {}]
 ];
+
+(********************************************)
+(** edge pattern                           **)
+
+processRegion[assoc_Association] :=
+  NamedGraphRegionData @ Map[processRegion, assoc];
 
 (********************************************)
 
@@ -364,23 +379,19 @@ processRegion[spec:$metricRegionHeads[__, GraphMetric -> metric_]] := Scope[
 (** Path[...]                              **)
 
 GraphRegionElementQ[Path[_, _]] := True;
-
-PackageScope["parseCardinalWord"]
-
-parseCardinalWord[path_String] /; StringLength[path] > 1 := Scope[
-  chars = Characters[path];
-  str = StringReplace[StringRiffle[chars, " "], " '" -> "'"];
-  Map[
-    If[StringMatchQ[#, _ ~~ "'"], Negated @ StringTake[#, 1], #]&,
-    StringSplit[str]
-  ]
-];
-
-parseCardinalWord[path_String] := {path};
-parseCardinalWord[list_List] := list;
+GraphRegionElementQ[Path[_, _, PathOffset -> _]] := True;
 
 processRegion[Path[start_, path_]] :=
   collectPathData @ sowPath[start, path, False];
+
+processRegion[Path[args__, ps:Rule[PathOffset, _]]] :=
+  GraphRegionAnnotation[processRegion @ Path @ args, Association @ ps];
+
+PackageExport["PathOffset"]
+
+SetUsage @ "
+PathOffset is an option to Path that specifies which steps to foreshorten.
+"
 
 (********************************************)
 
@@ -396,6 +407,27 @@ sowPath[start_, path_, repeating_] := Scope[
     )
   ];
 ];
+
+(********************************************)
+
+PackageScope["parseCardinalWord"]
+
+parseCardinalWord[path_String] /; StringLength[path] > 1 := Scope[
+  chars = Characters[path];
+  str = StringReplace[StringRiffle[chars, " "], " '" -> "'"];
+  Map[
+    If[StringMatchQ[#, _ ~~ "'"], Negated @ StringTake[#, 1], #]&,
+    StringSplit[str]
+  ] // checkCardinals
+];
+
+parseCardinalWord[elem_] := checkCardinals @ List @ elem;
+
+parseCardinalWord[list_List] := checkCardinals @ list;
+
+GraphRegion::badcardinals = "The region ``[...] includes a path `` with invalid cardinals."
+checkCardinals[list_List] :=
+  If[SubsetQ[$Cardinals, StripNegated /@ list], list, failAuto["badcardinals", list]];
 
 (********************************************)
 
@@ -418,7 +450,7 @@ doWalk[startId_, pathWord_, shouldRepeat_, func_] := Scope[
       failWalk[cardinal, vertexId]];
     vertexId = Part[$EdgePairs, edgeId, If[negatedQ, 1, 2]];
     func[vertexId, If[negatedQ, Negated @ edgeId, edgeId]];
-    If[vertexId == startId, Break[]];
+    If[vertexId == startId && shouldRepeat, Break[]];
   ,
     {i, 1, totalLen}
   ];
@@ -444,6 +476,9 @@ offsetWalk[start_, path_] := Scope[
 (** Line[...]                              **)
 
 GraphRegionElementQ[Line[_]] := True;
+
+processRegion[Line[{vertex_}]] :=
+  collectPathData @ sowVertex @ findVertex @ vertex;
 
 processRegion[Line[vertices_]] :=
   collectPathData @ MapStaggered[findAndSowGeodesic, findVertices @ vertices]
@@ -552,7 +587,10 @@ two distances to differ by up to \[CapitalDelta].
 "
 
 GraphRegionElementQ[Locus[_ ? GraphRegionElementQ, _ ? GraphRegionElementQ]] := True;
-GraphRegionElementQ[Locus[_ ? GraphRegionElementQ, _ ? GraphRegionElementQ, _ ? NumericQ]] := True;
+GraphRegionElementQ[Locus[_ ? GraphRegionElementQ, _ ? GraphRegionElementQ, (_ ? NumericQ) | "Polar"]] := True;
+
+processRegion[Locus[r1_, r2_, "Polar"]] :=
+  processRegion[Locus[r1, r2, -1]];
 
 processRegion[l:Locus[r1_, r2_, d_:0 ? NumericQ]] := Scope[
   r1 = First @ processRegion @ r1;
@@ -560,17 +598,31 @@ processRegion[l:Locus[r1_, r2_, d_:0 ? NumericQ]] := Scope[
   If[r1 === {} || r2 === {}, fail["emptyarea", l]];
   d1 = extractDistanceToRegion @ r1;
   d2 = extractDistanceToRegion @ r2;
+  isPolar = d === -1; d = Max[d, 0];
   indices = SelectIndices[
     Transpose @ {d1, d2},
     Apply[Abs[#1 - #2] <= d&]
   ];
+  If[isPolar,
+    d3 = d1 - d2;
+    indices1 = SelectIndices[d3, Positive];
+    indices2 = SelectIndices[d3, Negative];
+    indices = Union[
+      indices,
+      Select[indices1, IntersectingQ[Part[$VertexAdjacencyTable, #], indices2]&]
+    ];
+(*     subgraphRegionData[indices];
+    Return[GraphRegionData[indices, {}]];
+ *)  ];
   If[indices === {}, fail["emptyarea", l]];
   subgraphRegionData[indices]
 ];
 
+(*
+(* this appears to be slower! *)
 extractDistanceToRegion[{v_}] :=
   MetricDistance[$MetricGraphCache, v, All, GraphMetric -> $GraphMetric];
-
+*)
 extractDistanceToRegion[v_List] :=
   Min /@ Part[MetricDistanceMatrix[$MetricGraphCache, GraphMetric -> $GraphMetric], All, v];
 
@@ -641,10 +693,25 @@ circularRegionData[spec_, center_, condition_] := Scope[
 subgraphRegionData[vertices_] := Scope[
   forward = Flatten @ Part[$VertexOutEdgeTable, vertices];
   backward = Flatten @ Part[$VertexInEdgeTable, vertices];
+  candidates = Intersection[forward, backward];
+  vertexAssoc = ConstantAssociation[vertices, True];
+  edges = Select[candidates, Apply[And, Lookup[vertexAssoc, Part[$EdgePairs, #]]]&];
   GraphRegionData[
     vertices,
-    Intersection[forward, backward]
+    edges
   ]
+];
+
+(********************************************)
+(** RegionBoundary[...]                    **)
+
+GraphRegionElementQ[RegionBoundary[_]] := True;
+
+processRegion[RegionBoundary[region_]] := Scope[
+  vertices = First @ processRegion @ region;
+  complement = Complement[Range @ $VertexCount, vertices];
+  edgeVertices = Select[vertices, IntersectingQ[Part[$VertexAdjacencyTable, #], complement]&];
+  subgraphRegionData @ edgeVertices
 ];
 
 
@@ -706,6 +773,9 @@ processRegion[RegionUnion[regions__]] :=
 (********************************************)
 
 RegionDataUnion[{a_}] := a;
+
+RegionDataUnion[assoc_Association] :=
+  RegionDataUnion @ Values @ assoc;
 
 RegionDataUnion[list_List] :=
   GraphRegionData[

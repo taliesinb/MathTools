@@ -33,42 +33,84 @@ of the graph to be accessed. See GraphPlotScope for more info.
 
 (**************************************************************************************************)
 
-PackageScope["$GraphRegionTable"]
+PackageScope["$graphRegionTable"]
 
-$GraphRegionTable = StringTrim @ "
-| {$$} | a list of edges and/or vertices |
-| Line[{v$1, v$2}] | the geodesic between v$1 and v$2 |
-| Line[{v$1, v$2}, c$] | start at v$1, moving in cardinal direction c$, and end when v$2 is reached. |
-| Line[{v$1, $$, v$n}] | the geodesic path between v$1 and v$2, v$2 and v$3, etc. |
-| Path[v$, {c$1, $$, c$n} ] | starting at v$, walking along the path defined by cardinals c$i |
-| HalfLine[v$, c$] | a geodesic starting at v$ and continuing in the cardinal direction c$ |
-| HalfLine[{v$1, v$2}] | a geodesic starting at v$1 and continuing through v$2 |
-| InfiniteLine[v$, c$] | a geodesic with midpoint v$, and continuing in directions c$ and Negated[c$] |
-| InfiniteLine[{v$1, v$2}] | a geodesic intersecting v$1 and v$2 |
-| Polygon[{v$1, $$, v$n}] | all vertices surrounded by the given vertices, and their mutual edges |
-| Disk[v$, r$] | all vertices reachable in up to r$ edges from v$, and their mutual edges |
-| Circle[v$, r$] | all vertices exactly r$ edges from v$, and their mutual edges |
-* In the specifications above, a cardinal c$ can also be a list {c$1, ..., c$n}, which indicates that the \
-geodesic should use the cardinals cyclically: c$1, c$2, $$, c$n, c$1, c$2, $$.
-* The spec Offset[v$, {c1$, $$}] can be used to refer to the vertex obtained by starting at v$ and moving \
-along the given cardinals c$i.
+$graphRegionTable = StringTrim @ "
+The following specifications describe paths in the graph:
+| %Path[v$, {c$1, $$, c$n}] | start at v$, move along cardinals c$i |
+| %Line[{v$1, v$2}] | the geodesic between v$1 and v$2 |
+| %Line[{v$1, v$2}, c$] | start at v$1, moving along c$, and end at v$2 |
+| %Line[{v$1, $$, v$n}] | the geodesic path between v$1 and v$2, v$2 and v$3, etc. |
+| %Polygon[{v$1, $$, v$n}] | geodesics between the v$i, taken cyclically |
+| %HalfLine[v$, c$] | a geodesic starting at v$ and continuing in the cardinal direction c$ |
+| %HalfLine[{v$1, v$2}] | a geodesic starting at v$1 and continuing through v$2 |
+| %InfiniteLine[v$, c$] | a geodesic with midpoint v$, and continuing in directions c$ and Negated[c$] |
+| %InfiniteLine[{v$1, v$2}] | a geodesic intersecting v$1 and v$2 |
+| %GraphPathData[$$] | a previously computed path |
+* Specifications taking a cardinal direction c$ also take a list {c$1, ..., c$n}, used cyclically.
+* %Path[$$, PathOffset -> {i$1, i$2, $$}] indicates that the i$th elements of the path should drawn
+truncated.
+
+The following specifications describe regions in the graph:
+| %Point[v$] | a single vertex v$ |
+| %DirectedEdge[v$1, v$2] | a literal edge between v$1 and v$2 |
+| %VertexPattern[patt$] | all vertices match patt$ |
+| %EdgePattern[v$1, v$2, t$] | all edges matching %DirectedEdge[v$1, v$2, t$] |
+| %Disk[v$, r$] | vertices within distance r$ of v$ |
+| %Annulus[v$1, {r$1, r$2}] | vertices with distance r$1 \[LessEqual] r$ \[LessEqual] r$2 |
+| %Circle[v$, r$] | vertices exactly distance r$ from v$ |
+| %Locus[r$1, r$2] | vertices whose distance to regions r$1 and r$2 is equal |
+| %Locus[r$1, r$2, 'Polar'] | vertices that straddle the equation d$ (r$1) - d$ (r$2) = 0 |
+| %Locus[r$1, r$2, d$] | vertices whose distance to regions r$1 and r$2 differs by less than d$ |
+| %RegionBoundary[r$] | the vertices in region r$ adjacent to vertices not in r$ |
+| %RegionComplement[r$1, r$2] | the complement of region r$1 with region r$2 |
+| %RegionIntersection[r$1, r$2, $$] | the mutual intersection of regions r$i |
+| %RegionUnion[r$1, r$2, $$] | the union of regions r$i |
+| %GraphRegionData[$$] | a previously computed region |
+
+## Named regions
+
+* A specification of the form <|'name$1' -> spec$1, 'name$2' -> spec$2, $$|> creates named regions.
+* Named regions will automatically be given unique colors when highlighted.
+* Within a named region, the string 'name$i' can be used to refer to a previously defined region.
+
+## Distances
+
+* All distances are measured relative to the setting of %GraphMetric of the graph.
+* Specific regions like %Circle, %Disk etc accept an option %GraphMetric -> m$ to override this default.
+
+## Vertices
+
+* Specifications taking a vertex v$ can also take these symbolic forms:
+| %GraphOrigin | the 'origin vertex', if provided |
+| %RandomPoint | a randomly chosen vertex |
+| %Offset[v$, {c$1, $$}] | start at v$ and move along the cardinals c$i |
 "
+
+(**************************************************************************************************)
 
 PackageScope["$GraphRegionHighlightUsage"]
 
 $GraphRegionHighlightUsage = StringTrim @ "
+
+## Highlight specifications
+
+* A single highlight specification, or a list or association of specifications can be given.
+
+* The keys of an association will be used as legend labels.
+
 * Each highlight specification can be one of the following:
-| Highlighted[region$] | highlight a set of vertices or edges |
-| Foliated[{v$1, $$, v$n}] | draw lines between pages of a foliation of the vertices |
-| Outlined[region$] | draw an outline around a set of vertices |
-| Styled[region$, opts$$] | style particular vertices or edges differently |
-| Line[$$] | equivalent to Highlighted[Line[$$]] |
-| Arrow[$$] | like Line, but draw the highlight as an arrow |
-In addition, the following wrappers can be used around region$:
-| Legended[elems$, legend$] | attach an additional legend |
-| Labeled[elems$, label$] | labek the annotation in-place |
-Each region$ can be one or more of the following:
-<*$GraphRegionTable*>
+| region$ | highlight a set of vertices or edges with a unique color |
+| {region$1, region$2, $$} | highlight several regions with the same color |
+| %Style[spec$, style$] | specify a color or other options |
+| Labeled[region$, label$] | label the annotation in-place |
+| %Arrow[spec$] | draw paths as arrows |
+| %Axis -> %%All | %InfiniteLine[%GraphOrigin, c$i] for each cardinal c$i |
+| %Axis -> {c$1, $$} | %InfiniteLine[%GraphOrigin, c$i] |
+
+## Region specifications
+
+<*$graphRegionTable*>
 "
 
 (**************************************************************************************************)
@@ -116,7 +158,6 @@ stripDynamicModule[boxes_] := ReplaceAll[boxes,
 (**************************************************************************************************)
 
 PackageScope["$GraphVertexCoordinates"]
-PackageScope["$GraphVertexCoordinateDistanceMatrix"]
 PackageScope["$GraphEdgeCoordinateLists"]
 PackageScope["$GraphHighlightStyle"]
 PackageScope["$GraphIs3D"]
@@ -139,11 +180,10 @@ GraphPlotScope[graph_, body_] := Scope[
 
     {$GraphVertexCoordinates, $GraphEdgeCoordinateLists} = ExtractGraphPrimitiveCoordinates[$IndexGraph];
 
-    $GraphHighlightStyle := $GraphHighlightStyle = LookupOption[$Graph, GraphHighlightStyle];
+    $GraphHighlightStyle := $GraphHighlightStyle = removeSingleton @ LookupOption[$Graph, GraphHighlightStyle];
     $GraphPlotImageSize := $GraphPlotImageSize := LookupImageSize @ $Graph;
     $GraphPlotImageWidth := $GraphPlotImageWidth = First[$GraphPlotImageSize; LookupImageSize @ $Graph];
 
-    $GraphVertexCoordinateDistanceMatrix := $GraphVertexCoordinateDistanceMatrix = DistanceMatrix[$GraphVertexCoordinates];
 (*     $GraphVertexCoordinateBoundingBox := $GraphVertexCoordinateBoundingBox = CoordinateBoundingBox[$GraphVertexCoordinates];
  *)
 
@@ -205,10 +245,13 @@ ExtendedGraphPlot[graph_] := Block[
     $GraphPlotSize := $GraphPlotSize = rangeSize[$GraphPlotRange];
     $GraphMaxSafeVertexSize := $GraphMaxSafeVertexSize = computeMaxSafeVertexSize[];
 
-    {highlightGraphics, requiredPadding} = resolveGraphRegionHighlightGraphics @ graphRegionHighlight;
+    {highlightGraphics, highlightLegends, requiredPadding} = resolveGraphRegionHighlightGraphics @ graphRegionHighlight;
     If[highlightGraphics =!= {},
       graphics = GraphicsImageSizePadTo[graphics, requiredPadding];
-      graphics = ApplyEpilog[graphics, highlightGraphics];
+      {negative, positive} = SelectDiscard[highlightGraphics, First /* Negative];
+      If[negative =!= {}, graphics = ApplyProlog[graphics, Part[negative, All, 2]]];
+      If[positive =!= {}, graphics = ApplyEpilog[graphics, Part[positive, All, 2]]];
+      If[highlightLegends =!= None, graphLegend = highlightLegends];
     ];
     graphics = ApplyLegend[graphics, graphLegend];
 
@@ -226,17 +269,26 @@ rangeSize[range_] := EuclideanDistance @@@ range;
 
 computeBorderDistance[{cl_, ch_}, {pl_, ph_}] := {cl - pl, ph - ph};
 
-rankedMean[d_] := HarmonicMean @ Take[Sort @ d, Ceiling[Length[d] / 4]];
+rankedMean[d_] /; Length[d] < 4 := Min @ d;
+rankedMean[d_] := HarmonicMean @ Take[Sort @ d, Ceiling @ (2 * Sqrt @ Length[d])];
+
+getRankedMinDistance[coords_] := Scope[
+  coords //= ToPackedReal;
+  distances = If[Length[coords] > 150,
+    DistanceMatrix[RandomChoice[coords, 20], coords],
+    DistanceMatrix[coords]
+  ];
+  distances = DeleteCases[Flatten @ distances, 0|0.];
+  If[distances === {}, Infinity, rankedMean @ distances]
+];
 
 computeMaxSafeVertexSize[] := Scope[
-  distances = DeleteCases[Flatten @ $GraphVertexCoordinateDistanceMatrix, 0|0.];
-  minDistance = If[distances === {}, Infinity, rankedMean @ distances];
+  minDistance = getRankedMinDistance[$GraphVertexCoordinates];
   Max[Min[minDistance / 2, Max[$GraphPlotSize] / 3], $MachineEpsilon]
 ];
 
 computeMaxSafeArrowheadSize[] := Scope[
-  distances = DeleteCases[Flatten @ DistanceMatrix[lineCenter /@ $GraphEdgeCoordinateLists], 0|0.];
-  minDistance = If[distances === {}, Infinity, rankedMean @ distances];
+  minDistance = getRankedMinDistance[lineCenter /@ $GraphEdgeCoordinateLists];
   minDistance = Max[minDistance, $GraphMaxSafeVertexSize/Sqrt[2]];
   Min[$GraphMaxSafeVertexSize, minDistance, Max[$GraphPlotSize] / 3]
 ];
@@ -319,17 +371,18 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ];
 
     edgeCenters = lineCenter /@ $GraphEdgeCoordinateLists;
+
+    edgeStyle //= removeSingleton;
+    vertexStyle //= removeSingleton;
   ];
 
   (* create graphics for vertices *)
   FunctionSection[
 
     $vertexSizeOverrides = None;
-    $defaultVertexSize = Which[edgeStyle === {None}, 0.6, vertexColorFunction =!= None, 0.5, True, 0.3];
+    $defaultVertexSize = Which[edgeStyle === None, 0.6, vertexColorFunction =!= None, 0.5, True, 0.3];
     vertexSize = processVertexSize @ removeSingleton @ vertexSize;
     vertexSizeImage = toImageCoords @ vertexSize;
-
-    vertexStyle //= removeSingleton;
 
     SetAutomatic[vertexShapeFunction, If[vertexColorFunction =!= None, "Disk", "Point"]];
 
@@ -368,11 +421,12 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       If[FailureQ[vertexColorFunctionData], failPlot["badcolvals"]];
       {colorGroups, colorFunctionObject} = ApplyColoring[vertexColorFunctionData, palette];
       If[FailureQ[colorFunctionObject], failPlot["badcolvals"]];
-      automaticLegends["Colors"] := colorFunctionObject;
+      If[!MatchQ[colorFunctionObject, ColorFunctionObject["Discrete", Identity]],
+        automaticLegends["Colors"] := colorFunctionObject];
 
-      vertexItems = Capture @ KeyValueMap[colorGroupFun, colorGroups];
+      vertexItems = KeyValueMap[colorGroupFun, colorGroups];
     ,
-      vertexItems = vertexDrawFunc[Range @ $VertexCount, defaultVertexColor];
+      vertexItems = vertexDrawFunc[Range @ $VertexCount, vertexStyle];
 
     ];
     vertexGraphics = makeGraphicsGroup @ {vertexBaseStyle, vertexStyle, vertexItems};
@@ -381,13 +435,13 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
   (* create graphics for edges *)
   FunctionSection[
-    SetAutomatic[edgeStyle, Directive[Opacity[.18], Black, If[$GraphIs3D, MediumThick, SlightlyThick]]];
-    edgeStyle //= toDirectiveOptScan[setEdgeStyleGlobals];
-
     If[edgeStyle === None,
       edgeGraphics = Nothing;
       Goto[skipEdges];
     ];
+
+    SetAutomatic[edgeStyle, Directive[Opacity[.18], Black, If[$GraphIs3D, MediumThick, SlightlyThick]]];
+    edgeStyle //= toDirectiveOptScan[setEdgeStyleGlobals];
 
     If[arrowheadShape === None || zeroQ[arrowheadSize] || UndirectedGraphQ[$Graph],
       edgeGraphics = makeGraphicsGroup @ {edgeStyle, setback[Line, setbackDistance] @ $GraphEdgeCoordinateLists};
@@ -407,7 +461,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
         Scan[scanArrowheadShapeOpts, arrowheadShapeOpts]];
       SetAutomatic[arrowheadSize, baseArrowheadSize];
-      SetAutomatic[arrowheadPosition, If[$GraphIs3D && arrowheadShape =!= "Cone", 0.65, 0.5]];
+      SetAutomatic[arrowheadPosition, If[$GraphIs3D && arrowheadShape =!= "Cone", 0.65, 0.502]];
 
       arrowheadBounds = CoordinateBounds[
         edgeCenters,
@@ -447,6 +501,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     edgeLabels //= removeSingleton;
     If[edgeLabels =!= None,
+      SetAutomatic[arrowheadSize, 0];
       edgeLabelItems = generateLabelPrimitives[
         edgeLabels, $EdgeList, edgeCenters,
         Max[arrowheadSize] * $GraphPlotSizeX, edgeLabelStyle, <||>
@@ -543,7 +598,7 @@ toColorVertexDrawFunc[vertexDrawFunc_] :=
 toColorVertexDrawFuncWithTooltip[vertexDrawFunc_] :=
   {colorValue, indices} |-> NiceTooltip[
     vertexDrawFunc[indices, First @ colorValue],
-    Last @ colorAnd
+    Last @ colorValue
   ];
 
 (**************************************************************************************************)
@@ -632,7 +687,7 @@ attachArrowheadLabel[g:Graphics[primitives_, opts___], cardinal_, size_] := Scop
   cardinal //= Replace[TwoWay[c_] :> Row[{c, Negated[c]}]];
   label = makeArrowheadLabel[cardinal, size];
   {{xl, xh}, {yl, yh}} = GraphicsPlotRange[g];
-  labelPrimitives = {Opacity[1], Inset[label, {0., xl - 0.25}, {0, 0}, Automatic, None]};
+  labelPrimitives = {Opacity[1], Black, Inset[label, {0., xl - 0.25}, {0, 0}, Automatic, None]};
   Graphics[{primitives, labelPrimitives}, opts]
 ];
 
@@ -670,7 +725,7 @@ makeArrowheadGraphic2D[primitives_, style_, opts___] :=
 
 makeArrowheadGraphic3D[primitives_, style_, opts___] :=
   Graphics3D[
-    {Opacity[1], EdgeForm @ None, FaceForm @ style, primitives}
+    {Opacity[1], EdgeForm @ None, FaceForm @ style, primitives},
     opts
   ];
 
@@ -843,6 +898,15 @@ makeLegendArrowheadGraphic[color_, shape_] := makeArrowheadGraphic2D[
 
 (**************************************************************************************************)
 
+PackageScope["makeHighlightArrowheadShape"]
+
+makeHighlightArrowheadShape[style_, scaling_] :=
+  makeArrowheadGraphic2D[
+    $arrowheads2D["Line"] /. r_List :> (r * scaling), style, args
+  ];
+
+(**************************************************************************************************)
+
 applyAutomaticLegends[graphics_, <||>, _] := graphics;
 
 applyAutomaticLegends[graphics_, automaticLegends_, Automatic] :=
@@ -893,7 +957,7 @@ processVertexShapeFunction[spec_] := Scope[
     ,
     "Point",
       defaultVertexColor = $DarkGray;
-      setbackDistance = vertexSize / 2;
+      setbackDistance = 0;
       vertexDrawFunc = drawPoint[$vertexSize];
       vertexPadding = 1 + vertexSizeImage / 2;
     ,
@@ -985,6 +1049,7 @@ toColorFunctionData = MatchValues[
   key_String := getAnnoValue[vertexAnnotations, key];
   (key_String -> f_) := Replace[Quiet @ Check[Map[toFunc @ f, %[key]], $Failed], $Failed :> failPlot["msgcolfunc", key]];
   list_List /; Length[list] === $VertexCount := list;
+  assoc_Association := Lookup[assoc, $VertexList, Lookup[assoc, All, $Gray]];
   spec_ := failPlot["badcolfunc", If[Length[spec] > 10 || ByteCount[spec] > 1000, Skeleton[Length[spec]], spec]]
 ];
 

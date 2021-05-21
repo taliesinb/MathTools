@@ -8,81 +8,82 @@ PackageExport["AbstractCoordinateFunction"]
 PackageExport["VertexCoordinateFunction"]
 PackageExport["VertexNameFunction"]
 PackageExport["IncludeRepresentationMatrices"]
+PackageExport["AbstractCoordinateFilter"]
 
 SetUsage @ "AbstractCoordinateFunction is an option to QuiverLattice and QuiverGraph."
 SetUsage @ "VertexCoordinateFunction is an option to QuiverLattice and QuiverGraph."
 SetUsage @ "VertexNameFunction is an option to QuiverLattice and QuiverGraph."
+SetUsage @ "AbstractCoordinateFilter is an option to QuiverLattice and QuiverGraph."
 
-$baseLatticeUsage = "
-* The following options are supported:
-| AbstractCoordinateFunction | Automatic | function to obtain abstract vertex coordinates from representation matrices |
-| VertexCoordinateFunction | Automatic | function to obtain graphical vertex coordinates from abstract coordinates |
-| VertexNameFunction | 'SpiralIndex' | function to rename vertices after abstract coordinatization |
-| GraphLayout | None | the overall layout method to use for vertices and edges |
-| LayoutDimension | Automatic | number of dimensions of the graph layout |
-| VertexLabels | None | whether to plot vertices with their labels |
-| ImageSize | Automatic | size to plot the graph |
-| MaxVertices | Infinity | maximum number of lattice vertices to obtain |
-| MaxEdges | Infinity | maximum number of lattice edges to obtain |
-| MaxNorm | Infinity | drop vertices with larger norm |
-| NormFunction | Automatic | function to compute norm from abstract vertex coordinates |
-| GraphRegionHighlight | None | regions of the graph to highlight |
-| GraphLegend | Automatic | legend to attach to the entire graph |
-| IncludeRepresentationMatrices | False | whether to attach the original representations as vertex annotations |
+PackageScope["$baseLatticeUsage"]
 
-* AbstractCoordinateFunction extracts abstract vertex coordinates from RepresentationElements, and accepts these settings:
-| Automatic | pick coordinates based on the structure of the group (default) |
-| None | use the entire RepresentationElement as the coordinate |
-| f$ | apply f$ to the contents of each RepresentationElement (a matrix) |
-
-* VertexCoordinateFunction determines the graphical coordinates, and accepts the following settings:
-| Automatic | convert representation coords to spatial coords based on the structure of the group (default) |
-| None | use Graph's automatic layout of the vertices |
-| f$ | apply f$ to the representation coordinates produced by AbstractCoordinateFunction |
-
-* VertexNameFunction determines the final names given to vertices, and accepts these settings:
+$baseLatticeUsage = StringTrim @ "
+## Exploration options
+* The following options control how states are explored:
+| %MaxDepth | Infinity | maximum depth from the initial states |
+| %MaxVertices | Infinity | maximum number of lattice vertices to obtain |
+| %MaxEdges | Infinity | maximum number of lattice edges to obtain |
+| %MaxNorm | Infinity | maximal allowed norm, larger norm vertices are dropped |
+| %NormFunction | Automatic | function to compute norm from abstract vertex coordinates |
+| %InitialStates | Automatic | where to start the exploration. |
+* %MaxVertices -> AtLeast[n$] specifies that at least n$ vertices should be collected, \
+but the currently explored depth should be completed before termination.
+* For %NormFunction -> Automatic, %MaxNorm -> n$ will use %ChessboardNorm, which has the \
+effect of allowing up to n$ moves by each cardinal.
+* The default %InitialStates -> Automatic uses the 'natural' initial states for the \
+given machine. For a quiver representation, the first vertex is used along with the \
+identity matrix.
+## Graph options
+* The following options control aspects of the produced graph:
+| %CombineMultiedges | True | combine multiedges into a single edge sharing cardinals |
+| %SelfLoops | True | allow self-loops |
+| %CardinalColors | Automatic | how to choose colors for cardinals |
+## Coordinatization options
+* The following options control how vertices are named and coordinatized:
+| %AbstractCoordinateFunction | Automatic | function to obtain abstract vertex coordinates from representation matrices |
+| %VertexCoordinateFunction | Automatic | function to obtain graphical vertex coordinates from abstract coordinates |
+| %VertexNameFunction | 'SpiralIndex' | function to rename vertices after coordinatization |
+* %AbstractCoordinateFunction extracts abstract vertex coordinates from RepresentationElements, and accepts these settings:
+| Automatic | pick coordinates based on the structure of the machine (default) |
+| {p$1, $$, p$n} | obtain particular elements of the state |
+| None | use the entire state as the coordinate |
+| f$ | apply f$ to each state |
+* %VertexCoordinateFunction determines the graphical coordinates, and accepts the following settings:
+| Automatic | convert representation coords to spatial coords based on the structure of the machine (default) |
+| None | automatic layout of the vertices based on setting of GraphLayout |
+| f$ | apply f$ to the abstract coordinates produced by AbstractCoordinateFunction |
+* %VertexNameFunction determines the final names given to vertices, and accepts these settings:
 | 'SpiralIndex' | number vertices starting at 1 for the origin, proceeding clockwise then outward (default) |
 | 'RasterIndex' | number vertices starting at the top left, proceeding right then down |
 | 'Coordinates' | use abstract coordinates directly as names |
 | 'Representation' | use the original RepresentationElement[$$] objects directly as names |
-| None | use LatticeVertex[abstract$, type$] as names |
-
-* GraphLayout accepts these settings:
+| None | use LatticeVertex[abscoords$, genvertex$] as names |
+* %GraphLayout accepts these settings:
 | None | use the layout provided by VertexCoordinateFunction |
 | Automatic | use 'SpringElectricalEmbedding' |
-| '2D' | use a two-dimensional automatic layout |
-| '3D' | use a three-dimensional automatic layout |
 | spec$ | use a custom specification accepted by Graph |
-
-* VertexLabels determines how to label vertices, and accepts these settings:
-| None | do not label vertices |
-| Automatic | label vertices with their names |
-| 'VertexCoordinates' | label vertices with their abstract vertex coordinates |
-| Tooltip | label vertices with their names via a tooltip |
-
-* EdgeLabels determines how to label edges, and accepts these settings:
-| None | do not label edges |
-| Automatic | label edges with their cardinals |
-
-* GraphLegend accepts these settings:
-| None | no legend |
-| Automatic | use a legend indicating the cardinals |
-| expr$ | use a custom legend given by expr$ |
+## Extended options
+* In addition, the following extended graph options are supported:
+<*$extendedGraphUsage*>
+| 'Quiver' | label with the generating quiver |
+| 'QuiverRepresentation' | label with the generating quiver representation |
 "
 
 PackageExport["InitialStates"]
 
 $baseGenerateLatticeOptions = JoinOptions[{
   AbstractCoordinateFunction -> Automatic,
+  AbstractCoordinateFilter -> None,
   VertexCoordinateFunction -> Automatic,
   VertexNameFunction -> "SpiralIndex",
-  GraphLegend -> Automatic,
   MaxNorm -> Infinity,
+  MaxDepth -> Automatic,
   NormFunction -> Automatic,
   CardinalColors -> Automatic,
   MaxVertices -> Infinity, MaxEdges -> Infinity,
   DepthTermination -> Automatic, IncludeFrontier -> Automatic,
   IncludeRepresentationMatrices -> False,
+  GraphLegend -> Automatic,
   CombineMultiedges -> True,
   SelfLoops -> True,
   InitialStates -> Automatic
@@ -97,27 +98,26 @@ General::badlatticedepth = "The specified depth `` is not a positive integer."
 General::badvertnaming = "Unknown setting `` for VertexNameFunction. Valid renaming rules are ``.";
 General::renamenotquiv = "The vertex coordinates yielded a quiver with incompatible cardinal edges. Use LatticeGraph instead.";
 General::normempty = "The setting of NormFunction and MaxNorm -> `` yielded an empty graph. The first few norms were: ``."
+General::filterempty = "The setting of AbstractCoordinateFilter yielded an empty graph.";
 General::nonnumnorm = "The setting of NormFunction yielded the non-numeric value `` on vertex ``.";
 
 Options[iGenerateLattice] = $baseGenerateLatticeOptions;
 
 $cardinalBasedRegionPattern = Path | Line[_, _] | HalfLine | InfiniteLine | Axes;
 
-iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:OptionsPattern[]] := Scope[
-
-  depth = maxDepth;
+iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] := Scope[
 
   If[StringQ[representation],
     latticeName = representation;
 
     If[MemberQ[$LatticeClassNames, latticeName],
       Return @ Map[
-        iGenerateLattice[head, #, maxDepth, directedEdges, opts, PlotLabel -> Automatic]&,
+        iGenerateLattice[head, #, directedEdges, opts, PlotLabel -> Automatic]&,
         LatticeQuiverData @ latticeName
       ]];
 
     If[KeyExistsQ[$ParameterizedLatticeData, latticeName],
-      Return @ iGenerateLattice[head, {latticeName}, maxDepth, directedEdges, opts]];
+      Return @ iGenerateLattice[head, {latticeName}, directedEdges, opts]];
 
     representation = LatticeQuiverData[latticeName, "Representation"];
     If[!QuiverRepresentationObjectQ[representation],
@@ -156,10 +156,10 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
 
   UnpackOptionsAs[head, opts,
     maxNorm, normFunction,
-    abstractCoordinateFunction, vertexCoordinateFunction,
+    abstractCoordinateFunction, abstractCoordinateFilter, vertexCoordinateFunction,
     graphLayout,
     graphLegend, imageSize, vertexNameFunction, arrowheadStyle,
-    maxVertices, maxEdges, depthTermination, includeFrontier,
+    maxDepth, maxVertices, maxEdges, depthTermination, includeFrontier,
     graphMetric, combineMultiedges,
     includeRepresentationMatrices,
     graphRegionHighlight, plotLabel,
@@ -170,13 +170,17 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
 
   simpleOptions = TakeOptions[{opts}, $simpleGraphOptions];
 
-  SetAutomatic[depth, Which[
-    maxNorm =!= Infinity, maxNorm * Length[cardinalList],
-    maxVertices =!= Infinity, Infinity,
+  If[IntegerQ[maxDepth], SetAutomatic[includeFrontier, False]];
+  SetAutomatic[maxDepth, Which[
+    maxNorm =!= Infinity,
+      If[IntegerQ[maxNorm], maxNorm, Ceiling[maxNorm] + 1] * Length[cardinalList],
+    maxVertices =!= Infinity,
+      Infinity,
     AssociationQ[representation],
       Infinity,
     True,
-      maxNorm = If[MemberQ[$sparseLatticeNames, latticeName], 5, 3];
+      maxNorm = Replace[latticeName, $defaultLatticeNorms];
+      SetAutomatic[imageSize, Replace[latticeName, $defaultLatticeSizes]];
       maxNorm * Length[cardinalList]
   ]];
 
@@ -188,8 +192,8 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
 
   SetAutomatic[depthTermination, "Immediate"];
 
-  If[!MatchQ[depth, (_Integer ? Positive) | Infinity],
-    ReturnFailed[head::badlatticedepth, depth];
+  If[!MatchQ[maxDepth, (_Integer ? Positive) | Infinity],
+    ReturnFailed[head::badlatticedepth, maxDepth];
   ];
 
   $quiverLabel := Quiver[quiver, ImageSize -> 50,
@@ -228,10 +232,10 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
   ];
 
   (* do the exploration *)
-  {vertexList, indexEdgeList, reason} = StateTransitionGraph[cayleyFunction, initialStates,
+  {vertexList, indexEdgeList, reason} = CachedStateTransitionGraph[cayleyFunction, initialStates,
     {"VertexList", "IndexEdgeList", "TerminationReason"},
     DirectedEdges -> True,
-    MaxDepth -> depth,
+    MaxDepth -> maxDepth,
     IncludeFrontier -> includeFrontier, DepthTermination -> depthTermination,
     MaxVertices -> maxVertices, MaxEdges -> maxEdges, SelfLoops -> selfLoops
   ];
@@ -246,7 +250,7 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
   If[abstractCoordinateFunction =!= Identity,
     edgeList //= DeleteDuplicates];
 
-  If[ContainsQ[graphRegionHighlight, $cardinalBasedRegionPattern],
+  If[ContainsQ[graphRegionHighlight, $cardinalBasedRegionPattern] || graphMetric =!= Automatic,
     If[directedEdges === False, AppendTo[simpleOptions, ArrowheadShape -> None]];
     directedEdges = True;
   ];
@@ -257,25 +261,34 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
   abstractVertexList //= DeleteDuplicates;
 
   (* remove any vertices that exceed the norm *)
-  If[maxNorm =!= Infinity,
-    SetAutomatic[normFunction, ChessboardNorm];
-    normFunction //= toNormFunction;
-    norms = Map[First /* normFunction, abstractVertexList];
-    If[!VectorQ[norms, NumericQ],
-      badIndex = SelectFirstIndex[norms, NumericQ /* Not];
-      ReturnFailed[head::nonnumnorm, Part[norms, badIndex], InputForm @ Part[abstractVertexList, badIndex]]];
-    vertexIndices = SelectIndices[norms, LessEqualThan[maxNorm]];
-    If[vertexIndices === {},
-      someNorms = AssociationThread @@ Take[{abstractVertexList, norms}, All, UpTo[4]];
-      ReturnFailed[head::normempty, maxNorm, someNorms]];
+  norms = None;
+  If[maxNorm =!= Infinity || abstractCoordinateFilter =!= None,
+    If[maxNorm =!= Infinity,
+      SetAutomatic[normFunction, ChessboardNorm];
+      normFunction //= toNormFunction;
+      normOffset = If[IntegerQ[maxNorm], 0, maxNorm - Ceiling[maxNorm //= Ceiling]];
+      norms = Map[normFunction, FirstColumn[abstractVertexList] + normOffset];
+      If[!VectorQ[norms, NumericQ],
+        badIndex = SelectFirstIndex[norms, NumericQ /* Not];
+        ReturnFailed[head::nonnumnorm, Part[norms, badIndex], InputForm @ Part[abstractVertexList, badIndex]]];
+      vertexIndices = SelectIndices[norms, LessEqualThan[maxNorm]];
+      If[vertexIndices === {},
+        someNorms = AssociationThread @@ Take[{abstractVertexList, norms}, All, UpTo[4]];
+        ReturnFailed[head::normempty, maxNorm, someNorms]];
+    ,
+      vertexIndices = Range @ Length @ abstractVertexList;
+    ];
+    If[abstractCoordinateFilter =!= None,
+      vertexIndices = Intersection[vertexIndices, SelectIndices[abstractVertexList, First /* abstractCoordinateFilter]];
+      If[vertexIndices === {},
+        ReturnFailed[head::filterempty]];
+      If[norms =!= None, norms = Part[norms, vertexIndices]];
+    ];
     {abstractVertexList, edgeList} = VertexEdgeList @ Subgraph[
       Graph[abstractVertexList, edgeList],
       Part[abstractVertexList, vertexIndices]
     ];
     vertexList = Part[vertexList, vertexIndices];
-    norms = Part[norms, vertexIndices];
-  ,
-    norms = None;
   ];
 
   (* apply the final layout, if any *)
@@ -342,7 +355,8 @@ iGenerateLattice[head_, representation_, maxDepth_, directedEdges_, opts:Options
   |>]
 ];
 
-$sparseLatticeNames = {"TruncatedTrihexagonal"};
+$defaultLatticeNorms = {"TruncatedTrihexagonal" -> 5, _ -> 3};
+$defaultLatticeSizes = {"Square" -> {180, 180}, _ -> {200, 200}};
 
 toTitleString[s_String] :=
   ToLowerCase @ StringReplace[s, RegularExpression["([a-z])([A-Z])"] :> "$1 $2"];
@@ -376,11 +390,10 @@ iGenerateLattice[head_, {latticeName_String, args__}, maxDepth_, directedEdges_,
 
   {representation, customOptions} = FirstRest @ result;
   customOptions //= Flatten;
-  newMaxDepth = Lookup[customOptions, MaxDepth];
-  If[!MissingQ[newMaxDepth], maxDepth = newMaxDepth];
-  customOptions = DeleteOptions[customOptions, MaxDepth];
+  If[!KeyExistsQ[customOptions, MaxDepth],
+    customOptions //= ReplaceOptions[MaxDepth -> maxDepth]];
 
-  iGenerateLattice[head, representation, maxDepth, directedEdges, opts, Sequence @@ customOptions]
+  iGenerateLattice[head, representation, directedEdges, opts, Sequence @@ customOptions]
 ];
 
 (**************************************************************************************************)
@@ -452,10 +465,13 @@ $LatticeQuiverAutocomplete = Join[$LatticeNames, $ParameterizedLatticeNames, $La
 PackageExport["LatticeGraph"]
 
 SetUsage @ "
-LatticeGraph[qrep$, d$] generates the lattice graph for a quiver representation qrep$ to depth d$.
-LatticeGraph['name$', d$] generates the lattice graph for the named lattice 'name$' to depth d$.
-LatticeGraph[spec$] uses a default depth of 6.
+LatticeGraph['name$'] generates part of the lattice graph for the named lattice 'name$'.
+LatticeGraph[machine$] generates part of the lattice graph from a particular machine.
+LatticeGraph[$$, depth$] generates a graph to a given depth.
+* machine$ can be a group, groupoid, quiver representation, or an association with the \
+keys 'CayleyFunction' and 'InitialStates'.
 <*$namedLatticeUsage*>
+<*$baseLatticeUsage*>
 * To obtain cardinal tags on the edges, use the function LatticeQuiver.
 "
 
@@ -470,27 +486,28 @@ declareFunctionAutocomplete[LatticeGraph, {$LatticeQuiverAutocomplete, 0}];
 
 declareSyntaxInfo[LatticeGraph, {_, _., OptionsPattern[]}];
 
-LatticeGraph[name_, opts:OptionsPattern[]] :=
-  LatticeGraph[name, Automatic, opts];
+LatticeGraph[spec_, opts:OptionsPattern[]] :=
+  iGenerateLattice[LatticeGraph, spec, OptionValue @ DirectedEdges, FilterOptions @ opts];
 
 (* this avoids an obscure bug that triggers when you do ?LatticeGraph, that I should report *)
 SetAttributes[LatticeGraph, ReadProtected];
 
-LatticeGraph[spec_, depth_, opts:OptionsPattern[]] := Scope[
-  UnpackOptions[directedEdges];
-  iGenerateLattice[LatticeGraph, spec, depth, directedEdges, FilterOptions @ opts]
-];
+LatticeGraph[spec_, depth_, opts:OptionsPattern[]] :=
+  LatticeGraph[spec, opts, MaxDepth -> depth];
 
 (**************************************************************************************************)
 
 PackageExport["LatticeQuiver"]
 
 SetUsage @ "
-LatticeQuiver[qrep$, d$] generates the lattice quivr graph for a quiver representation qrep$ to depth d$.
-LatticeQuiver['name$', d$] generates the lattice quiver graph for the named lattice 'name$' to depth d$.
-LatticeQuiver[spec$] uses a default depth of 6.
-<*$namedLatticeUsage*>
+LatticeQuiver['name$'] generates part of the lattice graph for the named lattice 'name$'.
+LatticeQuiver[machine$] generates part of the lattice graph from a particular machine.
+LatticeQuiver[$$, depth$] generates a graph to a given depth.
+* machine$ can be a group, groupoid, quiver representation, or an association with the \
+keys 'CayleyFunction' and 'InitialStates'.
 * LatticeQuiver behaves like LatticeGraph, but returns a quiver instead of an ordinary graph.
+<*$namedLatticeUsage*>
+<*$baseLatticeUsage*>
 "
 
 DeclareArgumentCount[LatticeQuiver, {1, 2}];
@@ -501,11 +518,11 @@ declareFunctionAutocomplete[LatticeQuiver, {$LatticeQuiverAutocomplete, 0}];
 
 declareSyntaxInfo[LatticeQuiver, {_, _., OptionsPattern[]}];
 
-LatticeQuiver[name_, opts:OptionsPattern[]] :=
-  LatticeQuiver[name, Automatic, opts];
+LatticeQuiver[spec_, opts:OptionsPattern[]] :=
+  iGenerateLattice[LatticeQuiver, spec, True, FilterOptions @ opts];
 
 LatticeQuiver[spec_, depth_, opts:OptionsPattern[]] :=
-  iGenerateLattice[LatticeQuiver, spec, depth, True, opts];
+  LatticeQuiver[spec, opts, MaxDepth -> depth];
 
 
 (**************************************************************************************************)

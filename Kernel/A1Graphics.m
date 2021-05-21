@@ -8,7 +8,7 @@ PackageImport["GeneralUtilities`"]
 PackageExport["LegendForm"]
 
 SetUsage @ "
-LegendForm[expr$] renders as a form of expr$ that is suitable for use in Legended.
+LegendForm[expr$] renders as a form of expr$ that is suitable for use in %Legended.
 "
 
 LegendForm[Placed[a_, pos_]] :=
@@ -54,7 +54,7 @@ ImageToGraphics[img_, {xalign_, yalign_}, size_] := Scope[
 PackageExport["GraphicsQ"]
 
 SetUsage @ "
-GraphicsQ[object$] returns True if object$ is a Graphics[$$] or Graphics3D[$$] expression.
+GraphicsQ[object$] returns True if object$ is a %Graphics[$$] or %Graphics3D[$$] expression.
 "
 
 GraphicsQ[_Graphics | _Graphics3D] := True;
@@ -66,7 +66,7 @@ PackageExport["ImageSizePad"]
 
 SetUsage @ "
 ImageSizePad[size$, padding$] expands the image size size$ by padding it according to padding$.
-* padding$ can be any of the specifications supported by ImagePadding.
+* padding$ can be any of the specifications supported by %ImagePadding.
 "
 
 ImageSizePad::badpadding = "`` is not a valid padding spec.";
@@ -97,10 +97,10 @@ toPadding = MatchValues[
 PackageExport["NormalizePlotRange"]
 
 SetUsage @ "
-NormalizePlotRange[graphics$] updates the value of PlotRange to span all elements in graphics$.
-* graphics$ can be a Graphics[$$] or Graphics3D[$$] expression.
-* The value of PlotRangePadding is taken into account, and PlotRangePadding is set to zero in the result.
-* Providing the option PlotRangePadding will override the PlotRangePadding present in graphics$.
+NormalizePlotRange[graphics$] updates the value of %PlotRange to span all elements in graphics$.
+* graphics$ can be a %Graphics[$$] or %Graphics3D[$$] expression.
+* The value of %PlotRangePadding is taken into account, and %PlotRangePadding is set to zero in the result.
+* Providing the option %PlotRangePadding will override the %PlotRangePadding present in graphics$.
 "
 
 Options[NormalizePlotRange] = {
@@ -123,15 +123,15 @@ NormalizePlotRange[graphics_, OptionsPattern[]] := Scope[
 PackageExport["GraphicsPlotRange"]
 
 SetUsage @ "
-GraphicsPlotRange[graphics$] yields the PlotRange that will be used when graphics$ is rendered.
-* graphics$ can be a Graphics[$$], Graphics3D[$$], their box equivalents, or a list of graphics primitives.
-* Legended, Labeled, etc will be skipped.
-* The option PlotRangePadding specifies whether padding should be included in the resulting range, \
+GraphicsPlotRange[graphics$] yields the %PlotRange that will be used when graphics$ is rendered.
+* graphics$ can be a %Graphics[$$], %Graphics3D[$$], their box equivalents, or a list of graphics primitives.
+* %Legended, %Labeled, etc will be skipped.
+* The option %PlotRangePadding specifies whether padding should be included in the resulting range, \
 and has the following settings:
 | None | do not include any padding (default) |
 | Inherited | apply the padding specified in the graphics object |
 | custom$ | apply the custom padding |
-* Padding is applied used PlotRangePad.
+* Padding is applied used %PlotRangePad.
 "
 
 Options[GraphicsPlotRange] = {
@@ -238,19 +238,19 @@ PackageExport["MediumSmall"]
 PackageExport["MediumLarge"]
 PackageExport["Huge"]
 
-SetUsage @ "MediumSmall represents a size betwen Small and Medium."
-SetUsage @ "MediumLarge represents a size betwen Medium and Large."
-SetUsage @ "Huge represents a size greater than Large."
+SetUsage @ "MediumSmall represents a size betwen %Small and %Medium."
+SetUsage @ "MediumLarge represents a size betwen %Medium and %Large."
+SetUsage @ "Huge represents a size greater than %Large."
 
 (**************************************************************************************************)
 
 PackageExport["LookupImageSize"]
 
 SetUsage @ "
-LookupImageSize[object$] returns the ImageSize that a given object will use when rendered.
-* object$ can be a Graphics[$$] or Graphics3D[$$] object.
+LookupImageSize[object$] returns the setting of %ImageSize that a given object will use when rendered.
+* object$ can be a %Graphics[$$] or %Graphics3D[$$] object.
 * A numeric hard-coded size will be returned as-is.
-* Symbolic sizes like Tiny, Small, Medium, Large will be converted to their numeric equivalents.
+* Symbolic sizes like %Tiny, %Small, %Medium, %Large will be converted to their numeric equivalents.
 * The size is returned as a pair {width$, height$}, where height$ may be Automatic.
 "
 
@@ -272,7 +272,7 @@ resolveRawImageSize = MatchValues[
 PackageExport["ToNumericImageSize"]
 
 SetUsage @ "
-ToNumericImageSize[spec$, ratio$] resolves an ImageSize specificiaton spec$ using a target aspect ratio, \
+ToNumericImageSize[spec$, ratio$] resolves an %ImageSize specificiaton spec$ using a target aspect ratio, \
 returning {w$, h$}.
 "
 
@@ -327,6 +327,8 @@ $colorNormalizationRules = {
 
 (**************************************************************************************************)
 
+PackageScope["$opacityNormalizationRules"]
+
 PackageExport["VeryTransparent"]
 PackageExport["HalfTransparent"]
 PackageExport["PartlyTransparent"]
@@ -376,6 +378,22 @@ $thicknessNormalizationRules = {
 
 (**************************************************************************************************)
 
+PackageScope["toMultiDirective"]
+
+iToMultiDirective = MatchValues[
+  {} := Automatic;
+  {spec_} := toDirective @ spec;
+  spec_List | spec_Association := Map[toDirective, spec];
+  spec_ := toDirective[spec]
+];
+
+toMultiDirective[spec_] := Scope[
+  res = ToColorPalette @ spec;
+  If[FailureQ[res], iToMultiDirective[spec], res]
+];
+
+(**************************************************************************************************)
+
 PackageScope["toDirective"]
 
 toDirective = MatchValues[
@@ -416,6 +434,9 @@ ApplyProlog[graphics_, None | {}] := graphics;
 
 ApplyProlog[graphics_Graphics, prolog_] :=
   UpdateOptions[graphics, Prolog, Function[Append[Developer`ToList @ #1, prolog]]];
+
+ApplyProlog[Graphics3D[primitives_, opts___], prolog_] :=
+  Graphics3D[{prolog, primitives}, opts];
 
 (**************************************************************************************************)
 

@@ -14,6 +14,8 @@ $metricDistanceOptions = {
   GraphMetric -> Inherited
 };
 
+PackageScope["$metricUsage"]
+
 $metricUsage = StringTrim @ "
 * The setting of GraphMetric determines how the metric is computed:
 | Inherited | use the GraphMetric present in graph$ (default) |
@@ -99,16 +101,37 @@ MetricFindShortestPath[graph_, start_, end_, OptionsPattern[]] := Scope[
 
   If[!EdgeTaggedGraphQ[graph], ReturnFailed["nottaggraph"]];
 
-  (* distance matrix and adjacency table *)
-  data = {
-    toMetricDistanceOperator[metric] @ TaggedGraphDistanceMatrix[graph],
-    VertexAdjacencyTable[graph]
-  };
+  data = computeShortestPathFunctionData[graph, metric];
 
   If[start =!= All && end =!= All,
     findShortestPath[start, end, data],
     System`Private`ConstructNoEntry[MetricShortestPathFunction, {start, end}, data]
   ]
+];
+
+declareGraphCacheFriendly[computeShortestPathFunctionData];
+
+computeShortestPathFunctionData[graph_, metric_] := Scope[
+
+  distanceMatrix = toMetricDistanceOperator[metric] @ TaggedGraphDistanceMatrix[graph];
+
+  adjacentVertexTable = adjacentEdgeTags = ConstantArray[{}, VertexCount @ graph];
+  Scan[
+    Apply[{a, b, t} |-> (
+        AppendTo[Part[adjacentVertexTable, a], b];
+        AppendTo[Part[adjacentVertexTable, b], a];
+        AppendTo[Part[adjacentEdgeTags, a], t];
+        AppendTo[Part[adjacentEdgeTags, b], t];
+    )],
+    EdgeList @ graph
+  ];
+
+  {
+    distanceMatrix,
+    adjacentVertexTable,
+    adjacentEdgeTags,
+    CardinalList @ graph
+  }
 ];
 
 (**************************************************************************************************)
@@ -131,12 +154,17 @@ fspEval1[MetricShortestPathFunction[{All, v2_}, data_], v1_] :=
 fspEval1[MetricShortestPathFunction[{v1_, All}, data_], v2_] :=
   findShortestPath[v1, v2, data];
 
-findShortestPath[start_, end_, {distanceMatrix_, adjacencyTable_}] := Scope[
+findShortestPath[start_, end_, {distanceMatrix_, adjacentVertexTable_, adjacentEdgeTags_, cardinals_}] := Scope[
   vertex = start;
   pathBag = Internal`Bag[{start}];
+  moveCounts = ConstantAssociation[cardinals, 0];
   While[vertex =!= end,
-    adjacent = Part[adjacencyTable, vertex];
-    vertex = Part[adjacent, MinimumIndex @ Part[distanceMatrix, adjacent, end]];
+    adjacentVertices = Part[adjacentVertexTable, vertex];
+    adjacentTags = Part[adjacentEdgeTags, vertex];
+    distanceTies = MinimumIndices @ Part[distanceMatrix, adjacentVertices, end];
+    bestIndex = MinimumBy[distanceTies, moveCounts[Part[adjacentTags, #]]&];
+    vertex = Part[adjacentVertices, bestIndex];
+    moveCounts[Part[adjacentTags, bestIndex]] += 1;
     Internal`StuffBag[pathBag, vertex];
   ];
   Internal`BagPart[pathBag, All]

@@ -250,13 +250,22 @@ SetAttributes[evaluateExpression, HoldAllComplete];
 MakeBoxes[pd_Package`PackageData, StandardForm] :=
   RowBox[{"PackageData", StyleBox[RowBox[{"[", Length[pd], "]"}], Background -> LightRed]}];
 
-evaluatePackage[{path_, context_, packageData_Package`PackageData}] := (
+evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
   $currentPath = path; $currentFileLineTimings = <||>;
   GraphToolsPackageLoader`$FileTimings[path] = First @ AbsoluteTiming[
     Scan[evaluateExpression, packageData];
   ];
   GraphToolsPackageLoader`$FileLineTimings[path] = $currentFileLineTimings;
-);
+,
+  MacroEvaluate, catchMacroFailure
+];
+
+MacroEvaluate::macrofail = "Macro failed.";
+
+catchMacroFailure[$Failed, _] := handleMessage @
+  Failure["MacroEvaluate", <|"MessageTemplate" :> MacroEvaluate::macrofail, "MessageParameters" -> {}|>];
+
+catchMacroFailure[f_Failure, _] := handleMessage @ f;
 
 evaluateExpression[{lineNumber_, expr_}] := (
   $currentLineNumber = lineNumber;
@@ -276,15 +285,18 @@ handleMessage[f_Failure] := Scope[
 
 $directory = DirectoryName[$InputFileName];
 
+$lastLoadSuccessful = False;
+
 GraphToolsPackageLoader`Read[] :=
   GraphToolsPackageLoader`ReadPackages["GraphTools`", $directory];
 
 GraphToolsPackageLoader`Load[] := Scope[
   packages = GraphToolsPackageLoader`Read[];
   If[FailureQ[packages], ReturnFailed[]];
-  If[packages === "Unchanged", Return[None]];
+  If[packages === "Unchanged" && $lastLoadSuccessful, Return[None]];
   GraphToolsPackageLoader`$LoadCount++;
-  GraphToolsPackageLoader`EvaluatePackages @ packages;
+  If[!FailureQ[GraphToolsPackageLoader`EvaluatePackages @ packages],
+    $lastLoadSuccessful = True];
 ];
 
 GraphToolsPackageLoader`$LoadCount = 0;

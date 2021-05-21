@@ -15,6 +15,154 @@ PackageExport["LabelCardinals"]
 
 (**************************************************************************************************)
 
+PackageScope["$extendedGraphUsage"]
+
+$extendedGraphUsage = StringTrim @ "
+| %GraphLayout | None | the overall layout method to use for vertices and edges |
+| %LayoutDimension | Automatic | number of dimensions of the graph layout |
+| %VertexLabels | None | how to label vertices |
+| %ImageSize | Automatic | size to plot the graph |
+| %GraphRegionHighlight | None | regions of the graph to highlight |
+| %GraphLegend | Automatic | legend to attach to the entire graph |
+| %ArrowheadSize | Automatic | size of arrowheads |
+| %ArrowheadStyle | Automatic | style of arrowheads |
+| %ArrowheadPosition | Automatic | position of arrowheads along edges |
+| %ArrowheadShape | Automatic | shape of arrowheads |
+| %LabelCardinals | False | whether to attach labels to arrowheads |
+| %VertexShapeFunction | Automatic | how to draw vertices |
+| %EdgeShapeFunction | Automatic | how to draw edges |
+| %VertexColorFunction | None | function to obtain colors for vertices |
+| %VertexAnnotations | None | association of additional per-vertex data |
+| %GraphMetric | Automatic | metric to calculate graph distances |
+| %CardinalColors | Automatic | association of cardinal colors |
+| %ViewOptions | Automatic | how to project 3D coordinates |
+| %CoordinateTransformFunction | None | function to remap coordinates before plotting |
+
+## Arrowheads
+
+* %ArrowheadShape accepts these settings:
+| 'Arrow' | solid kinded arrowhead (default) |
+| 'Line' | two lines forming a partial triangle |
+| 'Disk' | circular disk |
+| 'Square' | square |
+| 'Diamond' | diamond (rotated square) |
+| 'Cone' | thin cone (3D) |
+| 'Sphere' | sphere (3D) |
+| 'Cardinal' | no arrowhead, use cardinal label |
+| None | no arrowheads |
+* In addition, %ArrowheadShape supports the suboption {'shape$', %TwoWayStyle -> spec$}.
+* %TwoWayStyle -> spec$ determines how to plot a cardinal and its negation together:
+| 'Out' | arrowheads facing away from each other |
+| 'OutClose' | facing out with backs touching |
+| 'In' | arrowheads facing towards each other |
+| 'InClose' | facing in with tips touching |
+| 'spec$' | one of the regular shapes |
+
+* %ArrowheadSize supports symbol sizes such as Small, Large, etc, or a value Scaled[r$].
+These modify scale the automatically chosen size, with Medium leaving it unchanged.
+
+* %ArrowheadStyle can be set to a color or list of directives.
+
+* %CardinalColors -> <|card$1 -> col$1, $$|> determines the colors for arrowheads.
+
+* %ArrowheadPosition -> r$ sets the position of the arrowhead to the fraction r$ along the \
+length of the edge.
+
+## Edges
+
+* %EdgeShapeFunction controls how edges are drawn, indepedently of arrowheads, and accepts:
+| Automatic | use %Line or %Arrow as appropriate |
+| None | do not draw edges |
+| f$ | call f$ to obtain graphical primitives |
+
+If a function f$ is given, it is provided with an association containing the following keys:
+| 'Coordinates' | the list of {x$, y$} or {x$, y$, z$} coordinates |
+| 'Source' | the source vertex |
+| 'Target' | the target vertex |
+| 'Cardinal' | the cardinal(s) on the edge |
+
+## Vertices
+
+* %VertexShapeFunction controls how vertices are drawn and accepts these settings:
+| Automatic | choose a method automatically |
+| 'Point' | use %Point[$$] |
+| 'Disk' | use %Disk[$$] |
+| 'Sphere' | use %Sphere[$$] |
+| 'Ball' | use 'Disk' for 2D and 'Sphere' for 3D |
+| None | do not draw vertices |
+
+* %VertexSize accepts these settings:
+| Automatic | use a safe default size (equivalent to Medium) |
+| Small, Medium, $$ | use a symbolic size, with Medium being 0.3 |
+| r$ | fraction r$ of the quantiles of inter-vertex distance |
+| {v$1 -> s$1, $$, %%All -> s$} | use specific sizes for specific vertices |
+
+* %VertexColorFunction accepts these settings:
+| None | color via VertexStyle (default) |
+| 'key$' | color with values from VertexAnnotation |
+| f$ | apply f$ to vertices to obtain values |
+| spec$ -> f$ | apply f$ to result of spec$ |
+| %Paletted[spec$, colors$] | use a given named or explicit color palette |
+* If a spec produces non-color values, they will colored based on the type of data.
+* If %GraphLegend -> Automatic, a color legend will be shown.
+
+## Metrics
+
+* %GraphMetric affects the behavior of %MetricDistance, %MetricDistanceMatrix, and %MetricFindShortestPath.
+* The following settings are accepted:
+| Automatic | use the default graph distance |
+| 'Euclidean' | use root total square of per-cardinal distances |
+| %QuadraticForm[$$] | use a quadratic form |
+| {s$1, s$2, $$} | use a particular signature |
+| n$ | use a homogenous form of degree n$ |
+| f$ | apply f$ to association of per-cardinal distances |
+
+## Labeling
+
+* %VertexLabels determines how to label vertices, and accepts these settings:
+| None | do not label vertices (default) |
+| Automatic | label with vertex names |
+| 'Index' | label with vertex indices |
+| 'key$' | label with values from VertexAnnotation |
+| %Tooltip[spec$] | label vertices via a tooltip |
+
+* %EdgeLabels determines how to label edges, and accepts these settings:
+| None | do not label edges |
+| 'Index' | label with edge index |
+| Automatic | label edges with their cardinals |
+
+* %VertexLabelStyle and EdgeLabelStyle accept these settings:
+| Automatic | default |
+| styles$ | a list, directive, or individual style |
+| {styles$, opt$ -> val$, $$} | provide suboptions |
+Suboptions include:
+| %ItemSize | a symbolic, numeric, or Scaled[$$] value |
+| %Background | additional background to distinguish labels |
+| %BaseStyle | extra options to control font, etc. |
+| %LabelPosition | one of Above, Below, Left, Right, Center |
+| %Spacings | size of offset from the labelled element |
+
+## Annotations
+
+* %VertexAnnotations can be set to an association between named properties \
+and lists of values.
+* The values should be in the same order and length as given by VertexList.
+* These values are accessible via %VertexColorFunction and %VertexLabels.
+
+## Highlights
+
+* %GraphRegionHighlight takes a list of regions to highlight, see %GraphRegion.
+
+## Legends
+
+* %GraphLegend accepts these settings:
+| None | no legend |
+| Automatic | attach legends for cardinals, colors, highlights, etc |
+| expr$ | use a custom legend given by expr$ |
+"
+
+(**************************************************************************************************)
+
 $extendedGraphOptionsRules = {
   GraphPlottingFunction -> None,
   GraphRegionHighlight -> None,
@@ -193,6 +341,13 @@ $simpleGraphOptions = Keys @ $simpleGraphOptionRules;
 
 PackageExport["ExtendedGraph"]
 
+SetUsage @ "
+ExtendedGraph[args$$] acts like Graph but accepts additional options and overrides how graphs are \
+displayed.
+* The following options and additional options are supported:
+<*$extendedGraphUsage*>
+"
+
 Options[ExtendedGraph] = $simpleGraphOptionRules;
 ExtendedGraph[args___] :=
   interceptedGraphConstructor[Graph[args, GraphPlottingFunction -> ExtendedGraphPlottingFunction]];
@@ -225,6 +380,8 @@ CreateGraphCache[graph_Graph, symbol_Symbol] := (
   symbol = Data`UnorderedAssociation[];
   GraphCache[graph, symbol]
 );
+
+GraphCache /: Print[GraphCache[graph_, sym_]] := Print[Keys @ sym];
 
 (* for ordinary functions, evaluate them on the raw graph *)
 GraphCache /: f_Symbol[GraphCache[graph_, sym_], args___] /; System`Private`HasDownEvaluationsQ[f] && System`Private`NotValidQ[f] :=
@@ -750,6 +907,11 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
 
   vertexCoordinates = ToPackedReal @ vertexCoordinates;
 
+  If[UndirectedGraphQ[graph],
+    vertexIndex = AssociationRange @ VertexList @ graph;
+    edgeCoordinateLists = MapThread[orientEdgeCoords, {edgeCoordinateLists, edgeList}];
+  ];
+
   applyCoordinateTransform[coordinateTransformFunction];
 
   If[CoordinateMatrixQ[vertexCoordinates, 3] && layoutDimension == 2,
@@ -761,6 +923,12 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
   ];
 
   {ToPackedReal @ vertexCoordinates, ToPackedRealArrays @ edgeCoordinateLists}
+];
+
+orientEdgeCoords[coords_, _DirectedEdge] := coords;
+orientEdgeCoords[coords_, ue:UndirectedEdge[a_, b_, rest___]] := If[
+  Norm[First[coords] - Part[vertexCoordinates, vertexIndex @ a]] < 0.001,
+  coords, Reverse @ coords
 ];
 
 captureVertexCoordinates[coords_, vertex_, _] :=
@@ -792,7 +960,7 @@ applyCoordinateTransform[ProjectionOnto[shape_]] := Block[{$rnf},
 
 projectLineOntoRNF = MatchValues[
   {a_, b_} ? CoordinateMatrixQ /; (Head[$rnf] === RegionNearestFunction) :=
-    $rnf @ Interpolated[a, b, 6];
+    $rnf @ Range[a, b, Into @ 6];
   points_List ? CoordinateMatrixQ :=
     $rnf @ points;
   points_List := Print[points]; (* projectLineOntoRNF /@ points; *)

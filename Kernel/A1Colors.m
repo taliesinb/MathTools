@@ -10,7 +10,7 @@ PackageExport["$ColorPattern"]
 $ColorPattern = _RGBColor | _GrayLevel | _CMYKColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor;
 
 SetUsage @ "
-$ColorPattern is a pattern that matches a valid color, like RGBColor[$$] etc.
+$ColorPattern is a pattern that matches a valid color, like %RGBColor[$$] etc.
 "
 
 (**************************************************************************************************)
@@ -30,6 +30,20 @@ SetColorOpacity[expr_, None] :=
 
 SetColorOpacity[expr_, opacity_] :=
   expr /. $setColorOpacityRules /. ($opacity -> opacity)
+
+(**************************************************************************************************)
+
+PackageExport["RemoveColorOpacity"]
+
+$removeColorOpacityRules = Dispatch[{
+  RGBColor[r_, g_, b_, _] :> RGBColor[r, g, b],
+  RGBColor[{r_, g_, b_, _}] :> RGBColor[r, g, b],
+  GrayLevel[g_, _] :> GrayLevel[g],
+  c:(_Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Length[c] === 4 :> Take[c, 3]
+}];
+
+RemoveColorOpacity[expr_] :=
+  expr /. $removeColorOpacityRules;
 
 (**************************************************************************************************)
 
@@ -54,7 +68,7 @@ $opacityRule = Alternatives[
   LCHColor[_, _, _, o_], LUVColor[_, _, _, o_]
 ] :> o;
 
-ExtractFirstOpacity[expr_] := FirstCase[expr, $opacityRule, None, {0, Infinity}];
+ExtractFirstOpacity[expr_] := FirstCase[expr /. $opacityNormalizationRules, $opacityRule, None, {0, Infinity}];
 
 (**************************************************************************************************)
 
@@ -99,12 +113,14 @@ toGlobalColorName[color_, {Key @ palette_, Key @ variant_, Key @ suffix_}] :=
 $ExtendedColors = <||>;
 ScanIndexed[toGlobalColorName, $ExtendedColorsGrouped, {3}];
 
+$ExtendedColorNames = Keys @ $ExtendedColorsGrouped;
+
 (**************************************************************************************************)
 
 PackageExport["OklabColor"]
 
 SetUsage @ "
-OklabColor[l$, a$, b$] returns an RGBColor[$$] corresponding to the given color in the OkLAB colorspace.
+OklabColor[l$, a$, b$] returns an %RGBColor[$$] corresponding to the given color in the OkLAB colorspace.
 "
 
 DeclareArgumentCount[OklabColor, 3];
@@ -263,15 +279,19 @@ PackageExport["$LightGray"]
 
 PackageExport["Paletted"]
 
+PackageScope["$paletteUsageString"]
+
 $paletteUsageString = StringTrim @ "
 * palette$ can be an one of the following:
 | Automatic | the default color palette |
 | 'Light', 'Dark' | a lighter or darker version of the default palette |
-| {spec$, 'Light'} | a lighter version of spec$ |
-| {spec$, 'Dark'} | a darker version of spec$ |
+| spec$ -> 'Light' | a lighter version of spec$ |
+| spec$ -> 'Dark' | a darker version of spec$ |
 | {c$1, c$2, $$} | an explicit list of colors |
+| %Offset[spec$, n$] | a rotated version of spec$ |
+| %Opacity[o$, spec$] | spec$ with opacity set to o$ |
 | 'Basic', 'Cool', 'Subdued' | a named palette |
-| {'set$', 'variant$'} | a lightness variant of 'set$' |
+| 'set$' -> 'variant$' | a lightness variant of 'set$' |
 * Lightness variants are 'VeryLight', 'Light', 'Medium', 'Dark'.
 ";
 
@@ -291,16 +311,19 @@ ToColorPalette[palette$, n$] returns exactly n$ colors from the palette.
 <*$paletteUsageString*>
 "
 
+$ecnp = Alternatives @@ $ExtendedColorNames;
+
 ToColorPalette = MatchValues[
   Automatic | "Medium"          := $MediumColorPalette;
   "Light"                       := $LightColorPalette;
   "Dark"                        := $DarkColorPalette;
-  {spec_, "Light"}              := OklabLighter @ % @ spec;
-  {spec_, "Dark"}               := OklabDarker @ % @ spec;
-  set_String                    := getNamedColorSet[set, "Medium"];
-  {set_String, variant_String}  := getNamedColorSet[set, variant];
+  spec_ -> "Light"              := OklabLighter @ % @ spec;
+  spec_ -> "Dark"               := OklabDarker @ % @ spec;
+  set:$ecnp                     := getNamedColorSet[set, "Medium"];
+  set:$ecnp -> variant_String   := getNamedColorSet[set, variant];
   list_List ? ColorVectorQ      := list /. $colorNormalizationRules;
   Offset[spec_, n_Integer]      := RotateLeft[% @ spec, n];
+  Opacity[o_, spec_]            := SetColorOpacity[% @ spec, N @ o];
   _                             := $Failed
 ];
 
@@ -338,8 +361,8 @@ in the range [v$1, v$n] and interpolate a corresponding color based on the match
 c$1 to c$n.
 ContinuousColorFunction[{v$1 -> c$1, $$, v$n -> c$n}] and ContinuousColorFunction[vlist$ -> clist$] are also supported.
 * Colors are blended in the OkLAB colorspace.
-* ContinuousColorFunction returns a ColorFunctinoObject[$$].
-* The option Ticks determines how ticks will be drawn, and accepts these options:
+* ContinuousColorFunction returns a %ColorFunctionObject[$$].
+* The option %Ticks determines how ticks will be drawn, and accepts these options:
 | n$ | choose n$ evenly-spaced ticks |
 | All | place a tick at every value |
 | Automatic | choose ticks automatically |
@@ -400,9 +423,10 @@ ContinuousColorFunction[values_, colors_, OptionsPattern[]] := Scope[
 PackageExport["DiscreteColorFunction"]
 
 SetUsage @ "
-DiscreteColorFunction[{v$1, $$, v$n}, {c$1, $$, c$n}] returns a ColorFunctionObject that takes a value \
+DiscreteColorFunction[{v$1, $$, v$n}, {c$1, $$, c$n}] returns a %ColorFunctionObject that takes a value \
 in the set v$i and returns a corresponding color c$i.
-DiscreteColorFunction[{v$1 -> c$1, $$, v$n -> c$n}] and DiscreteColorFunction[vlist$ -> clist$] are also supported.
+DiscreteColorFunction[{v$1 -> c$1, $$, v$n -> c$n}] works as above.
+DiscreteColorFunction[vlist$ -> clist$] works as above.
 "
 
 DeclareArgumentCount[DiscreteColorFunction, {1, 2}];
@@ -499,10 +523,13 @@ formatColorFunction[ColorFunctionObject["Linear", values_, func_, ticks_]] := Sc
   Row[{graphics, "  ", "(", min, " to ", max, ")"}, BaseStyle -> {FontFamily -> "Avenir"}]
 ]
 
-formatColorFunction[ColorFunctionObject["Discrete", assoc_]] :=
+formatColorFunction[ColorFunctionObject["Discrete", assoc_Association]] :=
   Apply[AngleBracket,
     KeyValueMap[{val, color} |-> (val -> simpleColorSquare[color]), assoc]
   ];
+
+formatColorFunction[ColorFunctionObject["Discrete", Identity]] :=
+  "ColorFunctionObject"["Discrete", Identity];
 
 declareFormatting[
   LegendForm[cf_ColorFunctionObject ? System`Private`HoldNoEntryQ] :>
@@ -510,7 +537,14 @@ declareFormatting[
 ];
 
 $colorLegendHeight = 100; $colorLegendWidth = 5;
-colorFunctionLegend[ColorFunctionObject["Linear", values_, func_, ticks_]] := Scope[
+colorFunctionLegend[ColorFunctionObject["Linear", values_, func_, ticks_]] :=
+  ContinuousColorLegend[values, func, ticks];
+
+(**************************************************************************************************)
+
+PackageExport["ContinuousColorLegend"]
+
+ContinuousColorLegend[values_, func_, ticks_] := Scope[
   raster = makeGradientRaster[values, func, $colorLegendHeight - 2, True];
   {min, max} = MinMax[values];
   includeSign = min < 0 && max > 0;
@@ -667,16 +701,25 @@ niceDecimalString[n_] := Which[
 trimPoint[str_] := StringTrim[str, "." ~~ EndOfString];
 addPlus[str_] := "+" <> str;
 
-colorFunctionLegend[ColorFunctionObject["Discrete", assoc_]] :=
+(**************************************************************************************************)
+
+colorFunctionLegend[ColorFunctionObject["Discrete", Identity]] := "";
+
+colorFunctionLegend[ColorFunctionObject["Discrete", assoc_Association]] :=
+  DiscreteColorLegend[assoc];
+
+PackageExport["DiscreteColorLegend"]
+
+DiscreteColorLegend[assoc_] :=
   Grid[
     KeyValueMap[{val, color} |-> {"", simpleColorSquare @ color, val}, assoc],
     Spacings -> {{0., {0.6}, 5}, {{0.5}}},
     BaseStyle -> $LegendLabelStyle
-  ]
+  ];
 
 simpleColorSquare[color_] := Graphics[
   {color, EdgeForm[Darker[color, .08]], Rectangle[]},
-  ImageSize -> 9, BaselinePosition -> Scaled[-0.02]
+  ImageSize -> 9, BaselinePosition -> Scaled[0.05]
 ];
 
 (**************************************************************************************************)
@@ -767,8 +810,8 @@ ApplyColoring[list$] determines an automatic coloring for items of list, returni
 {groups$, cfunc$}, where groups$ is an association from colors to positions of list$ at \
 which they occur, and cfunc$ is a color function that can be applied to new values.
 ApplyColoring[list$, palette$] uses a palette specification to choose colors.
-* See ToColorPalette for allowed settings of palette$ (the default used here is 'Basic'.
-* cfunc$ will be either a ContinuousColorFunction or a DiscreteColorFunction.
+* See %ToColorPalette for allowed settings of palette$ (the default used is 'Basic').
+* cfunc$ will be either a %ContinuousColorFunction or a %DiscreteColorFunction.
 "
 
 ApplyColoring::badpalette = "The palette `` was not a valid form."
@@ -779,6 +822,7 @@ coloringColorPalette = MatchValues[
 ];
 
 ApplyColoring[data_List, palette_:Automatic] := Scope[
+  If[ColorVectorQ[data], Return @ literalColorFunction[data]];
   $ColorPalette = coloringColorPalette[palette];
   If[FailureQ[$ColorPalette], ReturnFailed["badpalette", palette]];
   posIndex = KeySort @ PositionIndex @ data;
@@ -804,5 +848,14 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   colors = Map[normalFunction, uniqueValues];
   colorsValues = Transpose[{colors, uniqueValues}];
   {Merge[MapThread[Rule, {colorsValues, Values @ posIndex}], Catenate], colorFunction}
+];
+
+literalColorFunction[colors_] := Scope[
+  colorIndex = PositionIndex @ colors;
+  colors = Keys @ colorIndex;
+  colorFunction = System`Private`ConstructNoEntry[
+    ColorFunctionObject, "Discrete", Identity
+  ];
+  {KeyMap[{#, #}&, colorIndex], colorFunction}
 ];
 

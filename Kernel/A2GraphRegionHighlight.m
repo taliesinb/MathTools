@@ -34,6 +34,7 @@ GraphRegionHighlightGraphics[graph_, regionSpec_] := Scope[
 
   GraphPlotScope[graph,
     {graphics, padding} = resolveGraphRegionHighlightGraphics @ regionSpec;
+    graphics = Part[graphics, All, 2];
     plotRange = $GraphPlotRange
   ];
 
@@ -44,66 +45,161 @@ GraphRegionHighlightGraphics[graph_, regionSpec_] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["resolveGraphRegionHighlightGraphics"]
-
-resolveGraphRegionHighlightGraphics[None | {}] :=
-  {{}, 0};
-
-resolveGraphRegionHighlightGraphics[elem_] :=
-  resolveGraphRegionHighlightGraphics[{elem}];
-
-resolveGraphRegionHighlightGraphics[list_List] := Scope[
-  $baseHighlightStyle = toDirective @ $GraphHighlightStyle;
-  $requiredPadding = 0;
-  SetAutomatic[$baseHighlightStyle, $defaultBaseHighlightStyle];
-  $highlightOpacity = ExtractFirstOpacity[$baseHighlightStyle];
-  SetNone[$highlightOpacity, 0.5];
-  $highlightRadius = $GraphMaxSafeVertexSize * 0.8;
-  $pointSize = $highlightRadius / First[$GraphPlotSize];
-  $roundingRadius = 1.0;
-  CollectTo[{$highlightsBag}, Scan[processHighlightSpec, list]];
-  {$highlightsBag, $requiredPadding}
-];
-
-(* what are the inherited options? *)
-
-(* HighlightStyle gives the style of highlighting. *)
-(* HighlightElements can be vertices or Edges *)
-(* GraphMetric can override the graph's builtin metric *)
-
 (********************************************)
 (** highlight processing code              **)
 (********************************************)
 
+PackageScope["resolveGraphRegionHighlightGraphics"]
+
+resolveGraphRegionHighlightGraphics[None | {} | <||>] :=
+  {{}, None, 0};
+
+resolveGraphRegionHighlightGraphics[spec_] := Scope[
+
+  $highlightStyle = $GraphHighlightStyle;
+
+  (* GraphHighlightStyle -> Opacity[o] will still use the default color palette but control it's opacity *)
+  $defaultOpacity = If[!MatchQ[$highlightStyle, $opacityPattern], 0.5,
+    $highlightStyle = Automatic; ExtractFirstOpacity[$highlightStyle]];
+
+  (* toMultiDirective will interpret palette specs passed to GraphHighlightStyle, which will
+  turn into lists. it will also map over lists and associations to control lists or associations of regions *)
+  $highlightStyle = toMultiDirective @ Replace[$highlightStyle, Automatic -> Offset["Dark", 2]];
+
+  (* if no opacity was specified, use the default opacity *)
+  $highlightOpacity = ExtractFirstOpacity[$highlightStyle];
+  SetNone[$highlightOpacity,
+    $highlightStyle = SetColorOpacity[$highlightStyle, $defaultOpacity]; $defaultOpacity];
+
+  $plotWidth = First[$GraphPlotSize];
+  $highlightRadius = $GraphMaxSafeVertexSize;
+  $pointSize = $highlightRadius / $plotWidth;
+  $radiusScaling = 0.5;
+
+  $zorder = 1;
+  $requiredPadding = 0;
+  $pathStyle = "Line";
+  $arrowheadPosition = 1.0;
+  $arrowheadSize = 1;
+  $edgeSetback = 1.5;
+  $pathWinding = True;
+
+  $colorPalette = ToColorPalette[Automatic];
+  CollectTo[{$highlightsBag, $legendsBag}, processOuterSpec[spec]];
+  legend = If[$legendsBag === {}, None, DiscreteColorLegend @ Association @ $legendsBag];
+
+  $highlightsBag = Sort[$highlightsBag];
+  {Part[$highlightsBag, All, {1, 3}], legend, $requiredPadding}
+];
+
 requirePadding[p_] := $requiredPadding = Max[$requiredPadding, p];
 requirePaddingPointSize[ps_] := requirePadding[ps / First[$GraphPlotSize] * $GraphPlotImageWidth];
 
-sowHighlight[g_] := Internal`StuffBag[$highlightsBag, g];
+sowHighlight[g_] := Internal`StuffBag[$highlightsBag, {$zorder, Internal`BagLength[$highlightsBag], g}];
 
-$highlightOpacity = 0.5;
-$defaultBaseHighlightStyle := $defaultBaseHighlightStyle = Opacity[0.5, $DarkGreen];
+sowLegend[name_, color_] := Internal`StuffBag[$legendsBag, name -> color];
 
-$customHighlightedOptions = {
-  Background -> Automatic,
-  PerformanceGoal -> "Quality",
-  RoundingRadius -> 1
-};
+(**************************************************************************************************)
 
-Options[HighlightOptionsObject] = $customHighlightedOptions;
+processOuterSpec = MatchValues[
+  spec_ ? Developer`ListOrAssociationQ :=
+    If[!Developer`ListOrAssociationQ[spec],
+      Scan[processGeneralSpec, spec],
+      $i = 1; MapIndexed[processIndexedStyleSpec, spec]
+    ];
+  (* this applies styles before iterating over a list or associatino *)
+  s_Style :=
+    processStyleSpec[s, processOuterSpec];
+  other_ :=
+    If[Developer`ListOrAssociationQ[$highlightStyle],
+      Block[
+        {$highlightStyle = First @ $highlightStyle},
+        processGeneralSpec[other];
+      ],
+      processGeneralSpec[other];
+    ];
+];
+
+GraphRegionHighlight::missspecstyle = "Cannot find a style to use for spec part ``.";
+
+processIndexedStyleSpec[spec_, {part_}] := Block[
+  {i = If[ListQ[$highlightStyle], $i++, part]},
+  Block[{$highlightStyle = Quiet @ Check[Part[$highlightStyle, i], $Failed]},
+    If[FailureQ[$highlightStyle],
+      Message[GraphRegionHighlight::missspecstyle, part],
+      processGeneralSpec @ If[Head[part] === Key, Legended[spec, First @ part], spec];
+    ];
+  ];
+];
+
+(**************************************************************************************************)
+
+PackageExport["ZOrder"]
+
+SetUsage @ "
+ZOrder is an option that controls how graphical elements are sorted from back to front.
+"
+
+(**************************************************************************************************)
+
+PackageExport["PathStyle"]
+
+SetUsage @ "
+PathStyle is an option that controls how paths are rendered in highlights.
+"
+
+(**************************************************************************************************)
 
 GraphRegionHighlight::badelem = "Unknown highlight element ``.";
 
-processHighlightSpec[other_] := Message[GraphRegionHighlight::badelem, Shallow[other]];
+PackageExport["HighlightRadius"]
 
-processHighlightSpec[Framed] :=
-  sowHighlight @ {EdgeForm[{Red, Dashed}], FaceForm[None], Rectangle @@ (Transpose @ $GraphPlotRange)}
+SetUsage @ "
+HighlightRadius is an option that controls the radius of highlighting.
+"
 
-processHighlightSpec[Axes -> spec:(All|_Integer|{__Integer})] := Scope[
+PackageExport["EdgeSetback"]
+
+SetUsage @ "
+EdgeSetback is an option that controls how far an edge should be set back from final vertex.
+"
+
+
+processGeneralSpec = MatchValues[
+  Legended[Style[spec_, opts__], label_] :=
+    % @ Style[Legended[spec, label], opts];
+  Legended[spec_, label_] := (
+    % @ spec;
+    sowLegend[label, $highlightStyle];
+  );
+  Axes -> spec_ :=
+    processAxesSpec @ spec;
+  spec_Style :=
+    processStyleSpec[spec, %];
+  Labeled[spec_, _] :=
+    % @ spec;
+  region_ ? GraphRegionElementQ :=
+    resolveHighlightSpec @ region;
+  Arrow[spec_List] /; VectorQ[spec, validVertexQ] :=
+    resolveHighlightSpec @ Arrow @ Line @ spec;
+  Arrow[spec_] := (
+    $pathStyle = "Arrow"; % @ spec;
+  );
+  Null := Null;
+  list_List :=
+    Scan[processGeneralSpec, list];
+  other_ :=
+    Message[GraphRegionHighlight::badelem, Shallow[other]];
+];
+
+(**************************************************************************************************)
+
+processAxesSpec[(All|_Integer|{__Integer})] := Scope[
   colors = LookupCardinalColors[$Graph];
   KeyValueMap[axisHighlight, Part[colors, If[IntegerQ[spec], {spec}, spec]]]
 ];
 
-processHighlightSpec[Axes -> spec_] := Scope[
+processAxesSpec[Axes -> spec_] := Scope[
   colors = LookupCardinalColors[$Graph];
   words = Map[parseCardinalWord, Developer`ToList @ spec];
   colors = Association @ Map[#1 -> blendColors[Sort @ Lookup[colors, StripNegated /@ #1]]&, words];
@@ -111,9 +207,9 @@ processHighlightSpec[Axes -> spec_] := Scope[
 ];
 
 axisHighlight[word_, color_] := Scope[
-  path = First @ processRegionSpec @ InfiniteLine[GraphOrigin, word];
+  path = First @ resolveHighlightSpec @ InfiniteLine[GraphOrigin, word];
   If[Length @ DeleteDuplicates @ First @ path <= 2, Return[]];
-  processHighlightSpec @ Highlighted[path, color];
+  processHighlightSpec @ Style[path, color];
 ];
 
 blendColors[{$Blue, $Red}] := $Pink;
@@ -121,34 +217,104 @@ blendColors[{$Blue, $Green}] := $Teal;
 blendColors[{$Green, $Red}] := $Orange;
 blendColors[colors_] := OklabBlend[colors];
 
-processHighlightSpec[expr_ ? GraphRegionElementQ] :=
-  processHighlightSpec @ Highlighted @ expr;
+(**************************************************************************************************)
 
-processHighlightSpec[Highlighted[elems_, style:$ColorPattern:Automatic, opts:OptionsPattern[]]] := Block[
-  {regions = processRegionSpec @ elems,
-   $perfGoal = OptionValue[HighlightOptionsObject, {opts}, PerformanceGoal],
-   $highlightStyle = toDirective @ style,
-   $roundingRadius = Replace[
-    OptionValue[HighlightOptionsObject, {opts}, RoundingRadius],
-    Automatic -> $roundingRadius
-  ]},
-  SetAutomatic[$highlightStyle, $baseHighlightStyle];
-  $highlightStyle = SetColorOpacity[$highlightStyle, $highlightOpacity];
-  Scan[highlightIndividualRegion, regions];
+GraphRegionHighlight::badstylespec = "Unknown style specification ``.";
+
+processStyleSpec[spec_, f_] := Scope[
+  $innerFunc =f ;
+  iProcessStyleSpec @ spec
 ];
 
-highlightIndividualRegion[GraphRegionData[vertices_, edges_]] := Scope[
+
+Style;
+SyntaxInformation[Style];
+Options[Style];
+
+$additionalStyleOptions = {PerformanceGoal, PathStyle, ArrowheadPosition, ArrowheadSize, HighlightRadius, EdgeSetback};
+Unprotect[Style];
+SyntaxInformation[Style] = ReplaceOptions[
+  SyntaxInformation[Style],
+  "OptionNames" -> Union[Keys @ Options @ Style, SymbolName /@ $additionalStyleOptions]
+];
+Protect[Style];
+
+iProcessStyleSpec = MatchValues[
+  Style[most__, style:$ColorPattern] := Block[
+    {$highlightStyle = SetColorOpacity[RemoveColorOpacity @ style, $highlightOpacity]},
+    % @ Style @ most
+  ];
+  Style[most__, PerformanceGoal -> goal_] := Scope[
+    $perfGoal = goal;
+    % @ Style @ most
+  ];
+  Style[most__, PathStyle -> style_] := Scope[
+    $pathStyle = style;
+    % @ Style @ most
+  ];
+  Style[most__, ArrowheadPosition -> pos_] := Scope[
+    $arrowheadPosition = N[pos];
+    % @ Style @ most
+  ];
+  Style[most__, ArrowheadSize -> sz_] := Scope[
+    $arrowheadSize = sz;
+    % @ Style @ most
+  ];
+  Style[most__, HighlightRadius -> r_] := Scope[
+    $radiusScaling = r;
+    % @ Style @ most
+  ];
+  Style[most__, EdgeSetback -> r_] := Scope[
+    $edgeSetback = r;
+    % @ Style @ most
+  ];
+  Style[most__, "Background"] :=
+    % @ Style[most, Opaque, ZOrder -> -10];
+  Style[most__, "Foreground"] :=
+    % @ Style[most, Opaque, ZOrder -> 10];
+  Style[most__, ZOrder -> z_Integer] := Scope[
+    $zorder = z;
+    % @ Style @ most
+  ];
+  Style[most__, o:$opacityPattern] := Block[
+    {$highlightOpacity = ExtractFirstOpacity[o]}, Block[
+    {$highlightStyle = SetColorOpacity[RemoveColorOpacity @ $highlightStyle, $highlightOpacity]},
+    % @ Style @ most
+  ]];
+  Style[elem_] :=
+    $innerFunc[elem];
+  Style[__, remaining_] :=
+    Message[GraphRegionHighlight::badstylespec, remaining];
+];
+
+(**************************************************************************************************)
+
+resolveHighlightSpec[region_] := Scope[
+  results = Developer`ToList @ processRegionSpec @ region;
+  Scan[highlightRegion, results]
+];
+
+GraphRegionHighlight::interror = "Internal error: couldn't highlight `` data.";
+
+highlightRegion[other_] := (
+  Message[GraphRegionHighlight::interror, other];
+);
+
+highlightRegion[GraphRegionData[vertices_, edges_]] := Scope[
   If[$perfGoal === "Speed",
-    Return @ highlightIndividualRegion @ GraphRegionData[vertices, {}]];
-  graphics = subgraphCoveringGraphics[$roundingRadius * $highlightRadius, vertices, edges, $IndexGraphEdgeList, $GraphVertexCoordinates, $GraphEdgeCoordinateLists];
+    Return @ highlightRegion @ GraphRegionData[vertices, {}]];
+  graphics = subgraphCoveringGraphics[
+    $highlightRadius * $radiusScaling / 3, vertices, edges,
+    $IndexGraphEdgeList, $GraphVertexCoordinates, $GraphEdgeCoordinateLists
+  ];
   sowHighlight[{$highlightStyle, graphics}];
 ];
 
-highlightIndividualRegion[GraphRegionData[vertices_, {}]] :=
+highlightRegion[GraphRegionData[vertices_, {}]] :=
   sowVertexPoints @ vertices;
 
 sowVertexPoints[vertices_] := Scope[
-  pointSize = $roundingRadius * $pointSize * 0.5;
+  pointSize = $radiusScaling * $pointSize * 1;
   requirePaddingPointSize[pointSize];
   sowHighlight @ {
     $highlightStyle,
@@ -157,53 +323,133 @@ sowVertexPoints[vertices_] := Scope[
   }
 ];
 
-highlightIndividualRegion[GraphPathData[vertices_, {}, {}]] :=
+highlightRegion[GraphPathData[vertices_, {}, {}]] :=
   sowVertexPoints @ vertices;
 
-highlightIndividualRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
-  edgeCoords = Part[$GraphEdgeCoordinateLists, edges];
+$currentRegionAnnotations = <||>;
+highlightRegion[GraphRegionAnnotation[data_, anno_]] := Scope[
+  $currentRegionAnnotations = anno;
+  highlightRegion @ data;
+]
+
+highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
+  segments = Part[$GraphEdgeCoordinateLists, edges];
+  numSegments = Length @ segments;
+  thickness = $radiusScaling * $pointSize / 2;
+  thicknessRange = thickness * $plotWidth;
+  If[negations =!= {}, segments //= MapAt[Reverse, List /@ negations]];
+  shortenings = Lookup[$currentRegionAnnotations, PathOffset, {}];
+  shortenings //= Map[processShortenings] /* Association;
+  lastIsShortened = KeyExistsQ[shortenings, numSegments] && !StringQ[shortenings[numSegments]];
+  segments = joinSegments[segments, shortenings];
+  doArrow = MatchQ[$pathStyle, "Arrow" | "DiskArrow"];
   pathPrimitives = If[$GraphIs3D,
-    Tube[makeTube @ edgeCoords, $highlightRadius * 0.15]
+    Tube[segments, thickness / 5]
   ,
-    If[negations =!= {}, edgeCoords //= MapAt[Reverse, List /@ negations]];
-    JoinedCurve[Line /@ edgeCoords]
+    curve = JoinedCurve[Line @ segments];
+    If[doArrow,
+      arrowheads = Arrowheads @ List @ List[
+        thickness, $arrowheadPosition,
+        makeHighlightArrowheadShape[
+          Directive[Opacity @ $highlightOpacity, JoinForm @ "Miter", CapForm @ "Round"], 5
+        ]
+      ];
+      disk = If[$pathStyle === "DiskArrow", Disk[Part[$GraphVertexCoordinates, First @ vertices], $highlightRadius/4], Nothing];
+      capForm = CapForm @ If[$arrowheadPosition == 1, None, "Round"];
+      arrow = If[!lastIsShortened, Arrow[curve, {0, $edgeSetback * thicknessRange}], Arrow[curve]];
+      {disk, arrowheads, arrow}
+    ,
+      curve
+    ]
   ];
-  thickness = $roundingRadius * 0.75 * $pointSize;
-  requirePaddingPointSize[2 * thickness];
+  zrequirePaddingPointSize[2 * thickness * If[doArrow, 1.8, 1]];
   sowHighlight @ {
     If[$GraphIs3D && $highlightOpacity < 0.9, FaceForm[$highlightStyle, None], $highlightStyle],
-    JoinForm["Round"], CapForm["Round"],
-    Thickness[thickness],
+    JoinForm @ "Round", CapForm @ "Round",
+    Thickness @ thickness,
     pathPrimitives
   };
 ];
 
-makeTube[list_] := Scope[
-  n = Length[list];
-  line = Part[list, 1];
-  Do[
-    segment = Part[list, i];
-    lineLast = Last @ line; lineFirst = First @ line;
-    segmentLast = Last @ segment; segmentFirst = First @ segment;
-    Which[
-      approxEqual[lineLast, segmentFirst],
-        line = Join[line, Rest @ segment],
-      approxEqual[lineLast, segmentLast],
-        line = Join[line, Reverse @ Most @ segment],
-      approxEqual[lineFirst, segmentLast],
-        line = Join[Most @ segment, line],
-      approxEqual[lineFirst, segmentFirst],
-        line = Join[Reverse @ Rest @ segment, line],
-      True,
-        Print["OOPS: ", "Last: ", segmentLast, lineLast, " FIRST: ", segmentFirst, lineFirst];
-    ],
-    {i, 2, n}
+joinSegments[segments_, shortenings_] := Scope[
+  numSegments = Length @ segments;
+  $offsetVector = 0; isLast = False;
+  line = Internal`Bag[
+    applyOffsetToSegment[Part[segments, 1], Lookup[shortenings, 1, 0]]
   ];
-  line
+  Do[
+    isLast = i == numSegments;
+    segment = PlusVector[$offsetVector] @ Part[segments, i];
+    segment = Rest @ applyOffsetToSegment[segment, Lookup[shortenings, i, 0]];
+    Internal`StuffBag[line, segment, 1],
+    {i, 2, numSegments}
+  ];
+  Internal`BagPart[line, All]
 ];
 
-approxEqual[a_, b_] := EuclideanDistance[a, b] < 1*^-4;
+GraphRegionHighlight::badshortening = "PathOffset spec `` is invalid.";
 
+processShortenings = MatchValues[
+  z_Integer := modLen[z] -> -1;
+  z_Integer -> m_Integer := modLen[z] -> m;
+  z_Integer -> Scaled[n_] := modLen[z] -> Scaled[n];
+  z_Integer -> "Bend" := Splice[{z -> "BendOut", z+1 -> "BendIn"}];
+  other_ := (Message[GraphRegionHighlight::badshortening, other]; {})
+];
+
+modLen[z_] := Mod[z, numSegments + 1, 1];
+
+applyOffsetToSegment[segment_, 0] := segment;
+applyOffsetToSegment[segment_, offset_] := Scope[
+  {first, last} = FirstLast @ segment;
+  translated = PlusVector[segment, -first];
+  dist = EuclideanDistance[first, last];
+  newSegment = Match[offset,
+    Scaled[n_]:> scaleSegment[translated, n],
+    "BendOut" :> bendOutSegment[translated],
+    "BendIn" :> bendInSegment[translated],
+    n_ ? Positive :> extendSegment[translated, n],
+    n_ ? Negative :> truncateSegment[translated, n]
+  ];
+  newSegment //= PlusVector[first];
+  If[!StringQ[offset], $offsetVector += Last[newSegment] - last];
+  newSegment
+];
+
+bendOutSegment[coords_] := Scope[
+  truncatedCoords = Most @ truncateSegment[coords, 2];
+  $bendPoint ^= Last @ truncatedCoords;
+  truncatedCoords
+];
+
+bendInSegment[coords_] := Scope[
+  truncatedCoords = Rest @ Reverse @ truncateSegment[Reverse @ coords, 2];
+  {a, b, c} = {$bendPoint, First @ coords, First @ truncatedCoords};
+  mid1 = Mean[{a, a, b, b, c}];
+  mid2 = Mean[{a, a, b, b, b, c, c}];
+  mid3 = Mean[{a, b, b, c, c}];
+  (* the first is a dummy that will be dropped by the Rest in joinSegments *)
+  Join[{{0, 0}, mid1, mid2, mid3}, truncatedCoords]
+];
+
+scaleSegment[coords_, n_] := Scope[
+  margin = n * thicknessRange * If[isLast, 2, 1.5];
+  scaling = (dist + margin) / dist;
+  offset * scaling
+];
+
+finalDelta[coords_, n_] := Normalize[Last @ coords] * thicknessRange * n;
+
+extendSegment[coords_, n_] := Scope[
+  delta = finalDelta[coords, n];
+  MapAt[PlusOperator[delta], coords, -1]
+];
+
+truncateSegment[coords_, n_] := Scope[
+  final = Last[coords] + finalDelta[coords, n];
+  coords = DropWhile[Reverse @ coords, EuclideanDistance[#, final] < thicknessRange * n&];
+  Append[Reverse @ coords, final]
+];
 
 (**************************************************************************************************)
 
