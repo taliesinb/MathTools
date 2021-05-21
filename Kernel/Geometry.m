@@ -94,7 +94,7 @@ TorusInterpolated[spec_, v1_, v2_] := Scope[
   {theta2, phi2} = TorusAngles[spec, v2];
   thetas = AngleRange[theta1, theta2, Into @ 8];
   phis = AngleRange[phi1, phi2, Into @ 8];
-  If[EuclideanDistance[v1, v2] > 1.8, Capture[zTorusInterpolated[spec, v1, v2]]];
+  (* If[EuclideanDistance[v1, v2] > 1.8, Capture[zTorusInterpolated[spec, v1, v2]]]; *)
   TorusVector[spec] /@ Transpose[{thetas, phis}]
 ]
 

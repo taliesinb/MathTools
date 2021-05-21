@@ -231,8 +231,10 @@ interceptedGraphConstructor[e_] := e;
 (**************************************************************************************************)
 
 $arrowheadSizePattern = Alternatives[
-  _ ? NumericQ, Scaled[_ ? NumericQ],
-  sym_Symbol /; KeyExistsQ[$ImageWidthTable, sym],
+  _ ? NumericQ,
+  $SymbolicSizePattern,
+  Scaled[(_ ? NumericQ) | $SymbolicSizePattern],
+  PointSize[_ ? NumericQ],
   _Association,
   Automatic | None
 ];
@@ -892,7 +894,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     edgeCaptureFunction = storeEdgeCoords;
   ];
 
-  If[isMulti || !DuplicateFreeQ[edgeList],
+  If[isMulti || !DuplicateFreeQ[edgeList] && FreeQ[graphLayout, "MultiEdgeDistance"],
     graphLayout = Developer`ToList[graphLayout, "MultiEdgeDistance" -> 0.3];
   ];
 
@@ -943,13 +945,20 @@ storeMultiEdgeCoords[coords_, edge_] :=
 (**************************************************************************************************)
 
 ExtendedGraphPlot::badwrappedshape = "CoordinateTransformFunction -> ProjectionOnto[...] contains an invalid shape.";
-ExtendedGraphPlot::badedgeshape = "CoordinateTransformFunction -> `` is not a valid specification.";
+ExtendedGraphPlot::badcoordtrans = "CoordinateTransformFunction -> `` issued messages on application.";
 
 applyCoordinateTransform[Automatic|None] :=
   Null
 
-applyCoordinateTransform[spec_] :=
-  Message[ExtendedGraphPlot::badedgeshape, spec];
+applyCoordinateTransform[f_] := Block[{res},
+  res = Check[
+    vertexCoordinates = Map[f, vertexCoordinates];
+    edgeCoordinateLists = Map[f, edgeCoordinateLists, {-2}];,
+    $Failed
+  ];
+  If[FailureQ[res], Message[ExtendedGraphPlot::badcoordtrans, f]];
+];
+
 
 applyCoordinateTransform[ProjectionOnto[shape_]] := Block[{$rnf},
   $rnf = BoundaryProjection @ shape;
@@ -960,7 +969,7 @@ applyCoordinateTransform[ProjectionOnto[shape_]] := Block[{$rnf},
 
 projectLineOntoRNF = MatchValues[
   {a_, b_} ? CoordinateMatrixQ /; (Head[$rnf] === RegionNearestFunction) :=
-    $rnf @ Range[a, b, Into @ 6];
+    $rnf @ Interpolated[a, b, 6];
   points_List ? CoordinateMatrixQ :=
     $rnf @ points;
   points_List := Print[points]; (* projectLineOntoRNF /@ points; *)

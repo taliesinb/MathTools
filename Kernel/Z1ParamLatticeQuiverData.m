@@ -49,7 +49,7 @@ chooseTorusViewOptions = MatchValues[
   {_, Infinity, _} :=
     ViewOptions -> {ViewPoint -> {0.4, 1.5, 0.2}, ViewProjection -> "Orthographic"};
   _ :=
-    ViewOptions -> {ViewPoint -> {0.4, 1.5, 1.2}, ViewProjection -> "Orthographic"};
+    ViewOptions -> {ViewPoint -> {0.4, 1.5, 0.8}, ViewProjection -> "Orthographic"};
 ];
 
 chooseTorusOptions[spec_] := {

@@ -16,12 +16,18 @@ highlghts$. Any pre-existing highlights are preserved.
 
 DeclareArgumentCount[HighlightGraphRegion, 2];
 
+Options[HighlightGraphRegion] = $simpleGraphOptionRules;
+
 declareSyntaxInfo[HighlightGraphRegion, {_, _, OptionsPattern[]}];
 
-HighlightGraphRegion[graph_, highlights_] := Scope[
+HighlightGraphRegion[graph_, highlights_, opts:OptionsPattern[]] := Scope[
   oldHighlights = AnnotationValue[graph, GraphRegionHighlight];
   oldHighlights = If[FailureQ[oldHighlights], {}, Developer`ToList @ oldHighlights];
-  Annotate[graph, GraphRegionHighlight -> Join[oldHighlights, Developer`ToList @ highlights]]
+  ExtendedGraph[
+    graph,
+    GraphRegionHighlight -> Join[oldHighlights, Developer`ToList @ highlights],
+    opts
+  ]
 ];
 
 (**************************************************************************************************)
@@ -82,7 +88,7 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
   $arrowheadPosition = 1.0;
   $arrowheadSize = 1;
   $edgeSetback = 1.5;
-  $pathWinding = True;
+  $outline = False;
 
   $colorPalette = ToColorPalette[Automatic];
   CollectTo[{$highlightsBag, $legendsBag}, processOuterSpec[spec]];
@@ -98,6 +104,8 @@ requirePaddingPointSize[ps_] := requirePadding[ps / First[$GraphPlotSize] * $Gra
 sowHighlight[g_] := Internal`StuffBag[$highlightsBag, {$zorder, Internal`BagLength[$highlightsBag], g}];
 
 sowLegend[name_, color_] := Internal`StuffBag[$legendsBag, name -> color];
+
+debugGraphic[g_] := Internal`StuffBag[$highlightsBag, {100, 100, {Black, g}}];
 
 (**************************************************************************************************)
 
@@ -194,22 +202,22 @@ processGeneralSpec = MatchValues[
 
 (**************************************************************************************************)
 
-processAxesSpec[(All|_Integer|{__Integer})] := Scope[
+processAxesSpec[spec:(All|_Integer|{__Integer})] := Scope[
   colors = LookupCardinalColors[$Graph];
   KeyValueMap[axisHighlight, Part[colors, If[IntegerQ[spec], {spec}, spec]]]
 ];
 
-processAxesSpec[Axes -> spec_] := Scope[
+processAxesSpec[spec_] := Scope[
   colors = LookupCardinalColors[$Graph];
-  words = Map[parseCardinalWord, Developer`ToList @ spec];
+  words = Map[ParseCardinalWord, Developer`ToList @ spec];
   colors = Association @ Map[#1 -> blendColors[Sort @ Lookup[colors, StripNegated /@ #1]]&, words];
   KeyValueMap[axisHighlight, colors]
 ];
 
 axisHighlight[word_, color_] := Scope[
-  path = First @ resolveHighlightSpec @ InfiniteLine[GraphOrigin, word];
+  path = First @ processRegionSpec @ InfiniteLine[GraphOrigin, word];
   If[Length @ DeleteDuplicates @ First @ path <= 2, Return[]];
-  processHighlightSpec @ Style[path, color];
+  processGeneralSpec @ Style[path, color, HighlightRadius -> 1];
 ];
 
 blendColors[{$Blue, $Red}] := $Pink;
@@ -239,6 +247,7 @@ SyntaxInformation[Style] = ReplaceOptions[
 ];
 Protect[Style];
 
+PackageExport["HighlightOutline"]
 iProcessStyleSpec = MatchValues[
   Style[most__, style:$ColorPattern] := Block[
     {$highlightStyle = SetColorOpacity[RemoveColorOpacity @ style, $highlightOpacity]},
@@ -262,6 +271,10 @@ iProcessStyleSpec = MatchValues[
   ];
   Style[most__, HighlightRadius -> r_] := Scope[
     $radiusScaling = r;
+    % @ Style @ most
+  ];
+  Style[most__, HighlightOutline -> out_] := Scope[
+    $outline = out;
     % @ Style @ most
   ];
   Style[most__, EdgeSetback -> r_] := Scope[
@@ -305,7 +318,7 @@ highlightRegion[GraphRegionData[vertices_, edges_]] := Scope[
     Return @ highlightRegion @ GraphRegionData[vertices, {}]];
   graphics = subgraphCoveringGraphics[
     $highlightRadius * $radiusScaling / 3, vertices, edges,
-    $IndexGraphEdgeList, $GraphVertexCoordinates, $GraphEdgeCoordinateLists
+    $IndexGraphEdgeList, $VertexCoordinates, $EdgeCoordinateLists
   ];
   sowHighlight[{$highlightStyle, graphics}];
 ];
@@ -319,7 +332,7 @@ sowVertexPoints[vertices_] := Scope[
   sowHighlight @ {
     $highlightStyle,
     PointSize[pointSize],
-    Point @ Part[$GraphVertexCoordinates, DeleteDuplicates @ vertices]
+    Point @ Part[$VertexCoordinates, DeleteDuplicates @ vertices]
   }
 ];
 
@@ -333,122 +346,204 @@ highlightRegion[GraphRegionAnnotation[data_, anno_]] := Scope[
 ]
 
 highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
-  segments = Part[$GraphEdgeCoordinateLists, edges];
+
+  segments = Part[$EdgeCoordinateLists, edges];
+  If[negations =!= {},
+    segments //= MapAt[Reverse, List /@ negations]];
   numSegments = Length @ segments;
+
   thickness = $radiusScaling * $pointSize / 2;
   thicknessRange = thickness * $plotWidth;
-  If[negations =!= {}, segments //= MapAt[Reverse, List /@ negations]];
-  shortenings = Lookup[$currentRegionAnnotations, PathOffset, {}];
-  shortenings //= Map[processShortenings] /* Association;
-  lastIsShortened = KeyExistsQ[shortenings, numSegments] && !StringQ[shortenings[numSegments]];
-  segments = joinSegments[segments, shortenings];
+
+  adjustments = parseAdjustments /@ Lookup[$currentRegionAnnotations, PathAdjustments, {}];
+
+  lastIsModified = !MatchQ[Lookup[adjustments, numSegments], _Missing | _String];
+  segments = joinSegments[segments, adjustments];
+
   doArrow = MatchQ[$pathStyle, "Arrow" | "DiskArrow"];
+
+  darkerColor := OklabDarker[RemoveColorOpacity @ $highlightStyle, .1];
+  darkerStyle = If[$highlightOpacity == 1, darkerColor, Nothing];
+  setbackDistance = If[lastIsModified || !doArrow, 0, $edgeSetback * thicknessRange];
+
   pathPrimitives = If[$GraphIs3D,
-    Tube[segments, thickness / 5]
+    Tube[segments, thicknessRange / 2]
   ,
-    curve = JoinedCurve[Line @ segments];
     If[doArrow,
       arrowheads = Arrowheads @ List @ List[
         thickness, $arrowheadPosition,
         makeHighlightArrowheadShape[
-          Directive[Opacity @ $highlightOpacity, JoinForm @ "Miter", CapForm @ "Round"], 5
+          {Opacity @ $highlightOpacity, darkerStyle, JoinForm @ "Miter", CapForm @ "Round"}, 5
         ]
       ];
-      disk = If[$pathStyle === "DiskArrow", Disk[Part[$GraphVertexCoordinates, First @ vertices], $highlightRadius/4], Nothing];
-      capForm = CapForm @ If[$arrowheadPosition == 1, None, "Round"];
-      arrow = If[!lastIsShortened, Arrow[curve, {0, $edgeSetback * thicknessRange}], Arrow[curve]];
-      {disk, arrowheads, arrow}
+      disk = If[$pathStyle === "DiskArrow", Disk[Part[$VertexCoordinates, First @ vertices], $highlightRadius/4], Nothing];
+      arrow = setbackArrow[segments, setbackDistance];
+      initialDot = {darkerStyle, PointSize[thickness * 2], Point @ First @ segments};
+      {disk, arrowheads, arrow, initialDot}
     ,
-      curve
+      setbackLine[segments, setbackDistance]
     ]
   ];
+
+  pathStyle = If[$GraphIs3D && $highlightOpacity < 0.9, FaceForm[$highlightStyle, None], $highlightStyle];
+
+  pathOutline = If[$outline === False, Nothing,
+    outlineColor = If[$outline === True, darkerColor, $outline];
+    {outlineColor, Thickness[thickness * 1.5], Line[segments]}
+  ];
+
   zrequirePaddingPointSize[2 * thickness * If[doArrow, 1.8, 1]];
   sowHighlight @ {
-    If[$GraphIs3D && $highlightOpacity < 0.9, FaceForm[$highlightStyle, None], $highlightStyle],
     JoinForm @ "Round", CapForm @ "Round",
-    Thickness @ thickness,
-    pathPrimitives
+    pathOutline,
+    pathStyle, Thickness @ thickness, pathPrimitives
   };
 ];
 
-joinSegments[segments_, shortenings_] := Scope[
+setbackArrow[{}, _] := {};
+
+setbackArrow[curve_, 0|0.] := Arrow @ curve;
+
+setbackArrow[curve_, d_] := Scope[
+  target = Last @ curve;
+  curve = SetbackCoordinates[curve, {0, d}];
+  If[curve === {}, Return @ {}];
+  last = Last @ curve;
+  Arrow @ Append[curve, last + Normalize[target - last] * 1*^-3]
+];
+
+setbackLine[curve_, 0|0.] := Line @ curve;
+
+setbackLine[curve_, d_] := Line @ SetbackCoordinates[curve, {0, d}];
+
+joinSegments[segments_, adjustments_] := Scope[
   numSegments = Length @ segments;
   $offsetVector = 0; isLast = False;
-  line = Internal`Bag[
-    applyOffsetToSegment[Part[segments, 1], Lookup[shortenings, 1, 0]]
-  ];
+  segments = segments;
+  lineBag = Internal`Bag[];
+  Replace[adjustments, {
+    Rule[{z_, _}, {"Shrink", n_}] :> (Part[segments, z] //= shrinkSegment[n * thicknessRange]),
+    Rule[{z_, _}, {"Short", n_}] :> (Part[segments, {z, z + 1}] //= shortSegment[n * thicknessRange])
+  }, {1}];
   Do[
     isLast = i == numSegments;
     segment = PlusVector[$offsetVector] @ Part[segments, i];
-    segment = Rest @ applyOffsetToSegment[segment, Lookup[shortenings, i, 0]];
-    Internal`StuffBag[line, segment, 1],
-    {i, 2, numSegments}
+    mod = Lookup[adjustments, i, 0];
+    Switch[mod,
+      0,
+        Null,
+      {"Bend", _} /; !isLast,
+        nextSegment = Part[segments, i + 1];
+        {segment, nextSegment} = applyBendBetween[segment, nextSegment, Last @ mod];
+        Part[segments, i + 1] = nextSegment,
+      _ ? Positive,
+        {delta, segment} = extendSegment[segment, mod];
+        $offsetVector += delta,
+      _ ? Negative,
+        {delta, segment} = truncateSegment[segment, Abs @ mod];
+        If[doArrow && isLast,
+          (* this makes sure the arrowhead points at the original target *)
+          AppendTo[segment, PointAlongLine[Last[segment], Part[segments, -1, -1], 1*^-3]]];
+        $offsetVector += delta
+    ];
+    Internal`StuffBag[lineBag, If[i === 1, Identity, Rest] @ segment, 1]
+  ,
+    {i, 1, numSegments}
   ];
-  Internal`BagPart[line, All]
+  Internal`BagPart[lineBag, All]
 ];
 
-GraphRegionHighlight::badshortening = "PathOffset spec `` is invalid.";
+shrinkSegment[d_][segment_] := Scope[
+  {a, b} = FirstLast @ segment;
+  mid = Mean @ segment;
+  a2 = PointAlongLine[a, mid, d];
+  b2 = PointAlongLine[b, mid, d];
+  scaling = EuclideanDistance[mid, a2] / EuclideanDistance[mid, a];
+  translated = PlusVector[segment, -mid];
+  segment = PlusVector[translated * scaling, mid];
+  Join[{a, a2}, segment, {b2, b}]
+];
 
-processShortenings = MatchValues[
+shrinkSegment[{d1_, d2_}][segment_] := Scope[
+  {a, b} = FirstLast @ segment;
+  mid = Mean @ segment;
+  a2 = PointAlongLine[a, mid, d1];
+  b2 = PointAlongLine[b, mid, d2];
+  scaling1 = EuclideanDistance[mid, a2] / EuclideanDistance[mid, a];
+  scaling2 = EuclideanDistance[mid, b2] / EuclideanDistance[mid, b];
+  translated = PlusVector[segment, -mid];
+  segment = MapThread[{t, p} |-> t * p + mid, {
+    translated,
+    Interpolated[scaling1, scaling2, Length @ translated]
+  }];
+  Join[{a, a2}, segment, {b2, b}]
+];
+
+shortSegment[d_][{segmentA_, segmentB_}] := Scope[
+  If[ListQ[d], {d1, d2} = d, d1 = d2 = d];
+  segmentA = SetbackCoordinates[segmentA, {0, d1}];
+  segmentB = SetbackCoordinates[segmentB, {d2, 0}];
+  AppendTo[segmentA, First @ segmentB];
+  {segmentA, segmentB}
+];
+
+GraphRegionHighlight::badpadj = "PathAdjustments element `` is invalid.";
+
+parseAdjustments = MatchValues[
   z_Integer := modLen[z] -> -1;
-  z_Integer -> m_Integer := modLen[z] -> m;
-  z_Integer -> Scaled[n_] := modLen[z] -> Scaled[n];
-  z_Integer -> "Bend" := Splice[{z -> "BendOut", z+1 -> "BendIn"}];
-  other_ := (Message[GraphRegionHighlight::badshortening, other]; {})
+  z_Integer -> spec:(_Integer | _Scaled | {"Bend", ___}) := modLen[z] -> spec;
+  z:{__Integer} -> spec:{"Shrink" | "Short", ___} := modLen[z] -> spec;
+  z_ -> spec_String := %[z -> {spec, 1}];
+  other_ := (Message[GraphRegionHighlight::badpadj, other]; {})
 ];
 
 modLen[z_] := Mod[z, numSegments + 1, 1];
 
-applyOffsetToSegment[segment_, 0] := segment;
-applyOffsetToSegment[segment_, offset_] := Scope[
-  {first, last} = FirstLast @ segment;
-  translated = PlusVector[segment, -first];
-  dist = EuclideanDistance[first, last];
-  newSegment = Match[offset,
-    Scaled[n_]:> scaleSegment[translated, n],
-    "BendOut" :> bendOutSegment[translated],
-    "BendIn" :> bendInSegment[translated],
-    n_ ? Positive :> extendSegment[translated, n],
-    n_ ? Negative :> truncateSegment[translated, n]
-  ];
-  newSegment //= PlusVector[first];
-  If[!StringQ[offset], $offsetVector += Last[newSegment] - last];
-  newSegment
+(**************************************************************************************************)
+
+applyBendBetween[segment1_, segment2_, d_] := Scope[
+  {delta, truncated1} = truncateSegment[segment1, d];
+  {delta, truncated2} = truncateSegment[Reverse @ segment2, d];
+  bendStart = Last @ truncated1;
+  bendEnd = Last @ truncated2;
+  circlePoints = circleAround[bendStart, bendEnd, Last @ segment1];
+  {
+    Join[truncated1, circlePoints],
+    Reverse @ truncated2
+  }
 ];
 
-bendOutSegment[coords_] := Scope[
-  truncatedCoords = Most @ truncateSegment[coords, 2];
-  $bendPoint ^= Last @ truncatedCoords;
-  truncatedCoords
-];
-
-bendInSegment[coords_] := Scope[
-  truncatedCoords = Rest @ Reverse @ truncateSegment[Reverse @ coords, 2];
-  {a, b, c} = {$bendPoint, First @ coords, First @ truncatedCoords};
-  mid1 = Mean[{a, a, b, b, c}];
-  mid2 = Mean[{a, a, b, b, b, c, c}];
-  mid3 = Mean[{a, b, b, c, c}];
-  (* the first is a dummy that will be dropped by the Rest in joinSegments *)
-  Join[{{0, 0}, mid1, mid2, mid3}, truncatedCoords]
+circleAround[p1_, p2_, q_] := Scope[
+  d1 = p1 - q; d2 = p2 - q;
+  r = Mean[{Norm @ d1, Norm @ d2}];
+  a1 = ArcTan @@ d1; a2 = ArcTan @@ d2;
+  an = p + a0; bn = p + b0;
+  While[a2 < a1, a2 += Tau]; as1 = DeleteDuplicates @ Append[a2] @ Range[a1, a2, Tau / 16];
+  While[a1 < a2, a1 += Tau]; as2 = Reverse @ DeleteDuplicates @ Append[a1] @ Range[a2, a1, Tau / 16];
+  as = MinimumBy[{as1, as2}, Length];
+  AngleVector[q, {r, #}]& /@ as
 ];
 
 scaleSegment[coords_, n_] := Scope[
+  {first, last} = FirstLast @ segment;
+  translated = PlusVector[segment, -first];
+  dist = EuclideanDistance[first, last];
   margin = n * thicknessRange * If[isLast, 2, 1.5];
   scaling = (dist + margin) / dist;
-  offset * scaling
+  PlusVector[translated * scaling, first]
 ];
 
-finalDelta[coords_, n_] := Normalize[Last @ coords] * thicknessRange * n;
+finalDelta[coords_, n_] := Normalize[Part[coords, -1] - Part[coords, -2]] * thicknessRange * n;
 
 extendSegment[coords_, n_] := Scope[
   delta = finalDelta[coords, n];
-  MapAt[PlusOperator[delta], coords, -1]
+  {delta, MapAt[PlusOperator[delta], coords, -1]}
 ];
 
 truncateSegment[coords_, n_] := Scope[
-  final = Last[coords] + finalDelta[coords, n];
-  coords = DropWhile[Reverse @ coords, EuclideanDistance[#, final] < thicknessRange * n&];
-  Append[Reverse @ coords, final]
+  delta = finalDelta[coords, -n];
+  coords = SetbackCoordinates[coords, {0, thicknessRange * n}];
+  {delta, coords}
 ];
 
 (**************************************************************************************************)

@@ -181,7 +181,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     True,
       maxNorm = Replace[latticeName, $defaultLatticeNorms];
       SetAutomatic[imageSize, Replace[latticeName, $defaultLatticeSizes]];
-      maxNorm * Length[cardinalList]
+      If[maxNorm === None, maxNorm = 1; 3, maxNorm * Length[cardinalList]]
   ]];
 
   If[MatchQ[maxVertices, AtLeast[_Integer]],
@@ -196,7 +196,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     ReturnFailed[head::badlatticedepth, maxDepth];
   ];
 
-  $quiverLabel := Quiver[quiver, ImageSize -> 50,
+  $quiverLabel := Quiver[quiver, ImageSize -> {50, 80},
     ArrowheadStyle -> arrowheadStyle,
     GraphLegend -> Placed[Automatic, Left]];
 
@@ -232,11 +232,11 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   (* do the exploration *)
-  {vertexList, indexEdgeList, reason} = CachedStateTransitionGraph[cayleyFunction, initialStates,
+  {vertexList, indexEdgeList, reason} = CachedStateTransitionGraph[
+    cayleyFunction, initialStates,
     {"VertexList", "IndexEdgeList", "TerminationReason"},
-    DirectedEdges -> True,
-    MaxDepth -> maxDepth,
-    IncludeFrontier -> includeFrontier, DepthTermination -> depthTermination,
+    DirectedEdges -> True, MaxDepth -> maxDepth, IncludeFrontier -> includeFrontier,
+    DepthTermination -> depthTermination,
     MaxVertices -> maxVertices, MaxEdges -> maxEdges, SelfLoops -> selfLoops
   ];
 
@@ -355,7 +355,13 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   |>]
 ];
 
-$defaultLatticeNorms = {"TruncatedTrihexagonal" -> 5, _ -> 3};
+$defaultLatticeNorms = {
+  "TruncatedTrihexagonal" -> 5,
+  name_String /; $LatticeData[name, "Dimension"] === 3 -> None,
+  "Square" -> 2,
+  _ -> 3
+};
+
 $defaultLatticeSizes = {"Square" -> {180, 180}, _ -> {200, 200}};
 
 toTitleString[s_String] :=
@@ -367,15 +373,17 @@ General::badparamlatticename = "The specified name `` is not a known name for a 
 General::badparamlatticeargs = "The provided arguments `` were not valid for parameterized lattice ``."
 General::badparamlattiecount = "The parameterized lattice `` takes up to `` arguments, but `` were provided.";
 
-iGenerateLattice[head_, {latticeName_String, args__}, maxDepth_, directedEdges_, opts:OptionsPattern[]] := Scope[
+iGenerateLattice[head_, {latticeName_String, args__}, directedEdges_, opts:OptionsPattern[]] := Scope[
 
   paramLatticedata = $ParameterizedLatticeData[latticeName];
   If[MissingQ[paramLatticedata],
     ReturnFailed[head::badparamlatticename, latticeName, commaString @ $ParameterizedLatticeNames]];
 
   UnpackAssociation[paramLatticedata, factory, parameters];
+  UnpackOptions[maxDepth];
 
   arguments = {args};
+  options = {opts};
 
   argCount = Length @ arguments;
   If[argCount > Length[parameters] - 1,
@@ -390,10 +398,10 @@ iGenerateLattice[head_, {latticeName_String, args__}, maxDepth_, directedEdges_,
 
   {representation, customOptions} = FirstRest @ result;
   customOptions //= Flatten;
-  If[!KeyExistsQ[customOptions, MaxDepth],
-    customOptions //= ReplaceOptions[MaxDepth -> maxDepth]];
+  If[KeyExistsQ[customOptions, MaxDepth],
+    options //= DeleteOptions[MaxDepth]];
 
-  iGenerateLattice[head, representation, directedEdges, opts, Sequence @@ customOptions]
+  iGenerateLattice[head, representation, directedEdges, Sequence @@ options, Sequence @@ customOptions]
 ];
 
 (**************************************************************************************************)

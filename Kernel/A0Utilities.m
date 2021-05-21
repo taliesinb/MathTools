@@ -246,9 +246,9 @@ PlusVector[v_][matrix_] := PlusVector[matrix, v];
 
 (**************************************************************************************************)
 
-Unprotect[Into];
-Into /: Range[a_, b_, Into[n_]] := Table[b * i + a * (1 - i), {i, 0, 1, 1/(n-1)}];
-Protect[Into];
+PackageExport["Interpolated"]
+
+Interpolated[a_, b_, n_] := Table[b * i + a * (1 - i), {i, 0, 1, 1/(n-1)}];
 
 (**************************************************************************************************)
 
@@ -502,7 +502,7 @@ declareFormatting[
 PackageExport["NegatedForm"]
 
 declareBoxFormatting[
-  NegatedForm[e_] :> OverscriptBox[ToBoxes @ e, "_"]
+  NegatedForm[e_] :> OverscriptBox[ToBoxes @ e, AdjustmentBox["_", BoxBaselineShift -> -0.3]]
 ];
 
 (**************************************************************************************************)
@@ -537,6 +537,9 @@ DeleteOptions[opts_, keys_List] :=
 
 DeleteOptions[opts_, key_] :=
   DeleteCases[opts, key -> _];
+
+DeleteOptions[key_][opts_] :=
+  DeleteOptions[opts, key];
 
 (**************************************************************************************************)
 

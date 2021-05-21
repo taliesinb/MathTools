@@ -62,6 +62,25 @@ GraphicsQ[_] := False;
 
 (**************************************************************************************************)
 
+PackageExport["EffectiveImageSize"]
+
+EffectiveImageSize[{width_, height_}, trueAspectRatio_] := Scope[
+  imageAspectRatio = height / width;
+  Which[
+    (* perfect, full image will be used *)
+    imageAspectRatio == trueAspectRatio,
+      {width, height},
+    (* image is taller than necessary, but full width will be used *)
+    imageAspectRatio > trueAspectRatio,
+      {width, trueAspectRatio / width},
+    (* image is wider than necessary, but full height will be used *)
+    True,
+      {height / trueAspectRatio, height}
+  ]
+];
+
+(**************************************************************************************************)
+
 PackageExport["ImageSizePad"]
 
 SetUsage @ "
@@ -281,6 +300,34 @@ ToNumericImageSize[imageSize_, aspectRatio_] := Scope[
   SetAutomatic[height, width * aspectRatio];
   {width, height}
 ];
+
+(**************************************************************************************************)
+
+PackageScope["$SymbolicSizePattern"]
+
+$SymbolicSizePattern = Alternatives[
+  Tiny, Small, MediumSmall, Medium, MediumLarge, Large, Huge
+];
+
+(**************************************************************************************************)
+
+PackageScope["$SymbolicPointSizes"]
+
+$SymbolicPointSizes = <|
+  Tiny -> 2, Small -> 3,
+  MediumSmall -> 4, Medium -> 5, MediumLarge -> 6,
+  Large -> 7, Huge -> 10
+|>;
+
+(**************************************************************************************************)
+
+PackageScope["$SymbolicSizeFractions"]
+
+$SymbolicSizeFractions = <|
+  Tiny -> 0.25, Small -> 0.5,
+  MediumSmall -> 0.75, Medium -> 1.0, MediumLarge -> 1.25,
+  Large -> 1.5, Huge -> 2.0
+|>;
 
 (**************************************************************************************************)
 
@@ -583,7 +630,7 @@ $defaultViewOpts = Thread[$viewOptionSymbols -> Automatic];
 
 PackageScope["$automaticViewOptions"]
 
-$automaticViewOptions = {ViewProjection -> "Orthographic", ViewPoint -> {-0.2, -2, 0}};
+$automaticViewOptions = {ViewProjection -> "Orthographic", ViewPoint -> {-0.2, -2, 0.5}};
 
 ConstructGraphicsViewTransform[g_Graphics3D] := Scope[
   viewOpts = Options[g, $viewOptionSymbols];
@@ -677,3 +724,39 @@ GraphicsTransformCoordinates[ctf_, expr_] := Scope[
   $ctf = ctf;
   ReplaceAll[expr, $ctfDispatch]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["SetbackCoordinates"]
+
+SetbackCoordinates[{a_, b_}, {d1_, d2_}] := Scope[
+  If[EuclideanDistance[a, b] < d1 + d2, Return[{}]];
+  dx = Normalize[b - a];
+  {a + dx * d1 , b - dx * d2}
+];
+
+SetbackCoordinates[coords_, {d1_, d2_}] :=
+  setbackHalf[setbackHalf[coords, d1], -d2]
+
+setbackHalf[{}, _] := {};
+setbackHalf[coords_, 0|0.] := coords;
+setbackHalf[coords_, d_ ? Negative] := Reverse @ setbackHalf[Reverse @ coords, Abs[d]];
+
+setbackHalf[coords_, d_] := Scope[
+  prev = First @ coords; total = 0;
+  n = LengthWhile[coords, curr |-> (total += EuclideanDistance[curr, prev]; prev = curr; total < d)];
+  If[n == Length[coords], Return @ {}];
+  rem = total - d;
+  newCoords = Drop[coords, n];
+  If[rem == 0,
+    newCoords,
+    Prepend[newCoords, PointAlongLine[Part[coords, n + 1], Part[coords, n], rem]]
+  ]
+];
+
+(**************************************************************************************************)
+
+PackageScope["PointAlongLine"]
+
+PointAlongLine[a_, b_, d_] :=
+  a + Normalize[b - a] * d;

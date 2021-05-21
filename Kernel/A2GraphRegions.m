@@ -379,25 +379,25 @@ processRegion[spec:$metricRegionHeads[__, GraphMetric -> metric_]] := Scope[
 (** Path[...]                              **)
 
 GraphRegionElementQ[Path[_, _]] := True;
-GraphRegionElementQ[Path[_, _, PathOffset -> _]] := True;
+GraphRegionElementQ[Path[_, _, PathAdjustments -> _]] := True;
 
 processRegion[Path[start_, path_]] :=
   collectPathData @ sowPath[start, path, False];
 
-processRegion[Path[args__, ps:Rule[PathOffset, _]]] :=
+processRegion[Path[args__, ps:Rule[PathAdjustments, _]]] :=
   GraphRegionAnnotation[processRegion @ Path @ args, Association @ ps];
 
-PackageExport["PathOffset"]
+PackageExport["PathAdjustments"]
 
 SetUsage @ "
-PathOffset is an option to Path that specifies which steps to foreshorten.
+PathAdjustments is an option to Path that specifies which steps to foreshorten.
 "
 
 (********************************************)
 
 sowPath[start_, path_, repeating_] := Scope[
   startId = findVertex @ start;
-  pathWord = parseCardinalWord[path];
+  pathWord = ParseCardinalWord[path];
   sowVertex[startId];
   doWalk[
     startId, pathWord, repeating,
@@ -410,9 +410,16 @@ sowPath[start_, path_, repeating_] := Scope[
 
 (********************************************)
 
-PackageScope["parseCardinalWord"]
+PackageExport["FormatCardinalWord"]
 
-parseCardinalWord[path_String] /; StringLength[path] > 1 := Scope[
+FormatCardinalWord[w_] :=
+  Style[Row @ ParseCardinalWord[w], $LegendLabelStyle];
+
+(********************************************)
+
+PackageExport["ParseCardinalWord"]
+
+ParseCardinalWord[path_String] /; StringLength[path] > 1 := Scope[
   chars = Characters[path];
   str = StringReplace[StringRiffle[chars, " "], " '" -> "'"];
   Map[
@@ -421,13 +428,14 @@ parseCardinalWord[path_String] /; StringLength[path] > 1 := Scope[
   ] // checkCardinals
 ];
 
-parseCardinalWord[elem_] := checkCardinals @ List @ elem;
+ParseCardinalWord[elem_] := checkCardinals @ List @ elem;
 
-parseCardinalWord[list_List] := checkCardinals @ list;
+ParseCardinalWord[list_List] := checkCardinals @ list;
 
 GraphRegion::badcardinals = "The region ``[...] includes a path `` with invalid cardinals."
 checkCardinals[list_List] :=
-  If[SubsetQ[$Cardinals, StripNegated /@ list], list, failAuto["badcardinals", list]];
+  If[!ListQ[$Cardinals] || SubsetQ[$Cardinals, StripNegated /@ list], list,
+    failAuto["badcardinals", list]];
 
 (********************************************)
 
@@ -468,7 +476,7 @@ failWalk[cardinal_, vertexId_] := Scope[
 (********************************************)
 
 offsetWalk[start_, path_] := Scope[
-  cardList = parseCardinalWord[path];
+  cardList = ParseCardinalWord[path];
   doWalk[startId, pathWord, False, Null&]
 ];
 
@@ -529,7 +537,7 @@ findCardinalBetween[v1_, v2_] := Scope[
 GraphRegionElementQ[InfiniteLine[{_, _}] | InfiniteLine[_, _]] := True;
 
 processRegion[InfiniteLine[v_, dir_]] := Scope[
-  cardinalWord = parseCardinalWord[dir];
+  cardinalWord = ParseCardinalWord[dir];
   {posVerts, posEdges, posNegations} = List @@ processRegion @ HalfLine[v, cardinalWord];
   {negVerts, negEdges, negNegations} = List @@ processRegion @ HalfLine[v, Negated /@ Reverse @ cardinalWord];
   negEdgeLen = Length[negEdges];

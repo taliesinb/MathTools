@@ -134,7 +134,7 @@ readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
 loadFileContents[path_, context_] := Module[{str, contents},
   $loadedFileCount++;
   str = fileStringUTF8 @ path;
-  contents = Quiet @ Check[Package`ToPackageExpression @ str, $Failed];
+  contents = Check[Package`ToPackageExpression @ str, $Failed];
   If[FailureQ[contents], handleSyntaxError[path]];
   Block[{$Context = context}, contents = contents /. $initialSymbolResolutionDispatch /. ResolvedSymbol[sym_] :> sym];
   contents
@@ -227,21 +227,17 @@ GraphToolsPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
   $packageExpressions
 ];
 
-failEval[] := Throw[$Failed, failEval];
-
 GraphToolsPackageLoader`EvaluatePackages[packagesList_List] := Block[
   {$currentPath, $currentLineNumber, result},
   $currentPath = ""; $currentLineNumber = 0;
   GraphToolsPackageLoader`$FileTimings = <||>;
   GraphToolsPackageLoader`$FileLineTimings  = <||>;
-  result = Quiet @ Catch[
-    GeneralUtilities`WithMessageHandler[
-      Scan[evaluatePackage, packagesList],
-      handleMessage
-    ]
-  ,
-    failEval
+  $failEval = False;
+  result = GeneralUtilities`WithMessageHandler[
+    Scan[evaluatePackage, packagesList],
+    handleMessage
   ];
+  If[$failEval, Return[$Failed]];
   result
 ];
 
@@ -252,6 +248,7 @@ MakeBoxes[pd_Package`PackageData, StandardForm] :=
 
 evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
   $currentPath = path; $currentFileLineTimings = <||>;
+  If[$failEval, Return[$Failed]];
   GraphToolsPackageLoader`$FileTimings[path] = First @ AbsoluteTiming[
     Scan[evaluateExpression, packageData];
   ];
@@ -278,7 +275,7 @@ handleMessage[f_Failure] := Scope[
   Print["Aborting; message ", HoldForm @@ f["HeldMessageTemplate"], " occurred at ", fileLine];
   Print[FailureString @ f];
   SystemOpen[fileLine];
-  failEval[]
+  $failEval = True;
 ];
 
 (*************************************************************************************************)

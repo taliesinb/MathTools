@@ -48,7 +48,7 @@ The following specifications describe paths in the graph:
 | %InfiniteLine[{v$1, v$2}] | a geodesic intersecting v$1 and v$2 |
 | %GraphPathData[$$] | a previously computed path |
 * Specifications taking a cardinal direction c$ also take a list {c$1, ..., c$n}, used cyclically.
-* %Path[$$, PathOffset -> {i$1, i$2, $$}] indicates that the i$th elements of the path should drawn
+* %Path[$$, PathAdjustments -> {i$1, i$2, $$}] indicates that the i$th elements of the path should drawn
 truncated.
 
 The following specifications describe regions in the graph:
@@ -157,8 +157,8 @@ stripDynamicModule[boxes_] := ReplaceAll[boxes,
 
 (**************************************************************************************************)
 
-PackageScope["$GraphVertexCoordinates"]
-PackageScope["$GraphEdgeCoordinateLists"]
+PackageScope["$VertexCoordinates"]
+PackageScope["$EdgeCoordinateLists"]
 PackageScope["$GraphHighlightStyle"]
 PackageScope["$GraphIs3D"]
 PackageScope["$GraphPlotRange"]
@@ -178,26 +178,21 @@ GraphPlotScope[graph_, body_] := Scope[
 
   GraphScope[graph,
 
-    {$GraphVertexCoordinates, $GraphEdgeCoordinateLists} = ExtractGraphPrimitiveCoordinates[$IndexGraph];
+    {$VertexCoordinates, $EdgeCoordinateLists} = ExtractGraphPrimitiveCoordinates[$IndexGraph];
 
     $GraphHighlightStyle := $GraphHighlightStyle = removeSingleton @ LookupOption[$Graph, GraphHighlightStyle];
     $GraphPlotImageSize := $GraphPlotImageSize := LookupImageSize @ $Graph;
     $GraphPlotImageWidth := $GraphPlotImageWidth = First[$GraphPlotImageSize; LookupImageSize @ $Graph];
 
-(*     $GraphVertexCoordinateBoundingBox := $GraphVertexCoordinateBoundingBox = CoordinateBoundingBox[$GraphVertexCoordinates];
- *)
-
     (* before we have called the user function, guess the range based on the vertex and edge coordinates *)
-    $GraphIs3D := $GraphIs3D = CoordinateMatrixQ[$GraphVertexCoordinates, 3];
-    $GraphPlotRange := $GraphPlotRange = CoordinateBounds[{$GraphVertexCoordinates, Replace[$GraphEdgeCoordinateLists, {} -> Nothing]}];
+    $GraphIs3D := $GraphIs3D = CoordinateMatrixQ[$VertexCoordinates, 3];
+    $GraphPlotRange := $GraphPlotRange = CoordinateBounds[{$VertexCoordinates, Replace[$EdgeCoordinateLists, {} -> Nothing]}];
     $GraphPlotSize := $GraphPlotSize = rangeSize[$GraphPlotRange];
     $GraphPlotSizeX := Max[Part[$GraphPlotSize, 1], $MachineEpsilon];
     $GraphPlotSizeY := Max[Part[$GraphPlotSize, 2], $MachineEpsilon];
-    $GraphPlotScale := $GraphPlotScale = If[$GraphIs3D, $GraphPlotSizeX, Norm @ $GraphPlotSize];
-    $GraphPlotAspectRatio := $GraphPlotSizeY / $GraphPlotSizeX;
+    $GraphPlotScale := $GraphPlotScale = If[$GraphIs3D, Norm @ $GraphPlotSize, $GraphPlotSizeX];
+    $GraphPlotAspectRatio := $GraphPlotAspectRatio = computeGraphPlotAspectRatio[];
 
-    $GraphPlotScale := $GraphPlotScale = If[$GraphIs3D, $GraphPlotSizeX, Norm @ $GraphPlotSize];
-    $GraphPlotAspectRatio := Part[$GraphPlotSize, 2] / $GraphPlotSizeX;
     $GraphMaxSafeVertexSize := $GraphMaxSafeVertexSize = computeMaxSafeVertexSize[];
     $GraphMaxSafeArrowheadSize := $GraphMaxSafeArrowheadSize = computeMaxSafeArrowheadSize[];
 
@@ -282,13 +277,27 @@ getRankedMinDistance[coords_] := Scope[
   If[distances === {}, Infinity, rankedMean @ distances]
 ];
 
+computeGraphPlotAspectRatio[] := Scope[
+  If[CoordinateMatrixQ[$VertexCoordinates, 3],
+    viewOptions = LookupExtendedGraphAnnotations[$Graph, ViewOptions];
+    SetAutomatic[viewOptions, $automaticViewOptions];
+    viewOptions = Association[PlotRange -> CoordinateBounds[$VertexCoordinates], viewOptions];
+    viewTransform = ConstructGraphicsViewTransform[viewOptions];
+    vertexCoordinates = viewTransform @ $VertexCoordinates;
+    {width, height} = PlotRangeSize @ CoordinateBounds[vertexCoordinates];
+    height / width
+  ,
+    $GraphPlotSizeY / $GraphPlotSizeX
+  ]
+];
+
 computeMaxSafeVertexSize[] := Scope[
-  minDistance = getRankedMinDistance[$GraphVertexCoordinates];
+  minDistance = getRankedMinDistance[$VertexCoordinates];
   Max[Min[minDistance / 2, Max[$GraphPlotSize] / 3], $MachineEpsilon]
 ];
 
 computeMaxSafeArrowheadSize[] := Scope[
-  minDistance = getRankedMinDistance[lineCenter /@ $GraphEdgeCoordinateLists];
+  minDistance = getRankedMinDistance[lineCenter /@ $EdgeCoordinateLists];
   minDistance = Max[minDistance, $GraphMaxSafeVertexSize/Sqrt[2]];
   Min[$GraphMaxSafeVertexSize, minDistance, Max[$GraphPlotSize] / 3]
 ];
@@ -352,17 +361,15 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       If[Length[$VertexList] > 1000, Large,
         graphPlotSizeScalingFunction[If[$GraphIs3D, 30, 15] * ($GraphPlotSizeX / $GraphMaxSafeVertexSize)]]];
 
-    imageSize = ToNumericImageSize[imageSize, Clip[$GraphPlotAspectRatio, {0.2, 1.5}]];
+    {imageWidth, imageHeight} = ToNumericImageSize[imageSize, Clip[$GraphPlotAspectRatio, {0.3, 2}]];
+    If[$GraphIs3D,
+      (* this makes 3D rotation less zoomy *)
+      If[imageHeight > imageWidth * 1.5, imageHeight = imageWidth * 1.5];
+      If[imageHeight < imageWidth * 0.5, imageHeight = imageWidth * 0.5];
+    ];
+    imageSize = {imageWidth, imageHeight};
+    {effectiveImageWidth, effectiveImageHeight} = EffectiveImageSize[imageSize, $GraphPlotAspectRatio];
 
-    (* this makes rotation less zoomy *)
-    If[$GraphIs3D && First[imageSize] / Last[imageSize] > 1.75,
-      Part[imageSize, 2] = First[imageSize] / 1.75];
-
-    {imageWidth, imageHeight} = imageSize;
-
-    (* these are used by toImageCoords and toScaledCoords *)
-    imageCoordsFactor = imageWidth / $GraphPlotSizeX;
-    scaledCoordsVector = {1, imageWidth / imageHeight} / If[$GraphIs3D, Norm @ $GraphPlotSize, $GraphPlotSizeX];
 
     imagePadding = Which[
       NumericQ[imagePadding], N[imagePadding] * {{1, 1}, {1, 1}},
@@ -370,7 +377,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       True, {{1, 1}, {1, 1}}
     ];
 
-    edgeCenters = lineCenter /@ $GraphEdgeCoordinateLists;
+    edgeCenters = lineCenter /@ $EdgeCoordinateLists;
 
     edgeStyle //= removeSingleton;
     vertexStyle //= removeSingleton;
@@ -380,9 +387,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   FunctionSection[
 
     $vertexSizeOverrides = None;
-    $defaultVertexSize = Which[edgeStyle === None, 0.6, vertexColorFunction =!= None, 0.5, True, 0.3];
+    $defaultVertexSize = Which[edgeStyle === None, 0.6, vertexColorFunction =!= None, 0.5, True, Max[0.3, AbsolutePointSize[6]]];
     vertexSize = processVertexSize @ removeSingleton @ vertexSize;
-    vertexSizeImage = toImageCoords @ vertexSize;
+    vertexSizeImage = plotSizeToImageSize @ vertexSize;
 
     SetAutomatic[vertexShapeFunction, If[vertexColorFunction =!= None, "Disk", "Point"]];
 
@@ -444,7 +451,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     edgeStyle //= toDirectiveOptScan[setEdgeStyleGlobals];
 
     If[arrowheadShape === None || zeroQ[arrowheadSize] || UndirectedGraphQ[$Graph],
-      edgeGraphics = makeGraphicsGroup @ {edgeStyle, setback[Line, setbackDistance] @ $GraphEdgeCoordinateLists};
+      edgeGraphics = makeGraphicsGroup @ {edgeStyle, setback[Line, setbackDistance] @ $EdgeCoordinateLists};
     ,
       SetAutomatic[arrowheadStyle, Which[
         cardinalColors =!= None, cardinalColors,
@@ -452,15 +459,14 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         True, Gray
       ]];
       baseArrowheadSize := baseArrowheadSize = If[$GraphIs3D, 0.45, 0.8] * ($GraphMaxSafeArrowheadSize / $GraphPlotSizeX);
-      arrowheadSize //= Replace[$arrowheadSizeRules];
-      arrowheadSize //= ReplaceAll[Scaled[r_ ? NumericQ] :> baseArrowheadSize * r];
+      arrowheadSize //= processArrowheadSize;
 
-      SetAutomatic[arrowheadShape, "Arrow"];
+      SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Arrow"]];
       $twoWayStyle = "ArrowDoubleIn";
       If[ListQ[arrowheadShape],
         {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
         Scan[scanArrowheadShapeOpts, arrowheadShapeOpts]];
-      SetAutomatic[arrowheadSize, baseArrowheadSize];
+
       SetAutomatic[arrowheadPosition, If[$GraphIs3D && arrowheadShape =!= "Cone", 0.65, 0.502]];
 
       arrowheadBounds = CoordinateBounds[
@@ -475,7 +481,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       ];
 
       edgeGraphics = KeyValueMap[
-        {card, indices} |-> drawArrowheadEdges[card, Part[$GraphEdgeCoordinateLists, indices]],
+        {card, indices} |-> drawArrowheadEdges[card, Part[$EdgeCoordinateLists, indices]],
         edgeTagGroups
       ];
       edgeGraphics = makeGraphicsGroup @ {edgeStyle, edgeGraphics};
@@ -493,7 +499,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[vertexLabels =!= None,
       SetNone[vertexSize, $GraphMaxSafeVertexSize / 5];
       vertexLabelItems = generateLabelPrimitives[
-        vertexLabels, $VertexList, $GraphVertexCoordinates,
+        vertexLabels, $VertexList, $VertexCoordinates,
         vertexSize, vertexLabelStyle, vertexAnnotations
       ];
       AppendTo[labelGraphics, vertexLabelItems]
@@ -525,16 +531,6 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     graphicsElements = {edgeGraphics, vertexGraphics, labelGraphics};
 
-    If[Max[imagePadding] > 2,
-      (* we must scale down pointsize slightly since PointSize and Scaled refer to the full image width,
-      which includes the padding we just added! *)
-      compensationFactor = 1.0 - ((Total @ First[imagePadding]) / First[imageSize]);
-      graphicsElements = graphicsElements /. {
-        Scaled[s_] :> Scaled[s * compensationFactor],
-        PointSize[s_] :> PointSize[s * compensationFactor]
-      };
-    ];
-
     extraOptions = If[!$GraphIs3D, {},
       SetAutomatic[viewOptions, $automaticViewOptions];
       viewOptions
@@ -556,9 +552,13 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   ExtendedGraphPlottingFunction
 ];
 
-toImageCoords[sz_] := sz * imageCoordsFactor;
-toScaledCoords[sz_] := Scaled[sz * scaledCoordsVector];
-toScaledPointSize[sz_] := PointSize[sz * First[scaledCoordsVector]];
+imageSizeToImageFraction[sz_] := sz / effectiveImageWidth;
+imageSizeToPlotSize[sz_] := sz / effectiveImageWidth * $GraphPlotSizeX;
+imageFractionToPlotSize[sz_] := sz * $GraphPlotSizeX;
+plotSizeToImageFraction[sz_] := sz / $GraphPlotSizeX;
+plotSizeToImageSize[sz_] := sz / $GraphPlotSizeX * effectiveImageWidth;
+plotSizeToDiskSize[sz_] := Scaled[sz * {1, $GraphPlotAspectRatio} / $GraphPlotScale];
+plotSizeToPointSize[sz_] := PointSize[sz / $GraphPlotSizeX];
 
 extendPadding[n_] := imagePadding = Map[Max[#, n]&, imagePadding, {2}];
 extendPadding[padding_List] := imagePadding = MapThread[Max, {imagePadding, padding}, 2];
@@ -566,7 +566,7 @@ extendPadding[padding_List] := imagePadding = MapThread[Max, {imagePadding, padd
 extendPaddingToInclude[{{xmin_, xmax_}, {ymin_, ymax_}}] := Scope[
   {{pxmin, pxmax}, {pymin, pymax}} = $GraphPlotRange;
   extra = {{pxmin - xmin, xmax - pxmax}, {pymin - ymin, ymax - pymax}};
-  extendPadding[extra / $GraphPlotSizeX * imageWidth]
+  extendPadding @ plotSizeToImageSize @ extra
 ];
 
 makeGraphicsGroup[g_] := g;
@@ -577,7 +577,7 @@ zeroQ[_] := False;
 vertexDrawFuncWithSize[rawVertexDrawFunc_, vertexSize_] :=
   ReplaceAll[
     {indices, color} |->
-      rawVertexDrawFunc[Part[$GraphVertexCoordinates, indices], color],
+      rawVertexDrawFunc[Part[$VertexCoordinates, indices], color],
     $vertexSize -> vertexSize
   ];
 
@@ -588,7 +588,7 @@ vertexDrawFuncSizeRemapper[rawVertexDrawFunc_, sizeOverrides_, vertexSize_] :=
         rawVertexDrawFunc,
         $vertexSize -> Lookup[sizeOverrides, index, vertexSize]
       ],
-      Part[$GraphVertexCoordinates, index], color
+      Part[$VertexCoordinates, index], color
     ], indices
   ];
 
@@ -603,6 +603,22 @@ toColorVertexDrawFuncWithTooltip[vertexDrawFunc_] :=
 
 (**************************************************************************************************)
 
+ExtendedGraphPlot::badarrowheadsize = "ArrowheadSize -> `` is not a valid specification."
+
+(* the resulting size is expressed in the coordinate system of the size specification for Arrowheads[...],
+which is a fraction of the image width *)
+processArrowheadSize = MatchValues[
+  s:$SymbolicSizePattern          := imageSizeToImageFraction[4. * Lookup[$SymbolicPointSizes, s]];
+  r_ ? NumericQ                   := N[imageSizeToImageFraction[r]];
+  PointSize[sz_ ? NumericQ]       := N[sz];
+  AbsolutePointSize[sz_ ? NumericQ] := N[imageSizeToImageFraction[sz]];
+  Scaled[r_ ? NumericQ]           := baseArrowheadSize * N[r];
+  Scaled[s:$SymbolicSizePattern]  := baseArrowheadSize * Lookup[$SymbolicSizeFractions, s];
+  assoc_Association               := Map[%, assoc];
+  Automatic                       := baseArrowheadSize;
+  spec_ := failPlot["badarrowheadsize", spec];
+];
+
 PackageExport["TwoWayStyle"]
 
 scanArrowheadShapeOpts = MatchValues[
@@ -611,15 +627,6 @@ scanArrowheadShapeOpts = MatchValues[
   rule_ := failPlot["badsubopt", rule, ArrowheadShape];
 ];
 
-$arrowheadSizeRules = {
-  Tiny -> Scaled[0.25],
-  Small -> Scaled[0.5],
-  MediumSmall -> Scaled[0.75],
-  Medium -> Scaled[1.0],
-  MediumLarge -> Scaled[1.25],
-  Large -> Scaled[1.5],
-  Huge -> Scaled[2.0]
-};
 
 arrowheadsND[e_] := If[$GraphIs3D, Arrowheads[e, Appearance -> "Projected"], Arrowheads @ e];
 
@@ -654,7 +661,6 @@ drawArrowheadEdges[CardinalSet[cardinals_], edgeCoords_] := Scope[
 
 makeArrowheadsElement[cardinal_] := Scope[
   {shape, size, style, position} = lookupTagSpec[cardinal];
-  size //= Replace[Scaled[s_] :> s * baseArrowheadSize];
   shape = If[shape === "Cardinal",
     SetNone[style, Black];
     makeArrowheadLabelShape[cardinal, style, size]
@@ -687,7 +693,7 @@ attachArrowheadLabel[g:Graphics[primitives_, opts___], cardinal_, size_] := Scop
   cardinal //= Replace[TwoWay[c_] :> Row[{c, Negated[c]}]];
   label = makeArrowheadLabel[cardinal, size];
   {{xl, xh}, {yl, yh}} = GraphicsPlotRange[g];
-  labelPrimitives = {Opacity[1], Black, Inset[label, {0., xl - 0.25}, {0, 0}, Automatic, None]};
+  labelPrimitives = {Opacity[1], Black, Inset[label, {0., xl - 0.3}, {0, 0}, Automatic, None]};
   Graphics[{primitives, labelPrimitives}, opts]
 ];
 
@@ -876,10 +882,14 @@ ExtendedGraphPlot::badarrowhead = "ArrowheadShape -> `` should be None, Automati
 
 PackageExport["ArrowheadLegend"]
 
+to2DShape["Cone"] = "Arrow";
+to2DShape["Sphere"] = "Disk";
+to2DShape[a_] := a;
+
 ArrowheadLegend[assoc_, "Cardinal"] := "";
 ArrowheadLegend[assoc_Association, shape_:"Arrow"] := Scope[
   rows = KeyValueMap[
-    {name, color} |-> {makeLegendArrowheadGraphic[color, shape], name},
+    {name, color} |-> {makeLegendArrowheadGraphic[color, to2DShape @ shape], name},
     assoc
   ];
   Framed[
@@ -902,7 +912,7 @@ PackageScope["makeHighlightArrowheadShape"]
 
 makeHighlightArrowheadShape[style_, scaling_] :=
   makeArrowheadGraphic2D[
-    $arrowheads2D["Line"] /. r_List :> (r * scaling), style, args
+    $arrowheads2D["Line"] /. r_List :> (r * scaling), toDirective @ style, args
   ];
 
 (**************************************************************************************************)
@@ -968,7 +978,7 @@ processVertexShapeFunction[spec_] := Scope[
 ];
 
 drawPoint[size_][pos_, color_] :=
-  {toScaledPointSize @ size, color, Point @ pos};
+  {plotSizeToPointSize @ size, color, Point @ pos};
 
 drawSphere[size_][pos_, color_] :=
   {color, Sphere[pos, size]};
@@ -980,7 +990,7 @@ drawDisk[size_][pos_, color_] := {
 
 drawDisk3D[size_][pos_, color_] := Inset[
   Graphics[drawDisk[1][{0, 0}, color], AspectRatio -> 1],
-  pos, {0, 0}, toScaledCoords @ size
+  pos, {0, 0}, plotSizeToDiskSize @ size
 ];
 
 mapCoordArray[f_][array_, args___] :=
@@ -1049,7 +1059,7 @@ toColorFunctionData = MatchValues[
   key_String := getAnnoValue[vertexAnnotations, key];
   (key_String -> f_) := Replace[Quiet @ Check[Map[toFunc @ f, %[key]], $Failed], $Failed :> failPlot["msgcolfunc", key]];
   list_List /; Length[list] === $VertexCount := list;
-  assoc_Association := Lookup[assoc, $VertexList, Lookup[assoc, All, $Gray]];
+  assoc_Association := Lookup[assoc, $VertexList, Lookup[assoc, All, $LightGray]];
   spec_ := failPlot["badcolfunc", If[Length[spec] > 10 || ByteCount[spec] > 1000, Skeleton[Length[spec]], spec]]
 ];
 
@@ -1064,12 +1074,17 @@ ExtendedGraphPlot::badvertexsize = "`` is not a valid setting for VertexSize."
 
 $defaultVertexSize = 0.3;
 (* this returns a size in plot range coordinates *)
+
 processVertexSize = MatchValues[
   Automatic                     := %[$defaultVertexSize];
+  r_ ? NumericQ                 := %[{"Nearest", r}];
   {"Nearest", r_ ? NumericQ}    := N[r] * $GraphMaxSafeVertexSize;
   {"Scaled", r_ ? NumericQ}     := N[r] * Norm[$GraphPlotSize];
-  sym_Symbol /; KeyExistsQ[$fractionSizes, sym] := %[{"Nearest", 3 * $fractionSizes[sym]}];
-  r_ ? NumericQ                 := %[{"Nearest", r}];
+  PointSize[sz_ ? NumericQ]     := N[imageFractionToPlotSize[sz]];
+  AbsolutePointSize[sz_ ? NumericQ] := N[imageSizeToPlotSize[sz]];
+  m_Max | m_Min                 := Map[%, m];
+  sym:$SymbolicSizePattern      := N @ imageSizeToPlotSize @ Lookup[$SymbolicPointSizes, sym];
+  Scaled[sym:$SymbolicSizePattern] := %[$SymbolicSizeFractions @ sym * 0.5];
   rule_Rule                     := %[{rule}];
   rules_Association             := %[Normal @ rules];
   rules:{__Rule}                := (
@@ -1090,7 +1105,6 @@ ExtendedGraphPlot::badvertex = "`` is not a valid vertex."
 findVertex[v_] := Lookup[$VertexIndex, Key @ v, failPlot["badvertex", v]];
 findVertex[GraphOrigin] := findVertex @ LookupAnnotation[$Graph, GraphOrigin];
 
-$fractionSizes = <|Tiny -> 0.1, Small -> 0.15, MediumSmall -> 0.175, Medium -> 0.2, MediumLarge -> 0.3, Large -> 0.4, Huge -> 0.6|>;
 
 (**************************************************************************************************)
 
@@ -1228,6 +1242,7 @@ makeGraphics[elements_, imageSize_, padding_, plotLabel_, extraOptions_, epilog_
   ImageSize -> imageSize,
   ImagePadding -> padding, PlotLabel -> plotLabel,
   AspectRatio -> Automatic, PlotRangePadding -> None,
+  PreserveImageOptions -> False,
   If[epilog === None, Sequence @@ {}, Epilog -> epilog]
 ];
 
@@ -1240,6 +1255,7 @@ makeGraphics3D[elements_, imageSize_, padding_, plotLabel_, extraOptions_, epilo
   Lighting -> "Neutral",
   Method -> {"ShrinkWrap" -> False, "EdgeDepthOffset" -> False},
   AspectRatio -> Automatic,(* , ViewPoint -> {Infinity, 0, 0}, *)
+  PreserveImageOptions -> False,
   PlotLabel -> plotLabel
 ];
 
