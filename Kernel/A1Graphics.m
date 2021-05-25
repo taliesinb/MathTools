@@ -30,6 +30,12 @@ DownValues[WrappersDump`makeLabeledCore] = ReplaceAll[DownValues[WrappersDump`ma
 
 (**************************************************************************************************)
 
+PackageExport["StyleOperator"]
+
+StyleOperator[spec___][e_] := Style[e, spec];
+
+(**************************************************************************************************)
+
 PackageExport["$LegendLabelStyle"]
 
 $LegendLabelStyle = {FontFamily -> "Avenir", FontSize -> 12};
@@ -473,6 +479,8 @@ ApplyEpilog[graphics_Graphics, epilog_] :=
 ApplyEpilog[Graphics3D[primitives_, opts___], epilog_] :=
   Graphics3D[{primitives, epilog}, opts];
 
+ApplyEpilog[epilog_][graphics_] := ApplyEpilog[graphics, epilog];
+
 (**************************************************************************************************)
 
 PackageExport["ApplyProlog"]
@@ -484,6 +492,8 @@ ApplyProlog[graphics_Graphics, prolog_] :=
 
 ApplyProlog[Graphics3D[primitives_, opts___], prolog_] :=
   Graphics3D[{prolog, primitives}, opts];
+
+ApplyProlog[prolog_][graphics_] := ApplyProlog[graphics, prolog];
 
 (**************************************************************************************************)
 
@@ -497,6 +507,8 @@ ApplyLegend[expr_, item_] :=
 
 ApplyLegend[Legended[expr_, oldLegend_], newLegend_] :=
  updateLegendMargins @ Legended[expr, Developer`ToList[oldLegend, LegendForm /@ newLegend]];
+
+ApplyLegend[legend_][graphics_] := ApplyLegend[graphics, legend];
 
 updateLegendMargins[other_] := other;
 updateLegendMargins[Legended[g_Graphics | g_Graphics3D, legendSpec_]] := Scope[

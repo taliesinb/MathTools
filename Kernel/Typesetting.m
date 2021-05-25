@@ -538,10 +538,10 @@ SpacedRow[elems__, Spacings -> n_] := Block[{$srspacings = n},
 ];
 
 SpacedRow[elems__] :=
-  Row[Flatten @ List @ elems, Spacer[$srspacings]];
+  Row[DeleteCases[Null] @ Flatten @ List @ elems, Spacer[$srspacings]];
 
 SpacedRow[elems__Rule] := Scope[
-  {labels, items} = KeysValues @ Flatten @ List @ elems;
+  {labels, items} = KeysValues @ DeleteCases[Null] @ Flatten @ List @ elems;
   Grid[{items, Style[#, $LegendLabelStyle]& /@ labels}, Alignment -> {Center, {Center, Top}}, Spacings -> {$srspacings/10, {0}}]
 ];
 
