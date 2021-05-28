@@ -772,3 +772,10 @@ PackageScope["PointAlongLine"]
 
 PointAlongLine[a_, b_, d_] :=
   a + Normalize[b - a] * d;
+
+(**************************************************************************************************)
+
+PackageExport["LineLength"]
+
+LineLength[{a_, b_}] := EuclideanDistance[a, b];
+LineLength[list_] := Total @ MapStaggered[EuclideanDistance, list];

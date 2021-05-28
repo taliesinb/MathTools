@@ -530,6 +530,20 @@ formatLabeledMatrix[matrix_] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["MapSpacedRow"]
+
+Options[MapSpacedRow] = {
+  Spacings -> 20,
+  LabelStyle -> $LegendLabelStyle
+};
+
+MapSpacedRow[f_, list_List, args___, OptionsPattern[]] := Scope[
+  UnpackOptions[spacings, labelStyle];
+  SpacedRow[f[#, args]& /@ list, Spacings -> spacings, LabelStyle -> labelStyle]
+];
+
+(**************************************************************************************************)
+
 PackageExport["SpacedRow"]
 
 $srspacings = 20;
@@ -537,12 +551,27 @@ SpacedRow[elems__, Spacings -> n_] := Block[{$srspacings = n},
   SpacedRow[elems]
 ];
 
+$srlabelstyle = $LegendLabelStyle;
+SpacedRow[elems__, LabelStyle -> style_] := Block[{$srlabelstyle = style},
+  SpacedRow[elems]
+];
+
+SpacedRow[{rules__Rule}, opts___] := SpacedRow[rules, opts];
+
 SpacedRow[elems__] :=
   Row[DeleteCases[Null] @ Flatten @ List @ elems, Spacer[$srspacings]];
 
+SpacedRow[labels_List -> elems_List] := SpacedRow @@ MapThread[Rule, {labels, elems}];
+
+SpacedRow[labeled:{__Labeled}] := Scope[
+  items = Part[labeled, All, 1];
+  labels = Part[labeled, All, 2];
+  Grid[{items, labels}, Alignment -> {Center, Center}, Spacings -> {$srspacings/10, {0}}]
+];
+
 SpacedRow[elems__Rule] := Scope[
   {labels, items} = KeysValues @ DeleteCases[Null] @ Flatten @ List @ elems;
-  Grid[{items, Style[#, $LegendLabelStyle]& /@ labels}, Alignment -> {Center, {Center, Top}}, Spacings -> {$srspacings/10, {0}}]
+  Grid[{items, Style[#, $srlabelstyle]& /@ labels}, Alignment -> {Center, {Center, Top}}, Spacings -> {$srspacings/10, {0}}]
 ];
 
 (**************************************************************************************************)

@@ -830,7 +830,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   colorFunction = Which[
     Length[uniqueValues] == 1,
       DiscreteColorFunction[uniqueValues, {Gray}],
-    RangeQ[uniqueValues] && count <= 12,
+    (RangeQ[uniqueValues] || RangeQ[uniqueValues + 1]) && count <= 12,
       DiscreteColorFunction[uniqueValues, Automatic],
     RealVectorQ[nUniqueValues = N[uniqueValues]],
       ContinuousColorFunction[nUniqueValues, Automatic],

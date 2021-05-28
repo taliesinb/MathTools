@@ -187,10 +187,10 @@ GraphPlotScope[graph_, body_] := Scope[
 
     (* before we have called the user function, guess the range based on the vertex and edge coordinates *)
     $GraphIs3D := $GraphIs3D = CoordinateMatrixQ[$VertexCoordinates, 3];
-    $GraphPlotRange := $GraphPlotRange = CoordinateBounds[{$VertexCoordinates, Replace[$EdgeCoordinateLists, {} -> Nothing]}];
+    $GraphPlotRange := $GraphPlotRange = computeCoordinateBounds[];
     $GraphPlotSize := $GraphPlotSize = rangeSize[$GraphPlotRange];
-    $GraphPlotSizeX := Max[Part[$GraphPlotSize, 1], $MachineEpsilon];
-    $GraphPlotSizeY := Max[Part[$GraphPlotSize, 2], $MachineEpsilon];
+    $GraphPlotSizeX := Part[$GraphPlotSize, 1];
+    $GraphPlotSizeY := Part[$GraphPlotSize, 2];
     $GraphPlotScale := $GraphPlotScale = If[$GraphIs3D, Norm @ $GraphPlotSize, $GraphPlotSizeX];
     $GraphPlotAspectRatio := $GraphPlotAspectRatio = computeGraphPlotAspectRatio[];
 
@@ -200,6 +200,10 @@ GraphPlotScope[graph_, body_] := Scope[
     body
   ]
 ];
+
+$rangeMicroPadding = 1*^-12;
+computeCoordinateBounds[] :=
+  CoordinateBounds[{$VertexCoordinates, Replace[$EdgeCoordinateLists, {} -> Nothing]}, $rangeMicroPadding];
 
 (**************************************************************************************************)
 
@@ -361,7 +365,16 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       If[Length[$VertexList] > 1000, Large,
         graphPlotSizeScalingFunction[If[$GraphIs3D, 30, 15] * ($GraphPlotSizeX / $GraphMaxSafeVertexSize)]]];
 
-    {imageWidth, imageHeight} = ToNumericImageSize[imageSize, Clip[$GraphPlotAspectRatio, {0.3, 2}]];
+    If[RuleQ[imageSize],
+      {imageWidth, imageHeight} = Match[imageSize,
+        Rule["LongestEdge", sz_ ? NumericQ]   :> computeEdgeLengthBasedImageSize[1.0, sz],
+        Rule["ShortestEdge", sz_ ? NumericQ]  :> computeEdgeLengthBasedImageSize[0.0, sz],
+        Rule["MedianEdge", sz_ ? NumericQ]    :> computeEdgeLengthBasedImageSize[0.5, sz]
+        _ :> ReturnFailed[]
+      ];
+    ,
+      {imageWidth, imageHeight} = ToNumericImageSize[imageSize, Clip[$GraphPlotAspectRatio, {0.3, 2}]];
+    ];
     If[$GraphIs3D,
       (* this makes 3D rotation less zoomy *)
       If[imageHeight > imageWidth * 1.5, imageHeight = imageWidth * 1.5];
@@ -540,13 +553,30 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ];
 
     (* obtain final plotrange *)
-    plotRange = GraphicsPlotRange[graphics /. Disk[a_, _] :> Point[a]];
+    plotRange = $GraphPlotRange;
+
+    (* plotRange += {{-1, 1}, {-1, 1}} * $rangeMicroPadding; *)
     AppendTo[graphics, PlotRange -> plotRange];
 
     applyAutomaticLegends[graphics, automaticLegends, graphLegend]
   ]
 ,
   ExtendedGraphPlottingFunction
+];
+
+lineDiagonalLength[line_] :=
+  EuclideanDistance @@ CoordinateBoundingBox @ line;
+
+lineLength[line_] := EuclideanDistance[First @ line, Last @ line];
+
+computeEdgeLengthBasedImageSize[q_, edgeSize_] := Scope[
+  edgeLengths = Chop @ Map[lineLength, $EdgeCoordinateLists];
+  edgeLengths = DeleteCases[edgeLengths, 0|0.];
+  If[edgeLengths === {},
+    edgeLengths = Map[lineDiagonalLength, $EdgeCoordinateLists]];
+  quantile = Quantile[edgeLengths, q];
+  scaling = edgeSize / quantile;
+  Max[#, 10]& /@ N[$GraphPlotSize * scaling]
 ];
 
 imageSizeToImageFraction[sz_] := sz / effectiveImageWidth;
@@ -672,7 +702,7 @@ makeArrowheadsElement[cardinal_] := Scope[
     SetNone[style, $Gray];
     makeArrowheadShape[shape, style]
   ];
-  If[labelCardinals, shape = attachArrowheadLabel[shape, cardinal, size]];
+  If[labelCardinals, shape = attachArrowheadLabel[shape, StripNegated @ cardinal, size]];
   {size, position, shape}
 ];
 
@@ -694,10 +724,10 @@ lookupTagSpec[cardinal_] := Map[
 (**************************************************************************************************)
 
 attachArrowheadLabel[g:Graphics[primitives_, opts___], cardinal_, size_] := Scope[
-  cardinal //= Replace[TwoWay[c_] :> Row[{c, Negated[c]}]];
+  cardinal //= Replace[TwoWay[c_] :> c(* Row[{c, Negated[c]}] *)];
   label = makeArrowheadLabel[cardinal, size];
   {{xl, xh}, {yl, yh}} = GraphicsPlotRange[g];
-  labelPrimitives = {Opacity[1], Black, Inset[label, {0., xl - 0.3}, {0, 0}, Automatic, None]};
+  labelPrimitives = {Opacity[1], Black, Inset[label, {0., xl - 0.2}, {0, 0}, Automatic, None]};
   Graphics[{primitives, labelPrimitives}, opts]
 ];
 
@@ -1061,10 +1091,20 @@ processVertexShapeFunction[spec_] := Scope[
     ,
     "Point",
       defaultVertexColor = $DarkGray;
-      setbackDistance = 0;
       vertexDrawFunc = drawPoint[$vertexSize];
       vertexPadding = 1 + vertexSizeImage / 2;
     ,
+    "Square",
+      defaultVertexColor = $DarkGray;
+      vertexDrawFunc = drawSquare[$vertexSize];
+      vertexBaseStyle = EdgeForm @ AbsoluteThickness[1];
+      vertexPadding = 1 + vertexSizeImage / 2;
+    ,
+    "Hexagon",
+      defaultVertexColor = $DarkGray;
+      vertexDrawFunc = drawHexagon[$vertexSize];
+      vertexBaseStyle = EdgeForm @ AbsoluteThickness[1];
+      vertexPadding = 1 + vertexSizeImage / 2,
     _,
       failPlot["badvshapefunc", spec, commaString @ $validVertexShapes];
   ];
@@ -1077,9 +1117,12 @@ drawPoint[size_][pos_, color_] :=
 drawSphere[size_][pos_, color_] :=
   Style[Sphere[pos, size], color];
 
-drawDisk[size_][pos_, color_] := Style[
-  If[CoordinateMatrixQ[pos], Disk[#, size]& /@ pos, Disk[pos, size]],
-  FaceForm[color], EdgeForm[Darker[color, .3]]
+drawDisk[size_][pos_, color_] :=
+  edgedStyle[color] @ mapCoordArray[Disk, pos, size];
+
+edgedStyle[color_][primitives_] := Style[
+  primitives,
+  FaceForm[color], EdgeForm @ Darker[color, .3]
 ];
 
 drawDisk3D[size_][pos_, color_] := Inset[
@@ -1087,7 +1130,18 @@ drawDisk3D[size_][pos_, color_] := Inset[
   pos, {0, 0}, plotSizeToDiskSize @ size
 ];
 
+drawSquare[size_][pos_, color_] :=
+  edgedStyle[color] @ mapCoordArray[Rectangle[# - size / 2, # + size / 2]&, pos];
+
+(* todo: replace this with a single polygon *)
+$hexagonPoints = CirclePoints[{1, Tau/12}, 6] / Sqrt[2];
+drawHexagon[size_][pos_, color_] :=
+  edgedStyle[color] @ mapCoordArray[Polygon[PlusVector[$hexagonPoints * size, #]]&, pos];
+
 mapCoordArray[f_][array_, args___] :=
+  mapCoordArray[f, array, args];
+
+mapCoordArray[f_, array_, args___] :=
   If[CoordinateMatrixQ[array], Map[f[#, args]&, array], f[array, args]];
 
 (**************************************************************************************************)

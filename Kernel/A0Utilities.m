@@ -350,6 +350,12 @@ RestColumns[matrix_] := Part[matrix, All, 2 ;; All];
 
 (**************************************************************************************************)
 
+PackageExport["PrependColumn"]
+
+PrependColumn[matrix_, column_] := Transpose @ Prepend[Transpose @ matrix, column];
+
+(**************************************************************************************************)
+
 PackageExport["FirstRest"]
 
 FirstRest[list_] := {First @ list, Rest @ list};

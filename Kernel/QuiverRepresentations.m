@@ -45,6 +45,7 @@ carChars[str_] := Characters[str] /. "_" -> None;
 chooseAutoRepresentation[cardinalList_] :=
   Switch[
     ToLowerCase @ Sort @ cardinalList,
+      {"x"}, InfiniteAbelianGroup[1],
       {"x", "y"}, InfiniteAbelianGroup[2],
       {"x", "y", "z"}, InfiniteAbelianGroup[3],
       {"w", "x", "y", "z"}, InfiniteAbelianGroup[4],
@@ -91,10 +92,16 @@ DeclareArgumentCount[QuiverRepresentationPlot, 1];
 
 QuiverRepresentationPlot[qrep_, opts:OptionsPattern[Quiver]] := Scope[
 
+  UnpackOptions[plotLabel];
+  If[StringQ[qrep],
+    SetAutomatic[plotLabel, ToTitleString[qrep]];
+    qrep = LatticeQuiverData[qrep, "Representation"]];
+
   If[!QuiverRepresentationObjectQ[qrep], ReturnFailed[]];
 
   quiver = qrep["Quiver"];
-  quiverPlot = Quiver[quiver, opts, ImageSize -> Tiny, GraphLegend -> None];
+  quiverPlot = Quiver[quiver, PlotLabel -> plotLabel, opts, ImageSize -> {60, 80}, GraphLegend -> None,
+    VertexSize -> Large];
 
   colors = LookupCardinalColors[quiver];
   labeledGenerators = makeLabeledGenerators[qrep["Generators"], colors];

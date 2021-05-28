@@ -63,7 +63,9 @@ PackageExport["LabeledEdgeGraph"]
 
 LabeledEdgeGraph[g_, opts___] := ExtendedGraph[g, opts,
   VertexSize -> Large, ArrowheadSize -> Medium,
-  LabelCardinals->True,ImagePadding->{{20,10},{20,0}}, VertexLabels -> "Name"
+  LabelCardinals->True, ImagePadding -> {{20,10},{20,10}},
+  VertexLabels -> "Name",
+  ImageSize -> ("ShortestEdge" -> 60)
 ];
 
 
@@ -79,28 +81,54 @@ PlotLatticeColoring[quiver_, args___] := Scope[
   icon = Quiver[quiver,
     GraphLegend -> None,
     ArrowheadSize -> MediumSmall,
-    ArrowheadShape -> {"Arrow", TwoWayStyle -> "Out"},
+    ArrowheadShape -> {"Arrow", TwoWayStyle -> "OutClose"},
     ArrowheadStyle -> $LightGray,
     LabelCardinals -> True, VertexSize -> Huge,
-    ImagePadding -> 8, ImageSize -> {100, 100},
+    ImagePadding -> {{12, 12},{20, 15}}, ImageSize -> "ShortestEdge" -> 45,
     VertexColorFunction -> "Index",
-    GraphLayout -> If[notb, "CircularEmbedding", Automatic]
+    VertexCoordinates -> If[notb, CirclePoints @ VertexCount[quiver], {{0, 0}}]
   ];
   If[notb, icon //= CombineMultiedges];
   Row[{LatticeGraph[quiver, args,
     VertexColorFunction -> "GeneratingVertex",
-    VertexSize -> 1.2, ImageSize -> 150, GraphLegend -> None
+    VertexSize -> 1.2, ImageSize -> 120, GraphLegend -> None
   ], icon}, Spacer[15]]
 ]
 
 (**************************************************************************************************)
 
+PackageExport["LatticeColoringRow"]
+
+LatticeColoringRow[list_List, args___] :=
+  MapSpacedRow[toLabelLCP @ PlotLatticeColoring[#, args]&, list];
+
+toLabelLCP[Row[{lattice_, quiver_}, ___]] :=
+  Labeled[lattice, quiver];
+
+(**************************************************************************************************)
+
 PackageExport["LatticeColoringGrid"]
 
+makeColoringGridEntry[label:(_String | _Integer | _Subscript), ___] :=
+  {Item[Style[label, $LegendLabelStyle, 15, Bold], ItemSize -> {Full, 2}, Alignment -> Center], SpanFromLeft};
+
+makeColoringGridEntry[None, ___] :=
+  {" ", SpanFromLeft};
+
+makeColoringGridEntry[quiver_List, args___] :=
+  Map[makeColoringGridEntry[#, args]&, quiver];
+
+makeColoringGridEntry[quiver_, args___] :=
+  First @ PlotLatticeColoring[quiver, args];
+
 LatticeColoringGrid[items_, args___] := Scope[
+  entries = Map[Flatten[List[makeColoringGridEntry[#, args]]]&, items];
+  entries = PadRight[entries, Automatic, ""];
+  entries = Replace[entries, row:{_, SpanFromLeft, Repeated[""]} :> Replace[row, "" -> SpanFromLeft, {1}], {1}];
   Grid[
-    Map[PlotLatticeColoring[#, args]&, items, {2}],
-    Spacings -> {5, 0}
+    entries,
+    Spacings -> {0, 0}, ItemSize -> {All, 0},
+    Alignment -> Center
   ]
 ];
 

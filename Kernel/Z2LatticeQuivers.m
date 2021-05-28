@@ -107,6 +107,9 @@ $cardinalBasedRegionPattern = Path | Line[_, _] | HalfLine | InfiniteLine | Axes
 
 iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] := Scope[
 
+  If[ListQ[representation],
+    Return @ Map[iGenerateLattice[head, #, directedEdges, opts]&, representation]];
+
   If[StringQ[representation],
     latticeName = representation;
 
@@ -321,7 +324,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   vertexCoordinates = ToPackedReal @ vertexCoordinates;
 
   If[plotLabel === Automatic && StringQ[latticeName],
-    simpleOptions //= ReplaceOptions[PlotLabel -> toTitleString[latticeName]]];
+    simpleOptions //= ReplaceOptions[PlotLabel -> ToTitleString[latticeName]]];
 
   SetAutomatic[cardinalList, CardinalList @ edgeList];
   If[head === LatticeGraph,
@@ -364,7 +367,9 @@ $defaultLatticeNorms = {
 
 $defaultLatticeSizes = {"Square" -> {180, 180}, _ -> {200, 200}};
 
-toTitleString[s_String] :=
+PackageExport["ToTitleString"]
+
+ToTitleString[s_String] :=
   ToLowerCase @ StringReplace[s, RegularExpression["([a-z])([A-Z])"] :> "$1 $2"];
 
 (**************************************************************************************************)
@@ -373,7 +378,7 @@ General::badparamlatticename = "The specified name `` is not a known name for a 
 General::badparamlatticeargs = "The provided arguments `` were not valid for parameterized lattice ``."
 General::badparamlattiecount = "The parameterized lattice `` takes up to `` arguments, but `` were provided.";
 
-iGenerateLattice[head_, {latticeName_String, args__}, directedEdges_, opts:OptionsPattern[]] := Scope[
+iGenerateLattice[head_, {latticeName_String, args__}, directedEdges_, opts:OptionsPattern[]] /; !Developer`StringVectorQ[{args}] := Scope[
 
   paramLatticedata = $ParameterizedLatticeData[latticeName];
   If[MissingQ[paramLatticedata],
