@@ -895,7 +895,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
   ];
 
   If[isMulti || !DuplicateFreeQ[edgeList] && FreeQ[graphLayout, "MultiEdgeDistance"],
-    graphLayout = Developer`ToList[graphLayout, "MultiEdgeDistance" -> 0.3];
+    graphLayout = ToList[graphLayout, "MultiEdgeDistance" -> 0.3];
   ];
 
   newGraph = If[actualDim == 3, Graph3D, Graph][

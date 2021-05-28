@@ -1,8 +1,3 @@
-Package["GraphTools`"]
-
-PackageImport["GeneralUtilities`"]
-
-
 PackageExport["LatticeVertex"]
 
 SetUsage @ "

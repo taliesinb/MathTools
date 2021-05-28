@@ -1,9 +1,3 @@
-Package["GraphTools`"]
-
-
-PackageImport["GeneralUtilities`"]
-
-
 PackageExport["FindCoordinatizationFunction"]
 
 Options[FindCoordinatizationFunction] = {"Group" -> None, Modulus -> None};

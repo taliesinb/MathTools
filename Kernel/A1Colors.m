@@ -1,10 +1,3 @@
-Package["GraphTools`"]
-
-PackageImport["GeneralUtilities`"]
-
-
-(**************************************************************************************************)
-
 PackageExport["$ColorPattern"]
 
 $ColorPattern = _RGBColor | _GrayLevel | _CMYKColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor;

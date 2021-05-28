@@ -1,9 +1,3 @@
-Package["GraphTools`"]
-
-
-PackageImport["GeneralUtilities`"]
-
-
 PackageExport["ChessboardNorm"]
 
 ChessboardNorm[e_] := Max @ Abs @ e;

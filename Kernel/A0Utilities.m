@@ -1,11 +1,3 @@
-Package["GraphTools`"]
-
-
-PackageImport["GeneralUtilities`"]
-
-
-(**************************************************************************************************)
-
 PackageExport["Tau"]
 
 Tau = 2 * Pi;
@@ -14,19 +6,19 @@ Tau = 2 * Pi;
 
 PackageScope["ToPacked"]
 
-ToPacked = Developer`ToPackedArray;
+ToPacked = ToPackedArray;
 
 PackageScope["ToPackedReal"]
 
-ToPackedReal[e_] := Developer`ToPackedArray[e, Real];
+ToPackedReal[e_] := ToPackedArray[e, Real];
 
 PackageScope["ToPackedRealArrays"]
 
-ToPackedRealArrays[array_ ? Developer`PackedArrayQ] := array;
+ToPackedRealArrays[array_ ? PackedArrayQ] := array;
 
 ToPackedRealArrays[array_] := Scope[
   array = ToPackedReal[array];
-  If[Developer`PackedArrayQ[array], array, Map[ToPackedRealArrays, array]]
+  If[PackedArrayQ[array], array, Map[ToPackedRealArrays, array]]
 ];
 
 (**************************************************************************************************)

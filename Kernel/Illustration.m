@@ -1,10 +1,3 @@
-Package["GraphTools`"]
-
-PackageImport["GeneralUtilities`"]
-
-
-(**************************************************************************************************)
-
 PackageExport["IllustatePathsOnFundamentalQuiver"]
 
 IllustatePathsOnFundamentalQuiver[quiver_, pathSpecs_, opts___] := Scope[

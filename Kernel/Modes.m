@@ -1,8 +1,3 @@
-Package["GraphTools`"]
-
-PackageImport["GeneralUtilities`"]
-
-
 PackageExport["PlotGraphModes"]
 
 complexSortingValue[c_] := {-Round[Abs[c], 0.01], Mod[Arg[c+ $MachineEpsilon * I], 2Pi]}

@@ -1,9 +1,3 @@
-Package["GraphTools`"]
-
-
-PackageImport["GeneralUtilities`"]
-
-
 PackageExport["RepresentationObject"]
 
 SetUsage @ "
@@ -196,7 +190,7 @@ ModForm /: RepresentationElement[ModForm[matrix_, mod_]] :=
   RepresentationElement[matrix, mod];
 
 RepresentationElement /: Normal[RepresentationElement[matrix_, ___]] :=
-  If[Developer`PackedArrayQ[matrix], matrix, ExpandUnitRoots @ matrix];
+  If[PackedArrayQ[matrix], matrix, ExpandUnitRoots @ matrix];
 
 declareFormatting[
   RepresentationElement[matrix_ ? MatrixQ] :>
@@ -214,12 +208,12 @@ fmtComplexRow[re_, im_] := Row[{re, "+", im, $imagStr}];
 
 RepresentationElement[elem1_][RepresentationElement[elem2_]] := With[
   {res = Dot[elem1, elem2]},
-  RepresentationElement @ If[Developer`PackedArrayQ[res], res, Expand @ res]
+  RepresentationElement @ If[PackedArrayQ[res], res, Expand @ res]
 ];
 
 RepresentationElement[elem1_, mod_][RepresentationElement[elem2_, _]] := With[
   {res = Mod[Expand @ Dot[elem1, elem2], mod]},
-  RepresentationElement[If[Developer`PackedArrayQ[res], res, Expand @ res], mod]
+  RepresentationElement[If[PackedArrayQ[res], res, Expand @ res], mod]
 ];
 
 (**************************************************************************************************)

@@ -1,11 +1,3 @@
-Package["GraphTools`"]
-
-
-PackageImport["GeneralUtilities`"]
-
-
-(**************************************************************************************************)
-
 PackageScope["$LatticeData"]
 PackageScope["$LatticeNames"]
 PackageScope["$LatticeClassNames"]

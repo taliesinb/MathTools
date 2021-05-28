@@ -1,9 +1,3 @@
-Package["GraphTools`"]
-
-
-PackageImport["GeneralUtilities`"]
-
-
 PackageExport["GraphVertexAssignments"]
 
 SetUsage @ "

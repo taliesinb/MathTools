@@ -1,9 +1,3 @@
-Package["GraphTools`"]
-
-
-PackageImport["GeneralUtilities`"]
-
-
 PackageExport["AGraph"]
 
 pathGraph[n_Integer, opts___] := ExtendedGraph[PathGraph @ Range @ n, opts, VertexLabels -> "Name"];

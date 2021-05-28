@@ -1,8 +1,3 @@
-Package["GraphTools`"]
-
-PackageImport["GeneralUtilities`"]
-
-
 Unprotect[PathGraph];
 (* fix a weird oversight in the design of PathGraph *)
 PathGraph[n_Integer, opts___] := PathGraph[Range[n], opts];

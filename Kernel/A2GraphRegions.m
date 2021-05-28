@@ -1,10 +1,3 @@
-Package["GraphTools`"]
-
-PackageImport["GeneralUtilities`"]
-
-
-(**************************************************************************************************)
-
 PackageExport["RegionSubgraph"]
 
 SetUsage @ "
@@ -145,7 +138,7 @@ processRegionSpec[region_] := Scope[
   $TagVertexAdjacentEdgeTable := $TagVertexAdjacentEdgeTable = TagVertexAdjacentEdgeTable[$Graph];
   $EdgePairs := $EdgePairs = EdgePairs[$Graph];
   $Cardinals := $Cardinals = CardinalList[$Graph];
-  Map[outerProcessRegion, Developer`ToList @ region]
+  Map[outerProcessRegion, ToList @ region]
 ]
 
 outerProcessRegion[region_] := Scope[
@@ -271,11 +264,11 @@ processRegion[EdgePattern[a_, b_, Negated[c_]]] :=
 
 findEdgeIndices[p:EdgePattern[a_, b_, c___]] := Scope[
   Which[
-    Developer`NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[a, b, c]]],
+    NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[a, b, c]]],
       i,
-    Developer`NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[b, a, c]]],
+    NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[b, a, c]]],
       Negated /@ i,
-    Developer`NotEmptyQ[i = MatchIndices[$EdgeList, UndirectedEdge[a, b, c] | UndirectedEdge[b, a, c]]],
+    NotEmptyQ[i = MatchIndices[$EdgeList, UndirectedEdge[a, b, c] | UndirectedEdge[b, a, c]]],
       i,
     True,
       fail["nfedge", p]
@@ -351,7 +344,7 @@ findVertices[spec_] := Scope[
 
 resolveComplexVertexList[spec_] := Which[
   vertexPatternQ[spec], MatchIndices[$VertexList, spec],
-  ListQ[spec] && !Developer`EmptyQ[spec], Map[findVertex, spec],
+  ListQ[spec] && !EmptyQ[spec], Map[findVertex, spec],
   True, failAuto["notlist", spec]
 ];
 

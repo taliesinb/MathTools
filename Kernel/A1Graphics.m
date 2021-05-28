@@ -1,10 +1,3 @@
-Package["GraphTools`"]
-
-PackageImport["GeneralUtilities`"]
-
-
-(**************************************************************************************************)
-
 PackageExport["LegendForm"]
 
 SetUsage @ "
@@ -474,7 +467,7 @@ PackageExport["ApplyEpilog"]
 ApplyEpilog[graphics_, None | {}] := graphics;
 
 ApplyEpilog[graphics_Graphics, epilog_] :=
-  UpdateOptions[graphics, Epilog, Function[Append[Developer`ToList @ #1, epilog]]];
+  UpdateOptions[graphics, Epilog, Function[Append[ToList @ #1, epilog]]];
 
 ApplyEpilog[Graphics3D[primitives_, opts___], epilog_] :=
   Graphics3D[{primitives, epilog}, opts];
@@ -488,7 +481,7 @@ PackageExport["ApplyProlog"]
 ApplyProlog[graphics_, None | {}] := graphics;
 
 ApplyProlog[graphics_Graphics, prolog_] :=
-  UpdateOptions[graphics, Prolog, Function[Append[Developer`ToList @ #1, prolog]]];
+  UpdateOptions[graphics, Prolog, Function[Append[ToList @ #1, prolog]]];
 
 ApplyProlog[Graphics3D[primitives_, opts___], prolog_] :=
   Graphics3D[{prolog, primitives}, opts];
@@ -506,7 +499,7 @@ ApplyLegend[expr_, item_] :=
   updateLegendMargins @ Legended[expr, If[ListQ[item], Map[LegendForm], LegendForm] @ item];
 
 ApplyLegend[Legended[expr_, oldLegend_], newLegend_] :=
- updateLegendMargins @ Legended[expr, Developer`ToList[oldLegend, LegendForm /@ newLegend]];
+ updateLegendMargins @ Legended[expr, ToList[oldLegend, LegendForm /@ newLegend]];
 
 ApplyLegend[legend_][graphics_] := ApplyLegend[graphics, legend];
 

@@ -1,9 +1,3 @@
-Package["GraphTools`"]
-
-PackageImport["GeneralUtilities`"]
-
-(**************************************************************************************************)
-
 PackageExport["ArrowheadShape"]
 PackageExport["ArrowheadSize"]
 PackageExport["ArrowheadStyle"]
@@ -1048,7 +1042,7 @@ applyAutomaticLegends[graphics_, automaticLegends_, Placed[Automatic, place_]] :
 
 applyAutomaticLegends[graphics_, automaticLegends_, graphLegend_] := Scope[
   keyPattern = Alternatives @@ Keys[automaticLegends];
-  graphLegend = Developer`ToList @ graphLegend;
+  graphLegend = ToList @ graphLegend;
   If[!MatchQ[graphLegend, {Repeated[keyPattern | Placed[keyPattern, _]]}],
     Return @ graphics];
   legends = removeSingleton @ Replace[graphLegend, {

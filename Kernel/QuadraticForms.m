@@ -1,11 +1,3 @@
-Package["GraphTools`"]
-
-
-PackageImport["GeneralUtilities`"]
-
-
-(**************************************************************************************************)
-
 PackageExport["QuadraticForm"]
 PackageExport["QuadraticFormObject"]
 

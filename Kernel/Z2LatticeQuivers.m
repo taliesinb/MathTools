@@ -1,9 +1,3 @@
-Package["GraphTools`"]
-
-
-PackageImport["GeneralUtilities`"]
-
-
 PackageExport["AbstractCoordinateFunction"]
 PackageExport["VertexCoordinateFunction"]
 PackageExport["VertexNameFunction"]
@@ -142,7 +136,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   If[AssociationQ[representation] && Sort[Keys @ representation] === {"CayleyFunction", "InitialStates"},
 
     UnpackAssociation[representation, cayleyFunction, initialStates];
-    repInitialStates = Developer`ToList[initialStates];
+    repInitialStates = ToList[initialStates];
     cardinalList = Union[StripNegated /@ DeepCases[cayleyFunction, Labeled[_, c_] :> c]];
     If[cardinalList === {}, cardinalList = Automatic];
   ,
@@ -378,7 +372,7 @@ General::badparamlatticename = "The specified name `` is not a known name for a 
 General::badparamlatticeargs = "The provided arguments `` were not valid for parameterized lattice ``."
 General::badparamlattiecount = "The parameterized lattice `` takes up to `` arguments, but `` were provided.";
 
-iGenerateLattice[head_, {latticeName_String, args__}, directedEdges_, opts:OptionsPattern[]] /; !Developer`StringVectorQ[{args}] := Scope[
+iGenerateLattice[head_, {latticeName_String, args__}, directedEdges_, opts:OptionsPattern[]] /; !StringVectorQ[{args}] := Scope[
 
   paramLatticedata = $ParameterizedLatticeData[latticeName];
   If[MissingQ[paramLatticedata],

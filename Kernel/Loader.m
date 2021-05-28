@@ -140,13 +140,16 @@ loadFileContents[path_, context_] := Module[{str, contents},
   contents
 ];
 
+If[!ValueQ[GraphToolsPackageLoader`$SystemOpenEnabled], GraphToolsPackageLoader`$SystemOpenEnabled = True];
+DoSystemOpen[s_] := If[GraphToolsPackageLoader`$SystemOpenEnabled, SystemOpen[s]];
+
 handleSyntaxError[path_] := Scope[
   errors = GeneralUtilities`FindSyntaxErrors[path];
   Beep[];
   If[errors =!= {},
     Print["Aborting; syntax errors:"];
     Scan[Print, Take[errors, UpTo[5]]];
-    SystemOpen @ Part[errors, 1, 1];
+    DoSystemOpen @ Part[errors, 1, 1];
   ];
   failRead[];
 ];
@@ -189,7 +192,7 @@ GraphToolsPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
   $filesToSkip = FileNames[{"Loader.m", "init.m"}, $directory];
   $files = Sort @ Complement[FileNames["*.m", $directory], $filesToSkip];
 
-  $globalImports = {"System`", "GeneralUtilities`"};
+  $globalImports = {"System`", "GeneralUtilities`", "Developer`"};
 
   $packageExports = Internal`Bag[];
   $packageScopes = Internal`Bag[];
@@ -274,7 +277,7 @@ handleMessage[f_Failure] := Scope[
   fileLine = GeneralUtilities`FileLine[$currentPath, $currentLineNumber];
   Print["Aborting; message ", HoldForm @@ f["HeldMessageTemplate"], " occurred at ", fileLine];
   Print[FailureString @ f];
-  SystemOpen[fileLine];
+  DoSystemOpen[fileLine];
   $failEval = True;
 ];
 

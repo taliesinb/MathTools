@@ -1,12 +1,3 @@
-Package["GraphTools`"]
-
-
-PackageImport["GeneralUtilities`"]
-
-
-
-(**************************************************************************************************)
-
 PackageExport["GroupoidQ"]
 
 SetUsage @ "

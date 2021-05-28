@@ -1,10 +1,3 @@
-Package["GraphTools`"]
-
-PackageImport["GeneralUtilities`"]
-
-
-(**************************************************************************************************)
-
 PackageExport["HighlightGraphRegion"]
 
 SetUsage @ "
@@ -22,10 +15,10 @@ declareSyntaxInfo[HighlightGraphRegion, {_, _, OptionsPattern[]}];
 
 HighlightGraphRegion[graph_, highlights_, opts:OptionsPattern[]] := Scope[
   oldHighlights = AnnotationValue[graph, GraphRegionHighlight];
-  oldHighlights = If[FailureQ[oldHighlights], {}, Developer`ToList @ oldHighlights];
+  oldHighlights = If[FailureQ[oldHighlights], {}, ToList @ oldHighlights];
   ExtendedGraph[
     graph,
-    GraphRegionHighlight -> Join[oldHighlights, Developer`ToList @ highlights],
+    GraphRegionHighlight -> Join[oldHighlights, ToList @ highlights],
     opts
   ]
 ];
@@ -114,8 +107,8 @@ findExistingArrowheadSpec[] := FirstCase[$GraphPlotGraphics, _Arrowheads, None, 
 (**************************************************************************************************)
 
 processOuterSpec = MatchValues[
-  spec_ ? Developer`ListOrAssociationQ :=
-    If[!Developer`ListOrAssociationQ[spec],
+  spec_ ? ListOrAssociationQ :=
+    If[!ListOrAssociationQ[spec],
       Scan[processGeneralSpec, spec],
       $i = 1; MapIndexed[processIndexedStyleSpec, spec]
     ];
@@ -123,7 +116,7 @@ processOuterSpec = MatchValues[
   s_Style :=
     processStyleSpec[s, processOuterSpec];
   other_ :=
-    If[Developer`ListOrAssociationQ[$highlightStyle],
+    If[ListOrAssociationQ[$highlightStyle],
       Block[
         {$highlightStyle = First @ $highlightStyle},
         processGeneralSpec[other];
@@ -221,7 +214,7 @@ processAxesSpec[spec:(All|_Integer|{__Integer})] := Scope[
 
 processAxesSpec[spec_] := Scope[
   colors = LookupCardinalColors[$Graph];
-  words = Map[ParseCardinalWord, Developer`ToList @ spec];
+  words = Map[ParseCardinalWord, ToList @ spec];
   colors = Association @ Map[#1 -> blendColors[Sort @ Lookup[colors, StripNegated /@ #1]]&, words];
   KeyValueMap[axisHighlight, colors]
 ];
@@ -314,7 +307,7 @@ iProcessStyleSpec = MatchValues[
 (**************************************************************************************************)
 
 resolveHighlightSpec[region_] := Scope[
-  results = Developer`ToList @ processRegionSpec @ region;
+  results = ToList @ processRegionSpec @ region;
   Scan[highlightRegion, results]
 ];
 
