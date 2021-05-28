@@ -1,9 +1,3 @@
-Package["GraphTools`"]
-
-
-PackageImport["GeneralUtilities`"]
-
-
 PackageExport["RootPopulation"]
 
 fmtInt[i_] := Which[
@@ -20,26 +14,26 @@ declareFormatting[
 popForm[f_List, color_] := RawBoxes @ CompactMatrixBox[{f}, FrameStyle -> color, "Factor" -> False];
 
 
-PackageExport["MutationGameGroupoid"]
+PackageExport["MutationGame"]
 
-MutationGameGroupoid[graph_Graph] := Scope[
-  count = VertexCount @ graph;
+MutationGame[graph_Graph] := Scope[
+  vertexCount = VertexCount @ graph;
   outTable = VertexOutTable[graph];
   assoc = <|
     "Type" -> "MutationGame",
-    "MirroredGenerators" -> Table[makeMutateGenerator[i, Part[outTable, i]], {i, count}],
-    "InitialStates" -> makeSimpleRoots[count]
+    "MirroredGenerators" -> Table[makeMutateGenerator[i, Part[outTable, i]], {i, vertexCount}],
+    "InitialStates" -> makeSimpleRoots[vertexCount]
   |>;
   constructGroupoid[assoc]
 ];
 
 makeSimpleRoots[n_] := Flatten @ Table[
-  RootPopulation /@ {UnitVector[count, i], -UnitVector[count, i]},
-  {i, count}
+  RootPopulation /@ {UnitVector[n, i], -UnitVector[n, i]},
+  {i, n}
 ]
 
-makeSimpleRoots[n_] :=
-  Table[RootPopulation @ UnitVector[count, i], {i, count}];
+zmakeSimpleRoots[n_] :=
+  Table[RootPopulation @ UnitVector[n, i], {i, n}];
 
 PackageExport["MutateForward"]
 PackageExport["MutateBackward"]
@@ -57,3 +51,88 @@ MutateBackward[i_, nbors_][RootPopulation[pop_]] :=
 
 ToInverseFunction[m_MutateForward] := MutateBackward @@ m;
 ToInverseFunction[m_MutateBackward] := MutateForward @@ m;
+
+
+PackageExport["EdgeMutationGame"]
+
+EdgeMutationGame[graph_Graph] := Scope[
+  graph //= ToIndexGraph;
+  vertexCount = VertexCount @ graph;
+  edges = EdgeList @ graph;
+  assoc = <|
+    "Type" -> "EdgeMutationGame",
+    "MirroredGenerators" -> Map[makeEdgeMutateGenerator, EdgeList @ graph],
+    "InitialStates" -> makeSimpleRoots[vertexCount]
+  |>;
+  constructGroupoid[assoc]
+];
+
+makeEdgeMutateGenerator[DirectedEdge[i_, j_]] :=
+  GroupoidGenerator[
+    EdgeMutateForward[i, j],
+    EdgeMutateBackward[i, j]
+  ];
+
+makeEdgeMutateGenerator[UndirectedEdge[i_, j_]] := Splice[{
+  makeEdgeMutateGenerator @ DirectedEdge[i, j],
+  makeEdgeMutateGenerator @ DirectedEdge[j, i]
+}];
+
+PackageExport["EdgeMutateForward"]
+PackageExport["EdgeMutateBackward"]
+
+EdgeMutateForward[i_, j_][RootPopulation[pop_]] :=
+  RootPopulation @ ReplacePart[pop, j -> (Part[pop, i] - Part[pop, j])];
+
+EdgeMutateBackward[i_, j_][RootPopulation[pop_]] :=
+  RootPopulation @ ReplacePart[pop, j -> -(Part[pop, j] - Part[pop, i])];
+
+ToInverseFunction[m_EdgeMutateForward] := EdgeMutateBackward @@ m;
+ToInverseFunction[m_EdgeMutateBackward] := EdgeMutateForward @@ m;
+
+
+PackageExport["MultiMutationGame"]
+
+MultiMutationGame[graph_Graph] := Scope[
+  graph //= ToIndexGraph;
+  vertexCount = VertexCount @ graph;
+  outTable = VertexOutTable @ graph;
+  outMatrix = AdjacencyMatrix @ graph;
+  assoc = <|
+    "Type" -> "MultiMutationGame",
+    "Generators" -> MapIndexed[makeMultiMutateGenerator[First @ #2, #1, vertexCount]&, outTable],
+    "InitialStates" -> Flatten[{
+      Table[
+        If[ i === j, {
+          RepresentationElement @ DiagonalMatrix @ UnitVector[vertexCount, i],
+          RepresentationElement @ DiagonalMatrix @ -UnitVector[vertexCount, i]
+        },
+        RepresentationElement @ DiagonalMatrix @ (UnitVector[vertexCount, i] - UnitVector[vertexCount, j])]
+        , {i, vertexCount}, {j, vertexCount}]
+    }]
+  |>;
+  constructGroupoid[assoc]
+];
+
+makeMultiMutateGenerator[i_, out_, n_] :=
+  RepresentationElement @ ReplacePart[
+    IdentityMatrix @ n,
+    Normal @ Merge[Flatten @ {{i, i} -> -1, {#, i} -> 1& /@ out}, Total]
+  ]
+
+makeMultiMutateGenerator[i_, out_, n_] := Scope[
+  id = IdentityMatrix[n];
+  id[[All, i]] = -outMatrix[[i]];
+  id[[i, i]] *= -1;
+  RepresentationElement @ id
+];
+
+(* makeMultiMutateGenerator[i_, out_, n_] :=
+  RepresentationElement @ ReplacePart[
+    IdentityMatrix @ n,
+    KeyValueMap[mergeRule, Echo @ GroupBy[Flatten @ {{i, i} -> -1, {#, i} -> 1& /@ out}, First -> Last]]
+  ]
+
+mergeRule[p:{i_, i_}, vals_] := p -> (Times @@ vals);
+mergeRule[p:{i_, j_}, vals_] := p -> Total[vals];
+ *)
