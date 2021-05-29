@@ -4,6 +4,7 @@ PackageExport["ArrowheadStyle"]
 PackageExport["ArrowheadPosition"]
 PackageExport["VertexColorFunction"]
 PackageExport["CardinalColors"]
+PackageExport["ViewRegion"]
 
 SetUsage @ "ArrowheadShape is an extended option to Graph.";
 SetUsage @ "ArrowheadSize is an extended option to Graph.";
@@ -11,6 +12,7 @@ SetUsage @ "ArrowheadStyle is an extended option to Graph.";
 SetUsage @ "ArrowheadPosition is an extended option to Graph.";
 SetUsage @ "VertexColorFunction is an extended option to Graph."
 SetUsage @ "CardinalColors is an extended option to Graph."
+SetUsage @ "ViewRegion is an extended option to Graph."
 
 (**************************************************************************************************)
 
@@ -173,7 +175,10 @@ GraphPlotScope[graph_, body_] := Scope[
 
   GraphScope[graph,
 
-    {$VertexCoordinates, $EdgeCoordinateLists} = ExtractGraphPrimitiveCoordinates[$IndexGraph];
+    {$VertexCoordinates, $EdgeCoordinateLists} = ExtractGraphPrimitiveCoordinates @ $IndexGraph;
+
+    viewRegion = LookupExtendedGraphAnnotations[$Graph, ViewRegion];
+    If[viewRegion =!= All, applyViewRegion[viewRegion], $VertexParts = $EdgeParts = All];
 
     $GraphHighlightStyle := $GraphHighlightStyle = removeSingleton @ LookupOption[$Graph, GraphHighlightStyle];
     $GraphPlotImageSize := $GraphPlotImageSize := LookupImageSize @ $Graph;
@@ -195,9 +200,20 @@ GraphPlotScope[graph_, body_] := Scope[
   ]
 ];
 
+applyViewRegion[regionSpec_] := Block[{region},
+  region = RegionDataUnion @ processRegionSpec @ regionSpec;
+  If[!MatchQ[region, GraphRegionData[_List, _List]], Return[]];
+  $VertexParts = Part[region, 1];
+  $EdgeParts = Part[region, 2];
+];
+
 $rangeMicroPadding = 1*^-12;
 computeCoordinateBounds[] :=
-  CoordinateBounds[{$VertexCoordinates, Replace[$EdgeCoordinateLists, {} -> Nothing]}, $rangeMicroPadding];
+  CoordinateBounds[{
+    Part[$VertexCoordinates, $VertexParts],
+    Replace[Part[$EdgeCoordinateLists, $EdgeParts], {} -> Nothing]},
+    $rangeMicroPadding
+  ];
 
 (**************************************************************************************************)
 
@@ -279,9 +295,10 @@ computeGraphPlotAspectRatio[] := Scope[
   If[CoordinateMatrixQ[$VertexCoordinates, 3],
     viewOptions = LookupExtendedGraphAnnotations[$Graph, ViewOptions];
     SetAutomatic[viewOptions, $automaticViewOptions];
-    viewOptions = Association[PlotRange -> CoordinateBounds[$VertexCoordinates], viewOptions];
+    vertexCoords = Part[$VertexCoordinates, $VertexParts];
+    viewOptions = Association[PlotRange -> CoordinateBounds[vertexCoords], viewOptions];
     viewTransform = ConstructGraphicsViewTransform[viewOptions];
-    vertexCoordinates = viewTransform @ $VertexCoordinates;
+    vertexCoordinates = viewTransform @ vertexCoords;
     {width, height} = PlotRangeSize @ CoordinateBounds[vertexCoordinates];
     height / width
   ,
@@ -290,12 +307,12 @@ computeGraphPlotAspectRatio[] := Scope[
 ];
 
 computeMaxSafeVertexSize[] := Scope[
-  minDistance = getRankedMinDistance[$VertexCoordinates];
+  minDistance = getRankedMinDistance @ Part[$VertexCoordinates, $VertexParts];
   Max[Min[minDistance / 2, Max[$GraphPlotSize] / 3], $MachineEpsilon]
 ];
 
 computeMaxSafeArrowheadSize[] := Scope[
-  minDistance = getRankedMinDistance[lineCenter /@ $EdgeCoordinateLists];
+  minDistance = getRankedMinDistance[lineCenter /@ Part[$EdgeCoordinateLists, $EdgeParts]];
   minDistance = Max[minDistance, $GraphMaxSafeVertexSize/Sqrt[2]];
   Min[$GraphMaxSafeVertexSize, minDistance, Max[$GraphPlotSize] / 3]
 ];
@@ -356,7 +373,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     (* choose a size based on vertex seperation *)
     SetAutomatic[imageSize,
-      If[Length[$VertexList] > 1000, Large,
+      If[$VertexParts === All && Length[$VertexList] > 1000, Large,
         graphPlotSizeScalingFunction[If[$GraphIs3D, 30, 15] * ($GraphPlotSizeX / $GraphMaxSafeVertexSize)]]];
 
     If[RuleQ[imageSize],
@@ -437,9 +454,11 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       If[!MatchQ[colorFunctionObject, ColorFunctionObject["Discrete", Identity]],
         automaticLegends["Colors"] := colorFunctionObject];
 
+      colorGroups //= filterAssocIndices[$VertexParts];
+
       vertexItems = KeyValueMap[colorGroupFun, colorGroups];
     ,
-      vertexItems = vertexDrawFunc[Range @ $VertexCount, vertexStyle];
+      vertexItems = vertexDrawFunc[Part[Range @ $VertexCount, $VertexParts], vertexStyle];
 
     ];
     vertexGraphics = makeGraphicsGroup @ {vertexBaseStyle, vertexStyle, vertexItems};
@@ -457,7 +476,10 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     edgeStyle //= toDirectiveOptScan[setEdgeStyleGlobals];
 
     If[arrowheadShape === None || zeroQ[arrowheadSize] || UndirectedGraphQ[$Graph],
-      edgePrimitives = annotatedEdgePrimitives[setback[Line, setbackDistance], Range @ $EdgeCount];
+      edgePrimitives = annotatedEdgePrimitives[
+        setback[Line, setbackDistance],
+        If[$EdgeParts === All, Range @ $EdgeCount, $EdgeParts]
+      ];
       edgeGraphics = makeGraphicsGroup @ {edgeStyle, edgePrimitives};
     ,
       SetAutomatic[arrowheadStyle, Which[
@@ -477,7 +499,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       SetAutomatic[arrowheadPosition, If[$GraphIs3D && arrowheadShape =!= "Cone", 0.65, 0.502]];
 
       arrowheadBounds = CoordinateBounds[
-        edgeCenters,
+        Part[edgeCenters, $EdgeParts],
         Max[arrowheadSize * $GraphPlotSizeX] * 0.5
       ];
       extendPaddingToInclude[arrowheadBounds];
@@ -486,6 +508,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         <|All -> Range[$EdgeCount]|>,
         edgeTagGroups = PositionIndex[$EdgeTags]
       ];
+
+      edgeTagGroups //= filterAssocIndices[$EdgeParts];
 
       edgeGraphics = KeyValueMap[drawArrowheadEdges, edgeTagGroups];
       edgeGraphics = makeGraphicsGroup @ {edgeStyle, edgeGraphics};
@@ -503,7 +527,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[vertexLabels =!= None,
       SetNone[vertexSize, $GraphMaxSafeVertexSize / 5];
       vertexLabelItems = generateLabelPrimitives[
-        vertexLabels, $VertexList, $VertexCoordinates,
+        vertexLabels, $VertexList, $VertexCoordinates, $VertexParts,
         vertexSize, vertexLabelStyle, vertexAnnotations
       ];
       AppendTo[labelGraphics, vertexLabelItems]
@@ -513,7 +537,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[edgeLabels =!= None,
       SetAutomatic[arrowheadSize, 0];
       edgeLabelItems = generateLabelPrimitives[
-        edgeLabels, $EdgeList, edgeCenters,
+        edgeLabels, $EdgeList, edgeCenters, $EdgeParts,
         Max[arrowheadSize] * $GraphPlotSizeX, edgeLabelStyle, <||>
       ];
       AppendTo[labelGraphics, edgeLabelItems]];
@@ -557,6 +581,12 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 ,
   ExtendedGraphPlottingFunction
 ];
+
+filterAssocIndices[All][assoc_] :=
+  assoc;
+
+filterAssocIndices[parts_][assoc_] :=
+  DeleteCases[Map[Intersection[#, parts]&, assoc], {}];
 
 lineDiagonalLength[line_] :=
   EuclideanDistance @@ CoordinateBoundingBox @ line;
@@ -653,6 +683,7 @@ scanArrowheadShapeOpts = MatchValues[
 
 arrowheadsND[e_] := If[$GraphIs3D, Arrowheads[e, Appearance -> "Projected"], Arrowheads @ e];
 
+drawArrowheadEdges[_, {}] := Nothing;
 drawArrowheadEdges[cardinal_, indices_] := Scope[
   If[
     Or[
@@ -1192,7 +1223,7 @@ getAnnoValue[annos_, key_] := Lookup[annos, key, failPlot["badgraphannokey", key
 
 toColorFunctionData = MatchValues[
   "Name" := $VertexList;
-  "Index" := VertexRange[$Graph];
+  "Index" := Range @ $VertexCount;
   (* todo, make the distance work on regions as well *)
   "Distance" := MetricDistance[$MetricGraphCache, 1];
   {"Distance", v_} := MetricDistance[$MetricGraphCache, getVertexIndex @ v];
@@ -1269,9 +1300,13 @@ cachedRasterizeSize[e_] := cachedRasterizeSize[e] = Rasterize[e, "RasterSize"];
 
 PackageExport["LabelPosition"]
 
-generateLabelPrimitives[spec_, names_, coordinates_, size_, labelStyle_, annotations_] := Scope[
-  $annotationKeys = Keys[annotations];
-  $labelNames = names; $annotations = annotations; $labeledElemSize = size / 2; $spacings = 0;
+generateLabelPrimitives[spec_, names_, coordinates_, parts_, size_, labelStyle_, annotations_] := Scope[
+  $annotationKeys = Keys @ annotations;
+  $labelNames = names;
+  coordinates = Part[coordinates, parts];
+  $annotations = annotations;
+  $labeledElemSize = size / 2;
+  $spacings = 0;
   $labelSizeScale = 1; $labelY = -1; $labelX = 0; $labelBackground = GrayLevel[1.0, 0.6];
   $labelBaseStyle = Inherited;
   labelStyle //= removeSingleton;
@@ -1279,7 +1314,8 @@ generateLabelPrimitives[spec_, names_, coordinates_, size_, labelStyle_, annotat
   labelStyle //= DeleteCases[sspec:$sizePattern /; ($labelSizeScale = toNumericSizeScale @ sspec; True)];
   $magnifier = If[$labelSizeScale == 1, Identity, Magnify[#, $labelSizeScale]&];
   {payloadFunction, placerFunction} = processLabelSpec[spec];
-  labelElements = MapIndexed[placerFunction[labelForm @ payloadFunction @ First @ #2, #1]&, coordinates];
+  indices = If[parts === All, Range @ Length @ names, parts];
+  labelElements = MapThread[placerFunction[labelForm @ payloadFunction @ #2, #1]&, {coordinates, indices}];
   {labelStyle, labelElements}
 ];
 

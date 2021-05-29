@@ -164,6 +164,9 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   SetAutomatic[initialStates, repInitialStates];
+  If[IntegerQ[initialStates],
+    (* allow specifying a different vertex in the fundamental quiver. *)
+    initialStates = ReplacePart[repInitialStates, {1, 2} -> initialStates]];
 
   simpleOptions = TakeOptions[{opts}, $simpleGraphOptions];
 

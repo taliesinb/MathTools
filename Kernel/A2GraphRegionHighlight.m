@@ -25,9 +25,9 @@ HighlightGraphRegion[graph_, highlights_, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphRegionHighlightGraphics"]
+PackageExport["GraphRegionGraphics"]
 
-GraphRegionHighlightGraphics[graph_, regionSpec_] := Scope[
+GraphRegionGraphics[graph_, regionSpec_] := Scope[
 
   graph = CoerceToGraph[1];
 

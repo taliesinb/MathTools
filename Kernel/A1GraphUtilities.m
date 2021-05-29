@@ -180,7 +180,8 @@ $extendedGraphOptionsRules = {
   CardinalColors -> Automatic,
   ViewOptions -> Automatic,
   LabelCardinals -> False,
-  CoordinateTransformFunction -> None
+  CoordinateTransformFunction -> None,
+  ViewRegion -> All
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -636,6 +637,22 @@ VertexAdjacentEdgeTable[graph_] := Scope[
 PackageExport["TagIndices"]
 
 TagIndices[graph_] := PositionIndex @ EdgeTags @ graph;
+
+(**************************************************************************************************)
+
+PackageExport["TagVertexOutTable"]
+
+TagVertexOutTable[graph_] := Scope[
+  cardinals = CardinalList @ graph;
+  igraph = ToIndexGraph @ graph;
+  cardinals = Join[cardinals, Negated /@ cardinals];
+  outTables = ConstantAssociation[cardinals, ConstantArray[None, VertexCount @ igraph]];
+  ({src, dst, tag} |-> (
+      Part[outTables, Key @ tag, src] = dst;
+      Part[outTables, Key @ Negated @ tag, dst] = src;
+  )) @@@ EdgeList[igraph];
+  outTables
+];
 
 (**************************************************************************************************)
 

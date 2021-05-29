@@ -77,6 +77,8 @@ declareBoxFormatting[
 
 colorBox[box_, color_] := StyleBox[box, Background -> color];
 
+PackageScope["skeletonBox"]
+
 skeletonBox[head_, color_, args_] :=
   RowBox @ Flatten @ {head, "[", Riffle[colorBox[skeletonString @ #, color]& /@ args, ","], "]"};
 
@@ -772,6 +774,8 @@ processRegion[RegionUnion[regions__]] :=
   RegionDataUnion @ Map[processRegion, {regions}];
 
 (********************************************)
+
+PackageScope["RegionDataUnion"]
 
 RegionDataUnion[{a_}] := a;
 

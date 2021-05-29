@@ -809,6 +809,15 @@ ApplyColoring[list$, palette$] uses a palette specification to choose colors.
 
 ApplyColoring::badpalette = "The palette `` was not a valid form."
 
+$discreteColors = RGBColor /@ {"#da3b26", "#eebb40", "#4ba526", "#4aa59d", "#4184c6", "#ca4a86", "#6b6b6b", "#929292", "#c5c5c5"};
+
+discreteColorPalette = MatchValues[
+  4 := Part[$discreteColors, {1,2,3,5}];
+  5 := Part[$discreteColors, {1,2,3,5,6}];
+  n_ /; n <= 9 := Take[$discreteColors, n];
+  _ := $discreteColors;
+];
+
 coloringColorPalette = MatchValues[
   Automatic := Part[ToColorPalette["Basic"], {1, 2, 3, 5, 4, 6}];
   other_ := ToColorPalette[other];
@@ -824,6 +833,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
     Length[uniqueValues] == 1,
       DiscreteColorFunction[uniqueValues, {Gray}],
     (RangeQ[uniqueValues] || RangeQ[uniqueValues + 1]) && count <= 12,
+      If[palette === Automatic, $ColorPalette = discreteColorPalette @ count];
       DiscreteColorFunction[uniqueValues, Automatic],
     RealVectorQ[nUniqueValues = N[uniqueValues]],
       ContinuousColorFunction[nUniqueValues, Automatic],

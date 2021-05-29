@@ -64,11 +64,18 @@ LabeledEdgeGraph[g_, opts___] := ExtendedGraph[g, opts,
 
 (**************************************************************************************************)
 
-PackageExport["PlotLatticeColoring"]
+PackageExport["LatticeColoringPlot"]
 
 $customColors = <|"a" -> $Purple, "b" -> $Pink, "c" -> $Teal, "x" -> $Pink, "y" -> $Teal|>;
 
-PlotLatticeColoring[quiver_, args___] := Scope[
+$plcOrientation = "Horizontal";
+
+LatticeColoringPlot[quiver_, args___, "Orientation" -> o_] := Block[
+  {$plcOrientation = o},
+  LatticeColoringPlot[quiver, args]
+];
+
+LatticeColoringPlot[quiver_, args___] := Scope[
   quiver = Quiver[quiver];
   notb = VertexCount[quiver] > 1;
   icon = Quiver[quiver,
@@ -77,15 +84,19 @@ PlotLatticeColoring[quiver_, args___] := Scope[
     ArrowheadShape -> {"Arrow", TwoWayStyle -> "OutClose"},
     ArrowheadStyle -> $LightGray,
     LabelCardinals -> True, VertexSize -> Huge,
-    ImagePadding -> {{12, 12},{20, 15}}, ImageSize -> "ShortestEdge" -> 45,
+    ImagePadding -> {{12, 12},{20, 20}}, ImageSize -> "ShortestEdge" -> 45,
     VertexColorFunction -> "Index",
     VertexCoordinates -> If[notb, CirclePoints @ VertexCount[quiver], {{0, 0}}]
   ];
   If[notb, icon //= CombineMultiedges];
-  Row[{LatticeGraph[quiver, args,
+  graph = LatticeGraph[quiver, args,
     VertexColorFunction -> "GeneratingVertex",
     VertexSize -> 1.2, ImageSize -> 120, GraphLegend -> None
-  ], icon}, Spacer[15]]
+  ];
+  If[$plcOrientation === "Horizontal",
+    Row[{graph, icon}, Spacer[15]],
+    Labeled[graph, icon]
+  ]
 ]
 
 (**************************************************************************************************)
@@ -93,10 +104,7 @@ PlotLatticeColoring[quiver_, args___] := Scope[
 PackageExport["LatticeColoringRow"]
 
 LatticeColoringRow[list_List, args___] :=
-  MapSpacedRow[toLabelLCP @ PlotLatticeColoring[#, args]&, list];
-
-toLabelLCP[Row[{lattice_, quiver_}, ___]] :=
-  Labeled[lattice, quiver];
+  MapSpacedRow[LatticeColoringPlot[#, args, "Orientation" -> "Vertical"]&, list];
 
 (**************************************************************************************************)
 
@@ -112,7 +120,7 @@ makeColoringGridEntry[quiver_List, args___] :=
   Map[makeColoringGridEntry[#, args]&, quiver];
 
 makeColoringGridEntry[quiver_, args___] :=
-  First @ PlotLatticeColoring[quiver, args];
+  First @ LatticeColoringPlot[quiver, args];
 
 LatticeColoringGrid[items_, args___] := Scope[
   entries = Map[Flatten[List[makeColoringGridEntry[#, args]]]&, items];
