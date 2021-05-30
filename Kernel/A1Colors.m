@@ -828,7 +828,10 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   $ColorPalette = coloringColorPalette[palette];
   If[FailureQ[$ColorPalette], ReturnFailed["badpalette", palette]];
   posIndex = KeySort @ PositionIndex @ data;
-  uniqueValues = Keys @ posIndex; count = Length @ uniqueValues;
+  containsInd = KeyExistsQ[posIndex, Indeterminate];
+  If[containsInd, indPos = posIndex[Indeterminate]; KeyDropFrom[posIndex, Indeterminate]];
+  uniqueValues = Keys @ posIndex;
+  count = Length @ uniqueValues;
   colorFunction = Which[
     Length[uniqueValues] == 1,
       DiscreteColorFunction[uniqueValues, {Gray}],
@@ -850,6 +853,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   normalFunction = Normal @ colorFunction;
   colors = Map[normalFunction, uniqueValues];
   colorsValues = Transpose[{colors, uniqueValues}];
+  If[containsInd, AppendTo[colorsValues, {White, Indeterminate}]; AppendTo[posIndex, Indeterminate -> indPos]];
   {Merge[MapThread[Rule, {colorsValues, Values @ posIndex}], Catenate], colorFunction}
 ];
 

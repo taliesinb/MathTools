@@ -140,6 +140,7 @@ processRegionSpec[region_] := Scope[
   $TagVertexAdjacentEdgeTable := $TagVertexAdjacentEdgeTable = TagVertexAdjacentEdgeTable[$Graph];
   $EdgePairs := $EdgePairs = EdgePairs[$Graph];
   $Cardinals := $Cardinals = CardinalList[$Graph];
+  $GraphOrigin := $GraphOrigin = LookupExtendedGraphAnnotations[$Graph, GraphOrigin];
   Map[outerProcessRegion, ToList @ region]
 ]
 
@@ -322,7 +323,7 @@ processRegion[list_List /; VectorQ[list, GraphRegionElementQ]] :=
 
 GraphRegion::invv = "The region ``[...] contained an invalid vertex specification ``.";
 
-findVertex[GraphOrigin] := 1;
+findVertex[GraphOrigin] := findVertex[$GraphOrigin];
 
 findVertex[RandomPoint] := RandomInteger[{1, $VertexCount}];
 

@@ -14,6 +14,7 @@ $metricUsage = StringTrim @ "
 * The setting of GraphMetric determines how the metric is computed:
 | Inherited | use the GraphMetric present in graph$ (default) |
 | Automatic | length of the shortest path in graph$ |
+| 'Chessboard' | maximum of the per-cardinal distances |
 | 'Euclidean' | square root of sum of squares per-cardinal distances |
 | {s$1, s$2, $$} | signature of the metric, of same length as cardinals |
 | QuadraticForm[$$] | apply the quadratic form to the per-cardinal distances |
@@ -169,6 +170,8 @@ findShortestPath[start_, end_, {distanceMatrix_, adjacentVertexTable_, adjacentE
 toMetricDistanceOperator = MatchValues[
   "Euclidean" :=
     RootSumSquare;
+  "Chessboard" :=
+    ChessboardMetric;
   qf_QuadraticFormObject :=
     Values /* ToPacked /* qf;
   list_List ? RealVectorQ :=
@@ -182,13 +185,19 @@ toMetricDistanceOperator = MatchValues[
 ];
 
 General::badgmetricfn =
-  "Setting GraphMetric -> `` should be either Automatic, \"Euclidean\", QuadraticForm[...], {...}, or a function that will evaluate when applied."
+  "Setting GraphMetric -> `` should be either Automatic, \"Euclidean\", \"Chessboard\", QuadraticForm[...], {...}, or a function that will evaluate when applied."
 
 General::badgmetricfnres =
   "GraphMetric function returned a non-numeric result."
 
 checkMetricNumeric[value_] /; NumericQ[value] || RealVectorQ[value] := value;
 checkMetricNumeric[_] := (Message[General::badgmetricfnres]; 0);
+
+(**************************************************************************************************)
+
+PackageExport["ChessboardMetric"]
+
+ChessboardMetric[array_] := Map[ChessboardNorm, Transpose @ Values @ array];
 
 (**************************************************************************************************)
 

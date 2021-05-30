@@ -73,7 +73,7 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
   $highlightRadius = $GraphMaxSafeVertexSize;
   $pathRadius = 3;
   $pointSize = $highlightRadius / First[$GraphPlotSize];
-  $radiusScaling = 0.5;
+  $radiusScaling = 1;
 
   $zorder = 1;
   $requiredPadding = 0;
@@ -82,6 +82,7 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
   $arrowheadSize = 1;
   $edgeSetback = 1.5;
   $outline = False;
+  $simplifyRegions = True;
 
   $colorPalette = ToColorPalette[Automatic];
   CollectTo[{$highlightsBag, $legendsBag}, processOuterSpec[spec]];
@@ -244,7 +245,7 @@ Style;
 SyntaxInformation[Style];
 Options[Style];
 
-$additionalStyleOptions = {PerformanceGoal, PathStyle, ArrowheadPosition, ArrowheadSize, HighlightRadius, EdgeSetback};
+$additionalStyleOptions = {PerformanceGoal, PathStyle, ArrowheadPosition, ArrowheadSize, HighlightRadius, EdgeSetback, SimplifyRegions};
 Unprotect[Style];
 SyntaxInformation[Style] = ReplaceOptions[
   SyntaxInformation[Style],
@@ -253,9 +254,15 @@ SyntaxInformation[Style] = ReplaceOptions[
 Protect[Style];
 
 PackageExport["PathOutline"]
+PackageExport["SimplifyRegions"]
+
 iProcessStyleSpec = MatchValues[
   Style[most__, style:$ColorPattern] := Block[
     {$highlightStyle = SetColorOpacity[RemoveColorOpacity @ style, $highlightOpacity]},
+    % @ Style @ most
+  ];
+  Style[most__, SimplifyRegions -> boole_] := Scope[
+    $simplifyRegions = boole;
     % @ Style @ most
   ];
   Style[most__, PerformanceGoal -> goal_] := Scope[
@@ -321,7 +328,7 @@ highlightRegion[GraphRegionData[vertices_, edges_]] := Scope[
   If[$perfGoal === "Speed",
     Return @ highlightRegion @ GraphRegionData[vertices, {}]];
   graphics = subgraphCoveringGraphics[
-    $highlightRadius * $radiusScaling / 3, vertices, edges,
+    $highlightRadius * $radiusScaling, vertices, edges,
     $IndexGraphEdgeList, $VertexCoordinates, $EdgeCoordinateLists
   ];
   sowHighlight[{$highlightStyle, graphics}];
@@ -331,7 +338,7 @@ highlightRegion[GraphRegionData[vertices_, {}]] :=
   sowVertexPoints @ vertices;
 
 sowVertexPoints[vertices_] := Scope[
-  pointSize = $radiusScaling * $pointSize * 1;
+  pointSize = $radiusScaling * $pointSize;
   requirePaddingPointSize[pointSize];
   sowHighlight @ {
     $highlightStyle,
@@ -591,7 +598,7 @@ subgraphCoveringGraphics[r_, vertices_, edgeIndices_, edgeList_, vertexCoords_, 
   center = Mean[vertexPoints];
   radius = Max[SquaredDistanceMatrix[vertexPoints, {center}]];
   externalCoords = Part[vertexCoords, Complement[Range @ Length @ vertexCoords, vertices]];
-  If[(other = Min[SquaredDistanceMatrix[externalCoords, {center}]]) > radius,
+  If[$simplifyRegions && externalCoords =!= {} && (other = Min[SquaredDistanceMatrix[externalCoords, {center}]]) > radius,
     dr = (other - radius)/3;
     Return @ Disk[center, Sqrt[radius + dr]];
   ];

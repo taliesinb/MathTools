@@ -325,9 +325,14 @@ MatrixSimplify[matrix_] := Scope[
 
 PackageExport["SquaredDistanceMatrix"]
 
+SquaredDistanceMatrix[{}] := {};
+
 SquaredDistanceMatrix[points_] := (
   $loadDM; $distanceMatrixFunction1[points, $squaredEuclideanDistanceCode, False]
 );
+
+SquaredDistanceMatrix[{}, _] := {};
+SquaredDistanceMatrix[_, {}] := {};
 
 SquaredDistanceMatrix[points1_, points2_] := (
   $loadDM; $distanceMatrixFunction2[points1, points2, $squaredEuclideanDistanceCode, False]
