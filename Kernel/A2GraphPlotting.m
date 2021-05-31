@@ -3,6 +3,7 @@ PackageExport["ArrowheadSize"]
 PackageExport["ArrowheadStyle"]
 PackageExport["ArrowheadPosition"]
 PackageExport["VertexColorFunction"]
+PackageExport["EdgeColorFunction"]
 PackageExport["CardinalColors"]
 PackageExport["ViewRegion"]
 
@@ -11,6 +12,7 @@ SetUsage @ "ArrowheadSize is an extended option to Graph.";
 SetUsage @ "ArrowheadStyle is an extended option to Graph.";
 SetUsage @ "ArrowheadPosition is an extended option to Graph.";
 SetUsage @ "VertexColorFunction is an extended option to Graph."
+SetUsage @ "EdgeColorFunction is an extended option to Graph."
 SetUsage @ "CardinalColors is an extended option to Graph."
 SetUsage @ "ViewRegion is an extended option to Graph."
 
@@ -200,12 +202,15 @@ GraphPlotScope[graph_, body_] := Scope[
   ]
 ];
 
-applyViewRegion[regionSpec_] := Block[{region},
-  region = RegionDataUnion @ processRegionSpec @ regionSpec;
-  If[!MatchQ[region, GraphRegionData[_List, _List]], Return[]];
-  $VertexParts = Part[region, 1];
-  $EdgeParts = Part[region, 2];
-];
+ExtendedGraphPlot::badviewregion = "ViewRegion -> `` is invalid and will be ignored.";
+
+applyViewRegion[regionSpec_] := (
+  {$VertexParts, $EdgeParts} = processRegionVerticesEdges @ regionSpec;
+  If[FailureQ[$VertexParts],
+    $VertexParts = $EdgeParts = All;
+    failPlot["badviewregion", regionSpec]
+  ];
+)
 
 $rangeMicroPadding = 1*^-12;
 computeCoordinateBounds[] :=
@@ -358,8 +363,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     {arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, labelCardinals, viewOptions} =
       LookupExtendedGraphAnnotations[graph, {ArrowheadShape, ArrowheadStyle, ArrowheadSize, ArrowheadPosition, LabelCardinals, ViewOptions}];
 
-    {graphLegend, vertexColorFunction, vertexAnnotations} =
-      LookupExtendedGraphAnnotations[graph, {GraphLegend, VertexColorFunction, VertexAnnotations}];
+    {graphLegend, vertexColorFunction, vertexAnnotations, edgeColorFunction, colorRules} =
+      LookupExtendedGraphAnnotations[graph, {GraphLegend, VertexColorFunction, VertexAnnotations, EdgeColorFunction, ColorRules}];
   ];
 
   (* initial processing of global options *)
@@ -404,13 +409,19 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     edgeStyle //= removeSingleton;
     vertexStyle //= removeSingleton;
+
+    If[colorRules =!= None, processColorRules[colorRules]];
   ];
 
   (* create graphics for vertices *)
   FunctionSection[
 
     $vertexSizeOverrides = None;
-    $defaultVertexSize = Which[edgeStyle === None, 0.6, vertexColorFunction =!= None, 0.5, True, Max[0.3, AbsolutePointSize[6]]];
+    $defaultVertexSize = Which[
+      edgeStyle === None,           Scaled @ 0.6,
+      vertexColorFunction =!= None, Scaled @ 0.5,
+      True,                         Max[0.3, AbsolutePointSize[6]]
+    ];
     vertexSize = processVertexSize @ removeSingleton @ vertexSize;
     vertexSizeImage = plotSizeToImageSize @ vertexSize;
 
@@ -437,30 +448,11 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     SetAutomatic[vertexStyle, defaultVertexColor];
     vertexStyle //= toDirective;
 
-    If[vertexColorFunction =!= None,
-
-      colorGroupFun = If[MatchQ[vertexColorFunction, Tooltip[_]],
-        vertexColorFunction = First @ vertexColorFunction;
-        toColorVertexDrawFuncWithTooltip[vertexDrawFunc],
-        toColorVertexDrawFunc[vertexDrawFunc]
-      ];
-
-      palette = Automatic;
-      vertexColorFunction //= Replace[Paletted[d_, p_] :> (palette = p; d)];
-      vertexColorFunctionData = toColorFunctionData[vertexColorFunction];
-      If[FailureQ[vertexColorFunctionData], failPlot["badcolvals"]];
-      {colorGroups, colorFunctionObject} = ApplyColoring[vertexColorFunctionData, palette];
-      If[FailureQ[colorFunctionObject], failPlot["badcolvals"]];
-      If[!MatchQ[colorFunctionObject, ColorFunctionObject["Discrete", Identity]],
-        automaticLegends["Colors"] := colorFunctionObject];
-
-      colorGroups //= filterAssocIndices[$VertexParts];
-
-      vertexItems = KeyValueMap[colorGroupFun, colorGroups];
-    ,
-      vertexItems = vertexDrawFunc[Part[Range @ $VertexCount, $VertexParts], vertexStyle];
-
+    vertexItems = drawViaColorFunc[
+      vertexColorFunction, vertexDrawFunc, $VertexCount, $VertexParts, vertexStyle,
+      vertexColorDataProvider, VertexColorFunction
     ];
+
     vertexGraphics = makeGraphicsGroup @ {vertexBaseStyle, vertexStyle, vertexItems};
   ];
   Label[skipVertices];
@@ -476,11 +468,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     edgeStyle //= toDirectiveOptScan[setEdgeStyleGlobals];
 
     If[arrowheadShape === None || zeroQ[arrowheadSize] || UndirectedGraphQ[$Graph],
-      edgePrimitives = annotatedEdgePrimitives[
-        setback[Line, setbackDistance],
-        If[$EdgeParts === All, Range @ $EdgeCount, $EdgeParts]
-      ];
-      edgeGraphics = makeGraphicsGroup @ {edgeStyle, edgePrimitives};
+      arrowheadDrawFn = drawUndirectedEdges;
     ,
       SetAutomatic[arrowheadStyle, Which[
         cardinalColors =!= None, cardinalColors,
@@ -504,16 +492,18 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       ];
       extendPaddingToInclude[arrowheadBounds];
 
-      edgeTagGroups = If[$EdgeTags === None,
-        <|All -> Range[$EdgeCount]|>,
-        edgeTagGroups = PositionIndex[$EdgeTags]
-      ];
-
-      edgeTagGroups //= filterAssocIndices[$EdgeParts];
-
-      edgeGraphics = KeyValueMap[drawArrowheadEdges, edgeTagGroups];
-      edgeGraphics = makeGraphicsGroup @ {edgeStyle, edgeGraphics};
+      arrowheadDrawFn = drawTagGroupArrowheadEdges;
     ];
+
+    edgeItems = drawViaColorFunc[
+      edgeColorFunction, arrowheadDrawFn, $EdgeCount, $EdgeParts, edgeStyle,
+      edgeColorDataProvider, EdgeColorFunction
+    ];
+
+    edgeGraphics = makeGraphicsGroup @ {
+      edgeStyle, (* pick up thickness etc*)
+      edgeItems
+    };
   ];
   Label[skipEdges];
 
@@ -550,9 +540,12 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[labelGraphics =!= Nothing, extendPadding @ estimateLabelPadding @ labelGraphics];
 
     (* for graphs with cardinals, create an automatic legend when asked *)
-    If[cardinalColors =!= None && arrowheadStyle =!= None,
+    If[cardinalColors =!= None && arrowheadStyle =!= None && arrowheadShape =!= None,
       automaticLegends["Cardinals"] := ArrowheadLegend[cardinalColors, arrowheadShape];
     ];
+
+    If[colorRules =!= None,
+      KeyDropFrom[automaticLegends, "Colors"]];
 
     imagePadding //= Ceiling;
     imageSize = Ceiling @ ImageSizePad[imageSize, imagePadding];
@@ -645,14 +638,14 @@ vertexDrawFuncSizeRemapper[rawVertexDrawFunc_, sizeOverrides_, vertexSize_] :=
     ], indices
   ];
 
-toColorVertexDrawFunc[vertexDrawFunc_] :=
-  {colorValue, indices} |-> vertexDrawFunc[indices, First @ colorValue];
+(**************************************************************************************************)
 
-toColorVertexDrawFuncWithTooltip[vertexDrawFunc_] :=
-  {colorValue, indices} |-> NiceTooltip[
-    vertexDrawFunc[indices, First @ colorValue],
-    Last @ colorValue
-  ];
+processColorRules[rules_] := (
+  {vertexColorFunction, edgeColorFunction} = resolveRegionRules[rules, ColorRules];
+  If[!ColorVectorQ[vertexColorFunction] || !ColorVectorQ[edgeColorFunction],
+    failPlot[GraphHighlight, "badcolvals"]];
+  SetAutomatic[arrowheadStyle, Inherited];
+);
 
 (**************************************************************************************************)
 
@@ -682,6 +675,24 @@ scanArrowheadShapeOpts = MatchValues[
 
 
 arrowheadsND[e_] := If[$GraphIs3D, Arrowheads[e, Appearance -> "Projected"], Arrowheads @ e];
+
+drawUndirectedEdges[indices_, style_] :=
+  annotatedEdgePrimitives[setback[Line, setbackDistance] /* StyleOperator[style], indices];
+
+drawTagGroupArrowheadEdges[indices_, style_] := Scope[
+
+  edgeTagGroups = If[$EdgeTags === None,
+    <|All -> indices|>,
+    Map[Part[indices, #]&, PositionIndex @ Part[$EdgeTags, indices]]
+  ];
+
+  edgeTagGroups //= filterAssocIndices[$EdgeParts];
+
+  edgeStyle = style;
+  edgePrimitives = KeyValueMap[drawArrowheadEdges, edgeTagGroups];
+
+  Style[edgePrimitives, style]
+];
 
 drawArrowheadEdges[_, {}] := Nothing;
 drawArrowheadEdges[cardinal_, indices_] := Scope[
@@ -720,6 +731,7 @@ drawArrowheadEdges[CardinalSet[cardinals_], indices_] := Scope[
 
 makeArrowheadsElement[cardinal_] := Scope[
   {shape, size, style, position} = lookupTagSpec[cardinal];
+  SetInherited[style, edgeStyle];
   shape = If[shape === "Cardinal",
     SetNone[style, Black];
     makeArrowheadLabelShape[cardinal, style, size]
@@ -1214,53 +1226,137 @@ insetDisk[size_][pos_] := Inset[Graphics[Disk[{0, 0}, 1], AspectRatio -> 1], pos
 
 (**************************************************************************************************)
 
+drawViaColorFunc[colorFn_, drawFn_, count_, parts_, baseStyle_, dataProviderFn_, optSymbol_] := Scope[
+
+  If[colorFn === None,
+    Return @ drawFn[Part[Range @ count, parts], baseStyle]];
+
+  colorGroupFn = If[MatchQ[colorFn, Tooltip[_]],
+    colorFn = First @ colorFn;
+    toColorDrawFuncWithTooltip[drawFn],
+    toColorDrawFunc[drawFn]
+  ];
+
+  palette = Automatic;
+  colorFn //= Replace[Paletted[d_, p_] :> (palette = p; d)];
+  colorData = dataProviderFn @ colorFn;
+  If[FailureQ[colorData], failPlot[optSymbol, "badcolvals"]];
+
+  {colorGroups, colorFunctionObject} = ApplyColoring[colorData, palette];
+  If[FailureQ[colorFunctionObject], failPlot[optSymbol, "badcolvals"]];
+  If[!MatchQ[colorFunctionObject, ColorFunctionObject["Discrete", Identity]],
+    automaticLegends["Colors"] ^= colorFunctionObject];
+
+  colorGroups //= filterAssocIndices[parts];
+
+  KeyValueMap[colorGroupFn, colorGroups]
+];
+
+ExtendedGraphPlot::badcolvals = "Setting of `` did not produce values that could be colored."
+
+toColorDrawFunc[drawFn_] :=
+  {colorValue, indices} |-> drawFn[indices, First @ colorValue];
+
+toColorDrawFuncWithTooltip[drawFn_] :=
+  {colorValue, indices} |-> NiceTooltip[
+    drawFn[indices, First @ colorValue],
+    Last @ colorValue
+  ];
+
+(**************************************************************************************************)
+
+edgeColorDataProvider = MatchValues[
+  "Name" := $EdgeList;
+  "Index" := Range @ $EdgeCount;
+  "Cardinal" := $EdgeTags;
+  (* todo, make the distance work on regions as well *)
+  rules:{__Rule} := Last @ resolveRegionRules[rules, EdgeColorFunction];
+  list_List /; Length[list] === $EdgeCount := list;
+  assoc_Association := Lookup[assoc, $EdgeList, Lookup[assoc, All, $LightGray]];
+  spec_ := failPlot["badcolfunc", shortMsgForm @ spec, EdgeColorFunction]
+];
+
+(**************************************************************************************************)
+
 ExtendedGraphPlot::notvertex = "`` is not a valid vertex of the graph."
-ExtendedGraphPlot::badcolfunc = "`` is not a valid color function specification for VertexColorFunction."
+ExtendedGraphPlot::badcolfunc = "`` is not a valid color function specification for ``."
 ExtendedGraphPlot::msgcolfunc = "Applying the requested color function to property `` gave messages."
 
+getVertexIndex[GraphOrigin] := getVertexIndex @ LookupExtendedGraphAnnotations[$Graph, GraphOrigin];
 getVertexIndex[v_] := Lookup[$VertexIndex, v, failPlot["notvertex", v]];
 getAnnoValue[annos_, key_] := Lookup[annos, key, failPlot["badgraphannokey", key, commaString @ Keys @ annos]];
 
-toColorFunctionData = MatchValues[
+vertexColorDataProvider = MatchValues[
   "Name" := $VertexList;
   "Index" := Range @ $VertexCount;
   (* todo, make the distance work on regions as well *)
-  "Distance" := MetricDistance[$MetricGraphCache, 1];
+  "Distance" := %[{"Distance", GraphOrigin}];
   {"Distance", v_} := MetricDistance[$MetricGraphCache, getVertexIndex @ v];
-  {key_String, v_} := Part[getAnnoValue[vertexPairAnnotations, key], getVertexIndex @ v];
-  {key_String, v_, Transpose} := Part[getAnnoValue[vertexPairAnnotations, key], All, getVertexIndex @ v];
   key_String := getAnnoValue[vertexAnnotations, key];
   (key_String -> f_) := Replace[Quiet @ Check[Map[toFunc @ f, %[key]], $Failed], $Failed :> failPlot["msgcolfunc", key]];
+  rules:{__Rule} := First @ resolveRegionRules[rules, VertexColorFunction];
   list_List /; Length[list] === $VertexCount := list;
   assoc_Association := Lookup[assoc, $VertexList, Lookup[assoc, All, $LightGray]];
-  spec_ := failPlot["badcolfunc", If[Length[spec] > 10 || ByteCount[spec] > 1000, Skeleton[Length[spec]], spec]]
+  spec_ := failPlot["badcolfunc", shortMsgForm @ spec, VertexColorFunction]
 ];
 
 toFunc[i_Integer] := Extract[i];
 toFunc[f_] := f;
 
-ExtendedGraphPlot::badcolvals = "VertexColorFunction did not produce values that could be colored."
+(**************************************************************************************************)
+
+resolveRegionRules[rules_, optSym_] := Scope[
+  defaultColor = FirstCase[rules, Rule[All, color_ ? ColorQ] :> color, Gray, {1}];
+  $vertexValues = ConstantArray[defaultColor, $VertexCount];
+  $edgeValues = ConstantArray[defaultColor, $EdgeCount];
+  $optSym = optSym;
+  $regionColor = $Red;
+  Scan[applyRegionRule, rules];
+  {$vertexValues, $edgeValues}
+];
+
+applyRegionRule = MatchValues[
+  All -> _ ? ColorQ := Null;
+  spec_ -> color_ ? ColorQ := Scope[
+    $regionColor = color /. $colorNormalizationRules;
+    % @ spec
+  ];
+  spec_ ? GraphRegionElementQ := Scope[
+    {vertices, edges} = processRegionVerticesEdges @ spec;
+    If[FailureQ @ vertices, failPlot["badregion", spec, $optSym]];
+    Part[$vertexValues, vertices] = $regionColor;
+    Part[$edgeValues, edges] = $regionColor;
+  ];
+  spec:Except[_List] :=
+    % @ List @ spec;
+  spec_ := Scope[
+    vertices = Lookup[$VertexIndex, spec, failPlot["badregion", spec, $optSym]];
+    Part[$vertexValues, vertices] = $regionColor;
+  ];
+];
+
+ExtendedGraphPlot::badregion = "Specification `` in setting for `` is not a valid region, vertex, or edge."
+
+shortMsgForm[spec_] := If[Length[spec] > 10 || ByteCount[spec] > 1000, Skeleton[Length[spec]], spec];
 
 (**************************************************************************************************)
 
 ExtendedGraphPlot::badvertexsize = "`` is not a valid setting for VertexSize."
 
-$defaultVertexSize = 0.3;
 (* this returns a size in plot range coordinates *)
 
 processVertexSize = MatchValues[
-  Automatic                     := %[$defaultVertexSize];
-  r_ ? NumericQ                 := %[{"Nearest", r}];
-  {"Nearest", r_ ? NumericQ}    := N[r] * $GraphMaxSafeVertexSize;
-  {"Scaled", r_ ? NumericQ}     := N[r] * Norm[$GraphPlotSize];
-  PointSize[sz_ ? NumericQ]     := N[imageFractionToPlotSize[sz]];
-  AbsolutePointSize[sz_ ? NumericQ] := N[imageSizeToPlotSize[sz]];
-  m_Max | m_Min                 := Map[%, m];
-  sym:$SymbolicSizePattern      := N @ imageSizeToPlotSize @ Lookup[$SymbolicPointSizes, sym];
-  Scaled[sym:$SymbolicSizePattern] := %[$SymbolicSizeFractions @ sym * 0.5];
-  rule_Rule                     := %[{rule}];
-  rules_Association             := %[Normal @ rules];
-  rules:{__Rule}                := (
+  Automatic                          := % @ $defaultVertexSize;
+  r_ ? NumericQ                      := % @ AbsolutePointSize @ r;
+  sym:$SymbolicSizePattern           := % @ AbsolutePointSize @ $SymbolicPointSizes @ sym;
+  PointSize[sz_ ? NumericQ]          := N @ imageFractionToPlotSize @ sz;
+  AbsolutePointSize[sz_ ? NumericQ]  := N @ imageSizeToPlotSize @ sz;
+  Scaled[r_ ? NumericQ]              := N[r * $GraphMaxSafeVertexSize];
+  Scaled[sym:$SymbolicSizePattern]   := % @ Scaled @ $SymbolicSizeFractions @ sym;
+  m_Max | m_Min                      := Map[%, m];
+  rule_Rule                          := % @ {rule};
+  rules_Association                  := % @ Normal @ rules;
+  rules:{__Rule}                     := (
     $vertexSizeOverrides ^= Association[processVertexSizeRule /@ rules];
     Lookup[rules, Key @ All, %[$defaultVertexSize]]
   );

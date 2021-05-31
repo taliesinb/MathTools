@@ -32,17 +32,26 @@ $extendedGraphUsage = StringTrim @ "
 | %VertexShapeFunction | Automatic | how to draw vertices |
 | %EdgeShapeFunction | Automatic | how to draw edges |
 | %VertexColorFunction | None | function to obtain colors for vertices |
+| %EdgeColorFunction | None | function to obtain colors for edges |
+| %ColorRules | None | color vertices and edges by region |
 | %VertexAnnotations | None | association of additional per-vertex data |
 | %GraphMetric | Automatic | metric to calculate graph distances |
 | %CardinalColors | Automatic | association of cardinal colors |
 | %ViewOptions | Automatic | how to project 3D coordinates |
+| %ViewRegion | All | region of graph to plot |
 | %CoordinateTransformFunction | None | function to remap coordinates before plotting |
 
 ## Arrowheads
 
+* Any of the specifications below can be given in the form <|card$1 -> spec$1, $$|> to \
+customize the behavior on a per-cardinal basis.
+
 * %ArrowheadShape accepts these settings:
 | 'Arrow' | solid kinded arrowhead (default) |
-| 'Line' | two lines forming a partial triangle |
+| 'Line' | partial triangle formed by two lines |
+| 'DoubleLine' | two closely spaced partial triangles |
+| 'Triangle' | triangle formed by three lines |
+| 'HalfTriangle' | half triangle above the edge |
 | 'Disk' | circular disk |
 | 'Square' | square |
 | 'Diamond' | diamond (rotated square) |
@@ -58,7 +67,14 @@ $extendedGraphUsage = StringTrim @ "
 | 'InClose' | facing in with tips touching |
 | 'spec$' | one of the regular shapes |
 
-* %ArrowheadSize supports symbol sizes such as Small, Large, etc, or a value Scaled[r$].
+* %ArrowheadSize accepts these settings:
+| Automatic | use a safe arrowhead size, depending on layout |
+| size$ | size$ in points in the final plot |
+| Small, Medium, $$ | symbolic size, with Medium being equivalent to 20 |
+| AbsolutePointSize[size$] | equivalent to size$ |
+| PointSize[f$] | a fraction f$ of the width of the final plot |
+| Scaled[r$] | scale the default safe size by r$ |
+| Max[$$], Min[$$] | max or min of several specifications |
 These modify scale the automatically chosen size, with Medium leaving it unchanged.
 
 * %ArrowheadStyle can be set to a color or list of directives.
@@ -81,6 +97,16 @@ If a function f$ is given, it is provided with an association containing the fol
 | 'Target' | the target vertex |
 | 'Cardinal' | the cardinal(s) on the edge |
 
+* %EdgeColorFunction accepts these settings:
+| None | color via EdgeStyle (default) |
+| 'Cardinal' | color by cardinal present on edge |
+| {e$1, e$2, $$} | use values e$i in same order as %VertexList |
+| <|e$1 -> val$1, $$, All -> val$|> | assign values to specific edges |
+| {region$1 -> val$1, $$, All -> val$} | assign values to edges within specific regions |
+| %Paletted[spec$, colors$] | use a given named or explicit color palette |
+* If a spec produces non-color values, edges will colored based on the type of data.
+* If %GraphLegend -> Automatic, a color legend will be shown.
+
 ## Vertices
 
 * %VertexShapeFunction controls how vertices are drawn and accepts these settings:
@@ -89,29 +115,39 @@ If a function f$ is given, it is provided with an association containing the fol
 | 'Disk' | use %Disk[$$] |
 | 'Sphere' | use %Sphere[$$] |
 | 'Ball' | use 'Disk' for 2D and 'Sphere' for 3D |
+| 'Square' | square (designed for 'Square' lattice) |
+| 'Hexagon' | hexagon (designed for 'Triangular' lattice) |
 | None | do not draw vertices |
 
 * %VertexSize accepts these settings:
-| Automatic | use a safe default size (equivalent to Medium) |
-| Small, Medium, $$ | use a symbolic size, with Medium being 0.3 |
-| r$ | fraction r$ of the quantiles of inter-vertex distance |
+| Automatic | use a safe default size, depending on layout |
+| size$ | size$ in points in the final plot |
+| Small, Medium, $$ | symbolic size, with Medium being equivalent to 5 |
+| AbsolutePointSize[size$] | equivalent to size$ |
+| PointSize[f$] | a fraction f$ of the width of the final plot |
+| Scaled[r$] | fraction r$ of the quantiles of inter-vertex distance |
 | {v$1 -> s$1, $$, %%All -> s$} | use specific sizes for specific vertices |
+| Max[$$], Min[$$] | max or min of several specifications |
 
 * %VertexColorFunction accepts these settings:
 | None | color via VertexStyle (default) |
 | 'key$' | color with values from VertexAnnotation |
+| {val$1, val$2, $$} | use values val$i in same order as %VertexList |
+| <|v$1 -> val$1, $$, All -> val$|> | assign values to specific vertices |
+| {region$1 -> val$1, $$, All -> val$} | assign values to vertices within specific regions |
 | f$ | apply f$ to vertices to obtain values |
 | spec$ -> f$ | apply f$ to result of spec$ |
 | %Paletted[spec$, colors$] | use a given named or explicit color palette |
-* If a spec produces non-color values, they will colored based on the type of data.
+* If a spec produces non-color values, vertices will colored based on the type of data.
 * If %GraphLegend -> Automatic, a color legend will be shown.
 
 ## Metrics
 
 * %GraphMetric affects the behavior of %MetricDistance, %MetricDistanceMatrix, and %MetricFindShortestPath.
 * The following settings are accepted:
-| Automatic | use the default graph distance |
-| 'Euclidean' | use root total square of per-cardinal distances |
+| Automatic | the default graph distance |
+| 'Euclidean' | root total square of per-cardinal distances |
+| 'Chessboard' | maximum of the per-cardinal distances |
 | %QuadraticForm[$$] | use a quadratic form |
 | {s$1, s$2, $$} | use a particular signature |
 | n$ | use a homogenous form of degree n$ |
@@ -149,9 +185,15 @@ and lists of values.
 * The values should be in the same order and length as given by VertexList.
 * These values are accessible via %VertexColorFunction and %VertexLabels.
 
-## Highlights
+## Highlights and colors
 
 * %GraphRegionHighlight takes a list of regions to highlight, see %GraphRegion.
+
+* %ColorRules can be a list of rules of the following forms:
+| region$ -> color$ | set color of vertices and edges within region, see %GraphRegion |
+| vertex$ -> color$ | set color of a specific vertex |
+| edge$ -> color$ | set color of a specific edge |
+| {spec$1, $$} -> color$ | set color of several elements at once |
 
 ## Legends
 
@@ -172,6 +214,7 @@ $extendedGraphOptionsRules = {
   ArrowheadShape -> Automatic,
   ArrowheadPosition -> Automatic,
   VertexColorFunction -> None,
+  EdgeColorFunction -> None,
   VertexAnnotations -> None,
   LayoutDimension -> Automatic,
   GraphMetric -> Automatic,
@@ -181,6 +224,7 @@ $extendedGraphOptionsRules = {
   ViewOptions -> Automatic,
   LabelCardinals -> False,
   CoordinateTransformFunction -> None,
+  ColorRules -> None,
   ViewRegion -> All
 };
 

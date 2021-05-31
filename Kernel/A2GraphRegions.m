@@ -111,6 +111,9 @@ SetUsage @ "
 GraphRegionElementQ[elem$] returns True if elem$ is an expression describing a graph region.
 "
 
+GraphRegionElementQ[_] := False;
+GraphRegionElementQ[GraphOrigin] := True;
+
 (**************************************************************************************************)
 
 PackageExport["VertexPattern"]
@@ -129,6 +132,18 @@ Path[src$, {c$1, $$, c$n}] represents a path starting at src$ and taking cardina
 Path[src$, 'cards$'] interpreted the characters of 'cards$' as cardinals.
 "
  *)
+
+
+(**************************************************************************************************)
+
+PackageScope["processRegionVerticesEdges"]
+
+processRegionVerticesEdges[spec_] := Scope[
+  region = RegionDataUnion @ processRegionSpec[spec];
+  If[!MatchQ[region, _GraphRegionData], Return @ {$Failed, $Failed}];
+  {Part[region, 1], Part[region, 2]}
+];
+
 (**************************************************************************************************)
 
 PackageScope["processRegionSpec"]

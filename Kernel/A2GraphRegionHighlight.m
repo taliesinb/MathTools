@@ -223,7 +223,7 @@ processAxesSpec[spec_] := Scope[
 axisHighlight[word_, color_] := Scope[
   path = First @ processRegionSpec @ InfiniteLine[GraphOrigin, word];
   If[Length @ DeleteDuplicates @ First @ path <= 2, Return[]];
-  processGeneralSpec @ Style[path, color, HighlightRadius -> 1];
+  processGeneralSpec @ Style[path, color, HighlightRadius -> 2];
 ];
 
 blendColors[{$Blue, $Red}] := $Pink;
@@ -363,7 +363,7 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
     segments //= MapAt[Reverse, List /@ negations]];
   numSegments = Length @ segments;
 
-  thickness = $pathRadius / $GraphPlotImageWidth;
+  thickness = $radiusScaling * $pathRadius / $GraphPlotImageWidth;
   thicknessRange = thickness * First[$GraphPlotSize] * 1.5;
 
   adjustments = parseAdjustments /@ Lookup[$currentRegionAnnotations, PathAdjustments, {}];

@@ -23,12 +23,6 @@ DownValues[WrappersDump`makeLabeledCore] = ReplaceAll[DownValues[WrappersDump`ma
 
 (**************************************************************************************************)
 
-PackageExport["StyleOperator"]
-
-StyleOperator[spec___][e_] := Style[e, spec];
-
-(**************************************************************************************************)
-
 PackageExport["$LegendLabelStyle"]
 
 $LegendLabelStyle = {FontFamily -> "Avenir", FontSize -> 12};

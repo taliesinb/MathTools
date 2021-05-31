@@ -6,7 +6,7 @@ If[$VersionNumber < 12.2,
   If[!IntegerQ[GraphToolsPackageLoader`$LoadCount],
     Get[FileNameJoin[{FileNameDrop @ $InputFileName, "Loader.m"}]]];
 
-  PreemptProtect @ GraphToolsPackageLoader`Load[];
+  Block[{CellPrint}, GraphToolsPackageLoader`Load[]];
 
   If[!MemberQ[$ContextPath, "GraphTools`"], AppendTo[$ContextPath, "GraphTools`"]];
 ];

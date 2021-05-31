@@ -54,17 +54,14 @@ $literalStringColor = RGBColor[{0.4, 0.4, 0.4}];
 $literalSymbolRegex = RegularExpression["(Automatic|True|False|None|Inherited|Left|Right|Above|Below|Center|Top|Bottom|Infinity|Scaled|Tiny|Small|Medium|Large|Negated)"];
 $literalSymbolColor = RGBColor[{0.15, 0.15, 0.15}];
 
-$mainSymbolRegdx = RegularExpression["^\\$?[A-Za-z][A-Za-z]*"];
+$mainSymbolRegex = RegularExpression["^\\$?[A-Za-z][A-Za-z]*"];
 $mainSymbolColor = RGBColor[{0.71, 0.03, 0.}];
 
 colorLiterals[usageString_] := Scope[
   usageString //= StringTrim;
-  mainSymbol = First @ StringCases[usageString, $mainSymbolRegdx, 1];
+  $mainSymbol ^= First @ StringCases[usageString, $mainSymbolRegex, 1];
   StringReplace[
     usageString, {
-      WordBoundary ~~ mainSymbol ~~ WordBoundary :> makeStyleBox[mainSymbol,
-        FontColor -> $mainSymbolColor,
-        FontWeight -> "Medium"],
       string:$literalStringRegex :> makeStyleBox[
         "\\\"" <> StringTake[string, {2, -2}] <> "\\\"",
         FontColor -> $literalStringColor, ShowStringCharacters -> True,
@@ -75,6 +72,19 @@ colorLiterals[usageString_] := Scope[
         FontWeight -> "Medium"]
     }
   ]
+];
+
+colorMainSymbol[usageString_] := StringReplace[
+  usageString, {
+  ("\"" ~~ $mainSymbol ~~ "\"") :> StringTake[makeMainSymbolInlineSyntax[], {4, -2}],
+  WordBoundary ~~ $mainSymbol ~~ WordBoundary :> makeMainSymbolInlineSyntax[],
+  "<|" -> "\[LeftAssociation]",
+  "|>" -> "\[RightAssociation]"
+}];
+
+makeMainSymbolInlineSyntax[] := makeStyleBox[$mainSymbol,
+  FontColor -> $mainSymbolColor,
+  FontWeight -> "Medium"
 ];
 
 (**************************************************************************************************)
@@ -147,7 +157,7 @@ If[!AssociationQ[GeneralUtilities`Private`$SetUsageFormatCache],
     GeneralUtilities`CacheTo[
       GeneralUtilities`Private`$SetUsageFormatCache, Hash[str],
       Compose[
-        addHeaderLines, shortenGridBoxes,
+        colorMainSymbol, addHeaderLines, shortenGridBoxes,
         GeneralUtilities`Code`PackagePrivate`fmtUsageString,
         colorOptionSymbols, colorLiterals, str
       ]
@@ -198,14 +208,6 @@ declareFormatting[lhs_ :> rhs_] :=
   ];
 
 declareFormatting[___] := Panic["BadFormatting"]
-
-(**************************************************************************************************)
-
-PackageExport["OrList"]
-PackageExport["AndList"]
-
-OrList = Apply[Or];
-AndList = Apply[And];
 
 (**************************************************************************************************)
 

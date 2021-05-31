@@ -2,36 +2,6 @@
 (** Operators useful for Matrices                                                                 *)
 (**************************************************************************************************)
 
-PackageExport["TakeOperator"]
-
-TakeOperator[spec___][e_] := Take[e, spec];
-
-
-PackageExport["DropOperator"]
-
-DropOperator[spec___][e_] := Drop[e, spec];
-
-
-PackageExport["PartOperator"]
-
-PartOperator[spec___][e_] := Part[e, spec];
-
-
-PackageExport["DotOperator"]
-
-DotOperator[matrix_][other_] := Dot[matrix, other]
-
-
-PackageExport["TimesOperator"]
-
-TimesOperator[a_][b_] := a * b;
-
-
-PackageExport["PlusOperator"]
-
-PlusOperator[a_][b_] := a + b;
-
-
 PackageExport["InnerDimension"]
 
 InnerDimension[array_] := Last @ Dimensions @ array;
