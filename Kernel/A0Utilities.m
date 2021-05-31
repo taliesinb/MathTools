@@ -202,8 +202,8 @@ declareFormatting[rules__RuleDelayed] := Scan[declareFormatting, {rules}];
 declareFormatting[lhs_ :> rhs_] :=
   With[{head = First @ PatternHead[lhs]}, {isProtected = ProtectedFunctionQ[head]},
     If[isProtected, Unprotect[head]];
-    Format[lhs, StandardForm] := Block[{$isTraditionalForm = False}, rhs];
-    Format[lhs, TraditionalForm] := Block[{$isTraditionalForm = True}, rhs];
+    Format[$LHS:lhs, StandardForm] := Block[{$isTraditionalForm = False}, Interpretation[rhs, $LHS]];
+    Format[$LHS:lhs, TraditionalForm] := Block[{$isTraditionalForm = True}, Interpretation[rhs, $LHS]];
     If[isProtected, Protect[head]];
   ];
 
