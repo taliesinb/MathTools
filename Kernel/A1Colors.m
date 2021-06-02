@@ -1,6 +1,6 @@
 PackageExport["$ColorPattern"]
 
-$ColorPattern = _RGBColor | _GrayLevel | _CMYKColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor;
+$ColorPattern = _RGBColor | _GrayLevel | _CMYKColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor | Opacity[_, _];
 
 SetUsage @ "
 $ColorPattern is a pattern that matches a valid color, like %RGBColor[$$] etc.
@@ -67,7 +67,8 @@ ExtractFirstOpacity[expr_] := FirstCase[expr /. $opacityNormalizationRules, $opa
 
 PackageExport["ColorVectorQ"]
 
-ColorVectorQ[e_] := VectorQ[e, ColorQ];
+ColorVectorQ[{Repeated[$ColorPattern]}] := True;
+ColorVectorQ[_] := False;
 
 (**************************************************************************************************)
 

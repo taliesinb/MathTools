@@ -133,3 +133,91 @@ LatticeColoringGrid[items_, args___] := Scope[
   ]
 ];
 
+(**************************************************************************************************)
+
+PackageExport["HighlightCompassDomain"]
+
+HighlightCompassDomain[graph_, cardinals_, color_] := Scope[
+  region = ConnectedSubgraph[EdgePattern[_, _, Alternatives @@ cardinals]];
+  arrowheadStyle = Append[All -> Transparent] @ KeyTake[LookupCardinalColors @ graph, cardinals];
+  ExtendedGraph[graph, ArrowheadStyle -> arrowheadStyle, EdgeStyle -> VeryThick,
+    ColorRules -> {region -> Opacity[1,color], All -> LightGray}, GraphLegend -> None]
+];
+
+(**************************************************************************************************)
+
+PackageExport["CompassDiagram"]
+
+CompassDiagram[compasses_, equivSets_, opts___] := Scope[
+  cardinals = DeleteDuplicates[Join @@ Values @ compasses];
+  equivSets = DeleteDuplicates @ Join[equivSets, Map[Negated, equivSets, {2}], List /@ cardinals];
+  equivIndex = Map[Union @@ Part[equivSets, #]&, PositionIndex[equivSets, 2]];
+  compassIndex = PositionIndex[compasses, 2] /. Key[k_] :> k;
+  CollectTo[{$edges}, Do[
+    createEdges[card, equivCard],
+    {card, cardinals},
+    {equivCard, equivIndex[card]}
+  ]];
+  compasses = Keys @ compasses;
+  coords = {-#1, #2}& @@@ CirclePoints[Length @ compasses];
+  ExtendedGraph[compasses, $edges, VertexCoordinates -> coords,
+    opts,
+    GraphLayout -> {"MultiEdgeDistance" -> 0.13},
+    GraphLegend -> Automatic, Cardinals -> cardinals, ArrowheadShape -> {"PairedSquare", PairedDistance -> 0},
+    VertexLabels -> "Name", ArrowheadSize -> Large
+  ]
+];
+
+createEdges[card1_, card2_] := Outer[
+  {comp1, comp2} |-> If[Order[comp1, comp2] == 1,
+    Internal`StuffBag[$edges, DirectedEdge[comp1, comp2, CardinalSet[{card1, card2}]]]
+  ],
+  compassIndex @ card1, compassIndex @ StripNegated @ card2, 1
+];
+
+(**************************************************************************************************)
+
+PackageExport["MobiusStrip"]
+
+MobiusStrip[n_, is3D_:False] := Scope[
+  $n = n; tauN = Tau / n; $isA = Table[i <= n/2, {i, 0, n-1}];
+  $isC = RotateLeft[$isA, Ceiling[n/3]];
+  $isB = RotateRight[$isA, Ceiling[n/3]];
+  edges = mobiousPatch /@ Range[0, n-1];
+  vertices = Flatten @ Table[LatticeVertex[{x, y}], {x, 0, n-1}, {y, -1, 1}];
+  coords = If[is3D,
+    Flatten[Table[TorusVector[{y, n}, {phi/2, phi}], {phi, 0, Tau - tauN, tauN}, {y, -1, 1}], 1],
+    First /@ vertices
+  ];
+  Quiver[vertices, edges,
+    VertexCoordinates -> coords,
+    EdgeShapeFunction -> If[is3D, Automatic, drawMobiusEdge],
+    ImagePadding -> {{20, 20}, {20, 0}}, Cardinals -> {"x", "a", "b", "c"},
+    GraphOrigin -> LatticeVertex[{Floor[n/2], 0}]
+  ]
+];
+
+mlv[x_, y_] := LatticeVertex[{Mod[x, $n], If[x == $n || x == -1, -y, y]}];
+
+mobiousPatch[x_] := <|
+  "x" -> Table[mlv[x, y] -> mlv[x + 1, y], {y, -1, 1}],
+  toCards[x] -> {DirectedPath[mlv[x, -1], mlv[x, 0], mlv[x, 1]]}
+|>;
+toCardinalSet[{e_}] := e;
+toCardinalSet[e_] := CardinalSet[e];
+toCards[n_] := toCardinalSet @ Pick[{"a", "b", If[n < $n/2, Negated @ "c", "c"]}, {Part[$isA, n+1], Part[$isB, n+1], Part[$isC, n+1]}];
+
+drawMobiusEdge[assoc_] := Scope[
+  UnpackAssociation[assoc, coordinates, arrowheads, shape, edgeIndex];
+  {a, b} = {{ax, ay}, {bx, by}} = FirstLast[coordinates];
+  lines = If[EuclideanDistance[a, b] > 1,
+    ab = Normalize[b - a];
+    ab *= If[Abs[First[ab]] > Abs[Last[ab]], {1, 0}, {0, 1}] * 0.8;
+    {l, r} = {{b + ab, b}, {a, a - ab}};
+    counter = assoc["Counter"];
+    {shape /@ {l, r}, {Opacity[1, $DarkGray], Text[counter, Mean @ #, {0, 1.8}]& /@ {l, r}}}
+  ,
+    shape @ {a, b}
+  ];
+  Style[lines, arrowheads]
+];

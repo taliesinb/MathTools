@@ -454,6 +454,20 @@ MapStaggered[f_, list_] := f @@@ Partition[list, 2, 1];
 
 (**************************************************************************************************)
 
+(* add ability for PositionIndex to index at level 2 *)
+Unprotect[PositionIndex];
+PositionIndex[list_, 2] := Scope[
+  assoc = <||>;
+  ScanIndexed[
+    {e, part} |-> KeyAppendTo[assoc, e, First @ part],
+    list, {2}
+  ];
+  assoc
+];
+Protect[PositionIndex];
+
+(**************************************************************************************************)
+
 PackageExport["AtLeast"]
 
 SetUsage @ "
@@ -507,7 +521,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PackageScope["StripNegated"]
+PackageExport["StripNegated"]
 
 StripNegated[Negated[e_]] := e;
 StripNegated[e_] := e;

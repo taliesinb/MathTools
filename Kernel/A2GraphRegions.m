@@ -140,7 +140,7 @@ PackageScope["processRegionVerticesEdges"]
 
 processRegionVerticesEdges[spec_] := Scope[
   region = RegionDataUnion @ processRegionSpec[spec];
-  If[!MatchQ[region, _GraphRegionData], Return @ {$Failed, $Failed}];
+  If[!MatchQ[region, _GraphPathData | _GraphRegionData], Return @ {$Failed, $Failed}];
   {Part[region, 1], Part[region, 2]}
 ];
 
@@ -272,25 +272,34 @@ verbatimEdgePattern[a_, b_, c_] :=
 (********************************************)
 (** edge pattern                           **)
 
-GraphRegionElementQ[EdgePattern[_, __]] := True;
+GraphRegionElementQ[EdgePattern[_, _, _] | EdgePattern[_, _]] := True;
 
-processRegion[p:EdgePattern[___]] :=
+processRegion[p:EdgePattern[_, _, ___]] :=
   edgeIndicesToPathData @ findEdgeIndices[p]
 
 processRegion[EdgePattern[a_, b_, Negated[c_]]] :=
   edgeIndicesToPathData @ findEdgeIndices @ Map[Negated, EdgePattern[a, b, c]];
 
-findEdgeIndices[p:EdgePattern[a_, b_, c___]] := Scope[
-  Which[
-    NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[a, b, c]]],
-      i,
-    NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[b, a, c]]],
-      Negated /@ i,
-    NotEmptyQ[i = MatchIndices[$EdgeList, UndirectedEdge[a, b, c] | UndirectedEdge[b, a, c]]],
-      i,
-    True,
-      fail["nfedge", p]
-  ]
+findEdgeIndices[p:EdgePattern[a_, b_]] := Scope @ Which[
+  NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[a, b, ___]]], i,
+  NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[b, a, ___]]], Negated /@ i,
+  NotEmptyQ[i = MatchIndices[$EdgeList, UndirectedEdge[a, b, ___] | UndirectedEdge[b, a, ___]]], i,
+  True, fail["nfedge", p]
+];
+
+findEdgeIndices[p:EdgePattern[a_, b_, c_]] := Scope @ With[{cp = toCardinalPattern @ c}, Which[
+  NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[a, b, cp]]], i,
+  NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[b, a, cp]]], Negated /@ i,
+  NotEmptyQ[i = MatchIndices[$EdgeList, UndirectedEdge[a, b, cp] | UndirectedEdge[b, a, c]]], i,
+  True, fail["nfedge", p]
+]];
+
+supersetOf[sub_][sup_] := SubsetQ[sup, sub];
+
+toCardinalPattern = MatchValues[
+  CardinalSet[s_] := CardinalSet[_ ? (supersetOf[p])];
+  a_Alternatives  := Map[%, a];
+  s_              := s | CardinalSet[_ ? (MemberQ[s | Negated[s]])];
 ];
 
 edgeIndicesToPathData[indices_] :=
@@ -335,6 +344,10 @@ processRegion[list_List /; VectorQ[list, GraphRegionElementQ]] :=
   RegionDataUnion @ Map[processRegion, list];
 
 (********************************************)
+
+PackageScope["findVertexIndex"]
+
+findVertexIndex[e_] := Block[{failAuto = Function[$Failed]}, findVertex @ e];
 
 GraphRegion::invv = "The region ``[...] contained an invalid vertex specification ``.";
 
@@ -406,12 +419,13 @@ PathAdjustments is an option to Path that specifies which steps to foreshorten.
 
 (********************************************)
 
-sowPath[start_, path_, repeating_] := Scope[
+sowPath[start_, path_, repeating_, stop_:None] := Scope[
   startId = findVertex @ start;
+  stopId = If[stop === None, None, findVertex @ stop];
   pathWord = ParseCardinalWord[path];
   sowVertex[startId];
   doWalk[
-    startId, pathWord, repeating,
+    startId, stopId, pathWord, repeating,
     {vertex, edge} |-> (
       sowVertex[vertex];
       sowEdge[edge];
@@ -455,7 +469,7 @@ GraphRegion::notdir = "The region ``[...] includes a path ``, but paths cannot b
 GraphRegion::nocard = "The region ``[...] specified a cardinal '``' path step at vertex ``, but the only available \
 cardinals are: ``"
 
-doWalk[startId_, pathWord_, shouldRepeat_, func_] := Scope[
+doWalk[startId_, stopId_, pathWord_, shouldRepeat_, func_] := Scope[
   If[!DirectedGraphQ[$Graph], failAuto["notdir", path]];
   wordLen = Length @ pathWord;
   vertexId = startId;
@@ -469,6 +483,7 @@ doWalk[startId_, pathWord_, shouldRepeat_, func_] := Scope[
       failWalk[cardinal, vertexId]];
     vertexId = Part[$EdgePairs, edgeId, If[negatedQ, 1, 2]];
     func[vertexId, If[negatedQ, Negated @ edgeId, edgeId]];
+    If[vertexId == stopId, Break[]];
     If[vertexId == startId && shouldRepeat, Break[]];
   ,
     {i, 1, totalLen}
@@ -488,19 +503,22 @@ failWalk[cardinal_, vertexId_] := Scope[
 
 offsetWalk[start_, path_] := Scope[
   cardList = ParseCardinalWord[path];
-  doWalk[startId, pathWord, False, Null&]
+  doWalk[startId, None, pathWord, False, Null&]
 ];
 
 (********************************************)
 (** Line[...]                              **)
 
-GraphRegionElementQ[Line[_]] := True;
+GraphRegionElementQ[Line[_List] | Line[_List, _]] := True;
 
 processRegion[Line[{vertex_}]] :=
   collectPathData @ sowVertex @ findVertex @ vertex;
 
 processRegion[Line[vertices_]] :=
   collectPathData @ MapStaggered[findAndSowGeodesic, findVertices @ vertices]
+
+processRegion[Line[{start_, stop_}, c_]] :=
+  collectPathData @ sowPath[start, c, True, stop];
 
 findAndSowGeodesic[v1_, v2_] := Scope[
   geodesicVertices = MetricFindShortestPath[$MetricGraphCache, v1, v2, GraphMetric -> $GraphMetric];
@@ -733,6 +751,23 @@ processRegion[RegionBoundary[region_]] := Scope[
   subgraphRegionData @ edgeVertices
 ];
 
+
+(********************************************)
+(** ConnectedEdges[...]                    **)
+
+PackageExport["ConnectedSubgraph"]
+
+SetUsage @ "
+ConnectedSubgraph[region$] represents region$ extended by all edges that connect vertices within region$.
+"
+
+GraphRegionElementQ[ConnectedSubgraph[r_]] := AllTrue[ToList @ r, GraphRegionElementQ];
+
+processRegion[ConnectedSubgraph[region_]] := Scope[
+  region = RegionDataUnion @ Map[processRegion, ToList @ region];
+  vertices = First @ region;
+  RegionDataUnion[{region, subgraphRegionData @ vertices}]
+];
 
 (********************************************)
 (** RegionComplement[...]                  **)

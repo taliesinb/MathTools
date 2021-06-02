@@ -44,6 +44,34 @@ ImageToGraphics[img_, {xalign_, yalign_}, size_] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["GraphicsPrimitivesQ"]
+
+GraphicsPrimitivesQ = MatchValues[
+  list_List := AllTrue[list, GraphicsPrimitivesQ];
+  Style[s_, ___] := % @ s;
+  Annotation[g_, ___] := % @ g;
+  Rectangle[_ ? CoordinateVectorQ, _ ? CoordinateVectorQ] := True;
+  (Line|Arrow|BezierCurve|BSplineCurve)[_ ? CoordinateMatrixOrArrayQ] := True;
+  Arrow[_ ? CoordinateMatrixOrArrayQ, _] := True;
+  (JoinedCurve|FilledCurve)[list_List] := % @ list;
+  (Disk|Circle|Sphere)[_ ? CoordinateVectorQ, Optional[_, None]] := True;
+  Annulus[_ ? CoordinateVectorQ, _] := True;
+  Tube[_ ? CoordinateMatrixOrArrayQ, Optional[_, None]] := True;
+  Point[_ ? CoordinateVectorOrMatrixQ] := True;
+  Polygon[_ ? CoordinateMatrixOrArrayQ] := True;
+  Text[_, _ ? CoordinateVectorQ, ___] := True;
+  $ColorPattern | _Opacity := True;
+  _Thickness | _AbsoluteThickness | _PointSize | _AbsolutePointSize | _Dashing := True;
+  _Arrowheads := True;
+  _EdgeForm | _FaceForm | _Directive | _CapForm | _JoinForm := True;
+  e_ := False
+];
+
+CoordinateVectorOrMatrixQ[array_] := ArrayQ[array, 2|3] && MatchQ[InnerDimension @ array, 2|3];
+CoordinateMatrixOrArrayQ[array_] := CoordinateMatrixQ[array] || VectorQ[array, CoordinateMatrixQ];
+
+(**************************************************************************************************)
+
 PackageExport["GraphicsQ"]
 
 SetUsage @ "

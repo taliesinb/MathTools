@@ -95,7 +95,11 @@ If a function f$ is given, it is provided with an association containing the fol
 | 'Coordinates' | the list of {x$, y$} or {x$, y$, z$} coordinates |
 | 'Source' | the source vertex |
 | 'Target' | the target vertex |
+| 'EdgeIndex' | the index of the edge |
+| 'Counter' | an integer counter incremented on access |
+| 'Shape' | the symbol Line or Arrow |
 | 'Cardinal' | the cardinal(s) on the edge |
+| 'Arrowheads' | the Arrowheads expression (or None) |
 
 * %EdgeColorFunction accepts these settings:
 | None | color via EdgeStyle (default) |
@@ -502,7 +506,7 @@ separateTag = MatchValues[
 
 reattachTag[edge_, {}] := edge;
 reattachTag[edge_, {tag_}] := Append[edge, tag];
-reattachTag[edge_, tags_List] := Append[edge, CardinalSet @ tags];
+reattachTag[edge_, tags_List] := Append[edge, SimplifyCardinalSet @ CardinalSet @ tags];
 
 (**************************************************************************************************)
 
@@ -514,6 +518,14 @@ CardinalSet[cardinals$] represents a set of cardinals that is simultaneously pre
 
 MakeBoxes[CardinalSet[set_List], TraditionalForm] :=
   RowBox @ Riffle[MakeBoxes[#, TraditionalForm]& /@ set, " "];
+
+PackageScope["SimplifyCardinalSet"]
+
+SimplifyCardinalSet = MatchValues[
+  CardinalSet[{a_}] := % @ a;
+  CardinalSet[{l___, CardinalSet[{m__}], r___}] := % @ CardinalSet[{l, m, r}];
+  other_ := other;
+];
 
 PackageScope["SpliceCardinalSets"]
 

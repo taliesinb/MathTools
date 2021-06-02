@@ -46,8 +46,7 @@ The following specifications describe paths in the graph:
 | %InfiniteLine[{v$1, v$2}] | a geodesic intersecting v$1 and v$2 |
 | %GraphPathData[$$] | a previously computed path |
 * Specifications taking a cardinal direction c$ also take a list {c$1, ..., c$n}, used cyclically.
-* %Path[$$, PathAdjustments -> {i$1, i$2, $$}] indicates that the i$th elements of the path should drawn
-truncated.
+* %Path[$$, %PathAdjustments -> {adj$1, adj$2, $$}] gives a series of adjustments to how the path is drawn.
 
 The following specifications describe regions in the graph:
 | %Point[v$] | a single vertex v$ |
@@ -64,13 +63,8 @@ The following specifications describe regions in the graph:
 | %RegionComplement[r$1, r$2] | the complement of region r$1 with region r$2 |
 | %RegionIntersection[r$1, r$2, $$] | the mutual intersection of regions r$i |
 | %RegionUnion[r$1, r$2, $$] | the union of regions r$i |
-| %GraphRegionData[$$] | a previously computed region |
-
-## Named regions
-
-* A specification of the form <|'name$1' -> spec$1, 'name$2' -> spec$2, $$|> creates named regions.
-* Named regions will automatically be given unique colors when highlighted.
-* Within a named region, the string 'name$i' can be used to refer to a previously defined region.
+| %GraphRegionData[$$] | previously computed region |
+| %ConnectedSubgraph[region$] | all edges connecting vertices within region$ |
 
 ## Distances
 
@@ -95,16 +89,55 @@ $GraphRegionHighlightUsage = StringTrim @ "
 
 * A single highlight specification, or a list or association of specifications can be given.
 
-* The keys of an association will be used as legend labels.
+* For an association, the keys will be used as legend labels.
 
 * Each highlight specification can be one of the following:
 | region$ | highlight a set of vertices or edges with a unique color |
 | {region$1, region$2, $$} | highlight several regions with the same color |
-| %Style[spec$, style$] | specify a color or other options |
-| Labeled[region$, label$] | label the annotation in-place |
-| %Arrow[spec$] | draw paths as arrows |
+| %Style[spec$, style$$] | specify highlight color or other options |
+| %Legended[region$, label$] | label the region as label% in a legend |
+| %Arrow[spec$] | draw paths in spec$ as arrows |
 | %Axis -> %%All | %InfiniteLine[%GraphOrigin, c$i] for each cardinal c$i |
 | %Axis -> {c$1, $$} | %InfiniteLine[%GraphOrigin, c$i] |
+
+* If %GraphHighlightStyle is also provided, elements of it will be applied to \
+corresponding highlight specifications:
+| <|key$1 -> style$1, $$|> | apply style$i to highlight specification under key$i |
+| {style$1, style$2, $$} | apply style$i to highlight specification number i$ |
+| style$ | apply style$ to all highlight specifications |
+| {$$, opt$ -> value$} | apply additional highlight options globally |
+
+## Highlight styles
+
+* The following options are supported as rules in %Style[spec$, $$] wrapper in a highlight \
+specifications, and as elements of %GraphHighlightStyle:
+
+| %SimplifyRegions | True | whether to render disk-like regions with %Disk |
+| %PerformanceGoal | 'Quality' | how to prioritize region rendering |
+| %PathStyle | 'Line' | how to render paths |
+| %ArrowheadPosition | 1.0 | where to place arrowhead on a path |
+| %ArrowheadSize | Automatic | arrowhead size |
+| %HighlightRadius | Automatic | region highlighting radius |
+| %PathRadius | Automatic | path highlighting radius |
+| %PathOutline | False | whether to outline path highlight |
+| %EdgeSetback | 1 | scaled amount by which to set back edges from target |
+| %ZOrder | 1 | control order of rendering of highlighted elements |
+
+* %PathStyle controls how paths are highlighted:
+| 'Line' | thick overlaid lines |
+| 'Arrow' | thick overlaid arrows |
+| 'Replace' | replace original edges with new style |
+* 'DiskArrow', 'ArrowDisk', and 'DiskArrowDisk' will begin and/or end the arrow with \
+an enlarged disk.
+
+* The default opacity of highlight elements is 0.5, but if style colors are given \
+with an explicit opacity this opacity will be used instead.
+
+The following special named style elements control several settings:
+| 'Background' | solid elements placed behind target graph |
+| 'Foreground' | solid elements placed above target graph |
+| 'FadeGraph' | make target graph light gray |
+| 'Replace' | use %PathStyle -> 'Replace' with solid colors |
 
 ## Region specifications
 
@@ -409,6 +442,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     edgeStyle //= removeSingleton;
     vertexStyle //= removeSingleton;
+    edgeShapeFunction //= removeSingleton;
+    $esfCounter = 1;
 
     If[colorRules =!= None, processColorRules[colorRules]];
   ];
@@ -479,7 +514,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       arrowheadSize //= processArrowheadSize;
 
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Arrow"]];
-      $twoWayStyle = "ArrowDoubleIn";
+      $twoWayStyle = "ArrowDoubleIn"; $pairedDistance = 0.;
       If[ListQ[arrowheadShape],
         {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
         Scan[scanArrowheadShapeOpts, arrowheadShapeOpts]];
@@ -628,14 +663,17 @@ vertexDrawFuncWithSize[rawVertexDrawFunc_, vertexSize_] :=
   ];
 
 vertexDrawFuncSizeRemapper[rawVertexDrawFunc_, sizeOverrides_, vertexSize_] :=
-  {indices, color} |-> Map[
-    index |-> Construct[
-      ReplaceAll[
-        rawVertexDrawFunc,
-        $vertexSize -> Lookup[sizeOverrides, index, vertexSize]
+  {indices, color} |-> Annotation[
+    Map[
+      index |-> Construct[
+        ReplaceAll[
+          rawVertexDrawFunc,
+          $vertexSize -> Lookup[sizeOverrides, index, vertexSize]
+        ],
+        Part[$VertexCoordinates, index], color
       ],
-      Part[$VertexCoordinates, index], color
-    ], indices
+      indices],
+    indices, "VertexPrimitives"
   ];
 
 (**************************************************************************************************)
@@ -665,19 +703,8 @@ processArrowheadSize = MatchValues[
   spec_ := failPlot["badarrowheadsize", spec];
 ];
 
-PackageExport["TwoWayStyle"]
-
-scanArrowheadShapeOpts = MatchValues[
-  TwoWayStyle -> s:("Out"|"In"|"OutClose"|"InClose") := $twoWayStyle ^= arrowheadShape <> "Double" <> s;
-  TwoWayStyle -> s:("Square"|"Ball"|"Disk"|"Diamond"|None) := $twoWayStyle ^= s;
-  rule_ := failPlot["badsubopt", rule, ArrowheadShape];
-];
-
-
-arrowheadsND[e_] := If[$GraphIs3D, Arrowheads[e, Appearance -> "Projected"], Arrowheads @ e];
-
 drawUndirectedEdges[indices_, style_] :=
-  annotatedEdgePrimitives[setback[Line, setbackDistance] /* StyleOperator[style], indices];
+  Style[createEdgePrimitives[indices, Line, None, None], style];
 
 drawTagGroupArrowheadEdges[indices_, style_] := Scope[
 
@@ -695,39 +722,119 @@ drawTagGroupArrowheadEdges[indices_, style_] := Scope[
 ];
 
 drawArrowheadEdges[_, {}] := Nothing;
+
+undirectedCardinalQ[cardinal_] := Or[
+  lookupTagSpec[arrowheadShape, cardinal] === None,
+  zeroQ @ lookupTagSpec[arrowheadSize, cardinal]
+];
+
+drawArrowheadEdges[cardinal_, indices_] /; undirectedCardinalQ[cardinal] :=
+  createEdgePrimitives[indices, Line, None, cardinal];
+
 drawArrowheadEdges[cardinal_, indices_] := Scope[
-  If[
-    Or[
-      lookupTagSpec[arrowheadShape, cardinal] === None,
-      zeroQ @ lookupTagSpec[arrowheadSize, cardinal]
-    ],
-    func = setback[Line, setbackDistance];
-  ,
-    arrowheads = arrowheadsND @ List @ makeArrowheadsElement @ cardinal;
-    func = setback[Arrow, setbackDistance] /* StyleOperator[arrowheads];
-  ];
-  annotatedEdgePrimitives[func, indices]
+  arrowheads = arrowheadsND @ List @ makeArrowheadsElement @ cardinal;
+  createEdgePrimitives[indices, Arrow, arrowheads, cardinal]
 ];
 
-annotatedEdgePrimitives[f_, indices_] := Annotation[
-  f @ Part[$EdgeCoordinateLists, indices],
-  indices, "EdgePrimitives"
+isPairedShapeQ[shape_String] := StringStartsQ[arrowheadShape, "Paired"];
+
+drawArrowheadEdges[CardinalSet[cardinals_], indices_] /; isPairedShapeQ[arrowheadShape] := Scope[
+  shape1 = "Left" <> arrowheadShape; shape2 = "Right" <> arrowheadShape;
+  arrowheads = makePairedDiskArrowheads[cardinals] /. $pairDist -> ($pairedDistance / 20);
+  Part[arrowheads, All, 2] = makeMultiarrowheadPositions[Length[cardinals] / 2, .5];
+  arrow = Arrow @ Part[$EdgeCoordinateLists, indices];
+  primitives = Style[arrow, Arrowheads @ arrowheads];
+  Annotation[primitives, indices, "EdgePrimitives"]
 ];
 
-drawArrowheadEdges[CardinalSet[cardinals_], indices_] := Scope[
+makePairedDiskArrowheads[{c1_, c2_, rest___}] := Scope[
+  {shape, size, style1, arrowheadPosition} = lookupTagSpec @ StripNegated @ c1;
+  {shape, size, style2, arrowheadPosition} = lookupTagSpec @ StripNegated @ c2;
+  shape1o = shape1; shape2o = shape2;
+  If[OddQ[Count[{c1, c2}, _Negated]],
+    Swap[style1, style2];
+    shape1o = shape1o <> "Offset"; shape2o = shape2o <> "Offset"];
+  graphic = Graphics @ {Opacity[1],
+    {style1, $arrowheads2D @ shape1o},
+    {style2, $arrowheads2D @ shape2o}};
+  arrowheadSpec = {size, Null, graphic};
+  Prepend[arrowheadSpec] @ makePairedDiskArrowheads[{rest}]
+];
+
+makePairedDiskArrowheads[{}] := {};
+
+drawArrowheadEdges[CardinalSet[{c_}], indices_] :=
+  drawArrowheadEdges[c, indices];
+
+drawArrowheadEdges[cs:CardinalSet[cardinals_], indices_] := Scope[
   If[$twoWayStyle =!= None,
     cardinals = SortBy[cardinals, NegatedQ];
     cardinals //= ReplaceRepeated[{l___, c_, m___, Negated[c_], r___} :> {l, TwoWay[c], m, r}]];
   cardinals = SortBy[cardinals, {Head[#] === TwoWay, StripNegated @ #}&];
   num = Length[cardinals];
-  positions = If[num === 1, {arrowheadPosition}, 0.5 + 0.2 * Standardize[Range[num]]];
+  positions = makeMultiarrowheadPositions[num, arrowheadPosition];
   arrowheads = arrowheadsND @ MapThread[
     {card, pos} |-> makeArrowheadsElement[arrowheadPosition = pos; card],
     {cardinals, positions}
   ];
-  func = setback[multiArrow, setbackDistance] /* StyleOperator[arrowheads];
-  annotatedEdgePrimitives[func, indices]
+  createEdgePrimitives[indices, multiArrow, arrowheads, cs]
 ];
+
+makeMultiarrowheadPositions[1, pos_] := {pos};
+makeMultiarrowheadPositions[num_, _] := 0.5 + 0.2 * Standardize[Range @ num];
+
+PackageExport["TwoWayStyle"]
+PackageExport["PairedDistance"]
+
+scanArrowheadShapeOpts = MatchValues[
+  TwoWayStyle -> s:("Out"|"In"|"OutClose"|"InClose") := $twoWayStyle ^= arrowheadShape <> "Double" <> s;
+  TwoWayStyle -> s:("Square"|"Ball"|"Disk"|"Diamond"|None) := $twoWayStyle ^= s;
+  PairedDistance -> n_ ? NumericQ := $pairedDistance ^= N[n];
+  rule_ := failPlot["badsubopt", rule, commaString @ {TwoWayStyle, PairedDistance}];
+];
+
+(**************************************************************************************************)
+
+createEdgePrimitives[indices_, drawFn_,  arrowheads_, cardinal_] /; TrueQ[edgeShapeFunction === Automatic] := Scope[
+  coords = Part[$EdgeCoordinateLists, indices];
+  primitives = StyleOperator[arrowheads] @ setback[drawFn, setbackDistance] @ coords;
+  Annotation[primitives, indices, "EdgePrimitives"]
+];
+
+createEdgePrimitives[indices_, drawFn_, arrowheads_, cardinal_] := Scope[
+  coords = Part[$EdgeCoordinateLists, indices];
+  primitives = Map[
+    index |-> applyDrawFn[edgeShapeFunction, <|
+      "Coordinates" -> Part[$EdgeCoordinateLists, index],
+      "Source" -> Part[$EdgeList, index, 1],
+      "Target" -> Part[$EdgeList, index, 2],
+      "EdgeIndex" -> index,
+      "Counter" :> $esfCounter++,
+      "Shape" -> If[drawFn === Line, Line, Arrow],
+      "Cardinal" -> cardinal,
+      "Arrowheads" -> arrowheads
+    |>],
+    indices
+  ];
+  Annotation[primitives, indices, "EdgePrimitives"]
+];
+
+ExtendedGraphPlot::edgefnmsg = "EdgeShapeFunction issued messages when applied to ``."
+ExtendedGraphPlot::edgefnres = "EdgeShapeFunction produced an expression that does not appear to be valid graphics primitives."
+
+applyDrawFn[f_, assoc_] := Scope[
+  Check[
+    res = f[assoc],
+    failPlot["edgefnmsg", AssociationThread @@ KeysValues @ assoc];
+  ];
+  If[GraphicsPrimitivesQ[res], res,
+    Print[res];
+    Message[ExtendedGraphPlot::edgefnres]; {}]
+];
+
+(**************************************************************************************************)
+
+arrowheadsND[e_] := If[$GraphIs3D, Arrowheads[e, Appearance -> "Projected"], Arrowheads @ e];
 
 makeArrowheadsElement[cardinal_] := Scope[
   {shape, size, style, position} = lookupTagSpec[cardinal];
@@ -805,6 +912,8 @@ makeArrowheadGraphic3D[primitives_, style_, opts___] :=
     {Opacity[1], EdgeForm @ None, FaceForm @ style, primitives},
     opts
   ];
+
+$nudge = 1*^-2;
 
 $arrowheads2D = Association[
   "Line" ->
@@ -965,7 +1074,33 @@ $arrowheads2D = Association[
     FilledCurve[
       {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
       ToPacked @ {{{-0.45, 0.}, {0., -0.25}, {0.45, 0.}, {0., 0.25}}}
-    ]
+    ],
+  "RightPairedDisk" ->
+    Disk[{$pairDist - $nudge, 0.}, .2, {-Pi/2, Pi/2}],
+  "RightPairedDiskOffset" ->
+    Disk[{-$pairDist/2 - 0.2, 0.}, .2, {-Pi/2, Pi/2}],
+  "LeftPairedDisk" ->
+    Disk[{-$pairDist + $nudge, 0.}, .2, {Pi/2, 3*Pi/2}],
+  "LeftPairedDiskOffset" ->
+    Disk[{$pairDist/2 + 0.2, 0.}, .2, {Pi/2, 3*Pi/2}],
+
+  "RightPairedSquare" ->
+    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{$pairDist - $nudge, 0.2}, {$pairDist + 0.2, 0.2}, {$pairDist + 0.2, -0.2}, {$pairDist - $nudge, -0.2}}}],
+  "RightPairedSquareOffset" ->
+    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{-0.2, 0.2}, {0., 0.2}, {0., -0.2}, {-0.2, -0.2}}}],
+  "LeftPairedSquare" ->
+    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{-$pairDist + $nudge, 0.2}, {-$pairDist - 0.2, 0.2}, {-$pairDist - 0.2, -0.2}, {-$pairDist + $nudge, -0.2}}}],
+  "LeftPairedSquareOffset" ->
+    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{0.2, 0.2}, {0., 0.2}, {0., -0.2}, {0.2, -0.2}}}],
+
+  "RightPairedDiamond" ->
+    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{$pairDist - $nudge, 0.2}, {$pairDist + 0.2, 0.}, {$pairDist - $nudge, -0.2}}}],
+  "RightPairedDiamondOffset" ->
+    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{-0.2, 0.2}, {0., 0.}, {-0.2, -0.2}}}],
+  "LeftPairedDiamond" ->
+    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{-$pairDist + $nudge, 0.2}, {-$pairDist - 0.2, 0.}, {-$pairDist + $nudge, -0.2}}}],
+  "LeftPairedDiamondOffset" ->
+    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{0.2, 0.2}, {0., 0.}, {0.2, -0.2}}}]
 ];
 
 $coneRadius = 0.15;
@@ -988,7 +1123,10 @@ PackageScope["abs3DColor"]
 
 abs3DColor[c_] := Directive[Glow @ c, Black, Specularity @ 0];
 
-$namedArrowheads = Union[Keys @ $arrowheads2D, Keys @ $arrowheads3D, {"Cardinal"}];
+$namedArrowheads = Union[
+  Discard[Keys @ $arrowheads2D, StringContainsQ["Paired" | "DoubleIn" | "DoubleOut"]],
+  Keys @ $arrowheads3D, {"Cardinal", "PairedDisk", "PairedDiamond", "PairedSquare"}
+];
 
 (**************************************************************************************************)
 
@@ -1030,7 +1168,7 @@ makeArrowheadShape[spec_, _] :=
 
 badArrowheadShape[spec_] :=
   failPlot["badarrowhead", spec,
-    commaString @ Discard[StringContainsQ["Double"]] @ $namedArrowheads];
+    commaString @ $namedArrowheads];
 
 imageToGraphics[img_, pos_] := ImageToGraphics[ImageResize[img, 50], pos, 50];
 
@@ -1040,14 +1178,24 @@ ExtendedGraphPlot::badarrowhead = "ArrowheadShape -> `` should be None, Automati
 
 PackageExport["ArrowheadLegend"]
 
+to2DShape[Automatic] := "Arrow";
 to2DShape["Cone"] = "Arrow";
 to2DShape["Sphere"] = "Disk";
+to2DShape["PairedDisk"] = "Disk";
+to2DShape["PairedDiamond"] = "Diamond";
+to2DShape["PairedSquare"] = "Square";
 to2DShape[a_] := a;
 
 ArrowheadLegend[assoc_, "Cardinal"] := "";
 ArrowheadLegend[assoc_Association, shape_:"Arrow"] := Scope[
+  shapeIndex = If[AssociationQ[shape], shape, <|All -> shape|>];
   rows = KeyValueMap[
-    {name, color} |-> {makeLegendArrowheadGraphic[color, to2DShape @ shape], name},
+    {name, color} |-> (
+      arrowShape = to2DShape @ Lookup[shapeIndex, name, Lookup[shapeIndex, All, "Arrow"]];
+      If[MissingQ[arrowShape] || arrowShape === None, Nothing,
+        graphic = makeLegendArrowheadGraphic[color, arrowShape];
+        {graphic, name}
+      ]),
     assoc
   ];
   Framed[
@@ -1306,7 +1454,7 @@ toFunc[f_] := f;
 (**************************************************************************************************)
 
 resolveRegionRules[rules_, optSym_] := Scope[
-  defaultColor = FirstCase[rules, Rule[All, color_ ? ColorQ] :> color, Gray, {1}];
+  defaultColor = FirstCase[rules, Rule[All, color:$ColorPattern] :> color, Gray, {1}];
   $vertexValues = ConstantArray[defaultColor, $VertexCount];
   $edgeValues = ConstantArray[defaultColor, $EdgeCount];
   $optSym = optSym;
@@ -1316,8 +1464,8 @@ resolveRegionRules[rules_, optSym_] := Scope[
 ];
 
 applyRegionRule = MatchValues[
-  All -> _ ? ColorQ := Null;
-  spec_ -> color_ ? ColorQ := Scope[
+  All -> $ColorPattern := Null;
+  spec_ -> color:$ColorPattern := Scope[
     $regionColor = color /. $colorNormalizationRules;
     % @ spec
   ];
@@ -1426,7 +1574,7 @@ toDirectiveOptScan[f_][e_List | e_Directive] := (
   toDirective @ DeleteCases[e, _Rule]
 )
 
-ExtendedGraphPlot::badsubopt = "`` is not a recognized option to ``. Recognized options are ItemSize, BaseStyle, Background, LabelPosition, Spacings."
+ExtendedGraphPlot::badsubopt = "`` is not a recognized suboption. Recognized options are ``."
 
 setLabelStyleGlobals = MatchValues[
   ItemSize -> size:$sizePattern := $labelSizeScale ^= toNumericSizeScale @ size;
@@ -1439,7 +1587,7 @@ setLabelStyleGlobals = MatchValues[
   LabelPosition -> Left := $labelX ^= 1;
   LabelPosition -> Right := $labelX ^= -1;
   Spacings -> n_ := $spacings ^= N[n];
-  rule_ := failPlot["badsubopt", rule, LabelStyle];
+  rule_ := failPlot["badsubopt", rule, commaString @ {ItemSize, BaseStyle, Background, LabelPosition, Spacings}];
 ];
 
 $payloadP = _String | _Association;
@@ -1621,7 +1769,7 @@ splitPrimitives[Arrow[coords_, d_], ids_] :=
   Map[Arrow[#, d]&, splitMatchingIds[coords, ids]];
 
 splitPrimitives[list_List, ids_] :=
-  splitMatchingIds[coords, ids];
+  splitMatchingIds[list, ids];
 
 splitPrimitives[other_, _] := (
   Panic["UnhandledPrimitive", other];
@@ -1634,3 +1782,22 @@ splitMatchingIds[list_, ids_] := Scope[
     Part[list, indices]
   ]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["AnnotationsToTooltips"]
+
+AnnotationsToTooltips[g_Graphics, name_] :=
+  ReplaceAll[g, Annotation[prims_, ids_, name] :> annoWithTooltips[prims, ids]]
+
+annoWithTooltips[prims_List, ids_] :=
+  MapThread[Tooltip, {prims, ids}];
+
+annoWithTooltips[Style[prims_, opts___], ids_] :=
+  Style[annoWithTooltips[prims, ids], opts];
+
+annoWithTooltips[Arrow[prims_, opts__], ids_] :=
+  MapThread[Tooltip[Arrow[#1, opts], #2]&, {prims, ids}];
+
+annoWithTooltips[(head:Point|Line|Arrow)[prims_], ids_] :=
+  MapThread[Tooltip[head[#1], #2]&, {prims, ids}];

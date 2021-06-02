@@ -66,4 +66,5 @@ UnsameOperator[f_][g_] := UnsameQ[f, g];
 
 PackageExport["StyleOperator"]
 
+StyleOperator[None] = Identity;
 StyleOperator[spec___][e_] := Style[e, spec];
