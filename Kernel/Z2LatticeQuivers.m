@@ -13,6 +13,7 @@ PackageScope["$baseLatticeUsage"]
 
 $baseLatticeUsage = StringTrim @ "
 ## Exploration options
+
 * The following options control how states are explored:
 | %MaxDepth | Infinity | maximum depth from the initial states |
 | %MaxVertices | Infinity | maximum number of lattice vertices to obtain |
@@ -27,35 +28,45 @@ effect of allowing up to n$ moves by each cardinal.
 * The default %InitialStates -> Automatic uses the 'natural' initial states for the \
 given machine. For a quiver representation, the first vertex is used along with the \
 identity matrix.
+
 ## Graph options
+
 * The following options control aspects of the produced graph:
 | %CombineMultiedges | True | combine multiedges into a single edge sharing cardinals |
 | %SelfLoops | True | allow self-loops |
 | %CardinalColors | Automatic | how to choose colors for cardinals |
+
 ## Coordinatization options
+
 * The following options control how vertices are named and coordinatized:
 | %AbstractCoordinateFunction | Automatic | function to obtain abstract vertex coordinates from representation matrices |
 | %VertexCoordinateFunction | Automatic | function to obtain graphical vertex coordinates from abstract coordinates |
 | %VertexNameFunction | 'SpiralIndex' | function to rename vertices after coordinatization |
+
 * %AbstractCoordinateFunction extracts abstract vertex coordinates from RepresentationElements, and accepts these settings:
 | Automatic | pick coordinates based on the structure of the machine (default) |
 | {p$1, $$, p$n} | obtain particular elements of the state |
 | None | use the entire state as the coordinate |
-| f$ | apply f$ to each state |
+| f$ | apply f$ to each %RepresentationElement |
+| {All, f$} | apply f% to the full state |
+
 * %VertexCoordinateFunction determines the graphical coordinates, and accepts the following settings:
 | Automatic | convert representation coords to spatial coords based on the structure of the machine (default) |
 | None | automatic layout of the vertices based on setting of GraphLayout |
 | f$ | apply f$ to the abstract coordinates produced by AbstractCoordinateFunction |
+
 * %VertexNameFunction determines the final names given to vertices, and accepts these settings:
 | 'SpiralIndex' | number vertices starting at 1 for the origin, proceeding clockwise then outward (default) |
 | 'RasterIndex' | number vertices starting at the top left, proceeding right then down |
 | 'Coordinates' | use abstract coordinates directly as names |
 | 'Representation' | use the original RepresentationElement[$$] objects directly as names |
 | None | use LatticeVertex[abscoords$, genvertex$] as names |
+
 * %GraphLayout accepts these settings:
 | None | use the layout provided by VertexCoordinateFunction |
 | Automatic | use 'SpringElectricalEmbedding' |
 | spec$ | use a custom specification accepted by Graph |
+
 ## Extended options
 * In addition, the following extended graph options are supported:
 <*$extendedGraphUsage*>
@@ -86,7 +97,7 @@ $baseGenerateLatticeOptions = JoinOptions[{
 ];
 
 General::notquivrep = "First argument should be a QuiverRepresentationObject, or a quiver with canonically named cardinals.";
-General::badvcoords = "VertexCoordinateFunction did not return vectors of consistent dimensions.";
+General::badvcoords = "VertexCoordinateFunction did not return vectors of consistent dimensions. The first vector was ``, produced from ``.";
 General::badlatticename = "The specified name `` is not a known name for a lattice. Known names are: ``."
 General::badlatticedepth = "The specified depth `` is not a positive integer."
 General::badvertnaming = "Unknown setting `` for VertexNameFunction. Valid renaming rules are ``.";
@@ -133,11 +144,13 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     representation = AssociationMap[representation, {"CayleyFunction", "InitialStates"}];
   ];
 
+  wasAutoCardinalList = False;
   If[AssociationQ[representation] && Sort[Keys @ representation] === {"CayleyFunction", "InitialStates"},
 
     UnpackAssociation[representation, cayleyFunction, initialStates];
     repInitialStates = ToList[initialStates];
-    cardinalList = Union[StripNegated /@ DeepCases[cayleyFunction, Labeled[_, c_] :> c]];
+    wasAutoCardinalList = True;
+    cardinalList = Union[StripNegated /@ DeepCases[cayleyFunction, Labeled[_, c_ ? notInternalSymbolQ] :> c]];
     If[cardinalList === {}, cardinalList = Automatic];
   ,
     If[!QuiverRepresentationObjectQ[representation],
@@ -211,6 +224,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
       None
   ];
 
+  $stripLV = True;
   layoutDimension = Automatic; vertexLayout = Automatic;
   Switch[abstractCoordinateFunction,
     Automatic /; !AssociationQ[representation],
@@ -227,7 +241,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
       abstractCoordinateFunction = Identity,
     _,
       abstractCoordinateFunction //= toACFunction;
-      abstractCoordinateFunction = Normal /* abstractCoordinateFunction;
+      If[$stripLV, abstractCoordinateFunction = Normal /* abstractCoordinateFunction];
       lattice
   ];
 
@@ -241,7 +255,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   (* rewrite the vertices via the coordinate function *)
-  abstractVertexList = MapAt[abstractCoordinateFunction, vertexList, {All, 1}];
+  abstractVertexList = MapAt[abstractCoordinateFunction, vertexList, If[$stripLV, {All, 1}, {All}]];
   ivertex = First @ abstractVertexList;
 
   (* rewrite the indexed edges to use the explicit vertices *)
@@ -295,8 +309,9 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   SetAutomatic[vertexCoordinateFunction, None];
   If[vertexCoordinateFunction =!= None,
     If[AssociationQ[vertexCoordinateFunction], vertexCoordinateFunction //= procComplexVCF];
-    vertexCoordinates = Map[First /* vertexCoordinateFunction, abstractVertexList];
-    If[!MatrixQ[vertexCoordinates], ReturnFailed[head::badvcoords]];
+    If[$stripLV, vertexCoordinateFunction = First /* vertexCoordinateFunction];
+    vertexCoordinates = Map[vertexCoordinateFunction, abstractVertexList];
+    If[!MatrixQ[vertexCoordinates], ReturnFailed[head::badvcoords, First @ vertexCoordinates, First @ abstractVertexList]];
     layoutDimension = Switch[Length @ First @ vertexCoordinates, 2, 2, 3, 3, _, Automatic];
   ,
     vertexCoordinates = Automatic;
@@ -323,6 +338,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   If[plotLabel === Automatic && StringQ[latticeName],
     simpleOptions //= ReplaceOptions[PlotLabel -> ToTitleString[latticeName]]];
 
+  If[wasAutoCardinalList, cardinalList = Automatic];
   SetAutomatic[cardinalList, CardinalList @ edgeList];
   If[head === LatticeGraph,
     graph = ExtendedGraph[
@@ -395,7 +411,7 @@ iGenerateLattice[head_, {latticeName_String, args__}, directedEdges_, opts:Optio
   arguments = Join[parameters, AssociationThread[Take[paramKeys, argCount], arguments]];
   If[maxDepth =!= Automatic, arguments["MaxDepth"] = maxDepth];
 
-  result = factory[arguments];
+  result = factory[arguments, Association @ opts];
   If[!ListQ[result], ReturnFailed[head::badparamlatticeargs, KeyDrop["MaxDepth"] @ arguments, latticeName]];
 
   {representation, customOptions} = FirstRest @ result;
@@ -416,8 +432,12 @@ quiverStateToLatticeVertex[e_] := e /. QuiverElement[a_, b_] :> LatticeVertex[b,
 
 procComplexVCF[assoc_] :=
   Apply @ Construct[Function,
-    Total @ KeyValueMap[{i, vec} |-> Slot[i] * vec, assoc]
-  ];
+    $Total @ KeyValueMap[{i, vec} |-> toVCFEntry[Slot[i], vec], assoc]
+  ] /. $Total -> Total;
+
+toVCFEntry[s_, vecs_List ? MatrixQ] := toVCFEntry[s, Association @ MapIndexed[First[#2] -> #1&, vecs]];
+toVCFEntry[s_, vecs_Association] := Construct[Switch, s, Sequence @@ KeyValueMap[Splice[{#1, #2}]&, vecs], True, 0];
+toVCFEntry[s_, vec_List] := s * vec;
 
 $abc = Transpose @ N @ {{Sqrt[3]/2, -(1/2)}, {0, 1}, {-(Sqrt[3]/2), -(1/2)}};
 
@@ -462,8 +482,9 @@ toNormFunction = MatchValues[
 (**************************************************************************************************)
 
 toACFunction = MatchValues[
-  l_List := Extract[l];
-  f_ := f;
+  l_List    := Extract[l];
+  {All, f_} := ($stripLV ^= False; f);
+  f_        := f;
 ];
 
 (**************************************************************************************************)

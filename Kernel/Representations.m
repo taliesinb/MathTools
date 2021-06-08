@@ -221,10 +221,10 @@ RepresentationElement[elem1_, mod_][RepresentationElement[elem2_, _]] := With[
 PackageExport["ToRepresentation"]
 
 SetUsage @ "
-ToRepresentation[obj$] attempts to convert obj$ to a RepresentationObject.
-* If obj$ is already a RepresentationObject, it is returned unchanged.
-* If obj$ is a group or QuiverRepresentation, its base representation is returned.
-* If obj$ is a RootSystem, its TranslationGroup representation is returned.
+ToRepresentation[obj$] attempts to convert obj$ to a %RepresentationObject.
+* If obj$ is already a %RepresentationObject, it is returned unchanged.
+* If obj$ is a group or %QuiverRepresentation, its base representation is returned.
+* If obj$ is a %RootSystem, its %TranslationGroup representation is returned.
 * Otherwise, $Failed is returned.
 "
 

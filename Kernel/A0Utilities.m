@@ -418,6 +418,18 @@ MaximumBy[list_, f_] :=
 
 (**************************************************************************************************)
 
+PackageExport["Minimum"]
+
+Minimum[list_] :=
+  Part[list, First @ Ordering[list, 1]];
+
+PackageExport["Maximum"]
+
+Maximum[list_] :=
+  Part[list, First @ Ordering[list, -1]];
+
+(**************************************************************************************************)
+
 PackageExport["FirstIndex"]
 
 SetAttributes[FirstIndex, HoldRest];
@@ -507,8 +519,8 @@ Negated[elem$] represents the negation of elem$.
 Negated[Negated[e_]] := e;
 Negated /: DirectedEdge[a_, b_, Negated[c_]] := DirectedEdge[b, a, c];
 
-declareFormatting[
-  Negated[e_] :> NegatedForm[e]
+declareBoxFormatting[
+  Negated[e_] :> NegatedBoxForm[e]
 ];
 
 (**************************************************************************************************)
@@ -516,8 +528,11 @@ declareFormatting[
 PackageExport["NegatedForm"]
 
 declareBoxFormatting[
-  NegatedForm[e_] :> OverscriptBox[ToBoxes @ e, AdjustmentBox["_", BoxBaselineShift -> -0.3]]
+  NegatedForm[e_] :> NegatedBoxForm[e]
 ];
+
+SetHoldFirst[NegatedBoxForm];
+NegatedBoxForm[e_] := OverscriptBox[MakeBoxes @ e, AdjustmentBox["_", BoxBaselineShift -> -0.3]]
 
 (**************************************************************************************************)
 

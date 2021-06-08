@@ -168,7 +168,7 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
 
   depthLabels = Automatic;
   If[MatchQ[maxDepth, <|All -> _Integer|>],
-    depthLabels = DeepCases[f, Labeled[_, label_] :> label];
+    depthLabels = DeepCases[f, Labeled[_, label_ ? notInternalSymbolQ] :> label];
     depthLabels = DeleteDuplicates @ Replace[depthLabels, Negated[c_] :> c, {1}];
     If[depthLabels === {}, ReturnFailed["badmaxdepth"]];
     maxDepth = ConstantAssociation[depthLabels, First @ maxDepth];
@@ -193,8 +193,8 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
   trackLabelDepth = trackLabelDepth || ContainsQ[result, Alternatives @@ $vertexDepthElements];
 
   If[trackLabelDepth,
-    SetAutomatic[depthLabels, DeepUniqueCases[f, Labeled[_, label_] :> label]];
-    labels = DeepUniqueCases[f, Labeled[_, label_] :> label];
+    labels = DeepUniqueCases[f, Labeled[_, label_ ? notInternalSymbolQ] :> label];
+    SetAutomatic[depthLabels, labels];
     numDepthLabels = Length[depthLabels];
     labelToPos = AssociationThread[depthLabels, Range[numDepthLabels]];
     zeroDepthVector = ConstantArray[0, numDepthLabels + 1];
@@ -528,6 +528,11 @@ StateTransitionGraph[f_, initialVertices_, result:Except[_Rule], opts:OptionsPat
 
   Lookup[resultsAssoc, result, $Failed]
 ];
+
+PackageScope["notInternalSymbolQ"]
+SetHoldFirst @ notInternalSymbolQ;
+notInternalSymbolQ[sym_Symbol] := !StringEndsQ[SymbolName @ Unevaluated @ sym, "$"];
+notInternalSymbolQ[_] := True;
 
 makeSuperTransitionFunc[list_] := ApplyThrough[MapIndexed[makeTFuncElem, list]] /* Catenate;
 makeTFuncElem[Labeled[f_, label_] | (f_ -> label_), _] := f /* Map[Labeled[#, label]&]

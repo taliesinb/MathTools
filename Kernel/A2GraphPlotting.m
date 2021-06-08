@@ -117,6 +117,7 @@ specifications, and as elements of %GraphHighlightStyle:
 | %PathStyle | 'Line' | how to render paths |
 | %ArrowheadPosition | 1.0 | where to place arrowhead on a path |
 | %ArrowheadSize | Automatic | arrowhead size |
+| %PointSize | Automatic | vertex highlighting radius |
 | %HighlightRadius | Automatic | region highlighting radius |
 | %PathRadius | Automatic | path highlighting radius |
 | %PathOutline | False | whether to outline path highlight |
@@ -442,6 +443,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     edgeStyle //= removeSingleton;
     vertexStyle //= removeSingleton;
+    vertexLabelStyle //= removeSingleton;
+    edgeLabelStyle //= removeSingleton;
     edgeShapeFunction //= removeSingleton;
     $esfCounter = 1;
 
@@ -514,7 +517,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       arrowheadSize //= processArrowheadSize;
 
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Arrow"]];
-      $twoWayStyle = "ArrowDoubleIn"; $pairedDistance = 0.;
+      $twoWayStyle = "ArrowDoubleIn"; $pairedDistance = 0.; $negationStyle = "Flip";
       If[ListQ[arrowheadShape],
         {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
         Scan[scanArrowheadShapeOpts, arrowheadShapeOpts]];
@@ -553,7 +556,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       SetNone[vertexSize, $GraphMaxSafeVertexSize / 5];
       vertexLabelItems = generateLabelPrimitives[
         vertexLabels, $VertexList, $VertexCoordinates, $VertexParts,
-        vertexSize, vertexLabelStyle, vertexAnnotations
+        vertexSize, vertexLabelStyle, vertexAnnotations, True
       ];
       AppendTo[labelGraphics, vertexLabelItems]
     ];
@@ -563,7 +566,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       SetAutomatic[arrowheadSize, 0];
       edgeLabelItems = generateLabelPrimitives[
         edgeLabels, $EdgeList, edgeCenters, $EdgeParts,
-        Max[arrowheadSize] * $GraphPlotSizeX, edgeLabelStyle, <||>
+        Max[arrowheadSize] * $GraphPlotSizeX, edgeLabelStyle, <||>, False
       ];
       AppendTo[labelGraphics, edgeLabelItems]];
 
@@ -572,7 +575,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
   (* create the final graphics *)
   FunctionSection[
-    If[labelGraphics =!= Nothing, extendPadding @ estimateLabelPadding @ labelGraphics];
+    If[labelGraphics =!= Nothing, extendPadding @ estimateLabelPadding[labelGraphics, vertexLabelStyle]];
 
     (* for graphs with cardinals, create an automatic legend when asked *)
     If[cardinalColors =!= None && arrowheadStyle =!= None && arrowheadShape =!= None,
@@ -586,6 +589,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     imageSize = Ceiling @ ImageSizePad[imageSize, imagePadding];
 
     graphicsElements = {edgeGraphics, vertexGraphics, labelGraphics};
+
+    If[ContainsQ[graphicsElements, _UniqueLabel],
+      graphicsElements //= processUniqueLabels];
 
     extraOptions = If[!$GraphIs3D, {},
       SetAutomatic[viewOptions, $automaticViewOptions];
@@ -652,6 +658,22 @@ makeGraphicsGroup[g_] := g;
 
 zeroQ[0|0.] := True;
 zeroQ[_] := False;
+
+(**************************************************************************************************)
+
+processUniqueLabels[graphics_] := Scope[
+  uniqueLabelMap = <||>;
+  DeepCases[graphics, Text[t_, pos_, opts___] :> DeepCases[t,
+    UniqueLabel[id_] :> KeyAppendTo[uniqueLabelMap, id, yxCoord @ pos]
+  ]];
+  uniqueLabelMap //= Map[Minimum];
+  orderingMap = AssociationThread[Keys @ uniqueLabelMap, Ordering @ Ordering @ uniqueLabelMap];
+  graphics /. UniqueLabel[id_] :> RuleCondition @ orderingMap @ id
+];
+
+yxCoord[{x_, y_}] := {-y, x};
+
+(**************************************************************************************************)
 
 vertexDrawFuncWithSize[rawVertexDrawFunc_, vertexSize_] :=
   ReplaceAll[
@@ -740,28 +762,36 @@ isPairedShapeQ[shape_String] := StringStartsQ[arrowheadShape, "Paired"];
 
 drawArrowheadEdges[CardinalSet[cardinals_], indices_] /; isPairedShapeQ[arrowheadShape] := Scope[
   shape1 = "Left" <> arrowheadShape; shape2 = "Right" <> arrowheadShape;
-  arrowheads = makePairedDiskArrowheads[cardinals] /. $pairDist -> ($pairedDistance / 20);
+  arrowheads = makePairedDiskArrowheads[cardinals, $pairedDistance / 20];
   Part[arrowheads, All, 2] = makeMultiarrowheadPositions[Length[cardinals] / 2, .5];
   arrow = Arrow @ Part[$EdgeCoordinateLists, indices];
   primitives = Style[arrow, Arrowheads @ arrowheads];
   Annotation[primitives, indices, "EdgePrimitives"]
 ];
 
-makePairedDiskArrowheads[{c1_, c2_, rest___}] := Scope[
+makePairedDiskArrowheads[{c1_, c2_, rest___}, pdist_] := Scope[
   {shape, size, style1, arrowheadPosition} = lookupTagSpec @ StripNegated @ c1;
   {shape, size, style2, arrowheadPosition} = lookupTagSpec @ StripNegated @ c2;
-  shape1o = shape1; shape2o = shape2;
-  If[OddQ[Count[{c1, c2}, _Negated]],
-    Swap[style1, style2];
-    shape1o = shape1o <> "Offset"; shape2o = shape2o <> "Offset"];
+  shape1o = shape1; shape2o = shape2; negation = Nothing;
+  isNegated = OddQ[Count[{c1, c2}, _Negated]];
+  If[isNegated && $negationStyle === "Flip",
+      Swap[style1, style2];
+      shape1o = shape1o <> "Offset"; shape2o = shape2o <> "Offset"];
   graphic = Graphics @ {Opacity[1],
     {style1, $arrowheads2D @ shape1o},
-    {style2, $arrowheads2D @ shape2o}};
+    {style2, $arrowheads2D @ shape2o}} /. $pairDist -> pdist;
+  If[isNegated && $negationStyle === "OverBar",
+    graphic //= addNegationBar];
   arrowheadSpec = {size, Null, graphic};
-  Prepend[arrowheadSpec] @ makePairedDiskArrowheads[{rest}]
+  Prepend[arrowheadSpec] @ makePairedDiskArrowheads[{rest}, pdist]
 ];
 
-makePairedDiskArrowheads[{}] := {};
+addNegationBar[graphics:Graphics[primitives_, opts___]] := Scope[
+  {{xl, xh}, {yl, yh}} = GraphicsPlotRange @ graphics;
+  Graphics[{primitives, {Opacity[1], Black, AbsoluteThickness[0.5], Line @ {{xl, yh * 1.4}, {xh, yh * 1.4}}}}, opts]
+];
+
+makePairedDiskArrowheads[{}, _] := {};
 
 drawArrowheadEdges[CardinalSet[{c_}], indices_] :=
   drawArrowheadEdges[c, indices];
@@ -790,7 +820,8 @@ scanArrowheadShapeOpts = MatchValues[
   TwoWayStyle -> s:("Out"|"In"|"OutClose"|"InClose") := $twoWayStyle ^= arrowheadShape <> "Double" <> s;
   TwoWayStyle -> s:("Square"|"Ball"|"Disk"|"Diamond"|None) := $twoWayStyle ^= s;
   PairedDistance -> n_ ? NumericQ := $pairedDistance ^= N[n];
-  rule_ := failPlot["badsubopt", rule, commaString @ {TwoWayStyle, PairedDistance}];
+  NegationStyle -> s:("Flip"|"OverBar") := $negationStyle ^= s;
+  rule_ := failPlot["badsubopt", rule, commaString @ {TwoWayStyle, PairedDistance, NegationStyle}];
 ];
 
 (**************************************************************************************************)
@@ -810,6 +841,7 @@ createEdgePrimitives[indices_, drawFn_, arrowheads_, cardinal_] := Scope[
       "Target" -> Part[$EdgeList, index, 2],
       "EdgeIndex" -> index,
       "Counter" :> $esfCounter++,
+      "LabelStyle" -> Replace[edgeLabelStyle, Automatic -> $DarkGray],
       "Shape" -> If[drawFn === Line, Line, Arrow],
       "Cardinal" -> cardinal,
       "Arrowheads" -> arrowheads
@@ -846,6 +878,7 @@ makeArrowheadsElement[cardinal_] := Scope[
     SetNone[style, $Gray];
     makeArrowheadShape[shape, style]
   ];
+  If[NegatedQ[cardinal] && $negationStyle === "OverBar", shape //= addNegationBar];
   If[labelCardinals, shape = attachArrowheadLabel[shape, StripNegated @ cardinal, size]];
   {size, position, shape}
 ];
@@ -855,7 +888,7 @@ lookupTagSpec[assoc_Association, cardinal_] :=
   Lookup[assoc, cardinal, Lookup[assoc, All, None]];
 
 lookupTagSpec[Negated[cardinal_]] :=
-  MapAt[Minus, 2] @ lookupTagSpec[cardinal];
+  If[$negationStyle === "Flip", MapAt[Minus, 2], Identity] @ lookupTagSpec[cardinal];
 
 lookupTagSpec[TwoWay[cardinal_]] :=
   ReplacePart[1 -> $twoWayStyle] @ lookupTagSpec[cardinal];
@@ -902,7 +935,7 @@ makeArrowheadLabelShape[cardinal_, style_, size_] := Scope[
 makeArrowheadGraphic2D[primitives_, style_, opts___] :=
   Graphics[
     {Opacity[1], EdgeForm[None], style, primitives},
-    AspectRatio -> 1,
+    AspectRatio -> Automatic,
     PlotRangeClipping -> False,
     opts
   ];
@@ -1087,11 +1120,11 @@ $arrowheads2D = Association[
   "RightPairedSquare" ->
     FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{$pairDist - $nudge, 0.2}, {$pairDist + 0.2, 0.2}, {$pairDist + 0.2, -0.2}, {$pairDist - $nudge, -0.2}}}],
   "RightPairedSquareOffset" ->
-    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{-0.2, 0.2}, {0., 0.2}, {0., -0.2}, {-0.2, -0.2}}}],
+    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{$pairDist - 0.225, 0.2}, {$pairDist - 0.025, 0.2}, {$pairDist - 0.025, -0.2}, {$pairDist - 0.225, -0.2}}}],
   "LeftPairedSquare" ->
     FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{-$pairDist + $nudge, 0.2}, {-$pairDist - 0.2, 0.2}, {-$pairDist - 0.2, -0.2}, {-$pairDist + $nudge, -0.2}}}],
   "LeftPairedSquareOffset" ->
-    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{0.2, 0.2}, {0., 0.2}, {0., -0.2}, {0.2, -0.2}}}],
+    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{$pairDist + 0.225, 0.2}, {$pairDist + 0.025, 0.2}, {$pairDist + 0.025, -0.2}, {$pairDist + 0.225, -0.2}}}],
 
   "RightPairedDiamond" ->
     FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{$pairDist - $nudge, 0.2}, {$pairDist + 0.2, 0.}, {$pairDist - $nudge, -0.2}}}],
@@ -1208,8 +1241,8 @@ ArrowheadLegend[assoc_Association, shape_:"Arrow"] := Scope[
 PackageScope["makeLegendArrowheadGraphic"]
 
 makeLegendArrowheadGraphic[color_, shape_] := makeArrowheadGraphic2D[
-  Rotate[$arrowheads2D @ shape, Pi/2], FaceForm @ color,
-  BaselinePosition -> Scaled[0.1], ImageSize -> {11, 11}
+  Rotate[$arrowheads2D @ shape, Pi/2], If[StringContainsQ[shape, "Line"], Identity, FaceForm] @ color,
+  BaselinePosition -> Scaled[0.1], ImageSize -> {11, 11}, AspectRatio -> Automatic
 ];
 
 (**************************************************************************************************)
@@ -1527,15 +1560,18 @@ findVertex[GraphOrigin] := findVertex @ LookupAnnotation[$Graph, GraphOrigin];
 
 ExtendedGraphPlot::badlabelspec = "The label specification `` was not one of the recognized forms."
 
-estimateLabelPadding[graphics_] := Scope[
+estimateLabelPadding[graphics_, vertexLabelStyle_] := Scope[
   text = FirstCase[graphics, Text[t_, ___], $Failed, Infinity];
   If[FailureQ[text], Return @ {{0, 0}, {0, 0}}];
   {w, h} = 1 + cachedRasterizeSize[Text @ First @ text] / 2;
   {x, y} = Part[text, 3];
-  {
-    offsetToPadding[x, w],
-    offsetToPadding[y, h]
-  }
+  If[!FreeQ[vertexLabelStyle, LabelPosition -> Automatic],
+    Max[w, h],
+    {
+      offsetToPadding[x, w],
+      offsetToPadding[y, h]
+    }
+  ]
 ];
 
 offsetToPadding[o_, s_] := Switch[Sign[o], 1, {s, 0}, 0, {s, s}/2, -1, {0, s}];
@@ -1544,22 +1580,23 @@ cachedRasterizeSize[e_] := cachedRasterizeSize[e] = Rasterize[e, "RasterSize"];
 
 PackageExport["LabelPosition"]
 
-generateLabelPrimitives[spec_, names_, coordinates_, parts_, size_, labelStyle_, annotations_] := Scope[
+generateLabelPrimitives[spec_, names_, coordinates_, parts_, size_, labelStyle_, annotations_, isVertices_] := Scope[
   $annotationKeys = Keys @ annotations;
   $labelNames = names;
   coordinates = Part[coordinates, parts];
   $annotations = annotations;
   $labeledElemSize = size / 2;
   $spacings = 0;
+  $isVertices = isVertices;
   $labelSizeScale = 1; $labelY = -1; $labelX = 0; $labelBackground = GrayLevel[1.0, 0.6];
   $labelBaseStyle = Inherited;
-  labelStyle //= removeSingleton;
+  $adjacencyIndex = None;
   labelStyle //= toDirectiveOptScan[setLabelStyleGlobals];
   labelStyle //= DeleteCases[sspec:$sizePattern /; ($labelSizeScale = toNumericSizeScale @ sspec; True)];
   $magnifier = If[$labelSizeScale == 1, Identity, Magnify[#, $labelSizeScale]&];
   {payloadFunction, placerFunction} = processLabelSpec[spec];
   indices = If[parts === All, Range @ Length @ names, parts];
-  labelElements = MapThread[placerFunction[labelForm @ payloadFunction @ #2, #1]&, {coordinates, indices}];
+  labelElements = MapThread[placerFunction[labelForm @ payloadFunction @ #2, #1, #2]&, {coordinates, indices}];
   {labelStyle, labelElements}
 ];
 
@@ -1581,6 +1618,13 @@ setLabelStyleGlobals = MatchValues[
   Background -> o:$opacityPattern := $labelBackground ^= GrayLevel[1.0, toNumericOpacity @ o];
   Background -> c:$ColorPattern := $labelBackground ^= c;
   BaseStyle -> s_ := $labelBaseStyle ^= s;
+  LabelPosition -> Automatic := If[$isVertices,
+    $labelX ^= Automatic;
+    $labelY ^= Automatic;
+    $adjacencyIndex ^= VertexAdjacentEdgeTable[$Graph];
+  ,
+    %[LabelPosition -> Top]
+  ];
   LabelPosition -> Top|Above := $labelY ^= -1;
   LabelPosition -> Bottom|Below := $labelY ^= 1;
   LabelPosition -> Center := $labelX ^= $labelY ^= 0;
@@ -1642,7 +1686,19 @@ getAnnotation[name_][i_] := Part[$annotations, name, i];
 placeTooltipAt[label_, pos_] := NiceTooltip[{Transparent, If[$GraphIs3D, Sphere, Disk][pos, 1.1*$labeledElemSize]}, label];
 placeTooltipAt[None | _Missing, _] := Nothing;
 
-placeLabelAt[label_, pos_] := Text[
+$labelOffsets = N @ CirclePoints[{1, 0}, 8];
+placeLabelAt[label_, pos_, index_] /; ($labelX === Automatic) := Scope[
+  adjacentEdges = Part[$adjacencyIndex, index];
+  edgeCoords = Mean /@ Part[$EdgeCoordinateLists, adjacentEdges];
+  bestOffset = MaximumBy[$labelOffsets, sumOfSquaredDistances[#, edgeCoords]&];
+  {$labelX, $labelY} = bestOffset * {1.7, 1.1};
+  placeLabelAt[label, pos, index]
+];
+
+sumOfSquaredDistances[point_, points_] :=
+  Total @ Flatten @ SquaredDistanceMatrix[{point}, points];
+
+placeLabelAt[label_, pos_, _] := Text[
   $magnifier @ label,
   pos  + If[$GraphIs3D, 0, -$labeledElemSize * {$labelX, $labelY} * (1 + $spacings)],
   {$labelX, $labelY} * 0.95,

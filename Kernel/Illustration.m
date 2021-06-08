@@ -163,7 +163,9 @@ CompassDiagram[compasses_, equivSets_, opts___] := Scope[
   ExtendedGraph[compasses, $edges, VertexCoordinates -> coords,
     opts,
     GraphLayout -> {"MultiEdgeDistance" -> 0.13},
-    GraphLegend -> Automatic, Cardinals -> cardinals, ArrowheadShape -> {"PairedSquare", PairedDistance -> 0},
+    GraphLegend -> Automatic, Cardinals -> cardinals,
+    ArrowheadShape -> {"PairedSquare", PairedDistance -> 0, NegationStyle -> "OverBar"},
+    VertexLabelStyle -> {LabelPosition -> Automatic},
     VertexLabels -> "Name", ArrowheadSize -> Large
   ]
 ];
@@ -220,4 +222,28 @@ drawMobiusEdge[assoc_] := Scope[
     shape @ {a, b}
   ];
   Style[lines, arrowheads]
+];
+
+(**************************************************************************************************)
+
+PackageExport["SimpleLabeledGraph"]
+
+SimpleLabeledGraph[args___] := ExtendedGraph[args, $simpleLabeledGraphOpts];
+
+$simpleLabeledGraphOpts = Sequence[
+  CardinalColors -> None, VertexLabels -> Automatic, EdgeLabels -> "Cardinal",
+  VertexCoordinates -> {{-1, 0}, {0, 0}, {1, 0}}, ImagePadding -> {{0,0}, {0, 25}}, EdgeLabelStyle -> {Spacings -> -0.3},
+  GraphLayout -> {"MultiEdgeDistance" -> 0.6}, ArrowheadPosition -> 0.59, ImageSize -> "ShortestEdge" -> 55, ArrowheadSize -> Medium
+];
+
+(**************************************************************************************************)
+
+PackageExport["SimpleLabeledQuiver"]
+
+SimpleLabeledQuiver[args___] := Quiver[args, $simpleLabeledQuiverOpts];
+
+$simpleLabeledQuiverOpts = Sequence[
+  VertexLabels -> "Name",
+  VertexCoordinates -> RotateLeft[CirclePoints[3],2],
+  GraphLayout -> {"MultiEdgeDistance" -> 0.2}, ArrowheadPosition -> 0.59, ImageSize -> "ShortestEdge" -> 80, ArrowheadSize -> Medium
 ];

@@ -59,22 +59,30 @@ customize the behavior on a per-cardinal basis.
 | 'Sphere' | sphere (3D) |
 | 'Cardinal' | no arrowhead, use cardinal label |
 | None | no arrowheads |
-* In addition, %ArrowheadShape supports the suboption {'shape$', %TwoWayStyle -> spec$}.
+The following settings will pair up cardinals in %CardinalSet[$$]:
+| 'PairedDisk' | two half-disks |
+| 'PairedDiamond' | two half-diamonds |
+| 'PairedSquare' | two half-squares |
+* In addition, %ArrowheadShape supports suboptions via {'shape$', subopts$$}.
 * %TwoWayStyle -> spec$ determines how to plot a cardinal and its negation together:
 | 'Out' | arrowheads facing away from each other |
 | 'OutClose' | facing out with backs touching |
 | 'In' | arrowheads facing towards each other |
 | 'InClose' | facing in with tips touching |
 | 'spec$' | one of the regular shapes |
+* %NegationStyle -> spec$ determines how negated cardinals are drawn:
+| 'OverBar' | draw a negation bar above arrowhead |
+| 'Flip' | flip the direction of the cardinal, or switch paired cardinals |
+* %PairedDistance -> size$ determines the separation of paired cardinals, in points.
 
 * %ArrowheadSize accepts these settings:
 | Automatic | use a safe arrowhead size, depending on layout |
 | size$ | size$ in points in the final plot |
 | Small, Medium, $$ | symbolic size, with Medium being equivalent to 20 |
-| AbsolutePointSize[size$] | equivalent to size$ |
-| PointSize[f$] | a fraction f$ of the width of the final plot |
+| %AbsolutePointSize[size$] | equivalent to size$ |
+| %PointSize[f$] | a fraction f$ of the width of the final plot |
 | Scaled[r$] | scale the default safe size by r$ |
-| Max[$$], Min[$$] | max or min of several specifications |
+| %Max[$$], %Min[$$] | max or min of several specifications |
 These modify scale the automatically chosen size, with Medium leaving it unchanged.
 
 * %ArrowheadStyle can be set to a color or list of directives.
@@ -97,12 +105,13 @@ If a function f$ is given, it is provided with an association containing the fol
 | 'Target' | the target vertex |
 | 'EdgeIndex' | the index of the edge |
 | 'Counter' | an integer counter incremented on access |
-| 'Shape' | the symbol Line or Arrow |
+| 'Shape' | the symbol %Line or %Arrow |
 | 'Cardinal' | the cardinal(s) on the edge |
-| 'Arrowheads' | the Arrowheads expression (or None) |
+| 'Arrowheads' | the %Arrowheads[$$] expression (or None) |
+| 'LabelStyle' | setting of %EdgeLabelStyle |
 
 * %EdgeColorFunction accepts these settings:
-| None | color via EdgeStyle (default) |
+| None | color via %EdgeStyle (default) |
 | 'Cardinal' | color by cardinal present on edge |
 | {e$1, e$2, $$} | use values e$i in same order as %VertexList |
 | <|e$1 -> val$1, $$, All -> val$|> | assign values to specific edges |
@@ -134,8 +143,8 @@ If a function f$ is given, it is provided with an association containing the fol
 | Max[$$], Min[$$] | max or min of several specifications |
 
 * %VertexColorFunction accepts these settings:
-| None | color via VertexStyle (default) |
-| 'key$' | color with values from VertexAnnotation |
+| None | color via %VertexStyle (default) |
+| 'key$' | color with values from setting of %VertexAnnotations |
 | {val$1, val$2, $$} | use values val$i in same order as %VertexList |
 | <|v$1 -> val$1, $$, All -> val$|> | assign values to specific vertices |
 | {region$1 -> val$1, $$, All -> val$} | assign values to vertices within specific regions |
@@ -171,7 +180,7 @@ If a function f$ is given, it is provided with an association containing the fol
 | 'Index' | label with edge index |
 | Automatic | label edges with their cardinals |
 
-* %VertexLabelStyle and EdgeLabelStyle accept these settings:
+* %VertexLabelStyle and %EdgeLabelStyle accept these settings:
 | Automatic | default |
 | styles$ | a list, directive, or individual style |
 | {styles$, opt$ -> val$, $$} | provide suboptions |
@@ -179,8 +188,9 @@ Suboptions include:
 | %ItemSize | a symbolic, numeric, or Scaled[$$] value |
 | %Background | additional background to distinguish labels |
 | %BaseStyle | extra options to control font, etc. |
-| %LabelPosition | one of Above, Below, Left, Right, Center |
+| %LabelPosition | one of Above, Below, Left, Right, Center, or Automatic |
 | %Spacings | size of offset from the labelled element |
+* %VertexLabelStyle supports %LabelPosition -> Automatic, maximizing distance from the label to adjacent edges.
 
 ## Annotations
 
@@ -692,7 +702,14 @@ VertexAdjacentEdgeTable[graph_] := Scope[
 
 PackageExport["TagIndices"]
 
-TagIndices[graph_] := PositionIndex @ EdgeTags @ graph;
+TagIndices[graph_] := Scope[
+  $tagAssoc = <||>;
+  ScanIndexed[processTagEntry, EdgeTags @ graph];
+  $tagAssoc
+];
+
+processTagEntry[tag_, {part_}] := KeyAppendTo[$tagAssoc, tag, part];
+processTagEntry[CardinalSet[tags_], {part_}] := Scan[KeyAppendTo[$tagAssoc, #1, part]&, tags];
 
 (**************************************************************************************************)
 
@@ -717,7 +734,7 @@ PackageExport["TagVertexAdjacentEdgeTable"]
 TagVertexAdjacentEdgeTable[graph_] := Scope[
   outTable = VertexOutEdgeTable @ graph;
   inTable = VertexInEdgeTable @ graph;
-  Association @ KeyValueMap[
+  Merge[mergeNone] @ KeyValueMap[
     {key, edgeIndices} |-> {
       key ->          Map[First[Intersection[#, edgeIndices], None]&, outTable],
       Negated[key] -> Map[First[Intersection[#, edgeIndices], None]&, inTable]
@@ -725,6 +742,9 @@ TagVertexAdjacentEdgeTable[graph_] := Scope[
     TagIndices @ graph
   ]
 ];
+
+mergeNone[{a_}] := a;
+mergeNone[{a_, b_}] := MapThread[If[#1 === None, #2, #1]&, {a, b}];
 
 (**************************************************************************************************)
 
@@ -945,12 +965,23 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
   {layoutDimension, viewOptions, coordinateTransformFunction} =
     LookupExtendedGraphAnnotations[graph, {LayoutDimension, ViewOptions, CoordinateTransformFunction}];
 
-  actualDim = If[ContainsQ[graphLayout, "Dimension" -> 3] || CoordinateMatrixQ[vertexCoordinates, 3], 3, 2];
-  SetAutomatic[layoutDimension, actualDim];
+  actualDimension = Which[
+    ContainsQ[graphLayout, "Dimension" -> 3] || CoordinateMatrixQ[vertexCoordinates, 3], 3,
+    ContainsQ[graphLayout, "Dimension" -> 2] || CoordinateMatrixQ[vertexCoordinates, 2], 2,
+    True, Automatic
+  ];
+  Which[
+    actualDimension === layoutDimension === Automatic,
+      actualDimension = 2,
+    actualDimension === Automatic,
+      actualDimension = layoutDimension,
+    True,
+      Null
+  ];
 
   SetAutomatic[graphLayout, {}];
 
-  vertexCoordinates = ConstantArray[0., {VertexCount @ igraph, actualDim}];
+  vertexCoordinates = ConstantArray[0., {VertexCount @ igraph, actualDimension}];
 
   edgeList = EdgeList @ igraph;
   edgeCoordinateLists = ConstantArray[{}, Length @ edgeList];
@@ -971,7 +1002,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     graphLayout = ToList[graphLayout, "MultiEdgeDistance" -> 0.3];
   ];
 
-  newGraph = If[actualDim == 3, Graph3D, Graph][
+  newGraph = If[actualDimension == 3, Graph3D, Graph][
     VertexList @ igraph, EdgeList @ igraph,
     VertexShapeFunction -> captureVertexCoordinates,
     EdgeShapeFunction -> ({coords, edge} |-> edgeCaptureFunction[coords, sortUE @ edge]),
