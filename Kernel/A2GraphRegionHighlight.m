@@ -417,7 +417,8 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
 
   adjustments = parseAdjustments /@ Lookup[$currentRegionAnnotations, PathAdjustments, {}];
 
-  lastIsModified = !MatchQ[Lookup[adjustments, numSegments], _Missing | _String];
+  lastIsModified = !MatchQ[Lookup[adjustments, numSegments], _Missing | _String | {"Arrowhead", _}];
+  $extraArrowheads = {};
   segments = joinSegments[segments, adjustments, $pathStyle =!= "Replace"];
 
   doArrow = StringContainsQ[$pathStyle, "Arrow"];
@@ -425,7 +426,7 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
   darkerColor := OklabDarker[RemoveColorOpacity @ $highlightStyle, .05];
   darkerStyle = If[$highlightOpacity == 1, darkerColor, Nothing];
   guessVertexSize = FirstCase[$GraphPlotGraphics, PointSize[sz_] :> 1.2 * sz * $graphPlotWidth, 0, Infinity];
-  setbackDistance = If[lastIsModified || !doArrow || $arrowheadPosition != 1, 0, Max[$edgeSetback * thicknessRange/2, guessVertexSize]];
+  setbackDistance = If[lastIsModified || !doArrow || Max[$arrowheadPosition] != 1, 0, Max[$edgeSetback * thicknessRange/2, guessVertexSize]];
   pathPrimitives = If[$GraphIs3D,
     Tube[segments, thicknessRange / 3]
   ,
@@ -435,17 +436,24 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
         If[NumericQ[arrowheadSize],
           arrowheadSize = N[arrowheadSize] / $GraphPlotImageWidth];
         SetAutomatic[arrowheadSize, thickness];
-        arrowheads = Arrowheads @ List @ List[
-          arrowheadSize, $arrowheadPosition,
+        baseArrowheads = List[
+          arrowheadSize, $apos,
           makeHighlightArrowheadShape[
             {Opacity @ $highlightOpacity, darkerStyle, JoinForm @ "Miter", CapForm @ "Round"}, 5
           ]
         ];
-        diskRadius = pathRadius * 2 / $GraphPlotImageWidth * $graphPlotWidth;
+        arrowheads = Arrowheads @ If[ListQ[$arrowheadPosition],
+          Map[ReplaceAll[baseArrowheads, $apos -> #]&, $arrowheadPosition],
+          List @ ReplaceAll[baseArrowheads, $apos -> $arrowheadPosition]
+        ];
+        diskRadius = pathRadius * 1.5 / $GraphPlotImageWidth * $graphPlotWidth;
         disk1 = If[!StringStartsQ[$pathStyle, "Disk"], Nothing, Disk[Part[$VertexCoordinates, First @ vertices], diskRadius]];
         disk2 = If[!StringEndsQ[$pathStyle, "Disk"], Nothing, Disk[Part[$VertexCoordinates, Last @ vertices], diskRadius]];
         arrow = setbackArrow[segments, setbackDistance];
-        {disk1, arrowheads, arrow, disk2}
+        extraArrowheads = If[$extraArrowheads === {}, Nothing,
+          Style[Arrow[#1], Transparent, Arrowheads @ List @ ReplaceAll[baseArrowheads, $apos -> #2]]& @@@ $extraArrowheads
+        ];
+        {disk1, arrowheads, arrow, disk2, extraArrowheads}
       ,
       "Replace",
         newVertices = {}; newArrows = {};
@@ -533,15 +541,17 @@ joinSegments[segments_, adjustments_, shouldJoin_] := Scope[
     Switch[mod,
       0,
         Null,
+      {"Arrowhead", _},
+        $extraArrowheads ^= Append[$extraArrowheads, {segment, Last @ mod}],
       {"Bend", _} /; !isLast,
         nextSegment = Part[segments, i + 1];
         {segment, nextSegment} = applyBendBetween[segment, nextSegment, 1.5 * Last[mod]];
         Part[segments, i + 1] = nextSegment,
-      _ ? Positive,
-        {delta, segment} = extendSegment[segment, mod];
+      {"Extend", _ ? Positive},
+        {delta, segment} = extendSegment[segment, Last @ mod];
         $offsetVector += delta,
-      _ ? Negative,
-        {delta, segment} = truncateSegment[segment, Abs @ mod];
+      {"Extend", _ ? Negative},
+        {delta, segment} = truncateSegment[segment, Abs @ Last @ mod];
         If[doArrow && isLast,
           (* this makes sure the arrowhead points at the original target *)
           AppendTo[segment, PointAlongLine[Last[segment], Part[segments, -1, -1], 1*^-3]]];
@@ -594,11 +604,14 @@ shortSegment[d_][{segmentA_, segmentB_}] := Scope[
 GraphRegionHighlight::badpadj = "PathAdjustments element `` is invalid.";
 
 parseAdjustments = MatchValues[
-  z_Integer := modLen[z] -> -1;
-  z_Integer -> spec:(_Integer | _Scaled | {"Bend", ___}) := modLen[z] -> spec;
-  z:{__Integer} -> spec:{"Shrink" | "Short", ___} := modLen[z] -> spec;
-  z_ -> {"Expand", n_} := %[z -> {"Shrink", -n}];
-  z_ -> spec_String := %[z -> {spec, 1}];
+  z_Integer ? Negative -> other_                          := %[modLen[z] -> other];
+  z_Integer -> "Arrowhead"                                := z -> {"Arrowhead", .5};
+  z_Integer -> {"Arrowhead", pos_}                        := z -> {"Arrowhead", pos};
+  z_Integer -> spec:{"Bend" | "Extend", ___}              := z -> spec;
+  z:{__Integer} -> spec:{"Shrink" | "Short", ___}         := modLen[z] -> spec;
+  z_ -> {"Expand", n_}                                    := %[z -> {"Shrink", -n}];
+  z_ -> {"Shorten", n_}                                   := %[z -> {"Extend", -n}];
+  z_ -> spec_String                                       := %[z -> {spec, 1}];
   other_ := (Message[GraphRegionHighlight::badpadj, other]; {})
 ];
 

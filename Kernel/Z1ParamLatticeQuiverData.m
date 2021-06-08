@@ -16,55 +16,72 @@ DefineParameterizedLatticeQuiver[name_String, func_, params_] := (
 (**************************************************************************************************)
 
 torusNormOptions = MatchValues[
-  {m_, Infinity, d_} := {
-    MaxDepth -> m + d + 1,
+  {Infinity, h_, d_} := {
+    SetAutomatic[d, 4];
+    MaxDepth -> h + d + 1,
     NormFunction -> (1 -> Abs),
     MaxNorm -> d
   };
-  _ := MaxDepth -> Infinity;
+  {_, _, d_} := {
+    SetAutomatic[d, Infinity];
+    MaxDepth -> d
+  }
 ];
+
+LatticeGraph::badtorusopts = "Height should both be integer, and width should be an integer or infinity."
 
 torusCoordinate3DOptions = MatchValues[
-  {m_, Infinity, d_} := {
+  {Infinity, h_Integer, d_} := {
+    SetAutomatic[d, 4];
     Epilog -> {
       EdgeForm[None], Opacity[0.5],
-      FaceForm[{Glow @ GrayLevel[1.0], Specularity[1]}], Cylinder[{{-d, 0, 0}, {d, 0, 0}}, m / Tau - (1/Tau)]
+      FaceForm[{Glow @ GrayLevel[1.0], Specularity[1]}], Cylinder[{{-d, 0, 0}, {d, 0, 0}}, h / Tau - (1/Tau)]
     },
-    VertexCoordinateFunction -> TimesOperator[{1, Tau / m}] /* TubeVector[m / Tau],
-    CoordinateTransformFunction -> ProjectionOnto[Cylinder[{{-d*2*Sqrt[3], 0, 0}, {d*2*Sqrt[3], 0, 0}}, m / Tau - (0.1/Tau)]],
+    VertexCoordinateFunction -> TimesOperator[{1, Tau / h}] /* TubeVector[h / Tau],
+    CoordinateTransformFunction -> ProjectionOnto[Cylinder[{{-d*2*Sqrt[3], 0, 0}, {d*2*Sqrt[3], 0, 0}}, h / Tau - (0.1/Tau)]],
     ViewOptions -> {ViewPoint -> {0.4, 1.5, 0.2}, ViewProjection -> "Orthographic"}
   };
-  {m_, n_, _} := {
-    VertexCoordinateFunction -> TimesOperator[Tau / {m, n}] /* TorusVector[{m / Tau, (n + m) / Tau}],
-    CoordinateTransformFunction -> ProjectionOnto[Torus[{m, (n + m)} / Tau]],
+  {w_Integer, h_Integer, _} := {
+    VertexCoordinateFunction -> TimesOperator[Tau / {w, h} / {$ws, 1}] /* TorusVector[{w * $ws + h, h} / Tau],
+    CoordinateTransformFunction -> ProjectionOnto[Torus[{w + h, h} / Tau]],
     ViewOptions -> {ViewPoint -> {0.4, 1.5, 0.8}, ViewProjection -> "Orthographic"}
-  }
+  };
+  _ := (Message[LatticeGraph::badtorusopts]; $Failed);
 ];
 
-chooseTorus3DOptions[spec_, isABC_] := {
+chooseTorus3DOptions[spec_] := {
   torusNormOptions @ spec,
-  torusCoordinate3DOptions @ spec
+  Block[{$ws = If[$isABC, $s32, 1]}, torusCoordinate3DOptions @ spec]
 };
 
-$abcProj = {{0, Sqrt[3]/2, 0}, {1, 0, 0}};
+$abcProj = {{Sqrt[3]/2, 0, 0}, {0, 1, 0}};
 
-chooseTorus2DOptions[spec_, isABC_] := Scope[
-  modSpec = If[isABC, Dot[$abcProj, spec], Take[spec, 2]];
+chooseTorus2DOptions[spec_] := Scope[
+(*   translations = Match[$translations,
+    {x_, y_} :> {x, y},
+    {a_, b_, c_} :> {(b - c)/2, a}
+  ];
+  {o1, o2} = Take[spec, 2] * translations;
+  offsets = {o1, o2, -o1, -o2, o1 + o2, o1 - o2, -o1 + o2, -o1 - o2}; *)
+  {w, h} = Take[spec, 2]; If[$isABC, w *= $s32]; dx = {w, 0}; dy = {0, h};
+  offsets = {dx, dy, -dx, -dy, dx + dy, dx - dy, -dx + dy, -dx - dy};
   {
     torusNormOptions @ spec,
-    EdgeShapeFunction -> drawModulusEdge[modSpec],
-    VertexCoordinateFunction -> torus2DCoords,
-    ImagePadding -> 35
+    EdgeShapeFunction -> drawModulusEdge[offsets],
+    VertexCoordinateFunction -> Identity,
+    ImagePadding -> If[$doLabels, 35, 20]
   }
 ];
 
-torus2DCoords[{a_, b_}] := {b, a};
-torus2DCoords[vec:{_, _, _}] := Dot[$abcVectors, vec];
+chooseTorusOptions[userOpts_, spec_, rep_] := Scope[
+  $translations = Map[Normal /* ExtractTranslationVector, rep["Representation"]["Generators"]];
+  $doLabels = Lookup[userOpts, EdgeLabelStyle] =!= None;
+  $isABC = MatchQ[rep["Cardinals"], {"a", "b", "c"}];
+  func = If[Lookup[userOpts, LayoutDimension] === 2, chooseTorus2DOptions, chooseTorus3DOptions];
+  Flatten @ func @ spec
+];
 
-chooseTorusOptions[userOpts_, spec_, isABC_] :=
-  If[Lookup[userOpts, LayoutDimension] === 2, chooseTorus2DOptions, chooseTorus3DOptions][spec, isABC];
-
-$torusParameters = <|"m" -> 4, "n" -> Infinity, "t" -> 0, "MaxDepth" -> 4|>;
+$torusParameters = <|"w" -> 4, "h" -> None, "t" -> 0, "MaxDepth" -> Automatic|>;
 
 (**************************************************************************************************)
 
@@ -74,16 +91,15 @@ SetUsage @ "
 UniqueLabel[n$] represents a numeric label in a plot that should be numbered in raster order.
 "
 
-drawModulusEdge[{m_, n_}][assoc_] := Scope[
+drawModulusEdge[offsets_][assoc_] := Scope[
   UnpackAssociation[assoc, coordinates, arrowheads, shape, edgeIndex, labelStyle];
-  {a, b} = {{ax, ay}, {bx, by}} = FirstLast[coordinates];
-  offsets = Delete[Tuples[Reverse @ {{-m, 0, m}, {-n, 0, n}}], 5];
-  If[EuclideanDistance[a, b] > 1,
-    b2 = findModulusCounterpart[a, b, offsets, .4];
-    a2 = findModulusCounterpart[b, a, offsets, .4];
+  {a, b} = {{ax, ay}, {bx, by}} = FirstLast @ coordinates;
+  b2 = findModulusCounterpart[a, b, offsets, .4];
+  a2 = findModulusCounterpart[b, a, offsets, .4];
+  If[a2 =!= None && b2 =!= None,
     counter = assoc["Counter"];
     labelPoints = {1.35*(a2 - b) + b, (b2-a)*1.35 + a};
-    label = If[labelStyle =!= None, Map[makeWrappedEdgeLabel[counter, labelStyle], labelPoints]];
+    label = If[labelStyle === None, Nothing, Map[makeWrappedEdgeLabel[counter, labelStyle], labelPoints]];
     arrowheadsA = changeArrowheadPos[arrowheads, 0.8];
     arrowheadsB = changeArrowheadPos[arrowheads, 0.2];
     {
@@ -109,19 +125,22 @@ changeArrowheadPos[g_, _] := g;
 findModulusCounterpart[a_, b_, offsets_, d_] := Scope[
   bs = PlusOperator[b] /@ offsets;
   b2 = MinimumBy[bs, EuclideanDistance[a, #]&];
-  PointAlongLine[a, b2, d]
+  If[EuclideanDistance[a, b2] > EuclideanDistance[a, b], None,
+    PointAlongLine[a, b2, d]
+  ]
 ]
 
 (**************************************************************************************************)
 
 DefineParameterizedLatticeQuiver["SquareTorus", squareTorusFactory, $torusParameters];
 
-squareTorusFactory[<|"m" -> m_, "n" -> n_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
+squareTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
+  If[h === None, h = w; w = Infinity];
   rep = QuiverRepresentation[
     BouquetQuiver["xy"],
-    TranslationGroup[{{1, 0}, {t, 1}}, {m, n}]
+    TranslationGroup[{{1, 0}, {t/h, 1}}, {w, h}]
   ];
-  opts = chooseTorusOptions[userOpts, {m, n, d}, False] /. (1 -> Abs) -> (2 -> Abs);
+  opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
   {rep, opts}
 ];
 
@@ -132,20 +151,28 @@ DefineParameterizedLatticeQuiver["TriangularTorus", triangularTorusFactory, $tor
 $s32 = Sqrt[3]/2;
 $abcVectors = Simplify /@ {{0, 1}, {-$s32, -1/2}, {$s32, -1/2}};
 
-makeABCTorusRepresentation[m_, n_, t_] := Scope[
-  dx = t/m * $s32;
-  TranslationGroup[
-    $abcVectors,
-    {n * $s32, m} /. 0|1 -> Infinity
+makeABCTorusRepresentation[w_, h_, t_] := Scope[
+  If[t != 0,
+    dx = $s32/h;
+    TranslationGroup[
+      {{1/h, 1 + 1/w}, {-(1+h)/h, -(1+h+w)/w}, {1, h/w}},
+      {w, h} /. 0|1 -> Infinity
+    ]
+  ,
+    TranslationGroup[
+      $abcVectors,
+      {w * $s32, h} /. 0|1 -> Infinity
+    ]
   ]
 ];
 
-triangularTorusFactory[<|"m" -> m_, "n" -> n_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
+triangularTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
+  If[h === None, h = w; w = Infinity];
   rep = QuiverRepresentation[
     BouquetQuiver["abc"],
-    makeABCTorusRepresentation[m, n, t]
+    makeABCTorusRepresentation[w, h, t]
   ];
-  opts = chooseTorusOptions[userOpts, {m, n, d}, True];
+  opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
   {rep, opts}
 ];
 
@@ -153,16 +180,31 @@ triangularTorusFactory[<|"m" -> m_, "n" -> n_, "t" -> t_, "MaxDepth" -> d_|>, us
 
 DefineParameterizedLatticeQuiver["HexagonalTorus", hexagonalTorusFactory, $torusParameters];
 
-hexagonalTorusFactory[<|"m" -> m_, "n" -> n_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
+hexagonalTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
+  If[h === None, h = w; w = Infinity];
   rep = QuiverRepresentation[
     Quiver @ Labeled[1 -> 2, "a" | "b" | "c"],
-    makeABCTorusRepresentation[m, n, t]
+    makeABCTorusRepresentation[w, h, t]
   ];
-  opts = chooseTorusOptions[userOpts, {m, n, d}, True];
+  opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
   opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts;
   {rep, opts}
 ];
 
+(**************************************************************************************************)
+
+DefineParameterizedLatticeQuiver["RhombilleTorus", rhombilleTorusFactory, $torusParameters];
+
+rhombilleTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
+  If[h === None, h = w; w = Infinity];
+  rep = QuiverRepresentation[
+    Quiver @ Labeled[{1 -> 2, 2 -> 3}, "a" | "b" | "c"],
+    makeABCTorusRepresentation[w, h, t]
+  ];
+  opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
+  opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts;
+  {rep, opts}
+];
 (**************************************************************************************************)
 
 DefineParameterizedLatticeQuiver["Lamplighter", lamplighterFactory, <|"n" -> 3, "MaxDepth" -> Infinity|>];
@@ -172,7 +214,7 @@ lamplighterFactory[<|"n" -> n_, "MaxDepth" -> d_|>, userOpts_] := Scope[
     "CayleyFunction" -> LamplighterCayleyFunction,
     "InitialStates" -> {LatticeVertex[Zeros[n], 1]}
   |>;
-  {rep, MaxDepth -> d}
+  {rep, {MaxDepth -> d}}
 ];
 
 LamplighterCayleyFunction[LatticeVertex[lamps_, pos_]] := {

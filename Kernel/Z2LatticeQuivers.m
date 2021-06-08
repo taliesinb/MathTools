@@ -412,7 +412,8 @@ iGenerateLattice[head_, {latticeName_String, args__}, directedEdges_, opts:Optio
   If[maxDepth =!= Automatic, arguments["MaxDepth"] = maxDepth];
 
   result = factory[arguments, Association @ opts];
-  If[!ListQ[result], ReturnFailed[head::badparamlatticeargs, KeyDrop["MaxDepth"] @ arguments, latticeName]];
+  If[!MatchQ[result, {_, {___Rule}}],
+    ReturnFailed[head::badparamlatticeargs, KeyDrop["MaxDepth"] @ arguments, latticeName]];
 
   {representation, customOptions} = FirstRest @ result;
   customOptions //= Flatten;

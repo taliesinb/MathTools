@@ -13,7 +13,7 @@ SetUsage @ "
 Torus[r$1, r$2] represents a torus on the x$, y$ plane with small radius r$1 and large radius r$2.
 "
 
-Torus /: BoundaryDiscretizeRegion[Torus[{r_, R_}]] := With[
+Torus /: BoundaryDiscretizeRegion[Torus[{R_, r_}]] := With[
   {largeDF = RegionDistance @ Circle[{0, 0}, N @ R], maxR = N[r + R], r2 = N[r]^2},
   iregion = ImplicitRegion[largeDF[{x, y}] + z^2 <= r2, {x, y, z}];
   iregion = iregion /. Abs[q_] :> Power[q, 2];
@@ -33,7 +33,7 @@ TubeVector[r_][{x_, y_}] := {x, r * Sin[y], r * Cos[y]};
 
 PackageExport["TorusVector"]
 
-TorusVector[{r_, R_}, {theta_, phi_}] := Scope[
+TorusVector[{R_, r_}, {phi_, theta_}] := Scope[
   d = R + r * Cos[theta];
   {d * Cos[phi], d * Sin[phi], r * Sin[theta]}
 ];
@@ -44,12 +44,12 @@ TorusVector[spec_][angles_] := TorusVector[spec, angles];
 
 PackageExport["TorusAngles"]
 
-TorusAngles[{r_, R_}, v_] := Scope[
+TorusAngles[{R_, r_}, v_] := Scope[
   phi = ArcTan[Part[v, 1], Part[v, 2]];
   p = R * {Cos @ phi, Sin @ phi, 0};
   v2 = v - p;
   theta = ArcTan[Dot[v2, Normalize @ p], Last @ v];
-  {theta, phi}
+  {phi, theta}
 ];
 
 (**************************************************************************************************)
@@ -82,12 +82,11 @@ TorusNearestFunction[spec_][{v1_List, v2_List}] :=
   TorusInterpolated[spec, v1, v2];
 
 TorusInterpolated[spec_, v1_, v2_] := Scope[
-  {theta1, phi1} = TorusAngles[spec, v1];
-  {theta2, phi2} = TorusAngles[spec, v2];
+  {phi1, theta1} = TorusAngles[spec, v1];
+  {phi2, theta2} = TorusAngles[spec, v2];
   thetas = AngleRange[theta1, theta2, Into @ 8];
   phis = AngleRange[phi1, phi2, Into @ 8];
-  (* If[EuclideanDistance[v1, v2] > 1.8, Capture[zTorusInterpolated[spec, v1, v2]]]; *)
-  TorusVector[spec] /@ Transpose[{thetas, phis}]
+  TorusVector[spec] /@ Transpose[{phis, thetas}]
 ]
 
 (**************************************************************************************************)

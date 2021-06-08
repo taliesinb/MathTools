@@ -188,7 +188,7 @@ MobiusStrip[n_, is3D_:False] := Scope[
   edges = mobiousPatch /@ Range[0, n-1];
   vertices = Flatten @ Table[LatticeVertex[{x, y}], {x, 0, n-1}, {y, -1, 1}];
   coords = If[is3D,
-    Flatten[Table[TorusVector[{y, n}, {phi/2, phi}], {phi, 0, Tau - tauN, tauN}, {y, -1, 1}], 1],
+    Flatten[Table[TorusVector[{n, y}, {phi, phi/2}], {phi, 0, Tau - tauN, tauN}, {y, -1, 1}], 1],
     First /@ vertices
   ];
   Quiver[vertices, edges,

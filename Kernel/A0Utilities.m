@@ -35,6 +35,21 @@ With[{fmv := GeneralUtilities`Control`PackagePrivate`findMutatedVariables},
 
 (**************************************************************************************************)
 
+(* fix a bug in IndexOf, which accidentally didn't limit itself to level one *)
+With[{io := GeneralUtilities`IndexOf},
+  Unprotect[io];
+  If[FreeQ[DownValues[io], {1}],
+    DownValues[io] = ReplaceAll[
+      DownValues[io],
+      HoldPattern[FirstPosition][a_, b_, c_, Heads -> False] :>
+        FirstPosition[a, b, c, {1}, Heads -> False]
+    ];
+  ];
+  Protect[io];
+];
+
+(**************************************************************************************************)
+
 $slotRegularExpression = RegularExpression["<\\*([^*]+)\\*>"];
 
 substituteUsageSlots[s_String] :=
@@ -522,6 +537,17 @@ Negated /: DirectedEdge[a_, b_, Negated[c_]] := DirectedEdge[b, a, c];
 declareBoxFormatting[
   Negated[e_] :> NegatedBoxForm[e]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["UnderNegatedForm"]
+
+declareBoxFormatting[
+  UnderNegatedForm[e_] :> UnderNegatedBoxForm[e]
+];
+
+SetHoldFirst[UnderNegatedBoxForm];
+UnderNegatedBoxForm[e_] := UnderscriptBox[MakeBoxes @ e, "_"];
 
 (**************************************************************************************************)
 

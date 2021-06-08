@@ -119,17 +119,43 @@ ImageSizePad[imageSize_, paddingSpec_] := Scope[
 ];
 
 processPadding[head_, paddingSpec_] := Scope[
-  padding = Ceiling @ toPadding @ paddingSpec;
+  padding = Ceiling @ StandardizePadding @ paddingSpec;
   If[RealMatrixQ[padding] && Dimensions[padding] === {2, 2},
     padding,
     ReturnFailed[MessageName[head, "badpadding"], paddingSpec]
   ]
 ];
 
-toPadding = MatchValues[
-  p_ ? NumericQ := {{p, p}, {p, p}};
-  {pw_ ? NumericQ, ph_ ? NumericQ} := {{pw, pw}, {ph, ph}};
-  other_ := other;
+(**************************************************************************************************)
+
+PackageExport["StandardizePadding"]
+
+SetUsage @ "
+StandardizePadding[spec$] standardizes a padding specification spec$.
+* StandardizePadding returns {{l$, r$}, {b$, t$}}.
+* StandardizePadding accepts the following forms:
+| None | no padding |
+| n$ | pad by n$ on all sides |
+| {h$, v$} | pad by h$ horizontally and v$ vertically |
+| {{l$, r$}, {b$, t$}} | explicit padding |
+| {Left -> l$, $$} | per-side padding |
+"
+
+StandardizePadding = MatchValues[
+  None :=
+    {{0, 0}, {0, 0}};
+  p_ ? NumericQ :=
+    N @ {{p, p}, {p, p}};
+  {pw_ ? NumericQ, ph_ ? NumericQ} :=
+    {{pw, pw}, {ph, ph}};
+  rules:{Rule[Left|Right|Bottom|Top|All, _ ? NumericQ]...} :=
+    N @ Map[Lookup[rules, #, Lookup[rules, All, 0]]&, {{Left, Right}, {Bottom, Top}}, {2}];
+  spec:{{_ ? NumericQ, _ ? NumericQ}, {_ ? NumericQ, _ ? NumericQ}} :=
+    N @ spec;
+  All :=
+    All;
+  _ :=
+    $Failed;
 ];
 
 (**************************************************************************************************)
@@ -221,7 +247,7 @@ PackageExport["PlotRangePad"]
 
 SetUsage @ "
 PlotRangePad[range$, padding$] expands the plot range range$ by the amount padding$.
-* padding$ can be None, Automatic, Scaled[r$], or {{l$, r$}, {b$, t$}}.
+* padding$ can be None, Automatic, Scaled[r$], p$, or {{l$, r$}, {b$, t$}}.
 "
 
 PlotRangePad[range_, None | 0 | 0.] :=

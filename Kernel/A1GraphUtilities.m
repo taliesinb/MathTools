@@ -10,6 +10,7 @@ PackageExport["GraphMetric"]
 PackageExport["GraphOrigin"]
 PackageExport["Cardinals"]
 PackageExport["ViewOptions"]
+PackageExport["AdditionalImagePadding"]
 PackageExport["CoordinateTransformFunction"]
 PackageExport["LabelCardinals"]
 
@@ -28,6 +29,7 @@ $extendedGraphUsage = StringTrim @ "
 | %ArrowheadStyle | Automatic | style of arrowheads |
 | %ArrowheadPosition | Automatic | position of arrowheads along edges |
 | %ArrowheadShape | Automatic | shape of arrowheads |
+| %EdgeSetback | Automatic | how far to set back edges from vertices |
 | %LabelCardinals | False | whether to attach labels to arrowheads |
 | %VertexShapeFunction | Automatic | how to draw vertices |
 | %EdgeShapeFunction | Automatic | how to draw edges |
@@ -38,6 +40,7 @@ $extendedGraphUsage = StringTrim @ "
 | %GraphMetric | Automatic | metric to calculate graph distances |
 | %CardinalColors | Automatic | association of cardinal colors |
 | %ViewOptions | Automatic | how to project 3D coordinates |
+| %AdditionalImagePadding | None | additional padding to include unconditionally |
 | %ViewRegion | All | region of graph to plot |
 | %CoordinateTransformFunction | None | function to remap coordinates before plotting |
 
@@ -215,6 +218,22 @@ and lists of values.
 | None | no legend |
 | Automatic | attach legends for cardinals, colors, highlights, etc |
 | expr$ | use a custom legend given by expr$ |
+
+## Misc
+
+* %CoordinateTransformFunction can be a function, which will be applied to each coordinates, or one of:
+| 'Rotate90' | rotate 90\[Degree] |
+| 'Rotate180' | rotate 180\[Degree] |
+| 'Rotate270' | rotate 270\[Degree] |
+| 'ReflectHorizontal' | reflect horizontally |
+| 'ReflectVertical' | reflect vertically |
+
+* Padding, whether in %ImagePadding or %AdditionImagePadding, can be specified in these forms:
+| None | no padding |
+| n$ | pad by n$ on all sides |
+| {h$, v$} | pad by h$ horizontally and v$ vertically |
+| {{l$, r$}, {b$, t$}} | explicit padding |
+| {Left -> l$, $$} | per-side padding |
 "
 
 (**************************************************************************************************)
@@ -227,6 +246,7 @@ $extendedGraphOptionsRules = {
   ArrowheadStyle -> Automatic,
   ArrowheadShape -> Automatic,
   ArrowheadPosition -> Automatic,
+  EdgeSetback -> Automatic,
   VertexColorFunction -> None,
   EdgeColorFunction -> None,
   VertexAnnotations -> None,
@@ -239,7 +259,8 @@ $extendedGraphOptionsRules = {
   LabelCardinals -> False,
   CoordinateTransformFunction -> None,
   ColorRules -> None,
-  ViewRegion -> All
+  ViewRegion -> All,
+  AdditionalImagePadding -> None
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -385,13 +406,13 @@ PackageScope["$simpleGraphOptions"]
 PackageScope["$simpleGraphOptionRules"]
 
 $simpleGraphOptionRules = JoinOptions[{
-  EdgeLabels -> None, GraphLayout -> Automatic, ImagePadding -> All,
+  EdgeLabels -> None, GraphLayout -> Automatic, ImagePadding -> None,
   ImageSize -> Automatic, VertexCoordinates -> Automatic,
   VertexLabels -> None, VertexSize -> Automatic,
   VertexStyle -> Automatic, EdgeStyle -> Automatic,
   VertexShapeFunction -> Automatic, EdgeShapeFunction -> Automatic, PlotLabel -> None,
-  GraphHighlightStyle -> Automatic, VertexLabelStyle -> Automatic,
-  Epilog -> {}
+  GraphHighlightStyle -> Automatic, VertexLabelStyle -> Automatic, EdgeLabelStyle -> Automatic,
+  Epilog -> {}, Prolog -> {}, Frame -> None, FrameStyle -> Automatic
   },
   Rest @ $extendedGraphOptionsRules
 ]
@@ -1050,6 +1071,7 @@ storeMultiEdgeCoords[coords_, edge_] :=
 
 ExtendedGraphPlot::badwrappedshape = "CoordinateTransformFunction -> ProjectionOnto[...] contains an invalid shape.";
 ExtendedGraphPlot::badcoordtrans = "CoordinateTransformFunction -> `` issued messages on application.";
+ExtendedGraphPlot::badcoordtransname = "CoordinateTransformFunction -> `` is not one of ``."
 
 applyCoordinateTransform[Automatic|None] :=
   Null
@@ -1063,6 +1085,22 @@ applyCoordinateTransform[f_] := Block[{res},
   If[FailureQ[res], Message[ExtendedGraphPlot::badcoordtrans, f]];
 ];
 
+$namedTransforms = <|
+  "Rotate90" -> RotationTransform[90 Degree],
+  "Rotate180" -> RotationTransform[180 Degree],
+  "Rotate270" -> RotationTransform[270 Degree],
+  "ReflectHorizontal" -> ReflectionTransform[{0, 1}],
+  "ReflectVertical" -> ReflectionTransform[{0, 1}]
+|>;
+
+applyCoordinateTransform[name_String] := Scope[
+  trans = Lookup[$namedTransforms, name,
+    Message[ExtendedGraphPlot::badcoordtransname, name, commaString @ Keys @ $namedTransforms];
+    $Failed
+  ];
+  If[FailureQ[trans], ReturnFailed[]];
+  applyCoordinateTransform @ trans
+];
 
 applyCoordinateTransform[ProjectionOnto[shape_]] := Block[{$rnf},
   $rnf = BoundaryProjection @ shape;
