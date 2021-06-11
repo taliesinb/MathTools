@@ -247,3 +247,78 @@ $simpleLabeledQuiverOpts = Sequence[
   VertexCoordinates -> RotateLeft[CirclePoints[3],2],
   GraphLayout -> {"MultiEdgeDistance" -> 0.2}, ArrowheadPosition -> 0.59, ImageSize -> "ShortestEdge" -> 80, ArrowheadSize -> Medium
 ];
+
+(**************************************************************************************************)
+
+PackageExport["PathQuiverPlot"]
+
+PathQuiverPlot[fq_, paths_, v0_, cardinalDirs_, pathOpts_List, opts___Rule] := Scope[
+  If[!QuiverQ[fq], ReturnFailed[]];
+  $v0 = v0; $fq = fq; $scaling = 1.0;
+  cardinals = CardinalList @ fq;
+  paths = parsePath /@ DeleteDuplicates[paths];
+  If[ContainsQ[paths, $Failed], ReturnFailed[]];
+  pathWords = extractWord /@ paths;
+  If[cardinalDirs =!= None,
+    If[cardinalDirs === "Linear",
+      cardinalDirs = ConstantArray[{1, 0}, Length @ cardinals];
+      $scaling = 0.0
+    ];
+    If[Length[cardinalDirs] =!= Length[cardinals], ReturnFailed[]];
+    $cardinalDirs = AssociationThread[cardinals, cardinalDirs];
+    $cardinalDirs = Join[$cardinalDirs, Map[Minus, KeyMap[Negated, $cardinalDirs]]];
+    coords = Map[wordToCoords, pathWords];
+  ,
+    coords = Automatic
+  ];
+  vertices = Map[LatticeVertex, pathWords];
+  pathWords2 = DeepCases[#, Path[_, word_, ___] :> word]& /@ paths;
+  pathWordIndex = PositionIndex[pathWords2, 2];
+  edges = DeleteDuplicates @ Map[
+    word |-> DirectedEdge[
+      Part[vertices, removeSingleton @ pathWordIndex @ Most @ word],
+      Part[vertices, removeSingleton @ pathWordIndex @ word],
+      Last @ word
+    ],
+    DeleteCases[{}] @ Keys @ pathWordIndex
+  ];
+  $setback = 3;
+  pathOpts = DeleteCases[pathOpts, EdgeSetback -> v_ /; ($setback = v; True)];
+  labels = AssociationThread[vertices, FQPVertexIcon[pathOpts] /@ paths];
+  Quiver[
+    vertices, edges, opts,
+    VertexCoordinates -> coords,
+    VertexLabels -> labels,
+    VertexLabelStyle -> {LabelPosition -> {0., 0.3}, Background -> None},
+    ArrowheadShape -> {"Line", "Thickness" -> 2}, ArrowheadSize -> Medium, EdgeStyle -> {Thick, LightGray},
+    ImageSize -> 400, ImagePadding -> 30
+  ] // CombineMultiedges
+];
+
+wordToCoords[{}] := {0, 0};
+wordToCoords[path_List] := Total @ MapIndexed[$cardinalDirs[#1] / ($scaling * First[#2]+0.33)&, path];
+
+extractWord[Path[_, word_, ___]] := word;
+extractWord[list_List] := extractWord @ First @ list;
+
+parsePath = MatchValues[
+  path_String                   := Path[$v0, ParseCardinalWord @ path];
+  paths_List                    := Map[parsePath, paths];
+  Rule[paths_List, adj_List]    := Splice[parsePath[# -> adj]& /@ paths];
+  Rule[path_String, adj_List]   := Path[$v0, ParseCardinalWord @ path, PathAdjustments -> adj];
+  _ := $Failed;
+];
+
+FQPVertexIcon[opts_][path_] :=
+  HighlightGraphRegion[
+    $fq, path, {$Teal, PathRadius->2, PathStyle -> "DiskArrow", EdgeSetback -> $setback, "Foreground"}, Sequence @@ opts,
+    ImagePadding -> {7, 8}, AdditionalImagePadding -> {Bottom -> 15}, Frame -> True, FrameStyle -> {LightGray, Thin},
+    GraphLegend -> None, ImageSize -> "ShortestEdge" -> 25, ArrowheadShape -> None, VertexSize -> Small,
+    Epilog -> If[MatchQ[path, Path[_, {}, ___]], None, Text[
+      fmtPaths @ path /. Negated -> UnderNegatedForm,
+      GraphicsValue[{"BoundingFrame",Bottom}],{0,1.05}, Background -> White]
+    ]
+  ] // ExtendedGraphPlot;
+
+fmtPaths[Path[_, word_, ___]] := FormatCardinalWord[word, FontColor -> Gray, FontSize -> 10];
+fmtPaths[list_List] := Row[fmtPaths /@ list, Style[",", Gray]];

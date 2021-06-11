@@ -437,23 +437,29 @@ sowPath[start_, path_, repeating_, stop_:None] := Scope[
 
 PackageExport["FormatCardinalWord"]
 
-FormatCardinalWord[w_] :=
-  Style[Row @ ParseCardinalWord[w], $LegendLabelStyle];
+FormatCardinalWord[w_, opts___Rule] :=
+  Style[Row @ ParseCardinalWord[w], opts, $LegendLabelStyle];
 
 (********************************************)
 
 PackageExport["ParseCardinalWord"]
 
+ParseCardinalWord[""] = {};
+
+ParseCardinalWord[path_String] /; StringLength[path] === 1
+
 ParseCardinalWord[path_String] /; StringLength[path] > 1 := Scope[
   chars = Characters[path];
   str = StringReplace[StringRiffle[chars, " "], " '" -> "'"];
   Map[
-    If[StringMatchQ[#, _ ~~ "'"], Negated @ StringTake[#, 1], #]&,
+    If[StringMatchQ[#, _ ~~ "'"], Negated @ StringTake[#, 1], parseCard @ #]&,
     StringSplit[str]
   ] // checkCardinals
 ];
 
-ParseCardinalWord[elem_] := checkCardinals @ List @ elem;
+parseCard[s_String] := If[UpperCaseQ[s], Negated @ ToLowerCase @ s, s];
+
+ParseCardinalWord[elem_] := checkCardinals @ List @ parseCard @ elem;
 
 ParseCardinalWord[list_List] := checkCardinals @ list;
 

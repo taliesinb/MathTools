@@ -569,7 +569,7 @@ joinSegments[segments_, adjustments_, shouldJoin_] := Scope[
 
 shrinkSegment[d_][segment_] := Scope[
   {a, b} = FirstLast @ segment;
-  mid = Mean @ segment;
+  mid = Mean[{a, b}];
   a2 = PointAlongLine[a, mid, d];
   b2 = PointAlongLine[b, mid, d];
   scaling = EuclideanDistance[mid, a2] / EuclideanDistance[mid, a];

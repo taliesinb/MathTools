@@ -43,11 +43,12 @@ $extendedGraphUsage = StringTrim @ "
 | %AdditionalImagePadding | None | additional padding to include unconditionally |
 | %ViewRegion | All | region of graph to plot |
 | %CoordinateTransformFunction | None | function to remap coordinates before plotting |
+| %Frame | False | whether to draw a frame |
+| %FrameStyle | Automatic | color of frame |
 
 ## Arrowheads
 
-* Any of the specifications below can be given in the form <|card$1 -> spec$1, $$|> to \
-customize the behavior on a per-cardinal basis.
+* Any of the specifications below can also be given in the form <|card$1 -> spec$1, $$|>.
 
 * %ArrowheadShape accepts these settings:
 | 'Arrow' | solid kinded arrowhead (default) |
@@ -66,16 +67,24 @@ The following settings will pair up cardinals in %CardinalSet[$$]:
 | 'PairedDisk' | two half-disks |
 | 'PairedDiamond' | two half-diamonds |
 | 'PairedSquare' | two half-squares |
-* In addition, %ArrowheadShape supports suboptions via {'shape$', subopts$$}.
+
+* In addition, %ArrowheadShape supports suboptions via {'shape$', subopts$$}:
+| %NegationStyle | 'Flip' | how to plot negated cardinals in %CardinalSet[$$] |
+| %TwoWayStyle | 'In' | how to plot negated pairs in %CardinalSet[$$] |
+| %PairedDistance | 0 | how far away to plot negated pairs |
+| 'Thickness' | 1 | thickness of line-based arrowheads |
+
 * %TwoWayStyle -> spec$ determines how to plot a cardinal and its negation together:
 | 'Out' | arrowheads facing away from each other |
 | 'OutClose' | facing out with backs touching |
 | 'In' | arrowheads facing towards each other |
 | 'InClose' | facing in with tips touching |
 | 'spec$' | one of the regular shapes |
+
 * %NegationStyle -> spec$ determines how negated cardinals are drawn:
 | 'OverBar' | draw a negation bar above arrowhead |
 | 'Flip' | flip the direction of the cardinal, or switch paired cardinals |
+
 * %PairedDistance -> size$ determines the separation of paired cardinals, in points.
 
 * %ArrowheadSize accepts these settings:
@@ -84,9 +93,8 @@ The following settings will pair up cardinals in %CardinalSet[$$]:
 | Small, Medium, $$ | symbolic size, with Medium being equivalent to 20 |
 | %AbsolutePointSize[size$] | equivalent to size$ |
 | %PointSize[f$] | a fraction f$ of the width of the final plot |
-| Scaled[r$] | scale the default safe size by r$ |
+| %Scaled[r$] | scale the default safe size by r$ |
 | %Max[$$], %Min[$$] | max or min of several specifications |
-These modify scale the automatically chosen size, with Medium leaving it unchanged.
 
 * %ArrowheadStyle can be set to a color or list of directives.
 
@@ -94,6 +102,8 @@ These modify scale the automatically chosen size, with Medium leaving it unchang
 
 * %ArrowheadPosition -> r$ sets the position of the arrowhead to the fraction r$ along the \
 length of the edge.
+
+* %LabelCardinals -> True will add a label to each arrowhead indicating its cardinal.
 
 ## Edges
 
@@ -113,6 +123,9 @@ If a function f$ is given, it is provided with an association containing the fol
 | 'Arrowheads' | the %Arrowheads[$$] expression (or None) |
 | 'LabelStyle' | setting of %EdgeLabelStyle |
 
+* The result can contain the expression %UniqueLabel[$$] inside a %Text[$$] primitive.
+This will be renumbered so that all labels are ordered according to x$, y$ screen position.
+
 * %EdgeColorFunction accepts these settings:
 | None | color via %EdgeStyle (default) |
 | 'Cardinal' | color by cardinal present on edge |
@@ -122,6 +135,8 @@ If a function f$ is given, it is provided with an association containing the fol
 | %Paletted[spec$, colors$] | use a given named or explicit color palette |
 * If a spec produces non-color values, edges will colored based on the type of data.
 * If %GraphLegend -> Automatic, a color legend will be shown.
+
+* %EdgeSetback controls how far an edge should be set back from its endpoints.
 
 ## Vertices
 
@@ -139,11 +154,11 @@ If a function f$ is given, it is provided with an association containing the fol
 | Automatic | use a safe default size, depending on layout |
 | size$ | size$ in points in the final plot |
 | Small, Medium, $$ | symbolic size, with Medium being equivalent to 5 |
-| AbsolutePointSize[size$] | equivalent to size$ |
-| PointSize[f$] | a fraction f$ of the width of the final plot |
-| Scaled[r$] | fraction r$ of the quantiles of inter-vertex distance |
+| %AbsolutePointSize[size$] | equivalent to size$ |
+| %PointSize[f$] | a fraction f$ of the width of the final plot |
+| %Scaled[r$] | fraction r$ of the quantiles of inter-vertex distance |
 | {v$1 -> s$1, $$, %%All -> s$} | use specific sizes for specific vertices |
-| Max[$$], Min[$$] | max or min of several specifications |
+| %Max[$$],% Min[$$] | max or min of several specifications |
 
 * %VertexColorFunction accepts these settings:
 | None | color via %VertexStyle (default) |
@@ -187,19 +202,19 @@ If a function f$ is given, it is provided with an association containing the fol
 | Automatic | default |
 | styles$ | a list, directive, or individual style |
 | {styles$, opt$ -> val$, $$} | provide suboptions |
-Suboptions include:
-| %ItemSize | a symbolic, numeric, or Scaled[$$] value |
+Supported suboptions are:
+| %ItemSize | a symbolic, numeric, or %Scaled[$$] value |
 | %Background | additional background to distinguish labels |
 | %BaseStyle | extra options to control font, etc. |
 | %LabelPosition | one of Above, Below, Left, Right, Center, or Automatic |
 | %Spacings | size of offset from the labelled element |
-* %VertexLabelStyle supports %LabelPosition -> Automatic, maximizing distance from the label to adjacent edges.
+* %VertexLabelStyle -> {%LabelPosition -> Automatic} will maximize the distance to adjacent edges.
 
 ## Annotations
 
 * %VertexAnnotations can be set to an association between named properties \
 and lists of values.
-* The values should be in the same order and length as given by VertexList.
+* The values should be in the same order and length as given by %VertexList.
 * These values are accessible via %VertexColorFunction and %VertexLabels.
 
 ## Highlights and colors
@@ -227,13 +242,20 @@ and lists of values.
 | 'Rotate270' | rotate 270\[Degree] |
 | 'ReflectHorizontal' | reflect horizontally |
 | 'ReflectVertical' | reflect vertically |
+| 'BendVertical' | bend vertical edges for layered digraphs |
 
-* Padding, whether in %ImagePadding or %AdditionImagePadding, can be specified in these forms:
+* %Padding, whether in %ImagePadding or %AdditionImagePadding, can be specified in these forms:
 | None | no padding |
 | n$ | pad by n$ on all sides |
 | {h$, v$} | pad by h$ horizontally and v$ vertically |
 | {{l$, r$}, {b$, t$}} | explicit padding |
 | {Left -> l$, $$} | per-side padding |
+
+* %Frame -> True will draw a frame that encompasses the vertices and edges, plus any additional
+padding included by %ImagePadding. The effects of %AdditionalImagePadding will not be included.
+
+* The special expression %GraphicsValue[$$] can be used in %Prolog, %Epilog, or by shape functions.
+It will be replaced with computed values after plotting is complete. See %GraphicsValue for more information.
 "
 
 (**************************************************************************************************)
@@ -1089,9 +1111,23 @@ $namedTransforms = <|
   "Rotate90" -> RotationTransform[90 Degree],
   "Rotate180" -> RotationTransform[180 Degree],
   "Rotate270" -> RotationTransform[270 Degree],
-  "ReflectHorizontal" -> ReflectionTransform[{0, 1}],
+  "ReflectHorizontal" -> ReflectionTransform[{1, 0}],
   "ReflectVertical" -> ReflectionTransform[{0, 1}]
 |>;
+
+applyCoordinateTransform["BendVertical"] := Block[{},
+  edgeCoordinateLists = Map[bendVertical, edgeCoordinateLists];
+];
+
+bendVertical[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
+  If[EuclideanDistance[ax, bx] < 0.001, Return @ {a, b}];
+  c = {bx, ay};
+  ca = If[EuclideanDistance[c, a] < .25, a, PointAlongLine[c, a, .25]];
+  cb = If[EuclideanDistance[c, b] < .25, b, PointAlongLine[c, b, .25]];
+  Join[{a}, DiscretizeBezierCurve[{ca, c, cb}], {b}]
+];
+
+bendVertical[line_] := line;
 
 applyCoordinateTransform[name_String] := Scope[
   trans = Lookup[$namedTransforms, name,

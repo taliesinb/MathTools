@@ -63,10 +63,10 @@ toUsageStr[e_] := TextString[e];
 
 (**************************************************************************************************)
 
-$literalStringRegex = RegularExpression["'[A-Z][a-zA-Z]+'"];
+$literalStringRegex = RegularExpression["'[A-Z][a-zA-Z0-9]+'"];
 $literalStringColor = RGBColor[{0.4, 0.4, 0.4}];
 
-$literalSymbolRegex = RegularExpression["(Automatic|True|False|None|Inherited|Left|Right|Above|Below|Center|Top|Bottom|Infinity|Scaled|Tiny|Small|Medium|Large|Negated)"];
+$literalSymbolRegex = RegularExpression["(Automatic|True|False|None|Inherited|Left|Right|Above|Below|Center|Top|Bottom|Infinity|Tiny|Small|Medium|Large|Negated)"];
 $literalSymbolColor = RGBColor[{0.15, 0.15, 0.15}];
 
 $mainSymbolRegex = RegularExpression["^\\$?[A-Za-z][A-Za-z]*"];

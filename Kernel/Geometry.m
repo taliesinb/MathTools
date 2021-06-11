@@ -107,6 +107,15 @@ regionComponentPolygon[region_] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["DiscretizeBezierCurve"]
+
+DiscretizeBezierCurve[points_] := Scope[
+  region = DiscretizeGraphics @ BezierCurve @ ToPacked @ points;
+  ToPacked @ Flatten[region["EdgeCoordinates"], 1]
+];
+
+(**************************************************************************************************)
+
 PackageExport["PointDilationGraphics"]
 
 PointDilationGraphics[points_, r_] := Scope[

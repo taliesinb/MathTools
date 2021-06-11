@@ -527,7 +527,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       arrowheadSize //= processArrowheadSize;
 
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Arrow"]];
-      $twoWayStyle = "ArrowDoubleIn"; $pairedDistance = 0.; $negationStyle = "Flip";
+      $twoWayStyle = "ArrowDoubleIn"; $pairedDistance = 0.; $negationStyle = "Flip"; $lineThickness = 1;
       If[ListQ[arrowheadShape],
         {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
         Scan[scanArrowheadShapeOpts, arrowheadShapeOpts]];
@@ -604,10 +604,10 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[TrueQ @ frame,
       If[MatchQ[frameStyle, {} | Automatic], frameStyle = LightGray];
       frameStyle //= toDirective;
-      AppendTo[graphicsElements, Style[
-        Rectangle @@ $GraphicsBoundingFrame,
-        FaceForm @ None, EdgeForm @ frameStyle]
-      ]
+      SetNone[epilog, {}]; SetNone[prolog, {}];
+      rectangle = Rectangle @@ $GraphicsBoundingFrame;
+      epilog = ToList[epilog, Style[rectangle, FaceForm @ None, EdgeForm @ frameStyle]];
+      prolog = ToList[prolog, Style[rectangle, FaceForm @ White, EdgeForm @ None]];
     ];
 
     If[ContainsQ[graphicsElements, _UniqueLabel],
@@ -915,9 +915,10 @@ PackageExport["PairedDistance"]
 scanArrowheadShapeOpts = MatchValues[
   TwoWayStyle -> s:("Out"|"In"|"OutClose"|"InClose") := $twoWayStyle ^= arrowheadShape <> "Double" <> s;
   TwoWayStyle -> s:("Square"|"Ball"|"Disk"|"Diamond"|None) := $twoWayStyle ^= s;
+  "Thickness" -> thickness_ := $lineThickness ^= thickness;
   PairedDistance -> n_ ? NumericQ := $pairedDistance ^= N[n];
   NegationStyle -> s:("Flip"|"OverBar") := $negationStyle ^= s;
-  rule_ := failPlot["badsubopt", rule, commaString @ {TwoWayStyle, PairedDistance, NegationStyle}];
+  rule_ := failPlot["badsubopt", rule, commaString @ {TwoWayStyle, PairedDistance, NegationStyle, "Thickness"}];
 ];
 
 (**************************************************************************************************)
@@ -1266,8 +1267,8 @@ makeArrowheadShape[name_String, style_] /; StringStartsQ[name, {"Line", "DoubleL
   makeArrowheadGraphic2D[
     $arrowheads2D @ name,
     Directive[style, If[$GraphIs3D,
-      Thickness @ If[StringContainsQ[name, "Double"], 0.075, 0.15],
-      AbsoluteThickness @ 1.2
+      Thickness[$lineThickness * If[StringContainsQ[name, "Double"], 0.075, 0.15]],
+      AbsoluteThickness[$lineThickness * 1.2]
     ]]
   ];
 
@@ -1373,6 +1374,8 @@ applyAutomaticLegends[graphics_, automaticLegends_, graphLegend_] := Scope[
 ];
 
 (**************************************************************************************************)
+
+PackageScope["removeSingleton"]
 
 removeSingleton[{e_}] := e;
 removeSingleton[e_] := e;
