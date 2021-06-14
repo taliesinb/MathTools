@@ -64,7 +64,7 @@ findSubCoordinatization[matrices_, {m_, n_}] := Scope[
     AllTrue[matrices, DihedralTranslationMatrixQ[#] || TranslationMatrixQ[#]&],
       Splice @ Table[{getTranslationCyclicity[row], Extract[{row, n}]}, {row, m, n-1}],
     True,
-      {None, DiagonalBlock[{m, n}]}
+      {None, DiagonalBlock[{m, n}] /* Flatten}
   ]
 ];
 

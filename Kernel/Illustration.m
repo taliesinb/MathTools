@@ -166,6 +166,7 @@ CompassDiagram[compasses_, equivSets_, opts___] := Scope[
     GraphLegend -> Automatic, Cardinals -> cardinals,
     ArrowheadShape -> {"PairedSquare", PairedDistance -> 0, NegationStyle -> "OverBar"},
     VertexLabelStyle -> {LabelPosition -> Automatic},
+    BaselinePosition -> Center,
     VertexLabels -> "Name", ArrowheadSize -> Large
   ]
 ];
@@ -176,6 +177,64 @@ createEdges[card1_, card2_] := Outer[
   ],
   compassIndex @ card1, compassIndex @ StripNegated @ card2, 1
 ];
+
+(**************************************************************************************************)
+
+PackageExport["FadePathPlot"]
+
+FadePathPlot[g_, v1_, v2_, dir_, c_:None, c2_:None] := Scope[
+  mainPath = Line[{v1, v2}, dir];
+  transportPath = If[c =!= None, Line @ {Offset[v2, Negated @ c], Offset[v2, c]}, Nothing];
+  mainPathVertices = GraphRegion[g, mainPath];
+  HighlightGraphRegion[g,
+    {Style[transportPath, $Gray, PathStyle -> "DiskArrow", EdgeSetback -> 0, ArrowheadSize -> 3], mainPath},
+    {"Replace", "FadeGraph", $Teal, PathRadius -> 2},
+    GraphLegend -> None, VertexSize -> {v1 -> 8},
+    Epilog -> If[c === None, None, FadeProtected @ {
+      GraphicsValue[{"CardinalPrimitives", Disk[v2, 1], c}],
+      Switch[c2,
+        None, Nothing,
+        _List,
+        GraphicsValue[{"CardinalPrimitives", Disk[v2, 1], c2}, SetColorLightness[0.7]]]
+    }]
+  ]
+];
+
+FadePathPlot[g_, v1_, v2_, dir_, c_List] := Scope[
+  mainPath = Line[{v1, v2}, dir];
+  cLast = Last @ c;
+  If[ListQ[cLast], cLast //= First];
+  transportPath = Line @ {Offset[v2, Negated @ cLast], Offset[v2, cLast]};
+  mainPathVertices = Part[GraphRegion[g, mainPath], 1, 1];
+  If[Length[c] =!= Length[mainPathVertices], ReturnFailed[]];
+  epilog = MapThread[
+    {vertex, card} |-> GraphicsValue[
+      c = If[ListQ[card], Alternatives @@ card, card];
+      {"CardinalPrimitives", toCardinalEdgePattern[vertex, c], c}
+    ],
+    {mainPathVertices, c}
+  ];
+  HighlightGraphRegion[g,
+    {Style[transportPath, $Gray, PathStyle -> "DiskArrow", EdgeSetback -> 0, ArrowheadSize -> 3], mainPath},
+    {"Replace", "FadeGraph", $Teal, PathRadius -> 2},
+    GraphLegend -> None, VertexSize -> {v1 -> 8},
+    Epilog -> FadeProtected[epilog]
+  ]
+];
+
+toCardinalEdgePattern[v2_, c_] := EdgePattern[IndexedVertex @ v2, _, c];
+toCardinalEdgePattern[v2_, Negated[c_]] := EdgePattern[_, IndexedVertex @ v2, c];
+
+(**************************************************************************************************)
+
+PackageExport["CompassPathPlot"]
+
+CompassPathPlot[compass_, path_, color_:$Red] :=
+  HighlightGraphRegion[compass,
+    {Arrow[path]},
+    {color, "Foreground", PathStyle -> "DiskArrow", PathRadius -> 3},
+    Epilog -> GraphicsValue[{"CardinalPrimitives", All, _}]
+  ];
 
 (**************************************************************************************************)
 
@@ -259,17 +318,25 @@ PathQuiverPlot[fq_, paths_, v0_, cardinalDirs_, pathOpts_List, opts___Rule] := S
   paths = parsePath /@ DeleteDuplicates[paths];
   If[ContainsQ[paths, $Failed], ReturnFailed[]];
   pathWords = extractWord /@ paths;
-  If[cardinalDirs =!= None,
-    If[cardinalDirs === "Linear",
-      cardinalDirs = ConstantArray[{1, 0}, Length @ cardinals];
-      $scaling = 0.0
-    ];
-    If[Length[cardinalDirs] =!= Length[cardinals], ReturnFailed[]];
-    $cardinalDirs = AssociationThread[cardinals, cardinalDirs];
-    $cardinalDirs = Join[$cardinalDirs, Map[Minus, KeyMap[Negated, $cardinalDirs]]];
-    coords = Map[wordToCoords, pathWords];
-  ,
-    coords = Automatic
+  Which[
+    cardinalDirs === Inherited,
+      coords = AssociationThread[
+        Map[LatticeVertex @ ParseCardinalWord @ #&, VertexList @ fq],
+        GraphVertexCoordinates @ fq
+      ];
+    ,
+    cardinalDirs =!= None,
+      If[cardinalDirs === "Linear",
+        cardinalDirs = ConstantArray[{1, 0}, Length @ cardinals];
+        $scaling = 0.0
+      ];
+      If[Length[cardinalDirs] =!= Length[cardinals], ReturnFailed[]];
+      $cardinalDirs = AssociationThread[cardinals, cardinalDirs];
+      $cardinalDirs = Join[$cardinalDirs, Map[Minus, KeyMap[Negated, $cardinalDirs]]];
+      coords = Map[wordToCoords, pathWords];
+    ,
+    cardinalDirs === None,
+      coords = Automatic
   ];
   vertices = Map[LatticeVertex, pathWords];
   pathWords2 = DeepCases[#, Path[_, word_, ___] :> word]& /@ paths;
@@ -288,37 +355,51 @@ PathQuiverPlot[fq_, paths_, v0_, cardinalDirs_, pathOpts_List, opts___Rule] := S
   Quiver[
     vertices, edges, opts,
     VertexCoordinates -> coords,
-    VertexLabels -> labels,
-    VertexLabelStyle -> {LabelPosition -> {0., 0.3}, Background -> None},
-    ArrowheadShape -> {"Line", "Thickness" -> 2}, ArrowheadSize -> Medium, EdgeStyle -> {Thick, LightGray},
+    VertexShapeFunction -> labels, VertexSize -> Inherited,
+    VertexLabelStyle -> {LabelPosition -> Center, Background -> None, ZOrder -> 1},
+    ArrowheadShape -> {"Line", EdgeThickness -> 2}, ArrowheadSize -> Medium, EdgeStyle -> {Thick, LightGray},
     ImageSize -> 400, ImagePadding -> 30
   ] // CombineMultiedges
 ];
 
-wordToCoords[{}] := {0, 0};
-wordToCoords[path_List] := Total @ MapIndexed[$cardinalDirs[#1] / ($scaling * First[#2]+0.33)&, path];
+wordToCoords = MatchValues[
+  {}          := {0, 0};
+  path_List   := Total @ MapIndexed[$cardinalDirs[#1] / ($scaling * First[#2]+0.33)&, path];
+];
 
-extractWord[Path[_, word_, ___]] := word;
-extractWord[list_List] := extractWord @ First @ list;
+extractWord = MatchValues[
+  Path[_, word_, ___] := word;
+  list_List           := % @ First @ list;
+  Labeled[spec_, _]   := % @ spec;
+];
 
 parsePath = MatchValues[
   path_String                   := Path[$v0, ParseCardinalWord @ path];
   paths_List                    := Map[parsePath, paths];
+  Labeled[spec_, label_]        := Labeled[parsePath @ spec, label];
   Rule[paths_List, adj_List]    := Splice[parsePath[# -> adj]& /@ paths];
   Rule[path_String, adj_List]   := Path[$v0, ParseCardinalWord @ path, PathAdjustments -> adj];
   _ := $Failed;
 ];
 
-FQPVertexIcon[opts_][path_] :=
-  HighlightGraphRegion[
+FQPVertexIcon[opts_][path_] := Scope[
+  hasClassLabel = False;
+  If[MatchQ[path, Labeled[_, _]], hasClassLabel = True; {path, classLabel} = FirstLast @ path];
+  hasPathLabel = !MatchQ[path, Path[_, {}, ___]];
+  highlighted = HighlightGraphRegion[
     $fq, path, {$Teal, PathRadius->2, PathStyle -> "DiskArrow", EdgeSetback -> $setback, "Foreground"}, Sequence @@ opts,
-    ImagePadding -> {7, 8}, AdditionalImagePadding -> {Bottom -> 15}, Frame -> True, FrameStyle -> {LightGray, Thin},
+    ImagePadding -> {10, 10},
+    Frame -> True, FrameStyle -> {LightGray, Thin},
     GraphLegend -> None, ImageSize -> "ShortestEdge" -> 25, ArrowheadShape -> None, VertexSize -> Small,
-    Epilog -> If[MatchQ[path, Path[_, {}, ___]], None, Text[
-      fmtPaths @ path /. Negated -> UnderNegatedForm,
-      GraphicsValue[{"BoundingFrame",Bottom}],{0,1.05}, Background -> White]
-    ]
-  ] // ExtendedGraphPlot;
+    FrameLabel -> {
+      Bottom -> If[!hasPathLabel, None, fmtPaths[path] /. Negated -> UnderNegatedForm],
+      Top -> If[!hasClassLabel, None, Style[classLabel, FontColor -> Black, FontSize -> 10]]
+    }
+  ];
+  ExtendedGraphPlot @ highlighted
+];
 
-fmtPaths[Path[_, word_, ___]] := FormatCardinalWord[word, FontColor -> Gray, FontSize -> 10];
-fmtPaths[list_List] := Row[fmtPaths /@ list, Style[",", Gray]];
+fmtPaths = MatchValues[
+  Path[_, word_, ___] := FormatCardinalWord[word, FontColor -> Gray, FontSize -> 10];
+  list_List           := Row[fmtPaths /@ list, Style[",", Gray]];
+];

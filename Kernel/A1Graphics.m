@@ -461,6 +461,8 @@ PackageExport["VeryThin"]
   Medium = AT[1],
   Large / Thick is AT[2] *)
 
+PackageScope["$thicknessNormalizationRules"]
+
 $thicknessNormalizationRules = {
   VeryThin -> AbsoluteThickness[0.1],
   MediumThin -> AbsoluteThickness[0.5],
@@ -469,6 +471,18 @@ $thicknessNormalizationRules = {
   MediumThick -> AbsoluteThickness[1.5],
   VeryThick -> AbsoluteThickness[3]
 };
+
+(**************************************************************************************************)
+
+PackageScope["NormalizeThickness"]
+
+NormalizeThickness = MatchValues[
+  Automatic := AbsoluteThickness[1.2];
+  t:Thickness[s_Symbol] := t;
+  s_Symbol := Lookup[$thicknessNormalizationRules, s, $Failed];
+  n_ ? NumericQ := AbsoluteThickness @ N @ n;
+  _ := $Failed;
+];
 
 (**************************************************************************************************)
 
@@ -515,7 +529,7 @@ PackageExport["ApplyEpilog"]
 ApplyEpilog[graphics_, None | {}] := graphics;
 
 ApplyEpilog[graphics_Graphics, epilog_] :=
-  UpdateOptions[graphics, Epilog, Function[Append[ToList @ #1, epilog]]];
+  UpdateOptions[graphics, Epilog, Function[If[#1 === {}, epilog, {epilog, #1}]]];
 
 ApplyEpilog[Graphics3D[primitives_, opts___], epilog_] :=
   Graphics3D[{primitives, epilog}, opts];
@@ -529,7 +543,7 @@ PackageExport["ApplyProlog"]
 ApplyProlog[graphics_, None | {}] := graphics;
 
 ApplyProlog[graphics_Graphics, prolog_] :=
-  UpdateOptions[graphics, Prolog, Function[Append[ToList @ #1, prolog]]];
+  UpdateOptions[graphics, Prolog, Function[If[#1 === {}, prolog, {#1, prolog}]]];
 
 ApplyProlog[Graphics3D[primitives_, opts___], prolog_] :=
   Graphics3D[{prolog, primitives}, opts];
@@ -820,3 +834,45 @@ PackageExport["LineLength"]
 
 LineLength[{a_, b_}] := EuclideanDistance[a, b];
 LineLength[list_] := Total @ MapStaggered[EuclideanDistance, list];
+
+(**************************************************************************************************)
+
+PackageExport["TransformArrowheads"]
+
+$arrowheadTransforms = <|
+  "Reverse" -> reverseArrowhead,
+  "OverBar" -> addNegationBar[True],
+  "UnderBar" -> addNegationBar[False]
+|>;
+
+TransformArrowheads[primitives_, transform_String] := Scope[
+  func = Lookup[$arrowheadTransforms, transform];
+  ReplaceAll[primitives,
+    g:{_, _, _Graphics} :> RuleCondition @ func @ g
+  ]
+];
+
+TransformArrowheads[transform_][primitives_] :=
+  TransformArrowheads[primitives, transform];
+
+reverseArrowhead[{size_, pos_, graphics_}] :=
+  {-size, pos, graphics};
+
+addNegationBar[isOver_][{size_, pos_, graphics:Graphics[primitives_, opts___]}] := Scope[
+  {{xl, xh}, {yl, yh}} = GraphicsPlotRange @ graphics;
+  yb = If[isOver, yh * 1.4, yl * 1.4];
+  graphics = Graphics[{primitives, {Opacity[1], Black, AbsoluteThickness[0.5], Line @ {{xl, yb}, {xh, yb}}}}, opts];
+  {size, pos, graphics}
+];
+
+(**************************************************************************************************)
+
+PackageExport["SetFrameColor"]
+
+SetFrameColor[g_Graphics, color_] :=
+  If[LookupOption[g, Frame] === True,
+    ReplaceOptions[g, FrameStyle -> color],
+    ReplaceAll[g, a:Annotation[_, "Frame"] :> ReplaceAll[a, EdgeForm[_] :> EdgeForm[color]]]
+  ];
+
+SetFrameColor[expr_, _] := expr;

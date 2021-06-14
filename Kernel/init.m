@@ -1,3 +1,4 @@
+System`EdgeThickness;
 
 If[$VersionNumber < 12.2,
   General::packagewlversion = "Package `` requires Wolfram Langauge version `` or later to operate.";

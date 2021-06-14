@@ -30,6 +30,7 @@ $extendedGraphUsage = StringTrim @ "
 | %ArrowheadPosition | Automatic | position of arrowheads along edges |
 | %ArrowheadShape | Automatic | shape of arrowheads |
 | %EdgeSetback | Automatic | how far to set back edges from vertices |
+| %EdgeThickness | Automatic | thickness of edges |
 | %LabelCardinals | False | whether to attach labels to arrowheads |
 | %VertexShapeFunction | Automatic | how to draw vertices |
 | %EdgeShapeFunction | Automatic | how to draw edges |
@@ -72,7 +73,7 @@ The following settings will pair up cardinals in %CardinalSet[$$]:
 | %NegationStyle | 'Flip' | how to plot negated cardinals in %CardinalSet[$$] |
 | %TwoWayStyle | 'In' | how to plot negated pairs in %CardinalSet[$$] |
 | %PairedDistance | 0 | how far away to plot negated pairs |
-| 'Thickness' | 1 | thickness of line-based arrowheads |
+| %EdgeThickness | 1 | thickness of line-based arrowheads |
 
 * %TwoWayStyle -> spec$ determines how to plot a cardinal and its negation together:
 | 'Out' | arrowheads facing away from each other |
@@ -83,7 +84,8 @@ The following settings will pair up cardinals in %CardinalSet[$$]:
 
 * %NegationStyle -> spec$ determines how negated cardinals are drawn:
 | 'OverBar' | draw a negation bar above arrowhead |
-| 'Flip' | flip the direction of the cardinal, or switch paired cardinals |
+| 'UnderBar' | drwa a negation bar below arrowhead |
+| 'Reverse' | flip the direction of the cardinal, or switch paired cardinals |
 
 * %PairedDistance -> size$ determines the separation of paired cardinals, in points.
 
@@ -137,6 +139,8 @@ This will be renumbered so that all labels are ordered according to x$, y$ scree
 * If %GraphLegend -> Automatic, a color legend will be shown.
 
 * %EdgeSetback controls how far an edge should be set back from its endpoints.
+
+* %EdgeThickness controls the thickness of rendered edges, and is given in points.
 
 ## Vertices
 
@@ -282,7 +286,8 @@ $extendedGraphOptionsRules = {
   CoordinateTransformFunction -> None,
   ColorRules -> None,
   ViewRegion -> All,
-  AdditionalImagePadding -> None
+  AdditionalImagePadding -> None,
+  EdgeThickness -> Automatic
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -324,9 +329,14 @@ makeNewGraph[___] := $Failed;
 optionFixup = MatchValues[
   Rule[VertexSize, r:{__Rule}] := Rule[VertexSize, Association @ r];
   Rule[sym:(EdgeStyle|VertexStyle), val_] := Rule[sym, toDirective[val]];
+  Rule[VertexShapeFunction, assoc_Association] := Rule[VertexShapeFunction, toShape /@ assoc];
   Rule[sym:(GraphHighlightStyle|VertexLabelStyle|EdgeLabelStyle), elem_] := Rule[sym, toDirective[elem]];
   other_ := other;
 ];
+
+(* TODO: compute sizes here so that graph layout knows about them *)
+toShape[g_Graph] := ExtendedGraphPlot @ g;
+toShape[other_] := other;
 
 interceptedGraphConstructor[e_] := e;
 
@@ -434,7 +444,8 @@ $simpleGraphOptionRules = JoinOptions[{
   VertexStyle -> Automatic, EdgeStyle -> Automatic,
   VertexShapeFunction -> Automatic, EdgeShapeFunction -> Automatic, PlotLabel -> None,
   GraphHighlightStyle -> Automatic, VertexLabelStyle -> Automatic, EdgeLabelStyle -> Automatic,
-  Epilog -> {}, Prolog -> {}, Frame -> None, FrameStyle -> Automatic
+  Epilog -> {}, Prolog -> {}, Frame -> None, FrameStyle -> Automatic, BaselinePosition -> Automatic,
+  FrameLabel -> None
   },
   Rest @ $extendedGraphOptionsRules
 ]
@@ -572,7 +583,7 @@ CardinalSet[cardinals$] represents a set of cardinals that is simultaneously pre
 MakeBoxes[CardinalSet[set_List], TraditionalForm] :=
   RowBox @ Riffle[MakeBoxes[#, TraditionalForm]& /@ set, " "];
 
-PackageScope["SimplifyCardinalSet"]
+PackageExport["SimplifyCardinalSet"]
 
 SimplifyCardinalSet = MatchValues[
   CardinalSet[{a_}] := % @ a;
@@ -1098,6 +1109,9 @@ ExtendedGraphPlot::badcoordtransname = "CoordinateTransformFunction -> `` is not
 applyCoordinateTransform[Automatic|None] :=
   Null
 
+applyCoordinateTransform[list_List] :=
+  Scan[applyCoordinateTransform, list];
+
 applyCoordinateTransform[f_] := Block[{res},
   res = Check[
     vertexCoordinates = Map[f, vertexCoordinates];
@@ -1108,26 +1122,59 @@ applyCoordinateTransform[f_] := Block[{res},
 ];
 
 $namedTransforms = <|
-  "Rotate90" -> RotationTransform[90 Degree],
-  "Rotate180" -> RotationTransform[180 Degree],
-  "Rotate270" -> RotationTransform[270 Degree],
+  "Rotate90" -> RotationTransform[90 * Degree],
+  "Rotate180" -> RotationTransform[180 * Degree],
+  "Rotate270" -> RotationTransform[270 * Degree],
   "ReflectHorizontal" -> ReflectionTransform[{1, 0}],
-  "ReflectVertical" -> ReflectionTransform[{0, 1}]
+  "ReflectVertical" -> ReflectionTransform[{0, 1}],
+  "ShrinkHorizontal" -> ScalingTransform[{0.75, 1}],
+  "ShrinkVertical" -> ScalingTransform[{1, 0.75}],
+  "ExpandHorizontal" -> ScalingTransform[{1.25, 1}],
+  "ExpandVertical" -> ScalingTransform[{1, 1.25}]
 |>;
 
-applyCoordinateTransform["BendVertical"] := Block[{},
-  edgeCoordinateLists = Map[bendVertical, edgeCoordinateLists];
-];
+applyCoordinateTransform["BendVertical"] :=
+  edgeCoordinateLists //= Map[bendVertical];
 
 bendVertical[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
   If[EuclideanDistance[ax, bx] < 0.001, Return @ {a, b}];
   c = {bx, ay};
-  ca = If[EuclideanDistance[c, a] < .25, a, PointAlongLine[c, a, .25]];
-  cb = If[EuclideanDistance[c, b] < .25, b, PointAlongLine[c, b, .25]];
-  Join[{a}, DiscretizeBezierCurve[{ca, c, cb}], {b}]
+  ca = along[c, a, .25];
+  cb = along[c, b, .25];
+  Join[{a}, DiscretizeCurve[{ca, c, cb}], {b}]
 ];
 
 bendVertical[line_] := line;
+
+applyCoordinateTransform["SquareSelfLoops"] :=
+  edgeCoordinateLists //= Map[squareSelfLoop];
+
+squareSelfLoop[list:{a_, Repeated[_, {3, Infinity}], b_}] /; EuclideanDistance[a, b] < 0.01 := Scope[
+  c = Mean @ list;
+  {p1, p3} = {{xl, yl}, {xh, yh}} = CoordinateBoundingBox @ list;
+  p2 = {xh, yl}; p4 = {xl, yh};
+  ang = ArcTan @@ (a - c); ang *= 2/Pi;
+  (* p4 p3
+     p1 p2 *)
+  {u, v, w, x} = Which[
+    -0.5 <= ang < +0.5, (* E *) {p3, p4, p1, p2},
+    +0.5 <= ang < +1.5, (* N *) {p4, p1, p2, p3},
+    -1.5 <= ang < -0.5, (* S *) {p2, p3, p4, p1},
+    True,               (* W *) {p1, p2, p3, p4}
+  ];
+  trunc = 0.5;
+  v = (v * trunc + u * (1 - trunc));
+  w = (w * trunc + x * (1 - trunc));
+  DiscretizeCurve[{corner[a, u, v], corner[u, v, w], corner[v, w, x], corner[w, x, a], a}, BSplineCurve]
+];
+
+$cr = .1;
+corner[a_, b_, c_] :=
+  Splice @ {a, along[b, a, $cr], along[b, a, 0.8*$cr], b, along[b, c, 0.8*$cr], along[b, c, $cr]};
+
+along[a_, b_, d_] := If[EuclideanDistance[a, b] < d, b, PointAlongLine[a, b, d]]
+
+squareSelfLoop[line_] := line;
 
 applyCoordinateTransform[name_String] := Scope[
   trans = Lookup[$namedTransforms, name,
@@ -1172,6 +1219,7 @@ PackageScope["NotInGraphScopeOfQ"]
 NotInGraphScopeOfQ[graph_] := !GraphQ[$Graph] || (graph =!= $Graph)
 
 PackageScope["$Graph"]
+PackageScope["$GraphOrigin"]
 PackageScope["$VertexList"]
 PackageScope["$EdgeList"]
 PackageScope["$EdgeTags"]
@@ -1208,6 +1256,7 @@ The following variables are blocked during the execution of GraphScope:
 GraphScope[graph_, body_] := Block[
   {
     $Graph = graph,
+    $GraphOrigin := $GraphOrigin = LookupExtendedGraphAnnotations[$Graph, GraphOrigin],
     $VertexList := $VertexList = VertexList @ $Graph,
     $EdgeList := $EdgeList = EdgeList @ $Graph,
     $EdgeTags := $EdgeTags = Replace[EdgeTags @ $Graph, {} -> None],

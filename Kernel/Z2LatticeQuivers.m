@@ -105,6 +105,7 @@ General::renamenotquiv = "The vertex coordinates yielded a quiver with incompati
 General::normempty = "The setting of NormFunction and MaxNorm -> `` yielded an empty graph. The first few norms were: ``."
 General::filterempty = "The setting of AbstractCoordinateFilter yielded an empty graph.";
 General::nonnumnorm = "The setting of NormFunction yielded the non-numeric value `` on vertex ``.";
+General::badgconst = "Could not construct the final graph.";
 
 Options[iGenerateLattice] = $baseGenerateLatticeOptions;
 
@@ -348,15 +349,16 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
       GraphLayout -> graphLayout, VertexCoordinates -> vertexCoordinates,
       GraphOrigin -> ivertex, Cardinals -> cardinalList,
       Sequence @@ simpleOptions,
-      ArrowheadStyle -> None
-    ]
+      ArrowheadStyle -> None, BaselinePosition -> Center
+    ];
+    If[FailureQ[graph], ReturnFailed[head::badgconst]];
   ,
     imageSize //= toStandardImageSize;
     graph = Quiver[finalVertexList, edgeList,
       GraphLayout -> graphLayout, VertexCoordinates -> vertexCoordinates,
       GraphLegend -> graphLegend, ImageSize -> imageSize,
       GraphOrigin -> ivertex, Cardinals -> cardinalList,
-      Sequence @@ simpleOptions
+      Sequence @@ simpleOptions, BaselinePosition -> Center
     ];
     If[FailureQ[graph], ReturnFailed[head::renamenotquiv]];
   ];
@@ -445,7 +447,7 @@ $abc = Transpose @ N @ {{Sqrt[3]/2, -(1/2)}, {0, 1}, {-(Sqrt[3]/2), -(1/2)}};
 vecAngle[{0., 0.}] := 0;
 vecAngle[{a_, b_}] := ArcTan[a, b];
 
-vecSorter[v_] := Norm[v];
+vecSorter[v_] /; Length[v] >= 4 := vecSorter @ Take[v, 3];
 vecSorter[v_] /; Length[v] == 3 := {Norm[v], vecAngle @ Dot[$abc, v]};
 vecSorter[v_] /; Length[v] == 2 := {Norm[v], vecAngle @ v};
 vecSorter[v_] /; Length[v] == 1 := {Norm[v], v};

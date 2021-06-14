@@ -110,7 +110,7 @@ corresponding highlight specifications:
 ## Highlight styles
 
 * The following options are supported as rules in %Style[spec$, $$] wrapper in a highlight \
-specifications, and as elements of %GraphHighlightStyle:
+specifications, and in %GraphHighlightStyle:
 
 | %SimplifyRegions | True | whether to render disk-like regions with %Disk |
 | %PerformanceGoal | 'Quality' | how to prioritize region rendering |
@@ -139,6 +139,9 @@ The following special named style elements control several settings:
 | 'Foreground' | solid elements placed above target graph |
 | 'FadeGraph' | make target graph light gray |
 | 'Replace' | use %PathStyle -> 'Replace' with solid colors |
+
+* The function %FadeProtected can be used to protect certain primitives from the effects of 'FadeGraph'.
+%FadeProtected is typically used as a second argument to %GraphicsValue in an %Epilog or %Prolog.
 
 ## Region specifications
 
@@ -267,7 +270,7 @@ ExtendedGraphPlot[graph_] := Block[
    highlightGraphics, requiredPadding
   },
 
-  If[!GraphQ[graph], ReturnFailed[]];
+  If[!GraphQ[graph], Return[$Failed, Block]];
 
   {plottingFunction, graphLegend, graphRegionHighlight, vertexColorFunction} =
     LookupAnnotation[graph, {GraphPlottingFunction, GraphLegend, GraphRegionHighlight, VertexColorFunction}, None];
@@ -280,6 +283,8 @@ ExtendedGraphPlot[graph_] := Block[
   GraphPlotScope[graph,
 
     $GraphPlotGraphics = plottingFunction[$Graph];
+
+    If[FailureQ[$GraphPlotGraphics], Return[$Failed, Block]];
 
     If[MatchQ[$GraphPlotGraphics, _Legended],
       If[MatchQ[graphLegend, None | $autoFilledLegendPattern | {$autoFilledLegendPattern..}],
@@ -373,6 +378,7 @@ PackageExport["ExtendedGraphPlottingFunction"]
 
 ExtendedGraphPlot::badcolors = "CardinalColors should be an association from cardinals to colors.";
 ExtendedGraphPlot::badpadding = "Padding option `` was invalid."
+ExtendedGraphPlot::badthickness = "EdgeThickness -> `` was invalid."
 
 ExtendedGraphPlottingFunction[___] := $Failed;
 
@@ -387,16 +393,16 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   FunctionSection[
     {graphLayout,
      imageSize, vertexSize, vertexStyle, edgeStyle, vertexLabelStyle, edgeLabelStyle,
-     vertexShapeFunction, edgeShapeFunction, frameStyle} =
+     vertexShapeFunction, edgeShapeFunction, frameStyle, baselinePosition} =
       LookupOption[graph, {GraphLayout,
         ImageSize, VertexSize, VertexStyle, EdgeStyle, VertexLabelStyle, EdgeLabelStyle,
-        VertexShapeFunction, EdgeShapeFunction, FrameStyle}, Automatic];
+        VertexShapeFunction, EdgeShapeFunction, FrameStyle, BaselinePosition}, Automatic];
 
-    {vertexLabels, edgeLabels, plotLabel, prolog, epilog, imagePadding, plotRangePadding, frame} =
-      LookupOption[graph, {VertexLabels, EdgeLabels, PlotLabel, Prolog, Epilog, ImagePadding, PlotRangePadding, Frame}, None];
+    {vertexLabels, edgeLabels, plotLabel, prolog, epilog, imagePadding, plotRangePadding, frame, frameLabel} =
+      LookupOption[graph, {VertexLabels, EdgeLabels, PlotLabel, Prolog, Epilog, ImagePadding, PlotRangePadding, Frame, FrameLabel}, None];
 
-    {arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, edgeSetback, labelCardinals, viewOptions, additionalImagePadding} =
-      LookupExtendedGraphAnnotations[graph, {ArrowheadShape, ArrowheadStyle, ArrowheadSize, ArrowheadPosition, EdgeSetback, LabelCardinals, ViewOptions, AdditionalImagePadding}];
+    {arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, edgeSetback, edgeThickness, labelCardinals, viewOptions, additionalImagePadding} =
+      LookupExtendedGraphAnnotations[graph, {ArrowheadShape, ArrowheadStyle, ArrowheadSize, ArrowheadPosition, EdgeSetback, EdgeThickness, LabelCardinals, ViewOptions, AdditionalImagePadding}];
 
     {graphLegend, vertexColorFunction, vertexAnnotations, edgeColorFunction, colorRules} =
       LookupExtendedGraphAnnotations[graph, {GraphLegend, VertexColorFunction, VertexAnnotations, EdgeColorFunction, ColorRules}];
@@ -408,6 +414,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[!MatchQ[cardinalColors, None | _Association], failPlot["badcolors"]];
 
     SetNone[vertexAnnotations, <||>];
+    SetNone[epilog, {}];
+    SetNone[prolog, {}];
 
     $GraphicsBoundingFrame := $GraphicsBoundingFrame = computeBoundingFrame[];
 
@@ -469,6 +477,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       vertexColorFunction =!= None, Scaled @ 0.5,
       True,                         Max[0.3, AbsolutePointSize[6]]
     ];
+    $inheritedVertexSize = False;
     vertexSize = processVertexSize @ removeSingleton @ vertexSize;
     vertexSizeImage = plotSizeToImageSize @ vertexSize;
 
@@ -512,7 +521,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       Goto[skipEdges];
     ];
 
-    SetAutomatic[edgeStyle, Directive[Opacity[.18], Black, If[$GraphIs3D, MediumThick, SlightlyThick]]];
+    SetAutomatic[edgeStyle, GrayLevel[0, .18]];
     edgeStyle //= toDirectiveOptScan[setEdgeStyleGlobals];
 
     If[arrowheadShape === None || zeroQ[arrowheadSize] || UndirectedGraphQ[$Graph],
@@ -527,7 +536,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       arrowheadSize //= processArrowheadSize;
 
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Arrow"]];
-      $twoWayStyle = "ArrowDoubleIn"; $pairedDistance = 0.; $negationStyle = "Flip"; $lineThickness = 1;
+      $twoWayStyle = "ArrowDoubleIn"; $pairedDistance = 0.; $negationStyle = "Reverse"; $lineThickness = AbsoluteThickness[1.2];
       If[ListQ[arrowheadShape],
         {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
         Scan[scanArrowheadShapeOpts, arrowheadShapeOpts]];
@@ -548,8 +557,15 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       edgeColorDataProvider, EdgeColorFunction
     ];
 
+    SetAutomatic[edgeThickness, If[$GraphIs3D, MediumThick, SlightlyThick]];
+    edgeThickness = Replace[
+      NormalizeThickness @ edgeThickness,
+      $Failed :> failPlot["badthickness", edgeThickness]
+    ];
+
     edgeGraphics = makeGraphicsGroup @ {
-      edgeStyle, (* pick up thickness etc*)
+      edgeThickness,
+      edgeStyle,
       edgeItems
     };
   ];
@@ -564,21 +580,30 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     vertexLabels //= removeSingleton;
     If[vertexLabels =!= None,
       SetNone[vertexSize, $GraphMaxSafeVertexSize / 5];
-      vertexLabelItems = generateLabelPrimitives[
+      {vertexLabelItems, zorder} = generateLabelPrimitives[
         vertexLabels, $VertexList, $VertexCoordinates, $VertexParts,
         vertexSize, vertexLabelStyle, vertexAnnotations, True
       ];
-      AppendTo[labelGraphics, vertexLabelItems]
+      Which[
+        zorder == 0, AppendTo[labelGraphics, vertexLabelItems],
+        Positive @ zorder, AppendTo[epilog, vertexLabelItems],
+        Negative @ zorder, AppendTo[prolog, vertexLabelItems]
+      ];
     ];
 
     edgeLabels //= removeSingleton;
     If[edgeLabels =!= None,
       SetAutomatic[arrowheadSize, 0];
-      edgeLabelItems = generateLabelPrimitives[
+      {edgeLabelItems, zorder} = generateLabelPrimitives[
         edgeLabels, $EdgeList, edgeCenters, $EdgeParts,
         Max[arrowheadSize] * $GraphPlotSizeX, edgeLabelStyle, <||>, False
       ];
-      AppendTo[labelGraphics, edgeLabelItems]];
+      Which[
+        zorder == 0, AppendTo[labelGraphics, edgeLabelItems],
+        Positive @ zorder, AppendTo[epilog, edgeLabelItems],
+        Negative @ zorder, AppendTo[prolog, edgeLabelItems]
+      ];
+    ];
 
     labelGraphics = If[labelGraphics === {}, Nothing, GraphicsGroup @ labelGraphics];
   ];
@@ -595,6 +620,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[colorRules =!= None,
       KeyDropFrom[automaticLegends, "Colors"]];
 
+    interiorImageSize = imageSize;
     imagePadding += additionalImagePadding;
     imagePadding //= Ceiling;
     imageSize = Ceiling @ ImageSizePad[imageSize, imagePadding];
@@ -604,10 +630,14 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[TrueQ @ frame,
       If[MatchQ[frameStyle, {} | Automatic], frameStyle = LightGray];
       frameStyle //= toDirective;
-      SetNone[epilog, {}]; SetNone[prolog, {}];
       rectangle = Rectangle @@ $GraphicsBoundingFrame;
-      epilog = ToList[epilog, Style[rectangle, FaceForm @ None, EdgeForm @ frameStyle]];
-      prolog = ToList[prolog, Style[rectangle, FaceForm @ White, EdgeForm @ None]];
+      AppendTo[epilog, Annotation[Style[rectangle, FaceForm @ None, EdgeForm @ frameStyle], "Frame"]];
+      AppendTo[prolog, Annotation[Style[rectangle, FaceForm @ White, EdgeForm @ None], "FrameBackground"]];
+    ];
+
+    If[frameLabel =!= None,
+      frameLabelElements = processFrameLabel @ frameLabel;
+      prolog = ToList[prolog, frameLabelElements];
     ];
 
     If[ContainsQ[graphicsElements, _UniqueLabel],
@@ -618,10 +648,14 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       viewOptions
     ];
 
+    baselinePosition //= processBaselinePosition;
+
     (* assemble graphics *)
     graphics = If[$GraphIs3D, makeGraphics3D, makeGraphics][
       graphicsElements,
-      imageSize, imagePadding, plotRangePadding, plotLabel, extraOptions, prolog, epilog
+      imageSize, imagePadding, plotRangePadding, plotLabel, extraOptions,
+      Replace[prolog, {} -> None], Replace[epilog, {} -> None],
+      baselinePosition
     ];
 
     If[ContainsQ[graphics, _GraphicsValue], Block[{$GraphPlotGraphics = graphics},
@@ -638,6 +672,62 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   ]
 ,
   ExtendedGraphPlottingFunction
+];
+
+processFrameLabel = MatchValues[
+  label:Rule[Bottom|Top, _] :=
+    % @ List @ label;
+  rules:{Rule[Bottom|Top, _]...} := Scope[
+    {bLabel, tLabel} = Lookup[rules, {Bottom, Top}, None];
+    labels = List[
+      makeFrameLabelElement[bLabel, Bottom, .85],
+      makeFrameLabelElement[tLabel, Top, -.9]
+    ];
+    labelHeights = Last /@ frameLabelSize /@ labels;
+    (* at this point padding has already been done, so we have to update all 3 *)
+    padSize = {{0, 0}, labelHeights};
+    imageSize += Total /@ padSize;
+    imagePadding += padSize;
+    additionalImagePadding += padSize;
+    Annotation[List[GrayLevel[0, 1], DeleteNone @ labels], "FrameLabel"]
+  ];
+  None :=
+    Nothing;
+  label_ :=
+    % @ {Bottom -> label};
+];
+
+frameLabelSize[None] := {0, 0};
+frameLabelSize[label_] := 1 + cachedRasterizeSize[Text @ label] / 2;
+
+makeFrameLabelElement[None, _, _] := None;
+
+makeFrameLabelElement[label_, pos1_, pos2_] :=
+  Text[
+    Style[label, $LegendLabelStyle],
+    GraphicsValue[{"BoundingFrame", pos1}],
+    {0, pos2}, Background -> White
+  ];
+
+processBaselinePosition = MatchValues[
+  Automatic | GraphOrigin :=
+    % @ If[$GraphOrigin =!= None, $GraphOrigin, Center];
+  Center  := % @ Scaled[0.5, "Interior"];
+  Bottom  := % @ Scaled[0.0, "Interior"];
+  Top     := % @ Scaled[1.0, "Interior"];
+  Scaled[s_ ? NumericQ, "Interior"] := Scope[
+    padOffset = Part[imagePadding, 2, 1];
+    interiorImageHeight = Last @ interiorImageSize;
+    imageHeight = Last @ imageSize;
+    Scaled[((s * interiorImageHeight) + padOffset) / imageHeight]
+  ];
+  vertex_ := Scope[
+    index = getVertexIndex @ vertex;
+    yPos = Part[$VertexCoordinates, index, 2];
+    yOffset = Part[$GraphPlotRange, 2, 1];
+    s = (yPos - yOffset) / $GraphPlotSizeY;
+    % @ Scaled[s, "Interior"]
+  ];
 ];
 
 computeBoundingFrame[] := Scope[
@@ -699,16 +789,18 @@ GraphicsValue[spec$] represents a computed value for the current graphic.
 | 'BoundingRectangle' | rectangle bounding the plot range |
 | 'BoundingFrame' | bounding frame, which includes effect of %ImagePadding |
 | {'BoundingFrame', Left|Right|Bottom|Top} | center of bounding frame on given side |
-| {'VertexCoordinates', vertex$} | coordinate of vertex$ |
-| {'VertexPrimitives', vertex$} | graphics primitives used for vertex$ |
-| {'EdgeCoordinates', edge$} | coordinate of edge$ |
-| {'EdgePrimitives', edge$} | graphics primitives used for edge$ |
+| {'VertexCoordinates', spec$} | coordinates of vertex or region spec$ |
+| {'VertexPrimitives', spec$} | graphics primitives used for vertex or region spec$ |
+| {'EdgeCoordinates', spec$} | coordinate of edge or region spec$ |
+| {'EdgePrimitives', spec$} | graphics primitives used for edge or region spec$ |
+| {'CardinalPrimitives', spec$, c$} | primitives for arrowhead of cardinal c$ on given edges |
+* spec$ can also be All, in which case all coordinates or primitives are returned.
 "
 
 $validGVSpecs = {
   "PlotRange", "BoundingRectangle", "BoundingFrame",
   "VertexCoordinates", "VertexPrimitives",
-  "EdgeCoordinates", "EdgePrimitives"
+  "EdgeCoordinates", "EdgePrimitives", "CardinalPrimitives", "CardinalGraphics"
 };
 
 evalGraphicsValue = MatchValues[
@@ -721,21 +813,48 @@ evalGraphicsValue = MatchValues[
   GraphicsValue[{"BoundingFrame", side:Bottom|Top|Left|Right}] :=
     computeCenterPoint[$GraphicsBoundingFrame, side];
   GraphicsValue[{"VertexCoordinates", vertex_}] :=
-    Part[$VertexCoordinates, findVertex @ vertex];
-  GraphicsValue[{"VertexPrimitives", vertex_}] := First[
-    ExtractGraphPlotPrimitives[List @ findVertex @ vertex, "VertexPrimitives"],
-    failPlot["gvnoprim", vertex]
-  ];
+    Part[$VertexCoordinates, findVertexList @ vertex] //
+      postProcPrims[vertex];
+  GraphicsValue[{"VertexPrimitives", vertex_}] :=
+    ExtractGraphPlotPrimitives[findVertexList @ vertex, "VertexPrimitives"] //
+      postProcPrims[vertex];
   GraphicsValue[{"EdgeCoordinates", edge_}] :=
-    Part[$edgeCoordinateLists, findEdge @ edge];
-  GraphicsValue[{"EdgePrimitives", edge_}] := First[
-    ExtractGraphPlotPrimitives[List @ findEdge @ edge, "EdgePrimitives"],
-    failPlot["gvnoprim", edge]
-  ];
+    Part[$edgeCoordinateLists, findEdgeList @ edge] //
+      postProcPrims[edge];
+  GraphicsValue[{"EdgePrimitives", edge_}] :=
+    ExtractGraphPlotPrimitives[findEdgeList @ edge, "EdgePrimitives"] //
+      postProcPrims[edge];
+  GraphicsValue[{"CardinalPrimitives", edge_, c_}] :=
+    extractCardinalArrowhead[c] @ % @ GraphicsValue[{"EdgePrimitives", edge}];
+  GraphicsValue[{"CardinalGraphics", c_}] :=
+    FirstCase[$GraphPlotGraphics, Graphics[Annotation[_, c, "Cardinal"], ___], None, {1, Infinity}];
   GraphicsValue[spec_, f_] :=
     Construct[f, %[GraphicsValue @ spec]];
   gv_GraphicsValue := failPlot["badgraphicsvalue", gv, commaString @ $validGVSpecs]
 ];
+
+findVertexList = MatchValues[
+  All := Range @ $VertexCount;
+  spec_ := ToList @ findVertex @ spec
+];
+
+findEdgeList = MatchValues[
+  All := Range @ $EdgeCount;
+  spec_ := ToList @ findEdge @ spec
+];
+
+postProcPrims[All][vals_] := vals;
+
+postProcPrims[spec_ ? GraphRegionElementQ][vals_] :=
+  If[vals === {}, failPlot["gvnoprim", spec], vals];
+
+postProcPrims[spec_][vals_] :=
+  First[vals, failPlot["gvnoprim", spec]];
+
+extractCardinalArrowhead[c_][prims_] := ReplaceAll[
+  Style[prims, Transparent],
+  Annotation[g_, Except[c | Negated[c]], "Cardinal"] :> {}
+]
 
 computeCenterPoint[{{xl_, yl_}, {xh_, yh_}}, side_] := Scope[
   xm = (xl + xh)/2; ym = (yl + yh) / 2;
@@ -754,6 +873,17 @@ makeGraphicsGroup[g_] := g;
 
 zeroQ[0|0.] := True;
 zeroQ[_] := False;
+
+(**************************************************************************************************)
+
+PackageExport["FadeProtected"]
+
+SetUsage @ "
+FadeProtected[primitives$] indicates that the given graphics primitives should be protected \
+from the effects of the 'FadeGraph' directive in GraphRegionHighlight.
+"
+
+FadeProtected[primitives_] := Annotation[primitives, "FadeProtected"]
 
 (**************************************************************************************************)
 
@@ -870,21 +1000,16 @@ makePairedDiskArrowheads[{c1_, c2_, rest___}, pdist_] := Scope[
   {shape, size, style2, arrowheadPosition} = lookupTagSpec @ StripNegated @ c2;
   shape1o = shape1; shape2o = shape2; negation = Nothing;
   isNegated = OddQ[Count[{c1, c2}, _Negated]];
-  If[isNegated && $negationStyle === "Flip",
+  If[isNegated && $negationStyle === "Reverse",
       Swap[style1, style2];
       shape1o = shape1o <> "Offset"; shape2o = shape2o <> "Offset"];
   graphic = Graphics @ {Opacity[1],
     {style1, $arrowheads2D @ shape1o},
     {style2, $arrowheads2D @ shape2o}} /. $pairDist -> pdist;
-  If[isNegated && $negationStyle === "OverBar",
-    graphic //= addNegationBar];
   arrowheadSpec = {size, Null, graphic};
+  If[isNegated && MatchQ[$negationStyle, "OverBar" | "UnderBar"],
+    arrowheadSpec //= TransformArrowheads[$negationStyle]];
   Prepend[arrowheadSpec] @ makePairedDiskArrowheads[{rest}, pdist]
-];
-
-addNegationBar[graphics:Graphics[primitives_, opts___]] := Scope[
-  {{xl, xh}, {yl, yh}} = GraphicsPlotRange @ graphics;
-  Graphics[{primitives, {Opacity[1], Black, AbsoluteThickness[0.5], Line @ {{xl, yh * 1.4}, {xh, yh * 1.4}}}}, opts]
 ];
 
 makePairedDiskArrowheads[{}, _] := {};
@@ -915,10 +1040,13 @@ PackageExport["PairedDistance"]
 scanArrowheadShapeOpts = MatchValues[
   TwoWayStyle -> s:("Out"|"In"|"OutClose"|"InClose") := $twoWayStyle ^= arrowheadShape <> "Double" <> s;
   TwoWayStyle -> s:("Square"|"Ball"|"Disk"|"Diamond"|None) := $twoWayStyle ^= s;
-  "Thickness" -> thickness_ := $lineThickness ^= thickness;
+  EdgeThickness -> thickness_ := $lineThickness ^=  Replace[
+    NormalizeThickness @ thickness,
+    $Failed :> failPlot["badthickness", thickness]
+  ];
   PairedDistance -> n_ ? NumericQ := $pairedDistance ^= N[n];
-  NegationStyle -> s:("Flip"|"OverBar") := $negationStyle ^= s;
-  rule_ := failPlot["badsubopt", rule, commaString @ {TwoWayStyle, PairedDistance, NegationStyle, "Thickness"}];
+  NegationStyle -> s:("Reverse"|"OverBar"|"UnderBar") := $negationStyle ^= s;
+  rule_ := failPlot["badsubopt", rule, commaString @ {TwoWayStyle, PairedDistance, NegationStyle, EdgeThickness}];
 ];
 
 (**************************************************************************************************)
@@ -966,7 +1094,7 @@ applyDrawFn[f_, assoc_] := Scope[
 arrowheadsND[e_] := If[$GraphIs3D, Arrowheads[e, Appearance -> "Projected"], Arrowheads @ e];
 
 makeArrowheadsElement[cardinal_] := Scope[
-  {shape, size, style, position} = lookupTagSpec[cardinal];
+  {shape, size, style, position} = lookupTagSpec @ StripNegated @ cardinal;
   SetInherited[style, edgeStyle];
   shape = If[shape === "Cardinal",
     SetNone[style, Black];
@@ -975,17 +1103,16 @@ makeArrowheadsElement[cardinal_] := Scope[
     SetNone[style, $Gray];
     makeArrowheadShape[shape, style]
   ];
-  If[NegatedQ[cardinal] && $negationStyle === "OverBar", shape //= addNegationBar];
+  shape = attachCardinalAnnotation[shape, cardinal];
   If[labelCardinals, shape = attachArrowheadLabel[shape, StripNegated @ cardinal, size]];
-  {size, position, shape}
+  element = {size, position, shape};
+  If[NegatedQ[cardinal], element //= TransformArrowheads[$negationStyle]];
+  element
 ];
 
 lookupTagSpec[other_, cardinal_] := other;
 lookupTagSpec[assoc_Association, cardinal_] :=
   Lookup[assoc, cardinal, Lookup[assoc, All, None]];
-
-lookupTagSpec[Negated[cardinal_]] :=
-  If[$negationStyle === "Flip", MapAt[Minus, 2], Identity] @ lookupTagSpec[cardinal];
 
 lookupTagSpec[TwoWay[cardinal_]] :=
   ReplacePart[1 -> $twoWayStyle] @ lookupTagSpec[cardinal];
@@ -994,6 +1121,11 @@ lookupTagSpec[cardinal_] := Map[
   lookupTagSpec[#, cardinal]&,
   {arrowheadShape, arrowheadSize, arrowheadStyle, arrowheadPosition}
 ];
+
+(**************************************************************************************************)
+
+attachCardinalAnnotation[head_[primitives_, opts___], cardinal_] :=
+  head[Annotation[primitives, cardinal, "Cardinal"], opts];
 
 (**************************************************************************************************)
 
@@ -1266,10 +1398,7 @@ makeArrowheadShape["Sphere", style_] :=
 makeArrowheadShape[name_String, style_] /; StringStartsQ[name, {"Line", "DoubleLine"}] :=
   makeArrowheadGraphic2D[
     $arrowheads2D @ name,
-    Directive[style, If[$GraphIs3D,
-      Thickness[$lineThickness * If[StringContainsQ[name, "Double"], 0.075, 0.15]],
-      AbsoluteThickness[$lineThickness * 1.2]
-    ]]
+    Directive[style, $lineThickness]
   ];
 
 ExtendedGraphPlot::arrow3din2d = "Cannot use shape `` in a 2D graph."
@@ -1389,6 +1518,7 @@ $validVertexShapes = {"Disk", "Ball", "Point", None};
 processVertexShapeFunction[spec_] := Scope[
   setbackDistance = 0; vertexPadding = 0;
   vertexBaseStyle = None;
+  defaultVertexColor = $DarkGray;
   Switch[spec,
     "Disk" /; $GraphIs3D,
       defaultVertexColor = $Gray;
@@ -1402,26 +1532,28 @@ processVertexShapeFunction[spec_] := Scope[
     ,
     "Disk" | "Ball" | "Sphere",
       vertexPadding = 1 + vertexSizeImage/2;
-      defaultVertexColor = $DarkGray;
       vertexBaseStyle = EdgeForm @ AbsoluteThickness[.25];
       vertexDrawFunc = drawDisk[$vertexSize / 2];
     ,
     "Point",
-      defaultVertexColor = $DarkGray;
       vertexDrawFunc = drawPoint[$vertexSize];
       vertexPadding = 1 + vertexSizeImage / 2;
     ,
     "Square",
-      defaultVertexColor = $DarkGray;
       vertexDrawFunc = drawSquare[$vertexSize];
       vertexBaseStyle = EdgeForm @ AbsoluteThickness[1];
       vertexPadding = 1 + vertexSizeImage / 2;
     ,
     "Hexagon",
-      defaultVertexColor = $DarkGray;
       vertexDrawFunc = drawHexagon[$vertexSize];
       vertexBaseStyle = EdgeForm @ AbsoluteThickness[1];
       vertexPadding = 1 + vertexSizeImage / 2,
+    _Association,
+      vertexDrawFunc = drawCustomShape[spec, $vertexSize];
+      If[$inheritedVertexSize,
+        vertexSizeImage = Max[Map[cachedRasterizeSize, spec]] / 2];
+      vertexPadding = 1 + vertexSizeImage / 2;
+    ,
     _,
       failPlot["badvshapefunc", spec, commaString @ $validVertexShapes];
   ];
@@ -1449,6 +1581,28 @@ drawDisk3D[size_][pos_, color_] := Inset[
 
 drawSquare[size_][pos_, color_] :=
   edgedStyle[color] @ mapCoordArray[Rectangle[# - size / 2, # + size / 2]&, pos];
+
+drawCustomShape[assoc_, size_][pos_, color_] :=
+  Map[drawIndividualCustomShape[assoc, color, size], pos];
+
+drawIndividualCustomShape[assoc_, color_, size_][pos_] := Scope[
+  index = IndexOf[$VertexCoordinates, pos];
+  shape = If[index === None, None, Part[assoc, index]];
+  drawGraphicsWithColor[shape, pos, color, size]
+];
+
+drawGraphicsWithColor[None, pos_, color_, size_] :=
+  drawPoint[size][pos, color];
+
+drawGraphicsWithColor[other_, pos_, color_, size_] :=
+  Text[Style[other, color, FontSize -> size], pos, {0, 0}, Background -> White];
+
+drawGraphicsWithColor[g_Graphics, pos_, color_, size_] :=
+  Inset[
+    ReplaceOptions[g, FrameStyle -> color],
+    pos, {Center, Baseline}, If[$inheritedVertexSize, Automatic, {size, size}]
+  ];
+
 
 (* todo: replace this with a single polygon *)
 $hexagonPoints = CirclePoints[{1, Tau/12}, 6] / Sqrt[2];
@@ -1562,7 +1716,7 @@ ExtendedGraphPlot::notvertex = "`` is not a valid vertex of the graph."
 ExtendedGraphPlot::badcolfunc = "`` is not a valid color function specification for ``."
 ExtendedGraphPlot::msgcolfunc = "Applying the requested color function to property `` gave messages."
 
-getVertexIndex[GraphOrigin] := getVertexIndex @ LookupExtendedGraphAnnotations[$Graph, GraphOrigin];
+getVertexIndex[GraphOrigin] := getVertexIndex @ $GraphOrigin;
 getVertexIndex[v_] := Lookup[$VertexIndex, v, failPlot["notvertex", v]];
 getAnnoValue[annos_, key_] := Lookup[annos, key, failPlot["badgraphannokey", key, commaString @ Keys @ annos]];
 
@@ -1640,7 +1794,8 @@ processVertexSize = MatchValues[
     $vertexSizeOverrides ^= Association[processVertexSizeRule /@ rules];
     Lookup[rules, Key @ All, %[$defaultVertexSize]]
   );
-  other_                        := failPlot["badvertexsize", other];
+  Inherited                          := ($inheritedVertexSize ^= True; % @ Automatic);
+  other_                             := failPlot["badvertexsize", other];
 ];
 
 processVertexSizeRule[All -> _] :=
@@ -1651,14 +1806,16 @@ processVertexSizeRule[lhs_ -> rhs_] :=
 
 (**************************************************************************************************)
 
-findEdge[Rule[a_, b_]] := findEdge @ DirectedEdge[a, b];
-findEdge[TwoWayRule[a_, b_]] := findEdge @ UndirectedEdge[a, b];
-findEdge[edge_] := IndexOf[$EdgeList, edge /. GraphOrigin :> findVertex[GraphOrigin], failPlot["noedge", edge]];
+findEdge = MatchValues[
+  spec_ ? GraphRegionElementQ := Last @ processRegionVerticesEdges @ spec;
+  edge_ := IndexOf[$EdgeList, edge /. GraphOrigin :> findVertex[GraphOrigin], failPlot["noedge", edge]];
+];
 
 ExtendedGraphPlot::noedge = "Could not find edge ``."
 
 (**************************************************************************************************)
 
+findVertex[IndexedVertex[i_]] := i;
 findVertex[v_] := Lookup[$VertexIndex, Key @ v, failPlot["novertex", v]];
 findVertex[GraphOrigin] := findVertex @ LookupAnnotation[$Graph, GraphOrigin];
 
@@ -1669,11 +1826,12 @@ ExtendedGraphPlot::novertex = "`` is not a valid vertex."
 ExtendedGraphPlot::badlabelspec = "The label specification `` was not one of the recognized forms."
 
 estimateLabelPadding[graphics_, vertexLabelStyle_] := Scope[
-  text = FirstCase[graphics, Text[t_, ___], $Failed, Infinity];
+  graphics = graphics /. Text[opts___] :> outerText[opts];
+  text = FirstCase[graphics, outerText[t_, ___], $Failed, Infinity];
   If[FailureQ[text], Return @ {{0, 0}, {0, 0}}];
   {w, h} = 1 + cachedRasterizeSize[Text @ First @ text] / 2;
   {x, y} = Part[text, 3];
-  If[!FreeQ[vertexLabelStyle, LabelPosition -> Automatic],
+  N @ If[!FreeQ[vertexLabelStyle, LabelPosition -> Automatic],
     Max[w, h],
     {
       offsetToPadding[x, w],
@@ -1684,6 +1842,7 @@ estimateLabelPadding[graphics_, vertexLabelStyle_] := Scope[
 
 offsetToPadding[o_, s_] := Switch[Sign[o], 1, {s, 0}, 0, {s, s}/2, -1, {0, s}];
 
+cachedRasterizeSize[Null] := {0, 0};
 cachedRasterizeSize[e_] := cachedRasterizeSize[e] = Rasterize[e, "RasterSize"];
 
 PackageExport["LabelPosition"]
@@ -1694,7 +1853,7 @@ generateLabelPrimitives[spec_, names_, coordinates_, parts_, size_, labelStyle_,
   coordinates = Part[coordinates, parts];
   $annotations = annotations;
   $labeledElemSize = size / 2;
-  $spacings = 0;
+  $spacings = 0; $labelZOrder = 0;
   $isVertices = isVertices;
   $labelSizeScale = 1; $labelY = -1; $labelX = 0; $labelBackground = GrayLevel[1.0, 0.6];
   $labelBaseStyle = Inherited;
@@ -1705,7 +1864,7 @@ generateLabelPrimitives[spec_, names_, coordinates_, parts_, size_, labelStyle_,
   {payloadFunction, placerFunction} = processLabelSpec[spec];
   indices = If[parts === All, Range @ Length @ names, parts];
   labelElements = MapThread[placerFunction[labelForm @ payloadFunction @ #2, #1, #2]&, {coordinates, indices}];
-  {labelStyle, labelElements}
+  {Style[labelElements, labelStyle], $labelZOrder}
 ];
 
 toDirectiveOptScan[f_][{Automatic}] :=
@@ -1734,6 +1893,7 @@ setLabelStyleGlobals = MatchValues[
   ,
     %[LabelPosition -> Top]
   ];
+  ZOrder -> z_ := ($labelZOrder ^= z);
   LabelPosition -> Top|Above := $labelY ^= -1;
   LabelPosition -> Bottom|Below := $labelY ^= 1;
   LabelPosition -> Center := $labelX ^= $labelY ^= 0;
@@ -1808,6 +1968,9 @@ placeLabelAt[label_, pos_, index_] /; ($labelX === Automatic) := Scope[
 sumOfSquaredDistances[point_, points_] :=
   Total @ Flatten @ SquaredDistanceMatrix[{point}, points];
 
+placeLabelAt[g_Graphics, pos_, _] :=
+  Inset[g, pos, {Center, Baseline}];
+
 placeLabelAt[label_, pos_, _] := Text[
   $magnifier @ label,
   pos  + If[$GraphIs3D, 0, -$labeledElemSize * {$labelX, $labelY} * (1 + $spacings)],
@@ -1823,7 +1986,7 @@ makeMagnifier[scale_] := Magnify[#, scale]&;
 
 (**************************************************************************************************)
 
-makeGraphics[elements_, imageSize_, imagePadding_, plotRangePadding_, plotLabel_, extraOptions_, prolog_, epilog_] := Graphics[
+makeGraphics[elements_, imageSize_, imagePadding_, plotRangePadding_, plotLabel_, extraOptions_, prolog_, epilog_, baseline_] := Graphics[
   elements,
   Sequence @@ extraOptions,
   Frame -> None, Axes -> None,
@@ -1832,10 +1995,11 @@ makeGraphics[elements_, imageSize_, imagePadding_, plotRangePadding_, plotLabel_
   PlotRangePadding -> plotRangePadding, PlotRangeClipping -> False,
   AspectRatio -> Automatic, PreserveImageOptions -> False,
   If[epilog === None, Sequence @@ {}, Epilog -> epilog],
-  If[prolog === None, Sequence @@ {}, Prolog -> prolog]
+  If[prolog === None, Sequence @@ {}, Prolog -> prolog],
+  BaselinePosition -> baseline
 ];
 
-makeGraphics3D[elements_, imageSize_, imagePadding_, plotRangePadding_, plotLabel_, extraOptions_, prolog_, epilog_] := Graphics3D[
+makeGraphics3D[elements_, imageSize_, imagePadding_, plotRangePadding_, plotLabel_, extraOptions_, prolog_, epilog_, baseline_] := Graphics3D[
   {CapForm[None], elements, Replace[epilog, None -> Nothing], Replace[epilog, None -> Nothing]},
   Sequence @@ extraOptions,
   Axes -> None, Boxed -> False,

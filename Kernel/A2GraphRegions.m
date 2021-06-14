@@ -113,6 +113,8 @@ GraphRegionElementQ[elem$] returns True if elem$ is an expression describing a g
 
 GraphRegionElementQ[_] := False;
 GraphRegionElementQ[GraphOrigin] := True;
+GraphRegionElementQ[IndexedVertex[_Integer]] := True;
+GraphRegionElementQ[IndexedEdge[_Integer]] := True;
 
 (**************************************************************************************************)
 
@@ -133,6 +135,16 @@ Path[src$, 'cards$'] interpreted the characters of 'cards$' as cardinals.
 "
  *)
 
+PackageExport["IndexedVertex"]
+PackageExport["IndexedEdge"]
+
+SetUsage @ "
+IndexedVertex[i$] represents the vertex with index i$.
+"
+
+SetUsage @ "
+IndexedEdge[i$] represents the edge with index i$.
+"
 
 (**************************************************************************************************)
 
@@ -155,7 +167,6 @@ processRegionSpec[region_] := Scope[
   $TagVertexAdjacentEdgeTable := $TagVertexAdjacentEdgeTable = TagVertexAdjacentEdgeTable[$Graph];
   $EdgePairs := $EdgePairs = EdgePairs[$Graph];
   $Cardinals := $Cardinals = CardinalList[$Graph];
-  $GraphOrigin := $GraphOrigin = LookupExtendedGraphAnnotations[$Graph, GraphOrigin];
   Map[outerProcessRegion, ToList @ region]
 ]
 
@@ -243,6 +254,9 @@ processRegion[spec_] := If[MatchQ[Head @ spec, $regionHeads],
   GraphRegionData[{findVertex @ spec}, {}]
 ];
 
+processRegion[IndexedEdge[i_Integer]] /; 1 <= i <= $EdgeCount :=
+  edgeIndicesToPathData @ {i};
+
 (********************************************)
 (** edge pattern                           **)
 
@@ -277,8 +291,14 @@ GraphRegionElementQ[EdgePattern[_, _, _] | EdgePattern[_, _]] := True;
 processRegion[p:EdgePattern[_, _, ___]] :=
   edgeIndicesToPathData @ findEdgeIndices[p]
 
+processRegion[EdgePattern[a:(_IndexedVertex | GraphOrigin), b_, rest__]] :=
+  processRegion @ EdgePattern[Part[$VertexList, findVertex @ a], b, rest];
+
+processRegion[EdgePattern[a_, b:(_IndexedVertex | GraphOrigin), rest___]] :=
+  processRegion @ EdgePattern[a, Part[$VertexList, findVertex @ b], rest];
+
 processRegion[EdgePattern[a_, b_, Negated[c_]]] :=
-  edgeIndicesToPathData @ findEdgeIndices @ Map[Negated, EdgePattern[a, b, c]];
+  edgeIndicesToPathData @ Map[Negated, findEdgeIndices @ EdgePattern[a, b, c]];
 
 findEdgeIndices[p:EdgePattern[a_, b_]] := Scope @ Which[
   NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[a, b, ___]]], i,
@@ -302,12 +322,14 @@ toCardinalPattern = MatchValues[
   s_              := s | CardinalSet[_ ? (MemberQ[s | Negated[s]])];
 ];
 
-edgeIndicesToPathData[indices_] :=
+edgeIndicesToPathData[indices_] := Scope[
+  pureIndices = StripNegated /@ indices;
   GraphPathData[
-    Union @ AllVertices @ Part[$IndexGraphEdgeList, indices],
-    StripNegated /@ indices,
+    Union @ AllVertices @ Part[$IndexGraphEdgeList, pureIndices],
+    pureIndices,
     MatchIndices[indices, _Negated]
   ]
+];
 
 
 (********************************************)
@@ -353,9 +375,11 @@ GraphRegion::invv = "The region ``[...] contained an invalid vertex specificatio
 
 findVertex[GraphOrigin] := findVertex[$GraphOrigin];
 
+findVertex[IndexedVertex[i_Integer]] /; 1 <= i <= $VertexCount := i;
+
 findVertex[RandomPoint] := RandomInteger[{1, $VertexCount}];
 
-findVertex[Offset[v_, path_]] := offsetWalk[findVertex[v], path];
+findVertex[Offset[v_, path_]] := offsetWalk[findVertex @ v, path];
 
 findVertex[spec_] := Lookup[$VertexIndex, Key[spec],
   failAuto["invv", spec]];
@@ -446,8 +470,6 @@ PackageExport["ParseCardinalWord"]
 
 ParseCardinalWord[""] = {};
 
-ParseCardinalWord[path_String] /; StringLength[path] === 1
-
 ParseCardinalWord[path_String] /; StringLength[path] > 1 := Scope[
   chars = Characters[path];
   str = StringReplace[StringRiffle[chars, " "], " '" -> "'"];
@@ -457,6 +479,7 @@ ParseCardinalWord[path_String] /; StringLength[path] > 1 := Scope[
   ] // checkCardinals
 ];
 
+parseCard[Negated[s_]] := Negated @ parseCard[s];
 parseCard[s_String] := If[UpperCaseQ[s], Negated @ ToLowerCase @ s, s];
 
 ParseCardinalWord[elem_] := checkCardinals @ List @ parseCard @ elem;
@@ -507,8 +530,8 @@ failWalk[cardinal_, vertexId_] := Scope[
 
 (********************************************)
 
-offsetWalk[start_, path_] := Scope[
-  cardList = ParseCardinalWord[path];
+offsetWalk[startId_, path_] := Scope[
+  pathWord = ParseCardinalWord @ path;
   doWalk[startId, None, pathWord, False, Null&]
 ];
 
@@ -522,6 +545,9 @@ processRegion[Line[{vertex_}]] :=
 
 processRegion[Line[vertices_]] :=
   collectPathData @ MapStaggered[findAndSowGeodesic, findVertices @ vertices]
+
+processRegion[Line[vertices_, None]] :=
+  processRegion @ Line @ vertices;
 
 processRegion[Line[{start_, stop_}, c_]] :=
   collectPathData @ sowPath[start, c, True, stop];

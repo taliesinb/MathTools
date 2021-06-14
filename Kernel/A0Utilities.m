@@ -535,7 +535,7 @@ Negated[Negated[e_]] := e;
 Negated /: DirectedEdge[a_, b_, Negated[c_]] := DirectedEdge[b, a, c];
 
 declareBoxFormatting[
-  Negated[e_] :> NegatedBoxForm[e]
+  Negated[e_] :> UnderNegatedBoxForm[e]
 ];
 
 (**************************************************************************************************)
@@ -617,7 +617,7 @@ ReplaceOptions[g_Graph, rule_Rule | rule_List] :=
   Graph[g, rule];
 
 ReplaceOptions[obj_, key_ -> value_] := If[
-  ContainsQ[obj, key -> _],
+  MemberQ[obj, key -> _],
   Replace[obj, Rule[key, _] :> Rule[key, value], {1}],
   Append[obj, key -> value]
 ];
@@ -632,7 +632,7 @@ ReplaceOptions[rules_][obj_] := ReplaceOptions[obj, rules];
 PackageExport["UpdateOptions"]
 
 UpdateOptions[obj_, option_, func_] :=
-  ReplaceOptions[obj, option -> func[LookupOption[obj, option]]]
+  ReplaceOptions[obj, option -> func[LookupOption[obj, option]]];
 
 
 General::noobjprop = "There is no property named \"``\". Valid properties include: ``.";

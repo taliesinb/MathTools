@@ -24,6 +24,19 @@ SetColorOpacity[expr_, None] :=
 SetColorOpacity[expr_, opacity_] :=
   expr /. $setColorOpacityRules /. ($opacity -> opacity)
 
+SetColorOpacity[opacity_][expr_] :=
+  SetColorOpacity[expr, opacity];
+
+(**************************************************************************************************)
+
+PackageExport["SetColorLightness"]
+
+SetColorLightness[expr_, lightness_] :=
+  expr /. c:$ColorPattern :> RuleCondition @ OklabSetLightness[c, lightness];
+
+SetColorLightness[lightness_][expr_] :=
+  SetColorLightness[expr, lightness];
+
 (**************************************************************************************************)
 
 PackageExport["RemoveColorOpacity"]
@@ -165,12 +178,21 @@ OklabLightness[color_] := Scope[
 
 PackageExport["OklabSetLightness"]
 
+(* TODO: do this properly inside ToOklab *)
+OklabSetLightness[color:$opacityColorsPattern, lightness_] :=
+  SetColorOpacity[
+    OklabSetLightness[RemoveColorOpacity @ color, lightness],
+    ExtractFirstOpacity @ color
+  ];
+
+OklabSetLightness[Opacity[o_, color_], lightness_] :=
+  Opacity[o, OklabSetLightness[color, lightness]];
+
 OklabSetLightness[color_, lightness_] := Scope[
   ok = ToOklab[color];
   If[MatrixQ[ok], ok[[All, 1]] = lightess, ok[[1]] = lightness];
   FromOklab[ok]
 ]
-
 
 PackageExport["OklabDarker"]
 PackageExport["OklabLighter"]

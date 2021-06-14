@@ -264,14 +264,17 @@ declareSyntaxInfo[CustomRepresentation, {_, _., _.}];
 CustomRepresentation::notmat = "First argument should be a list of matrices."
 CustomRepresentation::badrepmat = "Matrices have inconsistent dimensions: ``."
 
-CustomRepresentation[matrices_, group_:None] := Scope[
+CustomRepresentation[matrices_, group_:None, mod_:None] := Scope[
   If[!VectorQ[matrices, MatrixQ], ReturnFailed["notmat"]];
   matrices = ToPacked /@ Normal /@ matrices;
   dims = Dimensions[matrices];
   If[!MatchQ[dims, {_, _, _}], ReturnFailed["badintcode", Dimensions /@ matrices]];
   dim = Part[dims, 2];
-  generators = RepresentationElement /@ matrices;
-  order = If[group === None, Infinity, GroupOrder[group]];
+  generators = If[mod === None,
+    RepresentationElement /@ matrices,
+    RepresentationElement[#, mod]& /@ matrices
+  ];
+  order = If[group === None, Infinity, GroupOrder @ group];
   repData = <|
     "Group" -> group,
     "GroupOrder" -> order,

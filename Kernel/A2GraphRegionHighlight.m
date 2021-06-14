@@ -3,7 +3,8 @@ PackageExport["HighlightGraphRegion"]
 SetUsage @ "
 HighlightGraphRegion[graph$, highlights$] highlights regions of graph$ according to highlights$.
 * HighlightGraphRegion returns a %Graph in which the option %GraphRegionHighlight has been set to \
-highlights$. Any pre-existing highlights are preserved.
+highlights$.
+* Any existing highlights are preserved.
 <*$GraphRegionHighlightUsage*>
 "
 
@@ -229,7 +230,8 @@ processGeneralSpec = MatchValues[
     Message[GraphRegionHighlight::badelem, Shallow[other]];
 ];
 
-validVertexQ[v_] := !FailureQ[findVertexIndex @ v];
+(* Offset needs processRegionSpec to be resolved, which is not available yet, so assume it's correct *)
+validVertexQ[v_] := If[ContainsQ[v, Offset], True, !FailureQ[findVertexIndex @ v]];
 
 (**************************************************************************************************)
 
@@ -330,7 +332,10 @@ iProcessStyleSpec = MatchValues[
     % @ Style @ most
   ];
   Style[most__, "FadeGraph"] := (
-    $GraphPlotGraphics ^= ReplaceAll[$GraphPlotGraphics, {t_Text :> t, _Opacity -> Opacity[1], $ColorPattern -> LightGray}];
+    $GraphPlotGraphics ^= ReplaceAll[$GraphPlotGraphics,
+      {t_Text :> t, a:Annotation[_, "FrameLabel" | "FadeProtected"] :> a,
+       _Opacity -> Opacity[1], $ColorPattern -> LightGray}
+    ];
     % @ Style[most];
   );
   Style[most__, "Background"] := % @ Style[most, Opaque, ZOrder -> -10];
@@ -427,6 +432,7 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
   darkerStyle = If[$highlightOpacity == 1, darkerColor, Nothing];
   guessVertexSize = FirstCase[$GraphPlotGraphics, PointSize[sz_] :> 1.2 * sz * $graphPlotWidth, 0, Infinity];
   setbackDistance = If[lastIsModified || !doArrow || Max[$arrowheadPosition] != 1, 0, Max[$edgeSetback * thicknessRange/2, guessVertexSize]];
+  If[$edgeSetback == 0, setbackDistance = 0];
   pathPrimitives = If[$GraphIs3D,
     Tube[segments, thicknessRange / 3]
   ,
@@ -464,7 +470,7 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
           adjustments === {}, newArrows,
           True, Style[Arrow @ segments, arrowheads, CapForm @ "Round"]
         ];
-        pathPrimitives = {newVertices, newEdges};
+        pathPrimitives = {newEdges, newVertices};
         replaceWithColor[pathPrimitives, $highlightStyle]
       ,
       _,
@@ -489,7 +495,11 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
 ];
 
 replaceWithColor[g_, c_] :=
-  ReplaceAll[g, {t_Text :> t, $ColorPattern -> c}];
+  ReplaceAll[g, {
+    t_Text :> t,
+    z_Graphics :> SetFrameColor[z, c],
+    $ColorPattern -> c
+  }];
 
 (* we simply delete matching edges, because we will redraw them possibly with adjustments *)
 removeHighlightedPathEdges[{old_, new_}] := (

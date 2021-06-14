@@ -568,6 +568,26 @@ SpacedRow[elems__Rule] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["SpacedArrow"]
+
+SpacedArrow[a_, b_] :=
+  SpacedRow[a, $smallNotationArrow, b];
+
+makeNotationArrow[x_, w_, h_, ratio_, thickness_, style___, opts___Rule] := Scope[
+  line = Line[{{-x, 0}, Offset[{-thickness, 0}, {0,0}]}];
+  head = Line[{{-1, -1 * ratio}, {0, 0}, {-1, 1 * ratio}}];
+  Graphics[{
+    CapForm["Round"], JoinForm["Round"], AbsoluteThickness[thickness], $DarkGray,
+    style, line, head},
+    opts,
+    ImageSize -> {w, h}
+  ]
+];
+
+$smallNotationArrow = makeNotationArrow[10, 50,20,1,3];
+
+(**************************************************************************************************)
+
 PackageExport["Gallery"]
 
 Options[Gallery] = {
