@@ -41,6 +41,9 @@ Quiver::nakededge = "The edge `` is not labeled with a cardinal.";
 processEdge[edge:(_Rule | _TwoWayRule | DirectedEdge[_, _] | UndirectedEdge[_, _]), None] :=
   (Message[Quiver::nakededge, edge]; $Failed);
 
+processEdge[Labeled[edges:{__Rule}, labels_List], _] /; Length[edges] === Length[labels] :=
+  MapThread[DirectedEdge[#1, #2, #3]&, {Keys @ edges, Values @ edges, SimplifyCardinalSet /@ labels}];
+
 processEdge[Labeled[edges_, label_], _] :=
   processEdge[edges, label];
 
@@ -164,7 +167,7 @@ QuiverQ[g_] := EdgeTaggedGraphQ[g] && validCardinalEdgesQ[EdgeList[g]];
 
 validCardinalEdgesQ[edges_] := And[
   MatchQ[edges, {DirectedEdge[_, _, _]..}],
-  AllTrue[GroupBy[edges, Last], checkForDuplicateCardinals]
+  AllTrue[GroupBy[edges // SpliceCardinalSetEdges, Last], checkForDuplicateCardinals]
 ];
 
 checkForDuplicateCardinals[edges_] :=

@@ -250,12 +250,15 @@ applyViewRegion[regionSpec_] := (
 )
 
 $rangeMicroPadding = 1*^-12;
-computeCoordinateBounds[] :=
+computeCoordinateBounds[] := Scope[
+  plotRange = LookupOption[$Graph, PlotRange];
+  If[MatrixQ[plotRange, NumericQ], Return @ plotRange];
   CoordinateBounds[{
     Part[$VertexCoordinates, $VertexParts],
     Replace[Part[$EdgeCoordinateLists, $EdgeParts], {} -> Nothing]},
     $rangeMicroPadding
-  ];
+  ]
+];
 
 (**************************************************************************************************)
 
@@ -715,12 +718,18 @@ processBaselinePosition = MatchValues[
   Center  := % @ Scaled[0.5, "Interior"];
   Bottom  := % @ Scaled[0.0, "Interior"];
   Top     := % @ Scaled[1.0, "Interior"];
+  "Coordinate" -> (yPos_ ? NumericQ) := Scope[
+    yOffset = Part[$GraphPlotRange, 2, 1];
+    s = (yPos - yOffset) / $GraphPlotSizeY;
+    % @ Scaled[s, "Interior"]
+  ];
   Scaled[s_ ? NumericQ, "Interior"] := Scope[
     padOffset = Part[imagePadding, 2, 1];
     interiorImageHeight = Last @ interiorImageSize;
     imageHeight = Last @ imageSize;
-    Scaled[((s * interiorImageHeight) + padOffset) / imageHeight]
+    Scaled[Clip[((s * interiorImageHeight) + padOffset) / imageHeight, {0, 1}]]
   ];
+  s:Scaled[_ ? NumericQ] := s;
   vertex_ := Scope[
     index = getVertexIndex @ vertex;
     yPos = Part[$VertexCoordinates, index, 2];
@@ -971,6 +980,7 @@ drawTagGroupArrowheadEdges[indices_, style_] := Scope[
 
 drawArrowheadEdges[_, {}] := Nothing;
 
+undirectedCardinalQ[CardinalSet[{}]] := True;
 undirectedCardinalQ[cardinal_] := Or[
   lookupTagSpec[arrowheadShape, cardinal] === None,
   zeroQ @ lookupTagSpec[arrowheadSize, cardinal]
@@ -1039,7 +1049,7 @@ PackageExport["PairedDistance"]
 
 scanArrowheadShapeOpts = MatchValues[
   TwoWayStyle -> s:("Out"|"In"|"OutClose"|"InClose") := $twoWayStyle ^= arrowheadShape <> "Double" <> s;
-  TwoWayStyle -> s:("Square"|"Ball"|"Disk"|"Diamond"|None) := $twoWayStyle ^= s;
+  TwoWayStyle -> s:("Square"|"Ball"|"Disk"|"Diamond"|"CrossLine"|"CrossBar"|None) := $twoWayStyle ^= s;
   EdgeThickness -> thickness_ := $lineThickness ^=  Replace[
     NormalizeThickness @ thickness,
     $Failed :> failPlot["badthickness", thickness]
@@ -1337,6 +1347,12 @@ $arrowheads2D = Association[
       {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
       ToPacked @ {{{-0.45, 0.}, {0., -0.25}, {0.45, 0.}, {0., 0.25}}}
     ],
+
+  "CrossLine" ->
+    Line @ ToPacked @ {{0., -0.3}, {0., 0.3}},
+  "CrossBar" ->
+    ToPacked /@ Rectangle[{-0.05,-0.2}, {0.05,0.2}],
+
   "RightPairedDisk" ->
     Disk[{$pairDist - $nudge, 0.}, .2, {-Pi/2, Pi/2}],
   "RightPairedDiskOffset" ->
@@ -1395,7 +1411,7 @@ $namedArrowheads = Union[
 makeArrowheadShape["Sphere", style_] :=
   makeArrowheadGraphic3D[$arrowheads3D @ name, abs3DColor @ style];
 
-makeArrowheadShape[name_String, style_] /; StringStartsQ[name, {"Line", "DoubleLine"}] :=
+makeArrowheadShape[name_String, style_] /; StringStartsQ[name, {"Line", "DoubleLine", "CrossLine"}] :=
   makeArrowheadGraphic2D[
     $arrowheads2D @ name,
     Directive[style, $lineThickness]
@@ -1856,7 +1872,7 @@ generateLabelPrimitives[spec_, names_, coordinates_, parts_, size_, labelStyle_,
   $spacings = 0; $labelZOrder = 0;
   $isVertices = isVertices;
   $labelSizeScale = 1; $labelY = -1; $labelX = 0; $labelBackground = GrayLevel[1.0, 0.6];
-  $labelBaseStyle = Inherited;
+  $labelBaseStyle = Inherited; $labelOffset = None;
   $adjacencyIndex = None;
   labelStyle //= toDirectiveOptScan[setLabelStyleGlobals];
   labelStyle //= DeleteCases[sspec:$sizePattern /; ($labelSizeScale = toNumericSizeScale @ sspec; True)];
@@ -1900,6 +1916,11 @@ setLabelStyleGlobals = MatchValues[
   LabelPosition -> {x_ ? NumericQ, y_ ? NumericQ} := ($labelX ^= N[x]; $labelY ^= N[y]);
   LabelPosition -> Left := $labelX ^= 1;
   LabelPosition -> Right := $labelX ^= -1;
+  LabelPosition -> Offset[{x_ ? NumericQ, y_ ? NumericQ}] := (
+    $labelOffset ^= {x, y};
+    $labelX ^= Switch[Sign @ x, -1, 1, 0, 0, 1, -1];
+    $labelY ^= Switch[Sign @ y, -1, 1, 0, 0, 1, -1];
+  );
   Spacings -> n_ := $spacings ^= N[n];
   rule_ := failPlot["badsubopt", rule, commaString @ {ItemSize, BaseStyle, Background, LabelPosition, Spacings}];
 ];
@@ -1922,7 +1943,7 @@ toPayloadFunction = MatchValues[
   "Name" :=               getName;
   "Index" :=              getIndex;
   "Tag" | "Cardinal" :=   getCardinal;
-  assoc_Association :=    getName /* assoc;
+  assoc_Association :=    lookupPayloadInAssoc[assoc];
   key_ := If[MemberQ[$annotationKeys, key],
     getAnnotation[key],
     failPlot["badgraphannokey", key, commaString @ $annotationKeys]
@@ -1947,6 +1968,9 @@ labelForm[matrix_ ? RealMatrixQ] :=
   myCompactMatrixForm @ matrix;
 
 labelForm[e_] := e;
+
+lookupPayloadInAssoc[assoc_][i_] :=
+  Lookup[assoc, IndexedVertex[i], Lookup[assoc, getName @ i]];
 
 getIndex[i_] := i;
 getName[i_] := Part[$labelNames, i];
@@ -1973,13 +1997,17 @@ placeLabelAt[g_Graphics, pos_, _] :=
 
 placeLabelAt[label_, pos_, _] := Text[
   $magnifier @ label,
-  pos  + If[$GraphIs3D, 0, -$labeledElemSize * {$labelX, $labelY} * (1 + $spacings)],
+  If[$labelOffset === None,
+    pos + If[$GraphIs3D, 0, -$labeledElemSize * {$labelX, $labelY} * (1 + $spacings)]
+  ,
+    Offset[$labelOffset, pos]
+  ],
   {$labelX, $labelY} * 0.95,
   Background -> $labelBackground,
   BaseStyle -> $labelBaseStyle
 ];
 
-placeLabelAt[None | _Missing, _] := Nothing;
+placeLabelAt[None | _Missing, _, _] := Nothing;
 
 makeMagnifier[1|1.0] := Identity;
 makeMagnifier[scale_] := Magnify[#, scale]&;
@@ -2038,10 +2066,13 @@ GraphEmbeddingGallery[g_Graph] := Table[Graph[g, GraphLayout -> layout, PlotLabe
 PackageExport["ShowLabels"]
 PackageExport["VertexLabelForm"]
 PackageExport["VertexTooltipForm"]
+PackageExport["EdgeLabelForm"]
 
 ShowLabels[e_] := VertexLabelForm[e];
 VertexLabelForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, VertexLabels -> "Name", ImagePadding -> 20];
 VertexTooltipForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, VertexLabels -> Placed["Name", Tooltip]];
+
+EdgeLabelForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, EdgeLabels -> "Index", ImagePadding -> 20];
 
 (**************************************************************************************************)
 

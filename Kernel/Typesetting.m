@@ -538,53 +538,88 @@ MapSpacedRow[f_, list_List, args___, OptionsPattern[]] := Scope[
 
 PackageExport["SpacedRow"]
 
-$srspacings = 20;
-SpacedRow[elems__, Spacings -> n_] := Block[{$srspacings = n},
+$srSpacings = 20;
+$srMaxItems = Infinity;
+$srMaxWidth = Infinity;
+$srLabelStyle = $LegendLabelStyle;
+
+SpacedRow[elems__, "MaxWidth" -> n_] := Block[{$srMaxWidth = n},
   SpacedRow[elems]
 ];
 
-$srlabelstyle = $LegendLabelStyle;
-SpacedRow[elems__, LabelStyle -> style_] := Block[{$srlabelstyle = style},
+SpacedRow[elems__, MaxItems -> n_] := Block[{$srMaxItems = n},
+  SpacedRow[elems]
+];
+
+SpacedRow[elems__, Spacings -> n_] := Block[{$srSpacings = n},
+  SpacedRow[elems]
+];
+
+SpacedRow[elems__, LabelStyle -> style_] := Block[{$srLabelStyle = style},
   SpacedRow[elems]
 ];
 
 SpacedRow[{rules__Rule}, opts___] := SpacedRow[rules, opts];
 
-SpacedRow[elems__] :=
-  Row[DeleteCases[Null] @ Flatten @ List @ elems, Spacer[$srspacings]];
+SpacedRow[elems__] := Scope[
+  items = DeleteCases[Null] @ Flatten @ List @ elems;
+  If[Length[items] > $srMaxWidth,
+    Grid[
+      Partition[items, UpTo[$srMaxWidth]],
+      Alignment -> {Center, Center}, Spacings -> {$srSpacings/10, {0.1}}
+    ],
+    Row[items, Spacer[$srSpacings]]
+  ]
+];
 
 SpacedRow[labels_List -> elems_List] := SpacedRow @@ MapThread[Rule, {labels, elems}];
 
 SpacedRow[labeled:{__Labeled}] := Scope[
   items = Part[labeled, All, 1];
   labels = Part[labeled, All, 2];
-  Grid[{items, labels}, Alignment -> {Center, Center}, Spacings -> {$srspacings/10, {0}}]
+  Grid[{items, labels}, Alignment -> {Center, Center}, Spacings -> {$srSpacings/10, {0}}]
 ];
 
 SpacedRow[elems__Rule] := Scope[
   {labels, items} = KeysValues @ DeleteCases[Null] @ Flatten @ List @ elems;
-  Grid[{items, Style[#, $srlabelstyle]& /@ labels}, Alignment -> {Center, {Center, Top}}, Spacings -> {$srspacings/10, {0}}]
+  Grid[{items, Style[#, $srLabelStyle]& /@ labels}, Alignment -> {Center, {Center, Top}}, Spacings -> {$srSpacings/10, {0}}]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["$LargeEllipsis"]
+
+$LargeEllipsis = Style["\[Ellipsis]", $LegendLabelStyle, Gray, 18]
+
+(**************************************************************************************************)
+
+PackageExport["MakeArrow"]
+
+MakeArrow[w_:50, h_:15, thickness_:1, style_:Black] =
+  makeNotationArrow[w, h, thickness, style];
 
 (**************************************************************************************************)
 
 PackageExport["SpacedArrow"]
 
-SpacedArrow[a_, b_] :=
-  SpacedRow[a, $smallNotationArrow, b];
+SpacedArrow[a_, b_, rest___] :=
+  SpacedRow[a, $smallNotationArrow, b, rest];
 
-makeNotationArrow[x_, w_, h_, ratio_, thickness_, style___, opts___Rule] := Scope[
-  line = Line[{{-x, 0}, Offset[{-thickness, 0}, {0,0}]}];
-  head = Line[{{-1, -1 * ratio}, {0, 0}, {-1, 1 * ratio}}];
+makeNotationArrow[w_, h_, thickness_, style___, opts___Rule] := Scope[
+  h2 = h/2;
+  line = Line[{{-w, 0}, Offset[{-thickness, 0}, {0,0}]}];
+  head = Line[{{-h2, -h2}, {0, 0}, {-h2, h2}}];
   Graphics[{
     CapForm["Round"], JoinForm["Round"], AbsoluteThickness[thickness], $DarkGray,
     style, line, head},
     opts,
-    ImageSize -> {w, h}
+    ImageSize -> {w + 2, h + 2}, PlotRangePadding -> 0, ImagePadding -> {{1, 1}, {1, 1}},
+    BaselinePosition -> Center
   ]
 ];
 
-$smallNotationArrow = makeNotationArrow[10, 50,20,1,3];
+$smallNotationArrow = makeNotationArrow[50, 20, 1];
+$smallNotationArrow = MakeArrow[30,10, 1.1, $LightGray];
 
 (**************************************************************************************************)
 

@@ -362,6 +362,14 @@ RestColumns[matrix_] := Part[matrix, All, 2 ;; All];
 PackageExport["PrependColumn"]
 
 PrependColumn[matrix_, column_] := Transpose @ Prepend[Transpose @ matrix, column];
+PrependColumn[column_][matrix_] := PrependColumn[matrix, column];
+
+(**************************************************************************************************)
+
+PackageExport["AppendColumn"]
+
+AppendColumn[matrix_, column_] := Transpose @ Append[Transpose @ matrix, column];
+AppendColumn[column_][matrix_] := AppendColumn[matrix, column];
 
 (**************************************************************************************************)
 
@@ -501,6 +509,10 @@ SetUsage @ "
 AtLeast[n$] is a symbolic expression indicating that at least n$ values should be obtained.
 "
 
+declareFormatting[
+  AtLeast[n_] :> Row[{">", n}]
+];
+
 (**************************************************************************************************)
 
 PackageExport["ToInverseFunction"]
@@ -637,6 +649,12 @@ UpdateOptions[obj_, option_, func_] :=
 
 General::noobjprop = "There is no property named \"``\". Valid properties include: ``.";
 General::noobjoptprop = "There is no property named \"``\" that accepts options. Such properties include: ``.";
+
+(**************************************************************************************************)
+
+PackageExport["DeleteNull"]
+
+DeleteNull[e_] := DeleteCases[e, Null];
 
 (**************************************************************************************************)
 

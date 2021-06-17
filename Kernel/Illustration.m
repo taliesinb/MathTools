@@ -184,7 +184,7 @@ PackageExport["FadePathPlot"]
 
 FadePathPlot[g_, v1_, v2_, dir_, c_:None, c2_:None] := Scope[
   mainPath = Line[{v1, v2}, dir];
-  transportPath = If[c =!= None, Line @ {Offset[v2, Negated @ c], Offset[v2, c]}, Nothing];
+  transportPath = If[c =!= None, Line @ {Offset[v2, Negated @ c], Offset[v2, c]}, {}];
   mainPathVertices = GraphRegion[g, mainPath];
   HighlightGraphRegion[g,
     {Style[transportPath, $Gray, PathStyle -> "DiskArrow", EdgeSetback -> 0, ArrowheadSize -> 3], mainPath},
@@ -204,21 +204,50 @@ FadePathPlot[g_, v1_, v2_, dir_, c_List] := Scope[
   mainPath = Line[{v1, v2}, dir];
   cLast = Last @ c;
   If[ListQ[cLast], cLast //= First];
+  If[RuleQ[cLast], cLast //= First];
   transportPath = Line @ {Offset[v2, Negated @ cLast], Offset[v2, cLast]};
   mainPathVertices = Part[GraphRegion[g, mainPath], 1, 1];
   If[Length[c] =!= Length[mainPathVertices], ReturnFailed[]];
-  epilog = MapThread[
-    {vertex, card} |-> GraphicsValue[
-      c = If[ListQ[card], Alternatives @@ card, card];
-      {"CardinalPrimitives", toCardinalEdgePattern[vertex, c], c}
-    ],
-    {mainPathVertices, c}
-  ];
+  epilog = MapThread[toFPPEpilogElement, {mainPathVertices, c}];
   HighlightGraphRegion[g,
     {Style[transportPath, $Gray, PathStyle -> "DiskArrow", EdgeSetback -> 0, ArrowheadSize -> 3], mainPath},
     {"Replace", "FadeGraph", $Teal, PathRadius -> 2},
     GraphLegend -> None, VertexSize -> {v1 -> 8},
     Epilog -> FadeProtected[epilog]
+  ]
+];
+
+toFPPEpilogElement[vertex_, None] := Nothing;
+
+toFPPEpilogElement[vertex_, card_] :=
+  toFPPEpilogElement[vertex, card -> "Identity"];
+
+toFPPEpilogElement[vertex_, card_ -> transform_String] := GraphicsValue[
+  {"CardinalPrimitives", toCardinalEdgePattern[vertex, card], card},
+  TransformArrowheads[transform]
+];
+
+toFPPEpilogElement[vertex_, cards_List] :=
+  Map[toFPPEpilogElement[vertex, #]&, cards];
+
+FadePathPlot[g_, v1_, v2_, dir_, "Labels" -> c_List] := Scope[
+  mainPath = Line[{v1, v2}, dir];
+  cLast = Last @ c;
+  If[ListQ[cLast], cLast //= First];
+  If[RuleQ[cLast], cLast //= First];
+  transportPath = Line @ {Offset[v2, Negated @ cLast], Offset[v2, cLast]};
+  mainPathVertices = Part[GraphRegion[g, mainPath], 1, 1];
+  If[Length[c] =!= Length[mainPathVertices], ReturnFailed[]];
+  colors = LookupCardinalColors @ g;
+  c = ReplaceAll[c, s_String /; KeyExistsQ[colors, s] :> Style[s, Italic, colors @ s]];
+  color = colors @ StripNegated @ cLast;
+  c = MapAt[Row[{"      ", #}]&, c, -1];
+  HighlightGraphRegion[g,
+    {Style[transportPath, color, PathStyle -> "DiskArrow", EdgeSetback -> 0, ArrowheadSize -> 3], mainPath},
+    {"Replace", "FadeGraph", $Teal, PathRadius -> 2},
+    GraphLegend -> None, VertexSize -> {v1 -> 8},
+    VertexLabels -> AssociationThread[IndexedVertex /@ mainPathVertices, c],
+    VertexLabelStyle -> {LabelPosition -> Offset[{0, 3}], BaseStyle -> {FontColor -> $Gray, FontWeight -> Bold}}
   ]
 ];
 
@@ -388,7 +417,7 @@ FQPVertexIcon[opts_][path_] := Scope[
   hasPathLabel = !MatchQ[path, Path[_, {}, ___]];
   highlighted = HighlightGraphRegion[
     $fq, path, {$Teal, PathRadius->2, PathStyle -> "DiskArrow", EdgeSetback -> $setback, "Foreground"}, Sequence @@ opts,
-    ImagePadding -> {10, 10},
+    ImagePadding -> {10, 10}, VertexLabels -> None,
     Frame -> True, FrameStyle -> {LightGray, Thin},
     GraphLegend -> None, ImageSize -> "ShortestEdge" -> 25, ArrowheadShape -> None, VertexSize -> Small,
     FrameLabel -> {

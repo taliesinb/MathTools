@@ -497,7 +497,7 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
 replaceWithColor[g_, c_] :=
   ReplaceAll[g, {
     t_Text :> t,
-    z_Graphics :> SetFrameColor[z, c],
+    Inset[z_Graphics, args__] :> Inset[SetFrameColor[z, c], args],
     $ColorPattern -> c
   }];
 

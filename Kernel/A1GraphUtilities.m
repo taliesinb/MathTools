@@ -540,11 +540,32 @@ ToIndexGraph[graph_] := IndexGraph @ graph;
 
 (**************************************************************************************************)
 
+PackageExport["ExpandCardinalSetEdges"]
+
+SetUsage @ "
+ExpandCardinalSetEdges[graph$] expands any edges tagged with CardinalSet into multiple edges with \
+one cardinal each.
+* CombineMultiedges is the inverse of ExpandCardinalSetEdges.
+"
+
+ExpandCardinalSetEdges[graph_] := Scope[
+  If[FreeQ[EdgeTags[graph], CardinalSet], Return @ graph];
+  opts = Options[graph];
+  Graph[
+    VertexList @ graph,
+    SpliceCardinalSetEdges @ EdgeList @ graph,
+    opts
+  ]
+];
+
+(**************************************************************************************************)
+
 PackageExport["CombineMultiedges"]
 
 SetUsage @ "
-CombineMultiedges[graph$] combines edges that share the same endpoints into
+CombineMultiedges[graph$] combines edges that share the same endpoints into \
 single edges, combining any cardinals they have.
+* ExpandCardinalSetEdges is the inverse of CombineMultiedges.
 "
 
 CombineMultiedges[graph_] := Scope[
@@ -587,13 +608,21 @@ PackageExport["SimplifyCardinalSet"]
 
 SimplifyCardinalSet = MatchValues[
   CardinalSet[{a_}] := % @ a;
-  CardinalSet[{l___, CardinalSet[{m__}], r___}] := % @ CardinalSet[{l, m, r}];
+  CardinalSet[{l___, CardinalSet[{m___}], r___}] := % @ CardinalSet[{l, m, r}];
   other_ := other;
 ];
+
+(**************************************************************************************************)
 
 PackageScope["SpliceCardinalSets"]
 
 SpliceCardinalSets[e_] := ReplaceAll[ReplaceAll[e, CardinalSet -> Splice], Negated[z_] :> z];
+
+(**************************************************************************************************)
+
+PackageScope["SpliceCardinalSetEdges"]
+
+SpliceCardinalSetEdges[e_] := ReplaceAll[e, DirectedEdge[a_, b_, CardinalSet[s_]] :> Splice[DirectedEdge[a, b, #]& /@ s]];
 
 (**************************************************************************************************)
 

@@ -1,5 +1,7 @@
 Begin["GraphToolsPackageLoader`Private`"];
 
+Get["GeneralUtilities`"];
+
 (*************************************************************************************************)
 
 (* we will immediately resolve these system symbols, which will take care of the vast majority of Package`PackageSymbol cases *)
@@ -283,12 +285,12 @@ handleMessage[f_Failure] := Scope[
 
 (*************************************************************************************************)
 
-$directory = DirectoryName[$InputFileName];
+GraphToolsPackageLoader`$Directory = DirectoryName[$InputFileName];
 
 $lastLoadSuccessful = False;
 
 GraphToolsPackageLoader`Read[] :=
-  GraphToolsPackageLoader`ReadPackages["GraphTools`", $directory];
+  GraphToolsPackageLoader`ReadPackages["GraphTools`", GraphToolsPackageLoader`$Directory];
 
 GraphToolsPackageLoader`Load[] := Scope[
   packages = GraphToolsPackageLoader`Read[];

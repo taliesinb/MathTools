@@ -842,13 +842,14 @@ PackageExport["TransformArrowheads"]
 $arrowheadTransforms = <|
   "Reverse" -> reverseArrowhead,
   "OverBar" -> addNegationBar[True],
-  "UnderBar" -> addNegationBar[False]
+  "UnderBar" -> addNegationBar[False],
+  "Identity" -> Identity
 |>;
 
 TransformArrowheads[primitives_, transform_String] := Scope[
   func = Lookup[$arrowheadTransforms, transform];
   ReplaceAll[primitives,
-    g:{_, _, _Graphics} :> RuleCondition @ func @ g
+    g:{_, _, Graphics[Except[{}], ___]} :> RuleCondition @ func @ g
   ]
 ];
 
