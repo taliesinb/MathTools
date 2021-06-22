@@ -40,6 +40,7 @@ $extendedGraphUsage = StringTrim @ "
 | %VertexAnnotations | None | association of additional per-vertex data |
 | %GraphMetric | Automatic | metric to calculate graph distances |
 | %CardinalColors | Automatic | association of cardinal colors |
+| %VisibleCardinals | All | which cardinals to draw |
 | %ViewOptions | Automatic | how to project 3D coordinates |
 | %AdditionalImagePadding | None | additional padding to include unconditionally |
 | %ViewRegion | All | region of graph to plot |
@@ -63,6 +64,9 @@ $extendedGraphUsage = StringTrim @ "
 | 'Cone' | thin cone (3D) |
 | 'Sphere' | sphere (3D) |
 | 'Cardinal' | no arrowhead, use cardinal label |
+| 'CrossLine' | a horizontal line |
+| 'CrossBar' | a thick horizontal line |
+| 'Tube' | a tube |
 | None | no arrowheads |
 The following settings will pair up cardinals in %CardinalSet[$$]:
 | 'PairedDisk' | two half-disks |
@@ -241,12 +245,15 @@ and lists of values.
 ## Misc
 
 * %CoordinateTransformFunction can be a function, which will be applied to each coordinates, or one of:
+| {'Rotate', n$} | rotate by n$ degrees |
 | 'Rotate90' | rotate 90\[Degree] |
 | 'Rotate180' | rotate 180\[Degree] |
 | 'Rotate270' | rotate 270\[Degree] |
 | 'ReflectHorizontal' | reflect horizontally |
 | 'ReflectVertical' | reflect vertically |
 | 'BendVertical' | bend vertical edges for layered digraphs |
+| {'Snap', n$} | snap vertices to n$ \[Times] n$ grid |
+| 'PolarProjection' | spherical polar projection |
 
 * %Padding, whether in %ImagePadding or %AdditionImagePadding, can be specified in these forms:
 | None | no padding |
@@ -281,6 +288,7 @@ $extendedGraphOptionsRules = {
   GraphOrigin -> None,
   Cardinals -> Automatic,
   CardinalColors -> Automatic,
+  VisibleCardinals -> All,
   ViewOptions -> Automatic,
   LabelCardinals -> False,
   CoordinateTransformFunction -> None,
@@ -568,7 +576,9 @@ single edges, combining any cardinals they have.
 * ExpandCardinalSetEdges is the inverse of CombineMultiedges.
 "
 
-CombineMultiedges[graph_] := Scope[
+CombineMultiedges[graph_Graph] := iCombineMultiedges[graph];
+
+iCombineMultiedges[graph_] := Scope[
   If[EdgeCount[graph] === 0, Return @ graph];
   {vertices, edges} = VertexEdgeList[graph];
   {edges, tags} = Transpose @ Map[separateTag, edges];
@@ -785,18 +795,32 @@ VertexAdjacentEdgeTable[graph_] := Scope[
 
 PackageExport["TagIndices"]
 
+SetUsage @ "
+TagIndices[graph$] returns an association from cardinals to the indices of edges on which they are present.
+"
+
 TagIndices[graph_] := Scope[
   $tagAssoc = <||>;
   ScanIndexed[processTagEntry, EdgeTags @ graph];
   $tagAssoc
 ];
 
-processTagEntry[tag_, {part_}] := KeyAppendTo[$tagAssoc, tag, part];
-processTagEntry[CardinalSet[tags_], {part_}] := Scan[KeyAppendTo[$tagAssoc, #1, part]&, tags];
+processTagEntry[tag_, {part_}] :=
+  KeyAppendTo[$tagAssoc, tag, part];
+
+processTagEntry[CardinalSet[tags_], {part_}] :=
+  Scan[KeyAppendTo[$tagAssoc, StripNegated @ #1, part]&, tags];
 
 (**************************************************************************************************)
 
 PackageExport["TagVertexOutTable"]
+
+SetUsage @ "
+TagVertexOutTable[graph$] returns an association from each cardinal to its VertexOutTable.
+* If a cardinal is not incident to a given vertex, the corresponding entry is None.
+* Keys are included for negations of cardinals.
+* As there is a maximum of edge for a given vertex and cardinal, table entries are single integers or None.
+"
 
 TagVertexOutTable[graph_] := Scope[
   cardinals = CardinalList @ graph;
@@ -806,13 +830,49 @@ TagVertexOutTable[graph_] := Scope[
   ({src, dst, tag} |-> (
       Part[outTables, Key @ tag, src] = dst;
       Part[outTables, Key @ Negated @ tag, dst] = src;
-  )) @@@ EdgeList[igraph];
+  )) @@@ SpliceCardinalSetEdges @ EdgeList[igraph];
   outTables
 ];
 
 (**************************************************************************************************)
 
+PackageExport["VertexTagTable"]
+
+SetUsage @ "
+VertexTagTable[graph$] returns a list of lists {tags$1, tags$2, $$} where tag$i is the list of tags \
+present on vertex v$i.
+"
+
+VertexTagTable[graph_, splice_:True] := Scope[
+  rules = {#1 -> #3, #2 -> Negated[#3]}& @@@ If[splice, SpliceCardinalSetEdges, Identity] @ EdgeList[graph];
+  Lookup[Merge[Flatten @ rules, Identity], VertexList @ graph, {}]
+]
+
+(**************************************************************************************************)
+
+PackageExport["VertexOutTagTable"]
+
+SetUsage @ "
+VertexOutTagTable[graph$] returns a list of lists {tags$1, tags$2, $$} where tag$i is the list of tags \
+present on vertex v$i in the outgoing direction.
+"
+
+VertexOutTagTable[graph_, splice_:True] := Scope[
+  rules = #1 -> #3& @@@ If[splice, SpliceCardinalSetEdges, Identity] @ EdgeList[graph];
+  Lookup[Merge[rules, Identity], VertexList @ graph, {}]
+]
+
+
+(**************************************************************************************************)
+
 PackageExport["TagVertexAdjacentEdgeTable"]
+
+SetUsage @ "
+TagVertexAdjacentEdgeTable[graph$] returns an association from each cardinal to its VertexAdjacentEdgeTable.
+* If a cardinal is not incident to a given vertex, the corresponding entry is None.
+* Keys are included for negations of cardinals.
+* As there is a maximum of edge for a given vertex and cardinal, table entries are single integers or None.
+"
 
 TagVertexAdjacentEdgeTable[graph_] := Scope[
   outTable = VertexOutEdgeTable @ graph;
@@ -1036,7 +1096,7 @@ vcoords$ is a list of coordinate tuples in the same order as VertexList[graph$],
 ecoords$ is a list of coordinate matrices in the same order as EdgeList[graph$].
 "
 
-ExtractGraphPrimitiveCoordinates[graph_] := Scope[
+ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
 
   If[!GraphQ[graph], ReturnFailed[]];
   igraph = ToIndexGraph[graph];
@@ -1044,6 +1104,8 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
 
   {graphLayout, vertexCoordinates} =
     LookupOption[igraph, {GraphLayout, VertexCoordinates}];
+
+  $egpGraph = graph;
 
   {layoutDimension, viewOptions, coordinateTransformFunction} =
     LookupExtendedGraphAnnotations[graph, {LayoutDimension, ViewOptions, CoordinateTransformFunction}];
@@ -1064,7 +1126,8 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
 
   SetAutomatic[graphLayout, {}];
 
-  vertexCoordinates = ConstantArray[0., {VertexCount @ igraph, actualDimension}];
+  vertexCount = VertexCount @ igraph;
+  vertexCoordinates = ConstantArray[0., {vertexCount, actualDimension}];
 
   edgeList = EdgeList @ igraph;
   edgeCoordinateLists = ConstantArray[{}, Length @ edgeList];
@@ -1081,7 +1144,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     edgeCaptureFunction = storeEdgeCoords;
   ];
 
-  If[isMulti || !DuplicateFreeQ[edgeList] && FreeQ[graphLayout, "MultiEdgeDistance"],
+  If[(isMulti || !DuplicateFreeQ[edgeList]) && FreeQ[graphLayout, "MultiEdgeDistance" | "SpringElectricalEmbedding"],
     graphLayout = ToList[graphLayout, "MultiEdgeDistance" -> 0.3];
   ];
 
@@ -1092,7 +1155,13 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     GraphLayout -> graphLayout, VertexCoordinates -> LookupOption[igraph, VertexCoordinates]
   ];
 
-  GraphComputation`GraphDrawing @ newGraph;
+  gdResult = Check[GraphComputation`GraphDrawing @ newGraph, $Failed];
+  If[FailureQ[gdResult],
+    vertexCoordinates = CirclePoints @ vertexCount;
+    If[actualDimension === 3, vertexCoordinates //= AppendColumn @ Zeros @ vertexCount];
+    edgeCoordinateLists = Part[vertexCoordinates, #]& /@ EdgePairs @ igraph;
+    Goto[end];
+  ];
 
   vertexCoordinates = ToPackedReal @ vertexCoordinates;
 
@@ -1111,6 +1180,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     edgeCoordinateLists //= Map[viewTransform];
   ];
 
+  Label[end];
   {ToPackedReal @ vertexCoordinates, ToPackedRealArrays @ edgeCoordinateLists}
 ];
 
@@ -1148,6 +1218,56 @@ applyCoordinateTransform[f_] := Block[{res},
     $Failed
   ];
   If[FailureQ[res], Message[ExtendedGraphPlot::badcoordtrans, f]];
+];
+
+applyCoordinateTransform["Center"] := Scope[
+  center = Mean @ vertexCoordinates;
+  applyCoordinateTransform[TranslationTransform[-center]];
+];
+
+applyCoordinateTransform["Snap"] :=
+  applyCoordinateTransform[{"Snap", 10}];
+
+applyCoordinateTransform[{"Snap", m_, nudge_:0.1}] := Scope[
+  applyCoordinateTransform["Center"];
+  bounds = CoordinateBounds[edgeCoordinateLists];
+  step = (EuclideanDistance @@@ bounds) / m;
+  grid = Flatten[CoordinateBoundsArray[bounds, step], 1];
+  nearest = Nearest @ grid;
+  applyCoordinateTransform[nearest /* First];
+  duplicateIndices = DuplicateIndices @ vertexCoordinates;
+  newVertexCoordinates = vertexCoordinates;
+  adjacencyTable = VertexAdjacencyTable @ $egpGraph;
+  $nudge = nudge;
+  Scan[index |-> (
+    center = Mean @ Part[vertexCoordinates, Part[adjacencyTable, index]];
+    Part[newVertexCoordinates, index] //= nudgeDuplicate[center]),
+    duplicateIndices, {2}];
+  vertexCoordinates ^= newVertexCoordinates;
+  edgeCoordinateLists ^= Part[vertexCoordinates, #]& /@ EdgePairs[$egpGraph];
+];
+
+nudgeDuplicate[z_][p_] := p + Normalize[Cross[z - p]] * Im[$nudge] + Normalize[z - p] * Re[$nudge];
+
+DuplicateIndices[list_] :=
+  Select[Length[#] > 1&] @ Values @ PositionIndex @ vertexCoordinates;
+
+applyCoordinateTransform[{"Rotate", n_}] := Scope[
+  applyCoordinateTransform["Center"];
+  applyCoordinateTransform[RotationTransform[n * Degree]];
+];
+
+applyCoordinateTransform[{"Radial", f_}] := Scope[
+  applyCoordinateTransform["Center"];
+  applyCoordinateTransform[Normalize[#] * f[Norm[#]]&];
+];
+
+applyCoordinateTransform["PolarProjection"] :=
+  applyCoordinateTransform[{"PolarProjection", 1}];
+
+applyCoordinateTransform[{"PolarProjection", h_}] := Scope[
+  applyCoordinateTransform["Center"];
+  applyCoordinateTransform[Apply[{x, y, z} |-> {x / (h-z), y/(h-z)}]];
 ];
 
 $namedTransforms = <|

@@ -134,10 +134,14 @@ minimumSquaredDistance[points_] :=
 
 pointDilationRegion[points_, d_] := Scope[
   bounds = CoordinateBounds[points, 2 * d];
+  is3D = (Length @ First @ points) === 3;
   Check[
     mesh = MeshRegion @ Point @ points;
     rd = RegionDistance[mesh];
-    ir = ImplicitRegion[rd[{x,y}] <= d, {x, y}];
+    ir = If[is3D,
+      ImplicitRegion[rd[{x, y, z}] <= d, {x, y, z}],
+      ImplicitRegion[rd[{x, y}] <= d, {x, y}]
+    ];
     quality = Length[points] < 1000;
     BoundaryDiscretizeRegion[ir, bounds,
       MaxCellMeasure -> If[quality, d/4, d],

@@ -255,6 +255,12 @@ PlusVector[v_][matrix_] := PlusVector[matrix, v];
 
 (**************************************************************************************************)
 
+PackageExport["Lerp"]
+
+Lerp[a_, b_, f_] := a * (1 - f) + b * f;
+
+(**************************************************************************************************)
+
 PackageExport["Interpolated"]
 
 Interpolated[a_, b_, n_] := Table[b * i + a * (1 - i), {i, 0, 1, 1/(n-1)}];
@@ -394,7 +400,15 @@ AssociationRange[list_] :=
 
 PackageExport["RuleRange"]
 
-RuleRange[labels_] := MapIndexed[#1 -> First[#2]&, labels];
+RuleRange[labels_] :=
+  MapIndexed[#1 -> First[#2]&, labels];
+
+(**************************************************************************************************)
+
+PackageExport["RuleThread"]
+
+RuleThread[keys_, values_] :=
+  MapThread[Rule, {keys, values}];
 
 (**************************************************************************************************)
 
@@ -545,6 +559,7 @@ Negated[elem$] represents the negation of elem$.
 
 Negated[Negated[e_]] := e;
 Negated /: DirectedEdge[a_, b_, Negated[c_]] := DirectedEdge[b, a, c];
+Negated[CardinalSet[cards_]] := CardinalSet[Negated /@ cards];
 
 declareBoxFormatting[
   Negated[e_] :> UnderNegatedBoxForm[e]
@@ -808,6 +823,30 @@ mUnpackOptionsAs[head_, opts_, syms_] :=
       GeneralUtilities`Control`PackagePrivate`capFirst /@ Map[HoldSymbolName, Unevaluated[syms]]
     ]
   ];
+
+(**************************************************************************************************)
+
+PackageScope["GraphCachedScope"]
+PackageExport["$GraphCacheStore"]
+
+$GraphCacheStore = Language`NewExpressionStore["GraphCache"];
+
+DefineMacro[GraphCachedScope,
+GraphCachedScope[graph_, args___, body_] := mGraphCachedScope[graph, {$LHSHead, args}, body]
+];
+
+SetHoldAllComplete[mGraphCachedScope];
+
+mGraphCachedScope[graph_, key_, body_] := With[{body2 = MacroExpand @ Scope @ body},
+  Quoted @ Module[
+    {$cacheTemp$ = $GraphCacheStore["get"[graph, key]]},
+    If[$cacheTemp$ === Null,
+      $cacheTemp$ = body2;
+      If[!FailureQ[$cacheTemp$], $GraphCacheStore["put"[graph, key, $cacheTemp$]]];
+    ];
+    $cacheTemp$
+  ]
+];
 
 (**************************************************************************************************)
 

@@ -111,7 +111,7 @@ LatticeColoringRow[list_List, args___] :=
 PackageExport["LatticeColoringGrid"]
 
 makeColoringGridEntry[label:(_String | _Integer | _Subscript), ___] :=
-  {Item[Style[label, $LegendLabelStyle, 15, Bold], ItemSize -> {Full, 2}, Alignment -> Center], SpanFromLeft};
+  {Item[LabelForm[label, 15, Bold], ItemSize -> {Full, 2}, Alignment -> Center], SpanFromLeft};
 
 makeColoringGridEntry[None, ___] :=
   {" ", SpanFromLeft};
@@ -137,41 +137,89 @@ LatticeColoringGrid[items_, args___] := Scope[
 
 PackageExport["HighlightCompassDomain"]
 
-HighlightCompassDomain[graph_, cardinals_, color_] := Scope[
-  region = ConnectedSubgraph[EdgePattern[_, _, Alternatives @@ cardinals]];
-  arrowheadStyle = Append[All -> Transparent] @ KeyTake[LookupCardinalColors @ graph, cardinals];
-  ExtendedGraph[graph, ArrowheadStyle -> arrowheadStyle, EdgeStyle -> VeryThick,
-    ColorRules -> {region -> Opacity[1,color], All -> LightGray}, GraphLegend -> None]
+Options[HighlightCompassDomain] = {
+  "Color" -> Automatic,
+  "Arrowheads" -> "Cardinals",
+  "PreserveColors" -> True
+}
+
+HighlightCompassDomain[graph_, cardinals_, OptionsPattern[]] := Scope[
+  UnpackOptions[color, arrowheads, preserveColors];
+  SetAutomatic[color, HumanBlend @ LookupCardinalColors[graph, cardinals]];
+  If[color === "First", color = LookupCardinalColors[graph, First @ cardinals]];
+  (* arrowheadStyle = Append[All -> Transparent] @ KeyTake[LookupCardinalColors @ graph, cardinals]; *)
+  HighlightGraphRegion[graph,
+    CompassDomain[cardinals], {color,
+      If[preserveColors, "ReplaceEdges", "Replace"],
+      If[arrowheads === All, Sequence @@ {}, "HideArrowheads"],
+      If[arrowheads === All, "FadeEdges", "FadeGraph"]
+    },
+    ArrowheadShape -> If[arrowheads === None, None, Automatic],
+    (* ArrowheadStyle -> arrowheadStyle,  *)
+    EdgeThickness -> VeryThick,
+    (* ColorRules -> {region -> Opacity[1, color], All -> LightGray}, *)
+    VisibleCardinals -> If[arrowheads === "Cardinals", cardinals, All],
+    GraphLegend -> None
+  ]
 ];
 
 (**************************************************************************************************)
 
 PackageExport["CompassDiagram"]
 
-CompassDiagram[compasses_, equivSets_, opts___] := Scope[
+Options[CompassDiagram] = JoinOptions[
+  {"ImpliedRelations" -> True, "Directed" -> False, "Shape" -> "PairedSquare"},
+  ExtendedGraph
+];
+
+CompassDiagram[compasses_, equivSets_, opts:OptionsPattern[]] := Scope[
+  UnpackOptions[impliedRelations, directed, shape];
+  (* don't use pairing! *)
   cardinals = DeleteDuplicates[Join @@ Values @ compasses];
-  equivSets = DeleteDuplicates @ Join[equivSets, Map[Negated, equivSets, {2}], List /@ cardinals];
-  equivIndex = Map[Union @@ Part[equivSets, #]&, PositionIndex[equivSets, 2]];
-  compassIndex = PositionIndex[compasses, 2] /. Key[k_] :> k;
-  CollectTo[{$edges}, Do[
-    createEdges[card, equivCard],
-    {card, cardinals},
-    {equivCard, equivIndex[card]}
-  ]];
+  If[MatchQ[equivSets, {__DirectedEdge}],
+    manualEdges = equivSets;
+    equivSets = {};
+  ,
+    manualEdges = {};
+  ];
+  If[impliedRelations,
+    equivSets = DeleteDuplicates @ Join[equivSets, Map[Negated, equivSets, {2}], List /@ cardinals];
+    equivIndex = Map[Union @@ Part[equivSets, #]&, PositionIndex[equivSets, 2]];
+    compassIndex = PositionIndex[compasses, 2] /. Key[k_] :> k;
+    CollectTo[{$edges}, Do[
+      createCDEdges[card, equivCard],
+      {card, cardinals},
+      {equivCard, equivIndex[card]}
+    ]];
+  ,
+    $edges = {}
+  ];
   compasses = Keys @ compasses;
   coords = {-#1, #2}& @@@ CirclePoints[Length @ compasses];
-  ExtendedGraph[compasses, $edges, VertexCoordinates -> coords,
-    opts,
+  ExtendedGraph[
+    compasses, Join[$edges, manualEdges],
+    VertexCoordinates -> coords,
+    FilterOptions @ opts,
     GraphLayout -> {"MultiEdgeDistance" -> 0.13},
     GraphLegend -> Automatic, Cardinals -> cardinals,
-    ArrowheadShape -> {"PairedSquare", PairedDistance -> 0, NegationStyle -> "OverBar"},
+    ArrowheadShape -> {shape, PairedDistance -> 0, NegationStyle -> "OverBar"},
     VertexLabelStyle -> {LabelPosition -> Automatic},
-    BaselinePosition -> Center,
-    VertexLabels -> "Name", ArrowheadSize -> Large
+    BaselinePosition -> Center, EdgeSetback -> .1,
+    VertexLabels -> "Name", ArrowheadSize -> Large,
+    EdgeShapeFunction -> If[!directed, Automatic, compassEdgeRenderingFunction]
   ]
 ];
 
-createEdges[card1_, card2_] := Outer[
+compassEdgeRenderingFunction = Function[
+  Style[
+    Arrow[#Coordinates],
+    Arrowheads @ If[MatchQ[#Cardinal, CardinalSet[{z_, z_}]], Identity,
+      Append @ {GraphicsValue["ArrowheadSize", #Fraction&], 1.0, ArrowheadData["Arrow", Gray]}
+    ] @ First @ #Arrowheads
+  ]
+];
+
+createCDEdges[card1_, card2_] := Outer[
   {comp1, comp2} |-> If[Order[comp1, comp2] == 1,
     Internal`StuffBag[$edges, DirectedEdge[comp1, comp2, CardinalSet[{card1, card2}]]]
   ],
@@ -182,55 +230,26 @@ createEdges[card1_, card2_] := Outer[
 
 PackageExport["FadePathPlot"]
 
-FadePathPlot[g_, v1_, v2_, dir_, c_:None, c2_:None] := Scope[
-  mainPath = Line[{v1, v2}, dir];
-  transportPath = If[c =!= None, Line @ {Offset[v2, Negated @ c], Offset[v2, c]}, {}];
-  mainPathVertices = GraphRegion[g, mainPath];
+Options[FadePathPlot] = {
+  "Labels" -> None,
+  "HideArrowheads" -> True
+};
+
+FadePathPlot[g_, line_, OptionsPattern[]] := Scope[
+  UnpackOptions[labels, hideArrowheads];
+  If[labels =!= None,
+    Return @ FadePathPlotWithLabels[g, line, labels, hideArrowheads]];
+  initialVertices = Map[pathInitialVertex, ToList @ line];
   HighlightGraphRegion[g,
-    {Style[transportPath, $Gray, PathStyle -> "DiskArrow", EdgeSetback -> 0, ArrowheadSize -> 3], mainPath},
-    {"Replace", "FadeGraph", $Teal, PathRadius -> 2},
-    GraphLegend -> None, VertexSize -> {v1 -> 8},
-    Epilog -> If[c === None, None, FadeProtected @ {
-      GraphicsValue[{"CardinalPrimitives", Disk[v2, 1], c}],
-      Switch[c2,
-        None, Nothing,
-        _List,
-        GraphicsValue[{"CardinalPrimitives", Disk[v2, 1], c2}, SetColorLightness[0.7]]]
-    }]
+    {line, Point /@ initialVertices},
+    {$Teal, RegionStyle -> "Highlight", "Replace", "FadeGraph", If[hideArrowheads, "HideArrowheads", Nothing], PathRadius -> 2, PointSize -> 8},
+    GraphLegend -> None, VertexSize -> Map[# -> 8&, initialVertices]
   ]
 ];
 
-FadePathPlot[g_, v1_, v2_, dir_, c_List] := Scope[
-  mainPath = Line[{v1, v2}, dir];
-  cLast = Last @ c;
-  If[ListQ[cLast], cLast //= First];
-  If[RuleQ[cLast], cLast //= First];
-  transportPath = Line @ {Offset[v2, Negated @ cLast], Offset[v2, cLast]};
-  mainPathVertices = Part[GraphRegion[g, mainPath], 1, 1];
-  If[Length[c] =!= Length[mainPathVertices], ReturnFailed[]];
-  epilog = MapThread[toFPPEpilogElement, {mainPathVertices, c}];
-  HighlightGraphRegion[g,
-    {Style[transportPath, $Gray, PathStyle -> "DiskArrow", EdgeSetback -> 0, ArrowheadSize -> 3], mainPath},
-    {"Replace", "FadeGraph", $Teal, PathRadius -> 2},
-    GraphLegend -> None, VertexSize -> {v1 -> 8},
-    Epilog -> FadeProtected[epilog]
-  ]
-];
+pathInitialVertex[Line[{v1_, ___}, ___]] := v1;
 
-toFPPEpilogElement[vertex_, None] := Nothing;
-
-toFPPEpilogElement[vertex_, card_] :=
-  toFPPEpilogElement[vertex, card -> "Identity"];
-
-toFPPEpilogElement[vertex_, card_ -> transform_String] := GraphicsValue[
-  {"CardinalPrimitives", toCardinalEdgePattern[vertex, card], card},
-  TransformArrowheads[transform]
-];
-
-toFPPEpilogElement[vertex_, cards_List] :=
-  Map[toFPPEpilogElement[vertex, #]&, cards];
-
-FadePathPlot[g_, v1_, v2_, dir_, "Labels" -> c_List] := Scope[
+FadePathPlotWithLabels[g_, Line[{v1_, v2_}, dir_], c_List, hideArrowheads_] := Scope[
   mainPath = Line[{v1, v2}, dir];
   cLast = Last @ c;
   If[ListQ[cLast], cLast //= First];
@@ -244,7 +263,7 @@ FadePathPlot[g_, v1_, v2_, dir_, "Labels" -> c_List] := Scope[
   c = MapAt[Row[{"      ", #}]&, c, -1];
   HighlightGraphRegion[g,
     {Style[transportPath, color, PathStyle -> "DiskArrow", EdgeSetback -> 0, ArrowheadSize -> 3], mainPath},
-    {"Replace", "FadeGraph", $Teal, PathRadius -> 2},
+    {"Replace", "FadeGraph", $Teal, PathRadius -> 2, If[hideArrowheads, "HideArrowheads", Nothing]},
     GraphLegend -> None, VertexSize -> {v1 -> 8},
     VertexLabels -> AssociationThread[IndexedVertex /@ mainPathVertices, c],
     VertexLabelStyle -> {LabelPosition -> Offset[{0, 3}], BaseStyle -> {FontColor -> $Gray, FontWeight -> Bold}}
@@ -386,7 +405,8 @@ PathQuiverPlot[fq_, paths_, v0_, cardinalDirs_, pathOpts_List, opts___Rule] := S
     VertexCoordinates -> coords,
     VertexShapeFunction -> labels, VertexSize -> Inherited,
     VertexLabelStyle -> {LabelPosition -> Center, Background -> None, ZOrder -> 1},
-    ArrowheadShape -> {"Line", EdgeThickness -> 2}, ArrowheadSize -> Medium, EdgeStyle -> {Thick, LightGray},
+    ArrowheadShape -> {"Line", EdgeThickness -> 2}, ArrowheadSize -> Medium, EdgeStyle -> LightGray,
+    EdgeThickness -> Thick,
     ImageSize -> 400, ImagePadding -> 30
   ] // CombineMultiedges
 ];

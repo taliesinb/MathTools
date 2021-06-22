@@ -12,7 +12,7 @@ LegendForm[lf_LegendForm] := lf;
 declareFormatting[
   LegendForm[list_List] :> Row[Map[LegendForm, list], Spacer[5]],
   LegendForm[assoc_Association] :> Grid[
-    Transpose @ KeyValueMap[{LegendForm[#2], Style[#1, $LegendLabelStyle, Bold]}&, assoc],
+    Transpose @ KeyValueMap[{LegendForm[#2], LabelForm[#1, Bold]}&, assoc],
     Spacings -> {{0.2, {1.2}}, {{0.5}}}
   ],
   LegendForm[e_] :> e
@@ -23,9 +23,15 @@ DownValues[WrappersDump`makeLabeledCore] = ReplaceAll[DownValues[WrappersDump`ma
 
 (**************************************************************************************************)
 
-PackageExport["$LegendLabelStyle"]
+PackageExport["$LabelStyle"]
 
-$LegendLabelStyle = {FontFamily -> "Avenir", FontSize -> 12};
+$LabelStyle = {FontFamily -> "Avenir", FontSize -> 12};
+
+(**************************************************************************************************)
+
+PackageExport["LabelForm"]
+
+LabelForm[e_, args___] := Style[e, args, $LabelStyle];
 
 (**************************************************************************************************)
 
@@ -68,6 +74,8 @@ GraphicsPrimitivesQ = MatchValues[
 ];
 
 CoordinateVectorOrMatrixQ[array_] := ArrayQ[array, 2|3] && MatchQ[InnerDimension @ array, 2|3];
+
+CoordinateMatrixOrArrayQ[{} | {{}}] := True;
 CoordinateMatrixOrArrayQ[array_] := CoordinateMatrixQ[array] || VectorQ[array, CoordinateMatrixQ];
 
 (**************************************************************************************************)
@@ -507,7 +515,7 @@ PackageScope["toDirective"]
 toDirective = MatchValues[
   Automatic := Automatic;
   {d_Directive} := % @ d;
-  e_List := normalizeStyles @ Directive @@ Flatten @ e;
+  e_List := normalizeStyles @ Directive @@ DeleteNone @ Flatten @ ReplaceAll[e, Directive[d_] :> d];
   Directive[e_List] := %[e];
   e_ := normalizeStyles @ e
 ];
@@ -528,6 +536,9 @@ PackageExport["ApplyEpilog"]
 
 ApplyEpilog[graphics_, None | {}] := graphics;
 
+ApplyEpilog[Labeled[graphics_, args__], epilog_] :=
+  Labeled[ApplyEpilog[graphics, epilog], args];
+
 ApplyEpilog[graphics_Graphics, epilog_] :=
   UpdateOptions[graphics, Epilog, Function[If[#1 === {}, epilog, {epilog, #1}]]];
 
@@ -541,6 +552,9 @@ ApplyEpilog[epilog_][graphics_] := ApplyEpilog[graphics, epilog];
 PackageExport["ApplyProlog"]
 
 ApplyProlog[graphics_, None | {}] := graphics;
+
+ApplyProlog[Labeled[graphics_, args__], prolog_] :=
+  Labeled[ApplyProlog[graphics, prolog], args];
 
 ApplyProlog[graphics_Graphics, prolog_] :=
   UpdateOptions[graphics, Prolog, Function[If[#1 === {}, prolog, {#1, prolog}]]];
@@ -559,6 +573,9 @@ ApplyLegend[expr_, None | Automatic | {}] :=
 
 ApplyLegend[expr_, item_] :=
   updateLegendMargins @ Legended[expr, If[ListQ[item], Map[LegendForm], LegendForm] @ item];
+
+ApplyLegend[Labeled[graphics_, args__], newLegend_] :=
+  Labeled[ApplyLegend[graphics, newLegend], args];
 
 ApplyLegend[Legended[expr_, oldLegend_], newLegend_] :=
  updateLegendMargins @ Legended[expr, ToList[oldLegend, LegendForm /@ newLegend]];
@@ -796,6 +813,15 @@ GraphicsTransformCoordinates[ctf_, expr_] := Scope[
 
 PackageExport["SetbackCoordinates"]
 
+SetbackCoordinates[spec_, 0|0.] :=
+  spec;
+
+SetbackCoordinates[spec_, d_ ? NumericQ] :=
+  SetbackCoordinates[spec, {d, d}];
+
+SetbackCoordinates[spec_ ? CoordinateArrayQ, d_] :=
+  SetbackCoordinates[#, d]& /@ spec;
+
 SetbackCoordinates[{a_, b_}, {d1_, d2_}] := Scope[
   If[EuclideanDistance[a, b] < d1 + d2, Return[{}]];
   dx = Normalize[b - a];
@@ -823,10 +849,13 @@ setbackHalf[coords_, d_] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["PointAlongLine"]
+PackageExport["PointAlongLine"]
 
 PointAlongLine[a_, b_, d_] :=
   a + Normalize[b - a] * d;
+
+PointAlongLine[a_, b_, Scaled[f_]] :=
+  PointAlongLine[a, b, EuclideanDistance[a, b] * f];
 
 (**************************************************************************************************)
 
@@ -849,7 +878,7 @@ $arrowheadTransforms = <|
 TransformArrowheads[primitives_, transform_String] := Scope[
   func = Lookup[$arrowheadTransforms, transform];
   ReplaceAll[primitives,
-    g:{_, _, Graphics[Except[{}], ___]} :> RuleCondition @ func @ g
+    g:{_, _, (Graphics|Graphics3D)[Except[{}], ___]} :> RuleCondition @ func @ g
   ]
 ];
 

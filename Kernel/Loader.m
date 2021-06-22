@@ -125,6 +125,7 @@ readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
   {cachedModTime, cachedContents} = Lookup[$fileContentCache, path, {$Failed, $Failed}];
   fileModTime = UnixTime @ FileDate[path, "Modification"];
   If[FailureQ[cachedContents] || cachedModTime =!= fileModTime,
+    If[GraphToolsPackageLoader`$Verbose, Print["Reading \"" <> path <> "\""]];
     contents = loadFileContents[path, context];
     $fileContentCache[path] = {fileModTime, contents};
   ,

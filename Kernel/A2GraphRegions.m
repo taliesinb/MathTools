@@ -165,6 +165,7 @@ processRegionSpec[region_] := Scope[
   $VertexOutEdgeTable := $VertexOutEdgeTable = VertexOutEdgeTable[$Graph];
   $VertexAdjacencyTable := $VertexAdjacencyTable = VertexAdjacencyTable[$Graph];
   $TagVertexAdjacentEdgeTable := $TagVertexAdjacentEdgeTable = TagVertexAdjacentEdgeTable[$Graph];
+  $TagIndices := $TagIndices = TagIndices[$Graph];
   $EdgePairs := $EdgePairs = EdgePairs[$Graph];
   $Cardinals := $Cardinals = CardinalList[$Graph];
   Map[outerProcessRegion, ToList @ region]
@@ -317,18 +318,43 @@ findEdgeIndices[p:EdgePattern[a_, b_, c_]] := Scope @ With[{cp = toCardinalPatte
 supersetOf[sub_][sup_] := SubsetQ[sup, sub];
 
 toCardinalPattern = MatchValues[
-  CardinalSet[s_] := CardinalSet[_ ? (supersetOf[p])];
+  CardinalSet[s_] := CardinalSet[_ ? (supersetOf[s])];
   a_Alternatives  := Map[%, a];
   s_              := s | CardinalSet[_ ? (MemberQ[s | Negated[s]])];
 ];
 
-edgeIndicesToPathData[indices_] := Scope[
-  pureIndices = StripNegated /@ indices;
+edgeIndicesToPathData[edgeIndices_] := Scope[
+  normalEdgeIndices = StripNegated /@ indices;
   GraphPathData[
-    Union @ AllVertices @ Part[$IndexGraphEdgeList, pureIndices],
-    pureIndices,
-    MatchIndices[indices, _Negated]
+    allEdgeVertices @ normalEdgeIndices,
+    normalEdgeIndices,
+    MatchIndices[edgeIndices, _Negated]
   ]
+];
+
+allEdgeVertices[edgeIndices_] :=
+  Union @ AllVertices @ Part[$IndexGraphEdgeList, edgeIndices];
+
+
+(**************************************************************************************************)
+
+PackageExport["CompassDomain"]
+
+SetUsage @ "
+CompassDomain[{c$1, c$2, $$}] represents the domain of a compass with cardinals c$i.
+* The domain is the connected subgraph induced by the vertices that have all of the c$i.
+"
+
+GraphRegionElementQ[CompassDomain[_List]] := True;
+
+processRegion[CompassDomain[cards_List]] := Scope[
+  edgeLists = Map[$TagIndices, cards];
+  overlappingEdges = Union @@ Intersection @@@ Subsets[edgeLists, {2, Infinity}];
+  edgeLists = Complement[#, overlappingEdges]& /@ edgeLists;
+  vertices = Intersection @@ Map[allEdgeVertices, edgeLists];
+  edges = Union @@ edgeLists;
+  {vertices, subgraphEdges} = FirstLast @ subgraphRegionData @ vertices;
+  GraphRegionData[vertices, Intersection[subgraphEdges, edges]]
 ];
 
 
@@ -462,7 +488,7 @@ sowPath[start_, path_, repeating_, stop_:None] := Scope[
 PackageExport["FormatCardinalWord"]
 
 FormatCardinalWord[w_, opts___Rule] :=
-  Style[Row @ ParseCardinalWord[w], opts, $LegendLabelStyle];
+  LabelForm[Row @ ParseCardinalWord[w], opts];
 
 (********************************************)
 
@@ -480,7 +506,7 @@ ParseCardinalWord[path_String] /; StringLength[path] > 1 := Scope[
 ];
 
 parseCard[Negated[s_]] := Negated @ parseCard[s];
-parseCard[s_String] := If[UpperCaseQ[s], Negated @ ToLowerCase @ s, s];
+parseCard[s_String] := If[UpperCaseQ[s] && !(ListQ[$Cardinals] && MemberQ[$Cardinals, s]), Negated @ ToLowerCase @ s, s];
 
 ParseCardinalWord[elem_] := checkCardinals @ List @ parseCard @ elem;
 
@@ -535,6 +561,31 @@ offsetWalk[startId_, path_] := Scope[
   doWalk[startId, None, pathWord, False, Null&]
 ];
 
+
+(********************************************)
+(** Cycles[...]                            **)
+
+GraphRegionElementQ[Cycles[_List] | Cycles[_String]] := True;
+
+processRegion[Cycles[word_]] := Scope[
+  word //= ParseCardinalWord;
+  init = First @ word;
+  edges = Lookup[$TagIndices, init];
+  startVertices = Sort @ Part[$EdgePairs, edges, 1];
+  cycles = {};
+  While[startVertices =!= {},
+    startVertex = First @ startVertices;
+    cycle = processRegion @ Line[IndexedVertex /@ {startVertex, startVertex}, word];
+    pathVertices = First @ cycle;
+    {vertexFirst, vertexLast} = FirstLast @ pathVertices;
+    If[vertexFirst === vertexLast,
+      AppendTo[cycles, cycle];
+    ];
+    startVertices = Complement[startVertices, pathVertices];
+  ];
+  Splice @ cycles
+];
+
 (********************************************)
 (** Line[...]                              **)
 
@@ -573,8 +624,6 @@ processRegion[HalfLine[{v1_, v2_}] | HalfLine[{0, 0}, {v1_, v2_}]] := Scope[
 
 processRegion[HalfLine[v_, dir_]] :=
   collectPathData @ sowPath[v, dir, True];
-
-processRegion[hf_HalfLine] := Print[hf];
 
 findWordBetween[v1_, v2_] := Scope[
   geodesicVertices = MetricFindShortestPath[$MetricGraphCache, v1, v2, GraphMetric -> $GraphMetric];
@@ -680,9 +729,7 @@ processRegion[l:Locus[r1_, r2_, d_:0 ? NumericQ]] := Scope[
       indices,
       Select[indices1, IntersectingQ[Part[$VertexAdjacencyTable, #], indices2]&]
     ];
-(*     subgraphRegionData[indices];
-    Return[GraphRegionData[indices, {}]];
- *)  ];
+  ];
   If[indices === {}, fail["emptyarea", l]];
   subgraphRegionData[indices]
 ];

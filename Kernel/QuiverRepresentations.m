@@ -109,7 +109,7 @@ makeLabeledGenerators[generators_, cardinalColors_] :=
       Labeled[#2, Row[{makeLegendArrowheadGraphic[cardinalColors @ #1, "Arrow"], " ", #1}]]&,
       generators
     ],
-    "  ", BaseStyle -> $LegendLabelStyle
+    "  ", BaseStyle -> $LabelStyle
   ];
 
 (**************************************************************************************************)
@@ -156,11 +156,16 @@ quiverRepresentationProperty[data_, "Identity"] := QuiverElement[
   data["Representation"]["Identity"]
 ];
 
+quiverRepresentationProperty[data_, "AllIdentities"] := Scope[
+  idRep = data["Representation"]["Identity"];
+  Map[
+    QuiverElement[idRep, #]&,
+    VertexList @ data["Quiver"]
+  ]
+];
+
 quiverRepresentationProperty[data_, "CayleyFunction", opts___Rule] :=
   computeCayleyFunction[data, opts];
-
-quiverRepresentationProperty[data_, other___] := Print[other];
-
 
 makeQuiverElementRule[inVertex_, outVertex_, gen_, cardinal_] :=
   QuiverElement[inVertex, \[FormalR] : _] :> Labeled[QuiverElement[outVertex, gen[\[FormalR]]], cardinal];
@@ -185,7 +190,7 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
       gen = generators[cardinal];
       If[MissingQ[gen], Nothing, {
         makeQuiverElementRule[inVertex, outVertex, gen, cardinal],
-        If[symmetric && (igen = ToInverseFunction[gen]) =!= gen,
+        If[symmetric && (igen = ToInverseFunction[gen]) =!= gen && igen =!= None,
           makeQuiverElementRule[outVertex, inVertex, igen, Negated @ cardinal],
           Nothing
         ]

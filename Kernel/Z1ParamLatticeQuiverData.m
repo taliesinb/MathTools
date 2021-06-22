@@ -193,6 +193,21 @@ hexagonalTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, use
 
 (**************************************************************************************************)
 
+DefineParameterizedLatticeQuiver["TrihexagonalTorus", trihexagonalTorusFactory, $torusParameters];
+
+trihexagonalTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
+  If[h === None, h = w; w = Infinity];
+  rep = QuiverRepresentation[
+    Quiver[<|"B" -> {1 -> 2, 2 -> 1}, "C" -> {2 -> 3, 3 -> 2}, "A" -> {3 -> 1, 1 -> 3}|>],
+    makeABCTorusRepresentation[w, h, t]
+  ];
+  opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
+  opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts;
+  {rep, opts}
+];
+
+(**************************************************************************************************)
+
 DefineParameterizedLatticeQuiver["RhombilleTorus", rhombilleTorusFactory, $torusParameters];
 
 rhombilleTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
@@ -205,6 +220,7 @@ rhombilleTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, use
   opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts;
   {rep, opts}
 ];
+
 (**************************************************************************************************)
 
 DefineParameterizedLatticeQuiver["Lamplighter", lamplighterFactory, <|"n" -> 3, "MaxDepth" -> Infinity|>];
@@ -223,3 +239,53 @@ LamplighterCayleyFunction[LatticeVertex[lamps_, pos_]] := {
   Labeled[LatticeVertex[MapAt[1-#&, lamps, pos], pos], "f"]
 };
 
+(**************************************************************************************************)
+
+DefineParameterizedLatticeQuiver["Cube", cubeFactory, <|"n" -> 1, "MaxDepth" -> Infinity|>]
+
+$cubeDirs = {{1,0,0}, {-1,0,0}, {0,1,0}, {0,-1,0}, {0,0,1}, {0,0,-1}};
+$cubeAxes = IdentityMatrix[3];
+
+makeCubeFace[n_][dir_, x_, y_] := Scope[
+  {a, b} = Select[$cubeAxes, Dot[#, dir] == 0&];
+  num = n + 2;
+  dn = Interpolated[-1, 1, num]; dx = 2 / (n + 1);
+  p = Outer[dir + a * #1 + b * #2&, dn, dn];
+  Do[
+    If[j < num, makeCubeEdge[x, Part[p, i, {j, j + 1}]]];
+    If[i < num, makeCubeEdge[y, Part[p, {i, i + 1}, j]]];
+  ,
+    {i, num}, {j, num}
+  ];
+  Internal`StuffBag[$points, p, 2];
+];
+
+makeCubeEdge[c_, {a_, b_}] :=
+  Internal`StuffBag[$edges, DirectedEdge[a, b, c]];
+
+cubeFactory[<|"n" -> n_, "MaxDepth" -> _|>, userOpts_] := Scope[
+  CollectTo[{$points, $edges},
+    MapThread[makeCubeFace[n], {$cubeDirs,
+      {"a", Negated @ "a", "c", Negated @ "c", Negated @ "c", "c"},
+      {"b", Negated @ "b", Negated @ "b", "b", Negated @ "a", "a"}
+    }]
+  ];
+  $points //= DeleteDuplicates;
+  $edges //= DeleteDuplicates;
+  innerCube = FadeProtected @ {
+    EdgeForm[None], Opacity[0.5],
+    FaceForm[None, {Glow @ GrayLevel[1.0], Specularity[1]}],
+    GraphicsValue["PrimitiveSize",
+      With[{z = 1-#PlotRange/2}, Cuboid[-{1,1,1} * z, {1,1,1} * z]]&
+    ]
+  };
+  graph = ExtendedGraph[$points, $edges, VertexCoordinates -> $points,
+    Sequence @@ Normal[userOpts],
+    ViewOptions -> {ViewVector -> {3,2.5,2}, ViewProjection -> "Orthographic"},
+    VertexShapeFunction -> None, ImageSize -> Small, EdgeThickness -> 2,
+    ArrowheadSize -> Medium,
+    Epilog -> innerCube
+  ];
+  If[!GraphQ[graph], ReturnFailed[]];
+  graph // CombineMultiedges
+];

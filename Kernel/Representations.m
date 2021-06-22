@@ -79,7 +79,7 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
   list = Flatten @ MapIndexed[
     {gen, index} |-> {
       If[labeled, Labeled[First @ index], Identity] @ gen,
-      If[symmetric && (igen = ToInverseFunction[gen]) =!= gen,
+      If[symmetric && (igen = ToInverseFunction[gen]) =!= gen && igen =!= None,
         If[labeled, Labeled[Negated @ First @ index], Identity] @ igen,
         Nothing
       ]
@@ -183,8 +183,10 @@ RepresentationElement[matrix$, mod$] is a matrix representation applied modulo m
 ToInverseFunction[RepresentationElement[matrix_]] :=
   Quiet @ Check[RepresentationElement[Inverse[matrix]], None]
 
-ToInverseFunction[RepresentationElement[matrix_, mod_]] :=
-  RepresentationElement[Inverse[matrix], mod];
+ToInverseFunction[RepresentationElement[matrix_, mod_]] := Scope[
+  inv = Quiet @ Check[Inverse @ matrix, None];
+  If[inv === None, None, RepresentationElement[inv, mod]]
+];
 
 ModForm /: RepresentationElement[ModForm[matrix_, mod_]] :=
   RepresentationElement[matrix, mod];

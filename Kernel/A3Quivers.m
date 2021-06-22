@@ -225,9 +225,11 @@ PackageExport["LookupCardinalColors"]
 
 SetUsage @ "
 LookupCardinalColors[quiver$] returns the association of cardinals to colors for quiver$.
+LookupCardinalColors[quiver$, c$] returns the color for cardinal c$.
 * The annotation CardinalColors is returned if present.
 * The cardinals are given in sorted order.
 * If the graph has no tagged edges, None is returned.
+* If c$ is an CardinalSet, the corresponding colors will be blended.
 "
 
 LookupCardinalColors[graph_Graph] := None;
@@ -240,15 +242,20 @@ LookupCardinalColors[graph_Graph ? EdgeTaggedGraphQ] :=
     }
   ];
 
+LookupCardinalColors[graph_Graph, card_] :=
+  Lookup[LookupCardinalColors @ graph, card, Gray];
+
+LookupCardinalColors[graph_Graph, CardinalSet[cards_List]] :=
+  HumanBlend @ Sort @ Lookup[LookupCardinalColors @ graph, cards, Gray];
+
 LookupCardinalColors[_] := $Failed;
 
+(**************************************************************************************************)
 
 PackageScope["ChooseCardinalColors"]
 
 ChooseCardinalColors[cardinals_List, palette_:Automatic] :=
   AssociationThread[cardinals, ToColorPalette[palette, Length @ cardinals]];
-
-
 
 (**************************************************************************************************)
 
@@ -261,3 +268,101 @@ RemoveCardinals[g_Graph] := Scope[
     VertexCoordinates -> coords
   ]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["RenameCardinals"]
+
+RenameCardinals[graph_Graph, renaming:{__String}] :=
+  RenameCardinals[graph, RuleThread[CardinalList @ graph, renaming]]
+
+RenameCardinals[graph_Graph, {}] := graph;
+
+RenameCardinals[graph_Graph, renaming:{__Rule}] := Scope[
+  {vertices, edges} = VertexEdgeList @ graph;
+  replacer = ReplaceAll @ Dispatch @ renaming;
+  edges = MapAt[replacer, edges, {All, 3}];
+  opts = DeleteOptions[AnnotationRules] @ Options @ graph;
+  annos = Replace[
+    ExtendedGraphAnnotations @ graph,
+    opt:Rule[(VisibleCardinals | Cardinals | CardinalColors), _] :> replacer[opt],
+    {1}
+  ];
+  ExtendedGraph[
+    vertices, edges,
+    Sequence @@ opts,
+    AnnotationRules -> {"GraphProperties" -> annos}
+  ]
+];
+
+RenameCardinals[renaming_][graph_] :=
+  RenameCardinals[graph, renaming];
+
+(**************************************************************************************************)
+
+PackageExport["TruncateQuiver"]
+PackageExport["TruncatedVertex"]
+
+declareFormatting[
+  TruncatedVertex[v_, a_] :> Superscript[v, a]
+];
+
+SetUsage @ "
+TruncatedVertex[vertex$, card$] represents a vertex that has been truncated in the direction card$.
+";
+
+Options[TruncateQuiver] = Prepend["AllowSkips" -> True] @ $simpleGraphOptionRules;
+
+TruncateQuiver[quiver_, opts:OptionsPattern[]] :=
+  TruncateQuiver[quiver, Automatic, opts];
+
+TruncateQuiver[quiver_, cardinals:Except[_Rule], userOpts:OptionsPattern[]] := Scope[
+  UnpackOptions[allowSkips];
+  {vertices, edges} = VertexEdgeList @ quiver;
+  SetAutomatic[cardinals, t = CardinalList[quiver]; Join[t, Negated /@ t]];
+  If[StringQ[cardinals], cardinals //= ParseCardinalWord];
+  ordering = AssociationRange[cardinals]; $n = Length @ cardinals;
+  tagTable = Map[SortBy[cardOrder[ordering]], VertexTagTable[quiver, False]];
+  tagOutTable = TagVertexOutTable @ quiver;
+  vertexCoords = GraphVertexCoordinates @ quiver;
+  CollectTo[{truncEdges, truncVertices, truncCoords},
+  ScanThread[{v, tags, coord, tagOut} |-> (
+    cornerVerts = Map[TruncatedVertex[v, #]&, tags];
+    cornerEdges = If[allowSkips, cornerEdge, noskipCornerEdge[ordering]] /@ Partition[cornerVerts, 2, 1, 1];
+    cornerCoords = Map[
+      PointAlongLine[coord, Part[vertexCoords, Lookup[tagOut, Replace[#, CardinalSet[s_] :> First[s]]]], Scaled[0.25]]&,
+      tags
+    ];
+    BagInsert[truncEdges, cornerEdges, 1];
+    BagInsert[truncVertices, cornerVerts, 1];
+    BagInsert[truncCoords, cornerCoords, 1])
+  ,
+    {vertices, tagTable, vertexCoords, AssociationTranspose @ tagOutTable}
+  ]];
+  truncEdges = Flatten @ {
+    truncEdges, truncatedEdge /@ edges
+  };
+  opts = Options @ quiver;
+  opts = Replace[opts, (AnnotationRules -> annos_) :>
+    AnnotationRules -> DeleteOptions[annos, VertexAnnotations]];
+  Graph[
+    truncVertices,
+    truncEdges,
+    VertexCoordinates -> truncCoords,
+    Cardinals -> {"f", "r"},
+    Sequence @@ opts, FilterOptions @ userOpts
+  ]
+];
+
+cardOrder[ordering_][CardinalSet[list_]] := Min @ Lookup[ordering, list];
+cardOrder[ordering_][e_] := ordering[e];
+
+tqSuccQ[a_, b_] := MatchQ[b - a, 1 | (1 + $n) | (1 - $n)];
+
+noskipCornerEdge[ordering_][{a:TruncatedVertex[v1_, c1_], b:TruncatedVertex[v2_, c2_]}] :=
+  If[tqSuccQ[ordering @ c1, ordering @ c2], DirectedEdge[a, b, "r"], Nothing];
+
+cornerEdge[{a_, b_}] := DirectedEdge[a, b, "r"]
+
+truncatedEdge[DirectedEdge[a_, b_, c_]] :=
+  DirectedEdge[TruncatedVertex[a, c], TruncatedVertex[b, Negated @ c], CardinalSet[{"f", Negated @ "f"}]];

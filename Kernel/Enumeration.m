@@ -40,7 +40,7 @@ AllCardinalSets[cardinals_] := Scope[
 PackageExport["CardinalRenamings"]
 
 CardinalRenamings[cardinals_] := Scope[
-  Map[Dispatch @ DeleteCases[MapThread[Rule, {cardinals, #}], Rule[z_, z_]]&, Permutations @ cardinals]
+  Map[Dispatch @ DeleteCases[RuleThread[cardinals, #], Rule[z_, z_]]&, Permutations @ cardinals]
 ];
 
 

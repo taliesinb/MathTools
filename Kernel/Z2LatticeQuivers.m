@@ -60,6 +60,7 @@ identity matrix.
 | 'RasterIndex' | number vertices starting at the top left, proceeding right then down |
 | 'Coordinates' | use abstract coordinates directly as names |
 | 'Representation' | use the original RepresentationElement[$$] objects directly as names |
+| 'RepresentationMatrix' | the underlying matrix of the RepresentationElement[$$] |
 | None | use LatticeVertex[abscoords$, genvertex$] as names |
 
 * %GraphLayout accepts these settings:
@@ -91,7 +92,8 @@ $baseGenerateLatticeOptions = JoinOptions[{
   GraphLegend -> Automatic,
   CombineMultiedges -> True,
   SelfLoops -> True,
-  InitialStates -> Automatic
+  InitialStates -> Automatic,
+  RandomSeeding -> None
   },
   $simpleGraphOptionRules
 ];
@@ -112,9 +114,6 @@ Options[iGenerateLattice] = $baseGenerateLatticeOptions;
 $cardinalBasedRegionPattern = Path | Line[_, _] | HalfLine | InfiniteLine | Axes;
 
 iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] := Scope[
-
-  If[ListQ[representation],
-    Return @ Map[iGenerateLattice[head, #, directedEdges, opts]&, representation]];
 
   If[StringQ[representation],
     latticeName = representation;
@@ -174,13 +173,15 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     graphMetric, combineMultiedges,
     includeRepresentationMatrices,
     graphRegionHighlight, plotLabel,
-    selfLoops, initialStates
+    selfLoops, initialStates, randomSeeding
   ];
 
   SetAutomatic[initialStates, repInitialStates];
   If[IntegerQ[initialStates],
     (* allow specifying a different vertex in the fundamental quiver. *)
     initialStates = ReplacePart[repInitialStates, {1, 2} -> initialStates]];
+
+  SetAll[initialStates, LatticeVertex @@@ representation["AllIdentities"]];
 
   simpleOptions = TakeOptions[{opts}, $simpleGraphOptions];
 
@@ -195,7 +196,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     True,
       maxNorm = Replace[latticeName, $defaultLatticeNorms];
       SetAutomatic[imageSize, Replace[latticeName, $defaultLatticeSizes]];
-      If[maxNorm === None, maxNorm = 1; 3, maxNorm * Length[cardinalList]]
+      If[maxNorm === None, maxNorm = 3, maxNorm * Length[cardinalList]]
   ]];
 
   If[MatchQ[maxVertices, AtLeast[_Integer]],
@@ -253,6 +254,14 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     DirectedEdges -> True, MaxDepth -> maxDepth, IncludeFrontier -> includeFrontier,
     DepthTermination -> depthTermination,
     MaxVertices -> maxVertices, MaxEdges -> maxEdges, SelfLoops -> selfLoops
+  ];
+
+  If[randomSeeding =!= None,
+    vertRange = Range @ Length[vertexList];
+    BlockRandom[reordering = RandomSample[vertRange], RandomSeeding -> randomSeeding];
+    vertexList //= PartOperator[reordering];
+    reorderMap = AssociationThread[vertRange, reordering];
+    indexEdgeList = MapAt[reorderMap, indexEdgeList, {All, 1 ;; 2}];
   ];
 
   (* rewrite the vertices via the coordinate function *)
@@ -393,7 +402,7 @@ General::badparamlatticename = "The specified name `` is not a known name for a 
 General::badparamlatticeargs = "The provided arguments `` were not valid for parameterized lattice ``."
 General::badparamlattiecount = "The parameterized lattice `` takes up to `` arguments, but `` were provided.";
 
-iGenerateLattice[head_, {latticeName_String, args__}, directedEdges_, opts:OptionsPattern[]] /; !StringVectorQ[{args}] := Scope[
+iGenerateLattice[head_, {latticeName_String, args___}, directedEdges_, opts:OptionsPattern[]] /; !MatchQ[{args}, {__String}] && !MemberQ[$LatticeClassNames, latticeName] := Scope[
 
   paramLatticedata = $ParameterizedLatticeData[latticeName];
   If[MissingQ[paramLatticedata],
@@ -414,6 +423,11 @@ iGenerateLattice[head_, {latticeName_String, args__}, directedEdges_, opts:Optio
   If[maxDepth =!= Automatic, arguments["MaxDepth"] = maxDepth];
 
   result = factory[arguments, Association @ opts];
+  If[GraphQ[result],
+    If[head === LatticeGraph, result = ExtendedGraph[result, ArrowheadShape -> None]];
+    Return @ result;
+  ];
+
   If[!MatchQ[result, {_, {___Rule}}],
     ReturnFailed[head::badparamlatticeargs, KeyDrop["MaxDepth"] @ arguments, latticeName]];
 
@@ -452,7 +466,7 @@ vecSorter[v_] /; Length[v] == 3 := {Norm[v], vecAngle @ Dot[$abc, v]};
 vecSorter[v_] /; Length[v] == 2 := {Norm[v], vecAngle @ v};
 vecSorter[v_] /; Length[v] == 1 := {Norm[v], v};
 
-$validRenamingRules = {"SpiralIndex", "RasterIndex", "Representation", "Coordinates", "Index"};
+$validRenamingRules = {"SpiralIndex", "RasterIndex", "Representation", "RepresentationMatrix", "Coordinates", "Index"};
 
 toRenamingRule["SpiralIndex", vertices_, origVertices_] :=
   AssociationThread[vertices, Ordering @ Ordering @ Map[vecSorter, N @ vertices[[All, 1]]]];
@@ -460,8 +474,11 @@ toRenamingRule["SpiralIndex", vertices_, origVertices_] :=
 toRenamingRule["RasterIndex", vertices_, origVertices_] :=
   AssociationThread[vertices, Ordering @ Ordering @ ({-#2, #1}& @@@ N[vertexCoordinates])];
 
-toRenamingRule["Representation", _, _] :=
+toRenamingRule["Representation", vertices_, origVertices_] :=
   AssociationThread[vertices, origVertices[[All, 1]]];
+
+toRenamingRule["RepresentationMatrix", vertices_, origVertices_] :=
+  AssociationThread[vertices, origVertices[[All, 1, 1]]];
 
 toRenamingRule["Coordinates", _, _] :=
   LatticeVertex[v_, _] :> v;

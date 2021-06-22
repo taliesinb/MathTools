@@ -59,7 +59,7 @@ resolveGraphRegionHighlightGraphics[None | {} | <||>] :=
 
 resolveGraphRegionHighlightGraphics[spec_] := Scope[
 
-  $highlightStyle = $GraphHighlightStyle;
+  $highlightStyle = $GraphHighlightStyle /. cc_CardinalColor :> evalCardinalColor[cc];
 
   If[MatchQ[spec, {__Association}], spec = Join @@ spec];
   If[Head[$highlightStyle] === Directive, $highlightStyle = List @@ $highlightStyle];
@@ -83,7 +83,7 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
 
   (* toMultiDirective will interpret palette specs passed to GraphHighlightStyle, which will
   turn into lists. it will also map over lists and associations to control lists or associations of regions *)
-  defaultPalette = If[FreeQ[spec, "Foreground" | "Background" | Opaque | "Replace"], "Dark", "Medium"];
+  defaultPalette = If[FreeQ[spec, "Foreground" | "Background" | Opaque | "Replace" | "ReplaceEdges"], "Dark", "Medium"];
   $highlightStyle = toMultiDirective @ Replace[$highlightStyle, Automatic -> Offset[defaultPalette, 2]];
 
   (* if no opacity was specified, use the default opacity *)
@@ -96,12 +96,18 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
   (* todo: use the same conversion functions as I use in GraphPlotting *)
   $pathRadius = Automatic;
   $graphPlotWidth = First @ $GraphPlotSize;
-  $pointSize = $highlightRadius / $graphPlotWidth;
-  $radiusScaling = 1;
+  $pointSize = 5;
+  $radiusScaling = If[$GraphIs3D, 0.25, 1];
+  $edgeBaseStyle := $edgeBaseStyle = FirstCase[
+    $GraphPlotGraphics,
+    Annotation[Style[_, style___], _, "EdgePrimitivesRoot"] :> toDirective[{style}],
+    {}, {0, Infinity}
+  ];
 
   $zorder = 1;
   $requiredPadding = 0;
   $pathStyle = "Line";
+  $regionStyle = "Highlight";
   $arrowheadPosition = 1.0;
   $arrowheadSize = Automatic;
   $edgeSetback = 1;
@@ -117,7 +123,6 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
 ];
 
 requirePadding[p_] := $requiredPadding = Max[$requiredPadding, p];
-requirePaddingPointSize[ps_] := requirePadding[ps / $graphPlotWidth * $GraphPlotImageWidth];
 
 sowHighlight[g_] := Internal`StuffBag[$highlightsBag, {$zorder, Internal`BagLength[$highlightsBag], g}];
 
@@ -126,8 +131,6 @@ sowLegend[name_, color_] := Internal`StuffBag[$legendsBag, name -> color];
 debugGraphic[g_] := (Internal`StuffBag[$highlightsBag, {100, 100, {Black, g}}]; g);
 
 echoGraphic[g_] := (Echo[Graphics[g, ImageSize -> {200, 200}]]; g);
-
-findExistingArrowheadSpec[] := FirstCase[$GraphPlotGraphics, _Arrowheads, None, {0, Infinity}];
 
 (**************************************************************************************************)
 
@@ -156,7 +159,7 @@ processIndexedStyleSpec[spec_, key_, index_] := Block[
     True,                           All
   ];
   If[IntegerQ @ part, part = Min[part, Length @ $highlightStyle]];
-  Block[{$highlightStyle = Part[$highlightStyle, part]},
+  Block[{$highlightStyle = If[part === All, $highlightStyle, Part[$highlightStyle, part]]},
     If[MissingQ[$highlightStyle],
       Message[GraphRegionHighlight::missspecstyle, part],
       processGeneralSpec @ If[Head[key] === Key, Legended[spec, First @ key], spec];
@@ -178,6 +181,14 @@ PackageExport["PathStyle"]
 
 SetUsage @ "
 PathStyle is an option that controls how paths are rendered in highlights.
+"
+
+(**************************************************************************************************)
+
+PackageExport["RegionStyle"]
+
+SetUsage @ "
+RegionStyle is an option that controls how regions are rendered in highlights.
 "
 
 (**************************************************************************************************)
@@ -243,7 +254,7 @@ processAxesSpec[spec:(All|_Integer|{__Integer})] := Scope[
 processAxesSpec[spec_] := Scope[
   colors = LookupCardinalColors[$Graph];
   words = Map[ParseCardinalWord, ToList @ spec];
-  colors = Association @ Map[#1 -> blendColors[Sort @ Lookup[colors, StripNegated /@ #1]]&, words];
+  colors = AssociationMap[LookupCardinalColors[$Graph, #]&, words];
   KeyValueMap[axisHighlight, colors]
 ];
 
@@ -252,11 +263,6 @@ axisHighlight[word_, color_] := Scope[
   If[Length @ DeleteDuplicates @ First @ path <= 2, Return[]];
   processGeneralSpec @ Style[path, color, HighlightRadius -> 2];
 ];
-
-blendColors[{$Blue, $Red}] := $Pink;
-blendColors[{$Blue, $Green}] := $Teal;
-blendColors[{$Green, $Red}] := $Orange;
-blendColors[colors_] := OklabBlend[colors];
 
 (**************************************************************************************************)
 
@@ -272,7 +278,11 @@ Style;
 SyntaxInformation[Style];
 Options[Style];
 
-$additionalStyleOptions = {PerformanceGoal, PathStyle, ArrowheadPosition, ArrowheadSize, PointSize, HighlightRadius, PathRadius, EdgeSetback, SimplifyRegions, ZOrder};
+$additionalStyleOptions = {
+  PerformanceGoal, PathStyle, RegionStyle, ArrowheadPosition, ArrowheadSize, PointSize, HighlightRadius,
+  PathRadius, EdgeSetback, SimplifyRegions, ZOrder
+};
+
 Unprotect[Style];
 SyntaxInformation[Style] = ReplaceOptions[
   SyntaxInformation[Style],
@@ -283,7 +293,8 @@ Protect[Style];
 PackageExport["PathOutline"]
 PackageExport["SimplifyRegions"]
 
-$namedStyles = "Background" | "Foreground" | "Replace" | "FadeGraph";
+$namedTransformsPattern = "Opaque" | "FadeGraph" | "FadeEdges" | "FadeVertices" | "HideArrowheads" | "HideEdges" | "HideVertices";
+$namedStyles = "Background" | "Foreground" | "Replace" | "ReplaceEdges" | $namedTransformsPattern;
 $highlightStylePattern = Rule[Alternatives @@ $additionalStyleOptions, _] | $namedStyles;
 
 iProcessStyleSpec = MatchValues[
@@ -303,12 +314,16 @@ iProcessStyleSpec = MatchValues[
     $pathStyle = style;
     % @ Style @ most
   ];
+  Style[most__, RegionStyle -> style_] := Scope[
+    $regionStyle = style;
+    % @ Style @ most
+  ];
   Style[most__, ArrowheadPosition -> pos_] := Scope[
     $arrowheadPosition = N[pos];
     % @ Style @ most
   ];
   Style[most__, PointSize -> sz_] := Scope[
-    $pointSize = sz / $GraphPlotImageWidth;
+    $pointSize = sz; (* this is measured in points, not in fraction of image width *)
     % @ Style @ most
   ];
   Style[most__, ArrowheadSize -> sz_] := Scope[
@@ -331,22 +346,21 @@ iProcessStyleSpec = MatchValues[
     $edgeSetback = r;
     % @ Style @ most
   ];
-  Style[most__, "FadeGraph"] := (
-    $GraphPlotGraphics ^= ReplaceAll[$GraphPlotGraphics,
-      {t_Text :> t, a:Annotation[_, "FrameLabel" | "FadeProtected"] :> a,
-       _Opacity -> Opacity[1], $ColorPattern -> LightGray}
-    ];
+  Style[most__, n:$namedTransformsPattern] := (
+    AttachGraphPlotAnnotation[n];
     % @ Style[most];
   );
   Style[most__, "Background"] := % @ Style[most, Opaque, ZOrder -> -10];
   Style[most__, "Foreground"] := % @ Style[most, Opaque, ZOrder -> 10];
-  Style[most__, "Replace"] := % @ Style[most, Opaque, ZOrder -> 10, PathStyle -> "Replace"];
+  Style[most__, "Replace"] := % @ Style[most, Opaque, ZOrder -> 10, PathStyle -> "Replace", RegionStyle -> "Replace"];
+  Style[most__, "ReplaceEdges"] := % @ Style[most, Opaque, ZOrder -> 10, PathStyle -> "ReplaceEdges", RegionStyle -> "ReplaceEdges"];
   Style[most__, ZOrder -> z_Integer] := Scope[
     $zorder = z;
     % @ Style @ most
   ];
+  Style[most__, "Opaque"] := % @ Style[most, Opaque];
   Style[most__, o:$opacityPattern] := Block[
-    {$highlightOpacity = ExtractFirstOpacity[o]}, Block[
+    {$highlightOpacity = ExtractFirstOpacity @ o}, Block[
     {$highlightStyle = SetColorOpacity[RemoveColorOpacity @ $highlightStyle, $highlightOpacity]},
     % @ Style @ most
   ]];
@@ -369,31 +383,45 @@ highlightRegion[other_] := (
   Message[GraphRegionHighlight::interror, other];
 );
 
-highlightRegion[GraphRegionData[vertices_, edges_]] := Scope[
+highlightRegion[GraphRegionData[vertices_, edges_]] /; StringStartsQ[$regionStyle, "Replace"] := Scope[
+  newVertices = {}; newEdges = {};
+  TransformGraphPlotPrimitives[removeHighlightedPathEdges, edges, "EdgePrimitives"];
+  TransformGraphPlotPrimitives[removeHighlightedPathVertices, vertices, "VertexPrimitives"];
+  pathPrimitives = {simplifyPrimitives @ newEdges, simplifyPrimitives @ newVertices};
+  sowHighlight @ Style[
+    replaceWithColor[pathPrimitives, $highlightStyle, $regionStyle === "ReplaceEdges"],
+    $edgeBaseStyle, $highlightStyle
+  ];
+];
+
+highlightRegion[GraphRegionData[vertices_, edges_]] /; $regionStyle === "Highlight" := Scope[
   If[$perfGoal === "Speed",
     Return @ highlightRegion @ GraphRegionData[vertices, {}]];
   graphics = subgraphCoveringGraphics[
     $highlightRadius * $radiusScaling, vertices, edges,
     $IndexGraphEdgeList, $VertexCoordinates, $EdgeCoordinateLists
   ];
-  sowHighlight[{$highlightStyle, graphics}];
+  sowHighlight @ Style[graphics, $highlightStyle];
 ];
 
-highlightRegion[GraphRegionData[vertices_, {}]] :=
+highlightRegion[GraphRegionData[vertices_, {}]] /; $regionStyle === "Highlight" :=
   sowVertexPoints @ vertices;
 
 sowVertexPoints[vertices_] := Scope[
-  requirePaddingPointSize @ $pointSize;
-  sowHighlight @ {
-    $highlightStyle,
-    PointSize @ $pointSize,
-    Point @ Part[$VertexCoordinates, DeleteDuplicates @ vertices]
-  }
-];
-
-highlightRegion[GraphPathData[vertices_, {}, {}]] /; $pathStyle =!= "Replace" && MatchQ[$pathStyle, "Line" | "Arrow"] := Scope[
-  $pointSize = 2 * Replace[$pathRadius, Automatic -> 4] / $GraphPlotImageWidth;
-  sowVertexPoints @ vertices;
+  requirePadding @ $pointSize;
+  coords = Part[$VertexCoordinates, DeleteDuplicates @ vertices];
+  highlights = If[$GraphIs3D,
+    Style[
+      Sphere[coords, $pointSize / $GraphPlotImageWidth * $graphPlotWidth],
+      Directive[Glow[$highlightStyle], GrayLevel[0, 1], Specularity[0]]
+    ]
+  ,
+    Style[
+      Point @ coords,
+      PointSize @ $pointSize, $highlightStyle
+    ];
+  ];
+  sowHighlight @ highlights
 ];
 
 $currentRegionAnnotations = <||>;
@@ -411,7 +439,7 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
 
   pathRadius = $pathRadius;
   SetAutomatic[pathRadius, Switch[$pathStyle,
-    "Replace",                            1.0,
+    "Replace" | "ReplaceEdges",           First @ evalGraphicsValue @ GraphicsValue["EdgeThickness"],
     s_ /; StringContainsQ[s, "Arrow"],    4.0,
     "Line",                               6.0
   ]];
@@ -428,12 +456,16 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
 
   doArrow = StringContainsQ[$pathStyle, "Arrow"];
 
-  darkerColor := OklabDarker[RemoveColorOpacity @ $highlightStyle, .05];
-  darkerStyle = If[$highlightOpacity == 1, darkerColor, Nothing];
-  guessVertexSize = FirstCase[$GraphPlotGraphics, PointSize[sz_] :> 1.2 * sz * $graphPlotWidth, 0, Infinity];
-  setbackDistance = If[lastIsModified || !doArrow || Max[$arrowheadPosition] != 1, 0, Max[$edgeSetback * thicknessRange/2, guessVertexSize]];
+  color = FirstCase[$highlightStyle, $ColorPattern, Gray, {0, Infinity}];
+  darkerColor := OklabDarker[RemoveColorOpacity @ color, .05];
+  arrowheadColor = If[$highlightOpacity == 1, darkerColor, color];
+
+  vertexSizePR = evalGraphicsValue @ GraphicsValue["VertexSize", "PlotRange"] * 1.2;
+  setbackDistance = If[lastIsModified || !doArrow || Max[$arrowheadPosition] != 1, 0, Max[$edgeSetback * thicknessRange/2, vertexSizePR]];
   If[$edgeSetback == 0, setbackDistance = 0];
-  pathPrimitives = If[$GraphIs3D,
+  isEdgeBased = True;
+  pathPrimitives = If[$GraphIs3D && $pathStyle === "Line",
+    isEdgeBased = False;
     Tube[segments, thicknessRange / 3]
   ,
     Switch[$pathStyle,
@@ -444,9 +476,7 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
         SetAutomatic[arrowheadSize, thickness];
         baseArrowheads = List[
           arrowheadSize, $apos,
-          makeHighlightArrowheadShape[
-            {Opacity @ $highlightOpacity, darkerStyle, JoinForm @ "Miter", CapForm @ "Round"}, 5
-          ]
+          makeHighlightArrowheadShape[arrowheadColor, 5, $GraphIs3D]
         ];
         arrowheads = Arrowheads @ If[ListQ[$arrowheadPosition],
           Map[ReplaceAll[baseArrowheads, $apos -> #]&, $arrowheadPosition],
@@ -462,15 +492,15 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
         {disk1, arrowheads, arrow, disk2, extraArrowheads}
       ,
       "Replace",
-        newVertices = {}; newArrows = {};
+        newVertices = newEdges = {};
         TransformGraphPlotPrimitives[removeHighlightedPathEdges, edges, "EdgePrimitives"];
         TransformGraphPlotPrimitives[removeHighlightedPathVertices, vertices, "VertexPrimitives"];
         newEdges = Which[
-          edges === {}, Nothing,
-          adjustments === {}, newArrows,
+          edges === {}, {},
+          adjustments === {}, newEdges,
           True, Style[Arrow @ segments, arrowheads, CapForm @ "Round"]
         ];
-        pathPrimitives = {newEdges, newVertices};
+        pathPrimitives = {Style[newEdges, $edgeBaseStyle], newVertices};
         replaceWithColor[pathPrimitives, $highlightStyle]
       ,
       _,
@@ -478,25 +508,41 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
     ]
   ];
 
-  pathStyle = If[$GraphIs3D && $highlightOpacity < 0.9, FaceForm[$highlightStyle, None], $highlightStyle];
-
-  pathOutline = If[$outline === False, Nothing,
-    outlineColor = If[$outline === True, darkerColor, $outline];
-    {outlineColor, Thickness[thickness * 1.5], Line[segments]}
+  If[$GraphIs3D && $pathStyle =!= "Replace",
+    pathPrimitives = pathPrimitives /. {
+      Disk[p_, r_] :> Sphere[p, r],
+      Arrow[a___] :> Arrow[Tube[a, diskRadius / 1.5]]
+    };
+    color = color /. c:$ColorPattern :> Color3D[c]
   ];
+
+  pathStyle = If[$GraphIs3D && $highlightOpacity < 0.9 && !isEdgeBased,
+    FaceForm[color, None], color];
+
+  If[$outline === True,
+    outlineColor = If[$outline === True, darkerColor, $outline];
+    sowHighlight @ Style[
+      Line @ segments,
+      JoinForm @ "Round", CapForm @ "Round",
+      outlineColor, Thickness[thickness * 1.5]
+    ];
+  ];
+
 
   (* unfortunately CapForm doesn't do anything for Arrow *)
   requirePadding[If[doArrow, 1.2, 1] * thicknessRange / $graphPlotWidth * $GraphPlotImageWidth];
-  sowHighlight @ {
+  sowHighlight @ Style[
+    pathPrimitives,
     JoinForm @ "Round", CapForm @ "Round",
-    pathOutline,
-    pathStyle, Thickness @ thickness, pathPrimitives
-  };
+    pathStyle, Thickness @ thickness
+  ];
 ];
 
-replaceWithColor[g_, c_] :=
+replaceWithColor[g_, c_, preserveArrowheads_:False] :=
   ReplaceAll[g, {
     t_Text :> t,
+    If[preserveArrowheads, a_Arrowheads :> a, Nothing],
+    Directive[Glow[_], rest___] :> Directive[Glow[c], rest], (* <- 3d color *)
     Inset[z_Graphics, args__] :> Inset[SetFrameColor[z, c], args],
     $ColorPattern -> c
   }];
@@ -504,7 +550,7 @@ replaceWithColor[g_, c_] :=
 (* we simply delete matching edges, because we will redraw them possibly with adjustments *)
 removeHighlightedPathEdges[{old_, new_}] := (
   arrowheads = FirstCase[old, _Arrowheads, None, Infinity];
-  AppendTo[newArrows, new];
+  AppendTo[newEdges, new];
   old
 );
 
@@ -682,8 +728,8 @@ subgraphCoveringGraphics[r_, vertices_, edgeIndices_, edgeList_, vertexCoords_, 
   radius = Max[SquaredDistanceMatrix[vertexPoints, {center}]];
   externalCoords = Part[vertexCoords, Complement[Range @ Length @ vertexCoords, vertices]];
   If[$simplifyRegions && externalCoords =!= {} && (other = Min[SquaredDistanceMatrix[externalCoords, {center}]]) > radius,
-    dr = (other - radius)/3;
-    Return @ Disk[center, Sqrt[radius + dr]];
+    dr = (other - radius) / If[$GraphIs3D, 32, 3];
+    Return @ If[$GraphIs3D, Sphere, Disk][center, Sqrt[radius + dr]];
   ];
   edgePoints = DeleteDuplicates @ Flatten[edgeSpaced /@ Part[edgeCoordsLists, edgeIndices], 1];
   points = ToPacked @ Join[vertexPoints, edgePoints];
@@ -691,7 +737,7 @@ subgraphCoveringGraphics[r_, vertices_, edgeIndices_, edgeList_, vertexCoords_, 
   If[ContainsQ[primitives, Polygon[_Rule]],
     primitives = primitives /. p:Polygon[_Rule] :> removeTrivialHoles[p, externalCoords];
   ];
-  primitives
+  Style[primitives, EdgeForm[None]]
 ];
 
 containsAnyPointsQ[coords_, points_] := Scope[

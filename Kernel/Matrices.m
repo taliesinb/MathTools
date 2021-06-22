@@ -1,11 +1,16 @@
 (**************************************************************************************************)
-(** Operators useful for Matrices                                                                 *)
+(** Idiomatic construction of matrices                                                            *)
 (**************************************************************************************************)
+
+PackageExport["Matrix"]
+
+SetHoldAll[Matrix];
+Matrix[CompoundExpression[a___]] := Map[List, List[a]];
+Matrix[elements___] := SequenceSplit[Flatten[Unevaluated[{elements}] /. HoldPattern[CompoundExpression[a__]] :> Riffle[{a}, EndOfRow]], {EndOfRow}];
 
 PackageExport["InnerDimension"]
 
 InnerDimension[array_] := Last @ Dimensions @ array;
-
 
 (**************************************************************************************************)
 (** Common matrix predicates                                                                      *)
@@ -69,6 +74,13 @@ PermutationMatrixQ[matrix_] :=
   SquareMatrixQ[matrix] && RealMatrixQ[matrix] @@ MinMax[matrix] == {0, 1} && Count[matrix, 1, 2] == Length[matrix] &&
     OnesQ[Total[matrix, {1}]] && OnesQ[Total[matrix, {2}]];
 
+
+PackageExport["SameMatrixUptoPermutationQ"]
+
+perms[n_] := perms[n] = Permutations @ Range[n];
+SameMatrixUptoPermutationQ[m1_, m2_] := AnyTrue[perms @ Length @ m1, m1 == Part[m2, #, #]&];
+(* SameMatrixUptoPermutationAndInversionQ[m1_, m2_] := AnyTrue[perms @ Length @ m1, MatchQ[Part[m2, #, #], m1 | Transpose[m1]]&];
+ *)
 
 (**************************************************************************************************)
 (** Translations matrix functions                                                                 *)
@@ -215,7 +227,7 @@ PackageExport["BlockDiagonalMatrix"]
 BlockDiagonalMatrix[blocks_] := Scope[
   range = Range @ Length @ blocks;
   If[!MatchQ[blocks, {Repeated[_ ? MatrixQ]}], ReturnFailed[]];
-  superMatrix = DiagonalMatrix[range] /. MapThread[Rule, {range, blocks}];
+  superMatrix = DiagonalMatrix[range] /. RuleThread[range, blocks];
   ToPacked @ ArrayFlatten[superMatrix, 2]
 ];
 

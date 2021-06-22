@@ -526,7 +526,7 @@ PackageExport["MapSpacedRow"]
 
 Options[MapSpacedRow] = {
   Spacings -> 20,
-  LabelStyle -> $LegendLabelStyle
+  LabelStyle -> $LabelStyle
 };
 
 MapSpacedRow[f_, list_List, args___, OptionsPattern[]] := Scope[
@@ -541,7 +541,7 @@ PackageExport["SpacedRow"]
 $srSpacings = 20;
 $srMaxItems = Infinity;
 $srMaxWidth = Infinity;
-$srLabelStyle = $LegendLabelStyle;
+$srLabelStyle = $LabelStyle;
 
 SpacedRow[elems__, "MaxWidth" -> n_] := Block[{$srMaxWidth = n},
   SpacedRow[elems]
@@ -572,7 +572,7 @@ SpacedRow[elems__] := Scope[
   ]
 ];
 
-SpacedRow[labels_List -> elems_List] := SpacedRow @@ MapThread[Rule, {labels, elems}];
+SpacedRow[labels_List -> elems_List] := SpacedRow @@ RuleThread[labels, elems];
 
 SpacedRow[labeled:{__Labeled}] := Scope[
   items = Part[labeled, All, 1];
@@ -589,7 +589,7 @@ SpacedRow[elems__Rule] := Scope[
 
 PackageExport["$LargeEllipsis"]
 
-$LargeEllipsis = Style["\[Ellipsis]", $LegendLabelStyle, Gray, 18]
+$LargeEllipsis = Style["\[Ellipsis]", $LabelStyle, Gray, 18]
 
 (**************************************************************************************************)
 
@@ -665,3 +665,42 @@ estimateItemSize = MatchValues[
   Legended[g_, _] := %[g] + 50;
   other_ := First[Rasterize[other, "RasterSize"]] * 2;
 ];
+
+(**************************************************************************************************)
+
+PackageExport["ChartSymbol"]
+
+SetUsage @ "
+ChartSymbol[sub$] represents a chart and formats as C$sub.
+"
+
+declareFormatting[
+  ChartSymbol[a___] :> Subscript["C", a]
+];
+
+(**************************************************************************************************)
+
+PackageExport["ChartSymbol"]
+
+SetUsage @ "
+ChartSymbol[sub$] represents a chart and formats as C$sub.
+"
+
+declareFormatting[
+  ChartSymbol[a___] :> Subscript["\[ScriptCapitalC]", a]
+];
+
+
+(**************************************************************************************************)
+
+PackageExport["ChartColorForm"]
+
+ChartColorForm[expr_, graph_] := Scope[
+  colors = LookupCardinalColors @ graph;
+  ReplaceAll[
+    expr,
+    cs:ChartSymbol[sym_String] :> Style[cs, HumanBlend @ Lookup[colors, ParseCardinalWord @ sym]]
+  ]
+];
+
+ChartColorForm[graph_][expr_] := ChartColorForm[expr, graph];

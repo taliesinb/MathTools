@@ -78,6 +78,12 @@ ExtractFirstOpacity[expr_] := FirstCase[expr /. $opacityNormalizationRules, $opa
 
 (**************************************************************************************************)
 
+PackageExport["ColorOpacity"]
+
+ColorOpacity[color_] := FirstCase[Replace[color, $opacityNormalizationRules], $opacityRule, 1, {0}];
+
+(**************************************************************************************************)
+
 PackageExport["ColorVectorQ"]
 
 ColorVectorQ[{Repeated[$ColorPattern]}] := True;
@@ -366,6 +372,19 @@ OklabBlend[colors$] blends a list of ordinary colors, but in OkLAB colorspace.
 DeclareArgumentCount[OklabBlend, 1];
 
 OklabBlend[colors_List] := FromOklab @ Mean @ ToOklab[colors];
+
+(**************************************************************************************************)
+
+PackageExport["HumanBlend"]
+
+HumanBlend[colors_List] := iHumanBlend @ Sort @ colors;
+
+iHumanBlend[{color_}] := color;
+iHumanBlend[{$Blue, $Green, $Red}] := $LightGray;
+iHumanBlend[{$Blue, $Red}] := $Pink;
+iHumanBlend[{$Blue, $Green}] := $Teal;
+iHumanBlend[{$Green, $Red}] := $Orange;
+iHumanBlend[colors_] := OklabBlend[colors];
 
 (**************************************************************************************************)
 
@@ -730,7 +749,7 @@ DiscreteColorLegend[assoc_] :=
   Grid[
     KeyValueMap[{val, color} |-> {"", simpleColorSquare @ color, val}, assoc],
     Spacings -> {{0., {0.6}, 5}, {{0.5}}},
-    BaseStyle -> $LegendLabelStyle
+    BaseStyle -> $LabelStyle
   ];
 
 simpleColorSquare[color_] := Graphics[
@@ -877,7 +896,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   colors = Map[normalFunction, uniqueValues];
   colorsValues = Transpose[{colors, uniqueValues}];
   If[containsInd, AppendTo[colorsValues, {White, Indeterminate}]; AppendTo[posIndex, Indeterminate -> indPos]];
-  {Merge[MapThread[Rule, {colorsValues, Values @ posIndex}], Catenate], colorFunction}
+  {Merge[RuleThread[colorsValues, Values @ posIndex], Catenate], colorFunction}
 ];
 
 literalColorFunction[colors_] := Scope[
