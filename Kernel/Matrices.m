@@ -71,7 +71,7 @@ ZeroMatrixQ[matrix_] := MatrixQ[matrix] && ZerosQ[matrix];
 PackageExport["PermutationMatrixQ"]
 
 PermutationMatrixQ[matrix_] :=
-  SquareMatrixQ[matrix] && RealMatrixQ[matrix] @@ MinMax[matrix] == {0, 1} && Count[matrix, 1, 2] == Length[matrix] &&
+  SquareMatrixQ[matrix] && RealMatrixQ[matrix] && MinMax[matrix] == {0, 1} && Count[matrix, 1, 2] == Length[matrix] &&
     OnesQ[Total[matrix, {1}]] && OnesQ[Total[matrix, {2}]];
 
 
@@ -309,14 +309,14 @@ PackageExport["SquaredDistanceMatrix"]
 
 SquaredDistanceMatrix[{}] := {};
 
-SquaredDistanceMatrix[points_] := (
+SquaredDistanceMatrix[points_ ? RealMatrixQ] := (
   $loadDM; $distanceMatrixFunction1[points, $squaredEuclideanDistanceCode, False]
 );
 
 SquaredDistanceMatrix[{}, _] := {};
 SquaredDistanceMatrix[_, {}] := {};
 
-SquaredDistanceMatrix[points1_, points2_] := (
+SquaredDistanceMatrix[points1_ ? RealMatrixQ, points2_ ? RealMatrixQ] := (
   $loadDM; $distanceMatrixFunction2[points1, points2, $squaredEuclideanDistanceCode, False]
 );
 

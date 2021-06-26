@@ -335,7 +335,7 @@ ToColorPalette[palette$, n$] returns exactly n$ colors from the palette.
 
 $ecnp = Alternatives @@ $ExtendedColorNames;
 
-ToColorPalette = MatchValues[
+ToColorPalette = Case[
   Automatic | "Medium"          := $MediumColorPalette;
   "Light"                       := $LightColorPalette;
   "Dark"                        := $DarkColorPalette;
@@ -628,12 +628,12 @@ ContinuousColorLegend[values_, func_, ticks_] := Scope[
   (* If[multiplier === None, graphics, Labeled[graphics, multiplier, Left, LabelStyle -> "Graphics"]] *)
 ];
 
-estimateTickWidth = MatchValues[
-  Row[list_, ___] := Total[% /@ list] + .5;
+estimateTickWidth = Case[
+  Row[list_, ___]       := Total[% /@ list] + .5;
   Superscript["10", b_] := 3;
-  Style[s_, ___] := %[s];
-  s_String := StringLength[s];
-  _ := 1;
+  Style[s_, ___]        := %[s];
+  s_String              := StringLength[s];
+  _                     := 1;
 ];
 
 chooseTicks[2, min_, max_] :=
@@ -662,7 +662,7 @@ tickListComplexity[target_, scaling_][ticks_] := Scope[
 ];
 
 
-tickComplexity = MatchValues[
+tickComplexity = Case[
   Row[{str_String, ___}] := decimalComplexity[str];
   str_String := decimalComplexity[str];
   _ := 0
@@ -853,14 +853,14 @@ ApplyColoring::badpalette = "The palette `` was not a valid form."
 
 $discreteColors = RGBColor /@ {"#da3b26", "#eebb40", "#4ba526", "#4aa59d", "#4184c6", "#ca4a86", "#6b6b6b", "#929292", "#c5c5c5"};
 
-discreteColorPalette = MatchValues[
+discreteColorPalette = Case[
   4 := Part[$discreteColors, {1,2,3,5}];
   5 := Part[$discreteColors, {1,2,3,5,6}];
   n_ /; n <= 9 := Take[$discreteColors, n];
   _ := $discreteColors;
 ];
 
-coloringColorPalette = MatchValues[
+coloringColorPalette = Case[
   Automatic := Part[ToColorPalette["Basic"], {1, 2, 3, 5, 4, 6}];
   other_ := ToColorPalette[other];
 ];

@@ -21,13 +21,17 @@ $baseLatticeUsage = StringTrim @ "
 | %MaxNorm | Infinity | maximal allowed norm, larger norm vertices are dropped |
 | %NormFunction | Automatic | function to compute norm from abstract vertex coordinates |
 | %InitialStates | Automatic | where to start the exploration. |
-* %MaxVertices -> AtLeast[n$] specifies that at least n$ vertices should be collected, \
+
+* %MaxVertices -> AtLeast[n$] specifies that at least n$ vertices should be collected,
 but the currently explored depth should be completed before termination.
+
 * For %NormFunction -> Automatic, %MaxNorm -> n$ will use %ChessboardNorm, which has the \
-effect of allowing up to n$ moves by each cardinal.
+effect of allowing up to n$ moves per cardinal.
+
 * The default %InitialStates -> Automatic uses the 'natural' initial states for the \
-given machine. For a quiver representation, the first vertex is used along with the \
-identity matrix.
+given machine.
+For a quiver representation, the 'central' vertex is chosen, valued by the identity matrix.
+For %InitialStates -> All, all vertices of the fundamental quiver are used as initial states.
 
 ## Graph options
 
@@ -35,6 +39,8 @@ identity matrix.
 | %CombineMultiedges | True | combine multiedges into a single edge sharing cardinals |
 | %SelfLoops | True | allow self-loops |
 | %CardinalColors | Automatic | how to choose colors for cardinals |
+
+* In addition, all the options of %ExtendedGraph are supported.
 
 ## Coordinatization options
 
@@ -49,6 +55,9 @@ identity matrix.
 | None | use the entire state as the coordinate |
 | f$ | apply f$ to each %RepresentationElement |
 | {All, f$} | apply f% to the full state |
+
+* %AbstractCoordinateFilter is a predicate that will be applied to vertices and should return True or False.
+Only vertices returning True will be retained.
 
 * %VertexCoordinateFunction determines the graphical coordinates, and accepts the following settings:
 | Automatic | convert representation coords to spatial coords based on the structure of the machine (default) |
@@ -68,11 +77,20 @@ identity matrix.
 | Automatic | use 'SpringElectricalEmbedding' |
 | spec$ | use a custom specification accepted by Graph |
 
-## Extended options
-* In addition, the following extended graph options are supported:
-<*$extendedGraphUsage*>
+* %GraphLegend accepts these settings:
+| None | no legend |
+| Automatic | legend for cardinals |
 | 'Quiver' | label with the generating quiver |
 | 'QuiverRepresentation' | label with the generating quiver representation |
+
+## Vertex data
+
+The following vertex is available for use with %VertexColorFunction, %VertexLabels, etc:
+
+| 'GeneratingVertex' | corresponding vertex of the fundamental quiver |
+| 'AbstractCoordinates' | abstract coordinates for the vertex |
+| 'RepresentationMatrix' | representation matrix for the vertex |
+| 'Norm' | the norm of the vertex, if computed |
 "
 
 PackageExport["InitialStates"]
@@ -265,6 +283,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   (* rewrite the vertices via the coordinate function *)
+  If[$stripLV && !MatchQ[First @ vertexList, _LatticeVertex], $stripLV = False];
   abstractVertexList = MapAt[abstractCoordinateFunction, vertexList, If[$stripLV, {All, 1}, {All}]];
   ivertex = First @ abstractVertexList;
 
@@ -374,10 +393,11 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
 
   If[combineMultiedges, graph //= CombineMultiedges];
 
+  isLV = MatchQ[First @ vertexList, LatticeVertex[_, _]];
   AttachVertexAnnotations[graph, <|
-    If[Length[First @ vertexList] == 2, "GeneratingVertex" -> vertexList[[All, 2]], {}],
-    "AbstractCoordinates" -> abstractVertexList[[All, 1]],
-    If[includeRepresentationMatrices, "RepresentationMatrix" -> vertexList[[All, 1]], {}],
+    If[isLV, "GeneratingVertex" -> vertexList[[All, 2]], {}],
+    "AbstractCoordinates" -> If[isLV, abstractVertexList[[All, 1]], abstractVertexList],
+    If[isLV && includeRepresentationMatrices, "RepresentationMatrix" -> vertexList[[All, 1]], {}],
     If[norms =!= None, "Norm" -> norms, {}]
   |>]
 ];
@@ -389,7 +409,7 @@ $defaultLatticeNorms = {
   _ -> 3
 };
 
-$defaultLatticeSizes = {"Square" -> {180, 180}, _ -> {200, 200}};
+$defaultLatticeSizes = {"Line" -> {200, 50}, "Square" -> {180, 180}, _ -> {200, 200}};
 
 PackageExport["ToTitleString"]
 
@@ -517,13 +537,14 @@ PackageExport["LatticeGraph"]
 
 SetUsage @ "
 LatticeGraph['name$'] generates part of the lattice graph for the named lattice 'name$'.
+LatticeQuiver[{'name$', p$1, $$}] generates a parameterized lattice graph with parameters p$i.
 LatticeGraph[machine$] generates part of the lattice graph from a particular machine.
 LatticeGraph[$$, depth$] generates a graph to a given depth.
 * machine$ can be a group, groupoid, quiver representation, or an association with the \
 keys 'CayleyFunction' and 'InitialStates'.
 <*$namedLatticeUsage*>
 <*$baseLatticeUsage*>
-* To obtain cardinal tags on the edges, use the function LatticeQuiver.
+* To obtain cardinal tags on the edges, use the function %LatticeQuiver.
 "
 
 DeclareArgumentCount[LatticeGraph, {1, 2}];
@@ -552,11 +573,13 @@ PackageExport["LatticeQuiver"]
 
 SetUsage @ "
 LatticeQuiver['name$'] generates part of the lattice graph for the named lattice 'name$'.
+LatticeQuiver[{'name$', p$1, $$}] generates a parameterized lattice quiver with parameters p$i.
 LatticeQuiver[machine$] generates part of the lattice graph from a particular machine.
 LatticeQuiver[$$, depth$] generates a graph to a given depth.
 * machine$ can be a group, groupoid, quiver representation, or an association with the \
 keys 'CayleyFunction' and 'InitialStates'.
-* LatticeQuiver behaves like LatticeGraph, but returns a quiver instead of an ordinary graph.
+* The returned graph is an undirected graph, unless %DirectedEdges -> True is specified.
+* LatticeQuiver behaves like %LatticeGraph, but returns a quiver instead of an ordinary graph.
 <*$namedLatticeUsage*>
 <*$baseLatticeUsage*>
 "

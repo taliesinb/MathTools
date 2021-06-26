@@ -68,10 +68,6 @@ $extendedGraphUsage = StringTrim @ "
 | 'CrossBar' | a thick horizontal line |
 | 'Tube' | a tube |
 | None | no arrowheads |
-The following settings will pair up cardinals in %CardinalSet[$$]:
-| 'PairedDisk' | two half-disks |
-| 'PairedDiamond' | two half-diamonds |
-| 'PairedSquare' | two half-squares |
 
 * In addition, %ArrowheadShape supports suboptions via {'shape$', subopts$$}:
 | %NegationStyle | 'Flip' | how to plot negated cardinals in %CardinalSet[$$] |
@@ -89,7 +85,6 @@ The following settings will pair up cardinals in %CardinalSet[$$]:
 * %NegationStyle -> spec$ determines how negated cardinals are drawn:
 | 'OverBar' | draw a negation bar above arrowhead |
 | 'UnderBar' | drwa a negation bar below arrowhead |
-| 'Reverse' | flip the direction of the cardinal, or switch paired cardinals |
 
 * %PairedDistance -> size$ determines the separation of paired cardinals, in points.
 
@@ -334,12 +329,13 @@ makeNewGraph[graph_Graph ? GraphQ, newOptions_List] :=
 makeNewGraph[___] := $Failed;
 
 (* these compensate for a weird extra level of list that Graph adds *)
-optionFixup = MatchValues[
-  Rule[VertexSize, r:{__Rule}] := Rule[VertexSize, Association @ r];
-  Rule[sym:(EdgeStyle|VertexStyle), val_] := Rule[sym, toDirective[val]];
-  Rule[VertexShapeFunction, assoc_Association] := Rule[VertexShapeFunction, toShape /@ assoc];
+optionFixup = Case[
+  Rule[VertexSize, r:{__Rule}]                    := Rule[VertexSize, Association @ r];
+  Rule[sym:(VertexLabels | EdgeLabels), l_List]   := Rule[sym, Hold[l]];
+  Rule[sym:(EdgeStyle|VertexStyle), val_]         := Rule[sym, toDirective[val]];
+  Rule[VertexShapeFunction, assoc_Association]    := Rule[VertexShapeFunction, toShape /@ assoc];
   Rule[sym:(GraphHighlightStyle|VertexLabelStyle|EdgeLabelStyle), elem_] := Rule[sym, toDirective[elem]];
-  other_ := other;
+  other_                                          := other;
 ];
 
 (* TODO: compute sizes here so that graph layout knows about them *)
@@ -592,11 +588,11 @@ iCombineMultiedges[graph_] := Scope[
   Graph[vertices, edges, opts]
 ];
 
-separateTag = MatchValues[
+separateTag = Case[
   DirectedEdge[a_, b_, t_] /; Order[a, b] == -1 := {DirectedEdge[b, a], Negated @ t};
-  DirectedEdge[a_, b_, t_] := {DirectedEdge[a, b], t};
-  UndirectedEdge[a_, b_, t_] := {Sort @ UndirectedEdge[a, b], t};
-  edge_ := {Sort @ edge, None}
+  DirectedEdge[a_, b_, t_]                      := {DirectedEdge[a, b], t};
+  UndirectedEdge[a_, b_, t_]                    := {Sort @ UndirectedEdge[a, b], t};
+  edge_                                         := {Sort @ edge, None}
 ];
 
 reattachTag[edge_, {}] := edge;
@@ -616,10 +612,10 @@ MakeBoxes[CardinalSet[set_List], TraditionalForm] :=
 
 PackageExport["SimplifyCardinalSet"]
 
-SimplifyCardinalSet = MatchValues[
-  CardinalSet[{a_}] := % @ a;
-  CardinalSet[{l___, CardinalSet[{m___}], r___}] := % @ CardinalSet[{l, m, r}];
-  other_ := other;
+SimplifyCardinalSet = Case[
+  CardinalSet[{a_}]                               := % @ a;
+  CardinalSet[{l___, CardinalSet[{m___}], r___}]  := % @ CardinalSet[{l, m, r}];
+  other_                                          := other;
 ];
 
 (**************************************************************************************************)
@@ -1017,10 +1013,10 @@ ToGraph[obj$] attempts to convert obj$ to a Graph[$$] object.
 
 $edgeP = _DirectedEdge | _UndirectedEdge | _Rule | _TwoWayRule;
 
-ToGraph = MatchValues[
-  g_Graph := g;
+ToGraph = Case[
+  g_Graph                 := g;
   list:{Repeated[$edgeP]} := Graph[list];
-  _ := $Failed
+  _                       := $Failed
 ];
 
 (**************************************************************************************************)
@@ -1049,9 +1045,14 @@ ExtendedSubgraph[oldGraph_, newVertices_, newEdges_] := Scope[
   annotations = ExtendedGraphAnnotations[oldGraph];
   vertexCoords = Lookup[options, VertexCoordinates, Automatic];
   oldVertices = VertexList[oldGraph];
-  newVertexIndices = Map[IndexOf[oldVertices, #]&, newVertices];
-  newVertexOrdering = Ordering[newVertexIndices];
-  newVertices = Part[newVertices, newVertexOrdering];
+  If[newVertices === All,
+    newVertexIndices = Range @ Length @ oldVertices;
+    newVertices = oldVertices;
+  ,
+    newVertexIndices = Map[IndexOf[oldVertices, #]&, newVertices];
+    newVertexOrdering = Ordering[newVertexIndices];
+    newVertices = Part[newVertices, newVertexOrdering];
+  ];
   vertexAnnotations = LookupAnnotation[oldGraph, VertexAnnotations, None];
   sortedNewVertexIndices = Sort @ newVertexIndices;
   If[ListQ[vertexCoords],
@@ -1321,7 +1322,7 @@ $cr = .1;
 corner[a_, b_, c_] :=
   Splice @ {a, along[b, a, $cr], along[b, a, 0.8*$cr], b, along[b, c, 0.8*$cr], along[b, c, $cr]};
 
-along[a_, b_, d_] := If[EuclideanDistance[a, b] < d, b, PointAlongLine[a, b, d]]
+along[a_, b_, d_] := PointAlongLine[{a, b}, d];
 
 squareSelfLoop[line_] := line;
 
@@ -1341,7 +1342,7 @@ applyCoordinateTransform[ProjectionOnto[shape_]] := Block[{$rnf},
   edgeCoordinateLists //= Map[projectLineOntoRNF];
 ];
 
-projectLineOntoRNF = MatchValues[
+projectLineOntoRNF = Case[
   {a_, b_} ? CoordinateMatrixQ /; (Head[$rnf] === RegionNearestFunction) :=
     $rnf @ Interpolated[a, b, 6];
   points_List ? CoordinateMatrixQ :=

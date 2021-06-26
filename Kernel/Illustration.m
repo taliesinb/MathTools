@@ -135,24 +135,58 @@ LatticeColoringGrid[items_, args___] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["PathWordPlot"]
+
+PathWordPlot[graph_, p_Path -> color_] :=
+  PathWordPlot[graph, p, color];
+
+PathWordPlot[graph_, path:Path[start_, word_, ___], color_:$Teal] := Scope[
+  end = Part[GraphRegion[graph, Take[path, 2]], 1, 1, -1];
+  end = Part[VertexList @ graph, end];
+  Labeled[
+    HighlightGraphRegion[graph, Arrow @ path, {color, "Foreground", "FadeGraph"}],
+    PathWordForm[start, word, end]
+  ]
+];
+
+(**************************************************************************************************)
+
+PackageExport["PathConcatPlot"]
+
+inlineSymbol[s_, args___] := Labeled[Style[s, 20, args], ""]
+
+PathConcatPlot[graph_, p1_, p2_, p3_] :=
+  SpacedRow[
+    PathWordPlot[graph, p1],
+    inlineSymbol @ "\[Star]",
+    PathWordPlot[graph, p2],
+    inlineSymbol @ "=",
+    If[p3 === None, inlineSymbol["\[UpTee]", 30], PathWordPlot[graph, p3]]
+  ]
+
+(**************************************************************************************************)
+
 PackageExport["HighlightCompassDomain"]
 
 Options[HighlightCompassDomain] = {
   "Color" -> Automatic,
   "Arrowheads" -> "Cardinals",
-  "PreserveColors" -> True
+  "PreserveColors" -> True,
+  "Lighter" -> 0
 }
 
 HighlightCompassDomain[graph_, cardinals_, OptionsPattern[]] := Scope[
-  UnpackOptions[color, arrowheads, preserveColors];
+  UnpackOptions[color, arrowheads, preserveColors, lighter];
   SetAutomatic[color, HumanBlend @ LookupCardinalColors[graph, cardinals]];
   If[color === "First", color = LookupCardinalColors[graph, First @ cardinals]];
+  If[lighter != 0, color = ColorConvert[MapAt[# - lighter&, ColorConvert[color, Hue], 2], RGBColor]];
   (* arrowheadStyle = Append[All -> Transparent] @ KeyTake[LookupCardinalColors @ graph, cardinals]; *)
   HighlightGraphRegion[graph,
     CompassDomain[cardinals], {color,
       If[preserveColors, "ReplaceEdges", "Replace"],
-      If[arrowheads === All, Sequence @@ {}, "HideArrowheads"],
-      If[arrowheads === All, "FadeEdges", "FadeGraph"]
+      If[arrowheads === None, "HideArrowheads", Nothing],
+      If[arrowheads === All, "FadeEdges", "FadeGraph"],
+      Cardinals -> cardinals
     },
     ArrowheadShape -> If[arrowheads === None, None, Automatic],
     (* ArrowheadStyle -> arrowheadStyle,  *)
@@ -168,12 +202,12 @@ HighlightCompassDomain[graph_, cardinals_, OptionsPattern[]] := Scope[
 PackageExport["CompassDiagram"]
 
 Options[CompassDiagram] = JoinOptions[
-  {"ImpliedRelations" -> True, "Directed" -> False, "Shape" -> "PairedSquare"},
+  {"ImpliedRelations" -> True, "Directed" -> False, "TransitionStyle" -> "Square", CombineMultiedges -> False},
   ExtendedGraph
 ];
 
 CompassDiagram[compasses_, equivSets_, opts:OptionsPattern[]] := Scope[
-  UnpackOptions[impliedRelations, directed, shape];
+  UnpackOptions[impliedRelations, directed, transitionStyle, combineMultiedges];
   (* don't use pairing! *)
   cardinals = DeleteDuplicates[Join @@ Values @ compasses];
   If[MatchQ[equivSets, {__DirectedEdge}],
@@ -196,32 +230,41 @@ CompassDiagram[compasses_, equivSets_, opts:OptionsPattern[]] := Scope[
   ];
   compasses = Keys @ compasses;
   coords = {-#1, #2}& @@@ CirclePoints[Length @ compasses];
-  ExtendedGraph[
+  graph = ExtendedGraph[
     compasses, Join[$edges, manualEdges],
     VertexCoordinates -> coords,
     FilterOptions @ opts,
     GraphLayout -> {"MultiEdgeDistance" -> 0.13},
     GraphLegend -> Automatic, Cardinals -> cardinals,
-    ArrowheadShape -> {shape, PairedDistance -> 0, NegationStyle -> "OverBar"},
-    VertexLabelStyle -> {LabelPosition -> Automatic},
+    ArrowheadShape -> {
+      If[transitionStyle === "Label", "Line", transitionStyle],
+      PairedDistance -> 0, NegationStyle -> "OverBar",
+      CardinalTransitionStyle -> transitionStyle
+    },
+    CardinalColors -> ChooseCardinalColors[cardinals],
+    VertexLabelStyle -> {LabelPosition -> Automatic, BaseStyle -> {FontSize -> 12}},
     BaselinePosition -> Center, EdgeSetback -> .1,
-    VertexLabels -> "Name", ArrowheadSize -> Large,
-    EdgeShapeFunction -> If[!directed, Automatic, compassEdgeRenderingFunction]
-  ]
-];
-
-compassEdgeRenderingFunction = Function[
-  Style[
-    Arrow[#Coordinates],
-    Arrowheads @ If[MatchQ[#Cardinal, CardinalSet[{z_, z_}]], Identity,
-      Append @ {GraphicsValue["ArrowheadSize", #Fraction&], 1.0, ArrowheadData["Arrow", Gray]}
-    ] @ First @ #Arrowheads
-  ]
+    VertexLabels -> "Name", ArrowheadSize -> Medium
+  ];
+  If[combineMultiedges,
+    graph = CombineMultiedges @ graph;
+    If[transitionStyle === "Label",
+      tags = EdgeTags @ graph;
+      graph = ExtendedSubgraph[graph, All, Take[EdgeList @ graph, All, 2]];
+      graph = ExtendedGraph[graph,
+        EdgeLabels -> tags,
+        EdgeLabelStyle -> {LabelPosition -> Scaled[0.5]},
+        ArrowheadShape -> "Line", ArrowheadSize -> Small, ArrowheadPosition -> 0.9,
+        GraphLegend -> None
+      ]
+    ];
+  ];
+  graph
 ];
 
 createCDEdges[card1_, card2_] := Outer[
   {comp1, comp2} |-> If[Order[comp1, comp2] == 1,
-    Internal`StuffBag[$edges, DirectedEdge[comp1, comp2, CardinalSet[{card1, card2}]]]
+    Internal`StuffBag[$edges, DirectedEdge[comp1, comp2, CardinalTransition[card1 -> card2]]]
   ],
   compassIndex @ card1, compassIndex @ StripNegated @ card2, 1
 ];
@@ -302,6 +345,7 @@ MobiusStrip[n_, is3D_:False] := Scope[
     VertexCoordinates -> coords,
     EdgeShapeFunction -> If[is3D, Automatic, drawMobiusEdge],
     ImagePadding -> {{20, 20}, {20, 0}}, Cardinals -> {"x", "a", "b", "c"},
+    ArrowheadPosition -> <|"x" -> 0.5, "a" -> 0.33, "b" -> 0.66, "c" -> {0.4, .6}|>,
     GraphOrigin -> LatticeVertex[{Floor[n/2], 0}]
   ]
 ];
@@ -451,4 +495,35 @@ FQPVertexIcon[opts_][path_] := Scope[
 fmtPaths = MatchValues[
   Path[_, word_, ___] := FormatCardinalWord[word, FontColor -> Gray, FontSize -> 10];
   list_List           := Row[fmtPaths /@ list, Style[",", Gray]];
+];
+
+(********************************************)
+
+PackageExport["PathWordForm"]
+
+PathWordForm[start_, {} | "", end_] :=
+  Row[{start, "\[ThinSpace]:\[ThinSpace]:\[ThinSpace]", end}, BaseStyle -> {FontFamily -> "Avenir"}];
+
+PathWordForm[start_, cards_, end_] :=
+  Row[{start, "\[ThinSpace]:\[ThinSpace]", Row[ParseCardinalWord @ cards, "\[VeryThinSpace]"], "\[ThinSpace]:\[ThinSpace]", end},
+    BaseStyle -> FontFamily -> "Avenir"]
+
+(**************************************************************************************************)
+
+PackageExport["ExportNotebookOutputs"]
+
+ExportNotebookOutputs[destination_String, prefix_String:"", sz_:3] := Scope[
+  EnsureDirectory[destination];
+  If[FileType[destination] =!= Directory, ReturnFailed[]];
+  outputCells = NotebookImport[EvaluationNotebook[], "Output" -> "Cell"];
+  Print["# of cells: ", Length @ outputCells];
+  $i = 1;
+  Scan[cell |-> (
+    path = FileNameJoin[{destination, prefix <> IntegerString[$i++, 10, 3] <> ".png"}];
+    image = Rasterize[cell, ImageFormattingWidth -> Infinity, ImageResolution -> Ceiling[144 * sz]];
+    Print["Rasterizing ", ImageDimensions[image], " to ", path];
+    Export[path, image])
+  ,
+    outputCells
+  ];
 ];

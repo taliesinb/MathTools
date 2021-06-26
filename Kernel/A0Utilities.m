@@ -4,6 +4,32 @@ Tau = 2 * Pi;
 
 (**************************************************************************************************)
 
+(* this takes the place of MatchValues in GU *)
+
+PackageExport["Case"]
+
+SetHoldAll[Case, setupCases];
+
+Case /: (Set|SetDelayed)[sym_Symbol, Case[args___]] := setupCases[sym, args];
+
+setupCases[sym_Symbol, CompoundExpression[args__SetDelayed, rewrites_List]] :=
+  setupCases[sym, CompoundExpression[args], rewrites];
+
+setupCases[sym_Symbol, CompoundExpression[args__SetDelayed, Null...], rewrites_:{}] := Module[{holds},
+  Clear[sym];
+  holds = Hold @@@ Hold[args];
+  holds = ReplaceAll[holds, Unevaluated @ rewrites];
+  PrependTo[holds, Hold[case_, UnmatchedCase[sym, case]]];
+  holds = ReplaceAll[holds, HoldPattern[Out[]] :> sym];
+  Replace[List @@ holds, Hold[a_, b_] :> SetDelayed[sym[a], b], {1}];
+];
+
+Case::baddef = "Bad case definition for ``."
+
+setupCases[sym_, args___] := Message[Case::baddef, sym];
+
+(**************************************************************************************************)
+
 PackageScope["ToPacked"]
 
 ToPacked = ToPackedArray;
@@ -281,6 +307,13 @@ AngleDifference[a_, b_] := If[Abs[b - a] > Pi, Mod[Mod[b, Tau] - Mod[a, Tau], Ta
 
 (**************************************************************************************************)
 
+PackageExport["SameLengthQ"]
+
+SameLengthQ[a_, b_] := Length[a] === Length[b];
+SameLengthQ[a_][b_] := SameLengthQ[a, b];
+
+(**************************************************************************************************)
+
 PackageExport["RealVectorQ"]
 
 RealVectorQ[list_] := VectorQ[list, Internal`RealValuedNumberQ];
@@ -477,11 +510,9 @@ FirstIndex[list_, pattern_, default_:None] :=
 
 PackageScope["toListOfLists"]
 
-toListOfLists = MatchValues[
-  list:{__List} := list;
-  list_List := {list};
-  _ := $Failed;
-];
+toListOfLists[list:{__List}] := list;
+toListOfLists[list_List] := {list};
+toListOfLists[_] := $Failed;
 
 (**************************************************************************************************)
 
@@ -576,6 +607,22 @@ declareBoxFormatting[
 SetHoldFirst[UnderNegatedBoxForm];
 UnderNegatedBoxForm[e_] := UnderscriptBox[MakeBoxes @ e, "_"];
 
+$db = 0.03;
+$letterShifts = {
+  "f" -> 0.05 + $db,
+  "g" -> -0.4 + $db,
+  "c" :>  -0.09,
+  "h" | "i" -> 0.05 + $db, "j" -> -0.4 + $db, "k" -> 0.05 + $db,
+  "m" | "n" -> 0.05 + $db, "p" | "q" -> -0.35, "r" -> 0.05 + $db,
+  "v" | "w" | "x" | "z" -> 0.05 + $db,
+  "y" -> -0.4 + $db,
+  _ -> 0
+};
+
+UnderNegatedBoxForm[letter_String] := With[{shift = Replace[letter, $letterShifts]},
+  UnderscriptBox[MakeBoxes @ letter, If[shift === 0, "_", AdjustmentBox["_", BoxBaselineShift -> shift]]]
+];
+
 (**************************************************************************************************)
 
 PackageExport["NegatedForm"]
@@ -585,6 +632,7 @@ declareBoxFormatting[
 ];
 
 SetHoldFirst[NegatedBoxForm];
+NegatedBoxForm[e_String] := StyleBox[MakeBoxes @ e, Underlined];
 NegatedBoxForm[e_] := OverscriptBox[MakeBoxes @ e, AdjustmentBox["_", BoxBaselineShift -> -0.3]]
 
 (**************************************************************************************************)

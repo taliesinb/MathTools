@@ -251,6 +251,9 @@ PackageScope["$namedLatticeUsage"]
 
 $namedLatticeUsage = StringTrim @ "
 ## Named lattices
+
+* The only one-dimensional lattice is the 'Line' lattice.
+
 * Named two-dimensional lattices (and their corresponding tilings) include:
 | 'Square' | square tiling, aka quadrille |
 | 'TruncatedSquare' | truncated square tiling, aka truncated quadrille |
@@ -261,9 +264,21 @@ $namedLatticeUsage = StringTrim @ "
 | 'Trihexagonal' | trihexagonal tiling, aka hexadeltille |
 | 'SnubTrihexagonal' | snub trihexagonal tiling, aka snub hextille |
 | 'TruncatedTrihexagonal' | truncated trihexagonal tiling, aka truncated hexadeltille |
+
 * Named three-dimensional Bravais lattices include:
 | 'Cubic' | cubic lattice, aka primitive cubic |
 | 'FaceCenteredCubic' | face centered cubic, aka FCC, cubic close-packed |
-| 'BodyCenteredCubic' | body centered cubic, aka BCC, |
 | 'HexagonalClosePacked' | hexagonal closed packed, aka HCP |
+
+* Named parameterized lattices include:
+| 'SquareTorus' | w$, h$ | square lattice on a w$ \[Times] h$ torus |
+| 'TriangularTorus' | w$, h$ | triangular lattice on w$ \[Times] h$ torus |
+| 'HexagonalTorus' | w$, h$ | hexagonal lattice on w$ \[Times] h$ torus |
+| 'TrihexagonalTorus' | w$, h$ | trihexagonal lattice on w$ \[Times] h$ torus |
+| 'RhombilleTorus' | w$, h$ | rhombille lattice on w$ \[Times] h$ torus |
+| 'Lamplighter' | n$ | Cayley graph of lamplighter group on n$ lamps |
+| 'Cube' | n$ | cube with n$ subdivided vertices on each face |
+* All parameterized lattices have default parameters.
+* Tori accept a single value h$, in which case w$ will be taken to be infinite.
+* If %LayoutDimension -> 2 is given for tori, they will be plotted on a modulus plane.
 ";

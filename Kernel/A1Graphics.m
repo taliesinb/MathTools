@@ -52,25 +52,30 @@ ImageToGraphics[img_, {xalign_, yalign_}, size_] := Scope[
 
 PackageExport["GraphicsPrimitivesQ"]
 
-GraphicsPrimitivesQ = MatchValues[
-  list_List := AllTrue[list, GraphicsPrimitivesQ];
-  Style[s_, ___] := % @ s;
-  Annotation[g_, ___] := % @ g;
-  Rectangle[_ ? CoordinateVectorQ, _ ? CoordinateVectorQ] := True;
-  (Line|Arrow|BezierCurve|BSplineCurve)[_ ? CoordinateMatrixOrArrayQ] := True;
-  Arrow[_ ? CoordinateMatrixOrArrayQ, _] := True;
-  (JoinedCurve|FilledCurve)[list_List] := % @ list;
-  (Disk|Circle|Sphere)[_ ? CoordinateVectorQ, Optional[_, None]] := True;
-  Annulus[_ ? CoordinateVectorQ, _] := True;
-  Tube[_ ? CoordinateMatrixOrArrayQ, Optional[_, None]] := True;
-  Point[_ ? CoordinateVectorOrMatrixQ] := True;
-  Polygon[_ ? CoordinateMatrixOrArrayQ] := True;
-  Text[_, _ ? CoordinateVectorQ, ___] := True;
-  $ColorPattern | _Opacity := True;
-  _Thickness | _AbsoluteThickness | _PointSize | _AbsolutePointSize | _Dashing := True;
-  _Arrowheads := True;
-  _EdgeForm | _FaceForm | _Directive | _CapForm | _JoinForm := True;
-  e_ := False
+$directivesP = Alternatives[
+  _Thickness, _AbsoluteThickness, _PointSize, _AbsolutePointSize, _Dashing,
+  _EdgeForm, _FaceForm, _Directive, _CapForm, _JoinForm
+];
+
+GraphicsPrimitivesQ = Case[
+  list_List                                        := AllTrue[list, GraphicsPrimitivesQ];
+  Style[s_, ___]                                   := % @ s;
+  Annotation[g_, ___]                              := % @ g;
+  Rectangle[_ ? vQ, _ ? vQ]                        := True;
+  (Line|Arrow|BezierCurve|BSplineCurve)[_ ? maQ]   := True;
+  Arrow[_ ? maQ, _]                                := True;
+  (JoinedCurve|FilledCurve)[list_List]             := % @ list;
+  (Disk|Circle|Sphere)[_ ? vQ, Optional[_, None]]  := True;
+  Annulus[_ ? vQ, _]                               := True;
+  Tube[_ ? maQ, Optional[_, None]]                 := True;
+  Point[_ ? vmQ]                                   := True;
+  Polygon[_ ? maQ]                                 := True;
+  Text[_, _ ? vQ, ___]                             := True;
+  $ColorPattern | _Opacity                         := True;
+  $directivesP                                     := True;
+  _Arrowheads                                      := True;
+  e_                                               := False,
+  {maQ -> CoordinateMatrixOrArrayQ, vQ -> CoordinateVectorQ, vmQ -> CoordinateVectorOrMatrixQ}
 ];
 
 CoordinateVectorOrMatrixQ[array_] := ArrayQ[array, 2|3] && MatchQ[InnerDimension @ array, 2|3];
@@ -149,21 +154,19 @@ StandardizePadding[spec$] standardizes a padding specification spec$.
 | {Left -> l$, $$} | per-side padding |
 "
 
-StandardizePadding = MatchValues[
-  None :=
-    {{0, 0}, {0, 0}};
-  p_ ? NumericQ :=
-    N @ {{p, p}, {p, p}};
-  {pw_ ? NumericQ, ph_ ? NumericQ} :=
-    {{pw, pw}, {ph, ph}};
-  rules:{Rule[Left|Right|Bottom|Top|All, _ ? NumericQ]...} :=
+StandardizePadding = Case[
+  All                   := All;
+  None                  := {{0, 0}, {0, 0}};
+  p_ ? NQ               := N @ {{p, p}, {p, p}};
+  {pw_ ? NQ, ph_ ? NQ}  := N @ {{pw, pw}, {ph, ph}};
+  spec:{{_ ? NQ, _ ? NQ}, {_ ? NQ, _ ? NQ}} := N @ spec;
+
+  rules:{Rule[Left|Right|Bottom|Top|All, _ ? NQ]...} :=
     N @ Map[Lookup[rules, #, Lookup[rules, All, 0]]&, {{Left, Right}, {Bottom, Top}}, {2}];
-  spec:{{_ ? NumericQ, _ ? NumericQ}, {_ ? NumericQ, _ ? NumericQ}} :=
-    N @ spec;
-  All :=
-    All;
-  _ :=
-    $Failed;
+
+  _ := $Failed;
+
+  {NQ -> NumericQ}
 ];
 
 (**************************************************************************************************)
@@ -217,7 +220,7 @@ GraphicsPlotRange[expr_, OptionsPattern[]] := Scope[
   iGraphicsPlotRange[expr]
 ];
 
-iGraphicsPlotRange = MatchValues[
+iGraphicsPlotRange = Case[
   g:(_Graphics | _Graphics3D) := Scope[
     plotRange = PlotRange @ expandGC @ g;
     If[plotRangePadding === None, Return @ plotRange];
@@ -334,11 +337,12 @@ LookupImageSize[obj_] := Scope[
   resolveRawImageSize @ LookupOption[obj, ImageSize]
 ];
 
-resolveRawImageSize = MatchValues[
-  sz:{_ ? NumberQ, Automatic | (_ ? NumberQ)} := sz;
-  w_ ? NumberQ := {w, Automatic};
-  s_Symbol := {Lookup[$ImageWidthTable, s], Automatic};
-  _ := {720, Automatic};
+resolveRawImageSize = Case[
+  sz:{_ ? NQ, Automatic | (_ ? NQ)} := sz;
+  w_ ? NQ                           := {w, Automatic};
+  s_Symbol                          := {Lookup[$ImageWidthTable, s], Automatic};
+  _                                 := {720, Automatic};
+  {NQ -> NumberQ}
 ];
 
 (**************************************************************************************************)
@@ -411,10 +415,10 @@ PackageScope["toNumericSizeScale"]
 $sizeScaleAssoc = KeyDrop[$ImageWidthTable / $ImageWidthTable[Medium], Automatic];
 $sizePattern = Alternatives @@ Append[Scaled[_ ? NumericQ]] @ Keys @ $sizeScaleAssoc;
 
-toNumericSizeScale = MatchValues[
+toNumericSizeScale = Case[
   sym_Symbol := Lookup[$sizeScaleAssoc, sym, 1];
   Scaled[r_] := Clip[N @ r, {.01, 10.}];
-  _ := 1
+  _          := 1
 ];
 
 
@@ -448,10 +452,10 @@ PackageScope["toNumericOpacity"]
 
 $opacityPattern = Alternatives @@ Append[Opacity[_ ? NumericQ]] @ Keys @ $opacityNormalizationRules;
 
-toNumericOpacity = MatchValues[
+toNumericOpacity = Case[
   r_ ? NumericQ := Clip[N @ r, {0, 1}];
-  sym_Symbol := Lookup[$opacityNormalizationRules, sym, 1];
-  _ := 1;
+  sym_Symbol    := Lookup[$opacityNormalizationRules, sym, 1];
+  _             := 1;
 ];
 
 (**************************************************************************************************)
@@ -484,23 +488,23 @@ $thicknessNormalizationRules = {
 
 PackageScope["NormalizeThickness"]
 
-NormalizeThickness = MatchValues[
-  Automatic := AbsoluteThickness[1.2];
+NormalizeThickness = Case[
+  Automatic             := AbsoluteThickness[1.2];
   t:Thickness[s_Symbol] := t;
-  s_Symbol := Lookup[$thicknessNormalizationRules, s, $Failed];
-  n_ ? NumericQ := AbsoluteThickness @ N @ n;
-  _ := $Failed;
+  s_Symbol              := Lookup[$thicknessNormalizationRules, s, $Failed];
+  n_ ? NumericQ         := AbsoluteThickness @ N @ n;
+  _                     := $Failed;
 ];
 
 (**************************************************************************************************)
 
 PackageScope["toMultiDirective"]
 
-iToMultiDirective = MatchValues[
-  {} := Automatic;
-  {spec_} := toDirective @ spec;
-  spec_List | spec_Association := Map[toDirective, spec];
-  spec_ := toDirective[spec]
+iToMultiDirective = Case[
+  {}                            := Automatic;
+  {spec_}                       := toDirective @ spec;
+  spec_List | spec_Association  := Map[toDirective, spec];
+  spec_                         := toDirective @ spec
 ];
 
 toMultiDirective[spec_] := Scope[
@@ -512,12 +516,14 @@ toMultiDirective[spec_] := Scope[
 
 PackageScope["toDirective"]
 
-toDirective = MatchValues[
-  Automatic := Automatic;
-  {d_Directive} := % @ d;
-  e_List := normalizeStyles @ Directive @@ DeleteNone @ Flatten @ ReplaceAll[e, Directive[d_] :> d];
-  Directive[e_List] := %[e];
-  e_ := normalizeStyles @ e
+toDirective = Case[
+  Automatic           := Automatic;
+  {d_Directive}       := % @ d;
+  e_List              := normalizeStyles[
+    Directive @@ DeleteNone @ Flatten @ ReplaceAll[e, Directive[d_] :> d]
+  ];
+  Directive[e_List]   := %[e];
+  e_                  := normalizeStyles @ e
 ];
 
 $styleNormalizationRules = Dispatch @ Flatten @ {
@@ -834,28 +840,40 @@ SetbackCoordinates[coords_, {d1_, d2_}] :=
 setbackHalf[{}, _] := {};
 setbackHalf[coords_, 0|0.] := coords;
 setbackHalf[coords_, d_ ? Negative] := Reverse @ setbackHalf[Reverse @ coords, Abs[d]];
+setbackHalf[coords_, d_] := takeLine[coords, d];
 
-setbackHalf[coords_, d_] := Scope[
+takeLine[coords_List, d_] := Scope[
   prev = First @ coords; total = 0;
   n = LengthWhile[coords, curr |-> (total += EuclideanDistance[curr, prev]; prev = curr; total < d)];
-  If[n == Length[coords], Return @ {}];
+  If[n == Length[coords], Return @ Last @ coords];
   rem = total - d;
   newCoords = Drop[coords, n];
   If[rem == 0,
     newCoords,
-    Prepend[newCoords, PointAlongLine[Part[coords, n + 1], Part[coords, n], rem]]
+    Prepend[newCoords, PointAlongLine[Part[coords, {n + 1, n}], rem]]
   ]
 ];
-
 (**************************************************************************************************)
 
 PackageExport["PointAlongLine"]
 
-PointAlongLine[a_, b_, d_] :=
+PointAlongLine[{a_, b_}, d_ ? NumericQ] :=
   a + Normalize[b - a] * d;
 
-PointAlongLine[a_, b_, Scaled[f_]] :=
-  PointAlongLine[a, b, EuclideanDistance[a, b] * f];
+PointAlongLine[coords_, Scaled[d_]] :=
+  PointAlongLine[coords, LineLength[coords] * d];
+
+PointAlongLine[coords_List, d_ ? NumericQ] := Scope[
+  prev = First @ coords; total = 0;
+  n = LengthWhile[coords, curr |-> (total += EuclideanDistance[curr, prev]; prev = curr; total < d)];
+  If[n == Length[coords], Return @ Last @ coords];
+  rem = total - d;
+  newCoords = Drop[coords, n];
+  If[rem == 0,
+    Part[coords, n + 1],
+    PointAlongLine[Part[coords, {n + 1, n}], rem]
+  ]
+];
 
 (**************************************************************************************************)
 

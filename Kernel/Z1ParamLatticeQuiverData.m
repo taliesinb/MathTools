@@ -126,7 +126,7 @@ findModulusCounterpart[a_, b_, offsets_, d_] := Scope[
   bs = PlusOperator[b] /@ offsets;
   b2 = MinimumBy[bs, EuclideanDistance[a, #]&];
   If[EuclideanDistance[a, b2] > EuclideanDistance[a, b], None,
-    PointAlongLine[a, b2, d]
+    PointAlongLine[{a, b2}, d]
   ]
 ]
 

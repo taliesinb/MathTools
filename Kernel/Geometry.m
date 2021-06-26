@@ -154,6 +154,18 @@ pointDilationRegion[points_, d_] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["ConvexHullLineIndices"]
+
+ConvexHullLineIndices[points_] := If[Length[points] <= 3, Range @ Length @ points,
+  WolframCGL`QuickHull @ ToPackedReal @ points
+];
+
+PackageExport["ConvexHullPointIndices"]
+
+ConvexHullPointIndices[points_] := Union @ Flatten @ ConvexHullLineIndices @ points;
+
+(**************************************************************************************************)
+
 PackageExport["VectorBetween"]
 
 VectorBetween[x_, {l_, h_}] := And @@ MapThread[LessEqual, {l, x, h}];

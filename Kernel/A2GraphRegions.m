@@ -93,6 +93,11 @@ regionDataListEdges[regionDataElements_] :=
 pathToRegion[GraphPathData[a_, b_, c_]] :=
   GraphRegionData[a, b];
 
+NegatePath[GraphPathData[a_, b_, c_]] := Scope[
+  cn = Range @ Length @ b;
+  GraphPathData[Reverse @ a, Reverse @ b, Complement[cn, c]]
+];
+
 (**************************************************************************************************)
 
 PackageExport["TakePath"]
@@ -585,6 +590,19 @@ processRegion[Cycles[word_]] := Scope[
   ];
   Splice @ cycles
 ];
+
+(********************************************)
+(** Negated[path...]                       **)
+
+GraphRegionElementQ[Negated[_ ? GraphRegionElementQ]] := True;
+
+processRegion[spec:Negated[region_]] := Scope[
+  paths = ToList @ processRegion @ region;
+  If[!MatchQ[paths, {__GraphPathData}], fail["badnegpath", spec]];
+  NegatePath /@ paths
+]
+
+GraphRegion::badnegpath = "Error in ``: can only negate a path or set of paths.";
 
 (********************************************)
 (** Line[...]                              **)

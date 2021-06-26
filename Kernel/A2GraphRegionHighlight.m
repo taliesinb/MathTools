@@ -104,6 +104,7 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
     {}, {0, Infinity}
   ];
 
+  $cardinalFilter = All;
   $zorder = 1;
   $requiredPadding = 0;
   $pathStyle = "Line";
@@ -280,7 +281,7 @@ Options[Style];
 
 $additionalStyleOptions = {
   PerformanceGoal, PathStyle, RegionStyle, ArrowheadPosition, ArrowheadSize, PointSize, HighlightRadius,
-  PathRadius, EdgeSetback, SimplifyRegions, ZOrder
+  PathRadius, EdgeSetback, SimplifyRegions, ZOrder, Cardinals
 };
 
 Unprotect[Style];
@@ -346,6 +347,10 @@ iProcessStyleSpec = MatchValues[
     $edgeSetback = r;
     % @ Style @ most
   ];
+  Style[most__, Cardinals -> cards_] := Scope[
+    $cardinalFilter = ToList @ cards;
+    % @ Style @ most
+  ];
   Style[most__, n:$namedTransformsPattern] := (
     AttachGraphPlotAnnotation[n];
     % @ Style[most];
@@ -384,10 +389,10 @@ highlightRegion[other_] := (
 );
 
 highlightRegion[GraphRegionData[vertices_, edges_]] /; StringStartsQ[$regionStyle, "Replace"] := Scope[
-  newVertices = {}; newEdges = {};
+  $newVertices = {}; $newEdges = {};
   TransformGraphPlotPrimitives[removeHighlightedPathEdges, edges, "EdgePrimitives"];
   TransformGraphPlotPrimitives[removeHighlightedPathVertices, vertices, "VertexPrimitives"];
-  pathPrimitives = {simplifyPrimitives @ newEdges, simplifyPrimitives @ newVertices};
+  pathPrimitives = {simplifyPrimitives @ $newEdges, simplifyPrimitives @ $newVertices};
   sowHighlight @ Style[
     replaceWithColor[pathPrimitives, $highlightStyle, $regionStyle === "ReplaceEdges"],
     $edgeBaseStyle, $highlightStyle
@@ -464,6 +469,7 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
   setbackDistance = If[lastIsModified || !doArrow || Max[$arrowheadPosition] != 1, 0, Max[$edgeSetback * thicknessRange/2, vertexSizePR]];
   If[$edgeSetback == 0, setbackDistance = 0];
   isEdgeBased = True;
+
   pathPrimitives = If[$GraphIs3D && $pathStyle === "Line",
     isEdgeBased = False;
     Tube[segments, thicknessRange / 3]
@@ -492,15 +498,15 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
         {disk1, arrowheads, arrow, disk2, extraArrowheads}
       ,
       "Replace",
-        newVertices = newEdges = {};
+        $newVertices = $newEdges = {}; $firstRemovedArrowheads = None;
         TransformGraphPlotPrimitives[removeHighlightedPathEdges, edges, "EdgePrimitives"];
         TransformGraphPlotPrimitives[removeHighlightedPathVertices, vertices, "VertexPrimitives"];
-        newEdges = Which[
+        $newEdges = Which[
           edges === {}, {},
-          adjustments === {}, newEdges,
-          True, Style[Arrow @ segments, arrowheads, CapForm @ "Round"]
+          adjustments === {}, $newEdges,
+          True, Style[Arrow @ segments, $firstRemovedArrowheads, CapForm @ "Round"]
         ];
-        pathPrimitives = {Style[newEdges, $edgeBaseStyle], newVertices};
+        pathPrimitives = {Style[$newEdges, $edgeBaseStyle], $newVertices};
         replaceWithColor[pathPrimitives, $highlightStyle]
       ,
       _,
@@ -548,18 +554,35 @@ replaceWithColor[g_, c_, preserveArrowheads_:False] :=
   }];
 
 (* we simply delete matching edges, because we will redraw them possibly with adjustments *)
-removeHighlightedPathEdges[{old_, new_}] := (
-  arrowheads = FirstCase[old, _Arrowheads, None, Infinity];
-  AppendTo[newEdges, new];
+removeHighlightedPathEdges[{old_, new_}] := Scope[
+  $firstRemovedArrowheads ^= FirstCase[old, _Arrowheads, None, Infinity];
+  If[$cardinalFilter =!= All,
+    $filteredEdges = {}; new //= saveAndTrimFilteredEdges;
+    old = {old, $filteredEdges};
+  ];
+  AppendTo[$newEdges, new];
   old
-);
+];
 
 (* we will delete matching vertices, but save them to be redrawn with the highlight color *)
 removeHighlightedPathVertices[{old_, new_}] := (
-  AppendTo[newVertices, new];
+  AppendTo[$newVertices, new];
   old
 );
 
+filteredArrowheadsQ[Arrowheads[list_List]] :=
+  AnyTrue[list, filteredArrowheadSpecQ];
+
+filteredArrowheadSpecQ[{_, _, Graphics[Annotation[_, card_, "Cardinal"], ___]}] /;
+  !MemberQ[$cardinalFilter, card | Negated[card]] := True;
+
+saveAndTrimFilteredEdges[edges_] := Scope[
+  edges /. Style[p_, l___, a_Arrowheads ? filteredArrowheadsQ, r___] :> {
+    {aNonvis, aVis} = SelectDiscard[First @ a, filteredArrowheadSpecQ];
+    AppendTo[$filteredEdges, Style[p, Transparent, l, Arrowheads @ aNonvis, r]];
+    Style[p, l, Arrowheads @ aVis, r]
+  }
+];
 
 (**************************************************************************************************)
 
@@ -610,7 +633,7 @@ joinSegments[segments_, adjustments_, shouldJoin_] := Scope[
         {delta, segment} = truncateSegment[segment, Abs @ Last @ mod];
         If[doArrow && isLast,
           (* this makes sure the arrowhead points at the original target *)
-          AppendTo[segment, PointAlongLine[Last[segment], Part[segments, -1, -1], 1*^-3]]];
+          AppendTo[segment, PointAlongLine[{Last[segment], Part[segments, -1, -1]}, 1*^-3]]];
         $offsetVector += delta
     ];
     If[shouldJoin,
@@ -626,8 +649,8 @@ joinSegments[segments_, adjustments_, shouldJoin_] := Scope[
 shrinkSegment[d_][segment_] := Scope[
   {a, b} = FirstLast @ segment;
   mid = Mean[{a, b}];
-  a2 = PointAlongLine[a, mid, d];
-  b2 = PointAlongLine[b, mid, d];
+  a2 = PointAlongLine[{a, mid}, d];
+  b2 = PointAlongLine[{b, mid}, d];
   scaling = EuclideanDistance[mid, a2] / EuclideanDistance[mid, a];
   translated = PlusVector[segment, -mid];
   segment = PlusVector[translated * scaling, mid];
@@ -637,8 +660,8 @@ shrinkSegment[d_][segment_] := Scope[
 shrinkSegment[{d1_, d2_}][segment_] := Scope[
   {a, b} = FirstLast @ segment;
   mid = Mean @ segment;
-  a2 = PointAlongLine[a, mid, d1];
-  b2 = PointAlongLine[b, mid, d2];
+  a2 = PointAlongLine[{a, mid}, d1];
+  b2 = PointAlongLine[{b, mid}, d2];
   scaling1 = EuclideanDistance[mid, a2] / EuclideanDistance[mid, a];
   scaling2 = EuclideanDistance[mid, b2] / EuclideanDistance[mid, b];
   translated = PlusVector[segment, -mid];

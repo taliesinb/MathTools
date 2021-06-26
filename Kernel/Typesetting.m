@@ -574,6 +574,8 @@ SpacedRow[elems__] := Scope[
 
 SpacedRow[labels_List -> elems_List] := SpacedRow @@ RuleThread[labels, elems];
 
+SpacedRow[labeled__Labeled] := SpacedRow[{labeled}];
+
 SpacedRow[labeled:{__Labeled}] := Scope[
   items = Part[labeled, All, 1];
   labels = Part[labeled, All, 2];
@@ -602,6 +604,14 @@ MakeArrow[w_:50, h_:15, thickness_:1, style_:Black] =
 
 PackageExport["SpacedArrow"]
 
+SpacedArrow[l__, "ArrowColor" -> color_, r___] := Block[{$arrowColor = color},
+  SpacedArrow[l, r]
+];
+
+SpacedArrow[l__, "ArrowThickness" -> thick_, r___] := Block[{$arrowThickness = thick},
+  SpacedArrow[l, r]
+];
+
 SpacedArrow[a_, b_, rest___] :=
   SpacedRow[a, $smallNotationArrow, b, rest];
 
@@ -618,8 +628,9 @@ makeNotationArrow[w_, h_, thickness_, style___, opts___Rule] := Scope[
   ]
 ];
 
-$smallNotationArrow = makeNotationArrow[50, 20, 1];
-$smallNotationArrow = MakeArrow[30,10, 1.1, $LightGray];
+$arrowThickness = 1.1;
+$arrowColor = $LightGray;
+$smallNotationArrow := MakeArrow[30,10, $arrowThickness, $arrowColor];
 
 (**************************************************************************************************)
 
@@ -680,14 +691,29 @@ declareFormatting[
 
 (**************************************************************************************************)
 
-PackageExport["ChartSymbol"]
+PackageExport["PathQuotientSymbol"]
 
 SetUsage @ "
-ChartSymbol[sub$] represents a chart and formats as C$sub.
+PathQuotientSymbol[q$, mu$] represents the path quiver on quiver q$.
 "
 
 declareFormatting[
-  ChartSymbol[a___] :> Subscript["\[ScriptCapitalC]", a]
+  PathQuotientSymbol[q_] :> Row[{PathQuiverSymbol[q], Style[" / ", Larger], "\[Mu]"}],
+  PathQuotientSymbol[q_, v0_] :> Row[{PathQuiverSymbol[q, v0], Style[" / ", Larger], "\[Mu]"}]
+];
+
+(**************************************************************************************************)
+
+PackageExport["PathQuiverSymbol"]
+
+SetUsage @ "
+PathQuiverSymbol[q$] represents the path quiver on quiver q$.
+"
+
+$pqSymbol = Style["\[CapitalGamma]", Italic, Larger];
+declareFormatting[
+  PathQuiverSymbol[q_] :> Row[{$pqSymbol, Row[{"(", q, ")"}]}],
+  PathQuiverSymbol[q_, v0_] :> Row[{$pqSymbol, Row[{"(", q, ",", v0,")"}]}]
 ];
 
 
@@ -695,8 +721,12 @@ declareFormatting[
 
 PackageExport["ChartColorForm"]
 
-ChartColorForm[expr_, graph_] := Scope[
-  colors = LookupCardinalColors @ graph;
+ChartColorForm[expr_, colors_] := Scope[
+  colors = Which[
+    GraphQ[colors], LookupCardinalColors @ colors,
+    AssociationQ[colors], colors,
+    True, Return @ expr
+  ];
   ReplaceAll[
     expr,
     cs:ChartSymbol[sym_String] :> Style[cs, HumanBlend @ Lookup[colors, ParseCardinalWord @ sym]]

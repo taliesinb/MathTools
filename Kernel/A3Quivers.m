@@ -228,16 +228,14 @@ LookupCardinalColors[quiver$] returns the association of cardinals to colors for
 LookupCardinalColors[quiver$, c$] returns the color for cardinal c$.
 * The annotation CardinalColors is returned if present.
 * The cardinals are given in sorted order.
-* If the graph has no tagged edges, None is returned.
+* If the graph has no tagged edges, <||> is returned.
 * If c$ is an CardinalSet, the corresponding colors will be blended.
 "
 
-LookupCardinalColors[graph_Graph] := None;
-
-LookupCardinalColors[graph_Graph ? EdgeTaggedGraphQ] :=
+LookupCardinalColors[graph_Graph] :=
   Replace[
     AnnotationValue[graph, CardinalColors], {
-      ($Failed | Automatic) :> ChooseCardinalColors @ CardinalList @ graph,
+      ($Failed | Automatic | None) :> ChooseCardinalColors @ CardinalList @ graph,
       palette:(_String | {_, _String} | _Offset) :> ChooseCardinalColors[CardinalList @ graph, palette]
     }
   ];
@@ -253,6 +251,8 @@ LookupCardinalColors[_] := $Failed;
 (**************************************************************************************************)
 
 PackageScope["ChooseCardinalColors"]
+
+ChooseCardinalColors[None, ___] := <||>;
 
 ChooseCardinalColors[cardinals_List, palette_:Automatic] :=
   AssociationThread[cardinals, ToColorPalette[palette, Length @ cardinals]];
@@ -330,7 +330,9 @@ TruncateQuiver[quiver_, cardinals:Except[_Rule], userOpts:OptionsPattern[]] := S
     cornerVerts = Map[TruncatedVertex[v, #]&, tags];
     cornerEdges = If[allowSkips, cornerEdge, noskipCornerEdge[ordering]] /@ Partition[cornerVerts, 2, 1, 1];
     cornerCoords = Map[
-      PointAlongLine[coord, Part[vertexCoords, Lookup[tagOut, Replace[#, CardinalSet[s_] :> First[s]]]], Scaled[0.25]]&,
+      PointAlongLine[
+        {coord, Part[vertexCoords, Lookup[tagOut, Replace[#, CardinalSet[s_] :> First[s]]]]},
+        Scaled[0.25]]&,
       tags
     ];
     BagInsert[truncEdges, cornerEdges, 1];
