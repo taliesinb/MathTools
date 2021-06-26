@@ -153,7 +153,7 @@ CayleyQuiver[rep_] := Scope[
 computeCayleyQuiver[data_] := Scope[
   cfunc = computeCayleyFunction[data, "Labeled" -> True, "Symmetric" -> True];
   istate = List @ representationProperty[data, "Identity"];
-  {edges, reason} = StateTransitionGraph[cfunc, istate, {"EdgeList", "TerminationReason"}, MaxDepth -> 8, MaxVertices -> 100];
+  {edges, reason} = MultiwaySystem[cfunc, istate, {"EdgeList", "TerminationReason"}, MaxDepth -> 8, MaxVertices -> 100];
   If[reason =!= "Complete", Message[CayleyQuiver::incomplete]];
   edges = DeleteDuplicates @ edges;
   Quiver[edges]

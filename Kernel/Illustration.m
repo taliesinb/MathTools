@@ -144,7 +144,7 @@ PathWordPlot[graph_, path:Path[start_, word_, ___], color_:$Teal] := Scope[
   end = Part[GraphRegion[graph, Take[path, 2]], 1, 1, -1];
   end = Part[VertexList @ graph, end];
   Labeled[
-    HighlightGraphRegion[graph, Arrow @ path, {color, "Foreground", "FadeGraph"}],
+    HighlightGraphRegion[graph, Arrow @ path, {color, "Foreground", "FadeGraph"}, GraphLegend -> None],
     PathWordForm[start, word, end]
   ]
 ];
@@ -383,8 +383,9 @@ SimpleLabeledGraph[args___] := ExtendedGraph[args, $simpleLabeledGraphOpts];
 
 $simpleLabeledGraphOpts = Sequence[
   CardinalColors -> None, VertexLabels -> Automatic, EdgeLabels -> "Cardinal",
-  VertexCoordinates -> {{-1, 0}, {0, 0}, {1, 0}}, ImagePadding -> {{0,0}, {0, 25}}, EdgeLabelStyle -> {Spacings -> -0.3},
-  GraphLayout -> {"MultiEdgeDistance" -> 0.6}, ArrowheadPosition -> 0.59, ImageSize -> "ShortestEdge" -> 55, ArrowheadSize -> Medium
+  ImagePadding -> {{0,0}, {0, 25}}, EdgeLabelStyle -> {Spacings -> -0.3},
+  GraphLayout -> {"Linear", "MultiEdgeDistance" -> 0.6}, ArrowheadPosition -> 0.59,
+  ImageSize -> "ShortestEdge" -> 55, ArrowheadSize -> Medium, ArrowheadStyle -> $DarkGray
 ];
 
 (**************************************************************************************************)
@@ -395,8 +396,8 @@ SimpleLabeledQuiver[args___] := Quiver[args, $simpleLabeledQuiverOpts];
 
 $simpleLabeledQuiverOpts = Sequence[
   VertexLabels -> "Name",
-  VertexCoordinates -> RotateLeft[CirclePoints[3],2],
-  GraphLayout -> {"MultiEdgeDistance" -> 0.2}, ArrowheadPosition -> 0.59, ImageSize -> "ShortestEdge" -> 80, ArrowheadSize -> Medium
+  GraphLayout -> {"Linear", "MultiEdgeDistance" -> 0.2},
+  ArrowheadPosition -> 0.59, ImageSize -> "ShortestEdge" -> 80, ArrowheadSize -> Medium
 ];
 
 (**************************************************************************************************)

@@ -1149,11 +1149,30 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
     graphLayout = ToList[graphLayout, "MultiEdgeDistance" -> 0.3];
   ];
 
+  initialVertexCoordinates = LookupOption[igraph, VertexCoordinates];
+
+  method = Match[graphLayout, s_String | {s_String, ___} :> s, Automatic];
+  autoLayout = Match[graphLayout, {s_String, opts___} :> {opts}, {___String, opts___} :> opts, Automatic];
+
+  If[method === "Linear", method = If[AcyclicGraphQ[graph], "Line", "Circle"]];
+  Switch[method,
+    "Line",
+      graphLayout = autoLayout;
+      initialVertexCoordinates = N[{# - 1, 0}& /@ Range[vertexCount]],
+    "Circle",
+      graphLayout = autoLayout;
+      initialVertexCoordinates = N @ RotateRight[CirclePoints @ vertexCount, 1],
+    s_String /; !StringEndsQ[s, "Embedding"],
+      graphLayout //= ReplaceAll[method -> (method <> "Embedding")],
+    True,
+      Null
+  ];
+
   newGraph = If[actualDimension == 3, Graph3D, Graph][
     VertexList @ igraph, EdgeList @ igraph,
     VertexShapeFunction -> captureVertexCoordinates,
     EdgeShapeFunction -> ({coords, edge} |-> edgeCaptureFunction[coords, sortUE @ edge]),
-    GraphLayout -> graphLayout, VertexCoordinates -> LookupOption[igraph, VertexCoordinates]
+    GraphLayout -> graphLayout, VertexCoordinates -> initialVertexCoordinates
   ];
 
   gdResult = Check[GraphComputation`GraphDrawing @ newGraph, $Failed];

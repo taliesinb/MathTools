@@ -266,7 +266,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   (* do the exploration *)
-  {vertexList, indexEdgeList, reason} = CachedStateTransitionGraph[
+  {vertexList, indexEdgeList, reason} = CachedMultiwaySystem[
     cayleyFunction, initialStates,
     {"VertexList", "IndexEdgeList", "TerminationReason"},
     DirectedEdges -> True, MaxDepth -> maxDepth, IncludeFrontier -> includeFrontier,
