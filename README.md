@@ -1,2 +1,2 @@
-# GraphTools
-GraphTools is a Wolfram Language package containing various graph-related functionality and improvements to the built-in functionality.
+# QuiverGeometry
+QuiverGeometry is a Wolfram Language package that provides a flexible platform for doing experiments in discrete geometry using the notion of cardinal quivers, their representations, and associated mathematical constructs.

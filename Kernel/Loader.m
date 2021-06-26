@@ -1,4 +1,4 @@
-Begin["GraphToolsPackageLoader`Private`"];
+Begin["QuiverGeometryPackageLoader`Private`"];
 
 Get["GeneralUtilities`"];
 
@@ -125,7 +125,7 @@ readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
   {cachedModTime, cachedContents} = Lookup[$fileContentCache, path, {$Failed, $Failed}];
   fileModTime = UnixTime @ FileDate[path, "Modification"];
   If[FailureQ[cachedContents] || cachedModTime =!= fileModTime,
-    If[GraphToolsPackageLoader`$Verbose, Print["Reading \"" <> path <> "\""]];
+    If[QuiverGeometryPackageLoader`$Verbose, Print["Reading \"" <> path <> "\""]];
     contents = loadFileContents[path, context];
     $fileContentCache[path] = {fileModTime, contents};
   ,
@@ -143,8 +143,8 @@ loadFileContents[path_, context_] := Module[{str, contents},
   contents
 ];
 
-If[!ValueQ[GraphToolsPackageLoader`$SystemOpenEnabled], GraphToolsPackageLoader`$SystemOpenEnabled = True];
-DoSystemOpen[s_] := If[GraphToolsPackageLoader`$SystemOpenEnabled, SystemOpen[s]];
+If[!ValueQ[QuiverGeometryPackageLoader`$SystemOpenEnabled], QuiverGeometryPackageLoader`$SystemOpenEnabled = True];
+DoSystemOpen[s_] := If[QuiverGeometryPackageLoader`$SystemOpenEnabled, SystemOpen[s]];
 
 handleSyntaxError[path_] := Scope[
   errors = GeneralUtilities`FindSyntaxErrors[path];
@@ -182,7 +182,7 @@ resolveRemainingSymbols[{path_, context_, packageData_Package`PackageData}] := S
   {path, context, packageData /. dispatch}
 ];
 
-GraphToolsPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
+QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
   {$directory, $files, $packageScopes, $packageExports, $packageExpressions, $packageRules,
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result
   },
@@ -233,11 +233,11 @@ GraphToolsPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
   $packageExpressions
 ];
 
-GraphToolsPackageLoader`EvaluatePackages[packagesList_List] := Block[
+QuiverGeometryPackageLoader`EvaluatePackages[packagesList_List] := Block[
   {$currentPath, $currentLineNumber, result},
   $currentPath = ""; $currentLineNumber = 0;
-  GraphToolsPackageLoader`$FileTimings = <||>;
-  GraphToolsPackageLoader`$FileLineTimings  = <||>;
+  QuiverGeometryPackageLoader`$FileTimings = <||>;
+  QuiverGeometryPackageLoader`$FileLineTimings  = <||>;
   $failEval = False;
   result = GeneralUtilities`WithMessageHandler[
     Scan[evaluatePackage, packagesList],
@@ -255,10 +255,10 @@ MakeBoxes[pd_Package`PackageData, StandardForm] :=
 evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
   $currentPath = path; $currentFileLineTimings = <||>;
   If[$failEval, Return[$Failed]];
-  GraphToolsPackageLoader`$FileTimings[path] = First @ AbsoluteTiming[
+  QuiverGeometryPackageLoader`$FileTimings[path] = First @ AbsoluteTiming[
     Scan[evaluateExpression, packageData];
   ];
-  GraphToolsPackageLoader`$FileLineTimings[path] = $currentFileLineTimings;
+  QuiverGeometryPackageLoader`$FileLineTimings[path] = $currentFileLineTimings;
 ,
   MacroEvaluate, catchMacroFailure
 ];
@@ -286,22 +286,22 @@ handleMessage[f_Failure] := Scope[
 
 (*************************************************************************************************)
 
-GraphToolsPackageLoader`$Directory = DirectoryName[$InputFileName];
+QuiverGeometryPackageLoader`$Directory = DirectoryName[$InputFileName];
 
 $lastLoadSuccessful = False;
 
-GraphToolsPackageLoader`Read[] :=
-  GraphToolsPackageLoader`ReadPackages["GraphTools`", GraphToolsPackageLoader`$Directory];
+QuiverGeometryPackageLoader`Read[] :=
+  QuiverGeometryPackageLoader`ReadPackages["QuiverGeometry`", QuiverGeometryPackageLoader`$Directory];
 
-GraphToolsPackageLoader`Load[] := Scope[
-  packages = GraphToolsPackageLoader`Read[];
+QuiverGeometryPackageLoader`Load[] := Scope[
+  packages = QuiverGeometryPackageLoader`Read[];
   If[FailureQ[packages], ReturnFailed[]];
   If[packages === "Unchanged" && $lastLoadSuccessful, Return[None]];
-  GraphToolsPackageLoader`$LoadCount++;
-  If[!FailureQ[GraphToolsPackageLoader`EvaluatePackages @ packages],
+  QuiverGeometryPackageLoader`$LoadCount++;
+  If[!FailureQ[QuiverGeometryPackageLoader`EvaluatePackages @ packages],
     $lastLoadSuccessful = True];
 ];
 
-GraphToolsPackageLoader`$LoadCount = 0;
+QuiverGeometryPackageLoader`$LoadCount = 0;
 
 End[];

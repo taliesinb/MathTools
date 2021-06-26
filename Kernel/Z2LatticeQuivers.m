@@ -537,7 +537,7 @@ PackageExport["LatticeGraph"]
 
 SetUsage @ "
 LatticeGraph['name$'] generates part of the lattice graph for the named lattice 'name$'.
-LatticeQuiver[{'name$', p$1, $$}] generates a parameterized lattice graph with parameters p$i.
+LatticeGraph[{'name$', p$1, $$}] generates a parameterized lattice graph with parameters p$i.
 LatticeGraph[machine$] generates part of the lattice graph from a particular machine.
 LatticeGraph[$$, depth$] generates a graph to a given depth.
 * machine$ can be a group, groupoid, quiver representation, or an association with the \

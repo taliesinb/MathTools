@@ -90,7 +90,7 @@ EnumerateQuivers[graph_, cardCount_, wrap_:True, noComp_:False] := Scope[
 ];
 
 $enumerateQuiversCache = <||>;
-$cacheDir = FileNameJoin[{ParentDirectory @ GraphToolsPackageLoader`$Directory, "Data"}];
+$cacheDir = FileNameJoin[{ParentDirectory @ QuiverGeometryPackageLoader`$Directory, "Data"}];
 
 toCacheFileName[name_, edges_, count_] :=
   FileNameJoin[{$cacheDir, name, If[edges === None, "", Base36Hash[edges] <> "_"] <> IntegerString[count] <> ".mx"}];

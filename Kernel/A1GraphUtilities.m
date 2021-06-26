@@ -1,4 +1,4 @@
-Package["GraphTools`"]
+Package["QuiverGeometry`"]
 
 
 PackageImport["GeneralUtilities`"]

@@ -80,7 +80,7 @@ $slotRegularExpression = RegularExpression["<\\*([^*]+)\\*>"];
 
 substituteUsageSlots[s_String] :=
   StringReplace[s, "<*" ~~ Shortest[slot___] ~~ "*>" :> Block[
-    {$ContextPath = {"System`", "GraphTools`", "GraphTools`PackageScope`"}},
+    {$ContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"}},
     toUsageStr[ToExpression[slot, InputForm]]
   ]];
 
@@ -564,7 +564,7 @@ PackageExport["ToInverseFunction"]
 
 SetUsage @ "
 ToInverseFunction[f$] returns %InverseFunction[f$].
-* ToInverseFunction exists to enable a fast-path for GraphTools-specific functions.
+* ToInverseFunction exists to enable a fast-path for QuiverGeometry-specific functions.
 "
 
 ToInverseFunction[e_] := InverseFunction[e];
