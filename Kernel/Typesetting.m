@@ -734,3 +734,39 @@ ChartColorForm[expr_, colors_] := Scope[
 ];
 
 ChartColorForm[graph_][expr_] := ChartColorForm[expr, graph];
+
+(**************************************************************************************************)
+
+PackageExport["EllipsisForm"]
+
+EllipsisForm[list_, n_] := If[Length[list] > n, Append[Take[list, n], $LargeEllipsis], list];
+EllipsisForm[n_][list_] := EllipsisForm[list, n];
+
+(**************************************************************************************************)
+
+PackageExport["RowForm"]
+
+RowForm[args___] := Row[{args}, "\[ThinSpace]"]
+
+(**************************************************************************************************)
+
+PackageExport["InverseForm"]
+
+InverseForm[f_] := Superscript[f, -1];
+
+(**************************************************************************************************)
+
+PackageExport["BracketForm"]
+
+BracketForm[f_] := Row[{"(", f, ")"}];
+
+(********************************************)
+
+PackageExport["PathWordForm"]
+
+PathWordForm[start_, {} | "", end_] :=
+  Row[{start, "\[ThinSpace]:\[ThinSpace]:\[ThinSpace]", end}, BaseStyle -> {FontFamily -> "Avenir"}];
+
+PathWordForm[start_, cards_, end_] :=
+  Row[{start, "\[ThinSpace]:\[ThinSpace]", Row[ParseCardinalWord @ cards, "\[VeryThinSpace]"], "\[ThinSpace]:\[ThinSpace]", end},
+    BaseStyle -> FontFamily -> "Avenir"]

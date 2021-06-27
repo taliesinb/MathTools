@@ -135,18 +135,44 @@ LatticeColoringGrid[items_, args___] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["PathPlot"]
+
+PathPlot[graph_, p_Path -> color_] :=
+  PathPlot[graph, p, color];
+
+PathPlot[graph_, path_Path, color_:$Teal] :=
+  HighlightGraphRegion[graph, path,
+    {color, PathStyle -> "DiskArrow", PathRadius -> 3, DiskRadius -> 4, "Foreground", "FadeGraph"},
+    GraphLegend -> None
+  ];
+
+(**************************************************************************************************)
+
 PackageExport["PathWordPlot"]
 
-PathWordPlot[graph_, p_Path -> color_] :=
-  PathWordPlot[graph, p, color];
+$pwpStyle = $Teal;
+$pwpLabel = Word;
 
-PathWordPlot[graph_, path:Path[start_, word_, ___], color_:$Teal] := Scope[
-  end = Part[GraphRegion[graph, Take[path, 2]], 1, 1, -1];
-  end = Part[VertexList @ graph, end];
+PathWordPlot[graph_, path:Path[start_, word_, ___]] :=
   Labeled[
-    HighlightGraphRegion[graph, Arrow @ path, {color, "Foreground", "FadeGraph"}, GraphLegend -> None],
-    PathWordForm[start, word, end]
+    PathPlot[graph, path, $pwpStyle],
+    $pwpLabel /. Word :> PathWordForm[start, word, pathEndVertex[graph, path]]
   ]
+
+PathWordPlot[graph_, Labeled[path_, label_]] := Scope[
+  $pwpLabel = label; PathWordPlot[graph, path]
+];
+
+PathWordPlot[graph_, Style[path_, color_]] := Scope[
+  $pwpStyle = color; PathWordPlot[graph, path]
+];
+
+PathWordPlot[graph_, None] :=
+  inlineSymbol["\[UpTee]", 30];
+
+pathEndVertex[graph_, path_] := Scope[
+  end = Part[GraphRegion[graph, Take[path, 2]], 1, 1, -1];
+  Part[VertexList @ graph, end]
 ];
 
 (**************************************************************************************************)
@@ -155,13 +181,17 @@ PackageExport["PathConcatPlot"]
 
 inlineSymbol[s_, args___] := Labeled[Style[s, 20, args], ""]
 
+PathConcatPlot[args___, PathStyle -> style_] := Block[{$pwpStyle = style},
+  PathConcatPlot[args]
+];
+
 PathConcatPlot[graph_, p1_, p2_, p3_] :=
   SpacedRow[
     PathWordPlot[graph, p1],
     inlineSymbol @ "\[Star]",
     PathWordPlot[graph, p2],
     inlineSymbol @ "=",
-    If[p3 === None, inlineSymbol["\[UpTee]", 30], PathWordPlot[graph, p3]]
+    PathWordPlot[graph, p3]
   ]
 
 (**************************************************************************************************)
@@ -382,7 +412,8 @@ PackageExport["SimpleLabeledGraph"]
 SimpleLabeledGraph[args___] := ExtendedGraph[args, $simpleLabeledGraphOpts];
 
 $simpleLabeledGraphOpts = Sequence[
-  CardinalColors -> None, VertexLabels -> Automatic, EdgeLabels -> "Cardinal",
+  CardinalColors -> None, VertexLabels -> "Name", VertexLabelStyle -> {LabelPosition -> Automatic},
+  EdgeLabels -> "Cardinal",
   ImagePadding -> {{0,0}, {0, 25}}, EdgeLabelStyle -> {Spacings -> -0.3},
   GraphLayout -> {"Linear", "MultiEdgeDistance" -> 0.6}, ArrowheadPosition -> 0.59,
   ImageSize -> "ShortestEdge" -> 55, ArrowheadSize -> Medium, ArrowheadStyle -> $DarkGray
@@ -395,7 +426,7 @@ PackageExport["SimpleLabeledQuiver"]
 SimpleLabeledQuiver[args___] := Quiver[args, $simpleLabeledQuiverOpts];
 
 $simpleLabeledQuiverOpts = Sequence[
-  VertexLabels -> "Name",
+  VertexLabels -> "Name", VertexLabelStyle -> {LabelPosition -> Automatic},
   GraphLayout -> {"Linear", "MultiEdgeDistance" -> 0.2},
   ArrowheadPosition -> 0.59, ImageSize -> "ShortestEdge" -> 80, ArrowheadSize -> Medium
 ];
@@ -497,17 +528,6 @@ fmtPaths = MatchValues[
   Path[_, word_, ___] := FormatCardinalWord[word, FontColor -> Gray, FontSize -> 10];
   list_List           := Row[fmtPaths /@ list, Style[",", Gray]];
 ];
-
-(********************************************)
-
-PackageExport["PathWordForm"]
-
-PathWordForm[start_, {} | "", end_] :=
-  Row[{start, "\[ThinSpace]:\[ThinSpace]:\[ThinSpace]", end}, BaseStyle -> {FontFamily -> "Avenir"}];
-
-PathWordForm[start_, cards_, end_] :=
-  Row[{start, "\[ThinSpace]:\[ThinSpace]", Row[ParseCardinalWord @ cards, "\[VeryThinSpace]"], "\[ThinSpace]:\[ThinSpace]", end},
-    BaseStyle -> FontFamily -> "Avenir"]
 
 (**************************************************************************************************)
 

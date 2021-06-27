@@ -8,6 +8,12 @@ $ColorPattern is a pattern that matches a valid color, like %RGBColor[$$] etc.
 
 (**************************************************************************************************)
 
+PackageExport["ColorHexString"]
+
+ColorHexString[color_] := StringDrop[Image`Utilities`toHEXcolor[color], 1];
+
+(**************************************************************************************************)
+
 PackageExport["SetColorOpacity"]
 
 $setColorOpacityRules = Dispatch[{

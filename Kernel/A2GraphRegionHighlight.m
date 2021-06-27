@@ -94,9 +94,8 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
   $highlightRadius = $GraphMaxSafeVertexSize;
 
   (* todo: use the same conversion functions as I use in GraphPlotting *)
-  $pathRadius = Automatic;
+  $pathRadius = Automatic; $diskRadius = Automatic;
   $graphPlotWidth = First @ $GraphPlotSize;
-  $pointSize = 5;
   $radiusScaling = If[$GraphIs3D, 0.25, 1];
   $edgeBaseStyle := $edgeBaseStyle = FirstCase[
     $GraphPlotGraphics,
@@ -199,13 +198,19 @@ GraphRegionHighlight::badelem = "Unknown highlight element ``.";
 PackageExport["HighlightRadius"]
 
 SetUsage @ "
-HighlightRadius is an option that controls the radius of highlighting regions.
+HighlightRadius is an option that controls the radius of highlighted regions.
 "
 
 PackageExport["PathRadius"]
 
 SetUsage @ "
-PathRadius is an option that controls the radius of highlighting paths.
+PathRadius is an option that controls the radius of highlighted paths.
+"
+
+PackageExport["DiskRadius"]
+
+SetUsage @ "
+DiskRadius is an option that controls the radius of highlighted vertices.
 "
 
 PackageExport["EdgeSetback"]
@@ -323,8 +328,8 @@ iProcessStyleSpec = MatchValues[
     $arrowheadPosition = N[pos];
     % @ Style @ most
   ];
-  Style[most__, PointSize -> sz_] := Scope[
-    $pointSize = sz; (* this is measured in points, not in fraction of image width *)
+  Style[most__, DiskRadius -> sz_] := Scope[
+    $diskRadius = sz; (* this is measured in points, not in fraction of image width *)
     % @ Style @ most
   ];
   Style[most__, ArrowheadSize -> sz_] := Scope[
@@ -413,17 +418,18 @@ highlightRegion[GraphRegionData[vertices_, {}]] /; $regionStyle === "Highlight" 
   sowVertexPoints @ vertices;
 
 sowVertexPoints[vertices_] := Scope[
-  requirePadding @ $pointSize;
+  SetAutomatic[$diskRadius, 5];
+  requirePadding @ $diskRadius;
   coords = Part[$VertexCoordinates, DeleteDuplicates @ vertices];
   highlights = If[$GraphIs3D,
     Style[
-      Sphere[coords, $pointSize / $GraphPlotImageWidth * $graphPlotWidth],
+      Sphere[coords, $diskRadius / $GraphPlotImageWidth * $graphPlotWidth],
       Directive[Glow[$highlightStyle], GrayLevel[0, 1], Specularity[0]]
     ]
   ,
     Style[
       Point @ coords,
-      PointSize @ $pointSize, $highlightStyle
+      PointSize @ $diskRadius, $highlightStyle
     ];
   ];
   sowHighlight @ highlights
@@ -488,7 +494,9 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
           Map[ReplaceAll[baseArrowheads, $apos -> #]&, $arrowheadPosition],
           List @ ReplaceAll[baseArrowheads, $apos -> $arrowheadPosition]
         ];
-        diskRadius = pathRadius * 1.5 / $GraphPlotImageWidth * $graphPlotWidth;
+        diskRadius = $diskRadius;
+        SetAutomatic[diskRadius, pathRadius * 1.5];
+        diskRadius = diskRadius / $GraphPlotImageWidth * $graphPlotWidth;
         disk1 = If[!StringStartsQ[$pathStyle, "Disk"], Nothing, Disk[Part[$VertexCoordinates, First @ vertices], diskRadius]];
         disk2 = If[!StringEndsQ[$pathStyle, "Disk"], Nothing, Disk[Part[$VertexCoordinates, Last @ vertices], diskRadius]];
         arrow = setbackArrow[segments, setbackDistance];

@@ -120,7 +120,7 @@ specifications, and in %GraphHighlightStyle:
 | %PathStyle | 'Line' | how to render paths |
 | %ArrowheadPosition | 1.0 | where to place arrowhead on a path |
 | %ArrowheadSize | Automatic | arrowhead size |
-| %PointSize | Automatic | vertex highlighting radius |
+| %DiskRadius | Automatic | vertex highlighting radius |
 | %HighlightRadius | Automatic | region highlighting radius |
 | %PathRadius | Automatic | path highlighting radius |
 | %PathOutline | False | whether to outline path highlight |

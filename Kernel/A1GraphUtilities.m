@@ -6,6 +6,7 @@ PackageImport["GeneralUtilities`"]
 
 PackageExport["VertexAnnotations"]
 PackageExport["LayoutDimension"]
+PackageExport["ExtendedGraphLayout"]
 PackageExport["GraphMetric"]
 PackageExport["GraphOrigin"]
 PackageExport["Cardinals"]
@@ -279,6 +280,7 @@ $extendedGraphOptionsRules = {
   EdgeColorFunction -> None,
   VertexAnnotations -> None,
   LayoutDimension -> Automatic,
+  ExtendedGraphLayout -> Automatic,
   GraphMetric -> Automatic,
   GraphOrigin -> None,
   Cardinals -> Automatic,
@@ -315,8 +317,9 @@ Protect[Graph];
 SetHoldAllComplete[interceptedGraphConstructor];
 
 interceptedGraphConstructor[Graph[Shortest[args__], options__Rule]] := Scope[
-  annotations = TakeOptions[{options}, $extendedGraphOptionSymbols];
-  newOptions = Map[optionFixup] @ DeleteOptions[{options}, $extendedGraphOptionSymbols];
+  options = Replace[{options}, Rule[GraphLayout, l_] :> Rule[ExtendedGraphLayout, l], {1}];
+  annotations = TakeOptions[options, $extendedGraphOptionSymbols];
+  newOptions = Map[optionFixup] @ DeleteOptions[options, $extendedGraphOptionSymbols];
   result = Graph[args, Sequence @@ newOptions];
   If[!GraphQ[result], result = makeNewGraph[args, newOptions]];
   If[!GraphQ[result], ReturnFailed[]];
@@ -1106,10 +1109,11 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
   {graphLayout, vertexCoordinates} =
     LookupOption[igraph, {GraphLayout, VertexCoordinates}];
 
+
   $egpGraph = graph;
 
-  {layoutDimension, viewOptions, coordinateTransformFunction} =
-    LookupExtendedGraphAnnotations[graph, {LayoutDimension, ViewOptions, CoordinateTransformFunction}];
+  {layoutDimension, extendedGraphLayout, viewOptions, coordinateTransformFunction} =
+    LookupExtendedGraphAnnotations[graph, {LayoutDimension, ExtendedGraphLayout, ViewOptions, CoordinateTransformFunction}];
 
   actualDimension = Which[
     ContainsQ[graphLayout, "Dimension" -> 3] || CoordinateMatrixQ[vertexCoordinates, 3], 3,
@@ -1125,6 +1129,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
       Null
   ];
 
+  If[extendedGraphLayout =!= Automatic, graphLayout = extendedGraphLayout];
   SetAutomatic[graphLayout, {}];
 
   vertexCount = VertexCount @ igraph;
@@ -1154,14 +1159,14 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
   method = Match[graphLayout, s_String | {s_String, ___} :> s, Automatic];
   autoLayout = Match[graphLayout, {s_String, opts___} :> {opts}, {___String, opts___} :> opts, Automatic];
 
-  If[method === "Linear", method = If[AcyclicGraphQ[graph], "Line", "Circle"]];
+  If[method === "Linear", method = If[AcyclicGraphQ[UndirectedGraph @ graph], "Line", "Circle"]];
   Switch[method,
     "Line",
       graphLayout = autoLayout;
-      initialVertexCoordinates = N[{# - 1, 0}& /@ Range[vertexCount]],
+      SetAutomatic[initialVertexCoordinates, N[{# - 1, 0}& /@ Range[vertexCount]]],
     "Circle",
       graphLayout = autoLayout;
-      initialVertexCoordinates = N @ RotateRight[CirclePoints @ vertexCount, 1],
+      SetAutomatic[initialVertexCoordinates, N @ RotateRight[CirclePoints @ vertexCount, 1]],
     s_String /; !StringEndsQ[s, "Embedding"],
       graphLayout //= ReplaceAll[method -> (method <> "Embedding")],
     True,

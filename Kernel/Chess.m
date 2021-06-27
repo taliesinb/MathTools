@@ -1,0 +1,3 @@
+PackageExport["ChessMoves"]
+
+ChessMoves["Knight"]

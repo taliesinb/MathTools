@@ -245,7 +245,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   $stripLV = True;
-  layoutDimension = Automatic; vertexLayout = Automatic;
+  layoutDimension = Automatic;
   Switch[abstractCoordinateFunction,
     Automatic /; !AssociationQ[representation],
       {coordTypes, abstractCoordinateFunction, isRedundant} =
@@ -344,7 +344,6 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     layoutDimension = Switch[Length @ First @ vertexCoordinates, 2, 2, 3, 3, _, Automatic];
   ,
     vertexCoordinates = Automatic;
-    vertexLayout = "SpringElectricalEmbedding";
   ];
 
   (* apply the final vertex and edge relabeling *)

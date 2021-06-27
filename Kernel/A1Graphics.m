@@ -31,7 +31,7 @@ $LabelStyle = {FontFamily -> "Avenir", FontSize -> 12};
 
 PackageExport["LabelForm"]
 
-LabelForm[e_, args___] := Style[e, args, $LabelStyle];
+LabelForm[e_, args___] := Style[e, $LabelStyle, args];
 
 (**************************************************************************************************)
 
