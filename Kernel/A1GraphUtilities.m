@@ -14,6 +14,7 @@ PackageExport["ViewOptions"]
 PackageExport["AdditionalImagePadding"]
 PackageExport["CoordinateTransformFunction"]
 PackageExport["LabelCardinals"]
+PackageExport["AspectRatioClipping"]
 
 (**************************************************************************************************)
 
@@ -45,6 +46,7 @@ $extendedGraphUsage = StringTrim @ "
 | %ViewOptions | Automatic | how to project 3D coordinates |
 | %AdditionalImagePadding | None | additional padding to include unconditionally |
 | %ViewRegion | All | region of graph to plot |
+| %AspectRatioClipping | True | whether to clip aspect ratio |
 | %CoordinateTransformFunction | None | function to remap coordinates before plotting |
 | %Frame | False | whether to draw a frame |
 | %FrameStyle | Automatic | color of frame |
@@ -292,6 +294,7 @@ $extendedGraphOptionsRules = {
   ColorRules -> None,
   ViewRegion -> All,
   AdditionalImagePadding -> None,
+  AspectRatioClipping -> True,
   EdgeThickness -> Automatic
 };
 
@@ -1109,7 +1112,6 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
   {graphLayout, vertexCoordinates} =
     LookupOption[igraph, {GraphLayout, VertexCoordinates}];
 
-
   $egpGraph = graph;
 
   {layoutDimension, extendedGraphLayout, viewOptions, coordinateTransformFunction} =
@@ -1167,6 +1169,14 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
     "Circle",
       graphLayout = autoLayout;
       SetAutomatic[initialVertexCoordinates, N @ RotateRight[CirclePoints @ vertexCount, 1]],
+    "LayeredDigraphEmbedding",
+      graphLayout //= ReplaceAll[
+        Rule["RootVertex", v_] :> Rule["RootVertex", IndexOf[VertexList @ graph, v]]
+      ],
+    "Tree",
+      graphLayout = {"LayeredDigraphEmbedding"};
+      root = LookupExtendedGraphAnnotations[graph, GraphOrigin];
+      If[root =!= None, AppendTo[graphLayout, "RootVertex" -> IndexOf[VertexList @ graph, root]]],
     s_String /; !StringEndsQ[s, "Embedding"],
       graphLayout //= ReplaceAll[method -> (method <> "Embedding")],
     True,
@@ -1182,6 +1192,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
 
   gdResult = Check[GraphComputation`GraphDrawing @ newGraph, $Failed];
   If[FailureQ[gdResult],
+    Print["Graph layout failed"];
     vertexCoordinates = CirclePoints @ vertexCount;
     If[actualDimension === 3, vertexCoordinates //= AppendColumn @ Zeros @ vertexCount];
     edgeCoordinateLists = Part[vertexCoordinates, #]& /@ EdgePairs @ igraph;
@@ -1311,7 +1322,7 @@ applyCoordinateTransform["BendVertical"] :=
   edgeCoordinateLists //= Map[bendVertical];
 
 bendVertical[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
-  If[EuclideanDistance[ax, bx] < 0.001, Return @ {a, b}];
+  If[Min[Abs[ax - bx], Abs[ay - by]] < 0.001, Return @ {a, b}];
   c = {bx, ay};
   ca = along[c, a, .25];
   cb = along[c, b, .25];

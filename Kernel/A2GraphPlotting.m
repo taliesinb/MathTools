@@ -224,7 +224,7 @@ GraphPlotScope[graph_, body_] := Scope[
 
   GraphScope[graph,
 
-    {$VertexCoordinates, $EdgeCoordinateLists} = ExtractGraphPrimitiveCoordinates @ $IndexGraph;
+    {$VertexCoordinates, $EdgeCoordinateLists} = ExtractGraphPrimitiveCoordinates @ graph;
 
     viewRegion = LookupExtendedGraphAnnotations[$Graph, ViewRegion];
     If[viewRegion =!= All, applyViewRegion[viewRegion], $VertexParts = $EdgeParts = All];
@@ -259,7 +259,7 @@ applyViewRegion[regionSpec_] := (
   ];
 )
 
-$rangeMicroPadding = 1*^-12;
+$rangeMicroPadding = 1*^-5;
 computeCoordinateBounds[] := Scope[
   plotRange = LookupOption[$Graph, PlotRange];
   If[MatrixQ[plotRange, NumericQ], Return @ plotRange];
@@ -421,8 +421,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     {vertexLabels, edgeLabels, plotLabel, prolog, epilog, imagePadding, plotRangePadding, frame, frameLabel} =
       LookupOption[graph, {VertexLabels, EdgeLabels, PlotLabel, Prolog, Epilog, ImagePadding, PlotRangePadding, Frame, FrameLabel}, None];
 
-    {arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, visibleCardinals, edgeSetback, edgeThickness, labelCardinals, viewOptions, additionalImagePadding} =
-      LookupExtendedGraphAnnotations[graph, {ArrowheadShape, ArrowheadStyle, ArrowheadSize, ArrowheadPosition, VisibleCardinals, EdgeSetback, EdgeThickness, LabelCardinals, ViewOptions, AdditionalImagePadding}];
+    {arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, visibleCardinals, edgeSetback, edgeThickness, labelCardinals, viewOptions, additionalImagePadding, aspectRatioClipping} =
+      LookupExtendedGraphAnnotations[graph, {ArrowheadShape, ArrowheadStyle, ArrowheadSize, ArrowheadPosition, VisibleCardinals, EdgeSetback, EdgeThickness, LabelCardinals, ViewOptions, AdditionalImagePadding, AspectRatioClipping}];
 
     {graphLegend, vertexColorFunction, vertexAnnotations, edgeColorFunction, colorRules} =
       LookupExtendedGraphAnnotations[graph, {GraphLegend, VertexColorFunction, VertexAnnotations, EdgeColorFunction, ColorRules}];
@@ -456,10 +456,12 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ,
       {imageWidth, imageHeight} = ToNumericImageSize[imageSize, Clip[$GraphPlotAspectRatio, {0.3, 2}]];
     ];
-    If[$GraphIs3D,
-      (* this makes 3D rotation less zoomy *)
-      If[imageHeight > imageWidth * 1.5, imageHeight = imageWidth * 1.5];
-      If[imageHeight < imageWidth * 0.5, imageHeight = imageWidth * 0.5];
+    If[aspectRatioClipping,
+      If[$GraphIs3D,
+        (* this makes 3D rotation less zoomy *)
+        If[imageHeight > imageWidth * 1.5, imageHeight = imageWidth * 1.5];
+        If[imageHeight < imageWidth * 0.5, imageHeight = imageWidth * 0.5];
+      ];
     ];
     imageSize = {imageWidth, imageHeight};
     {effectiveImageWidth, effectiveImageHeight} = EffectiveImageSize[imageSize, $GraphPlotAspectRatio];

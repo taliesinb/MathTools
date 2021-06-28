@@ -710,10 +710,10 @@ SetUsage @ "
 PathQuiverSymbol[q$] represents the path quiver on quiver q$.
 "
 
-$pqSymbol = Style["\[CapitalGamma]", Italic, Larger];
+$pqSymbol = Style["\[CapitalGamma]", Larger];
 declareFormatting[
   PathQuiverSymbol[q_] :> Row[{$pqSymbol, Row[{"(", q, ")"}]}],
-  PathQuiverSymbol[q_, v0_] :> Row[{$pqSymbol, Row[{"(", q, ",", v0,")"}]}]
+  PathQuiverSymbol[q_, v0_] :> Row[{$pqSymbol, Row[{"(", q, ",\[ThinSpace]", v0,")"}]}]
 ];
 
 

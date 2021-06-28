@@ -446,7 +446,7 @@ PathQuiverPlot[fq_, paths_, v0_, cardinalDirs_, pathOpts_List, opts___Rule] := S
     cardinalDirs === Inherited,
       coords = AssociationThread[
         Map[LatticeVertex @ ParseCardinalWord @ #&, VertexList @ fq],
-        GraphVertexCoordinates @ fq
+        First @ ExtractGraphPrimitiveCoordinates @ fq
       ];
     ,
     cardinalDirs =!= None,
@@ -483,7 +483,7 @@ PathQuiverPlot[fq_, paths_, v0_, cardinalDirs_, pathOpts_List, opts___Rule] := S
     VertexLabelStyle -> {LabelPosition -> Center, Background -> None, ZOrder -> 1},
     ArrowheadShape -> {"Line", EdgeThickness -> 2}, ArrowheadSize -> Medium, EdgeStyle -> LightGray,
     EdgeThickness -> Thick,
-    ImageSize -> 400, ImagePadding -> 30
+    ImageSize -> 400, ImagePadding -> 5, AspectRatioClipping -> False
   ] // CombineMultiedges
 ];
 
