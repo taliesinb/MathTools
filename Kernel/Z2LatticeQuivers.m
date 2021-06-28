@@ -487,6 +487,12 @@ vecSorter[v_] /; Length[v] == 1 := {Norm[v], v};
 
 $validRenamingRules = {"SpiralIndex", "RasterIndex", "Representation", "RepresentationMatrix", "Coordinates", "Index"};
 
+toRenamingRule[name_String -> n_Integer, vertices_, origVertices_] :=
+  Map[PartOperator[n], toRenamingRule[name, vertices, origVertices]];
+
+toRenamingRule[name_String -> f_, vertices_, origVertices_] :=
+  Map[f, toRenamingRule[name, vertices, origVertices]];
+
 toRenamingRule["SpiralIndex", vertices_, origVertices_] :=
   AssociationThread[vertices, Ordering @ Ordering @ Map[vecSorter, N @ vertices[[All, 1]]]];
 
@@ -498,6 +504,12 @@ toRenamingRule["Representation", vertices_, origVertices_] :=
 
 toRenamingRule["RepresentationMatrix", vertices_, origVertices_] :=
   AssociationThread[vertices, origVertices[[All, 1, 1]]];
+
+toRenamingRule["Coordinates" -> n_Integer, _, _] :=
+  LatticeVertex[v_, _] :> Part[v, n];
+
+toRenamingRule["Coordinates" -> f_, _, _] :=
+  LatticeVertex[v_, _] :> f[n];
 
 toRenamingRule["Coordinates", _, _] :=
   LatticeVertex[v_, _] :> v;

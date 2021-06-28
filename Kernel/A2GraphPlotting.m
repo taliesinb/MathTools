@@ -1634,6 +1634,8 @@ ArrowheadData[name_, style_:{}] :=
 
 (**************************************************************************************************)
 
+$lineThickness = AbsoluteThickness[1.2];
+
 makeArrowheadShape[None, _] := None;
 
 makeArrowheadShape["Sphere", style_] :=
@@ -1984,6 +1986,7 @@ vertexColorDataProvider = Case[
   {"Distance", v_}          := MetricDistance[$MetricGraphCache, getVertexIndex @ v];
   key_String                := getAnnoValue[vertexAnnotations, key];
   (key_String -> f_)        := Replace[Quiet @ Check[Map[toFunc @ f, %[key]], $Failed], $Failed :> failPlot["msgcolfunc", key]];
+  rules:{__Rule, All -> c_} := First @ resolveRegionRules[rules, VertexColorFunction, c];
   rules:{__Rule}            := First @ resolveRegionRules[rules, VertexColorFunction];
   list_List /; Length[list] === $VertexCount
                             := list;
@@ -1997,8 +2000,8 @@ toFunc[f_] := f;
 
 (**************************************************************************************************)
 
-resolveRegionRules[rules_, optSym_] := Scope[
-  defaultColor = FirstCase[rules, Rule[All, color:$ColorPattern] :> color, Gray, {1}];
+resolveRegionRules[rules_, optSym_, default_:Gray] := Scope[
+  defaultColor = FirstCase[rules, Rule[All, color:$ColorPattern] :> color, default, {1}];
   $vertexValues = ConstantArray[defaultColor, $VertexCount];
   $edgeValues = ConstantArray[defaultColor, $EdgeCount];
   $optSym = optSym;

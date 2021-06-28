@@ -277,8 +277,9 @@ PackageExport["$Gray"]
 {$Blue, $Red, $Green, $Pink, $Teal, $Yellow, $Orange, $Purple, $Gray} =
   Map[RGBColor, StringSplit @ "#3e81c3 #e1432d #4ea82a #c74883 #47a5a7 #f6e259 #dc841a #8b7ebe #929292"]
 
-$ColorPalette = $MediumColorPalette = {$Red, $Blue, $Green, $Orange, $Purple, $Teal, $Gray, $Pink, $Yellow};
+$ColorPalette = {$Red, $Blue, $Green, $Orange, $Purple, $Teal, $Gray, $Pink, $Yellow};
 
+PackageExport["$DarkColorPalette"]
 PackageExport["$DarkBlue"]
 PackageExport["$DarkRed"]
 PackageExport["$DarkGreen"]
@@ -291,6 +292,7 @@ PackageExport["$DarkGray"]
 {$DarkRed, $DarkBlue, $DarkGreen, $DarkOrange, $DarkPurple, $DarkTeal, $DarkGray, $DarkPink, $DarkYellow} =
   $DarkColorPalette = OklabDarker @ $ColorPalette;
 
+PackageExport["$LightColorPalette"]
 PackageExport["$LightBlue"]
 PackageExport["$LightRed"]
 PackageExport["$LightGreen"]
@@ -342,7 +344,7 @@ ToColorPalette[palette$, n$] returns exactly n$ colors from the palette.
 $ecnp = Alternatives @@ $ExtendedColorNames;
 
 ToColorPalette = Case[
-  Automatic | "Medium"          := $MediumColorPalette;
+  Automatic | "Medium"          := $ColorPalette;
   "Light"                       := $LightColorPalette;
   "Dark"                        := $DarkColorPalette;
   spec_ -> "Light"              := OklabLighter @ % @ spec;
