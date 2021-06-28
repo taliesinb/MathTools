@@ -154,15 +154,40 @@ pointDilationRegion[points_, d_] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["BoundingBoxPointIndices"]
+
+BoundingBoxPointIndices[points_, dscale_:0.01] := Scope[
+  bbox = CoordinateBoundingBox @ points;
+  diagonal = EuclideanDistance @@ bbox;
+  coords = Transpose @ points;
+  distances = If[Length[coords] === 2,
+    {x, y} = coords;
+    {{xl, yl}, {xh, yh}} = bbox;
+    MapThread[Min, {Abs[x - xl], Abs[y - yl], Abs[x - xh], Abs[y - yh]}]
+  ,
+    {x, y, z} = coords;
+    {{xl, yl, zl}, {xh, yh, zh}} = bbox;
+    MapThread[Min, {Abs[x - xl], Abs[y - yl], Abs[z - zl], Abs[x - xh], Abs[y - yh], Abs[z - zh]}]
+  ];
+  SelectIndices[distances, LessEqualThan[diagonal * dscale]]
+];
+
+(**************************************************************************************************)
+
 PackageExport["ConvexHullLineIndices"]
 
-ConvexHullLineIndices[points_] := If[Length[points] <= 3, Range @ Length @ points,
-  WolframCGL`QuickHull @ ToPackedReal @ points
-];
+ConvexHullLineIndices[points_] :=
+  If[Length[points] <= 3,
+    Range @ Length @ points,
+    Quiet @ Check[WolframCGL`QuickHull @ ToPackedReal @ points, $Failed]
+  ];
 
 PackageExport["ConvexHullPointIndices"]
 
-ConvexHullPointIndices[points_] := Union @ Flatten @ ConvexHullLineIndices @ points;
+ConvexHullPointIndices[points_] := Scope[
+  indices = ConvexHullLineIndices @ points;
+  Union @ Flatten @ Replace[indices, $Failed :> BoundingBoxPointIndices[points, 1*^-4]]
+]
 
 (**************************************************************************************************)
 

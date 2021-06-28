@@ -2088,8 +2088,8 @@ estimateLabelPadding[graphics_, vertexLabelStyle_] := Scope[
   graphics = graphics /. Text[opts___] :> outerText[opts];
   texts = Cases[graphics, outerText[t_, ___], Infinity];
   If[texts === {}, Return @ {{0, 0}, {0, 0}}];
-  hullIndices = ConvexHullPointIndices @ Part[texts, All, 2];
-  texts = Part[texts, hullIndices];
+  bboxIndices = BoundingBoxPointIndices @ Part[texts, All, 2];
+  texts = Part[texts, bboxIndices];
   allCorners = Map[textCorners, texts];
   cornerBounds = CoordinateBounds @ allCorners;
   extendPaddingToInclude @ cornerBounds
