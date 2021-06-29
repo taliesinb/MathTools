@@ -4,6 +4,8 @@ declarePlusTimesDispatch[symbol_Symbol, test_, dispatch_] := (
   symbol /: Times[object1_symbol ? test, object2_symbol ? test] := dispatch[Times][object1, object2];
 )
 
+$directionStrings = {"Forward", "Reverse", "Symmetric"};
+
 (**************************************************************************************************)
 
 PackageExport["$PathAlgebra"]
@@ -286,7 +288,14 @@ DefineMacro[UnpackPathAlgebra,
 UnpackPathAlgebra[args___] := Quoted @ UnpackAssociation[getObjectData @ $PathAlgebra, args]
 ];
 
-formatPathVector[pv_] := If[VertexFieldQ[pv] || EdgeFieldQ[pv],
+notBothwaysQ[PathVector[assoc_]] := Scope[
+  edges = Part[Keys @ assoc, All, 1];
+  DuplicateFreeQ @ Join[edges, Reverse[edges, 2]]
+]
+
+notBothwaysQ[_] := False;
+
+formatPathVector[pv_] := If[VertexFieldQ[pv] || (EdgeFieldQ[pv] && notBothwaysQ[pv]),
   iFormatPathVector[pv, False],
   Mouseover[
     iFormatPathVector[pv, False],
@@ -297,14 +306,9 @@ formatPathVector[pv_] := If[VertexFieldQ[pv] || EdgeFieldQ[pv],
 iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
   UnpackPathAlgebra[vertexCoordinates, plotRange, fieldColorFunction, vertexList, edgeSetback, imageSize];
   $sb = edgeSetback; $transparency = transparency;
-  pathPrimitiveGroups = Merge[Reverse[Normal @ paths, {2}], Identity];
-  pathPrimitives = KeyValueMap[
-    {weight, elements} |->
-      drawStyledPaths[
-        Map[Part[vertexCoordinates, #]&, SortBy[First /@ elements, Length /* Minus]],
-        fieldColorFunction @ weight
-      ],
-    pathPrimitiveGroups
+  pathPrimitives = drawWeightedElement @@@ SortBy[
+    Normal @ paths,
+    -PathLength[First @ #]&
   ];
   pathPrimitives = {
     AbsolutePointSize[4], AbsoluteThickness[1.5],
@@ -325,8 +329,14 @@ iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
   ]
 ];
 
-drawStyledPaths[vertices_, style_] /; $transparency :=
-  drawSingleMouseverStyledPath[#, style]& /@ vertices;
+drawWeightedElement[PathElement[element_], weight_] :=
+  drawStyledPath[
+    Part[vertexCoordinates, element],
+    fieldColorFunction @ weight
+  ];
+
+drawStyledPath[vertices_, style_] /; $transparency :=
+  drawSingleMouseverStyledPath[vertices, style];
 
 drawSingleMouseverStyledPath[vertices_, style_] :=
   Mouseover[
@@ -345,17 +355,11 @@ drawSinglePathPrimitives[vertices_] := {
   myArrow[processPathSegments @ vertices]
 };
 
-
-drawStyledPaths[vertices_, style_] :=
+drawStyledPath[vertices_, style_] :=
   Style[
-    drawPathPrimitives @ vertices, style,
+    drawSinglePathPrimitives @ vertices, style,
     Arrowheads[{{.13, 1, ArrowheadData["Line", style]}}]
   ]
-
-drawPathPrimitives[vertices_] := {
-  Point @ Part[vertices, All, 1],
-  myArrow[processPathSegments /@ vertices]
-};
 
 myArrow[{}] = Nothing;
 myArrow[Nothing] = Nothing;
@@ -402,18 +406,26 @@ WordVector[word_String] /; $PathAlgebraQ := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["WordDirective"]
+PackageExport["WordDelta"]
 
-WordDirective[word_String, type_:"Forward"] /; $PathAlgebraQ := Scope[
+declareFunctionAutocomplete[WordDelta, {0, $directionStrings}];
+
+WordDelta[word_String, type_:"Forward"] /; $PathAlgebraQ := Scope[
   forward = WordVector @ word;
   reverse := PathReverse @ forward;
   unit := VertexField[];
   Switch[type,
     "Forward", forward - unit,
-    "Reverse", unit - reverse,
+    "Reverse", reverse - unit,
     "Symmetric", forward - reverse
   ]
 ]
+
+(**************************************************************************************************)
+
+PackageExport["PathLength"]
+
+PathLength[PathElement[list_List]] := Length @ list;
 
 (**************************************************************************************************)
 
@@ -474,6 +486,8 @@ RandomVertexField[] /; $PathAlgebraQ := Scope[
 
 PackageExport["RandomEdgeField"]
 
+declareFunctionAutocomplete[RandomEdgeField, {$directionStrings}];
+
 RandomEdgeField[type_:"Forward"] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[edgePairs, randomFieldElement];
   forward = edgePairs;
@@ -505,6 +519,8 @@ EdgeField[spec$, 'Forward'] is the same as the above.
 EdgeField[spec$, 'Reverse'] gives reverse paths, as above.
 EdgeField[spec$, 'Symmetric'] uses weight 1 for forward paths and -1 for reverse paths.
 "
+
+declareFunctionAutocomplete[EdgeField, {0, $directionStrings}];
 
 EdgeField[] := EdgeField[All];
 
