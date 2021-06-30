@@ -4,7 +4,7 @@ declarePlusTimesDispatch[symbol_Symbol, test_, dispatch_] := (
   symbol /: Times[object1_symbol ? test, object2_symbol ? test] := dispatch[Times][object1, object2];
 )
 
-$directionStrings = {"Forward", "Reverse", "Symmetric"};
+$directionStrings = {"Forward", "Reverse", "Symmetric", "Antisymmetric"};
 
 (**************************************************************************************************)
 
@@ -326,8 +326,15 @@ composeWeightedPaths[PathElement[a_] -> aw_, PathElement[b_] -> bw_] :=
 
 (**************************************************************************************************)
 
+SetHoldAllComplete[ValidPathAssociationQ];
+
+ValidPathAssociationQ[assoc_Association] /; AssociationQ[Unevaluated[assoc]] :=
+  MatchQ[Keys @ assoc, {___PathElement}];
+
+ValidPathAssociationQ[_] := False;
+
 declareFormatting[
-  pv:PathVector[_Association] /; $PathAlgebraQ :>
+  pv:PathVector[_Association ? ValidPathAssociationQ] /; $PathAlgebraQ :>
     formatPathVector[pv]
 ];
 
@@ -434,6 +441,14 @@ fieldColors = MatchValues[
 
 PackageExport["WordVector"]
 
+SetUsage @ "
+WordVector['word$'] constructs a %PathVector consisting of all paths that have path word word$.
+* The weights are all 1.
+* 'word$' should consist of cardinals, or their negations (indicated by uppercase letters).
+"
+
+foobar
+
 WordVector[word_String] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[vertexList, tagOutTable, nullVertex];
   word = ParseCardinalWord @ word;
@@ -530,8 +545,10 @@ PathElement[{v$1, v$2, $$, v$n}] represents a path starting at v$1 and ending at
 PackageExport["VertexField"]
 
 SetUsage @ "
-VertexField[] constructs the unit vertex field.
-VertexField[i$] constructs the basis vertex field with weight 1 for vertex $i, and 0 elsewhere.
+VertexField[] constructs the unit vertex field, containing every empty path with weight 1.
+VertexField[n$] constucts the empty path on vertex n$ with weight 1.
+VertexField[-n$] constucts the empty path on vertex n$ with weight -1.
+VertexField[{n$1, n$2, $$}] constructs the sum of empty paths of on vertices n$i.
 "
 
 VertexField[] /; $PathAlgebraQ :=
@@ -551,6 +568,11 @@ VertexField[ints:{__Integer}] /; $PathAlgebraQ := Scope[
 (**************************************************************************************************)
 
 PackageExport["RandomVertexField"]
+
+SetUsage @ "
+RandomVertexField[] constructs a random vertex field, containing every empty path with a random weight.
+* The random weights are chosen from the appropriate base field.
+"
 
 RandomVertexField[] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[vertexList, randomFieldElement];
@@ -587,12 +609,14 @@ VertexFieldQ[_] := False;
 PackageExport["EdgeField"]
 
 SetUsage @ "
-EdgeField[] constructs the unit edge field.
-EdgeField[All] is the same as EdgeField[].
-EdgeField[i$] constructs the basis vertex field with weight 1 for the forward 1-path on edge $i.
-EdgeField[spec$, 'Forward'] is the same as the above.
-EdgeField[spec$, 'Reverse'] gives reverse paths, as above.
-EdgeField[spec$, 'Symmetric'] uses weight 1 for forward paths and -1 for reverse paths.
+EdgeField[] gives EdgeField[All].
+EdgeField[All] constructs the sum of all length 1 paths (edge paths).
+EdgeField[i$] gives the length 1 path on edge 1.
+EdgeField[spec$,'type$'] constructs one of the following:
+| 'Forward' | construct path in forward direction  (default) |
+| 'Reverse' | construct path in reverse direction |
+| 'Symmetric' | uses weight 1 for forward and reverse directions |
+| 'Antisymmetric' | uses weight 1 for forward  and -1 for reverses |
 "
 
 declareFunctionAutocomplete[EdgeField, {0, $directionStrings}];
@@ -620,10 +644,12 @@ EdgeField[ints:{__Integer}] := Scope[
 
 EdgeField[spec_, "Forward"] := EdgeField[spec];
 EdgeField[spec_, "Reverse"] := PathReverse @ EdgeField[spec];
-EdgeField[spec_, "Symmetric"] := symmetricEdgeField[spec];
+EdgeField[spec_, "Symmetric"] := symmetricEdgeField[spec, True];
+EdgeField[spec_, "Antisymmetric"] := symmetricEdgeField[spec, False];
 
-symmetricEdgeField[All] := Scope[
+symmetricEdgeField[All, sym_] := Scope[
   UnpackPathAlgebra[edgePairs, pos, neg];
+  If[sym, neg = pos];
   PathVector @ Association[
     {PathElement[#] -> pos, PathElement[Reverse @ #] -> neg}& /@ edgePairs
   ]

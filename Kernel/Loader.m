@@ -218,6 +218,11 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
   If[result === $Failed, Return[$Failed]];
 
   If[$loadedFileCount == 0, Return["Unchanged"]];
+
+  $PreviousPathAlgebra = If[
+    System`Private`HasImmediateValueQ[QuiverGeometry`$PathAlgebra],
+    QuiverGeometry`$PathAlgebra, None];
+
   Construct[ClearAll, mainContext <> "*", mainContext <> "**`*"];
 
   $packageExports = DeleteDuplicates @ Internal`BagPart[$packageExports, All];
@@ -288,18 +293,22 @@ handleMessage[f_Failure] := Scope[
 
 QuiverGeometryPackageLoader`$Directory = DirectoryName[$InputFileName];
 
+$PreviousPathAlgebra = None;
+
 $lastLoadSuccessful = False;
 
 QuiverGeometryPackageLoader`Read[] :=
   QuiverGeometryPackageLoader`ReadPackages["QuiverGeometry`", QuiverGeometryPackageLoader`$Directory];
 
-QuiverGeometryPackageLoader`Load[] := Scope[
+QuiverGeometryPackageLoader`Load[] := Block[{packages},
   packages = QuiverGeometryPackageLoader`Read[];
   If[FailureQ[packages], ReturnFailed[]];
   If[packages === "Unchanged" && $lastLoadSuccessful, Return[None]];
   QuiverGeometryPackageLoader`$LoadCount++;
   If[!FailureQ[QuiverGeometryPackageLoader`EvaluatePackages @ packages],
     $lastLoadSuccessful = True];
+  If[$PreviousPathAlgebra =!= None,
+    QuiverGeometry`$PathAlgebra = $PreviousPathAlgebra];
 ];
 
 QuiverGeometryPackageLoader`$LoadCount = 0;

@@ -120,7 +120,8 @@ colorMainSymbol[usageString_] := StringReplace[
   ("\"" ~~ $mainSymbol ~~ "\"") :> StringTake[makeMainSymbolInlineSyntax[], {4, -2}],
   WordBoundary ~~ $mainSymbol ~~ WordBoundary :> makeMainSymbolInlineSyntax[],
   "<|" -> "\[LeftAssociation]",
-  "|>" -> "\[RightAssociation]"
+  "|>" -> "\[RightAssociation]",
+  "-StyleBox[\"" -> "StyleBox[\"-"
 }];
 
 makeMainSymbolInlineSyntax[] := makeStyleBox[$mainSymbol,
