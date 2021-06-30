@@ -318,6 +318,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
       If[vertexIndices === {},
         someNorms = AssociationThread @@ Take[{abstractVertexList, norms}, All, UpTo[4]];
         ReturnFailed[head::normempty, maxNorm, someNorms]];
+      norms = Part[norms, vertexIndices];
     ,
       vertexIndices = Range @ Length @ abstractVertexList;
     ];
@@ -356,6 +357,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     ordering = Ordering @ finalVertexList;
     finalVertexList = ToPacked @ Part[finalVertexList, ordering];
     vertexList = Part[vertexList, ordering];
+    If[ListQ[norms], norms = Part[norms, ordering]];
     abstractVertexList = Part[abstractVertexList, ordering];
     If[ListQ[vertexCoordinates], vertexCoordinates = Part[vertexCoordinates, ordering]];
     edgeList //= Sort;

@@ -505,7 +505,8 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
         ];
         {disk1, arrowheads, arrow, disk2, extraArrowheads}
       ,
-      "Replace",
+      "Replace" | "ReplaceEdges",
+        $cardinalFilter = If[$pathStyle === "ReplaceEdges", {}, All];
         $newVertices = $newEdges = {}; $firstRemovedArrowheads = None;
         TransformGraphPlotPrimitives[removeHighlightedPathEdges, edges, "EdgePrimitives"];
         TransformGraphPlotPrimitives[removeHighlightedPathVertices, vertices, "VertexPrimitives"];

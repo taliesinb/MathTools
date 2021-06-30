@@ -1044,40 +1044,6 @@ joinAnnotation[graph_, key_, newAnnotations_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ExtendedSubgraph"]
-
-ExtendedSubgraph[oldGraph_, newVertices_, newEdges_] := Scope[
-  options = Options[oldGraph];
-  annotations = ExtendedGraphAnnotations[oldGraph];
-  vertexCoords = Lookup[options, VertexCoordinates, Automatic];
-  oldVertices = VertexList[oldGraph];
-  If[newVertices === All,
-    newVertexIndices = Range @ Length @ oldVertices;
-    newVertices = oldVertices;
-  ,
-    newVertexIndices = Map[IndexOf[oldVertices, #]&, newVertices];
-    newVertexOrdering = Ordering[newVertexIndices];
-    newVertices = Part[newVertices, newVertexOrdering];
-  ];
-  vertexAnnotations = LookupAnnotation[oldGraph, VertexAnnotations, None];
-  sortedNewVertexIndices = Sort @ newVertexIndices;
-  If[ListQ[vertexCoords],
-    vertexCoords = Part[vertexCoords, sortedNewVertexIndices];
-    options = ReplaceOptions[options, VertexCoordinates -> vertexCoords];
-  ];
-  If[AssociationQ[vertexAnnotations],
-    vertexAnnotations //= Map[Part[#, sortedNewVertexIndices]&];
-    annotations = ReplaceOptions[annotations, VertexAnnotations -> vertexAnnotations];
-  ];
-  If[newEdges === Automatic,
-    newEdges = Select[EdgeList @ oldGraph, MemberQ[newVertices, Part[#, 1]] && MemberQ[newVertices, Part[#, 2]]&]
-  ];
-  graph = Graph[newVertices, newEdges, options];
-  Annotate[graph, annotations]
-];
-
-(**************************************************************************************************)
-
 PackageExport["IndexGraphQ"]
 
 IndexGraphQ[g_Graph ? GraphQ] :=
