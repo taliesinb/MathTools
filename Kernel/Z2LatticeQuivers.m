@@ -651,3 +651,10 @@ LatticeQuiverData[] := $LatticeNames;
 LatticeQuiverData[{name_String, args___}, "Representation"] := Scope[
   Last @ $ParameterizedLatticeData[name][args]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["RationalAngle"]
+
+RationalAngle[{0|0., 0|0.}] := Indeterminate;
+RationalAngle[{a_, b_}] := N[ArcTan[a, b]] / Tau;

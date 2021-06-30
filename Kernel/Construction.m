@@ -113,7 +113,7 @@ VertexSelect[graph_, f_] := Scope @ Catch[
   $vertexCoordinates := $vertexCoordinates = First @ ExtractGraphPrimitiveCoordinates[graph];
 
   GraphScope[graph,
-    bools = toVertexResults[f];
+    bools = toVertexResults[f] /. Indeterminate -> True;
     If[!VectorQ[bools, BooleanQ], ReturnFailed[]];
     newVertices = Pick[$VertexList, bools];
   ];
@@ -124,9 +124,9 @@ VertexSelect[graph_, f_] := Scope @ Catch[
 ];
 
 toVertexResults = Case[
-  data_List -> f_           := MapThread[toFunc @ f, toVertexData @ data];
-  data_ -> f_              := Map[toFunc @ f, toVertexData @ data];
-  f_                        := Map[f, $VertexList];
+  data_List -> f_           := MapThread[checkBool @ toFunc @ f, toVertexData @ data];
+  data_ -> f_              := Map[checkBool @ toFunc @ f, toVertexData @ data];
+  f_                        := Map[checkBool @ f, $VertexList];
 ];
 
 toVertexData = Case[
@@ -145,7 +145,7 @@ toVertexData = Case[
 toFunc = Case[
   p_Integer := PartOperator[p];
   p_String := PartOperator[p];
-  f_ := checkedBoole @ f;
+  f_ := checkIndet @ f;
   f_ -> g_ := RightComposition[toFunc @ f, toFunc @ g]
 ];
 
@@ -154,12 +154,18 @@ failSelect[msg_, args___] := (
   Throw[$Failed, VertexSelect]
 );
 
-
-checkedBoole[f_][args___] := Replace[
-  Check[Replace[f[args], Except[True|False] -> $Failed], $Failed],
-  $Failed :> failSelect["notboolres", SequenceForm[args]]
+checkBool[f_][args___] := Catch[
+  Replace[
+    Check[f[args], $Failed],
+    Except[True|False|Indeterminate] :> failSelect["notboolres", SequenceForm[args]]
+  ],
+  indet
 ];
+
+checkIndet[f_][args___] :=
+  Replace[f[args], Indeterminate :> Throw[Indeterminate, indet]];
 
 getVertexIndex[GraphOrigin] := getVertexIndex @ $GraphOrigin;
 getVertexIndex[v_] := Lookup[$VertexIndex, v, failSelect["notvertex", v]];
 getAnnoValue[annos_, key_] := Lookup[annos, key, failSelect["badgraphannokey", key, commaString @ Keys @ annos]];
+
