@@ -267,7 +267,7 @@ PathVectorElementwise[_, _, {vec_}] := vec;
 
 PathVectorElementwise[f_, id_, vecs_] := Scope[
   assocs = Part[vecs, All, 1];
-  PathVector @ dropZero @ Merge[KeyUnion[assocs, id&], f]
+  PathVector @ KeySort @ dropZero @ Merge[KeyUnion[assocs, id&], f]
 ];
 
 dropZero[assoc_] := DeleteCases[assoc, 0|0.];
@@ -320,6 +320,9 @@ PathCompose[PathVector[a1_Association], PathVector[a2_Association]] /; $PathAlge
   ];
   PathVector @ KeySort @ assoc
 ]
+
+PathCompose[PathBivector[l1_, r1_], PathBivector[l2_, r2_]] /; $PathAlgebraQ :=
+  PathBivector[PathCompose[l1, l2], PathCompose[r1, r2]]
 
 composeWeightedPaths[PathElement[a_] -> aw_, PathElement[b_] -> bw_] :=
   If[Last[a] === First[b], compose[a, b] -> $times[aw, bw], {}];
@@ -530,6 +533,9 @@ PathReverse[PathElement[$$]] yields the reverse of PathElement[$$].
 PathReverse[PathVector[assoc_]] :=
   PathVector @ KeyMap[PathReverse, assoc]
 
+PathReverse[PathBivector[l_PathVector, r_PathVector]] :=
+  PathBivector[PathReverse @ l, PathReverse @ r];
+
 PathReverse[PathElement[list_]] := PathElement @ Reverse @ list;
 
 (**************************************************************************************************)
@@ -572,6 +578,8 @@ PackageExport["RandomVertexField"]
 SetUsage @ "
 RandomVertexField[] constructs a random vertex field, containing every empty path with a random weight.
 * The random weights are chosen from the appropriate base field.
+* For finite fields, any value is equally likely to be chosen.
+* For infinite fields, the range [-2, 2] is used.
 "
 
 RandomVertexField[] /; $PathAlgebraQ := Scope[
@@ -583,16 +591,25 @@ RandomVertexField[] /; $PathAlgebraQ := Scope[
 
 PackageExport["RandomEdgeField"]
 
+SetUsage @ "
+RandomEdgeField[] constructs a random edge field, containing every length-1 path with a random weight.
+RandomEdgeField['type$'] chooses only specific orientations of length-1 paths.
+* The random weights are chosen from the appropriate base field.
+* For finite fields, any value is equally likely to be chosen.
+* For infinite fields, the range [-2, 2] is used.
+* The available orientations are 'Forward', 'Reverse', and 'Symmetric' (default).
+"
+
 declareFunctionAutocomplete[RandomEdgeField, {$directionStrings}];
 
-RandomEdgeField[type_:"Forward"] /; $PathAlgebraQ := Scope[
+RandomEdgeField[type_:"Symmetric"] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[edgePairs, randomFieldElement];
   forward = edgePairs;
   reverse := Reverse[edgePairs, 2];
   pairs = PathElement /@ Switch[type,
     "Forward", forward,
     "Reverse", reverse,
-    "Symmetric", Join[forward, reverse]
+    "Symmetric" | "Antisymmetric", Join[forward, reverse]
   ];
   PathVector @ dropZero @ Association @ Map[elem |-> elem -> randomFieldElement[], pairs]
 ];
@@ -644,6 +661,7 @@ EdgeField[ints:{__Integer}] := Scope[
 
 EdgeField[spec_, "Forward"] := EdgeField[spec];
 EdgeField[spec_, "Reverse"] := PathReverse @ EdgeField[spec];
+
 EdgeField[spec_, "Symmetric"] := symmetricEdgeField[spec, True];
 EdgeField[spec_, "Antisymmetric"] := symmetricEdgeField[spec, False];
 
@@ -655,11 +673,12 @@ symmetricEdgeField[All, sym_] := Scope[
   ]
 ];
 
-symmetricEdgeField[i_Integer] := symmetricEdgeField[{i}];
+symmetricEdgeField[i_Integer, sym_] := symmetricEdgeField[{i}, sym];
 
-symmetricEdgeField[ints:{__Integer}] := Scope[
+symmetricEdgeField[ints:{__Integer}, sym_] := Scope[
   UnpackPathAlgebra[edgePairs, pos, neg];
   edges = Part[edgePairs, Abs @ ints];
+  If[sym, neg = pos];
   PathVector @ Association @ MapThread[
     {pEdge, nEdge, int} |-> If[Positive[int],
       {pEdge -> pos, nEdge -> neg},
@@ -675,152 +694,3 @@ PackageExport["EdgeFieldQ"]
 
 EdgeFieldQ[PathVector[assoc_Association]] := MatchQ[Keys @ assoc, {PathElement[{_, _}]...}];
 EdgeFieldQ[_] := False;
-
-(*
-(**************************************************************************************************)
-
-declareFormatting[
-  o:VertexField[_Graph, _List, _] :> formatField[o],
-  o:EdgeField[_Graph, _List, _] :> formatField[o]
-];
-
-frameField[f_] := Framed[f, FrameStyle -> LightGray];
-
-formatField[VertexField[g_Graph, values_List, mod_]] :=
-  frameField @ ExtendedGraphPlot @ ExtendedGraph[g,
-    VertexColorFunction -> Part[fieldColors @ mod, 1 + (values /. Indeterminate -> 0)],
-    GraphLegend -> None, ArrowheadShape -> None,
-    ImageSize -> "ShortestEdge" -> 15, VertexSize -> AbsolutePointSize[10]
-  ];
-
-formatField[EdgeField[g_Graph, values_List, _]] :=
-  ExtendedGraphPlot @ ExtendedGraph[g,
-    EdgeLabels -> values, ArrowheadShape -> "Line",
-    GraphLegend -> None,
-    VertexSize -> AbsolutePointSize[5], ImageSize -> "ShortestEdge" -> 20];
-
-(**************************************************************************************************)
-
-PackageExport["OperatorPlus"]
-PackageExport["OperatorTimes"]
-
-SetAttributes[OperatorPlus, {Flat, Orderless}];
-
-ops_OperatorPlus[field_] := Plus @@ Map[#[field]&, ops];
-
-OperatorTimes[scalar_, op_][field_] := scalar * op[field];
-
-declareFormatting[
-  HoldPattern @ OperatorPlus[ops__] :> Inactive[Plus][ops],
-  HoldPattern @ OperatorTimes[scalar_, op_] :> Inactive[Times][scalar, op]
-];
-
-SetHoldFirst[operatorQ];
-
-declareOperatorDispatch[symbol_] := (
-  operatorQ[_symbol] := True;
-  symbol /: Plus[object_symbol, others:Repeated[_ ? operatorQ]] := OperatorPlus[object, others];
-  symbol /: Times[scalar_ /; NumericQ[Unevaluated @ scalar], object_symbol] := OperatorTimes[scalar, object];
-);
-
-(* OperatorPlus /: Plus[HoldPattern[OperatorPlus[a___]], HoldPattern[OperatorPlus[b___]]] :=
-  OperatorPlus[a, b];
-
-OperatorPlus /: Times[scalar_ /; NumericQ[Unevaluated @ scalar], op_OperatorPlus] :=
-  OperatorTimes[scalar, op];
- *)
-
-declareOperatorDispatch[OperatorTimes];
-declareOperatorDispatch[OperatorPlus];
-
-(* OperatorPlus[a_] := a;
- *)
-(* OperatorPlus[a___, OperatorPlus[b___], c___] := OperatorPlus[a, b, c];
- *)
-
- OperatorTimes[a_, OperatorTimes[b_, c_]] := OperatorTimes[a * b, c];
-
-************************************************************************************************
-
-PackageExport["IdentityOperator"]
-
-IdentityOperator[][vf_] := vf;
-
-declareOperatorDispatch[IdentityOperator];
-
-declareFormatting[
-  IdentityOperator[] :> "I"
-];
-
-
-(**************************************************************************************************)
-
-PackageExport["CardinalDerivative"]
-
-CardinalDerivative[vf_, None] := vf;
-
-CardinalDerivative[vf_VertexField, path_] :=
-  Displacement[vf, path] - vf;
-
-CardinalDerivative[path_][field_] :=
-  CardinalDerivative[field, path];
-
-declareOperatorDispatch[CardinalDerivative];
-
-declareFormatting[
-  CardinalDerivative[path_] :> Subscript["\[CapitalDelta]", Sequence @@ ParseCardinalWord[path]]
-];
-
-(**************************************************************************************************)
-
-PackageExport["Displacement"]
-
-Displacement[path_][field_] :=
-  Displacement[field, path];
-
-Displacement[VertexField[graph_, values_, mod_], path_] := Scope[
-  tagOutTable = TagVertexOutTable @ graph;
-  cardinals = ParseCardinalWord @ path;
-  Scan[cardinal |-> Set[values, indeterminatePart[values, tagOutTable @ cardinal]], cardinals];
-  VertexField[graph, values, mod]
-];
-
-indeterminatePart[values_, part_] :=
-  Map[Internal`UnsafeQuietCheck[Part[values, #], Indeterminate]&, part];
-
-declareOperatorDispatch[Displacement];
-
-declareFormatting[
-  Displacement[path_] :> Subscript["D", Sequence @@ ParseCardinalWord[path]]
-];
-
-(**************************************************************************************************)
-
-PackageExport["RandomVertexField"]
-
-RandomVertexField[graph_, n_Integer] :=
-  VertexField[graph, RandomInteger[{0, n-1}, VertexCount @ graph], n];
-
-PackageExport["RandomEdgeField"]
-
-RandomEdgeField[graph_, n_Integer] :=
-  EdgeField[graph, RandomInteger[{0, n-1}, EdgeCount @ graph], n];
-
-(**************************************************************************************************)
-
-declarePlusTimesDispatch[VertexField, <|Plus -> fieldPlus, Times -> fieldTimes|>]
-
-fieldPlus[fields__] := Scope[
-  fields = {fields};
-  head = Part[fields, 1, 0];
-  graph = Part[fields, 1, 1];
-  mod = Part[fields, 1, 3];
-  values = Part[fields, All, 2];
-  sum = MapThread[Mod[Plus[##], mod]&, values];
-  head[graph, sum, mod]
-];
-
-fieldTimes[scalar_, head_[graph_, values_, mod_]] :=
-  head[graph, Mod[values * scalar, mod], mod]
-
-*)
