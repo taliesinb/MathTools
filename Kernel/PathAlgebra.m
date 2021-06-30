@@ -4,6 +4,10 @@ declarePlusTimesDispatch[symbol_Symbol, test_, dispatch_] := (
   symbol /: Times[object1_symbol ? test, object2_symbol ? test] := dispatch[Times][object1, object2];
 )
 
+DefineMacro[UnpackPathAlgebra,
+UnpackPathAlgebra[args___] := Quoted @ UnpackAssociation[getObjectData @ $PathAlgebra, args]
+];
+
 $directionStrings = {"Forward", "Reverse", "Symmetric", "Antisymmetric"};
 
 (**************************************************************************************************)
@@ -87,7 +91,7 @@ PathAlgebra[quiver_?GraphQ, field_, OptionsPattern[]] ? System`Private`HoldEntry
 
 $complexColorFunction = ComplexHue;
 
-ComplexHue[c_] := Hue[Arg[c]/(2 Pi)+.05, Min[Sqrt[Abs[c]]/1.5,1]]
+ComplexHue[c_] := Hue[Arg[c]/Tau+.05, Min[Sqrt[Abs[c]]/1.5,1]]
 
 (**************************************************************************************************)
 
@@ -204,24 +208,23 @@ SetUsage @ "
 Sandwich[bivector$, vector$] computes the sandwich product of a bivector with a vector.
 "
 
-Sandwich[PathBivector[a_PathVector, b_PathVector], v_PathVector] :=
-  PathCompose[PathSqrt @ a, PathCompose[v, PathSqrt @ PathReverse @ b]];
+Sandwich[PathBivector[l_PathVector, r_PathVector], PathVector[m_Association]] /; $PathAlgebraQ := Scope[
+  s = Normal @ First @ (l + r);
+  a = Normal @ First @ (l - r);
+  m = Normal @ m;
+  UnpackPathAlgebra[fieldPlus];
+  temp = None;
+  z1 = constructPathVector @ mergeWeights[Outer[symmetricSandwichProduct, s, m], 0, Apply @ fieldPlus];
+  z2 = constructPathVector @ mergeWeights[Outer[symmetricSandwichProduct, a, m], 0, Apply @ fieldPlus];
+  z1 + PathReverse[z2]
+];
+
+symmetricSandwichProduct[s:PathElement[sv_] -> sw_, m:PathElement[mv_] -> mw_] := (
+  temp = PathCompose[s, m, PathReverse @ s];
+  If[temp === NullElement, Nothing, temp -> (sw * mw)/2]
+)
 
 PathBivector /: CircleDot[a_PathBivector, v_PathVector] := Sandwich[a, v];
-
-PathBivector /: CircleDot[a_PathBivector, b_PathBivector] := Sandwich[a, b];
-
-Sandwich[PathBivector[a_PathVector, b_PathVector], PathBivector[c_PathVector, d_PathVector]] :=
-  PathBivector[PathCompose[a, c], PathCompose[b, d]];
-
-(**************************************************************************************************)
-
-PackageExport["SymmetricAntisymmetric"]
-
-SymmetricAntisymmetric[p_PathVector] := Scope[
-  pr = PathConjugate @ p;
-  {(p + pr)/2, (p - pr)/2}
-];
 
 (**************************************************************************************************)
 
@@ -267,10 +270,14 @@ PathVectorElementwise[_, _, {vec_}] := vec;
 
 PathVectorElementwise[f_, id_, vecs_] := Scope[
   assocs = Part[vecs, All, 1];
-  PathVector @ KeySort @ dropZero @ Merge[KeyUnion[assocs, id&], f]
+  constructPathVector @ Merge[KeyUnion[assocs, id&], f]
 ];
 
-dropZero[assoc_] := DeleteCases[assoc, 0|0.];
+mergeWeights[rules_, id_, f_] :=
+  Merge[KeyUnion[Flatten @ rules, id&], f];
+
+constructPathVector[assoc_] :=
+  PathVector @ Association @ KeySort @ KeyDrop[NullElement] @ DeleteCases[assoc, 0|0.];
 
 (**************************************************************************************************)
 
@@ -283,10 +290,13 @@ PathHead[PathElement[list_List]] := Last @ list;
 (**************************************************************************************************)
 
 PackageExport["NullPath"]
+PackageExport["NullElement"]
 
 declareFormatting[
   NullPath :> "\[UpTee]"
+  NullElement :> "\[UpTee]"
 ];
+
 
 (**************************************************************************************************)
 
@@ -304,9 +314,14 @@ $cancelRules = Dispatch @ {
 
 compose[a_, b_] := PathElement[Join[a, Rest @ b] //. $cancelRules];
 
+compose[a_, b_, c_] := PathElement[Join[a, Rest @ b, Rest @ c] //. $cancelRules];
+
 PathCompose[e_] := e;
 
-PathCompose[PathElement[a_], PathElement[b_]] /; $PathAlgebraQ :=
+PathCompose[PathElement[a_], PathElement[b_], PathElement[c_]] :=
+  If[Last[a] === First[b] && Last[b] === First[c], compose[a, b, c], NullElement];
+
+PathCompose[PathElement[a_], PathElement[b_]] :=
   If[Last[a] === First[b], compose[a, b], NullPath];
 
 PathCompose[a_PathVector, b_PathVector, c_PathVector, rest___PathVector] /; $PathAlgebraQ :=
@@ -314,11 +329,10 @@ PathCompose[a_PathVector, b_PathVector, c_PathVector, rest___PathVector] /; $Pat
 
 PathCompose[PathVector[a1_Association], PathVector[a2_Association]] /; $PathAlgebraQ := Scope[
   $times = $FieldTimes;
-  assoc = dropZero @ Merge[
+  constructPathVector @ Merge[
     Flatten @ Outer[composeWeightedPaths, Normal @ a1, Normal @ a2, 1],
     Apply @ $FieldPlus
-  ];
-  PathVector @ KeySort @ assoc
+  ]
 ]
 
 PathCompose[PathBivector[l1_, r1_], PathBivector[l2_, r2_]] /; $PathAlgebraQ :=
@@ -339,10 +353,6 @@ ValidPathAssociationQ[_] := False;
 declareFormatting[
   pv:PathVector[_Association ? ValidPathAssociationQ] /; $PathAlgebraQ :>
     formatPathVector[pv]
-];
-
-DefineMacro[UnpackPathAlgebra,
-UnpackPathAlgebra[args___] := Quoted @ UnpackAssociation[getObjectData @ $PathAlgebra, args]
 ];
 
 notBothwaysQ[PathVector[assoc_]] := Scope[
@@ -584,7 +594,7 @@ RandomVertexField[] constructs a random vertex field, containing every empty pat
 
 RandomVertexField[] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[vertexList, randomFieldElement];
-  PathVector @ dropZero @ Association @ Map[v |-> PathElement[{v}] -> randomFieldElement[], vertexList]
+  constructPathVector @ Association @ Map[v |-> PathElement[{v}] -> randomFieldElement[], vertexList]
 ];
 
 (**************************************************************************************************)
@@ -611,7 +621,7 @@ RandomEdgeField[type_:"Symmetric"] /; $PathAlgebraQ := Scope[
     "Reverse", reverse,
     "Symmetric" | "Antisymmetric", Join[forward, reverse]
   ];
-  PathVector @ dropZero @ Association @ Map[elem |-> elem -> randomFieldElement[], pairs]
+  constructPathVector @ Association @ Map[elem |-> elem -> randomFieldElement[], pairs]
 ];
 
 (**************************************************************************************************)
@@ -694,3 +704,4 @@ PackageExport["EdgeFieldQ"]
 
 EdgeFieldQ[PathVector[assoc_Association]] := MatchQ[Keys @ assoc, {PathElement[{_, _}]...}];
 EdgeFieldQ[_] := False;
+
