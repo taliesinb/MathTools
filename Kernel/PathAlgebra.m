@@ -70,7 +70,7 @@ PathAlgebra[quiver_?GraphQ, field_, OptionsPattern[]] ? System`Private`HoldEntry
 
   data["FieldColorFunction"] = If[IntegerQ[mod],
     AssociationThread[Range[0, mod-1], fieldColors @ mod],
-    $redBlueColorFunction
+    $complexColorFunction
   ];
 
   data["VertexCount"] = count = VertexCount @ quiver;
@@ -85,7 +85,9 @@ PathAlgebra[quiver_?GraphQ, field_, OptionsPattern[]] ? System`Private`HoldEntry
   System`Private`ConstructNoEntry[PathAlgebra, data]
 ];
 
-$redBlueColorFunction = ChooseContinuousColorFunction[{-2, 2}];
+$complexColorFunction = ComplexHue;
+
+ComplexHue[c_] := Hue[Arg[c]/(2 Pi)+.05, Min[Sqrt[Abs[c]]/1.5,1]]
 
 (**************************************************************************************************)
 
@@ -134,13 +136,44 @@ formatPathBivector[PathBivector[a_PathVector, b_PathVector]] :=
 
 (**************************************************************************************************)
 
+PackageExport["PathBivectorQ"]
+
+PathBivectorQ[PathBivector[a_ ? PathVectorQ, b_ ? PathVectorQ]] := True;
+PathBivectorQ[_] := False;
+
+declarePlusTimesDispatch[PathBivector, PathBivectorQ, $pathBivectorDispatch]
+
+$pathBivectorDispatch = <|
+  Plus -> PathBivectorPlus,
+  Times -> PathBivectorTimes
+|>;
+
+PackageExport["PathBivectorPlus"]
+PackageExport["PathBivectorTimes"]
+
+PathBivectorPlus[a_, b_, c_] := PathBivectorPlus[PathBivectorPlus[a, b], c];
+
+PathBivectorPlus[PathBivector[a_, b_], PathBivector[c_, d_]] :=
+  PathBivector[PathVectorPlus[a, c], PathVectorPlus[b, d]];
+
+PathBivectorTimes[PathBivector[a_, b_], PathBivector[c_, d_]] :=
+  PathBivector[PathVectorTimes[a, c], PathVectorTimes[b, d]];
+
+PathBivectorTimes[n_ ? NumericQ, PathBivector[a_, b_]] := PathBivector[
+  PathVectorTimes[n, a],
+  PathVectorTimes[n, b]
+];
+
+(**************************************************************************************************)
+
 PackageExport["ConvolutionBivector"]
 
 SetUsage @ "
 ConvolutionBivector[vector$] gives the Bivector[$$] that achieves a convolution with vector$.
 "
 
-ConvolutionBivector[p_] := PathBivector[p, p];
+ConvolutionBivector[pv_PathVector] :=
+  PathBivector[pv, pv];
 
 (**************************************************************************************************)
 
@@ -172,9 +205,23 @@ Sandwich[bivector$, vector$] computes the sandwich product of a bivector with a 
 "
 
 Sandwich[PathBivector[a_PathVector, b_PathVector], v_PathVector] :=
-  PathCompose[a, PathCompose[v, PathReverse @ b]];
+  PathCompose[PathSqrt @ a, PathCompose[v, PathSqrt @ PathReverse @ b]];
 
-PathBivector /: CircleDot[bv_PathBivector, v_PathVector] := Sandwich[bv, v];
+PathBivector /: CircleDot[a_PathBivector, v_PathVector] := Sandwich[a, v];
+
+PathBivector /: CircleDot[a_PathBivector, b_PathBivector] := Sandwich[a, b];
+
+Sandwich[PathBivector[a_PathVector, b_PathVector], PathBivector[c_PathVector, d_PathVector]] :=
+  PathBivector[PathCompose[a, c], PathCompose[b, d]];
+
+(**************************************************************************************************)
+
+PackageExport["SymmetricAntisymmetric"]
+
+SymmetricAntisymmetric[p_PathVector] := Scope[
+  pr = PathConjugate @ p;
+  {(p + pr)/2, (p - pr)/2}
+];
 
 (**************************************************************************************************)
 
@@ -243,14 +290,9 @@ declareFormatting[
 
 (**************************************************************************************************)
 
-Unprotect[NonCommutativeMultiply];
+PathVector /: CenterDot[v__PathVector] := PathCompose[v];
 
-NonCommutativeMultiply[pv_PathVector] := pv;
-
-NonCommutativeMultiply[a:Repeated[_PathVector, {2, Infinity}]] :=
-  Fold[PathCompose, {a}];
-
-Protect[NonCommutativeMultiply];
+PathBivector /: CenterDot[b__PathBivector] := PathCompose[b];
 
 (**************************************************************************************************)
 
@@ -262,8 +304,13 @@ $cancelRules = Dispatch @ {
 
 compose[a_, b_] := PathElement[Join[a, Rest @ b] //. $cancelRules];
 
-PathCompose[PathElement[a_], PathElement[b_]] :=
+PathCompose[e_] := e;
+
+PathCompose[PathElement[a_], PathElement[b_]] /; $PathAlgebraQ :=
   If[Last[a] === First[b], compose[a, b], NullPath];
+
+PathCompose[a_PathVector, b_PathVector, c_PathVector, rest___PathVector] /; $PathAlgebraQ :=
+  PathCompose[PathCompose[PathCompose[a, b], c], rest];
 
 PathCompose[PathVector[a1_Association], PathVector[a2_Association]] /; $PathAlgebraQ := Scope[
   $times = $FieldTimes;
@@ -271,7 +318,7 @@ PathCompose[PathVector[a1_Association], PathVector[a2_Association]] /; $PathAlge
     Flatten @ Outer[composeWeightedPaths, Normal @ a1, Normal @ a2, 1],
     Apply @ $FieldPlus
   ];
-  PathVector @ assoc
+  PathVector @ KeySort @ assoc
 ]
 
 composeWeightedPaths[PathElement[a_] -> aw_, PathElement[b_] -> bw_] :=
@@ -426,6 +473,34 @@ WordDelta[word_String, type_:"Forward"] /; $PathAlgebraQ := Scope[
 PackageExport["PathLength"]
 
 PathLength[PathElement[list_List]] := Length @ list;
+
+(**************************************************************************************************)
+
+PackageExport["PathConjugate"]
+
+PathConjugate[pv:PathVector[assoc_]] :=
+  If[FreeQ[Values @ assoc, Complex], pv, PathVector[Conjugate /@ assoc]];
+
+(**************************************************************************************************)
+
+PackageExport["PathPower"]
+
+PathPower[PathVector[assoc_], p_] :=
+  PathVector[Power[#, p]& /@ assoc];
+
+(**************************************************************************************************)
+
+PackageExport["PathSqrt"]
+
+PathSqrt[PathVector[assoc_]] :=
+  PathVector @ Map[Sqrt, assoc];
+
+(**************************************************************************************************)
+
+PackageExport["PathConjugateTranspose"]
+
+PathConjugateTranspose[pv_PathVector] :=
+  PathConjugate @ PathReverse @ pv;
 
 (**************************************************************************************************)
 
