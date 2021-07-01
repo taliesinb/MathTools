@@ -250,7 +250,7 @@ LookupCardinalColors[_] := $Failed;
 
 (**************************************************************************************************)
 
-PackageScope["ChooseCardinalColors"]
+PackageExport["ChooseCardinalColors"]
 
 ChooseCardinalColors[None, ___] := <||>;
 

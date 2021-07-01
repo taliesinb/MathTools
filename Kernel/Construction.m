@@ -58,15 +58,17 @@ ExtendedSubgraph[oldGraph_, newVertices_, newEdges_] := Scope[
     newVertexOrdering = Ordering[newVertexIndices];
     newVertices = Part[newVertices, newVertexOrdering];
   ];
-  vertexAnnotations = LookupAnnotation[oldGraph, VertexAnnotations, None];
+  {graphOrigin, vertexAnnotations} = LookupAnnotation[oldGraph, {GraphOrigin, VertexAnnotations}, None];
+  If[!MemberQ[newVertices, graphOrigin],
+    annotations //= ReplaceOptions[GraphOrigin -> None]];
   sortedNewVertexIndices = Sort @ newVertexIndices;
   If[ListQ[vertexCoords],
     vertexCoords = Part[vertexCoords, sortedNewVertexIndices];
-    options = ReplaceOptions[options, VertexCoordinates -> vertexCoords];
+    options //= ReplaceOptions[VertexCoordinates -> vertexCoords];
   ];
   If[AssociationQ[vertexAnnotations],
     vertexAnnotations //= Map[Part[#, sortedNewVertexIndices]&];
-    annotations = ReplaceOptions[annotations, VertexAnnotations -> vertexAnnotations];
+    annotations //= ReplaceOptions[VertexAnnotations -> vertexAnnotations];
   ];
   If[newEdges === Automatic,
     newEdges = Select[EdgeList @ oldGraph, MemberQ[newVertices, Part[#, 1]] && MemberQ[newVertices, Part[#, 2]]&]

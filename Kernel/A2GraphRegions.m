@@ -1,7 +1,7 @@
 PackageExport["RegionSubgraph"]
 
 SetUsage @ "
-RegionSubgraph[graph$, region$] gives a subgraph of graph$ described by region$, which can be one or more of the following:
+RegionSubgraph[graph$, region$] gives a subgraph of graph$ described by region$, which can be one or more:
 <*$graphRegionTable*>
 "
 
@@ -13,11 +13,37 @@ declareSyntaxInfo[RegionSubgraph, {_, _, OptionsPattern[]}];
 
 RegionSubgraph[graph_, region_] := Scope[
   graph = CoerceToGraph[1];
+  iRegionSubgraph[graph, region, False]
+];
+
+(**************************************************************************************************)
+
+PackageExport["RegionDelete"]
+
+SetUsage @ "
+RegionDelete[graph$, region$] deletes the region specified by region$, which can be one or more of:
+<*$graphRegionTable*>
+"
+
+RegionDelete[graph_, region_] := Scope[
+  graph = CoerceToGraph[1];
+  iRegionSubgraph[graph, region, True]
+]
+
+(**************************************************************************************************)
+
+iRegionSubgraph[graph_, region_, comp_] := Scope[
   regionData = GraphScope[graph, RegionDataUnion @ processRegionSpec @ region];
   If[FailureQ[result], ReturnFailed[]];
-  vertices = Part[regionData, 1];
+  vertices =  Part[regionData, 1];
   edges = Part[regionData, 2];
-  If[vertices === edges === {}, ReturnFailed["empty"]];
+  If[vertices === edges === {}, ReturnFailed[RegionSubgraph::empty]];
+  If[comp,
+    vertices = Complement[Range @ VertexCount @ graph, vertices];
+    edges = Complement[Range @ EdgeCount @ graph, edges];
+  ];
+  vertices = Part[VertexList @ graph, vertices];
+  edges = Part[EdgeList @ graph, edges];
   vertices = DeleteDuplicates @ Join[vertices, AllVertices @ edges];
   ExtendedSubgraph[graph, vertices, edges]
 ];

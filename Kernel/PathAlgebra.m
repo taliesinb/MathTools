@@ -216,7 +216,7 @@ Sandwich[PathBivector[l_PathVector, r_PathVector], PathVector[m_Association]] /;
   temp = None;
   z1 = constructPathVector @ mergeWeights[Outer[symmetricSandwichProduct, s, m], 0, Apply @ fieldPlus];
   z2 = constructPathVector @ mergeWeights[Outer[symmetricSandwichProduct, a, m], 0, Apply @ fieldPlus];
-  z1 + PathReverse[z2]
+  z1 - PathReverse @ z2
 ];
 
 symmetricSandwichProduct[s:PathElement[sv_] -> sw_, m:PathElement[mv_] -> mw_] := (

@@ -1072,7 +1072,7 @@ ecoords$ is a list of coordinate matrices in the same order as EdgeList[graph$].
 ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
 
   If[!GraphQ[graph], ReturnFailed[]];
-  igraph = ToIndexGraph[graph];
+  igraph = IndexEdgeTaggedGraph @ ToIndexGraph @ graph;
   If[!GraphQ[igraph], ReturnFailed[]];
 
   {graphLayout, vertexCoordinates} =
@@ -1100,23 +1100,19 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
   If[extendedGraphLayout =!= Automatic, graphLayout = extendedGraphLayout];
   SetAutomatic[graphLayout, {}];
 
-  vertexCount = VertexCount @ igraph;
+  vertexList = VertexList @ igraph;
+  vertexIndex := vertexIndex = AssociationRange @ vertexList;
+  vertexCount = Length @ vertexList;
   vertexCoordinates = ConstantArray[0., {vertexCount, actualDimension}];
 
   edgeList = EdgeList @ igraph;
-  edgeCoordinateLists = ConstantArray[{}, Length @ edgeList];
+  edgeCount = Length @ edgeList;
+  edgeCoordinateLists = ConstantArray[{}, edgeCount];
+
   If[UndirectedGraphQ[igraph] || MixedGraphQ[igraph],
     edgeList //= CanonicalizeEdges];
 
   isMulti = MultigraphQ[igraph];
-  If[isMulti,
-    edgeIndices = PositionIndex[edgeList];
-    edgeIndexOffset = ConstantAssociation[edgeList, 1];
-    edgeCaptureFunction = storeMultiEdgeCoords;
-  ,
-    edgeIndices = AssociationRange[edgeList];
-    edgeCaptureFunction = storeEdgeCoords;
-  ];
 
   If[(isMulti || !DuplicateFreeQ[edgeList]) && FreeQ[graphLayout, "MultiEdgeDistance" | "SpringElectricalEmbedding"],
     graphLayout = ToList[graphLayout, "MultiEdgeDistance" -> 0.3];
@@ -1137,12 +1133,12 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
       SetAutomatic[initialVertexCoordinates, N @ RotateRight[CirclePoints @ vertexCount, 1]],
     "LayeredDigraphEmbedding",
       graphLayout //= ReplaceAll[
-        Rule["RootVertex", v_] :> Rule["RootVertex", IndexOf[VertexList @ graph, v]]
+        Rule["RootVertex", v_] :> Rule["RootVertex", IndexOf[vertexList, v]]
       ],
     "Tree",
       graphLayout = {"LayeredDigraphEmbedding"};
       root = LookupExtendedGraphAnnotations[graph, GraphOrigin];
-      If[root =!= None, AppendTo[graphLayout, "RootVertex" -> IndexOf[VertexList @ graph, root]]],
+      If[root =!= None, AppendTo[graphLayout, "RootVertex" -> IndexOf[vertexList, root]]],
     s_String /; !StringEndsQ[s, "Embedding"],
       graphLayout //= ReplaceAll[method -> (method <> "Embedding")],
     True,
@@ -1150,14 +1146,14 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
   ];
 
   newGraph = If[actualDimension == 3, Graph3D, Graph][
-    VertexList @ igraph, EdgeList @ igraph,
+    vertexList, edgeList,
     VertexShapeFunction -> captureVertexCoordinates,
-    EdgeShapeFunction -> ({coords, edge} |-> edgeCaptureFunction[coords, sortUE @ edge]),
+    EdgeShapeFunction -> captureEdgeCoordinates,
     GraphLayout -> graphLayout, VertexCoordinates -> initialVertexCoordinates
   ];
 
   gdResult = Check[GraphComputation`GraphDrawing @ newGraph, $Failed];
-  If[FailureQ[gdResult],
+  If[FailureQ[gdResult] || !MatrixQ[vertexCoordinates] || !VectorQ[edgeCoordinateLists, MatrixQ],
     Print["Graph layout failed"];
     vertexCoordinates = CirclePoints @ vertexCount;
     If[actualDimension === 3, vertexCoordinates //= AppendColumn @ Zeros @ vertexCount];
@@ -1168,7 +1164,6 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
   vertexCoordinates = ToPackedReal @ vertexCoordinates;
 
   If[UndirectedGraphQ[graph],
-    vertexIndex = AssociationRange @ VertexList @ graph;
     edgeCoordinateLists = MapThread[orientEdgeCoords, {edgeCoordinateLists, edgeList}];
   ];
 
@@ -1187,19 +1182,19 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
 ];
 
 orientEdgeCoords[coords_, _DirectedEdge] := coords;
-orientEdgeCoords[coords_, ue:UndirectedEdge[a_, b_, rest___]] := If[
-  Norm[First[coords] - Part[vertexCoordinates, vertexIndex @ a]] < 0.001,
+orientEdgeCoords[coords_, UndirectedEdge[a_, b_, tag_]] := If[
+  EuclideanDistance[
+    First @ coords,
+    Part[vertexCoordinates, vertexIndex @ First @ Part[edgeList, tag]]
+  ] < 0.001,
   coords, Reverse @ coords
 ];
 
 captureVertexCoordinates[coords_, vertex_, _] :=
   Part[vertexCoordinates, vertex] = coords;
 
-storeEdgeCoords[coords_, edge_] :=
-  Part[edgeCoordinateLists, edgeIndices @ edge] = coords;
-
-storeMultiEdgeCoords[coords_, edge_] :=
-  Part[edgeCoordinateLists, Part[edgeIndices @ edge, edgeIndexOffset[edge]++]] = coords;
+captureEdgeCoordinates[coords_, edge_] :=
+  Part[edgeCoordinateLists, Last @ edge] = coords;
 
 (**************************************************************************************************)
 
