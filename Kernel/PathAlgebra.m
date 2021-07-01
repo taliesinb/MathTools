@@ -377,7 +377,43 @@ WordVector[word_String] /; $PathAlgebraQ := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["ReversalSymmetryDecompose"]
+
+SetUsage @ "
+ReversalSymmetryDecompose[vector$] returns {s$, a$} where s$ is the reversal-symmetric part of vector$ \
+and a$ is the antisymmetric part.
+"
+
+ReversalSymmetryDecompose[v_PathVector] := Scope[
+  forward = v * (1/2);
+  reverse = PathReverse @ forward;
+  {forward + reverse, forward - reverse}
+];
+
+(**************************************************************************************************)
+
+PackageExport["ReversalSymmetricQ"]
+PackageExport["ReversalAntisymmetricQ"]
+
+ReversalSymmetricQ[p_PathVector] :=
+  p === PathReverse[p];
+
+ReversalAntisymmetricQ[p_PathVector] :=
+  -p === PathReverse[p];
+
+(**************************************************************************************************)
+
 PackageExport["WordDelta"]
+
+SetUsage @ "
+WordDelta['word$', 'type$'] constructs a path vector that when convolved computes the finite difference \
+along the word 'word$'.
+* 'type$' can be one of:
+| 'Forward' | forward finite difference (X - I) |
+| 'Reverse' | reverse finite difference (X\[Conjugate] - I) |
+| 'Symmetric' | X + X\[Conjugate] - 2 I |
+| 'Antisymmetric' | X - X\[Conjugate] |
+"
 
 declareFunctionAutocomplete[WordDelta, {0, $directionStrings}];
 
@@ -388,7 +424,7 @@ WordDelta[word_String, type_:"Forward"] /; $PathAlgebraQ := Scope[
   Switch[type,
     "Forward", forward - unit,
     "Reverse", reverse - unit,
-    "Symmetric", forward + reverse,
+    "Symmetric", forward + reverse + -2 * unit,
     "Antisymmetric", forward - reverse
   ]
 ]
