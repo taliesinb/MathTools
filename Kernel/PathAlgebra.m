@@ -388,7 +388,8 @@ WordDelta[word_String, type_:"Forward"] /; $PathAlgebraQ := Scope[
   Switch[type,
     "Forward", forward - unit,
     "Reverse", reverse - unit,
-    "Symmetric", forward - reverse
+    "Symmetric", forward + reverse,
+    "Antisymmetric", forward - reverse
   ]
 ]
 
@@ -396,7 +397,11 @@ WordDelta[word_String, type_:"Forward"] /; $PathAlgebraQ := Scope[
 
 PackageExport["PathLength"]
 
-PathLength[PathElement[list_List]] := Length @ list;
+SetUsage @ "
+PathLength[element$] returns the length of a %PathElement.
+"
+
+PathLength[PathElement[list_List]] := Length[list] - 1;
 
 (**************************************************************************************************)
 
@@ -437,7 +442,7 @@ PathReverse[PathElement[$$]] yields the reverse of PathElement[$$].
 "
 
 PathReverse[PathVector[assoc_]] :=
-  PathVector @ KeyMap[PathReverse, assoc]
+  PathVector @ KeySort @ KeyMap[PathReverse, assoc]
 
 PathReverse[PathBivector[l_PathVector, r_PathVector]] :=
   PathBivector[PathReverse @ l, PathReverse @ r];
@@ -551,6 +556,22 @@ SparsifyPathVector[vector$, frac$] deletes frac$ of the paths in a %PathVector.
 
 SparsifyPathVector[PathVector[assoc_], frac_Real] :=
   PathVector @ Select[assoc, RandomReal[] > frac&]
+
+(**************************************************************************************************)
+
+PackageExport["ProjectPathLength"]
+
+SetUsage @ "
+ProjectPathLength[vector$, n$] returns the path vector consisting of paths of length n$.
+"
+
+ProjectPathLength[PathVector[assoc_], n_] :=
+  PathVector @ KeySelect[assoc, PathLength[#] === n&]
+
+ProjectPathLength[pv:PathVector[assoc_], All] := Scope[
+  max = Max @ Map[PathLength, Keys @ assoc];
+  Table[ProjectPathLength[pv, n], {n, 0, max}]
+];
 
 (**************************************************************************************************)
 
@@ -748,9 +769,26 @@ SetUsage @ "
 PathConvolution[k$, v$] gives the resulting of convolving path kernel k$ with v$.
 "
 
-PathConvolution[k_PathVector, v_PathVector] := PathCompose[k, PathCompose[v, PathReverse @ k]]
+PathConvolution[k_PathVector, v_PathVector] := Scope[
+  UnpackPathAlgebra[fieldPlus];
+  k = Normal @ First @ k;
+  v = Normal @ KeySelect[First @ v, PathHead[#] === PathTail[#]&];
+  temp = None;
+  constructPathVector @ mergeWeights[Outer[convolutionProduct, k, v], 0, Apply @ fieldPlus]
+];
+
+convolutionProduct[s:PathElement[sv_] -> sw_, m:PathElement[mv_] -> mw_] := (
+  temp = PathCompose[s, m, PathReverse @ s];
+  If[temp === NullElement, Nothing, temp -> sw * mw]
+)
+
+PathVector /: CircleTimes[k_PathVector, v_PathVector] := PathConvolution[k, v];
 
 (**************************************************************************************************)
+
+PackageExport["$SandwichForm"]
+
+$SandwichForm = "Plus";
 
 PackageExport["Sandwich"]
 
@@ -766,7 +804,13 @@ Sandwich[PathBivector[l_PathVector, r_PathVector], PathVector[m_Association]] /;
   temp = None;
   z1 = constructPathVector @ mergeWeights[Outer[symmetricSandwichProduct, s, m], 0, Apply @ fieldPlus];
   z2 = constructPathVector @ mergeWeights[Outer[symmetricSandwichProduct, a, m], 0, Apply @ fieldPlus];
-  z1 + z2
+  Switch[$SandwichForm,
+    "Plus", z1 + z2,
+    "Minus", z1 - z2,
+    "PlusReverse", z1 + PathReverse[z2],
+    "MinusReverse", z1 - PathReverse[z2],
+    _, $Failed
+  ]
 ];
 
 symmetricSandwichProduct[s:PathElement[sv_] -> sw_, m:PathElement[mv_] -> mw_] := (
