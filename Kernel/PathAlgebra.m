@@ -18,8 +18,9 @@ SetUsage @ "
 $PathAlgebra is the PathAlgebra[$$] used as the context for PathVector and PathElement objects.
 "
 
+$PathAlgebra::notset = "$PathAlgebra is not set."
 $PathAlgebra = None;
-$PathAlgebraQ := $PathAlgebra =!= None;
+$PathAlgebraQ := If[$PathAlgebra === None, Message[$PathAlgebra::notset]; False, True];
 $FieldPlus := $PathAlgebra["FieldPlus"];
 $FieldTimes := $PathAlgebra["FieldTimes"];
 
@@ -38,6 +39,8 @@ PackageExport["PathAlgebra"]
 
 SetUsage @ "
 PathAlgebra[quiver$, field$] constructs a PathAlgebra[$$] from a given cardinal quiver.
+PathAlgebra['lattice$', field$] uses a named lattice quiver as the quiver.
+PathAlgebra[spec$] uses %Integers as the field.
 * field$ can be an integer for a finite field (or ring), or one of %Integers, %Reals, or %Complexes.
 "
 
@@ -47,8 +50,17 @@ Options[PathAlgebra] = {
   ImageSize -> 100
 };
 
-PathAlgebra[quiver_?GraphQ, field_, OptionsPattern[]] ? System`Private`HoldEntryQ := Scope[
+$graphOrLatticeSpec = _Graph | _String | {_String, __};
+
+PathAlgebra[quiver:$graphOrLatticeSpec, opts:OptionsPattern[]] ? System`Private`HoldEntryQ =
+  PathAlgebra[quiver, Integers, opts];
+
+PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Private`HoldEntryQ := Scope[
+
+  If[MatchQ[quiver, _String | {_String, __}],
+    quiver = LatticeQuiver[quiver]];
   If[!QuiverQ[quiver], ReturnFailed[]];
+
   If[!MatchQ[field, _Integer | Integers | Reals | Complexes], ReturnFailed[]];
 
   UnpackOptions[plotRange, edgeSetback, imageSize];
@@ -80,7 +92,8 @@ PathAlgebra[quiver_?GraphQ, field_, OptionsPattern[]] ? System`Private`HoldEntry
   data["VertexCount"] = count = VertexCount @ quiver;
   data["VertexList"] = VertexRange @ quiver;
   data["Cardinals"] = CardinalList @ quiver;
-  data["EdgePairs"] = EdgePairs @ quiver;
+  data["EdgePairs"] = pairs = EdgePairs @ quiver;
+  data["EdgePairIndex"] = Join[AssociationRange @ pairs, -AssociationRange[Reverse[pairs, 2]]];
 
   data["NullVertex"] = dummy = count + 1;
   tagOutTable = Append[dummy] /@ ReplaceAll[TagVertexOutTable @ quiver, None -> dummy];
@@ -377,6 +390,23 @@ WordVector[word_String] /; $PathAlgebraQ := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["PathComplexRotation"]
+
+PathComplexRotation[PathVector[assoc_Association]] /; $PathAlgebraQ := Scope[
+  UnpackPathAlgebra[edgePairIndex]; temp = None;
+  constructPathVector @ KeyValueMap[complexRotatePath, assoc]
+];
+
+complexRotatePath[elem_, w_] :=
+  elem -> w;
+
+complexRotatePath[PathElement[pair:{_, _}], w_] := (
+  temp = edgePairIndex @ pair;
+  PathElement[Reverse @ pair] -> If[Positive[temp], -w, w]
+);
+
+(**************************************************************************************************)
+
 PackageExport["ReversalSymmetryDecompose"]
 
 SetUsage @ "
@@ -510,11 +540,9 @@ VertexField[] /; $PathAlgebraQ :=
     1
   ];
 
-VertexField[i_Integer] := VertexField[{i}];
-
-VertexField[ints:{__Integer}] /; $PathAlgebraQ := Scope[
+VertexField[ints:{__Integer} | _Integer] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[pos, neg];
-  PathVector @ Association @ Map[i |-> PathElement[{Abs @ i}] -> If[Positive[i], pos, neg], ints]
+  PathVector @ Association @ Map[i |-> PathElement[{Abs @ i}] -> If[Positive[i], pos, neg], ToList @ ints]
 ]
 
 
@@ -670,7 +698,7 @@ declareFunctionAutocomplete[EdgeField, {0, $directionStrings}];
 
 EdgeField[] := EdgeField[All];
 
-EdgeField[All] := Scope[
+EdgeField[All] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[edgePairs, pos, neg];
   PathVector @ ConstantAssociation[
     PathElement[#]& /@ edgePairs,
@@ -678,10 +706,9 @@ EdgeField[All] := Scope[
   ]
 ];
 
-EdgeField[i_Integer] := EdgeField[{i}];
-
-EdgeField[ints:{__Integer}] := Scope[
+EdgeField[ints:{__Integer} | _Integer] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[edgePairs, pos, neg];
+  ints = ToList @ ints;
   edges = Part[edgePairs, Abs @ ints];
   PathVector @ Association @ MapThread[
     {edge, int} |-> edge -> If[Positive[int], pos, neg],
