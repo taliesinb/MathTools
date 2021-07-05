@@ -11,25 +11,18 @@ Quiver[vertices$, edges$] constructs a cardinal quiver from a list of vertices a
 
 DeclareArgumentCount[Quiver, {1, 2}];
 
-Options[Quiver] = Join[
-  {ArrowheadSize -> Automatic, ArrowheadStyle -> Automatic},
-  Options[Graph]
-];
+Options[Quiver] = $simpleGraphOptionRules;
 
 declareSyntaxInfo[Quiver, {_, _., OptionsPattern[]}];
 
 Quiver[edges_, opts:OptionsPattern[]] :=
   Quiver[Automatic, edges, opts];
 
-Quiver[graph_Graph, newOpts:OptionsPattern[]] := Scope[
-  oldOpts = Options[graph];
-  edges = EdgeList[graph];
-  vertices = VertexList[graph];
-  makeQuiver[vertices, edges, oldOpts, {newOpts}]
-];
+Quiver[graph_Graph, opts:OptionsPattern[]] :=
+  ExtendedGraph[graph, opts, GraphLegend -> Automatic]
 
-Quiver[vertices_, edges_, newOpts:OptionsPattern[]] :=
-  makeQuiver[vertices, edges, {}, {newOpts}];
+Quiver[vertices_, edges_, opts:OptionsPattern[]] :=
+  makeQuiver[vertices, edges, {opts}];
 
 Quiver::invedge = "The edge specification `` is not valid."
 
@@ -79,7 +72,7 @@ processEdge[list_List, label_] := Map[processEdge[#, label]&, list];
 
 
 $maxVertexCount = 150;
-makeQuiver[vertices_, edges_, oldOpts_, newOpts_] := Scope[
+makeQuiver[vertices_, edges_, newOpts_] := Scope[
 
   If[!MatchQ[edges, {DirectedEdge[_, _, Except[_Alternatives]]..}],
     edges = Flatten @ List @ processEdge[edges, None];
@@ -93,12 +86,10 @@ makeQuiver[vertices_, edges_, oldOpts_, newOpts_] := Scope[
 
   If[vertices === Automatic, vertices = Union[InVertices @ edges, OutVertices @ edges]];
 
-  Graph[
+  ExtendedGraph[
     vertices, edges,
-    Sequence @@ DeleteOptions[newOpts, {GraphLegend}],
-    GraphLegend -> Lookup[newOpts, GraphLegend, Automatic],
-    GraphPlottingFunction -> ExtendedGraphPlottingFunction,
-    Sequence @@ oldOpts
+    Sequence @@ newOpts,
+    GraphLegend -> Automatic
   ]
 ]
 
@@ -143,7 +134,7 @@ BouquetQuiver['string$'] uses the characters of 'string$' as cardinals.
 
 DeclareArgumentCount[BouquetQuiver, 1];
 
-Options[BouquetQuiver] = Options[Graph];
+Options[BouquetQuiver] = $simpleGraphOptionRules;
 
 declareSyntaxInfo[BouquetQuiver, {_, OptionsPattern[]}];
 
@@ -192,9 +183,11 @@ DeclareArgumentCount[FreeQuiver, 1];
 
 declareSyntaxInfo[FreeQuiver, {_}];
 
-FreeQuiver[graph_] := Scope[
+Options[FreeQuiver] = $simpleGraphOptionRules;
+
+FreeQuiver[graph_, opts:OptionsPattern[]] := Scope[
   $count = 1;
-  makeQuiver[VertexList @ graph, Map[toFreeQuiverEdge, EdgeList @ graph], {}, {}]
+  makeQuiver[VertexList @ graph, Map[toFreeQuiverEdge, EdgeList @ graph], {opts}]
 ];
 
 (**************************************************************************************************)
@@ -254,19 +247,11 @@ PackageExport["ChooseCardinalColors"]
 
 ChooseCardinalColors[None, ___] := <||>;
 
-ChooseCardinalColors[cardinals_List, palette_:Automatic] :=
-  AssociationThread[cardinals, ToColorPalette[palette, Length @ cardinals]];
-
-(**************************************************************************************************)
-
-PackageExport["RemoveCardinals"]
-
-RemoveCardinals[g_Graph] := Scope[
-  coords = LookupOption[g, VertexCoordinates];
-  Graph[
-    VertexList[g], Take[EdgeList[g], All, 2],
-    VertexCoordinates -> coords
-  ]
+ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardinals,
+  {"b", "g", "r"},
+    <|"r" -> $Red, "g" -> $Green, "b" -> $Blue|>,
+  _,
+    AssociationThread[cardinals, ToColorPalette[palette, Length @ cardinals]]
 ];
 
 (**************************************************************************************************)
@@ -288,7 +273,7 @@ RenameCardinals[graph_Graph, renaming:{__Rule}] := Scope[
     opt:Rule[(VisibleCardinals | Cardinals | CardinalColors), _] :> replacer[opt],
     {1}
   ];
-  ExtendedGraph[
+  Graph[
     vertices, edges,
     Sequence @@ opts,
     AnnotationRules -> {"GraphProperties" -> annos}

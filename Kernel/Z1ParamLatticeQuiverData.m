@@ -294,12 +294,15 @@ cubeFactory[<|"n" -> n_, "MaxDepth" -> _|>, userOpts_] := Scope[
 
 DefineParameterizedLatticeQuiver["PositiveSquareLatticeDisclination", positiveSquareLatticeDisclinationFactory, <|"MaxDepth" -> Infinity|>]
 
-positiveSquareLatticeDisclinationFactory[_, userOpts_] := CombineMultiedges @ Quiver[
-  <|
-    "x" -> {7 -> 6, 6 -> 5, 2 -> 1, 1 -> 4,  9 -> 2, 8 -> 7, 19 -> 18, 18 -> 17, 17 -> 16, 16 -> 15, 5 -> 14, 4 -> 13},
-    "y" -> {7 -> 2, 6 -> 1, 1 -> 4, 2 -> 3, 19 -> 8, 8 -> 9, 9 -> 10, 10 -> 11, 3 -> 12, 4 -> 13, 18 -> 7, 17 -> 6},
-    "z" -> {3 -> 4, 4 -> 5, 2 -> 1, 1 -> 6, 9 -> 2, 10 -> 3, 11 -> 12, 12 -> 13, 13 -> 14, 14 -> 15, 5 -> 16, 6 -> 17}
-  |>,
-  Apply[Sequence, Normal @ userOpts],
-  GraphLayout -> "Spring", CoordinateTransformFunction -> {{"Rotate", 90}, "ReflectHorizontal"}
+positiveSquareLatticeDisclinationFactory[_, userOpts_] := Scope[
+  {x, y, z} = Lookup[userOpts, Cardinals, {"x", "y", "z"}];
+  graph = CombineMultiedges @ Quiver[
+    <|
+      x -> {7 -> 6, 6 -> 5, 2 -> 1, 1 -> 4,  9 -> 2, 8 -> 7, 19 -> 18, 18 -> 17, 17 -> 16, 16 -> 15, 5 -> 14, 4 -> 13},
+      y -> {7 -> 2, 6 -> 1, 1 -> 4, 2 -> 3, 19 -> 8, 8 -> 9, 9 -> 10, 10 -> 11, 3 -> 12, 4 -> 13, 18 -> 7, 17 -> 6},
+      z -> {3 -> 4, 4 -> 5, 2 -> 1, 1 -> 6, 9 -> 2, 10 -> 3, 11 -> 12, 12 -> 13, 13 -> 14, 14 -> 15, 5 -> 16, 6 -> 17}
+    |>,
+    Apply[Sequence, DeleteOptions[Cardinals] @ Normal @ userOpts],
+    GraphLayout -> "Spring", CoordinateTransformFunction -> {{"Rotate", 90}, "ReflectHorizontal"}
+  ]
 ];

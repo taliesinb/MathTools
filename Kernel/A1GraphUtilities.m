@@ -321,12 +321,12 @@ SetHoldAllComplete[interceptedGraphConstructor];
 
 interceptedGraphConstructor[Graph[Shortest[args__], options__Rule]] := Scope[
   options = Replace[{options}, Rule[GraphLayout, l_] :> Rule[ExtendedGraphLayout, l], {1}];
-  annotations = TakeOptions[options, $extendedGraphOptionSymbols];
+  annotations = DeleteDuplicatesBy[TakeOptions[options, $extendedGraphOptionSymbols], First];
   newOptions = Map[optionFixup] @ DeleteOptions[options, $extendedGraphOptionSymbols];
   result = Graph[args, Sequence @@ newOptions];
   If[!GraphQ[result], result = makeNewGraph[args, newOptions]];
   If[!GraphQ[result], ReturnFailed[]];
-  Annotate[result, checkGraphAnnotations @ DeleteDuplicatesBy[annotations, First]]
+  Annotate[result, checkGraphAnnotations @ annotations]
 ];
 
 makeNewGraph[graph_Graph ? GraphQ, newOptions_List] :=
@@ -337,7 +337,7 @@ makeNewGraph[___] := $Failed;
 (* these compensate for a weird extra level of list that Graph adds *)
 optionFixup = Case[
   Rule[VertexSize, r:{__Rule}]                    := Rule[VertexSize, Association @ r];
-  Rule[sym:(VertexLabels | EdgeLabels), l_List]   := Rule[sym, Hold[l]];
+  Rule[sym:(VertexLabels | EdgeLabels), l_List]   := Echo @ If[MatchQ[l, {_Hold}], First @ l, Rule[sym, Hold[l]]];
   Rule[sym:(EdgeStyle|VertexStyle), val_]         := Rule[sym, toDirective[val]];
   Rule[VertexShapeFunction, assoc_Association]    := Rule[VertexShapeFunction, toShape /@ assoc];
   Rule[sym:(GraphHighlightStyle|VertexLabelStyle|EdgeLabelStyle), elem_] := Rule[sym, toDirective[elem]];
@@ -533,13 +533,10 @@ $graphCacheEnabled = True;
 PackageExport["VertexEdgeList"]
 
 SetUsage @ "
-VertexEdgeList[graph$] returns {vertices$, edges$}
+VertexEdgeList[graph$] returns {vertices$, edges$}.
 "
 
-VertexEdgeList[graph_] := {
-  VertexList[graph],
-  EdgeList[graph]
-}
+VertexEdgeList[graph_] := {VertexList @ graph, EdgeList @ graph};
 
 (**************************************************************************************************)
 
@@ -558,14 +555,89 @@ one cardinal each.
 * CombineMultiedges is the inverse of ExpandCardinalSetEdges.
 "
 
-ExpandCardinalSetEdges[graph_] := Scope[
-  If[FreeQ[EdgeTags[graph], CardinalSet], Return @ graph];
-  opts = Options[graph];
+ExpandCardinalSetEdges[graph_] := If[
+  FreeQ[EdgeTags @ graph, CardinalSet], graph,
   Graph[
     VertexList @ graph,
     SpliceCardinalSetEdges @ EdgeList @ graph,
-    opts
+    Options @ graph
   ]
+];
+
+(**************************************************************************************************)
+
+PackageExport["RemoveEdgeTags"]
+
+SetUsage @ "
+RemoveEdgeTags[graph$] removes edge tags from edges of graph$, returning a new graph.
+RemoveEdgeTags[{edge$1, edge$2, $$}] removes edge tags from edge$i, returning a new list.
+* This turns a cardinal quiver into an unlabelled quiver.
+"
+
+RemoveEdgeTags = Case[
+  list_ ? EdgeListQ              := Take[list, All, 2];
+  graph_Graph ? EdgeTaggedGraphQ := Graph[
+    VertexList @ graph,
+    RemoveEdgeTags @ EdgeList @ graph,
+    Options @ graph
+  ];
+  graph_Graph                    := graph;
+  _ := $Failed
+];
+
+(**************************************************************************************************)
+
+PackageExport["MapEdgeTags"]
+
+SetUsage @ "
+MapEdgeTags[f$, graph$] applies the function f$ to the edge tags of edges of graph$.
+MapEdgeTags[{edge$1, edge$2, $$}, f$] applies f$ to tags of a list of edges.
+"
+
+MapEdgeTags[f_, list_ ? EdgeListQ] :=
+  MapAt[f, list, {All, 2}];
+
+MapEdgeTags[f_, graph_Graph ? EdgeTaggedGraphQ] := Graph[
+  VertexList @ graph,
+  MapEdgeTags[f, EdgeList @ graph],
+  Options @ graph
+];
+
+MapEdgeTags[_, graph_Graph] := graph;
+
+MapEdgeTags[_, _] := $Failed
+
+MapEdgeTags[f_][graph_] := MapEdgeTags[f, graph];
+
+(**************************************************************************************************)
+
+PackageExport["MapEdges"]
+
+SetUsage @ "
+MapEdges[f$, graph$] applies the function f$ to the edges of f$.
+"
+
+MapEdges[f_, graph_Graph] := Graph[
+  VertexList @ graph,
+  Map[f, EdgeList @ graph],
+  Options @ graph
+];
+
+MapEdges[f_, _] := $Failed;
+
+MapEdges[f_][g_] := MapEdges[f, g];
+
+(**************************************************************************************************)
+
+PackageExport["EdgeListQ"]
+
+SetUsage @ "
+EdgeListQ[e$] returns True if e$ is a list of edges (%UndirectedEdge or %DirectedEdge).
+"
+
+EdgeListQ = Case[
+  {RepeatedNull[_DirectedEdge | UndirectedEdge]} := True;
+  _ := False
 ];
 
 (**************************************************************************************************)

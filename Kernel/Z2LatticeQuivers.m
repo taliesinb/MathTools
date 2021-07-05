@@ -111,7 +111,8 @@ $baseGenerateLatticeOptions = JoinOptions[{
   CombineMultiedges -> True,
   SelfLoops -> True,
   InitialStates -> Automatic,
-  RandomSeeding -> None
+  RandomSeeding -> None,
+  CardinalList -> Automatic
   },
   $simpleGraphOptionRules
 ];
@@ -122,6 +123,7 @@ General::badlatticename = "The specified name `` is not a known name for a latti
 General::badlatticedepth = "The specified depth `` is not a positive integer."
 General::badvertnaming = "Unknown setting `` for VertexNameFunction. Valid renaming rules are ``.";
 General::renamenotquiv = "The vertex coordinates yielded a quiver with incompatible cardinal edges. Use LatticeGraph instead.";
+General::badcardlist = "Provided CardinalList -> `` does not match length of original cardinals ``.";
 General::normempty = "The setting of NormFunction and MaxNorm -> `` yielded an empty graph. The first few norms were: ``."
 General::filterempty = "The setting of AbstractCoordinateFilter yielded an empty graph.";
 General::nonnumnorm = "The setting of NormFunction yielded the non-numeric value `` on vertex ``.";
@@ -168,8 +170,8 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     UnpackAssociation[representation, cayleyFunction, initialStates];
     repInitialStates = ToList[initialStates];
     wasAutoCardinalList = True;
-    cardinalList = Union[StripNegated /@ DeepCases[cayleyFunction, Labeled[_, c_ ? notInternalSymbolQ] :> c]];
-    If[cardinalList === {}, cardinalList = Automatic];
+    trueCardinalList = Union[StripNegated /@ DeepCases[cayleyFunction, Labeled[_, c_ ? notInternalSymbolQ] :> c]];
+    If[trueCardinalList === {}, trueCardinalList = Automatic];
   ,
     If[!QuiverRepresentationObjectQ[representation],
       ReturnFailed[head::notquivrep]];
@@ -179,7 +181,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     repInitialStates = List @ quiverStateToLatticeVertex @ representation["Identity"];
 
     quiver = representation["Quiver"];
-    cardinalList = CardinalList @ quiver;
+    trueCardinalList = CardinalList @ quiver;
   ];
 
   UnpackOptionsAs[head, opts,
@@ -191,7 +193,8 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     graphMetric, combineMultiedges,
     includeRepresentationMatrices,
     graphRegionHighlight, plotLabel,
-    selfLoops, initialStates, randomSeeding
+    selfLoops, initialStates, randomSeeding,
+    cardinalList
   ];
 
   SetAutomatic[initialStates, repInitialStates];
@@ -206,7 +209,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   If[IntegerQ[maxDepth], SetAutomatic[includeFrontier, False]];
   SetAutomatic[maxDepth, Which[
     maxNorm =!= Infinity,
-      If[IntegerQ[maxNorm], maxNorm, Ceiling[maxNorm] + 1] * Length[cardinalList],
+      If[IntegerQ[maxNorm], maxNorm, Ceiling[maxNorm] + 1] * Length[trueCardinalList],
     maxVertices =!= Infinity,
       Infinity,
     AssociationQ[representation],
@@ -214,7 +217,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     True,
       maxNorm = Replace[latticeName, $defaultLatticeNorms];
       SetAutomatic[imageSize, Replace[latticeName, $defaultLatticeSizes]];
-      If[maxNorm === None, maxNorm = 3, maxNorm * Length[cardinalList]]
+      If[maxNorm === None, maxNorm = 3, maxNorm * Length[trueCardinalList]]
   ]];
 
   If[MatchQ[maxVertices, AtLeast[_Integer]],
@@ -368,15 +371,15 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   If[plotLabel === Automatic && StringQ[latticeName],
     simpleOptions //= ReplaceOptions[PlotLabel -> ToTitleString[latticeName]]];
 
-  If[wasAutoCardinalList, cardinalList = Automatic];
-  SetAutomatic[cardinalList, CardinalList @ edgeList];
+  If[wasAutoCardinalList, trueCardinalList = Automatic];
+  SetAutomatic[trueCardinalList, CardinalList @ edgeList];
   If[head === LatticeGraph,
     graph = ExtendedGraph[
       finalVertexList, edgeList,
       GraphLegend -> graphLegend,
       ImageSize -> imageSize,
       GraphLayout -> graphLayout, VertexCoordinates -> vertexCoordinates,
-      GraphOrigin -> ivertex, Cardinals -> cardinalList,
+      GraphOrigin -> ivertex, Cardinals -> trueCardinalList,
       Sequence @@ simpleOptions,
       ArrowheadStyle -> None, BaselinePosition -> Center
     ];
@@ -386,13 +389,17 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     graph = Quiver[finalVertexList, edgeList,
       GraphLayout -> graphLayout, VertexCoordinates -> vertexCoordinates,
       GraphLegend -> graphLegend, ImageSize -> imageSize,
-      GraphOrigin -> ivertex, Cardinals -> cardinalList,
+      GraphOrigin -> ivertex, Cardinals -> trueCardinalList,
       Sequence @@ simpleOptions, BaselinePosition -> Center
     ];
     If[FailureQ[graph], ReturnFailed[head::renamenotquiv]];
   ];
 
   If[combineMultiedges, graph //= CombineMultiedges];
+  If[cardinalList =!= Automatic,
+    If[Length[cardinalList] =!= Length[trueCardinalList],
+      ReturnFailed[head::badcardlist, cardinalList, trueCardinalList]];
+    graph = RenameCardinals[graph, cardinalList]];
 
   isLV = MatchQ[First @ vertexList, LatticeVertex[_, _]];
   AttachVertexAnnotations[graph, <|

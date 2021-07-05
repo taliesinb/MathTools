@@ -112,7 +112,7 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
   $arrowheadSize = Automatic;
   $edgeSetback = 1;
   $outline = False;
-  $simplifyRegions = True;
+  $simplifyRegions = False;
 
   $colorPalette = ToColorPalette[Automatic];
   CollectTo[{$highlightsBag, $legendsBag}, processOuterSpec[spec]];
