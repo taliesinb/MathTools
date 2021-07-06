@@ -1099,6 +1099,15 @@ ToGraph = Case[
 
 (**************************************************************************************************)
 
+PackageExport["DeleteVertexAnnotations"]
+
+DeleteVertexAnnotations[graph_Graph] :=
+  AnnotationDelete[graph, VertexAnnotations];
+
+DeleteVertexAnnotations[other_] := other;
+
+(**************************************************************************************************)
+
 PackageExport["AttachVertexAnnotations"]
 
 AttachVertexAnnotations[graph_, annotations_] := Scope[

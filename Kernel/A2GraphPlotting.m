@@ -1709,9 +1709,12 @@ ArrowheadLegend[assoc_Association, shape_:"Arrow"] := Scope[
 
 PackageScope["makeLegendArrowheadGraphic"]
 
-makeLegendArrowheadGraphic[color_, shape_] := makeArrowheadGraphic2D[
-  Rotate[$arrowheads2D @ shape, Pi/2], If[StringContainsQ[shape, "Line"], Identity, FaceForm] @ color,
-  BaselinePosition -> Scaled[0.1], ImageSize -> {11, 11}, AspectRatio -> Automatic
+makeLegendArrowheadGraphic[color_, shape_] := Scope[
+  isLine = StringContainsQ[shape, "Line"];
+  makeArrowheadGraphic2D[
+    {If[isLine, AbsoluteThickness[2.0], Nothing], Rotate[$arrowheads2D @ shape, Pi/2]}, If[isLine, Identity, FaceForm] @ color,
+    BaselinePosition -> Scaled[0.1], ImageSize -> {11, 11}, AspectRatio -> Automatic
+  ]
 ];
 
 (**************************************************************************************************)
