@@ -842,8 +842,8 @@ VertexInOutEdgeTable[graph_] := Scope[
   pairs = EdgePairs @ graph;
   vertices = VertexRange @ graph;
   Transpose[{
-    Lookup[PositionIndex @ FirstColumn @ pairs, vertices, {}],
-    Lookup[PositionIndex @ LastColumn @ pairs, vertices, {}]
+    Lookup[PositionIndex @ LastColumn @ pairs, vertices, {}],
+    Lookup[PositionIndex @ FirstColumn @ pairs, vertices, {}]
   }]
 ];
 

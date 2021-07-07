@@ -292,9 +292,10 @@ cubeFactory[<|"n" -> n_, "MaxDepth" -> _|>, userOpts_] := Scope[
 
 (**************************************************************************************************)
 
-DefineParameterizedLatticeQuiver["PositiveSquareLatticeDisclination", positiveSquareLatticeDisclinationFactory, <|"MaxDepth" -> Infinity|>]
+DefineParameterizedLatticeQuiver["PositiveSquareLatticeDisclination", positiveSquareLatticeDisclinationFactory, <|"RemoveCorner" -> False, "MaxDepth" -> Infinity|>]
 
-positiveSquareLatticeDisclinationFactory[_, userOpts_] := Scope[
+positiveSquareLatticeDisclinationFactory[assoc_, userOpts_] := Scope[
+  UnpackAssociation[assoc, removeCorner];
   {x, y, z} = Lookup[userOpts, Cardinals, {"x", "y", "z"}];
   graph = CombineMultiedges @ Quiver[
     <|
@@ -304,5 +305,7 @@ positiveSquareLatticeDisclinationFactory[_, userOpts_] := Scope[
     |>,
     Apply[Sequence, DeleteOptions[Cardinals] @ Normal @ userOpts],
     GraphLayout -> "Spring", CoordinateTransformFunction -> {{"Rotate", 90}, "ReflectHorizontal"}
-  ]
+  ];
+  If[removeCorner, graph = VertexDelete[graph, 1]];
+  graph
 ];
