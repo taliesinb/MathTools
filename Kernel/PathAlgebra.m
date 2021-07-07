@@ -105,7 +105,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   data["InOutEdges"] = VertexInOutEdgeTable @ quiver;
   data["VertexRewrites"] = calculateVertexRewrites[data];
 
-  tagLists = Replace[edgeTags, {CardinalList[c_] :> c, c_ :> {c}}, {1}];
+  tagLists = Replace[edgeTags, {CardinalSet[c_] :> c, c_ :> {c}}, {1}];
   data["EdgeTagLists"] = tagLists;
   data["PairTagLists"] = AssociationThread[
     Join[pairs, Reverse[pairs, 2]],
@@ -814,7 +814,6 @@ MultiWordVector[vertex_, word_] /; $PathAlgebraQ := Scope[
 enumeratePaths[path_, vertex_, word_, frame_] := Scope[
   {frameCard, word} = FirstRest @ word;
   rewrites = possibleRewrites[Values @ frame, vertex];
-  zPrint[vertex -> frameCard -> path -> frame -> rewrites];
   Scan[rewrite |-> (
     newFrame = applyRewrite[frame, rewrite];
     card = newFrame[frameCard];
@@ -850,7 +849,7 @@ possibleRewrites[keys_, vertex_] := Scope[
 PackageExport["PathElementToWord"]
 
 PathElementToWord[PathElement[vertices_]] := Scope[
-  UnpackPathAlgebra[quiver, vertexTags, vertexRewrites, pairTagLists];
+  UnpackPathAlgebra[vertexTags, vertexRewrites, pairTagLists];
 
   vertex = First @ vertices;
   initialCards = Part[vertexTags, vertex];
@@ -890,27 +889,57 @@ PackageExport["PathTranslate"]
 
 PathTranslate[t_PathVector, p_PathVector] /; $PathAlgebraQ := Scope[
 
-  UnpackPathAlgebra[quiver, nullVertex, tagOutTable, vertexTags, vertexRewrites];
+  UnpackPathAlgebra[nullVertex, tagOutTable, vertexTags, vertexRewrites, pairTagLists];
 
   BilinearApply[elementTranslate, t -> PathTailVertex, p -> PathTailVertex]
 ]
 
-elementTranslate[PathElement[t_], p_PathElement] := Scope[
-  words = PathElementToWord[p];
-  vertex = First @ t;
-  initialCards = Part[vertexTags, vertex];
-  frame = AssociationThread[initialCards, initialCards];
-  (* work in progress: we  need to find the word(s) of p, then find all the possible frames at the
-  end of t, then evaluate those words at those frames *)
+(* fast path *)
+(* elementTranslate[PathElement[t_], PathElement[p_]] :=
+  PathElement @ Take[t, -1];
+ *)
+elementTranslate[PathElement[tVertices_], p_PathElement] := Scope[
+  pWords = PathElementToWord[p] /. CardinalSet[s_] :> First[s];
+
+  {tTail, tHead} = FirstLast @ tVertices;
+  initialCards = Part[vertexTags, tTail];
+  initialFrame = AssociationThread[initialCards, initialCards];
+
+  CollectTo[{$frames},
+    enumerateTranslatedFrames[tVertices, initialFrame];
+  ];
+
+  $frames //= DeleteDuplicates;
+  relevantCardinals = DeleteDuplicates @ Flatten @ pWords;
+  $frames = DeleteDuplicates @ KeyTake[$frames, relevantCardinals];
+
   CollectTo[{$paths},
-    Scan[
-      word |-> enumeratePaths[{vertex}, vertex, word, frame],
-      words
+    Outer[
+      {word, frame} |-> enumeratePaths[{tHead}, tHead, word, frame],
+      pWords, $frames, 1
     ];
   ];
-  Map[PathElement, $paths]
+
+  Map[PathElement, DeleteDuplicates @ $paths]
 ]
 
+enumerateTranslatedFrames[{vertex_}, frame_] :=
+  Internal`StuffBag[$frames, frame];
+
+enumerateTranslatedFrames[vertices_, frame_] := Scope[
+  pair = Take[vertices, 2];
+  vertices = Drop[vertices, 1];
+  vertex = First @ pair;
+  pairTags = pairTagLists[pair];
+  cards = DeleteMissing @ Map[tag |-> keyOf[frame, tag], pairTags];
+  If[cards === {}, Return[]];
+  rewrites = possibleRewrites[Values @ frame, vertex];
+  cards //= If[Length[cards] === 1, First, CardinalSet];
+  Scan[rewrite |-> (
+    newFrame = applyRewrite[frame, rewrite];
+    enumerateTranslatedFrames[vertices, newFrame];
+  ), rewrites];
+];
 
 (**************************************************************************************************)
 
@@ -930,7 +959,7 @@ BilinearApply[monoid_, PathVector[a_] -> f_, PathVector[b_] -> g_] /; $PathAlgeb
 ];
 
 weightedApply[i_, j_] :=
-  flattenWeights[$monoid[Part[ak, i], Part[bk, j]], fieldTimes[Part[av, i], Part[bv, i]]];
+  flattenWeights[$monoid[Part[ak, i], Part[bk, j]], fieldTimes[Part[av, i], Part[bv, j]]];
 
 flattenWeights[result_, w_] := result -> w;
 flattenWeights[results_List, w_] := #1 -> w& /@ results;
