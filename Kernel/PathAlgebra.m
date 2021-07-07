@@ -69,6 +69,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   data = <||>;
   {vertexCoords, edgeCoords} = ExtractGraphPrimitiveCoordinates @ quiver;
 
+  data["Quiver"] = quiver;
   data["VertexCoordinates"] = vertexCoords;
   data["EdgeCoordinates"] = edgeCoords;
   data["PlotRange"] = Replace[plotRange, Automatic :> CoordinateBounds[vertexCoords]];
@@ -99,8 +100,41 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   tagOutTable = Append[dummy] /@ ReplaceAll[TagVertexOutTable @ quiver, None -> dummy];
   data["TagOutTable"] = tagOutTable;
   data["AdjacencyTable"] = VertexAdjacencyTable @ quiver;
+  data["VertexTags"] = VertexTagTable @ quiver;
+  data["EdgeTags"] = edgeTags = EdgeTags @ quiver;
+  data["InOutEdges"] = VertexInOutEdgeTable @ quiver;
+  data["VertexRewrites"] = calculateVertexRewrites[data];
+
+  tagLists = Replace[edgeTags, {CardinalList[c_] :> c, c_ :> {c}}, {1}];
+  data["EdgeTagLists"] = tagLists;
+  data["PairTagLists"] = AssociationThread[
+    Join[pairs, Reverse[pairs, 2]],
+    Join[tagLists, Map[Negated, tagLists, {2}]]
+  ];
 
   System`Private`ConstructNoEntry[PathAlgebra, data]
+];
+
+calculateVertexRewrites[algebra_] := Scope[
+  inOutEdges = algebra["InOutEdges"];
+  edgeTags = algebra["EdgeTags"];
+  vertexCardinalClasses = Apply[
+    {inEdges, outEdges} |-> Join[
+      Cases[Part[edgeTags, inEdges], CardinalSet[s_] :> Map[Negated, s]],
+      Cases[Part[edgeTags, outEdges], CardinalSet[s_] :> s]
+    ],
+    inOutEdges, {1}
+  ];
+  Map[
+    classes |-> Flatten @ Map[
+      class |-> Outer[
+        If[#1 =!= #2, #1 -> #2, {}]&,
+        class, class, 1
+      ],
+      classes
+    ],
+    vertexCardinalClasses
+  ]
 ];
 
 $complexColorFunction = ComplexHue;
@@ -169,6 +203,8 @@ mergeWeights[rules_, id_, f_] :=
   Merge[KeyUnion[Flatten @ rules, id&], f];
 
 constructPathVector[list_List] := constructPathVector @ Association @ list;
+
+rulesToPathVector[list_List] := constructPathVector @ Merge[Flatten @ list, Apply @ $FieldTimes];
 
 constructPathVector[assoc_Association] :=
   PathVector @ Association @ KeySort @ KeyDrop[NullElement] @ DeleteCases[assoc, 0|0.];
@@ -299,11 +335,26 @@ fieldColors = MatchValues[
 
 (**************************************************************************************************)
 
-PackageExport["PathHead"]
-PackageExport["PathTail"]
+PackageExport["PathHeadVertex"]
+PackageExport["PathTailVertex"]
 
-PathTail[PathElement[list_List]] := First @ list;
-PathHead[PathElement[list_List]] := Last @ list;
+PathTailVertex[PathElement[list_List]] := First @ list;
+PathHeadVertex[PathElement[list_List]] := Last @ list;
+
+(**************************************************************************************************)
+
+PackageExport["PathHeadVector"]
+PackageExport["PathTailVector"]
+
+PathHeadVector[PathElement[list_List]] := PathElement @ Take[list, 1];
+
+PathHeadVector[PathVector[assoc_]] :=
+  rulesToPathVector @ MapAt[PathHeadVector, Normal @ assoc, {All, 1}];
+
+PathTailVector[PathElement[list_List]] := PathElement @ Take[list, -1];
+
+PathTailVector[PathVector[assoc_]] :=
+  rulesToPathVector @ MapAt[PathTailVector, Normal @ assoc, {All, 1}];
 
 (**************************************************************************************************)
 
@@ -320,11 +371,19 @@ declareFormatting[
 
 PathVector /: CenterDot[v__PathVector] := PathCompose[v];
 
-PathBivector /: CenterDot[b__PathBivector] := PathCompose[b];
-
 (**************************************************************************************************)
 
 PackageExport["PathCompose"]
+
+(* defined on vectors by bilinearity *)
+
+PathCompose[a_PathVector, b_PathVector] /; $PathAlgebraQ :=
+  BilinearApply[PathCompose, a -> PathHeadVertex, b -> PathTailVertex];
+
+(* defined on elements *)
+
+PathCompose[PathElement[a_], PathElement[b_]] :=
+  If[Last[a] === First[b], compose[a, b], NullPath];
 
 $cancelRules = Dispatch @ {
   {l___, i_, j_, i_, r___} :> {l, i, r}
@@ -334,30 +393,15 @@ compose[a_, b_] := PathElement[Join[a, Rest @ b] //. $cancelRules];
 
 compose[a_, b_, c_] := PathElement[Join[a, Rest @ b, Rest @ c] //. $cancelRules];
 
+(* non-binary versions *)
+
 PathCompose[e_] := e;
 
 PathCompose[PathElement[a_], PathElement[b_], PathElement[c_]] :=
   If[Last[a] === First[b] && Last[b] === First[c], compose[a, b, c], NullElement];
 
-PathCompose[PathElement[a_], PathElement[b_]] :=
-  If[Last[a] === First[b], compose[a, b], NullPath];
-
 PathCompose[a_PathVector, b_PathVector, c_PathVector, rest___PathVector] /; $PathAlgebraQ :=
   PathCompose[PathCompose[PathCompose[a, b], c], rest];
-
-PathCompose[PathVector[a1_Association], PathVector[a2_Association]] /; $PathAlgebraQ := Scope[
-  $times = $FieldTimes;
-  constructPathVector @ Merge[
-    Flatten @ Outer[composeWeightedPaths, Normal @ a1, Normal @ a2, 1],
-    Apply @ $FieldPlus
-  ]
-]
-
-PathCompose[PathBivector[l1_, r1_], PathBivector[l2_, r2_]] /; $PathAlgebraQ :=
-  PathBivector[PathCompose[l1, l2], PathCompose[r1, r2]]
-
-composeWeightedPaths[PathElement[a_] -> aw_, PathElement[b_] -> bw_] :=
-  If[Last[a] === First[b], compose[a, b] -> $times[aw, bw], {}];
 
 (**************************************************************************************************)
 
@@ -509,9 +553,6 @@ PathReverse[PathElement[$$]] yields the reverse of PathElement[$$].
 
 PathReverse[PathVector[assoc_]] :=
   PathVector @ KeySort @ KeyMap[PathReverse, assoc]
-
-PathReverse[PathBivector[l_PathVector, r_PathVector]] :=
-  PathBivector[PathReverse @ l, PathReverse @ r];
 
 PathReverse[PathElement[list_]] := PathElement @ Reverse @ list;
 
@@ -752,133 +793,195 @@ PackageExport["EdgeFieldQ"]
 EdgeFieldQ[PathVector[assoc_Association]] := MatchQ[Keys @ assoc, {PathElement[{_, _}]...}];
 EdgeFieldQ[_] := False;
 
-
 (**************************************************************************************************)
 
-PackageExport["PathBivector"]
+PackageExport["MultiWordVector"]
 
-SetUsage @ "
-PathBivector[$$] represents a path bivector on a cardinal quiver.
-"
+MultiWordVector[vertex_, word_] /; $PathAlgebraQ := Scope[
+  UnpackPathAlgebra[quiver, nullVertex, tagOutTable, vertexTags, vertexRewrites];
 
-PathBivector[a_PathVector] :=
-  PathBivector[a, a];
+  initialCards = Part[vertexTags, vertex];
+  frame = AssociationThread[initialCards, initialCards];
 
-declareFormatting[
-  bv:PathBivector[_PathVector, _PathVector] /; $PathAlgebra =!= None :>
-    formatPathBivector[bv]
+  word = ParseCardinalWord @ word;
+  CollectTo[{$paths},
+    enumeratePaths[{vertex}, vertex, word, frame];
+  ];
+  elements = Map[PathElement, Union @ $paths];
+  PathVector @ ConstantAssociation[elements, 1]
+]
+
+enumeratePaths[path_, vertex_, word_, frame_] := Scope[
+  {frameCard, word} = FirstRest @ word;
+  rewrites = possibleRewrites[Values @ frame, vertex];
+  zPrint[vertex -> frameCard -> path -> frame -> rewrites];
+  Scan[rewrite |-> (
+    newFrame = applyRewrite[frame, rewrite];
+    card = newFrame[frameCard];
+    If[MissingQ @ card, Return[]];
+    next = Part[tagOutTable, Key @ card, vertex];
+    If[next =!= nullVertex,
+      enumeratePaths[Append[path, next], next, word, newFrame]];
+  ), rewrites];
 ];
 
-formatPathBivector[PathBivector[a_PathVector, b_PathVector]] :=
-  AngleBracket[a, b];
+enumeratePaths[path_, _, {}, _] :=
+  Internal`StuffBag[$paths, path];
 
-(**************************************************************************************************)
+applyRewrite[frame_, {}] := frame;
 
-PackageExport["PathBivectorQ"]
+applyRewrite[frame_, rewrite_] :=
+  Replace[frame, rewrite, {1}];
 
-PathBivectorQ[PathBivector[a_ ? PathVectorQ, b_ ? PathVectorQ]] := True;
-PathBivectorQ[_] := False;
+possibleRewrites[keys_, vertex_] := Scope[
+  rewrites = Part[vertexRewrites, vertex];
+  rewrites = Select[rewrites, MemberQ[keys, First[#]]&];
+  Select[Subsets @ rewrites, Keys /* DuplicateFreeQ]
+];
 
-declarePlusTimesDispatch[PathBivector, PathBivectorQ, $pathBivectorDispatch]
-
-$pathBivectorDispatch = <|
-  Plus -> PathBivectorPlus,
-  Times -> PathBivectorTimes
-|>;
-
-PackageExport["PathBivectorPlus"]
-PackageExport["PathBivectorTimes"]
-
-PathBivectorPlus[a_, b_, c_] := PathBivectorPlus[PathBivectorPlus[a, b], c];
-
-PathBivectorPlus[PathBivector[a_, b_], PathBivector[c_, d_]] :=
-  PathBivector[PathVectorPlus[a, c], PathVectorPlus[b, d]];
-
-PathBivectorTimes[PathBivector[a_, b_], PathBivector[c_, d_]] :=
-  PathBivector[PathVectorTimes[a, c], PathVectorTimes[b, d]];
-
-PathBivectorTimes[n_ ? NumericQ, PathBivector[a_, b_]] := PathBivector[
-  PathVectorTimes[n, a],
-  PathVectorTimes[n, b]
+possibleRewrites[keys_, vertex_] := Scope[
+  rewrites = Part[vertexRewrites, vertex];
+  rewrites = Select[rewrites, MemberQ[keys, First[#]]&];
+  Select[Subsets @ rewrites, Keys /* DuplicateFreeQ]
 ];
 
 (**************************************************************************************************)
 
-PackageExport["ConvolutionBivector"]
+PackageExport["PathElementToWord"]
 
-SetUsage @ "
-ConvolutionBivector[vector$] gives the Bivector[$$] that achieves a convolution with vector$.
-"
+PathElementToWord[PathElement[vertices_]] := Scope[
+  UnpackPathAlgebra[quiver, vertexTags, vertexRewrites, pairTagLists];
 
-ConvolutionBivector[pv_PathVector] :=
-  PathBivector[pv, pv];
+  vertex = First @ vertices;
+  initialCards = Part[vertexTags, vertex];
+  frame = AssociationThread[initialCards, initialCards];
 
-(**************************************************************************************************)
-
-PackageExport["TranslationBivector"]
-
-SetUsage @ "
-TranslationBivector[word$] gives the Bivector[$$] that achieves the translation by the cardinal word.
-"
-
-TranslationBivector[w_String] :=
-  ConvolutionBivector @ WordVector @ w;
-
-(**************************************************************************************************)
-
-PackageExport["PathConvolution"]
-
-SetUsage @ "
-PathConvolution[k$, v$] gives the resulting of convolving path kernel k$ with v$.
-"
-
-PathConvolution[k_PathVector, v_PathVector] := Scope[
-  UnpackPathAlgebra[fieldPlus];
-  k = Normal @ First @ k;
-  v = Normal @ KeySelect[First @ v, PathHead[#] === PathTail[#]&];
-  temp = None;
-  constructPathVector @ mergeWeights[Outer[convolutionProduct, k, v], 0, Apply @ fieldPlus]
+  CollectTo[{$words},
+    enumerateWords[{}, vertices, frame];
+  ];
+  DeleteDuplicates @ $words
 ];
 
-convolutionProduct[s:PathElement[sv_] -> sw_, m:PathElement[mv_] -> mw_] := (
-  temp = PathCompose[s, m, PathReverse @ s];
-  If[temp === NullElement, Nothing, temp -> sw * mw]
-)
+enumerateWords[word_, {v_}, _] := (
+  Internal`StuffBag[$words, word];
+);
 
-PathVector /: CircleTimes[k_PathVector, v_PathVector] := PathConvolution[k, v];
+enumerateWords[word_, vertices_, frame_] := Scope[
+  pair = Take[vertices, 2];
+  vertices = Drop[vertices, 1];
+  vertex = First @ pair;
+  pairTags = pairTagLists[pair];
+  cards = DeleteMissing @ Map[tag |-> keyOf[frame, tag], pairTags];
+  If[cards === {}, Return[]];
+  rewrites = possibleRewrites[Values @ frame, vertex];
+  cards //= If[Length[cards] === 1, First, CardinalSet];
+  Scan[rewrite |-> (
+    newFrame = applyRewrite[frame, rewrite];
+    enumerateWords[Append[word, cards], vertices, newFrame];
+  ), rewrites];
+];
+
+keysOf[assoc_, value_] := Part[IndicesOf[assoc, value], All, 1];
+keyOf[assoc_, value_] := Replace[IndexOf[assoc, value], Key[k_] :> k];
 
 (**************************************************************************************************)
 
-PackageExport["$SandwichForm"]
+PackageExport["PathTranslate"]
 
-$SandwichForm = "Plus";
+PathTranslate[t_PathVector, p_PathVector] /; $PathAlgebraQ := Scope[
 
-PackageExport["Sandwich"]
+  UnpackPathAlgebra[quiver, nullVertex, tagOutTable, vertexTags, vertexRewrites];
+
+  BilinearApply[elementTranslate, t -> PathTailVertex, p -> PathTailVertex]
+]
+
+elementTranslate[PathElement[t_], p_PathElement] := Scope[
+  words = PathElementToWord[p];
+  vertex = First @ t;
+  initialCards = Part[vertexTags, vertex];
+  frame = AssociationThread[initialCards, initialCards];
+  (* work in progress: we  need to find the word(s) of p, then find all the possible frames at the
+  end of t, then evaluate those words at those frames *)
+  CollectTo[{$paths},
+    Scan[
+      word |-> enumeratePaths[{vertex}, vertex, word, frame],
+      words
+    ];
+  ];
+  Map[PathElement, $paths]
+]
+
+
+(**************************************************************************************************)
+
+PackageExport["BilinearApply"]
+
+BilinearApply[monoid_, PathVector[a_] -> f_, PathVector[b_] -> g_] /; $PathAlgebraQ := Scope[
+  {ak, av} = KeysValues @ a; {bk, kv} = KeysValues @ b;
+  af = Map[f, ak]; bf = Map[g, bk];
+  ik = Intersection[af, bf];
+  ap = PositionIndex @ af; bp = PositionIndex @ bf;
+  UnpackPathAlgebra[fieldTimes, fieldPlus]; $monoid = monoid;
+  rules = MapThread[
+    {iset, jset} |-> Outer[weightedApply, iset, jset, 1],
+    Lookup[{ap, bp}, ik]
+  ];
+  constructPathVector @ Merge[Flatten @ rules, Apply @ fieldPlus]
+];
+
+weightedApply[i_, j_] :=
+  flattenWeights[$monoid[Part[ak, i], Part[bk, j]], fieldTimes[Part[av, i], Part[bv, i]]];
+
+flattenWeights[result_, w_] := result -> w;
+flattenWeights[results_List, w_] := #1 -> w& /@ results;
+flattenWeights[rules:{__Rule}, w_] := #1 -> fieldTimes[#2, w]& @@@ rules;
+
+(* (**************************************************************************************************)
+
+PackageExport["FramedPathElement"]
 
 SetUsage @ "
-Sandwich[bivector$, vector$] computes the sandwich product of a bivector with a vector.
+FramedPathElement[vertices$, frames$, indices$] represents a framed path.
+* vertices$ is a list of n$ vertices.
+* frames$ is a list of n$ cardinal tuples.
+* indices$ is a list of n$ - 1 frame indices.
 "
 
-Sandwich[PathBivector[l_PathVector, r_PathVector], PathVector[m_Association]] /; $PathAlgebraQ := Scope[
-  s = Normal @ First @ (l + r);
-  a = Normal @ First @ (l - r);
-  m = Normal @ KeySelect[m, PathHead[#] === PathTail[#]&];
-  UnpackPathAlgebra[fieldPlus];
-  temp = None;
-  z1 = constructPathVector @ mergeWeights[Outer[symmetricSandwichProduct, s, m], 0, Apply @ fieldPlus];
-  z2 = constructPathVector @ mergeWeights[Outer[symmetricSandwichProduct, a, m], 0, Apply @ fieldPlus];
-  Switch[$SandwichForm,
-    "Plus", z1 + z2,
-    "Minus", z1 - z2,
-    "PlusReverse", z1 + PathReverse[z2],
-    "MinusReverse", z1 - PathReverse[z2],
-    _, $Failed
+PathCompose[FramedPathElement[va_, fa_, ia_], FramedPathElement[vb_, fb_, ib_]] := Scope[
+  If[Last[va] =!= First[vb] || Last[fa] =!= First[fb], Return @ NullElement];
+  FramedPathElement[
+    Join[va, Rest @ vb],
+    Join[fa, Rest @ fb],
+    Join[ia, ib]
   ]
 ];
 
-symmetricSandwichProduct[s:PathElement[sv_] -> sw_, m:PathElement[mv_] -> mw_] := (
-  temp = PathCompose[s, m, PathReverse @ s];
-  If[temp === NullElement, Nothing, temp -> (sw * mw)/2]
-)
+declareFormatting[
+  FramedPathElement[v_List, f_List, i_List] /; Length[v] === Length[f] === (Length[i] + 1) :>
+    formatFramedPathElement[v, f, i]
+];
 
-PathBivector /: CircleDot[a_PathBivector, v_PathVector] := Sandwich[a, v];
+formatFramedPathElement[v_List, f_List, i_List] :=
+  LabelForm @ Row @ Riffle[
+    MapThread[Underscript[#1, Row[#2]]&, {v, f}],
+    Underscript[" \[LongRightArrow] ", Style[#, Gray]]& /@ i
+  ];
+
+ *)(**************************************************************************************************)
+
+(* PackageExport["PathTranslate"]
+
+PathTranslate[FramedPathElement[va_, fa_, ia_], FramedPathElement[vb_, fb_, ib_]] := Scope[
+  If[First[va] =!= First[vb] || First[fa] =!= First[fb], Return @ NullElement];
+  FramedPathElement[
+];
+
+apl
+ *)
+(* algorithm: 
+1. path B starts where path A ends.
+2. convert indices of path b back into cardinals
+3. construct a fresh path, doing a branch-out whenever cardinal transport is available.
+4. cardinal transport is defined per-vertex: we need to setup an association of rules, that says for each vertex
+   what replacements can be made, e.g. v1 -> {a -> b,
+*)
