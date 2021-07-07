@@ -139,7 +139,7 @@ calculateVertexRewrites[algebra_] := Scope[
 
 $complexColorFunction = ComplexHue;
 
-ComplexHue[c_] := Hue[Arg[c]/Tau+.05, Min[Sqrt[Abs[c]]/1.5,1]]
+ComplexHue[c_] := Hue[Arg[c]/Tau+.05, Min[Sqrt[Abs[c]]/1.2,1]]
 
 (**************************************************************************************************)
 
@@ -899,11 +899,12 @@ PathTranslate[t_PathVector, p_PathVector] /; $PathAlgebraQ := Scope[
   PathElement @ Take[t, -1];
  *)
 elementTranslate[PathElement[tVertices_], p_PathElement] := Scope[
-  pWords = PathElementToWord[p] /. CardinalSet[s_] :> First[s];
 
   {tTail, tHead} = FirstLast @ tVertices;
   initialCards = Part[vertexTags, tTail];
   initialFrame = AssociationThread[initialCards, initialCards];
+
+  pWords = PathElementToWord[p] /. CardinalSet[s_] :> First[Intersection[s, initialCards]];
 
   CollectTo[{$frames},
     enumerateTranslatedFrames[tVertices, initialFrame];
@@ -964,6 +965,15 @@ weightedApply[i_, j_] :=
 flattenWeights[result_, w_] := result -> w;
 flattenWeights[results_List, w_] := #1 -> w& /@ results;
 flattenWeights[rules:{__Rule}, w_] := #1 -> fieldTimes[#2, w]& @@@ rules;
+
+(**************************************************************************************************)
+
+PackageExport["PathFiniteDifference"]
+
+PathFiniteDifference[flow_, target_] :=
+  PathTranslate[PathReverse[flow] - PathTailVector[flow], target];
+
+PathFiniteDifference[v_][t_] := PathFiniteDifference[v, t];
 
 (* (**************************************************************************************************)
 
