@@ -917,7 +917,7 @@ elementTranslate[PathElement[t_], p_PathElement] := Scope[
 PackageExport["BilinearApply"]
 
 BilinearApply[monoid_, PathVector[a_] -> f_, PathVector[b_] -> g_] /; $PathAlgebraQ := Scope[
-  {ak, av} = KeysValues @ a; {bk, kv} = KeysValues @ b;
+  {ak, av} = KeysValues @ a; {bk, bv} = KeysValues @ b;
   af = Map[f, ak]; bf = Map[g, bk];
   ik = Intersection[af, bf];
   ap = PositionIndex @ af; bp = PositionIndex @ bf;
