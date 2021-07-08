@@ -128,7 +128,7 @@ calculateVertexRewrites[algebra_] := Scope[
   Map[
     classes |-> Flatten @ Map[
       class |-> Outer[
-        If[#1 =!= #2, #1 -> #2, {}]&,
+        If[#1 =!= #2, If[NegatedQ[#1], Negated[#1] -> Negated[#2], #1 -> #2], {}]&,
         class, class, 1
       ],
       classes
@@ -346,12 +346,12 @@ PathHeadVertex[PathElement[list_List]] := Last @ list;
 PackageExport["PathHeadVector"]
 PackageExport["PathTailVector"]
 
-PathHeadVector[PathElement[list_List]] := PathElement @ Take[list, 1];
+PathHeadVector[PathElement[list_List]] := PathElement @ Take[list, -1];
 
 PathHeadVector[PathVector[assoc_]] :=
   rulesToPathVector @ MapAt[PathHeadVector, Normal @ assoc, {All, 1}];
 
-PathTailVector[PathElement[list_List]] := PathElement @ Take[list, -1];
+PathTailVector[PathElement[list_List]] := PathElement @ Take[list, 1];
 
 PathTailVector[PathVector[assoc_]] :=
   rulesToPathVector @ MapAt[PathTailVector, Normal @ assoc, {All, 1}];
@@ -813,11 +813,14 @@ MultiWordVector[vertex_, word_] /; $PathAlgebraQ := Scope[
 
 enumeratePaths[path_, vertex_, word_, frame_] := Scope[
   {frameCard, word} = FirstRest @ word;
-  rewrites = possibleRewrites[Values @ frame, vertex];
+  rewrites = possibleRewrites[StripNegated /@ Values[frame], vertex];
   Scan[rewrite |-> (
     newFrame = applyRewrite[frame, rewrite];
-    card = newFrame[frameCard];
-    If[MissingQ @ card, Return[]];
+    card = If[NegatedQ @ frameCard,
+      Negated @ newFrame @ Negated @ frameCard,
+      newFrame @ frameCard
+    ];
+    If[MissingQ @ StripNegated @ card, Return[]];
     next = Part[tagOutTable, Key @ card, vertex];
     If[next =!= nullVertex,
       enumeratePaths[Append[path, next], next, word, newFrame]];
@@ -830,17 +833,11 @@ enumeratePaths[path_, _, {}, _] :=
 applyRewrite[frame_, {}] := frame;
 
 applyRewrite[frame_, rewrite_] :=
-  Replace[frame, rewrite, {1}];
+  Map[Identity, ReplaceAll[frame, rewrite]];
 
 possibleRewrites[keys_, vertex_] := Scope[
   rewrites = Part[vertexRewrites, vertex];
-  rewrites = Select[rewrites, MemberQ[keys, First[#]]&];
-  Select[Subsets @ rewrites, Keys /* DuplicateFreeQ]
-];
-
-possibleRewrites[keys_, vertex_] := Scope[
-  rewrites = Part[vertexRewrites, vertex];
-  rewrites = Select[rewrites, MemberQ[keys, First[#]]&];
+  rewrites = Select[rewrites, MemberQ[keys, StripNegated @ First @ #]&];
   Select[Subsets @ rewrites, Keys /* DuplicateFreeQ]
 ];
 
@@ -872,7 +869,7 @@ enumerateWords[word_, vertices_, frame_] := Scope[
   pairTags = pairTagLists[pair];
   cards = DeleteMissing @ Map[tag |-> keyOf[frame, tag], pairTags];
   If[cards === {}, Return[]];
-  rewrites = possibleRewrites[Values @ frame, vertex];
+  rewrites = possibleRewrites[StripNegated /@ Values @ frame, vertex];
   cards //= If[Length[cards] === 1, First, CardinalSet];
   Scan[rewrite |-> (
     newFrame = applyRewrite[frame, rewrite];
@@ -904,7 +901,9 @@ elementTranslate[PathElement[tVertices_], p_PathElement] := Scope[
   initialCards = Part[vertexTags, tTail];
   initialFrame = AssociationThread[initialCards, initialCards];
 
-  pWords = PathElementToWord[p] /. CardinalSet[s_] :> First[Intersection[s, initialCards]];
+  pWords = PathElementToWord[p];
+  pWords // ReplaceRepeated[{l___, CardinalSet[s_], r___} :> Splice @ Thread[{l, Intersection[s, initialCards], r}]];
+  pWords //= DeleteDuplicates;
 
   CollectTo[{$frames},
     enumerateTranslatedFrames[tVertices, initialFrame];
@@ -934,7 +933,7 @@ enumerateTranslatedFrames[vertices_, frame_] := Scope[
   pairTags = pairTagLists[pair];
   cards = DeleteMissing @ Map[tag |-> keyOf[frame, tag], pairTags];
   If[cards === {}, Return[]];
-  rewrites = possibleRewrites[Values @ frame, vertex];
+  rewrites = possibleRewrites[StripNegated /@ Values @ frame, vertex];
   cards //= If[Length[cards] === 1, First, CardinalSet];
   Scan[rewrite |-> (
     newFrame = applyRewrite[frame, rewrite];
