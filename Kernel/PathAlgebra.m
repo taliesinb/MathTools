@@ -405,6 +405,39 @@ PathCompose[a_PathVector, b_PathVector, c_PathVector, rest___PathVector] /; $Pat
 
 (**************************************************************************************************)
 
+PackageExport["ToPathVector"]
+
+SetUsage @ "
+ToPathVector[region$] constructs a %PathVector based on the given graph region.
+* region$ should be a path region.
+"
+
+ToPathVector[region_] /; $PathAlgebraQ := Scope[
+  UnpackPathAlgebra[quiver];
+  regionData = GraphRegion[quiver, attachWeightedData @ region];
+  $w = 1;
+  rules = extractWeightedPaths @ regionData;
+  rulesToPathVector @ rules
+];
+
+extractWeightedPaths = Case[
+  list_List :=
+    Map[%, list];
+  GraphPathData[vertices_, _, _] :=
+    PathElement[vertices] -> $w;
+  GraphRegionAnnotation[r_, <|"Weight" -> w_|>] :=
+    Block[{$w = w}, % @ r];
+  _ := {};
+];
+
+attachWeightedData = Case[
+  r_ -> w_    := Weighted[r, w];
+  list_List   := Map[%, list];
+  other_      := other
+];
+
+(**************************************************************************************************)
+
 PackageExport["WordVector"]
 
 SetUsage @ "
@@ -412,8 +445,6 @@ WordVector['word$'] constructs a %PathVector consisting of all paths that have p
 * The weights are all 1.
 * 'word$' should consist of cardinals, or their negations (indicated by uppercase letters).
 "
-
-foobar
 
 WordVector[word_String] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[vertexList, tagOutTable, nullVertex];
@@ -967,12 +998,40 @@ flattenWeights[rules:{__Rule}, w_] := #1 -> fieldTimes[#2, w]& @@@ rules;
 
 (**************************************************************************************************)
 
-PackageExport["PathFiniteDifference"]
+PackageExport["PathForwardDifference"]
 
-PathFiniteDifference[flow_, target_] :=
-  PathTranslate[PathReverse[flow] - PathTailVector[flow], target];
+PathForwardDifference[flow_, target_] :=
+  PathTranslate[flow - PathTailVector[flow], target];
 
-PathFiniteDifference[v_][t_] := PathFiniteDifference[v, t];
+PathForwardDifference[v_][t_] := PathForwardDifference[v, t];
+
+(**************************************************************************************************)
+
+PackageExport["PathBackwardDifference"]
+
+PathBackwardDifference[flow_, target_] :=
+  PathTranslate[flow - PathTailVector[flow], target];
+
+PathBackwardDifference[v_][t_] := PathBackwardDifference[v, t];
+
+(**************************************************************************************************)
+
+PackageExport["PathDualDifference"]
+
+PathDualDifference[flow_, target_] :=
+  PathTranslate[flow - PathTailVector[flow], target];
+
+PathDualDifference[v_][t_] := PathBackwardDifference[v, t];
+
+
+(**************************************************************************************************)
+
+PackageExport["SymmetricPathFiniteDifference"]
+
+SymmetricPathFiniteDifference[flow_, target_] :=
+  PathTranslate[PathReverse[flow] - flow, target];
+
+SymmetricPathFiniteDifference[v_][t_] := SymmetricPathFiniteDifference[v, t];
 
 (* (**************************************************************************************************)
 

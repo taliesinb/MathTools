@@ -461,6 +461,17 @@ resolveComplexVertexList[spec_] := Which[
 ];
 
 (********************************************)
+(** WeightedData                           **)
+
+PackageExport["Weighted"]
+
+processRegion[Weighted[region_, weight_]] :=
+  GraphRegionAnnotation[
+    If[ListQ[region], processRegion /@ region, processRegion @ region],
+    <|"Weight" -> weight|>
+  ];
+
+(********************************************)
 (** GraphRegionData|GraphPathData[...]     **)
 
 GraphRegionElementQ[GraphRegionData[_List, _List]] := True;
