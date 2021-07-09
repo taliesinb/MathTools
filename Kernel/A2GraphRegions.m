@@ -65,6 +65,41 @@ GraphRegion[graph_, region_] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["GraphPathVertices"]
+
+SetUsage @ "
+GraphPathVertices[graph$, path$] returns the list of vertices specified by path$.
+GraphPathVertices[graph$, {path$1, path$2, $$}] returns a list for each path$i.
+GraphPathVertices[graph$, <|key$1 -> path$1, $$|>] as above.
+* path$ can be region specifications like %Path, %Line, %HalfLine, %InfiniteLine, etc.
+"
+
+GraphPathVertices[garph_, specs_] := Scope @ Catch[
+  graph = CoerceToGraph[1];
+  vertexList = VertexList[graph];
+  GraphScope[graph,
+    If[ListOrAssociationQ[specs],
+      Map[
+        spec |-> toPathVertices[processRegionSpec @ spec, spec],
+        specs
+      ],
+      toPathVertices[processRegionSpec @ specs, specs]
+    ]
+  ]
+,
+  GraphPathVertices
+];
+
+toPathVertices[{GraphPathData[vertices_, _, _]}, _] :=
+  Part[vertexList, vertices];
+
+GraphPathVertices::notpath = "The specification `` is not a valid path."
+
+toPathVertices[_, spec_] :=
+  (Message[GraphPathVertices::notpath, spec]; Throw[$Failed, GraphPathVertices]);
+
+(**************************************************************************************************)
+
 PackageExport["GraphRegionCollection"]
 
 SetUsage @ "
