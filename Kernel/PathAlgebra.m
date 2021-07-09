@@ -873,10 +873,9 @@ enumeratePaths[path_, vertex_, word_, frame_] := Scope[
   rewrites = possibleRewrites[StripNegated /@ Values[frame], vertex];
   Scan[rewrite |-> (
     newFrame = applyRewrite[frame, rewrite];
-    card = If[NegatedQ @ frameCard,
-      Negated @ newFrame @ Negated @ frameCard,
-      newFrame @ frameCard
-    ];
+    card = newFrame @ frameCard;
+    If[MissingQ[card],
+      card = Negated @ newFrame @ Negated @ frameCard];
     If[MissingQ @ StripNegated @ card, Return[]];
     next = Part[tagOutTable, Key @ card, vertex];
     If[next =!= nullVertex,
