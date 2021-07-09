@@ -532,6 +532,12 @@ RangeQ[list_] := VectorQ[list, IntegerQ] && MinMax[list] == {1, Length @ list};
 
 (**************************************************************************************************)
 
+PackageExport["SortedRangeQ"]
+
+SortedRangeQ[list_] := RangeQ[list] && OrderedQ[list];
+
+(**************************************************************************************************)
+
 PackageExport["DropWhile"]
 
 DropWhile[list_, f_] := Drop[list, LengthWhile[list, f]];

@@ -545,6 +545,37 @@ PackageExport["ToIndexGraph"]
 ToIndexGraph[graph_ ? IndexGraphQ] := graph;
 ToIndexGraph[graph_] := IndexGraph @ graph;
 
+
+(**************************************************************************************************)
+
+PackageExport["PermuteVertices"]
+
+SetUsage @ "
+PermuteVertices[graph$] permutes the %VertexList order of vertices in graph$.
+* The option %RandomSeeding controls the pseudorandom permutation.
+"
+
+Options[PermuteVertices] = {RandomSeeding -> Automatic};
+
+PermuteVertices[graph_, OptionsPattern[]] := Scope @ RandomSeeded[
+  indices = RandomSample @ Range @ VertexCount @ graph;
+  scrambler = PartOperator[indices];
+
+  options = Options @ graph;
+  coords = LookupOption[options, VertexCoordinates];
+  If[ListQ[coords], options //= ReplaceOptions[VertexCoordinates -> scrambler[coords]]];
+
+  vertexAnnos = LookupExtendedGraphAnnotations[graph, VertexAnnotations];
+  If[AssociationQ[vertexAnnos], vertexAnnos //= Map[scrambler]];
+
+  result = Graph[scrambler @ VertexList @ graph, EdgeList @ graph, Sequence @@ options];
+  If[AssociationQ[vertexAnnos], result = Annotate[result, VertexAnnotations -> vertexAnnos]];
+
+  result
+,
+  OptionValue[RandomSeeding]
+];
+
 (**************************************************************************************************)
 
 PackageExport["ExpandCardinalSetEdges"]
@@ -1128,7 +1159,7 @@ joinAnnotation[graph_, key_, newAnnotations_] := Scope[
 PackageExport["IndexGraphQ"]
 
 IndexGraphQ[g_Graph ? GraphQ] :=
-  RangeQ @ VertexList @ g;
+  SortedRangeQ @ VertexList @ g;
 
 IndexGraphQ[_] := False;
 

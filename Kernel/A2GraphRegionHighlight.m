@@ -418,19 +418,20 @@ highlightRegion[GraphRegionData[vertices_, {}]] /; $regionStyle === "Highlight" 
   sowVertexPoints @ vertices;
 
 sowVertexPoints[vertices_] := Scope[
-  SetAutomatic[$diskRadius, 5];
-  requirePadding @ $diskRadius;
+  diskRadius = $diskRadius;
+  SetAutomatic[diskRadius, 10];
+  requirePadding @ diskRadius;
   coords = Part[$VertexCoordinates, DeleteDuplicates @ vertices];
   highlights = If[$GraphIs3D,
     Style[
-      Sphere[coords, $diskRadius / $GraphPlotImageWidth * $graphPlotWidth],
+      Sphere[coords, diskRadius / $GraphPlotImageWidth * $graphPlotWidth],
       Directive[Glow[$highlightStyle], GrayLevel[0, 1], Specularity[0]]
     ]
   ,
     Style[
       Point @ coords,
-      PointSize @ $diskRadius, $highlightStyle
-    ];
+      PointSize[diskRadius / $GraphPlotImageWidth], $highlightStyle
+    ]
   ];
   sowHighlight @ highlights
 ];
