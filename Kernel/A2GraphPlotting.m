@@ -871,6 +871,12 @@ extendPaddingToInclude[{{xmin_, xmax_}, {ymin_, ymax_}}] := Scope[
   extendPadding @ plotSizeToImageSize @ extra
 ];
 
+extendPaddingToInclude[{{xmin_, xmax_}, {ymin_, ymax_}, {zmin_, zmax_}}] := Scope[
+  {{pxmin, pxmax}, {pymin, pymax}, {pzmin, pzmax}} = $GraphPlotRange;
+  extra = {{pxmin - xmin, xmax - pxmax}, {pymin - ymin, ymax - pymax}, {pzmin - zmin, zmax - pzmax}};
+  extendPadding @ Max @ plotSizeToImageSize @ extra
+];
+
 (**************************************************************************************************)
 
 PackageExport["CardinalColor"]
@@ -2107,11 +2113,12 @@ textCorners[text:outerText[content_, pos_, align_:{0,0}, ___]] :=
 textCorners[_] := Nothing;
 
 offsetCorners[Offset[p_, _], args__] := offsetCorners[p, args];
-offsetCorners[p_, s_, o_] := Scope[
-  {p1, p2} = p; {s1, s2} = s; {o1, o2} = o;
+offsetCorners[p:{p1_, p2_}, s:{s1_, s2_}, o:{o1_, o2_}] := Scope[
   dx = (-o/2 - 1/2) * s;
   PlusVector[{{0, 0}, {0, s2}, {s1, 0}, {s1, s2}}, p + dx]
 ]
+offsetCorners[p_, _, _] := (* 3D *)
+  {p};
 
 offsetToPadding[o_, s_] := Switch[Sign[o], 1, {s, 0}, 0, {s, s}/2, -1, {0, s}];
 
