@@ -1043,31 +1043,48 @@ PathBackwardDifference[v_][t_] := PathBackwardDifference[v, t];
 
 PackageExport["PathEtaDifference"]
 
-PathEtaDifference[PathVector[flow_], PathVector[target_]] := Scope[
+PathEtaDifference[PathVector[flow_], PathVector[target_]] :=
+  etaEpsilonDifference[flow, target, False];
+
+PathEtaDifference[v_][t_] := PathEtaDifference[v, t];
+
+(**************************************************************************************************)
+
+PackageExport["PathEpsilonDifference"]
+
+PathEpsilonDifference[PathVector[flow_], PathVector[target_]] :=
+  etaEpsilonDifference[flow, target, True];
+
+PathEpsilonDifference[v_][t_] := PathEpsilonDifference[v, t];
+
+(**************************************************************************************************)
+
+etaEpsilonDifference[flow_, target_, isEps_] := Scope[
   UnpackPathAlgebra[nullVertex, tagOutTable, vertexTags, vertexRewrites, pairTagLists];
   targets = target;
   {targetPaths, targetWeights} = KeysValues @ Normal @ target;
   tailIndex = PositionIndex @ PathTailVertex @ targetPaths;
-  (* headIndex = PositionIndex @ PathHeadVertex @ targetPaths; *)
-  PathVector @ DeleteCases[0|0.] @ MapIndexed[etaDerivativeElement, flow]
+  If[isEps, headIndex = PositionIndex @ PathHeadVertex @ targetPaths];
+  $isEps = isEps;
+  PathVector @ DeleteCases[0|0.] @ MapIndexed[etaEpsilonElementDifference, flow]
 ];
 
-etaDerivativeElement[w_, {Key[tpath_PathElement]}] := Scope[
+etaEpsilonElementDifference[w_, {Key[tpath_PathElement]}] := Scope[
   rpath = PathReverse @ tpath;
   tail = PathTailVertex @ tpath;
   head = PathHeadVertex @ tpath;
   tailTargets = Lookup[tailIndex, tail, {}];
-  headTargets = Lookup[tailIndex, head, {}];
+  headTargets = Lookup[If[$isEps, headIndex, tailIndex], head, {}];
   If[headTargets === {} && tailTargets === {}, Return @ 0];
   forwardTranslated = Flatten @ Map[elementTranslate[tpath, #]&, Part[targetPaths, tailTargets]];
+  elementTranslate2 = If[$isEps, elementTranslateBack, elementTranslate];
   reverseTranslated = Flatten @ Map[elementTranslate[rpath, #]&, Part[targetPaths, headTargets]];
   {fWeight, bWeight} = Total @ Lookup[targets, #, 0]& /@ {forwardTranslated, reverseTranslated};
   {hWeight, tWeight} = Total @ Part[targetWeights, #]& /@ {headTargets, tailTargets};
   w * ((fWeight - tWeight) - (bWeight - hWeight))
 ]
 
-PathEtaDifference[v_][t_] := PathEtaDifference[v, t];
-
+elementTranslateBack[p_, q_] := PathReverse @ elementTranslate[p, PathReverse @ q];
 
 (**************************************************************************************************)
 
