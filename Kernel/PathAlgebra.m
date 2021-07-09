@@ -1064,7 +1064,7 @@ etaEpsilonDifference[flow_, target_, isEps_] := Scope[
   targets = target;
   {targetPaths, targetWeights} = KeysValues @ Normal @ target;
   tailIndex = PositionIndex @ PathTailVertex @ targetPaths;
-  If[isEps, headIndex = PositionIndex @ PathHeadVertex @ targetPaths];
+  headIndex = If[!isEps, tailIndex, PositionIndex @ PathHeadVertex @ targetPaths];
   $isEps = isEps;
   PathVector @ DeleteCases[0|0.] @ MapIndexed[etaEpsilonElementDifference, flow]
 ];
@@ -1074,11 +1074,11 @@ etaEpsilonElementDifference[w_, {Key[tpath_PathElement]}] := Scope[
   tail = PathTailVertex @ tpath;
   head = PathHeadVertex @ tpath;
   tailTargets = Lookup[tailIndex, tail, {}];
-  headTargets = Lookup[If[$isEps, headIndex, tailIndex], head, {}];
+  headTargets = Lookup[headIndex, head, {}];
   If[headTargets === {} && tailTargets === {}, Return @ 0];
   forwardTranslated = Flatten @ Map[elementTranslate[tpath, #]&, Part[targetPaths, tailTargets]];
   elementTranslate2 = If[$isEps, elementTranslateBack, elementTranslate];
-  reverseTranslated = Flatten @ Map[elementTranslate[rpath, #]&, Part[targetPaths, headTargets]];
+  reverseTranslated = Flatten @ Map[elementTranslate2[rpath, #]&, Part[targetPaths, headTargets]];
   {fWeight, bWeight} = Total @ Lookup[targets, #, 0]& /@ {forwardTranslated, reverseTranslated};
   {hWeight, tWeight} = Total @ Part[targetWeights, #]& /@ {headTargets, tailTargets};
   w * ((fWeight - tWeight) - (bWeight - hWeight))
