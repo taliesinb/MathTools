@@ -4,6 +4,15 @@ Tau = 2 * Pi;
 
 (**************************************************************************************************)
 
+PackageExport["RandomSeeded"]
+
+SetHoldFirst[RandomSeeded];
+
+RandomSeeded[body_, Automatic] := body;
+RandomSeeded[body_, other_] := BlockRandom[body, RandomSeeding -> other];
+
+(**************************************************************************************************)
+
 (* this takes the place of MatchValues in GU *)
 
 PackageExport["Case"]

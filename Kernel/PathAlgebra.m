@@ -339,7 +339,10 @@ PackageExport["PathHeadVertex"]
 PackageExport["PathTailVertex"]
 
 PathTailVertex[PathElement[list_List]] := First @ list;
+PathTailVertex[list_List] := Part[list, All, 1, 1];
+
 PathHeadVertex[PathElement[list_List]] := Last @ list;
+PathHeadVertex[list_List] := Part[list, All, 1, -1];
 
 (**************************************************************************************************)
 
@@ -482,6 +485,18 @@ complexRotatePath[PathElement[pair:{_, _}], w_] := (
 
 (**************************************************************************************************)
 
+PackageExport["PathVectorComponents"]
+
+PathVectorComponents[PathVector[assoc_]] :=
+  PathVector @ Association[#]& /@ Normal[assoc]
+
+PackageExport["PathVectorComponents"]
+
+PathVectorComponents[PathVector[assoc_], parts_] :=
+  PathVector @ Association @ Part[Normal[assoc], parts];
+
+(**************************************************************************************************)
+
 PackageExport["ReversalSymmetryDecompose"]
 
 SetUsage @ "
@@ -617,7 +632,6 @@ VertexField[ints:{__Integer} | _Integer] /; $PathAlgebraQ := Scope[
   PathVector @ Association @ Map[i |-> PathElement[{Abs @ i}] -> If[Positive[i], pos, neg], ToList @ ints]
 ]
 
-
 (**************************************************************************************************)
 
 PackageExport["RandomVertexField"]
@@ -629,9 +643,12 @@ RandomVertexField[] constructs a random vertex field, containing every empty pat
 * For infinite fields, the range [-2, 2] is used.
 "
 
-RandomVertexField[] /; $PathAlgebraQ := Scope[
+Options[RandomVertexField] = {RandomSeeding -> Automatic};
+
+RandomVertexField[OptionsPattern[]] /; $PathAlgebraQ := Scope @ RandomSeeded[
   UnpackPathAlgebra[vertexList, randomFieldElement];
-  constructPathVector @ Map[v |-> PathElement[{v}] -> randomFieldElement[], vertexList]
+  constructPathVector @ Map[v |-> PathElement[{v}] -> randomFieldElement[], vertexList],
+  OptionValue[RandomSeeding]
 ];
 
 (**************************************************************************************************)
@@ -649,7 +666,9 @@ RandomEdgeField['type$'] chooses only specific orientations of length-1 paths.
 
 declareFunctionAutocomplete[RandomEdgeField, {$directionStrings}];
 
-RandomEdgeField[type_:"Symmetric"] /; $PathAlgebraQ := Scope[
+Options[RandomEdgeField] = {RandomSeeding -> Automatic};
+
+RandomEdgeField[type_String:"Symmetric", OptionsPattern[]] /; $PathAlgebraQ := Scope @ RandomSeeded[
   UnpackPathAlgebra[edgePairs, randomFieldElement];
   forward = edgePairs;
   reverse := Reverse[edgePairs, 2];
@@ -658,7 +677,8 @@ RandomEdgeField[type_:"Symmetric"] /; $PathAlgebraQ := Scope[
     "Reverse", reverse,
     "Symmetric" | "Antisymmetric", Join[forward, reverse]
   ];
-  constructPathVector @ Map[elem |-> elem -> randomFieldElement[], pairs]
+  constructPathVector @ Map[elem |-> elem -> randomFieldElement[], pairs],
+  OptionValue[RandomSeeding]
 ];
 
 (**************************************************************************************************)
@@ -676,11 +696,13 @@ RandomPathField[{n$min, n$max}] chooses paths to have length n$, where n$min \[L
 * RandomPathField[spec$] is equivalent to RandomPathVector[1, spec$].
 "
 
-RandomPathField[] :=
-  RandomPathVector[1];
+Options[RandomPathField] = {RandomSeeding -> Automatic};
 
-RandomPathField[range:{_Integer ? NonNegative, _Integer ? NonNegative} | (_Integer ? NonNegative)] :=
-  RandomPathVector[1, range];
+RandomPathField[opts:OptionsPattern[]] :=
+  RandomPathVector[1, opts];
+
+RandomPathField[range:{_Integer ? NonNegative, _Integer ? NonNegative} | (_Integer ? NonNegative), opts:OptionsPattern[]] :=
+  RandomPathVector[1, range, opts];
 
 (**************************************************************************************************)
 
@@ -724,12 +746,15 @@ RandomPathVector[m$, {n$min, n$max}] chooses paths to have length n$, where n$mi
 * RandomPathVector[1, spec$] is equivalent to RandomPathField[spec$].
 "
 
-RandomPathVector[m_Integer] :=
-  RandomPathVector[m, {0, 2}];
+Options[RandomPathVector] = {RandomSeeding -> Automatic};
 
-RandomPathVector[m_Integer, range_Integer] := RandomPathVector[m, {range, range}];
+RandomPathVector[m_Integer, opts:OptionsPattern[]] :=
+  RandomPathVector[m, {0, 2}, opts];
 
-RandomPathVector[m_Integer, range:{_Integer ? NonNegative, _Integer ? NonNegative}] := Scope[
+RandomPathVector[m_Integer, range_Integer, opts:OptionsPattern[]] :=
+  RandomPathVector[m, {range, range}, opts];
+
+RandomPathVector[m_Integer, range:{_Integer ? NonNegative, _Integer ? NonNegative}, OptionsPattern[]] := Scope @ RandomSeeded[
   UnpackPathAlgebra[vertexList, adjacencyTable, randomFieldElement];
   constructPathVector @ Map[
     v |-> Table[
@@ -739,7 +764,8 @@ RandomPathVector[m_Integer, range:{_Integer ? NonNegative, _Integer ? NonNegativ
         {m}
       ],
     vertexList
-  ]
+  ],
+  OptionValue[RandomSeeding]
 ];
 
 chooseNext[v_] := RandomChoice @ Part[adjacencyTable, v]
@@ -1016,12 +1042,32 @@ PathBackwardDifference[v_][t_] := PathBackwardDifference[v, t];
 
 (**************************************************************************************************)
 
-PackageExport["PathDualDifference"]
+PackageExport["PathEtaDifference"]
 
-PathDualDifference[flow_, target_] :=
-  PathTranslate[flow - PathTailVector[flow], target];
+PathEtaDifference[PathVector[flow_], PathVector[target_]] := Scope[
+  UnpackPathAlgebra[nullVertex, tagOutTable, vertexTags, vertexRewrites, pairTagLists];
+  targets = target;
+  {targetPaths, targetWeights} = KeysValues @ Normal @ target;
+  tailIndex = PositionIndex @ PathTailVertex @ targetPaths;
+  (* headIndex = PositionIndex @ PathHeadVertex @ targetPaths; *)
+  PathVector @ DeleteCases[0|0.] @ MapIndexed[etaDerivativeElement, flow]
+];
 
-PathDualDifference[v_][t_] := PathBackwardDifference[v, t];
+etaDerivativeElement[w_, {Key[tpath_PathElement]}] := Scope[
+  rpath = PathReverse @ tpath;
+  tail = PathTailVertex @ tpath;
+  head = PathHeadVertex @ tpath;
+  tailTargets = Lookup[tailIndex, tail, {}];
+  headTargets = Lookup[tailIndex, head, {}];
+  If[headTargets === {} && tailTargets === {}, Return @ 0];
+  forwardTranslated = Flatten @ Map[elementTranslate[tpath, #]&, Part[targetPaths, tailTargets]];
+  reverseTranslated = Flatten @ Map[elementTranslate[rpath, #]&, Part[targetPaths, headTargets]];
+  {fWeight, bWeight} = Total @ Lookup[targets, #, 0]& /@ {forwardTranslated, reverseTranslated};
+  {hWeight, tWeight} = Total @ Part[targetWeights, #]& /@ {headTargets, tailTargets};
+  w * ((fWeight - tWeight) - (bWeight - hWeight))
+]
+
+PathEtaDifference[v_][t_] := PathEtaDifference[v, t];
 
 
 (**************************************************************************************************)
