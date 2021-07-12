@@ -292,6 +292,30 @@ cubeFactory[<|"n" -> n_, "MaxDepth" -> _|>, userOpts_] := Scope[
 
 (**************************************************************************************************)
 
+DefineParameterizedLatticeQuiver["CubeAtlas", cubeAtlasFactory, <|"MaxDepth" -> Infinity|>]
+
+cubeAtlasFactory[assoc_, userOpts_] := Scope[
+
+  {a, b, c} = Lookup[userOpts, Cardinals, {"a", "b", "c"}];
+
+  cab = ChartSymbol[a <> b];
+  cbc = ChartSymbol[b <> c];
+  cac = ChartSymbol[a <> c];
+
+  transitions = {
+    Annotation[DirectedEdge[cab, cbc, b], "CardinalTransitions" -> {a -> c}],
+    Annotation[DirectedEdge[cbc, cab, b], "CardinalTransitions" -> {c -> Negated @ a}],
+    Annotation[DirectedEdge[cbc, cac, c], "CardinalTransitions" -> {b -> a}],
+    Annotation[DirectedEdge[cac, cbc, c], "CardinalTransitions" -> {a -> Negated @ b}],
+    Annotation[DirectedEdge[cab, cac, a], "CardinalTransitions" -> {b -> Negated @ c}],
+    Annotation[DirectedEdge[cac, cab, a], "CardinalTransitions" -> {c -> b}]
+  };
+
+  atlasQuiver[{cab, cbc, cac}, transitions, Sequence @@ DeleteOptions[Normal @ userOpts, Cardinals]]
+];
+
+(**************************************************************************************************)
+
 DefineParameterizedLatticeQuiver["PositiveSquareLatticeDisclination", positiveSquareLatticeDisclinationFactory, <|"RemoveCorner" -> False, "MaxDepth" -> Infinity|>]
 
 positiveSquareLatticeDisclinationFactory[assoc_, userOpts_] := Scope[
@@ -308,4 +332,35 @@ positiveSquareLatticeDisclinationFactory[assoc_, userOpts_] := Scope[
   ];
   If[removeCorner, graph = VertexDelete[graph, 1]];
   graph
+];
+
+(**************************************************************************************************)
+
+DefineParameterizedLatticeQuiver["PositiveSquareLatticeDisclinationAtlas", positiveSquareLatticeDisclinationAtlasFactory, <|"MaxDepth" -> Infinity|>]
+
+positiveSquareLatticeDisclinationAtlasFactory[assoc_, userOpts_] := Scope[
+
+  {a, b, c} = Lookup[userOpts, Cardinals, {"a", "b", "c"}];
+
+  cab = ChartSymbol[a <> b];
+  cbc = ChartSymbol[b <> c];
+  cac = ChartSymbol[a <> c];
+
+  transitions = {
+    Annotation[DirectedEdge[cab, cbc, b], "CardinalTransitions" -> {a -> c}],
+    Annotation[DirectedEdge[cbc, cac, c], "CardinalTransitions" -> {b -> a}],
+    Annotation[DirectedEdge[cac, cab, a], "CardinalTransitions" -> {c -> Negated[b]}]
+  };
+
+  atlasQuiver[{cab, cbc, cac}, transitions, VertexCoordinates -> Part[CirclePoints[3], {3,2,1}],
+    Sequence @@ DeleteOptions[Normal @ userOpts, Cardinals]]
+];
+
+(**************************************************************************************************)
+
+atlasQuiver[charts_, transitions_, opts___Rule] := Quiver[
+  charts, transitions, opts,
+  EdgeLabels -> ("CardinalTransitions" -> CardinalTransition),
+  EdgeLabelStyle -> {LabelPosition -> Scaled[0.5]}, AdditionalImagePadding->5,
+  ArrowheadPosition -> 0.8, ArrowheadShape -> "Line", ImageSize -> 120
 ];

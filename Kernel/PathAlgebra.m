@@ -102,10 +102,12 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   ct = Lookup[LookupAnnotation[quiver, EdgeAnnotations, <||>], "CardinalTransitions", <||>];
   data["CardinalTransitions"] = Join[ct, KeyMap[Negated] @ Map[Reverse[#, 2]&, ct]];
 
+  pairs = EdgePairs @ quiver;
   tailVertices = Part[pairs, All, 1];
   headVertices = Part[pairs, All, 2];
   tailAssoc = AssociationThread[edgeRange, tailVertices];
   headAssoc = AssociationThread[edgeRange, headVertices];
+
   data["EdgeToTail"] = Join[tailAssoc, KeyMap[Negated, headAssoc]];
   data["EdgeToHead"] = Join[headAssoc, KeyMap[Negated, tailAssoc]];
 
