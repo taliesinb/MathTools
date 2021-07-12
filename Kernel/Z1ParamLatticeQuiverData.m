@@ -358,9 +358,44 @@ positiveSquareLatticeDisclinationAtlasFactory[assoc_, userOpts_] := Scope[
 
 (**************************************************************************************************)
 
+$tetraCoords3D = {
+  {0, 0, Sqrt[2/3] - 1/(2*Sqrt[6])},
+  {-1/2*1/Sqrt[3], -1/2, -1/2*1/Sqrt[6]},
+  {-1/2*1/Sqrt[3], 1/2, -1/2*1/Sqrt[6]},
+  {1/Sqrt[3], 0, -1/2*1/Sqrt[6]}
+};
+
+$tetraCoords2D = Append[CirclePoints[3], {0, 0}];
+
+DefineParameterizedLatticeQuiver["Tetrahedron", tetrahedronFactory, <|"MaxDepth" -> Infinity|>]
+
+tetrahedronFactory[assoc_, userOpts_] := Scope[
+
+  {a, b, c, d} = Lookup[userOpts, Cardinals, {"a", "b", "c", "d"}];
+  layoutDim = Lookup[userOpts, LayoutDimension, 3];
+
+  edges = <|
+    a -> {1 -> 2, 2 -> 3, 3 -> 1},
+    b -> {1 -> 2, 2 -> 4, 4 -> 1},
+    c -> {1 -> 4, 4 -> 3, 3 -> 1},
+    d -> {2 -> 4, 4 -> 3, 3 -> 2}
+  |>;
+
+  Quiver[
+    {1, 2, 3, 4}, edges,
+    Sequence @@ DeleteOptions[Normal @ userOpts, Cardinals],
+    VertexCoordinates -> If[layoutDim === 2, $tetraCoords2D, $tetraCoords3D],
+    GraphLayout -> {"MultiEdgeDistance" -> 0.1}, ArrowheadShape -> If[layoutDim === 2, "Line", "Cone"]
+  ]
+];
+
+(**************************************************************************************************)
+
 atlasQuiver[charts_, transitions_, opts___Rule] := Quiver[
   charts, transitions, opts,
   EdgeLabels -> ("CardinalTransitions" -> CardinalTransition),
   EdgeLabelStyle -> {LabelPosition -> Scaled[0.5]}, AdditionalImagePadding->5,
   ArrowheadPosition -> 0.8, ArrowheadShape -> "Line", ImageSize -> 120
 ];
+
+
