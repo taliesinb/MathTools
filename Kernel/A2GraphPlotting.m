@@ -424,8 +424,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     {arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, visibleCardinals, edgeSetback, edgeThickness, labelCardinals, viewOptions, additionalImagePadding, aspectRatioClipping} =
       LookupExtendedGraphAnnotations[graph, {ArrowheadShape, ArrowheadStyle, ArrowheadSize, ArrowheadPosition, VisibleCardinals, EdgeSetback, EdgeThickness, LabelCardinals, ViewOptions, AdditionalImagePadding, AspectRatioClipping}];
 
-    {graphLegend, vertexColorFunction, vertexAnnotations, edgeColorFunction, colorRules} =
-      LookupExtendedGraphAnnotations[graph, {GraphLegend, VertexColorFunction, VertexAnnotations, EdgeColorFunction, ColorRules}];
+    {graphLegend, vertexColorFunction, vertexAnnotations, edgeAnnotations, edgeColorFunction, colorRules} =
+      LookupExtendedGraphAnnotations[graph, {GraphLegend, VertexColorFunction, VertexAnnotations, EdgeAnnotations, EdgeColorFunction, ColorRules}];
   ];
 
   (* initial processing of global options *)
@@ -434,6 +434,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[!AssociationQ[cardinalColors], failPlot["badcolors"]];
 
     SetNone[vertexAnnotations, <||>];
+    SetNone[edgeAnnotations, <||>];
     SetNone[epilog, {}];
     SetNone[prolog, {}];
 
@@ -636,7 +637,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       SetAutomatic[arrowheadSize, 0];
       {edgeLabelItems, zorder} = generateLabelPrimitives[
         edgeLabels, $EdgeList, edgeCenters, $EdgeParts,
-        Max[arrowheadSize] * $GraphPlotSizeX, edgeLabelStyle, <||>, False
+        Max[arrowheadSize] * $GraphPlotSizeX, edgeLabelStyle, edgeAnnotations, False
       ];
       Which[
         zorder == 0, AppendTo[labelGraphics, edgeLabelItems],
@@ -2202,6 +2203,8 @@ setLabelStyleGlobals = Case[
   {NQ -> NumericQ}
 ];
 
+$keyP = _String | _Association | (_List ? (SameLengthQ[$labelNames]));
+
 processLabelSpec = Case[
   None                          := None;
   Automatic | All               := %["Name"];
@@ -2211,12 +2214,14 @@ processLabelSpec = Case[
   Placed[p:$payloadP, Tooltip]  := {toPayloadFunction @ p, placeTooltipAt};
 
   other_ :=                     failPlot["badlabelspec", other];
-  {$payloadP -> _String | _Association | (_List ? (SameLengthQ[$labelNames]))}
+  {$payloadP -> $keyP | Rule[$keyP, _]}
 ];
 
 ExtendedGraphPlot::badlabelspec = "The label specification `` was not one of the recognized forms."
 
 ExtendedGraphPlot::badgraphannokey = "The requested annotation `` is not present in the graph. Present annotations are: ``."
+
+ExtendedGraphPlot::msglabelfn = "The label function specification generated messages."
 
 toPayloadFunction = Case[
   "Name"                := getName;
@@ -2225,12 +2230,17 @@ toPayloadFunction = Case[
   assoc_Association     := lookupPayloadInAssoc[assoc];
   list_List ? (SameLengthQ[$labelNames])
                         := Part[list, #]&;
-
+  key_ -> f_            := %[key] /* postProcF[toFunc @ f];
   key_ := If[MemberQ[$annotationKeys, key],
     getAnnotation[key],
     failPlot["badgraphannokey", key, commaString @ $annotationKeys]
   ]
 ];
+
+postProcF[f_][e_] := Replace[
+    Quiet @ Check[f @ e, $Failed],
+    $Failed :> failPlot["msglabelfn"]
+  ];
 
 myCompactMatrixForm[vec_] :=
   CompactMatrixForm[vec, "Factor" -> False];

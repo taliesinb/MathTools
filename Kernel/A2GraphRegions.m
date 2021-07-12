@@ -579,15 +579,22 @@ ParseCardinalWord[path_String] /; StringLength[path] > 1 := Scope[
   Map[
     If[StringMatchQ[#, _ ~~ "'"], Negated @ StringTake[#, 1], parseCard @ #]&,
     StringSplit[str]
-  ] // checkCardinals
+  ] // deleteBacktracking // checkCardinals
 ];
+
+deleteBacktracking[e_] := e //. $backtrackingRules;
+
+$backtrackingRules = Dispatch @ {
+  {l___, i_, Negated[i_], r___} :> {l, r},
+  {l___, Negated[i_], i_, r___} :> {l, r}
+};
 
 parseCard[Negated[s_]] := Negated @ parseCard[s];
 parseCard[s_String] := If[UpperCaseQ[s] && !(ListQ[$Cardinals] && MemberQ[$Cardinals, s]), Negated @ ToLowerCase @ s, s];
 
 ParseCardinalWord[elem_] := checkCardinals @ List @ parseCard @ elem;
 
-ParseCardinalWord[list_List] := checkCardinals @ list;
+ParseCardinalWord[list_List] := checkCardinals @ deleteBacktracking @ list;
 
 GraphRegion::badcardinals = "The region ``[...] includes a path `` with invalid cardinals."
 checkCardinals[list_List] :=

@@ -46,7 +46,7 @@ PathAlgebra[spec$] uses %Integers as the field.
 
 Options[PathAlgebra] = {
   PlotRange -> Automatic,
-  EdgeSetback -> 0.15,
+  EdgeSetback -> 0.25,
   ImageSize -> 100
 };
 
@@ -70,7 +70,10 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   {vertexCoords, edgeCoords} = ExtractGraphPrimitiveCoordinates @ quiver;
 
   data["Quiver"] = quiver;
+  data["VertexList"] = VertexList @ quiver;
+
   data["VertexCoordinates"] = vertexCoords;
+  data["EdgeCoordinateLists"] = edgeCoords;
   data["EdgeCoordinates"] = edgeCoords;
   data["PlotRange"] = Replace[plotRange, Automatic :> CoordinateBounds[vertexCoords]];
   data["EdgeSetback"] = edgeSetback;
@@ -90,51 +93,39 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
     $complexColorFunction
   ];
 
-  data["VertexCount"] = count = VertexCount @ quiver;
-  data["VertexList"] = VertexRange @ quiver;
+  data["VertexCount"] = vertexCount = VertexCount @ quiver;
+  data["EdgeCount"] = edgeCount = EdgeCount @ quiver;
+  data["VertexRange"] = Range @ vertexCount;
+  data["EdgeRange"] = edgeRange = Range @ edgeCount;
   data["Cardinals"] = CardinalList @ quiver;
-  data["EdgePairs"] = pairs = EdgePairs @ quiver;
-  data["EdgePairIndex"] = Join[AssociationRange @ pairs, -AssociationRange[Reverse[pairs, 2]]];
 
-  data["NullVertex"] = dummy = count + 1;
-  tagOutTable = Append[dummy] /@ ReplaceAll[TagVertexOutTable @ quiver, None -> dummy];
+  ct = Lookup[LookupAnnotation[quiver, EdgeAnnotations, <||>], "CardinalTransitions", <||>];
+  data["CardinalTransitions"] = Join[ct, KeyMap[Negated] @ Map[Reverse[#, 2]&, ct]];
+
+  tailVertices = Part[pairs, All, 1];
+  headVertices = Part[pairs, All, 2];
+  tailAssoc = AssociationThread[edgeRange, tailVertices];
+  headAssoc = AssociationThread[edgeRange, headVertices];
+  data["EdgeToTail"] = Join[tailAssoc, KeyMap[Negated, headAssoc]];
+  data["EdgeToHead"] = Join[headAssoc, KeyMap[Negated, tailAssoc]];
+
+  data["NullVertex"] = nullVertex = vertexCount + 1;
+  tagOutTable = Append[nullVertex] /@ TagVertexOutTable[quiver, nullVertex];
   data["TagOutTable"] = tagOutTable;
-  data["AdjacencyTable"] = VertexAdjacencyTable @ quiver;
-  data["VertexTags"] = VertexTagTable @ quiver;
-  data["EdgeTags"] = edgeTags = EdgeTags @ quiver;
-  data["InOutEdges"] = VertexInOutEdgeTable @ quiver;
-  data["VertexRewrites"] = calculateVertexRewrites[data];
 
-  tagLists = Replace[edgeTags, {CardinalSet[c_] :> c, c_ :> {c}}, {1}];
-  data["EdgeTagLists"] = tagLists;
-  data["PairTagLists"] = AssociationThread[
-    Join[pairs, Reverse[pairs, 2]],
-    Join[tagLists, Map[Negated, tagLists, {2}]]
-  ];
+  data["NullEdge"] = nullEdge = edgeCount + 1;
+  tagOutEdgeTable = Append[nullEdge] /@ TagVertexAdjacentEdgeTable[quiver, nullEdge, Signed -> True];
+  data["TagOutEdgeTable"] = tagOutEdgeTable;
+
+  data["OutEdgeTable"] = VertexAdjacentEdgeTable[quiver, Signed -> True];
+
+  data["VertexTags"] = VertexTagTable @ quiver;
+
+  edgeTags = EdgeTags @ quiver;
+  edgeToCard = AssociationThread[edgeRange, edgeTags];
+  data["EdgeToCardinal"] = Join[edgeToCard, KeyMap[Negated] @ Map[Negated] @ edgeToCard];
 
   System`Private`ConstructNoEntry[PathAlgebra, data]
-];
-
-calculateVertexRewrites[algebra_] := Scope[
-  inOutEdges = algebra["InOutEdges"];
-  edgeTags = algebra["EdgeTags"];
-  vertexCardinalClasses = Apply[
-    {inEdges, outEdges} |-> Join[
-      Cases[Part[edgeTags, inEdges], CardinalSet[s_] :> Map[Negated, s]],
-      Cases[Part[edgeTags, outEdges], CardinalSet[s_] :> s]
-    ],
-    inOutEdges, {1}
-  ];
-  Map[
-    classes |-> Flatten @ Map[
-      class |-> Outer[
-        If[#1 =!= #2, If[NegatedQ[#1], Negated[#1] -> Negated[#2], #1 -> #2], {}]&,
-        class, class, 1
-      ],
-      classes
-    ],
-    vertexCardinalClasses
-  ]
 ];
 
 $complexColorFunction = ComplexHue;
@@ -211,6 +202,15 @@ constructPathVector[assoc_Association] :=
 
 (**************************************************************************************************)
 
+PackageExport["PathVectorElements"]
+
+SetUsage @ "PathVectorElements[path$] returns the %PathElements present in a %PathVector.
+"
+
+PathVectorElements[PathVector[assoc_]] := Keys @ assoc;
+
+(**************************************************************************************************)
+
 PackageExport["PathVectorQ"]
 
 SetUsage @ "
@@ -238,14 +238,14 @@ declareFormatting[
     formatPathVector[pv]
 ];
 
-notBothwaysQ[PathVector[assoc_]] := Scope[
-  edges = Part[Keys @ assoc, All, 1];
-  DuplicateFreeQ @ Join[edges, Reverse[edges, 2]]
+notOverlappingPathsQ[PathVector[assoc_]] := Scope[
+  edges = Part[Keys @ assoc, All, 2];
+  DuplicateFreeQ @ Flatten[edges, 1]
 ]
 
 notBothwaysQ[_] := False;
 
-formatPathVector[pv_] := If[VertexFieldQ[pv] || (EdgeFieldQ[pv] && notBothwaysQ[pv]),
+formatPathVector[pv_] := If[notOverlappingPathsQ[pv],
   iFormatPathVector[pv, False],
   Mouseover[
     iFormatPathVector[pv, False],
@@ -254,7 +254,10 @@ formatPathVector[pv_] := If[VertexFieldQ[pv] || (EdgeFieldQ[pv] && notBothwaysQ[
 ]
 
 iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
-  UnpackPathAlgebra[vertexCoordinates, plotRange, fieldColorFunction, vertexList, edgeSetback, imageSize];
+  UnpackPathAlgebra[
+    vertexCoordinates, edgeCoordinateLists, plotRange, fieldColorFunction,
+    vertexRange, vertexList, edgeSetback, imageSize, edgeToCardinal
+  ];
   $sb = edgeSetback; $transparency = transparency;
   pathPrimitives = drawWeightedElement @@@ SortBy[
     Normal @ paths,
@@ -264,8 +267,8 @@ iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
     AbsolutePointSize[4], AbsoluteThickness[1.5],
     pathPrimitives
   };
-  initialPathVertices = Keys[paths][[All, 1, 1]];
-  remainingVertices = Complement[vertexList, initialPathVertices];
+  initialPathVertices = Keys[paths][[All, 1]];
+  remainingVertices = Complement[vertexRange, initialPathVertices];
   vertexPrimitives = {
     AbsolutePointSize[3], $LightGray,
     Point @ Part[vertexCoordinates, remainingVertices]
@@ -279,51 +282,50 @@ iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
   ]
 ];
 
-drawWeightedElement[PathElement[element_], weight_] :=
-  drawStyledPath[
-    Part[vertexCoordinates, element],
-    fieldColorFunction @ weight
+pathElementForm[PathElement[t_, e_, h_]] :=
+  PathWordForm[
+    Part[vertexList, t],
+    Lookup[edgeToCardinal, e],
+    Part[vertexList, h]
   ];
 
-drawStyledPath[vertices_, style_] /; $transparency :=
-  drawSingleMouseverStyledPath[vertices, style];
+drawWeightedElement[p:PathElement[t_, e_, h_], weight_] :=
+  drawStyledPath[
+    If[e === {},
+      Part[vertexCoordinates, List @ t],
+      getEdgeCoords[e]
+    ],
+    fieldColorFunction @ weight
+  ] ~NiceTooltip~ pathElementForm[p];
 
-drawSingleMouseverStyledPath[vertices_, style_] :=
+getEdgeCoords[e_] := Scope[
+  coords = Part[edgeCoordinateLists, StripNegated /@ e];
+  orientedCoords = MapAt[Reverse, coords, List /@ SelectIndices[e, NegatedQ]];
+  Flatten[orientedCoords, 1] //. {l___, a_, a_, r___} :> {l, a, r}
+];
+
+
+drawStyledPath[vertices_, style_] /; $transparency :=
   Mouseover[
     drawSingleStyledPath[vertices, Opacity[.25, style]],
     drawSingleStyledPath[vertices, style]
   ];
 
+drawStyledPath[vertices_, style_] :=
+  drawSingleStyledPath[vertices, style]
+
+drawSingleStyledPath[{vertices_}, style_] :=
+  Style[Point @ vertices, style];
+
 drawSingleStyledPath[vertices_, style_] :=
   Style[
-    drawSinglePathPrimitives @ vertices, style,
-    Arrowheads[{{.13, 1, ArrowheadData["Line", style]}}]
-  ]
-
-drawSinglePathPrimitives[vertices_] := {
-  Point @ Part[vertices, 1],
-  myArrow[processPathSegments @ vertices]
-};
-
-drawStyledPath[vertices_, style_] :=
-  Style[
-    drawSinglePathPrimitives @ vertices, style,
+    {Point @ Part[vertices, 1], myArrow @ SetbackCoordinates[vertices, {0, $sb}]}, style,
     Arrowheads[{{.13, 1, ArrowheadData["Line", style]}}]
   ]
 
 myArrow[{}] = Nothing;
 myArrow[Nothing] = Nothing;
 myArrow[e_] := Arrow[e];
-
-processPathSegments[{_}] := Nothing;
-processPathSegments[list:{_, _}] := SetbackCoordinates[list, {0, $sb}];
-processPathSegments[list_] := Scope[$sa = 0; processPathSegment @@@ Partition[list, 3, 1]];
-
-processPathSegment[a_, b_, c_] := Scope[
-  ab = SetbackCoordinates[{a, b}, {$sa, $sb}]; $sa ^= $sb;
-  bc = SetbackCoordinates[{b, c}, {$sa, $sb}];
-  Splice @ Join[ab, bc]
-];
 
 fieldColors = MatchValues[
   2 := {$Gray, $DarkGray};
@@ -338,23 +340,23 @@ fieldColors = MatchValues[
 PackageExport["PathHeadVertex"]
 PackageExport["PathTailVertex"]
 
-PathTailVertex[PathElement[list_List]] := First @ list;
-PathTailVertex[list_List] := Part[list, All, 1, 1];
+PathTailVertex[p_PathElement] := Part[p, 1];
+PathTailVertex[list_List] := Part[list, All, 1];
 
-PathHeadVertex[PathElement[list_List]] := Last @ list;
-PathHeadVertex[list_List] := Part[list, All, 1, -1];
+PathHeadVertex[p_PathElement] := Part[p, 3];
+PathHeadVertex[list_List] := Part[list, All, 3];
 
 (**************************************************************************************************)
 
 PackageExport["PathHeadVector"]
 PackageExport["PathTailVector"]
 
-PathHeadVector[PathElement[list_List]] := PathElement @ Take[list, -1];
+PathHeadVector[PathElement[_, _, h_]] := PathElement[h, {}, h];
 
 PathHeadVector[PathVector[assoc_]] :=
   rulesToPathVector @ MapAt[PathHeadVector, Normal @ assoc, {All, 1}];
 
-PathTailVector[PathElement[list_List]] := PathElement @ Take[list, 1];
+PathTailVector[PathElement[t_, _, _]] := PathElement[t, {}, t];
 
 PathTailVector[PathVector[assoc_]] :=
   rulesToPathVector @ MapAt[PathTailVector, Normal @ assoc, {All, 1}];
@@ -380,31 +382,33 @@ PackageExport["PathCompose"]
 
 (* defined on vectors by bilinearity *)
 
-PathCompose[a_PathVector, b_PathVector] /; $PathAlgebraQ :=
-  BilinearApply[PathCompose, a -> PathHeadVertex, b -> PathTailVertex];
+PathCompose[a_PathVector, b_PathVector] :=
+  BilinearApply[elementCompose, a -> PathHeadVertex, b -> PathTailVertex];
 
 (* defined on elements *)
 
-PathCompose[PathElement[a_], PathElement[b_]] :=
-  If[Last[a] === First[b], compose[a, b], NullPath];
-
-$cancelRules = Dispatch @ {
-  {l___, i_, j_, i_, r___} :> {l, i, r}
-};
-
-compose[a_, b_] := PathElement[Join[a, Rest @ b] //. $cancelRules];
-
-compose[a_, b_, c_] := PathElement[Join[a, Rest @ b, Rest @ c] //. $cancelRules];
+PathCompose[a_PathElement, b_PathElement] :=
+  elementCompose[a, b];
 
 (* non-binary versions *)
 
 PathCompose[e_] := e;
 
-PathCompose[PathElement[a_], PathElement[b_], PathElement[c_]] :=
-  If[Last[a] === First[b] && Last[b] === First[c], compose[a, b, c], NullElement];
-
 PathCompose[a_PathVector, b_PathVector, c_PathVector, rest___PathVector] /; $PathAlgebraQ :=
   PathCompose[PathCompose[PathCompose[a, b], c], rest];
+
+(**************************************************************************************************)
+
+elementCompose[_PathElement, _PathElement] :=
+  NullPath;
+
+elementCompose[PathElement[t_, e1_, m_], PathElement[m_, e2_, h_]] :=
+  PathElement[t, Join[e1, e2] //. $cancelEdgeRules, h];
+
+$cancelEdgeRules = Dispatch @ {
+  {l___, i_, Negated[i_], r___} :> {l, r},
+  {l___, Negated[i_], i_, r___} :> {l, r}
+};
 
 (**************************************************************************************************)
 
@@ -426,8 +430,12 @@ ToPathVector[region_] /; $PathAlgebraQ := Scope[
 extractWeightedPaths = Case[
   list_List :=
     Map[%, list];
-  GraphPathData[vertices_, _, _] :=
-    PathElement[vertices] -> $w;
+  GraphPathData[vertices_, edges_, negations_] :=
+    PathElement[
+      First @ vertices,
+      ApplyNegated[edges, negations],
+      Last @ vertices
+    ] -> $w;
   GraphRegionAnnotation[r_, <|"Weight" -> w_|>] :=
     Block[{$w = w}, % @ r];
   _ := {};
@@ -450,38 +458,33 @@ WordVector['word$'] constructs a %PathVector consisting of all paths that have p
 "
 
 WordVector[word_String] /; $PathAlgebraQ := Scope[
-  UnpackPathAlgebra[vertexList, tagOutTable, nullVertex];
-  word = ParseCardinalWord @ word;
 
-  pathVertices = Internal`Bag[{vertexList}];
+  UnpackPathAlgebra[vertexRange, tagOutTable, tagOutEdgeTable, nullVertex, nullEdge];
+
+  word = ParseCardinalWord @ word;
+  headVertices = tailVertices = vertexRange;
+
+  CollectTo[{pathEdges},
   Scan[card |-> (
-    vertexList = Part[tagOutTable @ card, vertexList];
-    Internal`StuffBag[pathVertices, vertexList]),
+      edgeList = Part[tagOutEdgeTable @ card, headVertices];
+      headVertices = Part[tagOutTable @ card, headVertices];
+      Internal`StuffBag[pathEdges, edgeList]
+    ),
     word
+  ]];
+
+  pathEdges = If[pathEdges === {},
+    ConstantArray[{}, Length @ vertexRange],
+    Transpose @ pathEdges
   ];
 
-  pathVertices = Select[FreeQ[#, nullVertex]&] @ Transpose @ Internal`BagPart[pathVertices, All];
-  pathElements = PathElement /@ pathVertices;
+  pathElements = MapThread[toWordVectorPathElement, {tailVertices, pathEdges, headVertices}];
 
-  PathVector[ConstantAssociation[pathElements, 1]]
+  PathVector @ ConstantAssociation[Sort @ pathElements, 1]
 ]
 
-(**************************************************************************************************)
-
-PackageExport["PathComplexRotation"]
-
-PathComplexRotation[PathVector[assoc_Association]] /; $PathAlgebraQ := Scope[
-  UnpackPathAlgebra[edgePairIndex]; temp = None;
-  constructPathVector @ KeyValueMap[complexRotatePath, assoc]
-];
-
-complexRotatePath[elem_, w_] :=
-  elem -> w;
-
-complexRotatePath[PathElement[pair:{_, _}], w_] := (
-  temp = edgePairIndex @ pair;
-  PathElement[Reverse @ pair] -> If[Positive[temp], -w, w]
-);
+toWordVectorPathElement[tail_, edges_, head_] :=
+  If[FreeQ[edges, nullEdge], PathElement[tail, edges, head], Nothing];
 
 (**************************************************************************************************)
 
@@ -557,7 +560,7 @@ SetUsage @ "
 PathLength[element$] returns the length of a %PathElement.
 "
 
-PathLength[PathElement[list_List]] := Length[list] - 1;
+PathLength[PathElement[_, e_List, _]] := Length @ e;
 
 (**************************************************************************************************)
 
@@ -600,15 +603,22 @@ PathReverse[PathElement[$$]] yields the reverse of PathElement[$$].
 PathReverse[PathVector[assoc_]] :=
   PathVector @ KeySort @ KeyMap[PathReverse, assoc]
 
-PathReverse[PathElement[list_]] := PathElement @ Reverse @ list;
+PathReverse[PathElement[t_, e_, h_]] := PathElement[h, Map[Negated, Reverse @ e], t];
 
 (**************************************************************************************************)
 
 PackageExport["PathElement"]
 
 SetUsage @ "
-PathElement[{v$1, v$2, $$, v$n}] represents a path starting at v$1 and ending at v$n.
+PathElement[tail$, {edge$1, edge$2, $$}, head$] represents a path starting at vertex tail$, taking \
+the given edges, and ending at vertex head$.
 "
+
+(**************************************************************************************************)
+
+PackageExport["EmptyPathElement"]
+
+EmptyPathElement[v_] := PathElement[v, {}, v];
 
 (**************************************************************************************************)
 
@@ -623,13 +633,16 @@ VertexField[{n$1, n$2, $$}] constructs the sum of empty paths of on vertices n$i
 
 VertexField[] /; $PathAlgebraQ :=
   PathVector @ ConstantAssociation[
-    PathElement[{#}]& /@ $PathAlgebra["VertexList"],
+    EmptyPathElement /@ $PathAlgebra["VertexRange"],
     1
   ];
 
 VertexField[ints:{__Integer} | _Integer] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[pos, neg];
-  PathVector @ Association @ Map[i |-> PathElement[{Abs @ i}] -> If[Positive[i], pos, neg], ToList @ ints]
+  PathVector @ Association @ Map[
+    i |-> (EmptyPathElement[Abs @ i] -> If[Positive[i], pos, neg]),
+    Sort @ ToList @ ints
+  ]
 ]
 
 (**************************************************************************************************)
@@ -646,8 +659,8 @@ RandomVertexField[] constructs a random vertex field, containing every empty pat
 Options[RandomVertexField] = {RandomSeeding -> Automatic};
 
 RandomVertexField[OptionsPattern[]] /; $PathAlgebraQ := Scope @ RandomSeeded[
-  UnpackPathAlgebra[vertexList, randomFieldElement];
-  constructPathVector @ Map[v |-> PathElement[{v}] -> randomFieldElement[], vertexList],
+  UnpackPathAlgebra[vertexRange, randomFieldElement];
+  constructPathVector @ Map[v |-> EmptyPathElement[v] -> randomFieldElement[], vertexRange],
   OptionValue[RandomSeeding]
 ];
 
@@ -669,17 +682,22 @@ declareFunctionAutocomplete[RandomEdgeField, {$directionStrings}];
 Options[RandomEdgeField] = {RandomSeeding -> Automatic};
 
 RandomEdgeField[type_String:"Symmetric", OptionsPattern[]] /; $PathAlgebraQ := Scope @ RandomSeeded[
-  UnpackPathAlgebra[edgePairs, randomFieldElement];
-  forward = edgePairs;
-  reverse := Reverse[edgePairs, 2];
-  pairs = PathElement /@ Switch[type,
+  UnpackPathAlgebra[edgeRange, randomFieldElement];
+  forward = edgeRange;
+  reverse = Negated /@ edgeRange;
+  edges = PathElement /@ Switch[type,
     "Forward", forward,
     "Reverse", reverse,
     "Symmetric" | "Antisymmetric", Join[forward, reverse]
   ];
-  constructPathVector @ Map[elem |-> elem -> randomFieldElement[], pairs],
+  constructPathVector @ Map[edge |-> singleEdgePathElement[edge] -> randomFieldElement[], edges],
   OptionValue[RandomSeeding]
 ];
+
+(**************************************************************************************************)
+
+singleEdgePathElement[edge_] :=
+  PathElement[edgeToTail @ edge, {edge}, edgeToHead @ edge];
 
 (**************************************************************************************************)
 
@@ -755,26 +773,35 @@ RandomPathVector[m_Integer, range_Integer, opts:OptionsPattern[]] :=
   RandomPathVector[m, {range, range}, opts];
 
 RandomPathVector[m_Integer, range:{_Integer ? NonNegative, _Integer ? NonNegative}, OptionsPattern[]] := Scope @ RandomSeeded[
-  UnpackPathAlgebra[vertexList, adjacencyTable, randomFieldElement];
+  UnpackPathAlgebra[vertexRange, outEdgeTable, randomFieldElement, edgeToHead];
   constructPathVector @ Map[
-    v |-> Table[
-        len = RandomInteger[range];
-        PathElement[NestList[chooseNext, v, len]] -> randomFieldElement[]
-      ,
-        {m}
-      ],
-    vertexList
+    vertex |-> Table[
+      makeRandomPathElement[vertex, RandomInteger[range]] -> randomFieldElement[],
+      {m}
+    ],
+    vertexRange
   ],
   OptionValue[RandomSeeding]
 ];
 
-chooseNext[v_] := RandomChoice @ Part[adjacencyTable, v]
+makeRandomPathElement[tail_, len_] := Scope[
+  head = tail;
+  edges = Table[
+    edge = RandomChoice @ Part[outEdgeTable, head];
+    head = edgeToHead @ edge;
+    edge
+  ,
+    {len}
+  ];
+  PathElement[tail, edges //. $cancelEdgeRules, head]
+];
+
 
 (**************************************************************************************************)
 
 PackageExport["VertexFieldQ"]
 
-VertexFieldQ[PathVector[assoc_Association]] := MatchQ[Keys @ assoc, {PathElement[{_}]...}];
+VertexFieldQ[PathVector[assoc_Association]] := MatchQ[Keys @ assoc, {PathElement[_, {}, _]...}];
 VertexFieldQ[_] := False;
 
 (**************************************************************************************************)
@@ -797,33 +824,33 @@ declareFunctionAutocomplete[EdgeField, {0, $directionStrings}];
 EdgeField[] := EdgeField[All];
 
 EdgeField[All] /; $PathAlgebraQ := Scope[
-  UnpackPathAlgebra[edgePairs, pos, neg];
+  UnpackPathAlgebra[edgeRange, pos, neg, edgeToTail, edgeToHead];
   PathVector @ ConstantAssociation[
-    PathElement[#]& /@ edgePairs,
+    singleEdgePathElement /@ edgeRange,
     pos
   ]
 ];
 
 EdgeField[ints:{__Integer} | _Integer] /; $PathAlgebraQ := Scope[
-  UnpackPathAlgebra[edgePairs, pos, neg];
+  UnpackPathAlgebra[edgeRange, pos, neg, edgeToTail, edgeToHead];
   ints = ToList @ ints;
-  edges = Part[edgePairs, Abs @ ints];
+  edges = Part[edgeRange, Abs @ ints];
   PathVector @ Association @ MapThread[
     {edge, int} |-> edge -> If[Positive[int], pos, neg],
-    {PathElement /@ edges, ints}
+    {singleEdgePathElement /@ edges, ints}
   ]
 ];
 
 EdgeField[spec_, "Forward"] := EdgeField[spec];
 EdgeField[spec_, "Reverse"] := PathReverse @ EdgeField[spec];
 
-EdgeField[spec_, "Symmetric"] := symmetricEdgeField[spec, True];
+(* EdgeField[spec_, "Symmetric"] := symmetricEdgeField[spec, True];
 EdgeField[spec_, "Antisymmetric"] := symmetricEdgeField[spec, False];
 
 symmetricEdgeField[All, sym_] := Scope[
   UnpackPathAlgebra[edgePairs, pos, neg];
   If[sym, neg = pos];
-  PathVector @ Association[
+  PathVector @ Association[ (* TODO *)
     {PathElement[#] -> pos, PathElement[Reverse @ #] -> neg}& /@ edgePairs
   ]
 ];
@@ -842,99 +869,118 @@ symmetricEdgeField[ints:{__Integer}, sym_] := Scope[
     {PathElement /@ edges, PathElement /@ Reverse[edges, 2], ints}
   ]
 ];
-
+ *)
 (**************************************************************************************************)
 
 PackageExport["EdgeFieldQ"]
 
-EdgeFieldQ[PathVector[assoc_Association]] := MatchQ[Keys @ assoc, {PathElement[{_, _}]...}];
+EdgeFieldQ[PathVector[assoc_Association]] := MatchQ[Keys @ assoc, {PathElement[_, {_}, _]...}];
 EdgeFieldQ[_] := False;
-
-(**************************************************************************************************)
-
-PackageExport["MultiWordVector"]
-
-MultiWordVector[vertex_, word_] /; $PathAlgebraQ := Scope[
-  UnpackPathAlgebra[quiver, nullVertex, tagOutTable, vertexTags, vertexRewrites];
-
-  initialCards = Part[vertexTags, vertex];
-  frame = AssociationThread[initialCards, initialCards];
-
-  word = ParseCardinalWord @ word;
-  CollectTo[{$paths},
-    enumeratePaths[{vertex}, vertex, word, frame];
-  ];
-  elements = Map[PathElement, Union @ $paths];
-  PathVector @ ConstantAssociation[elements, 1]
-]
-
-enumeratePaths[path_, vertex_, word_, frame_] := Scope[
-  {frameCard, word} = FirstRest @ word;
-  rewrites = possibleRewrites[StripNegated /@ Values[frame], vertex];
-  Scan[rewrite |-> (
-    newFrame = applyRewrite[frame, rewrite];
-    card = newFrame @ frameCard;
-    If[MissingQ[card],
-      card = Negated @ newFrame @ Negated @ frameCard];
-    If[MissingQ @ StripNegated @ card, Return[]];
-    next = Part[tagOutTable, Key @ card, vertex];
-    If[next =!= nullVertex,
-      enumeratePaths[Append[path, next], next, word, newFrame]];
-  ), rewrites];
-];
-
-enumeratePaths[path_, _, {}, _] :=
-  Internal`StuffBag[$paths, path];
-
-applyRewrite[frame_, {}] := frame;
-
-applyRewrite[frame_, rewrite_] :=
-  Map[Identity, ReplaceAll[frame, rewrite]];
-
-possibleRewrites[keys_, vertex_] := Scope[
-  rewrites = Part[vertexRewrites, vertex];
-  rewrites = Select[rewrites, MemberQ[keys, StripNegated @ First @ #]&];
-  Select[Subsets @ rewrites, Keys /* DuplicateFreeQ]
-];
 
 (**************************************************************************************************)
 
 PackageExport["PathElementToWord"]
 
-PathElementToWord[PathElement[vertices_]] := Scope[
-  UnpackPathAlgebra[vertexTags, vertexRewrites, pairTagLists];
+SetUsage @ "
+PathElementToWord[PathElement[$$]] returns the cardinal word for a path element.
+PathElementToWord[list$] returns the words for a list of path elements.
+* These words are not relative to the tail frame.
+"
 
-  vertex = First @ vertices;
-  initialCards = Part[vertexTags, vertex];
-  frame = AssociationThread[initialCards, initialCards];
+PathElementToWord[PathElement[_, edges_, _]] := Scope[
+  UnpackPathAlgebra[edgeToCardinal];
+  Lookup[edgeToCardinal, edges]
+];
 
-  CollectTo[{$words},
-    enumerateWords[{}, vertices, frame];
+PathElementToWord[list:{___PathElement}] := Scope[
+  UnpackPathAlgebra[edgeToCardinal];
+  Lookup[edgeToCardinal, #]& /@ Part[list, All, 2]
+]
+
+(**************************************************************************************************)
+
+PackageExport["PathElementToTailFrameWord"]
+
+SetUsage @ "
+PathElementToTailFrameWord[PathElement[$$]] returns the cardinal word for a path element.
+PathElementToTailFrameWord[list$] returns the words for a list of path elements.
+* These words are relative to the tail frame, taking into account cardinal transport.
+"
+
+PathElementToTailFrameWord[p_PathElement | p:{___PathElement}] := Scope[
+  UnpackPathAlgebra[edgeToCardinal, vertexTags, cardinalTransitions];
+
+  If[ListQ[p], tailFrameWord /@ p, tailFrameWord @ p]
+];
+
+tailFrameWord[p_PathElement] :=
+  Part[elementFrameData @ p, 2];
+
+(**************************************************************************************************)
+
+elementFrameData[PathElement[tail_, edges_, _]] := Scope[
+  vertex = tail;
+  iframe = frame = Part[vertexTags, tail];
+  word = Map[edge |-> (
+    transitions = Lookup[cardinalTransitions, edge, {}];
+    frame //= ReplaceAll[transitions];
+    index = IndexOf[frame, Lookup[edgeToCardinal, edge]];
+    Part[iframe, index]),
+    edges
   ];
-  DeleteDuplicates @ $words
+  {iframe, word, frame}
+]
+
+(**************************************************************************************************)
+
+PackageExport["PathElementFromTailFrameWord"]
+
+SetUsage @ "
+PathElementFromTailFrameWord[tail$, word$] returns the PathElement starting at vertex tail$ and using word$.
+* The word$ should use cardinals present in the tail frame at tail$ only, they will be transported as necessary.
+"
+
+PathElementFromTailFrameWord[tail_, word_] := Scope[
+
+  UnpackPathAlgebra[vertexTags, cardinalTransitions, tagOutEdgeTable, nullEdge, edgeToHead];
+
+  tailFrameWordToElement[tail, word];
 ];
 
-enumerateWords[word_, {v_}, _] := (
-  Internal`StuffBag[$words, word];
-);
+(**************************************************************************************************)
 
-enumerateWords[word_, vertices_, frame_] := Scope[
-  pair = Take[vertices, 2];
-  vertices = Drop[vertices, 1];
-  vertex = First @ pair;
-  pairTags = pairTagLists[pair];
-  cards = DeleteMissing @ Map[tag |-> keyOf[frame, tag], pairTags];
-  If[cards === {}, Return[]];
-  rewrites = possibleRewrites[StripNegated /@ Values @ frame, vertex];
-  cards //= If[Length[cards] === 1, First, CardinalSet];
-  Scan[rewrite |-> (
-    newFrame = applyRewrite[frame, rewrite];
-    enumerateWords[Append[word, cards], vertices, newFrame];
-  ), rewrites];
+tailFrameWordToElement[tail_, word_] := Scope[
+  iframe = frame = Part[vertexTags, tail];
+  head = tail;
+
+  edges = Map[
+    card |-> (
+      cardIndex = IndexOf[iframe, card];
+      localCard = Part[frame, cardIndex];
+      edge = Part[tagOutEdgeTable @ localCard, head];
+      If[edge === nullEdge, Return[NullElement, Block]];
+      transitions = Lookup[cardinalTransitions, edge, {}];
+      frame //= ReplaceAll[transitions];
+      head = edgeToHead @ edge;
+      edge
+    ),
+    word
+  ];
+
+  PathElement[tail, edges, head]
 ];
 
-keysOf[assoc_, value_] := Part[IndicesOf[assoc, value], All, 1];
-keyOf[assoc_, value_] := Replace[IndexOf[assoc, value], Key[k_] :> k];
+DefineLiteralMacro[setupForTranslation,
+
+  setupForTranslation[] := (
+    UnpackPathAlgebra[
+      edgeToCardinal, (* elementFrameData *)
+      vertexTags, cardinalTransitions, tagOutEdgeTable, nullEdge, edgeToHead (* tailFrameWordToElement *)
+    ];
+    $frameDataCache = Data`UnorderedAssociation[];
+  )
+];
+
 
 (**************************************************************************************************)
 
@@ -942,60 +988,90 @@ PackageExport["PathTranslate"]
 
 PathTranslate[t_PathVector, p_PathVector] /; $PathAlgebraQ := Scope[
 
-  UnpackPathAlgebra[nullVertex, tagOutTable, vertexTags, vertexRewrites, pairTagLists];
+  setupForTranslation[];
 
   BilinearApply[elementTranslate, t -> PathTailVertex, p -> PathTailVertex]
 ]
 
-(* fast path *)
-(* elementTranslate[PathElement[t_], PathElement[p_]] :=
-  PathElement @ Take[t, -1];
- *)
-elementTranslate[PathElement[tVertices_], p_PathElement] := Scope[
+elementTranslate[t_PathElement, p_PathElement] := Scope[
 
-  {tTail, tHead} = FirstLast @ tVertices;
-  initialCards = Part[vertexTags, tTail];
-  initialFrame = AssociationThread[initialCards, initialCards];
+  If[PathTailVertex[t] =!= PathTailVertex[p], $Unreachable];
 
-  pWords = PathElementToWord[p];
-  pWords // ReplaceRepeated[{l___, CardinalSet[s_], r___} :> Splice @ Thread[{l, Intersection[s, initialCards], r}]];
-  pWords //= DeleteDuplicates;
+  tFrameData = CacheTo[$frameDataCache, t, elementFrameData @ t];
+  pFrameData = CacheTo[$frameDataCache, p, elementFrameData @ p];
 
-  CollectTo[{$frames},
-    enumerateTranslatedFrames[tVertices, initialFrame];
-  ];
+  pWord = Part[pFrameData, 2];
+  tTransport = RuleThread[First @ tFrameData, Last @ tFrameData];
 
-  $frames //= DeleteDuplicates;
-  relevantCardinals = DeleteDuplicates @ Flatten @ pWords;
-  $frames = DeleteDuplicates @ KeyTake[$frames, relevantCardinals];
+  pWordTransported = Replace[pWord, tTransport, {1}];
 
-  CollectTo[{$paths},
-    Outer[
-      {word, frame} |-> enumeratePaths[{tHead}, tHead, word, frame],
-      pWords, $frames, 1
-    ];
-  ];
-
-  Map[PathElement, DeleteDuplicates @ $paths]
+  tailFrameWordToElement[
+    PathHeadVertex @ t,
+    pWordTransported
+  ]
 ]
 
-enumerateTranslatedFrames[{vertex_}, frame_] :=
-  Internal`StuffBag[$frames, frame];
+(**************************************************************************************************)
 
-enumerateTranslatedFrames[vertices_, frame_] := Scope[
-  pair = Take[vertices, 2];
-  vertices = Drop[vertices, 1];
-  vertex = First @ pair;
-  pairTags = pairTagLists[pair];
-  cards = DeleteMissing @ Map[tag |-> keyOf[frame, tag], pairTags];
-  If[cards === {}, Return[]];
-  rewrites = possibleRewrites[StripNegated /@ Values @ frame, vertex];
-  cards //= If[Length[cards] === 1, First, CardinalSet];
-  Scan[rewrite |-> (
-    newFrame = applyRewrite[frame, rewrite];
-    enumerateTranslatedFrames[vertices, newFrame];
-  ), rewrites];
+PackageExport["TranslateAdd"]
+
+SetUsage @ "
+TranslateAdd[t$1, t$2] composes %PathVector t$2 with t$1, after translating \
+path elements of t$2 to the head of path elements of t$1.
+TranslateAdd[t$1, t$2, t$3, $$] chains together several %TranslateAdd operations.
+* t$1 \[CirclePlus] t$2 is infix syntax for TranslateAdd.
+"
+
+TranslateAdd[p__PathVector] := Scope[
+  setupForTranslation[];
+  iTranslateAdd[p]
 ];
+
+iTranslateAdd[t_PathVector, p_PathVector, rest___] :=
+  iTranslateAdd[
+    BilinearApply[elementTranslateAdd, t -> PathTailVertex, p -> PathTailVertex],
+    rest
+  ]
+
+iTranslateAdd[p_PathVector] := p;
+
+elementTranslateAdd[t_PathElement, p_PathElement] :=
+  elementCompose[t, elementTranslate[t, p]]
+
+PathVector /: CirclePlus[p__PathVector] :=
+  TranslateAdd[p];
+
+(**************************************************************************************************)
+
+PackageExport["TranslateSubtract"]
+
+SetUsage @ "
+TranslateSubtract[t$1, t$2] composes the reverse of %PathVector t$2 with t$1, after translating \
+path elements of t$2 to the head of path elements of t$1.
+* t$1 \[CircleMinus] t$2 is infix syntax for TranslateSubtract.
+"
+
+TranslateSubtract[a_PathVector, b_PathVector] :=
+  TranslateAdd[a, PathInvert @ b];
+
+PathVector /: CircleMinus[a_PathVector, b_PathVector] :=
+  TranslateSubtract[p];
+
+(**************************************************************************************************)
+
+PackageExport["PathInvert"]
+
+SetUsage @ "
+PathInvert[vector$] inverts a %PathVector by negating the path word of each of its elements.
+"
+
+PathInvert[PathVector[assoc_]] := Scope[
+  setupForTranslation[];
+  constructPathVector @ KeyMap[invertElement, assoc]
+];
+
+invertElement[p:PathElement[t_, edges_, h_]] :=
+  tailFrameWordToElement[t, Negated /@ tailFrameWord[p]]
 
 (**************************************************************************************************)
 
@@ -1060,7 +1136,9 @@ PathEpsilonDifference[v_][t_] := PathEpsilonDifference[v, t];
 (**************************************************************************************************)
 
 etaEpsilonDifference[flow_, target_, isEps_] := Scope[
-  UnpackPathAlgebra[nullVertex, tagOutTable, vertexTags, vertexRewrites, pairTagLists];
+
+  setupForTranslation[];
+
   targets = target;
   {targetPaths, targetWeights} = KeysValues @ Normal @ target;
   tailIndex = PositionIndex @ PathTailVertex @ targetPaths;
@@ -1094,53 +1172,3 @@ SymmetricPathFiniteDifference[flow_, target_] :=
   PathTranslate[PathReverse[flow] - flow, target];
 
 SymmetricPathFiniteDifference[v_][t_] := SymmetricPathFiniteDifference[v, t];
-
-(* (**************************************************************************************************)
-
-PackageExport["FramedPathElement"]
-
-SetUsage @ "
-FramedPathElement[vertices$, frames$, indices$] represents a framed path.
-* vertices$ is a list of n$ vertices.
-* frames$ is a list of n$ cardinal tuples.
-* indices$ is a list of n$ - 1 frame indices.
-"
-
-PathCompose[FramedPathElement[va_, fa_, ia_], FramedPathElement[vb_, fb_, ib_]] := Scope[
-  If[Last[va] =!= First[vb] || Last[fa] =!= First[fb], Return @ NullElement];
-  FramedPathElement[
-    Join[va, Rest @ vb],
-    Join[fa, Rest @ fb],
-    Join[ia, ib]
-  ]
-];
-
-declareFormatting[
-  FramedPathElement[v_List, f_List, i_List] /; Length[v] === Length[f] === (Length[i] + 1) :>
-    formatFramedPathElement[v, f, i]
-];
-
-formatFramedPathElement[v_List, f_List, i_List] :=
-  LabelForm @ Row @ Riffle[
-    MapThread[Underscript[#1, Row[#2]]&, {v, f}],
-    Underscript[" \[LongRightArrow] ", Style[#, Gray]]& /@ i
-  ];
-
- *)(**************************************************************************************************)
-
-(* PackageExport["PathTranslate"]
-
-PathTranslate[FramedPathElement[va_, fa_, ia_], FramedPathElement[vb_, fb_, ib_]] := Scope[
-  If[First[va] =!= First[vb] || First[fa] =!= First[fb], Return @ NullElement];
-  FramedPathElement[
-];
-
-apl
- *)
-(* algorithm: 
-1. path B starts where path A ends.
-2. convert indices of path b back into cardinals
-3. construct a fresh path, doing a branch-out whenever cardinal transport is available.
-4. cardinal transport is defined per-vertex: we need to setup an association of rules, that says for each vertex
-   what replacements can be made, e.g. v1 -> {a -> b,
-*)

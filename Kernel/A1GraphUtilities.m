@@ -5,6 +5,7 @@ PackageImport["GeneralUtilities`"]
 
 
 PackageExport["VertexAnnotations"]
+PackageExport["EdgeAnnotations"]
 PackageExport["LayoutDimension"]
 PackageExport["ExtendedGraphLayout"]
 PackageExport["GraphMetric"]
@@ -15,6 +16,14 @@ PackageExport["AdditionalImagePadding"]
 PackageExport["CoordinateTransformFunction"]
 PackageExport["LabelCardinals"]
 PackageExport["AspectRatioClipping"]
+
+(**************************************************************************************************)
+
+PackageExport["Signed"]
+
+SetUsage @ "
+Signed is an option to various graph utility functions.
+"
 
 (**************************************************************************************************)
 
@@ -40,6 +49,7 @@ $extendedGraphUsage = StringTrim @ "
 | %EdgeColorFunction | None | function to obtain colors for edges |
 | %ColorRules | None | color vertices and edges by region |
 | %VertexAnnotations | None | association of additional per-vertex data |
+| %EdgeAnnotations | None | association of additional per-edge data |
 | %GraphMetric | Automatic | metric to calculate graph distances |
 | %CardinalColors | Automatic | association of cardinal colors |
 | %VisibleCardinals | All | which cardinals to draw |
@@ -218,10 +228,13 @@ Supported suboptions are:
 
 ## Annotations
 
-* %VertexAnnotations can be set to an association between named properties \
-and lists of values.
+* %VertexAnnotations can be set to an association between named properties and lists of values.
 * The values should be in the same order and length as given by %VertexList.
 * These values are accessible via %VertexColorFunction and %VertexLabels.
+
+* %EdgeAnnotations can be set to an asssocation between named properties and associations of values.
+* These associations should have keys that are edge indices.
+* Tthese values are accessible via %EdgeLabels.
 
 ## Highlights and colors
 
@@ -281,6 +294,7 @@ $extendedGraphOptionsRules = {
   VertexColorFunction -> None,
   EdgeColorFunction -> None,
   VertexAnnotations -> None,
+  EdgeAnnotations -> None,
   LayoutDimension -> Automatic,
   ExtendedGraphLayout -> Automatic,
   GraphMetric -> Automatic,
@@ -337,7 +351,7 @@ makeNewGraph[___] := $Failed;
 (* these compensate for a weird extra level of list that Graph adds *)
 optionFixup = Case[
   Rule[VertexSize, r:{__Rule}]                    := Rule[VertexSize, Association @ r];
-  Rule[sym:(VertexLabels | EdgeLabels), l_List]   := Echo @ If[MatchQ[l, {_Hold}], First @ l, Rule[sym, Hold[l]]];
+  Rule[sym:(VertexLabels | EdgeLabels), l_List | l_Rule] := If[MatchQ[l, {_Hold}], First @ l, Rule[sym, Hold[l]]];
   Rule[sym:(EdgeStyle|VertexStyle), val_]         := Rule[sym, toDirective[val]];
   Rule[VertexShapeFunction, assoc_Association]    := Rule[VertexShapeFunction, toShape /@ assoc];
   Rule[sym:(GraphHighlightStyle|VertexLabelStyle|EdgeLabelStyle), elem_] := Rule[sym, toDirective[elem]];
@@ -366,6 +380,10 @@ $vertexAnnotationsPattern = Alternatives[
   None
 ];
 
+$edgeAnnotationsPattern = Alternatives[
+  Association[RepeatedNull[_String -> _Association]],
+  None
+];
 $layoutDimensionPattern = Alternatives[
   Automatic, None, 2, 3
 ];
@@ -383,6 +401,7 @@ $viewOptionsRulePattern = Automatic | {RepeatedNull[$viewOptionKeysPattern -> _]
 $extendedGraphOptionPatterns = <|
   ArrowheadSize -> $arrowheadSizePattern,
   VertexAnnotations -> $vertexAnnotationsPattern,
+  EdgeAnnotations -> $edgeAnnotationsPattern,
   LayoutDimension -> $layoutDimensionPattern,
   GraphMetric -> $graphMetricPattern,
   ViewOptions -> $viewOptionsRulePattern
@@ -885,14 +904,19 @@ PackageExport["VertexAdjacentEdgeTable"]
 SetUsage @ "
 VertexAdjacentEdgeTable[graph$] returns a list of lists {adj$1, adj$2, $$}  where adj$i \
 is a list of the indices of edges which begin or end at vertex v$i.
+* If the option %Signed -> True is provided, edges will be wrapped in %Negated if they are traversed in the \
+reversed direction.
 "
 
-VertexAdjacentEdgeTable[graph_] := Scope[
+Options[VertexAdjacentEdgeTable] = {Signed -> False};
+
+VertexAdjacentEdgeTable[graph_, OptionsPattern[]] := Scope[
   pairs = EdgePairs @ graph;
   vertices = VertexRange @ graph;
+  negator = If[OptionValue[Signed], Map[Negated, #, {2}]&, Identity];
   MapThread[Union, {
     Lookup[PositionIndex @ FirstColumn @ EdgePairs @ graph, vertices, {}],
-    Lookup[PositionIndex @ LastColumn @ EdgePairs @ graph, vertices, {}]
+    Lookup[negator @ PositionIndex @ LastColumn @ EdgePairs @ graph, vertices, {}]
   }]
 ];
 
@@ -922,16 +946,17 @@ PackageExport["TagVertexOutTable"]
 
 SetUsage @ "
 TagVertexOutTable[graph$] returns an association from each cardinal to its VertexOutTable.
+TagVertexOutTable[graph$, invalid$] uses invalid$ instead of None.
 * If a cardinal is not incident to a given vertex, the corresponding entry is None.
 * Keys are included for negations of cardinals.
 * As there is a maximum of edge for a given vertex and cardinal, table entries are single integers or None.
 "
 
-TagVertexOutTable[graph_] := Scope[
+TagVertexOutTable[graph_, invalid_:None] := Scope[
   cardinals = CardinalList @ graph;
   igraph = ToIndexGraph @ graph;
   cardinals = Join[cardinals, Negated /@ cardinals];
-  outTables = ConstantAssociation[cardinals, ConstantArray[None, VertexCount @ igraph]];
+  outTables = ConstantAssociation[cardinals, ConstantArray[invalid, VertexCount @ igraph]];
   ({src, dst, tag} |-> (
       Part[outTables, Key @ tag, src] = dst;
       Part[outTables, Key @ Negated @ tag, dst] = src;
@@ -974,25 +999,36 @@ PackageExport["TagVertexAdjacentEdgeTable"]
 
 SetUsage @ "
 TagVertexAdjacentEdgeTable[graph$] returns an association from each cardinal to its VertexAdjacentEdgeTable.
+TagVertexAdjacentEdgeTable[graph$, invalid$] uses invalid$ instead of None.
 * If a cardinal is not incident to a given vertex, the corresponding entry is None.
 * Keys are included for negations of cardinals.
 * As there is a maximum of edge for a given vertex and cardinal, table entries are single integers or None.
+* If the option %Signed -> True is provided, edges will be wrapped in %Negated if they are traversed in the \
+reversed direction.
 "
 
-TagVertexAdjacentEdgeTable[graph_] := Scope[
+Options[TagVertexAdjacentEdgeTable] = {Signed -> False};
+
+TagVertexAdjacentEdgeTable[graph_, opts:OptionsPattern[]] :=
+  TagVertexAdjacentEdgeTable[graph, None, opts];
+
+TagVertexAdjacentEdgeTable[graph_, invalid_, OptionsPattern[]] := Scope[
   outTable = VertexOutEdgeTable @ graph;
-  inTable = VertexInEdgeTable @ graph;
+  inTable = VertexInEdgeTable @ graph; $invalid = invalid;
+  negator = If[OptionValue[Signed], mapNegated, Identity];
   Merge[mergeNone] @ KeyValueMap[
     {key, edgeIndices} |-> {
-      key ->          Map[First[Intersection[#, edgeIndices], None]&, outTable],
-      Negated[key] -> Map[First[Intersection[#, edgeIndices], None]&, inTable]
+      key ->          Map[First[Intersection[#, edgeIndices], invalid]&, outTable],
+      Negated[key] -> negator @ Map[First[Intersection[#, edgeIndices], invalid]&, inTable]
     },
     TagIndices @ graph
   ]
 ];
 
+mapNegated[e_] := Map[If[# === $invalid, #, Negated[#]]&, e];
+
 mergeNone[{a_}] := a;
-mergeNone[{a_, b_}] := MapThread[If[#1 === None, #2, #1]&, {a, b}];
+mergeNone[{a_, b_}] := MapThread[If[#1 === $invalid, #2, #1]&, {a, b}];
 
 (**************************************************************************************************)
 
@@ -1145,6 +1181,38 @@ AttachVertexAnnotations[graph_, annotations_] := Scope[
   CheckIsGraph[1];
   joinAnnotation[graph, VertexAnnotations, annotations]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["VertexAnnotationPresentQ"]
+
+VertexAnnotationPresentQ[graph_, key_] :=
+  KeyExistsQ[LookupAnnotation[graph, VertexAnnotations, <||>], key]
+
+(**************************************************************************************************)
+
+PackageExport["DeleteEdgeAnnotations"]
+
+DeleteEdgeAnnotations[graph_Graph] :=
+  AnnotationDelete[graph, EdgeAnnotations];
+
+DeleteEdgeAnnotations[other_] := other;
+
+(**************************************************************************************************)
+
+PackageExport["AttachEdgeAnnotations"]
+
+AttachEdgeAnnotations[graph_, annotations_] := Scope[
+  CheckIsGraph[1];
+  joinAnnotation[graph, EdgeAnnotations, annotations]
+];
+
+(**************************************************************************************************)
+
+PackageExport["EdgeAnnotationPresentQ"]
+
+EdgeAnnotationPresentQ[graph_, key_] :=
+  KeyExistsQ[LookupAnnotation[graph, EdgeAnnotations, <||>], key]
 
 (**************************************************************************************************)
 

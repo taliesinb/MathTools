@@ -31,11 +31,18 @@ processEdge[edge_, _] :=
 
 Quiver::nakededge = "The edge `` is not labeled with a cardinal.";
 
+processEdge[Annotation[e_, rule_Rule], tag_] := Block[{$ea = Append[$ea, rule]},
+  processEdge[e, tag]
+];
+
 processEdge[edge:(_Rule | _TwoWayRule | DirectedEdge[_, _] | UndirectedEdge[_, _]), None] :=
   (Message[Quiver::nakededge, edge]; $Failed);
 
 processEdge[Labeled[edges:{__Rule}, labels_List], _] /; Length[edges] === Length[labels] :=
-  MapThread[DirectedEdge[#1, #2, #3]&, {Keys @ edges, Values @ edges, SimplifyCardinalSet /@ labels}];
+  sowAnnos @ MapThread[
+    DirectedEdge,
+    {Keys @ edges, Values @ edges, SimplifyCardinalSet /@ labels}
+  ];
 
 processEdge[Labeled[edges_, label_], _] :=
   processEdge[edges, label];
@@ -43,38 +50,49 @@ processEdge[Labeled[edges_, label_], _] :=
 processEdge[e_, Verbatim[Alternatives][args__]] :=
   Map[processEdge[e, #]&, {args}];
 
-processEdge[l_ <-> r_, label_] := {
+processEdge[l_ <-> r_, label_] := sowAnnos @ {
   DirectedEdge[l, r, label],
   DirectedEdge[r, l, label]
 };
 
 processEdge[l_ -> r_, label_] :=
-  DirectedEdge[l, r, label];
+  sowAnnos @ DirectedEdge[l, r, label];
 
 processEdge[DirectedEdge[l_, r_, Verbatim[Alternatives][args__]], z_] :=
   processEdge[DirectedEdge[l, r, #], z]& /@ {args};
 
 processEdge[DirectedEdge[l_, r_], c_] :=
-  DirectedEdge[l, r, c];
+  sowAnnos @ DirectedEdge[l, r, c];
 
 processEdge[UndirectedEdge[a_, b_], c_] :=
-  {DirectedEdge[a, b, c], DirectedEdge[b, a, c]};
+  sowAnnos @ {DirectedEdge[a, b, c], DirectedEdge[b, a, c]};
 
 processEdge[UndirectedEdge[a_, b_, c_], _] :=
-  {DirectedEdge[a, b, c], DirectedEdge[b, a, c]};
+  sowAnnos @ {DirectedEdge[a, b, c], DirectedEdge[b, a, c]};
 
-processEdge[de:DirectedEdge[_, _, _], _] := de;
+processEdge[de:DirectedEdge[_, _, _], _] :=
+  sowAnnos @ de;
 
 processEdge[assoc_Association, _] := KeyValueMap[processEdge[#2, #1]&, assoc];
 processEdge[Labeled[e_, label_], _] := processEdge[e, label];
 
 processEdge[list_List, label_] := Map[processEdge[#, label]&, list];
 
+sowAnnos[e_] /; $ea === {} := e;
+
+sowAnnos[e_List] := Map[sowAnno, e];
+sowAnnos[e_] := (Scan[attachAnno[e], $ea]; e);
+
+attachAnno[e_][key_ -> value_] :=
+  KeyAppendTo[$edgeAnnotations, key, e -> value]
 
 $maxVertexCount = 150;
 makeQuiver[vertices_, edges_, newOpts_] := Scope[
 
+  $edgeAnnotations = <||>;
+
   If[!MatchQ[edges, {DirectedEdge[_, _, Except[_Alternatives]]..}],
+    $ea = {};
     edges = Flatten @ List @ processEdge[edges, None];
     If[ContainsQ[edges, $Failed], ReturnFailed[]];
   ];
@@ -84,12 +102,21 @@ makeQuiver[vertices_, edges_, newOpts_] := Scope[
     ReturnFailed[];
   ];
 
+  If[$edgeAnnotations =!= <||>,
+    index = AssociationRange @ edges;
+    $edgeAnnotations = Map[
+      KeyMap[index, Association @ #]&,
+      $edgeAnnotations
+    ];
+  ];
+
   If[vertices === Automatic, vertices = Union[InVertices @ edges, OutVertices @ edges]];
 
   ExtendedGraph[
     vertices, edges,
     Sequence @@ newOpts,
-    GraphLegend -> Automatic
+    GraphLegend -> Automatic,
+    If[$edgeAnnotations =!= <||>, EdgeAnnotations -> $edgeAnnotations, Sequence @@ {}]
   ]
 ]
 

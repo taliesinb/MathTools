@@ -614,6 +614,19 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
+PackageExport["ApplyNegated"]
+
+SetUsage @ "
+ApplyNegated[list$, indices$] applies %Negated to the elements of list$ at positions indices$.
+"
+
+ApplyNegated[list_, {}] := list;
+
+ApplyNegated[list_, indices_] :=
+  MapAt[Negated, list, List /@ indices];
+
+(**************************************************************************************************)
+
 PackageExport["UnderNegatedForm"]
 
 declareBoxFormatting[
