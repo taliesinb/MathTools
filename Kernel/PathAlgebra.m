@@ -242,7 +242,7 @@ declareFormatting[
 
 notOverlappingPathsQ[PathVector[assoc_]] := Scope[
   edges = Part[Keys @ assoc, All, 2];
-  DuplicateFreeQ @ Flatten[edges, 1]
+  DuplicateFreeQ @ Flatten[edges /. Negated[e_] :> e, 1]
 ]
 
 notBothwaysQ[_] := False;
@@ -303,7 +303,7 @@ drawWeightedElement[p:PathElement[t_, e_, h_], weight_] :=
 getEdgeCoords[e_] := Scope[
   coords = Part[edgeCoordinateLists, StripNegated /@ e];
   orientedCoords = MapAt[Reverse, coords, List /@ SelectIndices[e, NegatedQ]];
-  Flatten[orientedCoords, 1] //. {l___, a_, a_, r___} :> {l, a, r}
+  Flatten[orientedCoords, 1] //. {l___, a_List, a_List, r___} :> {l, a, r}
 ];
 
 
@@ -401,8 +401,12 @@ PathCompose[a_PathVector, b_PathVector, c_PathVector, rest___PathVector] /; $Pat
 
 (**************************************************************************************************)
 
+elementCompose[_, NullElement] := NullElement;
+
+elementCompose[NullElement, _] := NullElement;
+
 elementCompose[_PathElement, _PathElement] :=
-  NullPath;
+  NullElement;
 
 elementCompose[PathElement[t_, e1_, m_], PathElement[m_, e2_, h_]] :=
   PathElement[t, Join[e1, e2] //. $cancelEdgeRules, h];
@@ -447,6 +451,19 @@ attachWeightedData = Case[
   r_ -> w_    := Weighted[r, w];
   list_List   := Map[%, list];
   other_      := other
+];
+
+(**************************************************************************************************)
+
+PackageExport["BasisWordVectors"]
+
+SetUsage @ "
+BasisWordVectors[] returns a list of %WordVector[c$i] for each cardinal c$i in the quiver.
+"
+
+BasisWordVectors[] /; $PathAlgebraQ := Scope[
+  UnpackPathAlgebra[cardinals];
+  WordVector /@ cardinals
 ];
 
 (**************************************************************************************************)
@@ -926,7 +943,7 @@ elementFrameData[PathElement[tail_, edges_, _]] := Scope[
   word = Map[edge |-> (
     transitions = Lookup[cardinalTransitions, edge, {}];
     frame //= ReplaceAll[transitions];
-    index = IndexOf[frame, Lookup[edgeToCardinal, edge]];
+    index = IndexOf[frame, Lookup[edgeToCardinal, edge]]; (* why can this fail? loop = PathCompose[a, b, c]; TranslationCommutator[loop, PathReverse@loop]*)
     Part[iframe, index]),
     edges
   ];
@@ -957,7 +974,7 @@ tailFrameWordToElement[tail_, word_] := Scope[
 
   edges = Map[
     card |-> (
-      cardIndex = IndexOf[iframe, card];
+      cardIndex = IndexOf[iframe, card, Return[NullElement, Block]];
       localCard = Part[frame, cardIndex];
       edge = Part[tagOutEdgeTable @ localCard, head];
       If[edge === nullEdge, Return[NullElement, Block]];
@@ -995,7 +1012,7 @@ PathTranslate[t_PathVector, p_PathVector] /; $PathAlgebraQ := Scope[
   BilinearApply[elementTranslate, t -> PathTailVertex, p -> PathTailVertex]
 ]
 
-elementTranslate[t_PathElement, p_PathElement] := Scope[
+elementTranslate[t_PathElement, p_PathElement, anti_:False] := Scope[
 
   If[PathTailVertex[t] =!= PathTailVertex[p], $Unreachable];
 
@@ -1006,6 +1023,8 @@ elementTranslate[t_PathElement, p_PathElement] := Scope[
   tTransport = RuleThread[First @ tFrameData, Last @ tFrameData];
 
   pWordTransported = Replace[pWord, tTransport, {1}];
+
+  If[anti, pWordTransported = Negated /@ pWordTransported];
 
   tailFrameWordToElement[
     PathHeadVertex @ t,
@@ -1053,11 +1072,16 @@ path elements of t$2 to the head of path elements of t$1.
 * t$1 \[CircleMinus] t$2 is infix syntax for TranslateSubtract.
 "
 
-TranslateSubtract[a_PathVector, b_PathVector] :=
-  TranslateAdd[a, PathInvert @ b];
+TranslateSubtract[a_PathVector, b_PathVector] := Scope[
+  setupForTranslation[];
+  BilinearApply[elementTranslateSubtract, a -> PathTailVertex, b -> PathTailVertex]
+];
+
+elementTranslateSubtract[t_PathElement, p_PathElement] :=
+  elementCompose[t, elementTranslate[t, p, True]]
 
 PathVector /: CircleMinus[a_PathVector, b_PathVector] :=
-  TranslateSubtract[p];
+  TranslateSubtract[a, b];
 
 (**************************************************************************************************)
 
@@ -1098,6 +1122,21 @@ weightedApply[i_, j_] :=
 flattenWeights[result_, w_] := result -> w;
 flattenWeights[results_List, w_] := #1 -> w& /@ results;
 flattenWeights[rules:{__Rule}, w_] := #1 -> fieldTimes[#2, w]& @@@ rules;
+
+(**************************************************************************************************)
+
+PackageExport["TranslationCommutator"]
+
+SetUsage @ "
+TranslationCommutator[a$, b$] returns (a$ \[CirclePlus] b$) \[CircleMinus] (a$ \[CirclePlus] b$).
+* \[CirclePlus] is TranslateAdd.
+* \[CircleMinus] is TranslateSubtract.
+"
+
+TranslationCommutator[a_, b_] := Scope[
+  ab = TranslateAdd[a, b];
+  TranslateSubtract[ab, ab]
+];
 
 (**************************************************************************************************)
 
