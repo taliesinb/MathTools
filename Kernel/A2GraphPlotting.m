@@ -2146,7 +2146,7 @@ generateLabelPrimitives[spec_, names_, coordinates_, parts_, size_, labelStyle_,
   $isVertices = isVertices;
   $labelSizeScale = 1; $labelScaledPos = None; $labelY = -1; $labelX = 0; $labelBackground = GrayLevel[1.0, 0.6];
   $labelBaseStyle = None; $labelOffset = None;
-  $adjacencyIndex = None;
+  $adjacencyIndex = None; $meanCoordinates = Mean @ coordinates;
   labelStyle //= toDirectiveOptScan[setLabelStyleGlobals];
   labelStyle //= DeleteCases[sspec:$sizePattern /; ($labelSizeScale = toNumericSizeScale @ sspec; True)];
   $magnifier = If[$labelSizeScale == 1, Identity, Magnify[#, $labelSizeScale]&];
@@ -2188,6 +2188,7 @@ setLabelStyleGlobals = Case[
   LabelPosition -> Top|Above              := $labelY = -1;
   LabelPosition -> Bottom|Below           := $labelY = 1;
   LabelPosition -> Center                 := $labelX = $labelY = 0;
+  LabelPosition -> "Radial"               := ($labelX = $labelY = "Radial");
   LabelPosition -> {x_ ? NQ, y_ ? NQ}     := ($labelX = N[x]; $labelY = N[y]);
   LabelPosition -> specs:{__}             := Scan[%[LabelPosition -> #]&, specs];
   LabelPosition -> Left                   := $labelX = 1;
@@ -2296,6 +2297,11 @@ placeLabelAt[label_, pos_, index_] /; ($labelX === Automatic) := Scope[
   edgeCoords = Mean /@ Part[$EdgeCoordinateLists, adjacentEdges];
   bestOffset = MaximumBy[$labelOffsets, sumOfSquaredDistances[#, edgeCoords]&];
   {$labelX, $labelY} = bestOffset * {1.7, 1.1};
+  placeLabelAt[label, pos, index]
+];
+
+placeLabelAt[label_, pos_, index_] /; ($labelX === "Radial") := Scope[
+  {$labelX, $labelY} = -Sign[pos - $meanCoordinates];
   placeLabelAt[label, pos, index]
 ];
 

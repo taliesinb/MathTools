@@ -264,10 +264,14 @@ makeCubeEdge[c_, {a_, b_}] :=
   Internal`StuffBag[$edges, DirectedEdge[a, b, c]];
 
 cubeFactory[<|"n" -> n_, "MaxDepth" -> _|>, userOpts_] := Scope[
+
+  {a, b, c} = Lookup[userOpts, Cardinals, {"a", "b", "c"}];
+  {A, B, C} = Negated /@ {a, b, c};
+
   CollectTo[{$points, $edges},
     MapThread[makeCubeFace[n], {$cubeDirs,
-      {"a", Negated @ "a", "c", Negated @ "c", Negated @ "c", "c"},
-      {"b", Negated @ "b", Negated @ "b", "b", Negated @ "a", "a"}
+      {a, A, c, C, C, c},
+      {b, B, B, b, A, a}
     }]
   ];
   $points //= DeleteDuplicates;
@@ -279,8 +283,9 @@ cubeFactory[<|"n" -> n_, "MaxDepth" -> _|>, userOpts_] := Scope[
       With[{z = 1-#PlotRange/2}, Cuboid[-{1,1,1} * z, {1,1,1} * z]]&
     ]
   };
-  graph = ExtendedGraph[$points, $edges, VertexCoordinates -> $points,
-    Sequence @@ Normal[userOpts],
+  graph = ExtendedGraph[
+    $points, $edges, VertexCoordinates -> $points,
+    trimCardinalOpts @ userOpts,
     ViewOptions -> {ViewVector -> {3,2.5,2}, ViewProjection -> "Orthographic"},
     VertexShapeFunction -> None, ImageSize -> Small, EdgeThickness -> 2,
     ArrowheadSize -> Medium,
@@ -292,27 +297,52 @@ cubeFactory[<|"n" -> n_, "MaxDepth" -> _|>, userOpts_] := Scope[
 
 (**************************************************************************************************)
 
-DefineParameterizedLatticeQuiver["CubeAtlas", cubeAtlasFactory, <|"MaxDepth" -> Infinity|>]
+DefineParameterizedLatticeQuiver["CubeAtlasDoubleCover", cubeAtlasDoubleCoverFactory, <|"MaxDepth" -> Infinity|>]
 
-cubeAtlasFactory[assoc_, userOpts_] := Scope[
+cubeAtlasDoubleCoverFactory[assoc_, userOpts_] := Scope[
 
   {a, b, c} = Lookup[userOpts, Cardinals, {"a", "b", "c"}];
 
   cab = ChartSymbol[a <> b];
   cbc = ChartSymbol[b <> c];
   cac = ChartSymbol[a <> c];
+  {A, B, C} = Negated /@ {a, b, c};
 
   transitions = {
-    Annotation[DirectedEdge[cab, cbc, b], "CardinalTransitions" -> {a -> c}],
-    Annotation[DirectedEdge[cbc, cab, b], "CardinalTransitions" -> {c -> Negated @ a}],
-    Annotation[DirectedEdge[cbc, cac, c], "CardinalTransitions" -> {b -> a}],
-    Annotation[DirectedEdge[cac, cbc, c], "CardinalTransitions" -> {a -> Negated @ b}],
-    Annotation[DirectedEdge[cab, cac, a], "CardinalTransitions" -> {b -> Negated @ c}],
-    Annotation[DirectedEdge[cac, cab, a], "CardinalTransitions" -> {c -> b}]
+    transAnno[DirectedEdge[cab, cbc, b], a -> c],
+    transAnno[DirectedEdge[cbc, cab, b], c -> A],
+    transAnno[DirectedEdge[cbc, cac, c], b -> a],
+    transAnno[DirectedEdge[cac, cbc, c], a -> B],
+    transAnno[DirectedEdge[cab, cac, a], b -> C],
+    transAnno[DirectedEdge[cac, cab, a], c -> b]
   };
 
-  atlasQuiver[{cab, cbc, cac}, transitions, Sequence @@ DeleteOptions[Normal @ userOpts, Cardinals]]
+  atlasQuiver[{cab, cbc, cac}, transitions, trimCardinalOpts @ userOpts]
 ];
+
+(**************************************************************************************************)
+
+DefineParameterizedLatticeQuiver["CubeAtlas", cubeAtlasFactory, <|"MaxDepth" -> Infinity|>]
+
+cubeAtlasFactory[assoc_, userOpts_] := Scope[
+
+  {a, b, c} = Lookup[userOpts, Cardinals, {"a", "b", "c"}];
+  {A, B, C} = Negated /@ {a, b, c};
+
+  cab1 = ChartSymbol[a <> b <> "+"]; cab2 = ChartSymbol[a <> b <> "-"];
+  cbc1 = ChartSymbol[b <> c <> "+"]; cbc2 = ChartSymbol[b <> c <> "-"];
+  cac1 = ChartSymbol[a <> c <> "+"]; cac2 = ChartSymbol[a <> c <> "-"];
+
+  transitions = <|
+    b -> {transAnno[cab1 -> cbc1, a -> c], transAnno[cbc1 -> cab2, c -> A], transAnno[cab2 -> cbc2, a -> c], transAnno[cbc2 -> cab1, c -> A]},
+    c -> {transAnno[cbc1 -> cac1, b -> a], transAnno[cac1 -> cbc2, a -> B], transAnno[cbc2 -> cac2, b -> a], transAnno[cac2 -> cbc1, a -> B]},
+    a -> {transAnno[cab1 -> cac1, b -> C], transAnno[cac1 -> cab2, c -> b], transAnno[cab2 -> cac2, b -> C], transAnno[cac2 -> cab1, c -> b]}
+  |>;
+
+  atlasQuiver[{cab1, cab2, cbc1, cbc2, cac1, cac2}, transitions, trimCardinalOpts @ userOpts, ArrowheadPosition -> 0.5]
+];
+
+transAnno[e_, t_] := Annotation[e, "CardinalTransitions" -> ToList[t]];
 
 (**************************************************************************************************)
 
@@ -352,8 +382,11 @@ positiveSquareLatticeDisclinationAtlasFactory[assoc_, userOpts_] := Scope[
     Annotation[DirectedEdge[cac, cab, a], "CardinalTransitions" -> {c -> Negated[b]}]
   };
 
-  atlasQuiver[{cab, cbc, cac}, transitions, VertexCoordinates -> Part[CirclePoints[3], {3,2,1}],
-    Sequence @@ DeleteOptions[Normal @ userOpts, Cardinals]]
+  atlasQuiver[
+    {cab, cbc, cac}, transitions,
+    VertexCoordinates -> Part[CirclePoints[3], {3,2,1}],
+    trimCardinalOpts @ userOpts
+  ]
 ];
 
 (**************************************************************************************************)
@@ -383,7 +416,7 @@ tetrahedronFactory[assoc_, userOpts_] := Scope[
 
   Quiver[
     {1, 2, 3, 4}, edges,
-    Sequence @@ DeleteOptions[Normal @ userOpts, Cardinals],
+    trimCardinalOpts @ userOpts,
     VertexCoordinates -> If[layoutDim === 2, $tetraCoords2D, $tetraCoords3D],
     GraphLayout -> {"MultiEdgeDistance" -> 0.1}, ArrowheadShape -> If[layoutDim === 2, "Line", "Cone"]
   ]
@@ -395,7 +428,9 @@ atlasQuiver[charts_, transitions_, opts___Rule] := Quiver[
   charts, transitions, opts,
   EdgeLabels -> ("CardinalTransitions" -> CardinalTransition),
   EdgeLabelStyle -> {LabelPosition -> Scaled[0.5]}, AdditionalImagePadding->5,
-  ArrowheadPosition -> 0.8, ArrowheadShape -> "Line", ImageSize -> 120
+  ArrowheadPosition -> 0.8, ArrowheadShape -> "Line", ArrowheadSize -> Small, ImageSize -> 150
 ];
 
+(**************************************************************************************************)
 
+trimCardinalOpts[userOpts_] := Sequence @@ DeleteOptions[Normal @ userOpts, Cardinals]

@@ -729,7 +729,9 @@ ChartColorForm[expr_, colors_] := Scope[
   ];
   ReplaceAll[
     expr,
-    cs:ChartSymbol[sym_String] :> Style[cs, HumanBlend @ Lookup[colors, ParseCardinalWord @ sym]]
+    cs:ChartSymbol[sym_String] :> Style[cs,
+      HumanBlend @ Lookup[colors, ParseCardinalWord @ StringTrim[sym, {"+" | "-"}]]
+    ]
   ]
 ];
 
