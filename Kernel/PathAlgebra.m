@@ -70,6 +70,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   {vertexCoords, edgeCoords} = ExtractGraphPrimitiveCoordinates @ quiver;
 
   data["Quiver"] = quiver;
+  data["IndexQuiver"] = ToIndexGraph @ quiver;
   data["VertexList"] = VertexList @ quiver;
 
   data["VertexCoordinates"] = vertexCoords;
@@ -943,7 +944,9 @@ elementFrameData[PathElement[tail_, edges_, _]] := Scope[
   word = Map[edge |-> (
     transitions = Lookup[cardinalTransitions, edge, {}];
     frame //= ReplaceAll[transitions];
-    index = IndexOf[frame, Lookup[edgeToCardinal, edge]]; (* why can this fail? loop = PathCompose[a, b, c]; TranslationCommutator[loop, PathReverse@loop]*)
+    index = IndexOf[frame, Lookup[edgeToCardinal, edge]];
+    (* why can this fail? loop = PathCompose[a, b, c]; TranslationCommutator[loop, PathReverse@loop]*)
+    If[MissingQ[index], Return[$Failed, Block]];
     Part[iframe, index]),
     edges
   ];
@@ -1018,6 +1021,8 @@ elementTranslate[t_PathElement, p_PathElement, anti_:False] := Scope[
 
   tFrameData = CacheTo[$frameDataCache, t, elementFrameData @ t];
   pFrameData = CacheTo[$frameDataCache, p, elementFrameData @ p];
+
+  If[FailureQ[tFrameData] || FailureQ[pFrameData], Return @ NullElement];
 
   pWord = Part[pFrameData, 2];
   tTransport = RuleThread[First @ tFrameData, Last @ tFrameData];
@@ -1098,6 +1103,25 @@ PathInvert[PathVector[assoc_]] := Scope[
 
 invertElement[p:PathElement[t_, edges_, h_]] :=
   tailFrameWordToElement[t, Negated /@ tailFrameWord[p]]
+
+(**************************************************************************************************)
+
+PackageExport["ShortestPathVector"]
+
+SetUsage @ "
+ShortestPathVector[vector$] replaces the %PathElement in vector$ with their shortest path equivalents.
+"
+
+ShortestPathVector[PathVector[assoc_]] := Scope[
+  UnpackPathAlgebra[indexQuiver];
+  shortestPath = FindShortestPath[indexQuiver, All, All];
+  edgeIndex = AssociationRange @ EdgePairs @ indexQuiver;
+  edgeIndex = Join[edgeIndex, Map[Negated] @ KeyMap[Reverse] @ edgeIndex];
+  constructPathVector @ KeyMap[shortestPathElement, assoc]
+];
+
+shortestPathElement[PathElement[t_, _, h_]] :=
+  PathElement[t, edgeIndex /@ Partition[shortestPath[t, h], 2, 1], h];
 
 (**************************************************************************************************)
 

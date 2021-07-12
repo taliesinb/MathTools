@@ -277,6 +277,8 @@ ChooseCardinalColors[None, ___] := <||>;
 ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardinals,
   {"b", "g", "r"},
     <|"r" -> $Red, "g" -> $Green, "b" -> $Blue|>,
+  {"b", "g", "r", "w"},
+    <|"r" -> $Red, "g" -> $Green, "b" -> $Blue, "w" -> $Gray|>,
   _,
     AssociationThread[cardinals, ToColorPalette[palette, Length @ cardinals]]
 ];

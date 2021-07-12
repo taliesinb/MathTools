@@ -418,7 +418,36 @@ tetrahedronFactory[assoc_, userOpts_] := Scope[
     {1, 2, 3, 4}, edges,
     trimCardinalOpts @ userOpts,
     VertexCoordinates -> If[layoutDim === 2, $tetraCoords2D, $tetraCoords3D],
-    GraphLayout -> {"MultiEdgeDistance" -> 0.1}, ArrowheadShape -> If[layoutDim === 2, "Line", "Cone"]
+    GraphLayout -> {"MultiEdgeDistance" -> 0.1},
+    ArrowheadShape -> If[layoutDim === 2, "Line", "Cone"],
+    ArrowheadSize -> Medium
+  ]
+];
+
+(**************************************************************************************************)
+
+DefineParameterizedLatticeQuiver["TetrahedronAtlas", tetrahedronAtlasFactory, <|"MaxDepth" -> Infinity|>]
+
+tetrahedronAtlasFactory[assoc_, userOpts_] := Scope[
+
+  {r, g, b, w} = Lookup[userOpts, Cardinals, {"r", "g", "b", "w"}];
+  {R, G, B, W} = Negated /@ {r, g, b, w};
+  cl = ChartSymbol["rgb"];
+  cb = ChartSymbol["rgw"];
+  cr = ChartSymbol["rbw"];
+  cf = ChartSymbol["gbw"];
+  edges = {
+    transAnno[DirectedEdge[cl, cf, b | G], r -> W],
+    transAnno[DirectedEdge[cf, cr, b | w], g -> r],
+    transAnno[DirectedEdge[cr, cl, r | b], w -> g],
+    transAnno[DirectedEdge[cl, cb, r | g], b -> w],
+    transAnno[DirectedEdge[cr, cb, w | R], b -> G],
+    transAnno[DirectedEdge[cf, cb, W | G], b -> r]
+  };
+
+  atlasQuiver[
+    {cl, cb, cr, cf},
+    edges
   ]
 ];
 
