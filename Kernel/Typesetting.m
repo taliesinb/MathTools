@@ -686,7 +686,8 @@ ChartSymbol[sub$] represents a chart and formats as C$sub.
 "
 
 declareFormatting[
-  ChartSymbol[a___] :> Subscript["C", a]
+  ChartSymbol[sym_String] :> formatChartSymbol[sym, Automatic],
+  ChartSymbol[other__] :> Subscript["C", other]
 ];
 
 (**************************************************************************************************)
@@ -725,17 +726,32 @@ ChartColorForm[expr_, colors_] := Scope[
   colors = Which[
     GraphQ[colors], LookupCardinalColors @ colors,
     AssociationQ[colors], colors,
+    Automatic, Automatic,
     True, Return @ expr
   ];
   ReplaceAll[
     expr,
-    cs:ChartSymbol[sym_String] :> Style[cs,
-      HumanBlend @ Lookup[colors, ParseCardinalWord @ StringTrim[sym, {"+" | "-"}]]
-    ]
+    ChartSymbol[sym_String] :> formatChartSymbol[sym, colors]
   ]
 ];
 
 ChartColorForm[graph_][expr_] := ChartColorForm[expr, graph];
+
+PackageScope["formatChartSymbol"]
+
+formatChartSymbol[sym_String, colors_] := Scope[
+  Style[
+    Subscript["C", sym]
+  ,
+    cards = ParseCardinalWord @ StringTrim[sym, {"+" | "-"}];
+    c = Lookup[
+      If[colors === Automatic, ChooseCardinalColors @ cards, colors],
+      cards,
+      $Failed
+    ];
+    If[ContainsQ[c, $Failed], Sequence @@ {}, HumanBlend @ c]
+  ]
+];
 
 (**************************************************************************************************)
 

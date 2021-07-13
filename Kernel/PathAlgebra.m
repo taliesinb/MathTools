@@ -791,6 +791,13 @@ ProjectPathLength[pv:PathVector[assoc_], All] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["RemoveEmptyPaths"]
+
+RemoveEmptyPaths[PathVector[assoc_]] :=
+  PathVector @ KeySelect[assoc, PathLength[#] > 0&];
+
+(**************************************************************************************************)
+
 PackageExport["RandomPathVector"]
 
 SetUsage @ "
@@ -1188,18 +1195,26 @@ flattenWeights[rules:{__Rule}, w_] := #1 -> fieldTimes[#2, w]& @@@ rules;
 
 (**************************************************************************************************)
 
-PackageExport["TranslationCommutator"]
+PackageExport["TorsionVector"]
 
 SetUsage @ "
-TranslationCommutator[a$, b$] returns (a$ \[CirclePlus] b$) \[CircleMinus] (a$ \[CirclePlus] b$).
+TorsionVector[a$, b$] returns (a$ \[CirclePlus] b$) \[CircleMinus] (b$ \[CirclePlus] a$).
 * \[CirclePlus] is TranslateAdd.
 * \[CircleMinus] is TranslateSubtract.
 "
 
-TranslationCommutator[a_, b_] := Scope[
+TorsionVector[a_, b_] := Scope[
   ab = TranslateAdd[a, b];
-  TranslateSubtract[ab, ab]
+  ba = TranslateAdd[b, a];
+  TranslateSubtract[ab, ba]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["LieBracketVector"]
+
+LieBracketVector[x_, y_] :=
+  ShortestPathVector @ TranslateAdd[PathCompose[x, y], PathReverse @ PathCompose[y, x]];
 
 (**************************************************************************************************)
 
