@@ -101,7 +101,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   data["Cardinals"] = CardinalList @ quiver;
 
   ct = Lookup[LookupAnnotation[quiver, EdgeAnnotations, <||>], "CardinalTransitions", <||>];
-  data["CardinalTransitions"] = Join[ct, KeyMap[Negated] @ Map[Reverse[#, 2]&, ct]];
+  data["CardinalTransitions"] = Join[ct, KeyMap[Negated] @ Map[reverseTransition, ct, {2}]];
 
   pairs = EdgePairs @ quiver;
   tailVertices = Part[pairs, All, 1];
@@ -134,6 +134,9 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 $complexColorFunction = ComplexHue;
 
 ComplexHue[c_] := Hue[Arg[c]/Tau+.05, Min[Sqrt[Abs[c]]/1.2,1]]
+
+reverseTransition[a_ -> Negated[b_]] := b -> Negated[a];
+reverseTransition[a_ -> b_] := b -> a;
 
 (**************************************************************************************************)
 
@@ -246,9 +249,11 @@ notOverlappingPathsQ[PathVector[assoc_]] := Scope[
   DuplicateFreeQ @ Flatten[edges /. Negated[e_] :> e, 1]
 ]
 
+pathFieldQ[PathVector[assoc_]] := DuplicateFreeQ @ PathTailVertex @ Keys[assoc];
+
 notBothwaysQ[_] := False;
 
-formatPathVector[pv_] := If[notOverlappingPathsQ[pv],
+formatPathVector[pv_] := If[notOverlappingPathsQ[pv] && pathFieldQ[pv],
   iFormatPathVector[pv, False],
   Mouseover[
     iFormatPathVector[pv, False],
@@ -307,6 +312,16 @@ getEdgeCoords[e_] := Scope[
   Flatten[orientedCoords, 1] //. {l___, a_List, a_List, r___} :> {l, a, r}
 ];
 
+(* mergeSegments[{segment_}] := segment;
+mergeSegments[segments_List] :=
+  MapStaggered[segmentJoin, segments]
+
+segmentJoin[a_, b_] := If[Abs[segmentAngle[a] - segmentAngle[b]] > 0.01,
+  Echo @ applyBendBetween[a, b, 0.1],
+  a
+];
+ *)
+segmentAngle[segment_] := ArcTan @@ (Last[segment] - First[segment]);
 
 drawStyledPath[vertices_, style_] /; $transparency :=
   Mouseover[
@@ -477,6 +492,9 @@ WordVector['word$'] constructs a %PathVector consisting of all paths that have p
 * 'word$' should consist of cardinals, or their negations (indicated by uppercase letters).
 "
 
+WordVector[words:{__String}] := 
+  PathVectorPlus @@ Map[WordVector, words];
+
 WordVector[word_String] /; $PathAlgebraQ := Scope[
 
   UnpackPathAlgebra[vertexRange, tagOutTable, tagOutEdgeTable, nullVertex, nullEdge];
@@ -624,6 +642,8 @@ PathReverse[PathVector[assoc_]] :=
   PathVector @ KeySort @ KeyMap[PathReverse, assoc]
 
 PathReverse[PathElement[t_, e_, h_]] := PathElement[h, Map[Negated, Reverse @ e], t];
+
+PathReverse[NullElement] := NullElement;
 
 (**************************************************************************************************)
 
@@ -1027,7 +1047,7 @@ elementTranslate[t_PathElement, p_PathElement, anti_:False] := Scope[
   pWord = Part[pFrameData, 2];
   tTransport = RuleThread[First @ tFrameData, Last @ tFrameData];
 
-  pWordTransported = Replace[pWord, tTransport, {1}];
+  pWordTransported = Replace[pWord, tTransport, {1, 2}];
 
   If[anti, pWordTransported = Negated /@ pWordTransported];
 
@@ -1036,6 +1056,9 @@ elementTranslate[t_PathElement, p_PathElement, anti_:False] := Scope[
     pWordTransported
   ]
 ]
+
+elementTranslateHead[t_PathElement, p_PathElement, anti_:False] :=
+  PathReverse @ elementTranslate[t, PathReverse @ p, anti];
 
 (**************************************************************************************************)
 
@@ -1090,6 +1113,21 @@ PathVector /: CircleMinus[a_PathVector, b_PathVector] :=
 
 (**************************************************************************************************)
 
+PackageExport["TranslateHeadSubtract"]
+
+TranslateHeadSubtract[a_PathVector, b_PathVector] := Scope[
+  setupForTranslation[];
+  BilinearApply[elementTranslateHeadSubtract, a -> PathTailVertex, b -> PathHeadVertex]
+];
+
+elementTranslateHeadSubtract[t_PathElement, p_PathElement] :=
+  elementCompose[t, PathReverse @ elementTranslateHead[t, p]]
+
+TranslateHeadSubtract[a_PathVector, b_PathVector] :=
+  PathReverse @ TranslateSubtract[a, b];
+
+(**************************************************************************************************)
+
 PackageExport["PathInvert"]
 
 SetUsage @ "
@@ -1114,7 +1152,7 @@ ShortestPathVector[vector$] replaces the %PathElement in vector$ with their shor
 
 ShortestPathVector[PathVector[assoc_]] := Scope[
   UnpackPathAlgebra[indexQuiver];
-  shortestPath = FindShortestPath[indexQuiver, All, All];
+  shortestPath = FindShortestPath[UndirectedGraph @ indexQuiver, All, All];
   edgeIndex = AssociationRange @ EdgePairs @ indexQuiver;
   edgeIndex = Join[edgeIndex, Map[Negated] @ KeyMap[Reverse] @ edgeIndex];
   constructPathVector @ KeyMap[shortestPathElement, assoc]
