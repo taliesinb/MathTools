@@ -1154,7 +1154,6 @@ ShortestPathVector[PathVector[assoc_]] := Scope[
   UnpackPathAlgebra[indexQuiver];
   undirected = Graph[VertexList @ indexQuiver, (EdgeList @ indexQuiver) /. DirectedEdge -> UndirectedEdge];
   shortestPath = FindShortestPath[undirected, All, All];
-  shortestPath = FindShortestPath[indexQuiver, All, All];
   edgeIndex = AssociationRange @ EdgePairs @ indexQuiver;
   edgeIndex = Join[edgeIndex, Map[Negated] @ KeyMap[Reverse] @ edgeIndex];
   constructPathVector @ KeyMap[shortestPathElement, assoc]
