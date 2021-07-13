@@ -1152,7 +1152,8 @@ ShortestPathVector[vector$] replaces the %PathElement in vector$ with their shor
 
 ShortestPathVector[PathVector[assoc_]] := Scope[
   UnpackPathAlgebra[indexQuiver];
-  shortestPath = FindShortestPath[UndirectedGraph @ indexQuiver, All, All];
+  undirected = Graph[VertexList @ indexQuiver, (EdgeList @ indexQuiver) /. DirectedEdge -> UndirectedEdge];
+  shortestPath = FindShortestPath[undirected, All, All];
   edgeIndex = AssociationRange @ EdgePairs @ indexQuiver;
   edgeIndex = Join[edgeIndex, Map[Negated] @ KeyMap[Reverse] @ edgeIndex];
   constructPathVector @ KeyMap[shortestPathElement, assoc]
