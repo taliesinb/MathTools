@@ -110,6 +110,7 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
   $regionStyle = "Highlight";
   $arrowheadPosition = 1.0;
   $arrowheadSize = Automatic;
+  $arrowheadStyle = Automatic;
   $edgeSetback = 1;
   $outline = False;
   $simplifyRegions = False;
@@ -285,7 +286,7 @@ SyntaxInformation[Style];
 Options[Style];
 
 $additionalStyleOptions = {
-  PerformanceGoal, PathStyle, RegionStyle, ArrowheadPosition, ArrowheadSize, PointSize, HighlightRadius,
+  PerformanceGoal, PathStyle, RegionStyle, ArrowheadPosition, ArrowheadSize, ArrowheadStyle, PointSize, HighlightRadius,
   PathRadius, EdgeSetback, SimplifyRegions, ZOrder, Cardinals
 };
 
@@ -330,6 +331,10 @@ iProcessStyleSpec = MatchValues[
   ];
   Style[most__, DiskRadius -> sz_] := Scope[
     $diskRadius = sz; (* this is measured in points, not in fraction of image width *)
+    % @ Style @ most
+  ];
+  Style[most__, ArrowheadStyle -> style_] := Scope[
+    $arrowheadStyle = style;
     % @ Style @ most
   ];
   Style[most__, ArrowheadSize -> sz_] := Scope[
@@ -507,17 +512,19 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
         {disk1, arrowheads, arrow, disk2, extraArrowheads}
       ,
       "Replace" | "ReplaceEdges",
-        $cardinalFilter = If[$pathStyle === "ReplaceEdges", {}, All];
-        $newVertices = $newEdges = {}; $firstRemovedArrowheads = None;
-        TransformGraphPlotPrimitives[removeHighlightedPathEdges, edges, "EdgePrimitives"];
-        TransformGraphPlotPrimitives[removeHighlightedPathVertices, vertices, "VertexPrimitives"];
-        $newEdges = Which[
-          edges === {}, {},
-          adjustments === {}, $newEdges,
-          True, Style[Arrow @ segments, $firstRemovedArrowheads, CapForm @ "Round"]
-        ];
-        pathPrimitives = {Style[$newEdges, $edgeBaseStyle], $newVertices};
-        replaceWithColor[pathPrimitives, $highlightStyle]
+        Block[{$cardinalFilter = $cardinalFilter},
+          If[$pathStyle === "ReplaceEdges", SetAll[$cardinalFilter, {}]];
+          $newVertices = $newEdges = {}; $firstRemovedArrowheads = None;
+          TransformGraphPlotPrimitives[removeHighlightedPathEdges, edges, "EdgePrimitives"];
+          TransformGraphPlotPrimitives[removeHighlightedPathVertices, vertices, "VertexPrimitives"];
+          $newEdges = Which[
+            edges === {}, {},
+            adjustments === {}, $newEdges,
+            True, Style[Arrow @ segments, $firstRemovedArrowheads, CapForm @ "Round"]
+          ];
+          pathPrimitives = {Style[$newEdges, $edgeBaseStyle], $newVertices};
+          replaceWithColor[pathPrimitives, $highlightStyle, $arrowheadStyle === Inherited]
+        ]
       ,
       _,
         setbackLine[segments, setbackDistance]
@@ -583,10 +590,10 @@ removeHighlightedPathVertices[{old_, new_}] := (
   old
 );
 
-filteredArrowheadsQ[Arrowheads[list_List]] :=
+filteredArrowheadsQ[Arrowheads[list_List, ___]] :=
   AnyTrue[list, filteredArrowheadSpecQ];
 
-filteredArrowheadSpecQ[{_, _, Graphics[Annotation[_, card_, "Cardinal"], ___]}] /;
+filteredArrowheadSpecQ[{_, _, (Graphics|Graphics3D)[Annotation[_, card_, "Cardinal"], ___]}] /;
   !MemberQ[$cardinalFilter, card | Negated[card]] := True;
 
 saveAndTrimFilteredEdges[edges_] := Scope[
