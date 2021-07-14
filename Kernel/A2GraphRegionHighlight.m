@@ -525,6 +525,9 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
   ];
 
   If[$GraphIs3D && $pathStyle =!= "Replace",
+    diskRadius = $diskRadius;
+    SetAutomatic[diskRadius, pathRadius * 1.5];
+    diskRadius = diskRadius / $GraphPlotImageWidth * $graphPlotWidth;
     pathPrimitives = pathPrimitives /. {
       Disk[p_, r_] :> Sphere[p, r],
       Arrow[a___] :> Arrow[Tube[a, diskRadius / 1.5]]

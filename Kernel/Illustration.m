@@ -196,23 +196,40 @@ PathConcatPlot[graph_, p1_, p2_, p3_] :=
 
 (**************************************************************************************************)
 
+PackageExport["PathComposePlot"]
+
+PathComposePlot[args___, PathStyle -> style_] := Block[{$pwpStyle = style},
+  PathComposePlot[args]
+];
+
+PathComposePlot[graph_, p1_, p2_, p3_] :=
+  SpacedRow[
+    PathWordPlot[graph, p1],
+    inlineSymbol @ "\[CenterDot]",
+    PathWordPlot[graph, p2],
+    inlineSymbol @ "=",
+    PathWordPlot[graph, p3]
+  ]
+(**************************************************************************************************)
+
 PackageExport["HighlightCompassDomain"]
 
 Options[HighlightCompassDomain] = {
   "Color" -> Automatic,
   "Arrowheads" -> "Cardinals",
   "PreserveColors" -> True,
-  "Lighter" -> 0
+  "Lighter" -> 0,
+  "ConnectedComponent" -> All
 }
 
 HighlightCompassDomain[graph_, cardinals_, OptionsPattern[]] := Scope[
-  UnpackOptions[color, arrowheads, preserveColors, lighter];
+  UnpackOptions[color, arrowheads, preserveColors, lighter, connectedComponent];
   SetAutomatic[color, HumanBlend @ LookupCardinalColors[graph, cardinals]];
   If[color === "First", color = LookupCardinalColors[graph, First @ cardinals]];
   If[lighter != 0, color = ColorConvert[MapAt[# - lighter&, ColorConvert[color, Hue], 2], RGBColor]];
   (* arrowheadStyle = Append[All -> Transparent] @ KeyTake[LookupCardinalColors @ graph, cardinals]; *)
   HighlightGraphRegion[graph,
-    CompassDomain[cardinals], {color,
+    CompassDomain[cardinals, connectedComponent],{color,
       If[preserveColors, "ReplaceEdges", "Replace"],
       If[arrowheads === None, "HideArrowheads", Nothing],
       If[arrowheads === All, "FadeEdges", "FadeGraph"],

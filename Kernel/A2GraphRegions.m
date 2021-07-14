@@ -390,7 +390,7 @@ toCardinalPattern = MatchValues[
 ];
 
 edgeIndicesToPathData[edgeIndices_] := Scope[
-  normalEdgeIndices = StripNegated /@ indices;
+  normalEdgeIndices = StripNegated /@ edgeIndices;
   GraphPathData[
     allEdgeVertices @ normalEdgeIndices,
     normalEdgeIndices,
@@ -408,19 +408,26 @@ PackageExport["CompassDomain"]
 
 SetUsage @ "
 CompassDomain[{c$1, c$2, $$}] represents the domain of a compass with cardinals c$i.
+CompassDomain[cardinals$, i$] represents the i$'th connected component.
 * The domain is the connected subgraph induced by the vertices that have all of the c$i.
 "
 
-GraphRegionElementQ[CompassDomain[_List]] := True;
+GraphRegionElementQ[CompassDomain[_List, ___]] := True;
 
-processRegion[CompassDomain[cards_List]] := Scope[
+processRegion[CompassDomain[cards_List, i_:All]] := Scope[
   edgeLists = Map[$TagIndices, cards];
   overlappingEdges = Union @@ Intersection @@@ Subsets[edgeLists, {2, Infinity}];
   edgeLists = Complement[#, overlappingEdges]& /@ edgeLists;
   vertices = Intersection @@ Map[allEdgeVertices, edgeLists];
   edges = Union @@ edgeLists;
   {vertices, subgraphEdges} = FirstLast @ subgraphRegionData @ vertices;
-  GraphRegionData[vertices, Intersection[subgraphEdges, edges]]
+  edges = Intersection[subgraphEdges, edges];
+  If[i =!= All,
+    vertices = Part[WeaklyConnectedComponents[Subgraph[$IndexGraph, vertices]], i];
+    edgePairs = EdgePairs @ $IndexGraph;
+    edges //= Select[MemberQ[vertices, Part[edgePairs, #, 1] | Part[edgePairs, #, 2]]&];
+  ];
+  GraphRegionData[vertices, edges]
 ];
 
 

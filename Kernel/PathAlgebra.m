@@ -325,7 +325,7 @@ segmentAngle[segment_] := ArcTan @@ (Last[segment] - First[segment]);
 
 drawStyledPath[vertices_, style_] /; $transparency :=
   Mouseover[
-    drawSingleStyledPath[vertices, Opacity[.25, style]],
+    drawSingleStyledPath[vertices, Opacity[.1, style]],
     drawSingleStyledPath[vertices, style]
   ];
 
@@ -553,6 +553,24 @@ ReversalSymmetryDecompose[v_PathVector] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["ReversalSymmetricPart"]
+
+ReversalSymmetricPart[v_PathVector] := Scope[
+  forward = v * (1/2);
+  reverse = PathReverse @ forward;
+  forward + reverse
+];
+
+PackageExport["ReversalAntisymmetricPart"]
+
+ReversalAntisymmetricPart[v_PathVector] := Scope[
+  forward = v * (1/2);
+  reverse = PathReverse @ forward;
+  forward - reverse
+];
+
+(**************************************************************************************************)
+
 PackageExport["ReversalSymmetricQ"]
 PackageExport["ReversalAntisymmetricQ"]
 
@@ -722,10 +740,10 @@ declareFunctionAutocomplete[RandomEdgeField, {$directionStrings}];
 Options[RandomEdgeField] = {RandomSeeding -> Automatic};
 
 RandomEdgeField[type_String:"Symmetric", OptionsPattern[]] /; $PathAlgebraQ := Scope @ RandomSeeded[
-  UnpackPathAlgebra[edgeRange, randomFieldElement];
+  UnpackPathAlgebra[edgeRange, randomFieldElement, edgeToTail, edgeToHead];
   forward = edgeRange;
   reverse = Negated /@ edgeRange;
-  edges = PathElement /@ Switch[type,
+  edges = Switch[type,
     "Forward", forward,
     "Reverse", reverse,
     "Symmetric" | "Antisymmetric", Join[forward, reverse]
@@ -780,6 +798,9 @@ PackageExport["ProjectPathLength"]
 SetUsage @ "
 ProjectPathLength[vector$, n$] returns the path vector consisting of paths of length n$.
 "
+
+ProjectPathLength[pv_PathVector] :=
+  ProjectPathLength[pv, All];
 
 ProjectPathLength[PathVector[assoc_], n_] :=
   PathVector @ KeySelect[assoc, PathLength[#] === n&]
@@ -1030,6 +1051,17 @@ DefineLiteralMacro[setupForTranslation,
   )
 ];
 
+DefineLiteralMacro[setupForShortestPaths,
+
+  setupForShortestPaths[] := (
+    UnpackPathAlgebra[indexQuiver];
+    undirectedIndexQuiver = Graph[VertexList @ indexQuiver, (EdgeList @ indexQuiver) /. DirectedEdge -> UndirectedEdge];
+    shortestPath = FindShortestPath[undirectedIndexQuiver, All, All];
+    edgeIndex = AssociationRange @ EdgePairs @ indexQuiver;
+    edgeIndex = Join[edgeIndex, Map[Negated] @ KeyMap[Reverse] @ edgeIndex];
+  )
+];
+
 
 (**************************************************************************************************)
 
@@ -1135,6 +1167,34 @@ TranslateHeadSubtract[a_PathVector, b_PathVector] :=
 
 (**************************************************************************************************)
 
+PackageExport["TranslationDifference"]
+
+TranslationDifference[a_PathVector, b_PathVector] := Scope[
+  setupForTranslation[];
+  setupForShortestPaths[];
+  BilinearApply[elementTranslationDifference, a -> PathTailVertex, b -> PathTailVertex]
+]
+
+elementTranslationDifference[a_PathElement, b_PathElement] := Scope[
+  ab = elementTranslate[a, b];
+  ba = elementTranslate[b, a];
+  If[ab === NullElement || ba === NullElement, Return @ NullElement];
+  t = PathHeadVertex @ ab; h = PathHeadVertex @ ba;
+  shortest = shortestPath[t, h];
+  PathElement[t, edgeIndex /@ Partition[shortest, 2, 1], h]
+];
+
+(**************************************************************************************************)
+
+PackageExport["AntisymmetrizedTranslationDifference"]
+
+AntisymmetrizedTranslationDifference[a_, b_] := Scope[
+  res = TranslationDifference[a, b]/2;
+  res - PathReverse[res]
+];
+
+(**************************************************************************************************)
+
 PackageExport["PathInvert"]
 
 SetUsage @ "
@@ -1158,16 +1218,18 @@ ShortestPathVector[vector$] replaces the %PathElement in vector$ with their shor
 "
 
 ShortestPathVector[PathVector[assoc_]] := Scope[
-  UnpackPathAlgebra[indexQuiver];
-  undirected = Graph[VertexList @ indexQuiver, (EdgeList @ indexQuiver) /. DirectedEdge -> UndirectedEdge];
-  shortestPath = FindShortestPath[undirected, All, All];
-  edgeIndex = AssociationRange @ EdgePairs @ indexQuiver;
-  edgeIndex = Join[edgeIndex, Map[Negated] @ KeyMap[Reverse] @ edgeIndex];
+  setupForShortestPaths[];
   constructPathVector @ KeyMap[shortestPathElement, assoc]
 ];
 
-shortestPathElement[PathElement[t_, _, h_]] :=
-  PathElement[t, edgeIndex /@ Partition[shortestPath[t, h], 2, 1], h];
+shortestPathElement[p:PathElement[t_, e_, h_]] := Scope[
+  shortest = shortestPath[t, h];
+  len = Length @ shortest;
+  If[len < Length[e] + 1,
+    PathElement[t, edgeIndex /@ Partition[shortest, 2, 1], h],
+    p
+  ]
+];
 
 (**************************************************************************************************)
 
@@ -1198,14 +1260,14 @@ flattenWeights[rules:{__Rule}, w_] := #1 -> fieldTimes[#2, w]& @@@ rules;
 PackageExport["TorsionVector"]
 
 SetUsage @ "
-TorsionVector[a$, b$] returns (a$ \[CirclePlus] b$) \[CircleMinus] (b$ \[CirclePlus] a$).
+TorsionVector[a$, b$] returns (b$ \[CirclePlus] a$) \[CircleMinus] (a$ \[CirclePlus] b$).
 * \[CirclePlus] is TranslateAdd.
 * \[CircleMinus] is TranslateSubtract.
 "
 
 TorsionVector[a_, b_] := Scope[
-  ab = TranslateAdd[a, b];
-  ba = TranslateAdd[b, a];
+  ab = TranslateAdd[b, a];
+  ba = TranslateAdd[a, b];
   TranslateSubtract[ab, ba]
 ];
 
