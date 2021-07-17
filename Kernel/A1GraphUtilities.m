@@ -440,7 +440,7 @@ ExtendedGraphQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageScope["LookupExtendedGraphAnnotations"]
+PackageExport["LookupExtendedGraphAnnotations"]
 
 LookupExtendedGraphAnnotations[graph_, keys_List] :=
   MapThread[

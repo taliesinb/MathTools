@@ -28,7 +28,7 @@ PackageExport["ModOperator"]
 PackageExport["PlusModOperator"]
 PackageExport["TimesModOperator"]
 
-ModOperator[n_][e_] := Mod[e, n, 0];
+ModOperator[n_][e_] := If[NumericQ[e], Mod[e, n, 0], e];
 ModOperator[Infinity] = Identity;
 PlusModOperator[n_] := Plus /* ModOperator[n];
 TimesModOperator[n_] := Times /* ModOperator[n];
@@ -47,7 +47,8 @@ PathAlgebra[spec$] uses %Integers as the field.
 Options[PathAlgebra] = {
   PlotRange -> Automatic,
   EdgeSetback -> 0.25,
-  ImageSize -> 100
+  ImageSize -> 100,
+  VertexSize -> Automatic
 };
 
 $graphOrLatticeSpec = _Graph | _String | {_String, __};
@@ -63,7 +64,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
   If[!MatchQ[field, _Integer | Integers | Reals | Complexes], ReturnFailed[]];
 
-  UnpackOptions[plotRange, edgeSetback, imageSize];
+  UnpackOptions[plotRange, edgeSetback, imageSize, vertexSize];
   If[NumericQ[plotRange], plotRange *= {{-1, 1}, {-1, 1}}];
 
   data = <||>;
@@ -71,7 +72,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
   data["Quiver"] = quiver;
   data["IndexQuiver"] = ToIndexGraph @ quiver;
-  data["VertexList"] = VertexList @ quiver;
+  data["VertexList"] = vertexList = VertexList @ quiver;
 
   data["VertexCoordinates"] = vertexCoords;
   data["EdgeCoordinateLists"] = edgeCoords;
@@ -79,6 +80,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   data["PlotRange"] = Replace[plotRange, Automatic :> CoordinateBounds[vertexCoords]];
   data["EdgeSetback"] = edgeSetback;
   data["ImageSize"] = imageSize;
+  data["VertexSize"] = vertexSize;
 
   data["Field"] = field;
   data["FieldModulus"] = mod = Match[field, n_Integer :> n, Infinity];
@@ -96,9 +98,25 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
   data["VertexCount"] = vertexCount = VertexCount @ quiver;
   data["EdgeCount"] = edgeCount = EdgeCount @ quiver;
-  data["VertexRange"] = Range @ vertexCount;
+  data["VertexRange"] = vertexRange = Range @ vertexCount;
   data["EdgeRange"] = edgeRange = Range @ edgeCount;
   data["Cardinals"] = CardinalList @ quiver;
+
+  data["VertexDegreeList"] = vertexDegrees = VertexDegree @ quiver;
+  origin = LookupExtendedGraphAnnotations[quiver, GraphOrigin];
+  If[origin =!= None,
+    origin = IndexOf[vertexList, origin];
+    data["Origin"] = origin;
+    data["OriginDegree"] = originDegree = Part[vertexDegrees, origin];
+    data["DegreePerfectVertices"] = SelectIndices[vertexDegrees, EqualTo[originDegree]];
+    data["DegreeDefectiveVertices"] = SelectIndices[vertexDegrees, UnequalTo[originDegree]];
+  ,
+    data["Origin"] = None;
+    data["OriginDegree"] = Indeterminate;
+    data["DegreePerfectVertices"] = vertexRange;
+    data["DegreeDefectiveVertices"] = {};
+  ];
+
 
   ct = Lookup[LookupAnnotation[quiver, EdgeAnnotations, <||>], "CardinalTransitions", <||>];
   data["CardinalTransitions"] = Join[ct, KeyMap[Negated] @ Map[reverseTransition, ct, {2}]];
@@ -182,9 +200,11 @@ $pathVectorDispatch = <|
 PackageExport["PathVectorPlus"]
 PackageExport["PathVectorTimes"]
 
+NumericOrSymbolicQ[a_] := NumericQ[a] || MatchQ[a, _Subscript];
+
 PathVectorPlus[v__PathVector] := PathVectorElementwise[Apply @ $FieldPlus, 0, {v}];
 PathVectorTimes[v__PathVector] := PathVectorElementwise[Apply @ $FieldTimes, 0, {v}];
-PathVectorTimes[n_ ? NumericQ, p_PathVector] := With[{t = $FieldTimes}, PathVectorMap[t[n, #]&, p]];
+PathVectorTimes[n_ ? NumericOrSymbolicQ, p_PathVector] := If[n === 1 || n === 1.0, p, With[{t = $FieldTimes}, PathVectorMap[t[n, #]&, p]]];
 
 PathVectorMap[f_, PathVector[assoc_]] :=
   PathVector @ Map[f, assoc];
@@ -264,7 +284,7 @@ formatPathVector[pv_] := If[notOverlappingPathsQ[pv] && pathFieldQ[pv],
 iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
   UnpackPathAlgebra[
     vertexCoordinates, edgeCoordinateLists, plotRange, fieldColorFunction,
-    vertexRange, vertexList, edgeSetback, imageSize, edgeToCardinal
+    vertexRange, vertexList, vertexSize, edgeSetback, imageSize, edgeToCardinal
   ];
   $sb = edgeSetback; $transparency = transparency;
   pathPrimitives = drawWeightedElement @@@ SortBy[
@@ -272,13 +292,13 @@ iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
     -PathLength[First @ #]&
   ];
   pathPrimitives = {
-    AbsolutePointSize[4], AbsoluteThickness[1.5],
+    AbsolutePointSize[Replace[vertexSize, Automatic -> 4]], AbsoluteThickness[1.5],
     pathPrimitives
   };
   initialPathVertices = Keys[paths][[All, 1]];
   remainingVertices = Complement[vertexRange, initialPathVertices];
   vertexPrimitives = {
-    AbsolutePointSize[3], $LightGray,
+    AbsolutePointSize[Replace[vertexSize, Automatic -> 3]], $LightGray,
     Point @ Part[vertexCoordinates, remainingVertices]
   };
   Graphics[
@@ -303,8 +323,8 @@ drawWeightedElement[p:PathElement[t_, e_, h_], weight_] :=
       Part[vertexCoordinates, List @ t],
       getEdgeCoords[e]
     ],
-    fieldColorFunction @ weight
-  ] ~NiceTooltip~ pathElementForm[p];
+    If[NumericQ[weight], fieldColorFunction @ weight, $Teal]
+  ] ~NiceTooltip~ Column[{pathElementForm[p], weight}]
 
 getEdgeCoords[e_] := Scope[
   coords = Part[edgeCoordinateLists, StripNegated /@ e];
@@ -346,10 +366,10 @@ myArrow[Nothing] = Nothing;
 myArrow[e_] := Arrow[e];
 
 fieldColors = MatchValues[
-  2 := {$Gray, $DarkGray};
+  2 := {$Gray, Black};
   3 := {$Gray, $Red, $Blue};
   4 := {$Gray, $Red, $Purple, $Blue};
-  4 := {$Gray, $Red, $DarkRed, $DarkBlue, $Blue};
+  5 := {$Gray, $Red, $DarkRed, $DarkBlue, $Blue};
   n_ := Take[Prepend[$ColorPalette, White], n];
 ];
 
@@ -492,7 +512,7 @@ WordVector['word$'] constructs a %PathVector consisting of all paths that have p
 * 'word$' should consist of cardinals, or their negations (indicated by uppercase letters).
 "
 
-WordVector[words:{__String}] := 
+WordVector[words:{__String}] :=
   PathVectorPlus @@ Map[WordVector, words];
 
 WordVector[word_String] /; $PathAlgebraQ := Scope[
@@ -526,15 +546,135 @@ toWordVectorPathElement[tail_, edges_, head_] :=
 
 (**************************************************************************************************)
 
+PackageExport["PathVectorWeights"]
+
+PathVectorWeights[list_List] :=
+  Map[PathVectorWeights, list];
+
+PathVectorWeights[PathVector[assoc_]] :=
+  Values @ assoc;
+
+PathVectorWeights[PathVector[assoc_], i_] :=
+  If[1 <= Abs[i] <= Length[assoc], Part[assoc, i], 0];
+
+PathVectorWeights[list_List, i_] :=
+  PathVectorWeights[#, i]& /@ list;
+
+(**************************************************************************************************)
+
+PackageExport["IgnoreDefectiveDegree"]
+
+SetUsage @ "
+IgnoreDefectiveDegree is an option to VertexFieldEquationSolve and FindPathVectorZeros.
+"
+
+PackageExport["RHSConstant"]
+
+SetUsage @ "
+RHSConstant is an option to VertexFieldEquationSolve and FindPathVectorZeros.
+"
+
+PackageExport["BoundaryConditions"]
+
+SetUsage @ "
+BoundaryConditions is an option to VertexFieldEquationSolve.
+"
+
+(**************************************************************************************************)
+
+PackageExport["FindPathVectorZeros"]
+
+Options[FindPathVectorZeros] = {
+  Modulus -> Inherited,
+  IgnoreDefectiveDegree -> False,
+  RHSConstant -> 0,
+  MaxItems -> 10
+};
+
+FindPathVectorZeros[pv_, OptionsPattern[]] := Scope[
+  UnpackPathAlgebra[field, degreePerfectVertices];
+  UnpackOptions[modulus, ignoreDefectiveDegree, rHSConstant, maxItems];
+  SetInherited[modulus, field];
+  weights = PathVectorWeights[pv];
+  vars = DeleteDuplicates @ DeepCases[weights, _Subscript];
+  If[ignoreDefectiveDegree,
+    parter = PartOperator[degreePerfectVertices];
+    weights = If[ListQ[pv], Flatten @ Map[parter, weights], parter @ weights]];
+  equations = Thread[weights == rHSConstant];
+  FindInstance[Evaluate @ equations, vars, Automatic, maxItems, Modulus -> modulus]
+]
+
+(**************************************************************************************************)
+
+PackageExport["SubstituteSymbolicWeights"]
+
+SubstituteSymbolicWeights[PathVector[assoc_], subs:{__Rule}] :=
+  constructPathVector @ AssociationThread[Keys @ assoc, ReplaceAll[Values @ assoc, subs]]
+
+SubstituteSymbolicWeights[pv_PathVector, subs:{___List}] :=
+  SubstituteSymbolicWeights[pv, #]& /@ subs;
+
+
+(**************************************************************************************************)
+
+PackageExport["SetPathElementWeights"]
+
+SetPathElementWeights[PathVector[assoc_], rules_] :=
+  constructPathVector @ Join[assoc, rules];
+
+SetPathElementWeights[rules_][vector_] :=
+  SetPathElementWeights[vector, rules];
+
+(**************************************************************************************************)
+
+PackageExport["SetVertexFieldWeights"]
+
+SetVertexFieldWeights[PathVector[assoc_], rules:(_Rule | {___Rule})] :=
+  constructPathVector @ Append[assoc, MapAt[EmptyPathElement, ToList @ rules, {All, 1}]];
+
+SetVertexFieldWeights[spec_][vector_] := SetVertexFieldWeights[vector, spec];
+
+(**************************************************************************************************)
+
+PackageExport["VertexFieldEquationSolve"]
+
+Options[VertexFieldEquationSolve] = Join[
+  {BoundaryConditions -> {}},
+  Options @ FindPathVectorZeros
+];
+
+VertexFieldEquationSolve::funcmsg = "Function issued messages when applied to a symbolic vertex field."
+VertexFieldEquationSolve::funcres = "Function did not return a vertex field."
+
+VertexFieldEquationSolve[f_, opts:OptionsPattern[]] := Scope[
+  UnpackOptions[boundaryConditions];
+  UnpackPathAlgebra[degreeDefectiveVertices, origin];
+  sym = SymbolicVertexField[];
+  {boundaryValue, originValue} = Lookup[boundaryConditions, {"Boundary", "Origin"}, None];
+  If[boundaryValue =!= None && degreeDefectiveVertices =!= {},
+    sym //= SetVertexFieldWeights[Thread[degreeDefectiveVertices -> boundaryValue]]];
+  If[originValue =!= None,
+    sym //= SetVertexFieldWeights[origin -> originValue]];
+  If[ListQ[f], f //= ApplyThrough];
+  res = Check[Construct[f, sym], $Failed];
+  If[FailureQ[res], ReturnFailed["funcmsg"]];
+  If[!PathVectorQ[res] && !VectorQ[res, PathVectorQ], ReturnFailed["funcres"]];
+  zeros = FindPathVectorZeros[res, FilterOptions @ opts];
+  SubstituteSymbolicWeights[sym, zeros]
+]
+
+(**************************************************************************************************)
+
+PackageExport["ConstantVertexField"]
+
+ConstantVertexField[n_:1] := PathVectorTimes[n, VertexField[]];
+
+(**************************************************************************************************)
+
 PackageExport["PathVectorComponents"]
 
 PathVectorComponents[PathVector[assoc_]] :=
   PathVector @ Association[#]& /@ Normal[assoc]
-
-PackageExport["PathVectorComponents"]
-
-PathVectorComponents[PathVector[assoc_], parts_] :=
-  PathVector @ Association @ Part[Normal[assoc], parts];
 
 (**************************************************************************************************)
 
@@ -779,6 +919,32 @@ RandomPathField[opts:OptionsPattern[]] :=
 
 RandomPathField[range:{_Integer ? NonNegative, _Integer ? NonNegative} | (_Integer ? NonNegative), opts:OptionsPattern[]] :=
   RandomPathVector[1, range, opts];
+
+(**************************************************************************************************)
+
+PackageExport["SymbolicVertexField"]
+
+SymbolicVertexField[symbol_:\[FormalV]] := Scope[
+  UnpackPathAlgebra[vertexRange];
+  PathVector @ Association @ Map[EmptyPathElement[#] -> Subscript[symbol, #]&, vertexRange]
+];
+
+(**************************************************************************************************)
+
+PackageExport["SymbolicEdgeField"]
+
+SymbolicEdgeField[symbol_:\[FormalE], type_:"Forward"] := Scope[
+  UnpackPathAlgebra[edgeRange, edgeToTail, edgeToHead];
+  forward = edgeRange;
+  reverse = Negated /@ edgeRange;
+  edges = Switch[type,
+    "Forward", forward,
+    "Reverse", reverse,
+    "Symmetric" | "Antisymmetric", Join[forward, reverse]
+  ];
+  i = 1;
+  PathVector @ Association @ KeySort @ Map[edge |-> singleEdgePathElement[edge] -> Subscript[symbol, i++], edges]
+];
 
 (**************************************************************************************************)
 
@@ -1074,6 +1240,8 @@ PathTranslate[t_PathVector, p_PathVector] /; $PathAlgebraQ := Scope[
   BilinearApply[elementTranslate, t -> PathTailVertex, p -> PathTailVertex]
 ]
 
+PathTranslate[t_PathVector][p_PathVector] := PathTranslate[t, p];
+
 elementTranslate[t_PathElement, p_PathElement, anti_:False] := Scope[
 
   If[PathTailVertex[t] =!= PathTailVertex[p], $Unreachable];
@@ -1098,6 +1266,19 @@ elementTranslate[t_PathElement, p_PathElement, anti_:False] := Scope[
 
 elementTranslateHead[t_PathElement, p_PathElement, anti_:False] :=
   PathReverse @ elementTranslate[t, PathReverse @ p, anti];
+
+PathVector /: UpArrow[t_PathVector, p_PathVector] :=
+  PathTranslate[t, p];
+
+(**************************************************************************************************)
+
+PackageExport["PathReverseTranslate"]
+
+PathReverseTranslate[t_PathVector, p_PathVector] /; $PathAlgebraQ :=
+  PathTranslate[PathReverse @ t, p];
+
+PathVector /: DownArrow[t_PathVector, p_PathVector] :=
+  PathReverseTranslate[t, p];
 
 (**************************************************************************************************)
 
@@ -1282,8 +1463,16 @@ LieBracketVector[x_, y_] :=
 
 PackageExport["PathForwardDifference"]
 
+PathForwardDifference[list:{__List}, target_] :=
+  Apply[PathVectorPlus, PathForwardDifference[#, target]& /@ list];
+
+PathForwardDifference[{v1_, vn___}, target_] :=
+  PathForwardDifference[v1, PathForwardDifference[{vn}, target]];
+
+PathForwardDifference[{}, target_] := target;
+
 PathForwardDifference[flow_, target_] :=
-  PathTranslate[flow - PathTailVector[flow], target];
+  PathTranslate[PathTailVector[flow] - flow, target];
 
 PathForwardDifference[v_][t_] := PathForwardDifference[v, t];
 
@@ -1291,10 +1480,48 @@ PathForwardDifference[v_][t_] := PathForwardDifference[v, t];
 
 PackageExport["PathBackwardDifference"]
 
+PathBackwardDifference[list:{__List}, target_] :=
+  Apply[PathVectorPlus, PathBackwardDifference[#, target]& /@ list];
+
 PathBackwardDifference[flow_, target_] :=
-  PathTranslate[flow - PathTailVector[flow], target];
+  PathTranslate[PathReverse[flow] - PathHeadVector[flow], target];
+
+PathBackwardDifference[{v1_, vn___}, target_] :=
+  PathBackwardDifference[v1, PathBackwardDifference[{vn}, target]];
+
+PathForwardDifference[{}, target_] := target;
 
 PathBackwardDifference[v_][t_] := PathBackwardDifference[v, t];
+
+(**************************************************************************************************)
+
+PackageExport["PathCentralDifference"]
+
+PathCentralDifference[list:{__List}, target_] :=
+  Apply[PathVectorPlus, PathCentralDifference[#, target]& /@ list];
+
+PathCentralDifference[flow_, target_] :=
+  PathTranslate[-flow + PathReverse[flow], target];
+
+PathCentralDifference[{v1_, vn___}, target_] :=
+  PathCentralDifference[v1, PathCentralDifference[{vn}, target]];
+
+PathCentralDifference[{}, target_] := target;
+
+PathCentralDifference[v_][t_] := PathCentralDifference[v, t];
+
+(**************************************************************************************************)
+
+PackageExport["LaplacianOperator"]
+
+LaplacianOperator[] := Scope[
+  basis = BasisWordVectors[];
+  basis = Join[basis, PathReverse /@ basis];
+  PathTranslate[Apply[PathVectorPlus, basis] - VertexField[]]
+];
+
+LaplacianOperator[pv_PathVector] :=
+  LaplacianOperator[][pv];
 
 (**************************************************************************************************)
 

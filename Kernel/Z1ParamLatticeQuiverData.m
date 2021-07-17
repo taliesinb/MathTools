@@ -15,6 +15,23 @@ DefineParameterizedLatticeQuiver[name_String, func_, params_] := (
 
 (**************************************************************************************************)
 
+DefineParameterizedLatticeQuiver["Circle", circleFactory, <|"Size" -> 5, "MaxDepth" -> Infinity|>];
+
+circleFactory[assoc_, userOpts_] := Scope[
+  UnpackAssociation[assoc, size];
+  vertices = Range @ size;
+  Quiver[
+    vertices,
+    DirectedEdge[#1, #2, "x"]& @@@ Partition[vertices, 2, 1, 1],
+    Sequence @@ Normal[userOpts],
+    VertexCoordinates -> CirclePoints[size],
+    GraphOrigin -> 1,
+    ImageSize -> 100, ArrowheadShape -> "Line"
+  ]
+];
+
+(**************************************************************************************************)
+
 torusNormOptions = MatchValues[
   {Infinity, h_, d_} := {
     SetAutomatic[d, 4];

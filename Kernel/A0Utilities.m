@@ -27,7 +27,7 @@ setupCases[sym_Symbol, CompoundExpression[args__SetDelayed, rewrites_List]] :=
 setupCases[sym_Symbol, CompoundExpression[args__SetDelayed, Null...], rewrites_:{}] := Module[{holds},
   Clear[sym];
   holds = Hold @@@ Hold[args];
-  holds = ReplaceAll[holds, Unevaluated @ rewrites];
+  holds = ReplaceAll[holds, procRewrites @ rewrites];
   PrependTo[holds, Hold[case_, UnmatchedCase[sym, case]]];
   holds = ReplaceAll[holds, HoldPattern[Out[]] :> sym];
   Replace[List @@ holds, Hold[a_, b_] :> SetDelayed[sym[a], b], {1}];
@@ -36,6 +36,11 @@ setupCases[sym_Symbol, CompoundExpression[args__SetDelayed, Null...], rewrites_:
 Case::baddef = "Bad case definition for ``."
 
 setupCases[sym_, args___] := Message[Case::baddef, sym];
+
+SetHoldAllComplete[procRewrites];
+procRewrites[l_List] := Map[procRewrites, Unevaluated @ l];
+procRewrites[a_ -> b_] := HoldPattern[a] -> b;
+procRewrites[a_ :> b_] := HoldPattern[a] :> b;
 
 (**************************************************************************************************)
 
