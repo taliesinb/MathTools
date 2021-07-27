@@ -102,7 +102,9 @@ $initialSymbolResolutionDispatch = Dispatch[{
   (* Package`PackageSymbol[name_String] /; StringStartsQ[name, $lowerCaseSymbolRegex] :> RuleCondition[makeResolvedSymbol[name]], *)
   Package`PackageSymbol["SetUsage"][usageString_String] :> RuleCondition[rewriteSetUsage[usageString]],
   Package`PackageSymbol[name_String] /; StringMatchQ[name, $coreSymbolRegex] :> RuleCondition[$coreSymbolAssociation[name]],
-  Package`PackageSymbol[name_String] /; StringContainsQ[name, "`"] :> RuleCondition[makeResolvedSymbol[name]]
+  Package`PackageSymbol[name_String] /; StringContainsQ[name, "`"] :> RuleCondition[makeResolvedSymbol[name]],
+  Package`PackageSymbol["$PackageFileName"] :> RuleCondition[QuiverGeometryPackageLoader`$CurrentFile],
+  Package`PackageSymbol["$PackageDirectory"] :> RuleCondition[QuiverGeometryPackageLoader`$Directory]
 }];
 
 (* this means SetUsage doesn't have to resolve the symbol later, which is expensive. *)
@@ -135,13 +137,17 @@ readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
 ];
 
 loadFileContents[path_, context_] := Module[{str, contents},
-  $loadedFileCount++;
-  str = fileStringUTF8 @ path;
+  $loadedFileCount++; QuiverGeometryPackageLoader`$CurrentFile = path;
+  str = StringReplace[fileStringUTF8 @ path, $stringProcessingRules];
   contents = Check[Package`ToPackageExpression @ str, $Failed];
   If[FailureQ[contents], handleSyntaxError[path]];
   Block[{$Context = context}, contents = contents /. $initialSymbolResolutionDispatch /. ResolvedSymbol[sym_] :> sym];
   contents
 ];
+
+$stringProcessingRules =
+  RegularExpression["(?s)\"\"\"(.*?)\"\"\""] :>
+    StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""]
 
 If[!ValueQ[QuiverGeometryPackageLoader`$SystemOpenEnabled], QuiverGeometryPackageLoader`$SystemOpenEnabled = True];
 DoSystemOpen[s_] := If[QuiverGeometryPackageLoader`$SystemOpenEnabled, SystemOpen[s]];
@@ -248,7 +254,7 @@ QuiverGeometryPackageLoader`EvaluatePackages[packagesList_List] := Block[
     Scan[evaluatePackage, packagesList],
     handleMessage
   ];
-  If[$failEval, Return[$Failed]];
+  If[$failEval, Return[$Failed, Block]];
   result
 ];
 
@@ -258,10 +264,10 @@ MakeBoxes[pd_Package`PackageData, StandardForm] :=
   RowBox[{"PackageData", StyleBox[RowBox[{"[", Length[pd], "]"}], Background -> LightRed]}];
 
 evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
-  $currentPath = path; $currentFileLineTimings = <||>;
-  If[$failEval, Return[$Failed]];
+  $currentPath = path; $currentFileLineTimings = <||>; $failCount = 0;
+  If[$failEval, Return[$Failed, Catch]];
   QuiverGeometryPackageLoader`$FileTimings[path] = First @ AbsoluteTiming[
-    Scan[evaluateExpression, packageData];
+    Catch[Scan[evaluateExpression, packageData], evaluateExpression];
   ];
   QuiverGeometryPackageLoader`$FileLineTimings[path] = $currentFileLineTimings;
 ,
@@ -275,23 +281,29 @@ catchMacroFailure[$Failed, _] := handleMessage @
 
 catchMacroFailure[f_Failure, _] := handleMessage @ f;
 
-evaluateExpression[{lineNumber_, expr_}] := (
+evaluateExpression[{lineNumber_, expr_}] := If[$failEval, $Failed,
   $currentLineNumber = lineNumber;
   $currentFileLineTimings[lineNumber] = First @ AbsoluteTiming[{expr}];
-);
+];
 
-handleMessage[f_Failure] := Scope[
+handleMessage[f_Failure] := Block[{fileLine},
+  $failEval = True;
+  If[$failCount++ > 5, Print["Emergency abort!"]; Abort[]];
+  (* ^ this is an emergency measure: it shouldn't happen but when we do get a long list of errors the
+  OS can lock up for a while *)
   Beep[];
   fileLine = GeneralUtilities`FileLine[$currentPath, $currentLineNumber];
   Print["Aborting; message ", HoldForm @@ f["HeldMessageTemplate"], " occurred at ", fileLine];
   Print[FailureString @ f];
+  Throw[$Failed, evaluateExpression];
   DoSystemOpen[fileLine];
-  $failEval = True;
+
 ];
 
 (*************************************************************************************************)
 
 QuiverGeometryPackageLoader`$Directory = DirectoryName[$InputFileName];
+QuiverGeometryPackageLoader`$CurrentFile = None;
 
 $PreviousPathAlgebra = None;
 
