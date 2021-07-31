@@ -54,7 +54,7 @@ For %InitialStates -> All, all vertices of the fundamental quiver are used as in
 | {p$1, $$, p$n} | obtain particular elements of the state |
 | None | use the entire state as the coordinate |
 | f$ | apply f$ to each %RepresentationElement |
-| {All, f$} | apply f% to the full state |
+| {All, f$} | apply f$ to the full state |
 
 * %AbstractCoordinateFilter is a predicate that will be applied to vertices and should return True or False.
 Only vertices returning True will be retained.
@@ -95,7 +95,7 @@ The following vertex is available for use with %VertexColorFunction, %VertexLabe
 
 PackageExport["InitialStates"]
 
-$baseGenerateLatticeOptions = JoinOptions[{
+$baseGenerateLatticeOptions = JoinOptions[
   AbstractCoordinateFunction -> Automatic,
   AbstractCoordinateFilter -> None,
   VertexCoordinateFunction -> Automatic,
@@ -112,8 +112,7 @@ $baseGenerateLatticeOptions = JoinOptions[{
   SelfLoops -> True,
   InitialStates -> Automatic,
   RandomSeeding -> None,
-  CardinalList -> Automatic
-  },
+  CardinalList -> Automatic,
   $simpleGraphOptionRules
 ];
 
@@ -233,16 +232,15 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   $quiverLabel := Quiver[quiver, ImageSize -> {50, 80},
-    ArrowheadStyle -> arrowheadStyle,
+    ArrowheadStyle -> arrowheadStyle, ArrowheadShape -> "Line",
     GraphLegend -> Placed[Automatic, Left]];
 
   Switch[graphLegend,
     "Quiver",
       graphLegend = Placed[$quiverLabel, Right],
     "QuiverRepresentation",
-      generators = representation["Generators"];
-      labeledGenerators = makeLabeledGenerators[generators, ChooseCardinalColors @ Keys @ generators];
-      graphLegend = Placed[Row[{$quiverLabel, "  ", labeledGenerators}], Right],
+
+      graphLegend = Placed[Row[{Spacer[30], QuiverRepresentationPlot @ representation}], Right],
     _,
       None
   ];
@@ -355,7 +353,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   renamingRule = toRenamingRule[vertexNameFunction, abstractVertexList, vertexList];
   If[FailureQ[renamingRule], ReturnFailed[head::badvertnaming, vertexNameFunction, commaString @ $validRenamingRules]];
   {ivertex, finalVertexList, edgeList} = {ivertex, abstractVertexList, edgeList} /. renamingRule;
-  If[RangeQ[finalVertexList],
+  If[PermutedRangeQ[finalVertexList],
     (* if we renamed to integers 1..n, reorder to make sure they occur in the natural order *)
     ordering = Ordering @ finalVertexList;
     finalVertexList = ToPacked @ Part[finalVertexList, ordering];
@@ -414,7 +412,8 @@ $defaultLatticeNorms = {
   "TruncatedTrihexagonal" -> 5,
   name_String /; $LatticeData[name, "Dimension"] === 3 -> None,
   "Square" -> 2,
-  _ -> 3
+  _String -> 3,
+  _ -> Infinity
 };
 
 $defaultLatticeSizes = {"Line" -> {200, 50}, "Square" -> {180, 180}, _ -> {200, 200}};
@@ -570,7 +569,7 @@ keys 'CayleyFunction' and 'InitialStates'.
 DeclareArgumentCount[LatticeGraph, {1, 2}];
 
 Options[LatticeGraph] = JoinOptions[
-  {DirectedEdges -> False},
+  DirectedEdges -> False,
   $baseGenerateLatticeOptions
 ];
 

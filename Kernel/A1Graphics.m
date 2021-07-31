@@ -25,13 +25,35 @@ DownValues[WrappersDump`makeLabeledCore] = ReplaceAll[DownValues[WrappersDump`ma
 
 PackageExport["$LabelStyle"]
 
-$LabelStyle = {FontFamily -> "Avenir", FontSize -> 12};
+$LabelStyle = {
+  FontFamily -> "Avenir", FontSize -> 12
+};
+
+(**************************************************************************************************)
+
+PackageExport["$MathLabelStyle"]
+PackageScope["$alphabet"]
+
+$alphabet = Join[Alphabet["English"], Alphabet["Greek"]];
+$alphabet = Join[$alphabet, ToUpperCase[$alphabet]];
+
+$MathLabelStyle = {
+  FontFamily -> "Avenir", FontSize -> 12,
+  SingleLetterItalics -> True, ShowStringCharacters -> False,
+  AutoItalicWords -> $alphabet
+};
+
+(**************************************************************************************************)
+
+PackageExport["BoldForm"]
+
+BoldForm[s_] := Style[s, Bold];
 
 (**************************************************************************************************)
 
 PackageExport["LabelForm"]
 
-LabelForm[e_, args___] := Style[e, $LabelStyle, args];
+LabelForm[e_, args___] := Style[e, args, $LabelStyle];
 
 (**************************************************************************************************)
 
@@ -82,6 +104,28 @@ CoordinateVectorOrMatrixQ[array_] := ArrayQ[array, 2|3] && MatchQ[InnerDimension
 
 CoordinateMatrixOrArrayQ[{} | {{}}] := True;
 CoordinateMatrixOrArrayQ[array_] := CoordinateMatrixQ[array] || VectorQ[array, CoordinateMatrixQ];
+
+(**************************************************************************************************)
+
+PackageExport["ExpandPrimitives"]
+
+$expandPrimitivesDispatch = Dispatch[{
+  p:Point[_ ? CoordinateMatrixQ] :> Thread[p],
+  p:Disk[_ ? CoordinateMatrixQ] :> Thread[p],
+  p:Line[l_ /; VectorQ[l, CoordinateMatrixQ]] :> Thread[p],
+  Style[p_, s__] :> expandStyle @ Replace[p, $expandPrimitivesDispatch]
+}];
+
+expandStyle = Case[
+  Style[p_List, s__] := Map[Style[#, s]&, p];
+  other_             := other
+];
+
+ExpandPrimitives[primitives_, level_:{0,1}] := Replace[
+  primitives,
+  $expandPrimitivesDispatch,
+  level
+];
 
 (**************************************************************************************************)
 

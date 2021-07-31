@@ -1,3 +1,19 @@
+DefineLiteralMacro[getRGBCardinals,
+  getRGBCardinals[] := (
+    {r, g, b} = cardinals = Lookup[userOpts, Cardinals, {"r", "g", "b"}];
+    {R, G, B} = Negated /@ {r, g, b};
+  )
+];
+
+DefineLiteralMacro[getRGBWCardinals,
+  getRGBWCardinals[] := (
+    {r, g, b, w} = cardinals = Lookup[userOpts, Cardinals, {"r", "g", "b", "w"}];
+    {R, G, B, W} = Negated /@ {r, g, b, w};
+  )
+];
+
+(**************************************************************************************************)
+
 PackageScope["$ParameterizedLatticeData"]
 PackageScope["$ParameterizedLatticeNames"]
 
@@ -225,6 +241,25 @@ trihexagonalTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, 
 
 (**************************************************************************************************)
 
+DefineParameterizedLatticeQuiver["RhombitrihexagonalTorus", rhombitrihexagonalTorusFactory, $torusParameters];
+
+rhombitrihexagonalTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
+  If[h === None, h = w; w = Infinity];
+  rep = Quiver @ <|
+    1 -> {6 -> 4, 1 -> 3},
+    2 -> {3 -> 2, 5 -> 6},
+    3 -> {1 -> 5, 2 -> 4},
+    4 -> {6 -> 1, 4 -> 3},
+    5 -> {2 -> 6, 3 -> 5},
+    6 -> {1 -> 2, 5 -> 4}
+  |>;
+  opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
+  opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts;
+  {rep, opts}
+];
+
+(**************************************************************************************************)
+
 DefineParameterizedLatticeQuiver["RhombilleTorus", rhombilleTorusFactory, $torusParameters];
 
 rhombilleTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
@@ -277,18 +312,17 @@ makeCubeFace[n_][dir_, x_, y_] := Scope[
   Internal`StuffBag[$points, p, 2];
 ];
 
-makeCubeEdge[c_, {a_, b_}] :=
-  Internal`StuffBag[$edges, DirectedEdge[a, b, c]];
+makeCubeEdge[b_, {r_, g_}] :=
+  Internal`StuffBag[$edges, DirectedEdge[r, g, b]];
 
 cubeFactory[<|"n" -> n_, "MaxDepth" -> _|>, userOpts_] := Scope[
 
-  {a, b, c} = Lookup[userOpts, Cardinals, {"a", "b", "c"}];
-  {A, B, C} = Negated /@ {a, b, c};
+  getRGBCardinals[];
 
   CollectTo[{$points, $edges},
     MapThread[makeCubeFace[n], {$cubeDirs,
-      {a, A, c, C, C, c},
-      {b, B, B, b, A, a}
+      {r, R, b, B, B, b},
+      {g, G, G, g, R, r}
     }]
   ];
   $points //= DeleteDuplicates;
@@ -302,7 +336,7 @@ cubeFactory[<|"n" -> n_, "MaxDepth" -> _|>, userOpts_] := Scope[
   };
   graph = ExtendedGraph[
     $points, $edges, VertexCoordinates -> $points,
-    trimCardinalOpts @ userOpts,
+    toOptsSeq @ userOpts,
     ViewOptions -> {ViewVector -> {3,2.5,2}, ViewProjection -> "Orthographic"},
     VertexShapeFunction -> None, ImageSize -> Small, EdgeThickness -> 2,
     ArrowheadSize -> Medium,
@@ -318,23 +352,25 @@ DefineParameterizedLatticeQuiver["CubeAtlasDoubleCover", cubeAtlasDoubleCoverFac
 
 cubeAtlasDoubleCoverFactory[assoc_, userOpts_] := Scope[
 
-  {a, b, c} = Lookup[userOpts, Cardinals, {"a", "b", "c"}];
+  getRGBCardinals[];
 
-  cab = ChartSymbol[a <> b];
-  cbc = ChartSymbol[b <> c];
-  cac = ChartSymbol[a <> c];
-  {A, B, C} = Negated /@ {a, b, c};
+  crg = ChartSymbol[r <> g];
+  cgb = ChartSymbol[g <> b];
+  crb = ChartSymbol[r <> b];
 
   transitions = {
-    transAnno[DirectedEdge[cab, cbc, b], a -> c],
-    transAnno[DirectedEdge[cbc, cab, b], c -> A],
-    transAnno[DirectedEdge[cbc, cac, c], b -> a],
-    transAnno[DirectedEdge[cac, cbc, c], a -> B],
-    transAnno[DirectedEdge[cab, cac, a], b -> C],
-    transAnno[DirectedEdge[cac, cab, a], c -> b]
+    transAnno[DirectedEdge[crg, cgb, g], r -> b, g],
+    transAnno[DirectedEdge[cgb, crg, g], b -> R, g],
+    transAnno[DirectedEdge[cgb, crb, b], g -> r, b],
+    transAnno[DirectedEdge[crb, cgb, b], r -> G, b],
+    transAnno[DirectedEdge[crg, crb, r], g -> B, r],
+    transAnno[DirectedEdge[crb, crg, r], b -> g, r]
   };
 
-  atlasQuiver[{cab, cbc, cac}, transitions, trimCardinalOpts @ userOpts]
+  atlasQuiver[
+    {crg, cgb, crb}, transitions,
+    Cardinals -> cardinals, toOptsSeq @ userOpts
+  ]
 ];
 
 (**************************************************************************************************)
@@ -343,23 +379,35 @@ DefineParameterizedLatticeQuiver["CubeAtlas", cubeAtlasFactory, <|"MaxDepth" -> 
 
 cubeAtlasFactory[assoc_, userOpts_] := Scope[
 
-  {a, b, c} = Lookup[userOpts, Cardinals, {"a", "b", "c"}];
-  {A, B, C} = Negated /@ {a, b, c};
+  getRGBCardinals[];
 
-  cab1 = ChartSymbol[a <> b <> "+"]; cab2 = ChartSymbol[a <> b <> "-"];
-  cbc1 = ChartSymbol[b <> c <> "+"]; cbc2 = ChartSymbol[b <> c <> "-"];
-  cac1 = ChartSymbol[a <> c <> "+"]; cac2 = ChartSymbol[a <> c <> "-"];
+  crg1 = ChartSymbol[r <> g <> "+"]; crg2 = ChartSymbol[r <> g <> "-"];
+  cgb1 = ChartSymbol[g <> b <> "+"]; cgb2 = ChartSymbol[g <> b <> "-"];
+  crb1 = ChartSymbol[r <> b <> "+"]; crb2 = ChartSymbol[r <> b <> "-"];
 
   transitions = <|
-    b -> {transAnno[cab1 -> cbc1, a -> c], transAnno[cbc1 -> cab2, c -> A], transAnno[cab2 -> cbc2, a -> c], transAnno[cbc2 -> cab1, c -> A]},
-    c -> {transAnno[cbc1 -> cac1, b -> a], transAnno[cac1 -> cbc2, a -> B], transAnno[cbc2 -> cac2, b -> a], transAnno[cac2 -> cbc1, a -> B]},
-    a -> {transAnno[cab1 -> cac1, b -> C], transAnno[cac1 -> cab2, c -> b], transAnno[cab2 -> cac2, b -> C], transAnno[cac2 -> cab1, c -> b]}
+    g -> {transAnno[crg1 -> cgb1, r -> b, g], transAnno[cgb1 -> crg2, b -> R, g], transAnno[crg2 -> cgb2, r -> b, g], transAnno[cgb2 -> crg1, b -> R, g]},
+    b -> {transAnno[cgb1 -> crb1, g -> r, b], transAnno[crb1 -> cgb2, r -> G, b], transAnno[cgb2 -> crb2, g -> r, b], transAnno[crb2 -> cgb1, r -> G, b]},
+    r -> {transAnno[crg1 -> crb1, g -> B, r], transAnno[crb1 -> crg2, b -> g, r], transAnno[crg2 -> crb2, g -> B, r], transAnno[crb2 -> crg1, b -> g, r]}
   |>;
 
-  atlasQuiver[{cab1, cab2, cbc1, cbc2, cac1, cac2}, transitions, trimCardinalOpts @ userOpts, ArrowheadPosition -> 0.5]
+  atlasQuiver[
+    {crg1, crg2, cgb1, cgb2, crb1, crb2}, transitions,
+    Cardinals -> cardinals, toOptsSeq @ userOpts, ArrowheadPosition -> 0.5
+  ]
 ];
 
-transAnno[e_, t_] := Annotation[e, "CardinalTransitions" -> ToList[t]];
+transAnno[e_, t_, u_List] :=
+  Annotation[e, "CardinalTransitions" -> ToList[t, Thread[u -> u]]];
+
+transAnno[e_, t_, u_] :=
+  Annotation[e, "CardinalTransitions" -> ToList[t, u -> u]];
+
+transAnno[e_, Negated[a_] -> b_, u_] :=
+  transAnno[e, a -> Negated[b], u];
+
+transAnno[e_, t_, Negated[u_]] :=
+  Annotation[e, "CardinalTransitions" -> ToList[t, u -> Negated @ u]];
 
 (**************************************************************************************************)
 
@@ -367,12 +415,12 @@ DefineParameterizedLatticeQuiver["PositiveSquareLatticeDisclination", positiveSq
 
 positiveSquareLatticeDisclinationFactory[assoc_, userOpts_] := Scope[
   UnpackAssociation[assoc, removeCorner];
-  {x, y, z} = Lookup[userOpts, Cardinals, {"x", "y", "z"}];
+  getRGBCardinals[];
   graph = CombineMultiedges @ Quiver[
     <|
-      x -> {7 -> 6, 6 -> 5, 2 -> 1, 1 -> 4,  9 -> 2, 8 -> 7, 19 -> 18, 18 -> 17, 17 -> 16, 16 -> 15, 5 -> 14, 4 -> 13},
-      y -> {7 -> 2, 6 -> 1, 1 -> 4, 2 -> 3, 19 -> 8, 8 -> 9, 9 -> 10, 10 -> 11, 3 -> 12, 4 -> 13, 18 -> 7, 17 -> 6},
-      z -> {3 -> 4, 4 -> 5, 2 -> 1, 1 -> 6, 9 -> 2, 10 -> 3, 11 -> 12, 12 -> 13, 13 -> 14, 14 -> 15, 5 -> 16, 6 -> 17}
+      r -> {7 -> 6, 6 -> 5, 2 -> 1, 1 -> 4,  9 -> 2, 8 -> 7, 19 -> 18, 18 -> 17, 17 -> 16, 16 -> 15, 5 -> 14, 4 -> 13},
+      g -> {7 -> 2, 6 -> 1, 1 -> 4, 2 -> 3, 19 -> 8, 8 -> 9, 9 -> 10, 10 -> 11, 3 -> 12, 4 -> 13, 18 -> 7, 17 -> 6},
+      b -> {3 -> 4, 4 -> 5, 2 -> 1, 1 -> 6, 9 -> 2, 10 -> 3, 11 -> 12, 12 -> 13, 13 -> 14, 14 -> 15, 5 -> 16, 6 -> 17}
     |>,
     Apply[Sequence, DeleteOptions[Cardinals] @ Normal @ userOpts],
     GraphLayout -> "Spring", CoordinateTransformFunction -> {{"Rotate", 90}, "ReflectHorizontal"}
@@ -387,22 +435,23 @@ DefineParameterizedLatticeQuiver["PositiveSquareLatticeDisclinationAtlas", posit
 
 positiveSquareLatticeDisclinationAtlasFactory[assoc_, userOpts_] := Scope[
 
-  {a, b, c} = Lookup[userOpts, Cardinals, {"a", "b", "c"}];
+  getRGBCardinals[];
 
-  cab = ChartSymbol[a <> b];
-  cbc = ChartSymbol[b <> c];
-  cac = ChartSymbol[a <> c];
+  crg = ChartSymbol[r <> g];
+  cgb = ChartSymbol[g <> b];
+  crb = ChartSymbol[r <> b];
 
   transitions = {
-    Annotation[DirectedEdge[cab, cbc, b], "CardinalTransitions" -> {a -> c}],
-    Annotation[DirectedEdge[cbc, cac, c], "CardinalTransitions" -> {b -> a}],
-    Annotation[DirectedEdge[cac, cab, a], "CardinalTransitions" -> {c -> Negated[b]}]
+    Annotation[DirectedEdge[crg, cgb, g], "CardinalTransitions" -> {r -> b}],
+    Annotation[DirectedEdge[cgb, crb, b], "CardinalTransitions" -> {g -> r}],
+    Annotation[DirectedEdge[crb, crg, r], "CardinalTransitions" -> {b -> G}]
   };
 
   atlasQuiver[
-    {cab, cbc, cac}, transitions,
+    {crg, cgb, crb}, transitions,
     VertexCoordinates -> Part[CirclePoints[3], {3,2,1}],
-    trimCardinalOpts @ userOpts
+    Cardinals -> cardinals,
+    toOptsSeq @ userOpts
   ]
 ];
 
@@ -421,19 +470,27 @@ DefineParameterizedLatticeQuiver["Tetrahedron", tetrahedronFactory, <|"MaxDepth"
 
 tetrahedronFactory[assoc_, userOpts_] := Scope[
 
-  {a, b, c, d} = Lookup[userOpts, Cardinals, {"a", "b", "c", "d"}];
+  getRGBWCardinals[];
   layoutDim = Lookup[userOpts, LayoutDimension, 3];
 
+(*   edges = <|
+    r -> {1 -> 2, 2 -> 3, 3 -> 1},
+    g -> {1 -> 2, 2 -> 4, 4 -> 1},
+    b -> {1 -> 4, 4 -> 3, 3 -> 1},
+    w -> {2 -> 4, 4 -> 3, 3 -> 2}
+  |>;
+ *)
   edges = <|
-    a -> {1 -> 2, 2 -> 3, 3 -> 1},
-    b -> {1 -> 2, 2 -> 4, 4 -> 1},
-    c -> {1 -> 4, 4 -> 3, 3 -> 1},
-    d -> {2 -> 4, 4 -> 3, 3 -> 2}
+    r -> {2 -> 1, 3 -> 2, 1 -> 3},
+    g -> {1 -> 2, 2 -> 4, 4 -> 1},
+    b -> {1 -> 4, 4 -> 3, 3 -> 1},
+    w -> {4 -> 2, 3 -> 4, 2 -> 3}
   |>;
 
   Quiver[
     {1, 2, 3, 4}, edges,
-    trimCardinalOpts @ userOpts,
+    Cardinals -> cardinals,
+    toOptsSeq @ userOpts,
     VertexCoordinates -> If[layoutDim === 2, $tetraCoords2D, $tetraCoords3D],
     GraphLayout -> {"MultiEdgeDistance" -> 0.1},
     ArrowheadShape -> If[layoutDim === 2, "Line", "Cone"],
@@ -447,26 +504,44 @@ DefineParameterizedLatticeQuiver["TetrahedronAtlas", tetrahedronAtlasFactory, <|
 
 tetrahedronAtlasFactory[assoc_, userOpts_] := Scope[
 
-  {r, g, b, w} = Lookup[userOpts, Cardinals, {"r", "g", "b", "w"}];
-  {R, G, B, W} = Negated /@ {r, g, b, w};
-  cl = ChartSymbol["rgb"];
-  cb = ChartSymbol["rgw"];
-  cr = ChartSymbol["rbw"];
-  cf = ChartSymbol["gbw"];
+  getRGBWCardinals[];
+
+  cl = ChartSymbol[r <> g <> b]; (* l = rgb  ORANGE ORBIT *)
+  cb = ChartSymbol[r <> g <> w]; (* b = rgw  BLUE ORBIT *)
+  cr = ChartSymbol[r <> b <> w]; (* r = rbw  GREEN ORBIT *)
+  cf = ChartSymbol[g <> b <> w]; (* f = gbw  RED ORBIT *)
+
   edges = {
-    transAnno[DirectedEdge[cl, cf, b | G], r -> W],
-    transAnno[DirectedEdge[cf, cr, b | w], g -> r],
-    transAnno[DirectedEdge[cr, cl, r | b], w -> g],
-    transAnno[DirectedEdge[cl, cb, r | g], b -> w],
-    transAnno[DirectedEdge[cr, cb, w | R], b -> G],
-    transAnno[DirectedEdge[cf, cb, W | G], b -> r]
+    (* f = gbw -> l = gbr *)
+    transAnno[DirectedEdge[cf, cl, b], w -> R, b], transAnno[DirectedEdge[cl, cf, g], r -> W, g],
+
+    (* f = bwg -> r = bwr *)
+    transAnno[DirectedEdge[cr, cf, b], r -> G, b], transAnno[DirectedEdge[cf, cr, w], g -> R, w],
+
+    (* r = rbw -> l = rbg *)
+    transAnno[DirectedEdge[cr, cl, r], w -> G, r], transAnno[DirectedEdge[cl, cr, b], g -> W, b],
+
+    (* l = rgb -> b = rgw *)
+    transAnno[DirectedEdge[cl, cb, r], b -> W, r], transAnno[DirectedEdge[cb, cl, g], w -> B, g],
+
+    (* r = rwb -> b = rwg *)
+    transAnno[DirectedEdge[cr, cb, w], b -> G, w], transAnno[DirectedEdge[cb, cr, r], g -> B, r],
+
+    (* b = gwr -> f = gwb *)
+    transAnno[DirectedEdge[cb, cf, w], r -> B, w], transAnno[DirectedEdge[cf, cb, g], b -> R, g]
   };
 
   atlasQuiver[
     {cl, cb, cr, cf},
-    edges
+    edges,
+    Cardinals -> cardinals,
+    toOptsSeq @ userOpts
   ]
 ];
+
+(**************************************************************************************************)
+
+DefineParameterizedLatticeQuiver["TetrahedronAtlas", tetrahedronAtlasFactory, <|"MaxDepth" -> Infinity|>]
 
 (**************************************************************************************************)
 
@@ -479,4 +554,7 @@ atlasQuiver[charts_, transitions_, opts___Rule] := Quiver[
 
 (**************************************************************************************************)
 
-trimCardinalOpts[userOpts_] := Sequence @@ DeleteOptions[Normal @ userOpts, Cardinals]
+toOptsSeq[assoc_] := Sequence @@ Normal[assoc];
+
+(* trimCardinalOpts[userOpts_] := Sequence @@ DeleteOptions[Normal @ userOpts, Cardinals]
+ *)

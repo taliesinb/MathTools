@@ -8,7 +8,7 @@ DefineMacro[UnpackPathAlgebra,
 UnpackPathAlgebra[args___] := Quoted @ UnpackAssociation[getObjectData @ $PathAlgebra, args]
 ];
 
-$directionStrings = {"Forward", "Reverse", "Symmetric", "Antisymmetric"};
+$directionStrings = {"Forward", "Backward", "Symmetric", "Antisymmetric"};
 
 (**************************************************************************************************)
 
@@ -27,11 +27,13 @@ $FieldTimes := $PathAlgebra["FieldTimes"];
 PackageExport["ModOperator"]
 PackageExport["PlusModOperator"]
 PackageExport["TimesModOperator"]
+PackageExport["MinusModOperator"]
 
 ModOperator[n_][e_] := If[NumericQ[e], Mod[e, n, 0], e];
 ModOperator[Infinity] = Identity;
 PlusModOperator[n_] := Plus /* ModOperator[n];
 TimesModOperator[n_] := Times /* ModOperator[n];
+MinusModOperator[n_] := Minus /* ModOperator[n];
 
 (**************************************************************************************************)
 
@@ -48,7 +50,9 @@ Options[PathAlgebra] = {
   PlotRange -> Automatic,
   EdgeSetback -> 0.25,
   ImageSize -> 100,
-  VertexSize -> Automatic
+  VertexSize -> Automatic,
+  ArrowheadSize -> 0.13,
+  EdgeThickness -> 1
 };
 
 $graphOrLatticeSpec = _Graph | _String | {_String, __};
@@ -64,7 +68,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
   If[!MatchQ[field, _Integer | Integers | Reals | Complexes], ReturnFailed[]];
 
-  UnpackOptions[plotRange, edgeSetback, imageSize, vertexSize];
+  UnpackOptions[plotRange, edgeSetback, imageSize, vertexSize, arrowheadSize, edgeThickness];
   If[NumericQ[plotRange], plotRange *= {{-1, 1}, {-1, 1}}];
 
   data = <||>;
@@ -81,11 +85,14 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   data["EdgeSetback"] = edgeSetback;
   data["ImageSize"] = imageSize;
   data["VertexSize"] = vertexSize;
+  data["ArrowheadSize"] = arrowheadSize;
+  data["EdgeThickness"] = edgeThickness;
 
   data["Field"] = field;
   data["FieldModulus"] = mod = Match[field, n_Integer :> n, Infinity];
   data["FieldPlus"] = PlusModOperator[mod];
   data["FieldTimes"] = TimesModOperator[mod];
+  data["FieldMinus"] = Match[field, n_Integer :> MinusModOperator[n], Minus];
   {pos, neg} = Match[field, n_Integer :> {1, n-1}, {1, -1}];
   data["Pos"] = pos;
   data["Neg"] = neg;
@@ -151,7 +158,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
 $complexColorFunction = ComplexHue;
 
-ComplexHue[c_] := Hue[Arg[c]/Tau+.05, Min[Sqrt[Abs[c]]/1.2,1]]
+ComplexHue[c_] := ColorConvert[Hue[Arg[c]/Tau+.05, Min[Sqrt[Abs[c]]/1.2,1], .9], RGBColor];
 
 reverseTransition[a_ -> Negated[b_]] := b -> Negated[a];
 reverseTransition[a_ -> b_] := b -> a;
@@ -202,7 +209,10 @@ PackageExport["PathVectorTimes"]
 
 NumericOrSymbolicQ[a_] := NumericQ[a] || MatchQ[a, _Subscript];
 
+PathVectorPlus[__] := $Failed;
 PathVectorPlus[v__PathVector] := PathVectorElementwise[Apply @ $FieldPlus, 0, {v}];
+
+PathVectorTimes[__] := $Failed;
 PathVectorTimes[v__PathVector] := PathVectorElementwise[Apply @ $FieldTimes, 0, {v}];
 PathVectorTimes[n_ ? NumericOrSymbolicQ, p_PathVector] := If[n === 1 || n === 1.0, p, With[{t = $FieldTimes}, PathVectorMap[t[n, #]&, p]]];
 
@@ -221,7 +231,7 @@ mergeWeights[rules_, id_, f_] :=
 
 constructPathVector[list_List] := constructPathVector @ Association @ list;
 
-rulesToPathVector[list_List] := constructPathVector @ Merge[Flatten @ list, Apply @ $FieldTimes];
+rulesToPathVector[list_List] := constructPathVector @ Merge[Flatten @ list, Apply @ $FieldPlus];
 
 constructPathVector[assoc_Association] :=
   PathVector @ Association @ KeySort @ KeyDrop[NullElement] @ DeleteCases[assoc, 0|0.];
@@ -264,6 +274,16 @@ declareFormatting[
     formatPathVector[pv]
 ];
 
+
+(**************************************************************************************************)
+
+PackageExport["PathVectorPlot"]
+
+PathVectorPlot[pv:PathVector[_Association ? ValidPathAssociationQ]] /; $PathAlgebraQ :=
+  formatPathVector[pv];
+
+(**************************************************************************************************)
+
 notOverlappingPathsQ[PathVector[assoc_]] := Scope[
   edges = Part[Keys @ assoc, All, 2];
   DuplicateFreeQ @ Flatten[edges /. Negated[e_] :> e, 1]
@@ -281,24 +301,28 @@ formatPathVector[pv_] := If[notOverlappingPathsQ[pv] && pathFieldQ[pv],
   ]
 ]
 
+formatPathVector[pv_] :=
+  iFormatPathVector[pv, False];
+
 iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
   UnpackPathAlgebra[
     vertexCoordinates, edgeCoordinateLists, plotRange, fieldColorFunction,
-    vertexRange, vertexList, vertexSize, edgeSetback, imageSize, edgeToCardinal
+    vertexRange, vertexList, vertexSize, edgeSetback, imageSize, edgeToCardinal,
+    arrowheadSize, edgeThickness
   ];
-  $sb = edgeSetback; $transparency = transparency;
-  pathPrimitives = drawWeightedElement @@@ SortBy[
-    Normal @ paths,
-    -PathLength[First @ #]&
-  ];
+  $sb = edgeSetback; $transparency = transparency; $arrowheadSize = arrowheadSize;
+  pathRules = Normal @ paths;
+  pathRules = Values @ GroupBy[pathRules, canonPathElement, combineReversed];
+  pathPrimitives = drawWeightedElement @@@ SortBy[pathRules, First /* PathLength /* Minus];
   pathPrimitives = {
-    AbsolutePointSize[Replace[vertexSize, Automatic -> 4]], AbsoluteThickness[1.5],
+    AbsoluteThickness[edgeThickness],
+    AbsolutePointSize[Replace[vertexSize, Automatic -> 4]],
     pathPrimitives
   };
-  initialPathVertices = Keys[paths][[All, 1]];
+  initialPathVertices = Cases[pathRules, PathElement[t_, _, _] :> t];
   remainingVertices = Complement[vertexRange, initialPathVertices];
   vertexPrimitives = {
-    AbsolutePointSize[Replace[vertexSize, Automatic -> 3]], $LightGray,
+    AbsolutePointSize[Replace[vertexSize, Automatic -> 3]], GrayLevel[0.9],
     Point @ Part[vertexCoordinates, remainingVertices]
   };
   Graphics[
@@ -310,12 +334,26 @@ iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
   ]
 ];
 
+canonPathElement[p:PathElement[t_, edges_, h_] -> w_] :=
+  If[t < h, PathElement[h, NegateReverse @ edges, t], p];
+
+combineReversed[{r_Rule}] := r;
+combineReversed[{a_ -> wf_, b_ -> wb_}] := ReversedGroup[a, b] -> {wf, wb};
+
+PathLength[ReversedGroup[a_, b_]] := PathLength[a];
+
 pathElementForm[PathElement[t_, e_, h_]] :=
   PathWordForm[
     Part[vertexList, t],
     Lookup[edgeToCardinal, e],
     Part[vertexList, h]
   ];
+
+$reverseColor = None;
+drawWeightedElement[ReversedGroup[p_, q_], {wf_, wb_}] := Block[
+  {$reverseColor = fieldColorFunction @ wb},
+  drawWeightedElement[p, wf]
+];
 
 drawWeightedElement[p:PathElement[t_, e_, h_], weight_] :=
   drawStyledPath[
@@ -328,9 +366,17 @@ drawWeightedElement[p:PathElement[t_, e_, h_], weight_] :=
 
 getEdgeCoords[e_] := Scope[
   coords = Part[edgeCoordinateLists, StripNegated /@ e];
-  orientedCoords = MapAt[Reverse, coords, List /@ SelectIndices[e, NegatedQ]];
-  Flatten[orientedCoords, 1] //. {l___, a_List, a_List, r___} :> {l, a, r}
+  segments = MapIndices[Reverse, SelectIndices[e, NegatedQ], coords];
+  If[Length[segments] > 1,
+    $n = Length[segments]; $sb = LineLength[First @ segments] / 3.5;
+    segments //= MapIndexed[setbackSegment];
+  ];
+  Flatten[segments, 1] //. {l___, a_List, a_List, r___} :> {l, a, r}
 ];
+
+setbackSegment[a_List, {1}] := SetbackCoordinates[a, {0, $sb}];
+setbackSegment[a_List, {n_} /; n === $n] := SetbackCoordinates[a, {$sb, 0}];
+setbackSegment[a_List, _] := SetbackCoordinates[a, {$sb, $sb}];
 
 (* mergeSegments[{segment_}] := segment;
 mergeSegments[segments_List] :=
@@ -345,25 +391,49 @@ segmentAngle[segment_] := ArcTan @@ (Last[segment] - First[segment]);
 
 drawStyledPath[vertices_, style_] /; $transparency :=
   Mouseover[
-    drawSingleStyledPath[vertices, Opacity[.1, style]],
-    drawSingleStyledPath[vertices, style]
+    drawPathPrimitives[vertices, Opacity[.1, style]],
+    drawPathPrimitives[vertices, style]
   ];
 
 drawStyledPath[vertices_, style_] :=
-  drawSingleStyledPath[vertices, style]
+  drawPathPrimitives[vertices, style]
 
-drawSingleStyledPath[{vertices_}, style_] :=
+drawPathPrimitives[{} | Nothing, _] :=
+  {};
+
+drawPathPrimitives[{vertices_}, style_] :=
   Style[Point @ vertices, style];
 
-drawSingleStyledPath[vertices_, style_] :=
+drawPathPrimitives[vertices_, style_] /; $reverseColor =!= None := Scope[
+  opacity = ExtractFirstOpacity @ style;
   Style[
-    {Point @ Part[vertices, 1], myArrow @ SetbackCoordinates[vertices, {0, $sb}]}, style,
-    Arrowheads[{{.13, 1, ArrowheadData["Line", style]}}]
+    Arrow[
+      Line[
+        SetbackCoordinates[vertices, {1,1} * .5 * $sb],
+        VertexColors -> SetColorOpacity[
+          lineColorRange[$reverseColor, style, Length @ vertices],
+          opacity
+        ]
+      ],
+      {.05, .05}
+    ],
+    Arrowheads @ {
+      {$arrowheadSize, 1, ArrowheadData["Line", SetColorOpacity[style, opacity]]},
+      {-$arrowheadSize, 0, ArrowheadData["Line", SetColorOpacity[$reverseColor, opacity]]}
+    }
   ]
+];
 
-myArrow[{}] = Nothing;
-myArrow[Nothing] = Nothing;
-myArrow[e_] := Arrow[e];
+lineColorRange[a_, b_, 2] := {a, b};
+lineColorRange[a_, b_, n_] :=
+  Join[ConstantArray[a, Floor[n / 2]], ConstantArray[b, Ceiling[n / 2]]];
+
+drawPathPrimitives[vertices_, style_] :=
+  Style[
+    {Point @ Part[vertices, 1],
+     Arrow @ SetbackCoordinates[vertices, {0, $sb}]}, style,
+    Arrowheads[{{$arrowheadSize, 1, ArrowheadData["Line", style]}}]
+  ]
 
 fieldColors = MatchValues[
   2 := {$Gray, Black};
@@ -404,15 +474,15 @@ PathTailVector[PathVector[assoc_]] :=
 PackageExport["NullPath"]
 PackageExport["NullElement"]
 
-declareFormatting[
-  NullPath :> "\[UpTee]"
-  NullElement :> "\[UpTee]"
+declareBoxFormatting[
+  NullPath :> TemplateBox[{}, "NullPathSymbol"],
+  NullElement :> TemplateBox[{}, "NullPathSymbol"]
 ];
 
 
 (**************************************************************************************************)
 
-PathVector /: CenterDot[v__PathVector] := PathCompose[v];
+PathVector /: Proportion[v__PathVector] := PathCompose[v];
 
 (**************************************************************************************************)
 
@@ -473,11 +543,14 @@ extractWeightedPaths = Case[
   list_List :=
     Map[%, list];
   GraphPathData[vertices_, edges_, negations_] :=
-    PathElement[
-      First @ vertices,
-      ApplyNegated[edges, negations],
-      Last @ vertices
-    ] -> $w;
+    attachPathElementWeight[
+      PathElement[
+        First @ vertices,
+        MapIndices[Negated, negations, edges],
+        Last @ vertices
+      ],
+      $w
+    ];
   GraphRegionAnnotation[r_, <|"Weight" -> w_|>] :=
     Block[{$w = w}, % @ r];
   _ := {};
@@ -488,6 +561,20 @@ attachWeightedData = Case[
   list_List   := Map[%, list];
   other_      := other
 ];
+
+attachPathElementWeight[pe_, w_] :=
+  pe -> w;
+
+attachPathElementWeight[pe_, c_Complex] := Scope[
+  w = Abs[c];
+  Switch[Arg[c],
+    Pi/2,   PathReverse[pe] -> -w,
+    -Pi/2,  PathReverse[pe] -> w,
+    0,      pe -> w,
+    Pi,     pe -> -w
+  ]
+];
+
 
 (**************************************************************************************************)
 
@@ -502,24 +589,54 @@ BasisWordVectors[] /; $PathAlgebraQ := Scope[
   WordVector /@ cardinals
 ];
 
+declareFunctionAutocomplete[BasisWordVectors, {$directionStrings}];
+
+BasisWordVectors[type_String] /; $PathAlgebraQ := Scope[
+  f = BasisWordVectors[];
+  b = PathReverse /@ f;
+  Switch[type,
+    "Forward", f,
+    "Backward", b,
+    "Symmetric", f + b,
+    "Antisymmetric", f - b,
+    _, $Failed
+  ]
+];
+
 (**************************************************************************************************)
 
 PackageExport["WordVector"]
 
 SetUsage @ "
 WordVector['word$'] constructs a %PathVector consisting of all paths that have path word word$.
-* The weights are all 1.
+WordVector['word$' -> w$] uses weight w$ for the basis paths.
+WordVector[{spec$1, spec$2, $$}] constructs a sum of word vectors.
+WordVector[spec$, type$] constructs a vector of a specific type.
+* The default weight is 1.
 * 'word$' should consist of cardinals, or their negations (indicated by uppercase letters).
+* type$ can be one of 'Forward', 'Backward', 'Symmetric', and 'Antisymmetric' |
 "
 
-WordVector[words:{__String}] :=
+declareFunctionAutocomplete[WordVector, {0, $directionStrings}];
+
+WordVector[spec_, All] := WordVector[spec, #]& /@ $directionStrings;
+
+WordVector[words_List] :=
   PathVectorPlus @@ Map[WordVector, words];
+
+WordVector[spec_, type_String] :=
+  makeTypeVector[WordVector, WordVector[spec], type];
+
+WordVector[word_String -> n_] :=
+  PathVectorTimes[n, WordVector[word]];
+
+General::badpathword = "`` is not a valid path word, which can contain cardinals ``."
 
 WordVector[word_String] /; $PathAlgebraQ := Scope[
 
-  UnpackPathAlgebra[vertexRange, tagOutTable, tagOutEdgeTable, nullVertex, nullEdge];
+  UnpackPathAlgebra[vertexRange, tagOutTable, tagOutEdgeTable, nullVertex, nullEdge, cardinals];
 
-  word = ParseCardinalWord @ word;
+  word = ToPathWord[word, cardinals, ReturnFailed["badpathword", word, cardinals]];
   headVertices = tailVertices = vertexRange;
 
   CollectTo[{pathEdges},
@@ -543,6 +660,21 @@ WordVector[word_String] /; $PathAlgebraQ := Scope[
 
 toWordVectorPathElement[tail_, edges_, head_] :=
   If[FreeQ[edges, nullEdge], PathElement[tail, edges, head], Nothing];
+
+(**************************************************************************************************)
+
+PackageExport["PathSplit"]
+
+PathSplit[PathVector[assoc_]] := Scope[
+  UnpackPathAlgebra[edgeToTail, edgeToHead];
+  rulesToPathVector @ KeyValueMap[splitPathElement, assoc]
+];
+
+splitPathElement[p:PathElement[_, {}, _], w_] :=
+  p -> w;
+
+splitPathElement[PathElement[_, edges_, _], w_] :=
+  Map[singleEdgePathElement[#] -> w&, edges];
 
 (**************************************************************************************************)
 
@@ -695,19 +827,23 @@ ReversalSymmetryDecompose[v_PathVector] := Scope[
 
 PackageExport["ReversalSymmetricPart"]
 
-ReversalSymmetricPart[v_PathVector] := Scope[
-  forward = v * (1/2);
+ReversalSymmetricPart[forward_PathVector] := Scope[
   reverse = PathReverse @ forward;
   forward + reverse
 ];
 
 PackageExport["ReversalAntisymmetricPart"]
 
-ReversalAntisymmetricPart[v_PathVector] := Scope[
-  forward = v * (1/2);
+ReversalAntisymmetricPart[forward_PathVector] := Scope[
   reverse = PathReverse @ forward;
   forward - reverse
 ];
+
+(**************************************************************************************************)
+
+PackageExport["PathLieDerivative"]
+
+PathLieDerivative[a_, b_] := (PathCentralDifference[a, b] - PathCentralDifference[b, a])/4
 
 (**************************************************************************************************)
 
@@ -729,7 +865,7 @@ WordDelta['word$', 'type$'] constructs a path vector that when convolved compute
 along the word 'word$'.
 * 'type$' can be one of:
 | 'Forward' | forward finite difference (X - I) |
-| 'Reverse' | reverse finite difference (X\[Conjugate] - I) |
+| 'Backward' | reverse finite difference (X\[Conjugate] - I) |
 | 'Symmetric' | X + X\[Conjugate] - 2 I |
 | 'Antisymmetric' | X - X\[Conjugate] |
 "
@@ -741,12 +877,24 @@ WordDelta[word_String, type_:"Forward"] /; $PathAlgebraQ := Scope[
   reverse := PathReverse @ forward;
   unit := VertexField[];
   Switch[type,
-    "Forward", forward - unit,
-    "Reverse", reverse - unit,
-    "Symmetric", forward + reverse + -2 * unit,
-    "Antisymmetric", forward - reverse
+    "Forward",        forward - unit,
+    "Backward",       reverse - unit,
+    "Symmetric",      forward + reverse + -2 * unit,
+    "Antisymmetric",  forward - reverse,
+    _,                ReturnFailed[WordDelta::badpvectype, type]
   ]
 ]
+
+General::badpvectype = "`` is not one of \"Forward\", \"Reverse\", \"Symmetric\", or \"Antisymmetric\"."
+
+makeTypeVector[head_, vector_PathVector, type_] :=
+  Switch[type,
+    "Forward",        vector,
+    "Backward",       PathReverse @ vector,
+    "Symmetric",      vector + PathReverse[vector],
+    "Antisymmetric",  vector - PathReverse[vector],
+    _,                (Message[head::badpvectype, type]; $Failed)
+  ];
 
 (**************************************************************************************************)
 
@@ -799,7 +947,7 @@ PathReverse[PathElement[$$]] yields the reverse of PathElement[$$].
 PathReverse[PathVector[assoc_]] :=
   PathVector @ KeySort @ KeyMap[PathReverse, assoc]
 
-PathReverse[PathElement[t_, e_, h_]] := PathElement[h, Map[Negated, Reverse @ e], t];
+PathReverse[PathElement[t_, e_, h_]] := PathElement[h, NegateReverse @ e, t];
 
 PathReverse[NullElement] := NullElement;
 
@@ -872,7 +1020,7 @@ RandomEdgeField['type$'] chooses only specific orientations of length-1 paths.
 * The random weights are chosen from the appropriate base field.
 * For finite fields, any value is equally likely to be chosen.
 * For infinite fields, the range [-2, 2] is used.
-* The available orientations are 'Forward', 'Reverse', and 'Symmetric' (default).
+* The available orientations are 'Forward', 'Backward', and 'Symmetric' (default).
 "
 
 declareFunctionAutocomplete[RandomEdgeField, {$directionStrings}];
@@ -884,9 +1032,11 @@ RandomEdgeField[type_String:"Symmetric", OptionsPattern[]] /; $PathAlgebraQ := S
   forward = edgeRange;
   reverse = Negated /@ edgeRange;
   edges = Switch[type,
-    "Forward", forward,
-    "Reverse", reverse,
-    "Symmetric" | "Antisymmetric", Join[forward, reverse]
+    "Forward",        forward,
+    "Backward",       reverse,
+    "Symmetric" |
+    "Antisymmetric",  Join[forward, reverse],
+    _,                ReturnFailed["badpvectype", type]
   ];
   constructPathVector @ Map[edge |-> singleEdgePathElement[edge] -> randomFieldElement[], edges],
   OptionValue[RandomSeeding]
@@ -938,9 +1088,11 @@ SymbolicEdgeField[symbol_:\[FormalE], type_:"Forward"] := Scope[
   forward = edgeRange;
   reverse = Negated /@ edgeRange;
   edges = Switch[type,
-    "Forward", forward,
-    "Reverse", reverse,
-    "Symmetric" | "Antisymmetric", Join[forward, reverse]
+    "Forward",        forward,
+    "Backward",       reverse,
+    "Symmetric" |
+    "Antisymmetric",  Join[forward, reverse],
+    _,                ReturnFailed["badpvectype", type]
   ];
   i = 1;
   PathVector @ Association @ KeySort @ Map[edge |-> singleEdgePathElement[edge] -> Subscript[symbol, i++], edges]
@@ -1048,7 +1200,7 @@ EdgeField[All] constructs the sum of all length 1 paths (edge paths).
 EdgeField[i$] gives the length 1 path on edge 1.
 EdgeField[spec$,'type$'] constructs one of the following:
 | 'Forward' | construct path in forward direction  (default) |
-| 'Reverse' | construct path in reverse direction |
+| 'Backward' | construct path in reverse direction |
 | 'Symmetric' | uses weight 1 for forward and reverse directions |
 | 'Antisymmetric' | uses weight 1 for forward  and -1 for reverses |
 "
@@ -1076,7 +1228,7 @@ EdgeField[ints:{__Integer} | _Integer] /; $PathAlgebraQ := Scope[
 ];
 
 EdgeField[spec_, "Forward"] := EdgeField[spec];
-EdgeField[spec_, "Reverse"] := PathReverse @ EdgeField[spec];
+EdgeField[spec_, "Backward"] := PathReverse @ EdgeField[spec];
 
 (* EdgeField[spec_, "Symmetric"] := symmetricEdgeField[spec, True];
 EdgeField[spec_, "Antisymmetric"] := symmetricEdgeField[spec, False];
@@ -1454,13 +1606,6 @@ TorsionVector[a_, b_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["LieBracketVector"]
-
-LieBracketVector[x_, y_] :=
-  ShortestPathVector @ TranslateAdd[PathCompose[x, y], PathReverse @ PathCompose[y, x]];
-
-(**************************************************************************************************)
-
 PackageExport["PathForwardDifference"]
 
 PathForwardDifference[list:{__List}, target_] :=
@@ -1489,7 +1634,7 @@ PathBackwardDifference[flow_, target_] :=
 PathBackwardDifference[{v1_, vn___}, target_] :=
   PathBackwardDifference[v1, PathBackwardDifference[{vn}, target]];
 
-PathForwardDifference[{}, target_] := target;
+PathBackwardDifference[{}, target_] := target;
 
 PathBackwardDifference[v_][t_] := PathBackwardDifference[v, t];
 

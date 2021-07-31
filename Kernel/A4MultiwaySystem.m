@@ -26,21 +26,19 @@ DeclareArgumentCount[MultiwaySystem, 2];
 declareSyntaxInfo[MultiwaySystem, {_, _, OptionsPattern[]}];
 
 Options[MultiwaySystem] = JoinOptions[
-  List[
-    MaxVertices -> Infinity,
-    MaxEdges -> Infinity,
-    MaxDepth -> Infinity,
-    MaxFunctionEvaluations -> Infinity,
-    MaxVerticesPerComponent -> Infinity,
-    MaxTime -> Infinity,
-    DirectedEdges -> True,
-    ProgressFunction -> None,
-    NormFunction -> Automatic,
-    MaxNorm -> None,
-    IncludeFrontier -> True,
-    DepthTermination -> "Immediate",
-    SelfLoops -> True
-  ],
+  MaxVertices -> Infinity,
+  MaxEdges -> Infinity,
+  MaxDepth -> Infinity,
+  MaxFunctionEvaluations -> Infinity,
+  MaxVerticesPerComponent -> Infinity,
+  MaxTime -> Infinity,
+  DirectedEdges -> True,
+  ProgressFunction -> None,
+  NormFunction -> Automatic,
+  MaxNorm -> None,
+  IncludeFrontier -> True,
+  DepthTermination -> "Immediate",
+  SelfLoops -> True,
   $simpleGraphOptionRules
 ];
 

@@ -186,7 +186,7 @@ PackageExport["ConvexHullPointIndices"]
 
 ConvexHullPointIndices[points_] := Scope[
   indices = ConvexHullLineIndices @ points;
-  Union @ Flatten @ Replace[indices, $Failed :> BoundingBoxPointIndices[points, 1*^-4]]
+  Union @ Flatten @ OnFailed[indices, BoundingBoxPointIndices[points, 1*^-4]]
 ]
 
 (**************************************************************************************************)

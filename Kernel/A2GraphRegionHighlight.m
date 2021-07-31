@@ -260,7 +260,7 @@ processAxesSpec[spec:(All|_Integer|{__Integer})] := Scope[
 
 processAxesSpec[spec_] := Scope[
   colors = LookupCardinalColors[$Graph];
-  words = Map[ParseCardinalWord, ToList @ spec];
+  words = Map[ToPathWord, ToList @ spec];
   colors = AssociationMap[LookupCardinalColors[$Graph, #]&, words];
   KeyValueMap[axisHighlight, colors]
 ];
@@ -286,7 +286,7 @@ SyntaxInformation[Style];
 Options[Style];
 
 $additionalStyleOptions = {
-  PerformanceGoal, PathStyle, RegionStyle, ArrowheadPosition, ArrowheadSize, ArrowheadStyle, PointSize, HighlightRadius,
+  PerformanceGoal, PathStyle, RegionStyle, ArrowheadPosition, ArrowheadSize, ArrowheadStyle, PointSize, HighlightRadius, DiskRadius,
   PathRadius, EdgeSetback, SimplifyRegions, ZOrder, Cardinals
 };
 
@@ -300,7 +300,7 @@ Protect[Style];
 PackageExport["PathOutline"]
 PackageExport["SimplifyRegions"]
 
-$namedTransformsPattern = "Opaque" | "FadeGraph" | "FadeEdges" | "FadeVertices" | "HideArrowheads" | "HideEdges" | "HideVertices";
+$namedTransformsPattern = "Opaque" | "FadeGraph" | "FadeEdges" | "FadeVertices" | "HideArrowheads" | "HideEdges" | "HideVertices" | "SemitransparentArrowheads";
 $namedStyles = "Background" | "Foreground" | "Replace" | "ReplaceEdges" | $namedTransformsPattern;
 $highlightStylePattern = Rule[Alternatives @@ $additionalStyleOptions, _] | $namedStyles;
 
@@ -451,7 +451,7 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
 
   segments = Part[$EdgeCoordinateLists, edges];
   If[negations =!= {},
-    segments //= MapAt[Reverse, List /@ negations]];
+    segments //= MapIndices[Reverse, negations]];
   numSegments = Length @ segments;
 
   pathRadius = $pathRadius;
@@ -502,14 +502,12 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
         ];
         diskRadius = $diskRadius;
         SetAutomatic[diskRadius, pathRadius * 1.5];
-        diskRadius = diskRadius / $GraphPlotImageWidth * $graphPlotWidth;
-        disk1 = If[!StringStartsQ[$pathStyle, "Disk"], Nothing, Disk[Part[$VertexCoordinates, First @ vertices], diskRadius]];
-        disk2 = If[!StringEndsQ[$pathStyle, "Disk"], Nothing, Disk[Part[$VertexCoordinates, Last @ vertices], diskRadius]];
+        diskPrimitives = makeArrowDiskPrimitives[vertices, StringStartsQ[$pathStyle, "Disk"], StringEndsQ[$pathStyle, "Disk"], diskRadius];
         arrow = setbackArrow[segments, setbackDistance];
         extraArrowheads = If[$extraArrowheads === {}, Nothing,
           Style[Arrow[#1], Transparent, Arrowheads @ List @ ReplaceAll[baseArrowheads, $apos -> #2]]& @@@ $extraArrowheads
         ];
-        {disk1, arrowheads, arrow, disk2, extraArrowheads}
+        {arrowheads, arrow, diskPrimitives, extraArrowheads}
       ,
       "Replace" | "ReplaceEdges",
         Block[{$cardinalFilter = $cardinalFilter},
@@ -527,7 +525,7 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
         ]
       ,
       _,
-        setbackLine[segments, setbackDistance]
+        {CapForm["Round"], setbackLine[segments, setbackDistance]}
     ]
   ];
 
@@ -562,6 +560,33 @@ highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
     JoinForm @ "Round", CapForm @ "Round",
     pathStyle, Thickness @ thickness
   ];
+];
+
+makeArrowDiskPrimitives[indices_, firstDisk_, lastDisk_, radius_] := Scope[
+  primitives = ExpandPrimitives @ removeSingleton @ ExtractGraphPlotPrimitives[indices, "VertexPrimitives"];
+  If[Length[primitives] =!= Length[indices], ReturnFailed[]];
+  frameRadius = radius / $GraphPlotImageWidth * 2;
+  diskRadius = radius / $GraphPlotImageWidth * $graphPlotWidth;
+  isDisk = ConstantArray[False, Length @ indices];
+  If[firstDisk, Part[isDisk, 1] = True];
+  If[lastDisk, Part[isDisk, -1] = True];
+  MapThread[makeArrowDisk, {primitives, indices, isDisk}]
+];
+
+makeArrowDisk[i_Inset, _, True] :=
+  i /. g_Graphics :> SetFrameColor[g, {$highlightStyle, Thickness[frameRadius]}];
+
+makeArrowDisk[i_Inset, _, False] := i;
+
+makeArrowDisk[other_, index_, True] :=
+  Disk[Part[$VertexCoordinates, index], diskRadius];
+
+makeArrowDisk[_, _, _] := Nothing;
+
+toRawPrimitive = Case[
+  Style[s_, ___]    := % @ s;
+  {p_}              := % @ p;
+  e_                := e;
 ];
 
 replaceWithColor[g_, c_, preserveArrowheads_:False] :=
@@ -646,6 +671,8 @@ joinSegments[segments_, adjustments_, shouldJoin_] := Scope[
         nextSegment = Part[segments, i + 1];
         {segment, nextSegment} = applyBendBetween[segment, nextSegment, 1.5 * Last[mod]];
         Part[segments, i + 1] = nextSegment,
+      {"Offset", {_, _}},
+        $offsetVector += Last[mod] * bendRange,
       {"Extend", _ ? Positive},
         {delta, segment} = extendSegment[segment, Last @ mod];
         $offsetVector += delta,
@@ -707,6 +734,7 @@ parseAdjustments = MatchValues[
   z_Integer -> "Arrowhead"                                := z -> {"Arrowhead", .5};
   z_Integer -> {"Arrowhead", pos_}                        := z -> {"Arrowhead", pos};
   z_Integer -> spec:{"Bend" | "Extend", ___}              := z -> spec;
+  z_Integer -> spec:{"Offset", {_, _}}                    := modLen[z] -> spec;
   z:{__Integer} -> spec:{"Shrink" | "Short", ___}         := modLen[z] -> spec;
   z_ -> {"Expand", n_}                                    := %[z -> {"Shrink", -n}];
   z_ -> {"Shorten", n_}                                   := %[z -> {"Extend", -n}];

@@ -7,8 +7,7 @@ fmtInt[i_] := Which[
 ];
 
 declareFormatting[
-  RootPopulation[f_List] :> popForm[f, $Gray],
-  NegatedForm[RootPopulation[f_List]] :> popForm[f, $LightRed]
+  RootPopulation[f_List] :> popForm[f, $Gray]
 ];
 
 popForm[f_List, color_] := RawBoxes @ CompactMatrixBox[{f}, FrameStyle -> color, "Factor" -> False];

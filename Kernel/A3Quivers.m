@@ -274,9 +274,14 @@ PackageExport["ChooseCardinalColors"]
 
 ChooseCardinalColors[None, ___] := <||>;
 
+$rgbColors = <|"r" -> $Red, "g" -> $Green, "b" -> $Blue, "w" -> $Gray, "x" -> $DarkGray|>;
+$xyzColors = <|"x" -> $Red, "y" -> $Green, "z" -> $Blue|>;
+
 ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardinals,
-  set_ /; SubsetQ[{"r", "g", "b"}, set],
-    KeyTake[<|"r" -> $Red, "g" -> $Green, "b" -> $Blue, "w" -> $Gray|>, cardinals],
+  {"x", "y"} | {"x", "y", "z"},
+    KeyTake[$xyzColors, cardinals],
+  set_ /; SubsetQ[{"r", "g", "b", "w", "x"}, set],
+    KeyTake[$rgbColors, cardinals],
   _,
     AssociationThread[cardinals, ToColorPalette[palette, Length @ cardinals]]
 ];
@@ -332,7 +337,7 @@ TruncateQuiver[quiver_, cardinals:Except[_Rule], userOpts:OptionsPattern[]] := S
   UnpackOptions[allowSkips];
   {vertices, edges} = VertexEdgeList @ quiver;
   SetAutomatic[cardinals, t = CardinalList[quiver]; Join[t, Negated /@ t]];
-  If[StringQ[cardinals], cardinals //= ParseCardinalWord];
+  If[StringQ[cardinals], cardinals //= ToPathWord];
   ordering = AssociationRange[cardinals]; $n = Length @ cardinals;
   tagTable = Map[SortBy[cardOrder[ordering]], VertexTagTable[quiver, False]];
   tagOutTable = TagVertexOutTable @ quiver;

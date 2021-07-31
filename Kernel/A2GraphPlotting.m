@@ -62,10 +62,10 @@ The following specifications describe regions in the graph:
 | %Locus[r$1, r$2] | vertices whose distance to regions r$1 and r$2 is equal |
 | %Locus[r$1, r$2, 'Polar'] | vertices that straddle the equation d$ (r$1) - d$ (r$2) = 0 |
 | %Locus[r$1, r$2, d$] | vertices whose distance to regions r$1 and r$2 differs by less than d$ |
-| %RegionBoundary[r$] | the vertices in region r$ adjacent to vertices not in r$ |
-| %RegionComplement[r$1, r$2] | the complement of region r$1 with region r$2 |
-| %RegionIntersection[r$1, r$2, $$] | the mutual intersection of regions r$i |
-| %RegionUnion[r$1, r$2, $$] | the union of regions r$i |
+| %GraphRegionBoundary[r$] | the vertices in region r$ adjacent to vertices not in r$ |
+| %GraphRegionComplement[r$1, r$2] | the complement of region r$1 with region r$2 |
+| %GraphRegionIntersection[r$1, r$2, $$] | the mutual intersection of regions r$i |
+| %GraphRegionUnion[r$1, r$2, $$] | the union of regions r$i |
 | %GraphRegionData[$$] | previously computed region |
 | %ConnectedSubgraph[region$] | all edges connecting vertices within region$ |
 
@@ -278,7 +278,7 @@ $autoFilledLegendPattern = (Automatic | _String) | Placed[Automatic | _String, _
 
 ExtendedGraphPlot[graph_] := Block[
   {
-   $GraphPlotImageSize, $GraphPlotImageWidth, $GraphPlotRange, $GraphPlotSize, $GraphMaxSafeVertexSize,
+   $GraphPlotImageSize, $GraphPlotImageWidth, $GraphPlotRange, $GraphPlotSize, $GraphMaxSafeVertexSize, $GraphPlotGraphics,
    plottingFunction, graphLegend, graphRegionHighlight, vertexColorFunction,
    highlightGraphics, requiredPadding, graphLabel = None
   },
@@ -455,7 +455,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         _ :> ReturnFailed[]
       ];
     ,
-      {imageWidth, imageHeight} = ToNumericImageSize[imageSize, Clip[$GraphPlotAspectRatio, {0.3, 2}]];
+      aspectRatio = $GraphPlotAspectRatio;
+      If[aspectRatioClipping, aspectRatio = Clip[$GraphPlotAspectRatio, {0.3, 2}]];
+      {imageWidth, imageHeight} = ToNumericImageSize[imageSize, aspectRatio];
     ];
     If[aspectRatioClipping,
       If[$GraphIs3D,
@@ -562,7 +564,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       SetAutomatic[arrowheadStyle, Which[
         cardinalColors =!= None, cardinalColors,
         vertexColorFunction =!= None, LightGray,
-        True, Gray
+        True, $Gray
       ]];
       If[AssociationQ[arrowheadStyle],
         arrowheadStyle //= MapIndexed[If[#1 =!= Automatic, #1, cardinalColors @ First @ First @ #2]&]];
@@ -570,7 +572,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       arrowheadSize //= processArrowheadSize;
       maxArrowheadSize = Max[arrowheadSize * $GraphPlotSizeX] / 2;
 
-      SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Arrow"]];
+      SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Line"]];
       $twoWayStyle = Automatic; $pairedDistance = 0.; $negationStyle = "Reverse"; $transitionStyle = "Label";
       $lineThickness = If[$GraphIs3D, Thickness @ 0.2, AbsoluteThickness @ 1.2];
       If[ListQ[arrowheadShape],
@@ -594,9 +596,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ];
 
     SetAutomatic[edgeThickness, If[$GraphIs3D, MediumThick, SlightlyThick]];
-    edgeThickness = Replace[
+    edgeThickness = OnFailed[
       NormalizeThickness @ edgeThickness,
-      $Failed :> failPlot["badthickness", edgeThickness]
+      failPlot["badthickness", edgeThickness]
     ];
 
     edgeInfo = <|
@@ -765,7 +767,7 @@ processFrameLabel = Case[
   rules:{Rule[Bottom|Top, _]...} := Scope[
     {bLabel, tLabel} = Lookup[rules, {Bottom, Top}, None];
     labels = List[
-      makeFrameLabelElement[bLabel, Bottom, .85],
+      makeFrameLabelElement[bLabel, Bottom, 1],
       makeFrameLabelElement[tLabel, Top, -.9]
     ];
     labelHeights = Last /@ frameLabelSize /@ labels;
@@ -1183,9 +1185,9 @@ scanArrowheadShapeOpts = Case[
   TwoWayStyle -> s:("Square"|"Ball"|"Disk"|"Diamond"|"CrossLine"|"CrossBar"|"Tube"|None) :=
     $twoWayStyle = s;
   EdgeThickness -> thickness_ :=
-    $lineThickness = Replace[
+    $lineThickness = OnFailed[
       NormalizeThickness @ thickness,
-      $Failed :> failPlot["badthickness", thickness]
+      failPlot["badthickness", thickness]
     ];
   PairedDistance -> n_ ? NumericQ :=
     $pairedDistance = N[n];
@@ -1220,6 +1222,8 @@ formatCardinalTransition = Case[
     Column[fmtCardinalArrow /@ list, Spacings -> -0.1, ItemSize -> {All, 1}];
   _ := "?"
 ];
+
+fmtCardinalArrow[a_ -> a_] := Nothing;
 
 fmtCardinalArrow[a_ -> b_] :=
   Row[formatCardinal /@ {a, b}, Style["\[RightArrow]", Gray]]
@@ -1365,7 +1369,7 @@ attachArrowheadLabel[g:Graphics[primitives_, opts___], cardinal_, size_] := Scop
   cardinal //= Replace[TwoWay[c_] :> c(* Row[{c, Negated[c]}] *)];
   label = makeArrowheadLabel[cardinal, size];
   {{xl, xh}, {yl, yh}} = GraphicsPlotRange[g];
-  labelPrimitives = {Opacity[1], Black, Inset[label, {0., xl - 0.2}, {0, 0}, Automatic, None]};
+  labelPrimitives = {Opacity[1], Black, Inset[label, Offset[{3, -2}, {0., xl - 0.2}], {0, 0}, Automatic, None]};
   Graphics[{primitives, labelPrimitives}, opts]
 ];
 
@@ -1995,7 +1999,7 @@ vertexColorDataProvider = Case[
   "Distance"                := %[{"Distance", GraphOrigin}];
   {"Distance", v_}          := MetricDistance[$MetricGraphCache, getVertexIndex @ v];
   key_String                := getAnnoValue[vertexAnnotations, key];
-  (key_String -> f_)        := Replace[Quiet @ Check[Map[toFunc @ f, %[key]], $Failed], $Failed :> failPlot["msgcolfunc", key]];
+  (key_String -> f_)        := OnFailed[Quiet @ Check[Map[toFunc @ f, %[key]], $Failed], failPlot["msgcolfunc", key]];
   rules:{__Rule, All -> c_} := First @ resolveRegionRules[rules, VertexColorFunction, c];
   rules:{__Rule}            := First @ resolveRegionRules[rules, VertexColorFunction];
   list_List /; Length[list] === $VertexCount
@@ -2132,7 +2136,7 @@ styleAsText[a_, l___] := Style[a, "Graphics", l];
 styleAsText[a_, l___, BaseStyle -> s_, r___] := Style[a, "Graphics", Sequence @@ ToList @ s, l, r];
 
 cachedRasterizeSize[Null] := {0, 0};
-cachedRasterizeSize[e_] := cachedRasterizeSize[e] = Rasterize[e, "RasterSize"];
+cachedRasterizeSize[e_] := cachedRasterizeSize[e] = Rasterize[e /.  Negated[z_] :> z, "RasterSize"];
 
 PackageExport["LabelPosition"]
 
@@ -2238,9 +2242,9 @@ toPayloadFunction = Case[
   ]
 ];
 
-postProcF[f_][e_] := Replace[
+postProcF[f_][e_] := OnFailed[
     Quiet @ Check[f @ e, $Failed],
-    $Failed :> failPlot["msglabelfn"]
+    failPlot["msglabelfn"]
   ];
 
 myCompactMatrixForm[vec_] :=
@@ -2288,25 +2292,37 @@ placeLabelAt[label_, pos_, index_] /; ($labelScaledPos =!= None) := Scope[
   pos12 = {pos1, pos2} = PointAlongLine[edgeCoords, Scaled @ #]& /@ ($labelScaledPos + {-0.01, 0.01});
   If[NegatedQ[label], label //= StripNegated; Swap[pos2, pos1]];
   text = Block[{$labelScaledPos = None, $labeledElemSize = 0}, placeLabelAt[label, Mean @ pos12,  index]];
-  If[Head[text] === Text, Insert[text, pos2 - pos1, 4], text]
+  If[Head[text] === Text, Insert[text, dim3to2[pos2 - pos1], 4], text]
+];
+
+dim3to2 = Case[
+  p:{_, _, _} := {1, 0};
+  p:{_, _}    := p
 ];
 
 $labelOffsets = N @ CirclePoints[{1, 0}, 8];
 placeLabelAt[label_, pos_, index_] /; ($labelX === Automatic) := Scope[
   adjacentEdges = Part[$adjacencyIndex, index];
   edgeCoords = Mean /@ Part[$EdgeCoordinateLists, adjacentEdges];
-  bestOffset = MaximumBy[$labelOffsets, sumOfSquaredDistances[#, edgeCoords]&];
-  {$labelX, $labelY} = bestOffset * {1.7, 1.1};
+  bestOffset = MaximumBy[$labelOffsets, sumOfDistances[pos - #, edgeCoords]&];
+  {$labelX, $labelY} = dim3to2[bestOffset] * {1.7, 1.1};
   placeLabelAt[label, pos, index]
 ];
 
 placeLabelAt[label_, pos_, index_] /; ($labelX === "Radial") := Scope[
-  {$labelX, $labelY} = -Sign[pos - $meanCoordinates];
-  placeLabelAt[label, pos, index]
+  cpos = pos - $meanCoordinates;
+  If[$GraphIs3D,
+    {$labelX, $labelY} = {0, Sign[$MachineEpsilon + Last[cpos]] * -1.5};
+    cscale = 1 + imageSizeToImageFraction[30] * {1, 1, 0.1};
+    placeLabelAt[label, (cscale * cpos) + $meanCoordinates, index]
+  ,
+    {$labelX, $labelY} = -Sign[cpos];
+    placeLabelAt[label, pos, index]
+  ]
 ];
 
-sumOfSquaredDistances[point_, points_] :=
-  Total @ Flatten @ SquaredDistanceMatrix[{point}, points];
+sumOfDistances[point_, points_] :=
+  Total @ Flatten @ DistanceMatrix[{point}, points];
 
 placeLabelAt[g_Graphics, pos_, _] :=
   Inset[g, pos, {Center, Baseline}];
@@ -2492,7 +2508,7 @@ PackageExport["ExtractGraphPlotPrimitives"]
 ExtractGraphPlotPrimitives[targetIds_, type_] := Block[
   {$targets = targetIds},
   DeepCases[
-    $GraphPlotGraphics,
+    $GraphPlotGraphics /. i_Inset :> RuleCondition[i /. Annotation[a_, _, type] :> a],
     anno:Annotation[_, ids_, type] /; IntersectingQ[ids, $targets] :>
       transformPrimitiveAnno[anno, PartOperator[-1, 1]]
   ]
@@ -2566,6 +2582,7 @@ ApplyFinalTransforms[primitives_] := primitives //. {
   Annotation[p_, "FadeGraph"] :> fadePrimitives[p],
   Annotation[p_, "FadeEdges"] :> applyToPrimitivesType[p, fadePrimitives, "EdgePrimitives"],
   Annotation[p_, "FadeVertices"] :> applyToPrimitivesType[p, fadePrimitives, "VertexPrimitives"],
+  Annotation[p_, "SemitransparentArrowheads"] :> applyToPrimitivesType[p, semitransparentArrowheads, "EdgePrimitives"],
   Annotation[p_, "HideArrowheads"] :> applyToPrimitivesType[p, hideArrowheads, "EdgePrimitives"],
   Annotation[p_, "HideVertices"] :> deletePrimitivesType[p, "VertexPrimitives"],
   Annotation[p_, "HideEdges"] :> deletePrimitivesType[p, "EdgePrimitives"]
@@ -2579,13 +2596,20 @@ applyToPrimitivesType[primitives_, f_, type_] := ReplaceAll[primitives,
   Annotation[p_, indices_, type] :> Annotation[f @ p, indices, type]
 ];
 
-fadePrimitives[primitives_] := ReplaceAll[primitives, {
+$fadePrimitivesRules = {
   t_Text :> t,
   a:Annotation[_, "FrameLabel" | "Protected"] :> a,
   Directive[Glow[_], opts___] :> Directive[Glow[LightGray], opts],
   _Opacity -> Opacity[1],
   $ColorPattern -> LightGray
-}];
+};
+
+fadePrimitives[primitives_] := ReplaceAll[primitives, $fadePrimitivesRules];
+
+semitransparentArrowheads[primitives_] := ReplaceAll[primitives, 
+  a_Arrowheads :>
+    ReplaceAll[a, c:$ColorPattern :> SetColorOpacity[c, .4]]  
+];
 
 hideArrowheads[p_] := ReplaceAll[p, {
   Arrow -> Line,

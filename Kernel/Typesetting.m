@@ -1,5 +1,24 @@
+(**************************************************************************************************)
+
+PackageExport["$MathFont"]
+
+$MathFont = "STIX Two Math";
+
 $vertLineBox = AdjustmentBox["\[VerticalLine]", BoxBaselineShift -> -0.2];
 $horLineBox = "\[HorizontalLine]";
+
+$invSep = "\"\[InvisibleSpace]\"";
+$vthinSep = "\"\[VeryThinSpace]\"";
+$thinSep = "\"\[ThinSpace]\"";
+
+RowSeq[args___] := TemplateBox[{args}, "RowDefault"];
+RowSep[{args___}, sep_] := RowSeqSep[args, sep];
+RowSeqSep[args___, sep_] := TemplateBox[{sep, "", args}, "RowWithSeparators"];
+GrayBox[e_] := StyleBox[e, $Gray];
+
+(**************************************************************************************************)
+
+tradBox[b_] := StyleBox[FormBox[b, TraditionalForm], ShowStringCharacters -> False];
 
 (**************************************************************************************************)
 
@@ -422,7 +441,7 @@ PackageExport["CompactMatrixBox"]
 
 $compactMatrixOptions = JoinOptions[
   $compactNumberOptions,
-  {ItemSize -> Automatic, FrameStyle -> GrayLevel[0.85], "Factor" -> True, "HideZeros" -> True}
+  ItemSize -> Automatic, FrameStyle -> GrayLevel[0.85], "Factor" -> True, "HideZeros" -> True
 ];
 
 Options[CompactMatrixBox] = $compactMatrixOptions;
@@ -519,79 +538,144 @@ formatLabeledMatrix[matrix_] := Scope[
   MatrixForm[tooltips, TableHeadings -> Automatic]
 ];
 
+(**************************************************************************************************)
+
+PackageExport["MaxWidth"]
+
+SetUsage @ "
+MaxWidth is an option to SpacedRow.
+"
 
 (**************************************************************************************************)
 
-PackageExport["MapSpacedRow"]
+PackageExport["ItemFunction"]
 
-Options[MapSpacedRow] = {
-  Spacings -> 20,
-  LabelStyle -> $LabelStyle
-};
+SetUsage @ "
+ItemFunction is an option to SpacedRow.
+"
 
-MapSpacedRow[f_, list_List, args___, OptionsPattern[]] := Scope[
-  UnpackOptions[spacings, labelStyle];
-  SpacedRow[f[#, args]& /@ list, Spacings -> spacings, LabelStyle -> labelStyle]
-];
+(**************************************************************************************************)
+
+PackageExport["LabelFunction"]
+
+SetUsage @ "
+LabelFunction is an option to SpacedRow.
+"
+
+(**************************************************************************************************)
+
+PackageExport["LabelSpacing"]
+
+SetUsage @ "
+LabelSpacing is an option to SpacedRow.
+"
+
+(**************************************************************************************************)
+
+PackageExport["SpacedColumn"]
+
+SpacedColumn[args___] := SpacedRow[args, "Transposed" -> True];
 
 (**************************************************************************************************)
 
 PackageExport["SpacedRow"]
 
+
 $srSpacings = 20;
 $srMaxItems = Infinity;
 $srMaxWidth = Infinity;
 $srLabelStyle = $LabelStyle;
+$srBaseStyle = {};
+$srItemStyle = {};
+$srItemFunction = Identity;
+$srLabelFunction = Identity;
+$srLabelSpacing = 0.1;
+$srTransposed = False;
 
-SpacedRow[elems__, "MaxWidth" -> n_] := Block[{$srMaxWidth = n},
-  SpacedRow[elems]
-];
+(* this is because i don't trust OptionsPattern to not capture rules used as label specs.
+i might be wrong though *)
 
-SpacedRow[elems__, MaxItems -> n_] := Block[{$srMaxItems = n},
-  SpacedRow[elems]
-];
+SpacedRow[elems__, MaxWidth -> n_] := Block[{$srMaxWidth = n}, SpacedRow[elems]];
+SpacedRow[elems__, MaxItems -> n_] := Block[{$srMaxItems = n}, SpacedRow[elems]];
+SpacedRow[elems__, Spacings -> n_] := Block[{$srSpacings = n}, SpacedRow[elems]];
+SpacedRow[elems__, LabelStyle -> style_] := Block[{$srLabelStyle = style}, SpacedRow[elems]];
+SpacedRow[elems__, BaseStyle -> s_] := Block[{$srBaseStyle = s}, SpacedRow[elems]];
+SpacedRow[elems__, ItemStyle -> s_] := Block[{$srItemStyle = s}, SpacedRow[elems]];
+SpacedRow[elems__, ItemFunction -> f_] := Block[{$srItemFunction = f}, SpacedRow[elems]];
+SpacedRow[elems__, LabelFunction -> f_] := Block[{$srLabelFunction = f}, SpacedRow[elems]];
+SpacedRow[elems__, LabelSpacing -> s_] := Block[{$srLabelSpacing = s}, SpacedRow[elems]];
+SpacedRow[elems__, "Transposed" -> t_] := Block[{$srTransposed = t}, SpacedRow[elems]];
 
-SpacedRow[elems__, Spacings -> n_] := Block[{$srSpacings = n},
-  SpacedRow[elems]
-];
-
-SpacedRow[elems__, LabelStyle -> style_] := Block[{$srLabelStyle = style},
-  SpacedRow[elems]
-];
-
-SpacedRow[{rules__Rule}, opts___] := SpacedRow[rules, opts];
+SpacedRow[labels_List -> items_List] /; Length[labels] == Length[items] :=
+  SpacedRow[RuleThread[labels, items]];
 
 SpacedRow[elems__] := Scope[
-  items = DeleteCases[Null] @ Flatten @ List @ elems;
-  If[Length[items] > $srMaxWidth,
+  items = DeleteCases[Null] @ Flatten @ {elems};
+  items = canonicalizeItem /@ Take[items, UpTo @ $srMaxItems];
+  hasLabels = MemberQ[items, _Labeled];
+  tooLong = Length[items] > $srMaxWidth;
+  If[tooLong || hasLabels,
+    If[tooLong,
+      items = Flatten @ Riffle[Partition[items, UpTo[$srMaxWidth]], {$nextRow}]
+    ];
+    If[hasLabels,
+      items //= Map[toGridRowPair /* If[$srTransposed, Reverse, Identity]];
+      vspacings = {$srLabelSpacing, .5};
+      entries = unfoldRow /@ SequenceSplit[items, {$nextRow}];
+      itemStyle = {{$srItemStyle, $srLabelStyle}};
+    ,
+      vspacings = {0.5};
+      entries = SequenceSplit[items, {$nextRow}];
+      itemStyle = {{$srItemStyle}};
+    ];
+    hspacings = $srSpacings/10;
+    styles = {{}, itemStyle};
+    If[$srTransposed,
+      entries //= Transpose;
+      styles //= Reverse;
+      {hspacings, vspacings} = {vspacings * 1.5, hspacings * 0.5};
+    ];
     Grid[
-      Partition[items, UpTo[$srMaxWidth]],
-      Alignment -> {Center, Center}, Spacings -> {$srSpacings/10, {0.1}}
-    ],
-    Row[items, Spacer[$srSpacings]]
+      entries,
+      Alignment -> {Center, Center},
+      Spacings -> {hspacings, {0, vspacings}},
+      ItemStyle -> styles,
+      BaseStyle -> $srBaseStyle
+    ]
+  ,
+    If[$srTransposed,
+      Column[items, Spacings -> $srSpacings/20, BaseStyle -> ToList[$srItemStyle, $srBaseStyle], Alignment -> Center],
+      Row[items, Spacer[$srSpacings], BaseStyle -> ToList[$srItemStyle, $srBaseStyle]]
+    ]
   ]
 ];
 
-SpacedRow[labels_List -> elems_List] := SpacedRow @@ RuleThread[labels, elems];
-
-SpacedRow[labeled__Labeled] := SpacedRow[{labeled}];
-
-SpacedRow[labeled:{__Labeled}] := Scope[
-  items = Part[labeled, All, 1];
-  labels = Part[labeled, All, 2];
-  Grid[{items, labels}, Alignment -> {Center, Center}, Spacings -> {$srSpacings/10, {0}}]
+canonicalizeItem = Case[
+  l_ -> i_        := % @ Labeled[i, l];
+  Labeled[i_, l_] := Labeled[$srItemFunction @ i, $srLabelFunction @ l];
+  other_          := $srItemFunction @ other;
 ];
 
-SpacedRow[elems__Rule] := Scope[
-  {labels, items} = KeysValues @ DeleteCases[Null] @ Flatten @ List @ elems;
-  Grid[{items, Style[#, $srLabelStyle]& /@ labels}, Alignment -> {Center, {Center, Top}}, Spacings -> {$srSpacings/10, {0}}]
+toGridRowPair = Case[
+  Labeled[item_, label_] := {item, label};
+  $nextRow := $nextRow;
+  item_ := {item, ""};
 ];
+
+unfoldRow[pairs_] :=
+  Splice @ Transpose @ pairs;
 
 (**************************************************************************************************)
 
 PackageExport["$LargeEllipsis"]
 
 $LargeEllipsis = Style["\[Ellipsis]", $LabelStyle, Gray, 18]
+
+(**************************************************************************************************)
+
+PackageExport["$LargeVerticalEllipsis"]
+
+$LargeVerticalEllipsis = Style["\[VerticalEllipsis]", $LabelStyle, Gray, 18]
 
 (**************************************************************************************************)
 
@@ -679,47 +763,6 @@ estimateItemSize = MatchValues[
 
 (**************************************************************************************************)
 
-PackageExport["ChartSymbol"]
-
-SetUsage @ "
-ChartSymbol[sub$] represents a chart and formats as C$sub.
-"
-
-declareFormatting[
-  ChartSymbol[sym_String] :> formatChartSymbol[sym, Automatic],
-  ChartSymbol[other__] :> Subscript["C", other]
-];
-
-(**************************************************************************************************)
-
-PackageExport["PathQuotientSymbol"]
-
-SetUsage @ "
-PathQuotientSymbol[q$, mu$] represents the path quiver on quiver q$.
-"
-
-declareFormatting[
-  PathQuotientSymbol[q_] :> Row[{PathQuiverSymbol[q], Style[" / ", Larger], "\[Mu]"}],
-  PathQuotientSymbol[q_, v0_] :> Row[{PathQuiverSymbol[q, v0], Style[" / ", Larger], "\[Mu]"}]
-];
-
-(**************************************************************************************************)
-
-PackageExport["PathQuiverSymbol"]
-
-SetUsage @ "
-PathQuiverSymbol[q$] represents the path quiver on quiver q$.
-"
-
-$pqSymbol = Style["\[CapitalGamma]", Larger];
-declareFormatting[
-  PathQuiverSymbol[q_] :> Row[{$pqSymbol, Row[{"(", q, ")"}]}],
-  PathQuiverSymbol[q_, v0_] :> Row[{$pqSymbol, Row[{"(", q, ",\[ThinSpace]", v0,")"}]}]
-];
-
-
-(**************************************************************************************************)
-
 PackageExport["ChartColorForm"]
 
 ChartColorForm[expr_, colors_] := Scope[
@@ -740,16 +783,17 @@ ChartColorForm[graph_][expr_] := ChartColorForm[expr, graph];
 PackageScope["formatChartSymbol"]
 
 formatChartSymbol[sym_String, colors_] := Scope[
-  Style[
-    Subscript["C", sym]
+  RawBoxes @ StyleBox[
+    SubscriptBox["C", StyleBox[sym, Italic]]
   ,
-    cards = ParseCardinalWord @ StringTrim[sym, {"+" | "-"}];
+    cards = ToPathWord @ StringTrim[sym, {"+" | "-"}];
     c = Lookup[
       If[colors === Automatic, ChooseCardinalColors @ cards, colors],
       cards,
       $Failed
     ];
-    If[ContainsQ[c, $Failed], Sequence @@ {}, HumanBlend @ c]
+    If[ContainsQ[c, $Failed], Sequence @@ {}, HumanBlend @ c],
+    BaseStyle -> Append[$LabelStyle, AutoSpacing -> False]
   ]
 ];
 
@@ -759,32 +803,3 @@ PackageExport["EllipsisForm"]
 
 EllipsisForm[list_, n_] := If[Length[list] > n, Append[Take[list, n], $LargeEllipsis], list];
 EllipsisForm[n_][list_] := EllipsisForm[list, n];
-
-(**************************************************************************************************)
-
-PackageExport["RowForm"]
-
-RowForm[args___] := Row[{args}, "\[ThinSpace]"]
-
-(**************************************************************************************************)
-
-PackageExport["InverseForm"]
-
-InverseForm[f_] := Superscript[f, -1];
-
-(**************************************************************************************************)
-
-PackageExport["BracketForm"]
-
-BracketForm[f_] := Row[{"(", f, ")"}];
-
-(********************************************)
-
-PackageExport["PathWordForm"]
-
-PathWordForm[start_, {} | "", end_] :=
-  Row[{start, "\[ThinSpace]:\[ThinSpace]:\[ThinSpace]", end}, BaseStyle -> {FontFamily -> "Avenir"}];
-
-PathWordForm[start_, cards_, end_] :=
-  Row[{start, "\[ThinSpace]:\[ThinSpace]", Row[ParseCardinalWord @ cards, "\[VeryThinSpace]"], "\[ThinSpace]:\[ThinSpace]", end},
-    BaseStyle -> FontFamily -> "Avenir"]

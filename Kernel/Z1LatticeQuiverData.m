@@ -104,7 +104,7 @@ DefineLatticeQuiver[
 
 DefineLatticeQuiver[
   "Names" -> {"Rhombille"},
-  "Quiver" -> Quiver @ Labeled[{1 -> 2, 2 -> 3}, "a" | "b" | "c"],
+  "Quiver" -> Quiver[Labeled[{1 -> 2, 2 -> 3}, "a" | "b" | "c"], GraphLayout -> {"MultiEdgeDistance" -> 0.5}],
   "Group" -> InfiniteAbelianGroup[3, "Redundant"],
   "Dimension" -> 2
 ];

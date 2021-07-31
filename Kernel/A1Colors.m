@@ -48,6 +48,7 @@ SetColorLightness[lightness_][expr_] :=
 PackageExport["RemoveColorOpacity"]
 
 $removeColorOpacityRules = Dispatch[{
+  Opacity[_, c_] :> c,
   RGBColor[r_, g_, b_, _] :> RGBColor[r, g, b],
   RGBColor[{r_, g_, b_, _}] :> RGBColor[r, g, b],
   GrayLevel[g_, _] :> GrayLevel[g],
@@ -241,7 +242,7 @@ FromOklab[lab_List ? MatrixQ] := RGBColor /@ OklabToRGB[lab]
 $toRGBRules = Dispatch[{
   RGBColor[r_, g_, b_] :> {r, g, b},
   RGBColor[{r_, g_, b_}] :> {r, g, b},
-  c:(_GrayLevel | XYZColor | CMYKColor | Hue | XYZColor | LABColor | LCHColor | LUVColor) :>
+  c:(_GrayLevel | _XYZColor | _CMYKColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) :>
     RuleCondition[List @@ ColorConvert[c, "RGB"]]
 }];
 
@@ -385,8 +386,9 @@ OklabBlend[colors_List] := FromOklab @ Mean @ ToOklab[colors];
 
 PackageExport["HumanBlend"]
 
-HumanBlend[colors_List] := iHumanBlend @ Sort @ colors;
+HumanBlend[colors_List] := iHumanBlend @ DeleteCases[$LightGray | $Gray | $DarkGray] @ Sort @ colors;
 
+iHumanBlend[{}] := $LightGray;
 iHumanBlend[{color_}] := color;
 iHumanBlend[{$Blue, $Green, $Red}] := $LightGray;
 iHumanBlend[{$Blue, $Red}] := $Pink;
@@ -885,7 +887,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   colorFunction = Which[
     Length[uniqueValues] == 1,
       DiscreteColorFunction[uniqueValues, {Gray}],
-    (RangeQ[uniqueValues] || RangeQ[uniqueValues + 1]) && count <= 12,
+    (PermutedRangeQ[uniqueValues] || PermutedRangeQ[uniqueValues + 1]) && count <= 12,
       If[palette === Automatic, $ColorPalette = discreteColorPalette @ count];
       DiscreteColorFunction[uniqueValues, Automatic],
     RealVectorQ[nUniqueValues = N[uniqueValues]],

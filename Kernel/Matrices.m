@@ -79,6 +79,10 @@ PackageExport["SameMatrixUptoPermutationQ"]
 
 perms[n_] := perms[n] = Permutations @ Range[n];
 SameMatrixUptoPermutationQ[m1_, m2_] := AnyTrue[perms @ Length @ m1, m1 == Part[m2, #, #]&];
+
+PackageExport["SameMatrixUptoPermutationAndInversionQ"]
+
+SameMatrixUptoPermutationAndInversionQ[m1_, m2_] := AnyTrue[perms @ Length @ m1, MatchQ[Part[m2, #, #], m1 | Transpose[m1]]&];
 (* SameMatrixUptoPermutationAndInversionQ[m1_, m2_] := AnyTrue[perms @ Length @ m1, MatchQ[Part[m2, #, #], m1 | Transpose[m1]]&];
  *)
 

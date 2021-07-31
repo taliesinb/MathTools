@@ -324,10 +324,11 @@ Graph;
 SyntaxInformation[Graph];
 Options[Graph];
 
+$fullGraphOptions = Sort @ JoinOptions[Graph, $extendedGraphOptionsRules];
+
 Unprotect[Graph];
-Options[Graph] = Sort @ JoinOptions[Graph, $extendedGraphOptionsRules];
-SyntaxInformation[Graph] = ReplaceOptions[SyntaxInformation[Graph], "OptionNames" -> Map[SymbolName, Keys[Options[Graph]]]];
-g:Graph[___] /; MemberQ[Unevaluated @ g, $extendedGraphOptionRulePattern] && $notIntercepted :=
+SyntaxInformation[Graph] = ReplaceOptions[SyntaxInformation[Graph], "OptionNames" -> Map[SymbolName, Keys @ $fullGraphOptions]];
+HoldPattern[g:Graph[___]] /; MemberQ[Unevaluated @ g, $extendedGraphOptionRulePattern] && $notIntercepted :=
   Block[{$notIntercepted = False}, interceptedGraphConstructor[g]];
 Protect[Graph];
 
@@ -466,7 +467,7 @@ ExtendedGraphAnnotations[graph_] :=
 PackageScope["$simpleGraphOptions"]
 PackageScope["$simpleGraphOptionRules"]
 
-$simpleGraphOptionRules = JoinOptions[{
+$simpleGraphOptionRules = JoinOptions[
   EdgeLabels -> None, GraphLayout -> Automatic, ImagePadding -> None,
   ImageSize -> Automatic, VertexCoordinates -> Automatic,
   VertexLabels -> None, VertexSize -> Automatic,
@@ -474,8 +475,7 @@ $simpleGraphOptionRules = JoinOptions[{
   VertexShapeFunction -> Automatic, EdgeShapeFunction -> Automatic, PlotLabel -> None,
   GraphHighlightStyle -> Automatic, VertexLabelStyle -> Automatic, EdgeLabelStyle -> Automatic,
   Epilog -> {}, Prolog -> {}, Frame -> None, FrameStyle -> Automatic, BaselinePosition -> Automatic,
-  FrameLabel -> None
-  },
+  FrameLabel -> None,
   Rest @ $extendedGraphOptionsRules
 ]
 
@@ -773,9 +773,9 @@ VertexRange[graph_] := Range @ VertexCount @ graph;
 PackageExport["AdjacentPairs"]
 
 SetUsage @ "
-AdjacentPairs[graph$] gives the list of {{u$1, v$1}, {u$2, v$2}, $$}} such that \
+AdjacentPairs[graph$] gives the list of {{u$1, v$1}, {u$2, v$2}, $$} such that \
 vertex with index u$i is adjacent to vertex with index v$i.
-* Note that AdjacentPairs is not given in the same order as EdgeList[graph$], and \
+* Note that AdjacentPairs is not given in the same order as %EdgeList[graph$], and \
 in general might have fewer values when there are multiple edges between the same \
 pair of vertices.
 * The relation is undirected, so that a$ \[DirectedEdge] b$ generates both {a$, b$} and {b$, a$}.
@@ -904,7 +904,7 @@ PackageExport["VertexAdjacentEdgeTable"]
 SetUsage @ "
 VertexAdjacentEdgeTable[graph$] returns a list of lists {adj$1, adj$2, $$}  where adj$i \
 is a list of the indices of edges which begin or end at vertex v$i.
-* If the option %Signed -> True is provided, edges will be wrapped in %Negated if they are traversed in the \
+* If the option %Signed -> True is provided, edges will be wrapped in Negated if they are traversed in the \
 reversed direction.
 "
 
@@ -1003,7 +1003,7 @@ TagVertexAdjacentEdgeTable[graph$, invalid$] uses invalid$ instead of None.
 * If a cardinal is not incident to a given vertex, the corresponding entry is None.
 * Keys are included for negations of cardinals.
 * As there is a maximum of edge for a given vertex and cardinal, table entries are single integers or None.
-* If the option %Signed -> True is provided, edges will be wrapped in %Negated if they are traversed in the \
+* If the option %Signed -> True is provided, edges will be wrapped in Negated if they are traversed in the \
 reversed direction.
 "
 
@@ -1175,6 +1175,13 @@ DeleteVertexAnnotations[other_] := other;
 
 (**************************************************************************************************)
 
+PackageExport["LookupVertexAnnotations"]
+
+LookupVertexAnnotations[graph_, key_] :=
+  Lookup[Replace[LookupAnnotation[graph, VertexAnnotations, None], None -> <||>], key, None];
+
+(**************************************************************************************************)
+
 PackageExport["AttachVertexAnnotations"]
 
 AttachVertexAnnotations[graph_, annotations_] := Scope[
@@ -1187,7 +1194,7 @@ AttachVertexAnnotations[graph_, annotations_] := Scope[
 PackageExport["VertexAnnotationPresentQ"]
 
 VertexAnnotationPresentQ[graph_, key_] :=
-  KeyExistsQ[LookupAnnotation[graph, VertexAnnotations, <||>], key]
+  KeyExistsQ[Replace[LookupAnnotation[graph, VertexAnnotations, None], None -> <||>], key]
 
 (**************************************************************************************************)
 
@@ -1197,6 +1204,13 @@ DeleteEdgeAnnotations[graph_Graph] :=
   AnnotationDelete[graph, EdgeAnnotations];
 
 DeleteEdgeAnnotations[other_] := other;
+
+(**************************************************************************************************)
+
+PackageExport["LookupEdgeAnnotations"]
+
+LookupEdgeAnnotations[graph_, key_] :=
+  Lookup[Replace[LookupAnnotation[graph, EdgeAnnotations, None], None -> <||>], key, None];
 
 (**************************************************************************************************)
 
@@ -1212,7 +1226,7 @@ AttachEdgeAnnotations[graph_, annotations_] := Scope[
 PackageExport["EdgeAnnotationPresentQ"]
 
 EdgeAnnotationPresentQ[graph_, key_] :=
-  KeyExistsQ[LookupAnnotation[graph, EdgeAnnotations, <||>], key]
+  KeyExistsQ[Replace[LookupAnnotation[graph, EdgeAnnotations, None], None -> <||>], key]
 
 (**************************************************************************************************)
 
@@ -1227,7 +1241,7 @@ joinAnnotation[graph_, key_, newAnnotations_] := Scope[
 PackageExport["IndexGraphQ"]
 
 IndexGraphQ[g_Graph ? GraphQ] :=
-  SortedRangeQ @ VertexList @ g;
+  RangeQ @ VertexList @ g;
 
 IndexGraphQ[_] := False;
 
@@ -1280,8 +1294,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
   If[extendedGraphLayout =!= Automatic, graphLayout = extendedGraphLayout];
   SetAutomatic[graphLayout, {}];
 
-  vertexList = VertexList @ igraph;
-  vertexIndex := vertexIndex = AssociationRange @ vertexList;
+  vertexList = VertexList @ graph;
   vertexCount = Length @ vertexList;
   vertexCoordinates = ConstantArray[0., {vertexCount, actualDimension}];
 
@@ -1326,13 +1339,15 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
   ];
 
   newGraph = If[actualDimension == 3, Graph3D, Graph][
-    vertexList, edgeList,
+    Range @ vertexCount, edgeList,
     VertexShapeFunction -> captureVertexCoordinates,
     EdgeShapeFunction -> captureEdgeCoordinates,
-    GraphLayout -> graphLayout, VertexCoordinates -> initialVertexCoordinates
+    GraphLayout -> graphLayout,
+    VertexCoordinates -> initialVertexCoordinates
   ];
 
   gdResult = Check[GraphComputation`GraphDrawing @ newGraph, $Failed];
+
   If[FailureQ[gdResult] || !MatrixQ[vertexCoordinates] || !VectorQ[edgeCoordinateLists, MatrixQ],
     Print["Graph layout failed"];
     vertexCoordinates = CirclePoints @ vertexCount;
@@ -1365,7 +1380,7 @@ orientEdgeCoords[coords_, _DirectedEdge] := coords;
 orientEdgeCoords[coords_, UndirectedEdge[a_, b_, tag_]] := If[
   EuclideanDistance[
     First @ coords,
-    Part[vertexCoordinates, vertexIndex @ First @ Part[edgeList, tag]]
+    Part[vertexCoordinates, Part[edgeList, tag, 1]]
   ] < 0.001,
   coords, Reverse @ coords
 ];
@@ -1604,3 +1619,62 @@ createMetricGraphCache[] := CreateGraphCache[
   Annotate[ToSymmetricGraph @ $IndexGraph, GraphMetric -> LookupAnnotation[$Graph, GraphMetric, Automatic]],
   $metricGraphCacheSymbol
 ];
+
+(**************************************************************************************************)
+
+PackageExport["DeleteCardinal"]
+
+DeleteCardinal[graph_, card_] := Scope[
+  opts = Options[graph];
+  {vertices, edges} = VertexEdgeList[graph];
+  edges //= Map[deleteCard[card | Negated[card]]];
+  cardinals = AnnotationValue[graph, Cardinals];
+  res = Graph[vertices, edges, opts];
+  If[ListQ[cardinals], res = Annotate[res, Cardinals -> DeleteCases[cardinals, card]]];
+  res
+];
+
+deleteCard[c_][head_[a_, b_, t_]] /; MatchQ[t, c] := Nothing;
+
+deleteCard[c_][head_[a_, b_, CardinalSet[l_List /; MemberQ[l, c]]]] :=
+  head[a, b, SimplifyCardinalSet @ CardinalSet @ DeleteCases[l, c]];
+
+deleteCard[c_][other_] := other;
+
+(**************************************************************************************************)
+
+PackageExport["FindAllUndirectedSpanningEdgeSets"]
+
+(* this is O(n!) in the number of vertices, so not practical for all but small graphs,
+but at least we don't have to rewrite FindSpanningTree *)
+
+FindAllUndirectedSpanningEdgeSets[graph_] := Scope[
+  {vertices, edges} = VertexEdgeList @ graph;
+  vertices = VertexList @ graph;
+  igraph = ToUndirectedEdgeIndexGraph @ graph;
+  {ivertices, iedges} = VertexEdgeList @ igraph;
+  perms = Permutations @ ivertices;
+  spanningEdgeSets = DeleteDuplicates @ Map[
+    Sort[findSpanningEdgeTags[#, iedges]]&,
+    perms
+  ]
+];
+
+(*
+  Graph[vertices, Part[edges, #], opts]& /@ skeletonIndices
+]
+*)
+ToUndirectedEdgeIndexGraph[graph_] := Scope[
+  {vertices, edges} = VertexEdgeList @ IndexGraph[graph];
+  i = 1; Graph[vertices, UndirectedEdge[#1, #2, i++]& @@@ edges]
+];
+
+findSpanningEdgeTags[vertices_, edgeList_] :=
+  Part[EdgeList[FindSpanningTree[Graph[vertices, edgeList]]], All, 3];
+
+(**************************************************************************************************)
+
+FindAllDirectedTrees[graph_] := Scope[
+  {vertices, edges} = VertexEdgeList @ graph;
+];
+

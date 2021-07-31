@@ -31,7 +31,7 @@ FindCoordinatizationFunction[matrices_List, OptionsPattern[]] := Scope[
     matrices = matrices;
     If[DihedralTranslationGroupQ[group],
       matrices[[All, -1, -1]] = 1];
-    g12 = Dot @@ Take[matrices, 2]; g12i = Inverse[g12];
+    g12 = Dot @@ Take[matrices, 2]; g12i = Quiet @ Check[Inverse[g12], Null];
     isRedundant = AnyTrue[Drop[matrices, 2], SameQ[#, g12] || SameQ[#, g12i]&];
   ];
   {types, First /* (ApplyThrough @ functions), isRedundant}

@@ -29,6 +29,7 @@ parseRepresentationSpec = MatchValues[
   s_String           := {carChars[s], Automatic};
   s_String -> rep_   := {carChars[s], rep};
   list_List -> rep_  := {list, rep};
+  a_Association      := {Keys @ a, CustomRepresentation @ Values @ a};
   rep_               := {Automatic, rep}
 ];
 
@@ -92,13 +93,15 @@ QuiverRepresentationPlot[qrep_, opts:OptionsPattern[Quiver]] := Scope[
   If[!QuiverRepresentationObjectQ[qrep], ReturnFailed[]];
 
   quiver = qrep["Quiver"];
-  quiverPlot = Quiver[quiver, PlotLabel -> plotLabel, opts, ImageSize -> {60, 80}, GraphLegend -> None,
-    VertexSize -> Large];
+  quiverPlot = Quiver[quiver,
+    PlotLabel -> plotLabel, opts, ImageSize -> {60, 80}, GraphLegend -> None,
+    VertexSize -> Large, ArrowheadShape -> "Line", GraphLayout -> {"MultiEdgeDistance" -> 0.5}
+  ];
 
   colors = LookupCardinalColors[quiver];
   labeledGenerators = makeLabeledGenerators[qrep["Generators"], colors];
 
-  Row[{quiverPlot, "  ", labeledGenerators}]
+  Column[{quiverPlot, "  ", labeledGenerators}, Alignment -> Center]
 ];
 
 PackageScope["makeLabeledGenerators"]
