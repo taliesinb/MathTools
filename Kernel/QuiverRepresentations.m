@@ -39,8 +39,8 @@ chooseAutoRepresentation[cardinalList_] :=
   Switch[
     ToLowerCase @ Sort @ cardinalList,
       {"x"}, InfiniteAbelianGroup[1],
-      {"x", "y"}, InfiniteAbelianGroup[2],
-      {"x", "y", "z"}, InfiniteAbelianGroup[3],
+      {"x", "y"} | {"b", "r"}, InfiniteAbelianGroup[2],
+      {"x", "y", "z"} | {"b", "g", "r"}, InfiniteAbelianGroup[3],
       {"w", "x", "y", "z"}, InfiniteAbelianGroup[4],
       {"a", "b", "c"}, InfiniteAbelianGroup[3, "Redundant"],
       {"a", "b", "c", "d"}, InfiniteAbelianGroup[4, "Redundant"],
@@ -83,9 +83,14 @@ PackageExport["QuiverRepresentationPlot"]
 
 DeclareArgumentCount[QuiverRepresentationPlot, 1];
 
-QuiverRepresentationPlot[qrep_, opts:OptionsPattern[Quiver]] := Scope[
+Options[QuiverRepresentationPlot] = JoinOptions[
+  "Transposed" -> False,
+  Quiver
+];
 
-  UnpackOptions[plotLabel];
+QuiverRepresentationPlot[qrep_, opts:OptionsPattern[]] := Scope[
+
+  UnpackOptions[plotLabel, transposed];
   If[StringQ[qrep],
     SetAutomatic[plotLabel, ToTitleString[qrep]];
     qrep = LatticeQuiverData[qrep, "Representation"]];
@@ -94,14 +99,14 @@ QuiverRepresentationPlot[qrep_, opts:OptionsPattern[Quiver]] := Scope[
 
   quiver = qrep["Quiver"];
   quiverPlot = Quiver[quiver,
-    PlotLabel -> plotLabel, opts, ImageSize -> {60, 80}, GraphLegend -> None,
-    VertexSize -> Large, ArrowheadShape -> "Line", GraphLayout -> {"MultiEdgeDistance" -> 0.5}
+    PlotLabel -> plotLabel, FilterOptions @ opts, ImageSize -> {60, 80}, GraphLegend -> None,
+    VertexSize -> Large, ArrowheadShape -> {"Line", EdgeThickness -> 2.5}, GraphLayout -> {"MultiEdgeDistance" -> 0.5}
   ];
 
   colors = LookupCardinalColors[quiver];
   labeledGenerators = makeLabeledGenerators[qrep["Generators"], colors];
 
-  Column[{quiverPlot, "  ", labeledGenerators}, Alignment -> Center]
+  SpacedRow[quiverPlot, labeledGenerators, "Transposed" -> transposed]
 ];
 
 PackageScope["makeLabeledGenerators"]

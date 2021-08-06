@@ -11,16 +11,27 @@
 \gdef\osymbol#1{\colorsymbol{00427f}{#1}}
 \gdef\lstring#1{\textcolor{666666}{\textrm{\textquotedblleft{#1}\textquotedblright}}}
 
+\gdef\rform#1{{\textcolor{b50700}{#1}}}
+\gdef\gform#1{{\textcolor{217f00}{#1}}}
+\gdef\bform#1{{\textcolor{165e9d}{#1}}}
+
 \gdef\tinybullet{{\tiny∙}}
-\gdef\de{\,{{\raisebox{1.19pt}{\tinybullet}\mkern{-0.8pt}{→}}}\,}
-\gdef\ue{\,\raisebox{1pt}{\tinybullet\raisebox{-0.03em}{\mkern{-0.3pt}{\tiny──}\mkern{-0.3pt}}\tinybullet}\,}
+\gdef\deSymbol{{\,{{\raisebox{1.19pt}{\tinybullet}\mkern{-0.8pt}{→}}}\,}}
+\gdef\ueSymbol{{\,\raisebox{1pt}{\tinybullet\raisebox{-0.03em}{\mkern{-0.3pt}{\tiny──}\mkern{-0.3pt}}\tinybullet}\,}}
+
+\gdef\de#1#2{{{#1} \deSymbol {#2}}}
+\gdef\ue#1#2{{{#1} \ueSymbol {#2}}}
+
+\gdef\tde#1#2#3{{{#1} \overset{#3}{\deSymbol} {#2}}}
+\gdef\tue#1#2#3{{{#1} \overset{#3}{\ueSymbol} {#2}}}
 
 \gdef\mapsfrom{\htmlClass{hreflect}{\mapsto}}
 \gdef\longmapsfrom{\htmlClass{hreflect}{\longmapsto}}
 
 \gdef\diffd{𝕕}
 
-\gdef\eq{=}
+\gdef\iso{\cong}
+\gdef\homotopic{\simeq}
 \gdef\ruledelayed{:\to}
 \gdef\mathdollar{\text{\textdollar}}
 \gdef\hyphen{\text{-}}
@@ -28,7 +39,99 @@
 \gdef\emdash{\text{---}}
 
 \gdef\updownarrows{\uparrow\!\downarrow}
-\gdef\vthinspace{\mkern{1}}
+\gdef\vthinspace{\mkern{1pt}}
 \gdef\dlq{\text{\textquotedblleft}}
 \gdef\drq{\text{\textquotedblright}}
 \gdef\dprime{{\prime\prime}}
+
+\gdef\inv#1{{{#1}^{-1}}}
+\gdef\groupInv{\inv}
+\gdef\groupoidInv{\inv}
+
+\gdef\pathHomomorphism#1{#1}
+\gdef\groupoidFunction#1{#1}
+\gdef\groupFunction#1{#1}
+\gdef\gl#1{GL({#1},\mathbb{R})}
+
+\gdef\negated#1{\underline{#1}}
+\gdef\pathComposeSymbol{{\,∷\,}}
+\gdef\pathCompose#1#2{{#1}\pathComposeSymbol{#2}}
+\gdef\pathTranslate#1#2{{#1}{\uparrow}{#2}}
+\gdef\pathBackwardTranslate#1#2{{#1}{\downarrow}{#2}}
+\gdef\pathHeadVector#1{{#1}^{\bullet}}
+\gdef\pathTailVector#1{{#1}_{\bullet}}
+\gdef\pathReverse#1{{#1}^{\dagger}}
+
+\gdef\length{\operatorname{len}}
+\gdef\signedLength{\operatorname{len^*}}
+\gdef\vertexList{\operatorname{vertices}}
+\gdef\edgeList{\operatorname{edges}}
+\gdef\pathList{\operatorname{paths}}
+\gdef\cardinalList{\operatorname{cards}}
+\gdef\wordOf{\operatorname{word}}
+\gdef\headVertex{\operatorname{head}}
+\gdef\tailVertex{\operatorname{tail}}
+\gdef\automorphisms{\operatorname{Aut}}
+
+\gdef\blank{\_}
+\gdef\emptyWord{}
+\gdef\wordSymbol#1{\mathtt{#1}}
+\gdef\word#1{#1}
+\gdef\pathMap#1{#1}
+\gdef\function#1{#1}
+
+\gdef\pathWord#1#2#3{{#1}\!:\!{#2}\!:\!{#3}}
+
+\gdef\nullpath{\bot}
+\gdef\path#1{#1}
+\gdef\vert#1{#1}
+\gdef\edge#1{#1}
+\gdef\card#1{\mathtt{#1}}
+\gdef\path#1{#1}
+\gdef\quiver#1{#1}
+\gdef\groupoid#1{#1}
+\gdef\group#1{#1}
+\gdef\sym#1{#1}
+\gdef\matrix#1{#1}
+\gdef\wordGroup#1{\Omega_{#1}}
+
+\gdef\graph#1{#1}
+\gdef\graphHomomorphism#1{#1}
+\gdef\covers#1#2{{#1} \sqsupseteq {#2}}
+
+\gdef\groupElem#1{#1}
+\gdef\groupoidElem#1{#1}
+
+\gdef\elemOf#1#2{{ {#1} \in {#2} }}
+\gdef\edgeOf#1#2{{ {#1} {\in}_E {#2} }}
+\gdef\vertOf#1#2{{ {#1} {\in}_V {#2} }}
+\gdef\pathOf#1#2{{ {#1} {\in}_P {#2} }}
+
+\gdef\pathGroupoid#1{{ \Gamma_{#1} }}
+\gdef\forwardPathQuiver#1#2{{\overrightharpoon{#1}_{#2}}}
+\gdef\backwardPathQuiver#1#2{{\overrightharpoon{#1}^{#2}}}
+\gdef\pathQuiver#1{{\overrightharpoon{#1}}}
+
+\gdef\mto#1#2{{#1}\mapsto{#2}}
+\gdef\rewrite#1#2{{#1}\mapsto{#2}}
+
+\gdef\ncard#1{\card{\negated{#1}}}
+
+\gdef\list#1{\{ {#1} \}}
+\gdef\tuple#1{( {#1} )}
+\gdef\concat#1{ {#1} }
+\gdef\paren#1{\left( {#1} \right)}
+\gdef\rewrite#1#2{{#1} \rightarrow {#2}}
+
+\gdef\quotient#1#2{{#1} / {#2}}
+
+\gdef\idElem#1{e_{#1}}
+
+\gdef\elem{\ \in\ }
+\gdef\gmult{\,\ast\,}
+\gdef\Gmult{\,\ast\,}
+
+\gdef\functionSignature#1#2#3{{{#1} : {#2} \to {#3}}}
+
+\gdef\indexSum#1#2#3{{\sum_{#2}^{#3} #1}}
+\gdef\indexProd#1#2#3{{\prod_{#2}^{#3} #1}}

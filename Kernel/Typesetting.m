@@ -578,6 +578,18 @@ SpacedColumn[args___] := SpacedRow[args, "Transposed" -> True];
 
 (**************************************************************************************************)
 
+PackageExport["ClickCopyRow"]
+
+ClickCopyRow[args___] := SpacedRow[args, ItemFunction -> ClickCopy];
+
+(**************************************************************************************************)
+
+PackageExport["ClickCopy"]
+
+ClickCopy[e_] := EventHandler[e, {"MouseClicked" :> CopyToClipboard[e]}];
+
+(**************************************************************************************************)
+
 PackageExport["SpacedRow"]
 
 
@@ -591,6 +603,8 @@ $srItemFunction = Identity;
 $srLabelFunction = Identity;
 $srLabelSpacing = 0.1;
 $srTransposed = False;
+$srIndexTooltip = False;
+$srAlignment = Center;
 
 (* this is because i don't trust OptionsPattern to not capture rules used as label specs.
 i might be wrong though *)
@@ -604,6 +618,8 @@ SpacedRow[elems__, ItemStyle -> s_] := Block[{$srItemStyle = s}, SpacedRow[elems
 SpacedRow[elems__, ItemFunction -> f_] := Block[{$srItemFunction = f}, SpacedRow[elems]];
 SpacedRow[elems__, LabelFunction -> f_] := Block[{$srLabelFunction = f}, SpacedRow[elems]];
 SpacedRow[elems__, LabelSpacing -> s_] := Block[{$srLabelSpacing = s}, SpacedRow[elems]];
+SpacedRow[elems__, Alignment -> a_] := Block[{$srAlignment = a}, SpacedRow[elems]];
+SpacedRow[elems__, "IndexTooltip" -> t_] := Block[{$srIndexTooltip = t}, SpacedRow[elems]];
 SpacedRow[elems__, "Transposed" -> t_] := Block[{$srTransposed = t}, SpacedRow[elems]];
 
 SpacedRow[labels_List -> items_List] /; Length[labels] == Length[items] :=
@@ -612,8 +628,11 @@ SpacedRow[labels_List -> items_List] /; Length[labels] == Length[items] :=
 SpacedRow[elems__] := Scope[
   items = DeleteCases[Null] @ Flatten @ {elems};
   items = canonicalizeItem /@ Take[items, UpTo @ $srMaxItems];
+  If[$srIndexTooltip, items //= MapIndexed[NiceTooltip[#1, First[#2]]&]];
   hasLabels = MemberQ[items, _Labeled];
   tooLong = Length[items] > $srMaxWidth;
+  alignment = $srAlignment;
+  If[!ListQ[alignment], alignment = {alignment, alignment}];
   If[tooLong || hasLabels,
     If[tooLong,
       items = Flatten @ Riffle[Partition[items, UpTo[$srMaxWidth]], {$nextRow}]
@@ -632,20 +651,26 @@ SpacedRow[elems__] := Scope[
     styles = {{}, itemStyle};
     If[$srTransposed,
       entries //= Transpose;
-      styles //= Reverse;
-      {hspacings, vspacings} = {vspacings * 1.5, hspacings * 0.5};
+      styles //= Reverse[#, {1, 3}]&;
+      {hspacings, vspacings} = {{0, vspacings * 1.5}, {0, hspacings * 0.5}};
+      alignment //= Reverse;
     ];
     Grid[
       entries,
-      Alignment -> {Center, Center},
-      Spacings -> {hspacings, {0, vspacings}},
+      Alignment -> alignment,
+      Spacings -> {hspacings, vspacings},
       ItemStyle -> styles,
       BaseStyle -> $srBaseStyle
     ]
   ,
     If[$srTransposed,
-      Column[items, Spacings -> $srSpacings/20, BaseStyle -> ToList[$srItemStyle, $srBaseStyle], Alignment -> Center],
-      Row[items, Spacer[$srSpacings], BaseStyle -> ToList[$srItemStyle, $srBaseStyle]]
+      Column[items, 
+        Spacings -> $srSpacings/20, BaseStyle -> ToList[$srItemStyle, $srBaseStyle],
+        Alignment -> alignment
+      ],
+      Row[items, Spacer[$srSpacings],
+        BaseStyle -> ToList[$srItemStyle, $srBaseStyle]
+      ]
     ]
   ]
 ];
@@ -657,7 +682,7 @@ canonicalizeItem = Case[
 ];
 
 toGridRowPair = Case[
-  Labeled[item_, label_] := {item, label};
+  Labeled[item_, label_, ___] := {item, label};
   $nextRow := $nextRow;
   item_ := {item, ""};
 ];
@@ -799,7 +824,60 @@ formatChartSymbol[sym_String, colors_] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["LargeLabeled"]
+
+Options[LargeLabeled] = JoinOptions[
+  Spacings -> 0,
+  Labeled
+];
+
+LargeLabeled[e_, l_, opts:OptionsPattern[]] :=
+  Labeled[
+    e, l, opts,
+    FrameMargins -> {{0, 0}, {OptionValue[Spacings], 0}}, 
+    LabelStyle -> Prepend[$LabelStyle, FontSize -> 16]
+  ];
+
+
+(**************************************************************************************************)
+
 PackageExport["EllipsisForm"]
 
 EllipsisForm[list_, n_] := If[Length[list] > n, Append[Take[list, n], $LargeEllipsis], list];
 EllipsisForm[n_][list_] := EllipsisForm[list, n];
+
+(**************************************************************************************************)
+
+PackageExport["CardinalTransition"]
+
+SetUsage @ "
+CardinalTransition[a$ -> b$] represents a transition from cardinal a$ to cardinal b$.
+CardinalTransition[{rule$1, rule$2, $$}] represents multiple simultaneous transitions.
+"
+
+$anyRuleP = _Rule | _TwoWayRule;
+declareFormatting[
+  ca:CardinalTransition[$anyRuleP | {$anyRuleP..}] :> formatCardinalTransition[ca]
+]
+
+formatCardinalTransition = Case[
+  CardinalTransition[{}] :=
+    "";
+  CardinalTransition[r_Rule | r_TwoWayRule] :=
+    fmtCardinalArrow @ r;
+  CardinalTransition[list:{$anyRuleP..}] :=
+    Column[fmtCardinalArrow /@ list, Spacings -> -0.1, ItemSize -> {All, 1}];
+  _ := "?"
+];
+
+fmtCardinalArrow[a_ -> a_] := Nothing;
+
+fmtCardinalArrow[a_ -> b_] :=
+  Row[formatCardinal /@ {a, b}, Style["\[RightArrow]", Gray]]
+
+fmtCardinalArrow[TwoWayRule[a_, b_]] :=
+  Row[formatCardinal /@ {a, b}, Style["\[LeftRightArrow]", Gray]]
+
+formatCardinal[c_] := If[!GraphQ[$Graph], c,
+  Style[c, LookupCardinalColors[$Graph, StripNegated @ c]]
+];

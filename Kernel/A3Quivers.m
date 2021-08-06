@@ -115,7 +115,7 @@ makeQuiver[vertices_, edges_, newOpts_] := Scope[
   ExtendedGraph[
     vertices, edges,
     Sequence @@ newOpts,
-    GraphLegend -> Automatic,
+    GraphLegend -> None,
     If[$edgeAnnotations =!= <||>, EdgeAnnotations -> $edgeAnnotations, Sequence @@ {}]
   ]
 ]
@@ -235,7 +235,7 @@ CardinalList[graph_Graph ? EdgeTaggedGraphQ] := Replace[
 ];
 
 CardinalList[edges_List] :=
-  SpliceCardinalSets @ UniqueCases[edges, DirectedEdge[_, _, c_] :> c];
+  DeleteDuplicates @ SpliceCardinalSets @ UniqueCases[edges, DirectedEdge[_, _, c_] :> c];
 
 extractCardinals[graph_] := DeleteCases[Union @ SpliceCardinalSets @ EdgeTags @ graph, Null];
 
@@ -252,13 +252,21 @@ LookupCardinalColors[quiver$, c$] returns the color for cardinal c$.
 * If c$ is an CardinalSet, the corresponding colors will be blended.
 "
 
-LookupCardinalColors[graph_Graph] :=
-  Replace[
-    AnnotationValue[graph, CardinalColors], {
-      ($Failed | Automatic | None) :> ChooseCardinalColors @ CardinalList @ graph,
-      palette:(_String | {_, _String} | _Offset) :> ChooseCardinalColors[CardinalList @ graph, palette]
-    }
-  ];
+LookupCardinalColors[graph_Graph] := Scope[
+  {cardinalColorRules, cardinalColors} = AnnotationValue[graph, {CardinalColorRules, CardinalColors}];
+  cardinals = CardinalList @ graph;
+  Which[
+    ColorVectorQ[cardinalColors],
+      cardinalColors,
+    RuleListQ[cardinalColorRules],
+      AssociationThread[
+        cardinals,
+        Replace[cardinals, Append[cardinalColorRules, _ -> $Gray], {1}]
+      ],
+    True,
+      ChooseCardinalColors @ cardinals
+  ]
+];
 
 LookupCardinalColors[graph_Graph, card_] :=
   Lookup[LookupCardinalColors @ graph, card, Gray];
@@ -278,7 +286,7 @@ $rgbColors = <|"r" -> $Red, "g" -> $Green, "b" -> $Blue, "w" -> $Gray, "x" -> $D
 $xyzColors = <|"x" -> $Red, "y" -> $Green, "z" -> $Blue|>;
 
 ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardinals,
-  {"x", "y"} | {"x", "y", "z"},
+  set_ /; SubsetQ[{"x", "y", "z"}, set],
     KeyTake[$xyzColors, cardinals],
   set_ /; SubsetQ[{"r", "g", "b", "w", "x"}, set],
     KeyTake[$rgbColors, cardinals],

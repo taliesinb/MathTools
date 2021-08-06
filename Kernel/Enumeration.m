@@ -15,10 +15,14 @@ GraphVertexAssignments[graph_, values_] := Scope[
   DeleteDuplicates[perms, MemberQ[Permute[#2, group], #1]&]
 ]
 
+(**************************************************************************************************)
+
 PackageExport["EdgeAutomorphismGroup"]
 
 EdgeAutomorphismGroup[graph_Graph] :=
   GraphAutomorphismGroup @ LineGraphFixed @ graph;
+
+(**************************************************************************************************)
 
 PackageExport["UniqueEdgeColorings"]
 
@@ -29,6 +33,8 @@ UniqueEdgeColorings[graph_] := Scope[
   First /@ GroupOrbits[group, Permutations @ edgeRange]
 ]
 
+(**************************************************************************************************)
+
 PackageExport["AllCardinalSets"]
 
 AllCardinalSets[cardinals_] := Scope[
@@ -37,12 +43,15 @@ AllCardinalSets[cardinals_] := Scope[
   Subsets[cardinals, {1, numCardinals}]
 ];
 
+(**************************************************************************************************)
+
 PackageExport["CardinalRenamings"]
 
 CardinalRenamings[cardinals_] := Scope[
   Map[Dispatch @ DeleteCases[RuleThread[cardinals, #], Rule[z_, z_]]&, Permutations @ cardinals]
 ];
 
+(**************************************************************************************************)
 
 PackageExport["CountQuivers"]
 
@@ -55,11 +64,15 @@ CountQuivers[graph_, cardCount_] := CountQuivers[graph, cardCount] = Scope[
   ]
 ];
 
+(**************************************************************************************************)
+
 PackageExport["$EnableEnumerateCache"]
 PackageExport["$EnumerateVerboseMode"]
 
 $EnumerateVerboseMode = False;
 $EnableEnumerateCache = True;
+
+(**************************************************************************************************)
 
 PackageExport["EnumerateQuivers"]
 
@@ -306,6 +319,8 @@ graphsEqualModuloEdgeNaming[tags1_, tags2_, isoList_] :=
 
 equalModuloNaming[list1_, list2_] := First[ArrayLabeling[list1]] === First[ArrayLabeling[list2]];
 
+(**************************************************************************************************)
+
 PackageExport["IsomorphicTaggedGraphsQ"]
 
 IsomorphicTaggedGraphsQ[g1_, g2_] := Scope[
@@ -323,12 +338,15 @@ IsomorphicTaggedGraphsQ[g1_, g2_] := Scope[
   False
 ];
 
+(**************************************************************************************************)
+
 PackageExport["FindEdgeIsomorphism"]
 
 FindEdgeIsomorphism[g1_, g2_, args___] :=
   If[EdgeCount[g1] =!= EdgeCount[g2], {},
     FindGraphIsomorphism[LineGraphFixed @ g1, LineGraphFixed @ g2, args]];
 
+(**************************************************************************************************)
 
 PackageExport["LineGraphFixed"]
 
@@ -345,6 +363,8 @@ LineGraphFixed[g_] := Scope[
     ]
   ]
 ]
+
+(**************************************************************************************************)
 
 PackageExport["EnumerateQuiverSkeletons"]
 
@@ -396,3 +416,31 @@ iEnumerateQuiverSkeletons[n_Integer] := Scope[
   quiverCacheStore["EnumerateQuiverSkeletons", None, n, edgeLists];
   edgeLists
 ];
+
+(**************************************************************************************************)
+
+PackageExport["EnumerateLattices"]
+
+EnumerateLattices[quivers_, cardinals_, group_, opts___Rule] := Scope[
+  rules = MapIndexed[First[#2] -> #1&, cardinals];
+  quivers = Map[
+    Quiver[VertexList @ #, MapAt[ReplaceAll[rules], EdgeList @ #, {All, 3}]]&, 
+    ExpandCardinalSetEdges /@ quivers
+  ];
+  lattices = Map[
+    quiver |-> LatticeGraph[
+      QuiverRepresentation[quiver, group], opts,
+      MaxNorm -> 3, ImageSize -> {120, 120}, VertexSize -> Small
+    ], 
+    quivers
+  ];
+  lattices = Select[lattices, DuplicateFreeQ[GraphVertexCoordinates[#]]&];
+  lattices = Join @@ Map[
+    DeleteDuplicates[#, IsomorphicGraphQ]&,
+    Values @ GroupBy[lattices, VertexDegree /* Sort]
+  ];
+  LatticeGraphToLatticeQuiver /@ SortBy[lattices, VertexCount]
+]
+
+LatticeGraphToLatticeQuiver[g_Graph] :=
+  ExtendedGraph[Graph[VertexList[g], DirectedEdge @@@ EdgeList[g], Options[g]], ArrowheadStyle -> Automatic]

@@ -199,8 +199,14 @@ System`InformationDump`subtitleStyled[sub_] := Style[sub, "InformationUsageText"
 
 PackageScope["SetUsage"]
 
+PackageExport["$DisableSetUsage"]
+
+$DisableSetUsage = False;
+
 preprocessUsageString[usageString_] :=
   FixedPoint[substituteUsageSlots, usageString]
+
+SetUsage[___] /; $DisableSetUsage := Null;
 
 SetUsage[usageString_String] :=
   GeneralUtilities`SetUsage[Evaluate @ preprocessUsageString @ usageString];
@@ -428,6 +434,25 @@ AngleDifference[a_, b_] := If[Abs[b - a] > Pi, Mod[Mod[b, Tau] - Mod[a, Tau], Ta
 
 (**************************************************************************************************)
 
+PackageExport["$RulePattern"]
+
+$RulePattern = _Rule | _RuleDelayed; 
+
+(**************************************************************************************************)
+
+PackageExport["$RuleListPattern"]
+
+$RuleListPattern = {RepeatedNull[_Rule | _RuleDelayed]};
+
+(**************************************************************************************************)
+
+PackageExport["RuleListQ"]
+
+RuleListQ[$RuleListPattern] := True;
+RuleListQ[_] := False;
+
+(**************************************************************************************************)
+
 PackageExport["SameLengthQ"]
 
 SetUsage @ "
@@ -447,6 +472,19 @@ RealVectorQ[list$] gives True if list$ is a vector of real-valued numbers.
 "
 
 RealVectorQ[list_] := VectorQ[list, Internal`RealValuedNumberQ];
+
+(**************************************************************************************************)
+
+PackageExport["UnitIntervalArrayQ"]
+
+SetUsage @ "
+UnitIntervalArrayQ[arr$] gives True if arr$ is an array whose values are between 0 and 1 inclusive.
+"
+
+UnitIntervalArrayQ[arr_] := Scope[
+  {min, max} = MinMax @ arr;
+  TrueQ[0 <= min <= max <= 1]
+];
 
 (**************************************************************************************************)
 
@@ -491,6 +529,24 @@ ContainsNegativeQ[expr$] gives True if expr$ contains at least one negative real
 "
 
 ContainsNegativeQ[expr_] := !FreeQ[expr, n_Real | n_Rational | n_Integer ? Negative];
+
+(**************************************************************************************************)
+
+PackageExport["EquivalenceClassIndices"]
+
+EquivalenceClassIndices[list_, fn_] :=
+  Gather[Range @ Length @ list, fn[Part[list, #1], Part[list, #2]]&];
+
+(**************************************************************************************************)
+  
+PackageExport["EquivalenceClassLabels"]
+
+EquivalenceClassLabels[list_] := Scope[
+  n = Max[list];
+  arr = ConstantArray[0, n];
+  ScanIndexed[Set[Part[arr, #1], First[#2]]&, list];
+  arr
+]
 
 (**************************************************************************************************)
 
@@ -1446,4 +1502,61 @@ CopyUnicodeToClipboard[text_] := Scope[
   Export[out, text, CharacterEncoding -> "UTF-8"];
   Run["osascript -e 'set the clipboard to ( do shell script \"cat " <> out <> "\" )'"];
   DeleteFile[out];
+];
+
+(**************************************************************************************************)
+
+PackageExport["BinaryDigits"]
+
+BinaryDigits[n_, len_] := IntegerDigits[n, 2, len];
+BinaryDigits[len_][n_] := BinaryDigits[n, len];
+
+(**************************************************************************************************)
+
+PackageExport["BitAndQ"]
+
+BitAndQ[a_, b_] := Total[BitAnd[a, b]] =!= 0;
+
+(**************************************************************************************************)
+
+PackageExport["BitNandQ"]
+
+BitNandQ[a_, b_] := Total[BitAnd[a, b]] === 0;
+BitNandQ[a___] := DuplicateFreeQ[{a}, BitAndQ];
+
+(**************************************************************************************************)
+
+PackageExport["RangePartitionIndices"]
+
+RangePartitionIndices[n_] := Scope[
+  CollectTo[{$partBag}, rangPartRecurse[{}, Range[n]]];
+  $partBag
+];
+
+rangPartRecurse[parts_, {}] := Internal`StuffBag[$partBag, parts];
+rangPartRecurse[parts_, rem:{_}] := Internal`StuffBag[$partBag, Append[parts, rem]];
+rangPartRecurse[parts_, rem_] := Scope @ Scan[
+  {first, rest} = TakeDrop[rem, 1];
+  rangPartRecurse[
+    Append[parts, Join[first, #]], 
+    Complement[rest, #]
+  ]&,
+  Subsets[rest, {1, Infinity}]
+];
+
+(**************************************************************************************************)
+
+PackageExport["RangePartitionGraph"]
+
+RangePartitionGraph[n_] := Scope[
+  init = List /@ Range[n];
+  MultiwaySystem[rangePartitionSuccessors, {init}]
+];
+  
+rangePartitionSuccessors[part_] := Join @@ Table[
+  Sort @ Append[
+    Delete[part, {{i}, {j}}], 
+    Sort[Join @@ Part[part, {i, j}]]
+  ],
+  {i, Length @ part}, {j, i+1, Length @ part}
 ];

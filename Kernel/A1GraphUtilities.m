@@ -6,16 +6,49 @@ PackageImport["GeneralUtilities`"]
 
 PackageExport["VertexAnnotations"]
 PackageExport["EdgeAnnotations"]
-PackageExport["LayoutDimension"]
 PackageExport["ExtendedGraphLayout"]
 PackageExport["GraphMetric"]
 PackageExport["GraphOrigin"]
 PackageExport["Cardinals"]
-PackageExport["ViewOptions"]
-PackageExport["AdditionalImagePadding"]
-PackageExport["CoordinateTransformFunction"]
-PackageExport["LabelCardinals"]
-PackageExport["AspectRatioClipping"]
+
+(**************************************************************************************************)
+
+PackageExport["GraphVertexData"]
+PackageScope["setupGraphVertexData"]
+
+defineLiteralMacro[setupGraphVertexData,
+  setupGraphVertexData[graph_] := (
+    $graphVertexIndex = AssociationRange @ VertexList @ graph;
+    $graphVertexData = LookupVertexAnnotations[graph, All];
+  )
+];
+
+getPart[list_List, i_Integer] /; 1 <= i <= Length[list] := Part[list, i];
+getPart[_, _] := None;
+
+getVertexElem[IndexedVertex[i_], data_] := getPart[data, i];
+getVertexElem[vertex_, data_] := getPart[data, Lookup[$graphVertexIndex, vertex, 0]];
+
+GraphVertexData[vertex_, key_] :=
+  getVertexElem[vertex, Lookup[$graphVertexData, key, None]];
+
+(**************************************************************************************************)
+
+PackageExport["GraphEdgeData"]
+PackageScope["setupGraphEdgeData"]
+
+defineLiteralMacro[setupGraphEdgeData,
+  setupGraphEdgeData[graph_] := Quoted[
+    $graphEdgeIndex = AssociationRange @ EdgeList @ graph;
+    $graphEdgeData = LookupEdgeAnnotations[graph, All];
+  ]
+];
+
+getEdgeElem[IndexedEdge[i_], data_] := getPart[data, i];
+getEdgeElem[edge_, data_] := getPart[data, Lookup[$graphEdgeIndex, edge, 0]];
+
+GraphEdgeData[edge_, key_] :=
+  getEdgeElem[edge, Lookup[$graphEdgeData, key, None]];
 
 (**************************************************************************************************)
 
@@ -47,8 +80,11 @@ $extendedGraphUsage = StringTrim @ "
 | %EdgeShapeFunction | Automatic | how to draw edges |
 | %VertexColorFunction | None | function to obtain colors for vertices |
 | %EdgeColorFunction | None | function to obtain colors for edges |
-| %ColorRules | None | color vertices and edges by region |
+| %VertexColorRules | None | color vertices by rules |
+| %EdgeColorRules | None | color edges by rules |
+| %RegionColorRules | None | color vertices and edges by region |
 | %VertexAnnotations | None | association of additional per-vertex data |
+| %VertexCoordinateRules | None | list of rules for per-vertex coordinates |
 | %EdgeAnnotations | None | association of additional per-edge data |
 | %GraphMetric | Automatic | metric to calculate graph distances |
 | %CardinalColors | Automatic | association of cardinal colors |
@@ -240,7 +276,7 @@ Supported suboptions are:
 
 * %GraphRegionHighlight takes a list of regions to highlight, see %GraphRegion.
 
-* %ColorRules can be a list of rules of the following forms:
+* %RegionColorRules can be a list of rules of the following forms:
 | region$ -> color$ | set color of vertices and edges within region, see %GraphRegion |
 | vertex$ -> color$ | set color of a specific vertex |
 | edge$ -> color$ | set color of a specific edge |
@@ -257,6 +293,7 @@ Supported suboptions are:
 
 * %CoordinateTransformFunction can be a function, which will be applied to each coordinates, or one of:
 | {'Rotate', n$} | rotate by n$ degrees |
+| 'Rotate0' | don't rotate |
 | 'Rotate90' | rotate 90\[Degree] |
 | 'Rotate180' | rotate 180\[Degree] |
 | 'Rotate270' | rotate 270\[Degree] |
@@ -305,11 +342,15 @@ $extendedGraphOptionsRules = {
   ViewOptions -> Automatic,
   LabelCardinals -> False,
   CoordinateTransformFunction -> None,
-  ColorRules -> None,
   ViewRegion -> All,
   AdditionalImagePadding -> None,
   AspectRatioClipping -> True,
-  EdgeThickness -> Automatic
+  EdgeThickness -> Automatic,
+  VertexCoordinateRules -> None,
+  VertexColorRules -> None,
+  EdgeColorRules -> None,
+  RegionColorRules -> None,
+  CardinalColorRules -> None
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -332,16 +373,24 @@ HoldPattern[g:Graph[___]] /; MemberQ[Unevaluated @ g, $extendedGraphOptionRulePa
   Block[{$notIntercepted = False}, interceptedGraphConstructor[g]];
 Protect[Graph];
 
+$extendedGraphOptionSymbols2 = Append[$extendedGraphOptionSymbols, AnnotationRules];
+
+splitUserGraphOptions[options___Rule] := Scope[
+  options = Replace[{options}, Rule[GraphLayout, l_] :> Rule[ExtendedGraphLayout, l], {1}];
+  extOptions = DeleteDuplicatesBy[TakeOptions[options, $extendedGraphOptionSymbols], First];
+  options = Map[optionFixup] @ DeleteOptions[options, $extendedGraphOptionSymbols2];
+  {options, checkGraphAnnotations @ extOptions}
+];
+
 SetHoldAllComplete[interceptedGraphConstructor];
 
 interceptedGraphConstructor[Graph[Shortest[args__], options__Rule]] := Scope[
-  options = Replace[{options}, Rule[GraphLayout, l_] :> Rule[ExtendedGraphLayout, l], {1}];
-  annotations = DeleteDuplicatesBy[TakeOptions[options, $extendedGraphOptionSymbols], First];
-  newOptions = Map[optionFixup] @ DeleteOptions[options, $extendedGraphOptionSymbols];
+  {newOptions, extOptions} = splitUserGraphOptions[options];
   result = Graph[args, Sequence @@ newOptions];
+  (* todo: forgoe Annotate and just do the combination ourselves *)
   If[!GraphQ[result], result = makeNewGraph[args, newOptions]];
   If[!GraphQ[result], ReturnFailed[]];
-  Annotate[result, checkGraphAnnotations @ annotations]
+  Annotate[result, extOptions]
 ];
 
 makeNewGraph[graph_Graph ? GraphQ, newOptions_List] :=
@@ -1113,10 +1162,12 @@ VertexInOutAssociation[graph_] := Scope[
 PackageExport["InVertices"]
 PackageExport["OutVertices"]
 PackageExport["AllVertices"]
+PackageExport["AllUniqueVertices"]
 
 InVertices[edges_] := edges[[All, 1]];
 OutVertices[edges_] := edges[[All, 2]];
 AllVertices[edges_] := Join[InVertices @ edges, OutVertices @ edges];
+AllUniqueVertices[edges_] := DeleteDuplicates @ AllVertices[edges];
 
 (**************************************************************************************************)
 
@@ -1177,8 +1228,14 @@ DeleteVertexAnnotations[other_] := other;
 
 PackageExport["LookupVertexAnnotations"]
 
+LookupVertexAnnotations[graph_, key_, part_] :=
+  Part[LookupVertexAnnotations[graph, key], part];
+
 LookupVertexAnnotations[graph_, key_] :=
   Lookup[Replace[LookupAnnotation[graph, VertexAnnotations, None], None -> <||>], key, None];
+
+LookupVertexAnnotations[graph_, All] :=
+  Replace[LookupAnnotation[graph, VertexAnnotations, None], None -> <||>];
 
 (**************************************************************************************************)
 
@@ -1211,6 +1268,9 @@ PackageExport["LookupEdgeAnnotations"]
 
 LookupEdgeAnnotations[graph_, key_] :=
   Lookup[Replace[LookupAnnotation[graph, EdgeAnnotations, None], None -> <||>], key, None];
+
+LookupEdgeAnnotations[graph_, All] :=
+  Replace[LookupAnnotation[graph, EdgeAnnotations, None], None -> <||>];
 
 (**************************************************************************************************)
 
@@ -1274,8 +1334,8 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
 
   $egpGraph = graph;
 
-  {layoutDimension, extendedGraphLayout, viewOptions, coordinateTransformFunction} =
-    LookupExtendedGraphAnnotations[graph, {LayoutDimension, ExtendedGraphLayout, ViewOptions, CoordinateTransformFunction}];
+  {layoutDimension, extendedGraphLayout, viewOptions, coordinateTransformFunction, vertexCoordinateRules} =
+    LookupExtendedGraphAnnotations[graph, {LayoutDimension, ExtendedGraphLayout, ViewOptions, CoordinateTransformFunction, VertexCoordinateRules}];
 
   actualDimension = Which[
     ContainsQ[graphLayout, "Dimension" -> 3] || CoordinateMatrixQ[vertexCoordinates, 3], 3,
@@ -1338,6 +1398,19 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
       Null
   ];
 
+  Switch[vertexCoordinateRules,
+    None, 
+      Null,
+    $RuleListPattern,
+      AppendTo[vertexCoordinateRules, _ -> None];
+      initialVertexCoordinates = Replace[vertexList, vertexCoordinateRules, {1}];
+      initialVertexCoordinates = nudgeOverlappingVertices[initialVertexCoordinates, LookupOption[graph, PlotRange]];
+    ,
+    _,
+      Print["Bad VertexCoordinateRules"];
+      Print[vertexCoordinateRules];
+  ];
+
   newGraph = If[actualDimension == 3, Graph3D, Graph][
     Range @ vertexCount, edgeList,
     VertexShapeFunction -> captureVertexCoordinates,
@@ -1350,13 +1423,21 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
 
   If[FailureQ[gdResult] || !MatrixQ[vertexCoordinates] || !VectorQ[edgeCoordinateLists, MatrixQ],
     Print["Graph layout failed"];
+    Print[MatrixForm[initialVertexCoordinates]];
     vertexCoordinates = CirclePoints @ vertexCount;
     If[actualDimension === 3, vertexCoordinates //= AppendColumn @ Zeros @ vertexCount];
     edgeCoordinateLists = Part[vertexCoordinates, #]& /@ EdgePairs @ igraph;
     Goto[end];
   ];
 
+  (* make self-edges on a single vertex graph the target size *)
   vertexCoordinates = ToPackedReal @ vertexCoordinates;
+  If[vertexCount === 1,
+    target = 2.5 * Max[Lookup[graphLayout, {"SelfLoopRadius", "MultiEdgeDistance"}, 0.4]];
+    diag = Mean[(EuclideanDistance @@ CoordinateBoundingBox[#])& /@ edgeCoordinateLists];
+    trans = ScalingTransform[{1,1} * target / diag, First @ vertexCoordinates];
+    edgeCoordinateLists = Map[trans, edgeCoordinateLists, {-2}];
+  ];
 
   If[UndirectedGraphQ[graph],
     edgeCoordinateLists = MapThread[orientEdgeCoords, {edgeCoordinateLists, edgeList}];
@@ -1393,6 +1474,30 @@ captureEdgeCoordinates[coords_, edge_] :=
 
 (**************************************************************************************************)
 
+nudgeOverlappingVertices[coords_, plotRange_] := Scope[
+  nudgedCoords = coords; num = Length[coords];
+  nudgeScale = ChessboardDistance @@ If[
+    CoordinateMatrixQ @ plotRange,
+    Transpose @ plotRange,
+    CoordinateBoundingBox @ coords
+  ];
+  nudgeScale = If[nudgeScale === 0, 1, Max[nudgeScale, 0.1]];
+  dupPos = PositionIndex[Round[coords, nudgeScale / 40]];
+  If[Length[dupPos] === 1 && num > 1,
+    Return @ PlusVector[CirclePoints[num] * nudgeScale/2, Mean @ coords]];
+  Scan[nudge, dupPos];
+  nudgedCoords
+];
+
+nudge[{_}] := Null;
+nudge[indices_] := 
+  Part[nudgedCoords, indices] = Plus[
+    Part[nudgedCoords, indices],
+    nudgeScale/6. * CirclePoints[Length @ indices]
+  ];
+
+(**************************************************************************************************)
+
 ExtendedGraphPlot::badwrappedshape = "CoordinateTransformFunction -> ProjectionOnto[...] contains an invalid shape.";
 ExtendedGraphPlot::badcoordtrans = "CoordinateTransformFunction -> `` issued messages on application.";
 ExtendedGraphPlot::badcoordtransname = "CoordinateTransformFunction -> `` is not one of ``."
@@ -1412,8 +1517,13 @@ applyCoordinateTransform[f_] := Block[{res},
   If[FailureQ[res], Message[ExtendedGraphPlot::badcoordtrans, f]];
 ];
 
-applyCoordinateTransform["Center"] := Scope[
+applyCoordinateTransform["CenterMean"] := Scope[
   center = Mean @ vertexCoordinates;
+  applyCoordinateTransform[TranslationTransform[-center]];
+];
+
+applyCoordinateTransform["CenterBounds"] := Scope[
+  center = Mean @ CoordinateBoundingBox @ {vertexCoordinates, edgeCoordinateLists};
   applyCoordinateTransform[TranslationTransform[-center]];
 ];
 
@@ -1421,7 +1531,7 @@ applyCoordinateTransform["Snap"] :=
   applyCoordinateTransform[{"Snap", 10}];
 
 applyCoordinateTransform[{"Snap", m_, nudge_:0.1}] := Scope[
-  applyCoordinateTransform["Center"];
+  applyCoordinateTransform["CenterMean"];
   bounds = CoordinateBounds[edgeCoordinateLists];
   step = (EuclideanDistance @@@ bounds) / m;
   grid = Flatten[CoordinateBoundsArray[bounds, step], 1];
@@ -1444,13 +1554,30 @@ nudgeDuplicate[z_][p_] := p + Normalize[Cross[z - p]] * Im[$nudge] + Normalize[z
 DuplicateIndices[list_] :=
   Select[Length[#] > 1&] @ Values @ PositionIndex @ vertexCoordinates;
 
-applyCoordinateTransform[{"Rotate", n_}] := Scope[
-  applyCoordinateTransform["Center"];
-  applyCoordinateTransform[RotationTransform[n * Degree]];
+applyCoordinateTransform["CenterTree"] := Scope[
+  horizontalGroups = GroupBy[vertexCoordinates, Round[Last @ #,.01]& -> First];
+  left = Min @ horizontalGroups;
+  horizontalOffsets = KeyValueMap[{#1, Mean[MinMax[#2]] - left}&, horizontalGroups];
+  offsetFn = Interpolation[horizontalOffsets, InterpolationOrder -> 1];
+  applyCoordinateTransform[{"HorizontalWarp", offsetFn}];
 ];
 
+applyCoordinateTransform[{"HorizontalWarp", offsetFn_}] := (
+  transFn = {x, y} |-> {x - offsetFn[y], y};
+  vertexCoordinates = Apply[transFn, vertexCoordinates, {1}];
+  edgeCoordinateLists = Apply[transFn, edgeCoordinateLists, {2}];
+);
+
+applyCoordinateTransform[{"Rotate", n_}] := (
+  applyCoordinateTransform["CenterMean"];
+  applyCoordinateTransform[RotationTransform[n * Degree]];
+);
+
+applyCoordinateTransform[{"Rotate", n_, p_}] :=
+  applyCoordinateTransform[RotationTransform[n * Degree, p]];
+
 applyCoordinateTransform[{"Radial", f_}] := Scope[
-  applyCoordinateTransform["Center"];
+  applyCoordinateTransform["CenterMean"];
   applyCoordinateTransform[Normalize[#] * f[Norm[#]]&];
 ];
 
@@ -1458,11 +1585,12 @@ applyCoordinateTransform["PolarProjection"] :=
   applyCoordinateTransform[{"PolarProjection", 1}];
 
 applyCoordinateTransform[{"PolarProjection", h_}] := Scope[
-  applyCoordinateTransform["Center"];
+  applyCoordinateTransform["CenterMean"];
   applyCoordinateTransform[Apply[{x, y, z} |-> {x / (h-z), y/(h-z)}]];
 ];
 
 $namedTransforms = <|
+  "Rotate0" -> Identity,
   "Rotate90" -> RotationTransform[90 * Degree],
   "Rotate180" -> RotationTransform[180 * Degree],
   "Rotate270" -> RotationTransform[270 * Degree],
@@ -1678,3 +1806,34 @@ FindAllDirectedTrees[graph_] := Scope[
   {vertices, edges} = VertexEdgeList @ graph;
 ];
 
+(**************************************************************************************************)
+
+PackageExport["ExtractExtendedGraphOptions"]
+
+ExtractExtendedGraphOptions[graph_Graph] := Scope[
+  opts = Options @ graph;
+  annoRules = Lookup[opts, AnnotationRules, {}];
+  graphProps = Lookup[annoRules, "GraphProperties", {}];
+  {DeleteOptions[opts, AnnotationRules], Association @ graphProps}
+]
+
+(**************************************************************************************************)
+
+PackageExport["NormalizeExtendedGraphOptions"]
+
+(* this idea seems to be unreliable for some reason. *have* to use Annotate for this *)
+NormalizeExtendedGraphOptions[opts_List, {} | <||>] := opts;
+
+NormalizeExtendedGraphOptions[opts_List, assoc_Association] := 
+  NormalizeExtendedGraphOptions[opts, Normal @ assoc];
+
+NormalizeExtendedGraphOptions[opts_List, extOpts_List] :=
+  ReplaceOptions[opts, AnnotationRules -> {"GraphProperties" -> extOpts}];
+
+NormalizeExtendedGraphOptions[opts_, extOpts_, userOpts__Rule] := Scope[
+  {opts2, extOpts2} = splitUserGraphOptions[userOpts];
+  NormalizeExtendedGraphOptions[
+    ReplaceOptions[opts, opts2],
+    ReplaceOptions[extOpts, extOpts2]
+  ]
+];

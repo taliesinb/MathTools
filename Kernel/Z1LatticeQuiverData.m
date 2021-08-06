@@ -161,11 +161,11 @@ DefineLatticeQuiver[
 
 DefineLatticeQuiver[
   "Names" -> {"TruncatedSquare", "TruncatedQuadrille"},
-  "Quiver" -> Quiver @ <|
+  "Quiver" -> Quiver[<|
     "a" -> {1 -> 2}, "b" -> {4 -> 3},
     "c" -> {3 -> 1, 2 -> 4},
     "d" -> {1 -> 4, 3 -> 2}
-  |>,
+  |>, GraphLayout -> "Tutte"],
   "Group" -> TranslationGroup[{{1, 0}, {0, 1}, {1, 1}/2, {-1, 1}/2}],
   "Dimension" -> 2
 ];
@@ -174,14 +174,14 @@ DefineLatticeQuiver[
 
 DefineLatticeQuiver[
   "Names" -> {"TruncatedTrihexagonal", "TruncatedHexadeltille"},
-  "Quiver" -> Quiver @ <|
+  "Quiver" -> Quiver[<|
     "a" -> {3 -> 2, 8 -> 9, 12 -> 5, 11 -> 6},
     "b" -> {4 -> 3, 9 -> 10},
     "c" -> {5 -> 4, 10 -> 11, 1 -> 8, 2 -> 7},
     "d" -> {6 -> 5, 11 -> 12},
     "e" -> {7 -> 6, 12 -> 1, 3 -> 10, 4 -> 9},
     "f" -> {1 -> 2, 8 -> 7}
-  |>,
+  |>, VertexCoordinates -> CirclePoints[12]],
   "Group" -> $DedecagonTranslationGroup,
   "Dimension" -> 2
 ];

@@ -3,10 +3,22 @@ PackageExport["ArrowheadSize"]
 PackageExport["ArrowheadStyle"]
 PackageExport["ArrowheadPosition"]
 PackageExport["VertexColorFunction"]
+
 PackageExport["EdgeColorFunction"]
+PackageExport["VertexColorRules"]
+PackageExport["CardinalColorRules"]
+
+PackageExport["EdgeColorRules"]
+PackageExport["RegionColorRules"]
 PackageExport["CardinalColors"]
 PackageExport["VisibleCardinals"]
 PackageExport["ViewRegion"]
+PackageExport["ViewOptions"]
+PackageExport["LayoutDimension"]
+PackageExport["AdditionalImagePadding"]
+PackageExport["CoordinateTransformFunction"]
+PackageExport["LabelCardinals"]
+PackageExport["AspectRatioClipping"]
 
 SetUsage @ "ArrowheadShape is an extended option to Graph.";
 SetUsage @ "ArrowheadSize is an extended option to Graph.";
@@ -14,9 +26,15 @@ SetUsage @ "ArrowheadStyle is an extended option to Graph.";
 SetUsage @ "ArrowheadPosition is an extended option to Graph.";
 SetUsage @ "VertexColorFunction is an extended option to Graph."
 SetUsage @ "EdgeColorFunction is an extended option to Graph."
+SetUsage @ "VertexColorRules is an extended option to Graph."
+SetUsage @ "CardinalColorRules is an extended option to Graph."
+SetUsage @ "EdgeColorRules is an extended option to Graph."
+SetUsage @ "RegionColorRules is an extended option to Graph."
 SetUsage @ "CardinalColors is an extended option to Graph."
 SetUsage @ "VisibleCardinals is an extended option to Graph."
 SetUsage @ "ViewRegion is an extended option to Graph."
+SetUsage @ "CoordinateTransformFunction is an extended option to Graph."
+SetUsage @ "VertexCoordinateRules is an extended option to Graph."
 
 (**************************************************************************************************)
 
@@ -263,11 +281,13 @@ $rangeMicroPadding = 1*^-5;
 computeCoordinateBounds[] := Scope[
   plotRange = LookupOption[$Graph, PlotRange];
   If[MatrixQ[plotRange, NumericQ], Return @ plotRange];
-  CoordinateBounds[{
+  range = CoordinateBounds[{
     Part[$VertexCoordinates, $VertexParts],
     Replace[Part[$EdgeCoordinateLists, $EdgeParts], {} -> Nothing]},
     $rangeMicroPadding
-  ]
+  ];
+  If[plotRange === "Square", range //= ToSquarePlotRange];
+  range
 ];
 
 (**************************************************************************************************)
@@ -276,7 +296,12 @@ PackageExport["ExtendedGraphPlot"]
 
 $autoFilledLegendPattern = (Automatic | _String) | Placed[Automatic | _String, _];
 
-ExtendedGraphPlot[graph_] := Block[
+ExtendedGraphPlot[___] := $Failed;
+
+ExtendedGraphPlot[graph_Graph, opts__Rule] :=
+  ExtendedGraphPlot @ ExtendedGraph[graph, opts]
+
+ExtendedGraphPlot[graph_Graph] := Block[
   {
    $GraphPlotImageSize, $GraphPlotImageWidth, $GraphPlotRange, $GraphPlotSize, $GraphMaxSafeVertexSize, $GraphPlotGraphics,
    plottingFunction, graphLegend, graphRegionHighlight, vertexColorFunction,
@@ -284,6 +309,16 @@ ExtendedGraphPlot[graph_] := Block[
   },
 
   If[!GraphQ[graph], Return[$Failed, Block]];
+
+  (* this is a workaround for a mysterious lack of re-entrancy *)
+  Block[{vlist = VertexList @ graph, gindices},
+    If[MemberQ[vlist, _Graph], 
+      gindices = SelectIndices[vlist, GraphQ];
+      glist = Part[vlist, gindices];
+      Return @ ExtendedGraphPlot @ VertexReplace[graph, RuleThread[glist, 
+        ExtendedGraphPlot[#, Frame -> True]& /@ glist]];
+    ]
+  ];
 
   {plottingFunction, graphLegend, graphRegionHighlight, vertexColorFunction} =
     LookupAnnotation[graph, {GraphPlottingFunction, GraphLegend, GraphRegionHighlight, VertexColorFunction}, None];
@@ -418,14 +453,14 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         ImageSize, VertexSize, VertexStyle, EdgeStyle, VertexLabelStyle, EdgeLabelStyle,
         VertexShapeFunction, EdgeShapeFunction, FrameStyle, BaselinePosition}, Automatic];
 
-    {vertexLabels, edgeLabels, plotLabel, prolog, epilog, imagePadding, plotRangePadding, frame, frameLabel} =
-      LookupOption[graph, {VertexLabels, EdgeLabels, PlotLabel, Prolog, Epilog, ImagePadding, PlotRangePadding, Frame, FrameLabel}, None];
+    {vertexLabels, edgeLabels, plotLabel, prolog, epilog, imagePadding, plotRange, plotRangePadding, frame, frameLabel} =
+      LookupOption[graph, {VertexLabels, EdgeLabels, PlotLabel, Prolog, Epilog, ImagePadding, PlotRange, PlotRangePadding, Frame, FrameLabel}, None];
 
     {arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, visibleCardinals, edgeSetback, edgeThickness, labelCardinals, viewOptions, additionalImagePadding, aspectRatioClipping} =
       LookupExtendedGraphAnnotations[graph, {ArrowheadShape, ArrowheadStyle, ArrowheadSize, ArrowheadPosition, VisibleCardinals, EdgeSetback, EdgeThickness, LabelCardinals, ViewOptions, AdditionalImagePadding, AspectRatioClipping}];
 
-    {graphLegend, vertexColorFunction, vertexAnnotations, edgeAnnotations, edgeColorFunction, colorRules} =
-      LookupExtendedGraphAnnotations[graph, {GraphLegend, VertexColorFunction, VertexAnnotations, EdgeAnnotations, EdgeColorFunction, ColorRules}];
+    {graphLegend, vertexColorFunction, vertexAnnotations, edgeAnnotations, edgeColorFunction, vertexColorRules, edgeColorRules, regionColorRules} =
+      LookupExtendedGraphAnnotations[graph, {GraphLegend, VertexColorFunction, VertexAnnotations, EdgeAnnotations, EdgeColorFunction, VertexColorRules, EdgeColorRules, RegionColorRules}];
   ];
 
   (* initial processing of global options *)
@@ -490,12 +525,26 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     edgeShapeFunction //= removeSingleton;
     $esfCounter = 1;
 
-    If[colorRules =!= None, processColorRules[colorRules]];
+    (* these go to custom shape functions, which have different processing *)
+    (* TODO: Strip out custom things that ordinary Style wouldn't understand *)
+    simpleVertexLabelStyle = vertexLabelStyle;
+    simpleEdgeLabelStyle = edgeLabelStyle;
+    SetAutomatic[simpleVertexLabelStyle, $DarkGray];
+    SetAutomatic[simpleEdgeLabelStyle, $DarkGray];
+
+    processRegionColorRules[regionColorRules];
+    processVertexColorRules[vertexColorRules];
+    processEdgeColorRules[edgeColorRules];
+
+    (* this allows GraphVertexData and GraphEdgeData to work *)
+    setupGraphVertexData[];
+    setupGraphEdgeData[];
   ];
 
   (* create graphics for vertices *)
   FunctionSection[
 
+    $vertexEdgeThickness = 1;
     $vertexSizeOverrides = None;
     $defaultVertexSize = Which[
       edgeStyle === None,           Scaled @ 0.6,
@@ -512,7 +561,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     vertexShapeFunction //= removeSingleton;
     If[vertexShapeFunction === None,
-      vertexGraphics = Nothing; edgeSetback = 0;
+      vertexGraphics = Nothing;
+      SetAutomatic[edgeSetback, 0];
       Goto[skipVertices];
     ];
 
@@ -557,7 +607,11 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     SetAutomatic[edgeStyle, GrayLevel[0, .18]];
     edgeStyle //= toDirectiveOptScan[setEdgeStyleGlobals];
 
-    If[arrowheadShape === None || zeroQ[arrowheadSize] || UndirectedGraphQ[$Graph] || MatchQ[visibleCardinals, {} | None],
+    SetAutomatic[edgeShapeFunction, "Arrow"];
+    If[Or[
+      arrowheadShape === None, zeroQ[arrowheadSize], UndirectedGraphQ[$Graph], MatchQ[visibleCardinals, {} | None],
+      And[StringQ[edgeShapeFunction], StringEndsQ[edgeShapeFunction, "Line"]]],
+      
       arrowheadDrawFn = drawUndirectedEdges;
       maxArrowheadSize = 0;
     ,
@@ -573,7 +627,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       maxArrowheadSize = Max[arrowheadSize * $GraphPlotSizeX] / 2;
 
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Line"]];
-      $twoWayStyle = Automatic; $pairedDistance = 0.; $negationStyle = "Reverse"; $transitionStyle = "Label";
+      $twoWayStyle = Automatic; $negationStyle = "Reverse"; $borderStyle = None;
       $lineThickness = If[$GraphIs3D, Thickness @ 0.2, AbsoluteThickness @ 1.2];
       If[ListQ[arrowheadShape],
         {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
@@ -826,7 +880,7 @@ processBaselinePosition = Case[
 computeBoundingFrame[] := Scope[
   (* additional image padding goes outside the frame *)
   padding = imagePadding - additionalImagePadding - 1;
-  {{l, r}, {b, t}} = padding / effectiveImageWidth * $GraphPlotSizeX;
+  {{l, r}, {b, t}} = padding / imageWidth * $GraphPlotSizeX;
   If[$GraphIs3D,
     {{xl, xh}, {yl, yh}, {zl, zh}} = $GraphPlotRange;
     {{xl - l, yl - b, zl}, {xh + r, yh + t, zh}}
@@ -923,40 +977,56 @@ $validGVSpecs = {
 };
 
 evalGraphicsValue = Case[
+
   GraphicsValue["PlotRange"] :=
     $GraphPlotRange;
+
   GraphicsValue["BoundingRectangle"] :=
     Transpose @ $GraphPlotRange;
+
   GraphicsValue["BoundingFrame"] :=
     $GraphicsBoundingFrame;
+
   GraphicsValue[{"BoundingFrame", side:Bottom|Top|Left|Right}] :=
     computeCenterPoint[$GraphicsBoundingFrame, side];
+
   GraphicsValue[{"VertexCoordinates", vertex_}] :=
     Part[$VertexCoordinates, findVertexList @ vertex] //
       postProcPrims[vertex];
+
   GraphicsValue[{"VertexPrimitives", vertex_}] :=
     ExtractGraphPlotPrimitives[findVertexList @ vertex, "VertexPrimitives"] //
       postProcPrims[vertex];
+
   GraphicsValue[{"EdgeCoordinates", edge_}] :=
     Part[$edgeCoordinateLists, findEdgeList @ edge] //
       postProcPrims[edge];
+
   GraphicsValue[{"EdgePrimitives", edge_}] :=
     ExtractGraphPlotPrimitives[findEdgeList @ edge, "EdgePrimitives"] //
       postProcPrims[edge];
+
   GraphicsValue[{"CardinalPrimitives", edge_, c_}] :=
     extractCardinalArrowhead[c] @ % @ GraphicsValue[{"EdgePrimitives", edge}];
+
   GraphicsValue[{"CardinalGraphics", c_}] :=
     FirstCase[$GraphPlotGraphics, Graphics[Annotation[_, c, "Cardinal"], ___], None, {1, Infinity}];
+
   GraphicsValue["EdgeThickness"] :=
     lookupPrimitiveAnnotationData["EdgePrimitivesRoot", EdgeThickness, 0];
+
   GraphicsValue["ArrowheadSize"] :=
     lookupPrimitiveAnnotationData["EdgePrimitivesRoot", ArrowheadSize, $emptySizeInfo];
+
   GraphicsValue["VertexSize"] :=
     lookupPrimitiveAnnotationData["VertexPrimitivesRoot", VertexSize, $emptySizeInfo];
+
   GraphicsValue["PrimitiveSize"] :=
     MapThread[Max, %[GraphicsValue[#]]& /@ {"ArrowheadSize", "VertexSize"}];
+
   GraphicsValue[spec_, f_] :=
     applyGVFunc[f, % @ GraphicsValue[spec]];
+
   gv_GraphicsValue := failPlot["badgraphicsvalue", gv, commaString @ $validGVSpecs]
 ];
 
@@ -1068,16 +1138,47 @@ vertexDrawFuncSizeRemapper[rawVertexDrawFunc_, sizeOverrides_, vertexSize_] :=
       ],
       indices],
     indices, "VertexPrimitives"
-  ];
+  ]; 
 
 (**************************************************************************************************)
 
-processColorRules[rules_] := (
-  {vertexColorFunction, edgeColorFunction} = resolveRegionRules[rules, ColorRules];
+ExtendedGraphPlot::badcolorruleres = "`` did not resolve to valid colors."
+ExtendedGraphPlot::badcolorrules = "`` -> `` is not a list of rules."
+
+processRegionColorRules[None] := Null;
+processRegionColorRules[rules:$RuleListPattern] := (
+  {vertexColorFunction, edgeColorFunction} = resolveRegionRules[rules, RegionColorRules];
   If[!ColorVectorQ[vertexColorFunction] || !ColorVectorQ[edgeColorFunction],
-    failPlot[GraphHighlight, "badcolvals"]];
+    failPlot["badcolorruleres", RegionColorRules]];
   SetAutomatic[arrowheadStyle, Inherited];
 );
+processRegionColorRules[r_] := failPlot["badcolorrules", RegionColorRules, r];
+
+processVertexColorRules[None] := Null;
+processVertexColorRules[rules_] :=
+  vertexColorFunction = resolveColorRules[VertexColorRules, $VertexList, rules, $Gray];
+
+processEdgeColorRules[None] := Null;
+processEdgeColorRules[rules_] := (
+  edgeColorFunction = resolveColorRules[EdgeColorRules, $EdgeList, rules, $Gray];
+  SetAutomatic[arrowheadStyle, Inherited];
+);
+
+resolveColorRules[head_, _, r_, _] := failPlot["badcolorrules", head, r];
+resolveColorRules[head_, elements_, rules:$RuleListPattern, default_] := Scope[
+  defaultColor = Replace[All, Append[rules, _ -> default]];
+  rules = Append[rules, _ -> defaultColor];
+  colors = Replace[elements, rules, {1}];
+  If[!ColorVectorQ[colors], failPlot["badcolorruleres", head]];
+  colors
+];
+
+(**************************************************************************************************)
+
+drawUndirectedEdges[indices_, style_] := Scope[
+  edgeStyle = style;
+  createEdgePrimitives[indices, Line, None, None]
+];
 
 (**************************************************************************************************)
 
@@ -1097,9 +1198,6 @@ processArrowheadSize = Case[
   spec_                           := failPlot["badarrowheadsize", spec];
   {NQ -> NumericQ}
 ];
-
-drawUndirectedEdges[indices_, style_] :=
-  Style[createEdgePrimitives[indices, Line, None, None], style];
 
 filterCardinals[cards_][CardinalSet[set_List]] := CardinalSet @ Select[set, MemberQ[cards, Negated[#] | #]&];
 filterCardinals[cards_][card_] := If[MemberQ[cards, card], card, Null];
@@ -1121,10 +1219,12 @@ drawTagGroupArrowheadEdges[indices_, style_] := Scope[
   edgeStyle = style;
   edgePrimitives = KeyValueMap[drawArrowheadEdges, edgeTagGroups];
 
-  Style[edgePrimitives, style]
+  edgePrimitives
 ];
 
-drawArrowheadEdges[_, {}] := Nothing;
+(**************************************************************************************************)
+
+drawArrowheadEdges[_, {}, _] := Nothing;
 
 undirectedCardinalQ[CardinalSet[{}] | Null] := True;
 undirectedCardinalQ[cardinal:Except[_CardinalSet]] := Or[
@@ -1134,9 +1234,6 @@ undirectedCardinalQ[cardinal:Except[_CardinalSet]] := Or[
 
 drawArrowheadEdges[cardinal_, indices_] /; undirectedCardinalQ[cardinal] :=
   createEdgePrimitives[indices, Line, None, cardinal];
-
-drawArrowheadEdges[CardinalTransition[list_List], indices_] /; $transitionStyle =!= "Label" :=
-  drawArrowheadEdges[CardinalSet[CardinalTransition /@ list], indices];
 
 drawArrowheadEdges[cardinal_, indices_] := Scope[
   arrowheads = arrowheadsND @ List @ makeArrowheadsElement @ cardinal;
@@ -1151,7 +1248,7 @@ drawArrowheadEdges[cs:CardinalSet[cardinals_], indices_] := Scope[
   If[$twoWayStyle =!= None,
     cardinals = SortBy[cardinals, NegatedQ];
     cardinals //= ReplaceRepeated[
-      {l___, c_, m___, Negated[c_], r___} /; !MatchQ[c, _CardinalTransition] :> {l, TwoWay[c], m, r}
+      {l___, c_, m___, Negated[c_], r___} :> {l, TwoWay[c], m, r}
     ]
   ];
   cardinals = SortBy[cardinals, {Head[#] === TwoWay, StripNegated @ #}&];
@@ -1176,70 +1273,41 @@ makeMultiarrowheadPositions[1, pos_] := {pos};
 makeMultiarrowheadPositions[num_, _] := 0.5 + 0.2 * Standardize[Range @ num];
 
 PackageExport["TwoWayStyle"]
-PackageExport["PairedDistance"]
-PackageExport["CardinalTransitionStyle"]
+PackageExport["BorderStyle"]
 
 scanArrowheadShapeOpts = Case[
+
   TwoWayStyle -> s:("Out"|"In"|"OutClose"|"InClose") :=
     $twoWayStyle = arrowheadShape <> "Double" <> s;
+
   TwoWayStyle -> s:("Square"|"Ball"|"Disk"|"Diamond"|"CrossLine"|"CrossBar"|"Tube"|None) :=
     $twoWayStyle = s;
+
   EdgeThickness -> thickness_ :=
     $lineThickness = OnFailed[
       NormalizeThickness @ thickness,
       failPlot["badthickness", thickness]
     ];
-  PairedDistance -> n_ ? NumericQ :=
-    $pairedDistance = N[n];
-  CardinalTransitionStyle -> style_ :=
-    $transitionStyle = style;
+
   NegationStyle -> s:("Reverse"|"OverBar"|"UnderBar") :=
     $negationStyle = s;
 
+  BorderStyle -> s_ := 
+    $borderStyle = s;
+
   rule_ :=
-    failPlot["badsubopt", rule, commaString @ {TwoWayStyle, PairedDistance, NegationStyle, EdgeThickness}];
+    failPlot["badsubopt", rule, commaString @ {TwoWayStyle, NegationStyle, EdgeThickness}];
 ];
 
 (**************************************************************************************************)
 
-PackageExport["CardinalTransition"]
-
-SetUsage @ "
-CardinalTransition[a$ -> b$] represents a transition from cardinal a$ to cardinal b$.
-"
-
-$anyRuleP = _Rule | _TwoWayRule;
-declareFormatting[
-  ca:CardinalTransition[$anyRuleP | {$anyRuleP..}] :> formatCardinalTransition[ca]
-]
-
-formatCardinalTransition = Case[
-  CardinalTransition[{}] :=
-    "";
-  CardinalTransition[r_Rule | r_TwoWayRule] :=
-    fmtCardinalArrow @ r;
-  CardinalTransition[list:{$anyRuleP..}] :=
-    Column[fmtCardinalArrow /@ list, Spacings -> -0.1, ItemSize -> {All, 1}];
-  _ := "?"
-];
-
-fmtCardinalArrow[a_ -> a_] := Nothing;
-
-fmtCardinalArrow[a_ -> b_] :=
-  Row[formatCardinal /@ {a, b}, Style["\[RightArrow]", Gray]]
-
-fmtCardinalArrow[TwoWayRule[a_, b_]] :=
-  Row[formatCardinal /@ {a, b}, Style["\[LeftRightArrow]", Gray]]
-
-formatCardinal[c_] := If[!GraphQ[$Graph], c,
-  Style[c, LookupCardinalColors[$Graph, StripNegated @ c]]
-];
-
-(**************************************************************************************************)
-
-createEdgePrimitives[indices_, drawFn_,  arrowheads_, cardinal_] /; TrueQ[edgeShapeFunction === Automatic] := Scope[
+createEdgePrimitives[indices_, drawFn_, arrowheads_, cardinal_] /; StringQ[edgeShapeFunction] := Scope[
   coords = Part[$EdgeCoordinateLists, indices];
-  primitives = StyleOperator[arrowheads] @ setback[drawFn, edgeSetback] @ coords;
+  styleFn = If[StringStartsQ[edgeShapeFunction, "Styled"], 
+    StyleOperator[edgeStyle, arrowheads], 
+    StyleOperator[arrowheads]
+  ];
+  primitives = styleFn @ setback[drawFn, edgeSetback] @ coords;
   Annotation[primitives, indices, "EdgePrimitives"]
 ];
 
@@ -1251,7 +1319,8 @@ createEdgePrimitives[indices_, drawFn_, arrowheads_, cardinal_] := Scope[
       "Target" -> Part[$EdgeList, index, 2],
       "EdgeIndex" -> index,
       "Counter" :> $esfCounter++,
-      "LabelStyle" -> Replace[edgeLabelStyle, Automatic -> $DarkGray],
+      "Style" -> edgeStyle,
+      "LabelStyle" -> simpleEdgeLabelStyle,
       "Shape" -> If[drawFn === Line, Line, Arrow],
       "Cardinal" -> cardinal,
       "Arrowheads" -> arrowheads
@@ -1276,46 +1345,7 @@ applyDrawFn[f_, assoc_] := Scope[
 
 (**************************************************************************************************)
 
-makeTransitionArrowhead[ct_, isNegated_] /; $transitionStyle === "Label" :=
-  makeLabeledTransitionArrowhead[ct, isNegated];
-
-(* TODO: only spread out arrowheads that share a position *)
-makeTransitionArrowhead[CardinalTransition[(Rule|TwoWayRule)[a_, b_]], isFlipped_] := Scope[
-  If[isFlipped, {a, b} = {b, a}];
-  {t, size, style1, pos1} = lookupTagSpec @ a;
-  {t, size, style2, pos2} = lookupTagSpec @ b;
-  shape1 = "LeftPaired" <> $transitionStyle; shape2 = "RightPaired" <> $transitionStyle;
-  SetNone[style1, $Gray]; SetNone[style2, $Gray];
-  isNegated = Count[{a, b}, _Negated] == 1;
-  If[isNegated && $negationStyle === "Reverse",
-    Swap[style1, style2];
-    shape1 = shape1 <> "Offset"; shape2 = shape2 <> "Offset";
-  ];
-  graphic = Graphics @ {Opacity[1],
-    {style1, $arrowheads2D @ shape1},
-    {style2, $arrowheads2D @ shape2}} /. $pairDist -> ($pairedDistance / 20);
-  arrowheadSpec = {size, (pos1 + pos2)/2, graphic};
-  If[isNegated && MatchQ[$negationStyle, "OverBar" | "UnderBar"],
-    arrowheadSpec //= TransformArrowheads[$negationStyle]];
-  arrowheadSpec
-];
-
-makeLabeledTransitionArrowhead[cs_CardinalTransition, isForward_] := Scope[
-  {t1, size, t2, pos} = lookupTagSpec @ FirstCase[cs, Rule[c_, _] :> c];
-  label = makeArrowheadLabel[formatCardinalTransition @ cs, arrowheadSize];
-  text = Text[label, {0, 0}, {0, -1}, If[isForward, {-1, 0}, {1, 0}]];
-  {size, pos, Graphics[{Opacity[1], text}]}
-];
-
-(**************************************************************************************************)
-
 arrowheadsND[e_] := If[$GraphIs3D, Arrowheads[e, Appearance -> "Projected"], Arrowheads @ e];
-
-makeArrowheadsElement[ct_CardinalTransition] :=
-  makeTransitionArrowhead[ct, False];
-
-makeArrowheadsElement[Negated[ct_CardinalTransition]] :=
-  makeTransitionArrowhead[ct, True];
 
 makeArrowheadsElement[cardinal_] := Scope[
   {shape, size, style, position} = lookupTagSpec @ cardinal;
@@ -1397,9 +1427,13 @@ makeArrowheadLabelShape[cardinal_, style_, size_] := Scope[
 
 (**************************************************************************************************)
 
+$borderStyle = None;
+
 makeArrowheadGraphic2D[primitives_, style_, opts___] :=
   Graphics[
-    {Opacity[1], EdgeForm[None], style, primitives},
+    {Opacity[1], EdgeForm @ If[$borderStyle =!= None, 
+      SetColorOpacity[$borderStyle @ style, 1], None], 
+      style, primitives},
     AspectRatio -> Automatic,
     PlotRangeClipping -> False,
     opts
@@ -1523,6 +1557,12 @@ $arrowheads2D = Association[
       {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
       ToPacked @ {{{+0.4, -0.4}, {+0.4, 0.}, {0., 0.}}}
     ]},
+
+  "FlatArrow" ->
+    Polygon[
+      ToPacked @ {{{-0.3166, -0.3333}, {-0.3166, 0.3333}, {0.25, 0.}}}
+    ],
+
   "Arrow" ->
     FilledCurve[
       {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
@@ -1577,34 +1617,7 @@ $arrowheads2D = Association[
   "CrossLine" ->
     Line @ ToPacked @ {{0., -0.3}, {0., 0.3}},
   "CrossBar" ->
-    ToPacked /@ Rectangle[{-0.05,-0.2}, {0.05,0.2}],
-
-  "RightPairedDisk" ->
-    Disk[{$pairDist - $nudge, 0.}, .2, {-Pi/2, Pi/2}],
-  "RightPairedDiskOffset" ->
-    Disk[{-$pairDist/2 - 0.2, 0.}, .2, {-Pi/2, Pi/2}],
-  "LeftPairedDisk" ->
-    Disk[{-$pairDist + $nudge, 0.}, .2, {Pi/2, 3*Pi/2}],
-  "LeftPairedDiskOffset" ->
-    Disk[{$pairDist/2 + 0.2, 0.}, .2, {Pi/2, 3*Pi/2}],
-
-  "RightPairedSquare" ->
-    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{$pairDist - $nudge, 0.2}, {$pairDist + 0.2, 0.2}, {$pairDist + 0.2, -0.2}, {$pairDist - $nudge, -0.2}}}],
-  "RightPairedSquareOffset" ->
-    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{$pairDist - 0.225, 0.2}, {$pairDist - 0.025, 0.2}, {$pairDist - 0.025, -0.2}, {$pairDist - 0.225, -0.2}}}],
-  "LeftPairedSquare" ->
-    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{-$pairDist + $nudge, 0.2}, {-$pairDist - 0.2, 0.2}, {-$pairDist - 0.2, -0.2}, {-$pairDist + $nudge, -0.2}}}],
-  "LeftPairedSquareOffset" ->
-    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{$pairDist + 0.225, 0.2}, {$pairDist + 0.025, 0.2}, {$pairDist + 0.025, -0.2}, {$pairDist + 0.225, -0.2}}}],
-
-  "RightPairedDiamond" ->
-    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{$pairDist - $nudge, 0.2}, {$pairDist + 0.2, 0.}, {$pairDist - $nudge, -0.2}}}],
-  "RightPairedDiamondOffset" ->
-    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{-0.2, 0.2}, {0., 0.}, {-0.2, -0.2}}}],
-  "LeftPairedDiamond" ->
-    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{-$pairDist + $nudge, 0.2}, {-$pairDist - 0.2, 0.}, {-$pairDist + $nudge, -0.2}}}],
-  "LeftPairedDiamondOffset" ->
-    FilledCurve[{{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}}, {{{0.2, 0.2}, {0., 0.}, {0.2, -0.2}}}]
+    ToPacked /@ Rectangle[{-0.05,-0.2}, {0.05,0.2}]
 ];
 
 $coneRadius = 0.15;
@@ -1624,15 +1637,8 @@ $arrowheads3D = Association[
     Sphere[ToPacked @ {0., 0., 0.}, .2]
 ];
 
-
-PackageExport["Color3D"]
-
-Color3D[Opacity[o_, color_]] := Color3D @ SetColorOpacity[color, o];
-Color3D[Opacity[o_]] := Directive[GrayLevel[0, o], Specularity @ 0];
-Color3D[c_] := Directive[Glow @ c, GrayLevel[0, ColorOpacity[c]], Specularity @ 0];
-
 $namedArrowheads = Union[
-  Discard[Keys @ $arrowheads2D, StringContainsQ["Paired" | "DoubleIn" | "DoubleOut"]],
+  Discard[Keys @ $arrowheads2D, StringContainsQ["DoubleIn" | "DoubleOut"]],
   Keys @ $arrowheads3D, {"Cardinal"}
 ];
 
@@ -1645,6 +1651,7 @@ ArrowheadData[name_, style_:{}] :=
 
 (**************************************************************************************************)
 
+$vertexEdgeThickness = 1;
 $lineThickness = AbsoluteThickness[1.2];
 
 makeArrowheadShape[None, _] := None;
@@ -1777,51 +1784,62 @@ removeSingleton[e_] := e;
 
 (**************************************************************************************************)
 
-ExtendedGraphPlot::badvshapefunc = "`` is not a valid setting for VertexShapeFunction. Valid shapes are: ``."
+ExtendedGraphPlot::badvshapefunc = "`` is not a valid named VertexShapeFunction. Valid shapes are: ``."
 
 $validVertexShapes = {"Disk", "Ball", "Point", None};
+
+processVertexShapeFunction[{spec_, EdgeThickness -> e_}] := (
+  $vertexEdgeThickness = e;
+  processVertexShapeFunction @ spec
+);
 
 processVertexShapeFunction[spec_] := Scope[
   setbackDistance = 0; vertexPadding = 0;
   vertexBaseStyle = None;
   defaultVertexColor = $DarkGray;
+  If[StringQ[spec] && KeyExistsQ[vertexAnnotations, spec],
+    spec = Lookup[vertexAnnotations, spec];
+    spec = AssociationThread[$VertexList, spec];
+  ];
+  vertexPadding = 1 + vertexSizeImage * 2;
   Switch[spec,
     "Disk" /; $GraphIs3D,
       defaultVertexColor = $Gray;
       vertexDrawFunc = mapCoordArray[drawDisk3D[$vertexSize]];
-      vertexPadding = 1 + vertexSizeImage * 2;
       setbackDistance = vertexSize / 2;
     ,
     "Ball" | "Sphere" /; $GraphIs3D,
       defaultVertexColor = $LightGray;
+      vertexPadding = 0;
       vertexDrawFunc = drawSphere[$vertexSize / (2 * Sqrt[3.])];
     ,
     "Disk" | "Ball" | "Sphere",
-      vertexPadding = 1 + vertexSizeImage/2;
       vertexBaseStyle = EdgeForm @ AbsoluteThickness[.25];
       vertexDrawFunc = drawDisk[$vertexSize / 2];
     ,
     "Point",
       vertexDrawFunc = drawPoint[$vertexSize];
-      vertexPadding = 1 + vertexSizeImage / 2;
     ,
     "Square",
       vertexDrawFunc = drawSquare[$vertexSize];
       vertexBaseStyle = EdgeForm @ AbsoluteThickness[1];
-      vertexPadding = 1 + vertexSizeImage / 2;
     ,
     "Hexagon",
       vertexDrawFunc = drawHexagon[$vertexSize];
       vertexBaseStyle = EdgeForm @ AbsoluteThickness[1];
-      vertexPadding = 1 + vertexSizeImage / 2,
+    ,
     _Association,
       vertexDrawFunc = drawCustomShape[spec, $vertexSize];
       If[$inheritedVertexSize,
         vertexSizeImage = Max[Map[cachedRasterizeSize, spec]] / 2];
-      vertexPadding = 1 + vertexSizeImage / 2;
+    ,
+    _String,
+      failPlot["badvshapefuncstr", spec, commaString @ $validVertexShapes];
     ,
     _,
-      failPlot["badvshapefunc", spec, commaString @ $validVertexShapes];
+      If[!System`Private`MightEvaluateWhenAppliedQ[spec],
+        failPlot["badvshapefunc"]];
+      vertexDrawFunc = drawCustomShapeFunction[spec, $vertexSize];
   ];
   {defaultVertexColor, vertexBaseStyle, setbackDistance, vertexDrawFunc, vertexPadding}
 ];
@@ -1832,12 +1850,13 @@ drawPoint[size_][pos_, color_] :=
 drawSphere[size_][pos_, color_] :=
   Style[Sphere[pos, size], color];
 
+(* Disk doesn't support coordinate arrays *)
 drawDisk[size_][pos_, color_] :=
   edgedStyle[color] @ mapCoordArray[Disk, pos, size];
 
 edgedStyle[color_][primitives_] := Style[
   primitives,
-  FaceForm[color], EdgeForm @ Darker[color, .3]
+  FaceForm[color], EdgeForm[{AbsoluteThickness @ $vertexEdgeThickness, Darker[color, .3]}]
 ];
 
 drawDisk3D[size_][pos_, color_] := Inset[
@@ -1847,28 +1866,6 @@ drawDisk3D[size_][pos_, color_] := Inset[
 
 drawSquare[size_][pos_, color_] :=
   edgedStyle[color] @ mapCoordArray[Rectangle[# - size / 2, # + size / 2]&, pos];
-
-drawCustomShape[assoc_, size_][pos_, color_] :=
-  Map[drawIndividualCustomShape[assoc, color, size], pos];
-
-drawIndividualCustomShape[assoc_, color_, size_][pos_] := Scope[
-  index = IndexOf[$VertexCoordinates, pos];
-  shape = If[index === None, None, Part[assoc, index]];
-  drawGraphicsWithColor[shape, pos, color, size]
-];
-
-drawGraphicsWithColor[None, pos_, color_, size_] :=
-  drawPoint[size][pos, color];
-
-drawGraphicsWithColor[other_, pos_, color_, size_] :=
-  Text[Style[other, color, FontSize -> size], pos, {0, 0}, Background -> White];
-
-drawGraphicsWithColor[g_Graphics, pos_, color_, size_] :=
-  Inset[
-    ReplaceOptions[g, FrameStyle -> color],
-    pos, {Center, Baseline}, If[$inheritedVertexSize, Automatic, {size, size}]
-  ];
-
 
 (* todo: replace this with a single polygon *)
 $hexagonPoints = CirclePoints[{1, Tau/12}, 6] / Sqrt[2];
@@ -1880,6 +1877,56 @@ mapCoordArray[f_][array_, args___] :=
 
 mapCoordArray[f_, array_, args___] :=
   If[CoordinateMatrixQ[array], Map[f[#, args]&, array], f[array, args]];
+
+(**************************************************************************************************)
+
+drawCustomShape[assoc_, size_][pos_, color_] :=
+  Map[drawIndividualCustomShape[assoc, color, size], pos];
+
+drawIndividualCustomShape[assoc_, color_, size_][pos_] := Scope[
+  index = IndexOf[$VertexCoordinates, pos];
+  shape = If[index === None, None, Part[assoc, index]];
+  drawGraphicsWithColor[shape, pos, color, size]
+];
+
+(**************************************************************************************************)
+
+drawCustomShapeFunction[fn_, size_][pos_, color_] :=
+  Map[drawIndividualCustomShapeFunction[fn, size, color], pos];
+
+drawIndividualCustomShapeFunction[fn_, size_, color_][pos_] := Scope[
+  index = IndexOf[$VertexCoordinates, pos];
+  vertex = Part[$VertexList, index];
+  $vertexDataInfo = <|
+    "Coordinates" -> pos,
+    "VertexIndex" -> index,
+    "Vertex" -> vertex,
+    "Size" -> size,
+    "PointSize" -> plotSizeToPointSize @ size,
+    "Color" -> removeSingleton @ color,
+    "LabelStyle" -> simpleVertexLabelStyle
+  |>;
+  Check[
+    res = fn[$vertexDataInfo],
+    $Failed
+  ];
+  If[res === $Failed, failPlot["vertexfnmsg", vertex]];
+  res
+];
+
+(**************************************************************************************************)
+
+drawGraphicsWithColor[None, pos_, color_, size_] :=
+  drawPoint[size][pos, color];
+
+drawGraphicsWithColor[other_, pos_, color_, size_] :=
+  Text[Style[other, color, FontSize -> Max[size, 8]], pos, {0, 0}, Background -> White];
+
+drawGraphicsWithColor[g_Graphics, pos_, color_, size_] :=
+  Inset[
+    ReplaceOptions[g, FrameStyle -> color],
+    pos, {Center, Baseline}, If[$inheritedVertexSize, Automatic, {size, size}]
+  ];
 
 (**************************************************************************************************)
 
@@ -1918,10 +1965,10 @@ setbackCoords[0|0.][line_] := line;
 
 setbackCoords[dist_][{a_, b_}] /; (EuclideanDistance[a, b] > 2 * dist) := Scope[
   dx = Normalize[b - a] * dist;
-  {a + dx, b - dx}; {a, b}
+  {a + dx, b - dx}
 ];
 
-setbackCoords[dist_][other_] := other;
+setbackCoords[dist_][other_] := SetbackCoordinates[other, dist];
 
 insetDisk[size_][pos_] := Inset[Graphics[Disk[{0, 0}, 1], AspectRatio -> 1], pos, {0, 0}, size];
 (id:insetDisk[size_])[pos_ ? CoordinateMatrixQ] := Map[id, pos];
@@ -1931,7 +1978,7 @@ insetDisk[size_][pos_] := Inset[Graphics[Disk[{0, 0}, 1], AspectRatio -> 1], pos
 drawViaColorFunc[colorFn_, drawFn_, count_, parts_, dataProviderFn_, optSymbol_] := Scope[
 
   If[colorFn === None,
-    result = drawFn[Part[Range @ count, parts], {}];
+    result = drawFn[Part[Range @ count, parts], $Gray];
     Return @ simplifyPrimitives @ result;
   ];
 
@@ -1970,14 +2017,18 @@ toColorDrawFuncWithTooltip[drawFn_] :=
 (**************************************************************************************************)
 
 edgeColorDataProvider = Case[
+
   "Name"                    := $EdgeList;
+  
   "Index"                   := Range @ $EdgeCount;
+  
   "Cardinal"                := $EdgeTags;
-  (* todo, make the distance work on regions as well *)
-  rules:{__Rule}            := Last @ resolveRegionRules[rules, EdgeColorFunction];
-  list_List /; Length[list] === $EdgeCount
-                            := list;
+
+  list_List /; Length[list] === $EdgeCount := list;
+
   assoc_Association         := Lookup[assoc, $EdgeList, Lookup[assoc, All, $LightGray]];
+
+  "Random"                  := RandomChoice[$ColorPalette, $EdgeCount];
 
   spec_ := failPlot["badcolfunc", shortMsgForm @ spec, EdgeColorFunction]
 ];
@@ -1993,18 +2044,23 @@ getVertexIndex[v_] := Lookup[$VertexIndex, v, failPlot["notvertex", v]];
 getAnnoValue[annos_, key_] := Lookup[annos, key, failPlot["badgraphannokey", key, commaString @ Keys @ annos]];
 
 vertexColorDataProvider = Case[
+
   "Name"                    := $VertexList;
+
   "Index"                   := Range @ $VertexCount;
+
   (* todo, make the distance work on regions as well *)
   "Distance"                := %[{"Distance", GraphOrigin}];
   {"Distance", v_}          := MetricDistance[$MetricGraphCache, getVertexIndex @ v];
+
   key_String                := getAnnoValue[vertexAnnotations, key];
   (key_String -> f_)        := OnFailed[Quiet @ Check[Map[toFunc @ f, %[key]], $Failed], failPlot["msgcolfunc", key]];
-  rules:{__Rule, All -> c_} := First @ resolveRegionRules[rules, VertexColorFunction, c];
-  rules:{__Rule}            := First @ resolveRegionRules[rules, VertexColorFunction];
-  list_List /; Length[list] === $VertexCount
-                            := list;
+
+  list_List /; Length[list] === $VertexCount := list;
+
   assoc_Association         := Lookup[assoc, $VertexList, Lookup[assoc, All, $LightGray]];
+
+  "Random"                  := RandomChoice[$ColorPalette, $VertexCount];
 
   spec_ := failPlot["badcolfunc", shortMsgForm @ spec, VertexColorFunction]
 ];
@@ -2067,7 +2123,7 @@ processVertexSize = Case[
   rules_Association                  := % @ Normal @ rules;
   rules:{__Rule}                     := (
     $vertexSizeOverrides = Association[processVertexSizeRule /@ rules];
-    Lookup[rules, Key @ All, %[$defaultVertexSize]]
+    processVertexSize @ Lookup[rules, Key @ All, Automatic]
   );
   Inherited                          := ($inheritedVertexSize = True; % @ Automatic);
 
@@ -2248,12 +2304,12 @@ postProcF[f_][e_] := OnFailed[
   ];
 
 myCompactMatrixForm[vec_] :=
-  CompactMatrixForm[vec, "Factor" -> False];
+  CompactMatrixForm[vec, "Factor" -> False, NegationStyle -> "Color"];
 
 myCompactVectorForm[vec_] :=
   CompactMatrixForm[List @ vec,
     "Factor" -> False, "HideZeros" -> False,
-    NegationStyle -> UnderBar, InversionStyle -> OverBar];
+    NegationStyle -> "Color", InversionStyle -> OverBar];
 
 labelForm[RepresentationElement[matrix_]] :=
   myCompactMatrixForm @ matrix;

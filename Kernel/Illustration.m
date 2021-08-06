@@ -1,14 +1,15 @@
 PackageExport["IllustatePathsOnFundamentalQuiver"]
 
 IllustatePathsOnFundamentalQuiver[quiver_, pathSpecs_, opts___] := Scope[
-  quivers = Labeled[DrawFundamentalQuiverPath[quiver, #1, #2, #3], FormatCardinalWord @ #1]& @@@ pathSpecs;
-  regionSpec = Style[Arrow @ Path[1, #1], #2, "Foreground", HighlightRadius->0.3, EdgeSetback -> 2.5]& @@@ pathSpecs;
-  lattice = LatticeGraph[
-    quiver, opts, GraphRegionHighlight -> regionSpec, ArrowheadSize -> Scaled[0.8],
-    LabelCardinals -> True, DirectedEdges -> True, ImagePadding -> {{0, 20}, {20, 0}},
-    ArrowheadShape -> "Line"
+  fquiver = If[QuiverRepresentationObjectQ[quiver], quiver["Quiver"], quiver];
+  quivers = Labeled[DrawFundamentalQuiverPath[fquiver, #1, #2, #3], WordForm @ #1]& @@@ pathSpecs;
+  regionSpec = Style[Arrow @ Path[1, #1], #2, "Foreground", "SemitransparentArrowheads", PathRadius->3, EdgeSetback -> 3]& @@@ pathSpecs;
+  lattice = LatticeQuiver[
+    quiver, opts, GraphRegionHighlight -> regionSpec, ArrowheadSize -> 20,
+    ImagePadding -> {{0, 20}, {20, 0}},
+    ArrowheadShape -> "Line", GraphLegend -> None
   ];
-  SpacedRow[lattice, quivers, Spacings -> 0]
+  Row[Flatten[{lattice, quivers}]]
 ]
 
 
@@ -18,12 +19,12 @@ PackageExport["DrawFundamentalQuiverPath"]
 
 DrawFundamentalQuiverPath[quiver_, path_, color_, adjustments_] := Scope[
   regionSpec = Style[
-    Arrow[Path[1, path, PathAdjustments -> adjustments]], color, "Foreground",
-    HighlightRadius -> 0.3, EdgeSetback -> 3, PathOutline -> False
+    Arrow[Path[1, path, PathAdjustments -> adjustments]], color, "Foreground", "SemitransparentArrowheads",
+    PathRadius -> 3, EdgeSetback -> 4, PathOutline -> False
   ];
-  ExtendedGraph[quiver, GraphRegionHighlight -> regionSpec, ArrowheadStyle -> $Gray, ArrowheadSize -> MediumSmall,
-    ImagePadding -> 15, EdgeStyle -> LightGray, LabelCardinals -> True,
-    GraphLegend -> None, ArrowheadShape -> "Line"]
+  ExtendedGraph[quiver, GraphRegionHighlight -> regionSpec, ArrowheadSize -> Medium,
+    ImagePadding -> 15, EdgeStyle -> LightGray, 
+    GraphLegend -> None, ArrowheadShape -> {"Line", EdgeThickness -> 2}]
 ];
 
 
@@ -39,7 +40,7 @@ PathBuilder[vertex_, {path1_String, path2_String}] :=
   GraphRegionHighlight -> Style[
       {Style[Arrow[Path[vertex, path1]], $Purple],
        Style[Arrow[Path[vertex, path2]], $Teal]},
-      "Foreground", HighlightRadius->0.3, EdgeSetback -> 2];
+      "Foreground", "SemitransparentArrowheads", PathRadius -> 3, EdgeSetback -> 2];
 
 (**************************************************************************************************)
 
@@ -62,6 +63,100 @@ LabeledEdgeGraph[g_, opts___] := ExtendedGraph[g, opts,
   ImageSize -> ("ShortestEdge" -> 60)
 ];
 
+(**************************************************************************************************)
+
+PackageExport["ColoredGraph"]
+
+$colorRules = <|
+  "r" -> $Red, "b" -> $Blue, "g" -> $Green, 
+  "R" -> $LightRed, "B" -> $LightBlue, "G" -> $LightGreen, 
+  "o" -> $Orange, "t" -> $Teal, "p" -> $Pink,
+  "O" -> $LightOrange, "T" -> $LightTeal, "P" -> $LightPink,
+  "0" -> Black, "1" -> $DarkGray, "2" -> $Gray, "3" -> $LightGray, "4" -> White,
+  "w" -> White
+|>;
+
+makeColor[str_String] := HumanBlend @ Lookup[$colorRules, Characters @ str];
+
+ColoredGraph[edges_list, opts___Rule] :=
+  ColoredGraph[AllUniqueVertices @ edges, edges, opts];
+
+ColoredGraph[vertices_List, edges_List, opts___Rule] := Scope[
+  vertexColors = AssociationMap[makeColor, vertices];
+  arrowheadStyles = AssociationMap[makeColor, Part[edges, All, 3]];
+  ExtendedGraph[
+    vertices, edges, opts,
+    VertexColorFunction -> vertexColors, VertexSize -> 10,
+    ArrowheadStyle -> arrowheadStyles, ArrowheadSize -> MediumSmall,
+    GraphLayout -> {"MultiEdgeDistance" -> 0.6},
+    ImageSize -> ("ShortestEdge" -> 50), EdgeThickness -> 1, EdgeStyle -> Directive[{AbsoluteThickness[0], GrayLevel[0.7, 1]}],
+    ArrowheadShape -> {"FlatArrow", BorderStyle -> Function[{Darker[#, .3], AbsoluteThickness[0]}]}
+  ]
+];
+
+(**************************************************************************************************)
+
+PackageExport["ColoredCoveredGraph"]
+
+$assocOrListP = _Association | _List;
+
+ColoredCoveredGraph[edges_List, coords:$assocOrListP, opts___Rule] :=
+  ColoredCoveredGraph[AllUniqueVertices @ edges, edges, coords, opts];
+
+ColoredCoveredGraph[vertices_List, edges_List, coords:$assocOrListP, opts___Rule] := Scope[
+  baseVertices = DeleteDuplicates @ Flatten @ Map[Characters, vertices];
+  baseCoords = Which[
+    CoordinateMatrixQ[coords], 
+      AssociationThread[baseVertices, coords],
+    AssociationQ[coords],
+      coords,
+    True,
+      ReturnFailed[];
+  ];
+  allCoords = Join[
+    baseCoords,
+    AssociationMap[Mean[Lookup[baseCoords, Characters @ #]]&, vertices]
+  ];
+  prims = {AbsoluteThickness[1.5], AbsoluteDashing[{2,2}], 
+    AbsolutePointSize[4], GrayLevel[0.5], contractionPrimitives /@ vertices};
+  frame = Rectangle @@ Transpose[bounds];
+  ColoredGraph[vertices, edges, opts,
+    VertexCoordinates -> allCoords,
+    ArrowheadSize -> <|"1" -> 14, "4" -> 16, "3" -> 16|>,
+    ImageSize -> {80, 80},
+    ArrowheadPosition -> 0.52, PlotRange -> "Square",
+    ImagePadding -> 0, AspectRatioClipping -> False,
+    GraphLayout -> {"SelfLoopRadius" -> 1*0.4, "MultiEdgeDistance" -> 0.4},
+    Frame -> True
+  ]
+];
+
+contractionPrimitives = Case[
+  v_String /; StringLength[v] === 1 := Nothing;
+  v_String := Scope[
+    new = Lookup[allCoords, v];
+    old = Lookup[allCoords, Characters @ v];
+    Map[{Line[{new, #}], Point[#]}&, old]
+  ]
+];
+
+(**************************************************************************************************)
+
+PackageExport["PartialOrderGraph"]
+
+PartialOrderGraph[graphs_, {opts___}, edges_, opts___Rule] := Scope[
+  plots = ExtendedGraphPlot[#, opts]& /@ graphs;
+  count = Length @ graphs;
+  vertices = Range @ count;
+  shapes = AssociationThread[vertices, plots];
+  ExtendedGraph[vertices, edges,
+    VertexShapeFunction -> shapes,
+    opts, GraphLayout -> "LayeredDigraph", GraphOrigin -> 1,
+    ArrowheadShape -> None, ArrowheadSize -> Huge,
+    ImageSize -> 250, VertexSize -> 100, EdgeThickness -> 3,
+    CoordinateTransformFunction -> "CenterTree"
+  ]
+];
 
 (**************************************************************************************************)
 
@@ -151,7 +246,7 @@ PathPlot[graph_Graph, path_Path, color_:$Teal] :=
 
 PackageExport["PathWordPlot"]
 
-$pwpStyle = $Teal;
+$pwpStyle = $DarkGray;
 $pwpLabel = Word;
 
 PathWordPlot[graph_Graph, p:Path[_, _String, ___, PathCancellation -> False, ___]] := Block[
@@ -185,7 +280,7 @@ pathEndVertex[graph_, path_] := Scope[
 
 PackageExport["PathConcatPlot"]
 
-inlineSymbol[s_, args___] := Labeled[Style[s, 20, args], ""]
+inlineSymbol[s_, args___] := Style[s, 20, args];
 
 PathConcatPlot[args___, PathStyle -> style_] := Block[{$pwpStyle = style},
   PathConcatPlot[args]
@@ -208,7 +303,7 @@ PackageExport["LargeSymbolForm"]
 
 PackageExport["LargeSymbolForm"]
 
-LargeSymbolForm[e_] := inlineSymbol[e];
+LargeSymbolForm[e_, opts___Rule] := inlineSymbol[e, opts];
 
 (**************************************************************************************************)
 
@@ -269,78 +364,6 @@ HighlightChartRegion[graph_, chart_, OptionsPattern[]] := Scope[
   ];
   If[label === True, result = Labeled[result, chart]];
   result
-];
-
-(**************************************************************************************************)
-
-PackageExport["CompassDiagram"]
-
-Options[CompassDiagram] = JoinOptions[
-  "ImpliedRelations" -> True, "Directed" -> False, "TransitionStyle" -> "Square", CombineMultiedges -> False,
-  ExtendedGraph
-];
-
-CompassDiagram[compasses_, equivSets_, opts:OptionsPattern[]] := Scope[
-  UnpackOptions[impliedRelations, directed, transitionStyle, combineMultiedges];
-  (* don't use pairing! *)
-  cardinals = DeleteDuplicates[Join @@ Values @ compasses];
-  If[MatchQ[equivSets, {__DirectedEdge}],
-    manualEdges = equivSets;
-    equivSets = {};
-  ,
-    manualEdges = {};
-  ];
-  If[impliedRelations,
-    equivSets = DeleteDuplicates @ Join[equivSets, Map[Negated, equivSets, {2}], List /@ cardinals];
-    equivIndex = Map[Union @@ Part[equivSets, #]&, PositionIndex[equivSets, 2]];
-    compassIndex = PositionIndex[compasses, 2] /. Key[k_] :> k;
-    CollectTo[{$edges}, Do[
-      createCDEdges[card, equivCard],
-      {card, cardinals},
-      {equivCard, equivIndex[card]}
-    ]];
-  ,
-    $edges = {}
-  ];
-  compasses = Keys @ compasses;
-  coords = {-#1, #2}& @@@ CirclePoints[Length @ compasses];
-  graph = ExtendedGraph[
-    compasses, Join[$edges, manualEdges],
-    VertexCoordinates -> coords,
-    FilterOptions @ opts,
-    GraphLayout -> {"MultiEdgeDistance" -> 0.13},
-    GraphLegend -> Automatic, Cardinals -> cardinals,
-    ArrowheadShape -> {
-      If[transitionStyle === "Label", "Line", transitionStyle],
-      PairedDistance -> 0, NegationStyle -> "OverBar",
-      CardinalTransitionStyle -> transitionStyle
-    },
-    CardinalColors -> ChooseCardinalColors[cardinals],
-    VertexLabelStyle -> {LabelPosition -> Automatic, BaseStyle -> {FontSize -> 12}},
-    BaselinePosition -> Center, EdgeSetback -> .1,
-    VertexLabels -> "Name", ArrowheadSize -> Medium
-  ];
-  If[combineMultiedges,
-    graph = CombineMultiedges @ graph;
-    If[transitionStyle === "Label",
-      tags = EdgeTags @ graph;
-      graph = ExtendedSubgraph[graph, All, Take[EdgeList @ graph, All, 2]];
-      graph = ExtendedGraph[graph,
-        EdgeLabels -> tags,
-        EdgeLabelStyle -> {LabelPosition -> Scaled[0.5]},
-        ArrowheadShape -> "Line", ArrowheadSize -> Small, ArrowheadPosition -> 0.9,
-        GraphLegend -> None
-      ]
-    ];
-  ];
-  graph
-];
-
-createCDEdges[card1_, card2_] := Outer[
-  {comp1, comp2} |-> If[Order[comp1, comp2] == 1,
-    Internal`StuffBag[$edges, DirectedEdge[comp1, comp2, CardinalTransition[card1 -> card2]]]
-  ],
-  compassIndex @ card1, compassIndex @ StripNegated @ card2, 1
 ];
 
 (**************************************************************************************************)
@@ -491,9 +514,9 @@ $simpleLabeledQuiverOpts = Sequence[
 
 PackageExport["PathQuiverPlot"]
 
-PathQuiverPlot[fq_, paths_, v0_, cardinalDirs_, pathOpts_List, opts___Rule] := Scope[
+PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___Rule] := Scope[
   If[!QuiverQ[fq], ReturnFailed[]];
-  $v0 = v0; $fq = fq; $scaling = 1.0;
+  $fq = fq; $v0 = v0; $scaling = 1.0;
   cardinals = CardinalList @ fq;
   paths = parsePath /@ DeleteDuplicates[paths];
   If[ContainsQ[paths, $Failed], ReturnFailed[]];
@@ -532,15 +555,17 @@ PathQuiverPlot[fq_, paths_, v0_, cardinalDirs_, pathOpts_List, opts___Rule] := S
   $setback = 3;
   pathOpts = DeleteCases[pathOpts, EdgeSetback -> v_ /; ($setback = v; True)];
   labels = AssociationThread[vertices, FQPVertexIcon[pathOpts] /@ paths];
-  Quiver[
+  plot = Quiver[
     vertices, edges, opts,
     VertexCoordinates -> coords,
     GraphOrigin -> LatticeVertex[{}], BaselinePosition -> Center,
     VertexShapeFunction -> labels, VertexSize -> Inherited,
     ArrowheadShape -> {"Line", EdgeThickness -> 2}, ArrowheadSize -> Medium, EdgeStyle -> LightGray,
     EdgeThickness -> Thick, Cardinals -> LookupExtendedGraphAnnotations[fq, Cardinals],
-    ImageSize -> 400, ImagePadding -> 5, AspectRatioClipping -> False
-  ] // CombineMultiedges
+    ImageSize -> 400, ImagePadding -> 5, AspectRatioClipping -> False,
+    GraphLegend -> None
+  ] // CombineMultiedges;
+  LargeLabeled[plot, ForwardPathQuiverSymbol["Q", v0Label]]
 ];
 
 wordToCoords = MatchValues[
@@ -569,8 +594,8 @@ FQPVertexIcon[opts_][path_] := Scope[
   hasPathLabel = !MatchQ[path, Path[_, {}, ___]];
   highlighted = HighlightGraphRegion[
     $fq, path, {$Teal, PathRadius->2, PathStyle -> "DiskArrow", EdgeSetback -> $setback, "Foreground"}, Sequence @@ opts,
-    ImagePadding -> {10, 8}, VertexLabels -> None,
-    Frame -> True, FrameStyle -> {LightGray, Thin}, PlotRangeClipping -> False,
+    VertexLabels -> None,
+    Frame -> True, FrameStyle -> {LightGray, SlightlyThin}, PlotRangeClipping -> False,
     GraphLegend -> None, ImageSize -> "ShortestEdge" -> 25, ArrowheadShape -> None, VertexSize -> Small,
     FrameLabel -> {
       Bottom -> If[!hasPathLabel, None, fmtPaths @ path],
@@ -589,7 +614,7 @@ fmtPaths = MatchValues[
 
 PackageExport["PathQuiverComparisonPlot"]
 
-PathQuiverComparisonPlot[pq_, q_, baseVertex_:None, quotient_:False] := SpacedRow[
+PathQuiverComparisonPlot[pq_, q_, baseVertex_:0, quotient_:False] := SpacedRow[
   If[quotient, PathQuotientSymbol, ForwardPathQuiverSymbol]["Q", baseVertex] -> ExtendedGraph[pq, GraphLegend -> None],
   "" -> ArrowheadLegend[LookupCardinalColors[q], "Line"],
   QuiverSymbol["Q"] -> ExtendedGraph[q, GraphLegend -> None],

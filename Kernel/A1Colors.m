@@ -236,8 +236,8 @@ ToOklab[RGBColor[rgb:{_, _, _}]] := RGBToOklab[rgb];
 ToOklab[c:$colorPattern] := RGBToOklab[List @@ ColorConvert[c, "RGB"]];
 ToOklab[e_] := RGBToOklab[ToRGB[e]];
 
-FromOklab[lab_List] := RGBColor @ OklabToRGB[lab];
-FromOklab[lab_List ? MatrixQ] := RGBColor /@ OklabToRGB[lab]
+FromOklab[lab_List] := RGBColor @@ OklabToRGB[lab];
+FromOklab[lab_List ? MatrixQ] := RGBColor @@@ OklabToRGB[lab]
 
 $toRGBRules = Dispatch[{
   RGBColor[r_, g_, b_] :> {r, g, b},
@@ -251,6 +251,8 @@ normalizeLightness[colors_, fraction_:1] := Scope[
   l[[All]] = (Mean[l] * fraction) + l[[All]] * (1 - fraction);
   FromOklab[Transpose[{l, a, b}]]
 ];
+
+PackageScope["ToRGB"]
 
 ToRGB[e_] := ReplaceAll[e, $toRGBRules];
 
@@ -386,15 +388,32 @@ OklabBlend[colors_List] := FromOklab @ Mean @ ToOklab[colors];
 
 PackageExport["HumanBlend"]
 
-HumanBlend[colors_List] := iHumanBlend @ DeleteCases[$LightGray | $Gray | $DarkGray] @ Sort @ colors;
+HumanBlend[colors_List] := iHumanBlend @ Sort @ colors;
 
-iHumanBlend[{}] := $LightGray;
-iHumanBlend[{color_}] := color;
-iHumanBlend[{$Blue, $Green, $Red}] := $LightGray;
-iHumanBlend[{$Blue, $Red}] := $Pink;
-iHumanBlend[{$Blue, $Green}] := $Teal;
-iHumanBlend[{$Green, $Red}] := $Orange;
-iHumanBlend[colors_] := OklabBlend[colors];
+iHumanBlend = Case[
+  {}                := w2;
+  {c_}              := c;
+  {w0, w2}          := w1;     {w0, w1, w2}      := w1;        {bl, wh}          := w1;
+  {b0, g0, r0}      := w0;     {b1, g1, r1}      := w1;        {b2, g2, r2}      := w2;
+  {t0, p0, o0}      := w0;     {t1, p1, o1}      := w1;        {t2, p2, o2}      := w2;
+  {b0, r0}          := p0;     {b1, r1}          := p1;        {b2, r2}          := p2;
+  {b0, g0}          := t0;     {b1, g1}          := t1;        {b2, r2}          := t2;
+  {g0, r0}          := o0;     {g1, r1}          := o1;        {g2, r2}          := o2;
+  {bl, r1}          := r0;     {bl, g1}          := g0;        {bl, b1}          := b0;
+  {wh, r0}          := r1;     {wh, g0}          := g1;        {wh, b0}          := b1;
+  {wh, r1}          := r2;     {wh, g1}          := g2;        {wh, b1}          := b2;
+  {bl, r2}          := r1;     {bl, g2}          := g1;        {bl, b2}          := b1;
+  {wh, w0}          := w2;     {bl, w2}          := w0;
+  colors_List := OklabBlend[colors];
+  {g0 -> $DarkGreen,  g1 -> $Green,  g2 -> $LightGreen,
+   r0 -> $DarkRed,    r1 -> $Red,    r2 -> $LightRed,
+   b0 -> $DarkBlue,   b1 -> $Blue,   b2 -> $LightBlue,
+   t0 -> $DarkTeal,   t1 -> $Teal,   t2 -> $LightTeal,
+   o0 -> $DarkOrange, o1 -> $Orange, o2 -> $LightOrange,
+   p0 -> $DarkPink,   p1 -> $Pink,   p2 -> $LightPink,
+   w0 -> $DarkGray,   w1 -> $Gray,   w2 -> $LightGray,
+   bl -> Black, wh -> White}
+];
 
 (**************************************************************************************************)
 
@@ -483,6 +502,8 @@ DiscreteColorFunction::toobig = "The list of values is too large (having `` valu
 
 setupColorRuleDispatch[DiscreteColorFunction];
 
+PackageScope["$BooleanColors"]
+
 $BooleanColors = {GrayLevel[0.2], GrayLevel[0.8]};
 
 DiscreteColorFunction[values_List, Automatic] := Scope[
@@ -522,6 +543,13 @@ cfuncCompose[ColorFunctionObject[type_, values_, func_, ticks_], composedFunc_] 
   System`Private`ConstructNoEntry[
     ColorFunctionObject, type, values, composedFunc /* func, ticks
   ];
+
+(**************************************************************************************************)
+
+PackageExport["ColorFunctionObjectQ"]
+
+ColorFunctionObjectQ[_ColorFunctionObject ? System`Private`NoEntryQ] := True;
+ColorFunctionObjectQ[_] := False;
 
 (**************************************************************************************************)
 
@@ -822,7 +850,7 @@ pickBiGradient[min_ ? Positive, max_ ? Positive] /; min <= max / 10. :=
   pickBiGradient[0, max];
 
 pickBiGradient[min_ ? Positive, max_ ? Positive] /; min <= max / 5. :=
-  {{pickNice[min, min, Floor], pickNice[max, max, Ceiling]}, $positiveColors, Automatic};
+  {Interpolated[pickNice[min, min, Floor], pickNice[max, max, Ceiling], Length @ $positiveColors], $positiveColors, Automatic};
 
 pickBiGradient[min_ ? Positive, max_ ? Positive] := Scope[
   dx = max - min;
@@ -857,6 +885,7 @@ which they occur, and cfunc$ is a color function that can be applied to new valu
 ApplyColoring[list$, palette$] uses a palette specification to choose colors.
 * See %ToColorPalette for allowed settings of palette$ (the default used is 'Basic').
 * cfunc$ will be either a %ContinuousColorFunction or a %DiscreteColorFunction.
+* If list$ consists of colors, these will be used verbatim.
 "
 
 ApplyColoring::badpalette = "The palette `` was not a valid form."
@@ -918,3 +947,10 @@ literalColorFunction[colors_] := Scope[
   {KeyMap[{#, #}&, colorIndex], colorFunction}
 ];
 
+(**************************************************************************************************)
+
+PackageExport["Color3D"]
+
+Color3D[Opacity[o_, color_]] := Color3D @ SetColorOpacity[color, o];
+Color3D[Opacity[o_]] := Directive[GrayLevel[0, o], Specularity @ 0];
+Color3D[c_] := Directive[Glow @ c, GrayLevel[0, ColorOpacity[c]], Specularity @ 0];

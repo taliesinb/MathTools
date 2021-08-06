@@ -215,6 +215,16 @@ StandardizePadding = Case[
 
 (**************************************************************************************************)
 
+PackageExport["ToSquarePlotRange"]
+
+ToSquarePlotRange[{{x1_, x2_}, {y1_, y2_}}] := Scope[
+  w = x2 - x1; h = y2 - y1;
+  d2 = Max[w, h] / 2; x = Mean[{x1, x2}]; y = Mean[{y1, y2}];
+  {{x - d2, x + d2}, {y - d2, y + d2}}
+];
+
+(**************************************************************************************************)
+
 PackageExport["NormalizePlotRange"]
 
 SetUsage @ "
@@ -968,3 +978,124 @@ SetFrameColor[g_Graphics, color_] :=
   ];
 
 SetFrameColor[expr_, _] := expr;
+
+(**************************************************************************************************)
+
+PackageExport["MeshImage"]
+
+MeshImage[array_, blockSize_] := Scope[
+  {b1, b2} = blockSize + {-1, 1};
+  dims = Dimensions @ array;
+  If[!ArrayQ[array, _, Developer`MachineRealQ] || !MatchQ[dims, {_, _, 3} | {_, _}],
+    ReturnFailed[]];
+  hasColor = Length[dims] == 3;
+  {h, w} = Take[dims, 2];
+  {h2, w2} = 1 + {h, w} * b2;
+  pixels = ConstantArray[.7, If[hasColor, {h2, w2, 3}, {h2, w2}]];
+  frame = 0.4;
+  If[hasColor, paintFrame[All], paintFrame[]];
+  ScanIndexed[paintBlock, Developer`ToPackedArray @ array, {2}];
+  Image[pixels]
+];
+
+paintFrame[cspec___] := (
+  Part[pixels, All, 1, cspec] = frame;
+  Part[pixels, All, w2, cspec] = frame;
+  Part[pixels, 1, All, cspec] = frame;
+  Part[pixels, h2, All, cspec] = frame;
+);
+
+paintBlock[v_, {r_, c_}] := Module[
+  {r1 = (r * b2), c1 = (c * b2)},
+  Part[pixels, (r1 - b1) ;; r1, (c1 - b1) ;; c1] = v;
+];
+
+(**************************************************************************************************)
+
+PackageExport["CompactArrayPlot"]
+PackageExport["ColorLegend"]
+
+Options[CompactArrayPlot] = {
+  PixelConstrained -> 4,
+  ColorFunction -> Automatic,
+  ColorLegend -> None
+};
+
+CompactArrayPlot::badrank = "Array should be of rank 2 or 3, but had rank ``.";
+CompactArrayPlot::rank3chans = "Rank 3 array should have 3 channels.";
+CompactArrayPlot::rank3vals = "Rank 3 array should be numeric in interval [0, 1].";
+CompactArrayPlot::interr = "Internal error while processing array.";
+CompactArrayPlot::badcvals = "ColorFunction produced non-RGB values, first was: ``.";
+
+CompactArrayPlot[array_, OptionsPattern[]] := Scope[
+  UnpackOptions[pixelConstrained, colorFunction, colorLegend];
+  array //= ToPackedReal;
+  dims = Dimensions @ array; ndims = Length @ dims;
+  If[array === {} || MemberQ[dims, 0], Return[Spacer[1]]];
+  If[ndims < 2 || ndims > 3, ReturnFailed["badrank", ndims]];
+  isRGB = ndims === 3;
+  If[isRGB,
+    If[Last[dims] =!= 3, ReturnFailed["badchans"]];
+    If[!PackedArrayQ[array] || !UnitIntervalArrayQ[array], ReturnFailed["rank3vals"]];
+  ];
+  SetAutomatic[colorFunction, Which[
+    isRGB,
+      None,
+    Developer`PackedArrayQ[array, Real] && UnitIntervalArrayQ[array],
+      None,
+    Developer`PackedArrayQ[array, Integer] && UnitIntervalArrayQ[array],
+      None,
+    True,
+      $BooleanColors = {White, Black};
+      Last @ ApplyColoring @ Flatten[array, 1]]
+  ];
+  If[colorFunction =!= None,
+    cfunc = colorFunction;
+    If[ColorFunctionObjectQ @ cfunc, cfunc //= Normal];
+    cfunc //= stripFinalRGB;
+    array = ToPackedArray @ Map[cfunc, array, {2}];
+    If[ArrayQ[array, 2, ColorQ],
+      array = ToPackedArray @ ToRGB @ array];
+    If[!PackedArrayQ[array], ReturnFailed["badcvals"]];
+  ];
+  If[!PackedArrayQ[array], ReturnFailed["interr"]];
+  graphics = MeshImage[array, pixelConstrained];
+  SetAutomatic[colorLegend, colorFunction];
+  If[colorLegend =!= None, graphics //= ApplyLegend[colorLegend]];
+  graphics
+];
+
+stripFinalRGB[RightComposition[fns___, RGBColor]] := RightComposition[fns];
+stripFinalRGB[other_] := other;
+
+(**************************************************************************************************)
+
+PackageExport["BinaryArrayPlot"]
+
+Options[BinaryArrayPlot] = {
+  PixelConstrained -> 4  
+}
+
+BinaryArrayPlot[array_, opts:OptionsPattern[]] :=
+  BinaryArrayPlot[array, Automatic, opts];
+
+BinaryArrayPlot[array_, digits:(_Integer|Automatic), OptionsPattern[]] := Scope[
+  UnpackOptions[pixelConstrained];
+  {min, max} = MinMax @ array;
+  Which[
+    VectorQ[array, Internal`NonNegativeIntegerQ],
+      SetAutomatic[digits, If[max == 0, 0, Floor[1 + Log2 @ max]]];
+      array = BinaryDigits[array, digits];
+    ,
+    MatrixQ[array, Internal`NonNegativeIntegerQ],
+      If[IntegerQ[digits] && InnerDimension[array] > digits,
+        array = Take[array, All, digits]];
+      If[max > 1, ReturnFailed[]];
+    ,
+    True,
+      ReturnFailed[];
+  ];
+  CompactArrayPlot[1 - array, PixelConstrained -> pixelConstrained]
+];
+
+

@@ -123,6 +123,15 @@ failRead[] := Throw[$Failed, failRead];
 
 $fileContentCache = Data`UnorderedAssociation[];
 
+observeTextFile[path_] := Module[{fileModTime},
+  cachedModTime = Lookup[$fileContentCache, path, $Failed];
+  fileModTime = UnixTime @ FileDate[path, "Modification"];
+  If[cachedModTime =!= fileModTime,
+    $changedTextFileCount++;
+    $fileContentCache[path] = fileModTime;
+  ];
+];
+
 readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
   {cachedModTime, cachedContents} = Lookup[$fileContentCache, path, {$Failed, $Failed}];
   fileModTime = UnixTime @ FileDate[path, "Modification"];
@@ -189,7 +198,7 @@ resolveRemainingSymbols[{path_, context_, packageData_Package`PackageData}] := S
 ];
 
 QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
-  {$directory, $files, $packageScopes, $packageExports, $packageExpressions, $packageRules,
+  {$directory, $files, $textFiles, $packageScopes, $packageExports, $packageExpressions, $packageRules,
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result
   },
 
@@ -200,12 +209,13 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
 
   $filesToSkip = FileNames[{"Loader.m", "init.m"}, $directory];
   $files = Sort @ Complement[FileNames["*.m", $directory], $filesToSkip];
+  $textFiles = FileNames["*.txt", $directory];
 
   $globalImports = {"System`", "GeneralUtilities`", "Developer`"};
 
   $packageExports = Internal`Bag[];
   $packageScopes = Internal`Bag[];
-  $loadedFileCount = 0;
+  $loadedFileCount = $changedTextFileCount = 0;
 
   result = Catch[
     $packageExpressions = Map[
@@ -223,7 +233,9 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
   ];
   If[result === $Failed, Return[$Failed]];
 
-  If[$loadedFileCount == 0, Return["Unchanged"]];
+  Scan[observeTextFile, $textFiles];
+
+  If[$loadedFileCount == 0 && $changedTextFileCount == 0, Return["Unchanged"]];
 
   $PreviousPathAlgebra = If[
     System`Private`HasImmediateValueQ[QuiverGeometry`$PathAlgebra],

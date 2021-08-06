@@ -135,6 +135,9 @@ resolvePath[type_, Automatic, None] :=
 resolvePath[type_, Automatic, base_String] :=
   checkFileExt[type] @ NormalizePath @ base;
 
+resolvePath[type_, File[path_], base_] :=
+  resolvePath[type, path, base];
+
 resolvePath[type_, path_String ? AbsolutePathQ, base_] :=
   checkFileExt[type] @ NormalizePath @ path;
 
@@ -178,22 +181,34 @@ PackageExport["ExportToMarkdown"]
 
 General::expdirne = "Export directory `` does not exist."
 
-Options[ExportToMarkdown] = $genericMarkdownExportOptions;
+Options[ExportToMarkdown] = JoinOptions[
+  MaxItems -> Infinity,
+  $genericMarkdownExportOptions
+];
 
 $dryRun = False;
 ExportToMarkdown[importSpec_, exportSpec_, OptionsPattern[]] := Scope @ CatchMessage[
-  UnpackOptions[importPath, exportPath, dryRun, verbose];
+  UnpackOptions[importPath, exportPath, dryRun, verbose, maxItems, includePrelude];
   $dryRun = dryRun =!= False;
   SetAutomatic[verbose, $dryRun];
   $verbose = verbose;
   setupMarkdownGlobals[];
   {ipath, opath} = resolveImportExportPaths[importSpec, importPath, exportSpec, exportPath];
   iexpr = parseInputSpec @ ipath;
+  If[ListQ[iexpr] && maxItems =!= Infinity, 
+    iexpr = If[IntegerQ[maxItems], Take[iexpr, UpTo @ maxItems], Take[iexpr, maxItems]]];
   outputDir = If[StringEndsQ[opath, ".md"], FileNameDrop @ opath, opath];
   If[FileType[outputDir] =!= Directory, ThrowMessage["expdirne", outputDir]]; 
   setupRasterizationPath[outputDir, "OutputImages"];
   If[$verbose, 
     Print["Rasterizing to \"", rasterizationPath, "\" embedded as \"", relativeRasterizationPath, "\""]];
+  If[StringQ[includePrelude],
+    preludePath = NormalizePath @ includePrelude;
+    If[Not @ AbsolutePathQ @ preludePath,
+      preludePath = ToFileName[outputDir, preludePath]];
+    If[$verbose, Print["Writing prelude to \"", preludePath, "\"."]];
+    ExportUTF8[preludePath, StringReplace[markdownPostprocessor @ $KatexPrelude, "\n" -> " "]];
+  ];
   doImportExport[iexpr, opath, StringEndsQ[opath, ".md"]]
 ];
 
@@ -237,7 +252,11 @@ getNotebookName = Case[
   File[file_] := toMDFileName @ FileBaseName @ file;
 ];
 
-toMDFileName[string_] := StringReplace[ToLowerCase @ string, (Whitespace | "-").. -> "-"] <> ".md";
+$mdFileNameTrim = DigitCharacter.. ~~ Repeated[" - ", {0, 1}];
+toMDFileName[string_] := Scope[
+  string = StringDelete[ToLowerCase @ string, StartOfString ~~ $mdFileNameTrim];
+  StringReplace[StringTrim @ string, (Whitespace | "-").. -> "-"] <> ".md"
+];
 
 (**************************************************************************************************)
 
@@ -248,7 +267,7 @@ ExportNavigationPage[files_, relativePrefix_String, navPath_] := Scope[
     If[FileType[files] =!= Directory, ReturnFailed[]];
     files = FileNames["*.md", files];
   ];
-  titles' = getFileTitle /@ files;
+  titles = getFileTitle /@ files;
   If[!StringVectorQ[titles], ReturnFailed[]];
   fileNames = FileBaseName /@ files;
   navData = MapThread[
@@ -349,7 +368,7 @@ ToMarkdownString[spec_, opts:OptionsPattern[]] := Scope[
 iToMarkdownString[spec_] := Scope[
   lines = toMarkdownLines @ spec;
   If[!StringVectorQ[lines], ReturnFailed[]];
-  If[includePrelude,
+  If[TrueQ @ includePrelude,
     lines = insertAtFirstNonheader[lines, {multilineMathTemplate @ $KatexPrelude}]];
   result = StringJoin @ {Riffle[lines, "\n\n"], "\n\n"};
   result = StringReplace[result, $tableCreation];
@@ -399,6 +418,7 @@ toMarkdownLines[File[path_String]] /; FileExtension[path] === "nb" := Scope[
   ]
 ]
 
+
 toMarkdownLines[nb_NotebookObject] :=
   toMarkdownLines @ NotebookGet @ nb;
 
@@ -431,19 +451,26 @@ trimCells[cells_List] := Take[cells, All, UpTo @ 2];
 $textCellP = "Section" | "Subsection" | "Subsubsection" | "Text";
 cellToMarkdown = Case[
 
-  Cell[e_, "Section"]         := StringJoin[headingDepth @ 1, textCellToMD @ e];
-  Cell[e_, "Subsection"]      := StringJoin[headingDepth @ 2, textCellToMD @ e];
-  Cell[e_, "Subsubsection"]   := StringJoin[headingDepth @ 3, textCellToMD @ e];
-  Cell[e_, "Text"]            := textCellToMD @ e;
-  Cell[e_, "Item"]            := StringJoin["* ", textCellToMD @ e];
-  Cell[e_, "Subitem"]         := StringJoin["\t* ", textCellToMD @ e];
-  Cell[e_, "SubsubItem"]      := StringJoin["\t\t* ", textCellToMD @ e];
-  e:Cell[_, "Output"]         := outputCellToMD @ e;
+  Cell[e_, "Chapter"]            := StringJoin[headingDepth @ 0, textCellToMD @ e];
+  Cell[e_, "Section"]            := StringJoin[headingDepth @ 1, textCellToMD @ e];
+  Cell[e_, "Subsection"]         := StringJoin[headingDepth @ 2, textCellToMD @ e];
+  Cell[e_, "Subsubsection"]      := StringJoin[headingDepth @ 3, textCellToMD @ e];
+  Cell[e_, "Text"]               := textCellToMD @ e;
+  Cell[e_, "Item"]               := StringJoin["* ", textCellToMD @ e];
+  Cell[e_, "Subitem"]            := StringJoin["\t* ", textCellToMD @ e];
+  Cell[e_, "SubsubItem"]         := StringJoin["\t\t* ", textCellToMD @ e];
+  Cell[b:BoxData[TemplateBox[_, _ ? textTagQ]], "Output"]
+                                 := textCellToMD @ b;
+  e:Cell[_, "Output"]            := outputCellToMD @ e;
 
   Cell[CellGroupData[cells_List, Open]] := Splice[% /@ trimCells[cells]];
 
   c_ := (Nothing);
 ];
+
+(* recognizes tags generated by StylesheetForms *)
+textTagQ[tag_String] := StringEndsQ[tag, "Form" | "Symbol"];
+textTagQ[_];
 
 headingDepth[n_] := StringRepeat["#", Max[n + headingDepthOffset, 1]] <> " ";
 
@@ -542,6 +569,8 @@ $finalStringFixups2 = {
 WhiteString = _String ? (StringMatchQ[Whitespace]);
 
 iTextCellToMDOuter = Case[
+  BoxData[box_] := 
+    multilineMathTemplate @ boxesToKatexString @ box;
   TextData @ Cell[BoxData[box_FormBox], ___] :=
     multilineMathTemplate @ boxesToKatexString @ box;
   TextData @ Cell[BoxData[boxes:{Repeated[_FormBox | WhiteString]}], ___] :=

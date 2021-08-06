@@ -107,7 +107,7 @@ $baseGenerateLatticeOptions = JoinOptions[
   MaxVertices -> Infinity, MaxEdges -> Infinity,
   DepthTermination -> Automatic, IncludeFrontier -> Automatic,
   IncludeRepresentationMatrices -> False,
-  GraphLegend -> Automatic,
+  GraphLegend -> None,
   CombineMultiedges -> True,
   SelfLoops -> True,
   InitialStates -> Automatic,

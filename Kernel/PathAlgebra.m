@@ -471,17 +471,6 @@ PathTailVector[PathVector[assoc_]] :=
 
 (**************************************************************************************************)
 
-PackageExport["NullPath"]
-PackageExport["NullElement"]
-
-declareBoxFormatting[
-  NullPath :> TemplateBox[{}, "NullPathSymbol"],
-  NullElement :> TemplateBox[{}, "NullPathSymbol"]
-];
-
-
-(**************************************************************************************************)
-
 PathVector /: Proportion[v__PathVector] := PathCompose[v];
 
 (**************************************************************************************************)

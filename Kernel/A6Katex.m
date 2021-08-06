@@ -44,7 +44,7 @@ makeLiteralReplacementRule[assoc_, wrap_] := ModuleScope[
   re = RegularExpression @ StringReplace[patt, "$" -> "\\$"];
   $table = assoc;
   If[wrap,
-    re :> StringJoin["{", $table["$1"], "}"],
+    re :> " " <> $table["$1"] <> " ",
     re :> $table["$1"]
   ]
 ];
@@ -59,30 +59,43 @@ $WLSymbolToUnicode = makeLiteralReplacementRule[SymbolTranslationData[<|"Symbol"
 
 (**************************************************************************************************)
 
+PackageScope["$TemplateKatexFunction"]
+
+$TemplateKatexFunction = <||>;
+
+(**************************************************************************************************)
+
 PackageExport["ToKatexString"]
 
 ToKatexString[e_] := Scope[
-  toKatexString @ ToBoxes[e, StandardForm]
+  boxesToKatexString @ ToBoxes[e, StandardForm]
 ]
 
 PackageScope["boxesToKatexString"]
 
 boxesToKatexString[e_] :=
   StringTrim @ StringReplace[$WLSymbolToKatexRegex] @ StringJoin @ 
-    iBoxesToKatexString @ cleanupInlineBoxes @ e;
+    ReplaceRepeated[$katexAppliedRule] @ boxToKatex @ cleanupInlineBoxes @ e;
 
-iBoxesToKatexString = Case[
-  RowBox[{"{", e__, "}"}] := {"\{", % /@ {e}, "\}"};
-  RowBox[e_] := Map[%, e];
+$katexAppliedRule = {
+  (s_String)[args___] :> {"\\" <> s <> "{", Riffle[{args}, "}{"], "}"}
+}
+
+
+PackageScope["boxToKatex"]
+
+boxToKatex = Case[
   "," := ",";
   " " := " ";
   "_" := "\\_";
   e_String := e;
+  
+  (* process results of dispatchTemplateBox: *)
+  e_List := Map[%, e]; 
+  e:(_String[___]) := Map[%, e]; 
+
   c_Cell := Block[{$inlineMathTemplate = Identity}, iTextCellToMD @ c];
-  TemplateBox[{}, "Integers"] := "\\mathbb{Z}";
-  TemplateBox[{}, "Rationals"] := "\\mathbb{Q}";
-  TemplateBox[{}, "Reals"] := "\\mathbb{R}";
-  TemplateBox[{}, "Complexes"] := "\\mathbb{C}";
+  TemplateBox[args_, tag_] := templateBoxToKatex[tag -> args];
   StyleBox[e_, opts___] := applyInlineStyle[% @ e, Lookup[{opts}, {FontWeight, FontSlant, FontColor}, None]];
   UnderscriptBox[e_, "_"] := {"\\underline{", % @ e, "}"};
   OverscriptBox[e_, "_"] := {"\\overline{", % @ e, "}"};
@@ -90,18 +103,41 @@ iBoxesToKatexString = Case[
   SubsuperscriptBox[e_, sub_, sup_] := {% @ e, "_", toBracket @ sub, "^", toBracket @ sup};
   SubscriptBox[e_, b_] := {% @ e, "_", toBracket @ b};
   OverscriptBox[e_, "^"] := {"\\hat{", % @ e, "}"};
-  TemplateBox[{e_, b_, c_}, "Subsuperscript"] := % @ SuperscriptBox[SubscriptBox[e, b], c];
+  
+  RowBox[{a_, "\[DirectedEdge]", b_}] := "de"[% @ a, % @ b];
+  RowBox[{a_, "\[UndirectedEdge]", b_}] := "ue"[% @ a, % @ b];
+  RowBox[{"{", e__, "}"}] := {"\{", % /@ {e}, "\}"};
+  RowBox[e_] := Map[%, e];
+
   TagBox[e_, _] := % @ e;
   RowBox[{"(", "\[NoBreak]", GridBox[grid_, ___], "\[NoBreak]", ")"}] := {"\\begin{pmatrix}", StringRiffle[Map[%, grid, {2}], "\\\\", "&"], "\\end{pmatrix}"};
   UnderoverscriptBox[e_, b_, c_] := % @ SuperscriptBox[SubscriptBox[e, b], c];
-  TemplateBox[{a_, b_, tag_}, "DirectedEdge"] :=
-    {% @ a, "\\overset{", % @ tag, "}{\[DirectedEdge]}", % @ b};
   FractionBox[a_, b_] := {"\\frac{", a, "}{", b, "}"};
   RowBox[list_] := Map[%, list];
-  other_ := (Print["UNRECOGNIZED: ", other]; Abort[])
+  
+  other_ := "UNRECOGNIZED " <> ToString[other, InputForm];
 ];
 
-(* TODO: helper for making latex calls *)
+templateBoxToKatex = Case[
+  "Naturals" -> {}                  := "\\mathbb{N}";
+  "Integers" -> {}                  := "\\mathbb{Z}";
+  "Rationals" -> {}                 := "\\mathbb{Q}";
+  "Reals" -> {}                     := "\\mathbb{R}";
+  "Complexes" -> {}                 := "\\mathbb{C}";
+  "DirectedEdge" -> {a_, b_, t_}    := "tde"[$ @ a, $ @ b, $ @ t];
+  "UndirectedEdge" -> {a_, b_, t_}  := "ude"[$ @ a, $ @ b, $ @ t];
+  "Subsuperscript" -> {a_, b_, c_}  := $ @ SuperscriptBox[SubscriptBox[a, b], c];
+  tag_ -> args_                     := dispatchTemplateBox[tag, args]
+,
+  {$ -> boxToKatex}
+];
+
+dispatchTemplateBox[tag_, args_] := Scope[
+  fn = Lookup[$TemplateKatexFunction, tag, None];
+  If[fn === None, Print[tag]; Return["UNHANDLED " <> tag]];
+  res = fn @@ args;
+  boxToKatex @ res (* recurese *)
+];
 
 applyInlineStyle[e_, {_, _, c:$ColorPattern}] :=
  {"\\textcolor{#", ColorHexString @ c, "}{", e, "}"};
@@ -110,7 +146,7 @@ applyInlineStyle[e_, _] := e;
 
 toBracket = Case[
   e_String /; StringFreeQ[e, " "] := e;
-  other_ := {"{", iBoxesToKatexString @ other, "}"};
+  other_ := {"{", boxToKatex @ other, "}"};
 ];
 
 cleanupInlineBoxes = RightComposition[
