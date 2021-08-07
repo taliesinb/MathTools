@@ -1378,6 +1378,31 @@ mUnpackOptionsAs[head_, opts_, syms_] :=
 
 (**************************************************************************************************)
 
+PackageScope["UnpackExtendedOptions"]
+
+DefineMacro[UnpackExtendedOptions,
+UnpackExtendedOptions[graph_, syms___Symbol] := mUnpackExtendedOptions[graph, {syms}] 
+];
+
+SetHoldAllComplete[mUnpackExtendedOptions];
+mUnpackExtendedOptions[graph_, syms_] :=
+  ToQuoted[Set, Quoted[syms],
+    ToQuoted[LookupExtendedGraphAnnotations,
+      Quoted[graph],
+      findMatchingSymbols[syms]
+    ]
+  ];
+
+$lowerCaseSymbolRegExp = RegularExpression["\\b([a-z])(\\w+)\\b"];
+findMatchingSymbols[syms_List] := findMatchingSymbols[syms] = Block[
+  {$Context = "QuiverGeometry`Private`Dummy`", $ContextPath = {"System`", "QuiverGeometry`", $Context}, str},
+  str = ToString[Unevaluated @ syms, InputForm];
+  str = StringReplace[str, $lowerCaseSymbolRegExp :> StringJoin[ToUpperCase["$1"], "$2"]];
+  ToExpression[str, InputForm, Quoted]
+];
+
+(**************************************************************************************************)
+
 PackageScope["GraphCachedScope"]
 PackageExport["$GraphCacheStore"]
 

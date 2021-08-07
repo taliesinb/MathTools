@@ -17,9 +17,10 @@ PackageExport["GraphVertexData"]
 PackageScope["setupGraphVertexData"]
 
 defineLiteralMacro[setupGraphVertexData,
-  setupGraphVertexData[graph_] := (
+  setupGraphVertexData[graph_, extra___Rule] := (
     $graphVertexIndex = AssociationRange @ VertexList @ graph;
     $graphVertexData = LookupVertexAnnotations[graph, All];
+    AssociateTo[$graphVertexData, {extra}];
   )
 ];
 
@@ -28,6 +29,8 @@ getPart[_, _] := None;
 
 getVertexElem[IndexedVertex[i_], data_] := getPart[data, i];
 getVertexElem[vertex_, data_] := getPart[data, Lookup[$graphVertexIndex, vertex, 0]];
+
+GraphVertexData[] := $graphVertexData;
 
 GraphVertexData[vertex_, key_] :=
   getVertexElem[vertex, Lookup[$graphVertexData, key, None]];
@@ -38,14 +41,17 @@ PackageExport["GraphEdgeData"]
 PackageScope["setupGraphEdgeData"]
 
 defineLiteralMacro[setupGraphEdgeData,
-  setupGraphEdgeData[graph_] := Quoted[
+  setupGraphEdgeData[graph_, extra___Rule] := (
     $graphEdgeIndex = AssociationRange @ EdgeList @ graph;
     $graphEdgeData = LookupEdgeAnnotations[graph, All];
-  ]
+    AssociateTo[$graphEdgeData, {extra}];
+  )
 ];
 
 getEdgeElem[IndexedEdge[i_], data_] := getPart[data, i];
 getEdgeElem[edge_, data_] := getPart[data, Lookup[$graphEdgeIndex, edge, 0]];
+
+GraphEdgeData[] := $graphEdgeData;
 
 GraphEdgeData[edge_, key_] :=
   getEdgeElem[edge, Lookup[$graphEdgeData, key, None]];
@@ -85,6 +91,7 @@ $extendedGraphUsage = StringTrim @ "
 | %RegionColorRules | None | color vertices and edges by region |
 | %VertexAnnotations | None | association of additional per-vertex data |
 | %VertexCoordinateRules | None | list of rules for per-vertex coordinates |
+| %VertexCoordinateFunction | None | function for computing per-vertex coordinates |
 | %EdgeAnnotations | None | association of additional per-edge data |
 | %GraphMetric | Automatic | metric to calculate graph distances |
 | %CardinalColors | Automatic | association of cardinal colors |
@@ -347,10 +354,13 @@ $extendedGraphOptionsRules = {
   AspectRatioClipping -> True,
   EdgeThickness -> Automatic,
   VertexCoordinateRules -> None,
+  VertexCoordinateFunction -> None,
   VertexColorRules -> None,
   EdgeColorRules -> None,
   RegionColorRules -> None,
-  CardinalColorRules -> None
+  CardinalColorRules -> None,
+  PrologFunction -> None,
+  EpilogFunction -> None
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -376,7 +386,9 @@ Protect[Graph];
 $extendedGraphOptionSymbols2 = Append[$extendedGraphOptionSymbols, AnnotationRules];
 
 splitUserGraphOptions[options___Rule] := Scope[
-  options = Replace[{options}, Rule[GraphLayout, l_] :> Rule[ExtendedGraphLayout, l], {1}];
+  options = {options};
+  If[!MemberQ[options, ExtendedGraphLayout -> _] && MemberQ[options, GraphLayout -> _], 
+    options = Replace[options, Rule[GraphLayout, l_] :> Rule[ExtendedGraphLayout, l], {1}]];
   extOptions = DeleteDuplicatesBy[TakeOptions[options, $extendedGraphOptionSymbols], First];
   options = Map[optionFixup] @ DeleteOptions[options, $extendedGraphOptionSymbols2];
   {options, checkGraphAnnotations @ extOptions}
@@ -1323,7 +1335,12 @@ vcoords$ is a list of coordinate tuples in the same order as VertexList[graph$],
 ecoords$ is a list of coordinate matrices in the same order as EdgeList[graph$].
 "
 
-ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
+ExtractGraphPrimitiveCoordinates::badvcoordrules = "VertexCoordinateRules is not a list of rules.";
+ExtractGraphPrimitiveCoordinates::badvcoords = "Initial setting of VertexCoordinates is not a matrix of coordinates.";
+ExtractGraphPrimitiveCoordinates::glayoutfail = "Failed to layout graph, using circle.";
+ExtractGraphPrimitiveCoordinates::badctrans = "CoordinateTransformFunction produced invalid values, using circle.";
+
+ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
 
   If[!GraphQ[graph], ReturnFailed[]];
   igraph = IndexEdgeTaggedGraph @ ToIndexGraph @ graph;
@@ -1334,9 +1351,11 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
 
   $egpGraph = graph;
 
-  {layoutDimension, extendedGraphLayout, viewOptions, coordinateTransformFunction, vertexCoordinateRules} =
-    LookupExtendedGraphAnnotations[graph, {LayoutDimension, ExtendedGraphLayout, ViewOptions, CoordinateTransformFunction, VertexCoordinateRules}];
-
+  UnpackExtendedOptions[graph,
+    layoutDimension, extendedGraphLayout, viewOptions, coordinateTransformFunction,
+    vertexCoordinateRules, vertexCoordinateFunction
+  ];
+    
   actualDimension = Which[
     ContainsQ[graphLayout, "Dimension" -> 3] || CoordinateMatrixQ[vertexCoordinates, 3], 3,
     ContainsQ[graphLayout, "Dimension" -> 2] || CoordinateMatrixQ[vertexCoordinates, 2], 2,
@@ -1388,6 +1407,9 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
       graphLayout //= ReplaceAll[
         Rule["RootVertex", v_] :> Rule["RootVertex", IndexOf[vertexList, v]]
       ],
+    "Random",
+      graphLayout = autoLayout;
+      SetAutomatic[initialVertexCoordinates, RandomReal[{-1, 1}, {vertexCount, actualDimension}]],
     "Tree",
       graphLayout = {"LayeredDigraphEmbedding"};
       root = LookupExtendedGraphAnnotations[graph, GraphOrigin];
@@ -1398,17 +1420,28 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
       Null
   ];
 
-  Switch[vertexCoordinateRules,
-    None, 
-      Null,
-    $RuleListPattern,
+  Which[
+    vertexCoordinateFunction =!= None,
+      initialVertexCoordinates = Map[vertexCoordinateFunction, vertexList];
+    ,
+    vertexCoordinateRules === None,
+      Null
+    ,
+    RuleListQ @ vertexCoordinateRules,
       AppendTo[vertexCoordinateRules, _ -> None];
       initialVertexCoordinates = Replace[vertexList, vertexCoordinateRules, {1}];
-      initialVertexCoordinates = nudgeOverlappingVertices[initialVertexCoordinates, LookupOption[graph, PlotRange]];
     ,
-    _,
-      Print["Bad VertexCoordinateRules"];
-      Print[vertexCoordinateRules];
+    True,
+      Message[ExtractGraphPrimitiveCoordinates::badvcoordrules];
+  ];
+
+  If[ListQ @ initialVertexCoordinates,
+    If[!CoordinateMatrixQ[initialVertexCoordinates],
+      Message[ExtractGraphPrimitiveCoordinates::badvcoords];
+      initialVertexCoordinates = Automatic;
+    ,
+      initialVertexCoordinates = nudgeOverlappingVertices[initialVertexCoordinates, LookupOption[graph, PlotRange]];
+    ];
   ];
 
   newGraph = If[actualDimension == 3, Graph3D, Graph][
@@ -1422,11 +1455,8 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
   gdResult = Check[GraphComputation`GraphDrawing @ newGraph, $Failed];
 
   If[FailureQ[gdResult] || !MatrixQ[vertexCoordinates] || !VectorQ[edgeCoordinateLists, MatrixQ],
-    Print["Graph layout failed"];
-    Print[MatrixForm[initialVertexCoordinates]];
-    vertexCoordinates = CirclePoints @ vertexCount;
-    If[actualDimension === 3, vertexCoordinates //= AppendColumn @ Zeros @ vertexCount];
-    edgeCoordinateLists = Part[vertexCoordinates, #]& /@ EdgePairs @ igraph;
+    Message[ExtractGraphPrimitiveCoordinates::glayoutfail];
+    useFallbackLayout[];
     Goto[end];
   ];
 
@@ -1444,6 +1474,11 @@ ExtractGraphPrimitiveCoordinates[graph_] := GraphCachedScope[graph,
   ];
 
   applyCoordinateTransform[coordinateTransformFunction];
+  If[!CoordinateMatrixQ[vertexCoordinates],
+    Message[ExtractGraphPrimitiveCoordinates::badctrans];
+    useFallbackLayout[];
+    Goto[end];
+  ];
 
   If[CoordinateMatrixQ[vertexCoordinates, 3] && layoutDimension == 2,
     SetAutomatic[viewOptions, $automaticViewOptions];
@@ -1472,6 +1507,12 @@ captureVertexCoordinates[coords_, vertex_, _] :=
 captureEdgeCoordinates[coords_, edge_] :=
   Part[edgeCoordinateLists, Last @ edge] = coords;
 
+useFallbackLayout[] := (
+  vertexCoordinates = CirclePoints @ vertexCount;
+  If[actualDimension === 3, vertexCoordinates //= AppendColumn @ Zeros @ vertexCount];
+  edgeCoordinateLists = Part[vertexCoordinates, #]& /@ EdgePairs @ igraph;
+)
+
 (**************************************************************************************************)
 
 nudgeOverlappingVertices[coords_, plotRange_] := Scope[
@@ -1484,8 +1525,8 @@ nudgeOverlappingVertices[coords_, plotRange_] := Scope[
   nudgeScale = If[nudgeScale === 0, 1, Max[nudgeScale, 0.1]];
   dupPos = PositionIndex[Round[coords, nudgeScale / 40]];
   If[Length[dupPos] === 1 && num > 1,
-    Return @ PlusVector[CirclePoints[num] * nudgeScale/2, Mean @ coords]];
-  Scan[nudge, dupPos];
+    Return @ PlusVector[CirclePoints[num] * nudgeScale/5, Mean @ coords]];
+  Scan[znudge, dupPos];
   nudgedCoords
 ];
 
@@ -1493,7 +1534,7 @@ nudge[{_}] := Null;
 nudge[indices_] := 
   Part[nudgedCoords, indices] = Plus[
     Part[nudgedCoords, indices],
-    nudgeScale/6. * CirclePoints[Length @ indices]
+    nudgeScale/5 * CirclePoints[Length @ indices]
   ];
 
 (**************************************************************************************************)
@@ -1814,26 +1855,5 @@ ExtractExtendedGraphOptions[graph_Graph] := Scope[
   opts = Options @ graph;
   annoRules = Lookup[opts, AnnotationRules, {}];
   graphProps = Lookup[annoRules, "GraphProperties", {}];
-  {DeleteOptions[opts, AnnotationRules], Association @ graphProps}
+  Join[DeleteOptions[opts, AnnotationRules], graphProps]
 ]
-
-(**************************************************************************************************)
-
-PackageExport["NormalizeExtendedGraphOptions"]
-
-(* this idea seems to be unreliable for some reason. *have* to use Annotate for this *)
-NormalizeExtendedGraphOptions[opts_List, {} | <||>] := opts;
-
-NormalizeExtendedGraphOptions[opts_List, assoc_Association] := 
-  NormalizeExtendedGraphOptions[opts, Normal @ assoc];
-
-NormalizeExtendedGraphOptions[opts_List, extOpts_List] :=
-  ReplaceOptions[opts, AnnotationRules -> {"GraphProperties" -> extOpts}];
-
-NormalizeExtendedGraphOptions[opts_, extOpts_, userOpts__Rule] := Scope[
-  {opts2, extOpts2} = splitUserGraphOptions[userOpts];
-  NormalizeExtendedGraphOptions[
-    ReplaceOptions[opts, opts2],
-    ReplaceOptions[extOpts, extOpts2]
-  ]
-];

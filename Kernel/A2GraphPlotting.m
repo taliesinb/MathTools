@@ -19,6 +19,7 @@ PackageExport["AdditionalImagePadding"]
 PackageExport["CoordinateTransformFunction"]
 PackageExport["LabelCardinals"]
 PackageExport["AspectRatioClipping"]
+PackageExport["PrologFunction"]
 
 SetUsage @ "ArrowheadShape is an extended option to Graph.";
 SetUsage @ "ArrowheadSize is an extended option to Graph.";
@@ -35,6 +36,7 @@ SetUsage @ "VisibleCardinals is an extended option to Graph."
 SetUsage @ "ViewRegion is an extended option to Graph."
 SetUsage @ "CoordinateTransformFunction is an extended option to Graph."
 SetUsage @ "VertexCoordinateRules is an extended option to Graph."
+SetUsage @ "PrologFunction is an extended option to Graph."
 
 (**************************************************************************************************)
 
@@ -429,6 +431,13 @@ lineCenter = Case[
 
 (**************************************************************************************************)
 
+PackageExport["GraphAnnotationData"]
+
+GraphAnnotationData[annotation_Symbol] :=
+  LookupExtendedGraphAnnotations[$Graph, annotation];
+
+(**************************************************************************************************)
+
 PackageExport["ExtendedGraphPlottingFunction"]
 
 ExtendedGraphPlot::badcolors = "CardinalColors should be an association from cardinals to colors.";
@@ -446,21 +455,25 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
   (* process options *)
   FunctionSection[
-    {graphLayout,
-     imageSize, vertexSize, vertexStyle, edgeStyle, vertexLabelStyle, edgeLabelStyle,
-     vertexShapeFunction, edgeShapeFunction, frameStyle, baselinePosition} =
-      LookupOption[graph, {GraphLayout,
-        ImageSize, VertexSize, VertexStyle, EdgeStyle, VertexLabelStyle, EdgeLabelStyle,
-        VertexShapeFunction, EdgeShapeFunction, FrameStyle, BaselinePosition}, Automatic];
+    {imageSize, vertexSize, vertexStyle, edgeStyle, vertexLabelStyle, edgeLabelStyle, vertexShapeFunction, edgeShapeFunction, frameStyle, baselinePosition} = LookupOption[graph,
+    {ImageSize, VertexSize, VertexStyle, EdgeStyle, VertexLabelStyle, EdgeLabelStyle, VertexShapeFunction, EdgeShapeFunction, FrameStyle, BaselinePosition}, Automatic];
 
-    {vertexLabels, edgeLabels, plotLabel, prolog, epilog, imagePadding, plotRange, plotRangePadding, frame, frameLabel} =
-      LookupOption[graph, {VertexLabels, EdgeLabels, PlotLabel, Prolog, Epilog, ImagePadding, PlotRange, PlotRangePadding, Frame, FrameLabel}, None];
+    {vertexLabels, edgeLabels, plotLabel, prolog, epilog, imagePadding, plotRange, plotRangePadding, frame, frameLabel} = LookupOption[graph,
+    {VertexLabels, EdgeLabels, PlotLabel, Prolog, Epilog, ImagePadding, PlotRange, PlotRangePadding, Frame, FrameLabel}, None];
 
-    {arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, visibleCardinals, edgeSetback, edgeThickness, labelCardinals, viewOptions, additionalImagePadding, aspectRatioClipping} =
-      LookupExtendedGraphAnnotations[graph, {ArrowheadShape, ArrowheadStyle, ArrowheadSize, ArrowheadPosition, VisibleCardinals, EdgeSetback, EdgeThickness, LabelCardinals, ViewOptions, AdditionalImagePadding, AspectRatioClipping}];
+    UnpackExtendedOptions[graph,
+      arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition,
+      visibleCardinals, labelCardinals, 
+      edgeSetback, edgeThickness, 
 
-    {graphLegend, vertexColorFunction, vertexAnnotations, edgeAnnotations, edgeColorFunction, vertexColorRules, edgeColorRules, regionColorRules} =
-      LookupExtendedGraphAnnotations[graph, {GraphLegend, VertexColorFunction, VertexAnnotations, EdgeAnnotations, EdgeColorFunction, VertexColorRules, EdgeColorRules, RegionColorRules}];
+      vertexColorFunction, vertexColorRules, vertexAnnotations, 
+        edgeColorFunction,   edgeColorRules,   edgeAnnotations,     
+      regionColorRules,
+
+      viewOptions, graphLegend, 
+      additionalImagePadding, aspectRatioClipping,
+      prologFunction, epilogFunction
+    ];
   ];
 
   (* initial processing of global options *)
@@ -537,8 +550,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     processEdgeColorRules[edgeColorRules];
 
     (* this allows GraphVertexData and GraphEdgeData to work *)
-    setupGraphVertexData[];
-    setupGraphEdgeData[];
+    setupGraphVertexData[graph, "Coordinates" -> $VertexCoordinates];
+    setupGraphEdgeData[graph, "Coordinates" -> $EdgeCoordinateLists];
   ];
 
   (* create graphics for vertices *)
@@ -746,7 +759,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         externalLabel = processFrameLabel3D @ frameLabel;
       ,
         frameLabelElements = processFrameLabel @ frameLabel;
-        prolog = ToList[prolog, frameLabelElements];
+        AppendTo[prolog, frameLabelElements];
       ];
     ];
 
@@ -759,6 +772,10 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ];
 
     baselinePosition //= processBaselinePosition;
+
+    (* compute prolog and epilog *)
+    If[prologFunction =!= None, AppendTo[prolog, prologFunction[]]];
+    If[epilogFunction =!= None, AppendTo[epilog, epilogFunction[]]];
 
     (* assemble graphics *)
     graphics = If[$GraphIs3D, makeGraphics3D, makeGraphics][
@@ -1801,7 +1818,6 @@ processVertexShapeFunction[spec_] := Scope[
     spec = Lookup[vertexAnnotations, spec];
     spec = AssociationThread[$VertexList, spec];
   ];
-  vertexPadding = 1 + vertexSizeImage * 2;
   Switch[spec,
     "Disk" /; $GraphIs3D,
       defaultVertexColor = $Gray;
@@ -1810,7 +1826,7 @@ processVertexShapeFunction[spec_] := Scope[
     ,
     "Ball" | "Sphere" /; $GraphIs3D,
       defaultVertexColor = $LightGray;
-      vertexPadding = 0;
+      vertexSizeImage = 0;
       vertexDrawFunc = drawSphere[$vertexSize / (2 * Sqrt[3.])];
     ,
     "Disk" | "Ball" | "Sphere",
@@ -1831,7 +1847,7 @@ processVertexShapeFunction[spec_] := Scope[
     _Association,
       vertexDrawFunc = drawCustomShape[spec, $vertexSize];
       If[$inheritedVertexSize,
-        vertexSizeImage = Max[Map[cachedRasterizeSize, spec]] / 2];
+        vertexSizeImage ^= Max[Map[cachedRasterizeSize, spec]] / 2];
     ,
     _String,
       failPlot["badvshapefuncstr", spec, commaString @ $validVertexShapes];
@@ -1841,6 +1857,7 @@ processVertexShapeFunction[spec_] := Scope[
         failPlot["badvshapefunc"]];
       vertexDrawFunc = drawCustomShapeFunction[spec, $vertexSize];
   ];
+  vertexPadding = Ceiling[1 + vertexSizeImage / 2];
   {defaultVertexColor, vertexBaseStyle, setbackDistance, vertexDrawFunc, vertexPadding}
 ];
 

@@ -2,6 +2,9 @@ Begin["QuiverGeometryPackageLoader`Private`"];
 
 Get["GeneralUtilities`"];
 
+Unprotect[EpilogFunction];
+ClearAll[EpilogFunction];
+
 (*************************************************************************************************)
 
 (* we will immediately resolve these system symbols, which will take care of the vast majority of Package`PackageSymbol cases *)
@@ -279,7 +282,7 @@ evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
   $currentPath = path; $currentFileLineTimings = <||>; $failCount = 0;
   If[$failEval, Return[$Failed, Catch]];
   QuiverGeometryPackageLoader`$FileTimings[path] = First @ AbsoluteTiming[
-    Catch[Scan[evaluateExpression, packageData], evaluateExpression];
+    Block[{$Context = context}, Catch[Scan[evaluateExpression, packageData], evaluateExpression]];
   ];
   QuiverGeometryPackageLoader`$FileLineTimings[path] = $currentFileLineTimings;
 ,

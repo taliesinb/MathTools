@@ -238,7 +238,7 @@ PackageExport["GraphVertexQuotient"]
 GraphVertexQuotient[graph_, equivFn_, userOpts___Rule] := Scope[
   setupGraphVertexData[graph];
   {vertexList, edgeList} = VertexEdgeList @ graph;
-  {opts, extOpts} = ExtractExtendedGraphOptions[graph];
+  opts = ExtractExtendedGraphOptions[graph];
   quotientVertexIndices = EquivalenceClassIndices[vertexList, equivFn];
   quotientVertexLabels = EquivalenceClassLabels[quotientVertexIndices];
   quotientVertexCounts = Length /@ quotientVertexIndices;
@@ -248,64 +248,58 @@ GraphVertexQuotient[graph_, equivFn_, userOpts___Rule] := Scope[
   {quotientEdges, quotientEdgesIndices} = KeysValues @ quotientEdgesIndex;
   quotientEdgesCounts = Length /@ quotientEdgesIndices;
   quotientVertices = Range @ Length @ quotientVertexIndices;
-  extOpts[VertexAnnotations] = <|
+  vertexAnnos = <|
     "EquivalenceClassIndices" -> quotientVertexIndices,
     "EquivalenceClassSizes" -> quotientVertexCounts
   |>;
-  extOpts[EdgeAnnotations] = <|
+  edgeAnnos = <|
     "EquivalenceClassIndices" -> quotientEdgesIndices,
     "EquivalenceClassSizes" -> quotientEdgesCounts
   |>;
-  extOpts[GraphPlottingFunction] = ExtendedGraphPlottingFunction;
-  Graph[
+  opts //= ReplaceOptions[{VertexAnnotations -> vertexAnnos, EdgeAnnotations -> edgeAnnos}];
+  ExtendedGraph[
     quotientVertices,
     DirectedEdge @@@ quotientEdges, 
-    NormalizeExtendedGraphOptions[opts, extOpts, userOpts]
+    Sequence @@ userOpts,
+    Sequence @@ opts
   ]
 ];
 
 (**************************************************************************************************)
 
-PackageExport["GraphGluingGraph"]
+PackageExport["GluingOrderGraph"]
 
-GraphGluingGraph[graph_, userOpts___Rule] := Scope[
+Options[GluingOrderGraph] = JoinOptions[
+  CombineMultiedges -> False,
+  ExtendedGraph  
+]
+
+GluingOrderGraph[graph_, userOpts:OptionsPattern[]] := Scope[
+  
   If[!EdgeTaggedGraphQ[graph], graph //= IndexEdgeTaggedGraph];
-  {opts, extOpts} = ExtractExtendedGraphOptions @ graph;
-  
-  isDir = DirectedGraphQ @ graph;
-  cardinalColorRules = extOpts[CardinalColorRules];
-  cardinalColors = LookupCardinalColors @ graph;
 
-  vertexList = VertexList @ graph;
-  vertexColorRules = extOpts[VertexColorRules];
-  If[!MatchQ[vertexColorRules, {(_Rule | _RuleDelayed)..}],
-    vertexColorRules = {_ -> Gray}];
-  vertexColors = AssociationThread[vertexList, Replace[vertexList, vertexColorRules, {1}]];
+  UnpackOptions[combineMultiedges];
   
-  edgeList = List @@@ CanonicalizeEdges[EdgeList @ graph];
+  initialGraph = GluedGraph[graph, ImageSize -> {50, 50}];
+  innerOpts = Sequence @@ ExtractExtendedGraphOptions @ initialGraph;
+
+  edgeList = List @@@ CanonicalizeEdges @ EdgeList @ graph;
   {vlist, ielist} = MultiwaySystem[graphGluingSuccessors, {edgeList}, {"VertexList", "IndexEdgeList"}];
   
   irange = Range @ Length @ vlist;
-  edgeType = If[isDir, DirectedEdge, UndirectedEdge];
-  
-  KeyDropFrom[extOpts, {VertexColorRules, EdgeColorRules, EdgeColorFunction, VertexColorFunction, GraphPlottingFunction}];
-  
-  vertexCoordinateRules = Lookup[extOpts, VertexCoordinateRules, None];
-  If[!RuleListQ[vertexCoordinateRules],
-    vertexCoordinateRules = RuleThread[vertexList, First @ ExtractGraphPrimitiveCoordinates @ graph]];
-  
-  extOpts[VertexCoordinateRules] = glueCoordinateRules @ vertexCoordinateRules;
-  extOpts[VertexColorRules] = glueColorRules[vertexColors, GluedVertex];
-  extOpts[CardinalColorRules] = glueColorRules[cardinalColors, GluedEdge];
-  
-  normedOpts = Sequence @@ Join[opts, Normal @ extOpts];
-  gluedGraphs = Map[
-    ExtendedGraph[AllUniqueVertices @ #, CanonicalizeEdges[edgeType @@@ #], normedOpts]&, 
-    vlist
+      
+  edgeType = If[DirectedGraphQ @ graph, DirectedEdge, UndirectedEdge];
+  postFn = If[combineMultiedges, CombineMultiedges, Identity];
+  graphFn = edges |-> ExtendedGraph[
+    AllUniqueVertices @ edges,
+    CanonicalizeEdges[edgeType @@@ edges], 
+    innerOpts
   ];
+  gluedGraphs = Map[graphFn /* postFn, vlist];
   
   ExtendedGraph[
-    irange, ielist, userOpts, GraphLayout -> "Tree",
+    Range @ Length @ vlist, ielist, FilterOptions @ userOpts, 
+    GraphLayout -> "Tree",
     VertexAnnotations -> <|"GluedGraph" -> gluedGraphs|>,
     ArrowheadShape -> None
   ]
@@ -348,8 +342,60 @@ SetAttributes[{GluedEdge, GluedVertex}, {Flat, Orderless}];
 toEdgeGluingRule[{a1_, b1_, c_}, {a2_, b2_, d_}] :=
   e:({a1, b1, c} | {a2, b2, d}) :> ReplacePart[e, 3 -> GluedEdge[c, d]];
 
+
+(**************************************************************************************************)
+
+PackageExport["GluedGraph"]
 PackageExport["GluedVertex"]
 PackageExport["GluedEdge"]
+
+GluedGraph[vertices_List, edges_List, opts___Rule] :=
+  GluedGraph @ ExtendedGraph[vertices, edges, opts];
+
+GluedGraph[edges_List, opts___Rule] :=
+  GluedGraph @ ExtendedGraph[AllUniqueVertices @ edges, edges, opts];
+
+GluedGraph[graph_Graph, opts__Rule] :=
+  GluedGraph @ ExtendedGraph[graph, FilterOptions @ opts];
+
+GluedGraph[graph_Graph] := Scope[
+
+  cardinalColors = LookupCardinalColors @ graph;
+
+  UnpackExtendedOptions[graph, vertexColorRules, vertexCoordinateRules, arrowheadShape];
+
+  vertexList = DeleteDuplicates @ ReplaceAll[VertexList @ graph, GluedVertex[a___] -> a];
+  If[!MatchQ[vertexColorRules, {(_Rule | _RuleDelayed)..}], vertexColorRules = {}];
+  AppendTo[vertexColorRules, _ -> Gray];
+  vertexColors = AssociationThread[vertexList, Replace[vertexList, vertexColorRules, {1}]];
+  vertexColorRules = glueColorRules[vertexColors, GluedVertex];
+
+  SetNone[vertexCoordinateRules, RuleThread[vertexList, N[CirclePoints @ Length @ vertexList] / 3]];
+  rawCoords = Select[CoordinateVectorQ] @ Values @ vertexCoordinateRules;
+  bounds = ToSquarePlotRange @ CoordinateBounds[rawCoords, Scaled[0.2]];
+  vertexCoordinateRules //= glueCoordinateRules;
+
+  cardinalColorRules = If[cardinalColors === None, None,
+    glueColorRules[cardinalColors, GluedEdge]];
+
+  scale = EuclideanDistance @@ Transpose[bounds];
+
+  SetAutomatic[arrowheadShape, {"FlatArrow", BorderStyle -> Function[{Darker[#, .3], AbsoluteThickness[0]}]}];
+
+  ExtendedGraph[graph,
+    VertexColorRules -> vertexColorRules,
+    VertexCoordinateRules -> vertexCoordinateRules,
+    CardinalColorRules -> cardinalColorRules,
+    ArrowheadPosition -> 0.52, PlotRange -> bounds,
+    ImagePadding -> 0, AspectRatioClipping -> False,
+    ExtendedGraphLayout -> {"SelfLoopRadius" -> scale / 20, "MultiEdgeDistance" -> scale / 5},
+    Frame -> True, VertexSize -> 10,
+    EdgeThickness -> 2, EdgeStyle -> GrayLevel[0.8, 1],
+    ArrowheadShape -> arrowheadShape,
+    VertexShapeFunction -> GluedVertexShapeFunction
+  ]
+];
+
 
 (**************************************************************************************************)
 
@@ -363,33 +409,28 @@ glueColorRules[assoc_Association, head_] := With[
 glueCoordinateRules[rules_] :=
   Append[rules, \[FormalH]_GluedVertex :> Mean[Lookup[rules, List @@ \[FormalH]]]];
   
-(* (**************************************************************************************************)
+(**************************************************************************************************)
 
 PackageExport["GluedVertexShapeFunction"]
 
-GluedVertexShapeFunction[vertexColors_][assoc_] := Construct[
-  Style[
-    Disk[#Coordinates, #Size / 2],
-    With[{color = gluedColor[vertexColors, #Vertex]},
-      EdgeForm[{AbsoluteThickness[1], Darker[color]}],
-      color
+GluedVertexShapeFunction[assoc_] := Construct[$gluedVertexShapeFunction, assoc];
+
+$gluedVertexShapeFunction = Function[
+  Block[{gluedVertices, gluedVertexCoords, coords = #Coordinates}, {
+  If[MatchQ[#Vertex, _GluedVertex], 
+    gluedVertices = List @@ #Vertex;
+    gluedVertexCoords = Replace[gluedVertices, GraphAnnotationData[VertexCoordinateRules], {1}];
+    Style[
+      Map[{Point[#], Line[{#, coords}]}&, gluedVertexCoords], 
+      AbsoluteThickness[1.5], AbsoluteDashing[{2,2}], 
+      AbsolutePointSize[4], GrayLevel[0.5]
     ]
-  ]&
-,
-  assoc
-]
-
-PackageExport["GluedEdgeShapeFunction"]
-
-GluedEdgeShapeFunction[cardinalColors_][assoc_] := Construct[
+  , Nothing],
   Style[
-    Arrow[#Coordinates, #Size / 2],
-    #Arrowheads /. rgb_RGBColor -> gluedColor[cardinalColors, #Cardinal]
-  ]&
-,
-  assoc
-]
-
-gluedColor[assoc_, elem_] := Lookup[assoc, elem, Print[assoc, elem]];
-gluedColor[assoc_, g_GluedVertex | g_GluedEdge] := HumanBlend @ Lookup[assoc, List @@ g]
- *)
+    Disk[coords, #Size / 2],
+    #Color,
+    EdgeForm[{Darker[#Color, .2], AbsoluteThickness[0]}],
+    AbsoluteThickness[0]
+  ]
+  }]
+];
