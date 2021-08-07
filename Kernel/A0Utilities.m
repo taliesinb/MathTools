@@ -201,7 +201,7 @@ PackageScope["SetUsage"]
 
 PackageExport["$DisableSetUsage"]
 
-$DisableSetUsage = False;
+$DisableSetUsage = True;
 
 preprocessUsageString[usageString_] :=
   FixedPoint[substituteUsageSlots, usageString]
@@ -1365,14 +1365,45 @@ toCardinal = Case[
 PackageScope["UnpackOptionsAs"]
 
 DefineMacro[UnpackOptionsAs,
-UnpackOptionsAs[head_Symbol, opts_, syms___Symbol] := mUnpackOptionsAs[head, opts, {syms}]
+UnpackOptionsAs[head_Symbol, opts_, syms__Symbol] :=
+  mUnpackOptionsAs[head, opts, {syms}]
 ];
 
 SetHoldAllComplete[mUnpackOptionsAs];
 mUnpackOptionsAs[head_, opts_, syms_] :=
   ToQuoted[Set, Quoted[syms],
-    ToQuoted[OptionValue, head, List @ opts,
-      GeneralUtilities`Control`PackagePrivate`capFirst /@ Map[HoldSymbolName, Unevaluated[syms]]
+    ToQuoted[OptionValue, head, List @ opts, symbolsToCapitalizedStrings @ syms]
+  ];
+
+(**************************************************************************************************)
+
+SetHoldAllComplete[symbolsToCapitalizedStrings];
+
+symbolsToCapitalizedStrings[syms_] := Map[
+  Function[sym, capitalizeFirstLetter @ HoldSymbolName @ sym, HoldAllComplete],
+  Unevaluated @ syms
+];
+
+capitalizeFirstLetter[str_String] := 
+  If[StringStartsQ[str, "$"], capitalizeFirstLetter @ StringDrop[str, 1],
+    ToUpperCase[StringTake[str, 1]] <> StringDrop[str, 1]];
+
+(**************************************************************************************************)
+
+PackageScope["UnpackAnonymousOptions"]
+
+DefineMacro[UnpackAnonymousOptions,
+UnpackAnonymousOptions[object_, default_, syms__Symbol] :=
+  mUnpackAnonymousOptions[object, default, {syms}] 
+];
+
+SetHoldAllComplete[mUnpackAnonymousOptions];
+mUnpackAnonymousOptions[object_, default_, syms_] :=
+  ToQuoted[Set, Quoted[syms],
+    ToQuoted[LookupOption,
+      Quoted[object],
+      findMatchingSymbols[syms],
+      Quoted[default]
     ]
   ];
 
@@ -1381,7 +1412,8 @@ mUnpackOptionsAs[head_, opts_, syms_] :=
 PackageScope["UnpackExtendedOptions"]
 
 DefineMacro[UnpackExtendedOptions,
-UnpackExtendedOptions[graph_, syms___Symbol] := mUnpackExtendedOptions[graph, {syms}] 
+UnpackExtendedOptions[graph_, syms___Symbol] :=
+  mUnpackExtendedOptions[graph, {syms}] 
 ];
 
 SetHoldAllComplete[mUnpackExtendedOptions];
@@ -1393,6 +1425,7 @@ mUnpackExtendedOptions[graph_, syms_] :=
     ]
   ];
 
+SetHoldAllComplete[findMatchingSymbols];
 $lowerCaseSymbolRegExp = RegularExpression["\\b([a-z])(\\w+)\\b"];
 findMatchingSymbols[syms_List] := findMatchingSymbols[syms] = Block[
   {$Context = "QuiverGeometry`Private`Dummy`", $ContextPath = {"System`", "QuiverGeometry`", $Context}, str},

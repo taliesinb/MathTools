@@ -455,11 +455,17 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
   (* process options *)
   FunctionSection[
-    {imageSize, vertexSize, vertexStyle, edgeStyle, vertexLabelStyle, edgeLabelStyle, vertexShapeFunction, edgeShapeFunction, frameStyle, baselinePosition} = LookupOption[graph,
-    {ImageSize, VertexSize, VertexStyle, EdgeStyle, VertexLabelStyle, EdgeLabelStyle, VertexShapeFunction, EdgeShapeFunction, FrameStyle, BaselinePosition}, Automatic];
 
-    {vertexLabels, edgeLabels, plotLabel, prolog, epilog, imagePadding, plotRange, plotRangePadding, frame, frameLabel} = LookupOption[graph,
-    {VertexLabels, EdgeLabels, PlotLabel, Prolog, Epilog, ImagePadding, PlotRange, PlotRangePadding, Frame, FrameLabel}, None];
+    UnpackAnonymousOptions[graph, Automatic,
+      imageSize, vertexSize, vertexStyle, edgeStyle,
+      vertexLabelStyle, edgeLabelStyle,
+      vertexShapeFunction, edgeShapeFunction, frameStyle, baselinePosition
+    ];
+
+    UnpackAnonymousOptions[graph, None,
+      vertexLabels, edgeLabels, plotLabel, prolog, epilog,
+      imagePadding, plotRange, plotRangePadding, frame, frameLabel
+    ];
 
     UnpackExtendedOptions[graph,
       arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition,
