@@ -345,6 +345,8 @@ $extendedGraphOptionsRules = {
   GraphOrigin -> None,
   Cardinals -> Automatic,
   CardinalColors -> Automatic,
+  CardinalColorRules -> None,
+  CardinalColorFunction -> None,
   VisibleCardinals -> All,
   ViewOptions -> Automatic,
   LabelCardinals -> False,
@@ -358,7 +360,6 @@ $extendedGraphOptionsRules = {
   VertexColorRules -> None,
   EdgeColorRules -> None,
   RegionColorRules -> None,
-  CardinalColorRules -> None,
   PrologFunction -> None,
   EpilogFunction -> None
 };

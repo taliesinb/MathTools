@@ -253,12 +253,16 @@ LookupCardinalColors[quiver$, c$] returns the color for cardinal c$.
 "
 
 LookupCardinalColors[graph_Graph] := Scope[
-  {cardinalColorRules, cardinalColors} = AnnotationValue[graph, {CardinalColorRules, CardinalColors}];
+  UnpackExtendedOptions[graph, cardinalColorRules, cardinalColors, cardinalColorFunction];
   cardinals = CardinalList @ graph;
   Which[
-    ColorVectorQ[cardinalColors],
-      cardinalColors,
-    RuleListQ[cardinalColorRules],
+    ColorVectorQ[cardinalColors] && SameLengthQ[cardinalColors, cardinals],
+      AssociationThread[cardinals, cardinalColors],
+    AssociationQ[cardinalColorFunction],
+      AssociationThread[cardinals, Lookup[cardinalColorFunction, cardinals, $Gray]],
+    cardinalColorFunction =!= None,
+      AssociationMap[cardinalColorFunction, cardinals],
+    RuleListQ @ cardinalColorRules,
       AssociationThread[
         cardinals,
         Replace[cardinals, Append[cardinalColorRules, _ -> $Gray], {1}]

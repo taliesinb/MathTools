@@ -2,15 +2,17 @@ PackageExport["ArrowheadShape"]
 PackageExport["ArrowheadSize"]
 PackageExport["ArrowheadStyle"]
 PackageExport["ArrowheadPosition"]
-PackageExport["VertexColorFunction"]
 
+PackageExport["VertexColorFunction"]
 PackageExport["EdgeColorFunction"]
 PackageExport["VertexColorRules"]
-PackageExport["CardinalColorRules"]
-
 PackageExport["EdgeColorRules"]
 PackageExport["RegionColorRules"]
+
 PackageExport["CardinalColors"]
+PackageExport["CardinalColorRules"]
+PackageExport["CardinalColorFunction"]
+
 PackageExport["VisibleCardinals"]
 PackageExport["ViewRegion"]
 PackageExport["ViewOptions"]
@@ -29,6 +31,7 @@ SetUsage @ "VertexColorFunction is an extended option to Graph."
 SetUsage @ "EdgeColorFunction is an extended option to Graph."
 SetUsage @ "VertexColorRules is an extended option to Graph."
 SetUsage @ "CardinalColorRules is an extended option to Graph."
+SetUsage @ "CardinalColorFunction is an extended option to Graph."
 SetUsage @ "EdgeColorRules is an extended option to Graph."
 SetUsage @ "RegionColorRules is an extended option to Graph."
 SetUsage @ "CardinalColors is an extended option to Graph."
