@@ -110,7 +110,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   data["Cardinals"] = CardinalList @ quiver;
 
   data["VertexDegreeList"] = vertexDegrees = VertexDegree @ quiver;
-  origin = LookupExtendedGraphAnnotations[quiver, GraphOrigin];
+  origin = LookupExtendedOption[quiver, GraphOrigin];
   If[origin =!= None,
     origin = IndexOf[vertexList, origin];
     data["Origin"] = origin;

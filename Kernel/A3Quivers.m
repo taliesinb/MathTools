@@ -256,6 +256,8 @@ LookupCardinalColors[graph_Graph] := Scope[
   UnpackExtendedOptions[graph, cardinalColorRules, cardinalColors, cardinalColorFunction];
   cardinals = CardinalList @ graph;
   Which[
+    cardinals === None,
+      <||>,
     ColorVectorQ[cardinalColors] && SameLengthQ[cardinalColors, cardinals],
       AssociationThread[cardinals, cardinalColors],
     AssociationQ[cardinalColorFunction],
@@ -269,6 +271,16 @@ LookupCardinalColors[graph_Graph] := Scope[
       ],
     True,
       ChooseCardinalColors @ cardinals
+  ]
+];
+
+(* if you look up a programmatically generated color for a cardinal not present in the cardinal list,
+we can still make it work properly: used for glued graphs *)
+LookupCardinalColors[graph_Graph, card_] /; LookupExtendedOption[graph, CardinalColorFunction] =!= None := Scope[
+  UnpackExtendedOptions[graph, cardinalColorFunction];
+  If[ListQ[card], 
+    AssociationMap[cardinalColorFunction, card],
+    cardinalColorFunction @ card
   ]
 ];
 
@@ -288,10 +300,15 @@ ChooseCardinalColors[None, ___] := <||>;
 
 $rgbColors = <|"r" -> $Red, "g" -> $Green, "b" -> $Blue, "w" -> $Gray, "x" -> $DarkGray|>;
 $xyzColors = <|"x" -> $Red, "y" -> $Green, "z" -> $Blue|>;
+$xyColors = <|"x" -> $Red, "y" -> $Blue|>;
 
 ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardinals,
-  set_ /; SubsetQ[{"x", "y", "z"}, set],
-    KeyTake[$xyzColors, cardinals],
+  {"x"},
+    <|"x" -> $Red|>,
+  {"x", "y"},
+    $xyColors,
+  {"x", "y", "z"},
+    $xyzColors,
   set_ /; SubsetQ[{"r", "g", "b", "w", "x"}, set],
     KeyTake[$rgbColors, cardinals],
   _,

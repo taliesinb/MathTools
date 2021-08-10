@@ -261,7 +261,7 @@ processAxesSpec[spec:(All|_Integer|{__Integer})] := Scope[
 processAxesSpec[spec_] := Scope[
   colors = LookupCardinalColors[$Graph];
   words = Map[ToPathWord, ToList @ spec];
-  colors = AssociationMap[LookupCardinalColors[$Graph, #]&, words];
+  colors = AssociationMap[HumanBlend @ LookupCardinalColors[$Graph, StripNegated /@ #]&, words];
   KeyValueMap[axisHighlight, colors]
 ];
 

@@ -31,6 +31,26 @@ $LabelStyle = {
 
 (**************************************************************************************************)
 
+PackageExport["$MathFont"]
+
+$MathFont = "KaTeX_Main";
+
+(**************************************************************************************************)
+
+PackageExport["$CardinalFont"]
+
+$CardinalFont = "KaTeX_Typewriter"
+
+(**************************************************************************************************)
+
+PackageExport["$CardinalStyle"]
+
+$CardinalStyle = {
+  FontFamily -> $CardinalFont, FontSize -> 14
+};
+
+(**************************************************************************************************)
+
 PackageExport["$MathLabelStyle"]
 PackageScope["$alphabet"]
 
@@ -38,7 +58,7 @@ $alphabet = Join[Alphabet["English"], Alphabet["Greek"]];
 $alphabet = Join[$alphabet, ToUpperCase[$alphabet]];
 
 $MathLabelStyle = {
-  FontFamily -> "Avenir", FontSize -> 12,
+  FontFamily -> $MathFont, FontSize -> 14,
   SingleLetterItalics -> True, ShowStringCharacters -> False,
   AutoItalicWords -> $alphabet
 };
@@ -938,6 +958,28 @@ LineLength[list_] := Total @ MapStaggered[EuclideanDistance, list];
 
 (**************************************************************************************************)
 
+PackageExport["EdgeLengthScale"]
+
+boundingBoxSideLength[line_] :=
+  Sqrt[1/2] * Total[EuclideanDistance @@@ CoordinateBounds @ line];
+
+(* boundingBoxSideLength[line_] :=
+  EuclideanDistance @@ CoordinateBoundingBox @ line;
+ *)
+adjustedLineLength[line_] := Min[LineLength @ line, boundingBoxSideLength @ line];
+
+EdgeLengthScale[{}, q_] := 1.0;
+
+EdgeLengthScale[edgeCoordinateLists_, q_] := Scope[
+  edgeLengths = Chop @ Map[adjustedLineLength, edgeCoordinateLists];
+  edgeLengths = DeleteCases[edgeLengths, 0|0.];
+  If[edgeLengths === {},
+    edgeLengths = Map[boundingBoxSideLength, edgeCoordinateLists]];
+  Quantile[edgeLengths, q]
+];
+
+(**************************************************************************************************)
+
 PackageExport["TransformArrowheads"]
 
 $arrowheadTransforms = <|
@@ -1097,5 +1139,3 @@ BinaryArrayPlot[array_, digits:(_Integer|Automatic), OptionsPattern[]] := Scope[
   ];
   CompactArrayPlot[1 - array, PixelConstrained -> pixelConstrained]
 ];
-
-

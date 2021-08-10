@@ -36,7 +36,7 @@ ChartSymbolCardinals = Case[
 PackageExport["CardinalTransitionMatrices"]
 
 CardinalTransitionMatrices[atlas_Graph] := Scope[
-  edgeAnnos = LookupExtendedGraphAnnotations[atlas, EdgeAnnotations];
+  edgeAnnos = LookupExtendedOption[atlas, EdgeAnnotations];
   cardinals = CardinalList @ atlas;
   transitions = Lookup[Replace[edgeAnnos, None -> <||>], "CardinalTransitions", None];
   If[!AssociationQ[transitions], ReturnFailed[]];

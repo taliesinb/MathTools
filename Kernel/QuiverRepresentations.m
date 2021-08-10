@@ -180,6 +180,27 @@ makeQuiverElementRule[inVertex_, outVertex_, gen_, cardinal_] :=
 
 Options[computeCayleyFunction] = {"Symmetric" -> True, "Labeled" -> True};
 
+(**************************************************************************************************)
+
+RenameCardinals[qrep_QuiverRepresentationObject, renaming_List] :=
+  RenameCardinals[qrep, RuleThread[qrep["Cardinals"], renaming]];
+
+RenameCardinals[QuiverRepresentationObject[data_Association], renaming:{__Rule}] := Scope[
+  UnpackAssociation[data, quiver, cardinals, generators, representation];
+
+  quiver = RenameCardinals[quiver, renaming];
+  cardinals = cardinals /. renaming;
+  generators = KeyMap[Replace[renaming], generators];
+
+  assoc = Association[
+    "Quiver" -> quiver,
+    "Cardinals" -> cardinals,
+    "Generators" -> generators,
+    "Representation" -> representation
+  ];
+
+  constructQuiverRepresentationObject[assoc]
+];
 
 (**************************************************************************************************)
 

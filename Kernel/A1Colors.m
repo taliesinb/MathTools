@@ -879,10 +879,14 @@ pickNice[val_, dx_, func_] := Scope[
 PackageExport["ApplyColoring"]
 
 SetUsage @ "
-ApplyColoring[list$] determines an automatic coloring for items of list, returning a pair \
-{groups$, cfunc$}, where groups$ is an association from colors to positions of list$ at \
-which they occur, and cfunc$ is a color function that can be applied to new values.
+ApplyColoring[list$] determines an automatic coloring for items of list, returning a tuple \
+{clist$, groups$, cfunc$}.
 ApplyColoring[list$, palette$] uses a palette specification to choose colors.
+The clist$, groups$, cfunc$ are as following:
+* clist$ is a list of color$i for each list$i.
+* groups$ is an association from pairs of colors and values to positions of list$ at which they occur
+* cfunc$ is a color function that can be applied to new values.
+
 * See %ToColorPalette for allowed settings of palette$ (the default used is 'Basic').
 * cfunc$ will be either a %ContinuousColorFunction or a %DiscreteColorFunction.
 * If list$ consists of colors, these will be used verbatim.
@@ -907,7 +911,10 @@ coloringColorPalette = Case[
 ApplyColoring[data_List, palette_:Automatic] := Scope[
   If[ColorVectorQ[data], Return @ literalColorFunction[data]];
   $ColorPalette = coloringColorPalette[palette];
-  If[FailureQ[$ColorPalette], ReturnFailed["badpalette", palette]];
+  If[FailureQ[$ColorPalette],
+    Message[ApplyColoring::badpalette, palette];
+    Return[{$Failed, $Failed, $Failed}];
+  ];
   posIndex = KeySort @ PositionIndex @ data;
   containsInd = KeyExistsQ[posIndex, Indeterminate];
   If[containsInd, indPos = posIndex[Indeterminate]; KeyDropFrom[posIndex, Indeterminate]];
@@ -930,21 +937,24 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
     True,
       DiscreteColorFunction[uniqueValues, Automatic]
   ];
-  If[FailureQ[colorFunction], Return @ {$Failed, $Failed}];
+  If[FailureQ[colorFunction], Return @ {$Failed, $Failed, $Failed}];
   normalFunction = Normal @ colorFunction;
   colors = Map[normalFunction, uniqueValues];
   colorsValues = Transpose[{colors, uniqueValues}];
   If[containsInd, AppendTo[colorsValues, {White, Indeterminate}]; AppendTo[posIndex, Indeterminate -> indPos]];
-  {Merge[RuleThread[colorsValues, Values @ posIndex], Catenate], colorFunction}
+  colorGroups = Merge[RuleThread[colorsValues, Values @ posIndex], Catenate];
+  colorList = ConstantArray[White, Length @ data];  
+  (* invert the PositionIndex-like association *)
+  KeyValueScan[Set[Part[colorList, #2], Part[#1, 1]]&, colorGroups];
+  {colorList, colorGroups, colorFunction}
 ];
 
 literalColorFunction[colors_] := Scope[
   colorIndex = PositionIndex @ colors;
-  colors = Keys @ colorIndex;
   colorFunction = System`Private`ConstructNoEntry[
     ColorFunctionObject, "Discrete", Identity
   ];
-  {KeyMap[{#, #}&, colorIndex], colorFunction}
+  {colors, KeyMap[{#, #}&, colorIndex], colorFunction}
 ];
 
 (**************************************************************************************************)

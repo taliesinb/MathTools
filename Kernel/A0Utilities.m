@@ -588,6 +588,15 @@ ArrayLabeling[array_, level_:1] := Scope[
   ]
 ];
 
+(**************************************************************************************************)
+
+PackageExport["ExtractIndices"]
+
+SetUsage @ "
+ExtractIndices[array$, indices$] gives a list of the parts of array$ given by indices$.
+* indices$ can be an array of any depth, whose values are positive integer parts.
+"
+
 ExtractIndices[array_, indices_ /; VectorQ[indices, Internal`NonNegativeMachineIntegerQ]] :=
   Part[array, indices];
 
@@ -1216,6 +1225,7 @@ declareFunctionAutocomplete[___] := Panic["BadArgs"];
 
 toOptionName[sym_Symbol] := SymbolName[sym];
 toOptionName[str_String] := str;
+toOptionName[_] := Nothing;
 
 declareSyntaxInfo[function_Symbol, argPatterns_List] := Scope[
   info = {"ArgumentsPattern" -> argPatterns};
@@ -1419,7 +1429,7 @@ UnpackExtendedOptions[graph_, syms___Symbol] :=
 SetHoldAllComplete[mUnpackExtendedOptions];
 mUnpackExtendedOptions[graph_, syms_] :=
   ToQuoted[Set, Quoted[syms],
-    ToQuoted[LookupExtendedGraphAnnotations,
+    ToQuoted[LookupExtendedOption,
       Quoted[graph],
       findMatchingSymbols[syms]
     ]

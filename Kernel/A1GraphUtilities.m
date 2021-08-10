@@ -10,6 +10,7 @@ PackageExport["ExtendedGraphLayout"]
 PackageExport["GraphMetric"]
 PackageExport["GraphOrigin"]
 PackageExport["Cardinals"]
+PackageExport["CustomGraphAnnotation"]
 
 (**************************************************************************************************)
 
@@ -361,7 +362,17 @@ $extendedGraphOptionsRules = {
   EdgeColorRules -> None,
   RegionColorRules -> None,
   PrologFunction -> None,
-  EpilogFunction -> None
+  EpilogFunction -> None,
+  UseAbsoluteSizes -> True,
+  SelfLoopRadius -> Automatic,
+  MultiEdgeDistance -> Automatic,
+  CustomGraphAnnotation[_String] -> None,
+  VertexLabelPosition -> Top,
+  EdgeLabelPosition -> Top,
+  VertexLabelSpacing -> 0,
+  EdgeLabelSpacing -> 0,
+  VertexLabelBaseStyle -> None,
+  EdgeLabelBaseStyle -> None
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -377,9 +388,10 @@ SyntaxInformation[Graph];
 Options[Graph];
 
 $fullGraphOptions = Sort @ JoinOptions[Graph, $extendedGraphOptionsRules];
+$extendedGraphSymbolNames = Map[SymbolName, Select[SymbolQ] @ Keys @ $fullGraphOptions];
 
 Unprotect[Graph];
-SyntaxInformation[Graph] = ReplaceOptions[SyntaxInformation[Graph], "OptionNames" -> Map[SymbolName, Keys @ $fullGraphOptions]];
+SyntaxInformation[Graph] = ReplaceOptions[SyntaxInformation[Graph], "OptionNames" -> $extendedGraphSymbolNames];
 HoldPattern[g:Graph[___]] /; MemberQ[Unevaluated @ g, $extendedGraphOptionRulePattern] && $notIntercepted :=
   Block[{$notIntercepted = False}, interceptedGraphConstructor[g]];
 Protect[Graph];
@@ -503,15 +515,15 @@ ExtendedGraphQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["LookupExtendedGraphAnnotations"]
+PackageExport["LookupExtendedOption"]
 
-LookupExtendedGraphAnnotations[graph_, keys_List] :=
+LookupExtendedOption[graph_, keys_List] :=
   MapThread[
     If[#1 === $Failed, #2, #1]&,
     {AnnotationValue[graph, keys], Lookup[$extendedGraphOptionsRules, keys]}
   ];
 
-LookupExtendedGraphAnnotations[graph_, key_Symbol] :=
+LookupExtendedOption[graph_, key_Symbol | key_CustomGraphAnnotation] :=
   LookupAnnotation[graph, key, Lookup[$extendedGraphOptionsRules, key]];
 
 (**************************************************************************************************)
@@ -537,7 +549,7 @@ $simpleGraphOptionRules = JoinOptions[
   VertexShapeFunction -> Automatic, EdgeShapeFunction -> Automatic, PlotLabel -> None,
   GraphHighlightStyle -> Automatic, VertexLabelStyle -> Automatic, EdgeLabelStyle -> Automatic,
   Epilog -> {}, Prolog -> {}, Frame -> None, FrameStyle -> Automatic, BaselinePosition -> Automatic,
-  FrameLabel -> None,
+  FrameLabel -> None, PlotRange -> Automatic,
   Rest @ $extendedGraphOptionsRules
 ]
 
@@ -646,7 +658,7 @@ PermuteVertices[graph_, OptionsPattern[]] := Scope @ RandomSeeded[
   coords = LookupOption[options, VertexCoordinates];
   If[ListQ[coords], options //= ReplaceOptions[VertexCoordinates -> scrambler[coords]]];
 
-  vertexAnnos = LookupExtendedGraphAnnotations[graph, VertexAnnotations];
+  vertexAnnos = LookupExtendedOption[graph, VertexAnnotations];
   If[AssociationQ[vertexAnnos], vertexAnnos //= Map[scrambler]];
 
   result = Graph[scrambler @ VertexList @ graph, EdgeList @ graph, Sequence @@ options];
@@ -1347,14 +1359,14 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
   igraph = IndexEdgeTaggedGraph @ ToIndexGraph @ graph;
   If[!GraphQ[igraph], ReturnFailed[]];
 
+  $Graph = graph;
+
   {graphLayout, vertexCoordinates} =
     LookupOption[igraph, {GraphLayout, VertexCoordinates}];
 
-  $egpGraph = graph;
-
   UnpackExtendedOptions[graph,
     layoutDimension, extendedGraphLayout, viewOptions, coordinateTransformFunction,
-    vertexCoordinateRules, vertexCoordinateFunction
+    vertexCoordinateRules, vertexCoordinateFunction, selfLoopRadius, multiEdgeDistance
   ];
     
   actualDimension = Which[
@@ -1387,8 +1399,8 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
 
   isMulti = MultigraphQ[igraph];
 
-  If[(isMulti || !DuplicateFreeQ[edgeList]) && FreeQ[graphLayout, "MultiEdgeDistance" | "SpringElectricalEmbedding"],
-    graphLayout = ToList[graphLayout, "MultiEdgeDistance" -> 0.3];
+  If[(isMulti || !DuplicateFreeQ[Sort /@ Take[edgeList, All, 2]]) && FreeQ[graphLayout, "MultiEdgeDistance" | "SpringElectricalEmbedding"],
+    graphLayout = ToList[graphLayout, "MultiEdgeDistance" -> 2*multiEdgeDistance];
   ];
 
   initialVertexCoordinates = LookupOption[igraph, VertexCoordinates];
@@ -1411,10 +1423,11 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
     "Random",
       graphLayout = autoLayout;
       SetAutomatic[initialVertexCoordinates, RandomReal[{-1, 1}, {vertexCount, actualDimension}]],
-    "Tree",
+    "Tree" | "CenteredTree",
       graphLayout = {"LayeredDigraphEmbedding"};
-      root = LookupExtendedGraphAnnotations[graph, GraphOrigin];
-      If[root =!= None, AppendTo[graphLayout, "RootVertex" -> IndexOf[vertexList, root]]],
+      root = LookupExtendedOption[graph, GraphOrigin];
+      If[root =!= None, AppendTo[graphLayout, "RootVertex" -> IndexOf[vertexList, root]]];
+      If[method === "CenteredTree", coordinateTransformFunction = "CenterTree"];,
     s_String /; !StringEndsQ[s, "Embedding"],
       graphLayout //= ReplaceAll[method -> (method <> "Embedding")],
     True,
@@ -1461,14 +1474,8 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
     Goto[end];
   ];
 
-  (* make self-edges on a single vertex graph the target size *)
   vertexCoordinates = ToPackedReal @ vertexCoordinates;
-  If[vertexCount === 1,
-    target = 2.5 * Max[Lookup[graphLayout, {"SelfLoopRadius", "MultiEdgeDistance"}, 0.4]];
-    diag = Mean[(EuclideanDistance @@ CoordinateBoundingBox[#])& /@ edgeCoordinateLists];
-    trans = ScalingTransform[{1,1} * target / diag, First @ vertexCoordinates];
-    edgeCoordinateLists = Map[trans, edgeCoordinateLists, {-2}];
-  ];
+  correctSelfLoops[];
 
   If[UndirectedGraphQ[graph],
     edgeCoordinateLists = MapThread[orientEdgeCoords, {edgeCoordinateLists, edgeList}];
@@ -1514,6 +1521,69 @@ useFallbackLayout[] := (
   edgeCoordinateLists = Part[vertexCoordinates, #]& /@ EdgePairs @ igraph;
 )
 
+correctSelfLoops[] := Scope[
+  selfLoopIndices = SelectIndices[edgeCoordinateLists, selfLoopQ];
+  If[selfLoopIndices === {}, Return[]];
+  edgeCoordinateLists ^= MapIndices[fixSelfLoop, selfLoopIndices, edgeCoordinateLists];
+];
+
+selfLoopQ[coords_] := First[coords] == Last[coords];
+
+(* fixSelfLoop[coords_] := Scope[
+  terminus = First @ coords;
+  mean = Mean @ coords;
+  If[selfLoopRadius === Automatic,
+    selfLoopRadius ^= EdgeLengthScale[edgeCoordinateLists, .5] / 4.0];
+  radialVector = selfLoopRadius * Normalize[mean - terminus];
+  center = terminus + radialVector;
+  circlePoints = CirclePoints[center, {selfLoopRadius, ArcTan @@ (-radialVector)}, 16];
+  AppendTo[circlePoints, First @ circlePoints];
+  ToPackedReal @ Reverse @ circlePoints
+]
+ *)
+fixSelfLoop[coords_] := Scope[
+  terminus = First @ coords;
+  If[selfLoopRadius === Automatic,
+    selfLoopRadius ^= EdgeLengthScale[edgeCoordinateLists, .5] / 4.0];
+  radialVector = selfLoopRadius * Normalize[mean - terminus];
+  centeredCoords = PlusVector[coords, -terminus];
+  scale = Norm @ Part[centeredCoords, Ceiling[Length[centeredCoords] / 2]];
+  centeredCoords *= selfLoopRadius / (scale / 2);
+  ToPackedReal @ PlusVector[centeredCoords, terminus]
+]
+
+(**************************************************************************************************)
+
+PackageExport["LookupVertexCoordinates"]
+
+LookupVertexCoordinates[graph_Graph, vertexList_:All] := Scope[
+  UnpackExtendedOptions[graph,
+    coordinateTransformFunction,
+    vertexCoordinateRules, vertexCoordinateFunction
+  ];
+
+  $Graph = graph;
+  SetAll[vertexList, VertexList @ graph];
+  If[!ListQ[vertexList], ReturnFailed[]];
+
+  coords = Which[
+    coordinateTransformFunction =!= None || (vertexCoordinateRules === None && vertexCoordinateFunction === None),
+      First @ ExtractGraphPrimitiveCoordinates @ graph
+    ,
+    RuleListQ @ vertexCoordinateRules,
+      AppendTo[vertexCoordinateRules, _ -> None];
+      Replace[vertexList, vertexCoordinateRules, {1}]
+    ,
+    vertexCoordinateFunction =!= None,
+      Map[vertexCoordinateFunction, vertexList]
+    ,
+    True,
+      ReturnFailed[];
+  ];
+
+  AssociationThread[vertexList, coords]
+]
+
 (**************************************************************************************************)
 
 nudgeOverlappingVertices[coords_, plotRange_] := Scope[
@@ -1524,10 +1594,11 @@ nudgeOverlappingVertices[coords_, plotRange_] := Scope[
     CoordinateBoundingBox @ coords
   ];
   nudgeScale = If[nudgeScale === 0, 1, Max[nudgeScale, 0.1]];
-  dupPos = PositionIndex[Round[coords, nudgeScale / 40]];
+  dupPos = Select[Length[#] > 1&] @ PositionIndex[Round[coords, nudgeScale / 40]];
+  If[Length[dupPos] === 0, Return @ coords];
   If[Length[dupPos] === 1 && num > 1,
-    Return @ PlusVector[CirclePoints[num] * nudgeScale/5, Mean @ coords]];
-  Scan[znudge, dupPos];
+    Return @ PlusVector[CirclePoints[{nudgeScale/5, Tau * .25/num}, num], Mean @ coords]];
+  Scan[nudge, dupPos];
   nudgedCoords
 ];
 
@@ -1581,14 +1652,14 @@ applyCoordinateTransform[{"Snap", m_, nudge_:0.1}] := Scope[
   applyCoordinateTransform[nearest /* First];
   duplicateIndices = DuplicateIndices @ vertexCoordinates;
   newVertexCoordinates = vertexCoordinates;
-  adjacencyTable = VertexAdjacencyTable @ $egpGraph;
+  adjacencyTable = VertexAdjacencyTable @ $Graph;
   $nudge = nudge;
   Scan[index |-> (
     center = Mean @ Part[vertexCoordinates, Part[adjacencyTable, index]];
     Part[newVertexCoordinates, index] //= nudgeDuplicate[center]),
     duplicateIndices, {2}];
   vertexCoordinates ^= newVertexCoordinates;
-  edgeCoordinateLists ^= Part[vertexCoordinates, #]& /@ EdgePairs[$egpGraph];
+  edgeCoordinateLists ^= Part[vertexCoordinates, #]& /@ EdgePairs[$Graph];
 ];
 
 nudgeDuplicate[z_][p_] := p + Normalize[Cross[z - p]] * Im[$nudge] + Normalize[z - p] * Re[$nudge];
@@ -1767,7 +1838,7 @@ The following variables are blocked during the execution of GraphScope:
 GraphScope[graph_, body_] := Block[
   {
     $Graph = graph,
-    $GraphOrigin := $GraphOrigin = LookupExtendedGraphAnnotations[$Graph, GraphOrigin],
+    $GraphOrigin := $GraphOrigin = LookupExtendedOption[$Graph, GraphOrigin],
     $VertexList := $VertexList = VertexList @ $Graph,
     $EdgeList := $EdgeList = EdgeList @ $Graph,
     $EdgeTags := $EdgeTags = Replace[EdgeTags @ $Graph, {} -> None],

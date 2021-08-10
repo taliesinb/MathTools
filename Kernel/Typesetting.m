@@ -1,9 +1,5 @@
 (**************************************************************************************************)
 
-PackageExport["$MathFont"]
-
-$MathFont = "STIX Two Math";
-
 $vertLineBox = AdjustmentBox["\[VerticalLine]", BoxBaselineShift -> -0.2];
 $horLineBox = "\[HorizontalLine]";
 
@@ -590,10 +586,20 @@ ClickCopy[e_] := EventHandler[e, {"MouseClicked" :> CopyToClipboard[e]}];
 
 (**************************************************************************************************)
 
+PackageExport["SpacedColumnRow"]
+
+SpacedColumnRow[items___] := Scope[
+  $srColumnRow = True;
+  SpacedRow[items]
+];
+
+(**************************************************************************************************)
+
 PackageExport["SpacedRow"]
 
-
+$srColumnRow = False;
 $srSpacings = 20;
+$srRowSpacings = 20;
 $srMaxItems = Infinity;
 $srMaxWidth = Infinity;
 $srLabelStyle = $LabelStyle;
@@ -612,6 +618,7 @@ i might be wrong though *)
 SpacedRow[elems__, MaxWidth -> n_] := Block[{$srMaxWidth = n}, SpacedRow[elems]];
 SpacedRow[elems__, MaxItems -> n_] := Block[{$srMaxItems = n}, SpacedRow[elems]];
 SpacedRow[elems__, Spacings -> n_] := Block[{$srSpacings = n}, SpacedRow[elems]];
+SpacedRow[elems__, RowSpacings -> n_] := Block[{$srRowSpacings = n}, SpacedRow[elems]];
 SpacedRow[elems__, LabelStyle -> style_] := Block[{$srLabelStyle = style}, SpacedRow[elems]];
 SpacedRow[elems__, BaseStyle -> s_] := Block[{$srBaseStyle = s}, SpacedRow[elems]];
 SpacedRow[elems__, ItemStyle -> s_] := Block[{$srItemStyle = s}, SpacedRow[elems]];
@@ -628,6 +635,12 @@ SpacedRow[labels_List -> items_List] /; Length[labels] == Length[items] :=
 SpacedRow[elems__] := Scope[
   items = DeleteCases[Null] @ Flatten @ {elems};
   items = canonicalizeItem /@ Take[items, UpTo @ $srMaxItems];
+  If[$srColumnRow && Length[items] > (maxWidth = Replace[$srMaxWidth, Infinity -> 4]),
+    Return @ SpacedColumn[
+      Map[SpacedRow, Echo @ Partition[items, UpTo[maxWidth]]],
+      Spacings -> $srRowSpacings
+    ]
+  ];
   If[$srIndexTooltip, items //= MapIndexed[NiceTooltip[#1, First[#2]]&]];
   hasLabels = MemberQ[items, _Labeled];
   tooLong = Length[items] > $srMaxWidth;
@@ -639,11 +652,11 @@ SpacedRow[elems__] := Scope[
     ];
     If[hasLabels,
       items //= Map[toGridRowPair /* If[$srTransposed, Reverse, Identity]];
-      vspacings = {$srLabelSpacing, .5};
+      vspacings = {$srLabelSpacing, $srRowSpacings / 40};
       entries = unfoldRow /@ SequenceSplit[items, {$nextRow}];
       itemStyle = {{$srItemStyle, $srLabelStyle}};
     ,
-      vspacings = {0.5};
+      vspacings = {$srRowSpacings / 40};
       entries = SequenceSplit[items, {$nextRow}];
       itemStyle = {{$srItemStyle}};
     ];

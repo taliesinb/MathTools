@@ -88,55 +88,10 @@ ColoredGraph[vertices_List, edges_List, opts___Rule] := Scope[
     vertices, edges, opts,
     VertexColorFunction -> vertexColors, VertexSize -> 10,
     ArrowheadStyle -> arrowheadStyles, ArrowheadSize -> MediumSmall,
-    GraphLayout -> {"MultiEdgeDistance" -> 0.6},
-    ImageSize -> ("ShortestEdge" -> 50), EdgeThickness -> 1, EdgeStyle -> Directive[{AbsoluteThickness[0], GrayLevel[0.7, 1]}],
+    GraphLayout -> {"SelfLoopRadius" -> 0.4, "MultiEdgeDistance" -> 0.4},
+    ImageSize -> {40, 40}, AspectRatioClipping -> False, Frame -> True,
+    EdgeThickness -> 1, EdgeStyle -> Directive[{AbsoluteThickness[0], GrayLevel[0.7, 1]}],
     ArrowheadShape -> {"FlatArrow", BorderStyle -> Function[{Darker[#, .3], AbsoluteThickness[0]}]}
-  ]
-];
-
-(**************************************************************************************************)
-
-PackageExport["ColoredCoveredGraph"]
-
-$assocOrListP = _Association | _List;
-
-ColoredCoveredGraph[edges_List, coords:$assocOrListP, opts___Rule] :=
-  ColoredCoveredGraph[AllUniqueVertices @ edges, edges, coords, opts];
-
-ColoredCoveredGraph[vertices_List, edges_List, coords:$assocOrListP, opts___Rule] := Scope[
-  baseVertices = DeleteDuplicates @ Flatten @ Map[Characters, vertices];
-  baseCoords = Which[
-    CoordinateMatrixQ[coords], 
-      AssociationThread[baseVertices, coords],
-    AssociationQ[coords],
-      coords,
-    True,
-      ReturnFailed[];
-  ];
-  allCoords = Join[
-    baseCoords,
-    AssociationMap[Mean[Lookup[baseCoords, Characters @ #]]&, vertices]
-  ];
-  prims = {AbsoluteThickness[1.5], AbsoluteDashing[{2,2}], 
-    AbsolutePointSize[4], GrayLevel[0.5], contractionPrimitives /@ vertices};
-  frame = Rectangle @@ Transpose[bounds];
-  ColoredGraph[vertices, edges, opts,
-    VertexCoordinates -> allCoords,
-    ArrowheadSize -> <|"1" -> 14, "4" -> 16, "3" -> 16|>,
-    ImageSize -> {80, 80},
-    ArrowheadPosition -> 0.52, PlotRange -> "Square",
-    ImagePadding -> 0, AspectRatioClipping -> False,
-    GraphLayout -> {"SelfLoopRadius" -> 1*0.4, "MultiEdgeDistance" -> 0.4},
-    Frame -> True
-  ]
-];
-
-contractionPrimitives = Case[
-  v_String /; StringLength[v] === 1 := Nothing;
-  v_String := Scope[
-    new = Lookup[allCoords, v];
-    old = Lookup[allCoords, Characters @ v];
-    Map[{Line[{new, #}], Point[#]}&, old]
   ]
 ];
 
@@ -171,6 +126,18 @@ LatticeColoringPlot[quiver_, args___, "Orientation" -> o_] := Block[
   LatticeColoringPlot[quiver, args]
 ];
 
+$plcIconSize = "ShortestEdge" -> {40, 100};
+LatticeColoringPlot[quiver_, args___, "IconSize" -> iconSize_] := Block[
+  {$plcIconSize = iconSize},
+  LatticeColoringPlot[quiver, args]
+];
+
+$plcSLR = 0.6;
+LatticeColoringPlot[quiver_, args___, SelfLoopRadius -> r_] := Block[
+  {$plcSLR = r},
+  LatticeColoringPlot[quiver, args]
+];
+
 LatticeColoringPlot[quiver_, args___] := Scope[
   quiver = Quiver[quiver];
   notb = VertexCount[quiver] > 1;
@@ -179,15 +146,16 @@ LatticeColoringPlot[quiver_, args___] := Scope[
     ArrowheadSize -> MediumSmall,
     ArrowheadShape -> {"Arrow", TwoWayStyle -> "OutClose"},
     ArrowheadStyle -> $LightGray,
-    LabelCardinals -> True, VertexSize -> Huge,
-    ImagePadding -> {{12, 12},{20, 20}}, ImageSize -> "ShortestEdge" -> 45,
+    LabelCardinals -> Below, VertexSize -> Huge,
+    ImagePadding -> {{15, 15},{15, 15}}, ImageSize -> $plcIconSize,
     VertexColorFunction -> "Index",
+    SelfLoopRadius -> $plcSLR,
     VertexCoordinates -> If[notb, CirclePoints @ VertexCount[quiver], {{0, 0}}]
   ];
   If[notb, icon //= CombineMultiedges];
   graph = LatticeGraph[quiver, args,
     VertexColorFunction -> "GeneratingVertex",
-    VertexSize -> 1.2, ImageSize -> 120, GraphLegend -> None
+    VertexSize -> 1.2, ImageSize -> 150, GraphLegend -> None
   ];
   If[$plcOrientation === "Horizontal",
     Row[{graph, icon}, Spacer[15]],
@@ -199,8 +167,12 @@ LatticeColoringPlot[quiver_, args___] := Scope[
 
 PackageExport["LatticeColoringRow"]
 
+$lcrMW = 3;
+
+LatticeColoringRow[args___, MaxWidth -> m_] := Block[{$lcrMW = m}, LatticeColoringRow[args]];
+
 LatticeColoringRow[list_List, args___] :=
-  MapSpacedRow[LatticeColoringPlot[#, args, "Orientation" -> "Vertical"]&, list];
+  SpacedRow[LatticeColoringPlot[#, args, "Orientation" -> "Vertical"]& /@ list, MaxWidth -> $lcrMW];
 
 (**************************************************************************************************)
 
@@ -479,11 +451,18 @@ PackageExport["SimpleLabeledGraph"]
 SimpleLabeledGraph[args___] := ExtendedGraph[args, $simpleLabeledGraphOpts];
 
 $simpleLabeledGraphOpts = Sequence[
-  CardinalColors -> None, VertexLabels -> "Name", VertexLabelStyle -> {LabelPosition -> Automatic},
-  EdgeLabels -> "Cardinal", ArrowheadShape -> {"Line", EdgeThickness -> 2},
-  ImagePadding -> {{0,0}, {0, 25}}, EdgeLabelStyle -> {Spacings -> -0.3},
-  GraphLayout -> {"Linear", "MultiEdgeDistance" -> 0.6}, ArrowheadPosition -> 0.59,
-  ImageSize -> "ShortestEdge" -> 55, ArrowheadSize -> Medium, ArrowheadStyle -> $Gray
+  CardinalColors -> None,
+  VertexLabels -> "Name",
+  VertexLabelPosition -> Automatic,
+  VertexLabelBaseStyle -> $MathLabelStyle,
+  EdgeLabels -> "Cardinal",
+  EdgeLabelBaseStyle -> $CardinalStyle,
+  EdgeLabelSpacing -> -0.3,
+  ArrowheadShape -> {"Line", EdgeThickness -> 2},
+  ImagePadding -> {{0,0}, {0, 25}},
+  GraphLayout -> {"Linear", "MultiEdgeDistance" -> 0.6}, ArrowheadPosition -> 0.525,
+  ArrowheadSize -> Medium, ArrowheadStyle -> $Gray,
+  ImageSize -> "ShortestEdge" -> 50
 ];
 
 (**************************************************************************************************)
@@ -494,7 +473,7 @@ $rgbList = {"r", "g", "b"};
 $abcList = {"a", "b", "c"};
 
 SimpleLabeledQuiver[args___] := Scope[
-  res = Quiver[args, $simpleLabeledQuiverOpts];
+  res = Quiver[args, FilterOptions @ $simpleLabeledQuiverOpts];
   cards = DeleteDuplicates @ EdgeTags[res];
   Which[
     SubsetQ[$rgbList, cards], cards = Select[$rgbList, MemberQ[cards, #]&],
@@ -505,9 +484,14 @@ SimpleLabeledQuiver[args___] := Scope[
 ];
 
 $simpleLabeledQuiverOpts = Sequence[
-  VertexLabels -> "Name", VertexLabelStyle -> {LabelPosition -> Automatic},
-  GraphLayout -> {"Linear", "MultiEdgeDistance" -> 0.2}, ArrowheadShape -> {"Line", EdgeThickness -> 2},
-  ArrowheadPosition -> 0.59, ImageSize -> "ShortestEdge" -> 80, ArrowheadSize -> Medium
+  VertexLabels -> "Name",
+  VertexLabelPosition -> Automatic, 
+  VertexLabelBaseStyle -> $MathLabelStyle,
+  GraphLayout -> {"Linear", "MultiEdgeDistance" -> 0.2},
+  ArrowheadShape -> {"Line", EdgeThickness -> 2},
+  ArrowheadPosition -> 0.59, 
+  ArrowheadSize -> Medium,
+  ImageSize -> "ShortestEdge" -> 70
 ];
 
 (**************************************************************************************************)
@@ -561,7 +545,7 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
     GraphOrigin -> LatticeVertex[{}], BaselinePosition -> Center,
     VertexShapeFunction -> labels, VertexSize -> Inherited,
     ArrowheadShape -> {"Line", EdgeThickness -> 2}, ArrowheadSize -> Medium, EdgeStyle -> LightGray,
-    EdgeThickness -> Thick, Cardinals -> LookupExtendedGraphAnnotations[fq, Cardinals],
+    EdgeThickness -> Thick, Cardinals -> LookupExtendedOption[fq, Cardinals],
     ImageSize -> 400, ImagePadding -> 5, AspectRatioClipping -> False,
     GraphLegend -> None
   ] // CombineMultiedges;

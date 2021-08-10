@@ -11,9 +11,19 @@
 \gdef\osymbol#1{\colorsymbol{00427f}{#1}}
 \gdef\lstring#1{\textcolor{666666}{\textrm{\textquotedblleft{#1}\textquotedblright}}}
 
-\gdef\rform#1{{\textcolor{b50700}{#1}}}
-\gdef\gform#1{{\textcolor{217f00}{#1}}}
-\gdef\bform#1{{\textcolor{165e9d}{#1}}}
+\gdef\rform#1{{\textcolor{e1432d}{#1}}}
+\gdef\gform#1{{\textcolor{4ea82a}{#1}}}
+\gdef\bform#1{{\textcolor{3e81c3}{#1}}}
+
+\gdef\rgform#1{{\textcolor{dc841a}{#1}}}
+\gdef\gbform#1{{\textcolor{47a5a7}{#1}}}
+\gdef\rbform#1{{\textcolor{c74883}{#1}}}
+
+\gdef\waform#1{{\textcolor{6b6b6b}{#1}}}
+\gdef\wbform#1{{\textcolor{929292}{#1}}}
+\gdef\wcform#1{{\textcolor{c5c5c5}{#1}}}
+\gdef\filledToken{∙}
+\gdef\emptyToken{∘}
 
 \gdef\tinybullet{{\tiny∙}}
 \gdef\deSymbol{{\,{{\raisebox{1.19pt}{\tinybullet}\mkern{-0.8pt}{→}}}\,}}
@@ -98,6 +108,7 @@
 \gdef\graph#1{#1}
 \gdef\graphHomomorphism#1{#1}
 \gdef\covers#1#2{{#1} \sqsupseteq {#2}}
+\gdef\covering#1#2#3{{#2} \sqsupseteq_{#1} {#3}}
 
 \gdef\groupElem#1{#1}
 \gdef\groupoidElem#1{#1}

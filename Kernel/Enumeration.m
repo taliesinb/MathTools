@@ -427,10 +427,15 @@ EnumerateLattices[quivers_, cardinals_, group_, opts___Rule] := Scope[
     Quiver[VertexList @ #, MapAt[ReplaceAll[rules], EdgeList @ #, {All, 3}]]&, 
     ExpandCardinalSetEdges /@ quivers
   ];
+  opts = {opts};
+  {directedEdges} = LookupOption[opts, {DirectedEdges}];
+  lgOpts = DeleteOptions[opts, DirectedEdges];
   lattices = Map[
     quiver |-> LatticeGraph[
-      QuiverRepresentation[quiver, group], opts,
-      MaxNorm -> 3, ImageSize -> {120, 120}, VertexSize -> Small
+      QuiverRepresentation[quiver, group], lgOpts,
+      MaxNorm -> 3, ImageSize -> {120, 120}, VertexSize -> 5,
+      (* EdgeShapeFunction -> "Line", EdgeColorFunction -> Function[Last@#], *)
+      VertexStyle -> Black, VertexSize -> 5, Frame -> True, EdgeStyle -> $DarkGray
     ], 
     quivers
   ];
@@ -439,8 +444,13 @@ EnumerateLattices[quivers_, cardinals_, group_, opts___Rule] := Scope[
     DeleteDuplicates[#, IsomorphicGraphQ]&,
     Values @ GroupBy[lattices, VertexDegree /* Sort]
   ];
-  LatticeGraphToLatticeQuiver /@ SortBy[lattices, VertexCount]
+  lattices = SortBy[lattices, VertexCount];
+  If[directedEdges, lattices //= Map @ LatticeGraphToLatticeQuiver];
+  lattices
 ]
 
 LatticeGraphToLatticeQuiver[g_Graph] :=
-  ExtendedGraph[Graph[VertexList[g], DirectedEdge @@@ EdgeList[g], Options[g]], ArrowheadStyle -> Automatic]
+  ExtendedGraph[
+    Graph[VertexList[g], DirectedEdge @@@ EdgeList[g], Options[g]], 
+    ArrowheadStyle -> Automatic
+  ]

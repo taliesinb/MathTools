@@ -672,6 +672,18 @@ $TemplateKatexFunction["CoversSymbol"] = "\\covers{}{}"&;
 
 (********************************************)
 
+PackageExport["IndexedCoveringForm"]
+
+declareBoxFormatting[
+  IndexedCoveringForm[pi_, g_, h_] :>
+    makeHintedTemplateBox[pi -> GraphHomomorphismSymbol, g -> GraphSymbol, h -> GraphSymbol, "IndexedCoveringForm"]
+];
+
+$TemplateKatexFunction["IndexedCoveringForm"] = "covering";
+
+
+(********************************************)
+
 PackageExport["GraphSymbol"]
 
 GraphSymbol[] := GraphSymbol["G"];
@@ -1037,7 +1049,7 @@ declareBoxFormatting[
     TemplateBox[List @ makeQGBoxes @ e, "DarkGrayForm"]
 ];
 
-$TemplateKatexFunction["DarkGrayForm"] = "w1form";
+$TemplateKatexFunction["DarkGrayForm"] = "waform";
 
 (**************************************************************************************************)
 
@@ -1048,7 +1060,7 @@ declareBoxFormatting[
     TemplateBox[List @ makeQGBoxes @ e, "MediumGrayForm"]
 ];
 
-$TemplateKatexFunction["GrayForm"] = "w2form";
+$TemplateKatexFunction["MediumGrayForm"] = "wbform";
 
 (**************************************************************************************************)
 
@@ -1059,7 +1071,7 @@ declareBoxFormatting[
     TemplateBox[List @ makeQGBoxes @ e, "LightGrayForm"]
 ];
 
-$TemplateKatexFunction["LightGrayForm"] = "w3form";
+$TemplateKatexFunction["LightGrayForm"] = "wcform";
 
 (**************************************************************************************************)
 

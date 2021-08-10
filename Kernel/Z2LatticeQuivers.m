@@ -193,7 +193,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     includeRepresentationMatrices,
     graphRegionHighlight, plotLabel,
     selfLoops, initialStates, randomSeeding,
-    cardinalList
+    cardinals
   ];
 
   SetAutomatic[initialStates, repInitialStates];
@@ -229,20 +229,6 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
 
   If[!MatchQ[maxDepth, (_Integer ? Positive) | Infinity],
     ReturnFailed[head::badlatticedepth, maxDepth];
-  ];
-
-  $quiverLabel := Quiver[quiver, ImageSize -> {50, 80},
-    ArrowheadStyle -> arrowheadStyle, ArrowheadShape -> "Line",
-    GraphLegend -> Placed[Automatic, Left]];
-
-  Switch[graphLegend,
-    "Quiver",
-      graphLegend = Placed[$quiverLabel, Right],
-    "QuiverRepresentation",
-
-      graphLegend = Placed[Row[{Spacer[30], QuiverRepresentationPlot @ representation}], Right],
-    _,
-      None
   ];
 
   $stripLV = True;
@@ -369,8 +355,26 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   If[plotLabel === Automatic && StringQ[latticeName],
     simpleOptions //= ReplaceOptions[PlotLabel -> ToTitleString[latticeName]]];
 
+  simpleOptions = DeleteOptions[simpleOptions, {VertexCoordinateFunction, Cardinals}];
   If[wasAutoCardinalList, trueCardinalList = Automatic];
   SetAutomatic[trueCardinalList, CardinalList @ edgeList];
+
+  If[cardinals =!= Automatic,
+    If[Length[cardinals] =!= Length[trueCardinalList],
+      ReturnFailed[head::badcardlist, cardinals, trueCardinalList]];
+    If[QuiverRepresentationObjectQ @ representation,
+      representation = RenameCardinals[representation, cardinals];
+      quiver = representation["Quiver"];
+    ]];
+
+  $quiverLabel := Quiver[quiver, ImageSize -> {50, 80},
+    ArrowheadStyle -> arrowheadStyle, ArrowheadShape -> "Line",
+    GraphLegend -> Placed[Automatic, Left]];
+
+  $representation = representation;
+
+  graphLegend //= makeQLatticeGraphLegend;
+
   If[head === LatticeGraph,
     graph = ExtendedGraph[
       finalVertexList, edgeList,
@@ -394,10 +398,8 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   If[combineMultiedges, graph //= CombineMultiedges];
-  If[cardinalList =!= Automatic,
-    If[Length[cardinalList] =!= Length[trueCardinalList],
-      ReturnFailed[head::badcardlist, cardinalList, trueCardinalList]];
-    graph = RenameCardinals[graph, cardinalList]];
+  If[cardinals =!= Automatic,
+    graph = RenameCardinals[graph, cardinals]];
 
   isLV = MatchQ[First @ vertexList, LatticeVertex[_, _]];
   AttachVertexAnnotations[graph, <|
@@ -407,6 +409,23 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     If[norms =!= None, "Norm" -> norms, {}]
   |>]
 ];
+
+makeQLatticeGraphLegend = Case[
+  "Quiver" := 
+    $quiverLabel;
+
+  "QuiverRepresentation" := 
+    Row[{Spacer[30], QuiverRepresentationPlot @ $representation}];
+
+  Placed[spec_, place_] :=
+    Placed[% @ spec, place];
+
+  Automatic :=
+    Automatic;
+
+  _ := None
+];
+
 
 $defaultLatticeNorms = {
   "TruncatedTrihexagonal" -> 5,
