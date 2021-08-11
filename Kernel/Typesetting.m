@@ -599,7 +599,7 @@ PackageExport["SpacedRow"]
 
 $srColumnRow = False;
 $srSpacings = 20;
-$srRowSpacings = 20;
+$srRowSpacings = 5;
 $srMaxItems = Infinity;
 $srMaxWidth = Infinity;
 $srLabelStyle = $LabelStyle;
@@ -607,7 +607,7 @@ $srBaseStyle = {};
 $srItemStyle = {};
 $srItemFunction = Identity;
 $srLabelFunction = Identity;
-$srLabelSpacing = 0.1;
+$srLabelSpacing = 5;
 $srTransposed = False;
 $srIndexTooltip = False;
 $srAlignment = Center;
@@ -637,7 +637,7 @@ SpacedRow[elems__] := Scope[
   items = canonicalizeItem /@ Take[items, UpTo @ $srMaxItems];
   If[$srColumnRow && Length[items] > (maxWidth = Replace[$srMaxWidth, Infinity -> 4]),
     Return @ SpacedColumn[
-      Map[SpacedRow, Echo @ Partition[items, UpTo[maxWidth]]],
+      Map[SpacedRow, Partition[items, UpTo[maxWidth]]],
       Spacings -> $srRowSpacings
     ]
   ];
@@ -646,32 +646,34 @@ SpacedRow[elems__] := Scope[
   tooLong = Length[items] > $srMaxWidth;
   alignment = $srAlignment;
   If[!ListQ[alignment], alignment = {alignment, alignment}];
+  rowSpacings = $srRowSpacings / 10;
+  labelSpacing = $srLabelSpacing / 10;
   If[tooLong || hasLabels,
     If[tooLong,
       items = Flatten @ Riffle[Partition[items, UpTo[$srMaxWidth]], {$nextRow}]
     ];
     If[hasLabels,
       items //= Map[toGridRowPair /* If[$srTransposed, Reverse, Identity]];
-      vspacings = {$srLabelSpacing, $srRowSpacings / 40};
+      vspacings = {labelSpacing, rowSpacings};
       entries = unfoldRow /@ SequenceSplit[items, {$nextRow}];
       itemStyle = {{$srItemStyle, $srLabelStyle}};
     ,
-      vspacings = {$srRowSpacings / 40};
+      vspacings = {rowSpacings};
       entries = SequenceSplit[items, {$nextRow}];
       itemStyle = {{$srItemStyle}};
     ];
-    hspacings = $srSpacings/10;
+    hspacings = {$srSpacings/10};
     styles = {{}, itemStyle};
     If[$srTransposed,
       entries //= Transpose;
       styles //= Reverse[#, {1, 3}]&;
-      {hspacings, vspacings} = {{0, vspacings * 1.5}, {0, hspacings * 0.5}};
+      {hspacings, vspacings} = {vspacings * 1.5, hspacings * 0.5};
       alignment //= Reverse;
     ];
     Grid[
       entries,
       Alignment -> alignment,
-      Spacings -> {hspacings, vspacings},
+      Spacings -> {{0, hspacings}, {0, vspacings}},
       ItemStyle -> styles,
       BaseStyle -> $srBaseStyle
     ]

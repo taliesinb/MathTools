@@ -107,7 +107,7 @@
 
 \gdef\graph#1{#1}
 \gdef\graphHomomorphism#1{#1}
-\gdef\covers#1#2{{#1} \sqsupseteq {#2}}
+\gdef\covers{\sqsupseteq}
 \gdef\covering#1#2#3{{#2} \sqsupseteq_{#1} {#3}}
 
 \gdef\groupElem#1{#1}

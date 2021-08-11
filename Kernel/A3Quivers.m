@@ -19,7 +19,7 @@ Quiver[edges_, opts:OptionsPattern[]] :=
   Quiver[Automatic, edges, opts];
 
 Quiver[graph_Graph, opts:OptionsPattern[]] :=
-  ExtendedGraph[graph, opts, GraphLegend -> Automatic]
+  ExtendedGraph[graph, opts]
 
 Quiver[vertices_, edges_, opts:OptionsPattern[]] :=
   makeQuiver[vertices, edges, {opts}];
@@ -303,6 +303,8 @@ $xyzColors = <|"x" -> $Red, "y" -> $Green, "z" -> $Blue|>;
 $xyColors = <|"x" -> $Red, "y" -> $Blue|>;
 
 ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardinals,
+  {___, "f", ___},
+    Append[ChooseCardinalColors[DeleteCases[cardinals, "f"]], "f" -> $Orange],
   {"x"},
     <|"x" -> $Red|>,
   {"x", "y"},

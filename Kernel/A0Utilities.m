@@ -1073,6 +1073,9 @@ DeleteOptions[options$, {sym$, sym$2, $$}] removes multiple rules.
 DeleteOptions[spec$] is the operator form of DeleteOptions.
 "
 
+DeleteOptions[graph_Graph, keys_] :=
+   Graph[VertexList @ graph, EdgeList @ graph, DeleteOptions[Options @ graph, keys]];
+
 DeleteOptions[opts_, keys_List] :=
   DeleteCases[opts, (Alternatives @@ keys) -> _];
 
@@ -1414,6 +1417,42 @@ mUnpackAnonymousOptions[object_, default_, syms_] :=
       Quoted[object],
       findMatchingSymbols[syms],
       Quoted[default]
+    ]
+  ];
+
+(**************************************************************************************************)
+
+PackageScope["UnpackAnonymousThemedOptions"]
+
+DefineMacro[UnpackAnonymousThemedOptions,
+UnpackAnonymousThemedOptions[object_, default_, syms__Symbol] :=
+  mUnpackAnonymousThemedOptions[object, default, {syms}] 
+];
+
+SetHoldAllComplete[mUnpackAnonymousThemedOptions];
+mUnpackAnonymousThemedOptions[object_, default_, syms_] :=
+  ToQuoted[Set, Quoted[syms],
+    ToQuoted[LookupThemedOption,
+      Quoted[object],
+      findMatchingSymbols[syms],
+      Quoted[default]
+    ]
+  ];
+(**************************************************************************************************)
+
+PackageScope["UnpackExtendedThemedOptions"]
+
+DefineMacro[UnpackExtendedThemedOptions,
+UnpackExtendedThemedOptions[graph_, syms___Symbol] :=
+  mUnpackExtendedThemedOptions[graph, {syms}] 
+];
+
+SetHoldAllComplete[mUnpackExtendedThemedOptions];
+mUnpackExtendedThemedOptions[graph_, syms_] := 
+  ToQuoted[Set, Quoted[syms],
+    ToQuoted[LookupExtendedThemedOption,
+      Quoted[graph],
+      findMatchingSymbols[syms]
     ]
   ];
 

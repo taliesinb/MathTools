@@ -427,15 +427,12 @@ EnumerateLattices[quivers_, cardinals_, group_, opts___Rule] := Scope[
     Quiver[VertexList @ #, MapAt[ReplaceAll[rules], EdgeList @ #, {All, 3}]]&, 
     ExpandCardinalSetEdges /@ quivers
   ];
-  opts = {opts};
-  {directedEdges} = LookupOption[opts, {DirectedEdges}];
-  lgOpts = DeleteOptions[opts, DirectedEdges];
+  userOpts = {opts};
+  {directedEdges} = LookupOption[userOpts, {DirectedEdges}];
+  userOpts //= DeleteOptions[DirectedEdges];
   lattices = Map[
     quiver |-> LatticeGraph[
-      QuiverRepresentation[quiver, group], lgOpts,
-      MaxNorm -> 3, ImageSize -> {120, 120}, VertexSize -> 5,
-      (* EdgeShapeFunction -> "Line", EdgeColorFunction -> Function[Last@#], *)
-      VertexStyle -> Black, VertexSize -> 5, Frame -> True, EdgeStyle -> $DarkGray
+      QuiverRepresentation[quiver, group], DirectedEdges -> False, MaxNorm -> 3
     ], 
     quivers
   ];
@@ -445,12 +442,28 @@ EnumerateLattices[quivers_, cardinals_, group_, opts___Rule] := Scope[
     Values @ GroupBy[lattices, VertexDegree /* Sort]
   ];
   lattices = SortBy[lattices, VertexCount];
-  If[directedEdges, lattices //= Map @ LatticeGraphToLatticeQuiver];
-  lattices
+  edgeHead = If[TrueQ @ directedEdges, DirectedEdge, UndirectedEdge];
+  userOpts = Sequence @@ TakeOptions[userOpts, Keys @ Options @ ExtendedGraph];
+  lattices //= Map @ LatticeGraphToLatticeQuiver
 ]
 
 LatticeGraphToLatticeQuiver[g_Graph] :=
   ExtendedGraph[
-    Graph[VertexList[g], DirectedEdge @@@ EdgeList[g], Options[g]], 
-    ArrowheadStyle -> Automatic
+    VertexList @ g, edgeHead @@@ EdgeList[g],
+    VertexCoordinates -> LookupOption[g, VertexCoordinates],
+    userOpts,
+    GraphTheme -> "EnumeratedLattice"
   ]
+
+(**************************************************************************************************)
+
+$enumeratedLatticeStyleOpts = {
+  ImageSize -> {100, 100}, VertexSize -> 5,
+  EdgeShapeFunction -> "StyledLine", EdgeColorFunction -> "Cardinal", 
+  EdgeThickness -> 2.5, EdgeStyle -> Opacity[0.7],
+  VertexStyle -> $DarkGray, VertexSize -> 5, Frame -> True
+  (* ArrowheadShape -> {"Line", EdgeThickness -> 2}, *)
+};
+
+$GraphThemeData["EnumeratedLattice"] := $enumeratedLatticeStyleOpts;
+

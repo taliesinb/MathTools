@@ -421,6 +421,7 @@ computeGraphPlotAspectRatio[] := Scope[
     viewOptions = LookupExtendedOption[$Graph, ViewOptions];
     SetAutomatic[viewOptions, $automaticViewOptions];
     vertexCoords = Part[$VertexCoordinates, $VertexParts];
+    viewOptions //= DeleteOptions["ShrinkWrap"];
     viewOptions = Association[PlotRange -> CoordinateBounds[vertexCoords], viewOptions];
     viewTransform = ConstructGraphicsViewTransform[viewOptions];
     vertexCoordinates = viewTransform @ vertexCoords;
@@ -458,7 +459,7 @@ lineCenter = Case[
 PackageExport["GraphAnnotationData"]
 
 GraphAnnotationData[annotation_] :=
-  LookupExtendedOption[$Graph, annotation];
+  LookupExtendedThemedOption[$Graph, annotation];
 
 (**************************************************************************************************)
 
@@ -482,18 +483,18 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   (* process options *)
   FunctionSection[
 
-    UnpackAnonymousOptions[graph, Automatic,
+    UnpackAnonymousThemedOptions[graph, Automatic,
       imageSize, vertexSize, vertexStyle, edgeStyle,
       vertexLabelStyle, edgeLabelStyle,
       vertexShapeFunction, edgeShapeFunction, frameStyle, baselinePosition
     ];
 
-    UnpackAnonymousOptions[graph, None,
+    UnpackAnonymousThemedOptions[graph, None,
       vertexLabels, edgeLabels, plotLabel, prolog, epilog,
       imagePadding, plotRange, plotRangePadding, frame, frameLabel
     ];
 
-    UnpackExtendedOptions[graph,
+    UnpackExtendedThemedOptions[graph,
       arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition,
       visibleCardinals, labelCardinals, 
       edgeSetback, edgeThickness, 
@@ -537,6 +538,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         Rule["LongestEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize[1.0, sz],
         Rule["ShortestEdge", sz:$numOrNumPairP]  :> computeEdgeLengthBasedImageSize[0.0, sz],
         Rule["MedianEdge", sz:$numOrNumPairP]    :> computeEdgeLengthBasedImageSize[0.5, sz],
+        Rule["AverageEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize["Average", sz],
         _ :> ReturnFailed[]
       ];
     ,
@@ -589,6 +591,11 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     (* this allows GraphVertexData and GraphEdgeData to work *)
     setupGraphVertexData[graph, "Coordinates" -> $VertexCoordinates];
     setupGraphEdgeData[graph, "Coordinates" -> $EdgeCoordinateLists];
+
+    shrinkWrap = False;
+    If[ListQ @ viewOptions,
+      shrinkWrap = Lookup[viewOptions, "ShrinkWrap", False];
+      viewOptions //= DeleteOptions["ShrinkWrap"]];
   ];
 
   (* create graphics for vertices *)
@@ -678,7 +685,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Line"]];
       $twoWayStyle = Automatic; $negationStyle = "Reverse"; $borderStyle = None;
-      $lineThickness = If[$GraphIs3D, Thickness @ 0.2, AbsoluteThickness @ 1.2];
+      $lineThickness = If[$GraphIs3D, Thickness @ 0.2, 
+        AbsoluteThickness @ Max[Round[ImageFractionToImageSize[Max[arrowheadSize]] / 10, .2], .5]];
       If[ListQ[arrowheadShape],
         {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
         Scan[scanArrowheadShapeOpts, arrowheadShapeOpts]];
@@ -811,6 +819,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       SetAutomatic[viewOptions, $automaticViewOptions];
       viewOptions
     ];
+
 
     baselinePosition //= processBaselinePosition;
 
@@ -970,6 +979,7 @@ computeEdgeLengthBasedImageSize[q_, edgeSize_] := Scope[
 ];
 
 imageSizeToImageFraction[sz_] := sz / effectiveImageWidth;
+ImageFractionToImageSize[sz_] := sz * effectiveImageWidth;
 imageSizeToPlotSize[sz_] := sz / effectiveImageWidth * $GraphPlotSizeX;
 imageFractionToPlotSize[sz_] := sz * $GraphPlotSizeX;
 plotSizeToImageFraction[sz_] := sz / $GraphPlotSizeX;
@@ -1685,7 +1695,7 @@ $arrowheads2D = Association[
     ],
 
   "CrossLine" ->
-    Line @ ToPacked @ {{0., -0.3}, {0., 0.3}},
+    Line @ ToPacked @ {{0., -0.333}, {0., 0.333}},
   "CrossBar" ->
     ToPacked /@ Rectangle[{-0.05,-0.2}, {0.05,0.2}]
 ];
@@ -2026,7 +2036,7 @@ setback[multiArrow, dist_] := multiArrow[#, dist]&;
 
 setback[Arrow, dist_] := Arrow[#, dist]&;
 
-setback[Line, dist_] := multiLine[Which[
+setback[Line|multiLine, dist_] := multiLine[Which[
   CoordinateMatrixQ[#], setbackCoords[dist][#],
   CoordinateArrayQ[#], Map[setbackCoords[dist], #],
   True, #]]&
@@ -2103,7 +2113,7 @@ edgeColorDataProvider = Case[
   
   "Index"                   := Range @ $EdgeCount;
   
-  "Cardinal"                := $EdgeTags;
+  "Cardinal"                := Lookup[cardinalColors, $EdgeTags, $LightGray];
 
   list_List /; Length[list] === $EdgeCount := list;
 
@@ -2448,7 +2458,7 @@ lookupPayloadInAssoc[assoc_][i_] :=
 
 getIndex[i_] := i;
 getName[i_] := Part[$labelNames, i];
-getCardinal[i_] := Part[$EdgeTags, i];
+getCardinal[i_] := If[ListQ[$EdgeTags], Part[$EdgeTags, i], None];
 getAnnotation[name_][i_] := Part[$annotations, name, i];
 
 placeTooltipAt[label_, pos_, _] := NiceTooltip[{Transparent, If[$GraphIs3D, Sphere, Disk][pos, 1.1*$labeledElemSize]}, label];
@@ -2552,7 +2562,7 @@ makeGraphics3D[elements_, imageSize_, imagePadding_, plotRangePadding_, plotLabe
   ImagePadding -> imagePadding, PlotRange -> All,
   PlotRangePadding -> plotRangePadding,
   Lighting -> "Neutral",
-  Method -> {"ShrinkWrap" -> False, "EdgeDepthOffset" -> False},
+  Method -> {"ShrinkWrap" -> shrinkWrap, "EdgeDepthOffset" -> False},
   AspectRatio -> Automatic, PreserveImageOptions -> False,
   PlotLabel -> plotLabel
 ];

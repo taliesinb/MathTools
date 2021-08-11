@@ -4,6 +4,7 @@ Package["QuiverGeometry`"]
 PackageImport["GeneralUtilities`"]
 
 
+PackageExport["GraphTheme"]
 PackageExport["VertexAnnotations"]
 PackageExport["EdgeAnnotations"]
 PackageExport["ExtendedGraphLayout"]
@@ -372,7 +373,8 @@ $extendedGraphOptionsRules = {
   VertexLabelSpacing -> 0,
   EdgeLabelSpacing -> 0,
   VertexLabelBaseStyle -> None,
-  EdgeLabelBaseStyle -> None
+  EdgeLabelBaseStyle -> None,
+  GraphTheme -> None
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -468,7 +470,7 @@ $graphMetricPattern = Alternatives[
 ];
 
 $viewOptionKeysPattern = Alternatives[
-  ViewPoint, ViewCenter, ViewVertical, ViewVector, ViewMatrix, ViewProjection, ViewAngle
+  ViewPoint, ViewCenter, ViewVertical, ViewVector, ViewMatrix, ViewProjection, ViewAngle, "ShrinkWrap"
 ];
 
 $viewOptionsRulePattern = Automatic | {RepeatedNull[$viewOptionKeysPattern -> _]};
@@ -494,6 +496,26 @@ checkGraphAnnotationRule[key_ -> value_] /; And[
   );
 
 checkGraphAnnotationRule[rule_] := rule;
+
+(**************************************************************************************************)
+
+PackageExport["GraphTheme"]
+
+SetUsage @ "
+GraphTheme is an extended option to Graph that controls multiple options simultanously via named themes.
+* See $GraphThemeData for named sets of options.
+"
+
+(**************************************************************************************************)
+
+PackageExport["$GraphThemeData"]
+
+$fontThemeOpts = {VertexLabelBaseStyle -> $MathLabelStyle, EdgeLabelBaseStyle -> $CardinalLabelStyle};
+
+$GraphThemeData = <|
+  None -> {},
+  "Fonts" :> $fontThemeOpts
+|>;
 
 (**************************************************************************************************)
 
@@ -525,6 +547,50 @@ LookupExtendedOption[graph_, keys_List] :=
 
 LookupExtendedOption[graph_, key_Symbol | key_CustomGraphAnnotation] :=
   LookupAnnotation[graph, key, Lookup[$extendedGraphOptionsRules, key]];
+
+(**************************************************************************************************)
+
+PackageExport["LookupGraphThemeOptions"]
+
+Graph::badtheme = "`` is not a valid GraphTheme."
+
+LookupGraphThemeOptions[graph_] := Scope[
+  theme = LookupAnnotation[graph, GraphTheme, None];
+  If[ListQ @ theme, Flatten, Identity] @ 
+    Lookup[$GraphThemeData, theme, Message[Graph::badtheme, theme]; {}]
+];
+
+PackageExport["LookupExtendedThemedOption"]
+
+LookupExtendedThemedOption[graph_, keys_List] :=
+  MapThread[
+    If[#1 === $Failed, #2, #1]&,
+    {
+      AnnotationValue[graph, keys], 
+      Lookup[
+        Join[LookupGraphThemeOptions @ graph, $extendedGraphOptionsRules], 
+        keys
+      ]
+    }
+  ];
+
+LookupExtendedThemedOption[graph_, key_] :=
+  LookupAnnotation[graph, key,
+    Lookup[LookupGraphThemeOptions @ graph, key,
+      Lookup[$extendedGraphOptionsRules, key]]];
+
+(**************************************************************************************************)
+
+PackageExport["LookupThemedOption"]
+
+LookupThemedOption[graph_, opt_, default_:Automatic] :=
+  Quiet @ Lookup[
+    Join[
+      Options @ graph,
+      LookupGraphThemeOptions @ graph
+    ], 
+    opt, default
+  ];
 
 (**************************************************************************************************)
 
@@ -1361,10 +1427,12 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
 
   $Graph = graph;
 
-  {graphLayout, vertexCoordinates} =
-    LookupOption[igraph, {GraphLayout, VertexCoordinates}];
+  UnpackAnonymousThemedOptions[graph, Automatic,
+    graphLayout, vertexCoordinates, plotRange
+  ];
+  initialVertexCoordinates = vertexCoordinates;
 
-  UnpackExtendedOptions[graph,
+  UnpackExtendedThemedOptions[graph,
     layoutDimension, extendedGraphLayout, viewOptions, coordinateTransformFunction,
     vertexCoordinateRules, vertexCoordinateFunction, selfLoopRadius, multiEdgeDistance
   ];
@@ -1400,10 +1468,9 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
   isMulti = MultigraphQ[igraph];
 
   If[(isMulti || !DuplicateFreeQ[Sort /@ Take[edgeList, All, 2]]) && FreeQ[graphLayout, "MultiEdgeDistance" | "SpringElectricalEmbedding"],
+    SetAutomatic[multiEdgeDistance, 0.2];
     graphLayout = ToList[graphLayout, "MultiEdgeDistance" -> 2*multiEdgeDistance];
   ];
-
-  initialVertexCoordinates = LookupOption[igraph, VertexCoordinates];
 
   method = Match[graphLayout, s_String | {s_String, ___} :> s, Automatic];
   autoLayout = Match[graphLayout, {s_String, opts___} :> {opts}, {___String, opts___} :> opts, Automatic];
@@ -1454,7 +1521,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
       Message[ExtractGraphPrimitiveCoordinates::badvcoords];
       initialVertexCoordinates = Automatic;
     ,
-      initialVertexCoordinates = nudgeOverlappingVertices[initialVertexCoordinates, LookupOption[graph, PlotRange]];
+      initialVertexCoordinates = nudgeOverlappingVertices[initialVertexCoordinates, plotRange];
     ];
   ];
 
@@ -1557,7 +1624,7 @@ fixSelfLoop[coords_] := Scope[
 PackageExport["LookupVertexCoordinates"]
 
 LookupVertexCoordinates[graph_Graph, vertexList_:All] := Scope[
-  UnpackExtendedOptions[graph,
+  UnpackExtendedThemedOptions[graph,
     coordinateTransformFunction,
     vertexCoordinateRules, vertexCoordinateFunction
   ];

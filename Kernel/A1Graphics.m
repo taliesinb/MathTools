@@ -43,9 +43,9 @@ $CardinalFont = "KaTeX_Typewriter"
 
 (**************************************************************************************************)
 
-PackageExport["$CardinalStyle"]
+PackageExport["$CardinalLabelStyle"]
 
-$CardinalStyle = {
+$CardinalLabelStyle = {
   FontFamily -> $CardinalFont, FontSize -> 14
 };
 
@@ -961,12 +961,13 @@ LineLength[list_] := Total @ MapStaggered[EuclideanDistance, list];
 PackageExport["EdgeLengthScale"]
 
 boundingBoxSideLength[line_] :=
-  Sqrt[1/2] * Total[EuclideanDistance @@@ CoordinateBounds @ line];
+  Total[EuclideanDistance @@@ CoordinateBounds @ line];
 
 (* boundingBoxSideLength[line_] :=
   EuclideanDistance @@ CoordinateBoundingBox @ line;
  *)
-adjustedLineLength[line_] := Min[LineLength @ line, boundingBoxSideLength @ line];
+adjustedLineLength[line_] :=
+  If[First[line] === Last[line], 0.8, 1] * Min[LineLength @ line, boundingBoxSideLength @ line];
 
 EdgeLengthScale[{}, q_] := 1.0;
 
@@ -975,7 +976,7 @@ EdgeLengthScale[edgeCoordinateLists_, q_] := Scope[
   edgeLengths = DeleteCases[edgeLengths, 0|0.];
   If[edgeLengths === {},
     edgeLengths = Map[boundingBoxSideLength, edgeCoordinateLists]];
-  Quantile[edgeLengths, q]
+  If[q === "Average", Mean @ edgeLengths, Quantile[edgeLengths, q]]
 ];
 
 (**************************************************************************************************)

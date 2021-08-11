@@ -114,10 +114,10 @@ PackageScope["makeLabeledGenerators"]
 makeLabeledGenerators[generators_, cardinalColors_] :=
   Row[
     KeyValueMap[
-      Labeled[#2, Row[{makeLegendArrowheadGraphic[cardinalColors @ #1, "Arrow"], " ", #1}]]&,
+      Labeled[#2, Row[{makeLegendArrowheadGraphic[cardinalColors @ #1, "Arrow"], "\[ThinSpace]", #1}]]&,
       generators
     ],
-    "  ", BaseStyle -> $LabelStyle
+    "  ", BaseStyle -> $CardinalLabelStyle
   ];
 
 (**************************************************************************************************)

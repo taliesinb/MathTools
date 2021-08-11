@@ -126,13 +126,13 @@ LatticeColoringPlot[quiver_, args___, "Orientation" -> o_] := Block[
   LatticeColoringPlot[quiver, args]
 ];
 
-$plcIconSize = "ShortestEdge" -> {40, 100};
+$plcIconSize = "AverageEdge" -> {65, 100};
 LatticeColoringPlot[quiver_, args___, "IconSize" -> iconSize_] := Block[
   {$plcIconSize = iconSize},
   LatticeColoringPlot[quiver, args]
 ];
 
-$plcSLR = 0.6;
+$plcSLR = 0.5;
 LatticeColoringPlot[quiver_, args___, SelfLoopRadius -> r_] := Block[
   {$plcSLR = r},
   LatticeColoringPlot[quiver, args]
@@ -142,14 +142,8 @@ LatticeColoringPlot[quiver_, args___] := Scope[
   quiver = Quiver[quiver];
   notb = VertexCount[quiver] > 1;
   icon = Quiver[quiver,
-    GraphLegend -> None,
-    ArrowheadSize -> MediumSmall,
-    ArrowheadShape -> {"Arrow", TwoWayStyle -> "OutClose"},
-    ArrowheadStyle -> $LightGray,
-    LabelCardinals -> Below, VertexSize -> Huge,
-    ImagePadding -> {{15, 15},{15, 15}}, ImageSize -> $plcIconSize,
-    VertexColorFunction -> "Index",
-    SelfLoopRadius -> $plcSLR,
+    GraphTheme -> "FundamentalColoringQuiver",
+    SelfLoopRadius -> $plcSLR, ImageSize -> $plcIconSize,
     VertexCoordinates -> If[notb, CirclePoints @ VertexCount[quiver], {{0, 0}}]
   ];
   If[notb, icon //= CombineMultiedges];
@@ -165,6 +159,20 @@ LatticeColoringPlot[quiver_, args___] := Scope[
 
 (**************************************************************************************************)
 
+$fundamentalColoringQuiverThemeOpts = {
+  ArrowheadSize -> MediumSmall,
+  GraphLegend -> None,
+  ArrowheadShape -> {"Arrow", TwoWayStyle -> "OutClose"},
+  ArrowheadStyle -> $LightGray,
+  LabelCardinals -> Below, VertexSize -> Huge,
+  ImagePadding -> {{15, 15}, {20, 20}},
+  VertexColorFunction -> "Index"
+};
+
+$GraphThemeData["FundamentalColoringQuiver"] := $fundamentalColoringQuiverThemeOpts;
+
+(**************************************************************************************************)
+
 PackageExport["LatticeColoringRow"]
 
 $lcrMW = 3;
@@ -172,7 +180,10 @@ $lcrMW = 3;
 LatticeColoringRow[args___, MaxWidth -> m_] := Block[{$lcrMW = m}, LatticeColoringRow[args]];
 
 LatticeColoringRow[list_List, args___] :=
-  SpacedRow[LatticeColoringPlot[#, args, "Orientation" -> "Vertical"]& /@ list, MaxWidth -> $lcrMW];
+  SpacedRow[
+    LatticeColoringPlot[#, args, "Orientation" -> "Vertical"]& /@ list,
+    MaxWidth -> $lcrMW
+  ];
 
 (**************************************************************************************************)
 
@@ -448,22 +459,26 @@ drawMobiusEdge[assoc_] := Scope[
 
 PackageExport["SimpleLabeledGraph"]
 
-SimpleLabeledGraph[args___] := ExtendedGraph[args, $simpleLabeledGraphOpts];
+SimpleLabeledGraph[args___] := ExtendedGraph[args, GraphTheme -> "SimpleLabeledGraph"]
 
-$simpleLabeledGraphOpts = Sequence[
+(**************************************************************************************************)
+
+$simpleLabeledGraphOpts = {
   CardinalColors -> None,
   VertexLabels -> "Name",
   VertexLabelPosition -> Automatic,
   VertexLabelBaseStyle -> $MathLabelStyle,
   EdgeLabels -> "Cardinal",
-  EdgeLabelBaseStyle -> $CardinalStyle,
+  EdgeLabelBaseStyle -> $CardinalLabelStyle,
   EdgeLabelSpacing -> -0.3,
   ArrowheadShape -> {"Line", EdgeThickness -> 2},
   ImagePadding -> {{0,0}, {0, 25}},
   GraphLayout -> {"Linear", "MultiEdgeDistance" -> 0.6}, ArrowheadPosition -> 0.525,
   ArrowheadSize -> Medium, ArrowheadStyle -> $Gray,
   ImageSize -> "ShortestEdge" -> 50
-];
+};
+
+$GraphThemeData["SimpleLabeledGraph"] := $simpleLabeledGraphOpts;
 
 (**************************************************************************************************)
 
@@ -473,17 +488,19 @@ $rgbList = {"r", "g", "b"};
 $abcList = {"a", "b", "c"};
 
 SimpleLabeledQuiver[args___] := Scope[
-  res = Quiver[args, FilterOptions @ $simpleLabeledQuiverOpts];
+  res = Quiver[args];
   cards = DeleteDuplicates @ EdgeTags[res];
   Which[
     SubsetQ[$rgbList, cards], cards = Select[$rgbList, MemberQ[cards, #]&],
     SubsetQ[$abcList, cards], cards = Select[$abcList, MemberQ[cards, #]&],
     True, Null
   ];
-  ExtendedGraph[res, Cardinals -> cards]
+  ExtendedGraph[res, Cardinals -> cards, GraphTheme -> "SimpleLabeledQuiver"]
 ];
 
-$simpleLabeledQuiverOpts = Sequence[
+(**************************************************************************************************)
+
+$simpleLabeledQuiverOpts = {
   VertexLabels -> "Name",
   VertexLabelPosition -> Automatic, 
   VertexLabelBaseStyle -> $MathLabelStyle,
@@ -492,7 +509,9 @@ $simpleLabeledQuiverOpts = Sequence[
   ArrowheadPosition -> 0.59, 
   ArrowheadSize -> Medium,
   ImageSize -> "ShortestEdge" -> 70
-];
+};
+
+$GraphThemeData["SimpleLabeledQuiver"] := $simpleLabeledQuiverOpts;
 
 (**************************************************************************************************)
 
@@ -500,7 +519,10 @@ PackageExport["PathQuiverPlot"]
 
 PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___Rule] := Scope[
   If[!QuiverQ[fq], ReturnFailed[]];
-  $fq = fq; $v0 = v0; $scaling = 1.0;
+  $fq = AnnotationDelete[fq, {ArrowheadShape, VertexLabels, EdgeLabels}]; (* <- so that the theme will take effect *)
+  $fq = DeleteOptions[$fq, ImageSize];
+  $v0 = v0; 
+  $scaling = 1.0;
   cardinals = CardinalList @ fq;
   paths = parsePath /@ DeleteDuplicates[paths];
   If[ContainsQ[paths, $Failed], ReturnFailed[]];
@@ -542,15 +564,40 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
   plot = Quiver[
     vertices, edges, opts,
     VertexCoordinates -> coords,
-    GraphOrigin -> LatticeVertex[{}], BaselinePosition -> Center,
-    VertexShapeFunction -> labels, VertexSize -> Inherited,
-    ArrowheadShape -> {"Line", EdgeThickness -> 2}, ArrowheadSize -> Medium, EdgeStyle -> LightGray,
-    EdgeThickness -> Thick, Cardinals -> LookupExtendedOption[fq, Cardinals],
-    ImageSize -> 400, ImagePadding -> 5, AspectRatioClipping -> False,
-    GraphLegend -> None
+    VertexShapeFunction -> labels, 
+    Cardinals -> LookupExtendedOption[fq, Cardinals],
+    GraphTheme -> "PathQuiver"
   ] // CombineMultiedges;
   LargeLabeled[plot, ForwardPathQuiverSymbol["Q", v0Label]]
 ];
+
+(**************************************************************************************************)
+
+$fundamentalQuiverOpts = {
+  ImageSize -> "ShortestEdge" -> 60, VertexLabels -> "Name",
+  GraphLayout -> "Linear", 
+  Cardinals -> {"r", "b"},
+  ImagePadding -> {10, 15}, 
+  ArrowheadSize -> MediumLarge,
+  VertexLabelBaseStyle -> $MathLabelStyle
+}
+
+$GraphThemeData["FundamentalQuiver"] := $fundamentalQuiverOpts;
+
+(**************************************************************************************************)
+
+$pathQuiverOpts = {
+  GraphOrigin -> LatticeVertex[{}], BaselinePosition -> Center,
+  VertexSize -> Inherited,
+  ArrowheadShape -> {"Line", EdgeThickness -> 2}, ArrowheadSize -> Medium, EdgeStyle -> LightGray,
+  EdgeThickness -> Thick, 
+  ImageSize -> 400, ImagePadding -> 5, AspectRatioClipping -> False,
+  GraphLegend -> None
+}
+
+$GraphThemeData["PathQuiver"] := $pathQuiverOpts;
+
+(**************************************************************************************************)
 
 wordToCoords = MatchValues[
   {}          := {0, 0};
@@ -572,25 +619,36 @@ parsePath = MatchValues[
   _ := $Failed;
 ];
 
+(**************************************************************************************************)
+
+$pathQuiverIconOpts = {
+  VertexLabels -> None,
+  Frame -> True, FrameStyle -> {LightGray, SlightlyThin}, PlotRangeClipping -> False,
+  GraphLegend -> None, ImageSize -> "ShortestEdge" -> 20, ArrowheadShape -> None,
+  VertexSize -> Medium  
+};
+
+$GraphThemeData["PathQuiverIcon"] := $pathQuiverIconOpts;
+
+(**************************************************************************************************)
+
 FQPVertexIcon[opts_][path_] := Scope[
   hasClassLabel = False;
   If[MatchQ[path, Labeled[_, _]], hasClassLabel = True; {path, classLabel} = FirstLast @ path];
   hasPathLabel = !MatchQ[path, Path[_, {}, ___]];
-  highlighted = HighlightGraphRegion[
-    $fq, path, {$Teal, PathRadius->2, PathStyle -> "DiskArrow", EdgeSetback -> $setback, "Foreground"}, Sequence @@ opts,
-    VertexLabels -> None,
-    Frame -> True, FrameStyle -> {LightGray, SlightlyThin}, PlotRangeClipping -> False,
-    GraphLegend -> None, ImageSize -> "ShortestEdge" -> 25, ArrowheadShape -> None, VertexSize -> Small,
+  highlighted = Capture @ HighlightGraphRegion[
+    $fq, path, {$Teal, PathRadius -> 2, PathStyle -> "DiskArrow", EdgeSetback -> $setback, "Foreground"}, Sequence @@ opts,
+    GraphTheme -> {"PathQuiverIcon", "FundamentalQuiver"},
     FrameLabel -> {
       Bottom -> If[!hasPathLabel, None, fmtPaths @ path],
-      Top -> If[!hasClassLabel, None, Style[classLabel, FontColor -> Black, FontSize -> 10]]
+      Top -> If[!hasClassLabel, None, Style[classLabel, FontColor -> Black, FontSize -> 12]]
     }
   ];
   ExtendedGraphPlot @ highlighted
 ];
 
 fmtPaths = MatchValues[
-  Path[_, word_, ___] := Style[WordForm @ word, FontColor -> Gray, FontSize -> 10];
+  Path[_, word_, ___] := Style[WordForm @ word, FontColor -> Gray, FontSize -> 12];
   list_List           := Row[fmtPaths /@ list, Style[",", Gray]];
 ];
 

@@ -58,6 +58,9 @@ rawSymbolBoxes = Case[
   RedForm[e_]                 := TemplateBox[List @ % @ e, "RedForm"];
   GreenForm[e_]               := TemplateBox[List @ % @ e, "GreenForm"];
   BlueForm[e_]                := TemplateBox[List @ % @ e, "BlueForm"];
+  RedGreenForm[e_]            := TemplateBox[List @ % @ e, "RedGreenForm"];
+  RedBlueForm[e_]             := TemplateBox[List @ % @ e, "RedBlueForm"];
+  GreenBlueForm[e_]           := TemplateBox[List @ % @ e, "GreenBlueForm"];
   s_Symbol                    := toSymbolName[s];
   str_String                  := str;
   i_Integer                   := TextString @ i;
@@ -134,7 +137,7 @@ makeTypedTemplateBox[args___, tag_] :=
 
 $colorFormP = Alternatives[
   RedForm, BlueForm, GreenForm,
-  PurpleForm, TealForm, OrangeForm, 
+  RedBlueForm, GreenBlueForm, RedGreenForm, 
   DarkGrayForm, MediumGrayForm, LightGrayForm
 ];
 
@@ -667,8 +670,8 @@ declareBoxFormatting[
     TemplateBox[{}, "CoversSymbol"]
 ]
 
-$TemplateKatexFunction["CoversForm"] = "covers";
-$TemplateKatexFunction["CoversSymbol"] = "\\covers{}{}"&;
+$TemplateKatexFunction["CoversForm"] = riffled["\\covers"];
+$TemplateKatexFunction["CoversSymbol"] = "\\covers";
 
 (********************************************)
 

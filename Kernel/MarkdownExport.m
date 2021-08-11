@@ -510,7 +510,7 @@ rasterizeCell[cell_] := Scope[
   If[$dryRun,
     imageFileName = StringJoin[cellHash, "_dummy.png"];
   ,
-    image = Rasterize[cell, ImageFormattingWidth -> Infinity, ImageResolution -> 288];
+    image = Rasterize[cell, ImageFormattingWidth -> Infinity, ImageResolution -> 144];
     If[!ImageQ[image], ReturnFailed[]];
     imageHash = Base36Hash @ image;
     imageDims = ImageDimensions @ image;
@@ -527,7 +527,7 @@ rasterizeCell[cell_] := Scope[
 
   (* create and return markdown *)
   Label[skipRasterization];
-  width = Ceiling @ First[imageDims * 0.333];
+  width = Ceiling @ First[imageDims * 0.5];
   imageRelativePath = toEmbedPath[relativeRasterizationPath, imageFileName, imagePath];
   markdown = imageTemplate[<|"imagepath" -> imagePath, "relativepath" -> imageRelativePath, "width" -> width|>];
   
