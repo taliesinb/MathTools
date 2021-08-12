@@ -207,7 +207,7 @@ PackageScope["SetUsage"]
 
 PackageExport["$DisableSetUsage"]
 
-$DisableSetUsage = True;
+$DisableSetUsage = False;
 
 preprocessUsageString[usageString_] :=
   FixedPoint[substituteUsageSlots, usageString]

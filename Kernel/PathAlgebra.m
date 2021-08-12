@@ -28,12 +28,14 @@ PackageExport["ModOperator"]
 PackageExport["PlusModOperator"]
 PackageExport["TimesModOperator"]
 PackageExport["MinusModOperator"]
+PackageExport["SubtractModOperator"]
 
 ModOperator[n_][e_] := If[NumericQ[e], Mod[e, n, 0], e];
 ModOperator[Infinity] = Identity;
 PlusModOperator[n_] := Plus /* ModOperator[n];
 TimesModOperator[n_] := Times /* ModOperator[n];
 MinusModOperator[n_] := Minus /* ModOperator[n];
+SubtractModOperator[n_] := Subtract /* ModOperator[n];
 
 (**************************************************************************************************)
 
@@ -52,7 +54,9 @@ Options[PathAlgebra] = {
   ImageSize -> 100,
   VertexSize -> Automatic,
   ArrowheadSize -> 0.13,
-  EdgeThickness -> 1
+  EdgeThickness -> 1,
+  "VertexNudge" -> {0, 0},
+  "EdgeNudge" -> {0, 0}
 };
 
 $graphOrLatticeSpec = _Graph | _String | {_String, __};
@@ -68,7 +72,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
   If[!MatchQ[field, _Integer | Integers | Reals | Complexes], ReturnFailed[]];
 
-  UnpackOptions[plotRange, edgeSetback, imageSize, vertexSize, arrowheadSize, edgeThickness];
+  UnpackOptions[plotRange, edgeSetback, imageSize, vertexSize, arrowheadSize, edgeThickness, vertexNudge, edgeNudge];
   If[NumericQ[plotRange], plotRange *= {{-1, 1}, {-1, 1}}];
 
   data = <||>;
@@ -87,12 +91,16 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   data["VertexSize"] = vertexSize;
   data["ArrowheadSize"] = arrowheadSize;
   data["EdgeThickness"] = edgeThickness;
+  data["VertexNudge"] = vertexNudge;
+  data["EdgeNudge"] = edgeNudge;
 
   data["Field"] = field;
   data["FieldModulus"] = mod = Match[field, n_Integer :> n, Infinity];
   data["FieldPlus"] = PlusModOperator[mod];
   data["FieldTimes"] = TimesModOperator[mod];
-  data["FieldMinus"] = Match[field, n_Integer :> MinusModOperator[n], Minus];
+  data["FieldMinus"] = MinusModOperator[mod];
+  data["FieldSubtract"] = SubtractModOperator[mod];
+
   {pos, neg} = Match[field, n_Integer :> {1, n-1}, {1, -1}];
   data["Pos"] = pos;
   data["Neg"] = neg;
@@ -134,6 +142,8 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   tailAssoc = AssociationThread[edgeRange, tailVertices];
   headAssoc = AssociationThread[edgeRange, headVertices];
 
+  data["EdgeTails"] = tailVertices;
+  data["EdgeHeads"] = headVertices;
   data["EdgeToTail"] = Join[tailAssoc, KeyMap[Negated, headAssoc]];
   data["EdgeToHead"] = Join[headAssoc, KeyMap[Negated, tailAssoc]];
 
@@ -308,7 +318,7 @@ iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
   UnpackPathAlgebra[
     vertexCoordinates, edgeCoordinateLists, plotRange, fieldColorFunction,
     vertexRange, vertexList, vertexSize, edgeSetback, imageSize, edgeToCardinal,
-    arrowheadSize, edgeThickness
+    arrowheadSize, edgeThickness, vertexNudge, edgeNudge
   ];
   $sb = edgeSetback; $transparency = transparency; $arrowheadSize = arrowheadSize;
   pathRules = Normal @ paths;
@@ -325,14 +335,23 @@ iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
     AbsolutePointSize[Replace[vertexSize, Automatic -> 3]], GrayLevel[0.9],
     Point @ Part[vertexCoordinates, remainingVertices]
   };
+  primitives = {vertexPrimitives, pathPrimitives};
+  primitives = doNudge[primitives, vertexNudge, edgeNudge];
   Graphics[
-    {vertexPrimitives, pathPrimitives},
+    primitives,
     Frame -> True, FrameTicks -> False, ImageSize -> imageSize,
     FrameStyle -> LightGray,
     PlotRange -> plotRange, PlotRangePadding -> Scaled[0.15],
     PlotRangeClipping -> True
   ]
 ];
+
+doNudge[g_, {0, 0}, {0, 0}] := g;
+doNudge[g_, vertexNudge_, _] :=
+  g /. Point[p_] :> If[CoordinateVectorQ[p],
+    Point[Offset[nudge, p]],
+    Point[Offset[nudge, #]]& /@ p
+  ];
 
 canonPathElement[p:PathElement[t_, edges_, h_] -> w_] :=
   If[t < h, PathElement[h, NegateReverse @ edges, t], p];
@@ -748,6 +767,20 @@ SetPathElementWeights[rules_][vector_] :=
 
 (**************************************************************************************************)
 
+PackageExport["VertexFieldWeights"]
+
+VertexFieldWeights[PathVector[assoc_]] /; $PathAlgebraQ := Scope[
+  UnpackPathAlgebra[vertexCount];
+  weightVector = ConstantArray[0, vertexCount];
+  KeyValueScan[setVertexFieldWeight, assoc];
+  weightVector
+]
+
+setVertexFieldWeight[PathElement[v_, {}, _], w_] := Part[weightVector, v] = w;
+setVertexFieldWeight[_, _] := Null;
+
+(**************************************************************************************************)
+
 PackageExport["SetVertexFieldWeights"]
 
 SetVertexFieldWeights[PathVector[assoc_], rules:(_Rule | {___Rule})] :=
@@ -1036,6 +1069,9 @@ RandomEdgeField[type_String:"Symmetric", OptionsPattern[]] /; $PathAlgebraQ := S
 singleEdgePathElement[edge_] :=
   PathElement[edgeToTail @ edge, {edge}, edgeToHead @ edge];
 
+reversedSingleEdgePathElement[edge_] :=
+  PathElement[edgeToHead @ edge, {Negated @ edge}, edgeToTail @ edge];
+
 (**************************************************************************************************)
 
 PackageExport["RandomPathField"]
@@ -1219,32 +1255,42 @@ EdgeField[ints:{__Integer} | _Integer] /; $PathAlgebraQ := Scope[
 EdgeField[spec_, "Forward"] := EdgeField[spec];
 EdgeField[spec_, "Backward"] := PathReverse @ EdgeField[spec];
 
-(* EdgeField[spec_, "Symmetric"] := symmetricEdgeField[spec, True];
+EdgeField[spec_, "Symmetric"] := symmetricEdgeField[spec, True];
 EdgeField[spec_, "Antisymmetric"] := symmetricEdgeField[spec, False];
 
 symmetricEdgeField[All, sym_] := Scope[
-  UnpackPathAlgebra[edgePairs, pos, neg];
+  UnpackPathAlgebra[edgeRange, pos, neg, edgeTails, edgeRange, edgeHeads];
   If[sym, neg = pos];
-  PathVector @ Association[ (* TODO *)
-    {PathElement[#] -> pos, PathElement[Reverse @ #] -> neg}& /@ edgePairs
+  constructPathVector @ MapThread[
+    {tail, edge, head} |-> weightedForwardBackwardEdgeElements[
+      tail, edge, head, {pos, neg}
+    ],
+    {edgeTails, edgeRange, edgeHeads}
   ]
 ];
 
 symmetricEdgeField[i_Integer, sym_] := symmetricEdgeField[{i}, sym];
 
 symmetricEdgeField[ints:{__Integer}, sym_] := Scope[
-  UnpackPathAlgebra[edgePairs, pos, neg];
-  edges = Part[edgePairs, Abs @ ints];
+  UnpackPathAlgebra[pos, neg, edgeTails, edgeRange, edgeHeads];
+  {edgeTails, edgeRange, edgeHeads} //= PartOperator[All, Abs @ ints];
   If[sym, neg = pos];
-  PathVector @ Association @ MapThread[
-    {pEdge, nEdge, int} |-> If[Positive[int],
-      {pEdge -> pos, nEdge -> neg},
-      {pEdge -> neg, nEdge -> pos}
+  constructPathVector @ MapThread[
+    {tail, edge, head, int} |-> weightedForwardBackwardEdgeElements[
+      tail, edge, head,
+      If[Positive[int], {pos, neg}, {neg, pos}]
     ],
-    {PathElement /@ edges, PathElement /@ Reverse[edges, 2], ints}
+    {edgeTails, edgeRange, edgeHeads, ints}
   ]
 ];
- *)
+
+weightedForwardBackwardEdgeElements[tail_, edge_, head_, {fweight_, bweight_}] := {
+  PathElement[tail, {edge}, head] -> fweight,
+  PathElement[head, {Negated @ edge}, tail] -> bweight
+};
+
+
+      
 (**************************************************************************************************)
 
 PackageExport["EdgeFieldQ"]
@@ -1659,58 +1705,30 @@ LaplacianOperator[pv_PathVector] :=
 
 (**************************************************************************************************)
 
-PackageExport["PathEtaDifference"]
-
-PathEtaDifference[PathVector[flow_], PathVector[target_]] :=
-  etaEpsilonDifference[flow, target, False];
-
-PathEtaDifference[v_][t_] := PathEtaDifference[v, t];
-
-(**************************************************************************************************)
-
-PackageExport["PathEpsilonDifference"]
-
-PathEpsilonDifference[PathVector[flow_], PathVector[target_]] :=
-  etaEpsilonDifference[flow, target, True];
-
-PathEpsilonDifference[v_][t_] := PathEpsilonDifference[v, t];
-
-(**************************************************************************************************)
-
-etaEpsilonDifference[flow_, target_, isEps_] := Scope[
-
-  setupForTranslation[];
-
-  targets = target;
-  {targetPaths, targetWeights} = KeysValues @ Normal @ target;
-  tailIndex = PositionIndex @ PathTailVertex @ targetPaths;
-  headIndex = If[!isEps, tailIndex, PositionIndex @ PathHeadVertex @ targetPaths];
-  $isEps = isEps;
-  PathVector @ DeleteCases[0|0.] @ MapIndexed[etaEpsilonElementDifference, flow]
-];
-
-etaEpsilonElementDifference[w_, {Key[tpath_PathElement]}] := Scope[
-  rpath = PathReverse @ tpath;
-  tail = PathTailVertex @ tpath;
-  head = PathHeadVertex @ tpath;
-  tailTargets = Lookup[tailIndex, tail, {}];
-  headTargets = Lookup[headIndex, head, {}];
-  If[headTargets === {} && tailTargets === {}, Return @ 0];
-  forwardTranslated = Flatten @ Map[elementTranslate[tpath, #]&, Part[targetPaths, tailTargets]];
-  elementTranslate2 = If[$isEps, elementTranslateBack, elementTranslate];
-  reverseTranslated = Flatten @ Map[elementTranslate2[rpath, #]&, Part[targetPaths, headTargets]];
-  {fWeight, bWeight} = Total @ Lookup[targets, #, 0]& /@ {forwardTranslated, reverseTranslated};
-  {hWeight, tWeight} = Total @ Part[targetWeights, #]& /@ {headTargets, tailTargets};
-  w * ((fWeight - tWeight) - (bWeight - hWeight))
-]
-
-elementTranslateBack[p_, q_] := PathReverse @ elementTranslate[p, PathReverse @ q];
-
-(**************************************************************************************************)
-
 PackageExport["SymmetricPathFiniteDifference"]
 
 SymmetricPathFiniteDifference[flow_, target_] :=
   PathTranslate[PathReverse[flow] - flow, target];
 
 SymmetricPathFiniteDifference[v_][t_] := SymmetricPathFiniteDifference[v, t];
+
+(**************************************************************************************************)
+
+PackageExport["Lookup"]
+
+(**************************************************************************************************)
+
+PackageExport["PathGradient"]
+
+PathGradient[pv_PathVector] /; $PathAlgebraQ := Scope[
+  UnpackPathAlgebra[edgeTails, edgeRange, edgeHeads, vertexRange, fieldSubtract, fieldMinus];
+  weights = VertexFieldWeights @ pv;
+  constructPathVector @ MapThread[
+    {tail, edge, head} |-> weightedForwardBackwardEdgeElements[
+      tail, edge, head,
+      w = fieldSubtract[Part[weights, head], Part[weights, tail]];
+      {w, fieldMinus @ w}
+    ],
+    {edgeTails, edgeRange, edgeHeads}
+  ]
+]

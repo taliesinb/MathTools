@@ -31,7 +31,7 @@ PackageExport["CoordinateVectorQ"]
 CoordinateVectorQ[{Repeated[_ ? NumericQ, {2, 3}]}] := True;
 CoordinateVectorQ[{_ ? NumericQ, _ ? NumericQ}, 2] := True;
 CoordinateVectorQ[{_ ? NumericQ, _ ? NumericQ, _ ? NumericQ}, 3] := True;
-CoordinateVectorQ[_, _] := False;
+CoordinateVectorQ[___] := False;
 
 
 PackageExport["CoordinateMatrixQ"]

@@ -570,7 +570,7 @@ LabelSpacing is an option to SpacedRow.
 
 PackageExport["SpacedColumn"]
 
-SpacedColumn[args___] := SpacedRow[args, "Transposed" -> True];
+SpacedColumn[args___] := SpacedRow[args, Transposed -> True];
 
 (**************************************************************************************************)
 
@@ -586,6 +586,12 @@ ClickCopy[e_] := MouseAppearance[
   EventHandler[Framed[e, Background -> GrayLevel[0.99], FrameStyle -> GrayLevel[0.95], ImageMargins -> {{5, 5}, {5, 5}}], {"MouseClicked" :> CopyToClipboard[e]}],
   "LinkHand"
 ];
+
+PackageExport["Transposed"]
+
+SetUsage @ "
+Transposed is an option to %SpacedRow, %AlgebraicRow, etc.
+"
 
 (**************************************************************************************************)
 
@@ -614,6 +620,7 @@ $srLabelSpacing = 5;
 $srTransposed = False;
 $srIndexTooltip = False;
 $srAlignment = Center;
+$srLabelPosition = Automatic;
 
 (* this is because i don't trust OptionsPattern to not capture rules used as label specs.
 i might be wrong though *)
@@ -628,9 +635,10 @@ SpacedRow[elems__, ItemStyle -> s_] := Block[{$srItemStyle = s}, SpacedRow[elems
 SpacedRow[elems__, ItemFunction -> f_] := Block[{$srItemFunction = f}, SpacedRow[elems]];
 SpacedRow[elems__, LabelFunction -> f_] := Block[{$srLabelFunction = f}, SpacedRow[elems]];
 SpacedRow[elems__, LabelSpacing -> s_] := Block[{$srLabelSpacing = s}, SpacedRow[elems]];
+SpacedRow[elems__, LabelPosition -> s_] := Block[{$srLabelPosition = s}, SpacedRow[elems]];
 SpacedRow[elems__, Alignment -> a_] := Block[{$srAlignment = a}, SpacedRow[elems]];
 SpacedRow[elems__, "IndexTooltip" -> t_] := Block[{$srIndexTooltip = t}, SpacedRow[elems]];
-SpacedRow[elems__, "Transposed" -> t_] := Block[{$srTransposed = t}, SpacedRow[elems]];
+SpacedRow[elems__, Transposed -> t_] := Block[{$srTransposed = t}, SpacedRow[elems]];
 
 SpacedRow[labels_List -> items_List] /; Length[labels] == Length[items] :=
   SpacedRow[RuleThread[labels, items]];
@@ -651,27 +659,33 @@ SpacedRow[elems__] := Scope[
   If[!ListQ[alignment], alignment = {alignment, alignment}];
   rowSpacings = $srRowSpacings / 10;
   labelSpacing = $srLabelSpacing / 10;
+  labelPosition = $srLabelPosition;
+  SetAutomatic[labelPosition, If[$srTransposed, Before, After]];
+  labelIsBefore = labelPosition === Before;
   If[tooLong || hasLabels,
     If[tooLong,
       items = Flatten @ Riffle[Partition[items, UpTo[$srMaxWidth]], {$nextRow}]
     ];
     If[hasLabels,
-      items //= Map[toGridRowPair /* If[$srTransposed, Reverse, Identity]];
-      vspacings = {labelSpacing, rowSpacings};
+      items //= Map[toGridRowPair /* If[labelIsBefore, Reverse, Identity]];
       entries = unfoldRow /@ SequenceSplit[items, {$nextRow}];
+      vspacings = {labelSpacing, rowSpacings};
       itemStyle = {{$srItemStyle, $srLabelStyle}};
+      If[labelIsBefore, itemStyle //= Map[Reverse]];
     ,
       vspacings = {rowSpacings};
       entries = SequenceSplit[items, {$nextRow}];
-      itemStyle = {{$srItemStyle}};
+      itemStyle = {$srItemStyle};
     ];
     hspacings = {$srSpacings/10};
-    styles = {{}, itemStyle};
+    
     If[$srTransposed,
       entries //= Transpose;
-      styles //= Reverse[#, {1, 3}]&;
+      styles = {itemStyle, {}};
       {hspacings, vspacings} = {vspacings * 1.5, hspacings * 0.5};
       alignment //= Reverse;
+    ,
+      styles = {{}, itemStyle};
     ];
     Grid[
       entries,

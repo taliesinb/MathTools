@@ -25,9 +25,9 @@
 \gdef\filledToken{∙}
 \gdef\emptyToken{∘}
 
-\gdef\tinybullet{{\tiny∙}}
-\gdef\deSymbol{{\,{{\raisebox{1.19pt}{\tinybullet}\mkern{-0.8pt}{→}}}\,}}
-\gdef\ueSymbol{{\,\raisebox{1pt}{\tinybullet\raisebox{-0.03em}{\mkern{-0.3pt}{\tiny──}\mkern{-0.3pt}}\tinybullet}\,}}
+\gdef\tinybullet{{\tiny●}}
+\gdef\deSymbol{{{{\raisebox{1.19pt}{\tinybullet}\mkern{-1pt}{→}}}\,}}
+\gdef\ueSymbol{{\raisebox{1pt}{\tinybullet\raisebox{-0.03em}{\mkern{-0.3pt}{\tiny──}\mkern{-0.3pt}}\tinybullet}\,}}
 
 \gdef\de#1#2{{{#1} \deSymbol {#2}}}
 \gdef\ue#1#2{{{#1} \ueSymbol {#2}}}
@@ -114,6 +114,15 @@
 \gdef\matrix#1{#1}
 \gdef\wordGroup#1{\Omega_{#1}}
 
+\gdef\basisPath#1{\mathbf{p}_{#1}}
+\gdef\basisPathWeight#1{p_{#1}}
+
+\gdef\gradOf#1{\grad\,{#1}}
+\gdef\grad{\nabla}
+\gdef\divOf#1{\div\,{#1}}
+\gdef\div{\dot{\nabla}}
+\gdef\suchThat#1#2{{#1} \vert {#2}}
+
 \gdef\graph#1{#1}
 \gdef\graphHomomorphism#1{#1}
 \gdef\covers{\sqsupseteq}
@@ -134,6 +143,8 @@
 
 \gdef\baseField#1{#1}
 \gdef\finiteField#1{\mathbb{F}_{#1}}
+
+\gdef\functionSpace#1#2{#2^{#1}}
 
 \gdef\pathGroupoid#1{{ \Gamma_{#1} }}
 \gdef\forwardPathQuiver#1#2{{\overrightharpoon{#1}_{#2}}}

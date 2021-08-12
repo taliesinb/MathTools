@@ -260,6 +260,8 @@ LookupCardinalColors[graph_Graph] := Scope[
       <||>,
     ColorVectorQ[cardinalColors] && SameLengthQ[cardinalColors, cardinals],
       AssociationThread[cardinals, cardinalColors],
+    AssociationQ[cardinalColors],
+      cardinalColors,
     AssociationQ[cardinalColorFunction],
       AssociationThread[cardinals, Lookup[cardinalColorFunction, cardinals, $Gray]],
     cardinalColorFunction =!= None,

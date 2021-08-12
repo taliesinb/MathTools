@@ -12,6 +12,14 @@ Headings is an option to %AlgebraicRow and %AlgebraicGrid.
 
 (**************************************************************************************************)
 
+PackageExport["AlgebraicColumn"]
+
+SetHoldAllComplete[AlgebraicColumn];
+
+$arColumn = False;
+AlgebraicColumn[args___] := Scope[$arColumn = True; AlgebraicRow[args]];
+
+(**************************************************************************************************)
 
 SetHoldAllComplete[AlgebraicRow, AlgebraicGrid, algebraicForm, algebraicGridRow];
 
@@ -28,9 +36,11 @@ AlgebraicRow[elements__,  MultiplicationForm -> t:("Dot"|"Times"|None)] := Block
 ];
 
 AlgebraicRow[elements__] :=
-  SpacedRow[
+  If[$arColumn, SpacedColumn, SpacedRow][
     Map[algebraicForm, Unevaluated @ {elements}],
-    LabelStyle -> $MathLabelStyle
+    LabelStyle -> $MathLabelStyle,
+    LabelPosition -> After,
+    Alignment -> If[$arColumn, Left, Center]
   ]
 
 (**************************************************************************************************)
@@ -39,10 +49,18 @@ PackageExport["AlgebraicGrid"]
 
 Options[AlgebraicGrid] = {
   Headings -> None,
-  MultiplicationForm -> "Dot"
+  MultiplicationForm -> "Dot",
+  Transposed -> False
 };
 
 $headings = None;
+$agTransposed = False;
+
+AlgebraicGrid[elements__, Transposed -> t_] := Block[
+  {$agTransposed = t},
+  AlgebraicGrid[elements]
+];
+
 
 AlgebraicGrid[elements__, Headings -> h_] := Block[
   {$headings = h},
@@ -58,7 +76,7 @@ AlgebraicGrid[elements__] := Scope[
   entries = Map[algebraicGridRow, Unevaluated @ {elements}];
   If[$headings =!= None, PrependTo[entries, LabelForm[#, Bold]& /@ $headings]];
   Grid[
-    entries,
+    If[$agTransposed, Transpose, Identity] @ entries,
     Spacings -> {2, 1.5},
     Alignment -> {Center, Center},
     BaseStyle -> $MathLabelStyle
@@ -174,6 +192,8 @@ symbolicForm = Case[
   PathForwardDifference[t_, p_] := differenceForm[t, "+", p];
   PathBackwardDifference[t_, p_] := differenceForm[t, "\[Minus]", p];
   PathCentralDifference[t_, p_] := differenceForm[t, None, p];
+
+  PathGradient[p_] := Row[{"\[Gradient]", "\[VeryThinSpace]", % @ p}];
 
   (head:symbolicHeads)[t_ ? isSuppressed, a_] :=
     Row[{Replace[head, $symbolicHeadToSymbol], possiblyParenSymbolicForm @ a}];
