@@ -682,7 +682,7 @@ SpacedRow[elems__] := Scope[
     ]
   ,
     If[$srTransposed,
-      Column[items, 
+      Column[items,
         Spacings -> $srSpacings/20, BaseStyle -> ToList[$srItemStyle, $srBaseStyle],
         Alignment -> alignment
       ],
@@ -852,7 +852,7 @@ Options[LargeLabeled] = JoinOptions[
 LargeLabeled[e_, l_, opts:OptionsPattern[]] :=
   Labeled[
     e, l, opts,
-    FrameMargins -> {{0, 0}, {OptionValue[Spacings], 0}}, 
+    FrameMargins -> {{0, 0}, {OptionValue[Spacings], 0}},
     LabelStyle -> Prepend[$LabelStyle, FontSize -> 16]
   ];
 

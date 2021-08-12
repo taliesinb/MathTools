@@ -424,7 +424,7 @@ PackageExport["EnumerateLattices"]
 EnumerateLattices[quivers_, cardinals_, group_, opts___Rule] := Scope[
   rules = MapIndexed[First[#2] -> #1&, cardinals];
   quivers = Map[
-    Quiver[VertexList @ #, MapAt[ReplaceAll[rules], EdgeList @ #, {All, 3}]]&, 
+    Quiver[VertexList @ #, MapAt[ReplaceAll[rules], EdgeList @ #, {All, 3}]]&,
     ExpandCardinalSetEdges /@ quivers
   ];
   userOpts = {opts};
@@ -433,7 +433,7 @@ EnumerateLattices[quivers_, cardinals_, group_, opts___Rule] := Scope[
   lattices = Map[
     quiver |-> LatticeGraph[
       QuiverRepresentation[quiver, group], DirectedEdges -> False, MaxNorm -> 3
-    ], 
+    ],
     quivers
   ];
   lattices = Select[lattices, DuplicateFreeQ[GraphVertexCoordinates[#]]&];
@@ -459,7 +459,7 @@ LatticeGraphToLatticeQuiver[g_Graph] :=
 
 $enumeratedLatticeStyleOpts = {
   ImageSize -> {100, 100}, VertexSize -> 5,
-  EdgeShapeFunction -> "StyledLine", EdgeColorFunction -> "Cardinal", 
+  EdgeShapeFunction -> "StyledLine", EdgeColorFunction -> "Cardinal",
   EdgeThickness -> 2.5, EdgeStyle -> Opacity[0.7],
   VertexStyle -> $DarkGray, VertexSize -> 5, Frame -> True
   (* ArrowheadShape -> {"Line", EdgeThickness -> 2}, *)

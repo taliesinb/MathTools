@@ -402,7 +402,7 @@ $extendedGraphOptionSymbols2 = Append[$extendedGraphOptionSymbols, AnnotationRul
 
 splitUserGraphOptions[options___Rule] := Scope[
   options = {options};
-  If[!MemberQ[options, ExtendedGraphLayout -> _] && MemberQ[options, GraphLayout -> _], 
+  If[!MemberQ[options, ExtendedGraphLayout -> _] && MemberQ[options, GraphLayout -> _],
     options = Replace[options, Rule[GraphLayout, l_] :> Rule[ExtendedGraphLayout, l], {1}]];
   extOptions = DeleteDuplicatesBy[TakeOptions[options, $extendedGraphOptionSymbols], First];
   options = Map[optionFixup] @ DeleteOptions[options, $extendedGraphOptionSymbols2];
@@ -556,7 +556,7 @@ Graph::badtheme = "`` is not a valid GraphTheme."
 
 LookupGraphThemeOptions[graph_] := Scope[
   theme = LookupAnnotation[graph, GraphTheme, None];
-  If[ListQ @ theme, Flatten, Identity] @ 
+  If[ListQ @ theme, Flatten, Identity] @
     Lookup[$GraphThemeData, theme, Message[Graph::badtheme, theme]; {}]
 ];
 
@@ -566,9 +566,9 @@ LookupExtendedThemedOption[graph_, keys_List] :=
   MapThread[
     If[#1 === $Failed, #2, #1]&,
     {
-      AnnotationValue[graph, keys], 
+      AnnotationValue[graph, keys],
       Lookup[
-        Join[LookupGraphThemeOptions @ graph, $extendedGraphOptionsRules], 
+        Join[LookupGraphThemeOptions @ graph, $extendedGraphOptionsRules],
         keys
       ]
     }
@@ -588,7 +588,7 @@ LookupThemedOption[graph_, opt_, default_:Automatic] :=
     Join[
       Options @ graph,
       LookupGraphThemeOptions @ graph
-    ], 
+    ],
     opt, default
   ];
 
@@ -1670,7 +1670,7 @@ nudgeOverlappingVertices[coords_, plotRange_] := Scope[
 ];
 
 nudge[{_}] := Null;
-nudge[indices_] := 
+nudge[indices_] :=
   Part[nudgedCoords, indices] = Plus[
     Part[nudgedCoords, indices],
     nudgeScale/5 * CirclePoints[Length @ indices]

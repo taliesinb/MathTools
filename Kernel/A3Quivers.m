@@ -278,7 +278,7 @@ LookupCardinalColors[graph_Graph] := Scope[
 we can still make it work properly: used for glued graphs *)
 LookupCardinalColors[graph_Graph, card_] /; LookupExtendedOption[graph, CardinalColorFunction] =!= None := Scope[
   UnpackExtendedOptions[graph, cardinalColorFunction];
-  If[ListQ[card], 
+  If[ListQ[card],
     AssociationMap[cardinalColorFunction, card],
     cardinalColorFunction @ card
   ]

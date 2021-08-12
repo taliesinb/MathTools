@@ -442,7 +442,7 @@ AngleDifference[a_, b_] := If[Abs[b - a] > Pi, Mod[Mod[b, Tau] - Mod[a, Tau], Ta
 
 PackageExport["$RulePattern"]
 
-$RulePattern = _Rule | _RuleDelayed; 
+$RulePattern = _Rule | _RuleDelayed;
 
 (**************************************************************************************************)
 
@@ -1403,7 +1403,7 @@ symbolsToCapitalizedStrings[syms_] := Map[
   Unevaluated @ syms
 ];
 
-capitalizeFirstLetter[str_String] := 
+capitalizeFirstLetter[str_String] :=
   If[StringStartsQ[str, "$"], capitalizeFirstLetter @ StringDrop[str, 1],
     ToUpperCase[StringTake[str, 1]] <> StringDrop[str, 1]];
 
@@ -1413,7 +1413,7 @@ PackageScope["UnpackAnonymousOptions"]
 
 DefineMacro[UnpackAnonymousOptions,
 UnpackAnonymousOptions[object_, default_, syms__Symbol] :=
-  mUnpackAnonymousOptions[object, default, {syms}] 
+  mUnpackAnonymousOptions[object, default, {syms}]
 ];
 
 SetHoldAllComplete[mUnpackAnonymousOptions];
@@ -1432,7 +1432,7 @@ PackageScope["UnpackAnonymousThemedOptions"]
 
 DefineMacro[UnpackAnonymousThemedOptions,
 UnpackAnonymousThemedOptions[object_, default_, syms__Symbol] :=
-  mUnpackAnonymousThemedOptions[object, default, {syms}] 
+  mUnpackAnonymousThemedOptions[object, default, {syms}]
 ];
 
 SetHoldAllComplete[mUnpackAnonymousThemedOptions];
@@ -1450,11 +1450,11 @@ PackageScope["UnpackExtendedThemedOptions"]
 
 DefineMacro[UnpackExtendedThemedOptions,
 UnpackExtendedThemedOptions[graph_, syms___Symbol] :=
-  mUnpackExtendedThemedOptions[graph, {syms}] 
+  mUnpackExtendedThemedOptions[graph, {syms}]
 ];
 
 SetHoldAllComplete[mUnpackExtendedThemedOptions];
-mUnpackExtendedThemedOptions[graph_, syms_] := 
+mUnpackExtendedThemedOptions[graph_, syms_] :=
   ToQuoted[Set, Quoted[syms],
     ToQuoted[LookupExtendedThemedOption,
       Quoted[graph],
@@ -1468,7 +1468,7 @@ PackageScope["UnpackExtendedOptions"]
 
 DefineMacro[UnpackExtendedOptions,
 UnpackExtendedOptions[graph_, syms___Symbol] :=
-  mUnpackExtendedOptions[graph, {syms}] 
+  mUnpackExtendedOptions[graph, {syms}]
 ];
 
 SetHoldAllComplete[mUnpackExtendedOptions];
@@ -1596,14 +1596,14 @@ ToFileName[""|None, ""|None] :=
 ToFileName[""|None, file_String] :=
   NormalizePath @ file;
 
-ToFileName[base_String, file_String] := 
+ToFileName[base_String, file_String] :=
   NormalizePath @ FileNameJoin[{base, file}];
 
 (**************************************************************************************************)
 
 PackageExport["ExportUTF8"]
 
-ExportUTF8[path_, string_] := 
+ExportUTF8[path_, string_] :=
   Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
 
   (**************************************************************************************************)
@@ -1651,7 +1651,7 @@ rangPartRecurse[parts_, rem:{_}] := Internal`StuffBag[$partBag, Append[parts, re
 rangPartRecurse[parts_, rem_] := Scope @ Scan[
   {first, rest} = TakeDrop[rem, 1];
   rangPartRecurse[
-    Append[parts, Join[first, #]], 
+    Append[parts, Join[first, #]],
     Complement[rest, #]
   ]&,
   Subsets[rest, {1, Infinity}]
@@ -1668,7 +1668,7 @@ RangePartitionGraph[n_] := Scope[
   
 rangePartitionSuccessors[part_] := Join @@ Table[
   Sort @ Append[
-    Delete[part, {{i}, {j}}], 
+    Delete[part, {{i}, {j}}],
     Sort[Join @@ Part[part, {i, j}]]
   ],
   {i, Length @ part}, {j, i+1, Length @ part}

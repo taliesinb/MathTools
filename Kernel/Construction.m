@@ -259,7 +259,7 @@ GraphVertexQuotient[graph_, equivFn_, userOpts___Rule] := Scope[
   opts //= ReplaceOptions[{VertexAnnotations -> vertexAnnos, EdgeAnnotations -> edgeAnnos}];
   ExtendedGraph[
     quotientVertices,
-    DirectedEdge @@@ quotientEdges, 
+    DirectedEdge @@@ quotientEdges,
     Sequence @@ userOpts,
     Sequence @@ opts
   ]
@@ -271,7 +271,7 @@ PackageExport["QuiverContractionOrder"]
 
 Options[QuiverContractionOrder] = JoinOptions[
   CombineMultiedges -> False,
-  ExtendedGraph  
+  ExtendedGraph
 ]
 
 QuiverContractionOrder[quiver_, gluedGraphOptions_List, userOpts:OptionsPattern[]] := Scope[
@@ -296,11 +296,11 @@ QuiverContractionOrder[quiver_, gluedGraphOptions_List, userOpts:OptionsPattern[
   gluedGraphs = postFn[GlueVertices[baseGraph, #]]& /@ validPartitions;
 
   ExtendedGraph[
-    contractionGraph, 
-    FilterOptions @ userOpts, 
+    contractionGraph,
+    FilterOptions @ userOpts,
     GraphLayout -> "CenteredTree",
     VertexAnnotations -> <|"GluedGraph" -> gluedGraphs, "Partitions" -> validPartitions|>,
-    ArrowheadShape -> None, VertexSize -> innerSize, 
+    ArrowheadShape -> None, VertexSize -> innerSize,
     VertexLabels -> Tooltip["Partitions"],
     VertexShapeFunction -> "GluedGraph"
   ]
@@ -316,7 +316,7 @@ validQuiverPartitionQ[outTable_, partition_] := Scope[
   True
 ];
 
-checkForConflicts[list_] := 
+checkForConflicts[list_] :=
   If[CountDistinct[DeleteDuplicates @ DeleteNone @ list] > 1, Return[False, Block]];
 
 (**************************************************************************************************)
@@ -356,13 +356,13 @@ GraphContractionOrder[graph_, gluedGraphOptions_List, userOpts:OptionsPattern[]]
 
   graphFn = edges |-> ExtendedGraph[
     AllUniqueVertices @ edges,
-    edges, 
+    edges,
     innerOpts
   ];
   gluedGraphs = Map[graphFn /* postFn, vlist];
   
   ExtendedGraph[
-    Range @ Length @ vlist, ielist, FilterOptions @ userOpts, 
+    Range @ Length @ vlist, ielist, FilterOptions @ userOpts,
     GraphLayout -> "CenteredTree",
     VertexAnnotations -> <|"GluedGraph" -> gluedGraphs|>,
     ArrowheadShape -> None, VertexSize -> innerSize, VertexShapeFunction -> "GluedGraph"
@@ -421,7 +421,7 @@ PackageExport["UngluedGraph"]
 
 UngluedGraph[graph_Graph, opts___Rule] := Scope[
   {vertexList, edgeList} = VertexEdgeList @ graph;
-  If[!MemberQ[vertexList, _GluedVertex] && !MemberQ[edgeList, _[_, _, _GluedEdge]], 
+  If[!MemberQ[vertexList, _GluedVertex] && !MemberQ[edgeList, _[_, _, _GluedEdge]],
     Return @ ExtendedGraph[graph, opts]];
   ungluingRules = Cases[vertexList, g_GluedVertex :> (g -> Splice @ Apply[List, g])];
   vertexList = DeleteDuplicates @ Replace[vertexList, ungluingRules, {1}];
@@ -455,7 +455,7 @@ GlueVertices[graph_Graph, glueList_List] := Scope[
   If[glueRules === {}, Return @ graph];
   gluedEdgeList = Fold[gluingResult, edgeList, glueRules];
   ExtendedGraph[
-    Sort @ AllUniqueVertices @ gluedEdgeList, gluedEdgeList, 
+    Sort @ AllUniqueVertices @ gluedEdgeList, gluedEdgeList,
     Sequence @@ opts
   ]
 ]
@@ -523,7 +523,7 @@ GluedGraph[graph_Graph, opts___Rule] := Scope[
 
 PackageExport["GluedCardinalColorFunction"]
 
-GluedCardinalColorFunction[baseColors_][cardinal_] := 
+GluedCardinalColorFunction[baseColors_][cardinal_] :=
   If[Head[cardinal] === GluedEdge,
     HumanBlend @ DeleteMissing @ Lookup[baseColors, List @@ cardinal],
     Lookup[baseColors, cardinal, $DarkGray]
@@ -553,7 +553,7 @@ GluedVertexColorFunction[baseColors_][vertex_] :=
 
 PackageExport["GluedVertexCoordinateFunction"]
 
-GluedVertexCoordinateFunction[baseCoords_][vertex_] := 
+GluedVertexCoordinateFunction[baseCoords_][vertex_] :=
   If[Head[vertex] === GluedVertex,
     Mean @ DeleteMissing @ Lookup[baseCoords, List @@ vertex],
     Lookup[baseCoords, vertex]

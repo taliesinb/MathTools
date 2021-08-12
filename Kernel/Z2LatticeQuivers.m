@@ -411,10 +411,10 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
 ];
 
 makeQLatticeGraphLegend = Case[
-  "Quiver" := 
+  "Quiver" :=
     $quiverLabel;
 
-  "QuiverRepresentation" := 
+  "QuiverRepresentation" :=
     Row[{Spacer[30], QuiverRepresentationPlot @ $representation}];
 
   Placed[spec_, place_] :=

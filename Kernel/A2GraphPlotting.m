@@ -338,10 +338,10 @@ ExtendedGraphPlot[graph_Graph] := Block[
 
   (* this is a workaround for a mysterious lack of re-entrancy *)
   Block[{vlist = VertexList @ graph, gindices},
-    If[MemberQ[vlist, _Graph], 
+    If[MemberQ[vlist, _Graph],
       gindices = SelectIndices[vlist, GraphQ];
       glist = Part[vlist, gindices];
-      Return @ ExtendedGraphPlot @ VertexReplace[graph, RuleThread[glist, 
+      Return @ ExtendedGraphPlot @ VertexReplace[graph, RuleThread[glist,
         ExtendedGraphPlot[#, Frame -> True]& /@ glist]];
     ]
   ];
@@ -496,19 +496,19 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     UnpackExtendedThemedOptions[graph,
       arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition,
-      visibleCardinals, labelCardinals, 
-      edgeSetback, edgeThickness, 
+      visibleCardinals, labelCardinals,
+      edgeSetback, edgeThickness,
 
-      vertexColorFunction, vertexColorRules, vertexAnnotations, 
-        edgeColorFunction,   edgeColorRules,   edgeAnnotations,     
+      vertexColorFunction, vertexColorRules, vertexAnnotations,
+        edgeColorFunction,   edgeColorRules,   edgeAnnotations,
       regionColorRules,
 
-      viewOptions, graphLegend, 
+      viewOptions, graphLegend,
       additionalImagePadding, aspectRatioClipping,
       prologFunction, epilogFunction,
       useAbsoluteSizes,
 
-      vertexLabelPosition,  edgeLabelPosition, 
+      vertexLabelPosition,  edgeLabelPosition,
       vertexLabelSpacing,   edgeLabelSpacing,
       vertexLabelBaseStyle, edgeLabelBaseStyle
     ];
@@ -685,7 +685,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Line"]];
       $twoWayStyle = Automatic; $negationStyle = "Reverse"; $borderStyle = None;
-      $lineThickness = If[$GraphIs3D, Thickness @ 0.2, 
+      $lineThickness = If[$GraphIs3D, Thickness @ 0.2,
         AbsoluteThickness @ Max[Round[ImageFractionToImageSize[Max[arrowheadSize]] / 10, .2], .5]];
       If[ListQ[arrowheadShape],
         {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
@@ -1206,7 +1206,7 @@ vertexDrawFuncSizeRemapper[rawVertexDrawFunc_, sizeOverrides_, vertexSize_] :=
       ],
       indices],
     indices, "VertexPrimitives"
-  ]; 
+  ];
 
 (**************************************************************************************************)
 
@@ -1360,7 +1360,7 @@ scanArrowheadShapeOpts = Case[
   NegationStyle -> s:("Reverse"|"OverBar"|"UnderBar") :=
     $negationStyle = s;
 
-  BorderStyle -> s_ := 
+  BorderStyle -> s_ :=
     $borderStyle = s;
 
   rule_ :=
@@ -1371,8 +1371,8 @@ scanArrowheadShapeOpts = Case[
 
 createEdgePrimitives[indices_, drawFn_, arrowheads_, cardinal_] /; StringQ[edgeShapeFunction] := Scope[
   coords = Part[$EdgeCoordinateLists, indices];
-  styleFn = If[StringStartsQ[edgeShapeFunction, "Styled"], 
-    StyleOperator[edgeStyle, arrowheads], 
+  styleFn = If[StringStartsQ[edgeShapeFunction, "Styled"],
+    StyleOperator[edgeStyle, arrowheads],
     StyleOperator[arrowheads]
   ];
   primitives = styleFn @ setback[drawFn, edgeSetback] @ coords;
@@ -1474,7 +1474,7 @@ attachArrowheadLabel[g:Graphics[primitives_, opts___], cardinal_, size_, type_] 
     Below,
       insetPos = Offset[orient * {0, -8}, {0, 0}],
     Before,
-      insetPos = Offset[orient * {-8, 0}, {0, 0}],    
+      insetPos = Offset[orient * {-8, 0}, {0, 0}],
     True,
       insetPos = Offset[orient * {3, -2}, {0., If[orient == 1, xl - 0.2, xb + 0.2]}];
   ];
@@ -1511,8 +1511,8 @@ $borderStyle = None;
 
 makeArrowheadGraphic2D[primitives_, style_, opts___] :=
   Graphics[
-    {Opacity[1], EdgeForm @ If[$borderStyle =!= None, 
-      SetColorOpacity[$borderStyle @ style, 1], None], 
+    {Opacity[1], EdgeForm @ If[$borderStyle =!= None,
+      SetColorOpacity[$borderStyle @ style, 1], None],
       style, primitives},
     AspectRatio -> Automatic,
     PlotRangeClipping -> False,
@@ -2068,7 +2068,7 @@ drawViaColorFunc[colorFn_, drawFn_, count_, parts_, dataProviderFn_, optSymbol_]
     toColorDrawFunc[drawFn]
   ];
 
-  {colorList, colorGroups, colorFunctionObject} = obtainColors[colorFn, dataProviderFn, optSymbol];  
+  {colorList, colorGroups, colorFunctionObject} = obtainColors[colorFn, dataProviderFn, optSymbol];
   If[!MatchQ[colorFunctionObject, ColorFunctionObject["Discrete", Identity]],
     automaticLegends["Colors"] ^= colorFunctionObject];
 
@@ -2792,9 +2792,9 @@ $fadePrimitivesRules = {
 
 fadePrimitives[primitives_] := ReplaceAll[primitives, $fadePrimitivesRules];
 
-semitransparentArrowheads[primitives_] := ReplaceAll[primitives, 
+semitransparentArrowheads[primitives_] := ReplaceAll[primitives,
   a_Arrowheads :>
-    ReplaceAll[a, c:$ColorPattern :> SetColorOpacity[c, .4]]  
+    ReplaceAll[a, c:$ColorPattern :> SetColorOpacity[c, .4]]
 ];
 
 hideArrowheads[p_] := ReplaceAll[p, {

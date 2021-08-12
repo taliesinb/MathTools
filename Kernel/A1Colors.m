@@ -943,7 +943,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   colorsValues = Transpose[{colors, uniqueValues}];
   If[containsInd, AppendTo[colorsValues, {White, Indeterminate}]; AppendTo[posIndex, Indeterminate -> indPos]];
   colorGroups = Merge[RuleThread[colorsValues, Values @ posIndex], Catenate];
-  colorList = ConstantArray[White, Length @ data];  
+  colorList = ConstantArray[White, Length @ data];
   (* invert the PositionIndex-like association *)
   KeyValueScan[Set[Part[colorList, #2], Part[#1, 1]]&, colorGroups];
   {colorList, colorGroups, colorFunction}

@@ -1116,7 +1116,7 @@ stripFinalRGB[other_] := other;
 PackageExport["BinaryArrayPlot"]
 
 Options[BinaryArrayPlot] = {
-  PixelConstrained -> 4  
+  PixelConstrained -> 4
 }
 
 BinaryArrayPlot[array_, opts:OptionsPattern[]] :=

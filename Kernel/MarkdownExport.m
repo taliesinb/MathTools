@@ -115,7 +115,7 @@ setupRasterizationPath[baseDir_, default_] := Quoted[
       relativeRasterizationPath = rasterizationPath,
     {_String, _String},
       {rasterizationPath, relativeRasterizationPath} = rasterizationPath,
-    None, 
+    None,
       Return[],
     _,
       ReturnFailed[];
@@ -195,12 +195,12 @@ ExportToMarkdown[importSpec_, exportSpec_, OptionsPattern[]] := Scope @ CatchMes
   setupMarkdownGlobals[];
   {ipath, opath} = resolveImportExportPaths[importSpec, importPath, exportSpec, exportPath];
   iexpr = parseInputSpec @ ipath;
-  If[ListQ[iexpr] && maxItems =!= Infinity, 
+  If[ListQ[iexpr] && maxItems =!= Infinity,
     iexpr = If[IntegerQ[maxItems], Take[iexpr, UpTo @ maxItems], Take[iexpr, maxItems]]];
   outputDir = If[StringEndsQ[opath, ".md"], FileNameDrop @ opath, opath];
-  If[FileType[outputDir] =!= Directory, ThrowMessage["expdirne", outputDir]]; 
+  If[FileType[outputDir] =!= Directory, ThrowMessage["expdirne", outputDir]];
   setupRasterizationPath[outputDir, "OutputImages"];
-  If[$verbose, 
+  If[$verbose,
     Print["Rasterizing to \"", rasterizationPath, "\" embedded as \"", relativeRasterizationPath, "\""]];
   If[StringQ[includePrelude],
     preludePath = NormalizePath @ includePrelude;
@@ -275,7 +275,7 @@ ExportNavigationPage[files_, relativePrefix_String, navPath_] := Scope[
     {fileNames, titles}
   ];
   Which[
-    StringQ[navPath], 
+    StringQ[navPath],
       navOutputPath = StringReplace[navPath, ".template" -> ""],
     RuleQ[navPath],
       navPath = First @ navPath;
@@ -386,7 +386,7 @@ createTable[ostr_String] := Scope[
   first = First @ grid;
   ncols = Length @ first;
   strikeRow = ConstantArray["---", ncols];
-  If[markdownFlavor === "Franklin", 
+  If[markdownFlavor === "Franklin",
     dummyRow = ConstantArray["z", ncols];
     grid = Join[{dummyRow, strikeRow}, grid];
   ,
@@ -489,7 +489,7 @@ rasterizeCell[cell_] := Scope[
   cellHash = Base36Hash @ cell;
   cacheKey = {cellHash, relativeRasterizationPath, rasterizationPath};
   cacheValue = Lookup[$rasterMetadataCache, Key @ {cacheKey}, None];
-  If[ListQ[cacheValue], 
+  If[ListQ[cacheValue],
     (* this cache gives us enough info to generate the markdown without looking for the file on disk *)
     {imageDims, imageFileName, imagePath} = cacheValue;
     If[$verbose, Print["Using cached metadata for ", imagePath]];
@@ -520,7 +520,7 @@ rasterizeCell[cell_] := Scope[
   imagePath = FileNameJoin[{rasterizationPath, imageFileName}];
 
   (* export *)
-  If[!FileExistsQ[imagePath], 
+  If[!FileExistsQ[imagePath],
     If[$verbose, Print["* Exporting image to ", imagePath]];
     If[!$dryRun, Export[imagePath, image, CompressionLevel -> 1]];
   ];
@@ -569,7 +569,7 @@ $finalStringFixups2 = {
 WhiteString = _String ? (StringMatchQ[Whitespace]);
 
 iTextCellToMDOuter = Case[
-  BoxData[box_] := 
+  BoxData[box_] :=
     multilineMathTemplate @ boxesToKatexString @ box;
   TextData @ Cell[BoxData[box_FormBox], ___] :=
     multilineMathTemplate @ boxesToKatexString @ box;
@@ -579,13 +579,13 @@ iTextCellToMDOuter = Case[
     iTextCellToMD @ other;
 ];
 
-replaceIndentingNewlines[boxes_] := 
+replaceIndentingNewlines[boxes_] :=
   Replace[boxes, s_String :> StringReplace[s, "\[IndentingNewLine]"|"\n" -> "\\\\\n"], {1}];
 
 PackageScope["iTextCellToMD"]
 
 iTextCellToMD = Case[
-  str_String := 
+  str_String :=
     str;
   list_List :=
     Map[%, list];

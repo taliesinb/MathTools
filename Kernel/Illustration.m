@@ -23,7 +23,7 @@ DrawFundamentalQuiverPath[quiver_, path_, color_, adjustments_] := Scope[
     PathRadius -> 3, EdgeSetback -> 4, PathOutline -> False
   ];
   ExtendedGraph[quiver, GraphRegionHighlight -> regionSpec, ArrowheadSize -> Medium,
-    ImagePadding -> 15, EdgeStyle -> LightGray, 
+    ImagePadding -> 15, EdgeStyle -> LightGray,
     GraphLegend -> None, ArrowheadShape -> {"Line", EdgeThickness -> 2}]
 ];
 
@@ -68,8 +68,8 @@ LabeledEdgeGraph[g_, opts___] := ExtendedGraph[g, opts,
 PackageExport["ColoredGraph"]
 
 $colorRules = <|
-  "r" -> $Red, "b" -> $Blue, "g" -> $Green, 
-  "R" -> $LightRed, "B" -> $LightBlue, "G" -> $LightGreen, 
+  "r" -> $Red, "b" -> $Blue, "g" -> $Green,
+  "R" -> $LightRed, "B" -> $LightBlue, "G" -> $LightGreen,
   "o" -> $Orange, "t" -> $Teal, "p" -> $Pink,
   "O" -> $LightOrange, "T" -> $LightTeal, "P" -> $LightPink,
   "0" -> Black, "1" -> $DarkGray, "2" -> $Gray, "3" -> $LightGray, "4" -> White,
@@ -237,7 +237,7 @@ PathWordPlot[graph_Graph, p:Path[_, _String, ___, PathCancellation -> False, ___
   PathWordPlot[graph, MapAt[ToPathWord, p, 2]]
 ];
 
-PathWordPlot[graph_Graph, path:Path[start_, word_, ___]] := 
+PathWordPlot[graph_Graph, path:Path[start_, word_, ___]] :=
   Labeled[
     PathPlot[graph, path, $pwpStyle],
     $pwpLabel /. Word :> PathWordForm[start, ToPathWord @ word, pathEndVertex[graph, path]]
@@ -502,11 +502,11 @@ SimpleLabeledQuiver[args___] := Scope[
 
 $simpleLabeledQuiverOpts = {
   VertexLabels -> "Name",
-  VertexLabelPosition -> Automatic, 
+  VertexLabelPosition -> Automatic,
   VertexLabelBaseStyle -> $MathLabelStyle,
   GraphLayout -> {"Linear", "MultiEdgeDistance" -> 0.2},
   ArrowheadShape -> {"Line", EdgeThickness -> 2},
-  ArrowheadPosition -> 0.59, 
+  ArrowheadPosition -> 0.59,
   ArrowheadSize -> Medium,
   ImageSize -> "ShortestEdge" -> 70
 };
@@ -521,7 +521,7 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
   If[!QuiverQ[fq], ReturnFailed[]];
   $fq = AnnotationDelete[fq, {ArrowheadShape, VertexLabels, EdgeLabels}]; (* <- so that the theme will take effect *)
   $fq = DeleteOptions[$fq, ImageSize];
-  $v0 = v0; 
+  $v0 = v0;
   $scaling = 1.0;
   cardinals = CardinalList @ fq;
   paths = parsePath /@ DeleteDuplicates[paths];
@@ -564,7 +564,7 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
   plot = Quiver[
     vertices, edges, opts,
     VertexCoordinates -> coords,
-    VertexShapeFunction -> labels, 
+    VertexShapeFunction -> labels,
     Cardinals -> LookupExtendedOption[fq, Cardinals],
     GraphTheme -> "PathQuiver"
   ] // CombineMultiedges;
@@ -575,9 +575,9 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
 
 $fundamentalQuiverOpts = {
   ImageSize -> "ShortestEdge" -> 60, VertexLabels -> "Name",
-  GraphLayout -> "Linear", 
+  GraphLayout -> "Linear",
   Cardinals -> {"r", "b"},
-  ImagePadding -> {10, 15}, 
+  ImagePadding -> {10, 15},
   ArrowheadSize -> MediumLarge,
   VertexLabelBaseStyle -> $MathLabelStyle
 }
@@ -590,7 +590,7 @@ $pathQuiverOpts = {
   GraphOrigin -> LatticeVertex[{}], BaselinePosition -> Center,
   VertexSize -> Inherited,
   ArrowheadShape -> {"Line", EdgeThickness -> 2}, ArrowheadSize -> Medium, EdgeStyle -> LightGray,
-  EdgeThickness -> Thick, 
+  EdgeThickness -> Thick,
   ImageSize -> 400, ImagePadding -> 5, AspectRatioClipping -> False,
   GraphLegend -> None
 }
@@ -625,7 +625,7 @@ $pathQuiverIconOpts = {
   VertexLabels -> None,
   Frame -> True, FrameStyle -> {LightGray, SlightlyThin}, PlotRangeClipping -> False,
   GraphLegend -> None, ImageSize -> "ShortestEdge" -> 20, ArrowheadShape -> None,
-  VertexSize -> Medium  
+  VertexSize -> Medium
 };
 
 $GraphThemeData["PathQuiverIcon"] := $pathQuiverIconOpts;

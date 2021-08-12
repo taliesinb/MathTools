@@ -45,7 +45,7 @@ declareSymbolForm[head_Symbol] := Scope[
   name = SymbolName @ head;
   Which[
     StringEndsQ[name, "SymbolForm"], Null,
-    StringEndsQ[name, "Symbol"], name = name <> "Form", 
+    StringEndsQ[name, "Symbol"], name = name <> "Form",
     True, ReturnFailed["badsym", head]
   ];
   With[{name2 = name},
@@ -118,7 +118,7 @@ $TemplateKatexFunction["PlainTextForm"] = "textrm";
 $symbolFormsP = Alternatives[
   _SymbolForm,
   _PathQuotientSymbol, _PathGroupoidSymbol, _GroupoidSymbol,
-  _PathQuiverSymbol, _QuiverSymbol, _PathSymbol, 
+  _PathQuiverSymbol, _QuiverSymbol, _PathSymbol,
   _WordForm,
   _VertexSymbol,
   _PathMapSymbol, _MapSymbol,
@@ -153,7 +153,7 @@ makeTypedTemplateBox[args___, tag_] :=
 
 $colorFormP = Alternatives[
   RedForm, BlueForm, GreenForm,
-  RedBlueForm, GreenBlueForm, RedGreenForm, 
+  RedBlueForm, GreenBlueForm, RedGreenForm,
   DarkGrayForm, MediumGrayForm, LightGrayForm
 ];
 
@@ -167,7 +167,7 @@ toTypedSymbol = Case[
     TemplateBox[List @ toTypedSymbol[arg -> type], SymbolName @ c];
   Rule[arg:((type_)[___]), type_] :=
     MakeBoxes @ arg;
-  Rule[arg_, type_] := 
+  Rule[arg_, type_] :=
     MakeBoxes @ type @ arg;
   arg_ :=
     makeQGBoxes @ arg,
@@ -190,7 +190,7 @@ toHintedSymbol = Case[
     TemplateBox[List @ toHintedSymbol[arg -> hint], SymbolName @ c];
   Rule[arg:symsP, hint_] :=
     MakeBoxes @ hint @ arg;
-  Rule[arg_, _] := 
+  Rule[arg_, _] :=
     makeQGBoxes @ arg;
   arg_ :=
     makeQGBoxes @ arg,
@@ -336,7 +336,7 @@ $namedFunctions = {
 };
 
 $functionHeads = {
-  FunctionSymbol, PathMapSymbol, 
+  FunctionSymbol, PathMapSymbol,
   GroupoidFunctionSymbol, GroupFunctionSymbol,
   PathHomomorphismSymbol, GraphHomomorphismSymbol,
   InverseForm
@@ -370,7 +370,7 @@ declareBoxFormatting[
   FunctionSymbol[f:$functionFormP] :>
     MakeBoxes @ f,
 
-  FunctionSymbol[f_ ? isMuQ] :> 
+  FunctionSymbol[f_ ? isMuQ] :>
     MakeBoxes @ PathMapSymbol["\[Mu]"],
 
   FunctionSymbol[f_] :>
@@ -411,7 +411,7 @@ PackageExport["PathMapSymbol"]
 PathMapSymbol[] := PathMapSymbol["\[Mu]"];
 
 declareBoxFormatting[
-  PathMapSymbol[mu_ ? isMuQ] :> 
+  PathMapSymbol[mu_ ? isMuQ] :>
     makeStandardBoxTemplate["\[Mu]", "PathMapSymbolForm"],
 
   PathMapSymbol[mu_] :>
@@ -657,7 +657,7 @@ PathQuiverSymbol[q$] represents the path quiver on quiver q$.
 
 PathQuiverSymbol[] := PathQuiverSymbol["Q"];
 
-declareBoxFormatting[  
+declareBoxFormatting[
   HoldPattern[PathQuiverSymbol[q_]] :>
     makeTypedTemplateBox[q -> QuiverSymbol, "PathQuiverSymbolForm"]
 ];
@@ -719,7 +719,7 @@ declareBoxFormatting[
     makeHintedTemplateBox[g -> GraphSymbol, h -> GraphSymbol, "CoversForm"],
   CoversForm[g_, h_, i_] :>
     makeHintedTemplateBox[g -> GraphSymbol, h -> GraphSymbol, i -> GraphSymbol, "CoversForm"],
-  CoversForm[] :> 
+  CoversForm[] :>
     TemplateBox[{}, "CoversSymbol"]
 ]
 
@@ -849,7 +849,7 @@ makeQGBoxes = Case[
   DirectedEdge[args__]      := MakeBoxes @ DirectedEdgeForm[args];
   UndirectedEdge[args__]    := MakeBoxes @ UndirectedEdgeForm[args];
   other_                    := MakeBoxes @ other,
-  {lsymsP -> $literalSymbolsP, symP -> $rawSymbolP, namedFnP -> Alternatives @@ $namedFunctions, 
+  {lsymsP -> $literalSymbolsP, symP -> $rawSymbolP, namedFnP -> Alternatives @@ $namedFunctions,
     binHeads -> $binaryRelationHeads}
 ];
 
@@ -860,7 +860,7 @@ algebraBoxes[_[args__], tag_] := makeStandardBoxTemplate[args, tag];
 PackageExport["DirectedEdgeForm"]
 
 declareBoxFormatting[
-  DirectedEdgeForm[a_, b_] :> 
+  DirectedEdgeForm[a_, b_] :>
     makeHintedTemplateBox[a -> VertexSymbol, b -> VertexSymbol, "DirectedEdgeForm"],
   DirectedEdgeForm[a_, b_, c_] :>
     makeHintedTemplateBox[a -> VertexSymbol, b -> VertexSymbol, c -> CardinalSymbol, "TaggedDirectedEdgeForm"]
@@ -1224,7 +1224,7 @@ makePathBoxTemplate[left_, rest___, tag_] :=
     Join[
       List @ maybeParen[PathSymbol|CardinalSymbol] @ left,
       Map[
-        maybeParen[PathSymbol|EdgeFieldSymbol|VertexFieldSymbol|PathTranslateForm|PathBackwardTranslateForm], 
+        maybeParen[PathSymbol|EdgeFieldSymbol|VertexFieldSymbol|PathTranslateForm|PathBackwardTranslateForm],
         Unevaluated @ {rest}
       ]
     ],
@@ -1258,7 +1258,7 @@ PackageExport["PathLeftTranslateForm"]
 declareBoxFormatting[
   PathTranslateForm[a_, b__] :>
     makePathBoxTemplate[a, b, "PathTranslateForm"],
-  PathTranslateForm[a_] :> 
+  PathTranslateForm[a_] :>
     makePathBoxTemplate[a, "PathAnonymousTranslateForm"],
   PathLeftTranslateForm[a_] :>
     makePathBoxTemplate[a, "PathLeftTranslateForm"]
@@ -1370,7 +1370,7 @@ declareBoxFormatting[
   PathCentralDifferenceForm[] :>
     TemplateBox[{}, "PathCentralDifferenceSymbol"],
   (op_PathCentralDifferenceForm)[arg_] :>
-    MakeBoxes @ OperatorAppliedForm[op, arg]    
+    MakeBoxes @ OperatorAppliedForm[op, arg]
 ];
 
 $TemplateKatexFunction["PathCentralDifferenceForm"] = applyRiffled["pathCentralDifference",","];
@@ -1573,7 +1573,7 @@ $TemplateKatexFunction["EllipsisSymbol"] = "\\dots"&;
 PackageExport["PartialDifferentialOfForm"]
 
 declareBoxFormatting[
-  PartialDifferentialOfForm[x_] :> 
+  PartialDifferentialOfForm[x_] :>
     makeStandardBoxTemplate[x, "PartialDifferentialOfForm"],
   PartialDifferentialOfForm[] :>
     TemplateBox[{}, "PartialDifferentialSymbol"]
@@ -1718,7 +1718,7 @@ cardinalBoxes[list_List] := Map[cardinalBox, list];
 
 cardSymBox[e_] := TemplateBox[{e}, "CardinalSymbolForm"];
 
-toNegCard[TemplateBox[{e_}, "CardinalSymbolForm"]] := 
+toNegCard[TemplateBox[{e_}, "CardinalSymbolForm"]] :=
   TemplateBox[{e}, "NegatedCardinalSymbolForm"];
 
 cardinalBox = Case[
@@ -1730,7 +1730,7 @@ cardinalBox = Case[
 ]
 
 (* only colors if it is all-or-nothing *)
-tryColorCardinals[list_] /; $AutoColorCardinals := 
+tryColorCardinals[list_] /; $AutoColorCardinals :=
   If[SubsetQ[{"r", "g", "b"}, list /. TemplateBox[{a_}, _] :> a],
     list /. $colorCardinalRules,
     list

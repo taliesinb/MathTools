@@ -74,7 +74,7 @@ ToKatexString[e_] := Scope[
 PackageScope["boxesToKatexString"]
 
 boxesToKatexString[e_] :=
-  StringTrim @ StringReplace[$WLSymbolToKatexRegex] @ StringJoin @ 
+  StringTrim @ StringReplace[$WLSymbolToKatexRegex] @ StringJoin @
     ReplaceRepeated[$katexAppliedRule] @ boxToKatex @ cleanupInlineBoxes @ e;
 
 $katexAppliedRule = {
@@ -91,8 +91,8 @@ boxToKatex = Case[
   e_String := e;
   
   (* process results of dispatchTemplateBox: *)
-  e_List := Map[%, e]; 
-  e:(_String[___]) := Map[%, e]; 
+  e_List := Map[%, e];
+  e:(_String[___]) := Map[%, e];
 
   c_Cell := Block[{$inlineMathTemplate = Identity}, iTextCellToMD @ c];
   TemplateBox[args_, tag_] := templateBoxToKatex[tag -> args];
