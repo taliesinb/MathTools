@@ -700,5 +700,5 @@ VertexField1DPlot[vals_] := ListLinePlot[vals,
   FillingStyle -> Directive[Opacity[.5],CapForm[None], AbsoluteThickness[2]], PlotMarkers->{Automatic, 0.12},
   Frame -> True, FrameStyle -> $LightGray, FrameTicks -> None, Axes -> None, GridLines -> {{}, {-0.025}},
   PlotStyle -> $DarkGray,
-  PlotRange -> {{1, All}, {-1, 1}}, PlotRangePadding -> 0.25, ImageSize -> 90, AspectRatio -> 1/2.2
+  PlotRange -> {{1, All}, {-1, 1}}, PlotRangePadding -> 0.4, ImageSize -> 125, AspectRatio -> 1/2.2
 ]

@@ -582,7 +582,10 @@ ClickCopyRow[args___] := SpacedRow[args, ItemFunction -> ClickCopy];
 
 PackageExport["ClickCopy"]
 
-ClickCopy[e_] := EventHandler[e, {"MouseClicked" :> CopyToClipboard[e]}];
+ClickCopy[e_] := MouseAppearance[
+  EventHandler[Framed[e, Background -> GrayLevel[0.99], FrameStyle -> GrayLevel[0.95], ImageMargins -> {{5, 5}, {5, 5}}], {"MouseClicked" :> CopyToClipboard[e]}],
+  "LinkHand"
+];
 
 (**************************************************************************************************)
 

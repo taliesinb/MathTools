@@ -25,6 +25,12 @@ With[{io := GeneralUtilities`IndexOf},
 
 (**************************************************************************************************)
 
+PackageScope["LowerCaseFirst"]
+
+LowerCaseFirst[str_String] := StringJoin[ToLowerCase @ StringTake[str, 1], StringDrop[str, 1]];
+
+(**************************************************************************************************)
+
 $slotRegularExpression = RegularExpression["<\\*([^*]+)\\*>"];
 
 substituteUsageSlots[s_String] :=

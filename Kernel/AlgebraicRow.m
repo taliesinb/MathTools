@@ -30,7 +30,7 @@ AlgebraicRow[elements__,  MultiplicationForm -> t:("Dot"|"Times"|None)] := Block
 AlgebraicRow[elements__] :=
   SpacedRow[
     Map[algebraicForm, Unevaluated @ {elements}],
-    BaseStyle -> $MathLabelStyle
+    LabelStyle -> $MathLabelStyle
   ]
 
 (**************************************************************************************************)
@@ -186,21 +186,20 @@ symbolicForm = Case[
 
 SetHoldAllComplete[differenceForm];
 differenceForm[a:{(_ ? isSuppressed)..}, type_, p_] :=
-  Row[{subscript[Superscript[$Delta, HoldLength @ a], type], symbolicForm @ p}];
+  Row[{supscript[Subscript[$Delta, HoldLength @ a], type], symbolicForm @ p}];
 
 differenceForm[t_ ? isSuppressed, type_, p_] :=
-  Row[{subscript[$Delta, type], symbolicForm @ p}];
+  Row[{supscript[$Delta, type], symbolicForm @ p}];
 
 differenceForm[t_Symbol | t_List, type_, p_] :=
-  Row[{subscript[Subscript[$Delta, subscriptForm @ t], type], symbolicForm @ p}]
+  Row[{supscript[Subscript[$Delta, subscriptForm @ t], type], symbolicForm @ p}];
 
 differenceForm[t_, type_, p_] :=
-  Row[{symbolicForm @ t, subscript[$Delta, type], symbolicForm @ p}];
+  Row[{symbolicForm @ t, supscript[$Delta, type], symbolicForm @ p}];
 
-subscript[e_, None] := e;
-subscript[e_, s_] := Subscript[e, s];
-subscript[Superscript[e_, sup_], sub_] := Subsuperscript[e, sub, sup];
-subscript[Subscript[e_, sub1_], sub2_] := Subsuperscript[e, sub1, sub2];
+supscript[e_, None] := e;
+supscript[e_, s_] := Superscript[e, s];
+supscript[Subscript[e_, sub1_], sub2_] := Subsuperscript[e, sub1, sub2];
 
 fmtWord = Case[
   s_String        := toRow[Map[If[UpperCaseQ[#], Negated @ ToLowerCase @ #, #]&, Characters @ s]];

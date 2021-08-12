@@ -15,7 +15,7 @@ $directionStrings = {"Forward", "Backward", "Symmetric", "Antisymmetric"};
 PackageExport["$PathAlgebra"]
 
 SetUsage @ "
-$PathAlgebra is the PathAlgebra[$$] used as the context for PathVector and PathElement objects.
+$PathAlgebra is the PathAlgebra[$$] used as the default algebra for PathVector and PathElement objects.
 "
 
 $PathAlgebra::notset = "$PathAlgebra is not set."

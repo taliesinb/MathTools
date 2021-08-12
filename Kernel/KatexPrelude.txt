@@ -39,6 +39,7 @@
 \gdef\longmapsfrom{\htmlClass{hreflect}{\longmapsto}}
 
 \gdef\diffd{𝕕}
+\gdef\partialdof#1{\partial {#1}}
 
 \gdef\iso{\cong}
 \gdef\homotopic{\simeq}
@@ -66,8 +67,16 @@
 \gdef\negated#1{\underline{#1}}
 \gdef\pathComposeSymbol{{\,∷\,}}
 \gdef\pathCompose#1#2{{#1}\pathComposeSymbol{#2}}
-\gdef\pathTranslate#1#2{{#1}{\uparrow}{#2}}
-\gdef\pathBackwardTranslate#1#2{{#1}{\downarrow}{#2}}
+\gdef\pathTranslate#1#2{{#1}{\,\uparrow\,}{#2}}
+\gdef\pathLeftTranslate#1{{#1}{\,\uparrow}}
+\gdef\pathBackwardTranslate#1#2{{#1}{\,\downarrow\,}{#2}}
+\gdef\pathLeftBackwardTranslate#1{{#1}{\,\downarrow}}
+\gdef\forwardDifference{\Delta^{+}}
+\gdef\backwardDifference{\Delta^{-}}
+\gdef\centralDifference{\Delta}
+\gdef\pathForwardDifference#1{\forwardDifference_{#1}}
+\gdef\pathBackwardDifference#1{\backwardDifference_{#1}}
+\gdef\pathCentralDifference#1{\centralDifference_{#1}}
 \gdef\pathHeadVector#1{{#1}^{\bullet}}
 \gdef\pathTailVector#1{{#1}_{\bullet}}
 \gdef\pathReverse#1{{#1}^{\dagger}}
@@ -81,7 +90,7 @@
 \gdef\wordOf{\operatorname{word}}
 \gdef\headVertex{\operatorname{head}}
 \gdef\tailVertex{\operatorname{tail}}
-\gdef\automorphisms{\operatorname{Aut}}
+\gdef\basis{\operatorname{basis}}
 
 \gdef\blank{\_}
 \gdef\emptyWord{}
@@ -110,13 +119,21 @@
 \gdef\covers{\sqsupseteq}
 \gdef\covering#1#2#3{{#2} \sqsupseteq_{#1} {#3}}
 
-\gdef\groupElem#1{#1}
-\gdef\groupoidElem#1{#1}
+\gdef\groupElement#1{#1}
+\gdef\groupoidElement#1{#1}
 
 \gdef\elemOf#1#2{{ {#1} \in {#2} }}
 \gdef\edgeOf#1#2{{ {#1} {\in}_E {#2} }}
 \gdef\vertOf#1#2{{ {#1} {\in}_V {#2} }}
 \gdef\pathOf#1#2{{ {#1} {\in}_P {#2} }}
+
+\gdef\vertices#1{ V_{#1} }
+\gdef\edges#1{ E_{#1} }
+\gdef\vertexField#1{#1}
+\gdef\edgeField#1{#1}
+
+\gdef\baseField#1{#1}
+\gdef\finiteField#1{\mathbb{F}_{#1}}
 
 \gdef\pathGroupoid#1{{ \Gamma_{#1} }}
 \gdef\forwardPathQuiver#1#2{{\overrightharpoon{#1}_{#2}}}
