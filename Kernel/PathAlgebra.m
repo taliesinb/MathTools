@@ -1714,10 +1714,6 @@ SymmetricPathFiniteDifference[v_][t_] := SymmetricPathFiniteDifference[v, t];
 
 (**************************************************************************************************)
 
-PackageExport["Lookup"]
-
-(**************************************************************************************************)
-
 PackageExport["PathGradient"]
 
 PathGradient[pv_PathVector] /; $PathAlgebraQ := Scope[
@@ -1732,3 +1728,17 @@ PathGradient[pv_PathVector] /; $PathAlgebraQ := Scope[
     {edgeTails, edgeRange, edgeHeads}
   ]
 ]
+
+(**************************************************************************************************)
+
+PackageExport["PathDivergence"]
+
+PathDivergence[pv_PathVector] /; $PathAlgebraQ :=
+  (PathHeadVector[pv] - PathTailVector[pv]) / 2;
+
+(**************************************************************************************************)
+
+PackageExport["PathLaplacian"]
+
+PathLaplacian[pv_PathVector] /; $PathAlgebraQ :=
+  PathDivergence @ PathGradient @ pv;

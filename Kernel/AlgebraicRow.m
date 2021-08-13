@@ -168,6 +168,11 @@ possiblyParenSymbolicForm = Case[
 
 SetHoldAllComplete[symbolicForm];
 symbolicForm = Case[
+
+  e_Evaluate := Construct[%, e];
+
+  f_Form := f;
+
   (a_ = b_) := Row[{% @ a, " = ", % @ b}];
 
   a_Symbol := symbolForm[HoldSymbolName @ a];
@@ -187,13 +192,16 @@ symbolicForm = Case[
   Subsuperscript[a_, b_, c_] := Subsuperscript[% @ a, % @ b, % @ c];
   Subscript[a_, b_] := Subscript[% @ a, % @ b];
 
-  WordVector[e_, type_String:"Forward"] := Subsuperscript["e", fmtWord @ e, fmtType @ type];
+  WordVector[e_, type_String:"Forward"] :=
+    Style[WordVectorForm[e, type], {SingleLetterItalics -> False, AutoItalicWords -> {}}];
 
   PathForwardDifference[t_, p_] := differenceForm[t, "+", p];
   PathBackwardDifference[t_, p_] := differenceForm[t, "\[Minus]", p];
   PathCentralDifference[t_, p_] := differenceForm[t, None, p];
 
   PathGradient[p_] := Row[{"\[Gradient]", "\[VeryThinSpace]", % @ p}];
+  PathDivergence[p_] := Row[{OverDot["\[Gradient]"], "\[VeryThinSpace]", % @ p}];
+  PathLaplacian[p_] := Row[{Overscript["\[Gradient]", "\[DoubleDot]"], "\[VeryThinSpace]", % @ p}];
 
   (head:symbolicHeads)[t_ ? isSuppressed, a_] :=
     Row[{Replace[head, $symbolicHeadToSymbol], possiblyParenSymbolicForm @ a}];
@@ -201,6 +209,13 @@ symbolicForm = Case[
   (head:symbolicHeads)[args___] := headForm[head, {args}];
   PathHeadVector[a_] := Superscript[% @ a, "\[FilledSmallCircle]"];
   PathTailVector[a_] := Subscript[% @ a, "\[FilledSmallCircle]"];
+
+  other_ := (
+    Print["UNMATCHED HEAD ", InputForm @ Head @ other];
+    Print[InputForm @ other];
+    ""
+  ),
+
   {symbolicHeads -> $symbolicHeadsP}
 ];
 

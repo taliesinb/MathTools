@@ -430,13 +430,8 @@ toMarkdownLines[nb_NotebookObject] :=
 toMarkdownLines[list_List] :=
   Flatten[Riffle[Map[toMarkdownLines, list], "---"], 1];
 
-toMarkdownLines[Notebook[cells_List, ___]] := Scope[
-  skipIndex = FirstIndex[cells, Cell["SKIPREMAINING", _]];
-  If[skipIndex =!= None, cells = Take[cells, skipIndex - 1]];
-  cells //= trimCells;
-  cells //= DeleteCases[Cell[e_, $textCellP] /; ContainsQ[e, s_String /; StringStartsQ[s, "XXX"]]];
-  Map[cellToMarkdown, cells]
-];
+toMarkdownLines[Notebook[cells_List, ___]] :=
+  Map[cellToMarkdown, trimCells @ cells]
 
 toMarkdownLines[c_Cell] := List @ cellToMarkdown @ Take[c, UpTo @ 2];
 
@@ -549,6 +544,7 @@ PackageScope["textCellToMD"]
 
 textCellToMD[e_] := Scope[
   text = StringTrim @ StringJoin @ iTextCellToMDOuter @ e;
+  If[StringContainsQ[text, "XXX"], Return[""]];
   text // StringReplace[$finalStringFixups1] // StringReplace[$finalStringFixups2]
 ]
 

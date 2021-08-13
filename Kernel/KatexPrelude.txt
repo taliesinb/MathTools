@@ -63,6 +63,7 @@
 \gdef\groupoidFunction#1{#1}
 \gdef\groupFunction#1{#1}
 \gdef\gl#1{GL({#1},\mathbb{R})}
+\gdef\automorphisms{\operatorname{Aut}}
 
 \gdef\negated#1{\underline{#1}}
 \gdef\pathComposeSymbol{{\,∷\,}}
@@ -117,10 +118,21 @@
 \gdef\basisPath#1{\mathbf{p}_{#1}}
 \gdef\basisPathWeight#1{p_{#1}}
 
+\gdef\unitSymbol{\mathbf{e}}
+\gdef\unitVertexField{\unitSymbol_1}
+
+\gdef\forwardSymbol{f}
+\gdef\backwardSymbol{b}
+\gdef\symmetricSymbol{s}
+\gdef\antisymmetricSymbol{a}
+\gdef\wordVector#1#2{\unitSymbol_{#1}^{#2}}
+
 \gdef\gradOf#1{\grad\,{#1}}
 \gdef\grad{\nabla}
 \gdef\divOf#1{\div\,{#1}}
 \gdef\div{\dot{\nabla}}
+\gdef\laplacianOf#1{\laplacian\,{#1}}
+\gdef\laplacian{\ddot{\nabla}}
 \gdef\suchThat#1#2{{#1} \vert {#2}}
 
 \gdef\graph#1{#1}
@@ -140,6 +152,9 @@
 \gdef\edges#1{ E_{#1} }
 \gdef\vertexField#1{#1}
 \gdef\edgeField#1{#1}
+
+\gdef\pathVector#1{\mathbf{#1}}
+\gdef\pathVectorSpace#1{\mathscr{#1}}
 
 \gdef\baseField#1{#1}
 \gdef\finiteField#1{\mathbb{F}_{#1}}

@@ -1298,14 +1298,37 @@ $TemplateKatexFunction["NegatedForm"] = "negated";
 
 (********************************************)
 
+PackageExport["UnitVertexFieldSymbol"]
+
+declareBoxFormatting[
+  UnitVertexFieldSymbol[] :> TemplateBox[{}, "UnitVertexFieldSymbol"]
+]
+
+$TemplateKatexFunction["UnitVertexFieldSymbol"] = "unitVertexField"
+
+(********************************************)
+
 PackageExport["WordVectorForm"]
 
 WordVectorForm[p_String, args___] := WordVectorForm[ToPathWord @ p, args]
 
 declareBoxFormatting[
   WordVectorForm[p_, dir_:"Forward"] :>
-    TemplateBox[{wordBoxes @ p, dir}, "WordVectorForm"]
+    TemplateBox[{wordBoxes @ p, directionBoxes @ dir}, "WordVectorForm"]
 ];
+
+directionBoxes = Case[
+  "Forward"         := TemplateBox[{}, "ForwardSymbol"];
+  "Backward"        := TemplateBox[{}, "BackwardSymbol"];
+  "Symmetric"       := TemplateBox[{}, "SymmetricSymbol"];
+  "Antisymmetric"   := TemplateBox[{}, "AntisymmetricSymbol"];
+];
+
+$TemplateKatexFunction["WordVectorForm"] = "wordVector";
+$TemplateKatexFunction["ForwardSymbol"] = "\\forwardSymbol"&;
+$TemplateKatexFunction["BackwardSymbol"] = "\\backwardSymbol"&;
+$TemplateKatexFunction["SymmetricSymbol"] = "\\symmetricSymbol"&;
+$TemplateKatexFunction["AntisymmetricSymbol"] = "\\antisymmetricSymbol"&;
 
 (********************************************)
 
@@ -1318,6 +1341,12 @@ makePathBoxTemplate[left_, rest___, tag_] :=
         Unevaluated @ {rest}
       ]
     ],
+    tag
+  ];
+
+makePathBoxTemplate[left_, tag_] :=
+  TemplateBox[
+    List @ maybeParen[PathSymbol|EdgeFieldSymbol|VertexFieldSymbol|PathTranslateForm|PathBackwardTranslateForm|$colorFormP] @ left,
     tag
   ];
 
@@ -1404,10 +1433,13 @@ PackageExport["PathReverseForm"]
 
 declareBoxFormatting[
   PathReverseForm[a_] :>
-    makePathBoxTemplate[a, "PathReverseForm"]
+    makePathBoxTemplate[a, "PathReverseForm"],
+  PathReverseForm[] :>
+    TemplateBox[{}, "PathReverseSymbol"]
 ];
 
 $TemplateKatexFunction["PathReverseForm"] = "pathReverse";
+$TemplateKatexFunction["PathReverseSymbol"] = "pathReverse";
 
 (********************************************)
 
@@ -1432,6 +1464,18 @@ declareBoxFormatting[
 
 $TemplateKatexFunction["DivergenceForm"] = "divOf";
 $TemplateKatexFunction["DivergenceSymbol"] = "\\div"&;
+
+(********************************************)
+
+PackageExport["LaplacianForm"]
+
+declareBoxFormatting[
+  LaplacianForm[q_] :> makeHintedTemplateBox[q -> EdgeFieldSymbol, "LaplacianForm"],
+  LaplacianForm[] :> TemplateBox[{}, "LaplacianSymbol"]
+];
+
+$TemplateKatexFunction["LaplacianForm"] = "laplacianOf";
+$TemplateKatexFunction["LaplacianSymbol"] = "\\laplacian"&;
 
 (********************************************)
 
@@ -1835,6 +1879,7 @@ wordBoxes = Case[
   (Times|ConcatenationForm)[a_, b_]   := TemplateBox[% /@ {a, b}, "ConcatenationForm"];
   list_List                           := TemplateBox[tryColorCardinals @ cardinalBoxes @ list, "WordForm"];
   Negated[s_]                         := negBox[% @ s];
+  s_SymbolForm                        := MakeBoxes @ s; (* placeholder *)
   s:syms                              := TemplateBox[List @ rawSymbolBoxes @ s, "WordSymbolForm"],
   {syms -> $rawSymbolP}
 ];
