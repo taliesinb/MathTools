@@ -84,7 +84,7 @@ PackageExport["QuiverRepresentationPlot"]
 DeclareArgumentCount[QuiverRepresentationPlot, 1];
 
 Options[QuiverRepresentationPlot] = JoinOptions[
-  "Transposed" -> False,
+  Transposed -> False,
   Quiver
 ];
 
@@ -106,7 +106,7 @@ QuiverRepresentationPlot[qrep_, opts:OptionsPattern[]] := Scope[
   colors = LookupCardinalColors[quiver];
   labeledGenerators = makeLabeledGenerators[qrep["Generators"], colors];
 
-  SpacedRow[quiverPlot, labeledGenerators, "Transposed" -> transposed]
+  SpacedRow[quiverPlot, labeledGenerators, Transposed -> transposed]
 ];
 
 PackageScope["makeLabeledGenerators"]

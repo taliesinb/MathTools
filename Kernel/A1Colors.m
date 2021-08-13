@@ -374,6 +374,14 @@ ToColorPalette[spec_, n_Integer] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["GrayColorQ"]
+
+GrayColorQ[_GrayLevel] := True;
+GrayColorQ[r_RGBColor] := SameQ @@ Round[Flatten @ Apply[List, r], .05];
+GrayColorQ[_] := False;
+
+(**************************************************************************************************)
+
 PackageExport["OklabBlend"]
 
 SetUsage @ "

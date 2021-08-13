@@ -837,23 +837,6 @@ ChartColorForm[expr_, colors_] := Scope[
 
 ChartColorForm[graph_][expr_] := ChartColorForm[expr, graph];
 
-PackageScope["formatChartSymbol"]
-
-formatChartSymbol[sym_String, colors_] := Scope[
-  RawBoxes @ StyleBox[
-    SubscriptBox["C", StyleBox[sym, Italic]]
-  ,
-    cards = ToPathWord @ StringTrim[sym, {"+" | "-"}];
-    c = Lookup[
-      If[colors === Automatic, ChooseCardinalColors @ cards, colors],
-      cards,
-      $Failed
-    ];
-    If[ContainsQ[c, $Failed], Sequence @@ {}, HumanBlend @ c],
-    BaseStyle -> Append[$LabelStyle, AutoSpacing -> False]
-  ]
-];
-
 (**************************************************************************************************)
 
 PackageExport["LargeLabeled"]

@@ -211,7 +211,8 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
   $trimmedMainContext = StringTrim[mainContext, "`"];
 
   $filesToSkip = FileNames[{"Loader.m", "init.m"}, $directory];
-  $files = Sort @ Complement[FileNames["*.m", $directory], $filesToSkip];
+  $userFiles = FileNames["user_*.m", $directory];
+  $files = Sort @ Complement[FileNames["*.m", $directory], Join[$filesToSkip, $userFiles]];
   $textFiles = FileNames["*.txt", $directory];
 
   $globalImports = {"System`", "GeneralUtilities`", "Developer`"};
@@ -237,6 +238,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
   If[result === $Failed, Return[$Failed]];
 
   Scan[observeTextFile, $textFiles];
+  Scan[observeTextFile, $userFiles];
 
   If[$loadedFileCount == 0 && $changedTextFileCount == 0, Return["Unchanged"]];
 
@@ -260,17 +262,30 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
 ];
 
 QuiverGeometryPackageLoader`EvaluatePackages[packagesList_List] := Block[
-  {$currentPath, $currentLineNumber, result},
+  {$currentPath, $currentLineNumber, result, initialFile, finalFile},
   $currentPath = ""; $currentLineNumber = 0;
   QuiverGeometryPackageLoader`$FileTimings = <||>;
   QuiverGeometryPackageLoader`$FileLineTimings  = <||>;
   $failEval = False;
+  loadUserFile["user_init.m"];
   result = GeneralUtilities`WithMessageHandler[
     Scan[evaluatePackage, packagesList],
     handleMessage
   ];
   If[$failEval, Return[$Failed, Block]];
+  loadUserFile["user_final.m"];
   result
+];
+
+$userContext = "QuiverGeometryPackageLoader`Private`User`";
+$userContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"};
+
+loadUserFile[name_] := Block[{path},
+  path = FileNameJoin[{QuiverGeometryPackageLoader`$Directory, name}];
+  If[!FileExistsQ[path], Return[]];
+  Block[{$Context = $userContext, $ContextPath = $userContextPath},
+    Get @ path;
+  ];
 ];
 
 SetAttributes[evaluateExpression, HoldAllComplete];

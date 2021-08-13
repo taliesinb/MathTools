@@ -172,6 +172,7 @@ symbolicForm = Case[
   e_Evaluate := Construct[%, e];
 
   f_Form := f;
+  t_Text := First @ t;
 
   (a_ = b_) := Row[{% @ a, " = ", % @ b}];
 
@@ -202,6 +203,7 @@ symbolicForm = Case[
   PathGradient[p_] := Row[{"\[Gradient]", "\[VeryThinSpace]", % @ p}];
   PathDivergence[p_] := Row[{OverDot["\[Gradient]"], "\[VeryThinSpace]", % @ p}];
   PathLaplacian[p_] := Row[{Overscript["\[Gradient]", "\[DoubleDot]"], "\[VeryThinSpace]", % @ p}];
+  PathSplit[p_Symbol] := PathSplitForm[symbolForm[HoldSymbolName @ p]];
 
   (head:symbolicHeads)[t_ ? isSuppressed, a_] :=
     Row[{Replace[head, $symbolicHeadToSymbol], possiblyParenSymbolicForm @ a}];

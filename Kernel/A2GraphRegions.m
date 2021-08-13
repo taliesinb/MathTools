@@ -164,7 +164,7 @@ NegatePath[GraphPathData[a_, b_, c_]] := Scope[
 GraphRegion::badcardinals = "The region ``[...] includes a path `` with invalid cardinals."
 
 ParseRegionWord[word_] :=
-  ToPathWord[word, $Cardinals, failAuto["badcardinals", list]]
+  ToPathWord[word, $Cardinals, failAuto["badcardinals", word]]
 
 $inRegionFunc = True;
 checkCardinals[list_List] :=

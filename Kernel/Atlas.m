@@ -1,12 +1,3 @@
-PackageExport["CardinalAtlas"]
-
-CardinalAtlas[quiver_Graph, charts_] := Scope[
-  Null;
-];
-
-
-(**************************************************************************************************)
-
 PackageExport["ChartSymbol"]
 
 SetUsage @ "
@@ -15,7 +6,27 @@ ChartSymbol[sub$] represents a chart and formats as C$sub.
 
 declareFormatting[
   ChartSymbol[sym_String] :> formatChartSymbol[sym, Automatic],
-  ChartSymbol[other__] :> Subscript["C", other]
+  ChartSymbol[other__] :> ChartSymbolForm[Row[{other}]]
+];
+
+(**************************************************************************************************)
+
+PackageScope["formatChartSymbol"]
+
+formatChartSymbol[sym_String, colors_] := Scope[
+  Style[
+    ChartSymbolForm[sym]
+  ,
+    cards = ToPathWord @ StringTrim[sym, {"+" | "-"}];
+    c = Lookup[
+      If[colors === Automatic, ChooseCardinalColors @ cards, colors],
+      cards,
+      $Failed
+    ];
+    If[ContainsQ[c, $Failed], Sequence @@ {},
+      FontColor -> OklabDarker[HumanBlend @ Discard[c, GrayColorQ], .2]
+    ]
+  ]
 ];
 
 (**************************************************************************************************)
@@ -71,3 +82,66 @@ CardinalTransitionRepresentation[atlas_Graph] := Scope[
     matrices
   ]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["CardinalAtlas"]
+
+CardinalAtlas[quiver_, charts_] := Scope @ Catch[
+  If[!EdgeTaggedGraphQ[quiver], ReturnFailed[]];
+  charts = toChart /@ charts;
+  If[!MatchQ[charts, {__List}], ReturnFailed[]];
+  $quiver = ToIndexGraph @ quiver;
+  $charts = charts;
+  {chartVertices, chartEdges} = Transpose @ Map[getChartRegion, charts];
+  vertexToChart = PositionIndex[chartVertices, 2];
+  Print[VertexList @ $quiver];
+  edgeList = EdgeList @ $quiver;
+  sharedEdges = Select[PositionIndex[chartEdges, 2], Length[#] > 1&];
+  groupedSharedEges = GroupBy[sharedEdges, Identity, Keys];
+  transitionEdges' = Merge[MapIndexed[toTransitionEdge, edgeList], Identity];
+  zOuter[
+    findCardinale,
+    z]
+,
+  CardinalAtlas
+];
+
+CardinalAtlas::notchart = "Chart specification `` is not a list of cardinals or a ChartSymbol.";
+
+toChart = Case[
+  list_List       := list;
+  cs_ChartSymbol  := ChartSymbolCardinals[cs];
+  other_          := failCA["notchart", other];
+];
+
+toTransitionEdge[DirectedEdge[a_, b_, c_], {p_}] := Scope[
+  aChart = vertexToChart @ a;
+  bChart = vertexToChart @ b;
+  comp1 = Complement[bChart, aChart];
+  comp2 = Complement[aChart, bChart];
+  List[
+    Outer[DirectedEdge[#1, #2, sharedCardinal[#1, #2, c]] -> p&, Complement[aChart, comp1], comp1, 1],
+    Outer[DirectedEdge[#1, #2, sharedCardinal[#1, #2, Negated @ c]] -> p&, Complement[bChart, comp2], comp2, 1]
+  ]
+];
+
+sharedCardinal[c1_, c2_, cs:CardinalSet[cards_]] := Scope[
+  int = Intersection[Part[$charts, c1], Part[$charts, c2]];
+  SelectFirst[cards, MemberQ[int, # | Negated[#]]&, cs]
+];
+
+sharedCardinal[_, _, c_] := c;
+
+CardinalAtlas::notatlas = "Cardinals `` do not form a chart.";
+
+getChartRegion[cardinals_] := Match[
+  GraphRegion[$quiver, ChartSymbol[cardinals]],
+  {GraphRegionData[vertices_, edges_]} :> {vertices, edges},
+  _ :> failCA["notatlas", cardinals];
+];
+
+failCA[msg_String, args___] := (
+  Message[MessageName[CardinalAtlas, msg], args];
+  Throw[$Failed, CardinalAtlas]
+);

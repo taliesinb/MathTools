@@ -357,8 +357,6 @@ makePiecewiseRow[All -> value_] :=
 makePiecewiseRow[case_ -> value_] :=
   {makeQGBoxes @ value, makeQGBoxes @ case};
 
-
-
 (**************************************************************************************************)
 
 PackageExport["FunctionSpaceForm"]
@@ -409,7 +407,9 @@ $namedFunctions = {
   HeadVertexFunction, TailVertexFunction,
   AutomorphismsFunction,
   BasisFunction,
-  SupportFunction
+  SupportFunction,
+  SplitFunction,
+  LCMFunction
 };
 
 $functionHeads = {
@@ -903,16 +903,23 @@ $binaryRelationMapping = <|
   NotSupersetEqual   -> "\[NotSupersetEqual]",
   TildeEqual         -> "\[TildeEqual]",
   TildeFullEqual     -> "\[TildeFullEqual]",
-  TildeTilde         -> "\[TildeTilde]"
+  TildeTilde         -> "\[TildeTilde]",
+  LessEqual          -> "\[LessEqual]",
+  Less               -> "<",
+  GreaterEqual       -> "\[GreaterEqual]",
+  Greater            -> ">"
 |>;
 
 $binaryRelationHeads = Alternatives @@ Keys[$binaryRelationMapping];
+
+$domainsP = Alternatives[Integers, Reals, Rationals, Complexes, Naturals];
 
 (* this is the general dispatch mechanism for a form of unknown type *)
 makeQGBoxes = Case[
   None                      := "";
   l:lsymsP                  := MakeBoxes @ l;
   s:namedFnP                := MakeBoxes @ s;
+  d:domainsP                := MakeBoxes @ d;
   e:symP                    := symbolBoxes @ e;
   e_Subtract                := algebraBoxes[e, "SubtractForm"];
   e_Times                   := algebraBoxes[e, "TimesForm"];
@@ -929,7 +936,7 @@ makeQGBoxes = Case[
   UndirectedEdge[args__]    := MakeBoxes @ UndirectedEdgeForm[args];
   other_                    := MakeBoxes @ other,
   {lsymsP -> $literalSymbolsP, symP -> $rawSymbolP, namedFnP -> Alternatives @@ $namedFunctions,
-    binHeads -> $binaryRelationHeads}
+    binHeads -> $binaryRelationHeads, domainsP -> $domainsP}
 ];
 
 algebraBoxes[_[args__], tag_] := makeStandardBoxTemplate[args, tag];
@@ -1034,7 +1041,49 @@ declareBoxFormatting[
     makeStandardBoxTemplate[args, "TimesForm"]
 ]
 
-$TemplateKatexFunction["TimesForm"] = riffled[" \\cross "];
+$TemplateKatexFunction["TimesForm"] = riffled[" \\times "];
+
+(**************************************************************************************************)
+
+PackageExport["DivideForm"]
+PackageExport["InlineDivideForm"]
+
+declareBoxFormatting[
+  DivideForm[a_, b_] :>
+    makeStandardBoxTemplate[a, b, "DivideForm"],
+  InlineDivideForm[a_, b_] :>
+    makeStandardBoxTemplate[a, b, "InlineDivideForm"]
+]
+
+$TemplateKatexFunction["DivideForm"] = "frac";
+$TemplateKatexFunction["InlineDivideForm"] = riffled[" / "];
+
+(**************************************************************************************************)
+
+PackageExport["PowerForm"]
+PackageExport["RepeatedPowerForm"]
+
+declareBoxFormatting[
+  PowerForm[a_, b_] :> makeStandardBoxTemplate[a, b, "PowerForm"],
+  RepeatedPowerForm[a_, b_] :> makeStandardBoxTemplate[a, b, "RepeatedPowerForm"]
+]
+
+$TemplateKatexFunction["PowerForm"] = "pow";
+$TemplateKatexFunction["RepeatedPowerForm"] = "rep";
+
+(**************************************************************************************************)
+
+PackageExport["PathRelationForm"]
+
+declareBoxFormatting[
+  PathRelationForm[args__] :>
+    TemplateBox[Map[wordBoxes, Unevaluated[{args}]], "PathRelationForm"],
+  PathRelationForm[] :>
+    TemplateBox[{}, "PathRelationSymbol"]
+]
+
+$TemplateKatexFunction["PathRelationForm"] = riffled[" \\pathIso "]
+$TemplateKatexFunction["PathRelationSymbol"] = "\\pathIso"&;
 
 (**************************************************************************************************)
 
@@ -1335,7 +1384,7 @@ $TemplateKatexFunction["AntisymmetricSymbol"] = "\\antisymmetricSymbol"&;
 makePathBoxTemplate[left_, rest___, tag_] :=
   TemplateBox[
     Join[
-      List @ maybeParen[PathSymbol|CardinalSymbol|$colorFormP] @ left,
+      List @ maybeParen[PathSymbol|CardinalSymbol|$colorFormP|$functionFormP|EdgeFieldSymbol] @ left,
       Map[
         maybeParen[PathSymbol|EdgeFieldSymbol|VertexFieldSymbol|PathTranslateForm|PathBackwardTranslateForm|$colorFormP],
         Unevaluated @ {rest}
@@ -1368,6 +1417,36 @@ declareBoxFormatting[
 
 $TemplateKatexFunction["PathComposeForm"] = "pathCompose";
 $TemplateKatexFunction["PathComposeSymbol"] = "pathComposeSymbol";
+
+(********************************************)
+
+PackageExport["PathIntegralForm"]
+
+declareBoxFormatting[
+  PathIntegralForm[a_, b_] :>
+    makePathBoxTemplate[a, b, "PathIntegralForm"],
+
+  PathIntegralForm[] :>
+    TemplateBox[{}, "PathIntegralSymbol"]
+];
+
+$TemplateKatexFunction["PathIntegralForm"] = "pathIntegral";
+$TemplateKatexFunction["PathIntegralSymbol"] = "pathIntegralSymbol";
+
+(********************************************)
+
+PackageExport["PathDotForm"]
+
+declareBoxFormatting[
+  PathDotForm[a_, b_] :>
+    makePathBoxTemplate[a, b, "PathDotForm"],
+
+  PathDotForm[] :>
+    TemplateBox[{}, "PathDotSymbol"]
+];
+
+$TemplateKatexFunction["PathDotForm"] = "pathDot";
+$TemplateKatexFunction["PathDotSymbol"] = "pathDotSymbol";
 
 (********************************************)
 
@@ -1426,6 +1505,15 @@ declareBoxFormatting[
 ];
 
 $TemplateKatexFunction["PathTailVectorForm"] = "pathTailVector";
+
+(********************************************)
+
+PackageExport["PathSplitForm"]
+
+declareBoxFormatting[
+  PathSplitForm[a_] :>
+    MakeBoxes @ AppliedForm[SplitFunction, a]
+];
 
 (********************************************)
 
@@ -1759,8 +1847,10 @@ PackageExport["PathListFunction"]
 PackageExport["CardinalListFunction"]
 PackageExport["SignedLengthFunction"]
 PackageExport["LengthFunction"]
+PackageExport["LCMFunction"]
 PackageExport["HeadVertexFunction"]
 PackageExport["TailVertexFunction"]
+PackageExport["SplitFunction"]
 PackageExport["WordFunction"]
 PackageExport["AutomorphismsFunction"]
 PackageExport["BasisFunction"]
@@ -1779,6 +1869,7 @@ Scan[declareFunctionFormatting, $namedFunctions];
 $TemplateKatexFunction["NamedFunctionSymbolForm"] = namedFuncKatex;
 
 namedFuncKatex["Word"] := "\\wordOf"; (* because 'word' already menas wordForm *)
+namedFuncKatex["LCM"] := "\\lcm"; (* lowercase *)
 namedFuncKatex[s_String] := namedFuncKatex[s] = StringJoin["\\", LowerCaseFirst @ s];
 
 (**************************************************************************************************)
@@ -1806,6 +1897,41 @@ declareBoxFormatting[
 
 $TemplateKatexFunction["RowForm"] = riffled[" "];
 $TemplateKatexFunction["TermRowForm"] = riffled[" "];
+
+(********************************************)
+
+PackageExport["ChartSymbolForm"]
+
+declareBoxFormatting[
+  ChartSymbolForm[elem_] :>
+    makeStandardBoxTemplate[elem, "ChartSymbolForm"],
+  ChartSymbolForm[] :>
+    TemplateBox[{}, "ChartSymbol"]
+];
+
+$TemplateKatexFunction["ChartSymbolForm"] = "chart"
+$TemplateKatexFunction["ChartSymbol"] = "\\chart{}"&;
+
+(********************************************)
+
+PackageExport["GraphRegionIntersectionForm"]
+PackageExport["GraphRegionUnionForm"]
+
+declareBoxFormatting[
+  GraphRegionIntersectionForm[args__] :>
+    makeStandardBoxTemplate[args, "GraphRegionIntersectionForm"],
+  GraphRegionIntersectionForm[] :>
+    TemplateBox[{}, "GraphRegionIntersectionSymbol"],
+  GraphRegionUnionForm[args__] :>
+    makeStandardBoxTemplate[args, "GraphRegionUnionForm"],
+  GraphRegionUnionForm[] :>
+    TemplateBox[{}, "GraphRegionUnionSymbol"]
+];
+
+$TemplateKatexFunction["GraphRegionIntersectionForm"] = riffled[" \\regionIntersection "]
+$TemplateKatexFunction["GraphRegionIntersectionSymbol"] = "\\regionIntersection"&;
+$TemplateKatexFunction["GraphRegionUnionForm"] = riffled[" \\regionUnion "]
+$TemplateKatexFunction["GraphRegionUnionSymbol"] = "\\regionUnion"&;
 
 (********************************************)
 
@@ -1872,16 +1998,23 @@ $TemplateKatexFunction["EmptyWordForm"] := "emptyWord"
 $TemplateKatexFunction["WordForm"] = "word";
 $TemplateKatexFunction["WordSymbolForm"] = "wordSymbol";
 
+$cardP = _CardinalSymbol | NegatedForm[_CardinalSymbol];
+$maybeColoredCardP = $colorFormP[$cardP] | $cardP;
+
 SetHoldAllComplete[wordBoxes];
 wordBoxes = Case[
   {}|""                               := TemplateBox[{}, "EmptyWordForm"];
-  word_String                         := % @ ToPathWord @ word;
-  (Times|ConcatenationForm)[a_, b_]   := TemplateBox[% /@ {a, b}, "ConcatenationForm"];
+  1                                   := TemplateBox[{"1"}, "WordForm"];
+  word_String                         := Construct[%, ToPathWord @ word];
+  (Times|ConcatenationForm)[a_, b_]   := TemplateBox[Map[%, Unevaluated @ {a, b}], "ConcatenationForm"];
+  RepeatedPowerForm[a_, b_]           := TemplateBox[Map[%, Unevaluated @ {a, b}], "RepeatedPowerForm"];
+  c:cardP                             := TemplateBox[List @ MakeBoxes @ c, "WordForm"];
+  list:{cardP..}                      := TemplateBox[Map[MakeBoxes, Unevaluated[list]], "WordForm"];
   list_List                           := TemplateBox[tryColorCardinals @ cardinalBoxes @ list, "WordForm"];
   Negated[s_]                         := negBox[% @ s];
   s_SymbolForm                        := MakeBoxes @ s; (* placeholder *)
-  s:syms                              := TemplateBox[List @ rawSymbolBoxes @ s, "WordSymbolForm"],
-  {syms -> $rawSymbolP}
+  s:symsP                             := TemplateBox[List @ rawSymbolBoxes @ s, "WordSymbolForm"],
+  {symsP -> $rawSymbolP, cardP -> $maybeColoredCardP}
 ];
 
 cardinalBoxes[list_List] := Map[cardinalBox, list];

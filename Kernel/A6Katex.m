@@ -145,7 +145,7 @@ applyInlineStyle[e_, {_, _, c:$ColorPattern}] :=
 applyInlineStyle[e_, _] := e;
 
 toBracket = Case[
-  e_String /; StringFreeQ[e, " "] := e;
+  e_String /; StringLength[e] === 1 := e;
   other_ := {"{", boxToKatex @ other, "}"};
 ];
 

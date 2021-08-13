@@ -329,8 +329,8 @@ Options[HighlightChartRegion] = {
 
 HighlightChartRegion[graph_, chart_, OptionsPattern[]] := Scope[
   UnpackOptions[color, arrowheads, preserveColors, lighter, label];
-  cardinals = chartCardinals @ chart;
-  SetAutomatic[color, HumanBlend @ LookupCardinalColors[graph, cardinals]];
+  cardinals = ChartSymbolCardinals @ chart;
+  SetAutomatic[color, HumanBlend @ DeleteCases[$DarkGray] @ LookupCardinalColors[graph, cardinals]];
   If[lighter != 0, color = ColorConvert[MapAt[# - lighter&, ColorConvert[color, Hue], 2], RGBColor]];
   result = HighlightGraphRegion[
     graph,
@@ -636,7 +636,7 @@ FQPVertexIcon[opts_][path_] := Scope[
   hasClassLabel = False;
   If[MatchQ[path, Labeled[_, _]], hasClassLabel = True; {path, classLabel} = FirstLast @ path];
   hasPathLabel = !MatchQ[path, Path[_, {}, ___]];
-  highlighted = Capture @ HighlightGraphRegion[
+  highlighted = HighlightGraphRegion[
     $fq, path, {$Teal, PathRadius -> 2, PathStyle -> "DiskArrow", EdgeSetback -> $setback, "Foreground"}, Sequence @@ opts,
     GraphTheme -> {"PathQuiverIcon", "FundamentalQuiver"},
     FrameLabel -> {

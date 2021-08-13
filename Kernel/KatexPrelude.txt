@@ -82,6 +82,12 @@
 \gdef\pathTailVector#1{{#1}_{\bullet}}
 \gdef\pathReverse#1{{#1}^{\dagger}}
 
+\gdef\pathIntegral#1#2{{#1} \int {#2}}
+\gdef\pathIntegralSymbol{{\int}}
+
+\gdef\pathDot#1#2{{#1} \cdot {#2}}
+\gdef\pathDotSymbol{{\cdot}}
+
 \gdef\length{\operatorname{len}}
 \gdef\signedLength{\operatorname{len^*}}
 \gdef\vertexList{\operatorname{vertices}}
@@ -92,6 +98,8 @@
 \gdef\headVertex{\operatorname{head}}
 \gdef\tailVertex{\operatorname{tail}}
 \gdef\basis{\operatorname{basis}}
+\gdef\split{\operatorname{split}}
+\gdef\lcm{\operatorname{lcm}}
 
 \gdef\blank{\_}
 \gdef\emptyWord{}
@@ -134,6 +142,17 @@
 \gdef\laplacianOf#1{\laplacian\,{#1}}
 \gdef\laplacian{\ddot{\nabla}}
 \gdef\suchThat#1#2{{#1} \vert {#2}}
+
+\gdef\chart#1{\chartSymbol_{#1}}
+\gdef\chartSymbol{C}
+
+\gdef\regionIntersection{\cap}
+\gdef\regionUnion{\cup}
+
+\gdef\pathIso{\simeq}
+
+\gdef\pow#1#2{{#1}^{#2}}
+\gdef\rep#1#2{{#1}^{#2}}
 
 \gdef\graph#1{#1}
 \gdef\graphHomomorphism#1{#1}

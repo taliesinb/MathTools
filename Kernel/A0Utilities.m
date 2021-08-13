@@ -25,6 +25,14 @@ With[{io := GeneralUtilities`IndexOf},
 
 (**************************************************************************************************)
 
+PackageScope["SetInitialValue"]
+
+SetHoldAllComplete[SetInitialValue];
+
+SetInitialValue[sym_Symbol, body_] := If[!System`Private`HasImmediateValueQ[sym], sym = body];
+
+(**************************************************************************************************)
+
 PackageScope["LowerCaseFirst"]
 
 LowerCaseFirst[str_String] := StringJoin[ToLowerCase @ StringTake[str, 1], StringDrop[str, 1]];
@@ -207,7 +215,7 @@ PackageScope["SetUsage"]
 
 PackageExport["$DisableSetUsage"]
 
-$DisableSetUsage = False;
+SetInitialValue[$DisableSetUsage, False];
 
 preprocessUsageString[usageString_] :=
   FixedPoint[substituteUsageSlots, usageString]

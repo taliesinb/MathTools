@@ -55,8 +55,11 @@ Options[PathAlgebra] = {
   VertexSize -> Automatic,
   ArrowheadSize -> 0.13,
   EdgeThickness -> 1,
+  "SymbolicEdgeThickness" -> Automatic,
+  "SymbolicEdgeStyle" -> Automatic,
   "VertexNudge" -> {0, 0},
-  "EdgeNudge" -> {0, 0}
+  "EdgeNudge" -> {0, 0},
+  "DrawSortOrder" -> Negated["PathLength"]
 };
 
 $graphOrLatticeSpec = _Graph | _String | {_String, __};
@@ -72,7 +75,9 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
   If[!MatchQ[field, _Integer | Integers | Reals | Complexes], ReturnFailed[]];
 
-  UnpackOptions[plotRange, edgeSetback, imageSize, vertexSize, arrowheadSize, edgeThickness, vertexNudge, edgeNudge];
+  UnpackOptions[plotRange, edgeSetback, imageSize, vertexSize, arrowheadSize,
+    edgeThickness, symbolicEdgeThickness, symbolicEdgeStyle,
+    vertexNudge, edgeNudge, drawSortOrder];
   If[NumericQ[plotRange], plotRange *= {{-1, 1}, {-1, 1}}];
 
   data = <||>;
@@ -91,8 +96,11 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   data["VertexSize"] = vertexSize;
   data["ArrowheadSize"] = arrowheadSize;
   data["EdgeThickness"] = edgeThickness;
+  data["SymbolicEdgeThickness"] = symbolicEdgeThickness;
+  data["SymbolicEdgeStyle"] = symbolicEdgeStyle;
   data["VertexNudge"] = vertexNudge;
   data["EdgeNudge"] = edgeNudge;
+  data["DrawSortOrder"] = drawSortOrder;
 
   data["Field"] = field;
   data["FieldModulus"] = mod = Match[field, n_Integer :> n, Infinity];
@@ -289,8 +297,8 @@ declareFormatting[
 
 PackageExport["PathVectorPlot"]
 
-PathVectorPlot[pv:PathVector[_Association ? ValidPathAssociationQ]] /; $PathAlgebraQ :=
-  formatPathVector[pv];
+PathVectorPlot[pv:PathVector[_Association ? ValidPathAssociationQ], opts___Rule] /; $PathAlgebraQ :=
+  formatPathVector[pv, opts];
 
 (**************************************************************************************************)
 
@@ -303,27 +311,33 @@ pathFieldQ[PathVector[assoc_]] := DuplicateFreeQ @ PathTailVertex @ Keys[assoc];
 
 notBothwaysQ[_] := False;
 
-formatPathVector[pv_] := If[notOverlappingPathsQ[pv] && pathFieldQ[pv],
-  iFormatPathVector[pv, False],
+formatPathVector[pv_, opts___] := If[notOverlappingPathsQ[pv] && pathFieldQ[pv],
+  iFormatPathVector[pv, False, opts],
   Mouseover[
-    iFormatPathVector[pv, False],
-    iFormatPathVector[pv, True]
+    iFormatPathVector[pv, False, opts],
+    iFormatPathVector[pv, True, opts]
   ]
 ]
 
 formatPathVector[pv_] :=
   iFormatPathVector[pv, False];
 
-iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
+iFormatPathVector[PathVector[paths_Association], transparency_, opts___Rule] := Scope[
   UnpackPathAlgebra[
     vertexCoordinates, edgeCoordinateLists, plotRange, fieldColorFunction,
     vertexRange, vertexList, vertexSize, edgeSetback, imageSize, edgeToCardinal,
-    arrowheadSize, edgeThickness, vertexNudge, edgeNudge
+    arrowheadSize, edgeThickness,
+    symbolicEdgeThickness, symbolicEdgeStyle,
+    vertexNudge, edgeNudge, drawSortOrder
   ];
   $sb = edgeSetback; $transparency = transparency; $arrowheadSize = arrowheadSize;
+  SetAutomatic[symbolicEdgeThickness, edgeThickness];
+  SetAutomatic[symbolicEdgeStyle, {}];
   pathRules = Normal @ paths;
   pathRules = Values @ GroupBy[pathRules, canonPathElement, combineReversed];
-  pathPrimitives = drawWeightedElement @@@ SortBy[pathRules, First /* PathLength /* Minus];
+  drawSorter = toDrawSorter @ drawSortOrder;
+  If[drawSorter =!= None, pathRules = SortBy[pathRules, drawSorter]];
+  pathPrimitives = drawWeightedElement @@@ pathRules;
   pathPrimitives = {
     AbsoluteThickness[edgeThickness],
     AbsolutePointSize[Replace[vertexSize, Automatic -> 4]],
@@ -338,12 +352,24 @@ iFormatPathVector[PathVector[paths_Association], transparency_] := Scope[
   primitives = {vertexPrimitives, pathPrimitives};
   primitives = doNudge[primitives, vertexNudge, edgeNudge];
   Graphics[
-    primitives,
+    primitives, opts,
     Frame -> True, FrameTicks -> False, ImageSize -> imageSize,
     FrameStyle -> LightGray,
     PlotRange -> plotRange, PlotRangePadding -> Scaled[0.15],
     PlotRangeClipping -> True
   ]
+];
+
+numericOrVectorQ[_ ? NumericQ | {_ ? NumericQ, _ ? NumericQ}] := True;
+numericOrVectorQ[_] := False;
+
+toDrawSorter = Case[
+  "PathLength"    := First /* PathLength;
+  "SymbolicQ"     := Last /* numericOrVectorQ /* Not;
+  "NumericQ"      := Last /* numericOrVectorQ;
+  Negated[e_]     := (% @ e) /* Not;
+  list_List       := ApplyThrough[% /@ list];
+  None            := None;
 ];
 
 doNudge[g_, {0, 0}, {0, 0}] := g;
@@ -374,14 +400,18 @@ drawWeightedElement[ReversedGroup[p_, q_], {wf_, wb_}] := Block[
   drawWeightedElement[p, wf]
 ];
 
-drawWeightedElement[p:PathElement[t_, e_, h_], weight_] :=
-  drawStyledPath[
+drawWeightedElement[p:PathElement[t_, e_, h_], weight_] := Scope[
+  isNumeric = NumericQ[weight];
+  graphics = drawStyledPath[
     If[e === {},
       Part[vertexCoordinates, List @ t],
       getEdgeCoords[e]
     ],
-    If[NumericQ[weight], fieldColorFunction @ weight, $Teal]
-  ] ~NiceTooltip~ Column[{pathElementForm[p], weight}]
+    If[isNumeric, fieldColorFunction @ weight, $Teal]
+  ];
+  If[!isNumeric, graphics //= StyleOperator[AbsoluteThickness[symbolicEdgeThickness], symbolicEdgeStyle]];
+  NiceTooltip[graphics, Column[{pathElementForm[p], weight}]]
+];
 
 getEdgeCoords[e_] := Scope[
   coords = Part[edgeCoordinateLists, StripNegated /@ e];
@@ -1047,22 +1077,39 @@ RandomEdgeField['type$'] chooses only specific orientations of length-1 paths.
 
 declareFunctionAutocomplete[RandomEdgeField, {$directionStrings}];
 
-Options[RandomEdgeField] = {RandomSeeding -> Automatic};
+Options[RandomEdgeField] = {RandomSeeding -> Automatic, "Density" -> 1};
 
 RandomEdgeField[type_String:"Symmetric", OptionsPattern[]] /; $PathAlgebraQ := Scope @ RandomSeeded[
   UnpackPathAlgebra[edgeRange, randomFieldElement, edgeToTail, edgeToHead];
-  forward = edgeRange;
-  reverse = Negated /@ edgeRange;
-  edges = Switch[type,
-    "Forward",        forward,
-    "Backward",       reverse,
-    "Symmetric" |
-    "Antisymmetric",  Join[forward, reverse],
+  UnpackOptions[density];
+  randomEdgeMaker = Switch[type,
+    "Forward",        makeRandomForwardEdge,
+    "Backward",       makeRandomBackwardEdge,
+    "Symmetric",      makeRandomSymmetricEdge,
+    "Antisymmetric",  makeRandomAntisymmetricEdge,
     _,                ReturnFailed["badpvectype", type]
   ];
-  constructPathVector @ Map[edge |-> singleEdgePathElement[edge] -> randomFieldElement[], edges],
+  If[density < 1, edgeRange = RandomSample[edgeRange, Ceiling[Length[edgeRange] * density]]];
+  constructPathVector @ Map[randomEdgeMaker[#1, randomFieldElement[]]&, edgeRange]
+,
   OptionValue[RandomSeeding]
 ];
+
+makeRandomForwardEdge[edge_, w_] :=
+  singleEdgePathElement[edge] -> w;
+
+makeRandomBackwardEdge[edge_, w_] :=
+  reversedSingleEdgePathElement[edge] -> w;
+
+makeRandomSymmetricEdge[edge_, w_] := {
+  singleEdgePathElement[edge] -> w,
+  reversedSingleEdgePathElement[edge] -> w
+}
+
+makeRandomAntisymmetricEdge[edge_, w_] := {
+  singleEdgePathElement[edge] -> w,
+  reversedSingleEdgePathElement[edge] -> -w
+}
 
 (**************************************************************************************************)
 
@@ -1742,3 +1789,13 @@ PackageExport["PathLaplacian"]
 
 PathLaplacian[pv_PathVector] /; $PathAlgebraQ :=
   PathDivergence @ PathGradient @ pv;
+
+(**************************************************************************************************)
+
+PackageExport["PathDot"]
+
+PathDot[a_PathVector, b_PathVector] /; $PathAlgebraQ := Scope[
+  assocs = Part[{a, b}, All, 1];
+  {a1, a2} = KeyIntersection[assocs];
+  Total[a1 * a2]
+];
