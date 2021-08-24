@@ -4,13 +4,14 @@ PackageExport["SelectVertices"]
 DiscardVertices[graph_Graph, filter_] := Subgraph[graph, Discard[VertexList[graph], filter]];
 SelectVertices[graph_Graph, filter_] := Subgraph[graph, Select[VertexList[graph], filter]];
 
-
+(**************************************************************************************************)
 
 PackageExport["GraphRelabel"]
 
 GraphRelabel[graph_Graph, f_] :=
   VertexReplace[graph, Map[# -> f[#]&, VertexList[graph]]];
 
+(**************************************************************************************************)
 
 PackageExport["GraphContract"]
 
@@ -41,6 +42,7 @@ GraphContract[g_, contraction_Association] :=
     ]
   ];
 
+(**************************************************************************************************)
 
 PackageExport["GraphContractBy"]
 
@@ -56,7 +58,7 @@ GraphContractBy[graph_Graph, func_] :=
     ]
   ];
 
-
+(**************************************************************************************************)
 
 PackageExport["GraphSum"]
 
@@ -85,13 +87,14 @@ GraphSum[graphs:ListOrAssociationOf[_Graph | Rule[_Graph, _]], opts:OptionsPatte
   GraphContract[union, $contractions]
 ];
 
+(**************************************************************************************************)
 
-PackageExport["GraphProduct"]
+PackageExport["ExtendedGraphProduct"]
 
 SetUsage @ "
-GraphProduct[{g$1, g$2, $$}, type$] takes the direct product of a list of graphs g$i, yielding a single graph with vertices \
-ProductVertex[{v$1, v$2, $$}], where v$i is a vertex from g$i.
-GraphProduct[<|k$1 -> g$1, k$2 -> g$2, $$|>, type$] yields a graph with vertices ProductVertex[<|k$1 -> v$1, k$2 -> v$2, $$|>].
+ExtendedGraphProduct[{g$1, g$2, $$}, type$] takes the direct product of a list of graphs g$i, yielding a single graph with vertices \
+VertexProducts[{v$1, v$2, $$}], where v$i is a vertex from g$i.
+GraphProduct[<|k$1 -> g$1, k$2 -> g$2, $$|>, type$] yields a graph with vertices VertexProducts[<|k$1 -> v$1, k$2 -> v$2, $$|>].
 type* specifies how to determine the edges of the product graph, and can be one of the following:
 | 'Cartesian' | Total[d$i] == 1 |
 | 'Tensor' | d$i == 1 |
@@ -103,7 +106,7 @@ than one for a multigraph). The tags for these directed edges are used in an ass
 the graphs responsible for them.
 "
 
-GraphProduct[graphs:ListOrAssociationOf[_Graph], type_, opts:OptionsPattern[Graph]] := Scope[
+ExtendedGraphProduct[graphs:ListOrAssociationOf[_Graph], type_, opts:OptionsPattern[Graph]] := Scope[
   If[AssociationQ[graphs],
     keys = Keys[graphs];
     graphs = Values[graphs]
@@ -115,6 +118,124 @@ GraphProduct[graphs:ListOrAssociationOf[_Graph], type_, opts:OptionsPattern[Grap
   $NotImplemented
 ];
 
+(**************************************************************************************************)
+
+PackageExport["DependentQuiverProduct"]
+
+SetUsage @ "
+DependentQuiverProduct[g1$, g$2] gives the dependent graph product of graph g$1 and g$2.
+* The vertices of the product are tuples {v$1, v$2}, where v$i is a vertex of g$i.
+* The edges of the product are edges {v$1, v$2} \[DirectedEdge] {w$1, w$2}.
+"
+
+Options[DependentQuiverProduct] = JoinOptions[
+  "UseCardinalSet" -> False,
+  ExtendedGraph
+];
+
+DependentQuiverProduct[a_Graph, b_Graph, opts:OptionsPattern[]] :=
+  generalQuiverProduct[a, b, dependentEdgeProduct, opts];
+
+dependentEdgeProduct[head_[at_, ah_, ac_], head_[bt_, bh_, bc_]] :=
+  head[VertexProduct[at, bt], VertexProduct[ah, bh], CardinalProduct[ac, bc]];
+
+dependentEdgeProduct[head_[at_, ah_], head_[bt_, bh_]] :=
+  head[VertexProduct[at, bt], VertexProduct[ah, bh]];
+
+(**************************************************************************************************)
+
+PackageExport["IndependentQuiverProduct"]
+
+SetUsage @ "
+IndependentQuiverProduct[g1$, g$2] gives the independent graph product of graph g$1 and g$2.
+* The vertices of the product are tuples {v$1, v$2}, where v$i is a vertex of g$i.
+* The edges of the product are edges either {v$1, v$2} \[DirectedEdge] {w$1, w$2} or \
+{v$1, w$2} \[DirectedEdge] {w$1, v$2}.
+"
+
+Options[IndependentQuiverProduct] = Options[DependentQuiverProduct];
+
+IndependentQuiverProduct[a_Graph, b_Graph, opts:OptionsPattern[]] :=
+  generalQuiverProduct[a, b, independentEdgeProduct, opts];
+
+independentEdgeProduct[head_[at_, ah_, ac_], head_[bt_, bh_, bc_]] := {
+  head[VertexProduct[at, bt], VertexProduct[ah, bh], CardinalProduct[ac, bc]],
+  head[VertexProduct[ah, bt], VertexProduct[at, bh], CardinalProduct[Negated @ ac, bc]]
+}
+
+independentEdgeProduct[head_[at_, ah_], head_[bt_, bh_]] := {
+  head[VertexProduct[at, bt], VertexProduct[ah, bh]],
+  head[VertexProduct[ah, bt], VertexProduct[at, bh]]
+}
+
+(**************************************************************************************************)
+
+Options[generalQuiverProduct] = Options[DependentQuiverProduct];
+
+generalQuiverProduct[a_Graph, b_Graph, edgeProdFn_, OptionsPattern[]] := Scope[
+  UnpackOptions[useCardinalSet];
+  opts = JoinOptions[ExtractExtendedGraphOptions /@ {a, b}, opts];
+  vertexLists = VertexList /@ {a, b};
+  edgeLists = EdgeList /@ {a, b};
+  {aColors, bColors} = LookupVertexColors /@ {a, b};
+  {aCoords, bCoords} = LookupVertexCoordinates /@ {a, b};
+  productVertices = Flatten @ Outer[VertexProduct, Sequence @@ vertexLists, 1];
+  productEdges = Flatten @ Outer[edgeProdFn, Sequence @@ edgeLists, 1];
+  If[!MatchQ[productEdges, {Repeated[_DirectedEdge|_UndirectedEdge]}],
+    ReturnFailed[]];
+  opts //= DeleteOptions[{VertexAnnotations, EdgeAnnotations, "Alternation", "UseCardinalSet"}];
+  (* productVertices = AllUniqueVertices @ productEdges; *)
+  vertexColorFunction = If[aColors === None || bColors === None, None,
+    VertexProductColorFunction[aColors, bColors]
+  ];
+  If[useCardinalSet,
+    productEdges //= ReplaceAll[CardinalProduct[z__] :> CardinalSet[{z}]];
+    {aCardColors, bCardColors} = LookupCardinalColors /@ {a, b};
+    If[aCardColors =!= <||> && bCardColors =!= <||>,
+      opts //= ReplaceOptions[{CardinalColors -> Join[aCardColors, bCardColors], ArrowheadStyle -> Automatic}];
+    ];
+  ];
+  {aSize, bSize} = LookupImageSize /@ {a, b};
+  size = {First @ bSize, Last @ aSize};
+  ExtendedGraph[productVertices, productEdges,
+    VertexCoordinates -> Map[productVertexCoords, productVertices],
+    VertexColorFunction -> vertexColorFunction,
+    ImageSize -> size,
+    Sequence @@ opts,
+    ArrowheadPosition -> 0.8
+  ]
+];
+
+productVertexCoords[VertexProduct[a_, b_]] :=
+  List[
+    First @ bCoords @ b,
+    Minus @ First @ aCoords @ a
+  ];
+
+(**************************************************************************************************)
+
+PackageExport["NegateGraph"]
+
+NegateGraph[g_Graph] := Scope[
+  Graph[
+    VertexList @ g, Map[reverseEdge, EdgeList @ g],
+    Options @ g
+  ]
+]
+
+reverseEdge = Case[
+  head_[a_, b_] := head[b, a];
+  head_[a_, b_, c_] := head[b, a, c];
+];
+
+(**************************************************************************************************)
+
+PackageExport["VertexProductColorFunction"]
+
+VertexProductColorFunction[c1_, c2_][VertexProduct[v1_, v2_]] :=
+  HumanBlend[{Lookup[c1, v1], Lookup[c2, v2]}];
+
+(**************************************************************************************************)
 
 PackageExport["RestrictedVertexProductGraph"]
 
@@ -156,12 +277,14 @@ RestrictedVertexProductGraph[graph_, cond_, opts:OptionsPattern[Graph]] := Scope
   Graph[productVertices, Flatten @ productEdges, opts]
 ]
 
+(**************************************************************************************************)
 
 PackageExport["RestrictedVertexProducts"]
 
 RestrictedVertexProducts[graph_, cond_] :=
   integersToVertices[graph, RestrictedVertexIndexProducts[graph, cond]];
 
+(**************************************************************************************************)
 
 PackageExport["RestrictedVertexIndexProducts"]
 

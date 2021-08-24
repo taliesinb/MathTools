@@ -6,7 +6,8 @@ ChartSymbol[sub$] represents a chart and formats as C$sub.
 
 declareFormatting[
   ChartSymbol[sym_String] :> formatChartSymbol[sym, Automatic],
-  ChartSymbol[other__] :> ChartSymbolForm[Row[{other}]]
+  ChartSymbol[list_List]  :> ChartSymbolForm[list],
+  ChartSymbol[other__]    :> ChartSymbolForm[Row[{other}]]
 ];
 
 (**************************************************************************************************)
@@ -39,6 +40,7 @@ ChartSymbolCardinals[chart$] returns the list of cardinals in a ChartSymbol[$$].
 
 ChartSymbolCardinals = Case[
   ChartSymbol[s_, ___] := ToPathWord[s];
+  ChartSymbol[s_List, ___] := s;
   (GraphRegionIntersection|GraphRegionUnion)[s__] := Union @@ Map[%, {s}];
 ];
 
@@ -85,29 +87,97 @@ CardinalTransitionRepresentation[atlas_Graph] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["CardinalAtlas"]
+PackageExport["TransportAtlas"]
 
-CardinalAtlas[quiver_, charts_] := Scope @ Catch[
+TransportAtlas[quiver_, charts_, opts___Rule] := Scope @ Catch[
   If[!EdgeTaggedGraphQ[quiver], ReturnFailed[]];
-  charts = toChart /@ charts;
-  If[!MatchQ[charts, {__List}], ReturnFailed[]];
+  colors = LookupCardinalColors @ quiver;
+  $charts = toChart /@ charts;
+  $fullCharts = Join[#, Map[Negated, #]]& /@ $charts;
+  If[!MatchQ[$charts, {__List}], ReturnFailed[]];
   $quiver = ToIndexGraph @ quiver;
-  $charts = charts;
-  {chartVertices, chartEdges} = Transpose @ Map[getChartRegion, charts];
-  vertexToChart = PositionIndex[chartVertices, 2];
-  Print[VertexList @ $quiver];
+  {chartVertices, chartEdges} = Transpose @ Map[getChartRegion, $charts];
+  vertexToCharts = PositionIndex[chartVertices, 2];
+  edgeToChart = PositionIndex[chartEdges, 2];
   edgeList = EdgeList @ $quiver;
-  sharedEdges = Select[PositionIndex[chartEdges, 2], Length[#] > 1&];
+  sharedEdges = Select[vertexToCharts, Length[#] > 1&];
   groupedSharedEges = GroupBy[sharedEdges, Identity, Keys];
-  transitionEdges' = Merge[MapIndexed[toTransitionEdge, edgeList], Identity];
-  zOuter[
-    findCardinale,
-    z]
+  overlapCardinalRelations = findOverlapRelations[];
+  transitionEdges = DeleteDuplicates @ Flatten @ Map[toTransitionEdge, edgeList];
+  cardinalTransitionAnnos = Association @ MapIndexed[toCardTransAnnos, transitionEdges];
+  (* the next step is to build CardinalTransitions for these chart transitions.
+  we should do this by finding cardinals that are part of the 'from' but not part of the 'to',
+  and vice versa, and see how they are identified on the overlap.
+  *)
+  chartSymbolAnno = Map[toChartSymbol, $charts];
+  ExtendedGraph[
+    Range @ Length @ $charts,
+    transitionEdges, opts,
+    VertexAnnotations -> <|"ChartSymbol" -> chartSymbolAnno|>,
+    EdgeAnnotations -> <|"CardinalTransitions" -> cardinalTransitionAnnos|>,
+    GraphTheme -> "TransportAtlas",
+    CardinalColors -> colors,
+    GraphOrigin -> 1,
+    BaselinePosition -> Scaled[0.5]
+  ]
 ,
-  CardinalAtlas
+  TransportAtlas
 ];
 
-CardinalAtlas::notchart = "Chart specification `` is not a list of cardinals or a ChartSymbol.";
+$TransportAtlasThemeRules = {
+  VertexLabels -> "ChartSymbol",
+  VertexLabelPosition -> Automatic,
+
+  EdgeLabels -> ("CardinalTransitions" -> CardinalTransition),
+  EdgeLabelPosition -> {Scaled[0.5], Above},
+  ArrowheadPosition -> 0.8
+}
+
+$GraphThemeData["TransportAtlas"] := $TransportAtlasThemeRules;
+
+toChartSymbol = Case[
+  list_List ? StringVectorQ := ChartSymbol @ StringJoin @ list;
+  other_                    := ChartSymbol @ other;
+];
+
+toCardTransAnnos[DirectedEdge[a_, b_, _], {index_}] := Scope[
+  relations = Lookup[overlapCardinalRelations, Key @ {a, b}, {}];
+  If[relations === {}, Nothing, index -> relations]
+];
+
+findOverlapRelations[] := Scope[
+  relations = DeleteDuplicates @ Flatten @ Cases[
+    edgeList,
+    DirectedEdge[a_, b_, CardinalSet[set_List]] :> (
+      aCharts = vertexToCharts @ a;
+      bCharts = vertexToCharts @ b;
+      (* head and tail have to both be in the same chart *)
+      charts = Intersection[aCharts, bCharts];
+      Outer[
+        {aChart, bChart} |-> If[aChart === bChart, Nothing,
+          {aCards, bCards} = Part[$fullCharts, {aChart, bChart}];
+          aNotBCards = Complement[aCards, bCards];
+          bNotACards = Complement[bCards, aCards];
+          {aChart, bChart} -> Outer[
+            normRule,
+            Intersection[set, aNotBCards],
+            Intersection[set, bNotACards],
+            1
+          ]
+        ],
+        charts, charts, 1
+      ]
+    )
+  ];
+  Merge[relations, Flatten /* DeleteDuplicates]
+]
+
+normRule[Negated[a_], b_] := a -> Negated[b];
+normRule[a_, b_] := a -> b;
+
+setToRelations[set_List] := TwoWayRule @@@ Subsets[set, {2}];
+
+TransportAtlas::notchart = "Chart specification `` is not a list of cardinals or a ChartSymbol.";
 
 toChart = Case[
   list_List       := list;
@@ -115,25 +185,30 @@ toChart = Case[
   other_          := failCA["notchart", other];
 ];
 
-toTransitionEdge[DirectedEdge[a_, b_, c_], {p_}] := Scope[
-  aChart = vertexToChart @ a;
-  bChart = vertexToChart @ b;
-  comp1 = Complement[bChart, aChart];
-  comp2 = Complement[aChart, bChart];
-  List[
-    Outer[DirectedEdge[#1, #2, sharedCardinal[#1, #2, c]] -> p&, Complement[aChart, comp1], comp1, 1],
-    Outer[DirectedEdge[#1, #2, sharedCardinal[#1, #2, Negated @ c]] -> p&, Complement[bChart, comp2], comp2, 1]
+(* this finds all transitions between charts that this edge could correspond to. the vertices
+   are chart indices, the tags are which cardinal moves between those charts *)
+toTransitionEdge[DirectedEdge[a_, b_, c_]] := Scope[
+  aCharts = vertexToCharts @ a;
+  bCharts = vertexToCharts @ b;
+  bNotACharts = Complement[bCharts, aCharts];
+  bAndACharts = Intersection[aCharts, bCharts];
+  (* transitions will be pairs where a B chart was absent on the left but present on the right,
+  but A was present on both *)
+  If[bNotACharts === {} && aNotBCharts === {}, Return[Nothing]];
+  Outer[
+    DirectedEdge[#1, #2, sharedCardinal[#1, #2, c]]&,
+    bAndACharts, bNotACharts, 1
   ]
 ];
 
 sharedCardinal[c1_, c2_, cs:CardinalSet[cards_]] := Scope[
-  int = Intersection[Part[$charts, c1], Part[$charts, c2]];
-  SelectFirst[cards, MemberQ[int, # | Negated[#]]&, cs]
+  set = Intersection[cards, Part[$fullCharts, c1], Part[$fullCharts, c2]];
+  If[Length[set] === 1, First @ set, CardinalSet @ set]
 ];
 
 sharedCardinal[_, _, c_] := c;
 
-CardinalAtlas::notatlas = "Cardinals `` do not form a chart.";
+TransportAtlas::notatlas = "Cardinals `` do not form a chart.";
 
 getChartRegion[cardinals_] := Match[
   GraphRegion[$quiver, ChartSymbol[cardinals]],
@@ -142,6 +217,6 @@ getChartRegion[cardinals_] := Match[
 ];
 
 failCA[msg_String, args___] := (
-  Message[MessageName[CardinalAtlas, msg], args];
-  Throw[$Failed, CardinalAtlas]
+  Message[MessageName[TransportAtlas, msg], args];
+  Throw[$Failed, TransportAtlas]
 );

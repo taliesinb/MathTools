@@ -18,25 +18,46 @@ declareFormatting[
   LatticeVertex[args_List, type_] :> formatLVertex[args, type]
 ];
 
+(**************************************************************************************************)
 
-PackageExport["ProductVertex"]
+PackageExport["CardinalProduct"]
 
 SetUsage @ "
-ProductVertex[a$, b$] represents a product of two vertices a$ and b$.
+CardinalProduct[a$, b$] represents a product of two vertices a$ and b$.
 "
 
-declareFormatting[
-  ProductVertex[a_, b_] :> CircleTimes[a, b]
+declareBoxFormatting[
+  CardinalProduct[a_, b_] :> TemplateBox[{MakeBoxes @ a, MakeBoxes @ b}, "CardinalProductForm"]
 ];
+
+$TemplateKatexFunction["CardinalProductForm"] = riffled[" \\cardProdSymbol "];
+
+(**************************************************************************************************)
+
+PackageExport["VertexProduct"]
+
+SetUsage @ "
+VertexProduct[a$, b$] represents a product of two vertices a$ and b$.
+"
+
+declareBoxFormatting[
+  VertexProduct[a_, b_] :> TemplateBox[{MakeBoxes @ a, MakeBoxes @ b}, "VertexProductForm"]
+];
+
+$TemplateKatexFunction["VertexProductForm"] = riffled[" \\vertexProdSymbol "];
+
+(**************************************************************************************************)
 
 PackageExport["ProductVertices"]
 
-ProductVertices[a_, b_] := ProductVertex @@@ Tuples[{toRange[a], toRange[b]}];
+ProductVertices[a_, b_] := VertexProduct @@@ Tuples[{toRange[a], toRange[b]}];
 
+toRange[list_List] := list;
 toRange[n_Integer] := Range[-n, n];
 toRange[m_Integer ;; n_Integer] := Range[m, n];
 toRange[m_Integer ;; n_Integer ;; s_Integer] := Range[m, n, s];
 
+(**************************************************************************************************)
 
 PackageExport["ContractedVertex"]
 
@@ -50,6 +71,7 @@ declareFormatting[
   ContractedVertex[v_, name_] :> Subscript[name, "+"]
 ];
 
+(**************************************************************************************************)
 
 PackageExport["SumVertex"]
 

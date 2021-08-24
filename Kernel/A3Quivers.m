@@ -300,9 +300,13 @@ PackageExport["ChooseCardinalColors"]
 
 ChooseCardinalColors[None, ___] := <||>;
 
-$rgbColors = <|"r" -> $Red, "g" -> $Green, "b" -> $Blue, "w" -> $Gray, "x" -> $DarkGray|>;
 $xyzColors = <|"x" -> $Red, "y" -> $Green, "z" -> $Blue|>;
 $xyColors = <|"x" -> $Red, "y" -> $Blue|>;
+$rgbwxColors = <|
+  "r" -> $Red, "g" -> $Green, "b" -> $Blue,
+  "rb" -> $Purple, "rg" -> $Orange, "gb" -> $Teal,
+  "w" -> $Gray, "x" -> $DarkGray
+|>;
 
 ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardinals,
   {___, "f", ___},
@@ -313,8 +317,8 @@ ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardin
     $xyColors,
   {"x", "y", "z"},
     $xyzColors,
-  set_ /; SubsetQ[{"r", "g", "b", "w", "x"}, set],
-    KeyTake[$rgbColors, cardinals],
+  set_ /; SubsetQ[Keys @ $rgbwxColors, set],
+    KeyTake[$rgbwxColors, cardinals],
   _,
     AssociationThread[cardinals, ToColorPalette[palette, Length @ cardinals]]
 ];

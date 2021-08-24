@@ -96,7 +96,7 @@ boxToKatex = Case[
 
   c_Cell := Block[{$inlineMathTemplate = Identity}, iTextCellToMD @ c];
   TemplateBox[args_, tag_] := templateBoxToKatex[tag -> args];
-  StyleBox[e_, opts___] := applyInlineStyle[% @ e, Lookup[{opts}, {FontWeight, FontSlant, FontColor}, None]];
+  StyleBox[e_, opts___] := applyInlineStyle[% @ e, Lookup[Select[{opts}, RuleQ], {FontWeight, FontSlant, FontColor}, None]];
   UnderscriptBox[e_, "_"] := {"\\underline{", % @ e, "}"};
   OverscriptBox[e_, "_"] := {"\\overline{", % @ e, "}"};
   SuperscriptBox[e_, b_] := {% @ e, "^", toBracket @ b};

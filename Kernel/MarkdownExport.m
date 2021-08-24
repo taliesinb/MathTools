@@ -380,7 +380,7 @@ $tableCreation = StartOfLine ~~ " "... ~~ text:Repeated["* " ~~ Except["\n"].. ~
 createTable[ostr_String] := Scope[
   str = StringTrim @ ostr;
   lines = StringDrop[StringSplit[str, "\n"..], 2];
-  If[Min[StringCount[lines, "\t"]] == 0, Return @ ostr];
+  If[Min[StringCount[lines, "\t"..]] == 0, Return @ ostr];
   grid = StringTrim /@ StringSplit[lines, "\t"..];
   If[!MatrixQ[grid], Print["Bad table"]];
   first = First @ grid;
@@ -542,9 +542,11 @@ PackageScope["textCellToMD"]
 
 (* Todo: introduce simple caching *)
 
+$forbiddenStrings = "XXX" | "XXXX";
+
 textCellToMD[e_] := Scope[
   text = StringTrim @ StringJoin @ iTextCellToMDOuter @ e;
-  If[StringContainsQ[text, "XXX"], Return[""]];
+  If[StringContainsQ[text, $forbiddenStrings], Return[""]];
   text // StringReplace[$finalStringFixups1] // StringReplace[$finalStringFixups2]
 ]
 

@@ -1376,9 +1376,10 @@ $backtrackingRules = Dispatch @ {
 };
 
 toCardinalList = Case[
-  list_List  := list;
-  str_String := Map[toCardinal, Characters @ str];
-  _          := $Failed;
+  list_List           := list;
+  n:Negated[_String]  := {n};
+  str_String          := Map[toCardinal, Characters @ str];
+  _                   := $Failed;
 ];
 
 toCardinal = Case[

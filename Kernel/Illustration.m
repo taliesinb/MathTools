@@ -19,7 +19,8 @@ PackageExport["DrawFundamentalQuiverPath"]
 
 DrawFundamentalQuiverPath[quiver_, path_, color_, adjustments_] := Scope[
   regionSpec = Style[
-    Arrow[Path[1, path, PathAdjustments -> adjustments]], color, "Foreground", "SemitransparentArrowheads",
+    Arrow[Path[GraphOrigin, path, PathAdjustments -> adjustments]], color,
+    "Foreground", "SemitransparentArrowheads", PathStyle -> "DiskArrow",
     PathRadius -> 3, EdgeSetback -> 4, PathOutline -> False
   ];
   ExtendedGraph[quiver, GraphRegionHighlight -> regionSpec, ArrowheadSize -> Medium,
@@ -76,39 +77,60 @@ $colorRules = <|
   "w" -> White
 |>;
 
-makeColor[str_String] := HumanBlend @ Lookup[$colorRules, Characters @ str];
+makeColor[str_String] := HumanBlend @ Lookup[$colorRules, Characters @ str, Nothing];
 
-ColoredGraph[edges_list, opts___Rule] :=
+ColoredGraph[edges_List, opts___Rule] :=
   ColoredGraph[AllUniqueVertices @ edges, edges, opts];
 
 ColoredGraph[vertices_List, edges_List, opts___Rule] := Scope[
   vertexColors = AssociationMap[makeColor, vertices];
-  arrowheadStyles = AssociationMap[makeColor, Part[edges, All, 3]];
+  cardinalColors = If[Length[First @ edges] =!= 3, None,
+    AssociationMap[makeColor, DeleteDuplicates @ Part[edges, All, 3]]
+  ];
   ExtendedGraph[
     vertices, edges, opts,
-    VertexColorFunction -> vertexColors, VertexSize -> 10,
-    ArrowheadStyle -> arrowheadStyles, ArrowheadSize -> MediumSmall,
-    GraphLayout -> {"SelfLoopRadius" -> 0.4, "MultiEdgeDistance" -> 0.4},
-    ImageSize -> {40, 40}, AspectRatioClipping -> False, Frame -> True,
-    EdgeThickness -> 1, EdgeStyle -> Directive[{AbsoluteThickness[0], GrayLevel[0.7, 1]}],
-    ArrowheadShape -> {"FlatArrow", BorderStyle -> Function[{Darker[#, .3], AbsoluteThickness[0]}]}
+    VertexColorFunction -> vertexColors,
+    If[cardinalColors === None, ArrowheadShape -> "Line", CardinalColors -> cardinalColors],
+    GraphTheme -> "ColoredGraph"
   ]
 ];
 
 (**************************************************************************************************)
 
+$coloredGraphThemeRules = {
+    VertexSize -> 10,
+    ArrowheadSize -> MediumSmall,
+    ImageSize -> {50, 50},
+    ImagePadding -> 10,
+    SelfLoopRadius -> 0.4, MultiEdgeDistance -> 0.4,
+    AspectRatioClipping -> False, (* Frame -> True, *)
+    EdgeThickness -> 1, EdgeStyle -> Directive[{AbsoluteThickness[0], GrayLevel[0.7, 1]}],
+    ArrowheadShape -> {"FlatArrow", BorderStyle -> Function[{Darker[#, .3], AbsoluteThickness[0]}]}
+};
+
+$GraphThemeData["ColoredGraph"] := $coloredGraphThemeRules;
+
+(**************************************************************************************************)
+
 PackageExport["PartialOrderGraph"]
 
-PartialOrderGraph[graphs_, {opts___}, edges_, opts___Rule] := Scope[
-  plots = ExtendedGraphPlot[#, opts]& /@ graphs;
-  count = Length @ graphs;
-  vertices = Range @ count;
-  shapes = AssociationThread[vertices, plots];
+PartialOrderGraph[vertices_, edges_, opts___Rule] := Scope[
+  If[MatchQ[vertices, {__Graph} -> _List],
+    {graphs, opts} = FirstLast @ vertices;
+    plots = ExtendedGraphPlot[#, opts]& /@ graphs;
+    vertices = Range @ Length @ vertices;
+    shapes = AssociationThread[vertices, plots];
+    vsize = 100;
+  ,
+    shapes = Automatic;
+    vsize = 6;
+  ];
   ExtendedGraph[vertices, edges,
+    opts,
     VertexShapeFunction -> shapes,
-    opts, GraphLayout -> "LayeredDigraph", GraphOrigin -> 1,
+    GraphLayout -> "LayeredDigraph", GraphOrigin -> First @ vertices,
     ArrowheadShape -> None, ArrowheadSize -> Huge,
-    ImageSize -> 250, VertexSize -> 100, EdgeThickness -> 3,
+    ImageSize -> 250, VertexSize -> vsize, EdgeThickness -> 3,
     CoordinateTransformFunction -> "CenterTree"
   ]
 ];
@@ -473,7 +495,8 @@ $simpleLabeledGraphOpts = {
   EdgeLabelSpacing -> -0.3,
   ArrowheadShape -> {"Line", EdgeThickness -> 2},
   ImagePadding -> {{0,0}, {0, 25}},
-  GraphLayout -> {"Linear", "MultiEdgeDistance" -> 0.6}, ArrowheadPosition -> 0.525,
+  ExtendedGraphLayout -> "Linear",
+  MultiEdgeDistance -> 0.6, ArrowheadPosition -> 0.525,
   ArrowheadSize -> Medium, ArrowheadStyle -> $Gray,
   ImageSize -> "ShortestEdge" -> 50
 };
@@ -504,7 +527,8 @@ $simpleLabeledQuiverOpts = {
   VertexLabels -> "Name",
   VertexLabelPosition -> Automatic,
   VertexLabelBaseStyle -> $MathLabelStyle,
-  GraphLayout -> {"Linear", "MultiEdgeDistance" -> 0.2},
+  ExtendedGraphLayout -> "Linear",
+  MultiEdgeDistance -> 0.2,
   ArrowheadShape -> {"Line", EdgeThickness -> 2},
   ArrowheadPosition -> 0.59,
   ArrowheadSize -> Medium,
@@ -702,3 +726,75 @@ VertexField1DPlot[vals_] := ListLinePlot[vals,
   PlotStyle -> $DarkGray,
   PlotRange -> {{1, All}, {-1, 1}}, PlotRangePadding -> 0.4, ImageSize -> 125, AspectRatio -> 1/2.2
 ]
+
+(**************************************************************************************************)
+
+PackageExport["PathHomomorphimsGrid"]
+
+PathHomomorphimsGrid[graphsAndPaths_:{Repeated[_-> _]}] := Scope[
+  {graphs, paths} = KeysValues @ graphsAndPaths;
+  If[!MatrixQ[paths], ReturnFailed[]];
+  {graphs, labelRow} = Transpose @ Map[toPHGColumnLabel, graphs];
+  entries = MapThread[
+    MapThread[pathHomomorphismDiagram, {graphs, {##}}]&,
+    paths
+  ];
+  alignment = If[First[graphs] === "Paths", {Right, {Center}}, {Center}];
+  Grid[
+    Prepend[labelRow] @ entries,
+    Spacings -> {{0, {2}, 0}, {10., 0.5, {0}}}, Alignment -> {alignment, Baseline}
+  ]
+]
+
+toPHGColumnLabel = Case[
+  Labeled[g_Graph, label_] := {g, Style[label, $LabelStyle, Bold]};
+  g_Graph                  := {g, ""};
+  "Paths"                  := {"Path", Style["path", $LabelStyle, Bold]}
+];
+
+pathHomomorphismDiagram["Path", path_] :=
+  path;
+
+pathHomomorphismDiagram[graph_Graph, path_] := Scope[
+  HighlightGraphRegion[graph,
+    Style[path, $DarkGreen, PathRadius->2, DiskRadius -> 4,  ArrowheadSize -> 3.5, "Opaque", "SemitransparentArrowheads", PathStyle -> "DiskArrow"],
+    VertexLabels->None,
+    ArrowheadShape -> "Line", VertexStyle -> $LightGray, EdgeStyle -> $LightGray,
+    ImagePadding -> {{15,15},{10,10}},
+    ArrowheadPosition -> 0.55, ImageSize -> "ShortestEdge" -> 50
+  ]
+];
+
+(**************************************************************************************************)
+
+PackageExport["GraphProductTable"]
+
+Options[GraphProductTable] = {
+  "Labels" -> {None, None},
+  "UseCardinalSet" -> True
+};
+
+GraphProductTable[prodFn_, aList_, bList_, OptionsPattern[]] := Scope[
+  UnpackOptions[labels, useCardinalSet];
+  entries = Outer[
+    prodFn[#1, #2,
+      PackingSpacing -> 1, "UseCardinalSet" -> useCardinalSet,
+      If[!useCardinalSet, ArrowheadShape -> None, Sequence @@ {}], MultiEdgeDistance -> 0.1,
+      ArrowheadPosition -> 0.9, EdgeSetback -> .1
+    ]&,
+    aList,
+    bList,
+    1
+  ];
+  {aLabels, bLabels} = labels;
+  aList = ExtendedGraph[#, CoordinateTransformFunction -> "Rotate270"]& /@ aList;
+  table = PrependColumn[entries, aList];
+  If[aLabels =!= None,
+    blank = Splice[{"", ""}];
+    table = PrependColumn[table, aLabels];
+  ,
+    blank = ""];
+  PrependTo[table, Prepend[blank] @ bList];
+  If[bLabels =!= None, PrependTo[table, Prepend[blank] @ bLabels]];
+  Grid[table]
+];

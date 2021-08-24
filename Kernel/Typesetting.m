@@ -576,7 +576,8 @@ SpacedColumn[args___] := SpacedRow[args, Transposed -> True];
 
 PackageExport["ClickCopyRow"]
 
-ClickCopyRow[args___] := SpacedRow[args, ItemFunction -> ClickCopy];
+ClickCopyRow[args___] := Framed[SpacedRow[args, ItemFunction -> ClickCopy],
+  Background -> RGBColor[{1,1,1}*0.95], FrameStyle -> None];
 
 (**************************************************************************************************)
 
@@ -621,6 +622,7 @@ $srTransposed = False;
 $srIndexTooltip = False;
 $srAlignment = Center;
 $srLabelPosition = Automatic;
+$srForceGrid = False;
 
 (* this is because i don't trust OptionsPattern to not capture rules used as label specs.
 i might be wrong though *)
@@ -639,6 +641,7 @@ SpacedRow[elems__, LabelPosition -> s_] := Block[{$srLabelPosition = s}, SpacedR
 SpacedRow[elems__, Alignment -> a_] := Block[{$srAlignment = a}, SpacedRow[elems]];
 SpacedRow[elems__, "IndexTooltip" -> t_] := Block[{$srIndexTooltip = t}, SpacedRow[elems]];
 SpacedRow[elems__, Transposed -> t_] := Block[{$srTransposed = t}, SpacedRow[elems]];
+SpacedRow[elems__, "ForceGrid" -> fg_] := Block[{$srForceGrid = fg}, SpacedRow[elems]];
 
 SpacedRow[labels_List -> items_List] /; Length[labels] == Length[items] :=
   SpacedRow[RuleThread[labels, items]];
@@ -662,7 +665,7 @@ SpacedRow[elems__] := Scope[
   labelPosition = $srLabelPosition;
   SetAutomatic[labelPosition, If[$srTransposed, Before, After]];
   labelIsBefore = labelPosition === Before;
-  If[tooLong || hasLabels,
+  If[tooLong || hasLabels || $srForceGrid,
     If[tooLong,
       items = Flatten @ Riffle[Partition[items, UpTo[$srMaxWidth]], {$nextRow}]
     ];
@@ -874,6 +877,8 @@ $anyRuleP = _Rule | _TwoWayRule;
 declareFormatting[
   ca:CardinalTransition[$anyRuleP | {$anyRuleP..}] :> formatCardinalTransition[ca]
 ]
+
+PackageScope["formatCardinalTransition"]
 
 formatCardinalTransition = Case[
   CardinalTransition[{}] :=

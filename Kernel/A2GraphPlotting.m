@@ -32,6 +32,7 @@ PackageExport["PrologFunction"]
 PackageExport["UseAbsoluteSizes"]
 PackageExport["SelfLoopRadius"]
 PackageExport["MultiEdgeDistance"]
+PackageExport["PackingSpacing"]
 
 SetUsage @ "ArrowheadShape is an extended option to Graph.";
 SetUsage @ "ArrowheadSize is an extended option to Graph.";
@@ -53,6 +54,7 @@ SetUsage @ "PrologFunction is an extended option to Graph."
 SetUsage @ "UseAbsoluteSizes is an extended option to Graph."
 SetUsage @ "SelfLoopRadius is an extended option to Graph."
 SetUsage @ "MultiEdgeDistance is an extended option to Graph."
+SetUsage @ "PackingSpacing is an extended option to Graph."
 
 SetUsage @ "VertexLabelPosition is an extended option to Graph."
 SetUsage @ "VertexLabelSpacing is an extended option to Graph."
@@ -820,7 +822,6 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       viewOptions
     ];
 
-
     baselinePosition //= processBaselinePosition;
 
     (* compute prolog and epilog *)
@@ -921,12 +922,16 @@ makeFrameLabelElement[label_, pos1_, pos2_] :=
     {0, pos2}, Background -> White
   ];
 
+ExtendedGraphPlot::badbaseline = "Could not resolve ``.";
+
 processBaselinePosition = Case[
   Automatic | GraphOrigin :=
     % @ If[$GraphOrigin =!= None, $GraphOrigin, Center];
   Center  := % @ Scaled[0.5, "Interior"];
   Bottom  := % @ Scaled[0.0, "Interior"];
   Top     := % @ Scaled[1.0, "Interior"];
+  spec_ -> outer:Top|Bottom|Center|Baseline :=
+    %[spec] -> outer;
   "Coordinate" -> (yPos_ ? NumericQ) := Scope[
     yOffset = Part[$GraphPlotRange, 2, 1];
     s = (yPos - yOffset) / $GraphPlotSizeY;
@@ -1864,7 +1869,8 @@ removeSingleton[e_] := e;
 
 (**************************************************************************************************)
 
-ExtendedGraphPlot::badvshapefunc = "`` is not a valid named VertexShapeFunction. Valid shapes are: ``."
+ExtendedGraphPlot::badvshapefuncstr = "`` is not a valid named VertexShapeFunction. Valid shapes are: ``."
+ExtendedGraphPlot::badvshapefunc = "`` is not a valid VertexShapeFunction."
 
 $validVertexShapes = {"Disk", "Ball", "Point", None};
 
@@ -1911,6 +1917,9 @@ processVertexShapeFunction[spec_] := Scope[
       vertexDrawFunc = drawCustomShape[spec, $vertexSize];
       If[$inheritedVertexSize,
         vertexSizeImage ^= Max[Map[cachedRasterizeSize, spec]] / 2];
+    ,
+    "Name" | "Vertex",
+      vertexDrawFunc = drawOriginalVertices[$vertexSize];
     ,
     _String,
       failPlot["badvshapefuncstr", spec, commaString @ $validVertexShapes];
@@ -1971,6 +1980,17 @@ drawIndividualCustomShape[assoc_, color_, size_][pos_] := Scope[
 
 (**************************************************************************************************)
 
+drawOriginalVertices[size_][pos_, color_] :=
+  Map[drawOriginalVertex[color, size], pos];
+
+drawOriginalVertex[color_, size_][pos_] := Scope[
+  index = IndexOf[$VertexCoordinates, pos];
+  shape = If[index === None, None, Part[$VertexList, index]];
+  drawGraphicsWithColor[shape, pos, color, size]
+];
+
+(**************************************************************************************************)
+
 drawCustomShapeFunction[fn_, size_][pos_, color_] :=
   Map[drawIndividualCustomShapeFunction[fn, size, color], pos];
 
@@ -2000,7 +2020,7 @@ drawGraphicsWithColor[None, pos_, color_, size_] :=
   drawPoint[size][pos, color];
 
 drawGraphicsWithColor[other_, pos_, color_, size_] :=
-  Text[Style[other, color, FontSize -> Max[size, 8]], pos, {0, 0}, Background -> White];
+  Text[Style[other, color, FontSize -> Max[size * effectiveImageWidth * 0.8, 8]], pos, {0, 0}, Background -> White];
 
 drawGraphicsWithColor[g_Graphics | g_Graph, pos_, color_, size_] :=
   Inset[
@@ -2300,7 +2320,7 @@ textCorners[text:outerText[content_, pos_, align_:{0,0}, ___]] :=
 
 textCorners[_] := Nothing;
 
-offsetCorners[Offset[p_, _], args__] := offsetCorners[p, args];
+offsetCorners[Offset[_, p_], args__] := offsetCorners[p, args];
 offsetCorners[p:{p1_, p2_}, s:{s1_, s2_}, o:{o1_, o2_}] := Scope[
   dx = (-o/2 - 1/2) * s;
   PlusVector[{{0, 0}, {0, s2}, {s1, 0}, {s1, s2}}, p + dx]

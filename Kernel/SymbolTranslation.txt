@@ -150,6 +150,8 @@ _                            Reals      \R                  ℝ
 \[FilledSmallCircle]         _          \bullet             ∙
 \[EmptyCircle]               _          _                   ○
 \[FilledCircle]              _          _                   ●
+\[EmptyRectangle]            _          _                   ▯
+\[FilledRectangle]           _          _                   ▮
 \[CenterDot]                 _          \cdot               ⋅
 \[Minus]                     -          -                   −
 \[Backslash]                 \\         \setminus           ∖
@@ -370,6 +372,7 @@ _                            Reals      \R                  ℝ
 \[Omega]                     _          \omega              ω
 \[Omicron]                   _          \omicron            ο
 \[Phi]                       _          \phi                ϕ
+\[CurlyPhi]                  _          \varphi             𝜑
 \[Pi]                        _          \pi                 π
 \[Psi]                       _          \psi                ψ
 \[Rho]                       _          \rho                ρ

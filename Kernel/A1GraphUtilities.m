@@ -367,6 +367,7 @@ $extendedGraphOptionsRules = {
   UseAbsoluteSizes -> True,
   SelfLoopRadius -> Automatic,
   MultiEdgeDistance -> Automatic,
+  PackingSpacing -> Automatic,
   CustomGraphAnnotation[_String] -> None,
   VertexLabelPosition -> Top,
   EdgeLabelPosition -> Top,
@@ -402,8 +403,13 @@ $extendedGraphOptionSymbols2 = Append[$extendedGraphOptionSymbols, AnnotationRul
 
 splitUserGraphOptions[options___Rule] := Scope[
   options = {options};
-  If[!MemberQ[options, ExtendedGraphLayout -> _] && MemberQ[options, GraphLayout -> _],
+  (* so the kernel will randomly mess with and rewrite GraphLayout, and hence ExtendedGraphLayout lets us avoid this,
+  and override it. i used to rewrite GraphLayout to *become* ExtendedGraphLayout so users did not have to understand
+  this, but the kernel would then take over the user stuff sometimes when graphs were reconstructed from existing graphs,
+  so disabled this here *)
+(*   If[!MemberQ[options, ExtendedGraphLayout -> _] && MemberQ[options, GraphLayout -> Except[{"Dimension" -> _}]],
     options = Replace[options, Rule[GraphLayout, l_] :> Rule[ExtendedGraphLayout, l], {1}]];
+ *)
   extOptions = DeleteDuplicatesBy[TakeOptions[options, $extendedGraphOptionSymbols], First];
   options = Map[optionFixup] @ DeleteOptions[options, $extendedGraphOptionSymbols2];
   {options, checkGraphAnnotations @ extOptions}
@@ -427,6 +433,7 @@ makeNewGraph[___] := $Failed;
 
 (* these compensate for a weird extra level of list that Graph adds *)
 optionFixup = Case[
+  Rule[GraphLayout, {"Dimension" -> d_}]          := Rule[LayoutDimension, d];
   Rule[VertexSize, r:{__Rule}]                    := Rule[VertexSize, Association @ r];
   Rule[sym:(VertexLabels | EdgeLabels), l_List | l_Rule] := If[MatchQ[l, {_Hold}], First @ l, Rule[sym, Hold[l]]];
   Rule[sym:(EdgeStyle|VertexStyle), val_]         := Rule[sym, toDirective[val]];
@@ -1434,7 +1441,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
 
   UnpackExtendedThemedOptions[graph,
     layoutDimension, extendedGraphLayout, viewOptions, coordinateTransformFunction,
-    vertexCoordinateRules, vertexCoordinateFunction, selfLoopRadius, multiEdgeDistance
+    vertexCoordinateRules, vertexCoordinateFunction, selfLoopRadius, multiEdgeDistance, packingSpacing
   ];
     
   actualDimension = Which[
@@ -1465,13 +1472,6 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
   If[UndirectedGraphQ[igraph] || MixedGraphQ[igraph],
     edgeList //= CanonicalizeEdges];
 
-  isMulti = MultigraphQ[igraph];
-
-  If[(isMulti || !DuplicateFreeQ[Sort /@ Take[edgeList, All, 2]]) && FreeQ[graphLayout, "MultiEdgeDistance" | "SpringElectricalEmbedding"],
-    SetAutomatic[multiEdgeDistance, 0.2];
-    graphLayout = ToList[graphLayout, "MultiEdgeDistance" -> 2*multiEdgeDistance];
-  ];
-
   method = Match[graphLayout, s_String | {s_String, ___} :> s, Automatic];
   autoLayout = Match[graphLayout, {s_String, opts___} :> {opts}, {___String, opts___} :> opts, Automatic];
 
@@ -1500,6 +1500,19 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
     True,
       Null
   ];
+
+  extraGraphOptions = {};
+  If[(MultigraphQ[igraph] || !DuplicateFreeQ[Sort /@ Take[edgeList, All, 2]]),
+    SetAutomatic[multiEdgeDistance, 0.2];
+    AppendTo[extraGraphOptions, "MultiEdgeDistance" -> 2*multiEdgeDistance];
+  ];
+
+  If[packingSpacing =!= Automatic,
+    AppendTo[extraGraphOptions, "PackingLayout" -> {"LayeredTop", "Padding" -> packingSpacing}];
+  ];
+
+  If[graphLayout === {}, graphLayout = Automatic];
+  graphLayout = Prepend[extraGraphOptions, "VertexLayout" -> graphLayout];
 
   Which[
     vertexCoordinateFunction =!= None,
@@ -1537,6 +1550,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
 
   If[FailureQ[gdResult] || !MatrixQ[vertexCoordinates] || !VectorQ[edgeCoordinateLists, MatrixQ],
     Message[ExtractGraphPrimitiveCoordinates::glayoutfail];
+    Print["GraphLayout -> ", graphLayout];
     useFallbackLayout[];
     Goto[end];
   ];
@@ -1748,6 +1762,10 @@ applyCoordinateTransform[{"HorizontalWarp", offsetFn_}] := (
   edgeCoordinateLists = Apply[transFn, edgeCoordinateLists, {2}];
 );
 
+applyCoordinateTransform["Reflect"] := (
+  applyCoordinateTransform[ScalingTransform[{-1, -1}]];
+);
+
 applyCoordinateTransform[{"Rotate", n_}] := (
   applyCoordinateTransform["CenterMean"];
   applyCoordinateTransform[RotationTransform[n * Degree]];
@@ -1771,9 +1789,14 @@ applyCoordinateTransform[{"PolarProjection", h_}] := Scope[
 
 $namedTransforms = <|
   "Rotate0" -> Identity,
+  "Rotate60" -> RotationTransform[60 * Degree],
+  "Rotate120" -> RotationTransform[120 * Degree],
+  "Rotate240" -> RotationTransform[240 * Degree],
+  "Rotate300" -> RotationTransform[300 * Degree],
   "Rotate90" -> RotationTransform[90 * Degree],
   "Rotate180" -> RotationTransform[180 * Degree],
   "Rotate270" -> RotationTransform[270 * Degree],
+  "ReflectDiagonal" -> ReflectionTransform[{1, 1}],
   "ReflectHorizontal" -> ReflectionTransform[{1, 0}],
   "ReflectVertical" -> ReflectionTransform[{0, 1}],
   "ShrinkHorizontal" -> ScalingTransform[{0.75, 1}],
