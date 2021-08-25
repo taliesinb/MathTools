@@ -1615,7 +1615,14 @@ PackageExport["ExportUTF8"]
 ExportUTF8[path_, string_] :=
   Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
 
-  (**************************************************************************************************)
+(**************************************************************************************************)
+
+PackageExport["ImportUTF8"]
+
+ImportUTF8[path_] :=
+  Import[path, "Text", CharacterEncoding -> "UTF8"];
+
+(**************************************************************************************************)
 
 PackageExport["CopyUnicodeToClipboard"]
 

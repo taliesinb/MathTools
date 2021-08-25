@@ -286,6 +286,8 @@ ExportNavigationPage[files_, relativePrefix_String, navPath_] := Scope[
   If[!FileExistsQ[navPath], ReturnFailed[]];
   navTemplate = FileTemplate @ navPath;
   If[navOutputPath === navPath, ReturnFailed[]];
+  nextPageFooters = Map[$nextPageTemplate, Rest @ navData];
+  ScanThread[insertNextPageFooter, {Most @ files, nextPageFooters}];
   FileTemplateApply[navTemplate, {navData}, navOutputPath]
 ];
 
@@ -294,6 +296,25 @@ toUnicode[str_] := FromCharacterCode[ToCharacterCode[str], "UTF8"];
 getFileTitle[path_] := StringTrim @ StringDelete[toUnicode @ First @ FileLines[path, 1], "#"];
 
 toNavTitle[e_] := StringReplace[e, " and " -> " &amp; "];
+
+$nextPageTemplate = StringTemplate @ "
+
+@@next-link
+[`title`](`path`)
+@@
+"
+
+$nextLinkPrefix = "@@next-link";
+
+insertNextPageFooter[file_, footer_] := Scope[
+  newContent = content = ImportUTF8 @ file;
+  If[StringContainsQ[content, $nextLinkPrefix],
+    cutoff = Part[StringPosition[content, $nextLinkPrefix, 1], 1, 1] - 1;
+    newContent = StringTake[content, cutoff];
+  ];
+  newContent = StringTrim[newContent] <> footer;
+  If[content =!= newContent, ExportUTF8[file, Global`$last ^= newContent]];
+];
 
 (**************************************************************************************************)
 

@@ -121,6 +121,7 @@
 \gdef\split{\operatorname{split}}
 \gdef\lcm{\operatorname{lcm}}
 \gdef\grade{\operatorname{grade}}
+\gdef\support{\operatorname{support}}
 
 \gdef\blank{\_}
 \gdef\emptyWord{}
@@ -234,7 +235,7 @@
 \gdef\cardinality#1{|{#1}|}
 \gdef\depQuiverProdSymbol{\,\times\,}
 \gdef\indepQuiverProdSymbol{\,⨝\,}
-\gdef\graphUnionSymbol{\squarecup}
+\gdef\graphUnionSymbol{\sqcup}
 \gdef\graphProdSymbol{\times}
 \gdef\inlineProdSymbol{\mid}
 \gdef\cardProdSymbol{\inlineProdSymbol}
@@ -242,3 +243,6 @@
 \gdef\edgeProdSymbol{\inlineProdSymbol}
 \gdef\indexSum#1#2#3{{\sum_{#2}^{#3} #1}}
 \gdef\indexProd#1#2#3{{\prod_{#2}^{#3} #1}}
+
+\gdef\oneTo#1{1..{#1}}
+\gdef\zeroTo#1{0..{#1}}

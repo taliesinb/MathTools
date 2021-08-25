@@ -152,6 +152,19 @@ _                            Reals      \R                  ℝ
 \[FilledCircle]              _          _                   ●
 \[EmptyRectangle]            _          _                   ▯
 \[FilledRectangle]           _          _                   ▮
+\[EmptySquare]               _          _                   □
+\[FilledSquare]              _          _                   ■
+\[LeftTriangle]              _          \triangleleft       ◁
+\[FilledLeftTriangle]        _          \blacktriangleleft  ◀
+\[RightTriangle]             _          \triangleright      ▷
+\[FilledRightTriangle]       _          \blacktriangleright ▶
+\[EmptyUpTriangle]           _          \triangle           △
+\[FilledUpTriangle]          _          \blacktriangle      ▲
+\[EmptyDownTriangle]         _          \triangledown       ▽
+\[FilledDownTriangle]        _          \blacktriangledown  ▼
+\[Diamond]                   _          \diamond            ◇
+\[FilledDiamond]             _          _                   ◆
+
 \[CenterDot]                 _          \cdot               ⋅
 \[Minus]                     -          -                   −
 \[Backslash]                 \\         \setminus           ∖

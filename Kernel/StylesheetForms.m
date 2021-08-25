@@ -184,7 +184,14 @@ toTypedSymbol = Case[
 
 (**************************************************************************************************)
 
-SetHoldAllComplete[makeHintedTemplateBox, toHintedSymbol];
+SetHoldAllComplete[makeNaryHintedTemplateBox, makeHintedTemplateBox, toHintedSymbol];
+
+makeNaryHintedTemplateBox[hint_, args___, tag_] :=
+  TemplateBox[
+    Map[Function[a, toHintedSymbol[a -> hint], HoldFirst], Unevaluated @ {args}],
+    tag
+  ];
+
 makeHintedTemplateBox[args___, tag_] :=
   TemplateBox[
     Map[toHintedSymbol, Unevaluated @ {args}],
@@ -1016,13 +1023,13 @@ PackageExport["EdgeProductForm"]
 PackageExport["CardinalProductForm"]
 
 declareBoxFormatting[
-  GraphUnionForm[g1_, g2_] :>
-    makeHintedTemplateBox[g1 -> QuiverSymbol, g2 -> QuiverSymbol, "GraphUnionForm"],
+  GraphUnionForm[g__] :>
+    makeNaryHintedTemplateBox[QuiverSymbol, g, "GraphUnionForm"],
   GraphUnionForm[] :>
     TemplateBox[{}, "GraphUnionSymbol"],
 
-  GraphProductForm[g1_, g2_] :>
-    makeHintedTemplateBox[g1 -> QuiverSymbol, g2 -> QuiverSymbol, "GraphProductForm"],
+  GraphProductForm[g__] :>
+    makeNaryHintedTemplateBox[QuiverSymbol, g, "GraphProductForm"],
   GraphProductForm[] :>
     TemplateBox[{}, "GraphProductSymbol"],
 
@@ -1040,31 +1047,30 @@ declareBoxFormatting[
     makeHintedTemplateBox[g1 -> QuiverSymbol, g2 -> QuiverSymbol, "AlternatingGraphProductForm"],
   AlternatingGraphProductForm[] :>
     TemplateBox[{}, "AlternatingGraphProductSymbol"],
-  VertexProductForm[v1_, v2_] :>
-    makeHintedTemplateBox[v1 -> VertexSymbol, v2 -> VertexSymbol, "VertexProductForm"],
-  EdgeProductForm[e1_, e2_] :>
-    makeHintedTemplateBox[e1 -> EdgeSymbol, e2 -> EdgeSymbol, "EdgeProductForm"],
-  CardinalProductForm[c1_, c2_] :>
-    makeHintedTemplateBox[c1 -> CardinalSymbol, c2 -> CardinalSymbol, "CardinalProductForm"]
+
+  VertexProductForm[v__] :>
+    makeNaryHintedTemplateBox[VertexSymbol, v, "VertexProductForm"],
+  EdgeProductForm[e__] :>
+    makeNaryHintedTemplateBox[EdgeSymbol, e, "EdgeProductForm"],
+  CardinalProductForm[c__] :>
+    makeNaryHintedTemplateBox[CardinalSymbol, c, "CardinalProductForm"]
 ]
 
-$TemplateKatexFunction["GraphUnionForm"] = riffled["\\graphUnionSymbol"];
-$TemplateKatexFunction["GraphUnionSymbol"] = "\\graphUnionSymbol"&;
+$TemplateKatexFunction["GraphUnionForm"] = riffled[" \\graphUnionSymbol "];
+$TemplateKatexFunction["GraphUnionSymbol"] = " \\graphUnionSymbol "&;
 
-$TemplateKatexFunction["DependentQuiverProductForm"] = riffled["\\depQuiverProdSymbol"];
-$TemplateKatexFunction["DependentQuiverProductSymbol"] = "\\depQuiverProdSymbol"&;
+$TemplateKatexFunction["DependentQuiverProductForm"] = riffled[" \\depQuiverProdSymbol "];
+$TemplateKatexFunction["DependentQuiverProductSymbol"] = " \\depQuiverProdSymbol "&;
 
-$TemplateKatexFunction["IndependentQuiverProductForm"] = riffled["\\indepQuiverProdSymbol"];
-$TemplateKatexFunction["IndependentQuiverProductSymbol"] = "\\indepQuiverProdSymbol"&;
+$TemplateKatexFunction["IndependentQuiverProductForm"] = riffled[" \\indepQuiverProdSymbol "];
+$TemplateKatexFunction["IndependentQuiverProductSymbol"] = " \\indepQuiverProdSymbol "&;
 
-$TemplateKatexFunction["GraphProductForm"] = riffled["\\graphProdSymbol"];
-$TemplateKatexFunction["GraphProductSymbol"] = "\\graphProdSymbol"&;
+$TemplateKatexFunction["GraphProductForm"] = riffled[" \\graphProdSymbol "];
+$TemplateKatexFunction["GraphProductSymbol"] = " \\graphProdSymbol "&;
 
-$TemplateKatexFunction["AlternatingGraphProductForm"] = riffled["\\agraphProdSymbol"];
-$TemplateKatexFunction["AlternatingGraphProductSymbol"] = "\\agraphProdSymbol"&;
-$TemplateKatexFunction["VertexProductForm"] = riffled["\\vertexProdSymbol"];
-$TemplateKatexFunction["EdgeProductForm"] = riffled["\\edgeProdSymbol"];
-$TemplateKatexFunction["CardinalProductForm"] = riffled["\\cardinalProdSymbol"];
+$TemplateKatexFunction["VertexProductForm"] = riffled[" \\vertexProdSymbol "];
+$TemplateKatexFunction["EdgeProductForm"] = riffled[" \\edgeProdSymbol "];
+$TemplateKatexFunction["CardinalProductForm"] = riffled[" \\cardinalProdSymbol "];
 
 (**************************************************************************************************)
 
@@ -1090,6 +1096,18 @@ declareBoxFormatting[
 ]
 
 $TemplateKatexFunction["SetCardinalityForm"] = "cardinality"
+
+(**************************************************************************************************)
+
+PackageExport["IntegerRangeForm"]
+
+declareBoxFormatting[
+  IntegerRangeForm[1, n_] :> makeStandardBoxTemplate[n, "OneToNForm"],
+  IntegerRangeForm[0, n_] :> makeStandardBoxTemplate[n, "ZeroToNForm"]
+]
+
+$TemplateKatexFunction["OneToNForm"] = "oneTo"
+$TemplateKatexFunction["ZeroToNForm"] = "zeroTo"
 
 (**************************************************************************************************)
 

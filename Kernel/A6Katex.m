@@ -1,20 +1,15 @@
 PackageExport["$KatexPrelude"]
 
-importUTF8[localFile_] :=
-  Import[FileNameJoin[{$PackageDirectory, localFile}], "Text", CharacterEncoding -> "UTF8"];
+importLocalUTF8[localFile_] := ImportUTF8 @ FileNameJoin[{$PackageDirectory, localFile}];
 
-(**************************************************************************************************)
-
-PackageExport["$KatexPrelude"]
-
-$KatexPrelude = importUTF8["KatexPrelude.txt"];
+$KatexPrelude = importLocalUTF8["KatexPrelude.txt"];
 
 (**************************************************************************************************)
 
 PackageExport["$SymbolTranslationTable"]
 
 $SymbolTranslationTable = Block[{str},
-  rawString = importUTF8["SymbolTranslation.txt"];
+  rawString = importLocalUTF8["SymbolTranslation.txt"];
   rawString //= StringReplace[{StartOfLine ~~ " "... ~~ "\n" -> "", " \\" -> " \\\\", "\"" -> "\\\""}];
   parsedString = StringTrim @ ToExpression["\"" <> rawString <> "\"", InputForm];
   table = StringExtract[parsedString, "\n" -> All, " ".. -> All] /. "_" -> None;
