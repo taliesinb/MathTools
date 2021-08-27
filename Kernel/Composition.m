@@ -144,6 +144,26 @@ dependentEdgeProduct[head_[at_, ah_], head_[bt_, bh_]] :=
 
 (**************************************************************************************************)
 
+PackageExport["CartesianQuiverProduct"]
+
+SetUsage @ "
+CartesianQuiverProduct[g1$, g$2] gives the Cartesian graph product of graph g$1 and g$2.
+"
+
+Options[CartesianQuiverProduct] = Options @ ExtendedGraph;
+
+CartesianQuiverProduct[a_Graph, b_Graph, opts:OptionsPattern[]] :=
+  generalQuiverProduct[a, b, cartesianEdgeProduct, opts];
+
+cartesianEdgeProduct[head_[at_, ah_, ac___], head_[bt_, bh_, bc___]] := {
+  head[VertexProduct[at, bt], VertexProduct[ah, bt], ac],
+  head[VertexProduct[at, bh], VertexProduct[ah, bh], ac],
+  head[VertexProduct[at, bt], VertexProduct[at, bh], bc],
+  head[VertexProduct[ah, bt], VertexProduct[ah, bh], bc]
+}
+
+(**************************************************************************************************)
+
 PackageExport["IndependentQuiverProduct"]
 
 SetUsage @ "
@@ -180,7 +200,7 @@ generalQuiverProduct[a_Graph, b_Graph, edgeProdFn_, OptionsPattern[]] := Scope[
   {aColors, bColors} = LookupVertexColors /@ {a, b};
   {aCoords, bCoords} = LookupVertexCoordinates /@ {a, b};
   productVertices = Flatten @ Outer[VertexProduct, Sequence @@ vertexLists, 1];
-  productEdges = Flatten @ Outer[edgeProdFn, Sequence @@ edgeLists, 1];
+  productEdges = DeleteDuplicates @ Flatten @ Outer[edgeProdFn, Sequence @@ edgeLists, 1];
   If[!MatchQ[productEdges, {Repeated[_DirectedEdge|_UndirectedEdge]}],
     ReturnFailed[]];
   opts //= DeleteOptions[{VertexAnnotations, EdgeAnnotations, "Alternation", "UseCardinalSet"}];
@@ -197,7 +217,8 @@ generalQuiverProduct[a_Graph, b_Graph, edgeProdFn_, OptionsPattern[]] := Scope[
   ];
   {aSize, bSize} = LookupImageSize /@ {a, b};
   size = {First @ bSize, Last @ aSize};
-  ExtendedGraph[productVertices, productEdges,
+  ExtendedGraph[
+    productVertices, productEdges,
     VertexCoordinates -> Map[productVertexCoords, productVertices],
     VertexColorFunction -> vertexColorFunction,
     ImageSize -> size,
@@ -209,7 +230,7 @@ generalQuiverProduct[a_Graph, b_Graph, edgeProdFn_, OptionsPattern[]] := Scope[
 productVertexCoords[VertexProduct[a_, b_]] :=
   List[
     First @ bCoords @ b,
-    Minus @ First @ aCoords @ a
+    Last @ aCoords @ a
   ];
 
 (**************************************************************************************************)

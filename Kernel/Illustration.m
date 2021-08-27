@@ -776,6 +776,7 @@ Options[GraphProductTable] = {
 
 GraphProductTable[prodFn_, aList_, bList_, OptionsPattern[]] := Scope[
   UnpackOptions[labels, useCardinalSet];
+  aList = RotateGraph /@ aList;
   entries = Outer[
     prodFn[#1, #2,
       PackingSpacing -> 1, "UseCardinalSet" -> useCardinalSet,
@@ -787,7 +788,6 @@ GraphProductTable[prodFn_, aList_, bList_, OptionsPattern[]] := Scope[
     1
   ];
   {aLabels, bLabels} = labels;
-  aList = ExtendedGraph[#, CoordinateTransformFunction -> "Rotate270"]& /@ aList;
   table = PrependColumn[entries, aList];
   If[aLabels =!= None,
     blank = Splice[{"", ""}];

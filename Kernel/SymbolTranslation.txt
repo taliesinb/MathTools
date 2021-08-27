@@ -158,6 +158,8 @@ _                            Reals      \R                  ℝ
 \[FilledLeftTriangle]        _          \blacktriangleleft  ◀
 \[RightTriangle]             _          \triangleright      ▷
 \[FilledRightTriangle]       _          \blacktriangleright ▶
+_                            _          \smallblacktriangleright ⏵
+_                            _          \smallblacktriangleleft  ⏴
 \[EmptyUpTriangle]           _          \triangle           △
 \[FilledUpTriangle]          _          \blacktriangle      ▲
 \[EmptyDownTriangle]         _          \triangledown       ▽

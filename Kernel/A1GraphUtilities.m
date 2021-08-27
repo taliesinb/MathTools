@@ -2019,3 +2019,17 @@ ExtractExtendedGraphOptions[graph_Graph] := Scope[
   graphProps = Lookup[annoRules, "GraphProperties", {}];
   Join[DeleteOptions[opts, AnnotationRules], graphProps]
 ]
+
+(**************************************************************************************************)
+
+PackageExport["RotateGraph"]
+
+RotateGraph[graph_] := Scope[
+  coords = Lookup[LookupVertexCoordinates @ graph, VertexList @ graph];
+  coords = RotationTransform[270 Degree] @ coords;
+  imageSize = Reverse @ LookupImageSize @ graph;
+  ExtendedGraph[
+    graph,
+    VertexCoordinates -> coords, ImageSize -> imageSize
+  ]
+]

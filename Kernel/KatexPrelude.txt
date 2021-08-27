@@ -34,14 +34,21 @@
 
 \gdef\primed#1{{#1}^{\prime}}
 \gdef\tinybullet{{\tiny●}}
-\gdef\deSymbol{{{{\raisebox{1.19pt}{\tinybullet}\mkern{-1pt}{→}}}\,}}
+
+\gdef\deSymbol{{{{\raisebox{1.1pt}{\tinybullet}\mkern{-1pt}{→}}}\,}}
 \gdef\ueSymbol{{\raisebox{1pt}{\tinybullet\raisebox{-0.03em}{\mkern{-0.3pt}{\tiny──}\mkern{-0.3pt}}\tinybullet}\,}}
+
+\gdef\ldeSymbol{{{{\raisebox{1.1pt}{\tinybullet}\mkern{-1pt}{\longrightarrow}}}\,}}
+\gdef\lueSymbol{{\raisebox{1pt}{\tinybullet\raisebox{-0.03em}{\mkern{-0.3pt}{\tiny────}\mkern{-0.3pt}}\tinybullet}\,}}
 
 \gdef\de#1#2{{{#1} \deSymbol {#2}}}
 \gdef\ue#1#2{{{#1} \ueSymbol {#2}}}
 
 \gdef\tde#1#2#3{{{#1} \overset{#3}{\deSymbol} {#2}}}
 \gdef\tue#1#2#3{{{#1} \overset{#3}{\ueSymbol} {#2}}}
+
+\gdef\ltde#1#2#3{{{#1} \overset{#3}{\ldeSymbol} {#2}}}
+\gdef\ltue#1#2#3{{{#1} \overset{#3}{\lueSymbol} {#2}}}
 
 \gdef\mapsfrom{\htmlClass{hreflect}{\mapsto}}
 \gdef\longmapsfrom{\htmlClass{hreflect}{\longmapsto}}
@@ -188,6 +195,7 @@
 \gdef\groupElement#1{#1}
 \gdef\groupoidElement#1{#1}
 
+\gdef\setConstructor#1#2{\left\{\,{#1}\;\middle|\;{#2}\,\right\}}
 \gdef\elemOf#1#2{{ {#1} \in {#2} }}
 \gdef\edgeOf#1#2{{ {#1} {\in}_E {#2} }}
 \gdef\vertOf#1#2{{ {#1} {\in}_V {#2} }}
@@ -239,7 +247,7 @@
 \gdef\graphProdSymbol{\times}
 \gdef\inlineProdSymbol{\mid}
 \gdef\cardProdSymbol{\inlineProdSymbol}
-\gdef\vertexProdSymbol{\inlineProdSymbol}
+\gdef\vertexProdSymbol{\!\inlineProdSymbol\!}
 \gdef\edgeProdSymbol{\inlineProdSymbol}
 \gdef\indexSum#1#2#3{{\sum_{#2}^{#3} #1}}
 \gdef\indexProd#1#2#3{{\prod_{#2}^{#3} #1}}

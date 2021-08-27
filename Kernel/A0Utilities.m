@@ -230,6 +230,21 @@ SetUsage[symbol_Symbol, usageString_String] :=
 
 (**************************************************************************************************)
 
+PackageExport["MapUnevaluated"]
+
+SetHoldAllComplete[MapUnevaluated]
+
+MapUnevaluated[f_, args_] :=
+  Map[f, Unevaluated[args]];
+
+MapUnevaluated[Function[body_], args_] :=
+  Map[Function[Null, body, HoldAllComplete], Unevaluated[args]];
+
+MapUnevaluated[Function[args_, body_], args_] :=
+  Map[Function[args, body, HoldAllComplete], Unevaluated[args]];
+
+(**************************************************************************************************)
+
 PackageExport["Tau"]
 
 SetUsage @ "

@@ -477,7 +477,8 @@ cellToMarkdown = Case[
   Cell[e_, "SubsubItem"]         := StringJoin["\t\t* ", textCellToMD @ e];
   Cell[b:BoxData[TemplateBox[_, _ ? textTagQ]], "Output"]
                                  := textCellToMD @ b;
-  e:Cell[_, "Output"]            := outputCellToMD @ e;
+
+  e:Cell[_, "Output"]            := If[ContainsQ[e, "LinkHand"], Nothing, outputCellToMD @ e];
 
   Cell[CellGroupData[cells_List, Open]] := Splice[% /@ trimCells[cells]];
 
@@ -577,6 +578,7 @@ $finalStringFixups1 = {
 };
 
 $finalStringFixups2 = {
+  "$ --" -> "$ --",
   "$ -" -> "$\\-",
   "$ ." -> "$.",
   "$ ," -> "$,",
