@@ -422,3 +422,61 @@ cornerEdge[{a_, b_}] := DirectedEdge[a, b, "r"]
 
 truncatedEdge[DirectedEdge[a_, b_, c_]] :=
   DirectedEdge[TruncatedVertex[a, c], TruncatedVertex[b, Negated @ c], CardinalSet[{"f", Negated @ "f"}]];
+
+(**************************************************************************************************)
+
+PackageExport["CircleQuiver"]
+
+Options[CircleQuiver] = Options[Graph];
+
+CircleQuiver[n_Integer, opts:OptionsPattern[]] :=
+  CircleQuiver[n, "x", opts];
+
+CircleQuiver[n_Integer, card_String, opts:OptionsPattern[]] := Scope[
+  vertices = Range[1, n];
+  edges = DirectedEdge[#1, #2, card]& @@@ Partition[vertices, 2, 1, 1];
+  ExtendedGraph[
+    vertices, edges,
+    opts, ExtendedGraphLayout -> "Linear"
+  ]
+]
+
+(**************************************************************************************************)
+
+PackageExport["SquareQuiver"]
+
+Options[SquareQuiver] = Options[Graph];
+
+SquareQuiver[m_Integer, n_Integer, opts:OptionsPattern[]] := Scope[
+  vertices = Catenate @ Array[VertexProduct, {m, n}];
+  edges = Flatten @ {
+    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i + 1, j], "x"], {i, m-1}, {j, n}],
+    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i, j + 1], "y"], {i, m}, {j, n-1}]
+  };
+  ExtendedGraph[
+    vertices, edges,
+    opts,
+    VertexCoordinates -> (List @@@ vertices),
+    AspectRatioClipping -> False,
+    Cardinals -> {"x", "y"}
+  ]
+]
+
+(**************************************************************************************************)
+
+PackageExport["LineQuiver"]
+
+Options[LineQuiver] = Options[Graph];
+
+LineQuiver[n_Integer, opts:OptionsPattern[]] :=
+  LineQuiver[n, "x", opts];
+
+LineQuiver[n_Integer, card_String, opts:OptionsPattern[]] := Scope[
+  vertices = Range @ n;
+  edges = MapStaggered[DirectedEdge[#1, #2, card]&, vertices];
+  ExtendedGraph[
+    vertices, edges,
+    opts, ExtendedGraphLayout -> "Linear",
+    AspectRatioClipping -> False
+  ]
+]

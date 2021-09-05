@@ -304,7 +304,7 @@ PathVectorPlot[pv:PathVector[_Association ? ValidPathAssociationQ], opts___Rule]
 
 notOverlappingPathsQ[PathVector[assoc_]] := Scope[
   edges = Part[Keys @ assoc, All, 2];
-  DuplicateFreeQ @ Flatten[edges /. Negated[e_] :> e, 1]
+  DuplicateFreeQ @ Catenate @ Ma[edges /. Negated[e_] :> e, 1]
 ]
 
 pathFieldQ[PathVector[assoc_]] := DuplicateFreeQ @ PathTailVertex @ Keys[assoc];

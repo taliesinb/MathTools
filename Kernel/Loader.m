@@ -157,9 +157,17 @@ loadFileContents[path_, context_] := Module[{str, contents},
   contents
 ];
 
-$stringProcessingRules =
+$stringProcessingRules = {
   RegularExpression["(?s)\"\"\"(.*?)\"\"\""] :>
-    StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""]
+    StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""],
+  RegularExpression[" ~!~ ([^\n]+)"] :> " ~NotMatchQ~ " <> bracketRHS["$1"],
+  RegularExpression[" ~~~ ([^\n]+)"] :> " ~MatchQ~ " <> bracketRHS["$1"]
+}
+
+bracketRHS[s_] := Block[{$Context = "QuiverGeometryPackageLoader`Scratch`", len},
+  len = SyntaxLength[s];
+  "(" <> StringInsert[s, ")", len+1]
+];
 
 If[!ValueQ[QuiverGeometryPackageLoader`$SystemOpenEnabled], QuiverGeometryPackageLoader`$SystemOpenEnabled = True];
 DoSystemOpen[s_] := If[QuiverGeometryPackageLoader`$SystemOpenEnabled, SystemOpen[s]];
@@ -235,6 +243,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
   ,
     failRead
   ];
+  Quiet @ Remove["QuiverGeometryPackageLoader`Scratch`*"]; (* <- dumping ground for SyntaxLength *)
   If[result === $Failed, Return[$Failed]];
 
   Scan[observeTextFile, $textFiles];

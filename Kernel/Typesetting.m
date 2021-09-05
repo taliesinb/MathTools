@@ -588,10 +588,28 @@ ClickCopy[e_] := MouseAppearance[
   "LinkHand"
 ];
 
+(**************************************************************************************************)
+
 PackageExport["Transposed"]
 
 SetUsage @ "
 Transposed is an option to %SpacedRow, %AlgebraicRow, etc.
+"
+
+(**************************************************************************************************)
+
+PackageExport["RiffleItem"]
+
+SetUsage @ "
+RiffleItem is an option to %SpacedRow, %AlgebraicRow, etc.
+"
+
+(**************************************************************************************************)
+
+PackageExport["ForceGrid"]
+
+SetUsage @ "
+ForceGrid is an option to %SpacedRow, %AlgebraicRow, etc.
 "
 
 (**************************************************************************************************)
@@ -623,7 +641,7 @@ $srIndexTooltip = False;
 $srAlignment = Center;
 $srLabelPosition = Automatic;
 $srForceGrid = False;
-
+$srRiffleItem = None;
 (* this is because i don't trust OptionsPattern to not capture rules used as label specs.
 i might be wrong though *)
 
@@ -641,7 +659,8 @@ SpacedRow[elems__, LabelPosition -> s_] := Block[{$srLabelPosition = s}, SpacedR
 SpacedRow[elems__, Alignment -> a_] := Block[{$srAlignment = a}, SpacedRow[elems]];
 SpacedRow[elems__, "IndexTooltip" -> t_] := Block[{$srIndexTooltip = t}, SpacedRow[elems]];
 SpacedRow[elems__, Transposed -> t_] := Block[{$srTransposed = t}, SpacedRow[elems]];
-SpacedRow[elems__, "ForceGrid" -> fg_] := Block[{$srForceGrid = fg}, SpacedRow[elems]];
+SpacedRow[elems__, ForceGrid -> fg_] := Block[{$srForceGrid = fg}, SpacedRow[elems]];
+SpacedRow[elems__, RiffleItem -> item_] := Block[{$srRiffleItem = item}, SpacedRow[elems]];
 
 SpacedRow[labels_List -> items_List] /; Length[labels] == Length[items] :=
   SpacedRow[RuleThread[labels, items]];
@@ -649,15 +668,17 @@ SpacedRow[labels_List -> items_List] /; Length[labels] == Length[items] :=
 SpacedRow[elems__] := Scope[
   items = DeleteCases[Null] @ Flatten @ {elems};
   items = canonicalizeItem /@ Take[items, UpTo @ $srMaxItems];
-  If[$srColumnRow && Length[items] > (maxWidth = Replace[$srMaxWidth, Infinity -> 4]),
+  If[$srRiffleItem =!= None, items = Riffle[items, $srRiffleItem]];
+  maxWidth = Replace[$srMaxWidth, Infinity -> 4];
+  If[$srColumnRow && IntegerQ[maxWidth] && Length[items] > maxWidth,
     Return @ SpacedColumn[
       Map[SpacedRow, Partition[items, UpTo[maxWidth]]],
       Spacings -> $srRowSpacings
-    ]
+    ];
   ];
   If[$srIndexTooltip, items //= MapIndexed[NiceTooltip[#1, First[#2]]&]];
   hasLabels = MemberQ[items, _Labeled];
-  tooLong = Length[items] > $srMaxWidth;
+  tooLong = IntegerQ[maxWidth] && Length[items] > maxWidth;
   alignment = $srAlignment;
   If[!ListQ[alignment], alignment = {alignment, alignment}];
   rowSpacings = $srRowSpacings / 10;
@@ -665,9 +686,18 @@ SpacedRow[elems__] := Scope[
   labelPosition = $srLabelPosition;
   SetAutomatic[labelPosition, If[$srTransposed, Before, After]];
   labelIsBefore = labelPosition === Before;
-  If[tooLong || hasLabels || $srForceGrid,
-    If[tooLong,
-      items = Flatten @ Riffle[Partition[items, UpTo[$srMaxWidth]], {$nextRow}]
+  If[ListQ[maxWidth],
+    items = Insert[items, EndOfLine, List /@ TakeWhile[1 + (Accumulate @ maxWidth), LessEqualThan[Length @ items]]]
+  ];
+  hasEndOfLines = MemberQ[items, EndOfLine];
+  If[tooLong || hasLabels || $srForceGrid || hasEndOfLines,
+    Which[
+      hasEndOfLines,
+        items = Replace[items, EndOfLine -> $nextRow, {1}],
+      tooLong,
+        items = Flatten @ Riffle[Partition[items, UpTo[maxWidth]], {$nextRow}],
+      True,
+        Null
     ];
     If[hasLabels,
       items //= Map[toGridRowPair /* If[labelIsBefore, Reverse, Identity]];

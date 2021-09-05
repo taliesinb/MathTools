@@ -897,7 +897,7 @@ SimplifyCardinalSet = Case[
 
 PackageScope["SpliceCardinalSets"]
 
-SpliceCardinalSets[e_] := ReplaceAll[ReplaceAll[e, CardinalSet -> Splice], Negated[z_] :> z];
+SpliceCardinalSets[e_] := Map[StripNegated, ReplaceAll[e, CardinalSet -> Splice]];
 
 (**************************************************************************************************)
 
@@ -1139,6 +1139,20 @@ VertexOutTagTable[graph_, splice_:True] := Scope[
   Lookup[Merge[rules, Identity], VertexList @ graph, {}]
 ]
 
+(**************************************************************************************************)
+
+PackageExport["VertexInTagTable"]
+
+SetUsage @ "
+VertexInTagTable[graph$] returns a list of lists {tags$1, tags$2, $$} where tag$i is the list of tags \
+present on vertex v$i in the incoming direction.
+* The tags are wrapped with Negated[$$].
+"
+
+VertexInTagTable[graph_, splice_:True] := Scope[
+  rules = #2 -> Negated[#3]& @@@ If[splice, SpliceCardinalSetEdges, Identity] @ EdgeList[graph];
+  Lookup[Merge[rules, Identity], VertexList @ graph, {}]
+]
 
 (**************************************************************************************************)
 
@@ -1405,6 +1419,30 @@ IndexGraphQ[_] := False;
 
 (**************************************************************************************************)
 
+PackageExport["ComponentGraphs"]
+
+ComponentGraphs[graph_] := ComponentGraphs[graph, All];
+
+ComponentGraphs[graph_, u_UpTo] := ComponentGraphs[graph, 1 ;; u];
+
+ComponentGraphs::compob = "Component `` was requested but only `` are available.";
+ComponentGraphs[graph_, spec:(_Integer|All|_Span)] := Scope[
+  components = WeaklyConnectedGraphComponents @ graph;
+  components = Reverse @ SortBy[components, ApplyThrough[{VertexCount, VertexList}]];
+  If[IntegerQ[spec] && Abs[spec] > Length[components],
+    ReturnFailed["compob", spec, Length[components]]];
+  Part[components, spec]
+];
+
+ComponentGraphs::badvertex = "Graph does not contain a vertex matching ``."
+ComponentGraphs[graph_, VertexPattern[p_]] :=
+  First[WeaklyConnectedGraphComponents[graph, p], Message["badvertex", p]; $Failed];
+
+ComponentGraphs::badcomp = "`` is not a valid component specification."
+ComponentGraphs[_, spec_] := (Message[ComponentGraphs::badcomp, spec]; $Failed);
+
+(**************************************************************************************************)
+
 PackageExport["CanonicalizeEdges"]
 
 CanonicalizeEdges[edges_] := Map[sortUE, edges];
@@ -1449,6 +1487,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
     ContainsQ[graphLayout, "Dimension" -> 2] || CoordinateMatrixQ[vertexCoordinates, 2], 2,
     True, Automatic
   ];
+  graphLayout //= DeleteCases["Dimension" -> _];
   Which[
     actualDimension === layoutDimension === Automatic,
       actualDimension = 2,
@@ -1460,6 +1499,13 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
 
   If[extendedGraphLayout =!= Automatic, graphLayout = extendedGraphLayout];
   SetAutomatic[graphLayout, {}];
+
+  If[MemberQ[graphLayout, "NudgeDistance" -> _],
+    nudgeDistance = FirstCase[graphLayout, ("NudgeDistance" -> d_) :> d];
+    graphLayout //= DeleteOptions["NudgeDistance"];
+  ,
+    nudgeDistance = Automatic;
+  ];
 
   vertexList = VertexList @ graph;
   vertexCount = Length @ vertexList;
@@ -1534,7 +1580,8 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
       Message[ExtractGraphPrimitiveCoordinates::badvcoords];
       initialVertexCoordinates = Automatic;
     ,
-      initialVertexCoordinates = nudgeOverlappingVertices[initialVertexCoordinates, plotRange];
+      If[nudgeDistance =!= 0,
+        initialVertexCoordinates = nudgeOverlappingVertices[initialVertexCoordinates, plotRange]];
     ];
   ];
 
@@ -1669,22 +1716,26 @@ LookupVertexCoordinates[graph_Graph, vertexList_:All] := Scope[
 
 nudgeOverlappingVertices[coords_, plotRange_] := Scope[
   nudgedCoords = coords; num = Length[coords];
-  nudgeScale = ChessboardDistance @@ If[
-    CoordinateMatrixQ @ plotRange,
-    Transpose @ plotRange,
-    CoordinateBoundingBox @ coords
+  nudgeScale = nudgeDistance;
+  If[nudgeScale === Automatic,
+    nudgeScale = ChessboardDistance @@ If[
+      CoordinateMatrixQ @ plotRange,
+      Transpose @ plotRange,
+      CoordinateBoundingBox @ coords
+    ];
+    nudgeScale = If[nudgeScale === 0, 1, Max[nudgeScale, 0.1]];
   ];
-  nudgeScale = If[nudgeScale === 0, 1, Max[nudgeScale, 0.1]];
   dupPos = Select[Length[#] > 1&] @ PositionIndex[Round[coords, nudgeScale / 40]];
   If[Length[dupPos] === 0, Return @ coords];
   If[Length[dupPos] === 1 && num > 1,
     Return @ PlusVector[CirclePoints[{nudgeScale/5, Tau * .25/num}, num], Mean @ coords]];
-  Scan[nudge, dupPos];
+  Scan[nudge, Values @ dupPos];
   nudgedCoords
 ];
 
 nudge[{_}] := Null;
-nudge[indices_] :=
+nudge[indices_] := nudge2 @ SortBy[indices, Part[vertexList, #]&];
+nudge2[indices_] :=
   Part[nudgedCoords, indices] = Plus[
     Part[nudgedCoords, indices],
     nudgeScale/5 * CirclePoints[Length @ indices]
@@ -1728,7 +1779,7 @@ applyCoordinateTransform[{"Snap", m_, nudge_:0.1}] := Scope[
   applyCoordinateTransform["CenterMean"];
   bounds = CoordinateBounds[edgeCoordinateLists];
   step = (EuclideanDistance @@@ bounds) / m;
-  grid = Flatten[CoordinateBoundsArray[bounds, step], 1];
+  grid = Catenate @ CoordinateBoundsArray[bounds, step];
   nearest = Nearest @ grid;
   applyCoordinateTransform[nearest /* First];
   duplicateIndices = DuplicateIndices @ vertexCoordinates;

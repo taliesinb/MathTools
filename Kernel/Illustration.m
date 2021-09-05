@@ -440,7 +440,7 @@ MobiusStrip[n_, is3D_:False] := Scope[
   edges = mobiousPatch /@ Range[0, n-1];
   vertices = Flatten @ Table[LatticeVertex[{x, y}], {x, 0, n-1}, {y, -1, 1}];
   coords = If[is3D,
-    Flatten[Table[TorusVector[{n, y}, {phi, phi/2}], {phi, 0, Tau - tauN, tauN}, {y, -1, 1}], 1],
+    Catenate @ Table[TorusVector[{n, y}, {phi, phi/2}], {phi, 0, Tau - tauN, tauN}, {y, -1, 1}],
     First /@ vertices
   ];
   Quiver[vertices, edges,
@@ -797,4 +797,67 @@ GraphProductTable[prodFn_, aList_, bList_, OptionsPattern[]] := Scope[
   PrependTo[table, Prepend[blank] @ bList];
   If[bLabels =!= None, PrependTo[table, Prepend[blank] @ bLabels]];
   Grid[table]
+];
+
+(**************************************************************************************************)
+
+PackageExport["GraphProductUnionSpacedRow"]
+
+productMeanPos[vertices_] := N @ Mean[List @@@ vertices];
+GraphProductUnionSpacedRow[full_, items_, opts___Rule] := Scope[
+  items = SortBy[items, ApplyThrough[{VertexList /* productMeanPos, VertexCount}]];
+  items = ShowFaded[full, #, .85]& /@ items;
+  SpacedRow[items, RiffleItem -> "\[Union]", opts, MaxWidth -> 6, RowSpacings -> 15]
+];
+
+(**************************************************************************************************)
+
+PackageExport["ConnectedComponentProductDecomposition"]
+
+ConnectedComponentProductDecomposition[graphs_, terms_, opts___Rule] := Scope[
+  If[graphs ~~~ l_Labeled,
+    displayForm = toQuiverProductColumn @ Last @ graphs;
+    graphs = First @ graphs;
+  ,
+    displayForm = {Automatic};
+  ];
+  maxWidth = Lookup[{opts}, MaxWidth, 4];
+  spacings = Lookup[{opts}, Spacings, 15];
+  opts = Sequence @@ DeleteOptions[{opts}, {MaxWidth, Spacings}];
+  base = GeneralQuiverProduct[graphs, terms, Automatic, opts,
+    ImageSize -> 120, VertexSize -> 4, ArrowheadShape -> None,
+    ExtendedGraphLayout ->{"NudgeDistance"->0}];
+  products = GeneralQuiverProduct[graphs, terms, All, opts,
+    ImageSize -> 100, VertexSize -> 4, ArrowheadSize -> 12];
+  imgSize = First @ LookupImageSize[base];
+  dislayForm = Replace[displayForm, {Automatic -> base, g_Graph :> ReplaceOptions[g, ImageSize -> imgSize]}, {1}];
+  SpacedColumn[
+    Sequence @@ dislayForm,
+    LargeSymbolForm["="],
+    GraphProductUnionSpacedRow[base, products, MaxWidth -> maxWidth, Spacings -> spacings],
+    Spacings -> 45
+  ]
+];
+
+toQuiverProductColumn = Case[
+  IndependentQuiverProductForm[a_, b_] :=
+    {toSimpleQuiver @ a, LargeSymbolForm @ IndependentQuiverProductForm[], toSimpleQuiver @ b};
+  DependentQuiverProductForm[a_, b_] :=
+    {toSimpleQuiver @ a, LargeSymbolForm @ DependentQuiverProductForm[], toSimpleQuiver @ b};
+  other_ := {toSimpleQuiver @ other};
+];
+
+(**************************************************************************************************)
+
+PackageExport["QuiverProductTable"]
+
+QuiverProductTable[quivers_, termsLists_, args___] := Scope[
+  makePlot = Labeled[
+    GeneralQuiverProduct[quivers, #2, args, ImageSize -> {100, 100}, ArrowheadStyle -> $Gray],
+    Row[{Style[#1, Bold], Invisible @ "X"}]
+  ]&;
+  SpacedColumn[
+    SpacedRow[makePlot @@@ #, Spacings -> 50, LabelSpacing -> 15]& /@ termsLists,
+    Spacings -> 50
+  ]
 ];

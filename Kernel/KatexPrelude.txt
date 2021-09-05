@@ -35,6 +35,11 @@
 \gdef\primed#1{{#1}^{\prime}}
 \gdef\tinybullet{{\tiny●}}
 
+\gdef\forwardFactor{\uparrow}
+\gdef\backwardFactor{\downarrow}
+\gdef\neutralFactor{\mid}
+\gdef\arrowhead{⏵}
+
 \gdef\deSymbol{{{{\raisebox{1.1pt}{\tinybullet}\mkern{-1pt}{→}}}\,}}
 \gdef\ueSymbol{{\raisebox{1pt}{\tinybullet\raisebox{-0.03em}{\mkern{-0.3pt}{\tiny──}\mkern{-0.3pt}}\tinybullet}\,}}
 
@@ -86,6 +91,7 @@
 \gdef\signed#1{{#1}^*}
 \gdef\transportAtlas#1{T_{#1}}
 \gdef\negated#1{\underline{#1}}
+\gdef\mirror#1{\overline{#1}}
 \gdef\pathComposeSymbol{{\,∷\,}}
 \gdef\pathCompose#1#2{{#1}\pathComposeSymbol{#2}}
 
@@ -223,6 +229,8 @@
 \gdef\rewrite#1#2{{#1}\mapsto{#2}}
 
 \gdef\ncard#1{\card{\negated{#1}}}
+\gdef\mcard#1{\card{\mirror{#1}}}
+\gdef\nmcard#1{\card{\negated{\mirror{#1}}}}
 
 \gdef\list#1{\{ {#1} \}}
 \gdef\tuple#1{( {#1} )}
@@ -240,12 +248,21 @@
 \gdef\cprod{\times}
 \gdef\functionSignature#1#2#3{{{#1} : {#2} \to {#3}}}
 
+\gdef\poly#1{#1}
+\gdef\quiverProdPoly#1{#1}
+\gdef\quiverProdPower#1#2{#1^{#2}}
+\gdef\quiverProdTimes#1{#1}
+
+\gdef\parenLabeled#1#2{#1\ ({#2})}
+
 \gdef\cardinality#1{|{#1}|}
 \gdef\depQuiverProdSymbol{\,\times\,}
 \gdef\indepQuiverProdSymbol{\,⨝\,}
 \gdef\graphUnionSymbol{\sqcup}
 \gdef\graphProdSymbol{\times}
 \gdef\inlineProdSymbol{\mid}
+
+\gdef\cardSeqSymbol{:}
 \gdef\cardProdSymbol{\inlineProdSymbol}
 \gdef\vertexProdSymbol{\!\inlineProdSymbol\!}
 \gdef\edgeProdSymbol{\inlineProdSymbol}

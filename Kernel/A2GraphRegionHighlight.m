@@ -802,7 +802,7 @@ subgraphCoveringGraphics[r_, vertices_, edgeIndices_, edgeList_, vertexCoords_, 
     dr = (other - radius) / If[$GraphIs3D, 32, 3];
     Return @ If[$GraphIs3D, Sphere, Disk][center, Sqrt[radius + dr]];
   ];
-  edgePoints = DeleteDuplicates @ Flatten[edgeSpaced /@ Part[edgeCoordsLists, edgeIndices], 1];
+  edgePoints = DeleteDuplicates @ Catenate @ Map[edgeSpaced] @ Part[edgeCoordsLists, edgeIndices];
   points = ToPacked @ Join[vertexPoints, edgePoints];
   primitives = PointDilationGraphics[points, r];
   If[ContainsQ[primitives, Polygon[_Rule]],

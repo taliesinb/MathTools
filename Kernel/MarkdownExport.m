@@ -401,7 +401,8 @@ $tableCreation = StartOfLine ~~ " "... ~~ text:Repeated["* " ~~ Except["\n"].. ~
 createTable[ostr_String] := Scope[
   str = StringTrim @ ostr;
   lines = StringDrop[StringSplit[str, "\n"..], 2];
-  If[Min[StringCount[lines, "\t"..]] == 0, Return @ ostr];
+  If[Min[StringCount[lines, "\t"..]] == 0,
+    Return @ ostr];
   grid = StringTrim /@ StringSplit[lines, "\t"..];
   If[!MatrixQ[grid], Print["Bad table"]];
   first = First @ grid;
@@ -449,7 +450,7 @@ toMarkdownLines[nb_NotebookObject] :=
  *)
 
 toMarkdownLines[list_List] :=
-  Flatten[Riffle[Map[toMarkdownLines, list], "---"], 1];
+  Catenate @ Riffle[Map[toMarkdownLines, list], "---"];
 
 toMarkdownLines[Notebook[cells_List, ___]] :=
   Map[cellToMarkdown, trimCells @ cells]
@@ -584,7 +585,10 @@ $finalStringFixups2 = {
   "$ ," -> "$,",
   "$ ?" -> "$?",
   "$ !" -> "$!",
-  "$ :" -> "$:"
+  "$ :" -> "$:",
+  "n'th" -> "$n^{\\textrm{th}}$",
+  l:("f"|"p") ~~ "-" ~~ r:("vert"|"edge"|"cardinal"|"quiver") :>
+    StringJoin["_", l, "_\\-", r]
 };
 
 WhiteString = _String ? (StringMatchQ[Whitespace]);

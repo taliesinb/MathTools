@@ -1084,8 +1084,8 @@ CompactArrayPlot[array_, OptionsPattern[]] := Scope[
       None,
     True,
       $BooleanColors = {White, Black};
-      Last @ ApplyColoring @ Flatten[array, 1]]
-  ];
+      Last @ ApplyColoring @ Catenate @ array
+  ]];
   If[colorFunction =!= None,
     cfunc = colorFunction;
     If[ColorFunctionObjectQ @ cfunc, cfunc //= Normal];
@@ -1134,3 +1134,39 @@ BinaryArrayPlot[array_, digits:(_Integer|Automatic), OptionsPattern[]] := Scope[
   ];
   CompactArrayPlot[1 - array, PixelConstrained -> pixelConstrained]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["FadeGraphics"]
+
+FadeGraphics[g_, 0 | 0.] := g;
+FadeGraphics[g_Graphics, opacity_] := ApplyEpilog[g,
+  Style[
+    Rectangle[{-1000, -1000}, {1000, 1000}],
+    EdgeForm[None], FaceForm[GrayLevel[1, opacity]]
+  ]
+];
+
+(**************************************************************************************************)
+
+PackageExport["ListShowFaded"]
+
+ListShowFaded[list_, i_, opacity_:0.9] := Scope[
+  list = Replace[list, g_Graph :> ExtendedGraphPlot[g], {1}];
+  {xs, ys} = Transpose[GraphicsPlotRange /@ list];
+  {xmin, xmax} = MinMax @ xs;
+  {ymin, ymax} = MinMax @ ys;
+  faded = Show[
+    Sequence @@ Delete[list, i],
+    Graphics[Style[Rectangle[{xmin, ymin} - 1, {xmax, ymax} + 1], EdgeForm[None], FaceForm[GrayLevel[1, opacity]]]],
+    Part[list, i],
+    PlotRange -> {{xmin, xmax}, {ymin, ymax}}
+  ]
+]
+
+(**************************************************************************************************)
+
+PackageExport["ShowFaded"]
+
+ShowFaded[items__, opacity_?NumericQ] := ListShowFaded[{items}, -1, opacity];
+ShowFaded[items__] := ListShowFaded[{items}, -1];

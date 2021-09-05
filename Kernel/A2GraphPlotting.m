@@ -681,6 +681,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       ]];
       If[AssociationQ[arrowheadStyle],
         arrowheadStyle //= MapIndexed[If[#1 =!= Automatic, #1, cardinalColors @ First @ First @ #2]&]];
+
       baseArrowheadSize := baseArrowheadSize = If[$GraphIs3D, 0.45, 0.8] * ($GraphMaxSafeArrowheadSize / $GraphPlotSizeX);
       arrowheadSize //= processArrowheadSize;
       maxArrowheadSize = Max[arrowheadSize * $GraphPlotSizeX] / 2;

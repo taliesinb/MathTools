@@ -41,10 +41,21 @@ VertexProduct[a$, b$] represents a product of two vertices a$ and b$.
 "
 
 declareBoxFormatting[
-  VertexProduct[a_, b_] :> TemplateBox[{MakeBoxes @ a, MakeBoxes @ b}, "VertexProductForm"]
+  VertexProduct[args__] :> TemplateBox[MapUnevaluated[MakeBoxes, {args}], "VertexProductForm"]
 ];
 
 $TemplateKatexFunction["VertexProductForm"] = riffled[" \\vertexProdSymbol "];
+
+(**************************************************************************************************)
+
+PackageExport["FlattenProductSymbols"]
+
+$flattenProductsRule = {
+  VertexProduct[l___, VertexProduct[m__], r___] :> VertexProduct[l, m, r],
+  CardinalProduct[l___, CardinalProduct[m__], r___] :> CardinalProduct[l, m, r]
+};
+
+FlattenProductSymbols[e_] := e //. $flattenProductsRule;
 
 (**************************************************************************************************)
 

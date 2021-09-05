@@ -111,7 +111,7 @@ PackageExport["DiscretizeCurve"]
 
 DiscretizeCurve[points_, f_:BezierCurve] := Scope[
   region = DiscretizeGraphics @ f @ ToPacked @ points;
-  ToPacked @ Flatten[region["EdgeCoordinates"], 1]
+  ToPacked @ Catenate @ region["EdgeCoordinates"]
 ];
 
 (**************************************************************************************************)
