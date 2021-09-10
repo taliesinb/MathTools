@@ -814,27 +814,32 @@ GraphProductUnionSpacedRow[full_, items_, opts___Rule] := Scope[
 
 PackageExport["ConnectedComponentProductDecomposition"]
 
-ConnectedComponentProductDecomposition[graphs_, terms_, opts___Rule] := Scope[
+Options[ConnectedComponentProductDecomposition] = JoinOptions[
+  {MaxWidth -> 4, Spacings -> 15, Transposed -> False},
+  ExtendedGraph
+];
+
+ConnectedComponentProductDecomposition[graphs_, terms_, userOpts:OptionsPattern[]] := Scope[
   If[graphs ~~~ l_Labeled,
     displayForm = toQuiverProductColumn @ Last @ graphs;
     graphs = First @ graphs;
   ,
     displayForm = {Automatic};
   ];
-  maxWidth = Lookup[{opts}, MaxWidth, 4];
-  spacings = Lookup[{opts}, Spacings, 15];
-  opts = Sequence @@ DeleteOptions[{opts}, {MaxWidth, Spacings}];
+  UnpackOptions[maxWidth, spacings, transposed];
+  opts = Sequence @@ DeleteOptions[{userOpts}, {MaxWidth, Spacings, Transposed}];
   base = GeneralQuiverProduct[graphs, terms, Automatic, opts,
     ImageSize -> 120, VertexSize -> 4, ArrowheadShape -> None,
     ExtendedGraphLayout ->{"NudgeDistance"->0}];
   products = GeneralQuiverProduct[graphs, terms, All, opts,
-    ImageSize -> 100, VertexSize -> 4, ArrowheadSize -> 12];
+    ImageSize -> 120, VertexSize -> 4, ArrowheadSize -> 12];
   imgSize = First @ LookupImageSize[base];
   dislayForm = Replace[displayForm, {Automatic -> base, g_Graph :> ReplaceOptions[g, ImageSize -> imgSize]}, {1}];
   SpacedColumn[
     Sequence @@ dislayForm,
     LargeSymbolForm["="],
-    GraphProductUnionSpacedRow[base, products, MaxWidth -> maxWidth, Spacings -> spacings],
+    GraphProductUnionSpacedRow[base, products,
+      MaxWidth -> maxWidth, Spacings -> spacings, Transposed -> transposed],
     Spacings -> 45
   ]
 ];
@@ -844,7 +849,7 @@ toQuiverProductColumn = Case[
     {toSimpleQuiver @ a, LargeSymbolForm @ IndependentQuiverProductForm[], toSimpleQuiver @ b};
   DependentQuiverProductForm[a_, b_] :=
     {toSimpleQuiver @ a, LargeSymbolForm @ DependentQuiverProductForm[], toSimpleQuiver @ b};
-  other_ := {toSimpleQuiver @ other};
+  other_ := {OnFailed[toSimpleQuiver @ other, other]};
 ];
 
 (**************************************************************************************************)

@@ -78,7 +78,7 @@ _                            _          \longmapsto         ⟼
 \[ExponentialE]              E          e                   ⅇ
 \[ImaginaryI]                I          i                   ⅈ
 \[Pi]                        Pi         \pi                 𝜋
-\[Infinity]                  Infinity   \inf                ∞
+\[Infinity]                  Infinity   \infty              ∞
                                                              
 _                            Integers   \Z                  ℤ
 _                            Naturals   \N                  ℕ

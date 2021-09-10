@@ -669,8 +669,7 @@ SpacedRow[elems__] := Scope[
   items = DeleteCases[Null] @ Flatten @ {elems};
   items = canonicalizeItem /@ Take[items, UpTo @ $srMaxItems];
   If[$srRiffleItem =!= None, items = Riffle[items, $srRiffleItem]];
-  maxWidth = Replace[$srMaxWidth, Infinity -> 4];
-  If[$srColumnRow && IntegerQ[maxWidth] && Length[items] > maxWidth,
+  If[$srColumnRow && Length[items] > (maxWidth = Replace[$srMaxWidth, Infinity -> 4]),
     Return @ SpacedColumn[
       Map[SpacedRow, Partition[items, UpTo[maxWidth]]],
       Spacings -> $srRowSpacings
@@ -678,7 +677,7 @@ SpacedRow[elems__] := Scope[
   ];
   If[$srIndexTooltip, items //= MapIndexed[NiceTooltip[#1, First[#2]]&]];
   hasLabels = MemberQ[items, _Labeled];
-  tooLong = IntegerQ[maxWidth] && Length[items] > maxWidth;
+  tooLong = IntegerQ[$srMaxWidth] && Length[items] > $srMaxWidth;
   alignment = $srAlignment;
   If[!ListQ[alignment], alignment = {alignment, alignment}];
   rowSpacings = $srRowSpacings / 10;
@@ -686,8 +685,8 @@ SpacedRow[elems__] := Scope[
   labelPosition = $srLabelPosition;
   SetAutomatic[labelPosition, If[$srTransposed, Before, After]];
   labelIsBefore = labelPosition === Before;
-  If[ListQ[maxWidth],
-    items = Insert[items, EndOfLine, List /@ TakeWhile[1 + (Accumulate @ maxWidth), LessEqualThan[Length @ items]]]
+  If[ListQ[$srMaxWidth],
+    items = Insert[items, EndOfLine, List /@ TakeWhile[1 + (Accumulate @ $srMaxWidth), LessEqualThan[Length @ items]]]
   ];
   hasEndOfLines = MemberQ[items, EndOfLine];
   If[tooLong || hasLabels || $srForceGrid || hasEndOfLines,
@@ -695,7 +694,7 @@ SpacedRow[elems__] := Scope[
       hasEndOfLines,
         items = Replace[items, EndOfLine -> $nextRow, {1}],
       tooLong,
-        items = Flatten @ Riffle[Partition[items, UpTo[maxWidth]], {$nextRow}],
+        items = Flatten @ Riffle[Partition[items, UpTo[$srMaxWidth]], {$nextRow}],
       True,
         Null
     ];
@@ -713,6 +712,10 @@ SpacedRow[elems__] := Scope[
     hspacings = {$srSpacings/10};
     
     If[$srTransposed,
+      (* i don't think this is needed, but just in case. i can enable it.
+      maxLen = Max[Length /@ entries];
+      entries = PadRight[#, maxLen, ""]& /@ entries;
+      *)
       entries //= Transpose;
       styles = {itemStyle, {}};
       {hspacings, vspacings} = {vspacings * 1.5, hspacings * 0.5};

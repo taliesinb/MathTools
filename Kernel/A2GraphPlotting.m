@@ -9,6 +9,9 @@ PackageExport["VertexColorRules"]
 PackageExport["EdgeColorRules"]
 PackageExport["RegionColorRules"]
 
+PackageExport["VertexTooltips"]
+PackageExport["EdgeTooltips"]
+
 PackageExport["CardinalColors"]
 PackageExport["CardinalColorRules"]
 PackageExport["CardinalColorFunction"]
@@ -358,6 +361,10 @@ ExtendedGraphPlot[graph_Graph] := Block[
 
   GraphPlotScope[graph,
 
+    If[$VertexCount === $EdgeCount === 0,
+      (* empty graphs don't accept options for some reason, so we have to pick a size here *)
+      Return @ Spacer @ 10];
+
     $GraphPlotGraphics = plottingFunction[$Graph];
 
     If[FailureQ[$GraphPlotGraphics], Return[$Failed, Block]];
@@ -504,6 +511,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       vertexColorFunction, vertexColorRules, vertexAnnotations,
         edgeColorFunction,   edgeColorRules,   edgeAnnotations,
       regionColorRules,
+
+      vertexTooltips, edgeTooltips,
 
       viewOptions, graphLegend,
       additionalImagePadding, aspectRatioClipping,
@@ -736,10 +745,11 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     (* for label style, support: Opacity, as well as Tiny, Small, etc. Medium corresponds to ordinary size. *)
 
     vertexLabels //= removeSingleton;
-    If[vertexLabels =!= None,
+    If[vertexLabels =!= None || vertexTooltips =!= None,
       SetNone[vertexSize, $GraphMaxSafeVertexSize / 5];
       {vertexLabelItems, zorder} = generateLabelPrimitives[
-        vertexLabels, $VertexList, $VertexCoordinates, $VertexParts,
+        vertexLabels, vertexTooltips,
+        $VertexList, $VertexCoordinates, $VertexParts,
         vertexSize,
         {vertexLabelStyle, vertexLabelPosition, vertexLabelSpacing, vertexLabelBaseStyle},
         vertexAnnotations, True
@@ -752,10 +762,11 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ];
 
     edgeLabels //= removeSingleton;
-    If[edgeLabels =!= None,
+    If[edgeLabels =!= None || edgeTooltips =!= None,
       SetAutomatic[arrowheadSize, 0];
       {edgeLabelItems, zorder} = generateLabelPrimitives[
-        edgeLabels, $EdgeList, edgeCenters, $EdgeParts,
+        edgeLabels, edgeTooltips,
+        $EdgeList, edgeCenters, $EdgeParts,
         Max[arrowheadSize] * $GraphPlotSizeX,
         {edgeLabelStyle, edgeLabelPosition, edgeLabelSpacing, edgeLabelBaseStyle},
         edgeAnnotations, False
@@ -2344,7 +2355,7 @@ cachedRasterizeSize[e_] := cachedRasterizeSize[e] = Rasterize[e /.  Negated[z_] 
 
 PackageExport["LabelPosition"]
 
-generateLabelPrimitives[spec_, names_, coordinates_, parts_, size_, {labelStyle_, labelPosition_, labelSpacing_, labelBaseStyle_}, annotations_, isVertices_] := Scope[
+generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {labelStyle_, labelPosition_, labelSpacing_, labelBaseStyle_}, annotations_, isVertices_] := Scope[
   $annotationKeys = Keys @ annotations;
   $labelNames = names;
   coordinates = Part[coordinates, parts];
@@ -2364,8 +2375,23 @@ generateLabelPrimitives[spec_, names_, coordinates_, parts_, size_, {labelStyle_
   $magnifier = If[$labelSizeScale == 1, Identity, Magnify[#, $labelSizeScale]&];
   {payloadFunction, placerFunction} = processLabelSpec[spec];
   indices = If[parts === All, Range @ Length @ names, parts];
-  labelElements = MapThread[placerFunction[labelForm @ payloadFunction @ #2, #1, #2]&, {coordinates, indices}];
-  {Style[labelElements, labelStyle], $labelZOrder}
+  labelElements = tooltipElements = Nothing;
+  If[payloadFunction =!= None,
+    labelElements = MapThread[
+      placerFunction[labelForm @ payloadFunction @ #2, #1, #2]&,
+      {coordinates, indices}
+    ];
+    labelElements = Style[labelElements, labelStyle];
+  ];
+  If[tspec =!= None,
+    tooltipPayloadFunction = processTooltipSpec @ tspec;
+    tooltipElements = MapThread[
+      placeTooltipAt[labelForm @ tooltipPayloadFunction @ #2, #1, #2]&,
+      {coordinates, indices}
+    ];
+  ];
+  elements = removeSingleton @ {labelElements, tooltipElements};
+  {elements, $labelZOrder}
 ];
 
 toDirectiveOptScan[f_][{Automatic}] :=
@@ -2419,14 +2445,14 @@ setLabelStyleGlobals = Case[
 $keyP = _String | _Association | (_List ? (SameLengthQ[$labelNames]));
 
 processLabelSpec = Case[
-  None                          := None;
+  None                          := {None, None};
   Automatic | All               := %["Name"];
   Tooltip                       := %[Placed["Name", Tooltip]];
   p:$payloadP                   := {toPayloadFunction @ p, placeLabelAt};
   Tooltip[p:$payloadP]          := {toPayloadFunction @ p, placeTooltipAt};
   Placed[p:$payloadP, Tooltip]  := {toPayloadFunction @ p, placeTooltipAt};
 
-  other_ :=                     failPlot["badlabelspec", other];
+  other_                        := failPlot["badlabelspec", other];
   {$payloadP -> $keyP | Rule[$keyP, _]}
 ];
 
@@ -2597,6 +2623,19 @@ graphPlotSizeScalingFunction[size_] :=
     Floor[scalingPower[size] * $midSize/scalingPower[$midSize], 25],
     Lookup[$ImageWidthTable, {Tiny, Huge}]
   ];
+
+(**************************************************************************************************)
+
+processTooltipSpec = Case[
+  None                          := None;
+  Automatic | All               := %["Name"];
+  p:$payloadP                   := toPayloadFunction @ p;
+
+  other_ :=                     failPlot["badlabelspec", other],
+  {$payloadP -> $keyP | Rule[$keyP, _]}
+]
+
+ExtendedGraphPlot::badtooltipspec = "The tooltip specification `` was not one of the recognized forms."
 
 (**************************************************************************************************)
 

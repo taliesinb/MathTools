@@ -346,8 +346,8 @@ edgeListTaggedTables[edgeList_] := Scope[
 toSignLists[num_, indices_] := Scope[
   arr = Zeros[num];
   indices = indices /. i_Integer ? Negative :> Negated[Abs @ i];
-  Part[arr, Cases[indices, i_Integer :> i]] = 1;
-  Part[arr, Cases[indices, Negated[i_Integer] :> i]] = -1;
+  Cases[indices, i_Integer :> Part[arr, i]++];
+  Cases[indices, Negated[i_Integer] :> Part[arr, Abs @ i]--];
   arr
 ];
 
@@ -355,7 +355,7 @@ PackageScope["toSimpleQuiver"]
 
 toSimpleQuiver = Case[
   g_Graph                  := g;
-  n_Integer ? Negative     := CircleQuiver[Abs @ n];
+  n_Integer ? Negative     := CycleQuiver[Abs @ n];
   n_Integer                := LineQuiver[n];
   {m_Integer, n_Integer}   := SquareQuiver[m, n];
   card_String -> n_Integer := LineQuiver[n, card];
@@ -370,15 +370,29 @@ makeProductEdges[vertex_, signs_] := Scope[
   ]
 ]
 
-makeEdgeItems[1, v_, {out_, _}] := Lookup[out, Key @ v, {}]
+(* out and in here are assocs from vertex to {outVertex, card} *)
+makeEdgeItems[1, v_, {out_, _}] := Lookup[out, Key @ v, {}];
 makeEdgeItems[-1, v_, {_, in_}] := Lookup[in, Key @ v, {}];
 makeEdgeItems[0, v_, _] := {{v, 1}};
+
+makeEdgeItems[2, v_, {out_, _}] := Catenate[
+  Map[toSeqCard[#2], Lookup[out, Key @ #1, {}]]& @@@
+    Lookup[out, Key @ v, {}]
+];
+toSeqCard[c1_][{v2_, c2_}] := {v2, CardinalSequence[c1, c2]};
+
 
 toProductCoordFunc = Case[
   funcs_List   := ApplyThrough[toSingleCoordFunc /@ funcs];
   "DimensionReduce" := DimensionReduce[coordinateTuples, 2];
+  "ABC"        := abcProductCoords;
+  "Mean"       := meanProductCoords;
+  n_Integer    := Function[Part[#2, n]];
   func_        := func
 ];
+
+abcProductCoords[_, coords_] := DotABC @ Part[coords, 1;;3, 1];
+meanProductCoords[_, coorsd_] := Mean @ coords;
 
 toSingleCoordFunc = Case[
   i_Integer -> j_Integer := Part[#2, i, j]&;

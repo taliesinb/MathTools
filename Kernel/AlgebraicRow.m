@@ -106,7 +106,7 @@ $mSymbol := Switch[$mForm,
 ];
 
 $symbolicHeadToSymbol = {
-  CenterDot | PathCompose -> "\[CenterDot]",
+  CenterDot | PathCompose -> $PathComposeSymbol,
   PathTranslate | UpArrow -> "\[UpArrow]",
   PathReverseTranslate | DownArrow -> "\[DownArrow]",
   TranslateAdd | CirclePlus -> "\[CircleTimes]",

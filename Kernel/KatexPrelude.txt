@@ -82,7 +82,7 @@
 \gdef\pathHomomorphism#1{#1}
 \gdef\groupoidFunction#1{#1}
 \gdef\groupFunction#1{#1}
-\gdef\gl#1{GL({#1},\mathbb{R})}
+\gdef\gl#1#2{GL({#1},#2)}
 \gdef\automorphisms{\operatorname{Aut}}
 
 \gdef\transportMap#1{\transportMapSymbol_{#1}}
@@ -154,8 +154,19 @@
 \gdef\card#1{\mathtt{#1}}
 \gdef\path#1{#1}
 \gdef\quiver#1{#1}
+
+\gdef\bindCards#1#2{#1[#2]}
+\gdef\lineQuiver#1{\textrm{Li}_{#1}}
+\gdef\cycleQuiver#1{\textrm{Cyc}_{#1}}
+\gdef\squareQuiver#1{\textrm{Sq}_{#1}}
+\gdef\triangularQuiver#1{\textrm{Tri}_{#1}}
+\gdef\hexagonalQuiver#1{\textrm{Hex}_{#1}}
+
 \gdef\groupoid#1{#1}
 \gdef\group#1{#1}
+\gdef\field#1{#1}
+\gdef\ring#1{#1}
+\gdef\semiring#1{#1}
 \gdef\sym#1{#1}
 \gdef\matrix#1{#1}
 \gdef\wordGroup#1{\Omega_{#1}}
@@ -201,7 +212,8 @@
 \gdef\groupElement#1{#1}
 \gdef\groupoidElement#1{#1}
 
-\gdef\setConstructor#1#2{\left\{\,{#1}\;\middle|\;{#2}\,\right\}}
+\gdef\setConstructor#1#2{\left\{\,{#1}\quad\middle|\mathstrut\quad{#2}\,\right\}}
+\gdef\constructor#1#2{\left.{#1}\quad\middle|\mathstrut\quad{#2}\right.}
 \gdef\elemOf#1#2{{ {#1} \in {#2} }}
 \gdef\edgeOf#1#2{{ {#1} {\in}_E {#2} }}
 \gdef\vertOf#1#2{{ {#1} {\in}_V {#2} }}
@@ -236,6 +248,8 @@
 \gdef\tuple#1{( {#1} )}
 \gdef\concat#1{ {#1} }
 \gdef\paren#1{\left( {#1} \right)}
+\gdef\ceil#1{\lceil{#1}\rceil}
+\gdef\floor#1{\lfloor{#1}\rfloor}
 
 \gdef\quotient#1#2{{#1} / {#2}}
 
@@ -262,7 +276,7 @@
 \gdef\graphProdSymbol{\times}
 \gdef\inlineProdSymbol{\mid}
 
-\gdef\cardSeqSymbol{:}
+\gdef\cardSeqSymbol{{:}}
 \gdef\cardProdSymbol{\inlineProdSymbol}
 \gdef\vertexProdSymbol{\!\inlineProdSymbol\!}
 \gdef\edgeProdSymbol{\inlineProdSymbol}

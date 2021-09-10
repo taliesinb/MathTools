@@ -425,21 +425,111 @@ truncatedEdge[DirectedEdge[a_, b_, c_]] :=
 
 (**************************************************************************************************)
 
-PackageExport["CircleQuiver"]
+$BigFiveThemeRules = {
+  AspectRatioClipping -> False,
+  ArrowheadSize -> 12,
+  VertexSize -> 5,
+  ImageSize -> ("ShortestEdge" -> 30)
+};
 
-Options[CircleQuiver] = Options[Graph];
+$GraphThemeData["BigFive"] := $BigFiveThemeRules;
 
-CircleQuiver[n_Integer, opts:OptionsPattern[]] :=
-  CircleQuiver[n, "x", opts];
+(**************************************************************************************************)
 
-CircleQuiver[n_Integer, card_String, opts:OptionsPattern[]] := Scope[
+PackageExport["CycleQuiver"]
+
+Options[CycleQuiver] = Options[Graph];
+
+CycleQuiver[n_Integer, opts:OptionsPattern[]] :=
+  CycleQuiver[n, "x", opts];
+
+CycleQuiver[n_Integer, card_String, opts:OptionsPattern[]] := Scope[
   vertices = Range[1, n];
   edges = DirectedEdge[#1, #2, card]& @@@ Partition[vertices, 2, 1, 1];
   ExtendedGraph[
     vertices, edges,
-    opts, ExtendedGraphLayout -> "Linear"
+    opts, ExtendedGraphLayout -> "Linear",
+    GraphTheme -> "BigFive",
+    ImageSize -> ("ShortestEdge" -> 35)
   ]
 ]
+
+(**************************************************************************************************)
+
+PackageExport["TriangularQuiver"]
+
+Options[TriangularQuiver] = Options[Graph];
+
+TriangularQuiver[n_Integer, opts:OptionsPattern[]] := Scope[
+  vertices = Catenate @ Array[VertexProduct, {n, n}];
+  edges = Flatten @ {
+    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i + 1, j], "x"], {i, n-1}, {j, n}],
+    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i, j + 1], "y"], {i, n}, {j, n-1}],
+    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i + 1, j + 1], "z"], {i, n-1}, {j, n-1}]
+  };
+  vertices //= Select[upperTriProdQ];
+  edges //= Select[upperTriProdQ];
+  ExtendedGraph[
+    vertices, edges,
+    opts,
+    ImageSize -> ("ShortestEdge" -> 33),
+    VertexCoordinates -> N[({#1 - #2/2, #2 * Sqrt[3]/2}& @@@ vertices)],
+    GraphTheme -> "BigFive",
+    Cardinals -> {"x", "y", "z"}
+  ]
+]
+
+upperTriProdQ[VertexProduct[a_, b_]] := a <= b;
+upperTriProdQ[DirectedEdge[t_, h_, _]] := upperTriProdQ[t] && upperTriProdQ[h];
+
+(**************************************************************************************************)
+
+PackageExport["HexagonalQuiver"]
+
+Options[HexagonalQuiver] = Options[Graph];
+
+HexagonalQuiver[n_Integer, opts:OptionsPattern[]] := Scope[
+  n2 = 2 * n;
+  z = (3 * n2 + 1)/2;
+  cards = {"x", "y", "z"};
+  edges = makeHexSkeleton[{{-1,1},{-1,1},{-1,1}}*n2, z, cards];
+  vertices = AllUniqueVertices @ edges;
+  ExtendedGraph[
+    vertices, edges, opts,
+    VertexCoordinates -> Map[DotABC, List @@@ vertices],
+    Cardinals -> cards,
+    ImageSize -> ("ShortestEdge" -> 25),
+    GraphTheme -> "BigFive"
+  ]
+];
+
+$hexNormVecs = {{3, 2, 1}, {1, 3, 2}, {2, 1, 3}};
+
+hexNorm[v_List] := Max[Abs @ Dot[$hexNormVecs, v]];
+
+makeHexSkeleton[{{a1_, a2_}, {b1_, b2_}, {c1_, c2_}}, norm_, {x_, y_, z_}] := Scope[
+  ab = Tuples[{Range[a1, a2], Range[b1, b2]}];
+  abc = Append[#, -Total[#]]& /@ ab;
+  abc //= Select[c1 <= Last[#] <= c2&];
+  vertices = VertexProduct @@@ abc;
+  edges = Flatten @ {
+    hexEdgeList[x, abc, {2, 1, 0}, {1, -1, 0}, 1],
+    hexEdgeList[y, abc, {0, 2, 1}, {0, 1, -1}, 1],
+    hexEdgeList[z, abc, {1, 0, 2}, {-1, 0, 1}, 1]
+    };
+  abc //= Select[hexNorm[#] <= norm&];
+  vertices = VertexProduct @@@ abc;
+  isVertex = ConstantAssociation[vertices, True];
+  Select[edges, isVertex[Part[#, 1]] && isVertex[Part[#, 2]]&]
+];
+
+hexEdgeList[card_, vertexCoords_, normal_, offset_, mod_] := Map[
+  vertex |-> If[Mod[Dot[normal, vertex], 3] == mod,
+    DirectedEdge[VertexProduct @@ vertex, VertexProduct @@ Plus[vertex, offset], card],
+    Nothing
+  ],
+  vertexCoords
+];
 
 (**************************************************************************************************)
 
@@ -447,7 +537,10 @@ PackageExport["SquareQuiver"]
 
 Options[SquareQuiver] = Options[Graph];
 
-SquareQuiver[m_Integer, n_Integer, opts:OptionsPattern[]] := Scope[
+SquareQuiver[m_Integer, opts:OptionsPattern[]] :=
+  SquareQuiver[{m, m}, opts];
+
+SquareQuiver[{m_Integer, n_Integer}, opts:OptionsPattern[]] := Scope[
   vertices = Catenate @ Array[VertexProduct, {m, n}];
   edges = Flatten @ {
     Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i + 1, j], "x"], {i, m-1}, {j, n}],
@@ -457,8 +550,8 @@ SquareQuiver[m_Integer, n_Integer, opts:OptionsPattern[]] := Scope[
     vertices, edges,
     opts,
     VertexCoordinates -> (List @@@ vertices),
-    AspectRatioClipping -> False,
-    Cardinals -> {"x", "y"}
+    Cardinals -> {"x", "y"},
+    GraphTheme -> "BigFive"
   ]
 ]
 
@@ -476,7 +569,8 @@ LineQuiver[n_Integer, card_String, opts:OptionsPattern[]] := Scope[
   edges = MapStaggered[DirectedEdge[#1, #2, card]&, vertices];
   ExtendedGraph[
     vertices, edges,
-    opts, ExtendedGraphLayout -> "Linear",
-    AspectRatioClipping -> False
+    opts,
+    GraphTheme -> "BigFive",
+    ExtendedGraphLayout -> "Linear"
   ]
 ]

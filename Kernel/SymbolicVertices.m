@@ -32,6 +32,21 @@ declareBoxFormatting[
 
 $TemplateKatexFunction["CardinalProductForm"] = riffled[" \\cardProdSymbol "];
 
+
+(**************************************************************************************************)
+
+PackageExport["CardinalSequence"]
+
+SetUsage @ "
+CardinalSequence[a$, b$] represents a sequence of cardinals.
+"
+
+declareBoxFormatting[
+  CardinalSequence[a_, b_] :> TemplateBox[{MakeBoxes @ a, MakeBoxes @ b}, "CardinalSequenceForm"]
+];
+
+$TemplateKatexFunction["CardinalSequenceForm"] = riffled[" \\cardSeqSymbol "];
+
 (**************************************************************************************************)
 
 PackageExport["VertexProduct"]

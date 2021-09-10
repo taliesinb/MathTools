@@ -360,6 +360,8 @@ $extendedGraphOptionsRules = {
   VertexCoordinateRules -> None,
   VertexCoordinateFunction -> None,
   VertexColorRules -> None,
+  VertexTooltips -> None,
+  EdgeTooltips -> None,
   EdgeColorRules -> None,
   RegionColorRules -> None,
   PrologFunction -> None,
@@ -1471,6 +1473,10 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
   If[!GraphQ[igraph], ReturnFailed[]];
 
   $Graph = graph;
+
+  If[EdgeCount[$Graph] == VertexCount[$Graph] == 0,
+    Return[{{}, {}}];
+  ];
 
   UnpackAnonymousThemedOptions[graph, Automatic,
     graphLayout, vertexCoordinates, plotRange
