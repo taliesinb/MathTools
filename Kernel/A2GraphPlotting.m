@@ -270,6 +270,7 @@ GraphPlotScope[graph_, body_] := Scope[
 
   If[!GraphQ[graph], ReturnFailed[]];
 
+  GPPrint["GraphPlotScope for ", graphSkeleton @ graph];
   GraphScope[graph,
 
     {$VertexCoordinates, $EdgeCoordinateLists} = ExtractGraphPrimitiveCoordinates @ graph;
@@ -341,15 +342,17 @@ ExtendedGraphPlot[graph_Graph] := Block[
 
   If[!GraphQ[graph], Return[$Failed, Block]];
 
+  GPPrint["ExtendedGraphPlot for ", graphSkeleton @ graph];
+
   (* this is a workaround for a mysterious lack of re-entrancy *)
-  Block[{vlist = VertexList @ graph, gindices},
+  (* Block[{vlist = VertexList @ graph, gindices},
     If[MemberQ[vlist, _Graph],
       gindices = SelectIndices[vlist, GraphQ];
       glist = Part[vlist, gindices];
       Return @ ExtendedGraphPlot @ VertexReplace[graph, RuleThread[glist,
         ExtendedGraphPlot[#, Frame -> True]& /@ glist]];
     ]
-  ];
+  ]; *)
 
   {plottingFunction, graphLegend, graphRegionHighlight, vertexColorFunction} =
     LookupAnnotation[graph, {GraphPlottingFunction, GraphLegend, GraphRegionHighlight, VertexColorFunction}, None];
@@ -472,6 +475,14 @@ GraphAnnotationData[annotation_] :=
 
 (**************************************************************************************************)
 
+PackageExport["$GraphPlotVerboseMode"]
+
+$GraphPlotVerboseMode = False;
+
+SetHoldAllComplete[GPPrint];
+graphSkeleton[g_Graph] := StringJoin["Graph[«", IntegerString @ VertexCount @ g, "», «", IntegerString @ EdgeCount @ g, "»]"];
+GPPrint[args___] /; $GraphPlotVerboseMode := Print[args];
+
 PackageExport["ExtendedGraphPlottingFunction"]
 
 ExtendedGraphPlot::badcolors = "CardinalColors should be an association from cardinals to colors.";
@@ -488,6 +499,8 @@ failPlot[msgName_String, args___] := (
 $numOrNumPairP = _ ? NumericQ | {_ ? NumericQ, _ ? NumericQ};
 
 ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
+
+  GPPrint["ExtendedGraphPlottingFunction for ", graphSkeleton @ graph];
 
   (* process options *)
   FunctionSection[
@@ -526,6 +539,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   ];
 
   (* initial processing of global options *)
+  GPPrint["Options processing"];
   FunctionSection[
     cardinalColors = LookupCardinalColors[graph];
     If[!AssociationQ[cardinalColors], failPlot["badcolors"]];
@@ -610,6 +624,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   ];
 
   (* create graphics for vertices *)
+  GPPrint["Vertex graphics"];
   FunctionSection[
 
     $vertexEdgeThickness = 1;
@@ -666,6 +681,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   Label[skipVertices];
 
   (* create graphics for edges *)
+  GPPrint["Edge graphics"];
   FunctionSection[
     If[edgeStyle === None,
       edgeGraphics = Nothing;
@@ -739,6 +755,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   Label[skipEdges];
 
   (* create labels for vertices and edges *)
+  GPPrint["Label graphics"];
   FunctionSection[
     labelGraphics = {};
 
@@ -784,6 +801,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   ];
 
   (* create the final graphics *)
+  GPPrint["Final assembly"];
   FunctionSection[
     If[labelGraphics =!= Nothing, extendPadding @ estimateLabelPadding[labelGraphics, vertexLabelStyle]];
 
@@ -1892,6 +1910,19 @@ processVertexShapeFunction[{spec_, EdgeThickness -> e_}] := (
   processVertexShapeFunction @ spec
 );
 
+(* this awkward thing exists because VertexShapeFunction seems to acquire multiple values
+when overriden *)
+processVertexShapeFunction[{__, last_}] :=
+  processVertexShapeFunction[last];
+
+ExtendedGraphPlot::badvshapefunckey = "`` is not a valid verte."
+
+processVertexShapeFunction[key_String -> func_] := (
+  annos = getAnnoValue[vertexAnnotations, key];
+  processVertexShapeFunction @ Association @
+    MapThread[#1 -> func[#2]&, {$VertexList, annos}]
+)
+
 processVertexShapeFunction[spec_] := Scope[
   setbackDistance = 0; vertexPadding = 0;
   vertexBaseStyle = None;
@@ -1927,6 +1958,7 @@ processVertexShapeFunction[spec_] := Scope[
       vertexBaseStyle = EdgeForm @ AbsoluteThickness[1];
     ,
     _Association,
+      additionalImagePadding += 2;
       vertexDrawFunc = drawCustomShape[spec, $vertexSize];
       If[$inheritedVertexSize,
         vertexSizeImage ^= Max[Map[cachedRasterizeSize, spec]] / 2];
@@ -2035,11 +2067,25 @@ drawGraphicsWithColor[None, pos_, color_, size_] :=
 drawGraphicsWithColor[other_, pos_, color_, size_] :=
   Text[Style[other, color, FontSize -> Max[size * effectiveImageWidth * 0.8, 8]], pos, {0, 0}, Background -> White];
 
-drawGraphicsWithColor[g_Graphics | g_Graph, pos_, color_, size_] :=
+drawGraphicsWithColor[g_Graph, pos_, color_, size_] :=
+  drawGraphicsWithColor[ExtendedGraphPlot @ g, pos, color, size];
+
+drawGraphicsWithColor[g_Graphics, pos_, color_, size_] :=
   Inset[
     ReplaceOptions[g, FrameStyle -> color],
-    pos, {Center, Baseline}, If[$inheritedVertexSize, Automatic, {size, size}]
+    pos, {Center, Baseline}, If[$inheritedVertexSize, Automatic,
+      toAspectSize[LookupImageSize @ g, StandardizePadding @ LookupOption[g, ImagePadding], size]
+    ]
   ];
+
+toAspectSize[w_, _, max_] :=
+  toAspectSize[w, {{0, 0}, {0, 0}}, max];
+
+toAspectSize[{w_, Automatic},  {{l_, r_}, {b_, t_}}, max_] :=
+  w * (max / (w - l - r));
+
+toAspectSize[{w_, h_}, {{l_, r_}, {b_, t_}}, max_] :=
+  {w, h} * (max / Max[w - l - r, h - b - t])
 
 (**************************************************************************************************)
 
@@ -2351,8 +2397,13 @@ textRasterSize[_] := {0, 0};
 styleAsText[a_, l___] := Style[a, "Graphics", l];
 styleAsText[a_, l___, BaseStyle -> s_, r___] := Style[a, "Graphics", Sequence @@ ToList @ s, l, r];
 
+PackageExport["ClearRasterizationCache"]
+
+ClearRasterizationCache[] := ($rasterizationCache = <||>;);
+
+$rasterizationCache = <||>;
 cachedRasterizeSize[Null] := {0, 0};
-cachedRasterizeSize[e_] := cachedRasterizeSize[e] = Rasterize[e /.  Negated[z_] :> z, "RasterSize"];
+cachedRasterizeSize[e_] := CacheTo[$rasterizationCache, e, Rasterize[e /.  Negated[z_] :> z, "RasterSize"]];
 
 PackageExport["LabelPosition"]
 

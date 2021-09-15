@@ -103,16 +103,12 @@ EnumerateQuivers[graph_, cardCount_, wrap_:True, noComp_:False] := Scope[
 ];
 
 $enumerateQuiversCache = <||>;
-$cacheDir = FileNameJoin[{ParentDirectory @ QuiverGeometryPackageLoader`$Directory, "Data"}];
-
-toCacheFileName[name_, edges_, count_] :=
-  FileNameJoin[{$cacheDir, name, If[edges === None, "", Base36Hash[edges] <> "_"] <> IntegerString[count] <> ".mx"}];
 
 quiverCacheLoad[name_, edges_, count_] := Module[
   {hash, fileName, memCache, diskCache, key = {name, edges, count}},
   memCache = $enumerateQuiversCache[key];
   If[!MissingQ[memCache], Return @ memCache];
-  fileName = toCacheFileName[name, edges, count];
+  fileName = CacheFilePath[name, edges, count];
   If[FileExistsQ[fileName],
     diskCache = Import @ fileName;
     $enumerateQuiversCache[key] = diskCache;
@@ -122,15 +118,8 @@ quiverCacheLoad[name_, edges_, count_] := Module[
   ]
 ];
 
-quiverCacheStore[name_, edges_, count_, result_] := Module[
-  {fileName = toCacheFileName[name, edges, count], dir},
-  If[!FileExistsQ[fileName],
-    dir = DirectoryName @ fileName;
-    If[!FileExistsQ[dir], EnsureDirectory @ dir];
-    Export[fileName, result];
-  ];
-  $enumerateQuiversCache[{name, edges, count}] = result
-];
+quiverCacheStore[name_, edges_, count_, result_] :=
+  $enumerateQuiversCache[{name, edges, count}] = EnsureExport[CacheFilePath[name, edges, count], result];
 
 PackageExport["$EnumerationImplementation"]
 

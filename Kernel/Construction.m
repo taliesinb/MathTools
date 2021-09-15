@@ -267,6 +267,15 @@ GraphVertexQuotient[graph_, equivFn_, userOpts___Rule] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["QuiverContractionList"]
+
+QuiverContractionList[graph_, opts_List] := Scope[
+  orderGraph = QuiverContractionOrder[graph, opts];
+  LookupVertexAnnotations[orderGraph, "GluedGraph"]
+]
+
+(**************************************************************************************************)
+
 PackageExport["QuiverContractionOrder"]
 
 Options[QuiverContractionOrder] = JoinOptions[
@@ -277,33 +286,58 @@ Options[QuiverContractionOrder] = JoinOptions[
 QuiverContractionOrder[quiver_, gluedGraphOptions_List, userOpts:OptionsPattern[]] := Scope[
 
   vertexList = VertexList @ quiver;
-  vertexCount = Length @ vertexList;
-  partitionGraph = RangePartitionGraph @ vertexCount;
-  partitionGraph //= TransitiveClosureGraph;
-  partitions = VertexList @ partitionGraph;
   outTable = TagVertexOutTable @ quiver;
-  validPartitions = Select[partitions, validQuiverPartitionQ[outTable, #]&];
-  contractionGraph = IndexGraph @ TransitiveReductionGraph @ Subgraph[partitionGraph, validPartitions];
-  validPartitions = ExtractIndices[vertexList, validPartitions];
+  vertexCount = Length @ vertexList;
+
+  {contractionGraph, validPartitions} =
+    CacheTo[$validPartitionCache, {vertexList, outTable}, computeValidPartitions[{vertexList, outTable}]];
+
+  plotRangePadding = Lookup[gluedGraphOptions, PlotRangePadding, Inherited];
+  plotRange = Lookup[gluedGraphOptions, PlotRange, GraphicsPlotRange[quiver, PlotRangePadding -> plotRangePadding]];
+  PrependTo[gluedGraphOptions, PlotRange -> plotRange];
 
   UnpackOptions[combineMultiedges];
   innerSize = LookupOption[gluedGraphOptions, ImageSize, 50];
   gluedGraphOptions = Sequence @@ gluedGraphOptions;
 
+  vertexAnnotations = <|"Partitions" -> validPartitions|>;
   postFn = If[combineMultiedges, CombineMultiedges, Identity];
   baseGraph = GluedGraph[quiver, gluedGraphOptions];
+  
   replacements = RuleThread[Range @ vertexCount, vertexList];
-  gluedGraphs = postFn[GlueVertices[baseGraph, #]]& /@ validPartitions;
+  vertexAnnotations["GluedGraph"] = postFn[GlueVertices[baseGraph, #]]& /@ validPartitions;
+
+  vertexCoordsAssoc = LookupVertexCoordinates @ quiver;
+  vertexCoords = Values @ vertexCoordsAssoc;
+  vertexCoordsBounds = CoordinateBounds[vertexCoords, Scaled[0.1]];
+  vertexAnnotations["PartitionGraphics"] = makePartitionGraphics /@ validPartitions;
 
   ExtendedGraph[
     contractionGraph,
     FilterOptions @ userOpts,
     GraphLayout -> "CenteredTree",
-    VertexAnnotations -> <|"GluedGraph" -> gluedGraphs, "Partitions" -> validPartitions|>,
-    ArrowheadShape -> None, VertexSize -> innerSize,
-    VertexLabels -> Tooltip["Partitions"],
+    VertexAnnotations -> vertexAnnotations,
+    ArrowheadShape -> None, VertexSize -> Max[innerSize],
+    VertexTooltips -> "Partitions",
     VertexShapeFunction -> "GluedGraph"
   ]
+];
+
+$validPartitionCache = <||>;
+computeValidPartitions[{vertexList_, outTable_}] := Scope[
+
+  path = CacheFilePath["QuiverContractions", vertexList, outTable];
+  If[FileExistsQ[path], Return @ Import @ path];
+
+  vertexCount = Length @ vertexList;
+  partitionGraph = RangePartitionGraph @ vertexCount;
+  partitionGraph //= TransitiveClosureGraph;
+  partitions = VertexList @ partitionGraph;
+  validPartitions = Select[partitions, validQuiverPartitionQ[outTable, #]&];
+  contractionGraph = IndexGraph @ TransitiveReductionGraph @ Subgraph[partitionGraph, validPartitions];
+  validPartitions = ExtractIndices[vertexList, validPartitions];
+
+  EnsureExport[path, {contractionGraph, validPartitions}]
 ];
 
 validQuiverPartitionQ[outTable_, partition_] := Scope[
@@ -318,6 +352,20 @@ validQuiverPartitionQ[outTable_, partition_] := Scope[
 
 checkForConflicts[list_] :=
   If[CountDistinct[DeleteDuplicates @ DeleteNone @ list] > 1, Return[False, Block]];
+
+makePartitionGraphics[partitionList_] := Scope[
+  partitionPoints = Lookup[vertexCoordsAssoc, #]& /@ partitionList;
+  primitives = {
+    {GrayLevel[0, 0.2], CapForm["Round"], AbsoluteThickness[4], Line @ Catenate[makeClique /@ partitionPoints]},
+    AbsolutePointSize[4], Point @ vertexCoords
+  };
+  Graphics[primitives,
+    PlotRange -> vertexCoordsBounds, FrameStyle -> LightGray, FrameTicks -> None,
+    ImageSize -> 35, Frame -> True, Background -> White, PlotRangePadding -> plotRangePadding
+  ]
+];
+
+makeClique[list_] := Subsets[list, {2}];
 
 (**************************************************************************************************)
 

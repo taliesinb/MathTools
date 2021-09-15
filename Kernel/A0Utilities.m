@@ -1646,6 +1646,38 @@ ImportUTF8[path_] :=
 
 (**************************************************************************************************)
 
+PackageScope["$CacheDirectory"]
+
+$CacheDirectory = FileNameJoin[{ParentDirectory @ QuiverGeometryPackageLoader`$Directory, "Data"}];
+
+(**************************************************************************************************)
+
+PackageScope["CacheFilePath"]
+
+CacheFilePath[name_, args___] :=
+  FileNameJoin[{$CacheDirectory, name, StringJoin @ Append[Riffle[toCacheArgString /@ {args}, "_"], ".mx"]}];
+
+toCacheArgString = Case[
+  data:(_List | _Association | _SparseArray) := Base36Hash @ data;
+  graph_Graph := Base36Hash @ VertexEdgeList @ graph;
+  other_ := TextString @ other;
+];
+
+(**************************************************************************************************)
+
+PackageScope["EnsureExport"]
+
+EnsureExport[filepath_, expr_] := Scope[
+  If[!FileExistsQ[filepath],
+    dir = DirectoryName @ filepath;
+    If[!FileExistsQ[dir], EnsureDirectory @ dir];
+    Export[filepath, expr];
+  ];
+  expr
+];
+
+(**************************************************************************************************)
+
 PackageExport["CopyUnicodeToClipboard"]
 
 CopyUnicodeToClipboard[text_] := Scope[

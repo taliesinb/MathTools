@@ -243,7 +243,7 @@ PackageExport["NormalizePlotRange"]
 
 SetUsage @ "
 NormalizePlotRange[graphics$] updates the value of %PlotRange to span all elements in graphics$.
-* graphics$ can be a %Graphics[$$] or %Graphics3D[$$] expression.
+* graphics$ can be a %Graphics[$$], %Graphics3D[$$], or %Graph[$$] expression.
 * The value of %PlotRangePadding is taken into account, and %PlotRangePadding is set to zero in the result.
 * Providing the option %PlotRangePadding will override the %PlotRangePadding present in graphics$.
 "
@@ -290,14 +290,23 @@ GraphicsPlotRange[expr_, OptionsPattern[]] := Scope[
 
 iGraphicsPlotRange = Case[
   g:(_Graphics | _Graphics3D) := Scope[
-    plotRange = PlotRange @ expandGC @ g;
-    If[plotRangePadding === None, Return @ plotRange];
-    PlotRangePad[plotRange, Replace[plotRangePadding, Inherited :> LookupOption[g, PlotRangePadding]]]
+    padRange[g, PlotRange @ expandGC @ g]
+  ];
+  g_Graph := padRange[g,
+    Replace[
+      LookupOption[g, PlotRange],
+      Automatic | None | All :> (
+        CoordinateBounds @ Values @ LookupVertexCoordinates @ g
+      )
+    ]
   ];
   g:(_GraphicsBox | _Graphics3DBox) := %[g /. $graphicsBoxReplacements];
   (Labeled|Legended)[e_, ___] := %[g];
   elems_ := %[Graphics @ elems];
 ];
+
+padRange[g_, plotRange_] :=
+  PlotRangePad[plotRange, Replace[plotRangePadding, Inherited :> LookupOption[g, PlotRangePadding]]];
 
 expandMultiArrowInGC[g_] := g /.
   Arrow[segments:{{__Integer}..}, opts___] :> RuleCondition[Map[Arrow[#, opts]&, segments]];
@@ -402,7 +411,11 @@ LookupImageSize[object$] returns the setting of %ImageSize that a given object w
 DeclareArgumentCount[LookupImageSize, 1];
 
 LookupImageSize[obj_] := Scope[
-  resolveRawImageSize @ LookupOption[obj, ImageSize]
+  {imageSize, aspectRatio} = LookupOption[obj, {ImageSize, AspectRatio}];
+  imageSize = resolveRawImageSize @ imageSize;
+  If[NumberQ[aspectRatio] && MatchQ[Part[imageSize, 2], Automatic],
+    Part[imageSize, 2] = Part[imageSize, 1] * aspectRatio];
+  imageSize
 ];
 
 resolveRawImageSize = Case[

@@ -1566,7 +1566,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
 
   If[graphLayout === {}, graphLayout = Automatic];
   graphLayout = Prepend[extraGraphOptions, "VertexLayout" -> graphLayout];
-
+  
   Which[
     vertexCoordinateFunction =!= None,
       initialVertexCoordinates = Map[vertexCoordinateFunction, vertexList];
@@ -1847,6 +1847,7 @@ applyCoordinateTransform[{"PolarProjection", h_}] := Scope[
 
 $namedTransforms = <|
   "Rotate0" -> Identity,
+  "Rotate45" -> RotationTransform[45 * Degree],
   "Rotate60" -> RotationTransform[60 * Degree],
   "Rotate120" -> RotationTransform[120 * Degree],
   "Rotate240" -> RotationTransform[240 * Degree],
@@ -1986,13 +1987,14 @@ The following variables are blocked during the execution of GraphScope:
 GraphScope[graph_, body_] := Block[
   {
     $Graph = graph,
+    $VertexCount = VertexCount @ graph,
+    $EdgeCount = EdgeCount @ graph,
+
     $GraphOrigin := $GraphOrigin = LookupExtendedOption[$Graph, GraphOrigin],
     $VertexList := $VertexList = VertexList @ $Graph,
     $EdgeList := $EdgeList = EdgeList @ $Graph,
     $EdgeTags := $EdgeTags = Replace[EdgeTags @ $Graph, {} -> None],
     $VertexIndex := $VertexIndex = VertexIndexAssociation @ $Graph,
-    $VertexCount = VertexCount @ $Graph,
-    $EdgeCount = EdgeCount @ $Graph,
 
     $IndexGraph := $IndexGraph = ToIndexGraph @ $Graph,
     $IndexGraphEdgeList := $IndexGraphEdgeList = EdgeList @ $IndexGraph,
