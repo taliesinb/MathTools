@@ -193,7 +193,7 @@ independentEdgeProduct[head_[at_, ah_], head_[bt_, bh_]] := {
 
 Options[generalBinaryQuiverProduct] = Options[DependentQuiverProduct];
 
-generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, OptionsPattern[]] := Scope[
+generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[useCardinalSet, flattenProducts];
   opts = JoinOptions[ExtractExtendedGraphOptions /@ {a, b}, opts];
   vertexLists = VertexList /@ {a, b};
@@ -222,8 +222,7 @@ generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, OptionsPattern[]] := S
     VertexCoordinates -> Map[productVertexCoords, productVertices],
     VertexColorFunction -> vertexColorFunction,
     ImageSize -> size,
-    Sequence @@ opts,
-    ArrowheadPosition -> 0.8
+    Sequence @@ opts
   ]
 ];
 
@@ -357,7 +356,7 @@ toSimpleQuiver = Case[
   g_Graph                  := g;
   n_Integer ? Negative     := CycleQuiver[Abs @ n];
   n_Integer                := LineQuiver[n];
-  {m_Integer, n_Integer}   := SquareQuiver[m, n];
+  {m_Integer, n_Integer}   := SquareQuiver[{m, n}];
   card_String -> n_Integer := LineQuiver[n, card];
   other_                   := $Failed;
 ];

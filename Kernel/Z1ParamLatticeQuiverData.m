@@ -492,7 +492,7 @@ tetrahedronFactory[assoc_, userOpts_] := Scope[
     Cardinals -> cardinals,
     toOptsSeq @ userOpts,
     VertexCoordinates -> If[layoutDim === 2, $tetraCoords2D, $tetraCoords3D],
-    GraphLayout -> {"MultiEdgeDistance" -> 0.1},
+    MultiEdgeDistance -> 0.1,
     ArrowheadShape -> If[layoutDim === 2, "Line", "Cone"],
     ArrowheadSize -> Medium
   ]

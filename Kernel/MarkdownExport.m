@@ -622,6 +622,8 @@ iTextCellToMD = Case[
     % @ text;
   StyleBox[str_String /; StringMatchQ[str, Whitespace], ___] :=
     " ";
+  ButtonBox[title_String, BaseStyle -> "Hyperlink", ButtonData -> {URL[url_String], _}, ___] :=
+    StringJoin["[", % @ title, "](", url, ")"];
   StyleBox[boxes_, opts___] := Scope[
     {weight, slant, color} = Lookup[{opts}, {FontWeight, FontSlant, FontColor}, None];
     styledMD[% @ boxes, weight === "Bold", slant === "Italic"]

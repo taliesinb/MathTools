@@ -1354,6 +1354,7 @@ drawArrowheadEdges[cs:CardinalSet[cardinals_], indices_] := Scope[
   createEdgePrimitives[indices, multiArrow, arrowheads, cs]
 ];
 
+makeMultiarrowheadPositions[num_, Around[mn_, sd_]] := mn + sd * Standardize[Range @ num];
 makeMultiarrowheadPositions[1, pos_] := {pos};
 makeMultiarrowheadPositions[num_, _] := 0.5 + 0.2 * Standardize[Range @ num];
 

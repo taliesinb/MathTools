@@ -100,7 +100,7 @@ QuiverRepresentationPlot[qrep_, opts:OptionsPattern[]] := Scope[
   quiver = qrep["Quiver"];
   quiverPlot = Quiver[quiver,
     PlotLabel -> plotLabel, FilterOptions @ opts, ImageSize -> {60, 80}, GraphLegend -> None,
-    VertexSize -> Large, ArrowheadShape -> {"Line", EdgeThickness -> 2.5}, GraphLayout -> {"MultiEdgeDistance" -> 0.5}
+    VertexSize -> Large, ArrowheadShape -> {"Line", EdgeThickness -> 2.5}
   ];
 
   colors = LookupCardinalColors[quiver];

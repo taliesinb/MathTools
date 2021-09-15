@@ -77,10 +77,12 @@
 
 \gdef\inv#1{{{#1}^{-1}}}
 \gdef\groupInv{\inv}
+\gdef\groupPow#1#2{{#1}^{#2}}
 \gdef\groupoidInv{\inv}
 
 \gdef\pathHomomorphism#1{#1}
 \gdef\groupoidFunction#1{#1}
+\gdef\affineModifier#1{\overrightharpoon{#1}}
 \gdef\groupFunction#1{#1}
 \gdef\gl#1#2{GL({#1},#2)}
 \gdef\automorphisms{\operatorname{Aut}}
@@ -156,8 +158,9 @@
 \gdef\quiver#1{#1}
 
 \gdef\bindCards#1#2{#1[#2]}
-\gdef\lineQuiver#1{\textrm{Li}_{#1}}
-\gdef\cycleQuiver#1{\textrm{Cyc}_{#1}}
+\gdef\bouquetQuiver#1{\textrm{Bq}_{#1}}
+\gdef\lineQuiver#1{\textrm{L}_{#1}}
+\gdef\cycleQuiver#1{\textrm{C}_{#1}}
 \gdef\squareQuiver#1{\textrm{Sq}_{#1}}
 \gdef\triangularQuiver#1{\textrm{Tri}_{#1}}
 \gdef\hexagonalQuiver#1{\textrm{Hex}_{#1}}
@@ -202,18 +205,28 @@
 \gdef\pow#1#2{{#1}^{#2}}
 \gdef\rep#1#2{{#1}^{#2}}
 
-\gdef\defeq{\,\overset{\tiny def}{=}\,}
-\gdef\defeq{\,≝\,}
+\gdef\defeq{\;\overset{\tiny def}{=}\;}
+\gdef\defeq{\;≝\;}
+
+\gdef\glueSum#1{#1}
+\gdef\gluePlus{+}
+
+\gdef\glueProduct#1{#1}
+\gdef\glueTimes{{\cdot}}
+
 \gdef\graph#1{#1}
 \gdef\graphHomomorphism#1{#1}
 \gdef\covers{\sqsupseteq}
 \gdef\covering#1#2#3{{#2} \sqsupseteq_{#1} {#3}}
 
+\gdef\groupPresentation#1#2{\left\langle\,{#1}\,\,\middle|\mathstrut\,\,{#2}\,\right\rangle}
+\gdef\groupRelationIso{=}
+\gdef\groupGenerator#1{#1}
 \gdef\groupElement#1{#1}
 \gdef\groupoidElement#1{#1}
 
-\gdef\setConstructor#1#2{\left\{\,{#1}\quad\middle|\mathstrut\quad{#2}\,\right\}}
-\gdef\constructor#1#2{\left.{#1}\quad\middle|\mathstrut\quad{#2}\right.}
+\gdef\setConstructor#1#2{\left\{\,{#1}\,\,\middle|\mathstrut\,\,{#2}\,\right\}}
+\gdef\constructor#1#2{\left.{#1}\,\,\middle|\mathstrut\,\,{#2}\right.}
 \gdef\elemOf#1#2{{ {#1} \in {#2} }}
 \gdef\edgeOf#1#2{{ {#1} {\in}_E {#2} }}
 \gdef\vertOf#1#2{{ {#1} {\in}_V {#2} }}
@@ -268,6 +281,10 @@
 \gdef\quiverProdTimes#1{#1}
 
 \gdef\parenLabeled#1#2{#1\ ({#2})}
+\gdef\modLabeled#1#2{{#1 }\textrm{ mod }{#2}}
+
+\gdef\cyclicGroup#1{\mathbb{Z}_{#1}}
+\gdef\compSuperQuiverOf{\succ}
 
 \gdef\cardinality#1{|{#1}|}
 \gdef\depQuiverProdSymbol{\,\times\,}
@@ -275,6 +292,9 @@
 \gdef\graphUnionSymbol{\sqcup}
 \gdef\graphProdSymbol{\times}
 \gdef\inlineProdSymbol{\mid}
+
+\gdef\serialCardSymbol{{:}}
+\gdef\parallelCardSymbol{{\mid}}
 
 \gdef\cardSeqSymbol{{:}}
 \gdef\cardProdSymbol{\inlineProdSymbol}

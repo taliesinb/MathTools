@@ -168,7 +168,7 @@ declareSyntaxInfo[BouquetQuiver, {_, OptionsPattern[]}];
 BouquetQuiver[str_String, opts:OptionsPattern[]] := BouquetQuiver[Characters[str], opts];
 
 BouquetQuiver[cardinals_List, opts:OptionsPattern[]] :=
-  Quiver[Map[c |-> Labeled[1 -> 1, c], cardinals], Cardinals -> cardinals, opts]
+  Quiver[Map[c |-> Labeled[1 -> 1, c], cardinals], Cardinals -> cardinals, opts, GraphOrigin -> 1]
 
 (**************************************************************************************************)
 
@@ -436,26 +436,6 @@ $GraphThemeData["BigFive"] := $BigFiveThemeRules;
 
 (**************************************************************************************************)
 
-PackageExport["CycleQuiver"]
-
-Options[CycleQuiver] = Options[Graph];
-
-CycleQuiver[n_Integer, opts:OptionsPattern[]] :=
-  CycleQuiver[n, "x", opts];
-
-CycleQuiver[n_Integer, card_String, opts:OptionsPattern[]] := Scope[
-  vertices = Range[1, n];
-  edges = DirectedEdge[#1, #2, card]& @@@ Partition[vertices, 2, 1, 1];
-  ExtendedGraph[
-    vertices, edges,
-    opts, ExtendedGraphLayout -> "Linear",
-    GraphTheme -> "BigFive",
-    ImageSize -> ("ShortestEdge" -> 35)
-  ]
-]
-
-(**************************************************************************************************)
-
 PackageExport["TriangularQuiver"]
 
 Options[TriangularQuiver] = Options[Graph];
@@ -540,17 +520,20 @@ Options[SquareQuiver] = Options[Graph];
 SquareQuiver[m_Integer, opts:OptionsPattern[]] :=
   SquareQuiver[{m, m}, opts];
 
-SquareQuiver[{m_Integer, n_Integer}, opts:OptionsPattern[]] := Scope[
+SquareQuiver[spec_, opts:OptionsPattern[]] :=
+  SquareQuiver[spec, {"x", "y"}, opts];
+
+SquareQuiver[{m_Integer, n_Integer}, {cx_, cy_}, opts:OptionsPattern[]] := Scope[
   vertices = Catenate @ Array[VertexProduct, {m, n}];
   edges = Flatten @ {
-    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i + 1, j], "x"], {i, m-1}, {j, n}],
-    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i, j + 1], "y"], {i, m}, {j, n-1}]
+    Table[enrichedEdge[VertexProduct[i, j], VertexProduct[i + 1, j], cx, i], {i, m-1}, {j, n}],
+    Table[enrichedEdge[VertexProduct[i, j], VertexProduct[i, j + 1], cy, j], {i, m}, {j, n-1}]
   };
   ExtendedGraph[
     vertices, edges,
     opts,
     VertexCoordinates -> (List @@@ vertices),
-    Cardinals -> {"x", "y"},
+    Cardinals -> {cx, cy},
     GraphTheme -> "BigFive"
   ]
 ]
@@ -561,12 +544,16 @@ PackageExport["LineQuiver"]
 
 Options[LineQuiver] = Options[Graph];
 
-LineQuiver[n_Integer, opts:OptionsPattern[]] :=
+LineQuiver[n_, opts:OptionsPattern[]] :=
   LineQuiver[n, "x", opts];
 
-LineQuiver[n_Integer, card_String, opts:OptionsPattern[]] := Scope[
-  vertices = Range @ n;
-  edges = MapStaggered[DirectedEdge[#1, #2, card]&, vertices];
+LineQuiver[n_, card_, opts:OptionsPattern[]] := Scope[
+  vertices = Switch[n,
+    _Integer, Range @ n,
+    _Span, Range @@ n,
+    _, ReturnFailed[];
+  ];
+  edges = MapStaggered[enrichedEdge[#1, #2, card, #1]&, vertices];
   ExtendedGraph[
     vertices, edges,
     opts,
@@ -574,3 +561,37 @@ LineQuiver[n_Integer, card_String, opts:OptionsPattern[]] := Scope[
     ExtendedGraphLayout -> "Linear"
   ]
 ]
+
+(**************************************************************************************************)
+
+PackageExport["CycleQuiver"]
+
+Options[CycleQuiver] = Options[Graph];
+
+CycleQuiver[n_Integer, opts:OptionsPattern[]] :=
+  CycleQuiver[n, "x", opts];
+
+CycleQuiver[n_Integer, card_, opts:OptionsPattern[]] := Scope[
+  vertices = Range[1, n];
+  edges = enrichedEdge[#1, #2, card, #1]& @@@ Partition[vertices, 2, 1, 1];
+  ExtendedGraph[
+    vertices, edges,
+    opts, ExtendedGraphLayout -> "Linear",
+    GraphTheme -> "BigFive",
+    ImageSize -> ("ShortestEdge" -> 35)
+  ]
+]
+
+(**************************************************************************************************)
+
+enrichedEdge[a_, b_, card_, n_] :=
+  DirectedEdge[a, b, card];
+
+enrichedEdge[a_, b_, cs_SerialCardinal, n_] :=
+  enrichedEdge[a, b, ModPart[cs, n], n];
+
+enrichedEdge[a_, b_, p_ParallelCardinal, n_] :=
+  DirectedEdge[a, b, CardinalSet @ (List @@ p)];
+
+ModPart[seq_, n_] := Part[seq, Mod[n, Length[seq], 1]];
+

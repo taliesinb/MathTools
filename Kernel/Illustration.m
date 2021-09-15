@@ -251,7 +251,7 @@ PathPlot[graph_Graph, path_Path, color_:$Teal] :=
 
 PackageExport["PathWordPlot"]
 
-$pwpStyle = $DarkGray;
+$pwpStyle = GrayLevel[0.25];
 $pwpLabel = Word;
 
 PathWordPlot[graph_Graph, p:Path[_, _String, ___, PathCancellation -> False, ___]] := Block[
@@ -496,9 +496,9 @@ $simpleLabeledGraphOpts = {
   ArrowheadShape -> {"Line", EdgeThickness -> 2},
   ImagePadding -> {{0,0}, {0, 25}},
   ExtendedGraphLayout -> "Linear",
-  MultiEdgeDistance -> 0.6, ArrowheadPosition -> 0.525,
+  MultiEdgeDistance -> 0.3, ArrowheadPosition -> 0.525,
   ArrowheadSize -> Medium, ArrowheadStyle -> $Gray,
-  ImageSize -> "ShortestEdge" -> 50
+  ImageSize -> "ShortestEdge" -> 90
 };
 
 $GraphThemeData["SimpleLabeledGraph"] := $simpleLabeledGraphOpts;
@@ -528,11 +528,11 @@ $simpleLabeledQuiverOpts = {
   VertexLabelPosition -> Automatic,
   VertexLabelBaseStyle -> $MathLabelStyle,
   ExtendedGraphLayout -> "Linear",
-  MultiEdgeDistance -> 0.2,
+  MultiEdgeDistance -> 0.1,
   ArrowheadShape -> {"Line", EdgeThickness -> 2},
   ArrowheadPosition -> 0.59,
   ArrowheadSize -> Medium,
-  ImageSize -> "ShortestEdge" -> 70
+  ImageSize -> "ShortestEdge" -> 90
 };
 
 $GraphThemeData["SimpleLabeledQuiver"] := $simpleLabeledQuiverOpts;
@@ -582,11 +582,15 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
     ],
     DeleteCases[{}] @ Keys @ pathWordIndex
   ];
+  additionalEdges = Lookup[{opts}, "AdditionalEdges", {}];
+  If[additionalEdges =!= {},
+    edges = Join[edges, Map[parseAdditionalEdge, additionalEdges]];
+  ];
   $setback = 3;
   pathOpts = DeleteCases[pathOpts, EdgeSetback -> v_ /; ($setback = v; True)];
   labels = AssociationThread[vertices, FQPVertexIcon[pathOpts] /@ paths];
   plot = Quiver[
-    vertices, edges, opts,
+    vertices, edges, FilterOptions @ opts,
     VertexCoordinates -> coords,
     VertexShapeFunction -> labels,
     Cardinals -> LookupExtendedOption[fq, Cardinals],
@@ -594,6 +598,13 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
   ] // CombineMultiedges;
   LargeLabeled[plot, ForwardPathQuiverSymbol["Q", v0Label]]
 ];
+
+parseAdditionalEdge[DirectedEdge[a_, b_, c_]] :=
+  DirectedEdge[parseAdditionalEdgeVertex @ a, parseAdditionalEdgeVertex @ b, c];
+
+parseAdditionalEdge[other_] := (Print[other]; $Failed);
+
+parseAdditionalEdgeVertex[vertex_] := LatticeVertex @ extractWord @ parsePath @ vertex;
 
 (**************************************************************************************************)
 
@@ -649,7 +660,7 @@ $pathQuiverIconOpts = {
   VertexLabels -> None,
   Frame -> True, FrameStyle -> {LightGray, SlightlyThin}, PlotRangeClipping -> False,
   GraphLegend -> None, ImageSize -> "ShortestEdge" -> 20, ArrowheadShape -> None,
-  VertexSize -> Medium
+  VertexSize -> Medium, VertexStyle -> $LightGray
 };
 
 $GraphThemeData["PathQuiverIcon"] := $pathQuiverIconOpts;
@@ -661,7 +672,7 @@ FQPVertexIcon[opts_][path_] := Scope[
   If[MatchQ[path, Labeled[_, _]], hasClassLabel = True; {path, classLabel} = FirstLast @ path];
   hasPathLabel = !MatchQ[path, Path[_, {}, ___]];
   highlighted = HighlightGraphRegion[
-    $fq, path, {$Teal, PathRadius -> 2, PathStyle -> "DiskArrow", EdgeSetback -> $setback, "Foreground"}, Sequence @@ opts,
+    $fq, path, {$Teal, PathRadius -> 2, PathStyle -> "DiskArrowDisk", EdgeSetback -> $setback, "Foreground"}, Sequence @@ opts,
     GraphTheme -> {"PathQuiverIcon", "FundamentalQuiver"},
     FrameLabel -> {
       Bottom -> If[!hasPathLabel, None, fmtPaths @ path],
@@ -673,7 +684,7 @@ FQPVertexIcon[opts_][path_] := Scope[
 
 fmtPaths = MatchValues[
   Path[_, word_, ___] := Style[WordForm @ word, FontColor -> Gray, FontSize -> 12];
-  list_List           := Row[fmtPaths /@ list, Style[",", Gray]];
+  list_List           := Row[fmtPaths /@ list, Style[",", Gray], BaseStyle -> {FontTracking -> "Narrow"}];
 ];
 
 (**************************************************************************************************)
@@ -761,7 +772,7 @@ pathHomomorphismDiagram[graph_Graph, path_] := Scope[
     VertexLabels->None,
     ArrowheadShape -> "Line", VertexStyle -> $LightGray, EdgeStyle -> $LightGray,
     ImagePadding -> {{15,15},{10,10}},
-    ArrowheadPosition -> 0.55, ImageSize -> "ShortestEdge" -> 50
+    ArrowheadPosition -> 0.55
   ]
 ];
 
@@ -771,17 +782,18 @@ PackageExport["GraphProductTable"]
 
 Options[GraphProductTable] = {
   "Labels" -> {None, None},
-  "UseCardinalSet" -> True
+  "UseCardinalSet" -> True,
+  ArrowheadPosition -> 0.525
 };
 
 GraphProductTable[prodFn_, aList_, bList_, OptionsPattern[]] := Scope[
-  UnpackOptions[labels, useCardinalSet];
+  UnpackOptions[labels, useCardinalSet, arrowheadPosition];
   aList = RotateGraph /@ aList;
   entries = Outer[
     prodFn[#1, #2,
       PackingSpacing -> 1, "UseCardinalSet" -> useCardinalSet,
       If[!useCardinalSet, ArrowheadShape -> None, Sequence @@ {}], MultiEdgeDistance -> 0.1,
-      ArrowheadPosition -> 0.9, EdgeSetback -> .1
+      ArrowheadPosition -> arrowheadPosition, EdgeSetback -> .1
     ]&,
     aList,
     bList,

@@ -104,7 +104,7 @@ DefineLatticeQuiver[
 
 DefineLatticeQuiver[
   "Names" -> {"Rhombille"},
-  "Quiver" -> Quiver[Labeled[{1 -> 2, 2 -> 3}, "a" | "b" | "c"], GraphLayout -> {"MultiEdgeDistance" -> 0.5}],
+  "Quiver" -> Quiver[Labeled[{1 -> 2, 2 -> 3}, "a" | "b" | "c"], MultiEdgeDistance -> 0.3],
   "Group" -> InfiniteAbelianGroup[3, "Redundant"],
   "Dimension" -> 2
 ];
@@ -135,11 +135,11 @@ DefineLatticeQuiver[
 
 DefineLatticeQuiver[
   "Names" -> {"Trihexagonal", "Hexadeltille"},
-  "Quiver" -> Quiver @ <|
+  "Quiver" -> Quiver[<|
     "a" -> {1 -> 3, 3 -> 1},
     "b" -> {1 -> 2, 2 -> 1},
     "c" -> {2 -> 3, 3 -> 2}
-  |>,
+  |>, MultiEdgeDistance -> .12],
   "Group" -> InfiniteAbelianGroup[3, "Redundant"],
   "Dimension" -> 2
 ];

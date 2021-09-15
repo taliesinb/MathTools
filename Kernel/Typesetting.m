@@ -642,6 +642,7 @@ $srAlignment = Center;
 $srLabelPosition = Automatic;
 $srForceGrid = False;
 $srRiffleItem = None;
+$srLabelFontSize = 15;
 (* this is because i don't trust OptionsPattern to not capture rules used as label specs.
 i might be wrong though *)
 
@@ -661,6 +662,7 @@ SpacedRow[elems__, "IndexTooltip" -> t_] := Block[{$srIndexTooltip = t}, SpacedR
 SpacedRow[elems__, Transposed -> t_] := Block[{$srTransposed = t}, SpacedRow[elems]];
 SpacedRow[elems__, ForceGrid -> fg_] := Block[{$srForceGrid = fg}, SpacedRow[elems]];
 SpacedRow[elems__, RiffleItem -> item_] := Block[{$srRiffleItem = item}, SpacedRow[elems]];
+SpacedRow[elems__, FontSize -> sz_] := Block[{$srLabelFontSize = sz}, SpacedRow[elems]];
 
 SpacedRow[labels_List -> items_List] /; Length[labels] == Length[items] :=
   SpacedRow[RuleThread[labels, items]];
@@ -750,7 +752,7 @@ canonicalizeItem = Case[
 ];
 
 toGridRowPair = Case[
-  Labeled[item_, label_, ___] := {item, label};
+  Labeled[item_, label_, ___] := {item, Style[label, FontSize -> $srLabelFontSize]};
   $nextRow := $nextRow;
   item_ := {item, ""};
 ];

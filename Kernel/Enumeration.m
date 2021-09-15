@@ -375,11 +375,11 @@ circlePoints[4] = Part[CirclePoints[4], {1, 3, 2, 4}];
 circlePoints[n_] := N @ CirclePoints[n];
 
 makeSmallGraphOpts[n_, r_] := Sequence[
-  GraphLayout -> {"MultiEdgeDistance" -> 0.2, "SelfLoopRadius" -> r},
+  MultiEdgeDistance -> 0.2, SelfLoopRadius -> r,
   ArrowheadSize -> Small, ArrowheadShape -> {"Line", TwoWayStyle -> "CrossLine"}, VertexSize -> Medium,
   VertexCoordinates -> circlePoints[n], ImageSize -> {40, 40}, ImagePadding -> 0,
   PlotRange -> Switch[n,
-    1, {{-1, 0}, {-1, 1}} * 0.09,
+    1, {{-1, 0}, {-1, 1}} * 0.6,
     2, {{-1, 1}, {-1, 1}} * 1.4,
     _, {{-1, 1}, {-1, 1}} * 1.3
   ],

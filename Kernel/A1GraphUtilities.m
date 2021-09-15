@@ -437,7 +437,7 @@ makeNewGraph[___] := $Failed;
 optionFixup = Case[
   Rule[GraphLayout, {"Dimension" -> d_}]          := Rule[LayoutDimension, d];
   Rule[VertexSize, r:{__Rule}]                    := Rule[VertexSize, Association @ r];
-  Rule[sym:(VertexLabels | EdgeLabels), l_List | l_Rule] := If[MatchQ[l, {_Hold}], First @ l, Rule[sym, Hold[l]]];
+  Rule[sym:(VertexLabels | EdgeLabels), l_List | l_Rule] := Rule[sym, If[MatchQ[l, {_Hold | _Association}], First @ l, Hold @ l]];
   Rule[sym:(EdgeStyle|VertexStyle), val_]         := Rule[sym, toDirective[val]];
   Rule[VertexShapeFunction, assoc_Association]    := Rule[VertexShapeFunction, toShape /@ assoc];
   Rule[sym:(GraphHighlightStyle|VertexLabelStyle|EdgeLabelStyle), elem_] := Rule[sym, toDirective[elem]];
@@ -1503,6 +1503,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
       Null
   ];
 
+  If[MatchQ[graphLayout, {___, "VertexLayout" -> _, ___}], graphLayout = Lookup[graphLayout, "VertexLayout"]];
   If[extendedGraphLayout =!= Automatic, graphLayout = extendedGraphLayout];
   SetAutomatic[graphLayout, {}];
 
