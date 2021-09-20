@@ -554,6 +554,7 @@ toNormFunction = MatchValues[
   (i:({__Integer}|_Integer) -> f_) := PartOperator[i] /* f;
   list_List := ApplyThrough[% /@ list] /* Max;
   i_Integer := PartOperator[i];
+  "Euclidean" := RootMeanSquare;
   f_ := f;
 ];
 

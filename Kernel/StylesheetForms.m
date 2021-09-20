@@ -80,7 +80,7 @@ $literalSymbolsP = Alternatives[
   FilledRectangleTokenSymbol, EmptyRectangleTokenSymbol,
   BarTokenSymbol,
   ForwardFactorSymbol, BackwardFactorSymbol, NeutralFactorSymbol,
-  ArrowheadSymbol
+  ArrowheadSymbol, Aligner
 ];
 
 (**************************************************************************************************)
@@ -129,6 +129,26 @@ $TemplateKatexFunction["NotApplicableSymbol"] = "\\wbform{\\text{---}}"&;
 
 (********************************************)
 
+PackageExport["UnknownSymbol"]
+
+declareBoxFormatting[
+  UnknownSymbol :> TemplateBox[{}, "UnknownSymbol"]
+]
+
+$TemplateKatexFunction["UnknownSymbol"] = "\\wbform{\\text{?}}"&;
+
+(********************************************)
+
+PackageExport["EmptySetSymbol"]
+
+declareBoxFormatting[
+  EmptySetSymbol :> TemplateBox[{}, "EmptySetSymbol"]
+]
+
+$TemplateKatexFunction["EmptySetSymbol"] = "\\empty"&;
+
+(********************************************)
+
 PackageExport["PlainTextForm"]
 
 declareBoxFormatting[
@@ -168,12 +188,16 @@ unaryWrapperQ[s_Symbol] := KeyExistsQ[$unaryWrapperFormName, Unevaluated @ s];
 unaryWrapperQ[_] := False;
 
 unaryWrappedQ[(head_Symbol ? unaryWrapperQ)[_]] := True;
+unaryWrappedQ[_Subscript | _Superscript | _Subsuperscript] := True;
 unaryWrappedQ[_] := False;
 
 recurseWrapperBoxes[e_, f_] := Block[{$decf = f}, rdb @ e];
 
 rdb = Case[
   e:((_Symbol ? unaryWrapperQ)[_])   := unaryWrapperBoxes[e, %];
+  Subscript[s_, i_]                  := SubscriptBox[% @ s, makeQGBoxes @ i];
+  Superscript[s_, i_]                := SuperscriptBox[% @ s, makeQGBoxes @ i];
+  Subsuperscript[s_, i_, j_]         := SubsuperscriptBox[% @ s, makeQGBoxes @ i, makeQGBoxes @ j];
   (Negated|NegatedForm)[e_]          := TemplateBox[List @ % @ e, "NegatedForm"];
   e_                                 := $decf @ e;
 ];
@@ -290,6 +314,7 @@ PackageExport["EdgeOfForm"]
 PackageExport["PathOfForm"]
 
 declareBoxFormatting[
+  ElementOfForm[a__, b_] :> makeStandardBoxTemplate[CommaRowForm[a], b, "ElementOfForm"],
   ElementOfForm[a_, b_] :> makeStandardBoxTemplate[a, b, "ElementOfForm"],
   VertexOfForm[a_, b_] :> makeHintedTemplateBox[a -> VertexSymbol, b -> QuiverSymbol, "VertexOfForm"],
   EdgeOfForm[a_, b_] :> makeHintedTemplateBox[a -> EdgeSymbol, b -> QuiverSymbol, "EdgeOfForm"],
@@ -711,6 +736,7 @@ declareBoxFormatting[
 SetHoldAllComplete[groupGeneratorBoxes, groupRelationSetBoxes, groupRelationBoxes];
 
 groupRelationSetBoxes = Case[
+  {}         := MakeBoxes @ EmptySetSymbol;
   list_List  := TemplateBox[MapUnevaluated[groupRelationBoxes, list], "CommaRowForm"];
   relation_  := MakeBoxes @ groupRelationBoxes @ relation;
 ]
@@ -759,6 +785,7 @@ groupRelationTermBoxes = Case[
   e_ ? unaryWrappedQ          := recurseWrapperBoxes[e, %] /. "NegatedForm" -> "GroupInverseForm";
   ge_GroupElement             := MakeBoxes @ ge;
   gm_GroupMultiplicationForm  := MakeBoxes @ gm;
+  GroupCommutatorForm[a_, b_] := TemplateBox[{% @ a, % @ b}, "GroupCommutatorForm"];
 ,
   symP -> $rawSymbolP
 ];
@@ -766,7 +793,15 @@ groupRelationTermBoxes = Case[
 $TemplateKatexFunction["GroupRelationForm"] = riffled[" \\groupRelationIso "]
 $TemplateKatexFunction["GroupRelationSymbol"] = "\\groupRelationIso"&;
 
+(**************************************************************************************************)
 
+PackageExport["GroupCommutatorForm"]
+
+declareBoxFormatting[
+  GroupCommutatorForm[a_, b_] :> makeStandardBoxTemplate[a, b, "GroupCommutatorForm"]
+]
+
+$TemplateKatexFunction["GroupCommutatorForm"] = "groupCommutator";
 
 (**************************************************************************************************)
 
@@ -844,23 +879,23 @@ $TemplateKatexFunction["GeneralLinearGroupForm"] = "gl";
 
 (**************************************************************************************************)
 
-PackageExport["GluingProductForm"]
-PackageExport["GluingSumForm"]
+PackageExport["ContractionProductForm"]
+PackageExport["ContractionSumForm"]
 
 declareBoxFormatting[
-  GluingProductForm[args__] :> makeStandardBoxTemplate[args, "GluingProductForm"],
-  GluingProductForm :> TemplateBox[{}, "GluingTimesSymbol"],
+  ContractionProductForm[args__] :> makeStandardBoxTemplate[args, "ContractionProductForm"],
+  ContractionProductForm :> TemplateBox[{}, "ContractionTimesSymbol"],
 
-  GluingSumForm[args__] :> makeStandardBoxTemplate[args, "GluingSumForm"],
-  GluingSumForm :> TemplateBox[{}, "GluingPlusSymbol"]
+  ContractionSumForm[args__] :> makeStandardBoxTemplate[args, "ContractionSumForm"],
+  ContractionSumForm :> TemplateBox[{}, "ContractionPlusSymbol"]
 
 ]
 
-$TemplateKatexFunction["GluingProductForm"] = applyRiffled["glueProduct", "\\glueTimes "];
-$TemplateKatexFunction["GluingTimesSymbol"] = "\\glueTimes "&;
+$TemplateKatexFunction["ContractionProductForm"] = applyRiffled["contractProduct", "\\contractTimes "];
+$TemplateKatexFunction["ContractionTimesSymbol"] = "\\contractTimes "&;
 
-$TemplateKatexFunction["GluingSumForm"] = applyRiffled["glueSum", "\\gluePlus "];
-$TemplateKatexFunction["GluingPlusSymbol"] = "\\gluePlus "&;
+$TemplateKatexFunction["ContractionSumForm"] = applyRiffled["contractSum", "\\contractPlus "];
+$TemplateKatexFunction["ContractionPlusSymbol"] = "\\contractPlus "&;
 
 (**************************************************************************************************)
 
@@ -917,7 +952,7 @@ PackageExport["MatrixDotForm"]
 declareBoxFormatting[
   MatrixDotForm[args__] :>
     TemplateBox[
-      MapUnevaluated[maybeParen[MatrixSymbol], {args}],
+      MapUnevaluated[maybeParen[MatrixSymbol|TranslationVectorForm], {args}],
       "MatrixDotForm"
     ],
 
@@ -1058,6 +1093,17 @@ declareBoxFormatting[
 $TemplateKatexFunction["BackwardPathQuiverSymbolForm"] = "backwardPathQuiver";
 
 
+(**************************************************************************************************)
+
+PackageExport["LatticeQuiverForm"]
+
+declareBoxFormatting[
+  LatticeQuiverForm[fq_, v_, cv_, d_] :>
+    makeHintedTemplateBox[fq -> QuiverSymbol, v -> VertexSymbol, cv -> FunctionSymbol, d -> SymbolForm, "LatticeQuiverForm"]
+];
+
+$TemplateKatexFunction["LatticeQuiverForm"] = applyRiffled["latticeBFS", ","];
+
 (********************************************)
 
 PackageExport["QuiverSymbol"]
@@ -1082,6 +1128,26 @@ declareBoxFormatting[
 
 (********************************************)
 
+declareNamedCardinalValuationSymbol[symbol_] := With[
+  {symbolName = SymbolName[symbol]},
+  {formName = symbolName <> "Form"},
+  declareBoxFormatting[
+    symbol[dim_] :> makeHintedTemplateBox[dim -> rawSymbolBoxes, formName],
+    q_symbol[cards__] :> MakeBoxes @ CardinalBindingForm[q, cards]
+  ];
+  $TemplateKatexFunction[formName] = LowerCaseFirst @ StringTrim[symbolName, "Symbol"];
+]
+
+(********************************************)
+
+PackageExport["TranslationCardinalValuationSymbol"]
+PackageExport["StarTranslationCardinalValuationSymbol"]
+
+declareNamedCardinalValuationSymbol[TranslationCardinalValuationSymbol];
+declareNamedCardinalValuationSymbol[StarTranslationCardinalValuationSymbol];
+
+(********************************************)
+
 declareNamedQuiverSymbol[symbol_] := With[
   {symbolName = SymbolName[symbol]},
   {formName = symbolName <> "Form"},
@@ -1096,9 +1162,11 @@ declareNamedQuiverSymbol[symbol_] := With[
 (********************************************)
 
 PackageExport["BouquetQuiverSymbol"]
+
 PackageExport["LineQuiverSymbol"]
 PackageExport["CycleQuiverSymbol"]
 PackageExport["SquareQuiverSymbol"]
+PackageExport["CubicQuiverSymbol"]
 PackageExport["TriangularQuiverSymbol"]
 PackageExport["HexagonalQuiverSymbol"]
 
@@ -1108,6 +1176,7 @@ declareNamedQuiverSymbol[CycleQuiverSymbol];
 declareNamedQuiverSymbol[SquareQuiverSymbol];
 declareNamedQuiverSymbol[TriangularQuiverSymbol];
 declareNamedQuiverSymbol[HexagonalQuiverSymbol];
+declareNamedQuiverSymbol[CubicQuiverSymbol];
 
 (********************************************)
 
@@ -1619,6 +1688,27 @@ $TemplateKatexFunction["CartesianProductForm"] = riffled[" \\cprod "];
 
 (**************************************************************************************************)
 
+PackageExport["SetUnionForm"]
+PackageExport["SetIntersectionForm"]
+
+declareBoxFormatting[
+  SetUnionForm[args__] :>
+    makeStandardBoxTemplate[args, "SetUnionForm"],
+  SetUnionForm[] :>
+    makeStandardBoxTemplate[args, "SetUnionSymbol"],
+  SetIntersectionForm[args__] :>
+    makeStandardBoxTemplate[args, "SetIntersectionForm"],
+  SetIntersectionForm[] :>
+    makeStandardBoxTemplate[args, "SetIntersectionSymbol"]
+]
+
+$TemplateKatexFunction["SetUnionForm"] = riffled[" \\cup "];
+$TemplateKatexFunction["SetUnionSymbol"] = " \\cup "&;
+$TemplateKatexFunction["SetIntersectionForm"] = riffled[" \\cap "];
+$TemplateKatexFunction["SetIntersectionSymbol"] = " \\cap "&;
+
+(**************************************************************************************************)
+
 PackageExport["DivideForm"]
 PackageExport["InlineDivideForm"]
 
@@ -1752,6 +1842,17 @@ $TemplateKatexFunction["ConstructorForm"] = "constructor"
 PackageExport["ColumnGridForm"]
 
 declareBoxFormatting[
+
+  ColumnGridForm[args__, Alignment -> alignment_] :>
+    TemplateBox[
+      List @ GridBox[
+        Map[List, MapUnevaluated[makeQGBoxesOrNull, {args}]],
+        GridBoxItemSize -> {"Columns" -> {{All}}, "Rows" -> {{All}}},
+        GridBoxAlignment -> {"Columns" -> {ToList @ alignment}}
+      ],
+      "ColumnGridForm"
+    ],
+
   ColumnGridForm[args__] :>
     TemplateBox[
       List @ GridBox[
@@ -1764,13 +1865,28 @@ declareBoxFormatting[
 
 $TemplateKatexFunction["ColumnGridForm"] = katexColumnGrid;
 
+katexColumnGrid[GridBox[entries_, ___, GridBoxAlignment -> {"Columns" -> {{alignment_}}}]] :=
+  {"\\begin{matrix*}[", toAlignmentLetter @ alignment, "]\n", Riffle[entries, "\\\\"], "\\end{matrix*}\n"}
+
 katexColumnGrid[GridBox[entries_, ___]] :=
   {"\\begin{aligned}\n", Riffle[entries, "\\\\"], "\\end{aligned}\n"}
 
+toAlignmentLetter = <|Left -> "l", Center -> "c", Right -> "r"|>;
+
+(**************************************************************************************************)
+
+PackageExport["Aligner"]
+
+declareBoxFormatting[
+  Aligner :> TemplateBox[{}, "Aligner"]
+];
+
+$TemplateKatexFunction["Aligner"] = "&"&;
 
 (**************************************************************************************************)
 
 PackageExport["EquationGridForm"]
+PackageExport["Aligned"]
 PackageExport["Divider"]
 
 SetUsage @ "
@@ -1788,17 +1904,24 @@ declareBoxFormatting[
 ]
 
 equationGridRow = Case[
-  Divider         := {"---"};
-  e_List          := MapUnevaluated[makeQGBoxesOrNull, e];
-  e_EqualForm     := riffledEqGridRow["=", e];
-  e_Subset        := riffledEqGridRow["\[Subset]", e];
-  e_SubsetEqual   := riffledEqGridRow["\[SubsetEqual]", e];
-  e_ElementOfForm := riffledEqGridRow["\[Element]", e];
+  Divider          := {"---"};
+  e_List           := MapUnevaluated[makeQGBoxesOrNull, e];
+  Aligned[e_]      := % @ List @ Aligned @ e;
+  e_EqualForm      := riffledEqGridRow["=", e];
+  e_DefEqualForm   := riffledEqGridRow[":=", e];
+  e_Subset         := riffledEqGridRow["\[Subset]", e];
+  e_SubsetEqual    := riffledEqGridRow["\[SubsetEqual]", e];
+  e_ElementOfForm  := riffledEqGridRow["\[Element]", e];
+  e_AndForm        := riffledEqGridRow["\[And]", e];
+  e_OrForm         := riffledEqGridRow["\[Or]", e];
+  e_ImpliesForm    := riffledEqGridRow["\[Implies]", e];
+  e_EquivalentForm := riffledEqGridRow["\[Equivalent]", e];
 ];
 
 riffledEqGridRow[div_, _[args__]] :=
   Riffle[MapUnevaluated[makeQGBoxesOrNull, {args}], div];
 
+makeQGBoxesOrNull[Aligned[e_]] := Splice @ MapUnevaluated[makeQGBoxes, {Aligner, e, Aligner}];
 makeQGBoxesOrNull[Null|None] := "";
 makeQGBoxesOrNull[other_] := makeQGBoxes[other]
 
@@ -1817,7 +1940,10 @@ $equationSymbolRules = {
   "\[Subset]"           -> "&\\subset ",
   "\[SubsetEqual]"      -> "&\\subseteq ",
   "where"               -> "&\\text{where} ",
-  "\[TildeTilde]"       -> "&\[TildeTilde] "
+  "\[TildeTilde]"       -> "&\[TildeTilde] ",
+  "\[Implies]"          -> "&\[Implies] ",
+  "\[And]"              -> "&\[And] ",
+  "\[Or]"               -> "&\[Or] "
 }
 
 $equationSplitP = Alternatives @@ Values[$equationSymbolRules];
@@ -2057,7 +2183,7 @@ makePathBoxTemplate[left_, rest___, tag_] :=
     Join[
       List @ maybeParen[PathSymbol|CardinalSymbol|$colorFormP|$functionFormP|EdgeFieldSymbol|PathVectorSymbol] @ left,
       MapUnevaluated[
-        maybeParen[PathSymbol|EdgeFieldSymbol|VertexFieldSymbol|PathVectorSymbol|PathTranslateForm|PathBackwardTranslateForm|$colorFormP],
+        maybeParen[PathSymbol|CardinalSymbol|EdgeFieldSymbol|VertexFieldSymbol|PathVectorSymbol|PathTranslateForm|PathBackwardTranslateForm|$colorFormP],
         {rest}
       ]
     ],
@@ -2352,6 +2478,23 @@ maybeParenBoxes = Case[
   {symsP -> $rawSymbolP, colsP -> $colorFormP, lsymsP -> $literalSymbolsP}
 ];
 
+(**************************************************************************************************)
+
+PackageExport["AssociativeArrayForm"]
+
+declareBoxFormatting[
+  AssociativeArrayForm[rules__Rule] :>
+    TemplateBox[
+      MapUnevaluated[assocRuleBox, {rules}],
+      "AssociativeArrayForm"
+    ]
+]
+
+SetHoldAllComplete[assocRuleBox];
+assocRuleBox[a_ -> b_] := MakeBoxes @ MapsToForm[a, b];
+
+$TemplateKatexFunction["AssociativeArrayForm"] = applyRiffled["assocArray", ","];
+
 (********************************************)
 
 PackageExport["ListForm"]
@@ -2406,23 +2549,41 @@ $TemplateKatexFunction["TupleForm"] = applyRiffled["tuple", ","];
 
 (********************************************)
 
+PackageExport["TranslationVectorForm"]
+
+declareBoxFormatting[
+  TranslationVectorForm[entries__] :>
+    makeStandardBoxTemplate[entries, "TranslationVectorForm"]
+];
+
+$TemplateKatexFunction["TranslationVectorForm"] = applyRiffled["tvector", ","];
+
+(********************************************)
+
 PackageExport["SmallMatrixForm"]
+PackageExport["NormalMatrixForm"]
 
 declareBoxFormatting[
   SmallMatrixForm[array_] :>
-    TemplateBox[MapUnevaluated[smallMatrixRowBoxes, array], "SmallMatrixForm"]
+    TemplateBox[MapUnevaluated[matrixRowBoxes, array], "SmallMatrixForm"],
+
+  NormalMatrixForm[array_] :>
+    TemplateBox[MapUnevaluated[matrixRowBoxes, array], "NormalMatrixForm"]
 ];
 
-SetHoldAllComplete[smallMatrixRowBoxes]
+SetHoldAllComplete[matrixRowBoxes]
 
-smallMatrixRowBoxes[row_List] :=
-  TemplateBox[MapUnevaluated[makeQGBoxes, row], "SmallMatrixRowForm"];
+matrixRowBoxes[row_List] :=
+  TemplateBox[MapUnevaluated[makeQGBoxes, row], "MatrixRowForm"];
 
 $TemplateKatexFunction["SmallMatrixForm"] = smallMatrixKatex;
-$TemplateKatexFunction["SmallMatrixRowForm"] = smallMatrixRowKatex;
+$TemplateKatexFunction["NormalMatrixForm"] = normalMatrixKatex;
+$TemplateKatexFunction["MatrixRowForm"] = matrixRowKatex;
 
 smallMatrixKatex[rows___] := {"{\\begin{smallmatrix}", Riffle[{rows}, "\\\\"], "\\end{smallmatrix}}"};
-smallMatrixRowKatex[cols___] := Riffle[{cols}, "&"];
+normalMatrixKatex[rows___] := {"{\\begin{pmatrix}", Riffle[{rows}, "\\\\"], "\\end{pmatrix}}"};
+
+matrixRowKatex[cols___] := Riffle[{cols}, "&"];
 
 (********************************************)
 
@@ -2445,6 +2606,17 @@ declareBoxFormatting[
 ]
 
 $TemplateKatexFunction["CommaRowForm"] = riffled[","];
+
+(********************************************)
+
+PackageExport["SpacedRowForm"]
+
+declareBoxFormatting[
+  SpacedRowForm[args__] :>
+    makeStandardBoxTemplate[args, "SpacedRowForm"]
+]
+
+$TemplateKatexFunction["SpacedRowForm"] = riffled[" \\quad "];
 
 (********************************************)
 
@@ -2585,13 +2757,21 @@ namedFuncKatex[s_String] := namedFuncKatex[s] = StringJoin["\\", LowerCaseFirst 
 (**************************************************************************************************)
 
 PackageExport["QuotientForm"]
+PackageExport["CompactQuotientForm"]
+PackageExport["MultilineQuotientForm"]
 
 declareBoxFormatting[
   QuotientForm[a_, b_] :>
-    makeStandardBoxTemplate[a, b, "QuotientForm"]
+    makeStandardBoxTemplate[a, b, "QuotientForm"],
+  MultilineQuotientForm[a_, b_] :>
+    makeStandardBoxTemplate[a, b, "MultilineQuotientForm"],
+  CompactQuotientForm[f_, x_, v_] :>
+    makeHintedTemplateBox[f -> QuiverSymbol, x -> VertexSymbol, v -> FunctionSymbol, "CompactQuotientForm"]
 ];
 
 $TemplateKatexFunction["QuotientForm"] = "quotient";
+$TemplateKatexFunction["MultilineQuotientForm"] = "multilineQuotient";
+$TemplateKatexFunction["CompactQuotientForm"] = "compactQuotient";
 
 (********************************************)
 
@@ -2754,7 +2934,18 @@ PathWordForm[a_, b_String, c_] := PathWordForm[a, ToPathWord @ b, c];
 
 declareBoxFormatting[
   PathWordForm[t_, w_, h_] :>
-    makeTypedTemplateBox[t -> VertexSymbol, w -> WordForm, h -> VertexSymbol, "PathWordForm"]
+    makeTypedTemplateBox[t -> generalizedVertexSymbol, w -> WordForm, h -> generalizedVertexSymbol, "PathWordForm"]
+];
+
+SetHoldAllComplete[generalizedVertexSymbol, generalizedVertexBoxes];
+
+declareBoxFormatting[
+  generalizedVertexSymbol[e_] :> recurseWrapperBoxes[e, generalizedVertexBoxes]
+];
+
+generalizedVertexBoxes = Case[
+  s_Symbol | s_String := MakeBoxes @ VertexSymbol @ s;
+  e_ := MakeBoxes[e];
 ];
 
 $TemplateKatexFunction["PathWordForm"] = "pathWord";
@@ -2812,12 +3003,13 @@ wordBoxes = Case[
   {}|""                               := TemplateBox[{}, "EmptyWordForm"];
   1                                   := TemplateBox[{"1"}, "WordForm"];
   word_String                         := Construct[%, ToPathWord @ word];
-  (Times|ConcatenationForm)[a_, b_]   := TemplateBox[MapUnevaluated[%, {a, b}], "ConcatenationForm"];
+  (Times|ConcatenationForm)[args__]   := TemplateBox[MapUnevaluated[%, {args}], "ConcatenationForm"];
   RepeatedPowerForm[a_, b_]           := TemplateBox[{% @ a, makeQGBoxes @ b}, "RepeatedPowerForm"];
   c:cardP                             := TemplateBox[List @ MakeBoxes @ c, "WordForm"];
   list:{cardP..}                      := TemplateBox[MapUnevaluated[MakeBoxes, list], "WordForm"];
   list_List                           := TemplateBox[tryColorCardinals @ cardinalBoxes @ list, "WordForm"];
   (Negated|NegatedForm)[e_]           := TemplateBox[List @ wordBoxes @ e, "NegatedForm"];
+  MirrorForm[e_]                      := TemplateBox[List @ wordBoxes @ e, "MirrorForm"];
   cs_CardinalSequenceForm             := MakeBoxes @ cs;
   sc_SerialCardinal                   := MakeBoxes @ sc;
   pc_ParallelCardinal                 := MakeBoxes @ pc;
@@ -2888,3 +3080,62 @@ declareBoxFormatting[
 ];
 
 
+(********************************************)
+
+PackageExport["DoubleQuotedStringForm"]
+PackageExport["QuotedCharacterForm"]
+
+PackageExport["LiteralStringForm"]
+PackageExport["StringSymbolForm"]
+
+PackageExport["LiteralCharacterForm"]
+PackageExport["CharacterSymbolForm"]
+
+declareBoxFormatting[
+  DoubleQuotedStringForm[args___] :>
+    TemplateBox[MapUnevaluated[stringElementBoxes, {args}], "DoubleQuotedStringForm"],
+
+  QuotedCharacterForm[a_] :>
+    TemplateBox[List @ quotedCharBoxes @ a, "QuotedCharacterForm"],
+
+  LiteralStringForm[str_String] :> TemplateBox[List @ str, "LiteralStringForm"],
+  LiteralCharacterForm[str_String] :> TemplateBox[List @ str, "LiteralCharacterForm"]
+];
+
+$TemplateKatexFunction["DoubleQuotedStringForm"] = applyRiffled["qstring", " "];
+$TemplateKatexFunction["QuotedCharacterForm"] = "qchar";
+$TemplateKatexFunction["StringSymbolForm"] = "strsym";
+$TemplateKatexFunction["CharacterSymbolForm"] = "charsym";
+
+declareSymbolForm[CharacterSymbolForm]
+declareSymbolForm[StringSymbolForm]
+
+SetHoldAllComplete[stringElementBoxes, stringSymbolBoxes, quotedCharBoxes]
+
+stringElementBoxes = Case[
+  s_String /; StringLength[s] === 1 := If[UpperCaseQ[s],
+    MakeBoxes @ StringSymbolForm @ s,
+    MakeBoxes @ LiteralCharacterForm @ s
+  ];
+  str_String := MakeBoxes @ LiteralStringForm @ str;
+  s:lsymsP := MakeBoxes @ s;
+  e_ ? unaryWrappedQ := recurseWrapperBoxes[e, stringSymbolBoxes];
+  other := MakeBoxes @ other;
+,
+  {lsymsP -> $literalSymbolsP}
+]
+
+stringSymbolBoxes = Case[
+  s_String := If[UpperCaseQ[s],
+    MakeBoxes @ StringSymbolForm @ s,
+    MakeBoxes @ CharacterSymbolForm @ s
+  ];
+  s_StringSymbolForm | s_CharacterSymbolForm := MakeBoxes @ s;
+]
+
+(* this should only be a literal or a CharacterSymbol *)
+quotedCharBoxes = Case[
+  s_String /; StringLength[s] === 1 := MakeBoxes @ LiteralCharacterForm @ s;
+  s_CharacterSymbolForm := MakeBoxes @ s;
+  e_ ? unaryWrappedQ := recurseWrapperBoxes[e, %];
+]

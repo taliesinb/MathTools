@@ -540,6 +540,47 @@ SquareQuiver[{m_Integer, n_Integer}, {cx_, cy_}, opts:OptionsPattern[]] := Scope
 
 (**************************************************************************************************)
 
+PackageExport["CubicQuiver"]
+
+Options[CubicQuiver] = Options[Graph];
+
+CubicQuiver[m_Integer, opts:OptionsPattern[]] :=
+  CubicQuiver[{m, m, m}, opts];
+
+CubicQuiver[spec_, opts:OptionsPattern[]] :=
+  CubicQuiver[spec, {"x", "y", "z"}, opts];
+
+CubicQuiver[{m_Integer, n_Integer, p_Integer}, {cx_, cy_, cz_}, opts:OptionsPattern[]] := Scope[
+  vertices = Flatten[Array[VertexProduct, {m, n, p}], 2];
+  edges = Flatten @ {
+    Table[enrichedEdge[VertexProduct[i, j, k], VertexProduct[i + 1, j, k], cx, i], {i, m-1}, {j, n}, {k, p}],
+    Table[enrichedEdge[VertexProduct[i, j, k], VertexProduct[i, j + 1, k], cy, j], {i, m}, {j, n-1}, {k, p}],
+    Table[enrichedEdge[VertexProduct[i, j, k], VertexProduct[i, j, k + 1], cz, j], {i, m}, {j, n}, {k, p-1}]
+  };
+  ExtendedGraph[
+    vertices, edges,
+    opts,
+    VertexCoordinates -> (List @@@ vertices),
+    Cardinals -> {cx, cy, cz},
+    LayoutDimension -> 3,
+    GraphTheme -> "BigFive3D"
+  ]
+]
+
+(**************************************************************************************************)
+
+$BigFive3DThemeRules = {
+  ArrowheadSize -> 15,
+  VertexSize -> 5,
+  VertexShapeFunction -> "Point",
+  ImageSize -> ("ShortestEdge" -> 80),
+  ViewOptions->{ViewVector->{-3.333,-10,10},ViewProjection->"Orthographic"}
+};
+
+$GraphThemeData["BigFive3D"] := $BigFive3DThemeRules;
+
+(**************************************************************************************************)
+
 PackageExport["LineQuiver"]
 
 Options[LineQuiver] = Options[Graph];

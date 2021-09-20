@@ -436,6 +436,7 @@ computeGraphPlotAspectRatio[] := Scope[
     viewOptions //= DeleteOptions["ShrinkWrap"];
     viewOptions = Association[PlotRange -> CoordinateBounds[vertexCoords], viewOptions];
     viewTransform = ConstructGraphicsViewTransform[viewOptions];
+    If[ContainsQ[viewTransform, Indeterminate], Return[1, Block]];
     vertexCoordinates = viewTransform @ vertexCoords;
     {width, height} = PlotRangeSize @ CoordinateBounds[vertexCoordinates];
     height / width
@@ -580,6 +581,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ];
     imageSize = {imageWidth, imageHeight};
     {effectiveImageWidth, effectiveImageHeight} = EffectiveImageSize[imageSize, $GraphPlotAspectRatio];
+    GPPrint[{"ImageSize" -> imageSize, "EffectiveImageSize" -> {effectiveImageWidth, effectiveImageHeight}}];
 
     SetAll[imagePadding, 1];
     imagePadding = Replace[
@@ -1010,7 +1012,8 @@ computeEdgeLengthBasedImageSize[q_, {edgeSize_, maxWidth_}] := Scope[
 computeEdgeLengthBasedImageSize[q_, edgeSize_] := Scope[
   quantile = EdgeLengthScale[$EdgeCoordinateLists, q];
   scaling = edgeSize / quantile;
-  Max[#, 10]& /@ N[$GraphPlotSize * scaling]
+  (* 3D? *)
+  Max[#, 10]& /@ N[Take[$GraphPlotSize, 2] * scaling]
 ];
 
 imageSizeToImageFraction[sz_] := sz / effectiveImageWidth;
@@ -1464,7 +1467,7 @@ makeArrowheadsElement[cardinal_] := Scope[
   If[shape === None, Return @ Nothing];
   shape = attachCardinalAnnotation[shape, cardinal];
   If[labelCardinals =!= False, shape = attachArrowheadLabel[shape, cardinal, size, labelCardinals]];
-  element = {size, position, shape};
+  element = {size, Replace[position, Around[m_, _] :> m], shape};
   If[NegatedQ[cardinal], element //= TransformArrowheads[$negationStyle]];
   element
 ];

@@ -86,7 +86,7 @@ $genericMarkdownOptions = {
   RasterizationPath -> Automatic,
   DisplayProgress -> False,
   HeadingDepthOffset -> 0,
-  IncludePrelude -> True,
+  IncludePrelude -> Automatic,
   DryRun -> False,
   Verbose -> Automatic
 }
@@ -100,6 +100,7 @@ $genericMarkdownExportOptions = {
 DefineLiteralMacro[setupMarkdownGlobals,
 setupMarkdownGlobals[] := Quoted[
   UnpackOptions[markdownFlavor, headingDepthOffset, includePrelude];
+  SetAutomatic[includePrelude, markdownFlavor =!= "Simple"];
   flavorFields = Lookup[$flavorData, markdownFlavor, ReturnFailed[]];
   UnpackAssociation[flavorFields, imageTemplate, inlineMathTemplate, multilineMathTemplate, markdownPostprocessor];
 ]];
@@ -404,27 +405,33 @@ createTable[ostr_String] := Scope[
   If[Min[StringCount[lines, "\t"..]] == 0,
     Return @ ostr];
   grid = StringTrim /@ StringSplit[lines, "\t"..];
+  grid = Map[StringReplace["\"" -> "'"], grid, {2}];
   If[!MatrixQ[grid], Print["Bad table"]];
   first = First @ grid;
   ncols = Length @ first;
+  hasHeader = VectorQ[first, boldedQ];
   strikeRow = ConstantArray["---", ncols];
-  If[markdownFlavor === "Franklin",
+  If[markdownFlavor === "Franklin" && !hasHeader,
+    prefix = "@@table-no-header\n";
     dummyRow = ConstantArray["z", ncols];
     grid = Join[{dummyRow, strikeRow}, grid];
+    postfix = "@@"
   ,
-    grid = Insert[grid, strikeRow, If[VectorQ[first, boldedQ], 1, 0]];
+    prefix = postfix = "";
+    grid = Insert[grid, strikeRow, If[hasHeader, 2, 1]];
   ];
-  StringJoin @ {Map[toTableRowString, grid], "\n\n"}
+  StringJoin[prefix, Map[toTableRowString, grid], postfix, "\n"]
 ];
 
 toTableRowString[cols_] := StringJoin["| ", Riffle[cols, " | "], " |\n"];
 
-boldedQ[str_] := StringMatchQ[str, "**" ~~ __ ~~ "**"];
+boldedQ[str_] := StringMatchQ[str, Verbatim["**"] ~~ __ ~~ Verbatim["**"]];
 
 insertAtFirstNonheader[lines_List, template_] := Scope[
   index = SelectFirstIndex[lines, !StringStartsQ[#, "#"] && !StringMatchQ[#, Whitespace]&, 1];
   Insert[lines, template, index]
 ];
+
 
 (**************************************************************************************************)
 
@@ -468,11 +475,14 @@ trimCells[cells_List] := Take[cells, All, UpTo @ 2];
 $textCellP = "Section" | "Subsection" | "Subsubsection" | "Text";
 cellToMarkdown = Case[
 
+  Cell["Under construction.", _] := outputCellToMD @ $underConstructionCell;
+
   Cell[e_, "Chapter"]            := StringJoin[headingDepth @ 0, textCellToMD @ e];
   Cell[e_, "Section"]            := StringJoin[headingDepth @ 1, textCellToMD @ e];
   Cell[e_, "Subsection"]         := StringJoin[headingDepth @ 2, textCellToMD @ e];
   Cell[e_, "Subsubsection"]      := StringJoin[headingDepth @ 3, textCellToMD @ e];
-  Cell[e_, "Text"]               := textCellToMD @ e;
+
+  Cell[e_, "Text"]               := insertLinebreaksOutsideKatex[textCellToMD @ e, 120];
   Cell[e_, "Item"]               := StringJoin["* ", textCellToMD @ e];
   Cell[e_, "Subitem"]            := StringJoin["\t* ", textCellToMD @ e];
   Cell[e_, "SubsubItem"]         := StringJoin["\t\t* ", textCellToMD @ e];
@@ -491,6 +501,33 @@ textTagQ[tag_String] := StringEndsQ[tag, "Form" | "Symbol"];
 textTagQ[_];
 
 headingDepth[n_] := StringRepeat["#", Max[n + headingDepthOffset, 1]] <> " ";
+
+$underConstructionCell := $underConstructionCell = Cell[BoxData @ $underConstructionGraphics, "Output"];
+
+$underConstructionGraphics := $underConstructionGraphics = ToBoxes @ With[{n = 5},
+  Framed[
+    Graphics[
+      Text[Style["UNDER CONSTRUCTION", Bold, FontColor -> Black,
+        FontFamily -> "Helvetica", FontSize -> 14]],
+      Background -> RGBColor[0.9558361921359645, 0.8310111921713484, 0.0999649884717605, 1.],
+      FrameStyle -> None,
+      PlotRange -> {{-1, 1}, {-1, 1}/n},
+      ImageSize -> {200, 200/n}
+    ],
+    ImageMargins -> 25, FrameStyle -> None
+  ]
+];
+
+(**************************************************************************************************)
+
+insertLinebreaksOutsideKatex[str_String, n_] := Scope[
+  katexSpans = StringPosition[str, Verbatim["$"] ~~ Shortest[___] ~~ Verbatim["$"], Overlaps -> False];
+  katexStrings = StringTake[str, katexSpans];
+  If[katexSpans === {}, Return @ InsertLinebreaks[str, n]];
+  str = InsertLinebreaks[StringReplacePart[str, "€", katexSpans], n];
+  i = 1;
+  StringReplace[str, "€" :> Part[katexStrings, i++]]
+];
 
 (**************************************************************************************************)
 
@@ -653,3 +690,21 @@ PreviousTextCell[] := Scope[
   If[!MatchQ[cellType, "Text"], ReturnFailed[]];
   Take[cellExpr, 2]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["RemainingNotebook"]
+
+RemainingNotebook[] := Scope[
+  cells = {};
+  cell = NextCell[];
+  skip = True;
+  While[MatchQ[cell, _CellObject],
+    result = NotebookRead @ cell;
+    If[FailureQ[result], Break[]];
+    skip = skip && MatchQ[result, Cell[_, "Output" | "Print" | "Echo" | "Message", ___]];
+    If[!skip, AppendTo[cells, result]];
+    cell = NextCell @ cell;
+  ];
+  Notebook[cells]
+]

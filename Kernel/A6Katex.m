@@ -91,6 +91,8 @@ boxToKatex = Case[
 
   c_Cell := Block[{$inlineMathTemplate = Identity}, iTextCellToMD @ c];
   TemplateBox[args_, tag_] := templateBoxToKatex[tag -> args];
+
+  StyleBox[e_, "Text"] := {"\\textrm{", boxToInlineText @ e, "}"};
   StyleBox[e_, opts___] := applyInlineStyle[% @ e, Lookup[Select[{opts}, RuleQ], {FontWeight, FontSlant, FontColor}, None]];
   UnderscriptBox[e_, "_"] := {"\\underline{", % @ e, "}"};
   OverscriptBox[e_, "_"] := {"\\overline{", % @ e, "}"};
@@ -112,6 +114,8 @@ boxToKatex = Case[
   
   other_ := "UNRECOGNIZED " <> ToString[other, InputForm];
 ];
+
+boxToInlineText[e_] := TextString[e];
 
 templateBoxToKatex = Case[
   "Naturals" -> {}                  := "\\mathbb{N}";

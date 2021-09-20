@@ -723,6 +723,8 @@ ConstructGraphicsViewTransform[viewAssoc_Association] := Scope[
     Return @ GraphicsViewTransform[Dot @@ viewMatrix, viewMatrix]];
 
   plotSize = EuclideanDistance @@@ plotRange;
+  If[Total[plotSize] == 0, Return[Indeterminate]];
+
   plotRangeLower = Part[plotRange, All, 1];
   SetAutomatic[viewPoint, {1.3, -2.4, 2}];
   SetAutomatic[viewProjection, If[FreeQ[viewPoint, Infinity], "Perspective", "Orthographic"]];

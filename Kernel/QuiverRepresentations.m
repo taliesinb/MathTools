@@ -101,7 +101,7 @@ QuiverRepresentationPlot[qrep_, opts:OptionsPattern[]] := Scope[
   quiverPlot = Quiver[quiver,
     PlotLabel -> plotLabel, FilterOptions @ opts, ImageSize -> {60, 80}, GraphLegend -> None,
     VertexSize -> Large, ArrowheadShape -> {"Line", EdgeThickness -> 2.5}
-  ];
+  ] // CombineMultiedges;
 
   colors = LookupCardinalColors[quiver];
   labeledGenerators = makeLabeledGenerators[qrep["Generators"], colors];

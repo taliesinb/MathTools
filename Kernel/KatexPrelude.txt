@@ -78,8 +78,10 @@
 \gdef\inv#1{{{#1}^{-1}}}
 \gdef\groupInv{\inv}
 \gdef\groupPow#1#2{{#1}^{#2}}
+\gdef\groupCommutator#1#2{\left[{#1},{#2}\right]}
 \gdef\groupoidInv{\inv}
 
+\gdef\latticeBFS#1{\textrm{bfs}({#1})}
 \gdef\pathHomomorphism#1{#1}
 \gdef\groupoidFunction#1{#1}
 \gdef\affineModifier#1{\overrightharpoon{#1}}
@@ -162,6 +164,7 @@
 \gdef\lineQuiver#1{\textrm{L}_{#1}}
 \gdef\cycleQuiver#1{\textrm{C}_{#1}}
 \gdef\squareQuiver#1{\textrm{Sq}_{#1}}
+\gdef\cubicQuiver#1{\textrm{Cbc}_{#1}}
 \gdef\triangularQuiver#1{\textrm{Tri}_{#1}}
 \gdef\hexagonalQuiver#1{\textrm{Hex}_{#1}}
 
@@ -208,11 +211,11 @@
 \gdef\defeq{\;\overset{\tiny def}{=}\;}
 \gdef\defeq{\;≝\;}
 
-\gdef\glueSum#1{#1}
-\gdef\gluePlus{+}
+\gdef\contractSum#1{#1}
+\gdef\contractPlus{+}
 
-\gdef\glueProduct#1{#1}
-\gdef\glueTimes{{\cdot}}
+\gdef\contractProduct#1{#1}
+\gdef\contractTimes{{\cdot}}
 
 \gdef\graph#1{#1}
 \gdef\graphHomomorphism#1{#1}
@@ -257,6 +260,7 @@
 \gdef\mcard#1{\card{\mirror{#1}}}
 \gdef\nmcard#1{\card{\negated{\mirror{#1}}}}
 
+\gdef\assocArray#1{\{ {#1} \}}
 \gdef\list#1{\{ {#1} \}}
 \gdef\tuple#1{( {#1} )}
 \gdef\concat#1{ {#1} }
@@ -264,7 +268,10 @@
 \gdef\ceil#1{\lceil{#1}\rceil}
 \gdef\floor#1{\lfloor{#1}\rfloor}
 
+\gdef\tvector#1{\left[{#1}\right]_{\textrm{T}}}
 \gdef\quotient#1#2{{#1} / {#2}}
+\gdef\compactQuotient#1#2#3{{#1}\;{\upharpoonright_{#2}}\;{#3}}
+\gdef\multilineQuotient#1#2{\frac{#1}{#2}}
 
 \gdef\idElem#1{e_{#1}}
 
@@ -305,3 +312,11 @@
 
 \gdef\oneTo#1{1..{#1}}
 \gdef\zeroTo#1{0..{#1}}
+
+\gdef\qstring#1{\mathtt{"}{#1}\mathtt{"}}
+\gdef\qchar#1{\mathtt{'}{#1}\mathtt{'}}
+\gdef\string#1{{#1}}
+\gdef\character#1{{#1}}
+
+\gdef\translationCardinalValuation#1{\textrm{T}_{#1}}
+\gdef\starTranslationCardinalValuation#1{\textrm{T}^*_{#1}}
