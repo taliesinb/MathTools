@@ -160,7 +160,11 @@
 \gdef\quiver#1{#1}
 
 \gdef\bindCards#1#2{#1[#2]}
-\gdef\bouquetQuiver#1{\textrm{Bq}_{#1}}
+
+\gdef\gridQuiver#1#2{\textrm{Grid}^{#1}_{#2}}
+\gdef\treeQuiver#1#2{\textrm{Tree}^{#1}_{#2}}
+\gdef\bouquetQuiver#1{\textrm{Bq}^{#1}}
+
 \gdef\lineQuiver#1{\textrm{L}_{#1}}
 \gdef\cycleQuiver#1{\textrm{C}_{#1}}
 \gdef\squareQuiver#1{\textrm{Sq}_{#1}}
@@ -255,12 +259,26 @@
 
 \gdef\mto#1#2{{#1}\mapsto{#2}}
 \gdef\rewrite#1#2{{#1}\mapsto{#2}}
+\gdef\rewritingRule#1#2{{#1}\mapsto{#2}}
+\gdef\rewritingSystem#1{\mathcal{#1}}
+\gdef\multiwayBFS#1{\textrm{bfs}({#1})}
+\gdef\rewritingStateBinding#1#2{{\left.{#1}\!\mid\!{#2}\right.}}
+\gdef\rewritingRuleBinding#1#2{#1{\left[\,{#2}\,\right]}}
+
+\gdef\namedSystem#1{\mathsf{#1}}
+\gdef\genericRewritingSystem{\namedSystem{System}}
+\gdef\stringRewritingSystem{\namedSystem{Str}}
+\gdef\turingMachineRewritingSystem{\namedSystem{TM}}
+\gdef\cellularAutomatonRewritingSystem{\namedSystem{CA}}
+\gdef\graphRewritingSystem{\namedSystem{Gr}}
+\gdef\hypergraphRewritingSystem{\namedSystem{HGr}}
+\gdef\petriNetRewritingSystem{\namedSystem{Petri}}
 
 \gdef\ncard#1{\card{\negated{#1}}}
 \gdef\mcard#1{\card{\mirror{#1}}}
 \gdef\nmcard#1{\card{\negated{\mirror{#1}}}}
 
-\gdef\assocArray#1{\{ {#1} \}}
+\gdef\assocArray#1{\left\langle {#1} \right\rangle}
 \gdef\list#1{\{ {#1} \}}
 \gdef\tuple#1{( {#1} )}
 \gdef\concat#1{ {#1} }
@@ -315,6 +333,9 @@
 
 \gdef\qstring#1{\mathtt{"}{#1}\mathtt{"}}
 \gdef\qchar#1{\mathtt{'}{#1}\mathtt{'}}
+\gdef\lstr#1{\mathtt{#1}}
+\gdef\lchar#1{\mathtt{#1}}
+
 \gdef\string#1{{#1}}
 \gdef\character#1{{#1}}
 

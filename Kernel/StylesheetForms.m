@@ -1118,6 +1118,100 @@ declareBoxFormatting[
 
 (********************************************)
 
+declareNamedRewritingSystem[symbol_] := With[
+  {symbolName = SymbolName[symbol]},
+  declareBoxFormatting[
+    symbol[] :> TemplateBox[{}, symbolName],
+    symbol[args__] :> TemplateBox[
+      Prepend[TemplateBox[{}, symbolName]] @
+      MapUnevaluated[rewritingRuleBoxes, {args}],
+      "RewritingSystemRuleBindingForm"
+    ]
+  ];
+  $TemplateKatexFunction[symbolName] = LowerCaseFirst @ StringTrim[symbolName, "Symbol"];
+]
+
+$TemplateKatexFunction["RewritingSystemRuleBindingForm"] = Function["rewritingRuleBinding"[#1, riffled[","][##2]]];
+
+SetHoldAllComplete[rewritingRuleBoxes];
+
+rewritingRuleBoxes = Case[
+  a_ -> b_ := MakeBoxes @ RewritingRuleForm[a, b];
+  other_   := makeQGBoxes @ other;
+];
+
+(********************************************)
+
+PackageExport["GenericRewritingSystemSymbol"]
+PackageExport["StringRewritingSystemSymbol"]
+PackageExport["TuringMachineRewritingSystemSymbol"]
+PackageExport["GraphRewritingSystemSymbol"]
+PackageExport["HypergraphRewritingSystemSymbol"]
+PackageExport["CellularAutomatonRewritingSystemSymbol"]
+PackageExport["PetriNetRewritingSystemSymbol"]
+
+declareNamedRewritingSystem[GenericRewritingSystemSymbol];
+declareNamedRewritingSystem[StringRewritingSystemSymbol];
+declareNamedRewritingSystem[TuringMachineRewritingSystemSymbol];
+declareNamedRewritingSystem[GraphRewritingSystemSymbol];
+declareNamedRewritingSystem[HypergraphRewritingSystemSymbol];
+declareNamedRewritingSystem[CellularAutomatonRewritingSystemSymbol];
+declareNamedRewritingSystem[PetriNetRewritingSystemSymbol];
+
+(********************************************)
+
+PackageExport["RewritingSystemStateBindingForm"]
+
+declareBoxFormatting[
+  RewritingSystemStateBindingForm[sys_, state_] :>
+    makeHintedTemplateBox[sys -> RewritingSystemSymbol, state, "RewritingSystemStateBindingForm"]
+]
+
+$TemplateKatexFunction["RewritingSystemStateBindingForm"] = "rewritingStateBinding";
+
+(********************************************)
+
+PackageExport["RewritingSystemSymbol"]
+
+RewritingSystemSymbol[] := RewritingSystemSymbol["R"];
+
+declareSymbolForm[RewritingSystemSymbol];
+
+(**************************************************************************************************)
+
+PackageExport["MultiwayGraphForm"]
+
+declareBoxFormatting[
+  MultiwayGraphForm[rs_, init_, d_] :>
+    makeHintedTemplateBox[rs -> RewritingSystemSymbol, init, d -> SymbolForm, "MultiwayGraphForm"]
+];
+
+$TemplateKatexFunction["MultiwayGraphForm"] = applyRiffled["multiwayBFS", ","];
+
+(********************************************)
+
+PackageExport["RewriteForm"]
+
+declareBoxFormatting[
+  RewriteForm[a_, b_] :>
+    makeStandardBoxTemplate[a, b, "RewriteForm"]
+];
+
+$TemplateKatexFunction["RewriteForm"] = "rewrite";
+
+(********************************************)
+
+PackageExport["RewritingRuleForm"]
+
+declareBoxFormatting[
+  RewritingRuleForm[a_, b_] :>
+    makeStandardBoxTemplate[a, b, "RewritingRuleForm"]
+];
+
+$TemplateKatexFunction["RewritingRuleForm"] = "rewritingRule";
+
+(********************************************)
+
 PackageExport["QuiverSizeSymbol"]
 
 declareBoxFormatting[
@@ -1159,9 +1253,26 @@ declareNamedQuiverSymbol[symbol_] := With[
   $TemplateKatexFunction[formName] = LowerCaseFirst @ StringTrim[symbolName, "Symbol"];
 ]
 
+declareTwoParameterNamedQuiverSymbol[symbol_] := With[
+  {symbolName = SymbolName[symbol]},
+  {formName = symbolName <> "Form"},
+  declareBoxFormatting[
+    symbol[k_] :> ToBoxes @ symbol[k, Infinity],
+    symbol[k_, size_] :> makeHintedTemplateBox[k, size -> QuiverSizeSymbol, formName],
+    q_symbol[cards__] :> MakeBoxes @ CardinalBindingForm[q, cards]
+  ];
+  $TemplateKatexFunction[formName] = LowerCaseFirst @ StringTrim[symbolName, "Symbol"];
+]
+
 (********************************************)
 
 PackageExport["BouquetQuiverSymbol"]
+PackageExport["GridQuiverSymbol"]
+PackageExport["TreeQuiverSymbol"]
+
+declareNamedQuiverSymbol[BouquetQuiverSymbol];
+declareTwoParameterNamedQuiverSymbol[GridQuiverSymbol];
+declareTwoParameterNamedQuiverSymbol[TreeQuiverSymbol];
 
 PackageExport["LineQuiverSymbol"]
 PackageExport["CycleQuiverSymbol"]
@@ -1170,7 +1281,6 @@ PackageExport["CubicQuiverSymbol"]
 PackageExport["TriangularQuiverSymbol"]
 PackageExport["HexagonalQuiverSymbol"]
 
-declareNamedQuiverSymbol[BouquetQuiverSymbol];
 declareNamedQuiverSymbol[LineQuiverSymbol];
 declareNamedQuiverSymbol[CycleQuiverSymbol];
 declareNamedQuiverSymbol[SquareQuiverSymbol];
@@ -2483,7 +2593,7 @@ maybeParenBoxes = Case[
 PackageExport["AssociativeArrayForm"]
 
 declareBoxFormatting[
-  AssociativeArrayForm[rules__Rule] :>
+  AssociativeArrayForm[rules__] :>
     TemplateBox[
       MapUnevaluated[assocRuleBox, {rules}],
       "AssociativeArrayForm"
@@ -2491,7 +2601,10 @@ declareBoxFormatting[
 ]
 
 SetHoldAllComplete[assocRuleBox];
-assocRuleBox[a_ -> b_] := MakeBoxes @ MapsToForm[a, b];
+assocRuleBox = Case[
+  a_ -> b_ := MakeBoxes @ MapsToForm[a, b];
+  other_   := makeQGBoxes @ other;
+];
 
 $TemplateKatexFunction["AssociativeArrayForm"] = applyRiffled["assocArray", ","];
 
@@ -2617,17 +2730,6 @@ declareBoxFormatting[
 ]
 
 $TemplateKatexFunction["SpacedRowForm"] = riffled[" \\quad "];
-
-(********************************************)
-
-PackageExport["RewriteForm"]
-
-declareBoxFormatting[
-  RewriteForm[a_, b_] :>
-    makeStandardBoxTemplate[a, b, "RewriteForm"]
-];
-
-$TemplateKatexFunction["RewriteForm"] = "rewrite";
 
 (********************************************)
 
@@ -2964,6 +3066,8 @@ EllipsisSequenceForm[f_] := EllipsisSequenceForm[f, SymbolForm["n"]];
 
 EllipsisSequenceForm[f_, n_] := Sequence[f[1], f[2], EllipsisSymbol, f @ n];
 
+EllipsisSequenceForm[f_, n_, 1] := Sequence[f[1], EllipsisSymbol, f @ n];
+
 (********************************************)
 
 PackageExport["ReverseEllipsisSequenceForm"]
@@ -3104,6 +3208,10 @@ declareBoxFormatting[
 
 $TemplateKatexFunction["DoubleQuotedStringForm"] = applyRiffled["qstring", " "];
 $TemplateKatexFunction["QuotedCharacterForm"] = "qchar";
+
+$TemplateKatexFunction["LiteralStringForm"] = "lstr";
+$TemplateKatexFunction["LiteralCharacterForm"] = "lchar";
+
 $TemplateKatexFunction["StringSymbolForm"] = "strsym";
 $TemplateKatexFunction["CharacterSymbolForm"] = "charsym";
 

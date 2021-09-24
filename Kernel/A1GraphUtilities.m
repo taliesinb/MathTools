@@ -377,7 +377,8 @@ $extendedGraphOptionsRules = {
   EdgeLabelSpacing -> 0,
   VertexLabelBaseStyle -> None,
   EdgeLabelBaseStyle -> None,
-  GraphTheme -> None
+  GraphTheme -> None,
+  VertexFontSize -> None
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -1543,11 +1544,14 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
     "Random",
       graphLayout = autoLayout;
       SetAutomatic[initialVertexCoordinates, RandomReal[{-1, 1}, {vertexCount, actualDimension}]],
-    "Tree" | "CenteredTree",
+    "Tree" | "CenteredTree" | "HorizontalTree" | "HorizontalCenteredTree",
       graphLayout = {"LayeredDigraphEmbedding"};
       root = LookupExtendedOption[graph, GraphOrigin];
       If[root =!= None, AppendTo[graphLayout, "RootVertex" -> IndexOf[vertexList, root]]];
-      If[method === "CenteredTree", coordinateTransformFunction = "CenterTree"];,
+      If[StringContainsQ[method, "Horizontal"], AppendTo[graphLayout, "Orientation" -> Left]];
+      If[method === "CenteredTree", coordinateTransformFunction = "CenterHorizontal"];
+      If[method === "HorizontalCenteredTree", coordinateTransformFunction = "CenterVertical"];
+    ,
     s_String /; !StringEndsQ[s, "Embedding"],
       graphLayout //= ReplaceAll[method -> (method <> "Embedding")],
     True,
@@ -1806,16 +1810,26 @@ nudgeDuplicate[z_][p_] := p + Normalize[Cross[z - p]] * Im[$nudge] + Normalize[z
 DuplicateIndices[list_] :=
   Select[Length[#] > 1&] @ Values @ PositionIndex @ vertexCoordinates;
 
-applyCoordinateTransform["CenterTree"] := Scope[
-  horizontalGroups = GroupBy[vertexCoordinates, Round[Last @ #,.01]& -> First];
-  left = Min @ horizontalGroups;
-  horizontalOffsets = KeyValueMap[{#1, Mean[MinMax[#2]] - left}&, horizontalGroups];
-  offsetFn = Interpolation[horizontalOffsets, InterpolationOrder -> 1];
-  applyCoordinateTransform[{"HorizontalWarp", offsetFn}];
-];
+applyCoordinateTransform["CenterHorizontal"|"CenterTree"] := centerTree[True];
+applyCoordinateTransform["CenterVertical"] := centerTree[False];
+
+centerTree[horizontal_] := Scope[
+  {fn1, fn2} = If[horizontal, {Last, First}, {First, Last}];
+  groups = GroupBy[vertexCoordinates, Round[fn1 @ #,.01]& -> fn2];
+  min = Min @ groups;
+  offsets = KeyValueMap[{#1, Mean[MinMax[#2]] - min}&, groups];
+  offsetFn = Interpolation[offsets, InterpolationOrder -> 1];
+  applyCoordinateTransform[{If[horizontal, "HorizontalWarp", "VerticalWarp"], offsetFn}];
+]
 
 applyCoordinateTransform[{"HorizontalWarp", offsetFn_}] := (
   transFn = {x, y} |-> {x - offsetFn[y], y};
+  vertexCoordinates = Apply[transFn, vertexCoordinates, {1}];
+  edgeCoordinateLists = Apply[transFn, edgeCoordinateLists, {2}];
+);
+
+applyCoordinateTransform[{"VerticalWarp", offsetFn_}] := (
+  transFn = {x, y} |-> {x, y - offsetFn[x]};
   vertexCoordinates = Apply[transFn, vertexCoordinates, {1}];
   edgeCoordinateLists = Apply[transFn, edgeCoordinateLists, {2}];
 );

@@ -128,6 +128,7 @@ CayleyFunction[object_, OptionsPattern[]] := Scope[
     RepresentationObject[object], object,
     GroupQ[object], GroupRepresentation[object],
     RootSystemQ[object], object,
+    RewritingSystemObjectQ[object], object,
     True, ReturnFailed["badrep"]
   ];
   rep["CayleyFunction", "Labeled" -> symmetric, "Symmetric" -> symmetric]

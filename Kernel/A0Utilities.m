@@ -1440,6 +1440,25 @@ capitalizeFirstLetter[str_String] :=
 
 (**************************************************************************************************)
 
+PackageScope["UnpackStringOptions"]
+
+DefineMacro[UnpackStringOptions,
+UnpackStringOptions[options_, default_, syms__Symbol] :=
+  mUnpackStringOptions[options, default, {syms}]
+];
+
+SetHoldAllComplete[mUnpackStringOptions, uppercaseSymbolName];
+mUnpackStringOptions[options_, default_, syms_] :=
+  ToQuoted[Set, Quoted[syms],
+    ToQuoted[Lookup,
+      options,
+      symbolsToCapitalizedStrings @ syms,
+      Quoted[default]
+    ]
+  ];
+
+(**************************************************************************************************)
+
 PackageScope["UnpackAnonymousOptions"]
 
 DefineMacro[UnpackAnonymousOptions,

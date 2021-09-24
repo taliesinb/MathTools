@@ -165,6 +165,12 @@ Options[BouquetQuiver] = $simpleGraphOptionRules;
 
 declareSyntaxInfo[BouquetQuiver, {_, OptionsPattern[]}];
 
+
+BouquetQuiver[n_Integer, opts:OptionsPattern[]] := BouquetQuiver[
+  Switch[n, 1, "r", 2, "rb", 3, "rgb", 4, "rgbw", _, Take[$alphabet, n]],
+  opts
+];
+
 BouquetQuiver[str_String, opts:OptionsPattern[]] := BouquetQuiver[Characters[str], opts];
 
 BouquetQuiver[cardinals_List, opts:OptionsPattern[]] :=
@@ -571,10 +577,10 @@ CubicQuiver[{m_Integer, n_Integer, p_Integer}, {cx_, cy_, cz_}, opts:OptionsPatt
 
 $BigFive3DThemeRules = {
   ArrowheadSize -> 15,
-  VertexSize -> 5,
+  VertexSize -> 4,
   VertexShapeFunction -> "Point",
   ImageSize -> ("ShortestEdge" -> 80),
-  ViewOptions->{ViewVector->{-3.333,-10,10},ViewProjection->"Orthographic"}
+  ViewOptions->{ViewVector->{-3.333,-10,10},ViewProjection->"Orthographic", "ShrinkWrap" -> True}
 };
 
 $GraphThemeData["BigFive3D"] := $BigFive3DThemeRules;
@@ -635,4 +641,76 @@ enrichedEdge[a_, b_, p_ParallelCardinal, n_] :=
   DirectedEdge[a, b, CardinalSet @ (List @@ p)];
 
 ModPart[seq_, n_] := Part[seq, Mod[n, Length[seq], 1]];
+
+(**************************************************************************************************)
+
+PackageExport["GridQuiver"]
+
+Options[GridQuiver] = Options[Graph];
+
+GridQuiver[k_Integer, n_Integer, opts:OptionsPattern[]] :=
+  Switch[k,
+    1, LineQuiver[n, opts],
+    2, SquareQuiver[n, opts],
+    3, CubicQuiver[n, opts],
+    _, generalGridQuiver[k, n, opts]
+  ];
+
+generalGridQuiver[k_, n_, opts___] := Scope[
+  vertices = Flatten @ Array[VertexProduct, Table[n, k]];
+  edges = Flatten @ Table[Map[generalGridEdge[n, i], vertices], {i, 1, k}];
+  ExtendedGraph[
+    vertices, edges,
+    opts,
+    ExtendedGraphLayout -> "SpringElectrical",
+    Cardinals -> Range[k],
+    LayoutDimension -> 3,
+    GraphTheme -> "BigFive3D"
+  ]
+]
+
+generalGridEdge[n_, i_][vertex_] :=
+  If[Part[vertex, i] < n,
+    DirectedEdge[vertex, MapAt[PlusOperator[1], vertex, i], i],
+    {}
+  ];
+
+(**************************************************************************************************)
+
+PackageExport["TreeQuiver"]
+PackageExport["TreeVertex"]
+
+Options[TreeQuiver] = Options[Graph];
+
+TreeQuiver[k_Integer, n_Integer, opts:OptionsPattern[]] := Scope[
+  If[!OddQ[n], ReturnFailed[]];
+  n = (n - 1) / 2;
+  cards = Join[Range[k], Negated /@ Range[k]];
+  vertices = Flatten @ Table[TreeVertex @@@ Tuples[cards, i], {i, 0, n}];
+  vertices = Discard[vertices, MatchQ[TreeVertex[___, c_, Negated[c_], ___] | TreeVertex[___, Negated[c_], c_, ___]]];
+  edges = makeTreeEdge /@ vertices;
+  vectorAssoc = AssociationThread[cards, CirclePoints[2 * k]];
+  coords = Map[treeVertexCoord, vertices];
+  scaling = 1 / k;
+  ExtendedGraph[
+    vertices, edges,
+    opts,
+    VertexCoordinates -> coords,
+    Cardinals -> Range[k],
+    GraphLayout -> {"NudgeDistance" -> 0},
+    ImageSize -> "AverageEdge" -> 30,
+    GraphTheme -> "BigFive"
+  ]
+]
+
+treeVertexCoord = Case[
+  TreeVertex[] := {0, 0};
+  t_TreeVertex := Total[Lookup[vectorAssoc, List @@ t] * Power[scaling, Range @ Length @ t]];
+];
+
+makeTreeEdge = Case[
+  TreeVertex[] := Nothing;
+  t_TreeVertex := DirectedEdge[Most @ t, t, Last @ t];
+]
+
 

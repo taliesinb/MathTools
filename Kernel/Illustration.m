@@ -551,6 +551,13 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
   paths = parsePath /@ DeleteDuplicates[paths];
   If[ContainsQ[paths, $Failed], ReturnFailed[]];
   pathWords = extractWord /@ paths;
+  UnpackStringOptions[{opts}, Automatic, additionalEdges, direction];
+  {doForward, doReverse} = Switch[direction,
+    "Forward" | Automatic, {True, False},
+    "Backward", {False, True},
+    "Both", {True, True},
+    _, ReturnFailed[]
+  ];
   Which[
     cardinalDirs === Inherited,
       coords = AssociationThread[
@@ -574,16 +581,12 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
   vertices = Map[LatticeVertex, pathWords];
   pathWords2 = DeepCases[#, Path[_, word_, ___] :> word]& /@ paths;
   pathWordIndex = PositionIndex[pathWords2, 2];
-  edges = DeleteDuplicates @ Map[
-    word |-> DirectedEdge[
-      Part[vertices, removeSingleton @ pathWordIndex @ Most @ word],
-      Part[vertices, removeSingleton @ pathWordIndex @ word],
-      Last @ word
-    ],
-    DeleteCases[{}] @ Keys @ pathWordIndex
-  ];
-  additionalEdges = Lookup[{opts}, "AdditionalEdges", {}];
-  If[additionalEdges =!= {},
+  pathKeys = DeleteCases[{}] @ Keys @ pathWordIndex;
+  edges' = DeleteDuplicates @ Flatten @ {
+    If[doForward, Map[makeExtensionEdges[Most, Identity], pathKeys], Nothing],
+    If[doReverse, Map[makeExtensionEdges[Rest, MirrorForm], pathKeys], Nothing]
+  };
+  If[additionalEdges =!= Automatic,
     edges = Join[edges, Map[parseAdditionalEdge, additionalEdges]];
   ];
   $setback = 3;
@@ -598,6 +601,12 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
   ] // CombineMultiedges;
   LargeLabeled[plot, ForwardPathQuiverSymbol["Q", v0Label]]
 ];
+
+makeExtensionEdges[wordFn_, mirrFn_][word_] := DirectedEdge[
+  Part[vertices, removeSingleton @ pathWordIndex @ wordFn @ word],
+  Part[vertices, removeSingleton @ pathWordIndex @ word],
+  mirrFn @ Last @ word
+]
 
 parseAdditionalEdge[DirectedEdge[a_, b_, c_]] :=
   DirectedEdge[parseAdditionalEdgeVertex @ a, parseAdditionalEdgeVertex @ b, c];

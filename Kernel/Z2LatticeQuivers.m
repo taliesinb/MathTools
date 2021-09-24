@@ -276,7 +276,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
 
   (* rewrite the indexed edges to use the explicit vertices *)
   edgeList = DeleteDuplicates[indexEdgeList] /.
-    DirectedEdge[i_, j_, c_] :> DirectedEdge[Part[abstractVertexList, i], Part[abstractVertexList, j], c];
+    DirectedEdge[i_, j_, c___] :> DirectedEdge[Part[abstractVertexList, i], Part[abstractVertexList, j], c];
   If[abstractCoordinateFunction =!= Identity,
     edgeList //= DeleteDuplicates];
 
@@ -375,24 +375,30 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
 
   graphLegend //= makeQLatticeGraphLegend;
 
+  baseOpts = deleteAutomaticOptions[
+    ImageSize -> imageSize,
+    GraphLayout -> graphLayout,
+    VertexCoordinates -> vertexCoordinates
+  ];
+
   If[head === LatticeGraph,
     graph = ExtendedGraph[
       finalVertexList, edgeList,
       GraphLegend -> graphLegend,
-      ImageSize -> imageSize,
-      GraphLayout -> graphLayout, VertexCoordinates -> vertexCoordinates,
-      GraphOrigin -> ivertex, Cardinals -> trueCardinalList,
+      GraphOrigin -> ivertex,
+      Cardinals -> trueCardinalList,
       Sequence @@ simpleOptions,
+      baseOpts,
       ArrowheadStyle -> None, BaselinePosition -> Center
     ];
     If[FailureQ[graph], ReturnFailed[head::badgconst]];
   ,
     imageSize //= toStandardImageSize;
     graph = Quiver[finalVertexList, edgeList,
-      GraphLayout -> graphLayout, VertexCoordinates -> vertexCoordinates,
-      GraphLegend -> graphLegend, ImageSize -> imageSize,
+      GraphLegend -> graphLegend,
       GraphOrigin -> ivertex, Cardinals -> trueCardinalList,
-      Sequence @@ simpleOptions, BaselinePosition -> Center
+      Sequence @@ simpleOptions, BaselinePosition -> Center,
+      baseOpts
     ];
     If[FailureQ[graph], ReturnFailed[head::renamenotquiv]];
   ];
@@ -409,6 +415,11 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     If[norms =!= None, "Norm" -> norms, {}]
   |>]
 ];
+
+(* this exists to allow graph themes to take over, but i should fix
+the problem in graph themes intead *)
+deleteAutomaticOptions[l___, opt_ -> Automatic, r___] := deleteAutomaticOptions[l, r];
+deleteAutomaticOptions[m___] := m;
 
 makeQLatticeGraphLegend = Case[
   "Quiver" :=

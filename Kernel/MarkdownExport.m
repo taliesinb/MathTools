@@ -270,11 +270,12 @@ ExportNavigationPage[files_, relativePrefix_String, navPath_] := Scope[
   ];
   titles = getFileTitle /@ files;
   If[!StringVectorQ[titles], ReturnFailed[]];
-  fileNames = FileBaseName /@ files;
+  fileNames = StringJoin[relativePrefix, FileBaseName[#]]& /@ files;
   navData = MapThread[
-    <|"path" -> StringJoin[relativePrefix, #1], "title" -> toNavTitle[#2]|>&,
+    <|"path" -> #1, "title" -> toNavTitle[#2]|>&,
     {fileNames, titles}
   ];
+  $titleToPath = AssociationThread[titles, fileNames];
   Which[
     StringQ[navPath],
       navOutputPath = StringReplace[navPath, ".template" -> ""],
@@ -288,7 +289,7 @@ ExportNavigationPage[files_, relativePrefix_String, navPath_] := Scope[
   navTemplate = FileTemplate @ navPath;
   If[navOutputPath === navPath, ReturnFailed[]];
   nextPageFooters = Map[$nextPageTemplate, Rest @ navData];
-  ScanThread[insertNextPageFooter, {Most @ files, nextPageFooters}];
+  ScanThread[insertNextPageFooter, {files, Append[None] @ nextPageFooters}];
   FileTemplateApply[navTemplate, {navData}, navOutputPath]
 ];
 
@@ -313,9 +314,25 @@ insertNextPageFooter[file_, footer_] := Scope[
     cutoff = Part[StringPosition[content, $nextLinkPrefix, 1], 1, 1] - 1;
     newContent = StringTake[content, cutoff];
   ];
-  newContent = StringTrim[newContent] <> footer;
-  If[content =!= newContent, ExportUTF8[file, Global`$last ^= newContent]];
+  If[StringContainsQ[content, $linkRegexp],
+    newContent = StringReplace[newContent, $linkRegexp :> toInlineLink["$1", file]];
+  ];
+  If[footer =!= None,
+    newContent = StringTrim[newContent] <> footer];
+  If[content =!= newContent, ExportUTF8[file, newContent]];
 ];
+
+toInlineLink[title_, file_] := Scope[
+  path = Lookup[$titleToPath, title, None];
+  If[path === None,
+    Print["Could not resolve inline link to \"", title, "\" in file ", file];
+    Print["Available: ", Keys @ $titleToPath];
+    Return @ StringJoin["\"", title, "\""]
+  ];
+  StringJoin["[", title, "](", path, ")"]
+];
+
+$linkRegexp = RegularExpression["""\[\[\[([^]]+)\]\]\]"""];
 
 (**************************************************************************************************)
 
@@ -402,10 +419,16 @@ $tableCreation = StartOfLine ~~ " "... ~~ text:Repeated["* " ~~ Except["\n"].. ~
 createTable[ostr_String] := Scope[
   str = StringTrim @ ostr;
   lines = StringDrop[StringSplit[str, "\n"..], 2];
+  allowCompact = True
+  If[StringStartsQ[First @ lines, "META: "],
+    {meta, lines} = FirstRest @ lines;
+    allowCompact = StringFreeQ[meta, "WIDE"];
+  ];
   If[Min[StringCount[lines, "\t"..]] == 0,
     Return @ ostr];
   grid = StringTrim /@ StringSplit[lines, "\t"..];
   grid = Map[StringReplace["\"" -> "'"], grid, {2}];
+  grid = Replace[grid, "**_**" -> "", {2}];
   If[!MatrixQ[grid], Print["Bad table"]];
   first = First @ grid;
   ncols = Length @ first;
@@ -415,12 +438,15 @@ createTable[ostr_String] := Scope[
     prefix = "@@table-no-header\n";
     dummyRow = ConstantArray["z", ncols];
     grid = Join[{dummyRow, strikeRow}, grid];
-    postfix = "@@"
+    postfix = "@@\n"
   ,
-    prefix = postfix = "";
+    prefix = postfix = "\n";
     grid = Insert[grid, strikeRow, If[hasHeader, 2, 1]];
   ];
-  StringJoin[prefix, Map[toTableRowString, grid], postfix, "\n"]
+  tableRowStrings = Map[toTableRowString, grid];
+  If[ncols > 3 && allowCompact,
+    prefix = "@@table-compact\n" <> prefix; postfix = "@@\n" <> postfix];
+  StringJoin[prefix, tableRowStrings, postfix]
 ];
 
 toTableRowString[cols_] := StringJoin["| ", Riffle[cols, " | "], " |\n"];
@@ -624,6 +650,7 @@ $finalStringFixups2 = {
   "$ !" -> "$!",
   "$ :" -> "$:",
   "n'th" -> "$n^{\\textrm{th}}$",
+  "i'th" -> "$i^{\\textrm{th}}$",
   l:("f"|"p") ~~ "-" ~~ r:("vert"|"edge"|"cardinal"|"quiver") :>
     StringJoin["_", l, "_\\-", r]
 };

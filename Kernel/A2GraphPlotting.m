@@ -19,6 +19,8 @@ PackageExport["CardinalColorFunction"]
 PackageExport["VertexLabelPosition"]
 PackageExport["VertexLabelSpacing"]
 PackageExport["VertexLabelBaseStyle"]
+PackageExport["VertexFontSize"]
+
 PackageExport["EdgeLabelPosition"]
 PackageExport["EdgeLabelSpacing"]
 PackageExport["EdgeLabelBaseStyle"]
@@ -508,7 +510,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     UnpackAnonymousThemedOptions[graph, Automatic,
       imageSize, vertexSize, vertexStyle, edgeStyle,
-      vertexLabelStyle, edgeLabelStyle,
+      vertexLabelStyle, edgeLabelStyle, vertexFontSize,
       vertexShapeFunction, edgeShapeFunction, frameStyle, baselinePosition
     ];
 
@@ -859,6 +861,15 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     (* compute prolog and epilog *)
     If[prologFunction =!= None, AppendTo[prolog, prologFunction[$Graph]]];
     If[epilogFunction =!= None, AppendTo[epilog, epilogFunction[$Graph]]];
+
+    If[shrinkWrap,
+      hullIndices = ConvexHullPointIndices[$VertexCoordinates];
+      hullPoints = Part[$VertexCoordinates, hullIndices];
+      mean = Mean @ hullPoints;
+      spherePoints = Tuples[{-1, 0, 1}, 3] * imageSizeToPlotSize[Max[imagePadding]];
+      hullPoints = Catenate[PlusVector[spherePoints, #]& /@ hullPoints];
+      graphicsElements = {Style[Point @ hullPoints, GrayLevel[1, .99], AbsolutePointSize[0]], graphicsElements};
+    ];
 
     (* assemble graphics *)
     graphics = If[$GraphIs3D, makeGraphics3D, makeGraphics][
@@ -1635,6 +1646,7 @@ $arrowheads2D = Association[
       {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
       ToPacked @ {{{0.3, -0.3}, {0.3, 0.3}, {0., 0.}}}
     ]},
+
   "HalfTriangle" ->
     FilledCurve[
       {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
@@ -1677,9 +1689,21 @@ $arrowheads2D = Association[
       ToPacked @ {{{+0.4, -0.4}, {+0.4, 0.}, {0., 0.}}}
     ]},
 
+  "OtherHalfTriangle" ->
+    FilledCurve[
+      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
+      ToPacked @ {{{-0.15, 0.4}, {-0.15, 0.}, {0.25, 0.}}}
+    ],
+
   "FlatArrow" ->
     Polygon[
       ToPacked @ {{{-0.3166, -0.3333}, {-0.3166, 0.3333}, {0.25, 0.}}}
+    ],
+
+  "NarrowArrow" ->
+    FilledCurve[
+      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
+      ToPacked @ {{{-0.3166, -0.25}, {-0.1833, 0.}, {-0.3166, 0.25}, {0.25, 0.}}}
     ],
 
   "Arrow" ->
@@ -2068,7 +2092,12 @@ drawGraphicsWithColor[None, pos_, color_, size_] :=
   drawPoint[size][pos, color];
 
 drawGraphicsWithColor[other_, pos_, color_, size_] :=
-  Text[Style[other, color, FontSize -> Max[size * effectiveImageWidth * 0.8, 8]], pos, {0, 0}, Background -> White];
+  Text[
+    Style[other, color, FontSize -> Replace[vertexFontSize,
+      None|Automatic :> Max[size * effectiveImageWidth * 0.8, 8]]
+    ],
+    pos, {0, 0}, Background -> White
+  ];
 
 drawGraphicsWithColor[g_Graph, pos_, color_, size_] :=
   drawGraphicsWithColor[ExtendedGraphPlot @ g, pos, color, size];
