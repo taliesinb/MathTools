@@ -415,10 +415,17 @@ PackageExport["NegateGraph"]
 
 NegateGraph[g_Graph] := Scope[
   Graph[
-    VertexList @ g, Map[reverseEdge, EdgeList @ g],
+    VertexList @ g, ReverseEdges @ EdgeList @ g,
     Options @ g
   ]
 ]
+
+
+(**************************************************************************************************)
+
+PackageExport["ReverseEdges"]
+
+ReverseEdges[edges_List] := Map[reverseEdge, edges];
 
 reverseEdge = Case[
   head_[a_, b_] := head[b, a];

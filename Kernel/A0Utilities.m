@@ -511,6 +511,26 @@ RealVectorQ[list_] := VectorQ[list, Internal`RealValuedNumberQ];
 
 (**************************************************************************************************)
 
+PackageExport["IntegerVectorQ"]
+
+SetUsage @ "
+IntegerVectorQ[list$] gives True if list$ is a vector of integers.
+"
+
+IntegerVectorQ[list_] := VectorQ[list, IntegerQ];
+
+(**************************************************************************************************)
+
+PackageExport["PositiveIntegerVectorQ"]
+
+SetUsage @ "
+IntegerVectorQ[list$] gives True if list$ is a vector of integers.
+"
+
+PositiveIntegerVectorQ[list_] := VectorQ[list, PositiveIntegerQ];
+
+(**************************************************************************************************)
+
 PackageExport["UnitIntervalArrayQ"]
 
 SetUsage @ "

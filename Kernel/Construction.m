@@ -353,16 +353,92 @@ validQuiverPartitionQ[outTable_, partition_] := Scope[
 checkForConflicts[list_] :=
   If[CountDistinct[DeleteDuplicates @ DeleteNone @ list] > 1, Return[False, Block]];
 
+(**************************************************************************************************)
+
+PackageExport["QuiverContractionGeneratingPartitions"]
+
+QuiverContractionGeneratingPartitions[quiver_] := Scope[
+  cards = CardinalList @ quiver;
+  allCards = Join[cards, Negated /@ cards];
+  outTable = TagVertexOutTable @ quiver;
+  vertices = VertexRange @ quiver;
+  vertexPairs = Subsets[vertices, {2}];
+  ExtractIndices[
+    VertexList @ quiver,
+    DeleteDuplicates @ Map[growCliques, vertexPairs]
+  ]
+];
+
+growCliques[init_] := Scope[
+  $ds = CreateDataStructure["DisjointSet"];
+  $hs = CreateDataStructure["HashSet"];
+  addClique[init];
+  Label["Start"];
+  Scan[If[checkSubset[#], Goto["Start"]]&, $ds["Subsets"]];
+  Sort @ Map[Sort, $ds["Subsets"]]
+];
+  
+checkSubset[subset_] := Scope[
+  (* If[!$hs["Insert", Sort @ subset], Return[False]]; *)
+  $dirty = False;
+  KeyValueMap[
+    {card, table} |-> addClique @ DeleteNone @ Part[table, subset],
+    outTable
+  ];
+  $dirty
+];
+
+addClique = Case[
+  {_} | {} := Null;
+  {a_, b_} := (
+    $ds["Insert", a];
+    $ds["Insert", b];
+    If[!$ds["CommonSubsetQ", a, b], $ds["Unify", a, b]; $dirty = True];
+  );
+  elems_List := Block[{f, rest},
+    Scan[$ds["Insert", #]&, elems];
+    f = First @ elems;
+    Scan[
+      If[!$ds["CommonSubsetQ", f, #],
+        $dirty = True;
+        $ds["Unify", f, #];
+      ]&,
+      Rest @ elems
+    ];
+  ];
+];
+
+(**************************************************************************************************)
+
+PackageExport["VertexPartitionGraphics"]
+
+Options[VertexPartitionGraphics] = Options[Graphics];
+
+VertexPartitionGraphics[graph_, partition_List, opts:OptionsPattern[]] := Scope[
+  UnpackOptions[plotRangePadding];
+  vertexCoordsAssoc = LookupVertexCoordinates @ graph;
+  vertexCoords = Values @ vertexCoordsAssoc;
+  vertexCoordsBounds = CoordinateBounds[vertexCoords, Scaled[0.1]];
+  $partitionGraphicsOpts = opts;
+  If[VectorQ[partition, IntegerVectorQ], makePartitionGraphics, Map @ makePartitionGraphics] @ partition
+]
+
+$partitionGraphicsOpts = Sequence[];
+
 makePartitionGraphics[partitionList_] := Scope[
   partitionPoints = Lookup[vertexCoordsAssoc, #]& /@ partitionList;
   primitives = {
     {GrayLevel[0, 0.2], CapForm["Round"], AbsoluteThickness[4], Line @ Catenate[makeClique /@ partitionPoints]},
     AbsolutePointSize[4], Point @ vertexCoords
   };
-  Graphics[primitives,
-    PlotRange -> vertexCoordsBounds, FrameStyle -> LightGray, FrameTicks -> None,
-    ImageSize -> 35, Frame -> True, Background -> White, PlotRangePadding -> plotRangePadding
-  ]
+  graphics = Graphics[primitives,
+    PlotRange -> vertexCoordsBounds,
+    $partitionGraphicsOpts,
+    FrameStyle -> LightGray, FrameTicks -> None,
+    ImageSize -> 35, Frame -> True, Background -> White,
+    PlotRangePadding -> plotRangePadding
+  ];
+  graphics
 ];
 
 makeClique[list_] := Subsets[list, {2}];
