@@ -21,6 +21,8 @@ PackageExport["VertexLabelSpacing"]
 PackageExport["VertexLabelBaseStyle"]
 PackageExport["VertexFontSize"]
 
+PackageExport["VertexOverlapResolution"]
+
 PackageExport["EdgeLabelPosition"]
 PackageExport["EdgeLabelSpacing"]
 PackageExport["EdgeLabelBaseStyle"]
@@ -61,6 +63,8 @@ SetUsage @ "SelfLoopRadius is an extended option to Graph."
 SetUsage @ "MultiEdgeDistance is an extended option to Graph."
 SetUsage @ "PackingSpacing is an extended option to Graph."
 
+SetUsage @ "VertexLayout is an extended option to Graph."
+SetUsage @ "VertexOverlapResolution is an extended option to Graph."
 SetUsage @ "VertexLabelPosition is an extended option to Graph."
 SetUsage @ "VertexLabelSpacing is an extended option to Graph."
 SetUsage @ "VertexLabelBaseStyle is an extended option to Graph."

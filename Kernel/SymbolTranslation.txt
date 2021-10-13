@@ -154,6 +154,8 @@ _                            Reals      \R                  ℝ
 \[FilledRectangle]           _          _                   ▮
 \[EmptySquare]               _          _                   □
 \[FilledSquare]              _          _                   ■
+\[EmptySmallSquare]          _          _                   ▫
+\[FilledSmallSquare]         _          _                   ▪
 \[LeftTriangle]              _          \triangleleft       ◁
 \[FilledLeftTriangle]        _          \blacktriangleleft  ◀
 \[RightTriangle]             _          \triangleright      ▷

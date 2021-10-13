@@ -65,6 +65,14 @@ HeadingDepthOffset is an option to various markdown-related functions.
 
 (**************************************************************************************************)
 
+PackageExport["IndexPagePath"]
+
+SetUsage @ "
+IndexPagePath is an option to various markdown-related functions.
+"
+
+(**************************************************************************************************)
+
 PackageExport["IncludePrelude"]
 
 SetUsage @ "
@@ -230,7 +238,9 @@ enumerateFiles[spec___, path_] := Scope[
 
 $notebookP = _File | _NotebookObject;
 
-General::nbimportfail = "Failed to convert notebook or notebooks ``."
+PackageExport["$LastFailedMarkdownResult"]
+
+General::nbimportfail = "Failed to convert notebook or notebooks ``. Invalid result available as $LastFailedMarkdownResult."
 doImportExport[spec:($notebookP | {$notebookP..}), exportPath_, True] := Scope[
   str = iToMarkdownString @ spec;
   If[!StringQ[str], ThrowMessage["nbimportfail", spec]];
@@ -263,7 +273,12 @@ toMDFileName[string_] := Scope[
 
 PackageExport["ExportNavigationPage"]
 
-ExportNavigationPage[files_, relativePrefix_String, navPath_] := Scope[
+Options[ExportNavigationPage] = {
+  IndexPagePath -> None
+}
+
+ExportNavigationPage[files_, relativePrefix_String, navPath_, OptionsPattern[]] := Scope[
+  UnpackOptions[indexPagePath];
   If[StringQ[files],
     If[FileType[files] =!= Directory, ReturnFailed[]];
     files = FileNames["*.md", files];
@@ -348,7 +363,7 @@ $flavorData["Franklin"] = <||>;
 
 $flavorData["Franklin", "ImageTemplate"] = StringTemplate @ StringTrim @  """
 ~~~
-<img src="`relativepath`" width="`width`">
+<img src="`relativepath`" width="`width` alt="`caption`">
 ~~~
 """;
 
@@ -406,7 +421,7 @@ ToMarkdownString[spec_, opts:OptionsPattern[]] := Scope[
 
 iToMarkdownString[spec_] := Scope[
   lines = toMarkdownLines @ spec;
-  If[!StringVectorQ[lines], ReturnFailed[]];
+  If[!StringVectorQ[lines], $LastFailedMarkdownResult ^= lines; ReturnFailed[]];
   If[TrueQ @ includePrelude,
     lines = insertAtFirstNonheader[lines, {multilineMathTemplate @ $KatexPrelude}]];
   result = StringJoin @ {Riffle[lines, "\n\n"], "\n\n"};
@@ -485,10 +500,15 @@ toMarkdownLines[nb_NotebookObject] :=
 toMarkdownLines[list_List] :=
   Catenate @ Riffle[Map[toMarkdownLines, list], "---"];
 
-toMarkdownLines[Notebook[cells_List, ___]] :=
+toMarkdownLines[Notebook[cells_List, ___]] := Scope[
+  $lastCaption = None;
   Map[cellToMarkdown, trimCells @ cells]
+]
 
-toMarkdownLines[c_Cell] := List @ cellToMarkdown @ Take[c, UpTo @ 2];
+toMarkdownLines[c_Cell] := Scope[
+  $lastCaption = None;
+  List @ cellToMarkdown @ Take[c, UpTo @ 2]
+];
 
 toMarkdownLines[e_] := List[
   "#### toMarkdownLines: unknown expression with head " <> TextString @ Head @ e
@@ -498,11 +518,18 @@ trimCells[cells_List] := Take[cells, All, UpTo @ 2];
 
 (**************************************************************************************************)
 
+$lastCaption = None;
+
 $textCellP = "Section" | "Subsection" | "Subsubsection" | "Text";
+
+$captionPattern = RowBox[{"(*", RowBox[{"CAPTION", ":", caption___}], "*)"}] :>
+  StringJoin @ iTextCellToMDOuter @ RowBox[{caption}];
+
 cellToMarkdown = Case[
 
   Cell["Under construction.", _] := outputCellToMD @ $underConstructionCell;
 
+  Cell[e_, "Code"]               := ($lastCaption = First[Cases[e, z_String :> $captionRegex], None]; Nothing);
   Cell[e_, "Chapter"]            := StringJoin[headingDepth @ 0, textCellToMD @ e];
   Cell[e_, "Section"]            := StringJoin[headingDepth @ 1, textCellToMD @ e];
   Cell[e_, "Subsection"]         := StringJoin[headingDepth @ 2, textCellToMD @ e];
@@ -557,11 +584,11 @@ insertLinebreaksOutsideKatex[str_String, n_] := Scope[
 
 (**************************************************************************************************)
 
-outputCellToMD[cell_] := rasterizeCell @ cell
+outputCellToMD[cell_] := rasterizeCell[cell, $lastCaption];
 
 $rasterMetadataCache = Data`UnorderedAssociation[];
 
-rasterizeCell[cell_] := Scope[
+rasterizeCell[cell_, caption_:None] := Scope[
 
   If[rasterizationPath === None || imageTemplate === None,
     Return["#### Placeholder for image"]];
@@ -610,7 +637,12 @@ rasterizeCell[cell_] := Scope[
   Label[skipRasterization];
   width = Ceiling @ First[imageDims * 0.5];
   imageRelativePath = toEmbedPath[relativeRasterizationPath, imageFileName, imagePath];
-  markdown = imageTemplate[<|"imagepath" -> imagePath, "relativepath" -> imageRelativePath, "width" -> width|>];
+  markdown = imageTemplate @ Association[
+    "imagepath" -> imagePath,
+    "relativepath" -> imageRelativePath,
+    "width" -> width,
+    "caption" -> Replace[$lastCaption, None -> ""]
+  ];
   
   If[!$dryRun, $rasterMetadataCache[cacheKey] ^= {imageDims, imageFileName, imagePath}];
 
@@ -679,6 +711,8 @@ iTextCellToMD = Case[
   list_List :=
     Map[%, list];
   TextData[e_] :=
+    % @ e;
+  RowBox[e_List] :=
     % @ e;
   Cell[BoxData[boxes_, ___], ___] :=
     inlineMathTemplate @ boxesToKatexString @ RowBox @ ToList @ boxes;

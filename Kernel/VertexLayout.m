@@ -174,7 +174,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
       initialVertexCoordinates = Automatic;
     ,
       If[nudgeDistance =!= 0,
-        initialVertexCoordinates = nudgeOverlappingVertices[initialVertexCoordinates, plotRange]];
+        initialVertexCoordinates = nudgeOverlappingVertices[initialVertexCoordinates, nudgeDistance, plotRange]];
     ];
   ];
 
@@ -312,7 +312,7 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
   ];
 
   UnpackExtendedThemedOptions[graph,
-    vertexLayout, layoutDimension, viewOptions, coordinateTransformFunction,
+    vertexLayout, layoutDimension, viewOptions, coordinateTransformFunction, vertexOverlapResolution,
     vertexCoordinateRules, vertexCoordinateFunction, selfLoopRadius, multiEdgeDistance, packingSpacing
   ];
     
@@ -358,23 +358,82 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
     "VertexCoordinates" -> vertexCoordinates,
     "LayoutDimension" -> layoutDimension,
     "SelfLoopRadius" -> selfLoopRadius,
-    "MultiEdgeDistance" -> multiEdgeDistance
+    "MultiEdgeDistance" -> multiEdgeDistance,
+    "VertexOverlapResolution" -> vertexOverlapResolution
   ];
 
   result = vertexLayout @ data;
-  If[MatchQ[result, {_ ? CoordinateMatrixQ, _ ? CoordinateArrayQ}],
-    result
+  If[MatchQ[result, {_ ? CoordinateMatrixQ, _ ? CoordinateMatricesQ}],
+    {$vertexCoordinates, $edgeCoordinateLists} = result;
   ,
     Message[ExtractGraphPrimitiveCoordinates::layoutobjres];
-    vertexCoordinates = CirclePoints @ vertexCount;
-    edgeCoordinateLists = Part[vertexCoordinates, #]& /@ Take[indexEdges, All, 2];
-    {vertexCoordinates, edgeCoordinateLists}
-  ]
+    $vertexCoordinates = CirclePoints @ vertexCount;
+    $edgeCoordinateLists = Part[$vertexCoordinates, {#1, #2}]& @@@ edgeList;
+  ];
 
-  (* Todo: handle vertex overlaps *)
+  If[coordinateTransformFunction ~!~ None | {},
+    applyCoordinateTransformNew[coordinateTransformFunction];
+  ];
+
+  If[CoordinateMatrixQ[vertexCoordinates, 3] && layoutDimension == 2,
+    SetAutomatic[viewOptions, $automaticViewOptions];
+    viewOptions = Association[PlotRange -> CoordinateBounds[vertexCoordinates], viewOptions];
+    viewTransform = ConstructGraphicsViewTransform[viewOptions];
+    $vertexCoordinates //= viewTransform;
+    $edgeCoordinateLists //= Map[viewTransform];
+  ];
+
+  {ToPackedReal @ $vertexCoordinates, ToPackedRealArrays @ $edgeCoordinateLists}
 ]
 
-$defaultVertexLayout := $defaultVertexLayout = SpringLayout[];
+$defaultVertexLayout := $defaultVertexLayout = SpringElectricalLayout[];
+
+(* we'll remove this when we've fully transitioned to the new code *)
+applyCoordinateTransformNew[trans_] := Block[{vertexCoordinates, edgeCoordinateLists},
+  {vertexCoordinates, edgeCoordinateLists} = {$vertexCoordinates, $edgeCoordinateLists};
+  applyCoordinateTransform[trans];
+  {$vertexCoordinates, $edgeCoordinateLists} = {vertexCoordinates, edgeCoordinateLists};
+];
+
+(* TODO: moveVertex, which will update the vertex, find all edges that start or end there,
+and shear them to match *)
+
+(**************************************************************************************************)
+
+PackageExport["LatticeLayout"]
+PackageExport["BasisVectors"]
+
+Options[LatticeLayout] = {BasisVectors -> Automatic};
+
+LatticeLayout[opts:OptionsPattern[]][data_] := Scope[
+  UnpackOptions[basisVectors];
+  UnpackAssociation[data, indexGraph, graph];
+
+  {vertexCoordinates, visitedEdges} = LatticeQuiverCoordinates[graph, basisVectors];
+
+  edgePairs = EdgePairs @ indexGraph;
+
+  wasVisited = ConstantArray[True, EdgeCount @ indexGraph];
+  Part[wasVisited, visitedEdges] = True;
+
+  edgeCoordinateLists = MapThread[makeLatticeEdge, {edgePairs, wasVisited}];
+
+  {vertexCoordinates, edgeCoordinateLists}
+]
+
+makeLatticeEdge[pair_, True] := Part[vertexCoordinates, pair];
+makeLatticeEdge[pair_, False] := Scope[
+  {a, b} = Part[vertexCoordinates, pair];
+  d = 0.25 * Normalize[b - a];
+  e = rot90 @ d;
+  ae = a + e;
+  be = b + e;
+  corn = 4;
+  DiscretizeCurve[{a, ae - e/corn, ae, ae + d/corn, be - d/corn, be, be + e/corn, b}]
+];
+
+rot90[{x_, y_}] := {y, -x};
+rot270[{x_, y_}] := {-y, x};
 
 (**************************************************************************************************)
 
@@ -430,6 +489,8 @@ Options[LinearLayout] = {
   Orientation -> Left
 };
 
+$threePoints = CirclePoints[3];
+
 LinearLayout[opts:OptionsPattern[]][data_] := Scope[
   UnpackOptions[method, orientation];
   SetAutomatic[method, If[AcyclicGraphQ[UndirectedGraph @ data["Graph"]], "Line", "Circle"]];
@@ -438,7 +499,10 @@ LinearLayout[opts:OptionsPattern[]][data_] := Scope[
     "Line",
       N[{# - 1, 0}& /@ Range[vertexCount]],
     "Circle",
-      MapColumn[Minus, 2, CirclePoints[{1, Pi}, vertexCount]],
+      points = MapColumn[Minus, 2, CirclePoints[{1, Pi}, vertexCount]];
+      If[vertexCount === 3, points //= TranslationTransform[{0.15, 0}];];
+      points
+    ,
     True,
       ReturnFailed[]
   ];
@@ -449,11 +513,11 @@ orientationTransform = Case[
   Left        := Identity;
   Right       := RotationTransform[Pi];
   Top         := RotationTransform[-Pi/2];
-  {Top, Left} := RotationTransform[-Pi/4];
-  {Top, Right} := RotationTransform[-3/4 Pi];
+  TopLeft     := RotationTransform[-Pi/4];
+  TopRight    := RotationTransform[-3/4 Pi];
   Bottom      := RotationTransform[Pi/2];
-  {Bottom, Left} := RotationTransform[Pi/4];
-  {Bottom, Right} := RotationTransform[3/4 Pi];
+  BottomLeft  := RotationTransform[Pi/4];
+  BottomRight := RotationTransform[3/4 Pi];
 ];
 
 (**************************************************************************************************)
@@ -469,7 +533,10 @@ self-loops will be manually corrected to have the correct scale
 
 VertexEdgeCoordinateData[data_Association, vertexLayout_] := Scope[
 
-  UnpackAssociation[data, indexVertices, indexEdges, vertexCoordinates, selfLoopRadius, multiEdgeDistance];
+  UnpackAssociation[data,
+    indexVertices, indexEdges, vertexCoordinates,
+    selfLoopRadius, multiEdgeDistance, vertexOverlapResolution
+  ];
 
   $vertexCoordinates = ConstantArray[None, vertexCount];
   $edgeCoordinateLists = ConstantArray[{}, Length @ indexEdges];
@@ -501,6 +568,10 @@ VertexEdgeCoordinateData[data_Association, vertexLayout_] := Scope[
 
   If[UndirectedGraphQ[graph],
     $edgeCoordinateLists = MapThread[orientEdgeCoordsNew, {$edgeCoordinateLists, indexEdges}];
+  ];
+
+  If[vertexOverlapResolution ~!~ None | 0 | 0.,
+    $vertexCoordinates = nudgeOverlappingVertices[$vertexCoordinates, vertexOverlapResolution, plotRange];
   ];
 
   {$vertexCoordinates, $edgeCoordinateLists}
@@ -541,7 +612,7 @@ fixSelfLoopNew[selfLoopRadius_][coords_] := Scope[
 
 (**************************************************************************************************)
 
-nudgeOverlappingVertices[coords_, plotRange_] := Scope[
+nudgeOverlappingVertices[coords_, nudgeDistance_, plotRange_] := Scope[
   nudgedCoords = coords; num = Length[coords];
   nudgeScale = nudgeDistance;
   If[nudgeScale === Automatic,

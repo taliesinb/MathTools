@@ -160,7 +160,7 @@ QuiverRepresentationObject /: MakeBoxes[object:QuiverRepresentationObject[data_A
 declareObjectPropertyDispatch[QuiverRepresentationObject, quiverRepresentationProperty];
 
 quiverRepresentationProperty[data_, "Identity"] := QuiverElement[
-  Part[VertexList[data["Quiver"]], MaximumIndex[BetweennessCentrality @ data["Quiver"]]],
+  Part[VertexList[data["Quiver"]], 1],
   data["Representation"]["Identity"]
 ];
 

@@ -100,7 +100,7 @@ chooseTorus2DOptions[spec_] := Scope[
   offsets = {dx, dy, -dx, -dy, dx + dy, dx - dy, -dx + dy, -dx - dy};
   {
     torusNormOptions @ spec,
-    EdgeShapeFunction -> drawModulusEdge[offsets],
+    EdgeShapeFunction -> ModulusEdgeShapeFunction[offsets],
     VertexCoordinateFunction -> Identity,
     ImagePadding -> If[$doLabels, 35, 20]
   }
@@ -124,7 +124,11 @@ SetUsage @ "
 UniqueLabel[n$] represents a numeric label in a plot that should be numbered in raster order.
 "
 
-drawModulusEdge[offsets_][assoc_] := Scope[
+(**************************************************************************************************)
+
+PackageExport["ModulusEdgeShapeFunction"]
+
+ModulusEdgeShapeFunction[offsets_][assoc_] := Scope[
   UnpackAssociation[assoc, coordinates, arrowheads, shape, edgeIndex, labelStyle];
   {a, b} = {{ax, ay}, {bx, by}} = FirstLast @ coordinates;
   b2 = findModulusCounterpart[a, b, offsets, .4];

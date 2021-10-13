@@ -582,7 +582,7 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
   pathWords2 = DeepCases[#, Path[_, word_, ___] :> word]& /@ paths;
   pathWordIndex = PositionIndex[pathWords2, 2];
   pathKeys = DeleteCases[{}] @ Keys @ pathWordIndex;
-  edges' = DeleteDuplicates @ Flatten @ {
+  edges = DeleteDuplicates @ Flatten @ {
     If[doForward, Map[makeExtensionEdges[Most, Identity], pathKeys], Nothing],
     If[doReverse, Map[makeExtensionEdges[Rest, MirrorForm], pathKeys], Nothing]
   };

@@ -40,6 +40,15 @@ CoordinateMatrixQ[matrix_, n_:2|3] :=
   MatrixQ[matrix] && MatchQ[InnerDimension @ matrix, n];
 
 
+PackageExport["CoordinateMatricesQ"]
+
+CoordinateMatricesQ[list_] :=
+  VectorQ[list, CoordinateMatrixQ];
+
+CoordinateMatricesQ[list_, n_] :=
+  VectorQ[list, CoordinateMatrixQ[#, n]&];
+
+
 PackageExport["CoordinateArrayQ"]
 
 CoordinateArrayQ[array_, n_:2|3] :=

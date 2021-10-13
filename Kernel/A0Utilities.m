@@ -726,6 +726,20 @@ AppendColumn[column_][matrix_] := AppendColumn[matrix, column];
 
 (**************************************************************************************************)
 
+PackageExport["TakeSequence"]
+
+SetRelatedSymbolGroup[TakeSequence, DropSequence];
+
+TakeSequence[list_, start_:1] := Table[Take[list, i], {i, start, Length @ list}];
+
+(**************************************************************************************************)
+
+PackageExport["DropSequence"]
+
+DropSequence[list_] := Table[Drop[list, i], {i, 0, Length[list] - 1}];
+
+(**************************************************************************************************)
+
 PackageExport["FirstRest"]
 
 SetRelatedSymbolGroup[FirstRest, FirstLast, MostLast];
@@ -1031,6 +1045,60 @@ NegatedQ[e$] returns True if e$ has head Negated.
 
 NegatedQ[_Negated] = True;
 NegatedQ[_] = False;
+
+(**************************************************************************************************)
+
+PackageExport["Modulo"]
+
+SetUsage @ "
+Modulo[n$] represents a modulo dimension n$.
+* Modulo threads over lists.
+"
+
+SetListable[Modulo];
+
+declareBoxFormatting[
+  Modulo[e_] :> MakeBoxes @ ModuloForm[e]
+];
+
+(**************************************************************************************************)
+
+PackageScope["$ModIntP"]
+
+$ModIntP = _Integer ? Positive | Modulo[_Integer ? Positive];
+
+(**************************************************************************************************)
+
+PackageExport["StripModulo"]
+
+SetUsage @ "
+StripModulo[e$] removes the head Modulo if present on e$.
+* StripModulo threads over lists.
+"
+
+SetListable[StripModulo];
+
+StripModulo = Case[
+  Modulo[e_]  := e;
+  e_          := e;
+];
+
+(**************************************************************************************************)
+
+PackageExport["GetModulus"]
+
+SetUsage @ "
+GetModulus[e$] returns n$ when given Modulus[n$], else returns Infinity.
+GetModulus[e$, else$] returns else$ instead of Infinity.
+* GetModulus threads over lists.
+"
+
+SetListable[GetModulus];
+
+GetModulus[e_] := GetModulus[e, Infinity];
+GetModulus[Modulo[n_], _] := n;
+GetModulus[list_List, else_] := Map[GetModulus[#, else]&, list];
+GetModulus[_, else_] := else;
 
 (**************************************************************************************************)
 
@@ -1615,13 +1683,36 @@ PackageScope["SetNone"]
 PackageScope["SetAll"]
 PackageScope["SetInherited"]
 
-DefineLiteralMacro[SetAutomatic, SetAutomatic[lhs_, rhs_] := If[lhs === Automatic, lhs = rhs, lhs]];
-DefineLiteralMacro[SetMissing, SetMissing[lhs_, rhs_] := If[MissingQ[lhs], lhs = rhs, lhs]];
-DefineLiteralMacro[SetNone, SetNone[lhs_, rhs_] := If[lhs === None, lhs = rhs, lhs]];
-DefineLiteralMacro[SetAll, SetAll[lhs_, rhs_] := If[lhs === All, lhs = rhs, lhs]];
-DefineLiteralMacro[SetInherited, SetInherited[lhs_, rhs_] := If[lhs === Inherited, lhs = rhs, lhs]];
+defineSetter[symbol_, value_] := (
+  DefineLiteralMacro[symbol, symbol[lhs_, rhs_] := If[lhs === value, lhs = rhs, lhs]];
+  SetHoldAll @ symbol;
+);
 
-SetHoldAll[SetAutomatic, SetMissing, SetNone, SetAll, SetInherited];
+defineSetter[SetAutomatic, Automatic];
+defineSetter[SetNone, None];
+defineSetter[SetAll, All];
+defineSetter[SetInherited, Inherited];
+
+DefineLiteralMacro[SetMissing, SetMissing[lhs_, rhs_] := If[MissingQ[lhs], lhs = rhs, lhs]];
+SetHoldAll[SetMissing];
+
+(**************************************************************************************************)
+
+PackageScope["ReplaceNone"]
+PackageScope["ReplaceMissing"]
+PackageScope["ReplaceAutomatic"]
+
+defineReplacer[symbol_, pattern_] := (
+  DefineLiteralMacro[symbol,
+    symbol[lhs_, rhs_] := Replace[lhs, pattern :> rhs],
+    symbol[rhs_]       := Replace[pattern :> rhs]
+  ];
+  SetHoldAll @ symbol;
+);
+
+defineReplacer[ReplaceNone, None];
+defineReplacer[ReplaceMissing, _Missing];
+defineReplacer[ReplaceAutomatic, Automatic];
 
 (**************************************************************************************************)
 
@@ -1765,6 +1856,28 @@ rangPartRecurse[parts_, rem_] := Scope @ Scan[
   ]&,
   Subsets[rest, {1, Infinity}]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["OrderSort"]
+
+OrderSort[list_, None] :=
+  Sort @ list;
+
+OrderSort[list_, order_] :=
+  Part[list, Ordering[
+    FirstPosition[order, #, Null, {1}]& /@ list
+  ]];
+
+OrderSort[order_][list_] := OrderSort[list, order];
+
+(**************************************************************************************************)
+
+PackageExport["IndexIn"]
+
+(* like IndexOf, but arguments work the other way around, and curries the other way *)
+IndexIn[item_, index_] := FirstPosition[index, item, Null, {1}];
+IndexIn[index_][item_] := IndexIn[item, index];
 
 (**************************************************************************************************)
 

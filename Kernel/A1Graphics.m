@@ -502,6 +502,12 @@ toNumericSizeScale = Case[
   _          := 1
 ];
 
+(**************************************************************************************************)
+
+PackageExport["TopLeft"]
+PackageExport["TopRight"]
+PackageExport["BottomLeft"]
+PackageExport["BottomRight"]
 
 (**************************************************************************************************)
 

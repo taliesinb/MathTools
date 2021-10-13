@@ -19,6 +19,8 @@ MaxNorm::usage = "MaxNorm is an option to MultiwaySystem.";
 IncludeFrontier::usage = "IncludeFrontier is an option to MultiwaySystem.";
 DepthTermination::usage = "DepthTermination is an option to MultiwaySystem."
 
+(**************************************************************************************************)
+
 PackageExport["MultiwaySystem"]
 
 DeclareArgumentCount[MultiwaySystem, 2];
@@ -546,6 +548,7 @@ toDirectedEdge[from_, to_] := DirectedEdge[from, to];
 toUndirectedEdge[from_, Labeled[to_, label_]] := UndirectedEdge[from, to, label];
 toUndirectedEdge[from_, to_] := UndirectedEdge[from, to];
 
+(**************************************************************************************************)
 
 PackageScope["CachedMultiwaySystem"]
 

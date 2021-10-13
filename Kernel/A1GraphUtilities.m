@@ -359,6 +359,7 @@ $extendedGraphOptionsRules = {
   AspectRatioClipping -> True,
   EdgeThickness -> Automatic,
   VertexLayout -> None,
+  VertexOverlapResolution -> None,
   VertexCoordinateRules -> None,
   VertexCoordinateFunction -> None,
   VertexColorRules -> None,
@@ -1146,6 +1147,21 @@ VertexOutTagTable[graph_, splice_:True] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["VertexOutVertexTagTable"]
+
+SetUsage @ "
+VertexOutVertexTagTable[graph$] returns a list of pairs {pairs$1, pair$2, $$} where pairs$i is the list of pairs
+of the form {$vertex$j, tag$j} present on vertex v$i in the outgoing direction.
+"
+
+VertexOutVertexTagTable[graph_, splice_:True] := Scope[
+  indexGraph = ToIndexGraph @ graph;
+  rules = #1 -> {#2, #3}& @@@ If[splice, SpliceCardinalSetEdges, Identity] @ EdgeList @ indexGraph;
+  Lookup[Merge[rules, Identity], VertexList @ indexGraph, {}]
+]
+
+(**************************************************************************************************)
+
 PackageExport["VertexInTagTable"]
 
 SetUsage @ "
@@ -1207,6 +1223,18 @@ VertexIndexAssociation[graph_] := AssociationRange @ VertexList @ graph;
 PackageExport["EdgeIndexAssociation"]
 
 EdgeIndexAssociation[graph_] := AssociationRange @ EdgeList @ graph;
+
+(**************************************************************************************************)
+
+PackageExport["EdgePairIndexAssociation"]
+
+EdgePairIndexAssociation[graph_] := AssociationRange @ EdgePairs @ graph;
+
+(**************************************************************************************************)
+
+PackageExport["EdgeTagAssociation"]
+
+EdgeTagAssociation[graph_] := AssociationThread[{#1, #2}& @@@ EdgeList[graph], EdgeTags @ graph];
 
 (**************************************************************************************************)
 

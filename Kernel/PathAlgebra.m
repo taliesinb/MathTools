@@ -24,19 +24,6 @@ $PathAlgebraQ := If[$PathAlgebra === None, Message[$PathAlgebra::notset]; False,
 $FieldPlus := $PathAlgebra["FieldPlus"];
 $FieldTimes := $PathAlgebra["FieldTimes"];
 
-PackageExport["ModOperator"]
-PackageExport["PlusModOperator"]
-PackageExport["TimesModOperator"]
-PackageExport["MinusModOperator"]
-PackageExport["SubtractModOperator"]
-
-ModOperator[n_][e_] := If[NumericQ[e], Mod[e, n, 0], e];
-ModOperator[Infinity] = Identity;
-PlusModOperator[n_] := Plus /* ModOperator[n];
-TimesModOperator[n_] := Times /* ModOperator[n];
-MinusModOperator[n_] := Minus /* ModOperator[n];
-SubtractModOperator[n_] := Subtract /* ModOperator[n];
-
 (**************************************************************************************************)
 
 PackageExport["PathAlgebra"]
@@ -90,7 +77,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   data["VertexCoordinates"] = vertexCoords;
   data["EdgeCoordinateLists"] = edgeCoords;
   data["EdgeCoordinates"] = edgeCoords;
-  data["PlotRange"] = Replace[plotRange, Automatic :> CoordinateBounds[vertexCoords]];
+  data["PlotRange"] = ReplaceAutomatic[plotRange, CoordinateBounds[vertexCoords]];
   data["EdgeSetback"] = edgeSetback;
   data["ImageSize"] = imageSize;
   data["VertexSize"] = vertexSize;

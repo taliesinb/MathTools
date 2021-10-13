@@ -257,7 +257,7 @@ GeneralQuiverProduct[graphs_List, productTerms_List, components_:Automatic, user
   If[graphs ~!~ {__Graph}, ReturnFailed["badgraphs"]];
   opts = DeleteOptions[
     JoinOptions[ExtractExtendedGraphOptions /@ graphs],
-    {VertexAnnotations, EdgeAnnotations, VertexCoordinates, ImageSize, ExtendedGraphLayout}
+    {VertexAnnotations, EdgeAnnotations, VertexCoordinates, VertexLayout, ImageSize, ExtendedGraphLayout}
   ];
   opts = JoinOptions[
     DeleteOptions[{userOpts}, {"UseCardinalSet", "Components", "FlattenProducts", VertexCoordinateFunction}],

@@ -523,23 +523,28 @@ PackageExport["SquareQuiver"]
 
 Options[SquareQuiver] = Options[Graph];
 
-SquareQuiver[m_Integer, opts:OptionsPattern[]] :=
+SquareQuiver[m:$ModIntP, opts:OptionsPattern[]] :=
   SquareQuiver[{m, m}, opts];
 
 SquareQuiver[spec_, opts:OptionsPattern[]] :=
   SquareQuiver[spec, {"x", "y"}, opts];
 
-SquareQuiver[{m_Integer, n_Integer}, {cx_, cy_}, opts:OptionsPattern[]] := Scope[
-  vertices = Catenate @ Array[VertexProduct, {m, n}];
+SquareQuiver[spec:{$ModIntP, $ModIntP}, {cx_, cy_}, opts:OptionsPattern[]] := Scope[
+  {m, n} = StripModulo @ spec;
+  {mp1, np1} = toModPlusOne @ spec;
+  vertices = Catenate @ Array[VertexProduct, StripModulo @ {m, n}];
   edges = Flatten @ {
-    Table[enrichedEdge[VertexProduct[i, j], VertexProduct[i + 1, j], cx, i], {i, m-1}, {j, n}],
-    Table[enrichedEdge[VertexProduct[i, j], VertexProduct[i, j + 1], cy, j], {i, m}, {j, n-1}]
+    Table[enrichedEdge[VertexProduct[i, j], VertexProduct[mp1 @ i, j], cx, i], {i, m}, {j, n}],
+    Table[enrichedEdge[VertexProduct[i, j], VertexProduct[i, np1 @ j], cy, j], {i, m}, {j, n}]
   };
+  edges //= Select[MemberQ[vertices, Part[#, 2]]&];
+  basis = {{1, 0}, {0, 1}};
   ExtendedGraph[
     vertices, edges,
     opts,
     VertexCoordinates -> (List @@@ vertices),
     Cardinals -> {cx, cy},
+    Sequence @@ modEdgeShapeFunctionSpec[spec, basis],
     GraphTheme -> "BigFive"
   ]
 ]
@@ -550,28 +555,50 @@ PackageExport["CubicQuiver"]
 
 Options[CubicQuiver] = Options[Graph];
 
-CubicQuiver[m_Integer, opts:OptionsPattern[]] :=
+CubicQuiver[m:$ModIntP, opts:OptionsPattern[]] :=
   CubicQuiver[{m, m, m}, opts];
 
 CubicQuiver[spec_, opts:OptionsPattern[]] :=
   CubicQuiver[spec, {"x", "y", "z"}, opts];
 
-CubicQuiver[{m_Integer, n_Integer, p_Integer}, {cx_, cy_, cz_}, opts:OptionsPattern[]] := Scope[
+CubicQuiver[spec:{$ModIntP, $ModIntP, $ModIntP}, {cx_, cy_, cz_}, opts:OptionsPattern[]] := Scope[
+  {m, n, p} = StripModulo @ spec;
+  {mp1, np1, pp1} = toModPlusOne @ spec;
   vertices = Flatten[Array[VertexProduct, {m, n, p}], 2];
   edges = Flatten @ {
-    Table[enrichedEdge[VertexProduct[i, j, k], VertexProduct[i + 1, j, k], cx, i], {i, m-1}, {j, n}, {k, p}],
-    Table[enrichedEdge[VertexProduct[i, j, k], VertexProduct[i, j + 1, k], cy, j], {i, m}, {j, n-1}, {k, p}],
-    Table[enrichedEdge[VertexProduct[i, j, k], VertexProduct[i, j, k + 1], cz, j], {i, m}, {j, n}, {k, p-1}]
+    Table[enrichedEdge[VertexProduct[i, j, k], VertexProduct[mp1 @ i, j, k], cx, i], {i, m}, {j, n}, {k, p}],
+    Table[enrichedEdge[VertexProduct[i, j, k], VertexProduct[i, np1 @ j, k], cy, j], {i, m}, {j, n}, {k, p}],
+    Table[enrichedEdge[VertexProduct[i, j, k], VertexProduct[i, j, pp1 @ k], cz, j], {i, m}, {j, n}, {k, p}]
   };
+  edges //= Select[MemberQ[vertices, Part[#, 2]]&];
+  basis = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
   ExtendedGraph[
     vertices, edges,
     opts,
     VertexCoordinates -> (List @@@ vertices),
     Cardinals -> {cx, cy, cz},
     LayoutDimension -> 3,
+    Sequence @@ modEdgeShapeFunctionSpec[spec, basis],
     GraphTheme -> "BigFive3D"
   ]
 ]
+
+toModPlusOne[spec_] := PlusOneMod[GetModulus @ #, 1]& /@ spec;
+
+modEdgeShapeFunctionSpec[spec_, basis_] /; ContainsQ[spec, Modulo] := Scope[
+  dim = InnerDimension @ basis;
+  tuples = Tuples @ MapThread[makeModOffset, {spec, basis}];
+  offsets = DeleteCases[{0..}] @ Map[Total] @ tuples;
+  {
+    EdgeShapeFunction -> ModulusEdgeShapeFunction[offsets],
+    ImagePadding -> 25
+  }
+];
+
+makeModOffset[Modulo[n_], vec_] := vec * #& /@ {-n, 0, n};
+makeModOffset[_, _] := ConstantArray[0, {1, dim}];
+
+modEdgeShapeFunctionSpec[spec_, basis_] := {};
 
 (**************************************************************************************************)
 
@@ -594,7 +621,8 @@ Options[LineQuiver] = Options[Graph];
 LineQuiver[n_, opts:OptionsPattern[]] :=
   LineQuiver[n, "x", opts];
 
-LineQuiver[n_, card_, opts:OptionsPattern[]] := Scope[
+LineQuiver[spec_, card_, opts:OptionsPattern[]] := Scope[
+  n = spec;
   vertices = Switch[n,
     _Integer, Range @ n,
     _Span, Range @@ n,
@@ -606,6 +634,21 @@ LineQuiver[n_, card_, opts:OptionsPattern[]] := Scope[
     opts,
     GraphTheme -> "BigFive",
     ExtendedGraphLayout -> "Linear"
+  ]
+]
+
+LineQuiver[Modulo[n_Integer], card_, opts:OptionsPattern[]] := Scope[
+  np1 = PlusOneMod[n, 1];
+  vertices = Range @ n;
+  edges = Table[enrichedEdge[i, np1 @ i, cx, i], {i, n}];
+  basis = {{1, 0}};
+  ExtendedGraph[
+    vertices, edges,
+    opts,
+    VertexCoordinates -> Transpose[{vertices, Zeros @ n}],
+    Cardinals -> {cx, cy},
+    Sequence @@ modEdgeShapeFunctionSpec[{Modulo @ n}, basis],
+    GraphTheme -> "BigFive"
   ]
 ]
 
@@ -623,7 +666,7 @@ CycleQuiver[n_Integer, card_, opts:OptionsPattern[]] := Scope[
   edges = enrichedEdge[#1, #2, card, #1]& @@@ Partition[vertices, 2, 1, 1];
   ExtendedGraph[
     vertices, edges,
-    opts, ExtendedGraphLayout -> "Linear",
+    opts, VertexLayout -> LinearLayout[],
     GraphTheme -> "BigFive",
     ImageSize -> ("ShortestEdge" -> 35)
   ]
@@ -648,7 +691,7 @@ PackageExport["GridQuiver"]
 
 Options[GridQuiver] = Options[Graph];
 
-GridQuiver[k_Integer, n_Integer, opts:OptionsPattern[]] :=
+GridQuiver[k_Integer, n:$ModIntP, opts:OptionsPattern[]] :=
   Switch[k,
     1, LineQuiver[n, opts],
     2, SquareQuiver[n, opts],
@@ -657,7 +700,7 @@ GridQuiver[k_Integer, n_Integer, opts:OptionsPattern[]] :=
   ];
 
 generalGridQuiver[k_, n_, opts___] := Scope[
-  vertices = Flatten @ Array[VertexProduct, Table[n, k]];
+  vertices = Flatten @ Array[VertexProduct, ConstantArray[StripModulo @ n, k]];
   edges = Flatten @ Table[Map[generalGridEdge[n, i], vertices], {i, 1, k}];
   ExtendedGraph[
     vertices, edges,
@@ -665,13 +708,17 @@ generalGridQuiver[k_, n_, opts___] := Scope[
     ExtendedGraphLayout -> "SpringElectrical",
     Cardinals -> Range[k],
     LayoutDimension -> 3,
+    Sequence @@ modEdgeShapeFunctionSpec[n, IdentityMatrix[k]],
     GraphTheme -> "BigFive3D"
   ]
 ]
 
+generalGridEdge[Modulo[n_], i_][vertex_] :=
+  DirectedEdge[vertex, MapAt[PlusOneMod[n], vertex, i], i];
+
 generalGridEdge[n_, i_][vertex_] :=
   If[Part[vertex, i] < n,
-    DirectedEdge[vertex, MapAt[PlusOperator[1], vertex, i], i],
+    DirectedEdge[vertex, MapAt[PlusOne, vertex, i], i],
     {}
   ];
 
@@ -712,5 +759,45 @@ makeTreeEdge = Case[
   TreeVertex[] := Nothing;
   t_TreeVertex := DirectedEdge[Most @ t, t, Last @ t];
 ]
+
+(**************************************************************************************************)
+
+PackageExport["LatticeQuiverCoordinates"]
+
+LatticeQuiverCoordinates[quiver_Graph, Automatic] :=
+  LatticeQuiverCoordinates[quiver, chooseLatticeBasisVectors @ Sort @ CardinalList @ quiver];
+
+LatticeQuiverCoordinates[quiver_Graph, "Triangular"] :=
+  LatticeQuiverCoordinates[quiver, $abcVectors];
+
+$s32 = Sqrt[3]/2;
+$abcVectors = Simplify /@ {{0, 1}, {-$s32, -1/2}, {$s32, -1/2}};
+
+chooseLatticeBasisVectors = Case[
+  {"x", "y"} | {"b", "r"}             := {{1,0}, {0, 1}};
+  {"x", "y", "z"} | {"b", "g", "r"}   := {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+  {"a", "b", "c"}                     := $abcVectors;
+  other_ := Take[CirclePoints[Length[other] * 2], Length @ other];
+]
+
+LatticeQuiverCoordinates[quiver_Graph, latticeBasis_] := Scope[
+  If[ListQ[latticeBasis], latticeBasis = AssociationThread[CardinalList @ quiver, latticeBasis]];
+  indexGraph = ToIndexGraph @ quiver;
+  outTable = VertexOutVertexTagTable @ indexGraph;
+  dims = Rest @ Dimensions @ Values @ latticeBasis;
+  coords = ConstantArray[0, Prepend[dims, VertexCount @ indexGraph]];
+  edgeBasis = Map[latticeBasis, EdgeTagAssociation @ indexGraph];
+  edgeIndex = EdgePairIndexAssociation @ indexGraph;
+  visitedEdges = CreateDataStructure["HashSet"];
+  initial = MinimumIndex @ VertexInDegree @ indexGraph;
+  BreadthFirstScan[indexGraph, initial, {"DiscoverVertex" -> (
+    {new, old, d} |-> If[new =!= old,
+      Set[Part[coords, new], Part[coords, old] + edgeBasis[{old, new}]];
+      visitedEdges["Insert", edgeIndex[{old, new}]];
+    ]
+  )}];
+  coords //= ToPackedReal;
+  {coords, visitedEdges["Elements"]}
+];
 
 

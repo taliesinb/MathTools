@@ -283,7 +283,7 @@ Options[QuiverContractionLattice] = JoinOptions[
   ExtendedGraph
 ]
 
-QuiverContractionLattice[quiver_, ContractedGraphOptions_List, userOpts:OptionsPattern[]] := Scope[
+QuiverContractionLattice[quiver_, contractedGraphOptions_List, userOpts:OptionsPattern[]] := Scope[
 
   vertexList = VertexList @ quiver;
   outTable = TagVertexOutTable @ quiver;
@@ -292,17 +292,19 @@ QuiverContractionLattice[quiver_, ContractedGraphOptions_List, userOpts:OptionsP
   {contractionGraph, validPartitions} =
     CacheTo[$validPartitionCache, {vertexList, outTable}, computeValidPartitions[{vertexList, outTable}]];
 
-  plotRangePadding = Lookup[ContractedGraphOptions, PlotRangePadding, Inherited];
-  plotRange = Lookup[ContractedGraphOptions, PlotRange, GraphicsPlotRange[quiver, PlotRangePadding -> plotRangePadding]];
-  PrependTo[ContractedGraphOptions, PlotRange -> plotRange];
+  plotRangePadding = Lookup[contractedGraphOptions, PlotRangePadding, Inherited];
+  plotRange = Lookup[contractedGraphOptions, PlotRange, GraphicsPlotRange[quiver, PlotRangePadding -> plotRangePadding]];
+  PrependTo[contractedGraphOptions, PlotRange -> plotRange];
 
   UnpackOptions[combineMultiedges];
-  innerSize = LookupOption[ContractedGraphOptions, ImageSize, 50];
-  ContractedGraphOptions = Sequence @@ ContractedGraphOptions;
+  innerSize = LookupOption[contractedGraphOptions, ImageSize, 50];
+  contractedGraphOptions = Sequence @@ contractedGraphOptions;
 
-  vertexAnnotations = <|"Partitions" -> validPartitions|>;
+  vertexAnnotations = <|
+    "ContractionSet" -> validPartitions
+  |>;
   postFn = If[combineMultiedges, CombineMultiedges, Identity];
-  baseGraph = ContractedGraph[quiver, ContractedGraphOptions];
+  baseGraph = ContractedGraph[quiver, contractedGraphOptions];
   
   replacements = RuleThread[Range @ vertexCount, vertexList];
   vertexAnnotations["ContractedGraph"] = postFn[ContractVertices[baseGraph, #]]& /@ validPartitions;
@@ -318,7 +320,7 @@ QuiverContractionLattice[quiver_, ContractedGraphOptions_List, userOpts:OptionsP
     GraphLayout -> "CenteredTree",
     VertexAnnotations -> vertexAnnotations,
     ArrowheadShape -> None, VertexSize -> Max[innerSize],
-    VertexTooltips -> "Partitions",
+    VertexTooltips -> "ContractionSet",
     VertexShapeFunction -> "ContractedGraph"
   ]
 ];
@@ -355,40 +357,205 @@ checkForConflicts[list_] :=
 
 (**************************************************************************************************)
 
-PackageExport["QuiverContractionGeneratingPartitions"]
+PackageExport["QuiverContractionLatticeFast"]
 
-QuiverContractionGeneratingPartitions[quiver_] := Scope[
+Options[QuiverContractionLatticeFast] = JoinOptions[
+  "IconOptions" -> {PlotRangePadding -> Scaled[0.2], ImagePadding -> 2},
+  "IconStyle" -> "Color",
+  ExtendedGraph
+];
+
+QuiverContractionLatticeFast[quiver_, opts:OptionsPattern[]] := Scope[
+  contractionSets = GeneratingContractionSets[quiver];
+  lattice = ContractionSetUnionLattice[
+    contractionSets,
+    ArrowheadShape -> None, VertexLayout -> TreeLayout[],
+    ArrowheadPosition -> Around[0.5,.1],
+    ArrowheadSize -> 10
+  ];
+  allPartitions = VertexList @ lattice;
+  vertices = VertexList @ quiver;
+  UnpackOptions[vertexSize];
+  contractionGraphs = CombineMultiedges @ ContractVertices[quiver, #, Frame -> True, Background -> White,
+    ImageSize -> vertexSize + 15, PlotRange -> "Square", ArrowheadShape -> {"Line", TwoWayStyle -> "CrossLine"},
+    VertexSize -> 8, VertexCoordinates -> "Mean", SelfLoopRadius -> 0.5,
+    ImagePadding -> 10]& /@ allPartitions;
+  allPartitions //= Map[CompleteContractionSet[vertices]];
+  UnpackOptions[iconOptions, iconStyle];
+  iconOptions = Sequence @@ iconOptions;
+  annos = <|
+    "ContractionSet" -> allPartitions,
+    "ColoredIcon" -> VertexPartitionGraphics[quiver, allPartitions, iconOptions, "Style" -> "Color"],
+    "EdgeIcon" -> VertexPartitionGraphics[quiver, allPartitions, iconOptions, "Style" -> "Edges"],
+    "GraphIcon" -> contractionGraphs
+  |>;
+  SetNone[iconStyle, Automatic];
+  ExtendedGraph[lattice, VertexAnnotations -> annos,
+    VertexShapeFunction -> iconStyle,
+    FilterOptions @ opts
+  ]
+];
+
+(**************************************************************************************************)
+
+PackageExport["DisjointUnionLattice"]
+
+Options[DisjointUnionLattice] = Options @ Graph;
+
+DisjointUnionLattice[generators:{__List}, opts:OptionsPattern[]] := Scope[
+  graph = MultiwaySystem[
+    disjointUnionCayleyFunction[generators],
+    {{}},
+    "Graph"
+  ];
+  ExtendedGraph[graph, opts]
+];
+
+disjointUnionCayleyFunction[generators_][subsets_] :=
+  MapIndexed[{gen, index} |-> If[
+    AllTrue[subsets, DisjointQ[gen]],
+    Labeled[Sort @ Append[subsets, gen], First @ index],
+    Nothing
+  ], generators];
+
+(**************************************************************************************************)
+
+PackageExport["ContractionSetUnionLattice"]
+
+Options[ContractionSetUnionLattice] = Options @ Graph;
+
+ContractionSetUnionLattice[contractionSets:{__List}, opts:OptionsPattern[]] := Scope[
+  contractionSets //= Map @ SortContractionSet;
+  {vertexList, edgeList} = MultiwaySystem[
+    contractionSetUnionCayleyFunction[contractionSets],
+    {{}},
+    {"VertexList", "EdgeList"}
+  ];
+  edgeList = Values @ GroupBy[edgeList, TakeOperator[2], combineTags];
+  TransitiveReductionGraph @ ExtendedGraph[vertexList, edgeList, opts, VertexLayout -> TreeLayout[]]
+];
+
+combineTags[{edge_}] := edge;
+combineTags[edges_] := Append[Part[edges, 1, 1;;2], CardinalSet[Part[edges, All, 3]]];
+
+contractionSetUnionCayleyFunction[generators_][contractionSet_] := Scope[
+  MapIndexed[
+    {gen, index} |-> If[SubsetQ[contractionSet, gen],
+      Nothing,
+      res = ContractionSetUnion[contractionSet, gen];
+      If[res === contractionSet, Nothing, Labeled[ContractionSetUnion[contractionSet, gen], First @ index]]
+    ],
+    generators
+  ]
+];
+
+(**************************************************************************************************)
+
+PackageExport["ContractionSetUnion"]
+
+(* DisjointSet doesn not have the right API yet to make this fast *)
+ContractionSetUnion[contractionSet1_, contractionSet2_] :=
+  Sort @ Fold[ContractionSetAppend, contractionSet1, contractionSet2];
+
+(**************************************************************************************************)
+
+PackageExport["ContractionSetAppend"]
+
+ContractionSetAppend[contractionSet_, term_] := Scope[
+  jointIndices = SelectIndices[contractionSet, IntersectingQ[term]];
+  Sort @ If[jointIndices === {},
+    Append[contractionSet, term],
+    Append[
+      Delete[contractionSet, List /@ jointIndices],
+      Union @@ Append[Part[contractionSet, jointIndices], term]
+    ]
+  ]
+];
+
+
+(**************************************************************************************************)
+
+PackageExport["ToContractionSet"]
+
+ToContractionSet[term:{___Integer}] := List @ Sort @ term;
+
+ToContractionSet[contractionSet_] :=
+  SortContractionSet @ If[DuplicateFreeQ[contractionSet, IntersectingQ],
+    contractionSet,
+    Fold[ContractionSetAppend, {}, contractionSet]
+  ];
+
+(**************************************************************************************************)
+
+PackageExport["SortContractionSet"]
+
+SortContractionSet[contractionSet_] :=
+  LexicographicSort @ Map[Sort, contractionSet];
+
+SortContractionSet[contractionSet_, index_] :=
+  LexicographicSort @ Map[OrderSort[index], contractionSet];
+
+(**************************************************************************************************)
+
+PackageExport["CompleteContractionSet"]
+
+CompleteContractionSet[vertices_][contractionSet_] := Scope[
+  remaining = Complement[vertices, Union @@ contractionSet];
+  SortContractionSet @ Join[contractionSet, List /@ remaining]
+];
+
+(**************************************************************************************************)
+
+PackageExport["GeneratingContractionSets"]
+
+Options[GeneratingContractionSets] = {
+  "Complete" -> False,
+  "SubsetSize" -> {2}
+};
+
+GeneratingContractionSets[quiver_, OptionsPattern[]] := Scope[
+  UnpackOptions[complete, subsetSize];
   cards = CardinalList @ quiver;
   allCards = Join[cards, Negated /@ cards];
   outTable = TagVertexOutTable @ quiver;
   vertices = VertexRange @ quiver;
-  vertexPairs = Subsets[vertices, {2}];
+  vertexPairs = Subsets[vertices, subsetSize];
+  alreadySeen = Data`UnorderedAssociation[];
+  contractionSets = DeleteDuplicates @ Map[growTerms, vertexPairs];
+  If[complete, contractionSets //= Map[CompleteContractionSet[vertices]]];
   ExtractIndices[
     VertexList @ quiver,
-    DeleteDuplicates @ Map[growCliques, vertexPairs]
+    contractionSets
   ]
 ];
 
-growCliques[init_] := Scope[
+growTerms[init_] := Scope[
+  (* If[KeyExistsQ[alreadySeen, init], Return @ Nothing]; *)
   $ds = CreateDataStructure["DisjointSet"];
   $hs = CreateDataStructure["HashSet"];
-  addClique[init];
+  addTerm[init];
   Label["Start"];
   Scan[If[checkSubset[#], Goto["Start"]]&, $ds["Subsets"]];
-  Sort @ Map[Sort, $ds["Subsets"]]
+  subsets = $ds["Subsets"];
+  result = SortContractionSet @ subsets;
+  AssociateTo[alreadySeen, Flatten[Map[# -> True&, Subsets[#, {2}]]& /@ result]];
+  result
+(*   remaining = Complement[vertices, Union @@ subsets];
+  SortContractionSet @ Join[subsets, List /@ remaining]
+ *)
 ];
   
 checkSubset[subset_] := Scope[
   (* If[!$hs["Insert", Sort @ subset], Return[False]]; *)
   $dirty = False;
   KeyValueMap[
-    {card, table} |-> addClique @ DeleteNone @ Part[table, subset],
+    {card, table} |-> addTerm @ DeleteNone @ Part[table, subset],
     outTable
   ];
   $dirty
 ];
 
-addClique = Case[
+addTerm = Case[
   {_} | {} := Null;
   {a_, b_} := (
     $ds["Insert", a];
@@ -412,28 +579,63 @@ addClique = Case[
 
 PackageExport["VertexPartitionGraphics"]
 
-Options[VertexPartitionGraphics] = Options[Graphics];
+Options[VertexPartitionGraphics] = JoinOptions[
+  "Style" -> "Color",
+  Graphics
+];
 
 VertexPartitionGraphics[graph_, partition_List, opts:OptionsPattern[]] := Scope[
-  UnpackOptions[plotRangePadding];
+  UnpackOptions[plotRangePadding, style];
   vertexCoordsAssoc = LookupVertexCoordinates @ graph;
   vertexCoords = Values @ vertexCoordsAssoc;
   vertexCoordsBounds = CoordinateBounds[vertexCoords, Scaled[0.1]];
-  $partitionGraphicsOpts = opts;
-  If[VectorQ[partition, IntegerVectorQ], makePartitionGraphics, Map @ makePartitionGraphics] @ partition
+  $partitionGraphicsOpts = Sequence @@ DeleteOptions[{opts}, "Style"];
+  termGraphicsFn = Switch[style,
+    "Color", makeColoredCliqueGraphics,
+    "Edges", makeEdgeCliqueGraphics,
+    _, ReturnFailed[]
+  ];
+  If[VectorQ[partition, IntegerVectorQ], termGraphicsFn, Map @ termGraphicsFn] @ partition
 ]
 
 $partitionGraphicsOpts = Sequence[];
 
-makePartitionGraphics[partitionList_] := Scope[
+makeEdgeCliqueGraphics[partitionList_] := Scope[
   partitionPoints = Lookup[vertexCoordsAssoc, #]& /@ partitionList;
   primitives = {
     {GrayLevel[0, 0.2], CapForm["Round"], AbsoluteThickness[4], Line @ Catenate[makeClique /@ partitionPoints]},
     AbsolutePointSize[4], Point @ vertexCoords
   };
   graphics = Graphics[primitives,
-    PlotRange -> vertexCoordsBounds,
     $partitionGraphicsOpts,
+    PlotRange -> vertexCoordsBounds,
+    FrameStyle -> LightGray, FrameTicks -> None,
+    ImageSize -> 35, Frame -> True, Background -> White,
+    PlotRangePadding -> plotRangePadding
+  ];
+  graphics
+];
+
+choosePalette = Case[
+  0 := {};
+  1 := {$Gray};
+  2 := {$LightRed, $LightBlue};
+  n_ := Take[$LightColorPalette, n];
+]
+
+makeColoredCliqueGraphics[partitionList_] := Scope[
+  termPoints = Lookup[vertexCoordsAssoc, #]& /@ partitionList;
+  i = 1;
+  numColors = Count[partitionList, Except[{_}]];
+  palette = choosePalette @ numColors;
+  termColors = Map[If[MatchQ[#, {_}], White, Part[palette, i++]]&, partitionList];
+  primitives = MapThread[
+    Style[Thread @ Disk[#1, .2], EdgeForm[Darker[#2, .3]], FaceForm[#2]]&,
+    {termPoints, termColors}
+  ];
+  graphics = Graphics[primitives,
+    $partitionGraphicsOpts,
+    PlotRange -> vertexCoordsBounds,
     FrameStyle -> LightGray, FrameTicks -> None,
     ImageSize -> 35, Frame -> True, Background -> White,
     PlotRangePadding -> plotRangePadding
@@ -458,15 +660,15 @@ PackageExport["GraphContractionLattice"]
 
 Options[GraphContractionLattice] = Options[QuiverContractionLattice];
 
-GraphContractionLattice[graph_, ContractedGraphOptions_List, userOpts:OptionsPattern[]] := Scope[
+GraphContractionLattice[graph_, contractedGraphOptions_List, userOpts:OptionsPattern[]] := Scope[
   
   If[!EdgeTaggedGraphQ[graph], graph //= IndexEdgeTaggedGraph];
 
   UnpackOptions[combineMultiedges];
-  innerSize = LookupOption[ContractedGraphOptions, ImageSize, 50];
-  ContractedGraphOptions = Sequence @@ ContractedGraphOptions;
+  innerSize = LookupOption[contractedGraphOptions, ImageSize, 50];
+  contractedGraphOptions = Sequence @@ contractedGraphOptions;
   
-  initialGraph = ContractedGraph[graph, ContractedGraphOptions, ImageSize -> {innerSize, innerSize}];
+  initialGraph = ContractedGraph[graph, contractedGraphOptions, ImageSize -> {innerSize, innerSize}];
   innerOpts = Sequence @@ ExtractExtendedGraphOptions @ initialGraph;
 
   edgeList = CanonicalizeEdges @ EdgeList @ graph;
@@ -483,12 +685,12 @@ GraphContractionLattice[graph_, ContractedGraphOptions_List, userOpts:OptionsPat
     edges,
     innerOpts
   ];
-  ContractedGraphs = Map[graphFn /* postFn, vlist];
+  contractedGraphs = Map[graphFn /* postFn, vlist];
   
   ExtendedGraph[
     Range @ Length @ vlist, ielist, FilterOptions @ userOpts,
     GraphLayout -> "CenteredTree",
-    VertexAnnotations -> <|"ContractedGraph" -> ContractedGraphs|>,
+    VertexAnnotations -> <|"ContractedGraph" -> contractedGraphs|>,
     ArrowheadShape -> None, VertexSize -> innerSize, VertexShapeFunction -> "ContractedGraph"
   ]
 ];
@@ -572,15 +774,31 @@ $ContractedEdgeExpansionRules = {
 
 PackageExport["ContractVertices"]
 
-ContractVertices[graph_Graph, glueList_List] := Scope[
+Options[ContractVertices] = JoinOptions[
+  VertexCoordinates -> Automatic,
+  ExtendedGraph
+];
+
+ContractVertices[graph_Graph, glueList_List, userOpts:OptionsPattern[]] := Scope[
   opts = ExtractExtendedGraphOptions @ graph;
   edgeList = EdgeList @ graph;
+  glueList //= ToContractionSet;
   glueRules = Flatten[toVertexContractionRule /@ glueList];
-  If[glueRules === {}, Return @ graph];
-  ContractedEdgeList = Fold[gluingResult, edgeList, glueRules];
+  vertexCoordinates = LookupOption[{userOpts}, VertexCoordinates, Automatic];
+  If[glueRules === {} && vertexCoordinates =!= "Mean",
+    Return @ If[{userOpts} === {}, graph, ExtendedGraph[graph, userOpts]]];
+  contractedEdgeList = Fold[gluingResult, edgeList, glueRules];
+  opts = Sequence @@ DeleteOptions[opts, {VertexCoordinates, VertexCoordinateRules}];
+  vertexList = Sort @ AllUniqueVertices @ contractedEdgeList;
+  If[vertexCoordinates === "Mean",
+    oldCoords = LookupVertexCoordinates[graph];
+    vertexCoordinates = ContractedVertexCoordinateFunction[oldCoords] /@ vertexList;
+    userOpts = Sequence @@ ReplaceOptions[{userOpts}, VertexCoordinates -> vertexCoordinates];
+  ];
   ExtendedGraph[
-    Sort @ AllUniqueVertices @ ContractedEdgeList, ContractedEdgeList,
-    Sequence @@ opts
+    vertexList, contractedEdgeList,
+    userOpts,
+    opts
   ]
 ]
 
@@ -626,6 +844,7 @@ ContractedGraph[graph_Graph, opts___Rule] := Scope[
   ExtendedGraph[graph,
     VertexColorRules -> None, CoordinateTransformFunction -> None,
     VertexCoordinates -> Automatic, VertexCoordinateRules -> None,
+    VertexLayout -> None,
     CardinalColorRules -> None,
     EdgeColorRules -> None,
     Sequence @@ DeleteOptions[opts, PlotRangePadding],

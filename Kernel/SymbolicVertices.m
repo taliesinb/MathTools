@@ -30,7 +30,7 @@ declareBoxFormatting[
   CardinalProduct[a_, b_] :> TemplateBox[{MakeBoxes @ a, MakeBoxes @ b}, "CardinalProductForm"]
 ];
 
-$TemplateKatexFunction["CardinalProductForm"] = riffled[" \\cardProdSymbol "];
+$TemplateKatexFunction["CardinalProductForm"] = riffled[" \\cardinalProductSymbol "];
 
 
 (**************************************************************************************************)
@@ -45,7 +45,7 @@ declareBoxFormatting[
   CardinalSequence[a_, b_] :> TemplateBox[{MakeBoxes @ a, MakeBoxes @ b}, "CardinalSequenceForm"]
 ];
 
-$TemplateKatexFunction["CardinalSequenceForm"] = riffled[" \\cardSeqSymbol "];
+$TemplateKatexFunction["CardinalSequenceForm"] = riffled[" \\cardinalSequenceSymbol "];
 
 (**************************************************************************************************)
 
@@ -59,7 +59,7 @@ declareBoxFormatting[
   VertexProduct[args__] :> TemplateBox[MapUnevaluated[MakeBoxes, {args}], "VertexProductForm"]
 ];
 
-$TemplateKatexFunction["VertexProductForm"] = riffled[" \\vertexProdSymbol "];
+$TemplateKatexFunction["VertexProductForm"] = riffled[" \\vertexProductSymbol "];
 
 (**************************************************************************************************)
 
@@ -93,8 +93,7 @@ ContractedVertex[vlist$, name$] represents a vertex formed by contraction with n
 "
 
 declareFormatting[
-  ContractedVertex[v_] :> CirclePlus @@ v,
-  ContractedVertex[v_, name_] :> Subscript[name, "+"]
+  ContractedVertex[v__] :> ContractionProductForm[v]
 ];
 
 (**************************************************************************************************)
