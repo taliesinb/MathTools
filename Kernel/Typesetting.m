@@ -461,7 +461,7 @@ iCompactMatrixBox[matrix_, itemSize_, frameStyle_, shouldFactor_] := Scope[
   {matrix, factor} = If[shouldFactor && Dimensions[matrix] =!= {1, 1} &&
     Min[Abs[ExpandUnitRoots[matrix] /. ModForm[m_, _] :> m]] > 0,
     MatrixSimplify[matrix], {matrix, 1}];
-  entries = Map[numBox, matrix, {2}] // simplifyNumBoxes;
+  entries = MapMatrix[numBox, matrix] // simplifyNumBoxes;
   matrixBoxes = matrixGridBoxes[entries, expandItemSize[itemSize, matrix], frameStyle];
   If[factor === 1, matrixBoxes,
     RowBox[{matrixBoxes, numBox[factor] // simplifyNumBoxes}]

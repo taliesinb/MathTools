@@ -129,7 +129,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
 
   ct = Lookup[LookupAnnotation[quiver, EdgeAnnotations, <||>], "CardinalTransitions", <||>];
-  data["CardinalTransitions"] = Join[ct, KeyMap[Negated] @ Map[reverseTransition, ct, {2}]];
+  data["CardinalTransitions"] = Join[ct, KeyMap[Negated] @ MapMatrix[reverseTransition, ct]];
 
   pairs = EdgePairs @ quiver;
   tailVertices = Part[pairs, All, 1];

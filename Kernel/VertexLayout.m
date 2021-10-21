@@ -129,7 +129,10 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
     "Tree" | "CenteredTree" | "HorizontalTree" | "HorizontalCenteredTree",
       graphLayout = {"LayeredDigraphEmbedding"};
       root = LookupExtendedOption[graph, GraphOrigin];
-      If[root =!= None, AppendTo[graphLayout, "RootVertex" -> IndexOf[vertexList, root]]];
+      If[root =!= None,
+        rootIndex = IndexOf[vertexList, root];
+        If[IntegerQ[rootIndex], AppendTo[graphLayout, "RootVertex" -> rootIndex]];
+      ];
       If[StringContainsQ[method, "Horizontal"], AppendTo[graphLayout, "Orientation" -> Left]];
       If[method === "CenteredTree", coordinateTransformFunction = "CenterHorizontal"];
       If[method === "HorizontalCenteredTree", coordinateTransformFunction = "CenterVertical"];
@@ -353,6 +356,7 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
     "Graph" -> $Graph,
     "IndexGraph" -> igraph,
     "VertexCount" -> vertexCount,
+    "EdgeCount" -> edgeCount,
     "IndexVertices" -> Range @ vertexCount,
     "IndexEdges" -> edgeList,
     "VertexCoordinates" -> vertexCoordinates,
@@ -437,6 +441,41 @@ rot270[{x_, y_}] := {-y, x};
 
 (**************************************************************************************************)
 
+PackageExport["SmartLayout"]
+
+$tetraGraph := $tetraGraph = UndirectedGraph[
+  {1 -> 2, 2 -> 3, 3 -> 4, 4 -> 1, 1 -> 3, 2 -> 4},
+  VertexCoordinates -> Append[CirclePoints[3], {0, 0}]
+];
+
+SmartLayout[][data_] := Scope[
+  UnpackAssociation[data, vertexCount, edgeCount, indexGraph];
+  ugraph = UndirectedGraph @ RemoveEdgeTags @ indexGraph;
+  coords = Which[
+    IsomorphicGraphQ[ugraph, $tetraGraph],
+      getIsomorphicCoordinates[ugraph, $tetraGraph],
+    vertexCount == (edgeCount + 1) && PathGraphQ[ugraph],
+      getIsomorphicCoordinates[ugraph, LineGraph[vertexCount]],
+    True,
+      $Failed
+  ];
+  If[!FailureQ[coords],
+    data["VertexCoordinates"] = coords;
+    VertexEdgeCoordinateData[data, Automatic]
+  ,
+    VertexEdgeCoordinateData[data, {"SpringElectricalEmbedding"}]
+  ]
+]
+
+getIsomorphicCoordinates[source_, target_] := Scope[
+  iso = FindGraphIsomorphism[source, target];
+  If[iso === {}, ReturnFailed[]];
+  targetVertices = Lookup[First @ iso, VertexList @ source];
+  LookupVertexCoordinates[target, targetVertices]
+]
+
+(**************************************************************************************************)
+
 PackageExport["SpringLayout"]
 PackageExport["Orientation"]
 
@@ -467,14 +506,20 @@ SpringElectricalLayout[opts:OptionsPattern[]][data_] :=
 
 PackageExport["TreeLayout"]
 PackageExport["Orientation"]
+PackageExport["RootVertex"]
 
 Options[TreeLayout] = {Alignment -> None, Orientation -> Top, RootVertex -> Automatic, "Bubble" -> False};
 
 TreeLayout[OptionsPattern[]][data_] := Scope[
-  UnpackAssociation[data, graph];
+  UnpackAssociation[data, graph, indexGraph];
   UnpackOptions[alignment, orientation, rootVertex, bubble];
 
-  rootIndex = If[rootVertex === Automatic, Automatic, VertexIndex[graph, rootVertex]];
+  rootIndex = Switch[rootVertex,
+    None,       None,
+    Automatic,  Automatic,
+    "Source",   First[GraphSources @ SimpleGraph @ ExpandCardinalSetEdges @ indexGraph, None],
+    _,          VertexIndex[graph, rootVertex]
+  ];
   vertexLayout = {"LayeredDigraphEmbedding", "Orientation" -> orientation, "RootVertex" -> rootIndex};
   
   VertexEdgeCoordinateData[data, vertexLayout]
@@ -653,12 +698,30 @@ applyCoordinateTransform[list_List] :=
 
 applyCoordinateTransform[f_] := Block[{res},
   res = Check[
-    vertexCoordinates = Map[f, vertexCoordinates];
-    edgeCoordinateLists = Map[f, edgeCoordinateLists, {-2}];,
+    vertexCoordinates //= Map[f];
+    edgeCoordinateLists = MapMatrix[f, edgeCoordinateLists];
+  ,
     $Failed
   ];
   If[FailureQ[res], Message[ExtendedGraphPlot::badcoordtrans, f]];
 ];
+
+applyRigidCoordinateTransform[f_] := Block[{res},
+  res = Check[
+    vertexCoordinates //= Map[f];
+    edgeCoordinateLists //= Map[transformEdgePoints @ f];
+  ,
+    $Failed
+  ];
+  If[FailureQ[res], Message[ExtendedGraphPlot::badcoordtrans, f]];
+];
+
+transformEdgePoints[f_][{a_, b_}] := {f @ a, f @ b};
+transformEdgePoints[f_][points_List] := Scope[
+  {a, b} = FirstLast @ points;
+  t = FindRigidTransform[N @ {a, b}, N @ {f @ a, f @ b}];
+  points
+]
 
 applyCoordinateTransform["CenterMean"] := Scope[
   center = Mean @ vertexCoordinates;
@@ -678,8 +741,7 @@ applyCoordinateTransform[{"Snap", m_, nudge_:0.1}] := Scope[
   bounds = CoordinateBounds[edgeCoordinateLists];
   step = (EuclideanDistance @@@ bounds) / m;
   grid = Catenate @ CoordinateBoundsArray[bounds, step];
-  nearest = Nearest @ grid;
-  applyCoordinateTransform[nearest /* First];
+  applyNearest[grid];
   duplicateIndices = DuplicateIndices @ vertexCoordinates;
   newVertexCoordinates = vertexCoordinates;
   adjacencyTable = VertexAdjacencyTable @ $Graph;
@@ -689,7 +751,12 @@ applyCoordinateTransform[{"Snap", m_, nudge_:0.1}] := Scope[
     Part[newVertexCoordinates, index] //= nudgeDuplicate[center]),
     duplicateIndices, {2}];
   vertexCoordinates ^= newVertexCoordinates;
-  edgeCoordinateLists ^= Part[vertexCoordinates, #]& /@ EdgePairs[$Graph];
+  (* TODO: rigid transfrom the nudged edges *)
+];
+
+applyNearest[points_] := Scope[
+  nearest = Nearest @ grid;
+  applyRigidCoordinateTransform @ Function[p, First @ nearest[p, 1]];
 ];
 
 nudgeDuplicate[z_][p_] := p + Normalize[Cross[z - p]] * Im[$nudge] + Normalize[z - p] * Re[$nudge];

@@ -197,3 +197,20 @@ VectorBetween[x_, {l_, h_}] := And @@ MapThread[LessEqual, {l, x, h}];
 VectorBetween[{x_, y_}, {{xl_, xh_}, {yl_, yh_}}] := xl <= x <= xh && yl <= y <= yh;
 VectorBetween[{x_, y_, z_}, {{xl_, xh_}, {yl_, yh_}, {zl_, zh_}}] := xl <= x <= xh && yl <= y <= yh && zl <= z <= zh;
 VectorBetween[lh_][x_] := VectorBetween[x, lh];
+
+(**************************************************************************************************)
+
+PackageExport["FindRigidTransform"]
+
+FindRigidTransform[{a1_, a1_}, {b1_, b1_}] := TranslationTransform[b1 - a1];
+FindRigidTransform[{a1_, a2_}, {a1_, a2_}] := Identity;
+
+FindRigidTransform[{a1_, a2_}, {b1_, b2_}] := Scope[
+  da = a2 - a1; db = b2 - b1;
+  RightComposition[
+    TranslationTransform[-a1],
+    RotationTransform[{da, db}],
+    ScalingTransform[N[Norm[db] / Norm[da]] * {1, 1}],
+    TranslationTransform[b1]
+  ]
+]

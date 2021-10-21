@@ -8,6 +8,7 @@ PackageExport["MaxNorm"]
 PackageExport["ProgressFunction"]
 PackageExport["IncludeFrontier"]
 PackageExport["DepthTermination"]
+PackageExport["PrologVertices"]
 
 MaxVertices::usage = "MaxVertices is an option to MultiwaySystem."
 MaxVerticesPerComponent::usage = "MaxVerticesPerComponent is an option to MultiwaySystem."
@@ -41,6 +42,7 @@ Options[MultiwaySystem] = JoinOptions[
   IncludeFrontier -> True,
   DepthTermination -> "Immediate",
   SelfLoops -> True,
+  PrologVertices -> {},
   $simpleGraphOptionRules
 ];
 
@@ -150,7 +152,8 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     directedEdges, progressFunction, normFunction,
     maxVertices, maxVerticesPerComponent, maxEdges, maxDepth,
     maxTime, maxFunctionEvaluations, maxNorm,
-    includeFrontier, depthTermination, selfLoops
+    includeFrontier, depthTermination, selfLoops,
+    prologVertices
   ];
 
   If[!ListQ[initialVertices] || Length[initialVertices] == 0,
@@ -214,6 +217,10 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
 
   If[ListQ[f], f = makeSuperTransitionFunc[f]];
 
+  numPrologVertices = Length @ prologVertices;
+  If[numPrologVertices > 0,
+    initialVertices = Join[prologVertices, initialVertices]];
+
   thisGenVertices = CreateDataStructure["Stack"];
   nextGenVertices = CreateDataStructure["Stack"];
   vertexArray = CreateDataStructure["DynamicArray"];
@@ -275,7 +282,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   transitionListsBag = Internal`Bag[];
   indexTransitionListsBag = Internal`Bag[];
 
-  stackPushList[thisGenVertices, Transpose[{initialIds, initialVertices, initialIds}]];
+  stackPushList[thisGenVertices, DropOperator[numPrologVertices] @ Transpose[{initialIds, initialVertices, initialIds}]];
 
   If[NumberQ[maxTime],
     stopTime = SessionTime[] + maxTime;

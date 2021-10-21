@@ -219,13 +219,43 @@ StandardizePadding = Case[
   {pw_ ? NQ, ph_ ? NQ}  := N @ {{pw, pw}, {ph, ph}};
   spec:{{_ ? NQ, _ ? NQ}, {_ ? NQ, _ ? NQ}} := N @ spec;
 
-  rules:{Rule[Left|Right|Bottom|Top|All, _ ? NQ]...} :=
-    N @ Map[Lookup[rules, #, Lookup[rules, All, 0]]&, {{Left, Right}, {Bottom, Top}}, {2}];
+  rules:{Rule[sideP, _ ? NQ]...} :=
+    N @ LookupSide[rules, {{Left, Right}, {Bottom, Top}}];
 
   _ := $Failed;
 
-  {NQ -> NumericQ}
+  {NQ -> NumericQ, sideP -> Left|Right|Bottom|Top|Horizontal|Vertical|BottomLeft|BottomRight|TopLeft|TopRight|All}
 ];
+
+
+(**************************************************************************************************)
+
+PackageExport["LookupSide"]
+
+LookupSide[rules_, sides_List] :=
+  Map[LookupSide[rules, #]&, sides];
+
+LookupSide[rules_, side_] :=
+  Lookup[rules, side, Lookup[rules, toSideClass @ side, Lookup[rules, All, 0]]];
+
+LookupSide[rules_, side_] :=
+  Lookup[rules, side,
+  Lookup[rules, toSideClass @ side,
+  Lookup[rules, toMultiClassC @ side,
+  Lookup[rules, toMultiClassA @ side,
+  Lookup[rules, All, 0]]]]];
+
+toMultiClassC = <|Bottom -> BottomLeft, Left -> TopLeft, Top -> TopRight, Right -> BottomRight|>;
+toMultiClassA = <|Bottom -> BottomRight, Left -> BottomLeft, Top -> TopLeft, Right -> TopRight|>;
+
+LookupSide[rules_][side_] :=
+  LookupSide[rules, side];
+
+toSideClass = Case[
+  Left|Right := Horizontal;
+  Bottom|Top := Vertical;
+  other_     := Null;
+]
 
 (**************************************************************************************************)
 
@@ -1111,7 +1141,7 @@ CompactArrayPlot[array_, OptionsPattern[]] := Scope[
     cfunc = colorFunction;
     If[ColorFunctionObjectQ @ cfunc, cfunc //= Normal];
     cfunc //= stripFinalRGB;
-    array = ToPackedArray @ Map[cfunc, array, {2}];
+    array = ToPackedArray @ MapMatrix[cfunc, array];
     If[ArrayQ[array, 2, ColorQ],
       array = ToPackedArray @ ToRGB @ array];
     If[!PackedArrayQ[array], ReturnFailed["badcvals"]];

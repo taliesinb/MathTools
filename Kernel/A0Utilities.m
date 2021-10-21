@@ -230,6 +230,16 @@ SetUsage[symbol_Symbol, usageString_String] :=
 
 (**************************************************************************************************)
 
+PackageExport["MapMatrix"]
+
+MapMatrix[f_, matrix_] :=
+  Map[f, matrix, {2}];
+
+MapMatrix[f_][matrix_] :=
+  MapMatrix[f, matrix];
+
+(**************************************************************************************************)
+
 PackageExport["MapUnevaluated"]
 
 SetHoldAllComplete[MapUnevaluated]
@@ -740,6 +750,12 @@ DropSequence[list_] := Table[Drop[list, i], {i, 0, Length[list] - 1}];
 
 (**************************************************************************************************)
 
+PackageExport["UnorderedPairs"]
+
+UnorderedPairs[list_] := Subsets[list, {2}];
+
+(**************************************************************************************************)
+
 PackageExport["FirstRest"]
 
 SetRelatedSymbolGroup[FirstRest, FirstLast, MostLast];
@@ -1155,6 +1171,14 @@ NegatedForm[e$] displays as Underbar[e$].
 declareBoxFormatting[
   NegatedForm[e_] :> NegatedBoxForm[e]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["LookupOperator"]
+
+LookupOperator[a_][key_] := Lookup[a1, key];
+LookupOperator[a_, (Rule|RuleDelayed)[DefaultValue, v_]][key_] := Lookup[a, key, v];
+LookupOperator[a_, rest__][key_] := Lookup[a, key, LookupOperator[rest] @ key];
 
 (**************************************************************************************************)
 
@@ -1895,3 +1919,9 @@ rangePartitionSuccessors[part_] := Join @@ Table[
   ],
   {i, Length @ part}, {j, i+1, Length @ part}
 ];
+
+(**************************************************************************************************)
+
+PackageExport["EchoEdgeList"]
+
+EchoEdgeList = EchoFunction[EdgeList]

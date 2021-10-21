@@ -364,6 +364,7 @@ $extendedGraphOptionsRules = {
   VertexCoordinateFunction -> None,
   VertexColorRules -> None,
   VertexTooltips -> None,
+  VertexClickFunction -> None,
   EdgeTooltips -> None,
   EdgeColorRules -> None,
   RegionColorRules -> None,
@@ -636,6 +637,19 @@ $simpleGraphOptions = Keys @ $simpleGraphOptionRules;
 
 (**************************************************************************************************)
 
+PackageExport["PlainGraph"]
+
+Options[PlainGraph] = $simpleGraphOptionRules;
+
+PlainGraph[graph_Graph, opts:OptionsPattern[]] := Scope[
+  If[OptionValue[VertexCoordinates] === Inherited,
+    opts = Sequence @ ReplaceOptions[{opts}, VertexCoordinates -> Values[LookupVertexCoordinates @ graph]]
+  ];
+  ExtendedGraph[VertexList @ graph, EdgeList @ graph, opts]
+];
+
+(**************************************************************************************************)
+
 PackageExport["ExtendedGraph"]
 
 SetUsage @ "
@@ -648,6 +662,28 @@ displayed.
 Options[ExtendedGraph] = $simpleGraphOptionRules;
 ExtendedGraph[args___] :=
   interceptedGraphConstructor[Graph[args, GraphPlottingFunction -> ExtendedGraphPlottingFunction]];
+
+(**************************************************************************************************)
+
+PackageExport["IndexedExtendedGraph"]
+
+SetUsage @ "
+IndexedExtendedGraph[args$$] is like ExtendedGraph but accepts edges in the form of indexices into \
+the vertex list.
+"
+
+Options[IndexedExtendedGraph] = $simpleGraphOptionRules;
+IndexedExtendedGraph[vertices_, edges_, opts___] := Scope[
+  range = Range @ Length @ vertices;
+  ExtendedGraph[
+    VertexReplace[
+      Graph[range, edges],
+      RuleThread[range, vertices]
+    ],
+    opts
+  ]
+];
+  
 
 (**************************************************************************************************)
 
@@ -878,7 +914,22 @@ separateTag = Case[
 
 reattachTag[edge_, {}] := edge;
 reattachTag[edge_, {tag_}] := Append[edge, tag];
-reattachTag[edge_, tags_List] := Append[edge, SimplifyCardinalSet @ CardinalSet @ tags];
+reattachTag[edge_, tags_List] := reorientCS @ Append[edge, SimplifyCardinalSet @ CardinalSet @ tags];
+
+reorientCS = Case[
+  head_[a_, b_, CardinalSet[cs:{__Negated}]] := head[b, a, CardinalSet[StripNegated /@ cs]];
+  other_ := other;
+];
+
+(**************************************************************************************************)
+
+PackageExport["CombineForwardMultiedges"]
+
+CombineForwardMultiedges[edges_List] :=
+  toCombinedForwardMultiedge /@ GatherBy[edges, TakeOperator[2]]
+
+toCombinedForwardMultiedge[{e_}] := e;
+toCombinedForwardMultiedge[list_List] := ReplacePart[Part[list, 1], 3 -> CardinalSet[Sort @ Part[list, All, 3]]];
 
 (**************************************************************************************************)
 
@@ -1066,7 +1117,7 @@ Options[VertexAdjacentEdgeTable] = {Signed -> False};
 VertexAdjacentEdgeTable[graph_, OptionsPattern[]] := Scope[
   pairs = EdgePairs @ graph;
   vertices = VertexRange @ graph;
-  negator = If[OptionValue[Signed], Map[Negated, #, {2}]&, Identity];
+  negator = If[OptionValue[Signed], MapMatrix[Negated, #]&, Identity];
   MapThread[Union, {
     Lookup[PositionIndex @ FirstColumn @ EdgePairs @ graph, vertices, {}],
     Lookup[negator @ PositionIndex @ LastColumn @ EdgePairs @ graph, vertices, {}]

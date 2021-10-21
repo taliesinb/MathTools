@@ -62,22 +62,22 @@ $TemplateKatexFunction = <||>;
 
 PackageExport["ToKatexString"]
 
-ToKatexString[e_] := Scope[
-  boxesToKatexString @ ToBoxes[e, StandardForm]
-]
+ToKatexString[e_] :=
+  boxesToKatexString @ ToBoxes[e, StandardForm];
+
+(**************************************************************************************************)
 
 PackageScope["boxesToKatexString"]
 
-boxesToKatexString[e_] :=
-  StringTrim @ StringReplace[$WLSymbolToKatexRegex] @ StringJoin @
-    ReplaceRepeated[$katexAppliedRule] @ boxToKatex @ cleanupInlineBoxes @ e;
+boxesToKatexString[boxes_] := Scope[
+  $currentKatexInputBoxes = cleanupInlineBoxes @ boxes;
+  katexString = StringJoin @ ReplaceRepeated[$katexAppliedRule] @ boxToKatex @ $currentKatexInputBoxes;
+  StringTrim @ StringReplace[$WLSymbolToKatexRegex] @ katexString
+];
 
 $katexAppliedRule = {
   (s_String)[args___] :> {"\\" <> s <> "{", Riffle[{args}, "}{"], "}"}
 }
-
-
-PackageScope["boxToKatex"]
 
 boxToKatex = Case[
   "," := ",";
@@ -107,7 +107,7 @@ boxToKatex = Case[
   RowBox[e_] := Map[%, e];
 
   TagBox[e_, _] := % @ e;
-  RowBox[{"(", "\[NoBreak]", GridBox[grid_, ___], "\[NoBreak]", ")"}] := {"\\begin{pmatrix}", StringRiffle[Map[%, grid, {2}], "\\\\", "&"], "\\end{pmatrix}"};
+  RowBox[{"(", "\[NoBreak]", GridBox[grid_, ___], "\[NoBreak]", ")"}] := {"\\begin{pmatrix}", StringRiffle[MapMatrix[%, grid], "\\\\", "&"], "\\end{pmatrix}"};
   UnderoverscriptBox[e_, b_, c_] := % @ SuperscriptBox[SubscriptBox[e, b], c];
   FractionBox[a_, b_] := {"\\frac{", a, "}{", b, "}"};
   RowBox[list_] := Map[%, list];
@@ -119,6 +119,8 @@ boxToInlineText[e_] := TextString[e];
 
 templateBoxToKatex = Case[
   "Naturals" -> {}                  := "\\mathbb{N}";
+  "PositiveNaturals" -> {}          := "\\mathbb{N}^+";
+  "Primes" -> {}                    := "\\mathbb{P}";
   "Integers" -> {}                  := "\\mathbb{Z}";
   "Rationals" -> {}                 := "\\mathbb{Q}";
   "Reals" -> {}                     := "\\mathbb{R}";
@@ -133,7 +135,10 @@ templateBoxToKatex = Case[
 
 dispatchTemplateBox[tag_, args_] := Scope[
   fn = Lookup[$TemplateKatexFunction, tag, None];
-  If[fn === None, Print[tag]; Return["UNHANDLED " <> tag]];
+  If[fn === None,
+    Print["Cannot dispatch ", tag, " in ", Framed @ RawBoxes @ $currentKatexInputBoxes];
+    Return["badDispatch"[tag]];
+  ];
   res = fn @@ args;
   boxToKatex @ res (* recurese *)
 ];

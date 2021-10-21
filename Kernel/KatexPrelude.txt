@@ -1,3 +1,5 @@
+\gdef\badDispatch#1{\textbf{\textcolor{e1432d}{#1}}}
+
 \gdef\rarrbar{{\raisebox{-0.05em}{→}\mkern{-0.13em}{\large\shortmid}}}
 \gdef\larrbar{{{\large\shortmid}\mkern{-0.13em}{\raisebox{-0.05em}{←}}}}
 
@@ -93,7 +95,13 @@
 \gdef\pathHomomorphism#1{#1}
 \gdef\groupoidFunction#1{#1}
 \gdef\affineModifier#1{\overrightharpoon{#1}}
-\gdef\modulo#1{\overdot{#1}}
+
+\gdef\supercirc#1{#1^{\circ}}
+\gdef\supercircb#1{#1\!\degree}
+\gdef\toroidalModifier#1{\supercirc{#1}}
+\gdef\modulo#1{\supercirc{#1}}
+
+\gdef\dividesSymbol{\,|\,}
 \gdef\groupFunction#1{#1}
 \gdef\gl#1#2{GL({#1},#2)}
 \gdef\automorphisms{\operatorname{Aut}}
@@ -151,8 +159,12 @@
 \gdef\basis{\operatorname{basis}}
 \gdef\split{\operatorname{split}}
 \gdef\lcm{\operatorname{lcm}}
+\gdef\minimalContractionSets{\operatorname{MCSets}}
+\gdef\minimalContractions{\operatorname{MC}}
 \gdef\grade{\operatorname{grade}}
 \gdef\support{\operatorname{support}}
+
+\gdef\isPrime#1{#1\textrm{ prime}}
 
 \gdef\blank{\_}
 \gdef\emptyWord{}
@@ -238,10 +250,11 @@
 
 \gdef\contractionLattice#1{\operatorname{Con}(#1)}
 
+\gdef\contractedRelation#1{\sim_{#1}}
 \gdef\isContracted#1#2{{#1} \sim {#2}}
 \gdef\isContractedIn#1#2#3{{#1} \sim_{#3} {#2}}
-\gdef\isNotContracted#1#2{{#1}{\not \sim}{#2}}
-\gdef\isNotContractedIn#1#2#3{{#1}{\not \sim}_{#3}{#2}}
+\gdef\isNotContracted#1#2{{#1} \not \sim {#2}}
+\gdef\isNotContractedIn#1#2#3{{#1} \not \sim_{#3} {#2}}
 
 \gdef\contractionSum#1{#1}
 \gdef\contractionSumSymbol{\sqcup}
@@ -251,8 +264,11 @@
 
 \gdef\graph#1{#1}
 \gdef\graphHomomorphism#1{#1}
+
 \gdef\coversSymbol{\sqsupseteq}
+\gdef\coveredBySymbol{\sqsubseteq}
 \gdef\strictlyCoversSymbol{\sqsupset}
+\gdef\strictlyCoveredBySymbol{\sqsubset}
 
 \gdef\covering#1#2#3{{#2} \sqsupseteq_{#1} {#3}}
 
@@ -274,6 +290,10 @@
 \gdef\latticeGreaterEqualSymbol{\ge}
 \gdef\latticeLessSymbol{<}
 \gdef\latticeLessEqualSymbol{\le}
+
+\gdef\symmetricOrthogonalAlgebra#1{\mathfrak{so}\(#1\)}
+
+\gdef\symmetricGroup#1{Sym_{#1}}
 
 \gdef\groupPresentation#1#2{\left\langle\,{#1}\,\,\middle|\mathstrut\,\,{#2}\,\right\rangle}
 \gdef\groupRelationIso{=}

@@ -368,9 +368,12 @@ getNamedColorSet[set_, variant_] := Scope[
 
 ToColorPalette[spec_, n_Integer] := Scope[
   colors = ToColorPalette[spec];
-  If[FailureQ[colors] || Length[colors] < n, ReturnFailed[]];
+  If[FailureQ[colors], ReturnFailed[]];
+  If[Length[colors] < n, colors //= expandColorPalette];
   Take[colors, n]
 ];
+
+expandColorPalette[colors_] := Join[colors, OklabBlend /@ (UnorderedPairs @ colors)];
 
 (**************************************************************************************************)
 
@@ -512,7 +515,7 @@ setupColorRuleDispatch[DiscreteColorFunction];
 
 PackageScope["$BooleanColors"]
 
-$BooleanColors = {GrayLevel[0.2], GrayLevel[0.8]};
+$BooleanColors = {GrayLevel[0.9], GrayLevel[0.1]};
 
 DiscreteColorFunction[values_List, Automatic] := Scope[
   values = Union @ values;

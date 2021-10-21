@@ -1,11 +1,18 @@
 (**************************************************************************************************)
 
 PackageExport["Naturals"]
+PackageExport["PositiveNaturals"]
 
 SetUsage @ "Naturals represents the natural numbers."
+SetUsage @ "PositiveNaturals represents the positive natural numbers."
 
 MakeBoxes[Naturals, StandardForm] := TemplateBox[{}, "Naturals"];
 MakeBoxes[Naturals, TraditionalForm] := TemplateBox[{}, "Naturals"];
+
+MakeBoxes[PositiveNaturals, StandardForm] := TemplateBox[{}, "PositiveNaturals"];
+MakeBoxes[PositiveNaturals, TraditionalForm] := TemplateBox[{}, "PositiveNaturals"];
+
+MakeBoxes[Primes, StandardForm] := TemplateBox[{}, "Primes"];
 
 applyRiffled[f_, op_][args___] := f[riffled[op][args]];
 
@@ -52,7 +59,7 @@ declareBoxFormatting[
 (**************************************************************************************************)
 
 declareSymbolForm::badsym = "Name of symbol `` should end in SymbolForm."
-declareSymbolForm[head_Symbol] := Scope[
+declareSymbolForm[head_Symbol, type_:RawSymbolForm] := Scope[
   name = SymbolName @ head;
   Which[
     StringEndsQ[name, "SymbolForm"], Null,
@@ -60,7 +67,7 @@ declareSymbolForm[head_Symbol] := Scope[
     True, ReturnFailed["badsym", head]
   ];
   With[{name2 = name},
-    declareBoxFormatting[head[s_] :> makeTypedTemplateBox[s -> RawSymbolForm, name2]];
+    declareBoxFormatting[head[s_] :> makeTypedTemplateBox[s -> type, name2]];
   ];
   $TemplateKatexFunction[name] = LowerCaseFirst @ StringDrop[name, -10];
 ];
@@ -517,7 +524,9 @@ $namedFunctions = {
   SupportFunction,
   SplitFunction,
   LCMFunction,
-  GradeFunction
+  GradeFunction,
+  MinimalContractionsFunction,
+  MinimalContractionSetsFunction
 };
 
 $functionHeads = {
@@ -684,9 +693,15 @@ declareSymbolForm[GroupoidFunctionSymbol];
 
 (**************************************************************************************************)
 
+PackageExport["ToroidalModifierForm"]
+
+declareUnaryWrapperForm[ToroidalModifierForm];
+
+(**************************************************************************************************)
+
 PackageExport["AffineModifierForm"]
 
-declareUnaryWrapperForm[AffineModifierForm]
+declareUnaryWrapperForm[AffineModifierForm];
 
 (**************************************************************************************************)
 
@@ -864,6 +879,18 @@ $semiringAliases = <|
 
 declareAlgebraicSymbol[SemiringSymbol, $semiringAliases];
 
+(********************************************)
+
+PackageExport["SpecialOrthogonalAlgebraForm"]
+
+declareUnaryForm[SpecialOrthogonalAlgebraForm];
+
+(********************************************)
+
+PackageExport["SymmetricGroupForm"]
+
+declareUnaryForm[SymmetricGroupForm];
+
 (**************************************************************************************************)
 
 PackageExport["GeneralLinearGroup"]
@@ -899,12 +926,7 @@ SetUsage @ "
 ContractionLatticeSymbol[q$] represents the lattice of contractions of a quiver q$.
 "
 
-declareBoxFormatting[
-  HoldPattern[ContractionLatticeSymbol[q_]] :>
-    makeTypedTemplateBox[q -> QuiverSymbol, "ContractionLatticeSymbolForm"]
-];
-
-$TemplateKatexFunction["ContractionLatticeSymbolForm"] = "contractionLattice";
+declareSymbolForm[ContractionLatticeSymbol, QuiverSymbol];
 
 (**************************************************************************************************)
 
@@ -933,18 +955,7 @@ OrderedContractionSetForm[index_][set_] :=
 
 PackageExport["WordGroupSymbol"]
 
-declareBoxFormatting[
-  
-  (* this looks suspicious *)
-  WordGroupSymbol[] :>
-    TemplateBox[{}, "WordGroupSymbolForm"],
-
-  WordGroupSymbol[s_] :>
-    makeTypedTemplateBox[s -> QuiverSymbol, "WordGroupSymbolForm"]
-
-];
-
-$TemplateKatexFunction["WordGroupSymbolForm"] = "wordGroup";
+declareSymbolForm[WordGroupSymbol, QuiverSymbol]
 
 (**************************************************************************************************)
 
@@ -1017,14 +1028,7 @@ SetUsage @ "
 PathQuiverSymbol[q$] represents the path quiver on quiver q$.
 "
 
-PathQuiverSymbol[] := PathQuiverSymbol["Q"];
-
-declareBoxFormatting[
-  HoldPattern[PathQuiverSymbol[q_]] :>
-    makeTypedTemplateBox[q -> QuiverSymbol, "PathQuiverSymbolForm"]
-];
-
-$TemplateKatexFunction["PathQuiverSymbolForm"] = "pathQuiver";
+declareSymbolForm[PathQuiverSymbol, QuiverSymbol];
 
 (**************************************************************************************************)
 
@@ -1262,10 +1266,18 @@ declareNamedQuiverSymbol[CubicQuiverSymbol];
 
 (********************************************)
 
-PackageExport["CoversForm"]
-PackageExport["StrictlyCoversForm"]
+PackageExport["DividesForm"]
 
-declareInfixSymbol[{CoversForm, StrictlyCoversForm}, GraphSymbol];
+declareInfixSymbol[DividesForm];
+
+(********************************************)
+
+PackageExport["CoversForm"]
+PackageExport["CoveredByForm"]
+PackageExport["StrictlyCoversForm"]
+PackageExport["StrictlyCoveredByForm"]
+
+declareInfixSymbol[{CoversForm, CoveredByForm, StrictlyCoversForm, StrictlyCoveredByForm}, GraphSymbol];
 
 (********************************************)
 
@@ -1481,6 +1493,12 @@ $TemplateKatexFunction["IsContractedForm"] = "isContracted"
 $TemplateKatexFunction["IsContractedInForm"] = "isContractedIn"
 $TemplateKatexFunction["IsNotContractedForm"] = "isNotContracted"
 $TemplateKatexFunction["IsNotContractedInForm"] = "isNotContractedIn"
+
+(**************************************************************************************************)
+
+PackageExport["ContractedRelationForm"]
+
+declareUnaryForm[ContractedRelationForm];
 
 (**************************************************************************************************)
 
@@ -1843,6 +1861,7 @@ $equationSymbolRules = {
   "\[SubsetEqual]"      -> "&\\subseteq ",
   "where"               -> "&\\text{where} ",
   "\[TildeTilde]"       -> "&\[TildeTilde] ",
+  "=>"                  -> "&\[Implies] ",
   "\[Implies]"          -> "&\[Implies] ",
   "\[And]"              -> "&\[And] ",
   "\[Or]"               -> "&\[Or] "
@@ -2232,11 +2251,7 @@ $TemplateKatexFunction["SuchThatForm"] = "suchThat";
 
 PackageExport["CompactBasisSymbolForm"]
 
-declareBoxFormatting[
-  CompactBasisSymbolForm[p_] :> makeTypedTemplateBox[p -> PathVectorSpaceSymbol, "CompactBasisSymbolForm"]
-];
-
-$TemplateKatexFunction["CompactBasisSymbolForm"] = "compactBasis";
+declareSymbolForm[CompactBasisSymbolForm, PathVectorSpaceSymbol];
 
 (********************************************)
 
@@ -2488,6 +2503,8 @@ PackageExport["OrFunction"]
 PackageExport["NotFunction"]
 
 PackageExport["VertexListFunction"]
+PackageExport["MinimalContractionsFunction"]
+PackageExport["MinimalContractionSetsFunction"]
 PackageExport["EdgeListFunction"]
 PackageExport["PathListFunction"]
 PackageExport["CardinalListFunction"]
@@ -2608,11 +2625,13 @@ $TemplateKatexFunction["TransportMapSymbol"] = "transportMapSymbol"
 
 PackageExport["CardinalGroupSymbolForm"]
 
-declareBoxFormatting[
-  CardinalGroupSymbolForm[q_] :> makeTypedTemplateBox[q -> SymbolForm, "CardinalGroupSymbolForm"]
-];
+declareSymbolForm[CardinalGroupSymbolForm, SymbolForm];
 
-$TemplateKatexFunction["CardinalGroupSymbolForm"] = "cardinalGroup"
+(********************************************)
+
+PackageExport["CardinalGroupoidSymbolForm"]
+
+declareSymbolForm[CardinalGroupoidSymbolForm, SymbolForm];
 
 (********************************************)
 
@@ -2952,7 +2971,7 @@ $binaryRelationMapping = <|
 
 $binaryRelationHeads = Alternatives @@ Keys[$binaryRelationMapping];
 
-$domainsP = Alternatives[Integers, Reals, Rationals, Complexes, Naturals];
+$domainsP = Alternatives[Integers, Reals, Rationals, Complexes, Naturals, PositiveNaturals, Primes];
 
 (* this is the general dispatch mechanism for a form of unknown type *)
 makeQGBoxes = Case[

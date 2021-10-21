@@ -110,7 +110,7 @@ setupMarkdownGlobals[] := Quoted[
   UnpackOptions[markdownFlavor, headingDepthOffset, includePrelude];
   SetAutomatic[includePrelude, markdownFlavor =!= "Simple"];
   flavorFields = Lookup[$flavorData, markdownFlavor, ReturnFailed[]];
-  UnpackAssociation[flavorFields, imageTemplate, inlineMathTemplate, multilineMathTemplate, markdownPostprocessor];
+  UnpackAssociation[flavorFields, imageTemplate, anchorTemplate, inlineMathTemplate, multilineMathTemplate, markdownPostprocessor];
 ]];
 
 DefineLiteralMacro[setupRasterizationPath,
@@ -187,17 +187,21 @@ General::notmdext = "`` file specification `` does not end in \".md\"."
 (**************************************************************************************************)
 
 PackageExport["ExportToMarkdown"]
+PackageExport["CollatedPagePath"]
+
+General::badcpp = "Bad CollatedPagePath ``."
 
 General::expdirne = "Export directory `` does not exist."
 
 Options[ExportToMarkdown] = JoinOptions[
   MaxItems -> Infinity,
+  CollatedPagePath -> None,
   $genericMarkdownExportOptions
 ];
 
 $dryRun = False;
 ExportToMarkdown[importSpec_, exportSpec_, OptionsPattern[]] := Scope @ CatchMessage[
-  UnpackOptions[importPath, exportPath, dryRun, verbose, maxItems, includePrelude];
+  UnpackOptions[importPath, exportPath, dryRun, verbose, maxItems, includePrelude, collatedPagePath];
   $dryRun = dryRun =!= False;
   SetAutomatic[verbose, $dryRun];
   $verbose = verbose;
@@ -218,7 +222,17 @@ ExportToMarkdown[importSpec_, exportSpec_, OptionsPattern[]] := Scope @ CatchMes
     If[$verbose, Print["Writing prelude to \"", preludePath, "\"."]];
     ExportUTF8[preludePath, StringReplace[markdownPostprocessor @ $KatexPrelude, "\n" -> " "]];
   ];
-  doImportExport[iexpr, opath, StringEndsQ[opath, ".md"]]
+  fileList = doImportExport[iexpr, opath, StringEndsQ[opath, ".md"]];
+  If[StringQ[collatedPagePath],
+    Which[
+      !StringEndsQ[collatedPagePath, ".md"], ReturnFailed["badcpp", collatedPagePath],
+      AbsolutePathQ[collatedPagePath], Null,
+      DirectoryQ[opath], collatedPagePath = ToFileName[opath, collatedPagePath],
+      True, ReturnFailed["badcpp", collatedPagePath]
+    ];
+    doImportExport[iexpr, collatedPagePath, True];
+  ];
+  fileList
 ];
 
 General::emptynbdir = "Import directory `` does not contain any notebooks."
@@ -279,6 +293,7 @@ Options[ExportNavigationPage] = {
 
 ExportNavigationPage[files_, relativePrefix_String, navPath_, OptionsPattern[]] := Scope[
   UnpackOptions[indexPagePath];
+  $mdFileCache = Data`UnorderedAssociation[]; (* for inserting by id from one page to another *)
   If[StringQ[files],
     If[FileType[files] =!= Directory, ReturnFailed[]];
     files = FileNames["*.md", files];
@@ -290,7 +305,8 @@ ExportNavigationPage[files_, relativePrefix_String, navPath_, OptionsPattern[]] 
     <|"path" -> #1, "title" -> toNavTitle[#2]|>&,
     {fileNames, titles}
   ];
-  $titleToPath = AssociationThread[titles, fileNames];
+  $titleToRelPath = AssociationThread[titles, fileNames];
+  $titleToAbsPath = AssociationThread[titles, files];
   Which[
     StringQ[navPath],
       navOutputPath = StringReplace[navPath, ".template" -> ""],
@@ -324,30 +340,55 @@ $nextPageTemplate = StringTemplate @ "
 $nextLinkPrefix = "@@next-link";
 
 insertNextPageFooter[file_, footer_] := Scope[
-  newContent = content = ImportUTF8 @ file;
+  newContent = content = ImportUTF8 @ file; $currentFile = file;
   If[StringContainsQ[content, $nextLinkPrefix],
     cutoff = Part[StringPosition[content, $nextLinkPrefix, 1], 1, 1] - 1;
     newContent = StringTake[content, cutoff];
   ];
+  If[StringContainsQ[content, $idInsertionRegexp],
+    newContent = StringReplace[newContent, $idInsertionRegexp :> toInsertedContent[StringReplace["$1", "\n" -> " "], "$2", "$3"]]
+  ];
   If[StringContainsQ[content, $linkRegexp],
-    newContent = StringReplace[newContent, $linkRegexp :> toInlineLink["$1", file]];
+    newContent = StringReplace[newContent, $linkRegexp :> toInlineLink[StringReplace["$1", "\n" -> " "]]];
   ];
   If[footer =!= None,
     newContent = StringTrim[newContent] <> footer];
   If[content =!= newContent, ExportUTF8[file, newContent]];
 ];
 
-toInlineLink[title_, file_] := Scope[
-  path = Lookup[$titleToPath, title, None];
-  If[path === None,
-    Print["Could not resolve inline link to \"", title, "\" in file ", file];
-    Print["Available: ", Keys @ $titleToPath];
+toInlineLink[title_] := Scope[
+  relPath = Lookup[$titleToRelPath, title, None];
+  If[relPath === None,
+    Print["Could not resolve inline link to \"", title, "\" in file ", $currentFile];
+    Print["Available: ", Keys @ $titleToRelPath];
     Return @ StringJoin["\"", title, "\""]
   ];
-  StringJoin["[", title, "](", path, ")"]
+  StringJoin["[", title, "](", relPath, ")"]
 ];
 
-$linkRegexp = RegularExpression["""\[\[\[([^]]+)\]\]\]"""];
+toInsertedContent[title_, id_, div_] := Scope[
+  absPath = Lookup[$titleToAbsPath, title, None];
+  If[absPath === None,
+    Print["Could not resolve insertion request to \"", title, "\" (", id, ") in file ", $currentFile];
+    Return @ "";
+  ];
+  markdown = CacheTo[$mdFileCache, absPath, ImportUTF8 @ absPath];
+  targetRegex = "\\label{" <> id <> "}\n\n" ~~ Shortest[content__] ~~ "\n\n";
+  foundContent = StringCases[markdown, targetRegex :> content, 1];
+  foundContent = First[foundContent, None];
+  If[!StringQ[foundContent],
+    Print["Could not find ID \"", id, "\" in \"", absPath, "\" referenced from file ", $currentFile];
+    Return @ "";
+  ];
+  foundContent //= StringTrim;
+  If[div =!= "", foundContent = StringJoin["@@", StringTrim[div, "@"], "\n", foundContent, "\n", "@@"]];
+  foundContent
+]
+
+
+$idInsertionRegexp = RegularExpression["""\[\[\[([^]]+)#([^]@]+)(@\w+)?\]\]\]"""];
+
+$linkRegexp = RegularExpression["""\[\[\[([^]#]+)\]\]\]"""];
 
 (**************************************************************************************************)
 
@@ -363,9 +404,11 @@ $flavorData["Franklin"] = <||>;
 
 $flavorData["Franklin", "ImageTemplate"] = StringTemplate @ StringTrim @  """
 ~~~
-<img src="`relativepath`" width="`width` alt="`caption`">
+<img src="`relativepath`" width="`width`" alt="`caption`">
 ~~~
 """;
+
+$flavorData["Franklin", "AnchorTemplate"] = StringTemplate @ """\label{``}""";
 
 $flavorData["Franklin", "InlineMathTemplate"] = wrapDollar;
 
@@ -385,6 +428,8 @@ $flavorData["Simple"] = <||>;
 
 $flavorData["Simple", "ImageTemplate"] = StringTemplate @ "![](`relativepath`)";
 
+$flavorData["Simple", "AnchorTemplate"] = "";
+
 $flavorData["Simple", "InlineMathTemplate"] = wrapDollar;
 
 $flavorData["Simple", "MultilineMathTemplate"] = wrapDoubleDollar;
@@ -403,7 +448,7 @@ $flavorData[None] = $flavorData["Simple"];
 
 $flavorData[None, "ImageTemplate"] = None;
 
-MacroEvaluate @ UnpackAssociation[$flavorData[None], imageTemplate, inlineMathTemplate, multilineMathTemplate, markdownPostprocessor];
+MacroEvaluate @ UnpackAssociation[$flavorData[None], imageTemplate, anchorTemplate, inlineMathTemplate, multilineMathTemplate, markdownPostprocessor];
 
 (**************************************************************************************************)
 
@@ -442,7 +487,7 @@ createTable[ostr_String] := Scope[
   If[Min[StringCount[lines, "\t"..]] == 0,
     Return @ ostr];
   grid = StringTrim /@ StringSplit[lines, "\t"..];
-  grid = Map[StringReplace["\"" -> "'"], grid, {2}];
+  grid = MapMatrix[StringReplace["\"" -> "'"], grid];
   grid = Replace[grid, "**_**" -> "", {2}];
   If[!MatrixQ[grid], Print["Bad table"]];
   first = First @ grid;
@@ -473,15 +518,21 @@ insertAtFirstNonheader[lines_List, template_] := Scope[
   Insert[lines, template, index]
 ];
 
-
 (**************************************************************************************************)
 
 General::badnbread = "Could not read notebook ``, will be replaced with placeholder.";
 
+$notebookToMarkdownCache = Data`UnorderedAssociation[];
+
 toMarkdownLines[File[path_String]] /; FileExtension[path] === "nb" := Scope[
+  fileDate = Quiet @ FileDate @ path;
+  {cachedResult, cachedDate} = Lookup[$notebookToMarkdownCache, path, {None, None}];
+  If[ListQ[cachedResult] && fileDate === cachedDate, Return @ cachedResult];
   nb = Quiet @ Get @ path;
   If[MatchQ[nb, Notebook[{__Cell}, ___]],
-    toMarkdownLines @ nb
+    result = toMarkdownLines @ nb;
+    CacheTo[$notebookToMarkdownCache, path, {result, fileDate}];
+    result
   ,
     Message[General::badnbread, path];
     List["#### toMarkdownLines: placeholder for " <> path]
@@ -498,16 +549,15 @@ toMarkdownLines[nb_NotebookObject] :=
  *)
 
 toMarkdownLines[list_List] :=
-  Catenate @ Riffle[Map[toMarkdownLines, list], "---"];
+  Flatten[Riffle[Map[toMarkdownLines, list], "---"], 1];
 
 toMarkdownLines[Notebook[cells_List, ___]] := Scope[
-  $lastCaption = None;
-  Map[cellToMarkdown, trimCells @ cells]
+  $lastCaption = None; Map[outerCellToMarkdown, cells]
 ]
 
-toMarkdownLines[c_Cell] := Scope[
+toMarkdownLines[cell_Cell] := Scope[
   $lastCaption = None;
-  List @ cellToMarkdown @ Take[c, UpTo @ 2]
+  List @ outerCellToMarkdown @ cell
 ];
 
 toMarkdownLines[e_] := List[
@@ -522,14 +572,28 @@ $lastCaption = None;
 
 $textCellP = "Section" | "Subsection" | "Subsubsection" | "Text";
 
-$captionPattern = RowBox[{"(*", RowBox[{"CAPTION", ":", caption___}], "*)"}] :>
+$outputCaptionPattern = RowBox[{"(*", RowBox[{"CAPTION", ":", caption___}], "*)"}] :>
   StringJoin @ iTextCellToMDOuter @ RowBox[{caption}];
+
+outerCellToMarkdown = Case[
+
+  Cell[e_, style_, ___, CellTags -> tag_String, ___] :=
+    Splice @ {anchorTemplate @ tag, cellToMarkdown @ Cell[e, style]};
+
+  Cell[e_, style_, ___] :=
+    cellToMarkdown @ Cell[e, style];
+  
+  Cell[CellGroupData[cells_List, Open]] :=
+    Splice[outerCellToMarkdown /@ cells];
+
+  Cell[_CellGroupData] :=
+    Nothing;
+];
 
 cellToMarkdown = Case[
 
   Cell["Under construction.", _] := outputCellToMD @ $underConstructionCell;
 
-  Cell[e_, "Code"]               := ($lastCaption = First[Cases[e, z_String :> $captionRegex], None]; Nothing);
   Cell[e_, "Chapter"]            := StringJoin[headingDepth @ 0, textCellToMD @ e];
   Cell[e_, "Section"]            := StringJoin[headingDepth @ 1, textCellToMD @ e];
   Cell[e_, "Subsection"]         := StringJoin[headingDepth @ 2, textCellToMD @ e];
@@ -544,7 +608,10 @@ cellToMarkdown = Case[
 
   e:Cell[_, "Output"]            := If[ContainsQ[e, "LinkHand"], Nothing, outputCellToMD @ e];
 
-  Cell[CellGroupData[cells_List, Open]] := Splice[% /@ trimCells[cells]];
+  Cell[e_, "Code"]               := (
+    $lastCaption = First[Cases[e, $outputCaptionPattern], None];
+    Nothing
+  );
 
   c_ := (Nothing);
 ];
@@ -664,6 +731,7 @@ $forbiddenStrings = "XXX" | "XXXX";
 
 textCellToMD[e_] := Scope[
   text = StringTrim @ StringJoin @ iTextCellToMDOuter @ e;
+  If[StringContainsQ[text, "\\badDispatch"], CellPrint @ Cell[e, "Text", Background -> RGBColor[1,0.95,0.95]]];
   If[StringContainsQ[text, $forbiddenStrings], Return[""]];
   text // StringReplace[$finalStringFixups1] // StringReplace[$finalStringFixups2]
 ]
@@ -681,6 +749,10 @@ $finalStringFixups2 = {
   "$ ?" -> "$?",
   "$ !" -> "$!",
   "$ :" -> "$:",
+  "1'st" -> "$1^{\\textrm{st}}$",
+  "2'nd" -> "$2^{\\textrm{nd}}$",
+  "3'rd" -> "$3^{\\textrm{rd}}$",
+  (d:DigitCharacter ~~ "'th") :> StringJoin["$", d, "^{\\textrm{th}}$"],
   "n'th" -> "$n^{\\textrm{th}}$",
   "i'th" -> "$i^{\\textrm{th}}$",
   l:("f"|"p") ~~ "-" ~~ r:("vert"|"edge"|"cardinal"|"quiver") :>

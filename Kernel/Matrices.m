@@ -99,7 +99,6 @@ SameMatrixUptoPermutationAndInversionQ[m1_, m2_] := AnyTrue[perms @ Length @ m1,
 (** Translations matrix functions                                                                 *)
 (**************************************************************************************************)
 
-
 PackageExport["TranslationMatrix"]
 
 TranslationMatrix[vector_] := Scope[
@@ -232,6 +231,22 @@ AugmentedIdentityMatrix[n_, {i_, j_}] := ReplacePart[IdentityMatrix[n], {i, j} -
 AugmentedIdentityMatrix[n_, list_List] := ReplacePart[IdentityMatrix[n], list -> 1];
 
 (**************************************************************************************************)
+(** Padding                                                                                       *)
+(**************************************************************************************************)
+
+PackageExport["PadRows"]
+
+PadRows[ragged_, item_] := Scope[
+  w = Max[Length /@ ragged];
+  ToPacked @ Map[padToLength[w, item], ragged]
+]
+
+padToLength[n_, item_][vector_] := Scope[
+  l = Length[vector];
+  If[l < n, Join[vector, ConstantArray[item, n - l]], vector]
+];
+
+(**************************************************************************************************)
 (** Block matrix functions                                                                        *)
 (**************************************************************************************************)
 
@@ -254,7 +269,7 @@ BooleArrayPlot[arr_] := ArrayPlot[arr, Mesh -> True, PixelConstrained -> 10, Col
 
 FindDiagonalBlockPositions[matrices_] := Scope[
   trans = Transpose[matrices, {3,1,2}];
-  isZero = Map[ZerosQ, trans, {2}];
+  isZero = MapMatrix[ZerosQ, trans];
   n = Length[trans]; n2 = n - 1;
   isZeroD = Table[And @@ isZero[[(i+1);;, j]], {i, n2}, {j, n2}];
   isZeroR = Table[And @@ isZero[[i, (j+1);;]], {i, n2}, {j, n2}];

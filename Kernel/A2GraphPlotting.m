@@ -10,6 +10,7 @@ PackageExport["EdgeColorRules"]
 PackageExport["RegionColorRules"]
 
 PackageExport["VertexTooltips"]
+PackageExport["VertexClickFunction"]
 PackageExport["EdgeTooltips"]
 
 PackageExport["CardinalColors"]
@@ -62,6 +63,9 @@ SetUsage @ "UseAbsoluteSizes is an extended option to Graph."
 SetUsage @ "SelfLoopRadius is an extended option to Graph."
 SetUsage @ "MultiEdgeDistance is an extended option to Graph."
 SetUsage @ "PackingSpacing is an extended option to Graph."
+
+SetUsage @ "VertexTooltips is an extended option to Graph."
+SetUsage @ "VertexClickFunction is an extended option to Graph."
 
 SetUsage @ "VertexLayout is an extended option to Graph."
 SetUsage @ "VertexOverlapResolution is an extended option to Graph."
@@ -413,7 +417,7 @@ ExtendedGraphPlot[graph_Graph] := Block[
 
 GraphicsImageSizePadTo[graphics_, requiredPadding_] := Scope[
   padding = LookupOption[graphics, ImagePadding];
-  padding = Map[Max[#, requiredPadding]&, padding, {2}];
+  padding = MapMatrix[Max[#, requiredPadding]&, padding];
   ReplaceOptions[graphics, ImagePadding -> padding]
 ];
 
@@ -533,6 +537,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       regionColorRules,
 
       vertexTooltips, edgeTooltips,
+      vertexClickFunction,
 
       viewOptions, graphLegend,
       additionalImagePadding, aspectRatioClipping,
@@ -567,10 +572,14 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     If[RuleQ[imageSize],
       {imageWidth, imageHeight} = Match[imageSize,
-        Rule["LongestEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize[1.0, sz],
-        Rule["ShortestEdge", sz:$numOrNumPairP]  :> computeEdgeLengthBasedImageSize[0.0, sz],
-        Rule["MedianEdge", sz:$numOrNumPairP]    :> computeEdgeLengthBasedImageSize[0.5, sz],
-        Rule["AverageEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize["Average", sz],
+        Rule["LongestEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize[1.0, sz, False],
+        Rule["LongestNonLoopEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize[1.0, sz, False],
+        Rule["ShortestEdge", sz:$numOrNumPairP]  :> computeEdgeLengthBasedImageSize[0.0, sz, False],
+        Rule["ShortestNonLoopEdge", sz:$numOrNumPairP]  :> computeEdgeLengthBasedImageSize[0.0, sz, True],
+        Rule["MedianEdge", sz:$numOrNumPairP]    :> computeEdgeLengthBasedImageSize[0.5, sz, False],
+        Rule["MedianNonLoopEdge", sz:$numOrNumPairP]    :> computeEdgeLengthBasedImageSize[0.5, sz, True],
+        Rule["AverageEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize["Average", sz, False],
+        Rule["AverageNonLoopEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize["Average", sz, True],
         _ :> ReturnFailed[]
       ];
     ,
@@ -660,6 +669,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     {defaultVertexColor, vertexBaseStyle, setbackDistance, rawVertexDrawFunc, vertexPadding} =
       processVertexShapeFunction[vertexShapeFunction];
     SetAutomatic[edgeSetback, setbackDistance];
+    If[MatchQ[edgeSetback, PointSize[_]], edgeSetback = imageSizeToPlotSize @@ edgeSetback];
     extendPadding[vertexPadding];
 
     vertexDrawFunc = If[$vertexSizeOverrides === None,
@@ -1019,17 +1029,19 @@ filterAssocIndices[All][assoc_] :=
 filterAssocIndices[parts_][assoc_] :=
   DeleteCases[Map[Intersection[#, parts]&, assoc], {}];
 
-computeEdgeLengthBasedImageSize[q_, {edgeSize_, maxWidth_}] := Scope[
-  {w, h} = size = computeEdgeLengthBasedImageSize[q, edgeSize];
+computeEdgeLengthBasedImageSize[q_, {edgeSize_, maxWidth_}, ignoreLoops_] := Scope[
+  {w, h} = size = computeEdgeLengthBasedImageSize[q, edgeSize, ignoreLoops];
   If[w > maxWidth, size * (maxWidth / w), size]
 ];
 
-computeEdgeLengthBasedImageSize[q_, edgeSize_] := Scope[
-  quantile = EdgeLengthScale[$EdgeCoordinateLists, q];
+computeEdgeLengthBasedImageSize[q_, edgeSize_, ignoreLoops_] := Scope[
+  quantile = EdgeLengthScale[If[ignoreLoops, deleteLoops, Identity] @ $EdgeCoordinateLists, q];
   scaling = edgeSize / quantile;
   (* 3D? *)
   Max[#, 10]& /@ N[Take[$GraphPlotSize, 2] * scaling]
 ];
+
+deleteLoops[coords_] := Discard[coords, First[#] == Last[#]&];
 
 imageSizeToImageFraction[sz_] := sz / effectiveImageWidth;
 ImageFractionToImageSize[sz_] := sz * effectiveImageWidth;
@@ -1040,7 +1052,7 @@ plotSizeToImageSize[sz_] := sz / $GraphPlotSizeX * effectiveImageWidth;
 plotSizeToDiskSize[sz_] := Scaled[sz * {1, $GraphPlotAspectRatio} / $GraphPlotScale];
 plotSizeToPointSize[sz_] := PointSize[sz / $GraphPlotSizeX];
 
-extendPadding[n_] := imagePadding = Map[Max[#, n]&, imagePadding, {2}];
+extendPadding[n_] := imagePadding = MapMatrix[Max[#, n]&, imagePadding];
 extendPadding[padding_List] := imagePadding = MapThread[Max, {imagePadding, padding}, 2];
 
 extendPaddingToInclude[{{xmin_, xmax_}, {ymin_, ymax_}}] := Scope[
@@ -1298,7 +1310,7 @@ resolveColorRules[head_, elements_, rules:$RuleListPattern, default_] := Scope[
 
 drawUndirectedEdges[indices_, style_] := Scope[
   edgeStyle = style;
-  createEdgePrimitives[indices, multiLine, None, None]
+  Style[createEdgePrimitives[indices, multiLine, None, None], style]
 ];
 
 (**************************************************************************************************)
@@ -1372,7 +1384,7 @@ drawArrowheadEdges[cs:CardinalSet[cardinals_], indices_] := Scope[
       {l___, c_, m___, Negated[c_], r___} :> {l, TwoWay[c], m, r}
     ]
   ];
-  cardinals = SortBy[cardinals, {Head[#] === TwoWay, StripNegated @ #}&];
+  cardinals = SortBy[cardinals, {Head[#] === TwoWay, #}&];
   num = Length @ cardinals;
   positions = Map[
     Replace[
@@ -1390,7 +1402,16 @@ drawArrowheadEdges[cs:CardinalSet[cardinals_], indices_] := Scope[
   createEdgePrimitives[indices, multiArrow, arrowheads, cs]
 ];
 
-makeMultiarrowheadPositions[num_, Around[mn_, sd_]] := mn + sd * Standardize[Range @ num];
+makeMultiarrowheadPositions[num_, Around[mn_, sd_]] := Scope[
+  p = mn + sd * Standardize[Range @ num];
+  {min, max} = MinMax @ p;
+  Which[
+    max > 1, p - (max - 1),
+    min < 0, p - min,
+    True, p
+  ]
+];
+
 makeMultiarrowheadPositions[1, pos_] := {pos};
 makeMultiarrowheadPositions[num_, _] := 0.5 + 0.2 * Standardize[Range @ num];
 
@@ -2018,6 +2039,8 @@ drawSphere[size_][pos_, color_] :=
 (* Disk doesn't support coordinate arrays *)
 drawDisk[size_][pos_, color_] :=
   edgedStyle[color] @ mapCoordArray[Disk, pos, size];
+
+edgedStyle[{}] := Identity;
 
 edgedStyle[color_][primitives_] := Style[
   primitives,
