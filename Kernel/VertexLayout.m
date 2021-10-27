@@ -455,7 +455,7 @@ SmartLayout[][data_] := Scope[
     IsomorphicGraphQ[ugraph, $tetraGraph],
       getIsomorphicCoordinates[ugraph, $tetraGraph],
     vertexCount == (edgeCount + 1) && PathGraphQ[ugraph],
-      getIsomorphicCoordinates[ugraph, LineGraph[vertexCount]],
+      getIsomorphicCoordinates[ugraph, PathGraph[vertexCount]],
     True,
       $Failed
   ];
@@ -531,15 +531,16 @@ PackageExport["LinearLayout"]
 
 Options[LinearLayout] = {
   Method -> Automatic,
-  Orientation -> Left
+  Orientation -> Automatic
 };
 
 $threePoints = CirclePoints[3];
 
 LinearLayout[opts:OptionsPattern[]][data_] := Scope[
   UnpackOptions[method, orientation];
-  SetAutomatic[method, If[AcyclicGraphQ[UndirectedGraph @ data["Graph"]], "Line", "Circle"]];
   UnpackAssociation[data, vertexCount];
+  SetAutomatic[method, If[AcyclicGraphQ[UndirectedGraph @ data["Graph"]], "Line", "Circle"]];
+  SetAutomatic[orientation, If[method === "Line", Left, If[vertexCount === 3, Top, Left]]];
   data["VertexCoordinates"] = orientationTransform[orientation] @ Switch[method,
     "Line",
       N[{# - 1, 0}& /@ Range[vertexCount]],
@@ -576,11 +577,13 @@ if VertexCoordinates is not Automatic, it will supersede the layout algorithm an
 self-loops will be manually corrected to have the correct scale
 *)
 
+
 VertexEdgeCoordinateData[data_Association, vertexLayout_] := Scope[
 
   UnpackAssociation[data,
     indexVertices, indexEdges, vertexCoordinates,
-    selfLoopRadius, multiEdgeDistance, vertexOverlapResolution
+    selfLoopRadius, multiEdgeDistance, vertexOverlapResolution,
+    layoutDimension
   ];
 
   $vertexCoordinates = ConstantArray[None, vertexCount];
@@ -589,7 +592,8 @@ VertexEdgeCoordinateData[data_Association, vertexLayout_] := Scope[
   graphLayout = {
     "VertexLayout" -> vertexLayout,
     "SelfLoopRadius" -> selfLoopRadius,
-    "MultiEdgeDistance" -> multiEdgeDistance
+    "MultiEdgeDistance" -> multiEdgeDistance,
+    If[IntegerQ[layoutDimension], "Dimension" -> layoutDimension, Nothing]
   };
 
   newGraph = Graph[

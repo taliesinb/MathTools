@@ -300,7 +300,7 @@ Protect[Style];
 PackageExport["PathOutline"]
 PackageExport["SimplifyRegions"]
 
-$namedTransformsPattern = "Opaque" | "FadeGraph" | "FadeEdges" | "FadeVertices" | "HideArrowheads" | "HideEdges" | "HideVertices" | "SemitransparentArrowheads";
+$namedTransformsPattern = "Opaque" | "FadeGraph" | "FadeProtect" | "FadeEdges" | "FadeVertices" | "HideArrowheads" | "HideEdges" | "HideVertices" | "SemitransparentArrowheads";
 $namedStyles = "Background" | "Foreground" | "Replace" | "ReplaceEdges" | $namedTransformsPattern;
 $highlightStylePattern = Rule[Alternatives @@ $additionalStyleOptions, _] | $namedStyles;
 
@@ -365,6 +365,9 @@ iProcessStyleSpec = MatchValues[
     AttachGraphPlotAnnotation[n];
     % @ Style[most];
   );
+  (* this doesn't really work, since the point styles for vertices live outside the "VertexPrimitives", so we even though the points
+  get protected, the point style still gets faded *)
+  Style[most__, "FadeProtect"] := % @ Style[most, "FadeGraph", RegionStyle -> "FadeProtect"];
   Style[most__, "Background"] := % @ Style[most, Opaque, ZOrder -> -10];
   Style[most__, "Foreground"] := % @ Style[most, Opaque, ZOrder -> 10];
   Style[most__, "Replace"] := % @ Style[most, Opaque, ZOrder -> 10, PathStyle -> "Replace", RegionStyle -> "Replace"];
@@ -398,7 +401,13 @@ highlightRegion[other_] := (
   Message[GraphRegionHighlight::interror, other];
 );
 
-highlightRegion[GraphRegionData[vertices_, edges_]] /; StringStartsQ[$regionStyle, "Replace"] := Scope[
+highlightRegion[GraphRegionData[vertices_, edges_]] /; $regionStyle === "FadeProtect" := Scope[
+  $newVertices = {}; $newEdges = {};
+  TransformGraphPlotPrimitives[fadeProtectPrimitives, edges, "EdgePrimitives"];
+  TransformGraphPlotPrimitives[fadeProtectPrimitives, vertices, "VertexPrimitives"];
+];
+
+highlightRegion[GraphRegionData[vertices_, edges_]] /; StringQ[$regionStyle] && StringStartsQ[$regionStyle, "Replace"] := Scope[
   $newVertices = {}; $newEdges = {};
   TransformGraphPlotPrimitives[removeHighlightedPathEdges, edges, "EdgePrimitives"];
   TransformGraphPlotPrimitives[removeHighlightedPathVertices, vertices, "VertexPrimitives"];
@@ -597,6 +606,9 @@ replaceWithColor[g_, c_, preserveArrowheads_:False] :=
     Inset[z_Graphics, args__] :> Inset[SetFrameColor[z, c], args],
     $ColorPattern -> c
   }];
+
+fadeProtectPrimitives[{old_, new_}] :=
+  {old, Annotation[new, "Protected"]};
 
 (* we simply delete matching edges, because we will redraw them possibly with adjustments *)
 removeHighlightedPathEdges[{old_, new_}] := Scope[

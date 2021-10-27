@@ -530,7 +530,13 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     "VertexTagDepthList" :> tagDepths,
     "VertexTagDepthAssociation" :> Map[AssociationThread[vertices, #]&, tagDepths],
     "LabeledGraph" :> Graph[graph, VertexLabels -> Automatic],
-    "CayleyGraph" :> ExtendedGraph[CombineMultiedges @ graph, GraphLegend -> "Cardinals", GraphLayout -> "SpringElectricalEmbedding"],
+    "CayleyGraph" :> ExtendedGraph[
+      CombineMultiedges @ ExtendedGraph[
+        vertices, DeleteDuplicates @ edges, FilterOptions @ opts,
+        GraphTheme -> "CayleyGraph",
+        GraphLegend -> "Cardinals"
+      ]
+    ],
     "IndexGraph" :> indexGraph,
     "EdgeLabels" :> edgeLabels,
     "TerminationReason" :> terminationReason,
@@ -539,6 +545,14 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
 
   Lookup[resultsAssoc, result, $Failed]
 ];
+
+$cayleyGraphThemeRules = {
+  ArrowheadShape -> {"Line", TwoWayStyle -> "CrossLine"},
+  VertexLayout -> SmartLayout[]
+}
+
+$GraphThemeData["CayleyGraph"] := $cayleyGraphThemeRules;
+
 
 PackageScope["notInternalSymbolQ"]
 SetHoldFirst @ notInternalSymbolQ;

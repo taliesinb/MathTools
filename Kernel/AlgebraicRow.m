@@ -21,6 +21,16 @@ AlgebraicColumn[args___] := Scope[$arColumn = True; AlgebraicRow[args]];
 
 (**************************************************************************************************)
 
+PackageExport["PathAlgebraicForm"]
+
+SetHoldAllComplete[PathAlgebraicForm];
+
+declareBoxFormatting[
+  PathAlgebraicForm[e_] :> ToBoxes @ toSymbolicForm @ e
+];
+
+(**************************************************************************************************)
+
 SetHoldAllComplete[AlgebraicRow, AlgebraicGrid, algebraicForm, algebraicGridRow];
 
 PackageExport["AlgebraicRow"]

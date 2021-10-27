@@ -679,6 +679,7 @@ FirstColumn[matrix$] gives a list consisting of the first column of a matrix.
 "
 
 FirstColumn[matrix_] := Part[matrix, All, 1];
+FirstColumn[None] := None;
 
 (**************************************************************************************************)
 
@@ -689,6 +690,7 @@ LastColumn[matrix$] gives a list consisting of the last column of a matrix.
 "
 
 LastColumn[matrix_] := Part[matrix, All, -1];
+LastColumn[None] := None;
 
 (**************************************************************************************************)
 
@@ -1006,6 +1008,9 @@ MapIndices[f$, indices$] is the operator form of MapIndices.
 "
 
 MapIndices[f_, {}, list_] := list;
+
+MapIndices[f_, indicesLists:{__List}, list_] :=
+  MapIndices[f, #, list]& /@ indicesLists;
 
 MapIndices[f_, indices_, list_] :=
   MapAt[f, list, List /@ indices];

@@ -213,6 +213,8 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result
   },
 
+  Off[General::shdw];
+
   $directory = AbsoluteFileName @ ExpandFileName @ mainPath;
   $mainContext = mainContext;
   $mainPathLength = StringLength[$directory];
@@ -266,6 +268,8 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
   $packageExpressions = $packageExpressions /. $exportDispatch /. $scopeDispatch;
 
   $packageExpressions //= Map[resolveRemainingSymbols];
+
+  On[General::shdw];
 
   $packageExpressions
 ];

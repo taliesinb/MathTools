@@ -826,7 +826,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     (* for graphs with cardinals, create an automatic legend when asked *)
     If[cardinalColors =!= None && arrowheadStyle =!= None && arrowheadShape =!= None,
       legendCardinals = If[ListQ[visibleCardinals], KeyTake[cardinalColors, visibleCardinals], cardinalColors];
-      automaticLegends["Cardinals"] := ArrowheadLegend[cardinalColors, arrowheadShape];
+      orient = If[FreeQ[graphLegend, Placed[Automatic | "Cardinals", Above|Below]], Vertical, Horizontal];
+      automaticLegends["Cardinals"] := ArrowheadLegend[cardinalColors, ArrowheadShape -> arrowheadShape, Orientation -> orient];
     ];
 
     If[colorRules =!= None,
@@ -1869,14 +1870,22 @@ ExtendedGraphPlot::badarrowhead = "ArrowheadShape -> `` should be None, Automati
 
 PackageExport["ArrowheadLegend"]
 
+Options[ArrowheadLegend] = {
+  ArrowheadShape -> "Arrow",
+  Orientation -> Vertical,
+  MaxItems -> 10
+}
+
 to2DShape[Automatic] := "Arrow";
 to2DShape["Cone"] = "Arrow";
 to2DShape["Sphere"] = "Disk";
 to2DShape[a_] := a;
 
-ArrowheadLegend[assoc_, "Cardinal"] := "";
-ArrowheadLegend[assoc_Association, shape_:"Arrow"] := Scope[
-  shapeIndex = If[AssociationQ[shape], shape, <|All -> shape|>];
+ArrowheadLegend[assoc_Association, OptionsPattern[]] := Scope[
+  UnpackOptions[arrowheadShape, orientation, maxItems];
+  If[arrowheadShape === "Cardinal", Return[""]];
+  isHorizontal = orientation === Horizontal;
+  shapeIndex = If[AssociationQ[arrowheadShape], arrowheadShape, <|All -> arrowheadShape|>];
   rows = KeyValueMap[
     {name, color} |-> (
       arrowShape = to2DShape @ Lookup[shapeIndex, name, Lookup[shapeIndex, All, "Arrow"]];
@@ -1886,19 +1895,32 @@ ArrowheadLegend[assoc_Association, shape_:"Arrow"] := Scope[
       ]),
     assoc
   ];
+  If[Length[rows] > maxItems, rows = Append[Take[rows, maxItems], {"", "\[VerticalEllipsis]"}]];
+  If[isHorizontal, horizontalALFrame, verticalALFrame] @ rows
+]
+
+verticalALFrame[rows_] :=
   Framed[
     Grid[rows, BaseStyle -> {FontFamily -> $CardinalFont, FontSize -> 12}, Spacings -> {.4, 0.5}],
     FrameMargins -> {{0, 0}, {5, 5}},
     FrameStyle -> None
   ]
-]
+
+horizontalALFrame[rows_] :=
+  Framed[
+    Grid[Transpose @ rows, BaseStyle -> {FontFamily -> $CardinalFont, FontSize -> 12}, Spacings -> {.4, 0.5}],
+    FrameMargins -> {{5, 5}, {0, 0}},
+    FrameStyle -> None
+  ]
 
 PackageScope["makeLegendArrowheadGraphic"]
 
 makeLegendArrowheadGraphic[color_, shape_] := Scope[
   isLine = StringContainsQ[shape, "Line"];
+  prims = $arrowheads2D @ shape;
   makeArrowheadGraphic2D[
-    {If[isLine, AbsoluteThickness[2.0], Nothing], Rotate[$arrowheads2D @ shape, Pi/2]}, If[isLine, Identity, FaceForm] @ color,
+    {If[isLine, AbsoluteThickness[2.0], Nothing], If[!isHorizontal, Rotate[prims, Pi/2], prims]},
+    If[isLine, Identity, FaceForm] @ color,
     BaselinePosition -> Scaled[0.1], ImageSize -> {11, 11}, AspectRatio -> Automatic
   ]
 ];
@@ -1969,8 +1991,12 @@ processVertexShapeFunction[{__, last_}] :=
 
 ExtendedGraphPlot::badvshapefunckey = "`` is not a valid verte."
 
+(* because rule isn't supported by Graph *)
+processVertexShapeFunction[key_String /* func_] :=
+  processVertexShapeFunction[key -> func];
+
 processVertexShapeFunction[key_String -> func_] := (
-  annos = getAnnoValue[vertexAnnotations, key];
+  annos = getVertexAnnoValue[vertexAnnotations, key];
   processVertexShapeFunction @ Association @
     MapThread[#1 -> func[#2]&, {$VertexList, annos}]
 )
@@ -2080,9 +2106,9 @@ drawIndividualCustomShape[assoc_, color_, size_][pos_] := Scope[
 (**************************************************************************************************)
 
 drawOriginalVertices[size_][pos_, color_] :=
-  Map[drawOriginalVertex[color, size], pos];
+  Map[drawOriginalVertexWithSize[color, size], pos];
 
-drawOriginalVertex[color_, size_][pos_] := Scope[
+drawOriginalVertexWithSize[color_, size_][pos_] := Scope[
   index = IndexOf[$VertexCoordinates, pos];
   shape = If[index === None, None, Part[$VertexList, index]];
   drawGraphicsWithColor[shape, pos, color, size]
@@ -2304,7 +2330,9 @@ ExtendedGraphPlot::notvertex = "`` is not a valid vertex of the graph."
 
 getVertexIndex[GraphOrigin] := getVertexIndex @ $GraphOrigin;
 getVertexIndex[v_] := Lookup[$VertexIndex, v, failPlot["notvertex", v]];
-getAnnoValue[annos_, key_] := Lookup[annos, key, failPlot["badgraphannokey", key, commaString @ Keys @ annos]];
+
+getVertexAnnoValue[annos_, n:"Name" | "Vertex"] /; !KeyExistsQ[annos, n] := $VertexList;
+getVertexAnnoValue[annos_, key_] := Lookup[annos, key, failPlot["badgraphannokey", key, commaString @ Keys @ annos]];
 
 vertexColorDataProvider = Case[
 
@@ -2316,7 +2344,7 @@ vertexColorDataProvider = Case[
   "Distance"                := %[{"Distance", GraphOrigin}];
   {"Distance", v_}          := MetricDistance[$MetricGraphCache, getVertexIndex @ v];
 
-  key_String                := getAnnoValue[vertexAnnotations, key];
+  key_String                := getVertexAnnoValue[vertexAnnotations, key];
   (key_String -> f_)        := Map[toFunc @ f, %[key]];
 
   list_List /; Length[list] === $VertexCount := list;
@@ -2384,9 +2412,9 @@ processVertexSize = Case[
   Scaled[r_ ? NumericQ]              := N[r * $GraphMaxSafeVertexSize];
   Scaled[sym:$SymbolicSizePattern]   := % @ Scaled @ $SymbolicSizeFractions @ sym;
   m_Max | m_Min                      := Map[%, m];
-  rule_Rule                          := % @ {rule};
+  rule:$RulePattern                  := % @ {rule};
   rules_Association                  := % @ Normal @ rules;
-  rules:{__Rule}                     := (
+  rules:$RuleListPattern             := (
     $vertexSizeOverrides = Association[processVertexSizeRule /@ rules];
     processVertexSize @ Lookup[rules, Key @ All, Automatic]
   );
@@ -2397,6 +2425,11 @@ processVertexSize = Case[
 
 processVertexSizeRule[All -> _] :=
   Nothing;
+
+processVertexSizeRule[(Rule|RuleDelayed)[VertexPattern[p_], rhs_]] := Scope[
+  pos = Flatten @ Position[$VertexList, p, {1}];
+  Splice @ RuleThread[pos, Replace[Part[$VertexList, pos], p :> processVertexSize[rhs], {1}]]
+];
 
 processVertexSizeRule[lhs_ -> rhs_] :=
   findVertex[lhs] -> processVertexSize[rhs];

@@ -14,6 +14,11 @@
 \gdef\lstring#1{\textcolor{666666}{\textrm{\textquotedblleft{#1}\textquotedblright}}}
 
 \gdef\boldForm#1{\textbf{#1}}
+
+\gdef\lrform#1{{\textcolor{e1432d}{#1}}}
+\gdef\lgform#1{{\textcolor{4ea82a}{#1}}}
+\gdef\lbform#1{{\textcolor{3e81c3}{#1}}}
+
 \gdef\rform#1{{\textcolor{e1432d}{#1}}}
 \gdef\gform#1{{\textcolor{4ea82a}{#1}}}
 \gdef\bform#1{{\textcolor{3e81c3}{#1}}}
@@ -29,6 +34,8 @@
 \gdef\barToken{\mathbf{|}}
 \gdef\filledRectangleToken{▮}
 \gdef\emptyRectangleToken{▯}
+\gdef\filledSquareToken{■}
+\gdef\emptySquareToken{□}
 \gdef\filledToken{∙}
 \gdef\emptyToken{∘}
 
@@ -66,10 +73,14 @@
 \gdef\emptySet{\empty}
 \gdef\unknown{\wbform{\text{?}}}
 \gdef\notApplicable{\wbform{\text{---}}}
+
+\gdef\congruentSymbol{\equiv}
 \gdef\isomorphicSymbol{\cong}
 \gdef\homotopicSymbol{\simeq}
 \gdef\approxEqualSymbol{\approx}
 \gdef\defEqualSymbol{\;≝\;}
+\gdef\tailEqualSymbol{\underdot{=}}
+\gdef\headEqualSymbol{\dot{=}}
 
 \gdef\ruledelayed{:\to}
 \gdef\mathdollar{\text{\textdollar}}
@@ -108,7 +119,12 @@
 
 \gdef\transportMap#1{\transportMapSymbol_{#1}}
 \gdef\transportMapSymbol{\tau}
+
+\gdef\action#1{#1}
+\gdef\selfAction#1{\hat{#1}}
+\gdef\actionGroupoid#1{\utilde{#1}}
 \gdef\cardinalGroup#1{G^*({#1})}
+
 \gdef\signed#1{{#1}^*}
 \gdef\transportAtlas#1{T_{#1}}
 \gdef\negated#1{\underline{#1}}
@@ -124,12 +140,18 @@
 \gdef\pathBackwardTranslate#1#2{{#1}{\,\backwardTranslateSymbol\,}{#2}}
 \gdef\pathLeftBackwardTranslate#1{{#1}{\,\backwardTranslateSymbol}}
 
+\gdef\compactCovariantDifference#1#2{\Delta_{#1}\,{#2}}
+\gdef\covariantDifference{{#1}\,\Delta\,{#2}}
+
 \gdef\forwardDifference{\Delta^{+}}
 \gdef\backwardDifference{\Delta^{-}}
 \gdef\centralDifference{\Delta}
 \gdef\pathForwardDifference#1{\forwardDifference_{#1}}
 \gdef\pathBackwardDifference#1{\backwardDifference_{#1}}
 \gdef\pathCentralDifference#1{\centralDifference_{#1}}
+
+\gdef\pathHead#1{\pathHeadVector{#1}}
+\gdef\pathTail#1{\pathTailVector{#1}}
 \gdef\pathHeadVector#1{{#1}^{\bullet}}
 \gdef\pathTailVector#1{{#1}_{\bullet}}
 \gdef\pathReverse#1{{#1}^{\dagger}}
@@ -173,6 +195,9 @@
 \gdef\pathMap#1{#1}
 \gdef\function#1{#1}
 
+\gdef\functionComposition#1{#1}
+\gdef\functionCompositionSymbol{∘}
+
 \gdef\pathWord#1#2#3{{#1}\!:\!{#2}\!:\!{#3}}
 
 \gdef\nullPath{\bot}
@@ -180,13 +205,18 @@
 
 \gdef\path#1{#1}
 \gdef\vert#1{#1}
-\gdef\tvert#1{\underset{\raisebox{0.3em}{.}}{#1}}
+
+\gdef\underdot#1{\underset{\raisebox{0.3em}{.}}{#1}}
+\gdef\tvert#1{\underdot{#1}}
 \gdef\hvert#1{\dot{#1}}
 \gdef\edge#1{#1}
 \gdef\card#1{\mathtt{#1}}
 \gdef\path#1{#1}
 \gdef\quiver#1{#1}
 
+\gdef\bindingRuleSymbol{\to}
+\gdef\bindCayleyQuiver#1#2{\selfAction{#1}[#2]}
+\gdef\bindActionQuiver#1#2{#1[#2]}
 \gdef\bindSize#1#2{#1(#2)}
 \gdef\bindCards#1#2{#1[#2]}
 \gdef\subSize#1#2{#1_{#2}}
@@ -275,6 +305,8 @@
 \gdef\powerSet#1{\powerSetSymbol({#1})}
 \gdef\powerSetSymbol{\mathsc{P}}
 
+\gdef\existsForm#1{\exists {#1}}
+\gdef\forAllForm#1{\forall {#1}}
 \gdef\notted#1{\notSymbol {#1}}
 \gdef\andSymbol{\land}
 \gdef\orSymbol{\lor}
@@ -293,11 +325,12 @@
 
 \gdef\symmetricOrthogonalAlgebra#1{\mathfrak{so}\(#1\)}
 
-\gdef\symmetricGroup#1{Sym_{#1}}
+\gdef\symmetricGroup#1{\operatorname{Sym}({#1})}
 
 \gdef\groupPresentation#1#2{\left\langle\,{#1}\,\,\middle|\mathstrut\,\,{#2}\,\right\rangle}
 \gdef\groupRelationIso{=}
 \gdef\groupGenerator#1{#1}
+\gdef\groupRelator#1{#1}
 \gdef\groupElement#1{#1}
 \gdef\groupoidElement#1{#1}
 
@@ -350,6 +383,14 @@
 
 \gdef\assocArray#1{\left\langle {#1} \right\rangle}
 \gdef\list#1{\{ {#1} \}}
+
+\gdef\permutationCycle#1{#1}
+\gdef\permutationCycleSymbol{\to}
+
+\gdef\permutationSet#1{#1}
+\gdef\permutationSetSymbol{;}
+
+\gdef\transposition#1#2{{#1} \leftrightarrow {#2}}
 \gdef\tuple#1{( {#1} )}
 \gdef\concat#1{ {#1} }
 \gdef\paren#1{\left( {#1} \right)}
@@ -366,8 +407,10 @@
 \gdef\minus#1{-{#1}}
 
 \gdef\elem{\ \in\ }
-\gdef\gmult{\,\ast\,}
-\gdef\Gmult{\,\ast\,}
+\gdef\vsp{\mkern{0.4pt}}
+\gdef\iGmult{\vsp}
+\gdef\gmult{\vsp\ast\vsp}
+\gdef\Gmult{\vsp\ast\vsp}
 
 \gdef\ellipsis{\dots}
 
@@ -387,6 +430,7 @@
 \gdef\parenLabeled#1#2{#1\ ({#2})}
 \gdef\modLabeled#1#2{{#1 }\textrm{ mod }{#2}}
 
+\gdef\freeGroup#1{F_{#1}}
 \gdef\cyclicGroup#1{\mathbb{Z}_{#1}}
 \gdef\componentSuperQuiverOfSymbol{\succ}
 

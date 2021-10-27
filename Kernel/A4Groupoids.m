@@ -6,6 +6,18 @@ GroupoidQ[groupoid$] returns True if groupoid$ is a valid groupoid.
 
 GroupoidQ[e_ ? GroupQ] := True;
 
+(* general plan: remove these mirror states, which don't make much sense. i can always rescue the code
+from git history anyway.
+
+instead: have a sparse groupoid and a dense groupoid. a sparse groupoid has a cayley function that creates
+exactly the right successors. a dense groupoid gives an association with keys being cardinals (or their negations)
+and values being functions, which should return NullElement if they can't act on a given state.
+
+then we construct the cayley function from this automatically.
+
+both kinds should list their cardinals ahead of time.
+*)
+
 (**************************************************************************************************)
 
 PackageExport["GroupoidGenerator"]
@@ -40,7 +52,12 @@ PackageScope["constructGroupoid"]
 constructGroupoid[assoc_] := Scope[
   assoc = assoc;
   If[!KeyExistsQ[assoc, "States"], assoc["States"] = Indeterminate];
-  If[!KeyExistsQ[assoc, "Generators"], assoc["Generators"] = assoc["MirroredGenerators"][[All, 1]]];
+  If[!KeyExistsQ[assoc, "Generators"],
+    assoc["Generators"] = If[KeyExistsQ[assoc, "MirroredGenerators"],
+      Part[assoc["MirroredGenerators"], All, 1],
+      None
+    ];
+  ];
   System`Private`ConstructNoEntry[GroupoidObject, assoc]
 ];
 
@@ -70,12 +87,12 @@ groupoidObjectBoxes[object:GroupoidObject[data_], form_] := Scope[
     (* Always displayed *)
     {
      {summaryItem["Type", type], SpanFromLeft},
-     {summaryItem["Generators", Length @ generators]},
+     {summaryItem["Generators", If[generators === None, None, Length @ generators]]},
      {summaryItem["Initial states", Length @ initialStates]},
      If[states =!= Indeterminate, {summaryItem["States", Length @ states]}, Nothing]
      },
     (* Displayed on request *)
-    {{Column[generators], SpanFromLeft}},
+    If[generators === None, {}, {{Column[generators], SpanFromLeft}}],
     form,
     "Interpretable" -> Automatic
   ]
@@ -86,7 +103,8 @@ groupoidObjectBoxes[object:GroupoidObject[data_], form_] := Scope[
 Options[computeCayleyFunction] = {"Symmetric" -> True, "Labeled" -> True};
 
 computeCayleyFunction[data_, OptionsPattern[]] := Scope[
-  UnpackAssociation[data, generators];
+  UnpackAssociation[data, generators, cayleyFunction];
+  If[cayleyFunction =!= Automatic, Return @ cayleyFunction];
   UnpackOptions[symmetric, labeled];
   list = Flatten @ MapIndexed[
     {gen, index} |-> {
@@ -189,5 +207,103 @@ SetTokenColor[n_, c1_, c2_][ColoredTokens[list_]] :=
 
 (**************************************************************************************************)
 
-PackageExport["TicTacToeGroupoid"]
+PackageExport["PermutationActionGroupoid"]
+
+PermutationActionGroupoid[initialState_List, generators_:Automatic] := Scope[
+  n = Length @ initialState;
+  generators //= toPermutationGenerators;
+  If[FailureQ[generators], ReturnFailed[]];
+  generatorsAndLabels = Map[{#, toPermutationForm @ #}&, generators];
+  cayleyFunction = PermutationActionCayleyFunction[generatorsAndLabels];
+  constructGroupoid @ Association[
+    "Type" -> "Permutation",
+    "CayleyFunction" -> cayleyFunction,
+    "InitialStates" -> {initialState}
+  ]
+]
+
+toPermutationGenerators = Case[
+  Automatic       := Partition[Range @ n, 2, 1];
+  list:{__List}   := Cycles /@ list;
+  c:{__Cycles}    := simplifyCycles /@ c;
+  g_ ? GroupQ     := % @ GroupGenerators @ g;
+  g_Graph         := DeleteDuplicates[Sort /@ AdjacentPairs[g]];
+  _               := $Failed;
+]
+
+simplifyCycles = Case[
+  Cycles[{{a_, b_}}] := {a, b};
+  other_             := other;
+];
+
+toPermutationForm = Case[
+  {a_Integer, b_Integer} := TranspositionForm[a, b];
+  {a__Integer}           := PermutationCycleForm[a];
+  other_                 := PermutationForm[other];
+]
+
+PermutationActionCayleyFunction[gens_][state_] :=
+  Labeled[applyPermutation[state, #], #2]& @@@ gens;
+
+applyPermutation[vec_, {i_, j_}] :=
+  ReplacePart[vec, {i -> Part[vec, j], j -> Part[vec, i]}];
+
+applyPermutation[vec_, c_Cycles] :=
+  Permute[vec, c];
+
+(**************************************************************************************************)
+
+PackageExport["CardinalRewriteGroupoid"]
+
+CardinalRewriteGroupoid[cardinals_List, initial_, rewriteCount_:1] := Scope[
+  Which[
+    ListQ[initial],
+      n = Length @ initial;
+      initialStates = {initial},
+    IntegerQ[initial],
+      n = initial;
+      initialStates = All,
+    True,
+      ReturnFailed[];
+  ];
+  unsignedTuples = Select[DuplicateFreeQ] @ Tuples[cardinals, {n}];
+  possibleIndices = Subsets[Range @ n];
+  allStates = JoinMap[
+    MapIndices[Negated, possibleIndices, #]&,
+    unsignedTuples
+  ];
+  SetAll[initialStates, allStates];
+  SetAll[rewriteCount, n];
+  cayleyFunction = CardinalRewriteCayleyFunction[allStates, toCountFilter  @ rewriteCount];
+  constructGroupoid @ Association[
+    "Type" -> "CardinalRewrite",
+    "CayleyFunction" -> cayleyFunction,
+    "InitialStates" -> initialStates,
+    "States" -> allStates
+  ]
+];
+
+toCountFilter = Case[
+  i_Integer | {i_Integer} := EqualTo[i];
+  {i_, j_} := Between[{i, j}];
+  _ := $Failed;
+];
+
+canonicalCardinalTransition[rules_] := Scope[
+  rules = DeleteCases[rules, z_ -> z_];
+  reps = Sort /@ {rules, reverseRules @ rules, negateRules @ rules, reverseRules @ negateRules @ rules};
+  minIndex = MinimumIndex[reps];
+  If[MatchQ[minIndex, 2 | 4], Negated, Identity] @ CardinalTransition @ Part[reps, minIndex]
+];
+
+reverseRules[rules_] := Map[Reverse, rules];
+negateRules[rules_] := MapMatrix[Negated, rules];
+
+PackageExport["CardinalRewriteCayleyFunction"]
+
+CardinalRewriteCayleyFunction[allStates_, countFilter_][state_] := Scope[
+  successors = Select[allStates, countFilter @ HammingDistance[#, state]&];
+  labels = canonicalCardinalTransition[RuleThread[state, #]]& /@ successors;
+  MapThread[Labeled, {successors, labels}]
+];
 

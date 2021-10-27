@@ -369,6 +369,7 @@ getNamedColorSet[set_, variant_] := Scope[
 ToColorPalette[spec_, n_Integer] := Scope[
   colors = ToColorPalette[spec];
   If[FailureQ[colors], ReturnFailed[]];
+  If[n > 40, Return @ Table[RandomColor[], n]];
   If[Length[colors] < n, colors //= expandColorPalette];
   Take[colors, n]
 ];
