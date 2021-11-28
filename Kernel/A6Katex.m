@@ -112,8 +112,15 @@ boxToKatex = Case[
   FractionBox[a_, b_] := {"\\frac{", a, "}{", b, "}"};
   RowBox[list_] := Map[%, list];
   
-  other_ := "UNRECOGNIZED " <> ToString[other, InputForm];
+  other_ := (
+    Print["Could not serialize ", InputForm @ other];
+    StringJoin["\\noKatexForm{", StringReplace[ToString[Head @ other, InputForm], $katexEscape], "}"]
+  );
 ];
+
+$katexEscape = {
+  "\\" -> "/"
+}
 
 boxToInlineText[e_] := TextString[e];
 

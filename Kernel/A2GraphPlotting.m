@@ -104,7 +104,7 @@ The following specifications describe paths in the graph:
 | %HalfLine[{v$1, v$2}] | a geodesic starting at v$1 and continuing through v$2 |
 | %InfiniteLine[v$, c$] | a geodesic with midpoint v$, and continuing in directions c$ and Negated[c$] |
 | %InfiniteLine[{v$1, v$2}] | a geodesic intersecting v$1 and v$2 |
-| %Cycles[word$] | all  disjointclosed paths with given word |
+| %Cycles[word$] | all  disjoint closed paths with given word |
 | %GraphPathData[$$] | a previously computed path |
 * Specifications taking a cardinal direction c$ also take a list {c$1, ..., c$n}, used cyclically.
 * %Path[$$, %PathAdjustments -> {adj$1, adj$2, $$}] gives a series of adjustments to how the path is drawn.
@@ -1890,7 +1890,7 @@ ArrowheadLegend[assoc_Association, OptionsPattern[]] := Scope[
     {name, color} |-> (
       arrowShape = to2DShape @ Lookup[shapeIndex, name, Lookup[shapeIndex, All, "Arrow"]];
       If[MissingQ[arrowShape] || arrowShape === None, Nothing,
-        graphic = makeLegendArrowheadGraphic[color, arrowShape];
+        graphic = makeLegendArrowheadGraphic[color, arrowShape, isHorizontal];
         {graphic, name}
       ]),
     assoc
@@ -1915,7 +1915,7 @@ horizontalALFrame[rows_] :=
 
 PackageScope["makeLegendArrowheadGraphic"]
 
-makeLegendArrowheadGraphic[color_, shape_] := Scope[
+makeLegendArrowheadGraphic[color_, shape_, isHorizontal_:False] := Scope[
   isLine = StringContainsQ[shape, "Line"];
   prims = $arrowheads2D @ shape;
   makeArrowheadGraphic2D[
@@ -2567,6 +2567,10 @@ setLabelStyleGlobals = Case[
     ]);
   ZOrder -> z_                            := $labelZOrder = z;
   LabelPosition -> Scaled[s_ ? NQ]        := ($labelScaledPos = s; $labelBackground = None);
+  LabelPosition -> TopRight               := (%[LabelPosition -> Top]; %[LabelPosition -> Right]);
+  LabelPosition -> TopLeft                := (%[LabelPosition -> Top]; %[LabelPosition -> Left]);
+  LabelPosition -> BottomRight            := (%[LabelPosition -> Bottom]; %[LabelPosition -> Right]);
+  LabelPosition -> BottomLeft             := (%[LabelPosition -> Bottom]; %[LabelPosition -> Left]);
   LabelPosition -> Top|Above              := $labelY = -1;
   LabelPosition -> Bottom|Below           := $labelY = 1.25;
   LabelPosition -> Center                 := $labelX = $labelY = 0;

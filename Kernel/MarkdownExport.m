@@ -196,15 +196,20 @@ General::expdirne = "Export directory `` does not exist."
 Options[ExportToMarkdown] = JoinOptions[
   MaxItems -> Infinity,
   CollatedPagePath -> None,
+  "NotebookCaching" -> True,
   $genericMarkdownExportOptions
 ];
 
 $dryRun = False;
+$verbose = False;
+
+SetHoldAllComplete[vPrint];
+vPrint[args___] /; TrueQ[$verbose] := Print @@ ReplaceAll[{args}, File[path_] :> StringJoin["\"", path, "\""]];
+
 ExportToMarkdown[importSpec_, exportSpec_, OptionsPattern[]] := Scope @ CatchMessage[
-  UnpackOptions[importPath, exportPath, dryRun, verbose, maxItems, includePrelude, collatedPagePath];
-  $dryRun = dryRun =!= False;
-  SetAutomatic[verbose, $dryRun];
-  $verbose = verbose;
+  UnpackOptions[importPath, exportPath, $dryRun, $verbose, maxItems, includePrelude, collatedPagePath, $notebookCaching];
+  $dryRun = $dryRun =!= False;
+  SetAutomatic[$verbose, $dryRun];
   setupMarkdownGlobals[];
   {ipath, opath} = resolveImportExportPaths[importSpec, importPath, exportSpec, exportPath];
   iexpr = parseInputSpec @ ipath;
@@ -213,13 +218,12 @@ ExportToMarkdown[importSpec_, exportSpec_, OptionsPattern[]] := Scope @ CatchMes
   outputDir = If[StringEndsQ[opath, ".md"], FileNameDrop @ opath, opath];
   If[FileType[outputDir] =!= Directory, ThrowMessage["expdirne", outputDir]];
   setupRasterizationPath[outputDir, "OutputImages"];
-  If[$verbose,
-    Print["Rasterizing to \"", rasterizationPath, "\" embedded as \"", relativeRasterizationPath, "\""]];
+  vPrint["Rasterizing to ", File @ rasterizationPath, " embedded as \"", relativeRasterizationPath, "\""];
   If[StringQ[includePrelude],
     preludePath = NormalizePath @ includePrelude;
     If[Not @ AbsolutePathQ @ preludePath,
       preludePath = ToFileName[outputDir, preludePath]];
-    If[$verbose, Print["Writing prelude to \"", preludePath, "\"."]];
+    vPrint["Writing prelude to ", File @ preludePath, "."];
     ExportUTF8[preludePath, StringReplace[markdownPostprocessor @ $KatexPrelude, "\n" -> " "]];
   ];
   fileList = doImportExport[iexpr, opath, StringEndsQ[opath, ".md"]];
@@ -282,6 +286,60 @@ toMDFileName[string_] := Scope[
   string = StringDelete[ToLowerCase @ string, StartOfString ~~ $mdFileNameTrim];
   StringReplace[StringTrim @ string, (Whitespace | "-").. -> "-"] <> ".md"
 ];
+
+(**************************************************************************************************)
+
+PackageExport["GarbageCollectOutputImages"]
+
+Options[GarbageCollectOutputImages] = {
+  MarkdownFlavor -> "Franklin",
+  RasterizationPath -> None,
+  DryRun -> False,
+  Verbose -> Automatic
+}
+
+GarbageCollectOutputImages[markdownSearchPath_, OptionsPattern[]] := Scope[
+  UnpackOptions[markdownFlavor, $dryRun, $verbose];
+
+  $dryRun = $dryRun =!= False;
+  SetAutomatic[$verbose, $dryRun];
+  
+  flavorFields = Lookup[$flavorData, markdownFlavor, ReturnFailed[]];
+  UnpackAssociation[flavorFields, imageTemplate];
+
+  setupRasterizationPath[markdownSearchPath, "OutputImages"];
+  If[FileType[markdownSearchPath] =!= Directory || FileType[rasterizationPath] =!= Directory, ReturnFailed[]];
+  
+  markdownPattern = imageTemplate @ Association[
+    "imagepath" -> "YYY",
+    "relativepath" -> "YYY",
+    "width" -> "XXX",
+    "caption" -> "XXX"
+  ];
+  markdownPattern = StringReplace[markdownPattern, {"YYY" -> Shortest[path___], "XXX" -> Shortest[___]}];
+  markdownPattern = Construct[Rule, markdownPattern, path];
+
+  markdownFiles = FileNames["*.md", markdownSearchPath];
+  markdownContent = ImportUTF8 /@ markdownFiles;
+  vPrint["* Searching ", Length @ markdownFiles, " markdown files in ", File @ markdownSearchPath, "."];
+ 
+  matches = Flatten @ StringCases[markdownContent, markdownPattern];
+  matches = Map[FileNameJoin[{rasterizationPath, FileNameTake[#]}]&, matches];
+  vPrint["* Founding ", Length @ matches, " referenced images."];
+
+  If[Length[matches] == 0, ReturnFailed[]];
+
+  existingFiles = FileNames["*.png", rasterizationPath];
+  vPrint["* Checking ", Length @ existingFiles, " existing images in ", File @ rasterizationPath,  "."];
+
+  garbageFiles = Complement[existingFiles, matches];
+
+  vPrint["* Deleting ", Length @ garbageFiles, " markdown files."];
+
+  If[!$dryRun, Scan[DeleteFile, garbageFiles]];
+
+  Return @ garbageFiles;
+]
 
 (**************************************************************************************************)
 
@@ -356,14 +414,26 @@ insertNextPageFooter[file_, footer_] := Scope[
   If[content =!= newContent, ExportUTF8[file, newContent]];
 ];
 
+toAnchorString[str_] := StringReplace[ToLowerCase[str], {":" -> "", " " -> "_"}];
+
 toInlineLink[title_] := Scope[
-  relPath = Lookup[$titleToRelPath, title, None];
+  If[StringContainsQ[title, "#"],
+    {title, anchor} = StringSplit[title, "#", 2],
+    anchor = None;
+  ];
+  If[StringContainsQ[title, ":"],
+    {label, title} = StringSplit[title, ":", 2],
+    label = title
+  ];
+  relPath = If[title === "", "",
+    relPath = Lookup[$titleToRelPath, title, None]];
   If[relPath === None,
     Print["Could not resolve inline link to \"", title, "\" in file ", $currentFile];
     Print["Available: ", Keys @ $titleToRelPath];
     Return @ StringJoin["\"", title, "\""]
   ];
-  StringJoin["[", title, "](", relPath, ")"]
+  If[anchor =!= None, relPath = StringJoin[relPath, "#", toAnchorString @ anchor]];
+  StringJoin["[", label, "](", relPath, ")"]
 ];
 
 toInsertedContent[title_, id_, div_] := Scope[
@@ -385,10 +455,9 @@ toInsertedContent[title_, id_, div_] := Scope[
   foundContent
 ]
 
+$idInsertionRegexp = RegularExpression["""(?m)^\[\[\[([^]]+)#([^]@]+)(@\w+)?\]\]\]$"""];
 
-$idInsertionRegexp = RegularExpression["""\[\[\[([^]]+)#([^]@]+)(@\w+)?\]\]\]"""];
-
-$linkRegexp = RegularExpression["""\[\[\[([^]#]+)\]\]\]"""];
+$linkRegexp = RegularExpression["""\[\[\[([^]@]+)\]\]\]"""];
 
 (**************************************************************************************************)
 
@@ -523,15 +592,18 @@ insertAtFirstNonheader[lines_List, template_] := Scope[
 General::badnbread = "Could not read notebook ``, will be replaced with placeholder.";
 
 $notebookToMarkdownCache = Data`UnorderedAssociation[];
+$notebookCaching = True;
 
 toMarkdownLines[File[path_String]] /; FileExtension[path] === "nb" := Scope[
   fileDate = Quiet @ FileDate @ path;
-  {cachedResult, cachedDate} = Lookup[$notebookToMarkdownCache, path, {None, None}];
-  If[ListQ[cachedResult] && fileDate === cachedDate, Return @ cachedResult];
+  If[$notebookCaching,
+    {cachedResult, cachedDate} = Lookup[$notebookToMarkdownCache, path, {None, None}];
+    If[ListQ[cachedResult] && fileDate === cachedDate, Return @ cachedResult];
+  ];
   nb = Quiet @ Get @ path;
   If[MatchQ[nb, Notebook[{__Cell}, ___]],
     result = toMarkdownLines @ nb;
-    CacheTo[$notebookToMarkdownCache, path, {result, fileDate}];
+    If[$notebookCaching, CacheTo[$notebookToMarkdownCache, path, {result, fileDate}]];
     result
   ,
     Message[General::badnbread, path];
@@ -667,7 +739,7 @@ rasterizeCell[cell_, caption_:None] := Scope[
   If[ListQ[cacheValue],
     (* this cache gives us enough info to generate the markdown without looking for the file on disk *)
     {imageDims, imageFileName, imagePath} = cacheValue;
-    If[$verbose, Print["Using cached metadata for ", imagePath]];
+    vPrint["Using cached metadata for ", imagePath];
     Goto[skipRasterization];
   ];
 
@@ -678,7 +750,7 @@ rasterizeCell[cell_, caption_:None] := Scope[
   If[StringQ[imagePath],
     imageFileName = FileNameTake @ imagePath;
     imageDims = FromDigits /@ StringExtract[FileBaseName @ imagePath, "_" -> {3, 4}];
-    If[$verbose, Print["* Using cached image at ", imagePath]];
+    vPrint["* Using cached image at ", File @ imagePath];
     Goto[skipRasterization]];
 
   (* rasterize *)
@@ -696,7 +768,7 @@ rasterizeCell[cell_, caption_:None] := Scope[
 
   (* export *)
   If[!FileExistsQ[imagePath],
-    If[$verbose, Print["* Exporting image to ", imagePath]];
+    vPrint["* Exporting image to ", File @ imagePath];
     If[!$dryRun, Export[imagePath, image, CompressionLevel -> 1]];
   ];
 
@@ -749,6 +821,8 @@ $finalStringFixups2 = {
   "$ ?" -> "$?",
   "$ !" -> "$!",
   "$ :" -> "$:",
+  "$ *" -> "\,$ *",
+  "\\text{\\,and\\,}" -> "$ and $", (* improves linebreaking *)
   "1'st" -> "$1^{\\textrm{st}}$",
   "2'nd" -> "$2^{\\textrm{nd}}$",
   "3'rd" -> "$3^{\\textrm{rd}}$",

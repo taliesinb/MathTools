@@ -7,6 +7,7 @@
 \[LessEqual]                 <=         \le                 ≤
 \[GreaterEqual]              >=         \ge                 ≥
 \[NotEqual]                  !=         \ne                 ≠
+_                            _          \defeq              ≝
 \[Equal]                     ==         _                   ⩵
 \[LongEqual]                 ===        _                   ⩶
                                                              
@@ -130,8 +131,8 @@ _                            Reals      \R                  ℝ
 \[NotSuperset]               _          \nsupset            ⊅
 \[SupersetEqual]             _          \supseteq           ⊇
 \[NotSupersetEqual]          _          \nsupseteq          ⊉
-\[Intersection]              _          \bigcap             ⋂
-\[Union]                     _          \bigcup             ⋃
+\[Intersection]              _          \cap                ⋂
+\[Union]                     _          \cup                ⋃
 \[SquareSuperset]            _          \sqsupset           ⊐
 \[SquareSupersetEqual]       _          \sqsupseteq         ⊒
 \[SquareSubset]              _          \sqsubset           ⊏
@@ -186,7 +187,9 @@ _                            _          \smallblacktriangleleft  ⏴
 \[Ellipsis]                  _          \dots               …
 \[CenterEllipsis]            _          \cdots              ⋯
 \[VerticalEllipsis]          _          \vdots              ⋮
-                                                             
+\[Sharp]                     _          \sharp              ♯
+\[Flat]                      _          \flat               ♭
+
 \[LeftCeiling]               _          \lceil              ⌈
 \[RightCeiling]              _          \rceil              ⌉
 \[LeftFloor]                 _          \lfloor             ⌊

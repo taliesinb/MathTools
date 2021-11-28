@@ -8,9 +8,23 @@ SetHoldAll[Matrix];
 Matrix[CompoundExpression[a___]] := Map[List, List[a]];
 Matrix[elements___] := SequenceSplit[Flatten[Unevaluated[{elements}] /. HoldPattern[CompoundExpression[a__]] :> Riffle[{a}, EndOfRow]], {EndOfRow}];
 
+(**************************************************************************************************)
+
 PackageExport["InnerDimension"]
 
 InnerDimension[array_] := Last @ Dimensions @ array;
+
+(**************************************************************************************************)
+
+PackageExport["Second"]
+
+Second[a_] := Part[a, 2];
+
+(**************************************************************************************************)
+
+PackageExport["SecondDimension"]
+
+SecondDimension[array_] := Second @ Dimensions @ array;
 
 (**************************************************************************************************)
 (** Common matrix predicates                                                                      *)
@@ -245,6 +259,14 @@ padToLength[n_, item_][vector_] := Scope[
   l = Length[vector];
   If[l < n, Join[vector, ConstantArray[item, n - l]], vector]
 ];
+
+PackageExport["PadColumns"]
+
+PadColumns[ragged_, n_, item_] := Scope[
+  full = PadRows[ragged, item];
+  w = Length @ First @ full;
+  padToLength[n, ConstantArray[item, w]] @ full
+]
 
 (**************************************************************************************************)
 (** Block matrix functions                                                                        *)

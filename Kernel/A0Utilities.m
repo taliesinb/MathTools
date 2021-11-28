@@ -738,6 +738,20 @@ AppendColumn[column_][matrix_] := AppendColumn[matrix, column];
 
 (**************************************************************************************************)
 
+PackageExport["AppendConstantColumn"]
+
+AppendConstantColumn[matrix_, item_] := Map[Append[item], matrix];
+AppendConstantColumn[item_][matrix_] := AppendConstantColumn[matrix, item];
+
+(**************************************************************************************************)
+
+PackageExport["AppendConstantRow"]
+
+AppendConstantRow[matrix_, item_] := Append[matrix, ConstantArray[item, Length @ First @ matrix]];
+AppendConstantRow[item_][matrix_] := AppendConstantRow[matrix, item];
+
+(**************************************************************************************************)
+
 PackageExport["TakeSequence"]
 
 SetRelatedSymbolGroup[TakeSequence, DropSequence];
@@ -1930,3 +1944,44 @@ rangePartitionSuccessors[part_] := Join @@ Table[
 PackageExport["EchoEdgeList"]
 
 EchoEdgeList = EchoFunction[EdgeList]
+
+(**************************************************************************************************)
+
+PackageExport["SignedPermutations"]
+
+SignedPermutations[list_List] := Catenate @ Map[SignedLists, Permutations @ list];
+
+(**************************************************************************************************)
+
+PackageExport["SignedLists"]
+
+SignedLists[list_] := MapIndices[Negated, Subsets @ Range @ Length @ list, list];
+
+(**************************************************************************************************)
+
+PackageExport["StandardizeRowColumnSpec"]
+
+StandardizeRowColumnSpec[{pre___, cycle_List, post___}, n_] := Scope[
+  pre = ToList[pre]; post = ToList[post];
+  {preLen, postLen} = Length /@ {pre, post};
+  cycle = PadRight[cycle, n, cycle];
+  Which[
+    preLen >= n,
+      Take[pre, n],
+    preLen == postLen == 0,
+      cycle,
+    preLen + postLen >= n,
+      Take[Join[pre, post], n],
+    True,
+      Join[pre, Take[cycle, n - Length[pre] - Length[post]], post]
+  ]
+]
+
+StandardizeRowColumnSpec[spec_List, n_] :=
+  PadRight[spec, n, spec];
+
+StandardizeRowColumnSpec[item_, n_] :=
+  ConstantArray[item, n];
+
+StandardizeRowColumnSpec[Automatic|None, _] :=
+  Automatic;

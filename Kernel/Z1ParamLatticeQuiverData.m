@@ -76,6 +76,11 @@ torusCoordinate3DOptions = MatchValues[
   };
   {w_Integer, h_Integer, _} := {
     VertexCoordinateFunction -> TimesOperator[Tau / {w, h} / {$ws, 1}] /* TorusVector[{w * $ws + h, h} / Tau],
+    Epilog -> {
+      EdgeForm[None], Opacity[0.5],
+      FaceForm[{Glow @ GrayLevel[1.0], Specularity[1]}],
+      TorusSurfacePolygon[Torus[{w + h, h-.33} / Tau]]
+    },
     CoordinateTransformFunction -> ProjectionOnto[Torus[{w + h, h} / Tau]],
     ViewOptions -> {ViewPoint -> {0.4, 1.5, 0.8}, ViewProjection -> "Orthographic"}
   };
@@ -224,7 +229,7 @@ hexagonalTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, use
     makeABCTorusRepresentation[w, h, t]
   ];
   opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
-  opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts;
+  (* opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts; *)
   {rep, opts}
 ];
 

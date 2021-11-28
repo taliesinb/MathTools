@@ -1,5 +1,7 @@
 \gdef\badDispatch#1{\textbf{\textcolor{e1432d}{#1}}}
+\gdef\noKatexForm#1{\badDispatch{#1}}
 
+\gdef\largeDot{\raisebox{0.06em}{\tiny∙}}
 \gdef\rarrbar{{\raisebox{-0.05em}{→}\mkern{-0.13em}{\large\shortmid}}}
 \gdef\larrbar{{{\large\shortmid}\mkern{-0.13em}{\raisebox{-0.05em}{←}}}}
 
@@ -74,10 +76,16 @@
 \gdef\unknown{\wbform{\text{?}}}
 \gdef\notApplicable{\wbform{\text{---}}}
 
+\gdef\textAnd{\text{\,and\,}}
+
+\gdef\identicallyEqualSymbol{\equiv}
 \gdef\congruentSymbol{\equiv}
 \gdef\isomorphicSymbol{\cong}
 \gdef\homotopicSymbol{\simeq}
 \gdef\approxEqualSymbol{\approx}
+\gdef\bijectiveSymbol{\cong}
+
+\gdef\defeq{\;≝\;}
 \gdef\defEqualSymbol{\;≝\;}
 \gdef\tailEqualSymbol{\underdot{=}}
 \gdef\headEqualSymbol{\dot{=}}
@@ -97,6 +105,9 @@
 \gdef\inverse#1{{{#1}^{-1}}}
 \gdef\inverseSymbol{\inverse{□}}
 
+\gdef\groupDirectProduct#1{#1}
+\gdef\groupDirectProductSymbol{\times}
+
 \gdef\groupInverse{\inverse}
 \gdef\groupPower#1#2{{#1}^{#2}}
 \gdef\groupCommutator#1#2{\left[{#1},{#2}\right]}
@@ -105,6 +116,7 @@
 \gdef\latticeBFS#1{\textrm{bfs}({#1})}
 \gdef\pathHomomorphism#1{#1}
 \gdef\groupoidFunction#1{#1}
+\gdef\groupoidHomomorphism#1{#1}
 \gdef\affineModifier#1{\overrightharpoon{#1}}
 
 \gdef\supercirc#1{#1^{\circ}}
@@ -114,8 +126,10 @@
 
 \gdef\dividesSymbol{\,|\,}
 \gdef\groupFunction#1{#1}
-\gdef\gl#1#2{GL({#1},#2)}
+\gdef\groupHomomorphism#1{#1}
+
 \gdef\automorphisms{\operatorname{Aut}}
+\gdef\endomorphisms{\operatorname{End}}
 
 \gdef\transportMap#1{\transportMapSymbol_{#1}}
 \gdef\transportMapSymbol{\tau}
@@ -185,19 +199,33 @@
 \gdef\minimalContractions{\operatorname{MC}}
 \gdef\grade{\operatorname{grade}}
 \gdef\support{\operatorname{support}}
+\gdef\coefficient{\operatorname{coeff}}
+\gdef\domain{\operatorname{domain}}
+\gdef\codomain{\operatorname{codomain}}
+\gdef\modFunction{\operatorname{mod}}
 
 \gdef\isPrime#1{#1\textrm{ prime}}
 
 \gdef\blank{\_}
 \gdef\emptyWord{}
+
+\gdef\multiwordSymbol#1{\mathbf{#1}}
 \gdef\wordSymbol#1{\mathtt{#1}}
 \gdef\word#1{#1}
 \gdef\pathMap#1{#1}
 \gdef\function#1{#1}
 
+\gdef\imageModifier#1{{#1}^{\rightarrow}}
+\gdef\preimageModifier#1{{#1}^{\leftarrow}}
+
+\gdef\multiImageModifier#1{{#1}^{\Rightarrow}}
+\gdef\multiPreimageModifier#1{{#1}^{\Leftarrow}}
+
 \gdef\functionComposition#1{#1}
 \gdef\functionCompositionSymbol{∘}
 
+\gdef\route#1#2#3{[{#1}\!:\!{#2}\!:\!{#3}]}
+\gdef\multiroute#1#2#3{[{#1}\!:\!{#2}\!:\!{#3}]}
 \gdef\pathWord#1#2#3{{#1}\!:\!{#2}\!:\!{#3}}
 
 \gdef\nullPath{\bot}
@@ -215,9 +243,13 @@
 \gdef\quiver#1{#1}
 
 \gdef\bindingRuleSymbol{\to}
+\gdef\compactBindingRuleSymbol{:}
+
+\gdef\cayleyQuiverSymbol#1{\selfAction{#1}}
 \gdef\bindCayleyQuiver#1#2{\selfAction{#1}[#2]}
 \gdef\bindActionQuiver#1#2{#1[#2]}
 \gdef\bindSize#1#2{#1(#2)}
+\gdef\bindCardSize#1#2{#1[#2]}
 \gdef\bindCards#1#2{#1[#2]}
 \gdef\subSize#1#2{#1_{#2}}
 
@@ -235,17 +267,49 @@
 
 \gdef\limit#1#2{\lim_{#2}\,#1}
 
+\gdef\realVectorSpace#1{\mathbb{R}^{#1}}
+\gdef\realVectorSpace#1{\mathbb{C}^{#1}}
+
+\gdef\matrixRing#1#2{M_{#2}(#1)}
+
 \gdef\groupoid#1{#1}
 \gdef\group#1{#1}
 \gdef\field#1{#1}
 \gdef\ring#1{#1}
+\gdef\indeterminate#1{#1}
 \gdef\semiring#1{#1}
 \gdef\sym#1{#1}
 \gdef\matrix#1{#1}
+\gdef\polynomial#1{#1}
+
+\gdef\polynomialRing#1#2{#1[{#2}]}
+
+\gdef\routeSymbol#1{#1}
+\gdef\multirouteSymbol#1{\mathbf{#1}}
+\gdef\planSymbol#1{\mathbf{#1}}
+
+\gdef\ringElement#1{#1}
+
+\gdef\matrixPart#1#2#3{#1\llbracket{#2,#3}\rrbracket}
+\gdef\matrixRowPart#1{#1}
+\gdef\matrixColumnPart#1{#1}
+\gdef\subMatrixPart#1#2#3{#1_{#2,#3}}
 
 \gdef\matrixDotSymbol{\cdot}
+\gdef\matrixPlusSymbol{+}
 
-\gdef\wordGroup#1{\Omega_{#1}}
+\gdef\wordGroup#1{\wordGroupSymbol_{#1}}
+\gdef\wordGroupSymbol{\Omega}
+
+\gdef\wordRing#1{\wordRingSymbol_{#1}}
+\gdef\wordRingSymbol{\Omega\!\degree}
+
+\gdef\linearCombinationCoefficient#1{{\textcolor{888888}{#1}}}
+
+\gdef\plan#1{#1}
+
+\gdef\planRing#1{\planRingSymbol_{#1}}
+\gdef\planRingSymbol{\Phi}
 
 \gdef\basisPath#1#2{\mathbf{#1}_{#2}}
 \gdef\basisPathWeight#1#2{{#1}_{#2}}
@@ -275,6 +339,7 @@
 
 \gdef\pathIso{\simeq}
 
+\gdef\factorial#1{#1!}
 \gdef\power#1#2{{#1}^{#2}}
 \gdef\repeatedPower#1#2{{#1}^{#2}}
 
@@ -303,10 +368,10 @@
 \gdef\covering#1#2#3{{#2} \sqsupseteq_{#1} {#3}}
 
 \gdef\powerSet#1{\powerSetSymbol({#1})}
-\gdef\powerSetSymbol{\mathsc{P}}
+\gdef\powerSetSymbol{\mathscr{P}}
 
-\gdef\existsForm#1{\exists {#1}}
-\gdef\forAllForm#1{\forall {#1}}
+\gdef\existsForm#1#2{\exists\,{#1}\,:\,{#2}}
+\gdef\forAllForm#1#2{\forall\,{#1}\,:\,{#2}}
 \gdef\notted#1{\notSymbol {#1}}
 \gdef\andSymbol{\land}
 \gdef\orSymbol{\lor}
@@ -323,10 +388,42 @@
 \gdef\latticeLessSymbol{<}
 \gdef\latticeLessEqualSymbol{\le}
 
-\gdef\symmetricOrthogonalAlgebra#1{\mathfrak{so}\(#1\)}
+\gdef\grpname#1{\operatorname{\mathsf{#1}}}
+\gdef\mkg#1#2#3{\grpname{#1}({#2},{#3})}
+\gdef\mka#1#2#3{\mathfrak{#1}({#2},{#3})}
 
-\gdef\symmetricGroup#1{\operatorname{Sym}({#1})}
+\gdef\generalLinearAlgebra#1#2{\mka{gl}{#1}{#2}}
+\gdef\generalLinearGroup#1#2{\mkg{GL}{#1}{#2}}
+\gdef\specialLinearAlgebra#1#2{\mka{sl}{#1}{#2}}
+\gdef\specialLinearGroup#1#2{\mkg{SL}{#1}{#2}}
 
+\gdef\projectiveGeneralLinearAlgebra#1#2{\mka{pgl}{#1}{#2}}
+\gdef\projectiveGeneralLinearGroup#1#2{\mkg{PGL}{#1}{#2}}
+
+\gdef\projectiveSpecialLinearAlgebra#1#2{\mka{psl}{#1}{#2}}
+\gdef\projectiveSpecialLinearGroup#1#2{\mkg{PSL}{#1}{#2}}
+
+\gdef\orthogonalAlgebra#1#2{\mka{o}{#1}{#2}}
+\gdef\orthogonalGroup#1#2{\mkg{O}{#1}{#2}}
+
+\gdef\specialOrthogonalAlgebra#1#2{\mka{so}{#1}{#2}}
+\gdef\specialOrthogonalGroup#1#2{\mkg{SO}{#1}{#2}}
+
+\gdef\unitaryAlgebra#1{\mka{u}{#1}{#2}}
+\gdef\unitaryGroup#1{\mkg{U}{#1}{#2}}
+
+\gdef\specialUnitaryAlgebra#1#2{\mka{su}{#1}{#2}}
+\gdef\specialUnitaryGroup#1#2{\mkg{su}{#1}{#2}}
+
+\gdef\spinAlgebra#1#2{\mka{spin}{#1}{#2}}
+\gdef\spinGroup#1#2{\mkg{Spin}{#1}{#2}}
+
+\gdef\pinAlgebra#1#2{\mka{pin}{#1}{#2}}
+\gdef\pinGroup#1#2{\mkg{Pin}{#1}{#2}}
+
+\gdef\symmetricGroup#1{\grpname{Sym}({#1})}
+
+\gdef\presentation#1{#1}
 \gdef\groupPresentation#1#2{\left\langle\,{#1}\,\,\middle|\mathstrut\,\,{#2}\,\right\rangle}
 \gdef\groupRelationIso{=}
 \gdef\groupGenerator#1{#1}
@@ -334,12 +431,37 @@
 \gdef\groupElement#1{#1}
 \gdef\groupoidElement#1{#1}
 
-\gdef\setConstructor#1#2{\left\{\,{#1}\,\,\middle|\mathstrut\,\,{#2}\,\right\}}
+\gdef\iconstruct#1#2{{#1}\,\,\middle|{\large\mathstrut}\,\,{#2}}
+\gdef\setConstructor#1#2{\left\{\,\iconstruct{#1}{#2}\,\right\}}
+\gdef\multisetConstructor#1#2{\left\{\mkern{-2.3pt}\left|\,\,\iconstruct{#1}{#2}\,\right|\mkern{-2.3pt}\right\}}
+
+\gdef\multisets#1{\mathscr{M}({#1})}
+\gdef\signedMultisets#1{\mathscr{M^*}({#1})}
+
+\gdef\setSymbol#1{#1}
+\gdef\multisetSymbol#1{#1}
+\gdef\setElementSymbol#1{#1}
+\gdef\multisetElementSymbol#1{#1}
+
+\gdef\multisetMultiplicitySymbol{\raisebox{.1em}{\small\#}\mkern{.1em}}
+\gdef\boundMultiplicityFunction#1{\operatorname{{#1}^{\sharp}}}
+
 \gdef\constructor#1#2{\left.{#1}\,\,\middle|\mathstrut\,\,{#2}\right.}
 \gdef\elemOf#1#2{{ {#1} \in {#2} }}
+\gdef\notElemOf#1#2{{ {#1} \notin {#2} }}
 \gdef\edgeOf#1#2{{ {#1} {\in}_E {#2} }}
 \gdef\vertOf#1#2{{ {#1} {\in}_V {#2} }}
 \gdef\pathOf#1#2{{ {#1} {\in}_P {#2} }}
+
+\gdef\pathType#1{\operatorName{path}{#1}}
+\gdef\vertexType#1{\operatorName{vertex}{#1}}
+\gdef\edgeType#1{\operatorName{edge}{#1}}
+\gdef\multisetType#1{\operatorName{mset}{#1}}
+\gdef\signedMultisetType#1{\operatorName{mset^*}{#1}}
+
+\gdef\fromTo#1{#1}
+\gdef\fromToSymbol{\mapsto}
+\gdef\vertexCountOf#1{|{#1}|}
 
 \gdef\vertices#1{ V_{#1} }
 \gdef\edges#1{ E_{#1} }
@@ -361,6 +483,8 @@
 
 \gdef\mto#1#2{{#1}\mapsto{#2}}
 \gdef\mtoSymbol{\mapsto}
+
+\gdef\groupWordRewriting#1{\langle{#1}\rangle}
 \gdef\rewrite#1#2{{#1}\mapsto{#2}}
 \gdef\rewritingRule#1#2{{#1}\mapsto{#2}}
 \gdef\rewritingSystem#1{\mathcal{#1}}
@@ -382,7 +506,10 @@
 \gdef\nmcard#1{\card{\negated{\mirror{#1}}}}
 
 \gdef\assocArray#1{\left\langle {#1} \right\rangle}
+
+\gdef\set#1{\{ {#1} \}}
 \gdef\list#1{\{ {#1} \}}
+\gdef\multiset#1{\lBrace {#1} \rBrace}
 
 \gdef\permutationCycle#1{#1}
 \gdef\permutationCycleSymbol{\to}
@@ -412,12 +539,22 @@
 \gdef\gmult{\vsp\ast\vsp}
 \gdef\Gmult{\vsp\ast\vsp}
 
+\gdef\gdot{\vsp\cdot\vsp}
+\gdef\gDot{\vsp{\,\largeDot\,}\vsp}
+
 \gdef\ellipsis{\dots}
+\gdef\verticalEllipsis{\vdots}
 
 \gdef\appliedRelation#1{#1}
 
 \gdef\setUnionSymbol{\cup}
 \gdef\setIntersectionSymbol{\cap}
+\gdef\setRelativeComplementSymbol{\backslash}
+
+\gdef\multisetUnionSymbol{\cup}
+\gdef\multisetIntersectionSymbol{\cap}
+\gdef\multisetRelativeComplementSymbol{\backslash}
+\gdef\multisetSumSymbol{+}
 
 \gdef\cartesianProductSymbol{\times}
 \gdef\functionSignature#1#2#3{{{#1} : {#2} \to {#3}}}
@@ -428,6 +565,14 @@
 \gdef\quiverProdTimes#1{#1}
 
 \gdef\parenLabeled#1#2{#1\ ({#2})}
+\gdef\parenRepeated#1#2{\parenLabeled{#1}{{#2}\text{ times}}}
+
+\gdef\underLabeled#1#2{\underbrace{#1}_{#2}}
+\gdef\underRepeated#1#2{\underbrace{#1}_{#2\text{ times}}}
+
+\gdef\overLabeled#1#2{\overbrace{#1}^{#2}}
+\gdef\overRepeated#1#2{\overbrace{#1}^{#2\text{ times}}}
+
 \gdef\modLabeled#1#2{{#1 }\textrm{ mod }{#2}}
 
 \gdef\freeGroup#1{F_{#1}}
@@ -463,6 +608,17 @@
 
 \gdef\string#1{{#1}}
 \gdef\character#1{{#1}}
+
+\gdef\homomorphismMapping#1{\assocArray{#1}}
+
+\gdef\translationPresentation#1{\textrm{Z}_{#1}}
+\gdef\starTranslationPresentation#1{\textrm{Z}^*_{#1}}
+
+\gdef\translationPathValuation#1{\mathcal{\overrightharpoon Z}_{#1}}
+\gdef\starTranslationPathValuation#1{\overrightharpoon{\mathcal{Z}^*_{#1}}}
+
+\gdef\translationWordHomomorphism#1{\mathcal{Z}_{#1}}
+\gdef\starTranslationWordHomomorphism#1{\mathcal{Z}^*_{#1}}
 
 \gdef\translationCardinalValuation#1{\textrm{T}_{#1}}
 \gdef\starTranslationCardinalValuation#1{\textrm{T}^*_{#1}}

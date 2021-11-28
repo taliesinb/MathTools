@@ -974,6 +974,56 @@ VertexRange[graph_] := Range @ VertexCount @ graph;
 
 (**************************************************************************************************)
 
+PackageExport["TaggedAdjacencyMatrices"]
+
+Options[TaggedAdjacencyMatrices] = {"Antisymmetric" -> False};
+
+TaggedAdjacencyMatrices[graph_ ? EdgeTaggedGraphQ, OptionsPattern[]] := Scope[
+  n = VertexCount @ graph;
+  assoc = EdgePairsToAdjacencyMatrix[#, n]& /@ TaggedEdgePairs[graph];
+  If[OptionValue["Antisymmetric"],
+    JoinTo[assoc, Association @ KeyValueMap[Negated[#1] -> Transpose[#2]&, assoc]];
+  ];
+  assoc
+]
+
+(**************************************************************************************************)
+
+PackageExport["EdgePairsToAdjacencyMatrix"]
+
+EdgePairsToAdjacencyMatrix[pairs_, n_] :=
+  ExtendedSparseArray[pairs, {n, n}]
+
+(**************************************************************************************************)
+
+PackageExport["ExtendedSparseArray"]
+
+ExtendedSparseArray[{} | <||>, sz_] := SparseArray[{}, sz];
+
+ExtendedSparseArray[assoc_Association, sz_] := SparseArray[Normal @ assoc, sz];
+
+ExtendedSparseArray[list:{___List} ? DuplicateFreeQ, sz_] := SparseArray[Thread[list -> 1], sz];
+
+ExtendedSparseArray[list:{___List}, sz_] := SparseArray[Normal @ Counts @ list, sz];
+
+ExtendedSparseArray[list:{___Rule}, sz_] := SparseArray[Normal @ Merge[list, Total], sz];
+
+(**************************************************************************************************)
+
+PackageExport["TaggedEdgePairs"]
+
+TaggedEdgePairs[graph_ ? EdgeTaggedGraphQ] :=
+  GroupBy[EdgeList @ ToIndexGraph @ graph, Last -> Function[{Part[#, 1], Part[#, 2]}]]
+
+(**************************************************************************************************)
+
+PackageExport["TaggedEdgeLists"]
+
+TaggedEdgeLists[graph_ ? EdgeTaggedGraphQ] :=
+  GroupBy[EdgeList @ graph, Last]
+
+(**************************************************************************************************)
+
 PackageExport["AdjacentPairs"]
 
 SetUsage @ "

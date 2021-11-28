@@ -314,6 +314,8 @@ $rgbwxColors = <|
   "w" -> $Gray, "x" -> $DarkGray
 |>;
 
+$colorFormed := $colorFormed = Map[Blank, $colorFormP];
+
 ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardinals,
   {___, "f", ___},
     Append[ChooseCardinalColors[DeleteCases[cardinals, "f"]], "f" -> $Orange],
@@ -323,6 +325,8 @@ ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardin
     $xyColors,
   {"x", "y", "z"},
     $xyzColors,
+  {Repeated[$colorFormed]},
+    AssociationThread[cardinals, Lookup[$colorFormAssoc, Part[cardinals, All, 0]]],
   set_ /; SubsetQ[Keys @ $rgbwxColors, set],
     KeyTake[$rgbwxColors, cardinals],
   _,
@@ -446,12 +450,15 @@ PackageExport["TriangularQuiver"]
 
 Options[TriangularQuiver] = Options[Graph];
 
-TriangularQuiver[n_Integer, opts:OptionsPattern[]] := Scope[
+TriangularQuiver[n_Integer, opts:OptionsPattern[]] :=
+  TriangularQuiver[n, {"r", "g", "b"}, opts];
+
+TriangularQuiver[n_Integer, cards:{x_, y_, z_}, opts:OptionsPattern[]] := Scope[
   vertices = Catenate @ Array[VertexProduct, {n, n}];
   edges = Flatten @ {
-    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i + 1, j], "x"], {i, n-1}, {j, n}],
-    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i, j + 1], "y"], {i, n}, {j, n-1}],
-    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i + 1, j + 1], "z"], {i, n-1}, {j, n-1}]
+    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i + 1, j], x], {i, n-1}, {j, n}],
+    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i, j + 1], y], {i, n}, {j, n-1}],
+    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i + 1, j + 1], z], {i, n-1}, {j, n-1}]
   };
   vertices //= Select[upperTriProdQ];
   edges //= Select[upperTriProdQ];
@@ -461,7 +468,7 @@ TriangularQuiver[n_Integer, opts:OptionsPattern[]] := Scope[
     ImageSize -> ("ShortestEdge" -> 33),
     VertexCoordinates -> N[({#1 - #2/2, #2 * Sqrt[3]/2}& @@@ vertices)],
     GraphTheme -> "BigFive",
-    Cardinals -> {"x", "y", "z"}
+    Cardinals -> cards
   ]
 ]
 

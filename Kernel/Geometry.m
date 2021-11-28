@@ -13,15 +13,27 @@ SetUsage @ "
 Torus[r$1, r$2] represents a torus on the x$, y$ plane with small radius r$1 and large radius r$2.
 "
 
-Torus /: BoundaryDiscretizeRegion[Torus[{R_, r_}]] := With[
+Torus /: BoundaryDiscretizeRegion[Torus[{R_, r_}], opts___Rule] := With[
   {largeDF = RegionDistance @ Circle[{0, 0}, N @ R], maxR = N[r + R], r2 = N[r]^2},
   iregion = ImplicitRegion[largeDF[{x, y}] + z^2 <= r2, {x, y, z}];
   iregion = iregion /. Abs[q_] :> Power[q, 2];
   BoundaryDiscretizeRegion[iregion,
     {{-maxR, maxR}, {-maxR, maxR}, {-r, r}},
+    opts,
     MaxCellMeasure -> (r/10)^2, PerformanceGoal -> "Quality"
   ]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["TorusSurfacePolygon"]
+
+TorusSurfacePolygon[t:Torus[{_, r_}], opts___Rule] :=
+  First @ RegionPolygon @ BoundaryDiscretizeRegion[
+    t, opts,
+    MaxCellMeasure -> (r / Tau)/2,
+    PerformanceGoal -> "Speed"
+  ]
 
 (**************************************************************************************************)
 

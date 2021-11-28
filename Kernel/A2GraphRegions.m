@@ -770,6 +770,8 @@ GraphRegionElementQ[InfiniteLine[{_, _}] | InfiniteLine[_, _]] := True;
 processRegion[InfiniteLine[v_, dir_]] := Scope[
   cardinalWord = ParseRegionWord @ dir;
   {posVerts, posEdges, posNegations} = List @@ processRegion @ HalfLine[v, cardinalWord];
+  If[Length[posVerts] > 0 && Last[posVerts] === First[posVerts],
+    Return @ GraphPathData[posVerts, posEdges, {}]];
   {negVerts, negEdges, negNegations} = List @@ processRegion @ HalfLine[v, Negated /@ Reverse @ cardinalWord];
   negEdgeLen = Length[negEdges];
   GraphPathData[
