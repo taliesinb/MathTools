@@ -745,10 +745,24 @@ AppendConstantColumn[item_][matrix_] := AppendConstantColumn[matrix, item];
 
 (**************************************************************************************************)
 
+PackageExport["PrependConstantColumn"]
+
+AppendConstantColumn[matrix_, item_] := Map[Prepend[item], matrix];
+AppendConstantColumn[item_][matrix_] := PrependConstantColumn[matrix, item];
+
+(**************************************************************************************************)
+
 PackageExport["AppendConstantRow"]
 
 AppendConstantRow[matrix_, item_] := Append[matrix, ConstantArray[item, Length @ First @ matrix]];
 AppendConstantRow[item_][matrix_] := AppendConstantRow[matrix, item];
+
+(**************************************************************************************************)
+
+PackageExport["PrependConstantRow"]
+
+AppendConstantRow[matrix_, item_] := Prepend[matrix, ConstantArray[item, Length @ First @ matrix]];
+AppendConstantRow[item_][matrix_] := PrependConstantRow[matrix, item];
 
 (**************************************************************************************************)
 
