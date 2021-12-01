@@ -243,8 +243,8 @@ $symbolFormsP = Alternatives[
 
 symbolBoxes = Case[
   s:($symbolFormsP)   := MakeBoxes @ s;
-  NegatedForm[n_]     := % @ Negated @ n;
-  Negated[n_]         := NegatedBoxForm @ RawBoxes @ % @ n;
+  InvertedForm[n_]     := % @ Inverted @ n;
+  Inverted[n_]         := InvertedBoxForm @ RawBoxes @ % @ n;
   f_PlainTextForm     := MakeBoxes @ f;
   other_              := rawSymbolBoxes @ other;
 ];
@@ -267,7 +267,7 @@ rdb = Case[
   Subscript[s_, i_]                  := SubscriptBox[% @ s, makeQGBoxes @ i];
   Superscript[s_, i_]                := SuperscriptBox[% @ s, makeQGBoxes @ i];
   Subsuperscript[s_, i_, j_]         := SubsuperscriptBox[% @ s, makeQGBoxes @ i, makeQGBoxes @ j];
-  (Negated|NegatedForm)[e_]          := TemplateBox[List @ % @ e, "NegatedForm"];
+  (Inverted|InvertedForm)[e_]          := TemplateBox[List @ % @ e, "InvertedForm"];
   e_                                 := $decf @ e;
 ];
 
@@ -309,7 +309,7 @@ $colorFormAssoc = <|
   DarkGrayForm -> $DarkGray, MediumGrayForm -> $Gray, LightGrayForm -> $LightGray
 |>;
 
-NegatedForm[(c:$colorFormP)[e_]] := c[NegatedForm[e]];
+InvertedForm[(c:$colorFormP)[e_]] := c[InvertedForm[e]];
 
 toTypedSymbol = Case[
   Rule[Form[e_], _] := makeQGBoxes @ e;
@@ -929,7 +929,7 @@ groupRelationTermBoxes = Case[
   s:symP                      := MakeBoxes @ GroupElementSymbol @ s;
   GroupInverseForm[e_]        := TemplateBox[List @ % @ e, "GroupInverseForm"];
   CardinalSymbol[s_]          := MakeBoxes @ GroupElementSymbol @ s;
-  e_ ? unaryWrappedQ          := recurseWrapperBoxes[e, %] /. "NegatedForm" -> "GroupInverseForm";
+  e_ ? unaryWrappedQ          := recurseWrapperBoxes[e, %] /. "InvertedForm" -> "GroupInverseForm";
   ge_GroupElementSymbol       := MakeBoxes @ ge;
   gg_GroupGeneratorSymbol     := MakeBoxes @ gg;
   gm_GroupMultiplicationForm  := MakeBoxes @ gm;
@@ -1801,9 +1801,13 @@ PackageExport["CardinalSymbol"]
 declareSymbolForm[CardinalSymbol];
 
 $TemplateKatexFunction["CardinalSymbolForm"] = "card";
-$TemplateKatexFunction["NegatedCardinalSymbolForm"] = "ncard";
+$TemplateKatexFunction["InvertedCardinalSymbolForm"] = "ncard";
 $TemplateKatexFunction["MirrorCardinalSymbolForm"] = "mcard";
+$TemplateKatexFunction["InvertedMirrorCardinalSymbolForm"] = "nmcard";
+
+(* for legacy notebooks: *)
 $TemplateKatexFunction["NegatedMirrorCardinalSymbolForm"] = "nmcard";
+$TemplateKatexFunction["NegatedCardinalSymbolForm"] = "ncard";
 
 (**************************************************************************************************)
 
@@ -1812,7 +1816,7 @@ PackageExport["MirrorForm"]
 declareUnaryWrapperForm[MirrorForm]
 
 declareBoxFormatting[
-  m:MirrorForm[_CardinalSymbol | _NegatedForm] :> cardinalBox @ m
+  m:MirrorForm[_CardinalSymbol | _InvertedForm] :> cardinalBox @ m
 ]
 
 
@@ -1899,7 +1903,7 @@ declareBoxFormatting[
 SetHoldAllComplete[naryCardinalForm];
 
 naryCardinalForm[args_, form_] :=
-  TemplateBox[MapUnevaluated[maybeParen[CardinalSymbol|NegatedForm|Negated], args], form];
+  TemplateBox[MapUnevaluated[maybeParen[CardinalSymbol|InvertedForm|Inverted], args], form];
 
 $TemplateKatexFunction["SerialCardinalForm"] = katexAliasRiffled["serialCardSymbol"];
 $TemplateKatexFunction["ParallelCardinalForm"] = katexAliasRiffled["parallelCardSymbol"];
@@ -2821,7 +2825,7 @@ innerPolyBoxes[args___] :=
 polyTermForm = Case[
   a_Times                     := Construct[%, Apply[List, a]];
   Power[a_, b_]               := TemplateBox[{% @ a, makeQGBoxes @ b}, $polyPowerForm];
-  (Negated|NegatedForm)[n_]   := TemplateBox[List @ % @ n, "NegatedForm"];
+  (Inverted|InvertedForm)[n_]   := TemplateBox[List @ % @ n, "InvertedForm"];
   a_ ? longPolyQ              := TemplateBox[List @ Apply[innerPolyBoxes, Unevaluated @ a], "ParenthesesForm"];
   a_List                      := TemplateBox[MapUnevaluated[makeInnerPolyParamQGBoxes, a], $polyTimesForm];
   a_                          := $scalarBoxes @ a;
@@ -2831,7 +2835,7 @@ makeInnerPolyParamQGBoxes = Case[
   a_List | a_Times            := TemplateBox[{polyTermForm @ a}, "ParenthesesForm"];
   Power[a_, b_]               := TemplateBox[{% @ a, makeQGBoxes @ b}, $polyPowerForm];
   a_ ? longPolyQ              := TemplateBox[List @ Apply[innerPolyBoxes, Unevaluated @ a], "ParenthesesForm"];
-  (Negated|NegatedForm)[n_]   := TemplateBox[List @ % @ n, "NegatedForm"];
+  (Inverted|InvertedForm)[n_]   := TemplateBox[List @ % @ n, "InvertedForm"];
   a_                          := $scalarBoxes @ a;
 ];
 
@@ -2892,12 +2896,18 @@ declareConstantSymbol[
 
 (**************************************************************************************************)
 
-PackageExport["NegatedBoxForm"]
+PackageExport["InvertedBoxForm"]
 
-SetHoldFirst[NegatedBoxForm];
-NegatedBoxForm[e_] := makeTemplateBox[e, "NegatedForm"]
+SetHoldFirst[InvertedBoxForm];
+InvertedBoxForm[e_] := makeTemplateBox[e, "InvertedForm"]
 
-$TemplateKatexFunction["NegatedForm"] = "negated";
+$TemplateKatexFunction["InvertedForm"] = "inverted";
+
+(********************************************)
+
+(* for legacy notebooks *)
+
+$TemplateKatexFunction["NegatedForm"] = "inverted";
 
 (********************************************)
 
@@ -3984,7 +3994,7 @@ declareBoxFormatting[
 $TemplateKatexFunction["EmptyWordForm"] := "emptyWord"
 $TemplateKatexFunction["WordForm"] = "word";
 
-$cardP = _CardinalSymbol | NegatedForm[_CardinalSymbol] | MirrorForm[_CardinalSymbol] ;
+$cardP = _CardinalSymbol | InvertedForm[_CardinalSymbol] | MirrorForm[_CardinalSymbol] ;
 $maybeColoredCardP = $colorFormP[$cardP] | $cardP;
 
 SetHoldAllComplete[wordBoxes, cardinalBox];
@@ -3997,7 +4007,7 @@ wordBoxes = Case[
   c:cardP                             := TemplateBox[List @ MakeBoxes @ c, "WordForm"];
   list:{cardP..}                      := TemplateBox[MapUnevaluated[MakeBoxes, list], "WordForm"];
   list_List                           := TemplateBox[tryColorCardinals @ cardinalBoxes @ list, "WordForm"];
-  (Negated|NegatedForm)[e_]           := TemplateBox[List @ wordBoxes @ e, "NegatedForm"];
+  (Inverted|InvertedForm)[e_]           := TemplateBox[List @ wordBoxes @ e, "InvertedForm"];
   MirrorForm[e_]                      := TemplateBox[List @ wordBoxes @ e, "MirrorForm"];
   Form[f_]                            := makeQGBoxes @ f;
   cs_CardinalSequenceForm             := MakeBoxes @ cs;
@@ -4015,20 +4025,20 @@ cardinalBoxes[list_List] := Map[cardinalBox, list];
 cardSymBox[e_] := TemplateBox[{e}, "CardinalSymbolForm"];
 
 toNegCard[TemplateBox[{e_}, "CardinalSymbolForm"]] :=
-  TemplateBox[{e}, "NegatedCardinalSymbolForm"];
+  TemplateBox[{e}, "InvertedCardinalSymbolForm"];
 
 toNegCard[TemplateBox[{e_}, "MirrorCardinalSymbolForm"]] :=
-  TemplateBox[{e}, "NegatedMirrorCardinalSymbolForm"];
+  TemplateBox[{e}, "InvertedMirrorCardinalSymbolForm"];
 
 toMirrorCard[TemplateBox[{e_}, "CardinalSymbolForm"]] :=
   TemplateBox[{e}, "MirrorCardinalSymbolForm"];
 
-toMirrorCard[TemplateBox[{e_}, "NegatedCardinalSymbolForm"]] :=
-  TemplateBox[{e}, "MirrorNegatedCardinalSymbolForm"];
+toMirrorCard[TemplateBox[{e_}, "InvertedCardinalSymbolForm"]] :=
+  TemplateBox[{e}, "MirrorInvertedCardinalSymbolForm"];
 
 cardinalBox = Case[
   c_CardinalSymbol                    := MakeBoxes @ c;
-  c:NegatedForm[_CardinalSymbol]      := MakeBoxes @ c;
+  c:InvertedForm[_CardinalSymbol]      := MakeBoxes @ c;
   s_String                            := cardSymBox @ s;
   (col:colsP)[e_]                     := TemplateBox[List @ MakeBoxes @ e, SymbolName @ col];
   i_Integer                           := cardSymBox @ TextString @ i;
@@ -4037,7 +4047,7 @@ cardinalBox = Case[
   sc_SerialCardinal                   := MakeBoxes @ sc;
   pc_ParallelCardinal                 := MakeBoxes @ pc;
   MirrorForm[s_]                      := toMirrorCard @ % @ s;
-  Negated[s_]                         := toNegCard @ % @ s,
+  Inverted[s_]                         := toNegCard @ % @ s,
   {symsP -> $rawSymbolP, colsP -> $colorFormP}
 ]
 
@@ -4050,7 +4060,7 @@ tryColorCardinals[list_] /; $AutoColorCardinals :=
 
 tryColorCardinals[list_] := list;
 
-$cardFormP = "CardinalSymbolForm" | "NegatedCardinalSymbolForm";
+$cardFormP = "CardinalSymbolForm" | "InvertedCardinalSymbolForm";
 
 $colorCardinalRules = {
   b:TemplateBox[{"r"}, $cardFormP] -> TemplateBox[List @ b, "RedForm"],
@@ -4186,7 +4196,7 @@ makeQGBoxes = Case[
   Minus[e_]                 := makeTemplateBox[e, "MinusForm"];
   Power[e_, -1]             := makeTemplateBox[e, "InverseForm"];
   Times[-1, e_]             := makeTemplateBox[e, "MinusForm"];
-  Negated[e_]               := makeTemplateBox[e, "NegatedForm"];
+  Inverted[e_]               := makeTemplateBox[e, "InvertedForm"];
   DirectedEdge[args__]      := MakeBoxes @ DirectedEdgeForm[args];
   UndirectedEdge[args__]    := MakeBoxes @ UndirectedEdgeForm[args];
   Labeled[a_, l_]           := MakeBoxes @ ParenthesesLabeledForm[a, l];

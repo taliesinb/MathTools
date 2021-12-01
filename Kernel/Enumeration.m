@@ -38,7 +38,7 @@ UniqueEdgeColorings[graph_] := Scope[
 PackageExport["AllCardinalSets"]
 
 AllCardinalSets[cardinals_] := Scope[
-  cardinals = Join[cardinals, Negated /@ cardinals];
+  cardinals = Join[cardinals, Inverted /@ cardinals];
   numCardinals = Length @ cardinals;
   Subsets[cardinals, {1, numCardinals}]
 ];

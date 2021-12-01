@@ -220,7 +220,7 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
       If[MissingQ[gen], Nothing, {
         makeQuiverElementRule[inVertex, outVertex, gen, cardinal],
         If[symmetric && (igen = ToInverseFunction[gen]) =!= gen && igen =!= None,
-          makeQuiverElementRule[outVertex, inVertex, igen, Negated @ cardinal],
+          makeQuiverElementRule[outVertex, inVertex, igen, Inverted @ cardinal],
           Nothing
         ]
       }]

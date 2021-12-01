@@ -80,7 +80,7 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
     {gen, index} |-> {
       If[labeled, Labeled[First @ index], Identity] @ gen,
       If[symmetric && (igen = ToInverseFunction[gen]) =!= gen && igen =!= None,
-        If[labeled, Labeled[Negated @ First @ index], Identity] @ igen,
+        If[labeled, Labeled[Inverted @ First @ index], Identity] @ igen,
         Nothing
       ]
     },
@@ -111,7 +111,7 @@ returns a list of successors elements that represent the action of generators of
 CayleyFunction takes the following options:
 | 'Symmetric' | True | whether to include the action of the inverses of the generators |
 | 'Labeled' | True | whether to yield successors that are Labeled with the name of the corresponding generator |
-* For 'Symmetric' -> True and 'Labeled' -> True, the inverses successors are labeled with Negated[gen$].
+* For 'Symmetric' -> True and 'Labeled' -> True, the inverses successors are labeled with Inverted[gen$].
 "
 
 Options[CayleyFunction] = {

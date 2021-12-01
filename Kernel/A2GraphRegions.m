@@ -116,7 +116,7 @@ and edge indices edges$.
 PackageExport["GraphPathData"]
 
 SetUsage @ "
-GraphPathData[vertices$, edges$, negations$] represents a path in a graph with vertex indices \
+GraphPathData[vertices$, edges$, inversions$] represents a path in a graph with vertex indices \
 vertices$, edge indices edges$, and a list of indices into edges$ of which edges were traversed \
 in their reverse direction.
 "
@@ -154,7 +154,7 @@ regionDataListEdges[regionDataElements_] :=
 pathToRegion[GraphPathData[a_, b_, c_]] :=
   GraphRegionData[a, b];
 
-NegatePath[GraphPathData[a_, b_, c_]] := Scope[
+InvertPath[GraphPathData[a_, b_, c_]] := Scope[
   cn = Range @ Length @ b;
   GraphPathData[Reverse @ a, Reverse @ b, Complement[cn, c]]
 ];
@@ -168,7 +168,7 @@ ParseRegionWord[word_] :=
 
 $inRegionFunc = True;
 checkCardinals[list_List] :=
-  If[!ListQ[$Cardinals] || SubsetQ[$Cardinals, StripNegated /@ list], list,
+  If[!ListQ[$Cardinals] || SubsetQ[$Cardinals, StripInverted /@ list], list,
     If[$inRegionFunc, failAuto["badcardinals", list], $Failed]];
 
 (**************************************************************************************************)
@@ -297,8 +297,8 @@ fail[msgName_, args___] := (
 SetHoldFirst[collectRegionData, collectPathData];
 
 collectPathData[body_] := Scope[
-  CollectTo[{$vertexBag, $edgeBag, $negationBag}, body];
-  GraphPathData[$vertexBag, $edgeBag, $negationBag]
+  CollectTo[{$vertexBag, $edgeBag, $inversionBag}, body];
+  GraphPathData[$vertexBag, $edgeBag, $inversionBag]
 ];
 
 (********************************************)
@@ -309,9 +309,9 @@ sowVertexList[v_] := Internal`StuffBag[$vertexBag, v, 1];
 
 sowEdge[i_Integer] := (Internal`StuffBag[$edgeBag, i]; True);
 
-sowEdge[Negated[i_Integer]] := (
+sowEdge[Inverted[i_Integer]] := (
   Internal`StuffBag[$edgeBag, i];
-  Internal`StuffBag[$negationBag, Internal`BagLength[$edgeBag]];
+  Internal`StuffBag[$inversionBag, Internal`BagLength[$edgeBag]];
   True
 );
 
@@ -332,7 +332,7 @@ findStrictEdge[v1_, v2_, else_:None] := First[
 
 (********************************************)
 
-findEdge[v1_, v2_] := findStrictEdge[v1, v2, Negated @ findStrictEdge[v2, v1]]
+findEdge[v1_, v2_] := findStrictEdge[v1, v2, Inverted @ findStrictEdge[v2, v1]]
 
 findAndSowEdge[v1_, v2_] := sowEdge @ findEdge[v1, v2];
 
@@ -381,7 +381,7 @@ processRegion[DirectedEdge[a_, b_, c_]] :=
   edgeIndicesToPathData @ findEdgeIndices @ verbatimEdgePattern[a, b, c]
 
 processRegion[UndirectedEdge[a_, b_, c_]] :=
-  edgeIndicesToPathData @ StripNegated @ findEdgeIndices @ verbatimEdgePattern[a, b, c]
+  edgeIndicesToPathData @ StripInverted @ findEdgeIndices @ verbatimEdgePattern[a, b, c]
 
 verbatimEdgePattern[a_, b_, c_] :=
   Verbatim /@ EdgePattern[a, b, c];
@@ -400,19 +400,19 @@ processRegion[EdgePattern[a:(_IndexedVertex | GraphOrigin), b_, rest__]] :=
 processRegion[EdgePattern[a_, b:(_IndexedVertex | GraphOrigin), rest___]] :=
   processRegion @ EdgePattern[a, Part[$VertexList, findVertex @ b], rest];
 
-processRegion[EdgePattern[a_, b_, Negated[c_]]] :=
-  edgeIndicesToPathData @ Map[Negated, findEdgeIndices @ EdgePattern[a, b, c]];
+processRegion[EdgePattern[a_, b_, Inverted[c_]]] :=
+  edgeIndicesToPathData @ Map[Inverted, findEdgeIndices @ EdgePattern[a, b, c]];
 
 findEdgeIndices[p:EdgePattern[a_, b_]] := Scope @ Which[
   NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[a, b, ___]]], i,
-  NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[b, a, ___]]], Negated /@ i,
+  NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[b, a, ___]]], Inverted /@ i,
   NotEmptyQ[i = MatchIndices[$EdgeList, UndirectedEdge[a, b, ___] | UndirectedEdge[b, a, ___]]], i,
   True, fail["nfedge", p]
 ];
 
 findEdgeIndices[p:EdgePattern[a_, b_, c_]] := Scope @ With[{cp = toCardinalPattern @ c}, Which[
   NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[a, b, cp]]], i,
-  NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[b, a, cp]]], Negated /@ i,
+  NotEmptyQ[i = MatchIndices[$EdgeList, DirectedEdge[b, a, cp]]], Inverted /@ i,
   NotEmptyQ[i = MatchIndices[$EdgeList, UndirectedEdge[a, b, cp] | UndirectedEdge[b, a, c]]], i,
   True, fail["nfedge", p]
 ]];
@@ -422,15 +422,15 @@ supersetOf[sub_][sup_] := SubsetQ[sup, sub];
 toCardinalPattern = MatchValues[
   CardinalSet[s_] := CardinalSet[_ ? (supersetOf[s])];
   a_Alternatives  := Map[%, a];
-  s_              := s | CardinalSet[_ ? (MemberQ[s | Negated[s]])];
+  s_              := s | CardinalSet[_ ? (MemberQ[s | Inverted[s]])];
 ];
 
 edgeIndicesToPathData[edgeIndices_] := Scope[
-  normalEdgeIndices = StripNegated /@ edgeIndices;
+  normalEdgeIndices = StripInverted /@ edgeIndices;
   GraphPathData[
     allEdgeVertices @ normalEdgeIndices,
     normalEdgeIndices,
-    MatchIndices[edgeIndices, _Negated]
+    MatchIndices[edgeIndices, _Inverted]
   ]
 ];
 
@@ -600,7 +600,7 @@ PathAdjustments is an option to Path that specifies which steps to foreshorten.
 PackageExport["PathCancellation"]
 
 SetUsage @ "
-PathCancellation is an option to Path that specifies whether to cancel neighboring negated cardinals.
+PathCancellation is an option to Path that specifies whether to cancel neighboring inverted cardinals.
 "
 
 (********************************************)
@@ -633,13 +633,13 @@ doWalk[startId_, stopId_, pathWord_, shouldRepeat_, func_] := Scope[
   totalLen = If[shouldRepeat, 10^6, wordLen];
   Do[
     cardinal = Part[pathWord, Mod[i, wordLen, 1]];
-    negatedQ = NegatedQ[cardinal];
+    invertedQ = InvertedQ[cardinal];
     edgeId = Part[$TagVertexAdjacentEdgeTable, Key @ cardinal, vertexId];
     If[edgeId === None,
       If[shouldRepeat, Break[]];
       failWalk[cardinal, vertexId]];
-    vertexId = Part[$EdgePairs, edgeId, If[negatedQ, 1, 2]];
-    func[vertexId, If[negatedQ, Negated @ edgeId, edgeId]];
+    vertexId = Part[$EdgePairs, edgeId, If[invertedQ, 1, 2]];
+    func[vertexId, If[invertedQ, Inverted @ edgeId, edgeId]];
     If[vertexId == stopId, Break[]];
     If[vertexId == startId && shouldRepeat, Break[]];
   ,
@@ -651,7 +651,7 @@ doWalk[startId_, stopId_, pathWord_, shouldRepeat_, func_] := Scope[
 failWalk[cardinal_, vertexId_] := Scope[
   available = Join[
     Part[$EdgeTags, Part[$VertexOutEdgeTable, vertexId]],
-    Negated /@ Part[$EdgeTags, Part[$VertexInEdgeTable, vertexId]]
+    Inverted /@ Part[$EdgeTags, Part[$VertexInEdgeTable, vertexId]]
   ];
   failAuto["nocard", cardinal, Part[$VertexList, vertexId], available];
 ];
@@ -690,17 +690,17 @@ processRegion[Cycles[word_]] := Scope[
 ];
 
 (********************************************)
-(** Negated[path...]                       **)
+(** Inverted[path...]                       **)
 
-GraphRegionElementQ[Negated[_ ? GraphRegionElementQ]] := True;
+GraphRegionElementQ[Inverted[_ ? GraphRegionElementQ]] := True;
 
-processRegion[spec:Negated[region_]] := Scope[
+processRegion[spec:Inverted[region_]] := Scope[
   paths = ToList @ processRegion @ region;
   If[!MatchQ[paths, {__GraphPathData}], fail["badnegpath", spec]];
-  NegatePath /@ paths
+  InvertPath /@ paths
 ]
 
-GraphRegion::badnegpath = "Error in ``: can only negate a path or set of paths.";
+GraphRegion::badnegpath = "Error in ``: can only invert a path or set of paths.";
 
 (********************************************)
 (** Line[...]                              **)
@@ -756,8 +756,8 @@ GraphRegion::grinterror = "An internal error occurred while procession region ``
 findCardinalBetween[v1_, v2_] := Scope[
   edgeIndex = findEdge[v1, v2];
   If[edgeIndex === None, failAuto["grinterror"]];
-  If[NegatedQ[edgeIndex],
-    Negated @ Part[$EdgeTags, StripNegated @ edgeIndex],
+  If[InvertedQ[edgeIndex],
+    Inverted @ Part[$EdgeTags, StripInverted @ edgeIndex],
     Part[$EdgeTags, edgeIndex]
   ]
 ];
@@ -769,15 +769,15 @@ GraphRegionElementQ[InfiniteLine[{_, _}] | InfiniteLine[_, _]] := True;
 
 processRegion[InfiniteLine[v_, dir_]] := Scope[
   cardinalWord = ParseRegionWord @ dir;
-  {posVerts, posEdges, posNegations} = List @@ processRegion @ HalfLine[v, cardinalWord];
+  {posVerts, posEdges, posInversions} = List @@ processRegion @ HalfLine[v, cardinalWord];
   If[Length[posVerts] > 0 && Last[posVerts] === First[posVerts],
     Return @ GraphPathData[posVerts, posEdges, {}]];
-  {negVerts, negEdges, negNegations} = List @@ processRegion @ HalfLine[v, Negated /@ Reverse @ cardinalWord];
+  {negVerts, negEdges, negInversions} = List @@ processRegion @ HalfLine[v, Inverted /@ Reverse @ cardinalWord];
   negEdgeLen = Length[negEdges];
   GraphPathData[
     Join[Reverse @ Rest @ negVerts, posVerts],
     Join[Reverse @ negEdges, posEdges],
-    Join[Complement[Range @ negEdgeLen, negEdgeLen + 1 - negNegations], negEdgeLen + posNegations]
+    Join[Complement[Range @ negEdgeLen, negEdgeLen + 1 - negInversions], negEdgeLen + posInversions]
   ]
 ];
 

@@ -169,7 +169,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     UnpackAssociation[representation, cayleyFunction, initialStates];
     repInitialStates = ToList[initialStates];
     wasAutoCardinalList = True;
-    trueCardinalList = Union[StripNegated /@ DeepCases[cayleyFunction, Labeled[_, c_ ? notInternalSymbolQ] :> c]];
+    trueCardinalList = Union[StripInverted /@ DeepCases[cayleyFunction, Labeled[_, c_ ? notInternalSymbolQ] :> c]];
     If[trueCardinalList === {}, trueCardinalList = Automatic];
   ,
     If[!QuiverRepresentationObjectQ[representation],

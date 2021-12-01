@@ -181,7 +181,7 @@ IndependentQuiverProduct[a_Graph, b_Graph, opts:OptionsPattern[]] :=
 
 independentEdgeProduct[head_[at_, ah_, ac_], head_[bt_, bh_, bc_]] := {
   head[VertexProduct[at, bt], VertexProduct[ah, bh], CardinalProduct[ac, bc]],
-  head[VertexProduct[ah, bt], VertexProduct[at, bh], CardinalProduct[Negated @ ac, bc]]
+  head[VertexProduct[ah, bt], VertexProduct[at, bh], CardinalProduct[Inverted @ ac, bc]]
 }
 
 independentEdgeProduct[head_[at_, ah_], head_[bt_, bh_]] := {
@@ -243,10 +243,10 @@ Options[GeneralQuiverProduct] = JoinOptions[
   ExtendedGraph
 ];
 
-$productTermElement = _Integer | Negated[_Integer];
+$productTermElement = _Integer | Inverted[_Integer];
 $productTermP = {$productTermElement..};
 
-GeneralQuiverProduct::badprodexpr = "Product expression `` should be a list of list of possibly negated integers.";
+GeneralQuiverProduct::badprodexpr = "Product expression `` should be a list of list of possibly inverted integers.";
 GeneralQuiverProduct::badgraphs = "First argument is not a list of graphs.";
 GeneralQuiverProduct::badcoords = "VertexCoordinateFunction did not produce valid coordinates. First coordinate was: ``.";
 
@@ -329,7 +329,7 @@ toGeneralProductFinalGraph[productVertices_, productEdges_] := Scope[
   ]
 ]
 
-(* Ok: just store the edges in an assoc, indexed by source, but in negated and unnegated form.
+(* Ok: just store the edges in an assoc, indexed by source, but in inverted and uninverted form.
 then when building product vertex we just look up in the appropriate key,
 *)
 
@@ -338,15 +338,15 @@ edgeListTaggedTables[edgeList_] := Scope[
   b = OutVertices @ edgeList;
   c = Part[edgeList, All, 3];
   oAssoc = Merge[Identity] @ RuleThread[a, Transpose[{b, c}]];
-  iAssoc = Merge[Identity] @ RuleThread[b, Transpose[{a, Negated /@ c}]];
+  iAssoc = Merge[Identity] @ RuleThread[b, Transpose[{a, Inverted /@ c}]];
   {oAssoc, iAssoc}
 ]
 
 toSignLists[num_, indices_] := Scope[
   arr = Zeros[num];
-  indices = indices /. i_Integer ? Negative :> Negated[Abs @ i];
+  indices = indices /. i_Integer ? Negative :> Inverted[Abs @ i];
   Cases[indices, i_Integer :> Part[arr, i]++];
-  Cases[indices, Negated[i_Integer] :> Part[arr, Abs @ i]--];
+  Cases[indices, Inverted[i_Integer] :> Part[arr, Abs @ i]--];
   arr
 ];
 
@@ -411,9 +411,9 @@ computedProductSingleCoord = Case[
 
 (**************************************************************************************************)
 
-PackageExport["NegateGraph"]
+PackageExport["InvertGraph"]
 
-NegateGraph[g_Graph] := Scope[
+InvertGraph[g_Graph] := Scope[
   Graph[
     VertexList @ g, ReverseEdges @ EdgeList @ g,
     Options @ g

@@ -129,21 +129,21 @@ $extendedGraphUsage = StringTrim @ "
 | None | no arrowheads |
 
 * In addition, %ArrowheadShape supports suboptions via {'shape$', subopts$$}:
-| %NegationStyle | 'Flip' | how to plot negated cardinals in %CardinalSet[$$] |
-| %TwoWayStyle | 'In' | how to plot negated pairs in %CardinalSet[$$] |
-| %PairedDistance | 0 | how far away to plot negated pairs |
+| %InversionStyle | 'Flip' | how to plot inverted cardinals in %CardinalSet[$$] |
+| %TwoWayStyle | 'In' | how to plot inverted pairs in %CardinalSet[$$] |
+| %PairedDistance | 0 | how far away to plot inverted pairs |
 | %EdgeThickness | 1 | thickness of line-based arrowheads |
 
-* %TwoWayStyle -> spec$ determines how to plot a cardinal and its negation together:
+* %TwoWayStyle -> spec$ determines how to plot a cardinal and its inversion together:
 | 'Out' | arrowheads facing away from each other |
 | 'OutClose' | facing out with backs touching |
 | 'In' | arrowheads facing towards each other |
 | 'InClose' | facing in with tips touching |
 | 'spec$' | one of the regular shapes |
 
-* %NegationStyle -> spec$ determines how negated cardinals are drawn:
-| 'OverBar' | draw a negation bar above arrowhead |
-| 'UnderBar' | drwa a negation bar below arrowhead |
+* %InversionStyle -> spec$ determines how inverted cardinals are drawn:
+| 'OverBar' | draw a inversion bar above arrowhead |
+| 'UnderBar' | drwa a inversion bar below arrowhead |
 
 * %PairedDistance -> size$ determines the separation of paired cardinals, in points.
 
@@ -906,7 +906,7 @@ iCombineMultiedges[graph_] := Scope[
 ];
 
 separateTag = Case[
-  DirectedEdge[a_, b_, t_] /; Order[a, b] == -1 := {DirectedEdge[b, a], Negated @ t};
+  DirectedEdge[a_, b_, t_] /; Order[a, b] == -1 := {DirectedEdge[b, a], Inverted @ t};
   DirectedEdge[a_, b_, t_]                      := {DirectedEdge[a, b], t};
   UndirectedEdge[a_, b_, t_]                    := {Sort @ UndirectedEdge[a, b], t};
   edge_                                         := {Sort @ edge, None}
@@ -917,7 +917,7 @@ reattachTag[edge_, {tag_}] := Append[edge, tag];
 reattachTag[edge_, tags_List] := reorientCS @ Append[edge, SimplifyCardinalSet @ CardinalSet @ tags];
 
 reorientCS = Case[
-  head_[a_, b_, CardinalSet[cs:{__Negated}]] := head[b, a, CardinalSet[StripNegated /@ cs]];
+  head_[a_, b_, CardinalSet[cs:{__Inverted}]] := head[b, a, CardinalSet[StripInverted /@ cs]];
   other_ := other;
 ];
 
@@ -954,7 +954,7 @@ SimplifyCardinalSet = Case[
 
 PackageScope["SpliceCardinalSets"]
 
-SpliceCardinalSets[e_] := Map[StripNegated, ReplaceAll[e, CardinalSet -> Splice]];
+SpliceCardinalSets[e_] := Map[StripInverted, ReplaceAll[e, CardinalSet -> Splice]];
 
 (**************************************************************************************************)
 
@@ -982,7 +982,7 @@ TaggedAdjacencyMatrices[graph_ ? EdgeTaggedGraphQ, OptionsPattern[]] := Scope[
   n = VertexCount @ graph;
   assoc = EdgePairsToAdjacencyMatrix[#, n]& /@ TaggedEdgePairs[graph];
   If[OptionValue["Antisymmetric"],
-    JoinTo[assoc, Association @ KeyValueMap[Negated[#1] -> Transpose[#2]&, assoc]];
+    JoinTo[assoc, Association @ KeyValueMap[Inverted[#1] -> Transpose[#2]&, assoc]];
   ];
   assoc
 ]
@@ -1158,7 +1158,7 @@ PackageExport["VertexAdjacentEdgeTable"]
 SetUsage @ "
 VertexAdjacentEdgeTable[graph$] returns a list of lists {adj$1, adj$2, $$}  where adj$i \
 is a list of the indices of edges which begin or end at vertex v$i.
-* If the option %Signed -> True is provided, edges will be wrapped in Negated if they are traversed in the \
+* If the option %Signed -> True is provided, edges will be wrapped in Inverted if they are traversed in the \
 reversed direction.
 "
 
@@ -1167,7 +1167,7 @@ Options[VertexAdjacentEdgeTable] = {Signed -> False};
 VertexAdjacentEdgeTable[graph_, OptionsPattern[]] := Scope[
   pairs = EdgePairs @ graph;
   vertices = VertexRange @ graph;
-  negator = If[OptionValue[Signed], MapMatrix[Negated, #]&, Identity];
+  negator = If[OptionValue[Signed], MapMatrix[Inverted, #]&, Identity];
   MapThread[Union, {
     Lookup[PositionIndex @ FirstColumn @ EdgePairs @ graph, vertices, {}],
     Lookup[negator @ PositionIndex @ LastColumn @ EdgePairs @ graph, vertices, {}]
@@ -1192,7 +1192,7 @@ processTagEntry[tag_, {part_}] :=
   KeyAppendTo[$tagAssoc, tag, part];
 
 processTagEntry[CardinalSet[tags_], {part_}] :=
-  Scan[KeyAppendTo[$tagAssoc, StripNegated @ #1, part]&, tags];
+  Scan[KeyAppendTo[$tagAssoc, StripInverted @ #1, part]&, tags];
 
 (**************************************************************************************************)
 
@@ -1202,18 +1202,18 @@ SetUsage @ "
 TagVertexOutTable[graph$] returns an association from each cardinal to its VertexOutTable.
 TagVertexOutTable[graph$, invalid$] uses invalid$ instead of None.
 * If a cardinal is not incident to a given vertex, the corresponding entry is None.
-* Keys are included for negations of cardinals.
+* Keys are included for inversions of cardinals.
 * As there is a maximum of edge for a given vertex and cardinal, table entries are single integers or None.
 "
 
 TagVertexOutTable[graph_, invalid_:None] := Scope[
   cardinals = CardinalList @ graph;
   igraph = ToIndexGraph @ graph;
-  cardinals = Join[cardinals, Negated /@ cardinals];
+  cardinals = Join[cardinals, Inverted /@ cardinals];
   outTables = ConstantAssociation[cardinals, ConstantArray[invalid, VertexCount @ igraph]];
   ({src, dst, tag} |-> (
       Part[outTables, Key @ tag, src] = dst;
-      Part[outTables, Key @ Negated @ tag, dst] = src;
+      Part[outTables, Key @ Inverted @ tag, dst] = src;
   )) @@@ SpliceCardinalSetEdges @ EdgeList[igraph];
   outTables
 ];
@@ -1228,7 +1228,7 @@ present on vertex v$i.
 "
 
 VertexTagTable[graph_, splice_:True] := Scope[
-  rules = {#1 -> #3, #2 -> Negated[#3]}& @@@ If[splice, SpliceCardinalSetEdges, Identity] @ EdgeList[graph];
+  rules = {#1 -> #3, #2 -> Inverted[#3]}& @@@ If[splice, SpliceCardinalSetEdges, Identity] @ EdgeList[graph];
   Lookup[Merge[Flatten @ rules, Identity], VertexList @ graph, {}]
 ]
 
@@ -1268,11 +1268,11 @@ PackageExport["VertexInTagTable"]
 SetUsage @ "
 VertexInTagTable[graph$] returns a list of lists {tags$1, tags$2, $$} where tag$i is the list of tags \
 present on vertex v$i in the incoming direction.
-* The tags are wrapped with Negated[$$].
+* The tags are wrapped with Inverted[$$].
 "
 
 VertexInTagTable[graph_, splice_:True] := Scope[
-  rules = #2 -> Negated[#3]& @@@ If[splice, SpliceCardinalSetEdges, Identity] @ EdgeList[graph];
+  rules = #2 -> Inverted[#3]& @@@ If[splice, SpliceCardinalSetEdges, Identity] @ EdgeList[graph];
   Lookup[Merge[rules, Identity], VertexList @ graph, {}]
 ]
 
@@ -1284,9 +1284,9 @@ SetUsage @ "
 TagVertexAdjacentEdgeTable[graph$] returns an association from each cardinal to its VertexAdjacentEdgeTable.
 TagVertexAdjacentEdgeTable[graph$, invalid$] uses invalid$ instead of None.
 * If a cardinal is not incident to a given vertex, the corresponding entry is None.
-* Keys are included for negations of cardinals.
+* Keys are included for inversions of cardinals.
 * As there is a maximum of edge for a given vertex and cardinal, table entries are single integers or None.
-* If the option %Signed -> True is provided, edges will be wrapped in Negated if they are traversed in the \
+* If the option %Signed -> True is provided, edges will be wrapped in Inverted if they are traversed in the \
 reversed direction.
 "
 
@@ -1298,17 +1298,17 @@ TagVertexAdjacentEdgeTable[graph_, opts:OptionsPattern[]] :=
 TagVertexAdjacentEdgeTable[graph_, invalid_, OptionsPattern[]] := Scope[
   outTable = VertexOutEdgeTable @ graph;
   inTable = VertexInEdgeTable @ graph; $invalid = invalid;
-  negator = If[OptionValue[Signed], mapNegated, Identity];
+  negator = If[OptionValue[Signed], mapInverted, Identity];
   Merge[mergeNone] @ KeyValueMap[
     {key, edgeIndices} |-> {
       key ->          Map[First[Intersection[#, edgeIndices], invalid]&, outTable],
-      Negated[key] -> negator @ Map[First[Intersection[#, edgeIndices], invalid]&, inTable]
+      Inverted[key] -> negator @ Map[First[Intersection[#, edgeIndices], invalid]&, inTable]
     },
     TagIndices @ graph
   ]
 ];
 
-mapNegated[e_] := Map[If[# === $invalid, #, Negated[#]]&, e];
+mapInverted[e_] := Map[If[# === $invalid, #, Inverted[#]]&, e];
 
 mergeNone[{a_}] := a;
 mergeNone[{a_, b_}] := MapThread[If[#1 === $invalid, #2, #1]&, {a, b}];
@@ -1669,7 +1669,7 @@ PackageExport["DeleteCardinal"]
 DeleteCardinal[graph_, card_] := Scope[
   opts = Options[graph];
   {vertices, edges} = VertexEdgeList[graph];
-  edges //= Map[deleteCard[card | Negated[card]]];
+  edges //= Map[deleteCard[card | Inverted[card]]];
   cardinals = AnnotationValue[graph, Cardinals];
   res = Graph[vertices, edges, opts];
   If[ListQ[cardinals], res = Annotate[res, Cardinals -> DeleteCases[cardinals, card]]];

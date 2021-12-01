@@ -141,7 +141,7 @@
 
 \gdef\signed#1{{#1}^*}
 \gdef\transportAtlas#1{T_{#1}}
-\gdef\negated#1{\underline{#1}}
+\gdef\inverted#1{\underline{#1}}
 \gdef\mirror#1{\overline{#1}}
 \gdef\pathComposeSymbol{{\,∷\,}}
 \gdef\pathCompose#1#2{{#1}\pathComposeSymbol{#2}}
@@ -501,9 +501,9 @@
 \gdef\hypergraphRewritingSystem{\namedSystem{HGr}}
 \gdef\petriNetRewritingSystem{\namedSystem{Petri}}
 
-\gdef\ncard#1{\card{\negated{#1}}}
+\gdef\ncard#1{\card{\inverted{#1}}}
 \gdef\mcard#1{\card{\mirror{#1}}}
-\gdef\nmcard#1{\card{\negated{\mirror{#1}}}}
+\gdef\nmcard#1{\card{\inverted{\mirror{#1}}}}
 
 \gdef\assocArray#1{\left\langle {#1} \right\rangle}
 

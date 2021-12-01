@@ -249,7 +249,7 @@ supscript[e_, s_] := Superscript[e, s];
 supscript[Subscript[e_, sub1_], sub2_] := Subsuperscript[e, sub1, sub2];
 
 fmtWord = Case[
-  s_String        := toRow[Map[If[UpperCaseQ[#], Negated @ ToLowerCase @ #, #]&, Characters @ s]];
+  s_String        := toRow[Map[If[UpperCaseQ[#], Inverted @ ToLowerCase @ #, #]&, Characters @ s]];
   s_String -> -1  := Row[{"\[Minus]", fmtWord @ s}];
   list_List       := Row[fmtWord /@ list, "+"];
   _               := "?"

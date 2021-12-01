@@ -69,7 +69,7 @@ buildTagMatrices[tag_, edgeIndices_] := Scope[
 
 procTransRule = Case[
   a_ -> b_          := Lookup[cardinalIndex, {b, a}] -> 1;
-  a_ -> Negated[b_] := Lookup[cardinalIndex, {b, a}] -> -1;
+  a_ -> Inverted[b_] := Lookup[cardinalIndex, {b, a}] -> -1;
 ];
 
 (**************************************************************************************************)
@@ -93,7 +93,7 @@ TransportAtlas[quiver_, charts_, opts___Rule] := Scope @ Catch[
   If[!EdgeTaggedGraphQ[quiver], ReturnFailed[]];
   colors = LookupCardinalColors @ quiver;
   $charts = toChart /@ charts;
-  $fullCharts = Join[#, Map[Negated, #]]& /@ $charts;
+  $fullCharts = Join[#, Map[Inverted, #]]& /@ $charts;
   If[!MatchQ[$charts, {__List}], ReturnFailed[]];
   $quiver = ToIndexGraph @ quiver;
   {chartVertices, chartEdges} = Transpose @ Map[getChartRegion, $charts];
@@ -172,7 +172,7 @@ findOverlapRelations[] := Scope[
   Merge[relations, Flatten /* DeleteDuplicates]
 ]
 
-normRule[Negated[a_], b_] := a -> Negated[b];
+normRule[Inverted[a_], b_] := a -> Inverted[b];
 normRule[a_, b_] := a -> b;
 
 setToRelations[set_List] := TwoWayRule @@@ Subsets[set, {2}];

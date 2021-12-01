@@ -934,5 +934,5 @@ fmtCardinalArrow[TwoWayRule[a_, b_]] :=
   Row[formatCardinal /@ {a, b}, Style["\[LeftRightArrow]", Gray]]
 
 formatCardinal[c_] := If[!GraphQ[$Graph], c,
-  Style[c, LookupCardinalColors[$Graph, StripNegated @ c]]
+  Style[c, LookupCardinalColors[$Graph, StripInverted @ c]]
 ];

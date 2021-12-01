@@ -383,7 +383,7 @@ TruncateQuiver[quiver_, opts:OptionsPattern[]] :=
 TruncateQuiver[quiver_, cardinals:Except[_Rule], userOpts:OptionsPattern[]] := Scope[
   UnpackOptions[allowSkips];
   {vertices, edges} = VertexEdgeList @ quiver;
-  SetAutomatic[cardinals, t = CardinalList[quiver]; Join[t, Negated /@ t]];
+  SetAutomatic[cardinals, t = CardinalList[quiver]; Join[t, Inverted /@ t]];
   If[StringQ[cardinals], cardinals //= ToPathWord];
   ordering = AssociationRange[cardinals]; $n = Length @ cardinals;
   tagTable = Map[SortBy[cardOrder[ordering]], VertexTagTable[quiver, False]];
@@ -431,7 +431,7 @@ noskipCornerEdge[ordering_][{a:TruncatedVertex[v1_, c1_], b:TruncatedVertex[v2_,
 cornerEdge[{a_, b_}] := DirectedEdge[a, b, "r"]
 
 truncatedEdge[DirectedEdge[a_, b_, c_]] :=
-  DirectedEdge[TruncatedVertex[a, c], TruncatedVertex[b, Negated @ c], CardinalSet[{"f", Negated @ "f"}]];
+  DirectedEdge[TruncatedVertex[a, c], TruncatedVertex[b, Inverted @ c], CardinalSet[{"f", Inverted @ "f"}]];
 
 (**************************************************************************************************)
 
@@ -739,9 +739,9 @@ Options[TreeQuiver] = Options[Graph];
 TreeQuiver[k_Integer, n_Integer, opts:OptionsPattern[]] := Scope[
   If[!OddQ[n], ReturnFailed[]];
   n = (n - 1) / 2;
-  cards = Join[Range[k], Negated /@ Range[k]];
+  cards = Join[Range[k], Inverted /@ Range[k]];
   vertices = Flatten @ Table[TreeVertex @@@ Tuples[cards, i], {i, 0, n}];
-  vertices = Discard[vertices, MatchQ[TreeVertex[___, c_, Negated[c_], ___] | TreeVertex[___, Negated[c_], c_, ___]]];
+  vertices = Discard[vertices, MatchQ[TreeVertex[___, c_, Inverted[c_], ___] | TreeVertex[___, Inverted[c_], c_, ___]]];
   edges = makeTreeEdge /@ vertices;
   vectorAssoc = AssociationThread[cards, CirclePoints[2 * k]];
   coords = Map[treeVertexCoord, vertices];

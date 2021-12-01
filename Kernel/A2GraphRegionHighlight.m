@@ -261,7 +261,7 @@ processAxesSpec[spec:(All|_Integer|{__Integer})] := Scope[
 processAxesSpec[spec_] := Scope[
   colors = LookupCardinalColors[$Graph];
   words = Map[ToPathWord, ToList @ spec];
-  colors = AssociationMap[HumanBlend @ LookupCardinalColors[$Graph, StripNegated /@ #]&, words];
+  colors = AssociationMap[HumanBlend @ LookupCardinalColors[$Graph, StripInverted /@ #]&, words];
   KeyValueMap[axisHighlight, colors]
 ];
 
@@ -456,11 +456,11 @@ highlightRegion[GraphRegionAnnotation[data_, anno_]] := Scope[
   highlightRegion @ data;
 ]
 
-highlightRegion[GraphPathData[vertices_, edges_, negations_]] := Scope[
+highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
 
   segments = Part[$EdgeCoordinateLists, edges];
-  If[negations =!= {},
-    segments //= MapIndices[Reverse, negations]];
+  If[inversions =!= {},
+    segments //= MapIndices[Reverse, inversions]];
   numSegments = Length @ segments;
 
   pathRadius = $pathRadius;
@@ -631,7 +631,7 @@ filteredArrowheadsQ[Arrowheads[list_List, ___]] :=
   AnyTrue[list, filteredArrowheadSpecQ];
 
 filteredArrowheadSpecQ[{_, _, (Graphics|Graphics3D)[Annotation[_, card_, "Cardinal"], ___]}] /;
-  !MemberQ[$cardinalFilter, card | Negated[card]] := True;
+  !MemberQ[$cardinalFilter, card | Inverted[card]] := True;
 
 saveAndTrimFilteredEdges[edges_] := Scope[
   edges /. Style[p_, l___, a_Arrowheads ? filteredArrowheadsQ, r___] :> {

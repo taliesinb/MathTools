@@ -102,7 +102,7 @@ The following specifications describe paths in the graph:
 | %Polygon[{v$1, $$, v$n}] | geodesics between the v$i, taken cyclically |
 | %HalfLine[v$, c$] | a geodesic starting at v$ and continuing in the cardinal direction c$ |
 | %HalfLine[{v$1, v$2}] | a geodesic starting at v$1 and continuing through v$2 |
-| %InfiniteLine[v$, c$] | a geodesic with midpoint v$, and continuing in directions c$ and Negated[c$] |
+| %InfiniteLine[v$, c$] | a geodesic with midpoint v$, and continuing in directions c$ and Inverted[c$] |
 | %InfiniteLine[{v$1, v$2}] | a geodesic intersecting v$1 and v$2 |
 | %Cycles[word$] | all  disjoint closed paths with given word |
 | %GraphPathData[$$] | a previously computed path |
@@ -730,7 +730,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       maxArrowheadSize = Max[arrowheadSize * $GraphPlotSizeX] / 2;
 
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Line"]];
-      $twoWayStyle = Automatic; $negationStyle = "Reverse"; $borderStyle = None;
+      $twoWayStyle = Automatic; $inversionStyle = "Reverse"; $borderStyle = None;
       $lineThickness = If[$GraphIs3D, Thickness @ 0.2,
         AbsoluteThickness @ Max[Round[ImageFractionToImageSize[Max[arrowheadSize]] / 10, .2], .5]];
       If[ListQ[arrowheadShape],
@@ -1077,7 +1077,7 @@ SetUsage @ "CardinalColor[c$] represents the color of cardinal c$."
 PackageScope["evalCardinalColor"]
 
 evalCardinalColor[CardinalColor[c_]] :=
-  LookupCardinalColors[$Graph, If[ListQ[c], CardinalSet @ DeleteDuplicates @ Map[StripNegated, c], c]];
+  LookupCardinalColors[$Graph, If[ListQ[c], CardinalSet @ DeleteDuplicates @ Map[StripInverted, c], c]];
 
 (**************************************************************************************************)
 
@@ -1197,7 +1197,7 @@ postProcPrims[spec_][vals_] :=
 
 extractCardinalArrowhead[c_][prims_] := ReplaceAll[
   Style[prims, Transparent],
-  Annotation[g_, Except[c | Negated[c]], "Cardinal"] :> {}
+  Annotation[g_, Except[c | Inverted[c]], "Cardinal"] :> {}
 ]
 
 computeCenterPoint[{{xl_, yl_}, {xh_, yh_}}, side_] := Scope[
@@ -1333,7 +1333,7 @@ processArrowheadSize = Case[
   {NQ -> NumericQ}
 ];
 
-filterCardinals[cards_][CardinalSet[set_List]] := CardinalSet @ Select[set, MemberQ[cards, Negated[#] | #]&];
+filterCardinals[cards_][CardinalSet[set_List]] := CardinalSet @ Select[set, MemberQ[cards, Inverted[#] | #]&];
 filterCardinals[cards_][card_] := If[MemberQ[cards, card], card, Null];
 
 drawTagGroupArrowheadEdges[indices_, style_] := Scope[
@@ -1380,9 +1380,9 @@ drawArrowheadEdges[CardinalSet[{c_}], indices_] :=
 drawArrowheadEdges[cs:CardinalSet[cardinals_], indices_] := Scope[
   If[$twoWayStyle === Automatic, $twoWayStyle ^= arrowheadShape <> "DoubleIn"];
   If[$twoWayStyle =!= None,
-    cardinals = SortBy[cardinals, NegatedQ];
+    cardinals = SortBy[cardinals, InvertedQ];
     cardinals //= ReplaceRepeated[
-      {l___, c_, m___, Negated[c_], r___} :> {l, TwoWay[c], m, r}
+      {l___, c_, m___, Inverted[c_], r___} :> {l, TwoWay[c], m, r}
     ]
   ];
   cardinals = SortBy[cardinals, {Head[#] === TwoWay, #}&];
@@ -1390,7 +1390,7 @@ drawArrowheadEdges[cs:CardinalSet[cardinals_], indices_] := Scope[
   positions = Map[
     Replace[
       lookupTagSpec[arrowheadPosition, #, 0.5],
-      {p1_, p2_} :> If[NegatedQ[#], p2, p1]
+      {p1_, p2_} :> If[InvertedQ[#], p2, p1]
     ]&,
     cardinals
   ];
@@ -1433,14 +1433,14 @@ scanArrowheadShapeOpts = Case[
       failPlot["badthickness", thickness]
     ];
 
-  NegationStyle -> s:("Reverse"|"OverBar"|"UnderBar") :=
-    $negationStyle = s;
+  InversionStyle -> s:("Reverse"|"OverBar"|"UnderBar") :=
+    $inversionStyle = s;
 
   BorderStyle -> s_ :=
     $borderStyle = s;
 
   rule_ :=
-    failPlot["badsubopt", rule, commaString @ {TwoWayStyle, NegationStyle, EdgeThickness}];
+    failPlot["badsubopt", rule, commaString @ {TwoWayStyle, InversionStyle, EdgeThickness}];
 ];
 
 (**************************************************************************************************)
@@ -1505,7 +1505,7 @@ makeArrowheadsElement[cardinal_] := Scope[
   shape = attachCardinalAnnotation[shape, cardinal];
   If[labelCardinals =!= False, shape = attachArrowheadLabel[shape, cardinal, size, labelCardinals]];
   element = {size, Replace[position, Around[m_, _] :> m], shape};
-  If[NegatedQ[cardinal], element //= TransformArrowheads[$negationStyle]];
+  If[InvertedQ[cardinal], element //= TransformArrowheads[$inversionStyle]];
   element
 ];
 
@@ -1515,12 +1515,12 @@ lookupTagSpec[other_, cardinal_, default_] :=
 lookupTagSpec[other_, cardinal_] := other;
 
 lookupTagSpec[assoc_Association, cardinal_] :=
-  Lookup[assoc, StripNegated @ cardinal, Lookup[assoc, All, None]];
+  Lookup[assoc, StripInverted @ cardinal, Lookup[assoc, All, None]];
 
 lookupTagSpec[TwoWay[cardinal_]] :=
   ReplacePart[1 -> $twoWayStyle] @ lookupTagSpec[cardinal];
 
-lookupTagSpec[cardinal_] := fixNegatedPos[cardinal,
+lookupTagSpec[cardinal_] := fixInvertedPos[cardinal,
   MapThread[
     lookupTagSpec[#1, cardinal, #2]&,
     {{arrowheadShape, arrowheadSize, arrowheadStyle, arrowheadPosition},
@@ -1528,9 +1528,9 @@ lookupTagSpec[cardinal_] := fixNegatedPos[cardinal,
   ]
 ];
 
-fixNegatedPos[_, other_] := other;
-fixNegatedPos[card_, {a_, b_, c_, {p1_, p2_}}] :=
-  {a, b, c, If[NegatedQ @ card, p2, p1]};
+fixInvertedPos[_, other_] := other;
+fixInvertedPos[card_, {a_, b_, c_, {p1_, p2_}}] :=
+  {a, b, c, If[InvertedQ @ card, p2, p1]};
 
 (**************************************************************************************************)
 
@@ -1540,9 +1540,9 @@ attachCardinalAnnotation[head_[primitives_, opts___], cardinal_] :=
 (**************************************************************************************************)
 
 attachArrowheadLabel[g:Graphics[primitives_, opts___], cardinal_, size_, type_] := Scope[
-  cardinal //= Replace[TwoWay[c_] :> c(* Row[{c, Negated[c]}] *)];
-  orient = If[NegatedQ @ cardinal, -1, 1];
-  label = makeArrowheadLabel[StripNegated @ cardinal, size];
+  cardinal //= Replace[TwoWay[c_] :> c(* Row[{c, Inverted[c]}] *)];
+  orient = If[InvertedQ @ cardinal, -1, 1];
+  label = makeArrowheadLabel[StripInverted @ cardinal, size];
   {{xl, xh}, {yl, yh}} = GraphicsPlotRange[g];
   Switch[type,
     Center,
@@ -2495,7 +2495,7 @@ ClearRasterizationCache[] := ($rasterizationCache = <||>;);
 
 $rasterizationCache = <||>;
 cachedRasterizeSize[Null] := {0, 0};
-cachedRasterizeSize[e_] := CacheTo[$rasterizationCache, e, Rasterize[e /.  Negated[z_] :> z, "RasterSize"]];
+cachedRasterizeSize[e_] := CacheTo[$rasterizationCache, e, Rasterize[e /.  Inverted[z_] :> z, "RasterSize"]];
 
 PackageExport["LabelPosition"]
 
@@ -2630,12 +2630,12 @@ postProcF[f_][e_] := OnFailed[
   ];
 
 myCompactMatrixForm[vec_] :=
-  CompactMatrixForm[vec, "Factor" -> False, NegationStyle -> "Color"];
+  CompactMatrixForm[vec, "Factor" -> False, InversionStyle -> "Color"];
 
 myCompactVectorForm[vec_] :=
   CompactMatrixForm[List @ vec,
     "Factor" -> False, "HideZeros" -> False,
-    NegationStyle -> "Color", InversionStyle -> OverBar];
+    InversionStyle -> "Color", InversionStyle -> OverBar];
 
 labelForm[RepresentationElement[matrix_]] :=
   myCompactMatrixForm @ matrix;
@@ -2662,17 +2662,17 @@ placeTooltipAt[None | _Missing, _, _] := Nothing;
 $labelScaledPos = None;
 
 placeLabelAt[CardinalSet[labels_List], pos_, index_] := Scope[
-  {neg, pos} = SelectDiscard[labels, NegatedQ];
+  {neg, pos} = SelectDiscard[labels, InvertedQ];
   {
     If[pos === {}, Nothing, placeLabelAt[Row[pos, ","], pos, index]],
-    If[neg === {}, Nothing, placeLabelAt[Negated @ Row[StripNegated /@ neg], pos, index]]
+    If[neg === {}, Nothing, placeLabelAt[Inverted @ Row[StripInverted /@ neg], pos, index]]
   }
 ];
 
 placeLabelAt[label_, pos_, index_] /; ($labelScaledPos =!= None) := Scope[
   edgeCoords = Part[$EdgeCoordinateLists, index];
   pos12 = {pos1, pos2} = PointAlongLine[edgeCoords, Scaled @ #]& /@ ($labelScaledPos + {-0.01, 0.01});
-  If[NegatedQ[label], label //= StripNegated; Swap[pos2, pos1]];
+  If[InvertedQ[label], label //= StripInverted; Swap[pos2, pos1]];
   text = Block[{$labelScaledPos = None, $labeledElemSize = 0}, placeLabelAt[label, Mean @ pos12,  index]];
   If[Head[text] === Text, Insert[text, dim3to2[pos2 - pos1], 4], text]
 ];

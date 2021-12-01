@@ -399,12 +399,12 @@ FadePathPlotWithLabels[g_, Line[{v1_, v2_}, dir_], c_List, hideArrowheads_] := S
   cLast = Last @ c;
   If[ListQ[cLast], cLast //= First];
   If[RuleQ[cLast], cLast //= First];
-  transportPath = Line @ {Offset[v2, Negated @ cLast], Offset[v2, cLast]};
+  transportPath = Line @ {Offset[v2, Inverted @ cLast], Offset[v2, cLast]};
   mainPathVertices = Part[GraphRegion[g, mainPath], 1, 1];
   If[Length[c] =!= Length[mainPathVertices], ReturnFailed[]];
   colors = LookupCardinalColors @ g;
   c = ReplaceAll[c, s_String /; KeyExistsQ[colors, s] :> Style[s, Italic, colors @ s]];
-  color = colors @ StripNegated @ cLast;
+  color = colors @ StripInverted @ cLast;
   c = MapAt[Row[{"      ", #}]&, c, -1];
   HighlightGraphRegion[g,
     {Style[transportPath, color, PathStyle -> "DiskArrow", EdgeSetback -> 0, ArrowheadSize -> 3], mainPath},
@@ -416,7 +416,7 @@ FadePathPlotWithLabels[g_, Line[{v1_, v2_}, dir_], c_List, hideArrowheads_] := S
 ];
 
 toCardinalEdgePattern[v2_, c_] := EdgePattern[IndexedVertex @ v2, _, c];
-toCardinalEdgePattern[v2_, Negated[c_]] := EdgePattern[_, IndexedVertex @ v2, c];
+toCardinalEdgePattern[v2_, Inverted[c_]] := EdgePattern[_, IndexedVertex @ v2, c];
 
 (**************************************************************************************************)
 
@@ -460,7 +460,7 @@ mobiousPatch[x_] := <|
 |>;
 toCardinalSet[{e_}] := e;
 toCardinalSet[e_] := CardinalSet[e];
-toCards[n_] := toCardinalSet @ Pick[{"r", "g", If[n < $n/2, Negated @ "b", "b"]}, {Part[$isA, n+1], Part[$isB, n+1], Part[$isC, n+1]}];
+toCards[n_] := toCardinalSet @ Pick[{"r", "g", If[n < $n/2, Inverted @ "b", "b"]}, {Part[$isA, n+1], Part[$isB, n+1], Part[$isC, n+1]}];
 
 drawMobiusEdge[assoc_] := Scope[
   UnpackAssociation[assoc, coordinates, arrowheads, shape, edgeIndex];
@@ -572,7 +572,7 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
       ];
       If[Length[cardinalDirs] =!= Length[cardinals], ReturnFailed[]];
       $cardinalDirs = AssociationThread[cardinals, cardinalDirs];
-      $cardinalDirs = Join[$cardinalDirs, Map[Minus, KeyMap[Negated, $cardinalDirs]]];
+      $cardinalDirs = Join[$cardinalDirs, Map[Minus, KeyMap[Inverted, $cardinalDirs]]];
       coords = Map[wordToCoords, pathWords];
     ,
     cardinalDirs === None,

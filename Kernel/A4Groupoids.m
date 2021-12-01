@@ -10,7 +10,7 @@ GroupoidQ[e_ ? GroupQ] := True;
 from git history anyway.
 
 instead: have a sparse groupoid and a dense groupoid. a sparse groupoid has a cayley function that creates
-exactly the right successors. a dense groupoid gives an association with keys being cardinals (or their negations)
+exactly the right successors. a dense groupoid gives an association with keys being cardinals (or their inversions)
 and values being functions, which should return NullElement if they can't act on a given state.
 
 then we construct the cayley function from this automatically.
@@ -29,14 +29,14 @@ acts on a GroupoidMirrorState[$$] by g$.
 
 gen_GroupoidGenerator[states_List] := Map[gen, states];
 GroupoidGenerator[f_, g_][s_] := makeState[f, s];
-GroupoidGenerator[f_, g_][Negated[s_]] := Negated @ makeState[g, s];
+GroupoidGenerator[f_, g_][Inverted[s_]] := Inverted @ makeState[g, s];
 
 ToInverseFunction[GroupoidGenerator[f_, g_]] :=
   GroupoidGenerator[g, f];
 
 makeState[f_, s_] := Scope[
   s2 = f[s];
-  If[s2 === s || s2 === Nothing, Negated[s], s2]
+  If[s2 === s || s2 === Nothing, Inverted[s], s2]
 ];
 
 declareFormatting[
@@ -72,7 +72,7 @@ groupoidProperty[data_, "CayleyGraph", opts___Rule] :=
 groupoidProperty[data_, "CompleteStates"] := Scope[
   states = data["States"];
   If[states === Indeterminate, Return @ Indeterminate];
-  Join[states, Negated /@ states]
+  Join[states, Inverted /@ states]
 ];
 
 (**************************************************************************************************)
@@ -110,7 +110,7 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
     {gen, index} |-> {
       If[labeled, Labeled[First @ index], Identity] @ gen,
       If[symmetric && (igen = ToInverseFunction[gen]) =!= gen,
-        If[labeled, Labeled[Negated @ First @ index], Identity] @ igen,
+        If[labeled, Labeled[Inverted @ First @ index], Identity] @ igen,
         Nothing
       ]
     },
@@ -134,7 +134,7 @@ PackageExport["GroupoidPermutationGroup"]
 GroupoidPermutationGroup[groupoid_] := Scope[
   data = getObjectData[groupoid];
   UnpackAssociation[data, mirroredGenerators, states];
-  statesBasis = Join[states, Negated /@ states];
+  statesBasis = Join[states, Inverted /@ states];
   PermutationGroup @ Table[
     FindPermutation[statesBasis, generator @ statesBasis],
     {generator, generators}
@@ -148,7 +148,7 @@ PackageExport["GroupoidPermutationTable"]
 GroupoidPermutationTable[groupoid_] := Scope[
   data = getObjectData[groupoid];
   UnpackAssociation[data, generators, states];
-  statesBasis = Join[states, Negated /@ states];
+  statesBasis = Join[states, Inverted /@ states];
   TableForm[
     # @ statesBasis& /@ generators,
     TableHeadings -> {Automatic, statesBasis}
@@ -269,7 +269,7 @@ CardinalRewriteGroupoid[cardinals_List, initial_, rewriteCount_:1] := Scope[
   unsignedTuples = Select[DuplicateFreeQ] @ Tuples[cardinals, {n}];
   possibleIndices = Subsets[Range @ n];
   allStates = JoinMap[
-    MapIndices[Negated, possibleIndices, #]&,
+    MapIndices[Inverted, possibleIndices, #]&,
     unsignedTuples
   ];
   SetAll[initialStates, allStates];
@@ -291,13 +291,13 @@ toCountFilter = Case[
 
 canonicalCardinalTransition[rules_] := Scope[
   rules = DeleteCases[rules, z_ -> z_];
-  reps = Sort /@ {rules, reverseRules @ rules, negateRules @ rules, reverseRules @ negateRules @ rules};
+  reps = Sort /@ {rules, reverseRules @ rules, invertRules @ rules, reverseRules @ invertRules @ rules};
   minIndex = MinimumIndex[reps];
-  If[MatchQ[minIndex, 2 | 4], Negated, Identity] @ CardinalTransition @ Part[reps, minIndex]
+  If[MatchQ[minIndex, 2 | 4], Inverted, Identity] @ CardinalTransition @ Part[reps, minIndex]
 ];
 
 reverseRules[rules_] := Map[Reverse, rules];
-negateRules[rules_] := MapMatrix[Negated, rules];
+invertRules[rules_] := MapMatrix[Inverted, rules];
 
 PackageExport["CardinalRewriteCayleyFunction"]
 

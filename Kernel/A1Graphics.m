@@ -1030,8 +1030,8 @@ PackageExport["TransformArrowheads"]
 
 $arrowheadTransforms = <|
   "Reverse" -> reverseArrowhead,
-  "OverBar" -> addNegationBar[True],
-  "UnderBar" -> addNegationBar[False],
+  "OverBar" -> addInversionBar[True],
+  "UnderBar" -> addInversionBar[False],
   "Identity" -> Identity
 |>;
 
@@ -1048,7 +1048,7 @@ TransformArrowheads[transform_][primitives_] :=
 reverseArrowhead[{size_, pos_, graphics_}] :=
   {-size, pos, graphics};
 
-addNegationBar[isOver_][{size_, pos_, graphics:Graphics[primitives_, opts___]}] := Scope[
+addInversionBar[isOver_][{size_, pos_, graphics:Graphics[primitives_, opts___]}] := Scope[
   {{xl, xh}, {yl, yh}} = GraphicsPlotRange @ graphics;
   yb = If[isOver, yh * 1.4, yl * 1.4];
   graphics = Graphics[{primitives, {Opacity[1], Black, AbsoluteThickness[0.5], Line @ {{xl, yb}, {xh, yb}}}}, opts];

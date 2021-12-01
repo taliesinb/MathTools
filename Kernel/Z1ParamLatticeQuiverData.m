@@ -1,14 +1,14 @@
 DefineLiteralMacro[getRGBCardinals,
   getRGBCardinals[] := (
     {r, g, b} = cardinals = Lookup[userOpts, Cardinals, {"r", "g", "b"}];
-    {R, G, B} = Negated /@ {r, g, b};
+    {R, G, B} = Inverted /@ {r, g, b};
   )
 ];
 
 DefineLiteralMacro[getRGBWCardinals,
   getRGBWCardinals[] := (
     {r, g, b, w} = cardinals = Lookup[userOpts, Cardinals, {"r", "g", "b", "w"}];
-    {R, G, B, W} = Negated /@ {r, g, b, w};
+    {R, G, B, W} = Inverted /@ {r, g, b, w};
   )
 ];
 
@@ -296,7 +296,7 @@ lamplighterFactory[<|"n" -> n_, "MaxDepth" -> d_|>, userOpts_] := Scope[
 
 LamplighterCayleyFunction[LatticeVertex[lamps_, pos_]] := {
   Labeled[LatticeVertex[lamps, Mod[pos + 1, Length[lamps], 1]], "x"],
-  Labeled[LatticeVertex[lamps, Mod[pos - 1, Length[lamps], 1]], Negated @ "x"],
+  Labeled[LatticeVertex[lamps, Mod[pos - 1, Length[lamps], 1]], Inverted @ "x"],
   Labeled[LatticeVertex[MapAt[1-#&, lamps, pos], pos], "f"]
 };
 
@@ -412,11 +412,11 @@ transAnno[e_, t_, u_List] :=
 transAnno[e_, t_, u_] :=
   Annotation[e, "CardinalTransitions" -> ToList[t, u -> u]];
 
-transAnno[e_, Negated[a_] -> b_, u_] :=
-  transAnno[e, a -> Negated[b], u];
+transAnno[e_, Inverted[a_] -> b_, u_] :=
+  transAnno[e, a -> Inverted[b], u];
 
-transAnno[e_, t_, Negated[u_]] :=
-  Annotation[e, "CardinalTransitions" -> ToList[t, u -> Negated @ u]];
+transAnno[e_, t_, Inverted[u_]] :=
+  Annotation[e, "CardinalTransitions" -> ToList[t, u -> Inverted @ u]];
 
 (**************************************************************************************************)
 

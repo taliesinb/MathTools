@@ -607,7 +607,7 @@ Options[MinimalContractionSets] = {
 MinimalContractionSets[quiver_, OptionsPattern[]] := Scope[
   UnpackOptions[complete, subsetSize, deleteDominated];
   cards = CardinalList @ quiver;
-  allCards = Join[cards, Negated /@ cards];
+  allCards = Join[cards, Inverted /@ cards];
   outTable = TagVertexOutTable @ quiver;
   vertices = VertexRange @ quiver;
   vertexPairs = Subsets[vertices, subsetSize];

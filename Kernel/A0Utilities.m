@@ -57,7 +57,7 @@ $literalStringColor = RGBColor[{0.4, 0.4, 0.4}];
 
 PackageScope["$literalSymbolRegex"]
 $literalSymbolStr = "\\$Failed Automatic True False None Inherited Left Right Above Below Center \
-Top Bottom Infinity Tiny Small Medium Large Negated Into";
+Top Bottom Infinity Tiny Small Medium Large Inverted Into";
 $literalSymbolRegex = RegularExpression["(" <> StringReplace[$literalSymbolStr, " " -> "|"] <> ")"];
 $literalSymbolColor = RGBColor[{0.15, 0.15, 0.15}];
 
@@ -1084,16 +1084,16 @@ ToInverseFunction[e_] := InverseFunction[e];
 
 (**************************************************************************************************)
 
-PackageExport["NegatedQ"]
+PackageExport["InvertedQ"]
 
-SetRelatedSymbolGroup[NegatedQ, Negated, StripNegated, NegateReverse]
+SetRelatedSymbolGroup[InvertedQ, Inverted, StripInverted, InvertReverse]
 
 SetUsage @ "
-NegatedQ[e$] returns True if e$ has head Negated.
+InvertedQ[e$] returns True if e$ has head Inverted.
 "
 
-NegatedQ[_Negated] = True;
-NegatedQ[_] = False;
+InvertedQ[_Inverted] = True;
+InvertedQ[_] = False;
 
 (**************************************************************************************************)
 
@@ -1151,58 +1151,58 @@ GetModulus[_, else_] := else;
 
 (**************************************************************************************************)
 
-PackageExport["Negated"]
+PackageExport["Inverted"]
 
 SetUsage @ "
-Negated[elem$] represents the negation of elem$.
-* Negated[a$ \[DirectedEdge] b$] represents the edge a$ \[DirectedEdge] b$ traversed in the reverse direction.
-* %DirectedEdge[a$, b$, Negated[c$]] evaluates to %DirectedEdge[b$, a$, c$].
-* Negated[Negated[c$]] evaluates to c$.
-* Negated[c$] display as %Underbar[c$].
+Inverted[elem$] represents the inversion of elem$.
+* Inverted[a$ \[DirectedEdge] b$] represents the edge a$ \[DirectedEdge] b$ traversed in the reverse direction.
+* %DirectedEdge[a$, b$, Inverted[c$]] evaluates to %DirectedEdge[b$, a$, c$].
+* Inverted[Inverted[c$]] evaluates to c$.
+* Inverted[c$] display as %Underbar[c$].
 "
 
-Negated[Negated[e_]] := e;
-Negated /: DirectedEdge[a_, b_, Negated[c_]] := DirectedEdge[b, a, c];
-Negated[CardinalSet[cards_]] := CardinalSet[Negated /@ cards];
+Inverted[Inverted[e_]] := e;
+Inverted /: DirectedEdge[a_, b_, Inverted[c_]] := DirectedEdge[b, a, c];
+Inverted[CardinalSet[cards_]] := CardinalSet[Inverted /@ cards];
 
 declareBoxFormatting[
-  Negated[e_] :> NegatedBoxForm[e]
+  Inverted[e_] :> InvertedBoxForm[e]
 ];
 
 (**************************************************************************************************)
 
-PackageExport["NegateReverse"]
+PackageExport["InvertReverse"]
 
 SetUsage @ "
-NegateReverse[list$] applies Negated to elements of list$, then reverses the list.
+InvertReverse[list$] applies Inverted to elements of list$, then reverses the list.
 "
 
-NegateReverse[e_List] := Reverse @ Map[Negated, e];
+InvertReverse[e_List] := Reverse @ Map[Inverted, e];
 
 (**************************************************************************************************)
 
-PackageExport["StripNegated"]
+PackageExport["StripInverted"]
 
 SetUsage @ "
-StripNegated[e$] removes the head Negated if present on e$.
-* StripNegated does not map over lists.
+StripInverted[e$] removes the head Inverted if present on e$.
+* StripInverted does not map over lists.
 "
 
-StripNegated = Case[
-  Negated[e_] := e;
+StripInverted = Case[
+  Inverted[e_] := e;
   e_          := e;
 ];
 
 (**************************************************************************************************)
 
-PackageExport["NegatedForm"]
+PackageExport["InvertedForm"]
 
 SetUsage @ "
-NegatedForm[e$] displays as Underbar[e$].
+InvertedForm[e$] displays as Underbar[e$].
 "
 
 declareBoxFormatting[
-  NegatedForm[e_] :> NegatedBoxForm[e]
+  InvertedForm[e_] :> InvertedBoxForm[e]
 ];
 
 (**************************************************************************************************)
@@ -1489,13 +1489,13 @@ PackageExport["ValidPathWordQ"]
 SetUsage @ "
 ValidPathWordQ[word$] returns True if word$ is a list of cardinals.
 ValidPathWordQ[word$, cards$] returns True if the cardinals in word are a subset of cards$.
-* Negated cardinal can be present in the form Negated[cardinal$].
+* Inverted cardinal can be present in the form Inverted[cardinal$].
 "
 
 ValidPathWordQ[word_] := ValidPathWordQ[word, Automatic];
 
 ValidPathWordQ[word_List, Automatic] := True;
-ValidPathWordQ[word_List, cards_] := SubsetQ[cards, StripNegated /@ word];
+ValidPathWordQ[word_List, cards_] := SubsetQ[cards, StripInverted /@ word];
 ValidPathWordQ[_, _] := False;
 
 (********************************************)
@@ -1504,10 +1504,10 @@ PackageExport["ToPathWord"]
 
 SetUsage @ "
 ToPathWord['word$'] interprets the characters of 'word$' as cardinals and returns a list of them.
-ToPathWord['word$', cards$] only allows the cardinals in card$ (or their negations).
+ToPathWord['word$', cards$] only allows the cardinals in card$ (or their inversions).
 ToPathWord['word$', cards$, default$] evaluates and returns default$ is the path is not valid.
 ToPathWord[list$, cards$, $$] checks that a list of cardinals is a subset of cards$.
-* If a letter 'c$' is uppercased, it is interpreted as Negated['c$'].
+* If a letter 'c$' is uppercased, it is interpreted as Inverted['c$'].
 * By default, $Failed is returned if the path is not valid.
 "
 
@@ -1538,20 +1538,20 @@ ToPathWord[word_, validCardinals_:Automatic] := Scope[
 ];
 
 $backtrackingRules = Dispatch @ {
-  {l___, i_, Negated[i_], r___} :> {l, r},
-  {l___, Negated[i_], i_, r___} :> {l, r}
+  {l___, i_, Inverted[i_], r___} :> {l, r},
+  {l___, Inverted[i_], i_, r___} :> {l, r}
 };
 
 toCardinalList = Case[
   list_List           := list;
-  n:Negated[_String]  := {n};
+  n:Inverted[_String]  := {n};
   str_String          := Map[toCardinal, Characters @ str];
   _                   := $Failed;
 ];
 
 toCardinal = Case[
   s_ /; MemberQ[$validCardinals, s] := s;
-  s_ ? UpperCaseQ := Negated @ ToLowerCase @ s;
+  s_ ? UpperCaseQ := Inverted @ ToLowerCase @ s;
   s_ := s
 ];
 
@@ -1969,7 +1969,7 @@ SignedPermutations[list_List] := Catenate @ Map[SignedLists, Permutations @ list
 
 PackageExport["SignedLists"]
 
-SignedLists[list_] := MapIndices[Negated, Subsets @ Range @ Length @ list, list];
+SignedLists[list_] := MapIndices[Inverted, Subsets @ Range @ Length @ list, list];
 
 (**************************************************************************************************)
 

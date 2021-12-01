@@ -46,7 +46,7 @@ Options[PathAlgebra] = {
   "SymbolicEdgeStyle" -> Automatic,
   "VertexNudge" -> {0, 0},
   "EdgeNudge" -> {0, 0},
-  "DrawSortOrder" -> Negated["PathLength"]
+  "DrawSortOrder" -> Inverted["PathLength"]
 };
 
 $graphOrLatticeSpec = _Graph | _String | {_String, __};
@@ -129,7 +129,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
 
   ct = Lookup[LookupAnnotation[quiver, EdgeAnnotations, <||>], "CardinalTransitions", <||>];
-  data["CardinalTransitions"] = Join[ct, KeyMap[Negated] @ MapMatrix[reverseTransition, ct]];
+  data["CardinalTransitions"] = Join[ct, KeyMap[Inverted] @ MapMatrix[reverseTransition, ct]];
 
   pairs = EdgePairs @ quiver;
   tailVertices = Part[pairs, All, 1];
@@ -139,8 +139,8 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
   data["EdgeTails"] = tailVertices;
   data["EdgeHeads"] = headVertices;
-  data["EdgeToTail"] = Join[tailAssoc, KeyMap[Negated, headAssoc]];
-  data["EdgeToHead"] = Join[headAssoc, KeyMap[Negated, tailAssoc]];
+  data["EdgeToTail"] = Join[tailAssoc, KeyMap[Inverted, headAssoc]];
+  data["EdgeToHead"] = Join[headAssoc, KeyMap[Inverted, tailAssoc]];
 
   data["NullVertex"] = nullVertex = vertexCount + 1;
   tagOutTable = Append[nullVertex] /@ TagVertexOutTable[quiver, nullVertex];
@@ -156,7 +156,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
   edgeTags = EdgeTags @ quiver;
   edgeToCard = AssociationThread[edgeRange, edgeTags];
-  data["EdgeToCardinal"] = Join[edgeToCard, KeyMap[Negated] @ Map[Negated] @ edgeToCard];
+  data["EdgeToCardinal"] = Join[edgeToCard, KeyMap[Inverted] @ Map[Inverted] @ edgeToCard];
 
   System`Private`ConstructNoEntry[PathAlgebra, data]
 ];
@@ -165,7 +165,7 @@ $complexColorFunction = ComplexHue;
 
 ComplexHue[c_] := ColorConvert[Hue[Arg[c]/Tau+.05, Min[Sqrt[Abs[c]]/1.2,1], .9], RGBColor];
 
-reverseTransition[a_ -> Negated[b_]] := b -> Negated[a];
+reverseTransition[a_ -> Inverted[b_]] := b -> Inverted[a];
 reverseTransition[a_ -> b_] := b -> a;
 
 (**************************************************************************************************)
@@ -291,7 +291,7 @@ PathVectorPlot[pv:PathVector[_Association ? ValidPathAssociationQ], opts___Rule]
 
 notOverlappingPathsQ[PathVector[assoc_]] := Scope[
   edges = Part[Keys @ assoc, All, 2];
-  DuplicateFreeQ @ Catenate @ Ma[edges /. Negated[e_] :> e, 1]
+  DuplicateFreeQ @ Catenate @ Ma[edges /. Inverted[e_] :> e, 1]
 ]
 
 pathFieldQ[PathVector[assoc_]] := DuplicateFreeQ @ PathTailVertex @ Keys[assoc];
@@ -354,7 +354,7 @@ toDrawSorter = Case[
   "PathLength"    := First /* PathLength;
   "SymbolicQ"     := Last /* numericOrVectorQ /* Not;
   "NumericQ"      := Last /* numericOrVectorQ;
-  Negated[e_]     := (% @ e) /* Not;
+  Inverted[e_]     := (% @ e) /* Not;
   list_List       := ApplyThrough[% /@ list];
   None            := None;
 ];
@@ -367,7 +367,7 @@ doNudge[g_, vertexNudge_, _] :=
   ];
 
 canonPathElement[p:PathElement[t_, edges_, h_] -> w_] :=
-  If[t < h, PathElement[h, NegateReverse @ edges, t], p];
+  If[t < h, PathElement[h, InvertReverse @ edges, t], p];
 
 combineReversed[{r_Rule}] := r;
 combineReversed[{a_ -> wf_, b_ -> wb_}] := ReversedGroup[a, b] -> {wf, wb};
@@ -401,8 +401,8 @@ drawWeightedElement[p:PathElement[t_, e_, h_], weight_] := Scope[
 ];
 
 getEdgeCoords[e_] := Scope[
-  coords = Part[edgeCoordinateLists, StripNegated /@ e];
-  segments = MapIndices[Reverse, SelectIndices[e, NegatedQ], coords];
+  coords = Part[edgeCoordinateLists, StripInverted /@ e];
+  segments = MapIndices[Reverse, SelectIndices[e, InvertedQ], coords];
   If[Length[segments] > 1,
     $n = Length[segments]; $sb = LineLength[First @ segments] / 3.5;
     segments //= MapIndexed[setbackSegment];
@@ -543,8 +543,8 @@ elementCompose[PathElement[t_, e1_, m_], PathElement[m_, e2_, h_]] :=
   PathElement[t, Join[e1, e2] //. $cancelEdgeRules, h];
 
 $cancelEdgeRules = Dispatch @ {
-  {l___, i_, Negated[i_], r___} :> {l, r},
-  {l___, Negated[i_], i_, r___} :> {l, r}
+  {l___, i_, Inverted[i_], r___} :> {l, r},
+  {l___, Inverted[i_], i_, r___} :> {l, r}
 };
 
 (**************************************************************************************************)
@@ -567,11 +567,11 @@ ToPathVector[region_] /; $PathAlgebraQ := Scope[
 extractWeightedPaths = Case[
   list_List :=
     Map[%, list];
-  GraphPathData[vertices_, edges_, negations_] :=
+  GraphPathData[vertices_, edges_, inversions_] :=
     attachPathElementWeight[
       PathElement[
         First @ vertices,
-        MapIndices[Negated, negations, edges],
+        MapIndices[Inverted, inversions, edges],
         Last @ vertices
       ],
       $w
@@ -638,7 +638,7 @@ WordVector['word$' -> w$] uses weight w$ for the basis paths.
 WordVector[{spec$1, spec$2, $$}] constructs a sum of word vectors.
 WordVector[spec$, type$] constructs a vector of a specific type.
 * The default weight is 1.
-* 'word$' should consist of cardinals, or their negations (indicated by uppercase letters).
+* 'word$' should consist of cardinals, or their inversions (indicated by uppercase letters).
 * type$ can be one of 'Forward', 'Backward', 'Symmetric', and 'Antisymmetric' |
 "
 
@@ -986,7 +986,7 @@ PathReverse[PathElement[$$]] yields the reverse of PathElement[$$].
 PathReverse[PathVector[assoc_]] :=
   PathVector @ KeySort @ KeyMap[PathReverse, assoc]
 
-PathReverse[PathElement[t_, e_, h_]] := PathElement[h, NegateReverse @ e, t];
+PathReverse[PathElement[t_, e_, h_]] := PathElement[h, InvertReverse @ e, t];
 
 PathReverse[NullElement] := NullElement;
 
@@ -1104,7 +1104,7 @@ singleEdgePathElement[edge_] :=
   PathElement[edgeToTail @ edge, {edge}, edgeToHead @ edge];
 
 reversedSingleEdgePathElement[edge_] :=
-  PathElement[edgeToHead @ edge, {Negated @ edge}, edgeToTail @ edge];
+  PathElement[edgeToHead @ edge, {Inverted @ edge}, edgeToTail @ edge];
 
 (**************************************************************************************************)
 
@@ -1145,7 +1145,7 @@ PackageExport["SymbolicEdgeField"]
 SymbolicEdgeField[symbol_:\[FormalE], type_:"Forward"] := Scope[
   UnpackPathAlgebra[edgeRange, edgeToTail, edgeToHead];
   forward = edgeRange;
-  reverse = Negated /@ edgeRange;
+  reverse = Inverted /@ edgeRange;
   edges = Switch[type,
     "Forward",        forward,
     "Backward",       reverse,
@@ -1320,7 +1320,7 @@ symmetricEdgeField[ints:{__Integer}, sym_] := Scope[
 
 weightedForwardBackwardEdgeElements[tail_, edge_, head_, {fweight_, bweight_}] := {
   PathElement[tail, {edge}, head] -> fweight,
-  PathElement[head, {Negated @ edge}, tail] -> bweight
+  PathElement[head, {Inverted @ edge}, tail] -> bweight
 };
 
 
@@ -1445,7 +1445,7 @@ DefineLiteralMacro[setupForShortestPaths,
     undirectedIndexQuiver = Graph[VertexList @ indexQuiver, (EdgeList @ indexQuiver) /. DirectedEdge -> UndirectedEdge];
     shortestPath = FindShortestPath[undirectedIndexQuiver, All, All];
     edgeIndex = AssociationRange @ EdgePairs @ indexQuiver;
-    edgeIndex = Join[edgeIndex, Map[Negated] @ KeyMap[Reverse] @ edgeIndex];
+    edgeIndex = Join[edgeIndex, Map[Inverted] @ KeyMap[Reverse] @ edgeIndex];
   )
 ];
 
@@ -1477,7 +1477,7 @@ elementTranslate[t_PathElement, p_PathElement, anti_:False] := Scope[
 
   pWordTransported = Replace[pWord, tTransport, {1, 2}];
 
-  If[anti, pWordTransported = Negated /@ pWordTransported];
+  If[anti, pWordTransported = Inverted /@ pWordTransported];
 
   tailFrameWordToElement[
     PathHeadVertex @ t,
@@ -1609,7 +1609,7 @@ PathInvert[PathVector[assoc_]] := Scope[
 ];
 
 invertElement[p:PathElement[t_, edges_, h_]] :=
-  tailFrameWordToElement[t, Negated /@ tailFrameWord[p]]
+  tailFrameWordToElement[t, Inverted /@ tailFrameWord[p]]
 
 (**************************************************************************************************)
 
