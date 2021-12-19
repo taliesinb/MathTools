@@ -576,7 +576,8 @@ SpacedColumn[args___] := SpacedRow[args, Transposed -> True];
 
 PackageExport["ClickCopyRow"]
 
-ClickCopyRow[args___] := Framed[SpacedRow[args, ItemFunction -> ClickCopy],
+ClickCopyRow[args___] := Framed[
+  SpacedRow[args, ItemFunction -> ClickCopy],
   Background -> RGBColor[{1,1,1}*0.95], FrameStyle -> None];
 
 (**************************************************************************************************)
@@ -653,7 +654,7 @@ SpacedRow[elems__, RowSpacings -> n_] := Block[{$srRowSpacings = n}, SpacedRow[e
 SpacedRow[elems__, LabelStyle -> style_] := Block[{$srLabelStyle = style}, SpacedRow[elems]];
 SpacedRow[elems__, BaseStyle -> s_] := Block[{$srBaseStyle = s}, SpacedRow[elems]];
 SpacedRow[elems__, ItemStyle -> s_] := Block[{$srItemStyle = s}, SpacedRow[elems]];
-SpacedRow[elems__, ItemFunction -> f_] := Block[{$srItemFunction = f}, SpacedRow[elems]];
+SpacedRow[elems__, ItemFunction -> f_] := Block[{$srItemFunction = wrappedItemFunc @ f}, SpacedRow[elems]];
 SpacedRow[elems__, LabelFunction -> f_] := Block[{$srLabelFunction = f}, SpacedRow[elems]];
 SpacedRow[elems__, LabelSpacing -> s_] := Block[{$srLabelSpacing = s}, SpacedRow[elems]];
 SpacedRow[elems__, LabelPosition -> s_] := Block[{$srLabelPosition = s}, SpacedRow[elems]];
@@ -663,6 +664,9 @@ SpacedRow[elems__, Transposed -> t_] := Block[{$srTransposed = t}, SpacedRow[ele
 SpacedRow[elems__, ForceGrid -> fg_] := Block[{$srForceGrid = fg}, SpacedRow[elems]];
 SpacedRow[elems__, RiffleItem -> item_] := Block[{$srRiffleItem = item}, SpacedRow[elems]];
 SpacedRow[elems__, FontSize -> sz_] := Block[{$srLabelFontSize = sz}, SpacedRow[elems]];
+
+wrappedItemFunc[f_][EndOfLine] := EndOfLine;
+wrappedItemFunc[f_][e_] := f @ e;
 
 SpacedRow[labels_List -> items_List] /; Length[labels] == Length[items] :=
   SpacedRow[RuleThread[labels, items]];

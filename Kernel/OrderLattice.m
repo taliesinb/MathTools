@@ -110,3 +110,181 @@ findNewPairs[newPartition_, oldPartition_] := Complement[
 	JoinMap[UnorderedPairs, Complement[newPartition, oldPartition]],
 	JoinMap[UnorderedPairs, Complement[oldPartition, newPartition]]
 ];
+
+(**************************************************************************************************)
+
+PackageExport["MeetSemilatticeGraph"]
+
+Options[MeetSemilatticeGraph] = JoinOptions[
+	ExtendedGraph
+];
+
+SetsIntersection[{}] := {};
+SetsIntersection[list_List] := Intersection @@ list;
+
+MeetSemilatticeGraph[elements_, userOpts:OptionsPattern[]] := Scope[
+	head = Part[elements, 1, 0];
+	subsets = Sort[Sort /@ (List @@@ elements)];
+	all = Union @ Map[SetsIntersection] @ Subsets[subsets];
+	range = Range @ Length @ all;
+	edges = TransitiveReductionGraph @ RelationGraph[SubsetQ[Part[all, #1], Part[all, #2]]&, range];
+	IndexedExtendedGraph[
+		head @@@ all, EdgeList @ edges,
+		GraphTheme -> "Poset",
+		FilterOptions @ userOpts
+	]
+];
+
+$GraphThemeData["Poset"] = {
+	ExtendedGraphLayout -> "CenteredTree",
+	VertexLabels -> "Name",
+	VertexSize -> 5,
+	ArrowheadShape -> None
+};
+
+(**************************************************************************************************)
+
+PackageExport["Poset"]
+
+VertexOutComponentLists[graph_] := AssociationMap[
+	VertexOutComponent[graph, {#}]&,
+	VertexList @ graph
+];
+
+EmptyIndex[keys_] := ConstantAssociation[keys, {}];
+
+makePoset[up_Association] := makePoset[up, InvertIndex @ up];
+
+makePoset[up_Association, dn_Association] := Scope[
+	set = Union[Keys @ up, Keys @ dn];
+	{up, dn} = KeyUnion[{up, dn}, {}&];
+	upRules = FlattenIndex @ up;
+	dnRules = FlattenIndex @ dn;
+	botSet = Cases[Normal @ dn, Rule[k_, {}] :> k];
+	topSet = Cases[Normal @ up, Rule[k_, {}] :> k];
+	Poset @ Association[
+		"Set" -> set,
+		"Up" -> up, "Dn" -> dn,
+		"UpSet" -> VertexOutComponentLists[Graph @ upRules],
+		"DnSet" -> VertexOutComponentLists[Graph @ dnRules],
+		"UpRules" -> upRules, "DnRules" -> dnRules,
+		"Bot" -> If[SingletonQ[botSet], First @ botSet, None],
+		"Top" -> If[SingletonQ[topSet], First @ topSet, None],
+		"BotSet" -> botSet,
+		"TopSet" -> topSet
+	]
+];
+
+SingletonQ = Case[
+	{e_} := True;
+	_ := False
+];
+
+(**************************************************************************************************)
+
+PackageExport["GraphPoset"]
+
+GraphPoset[graph_] := makePoset[VertexOutAssociation @ TransitiveReductionGraph @ graph]
+
+(**************************************************************************************************)
+
+PackageExport["RelationPoset"]
+PackageExport["InverseRelationPoset"]
+
+RelationPoset[relation_, list_List] := GraphPoset @ RelationGraph[relation, list];
+
+InverseRelationPoset[relation_, list_List] := ReversePoset @ RelationPoset[relation, list];
+
+(**************************************************************************************************)
+
+PackageExport["ReversePoset"]
+
+ReversePoset[Poset[assoc_]] := Scope[
+	UnpackAssociation[assoc, set, up, upSet, dn, dnSet, upRules, dnRules, bot, top, botSet, topSet];
+	Poset @ Association[
+		"Set" -> set,
+		"Up" -> dn, "Dn" -> up,
+		"UpSet" -> dnSet, "DnSet" -> upSet,
+		"UpRules" -> dnRules, "DnRules" -> upRules,
+		"Bot" -> top, "Top" -> bot,
+		"BotSet" -> topSet,
+		"TopSet" -> botSet
+	]
+];
+
+(**************************************************************************************************)
+
+PackageExport["SubsetPoset"]
+
+SubsetPoset[gens_String] :=
+	SubsetPoset @ StringSplit[gens];
+
+SubsetPoset[gens_List] :=
+	GraphPoset @ MeetSemilatticeGraph @ Map[parseGen, gens];
+
+parseGen = Case[
+	list_List := list;
+	s_String := Characters[s];
+]
+
+(**************************************************************************************************)
+
+PackageExport["DiscretePoset"]
+
+DiscretePoset[list_List] := Scope[
+	null = EmptyIndex[list];
+	Poset[null, null]
+];
+
+(**************************************************************************************************)
+
+PackageExport["PosetGraph"]
+
+PosetGraph[Poset[assoc_Association]] := Scope[
+	ExtendedGraph[
+		assoc["Set"],
+		DeleteCases[z_ -> z_] @ assoc["DnRules"],
+		GraphTheme -> "Poset"
+	]
+];
+
+(**************************************************************************************************)
+
+PackageExport["PosetQ"]
+
+PosetQ = Case[
+	Poset[_Association] := True;
+	_ := False;
+]
+
+declareBoxFormatting[
+	p:Poset[_Association] :> formatPoset[p]
+];
+
+formatPoset[p_Poset ? PosetQ, opts___Rule] := ToBoxes @ ExtendedGraphPlot[
+	PosetGraph @ p,
+	opts,
+	FrameStyle -> LightGray, Frame -> True, ImagePadding -> {Left -> 10, Right -> 10, Top -> 15, Bottom -> 10},
+	VertexLabels -> "Name" -> formatPosetElement,
+	ImageSize -> ("ShortestEdge" -> 25)
+];
+
+formatPoset[_] := $Failed;
+
+formatPosetElement[e_List] := Row[e];
+formatPosetElement[e_] := e;
+
+(**************************************************************************************************)
+
+PackageExport["PosetField"]
+
+declareBoxFormatting[
+	pf:PosetField[_Poset, _List] :> formatPosetField[pf]
+];
+
+formatPosetField[PosetField[p_Poset, v_List]] :=
+	formatPoset[p, VertexShapeFunction -> "Index" -> fieldPart[v],
+		VertexStyle -> Black, VertexLabels -> None]
+
+fieldPart[field_][i_] := Replace[Part[field, i], 0|0. -> ""];
+

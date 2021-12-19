@@ -34,8 +34,10 @@ SetInitialValue[sym_Symbol, body_] := If[!System`Private`HasImmediateValueQ[sym]
 (**************************************************************************************************)
 
 PackageScope["LowerCaseFirst"]
+PackageScope["UpperCaseFirst"]
 
 LowerCaseFirst[str_String] := StringJoin[ToLowerCase @ StringTake[str, 1], StringDrop[str, 1]];
+UpperCaseFirst[str_String] := StringJoin[ToUpperCase @ StringTake[str, 1], StringDrop[str, 1]];
 
 (**************************************************************************************************)
 
@@ -1999,3 +2001,24 @@ StandardizeRowColumnSpec[item_, n_] :=
 
 StandardizeRowColumnSpec[Automatic|None, _] :=
   Automatic;
+
+
+(**************************************************************************************************)
+
+PackageExport["ReverseRules"]
+
+ReverseRules[rules_] := Map[Reverse, rules];
+
+(**************************************************************************************************)
+
+PackageExport["InvertIndex"]
+
+InvertIndex[assoc_Association] :=
+  Merge[ReverseRules @ FlattenIndex @ assoc, Identity];
+
+(**************************************************************************************************)
+
+PackageExport["FlattenIndex"]
+
+FlattenIndex[assoc_] :=
+  Flatten @ KeyValueMap[{k, v} |-> Map[k -> #&, v], assoc];

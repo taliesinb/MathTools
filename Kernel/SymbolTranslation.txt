@@ -8,9 +8,16 @@
 \[GreaterEqual]              >=         \ge                 ≥
 \[NotEqual]                  !=         \ne                 ≠
 _                            _          \defeq              ≝
+_                            :=         \syntaxeqq          ≔
 \[Equal]                     ==         _                   ⩵
 \[LongEqual]                 ===        _                   ⩶
-                                                             
+\[GreaterLess]               _          \gtrless            ≷
+\[LessGreater]               _          \lessgtr            ≶
+\[GreaterEqualLess]          _          \gtreqless          ⋛
+\[LessEqualGreater]          _          \lesseqgtr          ⋚
+\[NotGreaterLess]            _          \ngtrless           ≹
+\[NotLessGreater]            _          \nlessgtr           ≸
+
 \[Precedes]                  _          \prec               ≺
 \[NotPrecedes]               _          \nprec              ⊀
 \[PrecedesEqual]             _          \preceq             ⪯
@@ -45,6 +52,8 @@ _                            _          \defeq              ≝
 \[LeftArrow]                 _          \larr               ←
 \[LeftTeeArrow]              _          \mapsfrom           ↤
 \[RightArrow]                _          \rarr               →
+\[RightVector]               _          \rightharpoonup     ⇀
+\[LeftVector]                _          \leftharpoonup      ↼
 \[RightTeeArrow]             _          \mapsto             ↦
 \[LeftRightArrow]            _          \harr               ↔
 \[RightArrowBar]             _          \rarrbar            ⇥
@@ -153,8 +162,9 @@ _                            Reals      \R                  ℝ
 \[FilledCircle]              _          _                   ●
 \[EmptyRectangle]            _          _                   ▯
 \[FilledRectangle]           _          _                   ▮
-\[EmptySquare]               _          _                   □
-\[FilledSquare]              _          _                   ■
+\[EmptySquare]               _          \square             □
+\[Square]                    _          \square             □
+\[FilledSquare]              _          \blacksquare        ■
 \[EmptySmallSquare]          _          _                   ▫
 \[FilledSmallSquare]         _          _                   ▪
 \[LeftTriangle]              _          \triangleleft       ◁

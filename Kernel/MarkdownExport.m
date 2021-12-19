@@ -90,7 +90,7 @@ DryRun is an option to various markdown-related functions.
 (**************************************************************************************************)
 
 $genericMarkdownOptions = {
-  MarkdownFlavor -> "Simple",
+  MarkdownFlavor -> "Preview",
   RasterizationPath -> Automatic,
   DisplayProgress -> False,
   HeadingDepthOffset -> 0,
@@ -108,9 +108,12 @@ $genericMarkdownExportOptions = {
 DefineLiteralMacro[setupMarkdownGlobals,
 setupMarkdownGlobals[] := Quoted[
   UnpackOptions[markdownFlavor, headingDepthOffset, includePrelude];
-  SetAutomatic[includePrelude, markdownFlavor =!= "Simple"];
+  SetAutomatic[includePrelude, !MatchQ[markdownFlavor, "Simple" | "Preview"]];
   flavorFields = Lookup[$flavorData, markdownFlavor, ReturnFailed[]];
-  UnpackAssociation[flavorFields, imageTemplate, anchorTemplate, inlineMathTemplate, multilineMathTemplate, markdownPostprocessor];
+  UnpackAssociation[flavorFields,
+    rasterizationFunction, stringImageTemplate, fileImageTemplate, anchorTemplate,
+    inlineMathTemplate, multilineMathTemplate, markdownPostprocessor, inlineHTML
+  ];
 ]];
 
 DefineLiteralMacro[setupRasterizationPath,
@@ -305,12 +308,12 @@ GarbageCollectOutputImages[markdownSearchPath_, OptionsPattern[]] := Scope[
   SetAutomatic[$verbose, $dryRun];
   
   flavorFields = Lookup[$flavorData, markdownFlavor, ReturnFailed[]];
-  UnpackAssociation[flavorFields, imageTemplate];
+  UnpackAssociation[flavorFields, fileImageTemplate];
 
   setupRasterizationPath[markdownSearchPath, "OutputImages"];
   If[FileType[markdownSearchPath] =!= Directory || FileType[rasterizationPath] =!= Directory, ReturnFailed[]];
   
-  markdownPattern = imageTemplate @ Association[
+  markdownPattern = fileImageTemplate @ Association[
     "imagepath" -> "YYY",
     "relativepath" -> "YYY",
     "width" -> "XXX",
@@ -471,7 +474,11 @@ wrapDoubleBrace[e_] := StringJoin["\\\\[\n", e, "\n\\\\]"];
 
 $flavorData["Franklin"] = <||>;
 
-$flavorData["Franklin", "ImageTemplate"] = StringTemplate @ StringTrim @  """
+$flavorData["Franklin", "RasterizationFunction"] = PNGRasterizationFunction;
+
+$flavorData["Franklin", "StringImageTemplate"] = None;
+
+$flavorData["Franklin", "FileImageTemplate"] = StringTemplate @ StringTrim @  """
 ~~~
 <img src="`relativepath`" width="`width`" alt="`caption`">
 ~~~
@@ -485,6 +492,10 @@ $flavorData["Franklin", "MultilineMathTemplate"] = wrapDoubleDollar;
 
 $flavorData["Franklin", "MarkdownPostprocessor"] = franklinFixup;
 
+$flavorData["Franklin", "InlineHTML"] = franklinInlineHTML;
+
+franklinInlineHTML[a_] := StringJoin["~~~", a, "~~~"];
+
 franklinFixup[str_String] = StringReplaceRepeated[str, $franklinFixes];
 
 $franklinFixes = {
@@ -495,15 +506,29 @@ $franklinFixes = {
 
 $flavorData["Simple"] = <||>;
 
-$flavorData["Simple", "ImageTemplate"] = StringTemplate @ "![](`relativepath`)";
+$flavorData["Simple", "RasterizationFunction"] = PNGRasterizationFunction;
+
+$flavorData["Simple", "StringImageTemplate"] = None;
+
+$flavorData["Simple", "FileImageTemplate"] = StringTemplate @ "![](`relativepath`)";
 
 $flavorData["Simple", "AnchorTemplate"] = "";
+
+$flavorData["Simple", "InlineHTML"] = Function[""];
 
 $flavorData["Simple", "InlineMathTemplate"] = wrapDollar;
 
 $flavorData["Simple", "MultilineMathTemplate"] = wrapDoubleDollar;
 
 $flavorData["Simple", "MarkdownPostprocessor"] = Identity;
+
+(**************************************************************************************************)
+
+$flavorData["Preview"] = $flavorData["Simple"];
+
+$flavorData["Preview", "StringImageTemplate"] = Key["linearSyntax"];
+
+$flavorData["Preview", "RasterizationFunction"] = WLLinearSyntaxRasterizationFunction;
 
 (**************************************************************************************************)
 
@@ -515,9 +540,9 @@ $flavorData["IAWriter", "MultilineMathTemplate"] = wrapDoubleBrace;
 
 $flavorData[None] = $flavorData["Simple"];
 
-$flavorData[None, "ImageTemplate"] = None;
+$flavorData[None, "FileImageTemplate"] = None;
 
-MacroEvaluate @ UnpackAssociation[$flavorData[None], imageTemplate, anchorTemplate, inlineMathTemplate, multilineMathTemplate, markdownPostprocessor];
+MacroEvaluate @ UnpackAssociation[$flavorData[None], fileImageTemplate, anchorTemplate, inlineMathTemplate, multilineMathTemplate, markdownPostprocessor];
 
 (**************************************************************************************************)
 
@@ -664,7 +689,9 @@ outerCellToMarkdown = Case[
 
 cellToMarkdown = Case[
 
-  Cell["Under construction.", _] := outputCellToMD @ $underConstructionCell;
+  Cell["Under construction.", _] := makeBannerMD @ "UNDER CONSTRUCTION";
+
+  Cell[str_String /; StringStartsQ[str, "BANNER: "], _] := makeBannerMD @ StringTrim[str, "BANNER: "];
 
   Cell[e_, "Chapter"]            := StringJoin[headingDepth @ 0, textCellToMD @ e];
   Cell[e_, "Section"]            := StringJoin[headingDepth @ 1, textCellToMD @ e];
@@ -694,12 +721,16 @@ textTagQ[_];
 
 headingDepth[n_] := StringRepeat["#", Max[n + headingDepthOffset, 1]] <> " ";
 
-$underConstructionCell := $underConstructionCell = Cell[BoxData @ $underConstructionGraphics, "Output"];
+(**************************************************************************************************)
 
-$underConstructionGraphics := $underConstructionGraphics = ToBoxes @ With[{n = 5},
+makeBannerMD[text_String] := makeBannerMD[text] = outputCellToMD @ makeBannerCell[text];
+
+makeBannerCell[str_] := Cell[BoxData @ makeBannerGraphics[str, 5], "Output"];
+
+makeBannerGraphics[str_, n_] := ToBoxes @
   Framed[
     Graphics[
-      Text[Style["UNDER CONSTRUCTION", Bold, FontColor -> Black,
+      Text[Style[str, Bold, FontColor -> Black,
         FontFamily -> "Helvetica", FontSize -> 14]],
       Background -> RGBColor[0.9558361921359645, 0.8310111921713484, 0.0999649884717605, 1.],
       FrameStyle -> None,
@@ -707,8 +738,7 @@ $underConstructionGraphics := $underConstructionGraphics = ToBoxes @ With[{n = 5
       ImageSize -> {200, 200/n}
     ],
     ImageMargins -> 25, FrameStyle -> None
-  ]
-];
+  ];
 
 (**************************************************************************************************)
 
@@ -729,8 +759,46 @@ $rasterMetadataCache = Data`UnorderedAssociation[];
 
 rasterizeCell[cell_, caption_:None] := Scope[
 
-  If[rasterizationPath === None || imageTemplate === None,
-    Return["#### Placeholder for image"]];
+  If[rasterizationFunction === None, Return["#### Placeholder for image"]];
+
+  rasterizationResult = rasterizationFunction @ cell;
+
+  If[!AssociationQ[rasterizationResult],
+    Print["RasterizationFunction did not return an association: ", Head @ rasterizationResult];
+    Return["#### Invalid rasterization result"];
+  ];
+
+  rasterizationResult["caption"] = Replace[$lastCaption, None -> ""];
+
+  markdown = Switch[rasterizationResult["type"],
+    "String",
+      stringImageTemplate @ rasterizationResult,
+    "File",
+      fileImageTemplate @ rasterizationResult,
+    _,
+      Print["RasterizationFunction returned invalid association."];
+      "#### Invalid rasterization result"
+  ];
+
+  markdown
+];
+
+(**************************************************************************************************)
+
+PackageExport["WLLinearSyntaxRasterizationFunction"]
+
+WLLinearSyntaxRasterizationFunction[cell_] := Association[
+  "type" -> "String",
+  "linearSyntax" -> ToString[RawBoxes @ Part[cell, 1, 1], StandardForm]
+];
+
+(**************************************************************************************************)
+
+PackageExport["PNGRasterizationFunction"]
+
+PNGRasterizationFunction[cell_] := Scope[
+
+  If[rasterizationPath === None, Return @ None];
 
   (* did we already export this result in this session? *)
   cellHash = Base36Hash @ cell;
@@ -774,19 +842,19 @@ rasterizeCell[cell_, caption_:None] := Scope[
 
   (* create and return markdown *)
   Label[skipRasterization];
+
   width = Ceiling @ First[imageDims * 0.5];
   imageRelativePath = toEmbedPath[relativeRasterizationPath, imageFileName, imagePath];
-  markdown = imageTemplate @ Association[
-    "imagepath" -> imagePath,
-    "relativepath" -> imageRelativePath,
-    "width" -> width,
-    "caption" -> Replace[$lastCaption, None -> ""]
-  ];
-  
+
   If[!$dryRun, $rasterMetadataCache[cacheKey] ^= {imageDims, imageFileName, imagePath}];
 
-  markdown
-];
+  Association[
+    "type" -> "File",
+    "imagepath" -> imagePath,
+    "relativepath" -> imageRelativePath,
+    "width" -> width
+  ]
+]
 
 toEmbedPath[None, imageFileName_, imagePath_] := "file://" <> imagePath;
 toEmbedPath[relative_, imageFileName_, _] := NormalizePath @ FileNameJoin[{relative, imageFileName}];
@@ -813,6 +881,8 @@ $finalStringFixups1 = {
   "$  " -> "$ "
 };
 
+makeFontSmallCaps[text_] := inlineHTML["<span style=\"font-variant: small-caps;\">" <> ToLowerCase[text] <> "</span>"];
+
 $finalStringFixups2 = {
   "$ --" -> "$ --",
   "$ -" -> "$\\-",
@@ -823,9 +893,12 @@ $finalStringFixups2 = {
   "$ :" -> "$:",
   "$ *" -> "\,$ *",
   "\\text{\\,and\\,}" -> "$ and $", (* improves linebreaking *)
+  "LHS" :> makeFontSmallCaps["LHS"],
+  "RHS" :> makeFontSmallCaps["RHS"],
   "1'st" -> "$1^{\\textrm{st}}$",
   "2'nd" -> "$2^{\\textrm{nd}}$",
   "3'rd" -> "$3^{\\textrm{rd}}$",
+  "n-ary" -> "$n$-ary",
   (d:DigitCharacter ~~ "'th") :> StringJoin["$", d, "^{\\textrm{th}}$"],
   "n'th" -> "$n^{\\textrm{th}}$",
   "i'th" -> "$i^{\\textrm{th}}$",

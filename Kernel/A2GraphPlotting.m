@@ -2331,6 +2331,7 @@ ExtendedGraphPlot::notvertex = "`` is not a valid vertex of the graph."
 getVertexIndex[GraphOrigin] := getVertexIndex @ $GraphOrigin;
 getVertexIndex[v_] := Lookup[$VertexIndex, v, failPlot["notvertex", v]];
 
+getVertexAnnoValue[annos_, "Index"] := Range @ $VertexCount;
 getVertexAnnoValue[annos_, n:"Name" | "Vertex"] /; !KeyExistsQ[annos, n] := $VertexList;
 getVertexAnnoValue[annos_, key_] := Lookup[annos, key, failPlot["badgraphannokey", key, commaString @ Keys @ annos]];
 
@@ -2499,6 +2500,7 @@ cachedRasterizeSize[e_] := CacheTo[$rasterizationCache, e, Rasterize[e /.  Inver
 
 PackageExport["LabelPosition"]
 
+$uniformPayloadSizes = False;
 generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {labelStyle_, labelPosition_, labelSpacing_, labelBaseStyle_}, annotations_, isVertices_] := Scope[
   $annotationKeys = Keys @ annotations;
   $labelNames = names;
@@ -2521,17 +2523,21 @@ generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {lab
   indices = If[parts === All, Range @ Length @ names, parts];
   labelElements = tooltipElements = Nothing;
   If[payloadFunction =!= None,
+    payloads = Map[payloadFunction, indices];
+    $uniformPayloadSizes = ArrayQ[payloads];
     labelElements = MapThread[
-      placerFunction[labelForm @ payloadFunction @ #2, #1, #2]&,
-      {coordinates, indices}
+      placerFunction[labelForm @ #3, #1, #2]&,
+      {coordinates, indices, payloads}
     ];
     labelElements = Style[labelElements, labelStyle];
   ];
   If[tspec =!= None,
     tooltipPayloadFunction = processTooltipSpec @ tspec;
+    tooltipPayloads = Map[tooltipPayloadFunction, indices];
+    $uniformPayloadSizes = ArrayQ[tooltipPayloads];
     tooltipElements = MapThread[
-      placeTooltipAt[labelForm @ tooltipPayloadFunction @ #2, #1, #2]&,
-      {coordinates, indices}
+      placeTooltipAt[labelForm @ #3, #1, #2]&,
+      {coordinates, indices, tooltipPayloads}
     ];
   ];
   elements = removeSingleton @ {labelElements, tooltipElements};
@@ -2625,25 +2631,25 @@ toPayloadFunction = Case[
 ];
 
 postProcF[f_][e_] := OnFailed[
-    Quiet @ Check[f @ e, $Failed],
+    Check[f @ e, $Failed],
     failPlot["msglabelfn"]
   ];
 
 myCompactMatrixForm[vec_] :=
-  CompactMatrixForm[vec, "Factor" -> False, InversionStyle -> "Color"];
+  CompactMatrixForm[vec, "Factor" -> False, NegationStyle -> "Color"];
 
 myCompactVectorForm[vec_] :=
   CompactMatrixForm[List @ vec,
     "Factor" -> False, "HideZeros" -> False,
-    InversionStyle -> "Color", InversionStyle -> OverBar];
+    InversionStyle -> "Color", NegationStyle -> OverBar];
 
 labelForm[RepresentationElement[matrix_]] :=
   myCompactMatrixForm @ matrix;
 
-labelForm[vec_ ? RealVectorQ] :=
+labelForm[vec_ ? RealVectorQ] /; $uniformPayloadSizes :=
   myCompactVectorForm @ vec;
 
-labelForm[matrix_ ? RealMatrixQ] :=
+labelForm[matrix_ ? RealMatrixQ] /; $uniformPayloadSizes :=
   myCompactMatrixForm @ matrix;
 
 labelForm[e_] := e;

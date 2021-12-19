@@ -126,7 +126,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
     "Random",
       graphLayout = autoLayout;
       SetAutomatic[initialVertexCoordinates, RandomReal[{-1, 1}, {vertexCount, actualDimension}]],
-    "Tree" | "CenteredTree" | "HorizontalTree" | "HorizontalCenteredTree",
+    "Tree" | "CenteredTree" | "HorizontalTree" | "HorizontalCenteredTree" | "InvertedCenteredTree",
       graphLayout = {"LayeredDigraphEmbedding"};
       root = LookupExtendedOption[graph, GraphOrigin];
       If[root =!= None,
@@ -134,8 +134,9 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
         If[IntegerQ[rootIndex], AppendTo[graphLayout, "RootVertex" -> rootIndex]];
       ];
       If[StringContainsQ[method, "Horizontal"], AppendTo[graphLayout, "Orientation" -> Left]];
-      If[method === "CenteredTree", coordinateTransformFunction = "CenterHorizontal"];
+      If[StringContainsQ[method, "CenteredTree"], coordinateTransformFunction = "CenterHorizontal"];
       If[method === "HorizontalCenteredTree", coordinateTransformFunction = "CenterVertical"];
+      If[StringContainsQ[method, "Inverted"], coordinateTransformFunction = {coordinateTransformFunction, "ReflectVertical"}];
     ,
     s_String /; !StringEndsQ[s, "Embedding"],
       graphLayout //= ReplaceAll[method -> (method <> "Embedding")],

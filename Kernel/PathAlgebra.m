@@ -163,6 +163,8 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
 $complexColorFunction = ComplexHue;
 
+PackageExport["ComplexHue"]
+
 ComplexHue[c_] := ColorConvert[Hue[Arg[c]/Tau+.05, Min[Sqrt[Abs[c]]/1.2,1], .9], RGBColor];
 
 reverseTransition[a_ -> Inverted[b_]] := b -> Inverted[a];

@@ -13,7 +13,7 @@
 \gdef\lsymbol#1{\colorsymbol{262626}{#1}}
 \gdef\msymbol#1{\colorsymbol{b50800}{#1}}
 \gdef\osymbol#1{\colorsymbol{00427f}{#1}}
-\gdef\lstring#1{\textcolor{666666}{\textrm{\textquotedblleft{#1}\textquotedblright}}}
+\gdef\lstring#1{\textcolor{666666}{\textrm{\textquotedblleft{\text{#1}}\textquotedblright}}}
 
 \gdef\boldForm#1{\textbf{#1}}
 
@@ -21,9 +21,9 @@
 \gdef\lgform#1{{\textcolor{4ea82a}{#1}}}
 \gdef\lbform#1{{\textcolor{3e81c3}{#1}}}
 
-\gdef\rform#1{{\textcolor{e1432d}{#1}}}
-\gdef\gform#1{{\textcolor{4ea82a}{#1}}}
-\gdef\bform#1{{\textcolor{3e81c3}{#1}}}
+\gdef\rform#1{{\textcolor{cb2b1a}{#1}}}
+\gdef\gform#1{{\textcolor{399318}{#1}}}
+\gdef\bform#1{{\textcolor{2b6fb0}{#1}}}
 
 \gdef\rgform#1{{\textcolor{dc841a}{#1}}}
 \gdef\gbform#1{{\textcolor{47a5a7}{#1}}}
@@ -33,6 +33,7 @@
 \gdef\wbform#1{{\textcolor{929292}{#1}}}
 \gdef\wcform#1{{\textcolor{c5c5c5}{#1}}}
 
+\gdef\tick{\checkmark}
 \gdef\barToken{\mathbf{|}}
 \gdef\filledRectangleToken{▮}
 \gdef\emptyRectangleToken{▯}
@@ -83,10 +84,11 @@
 \gdef\isomorphicSymbol{\cong}
 \gdef\homotopicSymbol{\simeq}
 \gdef\approxEqualSymbol{\approx}
-\gdef\bijectiveSymbol{\cong}
+\gdef\bijectiveSymbol{\approx}
 
-\gdef\defeq{\;≝\;}
-\gdef\defEqualSymbol{\;≝\;}
+\gdef\defeq{\mathrel{≝}}
+\gdef\defEqualSymbol{\mathrel{≝}}
+\gdef\syntaxEqualSymbol{\mathrel{\textcolor{888888}{\equiv}}}
 \gdef\tailEqualSymbol{\underdot{=}}
 \gdef\headEqualSymbol{\dot{=}}
 
@@ -124,7 +126,7 @@
 \gdef\toroidalModifier#1{\supercirc{#1}}
 \gdef\modulo#1{\supercirc{#1}}
 
-\gdef\dividesSymbol{\,|\,}
+\gdef\dividesSymbol{\mathrel{|}}
 \gdef\groupFunction#1{#1}
 \gdef\groupHomomorphism#1{#1}
 
@@ -143,16 +145,16 @@
 \gdef\transportAtlas#1{T_{#1}}
 \gdef\inverted#1{\underline{#1}}
 \gdef\mirror#1{\overline{#1}}
-\gdef\pathComposeSymbol{{\,∷\,}}
+\gdef\pathComposeSymbol{\mathbin{∷}}
 \gdef\pathCompose#1#2{{#1}\pathComposeSymbol{#2}}
 
-\gdef\translateSymbol{\uparrow}
-\gdef\backwardTranslateSymbol{\downarrow}
+\gdef\translateSymbol{\mathbin{\uparrow}}
+\gdef\backwardTranslateSymbol{\mathbin{\downarrow}}
 
-\gdef\pathTranslate#1#2{{#1}\,\translateSymbol\,{#2}}
-\gdef\pathLeftTranslate#1{{#1}{\,\translateSymbol}}
-\gdef\pathBackwardTranslate#1#2{{#1}{\,\backwardTranslateSymbol\,}{#2}}
-\gdef\pathLeftBackwardTranslate#1{{#1}{\,\backwardTranslateSymbol}}
+\gdef\pathTranslate#1#2{{#1}\translateSymbol{#2}}
+\gdef\pathLeftTranslate#1{{{#1}\translateSymbol}}
+\gdef\pathBackwardTranslate#1#2{{#1}{\backwardTranslateSymbol}{#2}}
+\gdef\pathLeftBackwardTranslate#1{{#1}{\backwardTranslateSymbol}}
 
 \gdef\compactCovariantDifference#1#2{\Delta_{#1}\,{#2}}
 \gdef\covariantDifference{{#1}\,\Delta\,{#2}}
@@ -204,6 +206,22 @@
 \gdef\codomain{\operatorname{codomain}}
 \gdef\modFunction{\operatorname{mod}}
 
+\gdef\projection{\operatorname{proj}}
+\gdef\lift{\operatorname{lift}}
+\gdef\identity{\operatorname{id}}
+\gdef\total{\operatorname{total}}
+
+\gdef\stateCompose{\operatorname{glue}}
+\gdef\infixStateComposeSymbol{\_}
+\gdef\stateDecompose{\operatorname{melt}}
+\gdef\stateJoin{\operatorname{conj}}
+\gdef\stateMeet{\operatorname{disj}}
+\gdef\stateExtent{\operatorname{extent}}
+\gdef\stateIntent{\operatorname{intent}}
+
+\gdef\infixStateJoinSymbol{\sqcup}
+\gdef\infixStateMeetSymbol{\sqcap}
+
 \gdef\isPrime#1{#1\textrm{ prime}}
 
 \gdef\blank{\_}
@@ -217,6 +235,8 @@
 
 \gdef\imageModifier#1{{#1}^{\rightarrow}}
 \gdef\preimageModifier#1{{#1}^{\leftarrow}}
+
+\gdef\multiImageColorModifier#1{\msetCol{#1}}
 
 \gdef\multiImageModifier#1{{#1}^{\Rightarrow}}
 \gdef\multiPreimageModifier#1{{#1}^{\Leftarrow}}
@@ -282,6 +302,17 @@
 \gdef\matrix#1{#1}
 \gdef\polynomial#1{#1}
 
+\gdef\setLetter{\mathcal{S}}
+\gdef\signedSetLetter{\mathcal{S^*}}
+\gdef\multisetLetter{\mathcal{M}}
+\gdef\signedMultisetLetter{\mathcal{M^*}}
+
+\gdef\multisetSemiringSymbol#1{#1}
+\gdef\multisetSemiring#1{\multisetLetter\left[#1\right]}
+
+\gdef\signedMultisetSemiringSymbol#1{#1}
+\gdef\signedMultisetSemiring#1{\signedMultisetLetter\left[#1\right]}
+
 \gdef\polynomialRing#1#2{#1[{#2}]}
 
 \gdef\routeSymbol#1{#1}
@@ -329,7 +360,7 @@
 \gdef\div{\dot{\nabla}}
 \gdef\laplacianOf#1{\laplacian\,{#1}}
 \gdef\laplacian{\ddot{\nabla}}
-\gdef\suchThat#1#2{{#1}|{#2}}
+\gdef\suchThat#1#2{{#1}\,\big|\,{#2}}
 
 \gdef\chart#1{\chartSymbol_{#1}}
 \gdef\chartSymbol{C}
@@ -367,8 +398,8 @@
 
 \gdef\covering#1#2#3{{#2} \sqsupseteq_{#1} {#3}}
 
+\gdef\powerSetSymbol{\mathcal{P}}
 \gdef\powerSet#1{\powerSetSymbol({#1})}
-\gdef\powerSetSymbol{\mathscr{P}}
 
 \gdef\existsForm#1#2{\exists\,{#1}\,:\,{#2}}
 \gdef\forAllForm#1#2{\forall\,{#1}\,:\,{#2}}
@@ -377,16 +408,40 @@
 \gdef\orSymbol{\lor}
 \gdef\notSymbol{\lnot}
 
-\gdef\latticeElement#1{#1}
+\gdef\latticeSymbol#1{#1}
+\gdef\meetSemilatticeSymbol#1{#1}
+\gdef\joinSemilatticeSymbol#1{#1}
+\gdef\posetSymbol#1{#1}
+
+\gdef\latticeElementSymbol#1{#1}
+\gdef\meetSemilatticeElementSymbol#1{#1}
+\gdef\joinSemilatticeElementSymbol#1{#1}
+\gdef\posetElementSymbol#1{#1}
+
 \gdef\latticeMeetSymbol{\wedge}
 \gdef\latticeJoinSymbol{\vee}
 \gdef\latticeTop{\top}
 \gdef\latticeBottom{\bot}
 
+\gdef\semilatticeMeetSymbol{\wedge}
+\gdef\semilatticeJoinSymbol{\vee}
+\gdef\semilatticeTop{\top}
+\gdef\semilatticeBottom{\bot}
+
+\gdef\semilatticeSemimeetSymbol{\wedge}
+\gdef\semilatticeSemijoinSymbol{\vee}
+
 \gdef\latticeGreaterSymbol{>}
 \gdef\latticeGreaterEqualSymbol{\ge}
 \gdef\latticeLessSymbol{<}
 \gdef\latticeLessEqualSymbol{\le}
+
+\gdef\posetGreaterSymbol{>}
+\gdef\posetGreaterEqualSymbol{\ge}
+\gdef\posetLessSymbol{<}
+\gdef\posetLessEqualSymbol{\le}
+\gdef\posetCoversSymbol{⋗}
+\gdef\posetCoveredBySymbol{⋖}
 
 \gdef\grpname#1{\operatorname{\mathsf{#1}}}
 \gdef\mkg#1#2#3{\grpname{#1}({#2},{#3})}
@@ -434,17 +489,27 @@
 \gdef\iconstruct#1#2{{#1}\,\,\middle|{\large\mathstrut}\,\,{#2}}
 \gdef\setConstructor#1#2{\left\{\,\iconstruct{#1}{#2}\,\right\}}
 \gdef\multisetConstructor#1#2{\left\{\mkern{-2.3pt}\left|\,\,\iconstruct{#1}{#2}\,\right|\mkern{-2.3pt}\right\}}
+\gdef\cardinalityConstructor#1#2{\left|\,\iconstruct{#1}{#2}\,\right|}
 
-\gdef\multisets#1{\mathscr{M}({#1})}
-\gdef\signedMultisets#1{\mathscr{M^*}({#1})}
+\gdef\setToMultiset#1{{#1}^\uparrow}
+\gdef\multisetToSet#1{{#1}^\downarrow}
+
+\gdef\subsets#1{\setLetter({#1})}
+\gdef\multisets#1{\multisetLetter({#1})}
+\gdef\signedMultisets#1{\signedMultisetLetter({#1})}
 
 \gdef\setSymbol#1{#1}
 \gdef\multisetSymbol#1{#1}
+\gdef\signedMultisetSymbol#1{#1}
 \gdef\setElementSymbol#1{#1}
 \gdef\multisetElementSymbol#1{#1}
+\gdef\signedMultisetElementSymbol#1{#1}
+
+\gdef\negated#1{\bar{#1}}
 
 \gdef\multisetMultiplicitySymbol{\raisebox{.1em}{\small\#}\mkern{.1em}}
 \gdef\boundMultiplicityFunction#1{\operatorname{{#1}^{\sharp}}}
+\gdef\boundSignedMultiplicityFunction#1{\operatorname{{#1}^{\sharp}}}
 
 \gdef\constructor#1#2{\left.{#1}\,\,\middle|\mathstrut\,\,{#2}\right.}
 \gdef\elemOf#1#2{{ {#1} \in {#2} }}
@@ -475,6 +540,7 @@
 \gdef\finiteField#1{\mathbb{F}_{#1}}
 
 \gdef\functionSpace#1#2{#2^{#1}}
+\gdef\finiteTotalFunctionSpace#1#2{#2^{\sub #1}}
 
 \gdef\pathGroupoid#1{{ \Gamma_{#1} }}
 \gdef\forwardPathQuiver#1#2{{\overrightharpoon{#1}_{#2}}}
@@ -492,14 +558,61 @@
 \gdef\rewritingStateBinding#1#2{{\left.{#1}\!\mid\!{#2}\right.}}
 \gdef\rewritingRuleBinding#1#2{#1{\left[\,{#2}\,\right]}}
 
-\gdef\namedSystem#1{\mathsf{#1}}
-\gdef\genericRewritingSystem{\namedSystem{System}}
+\gdef\namedSystem#1{\mathtt{#1}}
+\gdef\genericRewritingSystem{\namedSystem{Sys}}
 \gdef\stringRewritingSystem{\namedSystem{Str}}
+\gdef\circularStringRewritingSystem{\namedSystem{CStr}}
 \gdef\turingMachineRewritingSystem{\namedSystem{TM}}
 \gdef\cellularAutomatonRewritingSystem{\namedSystem{CA}}
 \gdef\graphRewritingSystem{\namedSystem{Gr}}
 \gdef\hypergraphRewritingSystem{\namedSystem{HGr}}
 \gdef\petriNetRewritingSystem{\namedSystem{Petri}}
+
+\gdef\localStates#1{\localStatesSymbol^#1}
+\gdef\regionalStates#1{\regionalStatesSymbol^#1}
+\gdef\globalStates#1{\globalStatesSymbol^#1}
+\gdef\keySubStates#1{\keySubStatesSymbol^#1}
+\gdef\valueSubStates#1{\valueSubStatesSymbol^#1}
+
+\gdef\localState#1#2{#2_{#1}}
+\gdef\regionalState#1{#1}
+\gdef\globalState#1{#1}
+\gdef\keySubState#1{#1}
+\gdef\valueSubState#1{#1}
+
+\gdef\lhsState#1{#1_{L}}
+\gdef\rhsState#1{#1_{R}}
+
+\gdef\rewriteLHSRegionalState#1{#1_{L}}
+\gdef\rewriteRHSRegionalState#1{#1_{R}}
+
+\gdef\regionalStateForm#1{\waform{(}#1\waform{)}}
+
+\gdef\invalidRegionalState{\rform{\times}}
+\gdef\emptyRegionalState{\regionalStateForm{}}
+
+\gdef\regionalSubstateSymbol{\sqsubseteq}
+\gdef\regionalSuperstateSymbol{\sqsupseteq}
+\gdef\comparableRegionalStatesSymbol{\mathbin{\square}}
+\gdef\incomparableRegionalStatesSymbol{\mathbin{\boxtimes}}
+
+\gdef\namedStateSet#1{\mathbf #1}
+\gdef\localStatesSymbol{\namedStateSet L}
+\gdef\regionalStatesSymbol{\namedStateSet R}
+\gdef\globalStatesSymbol{\namedStateSet G}
+
+\gdef\keySubStatesSymbol{\namedStateSet L_K}
+\gdef\valueSubStatesSymbol{\namedStateSet L_V}
+
+\gdef\localStateSymbol#1{#1}
+\gdef\regionalStateSymbol#1{#1}
+\gdef\globalStateSymbol#1{#1}
+\gdef\keySubStateSymbol#1{#1}
+\gdef\valueSubStateSymbol#1{#1}
+
+\gdef\infixComposeLocalStatesSymbol{\_}
+\gdef\composeLocalStatesSymbol{\operatorname{glue}}
+\gdef\composeLocalStatesForm#1{\composeLocalStatesSymbol(#1)}
 
 \gdef\ncard#1{\card{\inverted{#1}}}
 \gdef\mcard#1{\card{\mirror{#1}}}
@@ -507,9 +620,18 @@
 
 \gdef\assocArray#1{\left\langle {#1} \right\rangle}
 
+\gdef\openMultiset{\lBrace}
+\gdef\closeMultiset{\rBrace}
+
 \gdef\set#1{\{ {#1} \}}
 \gdef\list#1{\{ {#1} \}}
-\gdef\multiset#1{\lBrace {#1} \rBrace}
+\gdef\multiset#1{\openMultiset {#1} \closeMultiset}
+\gdef\signedMultiset#1{\openMultiset {#1} \closeMultiset}
+
+\gdef\styledSet#1#2{#1\{ {#1} #1\}}
+\gdef\styledList#1#2{#1\{ {#1} #1\}}
+\gdef\styledMultiset#1#2{#1\openMultiset {#2} #1\closeMultiset}
+\gdef\styledSignedMultiset#1#2{\openMultiset {#2} \closeMultiset}
 
 \gdef\permutationCycle#1{#1}
 \gdef\permutationCycleSymbol{\to}
@@ -540,7 +662,15 @@
 \gdef\Gmult{\vsp\ast\vsp}
 
 \gdef\gdot{\vsp\cdot\vsp}
-\gdef\gDot{\vsp{\,\largeDot\,}\vsp}
+\gdef\gDot{\vsp\mathbin{\largeDot}\vsp}
+
+\gdef\mdot{\vsp\cdot\vsp}
+\gdef\sgdot{\vsp\cdot\vsp}
+
+\gdef\thickdot{\raisebox{0.15em}{\tiny∙}}
+
+\gdef\srdot{\mathbin{\thickdot}}
+\gdef\srplus{+}
 
 \gdef\ellipsis{\dots}
 \gdef\verticalEllipsis{\vdots}
@@ -549,15 +679,26 @@
 
 \gdef\setUnionSymbol{\cup}
 \gdef\setIntersectionSymbol{\cap}
-\gdef\setRelativeComplementSymbol{\backslash}
+\gdef\setRelativeComplementSymbol{-}
 
-\gdef\multisetUnionSymbol{\cup}
-\gdef\multisetIntersectionSymbol{\cap}
-\gdef\multisetRelativeComplementSymbol{\backslash}
-\gdef\multisetSumSymbol{+}
+\gdef\msetCol{\textcolor{bb4444}}
+
+\gdef\repeatedMultiset#1#2{#1\,#2}
+
+\gdef\msrdot{\mathbin{\thickdot}}
+\gdef\msrplus{+}
+
+\gdef\dotminus{\mathbin{\dot{-}}}
+\gdef\dotcap{\mathbin{\dot{\cap}}}
+\gdef\dotcup{\mathbin{\dot{\cup}}}
+\gdef\multisetUnionSymbol{\dotcup}
+\gdef\multisetIntersectionSymbol{\dotcap}
+\gdef\multisetRelativeComplementSymbol{\dotminus}
+\gdef\multisetSumSymbol{\dotplus}
 
 \gdef\cartesianProductSymbol{\times}
 \gdef\functionSignature#1#2#3{{{#1} : {#2} \to {#3}}}
+\gdef\partialFunctionSignature#1#2#3{{{#1} : {#2} \rightharpoonup {#3}}}
 
 \gdef\poly#1{#1}
 \gdef\quiverProdPoly#1{#1}
@@ -580,8 +721,9 @@
 \gdef\componentSuperQuiverOfSymbol{\succ}
 
 \gdef\setCardinality#1{|{#1}|}
-\gdef\dependentQuiverProductSymbol{\,\times\,}
-\gdef\independentQuiverProductSymbol{\,⨝\,}
+\gdef\multisetCardinality#1{|{#1}|}
+\gdef\dependentQuiverProductSymbol{\mathbin{\times}}
+\gdef\independentQuiverProductSymbol{\mathbin{⨝}}
 \gdef\graphUnionSymbol{\sqcup}
 \gdef\graphProductSymbol{\times}
 \gdef\inlineProdSymbol{\mid}
@@ -593,15 +735,30 @@
 \gdef\cardinalProductSymbol{\inlineProdSymbol}
 \gdef\vertexProductSymbol{\!\inlineProdSymbol\!}
 \gdef\edgeProductSymbol{\inlineProdSymbol}
+
 \gdef\indexSum#1#2#3{{\sum_{#2}^{#3} #1}}
 \gdef\indexProd#1#2#3{{\prod_{#2}^{#3} #1}}
 \gdef\indexMax#1#2#3{{\max_{#2}^{#3} #1}}
 \gdef\indexMin#1#2#3{{\min_{#2}^{#3} #1}}
 
+\gdef\indexUnion#1#2#3{{\bigcup_{#2}^{#3} #1}}
+\gdef\indexIntersection#1#2#3{{\bigcap_{#2}^{#3} #1}}
+
+\gdef\styledIndexSum#1#2#3#4{{#1\sum_{#3}^{#4} #2}}
+\gdef\styledIndexProd#1#2#3#4{{#1\prod_{#3}^{#4} #2}}
+\gdef\styledIndexMax#1#2#3#4{{#1\max_{#3}^{#4} #2}}
+\gdef\styledIndexMin#1#2#3#4{{#1\min_{#3}^{#4} #2}}
+
+\gdef\indexSumSymbol{\sum}
+\gdef\indexProdSymbol{\prod}
+\gdef\indexMaxSymbol{\max}
+\gdef\indexMinSymbol{\min}
+
 \gdef\oneTo#1{1..{#1}}
 \gdef\zeroTo#1{0..{#1}}
 
 \gdef\qstring#1{\mathtt{"}{#1}\mathtt{"}}
+\gdef\wstring#1{\textcolor{6b6b6b}{#1}}
 \gdef\qchar#1{\mathtt{'}{#1}\mathtt{'}}
 \gdef\lstr#1{\mathtt{#1}}
 \gdef\lchar#1{\mathtt{#1}}

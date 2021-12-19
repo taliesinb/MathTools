@@ -1380,10 +1380,10 @@ tableToAssoc[vertices_, table_] := Association @ MapIndexed[
 ];
 
 VertexOutAssociation[graph_] :=
-  tableToAssoc[VertexList @ graph, VertexOutTable @ vertices];
+  tableToAssoc[VertexList @ graph, VertexOutTable @ graph];
 
 VertexInAssociation[graph_] :=
-  tableToAssoc[VertexList @ graph, VertexInTable @ vertices];
+  tableToAssoc[VertexList @ graph, VertexInTable @ graph];
 
 (**************************************************************************************************)
 

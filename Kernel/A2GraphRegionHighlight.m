@@ -94,7 +94,7 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
   $highlightRadius = $GraphMaxSafeVertexSize;
 
   (* todo: use the same conversion functions as I use in GraphPlotting *)
-  $pathRadius = Automatic; $diskRadius = Automatic;
+  $pathRadius = Automatic; $diskRadius = Automatic; $pathVertexHighlighting = All;
   $graphPlotWidth = First @ $GraphPlotSize;
   $radiusScaling = If[$GraphIs3D, 0.25, 1];
   $edgeBaseStyle := $edgeBaseStyle = FirstCase[
@@ -208,6 +208,12 @@ SetUsage @ "
 PathRadius is an option that controls the radius of highlighted paths.
 "
 
+PackageExport["PathVertexHighlighting"]
+
+SetUsage @ "
+PathVertexHighlighting is an option that controls how which vertices on paths are highlighted.
+"
+
 PackageExport["DiskRadius"]
 
 SetUsage @ "
@@ -280,14 +286,13 @@ processStyleSpec[spec_, f_] := Scope[
   iProcessStyleSpec @ spec
 ];
 
-
 Style;
 SyntaxInformation[Style];
 Options[Style];
 
 $additionalStyleOptions = {
   PerformanceGoal, PathStyle, RegionStyle, ArrowheadPosition, ArrowheadSize, ArrowheadStyle, PointSize, HighlightRadius, DiskRadius,
-  PathRadius, EdgeSetback, SimplifyRegions, ZOrder, Cardinals
+  PathRadius, EdgeSetback, SimplifyRegions, ZOrder, Cardinals, PathVertexHighlighting
 };
 
 Unprotect[Style];
@@ -347,6 +352,10 @@ iProcessStyleSpec = MatchValues[
   ];
   Style[most__, PathRadius -> r_] := Scope[
     $pathRadius = r;
+    % @ Style @ most
+  ];
+  Style[most__, PathVertexHighlighting -> ph_] := Scope[
+    $pathVertexHighlighting = ph;
     % @ Style @ most
   ];
   Style[most__, PathOutline -> out_] := Scope[
@@ -411,12 +420,24 @@ highlightRegion[GraphRegionData[vertices_, edges_]] /; StringQ[$regionStyle] && 
   $newVertices = {}; $newEdges = {};
   TransformGraphPlotPrimitives[removeHighlightedPathEdges, edges, "EdgePrimitives"];
   TransformGraphPlotPrimitives[removeHighlightedPathVertices, vertices, "VertexPrimitives"];
-  pathPrimitives = {simplifyPrimitives @ $newEdges, simplifyPrimitives @ $newVertices};
+  newEdges = simplifyPrimitives @ $newEdges;
+  newVertices = simplifyPrimitives @ $newVertices;
+  diskRadius = $diskRadius;
+  If[diskRadius =!= Automatic,
+    newVertices = replaceVertexSize[newVertices, PointSize[diskRadius / $GraphPlotImageWidth]];
+  ];
   sowHighlight @ Style[
-    replaceWithColor[pathPrimitives, $highlightStyle, $regionStyle === "ReplaceEdges"],
+    replaceWithColor[{newEdges, newVertices}, $highlightStyle, $regionStyle === "ReplaceEdges"],
     $edgeBaseStyle, $highlightStyle
   ];
 ];
+
+$pointSizeP = (_AbsolutePointSize | _PointSize);
+replaceVertexSize[primitives_, size_] :=
+  If[FreeQ[primitives, $pointSizeP],
+    Style[primitives, size],
+    ReplaceAll[primitives, $pointSizeP :> size]
+  ];
 
 highlightRegion[GraphRegionData[vertices_, edges_]] /; $regionStyle === "Highlight" := Scope[
   If[$perfGoal === "Speed",
@@ -455,6 +476,11 @@ highlightRegion[GraphRegionAnnotation[data_, anno_]] := Scope[
   $currentRegionAnnotations = anno;
   highlightRegion @ data;
 ]
+
+applyPathVertexHighlighting[vertices_, All] := vertices;
+applyPathVertexHighlighting[_, None] := {};
+applyPathVertexHighlighting[vertices_, "Endpoints"] := FirstLast @ vertices;
+applyPathVertexHighlighting[vertices_, "Interior"] := Part[vertices, 2;;-2];
 
 highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
 
@@ -523,13 +549,18 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
           If[$pathStyle === "ReplaceEdges", SetAll[$cardinalFilter, {}]];
           $newVertices = $newEdges = {}; $firstRemovedArrowheads = None;
           TransformGraphPlotPrimitives[removeHighlightedPathEdges, edges, "EdgePrimitives"];
-          TransformGraphPlotPrimitives[removeHighlightedPathVertices, vertices, "VertexPrimitives"];
+          TransformGraphPlotPrimitives[removeHighlightedPathVertices, applyPathVertexHighlighting[vertices, $pathVertexHighlighting], "VertexPrimitives"];
           $newEdges = Which[
             edges === {}, {},
             adjustments === {}, $newEdges,
             True, Style[Arrow @ segments, $firstRemovedArrowheads, CapForm @ "Round"]
           ];
-          pathPrimitives = {Style[$newEdges, $edgeBaseStyle], $newVertices};
+          edgeBaseStyle = $edgeBaseStyle;
+          If[$pathRadius =!= Automatic,
+            $newEdges //= removeThickness;
+            edgeBaseStyle //= removeThickness;
+          ];
+          pathPrimitives = {Style[$newEdges, edgeBaseStyle], $newVertices};
           replaceWithColor[pathPrimitives, $highlightStyle, $arrowheadStyle === Inherited]
         ]
       ,
@@ -570,6 +601,8 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
     pathStyle, Thickness @ thickness
   ];
 ];
+
+removeThickness[g_] := ReplaceAll[g, _Thickness | _AbsoluteThickness -> {}];
 
 makeArrowDiskPrimitives[indices_, firstDisk_, lastDisk_, radius_] := Scope[
   primitives = ExpandPrimitives @ removeSingleton @ ExtractGraphPlotPrimitives[indices, "VertexPrimitives"];

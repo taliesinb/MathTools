@@ -291,12 +291,11 @@ toCountFilter = Case[
 
 canonicalCardinalTransition[rules_] := Scope[
   rules = DeleteCases[rules, z_ -> z_];
-  reps = Sort /@ {rules, reverseRules @ rules, invertRules @ rules, reverseRules @ invertRules @ rules};
+  reps = Sort /@ {rules, ReverseRules @ rules, invertRules @ rules, ReverseRules @ invertRules @ rules};
   minIndex = MinimumIndex[reps];
   If[MatchQ[minIndex, 2 | 4], Inverted, Identity] @ CardinalTransition @ Part[reps, minIndex]
 ];
 
-reverseRules[rules_] := Map[Reverse, rules];
 invertRules[rules_] := MapMatrix[Inverted, rules];
 
 PackageExport["CardinalRewriteCayleyFunction"]

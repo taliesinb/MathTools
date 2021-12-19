@@ -342,6 +342,9 @@ RenameCardinals[graph_Graph, renaming:{__String}] :=
 
 RenameCardinals[graph_Graph, {}] := graph;
 
+RenameCardinals[graph_Graph, renaming_List] :=
+  RenameCardinals[graph, RuleThread[CardinalList @ graph, renaming]];
+
 RenameCardinals[graph_Graph, renaming:{__Rule}] := Scope[
   {vertices, edges} = VertexEdgeList @ graph;
   replacer = ReplaceAll @ Dispatch @ renaming;
