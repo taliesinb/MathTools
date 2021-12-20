@@ -33,8 +33,8 @@ SetInitialValue[sym_Symbol, body_] := If[!System`Private`HasImmediateValueQ[sym]
 
 (**************************************************************************************************)
 
-PackageScope["LowerCaseFirst"]
-PackageScope["UpperCaseFirst"]
+PackageExport["LowerCaseFirst"]
+PackageExport["UpperCaseFirst"]
 
 LowerCaseFirst[str_String] := StringJoin[ToLowerCase @ StringTake[str, 1], StringDrop[str, 1]];
 UpperCaseFirst[str_String] := StringJoin[ToUpperCase @ StringTake[str, 1], StringDrop[str, 1]];
@@ -2028,6 +2028,83 @@ StandardizeRowColumnSpec[item_, n_] :=
 StandardizeRowColumnSpec[Automatic|None, _] :=
   Automatic;
 
+(**************************************************************************************************)
+
+PackageExport["CommonPrefix"]
+PackageExport["CommonPrefixLength"]
+
+CommonPrefix[{}] := None;
+CommonPrefix[{e_}] := e;
+CommonPrefix[e_List] := Take[First @ e, CommonPrefixLength[e]];
+
+CommonPrefixLength[{}] := 0;
+CommonPrefixLength[{e_}] := Length @ e;
+CommonPrefixLength[list_] := Scope[
+  n = 1; minLen = Min @ Map[Length, list];
+  Do[
+    If[NotAllEqualQ[Take[list, All, n]], Return[n-1, Block]],
+    {n, minLen}
+  ];
+  minLen
+];
+
+
+PackageExport["CommonStringPrefix"]
+PackageExport["CommonStringPrefixLength"]
+
+CommonStringPrefix[{}] := None;
+CommonStringPrefix[strings_ ? StringVectorQ] :=
+  StringTake[First @ strings, CommonStringPrefixLength @ strings];
+
+CommonStringPrefixLength[strings_ ? StringVectorQ] :=
+  CommonPrefixLength @ Characters @ strings;
+
+(**************************************************************************************************)
+
+PackageExport["CommonSuffix"]
+PackageExport["CommonSuffixLength"]
+
+CommonSuffix[{}] := None;
+CommonSuffix[{e_}] := e;
+CommonSuffix[e_List] := Take[First @ e, -CommonSuffixLength[e]];
+
+CommonSuffixLength[{}] := 0;
+CommonSuffixLength[{e_}] := Length @ e;
+CommonSuffixLength[list_] := Scope[
+  n = 1; minLen = Min @ Map[Length, list];
+  Do[
+    If[NotAllEqualQ[Take[list, All, -n]], Return[n-1, Block]],
+    {n, minLen}
+  ];
+  minLen
+];
+
+
+PackageExport["CommonStringSuffix"]
+PackageExport["CommonStringSuffixLength"]
+
+CommonStringSuffix[{}] := None;
+CommonStringSuffix[strings_ ? StringVectorQ] :=
+  StringTake[First @ strings, Minus @ CommonStringSuffixLength @ strings];
+
+CommonStringSuffixLength[strings_ ? StringVectorQ] :=
+  CommonSuffixLength @ Characters @ strings;
+
+(**************************************************************************************************)
+
+PackageExport["AllSameQ"]
+PackageExport["NotAllSameQ"]
+
+AllSameQ[e_] := SameQ @@ e;
+NotAllSameQ[e_] := Not[SameQ @@ e];
+
+(**************************************************************************************************)
+
+PackageExport["AllEqualQ"]
+PackageExport["NotAllEqualQ"]
+
+AllEqualQ[e_] := Equal @@ e;
+NotAllEqualQ[e_] := Not[Equal @@ e];
 
 (**************************************************************************************************)
 

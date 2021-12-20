@@ -573,7 +573,7 @@ $tableCreation = StartOfLine ~~ " "... ~~ text:Repeated["* " ~~ Except["\n"].. ~
 createTable[ostr_String] := Scope[
   str = StringTrim @ ostr;
   lines = StringDrop[StringSplit[str, "\n"..], 2];
-  allowCompact = True
+  allowCompact = True;
   If[StringStartsQ[First @ lines, "META: "],
     {meta, lines} = FirstRest @ lines;
     allowCompact = StringFreeQ[meta, "WIDE"];
