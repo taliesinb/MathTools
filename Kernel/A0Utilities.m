@@ -232,13 +232,39 @@ SetUsage[symbol_Symbol, usageString_String] :=
 
 (**************************************************************************************************)
 
-PackageExport["MapMatrix"]
+PackageExport["MatrixMap"]
 
-MapMatrix[f_, matrix_] :=
-  Map[f, matrix, {2}];
+MatrixMap[f_, matrix_] := Map[f, matrix, {2}];
+MatrixMap[f_][matrix_] := Map[f, matrix, {2}];
 
-MapMatrix[f_][matrix_] :=
-  MapMatrix[f, matrix];
+(**************************************************************************************************)
+
+PackageExport["VectorReplace"]
+
+VectorReplace[vector_, rule_] := Replace[vector, rule, {1}];
+VectorReplace[rule_][vector_] := Replace[vector, rule, {1}];
+
+(**************************************************************************************************)
+
+PackageExport["MatrixReplace"]
+
+MatrixReplace[matrix_, rule_] := Replace[matrix, rule, {2}];
+MatrixReplace[rule_][matrix_] := Replace[matrix, rule, {2}];
+
+(**************************************************************************************************)
+
+PackageExport["VectorApply"]
+
+(* this is a named form of @@@ *)
+VectorApply[f_, e_] := Apply[f, e, {1}];
+VectorApply[f_][e_] := Apply[f, e, {1}];
+
+(**************************************************************************************************)
+
+PackageExport["MatrixApply"]
+
+MatrixApply[f_, e_] := Apply[f, e, {2}];
+MatrixApply[f_][e_] := Apply[f, e, {2}];
 
 (**************************************************************************************************)
 
@@ -628,7 +654,7 @@ ArrayLabelIndices[array$, labels$] gives an array of the same shape as array$, w
 "
 
 ArrayLabelIndices[array_, labels_] :=
-  Replace[array, RuleRange @ labels, {1}];
+  VectorReplace[array, RuleRange @ labels];
 
 ArrayLabelIndices[array_, labels_, level_] :=
   Replace[array, RuleRange @ labels, List[level]];
@@ -1242,7 +1268,7 @@ JoinOptions[options$1, options$2, $$] joins together the options$i to form a sin
 "
 
 JoinOptions[opts___] := DeleteDuplicatesBy[
-  Flatten @ Replace[Flatten @ {opts}, s_Symbol :> Options[s], {1}],
+  Flatten @ VectorReplace[Flatten @ {opts}, s_Symbol :> Options[s]],
   First
 ];
 
@@ -1304,7 +1330,7 @@ ReplaceOptions[g_Graph, rule_Rule | rule_List] :=
 
 ReplaceOptions[obj_, key_ -> value_] := If[
   MemberQ[obj, key -> _],
-  Replace[obj, Rule[key, _] :> Rule[key, value], {1}],
+  VectorReplace[obj, Rule[key, _] :> Rule[key, value]],
   Append[obj, key -> value]
 ];
 
@@ -1352,7 +1378,7 @@ LookupAnnotation[obj_, key_, default_:Automatic] :=
   OnFailed[AnnotationValue[obj, key], default];
 
 LookupAnnotation[obj_, key_List, default_:Automatic] :=
-  Replace[AnnotationValue[obj, key], $Failed :> default, {1}];
+  VectorReplace[AnnotationValue[obj, key], $Failed :> default];
 
 (**************************************************************************************************)
 

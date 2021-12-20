@@ -18,7 +18,7 @@ LookupVertexCoordinates[graph_Graph, vertexList_:All] := Scope[
     ,
     RuleListQ @ vertexCoordinateRules,
       AppendTo[vertexCoordinateRules, _ -> None];
-      Replace[vertexList, vertexCoordinateRules, {1}]
+      VectorReplace[vertexList, vertexCoordinateRules]
     ,
     vertexCoordinateFunction =!= None,
       Map[vertexCoordinateFunction, vertexList]
@@ -166,7 +166,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
     ,
     RuleListQ @ vertexCoordinateRules,
       AppendTo[vertexCoordinateRules, _ -> None];
-      initialVertexCoordinates = Replace[vertexList, vertexCoordinateRules, {1}];
+      initialVertexCoordinates = VectorReplace[vertexList, vertexCoordinateRules];
     ,
     True,
       Message[ExtractGraphPrimitiveCoordinates::badvcoordrules];
@@ -337,7 +337,7 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
     ,
     RuleListQ @ vertexCoordinateRules,
       AppendTo[vertexCoordinateRules, _ -> None];
-      vertexCoordinates = Replace[vertexList, vertexCoordinateRules, {1}];
+      vertexCoordinates = VectorReplace[vertexList, vertexCoordinateRules];
     ,
     True,
       Message[ExtractGraphPrimitiveCoordinates::badvcoordrules];
@@ -704,7 +704,7 @@ applyCoordinateTransform[list_List] :=
 applyCoordinateTransform[f_] := Block[{res},
   res = Check[
     vertexCoordinates //= Map[f];
-    edgeCoordinateLists = MapMatrix[f, edgeCoordinateLists];
+    edgeCoordinateLists = MatrixMap[f, edgeCoordinateLists];
   ,
     $Failed
   ];
@@ -751,10 +751,13 @@ applyCoordinateTransform[{"Snap", m_, nudge_:0.1}] := Scope[
   newVertexCoordinates = vertexCoordinates;
   adjacencyTable = VertexAdjacencyTable @ $Graph;
   $nudge = nudge;
-  Scan[index |-> (
-    center = Mean @ Part[vertexCoordinates, Part[adjacencyTable, index]];
-    Part[newVertexCoordinates, index] //= nudgeDuplicate[center]),
-    duplicateIndices, {2}];
+  Scan[
+    index |-> (
+      center = Mean @ Part[vertexCoordinates, Part[adjacencyTable, index]];
+      Part[newVertexCoordinates, index] //= nudgeDuplicate[center]
+    ),
+    duplicateIndices, {2}
+  ];
   vertexCoordinates ^= newVertexCoordinates;
   (* TODO: rigid transfrom the nudged edges *)
 ];
@@ -831,14 +834,14 @@ findPointEdgeIntersectionV[x_, {{x1_, y1_}, {x2_, y2_}}] :=
 
 applyCoordinateTransform[{"HorizontalWarp", offsetFn_}] := (
   transFn = {x, y} |-> {x - offsetFn[y], y};
-  vertexCoordinates = Apply[transFn, vertexCoordinates, {1}];
-  edgeCoordinateLists = Apply[transFn, edgeCoordinateLists, {2}];
+  vertexCoordinates = VectorApply[transFn, vertexCoordinates];
+  edgeCoordinateLists = MatrixApply[transFn, edgeCoordinateLists];
 );
 
 applyCoordinateTransform[{"VerticalWarp", offsetFn_}] := (
   transFn = {x, y} |-> {x, y - offsetFn[x]};
-  vertexCoordinates = Apply[transFn, vertexCoordinates, {1}];
-  edgeCoordinateLists = Apply[transFn, edgeCoordinateLists, {2}];
+  vertexCoordinates = VectorApply[transFn, vertexCoordinates];
+  edgeCoordinateLists = MatrixApply[transFn, edgeCoordinateLists];
 );
 
 applyCoordinateTransform["Reflect"] := (

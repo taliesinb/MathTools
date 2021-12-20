@@ -176,7 +176,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   depthLabels = Automatic;
   If[MatchQ[maxDepth, <|All -> _Integer|>],
     depthLabels = DeepCases[f, Labeled[_, label_ ? notInternalSymbolQ] :> label];
-    depthLabels = DeleteDuplicates @ Replace[depthLabels, Inverted[c_] :> c, {1}];
+    depthLabels = DeleteDuplicates @ VectorReplace[depthLabels, Inverted[c_] :> c];
     If[depthLabels === {}, ReturnFailed["badmaxdepth"]];
     maxDepth = ConstantAssociation[depthLabels, First @ maxDepth];
   ];
@@ -309,7 +309,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
 
   If[trackLabelDepth,
     $extractLabelBlock := (
-      labels = Replace[successors, {Labeled[_, l_] :> Replace[l, Inverted[c_] :> c], _ -> None}, {1}];
+      labels = VectorReplace[successors, {Labeled[_, l_] :> Replace[l, Inverted[c_] :> c], _ -> None}];
     );
 
     If[limitLabelDepth,

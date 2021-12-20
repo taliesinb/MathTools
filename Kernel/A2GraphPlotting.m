@@ -417,7 +417,7 @@ ExtendedGraphPlot[graph_Graph] := Block[
 
 GraphicsImageSizePadTo[graphics_, requiredPadding_] := Scope[
   padding = LookupOption[graphics, ImagePadding];
-  padding = MapMatrix[Max[#, requiredPadding]&, padding];
+  padding = MatrixMap[Max[#, requiredPadding]&, padding];
   ReplaceOptions[graphics, ImagePadding -> padding]
 ];
 
@@ -1053,7 +1053,7 @@ plotSizeToImageSize[sz_] := sz / $GraphPlotSizeX * effectiveImageWidth;
 plotSizeToDiskSize[sz_] := Scaled[sz * {1, $GraphPlotAspectRatio} / $GraphPlotScale];
 plotSizeToPointSize[sz_] := PointSize[sz / $GraphPlotSizeX];
 
-extendPadding[n_] := imagePadding = MapMatrix[Max[#, n]&, imagePadding];
+extendPadding[n_] := imagePadding = MatrixMap[Max[#, n]&, imagePadding];
 extendPadding[padding_List] := imagePadding = MapThread[Max, {imagePadding, padding}, 2];
 
 extendPaddingToInclude[{{xmin_, xmax_}, {ymin_, ymax_}}] := Scope[
@@ -1302,7 +1302,7 @@ resolveColorRules[head_, _, r_, _] := failPlot["badcolorrules", head, r];
 resolveColorRules[head_, elements_, rules:$RuleListPattern, default_] := Scope[
   defaultColor = Replace[All, Append[rules, _ -> default]];
   rules = Append[rules, _ -> defaultColor];
-  colors = Replace[elements, rules, {1}];
+  colors = VectorReplace[elements, rules];
   If[!ColorVectorQ[colors], failPlot["badcolorruleres", head]];
   AssociationThread[elements, colors]
 ];
@@ -1956,10 +1956,10 @@ applyAutomaticLegends[graphics_, automaticLegends_, graphLegend_] := Scope[
   graphLegend = ToList @ graphLegend;
   If[!MatchQ[graphLegend, {Repeated[keyPattern | Placed[keyPattern, _]]}],
     Return @ graphics];
-  legends = removeSingleton @ Replace[graphLegend, {
+  legends = removeSingleton @ VectorReplace[graphLegend, {
     s_String :> automaticLegends[s],
     Placed[s_String, p_] :> Placed[automaticLegends[s], p]
-  }, {1}];
+  }];
   ApplyLegend[graphics, legends]
 ];
 
@@ -2429,7 +2429,7 @@ processVertexSizeRule[All -> _] :=
 
 processVertexSizeRule[(Rule|RuleDelayed)[VertexPattern[p_], rhs_]] := Scope[
   pos = Flatten @ Position[$VertexList, p, {1}];
-  Splice @ RuleThread[pos, Replace[Part[$VertexList, pos], p :> processVertexSize[rhs], {1}]]
+  Splice @ RuleThread[pos, VectorReplace[Part[$VertexList, pos], p :> processVertexSize[rhs]]]
 ];
 
 processVertexSizeRule[lhs_ -> rhs_] :=

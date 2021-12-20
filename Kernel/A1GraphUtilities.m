@@ -1167,7 +1167,7 @@ Options[VertexAdjacentEdgeTable] = {Signed -> False};
 VertexAdjacentEdgeTable[graph_, OptionsPattern[]] := Scope[
   pairs = EdgePairs @ graph;
   vertices = VertexRange @ graph;
-  negator = If[OptionValue[Signed], MapMatrix[Inverted, #]&, Identity];
+  negator = If[OptionValue[Signed], MatrixMap[Inverted, #]&, Identity];
   MapThread[Union, {
     Lookup[PositionIndex @ FirstColumn @ EdgePairs @ graph, vertices, {}],
     Lookup[negator @ PositionIndex @ LastColumn @ EdgePairs @ graph, vertices, {}]

@@ -461,7 +461,7 @@ iCompactMatrixBox[matrix_, itemSize_, frameStyle_, shouldFactor_] := Scope[
   {matrix, factor} = If[shouldFactor && Dimensions[matrix] =!= {1, 1} &&
     Min[Abs[ExpandUnitRoots[matrix] /. ModForm[m_, _] :> m]] > 0,
     MatrixSimplify[matrix], {matrix, 1}];
-  entries = MapMatrix[numBox, matrix] // simplifyNumBoxes;
+  entries = MatrixMap[numBox, matrix] // simplifyNumBoxes;
   matrixBoxes = matrixGridBoxes[entries, expandItemSize[itemSize, matrix], frameStyle];
   If[factor === 1, matrixBoxes,
     RowBox[{matrixBoxes, numBox[factor] // simplifyNumBoxes}]
@@ -698,7 +698,7 @@ SpacedRow[elems__] := Scope[
   If[tooLong || hasLabels || $srForceGrid || hasEndOfLines,
     Which[
       hasEndOfLines,
-        items = Replace[items, EndOfLine -> $nextRow, {1}],
+        items = VectorReplace[items, EndOfLine -> $nextRow],
       tooLong,
         items = Flatten @ Riffle[Partition[items, UpTo[$srMaxWidth]], {$nextRow}],
       True,

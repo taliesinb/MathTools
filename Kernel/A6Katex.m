@@ -107,7 +107,7 @@ boxToKatex = Case[
   RowBox[e_] := Map[%, e];
 
   TagBox[e_, _] := % @ e;
-  RowBox[{"(", "\[NoBreak]", GridBox[grid_, ___], "\[NoBreak]", ")"}] := {"\\begin{pmatrix}", StringRiffle[MapMatrix[%, grid], "\\\\", "&"], "\\end{pmatrix}"};
+  RowBox[{"(", "\[NoBreak]", GridBox[grid_, ___], "\[NoBreak]", ")"}] := {"\\begin{pmatrix}", StringRiffle[MatrixMap[%, grid], "\\\\", "&"], "\\end{pmatrix}"};
   UnderoverscriptBox[e_, b_, c_] := % @ SuperscriptBox[SubscriptBox[e, b], c];
   FractionBox[a_, b_] := {"\\frac{", a, "}{", b, "}"};
   RowBox[list_] := Map[%, list];

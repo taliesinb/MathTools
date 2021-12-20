@@ -3202,8 +3202,8 @@ $equationSplitP = Alternatives @@ Values[$equationSymbolRules];
 katexEquationGrid[g_GridBox] := Scope[
   {entries, alignments, rowSpacings, columnSpacings} = getGridData[g];
   lines = assembleKatexGridRows[entries, rowSpacings];
-  lines = Replace[lines, $equationSymbolRules, {2}];
-  lines = Replace[lines, {"\\hline", h___} :> {"\\hline \\\\[-2ex]"}, {1}];
+  lines = MatrixReplace[lines, $equationSymbolRules];
+  lines = VectorReplace[lines, {"\\hline", h___} :> {"\\hline \\\\[-2ex]"}];
   {"\\begin{aligned}\n", lines, "\\end{aligned}\n"}
 ]
 

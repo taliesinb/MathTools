@@ -275,7 +275,7 @@ LookupCardinalColors[graph_Graph] := Scope[
     RuleListQ @ cardinalColorRules,
       AssociationThread[
         cardinals,
-        Replace[cardinals, Append[cardinalColorRules, _ -> $Gray], {1}]
+        VectorReplace[cardinals, Append[cardinalColorRules, _ -> $Gray]]
       ],
     True,
       ChooseCardinalColors @ cardinals

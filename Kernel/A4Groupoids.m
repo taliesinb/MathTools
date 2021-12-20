@@ -296,7 +296,7 @@ canonicalCardinalTransition[rules_] := Scope[
   If[MatchQ[minIndex, 2 | 4], Inverted, Identity] @ CardinalTransition @ Part[reps, minIndex]
 ];
 
-invertRules[rules_] := MapMatrix[Inverted, rules];
+invertRules[rules_] := MatrixMap[Inverted, rules];
 
 PackageExport["CardinalRewriteCayleyFunction"]
 

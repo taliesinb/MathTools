@@ -835,7 +835,7 @@ toVertexContractionRule[verts_List] := With[
 ];
 
 gluingResult[edgeList_, rules_] :=
-  Sort @ CanonicalizeEdges @ DeleteDuplicates[Replace[edgeList, rules, {1}] /. $flattenGlue];
+  Sort @ CanonicalizeEdges @ DeleteDuplicates[VectorReplace[edgeList, rules] /. $flattenGlue];
 
 gluingResultsList[edgeList_, rulesList_] := Map[
   gluingResult[edgeList, #]&,
@@ -846,7 +846,7 @@ edgeContractionSuccessors[edgeList_] := Scope[
   index = Values @ PositionIndex[Take[edgeList, All, 2]];
   index = Select[index, Length[#] >= 2&];
   rules = Flatten[toEdgeContractionRuleList[Part[edgeList, #]]& /@ index];
-  Sort[CanonicalizeEdges @ DeleteDuplicates[Replace[edgeList, #, {1}]]]& /@ rules
+  Sort[CanonicalizeEdges @ DeleteDuplicates[VectorReplace[edgeList, #]]]& /@ rules
 ];
 
 toEdgeContractionRuleList[edges_List] := toEdgeContractionRule @@@ Subsets[edges, {2}]
@@ -860,7 +860,7 @@ greedyContractEdges[edgeList_] := Scope[
   index = Select[index, Length[#] >= 2&];
   If[index === {}, Return @ edgeList];
   rules = Flatten[toEdgeContractionRuleList[Part[edgeList, #]]& /@ index];
-  greedyContractEdges @ Sort @ CanonicalizeEdges @ DeleteDuplicates @ Replace[edgeList, rules, {1}]
+  greedyContractEdges @ Sort @ CanonicalizeEdges @ DeleteDuplicates @ VectorReplace[edgeList, rules]
 ];
 
 (**************************************************************************************************)
@@ -872,10 +872,10 @@ UnContractedGraph[graph_Graph, opts___Rule] := Scope[
   If[!MemberQ[vertexList, _ContractedVertex] && !MemberQ[edgeList, _[_, _, _ContractedEdge]],
     Return @ ExtendedGraph[graph, opts]];
   ungluingRules = Cases[vertexList, g_ContractedVertex :> (g -> Splice @ Apply[List, g])];
-  vertexList = DeleteDuplicates @ Replace[vertexList, ungluingRules, {1}];
-  edgeList = DeleteDuplicates @ Replace[edgeList, ungluingRules, {2}];
-  edgeList = DeleteDuplicates @ Replace[edgeList, $ContractedVertexExpansionRules, {1}];
-  edgeList = DeleteDuplicates @ Replace[edgeList, $ContractedEdgeExpansionRules, {1}];
+  vertexList = DeleteDuplicates @ VectorReplace[vertexList, ungluingRules];
+  edgeList = DeleteDuplicates @ MatrixReplace[edgeList, ungluingRules];
+  edgeList = DeleteDuplicates @ VectorReplace[edgeList, $ContractedVertexExpansionRules];
+  edgeList = DeleteDuplicates @ VectorReplace[edgeList, $ContractedEdgeExpansionRules];
   ExtendedGraph[vertexList, edgeList, opts, Sequence @@ Options @ graph]
 ]
 

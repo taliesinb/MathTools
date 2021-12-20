@@ -1141,7 +1141,7 @@ CompactArrayPlot[array_, OptionsPattern[]] := Scope[
     cfunc = colorFunction;
     If[ColorFunctionObjectQ @ cfunc, cfunc //= Normal];
     cfunc //= stripFinalRGB;
-    array = ToPackedArray @ MapMatrix[cfunc, array];
+    array = ToPackedArray @ MatrixMap[cfunc, array];
     If[ArrayQ[array, 2, ColorQ],
       array = ToPackedArray @ ToRGB @ array];
     If[!PackedArrayQ[array], ReturnFailed["badcvals"]];
@@ -1203,7 +1203,7 @@ FadeGraphics[g_Graphics, opacity_] := ApplyEpilog[g,
 PackageExport["ListShowFaded"]
 
 ListShowFaded[list_, i_, opacity_:0.9] := Scope[
-  list = Replace[list, g_Graph :> ExtendedGraphPlot[g], {1}];
+  list = VectorReplace[list, g_Graph :> ExtendedGraphPlot[g]];
   {xs, ys} = Transpose[GraphicsPlotRange /@ list];
   {xmin, xmax} = MinMax @ xs;
   {ymin, ymax} = MinMax @ ys;

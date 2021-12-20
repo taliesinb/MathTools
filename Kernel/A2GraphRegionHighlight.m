@@ -699,10 +699,10 @@ joinSegments[segments_, adjustments_, shouldJoin_] := Scope[
   $offsetVector = 0; isLast = False;
   segments = segments;
   lineBag = Internal`Bag[];
-  Replace[adjustments, {
+  VectorReplace[adjustments, {
     Rule[{z_, _}, {"Shrink", n_}] :> (Part[segments, z] //= shrinkSegment[n * bendRange]),
     Rule[{z_, _}, {"Short", n_}] :> (Part[segments, {z, z + 1}] //= shortSegment[n * bendRange])
-  }, {1}];
+  }];
   Do[
     isLast = i == numSegments;
     segment = PlusVector[$offsetVector] @ Part[segments, i];

@@ -920,7 +920,7 @@ iTextCellToMDOuter = Case[
 ];
 
 replaceIndentingNewlines[boxes_] :=
-  Replace[boxes, s_String :> StringReplace[s, "\[IndentingNewLine]"|"\n" -> "\\\\\n"], {1}];
+  VectorReplace[boxes, s_String :> StringReplace[s, "\[IndentingNewLine]"|"\n" -> "\\\\\n"]];
 
 PackageScope["iTextCellToMD"]
 

@@ -291,7 +291,7 @@ BooleArrayPlot[arr_] := ArrayPlot[arr, Mesh -> True, PixelConstrained -> 10, Col
 
 FindDiagonalBlockPositions[matrices_] := Scope[
   trans = Transpose[matrices, {3,1,2}];
-  isZero = MapMatrix[ZerosQ, trans];
+  isZero = MatrixMap[ZerosQ, trans];
   n = Length[trans]; n2 = n - 1;
   isZeroD = Table[And @@ isZero[[(i+1);;, j]], {i, n2}, {j, n2}];
   isZeroR = Table[And @@ isZero[[i, (j+1);;]], {i, n2}, {j, n2}];

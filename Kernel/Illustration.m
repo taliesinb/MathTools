@@ -226,7 +226,7 @@ makeColoringGridEntry[quiver_, args___] :=
 LatticeColoringGrid[items_, args___] := Scope[
   entries = Map[Flatten[List[makeColoringGridEntry[#, args]]]&, items];
   entries = PadRight[entries, Automatic, ""];
-  entries = Replace[entries, row:{_, SpanFromLeft, Repeated[""]} :> Replace[row, "" -> SpanFromLeft, {1}], {1}];
+  entries = VectorReplace[entries, row:{_, SpanFromLeft, Repeated[""]} :> VectorReplace[row, "" -> SpanFromLeft]];
   Grid[
     entries,
     Spacings -> {0, 0}, ItemSize -> {All, 0},
@@ -862,7 +862,7 @@ ConnectedComponentProductDecomposition[graphs_, terms_, userOpts:OptionsPattern[
   products = GeneralQuiverProduct[graphs, terms, All, opts,
     ImageSize -> 120, VertexSize -> 4, ArrowheadSize -> 12];
   imgSize = First @ LookupImageSize[base];
-  dislayForm = Replace[displayForm, {Automatic -> base, g_Graph :> ReplaceOptions[g, ImageSize -> imgSize]}, {1}];
+  dislayForm = VectorReplace[displayForm, {Automatic -> base, g_Graph :> ReplaceOptions[g, ImageSize -> imgSize]}];
   SpacedColumn[
     Sequence @@ dislayForm,
     LargeSymbolForm["="],
