@@ -578,14 +578,19 @@ createTable[ostr_String] := Scope[
     {meta, lines} = FirstRest @ lines;
     allowCompact = StringFreeQ[meta, "WIDE"];
   ];
-  If[Min[StringCount[lines, "\t"..]] == 0,
+  If[Min[StringCount[DeleteCases["SPACER"] @ lines, "\t"..]] == 0,
     Return @ ostr];
   grid = StringTrim /@ StringSplit[lines, "\t"..];
-  grid = MapMatrix[StringReplace["\"" -> "'"], grid];
-  grid = Replace[grid, "**_**" -> "", {2}];
-  If[!MatrixQ[grid], Print["Bad table"]];
   first = First @ grid;
   ncols = Length @ first;
+  grid //= MatrixMap[StringReplace["\"" -> "'"]];
+  grid //= MatrixReplace["**_**" -> ""];
+  grid //= VectorReplace[{"SPACER"} :> ConstantArray["", ncols]];
+  If[!MatrixQ[grid],
+    Print["Bad table!"];
+    Print["First row is: ", First @ grid];
+    Print["Row lengths are: ", Length /@ grid];
+  ];
   hasHeader = VectorQ[first, boldedQ];
   strikeRow = ConstantArray["---", ncols];
   If[markdownFlavor === "Franklin" && !hasHeader,
