@@ -963,33 +963,3 @@ wrapWith[e_, wrap_] := Scope[
   p2 = StringEndsQ[e, Whitespace];
   {If[p1, " ", {}], wrap, StringTrim @ e, wrap, If[p2, " ", {}]}
 ];
-
-(**************************************************************************************************)
-
-PackageExport["PreviousTextCell"]
-
-PreviousTextCell[] := Scope[
-  cellExpr = NotebookRead @ PreviousCell[];
-  If[Head[cellExpr] =!= Cell, ThrowFailure["exportmdnocell"]];
-  cellType = Replace[cellExpr, {Cell[_, type_String, ___] :> type, _ :> $Failed}];
-  If[!MatchQ[cellType, "Text"], ReturnFailed[]];
-  Take[cellExpr, 2]
-];
-
-(**************************************************************************************************)
-
-PackageExport["RemainingNotebook"]
-
-RemainingNotebook[] := Scope[
-  cells = {};
-  cell = NextCell[];
-  skip = True;
-  While[MatchQ[cell, _CellObject],
-    result = NotebookRead @ cell;
-    If[FailureQ[result], Break[]];
-    skip = skip && MatchQ[result, Cell[_, "Output" | "Print" | "Echo" | "Message", ___]];
-    If[!skip, AppendTo[cells, result]];
-    cell = NextCell @ cell;
-  ];
-  Notebook[cells]
-]

@@ -209,8 +209,9 @@ SetTokenColor[n_, c1_, c2_][ColoredTokens[list_]] :=
 
 PackageExport["PermutationActionGroupoid"]
 
-PermutationActionGroupoid[initialState_List, generators_:Automatic] := Scope[
-  n = Length @ initialState;
+PermutationActionGroupoid[initialStates_List, generators_:Automatic] := Scope[
+  If[!MatrixQ[initialStates], initialStates = List @ initialStates];
+  n = Length @ First @ initialStates;
   generators //= toPermutationGenerators;
   If[FailureQ[generators], ReturnFailed[]];
   generatorsAndLabels = Map[{#, toPermutationForm @ #}&, generators];
@@ -218,12 +219,13 @@ PermutationActionGroupoid[initialState_List, generators_:Automatic] := Scope[
   constructGroupoid @ Association[
     "Type" -> "Permutation",
     "CayleyFunction" -> cayleyFunction,
-    "InitialStates" -> {initialState}
+    "InitialStates" -> initialStates
   ]
 ]
 
 toPermutationGenerators = Case[
   Automatic       := Partition[Range @ n, 2, 1];
+  "Cyclic"        := {Cycles @ {Range @ n}};
   list:{__List}   := Cycles /@ list;
   c:{__Cycles}    := simplifyCycles /@ c;
   g_ ? GroupQ     := % @ GroupGenerators @ g;

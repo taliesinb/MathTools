@@ -668,7 +668,7 @@ SpacedRow[elems__, FontSize -> sz_] := Block[{$srLabelFontSize = sz}, SpacedRow[
 wrappedItemFunc[f_][EndOfLine] := EndOfLine;
 wrappedItemFunc[f_][e_] := f @ e;
 
-SpacedRow[labels_List -> items_List] /; Length[labels] == Length[items] :=
+SpacedRow[labels_List -> items_List] /; SameLengthQ[labels, items] :=
   SpacedRow[RuleThread[labels, items]];
 
 SpacedRow[elems__] := Scope[

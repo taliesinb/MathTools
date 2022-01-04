@@ -72,7 +72,7 @@ addTermToIndex[support_][term_] := Scan[
 ];
 
 $GraphThemeData["PartitionLattice"] = {
-	VertexLayout -> TreeLayout[],
+	VertexLayout -> TreeVertexLayout[],
 	VertexTooltips -> "Name",
 	ArrowheadPosition -> Around[0.5,.1],
 	ArrowheadSize -> 15

@@ -38,7 +38,7 @@ processEdge[Annotation[e_, rule_Rule], tag_] := Block[{$ea = Append[$ea, rule]},
 processEdge[edge:(_Rule | _TwoWayRule | DirectedEdge[_, _] | UndirectedEdge[_, _]), None] :=
   (Message[Quiver::nakededge, edge]; $Failed);
 
-processEdge[Labeled[edges:{__Rule}, labels_List], _] /; Length[edges] === Length[labels] :=
+processEdge[Labeled[edges:{__Rule}, labels_List], _] /; SameLengthQ[edges, labels] :=
   sowAnnos @ MapThread[
     DirectedEdge,
     {Keys @ edges, Values @ edges, SimplifyCardinalSet /@ labels}
@@ -638,7 +638,7 @@ LineQuiver[spec_, card_, opts:OptionsPattern[]] := Scope[
     _Span, Range @@ n,
     _, ReturnFailed[];
   ];
-  edges = MapStaggered[enrichedEdge[#1, #2, card, #1]&, vertices];
+  edges = ApplyWindowed[enrichedEdge[#1, #2, card, #1]&, vertices];
   ExtendedGraph[
     vertices, edges,
     opts,
@@ -810,4 +810,19 @@ LatticeQuiverCoordinates[quiver_Graph, latticeBasis_] := Scope[
   {coords, visitedEdges["Elements"]}
 ];
 
+(**************************************************************************************************)
 
+PackageExport["CardinalEdgeAdd"]
+
+CardinalEdgeAdd[quiver_, spec_, userOpts___Rule] := Scope[
+  newQuiver = Quiver @ spec;
+  If[!QuiverQ[newQuiver], ReturnFailed[]];
+  opts = ExtractExtendedGraphOptions[quiver];
+  opts //= ReplaceOptions[Cardinals -> Join[CardinalList @ quiver, CardinalList @ newQuiver]];
+  ExtendedGraph[
+    VertexList @ quiver,
+    Join[EdgeList @ quiver, EdgeList @ newQuiver],
+    userOpts,
+    Sequence @@ opts
+  ]
+];

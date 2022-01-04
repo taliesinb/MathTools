@@ -2,7 +2,7 @@ PackageExport["$KatexPrelude"]
 
 importLocalUTF8[localFile_] := ImportUTF8 @ FileNameJoin[{$PackageDirectory, localFile}];
 
-$KatexPrelude = importLocalUTF8["KatexPrelude.txt"];
+$KatexPrelude = importLocalUTF8["KatexPrelude.tex"];
 
 (**************************************************************************************************)
 
@@ -127,6 +127,7 @@ boxToInlineText[e_] := TextString[e];
 templateBoxToKatex = Case[
   "Naturals" -> {}                  := "\\mathbb{N}";
   "PositiveNaturals" -> {}          := "\\mathbb{N}^+";
+  "PositiveReals" -> {}             := "\\mathbb{R}^+";
   "Primes" -> {}                    := "\\mathbb{P}";
   "Integers" -> {}                  := "\\mathbb{Z}";
   "Rationals" -> {}                 := "\\mathbb{Q}";

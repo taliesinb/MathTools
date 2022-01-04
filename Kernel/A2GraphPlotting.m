@@ -21,6 +21,7 @@ PackageExport["VertexLabelPosition"]
 PackageExport["VertexLabelSpacing"]
 PackageExport["VertexLabelBaseStyle"]
 PackageExport["VertexFontSize"]
+PackageExport["VertexBackground"]
 
 PackageExport["VertexOverlapResolution"]
 
@@ -529,7 +530,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     UnpackExtendedThemedOptions[graph,
       arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition,
-      visibleCardinals, labelCardinals,
+      visibleCardinals, labelCardinals, vertexBackground,
       edgeSetback, edgeThickness,
 
       vertexColorFunction, vertexColorRules, vertexAnnotations,
@@ -824,10 +825,13 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[labelGraphics =!= Nothing, extendPadding @ estimateLabelPadding[labelGraphics, vertexLabelStyle]];
 
     (* for graphs with cardinals, create an automatic legend when asked *)
-    If[cardinalColors =!= None && arrowheadStyle =!= None && arrowheadShape =!= None,
+    If[cardinalColors =!= None && arrowheadShape =!= None,
       legendCardinals = If[ListQ[visibleCardinals], KeyTake[cardinalColors, visibleCardinals], cardinalColors];
       orient = If[FreeQ[graphLegend, Placed[Automatic | "Cardinals", Above|Below]], Vertical, Horizontal];
-      automaticLegends["Cardinals"] := ArrowheadLegend[cardinalColors, ArrowheadShape -> arrowheadShape, Orientation -> orient];
+      automaticLegends["Cardinals"] := ArrowheadLegend[cardinalColors,
+        ArrowheadShape -> If[ListQ[arrowheadShape], First @ arrowheadShape, arrowheadShape],
+        Orientation -> orient
+      ];
     ];
 
     If[colorRules =!= None,
@@ -1353,7 +1357,7 @@ drawTagGroupArrowheadEdges[indices_, style_] := Scope[
   edgeStyle = style;
   edgePrimitives = KeyValueMap[drawArrowheadEdges, edgeTagGroups];
 
-  edgePrimitives
+  If[style =!= None, Style[edgePrimitives, style], edgePrimitives]
 ];
 
 (**************************************************************************************************)
@@ -1731,6 +1735,15 @@ $arrowheads2D = Association[
       {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
       ToPacked @ {{{-0.3166, -0.25}, {-0.1833, 0.}, {-0.3166, 0.25}, {0.25, 0.}}}
     ],
+  "NarrowArrowDoubleIn" -> {
+    FilledCurve[
+      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
+      ToPacked @ {{{-0.45, -0.25}, {-0.05, 0.}, {-0.45, 0.25}, {-0.35, 0.}}}
+    ],
+    FilledCurve[
+      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
+      ToPacked @ {{{+0.45, -0.25}, {+0.05, 0.}, {+0.45, 0.25}, {+0.35, 0.}}}
+    ]},
 
   "Arrow" ->
     FilledCurve[
@@ -2135,6 +2148,7 @@ drawIndividualCustomShapeFunction[fn_, size_, color_][pos_] := Scope[
     res = fn[$vertexDataInfo],
     $Failed
   ];
+  If[Head[res] === Form, res = Text[res, pos, {0, 0}, Background -> vertexBackground]];
   If[res === $Failed, failPlot["vertexfnmsg", vertex]];
   res
 ];
@@ -2149,7 +2163,7 @@ drawGraphicsWithColor[other_, pos_, color_, size_] :=
     Style[other, color, FontSize -> Replace[vertexFontSize,
       None|Automatic :> Max[size * effectiveImageWidth * 0.8, 8]]
     ],
-    pos, {0, 0}, Background -> White
+    pos, {0, 0}, Background -> vertexBackground
   ];
 
 drawGraphicsWithColor[g_Graph, pos_, color_, size_] :=
@@ -2277,7 +2291,7 @@ edgeColorDataProvider = Case[
   
   "Index"                   := Range @ $EdgeCount;
   
-  "Cardinal"                := Lookup[cardinalColors, $EdgeTags, $LightGray];
+  "Cardinal"                := Map[getCardinalEdgeColor, $EdgeTags];
 
   list_List /; Length[list] === $EdgeCount := list;
 
@@ -2288,6 +2302,12 @@ edgeColorDataProvider = Case[
   fn_ ? System`Private`MightEvaluateWhenAppliedQ := Map[fn, $EdgeList];
 
   _                         := $Failed
+];
+
+getCardinalEdgeColor = Case[
+  card_ := Lookup[cardinalColors, card, $LightGray];
+  CardinalSet[cards_] := OklabBlend @ DeleteDuplicates @ Lookup[cardinalColors, StripInverted @ cards, Nothing];
+  Null | None := $LightGray;
 ];
 
 (**************************************************************************************************)
@@ -2314,6 +2334,7 @@ PackageExport["LookupEdgeColors"]
 LookupEdgeColors[graph_Graph, edges_:All] := Scope[
   GraphScope[graph,
     UnpackExtendedOptions[graph, edgeColorFunction, edgeColorRules];
+    cardinalColors := cardinalColors = LookupCardinalColors @ graph;
     processEdgeColorRules[edgeColorRules];
     If[edges =!= All, $EdgeList = edges];
     If[edgeColorFunction === None, Return @ None];

@@ -191,11 +191,51 @@ independentEdgeProduct[head_[at_, ah_], head_[bt_, bh_]] := {
 
 (**************************************************************************************************)
 
+PackageExport["StrongQuiverProduct"]
+
+Options[StrongQuiverProduct] = Options[DependentQuiverProduct];
+
+StrongQuiverProduct[a_Graph, b_Graph, opts:OptionsPattern[]] :=
+  generalBinaryQuiverProduct[a, b, strongEdgeProduct, opts];
+
+strongEdgeProduct[head_[at_, ah_, ac___], head_[bt_, bh_, bc___]] := {
+  head[VertexProduct[at, bt], VertexProduct[ah, bt], ac],
+  head[VertexProduct[at, bh], VertexProduct[ah, bh], ac],
+  head[VertexProduct[at, bt], VertexProduct[at, bh], bc],
+  head[VertexProduct[ah, bt], VertexProduct[ah, bh], bc],
+  head[VertexProduct[at, bt], VertexProduct[ah, bh], bc]
+}
+
+(**************************************************************************************************)
+
+PackageExport["StrongIndependentQuiverProduct"]
+
+Options[StrongIndependentQuiverProduct] = Options[DependentQuiverProduct];
+
+StrongIndependentQuiverProduct[a_Graph, b_Graph, opts:OptionsPattern[]] :=
+  generalBinaryQuiverProduct[a, b, strongIndependentEdgeProduct, opts];
+
+strongIndependentEdgeProduct[head_[at_, ah_, ac_], head_[bt_, bh_, bc_]] := {
+  head[VertexProduct[at, bt], VertexProduct[ah, bh], CardinalProduct[ac, bc]],
+  head[VertexProduct[at, bh], VertexProduct[ah, bt], CardinalProduct[ac, Inverted @ bc]],
+  head[VertexProduct[at, bh], VertexProduct[ah, bh], CardinalProduct[ac, 1]],
+  head[VertexProduct[at, bt], VertexProduct[ah, bt], CardinalProduct[ac, 1]]
+}
+
+strongIndependentEdgeProduct[head_[at_, ah_], head_[bt_, bh_]] := {
+  head[VertexProduct[at, bt], VertexProduct[ah, bh]],
+  head[VertexProduct[ah, bt], VertexProduct[at, bh]]
+}
+
+(**************************************************************************************************)
+
 Options[generalBinaryQuiverProduct] = Options[DependentQuiverProduct];
 
-generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, opts:OptionsPattern[]] := Scope[
+generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, userOpts:OptionsPattern[]] := Scope[
   UnpackOptions[useCardinalSet, flattenProducts];
-  opts = JoinOptions[ExtractExtendedGraphOptions /@ {a, b}, opts];
+  opts = JoinOptions[ExtractExtendedGraphOptions /@ {a, b}];
+  opts //= DeleteOptions[{VertexCoordinates, VertexCoordinateRules}];
+  opts = JoinOptions[userOpts, opts];
   vertexLists = VertexList /@ {a, b};
   edgeLists = EdgeList /@ {a, b};
   {aColors, bColors} = LookupVertexColors /@ {a, b};
@@ -217,20 +257,19 @@ generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, opts:OptionsPattern[]]
   ];
   {aSize, bSize} = LookupImageSize /@ {a, b};
   size = {First @ bSize, Last @ aSize};
+  coords1 = Map[productVertexCoords1, productVertices];
+  coords2 = Map[productVertexCoords2, productVertices];
   ExtendedGraph[
     productVertices, productEdges,
-    VertexCoordinates -> Map[productVertexCoords, productVertices],
+    Sequence @@ opts,
+    VertexCoordinates -> If[CountDistinct[coords1] > CountDistinct[coords2], coords1, coords2],
     VertexColorFunction -> vertexColorFunction,
-    ImageSize -> size,
-    Sequence @@ opts
+    ImageSize -> size
   ]
 ];
 
-productVertexCoords[VertexProduct[a_, b_]] :=
-  List[
-    First @ bCoords @ b,
-    Last @ aCoords @ a
-  ];
+productVertexCoords1[VertexProduct[a_, b_]] := List[First @ bCoords @ b, Last @ aCoords @ a];
+productVertexCoords2[VertexProduct[a_, b_]] := List[Last @ bCoords @ b, First @ aCoords @ a];
 
 (**************************************************************************************************)
 

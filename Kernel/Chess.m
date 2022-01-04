@@ -1,3 +1,0 @@
-PackageExport["ChessMoves"]
-
-ChessMoves["Knight"]

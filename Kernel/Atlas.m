@@ -175,7 +175,7 @@ findOverlapRelations[] := Scope[
 normRule[Inverted[a_], b_] := a -> Inverted[b];
 normRule[a_, b_] := a -> b;
 
-setToRelations[set_List] := TwoWayRule @@@ Subsets[set, {2}];
+setToRelations[set_List] := TwoWayRule @@@ UnorderedPairs[set];
 
 TransportAtlas::notchart = "Chart specification `` is not a list of cardinals or a ChartSymbol.";
 

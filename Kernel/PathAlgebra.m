@@ -418,7 +418,7 @@ setbackSegment[a_List, _] := SetbackCoordinates[a, {$sb, $sb}];
 
 (* mergeSegments[{segment_}] := segment;
 mergeSegments[segments_List] :=
-  MapStaggered[segmentJoin, segments]
+  ApplyWindowed[segmentJoin, segments]
 
 segmentJoin[a_, b_] := If[Abs[segmentAngle[a] - segmentAngle[b]] > 0.01,
   Echo @ applyBendBetween[a, b, 0.1],

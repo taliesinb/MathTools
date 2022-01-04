@@ -5,6 +5,14 @@ MatchData[a_, None] := MatchData[a];
 
 (**************************************************************************************************)
 
+declareBoxFormatting[
+	MatchData[tokens:{__TokenData}] :> ToBoxes[
+		Row[Underscript @@@ tokens]
+	]
+]
+
+(**************************************************************************************************)
+
 PackageExport["RewritingSystemObject"]
 
 declareObjectPropertyDispatch[RewritingSystemObject, rewritingSystemProperty];
@@ -91,6 +99,9 @@ StringReplaceListOperator[rules_][str_] :=
 
 PackageExport["StringLabeledReplaceList"]
 
+StringLabeledReplaceList[str_, {rule_}] :=
+	StringLabeledReplaceList[str, rule, None];
+
 StringLabeledReplaceList[str_, rules_List] :=
 	Catenate @ MapIndexed[
 		StringLabeledReplaceList[str, #1, First @ #2]&,
@@ -100,9 +111,10 @@ StringLabeledReplaceList[str_, rules_List] :=
 StringLabeledReplaceList[str_String, rule_, matchIndex_:None] := Scope[
 	Map[
 		span |-> Labeled[
-			StringReplacePart[str, StringReplace[chunk = StringTake[str, span], rule], span],
-			MatchData[
-				Map[TokenData, Transpose @ {Characters @ chunk, Range @@ span}],
+			StringReplacePart[str, ochunk = StringReplace[ichunk = StringTake[str, span], rule], span],
+			RewriteForm[
+				StringRegionalStateForm[ichunk, span],
+				StringRegionalStateForm[ochunk, span],
 				matchIndex
 			]
 		],
@@ -121,6 +133,73 @@ stringTokens[str_String, span:{i_, j_}] :=
 		Range[i, j]
 	}];
 
+(**************************************************************************************************)
+
+PackageExport["CircularStringRewritingSystem"]
+
+CircularStringRewritingSystem[rules_] := Scope[
+	constructRewritingSystsem["CircularString", rules]
+]
+
+declareRewritingSystemDispatch["CircularString", circularStringRewritingSystemProperty]
+
+circularStringRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] := Scope[
+	UnpackAssociation[data, rules];
+	UnpackStringOptions[{opts}, True, labeled];
+	If[labeled,
+		CircularStringLabeledReplaceList[rules],
+		CircularStringReplaceListOperator[rules]
+	]
+];
+
+(**************************************************************************************************)
+
+PackageExport["CircularStringReplaceListOperator"]
+
+CircularStringReplaceListOperator[rules_][str_] :=
+	Part[CircularStringLabeledReplaceList[str, rules], All, 1];
+
+(**************************************************************************************************)
+
+PackageExport["CircularStringLabeledReplaceList"]
+
+CircularStringLabeledReplaceList[str_, {rule_}] :=
+	CircularStringLabeledReplaceList[str, rule, None];
+
+CircularStringLabeledReplaceList[str_, rules_List] :=
+	Catenate @ MapIndexed[
+		CircularStringLabeledReplaceList[str, #1, First @ #2]&,
+		rules
+	];
+
+CircularStringLabeledReplaceList[str_String, rule_, matchIndex_:None] := Scope[
+	str2 = StringJoin[str, str]; len = StringLength @ str;
+	spans = StringPosition[str2, First @ rule];
+	spans = {#, Mod[#, len, 1]}& /@ spans;
+	spans = DeleteDuplicatesBy[spans, Last];
+	VectorApply[
+		{span, modSpan} |-> Labeled[
+			circularStringReplacePart[str, ochunk = StringReplace[ichunk = StringTake[str2, span], rule], modSpan],
+			RewriteForm[
+				StringRegionalStateForm[ichunk, modSpan],
+				StringRegionalStateForm[ochunk, modSpan],
+				matchIndex
+			]
+		],
+		spans
+	]
+];
+
+CircularStringLabeledReplaceList[rule_][str_] := CircularStringLabeledReplaceList[str, rule];
+
+circularStringReplacePart[str_, new_, {i_, j_}] /; j < i :=
+	StringReplacePart[
+		StringReplacePart[str, StringTake[new, 1 + len - i], {i, len}],
+		StringTake[new, -j],
+		{1, j}
+	];
+
+circularStringReplacePart[str_, new_, span_] := StringReplacePart[str, new, span];
 
 (**************************************************************************************************)
 
@@ -151,7 +230,7 @@ rewriteGraphQuiver[system_, initialState_, isQuiver_, args___] := Scope[
 		DirectedEdges -> True,
 		VertexNameFunction -> None
 	];
-	result
+	ExtendedGraph[result, Cardinals -> Sort[CardinalList[result]]]
 ]
 
 (* TODO: fix Automatic options to inherit from the theme options *)
@@ -164,7 +243,7 @@ $RewriteQuiverThemeRules = {
   ArrowheadPosition -> 0.5,
   ArrowheadShape -> "NarrowArrow",
   ImageSize -> ("ShortestEdge" -> 65),
-  GraphLayout -> "HorizontalCenteredTree"
+  VertexLayout -> TreeVertexLayout[Orientation -> Left]
 };
 
 $RewriteGraphThemeRules = JoinOptions[

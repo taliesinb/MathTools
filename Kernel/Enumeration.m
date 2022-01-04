@@ -178,7 +178,7 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
       uet
     ],
  *)    (* the number of edges labelled by pairs of cardinals *)
-    Sort[Length[Intersection[#1, #2]]& @@@ Subsets[uet, {2}]],
+    Sort[Length[Intersection[#1, #2]]& @@@ UnorderedPairs[uet]],
     (* these are the number of times a given cardinal is labeled *)
     Sort @ Map[flatCountsSignature, uet]
   };
@@ -270,7 +270,7 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
       uet
     ],
  *)    (* the number of edges labelled by pairs of cardinals *)
-    Sort[Length[Intersection[#1, #2]]& @@@ Subsets[uet, {2}]],
+    Sort[Length[Intersection[#1, #2]]& @@@ UnorderedPairs[uet]],
     (* these are the number of times a given cardinal is labeled *)
     Sort @ Map[flatCountsSignature, uet]
   };

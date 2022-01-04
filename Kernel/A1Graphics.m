@@ -999,7 +999,7 @@ PointAlongLine[coords_List, d_ ? NumericQ] := Scope[
 PackageExport["LineLength"]
 
 LineLength[{a_, b_}] := EuclideanDistance[a, b];
-LineLength[list_] := Total @ MapStaggered[EuclideanDistance, list];
+LineLength[list_] := Total @ ApplyWindowed[EuclideanDistance, list];
 
 (**************************************************************************************************)
 

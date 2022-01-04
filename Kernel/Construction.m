@@ -21,7 +21,7 @@ UndirectedPath[vertices___] := Splice[UndirectedEdge @@@ Partition[List @ vertic
 
 PackageExport["Clique"]
 
-Clique[vertices___] := Splice[UndirectedEdge @@@ Subsets[{vertices}, {2}]];
+Clique[vertices___] := Splice[UndirectedEdge @@@ UnorderedPairs[{vertices}]];
 
 
 (**************************************************************************************************)
@@ -511,7 +511,7 @@ ContractionSetUnionLattice[contractionSets:{__List}, opts:OptionsPattern[]] := S
     {"VertexList", "EdgeList"}
   ];
   edgeList = Values @ GroupBy[edgeList, TakeOperator[2], combineTags];
-  TransitiveReductionGraph @ ExtendedGraph[vertexList, edgeList, opts, VertexLayout -> TreeLayout[]]
+  TransitiveReductionGraph @ ExtendedGraph[vertexList, edgeList, opts, VertexLayout -> TreeVertexLayout[]]
 ];
 
 combineTags[{edge_}] := edge;
@@ -645,7 +645,7 @@ growTerms[init_] := Scope[
   Scan[If[checkSubset[#], Goto["Start"]]&, $ds["Subsets"]];
   subsets = $ds["Subsets"];
   result = SortContractionSet @ subsets;
-  AssociateTo[alreadySeen, Flatten[Map[# -> True&, Subsets[#, {2}]]& /@ result]];
+  AssociateTo[alreadySeen, Flatten[Map[# -> True&, UnorderedPairs[#]]& /@ result]];
   result
 (*   remaining = Complement[vertices, Union @@ subsets];
   SortContractionSet @ Join[subsets, List /@ remaining]
@@ -710,7 +710,7 @@ $partitionGraphicsOpts = Sequence[];
 makeEdgeCliqueGraphics[partitionList_] := Scope[
   partitionPoints = Lookup[vertexCoordsAssoc, #]& /@ partitionList;
   primitives = {
-    {GrayLevel[0, 0.2], CapForm["Round"], AbsoluteThickness[4], Line @ Catenate[makeClique /@ partitionPoints]},
+    {GrayLevel[0, 0.2], CapForm["Round"], AbsoluteThickness[4], Line @ Catenate[UnorderedPairs /@ partitionPoints]},
     AbsolutePointSize[4], Point @ vertexCoords
   };
   graphics = Graphics[primitives,
@@ -749,8 +749,6 @@ makeColoredCliqueGraphics[partitionList_] := Scope[
   ];
   graphics
 ];
-
-makeClique[list_] := Subsets[list, {2}];
 
 (**************************************************************************************************)
 
@@ -817,7 +815,7 @@ graphContractionSuccessors[edgeList_] := Join[
 
 vertexContractionSuccessors[edgeList_] := Scope[
   vertices = AllUniqueVertices[edgeList];
-  rules = toVertexContractionRule /@ Subsets[vertices, {2}];
+  rules = toVertexContractionRule /@ UnorderedPairs[vertices];
   gluingResultsList[edgeList, rules]
 ];
 
@@ -849,7 +847,7 @@ edgeContractionSuccessors[edgeList_] := Scope[
   Sort[CanonicalizeEdges @ DeleteDuplicates[VectorReplace[edgeList, #]]]& /@ rules
 ];
 
-toEdgeContractionRuleList[edges_List] := toEdgeContractionRule @@@ Subsets[edges, {2}]
+toEdgeContractionRuleList[edges_List] := toEdgeContractionRule @@@ UnorderedPairs[edges];
 
 SetAttributes[{ContractedEdge, ContractedVertex}, {Flat, Orderless}];
 toEdgeContractionRule[head_[a1_, b1_, c_], head_[a2_, b2_, d_]] :=

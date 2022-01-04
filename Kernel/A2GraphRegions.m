@@ -714,7 +714,7 @@ processRegion[Line[vertices_]] := Scope[
   vertices //= findVertices;
   collectPathData[
     sowVertex @ First @ vertices;
-    MapStaggered[findAndSowGeodesic, vertices];
+    ApplyWindowed[findAndSowGeodesic, vertices];
   ]
 ];
 
@@ -727,7 +727,7 @@ processRegion[Line[{start_, stop_}, c_]] :=
 findAndSowGeodesic[v1_, v2_] := Scope[
   geodesicVertices = MetricFindShortestPath[$MetricGraphCache, v1, v2, GraphMetric -> $GraphMetric];
   sowVertexList @ Rest @ geodesicVertices;
-  MapStaggered[findAndSowEdge, geodesicVertices]
+  ApplyWindowed[findAndSowEdge, geodesicVertices]
 ];
 
 
@@ -748,7 +748,7 @@ processRegion[HalfLine[v_, dir_]] :=
 
 findWordBetween[v1_, v2_] := Scope[
   geodesicVertices = MetricFindShortestPath[$MetricGraphCache, v1, v2, GraphMetric -> $GraphMetric];
-  MapStaggered[findCardinalBetween, geodesicVertices]
+  ApplyWindowed[findCardinalBetween, geodesicVertices]
 ];
 
 GraphRegion::grinterror = "An internal error occurred while procession region ``[...].";

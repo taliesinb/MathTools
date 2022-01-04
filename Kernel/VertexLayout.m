@@ -505,13 +505,13 @@ SpringElectricalLayout[opts:OptionsPattern[]][data_] :=
 
 (**************************************************************************************************)
 
-PackageExport["TreeLayout"]
+PackageExport["TreeVertexLayout"]
 PackageExport["Orientation"]
 PackageExport["RootVertex"]
 
-Options[TreeLayout] = {Alignment -> None, Orientation -> Top, RootVertex -> Automatic, "Bubble" -> False};
+Options[TreeVertexLayout] = {Alignment -> None, Orientation -> Top, RootVertex -> Automatic, "Bubble" -> False};
 
-TreeLayout[OptionsPattern[]][data_] := Scope[
+TreeVertexLayout[OptionsPattern[]][data_] := Scope[
   UnpackAssociation[data, graph, indexGraph];
   UnpackOptions[alignment, orientation, rootVertex, bubble];
 

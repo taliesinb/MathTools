@@ -293,6 +293,14 @@ Tau = 2 * Pi;
 
 (**************************************************************************************************)
 
+PackageExport["NLogN"]
+
+SetListable[NLogN];
+NLogN[0|0.] := 0;
+NLogN[n_] := n * Log2[n];
+
+(**************************************************************************************************)
+
 PackageExport["RandomSeeded"]
 
 SetUsage @ "
@@ -419,13 +427,16 @@ $posIntOrInfinityP = _Integer ? Positive | Infinity;
 (**************************************************************************************************)
 
 PackageScope["declareBoxFormatting"]
+PackageScope["$BoxFormattingHeadQ"]
 
 SetHoldAllComplete[getPatternHead];
+
+$BoxFormattingHeadQ = Data`UnorderedAssociation[];
 
 declareBoxFormatting[rules__RuleDelayed] := Scan[declareBoxFormatting, {rules}];
 declareBoxFormatting[lhs_ :> rhs_] :=
   With[{head = getPatternHead[lhs]}, {isProtected = ProtectedFunctionQ[head]},
-    If[isProtected, Unprotect[head]];
+    If[isProtected, Unprotect[head]]; $BoxFormattingHeadQ[head] = True;
     MakeBoxes[lhs, StandardForm] := Block[{$isTraditionalForm = False}, rhs];
     MakeBoxes[lhs, TraditionalForm] := Block[{$isTraditionalForm = True}, rhs];
     If[isProtected, Protect[head]];
@@ -467,7 +478,7 @@ Lerp[a_, b_, Into[1]] := (a + b) / 2;
 Lerp[a_, b_, Into[2]] := {a, b};
 Lerp[a_, b_, Into[n_]] := Lerp[a, b, Range[0, 1, 1/(n-1)]]
 
-Lerp[n_][a_, b_] := Lerp[a, b, n];
+Lerp[n_][a_, b_] :=Lerp[a, b, n];
 
 (**************************************************************************************************)
 
@@ -752,6 +763,18 @@ PrependColumn[matrix$, column$] gives a matrix in which the list column$ has bee
 
 PrependColumn[matrix_, column_] := Transpose @ Prepend[Transpose @ matrix, column];
 PrependColumn[column_][matrix_] := PrependColumn[matrix, column];
+
+(**************************************************************************************************)
+
+PackageExport["AppendFirst"]
+
+AppendFirst[{}] := {};
+AppendFirst[list_] := Append[list, First @ list];
+
+PackageExport["PrependLast"]
+
+PrependLast[{}] := {};
+PrependLast[list_] := Prepend[list, Last @ list];
 
 (**************************************************************************************************)
 
@@ -1046,13 +1069,35 @@ DropWhile[list_, f_] := Drop[list, LengthWhile[list, f]];
 
 (**************************************************************************************************)
 
-PackageExport["MapStaggered"]
+PackageExport["ApplyWindowed"]
 
 SetUsage @ "
-MapStaggered[f$, {e$1, e$2, $$, e$n}] gives {f$[e$1, e$2], f$[e$2, e$3], $$, f$[e$(n-1), e$n]}.
+ApplyWindowed[f$, {e$1, e$2, $$, e$n}] gives {f$[e$1, e$2], f$[e$2, e$3], $$, f$[e$(n-1), e$n]}.
 "
 
-MapStaggered[f_, list_] := f @@@ Partition[list, 2, 1];
+ApplyWindowed[f_, list_] := f @@@ Partition[list, 2, 1];
+ApplyWindowed[f_, list_, n_] := f @@@ Partition[list, n, 1];
+
+(**************************************************************************************************)
+
+PackageExport["ApplyWindowedCyclic"]
+
+ApplyWindowedCyclic[f_, list_] := f @@@ Partition[list, 2, 1, 1];
+ApplyWindowedCyclic[f_, list_, n_] := f @@@ Partition[list, n, 1, 1];
+
+(**************************************************************************************************)
+
+PackageExport["MapWindowed"]
+
+MapWindowed[f_, list_] := f /@ Partition[list, 2, 1];
+MapWindowed[f_, list_, n_] := f /@ Partition[list, n, 1];
+
+(**************************************************************************************************)
+
+PackageExport["MapWindowedCyclic"]
+
+MapWindowedCyclic[f_, list_] := f /@ Partition[list, 2, 1, 1];
+MapWindowedCyclic[f_, list_, n_] := f /@ Partition[list, n, 1, 1];
 
 (**************************************************************************************************)
 
@@ -2125,3 +2170,45 @@ PackageExport["FlattenIndex"]
 
 FlattenIndex[assoc_] :=
   Flatten @ KeyValueMap[{k, v} |-> Map[k -> #&, v], assoc];
+
+(**************************************************************************************************)
+
+PackageExport["MapTuples"]
+
+MapTuples[f_, pairs_] := Map[f, Tuples @ pairs];
+MapTuples[f_, pairs_, n_] := Map[f, Tuples[pairs, n]];
+MapTuples[f_][pairs_] := MapTuples[f, pairs];
+
+(**************************************************************************************************)
+
+PackageExport["ApplyTuples"]
+
+ApplyTuples[f_, pairs_] := f @@@ Tuples[pairs];
+ApplyTuples[f_, pairs_, n_] := f @@@ Tuples[pairs, n];
+ApplyTuples[f_][pairs_] := ApplyTuples[f, pairs];
+
+(**************************************************************************************************)
+
+PackageExport["CatenateVectors"]
+
+CatenateVectors[vecLists_] := Join[Sequence @@ vecLists, 2];
+
+(**************************************************************************************************)
+
+PackageExport["CreateSymbol"]
+
+CreateSymbol[name_String, value_] :=
+  ToExpression[name, InputForm, SetOperator[value]];
+
+(**************************************************************************************************)
+
+PackageExport["CreateMultipleSymbols"]
+
+CreateMultipleSymbols[context_, names:{___String}, values_List] := Block[
+  {$Context = context, $ContextPath = {"System`", "Global`"}},
+  If[Length[names] =!= Length[values], Message[CreateMultipleSymbols::badlen, Length @ names, Length @ values]];
+  ToExpression[StringJoin["{", Riffle[names, ","], "}"], InputForm, SetOperator[values]]
+]
+
+CreateMultipleSymbols::badlen = "Was provided `` names and `` values."
+CreateMultipleSymbols[___] := $Failed;

@@ -137,3 +137,9 @@ StyleOperator[spec___][e_] := Style[e, spec];
 PackageExport["SubscriptOperator"]
 
 SubscriptOperator[s_][e__] := Subscript[s, e];
+
+(**************************************************************************************************)
+
+PackageExport["SetOperator"]
+
+SetOperator[value_] := Function[var, Set[var, value], {HoldAllComplete}];

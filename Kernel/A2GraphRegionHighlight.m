@@ -460,7 +460,7 @@ sowVertexPoints[vertices_] := Scope[
   highlights = If[$GraphIs3D,
     Style[
       Sphere[coords, diskRadius / $GraphPlotImageWidth * $graphPlotWidth],
-      Directive[Glow[$highlightStyle], GrayLevel[0, 1], Specularity[0]]
+      Color3D[$highlightStyle]
     ]
   ,
     Style[

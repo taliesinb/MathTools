@@ -120,7 +120,6 @@ _                            Reals      \R                  ℝ
 \[SquareIntersection]        _          \sqcap              ⊓
                                                              
 \[ForAll]                    _          \forall             ∀
-\[ForAll]                    _          \forall             ∀
 \[Exists]                    _          \exists             ∃
 \[NotExists]                 _          \nexists            ∄
 \[Not]                       !          \lnot               ¬
@@ -162,9 +161,9 @@ _                            Reals      \R                  ℝ
 \[FilledCircle]              _          _                   ●
 \[EmptyRectangle]            _          _                   ▯
 \[FilledRectangle]           _          _                   ▮
-\[EmptySquare]               _          \square             □
-\[Square]                    _          \square             □
-\[FilledSquare]              _          \blacksquare        ■
+\[EmptySquare]               _          _                   □
+\[Square]                    _          _                   □
+\[FilledSquare]              _          _                   ■
 \[EmptySmallSquare]          _          _                   ▫
 \[FilledSmallSquare]         _          _                   ▪
 \[LeftTriangle]              _          \triangleleft       ◁

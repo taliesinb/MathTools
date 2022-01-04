@@ -382,7 +382,8 @@ $extendedGraphOptionsRules = {
   VertexLabelBaseStyle -> None,
   EdgeLabelBaseStyle -> None,
   GraphTheme -> None,
-  VertexFontSize -> None
+  VertexFontSize -> None,
+  VertexBackground -> White
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -826,6 +827,16 @@ RemoveEdgeTags = Case[
 
 (**************************************************************************************************)
 
+PackageExport["MapVertices"]
+
+MapVertices[f_, graph_Graph] := Graph[
+  Map[f, VertexList @ graph],
+  MapAt[f, EdgeList @ graph, {All, 1;;2}],
+  Options @ graph
+];
+
+(**************************************************************************************************)
+
 PackageExport["MapEdgeTags"]
 
 SetUsage @ "
@@ -896,7 +907,7 @@ iCombineMultiedges[graph_] := Scope[
   {vertices, edges} = VertexEdgeList[graph];
   {edges, tags} = Transpose @ Map[separateTag, edges];
   edgeGroups = PositionIndex[edges];
-  If[Length[edgeGroups] === Length[edges], Return @ graph];
+  If[SameLengthQ[edgeGroups, edges], Return @ graph];
   edges = KeyValueMap[
     {edge, indices} |-> reattachTag[edge, DeleteNone @ Part[tags, indices]],
     edgeGroups
