@@ -407,14 +407,19 @@ and shear them to match *)
 
 PackageExport["LatticeLayout"]
 PackageExport["BasisVectors"]
+PackageExport["ScaleFactor"]
 
-Options[LatticeLayout] = {BasisVectors -> Automatic};
+Options[LatticeLayout] = {BasisVectors -> Automatic, ScaleFactor -> 1};
 
 LatticeLayout[opts:OptionsPattern[]][data_] := Scope[
-  UnpackOptions[basisVectors];
+  
+  UnpackOptions[basisVectors, scaleFactor];
+
   UnpackAssociation[data, indexGraph, graph];
 
   {vertexCoordinates, visitedEdges} = LatticeQuiverCoordinates[graph, basisVectors];
+
+  vertexCoordinates *= scaleFactor;
 
   edgePairs = EdgePairs @ indexGraph;
 

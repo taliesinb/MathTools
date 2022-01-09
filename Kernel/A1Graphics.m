@@ -440,8 +440,11 @@ LookupImageSize[object$] returns the setting of %ImageSize that a given object w
 
 DeclareArgumentCount[LookupImageSize, 1];
 
-LookupImageSize[obj_] := Scope[
+Options[LookupImageSize] = {AspectRatio -> Automatic};
+
+LookupImageSize[obj_, OptionsPattern[]] := Scope[
   {imageSize, aspectRatio} = LookupOption[obj, {ImageSize, AspectRatio}];
+  SetAutomatic[aspectRatio, OptionValue @ AspectRatio];
   imageSize = resolveRawImageSize @ imageSize;
   If[NumberQ[aspectRatio] && MatchQ[Part[imageSize, 2], Automatic],
     Part[imageSize, 2] = Part[imageSize, 1] * aspectRatio];
@@ -1069,32 +1072,85 @@ SetFrameColor[expr_, _] := expr;
 
 (**************************************************************************************************)
 
-PackageExport["MeshImage"]
+PackageExport["FadedMeshImage"]
 
-MeshImage[array_, blockSize_] := Scope[
-  {b1, b2} = blockSize + {-1, 1};
+FadedMeshImage[array_, blockSize_] := Scope[
+  fadeFactor = 0.8;
   dims = Dimensions @ array;
   If[!ArrayQ[array, _, Developer`MachineRealQ] || !MatchQ[dims, {_, _, 3} | {_, _}],
-    ReturnFailed[]];
-  hasColor = Length[dims] == 3;
+    ReturnFailed["baddata"]];
   {h, w} = Take[dims, 2];
-  {h2, w2} = 1 + {h, w} * b2;
-  pixels = ConstantArray[.7, If[hasColor, {h2, w2, 3}, {h2, w2}]];
-  frame = 0.4;
-  If[hasColor, paintFrame[All], paintFrame[]];
-  ScanIndexed[paintBlock, Developer`ToPackedArray @ array, {2}];
-  Image[pixels]
+  {b1, b2} = blockSize + {If[True, -1, 0], 1}; d = 0;
+  {h2, w2} = 1 + {h, w} * b2 - 2d;
+  pixels = ConstantArray[0., {3, h2, w2}]; fade = ConstantArray[1., {3, h2, w2}];
+  ScanIndexed[paintBlockAdditive, Developer`ToPackedArray @ array, {2}];
+  Do[multRow[0.5, r * b2 + 1], {r, 1, h - 1}];
+  Do[multCol[0.5, c * b2 + 1], {c, 1, w - 1}];
+  Do[Part[fade, All, r * b2 + 1, All] = fadeFactor, {r, 0, h}];
+  Do[Part[fade, All, All, c * b2 + 1] = fadeFactor, {c, 0, w}];
+  pixels *= fade;
+  Image[pixels, Interleaving -> False, ImageSize -> {w2, h2}]
+]
+
+paintBlockAdditive[v_, {r_, c_}] := Module[
+  {r1 = (r * b2) - d, c1 = (c * b2) - d},
+  Part[pixels, All, (r1 - b1)-1 ;; r1+1, (c1 - b1)-1 ;; c1+1] += v;
 ];
 
+multRow[val_, row_] := Part[pixels, All, row, All] *= val;
+multCol[val_, col_] := Part[pixels, All, All, col] *= val;
+
+multFrame[val_, cspec___] := (
+  Part[pixels, All, 1, cspec] *= val;
+  Part[pixels, All, w2, cspec] *= val;
+  Part[pixels, 1, All, cspec] *= val;
+  Part[pixels, h2, All, cspec] *= val;
+);
+
+(**************************************************************************************************)
+
+PackageExport["MeshImage"]
+
+FadedMeshImage::baddata = MeshImage::baddata = "Data should be an w * h * d array of real numbers."
+
+Options[MeshImage] = {
+  Frame -> True, Mesh -> True,
+  FrameStyle -> GrayLevel[0.4],
+  MeshStyle -> GrayLevel[0.4]
+};
+
+MeshImage[array_, blockSize_, OptionsPattern[]] := Scope[
+  UnpackOptions[frame, mesh, frameStyle, meshStyle];
+  frameStyle //= getFrameMeshColor;
+  meshStyle //= getFrameMeshColor;
+  {b1, b2} = blockSize + {If[mesh, -1, 0], 1};
+  dims = Dimensions @ array;
+  If[!ArrayQ[array, _, Developer`MachineRealQ] || !MatchQ[dims, {_, _, 3} | {_, _}],
+    ReturnFailed["baddata"]];
+  hasColor = Length[dims] == 3;
+  {h, w} = Take[dims, 2];
+  d = If[frame, 0, 1];
+  {h2, w2} = 1 + {h, w} * b2 - 2d;
+  pixels = ConstantArray[frameStyle, If[hasColor, {h2, w2, 3}, {h2, w2}]];
+  If[frame, If[hasColor, paintFrame[All], paintFrame[]]];
+  ScanIndexed[paintBlock, Developer`ToPackedArray @ array, {2}];
+  Image[pixels, ImageSize -> {w2, h2}]
+];
+
+getFrameMeshColor = Case[
+  GrayLevel[n_] :=  N @ n;
+  _ :=              Return[$Failed, Block];
+]
+
 paintFrame[cspec___] := (
-  Part[pixels, All, 1, cspec] = frame;
-  Part[pixels, All, w2, cspec] = frame;
-  Part[pixels, 1, All, cspec] = frame;
-  Part[pixels, h2, All, cspec] = frame;
+  Part[pixels, All, 1, cspec] = meshStyle;
+  Part[pixels, All, w2, cspec] = meshStyle;
+  Part[pixels, 1, All, cspec] = meshStyle;
+  Part[pixels, h2, All, cspec] = meshStyle;
 );
 
 paintBlock[v_, {r_, c_}] := Module[
-  {r1 = (r * b2), c1 = (c * b2)},
+  {r1 = (r * b2) - d, c1 = (c * b2) - d},
   Part[pixels, (r1 - b1) ;; r1, (c1 - b1) ;; c1] = v;
 ];
 
@@ -1106,7 +1162,9 @@ PackageExport["ColorLegend"]
 Options[CompactArrayPlot] = {
   PixelConstrained -> 4,
   ColorFunction -> Automatic,
-  ColorLegend -> None
+  ColorLegend -> None,
+  Frame -> True,
+  Mesh -> True
 };
 
 CompactArrayPlot::badrank = "Array should be of rank 2 or 3, but had rank ``.";
@@ -1116,7 +1174,7 @@ CompactArrayPlot::interr = "Internal error while processing array.";
 CompactArrayPlot::badcvals = "ColorFunction produced non-RGB values, first was: ``.";
 
 CompactArrayPlot[array_, OptionsPattern[]] := Scope[
-  UnpackOptions[pixelConstrained, colorFunction, colorLegend];
+  UnpackOptions[pixelConstrained, colorFunction, colorLegend, frame, mesh];
   array //= ToPackedReal;
   dims = Dimensions @ array; ndims = Length @ dims;
   If[array === {} || MemberQ[dims, 0], Return[Spacer[1]]];
@@ -1133,6 +1191,8 @@ CompactArrayPlot[array_, OptionsPattern[]] := Scope[
       None,
     Developer`PackedArrayQ[array, Integer] && UnitIntervalArrayQ[array],
       None,
+    ArrayQ[array, 2, ColorQ],
+      RGBColor,
     True,
       $BooleanColors = {White, Black};
       Last @ ApplyColoring @ Catenate @ array
@@ -1141,13 +1201,13 @@ CompactArrayPlot[array_, OptionsPattern[]] := Scope[
     cfunc = colorFunction;
     If[ColorFunctionObjectQ @ cfunc, cfunc //= Normal];
     cfunc //= stripFinalRGB;
-    array = ToPackedArray @ MatrixMap[cfunc, array];
+    array = ToPackedReal @ MatrixMap[cfunc, array];
     If[ArrayQ[array, 2, ColorQ],
-      array = ToPackedArray @ ToRGB @ array];
+      array = ToPackedReal @ ToRGB @ array];
     If[!PackedArrayQ[array], ReturnFailed["badcvals"]];
   ];
   If[!PackedArrayQ[array], ReturnFailed["interr"]];
-  graphics = MeshImage[array, pixelConstrained];
+  graphics = MeshImage[array, pixelConstrained, Frame -> frame, Mesh -> mesh];
   SetAutomatic[colorLegend, colorFunction];
   If[colorLegend =!= None, graphics //= ApplyLegend[colorLegend]];
   graphics

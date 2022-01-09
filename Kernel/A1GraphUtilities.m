@@ -370,7 +370,7 @@ $extendedGraphOptionsRules = {
   RegionColorRules -> None,
   PrologFunction -> None,
   EpilogFunction -> None,
-  UseAbsoluteSizes -> True,
+  UseAbsoluteSizes -> Automatic,
   SelfLoopRadius -> Automatic,
   MultiEdgeDistance -> Automatic,
   PackingSpacing -> Automatic,
@@ -383,7 +383,8 @@ $extendedGraphOptionsRules = {
   EdgeLabelBaseStyle -> None,
   GraphTheme -> None,
   VertexFontSize -> None,
-  VertexBackground -> White
+  VertexBackground -> White,
+  PeripheralVertices -> None
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -446,6 +447,7 @@ optionFixup = Case[
   Rule[sym:(VertexLabels | EdgeLabels), l_List | l_Rule] := Rule[sym, If[MatchQ[l, {_Hold | _Association}], First @ l, Hold @ l]];
   Rule[sym:(EdgeStyle|VertexStyle), val_]         := Rule[sym, toDirective[val]];
   Rule[VertexShapeFunction, assoc_Association]    := Rule[VertexShapeFunction, toShape /@ assoc];
+  Rule[VertexShapeFunction, rule_Rule]            := Rule[VertexShapeFunction, Hold[rule]];
   Rule[sym:(GraphHighlightStyle|VertexLabelStyle|EdgeLabelStyle), elem_] := Rule[sym, toDirective[elem]];
   other_                                          := other;
 ];

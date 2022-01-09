@@ -71,6 +71,22 @@ rewritingSystemObjectBoxes[rs:RewritingSystemObject[data_], form_] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["StringPlot"]
+
+charToColor = Replace[{
+	"r" -> $Red, "g" -> $Green, "b" -> $Blue,
+	"a" -> $Red, "b" -> $Blue, "c" -> $Green,
+	"x" -> $Teal, "y" -> $Orange, "z" -> $Pink,
+	"0" -> White, "1" -> GrayLevel[0.3], "2" -> GrayLevel[0.65], "3" -> GrayLevel[0.4],
+	"\[EmptySquare]" -> White, "\[FilledSquare]" -> GrayLevel[0.3],
+	_ -> Pink
+}];
+
+StringPlot[s_String, sz_:6] :=
+	FadedMeshImage[List @ ToRGB @ Map[charToColor, Characters @ s], sz]
+
+(**************************************************************************************************)
+
 PackageExport["StringRewritingSystem"]
 
 StringRewritingSystem[rules_] := Scope[

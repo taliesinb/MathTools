@@ -43,6 +43,8 @@ PackageExport["SelfLoopRadius"]
 PackageExport["MultiEdgeDistance"]
 PackageExport["PackingSpacing"]
 
+PackageExport["PeripheralVertices"]
+
 SetUsage @ "ArrowheadShape is an extended option to Graph.";
 SetUsage @ "ArrowheadSize is an extended option to Graph.";
 SetUsage @ "ArrowheadStyle is an extended option to Graph.";
@@ -76,6 +78,8 @@ SetUsage @ "VertexLabelBaseStyle is an extended option to Graph."
 SetUsage @ "EdgeLabelPosition is an extended option to Graph."
 SetUsage @ "EdgeLabelSpacing is an extended option to Graph."
 SetUsage @ "EdgeLabelBaseStyle is an extended option to Graph."
+
+SetUsage @ "PeripheralVertices is an extended option to Graph.";
 
 (**************************************************************************************************)
 
@@ -547,7 +551,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
       vertexLabelPosition,  edgeLabelPosition,
       vertexLabelSpacing,   edgeLabelSpacing,
-      vertexLabelBaseStyle, edgeLabelBaseStyle
+      vertexLabelBaseStyle, edgeLabelBaseStyle,
+
+      peripheralVertices
     ];
   ];
 
@@ -641,6 +647,20 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       viewOptions //= DeleteOptions["ShrinkWrap"]];
   ];
 
+  $fadedEdgeParts = None;
+  If[peripheralVertices =!= None,
+    If[$VertexParts === All, $VertexParts ^= Range @ $VertexCount];
+    If[$EdgeParts === All, $EdgeParts ^= Range @ $EdgeCount];
+    vertexDegrees = VertexDegree @ $Graph;
+    $VertexParts ^= Select[$VertexParts, Part[vertexDegrees, #] > peripheralVertices&];
+    isFadedPEdge = Function[{a, b}, Count[{MemberQ[$VertexParts, a], MemberQ[$VertexParts, b]}, True] == 1];
+    isNonPEdge = Function[{a, b}, MemberQ[$VertexParts, a] || MemberQ[$VertexParts, b]];
+    edgePairs = EdgePairs @ ToIndexGraph @ $Graph;
+    $fadedEdgeParts = Select[$EdgeParts, isFadedPEdge @@ Part[edgePairs, #]&];
+    {$fadedToEdgeParts, $fadedFromEdgeParts} = SelectDiscard[$fadedEdgeParts, MemberQ[$VertexParts, Part[edgePairs, #, 1]]&];
+    $EdgeParts ^= Select[$EdgeParts, isNonPEdge @@ Part[edgePairs, #]&];
+  ];
+
   (* create graphics for vertices *)
   GPPrint["Vertex graphics"];
   FunctionSection[
@@ -681,7 +701,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     SetAutomatic[vertexStyle, defaultVertexColor];
 
     vertexItems = drawViaColorFunc[
-      vertexColorFunction, vertexDrawFunc, $VertexCount, $VertexParts,
+      vertexColorFunction, vertexDrawFunc, $VertexCount, $VertexParts, None,
       vertexColorDataProvider, VertexColorFunction
     ];
 
@@ -750,8 +770,18 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ];
 
     edgeItems = drawViaColorFunc[
-      edgeColorFunction, arrowheadDrawFn, $EdgeCount, $EdgeParts,
+      edgeColorFunction, arrowheadDrawFn, $EdgeCount, $EdgeParts, $fadedEdgeParts,
       edgeColorDataProvider, EdgeColorFunction
+    ];
+
+    If[$fadedEdgeParts =!= None,
+      edgeItems = {
+        {
+          Line[Part[$EdgeCoordinateLists, $fadedFromEdgeParts], VertexColors -> ConstantArray[{Transparent, Opacity[1]}, Length @ $fadedFromEdgeParts]],
+          Line[Part[$EdgeCoordinateLists, $fadedToEdgeParts],   VertexColors -> ConstantArray[{Opacity[1], Transparent}, Length @ $fadedFromEdgeParts]]
+        },
+        edgeItems
+      }
     ];
 
     SetAutomatic[edgeThickness, If[edgeColorFunction =!= None, Thick, If[$GraphIs3D, MediumThick, SlightlyThick]]];
@@ -881,7 +911,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[prologFunction =!= None, AppendTo[prolog, prologFunction[$Graph]]];
     If[epilogFunction =!= None, AppendTo[epilog, epilogFunction[$Graph]]];
 
-    If[shrinkWrap,
+    If[shrinkWrap && $GraphIs3D,
       hullIndices = ConvexHullPointIndices[$VertexCoordinates];
       hullPoints = Part[$VertexCoordinates, hullIndices];
       mean = Mean @ hullPoints;
@@ -911,8 +941,13 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     (* plotRange += {{-1, 1}, {-1, 1}} * $rangeMicroPadding; *)
     AppendTo[graphics, PlotRange -> plotRange];
 
-    If[!useAbsoluteSizes,
-      graphics //= ReplaceAll[AbsolutePointSize[sz_] :> PointSize[sz / effectiveImageWidth]];
+    Switch[useAbsoluteSizes,
+      True,
+        graphics //= ReplaceAll[PointSize[sz_] :> AbsolutePointSize[sz * effectiveImageWidth]],
+      False,
+        graphics //= ReplaceAll[AbsolutePointSize[sz_] :> PointSize[sz / effectiveImageWidth]],
+      _,
+        Null
     ];
 
     applyExternalLabel[
@@ -2233,12 +2268,24 @@ insetDisk[size_][pos_] := Inset[Graphics[Disk[{0, 0}, 1], AspectRatio -> 1], pos
 
 (**************************************************************************************************)
 
-drawViaColorFunc[colorFn_, drawFn_, count_, parts_, dataProviderFn_, optSymbol_] := Scope[
+drawViaColorFunc[colorFn_, drawFn_, count_, parts_, fadedParts_, dataProviderFn_, optSymbol_] := Scope[
 
   If[colorFn === None,
-    result = drawFn[Part[Range @ count, parts], {}];
+
+    result = If[fadedParts === None,
+      drawFn[Part[Range @ count, parts], {}]
+    ,
+      range = Range @ count;
+      unfadedParts = Complement[parts, fadedParts];
+      {
+        drawFn[Part[range, unfadedParts], {}],
+        semitransparentArrowheads @ drawFn[Part[range, fadedParts], Transparent]
+      }
+    ];
+
     Return @ simplifyPrimitives @ result;
   ];
+
 
   colorGroupFn = If[MatchQ[colorFn, Tooltip[_]],
     colorFn = First @ colorFn;
@@ -2261,7 +2308,7 @@ obtainColors[colorFn_, dataProviderFn_, optSymbol_] := Scope[
 
   colorData = Check[dataProviderFn @ colorFn, $FailedMessages];
 
-  If[FailureQ[colorData], failPlot["badcolfn", optSymbol]];
+  If[FailureQ[colorData] || colorData === None, failPlot["badcolfn", optSymbol]];
   If[colorData === $FailedMessages, failPlot["msgcolfn", optSymbol]];
 
   {colorList, colorGroups, colorFunctionObject} = ApplyColoring[colorData, palette];
@@ -2827,10 +2874,14 @@ GraphEmbeddingGallery[g_Graph] := Table[Graph[g, GraphLayout -> layout, PlotLabe
 
 PackageExport["ShowLabels"]
 PackageExport["VertexLabelForm"]
+PackageExport["VertexIndexForm"]
 PackageExport["VertexTooltipForm"]
 PackageExport["EdgeLabelForm"]
 
 ShowLabels[e_] := VertexLabelForm[e];
+
+VertexIndexForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, VertexLabels -> "Index", ImagePadding -> 20];
+
 VertexLabelForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, VertexLabels -> "Name", ImagePadding -> 20];
 VertexTooltipForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, VertexLabels -> Placed["Name", Tooltip]];
 

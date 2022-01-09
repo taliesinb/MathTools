@@ -1,6 +1,8 @@
 *.nb
 *.png
+*.mp4
 *.mx
+*.old.*
 Kernel/user_init.m
 Kernel/user_final.m
 .DS_Store

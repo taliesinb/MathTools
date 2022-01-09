@@ -86,6 +86,8 @@ sowAnnos[e_] := (Scan[attachAnno[e], $ea]; e);
 attachAnno[e_][key_ -> value_] :=
   KeyAppendTo[$edgeAnnotations, key, e -> value]
 
+Quiver::containfailed = "Edges contain $Failed."
+
 $maxVertexCount = 150;
 makeQuiver[vertices_, edges_, newOpts_] := Scope[
 
@@ -94,7 +96,7 @@ makeQuiver[vertices_, edges_, newOpts_] := Scope[
   If[!MatchQ[edges, {DirectedEdge[_, _, Except[_Alternatives]]..}],
     $ea = {};
     edges = Flatten @ List @ processEdge[edges, None];
-    If[ContainsQ[edges, $Failed], ReturnFailed[]];
+    If[ContainsQ[edges, $Failed], ReturnFailed[Quiver::containfailed]];
   ];
 
   If[!validCardinalEdgesQ[edges],
@@ -746,7 +748,8 @@ TreeQuiver[k_Integer, n_Integer, opts:OptionsPattern[]] := Scope[
   vertices = Flatten @ Table[TreeVertex @@@ Tuples[cards, i], {i, 0, n}];
   vertices = Discard[vertices, MatchQ[TreeVertex[___, c_, Inverted[c_], ___] | TreeVertex[___, Inverted[c_], c_, ___]]];
   edges = makeTreeEdge /@ vertices;
-  vectorAssoc = AssociationThread[cards, CirclePoints[2 * k]];
+  dtheta = 2 * Pi / (2 * k);
+  vectorAssoc = AssociationThread[cards, CirclePoints[{1, 0}, 2 * k]];
   coords = Map[treeVertexCoord, vertices];
   scaling = 1 / k;
   ExtendedGraph[
@@ -772,43 +775,65 @@ makeTreeEdge = Case[
 
 (**************************************************************************************************)
 
+PackageExport["$TriangleVectors"]
+
+$TriangleVectors := $TriangleVectors = $abcVectors;
+
+(**************************************************************************************************)
+
 PackageExport["LatticeQuiverCoordinates"]
 
 LatticeQuiverCoordinates[quiver_Graph, Automatic] :=
   LatticeQuiverCoordinates[quiver, chooseLatticeBasisVectors @ Sort @ CardinalList @ quiver];
 
 LatticeQuiverCoordinates[quiver_Graph, "Triangular"] :=
-  LatticeQuiverCoordinates[quiver, $abcVectors];
+  LatticeQuiverCoordinates[quiver, $TriangularVectors2D];
+
+LatticeQuiverCoordinates[quiver_Graph, name_String] := Scope[
+  rep = LatticeQuiverData[name, "Representation"];
+  If[!QuiverRepresentationObjectQ[rep], ReturnFailed[]];
+  vectors = ExtractTranslationVector[Normal[#]]& /@ Values[rep["Generators"]];
+  If[!CoordinateMatrixQ[vectors], ReturnFailed[]];
+  LatticeQuiverCoordinates[quiver, vectors]
+];
+
+PackageExport["$TriangularVectors2D"]
 
 $s32 = Sqrt[3]/2;
-$abcVectors = Simplify /@ {{0, 1}, {-$s32, -1/2}, {$s32, -1/2}};
+$TriangularVectors2D = Simplify /@ {{1, 0}, {1/2, $s32}, {-1/2, $s32}};
 
 chooseLatticeBasisVectors = Case[
   {"x", "y"} | {"b", "r"}             := {{1,0}, {0, 1}};
   {"x", "y", "z"} | {"b", "g", "r"}   := {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-  {"a", "b", "c"}                     := $abcVectors;
+  {"a", "b", "c"}                     := $TriangularVectors2D;
   other_ := Take[CirclePoints[Length[other] * 2], Length @ other];
 ]
 
+LatticeQuiverCoordinates::badlen = "Number of cardinals `` didn't match number of basis vectors ``."
+
 LatticeQuiverCoordinates[quiver_Graph, latticeBasis_] := Scope[
-  If[ListQ[latticeBasis], latticeBasis = AssociationThread[CardinalList @ quiver, latticeBasis]];
+  cardinalList = CardinalList @ quiver;
+  If[!SameLengthQ[cardinalList, latticeBasis], ReturnFailed["badlen", Length @ cardinalList, Length @ latticeBasis]];
+  If[ListQ[latticeBasis], latticeBasis = AssociationThread[cardinalList, latticeBasis]];
   indexGraph = ToIndexGraph @ quiver;
   outTable = VertexOutVertexTagTable @ indexGraph;
   dims = Rest @ Dimensions @ Values @ latticeBasis;
   coords = ConstantArray[0, Prepend[dims, VertexCount @ indexGraph]];
   edgeBasis = Map[latticeBasis, EdgeTagAssociation @ indexGraph];
+  edgeBasis = Join[edgeBasis, Map[Minus, KeyMap[Reverse, edgeBasis]]];
   edgeIndex = EdgePairIndexAssociation @ indexGraph;
+  edgeIndex = Join[edgeIndex, KeyMap[Reverse, edgeIndex]];
   visitedEdges = CreateDataStructure["HashSet"];
   initial = MinimumIndex @ VertexInDegree @ indexGraph;
-  BreadthFirstScan[indexGraph, initial, {"DiscoverVertex" -> (
-    {new, old, d} |-> If[new =!= old,
-      Set[Part[coords, new], Part[coords, old] + edgeBasis[{old, new}]];
-      visitedEdges["Insert", edgeIndex[{old, new}]];
-    ]
-  )}];
+  BreadthFirstScan[UndirectedGraph @ indexGraph, initial, {"DiscoverVertex" -> discoverVertex}];
   coords //= ToPackedReal;
   {coords, visitedEdges["Elements"]}
 ];
+
+discoverVertex[new_, old_, _] := If[new =!= old,
+  Set[Part[coords, new], Part[coords, old] + edgeBasis[{old, new}]];
+  visitedEdges["Insert", edgeIndex[{old, new}]];
+]
 
 (**************************************************************************************************)
 

@@ -348,10 +348,10 @@
 \gdef\signedMultisetLetter{\mathcal{M^*}}
 
 \gdef\multisetSemiringSymbol#1{#1}
-\gdef\multisetSemiring#1{\multisetLetter\left[#1\right]}
+\gdef\multisetSemiring#1#2{\multisetLetter\left[#1, #2\right]}
 
-\gdef\signedMultisetSemiringSymbol#1{#1}
-\gdef\signedMultisetSemiring#1{\signedMultisetLetter\left[#1\right]}
+\gdef\signedMultisetRingSymbol#1{#1}
+\gdef\signedMultisetRing#1#2{\signedMultisetLetter\left[#1, #2\right]}
 
 \gdef\polynomialRing#1#2{#1[{#2}]}
 
@@ -541,6 +541,7 @@
 \gdef\multisetToSet#1{{#1}^\downarrow}
 
 \gdef\subsets#1{\setLetter({#1})}
+\gdef\signedSubsets#1{\signedSetLetter({#1})}
 \gdef\multisets#1{\multisetLetter({#1})}
 \gdef\signedMultisets#1{\signedMultisetLetter({#1})}
 
@@ -551,15 +552,23 @@
 \gdef\bundleProjection#1{#1}
 
 \gdef\setSymbol#1{#1}
+\gdef\signedSetSymbol#1{#1}
 \gdef\multisetSymbol#1{#1}
 \gdef\signedMultisetSymbol#1{#1}
+
 \gdef\setElementSymbol#1{#1}
+\gdef\signedSetElementSymbol#1{#1}
 \gdef\multisetElementSymbol#1{#1}
 \gdef\signedMultisetElementSymbol#1{#1}
 
 \gdef\negated#1{\bar{#1}}
 
-\gdef\multisetMultiplicitySymbol{\raisebox{.1em}{\small\#}\mkern{.1em}}
+\gdef\positiveSignedPart#1{{#1}^+}
+\gdef\negativeSignedPart#1{{#1}^-}
+
+\gdef\multisetMultiplicitySymbol{\,\raisebox{.1em}{\small\#}\mkern{.1em}\,}
+\gdef\signedMultisetMultiplicitySymbol{\,\raisebox{.1em}{\small\#}\mkern{.1em}\,}
+
 \gdef\boundMultiplicityFunction#1{{#1}^{\sharp}}
 \gdef\boundSignedMultiplicityFunction#1{\operatorname{{#1}^{\sharp}}}
 
@@ -677,6 +686,7 @@
 \gdef\closeMultiset{\rBrace}
 
 \gdef\set#1{\{ {#1} \}}
+\gdef\signedSet#1{\{ {#1} \}}
 \gdef\list#1{\{ {#1} \}}
 \gdef\multiset#1{\openMultiset {#1} \closeMultiset}
 \gdef\signedMultiset#1{\openMultiset {#1} \closeMultiset}
@@ -727,7 +737,7 @@
 \gdef\srdot{\mathbin{\smallblackcirc}}
 \gdef\srplus{+}
 
-\gdef\ellipsis{\dots}
+\gdef\ellipsis{\,\wbform{...}\,}
 \gdef\verticalEllipsis{\vdots}
 
 \gdef\appliedRelation#1{#1}
@@ -742,6 +752,9 @@
 
 \gdef\msrdot{\mathbin{\smallblackcirc}}
 \gdef\msrplus{+}
+
+\gdef\smrdot{\mathbin{\smallblackcirc}}
+\gdef\smrplus{+}
 
 \gdef\dotminus{\mathbin{\dot{-}}}
 \gdef\dotcap{\mathbin{\dot{\cap}}}

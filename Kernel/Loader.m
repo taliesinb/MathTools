@@ -220,7 +220,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
   $mainPathLength = StringLength[$directory];
   $trimmedMainContext = StringTrim[mainContext, "`"];
 
-  $filesToSkip = FileNames[{"Loader.m", "init.m"}, $directory];
+  $filesToSkip = FileNames[{"Loader.m", "init.m", "*.old.m"}, $directory];
   $userFiles = FileNames["user_*.m", $directory];
   $files = Sort @ Complement[FileNames["*.m", $directory], Join[$filesToSkip, $userFiles]];
   $textFiles = FileNames[{"*.txt", "*.tex"}, $directory];
@@ -357,7 +357,7 @@ $lastLoadSuccessful = False;
 QuiverGeometryPackageLoader`Read[] :=
   QuiverGeometryPackageLoader`ReadPackages["QuiverGeometry`", QuiverGeometryPackageLoader`$Directory];
 
-QuiverGeometryPackageLoader`Load[] := Block[{packages},
+QuiverGeometryPackageLoader`Load[] := PreemptProtect @ Block[{packages},
   packages = QuiverGeometryPackageLoader`Read[];
   If[FailureQ[packages], ReturnFailed[]];
   If[packages === "Unchanged" && $lastLoadSuccessful, Return[None]];

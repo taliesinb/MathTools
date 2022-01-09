@@ -12,6 +12,15 @@ PreviousTextCell[] := Scope[
 
 (**************************************************************************************************)
 
+PackageExport["CopyImageToClipboard"]
+
+CopyImageToClipboard[expr_] := (
+  CopyToClipboard @ Rasterize[expr, ImageFormattingWidth -> Infinity, ImageResolution -> 144];
+  expr
+);
+
+(**************************************************************************************************)
+
 PackageExport["RemainingNotebook"]
 
 RemainingNotebook[] := Scope[
@@ -87,3 +96,12 @@ mapVerbatim = Case[
 ];
 
 $replacementCellTypes = "Output" | "Text" | "Section" | "Subsection" | "Subsubsection" | "Item" | "SubItem" | "Subsubitem";
+
+(**************************************************************************************************)
+
+CopyFileToClipboard[path_] := If[
+  Run["osascript -e 'tell app \"Finder\" to set the clipboard to ( POSIX file \"" <> path <> "\" )'"] === 0,
+  path,
+  $Failed
+];
+

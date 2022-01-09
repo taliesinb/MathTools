@@ -538,6 +538,12 @@ RuleListQ[_] := False;
 
 (**************************************************************************************************)
 
+PackageExport["SameHeadQ"]
+
+SameHeadQ[a_, b_] := Head[a] === Head[b];
+
+(**************************************************************************************************)
+
 PackageExport["SameLengthQ"]
 
 SetUsage @ "
@@ -837,6 +843,20 @@ UnorderedPairs[list_] := Subsets[list, {2}];
 
 (**************************************************************************************************)
 
+PackageExport["SignedSubsets"]
+
+SignedSubsets[set_] := Scope[
+  n = Length[set]; $set = set;
+  SortBy[VectorReplace[NegatedForm[z_] :> z]] @ MapTuples[toSignedSubset, {0, 1, -1}, n]
+];
+
+toSignedSubset[vals_] := MapThread[
+  Switch[#1, -1, NegatedForm[#2], 0, Nothing, 1, #2]&,
+  {vals, $set}
+];
+
+(**************************************************************************************************)
+
 PackageExport["FirstRest"]
 
 SetRelatedSymbolGroup[FirstRest, FirstLast, MostLast];
@@ -866,6 +886,34 @@ MostLast[list$] gives the pair {%Most[list$], %Last[list$]}.
 "
 
 MostLast[list_] := {Most @ list, Last @ list};
+
+(**************************************************************************************************)
+
+PackageExport["MapMost"]
+
+MapMost[f_, list_] := MapAt[f, list, 1;;-2]
+MapMost[f_][list_] := MapMost[f, list];
+
+(**************************************************************************************************)
+
+PackageExport["MapRest"]
+
+MapRest[f_, list_] := MapAt[f, list, 2;;];
+MapRest[f_][list_] := MapRest[f, list];
+
+(**************************************************************************************************)
+
+PackageExport["MapFirst"]
+
+MapFirst[f_, list_] := MapAt[f, list, 1];
+MapFirst[f_][list_] := MapFirst[f, list];
+
+(**************************************************************************************************)
+
+PackageExport["MapLast"]
+
+MapLast[f_, list_] := MapAt[f, list, -1];
+MapLast[f_][list_] := MapLast[f, list];
 
 (**************************************************************************************************)
 
@@ -1915,7 +1963,10 @@ $CacheDirectory = FileNameJoin[{ParentDirectory @ QuiverGeometryPackageLoader`$D
 PackageScope["CacheFilePath"]
 
 CacheFilePath[name_, args___] :=
-  FileNameJoin[{$CacheDirectory, name, StringJoin @ Append[Riffle[toCacheArgString /@ {args}, "_"], ".mx"]}];
+  CacheFilePath[name, args, FileExtension -> "mx"]
+
+CacheFilePath[name_, args___, FileExtension -> ext_] :=
+  FileNameJoin[{$CacheDirectory, name, StringJoin[Riffle[toCacheArgString /@ Flatten[{args}], "_"], ".", ext]}];
 
 toCacheArgString = Case[
   data:(_List | _Association | _SparseArray) := Base36Hash @ data;
@@ -2212,3 +2263,10 @@ CreateMultipleSymbols[context_, names:{___String}, values_List] := Block[
 
 CreateMultipleSymbols::badlen = "Was provided `` names and `` values."
 CreateMultipleSymbols[___] := $Failed;
+
+(**************************************************************************************************)
+
+PackageExport["MergeAssocations"]
+
+MergeAssocations[f_, assocs_] :=
+  KeyValueMap[f, Merge[assocs, Identity]];
