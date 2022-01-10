@@ -648,6 +648,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   ];
 
   $fadedEdgeParts = None;
+
+  SetAutomatic[peripheralVertices, guessPeripheralVertexCutoff @ VertexDegree @ $Graph];
+
   If[peripheralVertices =!= None,
     If[$VertexParts === All, $VertexParts ^= Range @ $VertexCount];
     If[$EdgeParts === All, $EdgeParts ^= Range @ $EdgeCount];
@@ -958,6 +961,14 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 ,
   ExtendedGraphPlottingFunction
 ];
+
+guessPeripheralVertexCutoff[degrees_] := Scope[
+  counts = Counts @ degrees;
+  counts = TakeLargest[counts, UpTo @ 2];
+  countCutoff = Max[counts] / 3;
+  counts = Discard[counts, LessEqualThan[countCutoff]];
+  Max[Keys[counts]] - 0.5
+]
 
 applyExternalLabel[graphics_, None] := graphics;
 
@@ -3080,7 +3091,10 @@ fadePrimitives[primitives_] := ReplaceAll[primitives, $fadePrimitivesRules];
 
 semitransparentArrowheads[primitives_] := ReplaceAll[primitives,
   a_Arrowheads :>
-    ReplaceAll[a, c:$ColorPattern :> SetColorOpacity[c, .4]]
+    ReplaceAll[a, {
+      c:$ColorPattern :> SetColorOpacity[c, .4],
+      Directive[Glow[c_], opts___] :> Color3D[Opacity[.3, c]]
+    }]
 ];
 
 hideArrowheads[p_] := ReplaceAll[p, {

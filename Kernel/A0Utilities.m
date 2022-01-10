@@ -2270,3 +2270,11 @@ PackageExport["MergeAssocations"]
 
 MergeAssocations[f_, assocs_] :=
   KeyValueMap[f, Merge[assocs, Identity]];
+
+
+(**************************************************************************************************)
+
+PackageExport["MostCommon"]
+
+MostCommon[{}, _:First] := None;
+MostCommon[list_, f_:First] := f @ MaximumIndices @ Counts @ list;

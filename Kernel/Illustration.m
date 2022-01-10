@@ -732,8 +732,22 @@ ExportNotebookOutputs[destination_String, prefix_String:"", sz_:3] := Scope[
 
 PackageExport["PairwiseTable"]
 
-PairwiseTable[f_, list_] :=
-  TableForm[Outer[f, list, list, 1]];
+Options[PairwiseTable] = {
+  ShowLabels -> False,
+  LabelFunction -> BoldForm,
+  TableSpacing -> 2
+}
+
+PairwiseTable[f_, list_, OptionsPattern[]] := Scope[
+  UnpackOptions[showLabels, labelFunction, tableSpacing];
+  table = Outer[f, list, list, 1];
+  If[showLabels,
+    labels = Map[labelFunction, list];
+    TableForm[table, TableHeadings -> {labels, labels}, TableSpacing -> tableSpacing]
+  ,
+    TableForm[table]
+  ]
+];
 
 (**************************************************************************************************)
 

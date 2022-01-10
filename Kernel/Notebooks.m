@@ -21,6 +21,39 @@ CopyImageToClipboard[expr_] := (
 
 (**************************************************************************************************)
 
+PackageExport["CopyImageGalleryToClipboard"]
+
+$galleryCount = 0;
+newImageGalleryTempDir[] := Scope[
+  dir = FileNameJoin[{$TemporaryDirectory, "temp_image_gallery", IntegerString @ $galleryCount++}];
+  If[FileExistsQ[dir], DeleteDirectory[dir, DeleteContents -> True]];
+  EnsureDirectory @ dir
+];
+
+CopyImageGalleryToClipboard[args___] := Scope[
+  $galleryDir = newImageGalleryTempDir[];
+  images = galleryRasterize /@ Flatten[{args}];
+  If[!VectorQ[images, ImageQ], ReturnFailed[]];
+  images = ConformImages[images, {Max, Max}, "Pad", Padding -> White];
+  MapIndexed[saveToGalleryFile, images];
+  CopyToClipboard @ $galleryDir;
+  Print[$galleryDir];
+  SpacedRow[args]
+];
+
+saveToGalleryFile[image_, {i_}] := Scope[
+  path = FileNameJoin[{$galleryDir, IntegerString[i] <> ".png"}];
+  Export[path, image, CompressionLevel -> 1];
+  path
+]
+
+galleryRasterize = Case[
+  label_ -> expr_ := % @ LargeLabeled[expr, label];
+  expr_ := Rasterize[expr, ImageFormattingWidth -> Infinity, ImageResolution -> 144];
+]
+
+(**************************************************************************************************)
+
 PackageExport["RemainingNotebook"]
 
 RemainingNotebook[] := Scope[

@@ -75,10 +75,13 @@ PackageExport["StringPlot"]
 
 charToColor = Replace[{
 	"r" -> $Red, "g" -> $Green, "b" -> $Blue,
-	"a" -> $Red, "b" -> $Blue, "c" -> $Green,
+	"R" -> $Teal, "G" -> $Pink, "B" -> $Orange,
+	"a" -> $Red, "b" -> $Blue, "c" -> $Green, "d" -> $Pink, "e" -> $Orange, "f" -> $Teal,
+	"A" -> $Teal, "B" -> $Orange, "C" -> $Pink, "D" -> $Green, "E" -> $Blue, "F" -> $Red,
 	"x" -> $Teal, "y" -> $Orange, "z" -> $Pink,
-	"0" -> White, "1" -> GrayLevel[0.3], "2" -> GrayLevel[0.65], "3" -> GrayLevel[0.4],
+	"0" -> White, "1" -> GrayLevel[0.3], "3" -> $Red, "4" -> $Blue, "5" -> $Green, "6" -> $Orange,
 	"\[EmptySquare]" -> White, "\[FilledSquare]" -> GrayLevel[0.3],
+	" " -> White, "." -> GrayLevel[0.6],
 	_ -> Pink
 }];
 
