@@ -111,10 +111,13 @@ setupMarkdownGlobals[] := Quoted[
   SetAutomatic[includePrelude, !MatchQ[markdownFlavor, "Simple" | "Preview"]];
   flavorFields = Lookup[$flavorData, markdownFlavor, ReturnFailed[]];
   UnpackAssociation[flavorFields,
-    rasterizationFunction, stringImageTemplate, fileImageTemplate, fileVideoTemplate, anchorTemplate,
+    rasterizationFunction, stringImageTemplate, fileImageTemplate, fileAnimatedImageTemplate, fileVideoTemplate, anchorTemplate,
     inlineMathTemplate, multilineMathTemplate, markdownPostprocessor, inlineHTML
   ];
 ]];
+
+rasterizationPath = $TemporaryDirectory;
+relativeRasterizationPath = "";
 
 DefineLiteralMacro[setupRasterizationPath,
 setupRasterizationPath[baseDir_, default_] := Quoted[
@@ -308,13 +311,13 @@ GarbageCollectOutputImages[markdownSearchPath_, OptionsPattern[]] := Scope[
   SetAutomatic[$verbose, $dryRun];
   
   flavorFields = Lookup[$flavorData, markdownFlavor, ReturnFailed[]];
-  UnpackAssociation[flavorFields, fileImageTemplate];
+  UnpackAssociation[flavorFields, fileImageTemplate, fileAnimatedImageTemplate];
 
   setupRasterizationPath[markdownSearchPath, "OutputImages"];
   If[FileType[markdownSearchPath] =!= Directory || FileType[rasterizationPath] =!= Directory, ReturnFailed[]];
   
   markdownPattern = fileImageTemplate @ Association[
-    "imagepath" -> "YYY",
+    "path" -> "YYY",
     "relativepath" -> "YYY",
     "width" -> "XXX",
     "caption" -> "XXX"
@@ -474,7 +477,7 @@ wrapDoubleBrace[e_] := StringJoin["\\\\[\n", e, "\n\\\\]"];
 
 $flavorData["Franklin"] = <||>;
 
-$flavorData["Franklin", "RasterizationFunction"] = PNGRasterizationFunction;
+$flavorData["Franklin", "RasterizationFunction"] = DefaultRasterizationFunction;
 
 $flavorData["Franklin", "StringImageTemplate"] = None;
 
@@ -483,6 +486,8 @@ $flavorData["Franklin", "FileImageTemplate"] = StringTemplate @ StringTrim @  ""
 <img src="`relativepath`" width="`width`" alt="`caption`">
 ~~~
 """;
+
+$flavorData["Franklin", "FileAnimatedImageTemplate"] = $flavorData["Franklin", "FileImageTemplate"];
 
 $flavorData["Franklin", "FileVideoTemplate"] = StringTemplate @ StringTrim @  """
 ~~~
@@ -514,11 +519,13 @@ $franklinFixes = {
 
 $flavorData["Simple"] = <||>;
 
-$flavorData["Simple", "RasterizationFunction"] = PNGRasterizationFunction;
+$flavorData["Simple", "RasterizationFunction"] = DefaultRasterizationFunction;
 
 $flavorData["Simple", "StringImageTemplate"] = None;
 
 $flavorData["Simple", "FileImageTemplate"] = StringTemplate @ "![](`relativepath`)";
+
+$flavorData["Simple", "FileAnimatedImageTemplate"] = StringTemplate @ "![](`relativepath`)";
 
 $flavorData["Simple", "FileVideoTemplate"] = StringTemplate @ "![](`relativepath`)";
 
@@ -552,9 +559,11 @@ $flavorData[None] = $flavorData["Simple"];
 
 $flavorData[None, "FileImageTemplate"] = None;
 
+$flavorData[None, "FileAnimatedImageTemplate"] = None;
+
 $flavorData[None, "FileVideoTemplate"] = None;
 
-MacroEvaluate @ UnpackAssociation[$flavorData[None], fileImageTemplate, fileVideoTemplate, anchorTemplate, inlineMathTemplate, multilineMathTemplate, markdownPostprocessor];
+MacroEvaluate @ UnpackAssociation[$flavorData[None], fileImageTemplate, fileAnimatedImageTemplate, fileVideoTemplate, anchorTemplate, inlineMathTemplate, multilineMathTemplate, markdownPostprocessor];
 
 (**************************************************************************************************)
 
@@ -844,15 +853,13 @@ WLLinearSyntaxRasterizationFunction[cell_] := Association[
 
 (**************************************************************************************************)
 
-PackageExport["PNGRasterizationFunction"]
-
-PNGRasterizationFunction[cell_] := Scope[
+cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
 
   If[rasterizationPath === None, Return @ None];
 
   (* did we already export this result in this session? *)
-  cellHash = Base36Hash @ cell;
-  cacheKey = {cellHash, relativeRasterizationPath, rasterizationPath};
+  objHash = Base36Hash @ obj;
+  cacheKey = {objHash, relativeRasterizationPath, rasterizationPath};
   cacheValue = Lookup[$rasterMetadataCache, Key @ {cacheKey}, None];
   If[ListQ[cacheValue],
     (* this cache gives us enough info to generate the markdown without looking for the file on disk *)
@@ -864,7 +871,7 @@ PNGRasterizationFunction[cell_] := Scope[
   If[!$dryRun, EnsureDirectory[rasterizationPath]];
 
   (* did we already export this result in a previous session? *)
-  imagePath = First[FileNames[cellHash <> "_*_*.png", rasterizationPath], None];
+  imagePath = First[FileNames[objHash <> "_*_*." <> fileExt, rasterizationPath], None];
   If[StringQ[imagePath],
     imageFileName = FileNameTake @ imagePath;
     imageDims = FromDigits /@ StringExtract[FileBaseName @ imagePath, "_" -> {3, 4}];
@@ -873,13 +880,15 @@ PNGRasterizationFunction[cell_] := Scope[
 
   (* rasterize *)
   If[$dryRun,
-    imageFileName = StringJoin[cellHash, "_dummy.png"];
+    imageFileName = StringJoin[objHash, "_dummy.", fileExt];
   ,
-    image = Rasterize[cell, ImageFormattingWidth -> Infinity, ImageResolution -> 144];
-    If[!ImageQ[image], ReturnFailed[]];
+    result = rasterizeFn[obj];
+    If[!MatchQ[result, {_, _List}], ReturnFailed[]];
+    {image, imageDims} = result;
     imageHash = Base36Hash @ image;
-    imageDims = ImageDimensions @ image;
-    imageFileName = StringJoin[cellHash, "_", imageHash, "_", toDimsString @ imageDims, ".png"];
+    {w, h} = imageDims;
+    dimsStr = StringJoin[IntegerString[w, 10, 4], "_", IntegerString[h, 10, 4]];
+    imageFileName = StringJoin[objHash, "_", imageHash, "_", dimsStr, ".", fileExt];
   ];
 
   imagePath = FileNameJoin[{rasterizationPath, imageFileName}];
@@ -887,7 +896,7 @@ PNGRasterizationFunction[cell_] := Scope[
   (* export *)
   If[!FileExistsQ[imagePath],
     vPrint["* Exporting image to ", File @ imagePath];
-    If[!$dryRun, Export[imagePath, image, CompressionLevel -> 1]];
+    If[!$dryRun, Export[imagePath, image, exportArgs]];
   ];
 
   (* create and return markdown *)
@@ -900,7 +909,7 @@ PNGRasterizationFunction[cell_] := Scope[
 
   Association[
     "type" -> "File",
-    "imagepath" -> imagePath,
+    "path" -> imagePath,
     "relativepath" -> imageRelativePath,
     "width" -> width
   ]
@@ -910,6 +919,26 @@ toEmbedPath[None, imageFileName_, imagePath_] := "file://" <> imagePath;
 toEmbedPath[relative_, imageFileName_, _] := NormalizePath @ FileNameJoin[{relative, imageFileName}];
 
 toDimsString[{w_, h_}] := StringJoin[IntegerString[w, 10, 4], "_", IntegerString[h, 10, 4]];
+
+(**************************************************************************************************)
+
+PackageExport["DefaultRasterizationFunction"]
+
+DefaultRasterizationFunction[Cell[BoxData[t:TagBox[_, _BoxForm`AnimatedImageTag]], ___]] :=
+  DefaultRasterizationFunction @ ToExpression[t, StandardForm];
+
+DefaultRasterizationFunction[a_AnimatedImage] :=
+  cachedGenericRasterize[a, rasterizeAnimatedImage, "gif", "ColorMapLength" -> 16];
+
+rasterizeAnimatedImage[a_AnimatedImage] := {a, a["RasterSize"]};
+
+DefaultRasterizationFunction[cell_] :=
+  cachedGenericRasterize[cell, rasterizeImage, "png", CompressionLevel -> 1];
+
+rasterizeImage[obj_] := Scope[
+  img = Rasterize[obj, ImageFormattingWidth -> Infinity, ImageResolution -> 144];
+  {img, ImageDimensions @ img}
+]
 
 (**************************************************************************************************)
 

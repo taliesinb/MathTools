@@ -487,7 +487,7 @@ $graphMetricPattern = Alternatives[
 ];
 
 $viewOptionKeysPattern = Alternatives[
-  ViewPoint, ViewCenter, ViewVertical, ViewVector, ViewMatrix, ViewProjection, ViewAngle, "ShrinkWrap"
+  ViewPoint, ViewCenter, ViewVertical, ViewVector, ViewMatrix, ViewProjection, ViewAngle, "ShrinkWrap", SphericalRegion
 ];
 
 $viewOptionsRulePattern = Automatic | {RepeatedNull[$viewOptionKeysPattern -> _]};

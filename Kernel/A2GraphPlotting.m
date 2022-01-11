@@ -754,6 +754,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       maxArrowheadSize = Max[arrowheadSize * $GraphPlotSizeX] / 2;
 
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Line"]];
+      If[!$GraphIs3D, arrowheadShape //= to2DShape];
       $twoWayStyle = Automatic; $inversionStyle = "Reverse"; $borderStyle = None;
       $lineThickness = If[$GraphIs3D, Thickness @ 0.2,
         AbsoluteThickness @ Max[Round[ImageFractionToImageSize[Max[arrowheadSize]] / 10, .2], .5]];
@@ -1935,10 +1936,12 @@ Options[ArrowheadLegend] = {
   MaxItems -> 10
 }
 
-to2DShape[Automatic] := "Arrow";
-to2DShape["Cone"] = "Arrow";
-to2DShape["Sphere"] = "Disk";
-to2DShape[a_] := a;
+to2DShape = Case[
+  Automatic   := "Arrow";
+  "Cone"      := "Arrow";
+  "Sphere"    := "Disk";
+  a_          := a;
+];
 
 ArrowheadLegend[assoc_Association, OptionsPattern[]] := Scope[
   UnpackOptions[arrowheadShape, orientation, maxItems];

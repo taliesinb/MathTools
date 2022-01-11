@@ -41,6 +41,7 @@ ecoords$ is a list of coordinate matrices in the same order as EdgeList[graph$].
 "
 
 ExtractGraphPrimitiveCoordinates::badvcoordrules = "VertexCoordinateRules is not a list of rules.";
+ExtractGraphPrimitiveCoordinates::badvcoordfunc = "VertexCoordinateFunction did not return a valid result.";
 ExtractGraphPrimitiveCoordinates::badvcoords = "Initial setting of VertexCoordinates is not a matrix of coordinates.";
 ExtractGraphPrimitiveCoordinates::glayoutfail = "Failed to layout graph, using circle.";
 ExtractGraphPrimitiveCoordinates::badctrans = "CoordinateTransformFunction produced invalid values, using circle.";
@@ -160,6 +161,20 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
   Which[
     vertexCoordinateFunction =!= None,
       initialVertexCoordinates = Map[vertexCoordinateFunction, vertexList];
+      If[!CoordinateMatrixQ[initialVertexCoordinates, _],
+        Message[ExtractGraphPrimitiveCoordinates::badvcoordfunc];
+        initialVertexCoordinates = None;
+      ,
+      Switch[
+        Last @ Dimensions @ initialVertexCoordinates,
+        1,
+          initialVertexCoordinates = AppendConstantColumn[initialVertexCoordinates, 0];
+        2|3,
+          Null,
+        _,
+          initialVertexCoordinates = DimensionReduce[initialVertexCoordinates, ReplaceAutomatic[layoutDimension, 3]];
+        ];
+      ];
     ,
     vertexCoordinateRules === None,
       Null
@@ -331,6 +346,10 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
     ,
     vertexCoordinateFunction =!= None,
       vertexCoordinates = Map[vertexCoordinateFunction, vertexList];
+      If[!CoordinateMatrixQ[vertexCoordinates, _],
+        Message[ExtractGraphPrimitiveCoordinates::badvcoordfunc];
+        vertexCoordinates = Automatic;
+      ];
     ,
     vertexCoordinateRules === None,
       vertexCoordinates = Automatic;
@@ -344,9 +363,18 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
       vertexCoordinates = Automatic;
   ];
 
-  If[vertexCoordinates =!= Automatic && !CoordinateMatrixQ[vertexCoordinates],
-    Message[ExtractGraphPrimitiveCoordinates::badvcoords];
-    vertexCoordinates = Automatic
+  If[vertexCoordinates =!= Automatic,
+    If[!CoordinateMatrixQ[vertexCoordinates, _],
+      Message[ExtractGraphPrimitiveCoordinates::badvcoords];
+      vertexCoordinates = Automatic;
+    ,
+      Switch[
+        Last @ Dimensions @ vertexCoordinates,
+        1,     vertexCoordinates = AppendConstantColumn[vertexCoordinates, 0],
+        2|3,   Null,
+        _,     vertexCoordinates = DimensionReduce[vertexCoordinates, ReplaceAutomatic[layoutDimension, 3]]
+      ];
+    ];
   ];
 
   SetAutomatic[vertexLayout, $defaultVertexLayout];
