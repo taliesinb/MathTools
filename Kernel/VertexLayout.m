@@ -372,7 +372,7 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
         Last @ Dimensions @ vertexCoordinates,
         1,     vertexCoordinates = AppendConstantColumn[vertexCoordinates, 0],
         2|3,   Null,
-        _,     vertexCoordinates = DimensionReduce[vertexCoordinates, ReplaceAutomatic[layoutDimension, 3]]
+        _,     vertexCoordinates = DimensionReduce[vertexCoordinates, ReplaceAutomatic[layoutDimension, 3], Method -> "LatentSemanticAnalysis"]
       ];
     ];
   ];
@@ -685,8 +685,9 @@ correctSelfLoopsNew[selfLoopRadius_] := Scope[
 selfLoopQ[coords_] := First[coords] == Last[coords];
 
 fixSelfLoopNew[selfLoopRadius_][coords_] := Scope[
+  If[Length[coords] === 2, Return @ coords];
   terminus = First @ coords;
-  radialVector = selfLoopRadius * Normalize[mean - terminus];
+  radialVector = selfLoopRadius * Normalize[Mean[coords] - terminus];
   centeredCoords = PlusVector[coords, -terminus];
   scale = Norm @ Part[centeredCoords, Ceiling[Length[centeredCoords] / 2]];
   centeredCoords *= selfLoopRadius / (scale / 2);
@@ -707,9 +708,15 @@ nudgeOverlappingVertices[coords_, nudgeDistance_, plotRange_] := Scope[
     nudgeScale = If[nudgeScale === 0, 1, Max[nudgeScale, 0.1]];
   ];
   dupPos = Select[Length[#] > 1&] @ PositionIndex[Round[coords, nudgeScale / 40]];
+  is3D = CoordinateMatrixQ[coords, 3];
   If[Length[dupPos] === 0, Return @ coords];
-  If[Length[dupPos] === 1 && num > 1,
-    Return @ PlusVector[CirclePoints[{nudgeScale/5, Tau * .25/num}, num], Mean @ coords]];
+  If[Length[dupPos] === 1 && num == 1,
+    points = If[CoordinateMatrixQ[coords, 3],
+      SpherePoints[num] * nudgeScale/5,
+      CirclePoints[{nudgeScale/5, Tau * .25/num}, num]
+    ];
+    Return @ PlusVector[points, Mean @ coords]
+  ];
   Scan[nudge, Values @ dupPos];
   nudgedCoords
 ];
@@ -719,7 +726,7 @@ nudge[indices_] := nudge2 @ SortBy[indices, Part[vertexList, #]&];
 nudge2[indices_] :=
   Part[nudgedCoords, indices] = Plus[
     Part[nudgedCoords, indices],
-    nudgeScale/5 * CirclePoints[Length @ indices]
+    nudgeScale/5 * If[is3D, SpherePoints, CirclePoints][Length @ indices]
   ];
 
 (**************************************************************************************************)
