@@ -15,6 +15,9 @@ Options[Quiver] = $simpleGraphOptionRules;
 
 declareSyntaxInfo[Quiver, {_, _., OptionsPattern[]}];
 
+Quiver[vertices_List, {}, opts:OptionsPattern[]] :=
+  ExtendedGraph[Graph[vertices, {}], opts];
+
 Quiver[edges_, opts:OptionsPattern[]] :=
   Quiver[Automatic, edges, opts];
 

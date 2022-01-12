@@ -1,3 +1,59 @@
+(**************************************************************************************************)
+
+PackageExport["DiscreteAnimationObject"]
+
+declareBoxFormatting[
+  g:DiscreteAnimationObject[_, _Integer] :> makeDiscreteAnimationObjectBoxes[g]
+];
+
+makeDiscreteAnimationObjectBoxes[DiscreteAnimationObject[g_, n_]] := Scope[
+  ToBoxes @ Framed[
+    imgs = FastRasterizeList @ makeDiscreteGraphics[g, n];
+    dims = ImageDimensions /@ imgs;
+    If[Max[dims] > 64, imgs = ImageResize[#, {64}]& /@ imgs];
+    AnimatedImage[
+      imgs,
+      AnimationRepetitions -> Infinity,
+      FrameRate -> 2
+    ],
+    FrameStyle -> $Teal
+  ]
+];
+
+g_DiscreteAnimationObject["VideoToClipboard", args___] :=
+  CopyFileToClipboard @ VideoFilePath @ g["Video", args]
+
+CopyFileToClipboard[g_DiscreteAnimationObject] :=
+  g["VideoToClipboard"];
+
+g_DiscreteAnimationObject["Video", frameTime_:1/2] := Scope[
+  numFrames = Last @ g; fps = 1.0 / frameTime;
+  If[fps == Round[fps], fps //= Round];
+  path = File @ CacheVideoFilePath["ao", Hash[g], numFrames, fps];
+  If[FileExistsQ[path], Video @ path,
+    VideoRasterizeList[g["Frames", numFrames], path, fps]
+  ]
+];
+
+g_DiscreteAnimationObject["Manipulate"] :=
+  Construct[Animate, First @ g, {\[FormalT], 1, Last @ g, 1}]
+
+g_DiscreteAnimationObject["AnimatedImage"] :=
+  AnimatedImage[g["Frames"], FrameRate -> 2];
+
+g_DiscreteAnimationObject["Frames"] :=
+  FastRasterizeList @ g["Graphics"];
+
+DiscreteAnimationObject[g_, n_]["Graphics"] :=
+  makeDiscreteGraphics[g, n];
+
+makeDiscreteGraphics[g_, n_] :=  Scope[
+  f = Construct[Function, \[FormalT], g];
+  Map[f, Range @ n]
+];
+
+(**************************************************************************************************)
+
 PackageExport["AnimationObject"]
 
 declareBoxFormatting[
@@ -165,6 +221,21 @@ linearLerp[a_, b_, t_] := a * (1 - t) + (b * t);
 
 (**************************************************************************************************)
 
+Graphics3DSpinAnimation[g_Graphics3D, angleDelta_] := Scope[
+  viewPoint = LookupOption[g, ViewPoint, Automatic];
+  angles0 = ToSpherical @ viewPoint;
+  angles1 = applyAngleDelta[angles0, angleDelta];
+  viewPoint01 = ComposedNumericLerp[FromSpherical, angles0, angles1, \[FormalT]];
+  gSpin = ReplaceOptions[g, ViewPoint -> viewPoint01];
+  AnimationObject[gSpin]
+];
+
+applyAngleDelta[{r_, a_, b_}, {dr_, da_, db_}] := {r + dr, a + Pi * da, b + Tau * db};
+applyAngleDelta[{r_, a_, b_}, {da_, db_}] := {r, a + Pi * da, b + Tau * db};
+applyAngleDelta[{r_, a_, b_}, db_] := {r, a, b + Tau * db};
+
+(**************************************************************************************************)
+
 PackageExport["VertexLayoutAnimationLerp"]
 
 Options[VertexLayoutAnimationLerp] = {
@@ -185,3 +256,9 @@ VertexLayoutAnimationLerp[graph_Graph, layout_, OptionsPattern[]] := Scope[
 PackageExport["NumericLerp"]
 
 NumericLerp[a_, b_, t_ ? NumericQ] := linearLerp[a, b, t];
+
+(**************************************************************************************************)
+
+PackageExport["ComposedNumericLerp"]
+
+ComposedNumericLerp[f_, a_, b_, t_ ? NumericQ] := f @ linearLerp[a, b, t];

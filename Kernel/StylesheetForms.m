@@ -3476,6 +3476,9 @@ generalPolyBoxes[polyHead_, polyForm_, powerForm_, plusForm_, timesForm_, scalar
   ]
 ];
 
+innerPolyBoxes[a_, n_Integer ? Negative] :=
+  TemplateBox[{polyTermForm @ a, IntegerString @ Abs @ n}, "SubtractForm"];
+
 innerPolyBoxes[args___] :=
   TemplateBox[MapUnevaluated[polyTermForm, {args}], $polyPlusForm];
     

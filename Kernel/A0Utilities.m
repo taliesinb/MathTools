@@ -804,8 +804,8 @@ AppendConstantColumn[item_][matrix_] := AppendConstantColumn[matrix, item];
 
 PackageExport["PrependConstantColumn"]
 
-AppendConstantColumn[matrix_, item_] := Map[Prepend[item], matrix];
-AppendConstantColumn[item_][matrix_] := PrependConstantColumn[matrix, item];
+PrependConstantColumn[matrix_, item_] := Map[Prepend[item], matrix];
+PrependConstantColumn[item_][matrix_] := PrependConstantColumn[matrix, item];
 
 (**************************************************************************************************)
 
