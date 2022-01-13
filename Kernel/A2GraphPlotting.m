@@ -32,9 +32,13 @@ PackageExport["EdgeLabelBaseStyle"]
 PackageExport["VisibleCardinals"]
 PackageExport["ViewRegion"]
 PackageExport["ViewOptions"]
+PackageExport["ViewRotation"]
 PackageExport["LayoutDimension"]
 PackageExport["AdditionalImagePadding"]
+
 PackageExport["CoordinateTransformFunction"]
+PackageExport["CoordinateRotation"]
+
 PackageExport["LabelCardinals"]
 PackageExport["AspectRatioClipping"]
 PackageExport["PrologFunction"]
@@ -80,6 +84,9 @@ SetUsage @ "EdgeLabelSpacing is an extended option to Graph."
 SetUsage @ "EdgeLabelBaseStyle is an extended option to Graph."
 
 SetUsage @ "PeripheralVertices is an extended option to Graph.";
+
+SetUsage @ "ViewRotation is an extended option to Graph.";
+SetUsage @ "CoordinateRotation is an extended option to Graph.";
 
 (**************************************************************************************************)
 
@@ -644,7 +651,14 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     shrinkWrap = False;
     If[ListQ @ viewOptions,
       shrinkWrap = Lookup[viewOptions, "ShrinkWrap", False];
-      viewOptions //= DeleteOptions["ShrinkWrap"]];
+      viewRotation = Lookup[viewOptions, ViewRotation, 0];
+      If[viewRotation != 0,
+        viewPoint = Lookup[viewOptions, ViewPoint, {1.3, -2.4, 2.}];
+        viewPoint //= SphericalRotateVector[viewRotation * Pi];
+        viewOptions //= ReplaceOptions[ViewPoint -> viewPoint];
+      ];
+      viewOptions //= DeleteOptions[{"ShrinkWrap", ViewRotation}];
+    ];
   ];
 
   $fadedEdgeParts = None;
@@ -2202,6 +2216,8 @@ drawIndividualCustomShapeFunction[fn_, size_, color_][pos_] := Scope[
   res
 ];
 
+ExtendedGraphPlot::vertexfnmsg = "VertexShapeFunction issued messages when applied to ``."
+
 (**************************************************************************************************)
 
 drawGraphicsWithColor[None, pos_, color_, size_] :=
@@ -3087,7 +3103,9 @@ $fadePrimitivesRules = {
   a:Annotation[_, "FrameLabel" | "Protected"] :> a,
   Directive[Glow[_], opts___] :> Directive[Glow[LightGray], opts],
   _Opacity -> Opacity[1],
-  $ColorPattern -> LightGray
+  (VertexColors -> c_List) :> (VertexColors -> c),
+  (* (VertexColors -> c_List) :> (VertexColors -> Map[GrayLevel[0.85, ColorOpacity @ #]&, Echo @ c]), *)
+  c:$ColorPattern :> GrayLevel[0.85, Min[ColorOpacity @ c, 0.95]]
 };
 
 fadePrimitives[primitives_] := ReplaceAll[primitives, $fadePrimitivesRules];

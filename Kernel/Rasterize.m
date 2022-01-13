@@ -3,7 +3,8 @@ exprToCell[expr_, isize_] := Cell[
 	BoxData[ToBoxes[expr]],
 	"Output", ShowCellBracket -> False, Background -> Automatic, CellMargins -> 0,
 	CellFrame -> None, CellFrameMargins -> 0, CellContext -> "Global`",
-	GraphicsBoxOptions -> {ImageSize -> isize}, Graphics3DBoxOptions -> {ImageSize -> Medium}
+	GraphicsBoxOptions -> {ImageSize -> isize}, Graphics3DBoxOptions -> {ImageSize -> Medium},
+	StyleDefinitions -> FrontEnd`FileName[{"QuiverGeometry"}, "QGStylesLatest.nb", CharacterEncoding -> "UTF-8"]
 ];
 
 cellToExportPacket[cell_] := ExportPacket[

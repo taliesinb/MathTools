@@ -384,7 +384,8 @@ $extendedGraphOptionsRules = {
   GraphTheme -> None,
   VertexFontSize -> None,
   VertexBackground -> White,
-  PeripheralVertices -> None
+  PeripheralVertices -> None,
+  CoordinateRotation -> None
 };
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
@@ -487,7 +488,7 @@ $graphMetricPattern = Alternatives[
 ];
 
 $viewOptionKeysPattern = Alternatives[
-  ViewPoint, ViewCenter, ViewVertical, ViewVector, ViewMatrix, ViewProjection, ViewAngle, "ShrinkWrap", SphericalRegion
+  ViewPoint, ViewCenter, ViewVertical, ViewVector, ViewRotation, ViewMatrix, ViewProjection, ViewAngle, "ShrinkWrap", SphericalRegion
 ];
 
 $viewOptionsRulePattern = Automatic | {RepeatedNull[$viewOptionKeysPattern -> _]};

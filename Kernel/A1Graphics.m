@@ -755,8 +755,8 @@ PackageExport["ConstructGraphicsViewTransform"]
 ConstructGraphicsViewTransform[viewAssoc_Association] := Scope[
 
   viewAssoc = Association[$defaultViewOpts, viewAssoc];
-  {plotRange, viewPoint, viewVector, viewMatrix, viewCenter, viewVertical, viewAngle, viewProjection} =
-    Lookup[viewAssoc, {PlotRange, ViewPoint, ViewVector, ViewMatrix, ViewCenter, ViewVertical, ViewAngle, ViewProjection}];
+  {plotRange, viewPoint, viewVector, viewRotation, viewMatrix, viewCenter, viewVertical, viewAngle, viewProjection} =
+    Lookup[viewAssoc, {PlotRange, ViewPoint, ViewVector, ViewRotation, ViewMatrix, ViewCenter, ViewVertical, ViewAngle, ViewProjection}];
 
   If[Dimensions[viewMatrix] === {2, 4, 4},
     Return @ GraphicsViewTransform[Dot @@ viewMatrix, viewMatrix]];
@@ -779,6 +779,10 @@ ConstructGraphicsViewTransform[viewAssoc_Association] := Scope[
     cameraPoint = viewVector; lookAtPoint = viewCenter
   ];
   transVec = cameraPoint - lookAtPoint;
+
+  If[viewRotation != 0,
+    transVec //= SphericalRotateVector[viewRotation * Pi];
+  ];
 
   SetAutomatic[viewVertical, {0, 0, 1}];
   SetAutomatic[viewAngle, $defaultViewAngle];
@@ -837,18 +841,20 @@ $symbolicViewpointRules = {
 
 $defaultViewAngle = 35. * Degree;
 
-$viewOptionSymbols = {ViewPoint, ViewVector, ViewMatrix, ViewCenter, ViewVertical, ViewAngle, ViewProjection};
-$defaultViewOpts = Thread[$viewOptionSymbols -> Automatic];
+$viewOptionSymbols = {ViewPoint, ViewVector, ViewRotation, ViewMatrix, ViewCenter, ViewVertical, ViewAngle, ViewProjection};
+$defaultViewOpts = Thread[$viewOptionSymbols -> Automatic] // ReplaceOptions[ViewRotation -> 0];
 
 PackageScope["$automaticViewOptions"]
+PackageScope["$defaultViewPoint"]
 
-$automaticViewOptions = {ViewProjection -> "Orthographic", ViewPoint -> {-0.2, -2, 0.5}};
+$defaultViewPoint = {-0.2, -2, 0.5};
+$automaticViewOptions := {ViewProjection -> "Orthographic", ViewPoint -> $defaultViewPoint};
 
 ConstructGraphicsViewTransform[g_Graphics3D] := Scope[
   viewOpts = Options[g, $viewOptionSymbols];
   plotRange = GraphicsPlotRange @ g;
   viewAssoc = Association[viewOpts, PlotRange -> plotRange];
-  ConstructGraphicsViewTransform[viewAssoc]
+  ConstructGraphicsViewTransform[Echo @ viewAssoc]
 ];
 
 (**************************************************************************************************)
@@ -1274,6 +1280,38 @@ ListShowFaded[list_, i_, opacity_:0.9] := Scope[
     PlotRange -> {{xmin, xmax}, {ymin, ymax}}
   ]
 ]
+
+(**************************************************************************************************)
+
+PackageExport["FromSpherical"]
+PackageExport["ToSpherical"]
+
+FromSpherical[{r_, a_, b_}] := {r Cos[b] Sin[a],r Sin[a] Sin[b],r Cos[a]};
+ToSpherical[{x_, y_, z_}] := {Sqrt[x^2 + y^2 + z^2], ArcTan[z, Sqrt[x^2 + y^2]], ArcTan[x, y]};
+
+(**************************************************************************************************)
+
+PackageExport["SphericalRotateVector"]
+
+SphericalRotateVector[vecs:{___List}, t_] :=
+  Map[SphericalRotateVector[#, t]&, vecs];
+
+SphericalRotateVector[vec_List, t_] :=
+  Dot[{{Cos[t], -Sin[t], 0}, {Sin[t], Cos[t], 0}, {0, 0, 1}}, vec];
+
+SphericalRotateVector[t_][vec_] := SphericalRotateVector[vec, t];
+
+(**************************************************************************************************)
+
+PackageExport["RotateVector"]
+
+RotateVector[vecs:{___List}, t_] :=
+  Map[RotateVector[#, t]&, vecs];
+
+RotateVector[vec_List, t_] :=
+  Dot[{{Cos[t], -Sin[t]}, {Sin[t], Cos[t]}}, vec];
+
+RotateVector[t_][vec_] := RotateVector[vec, t];
 
 (**************************************************************************************************)
 

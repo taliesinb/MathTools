@@ -762,6 +762,7 @@ TreeQuiver[k_Integer, n_Integer, opts:OptionsPattern[]] := Scope[
     Cardinals -> Range[k],
     GraphLayout -> {"NudgeDistance" -> 0},
     ImageSize -> "AverageEdge" -> 30,
+    GraphOrigin -> TreeVertex[],
     GraphTheme -> "BigFive"
   ]
 ]

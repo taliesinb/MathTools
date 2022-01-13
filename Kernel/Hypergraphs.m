@@ -1,19 +1,21 @@
 PackageExport["PlotDirectedHypergraphEncodedGraph"]
 
+$defaultCardinalColors = <|1 -> $Red, 2 -> $Blue, 3 -> $Purple, 4 -> $Green, 5 -> $Orange, 6 -> $Teal, 7 -> $Pink|>;
+
 Options[PlotDirectedHypergraphEncodedGraph] = Options[ExtendedGraph];
 
 PlotDirectedHypergraphEncodedGraph[vertices_List, hyperedges_List, opts:OptionsPattern[]] := ExtendedGraphPlot @ ExtendedGraph[
 	vertices, DirectedEdge @@@ hyperedges,
 	opts,
 	GraphTheme -> "ColoredGraphUnion",
-	CardinalColors -> <|1 -> $Red, 2 -> $Blue, 3 -> $Purple|>
+	CardinalColors -> $defaultCardinalColors
 ];
 
 PlotDirectedHypergraphEncodedGraph[hyperedges_List, opts:OptionsPattern[]] := ExtendedGraphPlot @ ExtendedGraph[
 	DirectedEdge @@@ hyperedges,
 	opts,
 	GraphTheme -> "ColoredGraphUnion",
-	CardinalColors -> <|1 -> $Red, 2 -> $Blue, 3 -> $Purple|>
+	CardinalColors -> $defaultCardinalColors
 ];
 
 $GraphThemeData["ColoredGraphUnion"] = {

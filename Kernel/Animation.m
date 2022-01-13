@@ -2,6 +2,9 @@
 
 PackageExport["DiscreteAnimationObject"]
 
+SetHoldFirst[DiscreteAnimationObject];
+SetHoldFirst[makeDiscreteGraphics];
+
 declareBoxFormatting[
   g:DiscreteAnimationObject[_, _Integer] :> makeDiscreteAnimationObjectBoxes[g]
 ];
@@ -48,7 +51,7 @@ DiscreteAnimationObject[g_, n_]["Graphics"] :=
   makeDiscreteGraphics[g, n];
 
 makeDiscreteGraphics[g_, n_] :=  Scope[
-  f = Construct[Function, \[FormalT], g];
+  f = Construct[Function, \[FormalT], Unevaluated @ g];
   Map[f, Range @ n]
 ];
 

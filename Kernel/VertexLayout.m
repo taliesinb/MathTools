@@ -68,7 +68,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
   initialVertexCoordinates = vertexCoordinates;
 
   UnpackExtendedThemedOptions[graph,
-    layoutDimension, extendedGraphLayout, viewOptions, coordinateTransformFunction,
+    layoutDimension, extendedGraphLayout, viewOptions, coordinateTransformFunction, coordinateRotation,
     vertexCoordinateRules, vertexCoordinateFunction, selfLoopRadius, multiEdgeDistance, packingSpacing
   ];
     
@@ -228,6 +228,16 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
     Goto[end];
   ];
 
+  If[NumericQ[coordinateRotation],
+    If[CoordinateMatrixQ[vertexCoordinates, 3],
+      vertexCoordinates //= SphericalRotateVector[coordinateRotation];
+      edgeCoordinateLists //= SphericalRotateVector[coordinateRotation];
+    ,
+      vertexCoordinates //= RotateVector[coordinateRotation];
+      edgeCoordinateLists //= RotateVector[coordinateRotation];
+    ];
+  ];
+
   If[CoordinateMatrixQ[vertexCoordinates, 3] && layoutDimension == 2,
     SetAutomatic[viewOptions, $automaticViewOptions];
     viewOptions = Association[PlotRange -> CoordinateBounds[vertexCoordinates], viewOptions];
@@ -331,7 +341,7 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
   ];
 
   UnpackExtendedThemedOptions[graph,
-    vertexLayout, layoutDimension, viewOptions, coordinateTransformFunction, vertexOverlapResolution,
+    vertexLayout, layoutDimension, viewOptions, coordinateTransformFunction, coordinateRotation, vertexOverlapResolution,
     vertexCoordinateRules, vertexCoordinateFunction, selfLoopRadius, multiEdgeDistance, packingSpacing
   ];
     
@@ -406,6 +416,16 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
 
   If[coordinateTransformFunction ~!~ None | {},
     applyCoordinateTransformNew[coordinateTransformFunction];
+  ];
+
+  If[NumericQ[coordinateRotation],
+    If[CoordinateMatrixQ[vertexCoordinates, 3],
+      $vertexCoordinates //= SphericalRotateVector[coordinateRotation];
+      $edgeCoordinateLists //= SphericalRotateVector[coordinateRotation];
+    ,
+      $vertexCoordinates //= RotateVector[coordinateRotation];
+      $edgeCoordinateLists //= RotateVector[coordinateRotation];
+    ];
   ];
 
   If[CoordinateMatrixQ[vertexCoordinates, 3] && layoutDimension == 2,
