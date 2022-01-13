@@ -311,7 +311,7 @@ DirectedUniHypergraphLabeledReplaceList[hyperedges_List, rules_List] :=
 
 DirectedUniHypergraphLabeledReplaceList[hyperedges_List, rule_ | {rule_}] := Scope[
 	pos = SubsetPosition[hyperedges, First @ rule];
-	applyLabeledDUHRewrite[hyperedges, #, rule]& /@ pos
+	removeDupUniH[hyperedges, applyLabeledDUHRewriteChecked[hyperedges, #, rule]& /@ pos]
 ];
 
 applyLabeledDUHRewrite[edges_, pos_, rule_] :=
@@ -334,13 +334,18 @@ DirectedUniHypergraphReplaceList[hyperedges_List, rules_List] :=
 
 DirectedUniHypergraphReplaceList[hyperedges_List, rule_ | {rule_}] := Scope[
 	pos = SubsetPosition[hyperedges, First @ rule];
-	applyDUHRewrite[hyperedges, #, rule]& /@ pos
+	removeDupUniH[hyperedges, applyDUHRewrite[hyperedges, #, rule]& /@ pos]
 ];
 
 applyDUHRewrite[edges_, pos_, rule_] := Scope[
 	old = Part[edges, pos];
 	Union @ Join[Delete[edges, List /@ pos], Replace[old, {rule, _ -> $Failed}]]
 ]
+
+(**************************************************************************************************)
+
+removeDupUniH[hyperedges_, results_] :=
+	DeleteCases[results, Labeled[hyperedges, _] | hyperedges];
 
 (**************************************************************************************************)
 
