@@ -416,6 +416,8 @@ iHumanBlend = Case[
   {wh, r1}          := r2;     {wh, g1}          := g2;        {wh, b1}          := b2;
   {bl, r2}          := r1;     {bl, g2}          := g1;        {bl, b2}          := b1;
   {wh, w0}          := w2;     {bl, w2}          := w0;
+  {w0, o1}          := blend @ {o0, o1}; {t1, w0} := blend @ {t0, t1}; {w0, p1} := blend @ {p0, p1};
+  {w3, o1}          := blend @ {o1, o2}; {t1, w3} := blend @ {t1, t2}; {w3, p1} := blend @ {p1, p2};
   colors_List := OklabBlend[colors];
   {g0 -> $DarkGreen,  g1 -> $Green,  g2 -> $LightGreen,
    r0 -> $DarkRed,    r1 -> $Red,    r2 -> $LightRed,
@@ -424,7 +426,8 @@ iHumanBlend = Case[
    o0 -> $DarkOrange, o1 -> $Orange, o2 -> $LightOrange,
    p0 -> $DarkPink,   p1 -> $Pink,   p2 -> $LightPink,
    w0 -> $DarkGray,   w1 -> $Gray,   w2 -> $LightGray,
-   bl -> Black, wh -> White}
+   bl -> Black, wh -> White,
+   blend -> OklabBlend}
 ];
 
 (**************************************************************************************************)

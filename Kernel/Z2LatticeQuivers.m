@@ -258,7 +258,15 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     {"VertexList", "IndexEdgeList", "TerminationReason"},
     DirectedEdges -> True, MaxDepth -> maxDepth, IncludeFrontier -> includeFrontier,
     DepthTermination -> depthTermination,
-    MaxVertices -> maxVertices, MaxEdges -> maxEdges, SelfLoops -> selfLoops
+    MaxVertices -> maxVertices, MaxEdges -> (2 * maxEdges), SelfLoops -> selfLoops
+  ];
+
+  indexEdgeList = DeleteDuplicates @ indexEdgeList;
+  If[IntegerQ[maxEdges] && Length[indexEdgeList] > maxEdges,
+    indexEdgeList = Take[indexEdgeList, maxEdges];
+    vertexPresentQ = ConstantAssociation[Catenate @ Map[Part[vertexList, {Part[#, 1], Part[#, 2]}]&, indexEdgeList], True];
+    Scan[Set[vertexPresentQ[#], True]&, initialStates];
+    vertexList = Pick[vertexList, Lookup[vertexPresentQ, vertexList, False]];
   ];
 
   If[randomSeeding =!= None,
@@ -270,9 +278,9 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   (* rewrite the vertices via the coordinate function *)
-  If[$stripLV && !MatchQ[First @ vertexList, _LatticeVertex], $stripLV = False];
+  If[$stripLV && !MatchQ[First[vertexList, None], _LatticeVertex], $stripLV = False];
   abstractVertexList = MapAt[abstractCoordinateFunction, vertexList, If[$stripLV, {All, 1}, {All}]];
-  ivertex = First @ abstractVertexList;
+  ivertex = First[abstractVertexList, None];
 
   (* rewrite the indexed edges to use the explicit vertices *)
   edgeList = DeleteDuplicates[indexEdgeList] /.

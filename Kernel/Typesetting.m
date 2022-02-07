@@ -584,10 +584,12 @@ ClickCopyRow[args___] := Framed[
 
 PackageExport["ClickCopy"]
 
-ClickCopy[e_] := MouseAppearance[
-  EventHandler[Framed[e, Background -> GrayLevel[0.99], FrameStyle -> GrayLevel[0.95], ImageMargins -> {{5, 5}, {5, 5}}], {"MouseClicked" :> CopyToClipboard[e]}],
+ClickCopy[e_] := With[
+  {copyExpr = Cell[BoxData @ ToBoxes @ TraditionalForm @ e, FormatType -> TraditionalForm]},
+  MouseAppearance[
+  EventHandler[Framed[e, Background -> GrayLevel[0.99], FrameStyle -> GrayLevel[0.95], ImageMargins -> {{5, 5}, {5, 5}}], {"MouseClicked" :> CopyToClipboard[copyExpr]}],
   "LinkHand"
-];
+]];
 
 (**************************************************************************************************)
 

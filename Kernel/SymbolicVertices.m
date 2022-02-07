@@ -30,9 +30,6 @@ declareBoxFormatting[
   CardinalProduct[a_, b_] :> TemplateBox[{MakeBoxes @ a, MakeBoxes @ b}, "CardinalProductForm"]
 ];
 
-$TemplateKatexFunction["CardinalProductForm"] = riffled[" \\cardinalProductSymbol "];
-
-
 (**************************************************************************************************)
 
 PackageExport["CardinalSequence"]
@@ -58,8 +55,6 @@ VertexProduct[a$, b$] represents a product of two vertices a$ and b$.
 declareBoxFormatting[
   VertexProduct[args__] :> TemplateBox[MapUnevaluated[MakeBoxes, {args}], "VertexProductForm"]
 ];
-
-$TemplateKatexFunction["VertexProductForm"] = riffled[" \\vertexProductSymbol "];
 
 (**************************************************************************************************)
 

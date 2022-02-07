@@ -157,20 +157,20 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   ];
 
   If[!ListQ[initialVertices] || Length[initialVertices] == 0,
-    ReturnFailed["badinitstates"];
+    ReturnFailed[MultiwaySystem::badinitstates];
   ];
 
   initialVertices = DeleteDuplicates[initialVertices];
 
   If[!MatchQ[result, $stgElementsPattern | {Repeated[$stgElementsPattern]}],
-    ReturnFailed["badelement", result, TextString[Row[$stgElements, ", "]]];
+    ReturnFailed[MultiwaySystem::badelement, result, TextString[Row[$stgElements, ", "]]];
   ];
 
   Scan[
     symbol |-> If[!MatchQ[OptionValue[symbol], $posIntOrInfinityP],
-      ReturnFailed["badlimit", symbol];
+      ReturnFailed[MultiwaySystem::badlimit, symbol];
     ],
-    {MaxVertices, MaxEdges, MaxVerticesPerComponent, MaxTime, MaxFunctionEvaluations}
+    {MaxVertices, MaxVerticesPerComponent, MaxTime, MaxFunctionEvaluations}
   ];
 
   depthLabels = Automatic;
@@ -194,7 +194,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
         withinDepthTest = withinDepthTest;
       ],
     _,
-      ReturnFailed["badmaxdepth"];
+      ReturnFailed[MultiwaySystem::badmaxdepth];
   ];
 
   trackLabelDepth = trackLabelDepth || ContainsQ[result, Alternatives @@ $vertexDepthElements];
@@ -350,7 +350,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   ];
 
   If[ContainsQ[result, "EdgeLabels"],
-    If[directedEdges === False, ReturnFailed["undedgelabels"]];
+    If[directedEdges === False, ReturnFailed[MultiwaySystem::undedgelabels]];
     edgeLabelsBag = Internal`Bag[];
     $extractLabelBlock := (
       labels = Replace[successors, {Labeled[_, l_] :> l, _ -> None}, {1}];
@@ -481,18 +481,9 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     True, "Complete"
   ];
 
-  (* trim edges if we collected too many *)
-  If[edgeCount > maxEdges && !finishGeneration,
-    extraCount = edgeCount - maxEdges;
-    edgeTrimmer = MapAt[DropOperator[-extraCount], -1];
-    labelTrimer = DropOperator[-extraCount];
-  ,
-    edgeTrimmer = labelTrimmer = Identity;
-  ];
-
   (* calculate results *)
-  transitionLists := transitionLists = edgeTrimmer @ Internal`BagPart[transitionListsBag, All];
-  indexTransitionLists := indexTransitionLists = edgeTrimmer @ Internal`BagPart[indexTransitionListsBag, All];
+  transitionLists := transitionLists = Internal`BagPart[transitionListsBag, All];
+  indexTransitionLists := indexTransitionLists = Internal`BagPart[indexTransitionListsBag, All];
 
   vertices := Normal[vertexArray];
   vertexCount := vertexArray["Length"];
@@ -510,7 +501,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     indexTransitionLists, {1}
   ];
 
-  edgeLabels := edgeLabels = labelTrimer @ Internal`BagPart[edgeLabelsBag, All];
+  edgeLabels := edgeLabels = Internal`BagPart[edgeLabelsBag, All];
 
   graph := ExtendedGraph[vertices, edges, FilterOptions @ opts];
   indexGraph := Graph[Range @ vertexCount, indexEdges, FilterOptions @ opts];

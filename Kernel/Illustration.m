@@ -66,7 +66,7 @@ LabeledEdgeGraph[g_, opts___] := ExtendedGraph[g, opts,
 
 (**************************************************************************************************)
 
-PackageExport["ColoredGraph"]
+PackageExport["ColoredGraphCardinalColorFunction"]
 
 $colorRules = <|
   "r" -> $Red, "b" -> $Blue, "g" -> $Green,
@@ -77,20 +77,28 @@ $colorRules = <|
   "w" -> White
 |>;
 
-makeColor[str_String] := HumanBlend @ Lookup[$colorRules, Characters @ str, Nothing];
+ColoredGraphCardinalColorFunction[str_String] :=
+  HumanBlend @ Lookup[$colorRules, Characters @ str, Nothing];
+
+(**************************************************************************************************)
+
+PackageExport["ColoredGraph"]
 
 ColoredGraph[edges_List, opts___Rule] :=
   ColoredGraph[AllUniqueVertices @ edges, edges, opts];
 
 ColoredGraph[vertices_List, edges_List, opts___Rule] := Scope[
-  vertexColors = AssociationMap[makeColor, vertices];
+  vertexColors = AssociationMap[ColoredGraphCardinalColorFunction, vertices];
   cardinalColors = If[Length[First @ edges] =!= 3, None,
-    AssociationMap[makeColor, DeleteDuplicates @ Part[edges, All, 3]]
+    AssociationMap[ColoredGraphCardinalColorFunction, DeleteDuplicates @ Part[edges, All, 3]]
   ];
   ExtendedGraph[
     vertices, edges, opts,
     VertexColorFunction -> vertexColors,
-    If[cardinalColors === None, ArrowheadShape -> "Line", CardinalColors -> cardinalColors],
+    If[cardinalColors === None,
+      ArrowheadShape -> "Line",
+      CardinalColorFunction -> ColoredGraphCardinalColorFunction
+    ],
     GraphTheme -> "ColoredGraph"
   ]
 ];
@@ -806,24 +814,58 @@ pathHomomorphismDiagram[graph_Graph, path_] := Scope[
   ]
 ];
 
+
+(**************************************************************************************************)
+
+PackageExport["GraphProductsRow"]
+
+GraphProductsRow[{l1_ -> q1_, l2_ -> q2_}, prodSeq:Repeated[{__Rule}]] := Scope[
+  q1 = RotateGraph @ q1;
+  opts = Sequence[ArrowheadPosition -> 0.65, ImagePadding -> 15, Frame -> True];
+  prods = {prodSeq};
+  numProds = Length @ First @ List @ prodSeq;
+  topRow = Prepend[""] @ ConstantArray[q2, numProds];
+  prodRows = Catenate @ Map[
+    Function[prods,
+      {prodLabels, prodFns} = KeysValues @ prods;
+      bottomRow = Prepend[""] @ Map[#[l1, l2]&, prodLabels];
+      {
+        Prepend[q1] @ Map[#[q1, q2, opts]&, prodFns],
+        bottomRow
+      }
+    ],
+    {prodSeq}
+  ];
+  rows = Prepend[prodRows, topRow];
+  Grid[
+    rows,
+    Spacings -> {{0,0, {1, 1.5}}, {0,0, {1, 1.5}}}
+  ]
+];
+
 (**************************************************************************************************)
 
 PackageExport["GraphProductTable"]
 
-Options[GraphProductTable] = {
+Options[GraphProductTable] = JoinOptions[
   "Labels" -> {None, None},
-  "UseCardinalSet" -> True,
-  ArrowheadPosition -> 0.525
-};
+  "UseCardinalSet" -> False,
+  ArrowheadPosition -> 0.525,
+  ImagePadding -> 15,
+  ExtendedGraph,
+  Grid
+];
 
-GraphProductTable[prodFn_, aList_, bList_, OptionsPattern[]] := Scope[
+GraphProductTable[prodFn_, aList_, bList_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[labels, useCardinalSet, arrowheadPosition];
   aList = RotateGraph /@ aList;
   entries = Outer[
     prodFn[#1, #2,
       PackingSpacing -> 1, "UseCardinalSet" -> useCardinalSet,
-      If[!useCardinalSet, ArrowheadShape -> None, Sequence @@ {}], MultiEdgeDistance -> 0.1,
-      ArrowheadPosition -> arrowheadPosition, EdgeSetback -> .1
+      FilterOptions[First @ PatternHead @ prodFn, opts],
+      (* If[!useCardinalSet, ArrowheadShape -> None, Sequence @@ {}], *) MultiEdgeDistance -> 0.1,
+      ArrowheadPosition -> arrowheadPosition, EdgeSetback -> .1, ImagePadding -> 15,
+      Frame -> True
     ]&,
     aList,
     bList,
@@ -838,7 +880,7 @@ GraphProductTable[prodFn_, aList_, bList_, OptionsPattern[]] := Scope[
     blank = ""];
   PrependTo[table, Prepend[blank] @ bList];
   If[bLabels =!= None, PrependTo[table, Prepend[blank] @ bLabels]];
-  Grid[table]
+  Grid[table, FilterOptions @ opts, Spacings -> {{0,0,0.25,{1}, 0},{0,0,0.25,{1}, 0}}]
 ];
 
 (**************************************************************************************************)
@@ -887,10 +929,12 @@ ConnectedComponentProductDecomposition[graphs_, terms_, userOpts:OptionsPattern[
 ];
 
 toQuiverProductColumn = Case[
-  IndependentQuiverProductForm[a_, b_] :=
-    {toSimpleQuiver @ a, LargeSymbolForm @ IndependentQuiverProductForm[], toSimpleQuiver @ b};
-  DependentQuiverProductForm[a_, b_] :=
-    {toSimpleQuiver @ a, LargeSymbolForm @ DependentQuiverProductForm[], toSimpleQuiver @ b};
+  RightFreeQuiverProductForm[a_, b_] :=
+    {toSimpleQuiver @ a, LargeSymbolForm @ RightFreeQuiverProductForm[], toSimpleQuiver @ b};
+  LeftFreeQuiverProductForm[a_, b_] :=
+    {toSimpleQuiver @ a, LargeSymbolForm @ LeftFreeQuiverProductForm[], toSimpleQuiver @ b};
+  LockedQuiverProductForm[a_, b_] :=
+    {toSimpleQuiver @ a, LargeSymbolForm @ LockedQuiverProductForm[], toSimpleQuiver @ b};
   other_ := {OnFailed[toSimpleQuiver @ other, other]};
 ];
 

@@ -21,6 +21,10 @@
 \gdef\lgform#1{{\textcolor{4ea82a}{#1}}}
 \gdef\lbform#1{{\textcolor{3e81c3}{#1}}}
 
+\gdef\lrgform#1{{\textcolor{ffc87d}{#1}}}
+\gdef\lgbform#1{{\textcolor{96e2e3}{#1}}}
+\gdef\lrbform#1{{\textcolor{f989b8}{#1}}}
+
 \gdef\rform#1{{\textcolor{cb2b1a}{#1}}}
 \gdef\gform#1{{\textcolor{399318}{#1}}}
 \gdef\bform#1{{\textcolor{2b6fb0}{#1}}}
@@ -29,7 +33,6 @@
 \gdef\dgform#1{{\textcolor{006800}{#1}}}
 \gdef\dbform#1{{\textcolor{004987}{#1}}}
 
-\gdef\drgform#1{{\textcolor{934100}{#1}}}
 \gdef\drgform#1{{\textcolor{ae5900}{#1}}}
 \gdef\dgbform#1{{\textcolor{006567}{#1}}}
 \gdef\drbform#1{{\textcolor{86004d}{#1}}}
@@ -59,26 +62,36 @@
 \gdef\primed#1{{#1}^{\prime}}
 \gdef\tinybullet{{\tiny●}}
 
-\gdef\forwardFactor{\uparrow}
-\gdef\backwardFactor{\downarrow}
-\gdef\neutralFactor{\mid}
+\gdef\factsym#1{\mathord{#1}}
+
+\gdef\forwardFactor{\factsym{\uparrow}}
+\gdef\backwardFactor{\factsym{\downarrow}}
+\gdef\forwardBackwardFactor{\factsym{\updownarrow}}
+\gdef\forwardBackwardNeutralFactor{\factsym{\mathrlap{\downarrow}{\mathrlap{\uparrow}{\endash} } }}
+
+\gdef\neutralFactor{\factsym{\shornarrow}}
 \gdef\arrowhead{⏵}
+\gdef\inverseArrowhead{⏴}
+\gdef\rightArrowhead{⏵}
+\gdef\leftArrowhead{⏴}
 \gdef\upArrowhead{⏶}
+\gdef\downArrowhead{⏷}
 
-\gdef\deSymbol{{{{\raisebox{1.1pt}{\tinybullet}\mkern{-1pt}{→}}}\,}}
-\gdef\ueSymbol{{\raisebox{1pt}{\tinybullet\raisebox{-0.03em}{\mkern{-0.3pt}{\tiny──}\mkern{-0.3pt}}\tinybullet}\,}}
+\gdef\de#1#2{{{#1}\xundirectededge{}{#2}}}
+\gdef\ue#1#2{{{#1}\xrightedge{}{#2}}}
 
-\gdef\ldeSymbol{{{{\raisebox{1.1pt}{\tinybullet}\mkern{-1pt}{\longrightarrow}}}\,}}
-\gdef\lueSymbol{{\raisebox{1pt}{\tinybullet\raisebox{-0.03em}{\mkern{-0.3pt}{\tiny────}\mkern{-0.3pt}}\tinybullet}\,}}
+\gdef\shifttag#1{\raisebox{-1em}{$#1$}}
+\gdef\shifttag#1{#1}
 
-\gdef\de#1#2{{{#1} \deSymbol {#2}}}
-\gdef\ue#1#2{{{#1} \ueSymbol {#2}}}
+\gdef\tde#1#2#3{{#1}\:\xrightedge{\shifttag{#3}}\;{#2}}
+\gdef\tue#1#2#3{{#1}\;\xundirectededge{\shifttag{#3}}\;{#2}}
 
-\gdef\tde#1#2#3{{{#1} \overset{#3}{\deSymbol} {#2}}}
-\gdef\tue#1#2#3{{{#1} \overset{#3}{\ueSymbol} {#2}}}
+\gdef\shiftunderset#1#2{\underset{\raisebox{0.15em}{\scriptsize $#1$}}{#2}}
 
-\gdef\ltde#1#2#3{{{#1} \overset{#3}{\ldeSymbol} {#2}}}
-\gdef\ltue#1#2#3{{{#1} \overset{#3}{\lueSymbol} {#2}}}
+\gdef\mdtde#1#2#3#4{{#1}\,\;\shiftunderset{#4}{\xrightedge{#3}}\;{#2}}
+\gdef\mtue#1#2#3#4{{#1}\,\;\shiftunderset{#4}{\xundirectededge{#3}}\;\,{#2}}
+
+\gdef\mtde#1#2#3#4{{#1}\,\;\operatornamewithlimits{\xrightedge{#3}}\limits_{#4} \;{#2}}
 
 \gdef\mapsfrom{\htmlClass{hreflect}{\mapsto}}
 \gdef\longmapsfrom{\htmlClass{hreflect}{\longmapsto}}
@@ -94,7 +107,8 @@
 
 \gdef\identicallyEqualSymbol{\equiv}
 \gdef\congruentSymbol{\equiv}
-\gdef\isomorphicSymbol{\cong}
+\gdef\isomorphicSymbol{\simeq}
+\gdef\homeomorphicSymbol{\cong}
 \gdef\homotopicSymbol{\simeq}
 \gdef\approxEqualSymbol{\approx}
 \gdef\bijectiveSymbol{\approx}
@@ -287,6 +301,7 @@
 \gdef\route#1#2#3{[{#1}\!:\!{#2}\!:\!{#3}]}
 \gdef\multiroute#1#2#3{[{#1}\!:\!{#2}\!:\!{#3}]}
 \gdef\pathWord#1#2#3{{#1}\!:\!{#2}\!:\!{#3}}
+\gdef\parenPathWord#1#2#3{\left(\pathWord{#1}{#2}{#3}\right)}
 
 \gdef\nullPath{\bot}
 \gdef\nullElement{\bot}
@@ -295,6 +310,11 @@
 \gdef\vert#1{#1}
 
 \gdef\underdot#1{\underset{\raisebox{0.3em}{.}}{#1}}
+
+\gdef\headVertexSymbol{◨}
+\gdef\tailVertexSymbol{◧}
+\gdef\placeholderVertexSymbol{\mathrlap{◨}{◧}}
+
 \gdef\tvert#1{\underdot{#1}}
 \gdef\hvert#1{\dot{#1}}
 \gdef\edge#1{#1}
@@ -793,8 +813,23 @@
 
 \gdef\setCardinality#1{|{#1}|}
 \gdef\multisetCardinality#1{|{#1}|}
+
 \gdef\dependentQuiverProductSymbol{\mathbin{\times}}
-\gdef\independentQuiverProductSymbol{\mathbin{⨝}}
+\gdef\rightIndependentQuiverProductSymbol{\mathbin{⋊}}
+\gdef\leftIndependentQuiverProductSymbol{\mathbin{⋉}}
+\gdef\rightStrongQuiverProductSymbol{\mathbin{⧒}}
+\gdef\leftStrongQuiverProductSymbol{\mathbin{⧑}}
+\gdef\rightFiberQuiverProductSymbol{\mathbin{⧕}}
+\gdef\leftFiberQuiverProductSymbol{\mathbin{⧔}}
+
+\gdef\lockedQuiverProductSymbol{\mathbin{\searrow}}
+\gdef\rightFreeQuiverProductSymbol{\mathbin{\largerthan}}
+\gdef\leftFreeQuiverProductSymbol{\mathbin{\smallerthan}}
+
+\gdef\strongIndependentQuiverProductSymbol{\mathbin{⨝}}
+\gdef\cartesianQuiverProductSymbol{\mathbin{□}}
+\gdef\strongQuiverProductSymbol{\mathbin{⊠}}
+
 \gdef\graphUnionSymbol{\sqcup}
 \gdef\graphProductSymbol{\times}
 \gdef\inlineProdSymbol{|}
@@ -803,9 +838,16 @@
 \gdef\parallelCardSymbol{{\mid}}
 
 \gdef\cardinalSequenceSymbol{{:}}
+
+\gdef\cardinalProduct#1{(#1)}
+\gdef\vertexProduct#1{(#1)}
+\gdef\edgeProduct#1{(#1)}
+
 \gdef\cardinalProductSymbol{\inlineProdSymbol}
-\gdef\vertexProductSymbol{\!\inlineProdSymbol\!}
+\gdef\vertexProductSymbol{\inlineProdSymbol}
 \gdef\edgeProductSymbol{\inlineProdSymbol}
+
+\gdef\verticalVertexProduct#1#2{\cfrac{#1}{#2}}
 
 \gdef\indexSum#1#2#3{{\sum_{#2}^{#3} #1}}
 \gdef\indexProd#1#2#3{{\prod_{#2}^{#3} #1}}

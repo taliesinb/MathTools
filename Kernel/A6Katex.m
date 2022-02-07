@@ -106,12 +106,12 @@ boxToKatex = Case[
   RowBox[{"{", e__, "}"}] := {"\{", % /@ {e}, "\}"};
   RowBox[e_] := Map[%, e];
 
-  TagBox[e_, _] := % @ e;
+  TagBox[e_, __] := % @ e;
   RowBox[{"(", "\[NoBreak]", GridBox[grid_, ___], "\[NoBreak]", ")"}] := {"\\begin{pmatrix}", StringRiffle[MatrixMap[%, grid], "\\\\", "&"], "\\end{pmatrix}"};
   UnderoverscriptBox[e_, b_, c_] := % @ SuperscriptBox[SubscriptBox[e, b], c];
   FractionBox[a_, b_] := {"\\frac{", a, "}{", b, "}"};
   RowBox[list_] := Map[%, list];
-  
+
   other_ := (
     Print["Could not serialize ", InputForm @ other];
     StringJoin["\\noKatexForm{", StringReplace[ToString[Head @ other, InputForm], $katexEscape], "}"]

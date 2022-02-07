@@ -606,7 +606,7 @@ createTable[ostr_String] := Scope[
   ncols = Length @ first;
   grid //= MatrixMap[StringReplace["\"" -> "'"]];
   grid //= MatrixReplace["**_**" -> ""];
-  grid //= VectorReplace[{"SPACER"} :> ConstantArray["", ncols]];
+  grid //= VectorReplace[{"SPACER"} :> ConstantArray[" ", ncols]];
   If[!MatrixQ[grid],
     Print["Bad table!"];
     Print["First row is: ", First @ grid];
@@ -928,7 +928,7 @@ DefaultRasterizationFunction[Cell[BoxData[t:TagBox[_, _BoxForm`AnimatedImageTag]
   DefaultRasterizationFunction @ ToExpression[t, StandardForm];
 
 DefaultRasterizationFunction[a_AnimatedImage] :=
-  cachedGenericRasterize[a, rasterizeAnimatedImage, "gif", "ColorMapLength" -> 16];
+  cachedGenericRasterize[a, rasterizeAnimatedImage, "gif"];
 
 rasterizeAnimatedImage[a_AnimatedImage] := {a, a["RasterSize"]};
 

@@ -9,19 +9,24 @@ declareBoxFormatting[
   g:DiscreteAnimationObject[_, _Integer] :> makeDiscreteAnimationObjectBoxes[g]
 ];
 
-makeDiscreteAnimationObjectBoxes[DiscreteAnimationObject[g_, n_]] := Scope[
-  ToBoxes @ Framed[
-    imgs = FastRasterizeList @ makeDiscreteGraphics[g, n];
+makeDiscreteAnimationObjectBoxes[DiscreteAnimationObject[g_, n_]] :=
+  ToBoxes @ makeAnimatedThumbnail[
+    makeDiscreteGraphics[g, n],
+    128, $Teal
+  ]
+
+makeAnimatedThumbnail[frames_, maxSize_, color_] :=
+  Framed[
+    imgs = FastRasterizeListCenterPadded @ frames;
     dims = ImageDimensions /@ imgs;
-    If[Max[dims] > 64, imgs = ImageResize[#, {64}]& /@ imgs];
+    If[Max[dims] > maxSize, imgs = ImageResize[#, {maxSize}]& /@ imgs];
     AnimatedImage[
       imgs,
       AnimationRepetitions -> Infinity,
       FrameRate -> 2
     ],
-    FrameStyle -> $Teal
-  ]
-];
+    FrameStyle -> color
+  ];
 
 g_DiscreteAnimationObject["VideoToClipboard", args___] :=
   CopyFileToClipboard @ VideoFilePath @ g["Video", args]
@@ -45,7 +50,7 @@ g_DiscreteAnimationObject["AnimatedImage"] :=
   AnimatedImage[g["Frames"], FrameRate -> 2];
 
 g_DiscreteAnimationObject["Frames"] :=
-  FastRasterizeList @ g["Graphics"];
+  FastRasterizeListCenterPadded @ g["Graphics"];
 
 DiscreteAnimationObject[g_, n_]["Graphics"] :=
   makeDiscreteGraphics[g, n];
@@ -57,25 +62,39 @@ makeDiscreteGraphics[g_, n_] :=  Scope[
 
 (**************************************************************************************************)
 
+PackageExport["AnimationPart"]
+
+DiscreteAnimationObject::aplen = "AnimationPart lengths do not match."
+
+DiscreteAnimationObject[obj_] := Scope[
+  hobj = Hold[obj] /. AnimationPart[p_] :> AnimationPart[p, \[FormalT]];
+  n = DeepCases[hobj, AnimationPart[l_List, _] :> Length[l]];
+  If[n === {}, Return @ DiscreteAnimationObject[obj, 1]];
+  If[!AllEqualQ[n], ReturnFailed["aplen"]];
+  Replace[hobj, Hold[e_] :> DiscreteAnimationObject[e, First @ n]]
+];
+
+DiscreteAnimationObject[Hold[e_], n_] := DiscreteAnimationObject[e, n];
+
+(**************************************************************************************************)
+
+PackageExport["AnimationPart"]
+
+AnimationPart[e_, i_Integer] := Part[e, i];
+
+(**************************************************************************************************)
+
 PackageExport["AnimationObject"]
 
 declareBoxFormatting[
   g:AnimationObject[_] :> makeAnimationObjectBoxes[g]
 ];
 
-makeAnimationObjectBoxes[AnimationObject[g_]] := Scope[
-  ToBoxes @ Framed[
-    imgs = FastRasterizeList @ makeGraphics[g, 16];
-    dims = ImageDimensions /@ imgs;
-    If[Max[dims] > 128, imgs = ImageResize[#, {128}]& /@ imgs];
-    AnimatedImage[
-      imgs,
-      AnimationRepetitions -> Infinity,
-      DefaultDuration -> 1
-    ],
-    FrameStyle -> $Purple
+makeAnimationObjectBoxes[AnimationObject[g_]] :=
+  ToBoxes @ makeAnimatedThumbnail[
+    makeDiscreteGraphics[g, n],
+    128, $Purple
   ]
-];
 
 g_AnimationObject["VideoToClipboard", args___] :=
   CopyFileToClipboard @ VideoFilePath @ g["Video", args]
@@ -98,7 +117,7 @@ g_AnimationObject["AnimatedImage", n_Integer] :=
   AnimatedImage[g["Frames", n * 30], FrameRate -> 30];
 
 g_AnimationObject["Frames", n_Integer] :=
-  FastRasterizeList @ g["Graphics", n];
+  FastRasterizeListCenterPadded @ g["Graphics", n];
 
 AnimationObject[g_]["Graphics", n_] := makeGraphics[g, n];
 

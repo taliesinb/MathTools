@@ -356,6 +356,7 @@ $extendedGraphOptionsRules = {
   CoordinateTransformFunction -> None,
   ViewRegion -> All,
   AdditionalImagePadding -> None,
+  ExtendImagePadding -> True,
   AspectRatioClipping -> True,
   EdgeThickness -> Automatic,
   VertexLayout -> None,
@@ -826,6 +827,36 @@ RemoveEdgeTags = Case[
   ];
   graph_Graph                    := graph;
   _ := $Failed
+];
+
+(**************************************************************************************************)
+
+PackageExport["AddEdgeTags"]
+
+AddEdgeTags[spec_, tag_:None] := Scope[$tag = tag; addEdgeTags @ spec];
+
+addEdgeTags = Case[
+  list_ ? EdgeListQ              := addEdgeTag /@ list;
+  graph_Graph                    := Graph[
+    VertexList @ graph,
+    Map[addEdgeTag, EdgeList @ graph],
+    Options @ graph
+  ];
+  _ := $Failed
+];
+
+addEdgeTag = Case[
+  head_[a_, b_] := head[a, b, $tag];
+  other_ := other;
+];
+
+(**************************************************************************************************)
+
+PackageExport["RemoveEdgeTag"]
+
+RemoveEdgeTag = Case[
+  DirectedEdge[a_, b_, ___] := DirectedEdge[a, b];
+  UndirectedEdge[a_, b_, ___] := UndirectedEdge[a, b];
 ];
 
 (**************************************************************************************************)
@@ -1749,12 +1780,16 @@ ExtractExtendedGraphOptions[graph_Graph] := Scope[
 
 PackageExport["RotateGraph"]
 
-RotateGraph[graph_] := Scope[
+RotateGraph[graph_, opts___Rule] :=
+  RotateGraph[graph, 90, opts];
+
+RotateGraph[graph_, degrees_Integer, opts___Rule] := Scope[
   coords = Lookup[LookupVertexCoordinates @ graph, VertexList @ graph];
-  coords = RotationTransform[270 Degree] @ coords;
+  coords = RotationTransform[degrees Degree] @ coords;
   imageSize = Reverse @ LookupImageSize @ graph;
   ExtendedGraph[
     graph,
+    opts,
     VertexCoordinates -> coords, ImageSize -> imageSize
   ]
 ]

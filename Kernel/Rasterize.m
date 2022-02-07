@@ -35,6 +35,12 @@ FastRasterizeList[expr_List] := Map[resultToImage, MathLink`CallFrontEnd @ Map[e
 
 (*************************************************************************************************)
 
+PackageExport["FastRasterizeListCenterPadded"]
+
+FastRasterizeListCenterPadded[expr_List] = CenterPadImages @ FastRasterizeList[expr];
+
+(*************************************************************************************************)
+
 PackageExport["CachedFastRasterizeList"]
 
 $RasterizationCache = <||>;
@@ -74,4 +80,14 @@ PackageExport["$DefaultVideoEncoding"]
 
 $DefaultVideoExtension = "mp4"
 $DefaultVideoEncoding = "H264-AVF";
+
+(**************************************************************************************************)
+
+PackageExport["CenterPadImages"]
+
+CenterPadImages[images_List] := Scope[
+  If[!VectorQ[images, ImageQ], ReturnFailed[]];
+  ConformImages[images, {Max, Max}, "Pad", Padding -> White]
+];
+
 

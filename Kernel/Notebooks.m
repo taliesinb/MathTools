@@ -34,7 +34,7 @@ CopyImageGalleryToClipboard[args___] := Scope[
   $galleryDir = newImageGalleryTempDir[];
   images = galleryRasterize /@ Flatten[{args}];
   If[!VectorQ[images, ImageQ], ReturnFailed[]];
-  images = ConformImages[images, {Max, Max}, "Pad", Padding -> White];
+  images = CenterPadImages @ images;
   MapIndexed[saveToGalleryFile, images];
   CopyToClipboard @ $galleryDir;
   Print[$galleryDir];

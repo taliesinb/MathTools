@@ -35,6 +35,7 @@ PackageExport["ViewOptions"]
 PackageExport["ViewRotation"]
 PackageExport["LayoutDimension"]
 PackageExport["AdditionalImagePadding"]
+PackageExport["ExtendImagePadding"]
 
 PackageExport["CoordinateTransformFunction"]
 PackageExport["CoordinateRotation"]
@@ -552,7 +553,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       vertexClickFunction,
 
       viewOptions, graphLegend,
-      additionalImagePadding, aspectRatioClipping,
+      additionalImagePadding, aspectRatioClipping, extendImagePadding,
       prologFunction, epilogFunction,
       useAbsoluteSizes,
 
@@ -708,7 +709,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       processVertexShapeFunction[vertexShapeFunction];
     SetAutomatic[edgeSetback, setbackDistance];
     If[MatchQ[edgeSetback, PointSize[_]], edgeSetback = imageSizeToPlotSize @@ edgeSetback];
-    extendPadding[vertexPadding];
+    extendPaddingBy[vertexPadding];
 
     vertexDrawFunc = If[$vertexSizeOverrides === None,
       vertexDrawFuncWithSize[rawVertexDrawFunc, vertexSize],
@@ -870,7 +871,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   (* create the final graphics *)
   GPPrint["Final assembly"];
   FunctionSection[
-    If[labelGraphics =!= Nothing, extendPadding @ estimateLabelPadding[labelGraphics, vertexLabelStyle]];
+    If[labelGraphics =!= Nothing, extendPaddingBy @ estimateLabelPadding[labelGraphics, vertexLabelStyle]];
 
     (* for graphs with cardinals, create an automatic legend when asked *)
     If[cardinalColors =!= None && arrowheadShape =!= None,
@@ -1118,19 +1119,19 @@ plotSizeToImageSize[sz_] := sz / $GraphPlotSizeX * effectiveImageWidth;
 plotSizeToDiskSize[sz_] := Scaled[sz * {1, $GraphPlotAspectRatio} / $GraphPlotScale];
 plotSizeToPointSize[sz_] := PointSize[sz / $GraphPlotSizeX];
 
-extendPadding[n_] := imagePadding = MatrixMap[Max[#, n]&, imagePadding];
-extendPadding[padding_List] := imagePadding = MapThread[Max, {imagePadding, padding}, 2];
+extendPaddingBy[n_] /; TrueQ[extendImagePadding] := imagePadding = MatrixMap[Max[#, n]&, imagePadding];
+extendPaddingBy[padding_List] /; TrueQ[extendImagePadding] := imagePadding = MapThread[Max, {imagePadding, padding}, 2];
 
-extendPaddingToInclude[{{xmin_, xmax_}, {ymin_, ymax_}}] := Scope[
+extendPaddingToInclude[{{xmin_, xmax_}, {ymin_, ymax_}}] /; TrueQ[extendImagePadding] := Scope[
   {{pxmin, pxmax}, {pymin, pymax}} = $GraphPlotRange;
   extra = {{pxmin - xmin, xmax - pxmax}, {pymin - ymin, ymax - pymax}};
-  extendPadding @ plotSizeToImageSize @ extra
+  extendPaddingBy @ plotSizeToImageSize @ extra
 ];
 
-extendPaddingToInclude[{{xmin_, xmax_}, {ymin_, ymax_}, {zmin_, zmax_}}] := Scope[
+extendPaddingToInclude[{{xmin_, xmax_}, {ymin_, ymax_}, {zmin_, zmax_}}] /; TrueQ[extendImagePadding] := Scope[
   {{pxmin, pxmax}, {pymin, pymax}, {pzmin, pzmax}} = $GraphPlotRange;
   extra = {{pxmin - xmin, xmax - pxmax}, {pymin - ymin, ymax - pymax}, {pzmin - zmin, zmax - pzmax}};
-  extendPadding @ Max @ plotSizeToImageSize @ extra
+  extendPaddingBy @ Max @ plotSizeToImageSize @ extra
 ];
 
 (**************************************************************************************************)

@@ -333,6 +333,9 @@ SetHoldRest[OnFailed];
 OnFailed[$Failed, e_] := e;
 OnFailed[e_, _] := e;
 
+OnFailed[$Failed, e_, _] := e;
+OnFailed[e_, _, s_] := s;
+
 (**************************************************************************************************)
 
 (* this takes the place of MatchValues in GU *)

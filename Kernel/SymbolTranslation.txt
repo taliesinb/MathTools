@@ -30,6 +30,8 @@ _                            :=         \syntaxeqq          ≔
 \[RightTriangleEqual]        _          \unrhd              ⊳
 \[LeftTriangle]              _          \lhd                ⊲
 \[LeftTriangleEqual]         _          \unlhd              ⊲
+_                            _          \largerthan         ⪫
+_                            _          \smallerthan        ⪪
                                                              
 \[Tilde]                     _          \sim                ∼
 \[NotTilde]                  _          \nsim               ≁
@@ -43,9 +45,13 @@ _                            :=         \syntaxeqq          ≔
 \[TildeFullEqual]            _          \cong               ≅
 \[NotTildeFullEqual]         _          \ncong              ≆
 \[DotEqual]                  _          \doteq              ≐
-                                                             
+
 \[DownArrow]                 _          \darr               ↓
 \[UpArrow]                   _          \uarr               ↑
+\[LowerRightArrow]           _          \searrow            ↘
+\[UpperRightArrow]           _          \nearrow            ↗
+\[LowerLeftArrow]            _          \swarrow            ↙
+\[UpperLeftArrow]            _          \nwarrow            ↖
 \[UpDownArrow]               _          \varrow             ↕
 \[UpArrowDownArrow]          _          \updownarrows       ⇅
 \[LeftArrowRightArrow]       _          \leftrightarrows    ⇆
