@@ -340,7 +340,7 @@ GarbageCollectOutputImages[markdownSearchPath_, OptionsPattern[]] := Scope[
 
   garbageFiles = Complement[existingFiles, matches];
 
-  vPrint["* Deleting ", Length @ garbageFiles, " markdown files."];
+  vPrint["* Deleting ", Length @ garbageFiles, " unreferenced image files."];
 
   If[!$dryRun, Scan[DeleteFile, garbageFiles]];
 

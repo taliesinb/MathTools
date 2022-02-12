@@ -27,7 +27,7 @@ CardinalProduct[a$, b$] represents a product of two vertices a$ and b$.
 "
 
 declareBoxFormatting[
-  CardinalProduct[a_, b_] :> TemplateBox[{MakeBoxes @ a, MakeBoxes @ b}, "CardinalProductForm"]
+  CardinalProduct[args___] :> MakeBoxes @ CardinalProductForm[args]
 ];
 
 (**************************************************************************************************)

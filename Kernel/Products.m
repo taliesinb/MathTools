@@ -268,7 +268,7 @@ Options[GeneralQuiverProduct] = JoinOptions[
 ];
 
 $productTermElement = _Integer | Inverted[_Integer];
-$productTermP = {$productTermElement..};
+$productTermP = {$productTermElement...};
 
 GeneralQuiverProduct::badprodexpr = "Product expression `` should be a list of list of possibly inverted integers.";
 GeneralQuiverProduct::badgraphs = "First argument is not a list of graphs.";
@@ -281,7 +281,7 @@ GeneralQuiverProduct[graphs_List, productTerms_List, components_:Automatic, user
   If[graphs ~!~ {__Graph}, ReturnFailed["badgraphs"]];
   opts = DeleteOptions[
     JoinOptions[ExtractExtendedGraphOptions /@ graphs],
-    {VertexAnnotations, EdgeAnnotations, VertexCoordinates, VertexLayout, ImageSize, ExtendedGraphLayout}
+    {VertexAnnotations, EdgeAnnotations, VertexCoordinates, VertexLayout, ImageSize, ExtendedGraphLayout, Cardinals}
   ];
   opts = JoinOptions[
     DeleteOptions[{userOpts}, {"UseCardinalSet", "Components", "FlattenProducts", VertexCoordinateFunction}],

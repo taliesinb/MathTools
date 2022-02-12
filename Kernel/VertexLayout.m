@@ -561,12 +561,16 @@ SpringElectricalLayout[opts:OptionsPattern[]][data_] :=
 PackageExport["TreeVertexLayout"]
 PackageExport["Orientation"]
 PackageExport["RootVertex"]
+PackageExport["Balanced"]
 
-Options[TreeVertexLayout] = {Alignment -> None, Orientation -> Top, RootVertex -> Automatic, "Bubble" -> False};
+Options[TreeVertexLayout] = {
+  Alignment -> None, Orientation -> Top, RootVertex -> Automatic, "Bubble" -> False,
+  Balanced -> False
+};
 
 TreeVertexLayout[OptionsPattern[]][data_] := Scope[
-  UnpackAssociation[data, graph, indexGraph];
-  UnpackOptions[alignment, orientation, rootVertex, bubble];
+  UnpackAssociation[data, graph, indexGraph, vertexCount];
+  UnpackOptions[alignment, orientation, rootVertex, bubble, balanced];
 
   rootIndex = Switch[rootVertex,
     None,       None,
@@ -576,7 +580,17 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
   ];
   vertexLayout = {"LayeredDigraphEmbedding", "Orientation" -> orientation, "RootVertex" -> rootIndex};
   
-  VertexEdgeCoordinateData[data, vertexLayout]
+  {vertexCoordinates, edgeCoordinateLists} = VertexEdgeCoordinateData[data, vertexLayout];
+
+  If[TrueQ @ balanced,
+    outTable = MapThread[Append, {VertexOutTable @ graph, Range @ vertexCount}];
+    {coordsX, coordsY} = Transpose @ vertexCoordinates;
+    Do[coordsX = Map[Mean @ Part[coordsX, #]&, outTable], 20];
+    vertexCoordinates = Transpose @ {coordsX, coordsY};
+    edgeCoordinateLists = ExtractIndices[vertexCoordinates, EdgePairs[graph]];
+  ];
+
+  {vertexCoordinates, edgeCoordinateLists}
 ];
 
 (**************************************************************************************************)

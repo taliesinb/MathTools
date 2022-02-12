@@ -282,6 +282,7 @@ PackageScope["$GraphPlotSize"]
 PackageScope["$GraphPlotAspectRatio"]
 PackageScope["$GraphPlotImageSize"]
 PackageScope["$GraphPlotImageWidth"]
+PackageScope["$GraphPlotEffectiveImageWidth"]
 PackageScope["$GraphMaxSafeVertexSize"]
 PackageScope["$GraphPlotGraphics"]
 
@@ -333,17 +334,24 @@ applyViewRegion[regionSpec_] := (
 
 $rangeMicroPadding = 1*^-5;
 computeCoordinateBounds[] := Scope[
-  plotRange = LookupOption[$Graph, PlotRange];
-  If[MatrixQ[plotRange, NumericQ], Return @ plotRange];
-  If[NumericQ[plotRange], Return @ N[{{-1, 1}, {-1, 1}} * plotRange]];
+  {plotRange, plotRangePadding} = LookupOption[$Graph, {PlotRange, PlotRangePadding}];
+  If[MatrixQ[plotRange, NumericQ], Return @ addPRPadding[plotRange, plotRangePadding]];
+  If[NumericQ[plotRange], Return @ addPRPadding[N[{{-1, 1}, {-1, 1}} * plotRange], plotRangePadding]];
   range = CoordinateBounds[{
     Part[$VertexCoordinates, $VertexParts],
     Replace[Part[$EdgeCoordinateLists, $EdgeParts], {} -> Nothing]},
     $rangeMicroPadding
   ];
+  range = addPRPadding[range, plotRangePadding];
   If[plotRange === "Square", range //= ToSquarePlotRange];
   range
 ];
+
+addPRPadding[range_, Automatic | None | 0] := range;
+addPRPadding[{{l_, r_}, {b_, t_}}, p_ ? NumericQ] := {{l - p, r + p}, {b - p, t + p}};
+addPRPadding[{{l_, r_}, {b_, t_}}, {h_ ? NumericQ, v_ ? NumericQ}] := {{l - h, r + h}, {b - v, t + v}};
+addPRPadding[{{l_, r_}, {b_, t_}}, {{pl_, pr_}, {pb_, pt_}}] := {{l - pl, r + pr}, {b - pb, t + pt}};
+addPRPadding[range_, _] := (Print["Bad PlotRangePadding"]; range)
 
 (**************************************************************************************************)
 
@@ -409,6 +417,8 @@ ExtendedGraphPlot[graph_Graph] := Block[
     (* recompute these with the results of plottingFunction, for the benefit of GraphRegionHighlight *)
     $GraphPlotImageSize := $GraphPlotImageSize = LookupImageSize @ $GraphPlotGraphics;
     $GraphPlotImageWidth := $GraphPlotImageWidth = First[$GraphPlotImageSize] - Total[First @ LookupOption[$GraphPlotGraphics, ImagePadding]];
+    $GraphPlotEffectiveImageWidth = First[LookupOption[$GraphPlotGraphics, ImageSizeRaw], $GraphPlotImageWidth];
+
     $GraphPlotRange := $GraphPlotRange = GraphicsPlotRange @ $GraphPlotGraphics;
     $GraphPlotSize := $GraphPlotSize = rangeSize[$GraphPlotRange];
     $GraphMaxSafeVertexSize := $GraphMaxSafeVertexSize = computeMaxSafeVertexSize[];
@@ -767,7 +777,6 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       baseArrowheadSize := baseArrowheadSize = If[$GraphIs3D, 0.45, 0.8] * ($GraphMaxSafeArrowheadSize / $GraphPlotSizeX);
       arrowheadSize //= processArrowheadSize;
       maxArrowheadSize = Max[arrowheadSize * $GraphPlotSizeX] / 2;
-
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Line"]];
       If[!$GraphIs3D, arrowheadShape //= to2DShape];
       $twoWayStyle = Automatic; $inversionStyle = "Reverse"; $borderStyle = None;
@@ -942,7 +951,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     (* assemble graphics *)
     graphics = If[$GraphIs3D, makeGraphics3D, makeGraphics][
       graphicsElements,
-      imageSize, imagePadding, plotRangePadding, plotLabel, extraOptions,
+      imageSize, {effectiveImageWidth, effectiveImageHeight}, imagePadding, plotLabel, extraOptions,
       Replace[prolog, {} -> None], Replace[epilog, {} -> None],
       baselinePosition
     ];
@@ -2206,13 +2215,16 @@ drawIndividualCustomShapeFunction[fn_, size_, color_][pos_] := Scope[
     "Size" -> size,
     "PointSize" -> plotSizeToPointSize @ size,
     "Color" -> removeSingleton @ color,
-    "LabelStyle" -> simpleVertexLabelStyle
+    "LabelStyle" -> simpleVertexLabelStyle,
+    "Annotations" -> Part[vertexAnnotations, All, index]
   |>;
   Check[
     res = fn[$vertexDataInfo],
     $Failed
   ];
+  res = res /. cc_CardinalColor :> RuleCondition @ evalCardinalColor @ cc;
   If[Head[res] === Form, res = Text[res, pos, {0, 0}, Background -> vertexBackground]];
+  If[res === None, Return @ {}];
   If[res === $Failed, failPlot["vertexfnmsg", vertex]];
   res
 ];
@@ -2841,26 +2853,28 @@ makeMagnifier[scale_] := Magnify[#, scale]&;
 
 (**************************************************************************************************)
 
-makeGraphics[elements_, imageSize_, imagePadding_, plotRangePadding_, plotLabel_, extraOptions_, prolog_, epilog_, baseline_] := Graphics[
+makeGraphics[elements_, imageSize_, rawImageSize_, imagePadding_, plotLabel_, extraOptions_, prolog_, epilog_, baseline_] := Graphics[
   elements,
   Sequence @@ extraOptions,
   Frame -> None, Axes -> None,
   ImageSize -> imageSize,
+  ImageSizeRaw -> rawImageSize,
   ImagePadding -> imagePadding, PlotLabel -> plotLabel,
-  PlotRangePadding -> plotRangePadding, PlotRangeClipping -> False,
+  PlotRangePadding -> 0, PlotRangeClipping -> False,
   AspectRatio -> Automatic, PreserveImageOptions -> False,
   If[epilog === None, Sequence @@ {}, Epilog -> epilog],
   If[prolog === None, Sequence @@ {}, Prolog -> prolog],
   BaselinePosition -> baseline
 ];
 
-makeGraphics3D[elements_, imageSize_, imagePadding_, plotRangePadding_, plotLabel_, extraOptions_, prolog_, epilog_, baseline_] := Graphics3D[
+makeGraphics3D[elements_, imageSize_, rawImageSize_, imagePadding_, plotLabel_, extraOptions_, prolog_, epilog_, baseline_] := Graphics3D[
   {CapForm[None],  Replace[prolog, None -> Nothing], elements, Replace[epilog, None -> Nothing]},
   Sequence @@ extraOptions,
   Axes -> None, Boxed -> False,
   ImageSize -> imageSize,
+  ImageSizeRaw -> rawImageSize,
   ImagePadding -> imagePadding, PlotRange -> All,
-  PlotRangePadding -> plotRangePadding,
+  PlotRangePadding -> 0,
   Lighting -> "Neutral",
   Method -> {"ShrinkWrap" -> shrinkWrap, "EdgeDepthOffset" -> False},
   AspectRatio -> Automatic, PreserveImageOptions -> False,

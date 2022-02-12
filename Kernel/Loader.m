@@ -9,7 +9,7 @@ ClearAll[EpilogFunction];
 
 (* we will immediately resolve these system symbols, which will take care of the vast majority of Package`PackageSymbol cases *)
 $coreSymbols = {
-  (* package symbols: *) Package`Package, Package`PackageExport, Package`PackageScope, Package`PackageImport,
+  (* package symbols: *) Package`Package, Package`OptionExport, Package`PackageExport, Package`PackageScope, Package`PackageImport,
   (* system symbols: *) True, False, None, Automatic, Inherited, All, Full, Indeterminate, Null, $Failed, Span, UpTo,
   (* object heads: *)
     Symbol, Integer, String, Complex, Real, Rational,
@@ -209,7 +209,7 @@ resolveRemainingSymbols[{path_, context_, packageData_Package`PackageData}] := S
 ];
 
 QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
-  {$directory, $files, $textFiles, $packageScopes, $packageExports, $packageExpressions, $packageRules,
+  {$directory, $files, $textFiles, $packageScopes, $optionExports, $packageExports, $packageExpressions, $packageRules,
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result
   },
 
@@ -227,6 +227,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
 
   $globalImports = {"System`", "GeneralUtilities`", "Developer`"};
 
+  $optionExports = Internal`Bag[];
   $packageExports = Internal`Bag[];
   $packageScopes = Internal`Bag[];
   $loadedFileCount = $changedTextFileCount = 0;
@@ -236,6 +237,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
       path |-> Block[{expr, context},
         context = filePathToContext @ path;
         expr = readPackageFile[path, context];
+        addPackageCasesToBag[$optionExports, expr, Package`OptionExport[name_String] :> name];
         addPackageCasesToBag[$packageExports, expr, Package`PackageExport[name_String] :> name];
         addPackageCasesToBag[$packageScopes, expr, Package`PackageScope[name_String] :> name];
         {path, context, expr}
@@ -259,13 +261,15 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
 
   Construct[ClearAll, mainContext <> "*", mainContext <> "**`*"];
 
+  $optionExports = DeleteDuplicates @ Internal`BagPart[$optionExports, All];
   $packageExports = DeleteDuplicates @ Internal`BagPart[$packageExports, All];
   $packageScopes = DeleteDuplicates @ Internal`BagPart[$packageScopes, All];
 
+  $optionDispatch = createSymbolsInContextAndDispatchTable[$optionExports, "System`", {}];
   $exportDispatch = createSymbolsInContextAndDispatchTable[$packageExports, $mainContext, {}];
   $scopeDispatch = createSymbolsInContextAndDispatchTable[$packageScopes, $mainContext <> "PackageScope`", {}];
 
-  $packageExpressions = $packageExpressions /. $exportDispatch /. $scopeDispatch;
+  $packageExpressions = $packageExpressions /. $optionDispatch /. $exportDispatch /. $scopeDispatch;
 
   $packageExpressions //= Map[resolveRemainingSymbols];
 

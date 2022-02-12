@@ -424,7 +424,7 @@ highlightRegion[GraphRegionData[vertices_, edges_]] /; StringQ[$regionStyle] && 
   newVertices = simplifyPrimitives @ $newVertices;
   diskRadius = $diskRadius;
   If[diskRadius =!= Automatic,
-    newVertices = replaceVertexSize[newVertices, PointSize[diskRadius / $GraphPlotImageWidth]];
+    newVertices = replaceVertexSize[newVertices, PointSize[diskRadius / $GraphPlotEffectiveImageWidth]];
   ];
   sowHighlight @ Style[
     replaceWithColor[{newEdges, newVertices}, $highlightStyle, $regionStyle === "ReplaceEdges"],
@@ -459,13 +459,13 @@ sowVertexPoints[vertices_] := Scope[
   coords = Part[$VertexCoordinates, DeleteDuplicates @ vertices];
   highlights = If[$GraphIs3D,
     Style[
-      Sphere[coords, diskRadius / $GraphPlotImageWidth * $graphPlotWidth],
+      Sphere[coords, diskRadius / $GraphPlotEffectiveImageWidth * $graphPlotWidth],
       Color3D[$highlightStyle]
     ]
   ,
     Style[
       Point @ coords,
-      PointSize[diskRadius / $GraphPlotImageWidth], $highlightStyle
+      PointSize[diskRadius / $GraphPlotEffectiveImageWidth], $highlightStyle
     ]
   ];
   sowHighlight @ highlights
@@ -496,9 +496,9 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
     "Line",                               6.0
   ]];
 
-  thickness = pathRadius / $GraphPlotImageWidth;
+  thickness = pathRadius / $GraphPlotEffectiveImageWidth;
   thicknessRange = thickness * $graphPlotWidth * 1.5;
-  bendRange = Max[thicknessRange/2, 5 / $GraphPlotImageWidth * $graphPlotWidth];
+  bendRange = Max[thicknessRange/2, 5 / $GraphPlotEffectiveImageWidth * $graphPlotWidth];
 
   adjustments = parseAdjustments /@ Lookup[$currentRegionAnnotations, PathAdjustments, {}];
 
@@ -524,9 +524,14 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
     Switch[$pathStyle,
      "Arrow" | "DiskArrow" | "DiskArrowDisk" | "ArrowDisk",
         arrowheadSize = $arrowheadSize;
+
         If[NumericQ[arrowheadSize],
-          arrowheadSize = N[arrowheadSize] / $GraphPlotImageWidth];
+          arrowheadSize = N[arrowheadSize] / $GraphPlotEffectiveImageWidth];
         SetAutomatic[arrowheadSize, thickness];
+
+        (* note: arrowhead size is not a fraction of the full image width, but rather a fraction of the *displayed* image width, which
+        excludes ImagePadding and is also modified when the aspect ratio of PlotRange does not match that of ImageSize. so this can be much
+        larger than 1 for a very narrow horizontal plot range. *)
         baseArrowheads = List[
           arrowheadSize, $apos,
           makeHighlightArrowheadShape[arrowheadColor, 5, $GraphIs3D]
@@ -572,7 +577,7 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
   If[$GraphIs3D && $pathStyle =!= "Replace",
     diskRadius = $diskRadius;
     SetAutomatic[diskRadius, pathRadius * 1.5];
-    diskRadius = diskRadius / $GraphPlotImageWidth * $graphPlotWidth;
+    diskRadius = diskRadius / $GraphPlotEffectiveImageWidth * $graphPlotWidth;
     pathPrimitives = pathPrimitives /. {
       Disk[p_, r_] :> Sphere[p, r],
       Arrow[a___] :> Arrow[Tube[a, diskRadius / 1.5]]
@@ -588,27 +593,29 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
     sowHighlight @ Style[
       Line @ segments,
       JoinForm @ "Round", CapForm @ "Round",
-      outlineColor, Thickness[thickness * 1.5]
+      outlineColor, absThickness[thickness * 1.5]
     ];
   ];
 
 
   (* unfortunately CapForm doesn't do anything for Arrow *)
-  requirePadding[If[doArrow, 1.2, 1] * thicknessRange / $graphPlotWidth * $GraphPlotImageWidth];
+  requirePadding[If[doArrow, 1.2, 1] * thicknessRange / $graphPlotWidth * $GraphPlotEffectiveImageWidth];
   sowHighlight @ Style[
     pathPrimitives,
     JoinForm @ "Round", CapForm @ "Round",
-    pathStyle, Thickness @ thickness
+    pathStyle, absThickness @ thickness
   ];
 ];
+
+absThickness[thickness_] := AbsoluteThickness[thickness * $GraphPlotEffectiveImageWidth];
 
 removeThickness[g_] := ReplaceAll[g, _Thickness | _AbsoluteThickness -> {}];
 
 makeArrowDiskPrimitives[indices_, firstDisk_, lastDisk_, radius_] := Scope[
   primitives = ExpandPrimitives @ removeSingleton @ ExtractGraphPlotPrimitives[indices, "VertexPrimitives"];
   If[Length[primitives] =!= Length[indices], ReturnFailed[]];
-  frameRadius = radius / $GraphPlotImageWidth * 2;
-  diskRadius = radius / $GraphPlotImageWidth * $graphPlotWidth;
+  frameRadius = radius / $GraphPlotEffectiveImageWidth * 2;
+  diskRadius = radius / $GraphPlotEffectiveImageWidth * $graphPlotWidth;
   isDisk = ConstantArray[False, Length @ indices];
   If[firstDisk, Part[isDisk, 1] = True];
   If[lastDisk, Part[isDisk, -1] = True];
@@ -616,7 +623,7 @@ makeArrowDiskPrimitives[indices_, firstDisk_, lastDisk_, radius_] := Scope[
 ];
 
 makeArrowDisk[i_Inset, _, True] :=
-  i /. g_Graphics :> SetFrameColor[g, {$highlightStyle, Thickness[frameRadius]}];
+  i /. g_Graphics :> SetFrameColor[g, {$highlightStyle, absThickness[frameRadius]}];
 
 makeArrowDisk[i_Inset, _, False] := i;
 

@@ -577,7 +577,7 @@ SpacedColumn[args___] := SpacedRow[args, Transposed -> True];
 PackageExport["ClickCopyRow"]
 
 ClickCopyRow[args___] := Framed[
-  SpacedRow[args, ItemFunction -> ClickCopy],
+  SpacedRow[args, ItemFunction -> ClickCopy, SpliceForms -> False],
   Background -> RGBColor[{1,1,1}*0.95], FrameStyle -> None];
 
 (**************************************************************************************************)
@@ -627,25 +627,31 @@ SpacedColumnRow[items___] := Scope[
 (**************************************************************************************************)
 
 PackageExport["SpacedRow"]
+PackageExport["SpliceForms"]
 
 $srColumnRow = False;
-$srSpacings = 20;
-$srRowSpacings = 5;
-$srMaxItems = Infinity;
-$srMaxWidth = Infinity;
-$srLabelStyle = $LabelStyle;
-$srBaseStyle = {};
-$srItemStyle = {};
-$srItemFunction = Identity;
-$srLabelFunction = Identity;
-$srLabelSpacing = 5;
-$srTransposed = False;
-$srIndexTooltip = False;
-$srAlignment = Center;
-$srLabelPosition = Automatic;
-$srForceGrid = False;
-$srRiffleItem = None;
-$srLabelFontSize = 15;
+
+Options[SpacedRow] = {
+  Spacings -> ($srSpacings = 20),
+  RowSpacings -> ($srRowSpacings = 5),
+  MaxItems -> ($srMaxItems = Infinity),
+  MaxWidth -> ($srMaxWidth = Infinity),
+  LabelStyle -> ($srLabelStyle = $LabelStyle),
+  BaseStyle -> ($srBaseStyle = {}),
+  ItemStyle -> ($srItemStyle = {}),
+  ItemFunction -> ($srItemFunction = Identity),
+  LabelFunction -> ($srLabelFunction = Identity),
+  LabelSpacing -> ($srLabelSpacing = 5),
+  Transposed -> ($srTransposed = False),
+  "IndexTooltip" -> ($srIndexTooltip = False),
+  Alignment -> ($srAlignment = Center),
+  LabelPosition -> ($srLabelPosition = Automatic),
+  ForceGrid -> ($srForceGrid = False),
+  RiffleItem -> ($srRiffleItem = None),
+  FontSize -> ($srLabelFontSize = 15),
+  SpliceForms -> ($srSpliceForms = True)
+};
+
 (* this is because i don't trust OptionsPattern to not capture rules used as label specs.
 i might be wrong though *)
 
@@ -666,6 +672,7 @@ SpacedRow[elems__, Transposed -> t_] := Block[{$srTransposed = t}, SpacedRow[ele
 SpacedRow[elems__, ForceGrid -> fg_] := Block[{$srForceGrid = fg}, SpacedRow[elems]];
 SpacedRow[elems__, RiffleItem -> item_] := Block[{$srRiffleItem = item}, SpacedRow[elems]];
 SpacedRow[elems__, FontSize -> sz_] := Block[{$srLabelFontSize = sz}, SpacedRow[elems]];
+SpacedRow[elems__, SpliceForms -> b_] := Block[{$srSpliceForms = b}, SpacedRow[elems]];
 
 wrappedItemFunc[f_][EndOfLine] := EndOfLine;
 wrappedItemFunc[f_][e_] := f @ e;
@@ -675,6 +682,7 @@ SpacedRow[labels_List -> items_List] /; SameLengthQ[labels, items] :=
 
 SpacedRow[elems__] := Scope[
   items = DeleteCases[Null] @ Flatten @ {elems};
+  If[$srSpliceForms, items //= Map[procInlineForms]];
   items = canonicalizeItem /@ Take[items, UpTo @ $srMaxItems];
   If[$srRiffleItem =!= None, items = Riffle[items, $srRiffleItem]];
   If[$srColumnRow && Length[items] > (maxWidth = Replace[$srMaxWidth, Infinity -> 4]),
@@ -749,6 +757,13 @@ SpacedRow[elems__] := Scope[
       ]
     ]
   ]
+];
+
+procInlineForms = Case[
+  (head_Symbol)[args___] /; KeyExistsQ[$infixFormCharacters, head] :=
+    Splice @ Riffle[{args}, LargeSymbolForm @ $infixFormCharacters @ head];
+
+  other_ := other;
 ];
 
 canonicalizeItem = Case[
