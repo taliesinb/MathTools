@@ -120,7 +120,10 @@ rewriteSetUsage[usageString_String] := Scope[
   ]
 ];
 
-fileStringUTF8[path_] := ByteArrayToString @ ReadByteArray @ path;
+fileStringUTF8[path_] := Block[{bytes},
+  bytes = ReadByteArray @ path;
+  If[bytes === EndOfFile, "", ByteArrayToString @ bytes]
+];
 
 failRead[] := Throw[$Failed, failRead];
 
@@ -184,8 +187,9 @@ handleSyntaxError[path_] := Scope[
 ];
 
 filePathToContext[path_] := Block[{str, subContext, contextList},
-  str = StringTrim[StringDrop[path, $mainPathLength], ".m" | ".wl"];
+  str = StringTrim[StringDrop[path, $mainPathLength], ("init.m" | "init.wl" | ".m" | ".wl") ~~ EndOfString];
   str = StringTrim[str, $PathnameSeparator];
+  str = StringDelete[str, (WordBoundary ~~ "A"|"Z" ~~ DigitCharacter)];
   If[StringEndsQ[str, "Main"], str = StringDrop[str, -4]];
   contextList = Developer`ToList[$trimmedMainContext, FileNameSplit @ str];
   StringJoin[{#, "`"}& /@ contextList]
@@ -222,8 +226,9 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
 
   $filesToSkip = FileNames[{"Loader.m", "init.m", "*.old.m"}, $directory];
   $userFiles = FileNames["user_*.m", $directory];
-  $files = Sort @ Complement[FileNames["*.m", $directory], Join[$filesToSkip, $userFiles]];
-  $textFiles = FileNames[{"*.txt", "*.tex"}, $directory];
+  $files = Sort @ Complement[FileNames["*.m", $directory, Infinity], Join[$filesToSkip, $userFiles]];
+  $files = SortBy[$files, StringSplit[StringDelete[#, "init.m" ~~ EndOfString], "/"]&];
+  $textFiles = FileNames[{"*.txt", "*.tex"}, $directory, Infinity];
 
   $globalImports = {"System`", "GeneralUtilities`", "Developer`"};
 
