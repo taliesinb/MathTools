@@ -641,7 +641,7 @@ applyCoordinateTransform[{"Snap", m_, nudge_:0.1}] := Scope[
   duplicateIndices = DuplicateIndices @ vertexCoordinates;
   newVertexCoordinates = vertexCoordinates;
   adjacencyTable = VertexAdjacencyTable @ $Graph;
-  $nudge = nudge;
+  $nudge2 = nudge;
   Scan[
     index |-> (
       center = Mean @ Part[vertexCoordinates, Part[adjacencyTable, index]];
@@ -658,7 +658,7 @@ applyNearest[points_] := Scope[
   applyRigidCoordinateTransform @ Function[p, First @ nearest[p, 1]];
 ];
 
-nudgeDuplicate[z_][p_] := p + Normalize[Cross[z - p]] * Im[$nudge] + Normalize[z - p] * Re[$nudge];
+nudgeDuplicate[z_][p_] := p + Normalize[Cross[z - p]] * Im[$nudge2] + Normalize[z - p] * Re[$nudge2];
 
 DuplicateIndices[list_] :=
   Select[Length[#] > 1&] @ Values @ PositionIndex @ vertexCoordinates;

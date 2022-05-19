@@ -64,6 +64,7 @@ $literalSymbolRegex = RegularExpression["(" <> StringReplace[$literalSymbolStr, 
 $literalSymbolColor = RGBColor[{0.15, 0.15, 0.15}];
 
 PackageScope["$mainSymbolRegex"]
+PackageScope["$currentMainSymbol"]
 
 $mainSymbolRegex = RegularExpression["^\\$?[A-Za-z][A-Za-z]*"];
 $mainSymbolColor = RGBColor[{0.71, 0.03, 0.}];
@@ -83,14 +84,14 @@ colorLiterals[usageString_] := Scope[
 
 colorMainSymbol[usageString_] := StringReplace[
   usageString, {
-  ("\"" ~~ $mainSymbol ~~ "\"") :> StringTake[makeMainSymbolInlineSyntax[], {4, -2}],
-  WordBoundary ~~ $mainSymbol ~~ WordBoundary :> makeMainSymbolInlineSyntax[],
+  ("\"" ~~ $currentMainSymbol ~~ "\"") :> StringTake[makeMainSymbolInlineSyntax[], {4, -2}],
+  WordBoundary ~~ $currentMainSymbol ~~ WordBoundary :> makeMainSymbolInlineSyntax[],
   "<|" -> "\[LeftAssociation]",
   "|>" -> "\[RightAssociation]",
   "-StyleBox[\"" -> "StyleBox[\"-"
 }];
 
-makeMainSymbolInlineSyntax[] := makeStyleBox[$mainSymbol,
+makeMainSymbolInlineSyntax[] := makeStyleBox[$currentMainSymbol,
   FontColor -> $mainSymbolColor,
   FontWeight -> "Medium"
 ];
@@ -197,9 +198,9 @@ $RawUsageStringTable = Association[];
 
 storeRawUsageString[rawUsageString_String] := Block[
   {usageString = StringTrim @ rawUsageString},
-  (* $mainSymbol will be picked up later in the customSetUsageProcessor composition chain *)
-  $mainSymbol = First @ StringCases[usageString, $mainSymbolRegex, 1];
-  $RawUsageStringTable[$mainSymbol] = usageString;
+  (* $currentMainSymbol will be picked up later in the customSetUsageProcessor composition chain *)
+  $currentMainSymbol = First @ StringCases[usageString, $mainSymbolRegex, 1];
+  $RawUsageStringTable[$currentMainSymbol] = usageString;
 ];
 
 (**************************************************************************************************)
@@ -2281,3 +2282,79 @@ PackageExport["MostCommon"]
 
 MostCommon[{}, _:First] := None;
 MostCommon[list_, f_:First] := f @ MaximumIndices @ Counts @ list;
+
+(**************************************************************************************************)
+
+PackageExport["$SymbolicSizePattern"]
+
+$SymbolicSizePattern = Tiny | Small | MediumSmall | Medium | MediumLarge | Large | Huge;
+
+SetUsage @ "
+$SymbolicSizePattern is a pattern that matches a symbolic size like Small, Medium, etc.
+"
+
+PackageExport["$SizePattern"]
+
+$SizePattern = Tiny | Small | MediumSmall | Medium | MediumLarge | Large | Huge | Scaled[_?NumericQ];
+
+SetUsage @ "
+$SizePattern is a pattern that matches a numeric or symbolic size like Small, Medium, Scaled[n$], etc.
+"
+
+PackageExport["$SidePattern"]
+
+$SidePattern = Left | Right | Bottom | Top | BottomLeft | BottomRight | TopLeft | TopRight;
+
+SetUsage @ "
+$SizePattern is a pattern that matches a (potentially compound) symbol side, like Left, Top, or TopLeft.
+"
+
+PackageExport["$ColorPattern"]
+
+$ColorPattern = _RGBColor | _GrayLevel | _CMYKColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor | Opacity[_, _];
+
+SetUsage @ "
+$ColorPattern is a pattern that matches a valid color, like %RGBColor[$$] etc.
+"
+
+PackageExport["$OpacityPattern"]
+
+$OpacityPattern = VeryTransparent | HalfTransparent | PartlyTransparent | Opaque | Opacity[_ ? NumericQ];
+
+SetUsage @ "
+$OpacityPattern is a pattern that matches an opacity specification.
+"
+
+(**************************************************************************************************)
+
+PackageExport["$TriangleVectors"]
+
+$TriangleVectors = {{0, 1}, {-1/2*Sqrt[3], -1/2}, {Sqrt[3]/2, -1/2}};
+
+(**************************************************************************************************)
+
+PackageScope["ListOrAssociationOf"]
+
+ListOrAssociationOf[pattern_] := {Repeated[pattern]} | Association[Repeated[_ -> pattern]];
+
+(**************************************************************************************************)
+
+PackageExport["PerformSelfLinting"]
+
+PerformSelfLinting[] := Scope[
+  privateSymbols = Names["QuiverGeometry`**`*"];
+  privateSymbolNames = Last /@ StringSplit[privateSymbols, "`"];
+  moduleSymbols = Select[DeleteDuplicates @ privateSymbolNames, StringEndsQ["$"]];
+  moduleSymbols = Join[moduleSymbols, StringDrop[moduleSymbols, -1]];
+  privateSymbolAssoc = AssociationThread[privateSymbols, privateSymbolNames];
+  privateSymbolAssoc //= Select[StringLength[#] >= 4&];
+  privateSymbolAssoc //= Discard[ElementQ[moduleSymbols]];
+  collisionsAssoc = Select[PositionIndex[privateSymbolAssoc], Length[#] > 1&];
+  collisionsAssoc //= Select[possibleMissingPackageScope];
+  collisionsAssoc
+];
+
+possibleMissingPackageScope[names_] :=
+  CountDistinct[ToExpression[names, InputForm, System`Private`HasAnyEvaluationsQ]] > 1;
+
+

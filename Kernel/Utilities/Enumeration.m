@@ -357,16 +357,16 @@ LineGraphFixed[g_] := Scope[
 
 PackageExport["EnumerateQuiverSkeletons"]
 
-circlePoints[1] = {{0, 0}};
-circlePoints[2] = {{-1, -1}, {1, 1}} * 0.7;
-circlePoints[3] = {{0.866025, -0.75}, {0., 0.75}, {-0.866025, -0.75}};
-circlePoints[4] = Part[CirclePoints[4], {1, 3, 2, 4}];
-circlePoints[n_] := N @ CirclePoints[n];
+mkCirclePoints[1] = {{0, 0}};
+mkCirclePoints[2] = {{-1, -1}, {1, 1}} * 0.7;
+mkCirclePoints[3] = {{0.866025, -0.75}, {0., 0.75}, {-0.866025, -0.75}};
+mkCirclePoints[4] = Part[CirclePoints[4], {1, 3, 2, 4}];
+mkCirclePoints[n_] := N @ CirclePoints[n];
 
 makeSmallGraphOpts[n_, r_] := Sequence[
   MultiEdgeDistance -> 0.2, SelfLoopRadius -> r,
   ArrowheadSize -> Small, ArrowheadShape -> {"Line", TwoWayStyle -> "CrossLine"}, VertexSize -> Medium,
-  VertexCoordinates -> circlePoints[n], ImageSize -> {40, 40}, ImagePadding -> 0,
+  VertexCoordinates -> mkCirclePoints[n], ImageSize -> {40, 40}, ImagePadding -> 0,
   PlotRange -> Switch[n,
     1, {{-1, 0}, {-1, 1}} * 0.6,
     2, {{-1, 1}, {-1, 1}} * 1.4,

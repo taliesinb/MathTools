@@ -1,3 +1,8 @@
+PackageExport["ExtendedGraphLayout"]
+PackageExport["VertexLayout"]
+PackageExport["GraphMetric"]
+PackageExport["GraphOrigin"]
+
 PackageExport["ArrowheadShape"]
 PackageExport["ArrowheadSize"]
 PackageExport["ArrowheadStyle"]
@@ -236,6 +241,16 @@ PackageExport["GraphRegionHighlight"]
 SetUsage @ "
 GraphRegionHighlight is an extended option to Graph that specifies one or more highlighting directives to highlight \
 specific regions of the graph when it is displayed.
+<*$GraphRegionHighlightUsage*>
+"
+
+(**************************************************************************************************)
+
+SetUsage @ "
+HighlightGraphRegion[graph$, highlights$] highlights regions of graph$ according to highlights$.
+* HighlightGraphRegion returns a %Graph in which the option %GraphRegionHighlight has been set to \
+highlights$.
+* Any existing highlights are preserved.
 <*$GraphRegionHighlightUsage*>
 "
 
@@ -2628,7 +2643,7 @@ generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {lab
   setLabelStyleGlobals[BaseStyle -> labelBaseStyle];
   labelStyle //= toDirectiveOptScan[setLabelStyleGlobals];
   SetNone[$labelX, 0]; SetNone[$labelY, 0];
-  labelStyle //= DeleteCases[sspec:$sizePattern /; ($labelSizeScale = toNumericSizeScale @ sspec; True)];
+  labelStyle //= DeleteCases[sspec:$SizePattern /; ($labelSizeScale = toNumericSizeScale @ sspec; True)];
   $magnifier = If[$labelSizeScale == 1, Identity, Magnify[#, $labelSizeScale]&];
   {payloadFunction, placerFunction} = processLabelSpec[spec];
   indices = If[parts === All, Range @ Length @ names, parts];
@@ -2669,7 +2684,7 @@ toDirectiveOptScan[f_][e_List | e_Directive] := (
 ExtendedGraphPlot::badsubopt = "`` is not a recognized suboption. Recognized options are ``."
 
 setLabelStyleGlobals = Case[
-  ItemSize -> size:$sizePattern           := $labelSizeScale = toNumericSizeScale @ size;
+  ItemSize -> size:$SizePattern           := $labelSizeScale = toNumericSizeScale @ size;
   Background -> o:$opacityPattern         := $labelBackground = GrayLevel[1.0, toNumericOpacity @ o];
   Background -> None                      := $labelBackground = None;
   Background -> c:$ColorPattern           := $labelBackground = c;

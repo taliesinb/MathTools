@@ -1,7 +1,7 @@
 tokenizeUsage[str_String] :=
   Developer`ToList[
     TOpen[TLineGroup], TOpen[TLine],
-    DeleteCases[ ""|"\n"] @ StringSplit[str, Append[$tokenRules, wholeWord[word:$mainSymbol] :> TMain[word]]],
+    DeleteCases[ ""|"\n"] @ StringSplit[str, Append[$tokenRules, wholeWord[word:$currentMainSymbol] :> TMain[word]]],
     TClose[TLine], TClose[TLineGroup]
   ];
 
@@ -228,7 +228,7 @@ innerMathMarkdown = Case[
 
 PackageExport["UsageToMarkdown"]
 
-$mainSymbol = "FooBar";
+$currentMainSymbol = "FooBar";
 
 UsageToMarkdown[usage_String] :=
   UsageToMarkdown @ Rule[
@@ -238,7 +238,8 @@ UsageToMarkdown[usage_String] :=
 
 
 UsageToMarkdown[mainSymbol_String -> usage_String] := Scope[
-  $mainSymbol = mainSymbol;
+  (* $currentMainSymbol will be picked up later by ParseUsageString, it's PackageScope *)
+  $currentMainSymbol = mainSymbol;
   TokensToMarkdown @ ParseUsageString @ usage
 ];
 

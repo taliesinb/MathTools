@@ -191,7 +191,6 @@ squareTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOp
 DefineParameterizedLatticeQuiver["TriangularTorus", triangularTorusFactory, $torusParameters];
 
 $s32 = Sqrt[3]/2;
-$abcVectors = Simplify /@ {{0, 1}, {-$s32, -1/2}, {$s32, -1/2}};
 
 makeABCTorusRepresentation[w_, h_, t_] := Scope[
   If[t != 0,
@@ -202,7 +201,7 @@ makeABCTorusRepresentation[w_, h_, t_] := Scope[
     ]
   ,
     TranslationGroup[
-      $abcVectors,
+      $TriangleVectors,
       {w * $s32, h} /. 0|1 -> Infinity
     ]
   ]

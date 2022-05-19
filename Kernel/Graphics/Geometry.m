@@ -246,14 +246,14 @@ PackageExport["BandTwists"]
 (**************************************************************************************************)
 
 $easeSpeed = 50;
-easingFunction[x_] := Tanh[$easeSpeed (x - 1)^1/9] + Tanh[$easeSpeed (x + 1)^1/9];
+bandEasingFunction[x_] := Tanh[$easeSpeed (x - 1)^1/9] + Tanh[$easeSpeed (x + 1)^1/9];
 
 bandThetas[twists_, n_] := Interpolated[0, Pi * twists, n];
-bandThetas[1, n_] := Pi/2 * Map[easingFunction, Interpolated[-1, 1, n]];
+bandThetas[1, n_] := Pi/2 * Map[bandEasingFunction, Interpolated[-1, 1, n]];
 bandThetas[0, n_] := ConstantArray[0, n];
 
 bandThetas[twists_, x_List] := Pi * twists * x;
-bandThetas[1, x_List] := Pi/2 * Map[easingFunction, x];
+bandThetas[1, x_List] := Pi/2 * Map[bandEasingFunction, x];
 bandThetas[0, x_List] := ConstantArray[0, Length @ x];
 
 

@@ -1,13 +1,5 @@
 PackageExport["HighlightGraphRegion"]
 
-SetUsage @ "
-HighlightGraphRegion[graph$, highlights$] highlights regions of graph$ according to highlights$.
-* HighlightGraphRegion returns a %Graph in which the option %GraphRegionHighlight has been set to \
-highlights$.
-* Any existing highlights are preserved.
-<*$GraphRegionHighlightUsage*>
-"
-
 DeclareArgumentCount[HighlightGraphRegion, {2, 3}];
 
 Options[HighlightGraphRegion] = $simpleGraphOptionRules;
@@ -78,7 +70,7 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
   ];
 
   (* GraphHighlightStyle -> Opacity[o] will still use the default color palette but control it's opacity *)
-  $defaultOpacity = If[!MatchQ[$highlightStyle, $opacityPattern | Style[$opacityPattern, ___]], 0.5,
+  $defaultOpacity = If[!MatchQ[$highlightStyle, $OpacityPattern | Style[$OpacityPattern, ___]], 0.5,
     $highlightStyle = Automatic; ExtractFirstOpacity[$highlightStyle]];
 
   (* toMultiDirective will interpret palette specs passed to GraphHighlightStyle, which will
@@ -386,7 +378,7 @@ iProcessStyleSpec = MatchValues[
     % @ Style @ most
   ];
   Style[most__, "Opaque"] := % @ Style[most, Opaque];
-  Style[most__, o:$opacityPattern] := Block[
+  Style[most__, o:$OpacityPattern] := Block[
     {$highlightOpacity = ExtractFirstOpacity @ o}, Block[
     {$highlightStyle = SetColorOpacity[RemoveColorOpacity @ $highlightStyle, $highlightOpacity]},
     % @ Style @ most
@@ -394,7 +386,7 @@ iProcessStyleSpec = MatchValues[
   Style[elem_] :=
     $innerFunc[elem];
   Style[__, remaining_] :=
-    Message[GraphRegionHighlight::badstylespec, remaining];
+    Message[GraphRegionHighlight::badstylespec, Print[remaining]; remaining];
 ];
 
 (**************************************************************************************************)

@@ -439,29 +439,6 @@ computedProductSingleCoord = Case[
 
 (**************************************************************************************************)
 
-PackageExport["InvertGraph"]
-
-InvertGraph[g_Graph] := Scope[
-  Graph[
-    VertexList @ g, ReverseEdges @ EdgeList @ g,
-    Options @ g
-  ]
-]
-
-
-(**************************************************************************************************)
-
-PackageExport["ReverseEdges"]
-
-ReverseEdges[edges_List] := Map[reverseEdge, edges];
-
-reverseEdge = Case[
-  head_[a_, b_] := head[b, a];
-  head_[a_, b_, c_] := head[b, a, c];
-];
-
-(**************************************************************************************************)
-
 PackageExport["VertexProductColorFunction"]
 
 VertexProductColorFunction[c1_, c2_][VertexProduct[v1_, v2_]] :=
