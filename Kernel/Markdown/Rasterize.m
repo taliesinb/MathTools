@@ -43,6 +43,8 @@ FastRasterizeListCenterPadded[expr_List] = CenterPadImages @ FastRasterizeList[e
 
 PackageExport["CachedFastRasterizeList"]
 
+(* we might need to delete ImageSizeRaw here ... *)
+
 $RasterizationCache = <||>;
 CachedFastRasterizeList[expr_List] := CacheTo[$RasterizationCache, Hash[expr], FastRasterizeList[expr]];
 

@@ -636,7 +636,6 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ];
     imageSize = {imageWidth, imageHeight};
     {effectiveImageWidth, effectiveImageHeight} = EffectiveImageSize[imageSize, $GraphPlotAspectRatio];
-    GPPrint[{"ImageSize" -> imageSize, "EffectiveImageSize" -> {effectiveImageWidth, effectiveImageHeight}}];
 
     SetAll[imagePadding, 1];
     imagePadding = Replace[
@@ -649,6 +648,10 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       StandardizePadding @ additionalImagePadding,
       Except[_ ? MatrixQ] :> failPlot["badpadding", AdditionalImagePadding -> additionalImagePadding]
     ];
+    GPPrint[{
+      "ImageSize" -> imageSize, "EffectiveImageSize" -> {effectiveImageWidth, effectiveImageHeight},
+      "ImagePadding" -> imagePadding, "AdditionalImagePadding" -> additionalImagePadding
+    }];
 
     edgeCenters = lineCenter /@ $EdgeCoordinateLists;
 
@@ -808,7 +811,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         maxArrowheadSize
       ];
       extendPaddingToInclude[arrowheadBounds];
-
+      
       arrowheadDrawFn = drawTagGroupArrowheadEdges;
     ];
 
@@ -895,8 +898,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   (* create the final graphics *)
   GPPrint["Final assembly"];
   FunctionSection[
-    If[labelGraphics =!= Nothing, extendPaddingBy @ estimateLabelPadding[labelGraphics, vertexLabelStyle]];
-
+    
+    If[labelGraphics =!= Nothing, applyLabelPadding[labelGraphics, vertexLabelStyle]];
+    
     (* for graphs with cardinals, create an automatic legend when asked *)
     If[cardinalColors =!= None && arrowheadShape =!= None,
       legendCardinals = If[ListQ[visibleCardinals], KeyTake[cardinalColors, visibleCardinals], cardinalColors];
@@ -1059,7 +1063,7 @@ processFrameLabel = Case[
 ];
 
 frameLabelSize[None] := {0, 0};
-frameLabelSize[label_] := 1 + cachedRasterizeSize[Text @ label] / 2;
+frameLabelSize[label_] := 1 + CachedRasterSize[Text @ label] / 2;
 
 makeFrameLabelElement[None, _, _] := None;
 
@@ -2140,7 +2144,10 @@ processVertexShapeFunction[spec_] := Scope[
       additionalImagePadding += 2;
       vertexDrawFunc = drawCustomShape[spec, $vertexSize];
       If[$inheritedVertexSize,
-        vertexSizeImage ^= Max[Map[cachedRasterizeSize, spec]] / 2];
+        (* VertexSize -> Inherited means we obtain vertex size *from* the graphics themselves *)
+        vertexSizeImage ^= maxCustomVertexShapeSize[spec];
+        GPPrint[{"MaxCustomShapeSize" -> vertexSizeImage}];
+      ];
     ,
     "Name" | "Vertex",
       vertexDrawFunc = drawOriginalVertices[$vertexSize];
@@ -2265,8 +2272,11 @@ drawGraphicsWithColor[g_Graph, pos_, color_, size_] :=
 drawGraphicsWithColor[g_Graphics, pos_, color_, size_] :=
   Inset[
     ReplaceOptions[g, FrameStyle -> color],
-    pos, {Center, Baseline}, If[$inheritedVertexSize, Automatic,
+    pos, {Center, Baseline},
+    If[$inheritedVertexSize,
+      Automatic, (* <- user gave VertexSize -> Inherited, so use graphic's natural size *)
       toAspectSize[LookupImageSize @ g, StandardizePadding @ LookupOption[g, ImagePadding], size]
+      (* match the vertex size with the graphic's aspect ratio *)
     ]
   ];
 
@@ -2278,6 +2288,15 @@ toAspectSize[{w_, Automatic},  {{l_, r_}, {b_, t_}}, max_] :=
 
 toAspectSize[{w_, h_}, {{l_, r_}, {b_, t_}}, max_] :=
   {w, h} * (max / Max[w - l - r, h - b - t])
+
+(**************************************************************************************************)
+
+maxCustomVertexShapeSize[shapes_] := Max[guessCustomShapeSize /@ shapes] / 2;
+
+guessCustomShapeSize[shape_] := CachedRasterSize @ Replace[
+  drawGraphicsWithColor[shape, {0, 0}, Black, vertexSize],
+  Inset[e_, ___] :> e
+];
 
 (**************************************************************************************************)
 
@@ -2582,10 +2601,10 @@ ExtendedGraphPlot::novertex = "`` is not a valid vertex."
 
 (**************************************************************************************************)
 
-estimateLabelPadding[graphics_, vertexLabelStyle_] := Scope[
+applyLabelPadding[graphics_, vertexLabelStyle_] := Scope[
   graphics = graphics /. Text[opts___] :> outerText[opts];
   texts = Cases[graphics, outerText[t_, ___], Infinity];
-  If[texts === {}, Return @ {{0, 0}, {0, 0}}];
+  If[texts === {}, Return[Null]];
   bboxIndices = BoundingBoxPointIndices @ ReplaceAll[Part[texts, All, 2], Offset[_, p_] :> p];
   texts = Part[texts, bboxIndices];
   allCorners = Map[textCorners, texts];
@@ -2609,20 +2628,27 @@ offsetCorners[p_, _, _] := (* 3D *)
 offsetToPadding[o_, s_] := Switch[Sign[o], 1, {s, 0}, 0, {s, s}/2, -1, {0, s}];
 
 textRasterSize[Text[content_, ___List, opts___Rule]] :=
-  1 + cachedRasterizeSize[styleAsText[content, opts]] / 2;
+  1 + CachedRasterSize[styleAsText[content, opts]] / 2;
 
 textRasterSize[_] := {0, 0};
 
 styleAsText[a_, l___] := Style[a, "Graphics", l];
 styleAsText[a_, l___, BaseStyle -> s_, r___] := Style[a, "Graphics", Sequence @@ ToList @ s, l, r];
 
-PackageExport["ClearRasterizationCache"]
+PackageExport["ClearRasterSizeCache"]
 
-ClearRasterizationCache[] := ($rasterizationCache = <||>;);
+ClearRasterSizeCache[] := ($rasterSizeCache = <||>;);
 
-$rasterizationCache = <||>;
-cachedRasterizeSize[Null] := {0, 0};
-cachedRasterizeSize[e_] := CacheTo[$rasterizationCache, e, Rasterize[e /.  Inverted[z_] :> z, "RasterSize"]];
+PackageExport["CachedRasterSize"]
+
+$rasterSizeCache = <||>;
+CachedRasterSize[Null] := {0, 0};
+CachedRasterSize[e_] := CacheTo[$rasterSizeCache, e, Rasterize[e /. $rasterSizeFixupRules, "RasterSize"]];
+
+$rasterSizeFixupRules = {
+  Inverted[z_] :> z,
+  (ImageSizeRaw -> _) :> Sequence[] (* <- we use ImageSizeRaw for internal purposes but it messes up rasterization *)
+};
 
 PackageExport["LabelPosition"]
 

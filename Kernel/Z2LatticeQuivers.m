@@ -269,7 +269,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     vertexList = Pick[vertexList, Lookup[vertexPresentQ, vertexList, False]];
   ];
 
-  If[randomSeeding =!= None,
+  If[randomSeeding =!= None && indexEdgeList =!= {},
     vertRange = Range @ Length[vertexList];
     BlockRandom[reordering = RandomSample[vertRange], RandomSeeding -> randomSeeding];
     vertexList //= PartOperator[reordering];
@@ -347,7 +347,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   renamingRule = toRenamingRule[vertexNameFunction, abstractVertexList, vertexList];
   If[FailureQ[renamingRule], ReturnFailed[head::badvertnaming, vertexNameFunction, commaString @ $validRenamingRules]];
   {ivertex, finalVertexList} = {ivertex, abstractVertexList} /. renamingRule;
-  edgeList = MapAt[Replace[renamingRule], edgeList, {All, 1;;2}];
+  If[edgeList =!= {}, edgeList = MapAt[Replace[renamingRule], edgeList, {All, 1;;2}]];
 
   If[PermutedRangeQ[finalVertexList],
     (* if we renamed to integers 1..n, reorder to make sure they occur in the natural order *)
