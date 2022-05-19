@@ -1,5 +1,3 @@
-(**************************************************************************************************)
-
 PackageExport["LookupVertexCoordinates"]
 
 LookupVertexCoordinates[graph_Graph, vertexList_:All] := Scope[
@@ -451,251 +449,7 @@ applyCoordinateTransformNew[trans_] := Block[{vertexCoordinates, edgeCoordinateL
 (* TODO: moveVertex, which will update the vertex, find all edges that start or end there,
 and shear them to match *)
 
-(**************************************************************************************************)
 
-PackageExport["LatticeLayout"]
-PackageExport["BasisVectors"]
-PackageExport["ScaleFactor"]
-
-Options[LatticeLayout] = {BasisVectors -> Automatic, ScaleFactor -> 1};
-
-LatticeLayout[opts:OptionsPattern[]][data_] := Scope[
-  
-  UnpackOptions[basisVectors, scaleFactor];
-
-  UnpackAssociation[data, indexGraph, graph];
-
-  {vertexCoordinates, visitedEdges} = LatticeQuiverCoordinates[graph, basisVectors];
-
-  vertexCoordinates *= scaleFactor;
-
-  edgePairs = EdgePairs @ indexGraph;
-
-  wasVisited = ConstantArray[True, EdgeCount @ indexGraph];
-  Part[wasVisited, visitedEdges] = True;
-
-  edgeCoordinateLists = MapThread[makeLatticeEdge, {edgePairs, wasVisited}];
-
-  {vertexCoordinates, edgeCoordinateLists}
-]
-
-makeLatticeEdge[pair_, True] := Part[vertexCoordinates, pair];
-makeLatticeEdge[pair_, False] := Scope[
-  {a, b} = Part[vertexCoordinates, pair];
-  d = 0.25 * Normalize[b - a];
-  e = rot90 @ d;
-  ae = a + e;
-  be = b + e;
-  corn = 4;
-  DiscretizeCurve[{a, ae - e/corn, ae, ae + d/corn, be - d/corn, be, be + e/corn, b}]
-];
-
-rot90[{x_, y_}] := {y, -x};
-rot270[{x_, y_}] := {-y, x};
-
-(**************************************************************************************************)
-
-PackageExport["SmartLayout"]
-
-$tetraGraph := $tetraGraph = UndirectedGraph[
-  {1 -> 2, 2 -> 3, 3 -> 4, 4 -> 1, 1 -> 3, 2 -> 4},
-  VertexCoordinates -> Append[CirclePoints[3], {0, 0}]
-];
-
-SmartLayout[][data_] := Scope[
-  UnpackAssociation[data, vertexCount, edgeCount, indexGraph];
-  ugraph = UndirectedGraph @ RemoveEdgeTags @ indexGraph;
-  coords = Which[
-    IsomorphicGraphQ[ugraph, $tetraGraph],
-      getIsomorphicCoordinates[ugraph, $tetraGraph],
-    vertexCount == (edgeCount + 1) && PathGraphQ[ugraph],
-      getIsomorphicCoordinates[ugraph, PathGraph[vertexCount]],
-    True,
-      $Failed
-  ];
-  If[!FailureQ[coords],
-    data["VertexCoordinates"] = coords;
-    VertexEdgeCoordinateData[data, Automatic]
-  ,
-    VertexEdgeCoordinateData[data, {"SpringElectricalEmbedding"}]
-  ]
-]
-
-getIsomorphicCoordinates[source_, target_] := Scope[
-  iso = FindGraphIsomorphism[source, target];
-  If[iso === {}, ReturnFailed[]];
-  targetVertices = Lookup[First @ iso, VertexList @ source];
-  LookupVertexCoordinates[target, targetVertices]
-]
-
-(**************************************************************************************************)
-
-PackageExport["SpringLayout"]
-PackageExport["Orientation"]
-
-Options[SpringLayout] = {
-  "EnergyControl" -> Automatic,
-  "StepControl" -> Automatic,
-  "StepLength" -> Automatic,
-  "Tolerance" -> Automatic
-};
-
-SpringLayout[opts:OptionsPattern[]][data_] :=
-  VertexEdgeCoordinateData[data, {"SpringEmbedding", opts}]
-
-(**************************************************************************************************)
-
-PackageExport["SpringElectricalLayout"]
-
-Options[SpringElectricalLayout] = JoinOptions[
-  "SpringConstant" -> 1,
-  "RepulsiveForcePower" -> Automatic,
-  SpringLayout
-];
-
-SpringElectricalLayout[opts:OptionsPattern[]][data_] :=
-  VertexEdgeCoordinateData[data, {"SpringElectricalEmbedding", opts}]
-
-(**************************************************************************************************)
-
-PackageExport["TreeVertexLayout"]
-PackageExport["Orientation"]
-PackageExport["RootVertex"]
-PackageExport["RootOrientation"]
-PackageExport["Balanced"]
-PackageExport["BendStyle"]
-PackageExport["BendRadius"]
-PackageExport["PreserveBranchOrder"]
-
-Options[TreeVertexLayout] = {
-  Alignment -> None, Orientation -> Top, RootVertex -> Automatic, "Bubble" -> False,
-  Balanced -> False, RootOrientation -> "Source", BendStyle -> Automatic,
-  PreserveBranchOrder -> False,
-  BendRadius -> 0.25
-};
-
-TreeVertexLayout[OptionsPattern[]][data_] := Scope[
-  UnpackAssociation[data, graph, indexGraph, vertexCount];
-  UnpackOptions[alignment, orientation, rootVertex, bubble, balanced, rootOrientation, bendStyle, bendRadius, preserveBranchOrder];
-
-  rootIndex = Switch[rootVertex,
-    None,       None,
-    Automatic,  Automatic,
-    "Source",   First[GraphSources @ SimpleGraph @ ExpandCardinalSetEdges @ indexGraph, None],
-    _,          VertexIndex[graph, rootVertex]
-  ];
-  baseMethod = If[preserveBranchOrder, "LayeredEmbedding", "LayeredDigraphEmbedding"];
-  vertexLayout = {baseMethod, "Orientation" -> orientation, "RootVertex" -> rootIndex};
-  
-  If[rootOrientation === "Sink", data = MapAt[ReverseEdges, data, "IndexEdges"]];
-  {vertexCoordinates, edgeCoordinateLists} = VertexEdgeCoordinateData[data, vertexLayout];
-
-  If[TrueQ @ balanced,
-
-    outTable = MapThread[Append, {If[rootOrientation === "Source", VertexOutTable, VertexInTable] @ graph, Range @ vertexCount}];
-    {coordsX, coordsY} = Transpose @ vertexCoordinates;
-    Do[coordsX = Map[Mean @ Part[coordsX, #]&, outTable], 20];
-    vertexCoordinates = Transpose @ {coordsX, coordsY};
-    edgeCoordinateLists = ExtractIndices[vertexCoordinates, EdgePairs[graph]];
-  ];
-
-  Switch[bendStyle,
-    "Top" | Top,
-      edgeCoordinateLists //= Map[bendTop],
-    "Center" | Center,
-      edgeCoordinateLists //= Map[bendCenter],
-    "HalfCenter",
-      edgeCoordinateLists //= Map[bendCenterHalf]
-  ];
-
-  {vertexCoordinates, edgeCoordinateLists}
-];
-
-bendCenter[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
-  If[Min[Abs[ax - bx], Abs[ay - by]] < 0.001, Return @ {a, b}];
-  aby = (ay + by) / 2;
-  c = {ax, aby}; d = {bx, aby};
-  ca = along[c, a, bendRadius];
-  cd = along[c, d, bendRadius];
-  dc = along[d, c, bendRadius];
-  db = along[d, b, bendRadius];
-  Join[{a}, DiscretizeCurve[{ca, c, cd}], DiscretizeCurve[{dc, d, db}], {b}]
-];
-
-bendCenterHalf[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
-  If[Min[Abs[ax - bx], Abs[ay - by]] < 0.001, Return @ {a, b}];
-  aby = (ay + by) / 2;
-  c = {ax, aby}; d = {bx, aby};
-  ca = along[c, a, bendRadius];
-  cd = along[c, d, bendRadius];
-  dc = along[d, c, bendRadius];
-  db = along[d, b, bendRadius];
-  Join[{a, c}, DiscretizeCurve[{dc, d, db}], {b}]
-];
-
-(* bendCenterHalf[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
-  If[Min[Abs[ax - bx], Abs[ay - by]] < 0.001, Return @ {a, b}];
-  aby = (ay + by) / 2;
-  c = {ax, aby}; d = {bx, aby};
-  ca = along[c, a, bendRadius];
-  cd = along[c, d, bendRadius];
-  dc = along[d, c, bendRadius];
-  db = along[d, b, bendRadius];
-  Join[{c}, DiscretizeCurve[{dc, d, db}], {b}]
-]; *)
-
-bendTop[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
-  If[Min[Abs[ax - bx], Abs[ay - by]] < 0.001, Return @ {a, b}];
-  c = {bx, ay};
-  ca = along[c, a, bendRadius];
-  cb = along[c, b, bendRadius];
-  Join[{a}, DiscretizeCurve[{ca, c, cb}], {b}]
-];
-
-bendTop[line_] := line;
-bendCenter[line_] := line;
-bendCenterHalf[line_] := line;
-
-(**************************************************************************************************)
-
-PackageExport["LinearLayout"]
-
-Options[LinearLayout] = {
-  Method -> Automatic,
-  Orientation -> Automatic
-};
-
-$threePoints = CirclePoints[3];
-
-LinearLayout[opts:OptionsPattern[]][data_] := Scope[
-  UnpackOptions[method, orientation];
-  UnpackAssociation[data, vertexCount];
-  SetAutomatic[method, If[AcyclicGraphQ[UndirectedGraph @ data["Graph"]], "Line", "Circle"]];
-  SetAutomatic[orientation, If[method === "Line", Left, If[vertexCount === 3, Top, Left]]];
-  data["VertexCoordinates"] = orientationTransform[orientation] @ Switch[method,
-    "Line",
-      N[{# - 1, 0}& /@ Range[vertexCount]],
-    "Circle",
-      points = MapColumn[Minus, 2, CirclePoints[{1, Pi}, vertexCount]];
-      If[vertexCount === 3, points //= TranslationTransform[{0.15, 0}];];
-      points
-    ,
-    True,
-      ReturnFailed[]
-  ];
-  VertexEdgeCoordinateData[data, Automatic]
-];
-
-orientationTransform = Case[
-  Left        := Identity;
-  Right       := RotationTransform[Pi];
-  Top         := RotationTransform[-Pi/2];
-  TopLeft     := RotationTransform[-Pi/4];
-  TopRight    := RotationTransform[-3/4 Pi];
-  Bottom      := RotationTransform[Pi/2];
-  BottomLeft  := RotationTransform[Pi/4];
-  BottomRight := RotationTransform[3/4 Pi];
-];
 
 (**************************************************************************************************)
 
@@ -1031,8 +785,8 @@ applyCoordinateTransform["BendVertical"] :=
 bendVertical[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
   If[Min[Abs[ax - bx], Abs[ay - by]] < 0.001, Return @ {a, b}];
   c = {bx, ay};
-  ca = along[c, a, .25];
-  cb = along[c, b, .25];
+  ca = ptAlong[c, a, .25];
+  cb = ptAlong[c, b, .25];
   Join[{a}, DiscretizeCurve[{ca, c, cb}], {b}]
 ];
 
@@ -1062,9 +816,11 @@ squareSelfLoop[list:{a_, Repeated[_, {3, Infinity}], b_}] /; EuclideanDistance[a
 
 $cr = .1;
 corner[a_, b_, c_] :=
-  Splice @ {a, along[b, a, $cr], along[b, a, 0.8*$cr], b, along[b, c, 0.8*$cr], along[b, c, $cr]};
+  Splice @ {a, ptAlong[b, a, $cr], ptAlong[b, a, 0.8*$cr], b, ptAlong[b, c, 0.8*$cr], ptAlong[b, c, $cr]};
 
-along[a_, b_, d_] := PointAlongLine[{a, b}, d];
+PackageScope["ptAlong"]
+
+ptAlong[a_, b_, d_] := PointAlongLine[{a, b}, d];
 
 squareSelfLoop[line_] := line;
 
