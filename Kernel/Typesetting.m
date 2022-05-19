@@ -18,6 +18,12 @@ tradBox[b_] := StyleBox[FormBox[b, TraditionalForm], ShowStringCharacters -> Fal
 
 (**************************************************************************************************)
 
+PackageExport["KeynoteEquationText"]
+
+KeynoteEquationText[e_] := Style[e, FontWeight -> Bold, FontFamily -> "Optima", FontSize -> 16, FontColor -> $DarkGray];
+
+(**************************************************************************************************)
+
 PackageExport["LeftBar"]
 
 SetUsage @ "

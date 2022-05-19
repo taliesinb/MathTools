@@ -30,6 +30,9 @@ newImageGalleryTempDir[] := Scope[
   EnsureDirectory @ dir
 ];
 
+CopyImageGalleryToClipboard[args___, "Conform" -> sz_] :=
+  CopyImageGalleryToClipboard[ConformImages[Flatten @ {args}, sz, "Fit"]];
+
 CopyImageGalleryToClipboard[args___] := Scope[
   $galleryDir = newImageGalleryTempDir[];
   images = galleryRasterize /@ Flatten[{args}];
@@ -37,7 +40,7 @@ CopyImageGalleryToClipboard[args___] := Scope[
   images = CenterPadImages @ images;
   MapIndexed[saveToGalleryFile, images];
   CopyToClipboard @ $galleryDir;
-  Print[$galleryDir];
+  Print[$galleryDir]; SystemOpen[$galleryDir];
   SpacedRow[args]
 ];
 

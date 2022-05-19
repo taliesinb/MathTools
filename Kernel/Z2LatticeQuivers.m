@@ -346,7 +346,9 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   If[AssociationQ[representation] && vertexNameFunction === "SpiralIndex", vertexNameFunction = "Index"];
   renamingRule = toRenamingRule[vertexNameFunction, abstractVertexList, vertexList];
   If[FailureQ[renamingRule], ReturnFailed[head::badvertnaming, vertexNameFunction, commaString @ $validRenamingRules]];
-  {ivertex, finalVertexList, edgeList} = {ivertex, abstractVertexList, edgeList} /. renamingRule;
+  {ivertex, finalVertexList} = {ivertex, abstractVertexList} /. renamingRule;
+  edgeList = MapAt[Replace[renamingRule], edgeList, {All, 1;;2}];
+
   If[PermutedRangeQ[finalVertexList],
     (* if we renamed to integers 1..n, reorder to make sure they occur in the natural order *)
     ordering = Ordering @ finalVertexList;

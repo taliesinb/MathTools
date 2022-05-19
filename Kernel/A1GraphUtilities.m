@@ -819,7 +819,7 @@ RemoveEdgeTags[{edge$1, edge$2, $$}] removes edge tags from edge$i, returning a 
 "
 
 RemoveEdgeTags = Case[
-  list_ ? EdgeListQ              := Take[list, All, 2];
+  list_ ? EdgeListQ              := Take[If[FreeQ[list, CardinalSet], list, SpliceCardinalSetEdges @ list], All, 2];
   graph_Graph ? EdgeTaggedGraphQ := Graph[
     VertexList @ graph,
     RemoveEdgeTags @ EdgeList @ graph,

@@ -244,6 +244,10 @@ toPermutationForm = Case[
   other_                 := PermutationForm[other];
 ]
 
+(**************************************************************************************************)
+
+PackageExport["PermutationActionCayleyFunction"]
+
 PermutationActionCayleyFunction[gens_][state_] :=
   Labeled[applyPermutation[state, #], #2]& @@@ gens;
 
