@@ -166,7 +166,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
       Switch[
         Last @ Dimensions @ initialVertexCoordinates,
         1,
-          initialVertexCoordinates = AppendConstantColumn[initialVertexCoordinates, 0];
+          initialVertexCoordinates = AppendConstantColumn[initialVertexCoordinates, 0],
         2|3,
           Null,
         _,

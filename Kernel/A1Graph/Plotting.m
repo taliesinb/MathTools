@@ -2463,7 +2463,7 @@ LookupEdgeColors[graph_Graph, edges_:All] := Scope[
     If[edges =!= All, $EdgeList = edges];
     If[edgeColorFunction === None, Return @ None];
     {colorList, colorGroups, colorFunctionObject} = obtainColors[
-      edgeColorFunction, edgeColorDataProvider, VertexColorFunction
+      edgeColorFunction, edgeColorDataProvider, EdgeColorFunction
     ];
     AssociationThread[$EdgeList, colorList]
   ]

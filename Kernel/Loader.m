@@ -212,7 +212,7 @@ resolveRemainingSymbols[{path_, context_, packageData_Package`PackageData}] := S
   {path, context, packageData /. dispatch}
 ];
 
-QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
+QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled_:True] := Block[
   {$directory, $files, $textFiles, $packageScopes, $optionExports, $packageExports, $packageExpressions, $packageRules,
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result
   },
@@ -258,7 +258,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
   Scan[observeTextFile, $textFiles];
   Scan[observeTextFile, $userFiles];
 
-  If[$loadedFileCount == 0 && $changedTextFileCount == 0, Return["Unchanged"]];
+  If[cachingEnabled && $loadedFileCount == 0 && $changedTextFileCount == 0, Return["Unchanged"]];
 
   $PreviousPathAlgebra = If[
     System`Private`HasImmediateValueQ[QuiverGeometry`$PathAlgebra],
@@ -280,8 +280,25 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_] := Block[
 
   On[General::shdw];
 
+  QuiverGeometryPackageLoader`$SuspiciousPackageLines = findSuspiciousPackageLines[$packageExpressions];
+
   $packageExpressions
 ];
+
+QuiverGeometryPackageLoader`$SuspiciousPackageLines = {};
+
+$badControlStatementPatterns = Alternatives[
+  w_Switch /; EvenQ[Length[Unevaluated @ w]],
+  w_Which /; OddQ[Length[Unevaluated @ w]]
+];
+
+positionToFileLine[{fileNum_, 3, line_, rest___}] :=
+  Part[$packageExpressions, fileNum, 3, line, rest, 0] -> FileLine[Part[$packageExpressions, fileNum, 1], Part[$packageExpressions, fileNum, 3, line, 1]];
+
+positionToFileLine[_, _] := Nothing;
+
+findSuspiciousPackageLines[pdata_] :=
+  positionToFileLine /@ Position[$packageExpressions, $badControlStatementPatterns];
 
 QuiverGeometryPackageLoader`EvaluatePackages[packagesList_List] := Block[
   {$currentPath, $currentLineNumber, result, initialFile, finalFile},
@@ -363,8 +380,8 @@ $PreviousPathAlgebra = None;
 
 $lastLoadSuccessful = False;
 
-QuiverGeometryPackageLoader`Read[] :=
-  QuiverGeometryPackageLoader`ReadPackages["QuiverGeometry`", QuiverGeometryPackageLoader`$Directory];
+QuiverGeometryPackageLoader`Read[cachingEnabled_:True] :=
+  QuiverGeometryPackageLoader`ReadPackages["QuiverGeometry`", QuiverGeometryPackageLoader`$Directory, cachingEnabled];
 
 QuiverGeometryPackageLoader`Load[] := PreemptProtect @ Block[{packages},
   packages = QuiverGeometryPackageLoader`Read[];

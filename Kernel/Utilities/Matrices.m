@@ -359,6 +359,12 @@ PackageExport["SquaredDistanceMatrix"]
 
 SquaredDistanceMatrix[{}] := {};
 
+SquaredDistanceMatrix[points_ ? RealVectorQ] :=
+  Outer[SquaredEuclideanDistance, points, points];
+
+SquaredDistanceMatrix[points1_ ? RealVectorQ, points2_ ? RealVectorQ] :=
+  Outer[SquaredEuclideanDistance, points1, points2];
+
 SquaredDistanceMatrix[points_ ? RealMatrixQ] := (
   $loadDM; $distanceMatrixFunction1[points, $squaredEuclideanDistanceCode, False]
 );

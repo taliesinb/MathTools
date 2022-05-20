@@ -7,17 +7,6 @@ GraphTheme is an extended option to Graph that controls multiple options simulta
 
 (**************************************************************************************************)
 
-PackageExport["$GraphThemeData"]
-
-$fontThemeOpts = {VertexLabelBaseStyle -> $MathLabelStyle, EdgeLabelBaseStyle -> $CardinalLabelStyle};
-
-$GraphThemeData = <|
-  None -> {},
-  "Fonts" :> $fontThemeOpts
-|>;
-
-(**************************************************************************************************)
-
 PackageExport["LookupGraphThemeOptions"]
 
 Graph::badtheme = "`` is not a valid GraphTheme."

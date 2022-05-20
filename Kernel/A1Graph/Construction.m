@@ -2,8 +2,6 @@
 
 PackageExport["ExtendedGraph"]
 
-Options[ExtendedGraph] = $simpleGraphOptionRules;
-
 ExtendedGraph[args___] :=
   interceptedGraphConstructor[Graph[args, GraphPlottingFunction -> ExtendedGraphPlottingFunction]];
 

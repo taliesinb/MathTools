@@ -94,10 +94,10 @@ $RewriteQuiverThemeRules = {
   ArrowheadSize -> 15,
   VertexSize -> 5, VertexFontSize -> 12,
   ImagePadding -> {Left -> 25, Right -> 25},
-  ArrowheadPosition -> 0.5,
+  ArrowheadPosition -> 0.45,
   ArrowheadShape -> "NarrowArrow",
   ImageSize -> ("ShortestEdge" -> 65),
-  VertexLayout -> TreeVertexLayout[Orientation -> Left]
+  VertexLayout -> TreeVertexLayout[Orientation -> Left, Balanced -> True]
 };
 
 $RewriteGraphThemeRules = JoinOptions[

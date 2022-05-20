@@ -10,63 +10,63 @@ Signed is an option to various graph utility functions.
 PackageScope["$extendedGraphOptionsRules"]
 
 $extendedGraphOptionsRules = {
-  GraphPlottingFunction               -> None,
-  GraphRegionHighlight                -> None,
-  GraphLegend                         -> None,
+  AdditionalImagePadding              -> None,
+  ArrowheadPosition                   -> Automatic,
+  ArrowheadShape                      -> Automatic,
   ArrowheadSize                       -> Automatic,
   ArrowheadStyle                      -> Automatic,
-  ArrowheadShape                      -> Automatic,
-  ArrowheadPosition                   -> Automatic,
-  EdgeSetback                         -> Automatic,
-  VertexColorFunction                 -> None,
-  EdgeColorFunction                   -> None,
-  VertexAnnotations                   -> None,
+  AspectRatioClipping                 -> True,
+  CardinalColorFunction               -> None,
+  CardinalColorRules                  -> None,
+  CardinalColors                      -> Automatic,
+  Cardinals                           -> Automatic,
+  CoordinateRotation                  -> None,
+  CoordinateTransformFunction         -> None,
+  CustomGraphAnnotation[_String]      -> None,
   EdgeAnnotations                     -> None,
-  LayoutDimension                     -> Automatic,
+  EdgeColorFunction                   -> None,
+  EdgeColorRules                      -> None,
+  EdgeLabelBaseStyle                  -> None,
+  EdgeLabelPosition                   -> Top,
+  EdgeLabelSpacing                    -> 0,
+  EdgeSetback                         -> Automatic,
+  EdgeThickness                       -> Automatic,
+  EdgeTooltips                        -> None,
+  EpilogFunction                      -> None,
   ExtendedGraphLayout                 -> Automatic,
+  ExtendImagePadding                  -> True,
+  GraphLegend                         -> None,
   GraphMetric                         -> Automatic,
   GraphOrigin                         -> None,
-  Cardinals                           -> Automatic,
-  CardinalColors                      -> Automatic,
-  CardinalColorRules                  -> None,
-  CardinalColorFunction               -> None,
-  VisibleCardinals                    -> All,
-  ViewOptions                         -> Automatic,
+  GraphPlottingFunction               -> None,
+  GraphRegionHighlight                -> None,
+  GraphTheme                          -> None,
   LabelCardinals                      -> False,
-  CoordinateTransformFunction         -> None,
-  ViewRegion                          -> All,
-  AdditionalImagePadding              -> None,
-  ExtendImagePadding                  -> True,
-  AspectRatioClipping                 -> True,
-  EdgeThickness                       -> Automatic,
-  VertexLayout                        -> None,
-  VertexOverlapResolution             -> None,
-  VertexCoordinateRules               -> None,
-  VertexCoordinateFunction            -> None,
-  VertexColorRules                    -> None,
-  VertexTooltips                      -> None,
-  VertexClickFunction                 -> None,
-  EdgeTooltips                        -> None,
-  EdgeColorRules                      -> None,
-  RegionColorRules                    -> None,
-  PrologFunction                      -> None,
-  EpilogFunction                      -> None,
-  UseAbsoluteSizes                    -> Automatic,
-  SelfLoopRadius                      -> Automatic,
+  LayoutDimension                     -> Automatic,
   MultiEdgeDistance                   -> Automatic,
   PackingSpacing                      -> Automatic,
-  CustomGraphAnnotation[_String]      -> None,
-  VertexLabelPosition                 -> Top,
-  EdgeLabelPosition                   -> Top,
-  VertexLabelSpacing                  -> 0,
-  EdgeLabelSpacing                    -> 0,
-  VertexLabelBaseStyle                -> None,
-  EdgeLabelBaseStyle                  -> None,
-  GraphTheme                          -> None,
-  VertexFontSize                      -> None,
-  VertexBackground                    -> White,
   PeripheralVertices                  -> None,
-  CoordinateRotation                  -> None
+  PrologFunction                      -> None,
+  RegionColorRules                    -> None,
+  SelfLoopRadius                      -> Automatic,
+  UseAbsoluteSizes                    -> Automatic,
+  VertexAnnotations                   -> None,
+  VertexBackground                    -> White,
+  VertexClickFunction                 -> None,
+  VertexColorFunction                 -> None,
+  VertexColorRules                    -> None,
+  VertexCoordinateFunction            -> None,
+  VertexCoordinateRules               -> None,
+  VertexFontSize                      -> None,
+  VertexLabelBaseStyle                -> None,
+  VertexLabelPosition                 -> Top,
+  VertexLabelSpacing                  -> 0,
+  VertexLayout                        -> None,
+  VertexOverlapResolution             -> None,
+  VertexTooltips                      -> None,
+  ViewOptions                         -> Automatic,
+  ViewRegion                          -> All,
+  VisibleCardinals                    -> All
 };
 
 PackageScope["$extendedGraphOptionSymbols"]
@@ -93,6 +93,8 @@ $extendedGraphSymbolNames = Map[SymbolName, Select[SymbolQ] @ Keys @ $fullGraphO
 PackageExport["$ExtendedGraphOptions"]
 
 $ExtendedGraphOptions = Cases[$fullGraphOptions, HoldPattern[_Symbol -> _]];
+
+Options[ExtendedGraph] = $ExtendedGraphOptions;
 
 (**************************************************************************************************)
 
@@ -188,3 +190,13 @@ ExtendedGraphQ[g_Graph ? GraphQ] :=
 
 ExtendedGraphQ[_] := False;
 
+(**************************************************************************************************)
+
+PackageExport["$GraphThemeData"]
+
+$fontThemeOpts = {VertexLabelBaseStyle -> $MathLabelStyle, EdgeLabelBaseStyle -> $CardinalLabelStyle};
+
+$GraphThemeData = <|
+  None -> {},
+  "Fonts" :> $fontThemeOpts
+|>;

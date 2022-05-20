@@ -63,6 +63,7 @@ Options[GraphContractionLattice] = JoinOptions[
   "AllowCyclic" -> True,
   "GraphStyle" -> "ContractedGraph",
   "AllowGraphContractions" -> False,
+  "EdgeColoring" -> Automatic,
   ExtendedGraph
 ]
 
@@ -70,11 +71,13 @@ GraphContractionLattice[graph_, contractedGraphOptions_List, userOpts:OptionsPat
   
   If[!EdgeTaggedGraphQ[graph], graph //= IndexEdgeTaggedGraph];
 
-  UnpackOptions[combineMultiedges, greedyEdgeContraction];
+  UnpackOptions[combineMultiedges, greedyEdgeContraction, edgeColoring];
+
   innerSize = LookupOption[contractedGraphOptions, ImageSize, 50];
   contractedGraphOptions = Sequence @@ contractedGraphOptions;
   
-  initialGraph = ContractedGraph[graph, contractedGraphOptions, ImageSize -> {innerSize, innerSize}];
+  initialGraph = ContractedGraph[graph, contractedGraphOptions, ImageSize -> {innerSize, innerSize},
+    EdgeColorFunction -> edgeColoring];
   innerOpts = Sequence @@ ExtractExtendedGraphOptions @ initialGraph;
 
   edgeList = CanonicalizeEdges @ EdgeList @ graph;
@@ -234,8 +237,9 @@ ContractedGraph[edges_List, opts___Rule] :=
 
 ContractedGraph[graph_Graph, opts___Rule] := Scope[
 
-  unContractedGraph = UnContractedGraph[graph, opts];
-  
+  opts = {opts};
+  unContractedGraph = UnContractedGraph[graph, Sequence @@ DeleteOptions[opts, EdgeColorFunction]];
+
   baseVertexList = VertexList @ unContractedGraph;
   baseVertexColors = LookupVertexColors @ unContractedGraph;
   {baseVertexCoordinates, baseEdgeCoordinateLists} = ExtractGraphPrimitiveCoordinates @ unContractedGraph;
@@ -245,15 +249,21 @@ ContractedGraph[graph_Graph, opts___Rule] := Scope[
   baseCardinalColors = LookupCardinalColors @ unContractedGraph;
 
   vertexCoordinateFunction = ContractedVertexCoordinateFunction[AssociationThread[baseVertexList, baseVertexCoordinates]];
+  
+  edgeColorFunction = LookupOption[opts, EdgeColorFunction, Automatic];
   edgeColorFunction = Which[
-    baseEdgeColors =!= None, ContractedEdgeColorFunction[KeyMap[PartOperator[3], baseEdgeColors]],
-    baseCardinalColors =!= None, ContractedEdgeColorFunction[baseCardinalColors],
-    True, None
+    edgeColorFunction === Automatic && baseEdgeColors =!= None,
+      ContractedEdgeColorFunction[KeyMap[PartOperator[3], baseEdgeColors]],
+    edgeColorFunction === Inherited && baseCardinalColors =!= None,
+      (* ^ if we want to just inherit colors from cardinals -- which is not the default behavior *)
+      ContractedEdgeColorFunction[baseCardinalColors],
+    True,
+      None
   ];
+
   vertexColorFunction = If[baseVertexColors === None, None, ContractedVertexColorFunction[baseVertexColors]];
   cardinalColorFunction = If[baseCardinalColors === <||>, None, ContractedCardinalColorFunction[baseCardinalColors]];
 
-  opts = {opts};
   padding = LookupOption[opts, PlotRangePadding, Scaled[0.05]];
   bounds = ToSquarePlotRange @ CoordinateBounds[baseVertexCoordinates, padding];
 
@@ -265,7 +275,7 @@ ContractedGraph[graph_Graph, opts___Rule] := Scope[
     VertexLayout -> None,
     CardinalColorRules -> None,
     EdgeColorRules -> None,
-    Sequence @@ DeleteOptions[opts, PlotRangePadding],
+    Sequence @@ DeleteOptions[opts, {PlotRangePadding, EdgeColorFunction}],
     EdgeColorFunction -> edgeColorFunction,
     VertexColorFunction -> vertexColorFunction,
     VertexCoordinateFunction -> vertexCoordinateFunction,

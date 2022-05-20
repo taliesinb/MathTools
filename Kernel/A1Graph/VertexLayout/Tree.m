@@ -18,24 +18,35 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
   UnpackAssociation[data, graph, indexGraph, vertexCount];
   UnpackOptions[alignment, orientation, rootVertex, bubble, balanced, rootOrientation, bendStyle, bendRadius, preserveBranchOrder];
 
+  graphOrigin = LookupExtendedOption[graph, GraphOrigin];
   rootIndex = Switch[rootVertex,
-    None,       None,
-    Automatic,  Automatic,
-    "Source",   First[GraphSources @ SimpleGraph @ ExpandCardinalSetEdges @ indexGraph, None],
-    _,          VertexIndex[graph, rootVertex]
+    None,                       None,
+    Automatic,                  Automatic,
+    IndexedVertex[_Integer],    First @ rootVertex,
+    GraphOrigin,                If[graphOrigin === None, Automatic, VertexIndex[graph, graphOrigin]],
+    "Source",                   First[GraphSources @ SimpleGraph @ ExpandCardinalSetEdges @ indexGraph, None],
+    _,                          VertexIndex[graph, rootVertex]
   ];
   baseMethod = If[preserveBranchOrder, "LayeredEmbedding", "LayeredDigraphEmbedding"];
   vertexLayout = {baseMethod, "Orientation" -> orientation, "RootVertex" -> rootIndex};
   
-  If[rootOrientation === "Sink", data = MapAt[ReverseEdges, data, "IndexEdges"]];
+  If[rootOrientation === "Sink", data = MapAt[ReverseEdges, data, "IndexEdges"]; indexGraph //= InvertGraph];
   {vertexCoordinates, edgeCoordinateLists} = VertexEdgeCoordinateData[data, vertexLayout];
 
-  If[TrueQ @ balanced,
+  rever = Switch[orientation, Top, Identity, Left, Reverse, _, $NotImplemented];
 
-    outTable = MapThread[Append, {If[rootOrientation === "Source", VertexOutTable, VertexInTable] @ graph, Range @ vertexCount}];
-    {coordsX, coordsY} = Transpose @ vertexCoordinates;
-    Do[coordsX = Map[Mean @ Part[coordsX, #]&, outTable], 20];
-    vertexCoordinates = Transpose @ {coordsX, coordsY};
+  {balanceSteps, balanceDelta} = Replace[balanced, {
+    True           -> {100, 0.1},
+    _Integer       -> {balanced, 0.1},
+    {_Integer, _}  -> balanced,
+    _              -> {0, 0}
+  }];
+
+  If[balanceSteps > 0,
+    {coordsX, coordsY} = rever @ Transpose @ vertexCoordinates; ocoordsX = coordsX; widthTarget = Max[coordsX] - Min[coordsX];
+    coordsX = ElectricalGravitationalBalanceX[0.95 * coordsX + 0.05 * ocoordsX, coordsY, indexGraph, balanceSteps, balanceDelta];
+    (* coordsX = (Standardize[coordsX] * widthTarget) + Mean[coordsX]; *)
+    vertexCoordinates = Transpose @ rever @ {coordsX, coordsY};
     edgeCoordinateLists = ExtractIndices[vertexCoordinates, EdgePairs[graph]];
   ];
 
