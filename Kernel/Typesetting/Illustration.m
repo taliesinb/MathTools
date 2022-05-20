@@ -1,7 +1,7 @@
 PackageExport["IllustatePathsOnFundamentalQuiver"]
 
 IllustatePathsOnFundamentalQuiver[quiver_, pathSpecs_, opts___] := Scope[
-  fquiver = If[QuiverRepresentationObjectQ[quiver], quiver["Quiver"], quiver];
+  fquiver = If[PathRepresentationObjectQ[quiver], quiver["Quiver"], quiver];
   quivers = Labeled[DrawFundamentalQuiverPath[fquiver, #1, #2, #3], WordForm @ #1]& @@@ pathSpecs;
   regionSpec = Style[Arrow @ Path[1, #1], #2, "Foreground", "SemitransparentArrowheads", PathRadius->3, EdgeSetback -> 3]& @@@ pathSpecs;
   lattice = LatticeQuiver[

@@ -1590,7 +1590,7 @@ PackageScope["CheckIsRep"]
 PackageScope["CoerceToRep"]
 
 General::notrep = "The `` argument should be a RepresentationObject.";
-General::notrepc = "The `` argument should be a group, groupoid, RepresentationObject, QuiverRepresentationObject, or RootSystem.";
+General::notrepc = "The `` argument should be a group, groupoid, RepresentationObject, PathRepresentationObject, or RootSystem.";
 defineCheckArgMacro[CheckIsRep, RepresentationObjectQ, "notrep"];
 defineCoerceArgMacro[CoerceToRep, ToRepresentation, "notrepc"];
 

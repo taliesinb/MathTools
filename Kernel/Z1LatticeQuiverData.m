@@ -42,8 +42,8 @@ DefineLatticeQuiver[rawFields__] := Scope[
   If[!QuiverQ[quiver], ReturnFailed["badfield", canonicalName, "Quiver", "quiver"]];
   If[!GroupQ[group], ReturnFailed["badfield", canonicalName, "Group", "group"]];
 
-  representation = QuiverRepresentation[quiver, group];
-  If[!QuiverRepresentationObjectQ[representation],
+  representation = PathRepresentation[quiver, group];
+  If[!PathRepresentationObjectQ[representation],
     ReturnFailed["badrep", canonicalName]];
 
   fields["Representation"] = representation;

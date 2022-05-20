@@ -81,7 +81,7 @@ Only vertices returning True will be retained.
 | None | no legend |
 | Automatic | legend for cardinals |
 | 'Quiver' | label with the generating quiver |
-| 'QuiverRepresentation' | label with the generating quiver representation |
+| 'PathRepresentation' | label with the generating quiver representation |
 
 ## Vertex data
 
@@ -116,7 +116,7 @@ $baseGenerateLatticeOptions = JoinOptions[
   $simpleGraphOptionRules
 ];
 
-General::notquivrep = "First argument should be a QuiverRepresentationObject, or a quiver with canonically named cardinals.";
+General::notquivrep = "First argument should be a PathRepresentationObject, or a quiver with canonically named cardinals.";
 General::badvcoords = "VertexCoordinateFunction did not return vectors of consistent dimensions. The first vector was ``, produced from ``.";
 General::badlatticename = "The specified name `` is not a known name for a lattice. Known names are: ``."
 General::badlatticedepth = "The specified depth `` is not a positive integer."
@@ -147,17 +147,17 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
       Return @ iGenerateLattice[head, {latticeName}, directedEdges, opts]];
 
     representation = LatticeQuiverData[latticeName, "Representation"];
-    If[!QuiverRepresentationObjectQ[representation],
+    If[!PathRepresentationObjectQ[representation],
       ReturnFailed[head::badlatticename, latticeName, commaString @ $LatticeNames]];
   ];
 
   If[RuleQ[representation],
-    representation = QuiverRepresentation @@ representation;
+    representation = PathRepresentation @@ representation;
     If[FailureQ[representation], ReturnFailed[]];
   ];
 
   If[QuiverQ[representation],
-    representation = Quiet @ QuiverRepresentation[representation]];
+    representation = Quiet @ PathRepresentation[representation]];
 
   If[GroupoidObjectQ[representation],
     representation = AssociationMap[representation, {"CayleyFunction", "InitialStates"}];
@@ -172,7 +172,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     trueCardinalList = Union[StripInverted /@ DeepCases[cayleyFunction, Labeled[_, c_ ? notInternalSymbolQ] :> c]];
     If[trueCardinalList === {}, trueCardinalList = Automatic];
   ,
-    If[!QuiverRepresentationObjectQ[representation],
+    If[!PathRepresentationObjectQ[representation],
       ReturnFailed[head::notquivrep]];
 
     cayleyFunction = quiverStateToLatticeVertex @ representation["CayleyFunction", "Symmetric" -> True, "Labeled" -> True];
@@ -372,7 +372,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   If[cardinals =!= Automatic,
     If[Length[cardinals] =!= Length[trueCardinalList],
       ReturnFailed[head::badcardlist, cardinals, trueCardinalList]];
-    If[QuiverRepresentationObjectQ @ representation,
+    If[PathRepresentationObjectQ @ representation,
       representation = RenameCardinals[representation, cardinals];
       quiver = representation["Quiver"];
     ]];
@@ -435,8 +435,8 @@ makeQLatticeGraphLegend = Case[
   "Quiver" :=
     $quiverLabel;
 
-  "QuiverRepresentation" :=
-    Row[{Spacer[30], QuiverRepresentationPlot @ $representation}];
+  "PathRepresentation" :=
+    Row[{Spacer[30], PathRepresentationPlot @ $representation}];
 
   Placed[spec_, place_] :=
     Placed[% @ spec, place];
@@ -510,7 +510,7 @@ iGenerateLattice[head_, {latticeName_String, args___}, directedEdges_, opts:Opti
 
 (**************************************************************************************************)
 
-quiverStateToLatticeVertex[e_] := e /. QuiverElement[a_, b_] :> LatticeVertex[b, a];
+quiverStateToLatticeVertex[e_] := e /. PathValue[a_, b_] :> LatticeVertex[b, a];
 
 (**************************************************************************************************)
 
@@ -670,7 +670,7 @@ LatticeQuiverData['class$'] returns a list of names that fall into a particular 
 LatticeQuiverData[] returns a list of the names of all known lattices.
 * The following properties are present:
 | 'Names' | the full list of names of the lattice |
-| 'Representation' | the QuiverRepresentation[$$] object that generates the lattice |
+| 'Representation' | the PathRepresentation[$$] object that generates the lattice |
 | 'Dimension' | the dimension of its natural coordinitization |
 * The following classes are supported:
 | '2D' | lattices whose dimension is 2 |

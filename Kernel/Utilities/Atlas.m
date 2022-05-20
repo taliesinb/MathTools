@@ -79,7 +79,7 @@ PackageExport["CardinalTransitionRepresentation"]
 CardinalTransitionRepresentation[atlas_Graph] := Scope[
   matrices = CardinalTransitionMatrices[atlas];
   If[FailureQ @ matrices, ReturnFailed[]];
-  QuiverRepresentation[
+  PathRepresentation[
     atlas,
     matrices
   ]

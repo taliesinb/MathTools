@@ -1,24 +1,25 @@
-PackageExport["QuiverRepresentation"]
+PackageExport["PathRepresentation"]
 
 SetUsage @ "
-QuiverRepresentation[quiver$, cardinals$ -> representation$] attachs a representation to a quiver, returning \
-a QuiverRepresentationObject.
+PathRepresentation[fquiver$, cardinals$ -> representation$, initialVertex$] attachs a path representation to a \
+fundamental quiver, returning a PathRepresentationObject.
 * The list cardinals$ is matched with the generators of representation$ in order.
 * The list cardinals$ can also be given as a single string whose letters are the cardinals.
 * If no cardinals are provided, the cardinals present in quiver$ will be used, in sorted order.
-QuiverRepresentation[quiver$] chooses a representation based on the names of the cardinals in quiver$.
+PathRepresentation[quiver$] chooses a representation based on the names of the cardinals in quiver$.
 * For cardinals {'x', 'y'} or {'x', 'y', 'z'}, a representation of InfiniteAbelianGroup is used.
 * For cardinals {'a', 'b', 'c'}, {'a', 'b', 'c', 'd'}, a redundant representation of an InfiniteAbelianGroup is used.
+* initialVertex$ should be a vertex of quiver$, or Automatic to choose the first one.
 "
 
-DeclareArgumentCount[QuiverRepresentation, {1, 2}];
+DeclareArgumentCount[PathRepresentation, {1, 3}];
 
-declareSyntaxInfo[QuiverRepresentation, {_, _.}];
+declareSyntaxInfo[PathRepresentation, {_, _., _.}];
 
-QuiverRepresentation::noautorep =
+PathRepresentation::noautorep =
   "No automatic representation is defined for the cardinal set ``.";
 
-QuiverRepresentation::gencount =
+PathRepresentation::gencount =
   "The number of generators in the representation (``) did not match the number of cardinals in the graph (``).";
 
 $namedRep = "Abelian" | "Dihedral" | "Redundant" | "RedundantDihedral";
@@ -44,10 +45,10 @@ chooseAutoRepresentation[cardinalList_] :=
       {"w", "x", "y", "z"}, InfiniteAbelianGroup[4],
       {"a", "b", "c"}, InfiniteAbelianGroup[3, "Redundant"],
       {"a", "b", "c", "d"}, InfiniteAbelianGroup[4, "Redundant"],
-      _, Message[QuiverRepresentation::noautorep, cardinalList]; Return[$Failed, Block]
+      _, Message[PathRepresentation::noautorep, cardinalList]; Return[$Failed, Block]
   ];
 
-QuiverRepresentation[quiver_, representation_:Automatic] := Scope[
+PathRepresentation[quiver_, representation_:Automatic, initialVertex_:Automatic] := Scope[
   quiver = CoerceToQuiver[1];
   {cardinalListSpec, representation} = parseRepresentationSpec[representation];
   cardinalList = DeleteNone[cardinalListSpec];
@@ -62,40 +63,42 @@ QuiverRepresentation[quiver_, representation_:Automatic] := Scope[
   If[Length[cardinalList] =!= Length[generatorList],
     ReturnFailed["gencount", Length[generatorList], Length[cardinalList]]];
   generators = AssociationThread[cardinalList, generatorList];
+  SetAutomatic[initialVertex, Part[VertexList[quiver], 1]];
   assoc = Association[
     "Quiver" -> quiver,
     "Cardinals" -> cardinalList,
     "Generators" -> generators,
-    "Representation" -> representation
+    "Representation" -> representation,
+    "InitialVertex" -> initialVertex
   ];
-  constructQuiverRepresentationObject[assoc]
+  constructPathRepresentationObject[assoc]
 ];
 
-constructQuiverRepresentationObject[assoc_] :=
-  System`Private`ConstructNoEntry[QuiverRepresentationObject, assoc];
+constructPathRepresentationObject[assoc_] :=
+  System`Private`ConstructNoEntry[PathRepresentationObject, assoc];
 
 Format[RepresentationObject[matrix_?MatrixQ], StandardForm] :=
   renderRepresentationMatrix[matrix];
 
 (**************************************************************************************************)
 
-PackageExport["QuiverRepresentationPlot"]
+PackageExport["PathRepresentationPlot"]
 
-DeclareArgumentCount[QuiverRepresentationPlot, 1];
+DeclareArgumentCount[PathRepresentationPlot, 1];
 
-Options[QuiverRepresentationPlot] = JoinOptions[
+Options[PathRepresentationPlot] = JoinOptions[
   Transposed -> False,
   Quiver
 ];
 
-QuiverRepresentationPlot[qrep_, opts:OptionsPattern[]] := Scope[
+PathRepresentationPlot[qrep_, opts:OptionsPattern[]] := Scope[
 
   UnpackOptions[plotLabel, transposed];
   If[StringQ[qrep],
     SetAutomatic[plotLabel, ToTitleString[qrep]];
     qrep = LatticeQuiverData[qrep, "Representation"]];
 
-  If[!QuiverRepresentationObjectQ[qrep], ReturnFailed[]];
+  If[!PathRepresentationObjectQ[qrep], ReturnFailed[]];
 
   quiver = qrep["Quiver"];
   quiverPlot = Quiver[quiver,
@@ -122,13 +125,13 @@ makeLabeledGenerators[generators_, cardinalColors_] :=
 
 (**************************************************************************************************)
 
-PackageExport["QuiverRepresentationObject"]
+PackageExport["PathRepresentationObject"]
 
 SetUsage @ "
-QuiverRepresentationObject[$$] represents a Quiver with an associated representation.
+PathRepresentationObject[$$] represents a Quiver with an associated representation.
 "
 
-QuiverRepresentationObject /: MakeBoxes[object:QuiverRepresentationObject[data_Association] ? System`Private`HoldNoEntryQ, format_] := ModuleScope[
+PathRepresentationObject /: MakeBoxes[object:PathRepresentationObject[data_Association] ? System`Private`HoldNoEntryQ, format_] := ModuleScope[
   UnpackAssociation[data, quiver, generators, representation];
   dimension = representation["Dimension"];
   group = representation["Group"];
@@ -140,7 +143,7 @@ QuiverRepresentationObject /: MakeBoxes[object:QuiverRepresentationObject[data_A
   order = representation["GroupOrder"];
   labeledGenerators = makeLabeledGenerators[generators, cardinalColors];
   BoxForm`ArrangeSummaryBox[
-    QuiverRepresentationObject, object, icon,
+    PathRepresentationObject, object, icon,
     (* Always displayed *)
     {
      {summaryItem["Group", group], summaryItem["Cardinals", Row[coloredCardinals, ","]]},
@@ -157,35 +160,35 @@ QuiverRepresentationObject /: MakeBoxes[object:QuiverRepresentationObject[data_A
 ];
 
 
-declareObjectPropertyDispatch[QuiverRepresentationObject, quiverRepresentationProperty];
+declareObjectPropertyDispatch[PathRepresentationObject, pathRepresentationProperty];
 
-quiverRepresentationProperty[data_, "Identity"] := QuiverElement[
-  Part[VertexList[data["Quiver"]], 1],
+pathRepresentationProperty[data_, "Identity"] := PathValue[
+  data["InitialVertex"],
   data["Representation"]["Identity"]
 ];
 
-quiverRepresentationProperty[data_, "AllIdentities"] := Scope[
+pathRepresentationProperty[data_, "AllIdentities"] := Scope[
   idRep = data["Representation"]["Identity"];
   Map[
-    QuiverElement[idRep, #]&,
+    PathValue[idRep, #]&,
     VertexList @ data["Quiver"]
   ]
 ];
 
-quiverRepresentationProperty[data_, "CayleyFunction", opts___Rule] :=
+pathRepresentationProperty[data_, "CayleyFunction", opts___Rule] :=
   computeCayleyFunction[data, opts];
 
 makeQuiverElementRule[inVertex_, outVertex_, gen_, cardinal_] :=
-  QuiverElement[inVertex, \[FormalR] : _] :> Labeled[QuiverElement[outVertex, gen[\[FormalR]]], cardinal];
+  PathValue[inVertex, \[FormalR] : _] :> Labeled[PathValue[outVertex, gen[\[FormalR]]], cardinal];
 
 Options[computeCayleyFunction] = {"Symmetric" -> True, "Labeled" -> True};
 
 (**************************************************************************************************)
 
-RenameCardinals[qrep_QuiverRepresentationObject, renaming_List] :=
+RenameCardinals[qrep_PathRepresentationObject, renaming_List] :=
   RenameCardinals[qrep, RuleThread[qrep["Cardinals"], renaming]];
 
-RenameCardinals[QuiverRepresentationObject[data_Association], renaming:{__Rule}] := Scope[
+RenameCardinals[PathRepresentationObject[data_Association], renaming:{__Rule}] := Scope[
   UnpackAssociation[data, quiver, cardinals, generators, representation];
 
   quiver = RenameCardinals[quiver, renaming];
@@ -199,15 +202,15 @@ RenameCardinals[QuiverRepresentationObject[data_Association], renaming:{__Rule}]
     "Representation" -> representation
   ];
 
-  constructQuiverRepresentationObject[assoc]
+  constructPathRepresentationObject[assoc]
 ];
 
 (**************************************************************************************************)
 
-PackageExport["QuiverElement"]
+PackageExport["PathValue"]
 
 SetUsage @ "
-QuiverElement[v$, state$] represents a quiver vertex v$ with associated state state$.
+PathValue[v$, state$] represents a quiver vertex v$ with associated state state$.
 "
 
 computeCayleyFunction[data_, OptionsPattern[]] := Scope[
@@ -233,14 +236,14 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["QuiverRepresentationObjectQ"]
+PackageExport["PathRepresentationObjectQ"]
 
 SetUsage @ "
-QuiverRepresentationObjectQ[obj$] returns True if obj$ is a valid QuiverRepresentationObject.
+PathRepresentationObjectQ[obj$] returns True if obj$ is a valid PathRepresentationObject.
 "
 
-QuiverRepresentationObjectQ[_QuiverRepresentationObject ? System`Private`HoldNoEntryQ] := True;
-QuiverRepresentationObjectQ[_] := False;
+PathRepresentationObjectQ[_PathRepresentationObject ? System`Private`HoldNoEntryQ] := True;
+PathRepresentationObjectQ[_] := False;
 
 
 

@@ -371,7 +371,7 @@ LatticeQuiverCoordinates[quiver_Graph, "Triangular"] :=
 
 LatticeQuiverCoordinates[quiver_Graph, name_String] := Scope[
   rep = LatticeQuiverData[name, "Representation"];
-  If[!QuiverRepresentationObjectQ[rep], ReturnFailed[]];
+  If[!PathRepresentationObjectQ[rep], ReturnFailed[]];
   vectors = ExtractTranslationVector[Normal[#]]& /@ Values[rep["Generators"]];
   If[!CoordinateMatrixQ[vectors], ReturnFailed[]];
   LatticeQuiverCoordinates[quiver, vectors]

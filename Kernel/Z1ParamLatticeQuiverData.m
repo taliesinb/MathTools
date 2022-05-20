@@ -178,7 +178,7 @@ DefineParameterizedLatticeQuiver["SquareTorus", squareTorusFactory, $torusParame
 
 squareTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
   If[h === None, h = w; w = Infinity];
-  rep = QuiverRepresentation[
+  rep = PathRepresentation[
     BouquetQuiver["xy"],
     TranslationGroup[{{1, 0}, {t/h, 1}}, {w, h}]
   ];
@@ -209,7 +209,7 @@ makeABCTorusRepresentation[w_, h_, t_] := Scope[
 
 triangularTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
   If[h === None, h = w; w = Infinity];
-  rep = QuiverRepresentation[
+  rep = PathRepresentation[
     BouquetQuiver["abc"],
     makeABCTorusRepresentation[w, h, t]
   ];
@@ -223,9 +223,10 @@ DefineParameterizedLatticeQuiver["HexagonalTorus", hexagonalTorusFactory, $torus
 
 hexagonalTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
   If[h === None, h = w; w = Infinity];
-  rep = QuiverRepresentation[
+  rep = PathRepresentation[
     Quiver @ Labeled[1 -> 2, "a" | "b" | "c"],
-    makeABCTorusRepresentation[w, h, t]
+    makeABCTorusRepresentation[w, h, t],
+    2 (* for backward compatibility with old content *)
   ];
   opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
   (* opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts; *)
@@ -238,9 +239,10 @@ DefineParameterizedLatticeQuiver["TrihexagonalTorus", trihexagonalTorusFactory, 
 
 trihexagonalTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
   If[h === None, h = w; w = Infinity];
-  rep = QuiverRepresentation[
+  rep = PathRepresentation[
     Quiver[<|"B" -> {1 -> 2, 2 -> 1}, "C" -> {2 -> 3, 3 -> 2}, "A" -> {3 -> 1, 1 -> 3}|>],
-    makeABCTorusRepresentation[w, h, t]
+    makeABCTorusRepresentation[w, h, t],
+    2 (* for backward compatibility with old content *)
   ];
   opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
   opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts;
@@ -272,9 +274,10 @@ DefineParameterizedLatticeQuiver["RhombilleTorus", rhombilleTorusFactory, $torus
 
 rhombilleTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, userOpts_] := Scope[
   If[h === None, h = w; w = Infinity];
-  rep = QuiverRepresentation[
+  rep = PathRepresentation[
     Quiver @ Labeled[{1 -> 2, 2 -> 3}, "a" | "b" | "c"],
-    makeABCTorusRepresentation[w, h, t]
+    makeABCTorusRepresentation[w, h, t],
+    2 (* for backward compatibility with old content *)
   ];
   opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
   opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts;

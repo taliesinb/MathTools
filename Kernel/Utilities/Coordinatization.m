@@ -2,7 +2,7 @@ PackageExport["FindCoordinatizationFunction"]
 
 Options[FindCoordinatizationFunction] = {"Group" -> None, Modulus -> None};
 
-FindCoordinatizationFunction[qr_QuiverRepresentationObject] :=
+FindCoordinatizationFunction[qr_PathRepresentationObject] :=
   FindCoordinatizationFunction[qr["Representation"]];
 
 FindCoordinatizationFunction[rep_RepresentationObject, opts:OptionsPattern[]] := Scope[

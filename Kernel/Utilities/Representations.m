@@ -124,7 +124,7 @@ DeclareArgumentCount[CayleyFunction, 1];
 CayleyFunction[object_, OptionsPattern[]] := Scope[
   UnpackOptions[labeled, symmetric];
   rep = Which[
-    QuiverRepresentationObjectQ[object], object,
+    PathRepresentationObjectQ[object], object,
     RepresentationObject[object], object,
     GroupQ[object], GroupRepresentation[object],
     RootSystemQ[object], object,
@@ -226,14 +226,14 @@ PackageExport["ToRepresentation"]
 SetUsage @ "
 ToRepresentation[obj$] attempts to convert obj$ to a %RepresentationObject.
 * If obj$ is already a %RepresentationObject, it is returned unchanged.
-* If obj$ is a group or %QuiverRepresentation, its base representation is returned.
+* If obj$ is a group or %PathRepresentation, its base representation is returned.
 * If obj$ is a %RootSystem, its %TranslationGroup representation is returned.
 * Otherwise, $Failed is returned.
 "
 
 ToRepresentation = MatchValues[
   r_RepresentationObject ? System`Private`HoldNoEntryQ := r;
-  cq_QuiverRepresentationObject ? System`Private`HoldNoEntryQ := cq["Representation"];
+  cq_PathRepresentationObject ? System`Private`HoldNoEntryQ := cq["Representation"];
   rs_RootSystemObject ? System`Private`HoldNoEntryQ := GroupRepresentation @ TranslationGroup @ rs;
   g_ ? GroupQ := GroupRepresentation @ g;
   _ := $Failed;
@@ -295,7 +295,7 @@ PackageExport["RepresentationGenerators"]
 
 SetUsage @ "
 RepresentationGenerators[obj$] returns a list of RepresentationElement objects \
-for the generators of a group, RepresentationObject, or QuiverRepresentationObject.
+for the generators of a group, RepresentationObject, or PathRepresentationObject.
 "
 
 DeclareArgumentCount[RepresentationGenerators, 1];
