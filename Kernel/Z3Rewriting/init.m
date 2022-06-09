@@ -2,16 +2,24 @@ PackageExport["RewritingSystemObject"]
 
 declareObjectPropertyDispatch[RewritingSystemObject, rewritingSystemProperty];
 
-PackageScope["constructRewritingSystsem"]
+PackageScope["constructRewritingSystem"]
 PackageScope["declareRewritingSystemDispatch"]
 PackageScope["rewritingSystemProperty"]
 
-constructRewritingSystsem[type_, rules_] := Scope[
+PackageExport["CanonicalizationFunction"]
+
+Options[RewritingSystemObject] = {
+  CanonicalizationFunction -> None
+};
+
+constructRewritingSystem[type_, rules_, opts:OptionsPattern[RewritingSystemObject]] := Scope[
   rules //= ToList;
-  If[!RuleListQ[rules], ReturnFailed[]];
+  If[!RuleListQ[rules /. TwoWayRule -> Rule], ReturnFailed[]];
+  UnpackOptions[canonicalizationFunction];
   assoc = Association[
     "Type" -> type,
-    "Rules" -> rules
+    "Rules" -> rules,
+    "CanonicalizationFunction" -> canonicalizationFunction
   ];
   System`Private`ConstructNoEntry[RewritingSystemObject, assoc]
 ];
@@ -65,6 +73,12 @@ PackageExport["RewriteGraph"]
 
 Options[RewriteQuiver] = Options[RewriteGraph] = Options[LatticeQuiver];
 
+applyCanonicalizationFunction[f_][list_] :=
+  DeleteDuplicatesBy[Map[applyCanon1[f], list], stripLabel];
+
+applyCanon1[f_][Labeled[e_, l_]] := Labeled[f[e], l];
+stripLabel[Labeled[e_, _]] := e;
+
 RewriteQuiver[system_RewritingSystemObject, initialState_, args___] :=
   rewriteGraphQuiver[system, initialState, True, args];
 
@@ -73,6 +87,11 @@ RewriteGraph[system_RewritingSystemObject, initialState_, args___] :=
 
 rewriteGraphQuiver[system_, initialState_, isQuiver_, args___] := Scope[
   cayleyFunction = system["CayleyFunction", "Labeled" -> True (* isQuiver *)];
+  canonFunction = system["CanonicalizationFunction"];
+  If[canonFunction =!= None,
+    cayleyFunction = cayleyFunction /* applyCanonicalizationFunction[canonFunction];
+    initialState //= canonFunction
+  ];
   result = LatticeQuiver[
     <|"CayleyFunction" -> cayleyFunction, "InitialStates" -> {initialState}|>, args,
     GraphTheme -> If[isQuiver, "RewriteQuiver", "RewriteGraph"],

@@ -178,7 +178,8 @@ RenameCardinals[graph_Graph, renaming_List] :=
 RenameCardinals[graph_Graph, renaming:{__Rule}] := Scope[
   {vertices, edges} = VertexEdgeList @ graph;
   replacer = ReplaceAll @ Dispatch @ renaming;
-  edges = MapAt[replacer, edges, {All, 3}];
+  edges = MapAt[replacer, edges, {All, 3}] /. DirectedEdge[a_, b_, Inverted[c_]] :> DirectedEdge[b, a, c];
+  replacer = ReplaceAll @ Dispatch @ (renaming /. Inverted -> Identity);
   opts = DeleteOptions[AnnotationRules] @ Options @ graph;
   annos = Replace[
     ExtendedGraphAnnotations @ graph,

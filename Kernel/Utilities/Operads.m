@@ -3,7 +3,7 @@
 PackageExport["FunctionTreeGraph"]
 
 FunctionTreeGraph[e_, rules:OptionsPattern[]] :=
-  makeTreeGraph[e, scanFunction, rules];
+  makeTreeGraph[e, scanFunction, "ExpressionTreeGraph", rules];
 
 scanFunction = Case[
   HoldPattern[Function[vars_List, body_]] := Scope[$slotSymbols = vars; scanToTree[{}, body]];
@@ -17,25 +17,26 @@ scanFunction = Case[
 PackageExport["ExpressionTreeGraph"]
 
 ExpressionTreeGraph[e_, rules:OptionsPattern[]] :=
-  makeTreeGraph[e, scanExpression, rules];
+  makeTreeGraph[e, scanExpression, "ExpressionTreeGraph", rules];
 
 scanExpression[e_] := scanToTree[{}, e];
 
 (**************************************************************************************************)
 
-makeTreeGraph[e_, scanFn_, rules___] := Scope[
-  $type = $degree = $data = Association[];
+makeTreeGraph[e_, scanFn_, theme_, rules___] := Scope[
+  $type = $degree = $data = $leafData = Association[];
   $edges = Internal`Bag[]; $verts = Internal`Bag[]; $slotSymbols = {};
   scanFn @ e;
   verts = Internal`BagPart[$verts, All];
   edges = Internal`BagPart[$edges, All];
   ExtendedGraph[
     verts, edges,
+    FilterOptions[rules],
     VertexAnnotations -> Map[
       Lookup[#, verts, None]&,
-      <|"Type" -> $type, "Degree" -> $degree, "Data" -> $data|>
+      <|"Type" -> $type, "Degree" -> $degree, "Data" -> $data, "LeafData" -> $leafData|>
     ],
-    GraphTheme -> "ExpressionTreeGraph"
+    GraphTheme -> theme
   ]
 ];
 
@@ -45,11 +46,12 @@ SetAttributes[{scanToTree}, HoldRest];
 
 scanToTree[pos_, HoldForm[e_]] := scanToTree[pos, e];
 
-scanToTree[pos_, e:(head_Symbol[___])] := Scope[
+scanToTree[pos_, e:(head_Symbol[___])] /; head =!= Form := Scope[
   n = Length[Unevaluated @ e];
   Internal`StuffBag[$verts, pos];
   $degree[pos] ^= n;
   $data[pos] ^= head;
+  $leafData[pos] ^= Null;
   $type[pos] ^= "Node";
   Do[
     scanToTree[
@@ -70,9 +72,11 @@ scanToTree[pos_, Slot[n_Integer | n_String]] := Scope[
 ];
 
 scanToTree[pos_, e_] := Scope[
+  If[Head[e] === Form, e //= First];
   Internal`StuffBag[$verts, pos];
   $degree[pos] ^= 0;
   $data[pos] ^= e;
+  $leafData[pos] ^= e;
   $type[pos] = "Leaf";
 ];
 
@@ -91,6 +95,7 @@ $ExpressionTreeGraphThemeData = {
     Orientation -> Top, Balanced -> False, RootVertex -> {}, RootOrientation -> "Sink", BendStyle -> "HalfCenter",
     PreserveBranchOrder -> True],
   ImagePadding -> {Vertical -> 15, Horizontal -> 30},
+  EdgeStyle -> $LightGray, (* makes HalfCenter bending look good *)
   ImageSize -> "ShortestEdge" -> 50,
   BaselinePosition -> Top,
   VertexShapeFunction -> ExpressionTreeGraphVertexShape,
@@ -109,6 +114,31 @@ ExpressionTreeGraphVertexShape[assoc_] := Scope[
   ];
   Text[Framed[Style[annotations["Data"], 12, FontColor -> Black], Background -> color, FrameStyle -> Darker[color]], coordinates]
 ];
+
+$GraphThemeData["ExpressionTreeGraph"] := $ExpressionTreeGraphThemeData;
+
+(**************************************************************************************************)
+
+PackageExport["NestedListGraph"]
+
+NestedListGraph[e_, rules:OptionsPattern[]] := Scope[
+  makeTreeGraph[e, scanExpression, "NestedListGraph", rules]
+];
+
+$GraphThemeData["NestedListGraph"] := $NestedListGraphThemeData;
+
+$NestedListGraphThemeData = {
+  VertexLayout -> TreeVertexLayout[
+    Orientation -> Top, Balanced -> False, RootVertex -> {}, RootOrientation -> "Sink", BendStyle -> "Top",
+    StretchFactor -> 0.75, BendRadius -> 1,
+    PreserveBranchOrder -> True],
+  EdgeStyle -> $LightGray, (* makes HalfCenter bending look good *)
+  ImageSize -> "ShortestEdge" -> 20,
+  VertexSize -> 5,
+  BaselinePosition -> Top,
+  VertexColorFunction -> "LeafData",
+  ArrowheadShape -> None
+};
 
 (**************************************************************************************************)
 

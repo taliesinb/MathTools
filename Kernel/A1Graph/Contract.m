@@ -7,41 +7,47 @@ GraphContract[graph$, <|key$1 -> {v$11, v$12, $$}, {v$21, v$22, $$}, $$|>] contr
 ContractedVertex[{v$i1, v$i2, $$}, key$].
 "
 
-GraphContract[g_, {} | <||>] := g;
+GraphContract[g_, {} | <||>, ___] := g;
 
-GraphContract[g_, contraction_List] :=
+GraphContract[g_, contraction_, opts:OptionsPattern[]] :=
+  GraphContract[g, contraction, ContractedVertex, opts];
+
+GraphContract[g_, contraction_List, opts:OptionsPattern[]] :=
   VertexReplace[
     VertexContract[g, vertices],
     Map[
       vertices |-> First[vertices] -> ContractedVertex[vertices],
       toListOfLists @ contraction
     ]
-  ];
+  ] // egraph[opts];
 
-GraphContract[g_, contraction_Association] :=
+GraphContract[g_, contraction_Association, fn:Except[_Rule], opts:OptionsPattern[]] :=
   VertexReplace[
-    VertexContract[g, Values @ vertices],
+    VertexContract[g, Values @ contraction],
     KeyValueMap[
-      {key, vertices} |-> First[vertices] -> ContractedVertex[vertices, key],
+      {key, vertices} |-> First[vertices] -> fn[vertices, key],
       contraction
     ]
-  ];
+  ] // egraph[opts];
+
 
 (**************************************************************************************************)
 
 PackageExport["GraphContractBy"]
 
-Options[GraphContractBy] = {
-  VertexLabels -> Automatic
-};
+GraphContractBy[graph_Graph, func_, opts:OptionsPattern[]] :=
+  GraphContractBy[graph, func, ContractedVertex, opts];
 
-GraphContractBy[graph_Graph, func_] :=
-  GraphContract[graph,
-    If[OptionValue[VertexLabels] === Automatic,
-      GroupBy[VertexList[graph], func],
-      GatherBy[VertexList[graph], func]
-    ]
-  ];
+GraphContractBy[graph_Graph, func_, nameFn_, opts:OptionsPattern[]] := Switch[
+  nameFn,
+  "Key",          GraphContract[graph,  GroupBy[VertexList @ graph, func], #2&],
+  "FirstVertex",  VertexContract[graph, GatherBy[VertexList @ graph, func]],
+  "Vertices",     GraphContract[graph,  GatherBy[VertexList @ graph, func]],
+  _,              GraphContract[graph,  GroupBy[VertexList @ graph, func], nameFn]
+] // egraph[opts];
+
+egraph[] := Identity;
+egraph[opts__][g_] := ExtendedGraph[g, opts];
 
 (**************************************************************************************************)
 

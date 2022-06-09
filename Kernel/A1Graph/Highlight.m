@@ -130,7 +130,7 @@ echoGraphic[g_] := (Echo[Graphics[g, ImageSize -> {200, 200}]]; g);
 processOuterSpec = MatchValues[
   spec_ ? ListOrAssociationQ := Block[
     {$i = 1, $highlightStyle = $highlightStyle},
-    MapIndexed[processIndexedStyleSpec[#1, First @ #2, $i++]&, spec];
+    MapIndex1[processIndexedStyleSpec[#1, #2, $i++]&, spec];
   ];
   s_Style :=
     (* this applies styles before iterating over a list or associations *)

@@ -1,3 +1,46 @@
+PackageExport["VectorReflect"]
+
+SetUsage @ "
+VectorReflect[v$, rv$] reflects the vector v$ in the hyperplane perpendicular to rv$.
+"
+
+VectorReflect[v_, rv_] := Expand[v - (2 * Dot[rv, v] / Dot[rv, rv]) * rv];
+VectorReflect[v_, rv_ ? System`Private`ValidQ] := Expand[v - (2 * Dot[rv, v]) * rv];
+VectorReflect[rv_][v_] := VectorReflect[v, rv];
+
+(**************************************************************************************************)
+
+PackageExport["VectorRotate120"]
+PackageExport["VectorRotate90"]
+PackageExport["VectorRotate45"]
+
+VectorRotate120[vector_] := Dot[{{-(1/2), -(Sqrt[3]/2)}, {Sqrt[3]/2, -(1/2)}}, vector];
+VectorRotate120[matrix_ ? MatrixQ] := Map[VectorRotate120, matrix];
+
+VectorRotate90[vector_] := Dot[{{0, -1}, {1, 0}}, vector];
+VectorRotate90[matrix_ ? MatrixQ] := Map[VectorRotate90, matrix];
+
+VectorRotate45[vector_] := Dot[{{1/Sqrt[2], -(1/Sqrt[2])}, {1/Sqrt[2], 1/Sqrt[2]}}, vector];
+VectorRotate45[matrix_ ? MatrixQ] := Map[VectorRotate45, matrix];
+
+(**************************************************************************************************)
+
+PackageExport["VectorReject"]
+
+VectorReject[u_ ? MatrixQ, v_ ? MatrixQ] := MapThread[VectorReject, {u, v}];
+VectorReject[u_ ? MatrixQ, v_ ? VectorQ] := Map[VectorReject[u, #]&, v];
+VectorReject[u_, v_] := u - Projection[u, v];
+
+(**************************************************************************************************)
+
+PackageExport["VectorProject"]
+
+VectorProject[u_ ? MatrixQ, v_ ? MatrixQ] := MapThread[VectorProject, {u, v}];
+VectorProject[u_ ? MatrixQ, v_ ? VectorQ] := Map[VectorProject[u, #]&, v];
+VectorProject[u_, v_] := Projection[u, v];
+
+(**************************************************************************************************)
+
 PackageExport["SetbackCoordinates"]
 
 SetbackCoordinates[spec_, 0|0.] :=
@@ -70,9 +113,6 @@ PackageExport["EdgeLengthScale"]
 boundingBoxSideLength[line_] :=
   Total[EuclideanDistance @@@ CoordinateBounds @ line];
 
-(* boundingBoxSideLength[line_] :=
-  EuclideanDistance @@ CoordinateBoundingBox @ line;
- *)
 adjustedLineLength[line_] :=
   If[First[line] === Last[line], 0.8, 1] * Min[LineLength @ line, boundingBoxSideLength @ line];
 

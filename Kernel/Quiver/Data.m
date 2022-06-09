@@ -61,11 +61,17 @@ TagIndices[graph_] := Scope[
   $tagAssoc
 ];
 
+TagIndices[graph_, Signed -> isSigned_] := Scope[
+  $isTISigned = isSigned; TagIndices @ graph
+];
+
+$isTISigned = False;
+
 processTagEntry[tag_, {part_}] :=
   KeyAppendTo[$tagAssoc, tag, part];
 
 processTagEntry[CardinalSet[tags_], {part_}] :=
-  Scan[KeyAppendTo[$tagAssoc, StripInverted @ #1, part]&, tags];
+  Scan[KeyAppendTo[$tagAssoc, If[$isTISigned, Identity, StripInverted] @ #1, part]&, tags];
 
 (**************************************************************************************************)
 
@@ -177,7 +183,7 @@ TagVertexAdjacentEdgeTable[graph_, invalid_, OptionsPattern[]] := Scope[
       key ->          Map[First[Intersection[#, edgeIndices], invalid]&, outTable],
       Inverted[key] -> negator @ Map[First[Intersection[#, edgeIndices], invalid]&, inTable]
     },
-    TagIndices @ graph
+    TagIndices[graph, Signed -> True]
   ]
 ];
 

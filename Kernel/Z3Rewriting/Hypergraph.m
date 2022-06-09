@@ -3,7 +3,7 @@
 PackageExport["DirectedHypergraphRewritingSystem"]
 
 DirectedHypergraphRewritingSystem[rules_] := Scope[
-  constructRewritingSystsem["DirectedHypergraph", rules]
+  constructRewritingSystem["DirectedHypergraph", rules]
 ]
 
 declareRewritingSystemDispatch["DirectedHypergraph", directedHypergraphRewritingSystemProperty]
@@ -22,7 +22,7 @@ directedHypergraphRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] 
 PackageExport["DirectedUniHypergraphRewritingSystem"]
 
 DirectedUniHypergraphRewritingSystem[rules_] := Scope[
-  constructRewritingSystsem["DirectedUniHypergraph", rules]
+  constructRewritingSystem["DirectedUniHypergraph", rules]
 ]
 
 declareRewritingSystemDispatch["DirectedUniHypergraph", directedUniHypergraphRewritingSystemProperty]

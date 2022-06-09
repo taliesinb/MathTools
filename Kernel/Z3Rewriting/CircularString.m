@@ -3,7 +3,7 @@
 PackageExport["CircularStringRewritingSystem"]
 
 CircularStringRewritingSystem[rules_] := Scope[
-  constructRewritingSystsem["CircularString", rules]
+  constructRewritingSystem["CircularString", rules]
 ]
 
 declareRewritingSystemDispatch["CircularString", circularStringRewritingSystemProperty]

@@ -253,7 +253,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   (* do the exploration *)
-  {vertexList, indexEdgeList, reason} = CachedMultiwaySystem[
+  {vertexList, indexEdgeList, reason} = MultiwaySystem[
     cayleyFunction, initialStates,
     {"VertexList", "IndexEdgeList", "TerminationReason"},
     DirectedEdges -> True, MaxDepth -> maxDepth, IncludeFrontier -> includeFrontier,
@@ -404,7 +404,8 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
     If[FailureQ[graph], ReturnFailed[head::badgconst]];
   ,
     imageSize //= toStandardImageSize;
-    graph = Quiver[finalVertexList, edgeList,
+    graph = ExtendedGraph[
+      finalVertexList, edgeList,
       GraphLegend -> graphLegend,
       GraphOrigin -> ivertex, Cardinals -> trueCardinalList,
       Sequence @@ simpleOptions, BaselinePosition -> Center,
@@ -435,11 +436,17 @@ makeQLatticeGraphLegend = Case[
   "Quiver" :=
     $quiverLabel;
 
+  "Cardinals" :=
+    "Cardinals";
+
   "PathRepresentation" :=
     Row[{Spacer[30], PathRepresentationPlot @ $representation}];
 
   Placed[spec_, place_] :=
     Placed[% @ spec, place];
+
+  Labeled[spec_, rest__] :=
+    Labeled[% @ spec, rest];
 
   Automatic :=
     Automatic;
@@ -519,7 +526,7 @@ procComplexVCF[assoc_] :=
     $Total @ KeyValueMap[{i, vec} |-> toVCFEntry[Slot[i], vec], assoc]
   ] /. $Total -> Total;
 
-toVCFEntry[s_, vecs_List ? MatrixQ] := toVCFEntry[s, Association @ MapIndexed[First[#2] -> #1&, vecs]];
+toVCFEntry[s_, vecs_List ? MatrixQ] := toVCFEntry[s, Association @ MapIndex1[#2 -> #1&, vecs]];
 toVCFEntry[s_, vecs_Association] := Construct[Switch, s, Sequence @@ KeyValueMap[Splice[{#1, #2}]&, vecs], True, 0];
 toVCFEntry[s_, vec_List] := s * vec;
 

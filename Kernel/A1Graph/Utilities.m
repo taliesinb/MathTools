@@ -71,20 +71,6 @@ EdgePairsToAdjacencyMatrix[pairs_, n_] :=
 
 (**************************************************************************************************)
 
-PackageExport["ExtendedSparseArray"]
-
-ExtendedSparseArray[{} | <||>, sz_] := SparseArray[{}, sz];
-
-ExtendedSparseArray[assoc_Association, sz_] := SparseArray[Normal @ assoc, sz];
-
-ExtendedSparseArray[list:{___List} ? DuplicateFreeQ, sz_] := SparseArray[Thread[list -> 1], sz];
-
-ExtendedSparseArray[list:{___List}, sz_] := SparseArray[Normal @ Counts @ list, sz];
-
-ExtendedSparseArray[list:{___Rule}, sz_] := SparseArray[Normal @ Merge[list, Total], sz];
-
-(**************************************************************************************************)
-
 PackageExport["GraphCorners"]
 
 GraphCorners[graph_] := Scope[

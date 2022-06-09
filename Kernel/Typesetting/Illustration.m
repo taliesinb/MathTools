@@ -653,7 +653,7 @@ $GraphThemeData["PathQuiver"] := $pathQuiverOpts;
 
 wordToCoords = MatchValues[
   {}          := {0, 0};
-  path_List   := Total @ MapIndexed[$cardinalDirs[#1] / ($scaling * First[#2]+0.33)&, path];
+  path_List   := Total @ MapIndex1[$cardinalDirs[#1] / ($scaling * #2+0.33)&, path];
 ];
 
 extractWord = MatchValues[

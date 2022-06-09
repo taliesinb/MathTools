@@ -266,7 +266,7 @@ processRegionSpec[region_] := Scope[
   $VertexInEdgeTable := $VertexInEdgeTable = VertexInEdgeTable[$Graph];
   $VertexOutEdgeTable := $VertexOutEdgeTable = VertexOutEdgeTable[$Graph];
   $VertexAdjacencyTable := $VertexAdjacencyTable = VertexAdjacencyTable[$Graph];
-  $TagVertexAdjacentEdgeTable := $TagVertexAdjacentEdgeTable = TagVertexAdjacentEdgeTable[$Graph];
+  $TagVertexAdjacentEdgeTable := $TagVertexAdjacentEdgeTable = TagVertexAdjacentEdgeTable[$Graph, Signed -> True];
   $TagIndices := $TagIndices = TagIndices[$Graph];
   $EdgePairs := $EdgePairs = EdgePairs[$Graph];
   $Cardinals := $Cardinals = CardinalList[$Graph];
@@ -635,6 +635,7 @@ doWalk[startId_, stopId_, pathWord_, shouldRepeat_, func_] := Scope[
     cardinal = Part[pathWord, Mod[i, wordLen, 1]];
     invertedQ = InvertedQ[cardinal];
     edgeId = Part[$TagVertexAdjacentEdgeTable, Key @ cardinal, vertexId];
+    If[InvertedQ[edgeId], edgeId //= First; invertedQ = True];
     If[edgeId === None,
       If[shouldRepeat, Break[]];
       failWalk[cardinal, vertexId]];

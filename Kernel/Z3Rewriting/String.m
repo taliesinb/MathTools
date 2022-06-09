@@ -22,7 +22,7 @@ StringPlot[s_String, sz_:6] :=
 PackageExport["StringRewritingSystem"]
 
 StringRewritingSystem[rules_] := Scope[
-  constructRewritingSystsem["String", rules]
+  constructRewritingSystem["String", rules]
 ]
 
 declareRewritingSystemDispatch["String", stringRewritingSystemProperty]

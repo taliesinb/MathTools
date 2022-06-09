@@ -109,7 +109,7 @@ quiverCacheLoad[name_, edges_, count_] := Module[
   memCache = $enumerateQuiversCache[key];
   If[!MissingQ[memCache], Return @ memCache];
   fileName = CacheFilePath[name, edges, count];
-  If[FileExistsQ[fileName],
+  If[FileExistsQ[Echo @ fileName],
     diskCache = Import @ fileName;
     $enumerateQuiversCache[key] = diskCache;
     diskCache
@@ -153,7 +153,7 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
   If[$EnumerateVerboseMode, Print["# edge tuples: ", Length @ edgeTuples]];
   (* edgeTuples is a list of length cardCount of which edges is cardinal is attached to *)
   graphs = Map[
-    tuple |-> Graph[vertices, Flatten @ MapIndexed[{indices, cardinal} |-> Map[Append[First @ cardinal], Part[edges, indices]], tuple]],
+    tuple |-> Graph[vertices, Flatten @ MapIndex1[{indices, cardinal} |-> Map[Append[cardinal], Part[edges, indices]], tuple]],
     edgeTuples
   ];
   If[$EnumerateVerboseMode, Print["# total graphs: ", Length @ graphs]];
@@ -241,7 +241,7 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
       If[$EnumerateVerboseMode, i1 = Take[indexTuple, 2]; If[i1 =!= i1o, Print[i1]; i1o = i1]];
       edgeTuple = Part[edgeSubsets, indexTuple];
       If[Union[Part[edgeMask, Flatten @ edgeTuple]] === undirectedEdgeRange,
-        graph = Graph[vertices, Flatten @ MapIndexed[{indices, cardinal} |-> Map[Append[First @ cardinal], Part[edges, indices]], edgeTuple]];
+        graph = Graph[vertices, Flatten @ MapIndex1[{indices, cardinal} |-> Map[Append[cardinal], Part[edges, indices]], edgeTuple]];
         If[WeaklyConnectedGraphQ @ graph,
           Internal`StuffBag[graphs, graph];
           Internal`StuffBag[undirectedEdgeTuples, Mod[edgeTuple, undirectedEdgeCount, 1]];
@@ -376,17 +376,21 @@ makeSmallGraphOpts[n_, r_] := Sequence[
 ];
 
 EnumerateQuiverSkeletons[n_Integer] := Scope[
-  edgeLists = iEnumerateQuiverSkeletons[n];
+  edgeLists = iEnumerateQuiverSkeletons[n, True];
   opts = makeSmallGraphOpts[n, .3];
   vertices = Range[n];
   ExtendedGraph[vertices, #, opts]& /@ edgeLists
 ];
 
-iEnumerateQuiverSkeletons[n_Integer] := Scope[
-  cachedResult = quiverCacheLoad["EnumerateQuiverSkeletons", None, n];
+iEnumerateQuiverSkeletons[1, False] := {{}};
+
+iEnumerateQuiverSkeletons[n_Integer, allowSelfLoops_] := Scope[
+  cacheName = If[allowSelfLoops, "EnumerateQuiverSkeletons", "EnumerateSimpleGraphs"];
+  cachedResult = quiverCacheLoad[cacheName, None, n];
   If[cachedResult =!= None, Return @ cachedResult];
   vertices = Range[n];
   edges = Flatten @ Table[UndirectedEdge[i, j], {i, 1, n}, {j, i, n}];
+  If[!allowSelfLoops, edges //= DeleteCases[UndirectedEdge[i_, i_]]];
   edgeSubsets = Subsets[edges, {1, Length @ edges}];
   bag = Internal`Bag[];
   Scan[subset |-> If[Union @ AllVertices[edges] === vertices,
@@ -402,8 +406,20 @@ iEnumerateQuiverSkeletons[n_Integer] := Scope[
   ];
   graphs = Sort @ Map[CanonicalGraph, graphs];
   edgeLists = EdgeList /@ graphs;
-  quiverCacheStore["EnumerateQuiverSkeletons", None, n, edgeLists];
+  quiverCacheStore[cacheName, None, n, edgeLists];
   edgeLists
+];
+
+(**************************************************************************************************)
+
+PackageExport["EnumerateSimpleGraphs"]
+
+EnumerateSimpleGraphs[n_Integer] := Scope[
+  edgeLists = iEnumerateQuiverSkeletons[n, False];
+  opts = makeSmallGraphOpts[n, .3];
+  If[n === 1, opts = Sequence[PlotRange -> {{-1, 1}, {-1, 1}} * 0.6, opts]];
+  vertices = Range[n];
+  ExtendedGraph[vertices, #, opts]& /@ edgeLists
 ];
 
 (**************************************************************************************************)
@@ -411,7 +427,7 @@ iEnumerateQuiverSkeletons[n_Integer] := Scope[
 PackageExport["EnumerateLattices"]
 
 EnumerateLattices[quivers_, cardinals_, group_, opts___Rule] := Scope[
-  rules = MapIndexed[First[#2] -> #1&, cardinals];
+  rules = MapIndex1[#2 -> #1&, cardinals];
   quivers = Map[
     Quiver[VertexList @ #, MapAt[ReplaceAll[rules], EdgeList @ #, {All, 3}]]&,
     ExpandCardinalSetEdges /@ quivers

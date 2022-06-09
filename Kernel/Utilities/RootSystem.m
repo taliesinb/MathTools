@@ -161,20 +161,6 @@ rootPlot3D[tuples_, norm_, opts___] := Graphics3D[
 ];
 
 
-PackageExport["VectorReflect"]
-
-SetUsage @ "
-VectorReflect[v$, rv$] reflects the vector v$ in the hyperplane perpendicular to rv$.
-"
-
-VectorReflect[v_, rv_] := Expand[v - (2 * Dot[rv, v] / Dot[rv, rv]) * rv];
-VectorReflect[v_, rv_ ? System`Private`ValidQ] := Expand[v - (2 * Dot[rv, v]) * rv];
-VectorReflect[rv_][v_] := VectorReflect[v, rv];
-
-
-RotateBy90[vector_] := Dot[{{0, -1}, {1, 0}}, vector];
-RotateBy45[vector_] := Dot[{{1/Sqrt[2], -(1/Sqrt[2])}, {1/Sqrt[2], 1/Sqrt[2]}}, vector];
-
 
 PackageExport["RootSystem"]
 

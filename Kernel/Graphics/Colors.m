@@ -898,10 +898,16 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   ];
   posIndex = KeySort @ PositionIndex @ data;
   containsInd = KeyExistsQ[posIndex, Indeterminate];
+  containsNull = KeyExistsQ[posIndex, Null];
   If[containsInd, indPos = posIndex[Indeterminate]; KeyDropFrom[posIndex, Indeterminate]];
+  If[containsNull, nullPos = posIndex[Null]; KeyDropFrom[posIndex, Null]];
   uniqueValues = Keys @ posIndex;
   count = Length @ uniqueValues;
   colorFunction = Which[
+    ColorVectorQ[uniqueValues],
+      Identity,
+    uniqueValues === {0, 1} || uniqueValues === {1, 0},
+      DiscreteColorFunction[{0, 1}, {White, Black}],
     Length[uniqueValues] == 1,
       DiscreteColorFunction[uniqueValues, {Gray}],
     (PermutedRangeQ[uniqueValues] || PermutedRangeQ[uniqueValues + 1]) && count <= 12,
@@ -923,6 +929,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   colors = Map[normalFunction, uniqueValues];
   colorsValues = Transpose[{colors, uniqueValues}];
   If[containsInd, AppendTo[colorsValues, {White, Indeterminate}]; AppendTo[posIndex, Indeterminate -> indPos]];
+  If[containsNull, AppendTo[colorsValues, {Transparent, Null}]; AppendTo[posIndex, Null -> nullPos]];
   colorGroups = Merge[RuleThread[colorsValues, Values @ posIndex], Catenate];
   colorList = ConstantArray[White, Length @ data];
   (* invert the PositionIndex-like association *)

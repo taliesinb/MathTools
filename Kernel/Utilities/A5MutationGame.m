@@ -99,7 +99,7 @@ MultiMutationGame[graph_Graph] := Scope[
   outMatrix = AdjacencyMatrix @ graph;
   assoc = <|
     "Type" -> "MultiMutationGame",
-    "Generators" -> MapIndexed[makeMultiMutateGenerator[First @ #2, #1, vertexCount]&, outTable],
+    "Generators" -> MapIndex1[makeMultiMutateGenerator[#2, #1, vertexCount]&, outTable],
     "InitialStates" -> Flatten[{
       Table[
         If[ i === j, {

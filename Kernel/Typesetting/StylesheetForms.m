@@ -2035,6 +2035,15 @@ $TemplateKatexFunction["MultiwayGraphForm"] = applyRiffled["multiwayBFS", ","];
 
 (********************************************)
 
+PackageExport["ExpressionRewriteMatchForm"]
+
+declareBoxFormatting[
+  ExpressionRewriteMatchForm[{a___}] :> MakeBoxes[TupleForm[a]],
+  ExpressionRewriteMatchForm[a_, i_] :> MakeBoxes[ExpressionRewriteMatchForm[a]]
+];
+
+(********************************************)
+
 PackageExport["RewriteForm"]
 
 declareBinaryForm[RewriteForm]

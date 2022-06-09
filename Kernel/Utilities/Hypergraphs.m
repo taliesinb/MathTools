@@ -42,4 +42,4 @@ DirectedHypergraphToGraphs[hyperedges_] := Scope[
 PackageExport["GraphsToDirectedHypergraph"]
 
 GraphsToDirectedHypergraph[gs__Graph] :=
-	Join @@ MapIndexed[AppendConstantColumn[List @@@ EdgeList[#1], First @ #2]&, {gs}]
+	Join @@ MapIndex1[AppendConstantColumn[List @@@ EdgeList[#1], #2]&, {gs}]

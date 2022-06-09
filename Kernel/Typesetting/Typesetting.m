@@ -18,12 +18,6 @@ tradBox[b_] := StyleBox[FormBox[b, TraditionalForm], ShowStringCharacters -> Fal
 
 (**************************************************************************************************)
 
-PackageExport["KeynoteEquationText"]
-
-KeynoteEquationText[e_] := Style[e, FontWeight -> Bold, FontFamily -> "Optima", FontSize -> 16, FontColor -> $DarkGray];
-
-(**************************************************************************************************)
-
 PackageExport["LeftBar"]
 
 SetUsage @ "
@@ -697,7 +691,7 @@ SpacedRow[elems__] := Scope[
       Spacings -> $srRowSpacings
     ];
   ];
-  If[$srIndexTooltip, items //= MapIndexed[NiceTooltip[#1, First[#2]]&]];
+  If[$srIndexTooltip, items //= MapIndex1[NiceTooltip]];
   hasLabels = MemberQ[items, _Labeled];
   tooLong = IntegerQ[$srMaxWidth] && Length[items] > $srMaxWidth;
   alignment = $srAlignment;

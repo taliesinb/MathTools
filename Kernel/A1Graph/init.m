@@ -32,6 +32,7 @@ $extendedGraphOptionsRules = {
   EdgeSetback                         -> Automatic,
   EdgeThickness                       -> Automatic,
   EdgeTooltips                        -> None,
+  EdgeLength                          -> None,
   EpilogFunction                      -> None,
   ExtendedGraphLayout                 -> Automatic,
   ExtendImagePadding                  -> True,
@@ -176,7 +177,7 @@ $simpleGraphOptionRules = JoinOptions[
   GraphHighlightStyle -> Automatic, VertexLabelStyle -> Automatic, EdgeLabelStyle -> Automatic,
   Epilog -> {}, Prolog -> {}, Frame -> None, FrameStyle -> Automatic, BaselinePosition -> Automatic,
   FrameLabel -> None, PlotRange -> Automatic,
-  Rest @ $extendedGraphOptionsRules
+  DeleteCases[$extendedGraphOptionsRules, ExtendedGraphPlottingFunction -> _]
 ]
 
 $simpleGraphOptions = Keys @ $simpleGraphOptionRules;

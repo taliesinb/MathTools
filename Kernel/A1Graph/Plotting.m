@@ -34,6 +34,8 @@ PackageExport["EdgeLabelPosition"]
 PackageExport["EdgeLabelSpacing"]
 PackageExport["EdgeLabelBaseStyle"]
 
+PackageExport["EdgeLength"]
+
 PackageExport["VisibleCardinals"]
 PackageExport["ViewRegion"]
 PackageExport["ViewOptions"]
@@ -372,7 +374,7 @@ addPRPadding[range_, _] := (Print["Bad PlotRangePadding"]; range)
 
 PackageExport["ExtendedGraphPlot"]
 
-$autoFilledLegendPattern = (Automatic | _String) | Placed[Automatic | _String, _];
+$autoFilledLegendPattern = (Automatic | _String) | Placed[Automatic | _String | Labeled[Automatic | _String, __], _] | Labeled[Automatic | _String, __];
 
 ExtendedGraphPlot[___] := $Failed;
 
@@ -501,7 +503,7 @@ computeMaxSafeVertexSize[] := Scope[
 computeMaxSafeArrowheadSize[] := Scope[
   minDistance = getRankedMinDistance[lineCenter /@ Part[$EdgeCoordinateLists, $EdgeParts]];
   minDistance = Max[minDistance, $GraphMaxSafeVertexSize/Sqrt[2]];
-  Min[$GraphMaxSafeVertexSize, minDistance, Max[$GraphPlotSize] / 3]
+  Min[minDistance, Max[$GraphPlotSize] / 3]
 ];
 
 lineCenter = Case[
@@ -568,7 +570,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     UnpackExtendedThemedOptions[graph,
       arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition,
       visibleCardinals, labelCardinals, vertexBackground,
-      edgeSetback, edgeThickness,
+      edgeSetback, edgeThickness, edgeLength,
 
       vertexColorFunction, vertexColorRules, vertexAnnotations,
         edgeColorFunction,   edgeColorRules,   edgeAnnotations,
@@ -605,6 +607,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     automaticLegends = <||>;
 
+    If[edgeLength =!= None, imageSize = "Edge" -> edgeLength];
+
     (* choose a size based on vertex seperation *)
     SetAutomatic[imageSize,
       If[$VertexParts === All && Length[$VertexList] > 1000, Large,
@@ -616,6 +620,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         Rule["LongestNonLoopEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize[1.0, sz, False],
         Rule["ShortestEdge", sz:$numOrNumPairP]  :> computeEdgeLengthBasedImageSize[0.0, sz, False],
         Rule["ShortestNonLoopEdge", sz:$numOrNumPairP]  :> computeEdgeLengthBasedImageSize[0.0, sz, True],
+        Rule["Edge", sz:$numOrNumPairP] :> computeEdgeLengthBasedImageSize[0.1, sz, True],
         Rule["MedianEdge", sz:$numOrNumPairP]    :> computeEdgeLengthBasedImageSize[0.5, sz, False],
         Rule["MedianNonLoopEdge", sz:$numOrNumPairP]    :> computeEdgeLengthBasedImageSize[0.5, sz, True],
         Rule["AverageEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize["Average", sz, False],
@@ -698,7 +703,16 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[$VertexParts === All, $VertexParts ^= Range @ $VertexCount];
     If[$EdgeParts === All, $EdgeParts ^= Range @ $EdgeCount];
     vertexDegrees = VertexDegree @ $Graph;
-    $VertexParts ^= Select[$VertexParts, Part[vertexDegrees, #] > peripheralVertices&];
+    Switch[peripheralVertices,
+      _Integer,
+        $VertexParts ^= Select[$VertexParts, Part[vertexDegrees, #] > peripheralVertices&],
+      {_List, _Integer},
+        {centerVerts, maxDistance} = peripheralVertices;
+        distances = Min /@ Part[GraphDistanceMatrix[UndirectedGraph @ $Graph], All, centerVerts];
+        $VertexParts ^= Select[$VertexParts, Part[distances, #] <= maxDistance&],
+      _,
+        ReturnFailed[]
+    ];
     isFadedPEdge = Function[{a, b}, Count[{MemberQ[$VertexParts, a], MemberQ[$VertexParts, b]}, True] == 1];
     isNonPEdge = Function[{a, b}, MemberQ[$VertexParts, a] || MemberQ[$VertexParts, b]];
     edgePairs = EdgePairs @ ToIndexGraph @ $Graph;
@@ -790,9 +804,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         True, $Gray
       ]];
       If[AssociationQ[arrowheadStyle],
-        arrowheadStyle //= MapIndexed[If[#1 =!= Automatic, #1, cardinalColors @ First @ First @ #2]&]];
+        arrowheadStyle //= MapIndex1[If[#1 =!= Automatic, #1, cardinalColors @ First @ #2]&]];
 
-      baseArrowheadSize := baseArrowheadSize = If[$GraphIs3D, 0.45, 0.8] * ($GraphMaxSafeArrowheadSize / $GraphPlotSizeX);
+      baseArrowheadSize := baseArrowheadSize = If[$GraphIs3D, 0.45, 0.8] * (Min[$GraphMaxSafeArrowheadSize / $GraphPlotSizeX, maxMertexSize * 2]);
       arrowheadSize //= processArrowheadSize;
       maxArrowheadSize = Max[arrowheadSize * $GraphPlotSizeX] / 2;
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Line"]];
@@ -2057,16 +2071,24 @@ applyAutomaticLegends[graphics_, automaticLegends_, Placed[Automatic, place_]] :
   ApplyLegend[graphics, Map[Placed[#, place]&, Values @ automaticLegends]];
 
 applyAutomaticLegends[graphics_, automaticLegends_, graphLegend_] := Scope[
-  keyPattern = Alternatives @@ Keys[automaticLegends];
   graphLegend = ToList @ graphLegend;
-  If[!MatchQ[graphLegend, {Repeated[keyPattern | Placed[keyPattern, _]]}],
-    Return @ graphics];
-  legends = removeSingleton @ VectorReplace[graphLegend, {
-    s_String :> automaticLegends[s],
-    Placed[s_String, p_] :> Placed[automaticLegends[s], p]
-  }];
+  $auto = automaticLegends;
+  legends = removeSingleton @ Map[assembleLegendItem, graphLegend];
+  If[ContainsQ[legends, $Failed], Return @ graphics];
   ApplyLegend[graphics, legends]
 ];
+
+ExtendedGraphPlot::badlegendkey = "`` is not a valid named legend. Valid names are: ``."
+ExtendedGraphPlot::badlegendspec = "`` is not a valid legend spec."
+
+assembleLegendItem = Case[
+  Automatic                 := First[$auto, $Failed];
+  s_String                  := Lookup[$auto, s, Message[ExtendedGraphPlot::badlegendkey, s, Keys @ $auto]; $Failed];
+  Placed[s_String, p_]      := Placed[%[s], p];
+  Labeled[s_, l_, args___]  := Labeled[%[s], l, args];
+  None                      := None;
+  e_                        := (Message[ExtendedGraphPlot::badlegendspec, e]; $Failed);
+]
 
 (**************************************************************************************************)
 
@@ -2246,6 +2268,7 @@ drawIndividualCustomShapeFunction[fn_, size_, color_][pos_] := Scope[
   ];
   res = res /. cc_CardinalColor :> RuleCondition @ evalCardinalColor @ cc;
   If[Head[res] === Form, res = Text[res, pos, {0, 0}, Background -> vertexBackground]];
+  If[MatchQ[res, _Graph | _Graphics], res = drawGraphicsWithColor[res, pos, color, size]];
   If[res === None, Return @ {}];
   If[res === $Failed, failPlot["vertexfnmsg", vertex]];
   res
@@ -2267,7 +2290,7 @@ drawGraphicsWithColor[other_, pos_, color_, size_] :=
   ];
 
 drawGraphicsWithColor[g_Graph, pos_, color_, size_] :=
-  drawGraphicsWithColor[ExtendedGraphPlot @ g, pos, color, size];
+  drawGraphicsWithColor[ExtendedGraphPlot[g, BaselinePosition -> Center, Frame -> True, ImagePadding -> 10], pos, color, size];
 
 drawGraphicsWithColor[g_Graphics, pos_, color_, size_] :=
   Inset[
@@ -2660,7 +2683,7 @@ generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {lab
   $annotations = annotations;
   $labeledElemSize = size / 2;
   $spacings = 0; $labelZOrder = 0;
-  $isVertices = isVertices;
+  $isVertices = isVertices; $labelFontSize = None;
   $labelSizeScale = 1; $labelScaledPos = None; $labelY = None; $labelX = None; $labelBackground = GrayLevel[1.0, 0.6];
   $labelBaseStyle = None; $labelOffset = None;
   $adjacencyIndex = None; $meanCoordinates = Mean @ coordinates;
@@ -2670,6 +2693,7 @@ generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {lab
   labelStyle //= toDirectiveOptScan[setLabelStyleGlobals];
   SetNone[$labelX, 0]; SetNone[$labelY, 0];
   labelStyle //= DeleteCases[sspec:$SizePattern /; ($labelSizeScale = toNumericSizeScale @ sspec; True)];
+  If[$labelFontSize =!= None, PrependTo[labelStyle, FontSize -> $labelFontSize]];
   $magnifier = If[$labelSizeScale == 1, Identity, Magnify[#, $labelSizeScale]&];
   {payloadFunction, placerFunction} = processLabelSpec[spec];
   indices = If[parts === All, Range @ Length @ names, parts];
@@ -2711,6 +2735,7 @@ ExtendedGraphPlot::badsubopt = "`` is not a recognized suboption. Recognized opt
 
 setLabelStyleGlobals = Case[
   ItemSize -> size:$SizePattern           := $labelSizeScale = toNumericSizeScale @ size;
+  FontSize -> sz_                         := $labelFontSize = sz;
   Background -> o:$opacityPattern         := $labelBackground = GrayLevel[1.0, toNumericOpacity @ o];
   Background -> None                      := $labelBackground = None;
   Background -> c:$ColorPattern           := $labelBackground = c;
@@ -2876,7 +2901,9 @@ $labelFormattingRules = {
 placeLabelAt[label_, pos_, _] := makeTextLabel[
   label /. $labelFormattingRules,
   If[$labelOffset === None,
-    pos + If[$GraphIs3D, 0, -$labeledElemSize * {$labelX, $labelY} * (1 + $spacings)],
+    pos + If[$GraphIs3D,
+      -$labeledElemSize * {0, 0, $labelY} * (1 + $spacings),
+      -$labeledElemSize * {$labelX, $labelY} * (1 + $spacings)],
     Offset[$labelOffset, pos]
   ],
   {$labelX, $labelY} * 0.95

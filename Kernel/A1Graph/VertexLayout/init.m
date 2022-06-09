@@ -820,7 +820,7 @@ corner[a_, b_, c_] :=
 
 PackageScope["ptAlong"]
 
-ptAlong[a_, b_, d_] := PointAlongLine[{a, b}, d];
+ptAlong[a_, b_, d_] := Which[d <= 0, a, d >= EuclideanDistance[a, b], b, True, PointAlongLine[{a, b}, d]];
 
 squareSelfLoop[line_] := line;
 

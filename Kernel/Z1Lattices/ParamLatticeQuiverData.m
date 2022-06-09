@@ -79,7 +79,7 @@ torusCoordinate3DOptions = MatchValues[
     Epilog -> {
       EdgeForm[None], Opacity[0.5],
       FaceForm[{Glow @ GrayLevel[1.0], Specularity[1]}],
-      TorusSurfacePolygon[Torus[{w + h, h-.33} / Tau]]
+      TorusSurfacePolygon[Torus[{w + h, h-.4} / Tau]]
     },
     CoordinateTransformFunction -> ProjectionOnto[Torus[{w + h, h} / Tau]],
     ViewOptions -> {ViewPoint -> {0.4, 1.5, 0.8}, ViewProjection -> "Orthographic"}
@@ -139,6 +139,27 @@ ModulusEdgeShapeFunction[offsets_][assoc_] := Scope[
   b2 = findModulusCounterpart[a, b, offsets, .4];
   a2 = findModulusCounterpart[b, a, offsets, .4];
   If[a2 =!= None && b2 =!= None,
+    counter = assoc["Counter"];
+    labelPoints = {1.35*(a2 - b) + b, (b2-a)*1.35 + a};
+    label = If[labelStyle === None, Nothing, Map[makeWrappedEdgeLabel[counter, labelStyle], labelPoints]];
+    arrowheadsA = changeArrowheadPos[arrowheads, 0.8];
+    arrowheadsB = changeArrowheadPos[arrowheads, 0.2];
+    {
+      Style[shape @ {a, b2}, arrowheadsA],
+      Style[shape @ {a2, b}, arrowheadsB],
+      label
+    }
+  ,
+    Style[shape @ {a, b}, arrowheads]
+  ]
+];
+
+ModulusEdgeShapeFunction[basis_Association][assoc_] := Scope[
+  UnpackAssociation[assoc, cardinal, coordinates, arrowheads, shape, edgeIndex, labelStyle];
+  {a, b} = {{ax, ay}, {bx, by}} = FirstLast @ coordinates;
+  If[EuclideanDistance[a, b] > 1.1,
+    a2 = b - basis[cardinal]/3;
+    b2 = a + basis[cardinal]/3;
     counter = assoc["Counter"];
     labelPoints = {1.35*(a2 - b) + b, (b2-a)*1.35 + a};
     label = If[labelStyle === None, Nothing, Map[makeWrappedEdgeLabel[counter, labelStyle], labelPoints]];
@@ -283,6 +304,26 @@ rhombilleTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, use
   opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts;
   {rep, opts}
 ];
+
+(**************************************************************************************************)
+
+DefineParameterizedLatticeQuiver["Dihedral", dihedralFactory, <|"n" -> 3, "MaxDepth" -> 10|>];
+
+dihedralFactory[<|"n" -> n_, "MaxDepth" -> d_|>, userOpts_] := Scope[
+  rep = <|
+    "CayleyFunction" -> dihedralCayleyFunction[n],
+    "InitialStates" -> {{1, 0}}
+  |>;
+  circle = Reverse @ CirclePoints[n];
+  {rep, {MaxDepth -> d, VertexCoordinateFunction -> dihedralCoords[circle]}}
+];
+
+dihedralCoords[points_][{dir_, z_}] := Part[points, z + 1] * If[dir == 1, 1, 0.4];
+
+dihedralCayleyFunction[n_][{dir_, z_}] := {
+  Labeled[{dir, Mod[z + dir, n]}, "r"],
+  Labeled[{-dir, z}, "f"]
+};
 
 (**************************************************************************************************)
 

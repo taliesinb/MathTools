@@ -21,6 +21,36 @@ CopyImageToClipboard[expr_] := (
 
 (**************************************************************************************************)
 
+PackageExport["CopyRetinaImageToClipboard"]
+
+CopyRetinaImageToClipboard[expr_, crop_:False] := (
+  CopyToClipboard @ If[crop, ImageCrop, Identity] @ Rasterize[expr /. (RawImageSize -> _) -> Sequence[], ImageFormattingWidth -> Infinity, ImageResolution -> (144*2), Background -> Transparent];
+  expr
+);
+
+(**************************************************************************************************)
+
+PackageExport["FastCopyRetinaImageToClipboard"]
+
+FastCopyRetinaImageToClipboard[expr_, crop_:True] := (
+  CopyToClipboard @ If[crop, ImageCrop, Identity] @ Rasterize[expr /. (RawImageSize -> _) -> Sequence[], ImageFormattingWidth -> Infinity, ImageResolution -> (144*2)];
+  expr
+);
+
+(**************************************************************************************************)
+
+PackageExport["InteractiveCopyRetinaImageToClipboard"]
+
+InteractiveCopyRetinaImageToClipboard[expr_] := EventHandler[
+  MouseAppearance[
+    expr,
+    "LinkHand"
+  ],
+  {"MouseClicked" :> CopyRetinaImageToClipboard[expr]}
+];
+
+(**************************************************************************************************)
+
 PackageExport["CopyImageGalleryToClipboard"]
 
 $galleryCount = 0;

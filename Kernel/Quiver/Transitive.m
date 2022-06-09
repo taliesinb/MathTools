@@ -331,8 +331,9 @@ TreeQuiver[k_Integer, n_Integer, opts:OptionsPattern[]] := Scope[
   cards = Join[Range[k], Inverted /@ Range[k]];
   vertices = Flatten @ Table[TreeVertex @@@ Tuples[cards, i], {i, 0, n}];
   vertices = Discard[vertices, MatchQ[TreeVertex[___, c_, Inverted[c_], ___] | TreeVertex[___, Inverted[c_], c_, ___]]];
+  UnpackOptions[angleOffset, cardinals];
+  $cards = If[ListQ[cardinals], cardinals, Range @ k];
   edges = makeTreeEdge /@ vertices;
-  UnpackOptions[angleOffset];
   SetAutomatic[angleOffset, If[k == 2, Pi / 4, 0]];
   vectorAssoc = AssociationThread[cards, CirclePoints[{1, angleOffset}, 2 * k]];
   coords = Map[treeVertexCoord, vertices];
@@ -356,7 +357,7 @@ treeVertexCoord = Case[
 
 makeTreeEdge = Case[
   TreeVertex[] := Nothing;
-  t_TreeVertex := DirectedEdge[Most @ t, t, Last @ t];
+  t_TreeVertex := DirectedEdge[Most @ t, t, Last[t] /. i_Integer :> Part[$cards, i]];
 ]
 
 (**************************************************************************************************)

@@ -1,8 +1,8 @@
 PackageExport["EchoGraphicsScope"]
 PackageExport["EchoGraphics"]
 
-SetHoldAllComplete[DebugGraphicsScope];
-DebugGraphicsScope[e_] := Scope[
+SetHoldAllComplete[EchoGraphicsScope];
+EchoGraphicsScope[e_] := Scope[
 	$prims = {};
 	res = e;
 	n = Length[$prims]; $i = 1;
@@ -14,11 +14,11 @@ DebugGraphicsScope[e_] := Scope[
 ];
 
 
-PackageExport["EchoGraphicsScope"]
+PackageExport["EchoGraphics"]
 
-EchoGraphicsScope[e_] := (AppendTo[$prims, e]; e);
-EchoGraphicsScope[{x_ ? RealVectorQ, y_ ? RealVectorQ}] := (EchoGraphicsScope @ Transpose @ {x, y}; {x, y});
-EchoGraphicsScope[points_ ? RealMatrixQ] := (AppendTo[$prims, Point @ points]; points);
+EchoGraphics[e_] := (AppendTo[$prims, e]; e);
+EchoGraphics[{x_ ? RealVectorQ, y_ ? RealVectorQ}] := (EchoGraphics @ Transpose @ {x, y}; {x, y});
+EchoGraphics[points_ ? RealMatrixQ] := (AppendTo[$prims, Point @ points]; points);
 
 
 PackageExport["ElectricalBalanceX"]
@@ -27,9 +27,9 @@ PackageExport["ElectricalBalanceX"]
 
 ElectricalBalanceX[x_, y_, n_, delta_] := Scope[
 	x = ToPackedReal[x];
-	yDist = 10.0 * SquaredDistanceMatrix[y] + 0.1;
+	yDist = ToPackedReal[10.0 * SquaredDistanceMatrix[y] + 0.1];
 	Do[
-		x -= delta * Total[Outer[Subtract, x, x] / (SquaredDistanceMatrix[x] + yDist), {1}];
+		x -= delta * Total[DifferenceMatrix[x] / (SquaredDistanceMatrix[x] + yDist), {1}];
 	,
 		{n}
 	];
@@ -45,16 +45,17 @@ It also makes points attracted to the mean x value of all of their children
 and parents. the graph itself is passed in (should be an index graph).
 *)
 
+
 ElectricalGravitationalBalanceX[x_, y_, graph_, n_, delta_] := Scope[
 	x = ToPackedReal[x];
-	yDist = 10.0 * SquaredDistanceMatrix[y] + 0.1;
+	yDist = ToPackedReal[10.0 * SquaredDistanceMatrix[y] + 0.1];
 	adj = AdjacencyMatrix @ graph;
 	symAdjMatrix = BitOr[adj, Transpose @ adj, IdentityMatrix @ Length @ adj];
 	sqrtNumAdj = Sqrt @ Total[symAdjMatrix, {2}];
 	meanAdjMatrix = ToPackedReal @ Map[LengthNormalize, symAdjMatrix];
-	(* ^ ensure that for sinks, we don't try take the average of no verts *)
+	(* TODO: Test SparseArray applied to meanAdjMatrix *)
 	Do[
-		dx = Outer[Subtract, x, x]; x2 = SquaredDistanceMatrix[x];
+		dx = DifferenceMatrix[x]; x2 = SquaredDistanceMatrix[x];
 		repulse = Total[dx / (x2 + yDist), {1}];
 		attract = (x - Dot[meanAdjMatrix, x]) * sqrtNumAdj;
 		x -= delta * (repulse + attract);
@@ -63,4 +64,6 @@ ElectricalGravitationalBalanceX[x_, y_, graph_, n_, delta_] := Scope[
 	];
 	x
 ]
+
+
 

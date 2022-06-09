@@ -91,6 +91,16 @@ PackageExport["ZeroMatrixQ"]
 ZeroMatrixQ[matrix_] := MatrixQ[matrix] && ZerosQ[matrix];
 
 
+PackageExport["RowTotals"]
+
+RowTotals[matrix_] := Total[matrix, {2}];
+
+
+PackageExport["ColumnTotals"]
+
+ColumnTotals[matrix_] := Total[matrix, {1}];
+
+
 PackageExport["PermutationMatrixQ"]
 
 PermutationMatrixQ[matrix_] :=
@@ -344,6 +354,7 @@ FindIndependentVectors[vectors_] := Scope[
   Part[vectors,  pivotPositions]
 ]
 
+(**************************************************************************************************)
 
 PackageExport["MatrixSimplify"]
 
@@ -354,6 +365,82 @@ MatrixSimplify[matrix_] := Scope[
   {Simplify @ Cancel[matrix / gcd], gcd}
 ];
 
+(**************************************************************************************************)
+
+PackageExport["ExtendedSparseArray"]
+
+ExtendedSparseArray[{} | <||>, sz_] := SparseArray[{}, sz];
+
+ExtendedSparseArray[assoc_Association, sz_] := SparseArray[Normal @ assoc, sz];
+
+ExtendedSparseArray[list:{___List} ? DuplicateFreeQ, sz_] := SparseArray[Thread[list -> 1], sz];
+
+ExtendedSparseArray[list:{___List}, sz_] := SparseArray[Normal @ Counts @ list, sz];
+
+ExtendedSparseArray[list:{___Rule}, sz_] := SparseArray[sumRules @ list, sz];
+
+(**************************************************************************************************)
+
+sumRules[rules_] := Normal @ Merge[rules, Total];
+
+(**************************************************************************************************)
+
+PackageExport["FromSparseRows"]
+
+FromSparseRows[rowSpecs_List, n_Integer] := SparseArray[
+  Flatten @ MapIndex1[rowSpecToFullSpec, rowSpecs],
+  {Length @ rowSpecs, n}
+];
+
+FromSparseRows[rowSpecs_List] := SparseArray[
+  Flatten @ MapIndex1[rowSpecToFullSpec, rowSpecs]
+];
+
+rowSpecToFullSpec[{}, row_] := {};
+
+rowSpecToFullSpec[cols:{__Rule}, row_] := VectorApply[{row, #1} -> #2&, sumRules @ cols];
+
+rowSpecToFullSpec[cols_List -> k_, row_] := sumRules @ Map[{row, #} -> k&, cols];
+rowSpecToFullSpec[cols_List, row_] := sumRules @ Map[{row, #} -> 1&, cols];
+
+rowSpecToFullSpec[col_Integer -> k_, row_] := {{row, col} -> k};
+rowSpecToFullSpec[col_Integer, row_] := {{row, col} -> 1};
+
+(**************************************************************************************************)
+
+PackageExport["FromSparseColumns"]
+
+FromSparseColumns[args___] := Transpose @ FromSparseRows[args];
+
+(**************************************************************************************************)
+
+PackageExport["SparseTotalMatrix"]
+
+SparseTotalMatrix[indexSets_, n_] := FromSparseRows[indexSets, n];
+
+(**************************************************************************************************)
+
+PackageExport["SparseAveragingMatrix"]
+
+SparseAveragingMatrix[indexSets_, n_] := FromSparseRows[Map[set |-> set -> 1.0 / Length[set], indexSets], n];
+
+(**************************************************************************************************)
+
+PackageExport["SparseBroadcastMatrix"]
+
+SparseBroadcastMatrix[indexSets_, n_] := FromSparseColumns[indexSets, n];
+
+(**************************************************************************************************)
+
+PackageExport["DifferenceMatrix"]
+
+DifferenceMatrix[{}] := {};
+
+DifferenceMatrix[points_] := Outer[Plus, points, -points, 1];
+
+DifferenceMatrix[points1_, points2_] := Outer[Plus, points1, -points2, 1];
+
+(**************************************************************************************************)
 
 PackageExport["SquaredDistanceMatrix"]
 

@@ -3,7 +3,7 @@
 PackageExport["HyperstringRewritingSystem"]
 
 DirectedGraphRewritingSystem[rules_] := Scope[
-  constructRewritingSystsem["Hyperstring", rules]
+  constructRewritingSystem["Hyperstring", rules]
 ]
 
 declareRewritingSystemDispatch["Hyperstring", hyperstringRewritingSystemProperty]

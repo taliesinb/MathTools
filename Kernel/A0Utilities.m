@@ -25,6 +25,46 @@ With[{io := GeneralUtilities`IndexOf},
 
 (**************************************************************************************************)
 
+Module[{desugaringRules = Normal @ GeneralUtilities`Control`PackagePrivate`$DesugaringRules},
+  If[FreeQ[desugaringRules, rewriteDestructuringFunction],
+    AppendTo[desugaringRules, HoldPattern[GeneralUtilities`Control`PackagePrivate`e:Function[{___, _List, ___}, _]] :>
+      RuleCondition[rewriteDestructuringFunction[GeneralUtilities`Control`PackagePrivate`e]]];
+    GeneralUtilities`Control`PackagePrivate`$DesugaringRules = Dispatch @ desugaringRules;
+  ];
+];
+
+SetHoldAllComplete[rewriteDestructuringFunction, procDestructArg];
+
+rewriteDestructuringFunction[Function[args_, body_]] := Block[
+  {$destructAliases = {}, $i = 1},
+  ToQuoted[Function,
+    Map[procDestructArg, Unevaluated @ args],
+    Quoted[body] /. Flatten[$destructAliases]
+  ]
+];
+
+rewriteDestructuringFunction[e_] := Quoted[e];
+ 
+procDestructArg[e_Symbol] := Quoted[e];
+
+procDestructArg[argSpec_] := With[
+  {symbolPos = Position[Unevaluated @ argSpec, _Symbol, {0, Infinity}, Heads -> False]},
+  If[symbolPos === {},
+    Symbol["QuiverGeometry`Private`$$" <> IntegerString[$i++]]
+  ,
+    With[{parentSym = Symbol[Extract[Unevaluated @ argSpec, First @ symbolPos, HoldSymbolName] <> "$$"]},
+      AppendTo[$destructAliases, Map[
+        pos |-> Extract[Unevaluated @ argSpec, pos, HoldPattern] :> Extract[parentSym, pos],
+        symbolPos
+      ]];
+      parentSym
+    ]
+  ]
+]
+
+
+(**************************************************************************************************)
+
 PackageScope["SetInitialValue"]
 
 SetHoldAllComplete[SetInitialValue];
@@ -942,6 +982,17 @@ RuleRange[{key$1, key$2, $$}] gives the list {$$, key$i -> i$, $$}.
 
 RuleRange[labels_] :=
   MapIndexed[#1 -> First[#2]&, labels];
+
+(**************************************************************************************************)
+
+PackageExport["MapIndex1"]
+
+SetUsage @ "
+MapIndex1[f, arg] is equivalent to MapIndexed[f[#1, First[#2]]&, arg]
+"
+
+MapIndex1[f_, list_] := MapIndexed[Function[{argX, partX}, f[argX, First @ partX]], list];
+MapIndex1[f_][list_] := MapIndex1[f, list];
 
 (**************************************************************************************************)
 
@@ -2376,3 +2427,50 @@ PackageExport["LengthNormalize"]
 
 LengthNormalize[{}] := {};
 LengthNormalize[e_] := e / Length[e];
+
+(**************************************************************************************************)
+
+PackageExport["StringFindDelimitedPosition"]
+
+StringFindDelimitedPosition[str_, {start_, mid_, stop_}] := Scope[
+  pos = First[StringPosition[str, start ~~ mid ~~ stop, 1], None];
+  If[!ListQ[pos], ReturnFailed[]];
+  lens = First @ StringCases[
+    StringTake[str, pos],
+    a:start ~~ mid ~~ z:stop :> {+StringLength[a], -StringLength[z]},
+    1
+  ];
+  pos + lens
+]
+
+(**************************************************************************************************)
+
+PackageExport["FirstStringCase"]
+
+SetHoldRest[FirstStringCase];
+
+FirstStringCase[string_, pattern_, else_:None] :=
+  First[
+    StringCases[string, pattern, 1],
+    else
+  ]
+
+(**************************************************************************************************)
+
+PackageExport["ExportUTF8WithBackup"]
+
+ExportUTF8WithBackup[path_, contents_, currentContents_:Automatic] := Scope[
+  If[!StringQ[contents], ReturnFailed[]];
+  If[!FileExistsQ[path],
+    ExportUTF8[path, contents];
+  ,
+    SetAutomatic[currentContents, ImportUTF8 @ path];
+    If[contents =!= currentContents,
+      hash = Base36Hash @ currentContents;
+      cachePath = StringJoin[path, ".", hash, ".backup"];
+      If[!FileExistsQ[cachePath], CopyFile[path, cachePath]];
+      ExportUTF8[path, contents];
+    ];
+  ];
+  path
+];

@@ -5,18 +5,19 @@ PackageExport["RootOrientation"]
 PackageExport["Balanced"]
 PackageExport["BendStyle"]
 PackageExport["BendRadius"]
+PackageExport["StretchFactor"]
 PackageExport["PreserveBranchOrder"]
 
 Options[TreeVertexLayout] = {
   Alignment -> None, Orientation -> Top, RootVertex -> Automatic, "Bubble" -> False,
   Balanced -> False, RootOrientation -> "Source", BendStyle -> Automatic,
   PreserveBranchOrder -> False,
-  BendRadius -> 0.25
+  BendRadius -> 0.25, StretchFactor -> 1
 };
 
 TreeVertexLayout[OptionsPattern[]][data_] := Scope[
   UnpackAssociation[data, graph, indexGraph, vertexCount];
-  UnpackOptions[alignment, orientation, rootVertex, bubble, balanced, rootOrientation, bendStyle, bendRadius, preserveBranchOrder];
+  UnpackOptions[alignment, orientation, rootVertex, bubble, balanced, rootOrientation, bendStyle, bendRadius, preserveBranchOrder, stretchFactor];
 
   graphOrigin = LookupExtendedOption[graph, GraphOrigin];
   rootIndex = Switch[rootVertex,
@@ -33,6 +34,7 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
   If[rootOrientation === "Sink", data = MapAt[ReverseEdges, data, "IndexEdges"]; indexGraph //= InvertGraph];
   {vertexCoordinates, edgeCoordinateLists} = VertexEdgeCoordinateData[data, vertexLayout];
 
+  transposed = orientation === Left;
   rever = Switch[orientation, Top, Identity, Left, Reverse, _, $NotImplemented];
 
   {balanceSteps, balanceDelta} = Replace[balanced, {
@@ -48,6 +50,12 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
     (* coordsX = (Standardize[coordsX] * widthTarget) + Mean[coordsX]; *)
     vertexCoordinates = Transpose @ rever @ {coordsX, coordsY};
     edgeCoordinateLists = ExtractIndices[vertexCoordinates, EdgePairs[graph]];
+  ];
+
+  If[stretchFactor =!= 1,
+    stretchX = stretchY = 1;
+    If[transposed, stretchX = stretchFactor, stretchY = stretchFactor];
+    {vertexCoordinates, edgeCoordinateLists} = {vertexCoordinates, edgeCoordinateLists} /. {x_Real, y_Real} :> {x * stretchX, y * stretchY}
   ];
 
   Switch[bendStyle,
