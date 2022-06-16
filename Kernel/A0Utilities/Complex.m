@@ -7,6 +7,7 @@ RootOfUnity[2, 2] := 1;
 
 RootOfUnity[n_, i_] := RootOfUnity[n, i] = Expand @ ComplexExpand @ Exp[(i)/n * 2 Pi I];
 
+(**************************************************************************************************)
 
 PackageExport["UnitRoot"]
 
@@ -21,6 +22,7 @@ declareBoxFormatting[
   UnitRoot[n_] /; NumericQ[Unevaluated @ n] :> SubscriptBox["\[Xi]", ToBoxes @ n]
 ];
 
+(**************************************************************************************************)
 
 PackageScope["GetRootPower"]
 
@@ -28,11 +30,13 @@ GetRootPower[1] := 0;
 GetRootPower[UnitRoot[n_]] := 1;
 GetRootPower[Power[UnitRoot[n_], k_]] := k;
 
+(**************************************************************************************************)
 
 PackageScope["ContainsUnitRootsQ"]
 
 ContainsUnitRootsQ[e_] := ContainsQ[e, _UnitRoot];
 
+(**************************************************************************************************)
 
 PackageScope["ExpandUnitRoots"]
 

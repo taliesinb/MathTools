@@ -1,3 +1,143 @@
+PackageExport["CatenateVectors"]
+
+CatenateVectors[vecLists_] := Join[Sequence @@ vecLists, 2];
+
+
+(**************************************************************************************************)
+(** Packing                                                                                       *)
+(**************************************************************************************************)
+
+PackageScope["ToPacked"]
+
+ToPacked = ToPackedArray;
+
+PackageScope["ToPackedReal"]
+
+ToPackedReal[e_] := ToPackedArray[e, Real];
+
+PackageScope["ToPackedRealArrays"]
+
+ToPackedRealArrays[array_ ? PackedArrayQ] := array;
+
+ToPackedRealArrays[array_] := Scope[
+  array = ToPackedReal[array];
+  If[PackedArrayQ[array], array, Map[ToPackedRealArrays, array]]
+];
+
+(**************************************************************************************************)
+
+PackageExport["PlusVector"]
+
+SetUsage @ "
+PlusVector[matrix$, vector$] adds vector$ to each row vector of matrix$.
+PlusVector[vector$] is an operator form of PlusVector.
+* PlusVector is useful because normally matrix$ + vector$ adds vector$ column-wise to matrix$ via Listability.
+"
+
+PlusVector[matrix_, 0|0.|{0.,0.}] := matrix;
+PlusVector[matrix_, v_] := v + #& /@ matrix;
+PlusVector[v_][matrix_] := PlusVector[matrix, v];
+
+(**************************************************************************************************)
+(** Column / row accessors                                                                        *)
+(**************************************************************************************************)
+
+PackageExport["FirstColumn"]
+
+SetRelatedSymbolGroup[FirstColumn, LastColumn, MostColumns, RestColumns];
+
+SetUsage @ "
+FirstColumn[matrix$] gives a list consisting of the first column of a matrix.
+"
+
+FirstColumn[matrix_] := Part[matrix, All, 1];
+FirstColumn[None] := None;
+
+(**************************************************************************************************)
+
+PackageExport["LastColumn"]
+
+SetUsage @ "
+LastColumn[matrix$] gives a list consisting of the last column of a matrix.
+"
+
+LastColumn[matrix_] := Part[matrix, All, -1];
+LastColumn[None] := None;
+
+(**************************************************************************************************)
+
+PackageExport["MostColumns"]
+
+SetUsage @ "
+MostColumns[matrix$] gives a matrix consisting of the all but the last column of matrix$.
+"
+
+MostColumns[matrix_] := Part[matrix, All, All ;; -2];
+
+(**************************************************************************************************)
+
+PackageExport["RestColumns"]
+
+SetUsage @ "
+RestColumns[matrix$] gives a matrix consisting of the all but the first column of matrix$.
+"
+
+RestColumns[matrix_] := Part[matrix, All, 2 ;; All];
+
+(**************************************************************************************************)
+(** Column / row mutation                                                                         *)
+(**************************************************************************************************)
+
+PackageExport["PrependColumn"]
+
+SetRelatedSymbolGroup[PrependColumn, AppendColumn];
+
+SetUsage @ "
+PrependColumn[matrix$, column$] gives a matrix in which the list column$ has been prepended.
+"
+
+PrependColumn[matrix_, column_] := Transpose @ Prepend[Transpose @ matrix, column];
+PrependColumn[column_][matrix_] := PrependColumn[matrix, column];
+
+(**************************************************************************************************)
+
+PackageExport["AppendColumn"]
+
+SetUsage @ "
+AppendColumn[matrix$, column$] gives a matrix in which the list column$ has been appended.
+"
+
+AppendColumn[matrix_, column_] := Transpose @ Append[Transpose @ matrix, column];
+AppendColumn[column_][matrix_] := AppendColumn[matrix, column];
+
+(**************************************************************************************************)
+
+PackageExport["AppendConstantColumn"]
+
+AppendConstantColumn[matrix_, item_] := Map[Append[item], matrix];
+AppendConstantColumn[item_][matrix_] := AppendConstantColumn[matrix, item];
+
+(**************************************************************************************************)
+
+PackageExport["PrependConstantColumn"]
+
+PrependConstantColumn[matrix_, item_] := Map[Prepend[item], matrix];
+PrependConstantColumn[item_][matrix_] := PrependConstantColumn[matrix, item];
+
+(**************************************************************************************************)
+
+PackageExport["AppendConstantRow"]
+
+AppendConstantRow[matrix_, item_] := Append[matrix, ConstantArray[item, Length @ First @ matrix]];
+AppendConstantRow[item_][matrix_] := AppendConstantRow[matrix, item];
+
+(**************************************************************************************************)
+
+PackageExport["PrependConstantRow"]
+
+AppendConstantRow[matrix_, item_] := Prepend[matrix, ConstantArray[item, Length @ First @ matrix]];
+AppendConstantRow[item_][matrix_] := PrependConstantRow[matrix, item];
+
 (**************************************************************************************************)
 (** Idiomatic construction of matrices                                                            *)
 (**************************************************************************************************)

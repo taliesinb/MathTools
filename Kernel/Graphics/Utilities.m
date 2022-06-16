@@ -696,3 +696,125 @@ PackageExport["ShowFaded"]
 
 ShowFaded[items__, opacity_?NumericQ] := ListShowFaded[{items}, -1, opacity];
 ShowFaded[items__] := ListShowFaded[{items}, -1];
+
+
+(**************************************************************************************************)
+
+PackageExport["SimplifyGraphicsPrimitives"]
+
+SimplifyGraphicsPrimitives[primitives_] :=
+  simplifyPrimitiveAnnotations @ simplifyPrimitiveStyles @ primitives;
+
+$simplifyPrimitiveStyleRules = Dispatch @ {
+  Directive[{}] :> {},
+  Style[g_] :> g,
+  Style[g_, {} | {{}}] :> g,
+  Style[Style[g_, a___], b___] :> Style[g, a, b]
+};
+
+simplifyPrimitiveStyles[primitives_] :=
+  ReplaceRepeated[primitives, $simplifyPrimitiveStyleRules];
+
+$simplifyPrimitiveAnnotationRules = Dispatch @ {
+
+  (* a single annotation with uniform primitives can use a single larger primitive *)
+  anno:Annotation[{__Point} | {__Line} | {__Arrow}, __] :> joinAnnotationPrimitives[anno],
+
+  (* fragmented uniform primitives can be combined into a single larger primitive *)
+  annos:{Annotation[(head:(Point | Line | Arrow))[_], _List, type_]..} :> joinHeadAnnotations[annos, type],
+
+  (* fragmented list primitives can be joined  *)
+  annos:{Annotation[_List, _List, type_]..} :> joinListAnnotations[annos, type],
+
+  (* singleton annos can be joined, even if they are non-uniform / wrapped in style *)
+  annos:{Annotation[_, {_}, type_]..} :> joinSingletonAnnotations[annos, type]
+};
+
+joinHeadPrimitives[prims_] := Scope[
+  head = Part[prims, 1, 0];
+  coords = Part[prims, All, 1];
+  normFunc = If[head === Point, toCoordinateMatrix, toCoordinateArray];
+  coordsArray = ToPackedRealArrays @ Apply[Join] @ Map[normFunc] @ coords;
+  head[coordsArray]
+];
+
+joinAnnotationPrimitives[Annotation[prims_, args__]] :=
+  Annotation[joinHeadPrimitives @ prims, args];
+
+joinHeadAnnotations[annos_, type_] := Scope[
+  primitives = joinHeadPrimitives @ Part[annos, All, 1];
+  indices = Join @@ Part[annos, All, 2];
+  Annotation[primitives, indices, type]
+];
+
+toCoordinateArray[e_] := If[CoordinateArrayQ[e] || VectorQ[e, CoordinateMatrixQ], e, List @ e];
+toCoordinateMatrix[e_] := If[CoordinateMatrixQ[e], e, List @ e];
+
+joinListAnnotations[annos_, type_] :=
+  Annotation[Join @@ Part[annos, All, 1], Join @@ Part[annos, All, 2], type];
+
+joinSingletonAnnotations[annos_, type_] :=
+  Annotation[Part[annos, All, 1], Part[annos, All, 2, 1], type];
+
+(* a list of singleton-index annotations can be replaced with a single such primitive annotation *)
+simplifyPrimitiveAnnotations[primitives_] :=
+  ReplaceRepeated[primitives, $simplifyPrimitiveAnnotationRules];
+
+(**************************************************************************************************)
+
+PackageExport["Lerp"]
+
+SetUsage @ "
+Lerp[a$, b$, f$] linearly interpolates between a$ and b$, where f$ = 0 gives a$ and f$ = 1 gives b$.
+Lerp[a$, b$, {f$1, f$2, $$}] gives a list of interpolations.
+Lerp[a$, b$, Into[n$]] gives the n$ values interpolated between a$ and b$.
+Lerp[f$] is the operator form of Lerp$.
+* a$ and b$ can be numbers, arrays, etc.
+"
+
+Lerp[a_, b_, f_] := a * (1 - f) + b * f;
+Lerp[a_, b_, f_List] := Lerp[a, b, #]& /@ f;
+
+Lerp[a_, b_, Into[0]] := {};
+Lerp[a_, b_, Into[1]] := (a + b) / 2;
+Lerp[a_, b_, Into[2]] := {a, b};
+Lerp[a_, b_, Into[n_]] := Lerp[a, b, Range[0, 1, 1/(n-1)]]
+
+Lerp[n_][a_, b_] :=Lerp[a, b, n];
+
+(**************************************************************************************************)
+
+PackageExport["Interpolated"]
+
+SetUsage @ "
+Interpolated[a$, b$, n$] is equivalent to %Lerp[a$, b$, Into[n$]].
+"
+
+Interpolated[a_, b_, n_] := Table[b * i + a * (1 - i), {i, 0, 1, 1/(n-1)}];
+
+(**************************************************************************************************)
+
+PackageExport["AngleRange"]
+
+SetRelatedSymbolGroup[AngleRange, AngleDifference];
+
+SetUsage @ "
+AngleRange[a$, b$, Into[n$]] gives n$ angles between a$ and b$.
+* The angles are chosen in the direction that yields the shortest distance modulo %%Tau.
+* All values are given modulo %%Tau.
+"
+
+AngleRange[a_, b_, Into[0]] := {};
+AngleRange[a_, b_, Into[1]] := {Mod[(a + b), Tau] / 2};
+AngleRange[a_, b_, Into[n_]] := NestList[PlusOperator[AngleDifference[a, b] / (n-1)], a, n-1];
+AngleRange[a_, b_, da_] := AngleRange[a, b, Into[Ceiling[1 + Abs[AngleDifference[a, b]] / da]]];
+
+
+PackageExport["AngleDifference"]
+
+SetUsage @ "
+AngleDifference[a$, b$, Into[n$]] gives the signed distance between two angles a$ and b$.
+* This is the smallest difference between a$ and b$ modulo %%Tau.
+"
+
+AngleDifference[a_, b_] := If[Abs[b - a] > Pi, Mod[Mod[b, Tau] - Mod[a, Tau], Tau, -Pi], b - a];

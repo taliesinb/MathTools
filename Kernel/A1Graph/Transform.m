@@ -8,6 +8,8 @@ SelectVertices[graph_Graph, filter_] := Subgraph[graph, Select[VertexList[graph]
 
 PackageExport["GraphRelabel"]
 
+(* TODO: is this the same as MapVertices? *)
+
 GraphRelabel[graph_Graph, f_] :=
   VertexReplace[graph, Map[# -> f[#]&, VertexList[graph]]];
 
@@ -38,11 +40,16 @@ reverseEdge = Case[
 
 PackageExport["MapVertices"]
 
+(* TODO: Map on GraphOrigin, etc *)
+
 MapVertices[f_, graph_Graph] := Graph[
   Map[f, VertexList @ graph],
-  MapAt[f, EdgeList @ graph, {All, 1;;2}],
+  SafeMapAt[f, EdgeList @ graph, {All, 1;;2}],
   Options @ graph
 ];
+
+MapVertices[f_, {}] := {};
+MapVertices[f_, edges_List] := MapAt[f, edges, {All, 1;;2}];
 
 (**************************************************************************************************)
 
@@ -158,30 +165,49 @@ getAnnoValue[annos_, key_] := Lookup[annos, key, failSelect["badgraphannokey", k
 
 (**************************************************************************************************)
 
-PackageExport["PermuteVertices"]
+PackageExport["RandomlyPermuteVertices"]
 
 SetUsage @ "
-PermuteVertices[graph$] permutes the %VertexList order of vertices in graph$.
+RandomlyPermuteVertices[graph$] randomly permutes the %VertexList order of vertices in graph$.
 * The option %RandomSeeding controls the pseudorandom permutation.
 "
 
-Options[PermuteVertices] = {RandomSeeding -> Automatic};
+Options[RandomlyPermuteVertices] = {RandomSeeding -> Automatic};
 
-PermuteVertices[graph_, OptionsPattern[]] := Scope @ RandomSeeded[
-  indices = RandomSample @ Range @ VertexCount @ graph;
-  scrambler = PartOperator[indices];
+RandomlyPermuteVertices[graph_, OptionsPattern[]] := Scope[
+
+  indices = RandomSeeded[
+    RandomSample @ Range @ VertexCount @ graph,
+    OptionValue[RandomSeeding]
+  ];
+
+  PermuteVertices[graph, indices]
+];
+
+(**************************************************************************************************)
+
+PackageExport["PermuteVertices"]
+
+SetUsage @ "
+PermuteVertices[graph$, perm$] applies the permutation perm$ to the %VertexList order of vertices in graph$.
+"
+
+PermuteVertices[graph_, indices_List] := Scope[
+
+  If[Length[indices] =!= VertexCount[graph] || !PermutedRangeQ[indices], ReturnFailed[]];
+
+  permutor = PartOperator[indices];
 
   options = Options @ graph;
+
   coords = LookupOption[options, VertexCoordinates];
-  If[ListQ[coords], options //= ReplaceOptions[VertexCoordinates -> scrambler[coords]]];
+  If[ListQ[coords], options //= ReplaceOptions[VertexCoordinates -> permutor[coords]]];
 
   vertexAnnos = LookupExtendedOption[graph, VertexAnnotations];
-  If[AssociationQ[vertexAnnos], vertexAnnos //= Map[scrambler]];
+  If[AssociationQ[vertexAnnos], vertexAnnos //= Map[permutor]];
 
-  result = Graph[scrambler @ VertexList @ graph, EdgeList @ graph, Sequence @@ options];
+  result = Graph[permutor @ VertexList @ graph, EdgeList @ graph, Sequence @@ options];
   If[AssociationQ[vertexAnnos], result = Annotate[result, VertexAnnotations -> vertexAnnos]];
 
   result
-,
-  OptionValue[RandomSeeding]
 ];

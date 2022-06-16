@@ -472,3 +472,20 @@ $enumeratedLatticeStyleOpts = {
 
 $GraphThemeData["EnumeratedLattice"] := $enumeratedLatticeStyleOpts;
 
+(**************************************************************************************************)
+
+PackageExport["RangePartitionGraph"]
+
+RangePartitionGraph[n_] := Scope[
+  init = List /@ Range[n];
+  MultiwaySystem[rangePartitionSuccessors, {init}]
+];
+  
+rangePartitionSuccessors[part_] := Join @@ Table[
+  Sort @ Append[
+    Delete[part, {{i}, {j}}],
+    Sort[Join @@ Part[part, {i, j}]]
+  ],
+  {i, Length @ part}, {j, i+1, Length @ part}
+];
+

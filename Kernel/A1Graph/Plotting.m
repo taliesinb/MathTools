@@ -25,6 +25,8 @@ PackageExport["CardinalColorFunction"]
 PackageExport["VertexLabelPosition"]
 PackageExport["VertexLabelSpacing"]
 PackageExport["VertexLabelBaseStyle"]
+PackageExport["VertexLabelOrientation"]
+
 PackageExport["VertexFontSize"]
 PackageExport["VertexBackground"]
 
@@ -33,6 +35,7 @@ PackageExport["VertexOverlapResolution"]
 PackageExport["EdgeLabelPosition"]
 PackageExport["EdgeLabelSpacing"]
 PackageExport["EdgeLabelBaseStyle"]
+PackageExport["EdgeLabelOrientation"]
 
 PackageExport["EdgeLength"]
 
@@ -587,6 +590,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       vertexLabelPosition,  edgeLabelPosition,
       vertexLabelSpacing,   edgeLabelSpacing,
       vertexLabelBaseStyle, edgeLabelBaseStyle,
+      vertexLabelOrientation, edgeLabelOrientation,
 
       peripheralVertices
     ];
@@ -877,7 +881,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         vertexLabels, vertexTooltips,
         $VertexList, $VertexCoordinates, $VertexParts,
         vertexSize,
-        {vertexLabelStyle, vertexLabelPosition, vertexLabelSpacing, vertexLabelBaseStyle},
+        {vertexLabelStyle, vertexLabelPosition, vertexLabelSpacing, vertexLabelBaseStyle, vertexLabelOrientation},
         vertexAnnotations, True
       ];
       Which[
@@ -894,7 +898,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         edgeLabels, edgeTooltips,
         $EdgeList, edgeCenters, $EdgeParts,
         Max[arrowheadSize] * $GraphPlotSizeX,
-        {edgeLabelStyle, edgeLabelPosition, edgeLabelSpacing, edgeLabelBaseStyle},
+        {edgeLabelStyle, edgeLabelPosition, edgeLabelSpacing, edgeLabelBaseStyle, edgeLabelOrientation},
         edgeAnnotations, False
       ];
       Which[
@@ -2383,7 +2387,7 @@ drawViaColorFunc[colorFn_, drawFn_, count_, parts_, fadedParts_, dataProviderFn_
       }
     ];
 
-    Return @ simplifyPrimitives @ result;
+    Return @ SimplifyGraphicsPrimitives @ result;
   ];
 
 
@@ -2399,7 +2403,7 @@ drawViaColorFunc[colorFn_, drawFn_, count_, parts_, fadedParts_, dataProviderFn_
 
   colorGroups //= filterAssocIndices[parts];
 
-  simplifyPrimitives @ KeyValueMap[colorGroupFn, colorGroups]
+  SimplifyGraphicsPrimitives @ KeyValueMap[colorGroupFn, colorGroups]
 ];
 
 obtainColors[colorFn_, dataProviderFn_, optSymbol_] := Scope[
@@ -2674,9 +2678,10 @@ $rasterSizeFixupRules = {
 };
 
 PackageExport["LabelPosition"]
+PackageExport["LabelOrientation"]
 
 $uniformPayloadSizes = False;
-generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {labelStyle_, labelPosition_, labelSpacing_, labelBaseStyle_}, annotations_, isVertices_] := Scope[
+generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {labelStyle_, labelPosition_, labelSpacing_, labelBaseStyle_, labelOrientation_}, annotations_, isVertices_] := Scope[
   $annotationKeys = Keys @ annotations;
   $labelNames = names;
   coordinates = Part[coordinates, parts];
@@ -2687,10 +2692,13 @@ generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {lab
   $labelSizeScale = 1; $labelScaledPos = None; $labelY = None; $labelX = None; $labelBackground = GrayLevel[1.0, 0.6];
   $labelBaseStyle = None; $labelOffset = None;
   $adjacencyIndex = None; $meanCoordinates = Mean @ coordinates;
+  $labelOrientation = 0;
   setLabelStyleGlobals[LabelPosition -> labelPosition];
   setLabelStyleGlobals[LabelSpacing -> labelSpacing];
+  setLabelStyleGlobals[LabelOrientation -> labelOrientation];
   setLabelStyleGlobals[BaseStyle -> labelBaseStyle];
   labelStyle //= toDirectiveOptScan[setLabelStyleGlobals];
+  If[$labelX === $labelY === None && labelPosition === Automatic, $labelY = -1];
   SetNone[$labelX, 0]; SetNone[$labelY, 0];
   labelStyle //= DeleteCases[sspec:$SizePattern /; ($labelSizeScale = toNumericSizeScale @ sspec; True)];
   If[$labelFontSize =!= None, PrependTo[labelStyle, FontSize -> $labelFontSize]];
@@ -2754,22 +2762,28 @@ setLabelStyleGlobals = Case[
   LabelPosition -> TopLeft                := (%[LabelPosition -> Top]; %[LabelPosition -> Left]);
   LabelPosition -> BottomRight            := (%[LabelPosition -> Bottom]; %[LabelPosition -> Right]);
   LabelPosition -> BottomLeft             := (%[LabelPosition -> Bottom]; %[LabelPosition -> Left]);
-  LabelPosition -> Top|Above              := $labelY = -1;
-  LabelPosition -> Bottom|Below           := $labelY = 1.25;
+  LabelPosition -> Top|Above              := SetNone[$labelY, -1];
+  LabelPosition -> Bottom|Below           := SetNone[$labelY, 1.25];
   LabelPosition -> Center                 := $labelX = $labelY = 0;
   LabelPosition -> "Radial"               := ($labelX = $labelY = "Radial");
+  LabelPosition -> "Aligned"              := ($labelX = $labelY = "Aligned");
   LabelPosition -> {x_ ? NQ, y_ ? NQ}     := ($labelX = N[x]; $labelY = N[y]);
   LabelPosition -> specs:{__}             := Scan[%[LabelPosition -> #]&, specs];
-  LabelPosition -> Left                   := $labelX = 1.25;
-  LabelPosition -> Right                  := $labelX = -1.25;
+  LabelPosition -> Left                   := SetNone[$labelX, 1.25];
+  LabelPosition -> Right                  := SetNone[$labelX, -1.25];
   LabelPosition -> Offset[{x_ ? NQ, y_ ? NQ}] := (
     $labelOffset = {x, y};
     $labelX = Switch[Sign @ x, -1, 1, 0, 0, 1, -1];
     $labelY = Switch[Sign @ y, -1, 1, 0, 0, 1, -1];
   );
+  LabelOrientation -> Automatic           := ($labelOrientation = 0);
+  LabelOrientation -> (n_ ? NumericQ)     := ($labelOrientation = N @ n);
+  LabelOrientation -> Vertical            := ($labelOrientation = 90);
+  LabelOrientation -> Horizontal          := ($labelOrientation = 0);
+  LabelOrientation -> "Aligned"           := ($labelOrientation = "Aligned");
   Spacings|LabelSpacing -> n_ := $spacings = N[n];
 
-  rule_ := failPlot["badsubopt", rule, commaString @ {ItemSize, BaseStyle, Background, LabelPosition, Spacings}];
+  rule_ := failPlot["badsubopt", rule, commaString @ {ItemSize, BaseStyle, Background, LabelPosition, LabelOrientation, Spacings}];
   {NQ -> NumericQ}
 ];
 
@@ -2886,6 +2900,14 @@ placeLabelAt[label_, pos_, index_] /; ($labelX === "Radial") := Scope[
   ]
 ];
 
+placeLabelAt[label_, pos_, index_] /; (!$GraphIs3D && $labelOrientation === "Aligned" && !$isVertices) := Scope[
+  edgeCoords = Part[$EdgeCoordinateLists, index];
+  {start, end} = FirstLast @ edgeCoords;
+  $labelOrientation = Mod[((ArcTan2 @@ (end - start)) / Degree) + 90, 180] - 90;
+  placeLabelAt[label, pos, index]
+];
+
+
 sumOfDistances[point_, points_] :=
   Total @ Flatten @ DistanceMatrix[{point}, points];
 
@@ -2909,8 +2931,10 @@ placeLabelAt[label_, pos_, _] := makeTextLabel[
   {$labelX, $labelY} * 0.95
 ];
 
-makeTextLabel[label_, pos_, offset_, args___] := Text[
-  $magnifier @ label, pos, offset, Background -> $labelBackground,
+makeTextLabel[label_, pos_, offset_] := Text[
+  $magnifier @ label, pos, offset,
+  If[$labelOrientation == 0, Sequence @@ {}, AngleVector[$labelOrientation * Degree]],
+  Background -> $labelBackground,
   If[$labelBaseStyle === None, Sequence @@ {}, BaseStyle -> $labelBaseStyle]
 ];
 
@@ -3025,69 +3049,6 @@ TransformGraphCoordinates[f_, graph_, method_] :=
 
 (**************************************************************************************************)
 
-PackageScope["simplifyPrimitives"]
-
-simplifyPrimitives[primitives_] :=
-  simplifyPrimitiveAnnotations @ simplifyPrimitiveStyles @ primitives;
-
-$simplifyPrimitiveStyleRules = Dispatch @ {
-  Directive[{}] :> {},
-  Style[g_] :> g,
-  Style[g_, {} | {{}}] :> g,
-  Style[Style[g_, a___], b___] :> Style[g, a, b]
-};
-
-simplifyPrimitiveStyles[primitives_] :=
-  ReplaceRepeated[primitives, $simplifyPrimitiveStyleRules];
-
-
-$simplifyPrimitiveAnnotationRules = Dispatch @ {
-
-  (* a single annotation with uniform primitives can use a single larger primitive *)
-  anno:Annotation[{__Point} | {__Line} | {__Arrow}, __] :> joinAnnotationPrimitives[anno],
-
-  (* fragmented uniform primitives can be combined into a single larger primitive *)
-  annos:{Annotation[(head:(Point | Line | Arrow))[_], _List, type_]..} :> joinHeadAnnotations[annos, type],
-
-  (* fragmented list primitives can be joined  *)
-  annos:{Annotation[_List, _List, type_]..} :> joinListAnnotations[annos, type],
-
-  (* singleton annos can be joined, even if they are non-uniform / wrapped in style *)
-  annos:{Annotation[_, {_}, type_]..} :> joinSingletonAnnotations[annos, type]
-};
-
-joinHeadPrimitives[prims_] := Scope[
-  head = Part[prims, 1, 0];
-  coords = Part[prims, All, 1];
-  normFunc = If[head === Point, toCoordinateMatrix, toCoordinateArray];
-  coordsArray = ToPackedRealArrays @ Apply[Join] @ Map[normFunc] @ coords;
-  head[coordsArray]
-];
-
-joinAnnotationPrimitives[Annotation[prims_, args__]] :=
-  Annotation[joinHeadPrimitives @ prims, args];
-
-joinHeadAnnotations[annos_, type_] := Scope[
-  primitives = joinHeadPrimitives @ Part[annos, All, 1];
-  indices = Join @@ Part[annos, All, 2];
-  Annotation[primitives, indices, type]
-];
-
-toCoordinateArray[e_] := If[CoordinateArrayQ[e] || VectorQ[e, CoordinateMatrixQ], e, List @ e];
-toCoordinateMatrix[e_] := If[CoordinateMatrixQ[e], e, List @ e];
-
-joinListAnnotations[annos_, type_] :=
-  Annotation[Join @@ Part[annos, All, 1], Join @@ Part[annos, All, 2], type];
-
-joinSingletonAnnotations[annos_, type_] :=
-  Annotation[Part[annos, All, 1], Part[annos, All, 2, 1], type];
-
-(* a list of singleton-index annotations can be replaced with a single such primitive annotation *)
-simplifyPrimitiveAnnotations[primitives_] :=
-  ReplaceRepeated[primitives, $simplifyPrimitiveAnnotationRules];
-
-(**************************************************************************************************)
-
 PackageExport["ExtractGraphPlotPrimitives"]
 
 ExtractGraphPlotPrimitives[targetIds_, type_] := Block[
@@ -3171,7 +3132,7 @@ ApplyFinalTransforms[primitives_] := primitives //. {
   Annotation[p_, "HideArrowheads"] :> applyToPrimitivesType[p, hideArrowheads, "EdgePrimitives"],
   Annotation[p_, "HideVertices"] :> deletePrimitivesType[p, "VertexPrimitives"],
   Annotation[p_, "HideEdges"] :> deletePrimitivesType[p, "EdgePrimitives"]
-} // simplifyPrimitives;
+} // SimplifyGraphicsPrimitives;
 
 deletePrimitivesType[primitives_, type_] := ReplaceAll[primitives,
   Annotation[_, _, type] :> {}
@@ -3224,3 +3185,4 @@ annoWithTooltips[Arrow[prims_, opts__], ids_] :=
 
 annoWithTooltips[(head:Point|Line|Arrow)[prims_], ids_] :=
   MapThread[Tooltip[head[#1], #2]&, {prims, ids}];
+

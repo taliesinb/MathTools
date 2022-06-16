@@ -10,7 +10,7 @@ LookupCardinalColors[quiver$, c$] returns the color for cardinal c$.
 "
 
 LookupCardinalColors[graph_Graph] := Scope[
-  UnpackExtendedOptions[graph, cardinalColorRules, cardinalColors, cardinalColorFunction];
+  UnpackExtendedThemedOptions[graph, cardinalColorRules, cardinalColors, cardinalColorFunction];
   cardinals = CardinalList @ graph;
   Which[
     cardinals === None,
@@ -19,6 +19,8 @@ LookupCardinalColors[graph_Graph] := Scope[
       AssociationThread[cardinals, cardinalColors],
     AssociationQ[cardinalColors],
       cardinalColors,
+    ColorQ[cardinalColors],
+      ConstantAssociation[cardinals, cardinalColors],
     AssociationQ[cardinalColorFunction],
       AssociationThread[cardinals, Lookup[cardinalColorFunction, cardinals, $Gray]],
     cardinalColorFunction =!= None,
@@ -36,7 +38,7 @@ LookupCardinalColors[graph_Graph] := Scope[
 (* if you look up a programmatically generated color for a cardinal not present in the cardinal list,
 we can still make it work properly: used for glued graphs *)
 LookupCardinalColors[graph_Graph, card_] /; LookupExtendedOption[graph, CardinalColorFunction] =!= None := Scope[
-  UnpackExtendedOptions[graph, cardinalColorFunction];
+  UnpackExtendedThemedOptions[graph, cardinalColorFunction];
   If[ListQ[card],
     AssociationMap[cardinalColorFunction, card],
     cardinalColorFunction @ card
