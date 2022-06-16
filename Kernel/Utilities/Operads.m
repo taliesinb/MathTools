@@ -238,3 +238,113 @@ toArrowVarRules[var_] := {
   var -> Style[ForwardFactorSymbol, CardinalColor[var]]
 };
 
+(**************************************************************************************************)
+
+PackageExport["Hyperedge"]
+
+(**************************************************************************************************)
+
+PackageExport["HyperedgeIncidenceGraph"]
+
+SetUsage @ "
+HyperedgeIncidenceGraph[<|name$1 -> expr$1, $$|>] constructs a bipartite graph, consisting of two vertex types:
+* hyperedge vertices reprepresent expressions and sub-expressions of the expr$i.
+* atomic vertices represents atomic values in the expressions.
+* edges h$ -> a$ are labeled with the part p$ of h$ that has value a$.
+* if any of the expr$i contain name$i, there will be edges of the form h$ -> h$'.
+"
+
+HyperedgeIncidenceGraph::notassoc = "First argument should be an association from names to hyperedges."
+
+HyperedgeIncidenceGraph[expr_, rules:OptionsPattern[]] := Scope[
+  If[!AssociationQ[expr], ReturnFailed["notassoc"]];
+  keys = Keys[expr];
+  $keysP = Apply[Alternatives, Verbatim /@ keys];
+  
+  $type = $content = Association[];
+  CollectTo[{$hyperedges, $vertices},
+    KeyValueScan[scanHyperedge, expr /. p:$keysP :> Hyperedge[p]]
+  ];
+  
+  $vertices //= DeleteDuplicates;
+
+  ExtendedGraph[
+    $vertices,
+    $hyperedges,
+    FilterOptions[rules],
+    VertexAnnotations -> Map[
+      Lookup[#, $vertices, None]&,
+      <|"Content" -> $content, "Type" -> $type|>
+    ],
+    GraphTheme -> "HyperedgeIndicenceGraph"
+  ]
+];
+
+$GraphThemeData["HyperedgeIndicenceGraph"] := $HyperedgeIncidenceGraphThemeData;
+
+$HyperedgeIncidenceGraphThemeData = {
+  VertexLayout -> TreeVertexLayout[Orientation -> Top, Balanced -> True],
+  ImagePadding -> {Vertical -> 15, Horizontal -> 30},
+  ImageSize -> "ShortestEdge" -> 50, EdgeLabels -> "Cardinal", EdgeLabelStyle -> {LabelPosition -> Right, Background -> None},
+  BaselinePosition -> Top,
+  VertexColorFunction -> IncidenceVertexColorFunction,
+  ArrowheadShape -> "Line", ArrowheadSize -> 15, ArrowheadPosition -> 0.6,
+  CardinalColors -> $Gray,
+  EdgeSetback -> .1
+};
+
+scanHyperedge[path_, value_] := Scope[
+  p = Hyperedge[path];
+  $content[p] = value;
+  res = toHyperedgePart[p, value];
+  If[res =!= p, Internal`StuffBag[$hyperedges, DirectedEdge[p, res, None]]];
+];
+
+toHyperedgePart[path_, ref_Hyperedge] :=
+  ref;
+
+toHyperedgePart[path_, value:(_List | _Association)] := (
+  PartValueMap[addPathEdge[path], value];
+  addHyperedgeVertex[path, value]
+);
+
+toHyperedgePart[path_, atom_] :=
+  addAtomVertex[atom];
+
+addHyperedgeVertex[path_, value_] := (
+  Internal`StuffBag[$vertices, path];
+  $type[path] = SymbolName @ Head @ value;
+  $content[path] = value;
+  path
+)
+
+addAtomVertex[atom_] := (
+  Internal`StuffBag[$vertices, atom];
+  $type[atom] = "Atom";
+  $content[atom] = atom;
+  atom
+);
+
+addPathEdge[path_][subPart_, subValue_] :=
+  Internal`StuffBag[
+    $hyperedges,
+    DirectedEdge[path, toHyperedgePart[Append[path, subPart], subValue], subPart]
+  ];
+
+
+PackageExport["IncidenceVertexColorFunction"]
+
+IncidenceVertexColorFunction = Case[
+  _Hyperedge := White;
+  _ := Black;
+];
+
+
+PackageExport["IncidenceGraphVertexShapeFunction"]
+
+IncidenceGraphVertexShapeFunction[assoc_] := Scope[
+  UnpackAssociation[assoc, coordinates, annotations];
+  data = annotations["Type"];
+  If[data === None, Return @ Disk[coordinates, .1]];
+  Text[Framed[Style[annotations["Data"], 12], Background -> White, FrameStyle -> $LightGray], coordinates]
+];
