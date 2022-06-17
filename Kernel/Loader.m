@@ -338,18 +338,18 @@ findSuspiciousPackageLines[pdata_] :=
   positionToFileLine /@ Position[$packageExpressions, $badControlStatementPatterns];
 
 QuiverGeometryPackageLoader`EvaluatePackages[packagesList_List] := Block[
-  {$currentPath, $currentLineNumber, result, initialFile, finalFile},
+  {$currentPath, $currentLineNumber, $formsChanged, result, initialFile, finalFile},
   $currentPath = ""; $currentLineNumber = 0;
   QuiverGeometryPackageLoader`$FileTimings = <||>;
   QuiverGeometryPackageLoader`$FileLineTimings  = <||>;
-  $failEval = False;
+  $formsChanged = $failEval = False;
   loadUserFile["user_init.m"];
   result = GeneralUtilities`WithMessageHandler[
     Scan[evaluatePackage, packagesList],
     handleMessage
   ];
   If[$failEval, Return[$Failed, Block]];
-  loadUserFile["user_final.m"];
+  If[$formsChanged, loadUserFile["user_final.m"]];
   result
 ];
 
@@ -376,6 +376,7 @@ evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
   $currentPath = path; $currentFileLineTimings = <||>; $failCount = 0;
   If[$failEval, Return[$Failed, Catch]];
   VPrint["Evaluating \"", path, "\""];
+  $formsChanged = Or[$formsChanged, StringContainsQ[context, "StylesheetForms"]]; (* to avoid expensive symbol enum *)
   QuiverGeometryPackageLoader`$FileTimings[path] = First @ AbsoluteTiming[
     Block[{$Context = context}, Catch[Scan[evaluateExpression, packageData], evaluateExpression]];
   ];
