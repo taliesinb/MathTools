@@ -1,4 +1,12 @@
-PackageExport["AdjacentPairs"]
+PublicOption[Signed]
+
+SetUsage @ "
+Signed is an option to various graph utility functions.
+"
+
+(**************************************************************************************************)
+
+PublicFunction[AdjacentPairs]
 
 SetUsage @ "
 AdjacentPairs[graph$] gives the list of {{u$1, v$1}, {u$2, v$2}, $$} such that \
@@ -22,7 +30,7 @@ AdjacentPairs[graph_, "Directed"] := AdjacencyMatrix[graph]["NonzeroPositions"];
 
 (**************************************************************************************************)
 
-PackageExport["EdgePairs"]
+PublicFunction[EdgePairs]
 
 SetUsage @ "
 EdgePairs[graph$] gives the list of {{u$1, v$1}, {u$2, v$2}, $$}} such that \
@@ -40,8 +48,7 @@ EdgePairs[graph_] := List @@@ EdgeList @ ToIndexGraph @ graph;
 
 (**************************************************************************************************)
 
-PackageExport["VertexOutTable"]
-PackageExport["VertexInTable"]
+PublicFunction[VertexOutTable, VertexInTable]
 
 SetUsage @ "
 VertexOutTable[graph$] returns a list of lists {out$1, out$2, $$} where out$i is a list of the \
@@ -58,7 +65,7 @@ VertexInTable[graph_] := Transpose[AdjacencyMatrix[graph]]["AdjacencyLists"];
 
 (**************************************************************************************************)
 
-PackageExport["VertexInOutTable"]
+PublicFunction[VertexInOutTable]
 
 SetUsage @ "
 VertexInOutTable[graph$] returns a list of pairs of lists {{in$1, out$1}, {in$2, out$2}, $$} where in$i \
@@ -73,7 +80,7 @@ VertexInOutTable[graph_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VertexAdjacencyTable"]
+PublicFunction[VertexAdjacencyTable]
 
 SetUsage @ "
 VertexAdjacencyTable[graph$] returns a list of lists {adj$1, adj$2, $$} where adj$i \
@@ -87,8 +94,7 @@ VertexAdjacencyTable[graph_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VertexOutEdgeTable"]
-PackageExport["VertexInEdgeTable"]
+PublicFunction[VertexOutEdgeTable, VertexInEdgeTable]
 
 SetUsage @ "
 VertexOutEdgeTable[graph$] returns a list of lists {out$1, out$2, $$} where out$i is a list of the \
@@ -108,7 +114,7 @@ VertexInEdgeTable[graph_] :=
 
 (**************************************************************************************************)
 
-PackageExport["VertexInOutEdgeTable"]
+PublicFunction[VertexInOutEdgeTable]
 
 SetUsage @ "
 VertexInOutEdgeTable[graph$] returns a list of lists {{in$1, out$1}, {in$2, out$2}, $$}  where in$i \
@@ -127,7 +133,7 @@ VertexInOutEdgeTable[graph_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VertexAdjacentEdgeTable"]
+PublicFunction[VertexAdjacentEdgeTable]
 
 SetUsage @ "
 VertexAdjacentEdgeTable[graph$] returns a list of lists {adj$1, adj$2, $$}  where adj$i \
@@ -150,25 +156,25 @@ VertexAdjacentEdgeTable[graph_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VertexIndexAssociation"]
+PublicFunction[VertexIndexAssociation]
 
 VertexIndexAssociation[graph_] := AssociationRange @ VertexList @ graph;
 
 (**************************************************************************************************)
 
-PackageExport["EdgeIndexAssociation"]
+PublicFunction[EdgeIndexAssociation]
 
 EdgeIndexAssociation[graph_] := AssociationRange @ EdgeList @ graph;
 
 (**************************************************************************************************)
 
-PackageExport["EdgePairIndexAssociation"]
+PublicFunction[EdgePairIndexAssociation]
 
 EdgePairIndexAssociation[graph_] := AssociationRange @ EdgePairs @ graph;
 
 (**************************************************************************************************)
 
-PackageExport["VertexOrientedOutTable"]
+PublicFunction[VertexOrientedOutTable]
 
 SetUsage @ "
 VertexOrientedOutTable[graph$] returns a list of pairs of lists {{dout$1, uout$1}, {dout$2, uout$2}, $$} \
@@ -190,8 +196,7 @@ VertexOrientedOutTable[graph_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VertexOutAssociation"]
-PackageExport["VertexInAssociation"]
+PublicFunction[VertexOutAssociation, VertexInAssociation]
 
 SetUsage @ "
 VertexOutAssociation[graph$] returns an association of lists <|v$1 -> out$1, v$2 -> out$2, $$|> \
@@ -216,7 +221,7 @@ VertexInAssociation[graph_] :=
 
 (**************************************************************************************************)
 
-PackageExport["VertexInOutAssociation"]
+PublicFunction[VertexInOutAssociation]
 
 SetUsage @ "
 VertexInOutAssociation[graph$] returns an association of lists <|v$1 -> {in$1, out$1}, v$2 -> {in$2, out$2}, $$|> \
@@ -234,10 +239,7 @@ VertexInOutAssociation[graph_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["InVertices"]
-PackageExport["OutVertices"]
-PackageExport["AllVertices"]
-PackageExport["AllUniqueVertices"]
+PublicFunction[InVertices, OutVertices, AllVertices, AllUniqueVertices]
 
 InVertices[edges_] := edges[[All, 1]];
 OutVertices[edges_] := edges[[All, 2]];
@@ -246,7 +248,7 @@ AllUniqueVertices[edges_] := DeleteDuplicates @ AllVertices[edges];
 
 (**************************************************************************************************)
 
-PackageExport["VertexEdgeList"]
+PublicFunction[VertexEdgeList]
 
 SetUsage @ "
 VertexEdgeList[graph$] returns {vertices$, edges$}.

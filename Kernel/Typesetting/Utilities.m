@@ -1,4 +1,4 @@
-PackageExport["StandardizeRowColumnSpec"]
+PublicFunction[StandardizeRowColumnSpec]
 
 StandardizeRowColumnSpec[{pre___, cycle_List, post___}, n_] := Scope[
   pre = ToList[pre]; post = ToList[post];
@@ -24,3 +24,13 @@ StandardizeRowColumnSpec[item_, n_] :=
 
 StandardizeRowColumnSpec[Automatic|None, _] :=
   Automatic;
+
+
+(**************************************************************************************************)
+
+PublicFunction[StripLabel]
+
+StripLabel[items:{___Labeled}] := Part[items, All, 1];
+StripLabel[Labeled[e_, _]] := e;
+StripLabel[e_] := e;
+

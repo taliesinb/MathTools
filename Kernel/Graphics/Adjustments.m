@@ -1,4 +1,4 @@
-PackageExport["VectorReflect"]
+PublicFunction[VectorReflect]
 
 SetUsage @ "
 VectorReflect[v$, rv$] reflects the vector v$ in the hyperplane perpendicular to rv$.
@@ -10,9 +10,7 @@ VectorReflect[rv_][v_] := VectorReflect[v, rv];
 
 (**************************************************************************************************)
 
-PackageExport["VectorRotate120"]
-PackageExport["VectorRotate90"]
-PackageExport["VectorRotate45"]
+PublicFunction[VectorRotate120, VectorRotate90, VectorRotate45]
 
 VectorRotate120[vector_] := Dot[{{-(1/2), -(Sqrt[3]/2)}, {Sqrt[3]/2, -(1/2)}}, vector];
 VectorRotate120[matrix_ ? MatrixQ] := Map[VectorRotate120, matrix];
@@ -25,7 +23,7 @@ VectorRotate45[matrix_ ? MatrixQ] := Map[VectorRotate45, matrix];
 
 (**************************************************************************************************)
 
-PackageExport["VectorReject"]
+PublicFunction[VectorReject]
 
 VectorReject[u_ ? MatrixQ, v_ ? MatrixQ] := MapThread[VectorReject, {u, v}];
 VectorReject[u_ ? MatrixQ, v_ ? VectorQ] := Map[VectorReject[u, #]&, v];
@@ -33,7 +31,7 @@ VectorReject[u_, v_] := u - Projection[u, v];
 
 (**************************************************************************************************)
 
-PackageExport["VectorProject"]
+PublicFunction[VectorProject]
 
 VectorProject[u_ ? MatrixQ, v_ ? MatrixQ] := MapThread[VectorProject, {u, v}];
 VectorProject[u_ ? MatrixQ, v_ ? VectorQ] := Map[VectorProject[u, #]&, v];
@@ -41,7 +39,7 @@ VectorProject[u_, v_] := Projection[u, v];
 
 (**************************************************************************************************)
 
-PackageExport["SetbackCoordinates"]
+PublicFunction[SetbackCoordinates]
 
 SetbackCoordinates[spec_, 0|0.] :=
   spec;
@@ -79,7 +77,7 @@ takeLine[coords_List, d_] := Scope[
 ];
 (**************************************************************************************************)
 
-PackageExport["PointAlongLine"]
+PublicFunction[PointAlongLine]
 
 PointAlongLine[{a_, b_}, d_ ? NumericQ] :=
   a + Normalize[b - a] * d;
@@ -101,14 +99,14 @@ PointAlongLine[coords_List, d_ ? NumericQ] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["LineLength"]
+PublicFunction[LineLength]
 
 LineLength[{a_, b_}] := EuclideanDistance[a, b];
 LineLength[list_] := Total @ ApplyWindowed[EuclideanDistance, list];
 
 (**************************************************************************************************)
 
-PackageExport["EdgeLengthScale"]
+PublicFunction[EdgeLengthScale]
 
 boundingBoxSideLength[line_] :=
   Total[EuclideanDistance @@@ CoordinateBounds @ line];

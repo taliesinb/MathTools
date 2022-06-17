@@ -1,4 +1,4 @@
-PackageExport["IllustatePathsOnFundamentalQuiver"]
+PublicFunction[IllustatePathsOnFundamentalQuiver]
 
 IllustatePathsOnFundamentalQuiver[quiver_, pathSpecs_, opts___] := Scope[
   fquiver = If[PathRepresentationObjectQ[quiver], quiver["Quiver"], quiver];
@@ -15,7 +15,7 @@ IllustatePathsOnFundamentalQuiver[quiver_, pathSpecs_, opts___] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["DrawFundamentalQuiverPath"]
+PublicFunction[DrawFundamentalQuiverPath]
 
 DrawFundamentalQuiverPath[quiver_, path_, color_, adjustments_] := Scope[
   regionSpec = Style[
@@ -31,7 +31,7 @@ DrawFundamentalQuiverPath[quiver_, path_, color_, adjustments_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PathBuilder"]
+PublicFunction[PathBuilder]
 
 PathBuilder[vertex_, path_String, adjustments_:{}] :=
   GraphRegionHighlight -> Style[Arrow[Path[vertex, path, PathAdjustments -> adjustments]], $Purple,
@@ -45,7 +45,7 @@ PathBuilder[vertex_, {path1_String, path2_String}] :=
 
 (**************************************************************************************************)
 
-PackageExport["UnitGraphics"]
+PublicFunction[UnitGraphics]
 
 UnitGraphics[g_, n_:1] := Graphics[g,
   ImageSize -> Medium, PlotRange -> {{-n, n}, {-n, n}}, PlotRangePadding -> Scaled[0.1],
@@ -54,7 +54,7 @@ UnitGraphics[g_, n_:1] := Graphics[g,
 
 (**************************************************************************************************)
 
-PackageExport["LabeledEdgeGraph"]
+PublicFunction[LabeledEdgeGraph]
 
 LabeledEdgeGraph[g_, opts___] := ExtendedGraph[g, opts,
   VertexSize -> Large, ArrowheadSize -> Medium,
@@ -66,7 +66,7 @@ LabeledEdgeGraph[g_, opts___] := ExtendedGraph[g, opts,
 
 (**************************************************************************************************)
 
-PackageExport["ColoredGraphCardinalColorFunction"]
+PublicFunction[ColoredGraphCardinalColorFunction]
 
 $colorRules = <|
   "r" -> $Red, "b" -> $Blue, "g" -> $Green,
@@ -82,7 +82,7 @@ ColoredGraphCardinalColorFunction[str_String] :=
 
 (**************************************************************************************************)
 
-PackageExport["ColoredGraph"]
+PublicFunction[ColoredGraph]
 
 ColoredGraph[edges_List, opts___Rule] :=
   ColoredGraph[AllUniqueVertices @ edges, edges, opts];
@@ -120,7 +120,7 @@ $GraphThemeData["ColoredGraph"] := $coloredGraphThemeRules;
 
 (**************************************************************************************************)
 
-PackageExport["PartialOrderGraph"]
+PublicFunction[PartialOrderGraph]
 
 PartialOrderGraph[vertices_, edges_, opts___Rule] := Scope[
   If[MatchQ[vertices, {__Graph} -> _List],
@@ -145,7 +145,7 @@ PartialOrderGraph[vertices_, edges_, opts___Rule] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["LatticeColoringPlot"]
+PublicFunction[LatticeColoringPlot]
 
 $customColors = <|"a" -> $Purple, "b" -> $Pink, "c" -> $Teal, "x" -> $Pink, "y" -> $Teal|>;
 
@@ -203,7 +203,7 @@ $GraphThemeData["FundamentalColoringQuiver"] := $fundamentalColoringQuiverThemeO
 
 (**************************************************************************************************)
 
-PackageExport["LatticeColoringRow"]
+PublicFunction[LatticeColoringRow]
 
 $lcrMW = 3;
 
@@ -217,7 +217,7 @@ LatticeColoringRow[list_List, args___] :=
 
 (**************************************************************************************************)
 
-PackageExport["LatticeColoringGrid"]
+PublicFunction[LatticeColoringGrid]
 
 makeColoringGridEntry[label:(_String | _Integer | _Subscript), ___] :=
   {Item[LabelForm[label, 15, Bold], ItemSize -> {Full, 2}, Alignment -> Center], SpanFromLeft};
@@ -244,7 +244,7 @@ LatticeColoringGrid[items_, args___] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PathPlot"]
+PublicFunction[PathPlot]
 
 PathPlot[graph_Graph, p_Path -> color_] :=
   PathPlot[graph, p, color];
@@ -257,7 +257,7 @@ PathPlot[graph_Graph, path_Path, color_:$Teal] :=
 
 (**************************************************************************************************)
 
-PackageExport["PathWordPlot"]
+PublicFunction[PathWordPlot]
 
 $pwpStyle = GrayLevel[0.25];
 $pwpLabel = Word;
@@ -291,7 +291,7 @@ pathEndVertex[graph_, path_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PathConcatPlot"]
+PublicFunction[PathConcatPlot]
 
 inlineSymbol[s_, args___] := Style[s, 20, args];
 
@@ -310,17 +310,17 @@ PathConcatPlot[graph_, p1_, p2_, p3_] :=
 
 (**************************************************************************************************)
 
-PackageExport["LargeSymbolForm"]
+PublicFunction[LargeSymbolForm]
 
 (**************************************************************************************************)
 
-PackageExport["LargeSymbolForm"]
+PublicFunction[LargeSymbolForm]
 
 LargeSymbolForm[e_, opts___Rule] := inlineSymbol[e, opts];
 
 (**************************************************************************************************)
 
-PackageExport["PathComposePlot"]
+PublicFunction[PathComposePlot]
 
 PathComposePlot[args___, PathStyle -> style_] := Block[{$pwpStyle = style},
   PathComposePlot[args]
@@ -347,7 +347,7 @@ PathComposePlot[graph_, p1_, p2_, p3_, p4_] :=
   ]
 (**************************************************************************************************)
 
-PackageExport["HighlightChartRegion"]
+PublicFunction[HighlightChartRegion]
 
 Options[HighlightChartRegion] = {
   "Color" -> Automatic,
@@ -381,7 +381,7 @@ HighlightChartRegion[graph_, chart_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["FadePathPlot"]
+PublicFunction[FadePathPlot]
 
 Options[FadePathPlot] = {
   "Labels" -> None,
@@ -428,7 +428,7 @@ toCardinalEdgePattern[v2_, Inverted[c_]] := EdgePattern[_, IndexedVertex @ v2, c
 
 (**************************************************************************************************)
 
-PackageExport["CompassPathPlot"]
+PublicFunction[CompassPathPlot]
 
 CompassPathPlot[compass_, path_, color_:$Red] :=
   HighlightGraphRegion[compass,
@@ -439,7 +439,7 @@ CompassPathPlot[compass_, path_, color_:$Red] :=
 
 (**************************************************************************************************)
 
-PackageExport["MobiusStrip"]
+PublicFunction[MobiusStrip]
 
 MobiusStrip[n_, is3D_:False] := Scope[
   $n = n; tauN = Tau / n; $isA = Table[i <= n/2, {i, 0, n-1}];
@@ -487,7 +487,7 @@ drawMobiusEdge[assoc_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["SimpleLabeledGraph"]
+PublicFunction[SimpleLabeledGraph]
 
 SimpleLabeledGraph[args___] := ExtendedGraph[args, GraphTheme -> "SimpleLabeledGraph"]
 
@@ -513,7 +513,7 @@ $GraphThemeData["SimpleLabeledGraph"] := $simpleLabeledGraphOpts;
 
 (**************************************************************************************************)
 
-PackageExport["SimpleLabeledQuiver"]
+PublicFunction[SimpleLabeledQuiver]
 
 $rgbList = {"r", "g", "b"};
 $abcList = {"a", "b", "c"};
@@ -547,7 +547,7 @@ $GraphThemeData["SimpleLabeledQuiver"] := $simpleLabeledQuiverOpts;
 
 (**************************************************************************************************)
 
-PackageExport["PathQuiverPlot"]
+PublicFunction[PathQuiverPlot]
 
 PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___Rule] := Scope[
   If[!QuiverQ[fq], ReturnFailed[]];
@@ -706,7 +706,7 @@ fmtPaths = MatchValues[
 
 (**************************************************************************************************)
 
-PackageExport["PathQuiverComparisonPlot"]
+PublicFunction[PathQuiverComparisonPlot]
 
 PathQuiverComparisonPlot[pq_, q_, baseVertex_:0, quotient_:False] := SpacedRow[
   If[quotient, PathQuotientSymbol, ForwardPathQuiverSymbol]["Q", baseVertex] -> ExtendedGraph[pq, GraphLegend -> None],
@@ -718,7 +718,7 @@ PathQuiverComparisonPlot[pq_, q_, baseVertex_:0, quotient_:False] := SpacedRow[
 
 (**************************************************************************************************)
 
-PackageExport["ExportNotebookOutputs"]
+PublicFunction[ExportNotebookOutputs]
 
 ExportNotebookOutputs[destination_String, prefix_String:"", sz_:3] := Scope[
   EnsureDirectory[destination];
@@ -738,7 +738,7 @@ ExportNotebookOutputs[destination_String, prefix_String:"", sz_:3] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PairwiseTable"]
+PublicFunction[PairwiseTable]
 
 Options[PairwiseTable] = {
   ShowLabels -> False,
@@ -759,7 +759,7 @@ PairwiseTable[f_, list_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VertexField1DPlot"]
+PublicFunction[VertexField1DPlot]
 
 VertexField1DPlot[vals_] := ListLinePlot[vals,
   Joined -> False, Filling -> {1 -> Axis},
@@ -771,7 +771,7 @@ VertexField1DPlot[vals_] := ListLinePlot[vals,
 
 (**************************************************************************************************)
 
-PackageExport["PathHomomorphimsGrid"]
+PublicFunction[PathHomomorphimsGrid]
 
 Options[PathHomomorphimsGrid] = {
   "HighlightColor" -> $DarkGreen
@@ -817,7 +817,7 @@ pathHomomorphismDiagram[graph_Graph, path_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphProductsRow"]
+PublicFunction[GraphProductsRow]
 
 GraphProductsRow[{l1_ -> q1_, l2_ -> q2_}, prodSeq:Repeated[{__Rule}]] := Scope[
   q1 = RotateGraph @ q1;
@@ -845,7 +845,7 @@ GraphProductsRow[{l1_ -> q1_, l2_ -> q2_}, prodSeq:Repeated[{__Rule}]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphProductTable"]
+PublicFunction[GraphProductTable]
 
 Options[GraphProductTable] = JoinOptions[
   "Labels" -> {None, None},
@@ -885,7 +885,7 @@ GraphProductTable[prodFn_, aList_, bList_, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphProductUnionSpacedRow"]
+PublicFunction[GraphProductUnionSpacedRow]
 
 productMeanPos[vertices_] := N @ Mean[List @@@ vertices];
 GraphProductUnionSpacedRow[full_, items_, opts___Rule] := Scope[
@@ -896,7 +896,7 @@ GraphProductUnionSpacedRow[full_, items_, opts___Rule] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ConnectedComponentProductDecomposition"]
+PublicFunction[ConnectedComponentProductDecomposition]
 
 Options[ConnectedComponentProductDecomposition] = JoinOptions[
   {MaxWidth -> 4, Spacings -> 15, Transposed -> False},
@@ -940,7 +940,7 @@ toQuiverProductColumn = Case[
 
 (**************************************************************************************************)
 
-PackageExport["QuiverProductTable"]
+PublicFunction[QuiverProductTable]
 
 QuiverProductTable[quivers_, termsLists_, args___] := Scope[
   makePlot = Labeled[

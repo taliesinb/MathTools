@@ -1,4 +1,4 @@
-PackageExport["GraphCache"]
+PrivateHead[GraphCache]
 
 SetUsage @ "
 GraphCache[sym$] represents a cache of computed properties of a graph that stores cached properties \
@@ -9,7 +9,7 @@ SetHoldAllComplete[GraphCache];
 
 (**************************************************************************************************)
 
-PackageScope["declareGraphCacheFriendly"]
+PrivateFunction[declareGraphCacheFriendly]
 
 declareGraphCacheFriendly[sym_] := (
   System`Private`SetValid[sym];
@@ -19,7 +19,7 @@ declareGraphCacheFriendly[syms__] := Scan[declareGraphCacheFriendly, {syms}];
 
 (**************************************************************************************************)
 
-PackageScope["CreateGraphCache"]
+PrivateFunction[CreateGraphCache]
 
 SetHoldRest[CreateGraphCache];
 
@@ -31,7 +31,7 @@ CreateGraphCache[graph_Graph, symbol_Symbol] := (
 (**************************************************************************************************)
 
 MakeBoxes[GraphCache[_, sym_Symbol], StandardForm] :=
-  RowBox[{"GraphCache", "[", "{", RowBox @ Flatten @ Riffle[ToBoxes /@ Keys @ sym, ","], "}", "]"}];
+  RBox["GraphCache", "[", "{", RowBox @ Flatten @ Riffle[ToBoxes /@ Keys @ sym, ","], "}", "]"];
 
 GraphCache /: Print[GraphCache[graph_, sym_]] := Print[Keys @ sym];
 

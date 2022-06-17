@@ -1,10 +1,10 @@
-PackageExport["ReverseRules"]
+PublicFunction[ReverseRules]
 
 ReverseRules[rules_] := Map[Reverse, rules];
 
 (**************************************************************************************************)
 
-PackageExport["RuleRange"]
+PublicFunction[RuleRange]
 
 SetUsage @ "
 RuleRange[{key$1, key$2, $$}] gives the list {$$, key$i -> i$, $$}.
@@ -15,7 +15,7 @@ RuleRange[labels_] :=
 
 (**************************************************************************************************)
 
-PackageExport["RuleThread"]
+PublicFunction[RuleThread]
 
 SetRelatedSymbolGroup[RuleThread, AssociationThread];
 

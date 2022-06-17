@@ -1,4 +1,4 @@
-PackageExport["LatticeVertex"]
+PublicHead[LatticeVertex]
 
 SetUsage @ "
 LatticeVertex[coords$] represents a vertex in a lattice graph with lattice coordinates coords$.
@@ -20,7 +20,7 @@ declareFormatting[
 
 (**************************************************************************************************)
 
-PackageExport["CardinalProduct"]
+PublicHead[CardinalProduct]
 
 SetUsage @ "
 CardinalProduct[a$, b$] represents a product of two vertices a$ and b$.
@@ -32,7 +32,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PackageExport["CardinalSequence"]
+PublicHead[CardinalSequence]
 
 SetUsage @ "
 CardinalSequence[a$, b$] represents a sequence of cardinals.
@@ -46,7 +46,7 @@ $TemplateKatexFunction["CardinalSequenceForm"] = riffled[" \\cardinalSequenceSym
 
 (**************************************************************************************************)
 
-PackageExport["VertexProduct"]
+PublicHead[VertexProduct]
 
 SetUsage @ "
 VertexProduct[a$, b$] represents a product of two vertices a$ and b$.
@@ -58,7 +58,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PackageExport["FlattenProductSymbols"]
+PublicFunction[FlattenProductSymbols]
 
 $flattenProductsRule = {
   VertexProduct[l___, VertexProduct[m__], r___] :> VertexProduct[l, m, r],
@@ -69,7 +69,7 @@ FlattenProductSymbols[e_] := e //. $flattenProductsRule;
 
 (**************************************************************************************************)
 
-PackageExport["ProductVertices"]
+PublicFunction[ProductVertices]
 
 ProductVertices[a_, b_] := VertexProduct @@@ Tuples[{toRange[a], toRange[b]}];
 
@@ -80,7 +80,7 @@ toRange[m_Integer ;; n_Integer ;; s_Integer] := Range[m, n, s];
 
 (**************************************************************************************************)
 
-PackageExport["ContractedVertex"]
+PublicHead[ContractedVertex]
 
 SetUsage @ "
 ContractedVertex[{v$1, v$2, $$}] represents a vertex formed by contracting several vertices v$i.
@@ -93,7 +93,7 @@ declareFormatting[
 
 (**************************************************************************************************)
 
-PackageExport["SumVertex"]
+PublicHead[SumVertex]
 
 SetUsage @ "
 SumVertex[v$, g$] represents a vertex v$ from graph g$ in a sum of graphs.

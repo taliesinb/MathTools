@@ -1,4 +1,4 @@
-PackageExport["EquivalenceGraph"]
+PublicFunction[EquivalenceGraph]
 
 EquivalenceGraph[graph_, f_, newOpts___Rule] := Scope[
   vertices = VertexList @ graph;

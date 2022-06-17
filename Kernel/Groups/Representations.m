@@ -1,4 +1,4 @@
-PackageExport["RepresentationObject"]
+PublicObject[RepresentationObject]
 
 SetUsage @ "
 RepresentationObject[$$] represents a group representation.
@@ -91,7 +91,7 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["RepresentationObjectQ"]
+PublicFunction[RepresentationObjectQ]
 
 SetUsage @ "
 RepresentationObjectQ[rep$] returns True if rep$ is a valid RepresentationObject[$$].
@@ -102,7 +102,7 @@ RepresentationObjectQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["CayleyFunction"]
+PublicFunction[CayleyFunction]
 
 SetUsage @ "
 CayleyFunction[obj$] returns the function that takes an element of obj$ and \
@@ -136,7 +136,7 @@ CayleyFunction[object_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["CayleyQuiver"]
+PublicFunction[CayleyQuiver]
 
 SetUsage @ "
 CayleyQuiver[obj$] returns the cardinal quiver representing the Cayley graph of a RepresentationObject or Group.
@@ -171,7 +171,7 @@ Protect[Labeled];
 
 (**************************************************************************************************)
 
-PackageExport["RepresentationElement"]
+PublicHead[RepresentationElement]
 
 SetUsage @ "
 RepresentationElement[matrix$] is the matrix representation of a group element.
@@ -221,7 +221,7 @@ RepresentationElement[elem1_, mod_][RepresentationElement[elem2_, _]] := With[
 
 (**************************************************************************************************)
 
-PackageExport["ToRepresentation"]
+PublicFunction[ToRepresentation]
 
 SetUsage @ "
 ToRepresentation[obj$] attempts to convert obj$ to a %RepresentationObject.
@@ -240,7 +240,7 @@ ToRepresentation = MatchValues[
 ];
 
 
-PackageScope["toRepresentation"]
+PrivateFunction[toRepresentation]
 
 toRepresentation["Abelian", n_] := GroupRepresentation @ InfiniteAbelianGroup[n];
 toRepresentation["Redundant", n_] := GroupRepresentation @ InfiniteAbelianGroup[n, "Redundant"];
@@ -250,7 +250,7 @@ toRepresentation[spec_, _] :=  ToRepresentation @ spec;
 
 (**************************************************************************************************)
 
-PackageExport["CustomRepresentation"]
+PublicFunction[CustomRepresentation]
 
 SetUsage @ "
 CustomRepresentation[{matrix$1, $$, matrix$n}] takes a list of matrices and \
@@ -291,7 +291,7 @@ CustomRepresentation[matrices_, group_:None, mod_:None] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["RepresentationGenerators"]
+PublicFunction[RepresentationGenerators]
 
 SetUsage @ "
 RepresentationGenerators[obj$] returns a list of RepresentationElement objects \
@@ -307,7 +307,7 @@ RepresentationGenerators[obj_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GroupRepresentation"]
+PublicFunction[GroupRepresentation]
 
 SetUsage @ "
 GroupRepresentation[group$] returns a RepresentationObject of a group group$.
@@ -337,7 +337,7 @@ GroupRepresentation[group_] := Scope[
 ]
 
 
-PackageScope["makeGenerators"]
+PrivateFunction[makeGenerators]
 
 (* this is the fallback for groups that don't have specific implementations *)
 makeGenerators[group_] := permutationGroupMatrices[group];
@@ -377,7 +377,7 @@ unitRootAbelianMatrices[dims_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["TransformGenerators"]
+PublicFunction[TransformGenerators]
 
 SetUsage @ "
 TransformGenerators[representation$, transformation$] transforms the generators of a RepresentationObject[$$], \

@@ -1,10 +1,10 @@
-PackageScope["$CacheDirectory"]
+PrivateVariable[$CacheDirectory]
 
 $CacheDirectory = FileNameJoin[{ParentDirectory @ QuiverGeometryPackageLoader`$Directory, "Data"}];
 
 (**************************************************************************************************)
 
-PackageScope["CacheFilePath"]
+PrivateFunction[CacheFilePath]
 
 CacheFilePath[name_, args___] :=
   CacheFilePath[name, args, FileExtension -> "mx"]
@@ -20,7 +20,7 @@ toCacheArgString = Case[
 
 (**************************************************************************************************)
 
-PackageScope["EnsureExport"]
+PrivateFunction[EnsureExport]
 
 EnsureExport[filepath_, expr_] := Scope[
   If[!FileExistsQ[filepath],
@@ -33,7 +33,7 @@ EnsureExport[filepath_, expr_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["CopyUnicodeToClipboard"]
+PublicFunction[CopyUnicodeToClipboard]
 
 CopyUnicodeToClipboard[text_] := Scope[
   out = FileNameJoin[{$TemporaryDirectory, "temp_unicode.txt"}];
@@ -44,7 +44,7 @@ CopyUnicodeToClipboard[text_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ExportUTF8WithBackup"]
+PublicFunction[ExportUTF8WithBackup]
 
 ExportUTF8WithBackup[path_, contents_, currentContents_:Automatic] := Scope[
   If[!StringQ[contents], ReturnFailed[]];
@@ -62,7 +62,7 @@ ExportUTF8WithBackup[path_, contents_, currentContents_:Automatic] := Scope[
   path
 ];
 
-PackageExport["AbsolutePathQ"]
+PublicFunction[AbsolutePathQ]
 
 AbsolutePathQ = Case[
   s_String /; $SystemID === "Windows" := StringStartsQ[s, LetterCharacter ~~ ":\\"];
@@ -72,7 +72,7 @@ AbsolutePathQ = Case[
 
 (**************************************************************************************************)
 
-PackageExport["NormalizePath"]
+PublicFunction[NormalizePath]
 
 NormalizePath = Case[
   ""            := "";
@@ -88,7 +88,7 @@ $pathNormalizationRules = {
 
 (**************************************************************************************************)
 
-PackageScope["ToFileName"]
+PrivateFunction[ToFileName]
 
 ToFileName[""|None, ""|None] :=
   $Failed;

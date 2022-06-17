@@ -1,6 +1,6 @@
 (**************************************************************************************************)
 
-PackageExport["StringPlot"]
+PublicFunction[StringPlot]
 
 charToColor = Replace[{
   "r" -> $Red, "g" -> $Green, "b" -> $Blue,
@@ -19,7 +19,7 @@ StringPlot[s_String, sz_:6] :=
 
 (**************************************************************************************************)
 
-PackageExport["StringRewritingSystem"]
+PublicFunction[StringRewritingSystem]
 
 StringRewritingSystem[rules_] := Scope[
   constructRewritingSystem["String", rules]
@@ -38,14 +38,14 @@ stringRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["StringReplaceListOperator"]
+PublicFunction[StringReplaceListOperator]
 
 StringReplaceListOperator[rules_][str_] :=
   StringReplaceList[str, rules];
 
 (**************************************************************************************************)
 
-PackageExport["StringLabeledReplaceList"]
+PublicFunction[StringLabeledReplaceList]
 
 StringLabeledReplaceList[str_, {rule_}] :=
   StringLabeledReplaceList[str, rule, None];

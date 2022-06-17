@@ -1,4 +1,4 @@
-PackageExport["ChartSymbol"]
+PublicForm[ChartSymbol]
 
 SetUsage @ "
 ChartSymbol[sub$] represents a chart and formats as C$sub.
@@ -12,7 +12,7 @@ declareFormatting[
 
 (**************************************************************************************************)
 
-PackageScope["formatChartSymbol"]
+PrivateFunction[formatChartSymbol]
 
 formatChartSymbol[sym_String, colors_] := Scope[
   Style[
@@ -32,7 +32,7 @@ formatChartSymbol[sym_String, colors_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ChartSymbolCardinals"]
+PublicFunction[ChartSymbolCardinals]
 
 SetUsage @ "
 ChartSymbolCardinals[chart$] returns the list of cardinals in a ChartSymbol[$$].
@@ -46,7 +46,7 @@ ChartSymbolCardinals = Case[
 
 (**************************************************************************************************)
 
-PackageExport["CardinalTransitionMatrices"]
+PublicFunction[CardinalTransitionMatrices]
 
 CardinalTransitionMatrices[atlas_Graph] := Scope[
   edgeAnnos = LookupExtendedOption[atlas, EdgeAnnotations];
@@ -74,7 +74,7 @@ procTransRule = Case[
 
 (**************************************************************************************************)
 
-PackageExport["CardinalTransitionRepresentation"]
+PublicFunction[CardinalTransitionRepresentation]
 
 CardinalTransitionRepresentation[atlas_Graph] := Scope[
   matrices = CardinalTransitionMatrices[atlas];
@@ -87,7 +87,7 @@ CardinalTransitionRepresentation[atlas_Graph] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["TransportAtlas"]
+PublicFunction[TransportAtlas]
 
 TransportAtlas[quiver_, charts_, opts___Rule] := Scope @ Catch[
   If[!EdgeTaggedGraphQ[quiver], ReturnFailed[]];

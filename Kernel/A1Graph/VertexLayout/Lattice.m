@@ -1,6 +1,5 @@
-PackageExport["LatticeLayout"]
-PackageExport["BasisVectors"]
-PackageExport["ScaleFactor"]
+PublicObject[LatticeLayout]
+PublicOption[BasisVectors, ScaleFactor]
 
 Options[LatticeLayout] = {BasisVectors -> Automatic, ScaleFactor -> 1};
 

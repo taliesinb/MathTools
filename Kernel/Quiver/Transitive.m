@@ -1,15 +1,15 @@
-$BigFiveThemeRules = {
+$TransitiveQuiverThemeRules = {
   AspectRatioClipping -> False,
   ArrowheadSize -> 12,
   VertexSize -> 5,
   ImageSize -> ("ShortestEdge" -> 30)
 };
 
-$GraphThemeData["BigFive"] := $BigFiveThemeRules;
+$GraphThemeData["TransitiveQuiver"] := $TransitiveQuiverThemeRules;
 
 (**************************************************************************************************)
 
-PackageExport["BouquetQuiver"]
+PublicFunction[BouquetQuiver]
 
 SetUsage @ "
 BouquetQuiver[cardinals$] creates a Bouquet cardinal quiver graph with the given cardinal edges.
@@ -24,7 +24,7 @@ declareSyntaxInfo[BouquetQuiver, {_, OptionsPattern[]}];
 
 
 BouquetQuiver[n_Integer, opts:OptionsPattern[]] := BouquetQuiver[
-  Switch[n, 1, "r", 2, "rb", 3, "rgb", 4, "rgbw", _, Take[$alphabet, n]],
+  Switch[n, 1, "r", 2, "rb", 3, "rgb", 4, "rgbw", _, Take[$Alphabet, n]],
   opts
 ];
 
@@ -35,7 +35,7 @@ BouquetQuiver[cardinals_List, opts:OptionsPattern[]] :=
 
 (**************************************************************************************************)
 
-PackageExport["TriangularQuiver"]
+PublicFunction[TriangularQuiver]
 
 Options[TriangularQuiver] = $ExtendedGraphOptions;
 
@@ -56,7 +56,7 @@ TriangularQuiver[n_Integer, cards:{x_, y_, z_}, opts:OptionsPattern[]] := Scope[
     opts,
     ImageSize -> ("ShortestEdge" -> 33),
     VertexCoordinates -> N[({#1 - #2/2, #2 * Sqrt[3]/2}& @@@ vertices)],
-    GraphTheme -> "BigFive",
+    GraphTheme -> "TransitiveQuiver",
     Cardinals -> cards
   ]
 ]
@@ -66,7 +66,7 @@ upperTriProdQ[DirectedEdge[t_, h_, _]] := upperTriProdQ[t] && upperTriProdQ[h];
 
 (**************************************************************************************************)
 
-PackageExport["HexagonalQuiver"]
+PublicFunction[HexagonalQuiver]
 
 Options[HexagonalQuiver] = $ExtendedGraphOptions;
 
@@ -81,7 +81,7 @@ HexagonalQuiver[n_Integer, opts:OptionsPattern[]] := Scope[
     VertexCoordinates -> Map[DotABC, List @@@ vertices],
     Cardinals -> cards,
     ImageSize -> ("ShortestEdge" -> 25),
-    GraphTheme -> "BigFive"
+    GraphTheme -> "TransitiveQuiver"
   ]
 ];
 
@@ -115,7 +115,7 @@ hexEdgeList[card_, vertexCoords_, normal_, offset_, mod_] := Map[
 
 (**************************************************************************************************)
 
-PackageExport["SquareQuiver"]
+PublicFunction[SquareQuiver]
 
 Options[SquareQuiver] = $ExtendedGraphOptions;
 
@@ -141,13 +141,13 @@ SquareQuiver[spec:{$ModIntP, $ModIntP}, {cx_, cy_}, opts:OptionsPattern[]] := Sc
     VertexCoordinates -> (List @@@ vertices),
     Cardinals -> {cx, cy},
     Sequence @@ modEdgeShapeFunctionSpec[spec, basis],
-    GraphTheme -> "BigFive"
+    GraphTheme -> "TransitiveQuiver"
   ]
 ]
 
 (**************************************************************************************************)
 
-PackageExport["CubicQuiver"]
+PublicFunction[CubicQuiver]
 
 Options[CubicQuiver] = $ExtendedGraphOptions;
 
@@ -175,7 +175,7 @@ CubicQuiver[spec:{$ModIntP, $ModIntP, $ModIntP}, {cx_, cy_, cz_}, opts:OptionsPa
     Cardinals -> {cx, cy, cz},
     LayoutDimension -> 3,
     Sequence @@ modEdgeShapeFunctionSpec[spec, basis],
-    GraphTheme -> "BigFive3D"
+    GraphTheme -> "TransitiveQuiver3D"
   ]
 ]
 
@@ -198,7 +198,7 @@ modEdgeShapeFunctionSpec[spec_, basis_] := {};
 
 (**************************************************************************************************)
 
-$BigFive3DThemeRules = {
+$TransitiveQuiver3DThemeRules = {
   ArrowheadSize -> 15,
   VertexSize -> 4,
   VertexShapeFunction -> "Point",
@@ -206,11 +206,11 @@ $BigFive3DThemeRules = {
   ViewOptions->{ViewVector->{-3.333,-10,10},ViewProjection->"Orthographic", "ShrinkWrap" -> True}
 };
 
-$GraphThemeData["BigFive3D"] := $BigFive3DThemeRules;
+$GraphThemeData["TransitiveQuiver3D"] := $TransitiveQuiver3DThemeRules;
 
 (**************************************************************************************************)
 
-PackageExport["LineQuiver"]
+PublicFunction[LineQuiver]
 
 Options[LineQuiver] = $ExtendedGraphOptions;
 
@@ -228,7 +228,7 @@ LineQuiver[spec_, card_, opts:OptionsPattern[]] := Scope[
   ExtendedGraph[
     vertices, edges,
     opts,
-    GraphTheme -> "BigFive",
+    GraphTheme -> "TransitiveQuiver",
     ExtendedGraphLayout -> "Linear"
   ]
 ]
@@ -244,13 +244,13 @@ LineQuiver[Modulo[n_Integer], card_, opts:OptionsPattern[]] := Scope[
     VertexCoordinates -> Transpose[{vertices, Zeros @ n}],
     Cardinals -> {cx, cy},
     Sequence @@ modEdgeShapeFunctionSpec[{Modulo @ n}, basis],
-    GraphTheme -> "BigFive"
+    GraphTheme -> "TransitiveQuiver"
   ]
 ]
 
 (**************************************************************************************************)
 
-PackageExport["CycleQuiver"]
+PublicFunction[CycleQuiver]
 
 Options[CycleQuiver] = $ExtendedGraphOptions;
 
@@ -263,7 +263,7 @@ CycleQuiver[n_Integer, card_, opts:OptionsPattern[]] := Scope[
   ExtendedGraph[
     vertices, edges,
     opts, VertexLayout -> LinearLayout[],
-    GraphTheme -> "BigFive",
+    GraphTheme -> "TransitiveQuiver",
     ImageSize -> ("ShortestEdge" -> 35)
   ]
 ]
@@ -283,7 +283,7 @@ ModPart[seq_, n_] := Part[seq, Mod[n, Length[seq], 1]];
 
 (**************************************************************************************************)
 
-PackageExport["GridQuiver"]
+PublicFunction[GridQuiver]
 
 Options[GridQuiver] = $ExtendedGraphOptions;
 
@@ -305,7 +305,7 @@ generalGridQuiver[k_, n_, opts___] := Scope[
     Cardinals -> Range[k],
     LayoutDimension -> 3,
     Sequence @@ modEdgeShapeFunctionSpec[n, IdentityMatrix[k]],
-    GraphTheme -> "BigFive3D"
+    GraphTheme -> "TransitiveQuiver3D"
   ]
 ]
 
@@ -320,8 +320,7 @@ generalGridEdge[n_, i_][vertex_] :=
 
 (**************************************************************************************************)
 
-PackageExport["TreeQuiver"]
-PackageExport["TreeVertex"]
+PublicFunction[TreeQuiver, TreeVertex]
 
 Options[TreeQuiver] = Prepend[$ExtendedGraphOptions, "AngleOffset" -> 0];
 
@@ -346,7 +345,7 @@ TreeQuiver[k_Integer, n_Integer, opts:OptionsPattern[]] := Scope[
     GraphLayout -> {"NudgeDistance" -> 0},
     ImageSize -> "AverageEdge" -> 30,
     GraphOrigin -> TreeVertex[],
-    GraphTheme -> "BigFive"
+    GraphTheme -> "TransitiveQuiver"
   ]
 ]
 
@@ -362,7 +361,7 @@ makeTreeEdge = Case[
 
 (**************************************************************************************************)
 
-PackageExport["LatticeQuiverCoordinates"]
+PublicFunction[LatticeQuiverCoordinates]
 
 LatticeQuiverCoordinates[quiver_Graph, Automatic] :=
   LatticeQuiverCoordinates[quiver, chooseLatticeBasisVectors @ Sort @ CardinalList @ quiver];
@@ -380,7 +379,7 @@ LatticeQuiverCoordinates[quiver_Graph, name_String] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["$TriangularVectors2D"]
+PublicVariable[$TriangularVectors2D]
 
 $s32 = Sqrt[3]/2;
 $TriangularVectors2D = Simplify /@ {{1, 0}, {1/2, $s32}, {-1/2, $s32}};

@@ -1,4 +1,4 @@
-PackageExport["GraphAdd"]
+PublicFunction[GraphAdd]
 
 SetUsage @ "
 GraphAdd[graph$, vertices$, edges$] adds additional vertices and edges to graph$.
@@ -54,4 +54,4 @@ toProperEdges = Case[
 ];
 
 
-PackageExport["AdditionalVertex"]
+PublicHead[AdditionalVertex]

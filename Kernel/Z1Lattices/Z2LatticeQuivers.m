@@ -1,15 +1,11 @@
-PackageExport["AbstractCoordinateFunction"]
-PackageExport["VertexCoordinateFunction"]
-PackageExport["VertexNameFunction"]
-PackageExport["IncludeRepresentationMatrices"]
-PackageExport["AbstractCoordinateFilter"]
+PublicOption[AbstractCoordinateFunction, VertexCoordinateFunction, VertexNameFunction, IncludeRepresentationMatrices, AbstractCoordinateFilter]
 
 SetUsage @ "AbstractCoordinateFunction is an option to QuiverLattice and QuiverGraph."
 SetUsage @ "VertexCoordinateFunction is an option to QuiverLattice and QuiverGraph."
 SetUsage @ "VertexNameFunction is an option to QuiverLattice and QuiverGraph."
 SetUsage @ "AbstractCoordinateFilter is an option to QuiverLattice and QuiverGraph."
 
-PackageScope["$baseLatticeUsage"]
+PrivateVariable[$baseLatticeUsage]
 
 $baseLatticeUsage = StringTrim @ "
 ## Exploration options
@@ -93,7 +89,7 @@ The following vertex is available for use with %VertexColorFunction, %VertexLabe
 | 'Norm' | the norm of the vertex, if computed |
 "
 
-PackageExport["InitialStates"]
+PublicFunction[InitialStates]
 
 $baseGenerateLatticeOptions = JoinOptions[
   AbstractCoordinateFunction -> Automatic,
@@ -465,11 +461,6 @@ $defaultLatticeNorms = {
 
 $defaultLatticeSizes = {"Line" -> {200, 50}, "Square" -> {180, 180}, _ -> {200, 200}};
 
-PackageExport["ToTitleString"]
-
-ToTitleString[s_String] :=
-  ToLowerCase @ StringReplace[s, RegularExpression["([a-z])([A-Z])"] :> "$1 $2"];
-
 (**************************************************************************************************)
 
 General::badparamlatticename = "The specified name `` is not a known name for a parameterized lattice. Known names are: ``."
@@ -600,7 +591,7 @@ $LatticeQuiverAutocomplete = Join[$LatticeNames, $ParameterizedLatticeNames, $La
 
 (**************************************************************************************************)
 
-PackageExport["LatticeGraph"]
+PublicFunction[LatticeGraph]
 
 SetUsage @ "
 LatticeGraph['name$'] generates part of the lattice graph for the named lattice 'name$'.
@@ -636,7 +627,7 @@ LatticeGraph[spec_, depth_, opts:OptionsPattern[]] :=
 
 (**************************************************************************************************)
 
-PackageExport["LatticeQuiver"]
+PublicFunction[LatticeQuiver]
 
 SetUsage @ "
 LatticeQuiver['name$'] generates part of the lattice graph for the named lattice 'name$'.
@@ -668,7 +659,7 @@ LatticeQuiver[spec_, depth_, opts:OptionsPattern[]] :=
 
 (**************************************************************************************************)
 
-PackageExport["LatticeQuiverData"]
+PublicFunction[LatticeQuiverData]
 
 SetUsage @ "
 LatticeQuiverData['name$'] gives information about the quiver lattice given by 'name$'.
@@ -708,7 +699,7 @@ LatticeQuiverData[{name_String, args___}, "Representation"] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["RationalAngle"]
+PublicFunction[RationalAngle]
 
 RationalAngle[{0|0., 0|0.}] := Indeterminate;
 RationalAngle[{a_, b_}] := N[ArcTan[a, b]] / Tau;

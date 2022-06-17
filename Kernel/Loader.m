@@ -9,7 +9,11 @@ ClearAll[EpilogFunction];
 
 (* we will immediately resolve these system symbols, which will take care of the vast majority of Package`PackageSymbol cases *)
 $coreSymbols = {
-  (* package symbols: *) Package`Package, Package`OptionExport, Package`PackageExport, Package`PackageScope, Package`PackageImport,
+  (* package symbols: *) Package`Package,
+     Package`PackageExport, Package`PackageScope, Package`PackageImport,
+     Package`SystemMacro,   Package`SystemVariable,  Package`SystemFunction,  Package`SystemOption,  Package`SystemHead,  Package`SystemSymbol,  Package`SystemForm,  Package`SystemObject,
+     Package`PublicMacro,   Package`PublicVariable,  Package`PublicFunction,  Package`PublicOption,  Package`PublicHead,  Package`PublicSymbol,  Package`PublicForm,  Package`PublicObject,
+     Package`PrivateMacro,  Package`PrivateVariable, Package`PrivateFunction, Package`PrivateOption, Package`PrivateHead, Package`PrivateSymbol, Package`PrivateForm, Package`PrivateObject,
   (* system symbols: *) True, False, None, Automatic, Inherited, All, Full, Indeterminate, Null, $Failed, Span, UpTo,
   (* object heads: *)
     Symbol, Integer, String, Complex, Real, Rational,
@@ -209,6 +213,9 @@ createSymbolsInContextAndDispatchTable[names_, context_, contextPath_] := Block[
   Dispatch @ MapThread[toSymbolReplacementRule, {names, ToExpression[names, InputForm, ResolvedSymbol]}]
 ];
 
+addPackageSymbolsToBag[bag_, expr_, head_] :=
+  Internal`StuffBag[bag, Cases[expr, e:head[Package`PackageSymbol[_String]..] :> Part[List @@ e, All, 1], {2}], 2];
+
 addPackageCasesToBag[bag_, expr_, rule_] :=
   Internal`StuffBag[bag, Cases[expr, rule, {2}], 1];
 
@@ -219,7 +226,7 @@ resolveRemainingSymbols[{path_, context_, packageData_Package`PackageData, _}] :
 ];
 
 QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled_:True, fullReload_:True] := Block[
-  {$directory, $files, $textFiles, $packageScopes, $optionExports, $packageExports, $packageExpressions, $packageRules,
+  {$directory, $files, $textFiles, $privateSymbols, $systemSymbols, $publicSymbols, $packageExpressions, $packageRules,
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result, requiresFullReload
   },
 
@@ -239,9 +246,9 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
 
   $globalImports = {"System`", "GeneralUtilities`", "Developer`"};
 
-  $optionExports = Internal`Bag[];
-  $packageExports = Internal`Bag[];
-  $packageScopes = Internal`Bag[];
+  $systemSymbols = Internal`Bag[];
+  $publicSymbols = Internal`Bag[];
+  $privateSymbols = Internal`Bag[];
   $loadedFileCount = $changedTextFileCount = 0;
 
   requiresFullReload = fullReload;
@@ -250,9 +257,9 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
       path |-> Block[{expr, context, isDirty},
         context = filePathToContext @ path;
         {expr, isDirty} = readPackageFile[path, context];
-        addPackageCasesToBag[$optionExports, expr, Package`OptionExport[name_String] :> name];
-        addPackageCasesToBag[$packageExports, expr, Package`PackageExport[name_String] :> name];
-        addPackageCasesToBag[$packageScopes, expr, Package`PackageScope[name_String] :> name];
+        addPackageSymbolsToBag[$systemSymbols,  expr, Package`SystemMacro  | Package`SystemVariable  | Package`SystemFunction  | Package`SystemHead  | Package`SystemSymbol  | Package`SystemForm  | Package`SystemObject | Package`PublicOption | Package`SystemOption];
+        addPackageSymbolsToBag[$publicSymbols,  expr, Package`PublicMacro  | Package`PublicVariable  | Package`PublicFunction  | Package`PublicHead  | Package`PublicSymbol  | Package`PublicForm  | Package`PublicObject];
+        addPackageSymbolsToBag[$privateSymbols, expr, Package`PrivateMacro | Package`PrivateVariable | Package`PrivateFunction | Package`PrivateHead | Package`PrivateSymbol | Package`PrivateForm | Package`PrivateObject | Package`PrivateOption];
         If[!requiresFullReload && isDirty && initPathQ[path],
           VPrint["Dirty package \"", path, "\" is forcing a full reload."];
           requiresFullReload = True;
@@ -294,15 +301,15 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
     Apply[ClearAll, Map[# <> "*"&, dirtyContexts]];
   ];
 
-  $optionExports = DeleteDuplicates @ Internal`BagPart[$optionExports, All];
-  $packageExports = DeleteDuplicates @ Internal`BagPart[$packageExports, All];
-  $packageScopes = DeleteDuplicates @ Internal`BagPart[$packageScopes, All];
+  $systemSymbols = DeleteDuplicates @ Internal`BagPart[$systemSymbols, All];
+  $publicSymbols = DeleteDuplicates @ Internal`BagPart[$publicSymbols, All];
+  $privateSymbols = DeleteDuplicates @ Internal`BagPart[$privateSymbols, All];
 
-  $optionDispatch = createSymbolsInContextAndDispatchTable[$optionExports, "System`", {}];
-  $exportDispatch = createSymbolsInContextAndDispatchTable[$packageExports, $mainContext, {}];
-  $scopeDispatch = createSymbolsInContextAndDispatchTable[$packageScopes, $mainContext <> "PackageScope`", {}];
+  $systemDispatch = createSymbolsInContextAndDispatchTable[$systemSymbols, "System`", {}];
+  $publicDispatch = createSymbolsInContextAndDispatchTable[$publicSymbols, $mainContext, {}];
+  $privateDispatch = createSymbolsInContextAndDispatchTable[$privateSymbols, $mainContext <> "PackageScope`", {}];
 
-  $packageExpressions = $packageExpressions /. $optionDispatch /. $exportDispatch /. $scopeDispatch;
+  $packageExpressions = $packageExpressions /. $systemDispatch /. $publicDispatch /. $privateDispatch;
 
   $packageExpressions //= Map[resolveRemainingSymbols];
 

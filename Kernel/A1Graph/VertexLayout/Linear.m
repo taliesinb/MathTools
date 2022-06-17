@@ -1,4 +1,4 @@
-PackageExport["LinearLayout"]
+PublicObject[LinearLayout]
 
 Options[LinearLayout] = {
   Method -> Automatic,

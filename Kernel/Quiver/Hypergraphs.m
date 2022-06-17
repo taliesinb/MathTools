@@ -1,4 +1,4 @@
-PackageExport["PlotDirectedHypergraphEncodedGraph"]
+PublicFunction[PlotDirectedHypergraphEncodedGraph]
 
 $defaultCardinalColors = <|1 -> $Red, 2 -> $Blue, 3 -> $Purple, 4 -> $Green, 5 -> $Orange, 6 -> $Teal, 7 -> $Pink|>;
 
@@ -26,7 +26,7 @@ $GraphThemeData["ColoredGraphUnion"] = {
 
 (**************************************************************************************************)
 
-PackageExport["DirectedHypergraphToGraphs"]
+PublicFunction[DirectedHypergraphToGraphs]
 
 DirectedHypergraphToGraphs[hyperedges_] := Scope[
 	maxIndex = Max[Part[hyperedges, All, 3]];
@@ -39,7 +39,7 @@ DirectedHypergraphToGraphs[hyperedges_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphsToDirectedHypergraph"]
+PublicFunction[GraphsToDirectedHypergraph]
 
 GraphsToDirectedHypergraph[gs__Graph] :=
 	Join @@ MapIndex1[AppendConstantColumn[List @@@ EdgeList[#1], #2]&, {gs}]

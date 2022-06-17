@@ -1,6 +1,4 @@
-(**************************************************************************************************)
-
-PackageExport["ExtendedSubgraph"]
+PublicFunction[ExtendedSubgraph]
 
 ExtendedSubgraph[oldGraph_, newVertices_, newEdges_] := Scope[
   options = Options[oldGraph];

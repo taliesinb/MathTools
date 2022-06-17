@@ -1,11 +1,11 @@
-PackageExport["EquivalenceClassIndices"]
+PublicFunction[EquivalenceClassIndices]
 
 EquivalenceClassIndices[list_, fn_] :=
   Gather[Range @ Length @ list, fn[Part[list, #1], Part[list, #2]]&];
 
 (**************************************************************************************************)
   
-PackageExport["EquivalenceClassLabels"]
+PublicFunction[EquivalenceClassLabels]
 
 EquivalenceClassLabels[list_] := Scope[
   n = Max[list];
@@ -16,7 +16,7 @@ EquivalenceClassLabels[list_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ArrayLabelIndices"]
+PublicFunction[ArrayLabelIndices]
 
 SetUsage @ "
 ArrayLabelIndices[array$, labels$] gives an array of the same shape as array$, whose values are indices of labels$.
@@ -33,7 +33,7 @@ ArrayLabelIndices[array_, labels_, level_] :=
 
 (**************************************************************************************************)
 
-PackageExport["ArrayLabeling"]
+PublicFunction[ArrayLabeling]
 
 SetUsage @ "
 ArrayLabeling[list$] gives the result {indices$, assoc$}, where indices$ is a list the same length as array$, \
@@ -70,7 +70,7 @@ Protect[PositionIndex];
 
 (**************************************************************************************************)
 
-PackageExport["ExtractIndices"]
+PublicFunction[ExtractIndices]
 
 SetUsage @ "
 ExtractIndices[array$, indices$] gives a list of the parts of array$ given by indices$.
@@ -84,21 +84,21 @@ ExtractIndices[array_, indices_List] := Map[Part[array, #]&, indices, {-1}]
 
 (**************************************************************************************************)
 
-PackageExport["InvertIndex"]
+PublicFunction[InvertIndex]
 
 InvertIndex[assoc_Association] :=
   Merge[ReverseRules @ FlattenIndex @ assoc, Identity];
 
 (**************************************************************************************************)
 
-PackageExport["FlattenIndex"]
+PublicFunction[FlattenIndex]
 
 FlattenIndex[assoc_] :=
   Flatten @ KeyValueMap[{k, v} |-> Map[k -> #&, v], assoc];
 
 (**************************************************************************************************)
 
-PackageExport["FirstIndex"]
+PublicFunction[FirstIndex]
 
 SetUsage @ "
 FirstIndex[{e$1, e$2, $$}, patt$] gives the first i$ for which e$i matches patt$.
@@ -110,7 +110,7 @@ FirstIndex[list_, pattern_, default_:None] :=
 
 (**************************************************************************************************)
 
-PackageExport["IndexIn"]
+PublicFunction[IndexIn]
 
 (* like IndexOf, but arguments work the other way around, and curries the other way *)
 IndexIn[item_, index_] := FirstPosition[index, item, Null, {1}];

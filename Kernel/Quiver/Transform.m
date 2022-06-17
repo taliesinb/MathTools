@@ -1,4 +1,4 @@
-PackageExport["MapEdgeTags"]
+PublicFunction[MapEdgeTags]
 
 SetUsage @ "
 MapEdgeTags[f$, graph$] applies the function f$ to the edge tags of edges of graph$.
@@ -22,7 +22,7 @@ MapEdgeTags[f_][graph_] := MapEdgeTags[f, graph];
 
 (**************************************************************************************************)
 
-PackageExport["RemoveEdgeTags"]
+PublicFunction[RemoveEdgeTags]
 
 SetUsage @ "
 RemoveEdgeTags[graph$] removes edge tags from edges of graph$, returning a new graph.
@@ -43,7 +43,7 @@ RemoveEdgeTags = Case[
 
 (**************************************************************************************************)
 
-PackageExport["DeleteCardinal"]
+PublicFunction[DeleteCardinal]
 
 DeleteCardinal[graph_, card_] := Scope[
   opts = Options[graph];
@@ -64,7 +64,7 @@ deleteCard[c_][other_] := other;
 
 (**************************************************************************************************)
 
-PackageExport["ExpandCardinalSetEdges"]
+PublicFunction[ExpandCardinalSetEdges]
 
 SetUsage @ "
 ExpandCardinalSetEdges[graph$] expands any edges tagged with CardinalSet into multiple edges with \
@@ -83,7 +83,7 @@ ExpandCardinalSetEdges[graph_] := If[
 
 (**************************************************************************************************)
 
-PackageExport["CombineMultiedges"]
+PublicFunction[CombineMultiedges]
 
 SetUsage @ "
 CombineMultiedges[graph$] combines edges that share the same endpoints into \
@@ -125,7 +125,7 @@ reorientCS = Case[
 
 (**************************************************************************************************)
 
-PackageExport["CombineForwardMultiedges"]
+PublicFunction[CombineForwardMultiedges]
 
 CombineForwardMultiedges[edges_List] :=
   toCombinedForwardMultiedge /@ GatherBy[edges, TakeOperator[2]]
@@ -135,7 +135,7 @@ toCombinedForwardMultiedge[list_List] := ReplacePart[Part[list, 1], 3 -> Cardina
 
 (**************************************************************************************************)
 
-PackageExport["AddEdgeTags"]
+PublicFunction[AddEdgeTags]
 
 AddEdgeTags[spec_, tag_:None] := Scope[$tag = tag; addEdgeTags @ spec];
 
@@ -156,7 +156,7 @@ addEdgeTag = Case[
 
 (**************************************************************************************************)
 
-PackageExport["RemoveEdgeTag"]
+PublicFunction[RemoveEdgeTag]
 
 RemoveEdgeTag = Case[
   DirectedEdge[a_, b_, ___] := DirectedEdge[a, b];
@@ -165,7 +165,7 @@ RemoveEdgeTag = Case[
 
 (**************************************************************************************************)
 
-PackageExport["RenameCardinals"]
+PublicFunction[RenameCardinals]
 
 RenameCardinals[graph_Graph, renaming:{__String}] :=
   RenameCardinals[graph, RuleThread[CardinalList @ graph, renaming]]
@@ -198,8 +198,8 @@ RenameCardinals[renaming_][graph_] :=
 
 (**************************************************************************************************)
 
-PackageExport["TruncateQuiver"]
-PackageExport["TruncatedVertex"]
+PublicFunction[TruncateQuiver]
+PublicHead[TruncatedVertex]
 
 declareFormatting[
   TruncatedVertex[v_, a_] :> Superscript[v, a]

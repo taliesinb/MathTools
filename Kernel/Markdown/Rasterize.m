@@ -23,25 +23,25 @@ resultToImage[System`ConvertersDump`Bitmap[rawString_, {width_, height_, depth_}
 
 (*************************************************************************************************)
 
-PackageExport["FastRasterize"]
+PublicFunction[FastRasterize]
 
 FastRasterize[expr_] := resultToImage @ MathLink`CallFrontEnd @ exprToExportPacket @ expr;
 
 (*************************************************************************************************)
 
-PackageExport["FastRasterizeList"]
+PublicFunction[FastRasterizeList]
 
 FastRasterizeList[expr_List] := Map[resultToImage, MathLink`CallFrontEnd @ Map[exprToExportPacket, expr]];
 
 (*************************************************************************************************)
 
-PackageExport["FastRasterizeListCenterPadded"]
+PublicFunction[FastRasterizeListCenterPadded]
 
 FastRasterizeListCenterPadded[expr_List] = CenterPadImages @ FastRasterizeList[expr];
 
 (*************************************************************************************************)
 
-PackageExport["CachedFastRasterizeList"]
+PublicFunction[CachedFastRasterizeList]
 
 (* we might need to delete ImageSizeRaw here ... *)
 
@@ -50,13 +50,13 @@ CachedFastRasterizeList[expr_List] := CacheTo[$RasterizationCache, Hash[expr], F
 
 (*************************************************************************************************)
 
-PackageExport["VideoRasterizeList"]
+PublicFunction[VideoRasterizeList]
 
 toCachedVideoFileName[File[path_]] := path;
 toCachedVideoFileName[name_] := CacheVideoFilePath[name];
 toCachedVideoFileName[{name__}] := CacheVideoFilePath[name];
 
-PackageScope["CacheVideoFilePath"]
+PrivateFunction[CacheVideoFilePath]
 
 CacheVideoFilePath[args___] := CacheFilePath["Video", args, FileExtension -> $DefaultVideoExtension];
 
@@ -71,21 +71,20 @@ VideoRasterizeList[frames_, name_:Automatic, frameRate_:30] := Scope[
 
 (*************************************************************************************************)
 
-PackageScope["VideoFilePath"]
+PrivateFunction[VideoFilePath]
 
 VideoFilePath[v_Video] := First @ Information[v, "ResourcePath"]
 
 (*************************************************************************************************)
 
-PackageExport["$DefaultVideoExtension"]
-PackageExport["$DefaultVideoEncoding"]
+PublicVariable[$DefaultVideoExtension, $DefaultVideoEncoding]
 
 $DefaultVideoExtension = "mp4"
 $DefaultVideoEncoding = "H264-AVF";
 
 (**************************************************************************************************)
 
-PackageExport["CenterPadImages"]
+PublicFunction[CenterPadImages]
 
 CenterPadImages[images_List] := Scope[
   If[!VectorQ[images, ImageQ], ReturnFailed[]];

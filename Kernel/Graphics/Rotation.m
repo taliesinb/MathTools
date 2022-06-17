@@ -1,12 +1,11 @@
-PackageExport["FromSpherical"]
-PackageExport["ToSpherical"]
+PublicFunction[FromSpherical, ToSpherical]
 
 FromSpherical[{r_, a_, b_}] := {r Cos[b] Sin[a],r Sin[a] Sin[b],r Cos[a]};
 ToSpherical[{x_, y_, z_}] := {Sqrt[x^2 + y^2 + z^2], ArcTan[z, Sqrt[x^2 + y^2]], ArcTan[x, y]};
 
 (**************************************************************************************************)
 
-PackageExport["SphericalRotateVector"]
+PublicFunction[SphericalRotateVector]
 
 SphericalRotateVector[vecs:{___List}, t_] :=
   Map[SphericalRotateVector[#, t]&, vecs];
@@ -18,7 +17,7 @@ SphericalRotateVector[t_][vec_] := SphericalRotateVector[vec, t];
 
 (**************************************************************************************************)
 
-PackageExport["RotateVector"]
+PublicFunction[RotateVector]
 
 RotateVector[vecs:{___List}, t_] :=
   Map[RotateVector[#, t]&, vecs];

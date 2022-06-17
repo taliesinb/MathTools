@@ -1,4 +1,4 @@
-PackageExport["GraphContract"]
+PublicFunction[GraphContract]
 
 SetUsage @ "
 GraphContract[graph$, {v$1, v$2, $$}] contracts a set of vertices into one vertex, yielding ContractedVertex[{v$1, v$2, $$}].
@@ -33,7 +33,7 @@ GraphContract[g_, contraction_Association, fn:Except[_Rule], opts:OptionsPattern
 
 (**************************************************************************************************)
 
-PackageExport["GraphContractBy"]
+PublicFunction[GraphContractBy]
 
 GraphContractBy[graph_Graph, func_, opts:OptionsPattern[]] :=
   GraphContractBy[graph, func, ContractedVertex, opts];
@@ -51,7 +51,7 @@ egraph[opts__][g_] := ExtendedGraph[g, opts];
 
 (**************************************************************************************************)
 
-PackageExport["GraphContractionList"]
+PublicFunction[GraphContractionList]
 
 GraphContractionList[graph_, opts_List] := Scope[
   orderGraph = GraphContractionLattice[graph, opts];
@@ -60,7 +60,7 @@ GraphContractionList[graph_, opts_List] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphContractionLattice"]
+PublicFunction[GraphContractionLattice]
 
 Options[GraphContractionLattice] = JoinOptions[
   "GreedyEdgeContraction" -> True,
@@ -170,7 +170,7 @@ greedyContractEdges[edgeList_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["UnContractedGraph"]
+PublicFunction[UnContractedGraph]
 
 UnContractedGraph[graph_Graph, opts___Rule] := Scope[
   {vertexList, edgeList} = VertexEdgeList @ graph;
@@ -199,7 +199,7 @@ $ContractedEdgeExpansionRules = {
 
 (**************************************************************************************************)
 
-PackageExport["ContractVertices"]
+PublicFunction[ContractVertices]
 
 Options[ContractVertices] = JoinOptions[
   VertexCoordinates -> Automatic,
@@ -231,9 +231,8 @@ ContractVertices[graph_Graph, glueList_List, userOpts:OptionsPattern[]] := Scope
 
 (**************************************************************************************************)
 
-PackageExport["ContractedGraph"]
-PackageExport["ContractedVertex"]
-PackageExport["ContractedEdge"]
+PublicFunction[ContractedGraph]
+PublicHead[ContractedVertex, ContractedEdge]
 
 ContractedGraph[vertices_List, edges_List, opts___Rule] :=
   ContractedGraph[ExtendedGraph[vertices, edges], opts];
@@ -298,7 +297,7 @@ ContractedGraph[graph_Graph, opts___Rule] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ContractedCardinalColorFunction"]
+PublicFunction[ContractedCardinalColorFunction]
 
 ContractedCardinalColorFunction[baseColors_][cardinal_] :=
   If[Head[cardinal] === ContractedEdge,
@@ -308,7 +307,7 @@ ContractedCardinalColorFunction[baseColors_][cardinal_] :=
 
 (**************************************************************************************************)
 
-PackageExport["ContractedEdgeColorFunction"]
+PublicFunction[ContractedEdgeColorFunction]
 
 ContractedEdgeColorFunction[baseColors_][_[_, _, tag_]] :=
   If[Head[tag] === ContractedEdge,
@@ -318,7 +317,7 @@ ContractedEdgeColorFunction[baseColors_][_[_, _, tag_]] :=
 
 (**************************************************************************************************)
 
-PackageExport["ContractedVertexColorFunction"]
+PublicFunction[ContractedVertexColorFunction]
 
 ContractedVertexColorFunction[baseColors_][vertex_] :=
   If[Head[vertex] === ContractedVertex,
@@ -328,7 +327,7 @@ ContractedVertexColorFunction[baseColors_][vertex_] :=
 
 (**************************************************************************************************)
 
-PackageExport["ContractedVertexCoordinateFunction"]
+PublicFunction[ContractedVertexCoordinateFunction]
 
 ContractedVertexCoordinateFunction[baseCoords_][vertex_] :=
   If[Head[vertex] === ContractedVertex,
@@ -338,7 +337,7 @@ ContractedVertexCoordinateFunction[baseCoords_][vertex_] :=
   
 (**************************************************************************************************)
 
-PackageExport["ContractedVertexPrologFunction"]
+PublicFunction[ContractedVertexPrologFunction]
 
 ContractedVertexPrologFunction[graph_] := Scope[
   baseCoordFunc = GraphAnnotationData[VertexCoordinateFunction];

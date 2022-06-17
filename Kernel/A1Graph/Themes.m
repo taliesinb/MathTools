@@ -1,4 +1,4 @@
-PackageExport["GraphTheme"]
+PublicFunction[GraphTheme]
 
 SetUsage @ "
 GraphTheme is an extended option to Graph that controls multiple options simultanously via named themes.
@@ -7,7 +7,7 @@ GraphTheme is an extended option to Graph that controls multiple options simulta
 
 (**************************************************************************************************)
 
-PackageExport["LookupGraphThemeOptions"]
+PublicFunction[LookupGraphThemeOptions]
 
 Graph::badtheme = "`` is not a valid GraphTheme."
 
@@ -17,7 +17,7 @@ LookupGraphThemeOptions[graph_] := Scope[
     Lookup[$GraphThemeData, theme, Message[Graph::badtheme, theme]; {}]
 ];
 
-PackageExport["LookupExtendedThemedOption"]
+PublicFunction[LookupExtendedThemedOption]
 
 LookupExtendedThemedOption[graph_, keys_List] :=
   MapThread[
@@ -38,7 +38,7 @@ LookupExtendedThemedOption[graph_, key_] :=
 
 (**************************************************************************************************)
 
-PackageExport["LookupThemedOption"]
+PublicFunction[LookupThemedOption]
 
 LookupThemedOption[graph_, opt_, default_:Automatic] :=
   Quiet @ Lookup[

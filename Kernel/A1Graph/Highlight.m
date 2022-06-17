@@ -1,4 +1,19 @@
-PackageExport["HighlightGraphRegion"]
+PublicOption[ZOrder, PathStyle, RegionStyle, HighlightRadius, PathRadius, PathOutline, PathVertexHighlighting, DiskRadius, EdgeSetback, SimplifyRegions]
+
+SetUsage @ "ZOrder is an option that controls how graphical elements are sorted from back to front."
+SetUsage @ "PathStyle is an option that controls how paths are rendered in highlights."
+SetUsage @ "RegionStyle is an option that controls how regions are rendered in highlights."
+SetUsage @ "HighlightRadius is an option that controls the radius of highlighted regions."
+SetUsage @ "PathRadius is an option that controls the radius of highlighted paths."
+SetUsage @ "PathVertexHighlighting is an option that controls how which vertices on paths are highlighted."
+SetUsage @ "DiskRadius is an option that controls the radius of highlighted vertices."
+SetUsage @ "EdgeSetback is an option that controls how far an edge should be set back from final vertex."
+SetUsage @ "PathOutline is an option that controls whether paths are outlined."
+SetUsage @ "SimplifyRegions is an option that detects e.g. circular regions and uses Disk to highlight them."
+
+(**************************************************************************************************)
+
+PublicFunction[HighlightGraphRegion]
 
 DeclareArgumentCount[HighlightGraphRegion, {2, 3}];
 
@@ -21,7 +36,7 @@ HighlightGraphRegion[graph_, highlights_, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphRegionGraphics"]
+PrivateFunction[GraphRegionGraphics]
 
 GraphRegionGraphics[graph_, regionSpec_] := Scope[
 
@@ -44,7 +59,7 @@ GraphRegionGraphics[graph_, regionSpec_] := Scope[
 (** highlight processing code              **)
 (********************************************)
 
-PackageScope["resolveGraphRegionHighlightGraphics"]
+PrivateFunction[resolveGraphRegionHighlightGraphics]
 
 resolveGraphRegionHighlightGraphics[None | {} | <||>] :=
   {{}, None, 0};
@@ -162,62 +177,7 @@ processIndexedStyleSpec[spec_, key_, index_] := Block[
 
 (**************************************************************************************************)
 
-PackageExport["ZOrder"]
-
-SetUsage @ "
-ZOrder is an option that controls how graphical elements are sorted from back to front.
-"
-
-(**************************************************************************************************)
-
-PackageExport["PathStyle"]
-
-SetUsage @ "
-PathStyle is an option that controls how paths are rendered in highlights.
-"
-
-(**************************************************************************************************)
-
-PackageExport["RegionStyle"]
-
-SetUsage @ "
-RegionStyle is an option that controls how regions are rendered in highlights.
-"
-
-(**************************************************************************************************)
-
 GraphRegionHighlight::badelem = "Unknown highlight element ``.";
-
-PackageExport["HighlightRadius"]
-
-SetUsage @ "
-HighlightRadius is an option that controls the radius of highlighted regions.
-"
-
-PackageExport["PathRadius"]
-
-SetUsage @ "
-PathRadius is an option that controls the radius of highlighted paths.
-"
-
-PackageExport["PathVertexHighlighting"]
-
-SetUsage @ "
-PathVertexHighlighting is an option that controls how which vertices on paths are highlighted.
-"
-
-PackageExport["DiskRadius"]
-
-SetUsage @ "
-DiskRadius is an option that controls the radius of highlighted vertices.
-"
-
-PackageExport["EdgeSetback"]
-
-SetUsage @ "
-EdgeSetback is an option that controls how far an edge should be set back from final vertex.
-"
-
 
 processGeneralSpec = MatchValues[
   Legended[Style[spec_, opts__], label_] :=
@@ -293,9 +253,6 @@ SyntaxInformation[Style] = ReplaceOptions[
   "OptionNames" -> Union[Keys @ Options @ Style, SymbolName /@ $additionalStyleOptions]
 ];
 Protect[Style];
-
-PackageExport["PathOutline"]
-PackageExport["SimplifyRegions"]
 
 $namedTransformsPattern = "Opaque" | "FadeGraph" | "FadeProtect" | "FadeEdges" | "FadeVertices" | "HideArrowheads" | "HideEdges" | "HideVertices" | "SemitransparentArrowheads";
 $namedStyles = "Background" | "Foreground" | "Replace" | "ReplaceEdges" | $namedTransformsPattern;

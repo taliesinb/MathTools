@@ -1,4 +1,4 @@
-PackageExport["SpringElectricalLayout"]
+PublicObject[SpringElectricalLayout]
 
 Options[SpringElectricalLayout] = JoinOptions[
   "SpringConstant" -> 1,

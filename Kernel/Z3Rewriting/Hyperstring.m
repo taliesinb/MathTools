@@ -1,6 +1,6 @@
 (**************************************************************************************************)
 
-PackageExport["HyperstringRewritingSystem"]
+PublicFunction[HyperstringRewritingSystem]
 
 DirectedGraphRewritingSystem[rules_] := Scope[
   constructRewritingSystem["Hyperstring", rules]

@@ -1,16 +1,15 @@
-PackageExport["RewritingSystemObject"]
+PublicObject[RewritingSystemObject]
+PublicOption[CanonicalizationFunction]
 
 declareObjectPropertyDispatch[RewritingSystemObject, rewritingSystemProperty];
-
-PackageScope["constructRewritingSystem"]
-PackageScope["declareRewritingSystemDispatch"]
-PackageScope["rewritingSystemProperty"]
-
-PackageExport["CanonicalizationFunction"]
 
 Options[RewritingSystemObject] = {
   CanonicalizationFunction -> None
 };
+
+(**************************************************************************************************)
+
+PrivateFunction[constructRewritingSystem]
 
 constructRewritingSystem[type_, rules_, opts:OptionsPattern[RewritingSystemObject]] := Scope[
   rules //= ToList;
@@ -26,7 +25,7 @@ constructRewritingSystem[type_, rules_, opts:OptionsPattern[RewritingSystemObjec
 
 (**************************************************************************************************)
 
-declareObjectPropertyDispatch[RewritingSystemObject, rewritingSystemProperty];
+PrivateFunction[declareRewritingSystemDispatch, rewritingSystemProperty]
 
 $rewritingSystemProperyDispatch = <||>;
 
@@ -38,7 +37,7 @@ declareRewritingSystemDispatch[type_, dispatchFunction_] :=
 
 (**************************************************************************************************)
 
-PackageExport["RewritingSystemObjectQ"]
+PublicFunction[RewritingSystemObjectQ]
 
 RewritingSystemObjectQ = Case[
   rs_RewritingSystemObject ? System`Private`HoldNoEntryQ := True;
@@ -68,8 +67,7 @@ rewritingSystemObjectBoxes[rs:RewritingSystemObject[data_], form_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["RewriteQuiver"]
-PackageExport["RewriteGraph"]
+PublicFunction[RewriteQuiver, RewriteGraph]
 
 Options[RewriteQuiver] = Options[RewriteGraph] = Options[LatticeQuiver];
 
@@ -127,15 +125,5 @@ $RewriteGraphThemeRules = JoinOptions[
 
 $GraphThemeData["RewriteQuiver"] := $RewriteQuiverThemeRules;
 $GraphThemeData["RewriteGraph"] := $RewriteGraphThemeRules;
-
-
-(**************************************************************************************************)
-
-PackageExport["StripLabel"]
-
-StripLabel[items:{___Labeled}] := Part[items, All, 1];
-StripLabel[Labeled[e_, _]] := e;
-StripLabel[e_] := e;
-
 
 

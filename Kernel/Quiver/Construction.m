@@ -1,4 +1,4 @@
-PackageExport["Quiver"]
+PublicFunction[Quiver]
 
 SetUsage @ "
 Quiver[graph$] constructs a cardinal quiver from a graph.
@@ -139,7 +139,7 @@ checkEdgeGroup[tag_, edges_] /; !checkForDuplicateCardinals[edges] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ToQuiver"]
+PublicFunction[ToQuiver]
 
 SetUsage @ "
 ToQuiver[obj$] attempts to convert obj$ to a quiver Graph[$$] object.
@@ -157,7 +157,7 @@ ToQuiver = MatchValues[
 
 (**************************************************************************************************)
 
-PackageExport["QuiverQ"]
+PublicFunction[QuiverQ]
 
 SetUsage @ "
 QuiverQ[graph$] returns True if graph$ represents a cardinal quiver.
@@ -178,7 +178,7 @@ checkForDuplicateCardinals[edges_] :=
 
 (**************************************************************************************************)
 
-PackageExport["FreeQuiver"]
+PublicFunction[FreeQuiver]
 
 SetUsage @ "
 FreeQuiver[graph$] returns a cardinal quiver for graph$, assigning a unique formal symbol \
@@ -204,7 +204,7 @@ FreeQuiver[graph_, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["CardinalEdgeAdd"]
+PublicFunction[CardinalEdgeAdd]
 
 CardinalEdgeAdd[quiver_, spec_, userOpts___Rule] := Scope[
   newQuiver = Quiver @ spec;

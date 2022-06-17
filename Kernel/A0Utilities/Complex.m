@@ -1,4 +1,4 @@
-PackageExport["RootOfUnity"]
+PublicFunction[RootOfUnity]
 
 RootOfUnity[n_] := RootOfUnity[n, 1];
 
@@ -9,7 +9,7 @@ RootOfUnity[n_, i_] := RootOfUnity[n, i] = Expand @ ComplexExpand @ Exp[(i)/n * 
 
 (**************************************************************************************************)
 
-PackageExport["UnitRoot"]
+PublicFunction[UnitRoot]
 
 SetUsage @ "
 UnitRoot[n$] represents the first n$'th root of unity, and stands in for a complex number.
@@ -24,7 +24,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PackageScope["GetRootPower"]
+PrivateFunction[GetRootPower]
 
 GetRootPower[1] := 0;
 GetRootPower[UnitRoot[n_]] := 1;
@@ -32,13 +32,13 @@ GetRootPower[Power[UnitRoot[n_], k_]] := k;
 
 (**************************************************************************************************)
 
-PackageScope["ContainsUnitRootsQ"]
+PrivateFunction[ContainsUnitRootsQ]
 
 ContainsUnitRootsQ[e_] := ContainsQ[e, _UnitRoot];
 
 (**************************************************************************************************)
 
-PackageScope["ExpandUnitRoots"]
+PrivateFunction[ExpandUnitRoots]
 
 ExpandUnitRoots[e_] :=
   If[ContainsUnitRootsQ[e], e /. UnitRoot[n_] :> RootOfUnity[n, 1], e];

@@ -1,4 +1,4 @@
-PackageExport["RootPopulation"]
+PublicObject[RootPopulation]
 
 fmtInt[i_] := Which[
   Positive[i], i,
@@ -13,7 +13,7 @@ declareFormatting[
 popForm[f_List, color_] := RawBoxes @ CompactMatrixBox[{f}, FrameStyle -> color, "Factor" -> False];
 
 
-PackageExport["MutationGame"]
+PublicFunction[MutationGame]
 
 MutationGame[graph_Graph] := Scope[
   vertexCount = VertexCount @ graph;
@@ -34,8 +34,8 @@ makeSimpleRoots[n_] := Flatten @ Table[
 zmakeSimpleRoots[n_] :=
   Table[RootPopulation @ UnitVector[n, i], {i, n}];
 
-PackageExport["MutateForward"]
-PackageExport["MutateBackward"]
+
+PublicFunction[MutateForward, MutateBackward]
 
 makeMutateGenerator[i_, out_] := GroupoidGenerator[
   MutateForward[i, out],
@@ -52,7 +52,7 @@ ToInverseFunction[m_MutateForward] := MutateBackward @@ m;
 ToInverseFunction[m_MutateBackward] := MutateForward @@ m;
 
 
-PackageExport["EdgeMutationGame"]
+PublicFunction[EdgeMutationGame]
 
 EdgeMutationGame[graph_Graph] := Scope[
   graph //= ToIndexGraph;
@@ -77,8 +77,7 @@ makeEdgeMutateGenerator[UndirectedEdge[i_, j_]] := Splice[{
   makeEdgeMutateGenerator @ DirectedEdge[j, i]
 }];
 
-PackageExport["EdgeMutateForward"]
-PackageExport["EdgeMutateBackward"]
+PublicFunction[EdgeMutateForward, EdgeMutateBackward]
 
 EdgeMutateForward[i_, j_][RootPopulation[pop_]] :=
   RootPopulation @ ReplacePart[pop, j -> (Part[pop, i] - Part[pop, j])];
@@ -90,7 +89,7 @@ ToInverseFunction[m_EdgeMutateForward] := EdgeMutateBackward @@ m;
 ToInverseFunction[m_EdgeMutateBackward] := EdgeMutateForward @@ m;
 
 
-PackageExport["MultiMutationGame"]
+PublicFunction[MultiMutationGame]
 
 MultiMutationGame[graph_Graph] := Scope[
   graph //= ToIndexGraph;

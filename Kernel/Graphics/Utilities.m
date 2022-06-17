@@ -1,4 +1,4 @@
-PackageExport["LegendForm"]
+PublicForm[LegendForm]
 
 SetUsage @ "
 LegendForm[expr$] renders as a form of expr$ that is suitable for use in %Legended.
@@ -23,7 +23,7 @@ DownValues[WrappersDump`makeLabeledCore] = ReplaceAll[DownValues[WrappersDump`ma
 
 (**************************************************************************************************)
 
-PackageExport["$LabelStyle"]
+PrivateVariable[$LabelStyle]
 
 $LabelStyle = {
   FontFamily -> "Avenir", FontSize -> 12
@@ -31,19 +31,19 @@ $LabelStyle = {
 
 (**************************************************************************************************)
 
-PackageExport["$MathFont"]
+PrivateVariable[$MathFont]
 
 $MathFont = "KaTeX_Main";
 
 (**************************************************************************************************)
 
-PackageExport["$CardinalFont"]
+PrivateVariable[$CardinalFont]
 
 $CardinalFont = "KaTeX_Typewriter"
 
 (**************************************************************************************************)
 
-PackageExport["$CardinalLabelStyle"]
+PrivateVariable[$CardinalLabelStyle]
 
 $CardinalLabelStyle = {
   FontFamily -> $CardinalFont, FontSize -> 14
@@ -51,27 +51,23 @@ $CardinalLabelStyle = {
 
 (**************************************************************************************************)
 
-PackageExport["$MathLabelStyle"]
-PackageScope["$alphabet"]
-
-$alphabet = Join[Alphabet["English"], Alphabet["Greek"]];
-$alphabet = Join[$alphabet, ToUpperCase[$alphabet]];
+PrivateVariable[$MathLabelStyle]
 
 $MathLabelStyle = {
   FontFamily -> $MathFont, FontSize -> 14,
   SingleLetterItalics -> True, ShowStringCharacters -> False,
-  AutoItalicWords -> $alphabet
+  AutoItalicWords -> $Alphabet
 };
 
 (**************************************************************************************************)
 
-PackageExport["LabelForm"]
+PublicHead[LabelForm]
 
 LabelForm[e_, args___] := Style[e, args, $LabelStyle];
 
 (**************************************************************************************************)
 
-PackageScope["ImageToGraphics"]
+PrivateFunction[ImageToGraphics]
 
 ImageToGraphics[img_, {xalign_, yalign_}, size_] := Scope[
   {w, h} = ImageDimensions[img];
@@ -86,7 +82,7 @@ ImageToGraphics[img_, {xalign_, yalign_}, size_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphicsPrimitivesQ"]
+PrivateFunction[GraphicsPrimitivesQ]
 
 $directivesP = Alternatives[
   _Thickness, _AbsoluteThickness, _PointSize, _AbsolutePointSize, _Dashing,
@@ -121,7 +117,7 @@ CoordinateMatrixOrArrayQ[array_] := CoordinateMatrixQ[array] || VectorQ[array, C
 
 (**************************************************************************************************)
 
-PackageExport["ExpandPrimitives"]
+PrivateFunction[ExpandPrimitives]
 
 $expandPrimitivesDispatch = Dispatch[{
   p:Point[_ ? CoordinateMatrixQ] :> Thread[p],
@@ -143,7 +139,7 @@ ExpandPrimitives[primitives_, level_:{0,1}] := Replace[
 
 (**************************************************************************************************)
 
-PackageExport["GraphicsQ"]
+PrivateFunction[GraphicsQ]
 
 SetUsage @ "
 GraphicsQ[object$] returns True if object$ is a %Graphics[$$] or %Graphics3D[$$] expression.
@@ -154,7 +150,7 @@ GraphicsQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["EffectiveImageSize"]
+PrivateFunction[EffectiveImageSize]
 
 EffectiveImageSize[{width_, height_}, trueAspectRatio_] := Scope[
   imageAspectRatio = height / width;
@@ -173,7 +169,7 @@ EffectiveImageSize[{width_, height_}, trueAspectRatio_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ImageSizePad"]
+PrivateFunction[ImageSizePad]
 
 SetUsage @ "
 ImageSizePad[size$, padding$] expands the image size size$ by padding it according to padding$.
@@ -199,7 +195,7 @@ processPadding[head_, paddingSpec_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["StandardizePadding"]
+PrivateFunction[StandardizePadding]
 
 SetUsage @ "
 StandardizePadding[spec$] standardizes a padding specification spec$.
@@ -230,7 +226,7 @@ StandardizePadding = Case[
 
 (**************************************************************************************************)
 
-PackageExport["LookupSide"]
+PrivateFunction[LookupSide]
 
 LookupSide[rules_, sides_List] :=
   Map[LookupSide[rules, #]&, sides];
@@ -259,7 +255,7 @@ toSideClass = Case[
 
 (**************************************************************************************************)
 
-PackageExport["ToSquarePlotRange"]
+PrivateFunction[ToSquarePlotRange]
 
 ToSquarePlotRange[{{x1_, x2_}, {y1_, y2_}}] := Scope[
   w = x2 - x1; h = y2 - y1;
@@ -269,7 +265,7 @@ ToSquarePlotRange[{{x1_, x2_}, {y1_, y2_}}] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["NormalizePlotRange"]
+PrivateFunction[NormalizePlotRange]
 
 SetUsage @ "
 NormalizePlotRange[graphics$] updates the value of %PlotRange to span all elements in graphics$.
@@ -295,7 +291,7 @@ NormalizePlotRange[graphics_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphicsPlotRange"]
+PrivateFunction[GraphicsPlotRange]
 
 SetUsage @ "
 GraphicsPlotRange[graphics$] yields the %PlotRange that will be used when graphics$ is rendered.
@@ -361,7 +357,7 @@ $graphicsBoxReplacements := $graphicsBoxReplacements =
 
 (**************************************************************************************************)
 
-PackageExport["PlotRangePad"]
+PrivateFunction[PlotRangePad]
 
 SetUsage @ "
 PlotRangePad[range$, padding$] expands the plot range range$ by the amount padding$.
@@ -408,7 +404,7 @@ scaleToPadding[s:{_, _}, w_] := w * s / (1 - Min[Total @ s, 0.45]);
 
 (**************************************************************************************************)
 
-PackageExport["PlotRangeSize"]
+PrivateFunction[PlotRangeSize]
 
 SetUsage @ "
 PlotRangeSize[range$] returns the size of the plot range.
@@ -418,19 +414,7 @@ PlotRangeSize[range_] := EuclideanDistance @@@ range;
 
 (**************************************************************************************************)
 
-PackageExport["MediumSmall"]
-PackageExport["MediumLarge"]
-PackageExport["Huge"]
-
-SetUsage @ "MediumSmall represents a size betwen %Small and %Medium."
-SetUsage @ "MediumLarge represents a size betwen %Medium and %Large."
-SetUsage @ "Huge represents a size greater than %Large."
-
-(* if you add a size, update $SizePattern and $SymbolicSizePattern *)
-
-(**************************************************************************************************)
-
-PackageExport["LookupImageSize"]
+PrivateFunction[LookupImageSize]
 
 SetUsage @ "
 LookupImageSize[object$] returns the setting of %ImageSize that a given object will use when rendered.
@@ -463,7 +447,7 @@ resolveRawImageSize = Case[
 
 (**************************************************************************************************)
 
-PackageExport["ToNumericImageSize"]
+PrivateFunction[ToNumericImageSize]
 
 SetUsage @ "
 ToNumericImageSize[spec$, ratio$] resolves an %ImageSize specificiaton spec$ using a target aspect ratio, \
@@ -478,7 +462,7 @@ ToNumericImageSize[imageSize_, aspectRatio_] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["$SymbolicPointSizes"]
+PrivateVariable[$SymbolicPointSizes]
 
 $SymbolicPointSizes = <|
   Tiny -> 2, Small -> 3,
@@ -488,7 +472,7 @@ $SymbolicPointSizes = <|
 
 (**************************************************************************************************)
 
-PackageScope["$SymbolicSizeFractions"]
+PrivateVariable[$SymbolicSizeFractions]
 
 $SymbolicSizeFractions = <|
   Tiny -> 0.25, Small -> 0.5,
@@ -498,7 +482,7 @@ $SymbolicSizeFractions = <|
 
 (**************************************************************************************************)
 
-PackageScope["$ImageWidthTable"]
+PrivateVariable[$ImageWidthTable]
 
 $ImageWidthTable = <|
   Tiny -> 100,
@@ -512,13 +496,13 @@ $ImageWidthTable = <|
 
 (**************************************************************************************************)
 
-PackageScope["toStandardImageSize"]
+PrivateFunction[toStandardImageSize]
 
 toStandardImageSize[sym:(MediumSmall|MediumLarge|Huge)] := Lookup[$ImageWidthTable, sym];
 toStandardImageSize[other_] := other;
 
 
-PackageScope["toNumericSizeScale"]
+PrivateFunction[toNumericSizeScale]
 
 $sizeScaleAssoc = KeyDrop[$ImageWidthTable / $ImageWidthTable[Medium], Automatic];
 
@@ -530,7 +514,7 @@ toNumericSizeScale = Case[
 
 (**************************************************************************************************)
 
-PackageExport["ApplyEpilog"]
+PrivateFunction[ApplyEpilog]
 
 ApplyEpilog[graphics_, None | {}] := graphics;
 
@@ -547,7 +531,7 @@ ApplyEpilog[epilog_][graphics_] := ApplyEpilog[graphics, epilog];
 
 (**************************************************************************************************)
 
-PackageExport["ApplyProlog"]
+PrivateFunction[ApplyProlog]
 
 ApplyProlog[graphics_, None | {}] := graphics;
 
@@ -564,7 +548,7 @@ ApplyProlog[prolog_][graphics_] := ApplyProlog[graphics, prolog];
 
 (**************************************************************************************************)
 
-PackageExport["ApplyLegend"]
+PrivateFunction[ApplyLegend]
 
 ApplyLegend[expr_, None | Automatic | {}] :=
   expr;
@@ -599,7 +583,7 @@ updateMargin = <|
 
 (**************************************************************************************************)
 
-PackageExport["NiceTooltip"]
+PublicFunction[NiceTooltip]
 
 NiceTooltip[g_, None] := g;
 
@@ -614,13 +598,13 @@ NiceTooltip[g_, e_] :=
 
 (**************************************************************************************************)
 
-PackageScope["ColorFramed"]
+PublicFunction[ColorFramed]
 
 ColorFramed[boxes_, color_] := Framed[boxes, ContentPadding -> False, FrameStyle -> color];
 
 (**************************************************************************************************)
 
-PackageExport["TransformArrowheads"]
+PrivateFunction[TransformArrowheads]
 
 $arrowheadTransforms = <|
   "Reverse" -> reverseArrowhead,
@@ -651,7 +635,7 @@ addInversionBar[isOver_][{size_, pos_, graphics:Graphics[primitives_, opts___]}]
 
 (**************************************************************************************************)
 
-PackageExport["SetFrameColor"]
+PublicFunction[SetFrameColor]
 
 SetFrameColor[g_Graphics, color_] :=
   If[LookupOption[g, Frame] === True,
@@ -663,7 +647,7 @@ SetFrameColor[expr_, _] := expr;
 
 (**************************************************************************************************)
 
-PackageExport["FadeGraphics"]
+PublicFunction[FadeGraphics]
 
 FadeGraphics[g_, 0 | 0.] := g;
 FadeGraphics[g_Graphics, opacity_] := ApplyEpilog[g,
@@ -675,7 +659,7 @@ FadeGraphics[g_Graphics, opacity_] := ApplyEpilog[g,
 
 (**************************************************************************************************)
 
-PackageExport["ListShowFaded"]
+PublicFunction[ListShowFaded]
 
 ListShowFaded[list_, i_, opacity_:0.9] := Scope[
   list = VectorReplace[list, g_Graph :> ExtendedGraphPlot[g]];
@@ -692,15 +676,14 @@ ListShowFaded[list_, i_, opacity_:0.9] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ShowFaded"]
+PublicFunction[ShowFaded]
 
 ShowFaded[items__, opacity_?NumericQ] := ListShowFaded[{items}, -1, opacity];
 ShowFaded[items__] := ListShowFaded[{items}, -1];
 
-
 (**************************************************************************************************)
 
-PackageExport["SimplifyGraphicsPrimitives"]
+PrivateFunction[SimplifyGraphicsPrimitives]
 
 SimplifyGraphicsPrimitives[primitives_] :=
   simplifyPrimitiveAnnotations @ simplifyPrimitiveStyles @ primitives;
@@ -762,7 +745,7 @@ simplifyPrimitiveAnnotations[primitives_] :=
 
 (**************************************************************************************************)
 
-PackageExport["Lerp"]
+PublicFunction[Lerp]
 
 SetUsage @ "
 Lerp[a$, b$, f$] linearly interpolates between a$ and b$, where f$ = 0 gives a$ and f$ = 1 gives b$.
@@ -784,7 +767,7 @@ Lerp[n_][a_, b_] :=Lerp[a, b, n];
 
 (**************************************************************************************************)
 
-PackageExport["Interpolated"]
+PublicFunction[Interpolated]
 
 SetUsage @ "
 Interpolated[a$, b$, n$] is equivalent to %Lerp[a$, b$, Into[n$]].
@@ -794,7 +777,7 @@ Interpolated[a_, b_, n_] := Table[b * i + a * (1 - i), {i, 0, 1, 1/(n-1)}];
 
 (**************************************************************************************************)
 
-PackageExport["AngleRange"]
+PublicFunction[AngleRange]
 
 SetRelatedSymbolGroup[AngleRange, AngleDifference];
 
@@ -809,8 +792,9 @@ AngleRange[a_, b_, Into[1]] := {Mod[(a + b), Tau] / 2};
 AngleRange[a_, b_, Into[n_]] := NestList[PlusOperator[AngleDifference[a, b] / (n-1)], a, n-1];
 AngleRange[a_, b_, da_] := AngleRange[a, b, Into[Ceiling[1 + Abs[AngleDifference[a, b]] / da]]];
 
+(**************************************************************************************************)
 
-PackageExport["AngleDifference"]
+PublicFunction[AngleDifference]
 
 SetUsage @ "
 AngleDifference[a$, b$, Into[n$]] gives the signed distance between two angles a$ and b$.

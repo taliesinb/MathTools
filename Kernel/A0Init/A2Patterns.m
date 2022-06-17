@@ -1,18 +1,16 @@
-(**************************************************************************************************)
-
-PackageExport["$RulePattern"]
+PrivateVariable[$RulePattern]
 
 $RulePattern = _Rule | _RuleDelayed;
 
 (**************************************************************************************************)
 
-PackageExport["$RuleListPattern"]
+PrivateVariable[$RuleListPattern]
 
 $RuleListPattern = {RepeatedNull[_Rule | _RuleDelayed]};
 
 (**************************************************************************************************)
 
-PackageExport["$SymbolicSizePattern"]
+PrivateVariable[$SymbolicSizePattern]
 
 $SymbolicSizePattern = Tiny | Small | MediumSmall | Medium | MediumLarge | Large | Huge;
 
@@ -22,7 +20,7 @@ $SymbolicSizePattern is a pattern that matches a symbolic size like Small, Mediu
 
 (**************************************************************************************************)
 
-PackageExport["$SizePattern"]
+PrivateVariable[$SizePattern]
 
 $SizePattern = Tiny | Small | MediumSmall | Medium | MediumLarge | Large | Huge | Scaled[_?NumericQ];
 
@@ -32,7 +30,7 @@ $SizePattern is a pattern that matches a numeric or symbolic size like Small, Me
 
 (**************************************************************************************************)
 
-PackageExport["$SidePattern"]
+PrivateVariable[$SidePattern]
 
 $SidePattern = Left | Right | Bottom | Top | BottomLeft | BottomRight | TopLeft | TopRight;
 
@@ -42,7 +40,7 @@ $SizePattern is a pattern that matches a (potentially compound) symbol side, lik
 
 (**************************************************************************************************)
 
-PackageExport["$ColorPattern"]
+PrivateVariable[$ColorPattern]
 
 $ColorPattern = _RGBColor | _GrayLevel | _CMYKColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor | Opacity[_, _];
 
@@ -52,7 +50,7 @@ $ColorPattern is a pattern that matches a valid color, like %RGBColor[$$] etc.
 
 (**************************************************************************************************)
 
-PackageExport["$OpacityPattern"]
+PrivateVariable[$OpacityPattern]
 
 $OpacityPattern = VeryTransparent | HalfTransparent | PartlyTransparent | Opaque | Opacity[_ ? NumericQ];
 
@@ -62,12 +60,18 @@ $OpacityPattern is a pattern that matches an opacity specification.
 
 (**************************************************************************************************)
 
-PackageScope["ListOrAssociationOf"]
+PrivateFunction[ListOrAssociationOf]
 
 ListOrAssociationOf[pattern_] := {Repeated[pattern]} | Association[Repeated[_ -> pattern]];
 
 (**************************************************************************************************)
 
-PackageScope["$ModIntP"]
+PrivateVariable[$ModIntP]
 
 $ModIntP = _Integer ? Positive | Modulo[_Integer ? Positive];
+
+(**************************************************************************************************)
+
+PrivateVariable[$PosIntOrInfinityP]
+
+$PosIntOrInfinityP = _Integer ? Positive | Infinity;

@@ -1,5 +1,4 @@
-PackageExport["$ExtendedColors"]
-PackageExport["$ExtendedColorsGrouped"]
+PublicVariable[$ExtendedColors, $ExtendedColorsGrouped]
 
 $ExtendedColorsGrouped = <|
   "Basic" -> <|
@@ -35,6 +34,6 @@ ScanIndexed[toGlobalColorName, $ExtendedColorsGrouped, {3}];
 
 (**************************************************************************************************)
 
-PackageExport["$ExtendedColorNames"]
+PublicVariable[$ExtendedColorNames]
 
 $ExtendedColorNames = Keys @ $ExtendedColorsGrouped;

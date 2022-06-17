@@ -20,7 +20,7 @@ DSCopy[ds_] := ds["Copy"];
 
 (**************************************************************************************************)
 
-PackageExport["PartitionNode"]
+PublicHead[PartitionNode]
 
 PartitionNode::usage = "PartitionNode[partition, support]";
 zFormat[PartitionNode[support_List, partition_]] :=
@@ -31,7 +31,7 @@ getPartition[PartitionNode[_, partition_]] := partition;
 
 (**************************************************************************************************)
 
-PackageExport["PartitionLattice"]
+PublicFunction[PartitionLattice]
 
 Options[PartitionLattice] = JoinOptions[
 	CombineMultiedges -> True,
@@ -113,7 +113,7 @@ findNewPairs[newPartition_, oldPartition_] := Complement[
 
 (**************************************************************************************************)
 
-PackageExport["MeetSemilatticeGraph"]
+PublicFunction[MeetSemilatticeGraph]
 
 Options[MeetSemilatticeGraph] = JoinOptions[
 	ExtendedGraph
@@ -144,7 +144,7 @@ $GraphThemeData["Poset"] = {
 
 (**************************************************************************************************)
 
-PackageExport["Poset"]
+PublicObject[Poset]
 
 VertexOutComponentLists[graph_] := AssociationMap[
 	VertexOutComponent[graph, {#}]&,
@@ -182,14 +182,13 @@ SingletonQ = Case[
 
 (**************************************************************************************************)
 
-PackageExport["GraphPoset"]
+PublicFunction[GraphPoset]
 
 GraphPoset[graph_] := makePoset[VertexOutAssociation @ TransitiveReductionGraph @ graph]
 
 (**************************************************************************************************)
 
-PackageExport["RelationPoset"]
-PackageExport["InverseRelationPoset"]
+PublicFunction[RelationPoset, InverseRelationPoset]
 
 RelationPoset[relation_, list_List] := GraphPoset @ RelationGraph[relation, list];
 
@@ -197,7 +196,7 @@ InverseRelationPoset[relation_, list_List] := ReversePoset @ RelationPoset[relat
 
 (**************************************************************************************************)
 
-PackageExport["ReversePoset"]
+PublicFunction[ReversePoset]
 
 ReversePoset[Poset[assoc_]] := Scope[
 	UnpackAssociation[assoc, set, up, upSet, dn, dnSet, upRules, dnRules, bot, top, botSet, topSet];
@@ -214,7 +213,7 @@ ReversePoset[Poset[assoc_]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["SubsetPoset"]
+PublicFunction[SubsetPoset]
 
 SubsetPoset[gens_String] :=
 	SubsetPoset @ StringSplit[gens];
@@ -229,7 +228,7 @@ parseGen = Case[
 
 (**************************************************************************************************)
 
-PackageExport["DiscretePoset"]
+PublicFunction[DiscretePoset]
 
 DiscretePoset[list_List] := Scope[
 	null = EmptyIndex[list];
@@ -238,7 +237,7 @@ DiscretePoset[list_List] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PosetGraph"]
+PublicFunction[PosetGraph]
 
 PosetGraph[Poset[assoc_Association]] := Scope[
 	ExtendedGraph[
@@ -250,7 +249,7 @@ PosetGraph[Poset[assoc_Association]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PosetQ"]
+PublicFunction[PosetQ]
 
 PosetQ = Case[
 	Poset[_Association] := True;
@@ -276,7 +275,7 @@ formatPosetElement[e_] := e;
 
 (**************************************************************************************************)
 
-PackageExport["PosetField"]
+PublicFunction[PosetField]
 
 declareBoxFormatting[
 	pf:PosetField[_Poset, _List] :> formatPosetField[pf]

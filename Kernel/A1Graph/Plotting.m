@@ -1,120 +1,4 @@
-PackageExport["ExtendedGraphLayout"]
-PackageExport["VertexLayout"]
-PackageExport["GraphMetric"]
-PackageExport["GraphOrigin"]
-
-PackageExport["ArrowheadShape"]
-PackageExport["ArrowheadSize"]
-PackageExport["ArrowheadStyle"]
-PackageExport["ArrowheadPosition"]
-
-PackageExport["VertexColorFunction"]
-PackageExport["EdgeColorFunction"]
-PackageExport["VertexColorRules"]
-PackageExport["EdgeColorRules"]
-PackageExport["RegionColorRules"]
-
-PackageExport["VertexTooltips"]
-PackageExport["VertexClickFunction"]
-PackageExport["EdgeTooltips"]
-
-PackageExport["CardinalColors"]
-PackageExport["CardinalColorRules"]
-PackageExport["CardinalColorFunction"]
-
-PackageExport["VertexLabelPosition"]
-PackageExport["VertexLabelSpacing"]
-PackageExport["VertexLabelBaseStyle"]
-PackageExport["VertexLabelOrientation"]
-
-PackageExport["VertexFontSize"]
-PackageExport["VertexBackground"]
-
-PackageExport["VertexOverlapResolution"]
-
-PackageExport["EdgeLabelPosition"]
-PackageExport["EdgeLabelSpacing"]
-PackageExport["EdgeLabelBaseStyle"]
-PackageExport["EdgeLabelOrientation"]
-
-PackageExport["EdgeLength"]
-
-PackageExport["VisibleCardinals"]
-PackageExport["ViewRegion"]
-PackageExport["ViewOptions"]
-PackageExport["ViewRotation"]
-PackageExport["LayoutDimension"]
-PackageExport["AdditionalImagePadding"]
-PackageExport["ExtendImagePadding"]
-
-PackageExport["CoordinateTransformFunction"]
-PackageExport["CoordinateRotation"]
-
-PackageExport["LabelCardinals"]
-PackageExport["AspectRatioClipping"]
-PackageExport["PrologFunction"]
-PackageExport["UseAbsoluteSizes"]
-PackageExport["SelfLoopRadius"]
-PackageExport["MultiEdgeDistance"]
-PackageExport["PackingSpacing"]
-
-PackageExport["PeripheralVertices"]
-
-SetUsage @ "ArrowheadShape is an extended option to Graph.";
-SetUsage @ "ArrowheadSize is an extended option to Graph.";
-SetUsage @ "ArrowheadStyle is an extended option to Graph.";
-SetUsage @ "ArrowheadPosition is an extended option to Graph.";
-SetUsage @ "VertexColorFunction is an extended option to Graph."
-SetUsage @ "EdgeColorFunction is an extended option to Graph."
-SetUsage @ "VertexColorRules is an extended option to Graph."
-SetUsage @ "CardinalColorRules is an extended option to Graph."
-SetUsage @ "CardinalColorFunction is an extended option to Graph."
-SetUsage @ "EdgeColorRules is an extended option to Graph."
-SetUsage @ "RegionColorRules is an extended option to Graph."
-SetUsage @ "CardinalColors is an extended option to Graph."
-SetUsage @ "VisibleCardinals is an extended option to Graph."
-SetUsage @ "ViewRegion is an extended option to Graph."
-SetUsage @ "CoordinateTransformFunction is an extended option to Graph."
-SetUsage @ "VertexCoordinateRules is an extended option to Graph."
-SetUsage @ "PrologFunction is an extended option to Graph."
-SetUsage @ "UseAbsoluteSizes is an extended option to Graph."
-SetUsage @ "SelfLoopRadius is an extended option to Graph."
-SetUsage @ "MultiEdgeDistance is an extended option to Graph."
-SetUsage @ "PackingSpacing is an extended option to Graph."
-
-SetUsage @ "VertexTooltips is an extended option to Graph."
-SetUsage @ "VertexClickFunction is an extended option to Graph."
-
-SetUsage @ "VertexLayout is an extended option to Graph."
-SetUsage @ "VertexOverlapResolution is an extended option to Graph."
-SetUsage @ "VertexLabelPosition is an extended option to Graph."
-SetUsage @ "VertexLabelSpacing is an extended option to Graph."
-SetUsage @ "VertexLabelBaseStyle is an extended option to Graph."
-SetUsage @ "EdgeLabelPosition is an extended option to Graph."
-SetUsage @ "EdgeLabelSpacing is an extended option to Graph."
-SetUsage @ "EdgeLabelBaseStyle is an extended option to Graph."
-
-SetUsage @ "PeripheralVertices is an extended option to Graph.";
-
-SetUsage @ "ViewRotation is an extended option to Graph.";
-SetUsage @ "CoordinateRotation is an extended option to Graph.";
-
-(**************************************************************************************************)
-
-PackageExport["GraphPlottingFunction"]
-
-SetUsage @ "
-GraphPlottingFunction is an extended option to Graph that specifies a custom function to apply to \
-the graph to produce a graphical representation.
-* Various global variables are temporarily set during the application that allow properties \
-of the graph to be accessed. See GraphPlotScope for more info.
-* None indicates the ordinary graph plotting codepath should be used.
-* Automatic indicates that the default extended plotting codepath should be used.
-"
-
-(**************************************************************************************************)
-
-PackageScope["$graphRegionTable"]
+PrivateVariable[$graphRegionTable]
 
 $graphRegionTable = StringTrim @ "
 The following specifications describe paths in the graph:
@@ -165,7 +49,7 @@ The following specifications describe regions in the graph:
 
 (**************************************************************************************************)
 
-PackageScope["$GraphRegionHighlightUsage"]
+PrivateVariable[$GraphRegionHighlightUsage]
 
 $GraphRegionHighlightUsage = StringTrim @ "
 
@@ -241,7 +125,7 @@ The following special named style elements control several settings:
 
 (**************************************************************************************************)
 
-PackageExport["GraphRegionHighlight"]
+PublicOption[GraphRegionHighlight]
 
 SetUsage @ "
 GraphRegionHighlight is an extended option to Graph that specifies one or more highlighting directives to highlight \
@@ -261,7 +145,7 @@ highlights$.
 
 (**************************************************************************************************)
 
-PackageExport["GraphLegend"]
+PublicOption[GraphLegend]
 
 SetUsage @ "
 GraphLegend is an option to Quiver that creates a legend for the graph.
@@ -293,20 +177,9 @@ stripDynamicModule[boxes_] := ReplaceAll[boxes,
 
 (**************************************************************************************************)
 
-PackageScope["$VertexCoordinates"]
-PackageScope["$EdgeCoordinateLists"]
-PackageScope["$GraphHighlightStyle"]
-PackageScope["$GraphIs3D"]
-PackageScope["$GraphPlotRange"]
-PackageScope["$GraphPlotSize"]
-PackageScope["$GraphPlotAspectRatio"]
-PackageScope["$GraphPlotImageSize"]
-PackageScope["$GraphPlotImageWidth"]
-PackageScope["$GraphPlotEffectiveImageWidth"]
-PackageScope["$GraphMaxSafeVertexSize"]
-PackageScope["$GraphPlotGraphics"]
+PrivateVariable[$VertexCoordinates, $EdgeCoordinateLists, $GraphHighlightStyle, $GraphIs3D, $GraphPlotRange, $GraphPlotSize, $GraphPlotAspectRatio, $GraphPlotImageSize, $GraphPlotImageWidth, $GraphPlotEffectiveImageWidth, $GraphMaxSafeVertexSize, $GraphPlotGraphics]
 
-PackageExport["GraphPlotScope"]
+PrivateFunction[GraphPlotScope]
 
 SetHoldRest[GraphPlotScope];
 
@@ -375,7 +248,7 @@ addPRPadding[range_, _] := (Print["Bad PlotRangePadding"]; range)
 
 (**************************************************************************************************)
 
-PackageExport["ExtendedGraphPlot"]
+PublicFunction[ExtendedGraphPlot]
 
 $autoFilledLegendPattern = (Automatic | _String) | Placed[Automatic | _String | Labeled[Automatic | _String, __], _] | Labeled[Automatic | _String, __];
 
@@ -522,14 +395,14 @@ lineCenter = Case[
 
 (**************************************************************************************************)
 
-PackageExport["GraphAnnotationData"]
+PublicFunction[GraphAnnotationData]
 
 GraphAnnotationData[annotation_] :=
   LookupExtendedThemedOption[$Graph, annotation];
 
 (**************************************************************************************************)
 
-PackageExport["$GraphPlotVerboseMode"]
+PublicVariable[$GraphPlotVerboseMode]
 
 $GraphPlotVerboseMode = False;
 
@@ -537,7 +410,7 @@ SetHoldAllComplete[GPPrint];
 graphSkeleton[g_Graph] := StringJoin["Graph[«", IntegerString @ VertexCount @ g, "», «", IntegerString @ EdgeCount @ g, "»]"];
 GPPrint[args___] /; $GraphPlotVerboseMode := Print[args];
 
-PackageExport["ExtendedGraphPlottingFunction"]
+PublicFunction[ExtendedGraphPlottingFunction]
 
 ExtendedGraphPlot::badcolors = "CardinalColors should be an association from cardinals to colors.";
 ExtendedGraphPlot::badpadding = "Padding option `` was invalid."
@@ -571,7 +444,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ];
 
     UnpackExtendedThemedOptions[graph,
-      arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition,
+      arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, twoWayStyle,
       visibleCardinals, labelCardinals, vertexBackground,
       edgeSetback, edgeThickness, edgeLength,
 
@@ -815,7 +688,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       maxArrowheadSize = Max[arrowheadSize * $GraphPlotSizeX] / 2;
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Line"]];
       If[!$GraphIs3D, arrowheadShape //= to2DShape];
-      $twoWayStyle = Automatic; $inversionStyle = "Reverse"; $borderStyle = None;
+      $twoWayStyle = twoWayStyle; $inversionStyle = "Reverse"; $borderStyle = None;
       $lineThickness = If[$GraphIs3D, Thickness @ 0.2,
         AbsoluteThickness @ Max[Round[ImageFractionToImageSize[Max[arrowheadSize]] / 10, .2], .5]];
       If[ListQ[arrowheadShape],
@@ -1182,19 +1055,19 @@ extendPaddingToInclude[{{xmin_, xmax_}, {ymin_, ymax_}, {zmin_, zmax_}}] /; True
 
 (**************************************************************************************************)
 
-PackageExport["CardinalColor"]
+PublicHead[CardinalColor]
 
 SetUsage @ "CardinalColor[c$] represents the color of cardinal c$."
 
-PackageScope["evalCardinalColor"]
+PrivateFunction[evalCardinalColor]
 
 evalCardinalColor[CardinalColor[c_]] :=
   LookupCardinalColors[$Graph, If[ListQ[c], CardinalSet @ DeleteDuplicates @ Map[StripInverted, c], c]];
 
 (**************************************************************************************************)
 
-PackageScope["evalGraphicsValue"]
-PackageExport["GraphicsValue"]
+PrivateFunction[evalGraphicsValue]
+PublicHead[GraphicsValue]
 
 SetUsage @ "
 GraphicsValue[spec$] represents a computed value for the current graphic.
@@ -1338,7 +1211,7 @@ zeroQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["FadeProtected"]
+PublicFunction[FadeProtected]
 
 SetUsage @ "
 FadeProtected[primitives$] indicates that the given graphics primitives should be protected \
@@ -1528,8 +1401,7 @@ makeMultiarrowheadPositions[num_, Around[mn_, sd_]] := Scope[
 makeMultiarrowheadPositions[1, pos_] := {pos};
 makeMultiarrowheadPositions[num_, _] := 0.5 + 0.2 * Standardize[Range @ num];
 
-PackageExport["TwoWayStyle"]
-PackageExport["BorderStyle"]
+PublicOption[TwoWayStyle, BorderStyle]
 
 scanArrowheadShapeOpts = Case[
 
@@ -1934,7 +1806,7 @@ $namedArrowheads = Union[
 
 (**************************************************************************************************)
 
-PackageExport["ArrowheadData"]
+PublicFunction[ArrowheadData]
 
 ArrowheadData[name_, style_:{}] :=
   makeArrowheadShape[name, style];
@@ -1989,7 +1861,7 @@ ExtendedGraphPlot::badarrowhead = "ArrowheadShape -> `` should be None, Automati
 
 (**************************************************************************************************)
 
-PackageExport["ArrowheadLegend"]
+PublicFunction[ArrowheadLegend]
 
 Options[ArrowheadLegend] = {
   ArrowheadShape -> "Arrow",
@@ -2036,7 +1908,7 @@ horizontalALFrame[rows_] :=
     FrameStyle -> None
   ]
 
-PackageScope["makeLegendArrowheadGraphic"]
+PrivateFunction[makeLegendArrowheadGraphic]
 
 makeLegendArrowheadGraphic[color_, shape_, isHorizontal_:False] := Scope[
   isLine = StringContainsQ[shape, "Line"];
@@ -2050,7 +1922,7 @@ makeLegendArrowheadGraphic[color_, shape_, isHorizontal_:False] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["makeHighlightArrowheadShape"]
+PrivateFunction[makeHighlightArrowheadShape]
 
 makeHighlightArrowheadShape[color_, scaling_, False] :=
   makeArrowheadGraphic2D[
@@ -2096,7 +1968,7 @@ assembleLegendItem = Case[
 
 (**************************************************************************************************)
 
-PackageScope["removeSingleton"]
+PrivateFunction[removeSingleton]
 
 (* the hold is because some options have DeleteDuplicates applied to them, like Vertex/EdgeLabels *)
 removeSingleton[{Hold[e_]}] := e;
@@ -2463,7 +2335,7 @@ getCardinalEdgeColor = Case[
 
 (**************************************************************************************************)
 
-PackageExport["LookupVertexColors"]
+PublicFunction[LookupVertexColors]
 
 LookupVertexColors[graph_Graph, vertices_:All] := Scope[
   GraphScope[graph,
@@ -2480,7 +2352,7 @@ LookupVertexColors[graph_Graph, vertices_:All] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["LookupEdgeColors"]
+PublicFunction[LookupEdgeColors]
 
 LookupEdgeColors[graph_Graph, edges_:All] := Scope[
   GraphScope[graph,
@@ -2662,11 +2534,11 @@ textRasterSize[_] := {0, 0};
 styleAsText[a_, l___] := Style[a, "Graphics", l];
 styleAsText[a_, l___, BaseStyle -> s_, r___] := Style[a, "Graphics", Sequence @@ ToList @ s, l, r];
 
-PackageExport["ClearRasterSizeCache"]
+PublicFunction[ClearRasterSizeCache]
 
 ClearRasterSizeCache[] := ($rasterSizeCache = <||>;);
 
-PackageExport["CachedRasterSize"]
+PublicFunction[CachedRasterSize]
 
 $rasterSizeCache = <||>;
 CachedRasterSize[Null] := {0, 0};
@@ -2677,8 +2549,7 @@ $rasterSizeFixupRules = {
   (ImageSizeRaw -> _) :> Sequence[] (* <- we use ImageSizeRaw for internal purposes but it messes up rasterization *)
 };
 
-PackageExport["LabelPosition"]
-PackageExport["LabelOrientation"]
+PublicOption[LabelPosition, LabelOrientation]
 
 $uniformPayloadSizes = False;
 generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {labelStyle_, labelPosition_, labelSpacing_, labelBaseStyle_, labelOrientation_}, annotations_, isVertices_] := Scope[
@@ -2998,7 +2869,7 @@ ExtendedGraphPlot::badtooltipspec = "The tooltip specification `` was not one of
 
 (**************************************************************************************************)
 
-PackageExport["GraphEmbeddingGallery"]
+PublicFunction[GraphEmbeddingGallery]
 
 $layouts = {
   "GravityEmbedding", "HighDimensionalEmbedding", "PlanarEmbedding",
@@ -3009,11 +2880,7 @@ GraphEmbeddingGallery[g_Graph] := Table[Graph[g, GraphLayout -> layout, PlotLabe
 
 (**************************************************************************************************)
 
-PackageExport["ShowLabels"]
-PackageExport["VertexLabelForm"]
-PackageExport["VertexIndexForm"]
-PackageExport["VertexTooltipForm"]
-PackageExport["EdgeLabelForm"]
+PublicFunction[ShowLabels, VertexLabelForm, VertexIndexForm, VertexTooltipForm, EdgeLabelForm]
 
 ShowLabels[e_] := VertexLabelForm[e];
 
@@ -3026,7 +2893,7 @@ EdgeLabelForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, EdgeLab
 
 (**************************************************************************************************)
 
-PackageExport["PlotGraphVector"]
+PublicFunction[PlotGraphVector]
 
 PlotGraphVector[graph_Graph, opts___Rule][vector_List] :=
   PlotGraphVector[graph, vector, opts];
@@ -3042,14 +2909,14 @@ PlotGraphVector[graph_Graph, vector_, opts___Rule] := GraphPlot[graph,
 
 (**************************************************************************************************)
 
-PackageExport["TransformGraphCoordinates"]
+PublicFunction[TransformGraphCoordinates]
 
 TransformGraphCoordinates[f_, graph_, method_] :=
   Graph[graph, VertexCoordinates -> Map[f, GraphEmbedding[graph, method]]];
 
 (**************************************************************************************************)
 
-PackageExport["ExtractGraphPlotPrimitives"]
+PublicFunction[ExtractGraphPlotPrimitives]
 
 ExtractGraphPlotPrimitives[targetIds_, type_] := Block[
   {$targets = targetIds},
@@ -3062,7 +2929,7 @@ ExtractGraphPlotPrimitives[targetIds_, type_] := Block[
 
 (**************************************************************************************************)
 
-PackageExport["TransformGraphPlotPrimitives"]
+PublicFunction[TransformGraphPlotPrimitives]
 
 TransformGraphPlotPrimitives[f_, targetIds_, type_] := Block[
   {$targets = targetIds},
@@ -3111,7 +2978,7 @@ splitMatchingIds[list_, ids_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["AttachGraphPlotAnnotation"]
+PublicFunction[AttachGraphPlotAnnotation]
 
 AttachGraphPlotAnnotation[name_String] := (
   $GraphPlotGraphics //= MapAt[Annotation[#, name]&, 1]
@@ -3119,7 +2986,7 @@ AttachGraphPlotAnnotation[name_String] := (
 
 (**************************************************************************************************)
 
-PackageExport["ApplyFinalTransforms"]
+PublicFunction[ApplyFinalTransforms]
 
 ApplyFinalTransforms[g:(_Graphics|_Graphics3D)] :=
   MapAt[ApplyFinalTransforms, g, 1];
@@ -3169,7 +3036,7 @@ hideArrowheads[p_] := ReplaceAll[p, {
 
 (**************************************************************************************************)
 
-PackageExport["AnnotationsToTooltips"]
+PublicFunction[AnnotationsToTooltips]
 
 AnnotationsToTooltips[g_Graphics, name_] :=
   ReplaceAll[g, Annotation[prims_, ids_, name] :> annoWithTooltips[prims, ids]]

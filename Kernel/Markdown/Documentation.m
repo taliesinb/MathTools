@@ -125,7 +125,7 @@ groupString[] := Block[{start = ++$i},
 
 (**************************************************************************************************)
 
-PackageExport["ParseUsageString"]
+PublicFunction[ParseUsageString]
 
 ParseUsageString[str_] :=
   groupTokens @ tokenizeUsage @ str
@@ -135,7 +135,7 @@ ParseUsageString[n_Integer] :=
 
 (**************************************************************************************************)
 
-PackageExport["TokensToMarkdown"]
+PublicFunction[TokensToMarkdown]
 
 TokensToMarkdown[tokens_] :=
   StringJoin @ outerMarkdown @ tokens;
@@ -226,7 +226,7 @@ innerMathMarkdown = Case[
 
 (**************************************************************************************************)
 
-PackageExport["UsageToMarkdown"]
+PublicFunction[UsageToMarkdown]
 
 $currentMainSymbol = "FooBar";
 
@@ -245,7 +245,7 @@ UsageToMarkdown[mainSymbol_String -> usage_String] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["DumpUsagesToString"]
+PublicFunction[DumpUsagesToString]
 
 DumpUsagesToString[n_] := Scope[
   rules = Normal @ Take[$RawUsageStringTable, n];
@@ -254,14 +254,14 @@ DumpUsagesToString[n_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["DumpUsagesToClipboard"]
+PublicFunction[DumpUsagesToClipboard]
 
 DumpUsagesToClipboard[n_] :=
   CopyToClipboard @ DumpUsagesToString[n]
 
 (**************************************************************************************************)
 
-PackageExport["ExportUsages"]
+PublicFunction[ExportUsages]
 
 ExportUsages[n_] := Scope[
   usageString = DumpUsagesToString[n];

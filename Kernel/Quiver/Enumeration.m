@@ -1,4 +1,4 @@
-PackageExport["GraphVertexAssignments"]
+PublicFunction[GraphVertexAssignments]
 
 SetUsage @ "
 GraphVertexAssignments[graph$, integers$] assigns values from integers$ to the vertices of graph in all possible ways,
@@ -17,14 +17,14 @@ GraphVertexAssignments[graph_, values_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["EdgeAutomorphismGroup"]
+PublicFunction[EdgeAutomorphismGroup]
 
 EdgeAutomorphismGroup[graph_Graph] :=
   GraphAutomorphismGroup @ LineGraphFixed @ graph;
 
 (**************************************************************************************************)
 
-PackageExport["UniqueEdgeColorings"]
+PublicFunction[UniqueEdgeColorings]
 
 UniqueEdgeColorings[graph_] := Scope[
   group = EdgeAutomorphismGroup @ graph;
@@ -35,7 +35,7 @@ UniqueEdgeColorings[graph_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["AllCardinalSets"]
+PublicFunction[AllCardinalSets]
 
 AllCardinalSets[cardinals_] := Scope[
   cardinals = Join[cardinals, Inverted /@ cardinals];
@@ -45,7 +45,7 @@ AllCardinalSets[cardinals_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["CardinalRenamings"]
+PublicFunction[CardinalRenamings]
 
 CardinalRenamings[cardinals_] := Scope[
   Map[Dispatch @ DeleteCases[RuleThread[cardinals, #], Rule[z_, z_]]&, Permutations @ cardinals]
@@ -53,7 +53,7 @@ CardinalRenamings[cardinals_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["CountQuivers"]
+PublicFunction[CountQuivers]
 
 CountQuivers[graph_, cardCount_] := CountQuivers[graph, cardCount] = Scope[
   res = EnumerateQuivers[graph, cardCount, False, True];
@@ -66,15 +66,14 @@ CountQuivers[graph_, cardCount_] := CountQuivers[graph, cardCount] = Scope[
 
 (**************************************************************************************************)
 
-PackageExport["$EnableEnumerateCache"]
-PackageExport["$EnumerateVerboseMode"]
+PublicVariable[$EnableEnumerateCache, $EnumerateVerboseMode]
 
 $EnumerateVerboseMode = False;
 $EnableEnumerateCache = True;
 
 (**************************************************************************************************)
 
-PackageExport["EnumerateQuivers"]
+PublicFunction[EnumerateQuivers]
 
 EnumerateQuivers[n_Integer, args___] := Scope[
   skeletons = EnumerateQuiverSkeletons[n];
@@ -121,7 +120,7 @@ quiverCacheLoad[name_, edges_, count_] := Module[
 quiverCacheStore[name_, edges_, count_, result_] :=
   $enumerateQuiversCache[{name, edges, count}] = EnsureExport[CacheFilePath[name, edges, count], result];
 
-PackageExport["$EnumerationImplementation"]
+PublicVariable[$EnumerationImplementation]
 
 $EnumerationImplementation = 1;
 
@@ -310,7 +309,7 @@ equalModuloNaming[list1_, list2_] := First[ArrayLabeling[list1]] === First[Array
 
 (**************************************************************************************************)
 
-PackageExport["IsomorphicTaggedGraphsQ"]
+PublicFunction[IsomorphicTaggedGraphsQ]
 
 IsomorphicTaggedGraphsQ[g1_, g2_] := Scope[
   g1 //= ExpandCardinalSetEdges;
@@ -329,7 +328,7 @@ IsomorphicTaggedGraphsQ[g1_, g2_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["FindEdgeIsomorphism"]
+PublicFunction[FindEdgeIsomorphism]
 
 FindEdgeIsomorphism[g1_, g2_, args___] :=
   If[EdgeCount[g1] =!= EdgeCount[g2], {},
@@ -337,7 +336,7 @@ FindEdgeIsomorphism[g1_, g2_, args___] :=
 
 (**************************************************************************************************)
 
-PackageExport["LineGraphFixed"]
+PublicFunction[LineGraphFixed]
 
 LineGraphFixed[g_] := Scope[
   edges = EdgeList[g];
@@ -355,7 +354,7 @@ LineGraphFixed[g_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["EnumerateQuiverSkeletons"]
+PublicFunction[EnumerateQuiverSkeletons]
 
 mkCirclePoints[1] = {{0, 0}};
 mkCirclePoints[2] = {{-1, -1}, {1, 1}} * 0.7;
@@ -412,7 +411,7 @@ iEnumerateQuiverSkeletons[n_Integer, allowSelfLoops_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["EnumerateSimpleGraphs"]
+PublicFunction[EnumerateSimpleGraphs]
 
 EnumerateSimpleGraphs[n_Integer] := Scope[
   edgeLists = iEnumerateQuiverSkeletons[n, False];
@@ -424,7 +423,7 @@ EnumerateSimpleGraphs[n_Integer] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["EnumerateLattices"]
+PublicFunction[EnumerateLattices]
 
 EnumerateLattices[quivers_, cardinals_, group_, opts___Rule] := Scope[
   rules = MapIndex1[#2 -> #1&, cardinals];
@@ -474,7 +473,7 @@ $GraphThemeData["EnumeratedLattice"] := $enumeratedLatticeStyleOpts;
 
 (**************************************************************************************************)
 
-PackageExport["RangePartitionGraph"]
+PublicFunction[RangePartitionGraph]
 
 RangePartitionGraph[n_] := Scope[
   init = List /@ Range[n];

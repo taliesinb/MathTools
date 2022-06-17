@@ -1,4 +1,4 @@
-PackageExport["InvertedQ"]
+PublicFunction[InvertedQ]
 
 SetRelatedSymbolGroup[InvertedQ, Inverted, StripInverted, InvertReverse]
 
@@ -11,7 +11,7 @@ InvertedQ[_] = False;
 
 (**************************************************************************************************)
 
-PackageExport["Modulo"]
+PublicForm[Modulo]
 
 SetUsage @ "
 Modulo[n$] represents a modulo dimension n$.
@@ -27,7 +27,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PackageExport["StripModulo"]
+PublicFunction[StripModulo]
 
 SetUsage @ "
 StripModulo[e$] removes the head Modulo if present on e$.
@@ -43,7 +43,7 @@ StripModulo = Case[
 
 (**************************************************************************************************)
 
-PackageExport["GetModulus"]
+PublicFunction[GetModulus]
 
 SetUsage @ "
 GetModulus[e$] returns n$ when given Modulus[n$], else returns Infinity.
@@ -60,7 +60,7 @@ GetModulus[_, else_] := else;
 
 (**************************************************************************************************)
 
-PackageExport["Inverted"]
+PublicHead[Inverted]
 
 SetUsage @ "
 Inverted[elem$] represents the inversion of elem$.
@@ -80,7 +80,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PackageExport["InvertReverse"]
+PublicFunction[InvertReverse]
 
 SetUsage @ "
 InvertReverse[list$] applies Inverted to elements of list$, then reverses the list.
@@ -90,7 +90,7 @@ InvertReverse[e_List] := Reverse @ Map[Inverted, e];
 
 (**************************************************************************************************)
 
-PackageExport["StripInverted"]
+PublicFunction[StripInverted]
 
 SetUsage @ "
 StripInverted[e$] removes the head Inverted if present on e$.
@@ -104,7 +104,7 @@ StripInverted = Case[
 
 (**************************************************************************************************)
 
-PackageExport["InvertedForm"]
+PublicForm[InvertedForm]
 
 SetUsage @ "
 InvertedForm[e$] displays as Underbar[e$].
@@ -116,12 +116,12 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PackageExport["AtLeast"]
+SystemHead[AtLeast, AtMost]
 
-SetUsage @ "
-AtLeast[n$] is a symbolic expression indicating that at least n$ values should be obtained.
-"
+SetUsage @ "AtLeast[n$] is a symbolic expression indicating that at least n$ values should be obtained."
+SetUsage @ "AtMost[n$] is a symbolic expression indicating that at most n$ values should be obtained."
 
 declareFormatting[
-  AtLeast[n_] :> Row[{">", n}]
+  AtLeast[n_] :> Row[{"\[GreaterEqual]", n}],
+  AtMost[n_] :> Row[{"\[LessEqual]", n}]
 ];

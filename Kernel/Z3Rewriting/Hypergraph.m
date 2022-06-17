@@ -1,6 +1,6 @@
 (**************************************************************************************************)
 
-PackageExport["DirectedHypergraphRewritingSystem"]
+PublicFunction[DirectedHypergraphRewritingSystem]
 
 DirectedHypergraphRewritingSystem[rules_] := Scope[
   constructRewritingSystem["DirectedHypergraph", rules]
@@ -19,7 +19,7 @@ directedHypergraphRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] 
 
 (**************************************************************************************************)
 
-PackageExport["DirectedUniHypergraphRewritingSystem"]
+PublicFunction[DirectedUniHypergraphRewritingSystem]
 
 DirectedUniHypergraphRewritingSystem[rules_] := Scope[
   constructRewritingSystem["DirectedUniHypergraph", rules]
@@ -38,7 +38,7 @@ directedUniHypergraphRewritingSystemProperty[data_, "CayleyFunction", opts___Rul
 
 (**************************************************************************************************)
 
-PackageExport["DirectedUniHypergraphLabeledReplaceList"]
+PublicFunction[DirectedUniHypergraphLabeledReplaceList]
 
 DirectedUniHypergraphLabeledReplaceList[rule_][hyperedges_] :=
   DirectedUniHypergraphLabeledReplaceList[hyperedges, rule];
@@ -61,7 +61,7 @@ applyLabeledDUHRewrite[edges_, pos_, rule_] :=
 
 (**************************************************************************************************)
 
-PackageExport["DirectedUniHypergraphReplaceList"]
+PublicFunction[DirectedUniHypergraphReplaceList]
 
 DirectedUniHypergraphReplaceList[rule_][hyperedges_] :=
   DirectedUniHypergraphReplaceList[hyperedges, rule];
@@ -86,7 +86,7 @@ removeDupUniH[hyperedges_, results_] :=
 
 (**************************************************************************************************)
 
-PackageExport["DirectedHypergraphLabeledReplaceList"]
+PublicFunction[DirectedHypergraphLabeledReplaceList]
 
 DirectedHypergraphLabeledReplaceList[rule_][hyperedges_] :=
   DirectedHypergraphLabeledReplaceList[hyperedges, rule];
@@ -109,7 +109,7 @@ applyLabeledDHRewrite[edges_, pos_, rule_] :=
 
 (**************************************************************************************************)
 
-PackageExport["DirectedHypergraphReplaceList"]
+PublicFunction[DirectedHypergraphReplaceList]
 
 DirectedHypergraphReplaceList[rule_][hyperedges_] :=
   DirectedHypergraphReplaceList[hyperedges, rule];

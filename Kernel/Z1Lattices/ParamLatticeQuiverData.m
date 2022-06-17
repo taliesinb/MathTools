@@ -14,15 +14,14 @@ DefineLiteralMacro[getRGBWCardinals,
 
 (**************************************************************************************************)
 
-PackageScope["$ParameterizedLatticeData"]
-PackageScope["$ParameterizedLatticeNames"]
+PrivateVariable[$ParameterizedLatticeData, $ParameterizedLatticeNames]
 
 $ParameterizedLatticeData = <||>;
 $ParameterizedLatticeNames = {};
 
 (**************************************************************************************************)
 
-PackageExport["DefineParameterizedLatticeQuiver"]
+PublicFunction[DefineParameterizedLatticeQuiver]
 
 DefineParameterizedLatticeQuiver[name_String, func_, params_] := (
   AppendTo[$ParameterizedLatticeNames, name];
@@ -123,7 +122,7 @@ $torusParameters = <|"w" -> 4, "h" -> None, "t" -> 0, "MaxDepth" -> Automatic|>;
 
 (**************************************************************************************************)
 
-PackageExport["UniqueLabel"]
+PublicHead[UniqueLabel]
 
 SetUsage @ "
 UniqueLabel[n$] represents a numeric label in a plot that should be numbered in raster order.
@@ -131,7 +130,7 @@ UniqueLabel[n$] represents a numeric label in a plot that should be numbered in 
 
 (**************************************************************************************************)
 
-PackageExport["ModulusEdgeShapeFunction"]
+PublicFunction[ModulusEdgeShapeFunction]
 
 ModulusEdgeShapeFunction[offsets_][assoc_] := Scope[
   UnpackAssociation[assoc, coordinates, arrowheads, shape, edgeIndex, labelStyle];

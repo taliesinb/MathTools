@@ -1,4 +1,4 @@
-PackageExport["TakeSequence"]
+PublicFunction[TakeSequence]
 
 SetRelatedSymbolGroup[TakeSequence, DropSequence];
 
@@ -6,13 +6,13 @@ TakeSequence[list_, start_:1] := Table[Take[list, i], {i, start, Length @ list}]
 
 (**************************************************************************************************)
 
-PackageExport["DropSequence"]
+PublicFunction[DropSequence]
 
 DropSequence[list_] := Table[Drop[list, i], {i, 0, Length[list] - 1}];
 
 (**************************************************************************************************)
 
-PackageExport["FirstRest"]
+PublicFunction[FirstRest]
 
 SetRelatedSymbolGroup[FirstRest, FirstLast, MostLast];
 
@@ -24,7 +24,7 @@ FirstRest[list_] := {First @ list, Rest @ list};
 
 (**************************************************************************************************)
 
-PackageExport["FirstLast"]
+PublicFunction[FirstLast]
 
 SetUsage @ "
 FirstLast[list$] gives the pair {%First[list$], %Last[list$]}.
@@ -34,7 +34,7 @@ FirstLast[list_] := {First @ list, Last @ list};
 
 (**************************************************************************************************)
 
-PackageExport["MostLast"]
+PublicFunction[MostLast]
 
 SetUsage @ "
 MostLast[list$] gives the pair {%Most[list$], %Last[list$]}.
@@ -44,19 +44,19 @@ MostLast[list_] := {Most @ list, Last @ list};
 
 (**************************************************************************************************)
 
-PackageExport["AppendFirst"]
+PublicFunction[AppendFirst]
 
 AppendFirst[{}] := {};
 AppendFirst[list_] := Append[list, First @ list];
 
-PackageExport["PrependLast"]
+PublicFunction[PrependLast]
 
 PrependLast[{}] := {};
 PrependLast[list_] := Prepend[list, Last @ list];
 
 (**************************************************************************************************)
 
-PackageExport["DropWhile"]
+PublicFunction[DropWhile]
 
 SetUsage @ "
 DropWhile[{e$1, e$2, $$}, f$] drops the initial elements e$i that all yield f$[ei$] = True.
@@ -66,8 +66,7 @@ DropWhile[list_, f_] := Drop[list, LengthWhile[list, f]];
 
 (**************************************************************************************************)
 
-PackageExport["CommonPrefix"]
-PackageExport["CommonPrefixLength"]
+PublicFunction[CommonPrefix, CommonPrefixLength]
 
 CommonPrefix[{}] := None;
 CommonPrefix[{e_}] := e;
@@ -86,8 +85,7 @@ CommonPrefixLength[list_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["CommonSuffix"]
-PackageExport["CommonSuffixLength"]
+PublicFunction[CommonSuffix, CommonSuffixLength]
 
 CommonSuffix[{}] := None;
 CommonSuffix[{e_}] := e;
@@ -103,3 +101,13 @@ CommonSuffixLength[list_] := Scope[
   ];
   minLen
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[DeleteNull]
+
+SetUsage @ "
+DeleteNull[list$] removes any elements that are Null from list$.
+"
+
+DeleteNull[e_] := DeleteCases[e, Null];

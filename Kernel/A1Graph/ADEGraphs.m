@@ -1,4 +1,4 @@
-PackageExport["AGraph"]
+PublicFunction[AGraph]
 
 pathGraph[n_Integer, opts___] := ExtendedGraph[PathGraph @ Range @ n, opts, VertexLabels -> "Name"];
 lineCoords[n_] := Thread[{Range[n], 0}];
@@ -8,7 +8,7 @@ AGraph[n_] := AGraph[n] =
     ImageSize -> chooseWidth[n]
   ];
 
-PackageExport["DGraph"]
+PublicFunction[DGraph]
 
 DGraph[n_] := DGraph[n] = makeDGraph[n];
 (* makeDGraph[n_] := EdgeAdd[
@@ -23,7 +23,7 @@ makeDGraph[n_] := EdgeAdd[
   ImageSize -> chooseWidth[n - 1]
 ];
 
-PackageExport["EGraph"]
+PublicFunction[EGraph]
 
 EGraph[n_] /; 6 <= n <= 8 := EGraph[n] = makeEGraph[n-1];
 EGraph[_] := None;
@@ -38,17 +38,17 @@ makeEGraph[n_] := EdgeAdd[
 chooseWidth[n_] := (30 + (n - 1) * 30)
 
 
-PackageExport["ATildeGraph"]
+PublicFunction[ATildeGraph]
 
 ATildeGraph[n_] := ATildeGraph[n] = addAffineVertex[AGraph[n], {0, 1}];
 
 
-PackageExport["DTildeGraph"]
+PublicFunction[DTildeGraph]
 
 DTildeGraph[n_] := DTildeGraph[n] = addAffineVertex[DGraph[n], {0, 1}];
 
 
-PackageExport["ETildeGraph"]
+PublicFunction[ETildeGraph]
 
 E6Tilde[] := E6Tilde[] = addAffineVertex[E6Graph[], {0, 1}];
 E7Tilde[] := E7Tilde[] = addAffineVertex[E7Graph[], {-1, 0}];

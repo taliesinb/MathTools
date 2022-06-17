@@ -1,11 +1,11 @@
-PackageExport["MergeAssocations"]
+PublicFunction[MergeAssocations]
 
 MergeAssocations[f_, assocs_] :=
   KeyValueMap[f, Merge[assocs, Identity]];
 
 (**************************************************************************************************)
 
-PackageExport["AssociationRange"]
+PublicFunction[AssociationRange]
 
 SetRelatedSymbolGroup[AssociationRange, RuleRange];
 

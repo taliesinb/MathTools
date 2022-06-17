@@ -66,7 +66,7 @@ procDestructArg[argSpec_] := With[
 
 (* this takes the place of MatchValues in GU *)
 
-PackageExport["Case"]
+PublicMacro[Case]
 
 SetHoldAll[Case, setupCases];
 
@@ -105,111 +105,6 @@ Case[rules$$, {alias$1, alias$2, $$}] applies temporary aliases to the rules$ be
 
 (**************************************************************************************************)
 
-PackageScope["declareFormatting"]
-PackageScope["$isTraditionalForm"]
-
-getPatternHead[sym_Symbol] := sym;
-getPatternHead[expr_] := First @ PatternHead @ expr;
-
-declareFormatting[rules__RuleDelayed] := Scan[declareFormatting, {rules}];
-declareFormatting[lhs_ :> rhs_] :=
-  With[{head = getPatternHead[lhs]}, {isProtected = ProtectedFunctionQ[head]},
-    If[isProtected, Unprotect[head]];
-    Format[$LHS:lhs, StandardForm] := Block[{$isTraditionalForm = False}, Interpretation[rhs, $LHS]];
-    Format[$LHS:lhs, TraditionalForm] := Block[{$isTraditionalForm = True}, Interpretation[rhs, $LHS]];
-    If[isProtected, Protect[head]];
-  ];
-
-declareFormatting[___] := Panic["BadFormatting"]
-
-(**************************************************************************************************)
-
-PackageScope["$posIntOrInfinityP"]
-
-$posIntOrInfinityP = _Integer ? Positive | Infinity;
-
-(**************************************************************************************************)
-
-PackageScope["declareBoxFormatting"]
-PackageScope["$BoxFormattingHeadQ"]
-
-SetHoldAllComplete[getPatternHead];
-
-$BoxFormattingHeadQ = Data`UnorderedAssociation[];
-
-declareBoxFormatting[rules__RuleDelayed] := Scan[declareBoxFormatting, {rules}];
-declareBoxFormatting[lhs_ :> rhs_] :=
-  With[{head = getPatternHead[lhs]}, {isProtected = ProtectedFunctionQ[head]},
-    If[isProtected, Unprotect[head]]; $BoxFormattingHeadQ[head] = True;
-    MakeBoxes[lhs, StandardForm] := Block[{$isTraditionalForm = False}, rhs];
-    MakeBoxes[lhs, TraditionalForm] := Block[{$isTraditionalForm = True}, rhs];
-    If[isProtected, Protect[head]];
-  ];
-
-declareBoxFormatting[___] := Panic["BadFormatting"]
-
-(**************************************************************************************************)
-
-PackageScope["declareObjectPropertyDispatch"]
-PackageScope["getObjectData"]
-PackageScope["$SelfObject"]
-
-getObjectData[_] := $Failed;
-
-declareObjectPropertyDispatch[head_Symbol, dispatch_Symbol] := (
-  getObjectData[head[data_Association] ? System`Private`NoEntryQ] := data;
-  (obj:Blank[head] ? System`Private`NoEntryQ)[key_String, opts___Rule] := Block[{$SelfObject = obj},
-    dispatch[getObjectData @ obj, key, opts]
-  ];
-  dispatch[data_, key_String] := Block[{res = Lookup[data, key, $Failed]}, res /; res =!= $Failed];
-  dispatch[args___] := failDispatch[head, dispatch][args];
-);
-
-General::noobjprop = "There is no property named \"``\". Valid properties include: ``.";
-General::noobjoptprop = "There is no property named \"``\" that accepts options. Such properties include: ``.";
-
-failDispatch[head_, dispatch_][data_, key_String] :=
-  Message[MessageName[head, "noobjprop"], key, commaString @ getValidProps[dispatch, data]];
-
-failDispatch[head_, dispatch_][data_, key_String, __Rule] :=
-  Message[MessageName[head, "noobjoptprop"], key, commaString @ getValidOptProps @ dispatch];
-
-getValidProps[symbol_, data_] := Union[
-  Cases[DownValues[symbol], HoldPattern[Verbatim[HoldPattern][symbol[_, key_String]] :> _] :> key],
-  Keys @ data
-];
-
-getValidOptProps[symbol_] := getValidOptProps[symbol] =
-  Union @ Cases[DownValues[symbol], HoldPattern[Verbatim[HoldPattern][symbol[_, key_String, __]] :> _] :> key];
-
-(**************************************************************************************************)
-
-PackageScope["declareFunctionAutocomplete"]
-PackageScope["declareSyntaxInfo"]
-
-If[$Notebooks,
-
-declareFunctionAutocomplete[function_Symbol, spec_] := With[
-  {functionName = SymbolName[function]},
-    FE`Evaluate[FEPrivate`AddSpecialArgCompletion[functionName -> spec]]
-  ];
-declareFunctionAutocomplete[___] := Panic["BadArgs"];
-
-toOptionName[sym_Symbol] := SymbolName[sym];
-toOptionName[str_String] := str;
-toOptionName[_] := Nothing;
-
-declareSyntaxInfo[function_Symbol, argPatterns_List] := Scope[
-  info = {"ArgumentsPattern" -> argPatterns};
-  If[ContainsQ[argPatterns, Verbatim[OptionsPattern[]]],
-    AppendTo[info, "OptionNames" -> Map[toOptionName, Keys @ Options @ function]]];
-  SyntaxInformation[function] = info;
-];
-
-];
-
-(**************************************************************************************************)
-
 $numNames = <|1 -> "first", 2 -> "second", 3 -> "third", 4 -> "fourth"|>;
 
 defineCheckArgMacro[checkMacro_Symbol, checker_, msgName_String] := DefineMacro[coerceMacro,
@@ -231,8 +126,7 @@ _defineCoerceArgMacro := Panic["BadArgMacro"];
 
 (**************************************************************************************************)
 
-PackageScope["CheckIsQuiver"]
-PackageScope["CoerceToQuiver"]
+PrivateMacro[CheckIsQuiver, CoerceToQuiver]
 
 General::notquiver = "The `` argument should be a quiver.";
 General::notquiverc = "The `` argument should be a quiver or list of quiver edges.";
@@ -240,8 +134,7 @@ defineCheckArgMacro[CheckIsQuiver, QuiverQ, "notquiver"];
 defineCoerceArgMacro[CoerceToQuiver, ToQuiver, "notquiverc"];
 
 
-PackageScope["CheckIsGraph"]
-PackageScope["CoerceToGraph"]
+PrivateMacro[CheckIsGraph, CoerceToGraph]
 
 General::notgraph = "The `` argument should be a Graph.";
 General::notgraphc = "The `` argument should be a Graph or list of edges.";
@@ -249,8 +142,7 @@ defineCheckArgMacro[CheckIsGraph, GraphQ, "notgraph"];
 defineCoerceArgMacro[CoerceToGraph, ToGraph, "notgraphc"];
 
 
-PackageScope["CheckIsRep"]
-PackageScope["CoerceToRep"]
+PrivateMacro[CheckIsRep, CoerceToRep]
 
 General::notrep = "The `` argument should be a RepresentationObject.";
 General::notrepc = "The `` argument should be a group, groupoid, RepresentationObject, PathRepresentationObject, or RootSystem.";
@@ -258,20 +150,20 @@ defineCheckArgMacro[CheckIsRep, RepresentationObjectQ, "notrep"];
 defineCoerceArgMacro[CoerceToRep, ToRepresentation, "notrepc"];
 
 
-PackageScope["CheckIsGroup"]
+PrivateMacro[CheckIsGroup]
 
 General::notgroup = "`` is not a valid group.";
 defineCheckArgMacro[CheckIsGroup, GroupQ, "notgroup"];
 
 
-PackageScope["CheckIsGraphics"]
+PrivateMacro[CheckIsGraphics]
 
 General::notgraphics = "The `` argument should be a Graphics or Graphics3D expression."
 defineCheckArgMacro[CheckIsGraphics, GraphicsQ, "notgraphics"];
 
 (**************************************************************************************************)
 
-PackageScope["UnpackOptionsAs"]
+PrivateMacro[UnpackOptionsAs]
 
 DefineMacro[UnpackOptionsAs,
 UnpackOptionsAs[head_Symbol, opts_, syms__Symbol] :=
@@ -299,7 +191,7 @@ capitalizeFirstLetter[str_String] :=
 
 (**************************************************************************************************)
 
-PackageScope["UnpackStringOptions"]
+PrivateMacro[UnpackStringOptions]
 
 DefineMacro[UnpackStringOptions,
 UnpackStringOptions[options_, default_, syms__Symbol] :=
@@ -318,7 +210,7 @@ mUnpackStringOptions[options_, default_, syms_] :=
 
 (**************************************************************************************************)
 
-PackageScope["UnpackAnonymousOptions"]
+PrivateMacro[UnpackAnonymousOptions]
 
 DefineMacro[UnpackAnonymousOptions,
 UnpackAnonymousOptions[object_, default_, syms__Symbol] :=
@@ -337,7 +229,7 @@ mUnpackAnonymousOptions[object_, default_, syms_] :=
 
 (**************************************************************************************************)
 
-PackageScope["UnpackAnonymousThemedOptions"]
+PrivateMacro[UnpackAnonymousThemedOptions]
 
 DefineMacro[UnpackAnonymousThemedOptions,
 UnpackAnonymousThemedOptions[object_, default_, syms__Symbol] :=
@@ -355,7 +247,7 @@ mUnpackAnonymousThemedOptions[object_, default_, syms_] :=
   ];
 (**************************************************************************************************)
 
-PackageScope["UnpackExtendedThemedOptions"]
+PrivateMacro[UnpackExtendedThemedOptions]
 
 DefineMacro[UnpackExtendedThemedOptions,
 UnpackExtendedThemedOptions[graph_, syms___Symbol] :=
@@ -373,7 +265,7 @@ mUnpackExtendedThemedOptions[graph_, syms_] :=
 
 (**************************************************************************************************)
 
-PackageScope["UnpackExtendedOptions"]
+PrivateMacro[UnpackExtendedOptions]
 
 DefineMacro[UnpackExtendedOptions,
 UnpackExtendedOptions[graph_, syms___Symbol] :=
@@ -400,8 +292,8 @@ findMatchingSymbols[syms_List] := findMatchingSymbols[syms] = Block[
 
 (**************************************************************************************************)
 
-PackageScope["GraphCachedScope"]
-PackageExport["$GraphCacheStore"]
+PrivateMacro[GraphCachedScope]
+PublicVariable[$GraphCacheStore]
 
 $GraphCacheStore = Language`NewExpressionStore["GraphCache"];
 
@@ -424,7 +316,7 @@ mGraphCachedScope[graph_, key_, body_] := With[{body2 = MacroExpand @ Scope @ bo
 
 (**************************************************************************************************)
 
-PackageExport["CatchMessage"]
+PrivateFunction[CatchMessage]
 
 DefineMacro[CatchMessage,
 CatchMessage[body_] := Quoted[Catch[body, ThrownMessage[_], ThrownMessageHandler[$LHSHead]]]
@@ -433,14 +325,14 @@ CatchMessage[body_] := Quoted[Catch[body, ThrownMessage[_], ThrownMessageHandler
 ThrownMessageHandler[msgHead_Symbol][{args___}, ThrownMessage[msgName_String]] :=
   (Message[MessageName[msgHead, msgName], args]; $Failed);
 
-PackageExport["ThrowMessage"]
+PrivateFunction[ThrowMessage]
 
 ThrowMessage[msgName_String, msgArgs___] :=
   Throw[{msgArgs}, ThrownMessage[msgName]];
 
 (**************************************************************************************************)
 
-PackageScope["FunctionSection"]
+PrivateMacro[FunctionSection]
 
 DefineMacro[FunctionSection,
 FunctionSection[expr_] := Quoted[expr]
@@ -448,11 +340,7 @@ FunctionSection[expr_] := Quoted[expr]
 
 (**************************************************************************************************)
 
-PackageScope["SetAutomatic"]
-PackageScope["SetMissing"]
-PackageScope["SetNone"]
-PackageScope["SetAll"]
-PackageScope["SetInherited"]
+PrivateMacro[SetAutomatic, SetMissing, SetNone, SetAll, SetInherited]
 
 defineSetter[symbol_, value_] := (
   DefineLiteralMacro[symbol, symbol[lhs_, rhs_] := If[lhs === value, lhs = rhs, lhs]];
@@ -469,9 +357,7 @@ SetHoldAll[SetMissing];
 
 (**************************************************************************************************)
 
-PackageScope["ReplaceNone"]
-PackageScope["ReplaceMissing"]
-PackageScope["ReplaceAutomatic"]
+PrivateMacro[ReplaceNone, ReplaceMissing, ReplaceAutomatic]
 
 defineReplacer[symbol_, pattern_] := (
   DefineLiteralMacro[symbol,
@@ -487,13 +373,13 @@ defineReplacer[ReplaceAutomatic, Automatic];
 
 (**************************************************************************************************)
 
-PackageScope["$NotImplemented"]
+PrivateVariable[$NotImplemented]
 
 $NotImplemented := Panic["NotImplemented"];
 
 (**************************************************************************************************)
 
-PackageExport["OnFailed"]
+PrivateFunction[OnFailed]
 
 SetUsage @ "
 OnFailed[expr$, body$] evaluates and returns body$ if expr$ is $Failed, otherwise returns expr$.

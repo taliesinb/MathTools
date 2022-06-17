@@ -1,4 +1,4 @@
-PackageExport["Tau"]
+PublicFunction[Tau]
 
 SetUsage @ "
 Tau is an alias for 2 * %Pi.
@@ -8,7 +8,7 @@ Tau = 2 * Pi;
 
 (**************************************************************************************************)
 
-PackageExport["NLogN"]
+PublicFunction[NLogN]
 
 SetListable[NLogN];
 NLogN[0|0.] := 0;
@@ -16,7 +16,7 @@ NLogN[n_] := n * Log2[n];
 
 (**************************************************************************************************)
 
-PackageExport["RandomSeeded"]
+PublicFunction[RandomSeeded]
 
 SetUsage @ "
 RandomSeeded[body$, seeding$] evaluates body$ with %%RandomSeeding -> seeding$.
@@ -30,13 +30,7 @@ RandomSeeded[body_, other_] := BlockRandom[body, RandomSeeding -> other];
 
 (**************************************************************************************************)
 
-PackageScope["summaryItem"]
-
-summaryItem[a_, b_] := BoxForm`SummaryItem[{a <> ": ", b}];
-
-(**************************************************************************************************)
-
-PackageScope["toListOfLists"]
+PrivateFunction[toListOfLists]
 
 toListOfLists[list:{__List}] := list;
 toListOfLists[list_List] := {list};
@@ -44,7 +38,7 @@ toListOfLists[_] := $Failed;
 
 (**************************************************************************************************)
 
-PackageExport["ToInverseFunction"]
+PublicFunction[ToInverseFunction]
 
 SetUsage @ "
 ToInverseFunction[f$] returns %InverseFunction[f$].
@@ -55,17 +49,7 @@ ToInverseFunction[e_] := InverseFunction[e];
 
 (**************************************************************************************************)
 
-PackageExport["DeleteNull"]
-
-SetUsage @ "
-DeleteNull[list$] removes any elements that are Null from list$.
-"
-
-DeleteNull[e_] := DeleteCases[e, Null];
-
-(**************************************************************************************************)
-
-PackageExport["LookupAnnotation"]
+PrivateFunction[LookupAnnotation]
 
 SetUsage @ "
 LookupAnnotation[object$, key$] gives the value of the annotation associated with key$ in object$.
@@ -84,14 +68,29 @@ LookupAnnotation[obj_, key_List, default_:Automatic] :=
 
 (**************************************************************************************************)
 
-PackageExport["$TriangleVectors"]
+PrivateVariable[$TriangleVectors]
 
 $TriangleVectors = {{0, 1}, {-1/2*Sqrt[3], -1/2}, {Sqrt[3]/2, -1/2}};
 
 (**************************************************************************************************)
 
-PackageExport["LengthNormalize"]
+PrivateFunction[LengthNormalize]
 
 LengthNormalize[{}] := {};
 LengthNormalize[e_] := e / Length[e];
 
+(**************************************************************************************************)
+
+PrivateFunction[TotalNormalize]
+
+TotalNormalize[{}] := {};
+TotalNormalize[e_] := e / Max[Total[e], $MachineEpsilon];
+
+(**************************************************************************************************)
+
+PrivateFunction[notInternalSymbolQ]
+
+SetHoldFirst @ notInternalSymbolQ;
+
+notInternalSymbolQ[sym_Symbol] := !StringEndsQ[SymbolName @ Unevaluated @ sym, "$"];
+notInternalSymbolQ[_] := True;

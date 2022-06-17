@@ -1,12 +1,5 @@
-PackageExport["TreeVertexLayout"]
-PackageExport["Orientation"]
-PackageExport["RootVertex"]
-PackageExport["RootOrientation"]
-PackageExport["Balanced"]
-PackageExport["BendStyle"]
-PackageExport["BendRadius"]
-PackageExport["StretchFactor"]
-PackageExport["PreserveBranchOrder"]
+PublicObject[TreeVertexLayout]
+PublicOption[Orientation, RootVertex, RootOrientation, Balanced, BendStyle, BendRadius, StretchFactor, PreserveBranchOrder]
 
 Options[TreeVertexLayout] = {
   Alignment -> None, Orientation -> Top, RootVertex -> Automatic, "Bubble" -> False,
@@ -46,6 +39,7 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
 
   If[balanceSteps > 0,
     {coordsX, coordsY} = rever @ Transpose @ vertexCoordinates; ocoordsX = coordsX; widthTarget = Max[coordsX] - Min[coordsX];
+
     coordsX = ElectricalGravitationalBalanceX[0.95 * coordsX + 0.05 * ocoordsX, coordsY, indexGraph, balanceSteps, balanceDelta];
     (* coordsX = (Standardize[coordsX] * widthTarget) + Mean[coordsX]; *)
     vertexCoordinates = Transpose @ rever @ {coordsX, coordsY};

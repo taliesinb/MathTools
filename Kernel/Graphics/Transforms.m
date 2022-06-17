@@ -1,4 +1,4 @@
-PackageExport["ConstructGraphicsViewTransform"]
+PublicFunction[ConstructGraphicsViewTransform]
 
 (* adapted from https://mathematica.stackexchange.com/questions/3528/extract-values-for-viewmatrix-from-a-graphics3d *)
 
@@ -94,8 +94,7 @@ $defaultViewAngle = 35. * Degree;
 $viewOptionSymbols = {ViewPoint, ViewVector, ViewRotation, ViewMatrix, ViewCenter, ViewVertical, ViewAngle, ViewProjection};
 $defaultViewOpts = Thread[$viewOptionSymbols -> Automatic] // ReplaceOptions[ViewRotation -> 0];
 
-PackageScope["$automaticViewOptions"]
-PackageScope["$defaultViewPoint"]
+PrivateVariable[$automaticViewOptions, $defaultViewPoint]
 
 $defaultViewPoint = {-0.2, -2, 0.5};
 $automaticViewOptions := {ViewProjection -> "Orthographic", ViewPoint -> $defaultViewPoint};
@@ -109,7 +108,7 @@ ConstructGraphicsViewTransform[g_Graphics3D] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphicsViewTransform"]
+PublicFunction[GraphicsViewTransform]
 
 GraphicsViewTransform::badinput = "Received input of dimensions ``: ``."
 
@@ -134,7 +133,7 @@ toImageSpaceMatrix[matrix_] :=
 
 (**************************************************************************************************)
 
-PackageExport["Graphics3DProjection"]
+PublicFunction[Graphics3DProjection]
 
 $canonicalizeShapes = {
   c_Cuboid :> CanonicalizePolyhedron @ c
@@ -160,7 +159,7 @@ Graphics3DProjection[g:Graphics3D[primitives_, ___]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphicsTransformCoordinates"]
+PublicFunction[GraphicsTransformCoordinates]
 
 $ctfDispatch = Dispatch @ {
   Line[c_] :> Line[$ctf @ c],

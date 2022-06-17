@@ -1,4 +1,4 @@
-PackageExport["PerformSelfLinting"]
+PublicFunction[PerformSelfLinting]
 
 PerformSelfLinting[] := Scope[
   DeleteCases[{} | <||>] @ Association[
@@ -25,14 +25,14 @@ possibleMissingPackageScope[names_] :=
 
 (**************************************************************************************************)
 
-PackageExport["CreateSymbol"]
+PublicFunction[CreateSymbol]
 
 CreateSymbol[name_String, value_] :=
   ToExpression[name, InputForm, SetOperator[value]];
 
 (**************************************************************************************************)
 
-PackageExport["CreateMultipleSymbols"]
+PublicFunction[CreateMultipleSymbols]
 
 CreateMultipleSymbols[context_, names:{___String}, values_List] := Block[
   {$Context = context, $ContextPath = {"System`", "Global`"}},

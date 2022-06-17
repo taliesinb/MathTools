@@ -1,4 +1,4 @@
-PackageExport["ExtendedGraphProduct"]
+PublicFunction[ExtendedGraphProduct]
 
 SetUsage @ "
 ExtendedGraphProduct[{g$1, g$2, $$}, type$] takes the direct product of a list of graphs g$i, yielding a single graph with vertices \
@@ -29,7 +29,7 @@ ExtendedGraphProduct[graphs:ListOrAssociationOf[_Graph], type_, opts:OptionsPatt
 
 (**************************************************************************************************)
 
-PackageExport["LockedQuiverProduct"]
+PublicFunction[LockedQuiverProduct]
 
 SetUsage @ "
 LockedQuiverProduct[g1$, g$2] gives the dependent graph product of graph g$1 and g$2.
@@ -51,7 +51,7 @@ dependentEdgeProduct[head_[at_, ah_, ac_], head_[bt_, bh_, bc_]] :=
 
 (**************************************************************************************************)
 
-PackageExport["CartesianQuiverProduct"]
+PublicFunction[CartesianQuiverProduct]
 
 SetUsage @ "
 CartesianQuiverProduct[g1$, g$2] gives the Cartesian graph product of graph g$1 and g$2.
@@ -71,8 +71,7 @@ cartesianEdgeProduct[head_[at_, ah_, ac_], head_[bt_, bh_, bc_]] := {
 
 (**************************************************************************************************)
 
-PackageExport["RightFreeQuiverProduct"]
-PackageExport["LeftFreeQuiverProduct"]
+PublicFunction[RightFreeQuiverProduct, LeftFreeQuiverProduct]
 
 Options[LeftFreeQuiverProduct] = Options[RightFreeQuiverProduct] = Options[LockedQuiverProduct];
 
@@ -98,9 +97,7 @@ leftFiberEdgeProduct[head_[at_, ah_, ac_], head_[bt_, bh_, bc_]] := {
 
 (**************************************************************************************************)
 
-PackageExport["LeftStrongQuiverProduct"]
-PackageExport["RightStrongQuiverProduct"]
-PackageExport["StrongQuiverProduct"]
+PublicFunction[LeftStrongQuiverProduct, RightStrongQuiverProduct, StrongQuiverProduct]
 
 Options[LeftStrongQuiverProduct] = Options[RightStrongQuiverProduct] = Options[StrongQuiverProduct] = Options[LockedQuiverProduct];
 
@@ -142,7 +139,7 @@ strongEdgeProduct[head_[at_, ah_, ac_], head_[bt_, bh_, bc_]] := {
 
 (**************************************************************************************************)
 (*
-PackageExport["StrongQuiverProduct"]
+PublicFunction[StrongQuiverProduct]
 
 Options[StrongQuiverProduct] = Options[LockedQuiverProduct];
 
@@ -158,7 +155,7 @@ strongIndependentEdgeProduct[head_[at_, ah_, ac_], head_[bt_, bh_, bc_]] := {
  *)
 (**************************************************************************************************)
 
-PackageExport["GeneralBinaryQuiverProduct"]
+PublicFunction[GeneralBinaryQuiverProduct]
 
 Options[GeneralBinaryQuiverProduct] = Options[LockedQuiverProduct];
 
@@ -245,7 +242,7 @@ countDistinctRounded[e_] := CountDistinct[Round[e, 0.001]];
 
 (**************************************************************************************************)
 
-PackageExport["CardinalProductColorFunction"]
+PublicFunction[CardinalProductColorFunction]
 
 CardinalProductColorFunction[<||>, <||>][_] := $Gray;
 
@@ -258,7 +255,7 @@ CardinalProductColorFunction[aColors_, bColors_][CardinalProduct[a_, b_]] :=
 
 (**************************************************************************************************)
 
-PackageExport["GeneralQuiverProduct"]
+PublicFunction[GeneralQuiverProduct]
 
 Options[GeneralQuiverProduct] = JoinOptions[
   "UseCardinalSet" -> False,
@@ -378,7 +375,7 @@ toSignLists[num_, indices_] := Scope[
   arr
 ];
 
-PackageScope["toSimpleQuiver"]
+PrivateFunction[toSimpleQuiver]
 
 toSimpleQuiver = Case[
   g_Graph                  := g;
@@ -439,14 +436,14 @@ computedProductSingleCoord = Case[
 
 (**************************************************************************************************)
 
-PackageExport["VertexProductColorFunction"]
+PublicFunction[VertexProductColorFunction]
 
 VertexProductColorFunction[c1_, c2_][VertexProduct[v1_, v2_]] :=
   HumanBlend[{Lookup[c1, v1], Lookup[c2, v2]}];
 
 (**************************************************************************************************)
 
-PackageExport["RestrictedVertexProductGraph"]
+PublicFunction[RestrictedVertexProductGraph]
 
 SetUsage @ "
 RestrictedVertexProductGraph[graph$, cond$] yields a graph in which vertices are products VertexProduct[u$, v$] of \
@@ -488,14 +485,14 @@ RestrictedVertexProductGraph[graph_, cond_, opts:OptionsPattern[Graph]] := Scope
 
 (**************************************************************************************************)
 
-PackageExport["RestrictedVertexProducts"]
+PublicFunction[RestrictedVertexProducts]
 
 RestrictedVertexProducts[graph_, cond_] :=
   integersToVertices[graph, RestrictedVertexIndexProducts[graph, cond]];
 
 (**************************************************************************************************)
 
-PackageExport["RestrictedVertexIndexProducts"]
+PublicFunction[RestrictedVertexIndexProducts]
 
 RestrictedVertexIndexProducts[graph_, cond_] := Scope[
   count = VertexCount[graph];

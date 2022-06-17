@@ -1,4 +1,4 @@
-PackageExport["QuiverContractionList"]
+PublicFunction[QuiverContractionList]
 
 QuiverContractionList[graph_, opts_List] := Scope[
   orderGraph = QuiverContractionLattice[graph, opts];
@@ -7,7 +7,7 @@ QuiverContractionList[graph_, opts_List] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["QuiverContractionLattice"]
+PublicFunction[QuiverContractionLattice]
 
 Options[QuiverContractionLattice] = JoinOptions[
   CombineMultiedges -> False,
@@ -120,7 +120,7 @@ checkForConflicts[list_] :=
 
 (**************************************************************************************************)
 
-PackageExport["SpacelikeVertexRelationMatrix"]
+PublicFunction[SpacelikeVertexRelationMatrix]
 
 SpacelikeVertexRelationMatrix[graph_Graph] := Scope[
   dist = GraphDistanceMatrix[graph] /. {_Integer -> 0, Infinity -> 1};
@@ -130,7 +130,7 @@ SpacelikeVertexRelationMatrix[graph_Graph] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["QuiverContractionLatticeFast"]
+PublicFunction[QuiverContractionLatticeFast]
 
 Options[QuiverContractionLatticeFast] = JoinOptions[
   "ComputeIcons" -> True,
@@ -208,7 +208,7 @@ $GraphThemeData["ContractionGraphIcon"] = {
 
 (**************************************************************************************************)
 
-PackageExport["ContractionSetUnionLattice"]
+PublicFunction[ContractionSetUnionLattice]
 
 Options[ContractionSetUnionLattice] = Options @ Graph;
 
@@ -239,7 +239,7 @@ contractionSetUnionCayleyFunction[generators_][contractionSet_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ContractionSetUnion"]
+PublicFunction[ContractionSetUnion]
 
 (* DisjointSet doesn not have the right API yet to make this fast *)
 ContractionSetUnion[contractionSet1_, contractionSet2_] :=
@@ -247,7 +247,7 @@ ContractionSetUnion[contractionSet1_, contractionSet2_] :=
 
 (**************************************************************************************************)
 
-PackageExport["ContractionSetAppend"]
+PublicFunction[ContractionSetAppend]
 
 ContractionSetAppend[contractionSet_, term_] := Scope[
   jointIndices = SelectIndices[contractionSet, IntersectingQ[term]];
@@ -263,7 +263,7 @@ ContractionSetAppend[contractionSet_, term_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ToContractionSet"]
+PublicFunction[ToContractionSet]
 
 ToContractionSet[term:{___Integer}] := List @ Sort @ term;
 
@@ -275,7 +275,7 @@ ToContractionSet[contractionSet_] :=
 
 (**************************************************************************************************)
 
-PackageExport["SortContractionSet"]
+PublicFunction[SortContractionSet]
 
 SortContractionSet[contractionSet_] :=
   LexicographicSort @ Map[Sort, contractionSet];
@@ -285,7 +285,7 @@ SortContractionSet[contractionSet_, index_] :=
 
 (**************************************************************************************************)
 
-PackageExport["CompleteContractionSet"]
+PublicFunction[CompleteContractionSet]
 
 CompleteContractionSet[vertices_][contractionSet_] := Scope[
   remaining = Complement[vertices, Union @@ contractionSet];
@@ -294,7 +294,7 @@ CompleteContractionSet[vertices_][contractionSet_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["MinimalContractedQuivers"]
+PublicFunction[MinimalContractedQuivers]
 
 Options[MinimalContractedQuivers] = Options[ExtendedGraph];
 
@@ -305,7 +305,7 @@ MinimalContractedQuivers[quiver_, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["MinimalContractionSets"]
+PublicFunction[MinimalContractionSets]
 
 Options[MinimalContractionSets] = {
   "Complete" -> False,
@@ -393,7 +393,7 @@ addTerm = Case[
 
 (**************************************************************************************************)
 
-PackageExport["VertexPartitionGraphics"]
+PublicFunction[VertexPartitionGraphics]
 
 Options[VertexPartitionGraphics] = JoinOptions[
   "Style" -> "Color",

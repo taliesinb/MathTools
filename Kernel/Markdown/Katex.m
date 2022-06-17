@@ -1,11 +1,11 @@
-PackageExport["ToKatexString"]
+PublicFunction[ToKatexString]
 
 ToKatexString[e_] :=
   boxesToKatexString @ ToBoxes[e, StandardForm];
 
 (**************************************************************************************************)
 
-PackageScope["boxesToKatexString"]
+PrivateFunction[boxesToKatexString]
 
 boxesToKatexString[boxes_] := Scope[
   $currentKatexInputBoxes = cleanupInlineBoxes @ boxes;

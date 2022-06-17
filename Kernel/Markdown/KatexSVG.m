@@ -6,7 +6,7 @@ $ArrowSVGTemplate = StringTemplate @ StringTrim @ """
 </svg>
 """;
 
-PackageExport["LoadKatexArrowPathData"]
+PublicFunction[LoadKatexArrowPathData]
 
 $defaultKatexDir = "~/git/tools/KaTeX";
 
@@ -30,7 +30,7 @@ $ArrowSVGInsertion = {
   StartOfLine ~~ "};" ~~ EndOfLine
 };
 
-PackageExport["SaveKatexArrowPathData"]
+PublicFunction[SaveKatexArrowPathData]
 
 General::noinjpoint = "Could not find injection point for file ``.";
 SaveKatexArrowPathData::noarrowpaths = "Could not load arrow data from SVG files in ``.";
@@ -83,7 +83,7 @@ toCommentaryRule[js_][{start_, stop_}] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["SaveSVGArrowPathData"]
+PublicFunction[SaveSVGArrowPathData]
 
 SaveSVGArrowPathData[data_Association, katexDir_:Automatic] := Scope[
   SetAutomatic[katexDir, $defaultKatexDir];
@@ -93,7 +93,7 @@ SaveSVGArrowPathData[data_Association, katexDir_:Automatic] := Scope[
 
 saveSVGArrow[name_, path_] := ExportUTF8[FileNameJoin[{svgDir, name <> ".svg"}], $ArrowSVGTemplate @ path];
 
-PackageExport["LoadSVGArrowPathData"]
+PublicFunction[LoadSVGArrowPathData]
 
 LoadSVGArrowPathData[katexDir_:Automatic] := Scope[
   SetAutomatic[katexDir, $defaultKatexDir];
@@ -120,7 +120,7 @@ extractSVGPath[name_] :=
 
 (**************************************************************************************************)
 
-PackageExport["InjectCustomArrows"]
+PublicFunction[InjectCustomArrows]
 
 $LeftArrowSpecs = {
   named["bar", "leftbar"],

@@ -1,4 +1,4 @@
-PackageExport["LookupOption"]
+PublicFunction[LookupOption]
 
 SetRelatedSymbolGroup[LookupOption, JoinOptions, DeleteOptions, TakeOptions, ReplaceOptions, UpdateOptions];
 
@@ -14,7 +14,7 @@ LookupOption[obj_, opt_, default_:Automatic] :=
 
 (**************************************************************************************************)
 
-PackageExport["JoinOptions"]
+PublicFunction[JoinOptions]
 
 SetUsage @ "
 JoinOptions[options$1, options$2, $$] joins together the options$i to form a single list of rules.
@@ -29,7 +29,7 @@ JoinOptions[opts___] := DeleteDuplicatesBy[
 
 (**************************************************************************************************)
 
-PackageExport["DeleteOptions"]
+PublicFunction[DeleteOptions]
 
 SetUsage @ "
 DeleteOptions[options$, symbol$] removes rules with LHS symbol$ from the list of rules given by options$.
@@ -51,7 +51,7 @@ DeleteOptions[key_][opts_] :=
 
 (**************************************************************************************************)
 
-PackageExport["TakeOptions"]
+PublicFunction[TakeOptions]
 
 SetUsage @ "
 TakeOptions[options$, symbol$] gives only rules with LHS symbol$ from the list of rules given by options$.
@@ -70,7 +70,7 @@ TakeOptions[opts_List, key_] :=
 
 (**************************************************************************************************)
 
-PackageExport["ReplaceOptions"]
+PublicFunction[ReplaceOptions]
 
 SetUsage @ "
 ReplaceOptions[object$, symbol$ -> value$] gives a new version of object$ in which the option has been applied.
@@ -96,7 +96,7 @@ ReplaceOptions[rules_][obj_] := ReplaceOptions[obj, rules];
 
 (**************************************************************************************************)
 
-PackageExport["UpdateOptions"]
+PublicFunction[UpdateOptions]
 
 SetUsage @ "
 UpdateOptions[object$, option$, f$] returns a new object with the old value of option$ replaced with f$[value$].

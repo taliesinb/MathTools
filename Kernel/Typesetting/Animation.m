@@ -1,6 +1,4 @@
-(**************************************************************************************************)
-
-PackageExport["DiscreteAnimationObject"]
+PublicObject[DiscreteAnimationObject]
 
 SetHoldFirst[DiscreteAnimationObject];
 SetHoldFirst[makeDiscreteGraphics];
@@ -62,7 +60,7 @@ makeDiscreteGraphics[g_, n_] :=  Scope[
 
 (**************************************************************************************************)
 
-PackageExport["AnimationPart"]
+PublicFunction[AnimationPart]
 
 DiscreteAnimationObject::aplen = "AnimationPart lengths do not match."
 
@@ -78,13 +76,13 @@ DiscreteAnimationObject[Hold[e_], n_] := DiscreteAnimationObject[e, n];
 
 (**************************************************************************************************)
 
-PackageExport["AnimationPart"]
+PublicFunction[AnimationPart]
 
 AnimationPart[e_, i_Integer] := Part[e, i];
 
 (**************************************************************************************************)
 
-PackageExport["AnimationObject"]
+PublicObject[AnimationObject]
 
 declareBoxFormatting[
   g:AnimationObject[_] :> makeAnimationObjectBoxes[g]
@@ -128,8 +126,8 @@ makeGraphics[g_, n_] :=  Scope[
 
 (**************************************************************************************************)
 
-PackageExport["FindAnimationLerp"]
-PackageExport["EasingFunction"]
+PublicFunction[FindAnimationLerp]
+PublicOption[EasingFunction]
 
 Options[FindAnimationLerp] = {
   ImageSize -> Automatic,
@@ -258,7 +256,7 @@ applyAngleDelta[{r_, a_, b_}, db_] := {r, a, b + Tau * db};
 
 (**************************************************************************************************)
 
-PackageExport["VertexLayoutAnimationLerp"]
+PublicFunction[VertexLayoutAnimationLerp]
 
 Options[VertexLayoutAnimationLerp] = {
   "InitialRotation" -> 0,
@@ -275,12 +273,12 @@ VertexLayoutAnimationLerp[graph_Graph, layout_, OptionsPattern[]] := Scope[
 ]
 (**************************************************************************************************)
 
-PackageExport["NumericLerp"]
+PublicFunction[NumericLerp]
 
 NumericLerp[a_, b_, t_ ? NumericQ] := linearLerp[a, b, t];
 
 (**************************************************************************************************)
 
-PackageExport["ComposedNumericLerp"]
+PublicFunction[ComposedNumericLerp]
 
 ComposedNumericLerp[f_, a_, b_, t_ ? NumericQ] := f @ linearLerp[a, b, t];

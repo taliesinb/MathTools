@@ -1,4 +1,4 @@
-PackageExport["GraphSum"]
+PublicFunction[GraphSum]
 
 SetUsage @ "
 GraphSum[{g$1, g$2, $$}] takes the sum of a list of graphs g$i, yielding a single graph with vertices SumVertex[v$, i$], \

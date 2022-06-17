@@ -1,5 +1,4 @@
-PackageExport["QuadraticForm"]
-PackageExport["QuadraticFormObject"]
+PublicFunction[QuadraticForm]
 
 QuadraticForm::badspec =
   "First argument should be a positive integer, a list, or a matrix of coefficients."
@@ -14,10 +13,14 @@ QuadraticForm[spec_, OptionsPattern[]] := Scope[
   System`Private`ConstructNoEntry[QuadraticFormObject, matrix]
 ];
 
-MatrixTranspose[matrix_ ? MatrixQ] := Transpose[matrix];
-MatrixTranspose[vector_] := vector;
+matrixTranspose[matrix_ ? MatrixQ] := Transpose[matrix];
+matrixTranspose[vector_] := vector;
 
-(QuadraticFormObject[matrix_] ? System`Private`HoldNoEntryQ)[arg_] := Dot[MatrixTranspose @ arg, matrix, arg];
+(**************************************************************************************************)
+
+PublicObject[QuadraticFormObject]
+
+(QuadraticFormObject[matrix_] ? System`Private`HoldNoEntryQ)[arg_] := Dot[matrixTranspose @ arg, matrix, arg];
 
 declareFormatting[
   qf_QuadraticFormObject ? System`Private`HoldNoEntryQ :> formatQuadraticForm @ qf
@@ -32,8 +35,9 @@ formatQuadraticForm[QuadraticFormObject[matrix_]] :=
 formatQuadraticFormMatrix[matrix_] :=
   renderRepresentationMatrix[matrix, False, FrameStyle -> $LightBlue]
 
+(**************************************************************************************************)
 
-PackageExport["QuadraticFormQ"]
+PublicFunction[QuadraticFormQ]
 
 QuadraticFormQ[_QuadraticFormObject ? System`Private`HoldNoEntryQ] := True;
 QuadraticFormQ[_] := False;

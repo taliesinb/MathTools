@@ -1,13 +1,10 @@
-PackageScope["$LatticeData"]
-PackageScope["$LatticeNames"]
-PackageScope["$LatticeClassNames"]
-PackageScope["$latticeNameAliases"]
+PrivateVariable[$LatticeData, $LatticeNames, $LatticeClassNames, $latticeNameAliases]
 
 $LatticeData = <||>
 $LatticeNames = {};
 $LatticeClassNames = {"2D", "3D"};
 
-PackageExport["DefineLatticeQuiver"]
+PublicFunction[DefineLatticeQuiver]
 
 SetUsage @ "
 DefineLatticeQuiver[fields$] defines a new lattice described by fields$ and add its to \
@@ -247,7 +244,7 @@ DefineLatticeQuiver[
 
 (**************************************************************************************************)
 
-PackageScope["$namedLatticeUsage"]
+PrivateVariable[$namedLatticeUsage]
 
 $namedLatticeUsage = StringTrim @ "
 ## Named lattices

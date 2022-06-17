@@ -1,10 +1,10 @@
-PackageExport["ChessboardNorm"]
+PublicFunction[ChessboardNorm]
 
 ChessboardNorm[e_] := Max @ Abs @ e;
 
 (**************************************************************************************************)
 
-PackageExport["L1Norm"]
+PublicFunction[L1Norm]
 
 L1Norm[e_] := Total @ Abs @ e;
 
@@ -14,7 +14,7 @@ $metricDistanceOptions = {
   GraphMetric -> Inherited
 };
 
-PackageScope["$metricUsage"]
+PrivateVariable[$metricUsage]
 
 $metricUsage = StringTrim @ "
 * The setting of GraphMetric determines how the metric is computed:
@@ -29,7 +29,7 @@ $metricUsage = StringTrim @ "
 
 (**************************************************************************************************)
 
-PackageExport["MetricDistance"]
+PublicFunction[MetricDistance]
 
 SetUsage @ "
 MetricDistance[graph$, v$1, v$2] computes a graph distance between v$1 and v$2.
@@ -59,7 +59,7 @@ chooseMetric[graph_, value_] := value;
 
 (**************************************************************************************************)
 
-PackageExport["MetricDistanceMatrix"]
+PublicFunction[MetricDistanceMatrix]
 
 SetUsage @ "
 MetricDistanceMatrix[graph$] returns a matrix giving the distances between every pair \
@@ -83,7 +83,7 @@ MetricDistanceMatrix[graph_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["MetricFindShortestPath"]
+PublicFunction[MetricFindShortestPath]
 
 SetUsage @ "
 MetricFindShortestPath[graph$, v$1, v$2] returns the shortest path between v$1 and v$2.
@@ -137,7 +137,7 @@ computeShortestPathFunctionData[graph_, metric_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["MetricShortestPathFunction"]
+PublicFunction[MetricShortestPathFunction]
 
 declareFormatting[
   MetricShortestPathFunction[spec_, data_] ? System`Private`HoldNoEntryQ :>
@@ -201,19 +201,19 @@ checkMetricNumeric[_] := (Message[General::badgmetricfnres]; 0);
 
 (**************************************************************************************************)
 
-PackageExport["ChessboardMetric"]
+PublicFunction[ChessboardMetric]
 
 ChessboardMetric[array_] := Map[ChessboardNorm, Transpose @ Values @ array];
 
 (**************************************************************************************************)
 
-PackageExport["SignatureMetric"]
+PublicFunction[SignatureMetric]
 
 SignatureMetric[list_List][array_] := Sqrt @ Dot[list, Power[N @ Values @ array, 2]];
 
 (**************************************************************************************************)
 
-PackageExport["RootSumSquare"]
+PublicFunction[RootSumSquare]
 
 RootSumSquare[assoc_Association] := RootSumSquare @ Values @ assoc;
 RootSumSquare[array_] := Sqrt @ Total @ Power[N @ array, 2];
@@ -222,7 +222,7 @@ PowerMetric[n_][array_] := Surd[Total @ Power[N @ Values @ array, n], n];
 
 (**************************************************************************************************)
 
-PackageExport["QuadraticFormMetric"]
+PublicFunction[QuadraticFormMetric]
 
 QuadraticFormMetric[matrix_][vectors_ ? MatrixQ] := Sqrt @ Dot[Transpose @ vectors, matrix, vectors];
 QuadraticFormMetric[matrix_][vector_ ? VectorQ] := Sqrt @ Dot[vector, matrix, vector];
@@ -234,7 +234,7 @@ $taggedDistanceOptions = {
   MaxDepth -> Infinity
 };
 
-PackageExport["TaggedGraphDistance"]
+PublicFunction[TaggedGraphDistance]
 
 Options[TaggedGraphDistance] = $taggedDistanceOptions;
 
@@ -260,7 +260,7 @@ TaggedGraphDistance[graph_, vertex1_, vertex2_., tagSpec_., OptionsPattern[]] :=
 
 (**************************************************************************************************)
 
-PackageExport["TaggedGraphDistanceMatrix"]
+PublicFunction[TaggedGraphDistanceMatrix]
 
 Options[TaggedGraphDistanceMatrix] = $taggedDistanceOptions;
 

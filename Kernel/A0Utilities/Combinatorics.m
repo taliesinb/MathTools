@@ -1,10 +1,10 @@
-PackageExport["UnorderedPairs"]
+PublicFunction[UnorderedPairs]
 
 UnorderedPairs[list_] := Subsets[list, {2}];
 
 (**************************************************************************************************)
 
-PackageExport["SignedSubsets"]
+PublicFunction[SignedSubsets]
 
 SignedSubsets[set_] := Scope[
   n = Length[set]; $set = set;
@@ -18,27 +18,27 @@ toSignedSubset[vals_] := MapThread[
 
 (**************************************************************************************************)
 
-PackageExport["BinaryDigits"]
+PublicFunction[BinaryDigits]
 
 BinaryDigits[n_, len_] := IntegerDigits[n, 2, len];
 BinaryDigits[len_][n_] := BinaryDigits[n, len];
 
 (**************************************************************************************************)
 
-PackageExport["BitAndQ"]
+PublicFunction[BitAndQ]
 
 BitAndQ[a_, b_] := Total[BitAnd[a, b]] =!= 0;
 
 (**************************************************************************************************)
 
-PackageExport["BitNandQ"]
+PublicFunction[BitNandQ]
 
 BitNandQ[a_, b_] := Total[BitAnd[a, b]] === 0;
 BitNandQ[a___] := DuplicateFreeQ[{a}, BitAndQ];
 
 (**************************************************************************************************)
 
-PackageExport["RangePartitionIndices"]
+PublicFunction[RangePartitionIndices]
 
 RangePartitionIndices[n_] := Scope[
   CollectTo[{$partBag}, rangPartRecurse[{}, Range[n]]];
@@ -58,12 +58,12 @@ rangPartRecurse[parts_, rem_] := Scope @ Scan[
 
 (**************************************************************************************************)
 
-PackageExport["SignedPermutations"]
+PublicFunction[SignedPermutations]
 
 SignedPermutations[list_List] := Catenate @ Map[SignedLists, Permutations @ list];
 
 (**************************************************************************************************)
 
-PackageExport["SignedLists"]
+PublicFunction[SignedLists]
 
 SignedLists[list_] := MapIndices[Inverted, Subsets @ Range @ Length @ list, list];

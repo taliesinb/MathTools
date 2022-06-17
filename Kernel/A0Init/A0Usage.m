@@ -14,14 +14,14 @@ toUsageStr[e_] := TextString[e];
 $literalStringRegex = RegularExpression["'[A-Z][a-zA-Z0-9]+'"];
 $literalStringColor = RGBColor[{0.4, 0.4, 0.4}];
 
-PackageScope["$literalSymbolRegex"]
+PrivateVariable[$literalSymbolRegex]
+
 $literalSymbolStr = "\\$Failed Automatic True False None Inherited Left Right Above Below Center \
 Top Bottom Infinity Tiny Small Medium Large Inverted Into";
 $literalSymbolRegex = RegularExpression["(" <> StringReplace[$literalSymbolStr, " " -> "|"] <> ")"];
 $literalSymbolColor = RGBColor[{0.15, 0.15, 0.15}];
 
-PackageScope["$mainSymbolRegex"]
-PackageScope["$currentMainSymbol"]
+PrivateVariable[$mainSymbolRegex, $currentMainSymbol]
 
 $mainSymbolRegex = RegularExpression["^\\$?[A-Za-z][A-Za-z]*"];
 $mainSymbolColor = RGBColor[{0.71, 0.03, 0.}];
@@ -112,7 +112,7 @@ shortenGridBoxes[usageString_] := StringReplace[
 
 $fmtUsageOuter = True;
 
-PackageExport["ClearUsageCache"]
+PrivateFunction[ClearUsageCache]
 
 ClearUsageCache[] := (
   Clear[GeneralUtilities`Private`$SetUsageFormatCache];
@@ -149,7 +149,7 @@ customSetUsageProcessor = Composition[
 
 (**************************************************************************************************)
 
-PackageScope["$RawUsageStringTable"]
+PrivateVariable[$RawUsageStringTable]
 
 $RawUsageStringTable = Association[];
 
@@ -171,7 +171,7 @@ System`InformationDump`subtitleStyled[sub_] := Style[sub, "InformationUsageText"
 
 (**************************************************************************************************)
 
-PackageScope["SetInitialValue"]
+PrivateFunction[SetInitialValue]
 
 SetHoldAllComplete[SetInitialValue];
 
@@ -179,9 +179,9 @@ SetInitialValue[sym_Symbol, body_] := If[!System`Private`HasImmediateValueQ[sym]
 
 (**************************************************************************************************)
 
-PackageScope["SetUsage"]
+PrivateFunction[SetUsage]
 
-PackageExport["$DisableSetUsage"]
+PublicVariable[$DisableSetUsage]
 
 SetInitialValue[$DisableSetUsage, False];
 

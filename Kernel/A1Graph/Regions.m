@@ -1,4 +1,4 @@
-PackageExport["RegionSubgraph"]
+PublicFunction[RegionSubgraph]
 
 SetUsage @ "
 RegionSubgraph[graph$, region$] gives a subgraph of graph$ described by region$, which can be one or more:
@@ -18,7 +18,7 @@ RegionSubgraph[graph_, region_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["RegionDelete"]
+PublicFunction[RegionDelete]
 
 SetUsage @ "
 RegionDelete[graph$, region$] deletes the region specified by region$, which can be one or more of:
@@ -50,7 +50,7 @@ iRegionSubgraph[graph_, region_, comp_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphRegion"]
+PublicFunction[GraphRegion]
 
 SetUsage @ "
 GraphRegion[graph$, region$] returns a list of %GraphRegionData and %GraphPathData objects, representing \
@@ -65,7 +65,7 @@ GraphRegion[graph_, region_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphPathVertices"]
+PublicFunction[GraphPathVertices]
 
 SetUsage @ "
 GraphPathVertices[graph$, path$] returns the list of vertices specified by path$.
@@ -100,20 +100,20 @@ toPathVertices[_, spec_] :=
 
 (**************************************************************************************************)
 
-PackageExport["GraphRegionCollection"]
+PublicHead[GraphRegionCollection]
 
 SetUsage @ "
 GraphRegionCollection[<|name$1 -> region$1, $$|>] represents a collection of named regions.
 "
 
-PackageExport["GraphRegionData"]
+PublicHead[GraphRegionData]
 
 SetUsage @ "
 GraphRegionData[vertices$, edges$] represents a region in a graph with vertex indices vertices$ \
 and edge indices edges$.
 "
 
-PackageExport["GraphPathData"]
+PublicHead[GraphPathData]
 
 SetUsage @ "
 GraphPathData[vertices$, edges$, inversions$] represents a path in a graph with vertex indices \
@@ -121,7 +121,7 @@ vertices$, edge indices edges$, and a list of indices into edges$ of which edges
 in their reverse direction.
 "
 
-PackageExport["GraphRegionAnnotation"]
+PublicHead[GraphRegionAnnotation]
 
 SetUsage @ "
 GraphRegionAnnotation[data$, anno$] is a wrapper around %GraphPathData and %GraphRegionData \
@@ -138,7 +138,7 @@ declareBoxFormatting[
 
 colorBox[box_, color_] := StyleBox[box, Background -> color];
 
-PackageScope["skeletonBox"]
+PrivateFunction[skeletonBox]
 
 skeletonBox[head_, color_, args_] :=
   RowBox @ Flatten @ {head, "[", Riffle[colorBox[skeletonString @ #, color]& /@ args, ","], "]"};
@@ -173,7 +173,7 @@ checkCardinals[list_List] :=
 
 (**************************************************************************************************)
 
-PackageExport["TakePath"]
+PublicFunction[TakePath]
 
 TakePath[GraphPathData[v_, e_, c_], n_] := Scope[
   v2 = Take[v, n]; e2 = Take[e, n];
@@ -183,7 +183,7 @@ TakePath[GraphPathData[v_, e_, c_], n_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphRegionElementQ"]
+PublicFunction[GraphRegionElementQ]
 
 SetUsage @ "
 GraphRegionElementQ[elem$] returns True if elem$ is an expression describing a graph region.
@@ -196,16 +196,10 @@ GraphRegionElementQ[IndexedEdge[_Integer]] := True;
 
 (**************************************************************************************************)
 
-PackageExport["VertexPattern"]
-PackageExport["EdgePattern"]
+PublicHead[VertexPattern, EdgePattern]
 
-SetUsage @ "
-VertexPattern[pattern$] represent a vertex that matches pattern$.
-"
-
-SetUsage @ "
-EdgePattern[src$, dst$] represents an edge that matches src$ \[DirectedEdge] dst$.
-"
+SetUsage @ "VertexPattern[pattern$] represent a vertex that matches pattern$."
+SetUsage @ "EdgePattern[src$, dst$] represents an edge that matches src$ \[DirectedEdge] dst$."
 
 (* zSetUsage @ "
 Path[src$, {c$1, $$, c$n}] represents a path starting at src$ and taking cardinals c$i in tern.
@@ -213,20 +207,14 @@ Path[src$, 'cards$'] interpreted the characters of 'cards$' as cardinals.
 "
  *)
 
-PackageExport["IndexedVertex"]
-PackageExport["IndexedEdge"]
+PublicHead[IndexedVertex, IndexedEdge]
 
-SetUsage @ "
-IndexedVertex[i$] represents the vertex with index i$.
-"
-
-SetUsage @ "
-IndexedEdge[i$] represents the edge with index i$.
-"
+SetUsage @ "IndexedVertex[i$] represents the vertex with index i$."
+SetUsage @ "IndexedEdge[i$] represents the edge with index i$."
 
 (**************************************************************************************************)
 
-PackageExport["GraphRegionVertexEdgeList"]
+PublicFunction[GraphRegionVertexEdgeList]
 
 SetUsage @ "
 GraphRegionVertexEdgeList[graph$, region$] returns {vertices$, edges$} for region$.
@@ -250,7 +238,7 @@ GraphRegionVertexEdgeList[graph_, region_List] :=
 
 (**************************************************************************************************)
 
-PackageScope["processRegionVerticesEdges"]
+PrivateFunction[processRegionVerticesEdges]
 
 processRegionVerticesEdges[spec_] := Scope[
   region = RegionDataUnion @ processRegionSpec[spec];
@@ -260,7 +248,7 @@ processRegionVerticesEdges[spec_] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["processRegionSpec"]
+PrivateFunction[processRegionSpec]
 
 processRegionSpec[region_] := Scope[
   $VertexInEdgeTable := $VertexInEdgeTable = VertexInEdgeTable[$Graph];
@@ -447,7 +435,7 @@ processRegion[ChartSymbol[s_, comp_:All]] :=
 
 (**************************************************************************************************)
 
-PackageExport["ChartRegion"]
+PublicHead[ChartRegion]
 
 SetUsage @ "
 ChartRegion[{c$1, c$2, $$}] represents the domain of a compass with cardinals c$i.
@@ -509,7 +497,7 @@ processRegion[list_List /; VectorQ[list, GraphRegionElementQ]] :=
 
 (********************************************)
 
-PackageScope["findVertexIndex"]
+PrivateFunction[findVertexIndex]
 
 findVertexIndex[e_] := Block[{failAuto = Function[$Failed]}, findVertex @ e];
 
@@ -548,7 +536,7 @@ resolveComplexVertexList[spec_] := Which[
 (********************************************)
 (** WeightedData                           **)
 
-PackageExport["Weighted"]
+PublicHead[Weighted]
 
 processRegion[Weighted[region_, weight_]] :=
   GraphRegionAnnotation[
@@ -591,17 +579,10 @@ processRegion[Path[l__, PathCancellation -> bool_, r___]] :=
 processRegion[Path[args__, ps:Rule[PathAdjustments, _]]] :=
   GraphRegionAnnotation[processRegion @ Path @ args, Association @ ps];
 
-PackageExport["PathAdjustments"]
+PublicOption[PathAdjustments, PathCancellation]
 
-SetUsage @ "
-PathAdjustments is an option to Path that specifies which steps to foreshorten.
-"
-
-PackageExport["PathCancellation"]
-
-SetUsage @ "
-PathCancellation is an option to Path that specifies whether to cancel neighboring inverted cardinals.
-"
+SetUsage @ "PathAdjustments is an option to Path that specifies which steps to foreshorten."
+SetUsage @ "PathCancellation is an option to Path that specifies whether to cancel neighboring inverted cardinals."
 
 (********************************************)
 
@@ -798,7 +779,7 @@ processRegion[Polygon[vertices_]] := Scope[
 (********************************************)
 (** Locus[...]                             **)
 
-PackageExport["Locus"]
+PublicHead[Locus]
 
 SetUsage @ "
 Locus[r$1, r$2] represents the locus of points that are equally distance from \
@@ -924,7 +905,7 @@ subgraphRegionData[vertices_] := Scope[
 (********************************************)
 (** GraphRegionBoundary[...]               **)
 
-PackageExport["GraphRegionBoundary"]
+PublicHead[GraphRegionBoundary]
 
 SetUsage @ "
 GraphRegionBoundary[region$] represents the boundary of region$.
@@ -943,7 +924,7 @@ processRegion[GraphRegionBoundary[region_]] := Scope[
 (********************************************)
 (** ConnectedEdges[...]                    **)
 
-PackageExport["ConnectedSubgraph"]
+PublicHead[ConnectedSubgraph]
 
 SetUsage @ "
 ConnectedSubgraph[region$] represents region$ extended by all edges that connect vertices within region$.
@@ -960,7 +941,7 @@ processRegion[ConnectedSubgraph[region_]] := Scope[
 (********************************************)
 (** GraphRegionComplement[...]             **)
 
-PackageExport["GraphRegionComplement"]
+PublicHead[GraphRegionComplement]
 
 SetUsage @ "
 GraphRegionComplement[r$, c$1, c$2, $$] represents the complement of region r$ with the c$i.
@@ -992,7 +973,7 @@ RegionDataComplement[e:{_, _}] := Scope[
 (********************************************)
 (** GraphRegionIntersection[...]           **)
 
-PackageExport["GraphRegionIntersection"]
+PublicHead[GraphRegionIntersection]
 
 SetUsage @ "
 GraphRegionIntersection[r$1, r$2, $$] represents the intersection of regions r$i.
@@ -1021,7 +1002,7 @@ RegionDataIntersection[list_List] :=
 (********************************************)
 (** GraphRegionUnion[...]                  **)
 
-PackageExport["GraphRegionUnion"]
+PublicHead[GraphRegionUnion]
 
 declareFormatting[
   GraphRegionUnion[r___] :> Row[{r}, " \[Union] "]
@@ -1039,7 +1020,7 @@ processRegion[GraphRegionUnion[regions__]] :=
 
 (********************************************)
 
-PackageScope["RegionDataUnion"]
+PrivateFunction[RegionDataUnion]
 
 RegionDataUnion[{a_}] := a;
 

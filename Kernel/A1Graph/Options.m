@@ -41,7 +41,7 @@ $extendedGraphOptionPatterns = <|
 
 (**************************************************************************************************)
 
-PackageScope["checkGraphAnnotations"]
+PrivateFunction[checkGraphAnnotations]
 
 checkGraphAnnotations[rules_List] := Map[checkGraphAnnotationRule, rules];
 
@@ -58,7 +58,7 @@ checkGraphAnnotationRule[rule_] := rule;
 
 (**************************************************************************************************)
 
-PackageExport["AttachGraphOptions"]
+PrivateFunction[AttachGraphOptions]
 
 AttachGraphOptions[graph_Graph ? GraphQ, opts___] := Scope[
   result = Graph[graph, opts];
@@ -67,7 +67,7 @@ AttachGraphOptions[graph_Graph ? GraphQ, opts___] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["LookupExtendedOption"]
+PrivateFunction[LookupExtendedOption]
 
 LookupExtendedOption[graph_, keys_List] :=
   MapThread[
@@ -80,10 +80,21 @@ LookupExtendedOption[graph_, key_Symbol | key_CustomGraphAnnotation] :=
 
 (**************************************************************************************************)
 
-PackageScope["ExtendedGraphAnnotations"]
+PrivateFunction[ExtendedGraphAnnotations]
 
 ExtendedGraphAnnotations[graph_] :=
   Normal @ DeleteCases[$Failed] @ AssociationThread[
     $extendedGraphOptionSymbols,
     AnnotationValue[graph, $extendedGraphOptionSymbols]
   ];
+
+(**************************************************************************************************)
+
+PrivateFunction[ExtractExtendedGraphOptions]
+
+ExtractExtendedGraphOptions[graph_Graph] := Scope[
+  opts = Options @ graph;
+  annoRules = Lookup[opts, AnnotationRules, {}];
+  graphProps = Lookup[annoRules, "GraphProperties", {}];
+  Join[DeleteOptions[opts, AnnotationRules], graphProps]
+]

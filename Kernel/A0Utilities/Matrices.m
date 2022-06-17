@@ -1,21 +1,24 @@
-PackageExport["CatenateVectors"]
+PublicFunction[CatenateVectors]
 
 CatenateVectors[vecLists_] := Join[Sequence @@ vecLists, 2];
-
 
 (**************************************************************************************************)
 (** Packing                                                                                       *)
 (**************************************************************************************************)
 
-PackageScope["ToPacked"]
+PrivateFunction[ToPacked]
 
 ToPacked = ToPackedArray;
 
-PackageScope["ToPackedReal"]
+(**************************************************************************************************)
+
+PrivateFunction[ToPackedReal]
 
 ToPackedReal[e_] := ToPackedArray[e, Real];
 
-PackageScope["ToPackedRealArrays"]
+(**************************************************************************************************)
+
+PrivateFunction[ToPackedRealArrays]
 
 ToPackedRealArrays[array_ ? PackedArrayQ] := array;
 
@@ -26,7 +29,7 @@ ToPackedRealArrays[array_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PlusVector"]
+PublicFunction[PlusVector]
 
 SetUsage @ "
 PlusVector[matrix$, vector$] adds vector$ to each row vector of matrix$.
@@ -42,7 +45,7 @@ PlusVector[v_][matrix_] := PlusVector[matrix, v];
 (** Column / row accessors                                                                        *)
 (**************************************************************************************************)
 
-PackageExport["FirstColumn"]
+PublicFunction[FirstColumn]
 
 SetRelatedSymbolGroup[FirstColumn, LastColumn, MostColumns, RestColumns];
 
@@ -55,7 +58,7 @@ FirstColumn[None] := None;
 
 (**************************************************************************************************)
 
-PackageExport["LastColumn"]
+PublicFunction[LastColumn]
 
 SetUsage @ "
 LastColumn[matrix$] gives a list consisting of the last column of a matrix.
@@ -66,7 +69,7 @@ LastColumn[None] := None;
 
 (**************************************************************************************************)
 
-PackageExport["MostColumns"]
+PublicFunction[MostColumns]
 
 SetUsage @ "
 MostColumns[matrix$] gives a matrix consisting of the all but the last column of matrix$.
@@ -76,7 +79,7 @@ MostColumns[matrix_] := Part[matrix, All, All ;; -2];
 
 (**************************************************************************************************)
 
-PackageExport["RestColumns"]
+PublicFunction[RestColumns]
 
 SetUsage @ "
 RestColumns[matrix$] gives a matrix consisting of the all but the first column of matrix$.
@@ -88,7 +91,7 @@ RestColumns[matrix_] := Part[matrix, All, 2 ;; All];
 (** Column / row mutation                                                                         *)
 (**************************************************************************************************)
 
-PackageExport["PrependColumn"]
+PublicFunction[PrependColumn]
 
 SetRelatedSymbolGroup[PrependColumn, AppendColumn];
 
@@ -101,7 +104,7 @@ PrependColumn[column_][matrix_] := PrependColumn[matrix, column];
 
 (**************************************************************************************************)
 
-PackageExport["AppendColumn"]
+PublicFunction[AppendColumn]
 
 SetUsage @ "
 AppendColumn[matrix$, column$] gives a matrix in which the list column$ has been appended.
@@ -112,28 +115,28 @@ AppendColumn[column_][matrix_] := AppendColumn[matrix, column];
 
 (**************************************************************************************************)
 
-PackageExport["AppendConstantColumn"]
+PublicFunction[AppendConstantColumn]
 
 AppendConstantColumn[matrix_, item_] := Map[Append[item], matrix];
 AppendConstantColumn[item_][matrix_] := AppendConstantColumn[matrix, item];
 
 (**************************************************************************************************)
 
-PackageExport["PrependConstantColumn"]
+PublicFunction[PrependConstantColumn]
 
 PrependConstantColumn[matrix_, item_] := Map[Prepend[item], matrix];
 PrependConstantColumn[item_][matrix_] := PrependConstantColumn[matrix, item];
 
 (**************************************************************************************************)
 
-PackageExport["AppendConstantRow"]
+PublicFunction[AppendConstantRow]
 
 AppendConstantRow[matrix_, item_] := Append[matrix, ConstantArray[item, Length @ First @ matrix]];
 AppendConstantRow[item_][matrix_] := AppendConstantRow[matrix, item];
 
 (**************************************************************************************************)
 
-PackageExport["PrependConstantRow"]
+PublicFunction[PrependConstantRow]
 
 AppendConstantRow[matrix_, item_] := Prepend[matrix, ConstantArray[item, Length @ First @ matrix]];
 AppendConstantRow[item_][matrix_] := PrependConstantRow[matrix, item];
@@ -142,7 +145,7 @@ AppendConstantRow[item_][matrix_] := PrependConstantRow[matrix, item];
 (** Idiomatic construction of matrices                                                            *)
 (**************************************************************************************************)
 
-PackageExport["Matrix"]
+PublicFunction[Matrix]
 
 SetHoldAll[Matrix];
 Matrix[CompoundExpression[a___]] := Map[List, List[a]];
@@ -150,19 +153,19 @@ Matrix[elements___] := SequenceSplit[Flatten[Unevaluated[{elements}] /. HoldPatt
 
 (**************************************************************************************************)
 
-PackageExport["InnerDimension"]
+PublicFunction[InnerDimension]
 
 InnerDimension[array_] := Last @ Dimensions @ array;
 
 (**************************************************************************************************)
 
-PackageExport["Second"]
+PublicFunction[Second]
 
 Second[a_] := Part[a, 2];
 
 (**************************************************************************************************)
 
-PackageExport["SecondDimension"]
+PublicFunction[SecondDimension]
 
 SecondDimension[array_] := Second @ Dimensions @ array;
 
@@ -170,31 +173,35 @@ SecondDimension[array_] := Second @ Dimensions @ array;
 (** Common matrix predicates                                                                      *)
 (**************************************************************************************************)
 
-PackageExport["OnesQ"]
+PublicFunction[OnesQ]
 
 OnesQ[m_] := FreeQ[m, Complex] && MinMax[m] === {1, 1};
 
+(**************************************************************************************************)
 
-PackageExport["ZerosQ"]
+PublicFunction[ZerosQ]
 
 ZerosQ[m_] := FreeQ[m, Complex] && MinMax[m] === {0, 0};
 
+(**************************************************************************************************)
 
-PackageExport["CoordinateVectorQ"]
+PublicFunction[CoordinateVectorQ]
 
 CoordinateVectorQ[{Repeated[_ ? NumericQ, {2, 3}]}] := True;
 CoordinateVectorQ[{_ ? NumericQ, _ ? NumericQ}, 2] := True;
 CoordinateVectorQ[{_ ? NumericQ, _ ? NumericQ, _ ? NumericQ}, 3] := True;
 CoordinateVectorQ[___] := False;
 
+(**************************************************************************************************)
 
-PackageExport["CoordinateMatrixQ"]
+PublicFunction[CoordinateMatrixQ]
 
 CoordinateMatrixQ[matrix_, n_:2|3] :=
   MatrixQ[matrix] && MatchQ[InnerDimension @ matrix, n];
 
+(**************************************************************************************************)
 
-PackageExport["CoordinateMatricesQ"]
+PublicFunction[CoordinateMatricesQ]
 
 CoordinateMatricesQ[list_] :=
   VectorQ[list, CoordinateMatrixQ];
@@ -202,58 +209,67 @@ CoordinateMatricesQ[list_] :=
 CoordinateMatricesQ[list_, n_] :=
   VectorQ[list, CoordinateMatrixQ[#, n]&];
 
+(**************************************************************************************************)
 
-PackageExport["CoordinateArrayQ"]
+PublicFunction[CoordinateArrayQ]
 
 CoordinateArrayQ[array_, n_:2|3] :=
   ArrayQ[array, 3] && MatchQ[InnerDimension @ array, n];
 
+(**************************************************************************************************)
 
-PackageExport["ComplexMatrixQ"]
+PublicFunction[ComplexMatrixQ]
 
 ComplexMatrixQ[e_] := ContainsQ[e, _Complex] && MatrixQ[e];
 
+(**************************************************************************************************)
 
-PackageExport["UpperUnitriangularMatrixQ"]
+PublicFunction[UpperUnitriangularMatrixQ]
 
 UpperUnitriangularMatrixQ[matrix_] :=
   UpperTriangularMatrixQ[matrix] && OnesQ[Diagonal[matrix]];
 
+(**************************************************************************************************)
 
-PackageExport["IdentityMatrixQ"]
+PublicFunction[IdentityMatrixQ]
 
 IdentityMatrixQ[matrix_] :=
   DiagonalMatrixQ[matrix] && OnesQ[Diagonal[matrix]];
 
+(**************************************************************************************************)
 
-PackageExport["ZeroMatrixQ"]
+PublicFunction[ZeroMatrixQ]
 
 ZeroMatrixQ[matrix_] := MatrixQ[matrix] && ZerosQ[matrix];
 
+(**************************************************************************************************)
 
-PackageExport["RowTotals"]
+PublicFunction[RowTotals]
 
 RowTotals[matrix_] := Total[matrix, {2}];
 
+(**************************************************************************************************)
 
-PackageExport["ColumnTotals"]
+PublicFunction[ColumnTotals]
 
 ColumnTotals[matrix_] := Total[matrix, {1}];
 
+(**************************************************************************************************)
 
-PackageExport["PermutationMatrixQ"]
+PublicFunction[PermutationMatrixQ]
 
 PermutationMatrixQ[matrix_] :=
   SquareMatrixQ[matrix] && RealMatrixQ[matrix] && MinMax[matrix] == {0, 1} && Count[matrix, 1, 2] == Length[matrix] &&
     OnesQ[Total[matrix, {1}]] && OnesQ[Total[matrix, {2}]];
 
+(**************************************************************************************************)
 
-PackageExport["SameMatrixUptoPermutationQ"]
+PublicFunction[SameMatrixUptoPermutationQ]
 
 mkPerms[n_] := mkPerms[n] = Permutations @ Range[n];
 SameMatrixUptoPermutationQ[m1_, m2_] := AnyTrue[mkPerms @ Length @ m1, m1 == Part[m2, #, #]&];
 
-PackageExport["SameMatrixUptoPermutationAndInversionQ"]
+PublicFunction[SameMatrixUptoPermutationAndInversionQ]
 
 SameMatrixUptoPermutationAndInversionQ[m1_, m2_] := AnyTrue[mkPerms @ Length @ m1, MatchQ[Part[m2, #, #], m1 | Transpose[m1]]&];
 (* SameMatrixUptoPermutationAndInversionQ[m1_, m2_] := AnyTrue[mkPerms @ Length @ m1, MatchQ[Part[m2, #, #], m1 | Transpose[m1]]&];
@@ -263,7 +279,7 @@ SameMatrixUptoPermutationAndInversionQ[m1_, m2_] := AnyTrue[mkPerms @ Length @ m
 (** Translations matrix functions                                                                 *)
 (**************************************************************************************************)
 
-PackageExport["TranslationMatrix"]
+PublicFunction[TranslationMatrix]
 
 TranslationMatrix[vector_] := Scope[
   matrix = IdentityMatrix[Length[vector] + 1];
@@ -280,20 +296,23 @@ TranslationMatrix[vector_, mod_List] := Scope[
   ModForm[TranslationMatrix @ vector, modMatrix]
 ];
 
+(**************************************************************************************************)
 
-PackageExport["UnitTranslationMatrix"]
+PublicFunction[UnitTranslationMatrix]
 
 UnitTranslationMatrix[n_, k_] :=
   AugmentedIdentityMatrix[n + 1, {k, n + 1}]
 
+(**************************************************************************************************)
 
-PackageExport["RedundantUnitTranslationMatrix"]
+PublicFunction[RedundantUnitTranslationMatrix]
 
 RedundantUnitTranslationMatrix[n_, k_] :=
   ReplacePart[IdentityMatrix[n + 1], {{k, n + 1} -> 1, {Mod[k + 1, n, 1], n + 1} -> -1}];
 
+(**************************************************************************************************)
 
-PackageExport["TranslationMatrixQ"]
+PublicFunction[TranslationMatrixQ]
 
 TranslationMatrixQ[matrix_] := And[
   UpperUnitriangularMatrixQ[matrix],
@@ -303,13 +322,13 @@ TranslationMatrixQ[matrix_] := And[
 
 (**************************************************************************************************)
 
-PackageScope["MakeDihedralTranslationMatrices"]
+PrivateFunction[MakeDihedralTranslationMatrices]
 
 MakeDihedralTranslationMatrices[matrices_] :=
   ReplacePart[{-1, -1} -> -1] /@ matrices;
 
 
-PackageExport["DihedralTranslationMatrixQ"]
+PublicFunction[DihedralTranslationMatrixQ]
 
 DihedralTranslationMatrixQ[matrix_] := And[
   Part[matrix, -1, -1] === -1,
@@ -319,13 +338,13 @@ DihedralTranslationMatrixQ[matrix_] := And[
 
 (**************************************************************************************************)
 
-PackageScope["MakeRedundantTranslations"]
+PrivateFunction[MakeRedundantTranslations]
 
 MakeRedundantTranslations[vec_] :=
   Subtract @@ Partition[vec, 2, 1, 1];
 
 
-PackageExport["ExtractTranslationVector"]
+PublicFunction[ExtractTranslationVector]
 
 ExtractTranslationVector[matrix_] := matrix[[;;-2, -1]];
 
@@ -334,7 +353,7 @@ ExtractTranslationVector[matrix_] := matrix[[;;-2, -1]];
 (** Common constructors                                                                          **)
 (**************************************************************************************************)
 
-PackageExport["ZeroMatrix"]
+PublicFunction[ZeroMatrix]
 
 SetUsage @ "
 ZeroMatrix[n$] represents the zero n$ \[Times] n$ matrix.
@@ -342,13 +361,15 @@ ZeroMatrix[n$] represents the zero n$ \[Times] n$ matrix.
 
 ZeroMatrix[n_] := ConstantArray[0, {n, n}];
 
+(**************************************************************************************************)
 
-PackageExport["Ones"]
+PublicFunction[Ones]
 
 Ones[i_] := ConstantArray[1, i];
 
+(**************************************************************************************************)
 
-PackageExport["AppendOnes"]
+PublicFunction[AppendOnes]
 
 typedOne = MatchValues[
   _Real :=  1.;
@@ -363,19 +384,22 @@ AppendOnes = MatchValues[
   _ := $Failed;
 ];
 
+(**************************************************************************************************)
 
-PackageExport["Zeros"]
+PublicFunction[Zeros]
 
 Zeros[i_] := ConstantArray[0, i];
 
+(**************************************************************************************************)
 
-PackageExport["BasisScalingMatrix"]
+PublicFunction[BasisScalingMatrix]
 
 BasisScalingMatrix[n_, rules_] :=
   ReplaceDiagonalPart[IdentityMatrix @ n, rules];
 
+(**************************************************************************************************)
 
-PackageExport["ReplaceDiagonalPart"]
+PublicFunction[ReplaceDiagonalPart]
 
 ReplaceDiagonalPart[matrix_, rules_List] :=
   ReplacePart[matrix, {#1, #1} -> #2& @@@ rules];
@@ -383,8 +407,9 @@ ReplaceDiagonalPart[matrix_, rules_List] :=
 ReplaceDiagonalPart[matrix_, i_ -> v_] :=
   ReplacePart[matrix, {i, i} -> v];
 
+(**************************************************************************************************)
 
-PackageExport["AugmentedIdentityMatrix"]
+PublicFunction[AugmentedIdentityMatrix]
 
 SetUsage @ "
 AugmentedIdentityMatrix[n$, {i$, j$}] represents the identity n$ \[Times] n$ matrix with an additional one at position ($i, $j).
@@ -398,7 +423,7 @@ AugmentedIdentityMatrix[n_, list_List] := ReplacePart[IdentityMatrix[n], list ->
 (** Padding                                                                                       *)
 (**************************************************************************************************)
 
-PackageExport["PadRows"]
+PublicFunction[PadRows]
 
 PadRows[ragged_, item_] := Scope[
   w = Max[Length /@ ragged];
@@ -410,7 +435,9 @@ padToLength[n_, item_][vector_] := Scope[
   If[l < n, Join[vector, ConstantArray[item, n - l]], vector]
 ];
 
-PackageExport["PadColumns"]
+(**************************************************************************************************)
+
+PublicFunction[PadColumns]
 
 PadColumns[ragged_, n_, item_] := Scope[
   full = PadRows[ragged, item];
@@ -422,7 +449,7 @@ PadColumns[ragged_, n_, item_] := Scope[
 (** Block matrix functions                                                                        *)
 (**************************************************************************************************)
 
-PackageExport["BlockDiagonalMatrix"]
+PublicFunction[BlockDiagonalMatrix]
 
 BlockDiagonalMatrix[blocks_] := Scope[
   range = Range @ Length @ blocks;
@@ -431,8 +458,9 @@ BlockDiagonalMatrix[blocks_] := Scope[
   ToPacked @ ArrayFlatten[superMatrix, 2]
 ];
 
+(**************************************************************************************************)
 
-PackageExport["FindDiagonalBlockPositions"]
+PublicFunction[FindDiagonalBlockPositions]
 
 rangeTrueQ[func_, i_, j_] := And @@ Table[func[x], {x, i, j}];
 firstTrueInRange[func_, i_, j_] := Block[{}, Do[If[func[x], Return[x, Block]], {x, i, j}]; j + 1];
@@ -463,15 +491,18 @@ FindDiagonalBlockPositions[matrices_] := Scope[
   blockPositions
 ];
 
-PackageExport["FindDiagonalBlocks"]
+(**************************************************************************************************)
+
+PublicFunction[FindDiagonalBlocks]
 
 FindDiagonalBlocks[matrices_] := Scope[
   positions = FindDiagonalBlockPositions[matrices];
   matrices[[All, #, #]]& /@ (Span @@@ positions)
 ]
 
+(**************************************************************************************************)
 
-PackageExport["DiagonalBlock"]
+PublicFunction[DiagonalBlock]
 
 DiagonalBlock[matrix_ ? MatrixQ, {i_, j_}] := Part[matrix, i;;j, i;;j];
 DiagonalBlock[matrixList_ /; VectorQ[matrixList, MatrixQ], {i_, j_}] := Part[matrixList, All, i;;j, i;;j];
@@ -480,13 +511,11 @@ DiagonalBlock[obj_, list:{__List}] := Map[DiagonalBlock[obj, #]&, list];
 
 DiagonalBlock[part_][obj_] := DiagonalBlock[obj, part];
 
-
 (**************************************************************************************************)
 (** Misc utilities                                                                               **)
 (**************************************************************************************************)
 
-
-PackageExport["FindIndependentVectors"]
+PublicFunction[FindIndependentVectors]
 
 FindIndependentVectors[vectors_] := Scope[
   rowReduced = RowReduce @ Transpose @ vectors;
@@ -496,7 +525,7 @@ FindIndependentVectors[vectors_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["MatrixSimplify"]
+PublicFunction[MatrixSimplify]
 
 MatrixSimplify[matrix_] := Scope[
   entries = Flatten[matrix];
@@ -507,7 +536,7 @@ MatrixSimplify[matrix_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ExtendedSparseArray"]
+PublicFunction[ExtendedSparseArray]
 
 ExtendedSparseArray[{} | <||>, sz_] := SparseArray[{}, sz];
 
@@ -525,7 +554,7 @@ sumRules[rules_] := Normal @ Merge[rules, Total];
 
 (**************************************************************************************************)
 
-PackageExport["FromSparseRows"]
+PublicFunction[FromSparseRows]
 
 FromSparseRows[rowSpecs_List, n_Integer] := SparseArray[
   Flatten @ MapIndex1[rowSpecToFullSpec, rowSpecs],
@@ -548,31 +577,31 @@ rowSpecToFullSpec[col_Integer, row_] := {{row, col} -> 1};
 
 (**************************************************************************************************)
 
-PackageExport["FromSparseColumns"]
+PublicFunction[FromSparseColumns]
 
 FromSparseColumns[args___] := Transpose @ FromSparseRows[args];
 
 (**************************************************************************************************)
 
-PackageExport["SparseTotalMatrix"]
+PublicFunction[SparseTotalMatrix]
 
 SparseTotalMatrix[indexSets_, n_] := FromSparseRows[indexSets, n];
 
 (**************************************************************************************************)
 
-PackageExport["SparseAveragingMatrix"]
+PublicFunction[SparseAveragingMatrix]
 
 SparseAveragingMatrix[indexSets_, n_] := FromSparseRows[Map[set |-> set -> 1.0 / Length[set], indexSets], n];
 
 (**************************************************************************************************)
 
-PackageExport["SparseBroadcastMatrix"]
+PublicFunction[SparseBroadcastMatrix]
 
 SparseBroadcastMatrix[indexSets_, n_] := FromSparseColumns[indexSets, n];
 
 (**************************************************************************************************)
 
-PackageExport["DifferenceMatrix"]
+PublicFunction[DifferenceMatrix]
 
 DifferenceMatrix[{}] := {};
 
@@ -582,7 +611,30 @@ DifferenceMatrix[points1_, points2_] := Outer[Plus, points1, -points2, 1];
 
 (**************************************************************************************************)
 
-PackageExport["SquaredDistanceMatrix"]
+PublicFunction[DistanceMatrix]
+
+DistanceMatrix[{}] := {};
+
+DistanceMatrix[points_ ? RealVectorQ] :=
+  Outer[EuclideanDistance, points, points];
+
+DistanceMatrix[points1_ ? RealVectorQ, points2_ ? RealVectorQ] :=
+  Outer[EuclideanDistance, points1, points2];
+
+DistanceMatrix[points_ ? RealMatrixQ] := (
+  $loadDM; $distanceMatrixFunction1[points, $euclideanDistanceCode, False]
+);
+
+DistanceMatrix[{}, _] := {};
+DistanceMatrix[_, {}] := {};
+
+DistanceMatrix[points1_ ? RealMatrixQ, points2_ ? RealMatrixQ] := (
+  $loadDM; $distanceMatrixFunction2[points1, points2, $euclideanDistanceCode, False]
+);
+
+(**************************************************************************************************)
+
+PublicFunction[SquaredDistanceMatrix]
 
 SquaredDistanceMatrix[{}] := {};
 
@@ -606,8 +658,16 @@ SquaredDistanceMatrix[points1_ ? RealMatrixQ, points2_ ? RealMatrixQ] := (
 $loadDM := (
   DistanceMatrix[{{1,2}},{{3,4}}, DistanceFunction -> "SquaredEuclideanDistance"];
   $squaredEuclideanDistanceCode := NumericArrayUtilities`DistanceMatrix`PackagePrivate`$extractLLDMMethod["SquaredEuclideanDistance"];
+  $euclideanDistanceCode := NumericArrayUtilities`DistanceMatrix`PackagePrivate`$extractLLDMMethod["EuclideanDistance"];
   $distanceMatrixFunction1 = NumericArrayUtilities`DistanceMatrix`PackagePrivate`mTensorDistanceMatrix1Arg;
   $distanceMatrixFunction2 = NumericArrayUtilities`DistanceMatrix`PackagePrivate`mTensorDistanceMatrix2Arg;
   Clear[$loadDM];
 );
 
+(**************************************************************************************************)
+
+PublicFunction[MatrixThread, MatrixMax, MatrixMin]
+
+MatrixMax[m__] := MatrixThread[Max, m];
+MatrixMin[m__] := MatrixThread[Min, m];
+MatrixThread[f_, m__] := MapThread[f, {m}, 2];

@@ -1,13 +1,45 @@
-PackageExport["Signed"]
+PublicOption[ExtendedGraphLayout, VertexLayout, GraphMetric, GraphOrigin]
+
+PublicOption[ArrowheadShape, ArrowheadSize, ArrowheadStyle, ArrowheadPosition, TwoWayStyle]
+
+PublicOption[VertexColorFunction, EdgeColorFunction, VertexColorRules, EdgeColorRules, RegionColorRules]
+
+PublicOption[VertexTooltips, VertexClickFunction, EdgeTooltips]
+
+PublicOption[CardinalColors, CardinalColorRules, CardinalColorFunction]
+
+PublicOption[VertexLabelPosition, VertexLabelSpacing, VertexLabelBaseStyle, VertexLabelOrientation]
+
+PublicOption[VertexFontSize, VertexBackground]
+
+PublicOption[VertexOverlapResolution]
+
+PublicOption[EdgeLabelPosition, EdgeLabelSpacing, EdgeLabelBaseStyle, EdgeLabelOrientation]
+
+PublicOption[EdgeLength]
+
+PublicOption[VisibleCardinals, ViewRegion, ViewOptions, ViewRotation, LayoutDimension, AdditionalImagePadding, ExtendImagePadding]
+
+PublicOption[CoordinateTransformFunction, CoordinateRotation]
+
+PublicOption[LabelCardinals, AspectRatioClipping, PrologFunction, UseAbsoluteSizes, SelfLoopRadius, MultiEdgeDistance, PackingSpacing]
+
+PublicOption[PeripheralVertices]
+
+PublicOption[GraphPlottingFunction]
 
 SetUsage @ "
-Signed is an option to various graph utility functions.
+GraphPlottingFunction is an extended option to Graph that specifies a custom function to apply to \
+the graph to produce a graphical representation.
+* Various global variables are temporarily set during the application that allow properties \
+of the graph to be accessed. See GraphPlotScope for more info.
+* None indicates the ordinary graph plotting codepath should be used.
+* Automatic indicates that the default extended plotting codepath should be used.
 "
-
 
 (**************************************************************************************************)
 
-PackageScope["$extendedGraphOptionsRules"]
+PrivateVariable[$extendedGraphOptionsRules]
 
 $extendedGraphOptionsRules = {
   AdditionalImagePadding              -> None,
@@ -51,6 +83,7 @@ $extendedGraphOptionsRules = {
   PrologFunction                      -> None,
   RegionColorRules                    -> None,
   SelfLoopRadius                      -> Automatic,
+  TwoWayStyle                         -> Automatic,
   UseAbsoluteSizes                    -> Automatic,
   VertexAnnotations                   -> None,
   VertexBackground                    -> White,
@@ -63,7 +96,7 @@ $extendedGraphOptionsRules = {
   VertexLabelBaseStyle                -> None,
   VertexLabelPosition                 -> Top,
   VertexLabelSpacing                  -> 0,
-  VertexLabelOrientation                -> Automatic,
+  VertexLabelOrientation              -> Automatic,
   VertexLayout                        -> None,
   VertexOverlapResolution             -> None,
   VertexTooltips                      -> None,
@@ -72,7 +105,7 @@ $extendedGraphOptionsRules = {
   VisibleCardinals                    -> All
 };
 
-PackageScope["$extendedGraphOptionSymbols"]
+PrivateVariable[$extendedGraphOptionSymbols]
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
 
@@ -93,7 +126,7 @@ $extendedGraphSymbolNames = Map[SymbolName, Select[SymbolQ] @ Keys @ $fullGraphO
 
 (**************************************************************************************************)
 
-PackageExport["$ExtendedGraphOptions"]
+PublicVariable[$ExtendedGraphOptions]
 
 $ExtendedGraphOptions = Cases[$fullGraphOptions, HoldPattern[_Symbol -> _]];
 
@@ -125,7 +158,7 @@ splitUserGraphOptions[options___Rule] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["interceptedGraphConstructor"]
+PrivateFunction[interceptedGraphConstructor]
 
 SetHoldAllComplete[interceptedGraphConstructor];
 
@@ -140,7 +173,7 @@ interceptedGraphConstructor[Graph[Shortest[args__], options__Rule]] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["makeNewGraph"]
+PrivateFunction[makeNewGraph]
 
 makeNewGraph[graph_Graph ? GraphQ, newOptions_List] :=
   Graph[VertexList @ graph, EdgeList @ graph, Sequence @@ newOptions, Sequence @@ Options @ graph];
@@ -167,8 +200,7 @@ interceptedGraphConstructor[e_] := e;
 
 (**************************************************************************************************)
 
-PackageScope["$simpleGraphOptions"]
-PackageScope["$simpleGraphOptionRules"]
+PrivateVariable[$simpleGraphOptions, $simpleGraphOptionRules]
 
 $simpleGraphOptionRules = JoinOptions[
   EdgeLabels -> None, GraphLayout -> Automatic, ImagePadding -> None,
@@ -186,7 +218,7 @@ $simpleGraphOptions = Keys @ $simpleGraphOptionRules;
 
 (**************************************************************************************************)
 
-PackageExport["ExtendedGraphQ"]
+PublicFunction[ExtendedGraphQ]
 
 ExtendedGraphQ[g_Graph ? GraphQ] :=
   Count[AnnotationValue[g, $extendedGraphOptionSymbols], $Failed] =!= Length[$extendedGraphOptionSymbols];
@@ -195,7 +227,7 @@ ExtendedGraphQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["$GraphThemeData"]
+PublicVariable[$GraphThemeData]
 
 $fontThemeOpts = {VertexLabelBaseStyle -> $MathLabelStyle, EdgeLabelBaseStyle -> $CardinalLabelStyle};
 

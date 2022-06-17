@@ -1,6 +1,4 @@
-(**************************************************************************************************)
-
-PackageExport["PlainGraph"]
+PublicFunction[PlainGraph]
 
 Options[PlainGraph] = $simpleGraphOptionRules;
 
@@ -13,7 +11,7 @@ PlainGraph[graph_Graph, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["IndexedExtendedGraph"]
+PublicFunction[IndexedExtendedGraph]
 
 SetUsage @ "
 IndexedExtendedGraph[args$$] is like ExtendedGraph but accepts edges in the form of indexices into \
@@ -34,14 +32,14 @@ IndexedExtendedGraph[vertices_, edges_, opts___] := Scope[
   
 (**************************************************************************************************)
 
-PackageExport["ToIndexGraph"]
+PublicFunction[ToIndexGraph]
 
 ToIndexGraph[graph_ ? IndexGraphQ] := graph;
 ToIndexGraph[graph_] := IndexGraph @ graph;
 
 (**************************************************************************************************)
 
-PackageExport["EdgeListQ"]
+PublicFunction[EdgeListQ]
 
 SetUsage @ "
 EdgeListQ[e$] returns True if e$ is a list of edges (%UndirectedEdge or %DirectedEdge).
@@ -54,7 +52,7 @@ EdgeListQ = Case[
 
 (**************************************************************************************************)
 
-PackageExport["VertexRange"]
+PublicFunction[VertexRange]
 
 SetUsage @ "
 VertexRange[graph$] returns {1, 2, $$, n$} where n$ is the number of vertices in graph.
@@ -64,14 +62,14 @@ VertexRange[graph_] := Range @ VertexCount @ graph;
 
 (**************************************************************************************************)
 
-PackageExport["EdgePairsToAdjacencyMatrix"]
+PublicFunction[EdgePairsToAdjacencyMatrix]
 
 EdgePairsToAdjacencyMatrix[pairs_, n_] :=
   ExtendedSparseArray[pairs, {n, n}]
 
 (**************************************************************************************************)
 
-PackageExport["GraphCorners"]
+PublicFunction[GraphCorners]
 
 GraphCorners[graph_] := Scope[
   degree = DegreeCentrality[graph];
@@ -81,14 +79,14 @@ GraphCorners[graph_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphVertexCoordinates"]
+PublicFunction[GraphVertexCoordinates]
 
 GraphVertexCoordinates[graph_Graph] :=
   GraphEmbedding[graph];
 
 (**************************************************************************************************)
 
-PackageScope["integersToVertices"]
+PrivateFunction[integersToVertices]
 
 integersToVertices[graph_Graph, expr_] :=
   integersToVertices[VertexList[graph], expr];
@@ -98,7 +96,7 @@ integersToVertices[vertices_List, expr_] :=
 
 (**************************************************************************************************)
 
-PackageExport["ToGraph"]
+PublicFunction[ToGraph]
 
 SetUsage @ "
 ToGraph[obj$] attempts to convert obj$ to a Graph[$$] object.
@@ -117,7 +115,7 @@ ToGraph = Case[
 
 (**************************************************************************************************)
 
-PackageExport["IndexGraphQ"]
+PublicFunction[IndexGraphQ]
 
 IndexGraphQ[g_Graph ? GraphQ] :=
   RangeQ @ VertexList @ g;
@@ -126,7 +124,7 @@ IndexGraphQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["ComponentGraphs"]
+PublicFunction[ComponentGraphs]
 
 ComponentGraphs[graph_] := ComponentGraphs[graph, All];
 
@@ -150,7 +148,7 @@ ComponentGraphs[_, spec_] := (Message[ComponentGraphs::badcomp, spec]; $Failed);
 
 (**************************************************************************************************)
 
-PackageExport["CanonicalizeEdges"]
+PublicFunction[CanonicalizeEdges]
 
 CanonicalizeEdges[edges_] := Map[sortUE, edges];
 sortUE[UndirectedEdge[a_, b_, tag___]] /; Order[a, b] === 1 := UndirectedEdge[b, a, tag];
@@ -158,7 +156,7 @@ sortUE[other_] := other;
 
 (**************************************************************************************************)
 
-PackageExport["ToSymmetricGraph"]
+PublicFunction[ToSymmetricGraph]
 
 ToSymmetricGraph[graph_ ? DirectedGraphQ] :=
   Graph[VertexList @ graph, EdgeList[graph] /. DirectedEdge -> UndirectedEdge];
@@ -167,7 +165,7 @@ ToSymmetricGraph[graph_] := graph;
 
 (**************************************************************************************************)
 
-PackageExport["FindAllUndirectedSpanningEdgeSets"]
+PublicFunction[FindAllUndirectedSpanningEdgeSets]
 
 (* this is O(n!) in the number of vertices, so not practical for all but small graphs,
 but at least we don't have to rewrite FindSpanningTree *)
@@ -205,18 +203,7 @@ FindAllDirectedTrees[graph_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ExtractExtendedGraphOptions"]
-
-ExtractExtendedGraphOptions[graph_Graph] := Scope[
-  opts = Options @ graph;
-  annoRules = Lookup[opts, AnnotationRules, {}];
-  graphProps = Lookup[annoRules, "GraphProperties", {}];
-  Join[DeleteOptions[opts, AnnotationRules], graphProps]
-]
-
-(**************************************************************************************************)
-
-PackageExport["RotateGraph"]
+PublicFunction[RotateGraph]
 
 RotateGraph[graph_, opts___Rule] :=
   RotateGraph[graph, 90, opts];
@@ -234,7 +221,7 @@ RotateGraph[graph_, degrees_Integer, opts___Rule] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["RangePartitionGraph"]
+PublicFunction[RangePartitionGraph]
 
 RangePartitionGraph[n_] := Scope[
   init = List /@ Range[n];

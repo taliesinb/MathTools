@@ -12,7 +12,7 @@ $directionStrings = {"Forward", "Backward", "Symmetric", "Antisymmetric"};
 
 (**************************************************************************************************)
 
-PackageExport["$PathAlgebra"]
+PublicVariable[$PathAlgebra]
 
 SetUsage @ "
 $PathAlgebra is the PathAlgebra[$$] used as the default algebra for PathVector and PathElement objects.
@@ -26,7 +26,7 @@ $FieldTimes := $PathAlgebra["FieldTimes"];
 
 (**************************************************************************************************)
 
-PackageExport["PathAlgebra"]
+PublicFunction[PathAlgebra]
 
 SetUsage @ "
 PathAlgebra[quiver$, field$] constructs a PathAlgebra[$$] from a given cardinal quiver.
@@ -163,16 +163,12 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
 
 $complexColorFunction = ComplexHue;
 
-PackageExport["ComplexHue"]
-
-ComplexHue[c_] := ColorConvert[Hue[Arg[c]/Tau+.05, Min[Sqrt[Abs[c]]/1.2,1], .9], RGBColor];
-
 reverseTransition[a_ -> Inverted[b_]] := b -> Inverted[a];
 reverseTransition[a_ -> b_] := b -> a;
 
 (**************************************************************************************************)
 
-PackageExport["PathAlgebra"]
+PublicFunction[PathAlgebra]
 
 declareObjectPropertyDispatch[PathAlgebra, pathAlgebraProperty];
 
@@ -198,7 +194,7 @@ PathAlgebraBoxes[object:PathAlgebra[data_], form_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PathVector"]
+PublicHead[PathVector]
 
 SetUsage @ "
 PathVector[$$] represents a path vector on a cardinal quiver.
@@ -211,8 +207,7 @@ $pathVectorDispatch = <|
   Times -> PathVectorTimes
 |>;
 
-PackageExport["PathVectorPlus"]
-PackageExport["PathVectorTimes"]
+PublicFunction[PathVectorPlus, PathVectorTimes]
 
 NumericOrSymbolicQ[a_] := NumericQ[a] || MatchQ[a, _Subscript];
 
@@ -245,7 +240,7 @@ constructPathVector[assoc_Association] :=
 
 (**************************************************************************************************)
 
-PackageExport["PathVectorElements"]
+PublicFunction[PathVectorElements]
 
 SetUsage @ "PathVectorElements[path$] returns the %PathElements present in a %PathVector.
 "
@@ -254,7 +249,7 @@ PathVectorElements[PathVector[assoc_]] := Keys @ assoc;
 
 (**************************************************************************************************)
 
-PackageExport["PathVectorQ"]
+PublicFunction[PathVectorQ]
 
 SetUsage @ "
 PathVectorQ[expr$] gives True if expr$ is a valid PathVector.
@@ -284,7 +279,7 @@ declareFormatting[
 
 (**************************************************************************************************)
 
-PackageExport["PathVectorPlot"]
+PublicFunction[PathVectorPlot]
 
 PathVectorPlot[pv:PathVector[_Association ? ValidPathAssociationQ], opts___Rule] /; $PathAlgebraQ :=
   formatPathVector[pv, opts];
@@ -483,8 +478,7 @@ fieldColors = MatchValues[
 
 (**************************************************************************************************)
 
-PackageExport["PathHeadVertex"]
-PackageExport["PathTailVertex"]
+PublicFunction[PathHeadVertex, PathTailVertex]
 
 PathTailVertex[p_PathElement] := Part[p, 1];
 PathTailVertex[list_List] := Part[list, All, 1];
@@ -494,8 +488,7 @@ PathHeadVertex[list_List] := Part[list, All, 3];
 
 (**************************************************************************************************)
 
-PackageExport["PathHeadVector"]
-PackageExport["PathTailVector"]
+PublicFunction[PathHeadVector, PathTailVector]
 
 PathHeadVector[PathElement[_, _, h_]] := PathElement[h, {}, h];
 
@@ -513,7 +506,7 @@ PathVector /: Proportion[v__PathVector] := PathCompose[v];
 
 (**************************************************************************************************)
 
-PackageExport["PathCompose"]
+PublicFunction[PathCompose]
 
 (* defined on vectors by bilinearity *)
 
@@ -551,7 +544,7 @@ $cancelEdgeRules = Dispatch @ {
 
 (**************************************************************************************************)
 
-PackageExport["ToPathVector"]
+PublicFunction[ToPathVector]
 
 SetUsage @ "
 ToPathVector[region$] constructs a %PathVector based on the given graph region.
@@ -605,7 +598,7 @@ attachPathElementWeight[pe_, c_Complex] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["BasisWordVectors"]
+PublicFunction[BasisWordVectors]
 
 SetUsage @ "
 BasisWordVectors[] returns a list of %WordVector[c$i] for each cardinal c$i in the quiver.
@@ -632,7 +625,7 @@ BasisWordVectors[type_String] /; $PathAlgebraQ := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["WordVector"]
+PublicFunction[WordVector]
 
 SetUsage @ "
 WordVector['word$'] constructs a %PathVector consisting of all paths that have path word word$.
@@ -690,7 +683,7 @@ toWordVectorPathElement[tail_, edges_, head_] :=
 
 (**************************************************************************************************)
 
-PackageExport["PathSplit"]
+PublicFunction[PathSplit]
 
 PathSplit[PathVector[assoc_]] := Scope[
   UnpackPathAlgebra[edgeToTail, edgeToHead];
@@ -705,7 +698,7 @@ splitPathElement[PathElement[_, edges_, _], w_] :=
 
 (**************************************************************************************************)
 
-PackageExport["PathVectorWeights"]
+PublicFunction[PathVectorWeights]
 
 PathVectorWeights[list_List] :=
   Map[PathVectorWeights, list];
@@ -721,19 +714,19 @@ PathVectorWeights[list_List, i_] :=
 
 (**************************************************************************************************)
 
-PackageExport["IgnoreDefectiveDegree"]
+PublicFunction[IgnoreDefectiveDegree]
 
 SetUsage @ "
 IgnoreDefectiveDegree is an option to VertexFieldEquationSolve and FindPathVectorZeros.
 "
 
-PackageExport["RHSConstant"]
+PublicFunction[RHSConstant]
 
 SetUsage @ "
 RHSConstant is an option to VertexFieldEquationSolve and FindPathVectorZeros.
 "
 
-PackageExport["BoundaryConditions"]
+PublicFunction[BoundaryConditions]
 
 SetUsage @ "
 BoundaryConditions is an option to VertexFieldEquationSolve.
@@ -741,7 +734,7 @@ BoundaryConditions is an option to VertexFieldEquationSolve.
 
 (**************************************************************************************************)
 
-PackageExport["FindPathVectorZeros"]
+PublicFunction[FindPathVectorZeros]
 
 Options[FindPathVectorZeros] = {
   Modulus -> Inherited,
@@ -765,7 +758,7 @@ FindPathVectorZeros[pv_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["SubstituteSymbolicWeights"]
+PublicFunction[SubstituteSymbolicWeights]
 
 SubstituteSymbolicWeights[PathVector[assoc_], subs:{__Rule}] :=
   constructPathVector @ AssociationThread[Keys @ assoc, ReplaceAll[Values @ assoc, subs]]
@@ -776,7 +769,7 @@ SubstituteSymbolicWeights[pv_PathVector, subs:{___List}] :=
 
 (**************************************************************************************************)
 
-PackageExport["SetPathElementWeights"]
+PublicFunction[SetPathElementWeights]
 
 SetPathElementWeights[PathVector[assoc_], rules_] :=
   constructPathVector @ Join[assoc, rules];
@@ -786,7 +779,7 @@ SetPathElementWeights[rules_][vector_] :=
 
 (**************************************************************************************************)
 
-PackageExport["VertexFieldWeights"]
+PublicFunction[VertexFieldWeights]
 
 VertexFieldWeights[PathVector[assoc_]] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[vertexCount];
@@ -800,7 +793,7 @@ setVertexFieldWeight[_, _] := Null;
 
 (**************************************************************************************************)
 
-PackageExport["SetVertexFieldWeights"]
+PublicFunction[SetVertexFieldWeights]
 
 SetVertexFieldWeights[PathVector[assoc_], rules:(_Rule | {___Rule})] :=
   constructPathVector @ Append[assoc, MapAt[EmptyPathElement, ToList @ rules, {All, 1}]];
@@ -809,7 +802,7 @@ SetVertexFieldWeights[spec_][vector_] := SetVertexFieldWeights[vector, spec];
 
 (**************************************************************************************************)
 
-PackageExport["VertexFieldEquationSolve"]
+PublicFunction[VertexFieldEquationSolve]
 
 Options[VertexFieldEquationSolve] = Join[
   {BoundaryConditions -> {}},
@@ -838,20 +831,20 @@ VertexFieldEquationSolve[f_, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ConstantVertexField"]
+PublicFunction[ConstantVertexField]
 
 ConstantVertexField[n_:1] := PathVectorTimes[n, VertexField[]];
 
 (**************************************************************************************************)
 
-PackageExport["PathVectorComponents"]
+PublicFunction[PathVectorComponents]
 
 PathVectorComponents[PathVector[assoc_]] :=
   PathVector @ Association[#]& /@ Normal[assoc]
 
 (**************************************************************************************************)
 
-PackageExport["ReversalSymmetryDecompose"]
+PublicFunction[ReversalSymmetryDecompose]
 
 SetUsage @ "
 ReversalSymmetryDecompose[vector$] returns {s$, a$} where s$ is the reversal-symmetric part of vector$ \
@@ -866,14 +859,14 @@ ReversalSymmetryDecompose[v_PathVector] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ReversalSymmetricPart"]
+PublicFunction[ReversalSymmetricPart]
 
 ReversalSymmetricPart[forward_PathVector] := Scope[
   reverse = PathReverse @ forward;
   forward + reverse
 ];
 
-PackageExport["ReversalAntisymmetricPart"]
+PublicFunction[ReversalAntisymmetricPart]
 
 ReversalAntisymmetricPart[forward_PathVector] := Scope[
   reverse = PathReverse @ forward;
@@ -882,14 +875,13 @@ ReversalAntisymmetricPart[forward_PathVector] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PathLieDerivative"]
+PublicFunction[PathLieDerivative]
 
 PathLieDerivative[a_, b_] := (PathCentralDifference[a, b] - PathCentralDifference[b, a])/4
 
 (**************************************************************************************************)
 
-PackageExport["ReversalSymmetricQ"]
-PackageExport["ReversalAntisymmetricQ"]
+PublicFunction[ReversalSymmetricQ, ReversalAntisymmetricQ]
 
 ReversalSymmetricQ[p_PathVector] :=
   p === PathReverse[p];
@@ -899,7 +891,7 @@ ReversalAntisymmetricQ[p_PathVector] :=
 
 (**************************************************************************************************)
 
-PackageExport["WordDelta"]
+PublicFunction[WordDelta]
 
 SetUsage @ "
 WordDelta['word$', 'type$'] constructs a path vector that when convolved computes the finite difference \
@@ -939,7 +931,7 @@ makeTypeVector[head_, vector_PathVector, type_] :=
 
 (**************************************************************************************************)
 
-PackageExport["PathLength"]
+PublicFunction[PathLength]
 
 SetUsage @ "
 PathLength[element$] returns the length of a %PathElement.
@@ -949,35 +941,35 @@ PathLength[PathElement[_, e_List, _]] := Length @ e;
 
 (**************************************************************************************************)
 
-PackageExport["PathConjugate"]
+PublicFunction[PathConjugate]
 
 PathConjugate[pv:PathVector[assoc_]] :=
   If[FreeQ[Values @ assoc, Complex], pv, PathVector[Conjugate /@ assoc]];
 
 (**************************************************************************************************)
 
-PackageExport["PathPower"]
+PublicFunction[PathPower]
 
 PathPower[PathVector[assoc_], p_] :=
   PathVector[Power[#, p]& /@ assoc];
 
 (**************************************************************************************************)
 
-PackageExport["PathSqrt"]
+PublicFunction[PathSqrt]
 
 PathSqrt[PathVector[assoc_]] :=
   PathVector @ Map[Sqrt, assoc];
 
 (**************************************************************************************************)
 
-PackageExport["PathConjugateTranspose"]
+PublicFunction[PathConjugateTranspose]
 
 PathConjugateTranspose[pv_PathVector] :=
   PathConjugate @ PathReverse @ pv;
 
 (**************************************************************************************************)
 
-PackageExport["PathReverse"]
+PublicFunction[PathReverse]
 
 SetUsage @ "
 PathReverse[PathVector[$$]] yields the PathVector[$$] in which all \
@@ -994,7 +986,7 @@ PathReverse[NullElement] := NullElement;
 
 (**************************************************************************************************)
 
-PackageExport["PathElement"]
+PublicHead[PathElement]
 
 SetUsage @ "
 PathElement[tail$, {edge$1, edge$2, $$}, head$] represents a path starting at vertex tail$, taking \
@@ -1003,13 +995,13 @@ the given edges, and ending at vertex head$.
 
 (**************************************************************************************************)
 
-PackageExport["EmptyPathElement"]
+PublicFunction[EmptyPathElement]
 
 EmptyPathElement[v_] := PathElement[v, {}, v];
 
 (**************************************************************************************************)
 
-PackageExport["VertexField"]
+PublicFunction[VertexField]
 
 SetUsage @ "
 VertexField[] constructs the unit vertex field, containing every empty path with weight 1.
@@ -1034,7 +1026,7 @@ VertexField[ints:{__Integer} | _Integer] /; $PathAlgebraQ := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["RandomVertexField"]
+PublicFunction[RandomVertexField]
 
 SetUsage @ "
 RandomVertexField[] constructs a random vertex field, containing every empty path with a random weight.
@@ -1053,7 +1045,7 @@ RandomVertexField[OptionsPattern[]] /; $PathAlgebraQ := Scope @ RandomSeeded[
 
 (**************************************************************************************************)
 
-PackageExport["RandomEdgeField"]
+PublicFunction[RandomEdgeField]
 
 SetUsage @ "
 RandomEdgeField[] constructs a random edge field, containing every length-1 path with a random weight.
@@ -1110,7 +1102,7 @@ reversedSingleEdgePathElement[edge_] :=
 
 (**************************************************************************************************)
 
-PackageExport["RandomPathField"]
+PublicFunction[RandomPathField]
 
 SetUsage @ "
 RandomPathField[] constructs a random path field of paths of length 0 \[LessEqual] n$ \[LessEqual] 2.
@@ -1133,7 +1125,7 @@ RandomPathField[range:{_Integer ? NonNegative, _Integer ? NonNegative} | (_Integ
 
 (**************************************************************************************************)
 
-PackageExport["SymbolicVertexField"]
+PublicFunction[SymbolicVertexField]
 
 SymbolicVertexField[symbol_:\[FormalV]] := Scope[
   UnpackPathAlgebra[vertexRange];
@@ -1142,7 +1134,7 @@ SymbolicVertexField[symbol_:\[FormalV]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["SymbolicEdgeField"]
+PublicFunction[SymbolicEdgeField]
 
 SymbolicEdgeField[symbol_:\[FormalE], type_:"Forward"] := Scope[
   UnpackPathAlgebra[edgeRange, edgeToTail, edgeToHead];
@@ -1161,7 +1153,7 @@ SymbolicEdgeField[symbol_:\[FormalE], type_:"Forward"] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["SparsifyPathVector"]
+PublicFunction[SparsifyPathVector]
 
 SetUsage @ "
 SparsifyPathVector[vector$, frac$] deletes frac$ of the paths in a %PathVector.
@@ -1172,7 +1164,7 @@ SparsifyPathVector[PathVector[assoc_], frac_Real] :=
 
 (**************************************************************************************************)
 
-PackageExport["ProjectPathLength"]
+PublicFunction[ProjectPathLength]
 
 SetUsage @ "
 ProjectPathLength[vector$, n$] returns the path vector consisting of paths of length n$.
@@ -1191,14 +1183,14 @@ ProjectPathLength[pv:PathVector[assoc_], All] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["RemoveEmptyPaths"]
+PublicFunction[RemoveEmptyPaths]
 
 RemoveEmptyPaths[PathVector[assoc_]] :=
   PathVector @ KeySelect[assoc, PathLength[#] > 0&];
 
 (**************************************************************************************************)
 
-PackageExport["RandomPathVector"]
+PublicFunction[RandomPathVector]
 
 SetUsage @ "
 RandomPathVector[m$] constructs a random path vector of paths of length 0 \[LessEqual] n$ \[LessEqual] 2, with m$ starting at each vertex.
@@ -1246,14 +1238,14 @@ makeRandomPathElement[tail_, len_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VertexFieldQ"]
+PublicFunction[VertexFieldQ]
 
 VertexFieldQ[PathVector[assoc_Association]] := MatchQ[Keys @ assoc, {PathElement[_, {}, _]...}];
 VertexFieldQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["EdgeField"]
+PublicFunction[EdgeField]
 
 SetUsage @ "
 EdgeField[] gives EdgeField[All].
@@ -1329,14 +1321,14 @@ weightedForwardBackwardEdgeElements[tail_, edge_, head_, {fweight_, bweight_}] :
       
 (**************************************************************************************************)
 
-PackageExport["EdgeFieldQ"]
+PublicFunction[EdgeFieldQ]
 
 EdgeFieldQ[PathVector[assoc_Association]] := MatchQ[Keys @ assoc, {PathElement[_, {_}, _]...}];
 EdgeFieldQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["PathElementToWord"]
+PublicFunction[PathElementToWord]
 
 SetUsage @ "
 PathElementToWord[PathElement[$$]] returns the cardinal word for a path element.
@@ -1356,7 +1348,7 @@ PathElementToWord[list:{___PathElement}] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PathElementToTailFrameWord"]
+PublicFunction[PathElementToTailFrameWord]
 
 SetUsage @ "
 PathElementToTailFrameWord[PathElement[$$]] returns the cardinal word for a path element.
@@ -1392,7 +1384,7 @@ elementFrameData[PathElement[tail_, edges_, _]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PathElementFromTailFrameWord"]
+PublicFunction[PathElementFromTailFrameWord]
 
 SetUsage @ "
 PathElementFromTailFrameWord[tail$, word$] returns the PathElement starting at vertex tail$ and using word$.
@@ -1454,7 +1446,7 @@ DefineLiteralMacro[setupForShortestPaths,
 
 (**************************************************************************************************)
 
-PackageExport["PathTranslate"]
+PublicFunction[PathTranslate]
 
 PathTranslate[t_PathVector, p_PathVector] /; $PathAlgebraQ := Scope[
 
@@ -1495,7 +1487,7 @@ PathVector /: UpArrow[t_PathVector, p_PathVector] :=
 
 (**************************************************************************************************)
 
-PackageExport["PathReverseTranslate"]
+PublicFunction[PathReverseTranslate]
 
 PathReverseTranslate[t_PathVector, p_PathVector] /; $PathAlgebraQ :=
   PathTranslate[PathReverse @ t, p];
@@ -1505,7 +1497,7 @@ PathVector /: DownArrow[t_PathVector, p_PathVector] :=
 
 (**************************************************************************************************)
 
-PackageExport["TranslateAdd"]
+PublicFunction[TranslateAdd]
 
 SetUsage @ "
 TranslateAdd[t$1, t$2] composes %PathVector t$2 with t$1, after translating \
@@ -1535,7 +1527,7 @@ PathVector /: CirclePlus[p__PathVector] :=
 
 (**************************************************************************************************)
 
-PackageExport["TranslateSubtract"]
+PublicFunction[TranslateSubtract]
 
 SetUsage @ "
 TranslateSubtract[t$1, t$2] composes the reverse of %PathVector t$2 with t$1, after translating \
@@ -1556,7 +1548,7 @@ PathVector /: CircleMinus[a_PathVector, b_PathVector] :=
 
 (**************************************************************************************************)
 
-PackageExport["TranslateHeadSubtract"]
+PublicFunction[TranslateHeadSubtract]
 
 TranslateHeadSubtract[a_PathVector, b_PathVector] := Scope[
   setupForTranslation[];
@@ -1571,7 +1563,7 @@ TranslateHeadSubtract[a_PathVector, b_PathVector] :=
 
 (**************************************************************************************************)
 
-PackageExport["TranslationDifference"]
+PublicFunction[TranslationDifference]
 
 TranslationDifference[a_PathVector, b_PathVector] := Scope[
   setupForTranslation[];
@@ -1590,7 +1582,7 @@ elementTranslationDifference[a_PathElement, b_PathElement] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["AntisymmetrizedTranslationDifference"]
+PublicFunction[AntisymmetrizedTranslationDifference]
 
 AntisymmetrizedTranslationDifference[a_, b_] := Scope[
   res = TranslationDifference[a, b]/2;
@@ -1599,7 +1591,7 @@ AntisymmetrizedTranslationDifference[a_, b_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PathInvert"]
+PublicFunction[PathInvert]
 
 SetUsage @ "
 PathInvert[vector$] inverts a %PathVector by negating the path word of each of its elements.
@@ -1615,7 +1607,7 @@ invertElement[p:PathElement[t_, edges_, h_]] :=
 
 (**************************************************************************************************)
 
-PackageExport["ShortestPathVector"]
+PublicFunction[ShortestPathVector]
 
 SetUsage @ "
 ShortestPathVector[vector$] replaces the %PathElement in vector$ with their shortest path equivalents.
@@ -1637,7 +1629,7 @@ shortestPathElement[p:PathElement[t_, e_, h_]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["BilinearApply"]
+PublicFunction[BilinearApply]
 
 BilinearApply[monoid_, PathVector[a_] -> f_, PathVector[b_] -> g_] /; $PathAlgebraQ := Scope[
   {ak, av} = KeysValues @ a; {bk, bv} = KeysValues @ b;
@@ -1661,7 +1653,7 @@ flattenWeights[rules:{__Rule}, w_] := #1 -> fieldTimes[#2, w]& @@@ rules;
 
 (**************************************************************************************************)
 
-PackageExport["TorsionVector"]
+PublicFunction[TorsionVector]
 
 SetUsage @ "
 TorsionVector[a$, b$] returns (b$ \[CirclePlus] a$) \[CircleMinus] (a$ \[CirclePlus] b$).
@@ -1677,7 +1669,7 @@ TorsionVector[a_, b_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PathForwardDifference"]
+PublicFunction[PathForwardDifference]
 
 PathForwardDifference[list:{__List}, target_] :=
   Apply[PathVectorPlus, PathForwardDifference[#, target]& /@ list];
@@ -1694,7 +1686,7 @@ PathForwardDifference[v_][t_] := PathForwardDifference[v, t];
 
 (**************************************************************************************************)
 
-PackageExport["PathBackwardDifference"]
+PublicFunction[PathBackwardDifference]
 
 PathBackwardDifference[list:{__List}, target_] :=
   Apply[PathVectorPlus, PathBackwardDifference[#, target]& /@ list];
@@ -1711,7 +1703,7 @@ PathBackwardDifference[v_][t_] := PathBackwardDifference[v, t];
 
 (**************************************************************************************************)
 
-PackageExport["PathCentralDifference"]
+PublicFunction[PathCentralDifference]
 
 PathCentralDifference[list:{__List}, target_] :=
   Apply[PathVectorPlus, PathCentralDifference[#, target]& /@ list];
@@ -1728,7 +1720,7 @@ PathCentralDifference[v_][t_] := PathCentralDifference[v, t];
 
 (**************************************************************************************************)
 
-PackageExport["LaplacianOperator"]
+PublicFunction[LaplacianOperator]
 
 LaplacianOperator[] := Scope[
   basis = BasisWordVectors[];
@@ -1741,7 +1733,7 @@ LaplacianOperator[pv_PathVector] :=
 
 (**************************************************************************************************)
 
-PackageExport["SymmetricPathFiniteDifference"]
+PublicFunction[SymmetricPathFiniteDifference]
 
 SymmetricPathFiniteDifference[flow_, target_] :=
   PathTranslate[PathReverse[flow] - flow, target];
@@ -1750,7 +1742,7 @@ SymmetricPathFiniteDifference[v_][t_] := SymmetricPathFiniteDifference[v, t];
 
 (**************************************************************************************************)
 
-PackageExport["PathGradient"]
+PublicFunction[PathGradient]
 
 PathGradient[pv_PathVector] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[edgeTails, edgeRange, edgeHeads, vertexRange, fieldSubtract, fieldMinus];
@@ -1767,21 +1759,21 @@ PathGradient[pv_PathVector] /; $PathAlgebraQ := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PathDivergence"]
+PublicFunction[PathDivergence]
 
 PathDivergence[pv_PathVector] /; $PathAlgebraQ :=
   (PathHeadVector[pv] - PathTailVector[pv]) / 2;
 
 (**************************************************************************************************)
 
-PackageExport["PathLaplacian"]
+PublicFunction[PathLaplacian]
 
 PathLaplacian[pv_PathVector] /; $PathAlgebraQ :=
   PathDivergence @ PathGradient @ pv;
 
 (**************************************************************************************************)
 
-PackageExport["PathDot"]
+PublicFunction[PathDot]
 
 PathDot[a_PathVector, b_PathVector] /; $PathAlgebraQ := Scope[
   assocs = Part[{a, b}, All, 1];

@@ -1,4 +1,4 @@
-PackageExport["GroupoidQ"]
+PublicFunction[GroupoidQ]
 
 SetUsage @ "
 GroupoidQ[groupoid$] returns True if groupoid$ is a valid groupoid.
@@ -20,7 +20,7 @@ both kinds should list their cardinals ahead of time.
 
 (**************************************************************************************************)
 
-PackageExport["GroupoidGenerator"]
+PublicFunction[GroupoidGenerator]
 
 SetUsage @ "
 GroupoidGenerator[f$, g$] represents an element of a groupoid that acts on a GroupoidState[$$] by f$, and
@@ -45,9 +45,9 @@ declareFormatting[
 
 (**************************************************************************************************)
 
-PackageExport["GroupoidObject"]
+PublicObject[GroupoidObject]
 
-PackageScope["constructGroupoid"]
+PrivateFunction[constructGroupoid]
 
 constructGroupoid[assoc_] := Scope[
   assoc = assoc;
@@ -129,7 +129,7 @@ computeCayleyGraph[data_, opts___Rule] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GroupoidPermutationGroup"]
+PublicFunction[GroupoidPermutationGroup]
 
 GroupoidPermutationGroup[groupoid_] := Scope[
   data = getObjectData[groupoid];
@@ -143,7 +143,7 @@ GroupoidPermutationGroup[groupoid_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GroupoidPermutationTable"]
+PublicFunction[GroupoidPermutationTable]
 
 GroupoidPermutationTable[groupoid_] := Scope[
   data = getObjectData[groupoid];
@@ -157,15 +157,14 @@ GroupoidPermutationTable[groupoid_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GroupoidObjectQ"]
+PublicFunction[GroupoidObjectQ]
 
 GroupoidObjectQ[go_GroupoidObject ? System`Private`HoldNoEntryQ] := True;
 GroupoidObjectQ[_] := False;
 
-
 (**************************************************************************************************)
 
-PackageExport["ColoredTokenGroupoid"]
+PublicFunction[ColoredTokenGroupoid]
 
 ColoredTokenGroupoid[n_Integer, colors_Integer] := constructGroupoid @ Association[
   "Type" -> "ColorToken",
@@ -188,7 +187,7 @@ makeMirroredColoredTokenGenerators[n_, colors_] :=
   ];
 
 
-PackageExport["ColoredTokens"]
+PublicFunction[ColoredTokens]
 
 $TokenColorPalette = Prepend[$ColorPalette, GrayLevel[0.98]];
 
@@ -197,7 +196,7 @@ declareFormatting[
 ];
 
 
-PackageExport["SetTokenColor"]
+PublicFunction[SetTokenColor]
 
 SetTokenColor[n_, c_][ColoredTokens[list_]] :=
   If[list[[n]] === c, Nothing, ColoredTokens @ ReplacePart[list, n -> c]];
@@ -207,7 +206,7 @@ SetTokenColor[n_, c1_, c2_][ColoredTokens[list_]] :=
 
 (**************************************************************************************************)
 
-PackageExport["PermutationActionGroupoid"]
+PublicFunction[PermutationActionGroupoid]
 
 PermutationActionGroupoid[initialStates_List, generators_:Automatic] := Scope[
   If[!MatrixQ[initialStates], initialStates = List @ initialStates];
@@ -246,7 +245,7 @@ toPermutationForm = Case[
 
 (**************************************************************************************************)
 
-PackageExport["PermutationActionCayleyFunction"]
+PublicFunction[PermutationActionCayleyFunction]
 
 PermutationActionCayleyFunction[gens_][state_] :=
   Labeled[applyPermutation[state, #], #2]& @@@ gens;
@@ -259,7 +258,7 @@ applyPermutation[vec_, c_Cycles] :=
 
 (**************************************************************************************************)
 
-PackageExport["CardinalRewriteGroupoid"]
+PublicFunction[CardinalRewriteGroupoid]
 
 CardinalRewriteGroupoid[cardinals_List, initial_, rewriteCount_:1] := Scope[
   Which[
@@ -304,7 +303,7 @@ canonicalCardinalTransition[rules_] := Scope[
 
 invertRules[rules_] := MatrixMap[Inverted, rules];
 
-PackageExport["CardinalRewriteCayleyFunction"]
+PublicFunction[CardinalRewriteCayleyFunction]
 
 CardinalRewriteCayleyFunction[allStates_, countFilter_][state_] := Scope[
   successors = Select[allStates, countFilter @ HammingDistance[#, state]&];

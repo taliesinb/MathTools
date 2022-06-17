@@ -1,6 +1,6 @@
 (**************************************************************************************************)
 
-PackageExport["CircularStringRewritingSystem"]
+PublicFunction[CircularStringRewritingSystem]
 
 CircularStringRewritingSystem[rules_] := Scope[
   constructRewritingSystem["CircularString", rules]
@@ -19,14 +19,14 @@ circularStringRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] := S
 
 (**************************************************************************************************)
 
-PackageExport["CircularStringReplaceListOperator"]
+PublicFunction[CircularStringReplaceListOperator]
 
 CircularStringReplaceListOperator[rules_][str_] :=
   Part[CircularStringLabeledReplaceList[str, rules], All, 1];
 
 (**************************************************************************************************)
 
-PackageExport["CircularStringLabeledReplaceList"]
+PublicFunction[CircularStringLabeledReplaceList]
 
 CircularStringLabeledReplaceList[str_, {rule_}] :=
   CircularStringLabeledReplaceList[str, rule, None];

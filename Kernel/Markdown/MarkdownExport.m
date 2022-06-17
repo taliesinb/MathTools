@@ -1,5 +1,4 @@
-PackageExport["$DefaultImportPath"]
-PackageExport["$DefaultExportPath"]
+PublicVariable[$DefaultImportPath, $DefaultExportPath]
 
 $DefaultImportPath = ExpandFileName @ "~";
 $DefaultExportPath = ExpandFileName @ "~";
@@ -14,74 +13,42 @@ $DefaultExportPath determines the default used when %ExportPath is not specified
 
 (**************************************************************************************************)
 
-PackageExport["ImportPath"]
+PublicOption[ImportPath, ExportPath, MarkdownFlavor, RasterizationPath, DisplayProgress, HeadingDepthOffset, IndexPagePath, IncludePrelude, DryRun]
 
 SetUsage @ "
 ImportPath is an option to various markdown-related functions that determines the import path.
 * The default value of ImportPath is $DefaultImportPath.
 "
 
-(**************************************************************************************************)
-
-PackageExport["ExportPath"]
-
 SetUsage @ "
 ExportPath is an option to various markdown-related functions that determines the export path.
 * The default value of ExportPath is $DefaultExportPath.
 "
 
-(**************************************************************************************************)
-
-PackageExport["MarkdownFlavor"]
-
 SetUsage @ "
 MarkdownFlavor is an option to various markdown-related functions.
 "
-
-(**************************************************************************************************)
-
-PackageExport["RasterizationPath"]
 
 SetUsage @ "
 RasterizationPath is an option to various markdown-related functions that determines the path to place rasterized outputs.
 * The default value of RasterizationPath is Automatic, which will use the relative directory './Outputs'.
 "
 
-(**************************************************************************************************)
-
-PackageExport["DisplayProgress"]
-
 SetUsage @ "
 DisplayProgress is an option to various markdown-related functions that determines whether to display progress interactively.
 "
-
-(**************************************************************************************************)
-
-PackageExport["HeadingDepthOffset"]
 
 SetUsage @ "
 HeadingDepthOffset is an option to various markdown-related functions.
 "
 
-(**************************************************************************************************)
-
-PackageExport["IndexPagePath"]
-
 SetUsage @ "
 IndexPagePath is an option to various markdown-related functions.
 "
 
-(**************************************************************************************************)
-
-PackageExport["IncludePrelude"]
-
 SetUsage @ "
 IncludePrelude is an option to various markdown-related functions.
 "
-
-(**************************************************************************************************)
-
-PackageExport["DryRun"]
 
 SetUsage @ "
 DryRun is an option to various markdown-related functions.
@@ -192,8 +159,8 @@ General::notmdext = "`` file specification `` does not end in \".md\"."
 
 (**************************************************************************************************)
 
-PackageExport["ExportToMarkdown"]
-PackageExport["CollatedPagePath"]
+PublicFunction[ExportToMarkdown]
+PublicOption[CollatedPagePath]
 
 General::badcpp = "Bad CollatedPagePath ``."
 
@@ -262,7 +229,7 @@ enumerateFiles[spec___, path_] := Scope[
 
 $notebookP = _File | _NotebookObject;
 
-PackageExport["$LastFailedMarkdownResult"]
+PublicVariable[$LastFailedMarkdownResult]
 
 General::nbimportfail = "Failed to convert notebook or notebooks ``. Invalid result available as $LastFailedMarkdownResult."
 doImportExport[spec:($notebookP | {$notebookP..}), exportPath_, True] := Scope[
@@ -295,7 +262,7 @@ toMDFileName[string_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GarbageCollectOutputImages"]
+PublicFunction[GarbageCollectOutputImages]
 
 Options[GarbageCollectOutputImages] = {
   MarkdownFlavor -> "Franklin",
@@ -349,7 +316,7 @@ GarbageCollectOutputImages[markdownSearchPath_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ExportNavigationPage"]
+PublicFunction[ExportNavigationPage]
 
 Options[ExportNavigationPage] = {
   IndexPagePath -> None
@@ -567,9 +534,9 @@ MacroEvaluate @ UnpackAssociation[$flavorData[None], fileImageTemplate, fileAnim
 
 (**************************************************************************************************)
 
-PackageExport["ToMarkdownString"]
+PublicFunction[ToMarkdownString]
 
-PackageScope["$inlineMathTemplate"]
+PrivateVariable[$inlineMathTemplate]
 
 Options[ToMarkdownString] = $genericMarkdownOptions;
 
@@ -844,7 +811,7 @@ getVideoRasterSize[path_] := CacheTo[$rasterSizeCache, path, First @ Information
 
 (**************************************************************************************************)
 
-PackageExport["WLLinearSyntaxRasterizationFunction"]
+PublicFunction[WLLinearSyntaxRasterizationFunction]
 
 WLLinearSyntaxRasterizationFunction[cell_] := Association[
   "type" -> "String",
@@ -922,7 +889,7 @@ toDimsString[{w_, h_}] := StringJoin[IntegerString[w, 10, 4], "_", IntegerString
 
 (**************************************************************************************************)
 
-PackageExport["DefaultRasterizationFunction"]
+PublicFunction[DefaultRasterizationFunction]
 
 DefaultRasterizationFunction[Cell[BoxData[t:TagBox[_, _BoxForm`AnimatedImageTag]], ___]] :=
   DefaultRasterizationFunction @ ToExpression[t, StandardForm];
@@ -942,7 +909,7 @@ rasterizeImage[obj_] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["textCellToMD"]
+PrivateFunction[textCellToMD]
 
 (* Todo: introduce simple caching *)
 
@@ -1001,7 +968,7 @@ iTextCellToMDOuter = Case[
 replaceIndentingNewlines[boxes_] :=
   VectorReplace[boxes, s_String :> StringReplace[s, "\[IndentingNewLine]"|"\n" -> "\\\\\n"]];
 
-PackageScope["iTextCellToMD"]
+PrivateFunction[iTextCellToMD]
 
 iTextCellToMD = Case[
   str_String :=

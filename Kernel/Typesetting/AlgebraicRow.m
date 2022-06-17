@@ -1,18 +1,11 @@
-PackageExport["MultiplicationForm"]
+PublicOption[MultiplicationForm, Headings]
 
-SetUsage @ "
-MultiplicationForm is an option to %AlgebraicRow and %AlgebraicGrid.
-"
-
-PackageExport["Headings"]
-
-SetUsage @ "
-Headings is an option to %AlgebraicRow and %AlgebraicGrid.
-"
+SetUsage @ "MultiplicationForm is an option to %AlgebraicRow and %AlgebraicGrid."
+SetUsage @ "Headings is an option to %AlgebraicRow and %AlgebraicGrid."
 
 (**************************************************************************************************)
 
-PackageExport["AlgebraicColumn"]
+PublicFunction[AlgebraicColumn]
 
 SetHoldAllComplete[AlgebraicColumn];
 
@@ -21,7 +14,7 @@ AlgebraicColumn[args___] := Scope[$arColumn = True; AlgebraicRow[args]];
 
 (**************************************************************************************************)
 
-PackageExport["PathAlgebraicForm"]
+PublicHead[PathAlgebraicForm]
 
 SetHoldAllComplete[PathAlgebraicForm];
 
@@ -33,7 +26,7 @@ declareBoxFormatting[
 
 SetHoldAllComplete[AlgebraicRow, AlgebraicGrid, algebraicForm, algebraicGridRow];
 
-PackageExport["AlgebraicRow"]
+PublicFunction[AlgebraicRow]
 
 Options[AlgebraicRow] = {
   MultiplicationForm -> "Dot"
@@ -55,7 +48,7 @@ AlgebraicRow[elements__] :=
 
 (**************************************************************************************************)
 
-PackageExport["AlgebraicGrid"]
+PublicFunction[AlgebraicGrid]
 
 Options[AlgebraicGrid] = {
   Headings -> None,
@@ -285,13 +278,13 @@ subscriptForm = Case[
 
 (**************************************************************************************************)
 
-PackageExport["Parentheses"]
+PublicFunction[Parentheses]
 
 Parentheses[e_] := e;
 
 (**************************************************************************************************)
 
-PackageExport["Grouped"]
+PublicFunction[Grouped]
 
 Grouped[e_] := e;
 

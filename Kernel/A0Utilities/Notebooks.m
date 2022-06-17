@@ -1,6 +1,4 @@
-(**************************************************************************************************)
-
-PackageExport["PreviousTextCell"]
+PublicFunction[PreviousTextCell]
 
 PreviousTextCell[] := Scope[
   cellExpr = NotebookRead @ PreviousCell[];
@@ -12,7 +10,7 @@ PreviousTextCell[] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["CopyImageToClipboard"]
+PublicFunction[CopyImageToClipboard]
 
 CopyImageToClipboard[expr_] := (
   CopyToClipboard @ Rasterize[expr, ImageFormattingWidth -> Infinity, ImageResolution -> 144];
@@ -21,7 +19,7 @@ CopyImageToClipboard[expr_] := (
 
 (**************************************************************************************************)
 
-PackageExport["CopyRetinaImageToClipboard"]
+PublicFunction[CopyRetinaImageToClipboard]
 
 CopyRetinaImageToClipboard[expr_, crop_:False] := (
   CopyToClipboard @ If[crop, ImageCrop, Identity] @ Rasterize[expr /. (RawImageSize -> _) -> Sequence[], ImageFormattingWidth -> Infinity, ImageResolution -> (144*2), Background -> Transparent];
@@ -30,7 +28,7 @@ CopyRetinaImageToClipboard[expr_, crop_:False] := (
 
 (**************************************************************************************************)
 
-PackageExport["FastCopyRetinaImageToClipboard"]
+PublicFunction[FastCopyRetinaImageToClipboard]
 
 FastCopyRetinaImageToClipboard[expr_, crop_:True] := (
   CopyToClipboard @ If[crop, ImageCrop, Identity] @ Rasterize[expr /. (RawImageSize -> _) -> Sequence[], ImageFormattingWidth -> Infinity, ImageResolution -> (144*2)];
@@ -39,7 +37,7 @@ FastCopyRetinaImageToClipboard[expr_, crop_:True] := (
 
 (**************************************************************************************************)
 
-PackageExport["InteractiveCopyRetinaImageToClipboard"]
+PublicFunction[InteractiveCopyRetinaImageToClipboard]
 
 InteractiveCopyRetinaImageToClipboard[expr_] := EventHandler[
   MouseAppearance[
@@ -51,7 +49,7 @@ InteractiveCopyRetinaImageToClipboard[expr_] := EventHandler[
 
 (**************************************************************************************************)
 
-PackageExport["CopyImageGalleryToClipboard"]
+PublicFunction[CopyImageGalleryToClipboard]
 
 $galleryCount = 0;
 newImageGalleryTempDir[] := Scope[
@@ -87,7 +85,7 @@ galleryRasterize = Case[
 
 (**************************************************************************************************)
 
-PackageExport["RemainingNotebook"]
+PublicFunction[RemainingNotebook]
 
 RemainingNotebook[] := Scope[
   cells = {};
@@ -105,9 +103,7 @@ RemainingNotebook[] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ReplaceInCurrentNotebook"]
-PackageExport["CellTypes"]
-PackageExport["ReplaceExistingNotebook"]
+PublicFunction[ReplaceInCurrentNotebook, CellTypes, ReplaceExistingNotebook]
 
 Options[ReplaceInCurrentNotebook] = {
   CellTypes -> Automatic,
@@ -129,7 +125,7 @@ toBoxRules = Case[
 
 (**************************************************************************************************)
 
-PackageExport["CellReplaceBoxes"]
+PublicFunction[CellReplaceBoxes]
 
 CellReplaceBoxes[nbData_, rule_, typePattern_:_] :=
   ReplaceAll[nbData,
@@ -139,7 +135,7 @@ CellReplaceBoxes[nbData_, rule_, typePattern_:_] :=
 
 (**************************************************************************************************)
 
-PackageExport["ReplaceBoxesInCurrentNotebook"]
+PublicFunction[ReplaceBoxesInCurrentNotebook]
 
 Options[ReplaceBoxesInCurrentNotebook] = Options[ReplaceInCurrentNotebook];
 

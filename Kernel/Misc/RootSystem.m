@@ -1,4 +1,4 @@
-PackageExport["RootSystemObject"]
+PublicObject[RootSystemObject]
 
 SetUsage @ "
 RootSystemObject[$$] represents a root system.
@@ -61,8 +61,9 @@ declareFormatting[
 
 RootVector /: Normal[RootVector[vec_]] := vec;
 
+(**************************************************************************************************)
 
-PackageExport["RootSystemObjectQ"]
+PublicFunction[RootSystemObjectQ]
 
 SetUsage @ "
 RootSystemObjectQ[obj$] represents True if obj$ is a valid RootSystemObject[$$].
@@ -71,13 +72,14 @@ RootSystemObjectQ[obj$] represents True if obj$ is a valid RootSystemObject[$$].
 RootSystemObjectQ[_RootSystemObject ? System`Private`NoEntryQ] := True;
 RootSystemObjectQ[_] := False;
 
+(**************************************************************************************************)
 
 declareObjectPropertyDispatch[RootSystemObject, rootSystemProperty];
 
 rootSystemProperty[data_, "CoordinateFunction"] :=
   rootsCoordinateFunction @ data["SimpleRoots"];
 
-PackageScope["rootsCoordinateFunction"]
+PrivateFunction[rootsCoordinateFunction]
 
 rootsCoordinateFunction[simpleRoots_] := With[
   {inverseMatrix = Transpose @ PseudoInverse @ simpleRoots},
@@ -120,8 +122,9 @@ plotRootSystemObject[data_] := Scope[
 
 $rootPlotStyle = Sequence[PlotRangePadding -> Scaled[0.1], FrameStyle -> Gray, FrameTicks -> None];
 
+(**************************************************************************************************)
 
-PackageExport["RootPlot"]
+PublicFunction[RootPlot]
 
 SetUsage @ "
 RootPlot[roots$] will plot a list of roots in a small 2D or 3D Graphics object.
@@ -160,9 +163,9 @@ rootPlot3D[tuples_, norm_, opts___] := Graphics3D[
   opts
 ];
 
+(**************************************************************************************************)
 
-
-PackageExport["RootSystem"]
+PublicFunction[RootSystem]
 
 SetUsage @ "
 RootSystem['name$'] returns a RootSystemObject[$$] for the root system named 'name$'.
@@ -170,7 +173,7 @@ RootSystem['name$'] returns a RootSystemObject[$$] for the root system named 'na
 
 DeclareArgumentCount[RootSystem, 1];
 
-PackageExport["$NamedRootSystems"]
+PublicVariable[$NamedRootSystems]
 
 $NamedRootSystems = StringSplit["A1 D2 A2 B2 G2 C2 B3"];
 

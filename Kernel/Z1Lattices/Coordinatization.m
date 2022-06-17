@@ -1,4 +1,4 @@
-PackageExport["FindCoordinatizationFunction"]
+PublicFunction[FindCoordinatizationFunction]
 
 Options[FindCoordinatizationFunction] = {"Group" -> None, Modulus -> None};
 
@@ -71,7 +71,7 @@ findSubCoordinatization[matrices_, {m_, n_}] := Scope[
 BasisInversionMatrixQ[matrix_] :=
   IdentityMatrixQ[Abs @ matrix] && Count[Diagonal @ matrix, -1] == 1;
 
-PackageScope["chooseLatticeCoordinatization"]
+PrivateFunction[chooseLatticeCoordinatization]
 
 (* this should return {is3D, func}, where func takes a coordinate vector
 and produces a 2D or 3D coordinate *)
@@ -97,7 +97,7 @@ chooseLatticeCoordinatization[{Repeated["Infinite", 3]}, False] :=
 $abc = Transpose @ N @ {{Sqrt[3]/2, -(1/2)}, {0, 1}, {-(Sqrt[3]/2), -(1/2)}};
 dotABC[e_] := Dot[$abc, e];
 
-PackageExport["DotABC"]
+PublicFunction[DotABC]
 
 DotABC[e_] := Dot[$abc, e];
 

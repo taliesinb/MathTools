@@ -1,4 +1,4 @@
-PackageExport["$KatexPrelude"]
+PublicVariable[$KatexPrelude]
 
 importLocalUTF8[localFile__] := ImportUTF8 @ FileNameJoin[{$PackageDirectory, localFile}];
 
@@ -6,7 +6,7 @@ $KatexPrelude = importLocalUTF8["Markdown", "KatexPrelude.tex"];
 
 (**************************************************************************************************)
 
-PackageExport["$SymbolTranslationTable"]
+PublicVariable[$SymbolTranslationTable]
 
 $SymbolTranslationTable = Block[{str},
   rawString = importLocalUTF8["Markdown", "SymbolTranslation.txt"];
@@ -18,7 +18,7 @@ $SymbolTranslationTable = Block[{str},
 
 (**************************************************************************************************)
 
-PackageExport["SymbolTranslationData"]
+PublicFunction[SymbolTranslationData]
 
 SymbolTranslationData[assoc_Association] :=
   Association @ SymbolTranslationData[Normal @ assoc];
@@ -44,16 +44,16 @@ makeLiteralReplacementRule[assoc_, wrap_] := ModuleScope[
   ]
 ];
 
-PackageExport["$WLSymbolToKatexRegex"]
+PublicVariable[$WLSymbolToKatexRegex]
 
 $WLSymbolToKatexRegex = makeLiteralReplacementRule[SymbolTranslationData[<|"Symbol" -> "Katex"|>], True]
 
-PackageExport["$WLSymbolToUnicode"]
+PublicVariable[$WLSymbolToUnicode]
 
 $WLSymbolToUnicode = makeLiteralReplacementRule[SymbolTranslationData[<|"Symbol" -> "Unicode"|>], False]
 
 (**************************************************************************************************)
 
-PackageScope["$TemplateKatexFunction"]
+PrivateVariable[$TemplateKatexFunction]
 
 $TemplateKatexFunction = <||>;

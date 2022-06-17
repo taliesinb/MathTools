@@ -1,17 +1,17 @@
-PackageExport["RuleListQ"]
+PublicFunction[RuleListQ]
 
 RuleListQ[$RuleListPattern] := True;
 RuleListQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["SameHeadQ"]
+PublicFunction[SameHeadQ]
 
 SameHeadQ[a_, b_] := Head[a] === Head[b];
 
 (**************************************************************************************************)
 
-PackageExport["SameLengthQ"]
+PublicFunction[SameLengthQ]
 
 SetUsage @ "
 SameLengthQ[a$, b$] gives True if %Length[a$] === %Length[b$].
@@ -22,7 +22,7 @@ SameLengthQ[a_][b_] := SameLengthQ[a, b];
 
 (**************************************************************************************************)
 
-PackageExport["RealVectorQ"]
+PublicFunction[RealVectorQ]
 
 SetUsage @ "
 RealVectorQ[list$] gives True if list$ is a vector of real-valued numbers.
@@ -33,7 +33,7 @@ RealVectorQ[list_] := VectorQ[list, Internal`RealValuedNumberQ];
 
 (**************************************************************************************************)
 
-PackageExport["IntegerVectorQ"]
+PublicFunction[IntegerVectorQ]
 
 SetUsage @ "
 IntegerVectorQ[list$] gives True if list$ is a vector of integers.
@@ -43,7 +43,7 @@ IntegerVectorQ[list_] := VectorQ[list, IntegerQ];
 
 (**************************************************************************************************)
 
-PackageExport["PositiveIntegerVectorQ"]
+PublicFunction[PositiveIntegerVectorQ]
 
 SetUsage @ "
 IntegerVectorQ[list$] gives True if list$ is a vector of integers.
@@ -53,7 +53,7 @@ PositiveIntegerVectorQ[list_] := VectorQ[list, PositiveIntegerQ];
 
 (**************************************************************************************************)
 
-PackageExport["UnitIntervalArrayQ"]
+PublicFunction[UnitIntervalArrayQ]
 
 SetUsage @ "
 UnitIntervalArrayQ[arr$] gives True if arr$ is an array whose values are between 0 and 1 inclusive.
@@ -66,7 +66,7 @@ UnitIntervalArrayQ[arr_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["RealMatrixQ"]
+PublicFunction[RealMatrixQ]
 
 SetUsage @ "
 RealVectorQ[list$] gives True if list$ is a matrix of real-valued numbers.
@@ -77,7 +77,7 @@ RealMatrixQ[list_] := MatrixQ[list, Internal`RealValuedNumberQ];
 
 (**************************************************************************************************)
 
-PackageExport["ComplexVectorQ"]
+PublicFunction[ComplexVectorQ]
 
 SetUsage @ "
 ComplexVectorQ[list$] gives True if list$ is a vector of complex-valued numbers.
@@ -89,7 +89,7 @@ ComplexVectorQ[list_] := VectorQ[list, NumericQ] && !FreeQ[list, Complex];
 
 (**************************************************************************************************)
 
-PackageExport["ContainsComplexQ"]
+PublicFunction[ContainsComplexQ]
 
 SetUsage @ "
 ContainsComplexQ[expr$] gives True if expr$ contains at least one Complex expression.
@@ -100,7 +100,7 @@ ContainsComplexQ[expr_] := !FreeQ[expr, Complex];
 
 (**************************************************************************************************)
 
-PackageExport["ContainsNegativeQ"]
+PublicFunction[ContainsNegativeQ]
 
 SetUsage @ "
 ContainsNegativeQ[expr$] gives True if expr$ contains at least one negative real, rational, or integer.
@@ -110,7 +110,7 @@ ContainsNegativeQ[expr_] := !FreeQ[expr, n_Real | n_Rational | n_Integer ? Negat
 
 (**************************************************************************************************)
 
-PackageExport["RangeQ"]
+PublicFunction[RangeQ]
 
 SetRelatedSymbolGroup[RangeQ, PermutedRangeQ]
 
@@ -122,7 +122,7 @@ RangeQ[list_] := PermutedRangeQ[list] && OrderedQ[list];
 
 (**************************************************************************************************)
 
-PackageExport["PermutedRangeQ"]
+PublicFunction[PermutedRangeQ]
 
 SetUsage @ "
 PermutedRangeQ[list$] gives True if list$ is a permutation of {1, 2, $$, n$}.
@@ -132,23 +132,21 @@ PermutedRangeQ[list_] := VectorQ[list, IntegerQ] && MinMax[list] == {1, Length @
 
 (**************************************************************************************************)
 
-PackageExport["AllSameQ"]
-PackageExport["NotAllSameQ"]
+PublicFunction[AllSameQ, NotAllSameQ]
 
 AllSameQ[e_] := SameQ @@ e;
 NotAllSameQ[e_] := Not[SameQ @@ e];
 
 (**************************************************************************************************)
 
-PackageExport["AllEqualQ"]
-PackageExport["NotAllEqualQ"]
+PublicFunction[AllEqualQ, NotAllEqualQ]
 
 AllEqualQ[e_] := Equal @@ e;
 NotAllEqualQ[e_] := Not[Equal @@ e];
 
 (**************************************************************************************************)
 
-PackageExport["NotMatchQ"]
+PublicFunction[NotMatchQ]
 
 NotMatchQ[a_, b_] := !MatchQ[a, b];
 NotMatchQ[b_][a_] := !MatchQ[a, b];

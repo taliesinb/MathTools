@@ -1,7 +1,8 @@
 triProdInputQ[a_, b_, c_] := And[ArrayQ[a], ArrayQ[b], ArrayQ[c]];
 
+(**************************************************************************************************)
 
-PackageExport["Tricone"]
+PublicFunction[Tricone]
 
 Tricone[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
   dims = Dimensions /@ {a, b, c};
@@ -18,7 +19,7 @@ Tricone[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["Triblade"]
+PublicFunction[Triblade]
 
 Triblade[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
   dims = Dimensions /@ {a, b, c};
@@ -35,7 +36,7 @@ Triblade[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["Triforce"]
+PublicFunction[Triforce]
 
 Triforce[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
   dims = Dimensions /@ {a, b, c};
@@ -52,7 +53,7 @@ Triforce[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["Fish"]
+PublicFunction[Fish]
 
 Fish[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
   dims = Dimensions /@ {a, b, c};
@@ -69,22 +70,21 @@ Fish[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ThreeArrayQ"]
-PackageExport["CubixQ"]
+PublicFunction[ThreeArrayQ, CubixQ]
 
 ThreeArrayQ[arr_] := ArrayQ[arr, 3];
 CubixQ[arr_, n_] := ArrayQ[arr, 3] && AllSameQ[Dimensions[arr]];
 
 (**************************************************************************************************)
 
-PackageExport["KroneckerCubix"]
+PublicFunction[KroneckerCubix]
 
 KroneckerCubix[n_] := Array[KroneckerDelta, {n, n, n}];
 KroneckerCubix[{na_, nb_, nc_}] := Array[KroneckerDelta, {n, n, n}];
 
 (**************************************************************************************************)
 
-PackageExport["PartialKroneckerCubices"]
+PublicFunction[PartialKroneckerCubices]
 
 PartialKroneckerCubices[n_] := {
   Array[KroneckerDelta[#2, #3]&, {n, n, n}],
@@ -94,14 +94,15 @@ PartialKroneckerCubices[n_] := {
 
 (**************************************************************************************************)
 
-PackageExport["RandomCubix"]
+PublicFunction[RandomCubix]
 
 RandomCubix[n_:3] := RandomInteger[{-1, 1}, {n, n, n}];
 RandomCubix[n_, k_] := Table[RandomCubix[n], k];
 
 (**************************************************************************************************)
 
-PackageExport["ThreeMatrixForm"]
+PublicForm[ThreeMatrixForm]
+PrivateForm[ThreeMatrixForm]
 
 declareBoxFormatting[
   ThreeMatrixForm[expr_] :> ToBoxes[expr /. m_List ? ThreeArrayQ :> SingleThreeMatrixForm[m]],

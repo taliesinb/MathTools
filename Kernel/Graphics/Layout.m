@@ -1,27 +1,4 @@
-PackageExport["EchoGraphicsScope"]
-PackageExport["EchoGraphics"]
-
-SetHoldAllComplete[EchoGraphicsScope];
-EchoGraphicsScope[e_] := Scope[
-	$prims = {};
-	res = e;
-	n = Length[$prims]; $i = 1;
-	Print @ Graphics[
-		Map[{Opacity[$i++ / n], #}&, $prims],
-		Frame -> True, PlotRangePadding -> Scaled[0.1]
-	];
-	res
-];
-
-
-PackageExport["EchoGraphics"]
-
-EchoGraphics[e_] := (AppendTo[$prims, e]; e);
-EchoGraphics[{x_ ? RealVectorQ, y_ ? RealVectorQ}] := (EchoGraphics @ Transpose @ {x, y}; {x, y});
-EchoGraphics[points_ ? RealMatrixQ] := (AppendTo[$prims, Point @ points]; points);
-
-
-PackageExport["ElectricalBalanceX"]
+PublicFunction[ElectricalBalanceX]
 
 (* applies electrical repulsion, but only along the x axis, and only for y values that are very similar *)
 
@@ -36,8 +13,9 @@ ElectricalBalanceX[x_, y_, n_, delta_] := Scope[
 	ToPackedReal @ Flatten @ x
 ]
 
+(**************************************************************************************************)
 
-PackageExport["ElectricalGravitationalBalanceX"]
+PublicFunction[ElectricalGravitationalBalanceX]
 
 (*
 applies electrical repulsion to points that are near each-other in y values.
@@ -48,21 +26,23 @@ and parents. the graph itself is passed in (should be an index graph).
 
 ElectricalGravitationalBalanceX[x_, y_, graph_, n_, delta_] := Scope[
 	x = ToPackedReal[x];
-	yDist = ToPackedReal[10.0 * SquaredDistanceMatrix[y] + 0.1];
+	yDist = ToPackedReal[100000.0 * SquaredDistanceMatrix[y] + 0.1];
 	adj = AdjacencyMatrix @ graph;
-	symAdjMatrix = BitOr[adj, Transpose @ adj, IdentityMatrix @ Length @ adj];
-	sqrtNumAdj = Sqrt @ Total[symAdjMatrix, {2}];
-	meanAdjMatrix = ToPackedReal @ Map[LengthNormalize, symAdjMatrix];
+	symAdjMatrix = MatrixMax[adj, Transpose @ adj, 0.1 * (IdentityMatrix @ Length @ adj)];
+	sqrtNumAdj = Sqrt @ RowTotals[symAdjMatrix];
+	meanAdjMatrix = ToPackedReal @ Map[TotalNormalize, symAdjMatrix];
 	(* TODO: Test SparseArray applied to meanAdjMatrix *)
 	Do[
 		dx = DifferenceMatrix[x]; x2 = SquaredDistanceMatrix[x];
 		repulse = Total[dx / (x2 + yDist), {1}];
-		attract = (x - Dot[meanAdjMatrix, x]) * sqrtNumAdj;
+		attract = x - Dot[meanAdjMatrix, x];
+		attract *= sqrtNumAdj;
 		x -= delta * (repulse + attract);
 	,
 		{n}
 	];
-	x
+	dx = (EuclideanDistance @@ MinMax[x]) / 20;
+	MeanShift[x, dx]
 ]
 
 

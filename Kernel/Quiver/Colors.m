@@ -1,4 +1,4 @@
-PackageExport["LookupCardinalColors"]
+PublicFunction[LookupCardinalColors]
 
 SetUsage @ "
 LookupCardinalColors[quiver$] returns the association of cardinals to colors for quiver$.
@@ -55,7 +55,7 @@ LookupCardinalColors[_] := $Failed;
 
 (**************************************************************************************************)
 
-PackageExport["ChooseCardinalColors"]
+PublicFunction[ChooseCardinalColors]
 
 ChooseCardinalColors[None, ___] := <||>;
 

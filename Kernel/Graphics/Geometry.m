@@ -1,4 +1,4 @@
-PackageExport["ProjectionOnto"]
+PublicFunction[ProjectionOnto]
 
 SetUsage @ "
 ProjectionOnto can be applied to a graph via EdgeShapeFunction -> ProjectionOnto[shape] to \
@@ -7,7 +7,7 @@ indicate edges should be drawn projected onto shape.
 
 (**************************************************************************************************)
 
-PackageExport["Torus"]
+PublicHead[Torus]
 
 SetUsage @ "
 Torus[r$1, r$2] represents a torus on the x$, y$ plane with small radius r$1 and large radius r$2.
@@ -26,7 +26,7 @@ Torus /: BoundaryDiscretizeRegion[Torus[{R_, r_}], opts___Rule] := With[
 
 (**************************************************************************************************)
 
-PackageExport["TorusSurfacePolygon"]
+PublicFunction[TorusSurfacePolygon]
 
 TorusSurfacePolygon[t:Torus[{_, r_}], opts___Rule] :=
   First @ RegionPolygon @ BoundaryDiscretizeRegion[
@@ -37,20 +37,20 @@ TorusSurfacePolygon[t:Torus[{_, r_}], opts___Rule] :=
 
 (**************************************************************************************************)
 
-PackageExport["TubeVector"]
+PublicFunction[TubeVector]
 
 TubeVector[r_][{x_, y_}] := {x, r * Sin[y], r * Cos[y]};
 
 (**************************************************************************************************)
 
-PackageExport["TorusCenterVector"]
+PublicFunction[TorusCenterVector]
 
 TorusCenterVector[R_ | {R_, _}, theta_] :=
   tMatrix @ Thread @ {d * Cos[phi], d * Sin[phi], 0};
 
 (**************************************************************************************************)
 
-PackageExport["TorusVector"]
+PublicFunction[TorusVector]
 
 TorusVector[{R_, r_}, {phi_, theta_}] := Scope[
   d = R + r * Cos[theta];
@@ -64,7 +64,7 @@ tMatrix[v_] := v;
 
 (**************************************************************************************************)
 
-PackageExport["TorusAngles"]
+PublicFunction[TorusAngles]
 
 TorusAngles[{R_, r_}, v_] := Scope[
   phi = ArcTan[Part[v, 1], Part[v, 2]];
@@ -76,14 +76,14 @@ TorusAngles[{R_, r_}, v_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ArcTan2"]
+PublicFunction[ArcTan2]
 
 ArcTan2[0.|0, 0|0.] := 0;
 ArcTan2[x_, y_] := ArcTan[x, y];
 
 (**************************************************************************************************)
 
-PackageExport["BoundaryProjection"]
+PublicFunction[BoundaryProjection]
 
 BoundaryProjection[shape_] := Quiet @ Check[
   RegionNearest @ RegionBoundary @ BoundaryDiscretizeRegion[
@@ -113,7 +113,7 @@ TorusInterpolated[spec_, v1_, v2_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["RegionPolygon"]
+PublicFunction[RegionPolygon]
 
 RegionPolygon[region_] :=
   regionComponentPolygon /@ ConnectedMeshComponents[region];
@@ -129,7 +129,7 @@ regionComponentPolygon[region_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["DiscretizeCurve"]
+PublicFunction[DiscretizeCurve]
 
 DiscretizeCurve[points_, f_:BezierCurve] := Scope[
   region = DiscretizeGraphics @ f @ ToPacked @ points;
@@ -138,7 +138,7 @@ DiscretizeCurve[points_, f_:BezierCurve] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PointDilationGraphics"]
+PublicFunction[PointDilationGraphics]
 
 PointDilationGraphics[points_, r_] := Scope[
   points = ToPacked[points];
@@ -176,7 +176,7 @@ pointDilationRegion[points_, d_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["BoundingBoxPointIndices"]
+PublicFunction[BoundingBoxPointIndices]
 
 BoundingBoxPointIndices[points_, dscale_:0.01] := Scope[
   bbox = CoordinateBoundingBox @ points;
@@ -196,7 +196,7 @@ BoundingBoxPointIndices[points_, dscale_:0.01] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ConvexHullLineIndices"]
+PublicFunction[ConvexHullLineIndices]
 
 ConvexHullLineIndices[points_] :=
   If[Length[points] <= 3,
@@ -204,7 +204,7 @@ ConvexHullLineIndices[points_] :=
     Quiet @ Check[WolframCGL`QuickHull @ ToPackedReal @ points, $Failed]
   ];
 
-PackageExport["ConvexHullPointIndices"]
+PublicFunction[ConvexHullPointIndices]
 
 ConvexHullPointIndices[points_] := Scope[
   indices = ConvexHullLineIndices @ points;
@@ -213,7 +213,7 @@ ConvexHullPointIndices[points_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VectorBetween"]
+PublicFunction[VectorBetween]
 
 VectorBetween[x_, {l_, h_}] := And @@ MapThread[LessEqual, {l, x, h}];
 VectorBetween[{x_, y_}, {{xl_, xh_}, {yl_, yh_}}] := xl <= x <= xh && yl <= y <= yh;
@@ -222,7 +222,7 @@ VectorBetween[lh_][x_] := VectorBetween[x, lh];
 
 (**************************************************************************************************)
 
-PackageExport["FindRigidTransform"]
+PublicFunction[FindRigidTransform]
 
 FindRigidTransform[{a1_, a1_}, {b1_, b1_}] := TranslationTransform[b1 - a1];
 FindRigidTransform[{a1_, a2_}, {a1_, a2_}] := Identity;
@@ -239,9 +239,7 @@ FindRigidTransform[{a1_, a2_}, {b1_, b2_}] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["BandRadii"]
-PackageExport["BandPoints"]
-PackageExport["BandTwists"]
+PublicOption[BandRadii, BandPoints, BandTwists]
 
 (**************************************************************************************************)
 
@@ -257,7 +255,7 @@ bandThetas[1, x_List] := Pi/2 * Map[bandEasingFunction, x];
 bandThetas[0, x_List] := ConstantArray[0, Length @ x];
 
 
-PackageExport["BandBoundaryPoints"]
+PublicFunction[BandBoundaryPoints]
 
 Options[BandBoundaryPoints] = {
   BandRadii -> {5, 2},
@@ -277,7 +275,7 @@ BandBoundaryPoints[OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["BandGraphicsComplex"]
+PublicFunction[BandGraphicsComplex]
 
 Options[BandGraphicsComplex] = JoinOptions[
   BandBoundaryPoints
@@ -302,7 +300,7 @@ bandFacePoly[{a_, b_}, {c_, d_}] := {a, c, d, b};
 
 (**************************************************************************************************)
 
-PackageExport["BandCurvePoints"]
+PublicFunction[BandCurvePoints]
 
 Options[BandCurvePoints] = JoinOptions[
   BandBoundaryPoints
@@ -348,7 +346,7 @@ BandCurveProject[points_ ? CoordinateMatrixQ, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["BandAxisPoints"]
+PublicFunction[BandAxisPoints]
 
 Options[BandAxisPoints] = JoinOptions[
   BandBoundaryPoints
@@ -364,8 +362,8 @@ BandAxisPoints[opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["BandPlot2D"]
-PackageExport["AxisColors"]
+PublicFunction[BandPlot2D]
+PublicOption[AxisColors]
 
 Options[BandPlot2D] = JoinOptions[
   "Endpoints" -> True,
@@ -417,7 +415,7 @@ makeOpenPoint3D[p_] := {
 
 (**************************************************************************************************)
 
-PackageExport["BandPlot3D"]
+PublicFunction[BandPlot3D]
 
 Options[BandPlot3D] = JoinOptions[
   EdgeThickness -> 2,
@@ -470,7 +468,7 @@ $coordinateHeads = Point|Line|Arrow|Polygon;
 
 (**************************************************************************************************)
 
-PackageExport["BandMeshRegion"]
+PublicFunction[BandMeshRegion]
 
 BandMeshRegion[args___] := Scope[
   {p1, p2} = BandBoundaryPoints[args];

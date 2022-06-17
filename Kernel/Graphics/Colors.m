@@ -1,12 +1,10 @@
-(**************************************************************************************************)
-
-PackageExport["ColorHexString"]
+PublicFunction[ColorHexString]
 
 ColorHexString[color_] := StringDrop[Image`Utilities`toHEXcolor[color], 1];
 
 (**************************************************************************************************)
 
-PackageExport["SetColorOpacity"]
+PublicFunction[SetColorOpacity]
 
 $setColorOpacityRules = Dispatch[{
   RGBColor[r_, g_, b_] :> RGBColor[r, g, b, $opacity],
@@ -27,7 +25,7 @@ SetColorOpacity[opacity_][expr_] :=
 
 (**************************************************************************************************)
 
-PackageExport["SetColorLightness"]
+PublicFunction[SetColorLightness]
 
 SetColorLightness[expr_, lightness_] :=
   expr /. c:$ColorPattern :> RuleCondition @ OklabSetLightness[c, lightness];
@@ -37,7 +35,7 @@ SetColorLightness[lightness_][expr_] :=
 
 (**************************************************************************************************)
 
-PackageExport["RemoveColorOpacity"]
+PublicFunction[RemoveColorOpacity]
 
 $removeColorOpacityRules = Dispatch[{
   Opacity[_, c_] :> c,
@@ -52,7 +50,7 @@ RemoveColorOpacity[expr_] :=
 
 (**************************************************************************************************)
 
-PackageExport["ContainsOpacityColorsQ"]
+PublicFunction[ContainsOpacityColorsQ]
 
 $opacityColorsPattern = Alternatives[
   RGBColor[{_, _, _, _}],
@@ -65,7 +63,7 @@ ContainsOpacityColorsQ[expr_] := !FreeQ[expr, $opacityColorsPattern];
 
 (**************************************************************************************************)
 
-PackageExport["ExtractFirstOpacity"]
+PublicFunction[ExtractFirstOpacity]
 
 $opacityRule = Alternatives[
   RGBColor[{_, _, _, o_}], GrayLevel[_, o_], Opacity[o_], Opacity[o_, _],
@@ -77,20 +75,20 @@ ExtractFirstOpacity[expr_] := FirstCase[expr /. $opacityNormalizationRules, $opa
 
 (**************************************************************************************************)
 
-PackageExport["ColorOpacity"]
+PublicFunction[ColorOpacity]
 
 ColorOpacity[color_] := FirstCase[Replace[color, $opacityNormalizationRules], $opacityRule, 1, {0}];
 
 (**************************************************************************************************)
 
-PackageExport["ColorVectorQ"]
+PublicFunction[ColorVectorQ]
 
 ColorVectorQ[{Repeated[$ColorPattern]}] := True;
 ColorVectorQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["OklabColor"]
+PublicFunction[OklabColor]
 
 SetUsage @ "
 OklabColor[l$, a$, b$] returns an %RGBColor[$$] corresponding to the given color in the OkLAB colorspace.
@@ -136,7 +134,7 @@ RGBToSRGB[x_] := If[x >= 0.04045, ((x + 0.055)/(1 + 0.055))^2.4, x / 12.92];
 
 (**************************************************************************************************)
 
-PackageExport["OklabLightness"]
+PublicFunction[OklabLightness]
 
 OklabLightness[color_] := Scope[
   ok = ToOklab[color];
@@ -145,7 +143,7 @@ OklabLightness[color_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["OklabSetLightness"]
+PublicFunction[OklabSetLightness]
 
 (* TODO: do this properly inside ToOklab *)
 OklabSetLightness[color:$opacityColorsPattern, lightness_] :=
@@ -165,8 +163,7 @@ OklabSetLightness[color_, lightness_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["OklabDarker"]
-PackageExport["OklabLighter"]
+PublicFunction[OklabDarker, OklabLighter]
 
 timesMatrix[vec1_, vec2_] := If[MatrixQ[vec2], vec1 * #& /@ vec2, vec1 * vec2];
 OklabDarker[color_, amount_:.2] := FromOklab @ timesMatrix[{1 - amount, 1, 1}, ToOklab @ color];
@@ -174,24 +171,21 @@ OklabLighter[color_, amount_:.25] := OklabDarker[color, -amount];
 
 (**************************************************************************************************)
 
-PackageExport["OklabPaler"]
-PackageExport["OklabDeeper"]
+PublicFunction[OklabPaler, OklabDeeper]
 
 OklabPaler[color_, amount_:.2] := FromOklab @ timesMatrix[{1 + amount, 1 - amount, 1 - amount}, ToOklab @ color];
 OklabDeeper[color_, amount_:.2] := OklabPaler[color, -amount];
 
 (**************************************************************************************************)
 
-PackageExport["OklabToRGB"]
-PackageExport["RGBToOklab"]
+PublicFunction[OklabToRGB, RGBToOklab]
 
 RGBToOklab[rgb_List] := SRGBToOklab @ RGBToSRGB @ rgb;
 OklabToRGB[lab_List] := Clip[SRGBToRGB @ OklabToSRGB @ lab, {0., 1.}];
 
 (**************************************************************************************************)
 
-PackageExport["ToOklab"]
-PackageExport["FromOklab"]
+PublicFunction[ToOklab, FromOklab]
 
 ToOklab[RGBColor[r_, g_, b_]] := RGBToOklab[{r, g, b}];
 ToOklab[RGBColor[rgb:{_, _, _}]] := RGBToOklab[rgb];
@@ -216,69 +210,43 @@ normalizeLightness[colors_, fraction_:1] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["ToRGB"]
+PrivateFunction[ToRGB]
 
 ToRGB[e_] := ReplaceAll[e, $toRGBRules];
 
 (**************************************************************************************************)
 
-PackageExport["NormalizeColorLightness"]
+PublicFunction[NormalizeColorLightness]
 
 NormalizeColorLightness[colors_List, fraction_:1] :=
   normalizeLightness[colors, fraction];
 
 (**************************************************************************************************)
 
-PackageExport["$ColorPalette"]
+PublicVariable[$ColorPalette]
 
-PackageExport["$Blue"]
-PackageExport["$Red"]
-PackageExport["$Yellow"]
-PackageExport["$Green"]
-PackageExport["$Pink"]
-PackageExport["$Teal"]
-PackageExport["$Orange"]
-PackageExport["$Purple"]
-PackageExport["$Gray"]
+PublicVariable[$Blue, $Red, $Yellow, $Green, $Pink, $Teal, $Orange, $Purple, $Gray]
 
 {$Blue, $Red, $Green, $Pink, $Teal, $Yellow, $Orange, $Purple, $Gray} =
   Map[RGBColor, StringSplit @ "#3e81c3 #e1432d #4ea82a #c74883 #47a5a7 #f6e259 #dc841a #8b7ebe #929292"]
 
 $ColorPalette = {$Red, $Blue, $Green, $Orange, $Purple, $Teal, $Gray, $Pink, $Yellow};
 
-PackageExport["$DarkColorPalette"]
-PackageExport["$DarkBlue"]
-PackageExport["$DarkRed"]
-PackageExport["$DarkYellow"]
-PackageExport["$DarkGreen"]
-PackageExport["$DarkPink"]
-PackageExport["$DarkTeal"]
-PackageExport["$DarkOrange"]
-PackageExport["$DarkPurple"]
-PackageExport["$DarkGray"]
+PublicVariable[$DarkColorPalette, $DarkBlue, $DarkRed, $DarkYellow, $DarkGreen, $DarkPink, $DarkTeal, $DarkOrange, $DarkPurple, $DarkGray]
 
 {$DarkRed, $DarkBlue, $DarkGreen, $DarkOrange, $DarkPurple, $DarkTeal, $DarkGray, $DarkPink, $DarkYellow} =
   $DarkColorPalette = OklabDarker @ $ColorPalette;
 
-PackageExport["$LightColorPalette"]
-PackageExport["$LightBlue"]
-PackageExport["$LightRed"]
-PackageExport["$LightYellow"]
-PackageExport["$LightGreen"]
-PackageExport["$LightPink"]
-PackageExport["$LightTeal"]
-PackageExport["$LightOrange"]
-PackageExport["$LightPurple"]
-PackageExport["$LightGray"]
+PublicVariable[$LightColorPalette, $LightBlue, $LightRed, $LightYellow, $LightGreen, $LightPink, $LightTeal, $LightOrange, $LightPurple, $LightGray]
 
 {$LightRed, $LightBlue, $LightGreen, $LightOrange, $LightPurple, $LightTeal, $LightGray, $LightPink, $LightYellow} =
   $LightColorPalette = OklabLighter @ $ColorPalette;
 
 (**************************************************************************************************)
 
-PackageExport["Paletted"]
+PublicHead[Paletted]
 
-PackageScope["$paletteUsageString"]
+PrivateVariable[$paletteUsageString]
 
 $paletteUsageString = StringTrim @ "
 * palette$ can be an one of the following:
@@ -302,7 +270,7 @@ palette$.
 
 (**************************************************************************************************)
 
-PackageExport["ToColorPalette"]
+PublicFunction[ToColorPalette]
 
 SetUsage @ "
 ToColorPalette[palette$] returns an explicit list of colors from a palette specification.
@@ -344,7 +312,7 @@ expandColorPalette[colors_] := Join[colors, OklabBlend /@ (UnorderedPairs @ colo
 
 (**************************************************************************************************)
 
-PackageExport["GrayColorQ"]
+PublicFunction[GrayColorQ]
 
 GrayColorQ[_GrayLevel] := True;
 GrayColorQ[r_RGBColor] := SameQ @@ Round[Flatten @ Apply[List, r], .05];
@@ -352,7 +320,7 @@ GrayColorQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["OklabBlend"]
+PublicFunction[OklabBlend]
 
 SetUsage @ "
 OklabBlend[colors$] blends a list of ordinary colors, but in OkLAB colorspace.
@@ -364,7 +332,7 @@ OklabBlend[colors_List] := FromOklab @ Mean @ ToOklab[colors];
 
 (**************************************************************************************************)
 
-PackageExport["HumanBlend"]
+PublicFunction[HumanBlend]
 
 HumanBlend[colors_List] := iHumanBlend @ Sort @ colors;
 
@@ -398,7 +366,7 @@ iHumanBlend = Case[
 
 (**************************************************************************************************)
 
-PackageExport["ContinuousColorFunction"]
+PublicFunction[ContinuousColorFunction]
 
 SetUsage @ "
 ContinuousColorFunction[{v$1, $$, v$n}, {c$1, $$, c$n}] returns a function that will take a value \
@@ -465,7 +433,7 @@ ContinuousColorFunction[values_, colors_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["DiscreteColorFunction"]
+PublicFunction[DiscreteColorFunction]
 
 SetUsage @ "
 DiscreteColorFunction[{v$1, $$, v$n}, {c$1, $$, c$n}] returns a %ColorFunctionObject that takes a value \
@@ -483,7 +451,7 @@ DiscreteColorFunction::toobig = "The list of values is too large (having `` valu
 
 setupColorRuleDispatch[DiscreteColorFunction];
 
-PackageScope["$BooleanColors"]
+PrivateVariable[$BooleanColors]
 
 $BooleanColors = {GrayLevel[0.9], GrayLevel[0.1]};
 
@@ -515,7 +483,7 @@ DiscreteColorFunction[values_, colors_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ColorFunctionCompose"]
+PublicFunction[ColorFunctionCompose]
 
 ColorFunctionCompose[cfunc_ColorFunctionObject ? System`Private`NoEntryQ, func_] :=
   cfuncCompose[cfunc, func];
@@ -527,14 +495,14 @@ cfuncCompose[ColorFunctionObject[type_, values_, func_, ticks_], composedFunc_] 
 
 (**************************************************************************************************)
 
-PackageExport["ColorFunctionObjectQ"]
+PublicFunction[ColorFunctionObjectQ]
 
 ColorFunctionObjectQ[_ColorFunctionObject ? System`Private`NoEntryQ] := True;
 ColorFunctionObjectQ[_] := False;
 
 (**************************************************************************************************)
 
-PackageExport["ColorFunctionObject"]
+PublicObject[ColorFunctionObject]
 
 SetUsage @ "
 ColorFunctionObject[$$] represents a function that takes values and returns colors.
@@ -596,7 +564,7 @@ colorFunctionLegend[ColorFunctionObject["Linear", values_, func_, ticks_]] :=
 
 (**************************************************************************************************)
 
-PackageExport["ContinuousColorLegend"]
+PublicFunction[ContinuousColorLegend]
 
 ContinuousColorLegend[values_, func_, ticks_] := Scope[
   raster = makeGradientRaster[values, func, $colorLegendHeight - 2, True];
@@ -762,7 +730,7 @@ colorFunctionLegend[ColorFunctionObject["Discrete", Identity]] := "";
 colorFunctionLegend[ColorFunctionObject["Discrete", assoc_Association]] :=
   DiscreteColorLegend[assoc];
 
-PackageExport["DiscreteColorLegend"]
+PublicFunction[DiscreteColorLegend]
 
 DiscreteColorLegend[assoc_] :=
   Grid[
@@ -778,7 +746,7 @@ simpleColorSquare[color_] := Graphics[
 
 (**************************************************************************************************)
 
-PackageExport["ChooseContinuousColorFunction"]
+PublicFunction[ChooseContinuousColorFunction]
 
 DeclareArgumentCount[ChooseContinuousColorFunction, 1];
 
@@ -857,7 +825,7 @@ pickNice[val_, dx_, func_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ApplyColoring"]
+PublicFunction[ApplyColoring]
 
 SetUsage @ "
 ApplyColoring[list$] determines an automatic coloring for items of list, returning a tuple \
@@ -947,8 +915,14 @@ literalColorFunction[colors_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["Color3D"]
+PublicFunction[Color3D]
 
 Color3D[Opacity[o_, color_]] := Color3D @ SetColorOpacity[color, o];
 Color3D[Opacity[o_]] := Directive[GrayLevel[0, o], Specularity @ 0];
 Color3D[c_] := Directive[Glow @ c, GrayLevel[0, ColorOpacity[c]], Specularity @ 0];
+
+(**************************************************************************************************)
+
+PublicFunction[ComplexHue]
+
+ComplexHue[c_] := ColorConvert[Hue[Arg[c]/Tau+.05, Min[Sqrt[Abs[c]]/1.2,1], .9], RGBColor];

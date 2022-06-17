@@ -1,4 +1,4 @@
-PackageExport["GraphVertexQuotient"]
+PublicFunction[GraphVertexQuotient]
 
 GraphVertexQuotient[graph_, equivFn_, userOpts___Rule] := Scope[
   setupGraphVertexData[graph];

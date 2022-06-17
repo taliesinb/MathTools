@@ -1,6 +1,4 @@
-(**************************************************************************************************)
-
-PackageExport["ExtendedGraph"]
+PublicFunction[ExtendedGraph]
 
 ExtendedGraph[args___] :=
   interceptedGraphConstructor[Graph[args, GraphPlottingFunction -> ExtendedGraphPlottingFunction]];
@@ -13,8 +11,7 @@ PathGraph[n_Integer, opts___] := PathGraph[Range[n], opts];
 
 (**************************************************************************************************)
 
-PackageExport["DirectedCycle"]
-PackageExport["UndirectedCycle"]
+PublicFunction[DirectedCycle, UndirectedCycle]
 
 cyclicPairs[first_, vertices___] := Partition[{first, vertices, first}, 2, 1];
 
@@ -23,15 +20,14 @@ UndirectedCycle[vertices___] := Splice[UndirectedEdge @@@ cyclicPairs[vertices]]
 
 (**************************************************************************************************)
 
-PackageExport["DirectedPath"]
-PackageExport["UndirectedPath"]
+PublicFunction[DirectedPath, UndirectedPath]
 
 DirectedPath[vertices___] := Splice[DirectedEdge @@@ Partition[List @ vertices, 2, 1]];
 UndirectedPath[vertices___] := Splice[UndirectedEdge @@@ Partition[List @ vertices, 2, 1]];
 
 (**************************************************************************************************)
 
-PackageExport["Clique"]
+PublicFunction[Clique]
 
 Clique[vertices___] := Splice[UndirectedEdge @@@ UnorderedPairs[{vertices}]];
 

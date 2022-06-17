@@ -1,4 +1,4 @@
-PackageExport["ToSVGString"]
+PublicFunction[ToSVGString]
 
 ToSVGString[g_Graphics] := Scope[
 	{{xmin, xmax}, {ymin, ymax}} = GraphicsPlotRange @ g;

@@ -18,7 +18,7 @@ tradBox[b_] := StyleBox[FormBox[b, TraditionalForm], ShowStringCharacters -> Fal
 
 (**************************************************************************************************)
 
-PackageExport["LeftBar"]
+PublicForm[LeftBar]
 
 SetUsage @ "
 LeftBar[x$] typesets as a vertical line to the left of x$.
@@ -30,7 +30,7 @@ leftbarBox[box_] := RowBox[{$vertLineBox, box}];
 
 (**************************************************************************************************)
 
-PackageExport["RightBar"]
+PublicForm[RightBar]
 
 SetUsage @ "
 RightBar[x$] typesets as a vertical line to the right of x$.
@@ -298,13 +298,13 @@ numBox = MatchValues[
 ];
 
 
-PackageExport["NegationStyle"]
+SystemOption[NegationStyle]
 
 SetUsage @ "
 NegationStyle is an option to CompactNumberForm and other functions.
 "
 
-PackageExport["InversionStyle"]
+SystemOption[InversionStyle]
 
 SetUsage @ "
 InversionStyle is an option to CompactNumberForm and other functions.
@@ -382,7 +382,7 @@ blockNumberFormatting[head_, {negationStyle_, inversionStyle_}, body_] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["ModForm"]
+PrivateForm[ModForm]
 
 ModForm[x_, Infinity|0] := x;
 
@@ -395,7 +395,7 @@ modBox[a_, b_] := SubscriptBox[a, StyleBox[numBox @ b, $Blue]];
 
 (**************************************************************************************************)
 
-PackageExport["CompactNumberBox"]
+PublicFunction[CompactNumberBox]
 
 Options[CompactNumberBox] = $compactNumberOptions;
 
@@ -412,7 +412,7 @@ iCompactNumberBox[expr_] := numBox[expr] // simplifyNumBoxes;
 
 (**************************************************************************************************)
 
-PackageExport["CompactNumberForm"]
+PublicFunction[CompactNumberForm]
 
 Options[CompactNumberForm] = $compactNumberOptions;
 
@@ -433,7 +433,7 @@ MakeBoxes[CompactNumberForm[expr_, opts:OptionsPattern[]], form_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["CompactMatrixBox"]
+PublicFunction[CompactMatrixBox]
 
 $compactMatrixOptions = JoinOptions[
   $compactNumberOptions,
@@ -479,7 +479,7 @@ matrixGridBoxes[entries_, {w_, h_}, frameStyle_] := GridBox[entries,
 
 (**************************************************************************************************)
 
-PackageExport["CompactMatrixForm"]
+PublicForm[CompactMatrixForm]
 
 SetUsage @ "
 CompactMatrixForm
@@ -511,7 +511,7 @@ makeCompactMatrixFormBoxes[e_, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["renderRepresentationMatrix"]
+PrivateFunction[renderRepresentationMatrix]
 
 renderRepresentationMatrix[matrix_, isTraditional_:False, opts___] :=
   RawBoxes @ CompactMatrixBox[matrix, opts, NegationStyle -> "Color", InversionStyle -> None];
@@ -519,7 +519,7 @@ renderRepresentationMatrix[matrix_, isTraditional_:False, opts___] :=
 
 (**************************************************************************************************)
 
-PackageExport["LabeledMatrixForm"]
+PublicForm[LabeledMatrixForm]
 
 declareFormatting[
   LabeledMatrixForm[expr_] :> formatLabeledMatrices[expr]
@@ -536,45 +536,22 @@ formatLabeledMatrix[matrix_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["MaxWidth"]
+PublicOption[MaxWidth, ItemFunction, LabelFunction, LabelSpacing]
 
-SetUsage @ "
-MaxWidth is an option to SpacedRow.
-"
-
-(**************************************************************************************************)
-
-PackageExport["ItemFunction"]
-
-SetUsage @ "
-ItemFunction is an option to SpacedRow.
-"
+SetUsage @ "MaxWidth is an option to SpacedRow."
+SetUsage @ "ItemFunction is an option to SpacedRow."
+SetUsage @ "LabelFunction is an option to SpacedRow."
+SetUsage @ "LabelSpacing is an option to SpacedRow."
 
 (**************************************************************************************************)
 
-PackageExport["LabelFunction"]
-
-SetUsage @ "
-LabelFunction is an option to SpacedRow.
-"
-
-(**************************************************************************************************)
-
-PackageExport["LabelSpacing"]
-
-SetUsage @ "
-LabelSpacing is an option to SpacedRow.
-"
-
-(**************************************************************************************************)
-
-PackageExport["SpacedColumn"]
+PublicFunction[SpacedColumn]
 
 SpacedColumn[args___] := SpacedRow[args, Transposed -> True];
 
 (**************************************************************************************************)
 
-PackageExport["ClickCopyRow"]
+PublicFunction[ClickCopyRow]
 
 ClickCopyRow[args___] := Framed[
   SpacedRow[args, ItemFunction -> ClickCopy, SpliceForms -> False],
@@ -582,7 +559,7 @@ ClickCopyRow[args___] := Framed[
 
 (**************************************************************************************************)
 
-PackageExport["ClickCopy"]
+PublicFunction[ClickCopy]
 
 ClickCopy[e_] := With[
   {copyExpr = Cell[BoxData @ ToBoxes @ TraditionalForm @ e, FormatType -> TraditionalForm]},
@@ -593,31 +570,15 @@ ClickCopy[e_] := With[
 
 (**************************************************************************************************)
 
-PackageExport["Transposed"]
+PublicOption[Transposed, RiffleItem, ForceGrid]
 
-SetUsage @ "
-Transposed is an option to %SpacedRow, %AlgebraicRow, etc.
-"
-
-(**************************************************************************************************)
-
-PackageExport["RiffleItem"]
-
-SetUsage @ "
-RiffleItem is an option to %SpacedRow, %AlgebraicRow, etc.
-"
+SetUsage @ "Transposed is an option to %SpacedRow, %AlgebraicRow, etc."
+SetUsage @ "RiffleItem is an option to %SpacedRow, %AlgebraicRow, etc."
+SetUsage @ "ForceGrid is an option to %SpacedRow, %AlgebraicRow, etc."
 
 (**************************************************************************************************)
 
-PackageExport["ForceGrid"]
-
-SetUsage @ "
-ForceGrid is an option to %SpacedRow, %AlgebraicRow, etc.
-"
-
-(**************************************************************************************************)
-
-PackageExport["SpacedColumnRow"]
+PublicFunction[SpacedColumnRow]
 
 SpacedColumnRow[items___] := Scope[
   $srColumnRow = True;
@@ -626,8 +587,8 @@ SpacedColumnRow[items___] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["SpacedRow"]
-PackageExport["SpliceForms"]
+PublicFunction[SpacedRow]
+PublicOption[SpliceForms, IndexTooltip]
 
 $srColumnRow = False;
 
@@ -643,7 +604,7 @@ Options[SpacedRow] = {
   LabelFunction -> ($srLabelFunction = Identity),
   LabelSpacing -> ($srLabelSpacing = 5),
   Transposed -> ($srTransposed = False),
-  "IndexTooltip" -> ($srIndexTooltip = False),
+  IndexTooltip -> ($srIndexTooltip = False),
   Alignment -> ($srAlignment = Center),
   LabelPosition -> ($srLabelPosition = Automatic),
   ForceGrid -> ($srForceGrid = False),
@@ -783,26 +744,26 @@ unfoldRow[pairs_] :=
 
 (**************************************************************************************************)
 
-PackageExport["$LargeEllipsis"]
+PublicVariable[$LargeEllipsis]
 
 $LargeEllipsis = Style["\[Ellipsis]", $LabelStyle, Gray, 18]
 
 (**************************************************************************************************)
 
-PackageExport["$LargeVerticalEllipsis"]
+PublicVariable[$LargeVerticalEllipsis]
 
 $LargeVerticalEllipsis = Style["\[VerticalEllipsis]", $LabelStyle, Gray, 18]
 
 (**************************************************************************************************)
 
-PackageExport["MakeArrow"]
+PublicFunction[MakeArrow]
 
 MakeArrow[w_:50, h_:15, thickness_:1, style_:Black] =
   makeNotationArrow[w, h, thickness, style];
 
 (**************************************************************************************************)
 
-PackageExport["SpacedArrow"]
+PublicFunction[SpacedArrow]
 
 SpacedArrow[l__, "ArrowColor" -> color_, r___] := Block[{$arrowColor = color},
   SpacedArrow[l, r]
@@ -834,7 +795,7 @@ $smallNotationArrow := MakeArrow[30,10, $arrowThickness, $arrowColor];
 
 (**************************************************************************************************)
 
-PackageExport["Gallery"]
+PublicFunction[Gallery]
 
 Options[Gallery] = {
   ImageSize -> 1000,
@@ -879,7 +840,7 @@ estimateItemSize = MatchValues[
 
 (**************************************************************************************************)
 
-PackageExport["ChartColorForm"]
+PublicFunction[ChartColorForm]
 
 ChartColorForm[expr_, colors_] := Scope[
   colors = Which[
@@ -898,7 +859,7 @@ ChartColorForm[graph_][expr_] := ChartColorForm[expr, graph];
 
 (**************************************************************************************************)
 
-PackageExport["LargeLabeled"]
+PublicFunction[LargeLabeled]
 
 Options[LargeLabeled] = JoinOptions[
   Spacings -> 0,
@@ -915,14 +876,14 @@ LargeLabeled[e_, l_, opts:OptionsPattern[]] :=
 
 (**************************************************************************************************)
 
-PackageExport["EllipsisForm"]
+PublicForm[EllipsisForm]
 
 EllipsisForm[list_, n_] := If[Length[list] > n, Append[Take[list, n], $LargeEllipsis], list];
 EllipsisForm[n_][list_] := EllipsisForm[list, n];
 
 (**************************************************************************************************)
 
-PackageExport["CardinalTransition"]
+PublicFunction[CardinalTransition]
 
 SetUsage @ "
 CardinalTransition[a$ -> b$] represents a transition from cardinal a$ to cardinal b$.
@@ -934,7 +895,7 @@ declareFormatting[
   ca:CardinalTransition[$anyRuleP | {$anyRuleP..}] :> formatCardinalTransition[ca]
 ]
 
-PackageScope["formatCardinalTransition"]
+PrivateFunction[formatCardinalTransition]
 
 formatCardinalTransition = Case[
   CardinalTransition[{}] :=

@@ -1,4 +1,4 @@
-PackageExport["ValidPathWordQ"]
+PublicFunction[ValidPathWordQ]
 
 SetUsage @ "
 ValidPathWordQ[word$] returns True if word$ is a list of cardinals.
@@ -14,7 +14,7 @@ ValidPathWordQ[_, _] := False;
 
 (********************************************)
 
-PackageExport["ToPathWord"]
+PublicFunction[ToPathWord]
 
 SetUsage @ "
 ToPathWord['word$'] interprets the characters of 'word$' as cardinals and returns a list of them.
@@ -27,7 +27,7 @@ ToPathWord[list$, cards$, $$] checks that a list of cardinals is a subset of car
 
 SetHoldRest[ToPathWord];
 
-PackageScope["$pathCancellation"]
+PrivateVariable[$pathCancellation]
 $pathCancellation = True;
 
 ToPathWord["" | {}, ___] = {};

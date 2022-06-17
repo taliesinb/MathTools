@@ -1,4 +1,4 @@
-PackageExport["PathRepresentation"]
+PublicFunction[PathRepresentation]
 
 SetUsage @ "
 PathRepresentation[fquiver$, cardinals$ -> representation$, initialVertex$] attachs a path representation to a \
@@ -82,7 +82,7 @@ Format[RepresentationObject[matrix_?MatrixQ], StandardForm] :=
 
 (**************************************************************************************************)
 
-PackageExport["PathRepresentationPlot"]
+PublicFunction[PathRepresentationPlot]
 
 DeclareArgumentCount[PathRepresentationPlot, 1];
 
@@ -112,7 +112,7 @@ PathRepresentationPlot[qrep_, opts:OptionsPattern[]] := Scope[
   SpacedRow[quiverPlot, labeledGenerators, Transposed -> transposed]
 ];
 
-PackageScope["makeLabeledGenerators"]
+PrivateFunction[makeLabeledGenerators]
 
 makeLabeledGenerators[generators_, cardinalColors_] :=
   Row[
@@ -125,7 +125,7 @@ makeLabeledGenerators[generators_, cardinalColors_] :=
 
 (**************************************************************************************************)
 
-PackageExport["PathRepresentationObject"]
+PublicObject[PathRepresentationObject]
 
 SetUsage @ "
 PathRepresentationObject[$$] represents a Quiver with an associated representation.
@@ -207,7 +207,7 @@ RenameCardinals[PathRepresentationObject[data_Association], renaming:{__Rule}] :
 
 (**************************************************************************************************)
 
-PackageExport["PathValue"]
+PublicHead[PathValue]
 
 SetUsage @ "
 PathValue[v$, state$] represents a quiver vertex v$ with associated state state$.
@@ -236,7 +236,7 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PathRepresentationObjectQ"]
+PublicFunction[PathRepresentationObjectQ]
 
 SetUsage @ "
 PathRepresentationObjectQ[obj$] returns True if obj$ is a valid PathRepresentationObject.

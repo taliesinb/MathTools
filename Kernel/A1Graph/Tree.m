@@ -1,6 +1,4 @@
-(**************************************************************************************************)
-
-PackageExport["FunctionTreeGraph"]
+PublicFunction[FunctionTreeGraph]
 
 FunctionTreeGraph[e_, rules:OptionsPattern[]] :=
   makeTreeGraph[e, scanFunction, "ExpressionTreeGraph", rules];
@@ -14,7 +12,7 @@ scanFunction = Case[
 
 (**************************************************************************************************)
 
-PackageExport["ExpressionTreeGraph"]
+PublicFunction[ExpressionTreeGraph]
 
 ExpressionTreeGraph[e_, rules:OptionsPattern[]] :=
   makeTreeGraph[e, scanExpression, "ExpressionTreeGraph", rules];
@@ -102,7 +100,7 @@ $ExpressionTreeGraphThemeData = {
   ArrowheadShape -> None
 };
 
-PackageExport["ExpressionTreeGraphVertexShape"]
+PublicFunction[ExpressionTreeGraphVertexShape]
 
 ExpressionTreeGraphVertexShape[assoc_] := Scope[
   UnpackAssociation[assoc, coordinates, annotations];
@@ -119,7 +117,7 @@ $GraphThemeData["ExpressionTreeGraph"] := $ExpressionTreeGraphThemeData;
 
 (**************************************************************************************************)
 
-PackageExport["NestedListGraph"]
+PublicFunction[NestedListGraph]
 
 NestedListGraph[e_, rules:OptionsPattern[]] := Scope[
   makeTreeGraph[e, scanExpression, "NestedListGraph", rules]
@@ -142,7 +140,7 @@ $NestedListGraphThemeData = {
 
 (**************************************************************************************************)
 
-PackageExport["Polynomial"]
+PublicHead[Polynomial]
 
 SetAttributes[Polynomial, HoldRest];
 
@@ -157,7 +155,7 @@ makePolynomialBoxes[Polynomial[vars_List, body_]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PolynomialGraph"]
+PublicFunction[PolynomialGraph]
 
 Options[PolynomialGraph] = {
   ItemFunction -> Automatic
@@ -212,7 +210,7 @@ $PolynomialGraphThemeData = {
   ArrowheadShape -> None
 };
 
-PackageExport["PolynomialGraphVertexShapeFunction"]
+PublicFunction[PolynomialGraphVertexShapeFunction]
 
 PolynomialGraphVertexShapeFunction[assoc_] := Scope[
   UnpackAssociation[assoc, coordinates, annotations];
@@ -223,7 +221,7 @@ PolynomialGraphVertexShapeFunction[assoc_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ArrowPolynomialGraph"]
+PublicFunction[ArrowPolynomialGraph]
 
 ArrowPolynomialGraph[expr_, opts:OptionsPattern[]] :=
   PolynomialGraph[expr, opts, ItemFunction -> arrowPolyItemFunction];
@@ -240,11 +238,11 @@ toArrowVarRules[var_] := {
 
 (**************************************************************************************************)
 
-PackageExport["Hyperedge"]
+PublicHead[Hyperedge]
 
 (**************************************************************************************************)
 
-PackageExport["HyperedgeIncidenceGraph"]
+PublicFunction[HyperedgeIncidenceGraph]
 
 SetUsage @ "
 HyperedgeIncidenceGraph[<|name$1 -> expr$1, $$|>] constructs a bipartite graph, consisting of two vertex types:
@@ -332,7 +330,7 @@ addPathEdge[path_][subPart_, subValue_] :=
   ];
 
 
-PackageExport["IncidenceVertexColorFunction"]
+PublicFunction[IncidenceVertexColorFunction]
 
 IncidenceVertexColorFunction = Case[
   _Hyperedge := White;
@@ -340,7 +338,7 @@ IncidenceVertexColorFunction = Case[
 ];
 
 
-PackageExport["IncidenceGraphVertexShapeFunction"]
+PublicFunction[IncidenceGraphVertexShapeFunction]
 
 IncidenceGraphVertexShapeFunction[assoc_] := Scope[
   UnpackAssociation[assoc, coordinates, annotations];

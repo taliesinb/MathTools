@@ -1,4 +1,4 @@
-PackageExport["CardinalList"]
+PublicFunction[CardinalList]
 
 SetUsage @ "
 CardinalList[quiver$] returns the list of cardinals in a quiver.
@@ -20,7 +20,7 @@ extractCardinals[graph_] := DeleteCases[Union @ SpliceCardinalSets @ EdgeTags @ 
 
 (**************************************************************************************************)
 
-PackageExport["TaggedAdjacencyMatrices"]
+PublicFunction[TaggedAdjacencyMatrices]
 
 Options[TaggedAdjacencyMatrices] = {"Antisymmetric" -> False};
 
@@ -35,21 +35,21 @@ TaggedAdjacencyMatrices[graph_ ? EdgeTaggedGraphQ, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["TaggedEdgePairs"]
+PublicFunction[TaggedEdgePairs]
 
 TaggedEdgePairs[graph_ ? EdgeTaggedGraphQ] :=
   GroupBy[EdgeList @ ToIndexGraph @ graph, Last -> Function[{Part[#, 1], Part[#, 2]}]]
 
 (**************************************************************************************************)
 
-PackageExport["TaggedEdgeLists"]
+PublicFunction[TaggedEdgeLists]
 
 TaggedEdgeLists[graph_ ? EdgeTaggedGraphQ] :=
   GroupBy[EdgeList @ graph, Last]
 
 (**************************************************************************************************)
 
-PackageExport["TagIndices"]
+PublicFunction[TagIndices]
 
 SetUsage @ "
 TagIndices[graph$] returns an association from cardinals to the indices of edges on which they are present.
@@ -75,7 +75,7 @@ processTagEntry[CardinalSet[tags_], {part_}] :=
 
 (**************************************************************************************************)
 
-PackageExport["TagVertexOutTable"]
+PublicFunction[TagVertexOutTable]
 
 SetUsage @ "
 TagVertexOutTable[graph$] returns an association from each cardinal to its VertexOutTable.
@@ -99,7 +99,7 @@ TagVertexOutTable[graph_, invalid_:None] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VertexTagTable"]
+PublicFunction[VertexTagTable]
 
 SetUsage @ "
 VertexTagTable[graph$] returns a list of lists {tags$1, tags$2, $$} where tag$i is the list of tags \
@@ -113,7 +113,7 @@ VertexTagTable[graph_, splice_:True] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VertexOutTagTable"]
+PublicFunction[VertexOutTagTable]
 
 SetUsage @ "
 VertexOutTagTable[graph$] returns a list of lists {tags$1, tags$2, $$} where tag$i is the list of tags \
@@ -127,7 +127,7 @@ VertexOutTagTable[graph_, splice_:True] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VertexOutVertexTagTable"]
+PublicFunction[VertexOutVertexTagTable]
 
 SetUsage @ "
 VertexOutVertexTagTable[graph$] returns a list of pairs {pairs$1, pair$2, $$} where pairs$i is the list of pairs
@@ -142,7 +142,7 @@ VertexOutVertexTagTable[graph_, splice_:True] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VertexInTagTable"]
+PublicFunction[VertexInTagTable]
 
 SetUsage @ "
 VertexInTagTable[graph$] returns a list of lists {tags$1, tags$2, $$} where tag$i is the list of tags \
@@ -157,7 +157,7 @@ VertexInTagTable[graph_, splice_:True] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["TagVertexAdjacentEdgeTable"]
+PublicFunction[TagVertexAdjacentEdgeTable]
 
 SetUsage @ "
 TagVertexAdjacentEdgeTable[graph$] returns an association from each cardinal to its VertexAdjacentEdgeTable.
@@ -194,6 +194,6 @@ mergeNone[{a_, b_}] := MapThread[If[#1 === $invalid, #2, #1]&, {a, b}];
 
 (**************************************************************************************************)
 
-PackageExport["EdgeTagAssociation"]
+PublicFunction[EdgeTagAssociation]
 
 EdgeTagAssociation[graph_] := AssociationThread[{#1, #2}& @@@ EdgeList[graph], EdgeTags @ graph];

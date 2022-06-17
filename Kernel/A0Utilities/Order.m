@@ -1,13 +1,4 @@
-PackageExport["MinimumIndexBy"]
-PackageExport["MaximumIndexBy"]
-PackageExport["MinimumIndices"]
-PackageExport["MaximumIndices"]
-PackageExport["MinimumIndex"]
-PackageExport["MaximumIndex"]
-PackageExport["MinimumBy"]
-PackageExport["MaximumBy"]
-PackageExport["Minimum"]
-PackageExport["Maximum"]
+PublicFunction[MinimumIndexBy, MaximumIndexBy, MinimumIndices, MaximumIndices, MinimumIndex, MaximumIndex, MinimumBy, MaximumBy, Minimum, Maximum]
 
 (* these represent cliques of functions along abstract dimensions.
 there are three abstract dimensions: By-ness, Sign, and Index-ness *)
@@ -109,7 +100,7 @@ Maximum[list_] :=
 
 (**************************************************************************************************)
 
-PackageExport["OrderSort"]
+PublicFunction[OrderSort]
 
 OrderSort[list_, None] :=
   Sort @ list;
@@ -123,7 +114,7 @@ OrderSort[order_][list_] := OrderSort[list, order];
 
 (**************************************************************************************************)
 
-PackageExport["MostCommon"]
+PublicFunction[MostCommon]
 
 MostCommon[{}, _:First] := None;
 MostCommon[list_, f_:First] := f @ MaximumIndices @ Counts @ list;

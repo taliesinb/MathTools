@@ -1,4 +1,4 @@
-PackageExport["DisjointUnionLattice"]
+PublicFunction[DisjointUnionLattice]
 
 Options[DisjointUnionLattice] = Options @ Graph;
 

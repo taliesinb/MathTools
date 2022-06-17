@@ -1,12 +1,11 @@
-PackageExport["DiscardVertices"]
-PackageExport["SelectVertices"]
+PublicFunction[DiscardVertices, SelectVertices]
 
 DiscardVertices[graph_Graph, filter_] := Subgraph[graph, Discard[VertexList[graph], filter]];
 SelectVertices[graph_Graph, filter_] := Subgraph[graph, Select[VertexList[graph], filter]];
 
 (**************************************************************************************************)
 
-PackageExport["GraphRelabel"]
+PublicFunction[GraphRelabel]
 
 (* TODO: is this the same as MapVertices? *)
 
@@ -16,7 +15,7 @@ GraphRelabel[graph_Graph, f_] :=
 
 (**************************************************************************************************)
 
-PackageExport["InvertGraph"]
+PublicFunction[InvertGraph]
 
 InvertGraph[g_Graph] := Scope[
   Graph[
@@ -27,7 +26,7 @@ InvertGraph[g_Graph] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ReverseEdges"]
+PublicFunction[ReverseEdges]
 
 ReverseEdges[edges_List] := Map[reverseEdge, edges];
 
@@ -38,7 +37,7 @@ reverseEdge = Case[
 
 (**************************************************************************************************)
 
-PackageExport["MapVertices"]
+PublicFunction[MapVertices]
 
 (* TODO: Map on GraphOrigin, etc *)
 
@@ -53,7 +52,7 @@ MapVertices[f_, edges_List] := MapAt[f, edges, {All, 1;;2}];
 
 (**************************************************************************************************)
 
-PackageExport["MapEdges"]
+PublicFunction[MapEdges]
 
 SetUsage @ "
 MapEdges[f$, graph$] applies the function f$ to the edges of f$.
@@ -71,7 +70,7 @@ MapEdges[f_][g_] := MapEdges[f, g];
 
 (**************************************************************************************************)
 
-PackageExport["VertexSelect"]
+PublicFunction[VertexSelect]
 
 SetUsage @ "
 VertexSelect[graph$, predicate$] gives the subgraph of the vertices sastisfying predicate$.
@@ -165,7 +164,7 @@ getAnnoValue[annos_, key_] := Lookup[annos, key, failSelect["badgraphannokey", k
 
 (**************************************************************************************************)
 
-PackageExport["RandomlyPermuteVertices"]
+PublicFunction[RandomlyPermuteVertices]
 
 SetUsage @ "
 RandomlyPermuteVertices[graph$] randomly permutes the %VertexList order of vertices in graph$.
@@ -186,7 +185,7 @@ RandomlyPermuteVertices[graph_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["PermuteVertices"]
+PublicFunction[PermuteVertices]
 
 SetUsage @ "
 PermuteVertices[graph$, perm$] applies the permutation perm$ to the %VertexList order of vertices in graph$.

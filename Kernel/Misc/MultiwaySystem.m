@@ -1,14 +1,4 @@
-PackageExport["MaxVertices"]
-PackageExport["MaxVerticesPerComponent"]
-PackageExport["MaxEdges"]
-PackageExport["MaxDepth"]
-PackageExport["MaxTime"]
-PackageExport["MaxFunctionEvaluations"]
-PackageExport["MaxNorm"]
-PackageExport["ProgressFunction"]
-PackageExport["IncludeFrontier"]
-PackageExport["DepthTermination"]
-PackageExport["PrologVertices"]
+PublicFunction[MaxVertices, MaxVerticesPerComponent, MaxEdges, MaxDepth, MaxTime, MaxFunctionEvaluations, MaxNorm, ProgressFunction, IncludeFrontier, DepthTermination, PrologVertices]
 
 MaxVertices::usage = "MaxVertices is an option to MultiwaySystem."
 MaxVerticesPerComponent::usage = "MaxVerticesPerComponent is an option to MultiwaySystem."
@@ -22,7 +12,7 @@ DepthTermination::usage = "DepthTermination is an option to MultiwaySystem."
 
 (**************************************************************************************************)
 
-PackageExport["MultiwaySystem"]
+PublicFunction[MultiwaySystem]
 
 DeclareArgumentCount[MultiwaySystem, 2];
 
@@ -167,7 +157,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   ];
 
   Scan[
-    symbol |-> If[!MatchQ[OptionValue[symbol], $posIntOrInfinityP],
+    symbol |-> If[!MatchQ[OptionValue[symbol], $PosIntOrInfinityP],
       ReturnFailed[MultiwaySystem::badlimit, symbol];
     ],
     {MaxVertices, MaxVerticesPerComponent, MaxTime, MaxFunctionEvaluations}
@@ -544,12 +534,6 @@ $cayleyGraphThemeRules = {
 
 $GraphThemeData["CayleyGraph"] := $cayleyGraphThemeRules;
 
-
-PackageScope["notInternalSymbolQ"]
-SetHoldFirst @ notInternalSymbolQ;
-notInternalSymbolQ[sym_Symbol] := !StringEndsQ[SymbolName @ Unevaluated @ sym, "$"];
-notInternalSymbolQ[_] := True;
-
 makeSuperTransitionFunc[list_] := ApplyThrough[MapIndexed[makeTFuncElem, list]] /* Catenate;
 makeTFuncElem[Labeled[f_, label_] | (f_ -> label_), _] := f /* Map[Labeled[#, label]&]
 makeTFuncElem[f_, {i_}] := f /* Map[Labeled[#, i]&];
@@ -562,7 +546,7 @@ toUndirectedEdge[from_, to_] := UndirectedEdge[from, to];
 
 (**************************************************************************************************)
 
-PackageScope["CachedMultiwaySystem"]
+PrivateFunction[CachedMultiwaySystem]
 
 $LastHash = None;
 $LastResult = None;

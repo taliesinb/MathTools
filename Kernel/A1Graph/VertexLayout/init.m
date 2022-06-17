@@ -1,4 +1,4 @@
-PackageExport["LookupVertexCoordinates"]
+PublicFunction[LookupVertexCoordinates]
 
 LookupVertexCoordinates[graph_Graph, vertexList_:All] := Scope[
   UnpackExtendedThemedOptions[graph,
@@ -30,7 +30,7 @@ LookupVertexCoordinates[graph_Graph, vertexList_:All] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ExtractGraphPrimitiveCoordinates"]
+PrivateFunction[ExtractGraphPrimitiveCoordinates]
 
 SetUsage @ "
 ExtractGraphPrimitiveCoordinates[graph$] returns the pair {vcoords$, ecoords$}, where \
@@ -302,7 +302,7 @@ fixSelfLoop[coords_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["ExtractGraphPrimitiveCoordinatesNew"]
+PrivateFunction[ExtractGraphPrimitiveCoordinatesNew]
 
 (* swap this out when it is completely working *)
 
@@ -453,7 +453,7 @@ and shear them to match *)
 
 (**************************************************************************************************)
 
-PackageExport["VertexEdgeCoordinateData"]
+PrivateFunction[VertexEdgeCoordinateData]
 
 (* this handles capturing the vertex and edge coordinates from a given graph, which must be an index graph.
 this will be called by layout objects as necessary.
@@ -818,7 +818,7 @@ $cr = .1;
 corner[a_, b_, c_] :=
   Splice @ {a, ptAlong[b, a, $cr], ptAlong[b, a, 0.8*$cr], b, ptAlong[b, c, 0.8*$cr], ptAlong[b, c, $cr]};
 
-PackageScope["ptAlong"]
+PrivateFunction[ptAlong]
 
 ptAlong[a_, b_, d_] := Which[d <= 0, a, d >= EuclideanDistance[a, b], b, True, PointAlongLine[{a, b}, d]];
 

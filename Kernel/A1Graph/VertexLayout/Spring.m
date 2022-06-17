@@ -1,5 +1,5 @@
-PackageExport["SpringLayout"]
-PackageExport["Orientation"]
+PublicObject[SpringLayout]
+PublicOption[Orientation]
 
 Options[SpringLayout] = {
   "EnergyControl" -> Automatic,

@@ -1,13 +1,20 @@
-PackageExport["TopLeft"]
-PackageExport["TopRight"]
-PackageExport["BottomLeft"]
-PackageExport["BottomRight"]
+SystemSymbol[MediumSmall, MediumLarge, Huge]
+
+SetUsage @ "MediumSmall represents a size betwen %Small and %Medium."
+SetUsage @ "MediumLarge represents a size betwen %Medium and %Large."
+SetUsage @ "Huge represents a size greater than %Large."
+
+(* if you add a size, update $SizePattern and $SymbolicSizePattern *)
+
+(**************************************************************************************************)
+
+SystemSymbol[TopLeft, TopRight, BottomLeft, BottomRight]
 
 (* if you add a compound side, update $SidePattern *)
 
 (**************************************************************************************************)
 
-PackageScope["$colorNormalizationRules"]
+PrivateVariable[$colorNormalizationRules]
 
 $colorNormalizationRules = {
   Red -> $Red, Orange -> $Orange, Yellow -> $Yellow, Green -> $Green, Blue -> $Blue, Purple -> $Purple, Pink -> $Pink, Cyan -> $Teal,
@@ -16,14 +23,19 @@ $colorNormalizationRules = {
 
 (**************************************************************************************************)
 
-PackageScope["$opacityNormalizationRules"]
+SystemSymbol[VeryTransparent, HalfTransparent, PartlyTransparent, Opaque]
+
+PrivateFunction[toNumericOpacity]
+
+toNumericOpacity = Case[
+  r_ ? NumericQ := Clip[N @ r, {0, 1}];
+  sym_Symbol    := Lookup[$opacityNormalizationRules, sym, 1];
+  _             := 1;
+];
+
+PrivateVariable[$opacityNormalizationRules]
 
 (* if you add an opacity, update $OpacityPattern *)
-
-PackageExport["VeryTransparent"]
-PackageExport["HalfTransparent"]
-PackageExport["PartlyTransparent"]
-PackageExport["Opaque"]
 
 $opacityNormalizationRules = {
   VeryTransparent -> Opacity[0.2],
@@ -32,22 +44,9 @@ $opacityNormalizationRules = {
   Opaque -> Opacity[1.0]
 };
 
-PackageScope["toNumericOpacity"]
-
-toNumericOpacity = Case[
-  r_ ? NumericQ := Clip[N @ r, {0, 1}];
-  sym_Symbol    := Lookup[$opacityNormalizationRules, sym, 1];
-  _             := 1;
-];
-
 (**************************************************************************************************)
 
-PackageExport["VeryThick"]
-PackageExport["MediumThick"]
-PackageExport["SlightlyThick"]
-PackageExport["SlightlyThin"]
-PackageExport["MediumThin"]
-PackageExport["VeryThin"]
+SystemSymbol[VeryThick, MediumThick, SlightlyThick, SlightlyThin, MediumThin, VeryThin]
 
 (* how AbsoluteThickness works:
   Thin/AT[Tiny] = AT[0.25],
@@ -55,7 +54,7 @@ PackageExport["VeryThin"]
   Medium = AT[1],
   Large / Thick is AT[2] *)
 
-PackageScope["$thicknessNormalizationRules"]
+PrivateVariable[$thicknessNormalizationRules]
 
 $thicknessNormalizationRules = {
   VeryThin -> AbsoluteThickness[0.1],
@@ -68,7 +67,7 @@ $thicknessNormalizationRules = {
 
 (**************************************************************************************************)
 
-PackageScope["NormalizeThickness"]
+PrivateFunction[NormalizeThickness]
 
 NormalizeThickness = Case[
   Automatic             := AbsoluteThickness[1.2];
@@ -80,7 +79,7 @@ NormalizeThickness = Case[
 
 (**************************************************************************************************)
 
-PackageScope["toMultiDirective"]
+PrivateFunction[toMultiDirective]
 
 iToMultiDirective = Case[
   {}                            := Automatic;
@@ -96,7 +95,7 @@ toMultiDirective[spec_] := Scope[
 
 (**************************************************************************************************)
 
-PackageScope["toDirective"]
+PrivateFunction[toDirective]
 
 toDirective = Case[
   Automatic           := Automatic;
@@ -114,6 +113,6 @@ $styleNormalizationRules = Dispatch @ Flatten @ {
   $thicknessNormalizationRules
 };
 
-PackageScope["normalizeStyles"]
+PrivateFunction[normalizeStyles]
 
 normalizeStyles[e_] := ReplaceAll[e, $styleNormalizationRules];

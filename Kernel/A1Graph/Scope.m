@@ -1,25 +1,14 @@
-(**************************************************************************************************)
+PrivateFunction[GraphScope]
 
-PackageScope["GraphScope"]
-
-PackageScope["NotInGraphScopeOfQ"]
+PrivateFunction[NotInGraphScopeOfQ]
 
 NotInGraphScopeOfQ[graph_] := !GraphQ[$Graph] || (graph =!= $Graph)
 
-PackageScope["$Graph"]
-PackageScope["$GraphOrigin"]
-PackageScope["$VertexList"]
-PackageScope["$EdgeList"]
-PackageScope["$EdgeTags"]
-PackageScope["$VertexIndex"]
-PackageScope["$VertexCount"]
-PackageScope["$EdgeCount"]
+PrivateVariable[$Graph, $GraphOrigin, $VertexList, $EdgeList, $EdgeTags, $VertexIndex, $VertexCount, $EdgeCount]
 
-PackageScope["$IndexGraph"]
-PackageScope["$IndexGraphEdgeList"]
+PrivateVariable[$IndexGraph, $IndexGraphEdgeList]
 
-PackageScope["$MetricGraphCache"]
-PackageScope["$GraphMetric"]
+PrivateVariable[$MetricGraphCache, $GraphMetric]
 
 SetAttributes[GraphScope, HoldRest];
 

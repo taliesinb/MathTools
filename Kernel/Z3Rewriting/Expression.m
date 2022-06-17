@@ -1,4 +1,4 @@
-PackageExport["ExpressionRewritingSystem"]
+PublicFunction[ExpressionRewritingSystem]
 
 ExpressionRewritingSystem[rules_, opts___] := Scope[
   constructRewritingSystem["Expression", lookupRule @ rules, opts]
@@ -25,12 +25,12 @@ ExpressionRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] := Scope
 
 (**************************************************************************************************)
 
-PackageExport["UnorderedExpressionRewritingSystem"]
+PublicFunction[UnorderedExpressionRewritingSystem]
 
 UnorderedExpressionRewritingSystem[rules_] :=
   ExpressionRewritingSystem[rules, CanonicalizationFunction -> SortNestedLists];
 
-PackageExport["SortNestedLists"]
+PublicFunction[SortNestedLists]
 
 SortNestedLists[e_] := e //. l_List :> Sort[l];
 
@@ -50,7 +50,7 @@ subPatternSymbols[e_] := e /. Verbatim[Pattern][s_Symbol, _] :> s;
 
 (**************************************************************************************************)
 
-PackageExport["LabeledReplaceAllList"]
+PublicFunction[LabeledReplaceAllList]
 
 LabeledReplaceAllList[rules_][expr_] :=
   LabeledReplaceAllList[expr, rules];
@@ -88,7 +88,7 @@ invertCard[Labeled[e_, c_]] := Labeled[e, Inverted @ c];
 
 (**************************************************************************************************)
 
-PackageExport["ReplaceAllList"]
+PublicFunction[ReplaceAllList]
 
 ReplaceAllList[expr_, rules_] := Scope[
   positions = Position[expr, toLHS @ rules];

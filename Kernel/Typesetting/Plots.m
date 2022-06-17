@@ -1,4 +1,4 @@
-PackageExport["FadedMeshImage"]
+PublicFunction[FadedMeshImage]
 
 FadedMeshImage[array_, blockSize_] := Scope[
   fadeFactor = 0.8;
@@ -35,7 +35,7 @@ multFrame[val_, cspec___] := (
 
 (**************************************************************************************************)
 
-PackageExport["MeshImage"]
+PublicFunction[MeshImage]
 
 FadedMeshImage::baddata = MeshImage::baddata = "Data should be an w * h * d array of real numbers."
 
@@ -82,8 +82,7 @@ paintBlock[v_, {r_, c_}] := Module[
 
 (**************************************************************************************************)
 
-PackageExport["CompactArrayPlot"]
-PackageExport["ColorLegend"]
+PublicFunction[CompactArrayPlot, ColorLegend]
 
 Options[CompactArrayPlot] = {
   PixelConstrained -> 4,
@@ -144,7 +143,7 @@ stripFinalRGB[other_] := other;
 
 (**************************************************************************************************)
 
-PackageExport["BinaryArrayPlot"]
+PublicFunction[BinaryArrayPlot]
 
 Options[BinaryArrayPlot] = {
   PixelConstrained -> 4

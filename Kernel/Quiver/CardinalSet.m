@@ -1,8 +1,8 @@
-PackageExport["Cardinals"]
+PublicOption[Cardinals]
 
 (**************************************************************************************************)
 
-PackageExport["CardinalSet"]
+PublicHead[CardinalSet]
 
 SetUsage @ "
 CardinalSet[cardinals$] represents a set of cardinals that is simultaneously present on an edge.
@@ -13,7 +13,7 @@ MakeBoxes[CardinalSet[set_List], TraditionalForm] :=
 
 (**************************************************************************************************)
 
-PackageExport["SimplifyCardinalSet"]
+PublicFunction[SimplifyCardinalSet]
 
 SimplifyCardinalSet = Case[
   CardinalSet[{a_}]                               := % @ a;
@@ -23,13 +23,13 @@ SimplifyCardinalSet = Case[
 
 (**************************************************************************************************)
 
-PackageScope["SpliceCardinalSets"]
+PrivateFunction[SpliceCardinalSets]
 
 SpliceCardinalSets[e_] := Map[StripInverted, ReplaceAll[e, CardinalSet -> Splice]];
 
 (**************************************************************************************************)
 
-PackageScope["SpliceCardinalSetEdges"]
+PrivateFunction[SpliceCardinalSetEdges]
 
 SpliceCardinalSetEdges[e_] := ReplaceAll[e, DirectedEdge[a_, b_, CardinalSet[s_]] :> Splice[DirectedEdge[a, b, #]& /@ s]];
 

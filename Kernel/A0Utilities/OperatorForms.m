@@ -1,52 +1,52 @@
-PackageExport["TakeOperator"]
+PublicFunction[TakeOperator]
 
 TakeOperator[spec___][e_] := Take[e, spec];
 
 (**************************************************************************************************)
 
-PackageExport["DropOperator"]
+PublicFunction[DropOperator]
 
 DropOperator[spec___][e_] := Drop[e, spec];
 
 (**************************************************************************************************)
 
-PackageExport["PartOperator"]
+PublicFunction[PartOperator]
 
 PartOperator[spec___][e_] := Part[e, spec];
 
 (**************************************************************************************************)
 
-PackageExport["DotOperator"]
+PublicFunction[DotOperator]
 
 DotOperator[matrix_][other_] := Dot[matrix, other]
 
 (**************************************************************************************************)
 
-PackageExport["TimesOperator"]
+PublicFunction[TimesOperator]
 
 TimesOperator[a_][b_] := a * b;
 
 (**************************************************************************************************)
 
-PackageExport["PlusOperator"]
+PublicFunction[PlusOperator]
 
 PlusOperator[a_][b_] := a + b;
 
 (**************************************************************************************************)
 
-PackageExport["PlusOne"]
+PublicFunction[PlusOne]
 
 PlusOne[a_] := a + 1;
 
 (**************************************************************************************************)
 
-PackageExport["MinusOne"]
+PublicFunction[MinusOne]
 
 MinusOne[a_] := a - 1;
 
 (**************************************************************************************************)
 
-PackageExport["ModOperator"]
+PublicFunction[ModOperator]
 
 ModOperator[n_][e_] := If[NumericQ[e], Mod[e, n, 0], e];
 ModOperator[n_, m_][e_] := If[NumericQ[e], Mod[e, n, m], e];
@@ -55,7 +55,7 @@ ModOperator[Infinity, _] = Identity;
 
 (**************************************************************************************************)
 
-PackageExport["PlusOneMod"]
+PublicFunction[PlusOneMod]
 
 PlusOneMod[Infinity] := PlusOne;
 PlusOneMod[Infinity, _] := PlusOne;
@@ -64,7 +64,7 @@ PlusOneMod[n_, m_][x_] := Mod[x + 1, n, m];
 
 (**************************************************************************************************)
 
-PackageExport["MinusOneMod"]
+PublicFunction[MinusOneMod]
 
 MinusOneMod[Infinity] := MinusOne;
 MinusOneMod[Infinity, _] := MinusOne;
@@ -73,80 +73,80 @@ MinusOneMod[n_, m_][x_] := Mod[x - 1, n, m];
 
 (**************************************************************************************************)
 
-PackageExport["PlusModOperator"]
+PublicFunction[PlusModOperator]
 
 PlusModOperator[n__] := Plus /* ModOperator[n];
 
 (**************************************************************************************************)
 
-PackageExport["TimesModOperator"]
+PublicFunction[TimesModOperator]
 
 TimesModOperator[n__] := Times /* ModOperator[n];
 
 (**************************************************************************************************)
 
-PackageExport["MinusModOperator"]
+PublicFunction[MinusModOperator]
 
 MinusModOperator[n__] := Minus /* ModOperator[n];
 
 (**************************************************************************************************)
 
-PackageExport["SubtractModOperator"]
+PublicFunction[SubtractModOperator]
 
 SubtractModOperator[n__] := Subtract /* ModOperator[n];
 
 (**************************************************************************************************)
 
-PackageExport["OrOperator"]
+PublicFunction[OrOperator]
 
 e_OrOperator[arg_] := AnyTrue[e, #[arg]&];
 
 (**************************************************************************************************)
 
-PackageExport["AndOperator"]
+PublicFunction[AndOperator]
 
 e_AndOperator[arg_] := AllTrue[e, #[arg]&];
 
 (**************************************************************************************************)
 
-PackageExport["NotOperator"]
+PublicFunction[NotOperator]
 
 NotOperator[f_][expr_] := Not @ f @ expr;
 
 (**************************************************************************************************)
 
-PackageExport["SameOperator"]
+PublicFunction[SameOperator]
 
 SameOperator[f_][g_] := SameQ[f, g];
 
 (**************************************************************************************************)
 
-PackageExport["UnsameOperator"]
+PublicFunction[UnsameOperator]
 
 UnsameOperator[f_][g_] := UnsameQ[f, g];
 
 (**************************************************************************************************)
 
-PackageExport["StyleOperator"]
+PublicFunction[StyleOperator]
 
 StyleOperator[None] = Identity;
 StyleOperator[spec___][e_] := Style[e, spec];
 
 (**************************************************************************************************)
 
-PackageExport["SubscriptOperator"]
+PublicFunction[SubscriptOperator]
 
 SubscriptOperator[s_][e__] := Subscript[s, e];
 
 (**************************************************************************************************)
 
-PackageExport["SetOperator"]
+PublicFunction[SetOperator]
 
 SetOperator[value_] := Function[var, Set[var, value], {HoldAllComplete}];
 
 (**************************************************************************************************)
 
-PackageExport["LookupOperator"]
+PublicFunction[LookupOperator]
 
 LookupOperator[a_][key_] := Lookup[a1, key];
 LookupOperator[a_, (Rule|RuleDelayed)[DefaultValue, v_]][key_] := Lookup[a, key, v];

@@ -1,10 +1,9 @@
-PackageExport["VertexAnnotations"]
-PackageExport["EdgeAnnotations"]
-PackageExport["CustomGraphAnnotation"]
+PublicOption[VertexAnnotations, EdgeAnnotations]
+PublicHead[CustomGraphAnnotation]
 
 (**************************************************************************************************)
 
-PackageExport["DeleteVertexAnnotations"]
+PublicFunction[DeleteVertexAnnotations]
 
 DeleteVertexAnnotations[graph_Graph] :=
   AnnotationDelete[graph, VertexAnnotations];
@@ -13,7 +12,7 @@ DeleteVertexAnnotations[other_] := other;
 
 (**************************************************************************************************)
 
-PackageExport["LookupVertexAnnotations"]
+PublicFunction[LookupVertexAnnotations]
 
 LookupVertexAnnotations[graph_, key_, part_] :=
   Part[LookupVertexAnnotations[graph, key], part];
@@ -26,7 +25,7 @@ LookupVertexAnnotations[graph_, All] :=
 
 (**************************************************************************************************)
 
-PackageExport["AttachVertexAnnotations"]
+PublicFunction[AttachVertexAnnotations]
 
 AttachVertexAnnotations[graph_, annotations_] := Scope[
   CheckIsGraph[1];
@@ -35,14 +34,14 @@ AttachVertexAnnotations[graph_, annotations_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["VertexAnnotationPresentQ"]
+PublicFunction[VertexAnnotationPresentQ]
 
 VertexAnnotationPresentQ[graph_, key_] :=
   KeyExistsQ[Replace[LookupAnnotation[graph, VertexAnnotations, None], None -> <||>], key]
 
 (**************************************************************************************************)
 
-PackageExport["DeleteEdgeAnnotations"]
+PublicFunction[DeleteEdgeAnnotations]
 
 DeleteEdgeAnnotations[graph_Graph] :=
   AnnotationDelete[graph, EdgeAnnotations];
@@ -51,7 +50,7 @@ DeleteEdgeAnnotations[other_] := other;
 
 (**************************************************************************************************)
 
-PackageExport["LookupEdgeAnnotations"]
+PublicFunction[LookupEdgeAnnotations]
 
 LookupEdgeAnnotations[graph_, key_] :=
   Lookup[Replace[LookupAnnotation[graph, EdgeAnnotations, None], None -> <||>], key, None];
@@ -61,7 +60,7 @@ LookupEdgeAnnotations[graph_, All] :=
 
 (**************************************************************************************************)
 
-PackageExport["AttachEdgeAnnotations"]
+PublicFunction[AttachEdgeAnnotations]
 
 AttachEdgeAnnotations[graph_, annotations_] := Scope[
   CheckIsGraph[1];
@@ -70,14 +69,14 @@ AttachEdgeAnnotations[graph_, annotations_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["EdgeAnnotationPresentQ"]
+PublicFunction[EdgeAnnotationPresentQ]
 
 EdgeAnnotationPresentQ[graph_, key_] :=
   KeyExistsQ[Replace[LookupAnnotation[graph, EdgeAnnotations, None], None -> <||>], key]
 
 (**************************************************************************************************)
 
-PackageScope["joinAnnotation"]
+PrivateFunction[joinAnnotation]
 
 joinAnnotation[graph_, key_, newAnnotations_] := Scope[
   oldAnnotations = LookupAnnotation[graph, key, None];
@@ -87,8 +86,8 @@ joinAnnotation[graph_, key_, newAnnotations_] := Scope[
 
 (**************************************************************************************************)
 
-PackageExport["GraphVertexData"]
-PackageScope["setupGraphVertexData"]
+PublicFunction[GraphVertexData]
+PrivateFunction[setupGraphVertexData]
 
 defineLiteralMacro[setupGraphVertexData,
   setupGraphVertexData[graph_, extra___Rule] := (
@@ -111,8 +110,8 @@ GraphVertexData[vertex_, key_] :=
 
 (**************************************************************************************************)
 
-PackageExport["GraphEdgeData"]
-PackageScope["setupGraphEdgeData"]
+PublicFunction[GraphEdgeData]
+PrivateFunction[setupGraphEdgeData]
 
 defineLiteralMacro[setupGraphEdgeData,
   setupGraphEdgeData[graph_, extra___Rule] := (

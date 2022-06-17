@@ -1,6 +1,6 @@
 (**************************************************************************************************)
 
-PackageExport["DirectedUniGraphLabeledReplaceList"]
+PublicFunction[DirectedUniGraphLabeledReplaceList]
 
 DirectedUniGraphLabeledReplaceList[rule_][hyperedges_] :=
   DirectedUniGraphLabeledReplaceList[hyperedges, rule];
@@ -23,7 +23,7 @@ applyLabeledDUHRewrite[edges_, pos_, rule_] :=
 
 (**************************************************************************************************)
 
-PackageExport["DirectedUniGraphReplaceList"]
+PublicFunction[DirectedUniGraphReplaceList]
 
 DirectedUniGraphReplaceList[rule_][hyperedges_] :=
   DirectedUniGraphReplaceList[hyperedges, rule];
@@ -48,7 +48,7 @@ removeDupUniH[hyperedges_, results_] :=
 
 (**************************************************************************************************)
 
-PackageExport["DirectedGraphLabeledReplaceList"]
+PublicFunction[DirectedGraphLabeledReplaceList]
 
 DirectedGraphLabeledReplaceList[rule_][hyperedges_] :=
   DirectedGraphLabeledReplaceList[hyperedges, rule];
@@ -71,7 +71,7 @@ applyLabeledDHRewrite[edges_, pos_, rule_] :=
 
 (**************************************************************************************************)
 
-PackageExport["DirectedGraphReplaceList"]
+PublicFunction[DirectedGraphReplaceList]
 
 DirectedGraphReplaceList[rule_][hyperedges_] :=
   DirectedGraphReplaceList[hyperedges, rule];
