@@ -416,7 +416,7 @@ flowAlignedRow = Case[
     {makeQGBoxes @ f, ":", makeQGBoxes @ d, "\[RightArrow]", makeQGBoxes @ c};
 
   AppliedForm[f_, h_Symbol[a_, b_]] /; KeyExistsQ[$flowAlignmentTable, h] :=
-    {RowBox[makeQGBoxes @ f, "(", makeQGBoxes @ a], $flowAlignmentTable @ h, RowBox[makeQGBoxes @ b, ")"]};
+    {RBox[makeQGBoxes @ f, "(", makeQGBoxes @ a], $flowAlignmentTable @ h, RBox[makeQGBoxes @ b, ")"]};
 
   Form[e_] := makeQGBoxes @ e;
 

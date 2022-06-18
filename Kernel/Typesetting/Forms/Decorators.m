@@ -171,5 +171,5 @@ middleRow[l_][{most__}] := Join[{l}, commaRowBox /@ {most}, {""}];
 lastRow[l_, r_][{most__, last_}] := Join[{l}, commaRowBox /@ {most}, {last, r}];
 
 commaRowBox[""] := "";
-commaRowBox[e_] := RowBox[TemplateBox[List @ ",", "InvisibleForm"], e, ","];
+commaRowBox[e_] := RBox[TemplateBox[List @ ",", "InvisibleForm"], e, ","];
 
