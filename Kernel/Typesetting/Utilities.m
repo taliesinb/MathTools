@@ -1,4 +1,4 @@
-PublicFunction[StandardizeRowColumnSpec]
+PrivateFunction[StandardizeRowColumnSpec]
 
 StandardizeRowColumnSpec[{pre___, cycle_List, post___}, n_] := Scope[
   pre = ToList[pre]; post = ToList[post];
@@ -25,12 +25,47 @@ StandardizeRowColumnSpec[item_, n_] :=
 StandardizeRowColumnSpec[Automatic|None, _] :=
   Automatic;
 
-
 (**************************************************************************************************)
 
-PublicFunction[StripLabel]
+PrivateFunction[StripLabel]
 
 StripLabel[items:{___Labeled}] := Part[items, All, 1];
 StripLabel[Labeled[e_, _]] := e;
 StripLabel[e_] := e;
 
+(**************************************************************************************************)
+
+PrivateFunction[TBox, SBox, RBox, GBox]
+
+TBox[form_][args___] := TemplateBox[{args}, form];
+
+SBox[form_] := TemplateBox[{}, form];
+
+RBox[args___] := RowBox[{args}];
+
+GBox[entries_, alignments_, rowSpacings_, colSpacings_] :=
+  GridBox[
+    entries,
+    GridBoxAlignment -> {"Columns" -> alignments},
+    GridBoxSpacings -> {"Rows" -> prepend0 @ rowSpacings, "Columns" -> prepend0 @ colSpacings}
+  ];
+
+prepend0[list_List] := Prepend[list, 0];
+prepend0[e_] := e;
+
+(**************************************************************************************************)
+
+
+PrivateFunction[applyRiffled]
+
+applyRiffled[f_, op_][args___] := f[riffled[op][args]];
+
+(**************************************************************************************************)
+
+
+PrivateFunction[riffled]
+
+riffled[op_][] := "";
+riffled[op_][a_] := a;
+riffled[op_][a_, b_] := {a, op, b}
+riffled[op_][a_, b_, c__] := Riffle[{a, b, c}, op];

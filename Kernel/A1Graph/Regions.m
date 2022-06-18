@@ -266,9 +266,11 @@ outerProcessRegion[region_] := Scope[
   Catch[processRegion[region], outerProcessRegion]
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 (** framework code                         **)
-(********************************************)
+(**************************************************************************************************)
+
 
 failAuto[msgName_, args___] := (
   Message[MessageName[GraphRegion, msgName], $currentRegionHead, args];
@@ -280,7 +282,8 @@ fail[msgName_, args___] := (
   Throw[Nothing, outerProcessRegion]
 );
 
-(********************************************)
+(**************************************************************************************************)
+
 
 SetHoldFirst[collectRegionData, collectPathData];
 
@@ -289,7 +292,8 @@ collectPathData[body_] := Scope[
   GraphPathData[$vertexBag, $edgeBag, $inversionBag]
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 
 sowVertex[v_] := Internal`StuffBag[$vertexBag, v];
 
@@ -307,7 +311,8 @@ sowEdge[_] := False;
 
 sowEdgeList[i_List] := Internal`StuffBag[$edgeBag, i, 1];
 
-(********************************************)
+(**************************************************************************************************)
+
 
 SetHoldRest[findStrictEdge];
 findStrictEdge[v1_, v2_, else_:None] := First[
@@ -318,20 +323,23 @@ findStrictEdge[v1_, v2_, else_:None] := First[
   else
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 
 findEdge[v1_, v2_] := findStrictEdge[v1, v2, Inverted @ findStrictEdge[v2, v1]]
 
 findAndSowEdge[v1_, v2_] := sowEdge @ findEdge[v1, v2];
 
-(********************************************)
+(**************************************************************************************************)
+
 
 GraphRegion::nfvertex = "No vertex matching `` was found in the graph."
 GraphRegion::nfedge = "No edge matching `` was found in the graph.";
 GraphRegion::malformedrspec = "The region specification `` was malformed.";
 
 
-(********************************************)
+(**************************************************************************************************)
+
 (** literal vertices and edges             **)
 
 $regionHeads = Alternatives[
@@ -348,13 +356,15 @@ processRegion[spec_] := If[MatchQ[Head @ spec, $regionHeads],
 processRegion[IndexedEdge[i_Integer]] /; 1 <= i <= $EdgeCount :=
   edgeIndicesToPathData @ {i};
 
-(********************************************)
+(**************************************************************************************************)
+
 (** edge pattern                           **)
 
 processRegion[assoc_Association] :=
   NamedGraphRegionData @ Map[processRegion, assoc];
 
-(********************************************)
+(**************************************************************************************************)
+
 
 GraphRegionElementQ[e:_[___, GraphMetric -> _]] := GraphRegionElementQ @ Most @ e;
 GraphRegionElementQ[_Rule | _TwoWayRule | _DirectedEdge | _UndirectedEdge] := True;
@@ -374,7 +384,8 @@ processRegion[UndirectedEdge[a_, b_, c_]] :=
 verbatimEdgePattern[a_, b_, c_] :=
   Verbatim /@ EdgePattern[a, b, c];
 
-(********************************************)
+(**************************************************************************************************)
+
 (** edge pattern                           **)
 
 GraphRegionElementQ[EdgePattern[_, _, _] | EdgePattern[_, _]] := True;
@@ -462,7 +473,8 @@ processRegion[ChartRegion[cards_List, i_:All]] := Scope[
 ];
 
 
-(********************************************)
+(**************************************************************************************************)
+
 (** Point                                  **)
 
 GraphRegionElementQ[Point[_]] := True;
@@ -471,7 +483,8 @@ processRegion[Point[v_]] :=
   GraphRegionData[List @ findVertex @ v, {}];
 
 
-(********************************************)
+(**************************************************************************************************)
+
 (** vertex pattern                         **)
 
 GraphRegionElementQ[VertexPattern[_]] := True;
@@ -488,14 +501,17 @@ processRegion[p:VertexPattern[v_]] := Scope[
 ];
 
 
-(********************************************)
+(**************************************************************************************************)
+
 (** complex region specifications          **)
-(********************************************)
+(**************************************************************************************************)
+
 
 processRegion[list_List /; VectorQ[list, GraphRegionElementQ]] :=
   RegionDataUnion @ Map[processRegion, list];
 
-(********************************************)
+(**************************************************************************************************)
+
 
 PrivateFunction[findVertexIndex]
 
@@ -533,7 +549,8 @@ resolveComplexVertexList[spec_] := Which[
   True, failAuto["notlist", spec]
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 (** WeightedData                           **)
 
 PublicHead[Weighted]
@@ -544,7 +561,8 @@ processRegion[Weighted[region_, weight_]] :=
     <|"Weight" -> weight|>
   ];
 
-(********************************************)
+(**************************************************************************************************)
+
 (** GraphRegionData|GraphPathData[...]     **)
 
 GraphRegionElementQ[GraphRegionData[_List, _List]] := True;
@@ -553,7 +571,8 @@ GraphRegionElementQ[GraphPathData[_List, _List, _List]] := True;
 processRegion[g_GraphRegionData] := g;
 processRegion[g_GraphPathData] := g;
 
-(********************************************)
+(**************************************************************************************************)
+
 
 $metricRegionHeads = Alternatives[
   Line, Disk, Annulus, Circle, HalfLine, InfiniteLine, Polygon, StarPolygon, Path
@@ -564,7 +583,8 @@ processRegion[spec:$metricRegionHeads[__, GraphMetric -> metric_]] := Scope[
   processRegion @ Most @ spec
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 (** Path[...]                              **)
 
 GraphRegionElementQ[Path[_, _]] := True;
@@ -584,7 +604,8 @@ PublicOption[PathAdjustments, PathCancellation]
 SetUsage @ "PathAdjustments is an option to Path that specifies which steps to foreshorten."
 SetUsage @ "PathCancellation is an option to Path that specifies whether to cancel neighboring inverted cardinals."
 
-(********************************************)
+(**************************************************************************************************)
+
 
 sowPath[start_, path_, repeating_, stop_:None] := Scope[
   startId = findVertex @ start;
@@ -600,7 +621,8 @@ sowPath[start_, path_, repeating_, stop_:None] := Scope[
   ];
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 
 GraphRegion::notdir = "The region ``[...] includes a path ``, but paths cannot be defined on undirected graphs."
 
@@ -638,7 +660,8 @@ failWalk[cardinal_, vertexId_] := Scope[
   failAuto["nocard", cardinal, Part[$VertexList, vertexId], available];
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 
 offsetWalk[startId_, path_] := Scope[
   pathWord = ParseRegionWord @ path;
@@ -646,7 +669,8 @@ offsetWalk[startId_, path_] := Scope[
 ];
 
 
-(********************************************)
+(**************************************************************************************************)
+
 (** Cycles[...]                            **)
 
 GraphRegionElementQ[Cycles[_List] | Cycles[_String]] := True;
@@ -671,7 +695,8 @@ processRegion[Cycles[word_]] := Scope[
   Splice @ cycles
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 (** Inverted[path...]                       **)
 
 GraphRegionElementQ[Inverted[_ ? GraphRegionElementQ]] := True;
@@ -684,7 +709,8 @@ processRegion[spec:Inverted[region_]] := Scope[
 
 GraphRegion::badnegpath = "Error in ``: can only invert a path or set of paths.";
 
-(********************************************)
+(**************************************************************************************************)
+
 (** Line[...]                              **)
 
 GraphRegionElementQ[Line[_List] | Line[_List, _]] := True;
@@ -713,7 +739,8 @@ findAndSowGeodesic[v1_, v2_] := Scope[
 ];
 
 
-(********************************************)
+(**************************************************************************************************)
+
 (** HalfLine[...]                              **)
 
 GraphRegionElementQ[HalfLine[{_, _}] | HalfLine[_, _]] := True;
@@ -744,7 +771,8 @@ findCardinalBetween[v1_, v2_] := Scope[
   ]
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 (** InfiniteLine[...]                      **)
 
 GraphRegionElementQ[InfiniteLine[{_, _}] | InfiniteLine[_, _]] := True;
@@ -763,7 +791,8 @@ processRegion[InfiniteLine[v_, dir_]] := Scope[
   ]
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 (** Polygon[...]                           **)
 
 GraphRegionElementQ[Polygon[_List]] := True;
@@ -776,7 +805,8 @@ processRegion[Polygon[vertices_]] := Scope[
   ]
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 (** Locus[...]                             **)
 
 PublicHead[Locus]
@@ -826,7 +856,8 @@ extractDistanceToRegion[{v_}] :=
 extractDistanceToRegion[v_List] :=
   Min /@ Part[MetricDistanceMatrix[$MetricGraphCache, GraphMetric -> $GraphMetric], All, v];
 
-(********************************************)
+(**************************************************************************************************)
+
 (** Disk[...]                              **)
 
 GraphRegionElementQ[Disk[_, _ ? NumericQ]] := True;
@@ -835,7 +866,8 @@ processRegion[d:Disk[center_, r_ ? NumericQ]] :=
   circularRegionData[d, center, LessEqualThan[r]];
 
 
-(********************************************)
+(**************************************************************************************************)
+
 (** Annulus[...]                           **)
 
 GraphRegionElementQ[Annulus[_, {_ ? NumericQ, _ ? NumericQ}]] := True;
@@ -844,7 +876,8 @@ processRegion[a:Annulus[center_, {r1_ ? NumericQ, r2_ ? NumericQ}]] :=
   circularRegionData[a, center, Between[{r1, r2}]];
 
 
-(********************************************)
+(**************************************************************************************************)
+
 (** Circle[...]                            **)
 
 GraphRegionElementQ[Circle[_, _ ? NumericQ]] := True;
@@ -854,7 +887,8 @@ processRegion[c:Circle[center_, r_ ? NumericQ]] :=
 
 ApproxEqualTo[e_][r_] := Abs[e - r] < 0.5;
 
-(********************************************)
+(**************************************************************************************************)
+
 
 GraphRegion::emptyarea = "The area defined by `` contains no points."
 
@@ -902,7 +936,8 @@ subgraphRegionData[vertices_] := Scope[
   ]
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 (** GraphRegionBoundary[...]               **)
 
 PublicHead[GraphRegionBoundary]
@@ -921,7 +956,8 @@ processRegion[GraphRegionBoundary[region_]] := Scope[
 ];
 
 
-(********************************************)
+(**************************************************************************************************)
+
 (** ConnectedEdges[...]                    **)
 
 PublicHead[ConnectedSubgraph]
@@ -938,7 +974,8 @@ processRegion[ConnectedSubgraph[region_]] := Scope[
   RegionDataUnion[{region, subgraphRegionData @ vertices}]
 ];
 
-(********************************************)
+(**************************************************************************************************)
+
 (** GraphRegionComplement[...]             **)
 
 PublicHead[GraphRegionComplement]
@@ -952,7 +989,8 @@ GraphRegionElementQ[GraphRegionComplement[_, ___]] := True;
 processRegion[GraphRegionComplement[regions__]] :=
   RegionDataComplement @ Map[processRegion, {regions}];
 
-(********************************************)
+(**************************************************************************************************)
+
 
 RegionDataComplement[{a_}] := a;
 
@@ -970,7 +1008,8 @@ RegionDataComplement[e:{_, _}] := Scope[
 ]
 
 
-(********************************************)
+(**************************************************************************************************)
+
 (** GraphRegionIntersection[...]           **)
 
 PublicHead[GraphRegionIntersection]
@@ -988,7 +1027,8 @@ GraphRegionElementQ[GraphRegionIntersection[___]] := True;
 processRegion[GraphRegionIntersection[regions__]] :=
   RegionDataIntersection @ Map[processRegion, {regions}];
 
-(********************************************)
+(**************************************************************************************************)
+
 
 RegionDataIntersection[{a_}] := a;
 
@@ -999,7 +1039,8 @@ RegionDataIntersection[list_List] :=
   ]
 
 
-(********************************************)
+(**************************************************************************************************)
+
 (** GraphRegionUnion[...]                  **)
 
 PublicHead[GraphRegionUnion]
@@ -1018,7 +1059,8 @@ GraphRegionElementQ[GraphRegionUnion[___]] := True;
 processRegion[GraphRegionUnion[regions__]] :=
   RegionDataUnion @ Map[processRegion, {regions}];
 
-(********************************************)
+(**************************************************************************************************)
+
 
 PrivateFunction[RegionDataUnion]
 

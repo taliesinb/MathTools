@@ -41,7 +41,7 @@ ElectricalGravitationalBalanceX[x_, y_, graph_, n_, delta_] := Scope[
 	,
 		{n}
 	];
-	dx = (EuclideanDistance @@ MinMax[x]) / 20;
+	dx = Max[(EuclideanDistance @@ MinMax[x]) / 20, 0.0001];
 	MeanShift[x, dx]
 ]
 

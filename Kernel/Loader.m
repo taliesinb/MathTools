@@ -225,6 +225,12 @@ resolveRemainingSymbols[{path_, context_, packageData_Package`PackageData, _}] :
   {path, context, packageData /. dispatch}
 ];
 
+fileSortingTuple[path_] := {
+    StringFreeQ[path, "A0Init" | "A0Utilities"],
+    Which[StringEndsQ[path, "init.m"], -1, StringEndsQ[path, "final.m"], 1, True, 0],
+    path
+  };
+
 QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled_:True, fullReload_:True] := Block[
   {$directory, $files, $textFiles, $privateSymbols, $systemSymbols, $publicSymbols, $packageExpressions, $packageRules,
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result, requiresFullReload
@@ -240,7 +246,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
   $filesToSkip = FileNames[{"Loader.m", "init.m", "*.old.m"}, $directory];
   $userFiles = FileNames["user_*.m", $directory];
   $files = Sort @ Complement[FileNames["*.m", $directory, Infinity], Join[$filesToSkip, $userFiles]];
-  $files = SortBy[$files, {StringFreeQ[#, "A0Init" | "A0Utilities"], StringSplit[StringDelete[#, ("init.m" ~~ EndOfString)], "/"]}&];
+  $files = SortBy[$files, fileSortingTuple];
 
   $textFiles = FileNames[{"*.txt", "*.tex"}, $directory, Infinity];
 
@@ -376,7 +382,7 @@ evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
   $currentPath = path; $currentFileLineTimings = <||>; $failCount = 0;
   If[$failEval, Return[$Failed, Catch]];
   VPrint["Evaluating \"", path, "\""];
-  $formsChanged = Or[$formsChanged, StringContainsQ[context, "StylesheetForms"]]; (* to avoid expensive symbol enum *)
+  $formsChanged = Or[$formsChanged, StringContainsQ[context, "`Typesetting`Forms`"]]; (* to avoid expensive symbol enum *)
   QuiverGeometryPackageLoader`$FileTimings[path] = First @ AbsoluteTiming[
     Block[{$Context = context}, Catch[Scan[evaluateExpression, packageData], evaluateExpression]];
   ];
