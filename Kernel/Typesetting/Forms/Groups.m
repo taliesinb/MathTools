@@ -220,27 +220,23 @@ declareSymbolForm[SelfActionSymbol, GroupSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[GroupElementSymbol, GroupoidElementSymbol, RingElementSymbol]
+PublicForm[GroupElementSymbol, GroupoidElementSymbol]
 
 GroupElementSymbol[] := GroupElementSymbol["g"];
 GroupoidElementSymbol[] := GroupoidElementSymbol["g"];
-RingElementSymbol[] := RingElementSymbol["r"];
 
 declareSymbolForm[GroupElementSymbol];
 declareSymbolForm[GroupoidElementSymbol];
-declareSymbolForm[RingElementSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[GroupIdentitySymbol, GroupoidIdentitySymbol, RingIdentitySymbol]
+PublicForm[GroupIdentitySymbol, GroupoidIdentitySymbol]
 
 GroupIdentitySymbol[] := GroupIdentitySymbol["e"];
 GroupoidIdentitySymbol[] := GroupoidIdentitySymbol["e"];
-RingIdentitySymbol[] := RingIdentitySymbol["e"];
 
 declareSymbolForm[GroupIdentitySymbol];
 declareSymbolForm[GroupoidIdentitySymbol];
-declareSymbolForm[RingIdentitySymbol];
 
 (**************************************************************************************************)
 
@@ -262,7 +258,8 @@ declareUnaryForm[GroupoidInverseForm, maybeParen[GroupoidElementSymbol]];
 PublicForm[GroupMultiplicationForm, ImplicitGroupMultiplicationForm, GroupoidMultiplicationForm]
 
 $grouplikeTerms = Alternatives[
-  GroupElementSymbol, GroupElementSymbol, GroupIdentitySymbol, GroupGeneratorSymbol, GroupPowerForm, GroupInverseForm, PathSymbol, TupleForm
+  GroupElementSymbol, GroupElementSymbol, GroupIdentitySymbol, GroupGeneratorSymbol, GroupPowerForm, GroupInverseForm, PathSymbol, TupleForm,
+  RingElementSymbol, RingBasisElementForm, WordRingElementSymbol, WordRingBasisElementForm
 ];
 
 $groupoidlikeTerms = Alternatives[

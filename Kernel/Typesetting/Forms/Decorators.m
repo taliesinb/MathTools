@@ -20,6 +20,12 @@ declareAppliedFormatting[SignedForm];
 
 (**************************************************************************************************)
 
+PublicForm[FamilyModifierForm]
+
+declareUnaryWrapperForm[FamilyModifierForm]
+
+(**************************************************************************************************)
+
 PublicForm[WhiteCircleModifierForm, BlackCircleModifierForm]
 
 declareUnaryForm[WhiteCircleModifierForm];

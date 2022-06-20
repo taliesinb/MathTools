@@ -100,6 +100,8 @@ declareBoxFormatting[
     makeTypedTemplateBox[t -> generalizedVertexSymbol, w -> WordForm, h -> generalizedVertexSymbol, "PathWordForm"]
 ];
 
+PrivateFunction[generalizedVertexSymbol]
+
 SetHoldAllComplete[generalizedVertexSymbol, generalizedVertexBoxes];
 
 declareBoxFormatting[

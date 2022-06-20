@@ -17,6 +17,20 @@ $TemplateKatexFunction["PlanRingSymbol"] = katexAlias["planRingSymbol"];
 
 (**************************************************************************************************)
 
+PublicForm[WordRingElementSymbol]
+
+WordRingElementSymbol[] := WordRingElementSymbol["\[Omega]"];
+
+declareSymbolForm[WordRingElementSymbol];
+
+(**************************************************************************************************)
+
+PublicForm[WordRingBasisElementForm]
+
+declareUnaryForm[WordRingBasisElementForm];
+
+(**************************************************************************************************)
+
 PublicForm[RepeatedPowerForm]
 
 declareBinaryForm[RepeatedPowerForm];

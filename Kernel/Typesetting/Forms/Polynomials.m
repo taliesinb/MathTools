@@ -1,3 +1,12 @@
+PublicForm[VariableForm]
+
+declareBoxFormatting[
+  VariableForm[p_] :>
+    TemplateBox[List @ symbolBoxes @ p, "VariableForm"]
+];
+
+(**************************************************************************************************)
+
 PublicForm[PolynomialSymbol]
 
 declareSymbolForm[PolynomialSymbol];
@@ -79,3 +88,4 @@ makeInnerPolyParamQGBoxes = Case[
 
 longPolyQ[e_PolyForm] := Length[Unevaluated @ e] > 1;
 longPolyQ[e_] := Head[Unevaluated @ e] === $polyHead && Length[Unevaluated @ e] > 1;
+

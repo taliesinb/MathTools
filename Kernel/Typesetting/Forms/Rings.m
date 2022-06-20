@@ -11,7 +11,7 @@ PublicForm[RingSymbol]
 
 RingSymbol[] := RingSymbol["R"];
 
-$ringAliases = <|
+$ringAliases =   <|
   "Z" -> "Integers"
 |>
 
@@ -26,6 +26,34 @@ $semiringAliases = <|
 |>
 
 declareAlgebraicSymbol[SemiringSymbol, $semiringAliases];
+
+(**************************************************************************************************)
+
+PublicForm[RingElementSymbol]
+
+RingElementSymbol[] := RingElementSymbol["r"];
+
+declareSymbolForm[RingElementSymbol];
+
+(**************************************************************************************************)
+
+PublicForm[RingUnitElementForm]
+
+RingUnitElementForm[e_] := RingUnitElementForm["1", e];
+
+declareBinaryForm[RingUnitElementForm];
+
+(**************************************************************************************************)
+
+PublicForm[RingZeroElementSymbol]
+
+declareConstantSymbolForm[RingZeroElementSymbol];
+
+(**************************************************************************************************)
+
+PublicForm[RingBasisElementForm]
+
+declareUnaryForm[RingBasisElementForm];
 
 (**************************************************************************************************)
 
@@ -82,4 +110,5 @@ declareInfixSymbol[SignedMultisetRingSumForm] // usingCustomKatex["smrplus"];
 
 PublicForm[PolynomialRingForm]
 
-declareDerivedRingForm[PolynomialRingForm, IndeterminateSymbol];
+declareDerivedRingForm[PolynomialRingForm, VariableForm];
+
