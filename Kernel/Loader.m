@@ -349,23 +349,40 @@ QuiverGeometryPackageLoader`EvaluatePackages[packagesList_List] := Block[
   QuiverGeometryPackageLoader`$FileTimings = <||>;
   QuiverGeometryPackageLoader`$FileLineTimings  = <||>;
   $formsChanged = $failEval = False;
+  VPrint["Evaluating packages."];
   loadUserFile["user_init.m"];
   result = GeneralUtilities`WithMessageHandler[
     Scan[evaluatePackage, packagesList],
     handleMessage
   ];
   If[$failEval, Return[$Failed, Block]];
-  If[$formsChanged, loadUserFile["user_final.m"]];
+  finalChangedQ = userFileChangedQ["user_final.m"];
+  If[$formsChanged || finalChangedQ, loadUserFile["user_final.m"]];
   result
 ];
+
+If[!AssociationQ[$userFileModTimes], $userFileModTimes = Association[]];
+
+userFileChangedQ[name_] := Block[{path, modTime, lastModTime},
+  path = toUserFilePath @ name;
+  If[!FileExistsQ[path], Return[False]];
+  modTime = UnixTime @ FileDate[path, "Modification"];
+  lastModTime = Lookup[$userFileModTimes, path, 0];
+  $userFileModTimes[path] = modTime;
+  lastModTime != modTime
+];
+
+QuiverGeometryPackageLoader`ReloadUserFile[] := QuiverGeometryPackageLoader`ReloadUserFile["user_final.m"];
 
 QuiverGeometryPackageLoader`ReloadUserFile[name_] := loadUserFile @ name;
   
 $userContext = "QuiverGeometryPackageLoader`Private`User`";
 $userContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"};
 
+toUserFilePath[name_] := FileNameJoin[{QuiverGeometryPackageLoader`$Directory, name}];
+
 loadUserFile[name_] := Block[{path},
-  path = FileNameJoin[{QuiverGeometryPackageLoader`$Directory, name}];
+  path = toUserFilePath[name];
   If[!FileExistsQ[path], Return[]];
   Block[{$Context = $userContext, $ContextPath = $userContextPath},
     VPrint["Loading \"", name, "\""];
@@ -440,9 +457,7 @@ QuiverGeometryPackageLoader`Read[cachingEnabled_:True, fullReload_:True] :=
 QuiverGeometryPackageLoader`Load[fullReload_:True] := PreemptProtect @ Block[{packages},
   packages = QuiverGeometryPackageLoader`Read[True, fullReload];
   If[FailureQ[packages], ReturnFailed[]];
-  If[packages === {} && $lastLoadSuccessful, Return[Null]];
   QuiverGeometryPackageLoader`$LoadCount++;
-  VPrint["Evaluating packages."];
   If[!FailureQ[QuiverGeometryPackageLoader`EvaluatePackages @ packages],
     $lastLoadSuccessful = True];
   If[$PreviousPathAlgebra =!= None,
@@ -450,7 +465,6 @@ QuiverGeometryPackageLoader`Load[fullReload_:True] := PreemptProtect @ Block[{pa
 ];
 
 QuiverGeometryPackageLoader`$LoadCount = 0;
-
 
 selfModTime[] := UnixTime @ FileDate[QuiverGeometryPackageLoader`$LoaderFileName, "Modification"];
 

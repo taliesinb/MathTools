@@ -189,10 +189,14 @@ SetUsage @ "
 GraphRegionElementQ[elem$] returns True if elem$ is an expression describing a graph region.
 "
 
-GraphRegionElementQ[_] := False;
-GraphRegionElementQ[GraphOrigin] := True;
-GraphRegionElementQ[IndexedVertex[_Integer]] := True;
-GraphRegionElementQ[IndexedEdge[_Integer]] := True;
+GraphRegionElementQ = Case[
+  GraphOrigin                 := True;
+  IndexedVertex[_Integer]     := True;
+  IndexedVertex[{__Integer}]  := True;
+  IndexedEdge[_Integer]       := True;
+  IndexedEdge[{__Integer}]    := True;
+  _                           := False;
+];
 
 (**************************************************************************************************)
 
@@ -353,8 +357,11 @@ processRegion[spec_] := If[MatchQ[Head @ spec, $regionHeads],
   GraphRegionData[{findVertex @ spec}, {}]
 ];
 
-processRegion[IndexedEdge[i_Integer]] /; 1 <= i <= $EdgeCount :=
+processRegion[IndexedEdge[i_Integer ? validEdgeIndexQ]] :=
   edgeIndicesToPathData @ {i};
+
+processRegion[IndexedEdge[i:{__Integer} ? validEdgeIndexQ]] :=
+  edgeIndicesToPathData @ i;
 
 (**************************************************************************************************)
 
@@ -500,6 +507,13 @@ processRegion[p:VertexPattern[v_]] := Scope[
   GraphRegionData[indices, {}]
 ];
 
+processRegion[spec_IndexedVertex] := Scope[
+  indices = findVertexIndices @ spec;
+  If[IntegerVectorQ[indices],
+    GraphRegionData[indices, {}],
+    fail["malformedrspec", spec]
+  ]
+];
 
 (**************************************************************************************************)
 
@@ -512,6 +526,36 @@ processRegion[list_List /; VectorQ[list, GraphRegionElementQ]] :=
 
 (**************************************************************************************************)
 
+PrivateFunction[findVertexIndices]
+
+findVertexIndices[e_] := Block[{failAuto = Function[$Failed]}, iFindVertexIndices @ e];
+
+iFindVertexIndices = Case[
+  IndexedVertex[i:{__Integer} ? validVertexIndexQ] := i;
+  p:VertexPattern[v_]                              := MatchIndices[$VertexList, v, failAuto["invv", p]];
+  other_                                           := Replace[findVertex[other], i_Integer :> {i}];
+  list_List                                        := Scope[
+    Which[
+      res = Map[iFindVertexIndices, list];
+      VectorQ[res, IntegerVectorQ],
+        Union @@ res,
+      KeyExistsQ[$VertexIndex, list],
+        List @ $VertexIndex[list],
+      IntegerVectorQ[list] && validVertexIndexQ[list],
+        DeleteDuplicates @ list,
+      True,
+        $Failed
+    ]
+  ]
+];
+
+GraphRegion::invvertind = "IndexedVertex referenced an out-of-bound value, should be between 1 and ``.";
+validVertexIndexQ[i_] := If[1 <= Min[i] <= Max[i] <= $VertexCount, True, Message[GraphRegion::invvertind, $VertexCount]; False];
+
+GraphRegion::invedgeind = "IndexedEdge referenced an out-of-bound value, should be between 1 and ``.";
+validEdgeIndexQ[i_] := If[1 <= Min[i] <= Max[i] <= $EdgeCount, True, Message[GraphRegion::invedgeind, $EdgeCount]; False];
+
+(**************************************************************************************************)
 
 PrivateFunction[findVertexIndex]
 
@@ -519,22 +563,15 @@ findVertexIndex[e_] := Block[{failAuto = Function[$Failed]}, findVertex @ e];
 
 GraphRegion::invv = "The region ``[...] contained an invalid vertex specification ``.";
 
-findVertex[GraphOrigin] := findVertex[$GraphOrigin];
-
-findVertex[IndexedVertex[i_Integer]] /; 1 <= i <= $VertexCount := i;
-
-findVertex[RandomPoint] := RandomInteger[{1, $VertexCount}];
-
-findVertex[Offset[v_, path_]] := offsetWalk[findVertex @ v, path];
-
-findVertex[spec_] := Lookup[$VertexIndex, Key[spec],
-  failAuto["invv", spec]];
-
-findVertex[lv_LatticeVertex ? vertexPatternQ] :=
-  findVertex @ VertexPattern @ lv;
-
-findVertex[p:VertexPattern[v_]] :=
-  FirstIndex[$VertexList, v, failAuto["invv", p]];
+findVertex = Case[
+  GraphOrigin                                  := findVertex[$GraphOrigin];
+  IndexedVertex[i_Integer ? validVertexIndexQ] := i;
+  RandomPoint                                  := RandomInteger[{1, $VertexCount}];
+  Offset[v_, path_]                            := offsetWalk[findVertex @ v, path];
+  lv_LatticeVertex ? vertexPatternQ            := findVertex @ VertexPattern @ lv;
+  p:VertexPattern[v_]                          := FirstIndex[$VertexList, v, failAuto["invv", p]];
+  spec_                                        := Lookup[$VertexIndex, Key[spec], failAuto["invv", spec]];
+];
 
 GraphRegion::notlist = "The region ``[...] required a list of vertices, but got `` instead."
 
@@ -544,9 +581,9 @@ findVertices[spec_] := Scope[
 ];
 
 resolveComplexVertexList[spec_] := Which[
-  vertexPatternQ[spec], MatchIndices[$VertexList, spec],
+  vertexPatternQ[spec],         MatchIndices[$VertexList, spec],
   ListQ[spec] && !EmptyQ[spec], Map[findVertex, spec],
-  True, failAuto["notlist", spec]
+  True,                         failAuto["notlist", spec]
 ];
 
 (**************************************************************************************************)

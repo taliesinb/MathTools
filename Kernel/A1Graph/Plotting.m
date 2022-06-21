@@ -215,6 +215,7 @@ GraphPlotScope[graph_, body_] := Scope[
   ]
 ];
 
+ExtendedGraphPlot::badopt = "Option setting `` -> `` is invalid.";
 ExtendedGraphPlot::badviewregion = "ViewRegion -> `` is invalid and will be ignored.";
 
 applyViewRegion[regionSpec_] := (
@@ -502,7 +503,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         Rule["MedianNonLoopEdge", sz:$numOrNumPairP]    :> computeEdgeLengthBasedImageSize[0.5, sz, True],
         Rule["AverageEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize["Average", sz, False],
         Rule["AverageNonLoopEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize["Average", sz, True],
-        _ :> ReturnFailed[]
+        _ :> failPlot["badopt", ImageSize, imageSize]
       ];
     ,
       aspectRatio = $GraphPlotAspectRatio;
@@ -583,12 +584,14 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     Switch[peripheralVertices,
       _Integer,
         $VertexParts ^= Select[$VertexParts, Part[vertexDegrees, #] > peripheralVertices&],
-      {_List, _Integer},
+      {_, _Integer},
         {centerVerts, maxDistance} = peripheralVertices;
+        centerVerts = findVertexIndices[centerVerts];
+        If[!IntegerVectorQ[centerVerts], failPlot["badopt", PeripheralVertices, peripheralVertices]];
         distances = Min /@ Part[GraphDistanceMatrix[UndirectedGraph @ $Graph], All, centerVerts];
         $VertexParts ^= Select[$VertexParts, Part[distances, #] <= maxDistance&],
       _,
-        ReturnFailed[]
+        failPlot["badopt", PeripheralVertices, peripheralVertices]
     ];
     isFadedPEdge = Function[{a, b}, Count[{MemberQ[$VertexParts, a], MemberQ[$VertexParts, b]}, True] == 1];
     isNonPEdge = Function[{a, b}, MemberQ[$VertexParts, a] || MemberQ[$VertexParts, b]];
@@ -1963,7 +1966,7 @@ assembleLegendItem = Case[
   Placed[s_String, p_]      := Placed[%[s], p];
   Labeled[s_, l_, args___]  := Labeled[%[s], l, args];
   None                      := None;
-  e_                        := (Message[ExtendedGraphPlot::badlegendspec, e]; $Failed);
+  e_                        := e;
 ]
 
 (**************************************************************************************************)
@@ -2373,7 +2376,7 @@ LookupEdgeColors[graph_Graph, edges_:All] := Scope[
 ExtendedGraphPlot::notvertex = "`` is not a valid vertex of the graph."
 
 getVertexIndex[GraphOrigin] := getVertexIndex @ $GraphOrigin;
-getVertexIndex[v_] := Lookup[$VertexIndex, v, failPlot["notvertex", v]];
+getVertexIndex[v_] := Lookup[$VertexIndex, Key @ v, failPlot["notvertex", v]];
 
 getVertexAnnoValue[annos_, "Index"] := Range @ $VertexCount;
 getVertexAnnoValue[annos_, n:"Name" | "Vertex"] /; !KeyExistsQ[annos, n] := $VertexList;

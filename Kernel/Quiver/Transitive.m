@@ -1,3 +1,8 @@
+PublicOption[VertexHead, VertexOrigin]
+
+VertexHead::usage = "VertexHead is an option to SquareQuiver, TriangularQuiver, etc."
+VertexOrigin::usage = "VertexOrigin is an option to SquareQuiver, TriangularQuiver, etc."
+
 $TransitiveQuiverThemeRules = {
   AspectRatioClipping -> False,
   ArrowheadSize -> 12,
@@ -35,25 +40,42 @@ BouquetQuiver[cardinals_List, opts:OptionsPattern[]] :=
 
 (**************************************************************************************************)
 
+$transitiveQuiverOptions = JoinOptions[
+  $ExtendedGraphOptions,
+  VertexHead -> VertexProduct,
+  VertexOrigin -> 0
+];
+
+(**************************************************************************************************)
+
 PublicFunction[TriangularQuiver]
 
-Options[TriangularQuiver] = $ExtendedGraphOptions;
+Options[TriangularQuiver] = $transitiveQuiverOptions;
 
 TriangularQuiver[n_Integer, opts:OptionsPattern[]] :=
   TriangularQuiver[n, {"r", "g", "b"}, opts];
 
 TriangularQuiver[n_Integer, cards:{x_, y_, z_}, opts:OptionsPattern[]] := Scope[
-  vertices = Catenate @ Array[VertexProduct, {n, n}];
+  
+  UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
+  center = Ceiling[{(n + 2) / 3, (2*n + 1) / 3}];
+  SetAutomatic[vertexOrigin, center];
+  If[IntegerQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
+  SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
+  
+  vertices = Catenate @ Table[If[i <= j, vertexHead[i, j], Nothing], {i, n}, {j, n}];
   edges = Flatten @ {
-    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i + 1, j], x], {i, n-1}, {j, n}],
-    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i, j + 1], y], {i, n}, {j, n-1}],
-    Table[DirectedEdge[VertexProduct[i, j], VertexProduct[i + 1, j + 1], z], {i, n-1}, {j, n-1}]
+    Table[DirectedEdge[vertexHead[i, j], vertexHead[i + 1, j],     x], {i, n-1}, {j, n}],
+    Table[DirectedEdge[vertexHead[i, j], vertexHead[i, j + 1],     y], {i, n},   {j, n-1}],
+    Table[DirectedEdge[vertexHead[i, j], vertexHead[i + 1, j + 1], z], {i, n-1}, {j, n-1}]
   };
-  vertices //= Select[upperTriProdQ];
-  edges //= Select[upperTriProdQ];
+  isVertex = ConstantAssociation[vertices, True];
+  edges //= Select[isVertex[First @ #] && isVertex[Second @ #]&];
+
   ExtendedGraph[
     vertices, edges,
-    opts,
+    GraphOrigin -> graphOrigin,
+    FilterOptions @ opts,
     ImageSize -> ("ShortestEdge" -> 33),
     VertexCoordinates -> N[({#1 - #2/2, #2 * Sqrt[3]/2}& @@@ vertices)],
     GraphTheme -> "TransitiveQuiver",
@@ -76,6 +98,7 @@ HexagonalQuiver[n_Integer, opts:OptionsPattern[]] := Scope[
   cards = {"x", "y", "z"};
   edges = makeHexSkeleton[{{-1,1},{-1,1},{-1,1}}*n2, z, cards];
   vertices = AllUniqueVertices @ edges;
+
   ExtendedGraph[
     vertices, edges, opts,
     VertexCoordinates -> Map[DotABC, List @@@ vertices],
@@ -117,7 +140,7 @@ hexEdgeList[card_, vertexCoords_, normal_, offset_, mod_] := Map[
 
 PublicFunction[SquareQuiver]
 
-Options[SquareQuiver] = $ExtendedGraphOptions;
+Options[SquareQuiver] = $transitiveQuiverOptions;
 
 SquareQuiver[m:$ModIntP, opts:OptionsPattern[]] :=
   SquareQuiver[{m, m}, opts];
@@ -126,18 +149,28 @@ SquareQuiver[spec_, opts:OptionsPattern[]] :=
   SquareQuiver[spec, {"x", "y"}, opts];
 
 SquareQuiver[spec:{$ModIntP, $ModIntP}, {cx_, cy_}, opts:OptionsPattern[]] := Scope[
+
   {m, n} = StripModulo @ spec;
   {mp1, np1} = toModPlusOne @ spec;
-  vertices = Catenate @ Array[VertexProduct, StripModulo @ {m, n}];
+
+  UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
+  center = Ceiling[{m, n} / 2];
+  SetAutomatic[vertexOrigin, center];
+  If[IntegerQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
+  SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
+  
+  vertices = Catenate @ Array[vertexHead, StripModulo @ {m, n}];
   edges = Flatten @ {
-    Table[enrichedEdge[VertexProduct[i, j], VertexProduct[mp1 @ i, j], cx, i], {i, m}, {j, n}],
-    Table[enrichedEdge[VertexProduct[i, j], VertexProduct[i, np1 @ j], cy, j], {i, m}, {j, n}]
+    Table[enrichedEdge[vertexHead[i, j], vertexHead[mp1 @ i, j], cx, i], {i, m}, {j, n}],
+    Table[enrichedEdge[vertexHead[i, j], vertexHead[i, np1 @ j], cy, j], {i, m}, {j, n}]
   };
   edges //= Select[MemberQ[vertices, Part[#, 2]]&];
   basis = {{1, 0}, {0, 1}};
+
   ExtendedGraph[
     vertices, edges,
-    opts,
+    GraphOrigin -> graphOrigin,
+    FilterOptions @ opts,
     VertexCoordinates -> (List @@@ vertices),
     Cardinals -> {cx, cy},
     Sequence @@ modEdgeShapeFunctionSpec[spec, basis],
@@ -149,7 +182,7 @@ SquareQuiver[spec:{$ModIntP, $ModIntP}, {cx_, cy_}, opts:OptionsPattern[]] := Sc
 
 PublicFunction[CubicQuiver]
 
-Options[CubicQuiver] = $ExtendedGraphOptions;
+Options[CubicQuiver] = $transitiveQuiverOptions;
 
 CubicQuiver[m:$ModIntP, opts:OptionsPattern[]] :=
   CubicQuiver[{m, m, m}, opts];
@@ -158,19 +191,29 @@ CubicQuiver[spec_, opts:OptionsPattern[]] :=
   CubicQuiver[spec, {"x", "y", "z"}, opts];
 
 CubicQuiver[spec:{$ModIntP, $ModIntP, $ModIntP}, {cx_, cy_, cz_}, opts:OptionsPattern[]] := Scope[
+  
   {m, n, p} = StripModulo @ spec;
   {mp1, np1, pp1} = toModPlusOne @ spec;
-  vertices = Flatten[Array[VertexProduct, {m, n, p}], 2];
+
+  UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
+  center = Ceiling[{m, n, p} / 2];
+  SetAutomatic[vertexOrigin, center];
+  If[IntegerQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
+  SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
+
+  vertices = Flatten[Array[vertexHead, {m, n, p}], 2];
   edges = Flatten @ {
-    Table[enrichedEdge[VertexProduct[i, j, k], VertexProduct[mp1 @ i, j, k], cx, i], {i, m}, {j, n}, {k, p}],
-    Table[enrichedEdge[VertexProduct[i, j, k], VertexProduct[i, np1 @ j, k], cy, j], {i, m}, {j, n}, {k, p}],
-    Table[enrichedEdge[VertexProduct[i, j, k], VertexProduct[i, j, pp1 @ k], cz, j], {i, m}, {j, n}, {k, p}]
+    Table[enrichedEdge[vertexHead[i, j, k], vertexHead[mp1 @ i, j, k], cx, i], {i, m}, {j, n}, {k, p}],
+    Table[enrichedEdge[vertexHead[i, j, k], vertexHead[i, np1 @ j, k], cy, j], {i, m}, {j, n}, {k, p}],
+    Table[enrichedEdge[vertexHead[i, j, k], vertexHead[i, j, pp1 @ k], cz, j], {i, m}, {j, n}, {k, p}]
   };
   edges //= Select[MemberQ[vertices, Part[#, 2]]&];
   basis = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+
   ExtendedGraph[
     vertices, edges,
-    opts,
+    GraphOrigin -> graphOrigin,
+    FilterOptions @ opts,
     VertexCoordinates -> (List @@@ vertices),
     Cardinals -> {cx, cy, cz},
     LayoutDimension -> 3,
@@ -212,7 +255,10 @@ $GraphThemeData["TransitiveQuiver3D"] := $TransitiveQuiver3DThemeRules;
 
 PublicFunction[LineQuiver]
 
-Options[LineQuiver] = $ExtendedGraphOptions;
+Options[LineQuiver] = JoinOptions[
+  VertexHead -> Identity,
+  $transitiveQuiverOptions
+];
 
 LineQuiver[n_, opts:OptionsPattern[]] :=
   LineQuiver[n, "x", opts];
@@ -224,10 +270,19 @@ LineQuiver[spec_, card_, opts:OptionsPattern[]] := Scope[
     _Span, Range @@ n,
     _, ReturnFailed[];
   ];
+
+  UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
+  center = Ceiling[n / 2];
+  SetAutomatic[vertexOrigin, center];
+  If[IntegerQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
+  SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
+  vertices //= Map[vertexHead];
+
   edges = ApplyWindowed[enrichedEdge[#1, #2, card, #1]&, vertices];
   ExtendedGraph[
     vertices, edges,
-    opts,
+    GraphOrigin -> graphOrigin,
+    FilterOptions @ opts,
     GraphTheme -> "TransitiveQuiver",
     ExtendedGraphLayout -> "Linear"
   ]
@@ -285,22 +340,30 @@ ModPart[seq_, n_] := Part[seq, Mod[n, Length[seq], 1]];
 
 PublicFunction[GridQuiver]
 
-Options[GridQuiver] = $ExtendedGraphOptions;
+Options[GridQuiver] = $transitiveQuiverOptions;
 
-GridQuiver[k_Integer, n:$ModIntP, opts:OptionsPattern[]] :=
-  Switch[k,
-    1, LineQuiver[n, opts],
-    2, SquareQuiver[n, opts],
-    3, CubicQuiver[n, opts],
-    _, generalGridQuiver[k, n, opts]
-  ];
+GridQuiver[1, n:$ModIntP, opts:OptionsPattern[]] := LineQuiver[n, opts];
 
-generalGridQuiver[k_, n_, opts___] := Scope[
-  vertices = Flatten @ Array[VertexProduct, ConstantArray[StripModulo @ n, k]];
+GridQuiver[2, n:$ModIntP, opts:OptionsPattern[]] := SquareQuiver[n, opts];
+
+GridQuiver[3, n:$ModIntP, opts:OptionsPattern[]] := CubicQuiver[n, opts];
+
+GridQuiver[k_Integer, n:$ModIntP, opts:OptionsPattern[]] := Scope[
+
+  UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
+  center = Ceiling[n / 2];
+  SetAutomatic[vertexOrigin, center];
+  If[IntegerQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
+  SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
+
+  vertices = Flatten[Array[List, ConstantArray[StripModulo @ n, k]], k-1];
   edges = Flatten @ Table[Map[generalGridEdge[n, i], vertices], {i, 1, k}];
+  vertices = vertexHead @@@ vertices;
+
   ExtendedGraph[
     vertices, edges,
-    opts,
+    GraphOrigin -> graphOrigin,
+    FilterOptions @ opts,
     ExtendedGraphLayout -> "SpringElectrical",
     Cardinals -> Range[k],
     LayoutDimension -> 3,
@@ -310,11 +373,11 @@ generalGridQuiver[k_, n_, opts___] := Scope[
 ]
 
 generalGridEdge[Modulo[n_], i_][vertex_] :=
-  DirectedEdge[vertex, MapAt[PlusOneMod[n], vertex, i], i];
+  DirectedEdge[vertexHead @@ vertex, vertexHead @@ MapAt[PlusOneMod[n], vertex, i], i];
 
 generalGridEdge[n_, i_][vertex_] :=
   If[Part[vertex, i] < n,
-    DirectedEdge[vertex, MapAt[PlusOne, vertex, i], i],
+    DirectedEdge[vertexHead @@ vertex, vertexHead @@ MapAt[PlusOne, vertex, i], i],
     {}
   ];
 
