@@ -562,9 +562,10 @@ PrivateFunction[findVertexIndex]
 findVertexIndex[e_] := Block[{failAuto = Function[$Failed]}, findVertex @ e];
 
 GraphRegion::invv = "The region ``[...] contained an invalid vertex specification ``.";
+GraphRegion::noorigin = "The region ``[...] contained vertex specification GraphOrigin but no origin is set.";
 
 findVertex = Case[
-  GraphOrigin                                  := findVertex[$GraphOrigin];
+  GraphOrigin                                  := If[$GraphOrigin === None, failAuto["noorigin"], findVertex[$GraphOrigin]];
   IndexedVertex[i_Integer ? validVertexIndexQ] := i;
   RandomPoint                                  := RandomInteger[{1, $VertexCount}];
   Offset[v_, path_]                            := offsetWalk[findVertex @ v, path];

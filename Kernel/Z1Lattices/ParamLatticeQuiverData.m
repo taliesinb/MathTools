@@ -47,14 +47,14 @@ circleFactory[assoc_, userOpts_] := Scope[
 
 (**************************************************************************************************)
 
-torusNormOptions = MatchValues[
-  {Infinity, h_, d_} := {
+torusNormOptions = Case[
+  {Infinity, h_, d_} := Scope @ {
     SetAutomatic[d, 4];
     MaxDepth -> h + d + 1,
     NormFunction -> (1 -> Abs),
     MaxNorm -> d
   };
-  {_, _, d_} := {
+  {_, _, d_} := Scope @ {
     SetAutomatic[d, Infinity];
     MaxDepth -> d
   }
@@ -62,24 +62,28 @@ torusNormOptions = MatchValues[
 
 LatticeGraph::badtorusopts = "Height should both be integer, and width should be an integer or infinity."
 
-torusCoordinate3DOptions = MatchValues[
-  {Infinity, h_Integer, d_} := {
+torusCoordinate3DOptions = Case[
+  {Infinity, h_Integer, d_} := Scope @ {
     SetAutomatic[d, 4];
-    Epilog -> {
-      EdgeForm[None], Opacity[0.5],
-      FaceForm[{Glow @ GrayLevel[1.0], Specularity[1]}], Cylinder[{{-d, 0, 0}, {d, 0, 0}}, h / Tau - (1/Tau)]
-    },
+    Epilog -> If[AssociationQ @ $solid, {
+      EdgeForm[None], Opacity @ Lookup[$solid, "Opacity", 0.5],
+      offset = Lookup[$solid, "Offset", Automatic];
+      SetAutomatic[offset, 1 / Tau];
+      FaceForm[{Glow @ GrayLevel[1.0], Specularity[1]}], Cylinder[{{-d, 0, 0}, {d, 0, 0}}, h / Tau - offset]
+    }, {}],
     VertexCoordinateFunction -> TimesOperator[{1, Tau / h}] /* TubeVector[h / Tau],
     CoordinateTransformFunction -> ProjectionOnto[Cylinder[{{-d*2*Sqrt[3], 0, 0}, {d*2*Sqrt[3], 0, 0}}, h / Tau - (0.1/Tau)]],
     ViewOptions -> {ViewPoint -> {0.4, 1.5, 0.2}, ViewProjection -> "Orthographic"}
   };
-  {w_Integer, h_Integer, _} := {
+  {w_Integer, h_Integer, _} := Scope @ {
     VertexCoordinateFunction -> TimesOperator[Tau / {w, h} / {$ws, 1}] /* TorusVector[{w * $ws + h, h} / Tau],
-    Epilog -> {
-      EdgeForm[None], Opacity[0.5],
+    Epilog -> If[AssociationQ @ $solid, {
+      EdgeForm[None], Opacity @ Lookup[$solid, "Opacity", 0.5],
       FaceForm[{Glow @ GrayLevel[1.0], Specularity[1]}],
-      TorusSurfacePolygon[Torus[{w + h, h-.4} / Tau]]
-    },
+      offset = Lookup[$solid, "Offset", Automatic];
+      SetAutomatic[offset, .4];
+      TorusSurfacePolygon[Torus[{w + h, h - offset} / Tau]]
+    }, {}],
     CoordinateTransformFunction -> ProjectionOnto[Torus[{w + h, h} / Tau]],
     ViewOptions -> {ViewPoint -> {0.4, 1.5, 0.8}, ViewProjection -> "Orthographic"}
   };
@@ -110,10 +114,14 @@ chooseTorus2DOptions[spec_] := Scope[
   }
 ];
 
+PublicOption[InteriorSolid]
+
 chooseTorusOptions[userOpts_, spec_, rep_] := Scope[
   $translations = Map[Normal /* ExtractTranslationVector, rep["Representation"]["Generators"]];
   $doLabels = Lookup[userOpts, EdgeLabelStyle] =!= None;
   $isABC = MatchQ[rep["Cardinals"], {"a", "b", "c"}];
+  $solid = Lookup[userOpts, InteriorSolid, True];
+  If[MatchQ[$solid, True | Automatic], $solid = <||>];
   func = If[Lookup[userOpts, LayoutDimension] === 2, chooseTorus2DOptions, chooseTorus3DOptions];
   Flatten @ func @ spec
 ];

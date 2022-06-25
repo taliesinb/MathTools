@@ -31,7 +31,7 @@ $LabelStyle = {
 
 (**************************************************************************************************)
 
-PrivateVariable[$MathFont]
+PublicVariable[$MathFont]
 
 $MathFont = "KaTeX_Main";
 
@@ -43,7 +43,7 @@ $CardinalFont = "KaTeX_Typewriter"
 
 (**************************************************************************************************)
 
-PrivateVariable[$CardinalLabelStyle]
+PublicVariable[$CardinalLabelStyle]
 
 $CardinalLabelStyle = {
   FontFamily -> $CardinalFont, FontSize -> 14
@@ -51,7 +51,7 @@ $CardinalLabelStyle = {
 
 (**************************************************************************************************)
 
-PrivateVariable[$MathLabelStyle]
+PublicVariable[$MathLabelStyle]
 
 $MathLabelStyle = {
   FontFamily -> $MathFont, FontSize -> 14,
@@ -802,3 +802,22 @@ AngleDifference[a$, b$, Into[n$]] gives the signed distance between two angles a
 "
 
 AngleDifference[a_, b_] := If[Abs[b - a] > Pi, Mod[Mod[b, Tau] - Mod[a, Tau], Tau, -Pi], b - a];
+
+
+(**************************************************************************************************)
+
+PublicFunction[FrameFadePolygon]
+
+offsetNESW[corners_, 0] := corners;
+offsetNESW[corners:{_, _, _, _}, o_] :=
+  MapThread[Offset, {o * {{1, -1}, {-1, -1}, {1, 1}, {-1, 1}}, corners}];
+
+FrameFadePolygon[{{l_, b_}, {r_, t_}}, o_] := Scope[
+  {nw0, ne0, sw0, se0} = {{l, t}, {r, t}, {l, b}, {r, b}};
+  {nw1, ne1, sw1, se1} = offsetNESW[{nw0, ne0, sw0, se0}, o];
+  c1 = {1, 1, 1, 1}; c0 = {1, 1, 1, 0};
+  Polygon[
+    {nw0, ne0, se0, sw0, nw0, nw1, sw1, se1, ne1, nw1},
+    VertexColors -> {c1, c1, c1, c1, c1, c0, c0, c0, c0, c0}
+  ]
+]

@@ -36,7 +36,10 @@ BouquetQuiver[n_Integer, opts:OptionsPattern[]] := BouquetQuiver[
 BouquetQuiver[str_String, opts:OptionsPattern[]] := BouquetQuiver[Characters[str], opts];
 
 BouquetQuiver[cardinals_List, opts:OptionsPattern[]] :=
-  Quiver[Map[c |-> Labeled[1 -> 1, c], cardinals], Cardinals -> cardinals, opts, GraphOrigin -> 1]
+  Quiver[
+    Map[c |-> Labeled[1 -> 1, c], cardinals], Cardinals -> cardinals, opts, GraphOrigin -> 1,
+    GraphTheme -> "TransitiveQuiver"
+  ]
 
 (**************************************************************************************************)
 

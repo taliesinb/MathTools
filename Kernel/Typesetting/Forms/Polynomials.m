@@ -5,6 +5,9 @@ declareBoxFormatting[
     TemplateBox[List @ symbolBoxes @ p, "VariableForm"]
 ];
 
+$TemplateKatexFunction["VariableForm"] = "variable";
+
+
 (**************************************************************************************************)
 
 PublicForm[PolynomialSymbol]

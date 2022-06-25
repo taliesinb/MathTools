@@ -138,3 +138,12 @@ PublicForm[FactorialForm, PowerForm]
 declareUnaryForm[FactorialForm];
 declareBinaryForm[PowerForm];
 
+(**************************************************************************************************)
+
+PublicForm[KroneckerDeltaForm]
+PublicSymbol[KroneckerDeltaSymbol]
+
+declareNAryForm[KroneckerDeltaForm, KroneckerDeltaSymbol, ","];
+
+
+

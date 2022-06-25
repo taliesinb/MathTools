@@ -311,7 +311,7 @@ ExtractGraphPrimitiveCoordinates::badvcoordlen = "VertexCoordinates has length `
 ExtractGraphPrimitiveCoordinates::badvcoords = "Initial setting of VertexCoordinates is not a matrix of coordinates.";
 ExtractGraphPrimitiveCoordinates::glayoutfail = "Failed to layout graph, using circle.";
 ExtractGraphPrimitiveCoordinates::badctrans = "CoordinateTransformFunction produced invalid values, using circle.";
-ExtractGraphPrimitiveCoordinates::layoutobjres = "Layout object failed to returned a valid result.";
+ExtractGraphPrimitiveCoordinates::layoutobjres = "Layout object `` failed to returned a valid result.";
 
 ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
 
@@ -407,7 +407,7 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
   If[MatchQ[result, {_ ? CoordinateMatrixQ, _ ? CoordinateMatricesQ}],
     {$vertexCoordinates, $edgeCoordinateLists} = result;
   ,
-    Message[ExtractGraphPrimitiveCoordinates::layoutobjres];
+    Message[ExtractGraphPrimitiveCoordinates::layoutobjres, Shallow @ vertexLayout];
     $vertexCoordinates = CirclePoints @ vertexCount;
     $edgeCoordinateLists = Part[$vertexCoordinates, {#1, #2}]& @@@ edgeList;
   ];
@@ -622,6 +622,18 @@ transformEdgePoints[f_][points_List] := Scope[
 applyCoordinateTransform["CenterMean"] := Scope[
   center = Mean @ vertexCoordinates;
   applyCoordinateTransform[TranslationTransform[-center]];
+];
+
+ExtendedGraph::noorigin = "Graph does not have a GraphOrigin set.";
+
+applyCoordinateTransform["CenterOrigin"] := Scope[
+  origin = LookupExtendedOption[$Graph, GraphOrigin];
+  If[origin === None,
+    Message[ExtendedGraph::noorigin]
+  ,
+    center = Part[vertexCoordinates, VertexIndex[$Graph, origin]];
+    applyCoordinateTransform[TranslationTransform[-center]]
+  ];
 ];
 
 applyCoordinateTransform["CenterBounds"] := Scope[

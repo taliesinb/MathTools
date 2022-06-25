@@ -97,3 +97,17 @@ PrivateVariable[$Alphabet]
 
 $Alphabet = Join[Alphabet["English"], Alphabet["Greek"]];
 $Alphabet = Join[$Alphabet, ToUpperCase[$Alphabet]];
+
+(**************************************************************************************************)
+
+PublicFunction[StringJoinLeft, StringJoinRight]
+
+StringJoinLeft[prefix_String, other_String] := StringJoin[prefix, other];
+StringJoinLeft[prefix_String, other_List] := Map[StringJoinLeft[prefix], other];
+StringJoinLeft[prefix_String][other_] := StringJoinLeft[prefix, other];
+
+StringJoinRight[other_String, suffix_String] := StringJoin[other, suffix];
+StringJoinRight[other_List, suffix_String] := Map[StringJoinRight[suffix], other];
+StringJoinRight[suffix_String][other_] := StringJoinRight[other, suffix];
+
+  

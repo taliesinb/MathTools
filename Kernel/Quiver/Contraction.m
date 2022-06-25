@@ -60,7 +60,7 @@ QuiverContractionLattice[quiver_, contractedGraphOptions_List, userOpts:OptionsP
   ExtendedGraph[
     contractionGraph,
     FilterOptions @ userOpts,
-    GraphLayout -> "CenteredTree",
+    VertexLayout -> TreeVertexLayout[Balanced -> True],
     VertexAnnotations -> vertexAnnotations,
     ArrowheadShape -> None, VertexSize -> Max[innerSize],
     VertexTooltips -> "ContractionSet",

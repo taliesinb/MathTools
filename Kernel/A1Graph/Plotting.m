@@ -441,7 +441,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     UnpackAnonymousThemedOptions[graph, None,
       vertexLabels, edgeLabels, plotLabel, prolog, epilog,
-      imagePadding, plotRange, plotRangePadding, frame, frameLabel
+      imagePadding, plotRange, plotRangePadding, frame, frameLabel, frameFade
     ];
 
     UnpackExtendedThemedOptions[graph,
@@ -815,6 +815,12 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     graphicsElements = {edgeGraphics, vertexGraphics, labelGraphics};
 
+    If[frameFade =!= None,
+      If[!IntegerQ[frameFade], frameFade = 5];
+      polygon = FrameFadePolygon[$GraphicsBoundingFrame, frameFade];
+      AppendTo[epilog, Annotation[Style[polygon, EdgeForm @ None], "FrameFade"]];
+    ];
+
     If[TrueQ @ frame,
       If[MatchQ[frameStyle, {} | Automatic], frameStyle = LightGray];
       frameStyle //= toDirective;
@@ -823,7 +829,10 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         AppendTo[epilog, Annotation[Style[cuboid, FaceForm @ None, EdgeForm @ frameStyle], "Frame"]];
       ,
         rectangle = Rectangle @@ $GraphicsBoundingFrame;
-        AppendTo[epilog, Annotation[Style[rectangle, FaceForm @ None, EdgeForm @ frameStyle], "Frame"]];
+        orectangle = Rectangle @@ MapThread[Offset, {{{-1, -1}, {1, 1}}, $GraphicsBoundingFrame}];
+        AppendTo[epilog, Annotation[{
+          Style[orectangle, FaceForm @ None, EdgeForm @ White, AbsoluteThickness[3]], (* <- prevents sticking through of main graphics *)
+          Style[rectangle, FaceForm @ None, EdgeForm @ frameStyle]}, "Frame"]];
         AppendTo[prolog, Annotation[Style[rectangle, FaceForm @ White, EdgeForm @ None], "FrameBackground"]];
       ];
     ];
@@ -971,9 +980,9 @@ makeFrameLabelElement[label_, pos1_, pos2_] :=
 ExtendedGraphPlot::badbaseline = "Could not resolve ``.";
 
 processBaselinePosition = Case[
-  Automatic | GraphOrigin :=
+  GraphOrigin :=
     % @ If[$GraphOrigin =!= None, $GraphOrigin, Center];
-  Center  := % @ Scaled[0.5, "Interior"];
+  Automatic | None | Center  := % @ Scaled[0.5, "Interior"];
   Bottom  := % @ Scaled[0.0, "Interior"];
   Top     := % @ Scaled[1.0, "Interior"];
   spec_ -> outer:Top|Bottom|Center|Baseline :=
@@ -2233,11 +2242,16 @@ setback[Line|multiLine, dist_] := multiLine[Which[
   CoordinateArrayQ[#], Map[setbackCoords[dist], #],
   True, #]]&
 
-setbackCoords[0|0.][line_] := line;
+setbackCoords[0|0.|{0|0.,0|0.}][line_] := line;
 
-setbackCoords[dist_][{a_, b_}] /; (EuclideanDistance[a, b] > 2 * dist) := Scope[
+setbackCoords[dist_ ? NumericQ][{a_, b_}] /; (EuclideanDistance[a, b] > 2 * dist) := Scope[
   dx = Normalize[b - a] * dist;
   {a + dx, b - dx}
+];
+
+setbackCoords[{da_ ? NumericQ, db_ ? NumericQ}][{a_, b_}] /; (EuclideanDistance[a, b] > (da + db)) := Scope[
+  dx = Normalize[b - a];
+  {a + dx * da, b - dx * db}
 ];
 
 setbackCoords[dist_][other_] := SetbackCoordinates[other, dist];
@@ -2567,12 +2581,13 @@ generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {lab
   $labelBaseStyle = None; $labelOffset = None;
   $adjacencyIndex = None; $meanCoordinates = Mean @ coordinates;
   $labelOrientation = 0;
-  setLabelStyleGlobals[LabelPosition -> labelPosition];
+  If[!(labelPosition === Automatic && ContainsQ[setLabelStyleGlobals, LabelPosition -> _]),
+    setLabelStyleGlobals[LabelPosition -> labelPosition]];
   setLabelStyleGlobals[LabelSpacing -> labelSpacing];
   setLabelStyleGlobals[LabelOrientation -> labelOrientation];
   setLabelStyleGlobals[BaseStyle -> labelBaseStyle];
   labelStyle //= toDirectiveOptScan[setLabelStyleGlobals];
-  If[$labelX === $labelY === None && labelPosition === Automatic, $labelY = -1];
+  If[$labelX === $labelY === None && labelPosition === None, $labelY = -1];
   SetNone[$labelX, 0]; SetNone[$labelY, 0];
   labelStyle //= DeleteCases[sspec:$SizePattern /; ($labelSizeScale = toNumericSizeScale @ sspec; True)];
   If[$labelFontSize =!= None, PrependTo[labelStyle, FontSize -> $labelFontSize]];
@@ -3019,7 +3034,7 @@ $fadePrimitivesRules = {
   _Opacity -> Opacity[1],
   (VertexColors -> c_List) :> (VertexColors -> c),
   (* (VertexColors -> c_List) :> (VertexColors -> Map[GrayLevel[0.85, ColorOpacity @ #]&, Echo @ c]), *)
-  c:$ColorPattern :> GrayLevel[0.85, Min[ColorOpacity @ c, 0.95]]
+  c:$ColorPattern :> GrayLevel[0.7, Min[ColorOpacity @ c, 0.95]]
 };
 
 fadePrimitives[primitives_] := ReplaceAll[primitives, $fadePrimitivesRules];

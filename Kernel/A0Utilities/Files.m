@@ -10,9 +10,13 @@ CacheFilePath[name_, args___] :=
   CacheFilePath[name, args, FileExtension -> "mx"]
 
 CacheFilePath[name_, args___, FileExtension -> ext_] :=
-  FileNameJoin[{$CacheDirectory, name, StringJoin[Riffle[toCacheArgString /@ Flatten[{args}], "_"], ".", ext]}];
+  FileNameJoin[{$CacheDirectory, name, StringJoin[Riffle[toCacheArgString /@ {args}, "_"], ".", ext]}];
+
+$simpleArgP = _Integer | _String | None | Infinity | False | True;
 
 toCacheArgString = Case[
+  tuple:{Repeated[$simpleArgP, {1, 3}]} := StringRiffle[tuple, {"(", "-", ")"}];
+  {} := "";
   data:(_List | _Association | _SparseArray) := Base36Hash @ data;
   graph_Graph := Base36Hash @ VertexEdgeList @ graph;
   other_ := TextString @ other;

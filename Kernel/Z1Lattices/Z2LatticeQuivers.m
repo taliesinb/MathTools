@@ -109,6 +109,7 @@ $baseGenerateLatticeOptions = JoinOptions[
   InitialStates -> Automatic,
   RandomSeeding -> None,
   CardinalList -> Automatic,
+  InteriorSolid -> Automatic,
   $simpleGraphOptionRules
 ];
 

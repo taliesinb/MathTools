@@ -168,16 +168,25 @@ LatticeColoringPlot[quiver_, args___, SelfLoopRadius -> r_] := Block[
   LatticeColoringPlot[quiver, args]
 ];
 
+$vCount = Automatic;
+LatticeColoringPlot[quiver_, args___, "VertexCount" -> c_] := Block[
+  {$vCount = c},
+  LatticeColoringPlot[quiver, args]
+];
+
+
 LatticeColoringPlot[quiver_, args___] := Scope[
   quiver = Quiver[quiver];
-  notb = VertexCount[quiver] > 1;
-  icon = Quiver[quiver,
+  vCount = VertexCount[quiver];
+  notb = vCount > 1;
+  icon = Quiver[
+    quiver,
     GraphTheme -> "FundamentalColoringQuiver",
     SelfLoopRadius -> $plcSLR, ImageSize -> $plcIconSize,
-    VertexCoordinates -> If[notb, CirclePoints @ VertexCount[quiver], {{0, 0}}]
+    VertexCoordinates -> If[notb, Take[CirclePoints @ ReplaceAutomatic[$vCount, vCount], vCount], {{0, 0}}]
   ];
   If[notb, icon //= CombineMultiedges];
-  graph = LatticeGraph[quiver, args,
+  graph = LatticeGraph[quiver, FilterOptions @ args,
     VertexColorFunction -> "GeneratingVertex",
     VertexSize -> 1.2, ImageSize -> 150, GraphLegend -> None
   ];
@@ -196,7 +205,7 @@ $fundamentalColoringQuiverThemeOpts = {
   ArrowheadStyle -> $LightGray,
   LabelCardinals -> Below, VertexSize -> Huge,
   ImagePadding -> {{15, 15}, {20, 20}},
-  VertexColorFunction -> "Index"
+  VertexColorFunction -> "Name"
 };
 
 $GraphThemeData["FundamentalColoringQuiver"] := $fundamentalColoringQuiverThemeOpts;
@@ -456,7 +465,8 @@ MobiusStrip[n_, is3D_:False] := Scope[
     EdgeShapeFunction -> If[is3D, Automatic, drawMobiusEdge],
     ImagePadding -> {{20, 20}, {20, 0}}, Cardinals -> {"x", "r", "g", "b"},
     ArrowheadPosition -> <|"r" -> 0.33, "g" -> 0.66, "b" -> {0.4, .6}, "x" -> 0.5|>,
-    GraphOrigin -> LatticeVertex[{Floor[n/2], 0}], ArrowheadShape -> {"Line", EdgeThickness -> 2}
+    GraphOrigin -> LatticeVertex[{Floor[n/2], 0}], ArrowheadShape -> {"Line", EdgeThickness -> 2},
+    EdgeStyle -> GrayLevel[0.5, 0.4]
   ]
 ];
 
@@ -692,7 +702,7 @@ FQPVertexIcon[opts_][path_] := Scope[
     $fq, path, {$Teal, PathRadius -> 2, PathStyle -> "DiskArrowDisk", EdgeSetback -> $setback, "Foreground"}, Sequence @@ opts,
     GraphTheme -> {"PathQuiverIcon", "FundamentalQuiver"},
     FrameLabel -> {
-      Bottom -> If[!hasPathLabel, None, fmtPaths @ path],
+      Bottom -> fmtPaths @ path,
       Top -> If[!hasClassLabel, None, Style[classLabel, FontColor -> Black, FontSize -> 12]]
     }
   ];
@@ -700,8 +710,9 @@ FQPVertexIcon[opts_][path_] := Scope[
 ];
 
 fmtPaths = MatchValues[
+  Path[_, {}|"", ___]    := Style[CardinalSymbol["1"], FontColor -> Gray, FontSize -> 12];
   Path[_, word_, ___] := Style[WordForm @ word, FontColor -> Gray, FontSize -> 12];
-  list_List           := Row[fmtPaths /@ list, Style[",", Gray], BaseStyle -> {FontTracking -> "Narrow"}];
+  list_List           := Row[fmtPaths /@ list, Style[",", Gray], BaseStyle -> {}];
 ];
 
 (**************************************************************************************************)

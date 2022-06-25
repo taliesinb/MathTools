@@ -416,8 +416,7 @@ toInsertedContent[title_, id_, div_] := Scope[
     Return @ "";
   ];
   markdown = CacheTo[$mdFileCache, absPath, ImportUTF8 @ absPath];
-  targetRegex = "\\label{" <> id <> "}\n\n" ~~ Shortest[content__] ~~ "\n\n";
-  foundContent = StringCases[markdown, targetRegex :> content, 1];
+  foundContent = StringCases[markdown, "\\label{" <> id <> "}\n\n" ~~ Shortest[zzz__] ~~ "\n\n" :> zzz, 1];
   foundContent = First[foundContent, None];
   If[!StringQ[foundContent],
     Print["Could not find ID \"", id, "\" in \"", absPath, "\" referenced from file ", $currentFile];
@@ -667,7 +666,7 @@ $outputCaptionPattern = RowBox[{"(*", RowBox[{"CAPTION", ":", caption___}], "*)"
 
 outerCellToMarkdown = Case[
 
-  Cell[e_, style_, ___, CellTags -> tag_String, ___] :=
+  Cell[e_, style:Except["Input" | "Code"], ___, CellTags -> tag_String, ___] :=
     Splice @ {anchorTemplate @ tag, cellToMarkdown @ Cell[e, style]};
 
   Cell[e_, style_, ___] :=

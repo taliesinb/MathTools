@@ -18,6 +18,8 @@ PublicOption[EdgeLabelPosition, EdgeLabelSpacing, EdgeLabelBaseStyle, EdgeLabelO
 
 PublicOption[EdgeLength]
 
+PublicOption[FrameFade]
+
 PublicOption[VisibleCardinals, ViewRegion, ViewOptions, ViewRotation, LayoutDimension, AdditionalImagePadding, ExtendImagePadding]
 
 PublicOption[CoordinateTransformFunction, CoordinateRotation]
@@ -45,7 +47,7 @@ $extendedGraphOptionsRules = {
   AdditionalImagePadding              -> None,
   ArrowheadPosition                   -> Automatic,
   ArrowheadShape                      -> Automatic,
-  ArrowheadSize                       -> Automatic,
+  ArrowheadSize                       -> 15,
   ArrowheadStyle                      -> Automatic,
   AspectRatioClipping                 -> True,
   CardinalColorFunction               -> None,
@@ -69,6 +71,7 @@ $extendedGraphOptionsRules = {
   EpilogFunction                      -> None,
   ExtendedGraphLayout                 -> Automatic,
   ExtendImagePadding                  -> True,
+  FrameFade                           -> None,
   GraphLegend                         -> None,
   GraphMetric                         -> Automatic,
   GraphOrigin                         -> None,
@@ -94,7 +97,7 @@ $extendedGraphOptionsRules = {
   VertexCoordinateRules               -> None,
   VertexFontSize                      -> None,
   VertexLabelBaseStyle                -> None,
-  VertexLabelPosition                 -> Top,
+  VertexLabelPosition                 -> Automatic,
   VertexLabelSpacing                  -> 0,
   VertexLabelOrientation              -> Automatic,
   VertexLayout                        -> None,

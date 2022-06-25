@@ -298,6 +298,9 @@
 \gdef\functionComposition#1{#1}
 \gdef\functionCompositionSymbol{\mathbin{\small ∘}}
 
+\gdef\rightFunctionComposition#1{#1}
+\gdef\rightFunctionCompositionSymbol{\mathbin{\tiny ●}}
+
 \gdef\route#1#2#3{[{#1}\!:\!{#2}\!:\!{#3}]}
 \gdef\multiroute#1#2#3{[{#1}\!:\!{#2}\!:\!{#3}]}
 \gdef\pathWord#1#2#3{{#1}\!:\!{#2}\!:\!{#3}}
@@ -395,6 +398,9 @@
 \gdef\wordRing#1{\wordRingSymbol_{#1}}
 \gdef\wordRingSymbol{\Omega\!\degree}
 
+\gdef\wordRingElement#1{#1}
+\gdef\wordRingBasisElement#1{e_{#1}}
+
 \gdef\linearCombinationCoefficient#1{{\textcolor{888888}{#1}}}
 
 \gdef\plan#1{#1}
@@ -433,6 +439,9 @@
 \gdef\factorial#1{#1!}
 \gdef\power#1#2{{#1}^{#2}}
 \gdef\repeatedPower#1#2{{#1}^{#2}}
+
+\gdef\kroneckerDeltaForm#1{\kroneckerDeltaSymbol_{#1}}
+\gdef\kroneckerDeltaSymbol{\delta}
 
 \gdef\contractionLattice#1{\operatorname{Con}(#1)}
 
@@ -550,7 +559,7 @@
 
 \gdef\groupoidElement#1{#1}
 \gdef\groupIdentity#1{#1}
-\gdef\groupoidIdentity#1{#1}
+\gdef\groupoidIdentityElement#1#2{#1_{#2}}
 \gdef\ringIdentity#1{#1}
 
 \gdef\iconstruct#1#2{{#1}\,\,\middle|{\large\mathstrut}\,\,{#2}}

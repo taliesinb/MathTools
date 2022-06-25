@@ -371,8 +371,8 @@ highlightRegion[GraphRegionData[vertices_, edges_]] /; StringQ[$regionStyle] && 
   $newVertices = {}; $newEdges = {};
   TransformGraphPlotPrimitives[removeHighlightedPathEdges, edges, "EdgePrimitives"];
   TransformGraphPlotPrimitives[removeHighlightedPathVertices, vertices, "VertexPrimitives"];
-  newEdges = simplifyPrimitives @ $newEdges;
-  newVertices = simplifyPrimitives @ $newVertices;
+  newEdges = SimplifyGraphicsPrimitives @ $newEdges;
+  newVertices = SimplifyGraphicsPrimitives @ $newVertices;
   diskRadius = $diskRadius;
   If[diskRadius =!= Automatic,
     newVertices = replaceVertexSize[newVertices, PointSize[diskRadius / $GraphPlotEffectiveImageWidth]];
@@ -548,7 +548,6 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
     ];
   ];
 
-
   (* unfortunately CapForm doesn't do anything for Arrow *)
   requirePadding[If[doArrow, 1.2, 1] * thicknessRange / $graphPlotWidth * $GraphPlotEffectiveImageWidth];
   sowHighlight @ Style[
@@ -560,7 +559,7 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
 
 absThickness[thickness_] := AbsoluteThickness[thickness * $GraphPlotEffectiveImageWidth];
 
-removeThickness[g_] := ReplaceAll[g, _Thickness | _AbsoluteThickness -> {}];
+removeThickness[g_] := ReplaceAll[g, _Thickness | _AbsoluteThickness :> Sequence[]];
 
 makeArrowDiskPrimitives[indices_, firstDisk_, lastDisk_, radius_] := Scope[
   primitives = ExpandPrimitives @ removeSingleton @ ExtractGraphPlotPrimitives[indices, "VertexPrimitives"];

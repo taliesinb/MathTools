@@ -78,6 +78,8 @@ LookupExtendedOption[graph_, keys_List] :=
 LookupExtendedOption[graph_, key_Symbol | key_CustomGraphAnnotation] :=
   LookupAnnotation[graph, key, Lookup[$extendedGraphOptionsRules, key]];
 
+LookupExtendedOption[key_][graph_] := LookupExtendedOption[graph, key];
+
 (**************************************************************************************************)
 
 PrivateFunction[ExtendedGraphAnnotations]

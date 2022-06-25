@@ -99,7 +99,8 @@ $namedFunctions = {
   LiftFunction,
   IdentityFunction,
   TotalFunction,
-  
+  SrcFunction, SourceFunction,
+  TgtFunction, TargetFunction,
   StateJoinFunction,
   StateMeetFunction,
   StateExtentFunction,
@@ -164,6 +165,16 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
+PublicForm[RightFunctionCompositionForm]
+
+declareInfixSymbol[RightFunctionCompositionForm, FunctionSymbol, True];
+
+declareBoxFormatting[
+  f_RightFunctionCompositionForm[args___] :> MakeBoxes[AppliedForm[ParenthesesForm[f], args]]
+]
+
+(**************************************************************************************************)
+
 PublicForm[AppliedForm]
 
 declareBoxFormatting[
@@ -197,6 +208,8 @@ PublicSymbol[ClipFunction, SignFunction, StepFunction, DomainFunction, CodomainF
 PublicSymbol[StateMeetFunction, StateJoinFunction, StateExtentFunction, StateIntentFunction]
 
 PublicSymbol[StateComposeFunction, StateDecomposeFunction]
+
+PublicSymbol[SrcFunction, SourceFunction, TargetFunction, TgtFunction]
 
 declareFunctionFormatting[sym_] := With[
   {name = StringDelete[SymbolName[sym], "Function"]},

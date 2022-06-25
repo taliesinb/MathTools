@@ -80,8 +80,13 @@ ReplaceOptions[spec$] is the operator form of ReplaceOptions.
 * ReplaceOptions can take a list of rules as an object, returning a new list of rules.
 "
 
-ReplaceOptions[g_Graph, rule_Rule | rule_List] :=
-  Graph[g, rule];
+ReplaceOptions[obj_, {}] := obj;
+
+ReplaceOptions[g_Graph, rule_Rule | {rules__Rule}] :=
+  ExtendedGraph[g, rule];
+
+ReplaceOptions[gs:{__Graph}, spec_] :=
+  Map[ReplaceOptions[spec], gs];
 
 ReplaceOptions[obj_, key_ -> value_] := If[
   MemberQ[obj, key -> _],

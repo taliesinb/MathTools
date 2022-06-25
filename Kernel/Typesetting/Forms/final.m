@@ -69,6 +69,8 @@ makeQGBoxes = Case[
   Modulo[n_]                := MakeBoxes @ ModuloForm[n];
   Invisible[n_]             := TemplateBox[List @ MakeBoxes @ n, "InvisibleForm"];
   {a_, b__}                 := MakeBoxes @ TupleForm[a, b];
+  Composition[a___]         := MakeBoxes @ FunctionCompositionForm[a];
+  RightComposition[a___]    := MakeBoxes @ RightFunctionCompositionForm[a];
   other_                    := MakeBoxes @ other,
   {lsymsP -> $literalSymbolsP, symP -> $rawSymbolP, namedFnP -> Alternatives @@ $namedFunctions,
     binHeads -> $binaryRelationHeads, domainsP -> $domainsP}

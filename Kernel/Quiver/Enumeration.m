@@ -108,7 +108,7 @@ quiverCacheLoad[name_, edges_, count_] := Module[
   memCache = $enumerateQuiversCache[key];
   If[!MissingQ[memCache], Return @ memCache];
   fileName = CacheFilePath[name, edges, count];
-  If[FileExistsQ[Echo @ fileName],
+  If[FileExistsQ[fileName],
     diskCache = Import @ fileName;
     $enumerateQuiversCache[key] = diskCache;
     diskCache
@@ -425,7 +425,7 @@ EnumerateSimpleGraphs[n_Integer] := Scope[
 
 PublicFunction[EnumerateLattices]
 
-EnumerateLattices[quivers_, cardinals_, group_, opts___Rule] := Scope[
+EnumerateLattices[quivers_, cardinals_, group_, depth_, opts___Rule] := Scope[
   rules = MapIndex1[#2 -> #1&, cardinals];
   quivers = Map[
     Quiver[VertexList @ #, MapAt[ReplaceAll[rules], EdgeList @ #, {All, 3}]]&,
@@ -436,7 +436,7 @@ EnumerateLattices[quivers_, cardinals_, group_, opts___Rule] := Scope[
   userOpts //= DeleteOptions[DirectedEdges];
   lattices = Map[
     quiver |-> LatticeGraph[
-      PathRepresentation[quiver, group], DirectedEdges -> False, MaxNorm -> 3
+      PathRepresentation[quiver, group], DirectedEdges -> False, MaxNorm -> depth
     ],
     quivers
   ];
@@ -456,6 +456,7 @@ LatticeGraphToLatticeQuiver[g_Graph] :=
     VertexList @ g, edgeHead @@@ EdgeList[g],
     VertexCoordinates -> LookupOption[g, VertexCoordinates],
     userOpts,
+    GraphOrigin -> LookupExtendedOption[g, GraphOrigin],
     GraphTheme -> "EnumeratedLattice"
   ]
 
@@ -463,9 +464,11 @@ LatticeGraphToLatticeQuiver[g_Graph] :=
 
 $enumeratedLatticeStyleOpts = {
   ImageSize -> {100, 100}, VertexSize -> 5,
+  BaselinePosition -> None, CoordinateTransformFunction -> "CenterOrigin",
   EdgeShapeFunction -> "StyledLine", EdgeColorFunction -> "Cardinal",
   EdgeThickness -> 2.5, EdgeStyle -> Opacity[0.7],
-  VertexStyle -> $DarkGray, VertexSize -> 5, Frame -> True
+  VertexStyle -> $DarkGray, VertexSize -> 5, Frame -> True, FrameFade -> 10,
+  PlotRangeClipping -> True
   (* ArrowheadShape -> {"Line", EdgeThickness -> 2}, *)
 };
 
