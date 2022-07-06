@@ -39,6 +39,33 @@ declareInfixSymbol[NotEqualForm] // usingCustomKatex[" \\neq "];
 
 (**************************************************************************************************)
 
+PublicForm[LessForm, LessEqualForm, GreaterForm, GreaterEqualForm]
+
+declareInfixSymbol[LessForm] // usingCustomKatex[" < "];
+declareInfixSymbol[LessEqualForm] // usingCustomKatex[" \\le "];
+declareInfixSymbol[GreaterForm] // usingCustomKatex[" > "];
+declareInfixSymbol[GreaterEqualForm] // usingCustomKatex[" \\ge "];
+
+(**************************************************************************************************)
+
+PublicForm[SubsetForm, SubsetEqualForm, SupersetForm, SupersetEqualForm]
+
+declareInfixSymbol[SubsetForm] // usingCustomKatex[" \\subset "];
+declareInfixSymbol[SubsetEqualForm] // usingCustomKatex[" \\subseteq "];
+declareInfixSymbol[SupersetForm] // usingCustomKatex[" \\supset "];
+declareInfixSymbol[SupersetEqualForm] // usingCustomKatex[" \\supseteq "];
+
+(**************************************************************************************************)
+
+PublicForm[SubmultisetForm, SubmultisetEqualForm, SupermultisetForm, SupermultisetEqualForm]
+
+declareInfixSymbol[SubmultisetForm] // usingCustomKatex[" \\submset "];
+declareInfixSymbol[SubmultisetEqualForm] // usingCustomKatex[" \\submseteq "];
+declareInfixSymbol[SupermultisetForm] // usingCustomKatex[" \\supmset "];
+declareInfixSymbol[SupermultisetEqualForm] // usingCustomKatex[" \\supmseteq "];
+
+(**************************************************************************************************)
+
 PublicForm[BijectiveForm]
 
 declareInfixSymbol[BijectiveForm];

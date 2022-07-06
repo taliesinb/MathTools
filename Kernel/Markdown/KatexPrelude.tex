@@ -363,6 +363,7 @@
 \gdef\semiring#1{#1}
 \gdef\sym#1{#1}
 \gdef\matrix#1{#1}
+\gdef\tupleSym#1{#1}
 \gdef\polynomial#1{#1}
 
 \gdef\setLetter{\mathcal{S}}
@@ -383,6 +384,8 @@
 \gdef\planSymbol#1{\mathbf{#1}}
 
 \gdef\ringElement#1{#1}
+
+\gdef\tuplePart#1#2{#1\llbracket{#2}\rrbracket}
 
 \gdef\matrixPart#1#2#3{#1\llbracket{#2,#3}\rrbracket}
 \gdef\matrixRowPart#1{#1}
@@ -614,6 +617,11 @@
 \gdef\edgeType#1{\operatorName{edge}{#1}}
 \gdef\multisetType#1{\operatorName{mset}{#1}}
 \gdef\signedMultisetType#1{\operatorName{mset^*}{#1}}
+
+\gdef\submset{\mathbin{\dot{\subset}}}
+\gdef\submseteq{\mathbin{\dot{\subseteq}}}
+\gdef\supmset{\mathbin{\dot{\supset}}}
+\gdef\supmseteq{\mathbin{\dot{\supseteq}}}
 
 \gdef\unitInterval{\mathbb{I}}
 \gdef\fromTo#1{#1}

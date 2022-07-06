@@ -104,14 +104,14 @@ when saving and loading expressions, we should try typeset them nicely. We shoul
 *)
 
 readExpressionList[path_] := Block[
-  {$Context = "QuiverGeometry`TestHarness`", $ContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`", "QGShortcuts`"}, result},
+  {$Context = "QuiverGeometry`TestHarness`", $ContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`", "QuiverGeometry`Shortcuts`"}, result},
   result = ReadList[path];
   If[ListQ[result], result /. $decompressExpressionRules,
     Message[RunInputOutputTests::badtestfile, path]; $Failed]
 ];
 
 writeExpressionList[path_, list_] := Block[
-  {$Context = "QuiverGeometry`TestHarness`", $ContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`", "QGShortcuts`"}},
+  {$Context = "QuiverGeometry`TestHarness`", $ContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`", "QuiverGeometry`Shortcuts`"}},
   Scan[Write[path, #]&, list /. $compressExpressionRules];
   Close[path];
 ];

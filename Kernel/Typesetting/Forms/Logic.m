@@ -3,6 +3,10 @@ PublicForm[ExistsForm, ForAllForm]
 declareBinaryForm[ExistsForm] // usingCustomKatex["existsForm"];
 declareBinaryForm[ForAllForm] // usingCustomKatex["forAllForm"];
 
+
+$TemplateKatexFunction["ForAllSymbol"] = katexAlias["forall"];
+$TemplateKatexFunction["ExistsSymbol"] = katexAlias["exists"];
+
 (**************************************************************************************************)
 
 PublicForm[AndForm, OrForm]
@@ -17,9 +21,10 @@ declareUnaryForm[NotForm, maybeParen[SymbolForm]] // usingCustomKatex["notted"];
 
 (**************************************************************************************************)
 
-PublicForm[ImpliesForm]
+PublicForm[ImpliesForm, ImpliedByForm]
 
 declareInfixSymbol[ImpliesForm] // usingCustomKatex["implies"];
+declareInfixSymbol[ImpliedByForm] // usingCustomKatex["implied"];
 
 (**************************************************************************************************)
 

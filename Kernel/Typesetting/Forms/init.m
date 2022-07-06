@@ -1,3 +1,25 @@
+(**************************************************************************************************)
+
+PrivateFunction[TBox, SBox, RBox, GBox]
+
+TBox[form_][args___] := TemplateBox[{args}, form];
+
+SBox[form_] := TemplateBox[{}, form];
+
+RBox[args___] := RowBox[{args}];
+
+GBox[entries_, alignments_, rowSpacings_, colSpacings_] :=
+  GridBox[
+    entries,
+    GridBoxAlignment -> {"Columns" -> alignments},
+    GridBoxSpacings -> {"Rows" -> prepend0 @ rowSpacings, "Columns" -> prepend0 @ colSpacings}
+  ];
+
+prepend0[list_List] := Prepend[list, 0];
+prepend0[e_] := e;
+
+(**************************************************************************************************)
+
 PrivateFunction[katexAliasRiffled, katexAlias]
 
 katexAliasRiffled[fn_] := riffled @ toAlias @ fn;
@@ -223,6 +245,8 @@ declareSumLikeFormatting[form_Symbol, katexName_String] := With[
   {symbolName = StringTrim[formName, "Form"] <> "Symbol"},
   declareBoxFormatting[
     form[] :> SBox[symbolName],
+    form[a_] :>
+      MakeBoxes @ form[a, Null, Null],
     form[a_, b_] :>
       MakeBoxes @ form[a, b, Null],
     form[a_, b_, c_] :>
@@ -331,7 +355,7 @@ rdb = Case[
   Subscript[s_, i_]                  := SubscriptBox[% @ s, makeQGBoxes @ i];
   Superscript[s_, i_]                := SuperscriptBox[% @ s, makeQGBoxes @ i];
   Subsuperscript[s_, i_, j_]         := SubsuperscriptBox[% @ s, makeQGBoxes @ i, makeQGBoxes @ j];
-  (Inverted|InvertedForm)[e_]          := TemplateBox[List @ % @ e, "InvertedForm"];
+  (Inverted|InvertedForm)[e_]        := TemplateBox[List @ % @ e, "InvertedForm"];
   e_                                 := $decf @ e;
 ];
 
@@ -382,22 +406,25 @@ $colorFormAssoc = <|
 |>;
 
 toTypedSymbol = Case[
-  Rule[Form[e_], _] := makeQGBoxes @ e;
-  Rule[e_, None] := e;
-  Rule[e_, Automatic] := makeQGBoxes @ e;
-  Rule[BlankSymbol, _] :=
-    MakeBoxes @ BlankSymbol;
-  Rule[(c:colorsP)[arg_], type_] :=
-    TemplateBox[List @ toTypedSymbol[arg -> type], SymbolName @ c];
-  Rule[arg:((type_)[___]), type_] :=
-    MakeBoxes @ arg;
-  Rule[None|Null, _] := "";
-  Rule[arg_, type_] :=
-    MakeBoxes @ type @ arg;
-  arg_ :=
-    makeQGBoxes @ arg,
-  {colorsP -> $colorFormP}
+  Rule[Form[e_], _]                 := makeQGBoxes @ e;
+  Rule[e_, None]                    := e;
+  Rule[e_, Automatic]               := makeQGBoxes @ e;
+  Rule[BlankSymbol, _]              := MakeBoxes @ BlankSymbol;
+  Rule[e_ ? unaryWrappedQ, type_]   := recurseWrapperBoxes[e, toTypedSymbol[# -> type]&];
+  Rule[arg:((type_)[___]), type_]   := MakeBoxes @ arg;
+  Rule[None|Null, _]                := "";
+  Rule[arg_, type_]                 := MakeBoxes @ type @ arg;
+  arg_                              := makeQGBoxes @ arg
 ]
+
+(**************************************************************************************************)
+
+PublicForm[ClassTaggedForm]
+
+declareBoxFormatting[
+  ClassTaggedForm[form_, tag_] :> TagBox[ToBoxes @ form, "ClassTaggedForm"[tag]]
+];
+
 
 (**************************************************************************************************)
 
@@ -426,3 +453,4 @@ declareBoxFormatting[
 ];
 
 $TemplateKatexFunction["SymbolForm"] = "sym";
+

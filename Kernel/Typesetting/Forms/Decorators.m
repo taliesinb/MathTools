@@ -115,7 +115,7 @@ rewriteToVerticalOuter[arg_, n_Integer, opts:OptionsPattern[]] :=
 
 rewriteToVertical[TemplateBox[args_, "AssociativeArrayForm"] /; Length[args] >= 2, n_, align_] := Scope[
   {l, r} = makeFixedSpanning /@ $verticalFormData["AssociativeArrayForm"];
-  args = splice[{#1, SBox["MapsToSymbol"], #2}]& @@@ Part[args, All, 1];
+  args = toSplicedRow /@ args;
   rows = Partition[args, n]; nrows = Length[rows];
   rows = PrependColumn[rows, Prepend[l] @ Table["", nrows-1]];
   rows = AppendColumn[rows, Append[r] @ Table["", nrows-1]];
@@ -125,6 +125,11 @@ rewriteToVertical[TemplateBox[args_, "AssociativeArrayForm"] /; Length[args] >= 
   colSpacings = Flatten[{1, Table[{1, 1, 2}, n], 0} / 4];
   colSpacings[[-2]] = 0;
   TBox["GridForm"] @ createGridBox[rows, {Right, {Right, ReplaceAutomatic[align, Center], Left}, Left}, Automatic, colSpacings]
+];
+
+toSplicedRow = Case[
+  TemplateBox[{a_, b_}, "MapsToForm"]        := splice[{a, SBox["MapsToSymbol"], b}];
+  s:TemplateBox[{}, sym_]                    := splice[{"", s, ""}];
 ];
 
 PrivateFunction[addComma]

@@ -76,6 +76,13 @@ AbsolutePathQ = Case[
 
 (**************************************************************************************************)
 
+PublicFunction[RelativePath]
+
+RelativePath[_, path_] := None;
+RelativePath[base_String, path_] := If[StringStartsQ[path, base], StringTrim[StringDrop[path, StringLength @ base], $PathnameSeparator], None];
+
+(**************************************************************************************************)
+
 PublicFunction[NormalizePath]
 
 NormalizePath = Case[

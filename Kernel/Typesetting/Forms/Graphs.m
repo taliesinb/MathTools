@@ -30,10 +30,6 @@ declareSymbolForm[VertexSymbol];
 declareUnaryForm[TailVertexForm];
 declareUnaryForm[HeadVertexForm];
 
-declareBoxFormatting[
-  VertexSymbol[e:(_[___])] :> TemplateBox[List @ MakeBoxes @ e, "VertexSymbolForm"]
-];
-
 $TemplateKatexFunction["HeadVertexForm"] = "hvert";
 $TemplateKatexFunction["TailVertexForm"] = "tvert";
 $TemplateKatexFunction["VertexSymbolForm"] = "vert";

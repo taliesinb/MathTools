@@ -582,9 +582,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[$EdgeParts === All, $EdgeParts ^= Range @ $EdgeCount];
     vertexDegrees = VertexDegree @ $Graph;
     Switch[peripheralVertices,
-      _Integer,
+      _Integer | _Real,
         $VertexParts ^= Select[$VertexParts, Part[vertexDegrees, #] > peripheralVertices&],
-      {_, _Integer},
+      {_, _Integer | _Real},
         {centerVerts, maxDistance} = peripheralVertices;
         centerVerts = findVertexIndices[centerVerts];
         If[!IntegerVectorQ[centerVerts], failPlot["badopt", PeripheralVertices, peripheralVertices]];
@@ -2849,7 +2849,9 @@ makeGraphics[elements_, imageSize_, rawImageSize_, imagePadding_, plotLabel_, ex
 ];
 
 makeGraphics3D[elements_, imageSize_, rawImageSize_, imagePadding_, plotLabel_, extraOptions_, prolog_, epilog_, baseline_] := Graphics3D[
-  {CapForm[None],  Replace[prolog, None -> Nothing], elements, Replace[epilog, None -> Nothing]},
+  {CapForm[None],  Replace[prolog, None -> Nothing],
+  elements /. (a:Arrow[_ ? CoordinateMatricesQ] :> Thread[a]),
+  Replace[epilog, None -> Nothing]},
   Sequence @@ extraOptions,
   Axes -> None, Boxed -> False,
   ImageSize -> imageSize,

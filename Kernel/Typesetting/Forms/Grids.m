@@ -393,6 +393,7 @@ $flowAlignmentTable = <|
   AndForm -> "\[And]", OrForm -> "\[Or]", ImpliesForm -> "\[Implies]", EquivalentForm -> "\[Equivalent]",
   IsomorphicForm -> "\[TildeEqual]", HomeomorphicForm -> "\[TildeFullEqual]",
   "" -> "",
+  ForAllForm -> "\[ForAll]" | ":", ExistsForm -> "\[Exists]" | ":",
   SetUnionForm -> "\[Union]", SetIntersectionForm -> "\[Intersection]", SetRelativeComplementForm -> "\[Backslash]"
 |>;
 
@@ -412,11 +413,14 @@ flowAlignedRow = Case[
 
   e_List := MapUnevaluated[%, e];
 
-  FunctionSignatureForm[f_, d_, c_] /; KeyExistsQ[$flowAlignmentTable, FunctionSignatureForm] :=
+  FunctionSignatureForm[f_, d_, c_] :=
     {makeQGBoxes @ f, ":", makeQGBoxes @ d, "\[RightArrow]", makeQGBoxes @ c};
 
   AppliedForm[f_, h_Symbol[a_, b_]] /; KeyExistsQ[$flowAlignmentTable, h] :=
     {RBox[makeQGBoxes @ f, "(", makeQGBoxes @ a], $flowAlignmentTable @ h, RBox[makeQGBoxes @ b, ")"]};
+
+  ForAllForm[v_, b_] := {"\[ForAll]", makeQGBoxes @ v, ":", makeQGBoxes @ b};
+  ExistsForm[v_, b_] := {"\[Exists]", makeQGBoxes @ v, ":", makeQGBoxes @ b};
 
   Form[e_] := makeQGBoxes @ e;
 

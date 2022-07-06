@@ -25,6 +25,11 @@ With[{io := GeneralUtilities`IndexOf},
 
 (**************************************************************************************************)
 
+GeneralUtilities`Control`PackagePrivate`upperCaseString[s_String] /; StringStartsQ[s, "$"] :=
+  GeneralUtilities`Control`PackagePrivate`upperCaseString[StringDrop[s, 1]];
+
+(**************************************************************************************************)
+
 Module[{desugaringRules = Normal @ GeneralUtilities`Control`PackagePrivate`$DesugaringRules},
   If[FreeQ[desugaringRules, rewriteDestructuringFunction],
     AppendTo[desugaringRules, HoldPattern[GeneralUtilities`Control`PackagePrivate`e:Function[{___, _List, ___}, _]] :>

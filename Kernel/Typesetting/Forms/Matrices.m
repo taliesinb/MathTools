@@ -1,3 +1,19 @@
+PublicForm[TupleSymbol]
+
+declareSymbolForm[TupleSymbol] // usingCustomKatex["tupleSym"];
+
+(**************************************************************************************************)
+
+PublicForm[TuplePartForm]
+
+declareBoxFormatting[
+  TuplePartForm[t_, i_] :> makeHintedTemplateBox[t -> maybeParen[TupleSymbol], i, "TuplePartForm"]
+]
+
+$TemplateKatexFunction["TuplePartForm"] = "tuplePart";
+
+(**************************************************************************************************)
+
 PublicForm[MatrixPartForm, SubMatrixPartForm]
 
 declareBoxFormatting[
@@ -19,8 +35,8 @@ declareUnaryWrapperForm[MatrixColumnPartForm];
 
 PublicForm[MatrixDotForm, MatrixPlusForm]
 
-declareInfixSymbol[MatrixDotForm, maybeParen[MatrixSymbol|TranslationVectorForm]]
-declareInfixSymbol[MatrixPlusForm, maybeParen[MatrixSymbol|TranslationVectorForm]]
+declareInfixSymbol[MatrixDotForm, maybeParen[MatrixSymbol|TranslationVectorForm|TupleSymbol]]
+declareInfixSymbol[MatrixPlusForm, maybeParen[MatrixSymbol|TranslationVectorForm|TupleSymbol]]
 
 (**************************************************************************************************)
 

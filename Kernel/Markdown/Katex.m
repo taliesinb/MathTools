@@ -27,7 +27,7 @@ boxToKatex = Case[
   e_List := Map[%, e];
   e:(_String[___]) := Map[%, e];
 
-  c_Cell := Block[{$inlineMathTemplate = Identity}, iTextCellToMD @ c];
+  c_Cell := Block[{$inlineMathTemplate = Identity}, textBoxesToMarkdown @ c];
   TemplateBox[args_, tag_] := templateBoxToKatex[tag -> args];
 
   StyleBox[e_, "Text"] := {"\\textrm{", boxToInlineText @ e, "}"};
@@ -51,7 +51,6 @@ boxToKatex = Case[
   RowBox[list_] := Map[%, list];
 
   other_ := (
-    Print["Could not serialize ", InputForm @ other];
     StringJoin["\\noKatexForm{", StringReplace[ToString[Head @ other, InputForm], $katexEscape], "}"]
   );
 ];

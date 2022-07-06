@@ -7,6 +7,14 @@ declareSumLikeFormatting[IndexedMinForm, "indexMin"];
 
 (**************************************************************************************************)
 
+PublicForm[ConditionedForm]
+
+declareBoxFormatting[
+  ConditionedForm[SumForm[a_, i_], cond_] :> MakeBoxes @ SumForm[a, i, cond]
+];
+
+(**************************************************************************************************)
+
 PublicForm[SumForm, ProductForm]
 
 declareSumLikeFormatting[SumForm, "indexSum"];

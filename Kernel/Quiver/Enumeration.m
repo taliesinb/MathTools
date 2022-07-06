@@ -491,3 +491,47 @@ rangePartitionSuccessors[part_] := Join @@ Table[
   {i, Length @ part}, {j, i+1, Length @ part}
 ];
 
+(**************************************************************************************************)
+
+StrictlyIsomorphicSubgraphQ[sub_, super_] := Scope[
+  iso = FindSubgraphIsomorphism[sub, super];
+  If[iso === {}, Return @ False];
+  iso //= First;
+  deg1 = VertexDegree[sub, #]& /@ Keys[iso];
+  deg2 = VertexDegree[super, #]& /@ Values[iso];
+  And[
+    And @@ MapThread[LessEqual, {deg1, deg2}],
+    Mean[Boole @ MapThread[Equal, {deg1, deg2}]] > 0.75
+  ]
+];
+
+PublicFunction[GraphsCenterIsomorphicQ]
+
+GraphsCenterIsomorphicQ[n_][g1_, g2_] := Scope[
+  If[Max[VertexDegree @ g1] =!= Max[VertexDegree @ g2], Return[False]];
+  v1 = Take[VertexList @ g1, UpTo[5]];
+  v2 = Take[VertexList @ g2, UpTo[1]];
+  Or[
+    IsomorphicGraphQ[g1, g2],
+    StrictlyIsomorphicSubgraphQ[NeighborhoodGraph[g1, First @ v1, n], g2],
+    StrictlyIsomorphicSubgraphQ[NeighborhoodGraph[g2, First @ v2, n], g1],
+    AnyTrue[
+      NeighborhoodGraph[g1, #, n]& /@ Drop[v1, 1],
+      StrictlyIsomorphicSubgraphQ[#, g2]&
+    ],
+    AnyTrue[
+      NeighborhoodGraph[g2, #, n]& /@ Drop[v2, 1],
+      StrictlyIsomorphicSubgraphQ[#, g1]&
+    ]
+  ]
+]
+
+PublicFunction[CenterIsomorphicDuplicates]
+
+CenterIsomorphicDuplicates[list_, n_] :=
+  Select[Gather[list, GraphsCenterIsomorphicQ[n]], Length[#] > 1&];
+
+PublicFunction[DeleteCenterIsomorphicDuplicates]
+
+DeleteCenterIsomorphicDuplicates[gs_, n_] :=
+  DeleteDuplicates[gs, GraphsCenterIsomorphicQ[n]]

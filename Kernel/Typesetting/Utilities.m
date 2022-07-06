@@ -35,26 +35,6 @@ StripLabel[e_] := e;
 
 (**************************************************************************************************)
 
-PrivateFunction[TBox, SBox, RBox, GBox]
-
-TBox[form_][args___] := TemplateBox[{args}, form];
-
-SBox[form_] := TemplateBox[{}, form];
-
-RBox[args___] := RowBox[{args}];
-
-GBox[entries_, alignments_, rowSpacings_, colSpacings_] :=
-  GridBox[
-    entries,
-    GridBoxAlignment -> {"Columns" -> alignments},
-    GridBoxSpacings -> {"Rows" -> prepend0 @ rowSpacings, "Columns" -> prepend0 @ colSpacings}
-  ];
-
-prepend0[list_List] := Prepend[list, 0];
-prepend0[e_] := e;
-
-(**************************************************************************************************)
-
 
 PrivateFunction[applyRiffled]
 
