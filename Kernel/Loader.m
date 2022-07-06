@@ -356,8 +356,8 @@ QuiverGeometryPackageLoader`EvaluatePackages[packagesList_List] := Block[
     handleMessage
   ];
   If[$failEval, Return[$Failed, Block]];
-  finalChangedQ = userFileChangedQ["user_final.m"];
-  If[$formsChanged || finalChangedQ, loadUserFile["user_final.m"]];
+  If[userFileChangedQ["user_final.m"], loadUserFile["user_final.m"]];
+  If[$formsChanged || userFileChangedQ["user_shortcuts.m"], loadUserFile["user_shortcuts.m"]];
   result
 ];
 
