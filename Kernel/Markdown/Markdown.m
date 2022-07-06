@@ -40,7 +40,7 @@ toMarkdownLines[File[path_String]] /; FileExtension[path] === "nb" := Scope[
   If[$notebookCaching,
     {cachedResult, cachedDate} = Lookup[$notebookToMarkdownCache, path, {None, None}];
     If[ListQ[cachedResult] && fileDate === cachedDate,
-      mdvPrint["  Using cached markdown for \"", path, "\""];
+      mdvPrint["  Using cached markdown for ", MsgPath @ path];
       Return @ cachedResult
     ];
   ];

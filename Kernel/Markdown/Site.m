@@ -1,7 +1,7 @@
 PublicFunction[BuildQGSiteFranklin]
 
-$QGSiteImportPath = "~/Dropbox/QuiverGeometry";
-$QGSiteFranklinExportPath = "~/sites/qg-franklin";
+$QGSiteImportPath = NormalizePath @ "~/Dropbox/QG";
+$QGSiteFranklinExportPath = NormalizePath @ "~/sites/qg-franklin";
 
 Options[BuildQGSite] = $genericExportMarkdownOptions;
 
@@ -29,18 +29,18 @@ BuildQGSiteFranklin[src:Except[_Rule], opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[BuildQGSiteHugo]
+PublicFunction[BuildQGSite]
 
 Options[BuildQGSite] = $genericExportMarkdownOptions;
 
-$QGSiteHugoExportPath = "~/sites/qg-hugo/content";
+$QGSiteExportPath = NormalizePath @ "~/sites/qg-hugo/content";
 
-BuildQGSiteHugo[opts:OptionsPattern[]] := BuildQGSiteHugo[All, opts];
+BuildQGSite[opts:OptionsPattern[]] := BuildQGSite[All, opts];
 
-BuildQGSiteHugo[src:Except[_Rule], opts:OptionsPattern[]] := Scope[
+BuildQGSite[src:Except[_Rule], opts:OptionsPattern[]] := Scope[
   SetAll[src, $QGSiteImportPath];
   files = ExportToMarkdown[
-    src, File[$QGSiteHugoExportPath],
+    src, File[$QGSiteExportPath],
     MarkdownFlavor -> "Hugo",
     opts,
     IncludeFrontMatter -> True,
@@ -77,28 +77,94 @@ hugoExportPathFunction[relPath_] :=
 
 (**************************************************************************************************)
 
-PublicFunction[ClearQGSiteHugo]
+PublicFunction[ClearQGSite]
 
-Options[ClearQGSiteHugo] = {"ClearRasters" -> False};
+Options[ClearQGSite] = {"ClearRasters" -> False};
 
-ClearQGSiteHugo[OptionsPattern[]] := Scope[
+ClearQGSite[OptionsPattern[]] := Scope[
   
   If[OptionValue["ClearRasters"],
-    rasterPath = ToFileName[$QGSiteHugoExportPath, "../static/raster"];
+    rasterPath = ToFileName[$QGSiteExportPath, "../static/raster"];
     Quiet @ DeleteDirectory[rasterPath, DeleteContents -> True];
     EnsureDirectory[rasterPath];
   ,
     rasterPath = Nothing;
   ];
 
-  EnsureDirectory[$QGSiteHugoExportPath];
+  EnsureDirectory[$QGSiteExportPath];
 
-  Scan[tryDeleteFile, FileNames["*.md", $QGSiteHugoExportPath, Infinity]];
+  Scan[tryDeleteFile, FileNames["*.md", $QGSiteExportPath, Infinity]];
   
-  {rasterPath, $QGSiteHugoExportPath}
+  {rasterPath, $QGSiteExportPath}
 ];
 
 tryDeleteFile[path_String] :=
   If[StringContainsQ[ReadString @ path, "\"notebookpath\":"], DeleteFile @ path];
 
+(**************************************************************************************************)
 
+PublicFunction[QGSiteMarkdownPath]
+
+QGSiteMarkdownPath[] := QGSiteMarkdownPath @ EvaluationNotebook[];
+QGSiteMarkdownPath[nb_NotebookObject] := QGSiteMarkdownPath @ NotebookFileName @ nb;
+
+QGSiteMarkdownPath[nb_String] := Scope @ CatchMessage[
+  $baseImportPath = NormalizePath @ $QGSiteImportPath;
+  $exportPathFunction = hugoExportPathFunction;
+  toExportFileName[$QGSiteExportPath, nb]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[QGSiteWebpageURL]
+
+QGSiteWebpageURL[] := QGSiteWebpageURL @ EvaluationNotebook[];
+QGSiteWebpageURL[nb_NotebookObject] := QGSiteWebpageURL @ NotebookFileName @ nb;
+
+QGSiteWebpageURL[nb_] := Scope[
+  mdPath = QGSiteMarkdownPath[nb];
+  If[!StringQ[mdPath] || !FileExistsQ[mdPath], ReturnFailed[]];
+  frontMatter = MarkdownFrontMatter @ mdPath;
+  url = Lookup[frontMatter, "url", None];
+  If[!StringQ[url],
+    exportPath = NormalizePath @ $QGSiteExportPath;
+    url = RelativePath[exportPath, StringTrim[mdPath, ".md"]];
+  ];
+  If[StringQ[url], StringJoin[$urlBase, url], $Failed]
+];
+
+$urlBase = "http://localhost:1313/";
+
+(**************************************************************************************************)
+
+PublicFunction[OpenQGSiteWebpageURL]
+
+OpenQGSiteWebpageURL[] := OpenQGSiteWebpageURL @ EvaluationNotebook[];
+
+OpenQGSiteWebpageURL[nb_] := Scope[
+  url = QGSiteWebpageURL[nb];
+  If[!StringQ[url], ReturnFailed[]];
+  If[Run["/usr/bin/curl " <> $urlBase] =!= 0, ServeQGSite[]; Pause[1.0]];
+  WebpageOpen @ url
+];
+
+(**************************************************************************************************)
+
+PublicFunction[DeployQGSite]
+
+DeployQGSite[] := Scope[
+  siteRoot = NormalizePath @ "~/sites/qg-hugo";
+  deployScript = FileNameJoin[{siteRoot, "iterm_deploy.sh"}];
+  Run[deployScript];
+];
+
+(**************************************************************************************************)
+
+PublicFunction[ServeQGSite]
+
+ServeQGSite[] := Scope[
+  siteRoot = NormalizePath @ "~/sites/qg-hugo";
+  serveScript = FileNameJoin[{siteRoot, "iterm_serve.sh"}];
+  Run[serveScript];
+  GoodBeep[];
+];

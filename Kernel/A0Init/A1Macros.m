@@ -324,7 +324,8 @@ mGraphCachedScope[graph_, key_, body_] := With[{body2 = MacroExpand @ Scope @ bo
 PrivateFunction[CatchMessage]
 
 DefineMacro[CatchMessage,
-CatchMessage[body_] := Quoted[Catch[body, ThrownMessage[_], ThrownMessageHandler[$LHSHead]]]
+CatchMessage[body_] := Quoted[Catch[body, ThrownMessage[_], ThrownMessageHandler[$LHSHead]]],
+CatchMessage[head_, body_] := Quoted[Catch[body, ThrownMessage[_], ThrownMessageHandler[head]]]
 ];
 
 ThrownMessageHandler[msgHead_Symbol][{args___}, ThrownMessage[msgName_String]] :=

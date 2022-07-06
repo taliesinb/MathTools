@@ -30,7 +30,7 @@ GarbageCollectOutputImages[markdownSearchPath_, OptionsPattern[]] := Scope[
 
   markdownFiles = FileNames["*.md", markdownSearchPath];
   markdownContent = ImportUTF8 /@ markdownFiles;
-  mdvPrint["* Searching ", Length @ markdownFiles, " markdown files in ", File @ markdownSearchPath, "."];
+  mdvPrint["* Searching ", Length @ markdownFiles, " markdown files in ", MsgPath @ markdownSearchPath, "."];
  
   matches = Flatten @ StringCases[markdownContent, markdownPattern];
   matches = Map[FileNameJoin[{$rasterizationPath, FileNameTake[#]}]&, matches];
@@ -39,7 +39,7 @@ GarbageCollectOutputImages[markdownSearchPath_, OptionsPattern[]] := Scope[
   If[Length[matches] == 0, ReturnFailed[]];
 
   existingFiles = FileNames["*.png", $rasterizationPath];
-  mdvPrint["* Checking ", Length @ existingFiles, " existing images in ", File @ $rasterizationPath,  "."];
+  mdvPrint["* Checking ", Length @ existingFiles, " existing images in ", MsgPath @ $rasterizationPath,  "."];
 
   garbageFiles = Complement[existingFiles, matches];
 

@@ -70,7 +70,7 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
 
   (* export *)
   If[!FileExistsQ[imagePath] || !$rasterizationCaching,
-    mdvPrint["* Exporting image to ", File @ imagePath];
+    mdvPrint["* Exporting image to ", MsgPath @ imagePath];
     If[!$dryRun, Check[
       Export[imagePath, image, exportArgs],
       Print["Rasterization failed: ", Thumbnail @ image];

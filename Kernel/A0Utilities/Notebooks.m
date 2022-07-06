@@ -15,27 +15,27 @@ CreateQuiverGeometryNotebook[] :=
   ];
 
 createQGNotebookDockedCells[] := With[
-  {qgPath = QuiverGeometryPackageLoader`$LoaderFileName},
-  {getQG = Function[If[DownValues[QuiverGeometryPackageLoader`Load] === {}, Get[qgPath], QuiverGeometryPackageLoader`Load[False]]]},
-  Cell[BoxData @ ToBoxes @ Row[makeButton /@ {
-    " Preview: ",
-    " nb "        :> (getQG[]; QuiverGeometry`PreviewInIAWriter[]),
-    " section "         :> (getQG[]; QuiverGeometry`PreviewInIAWriter[SelectedCellGroup["Section"]]),
-    " subsection "      :> (getQG[]; QuiverGeometry`PreviewInIAWriter[SelectedCellGroup["Subsection"]]),
-    " group "           :> (getQG[]; QuiverGeometry`PreviewInIAWriter[SelectedCellGroup["Group"]]),
-    " cell "            :> (getQG[]; QuiverGeometry`PreviewInIAWriter[SelectedCellGroup["Cell"]]),
-    None,
+  {qgPath = QuiverGeometryPackageLoader`$initFile},
+  {getQG = Function[If[DownValues[QuiverGeometryPackageLoader`Load] === {}, Get[qgPath]]]},
+  {buttons = Map[makeButton, {
     " Build: ",
-    " nb "            :> (getQG[]; QuiverGeometry`BuildQGSiteHugo[EvaluationNotebook[], Verbose -> True];),
-    " dir "            :> (getQG[]; NotebookSave[]; QuiverGeometry`BuildQGSiteHugo[NotebookDirectory[]];),
-    " site "             :> (getQG[]; NotebookSave[]; QuiverGeometry`BuildQGSiteHugo[]),
-    None,
+    " nb "              :> (getQG[]; RunAsyncWithMessagePopup @ BuildQGSite[EvaluationNotebook[], Verbose -> "KeyModifiers"]),
+    " dir "             :> (getQG[]; NotebookSave[]; RunAsyncWithMessagePopup @ BuildQGSite[NotebookDirectory[], Verbose -> "KeyModifiers"];),
+    " site "            :> (getQG[]; NotebookSave[]; RunAsyncWithMessagePopup @ BuildQGSite[Verbose -> "KeyModifiers"]),
+    " deploy "          :> (getQG[]; RunAsyncWithMessagePopup @ DeployQGSite[]),
+    " Open: ",
+    " md "              :> (getQG[]; SystemOpen[QGSiteMarkdownPath[]]),
+    " web "             :> (getQG[]; OpenQGSiteWebpageURL[]),
+    " iA "              :> (getQG[]; RunAsyncWithMessagePopup @ PreviewInIAWriter @ SelectedCellGroup[]),
+    " \[UpArrow] "      :> (getQG[]; ExtendCellSelection[]),
     " Reload: ",
-    " QG "               :> (Get[qgPath]),
-    " Styles "           :> (getQG[]; QuiverGeometry`ApplyQuiverGeometryNotebookStyles[])
-  }, "   "], "DockedCell"]];
+    " QG "              :> Module[{res = Check[Get[qgPath], $Failed]}, If[res =!= $Failed, ApplyQuiverGeometryNotebookStyles[]; Beep[], Pause[0.1]; Beep[]; Pause[0.1]; Beep[]; SetSelectedNotebook @ First @ Notebooks["Messages"]]],
+    " QG fast "         :> Module[{res = Check[QuiverGeometryPackageLoader`Load[False], $Failed]}, If[res =!= $Failed, Beep[], Pause[0.1]; Beep[]; Pause[0.1]; Beep[]; SetSelectedNotebook @ First @ Notebooks["Messages"]]]
+  }]},
+  Cell[BoxData @ ToBoxes @ Row[buttons, "   "], "DockedCell"]
+];
 
-makeButton[None] := Spacer[10];
+makeButton[None] := Spacer[5];
 
 makeButton[txt_String] := Style[txt, "Text"];
 
@@ -44,6 +44,26 @@ makeButton[txt_ :> code_] := Button[
   code,
   Appearance -> FrontEndResource["FEExpressions", "OrangeButtonNinePatchAppearance"]
 ]
+
+(**************************************************************************************************)
+
+PublicFunction["RunAsyncWithMessagePopup"]
+
+SetHoldFirst[RunAsyncWithMessagePopup];
+
+RunAsyncWithMessagePopup[body_] := Block[{res, msg},
+  msg = First @ Notebooks["Messages"];
+  Quiet @ NotebookDelete @ Cells[msg];
+  res = Check[body, $Failed];
+  If[ModifierKeysPressedQ[], Print[res]];
+  If[FailureQ[res],
+    BadBeep[];
+    Quiet @ SetSelectedNotebook @ msg
+  ,
+    GoodBeep[];
+  ];
+  res
+];
 
 (**************************************************************************************************)
 
@@ -105,47 +125,43 @@ ApplyQuiverGeometryNotebookStyles[file_String ? FileQ] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[ExtendCellSelection]
+
+ExtendCellSelection[] := ExtendCellSelection @ EvaluationNotebook[];
+
+ExtendCellSelection[nb_NotebookObject] := extendedCells[nb, True]
+
+(**************************************************************************************************)
+
 PublicFunction[SelectedCellGroup]
 
-SelectedCellGroup[type_:"Cell"] := Scope[
-  nb = EvaluationNotebook[];
-  init = SelectedCells[nb];
-  If[init =!= {}, SelectionMove[nb, All, Cell]];
-  If[init === {}, SelectionMove[nb, Next, Cell]; init = SelectedCells[nb]];
-  If[init === {}, SelectionMove[nb, Previous, Cell]; init = SelectedCells[nb]];
-  res = None;
-  If[type === "Cell",
-    res = cells = SelectedCells[nb]; read = First[cells, None];
-    If[MatchQ[CurrentValue[read, "CellStyleName"], "Code" | "Input" | "Output"],
-      SelectionMove[nb, All, CellGroup];
-      cells = SelectedCells @ nb; read = Last[cells, None];
-      If[Head[read] =!= CellObject, Goto[Done]];
-      If[CurrentValue[read, "CellStyleName"] === "Output", res = cells];
-    ];
-    Goto[Done];
+SelectedCellGroup[] := SelectedCellGroup @ EvaluationNotebook[];
+
+SelectedCellGroup[nb_NotebookObject] :=
+  CellGroup @ extendedCells[nb, False]
+
+(**************************************************************************************************)
+
+extendedCells[nb_, extend_:False] := Scope[
+  
+  cells = SelectedCells[nb];
+
+  If[cells === {},
+    SelectionMove[nb, Next, Cell];
+    cells = SelectedCells[nb];
   ];
-  If[type === "Group",
-    SelectionMove[nb, All, CellGroup];
-    res = cells = SelectedCells @ nb; read = Last[cells, None];
-    If[Head[read] =!= CellObject, Goto[Done]];
-    If[CurrentValue[read, "CellStyleName"] === "Output",
-        SelectionMove[nb, All, CellGroup];
-        res = SelectedCells @ nb];
-    Goto[Done]
-  ];
-  Do[
-    SelectionMove[nb, All, CellGroup];
-    cells = SelectedCells @ nb; read = First[cells, None];
-    If[Head[read] =!= CellObject, Goto[Done]];
-    If[CurrentValue[read, "CellStyleName"] === type, res = cells; Goto[Done]]
+
+  If[Length[cells] == 1,
+    If[MatchQ[cellType @ First @ cells, "Code" | "Input" | "Output" | "Section" | "Subsection" | "Subsubsection" | "Chapter" | "Title"],
+      SelectionMove[nb, All, CellGroup]];
   ,
-    {8}
+    If[extend, SelectionMove[nb, All, CellGroup]];
   ];
-  Label[Done];
-  If[init =!= {}, SelectionMove[First @ init, Before, Cell]];
-  If[res === None, None, CellGroup @ res]
+
+  SelectedCells[nb]
 ];
 
+cellType[cell_] := CurrentValue[cell, "CellStyleName"];
 
 (**************************************************************************************************)
 
@@ -317,4 +333,3 @@ CopyFileToClipboard[path_] := If[
   path,
   $Failed
 ];
-

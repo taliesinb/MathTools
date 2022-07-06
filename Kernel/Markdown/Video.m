@@ -14,7 +14,7 @@ videoCellToMarkdown[TemplateBox[{_, srcPath_, ___}, "VideoBox1", ___]] := Scope[
     EnsureDirectory[$rasterizationPath];
     If[!FileExistsQ[videoPath], CopyFile[srcPath, videoPath]];
   ];
-  mdvPrint["Copying file from ", srcPath, " to ", videoPath];
+  mdvPrint["Copying file from ", MsgPath @ srcPath, " to ", MsgPath @ videoPath];
 
   {w, h} = Ceiling[videoDims / 2];
   relativePath = toEmbedPath[$relativeRasterizationPath, videoFileName, videoPath];

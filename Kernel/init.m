@@ -1,5 +1,7 @@
 System`EdgeThickness;
 
+QuiverGeometryPackageLoader`$initFile = $InputFileName;
+
 If[$VersionNumber < 12.2,
   General::packagewlversion = "Package `` requires Wolfram Langauge version `` or later to operate.";
   Message[General::packagewlversion, "QuiverGeometry`", 12.2]

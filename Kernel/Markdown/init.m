@@ -85,7 +85,7 @@ PrivateFunction[mdvPrint]
 
 SetHoldAllComplete[mdvPrint];
 mdvPrint[args___] /; TrueQ[$verbose] :=
-  Print @@ ReplaceAll[{args}, File[path_] :> StringJoin["\"", path, "\""]];
+  Print[args];
 
 (**************************************************************************************************)
 

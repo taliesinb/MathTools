@@ -1,3 +1,40 @@
+PublicFunction[MarkdownFrontMatter]
+
+MarkdownFrontMatter[path_String | File[path_String]] := Scope[
+  
+  path //= NormalizePath;
+
+  str = ReadString[path];
+
+  If[StringStartsQ[str, "{"],
+    jsonStr = FirstStringCase[str, json:(StartOfString ~~ "{\n" ~~ Shortest[___] ~~ "\n}\n") :> json];
+    If[StringQ[jsonStr],
+      res = Developer`ReadRawJSONString @ jsonStr;
+      If[AssociationQ[res], Return @ res]
+    ];
+  ];
+
+  None
+];
+
+(**************************************************************************************************)
+
+PrivateFunction[getMarkdownUnixTime]
+
+getMarkdownUnixTime[path_String] := Scope[
+  Quiet[
+    stream = OpenRead[path];
+    line = Last @ ReadList[stream, "String", 2];
+    Close[stream];
+  ];
+  If[!StringQ[line], Return[None]];
+  matches = StringCases[line, "unixtime\":" ~~ d:DigitCharacter.. :> d, 1];
+  If[matches === {}, Return[None]];
+  FromDigits @ First @ matches
+];
+
+(**************************************************************************************************)
+
 PublicFunction[NotebookFrontMatter]
 
 NotebookFrontMatter[nb_NotebookObject] :=
@@ -26,10 +63,10 @@ NotebookFrontMatter[path_String | File[path_String]] := Scope[
   dateString = DateString[fileDate, {"Year", "-", "Day", "-", "Month"}];
 
   result = Association[
+    "unixtime" -> UnixTime @ fileDate,
     "date" -> dateString,
     "weight" -> weight,
     "title" -> title,
-    "unixtime" -> UnixTime @ fileDate,
     "notebookpath" -> path,
     taggingRules
   ];
