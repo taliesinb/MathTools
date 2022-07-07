@@ -171,6 +171,9 @@ loadFileContents[path_, context_] := Module[{str, contents},
 $stringProcessingRules = {
   RegularExpression["(?s)\"\"\"(.*?)\"\"\""] :>
     StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""],
+(*   RegularExpression["(?s)(?<=\\s)`(.*?)`(?=\\s)"] :>
+    StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""],
+ *)
   RegularExpression[" ~!~ ([^\n]+)"] :> " ~NotMatchQ~ " <> bracketRHS["$1"],
   RegularExpression[" ~~~ ([^\n]+)"] :> " ~MatchQ~ " <> bracketRHS["$1"]
 }
@@ -257,12 +260,14 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
   $privateSymbols = Internal`Bag[];
   $loadedFileCount = $changedTextFileCount = 0;
 
+  dirtyCount = 0;
   requiresFullReload = fullReload;
   result = Catch[
     $packageExpressions = Map[
       path |-> Block[{expr, context, isDirty},
         context = filePathToContext @ path;
         {expr, isDirty} = readPackageFile[path, context];
+        If[isDirty, dirtyCount++];
         addPackageSymbolsToBag[$systemSymbols,  expr, Package`SystemMacro  | Package`SystemVariable  | Package`SystemFunction  | Package`SystemHead  | Package`SystemSymbol  | Package`SystemForm  | Package`SystemObject | Package`PublicOption | Package`SystemOption];
         addPackageSymbolsToBag[$publicSymbols,  expr, Package`PublicMacro  | Package`PublicVariable  | Package`PublicFunction  | Package`PublicHead  | Package`PublicSymbol  | Package`PublicForm  | Package`PublicObject];
         addPackageSymbolsToBag[$privateSymbols, expr, Package`PrivateMacro | Package`PrivateVariable | Package`PrivateFunction | Package`PrivateHead | Package`PrivateSymbol | Package`PrivateForm | Package`PrivateObject | Package`PrivateOption];
@@ -277,6 +282,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
   ,
     failRead
   ];
+  
   Quiet @ Remove["QuiverGeometryPackageLoader`Scratch`*"]; (* <- dumping ground for SyntaxLength *)
   If[result === $Failed,
     VPrint["Reading failed."];
@@ -357,7 +363,7 @@ QuiverGeometryPackageLoader`EvaluatePackages[packagesList_List] := Block[
   ];
   If[$failEval, Return[$Failed, Block]];
   If[userFileChangedQ["user_final.m"], loadUserFile["user_final.m"]];
-  If[$formsChanged || userFileChangedQ["user_shortcuts.m"], loadUserFile["user_shortcuts.m"]];
+  If[(Length[packagesList] > 10) || formsChanged || userFileChangedQ["user_shortcuts.m"], loadUserFile["user_shortcuts.m"]];
   result
 ];
 

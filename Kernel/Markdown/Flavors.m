@@ -23,9 +23,9 @@ $flavorData["Base", "StringImageTemplate"]        = None;
 (**************************************************************************************************)
 
 $flavorData["Franklin"] = $flavorData["Base"];
-$flavorData["Franklin", "AnchorTemplate"]         = StringTemplate @ """\label{``}""";
+$flavorData["Franklin", "AnchorTemplate"]         = StringFunction @ """\label{#1}""";
 $flavorData["Franklin", "ClassAttributeTemplate"] = franklinClassAttr;
-$flavorData["Franklin", "ExternalImportTemplate"] = StringTemplate @ """\textinput{``}""";
+$flavorData["Franklin", "ExternalImportTemplate"] = StringFunction @ """\textinput{#1}""";
 $flavorData["Franklin", "FileImageTemplate"]      = genericImageTagTemplate /* wrapCurly;
 $flavorData["Franklin", "FileVideoTemplate"]      = genericVideoTagTemplate /* wrapCurly;
 $flavorData["Franklin", "KatexPostprocessor"]     = splitOpenBraces;
@@ -36,7 +36,7 @@ franklinClassAttr[class_] := str |-> StringJoin[StringTrim @ "@@", StringRiffle[
 (**************************************************************************************************)
 
 $flavorData["Hugo"] = $flavorData["Base"];
-$flavorData["Hugo", "AnchorTemplate"]             = StringTemplate @ """<span id="``"></span>""";
+$flavorData["Hugo", "AnchorTemplate"]             = StringFunction @ """<span id="#1"></span>""";
 $flavorData["Hugo", "ClassAttributeTemplate"]     = hugoClassAttr;
 $flavorData["Hugo", "FileImageTemplate"]          = genericImageTagTemplate;
 $flavorData["Hugo", "FileVideoTemplate"]          = genericVideoTagTemplate;
@@ -97,14 +97,14 @@ blankString = Function[""];
 
 (**************************************************************************************************)
 
-genericImageTagTemplate = StringTemplate @ StringTrim @  """
-<img class="`classlist`" src="`relativepath`" width="`width`" alt="`caption`">
+genericImageTagTemplate = StringFunction @ StringTrim @  """
+<img class="#classlist" src="#relativepath" width="#width" alt="#caption">
 """;
 
-genericVideoTagTemplate = StringTemplate @ StringTrim @  """
-<video width="`width`" height="`height`" controls>
-  <source src="`relativepath`" type="video/mp4">
+genericVideoTagTemplate = StringFunction @ StringTrim @  """
+<video width="#width" height="#height" controls>
+  <source src="#relativepath" type="video/mp4">
 </video>
 """;
 
-genericImageLinkTemplate = StringTemplate @ "![](`relativepath`)";
+genericImageLinkTemplate = StringFunction @ "![](#relativepath)";

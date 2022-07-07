@@ -100,6 +100,8 @@ enumerateFiles[spec___, path_] := Scope[
 
 $notebookP = _File | _NotebookObject | _CellGroup | _Cell;
 
+ExportToMarkdown::msgs = "Messages issued during export of ``."
+
 (* this joins several notebooks into a single file *)
 doImportExport[spec:($notebookP | {$notebookP..}), exportPath_, True] := Scope[
   If[$notebookCaching && MatchQ[spec, _File],
@@ -108,8 +110,12 @@ doImportExport[spec:($notebookP | {$notebookP..}), exportPath_, True] := Scope[
       Return @ exportPath;
     ];
   ];
-  mdvPrint["* Exporting ", If[Head[spec] === File, MsgPath @@ spec, spec], " to ", MsgPath @ exportPath];
-  result = toMarkdownStringInner @ spec;
+  dbgSpec = If[Head[spec] === File, MsgPath @@ spec, spec];
+  mdvPrint["* Exporting ", dbgSpec, " to ", MsgPath @ exportPath];
+  Check[
+    result = toMarkdownStringInner @ spec,
+    Message[ExportToMarkdown::msgs, dbgSpec];
+  ];
   If[!StringQ[result], ThrowMessage["nbimportfail", spec]];
   If[$includeFrontMatter && MatchQ[spec, _NotebookObject | _File],
     frontMatter = Developer`ToJSON @ NotebookFrontMatter @ spec;

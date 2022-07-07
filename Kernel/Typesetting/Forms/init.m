@@ -1,25 +1,3 @@
-(**************************************************************************************************)
-
-PrivateFunction[TBox, SBox, RBox, GBox]
-
-TBox[form_][args___] := TemplateBox[{args}, form];
-
-SBox[form_] := TemplateBox[{}, form];
-
-RBox[args___] := RowBox[{args}];
-
-GBox[entries_, alignments_, rowSpacings_, colSpacings_] :=
-  GridBox[
-    entries,
-    GridBoxAlignment -> {"Columns" -> alignments},
-    GridBoxSpacings -> {"Rows" -> prepend0 @ rowSpacings, "Columns" -> prepend0 @ colSpacings}
-  ];
-
-prepend0[list_List] := Prepend[list, 0];
-prepend0[e_] := e;
-
-(**************************************************************************************************)
-
 PrivateFunction[katexAliasRiffled, katexAlias]
 
 katexAliasRiffled[fn_] := riffled @ toAlias @ fn;
@@ -97,7 +75,7 @@ declareUnaryWrapperForm[head_Symbol, katex_:Automatic] := With[
 PrivateVariable[$rawSymbolP, $literalSymbolsP]
 
 $rawSymbolP = _Symbol | _String | _Subscript | _Superscript | _Subsuperscript | EllipsisSymbol;
-$literalSymbolsP = Alternatives[Aligner];
+$literalSymbolsP = Alternatives[Aligner, EllipsisSymbol];
 
 (**************************************************************************************************)
 
@@ -211,8 +189,15 @@ declareCommaRiffledForm[symbol_, katex_] := With[
   $TemplateKatexFunction[formName] = applyRiffled[katex, ","];
 ];
 
+getStyleHead[style_] := Scope[
+  fn = Lookup[$TemplateKatexFunction, style, $templateBoxToKatexFunctions @ style];
+  Replace[fn, {
+    (s_String | Function[s_[#]]) :> StringJoin["\\", s]
+  }]
+];
+
 applyStyledRiffled[katex_, sep_][style_, args___] :=
-  katex[StringJoin["\\", $TemplateKatexFunction @ style], riffled[sep][args]];
+  katex[getStyleHead[style], riffled[sep][args]];
 
 declareStyledCommaRiffledForm[symbol_, katex_] := With[
   {formName = SymbolName[symbol]},
@@ -424,7 +409,6 @@ PublicForm[ClassTaggedForm]
 declareBoxFormatting[
   ClassTaggedForm[form_, tag_] :> TagBox[ToBoxes @ form, "ClassTaggedForm"[tag]]
 ];
-
 
 (**************************************************************************************************)
 

@@ -16,7 +16,7 @@ PreviewInIAWriter[nb_, opts:OptionsPattern[]] := Scope[
     MarkdownFlavor -> "IAWriter",
     KatexPreludePath -> "assets/prelude.md",
     RasterizationPath -> "assets", HeadingDepthOffset -> 1,
-    NotebookCaching -> False, Verbose -> True
+    NotebookCaching -> False
   ];
   If[StringQ[path],
     Run["osascript -e 'tell app \"iA Writer\" to open ( POSIX file \"" <> path <> "\" )'"];

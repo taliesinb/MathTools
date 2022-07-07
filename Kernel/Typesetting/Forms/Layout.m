@@ -101,13 +101,6 @@ $TemplateKatexFunction["MapsToSymbol"] = katexAlias["mtoSymbol"];
 
 (**************************************************************************************************)
 
-PublicSymbol[EllipsisSymbol, VerticalEllipsisSymbol]
-
-declareConstantSymbol[EllipsisSymbol];
-declareConstantSymbol[VerticalEllipsisSymbol];
-
-(**************************************************************************************************)
-
 PublicForm[RowForm, TermRowForm]
 
 declareNAryForm[RowForm];
@@ -235,13 +228,3 @@ declareBoxFormatting[
 ];
 
 $TemplateKatexFunction["ModulusLabeledForm"] = "modLabeled";
-
-(**************************************************************************************************)
-
-PublicForm[MathTextForm]
-
-declareBoxFormatting[
-  MathTextForm[l_] :> TemplateBox[List @ TextString @ l, "MathTextForm"]
-];
-
-$TemplateKatexFunction["MathTextForm"] = "textrm";

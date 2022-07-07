@@ -1,6 +1,6 @@
 PublicFunction[ColorHexString]
 
-ColorHexString[color_] := StringDrop[Image`Utilities`toHEXcolor[color], 1];
+ColorHexString[color_] := ColorHexString[color] = StringDrop[Image`Utilities`toHEXcolor[color], 1];
 
 (**************************************************************************************************)
 

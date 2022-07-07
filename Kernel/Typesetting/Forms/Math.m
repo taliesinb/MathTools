@@ -1,3 +1,26 @@
+SystemSymbol[Naturals, PositiveNaturals, Primes]
+
+(* SetUsage @ "Naturals represents the natural numbers."
+SetUsage @ "PositiveNaturals represents the positive natural numbers."
+SetUsage @ "Primes represents the prime numbers."
+ *)
+declareTemplateBoxRules[
+  Naturals                   -> "\[DoubleStruckN]",
+  PositiveNaturals           -> SuperscriptBox["\[DoubleStruckCapitalN]", "+"],
+  PositiveReals              -> SuperscriptBox["\[DoubleStruckCapitalR]", "+"],
+  Primes                     -> "\[DoubleStruckCapitalP]",
+  Reals                      -> "\[DoubleStruckCapitalR]"
+]
+
+(**************************************************************************************************)
+
+PublicSymbol[PiSymbol, TauSymbol]
+
+declareTemplateBoxRules[
+  PiSymbol                   -> "\[Pi]",
+  TauSymbol                  -> "\[Tau]"
+];
+
 (**************************************************************************************************)
 
 PublicForm[IndexedMaxForm, IndexedMinForm]

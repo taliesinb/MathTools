@@ -536,6 +536,9 @@ makeSym["QPPF", QuiverProductPolyForm];
 makeSym["TAF", TextAndForm];
 makeSym["CF", GeneralUtilities`CommaForm];
 
+makeSym["DE", DirectedEdgeForm];
+makeSym["UE", UndirectedEdgeForm];
+
 makeSym["DEdgeF", DirectedEdgeForm];
 makeSym["UEdgeF", UndirectedEdgeForm];
 

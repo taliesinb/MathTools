@@ -2,7 +2,13 @@ PublicVariable[$KatexPrelude]
 
 importLocalUTF8[localFile__] := ImportUTF8 @ FileNameJoin[{$PackageDirectory, localFile}];
 
-$KatexPrelude = importLocalUTF8["Markdown", "KatexPrelude.tex"];
+$KatexPrelude := $KatexPrelude = computeKatexPrelude[];
+
+computeKatexPrelude[] := Scope[
+  base = importLocalUTF8["Markdown", "KatexPrelude.tex"];
+  add = EmitKatexFunctionDefinitions[];
+  StringJoin[base, "\n\n", add]
+];
 
 (**************************************************************************************************)
 

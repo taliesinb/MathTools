@@ -111,3 +111,14 @@ DeleteNull[list$] removes any elements that are Null from list$.
 "
 
 DeleteNull[e_] := DeleteCases[e, Null];
+
+(**************************************************************************************************)
+
+PublicFunction[SequenceRiffle]
+
+SequenceRiffle[r_] := Sequence[];
+SequenceRiffle[a_, r_] := Sequence[r];
+SequenceRiffle[a_, b_, r_] := Sequence[a, r, b];
+SequenceRiffle[a_, b_, c_, r_] := Sequence[a, r, b, r, c];
+SequenceRiffle[a_, b_, c_, d_, r_] := Sequence[a, r, b, r, c, r, d];
+SequenceRiffle[seq__, r_] := Sequence @@ Riffle[{seq}, r];

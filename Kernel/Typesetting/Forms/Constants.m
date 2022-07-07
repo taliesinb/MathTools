@@ -1,77 +1,27 @@
-SystemSymbol[Naturals, PositiveNaturals]
+PublicSymbol[NotApplicableSymbol, UnknownSymbol, EmptySetSymbol, TickSymbol, UnitInterval, BlankSymbol, PlaceholderSquareSymbol]
 
-SetUsage @ "Naturals represents the natural numbers."
-SetUsage @ "PositiveNaturals represents the positive natural numbers."
+PublicSymbol[BarTokenSymbol, FilledTokenSymbol, FilledSquareTokenSymbol, FilledRectangleTokenSymbo, EmptyTokenSymbol, EmptySquareTokenSymbol, EmptyRectangleTokenSymbol]
 
-MakeBoxes[Naturals, StandardForm] := SBox["Naturals"];
-MakeBoxes[Naturals, TraditionalForm] := SBox["Naturals"];
-
-MakeBoxes[PositiveNaturals, StandardForm] := SBox["PositiveNaturals"];
-MakeBoxes[PositiveNaturals, TraditionalForm] := SBox["PositiveNaturals"];
-
-MakeBoxes[PositiveReals, StandardForm] := SBox["PositiveReals"];
-MakeBoxes[PositiveReals, TraditionalForm] := SBox["PositiveReals"];
-
-MakeBoxes[Primes, StandardForm] := SBox["Primes"];
+PublicSymbol[EllipsisSymbol, VerticalEllipsisSymbol]
 
 (**************************************************************************************************)
 
-PublicSymbol[PiSymbol, TauSymbol]
-
-declareConstantSymbol[{PiSymbol, TauSymbol}]
-
-(**************************************************************************************************)
-
-PublicSymbol[NotApplicableSymbol, UnknownSymbol, EmptySetSymbol]
-
-declareConstantSymbol[{NotApplicableSymbol, UnknownSymbol, EmptySetSymbol}];
-
-(**************************************************************************************************)
-
-PublicSymbol[TickSymbol]
-
-declareConstantSymbol[TickSymbol];
-
-(**************************************************************************************************)
-
-PublicSymbol[UnitInterval]
-
-declareConstantSymbol[UnitInterval];
-
-(**************************************************************************************************)
-
-(* Q: can i just use declareConstantSymbol here? *)
-
-PublicSymbol[BlankSymbol]
-
-declareBoxFormatting[
-  BlankSymbol :> SBox["BlankSymbol"]
+declareTemplateBoxRules[
+  NotApplicableSymbol        -> GrayBox @ KatexBox["NA", "\\text{---}"],
+  UnknownSymbol              -> GrayBox["?"],
+  EmptySetSymbol             -> GrayBox["\[EmptySet]"],
+  TickSymbol                 -> BoldBox["\[VeryThinSpace]\[Checkmark]\[VeryThinSpace]"],
+  UnitInterval               -> "\[DoubleStruckCapitalI]",
+  BlankSymbol                -> GrayBox @ KatexBox["\[VeryThinSpace]_\[VeryThinSpace]", "_"],
+  PlaceholderSquareSymbol    -> "\[EmptySquare]",
+  BarTokenSymbol             -> BoldBox["\[VeryThinSpace]|\[VeryThinSpace]"],
+  FilledTokenSymbol          -> "\[FilledCircle]",
+  FilledSquareTokenSymbol    -> "\[FilledSquare]",
+  FilledRectangleTokenSymbol -> "\[FilledRectangle]",
+  EmptyTokenSymbol           -> "\[EmptyCircle]",
+  EmptySquareTokenSymbol     -> "\[EmptySquare]",
+  EmptyRectangleTokenSymbol  -> "\[EmptyRectangle]",
+  EllipsisSymbol             -> KatexBox["\[ThinSpace]...\[ThinSpace]", "\\,\\gFo{...}\\,"],
+  VerticalEllipsisSymbol     -> KatexBox["\[ThinSpace]\[VerticalEllipsis]\[ThinSpace]", "\\vdots"]
 ]
 
-$TemplateKatexFunction["BlankSymbol"] = Function["\\blank"];
-
-(**************************************************************************************************)
-
-PublicSymbol[PlaceholderSquareSymbol]
-
-declareBoxFormatting[
-  PlaceholderSquareSymbol :> SBox["PlaceholderSquareSymbol"]
-]
-
-$TemplateKatexFunction["PlaceholderSquareSymbol"] = Function["□"];
-
-(**************************************************************************************************)
-
-PublicSymbol[IndeterminateSymbol]
-
-declareConstantSymbolForm[IndeterminateSymbol];
-
-(**************************************************************************************************)
-
-PublicSymbol[BarTokenSymbol, FilledTokenSymbol, FilledSquareTokenSymbol, FilledRectangleTokenSymbol, EmptyTokenSymbol, EmptySquareTokenSymbol, EmptyRectangleTokenSymbol]
-
-declareConstantSymbol[
-  {BarTokenSymbol,
-   FilledTokenSymbol, FilledSquareTokenSymbol, FilledRectangleTokenSymbol,
-   EmptyTokenSymbol, EmptySquareTokenSymbol, EmptyRectangleTokenSymbol
-}];

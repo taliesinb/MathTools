@@ -8,55 +8,6 @@
 \gdef\suptrans{^\mathsf{T}}
 \gdef\supdagger{^\dagger}
 
-\gdef\rawsymbol#1{\operatorname{#1}}
-\gdef\colorsymbol#1#2{\textcolor{#1}{\rawsymbol{#2}}}
-\gdef\lsymbol#1{\colorsymbol{262626}{#1}}
-\gdef\msymbol#1{\colorsymbol{b50800}{#1}}
-\gdef\osymbol#1{\colorsymbol{00427f}{#1}}
-\gdef\lstring#1{\textcolor{666666}{\textrm{\textquotedblleft{\text{#1}}\textquotedblright}}}
-
-\gdef\boldForm#1{\textbf{#1}}
-
-\gdef\lrform#1{{\textcolor{e1432d}{#1}}}
-\gdef\lgform#1{{\textcolor{4ea82a}{#1}}}
-\gdef\lbform#1{{\textcolor{3e81c3}{#1}}}
-
-\gdef\lrgform#1{{\textcolor{ffc87d}{#1}}}
-\gdef\lgbform#1{{\textcolor{96e2e3}{#1}}}
-\gdef\lrbform#1{{\textcolor{f989b8}{#1}}}
-
-\gdef\rform#1{{\textcolor{cb2b1a}{#1}}}
-\gdef\gform#1{{\textcolor{399318}{#1}}}
-\gdef\bform#1{{\textcolor{2b6fb0}{#1}}}
-
-\gdef\drform#1{{\textcolor{9b0000}{#1}}}
-\gdef\dgform#1{{\textcolor{006800}{#1}}}
-\gdef\dbform#1{{\textcolor{004987}{#1}}}
-
-\gdef\drgform#1{{\textcolor{ae5900}{#1}}}
-\gdef\dgbform#1{{\textcolor{006567}{#1}}}
-\gdef\drbform#1{{\textcolor{86004d}{#1}}}
-
-\gdef\rgform#1{{\textcolor{dc841a}{#1}}}
-\gdef\gbform#1{{\textcolor{47a5a7}{#1}}}
-\gdef\rbform#1{{\textcolor{c74883}{#1}}}
-
-\gdef\pform#1{{\textcolor{665996}{#1}}}
-\gdef\dpform#1{{\textcolor{41326b}{#1}}}
-
-\gdef\waform#1{{\textcolor{6b6b6b}{#1}}}
-\gdef\wbform#1{{\textcolor{929292}{#1}}}
-\gdef\wcform#1{{\textcolor{c5c5c5}{#1}}}
-
-\gdef\tick{\checkmark}
-\gdef\barToken{\mathbf{|}}
-\gdef\filledRectangleToken{▮}
-\gdef\emptyRectangleToken{▯}
-\gdef\filledSquareToken{■}
-\gdef\emptySquareToken{□}
-\gdef\filledToken{∙}
-\gdef\emptyToken{∘}
-
 \gdef\cardinalRewrite#1#2{\rewrite{#1}{#2}}
 
 \gdef\primed#1{{#1}^{\prime}}
@@ -70,15 +21,9 @@
 \gdef\forwardBackwardNeutralFactor{\factsym{\mathrlap{\downarrow}{\mathrlap{\uparrow}{\endash} } }}
 
 \gdef\neutralFactor{\factsym{\shornarrow}}
-\gdef\arrowhead{⏵}
-\gdef\inverseArrowhead{⏴}
-\gdef\rightArrowhead{⏵}
-\gdef\leftArrowhead{⏴}
-\gdef\upArrowhead{⏶}
-\gdef\downArrowhead{⏷}
 
-\gdef\de#1#2{{{#1}\xundirectededge{}{#2}}}
-\gdef\ue#1#2{{{#1}\xrightedge{}{#2}}}
+\gdef\de#1#2{{{#1}\xrightedge{}{#2}}}
+\gdef\ue#1#2{{{#1}\xundirectededge{}{#2}}}
 
 \gdef\shifttag#1{\raisebox{-1em}{$#1$}}
 \gdef\shifttag#1{#1}
@@ -98,10 +43,6 @@
 
 \gdef\diffd{𝕕}
 \gdef\partialdof#1{\partial {#1}}
-
-\gdef\emptySet{\empty}
-\gdef\unknown{\wbform{\text{?}}}
-\gdef\notApplicable{\wbform{\text{---}}}
 
 \gdef\textAnd{\text{\,and\,}}
 
@@ -154,18 +95,18 @@
 \gdef\blackCircleModifier#1{\supercircb{#1}}
 \gdef\whiteCircleModifier#1{\supercirc{#1}}
 
-\gdef\totalSpaceStyle#1{\rbform{#1}}
-\gdef\baseSpaceStyle#1{\bform{#1}}
-\gdef\fiberSpaceStyle#1{\rform{#1}}
-\gdef\totalSpaceElementStyle#1{\drbform{#1}}
-\gdef\baseSpaceElementStyle#1{\dbform{#1}}
-\gdef\fiberSpaceElementStyle#1{\drform{#1}}
+\gdef\totalSpaceStyle#1{\piFo{#1}}
+\gdef\baseSpaceStyle#1{\blFo{#1}}
+\gdef\fiberSpaceStyle#1{\reFo{#1}}
+\gdef\totalSpaceElementStyle#1{\daPiFo{#1}}
+\gdef\baseSpaceElementStyle#1{\daBlFo{#1}}
+\gdef\fiberSpaceElementStyle#1{\daReFo{#1}}
 
-\gdef\bundleProjectionStyle#1{\dgform{#1}}
-\gdef\bundleGraphStyle#1{\rbform{#1}}
-\gdef\bundleSectionStyle#1{\drgform{#1}}
+\gdef\bundleProjectionStyle#1{\daGrFo{#1}}
+\gdef\bundleGraphStyle#1{\piFo{#1}}
+\gdef\bundleSectionStyle#1{\daOrFo{#1}}
 
-\gdef\bundleFunctionStyle#1{\drbform{#1}}
+\gdef\bundleFunctionStyle#1{\daPiFo{#1}}
 \gdef\graphFunctionStyle#1{\totalSpaceStyle{#1}}
 \gdef\projectionFunctionStyle#1{\totalSpaceStyle{#1}}
 \gdef\sectionFunctionStyle#1{\totalSpaceStyle{#1}}
@@ -199,21 +140,6 @@
 
 \gdef\translateSymbol{\mathbin{\uparrow}}
 \gdef\backwardTranslateSymbol{\mathbin{\downarrow}}
-
-\gdef\pathTranslate#1#2{{#1}\translateSymbol{#2}}
-\gdef\pathLeftTranslate#1{{{#1}\translateSymbol}}
-\gdef\pathBackwardTranslate#1#2{{#1}{\backwardTranslateSymbol}{#2}}
-\gdef\pathLeftBackwardTranslate#1{{#1}{\backwardTranslateSymbol}}
-
-\gdef\compactCovariantDifference#1#2{\Delta_{#1}\,{#2}}
-\gdef\covariantDifference{{#1}\,\Delta\,{#2}}
-
-\gdef\forwardDifference{\Delta^{+}}
-\gdef\backwardDifference{\Delta^{-}}
-\gdef\centralDifference{\Delta}
-\gdef\pathForwardDifference#1{\forwardDifference_{#1}}
-\gdef\pathBackwardDifference#1{\backwardDifference_{#1}}
-\gdef\pathCentralDifference#1{\centralDifference_{#1}}
 
 \gdef\pathHead#1{\pathHeadVector{#1}}
 \gdef\pathTail#1{\pathTailVector{#1}}
@@ -686,9 +612,9 @@
 \gdef\rewriteLHSRegionalState#1{#1_{L}}
 \gdef\rewriteRHSRegionalState#1{#1_{R}}
 
-\gdef\regionalStateForm#1{\waform{(}#1\waform{)}}
+\gdef\regionalStateForm#1{\daGFo{(}#1\daGFo{)}}
 
-\gdef\invalidRegionalState{\rform{\times}}
+\gdef\invalidRegionalState{\reFo{\times}}
 \gdef\emptyRegionalState{\regionalStateForm{}}
 
 \gdef\regionalSubstateSymbol{\sqsubseteq}
@@ -775,7 +701,6 @@
 \gdef\srdot{\mathbin{\smallblackcirc}}
 \gdef\srplus{+}
 
-\gdef\ellipsis{\,\wbform{...}\,}
 \gdef\verticalEllipsis{\vdots}
 
 \gdef\appliedRelation#1{#1}

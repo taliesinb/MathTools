@@ -4,8 +4,15 @@ PrivateFunction[textCellToMarkdown]
 
 $forbiddenStrings = "XXX" | "XXXX";
 
+ToMarkdownString::msgs = "Messages issued during markdown conversion of cell printed below.";
 textCellToMarkdown[e_] := Scope[
-  text = StringTrim @ StringJoin @ textCellToMarkdownOuter @ e;
+  Check[
+    text = StringTrim @ StringJoin @ textCellToMarkdownOuter @ e;
+  ,
+    Message[ToMarkdownString::msgs];
+    PrintBadCell @ e;
+  ];
+  If[!StringQ[text], Return["bad text"]];
   If[StringContainsQ[text, "\\badDispatch"], PrintBadCell @ text];
   If[StringContainsQ[text, $forbiddenStrings], Return[""]];
   text // StringReplace[$finalStringFixups1] // StringReplace[$finalStringFixups2]

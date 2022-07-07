@@ -40,3 +40,9 @@ declareBoxFormatting[___] := Panic["BadFormatting"]
 PrivateFunction[summaryItem]
 
 summaryItem[a_, b_] := BoxForm`SummaryItem[{a <> ": ", b}];
+
+(**************************************************************************************************)
+
+Unprotect[Grid]
+Grid[a_Association] := Grid[KeyValueMap[List, a], Alignment -> Left, Dividers -> All, ItemSize -> 30];
+Protect[Grid]

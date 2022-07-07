@@ -109,5 +109,18 @@ StringJoinLeft[prefix_String][other_] := StringJoinLeft[prefix, other];
 StringJoinRight[other_String, suffix_String] := StringJoin[other, suffix];
 StringJoinRight[other_List, suffix_String] := Map[StringJoinRight[suffix], other];
 StringJoinRight[suffix_String][other_] := StringJoinRight[other, suffix];
-
   
+(**************************************************************************************************)
+
+PublicFunction[StringFunction]
+
+StringFunction[template_String] :=
+  Construct[
+    Function,
+    StringReplace[template, $stringFunctionSlotRules]
+  ] /. {StringExpression -> StringJoin, s_Slot :> TextString[s]};
+
+$stringFunctionSlotRules = {
+  "#" ~~ i:DigitCharacter :> Slot[FromDigits[i]],
+  "#" ~~ w:LetterCharacter.. :> Slot[w]
+};

@@ -50,8 +50,14 @@ declareConstantSymbol[TailVertexSymbol] // usingCustomKatex["tailVertexSymbol"];
 
 PublicSymbol[InverseArrowheadSymbol, ArrowheadSymbol, UpArrowheadSymbol, DownArrowheadSymbol, LeftArrowheadSymbol, RightArrowheadSymbol]
 
-declareConstantSymbol[{ArrowheadSymbol, InverseArrowheadSymbol, UpArrowheadSymbol, DownArrowheadSymbol, LeftArrowheadSymbol, RightArrowheadSymbol}];
-
+declareTemplateBoxRules[
+  InverseArrowheadSymbol -> "⏵",
+  ArrowheadSymbol        -> "⏴",
+  UpArrowheadSymbol      -> "⏶",
+  DownArrowheadSymbol    -> "⏷",
+  LeftArrowheadSymbol    -> "⏴",
+  RightArrowheadSymbol   -> "⏵"
+]
 
 (**************************************************************************************************)
 
@@ -70,7 +76,7 @@ declareBoxFormatting[
     toLongEdgeForm @ makeHintedTemplateBox[a -> VertexSymbol, b -> VertexSymbol, c -> CardinalSymbol, "TaggedUndirectedEdgeForm"]
 ]
 
-$TemplateKatexFunction["UndirectedEdgeForm"] = "de";
+$TemplateKatexFunction["UndirectedEdgeForm"] = "ue";
 $TemplateKatexFunction["TaggedUndirectedEdgeForm"] = "tue";
 $TemplateKatexFunction["LongTaggedUndirectedEdgeForm"] = "tue";
 
@@ -100,7 +106,6 @@ $TemplateKatexFunction["DirectedEdgeForm"] = "de";
 $TemplateKatexFunction["TaggedDirectedEdgeForm"] = "tde";
 $TemplateKatexFunction["MultiTaggedDirectedEdgeForm"] = "mtde";
 $TemplateKatexFunction["LongTaggedDirectedEdgeForm"] = "tde";
-
 
 (**************************************************************************************************)
 

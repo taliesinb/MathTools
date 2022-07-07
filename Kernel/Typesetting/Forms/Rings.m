@@ -47,7 +47,7 @@ declareBinaryForm[RingUnitElementForm];
 
 PublicForm[RingZeroElementSymbol]
 
-declareConstantSymbolForm[RingZeroElementSymbol];
+declareConstantSymbol[RingZeroElementSymbol];
 
 (**************************************************************************************************)
 

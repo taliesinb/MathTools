@@ -23,6 +23,9 @@ boxToKatex = Case[
   "_" := "\\_";
   e_String := e;
   
+  KatexFunction[s_String] := StringJoin["\\", s];
+  KatexFunction[s_String][args___] := Map[%, s[args]];
+
   (* process results of dispatchTemplateBox: *)
   e_List := Map[%, e];
   e:(_String[___]) := Map[%, e];
@@ -79,7 +82,7 @@ templateBoxToKatex = Case[
 ];
 
 dispatchTemplateBox[tag_, args_] := Scope[
-  fn = Lookup[$TemplateKatexFunction, tag, None];
+  fn = Lookup[$TemplateKatexFunction, tag, Lookup[$templateBoxToKatexFunctions, tag, None]];
   If[fn === None,
     Print["Cannot dispatch ", tag, " in ", Framed @ RawBoxes @ $currentKatexInputBoxes];
     Return["badDispatch"[tag]];

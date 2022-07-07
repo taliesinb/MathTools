@@ -1,5 +1,3 @@
-(**************************************************************************************************)
-
 $vertLineBox = AdjustmentBox["\[VerticalLine]", BoxBaselineShift -> -0.2];
 $horLineBox = "\[HorizontalLine]";
 
@@ -10,7 +8,6 @@ $thinSep = "\"\[ThinSpace]\"";
 RowSeq[args___] := TemplateBox[{args}, "RowDefault"];
 RowSep[{args___}, sep_] := RowSeqSep[args, sep];
 RowSeqSep[args___, sep_] := TemplateBox[{sep, "", args}, "RowWithSeparators"];
-GrayBox[e_] := StyleBox[e, $Gray];
 
 (**************************************************************************************************)
 

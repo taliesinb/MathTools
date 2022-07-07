@@ -1,69 +1,3 @@
-PublicFunction[CreateQuiverGeometryNotebook]
-
-CreateQuiverGeometryNotebook[] :=
-  CreateDocument[
-    {Cell["Title", "Title"],
-     Cell["Chapter", "Chapter"],
-     Cell["Section", "Section"],
-     Cell["Lorem ipsum dolor sit amet.", "Text"],
-     Cell["Graphics[Disk[], ImageSize -> 50]", "Code"],
-     Cell["Subsection", "Subsection"],
-     Cell["Item 1", "Item"],
-     Cell["Item 2", "Item"]},
-    StyleDefinitions -> "QuiverGeometry.nb",
-    DockedCells -> createQGNotebookDockedCells[]
-  ];
-
-createQGNotebookDockedCells[] := With[
-  {qgPath = QuiverGeometryPackageLoader`$initFile},
-  {getQG = Function[If[DownValues[QuiverGeometryPackageLoader`Load] === {}, Get[qgPath]]]},
-  {buttons = Map[makeButton, {
-    " Build: ",
-    " nb "              :> (getQG[]; RunAsyncWithMessagePopup @ BuildQGSite[EvaluationNotebook[], Verbose -> "KeyModifiers"]),
-    " dir "             :> (getQG[]; NotebookSave[]; RunAsyncWithMessagePopup @ BuildQGSite[NotebookDirectory[], Verbose -> "KeyModifiers"];),
-    " site "            :> (getQG[]; NotebookSave[]; RunAsyncWithMessagePopup @ BuildQGSite[Verbose -> "KeyModifiers"]),
-    " deploy "          :> (getQG[]; RunAsyncWithMessagePopup @ DeployQGSite[]),
-    " Open: ",
-    " md "              :> (getQG[]; SystemOpen[QGSiteMarkdownPath[]]),
-    " web "             :> (getQG[]; OpenQGSiteWebpageURL[]),
-    " iA "              :> (getQG[]; RunAsyncWithMessagePopup @ PreviewInIAWriter @ SelectedCellGroup[]),
-    " \[UpArrow] "      :> (getQG[]; ExtendCellSelection[]),
-    " Reload: ",
-    " QG "              :> Module[{res = Check[Get[qgPath], $Failed]}, If[res =!= $Failed, ApplyQuiverGeometryNotebookStyles[]; Beep[], Pause[0.1]; Beep[]; Pause[0.1]; Beep[]; SetSelectedNotebook @ First @ Notebooks["Messages"]]],
-    " QG fast "         :> Module[{res = Check[QuiverGeometryPackageLoader`Load[False], $Failed]}, If[res =!= $Failed, Beep[], Pause[0.1]; Beep[]; Pause[0.1]; Beep[]; SetSelectedNotebook @ First @ Notebooks["Messages"]]]
-  }]},
-  Cell[BoxData @ ToBoxes @ Row[buttons, "   "], "DockedCell"]
-];
-
-makeButton[None] := Spacer[5];
-
-makeButton[txt_String] := Style[txt, "Text"];
-
-makeButton[txt_ :> code_] := Button[
-  Style[" " <> txt <> " ", White],
-  code,
-  Appearance -> FrontEndResource["FEExpressions", "OrangeButtonNinePatchAppearance"]
-]
-
-(**************************************************************************************************)
-
-PublicFunction["RunAsyncWithMessagePopup"]
-
-SetHoldFirst[RunAsyncWithMessagePopup];
-
-RunAsyncWithMessagePopup[body_] := Block[{res, msg},
-  msg = First @ Notebooks["Messages"];
-  Quiet @ NotebookDelete @ Cells[msg];
-  res = Check[body, $Failed];
-  If[ModifierKeysPressedQ[], Print[res]];
-  If[FailureQ[res],
-    BadBeep[];
-    Quiet @ SetSelectedNotebook @ msg
-  ,
-    GoodBeep[];
-  ];
-  res
-];
 
 (**************************************************************************************************)
 
@@ -102,29 +36,6 @@ $idInsertionRegexp = RegularExpression["""\[\[\[(.+)#(.+)@(.+)\]\]\]"""];
 
 (**************************************************************************************************)
 
-PublicFunction[ApplyQuiverGeometryNotebookStyles]
-
-ApplyQuiverGeometryNotebookStyles[] :=
-  ApplyQuiverGeometryNotebookStyles @ EvaluationNotebook[];
-
-ApplyQuiverGeometryNotebookStyles[nb_NotebookObject] := (SetOptions[nb,
-  StyleDefinitions -> "QuiverGeometry.nb",
-  DockedCells -> createQGNotebookDockedCells[]
-]; nb);
-
-ApplyQuiverGeometryNotebookStyles[dir_String ? DirectoryQ] :=
-  Map[ApplyQuiverGeometryNotebookStyles, Select[StringFreeQ["XXX"]] @ FileNames["*.nb", dir, Infinity]];
-
-ApplyQuiverGeometryNotebookStyles[file_String ? FileQ] := Scope[
-  nb = NotebookOpen[file, Visible -> False];
-  ApplyQuiverGeometryNotebookStyles[nb];
-  NotebookSave[nb];
-  NotebookClose[nb];
-  file
-];
-
-(**************************************************************************************************)
-
 PublicFunction[ExtendCellSelection]
 
 ExtendCellSelection[] := ExtendCellSelection @ EvaluationNotebook[];
@@ -149,16 +60,30 @@ extendedCells[nb_, extend_:False] := Scope[
   If[cells === {},
     SelectionMove[nb, Next, Cell];
     cells = SelectedCells[nb];
+    If[cells === {}, SelectionMove[nb, Previous, Cell]; cells = SelectedCells[nb]];
+    nextPrev = True;
+  ,
+    nextPrev = False;
   ];
 
   If[Length[cells] == 1,
-    If[MatchQ[cellType @ First @ cells, "Code" | "Input" | "Output" | "Section" | "Subsection" | "Subsubsection" | "Chapter" | "Title"],
+    type = cellType @ First @ cells;
+    If[MatchQ[type, "Code" | "Input" | "Output" | "Section" | "Subsection" | "Subsubsection" | "Chapter" | "Title"],
       SelectionMove[nb, All, CellGroup]];
+    If[!nextPrev && extend && MatchQ[type, "Text" | "Item" | "SubItem"],
+      cpos = Lookup[Developer`CellInformation[First @ cells], "CursorPosition"];
+      If[cpos === "CellBracket",
+        SelectionMove[nb, All, CellGroup],
+        SelectionMove[nb, All, Cell]
+      ];
+    ];
+    cells = SelectedCells[nb];
   ,
     If[extend, SelectionMove[nb, All, CellGroup]];
+    cells = SelectedCells[nb];
   ];
 
-  SelectedCells[nb]
+  cells
 ];
 
 cellType[cell_] := CurrentValue[cell, "CellStyleName"];
@@ -302,6 +227,31 @@ CellReplaceBoxes[nbData_, rule_, typePattern_:_] :=
 
 (**************************************************************************************************)
 
+CopyFileToClipboard[path_] := If[
+  Run["osascript -e 'tell app \"Finder\" to set the clipboard to ( POSIX file \"" <> path <> "\" )'"] === 0,
+  path,
+  $Failed
+];
+
+(**************************************************************************************************)
+
+PublicFunction[ToNotebookExpression]
+
+ToNotebookExpression = Case[
+  str_String | Path[str_String]     := Import @ str;
+  nb_NotebookObject                 := NotebookGet @ nb;
+  nb_Notebook                       := nb;
+  Automatic                         := % @ EvaluationNotebook[];
+];
+
+(**************************************************************************************************)
+
+PublicFunction[DeleteUUIDs]
+
+DeleteUUIDs[e_] := DeleteCases[e, ExpressionUUID -> _, {0, Infinity}, Heads -> True];
+
+(**************************************************************************************************)
+
 PublicFunction[ReplaceBoxesInCurrentNotebook]
 
 Options[ReplaceBoxesInCurrentNotebook] = Options[ReplaceInCurrentNotebook];
@@ -325,11 +275,3 @@ mapVerbatim = Case[
 ];
 
 $replacementCellTypes = "Output" | "Text" | "Section" | "Subsection" | "Subsubsection" | "Item" | "SubItem" | "Subsubitem";
-
-(**************************************************************************************************)
-
-CopyFileToClipboard[path_] := If[
-  Run["osascript -e 'tell app \"Finder\" to set the clipboard to ( POSIX file \"" <> path <> "\" )'"] === 0,
-  path,
-  $Failed
-];

@@ -39,6 +39,12 @@ BuildQGSite[opts:OptionsPattern[]] := BuildQGSite[All, opts];
 
 BuildQGSite[src:Except[_Rule], opts:OptionsPattern[]] := Scope[
   SetAll[src, $QGSiteImportPath];
+  If[StringQ[src] && StringFreeQ[src, $PathnameSeparator],
+    src = FileNames["*" <> src <> "*.nb", $QGSiteImportPath, Infinity];
+    src = Discard[src, StringContainsQ["XXX"]];
+    If[src === {}, ReturnFailed[]];
+    src = First @ src;
+  ];
   files = ExportToMarkdown[
     src, File[$QGSiteExportPath],
     MarkdownFlavor -> "Hugo",
@@ -167,4 +173,16 @@ ServeQGSite[] := Scope[
   serveScript = FileNameJoin[{siteRoot, "iterm_serve.sh"}];
   Run[serveScript];
   GoodBeep[];
+];
+
+(**************************************************************************************************)
+
+PublicFunction[QGNotebookSaveAndExport]
+
+QGNotebookSaveAndExport[] := QGNotebookSaveAndExport[EvaluationNotebook[]];
+QGNotebookSaveAndExport[nb_NotebookObject] := Scope[
+  If[Lookup[NotebookInformation[nb], "ModifiedInMemory"],
+    Beep[]; NotebookSave[nb]; Pause[0.25];
+  ];
+  If[FailureQ @ BuildQGSite[nb], BadBeep[], GoodBeep[]];
 ];

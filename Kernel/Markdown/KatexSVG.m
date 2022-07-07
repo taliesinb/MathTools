@@ -1,7 +1,7 @@
-$ArrowSVGTemplate = StringTemplate @ StringTrim @ """
+$ArrowSVGTemplate = StringFunction @ StringTrim @ """
 <svg width="24000" height="800" xmlns="http://www.w3.org/2000/svg">
 
-<path d="``"/>
+<path d="#1"/>
 
 </svg>
 """;
