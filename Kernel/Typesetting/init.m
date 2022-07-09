@@ -13,6 +13,32 @@ ClearTemplateBoxDefinitions[];
 
 (**************************************************************************************************)
 
+PublicFunction[TemplateBoxNameQ]
+
+TemplateBoxNameQ[str_] :=
+  KeyExistsQ[$TemplateKatexFunction, str] || KeyExistsQ[$localTemplateToKatexFunctions, str] || (
+    AssociationQ[$localTemplateToKatexFunctions] && KeyExistsQ[$localTemplateToKatexFunctions, str]
+  );
+
+(**************************************************************************************************)
+
+PublicFunction[PrintTemplateBoxDefinitions]
+
+PrintTemplateBoxDefinitions[] := Scope[
+  Print @ SpacedColumn[
+    "Display functions" -> SpacedRow[
+      "Template" -> Grid[$templateBoxDisplayFunction],
+      "Katex" -> Grid[$katexDisplayFunction]
+    ],
+    "TemplateToKatexFunction" -> Grid[$templateToKatexFunction],
+    "KatexDefinitions" -> Pane @ EmitKatexFunctionDefinitions[],
+    "NameCounts" -> Grid[$templateBoxNameCounts],
+    Spacings -> 100
+  ];
+]
+
+(**************************************************************************************************)
+
 PublicHead[KatexBox]
 
 SetHoldAll[setTemplateBoxForm, setKatexBoxForm, getPatternSymbols];
@@ -45,6 +71,9 @@ DefineLiteralMacro[registerTemplateBoxName,
 (* this is the most general case, which handles var arg patterns etc.
 we have various special purpose declaration functions to avoid engaging with this *)
 
+setTemplateBoxForm[lhs_ :> rhs_] :=
+  setTemplateBoxForm[lhs, rhs];
+
 setTemplateBoxForm[lhs:(head_Symbol[___]), rhs_] := Scope[
   
   registerTemplateBoxName[head, Automatic];
@@ -69,6 +98,7 @@ setTemplateBoxForm[lhs:(head_Symbol[___]), rhs_] := Scope[
   If[vsym =!= None, slotTuple //= ReplacePart[{nsyms, 0} -> SlotSequence]];
   slotFn = Function[rhs] /. RuleThread[syms, slotTuple];
   slotFn = slotFn /. HoldPattern[SequenceRiffle[SlotSequence[i_], r_]] :> TemplateSlotSequence[i, r];
+  slotFn = slotFn //. $displayFunctionReplacements;
   riffleElem = FirstCase[slotFn, TemplateSlotSequence[_, r_] :> r, None, Infinity];
 
   (* set up $templateBoxDisplayFunction and $katexDisplayFunction *)
@@ -78,7 +108,7 @@ setTemplateBoxForm[lhs:(head_Symbol[___]), rhs_] := Scope[
      if there is a SlotSequence, we turn it into a tuple
      if there is a TemplateSlotSequence, we turn into a riffled tuple
   *)
-  templateToKatexFn = Construct[Function, kName @@ slotTuple];
+  templateToKatexFn = Construct[Function, $kName @@ slotTuple];
   If[vsym =!= None,
     seqRule = If[riffleElem =!= None,
       With[{r = riffleElem}, s_SlotSequence :> Riffle[List[s], r]],
@@ -88,7 +118,15 @@ setTemplateBoxForm[lhs:(head_Symbol[___]), rhs_] := Scope[
   ];
   registerTemplateToKatexFunction[templateToKatexFn];
 
+  {$tName, $kName}
 ];
+
+$displayFunctionReplacements = {
+  TEval[e_]                         :> RuleCondition @ e,
+  HoldPattern[RBox[r___]]           :> RowBox[{r}],
+  HoldPattern[SBox[s_]]             :> TemplateBox[{}, s],
+  HoldPattern[TBox[form_][args___]] :> TemplateBox[{args}, form]
+};
 
 $varPatternP = _BlankSequence | _BlankNullSequence | _Repeated;
 
@@ -112,15 +150,22 @@ setTemplateBoxForm[head_Symbol, rhs_] := Scope[
   
   registerTemplateBoxRules[head, {}];
 
-  registerDisplayFunction[Function[rhs]];
+  fn = Function[rhs] //. $displayFunctionReplacements;
+  registerDisplayFunction[fn];
 
   registerTemplateToKatexFunction[Construct[Function, PrefixSlash @ $kName]];
+
+  {$tName, $kName} (* used by other code sometimes *)
 ];
+
+TemplateBoxForm::badspec = "Unknown call setTemplateBoxForm[``]";
+
+setTemplateBoxForm[args___] := (Message[TemplateBoxForm::badspec, SequenceForm[args]]; $Failed);
 
 (**************************************************************************************************)
 
 registerTemplateToKatexFunction[fn_] :=
-  $templateToKatexFunction[$tName] = fn;
+  $templateToKatexFunction[$tName] = fn //. KatexBox[a_, b_] :> b;
 
 registerTemplateToKatexFunction[] :=
   $templateToKatexFunction[$tName] = PrefixSlash @ $kName;
@@ -188,7 +233,7 @@ registerOneArgTemplate[Identity | (#&)] := (
 
   $templateBoxDisplayFunction[$tName] = (#&);
 
-  $templateToKatexFunction[$tName] = (#&);
+  registerTemplateToKatexFunction[(#&)];
 );
 
 (**************************************************************************************************)
@@ -204,7 +249,7 @@ TemplateBoxForm /: SetDelayed[TemplateBoxForm[lhs_], rhs_] :=
 
 (* this takes a head that should act like e.g. GraphSymbol, VertexSymbol, etc. *)
 
-PrivateSymbol[DeclareUnaryTemplateBox]
+PublicFunction[DeclareUnaryTemplateBox]
 
 DeclareUnaryTemplateBox[head_, style_:None] := CatchMessage @ Scope[
 
@@ -223,7 +268,44 @@ toStyleBoxFn = Case[
 
 (**************************************************************************************************)
 
-PrivateFunction[DeclareTemplateBoxRules]
+(* this takes a constant head that should act like e.g. PiSymbol *)
+
+PublicFunction[DeclareConstantSymbolTemplateBox]
+
+DeclareConstantSymbolTemplateBox[head_, rhs_] :=
+  setTemplateBoxForm[head, rhs];
+
+(**************************************************************************************************)
+
+(* this takes a constant head that should act like e.g. PiSymbol *)
+
+PublicFunction[DeclareTypedSymbolTemplateBox]
+
+DeclareTypedSymbolTemplateBox[head_, rhs_:None] :=
+  DeclareUnaryTemplateBox[head, rhs];
+
+(**************************************************************************************************)
+
+(* this takes a head that should act like e.g. GraphSymbol, VertexSymbol, etc. *)
+
+PublicFunction[DeclareFunctionTemplateBox]
+
+DeclareFunctionTemplateBox[head_, rhs_] := Scope[
+
+  $head = head;
+
+  (* Evaluate forces the FunctionBox to evaluate now, since KatexBox needs to be literally present *)
+  {$tName, $kName} = setTemplateBoxForm[head, Evaluate @ FunctionBox @ rhs];
+
+  applyRule = HoldPattern[head[args___]] :> TemplateBox[Prepend[makeQGBoxes /@ {args}, $headBox], "AppliedForm"];
+  applyRule = applyRule /. $headBox -> SBox[$tName];
+  
+  registerTemplateBoxRules2 @@ applyRule;
+];
+
+(**************************************************************************************************)
+
+PublicFunction[DeclareTemplateBoxRules]
 
 (* this is used to define many simultaneous tepmlates via the same codepath as
 TemplateBoxForm[lhs] := rhs *)
@@ -238,4 +320,41 @@ declareTemplateBoxRule = Case[
   Null                            := Null;
   other_                          := ThrowMessage["badrule", InputForm @ other];
 ];
+
+(**************************************************************************************************)
+
+(* this takes a constant head that should act like e.g. PiSymbol *)
+
+PublicFunction[DeclareRelationTemplateBox]
+
+DeclareRelationTemplateBox[head_, symbol_] := Scope[
+
+  {tName, dummy} = setTemplateBoxForm[head, symbol];
+
+  riff = KatexBox[SBox @ tName, PrefixSlash @ dummy];
+  setTemplateBoxForm[head[args___], RBox[SequenceRiffle[args, TEval @ riff]]];
+];
+
+(**************************************************************************************************)
+
+PublicFunction[DeclareLocalStyles]
+
+DeclareLocalStyles::taggingrules = "Could not update tagging rules.";
+
+SetHoldAll[DeclareLocalStyles];
+DeclareLocalStyles[e___] := Scope[
+  $expressionToTemplateBoxRules = <||>;
+  $templateBoxDisplayFunction = $katexDisplayFunction = <||>;
+  $templateBoxNameCounts = <||>;
+  $templateToKatexFunction = <||>;
+  (e);
+  privateStylesheet = GeneratePrivateQuiverGeometryStylesheet[];
+  SetOptions[EvaluationNotebook[], StyleDefinitions -> privateStylesheet];
+  katex = EmitKatexFunctionDefinitions[];
+  currentRules = Lookup[Options[EvaluationNotebook[], TaggingRules], TaggingRules, <||>];
+  If[!AssociationQ[currentRules], ReturnFailed["taggingrules"]];
+  taggingRules = Join[currentRules, <|"KatexDefinitions" -> katex, "TemplateToKatexFunctions" -> $templateToKatexFunction|>];
+  SetOptions[EvaluationNotebook[], TaggingRules -> taggingRules];
+];
+
 

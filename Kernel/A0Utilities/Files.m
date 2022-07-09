@@ -1,6 +1,6 @@
 PrivateVariable[$CacheDirectory]
 
-$CacheDirectory = FileNameJoin[{ParentDirectory @ $PackageDirectory, "Data"}];
+$CacheDirectory = LocalPath["Data"];
 
 (**************************************************************************************************)
 

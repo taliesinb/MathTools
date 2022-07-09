@@ -55,18 +55,27 @@ WhiteString = _String ? (StringMatchQ[Whitespace]);
 textCellToMarkdownOuter = Case[
   TagBox[box_, "ClassTaggedForm"[tag_]] | BoxData[TagBox[box_, "ClassTaggedForm"[tag_]]] :=
     $classAttributeTemplate[{tag}] @ textCellToMarkdownOuter @ box;
-  BoxData[box_] :=
-    $multilineMathTemplate @ $katexPostprocessor @ boxesToKatexString @ box;
-  TextData @ Cell[BoxData[box_FormBox], ___] :=
-    $multilineMathTemplate @ $katexPostprocessor @ boxesToKatexString @ box;
-  TextData @ Cell[BoxData[boxes:{Repeated[_FormBox | WhiteString]}], ___] :=
-    $multilineMathTemplate @ $katexPostprocessor @ boxesToKatexString @ RowBox @ replaceIndentingNewlines @ boxes;
-  other_ :=
-    textBoxesToMarkdown @ other;
+  BoxData[box_]                                                           := toMultilineMath @ box;
+  TextData @ Cell[BoxData[box_FormBox], ___]                              := toMultilineMath @ box;
+  TextData @ Cell[BoxData[boxes:{Repeated[_FormBox | WhiteString]}], ___] := toMultilineMath @ RowBox @ replaceIndentingNewlines @ boxes;
+  other_ := textBoxesToMarkdown @ other;
 ];
 
 replaceIndentingNewlines[boxes_] :=
   VectorReplace[boxes, s_String :> StringReplace[s, "\[IndentingNewLine]"|"\n" -> "\\\\\n"]];
+
+(**************************************************************************************************)
+
+toMultilineMath[boxes_] := $multilineMathTemplate @ baseToMath @ boxes;
+toInlineMath[boxes_]    := $inlineMathTemplate @ baseToMath @ boxes;
+
+baseToMath[box_] /; StringQ[$localKatexDefinitions] := Block[
+  {localDefs = $localKatexDefinitions, res},
+  Clear[$localKatexDefinitions];
+  StringJoin[localDefs, "\n", baseToMath[box]]
+];
+
+baseToMath[box_] := $katexPostprocessor @ boxesToKatexString @ box;
 
 (**************************************************************************************************)
 
@@ -89,7 +98,7 @@ textBoxesToMarkdown = Case[
   RowBox[e_List] :=
     % @ e;
   Cell[BoxData[boxes_, ___], ___] :=
-    $inlineMathTemplate @ $katexPostprocessor @ boxesToKatexString @ RowBox @ ToList @ boxes;
+    toInlineMath @ RowBox @ ToList @ boxes;
   Cell[TextData[text_, ___], ___] :=
     % @ text;
   StyleBox[str_String /; StringMatchQ[str, Whitespace], ___] :=

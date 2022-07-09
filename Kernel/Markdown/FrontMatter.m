@@ -60,7 +60,8 @@ NotebookFrontMatter[path_String | File[path_String]] := Scope[
 
   {title, taggingRules} = getNotebookData[path];
   SetNone[title, trimNumberPrefix @ filebase];
-  dateString = DateString[fileDate, {"Year", "-", "Day", "-", "Month"}];
+  fileDate = DatePlus[fileDate, -1]; (* to force Hugo to render the page *)
+  dateString = DateString[fileDate, {"Year", "-", "Month", "-", "Day"}];
 
   result = Association[
     "unixtime" -> UnixTime @ fileDate,
@@ -68,7 +69,7 @@ NotebookFrontMatter[path_String | File[path_String]] := Scope[
     "weight" -> weight,
     "title" -> title,
     "notebookpath" -> path,
-    taggingRules
+    KeySelect[taggingRules, StringQ[#] && LowerCaseQ[StringTake[#, 1]]&]
   ];
 
   $frontMatterMetadataCache[path] ^= result;

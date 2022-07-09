@@ -3,7 +3,7 @@ PublicFunction[GenerateQuiverGeometryStylesheet]
 GenerateQuiverGeometryStylesheet[] := Scope[
   template = Get @ LocalPath["StyleSheets", "QuiverGeometry.template.nb"];
   template = DeleteCases[template, ExpressionUUID -> _, {0, Infinity}];
-  cells = KeyValueMap[makeStyleCell, $templateBoxFunctions];
+  cells = KeyValueMap[makeTemplateBoxStyleCell, $templateBoxDisplayFunction];
   template //= ReplaceAll[Cell[StyleData["Dummy"], ___] :> Splice[cells]];
 
   hash = Base36Hash[template];
@@ -16,17 +16,36 @@ GenerateQuiverGeometryStylesheet[] := Scope[
   $QuiverGeometryStylesheetPath ^= targetPath
 ];
 
-makeStyleCell[name_, fn_] := Cell[
+PrivateFunction[GeneratePrivateQuiverGeometryStylesheet]
+
+GeneratePrivateQuiverGeometryStylesheet[] := Scope[
+ template = Notebook[{
+      Cell[StyleData[StyleDefinitions -> $QuiverGeometryStylesheetPath]],
+      Cell[StyleData["Dummy"]]
+    },
+    FrontEndVersion -> "13.1 for Mac OS X x86 (64-bit) (June 16, 2022)",
+    StyleDefinitions -> "PrivateStylesheetFormatting.nb"
+  ];
+  cells = KeyValueMap[makeTemplateBoxStyleCell, $templateBoxDisplayFunction];
+  template //= ReplaceAll[Cell[StyleData["Dummy"], ___] :> Splice[cells]];
+  template
+];
+
+PrivateFunction[makeTemplateBoxStyleCell]
+
+makeTemplateBoxStyleCell[name_, fn_] := Cell[
   StyleData[name, StyleDefinitions -> StyleData["QuiverGeometryBase"]],
   TemplateBoxOptions -> {DisplayFunction -> fn}
 ];
+
+
 
 (**************************************************************************************************)
 
 PublicVariable[$QuiverGeometryStylesheetPath]
 
 $latestPathFile = LocalPath["StyleSheets", "latest.m"];
-$QuiverGeometryStylesheetPath := $QuiverGeometryStylesheetPath = Quiet @ Check[Import @ $latestPathFile, None];
+$QuiverGeometryStylesheetPath := $QuiverGeometryStylesheetPath = Check[Import @ $latestPathFile, None];
 
 (**************************************************************************************************)
 
@@ -60,7 +79,7 @@ createLegacyReplacementRules[] := Scope[
   keys = Select[Keys @ $templateBoxDisplayFunction, LowerCaseQ[StringTake[#, 1]]&];
   symbolRules = Map[
     UpperCaseFirst[#] -> #&,
-    Select[Keys @ $templateBoxFunctions, LowerCaseQ[StringTake[#, 1]]&]
+    Select[Keys @ $templateBoxDisplayFunction, LowerCaseQ[StringTake[#, 1]]&]
   ];
   colorRules = {
     "RedGreenForm" -> "TealForm", "RedBlueForm" -> "PinkForm", "GreenBlueForm" -> "OrangeForm"

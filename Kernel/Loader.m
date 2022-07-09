@@ -111,7 +111,7 @@ $initialSymbolResolutionDispatch = Dispatch[{
   Package`PackageSymbol[name_String] /; StringMatchQ[name, $coreSymbolRegex] :> RuleCondition[$coreSymbolAssociation[name]],
   Package`PackageSymbol[name_String] /; StringContainsQ[name, "`"] :> RuleCondition[makeResolvedSymbol[name]],
   Package`PackageSymbol["$PackageFileName"] :> RuleCondition[QuiverGeometryPackageLoader`$CurrentFile],
-  Package`PackageSymbol["$PackageDirectory"] :> RuleCondition[QuiverGeometryPackageLoader`$Directory]
+  Package`PackageSymbol["$PackageDirectory"] :> RuleCondition[QuiverGeometryPackageLoader`$PackageDirectory]
 }];
 
 (* this means SetUsage doesn't have to resolve the symbol later, which is expensive. *)
@@ -385,7 +385,7 @@ QuiverGeometryPackageLoader`ReloadUserFile[name_] := loadUserFile @ name;
 $userContext = "QuiverGeometryPackageLoader`Private`User`";
 $userContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"};
 
-toUserFilePath[name_] := FileNameJoin[{QuiverGeometryPackageLoader`$Directory, name}];
+toUserFilePath[name_] := FileNameJoin[{QuiverGeometryPackageLoader`$SourceDirectory, name}];
 
 loadUserFile[name_] := Block[{path},
   path = toUserFilePath[name];
@@ -448,7 +448,10 @@ handleMessage[f_Failure] := Block[{fileLine},
 
 (*************************************************************************************************)
 
-QuiverGeometryPackageLoader`$Directory = DirectoryName[$InputFileName];
+QuiverGeometryPackageLoader`$SourceDirectory = DirectoryName @ $InputFileName;
+
+QuiverGeometryPackageLoader`$PackageDirectory = ParentDirectory @ QuiverGeometryPackageLoader`$SourceDirectory;
+
 QuiverGeometryPackageLoader`$LoaderFileName = $InputFileName;
 
 QuiverGeometryPackageLoader`$CurrentFile = None;
@@ -458,7 +461,7 @@ $PreviousPathAlgebra = None;
 $lastLoadSuccessful = False;
 
 QuiverGeometryPackageLoader`Read[cachingEnabled_:True, fullReload_:True] :=
-  QuiverGeometryPackageLoader`ReadPackages["QuiverGeometry`", QuiverGeometryPackageLoader`$Directory, cachingEnabled, fullReload];
+  QuiverGeometryPackageLoader`ReadPackages["QuiverGeometry`", QuiverGeometryPackageLoader`$SourceDirectory, cachingEnabled, fullReload];
 
 QuiverGeometryPackageLoader`Load[fullReload_:True] := PreemptProtect @ Block[{packages},
   packages = QuiverGeometryPackageLoader`Read[True, fullReload];

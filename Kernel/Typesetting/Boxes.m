@@ -86,3 +86,10 @@ MapApply[
     {MathTextForm,       MathTextBox,        KatexForm["MathTextFont", "textrm"]}
   }
 ];
+
+(**************************************************************************************************)
+
+PrivateFunction[FunctionBox]
+
+FunctionBox[e_String] := KatexBox[e, StringJoin["\\operatorname{", e, "}"]];
+

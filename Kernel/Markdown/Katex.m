@@ -1,7 +1,6 @@
 PublicFunction[ToKatexString]
 
-ToKatexString[e_] :=
-  boxesToKatexString @ ToBoxes[e, StandardForm];
+ToKatexString[e_] := boxesToKatexString @ ToBoxes[e, StandardForm];
 
 (**************************************************************************************************)
 
@@ -55,6 +54,7 @@ boxToKatex = Case[
   RowBox[list_] := Map[%, list];
 
   other_ := (
+    Message[ToKatexString::badbox, InputForm @ other, Framed @ RawBoxes[other]];
     StringJoin["\\noKatexForm{", StringReplace[ToString[Head @ other, InputForm], $katexEscape], "}"]
   );
 ];
@@ -82,10 +82,20 @@ templateBoxToKatex = Case[
   {$ -> boxToKatex}
 ];
 
+ToKatexString::badbox = "Box `` correspoding to `` has no Katex conversion.";
+ToKatexString::badtemplatebox = "TemplateBox `` corresponding to `` has no $TemplateKatexFunction defined.";
+
 dispatchTemplateBox[tag_, args_] := Scope[
   fn = Lookup[$TemplateKatexFunction, tag, Lookup[$templateToKatexFunction, tag, None]];
+  If[fn === None && AssociationQ[$localTemplateToKatexFunctions],
+    fn = Lookup[$localTemplateToKatexFunctions, tag, None]];
   If[fn === None,
-    Print["Cannot dispatch ", tag, " in ", Framed @ RawBoxes @ $currentKatexInputBoxes];
+    (* this is slower than the others, but will allow ToKatexString to pick up local styles when run interactively *)
+    fn = CurrentValue[{TaggingRules, "TemplateToKatexFunctions", tag}];
+    If[fn === Inherited, fn = None];
+  ];
+  If[fn === None,
+    Message[ToKatexString::badtemplatebox, tag, Framed @ RawBoxes[TemplateBox[args, tag]]];
     Return["badDispatch"[tag]];
   ];
   res = fn @@ args;

@@ -44,5 +44,5 @@ summaryItem[a_, b_] := BoxForm`SummaryItem[{a <> ": ", b}];
 (**************************************************************************************************)
 
 Unprotect[Grid]
-Grid[a_Association] := Grid[KeyValueMap[List, a], Alignment -> Left, Dividers -> All, ItemSize -> 30];
+Grid[a_Association] := Grid[KeyValueMap[List, a], Alignment -> Left, Dividers -> All, ItemSize -> {{Automatic, 30}}];
 Protect[Grid]
