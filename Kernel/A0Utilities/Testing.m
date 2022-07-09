@@ -1,14 +1,12 @@
 PrivateFunction[RunImageTests]
 
-$TestsDirectory = FileNameJoin[{FileNameDrop[QuiverGeometryPackageLoader`$Directory], "Tests"}];
-
 RunInputOutputTests::noindir = "Input directory not found at ``.";
 RunInputOutputTests::notests = "No tests present in ``.";
 
 RunInputOutputTests[] := Scope[
-  inDir = FileNameJoin[{$TestsDirectory, "Inputs"}];
+  inDir = LocalPath["Tests", "Inputs"];
   If[!FileExistsQ[inDir], ReturnFailed["noindir", inDir]];
-  outDir = FileNameJoin[{$TestsDirectory, "Outputs"}];
+  outDir = LocalPath["Tests", "Outputs"];
   testFiles = FileNames["*.m", inDir];
   If[testFiles === {}, ReturnFailed["notests", inDir]];
   EnsureDirectory[outDir];

@@ -19,7 +19,7 @@ ToTitleString[s_String] :=
 
 PrivateFunction[commaString]
 
-qs[s_String] := "\"" <> s <> "\"";
+qs[s_String] := PrefixSlash[s];
 qs[e_] := e;
 commaString[list_List] := TextString[Row[Map[qs, list], ", "]];
 
@@ -29,20 +29,6 @@ PublicFunction[StringReplaceRepeated]
 
 StringReplaceRepeated[str_String, rules_] := FixedPoint[StringReplace[rules], str];
 StringReplaceRepeated[rules_][str_] := StringReplaceRepeated[str, rules];
-
-(**************************************************************************************************)
-
-PublicFunction[ExportUTF8]
-
-ExportUTF8[path_, string_] :=
-  Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
-
-(**************************************************************************************************)
-
-PublicFunction[ImportUTF8]
-
-ImportUTF8[path_] :=
-  Import[path, "Text", CharacterEncoding -> "UTF8"];
 
 (**************************************************************************************************)
 
@@ -124,3 +110,16 @@ $stringFunctionSlotRules = {
   "#" ~~ i:DigitCharacter :> Slot[FromDigits[i]],
   "#" ~~ w:LetterCharacter.. :> Slot[w]
 };
+
+
+(**************************************************************************************************)
+
+PrivateFunction[PrefixSlash]
+
+PrefixSlash[s_] := StringJoin["\\", s];
+
+(**************************************************************************************************)
+
+PrivateFunction[WrapQuotes]
+
+WrapQuotes[s_] := StringJoin["\"", s, "\""];

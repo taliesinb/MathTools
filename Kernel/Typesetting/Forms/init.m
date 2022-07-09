@@ -190,9 +190,9 @@ declareCommaRiffledForm[symbol_, katex_] := With[
 ];
 
 getStyleHead[style_] := Scope[
-  fn = Lookup[$TemplateKatexFunction, style, $templateBoxToKatexFunctions @ style];
+  fn = Lookup[$TemplateKatexFunction, style, $templateToKatexFunction @ style];
   Replace[fn, {
-    (s_String | Function[s_[#]]) :> StringJoin["\\", s]
+    (s_String | Function[s_[#]]) :> PrefixSlash[s]
   }]
 ];
 

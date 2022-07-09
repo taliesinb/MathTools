@@ -1,6 +1,6 @@
 PrivateVariable[$CacheDirectory]
 
-$CacheDirectory = FileNameJoin[{ParentDirectory @ QuiverGeometryPackageLoader`$Directory, "Data"}];
+$CacheDirectory = FileNameJoin[{ParentDirectory @ $PackageDirectory, "Data"}];
 
 (**************************************************************************************************)
 
@@ -48,6 +48,26 @@ CopyUnicodeToClipboard[text_] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[ExportUTF8]
+
+ExportUTF8[path_, string_] :=
+  Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
+
+(**************************************************************************************************)
+
+PublicFunction[ImportUTF8]
+
+ImportUTF8[path_] :=
+  Import[path, "Text", CharacterEncoding -> "UTF8"];
+
+(**************************************************************************************************)
+
+PrivateFunction[LocalPath]
+
+LocalPath[args___] := FileNameJoin[{$PackageDirectory, args}];
+
+(**************************************************************************************************)
+
 PublicFunction[ExportUTF8WithBackup]
 
 ExportUTF8WithBackup[path_, contents_, currentContents_:Automatic] := Scope[
@@ -65,6 +85,8 @@ ExportUTF8WithBackup[path_, contents_, currentContents_:Automatic] := Scope[
   ];
   path
 ];
+
+(**************************************************************************************************)
 
 PublicFunction[AbsolutePathQ]
 

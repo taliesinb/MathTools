@@ -23,7 +23,7 @@ boxToKatex = Case[
   "_" := "\\_";
   e_String := e;
   
-  KatexFunction[s_String] := StringJoin["\\", s];
+  KatexFunction[s_String] := PrefixSlash @ s;
   KatexFunction[s_String][args___] := Map[%, s[args]];
 
   (* process results of dispatchTemplateBox: *)
@@ -34,7 +34,8 @@ boxToKatex = Case[
   TemplateBox[args_, tag_] := templateBoxToKatex[tag -> args];
 
   StyleBox[e_, "Text"] := {"\\textrm{", boxToInlineText @ e, "}"};
-  StyleBox[e_, opts___] := applyInlineStyle[% @ e, Lookup[Select[{opts}, RuleQ], {FontWeight, FontSlant, FontColor}, None]];
+  StyleBox[e_, directives___] := Fold[applyStyle, % @ e, {directives}];
+  
   UnderscriptBox[e_, "_"] := {"\\underline{", % @ e, "}"};
   OverscriptBox[e_, "_"] := {"\\overline{", % @ e, "}"};
   SuperscriptBox[e_, b_] := {% @ e, "^", toBracket @ b};
@@ -82,7 +83,7 @@ templateBoxToKatex = Case[
 ];
 
 dispatchTemplateBox[tag_, args_] := Scope[
-  fn = Lookup[$TemplateKatexFunction, tag, Lookup[$templateBoxToKatexFunctions, tag, None]];
+  fn = Lookup[$TemplateKatexFunction, tag, Lookup[$templateToKatexFunction, tag, None]];
   If[fn === None,
     Print["Cannot dispatch ", tag, " in ", Framed @ RawBoxes @ $currentKatexInputBoxes];
     Return["badDispatch"[tag]];
@@ -91,8 +92,17 @@ dispatchTemplateBox[tag_, args_] := Scope[
   boxToKatex @ res (* recurese *)
 ];
 
-applyInlineStyle[e_, {_, _, c:$ColorPattern}] :=
- {"\\textcolor{#", ColorHexString @ c, "}{", e, "}"};
+applyStyle = Case[
+
+  Sequence[e_, (FontWeight -> "Bold" | Bold) | "Bold" | Bold]         := {"\\mathbf{", e, "}"};
+
+  Sequence[e_, (FontWeight -> "Italic" | Italic) | "Italic" | Italic] := {"\\mathif{", e, "}"};
+  
+  Sequence[e_, (FontColor -> c_) | (c_ ? ColorQ)]                     := {"\\textcolor{#", ColorHexString @ c, "}{", e, "}"};
+
+  Sequence[e_, style_] := e;
+];
+
 
 applyInlineStyle[e_, _] := e;
 

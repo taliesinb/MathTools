@@ -6,7 +6,7 @@ PublicSymbol[EllipsisSymbol, VerticalEllipsisSymbol]
 
 (**************************************************************************************************)
 
-declareTemplateBoxRules[
+DeclareTemplateBoxRules[
   NotApplicableSymbol        -> GrayBox @ KatexBox["NA", "\\text{---}"],
   UnknownSymbol              -> GrayBox["?"],
   EmptySetSymbol             -> GrayBox["\[EmptySet]"],

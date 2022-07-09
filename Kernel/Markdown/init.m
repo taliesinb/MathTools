@@ -1,21 +1,7 @@
-PublicVariable[$KatexPrelude]
-
-importLocalUTF8[localFile__] := ImportUTF8 @ FileNameJoin[{$PackageDirectory, localFile}];
-
-$KatexPrelude := $KatexPrelude = computeKatexPrelude[];
-
-computeKatexPrelude[] := Scope[
-  base = importLocalUTF8["Markdown", "KatexPrelude.tex"];
-  add = EmitKatexFunctionDefinitions[];
-  StringJoin[base, "\n\n", add]
-];
-
-(**************************************************************************************************)
-
 PublicVariable[$SymbolTranslationTable]
 
 $SymbolTranslationTable = Block[{str},
-  rawString = importLocalUTF8["Markdown", "SymbolTranslation.txt"];
+  rawString = ImportUTF8 @ LocalPath["Markdown", "SymbolTranslation.txt"];
   rawString //= StringReplace[{StartOfLine ~~ " "... ~~ "\n" -> "", " \\" -> " \\\\", "\"" -> "\\\""}];
   parsedString = StringTrim @ ToExpression["\"" <> rawString <> "\"", InputForm];
   table = StringExtract[parsedString, "\n" -> All, " ".. -> All] /. "_" -> None;

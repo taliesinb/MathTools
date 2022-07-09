@@ -50,7 +50,7 @@ declareConstantSymbol[TailVertexSymbol] // usingCustomKatex["tailVertexSymbol"];
 
 PublicSymbol[InverseArrowheadSymbol, ArrowheadSymbol, UpArrowheadSymbol, DownArrowheadSymbol, LeftArrowheadSymbol, RightArrowheadSymbol]
 
-declareTemplateBoxRules[
+DeclareTemplateBoxRules[
   InverseArrowheadSymbol -> "⏵",
   ArrowheadSymbol        -> "⏴",
   UpArrowheadSymbol      -> "⏶",
@@ -154,4 +154,8 @@ declareSumLikeFormatting[IndexedGraphDisjointUnionForm, "indexGraphDisjointUnion
 PublicForm[GraphRegionIntersectionForm, GraphRegionUnionForm]
 
 declareInfixSymbol[{GraphRegionIntersectionForm, GraphRegionUnionForm}]
+
+(**************************************************************************************************)
+
+PublicForm[GraphIsomorphismSymbol]
 

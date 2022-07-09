@@ -4,7 +4,7 @@ exprToCell[expr_, isize_] := Cell[
 	"Output", ShowCellBracket -> False, Background -> Automatic, CellMargins -> 0,
 	CellFrame -> None, CellFrameMargins -> 0, CellContext -> "Global`",
 	GraphicsBoxOptions -> {ImageSize -> isize}, Graphics3DBoxOptions -> {ImageSize -> Medium},
-	StyleDefinitions -> FrontEnd`FileName[{}, $StylesheetPath, CharacterEncoding -> "UTF-8"]
+	StyleDefinitions -> FrontEnd`FileName[{}, $QuiverGeometryStylesheetPath, CharacterEncoding -> "UTF-8"]
 ];
 
 cellToExportPacket[cell_] := ExportPacket[

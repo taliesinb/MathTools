@@ -231,4 +231,4 @@ namedFuncKatex["Not"] := "\\Not";
 namedFuncKatex["Word"] := "\\wordOf"; (* because 'word' already menas wordForm *)
 namedFuncKatex["LCM"] := "\\lcm"; (* lowercase *)
 namedFuncKatex["Mod"] := "\\modFunction"; (* becuase mod already defined *)
-namedFuncKatex[s_String] := namedFuncKatex[s] = StringJoin["\\", LowerCaseFirst @ s];
+namedFuncKatex[s_String] := namedFuncKatex[s] = PrefixSlash @ LowerCaseFirst @ s;

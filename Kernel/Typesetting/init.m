@@ -1,28 +1,21 @@
-PublicVariable[$expressionToTemplateBoxRules, $templateBoxFunctions, $katexDefinitions, $templateBoxToKatexFunctions]
+PublicVariable[$expressionToTemplateBoxRules, $templateBoxDisplayFunction, $katexDisplayFunction, $templateToKatexFunction]
 
 PublicFunction[ClearTemplateBoxDefinitions]
 
 ClearTemplateBoxDefinitions[] := (
   $expressionToTemplateBoxRules = <||>;
-  $templateBoxFunctions = $katexDefinitions = <||>;
+  $templateBoxDisplayFunction = $katexDisplayFunction = <||>;
   $templateBoxNameCounts = <||>;
-  $templateBoxToKatexFunctions = <||>;
+  $templateToKatexFunction = <||>;
 );
 
 ClearTemplateBoxDefinitions[];
 
-PublicFunction[TemplateBoxForm]
+(**************************************************************************************************)
+
 PublicHead[KatexBox]
 
-ClearAll[TemplateBoxForm, KatexForm, setTemplateBoxForm, setKatexBoxForm, setTemplateBoxRules0, setTemplateBoxRules1];
-
 SetHoldAll[setTemplateBoxForm, setKatexBoxForm, getPatternSymbols];
-
-TemplateBoxForm /: SetDelayed[TemplateBoxForm[lhs_], rhs_] := CatchMessage @ setTemplateBoxForm[lhs, rhs];
-KatexForm /: SetDelayed[KatexForm[lhs_], rhs_] := setKatexBoxForm[lhs, rhs];
-
-TemplateBoxForm::varlenriffle = "Use of variable-length sequence on RHS for head `` is not a SequenceRiffle.";
-TemplateBoxForm::toomanyrules = "Too many rules for head ``."
 
 toTName[base_, 1] := base;
 toTName[base_, 0] := LowerCaseFirst @ base;
@@ -34,13 +27,27 @@ toKSuffix[n_] := Switch[n, 0, "Ⅹ", 1, "", 2, "Ⅱ", 3, "Ⅲ", 4, "Ⅳ", 5, "�
 toKName[base_, 0] := LowerCaseFirst @ toKName[base, 1];
 toKName[base_, n_] := StringJoin[StringCases[base, {"Gray" -> "G", RegularExpression @ "[A-Z][A-Za-z]"}], toKSuffix @ n];
 
+General::tboxrulecount = "Too many rules for head ``."
+
+DefineLiteralMacro[registerTemplateBoxName,
+  registerTemplateBoxName[head_, n_] := Quoted[
+    $head = head;
+    headName = SymbolName @ head;
+    nameCount = ReplaceAutomatic[n, KeyIncrement[$templateBoxNameCounts, head]];
+    If[nameCount >= 5, ThrowMessage["tboxrulecount", $head]];
+    $tName = toTName[headName, nameCount];
+    $kName = toKName[headName, nameCount];
+  ]
+];
+
+(**************************************************************************************************)
+
+(* this is the most general case, which handles var arg patterns etc.
+we have various special purpose declaration functions to avoid engaging with this *)
+
 setTemplateBoxForm[lhs:(head_Symbol[___]), rhs_] := Scope[
   
-  $head = head;
-  headName = SymbolName @ head;
-
-  n = KeyIncrement[$templateBoxNameCounts, head];
-  If[n >= 5, ThrowMessage["toomanyrules", $head]];
+  registerTemplateBoxName[head, Automatic];
 
   (* extract pattern variables, but put sequence one at the end
       head[a_, b_]    ==>  {a, b}
@@ -50,8 +57,7 @@ setTemplateBoxForm[lhs:(head_Symbol[___]), rhs_] := Scope[
   {syms, usyms, vsym} = getPatternSymbols[lhs];
   
   (* tell MakeBoxes how to convert head[a_, b_] into TBox[{a, b}, "head"] *)
-  tName = toTName[headName, n];
-  setTemplateBoxRules0[lhs, syms, tName];
+  registerTemplateBoxRules[lhs, syms];
   nsyms = Length @ syms;
 
   (* convert the RHS to be a pure function that contains only #1, #2, ...
@@ -64,40 +70,30 @@ setTemplateBoxForm[lhs:(head_Symbol[___]), rhs_] := Scope[
   slotFn = Function[rhs] /. RuleThread[syms, slotTuple];
   slotFn = slotFn /. HoldPattern[SequenceRiffle[SlotSequence[i_], r_]] :> TemplateSlotSequence[i, r];
   riffleElem = FirstCase[slotFn, TemplateSlotSequence[_, r_] :> r, None, Infinity];
+
+  (* set up $templateBoxDisplayFunction and $katexDisplayFunction *)
+  registerDisplayFunction[slotFn];
   
   (* set up katexBoxRules to convert from TBox[{a, b}, "head"] to "head"[a, b]
      if there is a SlotSequence, we turn it into a tuple
      if there is a TemplateSlotSequence, we turn into a riffled tuple
   *)
-  kName = toKName[headName, n];
-  kFn = Construct[Function, kName @@ slotTuple];
+  templateToKatexFn = Construct[Function, kName @@ slotTuple];
   If[vsym =!= None,
     seqRule = If[riffleElem =!= None,
       With[{r = riffleElem}, s_SlotSequence :> Riffle[List[s], r]],
       s_SlotSequence :> List[s]
     ];
-    kFn = kFn /. seqRule;
+    templateToKatexFn = templateToKatexFn /. seqRule;
   ];
-  $templateBoxToKatexFunctions[tName] ^= kFn;
+  registerTemplateToKatexFunction[templateToKatexFn];
 
-  (* set up $templateBoxFunctions, which defines for MMA frontend will display TBox[{a, b}, "head"] at runtime.
-     will later produce a style definition in a notebook stylesheet. *)
-  $templateBoxFunctions[tName] ^= slotFn //. KatexBox[a_, b_] :> a;
-  
-  (* set up $katexDefinitions, which defines how Katex will display "head"[a, b] at runtime.
-     will later produce a \gdef expression that goes in the Katex prelude *)
-  katexFn = slotFn //. {
-    KatexBox[a_, b_] :> b,
-    SlotSequence -> Slot,
-    TemplateSlotSequence[i_, r_] :> Slot[i],
-    RowBox[e_List] :> e
-  };
-  $katexDefinitions[kName] ^= katexFn;
 ];
 
 $varPatternP = _BlankSequence | _BlankNullSequence | _Repeated;
 
 TemplateBoxForm::multivar = "Multiple variable-length pattern symbols in `` are not supported.";
+
 getPatternSymbols[e_] := Scope[
   syms = Cases[Unevaluated[e], Verbatim[Pattern][sym_Symbol, Except[$varPatternP]] :> sym, Infinity, Heads -> True];
   varSyms = Cases[Unevaluated[e], Verbatim[Pattern][sym_Symbol, $varPatternP] :> sym, Infinity, Heads -> True];
@@ -107,40 +103,65 @@ getPatternSymbols[e_] := Scope[
 
 (**************************************************************************************************)
 
+(* this is a case in which user declared boxes for a lone symbol, so there are no arguments
+to worry about *)
+
 setTemplateBoxForm[head_Symbol, rhs_] := Scope[
-  $head = head;
-  headName = SymbolName @ head;
   
-  tName = toTName[headName, 0];
-  setTemplateBoxRules0[head, {}, tName];
+  registerTemplateBoxName[head, 0];
+  
+  registerTemplateBoxRules[head, {}];
 
-  rhsFn = Function[rhs];
-  kName = toKName[headName, 0];
-  $templateBoxToKatexFunctions[tName] ^= Construct[Function, StringJoin["\\", kName]];
+  registerDisplayFunction[Function[rhs]];
 
-  $templateBoxFunctions[tName] ^= rhsFn //. KatexBox[a_, b_] :> a;
-
-  $katexDefinitions[kName] ^= rhsFn //. KatexBox[a_, b_] :> b;
+  registerTemplateToKatexFunction[Construct[Function, PrefixSlash @ $kName]];
 ];
 
 (**************************************************************************************************)
 
-(* this takes a head that should apply with one unrestricted argument, a corresponding
-box  *)
+registerTemplateToKatexFunction[fn_] :=
+  $templateToKatexFunction[$tName] = fn;
 
-setSimpleTemplateBoxForm[head_, box_] := Foo;
+registerTemplateToKatexFunction[] :=
+  $templateToKatexFunction[$tName] = PrefixSlash @ $kName;
 
 (**************************************************************************************************)
 
-SetHoldFirst[setTemplateBoxRules0];
-setTemplateBoxRules0[lhs_, syms_, tName_] :=
-  setTemplateBoxRules1[lhs, TemplateBox[makeQGBoxes /@ syms, tName]];
+(* this takes an arbtirary box function and then processes it to turn it into a templateBoxDisplayFunction
+and a katexDefinition, that will live in stylesheet and prelude respectively *)
 
-setTemplateBoxRules0[lhs_, {}, tName_] :=
-  setTemplateBoxRules1[lhs, TemplateBox[{}, tName]];
+registerDisplayFunction[displayFn_] := (
 
-SetHoldAll[setTemplateBoxRules1];
-setTemplateBoxRules1[lhs_, rhs_] := (
+  (* set up $templateBoxDisplayFunction, which defines for MMA frontend will display TBox[{a, b}, "head"] at runtime.
+     will later produce a style definition in a notebook stylesheet. *)
+  $templateBoxDisplayFunction[$tName] = displayFn //. KatexBox[a_, b_] :> a;
+
+  (* set up $katexDisplayFunction, which defines how Katex will display "head"[a, b] at runtime.
+     will later produce a \gdef expression that goes in the Katex prelude *)
+  $katexDisplayFunction[$kName] ^= displayFn //. {
+    KatexBox[a_, b_] :> b,
+    SlotSequence -> Slot,
+    TemplateSlotSequence[i_, r_] :> Slot[i],
+    RowBox[e_List] :> e
+  };
+);
+
+(**************************************************************************************************)
+
+SetHoldFirst[registerTemplateBoxRules];
+
+registerTemplateBoxRules[lhs_, rhs_] :=
+  registerTemplateBoxRules[lhs, rhs, $tName];
+
+registerTemplateBoxRules[lhs_, syms_, tName_] :=
+  registerTemplateBoxRules2[lhs, TemplateBox[makeQGBoxes /@ syms, tName]];
+
+registerTemplateBoxRules[lhs_, {}, tName_] :=
+  registerTemplateBoxRules2[lhs, TemplateBox[{}, tName]];
+
+SetHoldAll[registerTemplateBoxRules2];
+
+registerTemplateBoxRules2[lhs_, rhs_] := (
   KeyAppendTo[$expressionToTemplateBoxRules, $head, HoldPattern[lhs] :> rhs];
   $BoxFormattingHeadQ[$head] = True;
   MakeBoxes[lhs, StandardForm] := rhs;
@@ -149,41 +170,72 @@ setTemplateBoxRules1[lhs_, rhs_] := (
 
 (**************************************************************************************************)
 
-PublicFunction[KatexFunction]
+(* this handle both registering a display function and the template to katex conversion, which is
+trivial *)
 
-KatexFunction /: Set[KatexFunction[name_String], func_] :=
-  $katexDefinitions[name] ^= func;
+registerOneArgTemplate[displayFn_] := (
+
+  registerDisplayFunction[displayFn];
+
+  registerTemplateToKatexFunction[];
+
+);
+
+(* this optimizes the case where the katex does nothing, which is most kinds of symbols.
+here we don't bother to register a $katexDisplayFunction, to avoid bloat *)
+
+registerOneArgTemplate[Identity | (#&)] := (
+
+  $templateBoxDisplayFunction[$tName] = (#&);
+
+  $templateToKatexFunction[$tName] = (#&);
+);
+
+(**************************************************************************************************)
+(** EXPOSED INTERFACE TO USERS                                                                   **)
+(**************************************************************************************************)
+
+PublicFunction[TemplateBoxForm]
+
+TemplateBoxForm /: SetDelayed[TemplateBoxForm[lhs_], rhs_] :=
+  CatchMessage @ setTemplateBoxForm[lhs, rhs];
 
 (**************************************************************************************************)
 
-PrivateFunction[declareTemplateBoxRules]
+(* this takes a head that should act like e.g. GraphSymbol, VertexSymbol, etc. *)
 
-declareTemplateBoxRules[rules__] := Scan[declareTemplateBoxRule, {rules}];
+PrivateSymbol[DeclareUnaryTemplateBox]
 
-TemplateBoxForm::badrule = "Expresion `` is not a Rule or RuleDelayed.";
+DeclareUnaryTemplateBox[head_, style_:None] := CatchMessage @ Scope[
+
+  registerTemplateBoxName[head, 1];
+  
+  registerTemplateBoxRules[head[s_], {s}];
+
+  registerOneArgTemplate @ toStyleBoxFn @ style;
+];
+
+toStyleBoxFn = Case[
+  s_String     := StyleBox[#, s]&;
+  fn_Function  := fn;
+  None         := #&;
+];
+
+(**************************************************************************************************)
+
+PrivateFunction[DeclareTemplateBoxRules]
+
+(* this is used to define many simultaneous tepmlates via the same codepath as
+TemplateBoxForm[lhs] := rhs *)
+
+DeclareTemplateBoxRules[rules__] :=
+  CatchMessage @ Scan[declareTemplateBoxRule, {rules}];
+
+DeclareTemplateBoxRules::badrule = "Expresion `` is not a Rule or RuleDelayed.";
 
 declareTemplateBoxRule = Case[
   (Rule|RuleDelayed)[lhs_, rhs_]  := setTemplateBoxForm[lhs, rhs];
   Null                            := Null;
-  other_                          := Message[TemplateBoxForm::badrule, InputForm @ other];
+  other_                          := ThrowMessage["badrule", InputForm @ other];
 ];
 
-(**************************************************************************************************)
-
-PublicFunction[EmitKatexFunctionDefinitions]
-
-EmitKatexFunctionDefinitions[] := Scope[
-  defs = KeyValueMap[toKatexFunctionDef, $katexDefinitions];
-  StringRiffle[defs, "\n"]
-];
-
-toSlotStr = <|1 -> "#1", 2 -> "#2", 3 -> "#3", 4 -> "#4", 5 -> "#5"|>
-
-toKatexFunctionDef[name_, func_] := Scope[
-  maxSlot = Max[0, DeepCases[func, Slot[i_Integer] :> i]];
-  slotStrs = toSlotStr /@ Range[maxSlot];
-  eval = boxesToKatexString[func @@ slotStrs];
-  $katexFnDefTemplate[name, StringJoin @ slotStrs, eval]
-]
-  
-$katexFnDefTemplate = StringFunction["\\gdef\\#1#2{#3}"]

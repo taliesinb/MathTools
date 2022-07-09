@@ -1,19 +1,19 @@
-PublicFunction[GenerateStylesheet]
+PublicFunction[GenerateQuiverGeometryStylesheet]
 
-GenerateStylesheet[] := Scope[
-  template = Get @ FileNameJoin[{$StylesheetDirectory, "QuiverGeometry.template.nb"}];
+GenerateQuiverGeometryStylesheet[] := Scope[
+  template = Get @ LocalPath["StyleSheets", "QuiverGeometry.template.nb"];
   template = DeleteCases[template, ExpressionUUID -> _, {0, Infinity}];
   cells = KeyValueMap[makeStyleCell, $templateBoxFunctions];
   template //= ReplaceAll[Cell[StyleData["Dummy"], ___] :> Splice[cells]];
 
   hash = Base36Hash[template];
-  targetPath = FileNameJoin[{$StylesheetDirectory, "QuiverGeometry-" <> hash <> ".nb"}];
-  If[FileExistsQ[targetPath], Return[$StylesheetPath ^= targetPath]];
+  targetPath = LocalPath["StyleSheets", "QuiverGeometry-" <> hash <> ".nb"];
+  If[FileExistsQ[targetPath], Return[$QuiverGeometryStylesheetPath ^= targetPath]];
 
   Export[targetPath, template];
   Put[targetPath, $latestPathFile];
 
-  $StylesheetPath ^= targetPath
+  $QuiverGeometryStylesheetPath ^= targetPath
 ];
 
 makeStyleCell[name_, fn_] := Cell[
@@ -23,12 +23,10 @@ makeStyleCell[name_, fn_] := Cell[
 
 (**************************************************************************************************)
 
-PublicVariable[$StylesheetDirectory]
-PublicVariable[$StylesheetPath]
+PublicVariable[$QuiverGeometryStylesheetPath]
 
-$StylesheetDirectory = FileNameJoin[{ParentDirectory @ QuiverGeometryPackageLoader`$Directory, "StyleSheets"}];
-$latestPathFile = FileNameJoin[{$StylesheetDirectory, "latest.m"}];
-$StylesheetPath := $StylesheetPath = Quiet @ Check[Import @ $latestPathFile, None];
+$latestPathFile = LocalPath["StyleSheets", "latest.m"];
+$QuiverGeometryStylesheetPath := $QuiverGeometryStylesheetPath = Quiet @ Check[Import @ $latestPathFile, None];
 
 (**************************************************************************************************)
 
@@ -38,7 +36,7 @@ ApplyQuiverGeometryNotebookStyles[] :=
   ApplyQuiverGeometryNotebookStyles @ EvaluationNotebook[];
 
 ApplyQuiverGeometryNotebookStyles[nb_NotebookObject] := (SetOptions[nb,
-  StyleDefinitions -> $StylesheetPath,
+  StyleDefinitions -> $QuiverGeometryStylesheetPath,
   DockedCells -> createQGNotebookDockedCells[]
 ]; nb);
 
@@ -59,7 +57,7 @@ ApplyQuiverGeometryNotebookStyles[file_String ? FileQ] := Scope[
 PublicVariable[UpdateLegacyNotebook]
 
 createLegacyReplacementRules[] := Scope[
-  keys = Select[Keys @ $templateBoxFunctions, LowerCaseQ[StringTake[#, 1]]&];
+  keys = Select[Keys @ $templateBoxDisplayFunction, LowerCaseQ[StringTake[#, 1]]&];
   symbolRules = Map[
     UpperCaseFirst[#] -> #&,
     Select[Keys @ $templateBoxFunctions, LowerCaseQ[StringTake[#, 1]]&]
@@ -90,7 +88,7 @@ UpdateLegacyNotebook[nb_NotebookObject] := Scope[
 
 UpdateLegacyNotebook[nb_Notebook] := Scope[
   nb = DeleteCases[nb, StyleDefinitions -> _];
-  AppendTo[nb, StyleDefinitions -> $StylesheetPath];
+  AppendTo[nb, StyleDefinitions -> $QuiverGeometryStylesheetPath];
   ReplaceRepeated[nb, $legacyReplacementRules]
 ];
 
@@ -129,16 +127,18 @@ $builtinTemplateBoxNames = {"RowWithSeparators", "RowWithSeparator", "Spacer1", 
 
 FindMissingTemplateBoxDefinitions[] := FindMissingTemplateBoxDefinitions @ Automatic;
 FindMissingTemplateBoxDefinitions[nb_, ref_:Automatic] := Scope[
-  SetAutomatic[ref, $StylesheetPath];
+  SetAutomatic[ref, $QuiverGeometryStylesheetPath];
   availableNames = Join[NotebookStyleDataNames @ ref, $builtinTemplateBoxNames];
   notebookNames = NotebookTemplateBoxNames @ nb;
   Complement[notebookNames, availableNames]
 ];
 
-PublicFunction[SetQuiverGeometryStylesheet]
+(**************************************************************************************************)
 
-SetQuiverGeometryStylesheet[] := (
-  SetOptions[EvaluationNotebook[], StyleDefinitions -> $StylesheetPath];
+PublicFunction[ApplyQuiverGeometryStylesheet]
+
+ApplyQuiverGeometryStylesheet[] := (
+  SetOptions[EvaluationNotebook[], StyleDefinitions -> $QuiverGeometryStylesheetPath];
 );
 
 (**************************************************************************************************)
@@ -155,7 +155,7 @@ CreateQuiverGeometryNotebook[] :=
      Cell["Subsection", "Subsection"],
      Cell["Item 1", "Item"],
      Cell["Item 2", "Item"]},
-    StyleDefinitions -> $StylesheetPath,
+    StyleDefinitions -> $QuiverGeometryStylesheetPath,
     DockedCells -> createQGNotebookDockedCells[]
   ];
 

@@ -4,7 +4,7 @@ SystemSymbol[Naturals, PositiveNaturals, Primes]
 SetUsage @ "PositiveNaturals represents the positive natural numbers."
 SetUsage @ "Primes represents the prime numbers."
  *)
-declareTemplateBoxRules[
+DeclareTemplateBoxRules[
   Naturals                   -> "\[DoubleStruckN]",
   PositiveNaturals           -> SuperscriptBox["\[DoubleStruckCapitalN]", "+"],
   PositiveReals              -> SuperscriptBox["\[DoubleStruckCapitalR]", "+"],
@@ -16,7 +16,7 @@ declareTemplateBoxRules[
 
 PublicSymbol[PiSymbol, TauSymbol]
 
-declareTemplateBoxRules[
+DeclareTemplateBoxRules[
   PiSymbol                   -> "\[Pi]",
   TauSymbol                  -> "\[Tau]"
 ];
