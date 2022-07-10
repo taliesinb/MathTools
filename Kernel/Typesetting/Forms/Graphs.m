@@ -159,3 +159,11 @@ declareInfixSymbol[{GraphRegionIntersectionForm, GraphRegionUnionForm}]
 
 PublicForm[GraphIsomorphismSymbol]
 
+DeclareTypedSymbolTemplateBox[GraphIsomorphismSymbol]
+
+(**************************************************************************************************)
+
+PublicForm[GraphAutomorphismsFunction]
+
+DeclareFunctionTemplateBox[GraphAutomorphismsFunction, "Aut"]
+

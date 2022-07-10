@@ -1,3 +1,11 @@
+
+(*
+ overall strategy:
+
+ we've tried so far to have a single box expression express both TemplateBox and Katex display functions.
+
+this has required many hacks, like e.g.
+*)
 PublicVariable[$expressionToTemplateBoxRules, $templateBoxDisplayFunction, $katexDisplayFunction, $templateToKatexFunction]
 
 PublicFunction[ClearTemplateBoxDefinitions]
@@ -26,6 +34,7 @@ PublicFunction[PrintTemplateBoxDefinitions]
 
 PrintTemplateBoxDefinitions[] := Scope[
   Print @ SpacedColumn[
+    "Formatting rules" -> Grid[InputForm /@ $expressionToTemplateBoxRules],
     "Display functions" -> SpacedRow[
       "Template" -> Grid[$templateBoxDisplayFunction],
       "Katex" -> Grid[$katexDisplayFunction]
@@ -40,8 +49,6 @@ PrintTemplateBoxDefinitions[] := Scope[
 (**************************************************************************************************)
 
 PublicHead[KatexBox]
-
-SetHoldAll[setTemplateBoxForm, setKatexBoxForm, getPatternSymbols];
 
 toTName[base_, 1] := base;
 toTName[base_, 0] := LowerCaseFirst @ base;
@@ -68,6 +75,8 @@ DefineLiteralMacro[registerTemplateBoxName,
 
 (**************************************************************************************************)
 
+SetHoldAll[setTemplateBoxForm];
+
 (* this is the most general case, which handles var arg patterns etc.
 we have various special purpose declaration functions to avoid engaging with this *)
 
@@ -83,10 +92,35 @@ setTemplateBoxForm[lhs:(head_Symbol[___]), rhs_] := Scope[
       head[a_, b__]   ==>  {a, b}
       head[a__, b_]   ==>  {b, a}
   *)
-  {syms, usyms, vsym} = getPatternSymbols[lhs];
+  {syms, vsym} = getPatternSymbols[lhs, rhs];
   
   (* tell MakeBoxes how to convert head[a_, b_] into TBox[{a, b}, "head"] *)
   registerTemplateBoxRules[lhs, syms];
+
+  registerSlotFn[rhs, syms, vsym]
+]
+
+SetHoldAll[getPatternSymbols];
+
+$varPatternP = _BlankSequence | _BlankNullSequence | _Repeated;
+
+TemplateBoxForm::multivar = "Multiple variable-length pattern symbols in `` are not supported.";
+
+getPatternSymbols[lhs_, rhs_] := Scope[
+  syms = Cases[Unevaluated @ lhs, Verbatim[Pattern][sym_Symbol, Except[$varPatternP]] :> sym, Infinity, Heads -> True];
+  varSyms = Cases[Unevaluated @ lhs, Verbatim[Pattern][sym_Symbol, $varPatternP] :> sym, Infinity, Heads -> True];
+  syms = Select[syms, ContainsQ[Unevaluated @ rhs, #]&]; (* drop unused symbols *)
+  If[Length[var] > 1, ThrowMessage["multivar", $head]];
+  {DeleteDuplicates @ Join[syms, varSyms], First[varSyms, None]}
+];
+
+
+(**************************************************************************************************)
+
+SetHoldFirst[registerSlotFn];
+
+registerSlotFn[rhs_, syms_, vsym_] := Scope[
+
   nsyms = Length @ syms;
 
   (* convert the RHS to be a pure function that contains only #1, #2, ...
@@ -122,22 +156,37 @@ setTemplateBoxForm[lhs:(head_Symbol[___]), rhs_] := Scope[
 ];
 
 $displayFunctionReplacements = {
-  TEval[e_]                         :> RuleCondition @ e,
-  HoldPattern[RBox[r___]]           :> RowBox[{r}],
-  HoldPattern[SBox[s_]]             :> TemplateBox[{}, s],
-  HoldPattern[TBox[form_][args___]] :> TemplateBox[{args}, form]
+  TEval[e_]                            :> RuleCondition @ e,
+  (* HoldPattern[TBox[s_Slot][arg_]]      :> TemplateBox[{arg, s}, "ParameterizedTemplateBox"], *)
+  HoldPattern[RBox[r___]]              :> RowBox[{r}],
+  HoldPattern[SBox[s_]]                :> TemplateBox[{}, s],
+  HoldPattern[TBox[s_String][args___]] :> TemplateBox[{args}, s]
 };
 
-$varPatternP = _BlankSequence | _BlankNullSequence | _Repeated;
+(**************************************************************************************************)
 
-TemplateBoxForm::multivar = "Multiple variable-length pattern symbols in `` are not supported.";
+(* this is the case in which the template wants to processes arguments at boxification time
+before storing them in the TemplateBox. *)
 
-getPatternSymbols[e_] := Scope[
-  syms = Cases[Unevaluated[e], Verbatim[Pattern][sym_Symbol, Except[$varPatternP]] :> sym, Infinity, Heads -> True];
-  varSyms = Cases[Unevaluated[e], Verbatim[Pattern][sym_Symbol, $varPatternP] :> sym, Infinity, Heads -> True];
-  If[Length[var] > 1, ThrowMessage["multivar", $head]];
-  {DeleteDuplicates @ Join[syms, varSyms], DeleteDuplicates @ syms, First[varSyms, None]}
+setTemplateBoxForm[lhs:(head_Symbol[___]), With[withClause_, rhs_]] := Scope[
+
+  registerTemplateBoxName[head, Automatic];
+
+  (* get all symbols used in RHS, and injected by With *)
+  {syms, vsym} = getPatternSymbols[lhs, rhs];
+  withSyms = getWithSymbols[withClause];
+
+  (* have MakeBoxes evaluate the With, yielding the right tuple to put in TBox  *)
+  registerStagedTemplateBoxRules[lhs, Evaluate @ syms, Evaluate @ $tName, Evaluate @ withSyms, withClause];
+  
+  (* we continue as the normal setTemplateBoxForm does, where our tuple will now
+  have some additional variables at the beginning *)
+  registerSlotFn[rhs, Join[withSyms, syms], vsym];
 ];
+
+SetHoldAll[getWithSymbols];
+
+getWithSymbols[vars__] := Cases[Unevaluated @ {vars}, HoldPattern @ Set[v_Symbol, _] :> v, 2];
 
 (**************************************************************************************************)
 
@@ -195,14 +244,22 @@ registerDisplayFunction[displayFn_] := (
 
 SetHoldFirst[registerTemplateBoxRules];
 
-registerTemplateBoxRules[lhs_, rhs_] :=
-  registerTemplateBoxRules[lhs, rhs, $tName];
+registerTemplateBoxRules[lhs_, syms_] :=
+  registerTemplateBoxRules[lhs, syms, $tName];
 
 registerTemplateBoxRules[lhs_, syms_, tName_] :=
   registerTemplateBoxRules2[lhs, TemplateBox[makeQGBoxes /@ syms, tName]];
 
 registerTemplateBoxRules[lhs_, {}, tName_] :=
   registerTemplateBoxRules2[lhs, TemplateBox[{}, tName]];
+
+SetHoldAll[registerStagedTemplateBoxRules];
+
+registerStagedTemplateBoxRules[lhs_, syms_, tName_, withSyms_, withClause__] :=
+  registerTemplateBoxRules2[lhs, With[withClause, TemplateBox[Join[withSyms, makeQGBoxes /@ syms], tName]]];
+
+registerStagedTemplateBoxRules[lhs_, {}, tName_, withSyms_, withClause__] :=
+  registerTemplateBoxRules2[lhs, With[withClause, TemplateBox[withSyms, tName]]];
 
 SetHoldAll[registerTemplateBoxRules2];
 
@@ -247,7 +304,19 @@ TemplateBoxForm /: SetDelayed[TemplateBoxForm[lhs_], rhs_] :=
 
 (**************************************************************************************************)
 
-(* this takes a head that should act like e.g. GraphSymbol, VertexSymbol, etc. *)
+(* this takes a constant head that should act like e.g. PiSymbol *)
+
+PublicFunction[DeclareConstantSymbolTemplateBox]
+
+DeclareConstantSymbolTemplateBox[head_ -> rhs_] :=
+  setTemplateBoxForm[head, rhs];
+
+DeclareConstantSymbolTemplateBox[head_, rhs_] :=
+  setTemplateBoxForm[head, rhs];
+
+(**************************************************************************************************)
+
+(* this takes a head that should apply a style *)
 
 PublicFunction[DeclareUnaryTemplateBox]
 
@@ -268,25 +337,25 @@ toStyleBoxFn = Case[
 
 (**************************************************************************************************)
 
-(* this takes a constant head that should act like e.g. PiSymbol *)
-
-PublicFunction[DeclareConstantSymbolTemplateBox]
-
-DeclareConstantSymbolTemplateBox[head_, rhs_] :=
-  setTemplateBoxForm[head, rhs];
-
-(**************************************************************************************************)
-
-(* this takes a constant head that should act like e.g. PiSymbol *)
+(* this takes a head that should act like e.g. GraphSymbol, VertexSymbol, etc. *)
 
 PublicFunction[DeclareTypedSymbolTemplateBox]
 
-DeclareTypedSymbolTemplateBox[head_, rhs_:None] :=
-  DeclareUnaryTemplateBox[head, rhs];
+DeclareTypedSymbolTemplateBox[head_, fn_:None] :=
+  DeclareUnaryTemplateBox[head, fn];
+
+  (**************************************************************************************************)
+
+(* this takes a head that should act like e.g. PathQuiverSymbol *)
+
+PublicFunction[DeclareDerivedSymbolTemplateBox]
+
+DeclareDerivedSymbolTemplateBox[head_, fn_:None] :=
+  DeclareUnaryTemplateBox[head, fn];
 
 (**************************************************************************************************)
 
-(* this takes a head that should act like e.g. GraphSymbol, VertexSymbol, etc. *)
+(* this takes a head that should act like e.g. VertexListFunction *)
 
 PublicFunction[DeclareFunctionTemplateBox]
 
@@ -313,7 +382,7 @@ TemplateBoxForm[lhs] := rhs *)
 DeclareTemplateBoxRules[rules__] :=
   CatchMessage @ Scan[declareTemplateBoxRule, {rules}];
 
-DeclareTemplateBoxRules::badrule = "Expresion `` is not a Rule or RuleDelayed.";
+DeclareTemplateBoxRules::badrule = "Expression `` is not a Rule or RuleDelayed.";
 
 declareTemplateBoxRule = Case[
   (Rule|RuleDelayed)[lhs_, rhs_]  := setTemplateBoxForm[lhs, rhs];
@@ -323,16 +392,83 @@ declareTemplateBoxRule = Case[
 
 (**************************************************************************************************)
 
-(* this takes a constant head that should act like e.g. PiSymbol *)
+declareNullaryTemplateBox[head_, boxes_] := Scope[
+  {tName, kName} = setTemplateBoxForm[head, boxes];
+  KatexBox[SBox @ tName, PrefixSlash @ kName]
+];
 
-PublicFunction[DeclareRelationTemplateBox]
+(**************************************************************************************************)
 
-DeclareRelationTemplateBox[head_, symbol_] := Scope[
+PublicFunction[DeclareNAryRelationTemplateBox]
 
-  {tName, dummy} = setTemplateBoxForm[head, symbol];
+DeclareNAryRelationTemplateBox[head_, boxes_] := Scope[
+  riff = declareNullaryTemplateBox[head, boxes];
+  setTemplateBoxForm[head[args___], RBox[SequenceRiffle[args, RBox[" ", TEval @ riff, " "]]]];
+];
 
-  riff = KatexBox[SBox @ tName, PrefixSlash @ dummy];
-  setTemplateBoxForm[head[args___], RBox[SequenceRiffle[args, TEval @ riff]]];
+(**************************************************************************************************)
+
+PublicFunction[DeclareNAryOperatorTemplateBox]
+
+DeclareNAryOperatorTemplateBox[head_, boxes_] :=
+  DeclareNAryRelationTemplateBox[head, boxes];
+
+(**************************************************************************************************)
+
+PublicFunction[DeclareBinaryRelationTemplateBox]
+
+DeclareBinaryRelationTemplateBox[head_, boxes_] := Scope[
+  riff = declareNullaryTemplateBox[head, boxes];
+  setTemplateBoxForm[head[a_, b_], RBox[a, " ", TEval @ riff, " ", b]]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[DeclareIndexedBinaryRelationTemplateBox]
+
+DeclareIndexedBinaryRelationTemplateBox[head_, boxes_] := Scope[
+  riff = declareNullaryTemplateBox[head, boxes];
+  setTemplateBoxForm[head[a_, b_], RBox[a, " ", TEval @ riff, " ", b]];
+  setTemplateBoxForm[head[a_, b_, l_], RBox[a, " ", SubscriptBox[TEval @ riff, l], " ", b]]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[DeclareInfixTemplateBox]
+
+DeclareInfixTemplateBox[head_, boxes_] :=
+  DeclareBinaryRelationTemplateBox[head, boxes];
+
+(**************************************************************************************************)
+
+PublicFunction[DeclareSequenceTemplateBox, DeclareStyledSequenceTemplateBox]
+
+DeclareSequenceTemplateBox[head_, left_, right_] :=
+  setTemplateBoxForm[head[args___], RBox[left, SequenceRiffle[args, ", "], right]];
+
+DeclareStyledSequenceTemplateBox[head_, left_, right_] :=
+  setTemplateBoxForm[
+    head[style_, args___] :> With[
+      {styledL = RuntimeTBox[style, left],
+       styledR = RuntimeTBox[style, left]},
+      RBox[
+        styledL,
+        SequenceRiffle[args, ", "],
+        styledR
+      ]
+    ]
+  ];
+
+(**************************************************************************************************)
+
+PrivateFunction[RuntimeTBox]
+
+(* this isn't right, since KatexBox has to evaluate ahead of time *)
+
+RuntimeTBox[param_Symbol, arg_] := With[
+  {name = SymbolName @ param},
+  {kName = toKName[name, 1], tName = toTName[name, 1]},
+  KatexBox[TemplateBox[{arg, tName}, "ParameterizedTemplateBox"], kName[arg]]
 ];
 
 (**************************************************************************************************)

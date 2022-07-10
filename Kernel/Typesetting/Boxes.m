@@ -1,4 +1,4 @@
-PrivateFunction[TBox, SBox, RBox, GBox]
+PrivateFunction[TBox, SBox, RBox, GBox, PTBox]
 
 TBox[form_][args___] := TemplateBox[{args}, form];
 
@@ -93,3 +93,8 @@ PrivateFunction[FunctionBox]
 
 FunctionBox[e_String] := KatexBox[e, StringJoin["\\operatorname{", e, "}"]];
 
+(**************************************************************************************************)
+
+PublicFunction[EvaluateTemplateBox]
+
+EvaluateTemplateBox = BoxForm`TemplateBoxToDisplayBoxes

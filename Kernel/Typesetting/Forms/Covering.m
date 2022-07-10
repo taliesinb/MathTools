@@ -1,48 +1,38 @@
 PublicForm[CoversForm, CoveredByForm, StrictlyCoversForm, StrictlyCoveredByForm]
 
-declareInfixSymbol[{CoversForm, CoveredByForm, StrictlyCoversForm, StrictlyCoveredByForm}, GraphSymbol];
+DeclareBinaryRelationTemplateBox[CoversForm, "\[SquareSupersetEqual]"]
+DeclareBinaryRelationTemplateBox[CoveredByForm, "\[SquareSubsetEqual]"]
+DeclareBinaryRelationTemplateBox[StrictlyCoversForm, "\[SquareSuperset]"]
+DeclareBinaryRelationTemplateBox[StrictlyCoveredByForm, "\[SquareSubset]"]
 
 (**************************************************************************************************)
 
 PublicForm[GraphIndexedCoveringForm, QuiverIndexedCoveringForm]
 
-declareBoxFormatting[
-  GraphIndexedCoveringForm[pi_, g_, h_] :> makeHintedTemplateBox[pi -> GraphHomomorphismSymbol, g -> GraphSymbol, h -> GraphSymbol, "GraphIndexedCoveringForm"],
-  QuiverIndexedCoveringForm[pi_, g_, h_] :> makeHintedTemplateBox[pi -> GraphHomomorphismSymbol, g -> QuiverSymbol, h -> QuiverSymbol, "QuiverIndexedCoveringForm"]
-];
-
-$TemplateKatexFunction["IndexedCoveringForm"] = "graphCovering";
-$TemplateKatexFunction["GraphIndexedCoveringForm"] = "graphCovering";
-$TemplateKatexFunction["QuiverIndexedCoveringForm"] = "quiverCovering";
+DeclareIndexedBinaryRelationTemplateBox[GraphIndexedCoveringForm, "\[SquareSupersetEqual]"]
+DeclareIndexedBinaryRelationTemplateBox[QuiverIndexedCoveringForm, "\[SquareSupersetEqual]"]
 
 (**************************************************************************************************)
 
 PublicForm[ContractionLatticeSymbol]
 
-SetUsage @ "
-ContractionLatticeSymbol[q$] represents the lattice of contractions of a quiver q$.
-"
-
-declareSymbolForm[ContractionLatticeSymbol, QuiverSymbol];
+DeclareDerivedSymbolTemplateBox[ContractionLatticeSymbol]
 
 (**************************************************************************************************)
 
 PublicForm[ContractionProductForm, ContractionSumForm]
 
-declareInfixSymbol[{ContractionProductForm, ContractionSumForm}, None, True];
+DeclareNAryOperatorTemplateBox[ContractionProductForm, "\[CenterDot]"]
+DeclareNAryOperatorTemplateBox[ContractionSumForm, "\[SquareUnion]"]
 
 (**************************************************************************************************)
 
-PublicForm[ContractionSetForm]
+PublicForm[ContractionSetForm, OrderedContractionSetForm]
 
 ContractionSetForm[{RepeatedNull[{_}]}] := "";
 
 ContractionSetForm[e_List] :=
   ContractionSumForm @@ (ContractionProductForm @@@ DeleteCases[e, {_}])
-
-(**************************************************************************************************)
-
-PublicForm[OrderedContractionSetForm]
 
 OrderedContractionSetForm[index_][set_] :=
   ContractionSetForm @ SortContractionSet[DeleteCases[set, {_}], index]
@@ -51,24 +41,11 @@ OrderedContractionSetForm[index_][set_] :=
 
 PublicForm[IsContractedForm, IsNotContractedForm]
 
-declareBoxFormatting[
-  IsContractedForm[a_, b_] :>
-    makeHintedTemplateBox[a -> VertexSymbol, b -> VertexSymbol, "IsContractedForm"],
-  IsContractedForm[a_, b_, q_] :>
-    makeHintedTemplateBox[a -> VertexSymbol, b -> VertexSymbol, q -> QuiverSymbol, "IsContractedInForm"],
-  IsNotContractedForm[a_, b_] :>
-    makeHintedTemplateBox[a -> VertexSymbol, b -> VertexSymbol, "IsNotContractedForm"],
-  IsNotContractedForm[a_, b_, q_] :>
-    makeHintedTemplateBox[a -> VertexSymbol, b -> VertexSymbol, q -> QuiverSymbol, "IsNotContractedInForm"]
-];
-
-$TemplateKatexFunction["IsContractedForm"] = "isContracted"
-$TemplateKatexFunction["IsContractedInForm"] = "isContractedIn"
-$TemplateKatexFunction["IsNotContractedForm"] = "isNotContracted"
-$TemplateKatexFunction["IsNotContractedInForm"] = "isNotContractedIn"
+DeclareIndexedBinaryRelationTemplateBox[IsContractedForm, "\[Tilde]"]
+DeclareIndexedBinaryRelationTemplateBox[IsNotContractedForm, "\[NotTilde]"]
 
 (**************************************************************************************************)
 
 PublicForm[ContractedRelationForm]
 
-declareUnaryForm[ContractedRelationForm];
+DeclareNAryRelationTemplateBox[ContractedRelationForm, "\[Tilde]"]

@@ -1,13 +1,13 @@
 PublicForm[TupleForm]
 
-declareCommaRiffledForm[TupleForm, "tuple"];
+DeclareSequenceTemplateBox[TupleForm, "(", ")"];
 
 (**************************************************************************************************)
 
 PublicForm[SetForm, StyledSetForm]
 
-declareCommaRiffledForm[SetForm, "set"];
-declareStyledCommaRiffledForm[StyledSetForm, "styledSet"];
+DeclareSequenceTemplateBox[SetForm, "{", "}"];
+DeclareStyledSequenceTemplateBox[StyledSetForm, "{", "}"];
 
 (**************************************************************************************************)
 

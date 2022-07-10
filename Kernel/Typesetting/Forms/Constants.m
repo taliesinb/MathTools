@@ -6,7 +6,7 @@ PublicSymbol[EllipsisSymbol, VerticalEllipsisSymbol]
 
 (**************************************************************************************************)
 
-DeclareTemplateBoxRules[
+Map[DeclareConstantSymbolTemplateBox, {
   NotApplicableSymbol        -> GrayBox @ KatexBox["NA", "\\text{---}"],
   UnknownSymbol              -> GrayBox["?"],
   EmptySetSymbol             -> GrayBox["\[EmptySet]"],
@@ -23,5 +23,5 @@ DeclareTemplateBoxRules[
   EmptyRectangleTokenSymbol  -> "\[EmptyRectangle]",
   EllipsisSymbol             -> KatexBox["\[ThinSpace]...\[ThinSpace]", "\\,\\gFo{...}\\,"],
   VerticalEllipsisSymbol     -> KatexBox["\[ThinSpace]\[VerticalEllipsis]\[ThinSpace]", "\\vdots"]
-]
+}]
 
