@@ -149,9 +149,39 @@ VertexAdjacentEdgeTable[graph_, OptionsPattern[]] := Scope[
   vertices = VertexRange @ graph;
   negator = If[OptionValue[Signed], MatrixMap[Inverted, #]&, Identity];
   MapThread[Union, {
-    Lookup[PositionIndex @ FirstColumn @ EdgePairs @ graph, vertices, {}],
-    Lookup[negator @ PositionIndex @ LastColumn @ EdgePairs @ graph, vertices, {}]
+    Lookup[PositionIndex @ FirstColumn @ pairs, vertices, {}],
+    Lookup[negator @ PositionIndex @ LastColumn @ pairs, vertices, {}]
   }]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[VertexAdjacentVertexEdgeTable, VertexAdjacentVertexEdgeAssociation]
+
+SetUsage @ "
+VertexAdjacentVertexEdgeTable[graph$] returns a list of lists {adj$1, adj$2, $$}  where adj$i \
+is a list of the pairs {e$, v$}, where e$ is an edge index and v$ is a vertex index connected to \
+vertex $i by edge $e.
+"
+
+VertexAdjacentVertexEdgeTable[graph_] := vertexAdjacentEdgeVertex[graph, False];
+
+SetUsage @ "
+VertexAdjacentVertexEdgeTable[graph$] returns an association from each vertex u$ to the  \
+list of the pairs {e$, v$}, where e$ is an edge index and v$ is a vertex index connected to \
+vertex $u by edge $e.
+"
+
+VertexAdjacentVertexEdgeAssociation[graph_] := vertexAdjacentEdgeVertex[graph, True];
+
+vertexAdjacentEdgeVertex[graph_, returnAssoc_] := Scope[
+  pairs = EdgePairs @ graph;
+  vertices = VertexRange @ graph;
+  edgeIndices = PositionIndex @ FirstColumn @ pairs;
+  outVertices = LastColumn @ pairs;
+  outEdges = Lookup[edgeIndices, vertices, {}];
+  res = Map[edgeIndices |-> Transpose[{edgeIndices, Part[outVertices, edgeIndices]}], outEdges];
+  If[returnAssoc, AssociationThread[vertices, res], res]
 ];
 
 (**************************************************************************************************)

@@ -16,6 +16,12 @@ PartOperator[spec___][e_] := Part[e, spec];
 
 (**************************************************************************************************)
 
+PublicFunction[PartOfOperator]
+
+PartOfOperator[e_][p___] := Part[e, p];
+
+(**************************************************************************************************)
+
 PublicFunction[DotOperator]
 
 DotOperator[matrix_][other_] := Dot[matrix, other]

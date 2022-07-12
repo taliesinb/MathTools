@@ -4,7 +4,8 @@ PublicOption[CanonicalizationFunction]
 declareObjectPropertyDispatch[RewritingSystemObject, rewritingSystemProperty];
 
 Options[RewritingSystemObject] = {
-  CanonicalizationFunction -> None
+  CanonicalizationFunction -> None,
+  "CustomProperties" -> {}
 };
 
 (**************************************************************************************************)
@@ -13,12 +14,13 @@ PrivateFunction[constructRewritingSystem]
 
 constructRewritingSystem[type_, rules_, opts:OptionsPattern[RewritingSystemObject]] := Scope[
   rules //= ToList;
-  If[!RuleListQ[rules /. TwoWayRule -> Rule], ReturnFailed[]];
-  UnpackOptions[canonicalizationFunction];
+  If[rules =!= Null && !RuleListQ[rules /. TwoWayRule -> Rule], ReturnFailed[]];
+  UnpackOptions[canonicalizationFunction, customProperties];
   assoc = Association[
     "Type" -> type,
     "Rules" -> rules,
-    "CanonicalizationFunction" -> canonicalizationFunction
+    "CanonicalizationFunction" -> canonicalizationFunction,
+    customProperties
   ];
   System`Private`ConstructNoEntry[RewritingSystemObject, assoc]
 ];
@@ -56,7 +58,7 @@ rewritingSystemObjectBoxes[rs:RewritingSystemObject[data_], form_] := Scope[
     (* Always displayed *)
     {
      {summaryItem["Type", type]},
-     {summaryItem["Rules", Column @ rules]}
+     If[ListQ[rules], {summaryItem["Rules", Column @ rules]}, Nothing]
     },
     (* Displayed on request *)
     {},

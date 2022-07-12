@@ -19,7 +19,7 @@ SphericalRotateVector[t_][vec_] := SphericalRotateVector[vec, t];
 
 PublicFunction[RotateVector]
 
-RotateVector[vecs:{___List}, t_] :=
+RotateVector[vecs:{___List} | vecs_Association, t_] :=
   Map[RotateVector[#, t]&, vecs];
 
 RotateVector[vec_List, t_] :=

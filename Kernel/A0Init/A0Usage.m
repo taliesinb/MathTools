@@ -27,7 +27,7 @@ $mainSymbolRegex = RegularExpression["^\\$?[A-Za-z][A-Za-z]*"];
 $mainSymbolColor = RGBColor[{0.71, 0.03, 0.}];
 
 colorLiterals[usageString_] := Scope[
-  usageString //= StringTrim;
+  usageString = StringTrim[usageString];
   StringReplace[
     usageString, {
       string:$literalStringRegex :> makeStyleBox[
@@ -39,14 +39,14 @@ colorLiterals[usageString_] := Scope[
   ]
 ];
 
-colorMainSymbol[usageString_] := StringReplace[
+colorMainSymbol[usageString_] := If[$currentMainSymbol === None, usageString, StringReplace[
   usageString, {
   ("\"" ~~ $currentMainSymbol ~~ "\"") :> StringTake[makeMainSymbolInlineSyntax[], {4, -2}],
   WordBoundary ~~ $currentMainSymbol ~~ WordBoundary :> makeMainSymbolInlineSyntax[],
   "<|" -> "\[LeftAssociation]",
   "|>" -> "\[RightAssociation]",
   "-StyleBox[\"" -> "StyleBox[\"-"
-}];
+}]];
 
 makeMainSymbolInlineSyntax[] := makeStyleBox[$currentMainSymbol,
   FontColor -> $mainSymbolColor,
@@ -156,7 +156,7 @@ $RawUsageStringTable = Association[];
 storeRawUsageString[rawUsageString_String] := Block[
   {usageString = StringTrim @ rawUsageString},
   (* $currentMainSymbol will be picked up later in the customSetUsageProcessor composition chain *)
-  $currentMainSymbol = First @ StringCases[usageString, $mainSymbolRegex, 1];
+  $currentMainSymbol = First[StringCases[usageString, $mainSymbolRegex, 1], None];
   $RawUsageStringTable[$currentMainSymbol] = usageString;
 ];
 
