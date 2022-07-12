@@ -99,10 +99,10 @@ getFileTitle[path_] := StringTrim @ StringDelete[toUnicode @ First @ FileLines[p
 
 toNavTitle[e_] := StringReplace[e, " and " -> " &amp; "];
 
-$nextPageTemplate = StringTemplate @ "
+$nextPageTemplate = StringFunction @ "
 
 @@next-link
-[`title`](`path`)
+[#title](#path)
 @@
 "
 

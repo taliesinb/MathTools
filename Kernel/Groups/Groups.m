@@ -7,6 +7,9 @@ $IntZ = TemplateBox[{}, "Integers"] // RawBoxes;
 supNo1[str_, 1] := str;
 supNo1[str_, n_] := Superscript[str, n];
 
+subSupNo1[str_, n_, 1] := Subscript[str, n];
+subSupNo1[str_, n_, m_] := Subsuperscript[str, n, m];
+
 GroupOrder;
 Unprotect[GroupOrder];
 
@@ -121,9 +124,9 @@ makeCylicGenerators[Infinity] := makeInfiniteAbelianGenerators[1];
 (* add formating for some existing groups *)
 
 declareFormatting[
-  AlternatingGroup[n_Integer] :> Subscript[Style["A", Italic], n],
-  SymmetricGroup[n_Integer] :> Subscript[Style["S", Italic], n],
-  DihedralGroup[n_Integer] :> Subscript["Dih", n]
+  AlternatingGroup[n_] :> Subscript[Style["A", Italic], n],
+  SymmetricGroup[n_] :> Subscript[Style["S", Italic], n],
+  DihedralGroup[n_] :> Subscript[MathTextForm @ "Dih", n]
 ];
 
 (**************************************************************************************************)
@@ -225,17 +228,17 @@ declareGroup[
   InfiniteDihedralGroup[n_ ? Internal`PositiveIntegerQ] :> {
     "Generators" :> Append[BasisScalingMatrix[n + 1, -1 -> -1]] @ makeInfiniteAbelianGenerators[n],
     "Order" :> Infinity,
-    "Format" :> supNo1[Subscript["Dih", Infinity], n]
+    "Format" :> subSupNo1[MathTextForm @ "Dih", Infinity, n]
   },
   InfiniteDihedralGroup[n_ ? Internal`PositiveIntegerQ, "Improper"] :> {
     "Generators" :> MakeDihedralTranslationMatrices @ makeInfiniteAbelianGenerators[n],
     "Order" :> Infinity,
-    "Format" :> supNo1[Subscript["Dih", Infinity], n]
+    "Format" :> subSupNo1[MathTextForm @ "Dih", Infinity, n]
   },
   InfiniteDihedralGroup[n_ ? Internal`PositiveIntegerQ, "Redundant"] :> {
     "Generators" :> MakeDihedralTranslationMatrices @ makeInfiniteRedundantAbelianGenerators[n],
     "Order" :> Infinity,
-    "Format" :> supNo1[Subscript["Dih*", Infinity], n]
+    "Format" :> subSupNo1[MathTextForm @ "Dih*", Infinity, n]
   }
 ];
 
@@ -363,3 +366,20 @@ ReflectionGroupQ[group$] returns True if group$ is a ReflectionGroup.
 
 ReflectionGroupQ[_ReflectionGroup] := True;
 ReflectionGroupQ[_] := False;
+
+(**************************************************************************************************)
+
+PublicFunction[SignedSymmetricGroup]
+
+declareGroup[
+  SignedSymmetricGroup[n_Integer] :> {
+    "Generators" :> constructSignedSymmetricGenerators[n],
+    "Order" :> Factorial[n] * Power[2, n],
+    "Format" :> Subsuperscript[Style["S", Italic], n, "*"]
+  }
+]
+
+constructSignedSymmetricGenerators[n_] := Join[
+  BasisScalingMatrix[n, # -> -1]& /@ Range[n],
+  Permute[IdentityMatrix[n], Cycles[{{#, Mod[# + 1, n, 1]}}]]& /@ Range[n-1]
+]

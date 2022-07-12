@@ -1,4 +1,4 @@
-$ArrowSVGTemplate = StringFunction @ StringTrim @ """
+(* $ArrowSVGTemplate = StringFunction @ StringTrim @ """
 <svg width="24000" height="800" xmlns="http://www.w3.org/2000/svg">
 
 <path d="#1"/>
@@ -237,4 +237,4 @@ toArrowAlignments = Case[
 quotedTuple = Case[
   e_String := QuotedString[e];
   e_List := StringRiffle[Map[%, e], {"[", ",", "]"}];
-];
+]; *)

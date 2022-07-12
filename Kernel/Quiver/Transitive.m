@@ -64,7 +64,7 @@ TriangularQuiver[n_Integer, cards:{x_, y_, z_}, opts:OptionsPattern[]] := Scope[
   center = Ceiling[{(n + 2) / 3, (2*n + 1) / 3}];
   SetAutomatic[vertexOrigin, center];
   If[IntegerQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
-  SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
+  SetAutomatic[graphOrigin, Apply[vertexHead, center]];
   
   vertices = Catenate @ Table[If[i <= j, vertexHead[i, j], Nothing], {i, n}, {j, n}];
   edges = Flatten @ {
@@ -160,7 +160,7 @@ SquareQuiver[spec:{$ModIntP, $ModIntP}, {cx_, cy_}, opts:OptionsPattern[]] := Sc
   center = Ceiling[{m, n} / 2];
   SetAutomatic[vertexOrigin, center];
   If[IntegerQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
-  SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
+  SetAutomatic[graphOrigin, Apply[vertexHead, center]];
   
   vertices = Catenate @ Array[vertexHead, StripModulo @ {m, n}];
   edges = Flatten @ {

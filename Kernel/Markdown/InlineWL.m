@@ -10,7 +10,7 @@ $inlineWLVarReplacement = s:("$" ~~ WordCharacter ~~ RepeatedNull[WordCharacter 
 createInlineMath[str_String] := Scope[
   res = toInlineExpression[str];
   If[FailureQ[res], Return["BAD MATH"]];
-  katex = $katexPostprocessor @ boxesToKatexString @ MakeBoxes[res, StandardForm];
+  katex = $katexPostprocessor @ boxesToKatexString @ ToBoxes[res, StandardForm];
   If[!StringQ[katex], Message[ToMarkdownString::inlinewlbox, str]; Return["BAD KATEX"]];
   $inlineMathTemplate @ katex
 ];

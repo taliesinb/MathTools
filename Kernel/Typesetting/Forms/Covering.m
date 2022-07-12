@@ -7,8 +7,9 @@ DeclareBinaryRelationTemplateBox[StrictlyCoveredByForm, "\[SquareSubset]"]
 
 (**************************************************************************************************)
 
-PublicForm[GraphIndexedCoveringForm, QuiverIndexedCoveringForm]
+PublicForm[IndexedCoveringForm, GraphIndexedCoveringForm, QuiverIndexedCoveringForm]
 
+DeclareIndexedBinaryRelationTemplateBox[IndexedCoveringForm, "\[SquareSupersetEqual]"]
 DeclareIndexedBinaryRelationTemplateBox[GraphIndexedCoveringForm, "\[SquareSupersetEqual]"]
 DeclareIndexedBinaryRelationTemplateBox[QuiverIndexedCoveringForm, "\[SquareSupersetEqual]"]
 

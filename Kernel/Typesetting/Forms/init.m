@@ -374,10 +374,10 @@ PrivateVariable[$colorFormP, $colorFormAssoc]
 $colorFormP = Alternatives[
   LightRedForm, LightGreenForm, LightBlueForm,
   RedForm, BlueForm, GreenForm,
-  RedBlueForm, GreenBlueForm, RedGreenForm, PurpleForm,
+  PinkForm, TealForm, OrangeForm, PurpleForm,
 
   DarkRedForm, DarkBlueForm, DarkGreenForm,
-  DarkRedBlueForm, DarkGreenBlueForm, DarkRedGreenForm, DarkPurpleForm,
+  DarkPinkForm, DarkTealForm, DarkOrangeForm, DarkPurpleForm,
 
   DarkGrayForm, MediumGrayForm, LightGrayForm
 ];
@@ -386,7 +386,7 @@ $colorFormAssoc = <|
   LightRedForm -> $LightRed, LightGreenForm -> $LightGreen, LightBlueForm -> $LightBlue,
   RedForm -> $Red, BlueForm -> $Blue, GreenForm -> $Green,
   DarkRedForm -> $DarkRed, DarkBlueForm -> $DarkBlue, DarkGreenForm -> $DarkGreen,
-  RedBlueForm -> $Pink, GreenBlueForm -> $Teal, RedGreenForm -> $Orange, PurpleForm -> $Purple,
+  PinkForm -> $Pink, TealForm -> $Teal, OrangeForm -> $Orange, PurpleForm -> $Purple,
   DarkGrayForm -> $DarkGray, MediumGrayForm -> $Gray, LightGrayForm -> $LightGray
 |>;
 

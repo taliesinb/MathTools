@@ -144,20 +144,25 @@ CayleyQuiver[obj$] returns the cardinal quiver representing the Cayley graph of 
 
 DeclareArgumentCount[CayleyQuiver, 1];
 
+Options[CayleyQuiver] = $fullGraphOptions;
+
 CayleyQuiver::incomplete = "Cayley graph is incomplete."
 
-CayleyQuiver[rep_] := Scope[
+CayleyQuiver[rep_, opts:OptionsPattern[]] := Scope[
   rep = CoerceToRep[1];
-  computeCayleyQuiver @ getObjectData @ rep
+  computeCayleyQuiver[getObjectData @ rep, opts]
 ];
 
-computeCayleyQuiver[data_] := Scope[
+computeCayleyQuiver[data_, opts___] := Scope[
   cfunc = computeCayleyFunction[data, "Labeled" -> True, "Symmetric" -> True];
   istate = List @ representationProperty[data, "Identity"];
-  {edges, reason} = MultiwaySystem[cfunc, istate, {"EdgeList", "TerminationReason"}, MaxDepth -> 8, MaxVertices -> 100];
+  {edges, reason} = MultiwaySystem[
+    cfunc, istate, {"EdgeList", "TerminationReason"},
+    opts, MaxDepth -> 8, MaxVertices -> 100
+  ];
   If[reason =!= "Complete", Message[CayleyQuiver::incomplete]];
   edges = DeleteDuplicates @ edges;
-  Quiver[edges]
+  CombineMultiedges @ Quiver[edges, ImageSize -> Medium]
 ];
 
 Unprotect[Labeled];

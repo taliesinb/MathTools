@@ -1,11 +1,4 @@
 
-(*
- overall strategy:
-
- we've tried so far to have a single box expression express both TemplateBox and Katex display functions.
-
-this has required many hacks, like e.g.
-*)
 PublicVariable[$expressionToTemplateBoxRules, $templateBoxDisplayFunction, $katexDisplayFunction, $templateToKatexFunction]
 
 PublicFunction[ClearTemplateBoxDefinitions]
@@ -24,7 +17,7 @@ ClearTemplateBoxDefinitions[];
 PublicFunction[TemplateBoxNameQ]
 
 TemplateBoxNameQ[str_] :=
-  KeyExistsQ[$TemplateKatexFunction, str] || KeyExistsQ[$localTemplateToKatexFunctions, str] || (
+  KeyExistsQ[$TemplateKatexFunction, str] || KeyExistsQ[$templateToKatexFunction, str] || (
     AssociationQ[$localTemplateToKatexFunctions] && KeyExistsQ[$localTemplateToKatexFunctions, str]
   );
 

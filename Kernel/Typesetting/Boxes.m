@@ -35,7 +35,7 @@ defineStyleFormAndBox[form_, box_, style_] := With[
   MakeBoxes[form[e_], TraditionalForm]  := box[MakeBoxes[e, TraditionalForm]];
   box[e_]                               := TemplateBox[{e}, tName];
   (* TODO: replace this with single call to registerSingleArgTemplateBox *)
-  $templateBoxDisplayFunction[tName]          = toFrontendStyleFunction[style];
+  $templateBoxDisplayFunction[tName]    = toFrontendStyleFunction[style];
   $templateToKatexFunction[tName]       = Function[kName[#]];
   $katexDisplayFunction[kName]          = toKatexStyleFunction[style];
 ];
@@ -87,6 +87,11 @@ MapApply[
   }
 ];
 
+MakeBoxes[PlainTextForm[e_], StandardForm]     := PlainTextBox[makeQGBoxes @ e];
+MakeBoxes[PlainTextForm[e_], TraditionalForm]  := PlainTextBox[makeQGBoxes @ e];
+MakeBoxes[MathTextForm[e_], StandardForm]      := MathTextBox[makeQGBoxes @ e];
+MakeBoxes[MathTextForm[e_], TraditionalForm]   := MathTextBox[makeQGBoxes @ e];
+  
 (**************************************************************************************************)
 
 PrivateFunction[FunctionBox]

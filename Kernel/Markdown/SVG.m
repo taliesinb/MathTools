@@ -1,4 +1,4 @@
-PublicFunction[ToSVGString]
+(* PublicFunction[ToSVGString]
 
 ToSVGString[g_Graphics] := Scope[
 	{{xmin, xmax}, {ymin, ymax}} = GraphicsPlotRange @ g;
@@ -100,7 +100,7 @@ svg[Disk[{x_ ? nq, y_ ? nq}, r_:1]] := $circleTemplate[x, -y, r];
 
 svg[Disk[coords_ ? cmq, r_:1]] := svgMap[Disk[#, r]&, coords];
 
-(**************************************************************************************************)
+************************************************************************************************
 
 $rectangleTemplate = StringTemplate @ """<rect x="`1`" y="`2`" width="`3`" height="`4`" fill="`5`" stroke="`6`"/>""";
 
@@ -200,3 +200,4 @@ toColStr = Case[
 	c_ ? ColorQ 		:= Set[toColStr[c], "#" <> ColorHexString[c]];
 ];
 
+ *)

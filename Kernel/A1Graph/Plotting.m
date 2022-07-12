@@ -436,12 +436,12 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     UnpackAnonymousThemedOptions[graph, Automatic,
       imageSize, vertexSize, vertexStyle, edgeStyle,
       vertexLabelStyle, edgeLabelStyle, vertexFontSize,
-      vertexShapeFunction, edgeShapeFunction, frameStyle, baselinePosition
+      imagePadding, vertexShapeFunction, edgeShapeFunction, frameStyle, baselinePosition
     ];
 
     UnpackAnonymousThemedOptions[graph, None,
       vertexLabels, edgeLabels, plotLabel, prolog, epilog,
-      imagePadding, plotRange, plotRangePadding, frame, frameLabel, frameFade
+      plotRange, plotRangePadding, frame, frameLabel
     ];
 
     UnpackExtendedThemedOptions[graph,
@@ -466,7 +466,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       vertexLabelBaseStyle, edgeLabelBaseStyle,
       vertexLabelOrientation, edgeLabelOrientation,
 
-      peripheralVertices
+      peripheralVertices, frameFade
     ];
   ];
 
@@ -520,6 +520,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     imageSize = {imageWidth, imageHeight};
     {effectiveImageWidth, effectiveImageHeight} = EffectiveImageSize[imageSize, $GraphPlotAspectRatio];
 
+    SetAutomatic[imagePadding, If[MatrixQ[plotRange], None, All]];
+    SetNone[imagePadding, extendImagePadding = False; 1];
     SetAll[imagePadding, 1];
     imagePadding = Replace[
       StandardizePadding @ imagePadding,
@@ -908,6 +910,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 ,
   ExtendedGraphPlottingFunction
 ];
+
 
 guessPeripheralVertexCutoff[degrees_] := Scope[
   counts = Counts @ degrees;

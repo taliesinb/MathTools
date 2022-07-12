@@ -314,22 +314,27 @@ rhombilleTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, use
 
 (**************************************************************************************************)
 
-DefineParameterizedLatticeQuiver["Dihedral", dihedralFactory, <|"n" -> 3, "MaxDepth" -> 10|>];
+DefineParameterizedLatticeQuiver["Dihedral", dihedralFactory, <|"n" -> 3, "MaxDepth" -> Infinity|>];
 
 dihedralFactory[<|"n" -> n_, "MaxDepth" -> d_|>, userOpts_] := Scope[
   rep = <|
-    "CayleyFunction" -> dihedralCayleyFunction[n],
-    "InitialStates" -> {{1, 0}}
+    "CayleyFunction" -> dihedralCayleyFunction[n, If[IntegerQ[n], "r", "t"], "f"],
+    "InitialStates" -> {{1, 0}, {-1, 0}}
   |>;
-  circle = Reverse @ CirclePoints[n];
-  {rep, {MaxDepth -> d, VertexCoordinateFunction -> dihedralCoords[circle]}}
+  {rep, {
+    MaxDepth -> If[n === Infinity && d === Infinity, 6, d], PeripheralVertices -> 2,
+    VertexCoordinateFunction -> dihedralCoords[n]
+  }}
 ];
 
-dihedralCoords[points_][{dir_, z_}] := Part[points, z + 1] * If[dir == 1, 1, 0.4];
+dihedralCoords[Infinity][{dir_, z_}] := {z, dir/2};
+dihedralCoords[n_Integer] := dihedralCoords[Reverse @ CirclePoints[n]];
+dihedralCoords[points_List][{dir_, z_}] := Part[points, z + 1] * If[dir == 1, 1, 0.4];
 
-dihedralCayleyFunction[n_][{dir_, z_}] := {
-  Labeled[{dir, Mod[z + dir, n]}, "r"],
-  Labeled[{-dir, z}, "f"]
+dihedralCayleyFunction[n_, t_, r_][{dir_, z_}] := {
+  Labeled[{dir, Mod[z + dir, n]}, t],
+  Labeled[{dir, Mod[z - dir, n]}, Inverted @ t],
+  Labeled[{-dir, z}, r]
 };
 
 (**************************************************************************************************)

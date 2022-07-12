@@ -71,6 +71,7 @@ makeQGBoxes = Case[
   {a_, b__}                 := MakeBoxes @ TupleForm[a, b];
   Composition[a___]         := MakeBoxes @ FunctionCompositionForm[a];
   RightComposition[a___]    := MakeBoxes @ RightFunctionCompositionForm[a];
+  s_String                  := s;
   other_                    := MakeBoxes @ other,
   {lsymsP -> $literalSymbolsP, symP -> $rawSymbolP, namedFnP -> Alternatives @@ $namedFunctions,
     binHeads -> $binaryRelationHeads, domainsP -> $domainsP}

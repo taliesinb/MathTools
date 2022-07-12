@@ -74,9 +74,18 @@ templateBoxToKatex = Case[
   "Rationals" -> {}                 := "\\mathbb{Q}";
   "Reals" -> {}                     := "\\mathbb{R}";
   "Complexes" -> {}                 := "\\mathbb{C}";
+  "Superscript" -> {a_, b_}         := $ @ SuperscriptBox[a, b];
+  "Subscript" -> {a_, b_}           := $ @ SubscriptBox[a, b];
   "DirectedEdge" -> {a_, b_, t_}    := "tde"[$ @ a, $ @ b, $ @ t];
   "UndirectedEdge" -> {a_, b_, t_}  := "ude"[$ @ a, $ @ b, $ @ t];
   "Subsuperscript" -> {a_, b_, c_}  := $ @ SuperscriptBox[SubscriptBox[a, b], c];
+  "ContractionProduct" -> t_        := dispatchTemplateBox["ContractionProductForm", t]; (* legacy *)
+  "ContractionProductSymbol" -> t_  := dispatchTemplateBox["contractionProductForm", t]; (* legacy *)
+  "ContractionSum" -> t_            := dispatchTemplateBox["ContractionSumForm", t]; (* legacy *)
+  "ContractionSumSymbol" -> t_      := dispatchTemplateBox["contractionSumForm", t]; (* legacy *)
+  "ContractionLatticeSymbolForm" -> t_  := dispatchTemplateBox["ContractionLatticeSymbol", t]; (* legacy *)
+  "IsContractedInForm" -> t_        := dispatchTemplateBox["IsContractedForm2", t]; (* legacy *)
+  "IsNotContractedInForm" -> t_     := dispatchTemplateBox["IsNotContractedForm2", t]; (* legacy *)
   tag_ -> args_                     := dispatchTemplateBox[tag, args]
 ,
   {$ -> boxToKatex}

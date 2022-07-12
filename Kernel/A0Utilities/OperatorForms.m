@@ -149,5 +149,5 @@ SetOperator[value_] := Function[var, Set[var, value], {HoldAllComplete}];
 PublicFunction[LookupOperator]
 
 LookupOperator[a_][key_] := Lookup[a1, key];
-LookupOperator[a_, (Rule|RuleDelayed)[DefaultValue, v_]][key_] := Lookup[a, key, v];
+LookupOperator[a_, (Rule|RuleDelayed)["Default", v_]][key_] := Lookup[a, key, v];
 LookupOperator[a_, rest__][key_] := Lookup[a, key, LookupOperator[rest] @ key];

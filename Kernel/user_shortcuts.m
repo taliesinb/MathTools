@@ -85,6 +85,7 @@ symbolTable[name_String, valueFn_, iterators___] := Scope[
     result
 ];
 
+makeSym["$", value_] := Null;
 makeSym[name_, value_] := (
     CreateSymbol[$qgShortcutsContext <> name, value];
     $qgShortcutsContext <> name -> value
@@ -152,8 +153,8 @@ toIteratorData[lower_, upper_] := parseIterator /@ {lower, upper, lower <> upper
 SubOp[i_][e_] := Subscript[e, i];
 SupOp[i_][e_] := Superscript[e, i];
 
-$Style := $Style = parseIterator["r g b rg gb rb p" -> {RedForm, GreenForm, BlueForm, RedGreenForm, GreenBlueForm, RedBlueForm, PurpleForm}];
-$ExtendedStyle := $ExtendedStyle = parseIterator["r dr lr g dg lg b db lb rg drg lrg gb dgb lgb rb drb lrb p dp lp w0 w1 w2 dk k lk" -> {RedForm, DarkRedForm, LightRedForm, GreenForm, DarkGreenForm, LightGreenForm, BlueForm, DarkBlueForm, LightBlueForm, RedGreenForm, DarkRedGreenForm, LightRedGreenForm, GreenBlueForm, DarkGreenBlueForm, LightGreenBlueForm, RedBlueForm, DarkRedBlueForm, LightRedBlueForm, PurpleForm, DarkPurpleForm, LightPurpleForm, DarkGrayForm, MediumGrayForm, LightGrayForm, DarkGrayForm, MediumGrayForm, LightGrayForm}];
+$Style := $Style = parseIterator["r g b rg gb rb p" -> {RedForm, GreenForm, BlueForm, OrangeForm, TealForm, PinkForm, PurpleForm}];
+$ExtendedStyle := $ExtendedStyle = parseIterator["r dr lr g dg lg b db lb rg drg lrg gb dgb lgb rb drb lrb p dp lp w0 w1 w2 dk k lk" -> {RedForm, DarkRedForm, LightRedForm, GreenForm, DarkGreenForm, LightGreenForm, BlueForm, DarkBlueForm, LightBlueForm, OrangeForm, DarkOrangeForm, LightOrangeForm, TealForm, DarkTealForm, LightTealForm, PinkForm, DarkPinkForm, LightPinkForm, PurpleForm, DarkPurpleForm, LightPurpleForm, DarkGrayForm, MediumGrayForm, LightGrayForm, DarkGrayForm, MediumGrayForm, LightGrayForm}];
 
 $intScripts := $intScripts = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, $si, $sj, $sk, $sm, $sn, $sM, $sN, \[FormalI]};
 $natScripts := $natScripts = {0, 1, 2, 3, 4, 5, 6, $si, $sj, $sk, $sm, $sn, $sM, $sN, \[FormalI]};
@@ -269,11 +270,11 @@ symbolTable["$sset$#3#1#2",     #2[#3[SignedSetElementSymbolForm[#1]]]&,    $rom
 $ssset$abc = SignedSubsets[{QuiverGeometry`Shortcuts`$sset$ar, QuiverGeometry`Shortcuts`$sset$bb, QuiverGeometry`Shortcuts`$sset$cg}];
 
 ssetElToName = Case[
-    {} := "";
-    list_List := StringJoin @ Map[%, list];
+    {}              := "";
+    list_List       := StringJoin @ Map[%, list];
     NegatedForm[n_] := ToUpperCase @ %[n];
-    _[s_] := % @ s;
-    s_String := s;
+    _[s_]           := % @ s;
+    s_String        := s;
 ];
 
 symbolTable["$lsset$#",         Apply[SignedSetForm],                       {Map[ssetElToName, $ssset$abc], $ssset$abc /. NegatedForm[head_[e_]] :> head[NegatedForm[e]]}];
@@ -400,7 +401,7 @@ symbolTable["$PSL#1#2",         ProjectiveSpecialLinearGroupForm,           $Dim
 symbolTable["$#2c#1",           #2[CardinalSymbol[#1]]&,                    $roman, Maybe @ $Inverted];
 
 (* common cardinals get inversion + subscripts + styling *)
-symbolTable["$#3c#1#2#4",       #3[#2[CardinalSymbol[#4[#1]]]]&,            "1abcdrshvfgjwxyz", Maybe @ $ExtendedStyle, Maybe @ $Inverted, Maybe @ $Subscript];
+symbolTable["$#3c#1#2#4",       #3[#2[CardinalSymbol[#4[#1]]]]&,            "1abcdrsthvfgjwxyz", Maybe @ $ExtendedStyle, Maybe @ $Inverted, Maybe @ $Subscript];
 
 (* arrow symbols *)
 symbolTable["$c#1#2",           CardinalSymbol[#2[#1]]&,                    $Arrowheads, Maybe @ $Style];
@@ -550,9 +551,9 @@ makeSym["QuiverGeometry`Shortcuts`EG", ExtendedGraph];
 makeSym["RF", RedForm];
 makeSym["GF", GreenForm];
 makeSym["BF", BlueForm];
-makeSym["RGF", RedGreenForm];
-makeSym["RBF", RedBlueForm];
-makeSym["GBF", GreenBlueForm];
+makeSym["RGF", OrangeForm];
+makeSym["RBF", PinkForm];
+makeSym["GBF", TealForm];
 
 makeSym["BSMF", BoundSignedMultiplicityFunctionForm];
 makeSym["BMF", BoundMultiplicityFunctionForm];

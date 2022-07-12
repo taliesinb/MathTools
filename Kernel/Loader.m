@@ -40,7 +40,7 @@ $coreSymbols = {
     StringMatchQ, StringFreeQ, StringContainsQ, StringStartsQ, StringEndsQ, DuplicateFreeQ,
     And, Or, Not, EqualTo, Greater, GreaterThan, Less, LessThan, LessEqual, LessEqualThan, GreaterEqual, GreaterEqualThan, Between, Positive, Negative, NonNegative,
     If, While, Which, Do, Switch, Return, Throw, Catch, Break, Continue, Table, ConstantArray,
-    IdentityMatrix, UnitVector, Transpose, ArrayFlatten, ArrayReduce, ArrayReshape, Inverse, RotationMatrix,
+    IdentityMatrix, UnitVector, Transpose, ArrayFlatten, ArrayReshape, Inverse, RotationMatrix,
     Repeated, Verbatim, HoldPattern, Condition, RuleCondition, Except, PatternTest, Alternatives,
     Hold, HoldComplete, Sequence, Splice,
     Message, MessageName, Echo, EchoTiming, EchoFunction, Quiet, Check, General, Print, Assert,

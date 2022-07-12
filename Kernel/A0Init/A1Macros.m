@@ -72,6 +72,7 @@ procDestructArg[argSpec_] := With[
 (* this takes the place of MatchValues in GU *)
 
 PublicMacro[Case]
+PublicSymbol[$]
 
 SetHoldAll[Case, setupCases];
 
@@ -85,7 +86,7 @@ setupCases[sym_Symbol, CompoundExpression[args__SetDelayed, Null...], rewrites_:
   holds = Hold @@@ Hold[args];
   holds = ReplaceAll[holds, procRewrites @ rewrites];
   PrependTo[holds, Hold[case_, UnmatchedCase[sym, case]]];
-  holds = ReplaceAll[holds, HoldPattern[Out[]] :> sym];
+  holds = ReplaceAll[holds, HoldPattern[Out[] | $]  :> sym];
   Replace[List @@ holds, Hold[a___, b_] :> SetDelayed[sym[a], b], {1}];
 ];
 
@@ -94,6 +95,7 @@ Case::baddef = "Bad case definition for ``."
 setupCases[sym_, args___] := Message[Case::baddef, sym];
 
 SetHoldAllComplete[procRewrites];
+procRewrites[s_Symbol ? System`Private`HasImmediateValueQ] := HoldPattern[s] -> s;
 procRewrites[l_List] := Map[procRewrites, Unevaluated @ l];
 procRewrites[a_ -> b_] := HoldPattern[a] -> b;
 procRewrites[a_ :> b_] := HoldPattern[a] :> b;
