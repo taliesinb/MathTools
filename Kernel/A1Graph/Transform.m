@@ -26,11 +26,11 @@ InvertGraph[g_Graph] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[ReverseEdges]
+PublicFunction[ReverseEdges, ReverseEdge]
 
-ReverseEdges[edges_List] := Map[reverseEdge, edges];
+ReverseEdges[edges_List] := Map[ReverseEdge, edges];
 
-reverseEdge = Case[
+ReverseEdge = Case[
   head_[a_, b_] := head[b, a];
   head_[a_, b_, c_] := head[b, a, c];
 ];

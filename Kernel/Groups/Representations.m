@@ -121,15 +121,16 @@ Options[CayleyFunction] = {
 
 DeclareArgumentCount[CayleyFunction, 1];
 
+CayleyFunction::badobj = "Input was not a PathRepresentationObject, Group, or RewritingSystemObject.";
+
 CayleyFunction[object_, OptionsPattern[]] := Scope[
   UnpackOptions[labeled, symmetric];
   rep = Which[
     PathRepresentationObjectQ[object], object,
-    RepresentationObject[object], object,
+    RepresentationObjectQ[object], object,
     GroupQ[object], GroupRepresentation[object],
-    RootSystemQ[object], object,
     RewritingSystemObjectQ[object], object,
-    True, ReturnFailed["badrep"]
+    True, ReturnFailed["badobj"]
   ];
   rep["CayleyFunction", "Labeled" -> symmetric, "Symmetric" -> symmetric]
 ];

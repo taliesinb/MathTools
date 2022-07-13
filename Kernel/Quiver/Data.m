@@ -38,7 +38,19 @@ TaggedAdjacencyMatrices[graph_ ? EdgeTaggedGraphQ, OptionsPattern[]] := Scope[
 PublicFunction[TaggedEdgePairs]
 
 TaggedEdgePairs[graph_ ? EdgeTaggedGraphQ] :=
-  GroupBy[EdgeList @ ToIndexGraph @ graph, Last -> Function[{Part[#, 1], Part[#, 2]}]]
+  GroupBy[
+    EdgeList @ ToIndexGraph @ graph,
+    Last -> Function[{Part[#, 1], Part[#, 2]}]
+  ]
+
+TaggedEdgePairs[graph_, "Directed"] := TaggedEdgePairs[graph];
+
+TaggedEdgePairs[graph_ ? EdgeTaggedGraphQ, "Undirected"] :=
+  GroupBy[
+    EdgeList @ ToIndexGraph @ graph,
+    Last -> Function[Splice[{{Part[#, 1], Part[#, 2]}, {Part[#, 2], Part[#, 1]}}]],
+    Identity
+  ]
 
 (**************************************************************************************************)
 
@@ -96,6 +108,22 @@ TagVertexOutTable[graph_, invalid_:None] := Scope[
   )) @@@ SpliceCardinalSetEdges @ EdgeList[igraph];
   outTables
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[VertexTagAdjacencyAssociation]
+
+SetUsage @ "
+VertexTagAdjacencyAssociation[graph$] returns an association from vertices to lists of their neighbors.
+"
+
+VertexTagAdjacencyAssociation[graph_] := Scope[
+  vlist = VertexList @ graph;
+  Map[
+    pairs |-> GroupBy[ExtractIndices[vlist, pairs], First -> Last],
+    TaggedEdgePairs[graph, "Undirected"]
+  ]
+]
 
 (**************************************************************************************************)
 

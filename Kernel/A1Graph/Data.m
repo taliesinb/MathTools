@@ -6,6 +6,15 @@ Signed is an option to various graph utility functions.
 
 (**************************************************************************************************)
 
+PublicFunction[AdjacentVerticesPredicate]
+
+AdjacentVerticesPredicate[graph_] := Scope[
+  edges = {#1, #2}& @@@ EdgeList[graph];
+  ConstantAssociation[Join[edges, Reverse[edges, 2]], True] /* TrueQ
+];
+
+(**************************************************************************************************)
+
 PublicFunction[AdjacentPairs]
 
 SetUsage @ "
@@ -13,7 +22,7 @@ AdjacentPairs[graph$] gives the list of {{u$1, v$1}, {u$2, v$2}, $$} such that \
 vertex with index u$i is adjacent to vertex with index v$i.
 * Note that AdjacentPairs is not given in the same order as %EdgeList[graph$], and \
 in general might have fewer values when there are multiple edges between the same \
-pair of vertices.
+pair of vertices. Use EdgePairs if this matters.
 * The relation is undirected, so that a$ \[DirectedEdge] b$ generates both {a$, b$} and {b$, a$}.
 * Use AdjacentPairs[graph, 'Directed'] to obtain the directed form.
 "
@@ -45,6 +54,8 @@ vertex renaming might be expensive, and there is all the option processing that 
 unfortunately i can't find a way of extracting the list of edges in indexed form directly. *)
 EdgePairs[graph_ ? EdgeTaggedGraphQ] := {#1, #2}& @@@ EdgeList @ ToIndexGraph @ graph;
 EdgePairs[graph_] := List @@@ EdgeList @ ToIndexGraph @ graph;
+EdgePairs[graph_, "Undirected"] := Join[#, ReverseEdges[#]]& @ EdgePairs[graph];
+EdgePairs[graph_, "Directed"] := EdgePairs[graph];
 
 (**************************************************************************************************)
 
@@ -91,6 +102,17 @@ VertexAdjacencyTable[graph_] := Scope[
   adj = AdjacencyMatrix[graph];
   MapThread[Union, {adj["AdjacencyLists"], Transpose[adj]["AdjacencyLists"]}]
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[VertexAdjacencyAssociation]
+
+SetUsage @ "
+VertexAdjacencyAssociation[graph$] returns an association from vertices to lists of their neighbors.
+"
+
+VertexAdjacencyAssociation[graph_] :=
+  GroupBy[ExtractIndices[VertexList @ graph, AdjacentPairs @ graph], First -> Last]
 
 (**************************************************************************************************)
 

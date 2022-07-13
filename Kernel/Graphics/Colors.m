@@ -438,8 +438,7 @@ PublicFunction[DiscreteColorFunction]
 SetUsage @ "
 DiscreteColorFunction[{v$1, $$, v$n}, {c$1, $$, c$n}] returns a %ColorFunctionObject that takes a value \
 in the set v$i and returns a corresponding color c$i.
-DiscreteColorFunction[{v$1 -> c$1, $$, v$n -> c$n}] works as above.
-DiscreteColorFunction[vlist$ -> clist$] works as above.
+DiscreteColorFunction[vals$, Automatic] chooses colors automatically for the values.
 "
 
 DeclareArgumentCount[DiscreteColorFunction, {1, 2}];
@@ -456,14 +455,14 @@ PrivateVariable[$BooleanColors]
 $BooleanColors = {GrayLevel[0.9], GrayLevel[0.1]};
 
 DiscreteColorFunction[values_List, Automatic] := Scope[
-  values = Union @ values;
+  values = Union @ values; count = Length[values];
   If[MatchQ[values, {_ ? BooleanQ}], values = {False, True}];
   Which[
     values === {False, True},
       colors = $BooleanColors,
-    Length[values] <= Length[$ColorPalette],
+    count <= Length[$ColorPalette],
       colors = Take[$ColorPalette, count],
-    Length[values] <= 2 * Length[$ColorPalette],
+    count <= 2 * Length[$ColorPalette],
       colors = Take[Join[OklabLighter @ $ColorPalette, OklabDarker @ $ColorPalette], count],
     True,
       ReturnFailed["toobig", count]
@@ -835,7 +834,6 @@ The clist$, groups$, cfunc$ are as following:
 * clist$ is a list of color$i for each list$i.
 * groups$ is an association from pairs of colors and values to positions of list$ at which they occur
 * cfunc$ is a color function that can be applied to new values.
-
 * See %ToColorPalette for allowed settings of palette$ (the default used is 'Basic').
 * cfunc$ will be either a %ContinuousColorFunction or a %DiscreteColorFunction.
 * If list$ consists of colors, these will be used verbatim.

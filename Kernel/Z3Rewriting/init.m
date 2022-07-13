@@ -12,9 +12,13 @@ Options[RewritingSystemObject] = {
 
 PrivateFunction[constructRewritingSystem]
 
+RewritingSystemObject::badrules = "Invalid rewriting rules.";
+
 constructRewritingSystem[type_, rules_, opts:OptionsPattern[RewritingSystemObject]] := Scope[
-  rules //= ToList;
-  If[rules =!= Null && !RuleListQ[rules /. TwoWayRule -> Rule], ReturnFailed[]];
+  If[rules =!= Null,
+    rules //= ToList;
+    If[!RuleListQ[rules /. TwoWayRule -> Rule], ReturnFailed[RewritingSystemObject::badrules]];
+  ];
   UnpackOptions[canonicalizationFunction, customProperties];
   assoc = Association[
     "Type" -> type,
