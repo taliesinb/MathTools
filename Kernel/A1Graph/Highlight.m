@@ -17,7 +17,7 @@ PublicFunction[HighlightGraphRegion]
 
 DeclareArgumentCount[HighlightGraphRegion, {2, 3}];
 
-Options[HighlightGraphRegion] = $simpleGraphOptionRules;
+Options[HighlightGraphRegion] = $ExtendedGraphOptions;
 
 declareSyntaxInfo[HighlightGraphRegion, {_, _, OptionsPattern[]}];
 

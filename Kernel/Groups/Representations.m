@@ -145,7 +145,7 @@ CayleyQuiver[obj$] returns the cardinal quiver representing the Cayley graph of 
 
 DeclareArgumentCount[CayleyQuiver, 1];
 
-Options[CayleyQuiver] = $fullGraphOptions;
+Options[CayleyQuiver] = $ExtendedGraphOptions;
 
 CayleyQuiver::incomplete = "Cayley graph is incomplete."
 

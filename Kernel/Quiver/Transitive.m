@@ -23,7 +23,7 @@ BouquetQuiver['string$'] uses the characters of 'string$' as cardinals.
 
 DeclareArgumentCount[BouquetQuiver, 1];
 
-Options[BouquetQuiver] = $simpleGraphOptionRules;
+Options[BouquetQuiver] = $ExtendedGraphOptions;
 
 declareSyntaxInfo[BouquetQuiver, {_, OptionsPattern[]}];
 

@@ -1,6 +1,6 @@
 PublicFunction[PlainGraph]
 
-Options[PlainGraph] = $simpleGraphOptionRules;
+Options[PlainGraph] = $ExtendedGraphOptions;
 
 PlainGraph[graph_Graph, opts:OptionsPattern[]] := Scope[
   If[OptionValue[VertexCoordinates] === Inherited,
@@ -18,7 +18,7 @@ IndexedExtendedGraph[args$$] is like ExtendedGraph but accepts edges in the form
 the vertex list.
 "
 
-Options[IndexedExtendedGraph] = $simpleGraphOptionRules;
+Options[IndexedExtendedGraph] = $ExtendedGraphOptions;
 IndexedExtendedGraph[vertices_, edges_, opts___] := Scope[
   range = Range @ Length @ vertices;
   ExtendedGraph[

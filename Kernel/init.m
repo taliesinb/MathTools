@@ -10,7 +10,7 @@ If[$VersionNumber < 12.2,
     If[TrueQ[QuiverGeometryPackageLoader`$Verbose], Print["Loading loader.m"]];
     Get[FileNameJoin[{FileNameDrop @ $InputFileName, "Loader.m"}]]];
 
-  Block[{CellPrint}, QuiverGeometryPackageLoader`Load[]];
+  QuiverGeometryPackageLoader`Load[];
 
   If[!MemberQ[$ContextPath, "QuiverGeometry`"], AppendTo[$ContextPath, "QuiverGeometry`"]];
 ];

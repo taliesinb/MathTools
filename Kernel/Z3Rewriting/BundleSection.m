@@ -21,15 +21,15 @@ PublicFunction[BundleSectionRewritingCayleyFunction]
 
 (* TODO: Cache this *)
 BundleSectionRewritingCayleyFunction[BundleSection[sec_, hash_]] := Scope[
-  UnpackAssociation[Lookup[QuiverGeometryLoader`$BundleGraphCache, hash], verticalAdjacency, horizontalAdjacency, areBundleAdjacent];
+  UnpackAssociation[Lookup[QuiverGeometryLoader`$BundleGraphCache, hash], verticalAdjacency, baseAdjacency, areBundleAdjacent];
   Flatten @ KeyValueMap[
     {b, f} |-> (
       v = BundleVertex[b, f];
       (* get fiber nbors *)
       fnbs = verticalAdjacency[v];
       (* get base nbors *)
-      bnbs = horizontalAdjacency[v];
-      fnbs //= Select[fnb |-> AllTrue[bnbs, areBundleAdjacent[{fnb, #}]&]];
+      bnbs = baseAdjacency[b];
+      fnbs //= Select[fnb |-> AllTrue[bnbs, bnb |-> areBundleAdjacent[{fnb, BundleVertex[bnb, sec @ bnb]}]]];
       BundleSection[ReplacePart[sec, b -> Last[#]], hash]& /@ fnbs
     ),
     sec
@@ -110,11 +110,11 @@ BundleSection::usage := "BundleSection[<|b$1 -> f$1, b$2 -> f$2, $$|>, hash$] re
 
 declareBoxFormatting[
   bs:BundleSection[_Association, _Integer] :> bundleSectionBoxes[bs],
-  BundleVertex[b_, f_] :> UnderscriptBox[ToBoxes @ Style[f, $Blue], ToBoxes @ Style[b, $Red]]
+  BundleVertex[b_, f_] :> SuperscriptBox[ToBoxes @ Style[f, $Red], ToBoxes @ Style[b, $Blue]]
 ];
 
 bundleSectionBoxes[bs_BundleSection] := With[{
-  plots = PlotBundleSection[bs, Method -> #]& /@ {"Array", "Color", "Total"},
+  plots = BundleSectionPlot[bs, Method -> #]& /@ {"Array", "Color", "Total"},
   index = Replace[$BundleSectionDisplayMethod, {"Array" -> 1, "Color" -> 2, "Total" -> 3, _ -> 1}]},
   ToBoxes @ Interpretation[FlipView[plots, index], bs]
 ];
@@ -125,23 +125,25 @@ $BundleSectionDisplayMethod = "Total";
 
 (**************************************************************************************************)
 
-PublicFunction[PlotBundleSection]
+PublicFunction[BundleSectionPlot]
 
-Options[PlotBundleSection] = {
+Options[BundleSectionPlot] = {
   Method -> "Color",
-  ImageSize -> 100
+  ImageSize -> 100,
+  $ExtendedGraphOptions
 };
 
-PlotBundleSection::method = "Method should be one of ``";
+BundleSectionPlot::method = "Method should be one of ``";
 
-PlotBundleSection[expr_, OptionsPattern[]] := Scope[
+BundleSectionPlot[expr_, OptionsPattern[]] := Scope[
 
   UnpackOptions[method, $imageSize];
   plotter = Switch[method,
-    "Color", plotBundleSectionColor,
-    "Total", plotBundleSectionTotal,
-    "Array", plotBundleSectionArray,
-    _,       ReturnFailed["method", {"Color","Total","Array"}]
+    "Color", BundleSectionPlotColor,
+    "Total", BundleSectionPlotTotal,
+    "Line",  BundleSectionPlotLine,
+    "Array", BundleSectionPlotArray,
+    _,       ReturnFailed["method", {"Color","Total","Array","Line"}]
   ];
   ReplaceAll[
     expr,
@@ -149,7 +151,7 @@ PlotBundleSection[expr_, OptionsPattern[]] := Scope[
   ]
 ];
 
-plotBundleSectionColor[BundleSection[sec_Association, hash_]] :=
+BundleSectionPlotColor[BundleSection[sec_Association, hash_]] :=
   ExtendedGraphPlot[
     hashBaseGraph[hash],
     VertexColorFunction -> (sec /* hashColorFunc[hash]),
@@ -157,7 +159,7 @@ plotBundleSectionColor[BundleSection[sec_Association, hash_]] :=
     ImageSize -> $imageSize
   ];
 
-plotBundleSectionTotal[BundleSection[sec_Association, hash_]] :=
+BundleSectionPlotTotal[BundleSection[sec_Association, hash_]] :=
   ExtendedGraphPlot[
     hashBundleGraph[hash],
     RegionColorRules -> {ConnectedSubgraph[Map[Point, bundleSectionVertices[sec]]] -> $Red, All -> $LightGray},
@@ -166,7 +168,17 @@ plotBundleSectionTotal[BundleSection[sec_Association, hash_]] :=
     ImageSize -> $imageSize
   ];
 
-plotBundleSectionArray[BundleSection[sec_Association, hash_]] := Scope[
+BundleSectionPlotLine[BundleSection[sec_Association, hash_]] :=
+  ExtendedGraphPlot[
+    hashBundleGraph[hash],
+    RegionColorRules -> {ConnectedSubgraph[Map[Point, bundleSectionVertices[sec]]] -> $Red, All -> Transparent},
+    VertexSize -> 5, ImagePadding -> 10,
+    GraphTheme -> "BundleIconGraph",
+    LayoutDimension -> 2,
+    ImageSize -> $imageSize
+  ];
+
+BundleSectionPlotArray[BundleSection[sec_Association, hash_]] := Scope[
   bn = VertexCount @ hashBaseGraph[hash]; fn = (VertexCount @ hashBundleGraph[hash]) / bn;
   vals = Lookup[sec, hashBaseVerts[hash]];
   cols = ToRGB @ hashColorFunc[hash] @ vals;
@@ -214,21 +226,22 @@ $GraphThemeData["BundleIconGraph"] := $BundleIconGraphThemeRules;
 PublicHead[BundleVertex, BundleCardinal]
 
 PublicFunction[TrivialBundleGraph]
-PublicOption[FiberScale, FiberCoordinateRotation]
+PublicOption[FiberScale, FiberCoordinateRotation, BaseCoordinateRotation]
 
 Options[TrivialBundleGraph] = JoinOptions[
   FiberScale -> 1,
   FiberCoordinateRotation -> Pi/2,
+  BaseCoordinateRotation -> 0,
   LayoutDimension -> Automatic,
   $ExtendedGraphOptions
 ];
 
 TrivialBundleGraph[baseGraph_, fiberGraph_, opts:OptionsPattern[]] := Scope[
-  UnpackOptions[fiberScale, fiberCoordinateRotation, layoutDimension];
+  UnpackOptions[fiberScale, fiberCoordinateRotation, baseCoordinateRotation, layoutDimension];
   graphs = {baseGraph, fiberGraph};
   {baseCoords, fiberCoords} = LookupVertexCoordinates /@ graphs;
-  If[fiberCoordinateRotation =!= 0,
-    fiberCoords //= RotateVector[fiberCoordinateRotation]];
+  If[fiberCoordinateRotation =!= 0, fiberCoords //= RotateVector[fiberCoordinateRotation]];
+  If[baseCoordinateRotation =!= 0,  baseCoords //= RotateVector[baseCoordinateRotation]];
   {baseVertices, fiberVertices} = VertexList /@ graphs;
   {baseEdges, fiberEdges} = EdgeList /@ graphs;
   {baseAdj, fiberAdj} = VertexAdjacentVertexEdgeAssociation /@ graphs;
@@ -286,7 +299,7 @@ BundleVertexCoordinateFunction[bc_, fc_, scale_][BundleVertex[b_, f_]] :=
 $BundleGraphThemeRules = {
   VertexSize -> 8,
   ImagePadding -> 10,
-  EdgeLength -> 50,
+  ImageSize -> ("AverageEdge" -> 50),
   ArrowheadPosition -> 0.75
 };
 
@@ -329,7 +342,7 @@ getBundleGraphData[bundleGraph_, baseGraph_:Automatic, fiberGraph_:None] := Scop
   baseAdjacency = VertexAdjacencyAssociation @ baseGraph;
   taggedAdj = VertexTagAdjacencyAssociation @ bundleGraph;
   verticalAdjacency = joinAdjacencyAssociationsMatching[taggedAdj, BundleCardinal[None, _]];
-  horizontalAdjacency = joinAdjacencyAssociationsMatching[taggedAdj, BundleCardinal[Except @ None, _]];
+  horizontalAdjacency = joinAdjacencyAssociationsMatching[taggedAdj, BundleCardinal[_, None]];
 
   areBundleAdjacent = AdjacentVerticesPredicate @ bundleGraph;
   areBaseAdjacent = AdjacentVerticesPredicate @ baseGraph;

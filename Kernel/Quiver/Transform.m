@@ -209,7 +209,7 @@ SetUsage @ "
 TruncatedVertex[vertex$, card$] represents a vertex that has been truncated in the direction card$.
 ";
 
-Options[TruncateQuiver] = Prepend["AllowSkips" -> True] @ $simpleGraphOptionRules;
+Options[TruncateQuiver] = Prepend["AllowSkips" -> True] @ $ExtendedGraphOptions;
 
 TruncateQuiver[quiver_, opts:OptionsPattern[]] :=
   TruncateQuiver[quiver, Automatic, opts];

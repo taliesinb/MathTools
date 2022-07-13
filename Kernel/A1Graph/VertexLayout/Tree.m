@@ -8,8 +8,16 @@ Options[TreeVertexLayout] = {
   BendRadius -> 0.25, StretchFactor -> 1
 };
 
+TreeVertexLayout::dim3 = "TreeVertexLayout[] does not work with LayoutDimension -> 3, using SpringElectricalLayout[] instead.";
+
 TreeVertexLayout[OptionsPattern[]][data_] := Scope[
-  UnpackAssociation[data, graph, indexGraph, vertexCount];
+  UnpackAssociation[data, graph, indexGraph, vertexCount, layoutDimension];
+
+  If[layoutDimension === 3,
+    Message[TreeVertexLayout::dim3];
+    Return @ VertexEdgeCoordinateData[data, {"SpringElectricalEmbedding"}]
+  ];
+
   UnpackOptions[alignment, orientation, rootVertex, bubble, balanced, rootOrientation, bendStyle, bendRadius, preserveBranchOrder, stretchFactor];
 
   graphOrigin = LookupExtendedOption[graph, GraphOrigin];

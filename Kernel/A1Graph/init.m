@@ -124,14 +124,26 @@ Graph;
 SyntaxInformation[Graph];
 Options[Graph];
 
-$fullGraphOptions = Sort @ JoinOptions[Graph, $extendedGraphOptionsRules];
-$extendedGraphSymbolNames = Map[SymbolName, Select[SymbolQ] @ Keys @ $fullGraphOptions];
+$ignoredGraphOptionsSymbols = Alternatives[
+  AlignmentPoint, AnnotationRules, AspectRatio, Axes, AxesLabel,
+  AxesOrigin, AxesStyle, Background, BaseStyle, ContentSelectable,
+  DirectedEdges, EdgeCapacity, EdgeCost, EdgeWeight, Editable,
+  FormatType, FrameTicks, FrameTicksStyle,
+  GraphHighlight, GraphRoot, GraphStyle, GridLines, GridLinesStyle,
+  ImageMargins, PerformanceGoal, PlotRegion, PlotTheme,
+  Properties, RotateLabel, Ticks, TicksStyle, VertexCapacity,
+  VertexShape, VertexWeight
+];
+
+$fullGraphOptions = DeleteCases[Sort @ JoinOptions[Graph, $extendedGraphOptionsRules], $ignoredGraphOptionsSymbols -> _];
 
 (**************************************************************************************************)
 
-PublicVariable[$ExtendedGraphOptions]
+PublicVariable[$ExtendedGraphOptions, $ExtendedGraphOptionSymbols]
 
 $ExtendedGraphOptions = Cases[$fullGraphOptions, HoldPattern[_Symbol -> _]];
+$ExtendedGraphOptionSymbols = Keys @ $ExtendedGraphOptions;
+$extendedGraphSymbolNames = Map[SymbolName, $ExtendedGraphOptionSymbols];
 
 Options[ExtendedGraph] = $ExtendedGraphOptions;
 
@@ -200,24 +212,6 @@ toShape[g_Graph] := ExtendedGraphPlot @ g;
 toShape[other_] := other;
 
 interceptedGraphConstructor[e_] := e;
-
-(**************************************************************************************************)
-
-PrivateVariable[$simpleGraphOptions, $simpleGraphOptionRules]
-
-$simpleGraphOptionRules = JoinOptions[
-  EdgeLabels -> None, GraphLayout -> Automatic, ImagePadding -> None,
-  ImageSize -> Automatic, VertexCoordinates -> Automatic,
-  VertexLabels -> None, VertexSize -> Automatic,
-  VertexStyle -> Automatic, EdgeStyle -> Automatic,
-  VertexShapeFunction -> Automatic, EdgeShapeFunction -> Automatic, PlotLabel -> None,
-  GraphHighlightStyle -> Automatic, VertexLabelStyle -> Automatic, EdgeLabelStyle -> Automatic,
-  Epilog -> {}, Prolog -> {}, Frame -> None, FrameStyle -> Automatic, BaselinePosition -> Automatic,
-  FrameLabel -> None, PlotRange -> Automatic,
-  DeleteCases[$extendedGraphOptionsRules, ExtendedGraphPlottingFunction -> _]
-]
-
-$simpleGraphOptions = Keys @ $simpleGraphOptionRules;
 
 (**************************************************************************************************)
 

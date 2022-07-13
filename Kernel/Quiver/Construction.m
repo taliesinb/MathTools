@@ -11,7 +11,7 @@ Quiver[vertices$, edges$] constructs a cardinal quiver from a list of vertices a
 
 DeclareArgumentCount[Quiver, {1, 2}];
 
-Options[Quiver] = $simpleGraphOptionRules;
+Options[Quiver] = $ExtendedGraphOptions;
 
 declareSyntaxInfo[Quiver, {_, _., OptionsPattern[]}];
 
@@ -195,7 +195,7 @@ DeclareArgumentCount[FreeQuiver, 1];
 
 declareSyntaxInfo[FreeQuiver, {_}];
 
-Options[FreeQuiver] = $simpleGraphOptionRules;
+Options[FreeQuiver] = $ExtendedGraphOptions;
 
 FreeQuiver[graph_, opts:OptionsPattern[]] := Scope[
   $count = 1;

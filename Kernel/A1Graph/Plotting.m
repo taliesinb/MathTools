@@ -1,3 +1,5 @@
+(* TODO: Add AlignmentPoint, much like BaselinePosition *)
+
 PrivateVariable[$graphRegionTable]
 
 $graphRegionTable = StringTrim @ "
@@ -485,6 +487,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     automaticLegends = <||>;
 
+    If[edgeLength === None && imageSize === Automatic, edgeLength = 30];
     If[edgeLength =!= None, imageSize = "Edge" -> edgeLength];
 
     (* choose a size based on vertex seperation *)
@@ -633,7 +636,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       processVertexShapeFunction[vertexShapeFunction];
     SetAutomatic[edgeSetback, setbackDistance];
     If[MatchQ[edgeSetback, PointSize[_]], edgeSetback = imageSizeToPlotSize @@ edgeSetback];
-    extendPaddingBy[vertexPadding];
+    extendPaddingBy[vertexPadding+1];
 
     vertexDrawFunc = If[$vertexSizeOverrides === None,
       vertexDrawFuncWithSize[rawVertexDrawFunc, vertexSize],

@@ -75,29 +75,29 @@ rewritingSystemObjectBoxes[rs:RewritingSystemObject[data_], form_] := Scope[
 
 PublicFunction[RewriteQuiver, RewriteGraph]
 
-Options[RewriteQuiver] = Options[RewriteGraph] = Options[LatticeQuiver];
+Options[rewriteGraphQuiver] = Options[RewriteQuiver] = Options[RewriteGraph] = $ExtendedGraphOptions;
 
-applyCanonicalizationFunction[f_][list_] :=
-  DeleteDuplicatesBy[Map[applyCanon1[f], list], stripLabel];
+declareSyntaxInfo[LatticeGraph, {_, _, OptionsPattern[]}];
+declareSyntaxInfo[LatticeQuiver, {_, _, OptionsPattern[]}];
 
-applyCanon1[f_][Labeled[e_, l_]] := Labeled[f[e], l];
-stripLabel[Labeled[e_, _]] := e;
+RewriteQuiver[system_RewritingSystemObject, initialState_, opts:OptionsPattern[]] :=
+  rewriteGraphQuiver[system, initialState, True, opts];
 
-RewriteQuiver[system_RewritingSystemObject, initialState_, args___] :=
-  rewriteGraphQuiver[system, initialState, True, args];
+RewriteGraph[system_RewritingSystemObject, initialState_, opts:OptionsPattern[]] :=
+  rewriteGraphQuiver[system, initialState, False, opts];
 
-RewriteGraph[system_RewritingSystemObject, initialState_, args___] :=
-  rewriteGraphQuiver[system, initialState, False, args];
-
-rewriteGraphQuiver[system_, initialState_, isQuiver_, args___] := Scope[
+rewriteGraphQuiver[system_, initialState_, isQuiver_, opts:OptionsPattern[]] := Scope[
   cayleyFunction = system["CayleyFunction", "Labeled" -> True (* isQuiver *)];
   canonFunction = system["CanonicalizationFunction"];
+  initialState //= ToList;
   If[canonFunction =!= None,
     cayleyFunction = cayleyFunction /* applyCanonicalizationFunction[canonFunction];
-    initialState //= canonFunction
+    initialState //= Map[canonFunction]
   ];
+  UnpackOptions[layoutDimension];
+  If[layoutDimension === 3, opts = Sequence[opts, VertexLayout -> SpringElectricalLayout[]]];
   result = LatticeQuiver[
-    <|"CayleyFunction" -> cayleyFunction, "InitialStates" -> {initialState}|>, args,
+    <|"CayleyFunction" -> cayleyFunction, "InitialStates" -> initialState|>, opts,
     GraphTheme -> If[isQuiver, "RewriteQuiver", "RewriteGraph"],
     DirectedEdges -> True,
     VertexNameFunction -> None
@@ -110,7 +110,15 @@ rewriteGraphQuiver[system_, initialState_, isQuiver_, args___] := Scope[
   result
 ]
 
+applyCanonicalizationFunction[f_][list_] :=
+  DeleteDuplicatesBy[Map[applyCanon1[f], list], stripLabel];
+
+applyCanon1[f_][Labeled[e_, l_]] := Labeled[f[e], l];
+stripLabel[Labeled[e_, _]] := e;
+
 (* TODO: fix Automatic options to inherit from the theme options *)
+
+(**************************************************************************************************)
 
 $RewriteQuiverThemeRules = {
   AspectRatioClipping -> False,

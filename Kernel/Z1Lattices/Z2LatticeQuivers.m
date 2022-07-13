@@ -91,28 +91,6 @@ The following vertex is available for use with %VertexColorFunction, %VertexLabe
 
 PublicFunction[InitialStates]
 
-$baseGenerateLatticeOptions = JoinOptions[
-  AbstractCoordinateFunction -> Automatic,
-  AbstractCoordinateFilter -> None,
-  VertexCoordinateFunction -> Automatic,
-  VertexNameFunction -> "SpiralIndex",
-  MaxNorm -> Infinity,
-  MaxDepth -> Automatic,
-  NormFunction -> Automatic,
-  CardinalColors -> Automatic,
-  MaxVertices -> Infinity, MaxEdges -> Infinity,
-  DepthTermination -> Automatic, IncludeFrontier -> Automatic,
-  IncludeRepresentationMatrices -> False,
-  GraphLegend -> None,
-  CombineMultiedges -> True,
-  SelfLoops -> True,
-  InitialStates -> Automatic,
-  RandomSeeding -> None,
-  CardinalList -> Automatic,
-  InteriorSolid -> Automatic,
-  $simpleGraphOptionRules
-];
-
 General::notquivrep = "First argument should be a PathRepresentationObject, or a quiver with canonically named cardinals.";
 General::badvcoords = "VertexCoordinateFunction did not return vectors of consistent dimensions. The first vector was ``, produced from ``.";
 General::badlatticename = "The specified name `` is not a known name for a lattice. Known names are: ``."
@@ -200,7 +178,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
 
   SetAll[initialStates, LatticeVertex @@@ representation["AllIdentities"]];
 
-  simpleOptions = TakeOptions[{opts}, $simpleGraphOptions];
+  simpleOptions = TakeOptions[{opts}, $ExtendedGraphOptionSymbols];
 
   If[IntegerQ[maxDepth], SetAutomatic[includeFrontier, False]];
   SetAutomatic[maxDepth, Which[

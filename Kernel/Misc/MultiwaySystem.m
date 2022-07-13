@@ -33,7 +33,7 @@ Options[MultiwaySystem] = JoinOptions[
   DepthTermination -> "Immediate",
   SelfLoops -> True,
   PrologVertices -> {},
-  $simpleGraphOptionRules
+  $ExtendedGraphOptions
 ];
 
 stackPushList[stack_, list_] := Scan[item |-> stack["Push", item], list];

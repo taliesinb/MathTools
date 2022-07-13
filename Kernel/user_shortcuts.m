@@ -558,3 +558,5 @@ makeSym["GBF", TealForm];
 makeSym["BSMF", BoundSignedMultiplicityFunctionForm];
 makeSym["BMF", BoundMultiplicityFunctionForm];
 
+makeSym["EGP", ExtendedGraphPlot];
+
