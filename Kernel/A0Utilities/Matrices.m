@@ -659,7 +659,7 @@ SquaredDistanceMatrix::badarray = "Input was not an real vector or matrix.";
 s_SquaredDistanceMatrix := (Message[badarray]; $Failed);
 
 $loadDM := (
-  DistanceMatrix[{{1,2}},{{3,4}}, DistanceFunction -> "SquaredEuclideanDistance"];
+  Get["NumericArrayUtilities`"];
   $squaredEuclideanDistanceCode := NumericArrayUtilities`DistanceMatrix`PackagePrivate`$extractLLDMMethod["SquaredEuclideanDistance"];
   $euclideanDistanceCode := NumericArrayUtilities`DistanceMatrix`PackagePrivate`$extractLLDMMethod["EuclideanDistance"];
   $distanceMatrixFunction1 = NumericArrayUtilities`DistanceMatrix`PackagePrivate`mTensorDistanceMatrix1Arg;
