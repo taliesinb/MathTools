@@ -148,10 +148,10 @@ katexPiecewiseRow[case_, o:SBox["OtherwiseSymbol"]] :=
   {case, " &", o, "\n"};
 
 makePiecewiseRow[All -> value_] :=
-  {makeQGBoxes @ value, MakeBoxes @ OtherwiseSymbol}
+  {MakeQGBoxes @ value, MakeBoxes @ OtherwiseSymbol}
 
 makePiecewiseRow[case_ -> value_] :=
-  {makeQGBoxes @ value, makeQGBoxes @ case};
+  {MakeQGBoxes @ value, MakeQGBoxes @ case};
 
 (**************************************************************************************************)
 
@@ -159,15 +159,15 @@ PublicForm[SubstackForm]
 
 declareBoxFormatting[
   SubstackForm[list_List] :> TemplateBox[
-    List @ GridBox[MapUnevaluated[List @ makeQGBoxesOrComma @ #&, list], RowSpacings -> 0],
+    List @ GridBox[MapUnevaluated[List @ MakeQGBoxesOrComma @ #&, list], RowSpacings -> 0],
     "SubstackForm"
   ]
 ]
 
-SetHoldAllComplete[makeQGBoxesOrComma]
-makeQGBoxesOrComma = Case[
+SetHoldAllComplete[MakeQGBoxesOrComma]
+MakeQGBoxesOrComma = Case[
   {elems__} := MakeBoxes @ SpacedCommaRowForm @ elems;
-  other_    := makeQGBoxes @ other
+  other_    := MakeQGBoxes @ other
 ];
 
 $TemplateKatexFunction["SubstackForm"] = substackKatex

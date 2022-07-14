@@ -1,6 +1,7 @@
-PrivateFunction[TBox, SBox, RBox, GBox, PTBox]
+PrivateFunction[TBox, TBoxOp, SBox, RBox, GBox]
 
-TBox[form_][args___] := TemplateBox[{args}, form];
+TBox[args___, form_] := TemplateBox[{args}, form];
+TBoxOp[form_][args___] := TemplateBox[{args}, form];
 
 SBox[form_] := TemplateBox[{}, form];
 
@@ -87,10 +88,10 @@ MapApply[
   }
 ];
 
-MakeBoxes[PlainTextForm[e_], StandardForm]     := PlainTextBox[makeQGBoxes @ e];
-MakeBoxes[PlainTextForm[e_], TraditionalForm]  := PlainTextBox[makeQGBoxes @ e];
-MakeBoxes[MathTextForm[e_], StandardForm]      := MathTextBox[makeQGBoxes @ e];
-MakeBoxes[MathTextForm[e_], TraditionalForm]   := MathTextBox[makeQGBoxes @ e];
+MakeBoxes[PlainTextForm[e_], StandardForm]     := PlainTextBox[MakeQGBoxes @ e];
+MakeBoxes[PlainTextForm[e_], TraditionalForm]  := PlainTextBox[MakeQGBoxes @ e];
+MakeBoxes[MathTextForm[e_], StandardForm]      := MathTextBox[MakeQGBoxes @ e];
+MakeBoxes[MathTextForm[e_], TraditionalForm]   := MathTextBox[MakeQGBoxes @ e];
   
 (**************************************************************************************************)
 
@@ -100,6 +101,42 @@ FunctionBox[e_String] := KatexBox[e, StringJoin["\\operatorname{", e, "}"]];
 
 (**************************************************************************************************)
 
+PublicFormBox[ZNamedFunction]
+
+DefineUnaryForm[ZNamedFunctionForm, KatexBox[$1, "operatorname"[$1]], ZNamedFunctionBox]
+
+(**************************************************************************************************)
+
+PublicFormBox[ZSpaceRiffled, ZCommaRiffled, ZRiffled]
+
+DefineStandardTraditionalForm[
+  ZRiffledForm[seq___, r_] :> ZRiffledBox[MakeQGBoxSequence @ seq, MakeQGBoxes @ r]
+];
+
+ZRiffledBox[r_] := "";
+ZRiffledBox[e_, r_] := e;
+ZRiffledBox[seq__, r_] := RowBox @ Riffle[{seq}, r];
+
+DefineRiffledForm[ZCommaRiffledForm, RowBox[$1], ", ", ZCommaRiffledBox];
+DefineRiffledForm[ZSpaceRiffledForm, RowBox[$1], " ", ZSpaceRiffledBox];
+
+(**************************************************************************************************)
+
+PublicFormBox[ZApplied]
+
+DefineStandardTraditionalForm[
+  ZAppliedForm[f_, args___] :> ZAppliedBox[MakeQGBoxes @ f, MakeQGBoxSequence @ args]
+];
+
+DefineTemplateBox[
+  "ZAppliedForm" -> RowBox[$1, "(", $2, ")"]
+];
+
+ZAppliedBox[f_, args___] := TBox[f, ZCommaRiffledBox @ args, "ZAppliedForm"]
+
+(**************************************************************************************************)
+
 PublicFunction[EvaluateTemplateBox]
 
 EvaluateTemplateBox = BoxForm`TemplateBoxToDisplayBoxes
+

@@ -61,7 +61,7 @@ declareBoxFormatting[
 SetHoldAllComplete[matrixRowBoxes]
 
 matrixRowBoxes[row_List] :=
-  TemplateBox[MapUnevaluated[makeQGBoxes, row], "MatrixRowForm"];
+  TemplateBox[MapUnevaluated[MakeQGBoxes, row], "MatrixRowForm"];
 
 $TemplateKatexFunction["SmallMatrixForm"] = smallMatrixKatex;
 $TemplateKatexFunction["NormalMatrixForm"] = normalMatrixKatex;

@@ -4,7 +4,7 @@ graphOrQuiverBoxes = Case[
   g_GraphSymbol | g_QuiverSymbol := MakeBoxes @ g;
   c:(colorsP[_])                 := MakeBoxes @ c;
   s:symsP                        := MakeBoxes @ QuiverSymbol @ s;
-  other_                         := makeQGBoxes @ other;
+  other_                         := MakeQGBoxes @ other;
 ,
   {colorsP -> $colorFormP, symsP -> $rawSymbolP}
 ]
@@ -151,7 +151,7 @@ declareBoxFormatting[
 SetHoldAllComplete[pathWordRewritingRuleBox];
 pathWordRewritingRuleBox = Case[
   a_ -> b_ := TemplateBox[{wordBoxes @ a, wordBoxes @ b}, "RewritingRuleForm"];
-  other_   := makeQGBoxes @ other;
+  other_   := MakeQGBoxes @ other;
 ];
 
 (**************************************************************************************************)

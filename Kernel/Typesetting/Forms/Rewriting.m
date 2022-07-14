@@ -19,7 +19,7 @@ SetHoldAllComplete[rewritingRuleBoxes];
 
 rewritingRuleBoxes = Case[
   a_ -> b_ := MakeBoxes @ RewritingRuleForm[a, b];
-  other_   := makeQGBoxes @ other;
+  other_   := MakeQGBoxes @ other;
 ];
 
 PublicForm[GenericRewritingSystemSymbol, StringRewritingSystemSymbol, CircularStringRewritingSystemSymbol, TuringMachineRewritingSystemSymbol, GraphRewritingSystemSymbol, HypergraphRewritingSystemSymbol, CellularAutomatonRewritingSystemSymbol, PetriNetRewritingSystemSymbol]

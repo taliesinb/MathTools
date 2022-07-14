@@ -79,7 +79,7 @@ declareCommaRiffledForm[SpacedParenthesesForm, "paren"];
 PublicForm[NoParenthesesForm]
 
 declareBoxFormatting[
-  NoParenthesesForm[e_] :> makeQGBoxes @ e
+  NoParenthesesForm[e_] :> MakeQGBoxes @ e
 ];
 
 (**************************************************************************************************)
@@ -157,7 +157,7 @@ declareBoxFormatting[
 SetHoldAllComplete[assocRuleBox];
 assocRuleBox = Case[
   a_ -> b_ := MakeBoxes @ MapsToForm[a, b];
-  other_   := makeQGBoxes @ other;
+  other_   := MakeQGBoxes @ other;
 ];
 
 $TemplateKatexFunction["HomomorphismMappingForm"] = applyRiffled["homomorphismMapping", ","];

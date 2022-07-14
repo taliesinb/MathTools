@@ -118,7 +118,7 @@ makeSingleGridBoxes[grid_, opts:OptionsPattern[]] := Scope[
     Return @ makeMultiGridBoxes[items, opts];
   ];
   $itemForm = itemForm;
-  TBox["GridForm"] @ createGridBox[MapUnevaluated[makeGridRowBoxes, grid], alignment, rowSpacings, columnSpacings, rowLabels, columnLabels, labelFunction, labelSpacing]
+  TBoxOp["GridForm"] @ createGridBox[MapUnevaluated[makeGridRowBoxes, grid], alignment, rowSpacings, columnSpacings, rowLabels, columnLabels, labelFunction, labelSpacing]
 ];
 
 (**************************************************************************************************)
@@ -147,7 +147,7 @@ makeMultiGridBoxes[gridList_, OptionsPattern[]] := Scope[
 
   rowSpacings = StandardizeRowColumnSpec[rowSpacings, maxHeight - 1];
 
-  TBox["GridForm"] @ GBox[gridListBoxes, Flatten @ gridListAlignments, rowSpacings, Flatten @ Riffle[gridListColSpacings, gridSpacings]]
+  TBoxOp["GridForm"] @ GBox[gridListBoxes, Flatten @ gridListAlignments, rowSpacings, Flatten @ Riffle[gridListColSpacings, gridSpacings]]
 ];
 
 (**************************************************************************************************)
@@ -260,9 +260,9 @@ riffledGridRowBox[div_, _[args__]] :=
 
 makeGridEntryBox = Case[
   None | Null                       := "";
-  Form[item_] /; $itemForm =!= None := makeQGBoxes @ item;
-  item_ /; $itemForm =!= None       := With[{if = $itemForm}, makeQGBoxes @ if @ item];
-  item_                             := makeQGBoxes @ item
+  Form[item_] /; $itemForm =!= None := MakeQGBoxes @ item;
+  item_ /; $itemForm =!= None       := With[{if = $itemForm}, MakeQGBoxes @ if @ item];
+  item_                             := MakeQGBoxes @ item
 ];
 
 (**************************************************************************************************)
@@ -369,7 +369,7 @@ makeFlowAlignedGridForm[rawRows_List, OptionsPattern[FlowAlignedGridForm]] := Sc
   rows = Map[toRowBox, SequenceSplit[#, e:{patt} :> e]]& /@ rows;
   rows = PadRows[rows, ""];
   numColumns = Length @ First @ rows;
-  TBox["GridForm"] @ createGridBox[rows, alignment, rowSpacings, columnSpacings]
+  TBoxOp["GridForm"] @ createGridBox[rows, alignment, rowSpacings, columnSpacings]
 ]
 
 toFlowAlignmentSplits[s_] := Scope[
@@ -399,30 +399,30 @@ $flowAlignmentTable = <|
 
 
 $flowAlignmentContainerTable = <|
-  SetForm -> {SBox["LeftBrace"], makeQGBoxesList, SBox["RightBrace"]},
-  ListForm -> {SBox["LeftBrace"], makeQGBoxesList, SBox["RightBrace"]},
-  TupleForm -> {"(", makeQGBoxesList, ")"},
-  MultisetForm -> {SBox["LeftMultisetBracket"], makeQGBoxesList, SBox["RightMultisetBracket"]},
+  SetForm -> {SBox["LeftBrace"], MakeQGBoxesList, SBox["RightBrace"]},
+  ListForm -> {SBox["LeftBrace"], MakeQGBoxesList, SBox["RightBrace"]},
+  TupleForm -> {"(", MakeQGBoxesList, ")"},
+  MultisetForm -> {SBox["LeftMultisetBracket"], MakeQGBoxesList, SBox["RightMultisetBracket"]},
   AssociativeArrayForm -> {"\[LeftAngleBracket]", makeRuleBoxes, "\[RightAngleBracket]"}
 |>;
 
-makeQGBoxesList = makeQGBoxes /* List;
-makeRuleBoxes[a_ -> b_] := {makeQGBoxes @ a, " ", SBox["MapsToSymbol"], " ", makeQGBoxes @ b};
+MakeQGBoxesList = MakeQGBoxes /* List;
+makeRuleBoxes[a_ -> b_] := {MakeQGBoxes @ a, " ", SBox["MapsToSymbol"], " ", MakeQGBoxes @ b};
 
 flowAlignedRow = Case[
 
   e_List := MapUnevaluated[%, e];
 
   FunctionSignatureForm[f_, d_, c_] :=
-    {makeQGBoxes @ f, ":", makeQGBoxes @ d, "\[RightArrow]", makeQGBoxes @ c};
+    {MakeQGBoxes @ f, ":", MakeQGBoxes @ d, "\[RightArrow]", MakeQGBoxes @ c};
 
   AppliedForm[f_, h_Symbol[a_, b_]] /; KeyExistsQ[$flowAlignmentTable, h] :=
-    {RBox[makeQGBoxes @ f, "(", makeQGBoxes @ a], $flowAlignmentTable @ h, RBox[makeQGBoxes @ b, ")"]};
+    {RBox[MakeQGBoxes @ f, "(", MakeQGBoxes @ a], $flowAlignmentTable @ h, RBox[MakeQGBoxes @ b, ")"]};
 
-  ForAllForm[v_, b_] := {"\[ForAll]", makeQGBoxes @ v, ":", makeQGBoxes @ b};
-  ExistsForm[v_, b_] := {"\[Exists]", makeQGBoxes @ v, ":", makeQGBoxes @ b};
+  ForAllForm[v_, b_] := {"\[ForAll]", MakeQGBoxes @ v, ":", MakeQGBoxes @ b};
+  ExistsForm[v_, b_] := {"\[Exists]", MakeQGBoxes @ v, ":", MakeQGBoxes @ b};
 
-  Form[e_] := makeQGBoxes @ e;
+  Form[e_] := MakeQGBoxes @ e;
 
   e:((h_Symbol)[_, __]) /; KeyExistsQ[$flowAlignmentTable, h] :=
     riffledFlowAlignedGridRow[$flowAlignmentTable @ h, e];
@@ -430,7 +430,7 @@ flowAlignedRow = Case[
   (h_Symbol)[args___] /; KeyExistsQ[$flowAlignmentContainerTable, h] :=
     makeContainerFlow[h, args];
 
-  e_ := makeQGBoxes @ e;
+  e_ := MakeQGBoxes @ e;
 
 ];
 
@@ -461,7 +461,7 @@ declareBoxFormatting[
 ]
 
 equationCascadeFormBoxes[first_, second_, rest__] :=
-  TBox["EquationGridForm"] @ createGridBox[
+  TBoxOp["EquationGridForm"] @ createGridBox[
     Prepend[equationGridRow[EqualForm[first, second]]] @
           MapUnevaluated[equationGridRow[{None, "=", #}]&, {rest}],
     {Right, Center, Left}, Automatic, Automatic
@@ -477,7 +477,7 @@ SetUsage @ "
 Divider is used in EquationGridForm.
 "
 
-SetHoldAllComplete[makeQGBoxesOrNull, equationGridRow, riffledEqGridRow];
+SetHoldAllComplete[MakeQGBoxesOrNull, equationGridRow, riffledEqGridRow];
 SetHoldFirst[equationGridFormBoxes];
 
 Options[EquationGridForm] = {
@@ -492,14 +492,14 @@ declareBoxFormatting[
 ];
 
 equationGridFormBoxes[rows_, {alignment_, rowSpacings_, colSpacings_}] :=
-  TBox["EquationGridForm"] @ createGridBox[
+  TBoxOp["EquationGridForm"] @ createGridBox[
     MapUnevaluated[equationGridRow, rows],
     alignment, rowSpacings, colSpacings
   ];
 
 equationGridRow = Case[
   Divider          := {"---"};
-  e_List           := MapUnevaluated[makeQGBoxesOrNull, e];
+  e_List           := MapUnevaluated[MakeQGBoxesOrNull, e];
   Aligned[e_]      := % @ List @ Aligned @ e;
   e_EqualForm      := riffledEqGridRow["=", e];
   e_DefEqualForm   := riffledEqGridRow["≝", e];
@@ -527,13 +527,13 @@ equationGridRow = Case[
 ];
 
 riffledEqGridRow[div_, _[args__]] :=
-  Riffle[MapUnevaluated[makeQGBoxesOrNull, {args}], div];
+  Riffle[MapUnevaluated[MakeQGBoxesOrNull, {args}], div];
 
-PrivateSymbol[makeQGBoxesOrNull]
+PrivateSymbol[MakeQGBoxesOrNull]
 
-makeQGBoxesOrNull[Aligned[e_]] := Splice @ MapUnevaluated[makeQGBoxes, {Aligner, e, Aligner}];
-makeQGBoxesOrNull[Null|None] := "";
-makeQGBoxesOrNull[other_] := makeQGBoxes[other]
+MakeQGBoxesOrNull[Aligned[e_]] := Splice @ MapUnevaluated[MakeQGBoxes, {Aligner, e, Aligner}];
+MakeQGBoxesOrNull[Null|None] := "";
+MakeQGBoxesOrNull[other_] := MakeQGBoxes[other]
 
 padArray[rows_] := Scope[
   maxLen = Max[Length /@ rows];

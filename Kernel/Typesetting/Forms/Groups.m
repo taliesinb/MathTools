@@ -137,7 +137,7 @@ SetHoldAllComplete[groupRelationTermBoxes];
 
 groupRelationTermBoxes = Case[
   list_List                   := TemplateBox[MapUnevaluated[%, list], "ImplicitGroupMultiplicationForm"];
-  (Power|PowerForm|GroupPowerForm)[g_, e_]  := TemplateBox[{% @ g, makeQGBoxes @ e}, "GroupPowerForm"];
+  (Power|PowerForm|GroupPowerForm)[g_, e_]  := TemplateBox[{% @ g, MakeQGBoxes @ e}, "GroupPowerForm"];
   1                           := MakeBoxes @ GroupElementSymbol["e"];
   s:symP                      := MakeBoxes @ GroupElementSymbol @ s;
   GroupInverseForm[e_]        := TemplateBox[List @ % @ e, "GroupInverseForm"];
@@ -292,7 +292,7 @@ declareBoxFormatting[
 SetHoldAllComplete[groupWordRewritingRuleBox];
 groupWordRewritingRuleBox = Case[
   a_ -> b_ := MakeBoxes @ RewritingRuleForm[a, b];
-  other_   := makeQGBoxes @ other;
+  other_   := MakeQGBoxes @ other;
 ];
 
 $TemplateKatexFunction["GroupWordRewritingForm"] = applyRiffled["groupWordRewriting", ","];

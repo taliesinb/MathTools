@@ -119,10 +119,10 @@ declareBoxFormatting[
 SetHoldAllComplete[toColGrid]
 
 toColGrid = Case[
-  {a_}   := makeQGBoxesOrNull @ a;
+  {a_}   := MakeQGBoxesOrNull @ a;
   {a__}  := MakeBoxes @ CommaRowForm[a];
-  s_SingleColumnForm := makeQGBoxes @ s;
-  a_     := makeQGBoxesOrNull @ a
+  s_SingleColumnForm := MakeQGBoxes @ s;
+  a_     := MakeQGBoxesOrNull @ a
 ];
 
 $TemplateKatexFunction["SetConstructorForm"] = "setConstructor"
@@ -155,7 +155,7 @@ declareBoxFormatting[
 SetHoldAllComplete[assocRuleBox];
 assocRuleBox = Case[
   a_ -> b_ := MakeBoxes @ MapsToForm[a, b];
-  other_   := makeQGBoxes @ other;
+  other_   := MakeQGBoxes @ other;
 ];
 
 $TemplateKatexFunction["AssociativeArrayForm"] = applyRiffled["assocArray", ","];

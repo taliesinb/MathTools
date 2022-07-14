@@ -10,7 +10,7 @@ declareBoxFormatting[
   PermutationCycleForm[a_, b_] :> MakeBoxes @ TranspositionForm[a, b],
 
   PermutationCycleForm[args__] :> TemplateBox[
-    With[{list = MapUnevaluated[makeQGBoxes, {args}]},
+    With[{list = MapUnevaluated[MakeQGBoxes, {args}]},
       Append[list, First @ list]
     ],
     "PermutationCycleForm"
@@ -46,7 +46,7 @@ declareBoxFormatting[
     standardCycleBoxes @ list
 ];
 
-standardCycleBoxes[list_] := TemplateBox[makeQGBoxes /@ list, "StandardPermutationCycleForm"]
+standardCycleBoxes[list_] := TemplateBox[MakeQGBoxes /@ list, "StandardPermutationCycleForm"]
 
 (**************************************************************************************************)
 

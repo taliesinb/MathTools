@@ -32,7 +32,7 @@ declareBindingForm[form_, katexName_, argBoxFn_] := With[
           MapUnevaluated[argBoxFn, {args}],
           ToBoxes @ first
         ],
-        makeQGBoxes @ formName
+        MakeQGBoxes @ formName
       ]
   ];
   $TemplateKatexFunction[formName] = katexName[#1, Riffle[{##2}, ","]]&;
@@ -55,7 +55,7 @@ makeCardinalSizeBindingRuleBoxes = Case[
   c_ -> sz_           := makeHintedTemplateBox[c -> CardinalSymbol, sz -> QuiverSizeSymbol @ sz, "CompactBindingRuleForm"];
   g_GroupGeneratorSymbol := MakeBoxes @ g;
   c_                  := cardinalBox @ c;
-  Form[f_]            := makeQGBoxes @ f;
+  Form[f_]            := MakeQGBoxes @ f;
 ];
 
 
@@ -245,7 +245,7 @@ declareBoxFormatting[
   QuiverSizeSymbol[n_Integer] :> MakeBoxes @ n,
   QuiverSizeSymbol[Infinity] :> "\[Infinity]",
   QuiverSizeSymbol[Modulo[n_]] :> MakeBoxes @ ModuloForm @ n,
-  QuiverSizeSymbol[other_] :> makeQGBoxes @ other
+  QuiverSizeSymbol[other_] :> MakeQGBoxes @ other
 ]
 
 (**************************************************************************************************)

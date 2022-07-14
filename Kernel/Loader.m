@@ -11,9 +11,9 @@ ClearAll[EpilogFunction];
 $coreSymbols = {
   (* package symbols: *) Package`Package,
      Package`PackageExport, Package`PackageScope, Package`PackageImport,
-     Package`SystemMacro,   Package`SystemVariable,  Package`SystemFunction,  Package`SystemOption,  Package`SystemHead,  Package`SystemSymbol,  Package`SystemForm,  Package`SystemObject,
-     Package`PublicMacro,   Package`PublicVariable,  Package`PublicFunction,  Package`PublicOption,  Package`PublicHead,  Package`PublicSymbol,  Package`PublicForm,  Package`PublicObject,
-     Package`PrivateMacro,  Package`PrivateVariable, Package`PrivateFunction, Package`PrivateOption, Package`PrivateHead, Package`PrivateSymbol, Package`PrivateForm, Package`PrivateObject,
+     Package`SystemMacro,   Package`SystemVariable,  Package`SystemFunction,  Package`SystemOption,  Package`SystemHead,  Package`SystemSymbol,  Package`SystemForm,  Package`SystemObject, Package`SystemFormBox,
+     Package`PublicMacro,   Package`PublicVariable,  Package`PublicFunction,  Package`PublicOption,  Package`PublicHead,  Package`PublicSymbol,  Package`PublicForm,  Package`PublicObject, Package`PublicFormBox,
+     Package`PrivateMacro,  Package`PrivateVariable, Package`PrivateFunction, Package`PrivateOption, Package`PrivateHead, Package`PrivateSymbol, Package`PrivateForm, Package`PrivateObject, Package`PrivateFormBox,
   (* system symbols: *) True, False, None, Automatic, Inherited, All, Full, Indeterminate, Null, $Failed, Span, UpTo,
   (* object heads: *)
     Symbol, Integer, String, Complex, Real, Rational,
@@ -107,12 +107,22 @@ $lowerCaseSymbolRegex = RegularExpression["[$]?[a-z]"];
 
 $initialSymbolResolutionDispatch = Dispatch[{
   (* Package`PackageSymbol[name_String] /; StringStartsQ[name, $lowerCaseSymbolRegex] :> RuleCondition[makeResolvedSymbol[name]], *)
-  Package`PackageSymbol["SetUsage"][usageString_String] :> RuleCondition[rewriteSetUsage[usageString]],
+  Package`PackageSymbol["SetUsage"][usageString_String]                      :> RuleCondition[rewriteSetUsage[usageString]],
   Package`PackageSymbol[name_String] /; StringMatchQ[name, $coreSymbolRegex] :> RuleCondition[$coreSymbolAssociation[name]],
-  Package`PackageSymbol[name_String] /; StringContainsQ[name, "`"] :> RuleCondition[makeResolvedSymbol[name]],
-  Package`PackageSymbol["$PackageFileName"] :> RuleCondition[QuiverGeometryPackageLoader`$CurrentFile],
-  Package`PackageSymbol["$PackageDirectory"] :> RuleCondition[QuiverGeometryPackageLoader`$PackageDirectory]
+  Package`PackageSymbol[name_String] /; StringContainsQ[name, "`"]           :> RuleCondition[makeResolvedSymbol[name]],
+  Package`PackageSymbol["$PackageFileName"]                                  :> RuleCondition[QuiverGeometryPackageLoader`$CurrentFile],
+  Package`PackageSymbol["$PackageDirectory"]                                 :> RuleCondition[QuiverGeometryPackageLoader`$PackageDirectory],
+  p:Package`PackageSymbol["PublicFormBox"][___]                              :> RuleCondition @ processFormBoxes[p, Package`PublicForm, Package`PublicFunction],
+  p:Package`PackageSymbol["PrivateFormBox"][___]                             :> RuleCondition @ processFormBoxes[p, Package`PrivateForm, Package`PrivateFunction],
+  p:Package`PackageSymbol["SystemFormBox"][___]                              :> RuleCondition @ processFormBoxes[p, Package`SystemForm, Package`SystemFunction]
 }];
+
+(* turns PublicFormBox[Applied] into PublicForm[AppliedForm], PublicFunction[AppliedBox] *)
+processFormBoxes[p_, formFn_, boxFn_] :=
+   Package`PackageSplice @@ Cases[p, Package`PackageSymbol[name_String] :> {
+    formFn[Package`PackageSymbol[name <> "Form"]],
+    boxFn[Package`PackageSymbol[name <> "Box"]]
+  }];
 
 (* this means SetUsage doesn't have to resolve the symbol later, which is expensive. *)
 rewriteSetUsage[usageString_String] := Scope[
@@ -216,8 +226,11 @@ createSymbolsInContextAndDispatchTable[names_, context_, contextPath_] := Block[
   Dispatch @ MapThread[toSymbolReplacementRule, {names, ToExpression[names, InputForm, ResolvedSymbol]}]
 ];
 
-addPackageSymbolsToBag[bag_, expr_, head_] :=
+addPackageSymbolsToBag[bag_, expr_, head_] := (
   Internal`StuffBag[bag, Cases[expr, e:head[Package`PackageSymbol[_String]..] :> Part[List @@ e, All, 1], {2}], 2];
+  Cases[expr, splice_Package`PackageSplice :> addPackageSymbolsToBag[bag, splice, head], {2}];
+  (* ^= pick up PublicFormBox etc *)
+);
 
 addPackageCasesToBag[bag_, expr_, rule_] :=
   Internal`StuffBag[bag, Cases[expr, rule, {2}], 1];

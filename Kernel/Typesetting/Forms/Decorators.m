@@ -82,7 +82,7 @@ declareUnaryWrapperForm[NegatedForm]
 PublicForm[VerticalModifierForm]
 
 declareBoxFormatting[
-  VerticalModifierForm[inner_, args___] :> rewriteToVerticalOuter[makeQGBoxes[inner], args]
+  VerticalModifierForm[inner_, args___] :> rewriteToVerticalOuter[MakeQGBoxes[inner], args]
 ];
 
 $verticalFormData = <|
@@ -124,7 +124,7 @@ rewriteToVertical[TemplateBox[args_, "AssociativeArrayForm"] /; Length[args] >= 
   rows = MapAt[addComma, rows, {;;-2, -2}];
   colSpacings = Flatten[{1, Table[{1, 1, 2}, n], 0} / 4];
   colSpacings[[-2]] = 0;
-  TBox["GridForm"] @ createGridBox[rows, {Right, {Right, ReplaceAutomatic[align, Center], Left}, Left}, Automatic, colSpacings]
+  TBoxOp["GridForm"] @ createGridBox[rows, {Right, {Right, ReplaceAutomatic[align, Center], Left}, Left}, Automatic, colSpacings]
 ];
 
 toSplicedRow = Case[
@@ -147,7 +147,7 @@ rewriteToVertical[TemplateBox[args_, form_String] /; KeyExistsQ[$verticalFormDat
     RBox[spacer, #, ","]& /@ middle,
     RBox[spacer, last, r]
   }];
-  TBox["GridForm"] @ createGridBox[rows, {ReplaceAutomatic[align, Left]}, Automatic, 0]
+  TBoxOp["GridForm"] @ createGridBox[rows, {ReplaceAutomatic[align, Left]}, Automatic, 0]
 ];
 
 rewriteToVertical[TemplateBox[{style_, rest___}, form_ /; StringStartsQ[form, "Styled"]], args___] := Scope[
@@ -158,10 +158,10 @@ rewriteToVertical[TemplateBox[{style_, rest___}, form_ /; StringStartsQ[form, "S
   ]
 ];
 
-styleOpenItem[s_][e_] := TBox[s][e];
+styleOpenItem[s_][e_] := TBox[e, s];
 styleOpenItem[s_][r_RowBox] := MapAt[styleOpenItem[s], r, {1, 1}];
 
-styleCloseItem[s_][e_] := TBox[s][e];
+styleCloseItem[s_][e_] := TBox[e, s];
 styleCloseItem[s_][r_RowBox] := MapAt[styleCloseItem[s], r, {1, -1}];
 
 rewriteToVertical[TemplateBox[args_, form_String] /; KeyExistsQ[$verticalFormData, form], n_, align_] /; Length[args] >= 2 := Scope[
@@ -173,7 +173,7 @@ rewriteToVertical[TemplateBox[args_, form_String] /; KeyExistsQ[$verticalFormDat
     Splice[middleRow[spacer] /@ Part[rows, 2 ;; -2]],
     lastRow[spacer, r] @ Last @ rows
   };
-  TBox["GridForm"] @ createGridBox[rows, {Right, {ReplaceAutomatic[align, Center]}, Left}, Automatic, 0]
+  TBoxOp["GridForm"] @ createGridBox[rows, {Right, {ReplaceAutomatic[align, Center]}, Left}, Automatic, 0]
 ];
 
 rewriteToVertical[other_, _, _] := other;

@@ -1,3 +1,150 @@
+PublicSymbol[$1, $2, $3, $4, $5]
+
+PublicFunction[DefineStandardTraditionalForm]
+
+DefineStandardTraditionalForm[list_] := Scan[DefineStandardTraditionalForm, list];
+
+DefineStandardTraditionalForm[lhs_ :> rhs_] := (
+  MakeBoxes[lhs, StandardForm] := rhs;
+  MakeBoxes[l:lhs, TraditionalForm] := MakeBoxes @ l;
+)
+
+(**************************************************************************************************)
+
+PublicFunction[DefineUnaryForm]
+  
+DefineUnaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
+  {name = SymbolName @ formSym},
+  If[boxFn =!= None,
+    boxFn[e_] := TBox[e, name];
+    DefineStandardTraditionalForm[formSym[e_] :> boxFn[MakeQGBoxes @ e]],
+    DefineStandardTraditionalForm[formSym[e_] :> TBox[MakeQGBoxes @ e, name]]
+  ];
+  DefineTemplateBox[name -> boxes]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineBinaryForm]
+  
+DefineUnaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
+  {name = SymbolName @ formSym},
+  If[boxFn =!= None,
+    boxFn[e_, f_] := TBox[e, f, name];
+    DefineStandardTraditionalForm[formSym[e_, f_] :> boxFn[MakeQGBoxes @ e, MakeQGBoxes @ f]],
+    DefineStandardTraditionalForm[formSym[e_, f_] :> TBox[MakeQGBoxes @ e, MakeQGBoxes @ f, name]]
+  ];
+  DefineTemplateBox[name -> boxes]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineRiffledForm]
+  
+DefineRiffledForm[formSym_Symbol, boxes_, riffledBox_, boxFn_:None] := With[
+  {name = SymbolName @ formSym, isSimple = SameQ[boxes, RowBox[$1]]},
+  If[boxFn =!= None,
+    If[isSimple,
+      boxFn[e_] := e; boxFn[] := "",
+      boxFn[e_] := TBox[e, name]];
+    boxFn[seq___] := TBox[Riffle[{seq}, riffledBox], name];
+    DefineStandardTraditionalForm[formSym[e_] :> boxFn[MakeQGBoxes[e]]];
+    DefineStandardTraditionalForm[formSym[seq___] :> boxFn[MakeQGBoxSequence[seq]]]
+  ,
+  If[isSimple,
+      DefineStandardTraditionalForm[{formSym[e_] :> "", formSym[e_] :> MakeQGBoxes[e]}],
+      DefineStandardTraditionalForm[formSym[e_] :> TBox[MakeQGBoxes[e], name]]];
+    DefineStandardTraditionalForm[formSym[seq___] :> TemplateBox[Riffle[MakeQGBoxes /@ {seq}, riffledBox], name]]
+  ];
+  If[isSimple,
+    DefineTemplateBox[name -> boxes, {}, RowBox[##]&],
+    DefineTemplateBox[name -> boxes]
+  ];
+];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineConstantSymbolForm]
+
+DefineConstantSymbolForm[sym_Symbol, boxes_] := With[
+  {lname = LowerCaseFirst @ SymbolName @ sym},
+  DefineStandardTraditionalForm[sym :> SBox[lname]];
+  DefineTemplateBox[lname -> boxes]
+]
+  
+(**************************************************************************************************)
+
+PublicFunction[DefineUnaryStyleForm]
+
+DefineUnaryStyleForm[formSym_, style_, boxSym_:None] :=
+  DefineUnaryFormBox[formSym, StyleBox[$1, style], boxSym];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineTemplateBox]
+
+DefineTemplateBox = Case[
+  boxSpec_List := Scan[%, boxSpec];
+  boxSpec_ := $[boxSpec, Automatic, Automatic];
+  Seq[tSpec_, kSpec_] := $[tSpec, kSpec, Automatic];
+  Seq[tSpec_, kSpec_, cSpec_] := Scope @ QuiverGeometry`PackageScope`CatchMessage[
+    $tname = $tboxes = $kname = None;
+    procTSpec[tSpec]; procKSpec[kSpec]; procCSpec[cSpec];
+    {$tname, $kname}
+  ];
+];
+
+procTSpec = Case[
+  name_String -> boxes:Except[_Function] := (
+    $tname = name; $tboxes = boxes;
+    $templateBoxDisplayFunction[name] = toSlotFn[boxes]  //. KatexBox[b_, _] :> b;
+  );
+  spec_ := ThrowMessage["arg1", spec];
+];
+DefineTemplateBox::arg1 = "First argument `` is invalid.";
+
+procKSpec = Case[
+  Automatic := $[Automatic -> Automatic];
+  Automatic -> boxes_ := $[toKname[$tname] -> boxes];
+  name_String -> Automatic := $[name -> $tboxes];
+  specs:{___Rule} := Last[Map[procKSpec, specs], None];
+  name_String -> boxes:Except[_Function] := (
+    $kname = name;
+    $katexDisplayFunction[name] = toSlotFn[boxes] //. KatexBox[_, b_] :> b;
+  );
+  boxes:Except[_Rule] := $[Automatic -> boxes];
+  spec_ := ThrowMessage["arg2", spec, $tname];
+];
+DefineTemplateBox::arg2 = "Second argument `` for TBox `` is invalid.";
+
+procCSpec = Case[
+  Automatic := $[$tname :> Automatic];
+  name_ :> Automatic := $[name -> Construct[Function, $kname[##]]];
+  specs:{___RuleDelayed} := Last[Map[procCSpec, specs]];
+  fn_Function := $[$tname -> fn];
+  name_String :> body_ := $[name -> toSlotFn @ Unevaluated @ body];
+  name_String -> fn_Function := (
+    $templateToKatexFunction[name] = fn;
+  );
+  spec_ := ThrowMessage["arg3", spec, $tname];
+];
+DefineTemplateBox::arg3 = "Third argument `` for TBox `` is invalid.";
+
+(**************************************************************************************************)
+
+PrivateFunction[toKname]
+
+$kNameRules = {"Gray" -> "G", RegularExpression @ "[A-Z][A-Za-z]", "1" -> "Ⅰ", "2" -> "Ⅱ", "3" -> "Ⅲ", "4" -> "Ⅳ"};
+toKname = Case[
+  str_String ? LowerCaseQ := StringTake[str, 2];
+  str_String := StringJoin @ StringCases[str, $kNameRules];
+];
+
+$slotRules = {$1 -> Slot[1], $2 -> Slot[2], $3 -> Slot[3], $4 -> Slot[4], $5 -> Slot[5]};
+toSlotFn[None] := None;
+toSlotFn[body_] := Function[body] /. $slotRules;
+
+(**************************************************************************************************)
 
 PublicVariable[$expressionToTemplateBoxRules, $templateBoxDisplayFunction, $katexDisplayFunction, $templateToKatexFunction]
 
@@ -152,8 +299,9 @@ $displayFunctionReplacements = {
   TEval[e_]                            :> RuleCondition @ e,
   (* HoldPattern[TBox[s_Slot][arg_]]      :> TemplateBox[{arg, s}, "ParameterizedTemplateBox"], *)
   HoldPattern[RBox[r___]]              :> RowBox[{r}],
-  HoldPattern[SBox[s_]]                :> TemplateBox[{}, s],
-  HoldPattern[TBox[s_String][args___]] :> TemplateBox[{args}, s]
+  HoldPattern[SBox[s_]]                  :> TemplateBox[{}, s],
+  HoldPattern[TBox[args___, s_]]         :> TemplateBox[{args}, s],
+  HoldPattern[TBoxOp[s_String][args___]] :> TemplateBox[{args}, s]
 };
 
 (**************************************************************************************************)
@@ -241,7 +389,7 @@ registerTemplateBoxRules[lhs_, syms_] :=
   registerTemplateBoxRules[lhs, syms, $tName];
 
 registerTemplateBoxRules[lhs_, syms_, tName_] :=
-  registerTemplateBoxRules2[lhs, TemplateBox[makeQGBoxes /@ syms, tName]];
+  registerTemplateBoxRules2[lhs, TemplateBox[MakeQGBoxes /@ syms, tName]];
 
 registerTemplateBoxRules[lhs_, {}, tName_] :=
   registerTemplateBoxRules2[lhs, TemplateBox[{}, tName]];
@@ -249,7 +397,7 @@ registerTemplateBoxRules[lhs_, {}, tName_] :=
 SetHoldAll[registerStagedTemplateBoxRules];
 
 registerStagedTemplateBoxRules[lhs_, syms_, tName_, withSyms_, withClause__] :=
-  registerTemplateBoxRules2[lhs, With[withClause, TemplateBox[Join[withSyms, makeQGBoxes /@ syms], tName]]];
+  registerTemplateBoxRules2[lhs, With[withClause, TemplateBox[Join[withSyms, MakeQGBoxes /@ syms], tName]]];
 
 registerStagedTemplateBoxRules[lhs_, {}, tName_, withSyms_, withClause__] :=
   registerTemplateBoxRules2[lhs, With[withClause, TemplateBox[withSyms, tName]]];
@@ -359,7 +507,7 @@ DeclareFunctionTemplateBox[head_, rhs_] := Scope[
   (* Evaluate forces the FunctionBox to evaluate now, since KatexBox needs to be literally present *)
   {$tName, $kName} = setTemplateBoxForm[head, Evaluate @ FunctionBox @ rhs];
 
-  applyRule = HoldPattern[head[args___]] :> TemplateBox[Prepend[makeQGBoxes /@ {args}, $headBox], "AppliedForm"];
+  applyRule = HoldPattern[head[args___]] :> TemplateBox[Prepend[MakeQGBoxes /@ {args}, $headBox], "AppliedForm"];
   applyRule = applyRule /. $headBox -> SBox[$tName];
   
   registerTemplateBoxRules2 @@ applyRule;
@@ -485,5 +633,6 @@ DeclareLocalStyles[e___] := Scope[
   taggingRules = Join[currentRules, <|"KatexDefinitions" -> katex, "TemplateToKatexFunctions" -> $templateToKatexFunction|>];
   SetOptions[EvaluationNotebook[], TaggingRules -> taggingRules];
 ];
+
 
 

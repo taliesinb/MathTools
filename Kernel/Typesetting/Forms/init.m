@@ -65,7 +65,7 @@ declareUnaryWrapperForm::badsym = "Name of symbol `` should end in Form."
 declareUnaryWrapperForm[head_Symbol, katex_:Automatic] := With[
   {name = SymbolName @ head},
   If[!StringEndsQ[name, "Form"], ReturnFailed["badsym", head]];
-  declareBoxFormatting[head[s_] :> TemplateBox[List @ makeQGBoxes @ s, name]];
+  declareBoxFormatting[head[s_] :> TemplateBox[List @ MakeQGBoxes @ s, name]];
   $unaryWrapperFormName[head] = name;
   $TemplateKatexFunction[name] = If[katex === Automatic, LowerCaseFirst @ StringDrop[name, -4], katex];
 ];
@@ -235,7 +235,7 @@ declareSumLikeFormatting[form_Symbol, katexName_String] := With[
     form[a_, b_] :>
       MakeBoxes @ form[a, b, Null],
     form[a_, b_, c_] :>
-      TemplateBox[{makeQGBoxes @ a, makeSubSupBoxes @ b, makeSubSupBoxes @ c}, formName],
+      TemplateBox[{MakeQGBoxes @ a, makeSubSupBoxes @ b, makeSubSupBoxes @ c}, formName],
     form[a_, b_, c_, d_] :>
       TemplateBox[{MakeBoxes @ SuchThatForm[a, d], makeSubSupBoxes @ b, makeSubSupBoxes @ c}, formName]
   ];
@@ -246,7 +246,7 @@ declareSumLikeFormatting[form_Symbol, katexName_String] := With[
 SetHoldAllComplete[makeSubSupBoxes]
 makeSubSupBoxes = Case[
   list_List := MakeBoxes @ SubstackForm @ list;
-  e_        := makeQGBoxes @ e;
+  e_        := MakeQGBoxes @ e;
 ];
 
 (**************************************************************************************************)
@@ -267,7 +267,7 @@ declareAlgebraicSymbol[sym_Symbol, aliases_] := With[
 
     sym[e_, power_] :> With[
       {inner = MakeBoxes @ sym[e]},
-      TemplateBox[List @ TemplateBox[{inner, makeQGBoxes @ power}, "PowerForm"], formName]
+      TemplateBox[List @ TemplateBox[{inner, MakeQGBoxes @ power}, "PowerForm"], formName]
     ],
 
     sym[n_] :>
@@ -300,7 +300,7 @@ fieldOrRingBoxes = Case[
   r:ringsP       := MakeBoxes @ RingSymbol @ r;
   sr:semiringsP  := MakeBoxes @ SemiringSymbol @ sr;
   n_Integer      := MakeBoxes @ FiniteFieldSymbol[n];
-  other_         := makeQGBoxes @ other,
+  other_         := MakeQGBoxes @ other,
   {
     fieldsP     -> Alternatives[Reals, Complexes, Rationals, "R", "C", "Q", "K"],
     ringsP      -> Alternatives[Integers, "Z"],
@@ -337,9 +337,9 @@ recurseWrapperBoxes[e_, f_] := Block[{$decf = f}, rdb @ e];
 
 rdb = Case[
   e:((_Symbol ? unaryWrapperQ)[_])   := unaryWrapperBoxes[e, %];
-  Subscript[s_, i_]                  := SubscriptBox[% @ s, makeQGBoxes @ i];
-  Superscript[s_, i_]                := SuperscriptBox[% @ s, makeQGBoxes @ i];
-  Subsuperscript[s_, i_, j_]         := SubsuperscriptBox[% @ s, makeQGBoxes @ i, makeQGBoxes @ j];
+  Subscript[s_, i_]                  := SubscriptBox[% @ s, MakeQGBoxes @ i];
+  Superscript[s_, i_]                := SuperscriptBox[% @ s, MakeQGBoxes @ i];
+  Subsuperscript[s_, i_, j_]         := SubsuperscriptBox[% @ s, MakeQGBoxes @ i, MakeQGBoxes @ j];
   (Inverted|InvertedForm)[e_]        := TemplateBox[List @ % @ e, "InvertedForm"];
   e_                                 := $decf @ e;
 ];
@@ -356,7 +356,7 @@ PrivateFunction[makeTemplateBox, makeTypedTemplateBox]
 SetHoldAllComplete[makeTemplateBox];
 makeTemplateBox[args___, tag_] :=
   TemplateBox[
-    MapUnevaluated[makeQGBoxes, {args}],
+    MapUnevaluated[MakeQGBoxes, {args}],
     tag
   ];
 
@@ -391,15 +391,15 @@ $colorFormAssoc = <|
 |>;
 
 toTypedSymbol = Case[
-  Rule[Form[e_], _]                 := makeQGBoxes @ e;
+  Rule[Form[e_], _]                 := MakeQGBoxes @ e;
   Rule[e_, None]                    := e;
-  Rule[e_, Automatic]               := makeQGBoxes @ e;
+  Rule[e_, Automatic]               := MakeQGBoxes @ e;
   Rule[BlankSymbol, _]              := MakeBoxes @ BlankSymbol;
   Rule[e_ ? unaryWrappedQ, type_]   := recurseWrapperBoxes[e, toTypedSymbol[# -> type]&];
   Rule[arg:((type_)[___]), type_]   := MakeBoxes @ arg;
   Rule[None|Null, _]                := "";
   Rule[arg_, type_]                 := MakeBoxes @ type @ arg;
-  arg_                              := makeQGBoxes @ arg
+  arg_                              := MakeQGBoxes @ arg
 ]
 
 (**************************************************************************************************)

@@ -24,21 +24,25 @@ $binaryRelationMapping = <|
 PublicForm[Form]
 
 declareBoxFormatting[
-  Form[e_] :> makeQGBoxes @ e
+  Form[e_] :> MakeQGBoxes @ e
 ]
 
 (**************************************************************************************************)
 
-PrivateFunction[makeQGBoxes]
+PublicFunction[MakeQGBoxes, MakeQGBoxSequence]
 
-SetHoldAllComplete[makeQGBoxes];
+SetHoldAllComplete[MakeQGBoxes, MakeQGBoxSequence];
+
+MakeQGBoxSequence[] := Sequence[];
+MakeQGBoxSequence[e_] := MakeQGBoxes[e];
+MakeQGBoxSequence[e___] := Sequence @@ Map[MakeQGBoxes, {e}];
 
 $binaryRelationHeads = Alternatives @@ Keys[$binaryRelationMapping];
 
 $domainsP = Alternatives[Integers, Reals, Rationals, Complexes, Naturals, PositiveNaturals, PositiveReals, UnitInterval, Primes];
 
 (* this is the general dispatch mechanism for a form of unknown type *)
-makeQGBoxes = Case[
+MakeQGBoxes = Case[
   None | Null               := "";
   Pi                        := MakeBoxes @ PiSymbol;
   Tau                       := MakeBoxes @ TauSymbol;
@@ -95,10 +99,10 @@ rawSymbolBoxes = Case[
   i_Integer                   := TextString @ i;
   s_SymbolForm                := MakeBoxes @ s;
   PrimedForm[x_]              := TemplateBox[List @ % @ x, "PrimedForm"];
-  Subscript[a_, b_]           := SubscriptBox[makeQGBoxes @ a, makeQGBoxes @ b];
-  Subscript[a_, b_, c_]       := SubscriptBox[makeQGBoxes @ a, RBox[makeQGBoxes @ b, ",", makeQGBoxes @ c]];
-  Superscript[a_, b_]         := SuperscriptBox[makeQGBoxes @ a, makeQGBoxes @ b];
-  Subsuperscript[a_, b_, c_]  := SubsuperscriptBox[% @ a, makeQGBoxes @ b, makeQGBoxes @ c];
+  Subscript[a_, b_]           := SubscriptBox[MakeQGBoxes @ a, MakeQGBoxes @ b];
+  Subscript[a_, b_, c_]       := SubscriptBox[MakeQGBoxes @ a, RBox[MakeQGBoxes @ b, ",", MakeQGBoxes @ c]];
+  Superscript[a_, b_]         := SuperscriptBox[MakeQGBoxes @ a, MakeQGBoxes @ b];
+  Subsuperscript[a_, b_, c_]  := SubsuperscriptBox[% @ a, MakeQGBoxes @ b, MakeQGBoxes @ c];
   m_WhiteCircleModifierForm   := MakeBoxes @ m;
   m_BlackCircleModifierForm   := MakeBoxes @ m;
 ,
@@ -134,11 +138,11 @@ toHintedSymbol = Case[
   Rule[None, _] :=
     "";
   Rule[Form[e_], _] :=
-    makeQGBoxes @ e;
+    MakeQGBoxes @ e;
   Rule[e_, None] :=
     e;
   Rule[e_, Automatic] :=
-    makeQGBoxes @ e;
+    MakeQGBoxes @ e;
   Rule[e_, m_maybeParen] :=
     m @ e;
   Rule[l:literalP, _] :=
@@ -150,9 +154,9 @@ toHintedSymbol = Case[
   Rule[arg:symsP, hint_] :=
     MakeBoxes @ hint @ arg;
   Rule[arg_, _] :=
-    makeQGBoxes @ arg;
+    MakeQGBoxes @ arg;
   arg_ :=
-    makeQGBoxes @ arg,
+    MakeQGBoxes @ arg,
   {symsP -> $rawSymbolP, colorsP -> $colorFormP, literalP -> $literalSymbolsP}
 ]
 
