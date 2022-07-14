@@ -30,3 +30,10 @@ toTagPatt = Case[
   list_List := Alternatives @@ list;
   other_ := other;
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[CardinalSubquiver]
+
+CardinalSubquiver[g_Graph ? EdgeTaggedGraphQ, cardSpec_] :=
+  Graph[VertexList[g], Cases[EdgeList[g], _[_, _, cardSpec]], Options[g]];

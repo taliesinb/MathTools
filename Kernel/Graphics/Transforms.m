@@ -103,7 +103,7 @@ ConstructGraphicsViewTransform[g_Graphics3D] := Scope[
   viewOpts = Options[g, $viewOptionSymbols];
   plotRange = GraphicsPlotRange @ g;
   viewAssoc = Association[viewOpts, PlotRange -> plotRange];
-  ConstructGraphicsViewTransform[Echo @ viewAssoc]
+  ConstructGraphicsViewTransform[viewAssoc]
 ];
 
 (**************************************************************************************************)
