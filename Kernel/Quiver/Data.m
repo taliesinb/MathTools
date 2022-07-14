@@ -85,6 +85,21 @@ processTagEntry[tag_, {part_}] :=
 processTagEntry[CardinalSet[tags_], {part_}] :=
   Scan[KeyAppendTo[$tagAssoc, If[$isTISigned, Identity, StripInverted] @ #1, part]&, tags];
 
+
+(**************************************************************************************************)
+
+PublicFunction[EdgeToTagIndex]
+
+EdgeToTagIndex[graph_ ? EdgeTaggedGraphQ] := EdgeToTagIndex @ EdgeList @ graph;
+
+EdgeToTagIndex[edges_List] := Scope[
+  $index = Data`UnorderedAssociation[];
+  Scan[insertETTI, edges];
+  $index
+];
+
+insertETTI[head_[a_, b_, card_]] := ($index[head[a, b]] = card; $index[head[b, a]] = Inverted @ card);
+
 (**************************************************************************************************)
 
 PublicFunction[TagVertexOutTable]

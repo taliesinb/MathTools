@@ -12,15 +12,27 @@ _BundleSectionRewritingSystem := (Message[BundleSectionRewritingSystem::args]; $
 
 declareRewritingSystemDispatch["BundleSectionRewriting", BundleSectionRewritingSystemProperty]
 
-BundleSectionRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] :=
-  BundleSectionRewritingCayleyFunction; (* why not prefill to make this internal use faster *)
+BundleSectionRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] := Scope[
+  UnpackStringOptions[{opts}, True, labeled];
+  If[labeled,
+    LabeledSectionRewritingCayleyFunction,
+    SectionRewritingCayleyFunction
+  ]
+];
+
+BundleSectionRewritingSystemProperty[data_, "AllStates"] :=
+  FindAllBundleSections[data["BundleGraph"]];
 
 (**************************************************************************************************)
 
-PublicFunction[BundleSectionRewritingCayleyFunction]
+PublicFunction[LabeledSectionRewritingCayleyFunction, SectionRewritingCayleyFunction]
 
-BundleSectionRewritingCayleyFunction[BundleSection[sec_, hash_]] := Scope[
-  UnpackAssociation[Lookup[QuiverGeometryLoader`$BundleGraphCache, hash], verticalAdjacency, baseAdjacency, areBundleAdjacent];
+SectionRewritingCayleyFunction[bs_] := Block[{makeLabeledRewrittenSection = makeUnlabeledRewrittenSection},
+  LabeledSectionRewritingCayleyFunction[bs]
+];
+
+LabeledSectionRewritingCayleyFunction[BundleSection[sec_, hash_]] := Scope[
+  UnpackAssociation[bundleHashLookup @ hash, verticalAdjacency, baseAdjacency, areBundleAdjacent, cardinalIndex];
   Flatten @ KeyValueMap[
     {b, f} |-> (
       v = BundleVertex[b, f];
@@ -29,9 +41,34 @@ BundleSectionRewritingCayleyFunction[BundleSection[sec_, hash_]] := Scope[
       (* get base nbors *)
       bnbs = baseAdjacency[b];
       fnbs //= Select[fnb |-> AllTrue[bnbs, bnb |-> areBundleAdjacent[{fnb, BundleVertex[bnb, sec @ bnb]}]]];
-      BundleSection[ReplacePart[sec, b -> Last[#]], hash]& /@ fnbs
+      makeLabeledRewrittenSection[sec, hash, v] /@ fnbs
     ),
     sec
   ]
 ];
 
+makeLabeledRewrittenSection[sec_, hash_, v_][v2:BundleVertex[b_, f_]] :=
+  Labeled[
+    BundleSection[
+      ReplacePart[sec, Key[b] -> f],
+      hash
+    ],
+    SectionRewriteCardinal[b, Last @ cardinalIndex[DirectedEdge[v, v2]]]
+  ];
+
+makeUnlabeledRewrittenSection[sec_, hash_, v_][v2:BundleVertex[b_, f_]] :=
+  BundleSection[
+    ReplacePart[sec, Key[b] -> f],
+    hash
+  ];
+
+(* there is no meaning to inverting the base vertex of a section rewrite *)
+SectionRewriteCardinal[a_, Inverted[b_]] := Inverted[SectionRewriteCardinal[a, b]];
+
+(**************************************************************************************************)
+
+PublicHead[SectionRewriteCardinal]
+
+declareBoxFormatting[
+  SectionRewriteCardinal[b_, f_] :> makeColonPair[b, f]
+];

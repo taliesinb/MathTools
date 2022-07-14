@@ -83,12 +83,18 @@ declareSyntaxInfo[LatticeQuiver, {_, _, OptionsPattern[]}];
 RewriteQuiver[system_RewritingSystemObject, initialState_, opts:OptionsPattern[]] :=
   rewriteGraphQuiver[system, initialState, True, opts];
 
+RewritingSystemObject::noallstates = "Rewriting system cannot enumerate set of all states."
+
 RewriteGraph[system_RewritingSystemObject, initialState_, opts:OptionsPattern[]] :=
   rewriteGraphQuiver[system, initialState, False, opts];
 
 rewriteGraphQuiver[system_, initialState_, isQuiver_, opts:OptionsPattern[]] := Scope[
   cayleyFunction = system["CayleyFunction", "Labeled" -> True (* isQuiver *)];
   canonFunction = system["CanonicalizationFunction"];
+  If[initialState === All,
+    initialState = system["AllStates"];
+    If[!ListQ[initialState], ReturnFailed[RewritingSystemObject::noallstates]]
+  ];
   initialState //= ToList;
   If[canonFunction =!= None,
     cayleyFunction = cayleyFunction /* applyCanonicalizationFunction[canonFunction];

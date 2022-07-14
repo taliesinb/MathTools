@@ -10,8 +10,15 @@ BundleGraphQ[g_] := GraphQ[g] && VertexCount[g, BundleVertex[_, _]] === VertexCo
 PublicHead[BundleVertex, BundleCardinal]
 
 declareBoxFormatting[
-  BundleVertex[b_, f_] :> SuperscriptBox[ToBoxes @ Style[f, $Red], ToBoxes @ Style[b, $Blue]]
+  BundleVertex[b_, f_] :> makeColonPair[b, f],
+  BundleCardinal[b_, f_] :> makeColonPair[b, f]
 ];
+
+BundleCardinal /: Inverted[c_BundleCardinal] := Map[Inverted, c];
+
+PrivateFunction[makeColonPair]
+
+makeColonPair[a_, b_] := ToBoxes @ Row[{a, GrayForm @ ":", b}];
 
 (**************************************************************************************************)
 

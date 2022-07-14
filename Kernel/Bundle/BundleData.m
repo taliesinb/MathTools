@@ -55,6 +55,8 @@ getBundleGraphData[bundleGraph_, baseGraph_:Automatic, fiberGraph_:None] := Scop
   horizontalFoliation = CardinalSubquiver[bundleGraph, BundleCardinal[_, None]];
   verticalFoliation = CardinalSubquiver[bundleGraph, BundleCardinal[None, _]];
 
+  cardinalIndex = EdgeToTagIndex @ bundleGraph;
+
   data = Association[
     "Hash" -> hash,
     "BundleGraph" -> bundleGraph,
@@ -71,7 +73,8 @@ getBundleGraphData[bundleGraph_, baseGraph_:Automatic, fiberGraph_:None] := Scop
     "VerticalFoliation" -> verticalFoliation,
     "AreBundleAdjacent" -> areBundleAdjacent,
     "AreBaseAdjacent" -> areBaseAdjacent,
-    "FiberVertexColorFunction" -> fiberVertexColorFunction
+    "FiberVertexColorFunction" -> fiberVertexColorFunction,
+    "CardinalIndex" -> cardinalIndex
   ];
 
   AssociateTo[QuiverGeometryLoader`$BundleGraphCache, hash -> data];
