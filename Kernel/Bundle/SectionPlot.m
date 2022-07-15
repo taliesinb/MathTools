@@ -2,7 +2,7 @@ PublicFunction[BundleSectionPlot]
 
 Options[BundleSectionPlot] = {
   Method -> "Color",
-  ImageSize -> 100,
+  ImageSize -> Automatic,
   $ExtendedGraphOptions
 };
 
@@ -15,6 +15,7 @@ BundleSectionPlot::method = "Method should be one of ``.";
 BundleSectionPlot[expr_, OptionsPattern[]] := Scope[
 
   UnpackOptions[method, $imageSize];
+
   plotter = Switch[method,
     "Color"|"Base", BundleSectionPlotColor,
     "Total",        BundleSectionPlotTotal,
@@ -33,7 +34,7 @@ BundleSectionPlotColor[BundleSection[sec_Association, hash_]] :=
     hashBaseGraph[hash],
     VertexColorFunction -> (sec /* hashColorFunc[hash]),
     GraphTheme -> "BundleSectionPlot",
-    ImageSize -> $imageSize
+    If[$imageSize === Automatic, Seq[], ImageSize -> $imageSize]
   ];
 
 BundleSectionPlotTotal[BundleSection[sec_Association, hash_]] :=
@@ -42,7 +43,7 @@ BundleSectionPlotTotal[BundleSection[sec_Association, hash_]] :=
     RegionColorRules -> {ConnectedSubgraph[Map[Point, bundleSectionVertices[sec]]] -> $Red, All -> $LightGray},
     GraphTheme -> "BundleSectionPlot",
     LayoutDimension -> 2,
-    ImageSize -> $imageSize
+    If[$imageSize === Automatic, Seq[], ImageSize -> $imageSize]
   ];
 
 BundleSectionPlotLine[BundleSection[sec_Association, hash_]] :=
@@ -52,7 +53,7 @@ BundleSectionPlotLine[BundleSection[sec_Association, hash_]] :=
     VertexSize -> 5, ImagePadding -> 10,
     GraphTheme -> "BundleSectionPlot",
     LayoutDimension -> 2,
-    ImageSize -> $imageSize
+    If[$imageSize === Automatic, Seq[], ImageSize -> $imageSize]
   ];
 
 BundleSectionPlotArray[BundleSection[sec_Association, hash_]] := Scope[
@@ -83,7 +84,7 @@ $BundleSectionPlotThemeRules = {
   VertexSize -> 8,
   Frame -> True,
   ImagePadding -> 10,
-  EdgeLength -> 20
+  ImageSize -> "Edge" -> 20
 };
 
 $GraphThemeData["BundleSectionPlot"] := $BundleSectionPlotThemeRules;

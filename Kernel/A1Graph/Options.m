@@ -17,7 +17,7 @@ $edgeAnnotationsPattern = Alternatives[
   None
 ];
 $layoutDimensionPattern = Alternatives[
-  Automatic, None, 2, 3
+  Automatic, None, 1, 2, 3
 ];
 
 $graphMetricPattern = Alternatives[

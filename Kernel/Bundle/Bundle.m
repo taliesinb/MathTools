@@ -2,8 +2,13 @@
 
 PublicFunction[BundleGraphQ]
 
-General::notbundle = "Input is not a bundle graph."
-BundleGraphQ[g_] := GraphQ[g] && VertexCount[g, BundleVertex[_, _]] === VertexCount[g];
+General::notbundle = "Input is not a bundle graph, which is a directed graph with vertices of the form \
+BundleVertex[..., ...] and edges tagged with BundleCardinal[_, _]."
+BundleGraphQ[g_] := And[
+  EdgeTaggedGraphQ[g],
+  VertexCount[g, BundleVertex[_, _]] === VertexCount[g],
+  EdgeCount[g, DirectedEdge[_, _, BundleCardinal[_, _]]] === EdgeCount[g]
+];
 
 (**************************************************************************************************)
 
@@ -11,7 +16,9 @@ PublicHead[BundleVertex, BundleCardinal]
 
 declareBoxFormatting[
   BundleVertex[b_, f_] :> makeColonPair[b, f],
-  BundleCardinal[b_, f_] :> makeColonPair[b, f]
+  BundleCardinal[b_, f_] :> makeColonPair[b, f],
+  BundleCardinal[None, f_] :> makeColonPair["|", f],
+  BundleCardinal[b_, None] :> makeColonPair[b, "-"]
 ];
 
 BundleCardinal /: Inverted[c_BundleCardinal] := Map[Inverted, c];
@@ -24,15 +31,22 @@ makeColonPair[a_, b_] := ToBoxes @ Row[{a, GrayForm @ ":", b}];
 
 PublicFunction[BundleToBaseGraph]
 
+BundleToBaseGraph::noedges = "The base graph appears to have no edges.";
 BundleToBaseGraph[bundle_Graph] := Scope[
   If[!BundleGraphQ[bundle], ReturnFailed["notbundle"]];
   {vertices, edges} = VertexEdgeList[bundle];
   baseVertices = DeleteDuplicates @ FirstColumn @ vertices;
   baseEdges = UniqueCases[edges, head_[BundleVertex[b0_, _],  BundleVertex[b1_, _], BundleCardinal[bt_, _]] /; b0 =!= b1 :> head[b0, b1, bt]];
+  If[baseEdges === {}, Message[BundleToBaseGraph::noedges]];
+  vertexCoords = None;
   vcf = LookupExtendedOption[bundle, VertexCoordinateFunction];
-  baseVCF = If[MatchQ[vcf, BundleVertexCoordinateFunction[_, _, _]], Map[TakeOperator[2], First @ vcf], Automatic];
+  baseVCF = If[MatchQ[vcf, BundleVertexCoordinateFunction[_, _, _]], Map[TakeOperator[2], First @ vcf],
+    vertexCoords = GroupBy[Normal @ LookupVertexCoordinates[bundle], PartOperator[1, 1] -> Last, Mean];
+    None
+  ];
   ExtendedGraph[baseVertices, baseEdges,
     VertexCoordinateFunction -> baseVCF,
+    VertexCoordinates -> vertexCoords,
     GraphTheme -> LookupExtendedOption[bundle, GraphTheme]
   ]
 ];
@@ -72,10 +86,12 @@ TrivialBundleGraph[baseGraph_, fiberGraph_, opts:OptionsPattern[]] := Scope[
     If[Length[First[fiberCoords]] == 2, fiberCoords //= Map[Prepend[0]]];
   ];
   fColors = LookupCardinalColors[fiberGraph];
+  bColors = LookupCardinalColors[baseGraph];
   bundleGraph = ExtendedGraph[vertices, edges,
     FilterOptions[opts],
-    CardinalColorRules -> KeyValueMap[BundleCardinal[None, #1] -> #2&, fColors],
+    CardinalColorRules -> Join[KeyValueMap[BundleCardinal[None, #1] -> #2&, fColors], KeyValueMap[BundleCardinal[#1, None] -> #2&, bColors]],
     VertexCoordinateFunction -> BundleVertexCoordinateFunction[baseCoords, fiberCoords, fiberScale],
+    VisibleCardinals -> BundleCardinal[None, _] | BundleCardinal[_, None],
     GraphTheme -> "BundleGraph"
   ];
   getBundleGraphData[bundleGraph, baseGraph, fiberGraph];
@@ -115,6 +131,7 @@ $BundleGraphThemeRules = {
   VertexSize -> 8,
   ImagePadding -> 10,
   ImageSize -> ("AverageEdge" -> 50),
+  VisibleCardinals ->
   ArrowheadPosition -> 0.75
 };
 

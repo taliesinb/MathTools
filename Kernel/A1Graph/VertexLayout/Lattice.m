@@ -9,7 +9,9 @@ LatticeLayout[opts:OptionsPattern[]][data_] := Scope[
 
   UnpackAssociation[data, indexGraph, graph];
 
-  {vertexCoordinates, visitedEdges} = LatticeQuiverCoordinates[graph, basisVectors];
+  result = LatticeQuiverCoordinates[graph, basisVectors];
+  If[FailureQ[result], ReturnFailed[]];
+  {vertexCoordinates, visitedEdges} = result;
 
   vertexCoordinates *= scaleFactor;
 

@@ -9,8 +9,9 @@ $threePoints = CirclePoints[3];
 
 LinearLayout[opts:OptionsPattern[]][data_] := Scope[
   UnpackOptions[method, orientation];
-  UnpackAssociation[data, vertexCount];
+  UnpackAssociation[data, vertexCount, layoutDimension];
   SetAutomatic[method, If[AcyclicGraphQ[UndirectedGraph @ data["Graph"]], "Line", "Circle"]];
+  If[layoutDimension === 1, method = "Line"];
   SetAutomatic[orientation, If[method === "Line", Left, If[vertexCount === 3, Top, Left]]];
   data["VertexCoordinates"] = orientationTransform[orientation] @ Switch[method,
     "Line",

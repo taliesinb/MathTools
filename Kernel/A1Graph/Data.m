@@ -9,7 +9,7 @@ Signed is an option to various graph utility functions.
 PublicFunction[AdjacentVerticesPredicate]
 
 AdjacentVerticesPredicate[graph_] := Scope[
-  edges = {#1, #2}& @@@ ToEdgeList[graph];
+  edges = {#1, #2}& @@@ ToEdges[graph];
   ConstantUAssociation[Join[edges, Reverse[edges, 2]], True] /* TrueQ
 ];
 

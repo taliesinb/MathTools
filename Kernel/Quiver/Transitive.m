@@ -183,6 +183,17 @@ SquareQuiver[spec:{$ModIntP, $ModIntP}, {cx_, cy_}, opts:OptionsPattern[]] := Sc
 
 (**************************************************************************************************)
 
+PublicFunction[SquareModulusEdgeShapeFunction]
+
+(* for users *)
+SquareModulusEdgeShapeFunction[x_Integer, y_Integer] :=
+  SquareModulusEdgeShapeFunction[Modulo[x], Modulo[y]];
+
+SquareModulusEdgeShapeFunction[x_, y_] :=
+  Part[modEdgeShapeFunctionSpec[{x, y}, {{1, 0}, {0, 1}}], 1, 2]
+
+(**************************************************************************************************)
+
 PublicFunction[CubicQuiver]
 
 Options[CubicQuiver] = $transitiveQuiverOptions;
@@ -458,11 +469,23 @@ chooseLatticeBasisVectors = Case[
 ]
 
 LatticeQuiverCoordinates::badlen = "Number of cardinals `` didn't match number of basis vectors ``."
+LatticeQuiverCoordinates::badrules = "No basis rules matched the cardinal ``."
+LatticeQuiverCoordinates::badbasis = "Basis `` should be a list of vectors, rules, or an association.";
 
 LatticeQuiverCoordinates[quiver_Graph, latticeBasis_] := Scope[
   cardinalList = CardinalList @ quiver;
-  If[!SameLengthQ[cardinalList, latticeBasis], ReturnFailed["badlen", Length @ cardinalList, Length @ latticeBasis]];
-  If[ListQ[latticeBasis], latticeBasis = AssociationThread[cardinalList, latticeBasis]];
+  Which[
+    RuleListQ[latticeBasis],
+      latticeBasis = Association @ Map[
+        # -> Replace[Total[ReplaceList[#, latticeBasis]], 0 :> ReturnFailed["badrules", #]]&,
+        cardinalList
+      ],
+    ListQ[latticeBasis],
+      If[!SameLengthQ[cardinalList, latticeBasis], ReturnFailed["badlen", Length @ cardinalList, Length @ latticeBasis]];
+      latticeBasis = AssociationThread[cardinalList, latticeBasis],
+    !AssociationQ[latticeBasis],
+      ReturnFailed["badbasis", latticeBasis]
+  ];
   indexGraph = ToIndexGraph @ quiver;
   outTable = VertexOutVertexTagTable @ indexGraph;
   dims = Rest @ Dimensions @ Values @ latticeBasis;

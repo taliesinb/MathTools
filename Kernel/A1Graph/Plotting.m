@@ -487,6 +487,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     automaticLegends = <||>;
 
+    (* NOTE: themes should always use ImageSize -> "Edge" -> xxx so that user can override *)
     If[edgeLength === None && imageSize === Automatic, edgeLength = 30];
     If[edgeLength =!= None, imageSize = "Edge" -> edgeLength];
 
@@ -1337,7 +1338,7 @@ processArrowheadSize = Case[
 ];
 
 filterCardinals[cards_][CardinalSet[set_List]] := CardinalSet @ Select[set, MemberQ[cards, Inverted[#] | #]&];
-filterCardinals[cards_][card_] := If[MemberQ[cards, card], card, Null];
+filterCardinals[cards_][card_] := If[MemberQ[cards, card] || AnyTrue[cards, MatchQ[card, #]&], card, Null];
 
 drawTagGroupArrowheadEdges[indices_, style_] := Scope[
 

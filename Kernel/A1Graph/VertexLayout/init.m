@@ -236,6 +236,9 @@ ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
     ];
   ];
 
+  If[MatchQ[Dimensions @ edgeCoordinateLists, {_, 2, 2}],
+    edgeCoordinateLists = fixEdgeVertexIntersections[vertexCoordinates, edgeCoordinateLists]];
+
   If[CoordinateMatrixQ[vertexCoordinates, 3] && layoutDimension == 2,
     SetAutomatic[viewOptions, $automaticViewOptions];
     viewOptions = Association[PlotRange -> CoordinateBounds[vertexCoordinates], viewOptions];
@@ -500,6 +503,10 @@ VertexEdgeCoordinateData[data_Association, vertexLayout_] := Scope[
   $vertexCoordinates //= ToPackedReal;
   correctSelfLoopsNew[selfLoopRadius];
 
+  If[vertexCoordinates =!= Automatic && MatchQ[Dimensions @ $edgeCoordinateLists, {_, 2, 2}],
+    (* find simplistic edges that are likely to overlap vertices *)
+    $edgeCoordinateLists = fixEdgeVertexIntersections[$vertexCoordinates, $edgeCoordinateLists]];
+
   If[UndirectedGraphQ[graph],
     $edgeCoordinateLists = MapThread[orientEdgeCoordsNew, {$edgeCoordinateLists, indexEdges}];
   ];
@@ -544,6 +551,32 @@ fixSelfLoopNew[selfLoopRadius_][coords_] := Scope[
   centeredCoords *= selfLoopRadius / (scale / 2);
   ToPackedReal @ PlusVector[centeredCoords, terminus]
 ]
+
+(**************************************************************************************************)
+
+fixEdgeVertexIntersections[vertexCoordinates_, edgeCoordinateLists_] := Scope[
+  edgeLengths = Map[If[First[#] === Last[#], 0, LineLength[#]]&, edgeCoordinateLists];
+  scale = Quantile[DeleteCases[edgeLengths, 0], .15];
+  longIndices = SelectIndices[edgeLengths, GreaterEqualThan[scale * 2]];
+  If[longIndices === {}, Return @ edgeCoordinateLists];
+  vertexNearest = Nearest[vertexCoordinates];
+  MapIndices[displaceVertexIntersectingEdges, longIndices, edgeCoordinateLists]
+];
+
+displaceVertexIntersectingEdges[{a_, b_}] := Scope[
+  If[Min[EuclideanDistance[First @ a, First @ b], EuclideanDistance[Last @ a, Last @ b]] > scale/5, Return @ {a, b}];
+  points = Take[Lerp[a, b, Into[30]], {2, 19}];
+  nearest = Union @@ vertexNearest[points, {All, scale / 15}];
+  nearest = DeleteCases[nearest, a | b];
+  If[nearest === {}, Return @ {a, b}];
+  dy = Normalize[b - a] / 4;
+  dx = VectorRotate90[dy];
+  {a, Splice @ halfBend[a - dy/2, dx, -dy], Splice @ Reverse @ halfBend[b + dy/2, dx, dy], b}
+];
+
+
+$bendMatrix = {{0.,0.},{0.04,0.19},{0.15,0.35},{0.31,0.46},{0.5,0.5},{0.69,0.46},{0.85,0.35},{0.96,0.19},{1.,0.}};
+halfBend[p_, x_, y_] := Threaded[p] + Dot[$bendMatrix, ToPacked @ {x, y}];
 
 (**************************************************************************************************)
 

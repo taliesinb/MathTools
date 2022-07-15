@@ -74,7 +74,11 @@ rewritingSystemObjectBoxes[rs:RewritingSystemObject[data_], form_] := Scope[
 
 PublicFunction[RewriteQuiver, RewriteGraph]
 
-Options[rewriteGraphQuiver] = Options[RewriteQuiver] = Options[RewriteGraph] = $ExtendedGraphOptions;
+Options[rewriteGraphQuiver] = Options[RewriteQuiver] = Options[RewriteGraph] = JoinOptions[
+  MaxVertices -> Infinity,
+  MaxEdges -> Infinity,
+  $ExtendedGraphOptions
+];
 
 declareSyntaxInfo[LatticeGraph, {_, _, OptionsPattern[]}];
 declareSyntaxInfo[LatticeQuiver, {_, _, OptionsPattern[]}];
@@ -83,6 +87,7 @@ RewriteQuiver[system_RewritingSystemObject, initialState_, opts:OptionsPattern[]
   rewriteGraphQuiver[system, initialState, True, opts];
 
 RewritingSystemObject::noallstates = "Rewriting system cannot enumerate set of all states."
+RewritingSystemObject::noinitstates = "Empty set of initial states.";
 
 RewriteGraph[system_RewritingSystemObject, initialState_, opts:OptionsPattern[]] :=
   rewriteGraphQuiver[system, initialState, False, opts];
@@ -99,6 +104,7 @@ rewriteGraphQuiver[system_, initialState_, isQuiver_, opts:OptionsPattern[]] := 
     cayleyFunction = cayleyFunction /* applyCanonicalizationFunction[canonFunction];
     initialState //= Map[canonFunction]
   ];
+  If[initialState === {}, ReturnFailed[RewritingSystemObject::noinitstates]];
   UnpackOptions[layoutDimension];
   If[layoutDimension === 3, opts = Sequence[opts, VertexLayout -> SpringElectricalLayout[]]];
   result = LatticeQuiver[
