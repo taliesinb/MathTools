@@ -106,7 +106,7 @@ GraphContractionLattice[graph_, contractedGraphOptions_List, userOpts:OptionsPat
   
   ExtendedGraph[
     Range @ Length @ vlist, ielist, FilterOptions @ userOpts,
-    GraphLayout -> "CenteredTree",
+    GraphLayout -> TreeVertexLayout[Balanced -> True],
     VertexAnnotations -> <|"ContractedGraph" -> contractedGraphs|>,
     ArrowheadShape -> None, VertexSize -> innerSize, VertexShapeFunction -> "ContractedGraph"
   ]

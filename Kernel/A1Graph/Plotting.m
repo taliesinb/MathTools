@@ -2896,17 +2896,6 @@ ExtendedGraphPlot::badtooltipspec = "The tooltip specification `` was not one of
 
 (**************************************************************************************************)
 
-PublicFunction[GraphEmbeddingGallery]
-
-$layouts = {
-  "GravityEmbedding", "HighDimensionalEmbedding", "PlanarEmbedding",
-  "SpectralEmbedding", "SpringElectricalEmbedding", "SpringEmbedding", "TutteEmbedding"
-};
-
-GraphEmbeddingGallery[g_Graph] := Table[Graph[g, GraphLayout -> layout, PlotLabel -> layout], {layout, $layouts}]
-
-(**************************************************************************************************)
-
 PublicFunction[ShowLabels, VertexLabelForm, VertexIndexForm, VertexTooltipForm, EdgeLabelForm]
 
 ShowLabels[e_] := VertexLabelForm[e];

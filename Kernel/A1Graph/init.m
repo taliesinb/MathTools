@@ -1,4 +1,6 @@
-PublicOption[ExtendedGraphLayout, VertexLayout, GraphMetric, GraphOrigin]
+PublicOption[VertexLayout, VertexOverlapResolution, GraphOrigin]
+
+PublicOption[GraphMetric]
 
 PublicOption[ArrowheadShape, ArrowheadSize, ArrowheadStyle, ArrowheadPosition, TwoWayStyle]
 
@@ -11,8 +13,6 @@ PublicOption[CardinalColors, CardinalColorRules, CardinalColorFunction]
 PublicOption[VertexLabelPosition, VertexLabelSpacing, VertexLabelBaseStyle, VertexLabelOrientation]
 
 PublicOption[VertexFontSize, VertexBackground]
-
-PublicOption[VertexOverlapResolution]
 
 PublicOption[EdgeLabelPosition, EdgeLabelSpacing, EdgeLabelBaseStyle, EdgeLabelOrientation]
 
@@ -69,7 +69,6 @@ $extendedGraphOptionsRules = {
   EdgeTooltips                        -> None,
   EdgeLength                          -> None,
   EpilogFunction                      -> None,
-  ExtendedGraphLayout                 -> Automatic,
   ExtendImagePadding                  -> True,
   FrameFade                           -> None,
   GraphLegend                         -> None,
@@ -100,7 +99,7 @@ $extendedGraphOptionsRules = {
   VertexLabelPosition                 -> Automatic,
   VertexLabelSpacing                  -> 0,
   VertexLabelOrientation              -> Automatic,
-  VertexLayout                        -> None,
+  VertexLayout                        -> Automatic,
   VertexOverlapResolution             -> None,
   VertexTooltips                      -> None,
   ViewOptions                         -> Automatic,
@@ -159,13 +158,6 @@ $extendedGraphOptionSymbols2 = Append[$extendedGraphOptionSymbols, AnnotationRul
 
 splitUserGraphOptions[options___Rule] := Scope[
   options = {options};
-  (* so the kernel will randomly mess with and rewrite GraphLayout, and hence ExtendedGraphLayout lets us avoid this,
-  and override it. i used to rewrite GraphLayout to *become* ExtendedGraphLayout so users did not have to understand
-  this, but the kernel would then take over the user stuff sometimes when graphs were reconstructed from existing graphs,
-  so disabled this here *)
-(*   If[!MemberQ[options, ExtendedGraphLayout -> _] && MemberQ[options, GraphLayout -> Except[{"Dimension" -> _}]],
-    options = Replace[options, Rule[GraphLayout, l_] :> Rule[ExtendedGraphLayout, l], {1}]];
- *)
   extOptions = DeleteDuplicatesBy[TakeOptions[options, $extendedGraphOptionSymbols], First];
   options = Map[optionFixup] @ DeleteOptions[options, $extendedGraphOptionSymbols2];
   {options, checkGraphAnnotations @ extOptions}

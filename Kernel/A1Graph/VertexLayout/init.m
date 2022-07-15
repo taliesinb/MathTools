@@ -39,285 +39,15 @@ ecoords$ is a list of coordinate matrices in the same order as EdgeList[graph$].
 "
 
 ExtractGraphPrimitiveCoordinates::badvcoordrules = "VertexCoordinateRules is not a list of rules.";
-ExtractGraphPrimitiveCoordinates::badvcoordfunc = "VertexCoordinateFunction did not return a valid result.";
-ExtractGraphPrimitiveCoordinates::badvcoords = "Initial setting of VertexCoordinates is not a matrix of coordinates.";
-ExtractGraphPrimitiveCoordinates::glayoutfail = "Failed to layout graph, using circle.";
-ExtractGraphPrimitiveCoordinates::badctrans = "CoordinateTransformFunction produced invalid values, using circle.";
-
-ExtractGraphPrimitiveCoordinates[graph_] := (*GraphCachedScope[graph, *) Scope[
-
-  If[!GraphQ[graph], ReturnFailed[]];
-
-  UnpackExtendedThemedOptions[graph, vertexLayout];
-  If[vertexLayout =!= None, Return @ ExtractGraphPrimitiveCoordinatesNew[graph]];
-
-  igraph = IndexEdgeTaggedGraph @ ToIndexGraph @ graph;
-  If[!GraphQ[igraph], ReturnFailed[]];
-
-  $Graph = graph;
-
-  If[EdgeCount[$Graph] == VertexCount[$Graph] == 0,
-    Return[{{}, {}}];
-  ];
-
-  UnpackAnonymousThemedOptions[graph, Automatic,
-    graphLayout, vertexCoordinates, plotRange
-  ];
-  initialVertexCoordinates = vertexCoordinates;
-
-  UnpackExtendedThemedOptions[graph,
-    layoutDimension, extendedGraphLayout, viewOptions, coordinateTransformFunction, coordinateRotation,
-    vertexCoordinateRules, vertexCoordinateFunction, selfLoopRadius, multiEdgeDistance, packingSpacing
-  ];
-    
-  actualDimension = Which[
-    ContainsQ[graphLayout, "Dimension" -> 3] || CoordinateMatrixQ[vertexCoordinates, 3], 3,
-    ContainsQ[graphLayout, "Dimension" -> 2] || CoordinateMatrixQ[vertexCoordinates, 2], 2,
-    True, Automatic
-  ];
-  graphLayout //= DeleteCases["Dimension" -> _];
-  Which[
-    actualDimension === layoutDimension === Automatic,
-      actualDimension = 2,
-    actualDimension === Automatic,
-      actualDimension = layoutDimension,
-    True,
-      Null
-  ];
-
-  If[MatchQ[graphLayout, {___, "VertexLayout" -> _, ___}], graphLayout = Lookup[graphLayout, "VertexLayout"]];
-  If[extendedGraphLayout =!= Automatic, graphLayout = extendedGraphLayout];
-  SetAutomatic[graphLayout, {}];
-
-  If[MemberQ[graphLayout, "NudgeDistance" -> _],
-    nudgeDistance = FirstCase[graphLayout, ("NudgeDistance" -> d_) :> d];
-    graphLayout //= DeleteOptions["NudgeDistance"];
-  ,
-    nudgeDistance = Automatic;
-  ];
-
-  vertexList = VertexList @ graph;
-  vertexCount = Length @ vertexList;
-  vertexCoordinates = ConstantArray[0., {vertexCount, actualDimension}];
-
-  edgeList = EdgeList @ igraph;
-  edgeCount = Length @ edgeList;
-  edgeCoordinateLists = ConstantArray[{}, edgeCount];
-
-  If[UndirectedGraphQ[igraph] || MixedGraphQ[igraph],
-    edgeList //= CanonicalizeEdges];
-
-  method = Match[graphLayout, s_String | {s_String, ___} :> s, Automatic];
-  autoLayout = Match[graphLayout, {s_String, opts___} :> {opts}, {___String, opts___} :> opts, Automatic];
-
-  If[method === "Linear", method = If[AcyclicGraphQ[UndirectedGraph @ graph], "Line", "Circle"]];
-  Switch[method,
-    "Line",
-      graphLayout = autoLayout;
-      SetAutomatic[initialVertexCoordinates, N[{# - 1, 0}& /@ Range[vertexCount]]],
-    "Circle",
-      graphLayout = autoLayout;
-      SetAutomatic[initialVertexCoordinates, N @ RotateRight[CirclePoints @ vertexCount, 1]],
-    "LayeredDigraphEmbedding",
-      graphLayout //= ReplaceAll[
-        Rule["RootVertex", v_] :> Rule["RootVertex", IndexOf[vertexList, v]]
-      ],
-    "Random",
-      graphLayout = autoLayout;
-      SetAutomatic[initialVertexCoordinates, RandomReal[{-1, 1}, {vertexCount, actualDimension}]],
-    "Tree" | "CenteredTree" | "HorizontalTree" | "HorizontalCenteredTree" | "InvertedCenteredTree",
-      graphLayout = {"LayeredDigraphEmbedding"};
-      root = LookupExtendedOption[graph, GraphOrigin];
-      If[root =!= None,
-        rootIndex = IndexOf[vertexList, root];
-        If[IntegerQ[rootIndex], AppendTo[graphLayout, "RootVertex" -> rootIndex]];
-      ];
-      If[StringContainsQ[method, "Horizontal"], AppendTo[graphLayout, "Orientation" -> Left]];
-      If[StringContainsQ[method, "CenteredTree"], coordinateTransformFunction = "CenterHorizontal"];
-      If[method === "HorizontalCenteredTree", coordinateTransformFunction = "CenterVertical"];
-      If[StringContainsQ[method, "Inverted"], coordinateTransformFunction = {coordinateTransformFunction, "ReflectVertical"}];
-    ,
-    s_String /; !StringEndsQ[s, "Embedding"],
-      graphLayout //= ReplaceAll[method -> (method <> "Embedding")],
-    True,
-      Null
-  ];
-
-  extraGraphOptions = {};
-  If[(MultigraphQ[igraph] || !DuplicateFreeQ[Sort /@ Take[edgeList, All, 2]]),
-    SetAutomatic[multiEdgeDistance, 0.2];
-    AppendTo[extraGraphOptions, "MultiEdgeDistance" -> 2*multiEdgeDistance];
-  ];
-
-  If[packingSpacing =!= Automatic,
-    AppendTo[extraGraphOptions, "PackingLayout" -> {"LayeredTop", "Padding" -> packingSpacing}];
-  ];
-
-  If[graphLayout === {}, graphLayout = Automatic];
-  graphLayout = Prepend[extraGraphOptions, "VertexLayout" -> graphLayout];
-  
-  Which[
-    vertexCoordinateFunction =!= None,
-      initialVertexCoordinates = Map[vertexCoordinateFunction, vertexList];
-      If[!CoordinateMatrixQ[initialVertexCoordinates, _],
-        Message[ExtractGraphPrimitiveCoordinates::badvcoordfunc];
-        initialVertexCoordinates = None;
-      ,
-      Switch[
-        Last @ Dimensions @ initialVertexCoordinates,
-        1,
-          initialVertexCoordinates = AppendConstantColumn[initialVertexCoordinates, 0],
-        2|3,
-          Null,
-        _,
-          initialVertexCoordinates = DimensionReduce[initialVertexCoordinates, ReplaceAutomatic[layoutDimension, 3]];
-        ];
-      ];
-    ,
-    vertexCoordinateRules === None,
-      Null
-    ,
-    RuleListQ @ vertexCoordinateRules,
-      AppendTo[vertexCoordinateRules, _ -> None];
-      initialVertexCoordinates = VectorReplace[vertexList, vertexCoordinateRules];
-    ,
-    True,
-      Message[ExtractGraphPrimitiveCoordinates::badvcoordrules];
-  ];
-
-  If[ListQ @ initialVertexCoordinates,
-    If[!CoordinateMatrixQ[initialVertexCoordinates],
-      Message[ExtractGraphPrimitiveCoordinates::badvcoords];
-      initialVertexCoordinates = Automatic;
-    ,
-      If[nudgeDistance =!= 0,
-        initialVertexCoordinates = nudgeOverlappingVertices[initialVertexCoordinates, nudgeDistance, plotRange]];
-    ];
-  ];
-
-  newGraph = If[actualDimension == 3, Graph3D, Graph][
-    Range @ vertexCount, edgeList,
-    VertexShapeFunction -> captureVertexCoordinates,
-    EdgeShapeFunction -> captureEdgeCoordinates,
-    GraphLayout -> graphLayout,
-    VertexCoordinates -> initialVertexCoordinates
-  ];
-
-  gdResult = Check[GraphComputation`GraphDrawing @ newGraph, $Failed];
-
-  If[FailureQ[gdResult] || !MatrixQ[vertexCoordinates] || !VectorQ[edgeCoordinateLists, MatrixQ],
-    Message[ExtractGraphPrimitiveCoordinates::glayoutfail];
-    Print["GraphLayout -> ", graphLayout];
-    useFallbackLayout[];
-    Goto[end];
-  ];
-
-  vertexCoordinates = ToPackedReal @ vertexCoordinates;
-  correctSelfLoops[];
-
-  If[UndirectedGraphQ[graph],
-    edgeCoordinateLists = MapThread[orientEdgeCoords, {edgeCoordinateLists, edgeList}];
-  ];
-
-  applyCoordinateTransform[coordinateTransformFunction];
-  If[!CoordinateMatrixQ[vertexCoordinates],
-    Message[ExtractGraphPrimitiveCoordinates::badctrans];
-    useFallbackLayout[];
-    Goto[end];
-  ];
-
-  If[NumericQ[coordinateRotation],
-    If[CoordinateMatrixQ[vertexCoordinates, 3],
-      vertexCoordinates //= SphericalRotateVector[coordinateRotation];
-      edgeCoordinateLists //= SphericalRotateVector[coordinateRotation];
-    ,
-      vertexCoordinates //= RotateVector[coordinateRotation];
-      edgeCoordinateLists //= RotateVector[coordinateRotation];
-    ];
-  ];
-
-  If[MatchQ[Dimensions @ edgeCoordinateLists, {_, 2, 2}],
-    edgeCoordinateLists = fixEdgeVertexIntersections[vertexCoordinates, edgeCoordinateLists]];
-
-  If[CoordinateMatrixQ[vertexCoordinates, 3] && layoutDimension == 2,
-    SetAutomatic[viewOptions, $automaticViewOptions];
-    viewOptions = Association[PlotRange -> CoordinateBounds[vertexCoordinates], viewOptions];
-    viewTransform = ConstructGraphicsViewTransform[viewOptions];
-    vertexCoordinates //= viewTransform;
-    edgeCoordinateLists //= Map[viewTransform];
-  ];
-
-  Label[end];
-  {ToPackedReal @ vertexCoordinates, ToPackedRealArrays @ edgeCoordinateLists}
-];
-
-orientEdgeCoords[coords_, _DirectedEdge] := coords;
-orientEdgeCoords[coords_, UndirectedEdge[a_, b_, tag_]] := If[
-  EuclideanDistance[
-    First @ coords,
-    Part[vertexCoordinates, Part[edgeList, tag, 1]]
-  ] < 0.001,
-  coords, Reverse @ coords
-];
-
-captureVertexCoordinates[coords_, vertex_, _] :=
-  Part[vertexCoordinates, vertex] = coords;
-
-captureEdgeCoordinates[coords_, edge_] :=
-  Part[edgeCoordinateLists, Last @ edge] = coords;
-
-useFallbackLayout[] := (
-  vertexCoordinates = CirclePoints @ vertexCount;
-  If[actualDimension === 3, vertexCoordinates //= AppendColumn @ Zeros @ vertexCount];
-  edgeCoordinateLists = Part[vertexCoordinates, #]& /@ EdgePairs @ igraph;
-)
-
-correctSelfLoops[] := Scope[
-  selfLoopIndices = SelectIndices[edgeCoordinateLists, selfLoopQ];
-  If[selfLoopIndices === {}, Return[]];
-  edgeCoordinateLists ^= MapIndices[fixSelfLoop, selfLoopIndices, edgeCoordinateLists];
-];
-
-selfLoopQ[coords_] := First[coords] == Last[coords];
-
-(* fixSelfLoop[coords_] := Scope[
-  terminus = First @ coords;
-  mean = Mean @ coords;
-  If[selfLoopRadius === Automatic,
-    selfLoopRadius ^= EdgeLengthScale[edgeCoordinateLists, .5] / 4.0];
-  radialVector = selfLoopRadius * Normalize[mean - terminus];
-  center = terminus + radialVector;
-  circlePoints = CirclePoints[center, {selfLoopRadius, ArcTan @@ (-radialVector)}, 16];
-  AppendTo[circlePoints, First @ circlePoints];
-  ToPackedReal @ Reverse @ circlePoints
-]
- *)
-fixSelfLoop[coords_] := Scope[
-  terminus = First @ coords;
-  If[selfLoopRadius === Automatic,
-    selfLoopRadius ^= EdgeLengthScale[edgeCoordinateLists, .5] / 4.0];
-  radialVector = selfLoopRadius * Normalize[mean - terminus];
-  centeredCoords = PlusVector[coords, -terminus];
-  scale = Norm @ Part[centeredCoords, Ceiling[Length[centeredCoords] / 2]];
-  centeredCoords *= selfLoopRadius / (scale / 2);
-  ToPackedReal @ PlusVector[centeredCoords, terminus]
-]
-
-(**************************************************************************************************)
-
-PrivateFunction[ExtractGraphPrimitiveCoordinatesNew]
-
-(* swap this out when it is completely working *)
-
-ExtractGraphPrimitiveCoordinates::badvcoordrules = "VertexCoordinateRules is not a list of rules.";
 ExtractGraphPrimitiveCoordinates::badvcoordlen = "VertexCoordinates has length ``, but should have length ``.";
 ExtractGraphPrimitiveCoordinates::badvcoords = "Initial setting of VertexCoordinates is not a matrix of coordinates.";
 ExtractGraphPrimitiveCoordinates::glayoutfail = "Failed to layout graph, using circle.";
 ExtractGraphPrimitiveCoordinates::badctrans = "CoordinateTransformFunction produced invalid values, using circle.";
 ExtractGraphPrimitiveCoordinates::layoutobjres = "Layout object `` failed to returned a valid result.";
 
-ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
+ExtractGraphPrimitiveCoordinates[graph_] := Scope[
 
+  If[!GraphQ[graph], ReturnFailed[]];
   igraph = IndexEdgeTaggedGraph @ ToIndexGraph @ graph;
   If[!GraphQ[igraph], ReturnFailed[]];
 
@@ -338,7 +68,7 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
 
   (* unpack options and extended options *)
   UnpackAnonymousThemedOptions[graph, Automatic,
-    vertexCoordinates, plotRange
+    vertexCoordinates, plotRange, graphLayout
   ];
 
   UnpackExtendedThemedOptions[graph,
@@ -406,6 +136,16 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
     "VertexOverlapResolution" -> vertexOverlapResolution
   ];
 
+  (* TODO: fully support old graphLayout specs *)
+  Switch[graphLayout,
+    _String,
+      Return @ VertexEdgeCoordinateData[data, graphLayout],
+    {_String, ___},
+      Return @ VertexEdgeCoordinateData[data, First @ graphLayout],
+    _,
+      Null
+  ];
+
   result = vertexLayout @ data;
   If[MatchQ[result, {_ ? CoordinateMatrixQ, _ ? CoordinateMatricesQ}],
     {$vertexCoordinates, $edgeCoordinateLists} = result;
@@ -416,7 +156,7 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
   ];
 
   If[coordinateTransformFunction ~!~ None | {},
-    applyCoordinateTransformNew[coordinateTransformFunction];
+    applyCoordinateTransform[coordinateTransformFunction];
   ];
 
   If[NumericQ[coordinateRotation],
@@ -442,17 +182,8 @@ ExtractGraphPrimitiveCoordinatesNew[graph_] := Scope[
 
 $defaultVertexLayout := $defaultVertexLayout = SpringElectricalLayout[];
 
-(* we'll remove this when we've fully transitioned to the new code *)
-applyCoordinateTransformNew[trans_] := Block[{vertexCoordinates, edgeCoordinateLists},
-  {vertexCoordinates, edgeCoordinateLists} = {$vertexCoordinates, $edgeCoordinateLists};
-  applyCoordinateTransform[trans];
-  {$vertexCoordinates, $edgeCoordinateLists} = {vertexCoordinates, edgeCoordinateLists};
-];
-
 (* TODO: moveVertex, which will update the vertex, find all edges that start or end there,
 and shear them to match *)
-
-
 
 (**************************************************************************************************)
 
@@ -464,7 +195,6 @@ it expects to be given a VertexLayout, and will lay out both vertices and edges 
 if VertexCoordinates is not Automatic, it will supersede the layout algorithm and only edges will be laid out.
 self-loops will be manually corrected to have the correct scale
 *)
-
 
 VertexEdgeCoordinateData[data_Association, vertexLayout_] := Scope[
 
@@ -486,8 +216,8 @@ VertexEdgeCoordinateData[data_Association, vertexLayout_] := Scope[
 
   newGraph = Graph[
     indexVertices, indexEdges,
-    VertexShapeFunction -> captureVertexCoordinatesNew,
-    EdgeShapeFunction -> captureEdgeCoordinatesNew,
+    VertexShapeFunction -> captureVertexCoordinates,
+    EdgeShapeFunction -> captureEdgeCoordinates,
     GraphLayout -> graphLayout,
     VertexCoordinates -> vertexCoordinates
   ];
@@ -501,14 +231,14 @@ VertexEdgeCoordinateData[data_Association, vertexLayout_] := Scope[
   ];
 
   $vertexCoordinates //= ToPackedReal;
-  correctSelfLoopsNew[selfLoopRadius];
+  correctSelfLoops[selfLoopRadius];
 
   If[vertexCoordinates =!= Automatic && MatchQ[Dimensions @ $edgeCoordinateLists, {_, 2, 2}],
     (* find simplistic edges that are likely to overlap vertices *)
     $edgeCoordinateLists = fixEdgeVertexIntersections[$vertexCoordinates, $edgeCoordinateLists]];
 
   If[UndirectedGraphQ[graph],
-    $edgeCoordinateLists = MapThread[orientEdgeCoordsNew, {$edgeCoordinateLists, indexEdges}];
+    $edgeCoordinateLists = MapThread[orientEdgeCoords, {$edgeCoordinateLists, indexEdges}];
   ];
 
   If[vertexOverlapResolution ~!~ None | 0 | 0.,
@@ -518,14 +248,14 @@ VertexEdgeCoordinateData[data_Association, vertexLayout_] := Scope[
   {$vertexCoordinates, $edgeCoordinateLists}
 ];
 
-captureVertexCoordinatesNew[coords_, vertex_, _] :=
+captureVertexCoordinates[coords_, vertex_, _] :=
   Part[$vertexCoordinates, vertex] = coords;
 
-captureEdgeCoordinatesNew[coords_, edge_] :=
+captureEdgeCoordinates[coords_, edge_] :=
   Part[$edgeCoordinateLists, Last @ edge] = coords;
 
-orientEdgeCoordsNew[coords_, _DirectedEdge] := coords;
-orientEdgeCoordsNew[coords_, UndirectedEdge[a_, b_, tag_]] := If[
+orientEdgeCoords[coords_, _DirectedEdge] := coords;
+orientEdgeCoords[coords_, UndirectedEdge[a_, b_, tag_]] := If[
   EuclideanDistance[
     First @ coords,
     Part[$vertexCoordinates, Part[edgeList, tag, 1]]
@@ -533,16 +263,16 @@ orientEdgeCoordsNew[coords_, UndirectedEdge[a_, b_, tag_]] := If[
   coords, Reverse @ coords
 ];
 
-correctSelfLoopsNew[selfLoopRadius_] := Scope[
+correctSelfLoops[selfLoopRadius_] := Scope[
   selfLoopIndices = SelectIndices[$edgeCoordinateLists, selfLoopQ];
   If[selfLoopIndices === {}, Return[]];
   SetAutomatic[selfLoopRadius, EdgeLengthScale[$edgeCoordinateLists, .5] / 4.0];
-  $edgeCoordinateLists ^= MapIndices[fixSelfLoopNew[selfLoopRadius], selfLoopIndices, $edgeCoordinateLists];
+  $edgeCoordinateLists ^= MapIndices[fixSelfLoop[selfLoopRadius], selfLoopIndices, $edgeCoordinateLists];
 ];
 
 selfLoopQ[coords_] := First[coords] == Last[coords];
 
-fixSelfLoopNew[selfLoopRadius_][coords_] := Scope[
+fixSelfLoop[selfLoopRadius_][coords_] := Scope[
   If[Length[coords] === 2, Return @ coords];
   terminus = First @ coords;
   radialVector = selfLoopRadius * Normalize[Mean[coords] - terminus];
@@ -627,8 +357,8 @@ applyCoordinateTransform[list_List] :=
 
 applyCoordinateTransform[f_] := Block[{res},
   res = Check[
-    vertexCoordinates //= Map[f];
-    edgeCoordinateLists = MatrixMap[f, edgeCoordinateLists];
+    $vertexCoordinates //= Map[f];
+    $edgeCoordinateLists = MatrixMap[f, $edgeCoordinateLists];
   ,
     $Failed
   ];
@@ -637,8 +367,8 @@ applyCoordinateTransform[f_] := Block[{res},
 
 applyRigidCoordinateTransform[f_] := Block[{res},
   res = Check[
-    vertexCoordinates //= Map[f];
-    edgeCoordinateLists //= Map[transformEdgePoints @ f];
+    $vertexCoordinates //= Map[f];
+    $edgeCoordinateLists //= Map[transformEdgePoints @ f];
   ,
     $Failed
   ];
@@ -653,7 +383,7 @@ transformEdgePoints[f_][points_List] := Scope[
 ]
 
 applyCoordinateTransform["CenterMean"] := Scope[
-  center = Mean @ vertexCoordinates;
+  center = Mean @ $vertexCoordinates;
   applyCoordinateTransform[TranslationTransform[-center]];
 ];
 
@@ -664,13 +394,13 @@ applyCoordinateTransform["CenterOrigin"] := Scope[
   If[origin === None,
     Message[ExtendedGraph::noorigin]
   ,
-    center = Part[vertexCoordinates, VertexIndex[$Graph, origin]];
+    center = Part[$vertexCoordinates, VertexIndex[$Graph, origin]];
     applyCoordinateTransform[TranslationTransform[-center]]
   ];
 ];
 
 applyCoordinateTransform["CenterBounds"] := Scope[
-  center = Mean @ CoordinateBoundingBox @ {vertexCoordinates, edgeCoordinateLists};
+  center = Mean @ CoordinateBoundingBox @ {$vertexCoordinates, $edgeCoordinateLists};
   applyCoordinateTransform[TranslationTransform[-center]];
 ];
 
@@ -679,22 +409,22 @@ applyCoordinateTransform["Snap"] :=
 
 applyCoordinateTransform[{"Snap", m_, nudge_:0.1}] := Scope[
   applyCoordinateTransform["CenterMean"];
-  bounds = CoordinateBounds[edgeCoordinateLists];
+  bounds = CoordinateBounds[$edgeCoordinateLists];
   step = (EuclideanDistance @@@ bounds) / m;
   grid = Catenate @ CoordinateBoundsArray[bounds, step];
   applyNearest[grid];
-  duplicateIndices = DuplicateIndices @ vertexCoordinates;
-  newVertexCoordinates = vertexCoordinates;
+  duplicateIndices = DuplicateIndices @ $vertexCoordinates;
+  newVertexCoordinates = $vertexCoordinates;
   adjacencyTable = VertexAdjacencyTable @ $Graph;
   $nudge2 = nudge;
   Scan[
     index |-> (
-      center = Mean @ Part[vertexCoordinates, Part[adjacencyTable, index]];
+      center = Mean @ Part[$vertexCoordinates, Part[adjacencyTable, index]];
       Part[newVertexCoordinates, index] //= nudgeDuplicate[center]
     ),
     duplicateIndices, {2}
   ];
-  vertexCoordinates ^= newVertexCoordinates;
+  $vertexCoordinates ^= newVertexCoordinates;
   (* TODO: rigid transfrom the nudged edges *)
 ];
 
@@ -706,7 +436,7 @@ applyNearest[points_] := Scope[
 nudgeDuplicate[z_][p_] := p + Normalize[Cross[z - p]] * Im[$nudge2] + Normalize[z - p] * Re[$nudge2];
 
 DuplicateIndices[list_] :=
-  Select[Length[#] > 1&] @ Values @ PositionIndex @ vertexCoordinates;
+  Select[Length[#] > 1&] @ Values @ PositionIndex @ $vertexCoordinates;
 
 applyCoordinateTransform["RaiseHorizontalTreeNodes"] := raiseTreeNodes[True];
 applyCoordinateTransform["RaiseVerticalTreeNodes"] := raiseTreeNodes[False];
@@ -715,24 +445,24 @@ applyCoordinateTransform["RaiseVerticalTreeNodes"] := raiseTreeNodes[False];
 raiseTreeNodes[horizontal_] := Scope[
   {fn1, fn2} = If[horizontal, {Last, First}, {First, Last}];
 
-  rootIndex = If[horizontal, MaximumIndexBy[vertexCoordinates, Last], MinimumIndexBy[vertexCoordinates, First]];
+  rootIndex = If[horizontal, MaximumIndexBy[$vertexCoordinates, Last], MinimumIndexBy[$vertexCoordinates, First]];
   pointEdgeIntersect = If[horizontal, findPointEdgeIntersectionH, findPointEdgeIntersectionV];
 
-  rootCoords = Part[vertexCoordinates, rootIndex];
+  rootCoords = Part[$vertexCoordinates, rootIndex];
   gen1Indices = VertexIndex[$Graph, #]& /@ VertexOutComponent[$Graph, Part[vertexList, rootIndex], {1}];
-  gen1Coords = Part[vertexCoordinates, gen1Indices];
+  gen1Coords = Part[$vertexCoordinates, gen1Indices];
   edgePairs = EdgePairs @ $Graph;
   edgePairRange = AssociationRange @ edgePairs;
   layer1Pos = fn1 @ rootCoords + If[horizontal, -1, 1];
   ScanThread[{vertIndex, coord} |->
     If[fn1[coord] != layer1Pos,
       edgeIndex = edgePairRange[{rootIndex, vertIndex}];
-      edgeSegment = Part[edgeCoordinateLists, edgeIndex];
+      edgeSegment = Part[$edgeCoordinateLists, edgeIndex];
       newCoord = First[pointEdgeIntersect[layer1Pos, #]& /@ SortBy[fn1] /@ Partition[edgeSegment, 2, 1]];
-      Part[edgeCoordinateLists, edgeIndex] = {rootCoords, newCoord};
-      Part[vertexCoordinates, vertIndex] = newCoord;
+      Part[$edgeCoordinateLists, edgeIndex] = {rootCoords, newCoord};
+      Part[$vertexCoordinates, vertIndex] = newCoord;
       outgoingIndices = Flatten @ Position[edgePairs, {vertIndex, _}, {1}];
-      Part[edgeCoordinateLists, outgoingIndices] //= Map[{newCoord, Last @ #}&];
+      Part[$edgeCoordinateLists, outgoingIndices] //= Map[{newCoord, Last @ #}&];
     ],
     {gen1Indices, gen1Coords}
   ];
@@ -745,15 +475,15 @@ centerTree[horizontal_] := Scope[
   {fn1, fn2} = If[horizontal, {Last, First}, {First, Last}];
   pointEdgeIntersect = If[horizontal, findPointEdgeIntersectionH, findPointEdgeIntersectionV];
   
-  groups = GroupBy[vertexCoordinates, Round[fn1 @ #,.01]& -> fn2];
+  groups = GroupBy[$vertexCoordinates, Round[fn1 @ #,.01]& -> fn2];
   keys = Keys @ groups;
   pseudoEdgeCoordinates = Catenate @ Outer[
     pointEdgeIntersect,
-    keys, SortBy[fn1] /@ toEdgeListSegments /@ edgeCoordinateLists,
+    keys, SortBy[fn1] /@ toEdgeListSegments /@ $edgeCoordinateLists,
     1
   ];
-  Graphics[{Red, Point @ pseudoEdgeCoordinates, Blue, Point @ vertexCoordinates}];
-  groups = GroupBy[Join[vertexCoordinates, pseudoEdgeCoordinates], Round[fn1 @ #,.01]& -> fn2];
+  Graphics[{Red, Point @ pseudoEdgeCoordinates, Blue, Point @ $vertexCoordinates}];
+  groups = GroupBy[Join[$vertexCoordinates, pseudoEdgeCoordinates], Round[fn1 @ #,.01]& -> fn2];
   min = Min @ groups;
   offsets = KeyValueMap[{#1, Mean[MinMax[#2]] - min}&, groups];
   offsetFn = Interpolation[offsets, InterpolationOrder -> 1];
@@ -770,14 +500,14 @@ findPointEdgeIntersectionV[x_, {{x1_, y1_}, {x2_, y2_}}] :=
 
 applyCoordinateTransform[{"HorizontalWarp", offsetFn_}] := (
   transFn = {x, y} |-> {x - offsetFn[y], y};
-  vertexCoordinates = VectorApply[transFn, vertexCoordinates];
-  edgeCoordinateLists = MatrixApply[transFn, edgeCoordinateLists];
+  $vertexCoordinates = VectorApply[transFn, $vertexCoordinates];
+  $edgeCoordinateLists = MatrixApply[transFn, $edgeCoordinateLists];
 );
 
 applyCoordinateTransform[{"VerticalWarp", offsetFn_}] := (
   transFn = {x, y} |-> {x, y - offsetFn[x]};
-  vertexCoordinates = VectorApply[transFn, vertexCoordinates];
-  edgeCoordinateLists = MatrixApply[transFn, edgeCoordinateLists];
+  $vertexCoordinates = VectorApply[transFn, $vertexCoordinates];
+  $edgeCoordinateLists = MatrixApply[transFn, $edgeCoordinateLists];
 );
 
 applyCoordinateTransform["Reflect"] := (
@@ -825,7 +555,7 @@ $namedTransforms = <|
 |>;
 
 applyCoordinateTransform["BendVertical"] :=
-  edgeCoordinateLists //= Map[bendVertical];
+  $edgeCoordinateLists //= Map[bendVertical];
 
 bendVertical[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
   If[Min[Abs[ax - bx], Abs[ay - by]] < 0.001, Return @ {a, b}];
@@ -838,7 +568,7 @@ bendVertical[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
 bendVertical[line_] := line;
 
 applyCoordinateTransform["SquareSelfLoops"] :=
-  edgeCoordinateLists //= Map[squareSelfLoop];
+  $edgeCoordinateLists //= Map[squareSelfLoop];
 
 squareSelfLoop[list:{a_, Repeated[_, {3, Infinity}], b_}] /; EuclideanDistance[a, b] < 0.01 := Scope[
   c = Mean @ list;
@@ -881,8 +611,8 @@ applyCoordinateTransform[name_String] := Scope[
 applyCoordinateTransform[ProjectionOnto[shape_]] := Block[{$rnf},
   $rnf = BoundaryProjection @ shape;
   If[FailureQ[$rnf], Message[ExtendedGraphPlot::badwrappedshape]; Return @ $Failed];
-  vertexCoordinates //= $rnf;
-  edgeCoordinateLists //= Map[projectLineOntoRNF];
+  $vertexCoordinates //= $rnf;
+  $edgeCoordinateLists //= Map[projectLineOntoRNF];
 ];
 
 projectLineOntoRNF = Case[
@@ -893,3 +623,13 @@ projectLineOntoRNF = Case[
   points_List := Print[points]; (* projectLineOntoRNF /@ points; *)
 ];
 
+(**************************************************************************************************)
+
+PublicFunction[GraphEmbeddingGallery]
+
+$layouts = {
+  "GravityEmbedding", "HighDimensionalEmbedding", "PlanarEmbedding",
+  "SpectralEmbedding", "SpringElectricalEmbedding", "SpringEmbedding", "TutteEmbedding"
+};
+
+GraphEmbeddingGallery[g_Graph] := Table[Graph[g, GraphLayout -> layout, PlotLabel -> layout], {layout, $layouts}]

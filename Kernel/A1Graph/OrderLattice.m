@@ -136,7 +136,7 @@ MeetSemilatticeGraph[elements_, userOpts:OptionsPattern[]] := Scope[
 ];
 
 $GraphThemeData["Poset"] = {
-	ExtendedGraphLayout -> "CenteredTree",
+	VertexLayout -> TreeVertexLayout[Balanced -> True],
 	VertexLabels -> "Name",
 	VertexSize -> 5,
 	ArrowheadShape -> None

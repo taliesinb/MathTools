@@ -298,7 +298,7 @@ LineQuiver[spec_, card_, opts:OptionsPattern[]] := Scope[
     GraphOrigin -> graphOrigin,
     FilterOptions @ opts,
     GraphTheme -> "TransitiveQuiver",
-    ExtendedGraphLayout -> "Linear"
+    VertexLayout -> LinearLayout[]
   ]
 ]
 
@@ -378,7 +378,7 @@ GridQuiver[k_Integer, n:$ModIntP, opts:OptionsPattern[]] := Scope[
     vertices, edges,
     GraphOrigin -> graphOrigin,
     FilterOptions @ opts,
-    ExtendedGraphLayout -> "SpringElectrical",
+    VertexLayout -> SpringElectricalLayout[],
     Cardinals -> Range[k],
     LayoutDimension -> 3,
     Sequence @@ modEdgeShapeFunctionSpec[n, IdentityMatrix[k]],
@@ -419,7 +419,7 @@ TreeQuiver[k_Integer, n_Integer, opts:OptionsPattern[]] := Scope[
     FilterOptions @ opts,
     VertexCoordinates -> coords,
     Cardinals -> Range[k],
-    GraphLayout -> {"NudgeDistance" -> 0},
+    VertexOverlapResolution -> 0,
     ImageSize -> "AverageEdge" -> 30,
     GraphOrigin -> TreeVertex[],
     GraphTheme -> "TransitiveQuiver"

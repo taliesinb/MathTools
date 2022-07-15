@@ -57,7 +57,7 @@ Only vertices returning True will be retained.
 
 * %VertexCoordinateFunction determines the graphical coordinates, and accepts the following settings:
 | Automatic | convert representation coords to spatial coords based on the structure of the machine (default) |
-| None | automatic layout of the vertices based on setting of GraphLayout |
+| None | automatic layout of the vertices based on setting of VertexLayout |
 | f$ | apply f$ to the abstract coordinates produced by AbstractCoordinateFunction |
 
 * %VertexNameFunction determines the final names given to vertices, and accepts these settings:
@@ -68,10 +68,9 @@ Only vertices returning True will be retained.
 | 'RepresentationMatrix' | the underlying matrix of the RepresentationElement[$$] |
 | None | use LatticeVertex[abscoords$, genvertex$] as names |
 
-* %GraphLayout accepts these settings:
+* %VertexLayout accepts these settings:
 | None | use the layout provided by VertexCoordinateFunction |
-| Automatic | use 'SpringElectricalEmbedding' |
-| spec$ | use a custom specification accepted by Graph |
+| spec$ | use a custom specification accepted by ExtendedGraph |
 
 * %GraphLegend accepts these settings:
 | None | no legend |

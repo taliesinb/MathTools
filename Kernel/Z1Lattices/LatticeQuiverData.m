@@ -162,7 +162,7 @@ DefineLatticeQuiver[
     "a" -> {1 -> 2}, "b" -> {4 -> 3},
     "c" -> {3 -> 1, 2 -> 4},
     "d" -> {1 -> 4, 3 -> 2}
-  |>, GraphLayout -> "Tutte"],
+  |>, VertexLayout -> TutteLayout[]],
   "Group" -> TranslationGroup[{{1, 0}, {0, 1}, {1, 1}/2, {-1, 1}/2}],
   "Dimension" -> 2
 ];

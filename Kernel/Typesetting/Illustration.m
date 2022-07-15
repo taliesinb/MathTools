@@ -136,10 +136,10 @@ PartialOrderGraph[vertices_, edges_, opts___Rule] := Scope[
   ExtendedGraph[vertices, edges,
     opts,
     VertexShapeFunction -> shapes,
-    GraphLayout -> "LayeredDigraph", GraphOrigin -> First @ vertices,
+    VertexLayout -> TreeVertexLayout[Balanced -> True],
+    GraphOrigin -> First @ vertices,
     ArrowheadShape -> None, ArrowheadSize -> Huge,
-    ImageSize -> 250, VertexSize -> vsize, EdgeThickness -> 3,
-    CoordinateTransformFunction -> "CenterTree"
+    ImageSize -> 250, VertexSize -> vsize, EdgeThickness -> 3
   ]
 ];
 
@@ -513,7 +513,7 @@ $simpleLabeledGraphOpts = {
   EdgeLabelSpacing -> -0.3,
   ArrowheadShape -> {"Line", EdgeThickness -> 2},
   ImagePadding -> {{0,0}, {0, 25}},
-  ExtendedGraphLayout -> "Linear",
+  VertexLayout -> LinearLayout[],
   MultiEdgeDistance -> 0.3, ArrowheadPosition -> 0.525,
   ArrowheadSize -> Medium, ArrowheadStyle -> $Gray,
   ImageSize -> "ShortestEdge" -> 90
@@ -545,7 +545,7 @@ $simpleLabeledQuiverOpts = {
   VertexLabels -> "Name",
   VertexLabelPosition -> Automatic,
   VertexLabelBaseStyle -> $MathLabelStyle,
-  ExtendedGraphLayout -> "Linear",
+  VertexLayout -> LinearLayout[],
   MultiEdgeDistance -> 0.1,
   ArrowheadShape -> {"Line", EdgeThickness -> 2},
   ArrowheadPosition -> 0.59,
@@ -637,7 +637,7 @@ parseAdditionalEdgeVertex[vertex_] := LatticeVertex @ extractWord @ parsePath @ 
 
 $fundamentalQuiverOpts = {
   ImageSize -> "ShortestEdge" -> 60, VertexLabels -> "Name",
-  GraphLayout -> "Linear",
+  GraphLayout -> LinearLayout[],
   Cardinals -> {"r", "b"},
   ImagePadding -> {10, 15},
   ArrowheadSize -> MediumLarge,
@@ -925,7 +925,8 @@ ConnectedComponentProductDecomposition[graphs_, terms_, userOpts:OptionsPattern[
   opts = Sequence @@ DeleteOptions[{userOpts}, {MaxWidth, Spacings, Transposed}];
   base = GeneralQuiverProduct[graphs, terms, Automatic, opts,
     ImageSize -> 120, VertexSize -> 4, ArrowheadShape -> None,
-    ExtendedGraphLayout ->{"NudgeDistance"->0}];
+    VertexOverlapResolution -> 0
+  ];
   products = GeneralQuiverProduct[graphs, terms, All, opts,
     ImageSize -> 120, VertexSize -> 4, ArrowheadSize -> 12];
   imgSize = First @ LookupImageSize[base];

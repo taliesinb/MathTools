@@ -2,7 +2,7 @@ SetUsage @ "
 ExtendedGraph[args$$] acts like Graph but accepts additional options and overrides how graphs are \
 displayed.
 * The following options and additional options are supported:
-| %GraphLayout | None | the overall layout method to use for vertices and edges |
+| %VertexLayout | None | the overall layout method to use for vertices |
 | %LayoutDimension | Automatic | number of dimensions of the graph layout |
 | %VertexLabels | None | how to label vertices |
 | %ImageSize | Automatic | size to plot the graph |

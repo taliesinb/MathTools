@@ -487,7 +487,8 @@ positiveSquareLatticeDisclinationFactory[assoc_, userOpts_] := Scope[
       b -> {3 -> 4, 4 -> 5, 2 -> 1, 1 -> 6, 9 -> 2, 10 -> 3, 11 -> 12, 12 -> 13, 13 -> 14, 14 -> 15, 5 -> 16, 6 -> 17}
     |>,
     Apply[Sequence, DeleteOptions[Cardinals] @ Normal @ userOpts],
-    GraphLayout -> "Spring", CoordinateTransformFunction -> {{"Rotate", 90}, "ReflectHorizontal"}
+    VertexLayout -> SpringLayout[],
+    CoordinateTransformFunction -> {{"Rotate", 90}, "ReflectHorizontal"}
   ];
   If[removeCorner, graph = VertexDelete[graph, 1]];
   graph
