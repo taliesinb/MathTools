@@ -5,14 +5,14 @@ BundleSectionRewritingSystem::arg1 = "First argument should be a bundle graph."
 BundleSectionRewritingSystem[graph_] := Scope[
   If[!BundleGraphQ[graph], ReturnFailed["arg1"]];
   props = <|"BundleGraph" -> graph|>;
-  constructRewritingSystem["BundleSectionRewriting", Null, "CustomProperties" -> props]
+  constructRewritingSystem["BundleSection", Null, "CustomProperties" -> props]
 ]
 
-_BundleSectionRewritingSystem := (Message[BundleSectionRewritingSystem::args]; $Failed);
+_BundleSectionRewritingSystem := (Message[BundleSectionRewritingSystem::args, BundleSectionRewritingSystem]; $Failed);
 
-declareRewritingSystemDispatch["BundleSectionRewriting", BundleSectionRewritingSystemProperty]
+declareRewritingSystemDispatch["BundleSection", bundleSectionRewritingSystemProperty]
 
-BundleSectionRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] := Scope[
+bundleSectionRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] := Scope[
   UnpackStringOptions[{opts}, True, labeled];
   If[labeled,
     LabeledSectionRewritingCayleyFunction,
@@ -20,7 +20,7 @@ BundleSectionRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] := Sc
   ]
 ];
 
-BundleSectionRewritingSystemProperty[data_, "AllStates"] :=
+bundleSectionRewritingSystemProperty[data_, "AllStates"] :=
   FindAllBundleSections[data["BundleGraph"]];
 
 (**************************************************************************************************)

@@ -40,7 +40,7 @@ Options[PartitionLattice] = JoinOptions[
 
 PartitionLattice[minimalPartitions_, userOpts:OptionsPattern[]] := Scope[
 	mpRange = Range @ Length @ minimalPartitions;
-	$dsIndex = $pairIndex = Data`UnorderedAssociation[];
+	$dsIndex = $pairIndex = UAssociation[];
 	ScanIndexed[setupPart, minimalPartitions];
 	initSupports = List /@ mpRange;
 	initNodes = MapThread[PartitionNode, {initSupports, minimalPartitions}];

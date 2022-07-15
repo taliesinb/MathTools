@@ -1,5 +1,4 @@
 PublicObject[RewritingSystemObject]
-PublicOption[CanonicalizationFunction]
 
 declareObjectPropertyDispatch[RewritingSystemObject, rewritingSystemProperty];
 

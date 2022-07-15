@@ -117,12 +117,12 @@ PrivateFunction[ClearUsageCache]
 ClearUsageCache[] := (
   Clear[GeneralUtilities`Private`$SetUsageFormatCache];
   $RawUsageStringTable = Association[];
-  GeneralUtilities`Code`PackagePrivate`$relatedSymbolTable = Data`UnorderedAssociation[];
+  GeneralUtilities`Code`PackagePrivate`$relatedSymbolTable = UAssociation[];
 );
 
 (* this speeds up the processing of usage string messages, which are otherwise quite expensive *)
 If[!AssociationQ[GeneralUtilities`Private`$SetUsageFormatCache],
-  GeneralUtilities`Private`$SetUsageFormatCache = Data`UnorderedAssociation[];
+  GeneralUtilities`Private`$SetUsageFormatCache = UAssociation[];
   GeneralUtilities`Code`PackagePrivate`fmtUsageString[str_String] /; $fmtUsageOuter := Block[
     {$fmtUsageOuter = False},
     storeRawUsageString[str];

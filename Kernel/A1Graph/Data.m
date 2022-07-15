@@ -9,8 +9,8 @@ Signed is an option to various graph utility functions.
 PublicFunction[AdjacentVerticesPredicate]
 
 AdjacentVerticesPredicate[graph_] := Scope[
-  edges = {#1, #2}& @@@ EdgeList[graph];
-  ConstantAssociation[Join[edges, Reverse[edges, 2]], True] /* TrueQ
+  edges = {#1, #2}& @@@ ToEdgeList[graph];
+  ConstantUAssociation[Join[edges, Reverse[edges, 2]], True] /* TrueQ
 ];
 
 (**************************************************************************************************)
@@ -112,7 +112,7 @@ VertexAdjacencyAssociation[graph$] returns an association from vertices to lists
 "
 
 VertexAdjacencyAssociation[graph_] :=
-  GroupBy[ExtractIndices[VertexList @ graph, AdjacentPairs @ graph], First -> Last]
+  GroupPairs @ ExtractIndices[VertexList @ graph, AdjacentPairs @ graph];
 
 (**************************************************************************************************)
 
@@ -216,7 +216,27 @@ VertexIndexAssociation[graph_] := AssociationRange @ VertexList @ graph;
 
 PublicFunction[EdgeIndexAssociation]
 
-EdgeIndexAssociation[graph_] := AssociationRange @ EdgeList @ graph;
+EdgeIndexAssociation[graph_] := AssociationRange @ ToUntaggedEdges @ graph;
+
+EdgeIndexAssociation[graph_, Signed -> False] := EdgeIndexAssociation @ graph;
+
+EdgeIndexAssociation[graph_, Signed -> True] := UAssociation @ MapIndex1[toUEdgeIndex, ToUntaggedEdges @ graph];
+
+toUEdgeIndex[head_[a_, b_, ___], index_] := {head[a, b] -> i, head[b, a] -> Inverted[i]};
+
+(**************************************************************************************************)
+
+PublicFunction[ToEdges, ToUntaggedEdges]
+
+ToEdges = Case[
+  e_Graph := EdgeList[e];
+  e_List  := e;
+];
+
+ToUntaggedEdges = Case[
+  e_Graph := % @ EdgeList[e];
+  e_List := Take[e, All, 2];
+];
 
 (**************************************************************************************************)
 
@@ -234,7 +254,7 @@ where dout$i is the list of indices of vertices that are have a directed edge fr
 the list of indices of vertices that have a undirected edge from vertex i$.
 "
 
-toOutTable[count_, edges_] := Lookup[GroupBy[edges, First -> Last], Range[count], {}];
+toOutTable[count_, edges_] := Lookup[GroupPairs @ edges, Range[count], {}];
 
 VertexOrientedOutTable[graph_] := Scope[
   edges = EdgeList @ IndexGraph @ graph; count = VertexCount[graph];

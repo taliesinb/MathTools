@@ -62,7 +62,7 @@ Options[ExportNavigationPage] = {
 
 ExportNavigationPage[files_, relativePrefix_String, navPath_, OptionsPattern[]] := Scope[
   UnpackOptions[indexPagePath];
-  $mdFileCache = Data`UnorderedAssociation[]; (* for inserting by id from one page to another *)
+  $mdFileCache = UAssociation[]; (* for inserting by id from one page to another *)
   If[StringQ[files],
     If[FileType[files] =!= Directory, ReturnFailed[]];
     files = FileNames["*.md", files];

@@ -93,7 +93,7 @@ PublicFunction[EdgeToTagIndex]
 EdgeToTagIndex[graph_ ? EdgeTaggedGraphQ] := EdgeToTagIndex @ EdgeList @ graph;
 
 EdgeToTagIndex[edges_List] := Scope[
-  $index = Data`UnorderedAssociation[];
+  $index = UAssociation[];
   Scan[insertETTI, edges];
   $index
 ];
@@ -135,7 +135,7 @@ VertexTagAdjacencyAssociation[graph$] returns an association from vertices to li
 VertexTagAdjacencyAssociation[graph_] := Scope[
   vlist = VertexList @ graph;
   Map[
-    pairs |-> GroupBy[ExtractIndices[vlist, pairs], First -> Last],
+    pairs |-> GroupPairs[ExtractIndices[vlist, pairs]],
     TaggedEdgePairs[graph, "Undirected"]
   ]
 ]

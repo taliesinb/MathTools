@@ -320,7 +320,7 @@ MinimalContractionSets[quiver_, OptionsPattern[]] := Scope[
   outTable = TagVertexOutTable @ quiver;
   vertices = VertexRange @ quiver;
   vertexPairs = Subsets[vertices, subsetSize];
-  alreadySeen = Data`UnorderedAssociation[];
+  alreadySeen = UAssociation[];
   contractionSets = DeleteDuplicates @ Map[growTerms, vertexPairs];
   If[deleteDominated,
     contractionSets //= Discard[AnyTrue[contractionSets, contractionDominates[#]]&]];

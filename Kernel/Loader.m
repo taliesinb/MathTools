@@ -110,6 +110,7 @@ $initialSymbolResolutionDispatch = Dispatch[{
   Package`PackageSymbol["SetUsage"][usageString_String]                      :> RuleCondition[rewriteSetUsage[usageString]],
   Package`PackageSymbol[name_String] /; StringMatchQ[name, $coreSymbolRegex] :> RuleCondition[$coreSymbolAssociation[name]],
   Package`PackageSymbol[name_String] /; StringContainsQ[name, "`"]           :> RuleCondition[makeResolvedSymbol[name]],
+  Package`PackageSymbol["UAssociation"]                                      :> Data`UnorderedAssociation,
   Package`PackageSymbol["$PackageFileName"]                                  :> RuleCondition[QuiverGeometryPackageLoader`$CurrentFile],
   Package`PackageSymbol["$PackageDirectory"]                                 :> RuleCondition[QuiverGeometryPackageLoader`$PackageDirectory],
   p:Package`PackageSymbol["PublicFormBox"][___]                              :> RuleCondition @ processFormBoxes[p, Package`PublicForm, Package`PublicFunction],
@@ -187,6 +188,8 @@ $stringProcessingRules = {
   RegularExpression[" ~!~ ([^\n]+)"] :> " ~NotMatchQ~ " <> bracketRHS["$1"],
   RegularExpression[" ~~~ ([^\n]+)"] :> " ~MatchQ~ " <> bracketRHS["$1"]
 }
+
+(**************************************************************************************************)
 
 bracketRHS[s_] := Block[{$Context = "QuiverGeometryPackageLoader`Scratch`", len},
   len = SyntaxLength[s];

@@ -32,7 +32,7 @@ toMarkdownStringInner[spec_] := Scope[
 
 General::badnbread = "Could not read notebook ``, will be replaced with placeholder.";
 
-$notebookToMarkdownCache = Data`UnorderedAssociation[];
+$notebookToMarkdownCache = UAssociation[];
 $notebookCaching = False;
 
 toMarkdownLines[File[path_String]] /; FileExtension[path] === "nb" := Scope[

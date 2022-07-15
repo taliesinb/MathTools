@@ -164,6 +164,16 @@ getAnnoValue[annos_, key_] := Lookup[annos, key, failSelect["badgraphannokey", k
 
 (**************************************************************************************************)
 
+PublicFunction[RemoveSelfLoops]
+
+RemoveSelfLoops[graph_Graph] := Graph[
+  VertexList @ graph,
+  Select[EdgeList @ graph, First[#1] =!= Second[#]&],
+  Options @ graph
+];
+
+(**************************************************************************************************)
+
 PublicFunction[RandomlyPermuteVertices]
 
 SetUsage @ "

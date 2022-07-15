@@ -1,4 +1,4 @@
-declarePlusTimesDispatch[symbol_Symbol, test_, dispatch_] := (
+(* declarePlusTimesDispatch[symbol_Symbol, test_, dispatch_] := (
   symbol /: Plus[objects:Repeated[_symbol ? test, {2, Infinity}]] := dispatch[Plus][objects];
   symbol /: Times[scalar_ /; NumericQ[Unevaluated @ scalar], object_symbol ? test] := dispatch[Times][scalar, object];
   symbol /: Times[object1_symbol ? test, object2_symbol ? test] := dispatch[Times][object1, object2];
@@ -1428,7 +1428,7 @@ DefineLiteralMacro[setupForTranslation,
       edgeToCardinal, (* elementFrameData *)
       vertexTags, cardinalTransitions, tagOutEdgeTable, nullEdge, edgeToHead (* tailFrameWordToElement *)
     ];
-    $frameDataCache = Data`UnorderedAssociation[];
+    $frameDataCache = UAssociation[];
   )
 ];
 
@@ -1780,3 +1780,4 @@ PathDot[a_PathVector, b_PathVector] /; $PathAlgebraQ := Scope[
   {a1, a2} = KeyIntersection[assocs];
   Total[a1 * a2]
 ];
+ *)

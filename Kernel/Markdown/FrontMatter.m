@@ -40,7 +40,7 @@ PublicFunction[NotebookFrontMatter]
 NotebookFrontMatter[nb_NotebookObject] :=
   NotebookFrontMatter @ NotebookFileName @ nb;
 
-$frontMatterMetadataCache = Data`UnorderedAssociation[];
+$frontMatterMetadataCache = UAssociation[];
 
 NotebookFrontMatter[path_String | File[path_String]] := Scope[
   

@@ -1,7 +1,7 @@
-PublicFunction[MaxVertices, MaxVerticesPerComponent, MaxEdges, MaxDepth, MaxTime, MaxFunctionEvaluations, MaxNorm, ProgressFunction, IncludeFrontier, DepthTermination, PrologVertices]
+PublicOption[MaxVertices, MaxEdges, MaxDepth, MaxTime, MaxFunctionEvaluations, MaxNorm]
+PublicOption[ProgressFunction, IncludeFrontier, DepthTermination, PrologVertices, CanonicalizationFunction]
 
 MaxVertices::usage = "MaxVertices is an option to MultiwaySystem."
-MaxVerticesPerComponent::usage = "MaxVerticesPerComponent is an option to MultiwaySystem."
 MaxEdges::usage = "MaxEdges is an option to MultiwaySystem."
 MaxDepth::usage = "MaxDepth is an option to MultiwaySystem."
 MaxTime::usage = "MaxTime is an option to MultiwaySystem.";
@@ -9,6 +9,7 @@ ProgressFunction::usage = "ProgressFunction is an option to MultiwaySystem.";
 MaxNorm::usage = "MaxNorm is an option to MultiwaySystem.";
 IncludeFrontier::usage = "IncludeFrontier is an option to MultiwaySystem.";
 DepthTermination::usage = "DepthTermination is an option to MultiwaySystem."
+CanonicalizationFunction::usage = "CanonicalizationFunction is an option to MultiwaySystem."
 
 (**************************************************************************************************)
 
@@ -23,7 +24,6 @@ Options[MultiwaySystem] = JoinOptions[
   MaxEdges -> Infinity,
   MaxDepth -> Infinity,
   MaxFunctionEvaluations -> Infinity,
-  MaxVerticesPerComponent -> Infinity,
   MaxTime -> Infinity,
   DirectedEdges -> True,
   ProgressFunction -> None,
@@ -31,6 +31,7 @@ Options[MultiwaySystem] = JoinOptions[
   MaxNorm -> None,
   IncludeFrontier -> True,
   DepthTermination -> "Immediate",
+  CanonicalizationFunction -> None,
   SelfLoops -> True,
   PrologVertices -> {},
   $ExtendedGraphOptions
@@ -51,16 +52,12 @@ MultiwaySystem[transition$, states$, 'element$'] returns a named element.
 | 'VertexList' | a list of vertices in the same order as the vertices of 'IndexGraph' |
 | 'EdgeList' | a list of edges |
 | 'TransitionLists' | a list of transitions, each of the form {istate$, {ostate$1, ostate$2, $$}}. |
-| 'VertexDepthAssociation' | an association between a vertex and its distance from the initial set |
-| 'VertexTagDepthAssociation' | an association between labels and minimum distances counting only that label |
 | 'TerminationReason' | one of 'MaxVertices', 'MaxEdges', 'MaxDepth', 'MaxTime', 'MaxFunctionEvaluations', or 'Complete' |
 | 'EdgeLabels' | a list of edge labels in the same order as 'EdgeList' |
 | 'Elements' | a list of valid element names |
 * Most of the above elements, e.g. 'Graph', 'EdgeList', etc. have a corresponding element \
 'IndexGraph', 'IndexEdgeList', etc. that label vertices with consecutive integers in the same \
 order as 'VertexList'.
-* The elements 'VertexDepthAssociation' and 'VertexTagDepthAssociation' also have 'prop$List' forms \
-that use the same order as 'VertexList'.
 * transition$ should be a function that takes a single state and should return a list of \
 successor states.
 * transition$ may return states in the form %Labeled[ostate$, label$]; these labels will \
@@ -79,10 +76,10 @@ and their successor states labeled as i$. Any of the f$i can also be of the form
 | %NormFunction | Automatic | function that evaluates the norm of a given state |
 | %DirectedEdges | True | whether to return a directed or undirected graph |
 | %SelfLoops | True | whether to include transitions from a state to itself |
-| %MaxVerticesPerComponent | Infinity | how many vertices per graph component |
 | %IncludeFrontier | True | whether to include edges to vertices beyond maximum depth |
 | %DepthTermination | 'Immediate' | specifies when termination take effect |
 | %ProgressFunction | None | a function to call with an association with information about the exploration |
+| %CanonicalizationFunction | None | function to apply to states returned by transition$ |
 * For %ProgressFunction -> p$, p$ will be called with an association containing the following keys:
 | 'State' | the current state being explored |
 | 'Successors' | the list of successors that was returned by transition$ |
@@ -91,16 +88,10 @@ and their successor states labeled as i$. Any of the f$i can also be of the form
 | 'EdgeCount' | the number of edges seen so far |
 | 'VertexCount' | the number of vertices seen so far |
 * For %DepthTermination -> 'Delayed', the depth currently being explored will be finished before termination occurs.
-* If %MaxDepth -> <|label$1 -> d$1, $$, label$n -> d$n|> is specified, a per-label maximum depth will be applied, so \
-that a vertex will be explored as long as it can be reached in under d$i steps of edges labeled label$i.
 "
 
 $backEdgeElements = {
   "SpanningTree", "IndexSpanningTree"
-};
-
-$vertexDepthElements = {
-  "VertexDepthList", "VertexDepthAssociation", "VertexTagDepthList", "VertexTagDepthAssociation"
 };
 
 $stgElements = {
@@ -109,7 +100,6 @@ $stgElements = {
   "VertexList",
   "Graph", "IndexGraph", "CayleyGraph", "LabeledGraph",
   Splice[$backEdgeElements],
-  Splice[$vertexDepthElements],
   "TerminationReason", "EdgeLabels",
   "Elements"
 };
@@ -121,7 +111,7 @@ MultiwaySystem::badinitstates = "The initial states spec should be a non-empty l
 MultiwaySystem::badelement = "Requested element `` is not one of `` or a list of these."
 MultiwaySystem::notlist = "The successor function did not return a list for state `` (at depth ``), which had head `` instead; halting early."
 MultiwaySystem::badnorm = "The setting for NormFunction should be function that takes a state and returns a positive number."
-MultiwaySystem::badmaxdepth = "The setting for MaxDepth should be an integer, Infinity, or an association from labels to depths."
+MultiwaySystem::badmaxdepth = "The setting for MaxDepth should be an integer or Infinity."
 MultiwaySystem::undedgelabels = "Cannot obtain element \"EdgeLabels\" when DirectedEdges -> False.";
 
 MultiwaySystem[f_, initialVertices_, opts:OptionsPattern[]] :=
@@ -140,10 +130,10 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
 
   UnpackOptions[
     directedEdges, progressFunction, normFunction,
-    maxVertices, maxVerticesPerComponent, maxEdges, maxDepth,
+    maxVertices, maxEdges, maxDepth,
     maxTime, maxFunctionEvaluations, maxNorm,
     includeFrontier, depthTermination, selfLoops,
-    prologVertices
+    prologVertices, canonicalizationFunction
   ];
 
   If[!ListQ[initialVertices] || Length[initialVertices] == 0,
@@ -160,43 +150,10 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     symbol |-> If[!MatchQ[OptionValue[symbol], $PosIntOrInfinityP],
       ReturnFailed[MultiwaySystem::badlimit, symbol];
     ],
-    {MaxVertices, MaxVerticesPerComponent, MaxTime, MaxFunctionEvaluations}
+    {MaxVertices, MaxTime, MaxFunctionEvaluations}
   ];
 
-  depthLabels = Automatic;
-  If[MatchQ[maxDepth, <|All -> _Integer|>],
-    depthLabels = DeepCases[f, Labeled[_, label_ ? notInternalSymbolQ] :> label];
-    depthLabels = DeleteDuplicates @ VectorReplace[depthLabels, Inverted[c_] :> c];
-    If[depthLabels === {}, ReturnFailed["badmaxdepth"]];
-    maxDepth = ConstantAssociation[depthLabels, First @ maxDepth];
-  ];
-
-  Switch[maxDepth,
-    _Integer ? Positive | Infinity,
-      trackLabelDepth = limitLabelDepth = False,
-    Association[Repeated[_ -> (_Integer | Infinity)]],
-      trackLabelDepth = True;
-      limitLabelDepth = True;
-      {depthLabels, depthValues} = KeysValues[maxDepth];
-      maxDepth = Total[maxDepth];
-      With[{compare = Append[depthValues, maxDepth]},
-        withinDepthTest = depth |-> Apply[And, MapThread[LessEqual, {depth, compare}]];
-        withinDepthTest = withinDepthTest;
-      ],
-    _,
-      ReturnFailed[MultiwaySystem::badmaxdepth];
-  ];
-
-  trackLabelDepth = trackLabelDepth || ContainsQ[result, Alternatives @@ $vertexDepthElements];
-
-  If[trackLabelDepth,
-    labels = DeepUniqueCases[f, Labeled[_, label_ ? notInternalSymbolQ] :> label];
-    SetAutomatic[depthLabels, labels];
-    numDepthLabels = Length[depthLabels];
-    labelToPos = AssociationThread[depthLabels, Range[numDepthLabels]];
-    zeroDepthVector = ConstantArray[0, numDepthLabels + 1];
-  ];
-
+  If[!MatchQ[maxDepth, $PosIntOrInfinityP], ReturnFailed[MultiwaySystem::badmaxdepth]];
 
   If[NumberQ[maxNorm],
     If[normFunction === None, checkNorm[Null]]; (* trigger message *)
@@ -207,6 +164,15 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
 
   If[ListQ[f], f = makeSuperTransitionFunc[f]];
 
+  If[!MatchQ[canonicalizationFunction, None | Identity | (#&)],
+    canonFn = VectorReplace[{Labeled[e_, l_] :> Labeled[canonicalizationFunction[e], f], e_ :> canonicalizationFunction[e]}] /* DeleteDuplicates;
+    initialVertices //= canonFn;
+    If[ListQ[prologVertices], prologVertices = canonFn @ prologVertices];
+    $canonicalizationBlock := (
+      successors //= canonFn;
+    );
+  ];
+
   numPrologVertices = Length @ prologVertices;
   If[numPrologVertices > 0,
     initialVertices = Join[prologVertices, initialVertices]];
@@ -214,46 +180,12 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   thisGenVertices = CreateDataStructure["Stack"];
   nextGenVertices = CreateDataStructure["Stack"];
   vertexArray = CreateDataStructure["DynamicArray"];
-  vertexIndex = Data`UnorderedAssociation[];
-  visitedVerftices = CreateDataStructure["HashSet"];
+  vertexIndex = UAssociation[];
   initialIds = Range @ Length @ initialVertices;
 
   arrayAppendList[vertexArray, initialVertices];
 
   ScanThread[Set[vertexIndex[#1], #2]&, {initialVertices, initialIds}];
-  If[trackLabelDepth,
-    depthVectorAssoc = ConstantAssociation[initialIds, zeroDepthVector]];
-
-  If[trackDCs = IntegerQ[maxVerticesPerComponent],
-
-    (* set up hash sets to store the sets of vertexIds in each component *)
-    dcVertexSets = MapThread[
-      {vertex, id} |-> (
-        set = CreateDataStructure["HashSet"];
-        set["Insert", id];
-        set
-      ),
-      {initialVertices, initialIds}
-    ];
-
-    (* set up a mechanism to allow us to follow DC ids when they are merged *)
-    mergedDcId = initialIds;
-    mergedDcChildren = AssociationThread[initialIds, List /@ initialIds];
-    vertexIdToDcId = AssociationThread[initialIds, initialIds];
-    dcActive = ConstantArray[True, Length[initialIds]];
-
-    (* set up the function that will attempt to merge two components *)
-    mergeDcs = {id1, id2} |-> If[id1 =!= id2, With[
-      {dcVertexSet1 = Part[dcVertexSets, id1]},
-      {dcVertexSet2 = Part[dcVertexSets, id2]},
-      dcVertexSet1["Union", Normal @ dcVertexSet2];
-      mergedDcId[[mergedDcChildren[id2]]] = id1;
-      JoinTo[mergedDcChildren[id1], mergedDcChildren[id2]];
-      dcActive[[id1]] = And[dcActive[[id1]], dcActive[[id2]], dcVertexSet1["Length"] < maxVerticesPerComponent];
-      dcActive[[id2]] = False;
-      dcId = id1
-    ]];
-  ];
 
   Switch[progressFunction,
     None,
@@ -272,7 +204,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   transitionListsBag = Internal`Bag[];
   indexTransitionListsBag = Internal`Bag[];
 
-  stackPushList[thisGenVertices, DropOperator[numPrologVertices] @ Transpose[{initialIds, initialVertices, initialIds}]];
+  stackPushList[thisGenVertices, DropOperator[numPrologVertices] @ Transpose[{initialIds, initialVertices}]];
 
   If[NumberQ[maxTime],
     stopTime = SessionTime[] + maxTime;
@@ -282,61 +214,14 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   ];
 
   (* build the function that decides which vertices to visit next *)
-  removeStaleSuccessors = {succId, succ} |-> If[$staleTest, {succId, succ, dcId}, Nothing];
+  removeStaleSuccessors = {succId, succ} |-> If[$staleTest, {succId, succ}, Nothing];
   If[normTest =!= None,
     removeStaleSuccessors //= ReplaceAll[$staleTest :> And[$staleTest, normTest[succ]]]
   ];
-  If[limitLabelDepth,
-    removeStaleSuccessors //= ReplaceAll[$staleTest -> shouldRevisitAssoc[succId]],
-    removeStaleSuccessors //= ReplaceAll[$staleTest -> succId > lastCount]
-  ];
+  removeStaleSuccessors //= ReplaceAll[$staleTest -> succId > lastCount];
   If[trackBackEdges = ContainsQ[result, Alternatives @ $backEdgeElements],
     backEdgesAssociation = Association[];
     removeStaleSuccessors //= Insert[removeStaleSuccessors, $Unreachable]; (* TODO: implement me *)
-  ];
-
-  (* set up blocks of code to run at specific parts of the main loop *)
-
-  If[trackLabelDepth,
-    $extractLabelBlock := (
-      labels = VectorReplace[successors, {Labeled[_, l_] :> Replace[l, Inverted[c_] :> c], _ -> None}];
-    );
-
-    If[limitLabelDepth,
-      $trackLabelDepthBlock := (
-        currentDepthVector = depthVectorAssoc[vertexId];
-        shouldRevisitAssoc = Association @ MapThread[
-          {id, labelPos} |-> (
-            newDepth = currentDepthVector + UnitVector[numDepthLabels + 1, labelPos];
-            If[id > lastCount,
-              (* fresh vertices should only be visited if they pass the depth test.
-              if they fail we might revisit them later if their depth gets shallower from a new path *)
-              depthVectorAssoc[id] = newDepth;
-              id -> withinDepthTest[newDepth]
-            ,
-              (* update the depth of stale vertices *)
-              oldDepth = depthVectorAssoc[id];
-              depthVectorAssoc[id] = MapThread[Min, {oldDepth, newDepth}];
-              (* and revisit them if their new depth starts to pass *)
-              id -> And[withinDepthTest[newDepth], !withinDepthTest[oldDepth]]
-            ]
-          ),
-          {successorsIds, Lookup[labelToPos, labels, numDepthLabels + 1]}
-        ];
-      );
-    ,
-      $trackLabelDepthBlock := (
-        currentDepthVector = depthVectorAssoc[vertexId];
-        ScanThread[
-          {id, labelPos} |-> (
-            newDepth = currentDepthVector + UnitVector[numDepthLabels + 1, labelPos];
-            depthVectorAssoc[id] = If[id > lastCount, newDepth,
-              MapThread[Min, {depthVectorAssoc[id], newDepth}]
-            ]),
-          {successorsIds, Lookup[labelToPos, labels, numDepthLabels + 1]}
-        ];
-      );
-    ];
   ];
 
   If[ContainsQ[result, "EdgeLabels"],
@@ -346,19 +231,6 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
       labels = Replace[successors, {Labeled[_, l_] :> l, _ -> None}, {1}];
       Internal`StuffBag[edgeLabelsBag, labels, 1];
       labels = Replace[labels, Inverted[c_] :> c, {1}];
-    );
-  ];
-
-  If[trackDCs,
-    (* if we are tracking components, find the new old ids, because these represent
-    sites of potential merging, and merge together their vertex sets where necessary *)
-    $trackDCsBlock := (
-      {newIds, oldIds} = SelectDiscard[successorsIds, GreaterThan[lastCount]];
-      Scan[oldId |-> mergeDcs[mergedDcId[[vertexIdToDcId @ oldId]], dcId], oldIds];
-      currentDcVertexSet = Part[dcVertexSets, dcId];
-      currentDcVertexSet["Union", newIds];
-      If[currentDcVertexSet["Length"] >= maxVerticesPerComponent, dcActive[[dcId]] = False];
-      AssociateTo[vertexIdToDcId, # -> dcId& /@ successorsIds];
     );
   ];
 
@@ -400,8 +272,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     ];
 
     (* obtain a vertex to explore *)
-    {vertexId, vertex, dcId} = thisGenVertices["Pop"];
-    If[trackDCs, dcId = mergedDcId[[dcId]]];
+    {vertexId, vertex} = thisGenVertices["Pop"];
 
     (* call the successor function to obtain successor vertices *)
     evaluations += 1;
@@ -409,6 +280,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     progress[];
     If[MissingQ[successors], successors = {}];
     If[!ListQ[successors], Message[MultiwaySystem::notlist, vertex, generation, Head[successors]]; Break[]];
+    $canonicalizationBlock;
     If[successors === {}, Continue[]];
     $removeSelfLoopsBlock;
 
@@ -434,9 +306,6 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
         vertexIndex[succ] = Length[vertexIndex] + 1
       ], successors];
 
-    (* update the per-label depth, if necessary *)
-    $trackLabelDepthBlock;
-
     (* add the corresponding indexed transitions list to its bag *)
     relabeledSuccessorsIds = If[FreeQ[labeledSuccessors, _Labeled, {1}],
       successorsIds,
@@ -447,18 +316,13 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     ];
     Internal`StuffBag[indexTransitionListsBag, {vertexId, relabeledSuccessorsIds}];
 
-    (* update the connected component state, if necessary *)
-    $trackDCsBlock;
-
-    If[!trackDCs || dcActive[[dcId]],
-      (* add all new vertices to the next generation *)
-      stackPushList[nextGenVertices,
-        If[!DuplicateFreeQ[successorsIds],
-          KeyValueMap[removeStaleSuccessors, AssociationThread[successorsIds, successors]],
-          MapThread[removeStaleSuccessors, {successorsIds, successors}]
-        ]
+    (* add all new vertices to the next generation *)
+    stackPushList[nextGenVertices,
+      If[!DuplicateFreeQ[successorsIds],
+        KeyValueMap[removeStaleSuccessors, AssociationThread[successorsIds, successors]],
+        MapThread[removeStaleSuccessors, {successorsIds, successors}]
       ]
-    ];
+    ]
   ];
 
   terminationReason = Which[
@@ -496,9 +360,6 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   graph := ExtendedGraph[vertices, edges, FilterOptions @ opts];
   indexGraph := Graph[Range @ vertexCount, indexEdges, FilterOptions @ opts];
 
-  depths := Map[Total, Values @ depthVectorAssoc];
-  tagDepths := AssociationThread[Append[depthLabels, None], Transpose @ Values @ depthVectorAssoc];
-
   resultsAssoc = <|
     "TransitionLists" :> transitionLists,
     "IndexTransitionLists" :> indexTransitionLists,
@@ -506,10 +367,6 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     "IndexEdgeList" :> indexEdges,
     "VertexList" :> vertices,
     "Graph" :> graph,
-    "VertexDepthList" :> depths,
-    "VertexDepthAssociation" :> AssociationThread[vertices, depths],
-    "VertexTagDepthList" :> tagDepths,
-    "VertexTagDepthAssociation" :> Map[AssociationThread[vertices, #]&, tagDepths],
     "LabeledGraph" :> Graph[graph, VertexLabels -> Automatic],
     "CayleyGraph" :> ExtendedGraph[
       CombineMultiedges @ ExtendedGraph[

@@ -1,9 +1,9 @@
 PublicFunction[ClearBundleData]
 
-ClearBundleData[] := QuiverGeometryLoader`$BundleGraphCache = Data`UnorderedAssociation[];
+ClearBundleData[] := QuiverGeometryLoader`$BundleGraphCache = UAssociation[];
 
 If[!AssociationQ[QuiverGeometryLoader`$BundleGraphCache],
-QuiverGeometryLoader`$BundleGraphCache = Data`UnorderedAssociation[]
+QuiverGeometryLoader`$BundleGraphCache = UAssociation[]
 ];
 
 (**************************************************************************************************)
@@ -42,7 +42,7 @@ getBundleGraphData[bundleGraph_, baseGraph_:Automatic, fiberGraph_:None] := Scop
 
   fiberVertices = If[fiberGraph =!= None, VertexList @ fiberGraph, Union @ LastColumn @ VertexList @ bundleGraph];
   fiberVertexColorFunction = DiscreteColorFunction[fiberVertices, Automatic];
-  fiberGroups = GroupBy[bundleVertices, First -> Last];
+  fiberGroups = GroupPairs @ bundleVertices;
 
   baseAdjacency = VertexAdjacencyAssociation @ baseGraph;
   taggedAdj = VertexTagAdjacencyAssociation @ bundleGraph;

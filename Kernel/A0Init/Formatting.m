@@ -22,7 +22,7 @@ PrivateVariable[$BoxFormattingHeadQ]
 
 SetHoldAllComplete[getPatternHead];
 
-$BoxFormattingHeadQ = Data`UnorderedAssociation[];
+$BoxFormattingHeadQ = UAssociation[];
 
 declareBoxFormatting[rules__RuleDelayed] := Scan[declareBoxFormatting, {rules}];
 declareBoxFormatting[lhs_ :> rhs_] :=

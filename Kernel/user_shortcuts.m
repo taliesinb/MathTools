@@ -534,6 +534,7 @@ makeSym["SF", SymbolForm];
 
 makeSym["QPPF", QuiverProductPolyForm];
 
+makeSym["VLF", VertexLabelForm];
 makeSym["TAF", TextAndForm];
 makeSym["CF", GeneralUtilities`CommaForm];
 

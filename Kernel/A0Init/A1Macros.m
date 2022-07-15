@@ -59,7 +59,10 @@ procDestructArg[argSpec_] := With[
   ,
     With[{parentSym = Symbol[Extract[Unevaluated @ argSpec, First @ symbolPos, HoldSymbolName] <> "$$"]},
       AppendTo[$destructAliases, Map[
-        pos |-> Extract[Unevaluated @ argSpec, pos, HoldPattern] :> Extract[parentSym, pos],
+        pos |-> If[Length[pos] === 1,
+          With[{p1 = First @ pos}, Extract[Unevaluated @ argSpec, pos, HoldPattern] :> Part[parentSym, p1]],
+          Extract[Unevaluated @ argSpec, pos, HoldPattern] :> Extract[parentSym, pos]
+        ],
         symbolPos
       ]];
       parentSym

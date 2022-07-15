@@ -27,7 +27,7 @@ rasterizeImage[obj_] := Scope[
 
 (**************************************************************************************************)
 
-$rasterMetadataCache = Data`UnorderedAssociation[];
+$rasterMetadataCache = UAssociation[];
 
 cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
 
