@@ -14,10 +14,6 @@ PrivateFunction[constructRewritingSystem]
 RewritingSystemObject::badrules = "Invalid rewriting rules.";
 
 constructRewritingSystem[type_, rules_, opts:OptionsPattern[RewritingSystemObject]] := Scope[
-  If[rules =!= Null,
-    rules //= ToList;
-    If[!RuleListQ[rules /. TwoWayRule -> Rule], ReturnFailed[RewritingSystemObject::badrules]];
-  ];
   UnpackOptions[canonicalizationFunction, customProperties];
   assoc = Association[
     "Type" -> type,
@@ -27,6 +23,9 @@ constructRewritingSystem[type_, rules_, opts:OptionsPattern[RewritingSystemObjec
   ];
   System`Private`ConstructNoEntry[RewritingSystemObject, assoc]
 ];
+
+(* TODO: system for normalizing rules (e.g. handling <->), allowing manually tagged rules,
+and reporting failure. *)
 
 (**************************************************************************************************)
 
@@ -74,60 +73,71 @@ rewritingSystemObjectBoxes[rs:RewritingSystemObject[data_], form_] := Scope[
 
 PublicFunction[RewriteQuiver, RewriteGraph]
 
-Options[rewriteGraphQuiver] = Options[RewriteQuiver] = Options[RewriteGraph] = JoinOptions[
+Options[RewriteQuiver] = Options[RewriteGraph] = JoinOptions[
   MaxVertices -> Infinity,
   MaxEdges -> Infinity,
+  Verbose -> False,
+  ProgressFunction -> None,
+  DirectedEdges -> True,
   $ExtendedGraphOptions
 ];
 
 declareSyntaxInfo[LatticeGraph, {_, _, OptionsPattern[]}];
 declareSyntaxInfo[LatticeQuiver, {_, _, OptionsPattern[]}];
 
-RewriteQuiver[system_RewritingSystemObject, initialState_, opts:OptionsPattern[]] :=
+RewriteQuiver[system_RewritingSystemObject, initialState_, opts:OptionsPattern[RewriteQuiver]] :=
   rewriteGraphQuiver[system, initialState, True, opts];
 
 RewritingSystemObject::noallstates = "Rewriting system cannot enumerate set of all states."
 RewritingSystemObject::noinitstates = "Empty set of initial states.";
 
-RewriteGraph[system_RewritingSystemObject, initialState_, opts:OptionsPattern[]] :=
-  rewriteGraphQuiver[system, initialState, False, opts];
+RewriteGraph[system_RewritingSystemObject, initialStates_, opts:OptionsPattern[RewriteQuiver]] :=
+  rewriteGraphQuiver[system, initialStates, False, opts];
 
-rewriteGraphQuiver[system_, initialState_, isQuiver_, opts:OptionsPattern[]] := Scope[
-  cayleyFunction = system["CayleyFunction", "Labeled" -> True (* isQuiver *)];
-  canonFunction = system["CanonicalizationFunction"];
-  If[initialState === All,
-    initialState = system["AllStates"];
-    If[!ListQ[initialState], ReturnFailed[RewritingSystemObject::noallstates]]
+rewriteGraphQuiver[system_, initialStates_, isQuiver_, opts:OptionsPattern[RewriteQuiver]] := Scope[
+  
+  cayleyFunction = system["CayleyFunction", "Labeled" -> isQuiver];
+  
+  Switch[initialStates,
+    All,
+      initialStates = system["AllStates"];
+      If[!ListQ[initialStates], ReturnFailed[RewritingSystemObject::noallstates]],
+    {},
+      ReturnFailed[RewritingSystemObject::noinitstates],
+    _List,
+      Null,
+    _,
+      initialStates //= List;
   ];
-  initialState //= ToList;
-  If[canonFunction =!= None,
-    cayleyFunction = cayleyFunction /* applyCanonicalizationFunction[canonFunction];
-    initialState //= Map[canonFunction]
-  ];
-  If[initialState === {}, ReturnFailed[RewritingSystemObject::noinitstates]];
-  UnpackOptions[layoutDimension];
+
+  UnpackOptions[layoutDimension, verbose];
+  
   If[layoutDimension === 3, opts = Sequence[opts, VertexLayout -> SpringElectricalLayout[]]];
-  result = LatticeQuiver[
-    <|"CayleyFunction" -> cayleyFunction, "InitialStates" -> initialState|>, opts,
+  
+  result = MultiwaySystem[
+    If[verbose, tapped[cayleyFunction], cayleyFunction], initialStates,
+    {"Graph", "TerminationReason"},
+    FilterOptions @ opts,
     GraphTheme -> If[isQuiver, "RewriteQuiver", "RewriteGraph"],
-    DirectedEdges -> True,
-    VertexNameFunction -> None
+    CanonicalizationFunction -> system["CanonicalizationFunction"]
   ];
-  (* there is a bug in LatticeGraph, see RewriteGraph[StringRewritingSystem[{"10" -> "01", "010" -> "100"}],
-  "010"] // EdgeList, which reverses one edge and doesn't include a self-loop *)
-  If[!isQuiver, result = RemoveEdgeTags @ result];
-  cards = CardinalList[result];
-  If[cards =!= None, result = ExtendedGraph[result, Cardinals -> Sort[cards]]];
-  result
+
+  If[!ListQ[result], ReturnFailed[]];
+  {graph, terminationReason} = result;
+  If[verbose, Print["TerminationReason: ", terminationReason]];
+
+  (* TODO: do this in MultiwaySystem *)
+  If[isQuiver,
+    cards = CardinalList[graph];
+    If[cards =!= None, graph = ExtendedGraph[graph, Cardinals -> Sort[cards]]];
+  ];
+
+  graph
 ]
 
-applyCanonicalizationFunction[f_][list_] :=
-  DeleteDuplicatesBy[Map[applyCanon1[f], list], stripLabel];
-
-applyCanon1[f_][Labeled[e_, l_]] := Labeled[f[e], l];
-stripLabel[Labeled[e_, _]] := e;
-
 (* TODO: fix Automatic options to inherit from the theme options *)
+
+tapped[f_][arg_] := Module[{res = f[arg], res2}, res2 = Map[InputForm, StripLabel[res]]; Echo[InputForm[arg] -> If[ListQ[res2], Column[res2], res2]]; res];
 
 (**************************************************************************************************)
 

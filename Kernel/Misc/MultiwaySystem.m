@@ -242,9 +242,8 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
 
   If[!includeFrontier,
     $excludeFrontierBlock := (
-      interiorMask = UnsameQ[#, $notFound]& /@ Lookup[vertexIndex, successors, $notFound];
-      successors = Pick[successors, interiorMask, True];
-      labeledSuccessors = Pick[labeledSuccessors, interiorMask, True];
+      interiorMask = SameAs[$notFound] /@ Lookup[vertexIndex, successors, $notFound];
+      successors = Pick[successors, interiorMask, False];
     )
   ];
 
@@ -284,6 +283,9 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     If[successors === {}, Continue[]];
     $removeSelfLoopsBlock;
 
+    (* avoid including edges to unvisited vertices when on final depth *)
+    If[isLastGeneration, $excludeFrontierBlock];
+
     (* add the transitions lists to its bag *)
     Internal`StuffBag[transitionListsBag, {vertex, successors}];
     edgeCount += Length[successors];
@@ -297,9 +299,6 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
 
     (* detect new vertices, and obtain all the Ids of successor vertices *)
     lastCount = Length[vertexIndex];
-
-    If[isLastGeneration, $excludeFrontierBlock];
-
     successorsIds = Map[
       succ |-> Lookup[vertexIndex, Key[succ],
         vertexArray["Append", succ];
@@ -370,7 +369,8 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     "LabeledGraph" :> Graph[graph, VertexLabels -> Automatic],
     "CayleyGraph" :> ExtendedGraph[
       CombineMultiedges @ ExtendedGraph[
-        vertices, DeleteDuplicates @ edges, FilterOptions @ opts,
+        vertices, DeleteDuplicates @ edges,
+        FilterOptions @ opts,
         GraphTheme -> "CayleyGraph",
         GraphLegend -> "Cardinals"
       ]

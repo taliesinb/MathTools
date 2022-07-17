@@ -593,6 +593,10 @@ resolveComplexVertexList[spec_] := Which[
 
 PublicHead[Weighted]
 
+Weighted /: Times[w2_ ? AtomQ, Weighted[e_, w1_]] := Weighted[e, w1 * w2];
+
+Weighted[Weighted[e_, w1_], w2_] := Weighted[e, w1 * w2];
+
 processRegion[Weighted[region_, weight_]] :=
   GraphRegionAnnotation[
     If[ListQ[region], processRegion /@ region, processRegion @ region],

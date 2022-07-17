@@ -9,9 +9,9 @@ lookupRule = Case[
   e_ := e;
 ];
 
-declareRewritingSystemDispatch["Expression", ExpressionRewritingSystemProperty]
+declareRewritingSystemDispatch["Expression", expressionRewritingSystemProperty]
 
-ExpressionRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] := Scope[
+expressionRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] := Scope[
   UnpackAssociation[data, rules];
   UnpackStringOptions[{opts}, True, labeled];
   rules = Map[procSymRules, ToList @ rules];

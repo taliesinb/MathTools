@@ -2896,16 +2896,25 @@ ExtendedGraphPlot::badtooltipspec = "The tooltip specification `` was not one of
 
 (**************************************************************************************************)
 
-PublicFunction[ShowLabels, VertexLabelForm, VertexIndexForm, VertexTooltipForm, EdgeLabelForm]
+PublicFunction[VertexIndexForm, VertexLabelForm]
 
-ShowLabels[e_] := VertexLabelForm[e];
+VertexIndexForm[expr_] := addOptionsToGraphs[expr, VertexLabels -> "Index", ImagePadding -> 20];
+VertexLabelForm[expr_] := addOptionsToGraphs[expr, VertexLabels -> "Name", ImagePadding -> 20];
 
-VertexIndexForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, VertexLabels -> "Index", ImagePadding -> 20];
+PublicFunction[EdgeIndexForm, EdgeLabelForm]
 
-VertexLabelForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, VertexLabels -> "Name", ImagePadding -> 20];
-VertexTooltipForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, VertexLabels -> Placed["Name", Tooltip]];
+EdgeIndexForm[expr_] := addOptionsToGraphs[expr, EdgeLabels -> "Index", ImagePadding -> 20];
+EdgeLabelForm[expr_] := addOptionsToGraphs[expr, EdgeLabels -> "Name", ImagePadding -> 20];
 
-EdgeLabelForm[e_] := e /. (g_Graph ? GraphQ) :> RuleCondition @ Graph[g, EdgeLabels -> "Index", ImagePadding -> 20];
+PublicFunction[GraphIndexForm, GraphLabelForm, GraphTooltipIndexForm, GraphTooltipLabelForm]
+
+GraphIndexForm[expr_] := addOptionsToGraphs[expr, VertexLabels -> "Index", EdgeLabels -> "Index", ImagePadding -> 20];
+GraphLabelForm[expr_] := addOptionsToGraphs[expr,  VertexLabels -> "Name", EdgeLabels -> "Name", ImagePadding -> 20];
+GraphTooltipIndexForm[expr_] := addOptionsToGraphs[expr,  VertexLabels -> Placed["Index", Tooltip], EdgeLabels -> Placed["Index", Tooltip], ImagePadding -> 20];
+GraphTooltipLabelForm[expr_] := addOptionsToGraphs[expr,  VertexLabels -> Placed["Name", Tooltip], EdgeLabels -> Placed["Name", Tooltip], ImagePadding -> 20];
+
+addOptionsToGraphs[expr_, opts___] :=
+  ReplaceAll[expr, (g_Graph ? GraphQ) :> RuleCondition @ ExtendedGraph[g, opts]];
 
 (**************************************************************************************************)
 

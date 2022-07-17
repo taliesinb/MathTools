@@ -534,7 +534,15 @@ makeSym["SF", SymbolForm];
 
 makeSym["QPPF", QuiverProductPolyForm];
 
-makeSym["VLF", VertexLabelForm];
+makeSym["VIF",  VertexIndexForm];
+makeSym["VLF",  VertexLabelForm];
+makeSym["ELF",  EdgeLabelForm];
+makeSym["ELF",  EdgeLabelForm];
+makeSym["GIF",  GraphIndexForm];
+makeSym["GLF",  GraphLabelForm];
+makeSym["GTIF", GraphTooltipIndexForm];
+makeSym["GTLF", GraphTooltipLabelForm];
+
 makeSym["TAF", TextAndForm];
 makeSym["CF", GeneralUtilities`CommaForm];
 

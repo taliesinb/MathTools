@@ -123,7 +123,7 @@ NotOperator[f_][expr_] := Not @ f @ expr;
 
 PublicFunction[SameOperator]
 
-SameOperator[f_][g_] := SameQ[f, g];
+SameOperator = SameAs;
 
 (**************************************************************************************************)
 
