@@ -37,9 +37,10 @@ declareBoxFormatting[___] := Panic["BadFormatting"]
 
 (**************************************************************************************************)
 
-PrivateFunction[summaryItem]
+PrivateFunction[summaryItem, padSummaryItem]
 
 summaryItem[a_, b_] := BoxForm`SummaryItem[{a <> ": ", b}];
+padSummaryItem[a_, b_] := BoxForm`SummaryItem[{Pane[a <> ": ", 60], b}];
 
 (**************************************************************************************************)
 

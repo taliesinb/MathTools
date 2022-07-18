@@ -81,6 +81,13 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
+PublicHead[InvertAwareSort]
+
+InvertAwareSort[e_] :=
+  SortBy[e, z |-> {ReplaceAll[z, Inverted[f_] :> f], Position[z, _Inverted]}];
+
+(**************************************************************************************************)
+
 PublicFunction[InvertReverse]
 
 SetUsage @ "

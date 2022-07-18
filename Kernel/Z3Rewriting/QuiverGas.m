@@ -42,24 +42,29 @@ GraphGasState[{___Integer}, hash_Integer] :=  *) *)
 
 PublicFunction[QuiverGas]
 
+PublicOption[RuleSymmetries, UnspecifiedIdentity]
+
 Options[QuiverGas] = {
-  Method -> 2
+  Method -> 2,
+  RuleSymmetries -> None,
+  UnspecifiedIdentity -> True
 };
 
 QuiverGas::arg1 = "First argument should be an edge tagged graph.";
 QuiverGas::arg2 = "Second argument should be a list of cardinal flow rules.";
 QuiverGas::method = "Unknown method ``.";
 
-QuiverGas[graph_, rules_, OptionsPattern[]] := Scope[
+QuiverGas[graph_, rules_, OptionsPattern[]] := Scope @ CatchMessage[
 
   If[!EdgeTaggedGraphQ[graph], ReturnFailed["arg1"]];
 
   If[!RuleListQ[rules], ReturnFailed["arg2"]];
 
-  UnpackOptions[method];
+  UnpackOptions[method, ruleSymmetries, unspecifiedIdentity];
 
   dataFn = Switch[method, 2, quiverGasDataNew, 1, quiverGasDataOld, _, ReturnFailed["method", method]];
 
+  rules = processGasRules[CardinalList @ graph, rules, ruleSymmetries, unspecifiedIdentity];
   data = dataFn[graph, rules];
   If[!AssociationQ[data], ReturnFailed[]];
 
@@ -78,6 +83,59 @@ QuiverGas[graph_, rules_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
+QuiverGas::invsym = "Invalid symmetries ``.";
+
+processGasRules[cardinals_, rules_, symmetries_, unspecifiedIdentity_] := Scope[
+  $cardinals = Join[cardinals, Inverted /@ cardinals];
+  rules = Map[processGasRule, rules];
+  If[symmetries =!= None && rules =!= {},
+    sub = SubstitutionRewritingSystem[symmetries];
+    If[FailureQ[sub], ThrowMessage["invsym", symmetries]];
+    rules = RewriteStates[sub, rules];
+    rules = DeleteDuplicates @ Map[InvertAwareSort, rules, {2}];
+    If[!RuleVectorQ[rules], ThrowMessage["invsym", symmetries]];
+  ];
+  If[unspecifiedIdentity,
+    allLHS = InvertAwareSort /@ Rest[Subsets @ $cardinals];
+    unspecifiedLHS = Complement[allLHS, Keys @ rules];
+    rules = Join[rules, RuleThread[unspecifiedLHS, unspecifiedLHS]];
+  ];
+  DeleteDuplicates @ rules
+];
+
+processGasRule[lhs_ -> rhs_] := Rule[processLHS @ lhs, processRHS @ rhs];
+
+QuiverGas::invspec = "Rule component `` is not valid."
+
+processRHS = Case[
+  Weighted[spec_, 0|0.]             := Nothing;
+  Weighted[spec_, 1|1.]             := % spec;
+  Weighted[spec_, w_ /; 0 < w < 1]  := Weighted[% @ spec, N @ w];
+  Times[w_ /; 0 < w < 1, spec_]     := Weighted[% @ spec, N @ w];
+  str_String                        := toCardinalList @ stringToCardList @ str;
+  list_List                         := toCardinalList @ list;
+  inv_                              := ThrowMessage["invspec", inv];
+];
+
+processLHS = Case[
+  str_String                                := toCardinalList @ stringToCardList @ str;
+  list_List                                 := toCardinalList @ list;
+  inv_                                      := ThrowMessage["invspec", inv];
+];
+
+PrivateFunction[stringToCardList]
+
+stringToCardList[str_String] :=
+  Map[If[UpperCaseQ[#], Inverted @ ToLowerCase @ #, #]&, Characters @ str];
+
+QuiverGas::invcards = "Spec `` contains invalid cardinals. Allowed cardinals are: ``."
+toCardinalList[list_] := If[!SubsetQ[$cardinals, list],
+  ThrowMessage["invcard", list, $cardinals],
+  DeleteDuplicates @ list
+];
+
+(**************************************************************************************************)
+
 PublicHead[QuiverGasObject]
 
 MakeBoxes[object_QuiverGasObject ? System`Private`HoldNoEntryQ, form_] :=
@@ -87,33 +145,55 @@ quiverGasObjectBoxes[object:QuiverGasObject[data_], form_] := Scope[
   UnpackAssociation[data, rules, graph];
   vcount = VertexCount @ graph;
   ecount = EdgeCount @ graph;
+  rules = SortBy[rules, ruleOrderer];
+  formattedRules = Grid[
+    Map[fmtRule, SplitBy[rules, First /* Length], {2}],
+    Alignment -> Left, BaselinePosition -> 1,
+    ColumnSpacings -> 3
+  ];
   BoxForm`ArrangeSummaryBox[
     QuiverGasObject, object, None,
     (* Always displayed *)
     {
-     {summaryItem["Vertices", vcount]},
-     {summaryItem["Edges", ecount]},
-     {summaryItem["Rules", Row[rules, ", "]]}
+     {padSummaryItem["Vertices", vcount]},
+     {padSummaryItem["Edges", ecount]},
+     {padSummaryItem["Rules", Length @ rules]}
     },
     (* Displayed on request *)
-    {},
+    {BoxForm`SummaryItem[{formattedRules}]},
     form,
     "Interpretable" -> Automatic
   ]
 ];
 
+fmtRule[a_List -> b_List] := Pane[Row[a] -> Row[b], BaselinePosition -> Baseline];
+
+ruleOrderer[r:Rule[a_, b_]] :=
+  {Length[a], Length[b], ReplaceAll[r, Inverted[f_] :> f], Position[r, _Inverted]};
+
 (**************************************************************************************************)
 
 PublicFunction[QuiverGasEvolve]
 
-QuiverGasEvolve[qg:QuiverGasObject[assoc_] ? System`Private`NoEntryQ, init_, steps_Integer] := Scope[
+Options[QuiverGasEvolve] = {
+  RandomSeeding -> Automatic
+};
 
-  UnpackAssociation[assoc, flowVectorSize, updateFunction];
+QuiverGasEvolve::badinit = "Could not resolve initial condition.";
+QuiverGasEvolve[qg:QuiverGasObject[assoc_] ? System`Private`NoEntryQ, init_, steps_Integer, OptionsPattern[]] := Scope[
 
-  init = Switch[init,
-    i_Integer /; 1 <= i <= flowVectorSize, RandomSample @ Join[ConstantArray[1, init], ConstantArray[0, flowVectorSize - init]],
-    _Real | _Rational,                     RandomChoice[{init, 1 - init} -> {1, 0}, flowVectorSize],
-    _,                                     ReturnFailed[]
+  UnpackAssociation[assoc, flowVectorSize, updateFunction, signedEdgeToIndex];
+
+  UnpackOptions[randomSeeding];
+
+  RandomSeeded[
+    init = Switch[init,
+      _List,                                 Normal @ ExtendedSparseArray[Lookup[signedEdgeToIndex, init, ReturnFailed["badinit"]], flowVectorSize],
+      i_Integer /; 1 <= i <= flowVectorSize, RandomSample @ Join[ConstantArray[1, init], ConstantArray[0, flowVectorSize - init]],
+      _Real | _Rational,                     RandomChoice[{init, 1 - init} -> {1, 0}, flowVectorSize],
+      _,                                     ReturnFailed[]
+    ],
+    randomSeeding
   ];
 
   init //= ToPackedReal;
@@ -228,7 +308,7 @@ quiverGasDataOld[g_, rules_] := Scope[
   update = (ExtractIndices[#, gatherMatrix]&) /* Apply[fn] /* Flatten /* PartOperator[scatterVector] /* Append[0];
   ];
 
-  <|"Neighborhood" -> tags, "UpdateFunction" -> update, "FlowVectorSize" -> noneEdgeIndex|>
+  <|"Neighborhood" -> tags, "UpdateFunction" -> update, "FlowVectorSize" -> noneEdgeIndex, "SignedEdgeToIndex" -> signedEdgeToIndex|>
 ]
 
 (**************************************************************************************************)
@@ -264,7 +344,7 @@ quiverGasDataNew[g_, rules_] := Scope[
 
   cfn = compileScatterGather[fn, Real, gatherMatrix, scatterVector];
 
-  <|"Neighborhood" -> tags, "UpdateFunction" -> cfn, "FlowVectorSize" -> noneEdgeIndex|>
+  <|"Neighborhood" -> tags, "UpdateFunction" -> cfn, "FlowVectorSize" -> noneEdgeIndex, "SignedEdgeToIndex" -> signedEdgeToIndex|>
 ]
 
 (* this is the optimized version that does the gather internally *)
@@ -338,9 +418,15 @@ getFlow[flow_, spec_] := Scope[
   ]
 ];
 
+
 (**************************************************************************************************)
 
 $plotDataCache = UAssociation[];
+
+qg_QuiverGasEvolutionData["ParticlePlotImage", part_, userOpts___Rule] := Scope[
+  res = qg["ParticlePlot", part, userOpts];
+  If[VectorQ[res], Rasterize /@ res, Rasterize @ res]
+];
 
 qg_QuiverGasEvolutionData["ParticlePlot", part_, userOpts___Rule] := Scope[
 
@@ -349,15 +435,19 @@ qg_QuiverGasEvolutionData["ParticlePlot", part_, userOpts___Rule] := Scope[
 
   UnpackAssociation[obj, graph, graphHash, symmetricEdgeCoordinates, vertexCoordinates, flowVectorSize];
 
-  plotGraphics = CacheTo[$plotDataCache, graphHash, ExtendedGraphPlot[
-    graph, ImagePadding -> 5, EdgeThickness -> 1, VertexSize -> 5,
-    ArrowheadShape -> None, EdgeStyle -> $LightGray, VertexStyle -> Black,
-    EdgeLabelStyle -> None
-  ]];
+  mesh = TrueQ @ Lookup[{userOpts}, Mesh, True];
+  plotGraphics = If[mesh,
+    Part[CacheTo[$plotDataCache, graphHash, DeleteOptions[ImageSizeRaw] @ ExtendedGraphPlot[
+      graph, ImagePadding -> 5, EdgeThickness -> 1, VertexSize -> 5,
+      ArrowheadShape -> None, EdgeStyle -> $LightGray, VertexStyle -> Black,
+      EdgeLabelStyle -> None
+    ]], 1, 1],
+    {}
+  ];
 
   flowTable @ Graphics[
-    {Part[plotGraphics, 1, 1],
-    {MapThread[
+    {plotGraphics,
+    {Thickness[Large], MapThread[
         {segment, weight} |-> If[weight > 0, Style[drawArrowAlong[segment], GrayLevel[1 - weight]]],
         {symmetricEdgeCoordinates, flow}
       ]
@@ -367,7 +457,7 @@ qg_QuiverGasEvolutionData["ParticlePlot", part_, userOpts___Rule] := Scope[
   ]
 ];
 
-$gasArrow := $gasArrow = Part[ArrowheadData["Arrow"], 1, 4];
+$gasArrow := $gasArrow = Part[ArrowheadData["EqualLine"], 1, 4];
 
 drawArrowAlong[list_List] :=
   drawArrowAlong @ Part[list, {1, -1}];
@@ -376,7 +466,7 @@ drawArrowAlong[{a_, b_}] /; EuclideanDistance[a, b] >= 2 :=
   drawArrowAlong[{a, a - Normalize[b - a]}];
 
 drawArrowAlong[{a_, b_}] := Scope[
-  y = Normalize[b - a];
+  y = 0.5 * Normalize[b - a];
   m = Mean[{b, a}];
   x = VectorRotate90[y];
   GeometricTransformation[$gasArrow, {Trans[y, x], m}]

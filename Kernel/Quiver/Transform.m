@@ -6,7 +6,7 @@ MapEdgeTags[{edge$1, edge$2, $$}, f$] applies f$ to tags of a list of edges.
 "
 
 MapEdgeTags[f_, list_ ? EdgeListQ] :=
-  MapAt[f, list, {All, 2}];
+  MapAt[f, list, {All, 3}];
 
 MapEdgeTags[f_, graph_Graph ? EdgeTaggedGraphQ] := Graph[
   VertexList @ graph,
@@ -19,6 +19,26 @@ MapEdgeTags[_, graph_Graph] := graph;
 MapEdgeTags[_, _] := $Failed
 
 MapEdgeTags[f_][graph_] := MapEdgeTags[f, graph];
+
+(**************************************************************************************************)
+
+PublicFunction[InvertCardinals]
+
+SetUsage @ "
+InvertCardinals[graph$] negates all the cardinals of graph$.
+InvertCardinals[graph$, {card$i}] negates specific cardinals.
+"
+
+(* TODO: handle CardinalSet *)
+
+InvertCardinals[graph_ ? EdgeTaggedGraphQ, cards_List] := Scope[
+  cardinals = CardinalList @ graph;
+  cardP = Alternatives @@ cards;
+  MapEdgeTags[AssociationMap[If[MatchQ[#, cardP], Inverted[#], #]&, cardinals], graph]
+];
+
+InvertCardinals[graph_ ? EdgeTaggedGraphQ] :=
+  InvertCardinals[graph, CardinalList @ graph];
 
 (**************************************************************************************************)
 
