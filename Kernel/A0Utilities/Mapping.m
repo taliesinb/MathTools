@@ -34,6 +34,27 @@ MatrixApply[f_][e_] := Apply[f, e, {2}];
 
 (**************************************************************************************************)
 
+PublicFunction[ThreadAnd, ThreadOr, ThreadNot]
+
+ThreadAnd[args__] := And @@@ Trans[args];
+ThreadOr[args__] := Or @@@ Trans[args];
+ThreadNot[arg_List] := Map[Not, arg];
+
+(**************************************************************************************************)
+
+PublicFunction[ThreadLess, ThreadLessEqual, ThreadGreater, ThreadGreaterEqual, ThreadEqual, ThreadUnequal, ThreadSame, ThreadUnsame]
+
+ThreadLess[lists___]         := MapThread[Less, {lists}];
+ThreadLessEqual[lists___]    := MapThread[LessEqual, {lists}];
+ThreadGreater[lists___]      := MapThread[Greater, {lists}];
+ThreadGreaterEqual[lists___] := MapThread[GreaterEqual, {lists}];
+ThreadEqual[lists___]        := MapThread[Equal, {lists}];
+ThreadUnequal[lists___]      := MapThread[Unequal, {lists}];
+ThreadSame[lists___]         := MapThread[SameQ, {lists}];
+ThreadUnsame[lists___]       := MapThread[UnsameQ, {lists}];
+
+(**************************************************************************************************)
+
 PublicFunction[MapUnevaluated]
 
 SetHoldAllComplete[MapUnevaluated]

@@ -30,6 +30,12 @@ LookupVertexCoordinates[graph_Graph, vertexList_:All] := Scope[
 
 (**************************************************************************************************)
 
+PublicSymbol[$LargeGraphVertexCutoff]
+
+$LargeGraphVertexCutoff = 500;
+
+(**************************************************************************************************)
+
 PrivateFunction[ExtractGraphPrimitiveCoordinates]
 
 SetUsage @ "
@@ -75,7 +81,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     vertexLayout, layoutDimension, viewOptions, coordinateTransformFunction, coordinateRotation, vertexOverlapResolution,
     vertexCoordinateRules, vertexCoordinateFunction, selfLoopRadius, multiEdgeDistance, packingSpacing
   ];
-    
+
   (* process VertexCoordinateFunction, VertexCoordinateRules, and VertexCoordinates to produce a single
   VertexCoordinates element, which is either a list or Automatic. *)
   Which[
@@ -118,7 +124,12 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     ];
   ];
 
-  SetAutomatic[vertexLayout, $defaultVertexLayout];
+  SetAutomatic[vertexLayout,
+    If[vertexCoordinates =!= Automatic,
+      ManualVertexLayout[],
+      $defaultVertexLayout
+    ]
+  ];
   SetAutomatic[multiEdgeDistance, 0.3];
   SetAutomatic[selfLoopRadius, 0.5];
 
@@ -129,6 +140,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     "EdgeCount" -> edgeCount,
     "IndexVertices" -> Range @ vertexCount,
     "IndexEdges" -> edgeList,
+    "LargeGraphQ" -> (vertexCount > $LargeGraphVertexCutoff),
     "VertexCoordinates" -> vertexCoordinates,
     "LayoutDimension" -> layoutDimension,
     "SelfLoopRadius" -> selfLoopRadius,

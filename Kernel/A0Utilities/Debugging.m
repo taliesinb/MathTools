@@ -23,7 +23,7 @@ EchoGraphicsScope[e_] := Scope[
 PublicFunction[EchoGraphics]
 
 EchoGraphics[e_] := (AppendTo[$prims, e]; e);
-EchoGraphics[{x_ ? RealVectorQ, y_ ? RealVectorQ}] := (EchoGraphics @ Transpose @ {x, y}; {x, y});
+EchoGraphics[{x_ ? RealVectorQ, y_ ? RealVectorQ}] := (EchoGraphics @ Trans[x, y]; {x, y});
 EchoGraphics[points_ ? RealMatrixQ] := (AppendTo[$prims, Point @ points]; points);
 
 (**************************************************************************************************)

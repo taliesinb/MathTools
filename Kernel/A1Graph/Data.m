@@ -86,7 +86,7 @@ list of indices of vertices that have a edge from vertex v$i.
 
 VertexInOutTable[graph_] := Scope[
   adj = AdjacencyMatrix[graph];
-  Transpose[{adj["AdjacencyLists"], Transpose[adj]["AdjacencyLists"]}]
+  Trans[adj["AdjacencyLists"], Transpose[adj]["AdjacencyLists"]]
 ];
 
 (**************************************************************************************************)
@@ -147,10 +147,10 @@ indices of edges whose origin is the vertex v$i.
 VertexInOutEdgeTable[graph_] := Scope[
   pairs = EdgePairs @ graph;
   vertices = VertexRange @ graph;
-  Transpose[{
+  Trans[
     Lookup[PositionIndex @ LastColumn @ pairs, vertices, {}],
     Lookup[PositionIndex @ FirstColumn @ pairs, vertices, {}]
-  }]
+  ]
 ];
 
 (**************************************************************************************************)
@@ -202,7 +202,7 @@ vertexAdjacentEdgeVertex[graph_, returnAssoc_] := Scope[
   edgeIndices = PositionIndex @ FirstColumn @ pairs;
   outVertices = LastColumn @ pairs;
   outEdges = Lookup[edgeIndices, vertices, {}];
-  res = Map[edgeIndices |-> Transpose[{edgeIndices, Part[outVertices, edgeIndices]}], outEdges];
+  res = Map[edgeIndices |-> Trans[edgeIndices, Part[outVertices, edgeIndices]], outEdges];
   If[returnAssoc, AssociationThread[vertices, res], res]
 ];
 
@@ -260,10 +260,10 @@ VertexOrientedOutTable[graph_] := Scope[
   edges = EdgeList @ IndexGraph @ graph; count = VertexCount[graph];
   dir = Cases[edges, _DirectedEdge];
   undir = Cases[edges, _UndirectedEdge];
-  Transpose @ {
+  Trans[
     toOutTable[count, dir],
     toOutTable[count, Join[undir, Reverse[undir, 2]], 1]
-  }
+  ]
 ];
 
 (**************************************************************************************************)

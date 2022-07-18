@@ -362,8 +362,8 @@ edgeListTaggedTables[edgeList_] := Scope[
     Part[edgeList, All, 3],
     ConstantArray[None, Length @ edgeList]
   ];
-  oAssoc = Merge[Identity] @ RuleThread[a, Transpose[{b, c}]];
-  iAssoc = Merge[Identity] @ RuleThread[b, Transpose[{a, Inverted /@ c}]];
+  oAssoc = Merge[Identity] @ RuleThread[a, Trans[b, c]];
+  iAssoc = Merge[Identity] @ RuleThread[b, Trans[a, Inverted /@ c]];
   {oAssoc, iAssoc}
 ]
 
@@ -501,7 +501,7 @@ RestrictedVertexIndexProducts[graph_, cond_] := Scope[
       Discard[Tuples[Range[count], 2], Apply[Equal]],
     LessThan[1] | Between[{0, 1}],
       range = Range[count];
-      Join[Transpose[{range, range}], EdgePairs[graph]],
+      Join[Trans[range, range], EdgePairs[graph]],
     EqualTo[1],
       EdgePairs[graph],
     _LessThan | _EqualTo | _Between | _GreaterThan,

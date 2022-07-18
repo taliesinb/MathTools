@@ -138,7 +138,7 @@ declareBoxFormatting[
 
 colorBox[box_, color_] := StyleBox[box, Background -> color];
 
-PrivateFunction[skeletonBox]
+PrivateFunction[skeletonBox, skeletonString]
 
 skeletonBox[head_, color_, args_] :=
   RowBox @ Flatten @ {head, "[", Riffle[colorBox[skeletonString @ #, color]& /@ args, ","], "]"};
@@ -874,7 +874,7 @@ processRegion[l:Locus[r1_, r2_, d_:0 ? NumericQ]] := Scope[
   d2 = extractDistanceToRegion @ r2;
   isPolar = d === -1; d = Max[d, 0];
   indices = SelectIndices[
-    Transpose @ {d1, d2},
+    Trans[d1, d2],
     Apply[Abs[#1 - #2] <= d&]
   ];
   If[isPolar,

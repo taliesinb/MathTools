@@ -76,7 +76,7 @@ stringTokens[str_String, All] :=
   stringTokens[str, {1, StringLength @ str}];
 
 stringTokens[str_String, span:{i_, j_}] :=
-  Transpose[{
+  Trans[
     Characters @ StringTake[str, span],
     Range[i, j]
-  }];
+  ];

@@ -56,7 +56,7 @@ MakeBoxes[rs_RewritingSystemObject ? System`Private`HoldNoEntryQ, form_] :=
 rewritingSystemObjectBoxes[rs:RewritingSystemObject[data_], form_] := Scope[
   UnpackAssociation[data, type, rules];
   BoxForm`ArrangeSummaryBox[
-    RewritingSystemObject, object, None,
+    RewritingSystemObject, rs, None,
     (* Always displayed *)
     {
      {summaryItem["Type", type]},
@@ -71,14 +71,33 @@ rewritingSystemObjectBoxes[rs:RewritingSystemObject[data_], form_] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[RewriteStates]
+
+Options[RewriteStates] = {
+  MaxVertices -> Infinity,
+  MaxEdges -> Infinity,
+  ProgressFunction -> None,
+  Verbose -> False
+};
+
+RewriteStates[system_RewritingSystemObject, initialStates_, opts:OptionsPattern[]] := Scope[
+  
+  UnpackOptions[verbose];
+
+  rewriteMultiwaySystem[
+    system, initialStates, False, verbose, "VertexList",
+    FilterOptions @ opts
+  ]
+];
+
+(**************************************************************************************************)
+
 PublicFunction[RewriteQuiver, RewriteGraph]
 
 Options[RewriteQuiver] = Options[RewriteGraph] = JoinOptions[
-  MaxVertices -> Infinity,
-  MaxEdges -> Infinity,
-  Verbose -> False,
-  ProgressFunction -> None,
+  RewriteStates,
   DirectedEdges -> True,
+  Verbose -> False,
   $ExtendedGraphOptions
 ];
 
@@ -95,31 +114,16 @@ RewriteGraph[system_RewritingSystemObject, initialStates_, opts:OptionsPattern[R
   rewriteGraphQuiver[system, initialStates, False, opts];
 
 rewriteGraphQuiver[system_, initialStates_, isQuiver_, opts:OptionsPattern[RewriteQuiver]] := Scope[
-  
-  cayleyFunction = system["CayleyFunction", "Labeled" -> isQuiver];
-  
-  Switch[initialStates,
-    All,
-      initialStates = system["AllStates"];
-      If[!ListQ[initialStates], ReturnFailed[RewritingSystemObject::noallstates]],
-    {},
-      ReturnFailed[RewritingSystemObject::noinitstates],
-    _List,
-      Null,
-    _,
-      initialStates //= List;
-  ];
 
   UnpackOptions[layoutDimension, verbose];
   
   If[layoutDimension === 3, opts = Sequence[opts, VertexLayout -> SpringElectricalLayout[]]];
   
-  result = MultiwaySystem[
-    If[verbose, tapped[cayleyFunction], cayleyFunction], initialStates,
+  result = rewriteMultiwaySystem[
+    system, initialStates, isQuiver, verbose,
     {"Graph", "TerminationReason"},
     FilterOptions @ opts,
-    GraphTheme -> If[isQuiver, "RewriteQuiver", "RewriteGraph"],
-    CanonicalizationFunction -> system["CanonicalizationFunction"]
+    GraphTheme -> If[isQuiver, "RewriteQuiver", "RewriteGraph"]
   ];
 
   If[!ListQ[result], ReturnFailed[]];
@@ -134,6 +138,31 @@ rewriteGraphQuiver[system_, initialStates_, isQuiver_, opts:OptionsPattern[Rewri
 
   graph
 ]
+
+(**************************************************************************************************)
+
+rewriteMultiwaySystem[system_, states_, isLabeled_, verbose_, args___] := Scope[
+  
+  Switch[states,
+    All,
+      states = system["AllStates"];
+      If[!ListQ[states], ReturnFailed[RewritingSystemObject::noallstates]],
+    {},
+      ReturnFailed[RewritingSystemObject::noinitstates],
+    _List,
+      Null,
+    _,
+      states //= List;
+  ];
+
+  cayleyFunction = system["CayleyFunction", "Labeled" -> isLabeled];
+
+  result = MultiwaySystem[
+    If[verbose, tapped[cayleyFunction], cayleyFunction], states,
+    args,
+    CanonicalizationFunction -> system["CanonicalizationFunction"]
+  ]
+];
 
 (* TODO: fix Automatic options to inherit from the theme options *)
 

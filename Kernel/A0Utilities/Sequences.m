@@ -1,3 +1,11 @@
+PublicFunction[Trans]
+
+Trans = Case[
+  Seq[seq___List] := Transpose[{seq}];
+];
+
+(**************************************************************************************************)
+
 PublicFunction[TakeSequence]
 
 SetRelatedSymbolGroup[TakeSequence, DropSequence];

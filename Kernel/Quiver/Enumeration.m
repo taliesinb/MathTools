@@ -500,8 +500,8 @@ StrictlyIsomorphicSubgraphQ[sub_, super_] := Scope[
   deg1 = VertexDegree[sub, #]& /@ Keys[iso];
   deg2 = VertexDegree[super, #]& /@ Values[iso];
   And[
-    And @@ MapThread[LessEqual, {deg1, deg2}],
-    Mean[Boole @ MapThread[Equal, {deg1, deg2}]] > 0.75
+    And @@ ThreadLessEqual[deg1, deg2],
+    Mean[Boole @ ThreadEqual[deg1, deg2]] > 0.75
   ]
 ];
 

@@ -205,7 +205,7 @@ $toRGBRules = Dispatch[{
 normalizeLightness[colors_, fraction_:1] := Scope[
   {l, a, b} = Transpose @ ToOklab[colors];
   l[[All]] = (Mean[l] * fraction) + l[[All]] * (1 - fraction);
-  FromOklab[Transpose[{l, a, b}]]
+  FromOklab @ Trans[l, a, b]
 ];
 
 (**************************************************************************************************)
@@ -424,7 +424,7 @@ ContinuousColorFunction[values_, colors_, OptionsPattern[]] := Scope[
   If[Length[values] < 2, ReturnFailed["interpsize"]];
   okLabValues = ToOklab[colors];
   values = N @ values;
-  interp = Interpolation[Transpose[{values, okLabValues}], InterpolationOrder -> 1];
+  interp = Interpolation[Trans[values, okLabValues], InterpolationOrder -> 1];
   UnpackOptions[ticks];
   System`Private`ConstructNoEntry[
     ColorFunctionObject, "Linear", values, interp /* OklabToRGB, ticks
@@ -893,7 +893,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   If[FailureQ[colorFunction], Return @ {$Failed, $Failed, $Failed}];
   normalFunction = Normal @ colorFunction;
   colors = Map[normalFunction, uniqueValues];
-  colorsValues = Transpose[{colors, uniqueValues}];
+  colorsValues = Trans[colors, uniqueValues];
   If[containsInd, AppendTo[colorsValues, {White, Indeterminate}]; AppendTo[posIndex, Indeterminate -> indPos]];
   If[containsNull, AppendTo[colorsValues, {Transparent, Null}]; AppendTo[posIndex, Null -> nullPos]];
   colorGroups = Merge[RuleThread[colorsValues, Values @ posIndex], Catenate];

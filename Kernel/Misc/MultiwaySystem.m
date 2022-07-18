@@ -204,7 +204,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   transitionListsBag = Internal`Bag[];
   indexTransitionListsBag = Internal`Bag[];
 
-  stackPushList[thisGenVertices, DropOperator[numPrologVertices] @ Transpose[{initialIds, initialVertices}]];
+  stackPushList[thisGenVertices, DropOperator[numPrologVertices] @ Trans[initialIds, initialVertices]];
 
   If[NumberQ[maxTime],
     stopTime = SessionTime[] + maxTime;

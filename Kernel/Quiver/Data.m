@@ -217,23 +217,28 @@ Options[TagVertexAdjacentEdgeTable] = {Signed -> False};
 TagVertexAdjacentEdgeTable[graph_, opts:OptionsPattern[]] :=
   TagVertexAdjacentEdgeTable[graph, None, opts];
 
-TagVertexAdjacentEdgeTable[graph_, invalid_, OptionsPattern[]] := Scope[
-  outTable = VertexOutEdgeTable @ graph;
-  inTable = VertexInEdgeTable @ graph; $invalid = invalid;
-  negator = If[OptionValue[Signed], mapInverted, Identity];
-  Merge[mergeNone] @ KeyValueMap[
-    {key, edgeIndices} |-> {
-      key ->          Map[First[Intersection[#, edgeIndices], invalid]&, outTable],
-      Inverted[key] -> negator @ Map[First[Intersection[#, edgeIndices], invalid]&, inTable]
-    },
-    TagIndices[graph, Signed -> True]
-  ]
+TagVertexAdjacentEdgeTable[graph_, invalid:Except[_Rule], OptionsPattern[]] :=
+  tagVertexAdjacentEdgeTableInternal[graph, invalid, OptionValue[Signed]]
+
+tagVertexAdjacentEdgeTableInternal[graph_, none_, signed_] := Scope[
+  cardinals = CardinalList @ graph;
+  cardinals = Join[cardinals, Inverted /@ cardinals];
+  cardInd = UAssociation @ AssociationRange @ cardinals;
+  vectors = ConstantArray[none, {Length @ cardinals, VertexCount @ graph}];
+  tags = EdgeTags @ graph;
+  tagInds = Lookup[cardInd, tags];
+  invTagInds = Lookup[cardInd, Inverted /@ tags];
+  negator = If[signed, Inverted, Identity];
+  ScanThread[
+    i = 1;
+    {edge, tagInd, invTagInd} |-> (
+      Part[vectors, tagInd, Part[edge, 1]] = i;
+      Part[vectors, invTagInd, Part[edge, 2]] = negator[i++]
+    ),
+    {EdgePairs @ graph, tagInds, invTagInds}
+  ];
+  AssociationThread[cardinals, ToPacked /@ vectors]
 ];
-
-mapInverted[e_] := Map[If[# === $invalid, #, Inverted[#]]&, e];
-
-mergeNone[{a_}] := a;
-mergeNone[{a_, b_}] := MapThread[If[#1 === $invalid, #2, #1]&, {a, b}];
 
 (**************************************************************************************************)
 

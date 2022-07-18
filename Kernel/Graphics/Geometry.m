@@ -108,7 +108,7 @@ TorusInterpolated[spec_, v1_, v2_] := Scope[
   {phi2, theta2} = TorusAngles[spec, v2];
   thetas = AngleRange[theta1, theta2, Into @ 8];
   phis = AngleRange[phi1, phi2, Into @ 8];
-  TorusVector[spec] /@ Transpose[{phis, thetas}]
+  TorusVector[spec] /@ Trans[phis, thetas]
 ]
 
 (**************************************************************************************************)
@@ -215,7 +215,7 @@ ConvexHullPointIndices[points_] := Scope[
 
 PublicFunction[VectorBetween]
 
-VectorBetween[x_, {l_, h_}] := And @@ MapThread[LessEqual, {l, x, h}];
+VectorBetween[x_, {l_, h_}] := And @@ ThreadLessEqual[l, x, h];
 VectorBetween[{x_, y_}, {{xl_, xh_}, {yl_, yh_}}] := xl <= x <= xh && yl <= y <= yh;
 VectorBetween[{x_, y_, z_}, {{xl_, xh_}, {yl_, yh_}, {zl_, zh_}}] := xl <= x <= xh && yl <= y <= yh && zl <= z <= zh;
 VectorBetween[lh_][x_] := VectorBetween[x, lh];
@@ -288,7 +288,7 @@ BandGraphicsComplex[opts:OptionsPattern[]] := Scope[
   p = ToPacked @ N @ Join[p1, p2];
   n1 = Range[len]; n2 = n1 + len;
   lineIndices = If[OddQ[bandTwists], Join[n1, n2], AppendFirst /@ {n1, n2}];
-  polyIndices = ApplyWindowed[bandFacePoly, Transpose @ {n1, n2}];
+  polyIndices = ApplyWindowed[bandFacePoly, Trans[n1, n2]];
   GraphicsComplex[p, {
       {EdgeForm[None], Polygon @ ToPacked @ polyIndices},
       Line @ ToPacked @ lineIndices
@@ -477,7 +477,7 @@ BandMeshRegion[args___] := Scope[
   p = Join[p1, p2];
   bound1 = MapWindowed[Line, n1];
   bound2 = MapWindowed[Line, n2];
-  faces = ApplyWindowed[bandFacePoly, Transpose @ {n1, n2}];
+  faces = ApplyWindowed[bandFacePoly, Trans[n1, n2]];
   MeshRegion[p, Flatten[{bound1, bound2, Polygon @ faces}], $bandMeshOptions]
 ];
 

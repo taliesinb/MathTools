@@ -72,8 +72,7 @@ TriangularQuiver[n_Integer, cards:{x_, y_, z_}, opts:OptionsPattern[]] := Scope[
     Table[DirectedEdge[vertexHead[i, j], vertexHead[i, j + 1],     y], {i, n},   {j, n-1}],
     Table[DirectedEdge[vertexHead[i, j], vertexHead[i + 1, j + 1], z], {i, n-1}, {j, n-1}]
   };
-  isVertex = ConstantAssociation[vertices, True];
-  edges //= Select[isVertex[First @ #] && isVertex[Second @ #]&];
+  edges //= selectValidEdges2[vertices];
 
   ExtendedGraph[
     vertices, edges,
@@ -128,7 +127,8 @@ makeHexSkeleton[{{a1_, a2_}, {b1_, b2_}, {c1_, c2_}}, norm_, {x_, y_, z_}] := Sc
   abc //= Select[hexNorm[#] <= norm&];
   vertices = VertexProduct @@@ abc;
   isVertex = ConstantAssociation[vertices, True];
-  Select[edges, isVertex[Part[#, 1]] && isVertex[Part[#, 2]]&]
+  edges //= selectValidEdges2[vertices];
+  edges
 ];
 
 hexEdgeList[card_, vertexCoords_, normal_, offset_, mod_] := Map[
@@ -167,7 +167,7 @@ SquareQuiver[spec:{$ModIntP, $ModIntP}, {cx_, cy_}, opts:OptionsPattern[]] := Sc
     Table[enrichedEdge[vertexHead[i, j], vertexHead[mp1 @ i, j], cx, i], {i, m}, {j, n}],
     Table[enrichedEdge[vertexHead[i, j], vertexHead[i, np1 @ j], cy, j], {i, m}, {j, n}]
   };
-  edges //= Select[MemberQ[vertices, Part[#, 2]]&];
+  edges //= selectValidEdges1[vertices];
   basis = {{1, 0}, {0, 1}};
 
   ExtendedGraph[
@@ -180,6 +180,21 @@ SquareQuiver[spec:{$ModIntP, $ModIntP}, {cx_, cy_}, opts:OptionsPattern[]] := Sc
     GraphTheme -> "TransitiveQuiver"
   ]
 ]
+
+(**************************************************************************************************)
+
+selectValidEdges1[vertices_][edges_] := Scope[
+  vassoc = ConstantAssociation[vertices, True];
+  Pick[edges, Lookup[vassoc, Part[edges, All, 2], False]]
+];
+
+selectValidEdges2[vertices_][edges_] := Scope[
+  vassoc = ConstantAssociation[vertices, True];
+  Pick[edges, ThreadAnd[
+    Lookup[vassoc, Part[edges, All, 1], False],
+    Lookup[vassoc, Part[edges, All, 2], False]
+  ]]
+];
 
 (**************************************************************************************************)
 
@@ -221,7 +236,8 @@ CubicQuiver[spec:{$ModIntP, $ModIntP, $ModIntP}, {cx_, cy_, cz_}, opts:OptionsPa
     Table[enrichedEdge[vertexHead[i, j, k], vertexHead[i, np1 @ j, k], cy, j], {i, m}, {j, n}, {k, p}],
     Table[enrichedEdge[vertexHead[i, j, k], vertexHead[i, j, pp1 @ k], cz, j], {i, m}, {j, n}, {k, p}]
   };
-  edges //= Select[MemberQ[vertices, Part[#, 2]]&];
+  edges //= selectValidEdges1[vertices];
+
   basis = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 
   ExtendedGraph[
@@ -310,7 +326,7 @@ LineQuiver[Modulo[n_Integer], card_, opts:OptionsPattern[]] := Scope[
   ExtendedGraph[
     vertices, edges,
     opts,
-    VertexCoordinates -> Transpose[{vertices, Zeros @ n}],
+    VertexCoordinates -> Trans[vertices, Zeros @ n],
     Cardinals -> {cx, cy},
     Sequence @@ modEdgeShapeFunctionSpec[{Modulo @ n}, basis],
     GraphTheme -> "TransitiveQuiver"
