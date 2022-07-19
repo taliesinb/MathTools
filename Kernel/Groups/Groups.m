@@ -98,7 +98,7 @@ makeAbelianGeneratorBlocks[n_Integer, rest___] :=
   Prepend[makeAbelianGeneratorBlocks[rest], makeCylicGenerators[n]];
 
 makeAbelianGeneratorBlocks[infs:Longest[Infinity..], rest___] :=
-  Prepend[makeAbelianGeneratorBlocks[rest], makeInfiniteAbelianGenerators[Length[{infs}]]]
+  Prepend[makeAbelianGeneratorBlocks[rest], makeInfiniteAbelianGenerators[SeqLength[infs]]]
 
 makeAbelianGeneratorBlocks[] := {};
 

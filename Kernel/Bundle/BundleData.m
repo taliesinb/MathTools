@@ -26,7 +26,7 @@ BundleData[bundleGraph_Graph, key_:All] := Scope[
 
 PrivateFunction[getBundleGraphData]
 
-getBundleGraphData[bundleGraph_, baseGraph_:Automatic, fiberGraph_:None] := Scope[
+getBundleGraphData[bundleGraph_, baseGraph_:Automatic, fiberGraph_:None, sectionDisplayMethod_:Inherited] := Scope[
   
   hash = Hash[bundleGraph];
   If[AssociationQ[cachedValue = bundleHashLookup[hash]],
@@ -74,7 +74,8 @@ getBundleGraphData[bundleGraph_, baseGraph_:Automatic, fiberGraph_:None] := Scop
     "AreBundleAdjacent" -> areBundleAdjacent,
     "AreBaseAdjacent" -> areBaseAdjacent,
     "FiberVertexColorFunction" -> fiberVertexColorFunction,
-    "CardinalIndex" -> cardinalIndex
+    "CardinalIndex" -> cardinalIndex,
+    "SectionDisplayMethod" -> sectionDisplayMethod
   ];
 
   AssociateTo[QuiverGeometryLoader`$BundleGraphCache, hash -> data];

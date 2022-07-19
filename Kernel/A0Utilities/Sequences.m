@@ -6,6 +6,25 @@ Trans = Case[
 
 (**************************************************************************************************)
 
+PublicFunction[SeqLength]
+
+SeqLength[]        := 0;
+SeqLength[_]       := 1;
+SeqLength[_, _]    := 2;
+SeqLength[_, _, _] := 3;
+s_SeqLength        := Length[Unevaluated @ s];
+
+(**************************************************************************************************)
+
+PublicFunction[SeqFirst, SeqLast, SeqMost, SeqRest]
+
+SeqFirst[a_, ___] := a;
+SeqLast[___, a_]  := a;
+SeqMost[a___, _]  := a;
+SeqRest[_, a___]  := a;
+
+(**************************************************************************************************)
+
 PublicFunction[TakeSequence]
 
 SetRelatedSymbolGroup[TakeSequence, DropSequence];

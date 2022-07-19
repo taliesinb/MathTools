@@ -205,7 +205,32 @@ SquareModulusEdgeShapeFunction[x_Integer, y_Integer] :=
   SquareModulusEdgeShapeFunction[Modulo[x], Modulo[y]];
 
 SquareModulusEdgeShapeFunction[x_, y_] :=
-  Part[modEdgeShapeFunctionSpec[{x, y}, {{1, 0}, {0, 1}}], 1, 2]
+  makeModulusEdgeShapeFunctionInner[{x, y}, {{1, 0}, {0, 1}}]
+
+(**************************************************************************************************)
+
+PrivateFunction[MakeModulusEdgeShapeFunction]
+
+MakeModulusEdgeShapeFunction[specs__Integer] :=
+  Automatic;
+
+MakeModulusEdgeShapeFunction[spec_] :=
+  makeModulusEdgeShapeFunctionInner[{spec}, {{1, 0}}];
+
+MakeModulusEdgeShapeFunction[specs:Repeated[_, {2, 3}]] :=
+  makeModulusEdgeShapeFunctionInner[{specs}, IdentityMatrix @ SeqLength[specs]];
+
+MakeModulusEdgeShapeFunction[specs__] :=
+  Automatic;
+
+(**************************************************************************************************)
+
+makeModulusEdgeShapeFunctionInner[spec_List, basis_List] := Scope[
+  dim = InnerDimension @ basis;
+  tuples = Tuples @ MapThread[makeModOffset, {spec, basis}];
+  offsets = DeleteCases[{0..}] @ Map[Total] @ tuples;
+  ModulusEdgeShapeFunction[offsets]
+];
 
 (**************************************************************************************************)
 
@@ -255,11 +280,9 @@ CubicQuiver[spec:{$ModIntP, $ModIntP, $ModIntP}, {cx_, cy_, cz_}, opts:OptionsPa
 toModPlusOne[spec_] := PlusOneMod[GetModulus @ #, 1]& /@ spec;
 
 modEdgeShapeFunctionSpec[spec_, basis_] /; ContainsQ[spec, Modulo] := Scope[
-  dim = InnerDimension @ basis;
-  tuples = Tuples @ MapThread[makeModOffset, {spec, basis}];
-  offsets = DeleteCases[{0..}] @ Map[Total] @ tuples;
+  esf = makeModulusEdgeShapeFunctionInner[spec, basis];
   {
-    EdgeShapeFunction -> ModulusEdgeShapeFunction[offsets],
+    EdgeShapeFunction -> esf,
     ImagePadding -> 25
   }
 ];

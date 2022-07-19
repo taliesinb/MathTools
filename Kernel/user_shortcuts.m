@@ -76,7 +76,7 @@ symbolTable[name_String, valueFn_, iterators___] := Scope[
     names = ApplyTuples[nameFn, nameTuples];
     values = ApplyTuples[valueFn, valueTuples] //. $valueSimplification;
     result = RuleThread[names, CreateMultipleSymbols[$qgShortcutsContext, names, values]];
-    If[Length[{iterators}] === 1,
+    If[SeqLength[iterators] === 1,
         name2 = StringReplace[name, "#" -> ""];
         If[!StringEndsQ[name2, "$"], name2 = name2 <> "$"];
         If[!NameQ[$qgShortcutsContext <> name2],

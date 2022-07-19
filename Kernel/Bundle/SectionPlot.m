@@ -34,27 +34,33 @@ BundleSectionPlotColor[BundleSection[sec_Association, hash_]] :=
     hashBaseGraph[hash],
     VertexColorFunction -> (sec /* hashColorFunc[hash]),
     GraphTheme -> "BundleSectionPlot",
+    EdgeColorFunction -> None, EdgeStyle -> $LightGray,
+    ImagePadding -> 15, VertexSize -> 8, EdgeThickness -> 2,
     If[$imageSize === Automatic, Seq[], ImageSize -> $imageSize]
   ];
 
-BundleSectionPlotTotal[BundleSection[sec_Association, hash_]] :=
+BundleSectionPlotTotal[BundleSection[sec_Association, hash_]] := Scope[
+  bundle = hashBundleGraph[hash];
   ExtendedGraphPlot[
-    hashBundleGraph[hash],
-    RegionColorRules -> {ConnectedSubgraph[Map[Point, bundleSectionVertices[sec]]] -> $Red, All -> $LightGray},
-    GraphTheme -> "BundleSectionPlot",
-    LayoutDimension -> 2,
+    bundle,
+    RegionColorRules -> {ConnectedSubgraph[Map[Point, bundleSectionVertices[sec]]] -> $Purple, All -> GrayLevel[0.6, 0.2]},
+    VertexColorRules -> {(Alternatives @@ bundleSectionVertices[sec]) -> Darker[$Purple, .2], All -> GrayLevel[1 - 0.4 * 0.2]},
+    ImagePadding -> 10, VertexShapeFunction -> "Point", VertexStyle -> GrayLevel[0.2, 1],
+    GraphTheme -> "BundleSectionPlot", EdgeSetback -> 0.15, VertexSize -> 6,
     If[$imageSize === Automatic, Seq[], ImageSize -> $imageSize]
-  ];
+  ]
+];
 
-BundleSectionPlotLine[BundleSection[sec_Association, hash_]] :=
+BundleSectionPlotLine[BundleSection[sec_Association, hash_]] := Scope[
+  bundle = hashBundleGraph[hash];
   ExtendedGraphPlot[
     hashBundleGraph[hash],
-    RegionColorRules -> {ConnectedSubgraph[Map[Point, bundleSectionVertices[sec]]] -> $Red, All -> Transparent},
+    RegionColorRules -> {ConnectedSubgraph[Map[Point, bundleSectionVertices[sec]]] -> $Purple, All -> Transparent},
     VertexSize -> 5, ImagePadding -> 10,
     GraphTheme -> "BundleSectionPlot",
-    LayoutDimension -> 2,
     If[$imageSize === Automatic, Seq[], ImageSize -> $imageSize]
-  ];
+  ]
+];
 
 BundleSectionPlotArray[BundleSection[sec_Association, hash_]] := Scope[
   bn = VertexCount @ hashBaseGraph[hash]; fn = (VertexCount @ hashBundleGraph[hash]) / bn;
@@ -79,12 +85,16 @@ bundleSectionVertices[assoc_] := KeyValueMap[BundleVertex, assoc];
 (**************************************************************************************************)
 
 $BundleSectionPlotThemeRules = {
-  AspectRatioClipping -> False,
-  ArrowheadSize -> 0,
-  VertexSize -> 8,
-  Frame -> True,
-  ImagePadding -> 10,
-  ImageSize -> "Edge" -> 20
+  VertexSize -> 6,
+  ImageSize -> ("Edge" -> 20),
+  ArrowheadPosition -> 0.75,
+  EdgeSetback -> 0.15,
+  ExtendImagePadding -> False,
+  ArrowheadShape -> None,
+  EdgeColorFunction -> "Cardinal", EdgeStyle -> Opacity[1],
+  VertexStyle -> GrayLevel[0.3, 1],
+  ViewOptions -> {"ShrinkWrap" -> True},
+  Frame -> True
 };
 
 $GraphThemeData["BundleSectionPlot"] := $BundleSectionPlotThemeRules;

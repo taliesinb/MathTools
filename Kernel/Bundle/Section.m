@@ -6,16 +6,21 @@ declareBoxFormatting[
   bs:BundleSection[_Association, _Integer] :> Construct[InterpretationBox, bundleSectionBoxes[bs], bs]
 ];
 
-bundleSectionBoxes[bs_BundleSection] := Switch[
-  $BundleSectionDisplayMethod,
-  None,                            RowBox[{"BundleSection", "[", ToBoxes @ First @ bs, "]"}],
-  "Skeleton",                      RowBox[{"BundleSection", "[", "\[LeftAngleBracket]", TextString @ Length @ First @ bs, "\[RightAngleBracket]", "]"}],
-  $bundleSectionPlotMethodPattern, ToBoxes @ BundleSectionPlot[bs, Method -> $BundleSectionDisplayMethod]
+bundleSectionBoxes[bs:BundleSection[_, hash_Integer]] := Scope[
+  method = bundleHashLookup[hash, "SectionDisplayMethod"];
+  If[method === Inherited, method = $BundleSectionDisplayMethod];
+  Switch[
+    method,
+    "Skeleton",                      RowBox[{"BundleSection", "[", "\[LeftAngleBracket]", TextString @ Length @ First @ bs, "\[RightAngleBracket]", "]"}],
+    $bundleSectionPlotMethodPattern, ToBoxes @ BundleSectionPlot[bs, Method -> method],
+    None | _,                        RowBox[{"BundleSection", "[", ToBoxes @ First @ bs, "]"}]
+  ]
 ];
 
 (**************************************************************************************************)
 
 PublicVariable[$BundleSectionDisplayMethod]
+PrivateVariable[$bundleSectionDisplayMethodPattern]
 
 $bundleSectionDisplayMethodPattern = Join[None | "Skeleton", $bundleSectionPlotMethodPattern];
 
@@ -56,14 +61,25 @@ when we undecimate. so we don't compress in terms of the number of sections.
 
 PublicFunction[FindAllBundleSections]
 
-FindAllBundleSections[bundle_Graph] := Scope[
+$AllBundleSectionsCache = UAssociation[];
+
+FindAllBundleSections[bundle_Graph, n_:All] := Scope[
   If[!BundleGraphQ[bundle], ReturnFailed["notbundle"]];
+
+  bundleData = getBundleGraphData[bundle];
+  allSections = Lookup[$AllBundleSectionsCache, bundleData["Hash"], None];
+  If[allSections =!= None, Goto[Skip]];
   
   UnpackAssociation[getBundleGraphData[bundle], fiberGroups, $baseAdjacency, $areBundleAdjacent, hash];
   {base, fibers} = KeysValues @ fiberGroups;
   
   allSections = MapTuples[AssociationThread[base, #]&, fibers];
-  BundleSection[#, hash]& /@ Select[allSections, validSectionQ]
+  allSections = BundleSection[#, hash]& /@ Select[allSections, validSectionQ];
+
+  $AllBundleSectionsCache[hash] ^= allSections;
+
+  Label[Skip];
+  safeRandomSample[n] @ allSections
 ];
 
 validSectionQ[section_] := Module[{v, bnbs},
@@ -78,6 +94,20 @@ validSectionQ[section_] := Module[{v, bnbs},
   ];
   True
 ]
+
+(**************************************************************************************************)
+
+PublicFunction[BundleSectionComponents]
+
+BundleSectionComponents[bundle_Graph, n_:All] := Scope[
+  secs = FindAllBundleSections @ bundle;
+  graph = RewriteGraph[BundleSectionRewritingSystem @ bundle, secs];
+  components = ConnectedComponents[graph];
+  Map[safeRandomSample[n], components]
+]
+
+safeRandomSample[All] = Identity;
+safeRandomSample[n_][list_List] := RandomSample[list, UpTo @ n];
 
 (**************************************************************************************************)
 

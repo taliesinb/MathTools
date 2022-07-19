@@ -55,19 +55,56 @@ BundleToBaseGraph[bundle_Graph] := Scope[
 
 PublicFunction[TrivialBundleGraph]
 
-PublicOption[FiberScale, FiberCoordinateRotation, BaseCoordinateRotation]
+PublicOption[FiberScale, FiberCoordinateRotation, BaseCoordinateRotation, SectionDisplayMethod]
 
 Options[TrivialBundleGraph] = JoinOptions[
   FiberScale -> 1,
   FiberCoordinateRotation -> Pi/2,
   BaseCoordinateRotation -> 0,
   LayoutDimension -> Automatic,
+  SectionDisplayMethod -> Inherited,
   $ExtendedGraphOptions
 ];
 
+$modIntP = _Integer ? Positive | Modulo[_Integer ? Positive];
+$modIntListP = $modIntP | {$modIntP..};
+
+colors1D = <|"b" -> {$Blue}, "f" -> {$Red}|>;
+colors2D = <|"b" -> {$Blue, $Teal}, "f" -> {$Red, $Orange}|>
+colors3D = <|"b" -> {$Blue, $Teal, $Green}, "f" -> {$Red, $Orange, $Yellow}|>
+
+toQuiver = Case[
+  {n_Integer}         := LineQuiver[n, $qname, LayoutDimension -> 1, EdgeLabelStyle -> None, CardinalColors -> colors1D[$qname]];
+  {Modulo[n_Integer]} := CycleQuiver[n, $qname, LayoutDimension -> 1, EdgeLabelStyle -> None, CardinalColors -> colors1D[$qname]];
+  {m_, n_}            := SquareQuiver[{m, n}, {$qname <> "x", $qname <> "y"}, LayoutDimension -> 2, EdgeLabelStyle -> None, CardinalColors -> colors2D[$qname]];
+  {m_, n_, p_}        := CubicQuiver[{m, n, p}, {$qname <> "x", $qname <> "y", $qname <> "z"}, LayoutDimension -> 3, EdgeLabelStyle -> None, CardinalColors -> colors3D[$qname]];
+];
+
+TrivialBundleGraph[base:$modIntListP, fiber:$modIntListP, opts:OptionsPattern[]] := Scope[
+  {base, fiber} = ToList /@ {base, fiber};
+  $qname = "b"; baseQuiver = toQuiver @ base;
+  $qname = "f"; fiberQuiber = toQuiver @ fiber;
+  baseFiber = Join[base, fiber]; baseDim = Length[base]; fiberDim = Length[fiber];
+  If[baseDim + fiberDim >= 4, ReturnFailed[]];
+  displayMethod = If[MatchQ[baseFiber, {_, _}], "Total", "Color"];
+  esf = MakeModulusEdgeShapeFunction @@ baseFiber;
+  TrivialBundleGraph[baseQuiver, fiberQuiber, opts,
+    SectionDisplayMethod -> displayMethod,
+    EdgeShapeFunction -> esf, EdgeLabelStyle -> None,
+    ImagePadding -> If[esf =!= Automatic, 30, Automatic],
+    If[Length[baseFiber] >= 3, Seq[LayoutDimension -> 3, ImageSize -> "ShortestEdge" -> 45, FiberCoordinateRotation -> 0], Seq[]]
+  ]
+];
+
+TrivialBundleGraph::arg12 = "`` argument should be a quiver, or an integer or list of integer (or Modulo of these), giving the `` graph.";
+TrivialBundleGraph::baddisplay = "SectionDisplayMethod -> `` is invalid, should be one of ``.";
 TrivialBundleGraph[baseGraph_, fiberGraph_, opts:OptionsPattern[]] := Scope[
-  UnpackOptions[fiberScale, fiberCoordinateRotation, baseCoordinateRotation, layoutDimension];
+  UnpackOptions[fiberScale, fiberCoordinateRotation, baseCoordinateRotation, layoutDimension, sectionDisplayMethod];
+  If[!MatchQ[sectionDisplayMethod, $bundleSectionDisplayMethodPattern | Inherited],
+    ReturnFailed["baddisplay", sectionDisplayMethod, Append[Inherited] @ Cases[$bundleSectionDisplayMethodPattern, _String | _Symbol]]];
   graphs = {baseGraph, fiberGraph};
+  If[!EdgeTaggedGraphQ[baseGraph], ReturnFailed["arg12", "First", "base"]];
+  If[!EdgeTaggedGraphQ[fiberGraph], ReturnFailed["arg12", "Second", "fiber"]];
   {baseCoords, fiberCoords} = LookupVertexCoordinates /@ graphs;
   If[fiberCoordinateRotation =!= 0, fiberCoords //= RotateVector[fiberCoordinateRotation]];
   If[baseCoordinateRotation =!= 0,  baseCoords //= RotateVector[baseCoordinateRotation]];
@@ -87,14 +124,20 @@ TrivialBundleGraph[baseGraph_, fiberGraph_, opts:OptionsPattern[]] := Scope[
   ];
   fColors = LookupCardinalColors[fiberGraph];
   bColors = LookupCardinalColors[baseGraph];
+  cardinalColorRules = Join[
+    KeyValueMap[BundleCardinal[None, #1] -> #2&, fColors],
+    KeyValueMap[BundleCardinal[#1, None] -> #2&, bColors],
+    {_ -> GrayLevel[0.3, 0.2]}
+  ];
   bundleGraph = ExtendedGraph[vertices, edges,
     FilterOptions[opts],
-    CardinalColorRules -> Join[KeyValueMap[BundleCardinal[None, #1] -> #2&, fColors], KeyValueMap[BundleCardinal[#1, None] -> #2&, bColors]],
+    CardinalColorRules -> cardinalColorRules,
     VertexCoordinateFunction -> BundleVertexCoordinateFunction[baseCoords, fiberCoords, fiberScale],
     VisibleCardinals -> BundleCardinal[None, _] | BundleCardinal[_, None],
     GraphTheme -> "BundleGraph"
   ];
-  getBundleGraphData[bundleGraph, baseGraph, fiberGraph];
+  KeyDropFrom[QuiverGeometryLoader`$BundleGraphCache, Hash @ bundleGraph];
+  getBundleGraphData[bundleGraph, baseGraph, fiberGraph, sectionDisplayMethod];
   bundleGraph
 ];
 
@@ -128,11 +171,15 @@ BundleVertexCoordinateFunction[bc_, fc_, scale_][BundleVertex[b_, f_]] :=
 (**************************************************************************************************)
 
 $BundleGraphThemeRules = {
-  VertexSize -> 8,
+  VertexSize -> 6,
   ImagePadding -> 10,
-  ImageSize -> ("AverageEdge" -> 50),
-  VisibleCardinals ->
-  ArrowheadPosition -> 0.75
+  ImageSize -> ("Edge" -> 50),
+  ArrowheadPosition -> 0.75,
+  EdgeSetback -> 0.15,
+  ArrowheadShape -> None,
+  EdgeColorFunction -> "Cardinal", EdgeStyle -> Opacity[1],
+  VertexStyle -> GrayLevel[0.3, 1],
+  ViewOptions -> {"ShrinkWrap" -> True}
 };
 
 $GraphThemeData["BundleGraph"] := $BundleGraphThemeRules;

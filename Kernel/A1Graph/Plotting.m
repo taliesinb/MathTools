@@ -498,16 +498,16 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     If[RuleQ[imageSize],
       {imageWidth, imageHeight} = Match[imageSize,
-        Rule["LongestEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize[1.0, sz, False],
-        Rule["LongestNonLoopEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize[1.0, sz, False],
-        Rule["ShortestEdge", sz:$numOrNumPairP]  :> computeEdgeLengthBasedImageSize[0.0, sz, False],
-        Rule["ShortestNonLoopEdge", sz:$numOrNumPairP]  :> computeEdgeLengthBasedImageSize[0.0, sz, True],
-        Rule["Edge", sz:$numOrNumPairP] :> computeEdgeLengthBasedImageSize[0.1, sz, True],
-        Rule["MedianEdge", sz:$numOrNumPairP]    :> computeEdgeLengthBasedImageSize[0.5, sz, False],
-        Rule["MedianNonLoopEdge", sz:$numOrNumPairP]    :> computeEdgeLengthBasedImageSize[0.5, sz, True],
-        Rule["AverageEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize["Average", sz, False],
-        Rule["AverageNonLoopEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize["Average", sz, True],
-        _ :> failPlot["badopt", ImageSize, imageSize]
+        Rule["LongestEdge", sz:$numOrNumPairP]         :> computeEdgeLengthBasedImageSize[1.0, sz, False],
+        Rule["LongestNonLoopEdge", sz:$numOrNumPairP]  :> computeEdgeLengthBasedImageSize[1.0, sz, False],
+        Rule["ShortestEdge", sz:$numOrNumPairP]        :> computeEdgeLengthBasedImageSize[0.0, sz, False],
+        Rule["ShortestNonLoopEdge", sz:$numOrNumPairP] :> computeEdgeLengthBasedImageSize[0.0, sz, True],
+        Rule["Edge", sz:$numOrNumPairP]                :> computeEdgeLengthBasedImageSize[0.1, sz, True],
+        Rule["MedianEdge", sz:$numOrNumPairP]          :> computeEdgeLengthBasedImageSize[0.5, sz, False],
+        Rule["MedianNonLoopEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize[0.5, sz, True],
+        Rule["AverageEdge", sz:$numOrNumPairP]         :> computeEdgeLengthBasedImageSize["Average", sz, False],
+        Rule["AverageNonLoopEdge", sz:$numOrNumPairP]  :> computeEdgeLengthBasedImageSize["Average", sz, True],
+        _                                              :> failPlot["badopt", ImageSize, imageSize]
       ];
     ,
       aspectRatio = $GraphPlotAspectRatio;
@@ -1042,7 +1042,7 @@ computeEdgeLengthBasedImageSize[q_, {edgeSize_, maxWidth_}, ignoreLoops_] := Sco
 computeEdgeLengthBasedImageSize[q_, edgeSize_, ignoreLoops_] := Scope[
   quantile = EdgeLengthScale[If[ignoreLoops, deleteLoops, Identity] @ $EdgeCoordinateLists, q];
   scaling = edgeSize / quantile;
-  (* 3D? *)
+  If[$GraphIs3D, scaling *= 1.5];
   Max[#, 10]& /@ N[Take[$GraphPlotSize, 2] * scaling]
 ];
 
@@ -1054,7 +1054,7 @@ imageSizeToPlotSize[sz_] := sz / effectiveImageWidth * $GraphPlotSizeX;
 imageFractionToPlotSize[sz_] := sz * $GraphPlotSizeX;
 plotSizeToImageFraction[sz_] := sz / $GraphPlotSizeX;
 plotSizeToImageSize[sz_] := sz / $GraphPlotSizeX * effectiveImageWidth;
-plotSizeToDiskSize[sz_] := Scaled[sz * {1, $GraphPlotAspectRatio} / $GraphPlotScale];
+plotSizeToDiskSize[sz_] := If[$GraphIs3D, Scaled[sz / $GraphPlotScale], Scaled[sz * {1, $GraphPlotAspectRatio} / $GraphPlotScale]];
 plotSizeToPointSize[sz_] := PointSize[sz / $GraphPlotSizeX];
 
 extendPaddingBy[n_] /; TrueQ[extendImagePadding] := imagePadding = MatrixMap[Max[#, n]&, imagePadding];
@@ -1461,7 +1461,8 @@ createEdgePrimitives[indices_, drawFn_, arrowheads_, cardinal_] /; StringQ[edgeS
 createEdgePrimitives[indices_, drawFn_, arrowheads_, cardinal_] := Scope[
   primitives = Map[
     index |-> applyDrawFn[edgeShapeFunction, <|
-      "Coordinates" -> SetbackCoordinates[Part[$EdgeCoordinateLists, index], edgeSetback],
+      "Coordinates" -> Part[$EdgeCoordinateLists, index],
+      "Setback" -> edgeSetback,
       "Source" -> Part[$EdgeList, index, 1],
       "Target" -> Part[$EdgeList, index, 2],
       "EdgeIndex" -> index,
@@ -2105,10 +2106,12 @@ edgedStyle[color_][primitives_] := Style[
   FaceForm[color], EdgeForm[{AbsoluteThickness @ $vertexEdgeThickness, Darker[color, .3]}]
 ];
 
-drawDisk3D[size_][pos_, color_] := Inset[
+(* drawDisk3D[size_][pos_, color_] := Inset[
   Graphics[drawDisk[1][{0, 0}, color], AspectRatio -> 1],
   pos, {0, 0}, plotSizeToDiskSize @ size
 ];
+ *)
+drawDisk3D[size_][pos_, color_] := drawSphere[size][pos, color];
 
 drawSquare[size_][pos_, color_] :=
   edgedStyle[color] @ mapCoordArray[Rectangle[# - size / 2, # + size / 2]&, pos];
@@ -2255,6 +2258,8 @@ setback[Line|multiLine, dist_] := multiLine[Which[
   CoordinateMatrixQ[#], setbackCoords[dist][#],
   CoordinateArrayQ[#], Map[setbackCoords[dist], #],
   True, #]]&
+
+PrivateFunction[setbackCoords]
 
 setbackCoords[0|0.|{0|0.,0|0.}][line_] := line;
 
