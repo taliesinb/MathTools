@@ -97,7 +97,6 @@ PublicFunction[RewriteQuiver, RewriteGraph]
 Options[RewriteQuiver] = Options[RewriteGraph] = JoinOptions[
   RewriteStates,
   DirectedEdges -> True,
-  Verbose -> False,
   $ExtendedGraphOptions
 ];
 
@@ -122,7 +121,7 @@ rewriteGraphQuiver[system_, initialStates_, isQuiver_, opts:OptionsPattern[Rewri
   result = rewriteMultiwaySystem[
     system, initialStates, isQuiver, verbose,
     {"Graph", "TerminationReason"},
-    FilterOptions @ opts,
+    FilterOptions[MultiwaySystem, opts],
     GraphTheme -> If[isQuiver, "RewriteQuiver", "RewriteGraph"]
   ];
 
