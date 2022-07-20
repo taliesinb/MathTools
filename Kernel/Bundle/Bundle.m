@@ -92,7 +92,8 @@ TrivialBundleGraph[base:$modIntListP, fiber:$modIntListP, opts:OptionsPattern[]]
     SectionDisplayMethod -> displayMethod,
     EdgeShapeFunction -> esf, EdgeLabelStyle -> None,
     ImagePadding -> If[esf =!= Automatic, 30, Automatic],
-    If[Length[baseFiber] >= 3, Seq[LayoutDimension -> 3, ImageSize -> "ShortestEdge" -> 45, FiberCoordinateRotation -> 0], Seq[]]
+    If[Length[baseFiber] >= 3, Seq[LayoutDimension -> 3, ImageSize -> "ShortestEdge" -> 45], Seq[]],
+    If[Length[fiber] >= 2, FiberCoordinateRotation -> 0, Seq[]]
   ]
 ];
 

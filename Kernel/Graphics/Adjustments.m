@@ -51,7 +51,7 @@ SetbackCoordinates[spec_ ? CoordinateArrayQ, d_] :=
   SetbackCoordinates[#, d]& /@ spec;
 
 SetbackCoordinates[{a_, b_}, {d1_, d2_}] := Scope[
-  If[EuclideanDistance[a, b] < d1 + d2, Return[{}]];
+  If[EuclideanDistance[a, b] < d1 + d2, Return[{Mean[{a, b}]}]];
   dx = Normalize[b - a];
   {a + dx * d1 , b - dx * d2}
 ];

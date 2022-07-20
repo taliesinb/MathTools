@@ -198,11 +198,15 @@ BoundingBoxPointIndices[points_, dscale_:0.01] := Scope[
 
 PublicFunction[ConvexHullLineIndices]
 
-ConvexHullLineIndices[points_] :=
+ConvexHullLineIndices[points_] := Scope[
   If[Length[points] <= 3,
-    Range @ Length @ points,
-    Quiet @ Check[WolframCGL`QuickHull @ ToPackedReal @ points, $Failed]
-  ];
+    Range @ Length @ points
+  ,
+    res = Check[WolframCGL`QuickHull @ ToPackedReal @ points, $Failed];
+    If[!MatrixQ[res], res = $Failed];
+    res
+  ]
+];
 
 PublicFunction[ConvexHullPointIndices]
 
