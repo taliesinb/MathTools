@@ -1,3 +1,21 @@
+PublicFunction["Unthread"]
+
+(* todo: implement these as macros, and better yet as syntax in Loader.m *)
+
+Unthread /: head_Symbol[l___, Unthread[a_], r___] := With[
+  {u = Unique["\[FormalO]"]},
+  Map[u |-> head[l, u, r], a]
+];
+
+Unthread[a_, 0] := a;
+
+Unthread /: head_Symbol[l___, Unthread[a_, n_Integer], r___] := With[
+  {u = Unique["\[FormalO]"]},
+  Construct[Unthread, Map[u |-> head[l, u, r], a], n-1]
+];
+
+(**************************************************************************************************)
+
 PublicFunction[MatrixMap]
 
 MatrixMap[f_, matrix_] := Map[f, matrix, {2}];

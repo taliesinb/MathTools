@@ -91,15 +91,6 @@ DefineLatticeQuiver[
 (**************************************************************************************************)
 
 DefineLatticeQuiver[
-  "Names" -> {"HexagonalDoubleCover"},
-  "Quiver" -> BouquetQuiver @ "abc",
-  "Group" -> InfiniteDihedralGroup[3, "Redundant"],
-  "Dimension" -> 2
-];
-
-(**************************************************************************************************)
-
-DefineLatticeQuiver[
   "Names" -> {"Rhombille"},
   "Quiver" -> Quiver[Labeled[{1 -> 2, 2 -> 3}, "a" | "b" | "c"], MultiEdgeDistance -> 0.3, VertexCoordinates -> {{0, 0}, {1, 0}, {2, 0}}],
   "Group" -> InfiniteAbelianGroup[3, "Redundant"],

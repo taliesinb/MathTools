@@ -1,14 +1,11 @@
 PublicFunction[PathRepresentation]
 
 SetUsage @ "
-PathRepresentation[fquiver$, cardinals$ -> representation$, initialVertex$] attachs a path representation to a \
+PathRepresentation[fquiver$, representation$, initialVertex$] attachs a path representation to a \
 fundamental quiver, returning a PathRepresentationObject.
-* The list cardinals$ is matched with the generators of representation$ in order.
-* The list cardinals$ can also be given as a single string whose letters are the cardinals.
+* representation$ can be a LinearGroupRepresentation, or a valid group.
+* If the labels of fquiver$ do not match the generator names in representation$, then they override those in representation, and are used in matching order.
 * If no cardinals are provided, the cardinals present in quiver$ will be used, in sorted order.
-PathRepresentation[quiver$] chooses a representation based on the names of the cardinals in quiver$.
-* For cardinals {'x', 'y'} or {'x', 'y', 'z'}, a representation of InfiniteAbelianGroup is used.
-* For cardinals {'a', 'b', 'c'}, {'a', 'b', 'c', 'd'}, a redundant representation of an InfiniteAbelianGroup is used.
 * initialVertex$ should be a vertex of quiver$, or Automatic to choose the first one.
 "
 
@@ -24,49 +21,20 @@ PathRepresentation::gencount =
 
 $namedRep = "Abelian" | "Dihedral" | "Redundant" | "RedundantDihedral";
 
-parseRepresentationSpec = MatchValues[
-  Automatic          := {Automatic, Automatic};
-  name:$namedRep     := {Automatic, name};
-  s_String           := {carChars[s], Automatic};
-  s_String -> rep_   := {carChars[s], rep};
-  list_List -> rep_  := {list, rep};
-  a_Association      := {Keys @ a, CustomRepresentation @ Values @ a};
-  rep_               := {Automatic, rep}
-];
-
-carChars[str_] := Characters[str] /. "_" -> None;
-
-chooseAutoRepresentation[cardinalList_] :=
-  Switch[
-    ToLowerCase @ Sort @ cardinalList,
-      {"x"}, InfiniteAbelianGroup[1],
-      {"x", "y"} | {"b", "r"}, InfiniteAbelianGroup[2],
-      {"x", "y", "z"} | {"b", "g", "r"}, InfiniteAbelianGroup[3],
-      {"w", "x", "y", "z"}, InfiniteAbelianGroup[4],
-      {"a", "b", "c"}, InfiniteAbelianGroup[3, "Redundant"],
-      {"a", "b", "c", "d"}, InfiniteAbelianGroup[4, "Redundant"],
-      _, Message[PathRepresentation::noautorep, cardinalList]; Return[$Failed, Block]
-  ];
-
-PathRepresentation[quiver_, representation_:Automatic, initialVertex_:Automatic] := Scope[
+PathRepresentation[quiver_, representation_, initialVertex_:Automatic] := Scope[
   quiver = CoerceToQuiver[1];
-  {cardinalListSpec, representation} = parseRepresentationSpec[representation];
-  cardinalList = DeleteNone[cardinalListSpec];
-  SetAutomatic[cardinalList, CardinalList[quiver]];
-  SetAutomatic[representation, chooseAutoRepresentation[cardinalList]];
-  If[FailureQ[representation = toRepresentation[representation, Length[cardinalList]]],
-    ReturnFailed["notrep", "second"]];
-  generatorList = representation["Generators"];
-  If[ContainsQ[cardinalListSpec, None],
-    generatorList = Part[generatorList, SelectIndices[cardinalListSpec, # =!= None&]];
+  representation = CoerceToRep[2];
+  cardinals = CardinalList[quiver];
+  generators = representation["Generators"];
+  If[!SameLengthQ[cardinals, generators],
+    ReturnFailed["gencount", Length @ generatorList, Length @ cardinalList]];
+  If[!SameSetQ[cardinals, Keys @ generators],
+    generators = AssociationThread[cardinals, Values @ generators];
   ];
-  If[Length[cardinalList] =!= Length[generatorList],
-    ReturnFailed["gencount", Length[generatorList], Length[cardinalList]]];
-  generators = AssociationThread[cardinalList, generatorList];
   SetAutomatic[initialVertex, Part[VertexList[quiver], 1]];
   assoc = Association[
     "Quiver" -> quiver,
-    "Cardinals" -> cardinalList,
+    "Cardinals" -> cardinals,
     "Generators" -> generators,
     "Representation" -> representation,
     "InitialVertex" -> initialVertex
@@ -77,7 +45,7 @@ PathRepresentation[quiver_, representation_:Automatic, initialVertex_:Automatic]
 constructPathRepresentationObject[assoc_] :=
   System`Private`ConstructNoEntry[PathRepresentationObject, assoc];
 
-Format[RepresentationObject[matrix_?MatrixQ], StandardForm] :=
+Format[LinearRepresentationObject[matrix_?MatrixQ], StandardForm] :=
   renderRepresentationMatrix[matrix];
 
 (**************************************************************************************************)
@@ -107,14 +75,14 @@ PathRepresentationPlot[qrep_, opts:OptionsPattern[]] := Scope[
   ] // CombineMultiedges;
 
   colors = LookupCardinalColors[quiver];
-  labeledGenerators = makeLabeledGenerators[qrep["Generators"], colors];
+  labeledGenerators = makeColoredGenerators[qrep["Generators"], colors];
 
   SpacedRow[quiverPlot, labeledGenerators, Transposed -> transposed]
 ];
 
-PrivateFunction[makeLabeledGenerators]
+PrivateFunction[makeColoredGenerators]
 
-makeLabeledGenerators[generators_, cardinalColors_] :=
+makeColoredGenerators[generators_, cardinalColors_] :=
   Row[
     KeyValueMap[
       Labeled[#2, Row[{makeLegendArrowheadGraphic[cardinalColors @ #1, "Arrow"], "\[ThinSpace]", #1}]]&,
@@ -141,7 +109,7 @@ PathRepresentationObject /: MakeBoxes[object:PathRepresentationObject[data_Assoc
   vertices = VertexCount[quiver];
   edges = EdgeCount[quiver];
   order = representation["GroupOrder"];
-  labeledGenerators = makeLabeledGenerators[generators, cardinalColors];
+  coloredGenerators = makeColoredGenerators[generators, cardinalColors];
   BoxForm`ArrangeSummaryBox[
     PathRepresentationObject, object, icon,
     (* Always displayed *)
@@ -152,7 +120,7 @@ PathRepresentationObject /: MakeBoxes[object:PathRepresentationObject[data_Assoc
      },
     (* Displayed on request *)
     {
-      {labeledGenerators, SpanFromLeft}
+      {coloredGenerators, SpanFromLeft}
     },
     format,
     "Interpretable" -> Automatic
@@ -210,7 +178,7 @@ RenameCardinals[PathRepresentationObject[data_Association], renaming:{__Rule}] :
 PublicHead[PathValue]
 
 SetUsage @ "
-PathValue[v$, state$] represents a quiver vertex v$ with associated state state$.
+PathValue[v$, state$] represents a fundamental quiver vertex v$ with associated state state$.
 "
 
 computeCayleyFunction[data_, OptionsPattern[]] := Scope[

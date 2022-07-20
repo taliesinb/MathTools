@@ -154,10 +154,10 @@ defineCoerceArgMacro[CoerceToGraph, ToGraph, "notgraphc"];
 
 PrivateMacro[CheckIsRep, CoerceToRep]
 
-General::notrep = "The `` argument should be a RepresentationObject.";
-General::notrepc = "The `` argument should be a group, groupoid, RepresentationObject, PathRepresentationObject, or RootSystem.";
+General::notrep = "The `` argument should be a LinearRepresentationObject.";
+General::notrepc = "The `` argument should be a group, groupoid, LinearRepresentationObject, PathRepresentationObject, or RootSystem.";
 defineCheckArgMacro[CheckIsRep, RepresentationObjectQ, "notrep"];
-defineCoerceArgMacro[CoerceToRep, ToRepresentation, "notrepc"];
+defineCoerceArgMacro[CoerceToRep, ToLinearRepresentation, "notrepc"];
 
 
 PrivateMacro[CheckIsGroup]

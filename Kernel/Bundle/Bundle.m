@@ -171,7 +171,7 @@ BundleVertexCoordinateFunction[bc_, fc_, scale_][BundleVertex[b_, f_]] :=
   
 (**************************************************************************************************)
 
-$BundleGraphThemeRules = {
+DefineGraphTheme["BundleGraph",
   VertexSize -> 6,
   ImagePadding -> 10,
   ImageSize -> ("Edge" -> 50),
@@ -181,6 +181,5 @@ $BundleGraphThemeRules = {
   EdgeColorFunction -> "Cardinal", EdgeStyle -> Opacity[1],
   VertexStyle -> GrayLevel[0.3, 1],
   ViewOptions -> {"ShrinkWrap" -> True}
-};
+];
 
-$GraphThemeData["BundleGraph"] := $BundleGraphThemeRules;

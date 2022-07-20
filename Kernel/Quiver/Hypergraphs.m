@@ -18,11 +18,11 @@ PlotDirectedHypergraphEncodedGraph[hyperedges_List, opts:OptionsPattern[]] := Ex
 	CardinalColors -> $defaultCardinalColors
 ];
 
-$GraphThemeData["ColoredGraphUnion"] = {
+DefineGraphTheme["ColoredGraphUnion",
 	ArrowheadSize -> 10, ArrowheadShape -> {"Line", TwoWayStyle -> "CrossBar"}, ArrowheadPosition -> 0.5,
 	VertexSize -> 5, EdgeColorFunction -> "Cardinal",
 	ImageSize -> "ShortestEdge" -> 50
-};
+];
 
 (**************************************************************************************************)
 

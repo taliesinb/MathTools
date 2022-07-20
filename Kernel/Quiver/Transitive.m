@@ -3,14 +3,12 @@ PublicOption[VertexHead, VertexOrigin]
 VertexHead::usage = "VertexHead is an option to SquareQuiver, TriangularQuiver, etc."
 VertexOrigin::usage = "VertexOrigin is an option to SquareQuiver, TriangularQuiver, etc."
 
-$TransitiveQuiverThemeRules = {
+DefineGraphTheme["TransitiveQuiver",
   AspectRatioClipping -> False,
   ArrowheadSize -> 12,
   VertexSize -> 5,
   ImageSize -> ("ShortestEdge" -> 30)
-};
-
-$GraphThemeData["TransitiveQuiver"] := $TransitiveQuiverThemeRules;
+];
 
 (**************************************************************************************************)
 
@@ -294,15 +292,13 @@ modEdgeShapeFunctionSpec[spec_, basis_] := {};
 
 (**************************************************************************************************)
 
-$TransitiveQuiver3DThemeRules = {
+DefineGraphTheme["TransitiveQuiver3D",
   ArrowheadSize -> 15,
   VertexSize -> 4,
   VertexShapeFunction -> "Point",
   ImageSize -> ("ShortestEdge" -> 80),
   ViewOptions->{ViewVector->{-3.333,-10,10},ViewProjection->"Orthographic", "ShrinkWrap" -> True}
-};
-
-$GraphThemeData["TransitiveQuiver3D"] := $TransitiveQuiver3DThemeRules;
+];
 
 (**************************************************************************************************)
 

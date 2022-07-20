@@ -46,7 +46,7 @@ EdgeListQ[e$] returns True if e$ is a list of edges (%UndirectedEdge or %Directe
 "
 
 EdgeListQ = Case[
-  {RepeatedNull[_DirectedEdge | UndirectedEdge]} := True;
+  {RepeatedNull[_DirectedEdge | _UndirectedEdge]} := True;
   _ := False
 ];
 
@@ -224,7 +224,7 @@ RotateGraph[graph_, degrees_Integer, opts___Rule] := Scope[
 PublicFunction[RangePartitionGraph]
 
 RangePartitionGraph[n_] := Scope[
-  init = List /@ Range[n];
+  init = Array[List, n];
   MultiwaySystem[rangePartitionSuccessors, {init}]
 ];
   

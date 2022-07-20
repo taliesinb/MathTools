@@ -169,7 +169,7 @@ tapped[f_][arg_] := Module[{res = f[arg], res2}, res2 = Map[InputForm, StripLabe
 
 (**************************************************************************************************)
 
-$RewriteQuiverThemeRules = {
+DefineGraphTheme["RewriteQuiver",
   AspectRatioClipping -> False,
   ArrowheadSize -> 15,
   VertexSize -> 5, VertexFontSize -> 12,
@@ -178,15 +178,11 @@ $RewriteQuiverThemeRules = {
   ArrowheadShape -> "NarrowArrow",
   ImageSize -> ("ShortestEdge" -> 65),
   VertexLayout -> TreeVertexLayout[Orientation -> Left, Balanced -> True]
-};
-
-$RewriteGraphThemeRules = JoinOptions[
-  ArrowheadStyle -> $Gray,
-  ArrowheadShape -> "NarrowArrow",
-  $RewriteQuiverThemeRules
 ];
 
-$GraphThemeData["RewriteQuiver"] := $RewriteQuiverThemeRules;
-$GraphThemeData["RewriteGraph"] := $RewriteGraphThemeRules;
+DefineGraphTheme["RewriteGraph" -> "RewriteQuiver",
+  ArrowheadStyle -> $Gray,
+  ArrowheadShape -> "NarrowArrow"
+];
 
 

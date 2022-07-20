@@ -216,7 +216,7 @@ ExtendedGraphQ[_] := False;
 
 (**************************************************************************************************)
 
-PublicVariable[$GraphThemeData]
+PrivateVariable[$GraphThemeData]
 
 $fontThemeOpts = {VertexLabelBaseStyle -> $MathLabelStyle, EdgeLabelBaseStyle -> $CardinalLabelStyle};
 
@@ -224,3 +224,17 @@ $GraphThemeData = <|
   None -> {},
   "Fonts" :> $fontThemeOpts
 |>;
+
+(**************************************************************************************************)
+
+PublicFunction[DefineGraphTheme]
+
+(* TODO: eventually have graph themes be able to chain other graph themes dynamically *)
+DefineGraphTheme[name_String -> parent_String, opts___Rule] :=
+  $GraphThemeData[name] = Join[{opts}, $GraphThemeData[parent]];
+
+DefineGraphTheme[name_String, opts___Rule] :=
+  $GraphThemeData[name] = List[opts];
+
+_DefineGraphTheme := $Unreachable;
+

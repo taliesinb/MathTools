@@ -112,21 +112,16 @@ processRHS = Case[
   Weighted[spec_, 1|1.]             := % spec;
   Weighted[spec_, w_ /; 0 < w < 1]  := Weighted[% @ spec, N @ w];
   Times[w_ /; 0 < w < 1, spec_]     := Weighted[% @ spec, N @ w];
-  str_String                        := toCardinalList @ stringToCardList @ str;
+  str_String                        := toCardinalList @ StringToWord @ str;
   list_List                         := toCardinalList @ list;
   inv_                              := ThrowMessage["invspec", inv];
 ];
 
 processLHS = Case[
-  str_String                                := toCardinalList @ stringToCardList @ str;
+  str_String                                := toCardinalList @ StringToWord @ str;
   list_List                                 := toCardinalList @ list;
   inv_                                      := ThrowMessage["invspec", inv];
 ];
-
-PrivateFunction[stringToCardList]
-
-stringToCardList[str_String] :=
-  Map[If[UpperCaseQ[#], Inverted @ ToLowerCase @ #, #]&, Characters @ str];
 
 QuiverGas::invcards = "Spec `` contains invalid cardinals. Allowed cardinals are: ``."
 toCardinalList[list_] := If[!SubsetQ[$cardinals, list],

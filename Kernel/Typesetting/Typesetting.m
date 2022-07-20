@@ -288,9 +288,11 @@ numBox = MatchValues[
 
   ModForm[0, _] := $zero;
   ModForm[a_, b_] := modBox[% @ a, b];
-  sym_Symbol := ToBoxes[sym];
+
+(*   sym_Symbol := ToBoxes[sym];
   sym_Symbol[args___] := RowBox[{ToBoxes[sym], "[", RowBox @ Riffle[Map[numBox, {args}], ","], "]"}];
 
+ *)
   e_ := ToBoxes[e];
 ];
 
@@ -444,6 +446,8 @@ expandItemSize[Automatic, matrix_] := {0.65, 0.2};
 expandItemSize[num_ ? NumericQ, _] := {N @ num, 0.3};
 expandItemSize[num:{_ ? NumericQ, _ ? NumericQ}, _] := {num, num};
 expandItemSize[_, _] := {0.6, 0.3};
+
+CompactMatrixBox[{{}}, ___] := "";
 
 CompactMatrixBox[matrix_, OptionsPattern[]] := Scope[
   UnpackOptions[negationStyle, inversionStyle, itemSize, frameStyle, factor, hideZeros];

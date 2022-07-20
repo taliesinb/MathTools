@@ -106,25 +106,28 @@ ExpandCardinalSetEdges[graph_] := If[
 PublicFunction[CombineMultiedges]
 
 SetUsage @ "
-CombineMultiedges[graph$] combines edges that share the same endpoints into \
-single edges, combining any cardinals they have.
+CombineMultiedges[graph$] combines edges that share the same endpoints into single edges, combining any cardinals they have.
+CombineMultiedges[edges$] combines edges in an edge list directly.
 * ExpandCardinalSetEdges is the inverse of CombineMultiedges.
 "
 
-CombineMultiedges[graph_Graph] := iCombineMultiedges[graph];
+CombineMultiedges[graph_Graph] := Graph[
+  VertexList[graph],
+  combineMultiedgesInternal @ EdgeList @ graph,
+  Options @ graph
+];
 
-iCombineMultiedges[graph_] := Scope[
-  If[EdgeCount[graph] === 0, Return @ graph];
-  {vertices, edges} = VertexEdgeList[graph];
-  {edges, tags} = Transpose @ Map[separateTag, edges];
-  edgeGroups = PositionIndex[edges];
-  If[SameLengthQ[edgeGroups, edges], Return @ graph];
+CombineMultiedges[edges_List ? EdgeListQ] :=
+  combineMultiedgesInternal[edges];
+
+combineMultiedgesInternal[edges_] := Scope[
+  {plainEdges, tags} = Transpose @ Map[separateTag, edges];
+  edgeGroups = PositionIndex[plainEdges];
+  If[SameLengthQ[edgeGroups, plainEdges], Return @ edges];
   edges = KeyValueMap[
     {edge, indices} |-> reattachTag[edge, DeleteNone @ Part[tags, indices]],
     edgeGroups
-  ];
-  opts = Options[graph];
-  Graph[vertices, edges, opts]
+  ]
 ];
 
 separateTag = Case[

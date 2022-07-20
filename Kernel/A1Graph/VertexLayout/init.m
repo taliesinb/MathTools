@@ -3,7 +3,7 @@ PublicFunction[LookupVertexCoordinates]
 LookupVertexCoordinates[graph_Graph, vertexList_:All] := Scope[
   UnpackExtendedThemedOptions[graph,
     coordinateTransformFunction,
-    vertexCoordinateRules, vertexCoordinateFunction
+    vertexCoordinates, vertexCoordinateRules, vertexCoordinateFunction
   ];
 
   $Graph = graph;
@@ -11,6 +11,8 @@ LookupVertexCoordinates[graph_Graph, vertexList_:All] := Scope[
   If[!ListQ[vertexList], ReturnFailed[]];
 
   coords = Which[
+    coordinateTransformFunction === None && MatrixQ[vertexCoordinates] && vertexCoordinateFunction === None,
+      vertexCoordinates,
     coordinateTransformFunction =!= None || (vertexCoordinateRules === None && vertexCoordinateFunction === None),
       First @ ExtractGraphPrimitiveCoordinates @ graph
     ,

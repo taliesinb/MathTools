@@ -8,11 +8,26 @@ $tetraGraph := $tetraGraph = UndirectedGraph[
 SmartLayout[][data_] := Scope[
   UnpackAssociation[data, vertexCount, edgeCount, indexGraph];
   ugraph = UndirectedGraph @ RemoveEdgeTags @ indexGraph;
+  isDir = DirectedGraphQ[indexGraph];
   coords = Which[
     IsomorphicGraphQ[ugraph, $tetraGraph],
       getIsomorphicCoordinates[ugraph, $tetraGraph],
     vertexCount == (edgeCount + 1) && PathGraphQ[ugraph],
-      getIsomorphicCoordinates[ugraph, PathGraph[vertexCount]],
+      Threaded[{-1, 1}] * getIsomorphicCoordinates[ugraph, PathGraph[vertexCount]],
+    vertexCount == edgeCount && CycleGraphQ[ugraph],
+      getIsomorphicCoordinates[ugraph, CycleGraph[vertexCount]],
+    TreeGraphQ[ugraph],
+      degree = VertexDegree @ ugraph; nonUnitDegree = DeleteCases[degree, 1];
+      If[nonUnitDegree =!= {} && AllSameQ[nonUnitDegree],
+        Return @ VertexEdgeCoordinateData[data, {"BalloonEmbedding"}],
+        Return @ TreeVertexLayout[Balanced -> True][data]
+      ],
+    And[isDir, (2 * edgeCount) / vertexCount === 3, !FailureQ[
+      dicoords = getIsomorphicCoordinates[
+        ugraph, RemoveEdgeTags @ LatticeGraph[{"Dihedral", vertexCount / 2}]
+      ]
+    ]],
+      dicoords,
     True,
       $Failed
   ];
@@ -26,7 +41,6 @@ SmartLayout[][data_] := Scope[
 
 getIsomorphicCoordinates[source_, target_] := Scope[
   iso = FindGraphIsomorphism[source, target];
-  If[iso === {}, ReturnFailed[]];
-  targetVertices = Lookup[First @ iso, VertexList @ source];
-  LookupVertexCoordinates[target, targetVertices]
+  iso = First[iso, ReturnFailed[]];
+  Lookup[LookupVertexCoordinates[target, All], Lookup[iso, VertexList @ source]]
 ]

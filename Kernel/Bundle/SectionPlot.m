@@ -84,7 +84,7 @@ bundleSectionVertices[assoc_] := KeyValueMap[BundleVertex, assoc];
 
 (**************************************************************************************************)
 
-$BundleSectionPlotThemeRules = {
+DefineGraphTheme["BundleSectionPlot",
   VertexSize -> 6,
   ImageSize -> ("Edge" -> 20),
   ArrowheadPosition -> 0.75,
@@ -95,6 +95,6 @@ $BundleSectionPlotThemeRules = {
   VertexStyle -> GrayLevel[0.3, 1],
   ViewOptions -> {"ShrinkWrap" -> True},
   Frame -> True
-};
+];
 
-$GraphThemeData["BundleSectionPlot"] := $BundleSectionPlotThemeRules;
+

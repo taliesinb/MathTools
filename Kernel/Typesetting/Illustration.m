@@ -105,7 +105,7 @@ ColoredGraph[vertices_List, edges_List, opts___Rule] := Scope[
 
 (**************************************************************************************************)
 
-$coloredGraphThemeRules = {
+DefineGraphTheme["ColoredGraph",
     VertexSize -> 10,
     ArrowheadSize -> MediumSmall,
     ImageSize -> {50, 50},
@@ -114,9 +114,7 @@ $coloredGraphThemeRules = {
     AspectRatioClipping -> False, (* Frame -> True, *)
     EdgeThickness -> 1, EdgeStyle -> Directive[{AbsoluteThickness[0], GrayLevel[0.7, 1]}],
     ArrowheadShape -> {"FlatArrow", BorderStyle -> Function[{Darker[#, .3], AbsoluteThickness[0]}]}
-};
-
-$GraphThemeData["ColoredGraph"] := $coloredGraphThemeRules;
+];
 
 (**************************************************************************************************)
 
@@ -198,7 +196,7 @@ LatticeColoringPlot[quiver_, args___] := Scope[
 
 (**************************************************************************************************)
 
-$fundamentalColoringQuiverThemeOpts = {
+DefineGraphTheme["FundamentalColoringQuiver",
   ArrowheadSize -> MediumSmall,
   GraphLegend -> None,
   ArrowheadShape -> {"Arrow", TwoWayStyle -> "OutClose"},
@@ -206,9 +204,7 @@ $fundamentalColoringQuiverThemeOpts = {
   LabelCardinals -> Below, VertexSize -> Huge,
   ImagePadding -> {{15, 15}, {20, 20}},
   VertexColorFunction -> "Name"
-};
-
-$GraphThemeData["FundamentalColoringQuiver"] := $fundamentalColoringQuiverThemeOpts;
+];
 
 (**************************************************************************************************)
 
@@ -503,7 +499,7 @@ SimpleLabeledGraph[args___] := ExtendedGraph[args, GraphTheme -> "SimpleLabeledG
 
 (**************************************************************************************************)
 
-$simpleLabeledGraphOpts = {
+DefineGraphTheme["SimpleLabeledGraph",
   CardinalColors -> None,
   VertexLabels -> "Name",
   VertexLabelPosition -> Automatic,
@@ -517,9 +513,7 @@ $simpleLabeledGraphOpts = {
   MultiEdgeDistance -> 0.3, ArrowheadPosition -> 0.525,
   ArrowheadSize -> Medium, ArrowheadStyle -> $Gray,
   ImageSize -> "ShortestEdge" -> 90
-};
-
-$GraphThemeData["SimpleLabeledGraph"] := $simpleLabeledGraphOpts;
+];
 
 (**************************************************************************************************)
 
@@ -541,7 +535,7 @@ SimpleLabeledQuiver[args___] := Scope[
 
 (**************************************************************************************************)
 
-$simpleLabeledQuiverOpts = {
+DefineGraphTheme["SimpleLabeledQuiver",
   VertexLabels -> "Name",
   VertexLabelPosition -> Automatic,
   VertexLabelBaseStyle -> $MathLabelStyle,
@@ -551,9 +545,7 @@ $simpleLabeledQuiverOpts = {
   ArrowheadPosition -> 0.59,
   ArrowheadSize -> Medium,
   ImageSize -> "ShortestEdge" -> 90
-};
-
-$GraphThemeData["SimpleLabeledQuiver"] := $simpleLabeledQuiverOpts;
+];
 
 (**************************************************************************************************)
 
@@ -635,29 +627,25 @@ parseAdditionalEdgeVertex[vertex_] := LatticeVertex @ extractWord @ parsePath @ 
 
 (**************************************************************************************************)
 
-$fundamentalQuiverOpts = {
+DefineGraphTheme["FundamentalQuiver",
   ImageSize -> "ShortestEdge" -> 60, VertexLabels -> "Name",
   GraphLayout -> LinearLayout[],
   Cardinals -> {"r", "b"},
   ImagePadding -> {10, 15},
   ArrowheadSize -> MediumLarge,
   VertexLabelBaseStyle -> $MathLabelStyle
-}
-
-$GraphThemeData["FundamentalQuiver"] := $fundamentalQuiverOpts;
+];
 
 (**************************************************************************************************)
 
-$pathQuiverOpts = {
+DefineGraphTheme["PathQuiver",
   GraphOrigin -> LatticeVertex[{}], BaselinePosition -> Center,
   VertexSize -> Inherited,
   ArrowheadShape -> {"Line", EdgeThickness -> 2}, ArrowheadSize -> Medium, EdgeStyle -> LightGray,
   EdgeThickness -> Thick,
   ImageSize -> 400, ImagePadding -> 5, AspectRatioClipping -> False,
   GraphLegend -> None
-}
-
-$GraphThemeData["PathQuiver"] := $pathQuiverOpts;
+];
 
 (**************************************************************************************************)
 
@@ -683,14 +671,12 @@ parsePath = MatchValues[
 
 (**************************************************************************************************)
 
-$pathQuiverIconOpts = {
+DefineGraphTheme["PathQuiverIcon",
   VertexLabels -> None,
   Frame -> True, FrameStyle -> {LightGray, SlightlyThin}, PlotRangeClipping -> False,
   GraphLegend -> None, ImageSize -> "ShortestEdge" -> 20, ArrowheadShape -> None,
   VertexSize -> Medium, VertexStyle -> $LightGray
-};
-
-$GraphThemeData["PathQuiverIcon"] := $pathQuiverIconOpts;
+];
 
 (**************************************************************************************************)
 
@@ -962,5 +948,18 @@ QuiverProductTable[quivers_, termsLists_, args___] := Scope[
   SpacedColumn[
     SpacedRow[makePlot @@@ #, Spacings -> 50, LabelSpacing -> 15]& /@ termsLists,
     Spacings -> 50
+  ]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[IllustrateIsomorphism]
+
+IllustrateIsomorphism[source_, target_] := Scope[
+  iso = FindGraphIsomorphism[source, target];
+  iso = First[iso, ReturnFailed[]];
+  SpacedRow[
+    ExtendedGraph[source, VertexLabels -> "Name" -> iso],
+    VertexLabelForm @ target
   ]
 ];

@@ -71,12 +71,12 @@ addTermToIndex[support_][term_] := Scan[
 	UnorderedPairs @ term
 ];
 
-$GraphThemeData["PartitionLattice"] = {
+DefineGraphTheme["PartitionLattice",
 	VertexLayout -> TreeVertexLayout[],
 	VertexTooltips -> "Name",
 	ArrowheadPosition -> Around[0.5,.1],
 	ArrowheadSize -> 15
-};
+];
 
 nodeSucessors[node_PartitionNode] := Scope[
 	support = getSupport @ node;
@@ -135,12 +135,12 @@ MeetSemilatticeGraph[elements_, userOpts:OptionsPattern[]] := Scope[
 	]
 ];
 
-$GraphThemeData["Poset"] = {
+DefineGraphTheme["Poset",
 	VertexLayout -> TreeVertexLayout[Balanced -> True],
 	VertexLabels -> "Name",
 	VertexSize -> 5,
 	ArrowheadShape -> None
-};
+];
 
 (**************************************************************************************************)
 

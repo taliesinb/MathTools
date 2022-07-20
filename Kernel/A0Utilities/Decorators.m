@@ -24,6 +24,16 @@ declareBoxFormatting[
   Modulo[e_] :> MakeBoxes @ ModuloForm[e]
 ];
 
+(**************************************************************************************************)
+
+Unprotect[Labeled];
+
+Labeled[Nothing, _] := Nothing;
+Labeled[None] := Identity;
+Labeled[label_][g_] := Labeled[g, label];
+Labeled[f_, label_][input___] := Labeled[f[input], label];
+
+Protect[Labeled];
 
 (**************************************************************************************************)
 

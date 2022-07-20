@@ -24,7 +24,7 @@ processSubRule = Case[
 
 SubstitutionRewritingSystem::invcyc = "Invalid Cycles[...] element ``."
 processCycle = Case[
-  s_String  := % @ stringToCardList[s];
+  s_String  := % @ StringToWord[s];
   {_} | {}  := Nothing;
   {a_, b_}  := processSubRule[TwoWayRule[a, b]];
   list_List := ApplyWindowedCyclic[Rule /* processSubRule, list];

@@ -124,16 +124,14 @@ TransportAtlas[quiver_, charts_, opts___Rule] := Scope @ Catch[
   TransportAtlas
 ];
 
-$TransportAtlasThemeRules = {
+DefineGraphTheme["TransportAtlas",
   VertexLabels -> "ChartSymbol",
   VertexLabelPosition -> Automatic,
 
   EdgeLabels -> ("CardinalTransitions" -> CardinalTransition),
   EdgeLabelPosition -> {Scaled[0.5], Above},
   ArrowheadPosition -> 0.8
-}
-
-$GraphThemeData["TransportAtlas"] := $TransportAtlasThemeRules;
+];
 
 toChartSymbol = Case[
   list_List ? StringVectorQ := ChartSymbol @ StringJoin @ list;

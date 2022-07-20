@@ -143,7 +143,7 @@ PublicFunction[PointDilationGraphics]
 PointDilationGraphics[points_, r_] := Scope[
   points = ToPacked[points];
   If[Length[points] < 1500 && minimumSquaredDistance[points] > (2r)^2,
-    GraphicsComplex[points, Disk[#, r]& /@ Range[Length @ points]],
+    GraphicsComplex[points, Array[Disk[#, r]&, Length @ points]],
     RegionPolygon @ pointDilationRegion[points, r]
   ]
 ];

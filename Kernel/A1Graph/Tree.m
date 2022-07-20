@@ -86,9 +86,7 @@ scanToTree[pos_, e_Symbol /; MemberQ[$slotSymbols, e]] := Scope[
   $type[pos] = "Slot";
 ];
 
-$GraphThemeData["ExpressionTreeGraph"] := $ExpressionTreeGraphThemeData;
-
-$ExpressionTreeGraphThemeData = {
+DefineGraphTheme["ExpressionTreeGraph",
   VertexLayout -> TreeVertexLayout[
     Orientation -> Top, Balanced -> False, RootVertex -> {}, RootOrientation -> "Sink", BendStyle -> "HalfCenter",
     PreserveBranchOrder -> True],
@@ -98,7 +96,7 @@ $ExpressionTreeGraphThemeData = {
   BaselinePosition -> Top,
   VertexShapeFunction -> ExpressionTreeGraphVertexShape,
   ArrowheadShape -> None
-};
+];
 
 PublicFunction[ExpressionTreeGraphVertexShape]
 
@@ -113,8 +111,6 @@ ExpressionTreeGraphVertexShape[assoc_] := Scope[
   Text[Framed[Style[annotations["Data"], 12, FontColor -> Black], Background -> color, FrameStyle -> Darker[color]], coordinates]
 ];
 
-$GraphThemeData["ExpressionTreeGraph"] := $ExpressionTreeGraphThemeData;
-
 (**************************************************************************************************)
 
 PublicFunction[NestedListGraph]
@@ -123,9 +119,7 @@ NestedListGraph[e_, rules:OptionsPattern[]] := Scope[
   makeTreeGraph[e, scanExpression, "NestedListGraph", rules]
 ];
 
-$GraphThemeData["NestedListGraph"] := $NestedListGraphThemeData;
-
-$NestedListGraphThemeData = {
+DefineGraphTheme["NestedListGraph",
   VertexLayout -> TreeVertexLayout[
     Orientation -> Top, Balanced -> False, RootVertex -> {}, RootOrientation -> "Sink", BendStyle -> "Top",
     StretchFactor -> 0.75, BendRadius -> 1,
@@ -136,7 +130,7 @@ $NestedListGraphThemeData = {
   BaselinePosition -> Top,
   VertexColorFunction -> "LeafData",
   ArrowheadShape -> None
-};
+];
 
 (**************************************************************************************************)
 
@@ -198,9 +192,7 @@ toVarRules[var_] := var -> Style[var, CardinalColor[var]];
 
 (**************************************************************************************************)
 
-$GraphThemeData["PolynomialGraph"] := $PolynomialGraphThemeData;
-
-$PolynomialGraphThemeData = {
+DefineGraphTheme["PolynomialGraph",
   VertexLayout -> TreeVertexLayout[Orientation -> Top, Balanced -> True],
   EdgeColorFunction -> "Cardinal",
   ImagePadding -> {Vertical -> 15, Horizontal -> 30},
@@ -208,7 +200,7 @@ $PolynomialGraphThemeData = {
   BaselinePosition -> Top,
   VertexShapeFunction -> PolynomialGraphVertexShapeFunction,
   ArrowheadShape -> None
-};
+];
 
 PublicFunction[PolynomialGraphVertexShapeFunction]
 
@@ -278,9 +270,7 @@ HyperedgeIncidenceGraph[expr_, rules:OptionsPattern[]] := Scope[
   ]
 ];
 
-$GraphThemeData["HyperedgeIndicenceGraph"] := $HyperedgeIncidenceGraphThemeData;
-
-$HyperedgeIncidenceGraphThemeData = {
+DefineGraphTheme["HyperedgeIndicenceGraph",
   VertexLayout -> TreeVertexLayout[Orientation -> Top, Balanced -> True],
   ImagePadding -> {Vertical -> 15, Horizontal -> 30},
   ImageSize -> "ShortestEdge" -> 50, EdgeLabels -> "Cardinal", EdgeLabelStyle -> {LabelPosition -> Right, Background -> None},
@@ -289,7 +279,7 @@ $HyperedgeIncidenceGraphThemeData = {
   ArrowheadShape -> "Line", ArrowheadSize -> 15, ArrowheadPosition -> 0.6,
   CardinalColors -> $Gray,
   EdgeSetback -> .1
-};
+];
 
 scanHyperedge[path_, value_] := Scope[
   p = Hyperedge[path];

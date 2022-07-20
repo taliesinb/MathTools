@@ -51,6 +51,8 @@ ToPathWord[word_, validCardinals_:Automatic] := Scope[
   ]
 ];
 
+PrivateSymbol[$backtrackingRules]
+
 $backtrackingRules = Dispatch @ {
   {l___, i_, Inverted[i_], r___} :> {l, r},
   {l___, Inverted[i_], i_, r___} :> {l, r}

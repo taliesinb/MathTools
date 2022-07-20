@@ -322,22 +322,6 @@ TranslationMatrixQ[matrix_] := And[
 
 (**************************************************************************************************)
 
-PrivateFunction[MakeDihedralTranslationMatrices]
-
-MakeDihedralTranslationMatrices[matrices_] :=
-  ReplacePart[{-1, -1} -> -1] /@ matrices;
-
-
-PublicFunction[DihedralTranslationMatrixQ]
-
-DihedralTranslationMatrixQ[matrix_] := And[
-  Part[matrix, -1, -1] === -1,
-  UpperUnitriangularMatrixQ @ ReplaceDiagonalPart[matrix, -1 -> 1],
-  IdentityMatrixQ @ DiagonalBlock[matrix, {1, -2}]
-];
-
-(**************************************************************************************************)
-
 PrivateFunction[MakeRedundantTranslations]
 
 MakeRedundantTranslations[vec_] :=

@@ -47,8 +47,6 @@ the directed graph whose vertices are the states and whose edges are the transit
 MultiwaySystem[transition$, states$, 'element$'] returns a named element.
 * The possible values for element$ are one or a list of the following:
 | 'Graph' | the graph of states and their transitions (default) |
-| 'LabeledGraph' | a graph with states displayed as labels |
-| 'CayleyGraph' | a graph with labeled edges displayed with colored arrows |
 | 'VertexList' | a list of vertices in the same order as the vertices of 'IndexGraph' |
 | 'EdgeList' | a list of edges |
 | 'TransitionLists' | a list of transitions, each of the form {istate$, {ostate$1, ostate$2, $$}}. |
@@ -98,7 +96,7 @@ $stgElements = {
   "TransitionLists", "IndexTransitionLists",
   "EdgeList", "IndexEdgeList",
   "VertexList",
-  "Graph", "IndexGraph", "CayleyGraph", "LabeledGraph",
+  "Graph", "IndexGraph",
   Splice[$backEdgeElements],
   "TerminationReason", "EdgeLabels",
   "Elements"
@@ -366,15 +364,6 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     "IndexEdgeList" :> indexEdges,
     "VertexList" :> vertices,
     "Graph" :> graph,
-    "LabeledGraph" :> Graph[graph, VertexLabels -> Automatic],
-    "CayleyGraph" :> ExtendedGraph[
-      CombineMultiedges @ ExtendedGraph[
-        vertices, DeleteDuplicates @ edges,
-        FilterOptions @ opts,
-        GraphTheme -> "CayleyGraph",
-        GraphLegend -> "Cardinals"
-      ]
-    ],
     "IndexGraph" :> indexGraph,
     "EdgeLabels" :> edgeLabels,
     "TerminationReason" :> terminationReason,
@@ -384,12 +373,6 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   Lookup[resultsAssoc, result, $Failed]
 ];
 
-$cayleyGraphThemeRules = {
-  ArrowheadShape -> {"Line", TwoWayStyle -> "CrossLine"},
-  VertexLayout -> SmartLayout[]
-}
-
-$GraphThemeData["CayleyGraph"] := $cayleyGraphThemeRules;
 
 makeSuperTransitionFunc[list_] := ApplyThrough[MapIndexed[makeTFuncElem, list]] /* Catenate;
 makeTFuncElem[Labeled[f_, label_] | (f_ -> label_), _] := f /* Map[Labeled[#, label]&]

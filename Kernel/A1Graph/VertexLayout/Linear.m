@@ -15,7 +15,7 @@ LinearLayout[opts:OptionsPattern[]][data_] := Scope[
   SetAutomatic[orientation, If[method === "Line", Left, If[vertexCount === 3, Top, Left]]];
   data["VertexCoordinates"] = orientationTransform[orientation] @ Switch[method,
     "Line",
-      N[{# - 1, 0}& /@ Range[vertexCount]],
+      N @ Array[{# - 1, 0}&, vertexCount],
     "Circle",
       points = MapColumn[Minus, 2, CirclePoints[{1, Pi}, vertexCount]];
       If[vertexCount === 3, points //= TranslationTransform[{0.15, 0}];];

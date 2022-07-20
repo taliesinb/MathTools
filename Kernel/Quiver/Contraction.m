@@ -198,13 +198,13 @@ createContractionGraph[quiver_, vertexSize_][partition_] :=
     PlotRange -> "Square"
   ];
 
-$GraphThemeData["ContractionGraphIcon"] = {
+DefineGraphTheme["ContractionGraphIcon",
   Frame -> True, Background -> White,
   PlotRange -> "Square",
   ArrowheadShape -> {"Line", TwoWayStyle -> "CrossLine"},
   VertexSize -> 8, VertexCoordinates -> "Mean", SelfLoopRadius -> 0.5,
   ImagePadding -> 10
-};
+];
 
 (**************************************************************************************************)
 

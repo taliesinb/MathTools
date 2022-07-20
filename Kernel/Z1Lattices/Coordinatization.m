@@ -5,8 +5,8 @@ Options[FindCoordinatizationFunction] = {"Group" -> None, Modulus -> None};
 FindCoordinatizationFunction[qr_PathRepresentationObject] :=
   FindCoordinatizationFunction[qr["Representation"]];
 
-FindCoordinatizationFunction[rep_RepresentationObject, opts:OptionsPattern[]] := Scope[
-  generators = rep["Generators"];
+FindCoordinatizationFunction[rep_LinearRepresentationObject, opts:OptionsPattern[]] := Scope[
+  generators = Values @ rep["Generators"];
   gen = First @ generators;
   modulus = If[MatchQ[gen, RepresentationElement[_, _]], Last[gen], None];
   FindCoordinatizationFunction[First /@ generators, "Group" -> rep["Group"], Modulus -> modulus]
@@ -14,7 +14,7 @@ FindCoordinatizationFunction[rep_RepresentationObject, opts:OptionsPattern[]] :=
 
 FindCoordinatizationFunction[matrices_List, OptionsPattern[]] := Scope[
   UnpackOptions[group, modulus];
-  If[TranslationGroupQ[group](*  || DihedralTranslationGroupQ[group] *),
+  If[TranslationGroupQ[group],
     translationVectors = ExtractTranslationVector /@ matrices;
     rank = MatrixRank[translationVectors];
     taker = If[rank === Length[translationVectors], Identity, TakeOperator[rank]];
@@ -29,8 +29,6 @@ FindCoordinatizationFunction[matrices_List, OptionsPattern[]] := Scope[
   isRedundant = False;
   If[Length[matrices] >= 3,
     matrices = matrices;
-    If[DihedralTranslationGroupQ[group],
-      matrices[[All, -1, -1]] = 1];
     g12 = Dot @@ Take[matrices, 2]; g12i = Quiet @ Check[Inverse[g12], Null];
     isRedundant = AnyTrue[Drop[matrices, 2], SameQ[#, g12] || SameQ[#, g12i]&];
   ];

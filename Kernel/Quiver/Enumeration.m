@@ -462,7 +462,7 @@ LatticeGraphToLatticeQuiver[g_Graph] :=
 
 (**************************************************************************************************)
 
-$enumeratedLatticeStyleOpts = {
+DefineGraphTheme["EnumeratedLattice",
   ImageSize -> {100, 100}, VertexSize -> 5,
   BaselinePosition -> None, CoordinateTransformFunction -> "CenterOrigin",
   EdgeShapeFunction -> "StyledLine", EdgeColorFunction -> "Cardinal",
@@ -470,9 +470,7 @@ $enumeratedLatticeStyleOpts = {
   VertexStyle -> $DarkGray, VertexSize -> 5, Frame -> True, FrameFade -> 10,
   PlotRangeClipping -> True
   (* ArrowheadShape -> {"Line", EdgeThickness -> 2}, *)
-};
-
-$GraphThemeData["EnumeratedLattice"] := $enumeratedLatticeStyleOpts;
+];
 
 (**************************************************************************************************)
 

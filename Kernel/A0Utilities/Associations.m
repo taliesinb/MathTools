@@ -5,9 +5,9 @@ MergeAssocations[f_, assocs_] :=
 
 (**************************************************************************************************)
 
-PublicFunction[AssociationRange]
+PublicFunction[AssociationRange, RangeAssociation]
 
-SetRelatedSymbolGroup[AssociationRange, RuleRange];
+SetRelatedSymbolGroup[AssociationRange, RangeAssociation, RuleRange];
 
 SetUsage @ "
 AssociationRange[{key$1, key$2, $$}] gives the association <|$$, key$i -> i$, $$|>.
@@ -15,6 +15,9 @@ AssociationRange[{key$1, key$2, $$}] gives the association <|$$, key$i -> i$, $$
 
 AssociationRange[list_] :=
   AssociationThread[list, Range @ Length @ list];
+
+RangeAssociation[list_] :=
+  AssociationThread[Range @ Length @ list, list];
 
 (**************************************************************************************************)
 

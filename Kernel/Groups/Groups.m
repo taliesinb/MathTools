@@ -1,4 +1,15 @@
-PrivateFunction[makeGenerators]
+PrivateFunction[makeGenerators, makeIdentityRepresentation]
+
+(* this is the fallback for groups that don't have specific implementations *)
+makeGenerators[group_] :=
+  RangeAssociation @ PermutationGroupMatrices @ group;
+
+makeIdentityRepresentation[group_] := None;
+
+addLabels = Case[
+  assoc_Association := assoc;
+  list_List := RangeAssociation @ list;
+];
 
 $posIntOrInfinity = (_Integer ? Positive) | Infinity;
 
@@ -27,7 +38,7 @@ GroupGeneratorElements[group$] returns the RepresentationElement[$$] objects cor
 "
 
 GroupGeneratorElements[group_] := Scope[
-  rep = GroupRepresentation[group];
+  rep = LinearGroupRepresentation[group];
   If[!RepresentationObjectQ[rep], ReturnFailed[]];
   rep["Generators"]
 ];
@@ -71,6 +82,7 @@ AbelianGroupQ[group_] := MatchQ[group,
 (* Framework to set up custom groups *)
 
 declareGroup[rules__RuleDelayed] := Scan[declareGroup, {rules}];
+
 declareGroup[pattern_ :> {"Generators" :> generators_, "Order" :> order_, "Format" :> format_}] := (
   CustomGroupQ[HoldPattern @ pattern] := True;
   GroupQ[HoldPattern @ pattern] := True;
@@ -117,7 +129,7 @@ declareGroup[
 makeAbelianSymbol[n_Integer] := Subscript[$IntZ, n];
 makeAbelianSymbol[Infinity] := $IntZ;
 
-makeCylicGenerators[n_Integer] := {{{UnitRoot[n]}}};
+makeCylicGenerators[n_Integer] := <|1 -> {{UnitRoot[n]}}|>;
 makeCylicGenerators[Infinity] := makeInfiniteAbelianGenerators[1];
 
 
@@ -136,27 +148,30 @@ PublicFunction[GroupDirectProduct]
 SetUsage @ "
 GroupDirectProduct[{g$1, $$, g$n}] represents the product of several groups.
 * The generators of the product is the union of generators of the g$i.
-* GroupDirectProduct works with GroupRepresentation.
+* GroupDirectProduct works with LinearGroupRepresentation.
 * GroupDirectProduct does not work with the other group theory functions.
 ";
 
 declareGroup[
   GroupDirectProduct[groups:{Repeated[_ ? GroupQ]}] :> {
-    "Generators" :> constructDirectProductGenerators[makeGenerators /@ g],
+    "Generators" :> constructDirectProductGenerators[makeGenerators /@ groups],
     "Order" :> Times @@ Map[GroupOrder, g],
     "Format" :> Apply[If[VectorQ[list, AbelianGroupQ], CirclePlus, CircleTimes], Map[maybeBracket, groups]]
   }
 ];
 
-constructDirectProductGenerators[generatorLists_] := Scope[
+constructDirectProductGenerators[generatorLists_List] := Scope[
   identities = IdentityMatrix[Length[First[#]]]& /@ generatorLists;
-  Flatten[Table[
-    Map[
-      gen |-> BlockDiagonalMatrix[ReplacePart[identities, i -> gen]],
-      generatorLists[[i]]
+  labelFn = If[MatchQ[Length /@ generatorLists, {1..}], #2&, Subscript];
+  Association @ MapIndex1[
+    {genList, i} |-> KeyValueMap[
+      {label, gen} |-> (
+        labelFn[label, i] -> BlockDiagonalMatrix[ReplacePart[identities, i -> gen]]
+      ),
+      genList
     ],
-    {i, Length[generatorLists]}
-  ], 1]
+    generatorLists
+  ]
 ];
 
 maybeBracket /: MakeBoxes[maybeBracket[e_], form:StandardForm | TraditionalForm] := Scope[
@@ -170,13 +185,13 @@ PublicFunction[DiscreteHeisenbergGroup]
 
 SetUsage @ "
 DiscreteHeisenbergGroup[] represents the Heisenberg group of 3 \[Times] 3 upper-unitriangular matrices with integer entries.
-* DiscreteHeisenbergGroup works with GroupRepresentation.
+* DiscreteHeisenbergGroup works with LinearGroupRepresentation.
 * DiscreteHeisenbergGroup does not work with the other group theory functions, since it has no finite permutation representation.
 "
 
 declareGroup[
   DiscreteHeisenbergGroup[] :> {
-    "Generators" :> Map[AugmentedIdentityMatrix[3, #]&, {{1, 2}, {1, 3}, {2, 3}}],
+    "Generators" :> RangeAssociation @ MapIndex1[AugmentedIdentityMatrix[3, #]&, {{1, 2}, {1, 3}, {2, 3}}],
     "Order" :> Infinity,
     "Format" :> Style["H", Italic]
   }
@@ -189,7 +204,7 @@ PublicFunction[InfiniteAbelianGroup]
 SetUsage @ "
 InfiniteAbelianGroup[n$] represents an infinite Abelian group on n$ generators.
 InfiniteAbelianGroup[n$, 'Redundant'] uses a redundant representation by forming pairs of generators cyclically.
-* InfiniteAbelianGroup works with GroupRepresentation.
+* InfiniteAbelianGroup works with LinearGroupRepresentation.
 * InfiniteAbelianGroup does not work with the other group theory functions, since it has no finite permutation representation.
 "
 
@@ -207,38 +222,26 @@ declareGroup[
 ];
 
 makeInfiniteAbelianGenerators[n_] :=
-  UnitTranslationMatrix[n, #]& /@ Range[n];
+  RangeAssociation @ Array[UnitTranslationMatrix[n, #]&, n];
 
 makeInfiniteRedundantAbelianGenerators[n_] :=
-  RedundantUnitTranslationMatrix[n, #]& /@ Range[n];
+  RangeAssociation @ Array[RedundantUnitTranslationMatrix[n, #]&, n];
 
 (**************************************************************************************************)
 
-PublicFunction[InfiniteDihedralGroup]
+(* PublicFunction[InfiniteDihedralGroup]
 
 SetUsage @ "
-InfiniteDihedralGroup[n$] represents an infinite dihedral group on n$ - 1 generators, and an implicit reflection.
-InfiniteDihedralGroup[n$, 'Improper'] represents an infinite dihedral group on n$ generators.
-InfiniteDihedralGroup[n$, 'Redundant'] uses a redundant representation by forming pairs of generators cyclically.
+InfiniteDihedralGroup[] represents the infinite dihedral group.
 * InfiniteDihedralGroup works with GroupRepresentation.
 * InfiniteDihedralGroup does not work with the other group theory functions, since it has no finite permutation representation.
 "
-
+ *)
 declareGroup[
-  InfiniteDihedralGroup[n_ ? Internal`PositiveIntegerQ] :> {
-    "Generators" :> Append[BasisScalingMatrix[n + 1, -1 -> -1]] @ makeInfiniteAbelianGenerators[n],
+  DihedralGroup[Infinity] :> {
+    "Generators" :> <|"t" -> {{1, 1}, {0, 1}}, "r" -> {{1, 0}, {0, -1}}|>,
     "Order" :> Infinity,
-    "Format" :> subSupNo1[MathTextForm @ "Dih", Infinity, n]
-  },
-  InfiniteDihedralGroup[n_ ? Internal`PositiveIntegerQ, "Improper"] :> {
-    "Generators" :> MakeDihedralTranslationMatrices @ makeInfiniteAbelianGenerators[n],
-    "Order" :> Infinity,
-    "Format" :> subSupNo1[MathTextForm @ "Dih", Infinity, n]
-  },
-  InfiniteDihedralGroup[n_ ? Internal`PositiveIntegerQ, "Redundant"] :> {
-    "Generators" :> MakeDihedralTranslationMatrices @ makeInfiniteRedundantAbelianGenerators[n],
-    "Order" :> Infinity,
-    "Format" :> subSupNo1[MathTextForm @ "Dih*", Infinity, n]
+    "Format" :> Subscript[MathTextForm @ "Dih", Infinity]
   }
 ];
 
@@ -265,16 +268,22 @@ TranslationGroup[vecs_ ? MatrixQ, "Redundant"] :=
 TranslationGroup[vecs_, None] := TranslationGroup[vecs];
 
 declareGroup[
-  TranslationGroup[vecs_ ? MatrixQ] :> {
-    "Generators" :> Map[TranslationMatrix, vecs],
+  TranslationGroup[vecs_ ? MatrixOrTableQ] :> {
+    "Generators" :> addLabels @ Map[TranslationMatrix, vecs],
     "Order" :> Infinity,
     "Format" :> Subsuperscript["T", Length @ vecs, Length @ First @ vecs]
   },
-  TranslationGroup[vecs_ ? MatrixQ, mod_ /; VectorQ[mod] || IntegerQ[mod]] :> {
-    "Generators" :> Map[TranslationMatrix[#, mod]&, vecs],
+  TranslationGroup[vecs_ ? MatrixOrTableQ, mod_ /; VectorQ[mod] || IntegerQ[mod]] :> {
+    "Generators" :> addLabels @ Map[TranslationMatrix[#, mod]&, vecs],
     "Order" :> Infinity,
     "Format" :> Subsuperscript["T%", Length @ vecs, Length @ First @ vecs]
   }
+];
+
+MatrixOrTableQ = Case[
+  a_List ? MatrixQ := True;
+  a_Association /; MatrixQ[Values @ a] := True;
+  _ := False
 ];
 
 (**************************************************************************************************)
@@ -287,50 +296,6 @@ TranslationGroupQ[group$] returns True if group$ is a TranslationGroup.
 
 TranslationGroupQ[TranslationGroup[_]] := True;
 TranslationGroupQ[_] := False;
-
-
-(**************************************************************************************************)
-
-PublicFunction[DihedralTranslationGroup]
-
-SetUsage @ "
-DihedralTranslationGroup[vectors$] represents an 'improper' translation group generated by the translation
-vectors vectors$, where the generators also invert the translations of subsequent group elements.
-DihedralTranslationGroup[RootSystem[$$]] uses the simple roots of a given root system.
-DihedralTranslationGroup[$$, 'Redundant'] uses a redundant representation by forming pairs of translations \
-cyclically.
-* The group operation is given by composing translations.
-* A generator acts by translating: adding its corresponding vector to its operand, and flipping
-the direction of future translations.
-In one dimension this is the InfiniteDihedralGroup[1].
-"
-
-DihedralTranslationGroup[rs_ ? RootSystemObjectQ] :=
-  DihedralTranslationGroup @ rs["TranslationMatrices"];
-
-DihedralTranslationGroup[vecs_ ? MatrixQ, "Redundant"] :=
-  DihedralTranslationGroup @ MakeRedundantTranslations @ vecs;
-
-declareGroup[
-  DihedralTranslationGroup[vecs_ ? MatrixQ] :> {
-    "Generators" :> MakeDihedralTranslationMatrices @ Map[TranslationMatrix, vecs],
-    "Order" :> Infinity,
-    "Format" :> Subsuperscript["TDih", Length @ vecs, Length @ First @ vecs]
-  }
-];
-
-(**************************************************************************************************)
-
-PublicFunction[DihedralTranslationGroupQ]
-
-SetUsage @ "
-DihedralTranslationGroupQ[group$] returns True if group$ is a DihedralTranslationGroup.
-"
-
-DihedralTranslationGroupQ[_DihedralTranslationGroup | _InfiniteDihedralGroup] := True;
-DihedralTranslationGroupQ[_] := False;
-
-
 
 (**************************************************************************************************)
 
@@ -371,6 +336,10 @@ ReflectionGroupQ[_] := False;
 
 PublicFunction[SignedSymmetricGroup]
 
+SetUsage @ "
+SignedSymmetricGroup[n$] represents the signed symmetric group on n$ generators.
+"
+
 declareGroup[
   SignedSymmetricGroup[n_Integer] :> {
     "Generators" :> constructSignedSymmetricGenerators[n],
@@ -379,7 +348,110 @@ declareGroup[
   }
 ]
 
-constructSignedSymmetricGenerators[n_] := Join[
-  BasisScalingMatrix[n, # -> -1]& /@ Range[n],
-  Permute[IdentityMatrix[n], Cycles[{{#, Mod[# + 1, n, 1]}}]]& /@ Range[n-1]
+constructSignedSymmetricGenerators[n_] := Association @ Join[
+  Array[Subscript["r", #] -> Permute[IdentityMatrix[n], Cycles[{{#, Mod[# + 1, n, 1]}}]]&, n - 1],
+  Array[Subscript["f", #] -> BasisScalingMatrix[n, # -> -1]&, n]
 ]
+
+(**************************************************************************************************)
+
+PublicFunction[PermutationGroupMatrices]
+
+PermutationGroupMatrices[group_] := Scope[
+  generators = GroupGenerators[group];
+  If[!ListQ[generators], ReturnFailed[]];
+  max = Max[PermutationMax /@ generators];
+  Normal /@ Map[cyclesToPermutationMatrix[#, max]&, generators]
+];
+
+cyclesToPermutationMatrix[Cycles[cycles_], n_] := Scope[
+  edges = Map[
+    cycle |-> Map[# -> 1&, Partition[cycle, 2, 1, 1]],
+    cycles
+  ];
+  stable = Complement[Range[n], Union @@ cycles];
+  stableEdges = Map[{#, #} -> 1&, stable];
+  SparseArray[Flatten @ {edges, stableEdges}, {n, n}]
+];
+
+complexAbelianMatrices[dims_] := Scope[
+  n = Length[dims];
+  Table[
+    DiagonalMatrix @ ReplacePart[Ones[n], i -> RootOfUnity[Part[dims, i]]],
+    {i, n}
+  ]
+];
+
+unitRootAbelianMatrices[dims_] := Scope[
+  n = Length[dims];
+  Table[
+    DiagonalMatrix @ ReplacePart[Ones[n], i -> UnitRoot[Part[dims, i]]],
+    {i, n}
+  ]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[StringToWord]
+
+StringToWord[str_String] :=
+  Map[If[UpperCaseQ[#], Inverted @ ToLowerCase @ #, #]&, Characters @ str];
+
+(**************************************************************************************************)
+
+PublicFunction[FreeGroup]
+
+SetUsage @ "
+FreeGroup[n$] represents the free group on n$ generators.
+FreeGroup[{g$1, g$2, $$}] represents the free group on specific generators.
+"
+
+FreeGroup[str_String] := FreeGroup[Characters @ str];
+
+declareGroup[
+  FreeGroup[n_Integer] :> {
+    "Generators" :> makeFreeGenerators[Range @ n],
+    "Order" :> Infinity,
+    "Format" :> Subscript[Style["F", Italic], n]
+  },
+  FreeGroup[gens_List] :> {
+    "Generators" :> makeFreeGenerators[gens],
+    "Order" :> Infinity,
+    "Format" :> Subscript[Style["F", Italic], Row[gens,","]]
+  }
+];
+
+makeIdentityRepresentation[_FreeGroup] := ModForm[{{GroupWord[{}]}}, GroupWordMultiplication];
+
+makeFreeGenerators[gens_] := AssociationMap[g |-> ModForm[{{GroupWord[{g}]}}, GroupWordMultiplication], gens];
+
+(**************************************************************************************************)
+
+PublicFunction[GroupWordMultiplication]
+
+PublicHead[GroupWord]
+
+GroupWord::usage = "GroupWord[list$] represent a word over group generators."
+
+(* TODO: make this into a form *)
+declareFormatting[
+  GroupWord[w_List] :> Row[w]
+]
+
+GroupWordMultiplication[GroupWord[w1_List], GroupWord[w2_List]] := wordJoin[w1, w2];
+
+GroupWord /: Power[GroupWord[w_List], n_] := groupWordPower[w, n];
+
+GroupWord /: Inverted[GroupWord[w_List]] := groupWordPower[w, -1];
+
+groupWordPower[w_List, 0] := GroupWord[{}];
+
+groupWordPower[w_List, 1] := GroupWord[w];
+
+groupWordPower[w_List, -1] := GroupWord[InvertReverse @ w];
+
+groupWordPower[w_List, n_Integer ? Negative] := groupWordPower[InvertReverse @ w, -n];
+
+groupWordPower[w_List, n_Integer ? Positive] := wordJoin @@ ConstantArray[w, n];
+
+wordJoin[words__List] := GroupWord[Join[words] //. $backtrackingRules];

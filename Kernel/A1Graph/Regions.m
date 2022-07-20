@@ -719,7 +719,7 @@ GraphRegionElementQ[Cycles[_List] | Cycles[_String]] := True;
 
 processRegion[Cycles[word_]] := Scope[
   word //= ParseRegionWord;
-  If[word === {}, Return @ Splice[GraphPathData[{#}, {}, {}]& /@ Range[$VertexCount]]];
+  If[word === {}, Return @ Splice @ Array[GraphPathData[{#}, {}, {}]&, $VertexCount]];
   init = First @ word;
   edges = Lookup[$TagIndices, init];
   startVertices = Sort @ Part[$EdgePairs, edges, 1];
