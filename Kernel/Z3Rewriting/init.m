@@ -156,10 +156,11 @@ rewriteMultiwaySystem[system_, states_, isLabeled_, verbose_, args___] := Scope[
 
   cayleyFunction = system["CayleyFunction", "Labeled" -> isLabeled];
 
-  result = MultiwaySystem[
+  result = CachedMultiwaySystem[
     If[verbose, tapped[cayleyFunction], cayleyFunction], states,
     args,
-    CanonicalizationFunction -> system["CanonicalizationFunction"]
+    CanonicalizationFunction -> system["CanonicalizationFunction"],
+    If[Length[states] > 1, VertexLayout -> SpringElectricalLayout[], Seq[]]
   ]
 ];
 
