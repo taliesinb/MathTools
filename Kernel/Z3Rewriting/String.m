@@ -62,7 +62,7 @@ StringLabeledReplaceList[str_String, rule_, matchIndex_:None] := Scope[
       StringReplacePart[str, ochunk = StringReplace[ichunk = StringTake[str, span], rule], span],
       RewriteForm[
         StringRegionalStateForm[ichunk, span],
-        StringRegionalStateForm[ochunk, span],
+        If[StringLength[ochunk] == StringLength[ichunk], StringRegionalStateForm[ochunk, span], ochunk],
         matchIndex
       ]
     ],

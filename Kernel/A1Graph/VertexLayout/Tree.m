@@ -69,6 +69,7 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
       edgeCoordinateLists //= Map[bendCenterHalf]
   ];
 
+  edgeCoordinateLists = fixEdgeVertexIntersections[vertexCoordinates, edgeCoordinateLists];
   {vertexCoordinates, edgeCoordinateLists}
 ];
 

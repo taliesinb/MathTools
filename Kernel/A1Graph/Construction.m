@@ -5,6 +5,21 @@ ExtendedGraph[args___] :=
 
 (**************************************************************************************************)
 
+PublicFunction[FromIndexedEdges]
+
+Options[FromIndexedEdges] = $ExtendedGraphOptions;
+
+FromIndexedEdges[vertices_List, edges_List, opts___Rule] := With[
+  {vrange = Range @ Length @ vertices},
+  VertexReplace[
+    Graph[vrange, edges],
+    RuleThread[vrange, vertices],
+    toPlainGraphConstructorOptions[opts]
+  ]
+];
+
+(**************************************************************************************************)
+
 Unprotect[PathGraph];
 (* fix a weird oversight in the design of PathGraph *)
 PathGraph[n_Integer, opts___] := PathGraph[Range[n], opts];

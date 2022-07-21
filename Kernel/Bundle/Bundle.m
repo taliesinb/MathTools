@@ -29,6 +29,18 @@ makeColonPair[a_, b_] := ToBoxes @ Row[{a, GrayForm @ ":", b}];
 
 (**************************************************************************************************)
 
+PublicFunction[BundleToFiberGraph]
+
+BundleToFiberGraph[bundle_Graph, baseVertex_:Automatic] := Scope[
+  hash = Hash[bundle];
+  fiberGraph = bundleHashLookup[hash, "FiberGraph"];
+  If[GraphQ[fiberGraph], Return @ fiberGraph];
+  SetAutomatic[baseVertex, First @ VertexList @ bundle];
+  ExtendedSubgraph[bundle, Cases[VertexList @ bundle, BundleVertex[baseVertex, _]], Automatic]
+];
+
+(**************************************************************************************************)
+
 PublicFunction[BundleToBaseGraph]
 
 BundleToBaseGraph::noedges = "The base graph appears to have no edges.";

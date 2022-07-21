@@ -33,8 +33,7 @@ Options[MultiwaySystem] = JoinOptions[
   DepthTermination -> "Immediate",
   CanonicalizationFunction -> None,
   SelfLoops -> True,
-  PrologVertices -> {},
-  $ExtendedGraphOptions
+  PrologVertices -> {}
 ];
 
 stackPushList[stack_, list_] := Scan[item |-> stack["Push", item], list];
@@ -163,7 +162,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   If[ListQ[f], f = makeSuperTransitionFunc[f]];
 
   If[!MatchQ[canonicalizationFunction, None | Identity | (#&)],
-    canonFn = VectorReplace[{Labeled[e_, l_] :> Labeled[canonicalizationFunction[e], f], e_ :> canonicalizationFunction[e]}] /* DeleteDuplicates;
+    canonFn = VectorReplace[{Labeled[e_, l_] :> Labeled[canonicalizationFunction[e], l], e_ :> canonicalizationFunction[e]}] /* DeleteDuplicates;
     initialVertices //= canonFn;
     If[ListQ[prologVertices], prologVertices = canonFn @ prologVertices];
     $canonicalizationBlock := (
@@ -387,18 +386,20 @@ toUndirectedEdge[from_, to_] := UndirectedEdge[from, to];
 (**************************************************************************************************)
 
 PrivateFunction[CachedMultiwaySystem]
+PublicFunction[ClearMultiwayCache]
 
-$LastHash = None;
-$LastResult = None;
+ClearMultiwayCache[] := (QuiverGeometryLoader`$MultiwaySystemCache = CreateDataStructure["LeastRecentlyUsedCache", 8]);
+
+SetInitialValue[QuiverGeometryLoader`$MultiwaySystemCache, None];
 
 CachedMultiwaySystem[args___] := Scope[
-  hash = Hash[{args}];
-  If[hash === $LastHash, Return @ $LastResult];
+  hash = Hash @ {args};
+  If[QuiverGeometryLoader`$MultiwaySystemCache === None, ClearMultiwayCache[]];
+  cachedValue = QuiverGeometryLoader`$MultiwaySystemCache["Lookup", hash, Null&];
+  If[cachedValue =!= Null, Return @ cachedValue];
   result = MultiwaySystem[args];
   If[!FailureQ[result],
-    $LastHash ^= hash;
-    $LastResult ^= result;
-  ];
+    QuiverGeometryLoader`$MultiwaySystemCache["Insert", hash -> result]];
   result
 ];
 

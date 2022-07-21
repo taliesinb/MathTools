@@ -44,8 +44,9 @@ BundleSectionPlotTotal[BundleSection[sec_Association, hash_]] := Scope[
   ExtendedGraphPlot[
     bundle,
     RegionColorRules -> {ConnectedSubgraph[Map[Point, bundleSectionVertices[sec]]] -> $Purple, All -> GrayLevel[0.6, 0.2]},
-    VertexColorRules -> {(Alternatives @@ bundleSectionVertices[sec]) -> Darker[$Purple, .2], All -> GrayLevel[1 - 0.4 * 0.2]},
+    VertexColorRules -> {(Alternatives @@ bundleSectionVertices[sec]) -> Darker[$Purple, .2], All -> Transparent},
     ImagePadding -> 10, VertexShapeFunction -> "Point", VertexStyle -> GrayLevel[0.2, 1],
+    EdgeSetback -> 0,
     GraphTheme -> "BundleSectionPlot", EdgeSetback -> 0.15, VertexSize -> 6,
     If[$imageSize === Automatic, Seq[], ImageSize -> $imageSize]
   ]

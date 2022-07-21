@@ -298,6 +298,10 @@ fixSelfLoop[selfLoopRadius_][coords_] := Scope[
 
 (**************************************************************************************************)
 
+PrivateFunction[fixEdgeVertexIntersections]
+
+fixEdgeVertexIntersections[_, {}] := {};
+
 fixEdgeVertexIntersections[vertexCoordinates_, edgeCoordinateLists_] := Scope[
   edgeLengths = Map[If[First[#] === Last[#], 0, LineLength[#]]&, edgeCoordinateLists];
   scale = Quantile[DeleteCases[edgeLengths, 0], .15];

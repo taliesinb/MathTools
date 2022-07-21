@@ -168,7 +168,10 @@ Scan[form |-> MakeBoxes[g_Graph /; ExtendedGraphQ[Unevaluated[g]], form] := exte
 Protect[Graph];
 
 extendedGraphBoxes[graph_Graph] :=
-  stripDynamicModule @ ToBoxes @ ExtendedGraphPlot @ graph;
+  Construct[InterpretationBox,
+    stripDynamicModule @ ToBoxes @ ExtendedGraphPlot @ graph,
+    graph
+  ];
 
 stripDynamicModule[boxes_] := ReplaceAll[boxes,
   NamespaceBox[
@@ -189,10 +192,13 @@ GraphPlotScope[graph_, body_] := Scope[
 
   If[!GraphQ[graph], ReturnFailed[]];
 
-  GPPrint["GraphPlotScope for ", graphSkeleton @ graph];
-  GraphScope[graph,
+  UnpackExtendedThemedOptions[graph, collapseMultiedges];
 
-    {$VertexCoordinates, $EdgeCoordinateLists} = ExtractGraphPrimitiveCoordinates @ graph;
+  GPPrint["GraphPlotScope for ", graphSkeleton @ graph];
+  GraphScope[
+    If[TrueQ @ collapseMultiedges, CombineMultiedges @ graph, graph]
+  ,
+    {$VertexCoordinates, $EdgeCoordinateLists} = ExtractGraphPrimitiveCoordinates @ $Graph;
 
     viewRegion = LookupExtendedOption[$Graph, ViewRegion];
     If[viewRegion =!= All, applyViewRegion[viewRegion], $VertexParts = $EdgeParts = All];
@@ -271,16 +277,6 @@ ExtendedGraphPlot[graph_Graph] := Block[
 
   GPPrint["ExtendedGraphPlot for ", graphSkeleton @ graph];
 
-  (* this is a workaround for a mysterious lack of re-entrancy *)
-  (* Block[{vlist = VertexList @ graph, gindices},
-    If[MemberQ[vlist, _Graph],
-      gindices = SelectIndices[vlist, GraphQ];
-      glist = Part[vlist, gindices];
-      Return @ ExtendedGraphPlot @ VertexReplace[graph, RuleThread[glist,
-        ExtendedGraphPlot[#, Frame -> True]& /@ glist]];
-    ]
-  ]; *)
-
   {plottingFunction, graphLegend, graphRegionHighlight, vertexColorFunction} =
     LookupAnnotation[graph, {GraphPlottingFunction, GraphLegend, GraphRegionHighlight, VertexColorFunction}, None];
 
@@ -310,7 +306,14 @@ ExtendedGraphPlot[graph_Graph] := Block[
       $GraphPlotGraphics //= First;
     ];
 
+    eventHandler = None;
+    If[MatchQ[$GraphPlotGraphics, _EventHandler],
+      eventHandler = ReplacePart[$GraphPlotGraphics, 1 -> None];
+      $GraphPlotGraphics //= First;
+    ];
+
     (* recompute these with the results of plottingFunction, for the benefit of GraphRegionHighlight *)
+    rawGraphics = Replace[$GraphPlotGraphics, EventHandler[e_, ___] :> e];
     $GraphPlotImageSize := $GraphPlotImageSize = LookupImageSize @ $GraphPlotGraphics;
     $GraphPlotImageWidth := $GraphPlotImageWidth = First[$GraphPlotImageSize] - Total[First @ LookupOption[$GraphPlotGraphics, ImagePadding]];
     $GraphPlotEffectiveImageWidth = First[LookupOption[$GraphPlotGraphics, ImageSizeRaw], $GraphPlotImageWidth];
@@ -329,8 +332,11 @@ ExtendedGraphPlot[graph_Graph] := Block[
     ];
 
     If[graphLabel =!= None, $GraphPlotGraphics = ReplacePart[graphLabel, 1 -> $GraphPlotGraphics]];
+    result = ApplyFinalTransforms @ $GraphPlotGraphics;
+    
+    If[eventHandler =!= None, result = ReplacePart[eventHandler, 1 -> result]];
 
-    ApplyLegend[ApplyFinalTransforms @ $GraphPlotGraphics, graphLegend]
+    ApplyLegend[result, graphLegend]
   ]
 ];
 
@@ -904,6 +910,17 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         graphics //= ReplaceAll[AbsolutePointSize[sz_] :> PointSize[sz / effectiveImageWidth]],
       _,
         Null
+    ];
+
+    If[vertexClickFunction =!= None && !$GraphIs3D,
+      With[
+        {nearest = Nearest[$VertexCoordinates -> $VertexList], vsize = vertexSize, vclick = vertexClickFunction},
+        graphics = EventHandler[graphics, {"MouseClicked" :> Replace[
+            nearest[MousePosition["Graphics"], {1, vsize}],
+            {\[FormalV]_} :> vclick[\[FormalV]]
+          ]}
+        ];
+      ];
     ];
 
     applyExternalLabel[
@@ -1608,6 +1625,7 @@ makeArrowheadGraphic3D[primitives_, style_, opts___] :=
 $nudge = 1*^-2;
 
 $arrowheads2D = Association[
+  "Invisible" -> {},
   "Line" ->
     Line @ ToPacked @ {{-0.2, -0.3}, {0.1, 0.}, {-0.2, 0.3}},
   "LineDoubleOut" ->

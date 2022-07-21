@@ -18,8 +18,8 @@ declareRewritingSystemDispatch["GraphGas", quiverGasRewritingSystemProperty]
 quiverGasRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] := Scope[
   UnpackStringOptions[{opts}, True, labeled];
   If[labeled,
-    LabeledSectionRewritingCayleyFunction,
-    SectionRewritingCayleyFunction
+    LabeledSectionHomotopyCayleyFunction,
+    SectionHomotopyCayleyFunction
   ]
 ];
 

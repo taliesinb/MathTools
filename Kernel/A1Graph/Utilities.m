@@ -124,6 +124,23 @@ IndexGraphQ[_] := False;
 
 (**************************************************************************************************)
 
+PublicFunction[DropComponents]
+
+DropComponents[graph_Graph, spec_] := Scope[
+  components = WeaklyConnectedComponents @ graph;
+  components = Reverse @ Sort @ components;
+  vertices = Quiet @ Check[
+    If[IntegerQ[spec], Part[components, spec], Union @@ Part[components, spec]],
+    $Failed
+  ];
+  If[!VectorQ[vertices], ReturnFailed[]];
+  ExtendedSubgraph[graph, Complement[VertexList @ graph, vertices], Automatic]
+];
+
+DropComponents[n_][graph_] := DropComponents[graph, n];
+
+(**************************************************************************************************)
+
 PublicFunction[ComponentGraphs]
 
 ComponentGraphs[graph_] := ComponentGraphs[graph, All];

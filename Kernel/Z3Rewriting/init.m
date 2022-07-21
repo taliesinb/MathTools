@@ -103,6 +103,7 @@ Options[RewriteQuiver] = Options[RewriteGraph] = JoinOptions[
 declareSyntaxInfo[LatticeGraph, {_, _, OptionsPattern[]}];
 declareSyntaxInfo[LatticeQuiver, {_, _, OptionsPattern[]}];
 
+
 RewriteQuiver[system_RewritingSystemObject, initialState_, opts:OptionsPattern[RewriteQuiver]] :=
   rewriteGraphQuiver[system, initialState, True, opts];
 
@@ -120,22 +121,31 @@ rewriteGraphQuiver[system_, initialStates_, isQuiver_, opts:OptionsPattern[Rewri
   
   result = rewriteMultiwaySystem[
     system, initialStates, isQuiver, verbose,
-    {"Graph", "TerminationReason"},
-    FilterOptions[MultiwaySystem, opts],
-    GraphTheme -> If[isQuiver, "RewriteQuiver", "RewriteGraph"]
+    {"VertexList", "IndexEdgeList", "TerminationReason"},
+    FilterOptions[MultiwaySystem, opts]
   ];
 
   If[!ListQ[result], ReturnFailed[]];
-  {graph, terminationReason} = result;
+  {vertices, indexEdgeList, terminationReason} = result;
   If[verbose, Print["TerminationReason: ", terminationReason]];
 
-  (* TODO: do this in MultiwaySystem *)
-  If[isQuiver,
-    cards = CardinalList[graph];
-    If[cards =!= None, graph = ExtendedGraph[graph, Cardinals -> Sort[cards]]];
-  ];
+  opts = {
+    GraphTheme -> If[isQuiver, "RewriteQuiver", "RewriteGraph"]
+  };
 
-  graph
+  If[Length[indexEdgeList] > 0,
+    If[isQuiver,
+      cards = Union @ Part[indexEdgeList, All, 3];
+      If[cards =!= {None}, AppendTo[opts, Cardinals -> cards]];
+    ,
+      If[(Length @ First @ indexEdgeList) === 3,
+        indexEdgeList = Take[indexEdgeList, All, 2]];
+    ];
+  ];
+  If[initialStates === All || Length[initialStates] > 1,
+    AppendTo[opts, VertexLayout -> SpringElectricalLayout[]]];
+
+  FromIndexedEdges[vertices, Union @ indexEdgeList, Seq @@ opts]
 ]
 
 (**************************************************************************************************)
@@ -159,8 +169,7 @@ rewriteMultiwaySystem[system_, states_, isLabeled_, verbose_, args___] := Scope[
   result = CachedMultiwaySystem[
     If[verbose, tapped[cayleyFunction], cayleyFunction], states,
     args,
-    CanonicalizationFunction -> system["CanonicalizationFunction"],
-    If[Length[states] > 1, VertexLayout -> SpringElectricalLayout[], Seq[]]
+    CanonicalizationFunction -> system["CanonicalizationFunction"]
   ]
 ];
 
@@ -177,13 +186,14 @@ DefineGraphTheme["RewriteQuiver",
   ImagePadding -> {Left -> 25, Right -> 25},
   ArrowheadPosition -> 0.45,
   ArrowheadShape -> "NarrowArrow",
+  TwoWayStyle -> "CrossLine",
   ImageSize -> ("ShortestEdge" -> 65),
-  VertexLayout -> TreeVertexLayout[Orientation -> Left, Balanced -> True]
+  VertexLayout -> TreeVertexLayout[Orientation -> Left, Balanced -> True],
+  CollapseMultiedges -> True
 ];
 
 DefineGraphTheme["RewriteGraph" -> "RewriteQuiver",
-  ArrowheadStyle -> $Gray,
-  ArrowheadShape -> "NarrowArrow"
+  ArrowheadStyle -> $Gray
 ];
 
 

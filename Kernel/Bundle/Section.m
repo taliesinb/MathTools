@@ -48,6 +48,19 @@ constructSectionManually[assoc_, bundle_Graph] := Scope[
   BundleSection[assoc, hash]
 ];
 
+validSectionQ[section_] := Module[{v, bnbs},
+  KeyValueScan[
+    {b, f} |-> (
+      v = BundleVertex[b, f];
+      bnbs = $baseAdjacency[b];
+      bnbs = Thread @ BundleVertex[bnbs, Lookup[section, bnbs]];
+      If[!AllTrue[bnbs, $areBundleAdjacent[{v, #}]&], Return[False, Module]];
+    ),
+    section
+  ];
+  True
+];
+
 (**************************************************************************************************)
 
 (* faster potential method:
@@ -61,48 +74,54 @@ when we undecimate. so we don't compress in terms of the number of sections.
 
 PublicFunction[FindAllBundleSections]
 
-$AllBundleSectionsCache = UAssociation[];
+SetInitialValue[QuiverGeometryLoader`$AllBundleSectionsCache, UAssociation[]];
 
-FindAllBundleSections[bundle_Graph, n_:All] := Scope[
+Options[BundleSectionComponents] = {
+  FiberSymmetries -> None
+};
+
+FindAllBundleSections[bundle_Graph, opts:OptionsPattern[]] := FindAllBundleSections[bundle, All, opts];
+
+FindAllBundleSections[bundle_Graph, n:Except[_Rule], opts:OptionsPattern[]] := Scope[
   If[!BundleGraphQ[bundle], ReturnFailed["notbundle"]];
 
-  bundleData = getBundleGraphData[bundle];
-  allSections = Lookup[$AllBundleSectionsCache, bundleData["Hash"], None];
+  hash = Hash @ bundle; key = hash[opts];
+  allSections = Lookup[QuiverGeometryLoader`$AllBundleSectionsCache, key, None];
   If[allSections =!= None, Goto[Skip]];
-  
-  UnpackAssociation[getBundleGraphData[bundle], fiberGroups, $baseAdjacency, $areBundleAdjacent, hash];
-  {base, fibers} = KeysValues @ fiberGroups;
-  
-  allSections = MapTuples[AssociationThread[base, #]&, fibers];
-  allSections = BundleSection[#, hash]& /@ Select[allSections, validSectionQ];
 
-  $AllBundleSectionsCache[hash] ^= allSections;
+  bundleData = getBundleGraphData[bundle];
+  UnpackAssociation[bundleData, hash, fiberGroups, baseVertices];
+
+  b = First @ First @ VertexList @ bundle;
+  fs = fiberGroups[b];
+  init = Map[f |-> BundleSection[<|b -> f|>, hash], fs];
+
+  allSections = RewriteStates[BundleSectionExtensionSystem[bundle, opts], init];
+
+  bn = Length @ baseVertices;
+  allSections //= Select[Length[First[#]] === bn&];
+  allSections //= Sort;
+
+  QuiverGeometryLoader`$AllBundleSectionsCache[key] ^= allSections;
 
   Label[Skip];
   safeRandomSample[n] @ allSections
 ];
 
-validSectionQ[section_] := Module[{v, bnbs},
-  KeyValueScan[
-    {b, f} |-> (
-      v = BundleVertex[b, f];
-      bnbs = $baseAdjacency[b];
-      bnbs = Thread @ BundleVertex[bnbs, Lookup[section, bnbs]];
-      If[!AllTrue[bnbs, $areBundleAdjacent[{v, #}]&], Return[False, Module]];
-    ),
-    section
-  ];
-  True
-]
 
 (**************************************************************************************************)
 
 PublicFunction[BundleSectionComponents]
 
-BundleSectionComponents[bundle_Graph, n_:All] := Scope[
-  secs = FindAllBundleSections @ bundle;
-  graph = RewriteGraph[BundleSectionRewritingSystem @ bundle, secs];
-  components = ConnectedComponents[graph];
+Options[BundleSectionComponents] = {
+  FiberSymmetries -> None
+};
+
+BundleSectionComponents[bundle_Graph, opts:OptionsPattern[]] := BundleSectionComponents[bundle, All, opts];
+
+BundleSectionComponents[bundle_Graph, n:Except[_Rule], opts:OptionsPattern[]] := Scope[
+  graph = RewriteGraph[BundleSectionHomotopySystem[bundle, opts], All];
+  components = WeaklyConnectedComponents[graph];
   Map[safeRandomSample[n], components]
 ]
 
@@ -125,3 +144,29 @@ FindConstantBundleSections[bundle_Graph] := Scope[
 
 vertexListToSection[vertexList_List] := Association[Rule @@@ vertexList];
 vertexListToSection[subgraph_Graph] := vertexListToSection @ VertexList @ subgraph;
+
+(**************************************************************************************************)
+
+PublicFunction[SectionOrbit]
+
+SectionOrbit[BundleSection[sec_Association, hash_Integer], group_] := Scope[
+  keys = Keys @ sec;
+  sectionLists = toSectionOrbitLists[Values @ sec, hash, group];
+  Map[section |-> BundleSection[AssociationThread[keys, section], hash], sectionLists]
+];
+
+SectionOrbit[group_][section_] := SectionOrbit[section, group];
+
+toSectionOrbitLists[sectionValues_, hash_, group_] := Scope[
+  vertexIndex = bundleHashLookup[hash, "FiberVertexIndex"];
+  PermutationReplace[Lookup[vertexIndex, sectionValues], group]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[SectionOrbitRepresentative]
+
+SectionOrbitRepresentative[BundleSection[sec_Association, hash_Integer], group_] :=
+  BundleSection[AssociationThread[Keys @ sec, Minimum @ toSectionOrbitLists[Values @ sec, hash, group]], hash]
+
+SectionOrbitRepresentative[group_][sec_] := SectionOrbitRepresentative[sec, group];

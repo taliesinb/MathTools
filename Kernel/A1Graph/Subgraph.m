@@ -9,11 +9,13 @@ ExtendedSubgraph[oldGraph_, newVertices_, newEdges_] := Scope[
     newVertexIndices = Range @ Length @ oldVertices;
     newVertices = oldVertices;
   ,
-    newVertexIndices = Map[IndexOf[oldVertices, #]&, newVertices];
+    oldVertexIndex = AssociationRange @ oldVertices;
+    newVertexIndices = Lookup[oldVertexIndex, newVertices];
     newVertexOrdering = Ordering[newVertexIndices];
     newVertices = Part[newVertices, newVertexOrdering];
   ];
   {graphOrigin, vertexAnnotations} = LookupAnnotation[oldGraph, {GraphOrigin, VertexAnnotations}, None];
+  isNewVertex = UAssociation @ ConstantAssociation[newVertices, True];
   If[!MemberQ[newVertices, graphOrigin],
     annotations //= ReplaceOptions[GraphOrigin -> None]];
   sortedNewVertexIndices = Sort @ newVertexIndices;
@@ -26,7 +28,7 @@ ExtendedSubgraph[oldGraph_, newVertices_, newEdges_] := Scope[
     annotations //= ReplaceOptions[VertexAnnotations -> vertexAnnotations];
   ];
   If[newEdges === Automatic,
-    newEdges = Select[EdgeList @ oldGraph, MemberQ[newVertices, Part[#, 1]] && MemberQ[newVertices, Part[#, 2]]&]
+    newEdges = Select[EdgeList @ oldGraph, isNewVertex[Part[#, 1]] && isNewVertex[Part[#, 2]]&]
   ];
   graph = Graph[newVertices, newEdges, options];
   Annotate[graph, annotations]

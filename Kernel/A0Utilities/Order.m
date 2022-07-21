@@ -20,11 +20,11 @@ SetRelatedSymbolGroup @@@ {
 (**************************************************************************************************)
 
 SetUsage @ "
-MinimumIndexBy[{e$1, e$2, $$}, f$] gives the first index i$ for which f$[e$i] is minimal.
+MinimumIndexBy[{e$1, e$2, $$}, f$] gives the first index i$ for which f$[e$i] is minimal as computed by Ordering.
 "
 
 SetUsage @ "
-MaximumIndexBy[{e$1, e$2, $$}, f$] gives the first index i$ for which f$[e$i] is maximal.
+MaximumIndexBy[{e$1, e$2, $$}, f$] gives the first index i$ for which f$[e$i] is maximal as computed by Ordering.
 "
 
 MinimumIndexBy[list_, f_] :=
@@ -53,11 +53,11 @@ MaximumIndices[list_] :=
 (**************************************************************************************************)
 
 SetUsage @ "
-MinimumIndex[{e$1, e$2, $$}] gives the first index i$ for which e$i is minimal.
+MinimumIndex[{e$1, e$2, $$}] gives the first index i$ for which e$i is minimal as computed by Ordering.
 "
 
 SetUsage @ "
-MaximumIndex[{e$1, e$2, $$}] gives the first index i$ for which e$i is maximal.
+MaximumIndex[{e$1, e$2, $$}] gives the first index i$ for which e$i is maximal as computed by Ordering.
 "
 
 MinimumIndex[list_] :=
@@ -69,11 +69,11 @@ MaximumIndex[list_] :=
 (**************************************************************************************************)
 
 SetUsage @ "
-MinimumBy[{e$1, e$2, $$}, f$] gives the first index i$ for which f$[e$i] is minimal.
+MinimumBy[{e$1, e$2, $$}, f$] gives the first index i$ for which f$[e$i] is minimal as computed by Ordering.
 "
 
 SetUsage @ "
-MaximumBy[{e$1, e$2, $$}, f$] gives the first index i$ for which f$[e$i] is maximal.
+MaximumBy[{e$1, e$2, $$}, f$] gives the first index i$ for which f$[e$i] is maximal as computed by Ordering.
 "
 
 MinimumBy[list_, f_] :=
@@ -85,11 +85,11 @@ MaximumBy[list_, f_] :=
 (**************************************************************************************************)
 
 SetUsage @ "
-Minimum[{e$1, e$2, $$}] gives the maximal e$i.
+Minimum[{e$1, e$2, $$}] gives the minimal e$i as computed by Ordering.
 "
 
 SetUsage @ "
-Maximum[{e$1, e$2, $$}] gives the minimal e$i.
+Maximum[{e$1, e$2, $$}] gives the maximal e$i as computed by Ordering.
 "
 
 Minimum[list_] :=

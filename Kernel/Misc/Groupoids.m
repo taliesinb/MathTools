@@ -124,7 +124,8 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
 computeCayleyGraph[data_, opts___Rule] := Scope[
   init = data["InitialStates"];
   cfunc = computeCayleyFunction[data, "Symmetric" -> False];
-  MultiwaySystem[cfunc, init, "CayleyGraph", opts, MaxVertices -> 10^3, SelfLoops -> False]
+  graph = MultiwaySystem[cfunc, init, "Graph", MaxVertices -> 10^3, SelfLoops -> False];
+  ExtendedGraph[graph, opts]
 ];
 
 (**************************************************************************************************)

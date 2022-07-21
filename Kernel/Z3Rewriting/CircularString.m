@@ -47,7 +47,7 @@ CircularStringLabeledReplaceList[str_String, rule_, matchIndex_:None] := Scope[
       circularStringReplacePart[str, ochunk = StringReplace[ichunk = StringTake[str2, span], rule], modSpan],
       RewriteForm[
         StringRegionalStateForm[ichunk, modSpan],
-        StringRegionalStateForm[ochunk, modSpan],
+        ochunk,
         matchIndex
       ]
     ],

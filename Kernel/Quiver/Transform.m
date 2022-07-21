@@ -120,6 +120,8 @@ CombineMultiedges[graph_Graph] := Graph[
 CombineMultiedges[edges_List ? EdgeListQ] :=
   combineMultiedgesInternal[edges];
 
+combineMultiedgesInternal[{}] := {};
+
 combineMultiedgesInternal[edges_] := Scope[
   {plainEdges, tags} = Transpose @ Map[separateTag, edges];
   edgeGroups = PositionIndex[plainEdges];

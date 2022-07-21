@@ -34,13 +34,16 @@ getBundleGraphData[bundleGraph_, baseGraph_:Automatic, fiberGraph_:None, section
 
   bundleVertices = VertexList @ bundleGraph;
   bundleEdges = EdgeList @ bundleGraph;
+  bundleVertexIndex = AssociationRange @ bundleVertices;
   bundleCoordinates = LookupVertexCoordinates @ bundleGraph;
 
   SetAutomatic[baseGraph, BundleToBaseGraph @ bundleGraph];
   baseVertices = VertexList @ baseGraph;
+  baseVertexIndex = AssociationRange @ baseVertices;
   baseCoordinates = LookupVertexCoordinates @ baseGraph;
 
   fiberVertices = If[fiberGraph =!= None, VertexList @ fiberGraph, Union @ LastColumn @ VertexList @ bundleGraph];
+  fiberVertexIndex = AssociationRange @ fiberVertices;
   fiberVertexColorFunction = DiscreteColorFunction[fiberVertices, Automatic];
   fiberGroups = GroupPairs @ bundleVertices;
 
@@ -61,10 +64,13 @@ getBundleGraphData[bundleGraph_, baseGraph_:Automatic, fiberGraph_:None, section
     "Hash" -> hash,
     "BundleGraph" -> bundleGraph,
     "BundleVertices" -> bundleVertices,
+    "BundleVertexIndex" -> bundleVertexIndex,
     "BaseGraph" -> baseGraph,
     "BaseVertices" -> baseVertices,
+    "BaseVertexIndex" -> baseVertexIndex,
     "FiberGraph" -> fiberGraph,
     "FiberVertices" -> fiberVertices,
+    "FiberVertexIndex" -> fiberVertexIndex,
     "FiberGroups" -> fiberGroups,
     "BaseAdjacency" -> baseAdjacency,
     "VerticalAdjacency" -> verticalAdjacency,

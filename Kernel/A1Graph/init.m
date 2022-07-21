@@ -16,6 +16,8 @@ PublicOption[VertexFontSize, VertexBackground]
 
 PublicOption[EdgeLabelPosition, EdgeLabelSpacing, EdgeLabelBaseStyle, EdgeLabelOrientation]
 
+PublicOption[CollapseMultiedges]
+
 PublicOption[EdgeLength]
 
 PublicOption[FrameFade]
@@ -54,6 +56,7 @@ $extendedGraphOptionsRules = {
   CardinalColorRules                  -> None,
   CardinalColors                      -> Automatic,
   Cardinals                           -> Automatic,
+  CollapseMultiedges                  -> False,
   CoordinateRotation                  -> None,
   CoordinateTransformFunction         -> None,
   CustomGraphAnnotation[_String]      -> None,
@@ -165,7 +168,7 @@ splitUserGraphOptions[options___Rule] := Scope[
 
 (**************************************************************************************************)
 
-PrivateFunction[interceptedGraphConstructor]
+PrivateFunction[interceptedGraphConstructor, toPlainGraphConstructorOptions]
 
 SetHoldAllComplete[interceptedGraphConstructor];
 
@@ -176,6 +179,16 @@ interceptedGraphConstructor[Graph[Shortest[args__], options__Rule]] := Scope[
   If[!GraphQ[result], result = makeNewGraph[args, newOptions]];
   If[!GraphQ[result], ReturnFailed[]];
   Annotate[result, extOptions]
+];
+
+(* since this is for fresh graphs, which don't have to worry about merging with existing AnnotationRules *)
+toPlainGraphConstructorOptions[] :=
+  {AnnotationRules -> {"GraphProperties" -> {GraphPlottingFunction -> ExtendedGraphPlottingFunction}}};
+
+toPlainGraphConstructorOptions[options__Rule] := Scope[
+  {plainOptions, extOptions} = splitUserGraphOptions[options];
+  AppendTo[extOptions, GraphPlottingFunction -> ExtendedGraphPlottingFunction];
+  Append[plainOptions, AnnotationRules -> {"GraphProperties" -> extOptions}]
 ];
 
 (**************************************************************************************************)
