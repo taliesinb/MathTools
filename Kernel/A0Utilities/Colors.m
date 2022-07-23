@@ -280,6 +280,8 @@ ToColorPalette[palette$, n$] returns exactly n$ colors from the palette.
 
 $ecnp = Alternatives @@ $ExtendedColorNames;
 
+ToColorPalette::invalid = "`` is not a valid color palette.";
+
 ToColorPalette = Case[
   Automatic | "Medium"          := $ColorPalette;
   "Light"                       := $LightColorPalette;
@@ -291,7 +293,7 @@ ToColorPalette = Case[
   list_List ? ColorVectorQ      := list /. $colorNormalizationRules;
   Offset[spec_, n_Integer]      := RotateLeft[% @ spec, n];
   Opacity[o_, spec_]            := SetColorOpacity[% @ spec, N @ o];
-  _                             := $Failed
+  spec_                         := (Message[ToColorPalette::invalid, spec]; $Failed)
 ];
 
 getNamedColorSet[set_, variant_] := Scope[

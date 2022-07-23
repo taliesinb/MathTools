@@ -60,13 +60,13 @@ parenBox[e_] := rowBox["(", e, ")"];
 
 (* maybeParenBox decides if a box contains infix syntax that
 requires wrapping in parens to be unambigious, and applies it if so. *)
-maybeParenBox = MatchValues[
+maybeParenBox = Case[
   b:parenBox[__] := b;
   b_ /; FreeQ[b, "+" | "/"] := b;
   b_ := parenBox @ b;
 ];
 
-maybeParenBox2 = MatchValues[
+maybeParenBox2 = Case[
   b:parenBox[__] := b;
   b_ /; FreeQ[b, "+" | "/" | $vertLineBox | $prodSpace] := b;
   b_ := parenBox @ b;
@@ -105,7 +105,7 @@ redBox[redBox[b_]] := b;
 (*blueBox[b_] := StyleBox[b, $Blue];*)
 blueBox[blueBox[b_]] := b;
 
-minusBox = MatchValues[
+minusBox = Case[
   rowBox[$minus, b_] := b;
   b_ := rowBox[$minus, b];
 ];
@@ -832,11 +832,11 @@ graphToGraphics[e_] := e;
 
 lookupImageWidth[g_] := First @ LookupImageSize @ g;
 
-estimateItemSize = MatchValues[
+estimateItemSize = Case[
   g_Graphics | g_Graphics3D := lookupImageWidth[g];
-  Labeled[g_, _] := %[g];
-  Legended[g_, _] := %[g] + 50;
-  other_ := First[Rasterize[other, "RasterSize"]] * 2;
+  Labeled[g_, _]            := %[g];
+  Legended[g_, _]           := %[g] + 50;
+  other_                    := First[Rasterize[other, "RasterSize"]] * 2;
 ];
 
 (**************************************************************************************************)

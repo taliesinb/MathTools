@@ -34,9 +34,21 @@ boxToKatex = Case[
 
   StyleBox[e_, "Text"] := {"\\textrm{", boxToInlineText @ e, "}"};
   StyleBox[e_, directives___] := Fold[applyStyle, % @ e, {directives}];
+  DynamicBox[e_, ___] := % @ e;
+
+  AdjustmentBox[e_, BoxBaselineShift -> n_] := {"\\raisebox{" <> TextString[-n] <> "em}{", % @ e, "}"};
   
-  UnderscriptBox[e_, "_"] := {"\\underline{", % @ e, "}"};
+  OverscriptBox[e_, "^"] := {"\\hat{", % @ e, "}"};
+  OverscriptBox[e_, "\[RightVector]"] := {"\\vector{", % @ e, "}"};
+  OverscriptBox[e_, "~"] := {"\\tilde{", % @ e, "}"};
   OverscriptBox[e_, "_"] := {"\\overline{", % @ e, "}"};
+  OverscriptBox[e_, "."] := {"\\dot{", % @ e, "}"};
+  OverscriptBox[e_, f_] := {"\\overset{", % @ f, "}{", % @ e, "}"};
+
+  UnderscriptBox[e_, "_"] := {"\\underline{", % @ e, "}"};
+  UnderscriptBox[e_, "."] := {"\\underdot{", % @ e, "}"};
+  UnderscriptBox[e_, f_] := {"\\underset{", % @ f, "}{", % @ e, "}"};
+
   SuperscriptBox[e_, b_] := {% @ e, "^", toBracket @ b};
   SubsuperscriptBox[e_, sub_, sup_] := {% @ e, "_", toBracket @ sub, "^", toBracket @ sup};
   SubscriptBox[e_, b_] := {% @ e, "_", toBracket @ b};
@@ -135,7 +147,6 @@ cleanupInlineBoxes = RightComposition[
     FormBox[e_, TraditionalForm] :> e,
     TemplateBox[a_, b_, __] :> TemplateBox[a, b],
     InterpretationBox[e_, ___] :> e,
-    AdjustmentBox[a_, ___] :> a,
     TemplateBox[{a_, RowBox[{b_, rest__}], c_}, "DirectedEdge"] :>
       RowBox[{
         TemplateBox[{a, b, c}, "DirectedEdge"],

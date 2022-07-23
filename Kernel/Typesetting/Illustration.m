@@ -54,18 +54,6 @@ UnitGraphics[g_, n_:1] := Graphics[g,
 
 (**************************************************************************************************)
 
-PublicFunction[LabeledEdgeGraph]
-
-LabeledEdgeGraph[g_, opts___] := ExtendedGraph[g, opts,
-  VertexSize -> Large, ArrowheadSize -> Medium,
-  ArrowheadShape -> {"Line", EdgeThickness -> 2},
-  LabelCardinals->True, ImagePadding -> {{20,10},{20,10}},
-  VertexLabels -> "Name",
-  ImageSize -> ("ShortestEdge" -> 60)
-];
-
-(**************************************************************************************************)
-
 PublicFunction[ColoredGraphCardinalColorFunction]
 
 $colorRules = <|
@@ -317,10 +305,6 @@ PathConcatPlot[graph_, p1_, p2_, p3_] :=
 
 PublicFunction[LargeSymbolForm]
 
-(**************************************************************************************************)
-
-PublicFunction[LargeSymbolForm]
-
 LargeSymbolForm[e_, opts___Rule] := inlineSymbol[e, opts];
 
 (**************************************************************************************************)
@@ -509,11 +493,54 @@ DefineGraphTheme["SimpleLabeledGraph",
   EdgeLabelSpacing -> -0.3,
   ArrowheadShape -> {"Line", EdgeThickness -> 2},
   ImagePadding -> {{0,0}, {0, 25}},
-  VertexLayout -> LinearLayout[],
+  VertexLayout -> SmartLayout[],
   MultiEdgeDistance -> 0.3, ArrowheadPosition -> 0.525,
-  ArrowheadSize -> Medium, ArrowheadStyle -> $Gray,
+  ArrowheadSize -> Large, ArrowheadStyle -> $Gray,
   ImageSize -> "ShortestEdge" -> 90
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[BasicGraph]
+
+BasicGraph[graph_Graph, opts___Rule] :=
+  BasicGraph[EdgeList[graph], opts, GraphOrigin -> LookupExtendedOption[graph, GraphOrigin]];
+
+BasicGraph[spec_, opts___Rule] := BasicGraph[toGraph @ spec, opts];
+
+BasicGraph[edges_List ? EdgeListQ, opts___Rule] := ExtendedGraph[edges, opts, GraphTheme -> "BasicGraph"];
+
+toGraph = Case[
+  i_Integer                         := LineQuiver[i, GraphOrigin -> Automatic, VertexOrigin -> Automatic];
+  "Line"                            := LineQuiver[6, GraphOrigin -> Automatic, VertexOrigin -> Automatic, PeripheralVertices -> 1];
+  {w_Integer, h_Integer}            := SquareQuiver[{w, h}, GraphOrigin -> Automatic, VertexOrigin -> Automatic];
+  "Square"                          := SquareQuiver[6, GraphOrigin -> Automatic, VertexOrigin -> Automatic, PeripheralVertices -> 3];
+  "Triangle"                        := TriangularQuiver[6, GraphOrigin -> Automatic, VertexOrigin -> Automatic, PeripheralVertices -> 5];
+  {w_Integer, h_Integer, d_Integer} := CubicQuiver[{w, h, d}, GraphOrigin -> Automatic, VertexOrigin -> Automatic];
+];
+
+DefineGraphTheme["BasicGraph",
+  ArrowheadShape -> None,
+  EdgeLength -> 60,
+  EdgeThickness -> 2,
+  ImagePadding -> 10,
+  VertexLabelPosition -> Below,
+  VertexLabelBaseStyle -> $MathLabelStyle,
+  VertexLayout -> SmartLayout[]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[PathedBasicGraph]
+
+PathedBasicGraph[spec_, paths_, opts___Rule] :=
+  BasicGraph[
+    spec,
+    GraphHighlight -> {DotLine /@ paths},
+    opts,
+    HighlightStyle -> {PathRadius -> 8, DiskRadius -> 8},
+    HighlightColor -> $Green
+  ];
 
 (**************************************************************************************************)
 
@@ -649,18 +676,18 @@ DefineGraphTheme["PathQuiver",
 
 (**************************************************************************************************)
 
-wordToCoords = MatchValues[
+wordToCoords = Case[
   {}          := {0, 0};
   path_List   := Total @ MapIndex1[$cardinalDirs[#1] / ($scaling * #2+0.33)&, path];
 ];
 
-extractWord = MatchValues[
+extractWord = Case[
   Path[_, word_, ___] := word;
   list_List           := % @ First @ list;
   Labeled[spec_, _]   := % @ spec;
 ];
 
-parsePath = MatchValues[
+parsePath = Case[
   path_String                   := Path[$v0, ToPathWord @ path];
   paths_List                    := Map[parsePath, paths];
   Labeled[spec_, label_]        := Labeled[parsePath @ spec, label];
@@ -695,8 +722,8 @@ FQPVertexIcon[opts_][path_] := Scope[
   ExtendedGraphPlot @ highlighted
 ];
 
-fmtPaths = MatchValues[
-  Path[_, {}|"", ___]    := Style[CardinalSymbol["1"], FontColor -> Gray, FontSize -> 12];
+fmtPaths = Case[
+  Path[_, {}|"", ___] := Style[CardinalSymbol["1"], FontColor -> Gray, FontSize -> 12];
   Path[_, word_, ___] := Style[WordForm @ word, FontColor -> Gray, FontSize -> 12];
   list_List           := Row[fmtPaths /@ list, Style[",", Gray], BaseStyle -> {}];
 ];
@@ -771,7 +798,7 @@ VertexField1DPlot[vals_] := ListLinePlot[vals,
 PublicFunction[PathHomomorphimsGrid]
 
 Options[PathHomomorphimsGrid] = {
-  "HighlightColor" -> $DarkGreen
+  HighlightColor -> $DarkGreen
 }
 
 PathHomomorphimsGrid[graphsAndPaths_:{Repeated[_-> _]}, OptionsPattern[]] := Scope[

@@ -1,16 +1,16 @@
-PublicFunction[AGraph]
+PublicFunction[ADEAGraph]
 
 pathGraph[n_Integer, opts___] := ExtendedGraph[PathGraph @ Range @ n, opts, VertexLabels -> "Name"];
 lineCoords[n_] := Thread[{Range[n], 0}];
 
-AGraph[n_] := AGraph[n] =
+ADEAGraph[n_] := ADEAGraph[n] =
   pathGraph[n, VertexCoordinates -> lineCoords[n],
     ImageSize -> chooseWidth[n]
   ];
 
-PublicFunction[DGraph]
+PublicFunction[ADEDGraph]
 
-DGraph[n_] := DGraph[n] = makeDGraph[n];
+ADEDGraph[n_] := ADEDGraph[n] = makeDGraph[n];
 (* makeDGraph[n_] := EdgeAdd[
   pathGraph[n-2], {(n-2) <-> (n-1), (n-2) <-> n},
   VertexCoordinates -> Join[lineCoords[n-2], {{n-1, 1/2}, {n-1, -1/2}}],
@@ -23,11 +23,11 @@ makeDGraph[n_] := EdgeAdd[
   ImageSize -> chooseWidth[n - 1]
 ];
 
-PublicFunction[EGraph]
+PublicFunction[ADEEGraph]
 
-EGraph[n_] /; 6 <= n <= 8 := EGraph[n] = makeEGraph[n-1];
-EGraph[_] := None;
-EGraph[All] := EGraph /@ {6, 7, 8};
+ADEEGraph[n_] /; 6 <= n <= 8 := ADEEGraph[n] = makeEGraph[n-1];
+ADEEGraph[_] := None;
+ADEEGraph[All] := EGraph /@ {6, 7, 8};
 
 makeEGraph[n_] := EdgeAdd[
   pathGraph[n], (n+1) <-> 3,
@@ -38,24 +38,24 @@ makeEGraph[n_] := EdgeAdd[
 chooseWidth[n_] := (30 + (n - 1) * 30)
 
 
-PublicFunction[ATildeGraph]
+PublicFunction[ADEATildeGraph]
 
-ATildeGraph[n_] := ATildeGraph[n] = addAffineVertex[AGraph[n], {0, 1}];
-
-
-PublicFunction[DTildeGraph]
-
-DTildeGraph[n_] := DTildeGraph[n] = addAffineVertex[DGraph[n], {0, 1}];
+ADEATildeGraph[n_] := ADEATildeGraph[n] = addAffineVertex[AGraph[n], {0, 1}];
 
 
-PublicFunction[ETildeGraph]
+PublicFunction[ADEDTildeGraph]
 
-E6Tilde[] := E6Tilde[] = addAffineVertex[E6Graph[], {0, 1}];
-E7Tilde[] := E7Tilde[] = addAffineVertex[E7Graph[], {-1, 0}];
-E8Tilde[] := E8Tilde[] = addAffineVertex[E8Graph[], {1, 0}];
-D4Tilde[] := D4Tilde[] = addAffineVertex[DGraph[3], {2, 2}];
+ADEDTildeGraph[n_] := ADEDTildeGraph[n] = addAffineVertex[DGraph[n], {0, 1}];
 
-ETildeGraphs[] := {E6Tilde[], E7Tilde[], E8Tilde[]};
+
+PublicFunction[ADEETildeGraph]
+
+ADEE6Tilde[] := ADEE6Tilde[] = addAffineVertex[E6Graph[], {0, 1}];
+ADEE7Tilde[] := ADEE7Tilde[] = addAffineVertex[E7Graph[], {-1, 0}];
+ADEE8Tilde[] := ADEE8Tilde[] = addAffineVertex[E8Graph[], {1, 0}];
+ADED4Tilde[] := ADED4Tilde[] = addAffineVertex[DGraph[3], {2, 2}];
+
+ADEETildeGraphs[] := {ADEE6Tilde[], ADEE7Tilde[], ADEE8Tilde[]};
 
 
 addAffineVertex[graph_, offset_] := Scope[

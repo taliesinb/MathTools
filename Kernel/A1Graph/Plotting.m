@@ -70,7 +70,7 @@ $GraphRegionHighlightUsage = StringTrim @ "
 | %Axis -> %%All | %InfiniteLine[%GraphOrigin, c$i] for each cardinal c$i |
 | %Axis -> {c$1, $$} | %InfiniteLine[%GraphOrigin, c$i] |
 
-* If %GraphHighlightStyle is also provided, elements of it will be applied to \
+* If %HighlightStyle is also provided, elements of it will be applied to \
 corresponding highlight specifications:
 | <|key$1 -> style$1, $$|> | apply style$i to highlight specification under key$i |
 | {style$1, style$2, $$} | apply style$i to highlight specification number i$ |
@@ -80,7 +80,7 @@ corresponding highlight specifications:
 ## Highlight styles
 
 * The following options are supported as rules in %Style[spec$, $$] wrapper in a highlight \
-specifications, and in %GraphHighlightStyle:
+specifications, and in %HighlightStyle:
 
 | %SimplifyRegions | True | whether to render disk-like regions with %Disk |
 | %PerformanceGoal | 'Quality' | how to prioritize region rendering |
@@ -182,7 +182,7 @@ stripDynamicModule[boxes_] := ReplaceAll[boxes,
 
 (**************************************************************************************************)
 
-PrivateVariable[$VertexCoordinates, $EdgeCoordinateLists, $GraphHighlightStyle, $GraphIs3D, $GraphPlotRange, $GraphPlotSize, $GraphPlotAspectRatio, $GraphPlotImageSize, $GraphPlotImageWidth, $GraphPlotEffectiveImageWidth, $GraphMaxSafeVertexSize, $GraphPlotGraphics]
+PrivateVariable[$VertexCoordinates, $EdgeCoordinateLists, $GraphIs3D, $GraphPlotRange, $GraphPlotSize, $GraphPlotAspectRatio, $GraphPlotImageSize, $GraphPlotImageWidth, $GraphPlotEffectiveImageWidth, $GraphMaxSafeVertexSize, $GraphPlotGraphics]
 
 PrivateFunction[GraphPlotScope]
 
@@ -203,7 +203,6 @@ GraphPlotScope[graph_, body_] := Scope[
     viewRegion = LookupExtendedOption[$Graph, ViewRegion];
     If[viewRegion =!= All, applyViewRegion[viewRegion], $VertexParts = $EdgeParts = All];
 
-    $GraphHighlightStyle := $GraphHighlightStyle = removeSingleton @ LookupOption[$Graph, GraphHighlightStyle];
     $GraphPlotImageSize := $GraphPlotImageSize := LookupImageSize @ $Graph;
     $GraphPlotImageWidth := $GraphPlotImageWidth = First[$GraphPlotImageSize; LookupImageSize @ $Graph];
 
@@ -688,7 +687,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       And[StringQ[edgeShapeFunction], StringEndsQ[edgeShapeFunction, "Line"]]],
       
       arrowheadDrawFn = drawUndirectedEdges;
-      maxArrowheadSize = 0;
+      arrowheadSize = maxArrowheadSize = 0;
     ,
       SetAutomatic[arrowheadStyle, Which[
         cardinalColors =!= None, cardinalColors,
@@ -1351,7 +1350,7 @@ processArrowheadSize = Case[
   assoc_Association               := Map[%, assoc];
   Automatic                       := baseArrowheadSize;
   spec_                           := failPlot["badarrowheadsize", spec];
-  {NQ -> NumericQ}
+  {NQ -> NumericQ, sp -> $SymbolicSizePattern}
 ];
 
 filterCardinals[cards_][CardinalSet[set_List]] := CardinalSet @ Select[set, MemberQ[cards, Inverted[#] | #]&];

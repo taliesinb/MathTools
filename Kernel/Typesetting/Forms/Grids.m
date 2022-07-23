@@ -502,6 +502,7 @@ equationGridRow = Case[
   e_List           := MapUnevaluated[MakeQGBoxesOrNull, e];
   Aligned[e_]      := % @ List @ Aligned @ e;
   e_EqualForm      := riffledEqGridRow["=", e];
+  e_NotEqualForm   := riffledEqGridRow["\[NotEqual]", e];
   e_DefEqualForm   := riffledEqGridRow["≝", e];
   e_DotEqualForm := riffledEqGridRow["≐", e];
   e_ColonEqualForm := riffledEqGridRow["≔", e];
@@ -544,6 +545,7 @@ $TemplateKatexFunction["EquationGridForm"] = katexEquationGrid;
 
 $equationSymbolRules = {
   "="                                             -> "&= ",
+  "\[NotEqual]"                                   -> "&\\neq ",
   "+"                                             -> "&+ ",
   "\[Element]"                                    -> "&\\in ",
   "≔" | SBox["ColonEqualSymbol"]                  -> "&\\coloneqq ",

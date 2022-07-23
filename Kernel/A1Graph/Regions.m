@@ -425,7 +425,7 @@ findEdgeIndices[p:EdgePattern[a_, b_, c_]] := Scope @ With[{cp = toCardinalPatte
 
 supersetOf[sub_][sup_] := SubsetQ[sup, sub];
 
-toCardinalPattern = MatchValues[
+toCardinalPattern = Case[
   CardinalSet[s_] := CardinalSet[_ ? (supersetOf[s])];
   a_Alternatives  := Map[%, a];
   s_              := s | CardinalSet[_ ? (MemberQ[s | Inverted[s]])];
@@ -755,7 +755,10 @@ GraphRegion::badnegpath = "Error in ``: can only invert a path or set of paths."
 
 (** Line[...]                              **)
 
-GraphRegionElementQ[Line[_List] | Line[_List, _]] := True;
+GraphRegionElementQ[Line[_List] | Line[_List, _] | Line[___, PathAdjustments -> _]] := True;
+
+processRegion[Line[args__, ps:Rule[PathAdjustments, _]]] :=
+  GraphRegionAnnotation[processRegion @ Line @ args, Association @ ps];
 
 processRegion[Line[{vertex_}]] :=
   collectPathData @ sowVertex @ findVertex @ vertex;
@@ -942,7 +945,7 @@ leftOf[z_][e_] := Dot[z - e, z] >= 0;
 rightOf[z_][e_] := Dot[z - e, z] <= 0;
 andOperator[f_, g_][e_] := f[e] && g[e];
 
-toComplexCond = MatchValues[
+toComplexCond = Case[
   LessEqualThan[n_] := leftOf @ complexToVector @ n;
   ApproxEqualTo[n_] := ApproxEqualTo[complexToVector @ n];
   Between[{a_, b_}] := andOperator[leftOf @ complexToVector @ a, rightOf @ complexToVector @ b];

@@ -146,12 +146,12 @@ ToLinearRepresentation[obj$] attempts to convert obj$ to a %LinearRepresentation
 * Otherwise, $Failed is returned.
 "
 
-ToLinearRepresentation = MatchValues[
+ToLinearRepresentation = Case[
   r_LinearRepresentationObject ? System`Private`HoldNoEntryQ := r;
-  cq_PathRepresentationObject ? System`Private`HoldNoEntryQ := cq["Representation"];
-  rs_RootSystemObject ? System`Private`HoldNoEntryQ := LinearGroupRepresentation @ TranslationGroup @ rs;
-  g_ ? GroupQ := LinearGroupRepresentation @ g;
-  _ := $Failed;
+  cq_PathRepresentationObject ? System`Private`HoldNoEntryQ  := cq["Representation"];
+  rs_RootSystemObject ? System`Private`HoldNoEntryQ          := LinearGroupRepresentation @ TranslationGroup @ rs;
+  g_ ? GroupQ                                                := LinearGroupRepresentation @ g;
+  _                                                          := $Failed;
 ];
 
 

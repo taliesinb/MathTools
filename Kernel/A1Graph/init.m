@@ -28,6 +28,8 @@ PublicOption[CoordinateTransformFunction, CoordinateRotation]
 
 PublicOption[LabelCardinals, AspectRatioClipping, PrologFunction, UseAbsoluteSizes, SelfLoopRadius, MultiEdgeDistance, PackingSpacing]
 
+PublicOption[HighlightStyle, HighlightColor, HighlightOpacity]
+
 PublicOption[PeripheralVertices]
 
 PublicOption[GraphPlottingFunction]
@@ -80,6 +82,9 @@ $extendedGraphOptionsRules = {
   GraphPlottingFunction               -> None,
   GraphRegionHighlight                -> None,
   GraphTheme                          -> None,
+  HighlightColor                      -> Automatic,
+  HighlightOpacity                    -> Automatic,
+  HighlightStyle                      -> Automatic,
   LabelCardinals                      -> False,
   LayoutDimension                     -> Automatic,
   MultiEdgeDistance                   -> Automatic,
@@ -131,7 +136,7 @@ $ignoredGraphOptionsSymbols = Alternatives[
   AxesOrigin, AxesStyle, Background, BaseStyle, ContentSelectable,
   DirectedEdges, EdgeCapacity, EdgeCost, EdgeWeight, Editable,
   FormatType, FrameTicks, FrameTicksStyle,
-  GraphHighlight, GraphRoot, GraphStyle, GridLines, GridLinesStyle,
+  GraphRoot, GraphStyle, GridLines, GridLinesStyle,
   ImageMargins, PerformanceGoal, PlotRegion, PlotTheme,
   Properties, RotateLabel, Ticks, TicksStyle, VertexCapacity,
   VertexShape, VertexWeight
@@ -203,12 +208,13 @@ makeNewGraph[___] := $Failed;
 (* these compensate for a weird extra level of list that Graph adds *)
 optionFixup = Case[
   Rule[GraphLayout, {"Dimension" -> d_}]          := Rule[LayoutDimension, d];
+  Rule[GraphHighlight, r_]                        := Rule[GraphRegionHighlight, r];
   Rule[VertexSize, r:{__Rule}]                    := Rule[VertexSize, Association @ r];
   Rule[sym:(VertexLabels | EdgeLabels), l_List | l_Rule] := Rule[sym, If[MatchQ[l, {_Hold | _Association}], First @ l, Hold @ l]];
   Rule[sym:(EdgeStyle|VertexStyle), val_]         := Rule[sym, toDirective[val]];
   Rule[VertexShapeFunction, assoc_Association]    := Rule[VertexShapeFunction, toShape /@ assoc];
   Rule[VertexShapeFunction, rule_Rule]            := Rule[VertexShapeFunction, Hold[rule]];
-  Rule[sym:(GraphHighlightStyle|VertexLabelStyle|EdgeLabelStyle), elem_] := Rule[sym, toDirective[elem]];
+  Rule[sym:(HighlightStyle|VertexLabelStyle|EdgeLabelStyle), elem_] := Rule[sym, toDirective[elem]];
   other_                                          := other;
 ];
 

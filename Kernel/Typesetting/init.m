@@ -1,4 +1,27 @@
-PublicSymbol[$1, $2, $3, $4, $5]
+PublicFunction[TBox, TBoxOp, SBox, RBox, GBox, RaiseBox]
+
+TBox[args___, form_] := TemplateBox[{args}, form];
+TBoxOp[form_][args___] := TemplateBox[{args}, form];
+
+SBox[form_] := TemplateBox[{}, form];
+
+RBox[args___] := RowBox[{args}];
+
+GBox[entries_, alignments_, rowSpacings_, colSpacings_] :=
+  GridBox[
+    entries,
+    GridBoxAlignment -> {"Columns" -> alignments},
+    GridBoxSpacings -> {"Rows" -> prepend0 @ rowSpacings, "Columns" -> prepend0 @ colSpacings}
+  ];
+
+prepend0[list_List] := Prepend[list, 0];
+prepend0[e_] := e;
+
+RaiseBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> -n];
+
+(**************************************************************************************************)
+
+PublicSymbol[$0, $1, $2, $3, $4, $5]
 
 PublicFunction[DefineStandardTraditionalForm]
 
@@ -23,11 +46,12 @@ DefineUnaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
   DefineTemplateBox[name -> boxes]
 ];
 
+
 (**************************************************************************************************)
 
 PublicFunction[DefineBinaryForm]
   
-DefineUnaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
+DefineBinaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
   {name = SymbolName @ formSym},
   If[boxFn =!= None,
     boxFn[e_, f_] := TBox[e, f, name];
@@ -54,11 +78,11 @@ DefineRiffledForm[formSym_Symbol, boxes_, riffledBox_, boxFn_:None] := With[
   If[isSimple,
       DefineStandardTraditionalForm[{formSym[e_] :> "", formSym[e_] :> MakeQGBoxes[e]}],
       DefineStandardTraditionalForm[formSym[e_] :> TBox[MakeQGBoxes[e], name]]];
-    DefineStandardTraditionalForm[formSym[seq___] :> TemplateBox[Riffle[MakeQGBoxes /@ {seq}, riffledBox], name]]
+    DefineStandardTraditionalForm[formSym[seq___] :> TBox[Riffle[MakeQGBoxes /@ {seq}, riffledBox], name]]
   ];
   If[isSimple,
-    DefineTemplateBox[name -> boxes, {}, RowBox[##]&],
-    DefineTemplateBox[name -> boxes]
+    DefineTemplateBox[name -> DBox[boxes], {}, #&],
+    DefineTemplateBox[name -> DBox[boxes]]
   ];
 ];
 
@@ -89,7 +113,7 @@ DefineTemplateBox = Case[
   Seq[tSpec_, kSpec_] := $[tSpec, kSpec, Automatic];
   Seq[tSpec_, kSpec_, cSpec_] := Scope @ QuiverGeometry`PackageScope`CatchMessage[
     $tname = $tboxes = $kname = None;
-    procTSpec[tSpec]; procKSpec[kSpec]; procCSpec[cSpec];
+    procTSpec[tSpec]; procKSpec[kSpec]; procCSpec[cSpec /. $0 -> $kname];
     {$tname, $kname}
   ];
 ];
@@ -97,7 +121,7 @@ DefineTemplateBox = Case[
 procTSpec = Case[
   name_String -> boxes:Except[_Function] := (
     $tname = name; $tboxes = boxes;
-    $templateBoxDisplayFunction[name] = toSlotFn[boxes]  //. KatexBox[b_, _] :> b;
+    $templateBoxDisplayFunction[name] = toSlotFn[boxes]  //. KatexSwitch[b_, _] :> b;
   );
   spec_ := ThrowMessage["arg1", spec];
 ];
@@ -110,7 +134,7 @@ procKSpec = Case[
   specs:{___Rule} := Last[Map[procKSpec, specs], None];
   name_String -> boxes:Except[_Function] := (
     $kname = name;
-    $katexDisplayFunction[name] = toSlotFn[boxes] //. KatexBox[_, b_] :> b;
+    $katexDisplayFunction[name] = toSlotFn[boxes] //. KatexSwitch[_, b_] :> b;
   );
   boxes:Except[_Rule] := $[Automatic -> boxes];
   spec_ := ThrowMessage["arg2", spec, $tname];
@@ -134,7 +158,7 @@ DefineTemplateBox::arg3 = "Third argument `` for TBox `` is invalid.";
 
 PrivateFunction[toKname]
 
-$kNameRules = {"Gray" -> "G", RegularExpression @ "[A-Z][A-Za-z]", "1" -> "Ⅰ", "2" -> "Ⅱ", "3" -> "Ⅲ", "4" -> "Ⅳ"};
+$kNameRules = {RegularExpression @ "^[a-z][a-z]?", "Gray" -> "G", RegularExpression @ "[A-Z][A-Za-z]", "1" -> "Ⅰ", "2" -> "Ⅱ", "3" -> "Ⅲ", "4" -> "Ⅳ"};
 toKname = Case[
   str_String ? LowerCaseQ := StringTake[str, 2];
   str_String := StringJoin @ StringCases[str, $kNameRules];
@@ -188,7 +212,7 @@ PrintTemplateBoxDefinitions[] := Scope[
 
 (**************************************************************************************************)
 
-PublicHead[KatexBox]
+PublicHead[KatexSwitch]
 
 toTName[base_, 1] := base;
 toTName[base_, 0] := LowerCaseFirst @ base;
@@ -355,7 +379,7 @@ setTemplateBoxForm[args___] := (Message[TemplateBoxForm::badspec, SequenceForm[a
 (**************************************************************************************************)
 
 registerTemplateToKatexFunction[fn_] :=
-  $templateToKatexFunction[$tName] = fn //. KatexBox[a_, b_] :> b;
+  $templateToKatexFunction[$tName] = fn //. KatexSwitch[a_, b_] :> b;
 
 registerTemplateToKatexFunction[] :=
   $templateToKatexFunction[$tName] = PrefixSlash @ $kName;
@@ -369,12 +393,12 @@ registerDisplayFunction[displayFn_] := (
 
   (* set up $templateBoxDisplayFunction, which defines for MMA frontend will display TBox[{a, b}, "head"] at runtime.
      will later produce a style definition in a notebook stylesheet. *)
-  $templateBoxDisplayFunction[$tName] = displayFn //. KatexBox[a_, b_] :> a;
+  $templateBoxDisplayFunction[$tName] = displayFn //. KatexSwitch[a_, b_] :> a;
 
   (* set up $katexDisplayFunction, which defines how Katex will display "head"[a, b] at runtime.
      will later produce a \gdef expression that goes in the Katex prelude *)
   $katexDisplayFunction[$kName] ^= displayFn //. {
-    KatexBox[a_, b_] :> b,
+    KatexSwitch[a_, b_] :> b,
     SlotSequence -> Slot,
     TemplateSlotSequence[i_, r_] :> Slot[i],
     RowBox[e_List] :> e
@@ -504,7 +528,7 @@ DeclareFunctionTemplateBox[head_, rhs_] := Scope[
 
   $head = head;
 
-  (* Evaluate forces the FunctionBox to evaluate now, since KatexBox needs to be literally present *)
+  (* Evaluate forces the FunctionBox to evaluate now, since KatexSwitch needs to be literally present *)
   {$tName, $kName} = setTemplateBoxForm[head, Evaluate @ FunctionBox @ rhs];
 
   applyRule = HoldPattern[head[args___]] :> TemplateBox[Prepend[MakeQGBoxes /@ {args}, $headBox], "AppliedForm"];
@@ -535,7 +559,7 @@ declareTemplateBoxRule = Case[
 
 declareNullaryTemplateBox[head_, boxes_] := Scope[
   {tName, kName} = setTemplateBoxForm[head, boxes];
-  KatexBox[SBox @ tName, PrefixSlash @ kName]
+  KatexSwitch[SBox @ tName, PrefixSlash @ kName]
 ];
 
 (**************************************************************************************************)
@@ -602,18 +626,6 @@ DeclareStyledSequenceTemplateBox[head_, left_, right_] :=
 
 (**************************************************************************************************)
 
-PrivateFunction[RuntimeTBox]
-
-(* this isn't right, since KatexBox has to evaluate ahead of time *)
-
-RuntimeTBox[param_Symbol, arg_] := With[
-  {name = SymbolName @ param},
-  {kName = toKName[name, 1], tName = toTName[name, 1]},
-  KatexBox[TemplateBox[{arg, tName}, "ParameterizedTemplateBox"], kName[arg]]
-];
-
-(**************************************************************************************************)
-
 PublicFunction[DeclareLocalStyles]
 
 DeclareLocalStyles::taggingrules = "Could not update tagging rules.";
@@ -634,5 +646,152 @@ DeclareLocalStyles[e___] := Scope[
   SetOptions[EvaluationNotebook[], TaggingRules -> taggingRules];
 ];
 
+(**************************************************************************************************)
 
+PublicFunction[DBox]
 
+(* this is needed because DisplayFunction -> (RowBox[#]&) where # is a list does not work! *)
+DBox[e_] := DynamicBox[e, DestroyAfterEvaluation -> True, TrackedSymbols -> {}];
+
+(**************************************************************************************************)
+
+PublicFunction[RedForm, GreenForm, BlueForm, OrangeForm, PinkForm, TealForm, GrayForm, PurpleForm]
+PublicFunction[LightRedForm, LightGreenForm, LightBlueForm, LightOrangeForm, LightPinkForm, LightTealForm, LightGrayForm, LightPurpleForm]
+PublicFunction[DarkRedForm, DarkGreenForm, DarkBlueForm, DarkOrangeForm, DarkPinkForm, DarkTealForm, DarkGrayForm, DarkPurpleForm]
+PublicFunction[BoldForm, ItalicForm, UnderlinedForm, StruckthroughForm, PlainTextForm, MathTextForm]
+
+PrivateFunction[RedBox, GreenBox, BlueBox, OrangeBox, PinkBox, TealBox, GrayBox, PurpleBox]
+PrivateFunction[LightRedBox, LightGreenBox, LightBlueBox, LightOrangeBox, LightPinkBox, LightTealBox, LightGrayBox, LightPurpleBox]
+PrivateFunction[DarkRedBox, DarkGreenBox, DarkBlueBox, DarkOrangeBox, DarkPinkBox, DarkTealBox, DarkGrayBox, DarkPurpleBox]
+PrivateFunction[BoldBox, ItalicBox, UnderlinedBox, StruckthroughBox, PlainTextBox, MathTextBox]
+
+defineStyleFormAndBox[form_, box_, style_] := With[
+  {tName = SymbolName[form]},
+  {kName = toKName[tName, 0]},
+  MakeBoxes[form[e_], StandardForm]     := box[MakeBoxes[e, StandardForm]];
+  MakeBoxes[form[e_], TraditionalForm]  := box[MakeBoxes[e, TraditionalForm]];
+  box[e_]                               := TemplateBox[{e}, tName];
+  (* TODO: replace this with single call to registerSingleArgTemplateBox *)
+  $templateBoxDisplayFunction[tName]    = toFrontendStyleFunction[style];
+  $templateToKatexFunction[tName]       = Function[kName[#]];
+  $katexDisplayFunction[kName]          = toKatexStyleFunction[style];
+];
+
+toFrontendStyleFunction = Case[
+  style_                := StyleBox[#1, style]&;
+  KatexForm[style_, _]  := % @ style;
+];
+
+toKatexStyleFunction = Case[
+  color_ ? ColorQ       := % @ StringJoin["textcolor{", ColorHexString @ color, "}"];
+  str_String            := Function[str[#]];
+  KatexForm[_, style_]  := % @ style;
+];
+
+MapApply[
+  defineStyleFormAndBox,
+  {
+    {RedForm,            RedBox,             $Red},
+    {GreenForm,          GreenBox,           $Green},
+    {BlueForm,           BlueBox,            $Blue},
+    {OrangeForm,         OrangeBox,          $Orange},
+    {PinkForm,           PinkBox,            $Pink},
+    {TealForm,           TealBox,            $Teal},
+    {GrayForm,           GrayBox,            $Gray},
+    {PurpleForm,         PurpleBox,          $Purple},
+    {LightRedForm,       LightRedBox,        $LightRed},
+    {LightGreenForm,     LightGreenBox,      $LightGreen},
+    {LightBlueForm,      LightBlueBox,       $LightBlue},
+    {LightOrangeForm,    LightOrangeBox,     $LightOrange},
+    {LightPinkForm,      LightPinkBox,       $LightPink},
+    {LightTealForm,      LightTealBox,       $LightTeal},
+    {LightGrayForm,      LightGrayBox,       $LightGray},
+    {LightPurpleForm,    LightPurpleBox,     $LightPurple},
+    {DarkRedForm,        DarkRedBox,         $DarkRed},
+    {DarkGreenForm,      DarkGreenBox,       $DarkGreen},
+    {DarkBlueForm,       DarkBlueBox,        $DarkBlue},
+    {DarkOrangeForm,     DarkOrangeBox,      $DarkOrange},
+    {DarkPinkForm,       DarkPinkBox,        $DarkPink},
+    {DarkTealForm,       DarkTealBox,        $DarkTeal},
+    {DarkGrayForm,       DarkGrayBox,        $DarkGray},
+    {DarkPurpleForm,     DarkPurpleBox,      $DarkPurple},
+    {BoldForm,           BoldBox,            KatexForm[Bold, "mathbf"]},
+    {ItalicForm,         ItalicBox,          KatexForm[Italic, "mathit"]},
+    {UnderlinedForm,     UnderlinedBox,      KatexForm[Underlined, "underline"]},
+    {StruckthroughForm,  StruckthroughBox,   KatexForm[Struckthrough, "struckthrough"]},
+    {PlainTextForm,      PlainTextBox,       KatexForm["MathText", "textrm"]},
+    {MathTextForm,       MathTextBox,        KatexForm["MathTextFont", "textrm"]}
+  }
+];
+
+PrivateSymbol["$colorNameP"]
+
+$colorNameP = Alternatives[
+  "RedForm", "GreenForm", "BlueForm", "OrangeForm", "PinkForm", "TealForm", "GrayForm", "PurpleForm",
+  "LightRedForm", "LightGreenForm", "LightBlueForm", "LightOrangeForm", "LightPinkForm", "LightTealForm", "LightGrayForm", "LightPurpleForm",
+  "DarkRedForm", "DarkGreenForm", "DarkBlueForm", "DarkOrangeForm", "DarkPinkForm", "DarkTealForm", "DarkGrayForm", "DarkPurpleForm"
+];
+
+MakeBoxes[PlainTextForm[e_], StandardForm]     := PlainTextBox[MakeQGBoxes @ e];
+MakeBoxes[PlainTextForm[e_], TraditionalForm]  := PlainTextBox[MakeQGBoxes @ e];
+MakeBoxes[MathTextForm[e_], StandardForm]      := MathTextBox[MakeQGBoxes @ e];
+MakeBoxes[MathTextForm[e_], TraditionalForm]   := MathTextBox[MakeQGBoxes @ e];
+  
+(**************************************************************************************************)
+
+PrivateFunction[FunctionBox]
+
+FunctionBox[e_String] := KatexSwitch[e, StringJoin["\\operatorname{", e, "}"]];
+
+(**************************************************************************************************)
+
+PublicFormBox[ZNamedFunction]
+
+DefineUnaryForm[ZNamedFunctionForm, KatexSwitch[$1, "operatorname"[$1]], ZNamedFunctionBox]
+
+(**************************************************************************************************)
+
+PublicFormBox[ZSpaceRiffled, ZCommaRiffled, ZRiffled]
+
+DefineStandardTraditionalForm[
+  ZRiffledForm[seq___, r_] :> ZRiffledBox[MakeQGBoxSequence @ seq, MakeQGBoxes @ r]
+];
+
+ZRiffledBox[r_] := "";
+ZRiffledBox[e_, r_] := e;
+ZRiffledBox[seq__, r_] := RowBox @ Riffle[{seq}, r];
+
+DefineRiffledForm[ZCommaRiffledForm, RowBox[$1], ", ", ZCommaRiffledBox];
+DefineRiffledForm[ZSpaceRiffledForm, RowBox[$1], " ", ZSpaceRiffledBox];
+
+(**************************************************************************************************)
+
+PublicFormBox[ZApplied]
+
+DefineStandardTraditionalForm[
+  ZAppliedForm[f_, args___] :> ZAppliedBox[MakeQGBoxes @ f, MakeQGBoxSequence @ args]
+];
+
+DefineTemplateBox[
+  "ZAppliedForm" -> RBox[$1, "(", $2, ")"]
+];
+
+ZAppliedBox[f_, args___] := TBox[f, ZCommaRiffledBox @ args, "ZAppliedForm"]
+
+(**************************************************************************************************)
+
+PublicFunction[EvaluateTemplateBox]
+
+EvaluateTemplateBox = BoxForm`TemplateBoxToDisplayBoxes
+
+(**************************************************************************************************)
+
+PrivateFunction[RuntimeTBox]
+
+(* this isn't right, since KatexSwitch has to evaluate ahead of time *)
+
+RuntimeTBox[param_Symbol, arg_] := With[
+  {name = SymbolName @ param},
+  {kName = toKName[name, 1], tName = toTName[name, 1]},
+  KatexSwitch[TemplateBox[{arg, tName}, "ParameterizedTemplateBox"], kName[arg]]
+];

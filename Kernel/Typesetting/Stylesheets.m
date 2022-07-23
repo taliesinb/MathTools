@@ -1,6 +1,10 @@
-PublicFunction[GenerateQuiverGeometryStylesheet]
+PublicFunction[UpdateQuiverGeometryStylesheet]
 
-GenerateQuiverGeometryStylesheet[] := Scope[
+UpdateQuiverGeometryStylesheet::open = "Could not open existing stylesheet at ``.";
+UpdateQuiverGeometryStylesheet::replace = "Could not replace existing stylesheet at ``.";
+UpdateQuiverGeometryStylesheet::save = "Could not save existing stylesheet at ``.";
+
+UpdateQuiverGeometryStylesheet[] := Scope[
   template = Get @ LocalPath["StyleSheets", "QuiverGeometry.template.nb"];
   template = DeleteCases[template, ExpressionUUID -> _, {0, Infinity}];
   cells = KeyValueMap[makeTemplateBoxStyleCell, $templateBoxDisplayFunction];
@@ -8,12 +12,16 @@ GenerateQuiverGeometryStylesheet[] := Scope[
 
   hash = Base36Hash[template];
   targetPath = LocalPath["StyleSheets", "QuiverGeometry-" <> hash <> ".nb"];
-  If[FileExistsQ[targetPath], Return[$QuiverGeometryStylesheetPath ^= targetPath]];
+  If[!FileExistsQ[targetPath],
+    Export[targetPath, template];
+    Put[targetPath, $latestPathFile];
+  ];
 
-  Export[targetPath, template];
-  Put[targetPath, $latestPathFile];
-
-  $QuiverGeometryStylesheetPath ^= targetPath
+  nb = NotebookOpen[$QuiverGeometryStylesheetPath, Visible -> True];
+  If[Head[nb] =!= NotebookObject, ReturnFailed["open", $QuiverGeometryStylesheetPath]];
+  If[FailureQ[NotebookPut[template, nb]], ReturnFailed["replace", $QuiverGeometryStylesheetPath]];
+  If[FailureQ[NotebookSave[nb]], ReturnFailed["save", $QuiverGeometryStylesheetPath]];
+  (* NotebookClose[nb]; *)
 ];
 
 PrivateFunction[GeneratePrivateQuiverGeometryStylesheet]
@@ -46,6 +54,7 @@ PublicVariable[$QuiverGeometryStylesheetPath]
 
 $latestPathFile = LocalPath["StyleSheets", "latest.m"];
 $QuiverGeometryStylesheetPath := $QuiverGeometryStylesheetPath = Check[Import @ $latestPathFile, None];
+$QuiverGeometryStylesheetPath = LocalPath["StyleSheets", "QuiverGeometry.nb"];
 
 (**************************************************************************************************)
 
@@ -178,32 +187,6 @@ CreateQuiverGeometryNotebook[] :=
     DockedCells -> createQGNotebookDockedCells[]
   ];
 
-If[!TrueQ[QuiverGeometryPackageLoader`$menuModified],
-With[{qgPath = QuiverGeometryPackageLoader`$initFile},
-  LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["MenuListSaveItems", {
-    MenuItem[
-      "&Save and Export",
-      KernelExecute[QuiverGeometry`QGNotebookSaveAndExport[]],
-      FrontEnd`MenuKey["s", FrontEnd`Modifiers -> {"Command", "Option"}],
-      MenuEvaluator -> Automatic, Method -> "Queued"
-    ],
-    MenuItem[
-      "Load QG",
-      KernelExecute[Get[qgPath]],
-      FrontEnd`MenuKey["g", FrontEnd`Modifiers -> {"Command", "Option"}],
-      MenuEvaluator -> Automatic, Method -> "Queued"
-    ],
-    MenuItem[
-      "Fast load QG",
-      KernelExecute[QuiverGeometryPackageLoader`Load[False]],
-      FrontEnd`MenuKey["g", FrontEnd`Modifiers -> {"Command", "Option", "Shift"}],
-      MenuEvaluator -> Automatic, Method -> "Queued"
-    ]
-    
-  }]];
-  QuiverGeometryPackageLoader`$menuModified = True;
-]];
-
 createQGNotebookDockedCells[] := With[
   {qgPath = QuiverGeometryPackageLoader`$initFile},
   {getQG = Function[If[DownValues[QuiverGeometryPackageLoader`Load] === {}, Get[qgPath]]]},
@@ -218,7 +201,9 @@ createQGNotebookDockedCells[] := With[
     " deploy "          :> (getQG[]; RunAsyncWithMessagePopup @ DeployQGSite[]),
     " load: ",
     " QG "              :> Module[{res = Check[Get[qgPath], $Failed]}, If[res =!= $Failed, ApplyQuiverGeometryNotebookStyles[]; Beep[], Pause[0.1]; Beep[]; Pause[0.1]; Beep[]; SetSelectedNotebook @ First @ Notebooks["Messages"]]],
-    " QG fast "         :> Module[{res = Check[QuiverGeometryPackageLoader`Load[False], $Failed]}, If[res =!= $Failed, Beep[], Pause[0.1]; Beep[]; Pause[0.1]; Beep[]; SetSelectedNotebook @ First @ Notebooks["Messages"]]]
+    " QG fast "         :> Module[{res = Check[QuiverGeometryPackageLoader`Load[False], $Failed]}, If[res =!= $Failed, Beep[], Pause[0.1]; Beep[]; Pause[0.1]; Beep[]; SetSelectedNotebook @ First @ Notebooks["Messages"]]],
+    None,
+    " styles "          :> (getQG[]; RunAsyncWithMessagePopup @ UpdateQuiverGeometryStylesheet[])
   }]},
   Cell[BoxData @ ToBoxes @ Row[buttons, "   "], "DockedCell"]
 ];

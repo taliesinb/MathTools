@@ -150,9 +150,9 @@ ToQuiver[obj$] attempts to convert obj$ to a quiver Graph[$$] object.
 
 ToQuiver = MatchValues[
   graph_Graph := If[QuiverQ @ graph, graph, Quiet @ Quiver @ graph];
-  edges_List := Quiet @ Quiver @ edges;
-  str_String := BouquetQuiver @ str;
-  _ := $Failed;
+  edges_List  := Quiet @ Quiver @ edges;
+  str_String  := BouquetQuiver @ str;
+  _           := $Failed;
 ];
 
 (**************************************************************************************************)

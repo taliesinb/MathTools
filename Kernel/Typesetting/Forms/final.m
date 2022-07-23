@@ -44,9 +44,6 @@ $domainsP = Alternatives[Integers, Reals, Rationals, Complexes, Naturals, Positi
 (* this is the general dispatch mechanism for a form of unknown type *)
 MakeQGBoxes = Case[
   None | Null               := "";
-  Pi                        := MakeBoxes @ PiSymbol;
-  Tau                       := MakeBoxes @ TauSymbol;
-  l:lsymsP                  := MakeBoxes @ l;
   s:namedFnP                := MakeBoxes @ s;
   d:domainsP                := MakeBoxes @ d;
   e:symP                    := symbolBoxes @ e;
@@ -77,7 +74,7 @@ MakeQGBoxes = Case[
   RightComposition[a___]    := MakeBoxes @ RightFunctionCompositionForm[a];
   s_String                  := s;
   other_                    := MakeBoxes @ other,
-  {lsymsP -> $literalSymbolsP, symP -> $rawSymbolP, namedFnP -> Alternatives @@ $namedFunctions,
+  {lsymsP -> $literalSymbolsP, symP -> Rest[$rawSymbolP], namedFnP -> Alternatives @@ $namedFunctions,
     binHeads -> $binaryRelationHeads, domainsP -> $domainsP}
 ];
 

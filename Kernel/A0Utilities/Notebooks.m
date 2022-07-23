@@ -1,3 +1,21 @@
+PublicFunction[WithExternalMessageCapture]
+
+$tmpMessageFilePath = FileNameJoin[{$TemporaryDirectory, "messages.txt"}];
+
+SetHoldFirst[WithExternalMessageCapture];
+
+WithExternalMessageCapture[body_] := Scope[
+  stream = OpenWrite[$tmpMessageFilePath, PageWidth -> 120, FormatType -> InputForm];
+  $hadMessage = False;
+  Block[{$Messages = {stream}, $MessagePrePrint = applyIF}, Check[result = body, $hadMessage = True]];
+  Close[$tmpMessageFilePath];
+  If[$hadMessage, NotebookOpen[$tmpMessageFilePath]];
+  result
+];
+
+(* this is because $Messages doesn't respect FormatType -> InputForm *)
+applyIF[HoldForm[e_]] := HoldForm[InputForm[e]];
+applyIF[e_] := e;
 
 (**************************************************************************************************)
 
@@ -275,3 +293,120 @@ mapVerbatim = Case[
 ];
 
 $replacementCellTypes = "Output" | "Text" | "Section" | "Subsection" | "Subsubsection" | "Item" | "SubItem" | "Subsubitem";
+
+(**************************************************************************************************)
+
+PrivateFunction[CellCursorPosition]
+
+CellCursorPosition[cell_CellObject] := Scope[
+  info = Developer`CellInformation[cell];
+  If[!RuleListQ[info], None, First[Lookup[info, "CursorPosition", None], None]]
+];
+
+(**************************************************************************************************)
+
+PrivateFunction[ReplaceTaggingRule]
+
+ReplaceTaggingRule[Cell[l__, TaggingRules -> rules_List, r___], rule_] :=
+  Cell[l, TaggingRules -> ReplaceOptions[rules, rule], r];
+
+ReplaceTaggingRule[Cell[args__], rule_] :=
+  Cell[args, TaggingRules -> {rule}];
+  
+(**************************************************************************************************)
+
+PrivateFunction[LookupTaggingRule]
+
+LookupTaggingRule[Cell[__, TaggingRules -> rules_List, ___], key_] :=
+  Lookup[rules, key, None];
+
+LookupTaggingRule[_, _] := None;
+
+(**************************************************************************************************)
+
+PublicFunction[ToggleInlineCells]
+
+$LastConvertedCellBuffer = {};
+
+ToggleInlineCells[] := ToggleInlineCells @ SelectedCells[];
+
+ToggleInlineCells[list:{___CellObject}] := Map[ToggleInlineCells, list];
+
+ToggleInlineCells[cell_CellObject] := Scope[
+  cellData = NotebookRead[cell];
+  (* to make sure we can get manually retrieve cells if they get mangld *)
+  $LastConvertedCellBuffer ^= Prepend[$LastConvertedCellBuffer, cellData];
+  If[Length[$LastConvertedCellBuffer] > 4, $LastConvertedCellBuffer ^= Take[$LastConvertedCellBuffer, 4]];
+
+  If[MatchQ[cellData, Cell @ BoxData @ $toggledInlineCellP],
+    (* we're already inside an inline cell, just change it to text inline *)
+    str = toggleToText @ cellData;
+    NotebookWrite[cell, Cell[TextData[str], "Text"]];
+    Return[];
+  ];
+  savePosition = CellCursorPosition[cell];
+  restorePosition = None; nb = None;
+  If[MemberQ[SelectedCells[], cell], nb = ParentNotebook[cell]];
+  newData = Which[
+    ContainsQ[cellData, $toggledInlineCellP],
+      restorePosition = LookupTaggingRule[cellData, "CursorPosition"];
+      toggleToText[cellData],
+    !ContainsQ[cellData, _String ? containsWLQ],
+      BadBeep[];
+      Return[],
+    True,
+      newData = toggleToCode[cellData];
+      ReplaceTaggingRule[newData, "CursorPosition" -> savePosition]
+  ];
+  NotebookWrite[cell, newData, All];
+  If[nb =!= None && restorePosition =!= None,
+    SelectionMove[nb, ##, AutoScroll -> False]& @@@ {
+      {All, CellContents},
+      {Before, CellContents},
+      {Next, Character, restorePosition},
+      {After, Character}
+    }
+  ];
+];
+
+When two paths are(( PCF[ CP[$gva,$gvb,$gvc], CP[$gvc,$gvd] ] = CP[$gva,$gvb,$gvc,$gvd] ))
+
+$toggledInlineCellP = FormBox[TagBox[_, "ToggledInlineCell" -> _], _];
+
+toggleToText = Case[
+  c:Cell[_TextData, __] := MapAt[%, c, 1];
+  t_TextData := Map[%, t];
+  list_List := Map[%, list];
+  s:StyleBox[___] := MapAt[%, s, 1];
+  Cell[BoxData[FormBox[TagBox[_, "ToggledInlineCell" -> str_], TraditionalForm]]] := str;
+  c_Cell := c;
+  e_ := e;
+];
+
+$inlineWLExprRegex =  RegularExpression @ "(\\(\\([^\n]+\\)\\))|(\\$[[:alpha:]][[:alpha:][:digit:]$]*\\b)";
+containsWLQ[e_] := StringContainsQ[e, $inlineWLExprRegex];
+
+toggleToCode = Case[
+  c:Cell[_String ? containsWLQ, __] := MapAt[% /* TextData, c, 1];
+  c:Cell[_TextData, __] := MapAt[%, c, 1];
+  t_TextData := Map[%, t];
+  list_List := Map[%, list];
+  s_StyleBox := MapAt[%, s, 1];
+  c_Cell := c;
+  str_String ? containsWLQ := splitToCode[str];
+  e_ := e;
+];
+
+splitToCode[str_String] :=
+  List @@ StringReplace[str, {
+    var:("$" ~~ WordCharacter ~~ RepeatedNull[WordCharacter | DigitCharacter | "$"] ~~ WordBoundary) :> makeToggledInlineCell[var],
+    span:("((" ~~ Shortest[Repeated[Except["\n"]]] ~~ "))") :> makeToggledInlineCell[span]
+  }];
+
+makeToggledInlineCell[str_] := Scope[
+  expr = toInlineExpression[str];
+  If[FailureQ[expr], BadBeep[]; Return @ str];
+  boxes = ToBoxes[expr, StandardForm];
+  boxes = TagBox[boxes, "ToggledInlineCell" -> str];
+  Cell[BoxData @ FormBox[boxes, TraditionalForm]]
+];

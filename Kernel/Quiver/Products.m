@@ -512,9 +512,9 @@ RestrictedVertexIndexProducts[graph_, cond_] := Scope[
   ]
 ];
 
-toMax = MatchValues[
-  LessThan[d_] := d;
-  EqualTo[d_] := d;
+toMax = Case[
+  LessThan[d_]            := d;
+  EqualTo[d_]             := d;
   Between[{dmin_, dmax_}] := dmax;
-  GreaterThan[d_] := Infinity;
+  GreaterThan[d_]         := Infinity;
 ];

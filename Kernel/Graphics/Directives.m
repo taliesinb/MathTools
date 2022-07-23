@@ -25,6 +25,8 @@ $colorNormalizationRules = {
 
 SystemSymbol[VeryTransparent, HalfTransparent, PartlyTransparent, Opaque]
 
+VeryTransparent::usage = HalfTransparent::usage = PartlyTransparent::usage = Opaque::usage = "";
+
 PrivateFunction[toNumericOpacity]
 
 toNumericOpacity = Case[
@@ -75,22 +77,6 @@ NormalizeThickness = Case[
   s_Symbol              := Lookup[$thicknessNormalizationRules, s, $Failed];
   n_ ? NumericQ         := AbsoluteThickness @ N @ n;
   _                     := $Failed;
-];
-
-(**************************************************************************************************)
-
-PrivateFunction[toMultiDirective]
-
-iToMultiDirective = Case[
-  {}                            := Automatic;
-  {spec_}                       := toDirective @ spec;
-  spec_List | spec_Association  := Map[toDirective, spec];
-  spec_                         := toDirective @ spec
-];
-
-toMultiDirective[spec_] := Scope[
-  res = ToColorPalette @ spec;
-  If[FailureQ[res], iToMultiDirective[spec], res]
 ];
 
 (**************************************************************************************************)

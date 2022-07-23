@@ -479,8 +479,8 @@ $lastLoadSuccessful = False;
 QuiverGeometryPackageLoader`Read[cachingEnabled_:True, fullReload_:True] :=
   QuiverGeometryPackageLoader`ReadPackages["QuiverGeometry`", QuiverGeometryPackageLoader`$SourceDirectory, cachingEnabled, fullReload];
 
-QuiverGeometryPackageLoader`Load[fullReload_:True] := PreemptProtect @ Block[{packages},
-  packages = QuiverGeometryPackageLoader`Read[True, fullReload];
+QuiverGeometryPackageLoader`Load[fullReload_:True, fullRead_:False] := PreemptProtect @ Block[{packages},
+  packages = QuiverGeometryPackageLoader`Read[!fullRead, fullReload];
   If[FailureQ[packages], ReturnFailed[]];
   QuiverGeometryPackageLoader`$LoadCount++;
   If[!FailureQ[QuiverGeometryPackageLoader`EvaluatePackages @ packages],

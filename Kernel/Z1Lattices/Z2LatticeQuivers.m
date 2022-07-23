@@ -547,19 +547,19 @@ toRenamingRule[_, _, _] := $Failed;
 
 (**************************************************************************************************)
 
-toNormFunction = MatchValues[
+toNormFunction = Case[
   (i:({__Integer}|_Integer) -> f_) := PartOperator[i] /* f;
-  list_List := ApplyThrough[% /@ list] /* Max;
-  i_Integer := PartOperator[i];
-  "Euclidean" := RootMeanSquare;
-  f_ := f;
+  list_List                        := ApplyThrough[% /@ list] /* Max;
+  i_Integer                        := PartOperator[i];
+  "Euclidean"                      := RootMeanSquare;
+  f_                               := f;
 ];
 
 (**************************************************************************************************)
 
-toACFunction = MatchValues[
+toACFunction = Case[
   l_List    := Extract[l];
-  {All, f_} := ($stripLV ^= False; f);
+  {All, f_} := ($stripLV = False; f);
   f_        := f;
 ];
 

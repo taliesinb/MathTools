@@ -15,7 +15,7 @@ PrivateFunction[toMarkdownStringInner]
 toMarkdownStringInner[spec_] := Scope[
   $textPostProcessor = StringReplace @ {
     If[$inlineLinkTemplate === None, Nothing, $markdownLinkReplacement],
-    $inlineWLExprReplacement,
+    $inlineWLExprReplacement, $inlineWLExprReplacement2,
     $inlineWLVarReplacement
   };
   lines = toMarkdownLines @ spec;
@@ -100,6 +100,8 @@ cellToMarkdown = Case[
   cell_CellObject :=
     cellToMarkdown @ NotebookRead @ cell;
 
+  Cell[___, CellDingbat -> "!", ___] := Nothing;
+
   Cell[e_, style:Except["Input" | "Code"], ___, CellTags -> tag_String, ___] :=
     Splice @ {$anchorTemplate @ tag, cellToMarkdownInner0 @ Cell[e, style]};
 
@@ -124,8 +126,11 @@ PrivateFunction[PrintBadCell]
 
 $LastFailedMarkdownInput = $LastFailedMarkdownOutput = None;
 
-PrintBadCell[c_Cell] := CellPrint @ ReplaceOptions[c, Background -> RGBColor[1,0.95,0.95]];
-PrintBadCell[e_] := CellPrint @ Cell[e, "Text", Background -> RGBColor[1,0.95,0.95]]
+PrintBadCell[c_Cell] :=
+  CellPrint @ ReplaceOptions[c, {Background -> RGBColor[1,0.95,0.95], CellDingbat -> "!"}];
+
+PrintBadCell[e_] :=
+  CellPrint @ Cell[e, "Text", Background -> RGBColor[1,0.95,0.95], CellDingbat -> "!"]
 
 (**************************************************************************************************)
 

@@ -184,5 +184,14 @@ QGNotebookSaveAndExport[nb_NotebookObject] := Scope[
   If[Lookup[NotebookInformation[nb], "ModifiedInMemory"],
     Beep[]; NotebookSave[nb]; Pause[0.25];
   ];
-  If[FailureQ @ BuildQGSite[nb], BadBeep[], GoodBeep[]];
+  WithExternalMessageCapture @ BuildQGSite[nb, NotebookCaching -> False];
+  GoodBeep[];
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[QGNotebookExport]
+
+QGNotebookExport[] := QGNotebookExport @ EvaluationNotebook[];
+QGNotebookExport[nb_NotebookObject] := WithExternalMessageCapture @ BuildQGSite[nb, NotebookCaching -> False];
+

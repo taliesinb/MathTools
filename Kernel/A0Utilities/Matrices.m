@@ -355,12 +355,12 @@ Ones[i_] := ConstantArray[1, i];
 
 PublicFunction[AppendOnes]
 
-typedOne = MatchValues[
+typedOne = Case[
   _Real :=  1.;
   _ :=      1;
 ];
 
-AppendOnes = MatchValues[
+AppendOnes = Case[
   array_ ? VectorQ :=
     Append[array, typedOne @ Part[array, 1]];
   array_ ? MatrixQ :=

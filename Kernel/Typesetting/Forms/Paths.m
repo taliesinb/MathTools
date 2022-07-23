@@ -167,4 +167,3 @@ PublicForm[PathSymbol]
 PathSymbol[] := PathSymbol["P"];
 
 declareSymbolForm[PathSymbol];
-

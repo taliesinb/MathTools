@@ -569,3 +569,4 @@ makeSym["BMF", BoundMultiplicityFunctionForm];
 
 makeSym["EGP", ExtendedGraphPlot];
 
+makeSym["EG", ExtendedGraph];

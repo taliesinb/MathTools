@@ -29,6 +29,11 @@ declareBoxFormatting[
   SpacedForm[args___] :> MakeBoxes @ SpacedRowForm[args]
 ];
 
+(**************************************************************************************************)
+
+PublicForm[PadForm]
+
+DefineUnaryForm[PadForm, KatexSwitch[RBox[" ", $1, " "], RBox["\;", $1, "\;"]]]
 (* TODO: migrate away from the old ones, rename the form names *)
 
 (**************************************************************************************************)

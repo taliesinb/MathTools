@@ -22,8 +22,12 @@
 
 \gdef\neutralFactor{\factsym{\shornarrow}}
 
-\gdef\de#1#2{{{#1}\xrightedge{}{#2}}}
-\gdef\ue#1#2{{{#1}\xundirectededge{}{#2}}}
+\gdef\edgedot{↫}
+\gdef\desym{\mathbin{↣}}
+\gdef\uesym{\mathbin{↢}}
+
+\gdef\de#1#2{{{#1}\desym{#2}}}
+\gdef\ue#1#2{{{#1}\uesym{#2}}}
 
 \gdef\shifttag#1{\raisebox{-1em}{$#1$}}
 \gdef\shifttag#1{#1}
