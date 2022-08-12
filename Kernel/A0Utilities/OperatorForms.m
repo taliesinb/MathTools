@@ -28,6 +28,12 @@ DotOperator[matrix_][other_] := Dot[matrix, other]
 
 (**************************************************************************************************)
 
+PublicFunction[DotRightOperator]
+
+DotRightOperator[matrix_][other_] := Dot[other, matrix]
+
+(**************************************************************************************************)
+
 PublicFunction[TimesOperator]
 
 TimesOperator[a_][b_] := a * b;

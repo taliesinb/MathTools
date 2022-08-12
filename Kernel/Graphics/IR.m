@@ -1,0 +1,2 @@
+PublicHead[EGraphics]
+

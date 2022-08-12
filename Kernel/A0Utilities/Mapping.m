@@ -39,9 +39,9 @@ MatrixReplace[rule_][matrix_] := Replace[matrix, rule, {2}];
 
 PublicFunction[VectorApply]
 
-(* this is a named form of @@@ *)
-VectorApply[f_, e_] := Apply[f, e, {1}];
-VectorApply[f_][e_] := Apply[f, e, {1}];
+(* this is a named form of @@@, aka MapApply *)
+VectorApply[f_, e_] := MapApply[f, e];
+VectorApply[f_][e_] := MapApply[f, e];
 
 (**************************************************************************************************)
 

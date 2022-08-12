@@ -10,6 +10,56 @@ With[{fmv := GeneralUtilities`Control`PackagePrivate`findMutatedVariables},
 
 (**************************************************************************************************)
 
+(* add ability for Scope to take additional arguments, which are local function definitions. if these
+use arguments of original function they will still work, via a suitable Block and alias *)
+
+Unprotect[Scope];
+DefineMacro[Scope,
+Scope[body_] := GeneralUtilities`Control`PackagePrivate`mScope[body, Block],
+Scope[body_, defs__] := mScopeWithDefs[body, {defs}, Block]
+];
+Protect[Scope];
+
+SetHoldAllComplete[mScopeWithDefs, procScopeDef, quotedSetDelayed];
+
+mScopeWithDefs[body2_, defs2_, type_] := Module[
+  {lhsHeadName, lhsSymbolP, aliasSymbols, held, aliasRules, body, defs},
+  lhsHeadName = Construct[QualifiedSymbolName, First @ $LHSHead];
+  body = Quoted[body2]; defs = Hold[defs2];
+  lhsSymbolP = Compose[HoldPattern, Alternatives @@ $LHSPatternSymbols] /. Quoted[q_] :> q;
+  aliasRules = DeleteDuplicates @ DeepCases[defs, s:lhsSymbolP :> HoldPattern[s]];
+  aliasRules = # -> Apply[GeneralUtilities`Control`PackagePrivate`toAliasedSymbol, #]& /@ aliasRules;
+  body = body /. aliasRules;
+  defs = defs /. aliasRules;
+  Block[{$lhsHeadName = lhsHeadName, $bodyRules = {}},
+    Apply[procScopeDef, defs //. Quoted[q_] :> q];
+    body = body /. $bodyRules;
+  ];
+  If[aliasRules =!= {}, body = ToQuoted[Block, toAliasSet /@ aliasRules, body]];
+  GeneralUtilities`Control`PackagePrivate`mScope @@ Append[body, type]
+];
+
+toAliasSet[_[s_]-> a_] := Quoted @ Set[a, s];
+
+procScopeDef[list_List] := Scan[procScopeDef, Unevaluated @ list];
+procScopeDef[r_RuleDelayed | r_Rule] := AppendTo[$bodyRules, r];
+
+procScopeDef[SetDelayed[head_Symbol[args___], rhs_]] := With[
+  {head2 = Symbol[$lhsHeadName <> "$" <> SymbolName[head]]},
+  AppendTo[$bodyRules, HoldPattern[head] -> head2];
+  SetDelayed[head2[args], rhs]
+];
+
+procScopeDef[SetDelayed[head_Symbol[args___][args2___], rhs_]] := With[
+  {head2 = Symbol[$lhsHeadName <> "$" <> SymbolName[head]]},
+  AppendTo[$bodyRules, HoldPattern[head] -> head2];
+  SetDelayed[head2[args][args2], rhs]
+];
+
+procScopeDef[e_] := Print[Hold[e]];
+
+(**************************************************************************************************)
+
 (* fix a bug in IndexOf, which accidentally didn't limit itself to level one *)
 With[{io := GeneralUtilities`IndexOf},
   Unprotect[io];
@@ -170,6 +220,53 @@ PrivateMacro[CheckIsGraphics]
 
 General::notgraphics = "The `` argument should be a Graphics or Graphics3D expression."
 defineCheckArgMacro[CheckIsGraphics, GraphicsQ, "notgraphics"];
+
+(**************************************************************************************************)
+
+PublicFunction[PackAssociation]
+
+PackAssociation::usage = "PackAssociation[sym1, sym2, ...] creates an association whose keys are the title-cased names of sym_i \
+and values are their values.";
+
+DefineMacro[PackAssociation, PackAssociation[syms__Symbol] := mPackAssociation[syms]];
+
+SetHoldAllComplete[mPackAssociation, packAssocRule];
+
+mPackAssociation[sym__] := ToQuoted[Association, Seq @@ MapUnevaluated[packAssocRule, {sym}]];
+packAssocRule[s_] := ToTitleCase[HoldSymbolName[s]] -> Quoted[s];
+
+(**************************************************************************************************)
+
+PublicFunction[UnpackTuple]
+
+General::badtuple = "Argument `` should be a single value or a list of `` values."
+
+DefineMacro[UnpackTuple, UnpackTuple[val_, syms__Symbol] := mUnpackTuple[val, syms]];
+
+SetHoldAllComplete[mUnpackTuple];
+mUnpackTuple[val_, s1_Symbol, s2_Symbol] :=
+  Quoted @ If[ListQ[val],
+    If[Length[val] != 2, ThrowMessage["badtuple", val, 2]]; {s1, s2} = val,
+    s1 = s2 = val
+  ];
+
+mUnpackTuple[val_, s1_Symbol, s2_Symbol, s3_Symbol] :=
+  Quoted @ If[ListQ[val],
+    If[Length[val] != 3, ThrowMessage["badtuple", val, 3]]; {s1, s2, s3} = val,
+    s1 = s2 = s3 = val
+  ];
+
+mUnpackTuple[val_, s1_Symbol, s2_Symbol, s3_Symbol, s4_Symbol] :=
+  Quoted @ If[ListQ[val],
+    If[Length[val] != 4, ThrowMessage["badtuple", val, 4]]; {s1, s2, s3, s4} = val,
+    s1 = s2 = s3 = s4 = val
+  ];
+
+mUnpackTuple[val_, s1_Symbol, s2_Symbol, s3_Symbol, s4_Symbol, s5_Symbol] :=
+  Quoted @ If[ListQ[val],
+    If[Length[val] != 5, ThrowMessage["badtuple", val, 5]]; {s1, s2, s3, s4, s5} = val,
+    s1 = s2 = s3 = s4 = s5 = val
+  ];
 
 (**************************************************************************************************)
 
@@ -365,6 +462,12 @@ defineSetter[SetInherited, Inherited];
 
 DefineLiteralMacro[SetMissing, SetMissing[lhs_, rhs_] := If[MissingQ[lhs], lhs = rhs, lhs]];
 SetHoldAll[SetMissing];
+
+(**************************************************************************************************)
+
+PrivateMacro[SetScaledFactor]
+
+DefineLiteralMacro[SetScaledFactor, SetScaledFactor[lhs_, scale_] := If[MatchQ[lhs, Scaled[_ ? NumericQ]], lhs //= First /* N; lhs *= scale]];
 
 (**************************************************************************************************)
 

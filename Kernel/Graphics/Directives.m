@@ -102,3 +102,10 @@ $styleNormalizationRules = Dispatch @ Flatten @ {
 PrivateFunction[normalizeStyles]
 
 normalizeStyles[e_] := ReplaceAll[e, $styleNormalizationRules];
+
+(**************************************************************************************************)
+
+PublicFunction[FaceEdgeForm]
+
+FaceEdgeForm[color_ ? ColorQ] := Directive[FaceForm[color], EdgeForm[Darker[color, .2]]];
+FaceEdgeForm[d_Directive] := d;

@@ -149,13 +149,7 @@ FastCopyRetinaImageToClipboard[expr_, crop_:True] := (
 
 PublicFunction[InteractiveCopyRetinaImageToClipboard]
 
-InteractiveCopyRetinaImageToClipboard[expr_] := EventHandler[
-  MouseAppearance[
-    expr,
-    "LinkHand"
-  ],
-  {"MouseClicked" :> CopyRetinaImageToClipboard[expr]}
-];
+InteractiveCopyRetinaImageToClipboard[expr_] := ClickForm[expr, CopyRetinaImageToClipboard[expr]];
 
 (**************************************************************************************************)
 

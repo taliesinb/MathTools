@@ -37,3 +37,4 @@ ScanIndexed[toGlobalColorName, $ExtendedColorsGrouped, {3}];
 PublicVariable[$ExtendedColorNames]
 
 $ExtendedColorNames = Keys @ $ExtendedColorsGrouped;
+

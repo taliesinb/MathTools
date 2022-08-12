@@ -426,6 +426,8 @@ ExtendedGraphPlot::badthickness = "EdgeThickness -> `` was invalid."
 
 ExtendedGraphPlottingFunction[___] := $Failed;
 
+PrivateFunction[failPlot]
+
 failPlot[msgName_String, args___] := (
   Message[MessageName[ExtendedGraphPlot, msgName], args];
   Throw[$Failed, ExtendedGraphPlottingFunction]
@@ -701,9 +703,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       arrowheadSize //= processArrowheadSize;
       maxArrowheadSize = Max[arrowheadSize * $GraphPlotSizeX] / 2;
       SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Line"]];
-      If[!$GraphIs3D, arrowheadShape //= to2DShape];
-      $twoWayStyle = twoWayStyle; $inversionStyle = "Reverse"; $borderStyle = None;
-      $lineThickness = If[$GraphIs3D, Thickness @ 0.2,
+      If[!$GraphIs3D, arrowheadShape //= to2DArrowheadShape];
+      $twoWayStyle = twoWayStyle; $inversionStyle = "Reverse"; $arrowBorderStyle = None;
+      $edgeThickness = If[$GraphIs3D, Thickness @ 0.2,
         AbsoluteThickness @ Max[Round[ImageFractionToImageSize[Max[arrowheadSize]] / 10, .2], .5]];
       If[ListQ[arrowheadShape],
         {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
@@ -1447,7 +1449,7 @@ scanArrowheadShapeOpts = Case[
     $twoWayStyle = s;
 
   EdgeThickness -> thickness_ :=
-    $lineThickness = OnFailed[
+    $edgeThickness = OnFailed[
       NormalizeThickness @ thickness,
       failPlot["badthickness", thickness]
     ];
@@ -1456,11 +1458,19 @@ scanArrowheadShapeOpts = Case[
     $inversionStyle = s;
 
   BorderStyle -> s_ :=
-    $borderStyle = s;
+    $arrowBorderStyle = s;
 
   rule_ :=
     failPlot["badsubopt", rule, commaString @ {TwoWayStyle, InversionStyle, EdgeThickness}];
 ];
+
+(**************************************************************************************************)
+
+PrivateVariable[$edgeThickness, $vertexEdgeThickness, $arrowBorderStyle]
+
+$vertexEdgeThickness = 1;
+$edgeThickness = AbsoluteThickness[1.2];
+$arrowBorderStyle = None;
 
 (**************************************************************************************************)
 
@@ -1600,385 +1610,6 @@ makeArrowheadLabelShape[cardinal_, style_, size_] := Scope[
   label = makeArrowheadLabel[cardinal, size * 1.75];
   Graphics[{Opacity[1], style, Text[label, {0, 0}, {0, -0.9}]}]
 ];
-
-(**************************************************************************************************)
-
-$borderStyle = None;
-
-makeArrowheadGraphic2D[primitives_, style_, opts___] :=
-  Graphics[
-    {Opacity[1], EdgeForm @ If[$borderStyle =!= None,
-      SetColorOpacity[$borderStyle @ style, 1], None],
-      style, primitives},
-    AspectRatio -> Automatic,
-    PlotRangeClipping -> False,
-    opts
-  ];
-
-makeArrowheadGraphic3D[primitives_, style_, opts___] :=
-  Graphics3D[
-    {Opacity[1], EdgeForm @ None, FaceForm @ style, primitives},
-    opts
-  ];
-
-$nudge = 1*^-2;
-
-$arrowheads2D = Association[
-  "Invisible" -> {},
-  "Line" ->
-    Line @ ToPacked @ {{-0.2, -0.3}, {0.1, 0.}, {-0.2, 0.3}},
-  "LineDoubleOut" ->
-    Line @ ToPacked @ {
-      {{+0.1, -0.3}, {+0.4, 0.}, {+0.1, 0.3}},
-      {{-0.1, -0.3}, {-0.4, 0.}, {-0.1, 0.3}}
-    },
-  "LineDoubleOutClose" ->
-    Line @ ToPacked @ {
-      {{0., -0.3}, {+0.3, 0.}, {0., 0.3}},
-      {{0., -0.3}, {-0.3, 0.}, {0., 0.3}}
-    },
-  "LineDoubleIn" ->
-    Line @ ToPacked @ {
-      {{+0.4, -0.3}, {+0.1, 0.}, {+0.4, 0.3}},
-      {{-0.4, -0.3}, {-0.1, 0.}, {-0.4, 0.3}}
-    },
-  "LineDoubleInClose" ->
-    Line @ ToPacked @ {
-      {{+0.3, -0.3}, {0., 0.}, {+0.3, 0.3}},
-      {{-0.3, -0.3}, {0., 0.}, {-0.3, 0.3}}
-    },
-  "DoubleLine" ->
-    Line @ ToPacked @ {
-      {{-0.25, -0.3}, {+0.05, 0.}, {-0.25, 0.3}},
-      {{-0.05, -0.3}, {+0.25, 0.}, {-0.05, 0.3}}
-    },
-  "EqualLine" ->
-    Line @ ToPacked @ (0.25 * {{-0.5, -0.87}, {1.0, 0.}, {-0.5, 0.87}}),
-  "EqualTriangle" ->
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {0.25 * {{-0.5, -0.87}, {1.0, 0.}, {-0.5, 0.87}}}
-    ],
-  "Triangle" ->
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.1, -0.3}, {-0.1, 0.3}, {0.2, 0.}}}
-    ],
-  "TriangleDoubleOut" -> {
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.1, -0.3}, {-0.1, 0.3}, {-0.4, 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{+0.1, -0.3}, {+0.1, 0.3}, {0.4, 0.}}}
-    ]},
-  "TriangleDoubleOutClose" -> {
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{0., -0.3}, {0., 0.3}, {-0.3, 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{0., -0.3}, {0., 0.3}, {0.3, 0.}}}
-    ]},
-  "TriangleDoubleIn" -> {
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.4, -0.3}, {-0.4, 0.3}, {-0.1, 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{+0.4, -0.3}, {+0.4, 0.3}, {0.1, 0.}}}
-    ]},
-  "TriangleDoubleInClose" -> {
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.3, -0.3}, {-0.3, 0.3}, {0., 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{0.3, -0.3}, {0.3, 0.3}, {0., 0.}}}
-    ]},
-
-  "HalfTriangle" ->
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.15, -0.4}, {-0.15, 0.}, {0.25, 0.}}}
-    ],
-  "HalfTriangleDoubleOut" -> {
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.1, -0.4}, {-0.1, 0.}, {-0.5, 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{+0.1, -0.4}, {+0.1, 0.}, {0.5, 0.}}}
-    ]},
-  "HalfTriangleDoubleOutClose" -> {
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{0., -0.4}, {0., 0.}, {-0.4, 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{0., -0.4}, {0., 0.}, {+0.4, 0.}}}
-    ]},
-  "HalfTriangleDoubleIn" -> {
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.5, -0.4}, {-0.5, 0.}, {-0.1, 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{+0.5, -0.4}, {+0.5, 0.}, {+0.1, 0.}}}
-    ]},
-  "HalfTriangleDoubleInClose" -> {
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.4, -0.4}, {-0.4, 0.}, {0., 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{+0.4, -0.4}, {+0.4, 0.}, {0., 0.}}}
-    ]},
-
-  "OtherHalfTriangle" ->
-    FilledCurve[
-      {{{0, 1, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.15, 0.4}, {-0.15, 0.}, {0.25, 0.}}}
-    ],
-
-  "FlatArrow" ->
-    Polygon[
-      ToPacked @ {{{-0.3166, -0.3333}, {-0.3166, 0.3333}, {0.25, 0.}}}
-    ],
-
-  "NarrowArrow" ->
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.3166, -0.25}, {-0.1833, 0.}, {-0.3166, 0.25}, {0.25, 0.}}}
-    ],
-  "NarrowArrowDoubleIn" -> {
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.45, -0.25}, {-0.05, 0.}, {-0.45, 0.25}, {-0.35, 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{+0.45, -0.25}, {+0.05, 0.}, {+0.45, 0.25}, {+0.35, 0.}}}
-    ]},
-
-  "Arrow" ->
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.3166, -0.3333}, {-0.1833, 0.}, {-0.3166, 0.3333}, {0.25, 0.}}}
-    ],
-  "ArrowDoubleOut" -> {
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.05, -0.33}, {-0.45, 0.}, {-0.05, 0.33}, {-0.15, 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{0.05, -0.33}, {0.45, 0.}, {0.05, 0.33}, {0.15, 0.}}}
-    ]},
-  "ArrowDoubleOutClose" -> {
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{0.0, -0.33}, {-0.4, 0.}, {0.0, 0.33}, {-0.1, 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{0.0, -0.33}, {0.4, 0.}, {0.0, 0.33}, {0.1, 0.}}}
-    ]},
-  "ArrowDoubleIn" -> {
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.45, -0.33}, {-0.05, 0.}, {-0.45, 0.33}, {-0.35, 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{+0.45, -0.33}, {+0.05, 0.}, {+0.45, 0.33}, {+0.35, 0.}}}
-    ]},
-  "ArrowDoubleInClose" -> {
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.4, -0.33}, {0., 0.}, {-0.4, 0.33}, {-0.30, 0.}}}
-    ],
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{+0.4, -0.33}, {0, 0.}, {+0.4, 0.33}, {+0.3, 0.}}}
-    ]},
-  "Disk" ->
-    Disk[ToPacked @ {0., 0.}, .2],
-  "Square" ->
-    ToPacked /@ Rectangle[-0.2 * {1,1}, 0.2 * {1,1}],
-  "Diamond" ->
-    FilledCurve[
-      {{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}},
-      ToPacked @ {{{-0.45, 0.}, {0., -0.25}, {0.45, 0.}, {0., 0.25}}}
-    ],
-
-  "CrossLine" ->
-    Line @ ToPacked @ {{0., -0.333}, {0., 0.333}},
-  "CrossBar" ->
-    ToPacked /@ Rectangle[{-0.05,-0.2}, {0.05,0.2}]
-];
-
-$coneRadius = 0.15;
-
-$arrowheads3D = Association[
-  "Cone" ->
-    Cone[ToPacked @ {{-0.2, 0., 0.}, {0.2, 0., 0.}}, $coneRadius],
-  "Tube" ->
-    Tube[ToPacked @ {{-0.2, 0., 0.}, {0.2, 0., 0.}}, $coneRadius/2],
-  "ConeDoubleOut" ->
-    Cone[ToPacked @ {{{0.1, 0., 0.}, {0.5, 0., 0.}}, {{-0.1, 0., 0.}, {-0.5, 0., 0.}}}, {$coneRadius, $coneRadius}],
-  "ConeDoubleOutClose" ->
-    Cone[ToPacked @ {{{0., 0., 0.}, {0.4, 0., 0.}}, {{0., 0., 0.}, {-0.4, 0., 0.}}}, {$coneRadius, $coneRadius}],
-  "ConeDoubleIn" ->
-    Cone[ToPacked @ {{{0.5, 0., 0.}, {0.1, 0., 0.}}, {{-0.5, 0., 0.}, {-0.1, 0., 0.}}}, {$coneRadius, $coneRadius}],
-  "Sphere" ->
-    Sphere[ToPacked @ {0., 0., 0.}, .2]
-];
-
-$namedArrowheads = Union[
-  Discard[Keys @ $arrowheads2D, StringContainsQ["DoubleIn" | "DoubleOut"]],
-  Keys @ $arrowheads3D, {"Cardinal"}
-];
-
-(**************************************************************************************************)
-
-PublicFunction[ArrowheadData]
-
-ArrowheadData[name_, style_:{}] :=
-  makeArrowheadShape[name, style];
-
-(**************************************************************************************************)
-
-$vertexEdgeThickness = 1;
-$lineThickness = AbsoluteThickness[1.2];
-
-makeArrowheadShape[None, _] := None;
-
-makeArrowheadShape["Sphere", style_] :=
-  makeArrowheadGraphic3D[$arrowheads3D @ name, Color3D @ style];
-
-makeArrowheadShape[name_String, style_] /; StringStartsQ[name, {"Line", "DoubleLine", "CrossLine"}] :=
-  makeArrowheadGraphic2D[
-    $arrowheads2D @ name,
-    Directive[style, $lineThickness]
-  ];
-
-ExtendedGraphPlot::arrow3din2d = "Cannot use shape `` in a 2D graph."
-
-makeArrowheadShape[name_String, style_] := Which[
-  KeyExistsQ[$arrowheads2D, name],
-    makeArrowheadGraphic2D[$arrowheads2D @ name, style],
-  KeyExistsQ[$arrowheads3D, name],
-    If[!$GraphIs3D, failPlot["arrow3din2d", name]];
-    makeArrowheadGraphic3D[$arrowheads3D @ name, Color3D @ style],
-  True,
-    badArrowheadShape[name]
-];
-
-makeArrowheadShape[Graphics[elems_, opts___], style_] :=
-  Graphics[{Opacity[1], style, elems}, opts, AspectRatio -> 1, PlotRangeClipping -> False];
-
-makeArrowheadShape[Placed[img_Image, pos_], style_] :=
-  imageToGraphics[img, pos];
-
-makeArrowheadShape[img_Image, style_] :=
-  imageToGraphics[img, {0, 1}];
-
-makeArrowheadShape[spec_, _] :=
-  badArrowheadShape[spec];
-
-badArrowheadShape[spec_] :=
-  failPlot["badarrowhead", spec,
-    commaString @ $namedArrowheads];
-
-imageToGraphics[img_, pos_] := ImageToGraphics[ImageResize[img, 50], pos, 50];
-
-ExtendedGraphPlot::badarrowhead = "ArrowheadShape -> `` should be None, Automatic, Graphics[..], an Image, or one of ``."
-
-(**************************************************************************************************)
-
-PublicFunction[ArrowheadLegend]
-
-Options[ArrowheadLegend] = {
-  ArrowheadShape -> "Arrow",
-  Orientation -> Vertical,
-  MaxItems -> 10
-}
-
-to2DShape = Case[
-  Automatic   := "Arrow";
-  "Cone"      := "Arrow";
-  "Sphere"    := "Disk";
-  a_          := a;
-];
-
-ArrowheadLegend[assoc_Association, OptionsPattern[]] := Scope[
-  UnpackOptions[arrowheadShape, orientation, maxItems];
-  If[arrowheadShape === "Cardinal", Return[""]];
-  isHorizontal = orientation === Horizontal;
-  shapeIndex = If[AssociationQ[arrowheadShape], arrowheadShape, <|All -> arrowheadShape|>];
-  rows = KeyValueMap[
-    {name, color} |-> (
-      arrowShape = to2DShape @ Lookup[shapeIndex, name, Lookup[shapeIndex, All, "Arrow"]];
-      If[MissingQ[arrowShape] || arrowShape === None, Nothing,
-        graphic = makeLegendArrowheadGraphic[color, arrowShape, isHorizontal];
-        {graphic, name}
-      ]),
-    assoc
-  ];
-  If[Length[rows] > maxItems, rows = Append[Take[rows, maxItems], {"", "\[VerticalEllipsis]"}]];
-  If[isHorizontal, horizontalALFrame, verticalALFrame] @ rows
-]
-
-verticalALFrame[rows_] :=
-  Framed[
-    Grid[rows, BaseStyle -> {FontFamily -> $CardinalFont, FontSize -> 12}, Spacings -> {.4, 0.5}],
-    FrameMargins -> {{0, 0}, {5, 5}},
-    FrameStyle -> None
-  ]
-
-horizontalALFrame[rows_] :=
-  Framed[
-    Grid[Transpose @ rows, BaseStyle -> {FontFamily -> $CardinalFont, FontSize -> 12}, Spacings -> {.4, 0.5}],
-    FrameMargins -> {{5, 5}, {0, 0}},
-    FrameStyle -> None
-  ]
-
-PrivateFunction[makeLegendArrowheadGraphic]
-
-makeLegendArrowheadGraphic[color_, shape_, isHorizontal_:False] := Scope[
-  isLine = StringContainsQ[shape, "Line"];
-  prims = $arrowheads2D @ shape;
-  makeArrowheadGraphic2D[
-    {If[isLine, AbsoluteThickness[2.0], Nothing], If[!isHorizontal, Rotate[prims, Pi/2], prims]},
-    If[isLine, Identity, FaceForm] @ color,
-    BaselinePosition -> Scaled[0.1], ImageSize -> {11, 11}, AspectRatio -> Automatic
-  ]
-];
-
-(**************************************************************************************************)
-
-PrivateFunction[makeHighlightArrowheadShape]
-
-makeHighlightArrowheadShape[color_, scaling_, False] :=
-  makeArrowheadGraphic2D[
-    $arrowheads2D["Line"] /. r_List :> (r * scaling),
-    toDirective @ {color, JoinForm @ "Miter", CapForm @ "Round"}
-  ];
-
-makeHighlightArrowheadShape[color_, scaling_, True] :=
-  makeArrowheadGraphic3D[
-    Cone[ToPacked @ ({{-0.2, 0., 0.}, {0.2, 0., 0.}} * 1.75 * scaling), $coneRadius * 1.75 * scaling],
-    Color3D @ color
-  ];
 
 (**************************************************************************************************)
 
@@ -3032,7 +2663,7 @@ splitMatchingIds[list_, ids_] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[AttachGraphPlotAnnotation]
+PrivateFunction[AttachGraphPlotAnnotation]
 
 AttachGraphPlotAnnotation[name_String] := (
   $GraphPlotGraphics //= MapAt[Annotation[#, name]&, 1]
@@ -3040,7 +2671,7 @@ AttachGraphPlotAnnotation[name_String] := (
 
 (**************************************************************************************************)
 
-PublicFunction[ApplyFinalTransforms]
+PrivateFunction[ApplyFinalTransforms]
 
 ApplyFinalTransforms[g:(_Graphics|_Graphics3D)] :=
   MapAt[ApplyFinalTransforms, g, 1];
@@ -3090,7 +2721,7 @@ hideArrowheads[p_] := ReplaceAll[p, {
 
 (**************************************************************************************************)
 
-PublicFunction[AnnotationsToTooltips]
+PrivateFunction[AnnotationsToTooltips]
 
 AnnotationsToTooltips[g_Graphics, name_] :=
   ReplaceAll[g, Annotation[prims_, ids_, name] :> annoWithTooltips[prims, ids]]

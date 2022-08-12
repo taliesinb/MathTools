@@ -28,6 +28,12 @@ EchoGraphics[points_ ? RealMatrixQ] := (AppendTo[$prims, Point @ points]; points
 
 (**************************************************************************************************)
 
+PublicFunction[EchoDimensions]
+
+EchoDimensions[e_] := (Echo[Row[Dimensions @ e, "\[Times]", BaseStyle -> $DarkBlue]]; e);
+
+(**************************************************************************************************)
+
 PublicHead[MsgPath]
 
 MsgPath[p_MsgFile] := p;
@@ -40,19 +46,19 @@ MakeBoxes[MsgPath[s_String], TraditionalForm] := msgPathBoxes[s];
 msgPathBoxes[path_String] := With[
   {type = FileType[path]},
   {color = Switch[Quiet @ FileType @ path, None, $LightRed, Directory, $LightBlue, File, $LightGray, True, $LightRed]},
-  ToBoxes @ MouseAppearance[EventHandler[
+  ToBoxes @ ClickForm[
     Framed[Style[path, FontFamily -> "Source Code Pro", FontSize -> 10, Bold, FontColor -> Black],
       Background -> color, FrameStyle -> Darker[color, .2],
       ContentPadding -> False, RoundingRadius -> 2,
       ImageSize -> {Automatic, 16}, FrameMargins -> {{5, 5}, {0, 0}},
       BaselinePosition -> Baseline
     ],
-    {"MouseClicked" :> If[
+    If[
       ModifierKeysPressedQ[],
       trySystemOpen @ path,
       Beep[]; CopyToClipboard @ ToString[path, InputForm]
-    ]}
-  ], "LinkHand"]
+    ]
+  ]
 ];
 
 trySystemOpen[s_String] := Scope[

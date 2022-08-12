@@ -326,11 +326,26 @@ PublicFunction[OklabBlend]
 
 SetUsage @ "
 OklabBlend[colors$] blends a list of ordinary colors, but in OkLAB colorspace.
+OklabBlend[colors$, i$] blends part $i between the colors, where $i runs from 0 to 1.
 "
 
 DeclareArgumentCount[OklabBlend, 1];
 
 OklabBlend[colors_List] := FromOklab @ Mean @ ToOklab[colors];
+
+OklabBlend[colors_List, i_] := oklabInterpolation[colors, i] // FromOklab;
+
+(**************************************************************************************************)
+
+PublicFunction[OklabBlendFunction]
+
+OklabBlendFunction[colors_, Automatic] := OklabInterpolation[colors] /* FromOklab
+
+oklabInterpolation[colors_, args___] :=
+  Interpolation[
+    Trans[Lerp[0, 1, Into @ Length @ colors], ToOklab @ colors],
+    args
+  ];
 
 (**************************************************************************************************)
 
@@ -372,9 +387,10 @@ PublicFunction[ContinuousColorFunction]
 
 SetUsage @ "
 ContinuousColorFunction[{v$1, $$, v$n}, {c$1, $$, c$n}] returns a function that will take a value \
-in the range [v$1, v$n] and interpolate a corresponding color based on the matching colors \
-c$1 to c$n.
-ContinuousColorFunction[{v$1 -> c$1, $$, v$n -> c$n}] and ContinuousColorFunction[vlist$ -> clist$] are also supported.
+in the range [v$1, v$n] and interpolate a corresponding color based on the matching colors c$1 to c$n.
+ContinuousColorFunction[%Interval[{a$, b$}], $$] will interpolate between colors over the range a$ to b$.
+ContinuousColorFunction[Automatic, $$] will interpolate between colors over the range 0 to 1.
+* ContinuousColorFunction[{v$1 -> c$1, $$, v$n -> c$n}] and ContinuousColorFunction[vlist$ -> clist$] are also supported.
 * Colors are blended in the OkLAB colorspace.
 * ContinuousColorFunction returns a %ColorFunctionObject[$$].
 * The option %Ticks determines how ticks will be drawn, and accepts these options:
@@ -422,6 +438,8 @@ ContinuousColorFunction[values_List, Automatic, opts:OptionsPattern[]] := Scope[
 
 ContinuousColorFunction[values_, colors_, OptionsPattern[]] := Scope[
   colors = toColorList @ colors;
+  SetAutomatic[values, Interval[{0, 1}]];
+  values //= Replace[Interval[{a_, b_}] :> Lerp[a, b, Into @ Length @ colors]];
   checkColArgs[ContinuousColorFunction, values, colors];
   If[Length[values] < 2, ReturnFailed["interpsize"]];
   okLabValues = ToOklab[colors];
@@ -755,7 +773,7 @@ Options[ChooseContinuousColorFunction] = {
   Ticks -> Automatic
 };
 
-ChooseContinuousColorFunction[ab:{_ ? NumberQ, _ ? NumberQ}, OptionsPattern[]] := Scope[
+ChooseContinuousColorFunction[ab:{$NumberP, $NumberP}, OptionsPattern[]] := Scope[
   UnpackOptions[ticks];
   {values, colors, newTicks} = pickBiGradient @@ Sort[ab];
   SetAutomatic[ticks, newTicks];
@@ -926,3 +944,13 @@ Color3D[c_] := Directive[Glow @ c, GrayLevel[0, ColorOpacity[c]], Specularity @ 
 PublicFunction[ComplexHue]
 
 ComplexHue[c_] := ColorConvert[Hue[Arg[c]/Tau+.05, Min[Sqrt[Abs[c]]/1.2,1], .9], RGBColor];
+
+(**************************************************************************************************)
+
+PublicFunction[OklabHue]
+
+$OklabHueFunction := $OklabHueFunction = ContinuousColorFunction[
+  {0 -> RGBColor[0.8, 0.2, 0.12], 3/12 -> RGBColor[0.7, 0.65, 0.05], 5/12 -> RGBColor[0.1, 0.6, 0.15], 6/12 -> RGBColor[0.05, 0.48, 0.50], 8/12 -> RGBColor[0.15, 0.20, 0.65], 12/12 -> RGBColor[0.8, 0.2, 0.12]}
+];
+
+OklabHue[c_] := $OklabHueFunction[c];

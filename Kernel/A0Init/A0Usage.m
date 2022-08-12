@@ -18,12 +18,13 @@ PrivateVariable[$literalSymbolRegex]
 
 $literalSymbolStr = "\\$Failed Automatic True False None Inherited Left Right Above Below Center \
 Top Bottom Infinity Tiny Small Medium Large Inverted Into";
+
 $literalSymbolRegex = RegularExpression["(" <> StringReplace[$literalSymbolStr, " " -> "|"] <> ")"];
 $literalSymbolColor = RGBColor[{0.15, 0.15, 0.15}];
 
 PrivateVariable[$mainSymbolRegex, $currentMainSymbol]
 
-$mainSymbolRegex = RegularExpression["^\\$?[A-Za-z][A-Za-z]*"];
+$mainSymbolRegex = RegularExpression["^\\$?[A-Za-z][A-Za-z0-9]*"];
 $mainSymbolColor = RGBColor[{0.71, 0.03, 0.}];
 
 colorLiterals[usageString_] := Scope[
@@ -146,6 +147,26 @@ customSetUsageProcessor = Composition[
   GeneralUtilities`Code`PackagePrivate`fmtUsageString,
   colorOtherSymbols, colorLiterals
 ];
+
+(**************************************************************************************************)
+
+(* this allows % to be used in LHS of SetUsage lines *)
+
+encodeUppercase[i_] := FromCharacterCode[65 + IntegerDigits[i, 26, 2]];
+decodeUppercase[s_] := FromDigits[ToCharacterCode[s] - 65, 26];
+GeneralUtilities`Code`PackagePrivate`linearLHS[str_String, Optional[escapeq_, False]] /; StringContainsQ[str, "\!\(\*"] := Module[
+  {blocks = {}, i = 0, str2, res},
+  If[StringStartsQ[str, "\!\(\*"] && StringEndsQ[str, "\)"], Return @ str];
+  str2 = StringReplace[str, "\!\(\*" ~~ Shortest[content__] ~~ "\)" :> (
+    AppendTo[blocks, content];
+    "AZA" <> encodeUppercase[++i]
+  )];
+  res = GeneralUtilities`Code`PackagePrivate`linearLHS[str2, escapeq];
+  StringReplace[res, {
+    "\"AZA" ~~ d:(LetterCharacter ~~ LetterCharacter) ~~ "\"" :> Part[blocks, decodeUppercase[d]],
+    "AZA" ~~ d:(LetterCharacter ~~ LetterCharacter) :> Part[blocks, decodeUppercase[d]]
+  }]
+]
 
 (**************************************************************************************************)
 

@@ -1,4 +1,4 @@
-PublicFunction[TBox, TBoxOp, SBox, RBox, GBox, RaiseBox]
+PublicFunction[TBox, TBoxOp, SBox, RBox, GBox]
 
 TBox[args___, form_] := TemplateBox[{args}, form];
 TBoxOp[form_][args___] := TemplateBox[{args}, form];
@@ -17,8 +17,6 @@ GBox[entries_, alignments_, rowSpacings_, colSpacings_] :=
 prepend0[list_List] := Prepend[list, 0];
 prepend0[e_] := e;
 
-RaiseBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> -n];
-
 (**************************************************************************************************)
 
 PublicSymbol[$0, $1, $2, $3, $4, $5]
@@ -31,6 +29,14 @@ DefineStandardTraditionalForm[lhs_ :> rhs_] := (
   MakeBoxes[lhs, StandardForm] := rhs;
   MakeBoxes[l:lhs, TraditionalForm] := MakeBoxes @ l;
 )
+
+(**************************************************************************************************)
+
+PublicFormBox[Raise]
+
+DefineStandardTraditionalForm[RaiseForm[e_, n_ ? NumericQ] :> RaiseBox[MakeBoxes @ e, n]];
+
+RaiseBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> -n];
 
 (**************************************************************************************************)
 
@@ -795,3 +801,17 @@ RuntimeTBox[param_Symbol, arg_] := With[
   {kName = toKName[name, 1], tName = toTName[name, 1]},
   KatexSwitch[TemplateBox[{arg, tName}, "ParameterizedTemplateBox"], kName[arg]]
 ];
+
+(**************************************************************************************************)
+
+PublicOption[NegationStyle, InversionStyle]
+
+SetUsage @ "NegationStyle is an option to CompactNumberForm and other functions."
+SetUsage @ "InversionStyle is an option to CompactNumberForm and other functions."
+
+PrivateVariable[$compactNumberOptions]
+
+$compactNumberOptions = {
+  NegationStyle -> "Color",
+  InversionStyle -> UnderBar
+};

@@ -1,3 +1,12 @@
+PublicFunction[FormalSymbolArray]
+
+$formalsRoman = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+FormalSymbolArray[dims_, str_String] := FormalSymbolArray[dims, First @ First @ StringPosition[$formalsRoman, str] - 1];
+FormalSymbolArray[dims_, offset_:0] := Block[{n = 0 + offset}, Array[Symbol @ FromCharacterCode[63488 + n++]&, dims]];
+
+(**************************************************************************************************)
+
+
 PublicFunction[CatenateVectors]
 
 CatenateVectors[vecLists_] := Join[Sequence @@ vecLists, 2];
@@ -138,8 +147,8 @@ AppendConstantRow[item_][matrix_] := AppendConstantRow[matrix, item];
 
 PublicFunction[PrependConstantRow]
 
-AppendConstantRow[matrix_, item_] := Prepend[matrix, ConstantArray[item, Length @ First @ matrix]];
-AppendConstantRow[item_][matrix_] := PrependConstantRow[matrix, item];
+PrependConstantRow[matrix_, item_] := Prepend[matrix, ConstantArray[item, Length @ First @ matrix]];
+PrependConstantRow[item_][matrix_] := PrependConstantRow[matrix, item];
 
 (**************************************************************************************************)
 (** Idiomatic construction of matrices                                                            *)
@@ -194,6 +203,13 @@ CoordinateVectorQ[___] := False;
 
 (**************************************************************************************************)
 
+PublicFunction[CoordinatePairQ]
+
+CoordinatePairQ[{_, _} ? CoordinateVectorQ] := True;
+CoordinatePairQ[_] := False;
+
+(**************************************************************************************************)
+
 PublicFunction[CoordinateMatrixQ]
 
 CoordinateMatrixQ[matrix_, n_:2|3] :=
@@ -208,6 +224,19 @@ CoordinateMatricesQ[list_] :=
 
 CoordinateMatricesQ[list_, n_] :=
   VectorQ[list, CoordinateMatrixQ[#, n]&];
+
+(**************************************************************************************************)
+
+PublicFunction[CoordinateVectorOrMatrixQ]
+
+CoordinateVectorOrMatrixQ[array_] := ArrayQ[array, 1|2] && MatchQ[InnerDimension @ array, 2|3];
+
+(**************************************************************************************************)
+
+PublicFunction[CoordinateMatrixOrMatricesQ]
+
+CoordinateMatrixOrMatricesQ[{} | {{}}] := True;
+CoordinateMatrixOrMatricesQ[e_] := CoordinateMatrixQ[e] || CoordinateMatricesQ[e];
 
 (**************************************************************************************************)
 

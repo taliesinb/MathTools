@@ -61,6 +61,16 @@ PositiveIntegerVectorQ[list_] := VectorQ[list, PositiveIntegerQ];
 
 (**************************************************************************************************)
 
+PublicFunction[PositiveIntegerVectorsQ]
+
+SetUsage @ "
+PositiveIntegerVectorsQ[list$] gives True if list$ is a list of vectors of positive integers.
+"
+
+PositiveIntegerVectorsQ[list_] := VectorQ[list, PositiveIntegerVectorQ];
+
+(**************************************************************************************************)
+
 PublicFunction[UnitIntervalArrayQ]
 
 SetUsage @ "
