@@ -1,9 +1,12 @@
 PublicFunction[NeutralGraphics3D]
 
 NeutralGraphics3D[prims_, opts___] := Graphics3D[
-  {Opacity[0.5], EdgeForm @ AbsoluteThickness[3], FaceForm @ GrayLevel[0.9], EdgeForm @ GrayLevel[0.5], prims},
+  {EdgeForm @ AbsoluteThickness[3], FaceForm @ GrayLevel[0.9], EdgeForm @ GrayLevel[0.5], prims},
   opts, Boxed -> False, Lighting -> AmbientLight[White], ImageSize -> 300,
-  ViewProjection->"Orthographic"
+  ViewProjection -> "Orthographic",
+  ViewPoint -> {-2, -1.5, 2.5},
+  ViewVertical -> {0, 0, 1}
+
 ]
 
 (**************************************************************************************************)
@@ -129,4 +132,85 @@ SpannedCubeArray[spec:(_List | _Rule), dims_, OptionsPattern[]] := Scope[
     Style[Cuboid @@ bounds, FaceEdgeForm @ color]
   ]
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[CubeArrayAxes]
+
+PublicOption[FlagOrientation]
+
+CubeArrayAxes::badlabelpos = "Unrecognized LabelPosition ``.";
+
+Options[CubeArrayAxes] = {
+  LabelPosition -> "Near",
+  InsetScale -> 1/144,
+  BaseStyle -> {},
+  FontSize -> 16
+};
+
+CubeArrayAxes[origin_, dims_, {lx_, ly_, lz_}, OptionsPattern[]] := Scope[
+  UnpackOptions[labelPosition, insetScale, baseStyle, fontSize];
+  AppendTo[baseStyle, FontSize -> fontSize];
+  spec = Lookup[cubeArrayAxesOrient, labelPosition, ReturnFailed["badlabelpos", orient]];
+  MapThread[
+    CubeEdgeText[#1, origin, dims, Seq @@ #2, InsetScale -> insetScale, BaseStyle -> baseStyle]&,
+    {{lx, ly, lz}, spec}
+  ]
+];
+
+cubeArrayAxesOrient = <|
+  "XZY"    -> {{{3, 1, 2}, {0,0,0}}, {{1, 2, 3}, {1,0,1}}, {{1, 3, 2}, {1,0,0}}},
+  "YZX"    -> {{{3, 1, 2}, {1,0,1}}, {{3, 2, 1}, {0,0,0}}, {{1, 3, 2}, {0,0,1}}},
+  "ZXY"    -> {{{3, 1, 2}, {1,0,1}}, {{3, 2, 1}, {1,1,1}}, {{1, 3, 2}, {0,0,1}}},
+  "XYZ"    -> {{{3, 1, 2}, {1,0,1}}, {{3, 2, 1}, {1,1,1}}, {{1, 3, 2}, {1,1,0}}},
+  "ZYX"    -> {{{3, 1, 2}, {1,1,1}}, {{3, 2, 1}, {1,0,1}}, {{1, 3, 2}, {1,0,0}}},
+  "Near"   -> {{{3, 1, 2}, {0,0,0}}, {{3, 2, 1}, {0,0,0}}, {{1, 3, 2}, {0, 0, {Above, 0}}}},
+  "Far"    -> {{{3, 1, 2}, {1,1,1}}, {{3, 2, 1}, {1,1,1}}, {{1, 3, 2}, {1, 1, {Below, 1.02}}}}
+|>;
+
+$CubeAxesStyle = FontWeight -> Bold;
+
+(**************************************************************************************************)
+
+PublicFunction[CubeEdgeText]
+
+faceNameToIndex = Case[
+  {"YZ", Top}    := {{1, 2, 3}, {0, 1, 1}};
+  {"YZ", Bottom} := {{1, 2, 3}, {0, 1, 0}};
+  {"YZ", Left}   := {{1, 3, 2}, {0, 0, 1}};
+  {"YZ", Right}  := {{1, 3, 2}, {0, 0, 0}};
+
+  {"XY", Top}    := {{3, 1, 2}, {1, 0, 1}};
+  {"XY", Bottom} := {{3, 1, 2}, {1, 0, 0}};
+  {"XY", Left}   := {{3, 2, 1}, {1, 1, 0}};
+  {"XY", Right}  := {{3, 2, 1}, {1, 1, 1}};
+
+  {"XZ", Top}    := {{2, 1, 3}, {0, 0, 1}};
+  {"XZ", Bottom} := {{2, 1, 3}, {0, 0, 0}};
+  {"XZ", Left}   := {{2, 3, 1}, {0, 1, 0}};
+  {"XZ", Right}  := {{2, 3, 1}, {0, 1, 1}};
+];
+
+Options[CubeEdgeText] = {FlipX -> Automatic, FlipY -> False, InsetScale -> 1/144, BaseStyle -> {}};
+
+CubeEdgeText[text_, origin_, dims_, faceName_String, pos_Symbol] :=
+  CubeEdgeText[text, origin, dims, Seq @@ faceNameToIndex[{faceName, pos}]];
+
+CubeEdgeText[text_, origin_, dims_, indices_, positions_:{0,0,0}, opts:OptionsPattern[]] := Scope[
+  origin2 = origin - dims * 0.001; dims2 = dims * 1.002;
+  cubeText0[text, origin2, Threaded[origin] + DiagonalMatrix[dims2], indices, positions, opts]
+];
+  
+cubeText0[text_, origin_, axisVectors:{_, _, _}, {i_, j_, k_}, {s_, t_, p_}, opts___] :=
+  cubeText1[text, origin + Part[axisVectors, i] * s, Part[axisVectors, {j, k}], {t, p}, opts]
+  
+cubeText1[text_, origin_, {dx_, dy_}, {fx_, fy_}, opts___] :=
+  PlaneInset[text, origin + dx * toRat[fx] + dy * toRat[fy], {dx, dy}, {1, -1} * Map[unit2biunit, {fx, fy}], opts];
+  
+toRat[{Above|Below, x_}] := x;
+toRat[x_] := x;
+
+unit2biunit[{Above, _}] := 1;
+unit2biunit[{Below, _}] := -1;
+unit2biunit[x_] := 2x - 1;
 

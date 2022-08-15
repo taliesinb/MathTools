@@ -21,7 +21,7 @@ standardRasterizationFunction[cell_] :=
   cachedGenericRasterize[cell, rasterizeImage, "png", CompressionLevel -> 1];
 
 rasterizeImage[obj_] := Scope[
-  img = Rasterize[obj, ImageFormattingWidth -> Infinity, ImageResolution -> 144];
+  img = CachedFastRasterize[obj];
   {img, ImageDimensions @ img}
 ]
 

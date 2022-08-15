@@ -689,3 +689,11 @@ PublicFunction[MatrixThread, MatrixMax, MatrixMin]
 MatrixMax[m__] := MatrixThread[Max, m];
 MatrixMin[m__] := MatrixThread[Min, m];
 MatrixThread[f_, m__] := MapThread[f, {m}, 2];
+
+(**************************************************************************************************)
+
+PublicFunction[VectorThread, VectorMax, VectorMin]
+
+VectorMax[m__] := VectorThread[Max, m];
+VectorMin[m__] := VectorThread[Min, m];
+VectorThread[f_, v__] := MapThread[f, {v}];

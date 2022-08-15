@@ -119,8 +119,10 @@ SimplifyTranslate[e_] := e //. Translate[Translate[g_, pos1_], pos2_] :> RuleCon
 
 (**************************************************************************************************)
 
-$coordArg1P = Point | Circle | Disk | Polygon | Line | Arrow | BSplineCurve | BezierCurve | Ball | Sphere | Cylinder | Tube | Cone | CapsuleShape | StadiumShape | Cuboid | CenteredRectangle | CenteredCuboid;
-$coordArg2P = Text | Inset;
+$coordArg1P = Point | Circle | Disk | Polygon | Line | Arrow | BSplineCurve | BezierCurve | Ball | Sphere |
+  Cylinder | Tube | Cone | CapsuleShape | StadiumShape | Cuboid | CenteredRectangle | CenteredCuboid | VectorArrow | AxesFlag;
+
+$coordArg2P = Text | Inset | PlaneInset;
 $coordRectP = Cuboid | Rectangle;
 
 (* TODO: Will this handle nested translates? also, what about other transformations ? *)

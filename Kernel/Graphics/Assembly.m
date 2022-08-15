@@ -213,3 +213,93 @@ assembleSGrid[array_List, {halign_, valign_, hspacing_, vspacing_}] := Scope[
   Sized[list2, {x - hspacing, y - vspacing}]
 ];
 
+(**************************************************************************************************)
+
+PublicFunction[AssembleGraphics3D]
+
+PublicHead[XStack, YStack, ZStack]
+
+PublicOption[XSpacing, YSpacing, ZSpacing]
+
+Options[AssembleGraphics3D] = JoinOptions[
+  XSpacing -> 1, YSpacing -> 1, ZSpacing -> 1, Spacing -> None,
+  Alignment -> Center,
+  BaseStyle -> {FontSize -> 30, FontFamily -> "Source Code Pro"},
+  Graphics3D
+];
+
+AssembleGraphics3D[g_, opts:OptionsPattern[]] := Scope[
+  
+  UnpackOptions[$xSpacing, $ySpacing, $zSpacing, spacing, $baseStyle, $alignment];
+
+  If[!ListQ[$alignment], $alignment *= {1, 1, 1}];
+
+  If[spacing =!= None, UnpackTuple[spacing, $xSpacing, $ySpacing, $zSpacing]];
+  $spacing = {$xSpacing, $ySpacing, $zSpacing};
+
+  prims = assemble3D @ embedSizes3D @ g;
+  If[!MatchQ[prims, _Sized], ReturnFailed[]];
+
+  {xmax, ymax, zmax} = Last @ prims;
+  prims //= First;
+  prims //= SimplifyTranslate;
+  
+  Graphics3D[prims, BaseStyle -> $baseStyle, PlotRange -> {{0, xmax}, {0, ymax}, {0, zmax}}, FilterOptions @ opts]
+
+];
+  
+(**************************************************************************************************)
+
+embedSizes3D = Case[
+  s:(_XStack | _YStack | _ZStack) := Map[%, s];
+  r_Rule                     := r;
+  e_                         := wrapGraphics3D[e];
+];
+
+wrapGraphics3D[Spacer[w_ ? NumericQ]] := Sized[{}, {w, 0.0001, 0.0001}];
+wrapGraphics3D[Spacer[c:$Coord3P]] := Sized[{}, c];
+
+wrapGraphics3D[Padded[e_, padding_]] := Scope[
+  {g, {w, h, d}} = List @@ wrapGraphics3D[e];
+  {{l, r}, {b, t}, {u, o}} = StandardizePadding3D[padding];
+  Sized[Translate[g, {l, b, u}], {w + l + r, h + b + t, d + u + o}]
+];
+
+wrapGraphics3D[g_] := Scope[
+  {{xmin, xmax}, {ymin, ymax}, {zmin, zmax}} = plotRange3D @ g;
+  xsize = xmax - xmin;
+  ysize = ymax - ymin;
+  zsize = zmax - zmin;
+  Sized[Translate[g, -{xmin, ymin, zmin}], {xsize, ysize, zsize}]
+];
+
+plotRange3D = Case[
+  Cuboid[min_, max_] := Trans[min, max];
+  other_ := GraphicsPlotRange @ Graphics3D @ other;
+];
+
+assemble3D = Case[
+  XStack[args___, opts___Rule] := assembleI[assemble3D /@ {args}, 1, Lookup[{opts}, {Alignment, Spacing}, Inherited]];
+  YStack[args___, opts___Rule] := assembleI[assemble3D /@ {args}, 2, Lookup[{opts}, {Alignment, Spacing}, Inherited]];
+  ZStack[args___, opts___Rule] := assembleI[assemble3D /@ {args}, 3, Lookup[{opts}, {Alignment, Spacing}, Inherited]];
+  e_ := e;
+];
+
+assembleI[list_List, i_, {align_, spacing_}] := Scope[
+  sizes = Part[list, All, 2];
+  SetInherited[align, Part[$alignment, i]];
+  SetInherited[spacing, Part[$spacing, i]];
+  SetScaledFactor[spacing, Mean @ Part[sizes, All, i]];
+  maxCoords = Map[Max, Transpose @ sizes];
+  afuncs = toAlignFunc[#, align]& /@ maxCoords;
+  offset = 0;
+  list2 = VectorApply[
+    offset = 0; {g, size} |-> SeqFirst[
+      Translate[g, ReplacePart[MapThread[Construct, {afuncs, size}], i -> offset]],
+      offset += Part[size, i] + spacing
+    ],
+    list
+  ];
+  size = ReplacePart[maxCoords, i -> (offset - spacing)];
+  Sized[list2, size]
+];

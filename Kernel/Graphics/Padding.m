@@ -38,21 +38,51 @@ StandardizePadding[spec$] standardizes a padding specification spec$.
 "
 
 StandardizePadding = Case[
-  All                   := All;
-  None                  := {{0, 0}, {0, 0}};
-  p_ ? NQ               := N @ {{p, p}, {p, p}};
-  {pw_ ? NQ, ph_ ? NQ}  := N @ {{pw, pw}, {ph, ph}};
-  spec:{{_ ? NQ, _ ? NQ}, {_ ? NQ, _ ? NQ}} := N @ spec;
+  All                              := All;
+  None                             := {{0, 0}, {0, 0}};
+  p:$NumberP                       := N @ {{p, p}, {p, p}};
+  c:$Coord2P                       := N @ c;
+  s:{$Coord2P, $Coord2P}           := N @ s;
 
-  rule_Rule             := % @ {rule};
-  rules:{Rule[sideP, _ ? NQ]...} :=
-    N @ LookupSide[rules, {{Left, Right}, {Bottom, Top}}];
+  rule_Rule                        := % @ {rule};
+  rules:{Rule[sideP, $NumberP]...} := N @ LookupSide[rules, {{Left, Right}, {Bottom, Top}}];
 
-  _ := $Failed;
-
-  {NQ -> NumericQ, sideP -> $SidePattern|Horizontal|Vertical|All}
+  _                                := $Failed;
+,
+  {sideP -> $SidePattern|Horizontal|Vertical|All}
 ];
 
+(**************************************************************************************************)
+
+PrivateFunction[StandardizePadding3D]
+
+SystemSymbol[Under, Over]
+
+SetUsage @ "
+StandardizePadding3D[spec$] standardizes a 3D padding specification spec$.
+* StandardizePadding3D returns {{l$, r$}, {b$, t$}, {u$, o$}}.
+* StandardizePadding3D accepts the following forms:
+| None | no padding |
+| n$ | pad by n$ on all sides |
+| {x$, y$, z$} | pad on both sides on the x$, $y and $z axes |
+| {{l$, r$}, {b$, t$}, {$u, o$}} | explicit padding |
+| {Left -> l$, $$} | per-side padding |
+"
+
+StandardizePadding3D = Case[
+  All                              := All;
+  None                             := {{0, 0}, {0, 0}, {0, 0}};
+  p:$NumberP                       := N @ {{p, p}, {p, p}, {p, p}};
+  c:$Coord3P                       := N @ c;
+  s:{$Coord2P, $Coord2P, $Coord2P} := N @ s;
+
+  rule_Rule                        := % @ {rule};
+  rules:{Rule[sideP, $NumberP]...} := N @ LookupSide[rules, {{Left, Right}, {Bottom, Top}, {Under, Over}}];
+
+  _                                := $Failed;
+,
+  {sideP -> $SidePattern|Horizontal|Vertical|Under|Over|All}
+];
 
 (**************************************************************************************************)
 

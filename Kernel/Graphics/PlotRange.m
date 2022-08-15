@@ -100,7 +100,8 @@ plotRangeExpand[g_] := g /.
   gc_GraphicsComplex :> RuleCondition[Normal @ expandMultiArrowInGC @ gc] /. {
   StadiumShape[{a_, b_}, r_] :> RuleCondition[{Disk[a, r], Disk[b, r]}],
   CapsuleShape[{a_, b_}, r_] :> RuleCondition[{Sphere[a, r], Sphere[b, r]}],
-  (c_CenteredCuboid | c_CenteredRectangle) :> RuleCondition[With[{h = $ghead}, Typeset`MakeBoxes[c, StandardForm, h]] //. $graphicsBoxReplacements],
+  Cube[p:{_, _, _}:{0,0,0}, l_:1] :> RuleCondition[Sphere[p, l]],
+  c:$CustomPrimitiveP :> RuleCondition[With[{h = $ghead}, Typeset`MakeBoxes[c, StandardForm, h]] //. $graphicsBoxReplacements],
   a:$AnnotationP :> RuleCondition[plotRangeExpand @ First @ a],
   Inset[_, pos_, $centerOSpecP, {w_, h_}] :> RuleCondition[Rectangle[pos - {w,h}/2, pos + {w,h}/2]]
 } /. t_Translate :> RuleCondition @ BakeGraphicsTransformations[t];

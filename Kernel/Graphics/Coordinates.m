@@ -199,7 +199,7 @@ GraphicsTransformCoordinates[{x$, y$}, primitives$] takes projects the unit z$ b
 the vector {x$, y$}.
 "
 
-(* TODO: correctly transform radii, etc. Sphere should become ellipsoid etc.
+(* TODO: correctly transform radii, and deltas. Sphere should become ellipsoid etc.
 TODO: check for coordinates  first to handle things like Arrow[Line[...]] *)
 
 $ctfDispatch = Dispatch @ {
@@ -230,7 +230,7 @@ $ctfDispatch = Dispatch @ {
   Cuboid[a_]                 :> RuleCondition @ Cuboid[$ctf @ a, $ctf @ b],
   Cuboid[a_, b_]             :> RuleCondition @ Cuboid[$ctf @ a, $ctf @ b],
   CenteredCuboid[a_, r_]     :> RuleCondition @ CenteredCuboid[$ctf @ a, r],
-  CenteredRectangle[a_, r_]  :> RuleCondition @ CenteredCuboid[$ctf @ a, r],
+  CenteredRectangle[a_, r_]  :> RuleCondition @ CenteredRectangle[$ctf @ a, r],
   GraphicsComplex[c_, g_]    :> RuleCondition @ GraphicsComplex[$ctf @ c, g],
   Inset[e_, a_, r___]        :> Inset[e, $ctf @ a, r],
   Text[e_, a_, r___]         :> Text[e, $ctf @ a, r],

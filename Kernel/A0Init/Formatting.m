@@ -47,3 +47,23 @@ padSummaryItem[a_, b_] := BoxForm`SummaryItem[{Pane[a <> ": ", 60], b}];
 Unprotect[Grid]
 Grid[a_Association] := Grid[KeyValueMap[List, a], Alignment -> Left, Dividers -> All, ItemSize -> {{Automatic, 30}}];
 Protect[Grid]
+
+(**************************************************************************************************)
+
+PrivateFunction[declareGraphicsFormatting]
+
+declareGraphicsFormatting[lhs_ :> rhs_, type_:Graphics|Graphics3D] :=
+  Typeset`MakeBoxes[expr:lhs, StandardForm | TraditionalForm, type] :=
+    Construct[InterpretationBox, rhs, expr];
+
+declareGraphicsFormatting[list_List, type_:Graphics|Graphics3D] :=
+  Scan[declareGraphicsFormatting[#, type]&, list];
+
+declareGraphicsFormatting[___] := Panic["BadGraphicsFormatting"];
+
+(**************************************************************************************************)
+
+PrivateFunction[make2DBoxes, make3DBoxes]
+
+make2DBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics];
+make3DBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics3D];

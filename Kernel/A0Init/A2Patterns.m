@@ -104,7 +104,7 @@ $CoordMaybeMatsP = _List ? CoordinateMatrixOrMatricesQ;
 
 (**************************************************************************************************)
 
-PrivateVariable[$ArcP, $RegionP, $AnnotationP]
+PrivateVariable[$ArcP, $RegionP, $AnnotationP, $CustomPrimitiveP]
 
 headToPattern[e_] := Apply[Alternatives, Blank /@ e];
 
@@ -121,3 +121,5 @@ $RegionP = headToPattern @ {
 
 (* TODO: handle all wrappers *)
 $AnnotationP = headToPattern @ {Annotation, Tooltip, EventHandler, ClickForm};
+
+$CustomPrimitiveP = headToPattern @ {CenteredCuboid, CenteredRectangle, VectorArrow, Arrowhead, AxesFlag};
