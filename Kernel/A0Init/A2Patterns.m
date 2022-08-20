@@ -123,3 +123,52 @@ $RegionP = headToPattern @ {
 $AnnotationP = headToPattern @ {Annotation, Tooltip, EventHandler, ClickForm};
 
 $CustomPrimitiveP = headToPattern @ {CenteredCuboid, CenteredRectangle, VectorArrow, Arrowhead, AxesFlag};
+
+(**************************************************************************************************)
+
+PrivateVariable[$GPrimVecH, $GPrimVecVecH, $GPrimVecsH]
+
+$GPrimVecH = AxesFlag;
+
+$GPrimVecVecH = Cuboid | Rectangle;
+
+$GPrimVecsH = Point;
+
+PrivateVariable[$GPrimVecRadH, $GPrimVecsRadH]
+
+$GPrimVecRadH = Circle | Disk | Annulus | Cube;
+
+$GPrimVecsRadH = Sphere | Ball | CenteredRectangle | CenteredCuboid;
+
+PrivateVariable[$GPrimPairH, $GPrimPairRadH]
+
+$GPrimPairH = InfiniteLine | HalfLine;
+
+$GPrimPairRadH = Cylinder | Cone | CapsuleShape | StadiumShape;
+
+PrivateVariable[$GPrimVecDeltaH]
+
+(* TOD: InfinitePlane, ConicHull, etc *)
+
+$GPrimVecDeltaH = VectorArrow | Arrowhead | InfiniteLine | HalfLine;
+
+PrivateVariable[$GPrimMatH, $GPrimMatsH, $GPrimMatsRadH]
+
+$GPrimMatH = BSplineCurve | BezierCurve | Polygon | Polyhedron;
+
+$GPrimMatsH = Polygon | Polyhedron | Line | Arrow | FilledCurve;
+
+$GPrimMatsRadH = Tube
+
+PrivateVariable[$GPrimAnyVecH]
+
+$GPrimAnyVecH = Text | Inset | PlaneInset;
+
+PrivateVariable[$GPrimVH, $GPrimVVH, $GPrimVRH, $GPrimVDH, $GPrimAVH]
+
+$GPrimVH = DeleteDuplicates @ Flatten @ Alternatives[$GPrimVecH, $GPrimVecsH, $GPrimMatH, $GPrimMatsH, $GPrimPairH];
+$GPrimVRH = DeleteDuplicates @ Flatten @ Alternatives[$GPrimVecRadH, $GPrimVecsRadH, $GPrimMatsRadH, $GPrimPairRadH];
+$GPrimVVH = $GPrimVecVecH;
+$GPrimVDH = $GPrimVecDeltaH;
+$GPrimAVH = $GPrimAnyVecH;
+

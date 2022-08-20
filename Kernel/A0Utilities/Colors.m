@@ -953,4 +953,4 @@ $OklabHueFunction := $OklabHueFunction = ContinuousColorFunction[
   {0 -> RGBColor[0.8, 0.2, 0.12], 3/12 -> RGBColor[0.7, 0.65, 0.05], 5/12 -> RGBColor[0.1, 0.6, 0.15], 6/12 -> RGBColor[0.05, 0.48, 0.50], 8/12 -> RGBColor[0.15, 0.20, 0.65], 12/12 -> RGBColor[0.8, 0.2, 0.12]}
 ];
 
-OklabHue[c_] := $OklabHueFunction[c];
+OklabHue[c_] := $OklabHueFunction[Mod[c, 1, 0]];

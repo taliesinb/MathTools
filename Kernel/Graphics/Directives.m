@@ -107,5 +107,12 @@ normalizeStyles[e_] := ReplaceAll[e, $styleNormalizationRules];
 
 PublicFunction[FaceEdgeForm]
 
+toFECol[color_ -> op_] := Opacity[op, color];
+toFECol[e_] := e;
+
+FaceEdgeForm[face_, edge_] := Directive[FaceForm[toFECol @ face], EdgeForm[toFECol @ edge]];
 FaceEdgeForm[color_ ? ColorQ] := Directive[FaceForm[color], EdgeForm[Darker[color, .2]]];
 FaceEdgeForm[d_Directive] := d;
+FaceEdgeForm[e_] := e;
+FaceEdgeForm[Automatic] = {};
+FaceEdgeForm[None] := Transparent;

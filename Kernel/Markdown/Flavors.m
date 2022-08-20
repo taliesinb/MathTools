@@ -62,6 +62,14 @@ $flavorData["IAWriter", "MultilineMathTemplate"]  = wrapDoubleBrace;
 
 (**************************************************************************************************)
 
+$flavorData["Jupyter"] = $flavorData["Base"];
+$flavorData["Jupyter", "FileImageTemplate"]       = None;
+$flavorData["Jupyter", "RasterizationFunction"]   = JupyterRasterizationFunction;
+$flavorData["Jupyter", "StringImageTemplate"]     = $JupyterStringImageTemplate;
+$flavorData["Jupyter", "FileImageTemplate"]       = $JupyterFileImageTemplate;
+
+(**************************************************************************************************)
+
 $flavorData[None] = $flavorData["Base"];
 $flavorData[None, "FileImageTemplate"] = None;
 

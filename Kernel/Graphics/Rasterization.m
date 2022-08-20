@@ -1,17 +1,23 @@
 toExportNotebook[expr_, background_] :=
-	Cell[BoxData[ToBoxes[expr]],
-		"Output", ShowCellBracket -> False, Background -> background, CellMargins -> 0,
-		CellFrame -> None, CellFrameMargins -> 0, CellContext -> "Global`",
-		GraphicsBoxOptions -> {ImageSize -> Medium}, Graphics3DBoxOptions -> {ImageSize -> Medium},
-		StyleDefinitions -> $QGStyleDefs
-	];
+	toExportCell[expr, Background -> background, StyleDefinitions -> $QGStyleDefs];
 
 (* we do this because custom stylesheet makes rasterization substantially slower. TODO: also check for known TemplateBox string names! *)
 toExportNotebook[expr_, background_] /; FreeQ[expr, _Symbol ? QuiverGeometrySymbolQ] :=
-	Cell[BoxData[ToBoxes[expr]],
-		"Output", ShowCellBracket -> False, Background -> background, CellMargins -> 0,
-		CellFrame -> None, CellFrameMargins -> 0, CellContext -> "Global`",
-		GraphicsBoxOptions -> {ImageSize -> Medium}, Graphics3DBoxOptions -> {ImageSize -> Medium}];
+	toExportCell[expr, Background -> background];
+	
+$exportCellOptions = Sequence[
+	ShowCellBracket -> False, CellMargins -> 0,
+	CellFrame -> None, CellFrameMargins -> 0, CellContext -> "Global`",
+	GraphicsBoxOptions -> {ImageSize -> Medium}, Graphics3DBoxOptions -> {ImageSize -> Medium}
+];
+
+toExportCell[Cell[args___], opts___] :=
+	Cell[args, $exportCellOptions, opts];
+
+toExportCell[expr_, opts___] := Cell[
+	BoxData @ ToBoxes @ expr, "Output",
+	$exportCellOptions, opts
+];
 
 $QGStyleDefs := $QGStyleDefs = With[{path = $QuiverGeometryStylesheetPath}, FileName[{}, path, CharacterEncoding -> "UTF-8"]];
 
@@ -36,7 +42,20 @@ PublicFunction[FastRasterize]
 
 Options[FastRasterize] = {Background -> Automatic};
 
-FastRasterize[expr_, OptionsPattern[]] := MathLink`CallFrontEnd @ toExportPacket[expr, OptionValue[Background]];
+FastRasterize::fail = "Failed to rasterize input with head ``. Result printed below.";
+FastRasterize[expr_, OptionsPattern[]] := Scope[
+	res = MathLink`CallFrontEnd @ toExportPacket[expr, OptionValue[Background]];
+	If[!ImageQ[res], Message[FastRasterize::fail, Head @ expr]; Print[expr]; ConstantImage[Pink, {10, 10}], res]
+];
+
+(*************************************************************************************************)
+
+PublicFunction[ClearRasterizationCache]
+
+ClearRasterizationCache[] := (
+	QuiverGeometryLoader`$RasterizationCache = UAssociation[];
+	QuiverGeometryLoader`$Base64RasterizationCache = UAssociation[];
+)
 
 (*************************************************************************************************)
 

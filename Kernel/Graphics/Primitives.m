@@ -1,3 +1,62 @@
+PublicFunction[ShapeFromString]
+
+ShapeFromString[str_String] := Scope[
+  $f = 1;
+  Prepend[{0,0}] @ Accumulate @ Map[
+    $f * Lookup[$locs, StringTrim @ #, Print[#]]&,
+    StringSplit[str]
+  ]
+];
+
+$s2 = 1/Sqrt[2];
+$s3 = Sqrt[3]/2;
+$locs = Association[
+  "" -> {0, 0},
+  "+" :> ($f *= 2; {0,0}), "-" :> ($f /= 2; {0,0}),
+  "n" -> {0, 1}, "e" -> {1, 0}, "s" -> {0, -1}, "w" -> {-1, 0},
+  "ne" -> {$s2, $s2}, "se" -> {$s2, -$s2}, "sw" -> {-$s2, -$s2}, "nw" -> {-$s2, $s2},
+  "120" -> {$s3, -1/2}, "240" -> {-$s3, -1/2},
+  "*" :> ($f *= Sqrt[2]; {0, 0}),
+  "/" :> ($f /= Sqrt[2]; {0, 0})
+];
+
+(**************************************************************************************************)
+
+PublicFunction[PatternShading3D]
+
+PatternShading3D[color_, density_:5] := toSurfaceAppearance[
+  "UseScreenSpace" -> 1, "FeatureColor" -> color,
+  "Shape" -> "Line", "StepCount" -> 1, "Tiling" -> {1, 1}*density,
+  "IsTwoTone" -> 1
+];
+
+Options[toSurfaceAppearance] = {
+  "StepCount" -> 1, "Tiling" -> {5, 5},
+  "FeatureColor" -> Black, "UseScreenSpace" -> 1, "IsTwoTone" -> 1,
+  "LuminanceModifier" -> 0.0, "Shape" -> "Disk"
+};
+
+(* https://mathematica.stackexchange.com/questions/240690/regionplot3d-knotdata/240859#240859 *)
+
+toSurfaceAppearance[opts:OptionsPattern[toSurfaceAppearance]] :=
+  SurfaceAppearance["RampShading",
+    Sequence @@ FilterRules[{opts, Options[toSurfaceAppearance]}, Except["Shape"]],
+    "Arguments" -> {"HalftoneShading", 0.5, Red, OptionValue["Shape"]},
+    EdgeForm[], Texture["HalftoneShading" <> OptionValue["Shape"]]]
+
+(**************************************************************************************************)
+
+PublicHead[AnnotatedCoordinate]
+
+(* AnnotatedCoordinate gets transformed by GraphicsTransformCoordinates but doesn't actually render.
+used to keep track of named coordinates as they are transformed for later processing. *)
+
+declareGraphicsFormatting[
+  AnnotatedCoordinate[_, _] :> {}
+]
+
+(**************************************************************************************************)
+
 PublicHead[CenteredCuboid, CenteredRectangle]
 
 CenteredCuboid[pos_] := CenteredCuboid[pos, 1];
@@ -27,7 +86,7 @@ vectorArrowBoxes[pos1_, dir_, sz_:Automatic] := Scope[
   pos3 = pos1 + dir;
   SetAutomatic[sz, Norm[dir]/4];
   pos2 = PointAlongLine[{pos3, pos1}, sz];
-  {AbsoluteThickness[2], Construct[If[Length[pos1] === 2, LineBox, Line3DBox], {pos1, pos2}],
+  {AbsoluteThickness[3], Construct[If[Length[pos1] === 2, LineBox, Line3DBox], {pos1, pos2}],
    arrowheadBoxes[pos2, pos3 - pos2]}
 ];
 
@@ -74,24 +133,51 @@ PublicHead[PlaneInset]
 
 declareGraphicsFormatting[
 
-  PlaneInset[object_, origin_, vectors:{_List, _List}, offset:_List:{0, 0}, rule___Rule] :> planeInsetBoxes[object, origin, vectors, offset, rule]
+  PlaneInset[object_, origin_, vectors:({_List, _List}|_String), offset:_List:{0, 0}, rule___Rule] :> planeInsetBoxes[object, origin, vectors, offset, rule]
 
 ];
 
-PublicOption[FlipX, FlipY, InsetScale]
+PublicOption[FlipX, FlipY, FlipZ, InsetScale]
 
 Options[PlaneInset] = {
   ViewVector -> -{-2, -1.5, 2.5},
   FlipX -> Automatic,
   FlipY -> False,
   InsetScale -> 1/144,
-  BaseStyle -> {}
+  BaseStyle -> {},
+  TextAlignment -> Left,
+  LineSpacing -> 0.1,
+  FontSize -> Inherited,
+  FontColor -> Inherited,
+  FontFamily -> Inherited
 };
+
+planeInsetBoxes[object_, origin_, orient_String, f_, opts:OptionsPattern[PlaneInset]] := Scope[
+  UnpackOptions[viewVector];
+  viewVector //= Normalize;
+  Switch[orient,
+    "Screen",
+      vx = Chop @ Cross[viewVector, Normalize @ ReplacePart[viewVector, 3 -> 0]];
+      vy = Chop @ Cross[vx, viewVector],
+    "XZ",
+      vx = {1, 0, 0}; vy = {0, 0, 1},
+    "XY",
+      vx = {1, 0, 0}; vy = {0, 1, 0},
+    "YZ",
+      vx = {0, 1, 0}; vy = {0, 0, 1}
+  ];
+  planeInsetBoxes[object, origin, {vx, vy}, f, opts]
+];
 
 fracPair[f_] := f/2 + {-0.5, 0.5};
 planeInsetBoxes[object_, origin_, {vx_, vy_}, {fx_, fy_}, OptionsPattern[PlaneInset]] := Scope[
-  UnpackOptions[viewVector, flipX, flipY, insetScale, baseStyle];
-  {texture, dims} = cachedTextureBoxAndSize @ If[baseStyle =!= {}, Style[object, Seq @@ baseStyle], object];
+  UnpackOptions[viewVector, flipX, flipY, insetScale, baseStyle, textAlignment, lineSpacing, fontSize, fontColor, fontFamily];
+  baseStyle = ToList[baseStyle, FontSize -> fontSize, FontFamily -> fontFamily, FontColor -> fontColor, LineSpacing -> lineSpacing, TextAlignment -> textAlignment];
+  baseStyle //= DeleteCases[_ -> Inherited];
+  If[textAlignment =!= Left,
+    object = Framed[object, FrameStyle -> None, ContentPadding -> False]];
+  styledObject = addStyle[object, Seq @@ baseStyle];
+  {texture, dims} = cachedTextureBoxAndSize @ styledObject;
   {w, h} = dims * insetScale;
   {mx, px} = Outer[Times, fracPair[-fx], Normalize[vx] * w];
   {my, py} = Outer[Times, fracPair[-fy], Normalize[vy] * h];
@@ -103,6 +189,10 @@ planeInsetBoxes[object_, origin_, {vx_, vy_}, {fx_, fy_}, OptionsPattern[PlaneIn
   ]
 ];
 
+addStyle[Text[t_, rest___], style___] := Text[Style[t, style], rest];
+addStyle[other_, style___] := Style[other, style];
+
+
 planeInsetBoxes[args___] := Print[{args}];
 
 $textureCoords = Association[
@@ -112,6 +202,10 @@ $textureCoords = Association[
   {True, True}   -> ToPacked[{{1,1}, {1,0}, {0,0}, {0,1}}]
 ];
 
+PublicFunction[ClearTextureCache]
+
+ClearTextureCache[] := (QuiverGeometryLoader`$TextureBoxCache = UAssociation[];)
+
 If[!AssociationQ[QuiverGeometryLoader`$TextureBoxCache],
   QuiverGeometryLoader`$TextureBoxCache = UAssociation[]];
 
@@ -119,7 +213,7 @@ cachedTextureBoxAndSize[object_] :=
   CacheTo[QuiverGeometryLoader`$TextureBoxCache, Hash @ object, textureBoxesAndSize @ object];
 
 textureBoxesAndSize[object_] := Scope[
-  img = FastRasterize[object, Background -> Transparent];
+  img = FastRasterize[Style[object, LineSpacing -> 0.1], Background -> Transparent];
   dims = ImageDimensions @ img;
   texture = Construct[Typeset`MakeBoxes, Texture @ img, StandardForm, Graphics3D];
   {texture, dims}

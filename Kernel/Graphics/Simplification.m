@@ -1,5 +1,7 @@
 PrivateFunction[ExpandPrimitives]
 
+(* TODO: use the patterns like $GPrimVecsH to express these *)
+
 $expandPrimitivesDispatch = Dispatch[{
   p:Point[_ ? CoordinateMatrixQ] :> Thread[p],
   p:(Ball|Sphere)[_ ? CoordinateMatrixQ] :> Thread[p],
@@ -115,23 +117,16 @@ $simplifyPrimitiveListsRules = Dispatch @ {
 
 PublicFunction[SimplifyTranslate]
 
-SimplifyTranslate[e_] := e //. Translate[Translate[g_, pos1_], pos2_] :> RuleCondition @ Translate[g, pos1 + pos2];
+SimplifyTranslate[e_] := e //. {
+  Translate[Translate[g_, pos1_], pos2_] :> RuleCondition @ Translate[g, pos1 + pos2],
+  Translate[{t__Translate}, pos_] :> RuleCondition @ SimplifyTranslate[Map[Translate[#, pos]&, {t}]]
+}
 
 (**************************************************************************************************)
 
-$coordArg1P = Point | Circle | Disk | Polygon | Line | Arrow | BSplineCurve | BezierCurve | Ball | Sphere |
-  Cylinder | Tube | Cone | CapsuleShape | StadiumShape | Cuboid | CenteredRectangle | CenteredCuboid | VectorArrow | AxesFlag;
-
-$coordArg2P = Text | Inset | PlaneInset;
-$coordRectP = Cuboid | Rectangle;
+PublicFunction[BakeGraphicsTransformations]
 
 (* TODO: Will this handle nested translates? also, what about other transformations ? *)
 BakeGraphicsTransformations[e_] := ReplaceRepeated[e, {
-  Translate[f_, dx_ ? CoordinateVectorQ] :> RuleCondition @ ReplaceAll[f, {
-    a_Arrowheads :> a,
-    (head:$coordArg1P)[x_ ? CoordinateVectorOrMatrixQ, rest___]                   :> head[Threaded[dx] + x, rest],
-    (head:$coordArg1P)[x_ ? CoordinateMatrixOrMatricesQ, rest___]                 :> head[Threaded[dx] + x, rest],
-    (head:$coordArg2P)[first_, x_ ? CoordinateVectorQ, rest___]                   :> head[first, Threaded[dx] + x, rest],
-    (head:$coordRectP)[x1_ ? CoordinateVectorQ, x2_ ? CoordinateVectorQ, rest___] :> head[Threaded[dx] + x1, Threaded[dx] + x2, rest]
-  }]
+  Translate[prims_, dx_ ? CoordinateVectorQ] :> RuleCondition @ TranslatePrimitives[prims, dx]
 }];

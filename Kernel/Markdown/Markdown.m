@@ -2,17 +2,17 @@ PublicFunction[ToMarkdownString]
 
 Options[ToMarkdownString] = $genericMarkdownOptions;
 
-ToMarkdownString[spec_, opts:OptionsPattern[]] := Scope[
+ToMarkdownString[spec_, returnVec:True|False:False, opts:OptionsPattern[]] := Scope[
   setupMarkdownGlobals[];
   setupRasterizationPath[$TemporaryDirectory, ToFileName[$TemporaryDirectory, "wl_md_images"]];
-  toMarkdownStringInner @ spec
+  toMarkdownStringInner[spec, returnVec]
 ];
 
 (**************************************************************************************************)
 
 PrivateFunction[toMarkdownStringInner]
 
-toMarkdownStringInner[spec_] := Scope[
+toMarkdownStringInner[spec_, returnVec_:False] := Scope[
   $textPostProcessor = StringReplace @ {
     If[$inlineLinkTemplate === None, Nothing, $markdownLinkReplacement],
     $inlineWLExprReplacement, $inlineWLExprReplacement2,
@@ -20,6 +20,7 @@ toMarkdownStringInner[spec_] := Scope[
   };
   lines = toMarkdownLines @ spec;
   If[!StringVectorQ[lines], ReturnFailed[]];
+  If[returnVec, Return @ lines];
   If[StringQ[$katexPreludePath] && $embedPreludeLink,
     lines = insertAtFirstNonheader[lines, {$externalImportTemplate @ $katexPreludePath}]];
   result = StringJoin @ {Riffle[lines, "\n\n"], "\n\n"};
@@ -85,7 +86,7 @@ toMarkdownLines[Notebook[cells_List, opts___]] := Scope[
 ]
 
 toMarkdownLines[cell_Cell | cell_CellObject | cell_CellGroup] := Scope[
-  $lastCaption = None;
+  $lastCaption = $lastExternalCodeCell = None;
   List @ cellToMarkdown @ cell
 ];
 
@@ -134,7 +135,7 @@ PrintBadCell[e_] :=
 
 (**************************************************************************************************)
 
-ToMarkdownString::badcell = "Error occurred while rasterizing cell.";
+ToMarkdownString::badcell = "Error occurred while converting cell.";
 
 cellToMarkdownInner0[cell_] := Scope[
   result = cellToMarkdownInner1[cell];
@@ -145,37 +146,49 @@ cellToMarkdownInner0[cell_] := Scope[
 
 cellToMarkdownInner1 = Case[
 
-  Cell["Under construction.", _] := bannerToMarkdown @ "UNDER CONSTRUCTION";
+  Cell["Under construction.", _]         := bannerToMarkdown @ "UNDER CONSTRUCTION";
 
   Cell[str_String /; StringStartsQ[str, "BANNER: "], _] := bannerToMarkdown @ StringTrim[str, "BANNER: "];
 
-  Cell[e_, "Title"]              := StringJoin[headingDepth @ -1, textCellToMarkdown @ e];
-  Cell[e_, "Chapter"]            := StringJoin[headingDepth @ 0,  textCellToMarkdown @ e];
-  Cell[e_, "Section"]            := StringJoin[headingDepth @ 1,  textCellToMarkdown @ e];
-  Cell[e_, "Subsection"]         := StringJoin[headingDepth @ 2,  textCellToMarkdown @ e];
-  Cell[e_, "Subsubsection"]      := StringJoin[headingDepth @ 3,  textCellToMarkdown @ e];
-
-  Cell[e_, "Text"]               := insertLinebreaksOutsideKatex[textCellToMarkdown @ e, 120];
-  Cell[e_, "Item"]               := StringJoin["* ",     textCellToMarkdown @ e];
-  Cell[e_, "Subitem"]            := StringJoin["\t* ",   textCellToMarkdown @ e];
-  Cell[e_, "SubsubItem"]         := StringJoin["\t\t* ", textCellToMarkdown @ e];
-
-  Cell[e_, "ItemNumbered"]       := StringJoin["1. ",        textCellToMarkdown @ e];
-  Cell[e_, "SubitemNumbered"]    := StringJoin["\t1.1 ",     textCellToMarkdown @ e];
-  Cell[e_, "SubsubItemNumbered"] := StringJoin["\t\t1.1.1 ", textCellToMarkdown @ e];
+  Cell[e_, "Title"]                      := StringJoin[headingDepth @ -1, textCellToMarkdown @ e];
+  Cell[e_, "Chapter"]                    := StringJoin[headingDepth @ 0,  textCellToMarkdown @ e];
+  Cell[e_, "Section"]                    := StringJoin[headingDepth @ 1,  textCellToMarkdown @ e];
+  Cell[e_, "Subsection"]                 := StringJoin[headingDepth @ 2,  textCellToMarkdown @ e];
+  Cell[e_, "Subsubsection"]              := StringJoin[headingDepth @ 3,  textCellToMarkdown @ e];
+       
+  Cell[e_, "Exercise"]                   := StringJoin["**Task**: ", textCellToMarkdown @ e];
+       
+  Cell[e_, "Text"]                       := insertLinebreaksOutsideKatex[textCellToMarkdown @ e, 120];
+  Cell[e_, "Item"]                       := StringJoin["* ",     textCellToMarkdown @ e];
+  Cell[e_, "Subitem"]                    := StringJoin["\t* ",   textCellToMarkdown @ e];
+  Cell[e_, "SubsubItem"]                 := StringJoin["\t\t* ", textCellToMarkdown @ e];
+       
+  Cell[e_, "ItemNumbered"]               := StringJoin["1. ",        textCellToMarkdown @ e];
+  Cell[e_, "SubitemNumbered"]            := StringJoin["\t1.1 ",     textCellToMarkdown @ e];
+  Cell[e_, "SubsubItemNumbered"]         := StringJoin["\t\t1.1.1 ", textCellToMarkdown @ e];
+       
+  Cell[code_, "ExternalLanguage"]        := ($lastExternalCodeCell = code; StringJoin["```python\n", code, "\n```"]);
 
   Cell[b:BoxData[TemplateBox[_, _ ? textTagQ]], "Output"]     := textCellToMarkdown @ b;
   Cell[BoxData[t:TemplateBox[_, "VideoBox1", ___]], "Output"] := videoCellToMarkdown @ t;
 
-  e:Cell[_, "Output"]            := If[ContainsQ[e, "LinkHand"], Nothing, outputCellToMarkdown @ e];
-  Cell[e_, "Code"]               := ($lastCaption = First[Cases[e, $outputCaptionPattern], None]; Nothing);
+  Cell[BoxData[out_String], "Output"]    := textOutputCellToMarkdown @ out;
+  e:Cell[_, "Output"]                    := If[ContainsQ[e, "LinkHand"], Nothing, outputCellToMarkdown @ e];
+
+  Cell[s_String, "PythonOutput"]         := textOutputCellToMarkdown @ s;
+  e:Cell[_, "PythonOutput"]              := outputCellToMarkdown @ e;
+
+  e:Cell[BoxData[_GraphicsBox], "Print"] := outputCellToMarkdown @ e;
+  
+  Cell[str_String, "Program"]            := str;
+  Cell[e_, "Code"]                       := ($lastCaption = First[Cases[e, $outputCaptionPattern], None]; Nothing);
 
   c_ := (Nothing);
 ];
 
-PrivateVariable[$lastCaption]
+PrivateVariable[$lastCaption, $lastExternalCodeCell]
 
-$lastCaption = None;
+$lastCaption = $lastExternalCodeCell = None;
 
 $outputCaptionPattern = RowBox[{"(*", RowBox[{"CAPTION", ":", caption___}], "*)"}] :>
   StringJoin @ textCellToMarkdownOuter @ RowBox[{caption}];

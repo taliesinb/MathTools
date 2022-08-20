@@ -6,6 +6,7 @@ $forbiddenStrings = "XXX" | "XXXX";
 
 ToMarkdownString::msgs = "Messages issued during markdown conversion of cell printed below.";
 textCellToMarkdown[e_] := Scope[
+  $lastExternalCodeCell ^= None;
   If[ContainsQ[e, s_String /; StringContainsQ[s, $forbiddenStrings]], Return[""]];
   Check[
     text = StringTrim @ StringJoin @ textCellToMarkdownOuter @ e;

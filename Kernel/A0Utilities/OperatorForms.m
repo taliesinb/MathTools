@@ -34,15 +34,19 @@ DotRightOperator[matrix_][other_] := Dot[other, matrix]
 
 (**************************************************************************************************)
 
-PublicFunction[TimesOperator]
+PublicFunction[TimesOperator, ThreadedTimesOperator]
 
 TimesOperator[a_][b_] := a * b;
+ThreadedTimesOperator[a_ ? NumberQ] := TimesOperator @ a;
+ThreadedTimesOperator[a_] := TimesOperator[Threaded[a]]
 
 (**************************************************************************************************)
 
-PublicFunction[PlusOperator]
+PublicFunction[PlusOperator, ThreadedPlusOperator]
 
 PlusOperator[a_][b_] := a + b;
+ThreadedPlusOperator[a_ ? NumberQ] := PlusOperator @ a;
+ThreadedPlusOperator[a_] := PlusOperator[Threaded[a]];
 
 (**************************************************************************************************)
 

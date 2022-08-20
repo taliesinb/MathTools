@@ -58,6 +58,9 @@ PrivateFunction[StandardizePadding3D]
 
 SystemSymbol[Under, Over]
 
+Under::usage = "Under is like Bottom but for the Z coordinate.";
+Over::usage = "Over is like Top but for the Z coordinate.";
+
 SetUsage @ "
 StandardizePadding3D[spec$] standardizes a 3D padding specification spec$.
 * StandardizePadding3D returns {{l$, r$}, {b$, t$}, {u$, o$}}.

@@ -28,3 +28,20 @@ outputCellToMarkdown[cell_] := Scope[
 
   markdown
 ];
+
+
+PrivateFunction[textOutputCellToMarkdown]
+
+(* TODO: Make this into a flavor template *)
+textOutputCellToMarkdown[text_String] := Scope[
+
+  If[$lastExternalCodeCell =!= None,
+    If[text === "\"None\"", Return @ Nothing];
+    StringJoin["```\n", StringTrim[text, "\""], "\n```"]
+  ,
+    StringJoin["```\n", StringTrim @ text, "\n```"]
+  ]
+
+];
+
+textOutputCellToMarkdown[args___] := Print["INVALID CALL TO textOutputCellToMarkdown: ", InputForm /@ {args}];

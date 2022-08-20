@@ -46,14 +46,16 @@ procScopeDef[r_RuleDelayed | r_Rule] := AppendTo[$bodyRules, r];
 
 procScopeDef[SetDelayed[head_Symbol[args___], rhs_]] := With[
   {head2 = Symbol[$lhsHeadName <> "$" <> SymbolName[head]]},
-  AppendTo[$bodyRules, HoldPattern[head] -> head2];
-  SetDelayed[head2[args], rhs]
+  {rule = HoldPattern[head] -> head2},
+  AppendTo[$bodyRules, rule];
+  SetDelayed @@ ReplaceAll[Hold[head[args], rhs], rule]
 ];
 
 procScopeDef[SetDelayed[head_Symbol[args___][args2___], rhs_]] := With[
   {head2 = Symbol[$lhsHeadName <> "$" <> SymbolName[head]]},
-  AppendTo[$bodyRules, HoldPattern[head] -> head2];
-  SetDelayed[head2[args][args2], rhs]
+  {rule = HoldPattern[head] -> head2},
+  AppendTo[$bodyRules, rule];
+  SetDelayed @@ ReplaceAll[Hold[head[args][args2], rhs], rule]
 ];
 
 procScopeDef[e_] := Print[Hold[e]];

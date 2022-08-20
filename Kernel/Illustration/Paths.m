@@ -47,6 +47,8 @@ pathEndVertex[graph_, path_] := Scope[
 
 PublicFunction[PathConcatPlot]
 
+PrivateFunction[inlineSymbol]
+
 inlineSymbol[s_, args___] := Style[s, 20, args];
 
 PathConcatPlot[args___, PathStyle -> style_] := Block[{$pwpStyle = style},

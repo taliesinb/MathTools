@@ -5,7 +5,7 @@ PublicOption[ZVector]
 Options[MeshLines] = {
   MeshStyle -> $Gray,
   FrameStyle -> Automatic,
-  Background -> Automatic,
+  Background -> None,
   ItemSize -> 1,
   Dividers -> True,
   ZVector -> {1/3,1/3}
@@ -18,19 +18,17 @@ MeshLines[{xmin_, ymin_}, {ncols_, nrows_}, OptionsPattern[]] := CatchMessage @ 
   {xmax, ymax} = {xmin, ymin} + {ncols, nrows} * {cellw, cellh};
   SetAutomatic[frameStyle, FirstCase[meshStyle, c_ ? ColorQ :> Darker[c, .2], $DarkGray, {0, Infinity}]];
   {
-    If[meshStyle === None, Nothing,
-      {
-        HorizontalLine[{xmin, xmax}, Range[ymin + cellh, ymax - cellh, cellh]],
-        VerticalLine[Range[xmin + cellw, xmax - cellw, cellw], {ymin, ymax}]
-      } ~Style~ toSeq[meshStyle]
-    ],
     If[frameStyle === None, Nothing,
       Style[Rectangle[{xmin, ymin}, {xmax, ymax}], EdgeForm[frameStyle], FaceForm[background]]
+    ],
+    If[meshStyle === None, Nothing,
+      Style[{
+        HorizontalLine[{xmin, xmax}, Range[ymin + cellh, ymax - cellh, cellh]],
+        VerticalLine[Range[xmin + cellw, xmax - cellw, cellw], {ymin, ymax}]
+      }, Seq @@ ToList[meshStyle]]
     ]
   }
 ];
-
-(**************************************************************************************************)
 
 MeshLines[pos:{_, _, _}, num:{_, _, _}, opts:OptionsPattern[]] := CatchMessage @ Scope[
   
@@ -40,11 +38,27 @@ MeshLines[pos:{_, _, _}, num:{_, _, _}, opts:OptionsPattern[]] := CatchMessage @
 
   GraphicsTransformCoordinates[zVector, primitives]
 ];
+(**************************************************************************************************)
+
+PublicFunction[MeshLines3D]
+
+Options[MeshLines3D] = {
+  MeshStyle -> $Gray,
+  FrameStyle -> Automatic,
+  Background -> None,
+  ItemSize -> 1
+};
+
+MeshLines3D[pos:{_, _, _}, num:{_, _, _}, opts:OptionsPattern[]] := CatchMessage @ Scope[
+  
+  makeMesh3D[pos, num, opts]
+
+];
 
 (**************************************************************************************************)
 
 makeMesh3D[{minX_, minY_, minZ_}, {numX_, numY_, numZ_}, OptionsPattern[MeshLines]] := Scope[
-  UnpackOptions[itemSize, meshStyle, frameStyle, background];
+  UnpackOptions[itemSize, meshStyle, frameStyle, background, dividers];
   
   UnpackTuple[itemSize, sizeX, sizeY, sizeZ];
   UnpackTuple[meshStyle, meshX, meshY, meshZ];
@@ -54,15 +68,17 @@ makeMesh3D[{minX_, minY_, minZ_}, {numX_, numY_, numZ_}, OptionsPattern[MeshLine
   SetAutomatic[frameY, meshToFrameStyle @ meshY];
   SetAutomatic[frameZ, meshToFrameStyle @ meshZ];
   SetAutomatic[background, GrayLevel[1, 0.9]];
+  SetAutomatic[dividers, If[frameStyle === None, All, Center]];
 
   {maxX, maxY, maxZ} = {minX, minY, minZ} + {numX, numY, numZ} * {sizeX, sizeY, sizeZ};
 
   Xseg = CoordinateSegment[minX, maxX];
   Yseg = CoordinateSegment[minY, maxY];
   Zseg = CoordinateSegment[minZ, maxZ];
-  Xran = Range[minX + sizeX, maxX - sizeX, sizeX];
-  Yran = Range[minY + sizeY, maxY - sizeY, sizeY];
-  Zran = Range[minZ + sizeZ, maxZ - sizeZ, sizeZ];
+  bump = If[dividers === Center, 1, 0];
+  Xran = Range[minX + bump * sizeX, maxX - bump * sizeX, sizeX];
+  Yran = Range[minY + bump * sizeY, maxY - bump * sizeY, sizeY];
+  Zran = Range[minZ + bump * sizeZ, maxZ - bump * sizeZ, sizeZ];
 
   List[
     styleFrame[frameX, CoordinateComplex[{Xran, Yseg, Zseg}]],
@@ -89,41 +105,52 @@ meshToFrameStyle[meshStyle_] := FirstCase[meshStyle, c_ ? ColorQ :> Darker[c, .2
 (**************************************************************************************************)
 
 PublicFunction[MeshGrid]
-PublicOption[HighlightItems, HighlightOffset, ZDimension]
+PublicOption[HighlightItems, HighlightOffset, ZDimension, TickSpacing]
 
 Options[MeshGrid] = JoinOptions[
   ItemFunction -> Identity,
   ItemSize -> 1,
   ItemStyle -> None,
+  TicksStyle -> Automatic,
+  TickSpacing -> 0.1,
+  Ticks -> None,
   HighlightItems -> None,
   HighlightOffset -> 0,
   AxesLabel -> None,
   LabelStyle -> Automatic,
   ZDimension -> None,
+  Background -> None,
   MeshLines
 ];
 
 MeshGrid[array_ ? MatrixQ, opts:OptionsPattern[]] :=
   MeshGrid[{0, 0}, array, opts];
 
-$axesLabelStyle = {FontSize -> 14, FontColor -> Black, FontFamily -> "Avenir"};
+$defaultAxesLabelStyle = {FontSize -> 12, FontColor -> Black, FontFamily -> "Avenir"};
+$defaultTickStyle = {FontSize -> 12, FontColor -> $Gray, FontFamily -> "Avenir"};
 
-MeshGrid[{xmin_, ymin_}, array_ ? MatrixQ, opts:OptionsPattern[]] := Scope[
+MeshGrid[{xmin2_, ymin2_}, array_ ? MatrixQ, opts:OptionsPattern[]] := Scope[
+  {xmin, ymin} = {xmin2, ymin2};
   {nrows, ncols} = Take[Dimensions @ array, 2];
-  UnpackOptions[itemSize, itemFunction, itemStyle, highlightItems, highlightOffset, axesLabel, labelStyle];
-  meshItems = MeshLines[{xmin, ymin}, {ncols, nrows}, itemSize, FilterOptions @ opts];
+  UnpackOptions[background, itemSize, itemFunction, itemStyle, highlightItems, highlightOffset, axesLabel, labelStyle];
+  meshItems = MeshLines[{xmin, ymin}, {ncols, nrows}, FilterOptions @ opts];
   If[itemFunction =!= Identity, array = Map[itemFunction, array, {2}]];
   {cellw, cellh} = {1, 1} * itemSize;
-  xcoords = xmin + cellw * (Range[ncols] - 0.5);
-  ycoords = ymin + cellh * (Reverse[Range[nrows]] - 0.5);
+  xcoords = xmin + cellw * (Range[ncols] - 0.5);          xmax = Max[xcoords] + cellw/2;
+  ycoords = ymin + cellh * (Reverse[Range[nrows]] - 0.5); ymax = Max[ycoords] + cellh/2;
   arrayItems = MapIndexed[
     {a, {i, j}} |-> Inset[a, {Part[xcoords, j], Part[ycoords, i]}],
     array, {2}
   ];
-  If[itemStyle =!= None, arrayItems = Style[arrayItems, toSeq @ itemStyle]];
+  UnpackOptions[ticks, ticksStyle, tickSpacing];
+  tickItems = If[ticks === None, Nothing,
+    SetAutomatic[ticksStyle, $defaultTickStyle];
+    tickItems = Style[makeTickItems @ ticks, ticksStyle]
+  ];
+  If[itemStyle =!= None, arrayItems = Style[arrayItems, Seq @@ ToList[itemStyle]]];
   axesItems = If[axesLabel === None, Nothing,
     If[!MatchQ[axesLabel, {_, _}], ReturnFailed[]];
-    SetAutomatic[labelStyle, $axesLabelStyle];
+    SetAutomatic[labelStyle, $defaultAxesLabelStyle];
     {rowLabel, colLabel} = axesLabel;
     origin = {0, nrows} * 2;
     {
@@ -139,7 +166,16 @@ MeshGrid[{xmin_, ymin_}, array_ ? MatrixQ, opts:OptionsPattern[]] := Scope[
     yfunc = Part[ycoords, #] + {-1, 1}*hsizey*cellh&;
     highlightItems = Style[Map[toHighlightItem, ToList @ highlightItems], Opacity[0.3, $Red]];
   ];
-  {meshItems, arrayItems, highlightItems, axesItems}
+  {meshItems, arrayItems, highlightItems, axesItems, tickItems}
+];
+
+makeTickItems = Case[
+  list_List  := Map[%, list];
+  Style[e_, rest___] := Style[% @ e, rest];
+  Left       := Scope[xo = xmin - tickSpacing; i = 1; Text[i++, {xo, #}, {2,  0}]& /@ ycoords];
+  Right      := Scope[xo = xmax + tickSpacing; i = 1; Text[i++, {xo, #}, {-2, 0}]& /@ ycoords];
+  Bottom     := Scope[yo = ymin - tickSpacing; i = 1; Text[i++, {#, yo}, {0,  1.1}]& /@ xcoords];
+  Top        := Scope[yo = ymax + tickSpacing; i = 1; Text[i++, {#, yo}, {0, -1.1}]& /@ xcoords];
 ];
 
 toHighlightItem = Case[

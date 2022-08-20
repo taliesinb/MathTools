@@ -188,6 +188,27 @@ xyzMatrix[tmatrix_, input_] := Transpose @ imageXYZ @ Dot[tmatrix, AppendConstan
 imageXYZ[e_] := Transpose[Take[e, 3] / maybeThreaded[Part[e, 4]]];
 
 (**************************************************************************************************)
+(*
+PublicFunction[PrimitiveCoordinates]
+
+PrimitiveCoordinates[g_] := Scope[
+  $coords = Internal`Bag[];
+  DeepCasees[g, $coordDispatch];
+  Internal`BagPart[$coords, All]
+];
+
+stuffCoords[c_] := Internal`StuffBag[$coords, c, Which[CoordinateVectorQ[c], 0, CoordinateMatrixQ[c], 1, CoordinateMatricesQ[c], 2]];
+
+$coordDispatch = Dispatch @ {
+  (head:$GPrimVDH)[c_List ? stuffCoords, _, rest___] :> Null,
+  (head:$GPrimVH)[c_List, rest___]            :> Null,
+  (head:$GPrimVRH)[c_List, rest___]           :> Null,
+  (head:$GPrimVVH)[c1_List, c2_List, rest___] :> Null,
+  (head:$GPrimAVH)[f_, c_List, rest___]       :> Null,
+  Translate[p_, c_]
+} *)
+
+(**************************************************************************************************)
 
 PublicFunction[GraphicsTransformCoordinates]
 
@@ -203,39 +224,21 @@ the vector {x$, y$}.
 TODO: check for coordinates  first to handle things like Arrow[Line[...]] *)
 
 $ctfDispatch = Dispatch @ {
-  Line[c_]                   :> RuleCondition @ Line[$ctf @ c],
-  InfiniteLine[c_]           :> RuleCondition @ InfiniteLine[$ctf @ c],
-  InfiniteLine[c_, p_]       :> RuleCondition @ InfiniteLine[$ctf @ c, $ctf @ p],
-  HalfLine[c_]               :> RuleCondition @ HalfLine[$ctf @ c],
-  HalfLine[c_, p_]           :> RuleCondition @ HalfLine[$ctf @ c, $ctf @ p],
-  Arrow[c_, r___]            :> RuleCondition @ Arrow[$ctf @ c, r],
-  Point[c_]                  :> RuleCondition @ Point[$ctf @ c],
-  Polygon[c_]                :> RuleCondition @ Polygon[$ctf @ c],
-  Polygon[c_, d_]            :> RuleCondition @ Polygon[$ctf @ c, d],
-  Polyhedron[c_]             :> RuleCondition @ Polyhedron[$ctf @ c], (* TODO: take care of -> etc *)
-  Polyhedron[c_, d_]         :> RuleCondition @ Polyhedron[$ctf @ c, d],
-  FilledCurve[c_, i_]        :> RuleCondition @ FilledCurve[$ctf @ c, i],
-  FilledCurve[c_]            :> RuleCondition @ FilledCurve[$ctf /@ c],
-  BezierCurve[c_, r___]      :> RuleCondition @ BezierCurve[$ctf /@ c, r],
-  BSplineCurve[c_, r___]     :> RuleCondition @ BSplineCurve[$ctf /@ c, r],
-  Tube[c_, r___]             :> RuleCondition @ Tube[$ctf @ c, r],
-  Cone[c_, r___]             :> RuleCondition @ Cone[$ctf @ c, r],
-  Disk[c_, r___]             :> RuleCondition @ Disk[$ctf @ c, r],
-  Circle[c_, r___]           :> RuleCondition @ Circle[$ctf @ c, r],
-  Ball[c_, r___]             :> RuleCondition @ Ball[$ctf @ c, r],
-  Sphere[c_, r___]           :> RuleCondition @ Sphere[$ctf @ c, r]
-  Polyhedron[c_, d_]         :> RuleCondition @ Polyhedron[$ctf @ c, d],
-  Rectangle[a_]              :> RuleCondition @ Rectangle[$ctf @ a],
-  Rectangle[a_, b_, r___]    :> RuleCondition @ Rectangle[$ctf @ a, $ctf @ b, r],
-  Cuboid[a_]                 :> RuleCondition @ Cuboid[$ctf @ a, $ctf @ b],
-  Cuboid[a_, b_]             :> RuleCondition @ Cuboid[$ctf @ a, $ctf @ b],
-  CenteredCuboid[a_, r_]     :> RuleCondition @ CenteredCuboid[$ctf @ a, r],
-  CenteredRectangle[a_, r_]  :> RuleCondition @ CenteredRectangle[$ctf @ a, r],
-  GraphicsComplex[c_, g_]    :> RuleCondition @ GraphicsComplex[$ctf @ c, g],
-  Inset[e_, a_, r___]        :> Inset[e, $ctf @ a, r],
-  Text[e_, a_, r___]         :> Text[e, $ctf @ a, r],
-  a_Arrowheads               :> a
-};
+  (* this comes first because e.g. InfiniteLine matches both VDH and VH *)
+  (head:$GPrimVDH)[c_List, d_List, rest___]   :> RuleCondition[head[Seq @@ ctfDelta[c, d], rest]],
+  (head:$GPrimVH)[c_List, rest___]            :> RuleCondition[head[ctf @ c, rest]],
+  (head:$GPrimVRH)[c_List, rest___]           :> RuleCondition[head[ctf @ c, rest]],
+  (head:$GPrimVVH)[c1_List, c2_List, rest___] :> RuleCondition[head[$ctf @ c1, $ctf @ c2, rest]],
+  (head:$GPrimAVH)[f_, c_List, rest___]       :> RuleCondition[head[f, $ctf @ c, rest]],
+  GraphicsComplex[c_List, d_]                 :> RuleCondition[GraphicsComplex[$ctf @ c, d]],
+  AnnotatedCoordinate[c_List, r___]           :> RuleCondition[AnnotatedCoordinate[$ctf @ c, r]],
+  a_Arrowheads                                :> a
+}
+
+ctf[a_ ? CoordinateMatricesQ] := Map[$ctf, a];
+ctf[a_] := $ctf @ a;
+
+ctfDelta[a_, d_] := With[{a1 = $ctf[a]}, {a1, $ctf[a + d] - a1}];
 
 GraphicsTransformCoordinates[ctf_, expr_] := Scope[
   $ctf = ctf;
@@ -247,6 +250,13 @@ GraphicsTransformCoordinates[{x_, y_} ? CoordinateVectorQ, expr_] :=
     DotRightOperator @ ToPacked @ Transpose @ {{1, 0, x}, {0, 1, y}},
     expr
   ];
+
+(**************************************************************************************************)
+
+PublicFunction[TranslatePrimitives, ScalePrimitives]
+
+TranslatePrimitives[prims_, t_] := GraphicsTransformCoordinates[ThreadedPlusOperator[t], prims];
+ScalePrimitives[prims_, s_] := GraphicsTransformCoordinates[ThreadedTimesOperator[s], prims];
 
 (**************************************************************************************************)
 
