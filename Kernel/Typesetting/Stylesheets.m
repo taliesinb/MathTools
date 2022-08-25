@@ -17,8 +17,13 @@ UpdateQuiverGeometryStylesheet[] := Scope[
     Put[targetPath, $latestPathFile];
   ];
 
+  If[!FileExistsQ[$QuiverGeometryStylesheetPath],
+      NotebookSave[template, $QuiverGeometryStylesheetPath];
+      Return[]];
+
   nb = NotebookOpen[$QuiverGeometryStylesheetPath, Visible -> True];
   If[Head[nb] =!= NotebookObject, ReturnFailed["open", $QuiverGeometryStylesheetPath]];
+
   If[FailureQ[NotebookPut[template, nb]], ReturnFailed["replace", $QuiverGeometryStylesheetPath]];
   If[FailureQ[NotebookSave[nb]], ReturnFailed["save", $QuiverGeometryStylesheetPath]];
   (* NotebookClose[nb]; *)

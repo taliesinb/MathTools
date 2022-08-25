@@ -129,7 +129,8 @@ Options[CubeGrid] = Options[CubeArray] = {
   CubeGap -> 0.2, CubeStyle -> Automatic, FlipAxes -> None, FlipX -> False, FlipY -> False, FlipZ -> False,
   LabelAxes -> False, AxesOptions -> {}, CubeOpacity -> .3, SpanGap -> 0.2, SpanHighlights -> {},
   HighlightStyle -> {}, MeshStyle -> None, ItemFunction -> Automatic, ItemStyleFunction -> None,
-  TicksStyle -> Automatic, TickSpacing -> 0.1, Ticks -> None, FlipTicks -> {}
+  TicksStyle -> Automatic, TickSpacing -> 0.1, Ticks -> None, FlipTicks -> {}, FrameStyle -> None,
+  PlotLabel -> None
 };
 
 CubeGrid[args___] := CubeArray[args, CubeGap -> 0, CubeStyle -> None, MeshStyle -> Automatic];
@@ -147,20 +148,22 @@ CubeArray[dims_List, opts:OptionsPattern[]] := Scope[
     labelAxes, axesOptions, meshStyle,
     cubeOpacity,
     spanGap, spanHighlights, highlightStyle,
-    $itemFunction, $itemStyleFunction
+    $itemFunction, $itemStyleFunction,
+    frameStyle,
+    plotLabel
   ];
   
   SetAutomatic[$itemFunction, $defaultItemFunction];
   SetAutomatic[cubeStyle, $defaultCubeStyle];
   SetAutomatic[meshStyle, $defaultMeshStyle];
 
+  attachPlotLabel[dims, plotLabel] @ 
   ReplaceAll[Annotation[a_, _] :> a] @
   attachLabelAxes[dims, labelAxes, axesOptions] @
   attachSpanHighlights[dims, spanHighlights, False] @
-
   attachTicks[dims, opts] @
   multXYZ[resolveFlip[opts]] @
-  attachMesh[dims, meshStyle] @
+  attachMesh[dims, meshStyle, frameStyle] @
   If[cubeStyle === $itemStyleFunction === None && $itemFunction === $defaultItemFunction, {},
     Style[
       Array[makeCube[dims, {##}]&, dims],
@@ -170,8 +173,15 @@ CubeArray[dims_List, opts:OptionsPattern[]] := Scope[
   ]
 ];
 
-attachMesh[dims_, None][e_] := e;
-attachMesh[dims_, style_][e_] := {Style[MeshLines3D[-dims/2, dims, FrameStyle -> None, MeshStyle -> style], AbsoluteThickness[1]], e};
+$defaultLabelStyle = {FontSize -> 30, FontColor -> $Gray, FontFamily -> "Avenir"};
+
+attachPlotLabel[_, None][e_] := e;
+attachPlotLabel[dims_, label_][e_] := {e, PlaneInset[label, -dims/2 - {2, 1.5, 0}/10, "Screen", {0, 1.1}, BaseStyle -> $defaultLabelStyle]};
+
+attachMesh[dims_, None, None][e_] := e;
+attachMesh[dims_, style_, None][e_] := {Style[MeshLines3D[-dims/2, dims, FrameStyle -> None, MeshStyle -> style], AbsoluteThickness[1]], e};
+
+attachMesh[dims_, style_, fstyle_][e_] := {Style[MeshLines3D[-dims/2, dims, FrameStyle -> fstyle, MeshStyle -> style], AbsoluteThickness[1]], e};
 
 attachTicks[dims_, opts:OptionsPattern[CubeArray]][e_] := Scope[
   UnpackOptions[ticksStyle, tickSpacing, ticks, flipTicks];
@@ -249,10 +259,10 @@ Options[ColoredCubeGrid] = Options[ColoredCubeArray] = JoinOptions[
 ColoredCubeGrid[args___] := ColoredCubeArray[args, CubeGap -> 0, CubeStyle -> None, CubeOpacity -> 1, MeshStyle -> Automatic];
 
 ColoredCubeArray[array_List /; ArrayQ[array, 3], opts:OptionsPattern[]] := Scope[
-  ColoredCubeArray[Extract[array, #]&, Dimensions @ array, "A", opts]
+  ColoredCubeArray[Extract[array, #]&, Dimensions @ array, opts]
 ];
  
-ColoredCubeArray[cfunc_, dims:{__Integer}, "A", opts:OptionsPattern[]] := Scope[
+ColoredCubeArray[cfunc_, dims:{__Integer}, opts:OptionsPattern[]] := Scope[
 
   UnpackOptions[colorRules];
 
@@ -320,14 +330,16 @@ CubeAxes::badlabelpos = "Unrecognized LabelPosition ``.";
 Options[CubeAxes] = {
   LabelPosition -> "Near",
   InsetScale -> 1/144, BaseStyle -> Automatic,
-  FontSize -> 24, IncludeArrow -> False,
-  CubeOffset -> 0.1, HideTrivialAxes -> True
+  FontSize -> Automatic, IncludeArrow -> False,
+  CubeOffset -> 0.1, HideTrivialAxes -> True,
+  Spacing -> 0
 };
 
 CubeAxes[origin_, size_, {lx_, ly_, lz_}, OptionsPattern[]] := Scope[
-  UnpackOptions[labelPosition, insetScale, baseStyle, fontSize, includeArrow, cubeOffset, hideTrivialAxes];
+  UnpackOptions[labelPosition, insetScale, baseStyle, fontSize, includeArrow, cubeOffset, hideTrivialAxes, spacing];
   SetAutomatic[baseStyle, $CubeBaseStyle];
-  AppendTo[baseStyle, FontSize -> fontSize];
+  If[FreeQ[baseStyle, FontSize], SetAutomatic[fontSize, 24]];
+  If[NumberQ[fontSize], baseStyle //= ReplaceOptions[FontSize -> fontSize]];
   If[MatchQ[labelPosition, Placed[_String, _]],
     labelScale = Last[labelPosition]; labelPosition //= First,
     labelScale = 0
@@ -336,7 +348,7 @@ CubeAxes[origin_, size_, {lx_, ly_, lz_}, OptionsPattern[]] := Scope[
   spec = spec /. {$s -> labelScale, $i -> (1 - labelScale)};
   MapThread[
     If[hideTrivialAxes && #4 === 1, Nothing,
-    CubeEdgeText[#1, origin, size, Seq @@ #2, InsetScale -> insetScale, BaseStyle -> baseStyle, IncludeArrow -> #3, CubeOffset -> cubeOffset]]&,
+    CubeEdgeText[#1, origin, size, Seq @@ #2, InsetScale -> insetScale, BaseStyle -> baseStyle, IncludeArrow -> #3, CubeOffset -> cubeOffset, Spacing -> spacing]]&,
     {{lx, ly, lz}, spec, includeArrow * {1,1,1}, size}
   ]
 ];
@@ -350,7 +362,8 @@ $cubeAxesOrient = <|
   "ZYX"     -> {{{3, 1, 2}, {1,$i,1}}, {{3, 2, 1}, {1,$i,1}}, {{1, 3, 2}, {1,$s,0}}},
   "TopLeft" -> {{{3, 1, 2}, {1,$s,1}}, {{3, 2, 1}, {0,$i,0}}, {{1, 3, 2}, {0,$i,1}}},
   "Near"    -> {{{3, 1, 2}, {0,$s,0}}, {{3, 2, 1}, {0,$s,0}}, {{1, 3, 2}, {0,$s,{Above, 0}}}},
-  "Far"     -> {{{3, 1, 2}, {1,$i,1}}, {{3, 2, 1}, {1,$i,1}}, {{1, 3, 2}, {1,$i,{Below, 1.02}}}}
+  "Far"     -> {{{3, 1, 2}, {1,$i,1}}, {{3, 2, 1}, {1,$i,1}}, {{1, 3, 2}, {1,$i,{Below, 1.02}}}},
+  "Foo" -> {{{3, 1, 2}, {1,$i,1}}, {{3, 2, 1}, {1,$i,1}}, {{1, 3, 2}, {1, $i, 0}}}
 |>;
 
 $CubeAxesStyle = FontWeight -> Bold;
@@ -378,7 +391,10 @@ faceNameToIndex = Case[
   {"XZ", Right}  := {{2, 3, 1}, {0, 1, 1}};
 ];
 
-Options[CubeEdgeText] = {FlipX -> Automatic, FlipY -> False, InsetScale -> 1/144, BaseStyle -> {}, IncludeArrow -> False, CubeOffset -> 1/10};
+Options[CubeEdgeText] = {
+  FlipX -> Automatic, FlipY -> False, InsetScale -> 1/144, BaseStyle -> {}, IncludeArrow -> False, CubeOffset -> 1/10,
+  Spacing -> 0
+};
 
 CubeEdgeText[None, ___] := Nothing;
 
@@ -386,7 +402,7 @@ CubeEdgeText[text_, origin_, dims_, faceName_String, pos_Symbol] :=
   CubeEdgeText[text, origin, dims, Seq @@ faceNameToIndex[{faceName, pos}]];
 
 CubeEdgeText[text_, origin_, dims_, indices_, positions_:{0,0,0}, opts:OptionsPattern[]] := Scope[
-  UnpackOptions[cubeOffset];
+  UnpackOptions[cubeOffset, spacing];
   coFac = N[cubeOffset / Norm[dims]];
   origin2 = origin - coFac * dims; dims2 = dims * (1 + 2*coFac);
   cubeText0[text, origin2, DiagonalMatrix[dims2], indices, positions, opts]
@@ -404,7 +420,7 @@ cubeText1[text_, origin_, {dx_, dy_}, {fx_, fy_}, opts___] := Scope[
     _, Sign @ arrow
   ];
   text = Switch[arrow, 0, text, -1, Row[{$larr, text}], 1, Row[{text, $rarr}], All,  Row[{$larr, text, $rarr}]];
-  PlaneInset[text, origin + dx * toRat[fx] + dy * toRat[fy], {dx, dy}, {1, -1} * Map[unit2biunit, {fx, fy}], FilterOptions @ opts]
+  PlaneInset[text, origin + dx * toRat[fx] + dy * toRat[fy] + dy * spacing * Sign[toRat[fy] - 0.5], {dx, dy}, {1, -1} * Map[unit2biunit, {fx, fy}], FilterOptions @ opts]
 ];
   
 $larr = Style["\[LeftArrow]\[ThinSpace]", $Gray];

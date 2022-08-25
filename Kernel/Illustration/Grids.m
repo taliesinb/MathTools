@@ -3,7 +3,7 @@ PublicFunction[ScalarGrid]
 PublicFunction[ColumnVectorGrid]
 PublicFunction[RowVectorGrid]
 
-$axisStyle = {FontSize -> 13, FontFamily -> "Avenir", FontColor -> Black};
+$axisStyle = {FontSize -> 16, FontFamily -> "Avenir", FontColor -> Black};
 $rowsText = "rows";
 $colsText = "cols";
 

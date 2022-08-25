@@ -30,11 +30,15 @@ LabeledArrowSW[text_, sz_:1] := makeTextArrow[sz*{-1,-1}*2, text, {1.2, -0.4}, {
 
 PublicFunction[LabeledArrow3D]
 
+$xyVector = Normalize @ Cross[{2, 1.5, 0}, {0,0,1}];
+$viewVector = Normalize @ {2, 1.5, 0};
+
 LabeledArrow3D[pos_, d_, label_, size:Except[_Rule]:Automatic, color:Except[_Rule]:$Gray, opts___Rule] := Scope[
+   d = d /. {"XY" -> $xyVector};
    nd = szo * Normalize[d]; sz = size; label1 = label;
    SetAutomatic[sz, Norm[d] / 6];
    If[ListQ[sz], {szi, szo} = sz, szo = sz; szi = sz/4];
-   other = If[Abs[Dot[Normalize[d], {0, 0, 1}]] > 0.9, Normalize @ {2, 1.5, 0}, {0, 0, -1}];
+   other = If[Abs[Dot[Normalize[d], {0, 0, 1}]] > 0.9, $viewVector, Normalize @ {2, 1.5, -1}];
    l = Cross[nd, other]; o = pos;
    li = szi * Normalize[l];
    If[ListQ[label1], {label1, label2} = label1, label2 = None];
@@ -45,4 +49,3 @@ LabeledArrow3D[pos_, d_, label_, size:Except[_Rule]:Automatic, color:Except[_Rul
       If[label2 === None, Nothing, PlaneInset[label2, o+d/2-li, {d, l}, {0, 1}, opts, opts2]]
    }
 ]
-NeutralGraphics3D[LabeledArrow3D[{0,0,0},{2,0,0},"Abc"]]

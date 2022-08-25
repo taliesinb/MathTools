@@ -89,9 +89,10 @@ $textPostProcessor = Identity;
 (* TODO: just wrap inline math with a symbolic wrapper, then replace that with inlineMathTemplate later.
 this will allow us to interpret $ as coming soley from user and not a result of inlineMathTemplate *)
 
+$lastSpace = False;
 textBoxesToMarkdown = Case[
   str_String :=
-    $textPostProcessor @ str;
+    checkLastSpace @ $textPostProcessor @ str;
   list_List :=
     Map[%, list];
   TextData[e_] :=
@@ -99,23 +100,42 @@ textBoxesToMarkdown = Case[
   RowBox[e_List] :=
     % @ e;
   Cell[BoxData[boxes_, ___], ___] :=
-    toInlineMath @ RowBox @ ToList @ boxes;
+    ($lastTB = toInlineMath @ RowBox @ ToList @ boxes);
   Cell[TextData[text_, ___], ___] :=
-    % @ text;
+    text;
   StyleBox[str_String /; StringMatchQ[str, Whitespace], ___] :=
-    " ";
+    ($lastSpace = True; " ");
   ButtonBox[title_String, BaseStyle -> "Hyperlink", ButtonData -> {URL[url_String], _}, ___] :=
     StringJoin["[", % @ title, "](", url, ")"];
-  StyleBox[boxes_, opts___] := Scope[
-    {weight, slant, color} = Lookup[{opts}, {FontWeight, FontSlant, FontColor}, None];
-    styledMD[% @ boxes, weight === "Bold", slant === "Italic"]
-  ];
+  StyleBox[boxes_, opts___] := styleBoxToMarkdown @ StyleBox[boxes, Apply[Sequence] @ Sort @ List @ FilterOptions[styleBoxToMarkdown, opts]];
 ];
 
-styledMD[e_, False, False] := e;
-styledMD[e_, False, True] := wrapWith[e, "*"];
-styledMD[e_, True, False] := wrapWith[e, "**"];
-styledMD[e_, True, True] := wrapWith[e, "***"];
+checkLastSpace[list_List] := Map[checkLastSpace, list];
+checkLastSpace[s_String /; StringEndsQ[s, " "]] := ($lastSpace = True; s);
+checkLastSpace[other_] := ($lastSpace = False; other);
+
+Options[styleBoxToMarkdown] = {FontWeight -> "Plain", FontSlant -> "Plain", FontColor -> None};
+
+styleBoxToMarkdown = Case[ 
+  StyleBox[e_String, FontSlant -> Italic|"Italic"] /; TrueQ[$lastSpace] := wrapWith[e, "*"];
+  StyleBox[e_String, FontWeight -> Bold|"Bold"] /; TrueQ[$lastSpace] := wrapWith[e, "**"];
+  StyleBox[e_String, FontSlant  -> Italic|"Italic", FontWeight -> Bold|"Bold"] /; TrueQ[$lastSpace] := wrapWith[e, "***"];
+  StyleBox[e_, rules___] := $styledSpanTemplate[textBoxesToMarkdown @ e, StringRiffle[toStylePropVal /@ {rules}, ";"]];
+]
+
+toStylePropVal = Case[
+  FontColor -> (color_? ColorQ) := "color:" <> Image`Utilities`toHEXcolor[color];
+  FontWeight -> "Bold"|Bold := "font-weight:bold";
+  FontWeight -> Plain|"Plain" := "font-weight:normal";
+  FontSlant -> "Italic"|Italic := "font-style:italic";
+  FontSlant -> Plain|"Plain" := "font-style:normal";  
+  _ := Nothing
+]
+
+$styledSpanTemplate = StringFunction @ "<span style='#2'>#1</span>"
+$colorSpanTemplate = StringFunction @ "<font color='#2'>#1</font>"
+
+styledMD[e___] := Print["Can't handle: ", e];
 
 wrapWith[e_, wrap_] := Scope[
   e = StringJoin @ e;

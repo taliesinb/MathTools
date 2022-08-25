@@ -98,6 +98,7 @@ expandMultiArrowInGC[g_] := g /.
 
 plotRangeExpand[g_] := g /.
   gc_GraphicsComplex :> RuleCondition[Normal @ expandMultiArrowInGC @ gc] /. {
+  Invisible[e_] :> e,
   StadiumShape[{a_, b_}, r_] :> RuleCondition[{Disk[a, r], Disk[b, r]}],
   CapsuleShape[{a_, b_}, r_] :> RuleCondition[{Sphere[a, r], Sphere[b, r]}],
   Cube[p:{_, _, _}:{0,0,0}, l_:1] :> RuleCondition[Sphere[p, l/2]],

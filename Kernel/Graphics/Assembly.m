@@ -331,6 +331,7 @@ embedSizes3D = Case[
   r_Rule                                 := r;
   Framed[g_]                             := Framed[embedSizes3D @ g];
   Labeled[g_, r___]                      := Labeled[embedSizes3D @ g, r];
+  Overlay[list_List, opts___]            := Overlay[embedSizes3D /@ list, opts];
   e_                                     := wrapGraphics3D[e];
 ];
 
@@ -377,13 +378,21 @@ assemble3D = Case[
     {g2, sz} = List @@ assemble3D[g];
     Sized[{g2, Text[a, {0, 0, 0}, {0, -1}, BaseStyle -> $labelStyle]}, sz]
   ];
-  Overlay[{a_, b_}] := assembleOverlay[assemble3D @ a, b];
+  Overlay[{a_, b_}, opts___] := assembleOverlay[assemble3D @ a, assemble3D @ b, opts];
   CubeStack[center_, specs:{___Rule}, opts___Rule] := assembleCube[
     assemble3D @ center,
     MapColumn[assemble3D, 2, List @@@ specs],
     Lookup[{opts}, {Alignment, XSpacing, YSpacing, ZSpacing}, Inherited]
   ];
   e_ := e;
+];
+
+assembleOverlay[g1_, g2_, opts___] := Scope[
+  {g1, s1} = List @@ assemble3D[g1];
+  {g2, s2} = List @@ assemble3D[g2];
+  a = Lookup[{opts}, Alignment, None];
+  If[a === None, g2 //= First; t = s1/2, t = -alignAgainst[s1, s2, a]];
+  Sized[{g1, Translate[g2, t]}, s1]
 ];
 
 assembleXY[list_List, is3D_, {align_, spacing_}] := Scope[

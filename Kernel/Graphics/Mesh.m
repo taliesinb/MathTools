@@ -79,11 +79,13 @@ makeMesh3D[{minX_, minY_, minZ_}, {numX_, numY_, numZ_}, OptionsPattern[MeshLine
   Xran = Range[minX + bump * sizeX, maxX - bump * sizeX, sizeX];
   Yran = Range[minY + bump * sizeY, maxY - bump * sizeY, sizeY];
   Zran = Range[minZ + bump * sizeZ, maxZ - bump * sizeZ, sizeZ];
-
+  
   List[
-    styleFrame[frameX, CoordinateComplex[{Xran, Yseg, Zseg}]],
+(*     styleFrame[frameX, CoordinateComplex[{Xran, Yseg, Zseg}]],
     styleFrame[frameY, CoordinateComplex[{Xseg, Yran, Zseg}]],
     styleFrame[frameZ, CoordinateComplex[{Xseg, Yseg, Zran}]],
+ *)
+    styleMesh[frameStyle, CoordinateComplex[{{minX, maxX, Xseg}, {minY, maxY, Yseg}, {minZ, maxZ, Zseg}}, 1]],
 
     styleMesh[meshX, CoordinateComplex[{Xseg, Yran, Zran}]],
     styleMesh[meshY, CoordinateComplex[{Xran, Yseg, Zran}]],
@@ -126,8 +128,8 @@ Options[MeshGrid] = JoinOptions[
 MeshGrid[array_ ? MatrixQ, opts:OptionsPattern[]] :=
   MeshGrid[{0, 0}, array, opts];
 
-$defaultAxesLabelStyle = {FontSize -> 12, FontColor -> Black, FontFamily -> "Avenir"};
-$defaultTickStyle = {FontSize -> 12, FontColor -> $Gray, FontFamily -> "Avenir"};
+$defaultAxesLabelStyle = {FontSize -> 20, FontColor -> Black, FontFamily -> "Avenir"};
+$defaultTickStyle = {FontSize -> 20, FontColor -> $Gray, FontFamily -> "Avenir"};
 
 MeshGrid[{xmin2_, ymin2_}, array_ ? MatrixQ, opts:OptionsPattern[]] := Scope[
   {xmin, ymin} = {xmin2, ymin2};
@@ -138,9 +140,15 @@ MeshGrid[{xmin2_, ymin2_}, array_ ? MatrixQ, opts:OptionsPattern[]] := Scope[
   {cellw, cellh} = {1, 1} * itemSize;
   xcoords = xmin + cellw * (Range[ncols] - 0.5);          xmax = Max[xcoords] + cellw/2;
   ycoords = ymin + cellh * (Reverse[Range[nrows]] - 0.5); ymax = Max[ycoords] + cellh/2;
-  arrayItems = MapIndexed[
-    {a, {i, j}} |-> Inset[a, {Part[xcoords, j], Part[ycoords, i]}],
-    array, {2}
+  If[MatrixQ[array, ContainsQ[_Rectangle]],
+    arrayItems = MapIndexed[
+      {a, {i, j}} |-> Translate[a, {Part[xcoords, j], Part[ycoords, i]}],
+      array, {2}
+    ],
+    arrayItems = MapIndexed[
+      {a, {i, j}} |-> Inset[a, {Part[xcoords, j], Part[ycoords, i]}],
+      array, {2}
+    ];
   ];
   UnpackOptions[ticks, ticksStyle, tickSpacing];
   tickItems = If[ticks === None, Nothing,

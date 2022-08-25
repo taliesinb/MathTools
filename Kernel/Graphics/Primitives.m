@@ -244,7 +244,12 @@ PublicHead[CoordinateSegment]
 
 CoordinateComplex[{___, {}, ___}] := {};
 
-CoordinateComplex[coords_] := KeyValueMap[ccMake, KeySort @ GroupPairs @ ApplyTuples[ccElement, ToList /@ coords]];
+CoordinateComplex[coords_, patt_:All] :=
+  KeyValueMap[ccMake, KeySelect[orderMatchQ[patt]] @ KeySort @ GroupPairs @ ApplyTuples[ccElement, ToList /@ coords]];
+
+orderMatchQ[All] = True&;
+orderMatchQ[list_List][i_] := MemberQ[list, Round @ i];
+orderMatchQ[i_][j_] := i == j;
 
 ccMake[0, p_] := Point[p];
 ccElement[p__] :=
