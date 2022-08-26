@@ -80,7 +80,7 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
 
   (* did we already export this result in this session? *)
   objHash = Base36Hash @ obj;
-  cacheKey = {objHash, $relativeRasterizationPath, $rasterizationPath};
+  cacheKey = {objHash, $rasterizationURL, $rasterizationPath};
   cacheValue = Lookup[$rasterMetadataCache, Key @ cacheKey, None];
   If[ListQ[cacheValue] && $rasterizationCaching,
     (* this cache gives us enough info to generate the markdown without looking for the file on disk *)
@@ -126,7 +126,7 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
   Label[skipRasterization];
 
   width = Ceiling @ First[imageDims * 0.5];
-  imageRelativePath = toEmbedPath[$relativeRasterizationPath, imageFileName, imagePath];
+  url = toEmbedPath[$rasterizationURL, imageFileName, imagePath];
 
   If[!$dryRun, $rasterMetadataCache[cacheKey] ^= {imageDims, imageFileName, imagePath}];
 
@@ -134,7 +134,7 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
     "type" -> "File",
     "path" -> imagePath,
     "filename" -> imageFileName,
-    "relativepath" -> imageRelativePath,
+    "url" -> url,
     "width" -> width
   ]
 ]
@@ -142,7 +142,7 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
 PrivateFunction[toEmbedPath]
 
 toEmbedPath[None, imageFileName_, imagePath_] := "file://" <> imagePath;
-toEmbedPath[relative_, imageFileName_, _] := NormalizePath @ FileNameJoin[{relative, imageFileName}];
+toEmbedPath[rasterizationURL_, imageFileName_, _] := NormalizePath @ FileNameJoin[{rasterizationURL, imageFileName}];
 
 toDimsString[{w_, h_}] := StringJoin[IntegerString[w, 10, 4], "_", IntegerString[h, 10, 4]];
 

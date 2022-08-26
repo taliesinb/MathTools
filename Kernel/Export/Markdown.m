@@ -44,7 +44,7 @@ ExportToMarkdown[importSpec_, exportSpec_, OptionsPattern[]] := Scope @ CatchMes
       ThrowMessage["expdirne", MsgPath @ outputDir]]];
 
   setupRasterizationPath[outputDir, "OutputImages"];
-  mdvPrint["Rasterizing to ", MsgPath @ $rasterizationPath, " embedded as \"", $relativeRasterizationPath, "\""];
+  mdvPrint["Rasterizing to ", MsgPath @ $rasterizationPath, " embedded as \"", $rasterizationURL, "\""];
 
   If[StringQ[$katexPreludePath],
     preludePath = NormalizePath @ $katexPreludePath;

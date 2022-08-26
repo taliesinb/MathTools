@@ -43,18 +43,11 @@ CopyImageToInlineHTML[e_] := Scope[
   import
 ]
 
-PrivateFunction[JupyterRasterizationFunction]
-
-$externalImageHost = None;
 JupyterRasterizationFunction[e_] := Scope[
-  Which[$lastExternalCodeCell =!= None,
+  Which[($lastExternalCodeCell =!= None),
     base64RasterizationFunction["PNG", False] @ e,
-  $externalImageHost =!= None,
-    res = standardRasterizationFunction[e];
-    If[$externalImageHost =!= "localhost",
-      res["relativepath"] = $externalImageHost <> res["filename"];
-    ];
-    res,
+  $rasterizationPath =!= None,
+    standardRasterizationFunction[e],
   True,
     jpeg = base64RasterizationFunction["JPEG", True] @ e;
     png = base64RasterizationFunction["PNG", True] @ e;
@@ -66,26 +59,31 @@ PrivateVariable[$JupyterStringImageTemplate]
 PrivateVariable[$JupyterFileImageTemplate]
 
 $JupyterStringImageTemplate = StringFunction @ """<center><img src="data:image/#format;base64,#encoded" width="#width"></center>"""
-$JupyterFileImageTemplate = StringFunction @ """<center><img width="#width" src="#relativepath"></center>"""
+$JupyterFileImageTemplate = StringFunction @ """<center><img width="#width" src="#url"></center>"""
 
 $pngPrefix = StringTake[$JupyterStringImageTemplate[<|"format" -> "png", "width" -> "", "encoded" -> ""|>], 36];
 
-PublicFunction[ExportNotebookToJupyter]
+PublicFunction[ExportToJupyter]
 
-PublicOption[ExternalImageHost, RasterizationPath]
-
-Options[ExportNotebookToJupyter] = {
-  ExternalImageHost -> None,
+Options[ExportToJupyter] = {
   RasterizationPath -> None,
+  RasterizationURL -> None,
   MaxItems -> Infinity
 };
 
 $JupyterTemplate := $JupyterTemplate = Developer`ReadRawJSONFile[LocalPath["Kernel", "Export", "Template.ipynb"]];
 
-ExportNotebookToJupyter[target_String, nb:_NotebookObject:Automatic, OptionsPattern[]] := Scope[
-  UnpackOptions[$externalImageHost, rasterizationPath, maxItems];
+$isJupyterTarget = False;
+
+ExportToJupyter[nb:_NotebookObject:Automatic, target_String, OptionsPattern[]] := Scope[
+  UnpackOptions[$rasterizationURL, $rasterizationPath, maxItems];
   SetAutomatic[nb, EvaluationNotebook[]];
-  paras = ToMarkdownString[nb, True, MarkdownFlavor -> "Jupyter", RasterizationPath -> rasterizationPath];
+  paras = ToMarkdownString[nb, True,
+    MarkdownFlavor -> "Jupyter",
+    RasterizationPath -> $rasterizationPath,
+    RasterizationURL -> $rasterizationURL,
+    RasterizationFunction -> JupyterRasterizationFunction
+  ];
   paras = SequenceReplace[paras, {
     {bull__ ? bulletLineQ} :> clump[bull],
     {in_ ? pyInputQ, out__ ? pyOutputQ} :> inOutPair[in, out]

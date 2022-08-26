@@ -138,6 +138,8 @@ setupMarkdownGlobals[] := Quoted[
     $rawHTMLTemplate,
     $stringImageTemplate
   ];
+  rfunc = OptionValue[RasterizationFunction];
+  If[rfunc =!= Automatic, $rasterizationFunction = rfunc];
   SetInherited[$fileAnimatedImageTemplate, $fileImageTemplate];
   SetInherited[$fileVideoTemplate, $fileImageTemplate];
 ]];
@@ -146,27 +148,15 @@ setupMarkdownGlobals[] := Quoted[
 
 PrivateMacro[setupRasterizationPath]
 
-PrivateVariable[$rasterizationPath, $relativeRasterizationPath]
+PrivateVariable[$rasterizationPath, $rasterizationURL]
 
 $rasterizationPath = $TemporaryDirectory;
-$relativeRasterizationPath = "";
+$rasterizationURL = None;
 
 DefineLiteralMacro[setupRasterizationPath,
 setupRasterizationPath[baseDir_, default_] := Quoted[
-  UnpackOptions[$rasterizationPath];
+  UnpackOptions[$rasterizationPath, $rasterizationURL];
   SetAutomatic[$rasterizationPath, default];
-  Switch[$rasterizationPath,
-    _String ? AbsolutePathQ,
-      $relativeRasterizationPath = None,
-    _String,
-      $relativeRasterizationPath = $rasterizationPath,
-    {_String, _String},
-      {$rasterizationPath, $relativeRasterizationPath} = $rasterizationPath,
-    None,
-      Return[],
-    _,
-      ReturnFailed[];
-  ];
   $rasterizationPath //= NormalizePath;
   If[!AbsolutePathQ[$rasterizationPath],
     $rasterizationPath = ToFileName[baseDir, $rasterizationPath]];
@@ -174,7 +164,8 @@ setupRasterizationPath[baseDir_, default_] := Quoted[
 
 (**************************************************************************************************)
 
-PublicOption[EmbedPreludeLink, ExportPathFunction, HeadingDepthOffset, KatexPreludePath, MarkdownFlavor, NotebookCaching, RasterizationCaching, RasterizationPath]
+PublicOption[EmbedPreludeLink, ExportPathFunction, HeadingDepthOffset, KatexPreludePath, MarkdownFlavor, NotebookCaching]
+PublicOption[RasterizationCaching, RasterizationPath, RasterizationURL, RasterizationFunction]
 
 SetUsage @ "EmbedPreludeLink is an option to various markdown-related functions."
 SetUsage @ "ExportPathFunction is an option to various markdown-related functions."
@@ -185,6 +176,9 @@ SetUsage @ "NotebookCaching is an option to various markdown-related functions."
 SetUsage @ "RasterizationCaching is an option to various markdown-related functions."
 SetUsage @ "RasterizationPath is an option to various markdown-related functions that determines the path to place rasterized outputs.
 * The default value of RasterizationPath is Automatic, which will use the relative directory './OutputImages'."
+SetUsage @ "RasterizationURL is an option to various markdown-related functions that determines the path prefix to use for raster URLs."
+SetUsage @ "RasterizationFunction is an override of the default rasterization function used by the given markdown flavor."
+
 
 PrivateVariable[$genericMarkdownOptions]
 
@@ -196,7 +190,9 @@ $genericMarkdownOptions = {
   MarkdownFlavor -> "Preview",
   NotebookCaching -> False,
   RasterizationCaching -> True,
-  RasterizationPath -> Automatic
+  RasterizationPath -> Automatic,
+  RasterizationURL -> None,
+  RasterizationFunction -> Automatic
 }
 
 (**************************************************************************************************)

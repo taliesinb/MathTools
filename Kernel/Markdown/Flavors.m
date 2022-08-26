@@ -64,7 +64,6 @@ $flavorData["IAWriter", "MultilineMathTemplate"]  = wrapDoubleBrace;
 
 $flavorData["Jupyter"] = $flavorData["Base"];
 $flavorData["Jupyter", "FileImageTemplate"]       = None;
-$flavorData["Jupyter", "RasterizationFunction"]   = JupyterRasterizationFunction;
 $flavorData["Jupyter", "StringImageTemplate"]     = $JupyterStringImageTemplate;
 $flavorData["Jupyter", "FileImageTemplate"]       = $JupyterFileImageTemplate;
 
@@ -106,13 +105,13 @@ blankString = Function[""];
 (**************************************************************************************************)
 
 genericImageTagTemplate = StringFunction @ StringTrim @  """
-<img class="#classlist" src="#relativepath" width="#width" alt="#caption">
+<img class="#classlist" src="#url" width="#width" alt="#caption">
 """;
 
 genericVideoTagTemplate = StringFunction @ StringTrim @  """
 <video width="#width" height="#height" controls>
-  <source src="#relativepath" type="video/mp4">
+  <source src="#url" type="video/mp4">
 </video>
 """;
 
-genericImageLinkTemplate = StringFunction @ "![](#relativepath)";
+genericImageLinkTemplate = StringFunction @ "![](#url)";
