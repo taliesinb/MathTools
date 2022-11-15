@@ -1,14 +1,14 @@
-PublicFunction[GarbageCollectOutputImages]
+PublicFunction[SiteGarbageCollectRasters]
 
-Options[GarbageCollectOutputImages] = {
-  MarkdownFlavor -> "Franklin",
-  RasterizationPath -> None,
+Options[SiteGarbageCollectRasters] = {
   DryRun -> False,
   Verbose -> Automatic
 }
 
-GarbageCollectOutputImages[markdownSearchPath_, OptionsPattern[]] := Scope[
-  UnpackOptions[$markdownFlavor, $dryRun, $verbose];
+SiteGarbageCollectRasters[site_, OptionsPattern[]] := Scope[
+
+  UnpackOptions[$dryRun, $verbose];
+  UnpackAssociation[siteData, $markdownFlavor];
 
   $dryRun = $dryRun =!= False;
   SetAutomatic[$verbose, $dryRun];
@@ -16,6 +16,7 @@ GarbageCollectOutputImages[markdownSearchPath_, OptionsPattern[]] := Scope[
   flavorFields = Lookup[$flavorData, $markdownFlavor, ReturnFailed[]];
   UnpackAssociation[flavorFields, $fileImageTemplate, $fileAnimatedImageTemplate];
 
+  (* TODO: Fix me *)
   setupRasterizationPath[markdownSearchPath, "OutputImages"];
   If[FileType[markdownSearchPath] =!= Directory || FileType[$rasterizationPath] =!= Directory, ReturnFailed[]];
   
@@ -30,20 +31,20 @@ GarbageCollectOutputImages[markdownSearchPath_, OptionsPattern[]] := Scope[
 
   markdownFiles = FileNames["*.md", markdownSearchPath];
   markdownContent = ImportUTF8 /@ markdownFiles;
-  mdvPrint["* Searching ", Length @ markdownFiles, " markdown files in ", MsgPath @ markdownSearchPath, "."];
+  VPrint["* Searching ", Length @ markdownFiles, " markdown files in ", MsgPath @ markdownSearchPath, "."];
  
   matches = Flatten @ StringCases[markdownContent, markdownPattern];
   matches = Map[FileNameJoin[{$rasterizationPath, FileNameTake[#]}]&, matches];
-  mdvPrint["* Found ", Length @ matches, " referenced images."];
+  VPrint["* Found ", Length @ matches, " referenced images."];
 
   If[Length[matches] == 0, ReturnFailed[]];
 
   existingFiles = FileNames["*.png", $rasterizationPath];
-  mdvPrint["* Checking ", Length @ existingFiles, " existing images in ", MsgPath @ $rasterizationPath,  "."];
+  VPrint["* Checking ", Length @ existingFiles, " existing images in ", MsgPath @ $rasterizationPath,  "."];
 
   garbageFiles = Complement[existingFiles, matches];
 
-  mdvPrint["* Deleting ", Length @ garbageFiles, " unreferenced image files."];
+  VPrint["* Deleting ", Length @ garbageFiles, " unreferenced image files."];
 
   If[!$dryRun, Scan[DeleteFile, garbageFiles]];
 
@@ -52,15 +53,15 @@ GarbageCollectOutputImages[markdownSearchPath_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[ExportNavigationPage]
+PublicFunction[SiteExportNavigationPage]
 
 SetUsage @ "IndexPagePath is an option to various markdown-related functions."
 
-Options[ExportNavigationPage] = {
+Options[SiteExportNavigationPage] = {
   IndexPagePath -> None
 }
 
-ExportNavigationPage[files_, relativePrefix_String, navPath_, OptionsPattern[]] := Scope[
+SiteExportNavigationPage[files_, relativePrefix_String, navPath_, OptionsPattern[]] := Scope[
   UnpackOptions[indexPagePath];
   $mdFileCache = UAssociation[]; (* for inserting by id from one page to another *)
   If[StringQ[files],
@@ -169,11 +170,3 @@ toInsertedContent[title_, id_, div_] := Scope[
   If[div =!= "", foundContent = StringJoin["@@", StringTrim[div, "@"], "\n", foundContent, "\n", "@@"]];
   foundContent
 ]
-
-(**************************************************************************************************)
-
-PublicFunction[FocusWebpage]
-
-FocusWebpage[url_] := If[url =!= QuiverGeometryPackageLoader`$lastFocusUrl,
-  QuiverGeometryPackageLoader`$lastFocusUrl = url; SystemOpen[url]];
-

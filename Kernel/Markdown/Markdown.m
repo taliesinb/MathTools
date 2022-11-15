@@ -4,7 +4,7 @@ Options[ToMarkdownString] = $genericMarkdownOptions;
 
 ToMarkdownString[spec_, returnVec:True|False:False, opts:OptionsPattern[]] := Scope[
   setupMarkdownGlobals[];
-  setupRasterizationPath[$TemporaryDirectory, ToFileName[$TemporaryDirectory, "wl_md_images"]];
+  SetAutomatic[$rasterizationPath, ToFileName[$TemporaryDirectory, "raster"]];
   toMarkdownStringInner[spec, returnVec]
 ];
 
@@ -13,6 +13,7 @@ ToMarkdownString[spec_, returnVec:True|False:False, opts:OptionsPattern[]] := Sc
 PrivateFunction[toMarkdownStringInner]
 
 toMarkdownStringInner[spec_, returnVec_:False] := Scope[
+  initPNGExport[];
   $textPostProcessor = StringReplace @ {
     If[$inlineLinkTemplate === None, Nothing, $markdownLinkReplacement],
     $inlineWLExprReplacement, $inlineWLExprReplacement2,
@@ -21,27 +22,42 @@ toMarkdownStringInner[spec_, returnVec_:False] := Scope[
   lines = toMarkdownLines @ spec;
   If[!StringVectorQ[lines], ReturnFailed[]];
   If[returnVec, Return @ lines];
-  If[StringQ[$katexPreludePath] && $embedPreludeLink,
-    lines = insertAtFirstNonheader[lines, {$externalImportTemplate @ $katexPreludePath}]];
+  If[StringQ[$katexPreludePath] && $embedKatexPrelude === "Link",
+      lines = insertAtFirstNonheader[lines, {$externalImportTemplate @ $katexPreludePath}]];
+  If[$embedKatexPrelude === True,
+    katexMarkdown = $markdownPostprocessor @ $multilineMathTemplate @ $katexPostprocessor @ $KatexPrelude;
+    lines = insertAtFirstNonheader[lines, {katexMarkdown}]];
   result = StringJoin @ {Riffle[lines, "\n\n"], "\n\n"};
   If[!StringQ[result], ReturnFailed[]];
-  result //= StringReplace[$markdownTableReplacement];
-  StringTrim @ $markdownPostprocessor @ result
+  result //= StringReplace[$markdownTableReplacement] /* $markdownPostprocessor /* StringTrim;
+  If[$includeFrontMatter && AssociationQ[frontMatter = NotebookFrontMatter @ spec],
+    frontMatter = frontMatter /. None -> Null;
+    frontMatter //= Developer`WriteRawJSONString /* StringReplace["\\/" -> "/"]; (* weird bug in ToJSON *)
+    result = StringJoin[frontMatter, "\n\n", result];
+  ];
+  If[!StringQ[result], ReturnFailed[]];
+  result
 ];
+
+(**************************************************************************************************)
+
+(* avoids a problem with GIFImageQuantize running the first time on a fresh kernel *)
+initPNGExport[] := (Clear[initPNGExport]; Quiet @ ExportString[ConstantImage[1, {2, 2}], "PNG", CompressionLevel -> 1]);
 
 (**************************************************************************************************)
 
 General::badnbread = "Could not read notebook ``, will be replaced with placeholder.";
 
 $notebookToMarkdownCache = UAssociation[];
-$notebookCaching = False;
 
 toMarkdownLines[File[path_String]] /; FileExtension[path] === "nb" := Scope[
+  path = NormalizePath @ path;
   fileDate = Quiet @ FileDate @ path;
+  cacheKey = <|"Path" -> path, "Hash" -> $markdownGlobalsHash, "DryRun" -> $dryRun|>;
   If[$notebookCaching,
     {cachedResult, cachedDate} = Lookup[$notebookToMarkdownCache, path, {None, None}];
     If[ListQ[cachedResult] && fileDate === cachedDate,
-      mdvPrint["  Using cached markdown for ", MsgPath @ path];
+      VPrint["  Using cached markdown for ", MsgPath @ path];
       Return @ cachedResult
     ];
   ];
@@ -76,10 +92,10 @@ $localTemplateToKatexFunctions = None;
 toMarkdownLines[Notebook[cells_List, opts___]] := Scope[
   taggingRules = Lookup[{opts}, TaggingRules, <||>];
   If[StringQ[katexDefs = taggingRules["KatexDefinitions"]],
-    mdvPrint["Applying local katex definitions: \n", katexDefs];
+    VPrint["Applying local katex definitions: \n", katexDefs];
     $localKatexDefinitions = katexDefs];
   If[AssociationQ[katexFns = taggingRules["TemplateToKatexFunctions"]],
-    mdvPrint["Applying local template to katex functions: \n", katexFns];
+    VPrint["Applying local template to katex functions: \n", katexFns];
     $localTemplateToKatexFunctions = katexFns
   ];
   $lastCaption = None; Map[cellToMarkdown, cells]
@@ -96,6 +112,10 @@ toMarkdownLines[e_] := List[
 
 (**************************************************************************************************)
 
+$textStyleP = "Text" | "Section" | "Subsection";
+
+$graphicsCell = Cell[BoxData[_GraphicsBox], __];
+
 cellToMarkdown = Case[
 
   cell_CellObject :=
@@ -105,6 +125,38 @@ cellToMarkdown = Case[
 
   Cell[e_, style:Except["Input" | "Code"], ___, CellTags -> tag_String, ___] :=
     Splice @ {$anchorTemplate @ tag, cellToMarkdownInner0 @ Cell[e, style]};
+
+  (* JS: style applied incorrectly to contents of cell *)
+  Cell[TextData[StyleBox[contents_, style_String]], "Text", ___] :=
+    % @ Cell[contents, style];
+
+  (* JS: cell missing style, can happen in embedded cells *)
+  Cell[b_BoxData] := % @ Cell[b, "Text"];
+
+  (* JS: this is a degenerate kind of cell pasted in another cell *)
+  Cell[TextData[c_Cell], ___] := % @ c;
+
+  (* JS: this handles image-containing cells that are embedded as lines of text *)
+  Cell[TextData[{linesL___String, outCell:$graphicsCell, linesR___String}], s:$textStyleP, ___] :=
+    Splice @ Map[%, {
+      Cell[TextData[{linesL}], s],
+      outCell,
+      Cell[TextData[{linesR}], s]
+    }];
+
+  (* JS: empty cells produce by previous splicing rule *)
+  Cell[TextData[{("" | "\n")...}], ___] := Nothing;
+
+  (* JS: no-op cells *)
+  Cell[TextData[""] | BoxData[""] | "", ___] := Nothing;
+
+  (* JS: the copyright notice *)
+  Cell[BoxData[{linesL___, g_GraphicsBox, linesR___}], s:$textStyleP, ___] :=
+    Splice @ Map[%, {
+      Cell[BoxData[{linesL}], s],
+      Cell[BoxData[g], "Output"],
+      Cell[BoxData[{linesR}], s]
+    }];
 
   Cell[e_, style_, ___] :=
     cellToMarkdownInner0 @ Cell[e, style];
@@ -135,20 +187,28 @@ PrintBadCell[e_] :=
 
 (**************************************************************************************************)
 
-ToMarkdownString::badcell = "Error occurred while converting cell.";
+ToMarkdownString::badcell = "Error occurred while converting cell. cellToMarkdownInner1 did not return a string (or Nothing). Instead it returned expression with head ``, see $LastFailedMarkdownOutput. Entire bad cell is printed below.";
 
 cellToMarkdownInner0[cell_] := Scope[
   result = cellToMarkdownInner1[cell];
-  If[StringQ[result] || result === Nothing, result,
+  If[StringQ[result] || result === Nothing,
+    result
+  ,
     $LastFailedMarkdownInput ^= cell; $LastFailedMarkdownOutput ^= result;
-    Message[ToMarkdownString::badcell]; PrintBadCell[cell]; "### BAD CELL"]
+    Message[ToMarkdownString::badcell, Head @ result];
+    PrintBadCell[cell];
+    "### BAD CELL"
+  ]
 ];
+
+(* TODO: use stylesheets to call a specific function that will generate markdown per-style *)
 
 cellToMarkdownInner1 = Case[
 
   Cell["Under construction.", _]         := bannerToMarkdown @ "UNDER CONSTRUCTION";
+  Cell[e_, "Banner"]                     := bannerToMarkdown @ e;
 
-  Cell[str_String /; StringStartsQ[str, "BANNER: "], _] := bannerToMarkdown @ StringTrim[str, "BANNER: "];
+  c:Cell[BoxData[GraphicsBox[TagBox[_, _BoxForm`ImageTag, ___], ___]], _] := cellToRasterMarkdown @ c;
 
   Cell[e_, "Title"]                      := StringJoin[headingDepth @ -1, textCellToMarkdown @ e];
   Cell[e_, "Chapter"]                    := StringJoin[headingDepth @ 0,  textCellToMarkdown @ e];
@@ -156,10 +216,13 @@ cellToMarkdownInner1 = Case[
   Cell[e_, "Subsection"]                 := StringJoin[headingDepth @ 2,  textCellToMarkdown @ e];
   Cell[e_, "Subsubsection"]              := StringJoin[headingDepth @ 3,  textCellToMarkdown @ e];
        
+  Cell[e_, "Author" | "Affiliation" | "Institution"] := StringJoin["## ", textCellToMarkdown @ e];
+
+  Cell[e_, "Equation"]                   := mathCellToMarkdown @ e;
   Cell[e_, "Exercise"]                   := StringJoin["**Task**: ", textCellToMarkdown @ e];
-       
+
   Cell[e_, "Text"]                       := insertLinebreaksOutsideKatex[textCellToMarkdown @ e, 120];
-  Cell[e_, "Item"]                       := StringJoin["* ",     textCellToMarkdown @ e];
+  Cell[e_, "Item" | "Item1"]             := StringJoin["* ",     textCellToMarkdown @ e];
   Cell[e_, "Subitem"]                    := StringJoin["\t* ",   textCellToMarkdown @ e];
   Cell[e_, "SubsubItem"]                 := StringJoin["\t\t* ", textCellToMarkdown @ e];
        
@@ -169,40 +232,36 @@ cellToMarkdownInner1 = Case[
        
   Cell[code_, "ExternalLanguage"]        := ($lastExternalCodeCell = code; StringJoin["```python\n", code, "\n```"]);
 
-  Cell[b:BoxData[TemplateBox[_, _ ? textTagQ]], "Output"]     := textCellToMarkdown @ b;
-  Cell[BoxData[t:TemplateBox[_, "VideoBox1", ___]], "Output"] := videoCellToMarkdown @ t;
+  Cell[b_, "Output"] /; ContainsQ[b, "LinkHand"] := Nothing;
+  Cell[b_, "Output"]                     := outputCellToMarkdown @ b;
 
-  Cell[BoxData[out_String], "Output"]    := textOutputCellToMarkdown @ out;
-  e:Cell[_, "Output"]                    := If[ContainsQ[e, "LinkHand"], Nothing, outputCellToMarkdown @ e];
+  Cell[s_String, "PythonOutput"]         := plaintextCodeToMarkdown @ s;
+  e:Cell[_, "PythonOutput"]              := cellToRasterMarkdown @ e;
 
-  Cell[s_String, "PythonOutput"]         := textOutputCellToMarkdown @ s;
-  e:Cell[_, "PythonOutput"]              := outputCellToMarkdown @ e;
-
-  e:Cell[BoxData[_GraphicsBox], "Print"] := outputCellToMarkdown @ e;
+  e:Cell[BoxData[_GraphicsBox], "Print"] := cellToRasterMarkdown @ e;
   
-  Cell[str_String, "Program"]            := str;
+  Cell[m_String, "Markdown"|"Program"]   := m; (* verbatim markdown *)
+
   Cell[e_, "Code"]                       := ($lastCaption = First[Cases[e, $outputCaptionPattern], None]; Nothing);
 
-  c_ := (Nothing);
+  c_                                     := (Nothing);
 ];
+
+(**************************************************************************************************)
 
 PrivateVariable[$lastCaption, $lastExternalCodeCell]
 
 $lastCaption = $lastExternalCodeCell = None;
 
 $outputCaptionPattern = RowBox[{"(*", RowBox[{"CAPTION", ":", caption___}], "*)"}] :>
-  StringJoin @ textCellToMarkdownOuter @ RowBox[{caption}];
-
-(* recognizes tags generated by StylesheetForms *)
-textTagQ[tag_String] := StringEndsQ[tag, "Form" | "Symbol"] || TemplateBoxNameQ[tag];
-textTagQ[_] := False;
+  StringJoin @ textBoxesToMarkdownOuter @ RowBox[{caption}];
 
 headingDepth[n_] := StringRepeat["#", Max[n + $headingDepthOffset, 1]] <> " ";
 
 (**************************************************************************************************)
 
 insertLinebreaksOutsideKatex[str_String, n_] := Scope[
-  If[$markdownFlavor === "Hugo", Return @ str];
+  If[$markdownFlavor === "Hugo" || StringLength[str] < n, Return @ str];
   katexSpans = StringPosition[str, Verbatim["$"] ~~ Shortest[___] ~~ Verbatim["$"], Overlaps -> False];
   katexStrings = StringTake[str, katexSpans];
   If[katexSpans === {}, Return @ InsertLinebreaks[str, n]];
@@ -210,4 +269,6 @@ insertLinebreaksOutsideKatex[str_String, n_] := Scope[
   i = 1;
   StringReplace[str, "€" :> Part[katexStrings, i++]]
 ];
+
+insertLinebreaksOutsideKatex[other_, _] := (Print[other]; $Failed)
 

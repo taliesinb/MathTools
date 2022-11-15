@@ -1,10 +1,8 @@
 PrivateFunction[bannerToMarkdown]
 
-bannerToMarkdown[text_String] := bannerToMarkdown[text] = outputCellToMarkdown @ makeBannerCell[text];
+bannerToMarkdown[text_String] := bannerToMarkdown[text] = outputCellToMarkdown @ BoxData @ makeBannerBoxes[text, 5];
 
-makeBannerCell[str_] := Cell[BoxData @ makeBannerGraphics[str, 5], "Output"];
-
-makeBannerGraphics[str_, n_] := ToBoxes @
+makeBannerBoxes[str_, n_] := ToBoxes @
   Framed[
     Graphics[
       Text[Style[str, Bold, FontColor -> Black,

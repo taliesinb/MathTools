@@ -28,13 +28,13 @@ createMarkdownTable[ostr_String] := Scope[
   hasHeader = VectorQ[first, boldedQ];
   strikeRow = ConstantArray["---", ncols];
   attrs = {};
-  If[!hasHeader,
+  If[!hasHeader && $allowTableHeaderSkip,
     AppendTo[attrs, "table-no-header"];
     dummyRow = ConstantArray["z", ncols];
     grid = Join[{dummyRow, strikeRow}, grid];
   ,
     postFn = Identity;
-    grid = Insert[grid, strikeRow, If[hasHeader, 2, 1]];
+    grid = Insert[grid, strikeRow, If[hasHeader || !$allowTableHeaderSkip, 2, 1]];
   ];
   If[ncols > 3 && allowCompact,
     AppendTo[attrs, "table-compact"]];
@@ -45,4 +45,4 @@ createMarkdownTable[ostr_String] := Scope[
 
 toTableRowString[cols_] := StringJoin["| ", Riffle[cols, " | "], " |\n"];
 
-boldedQ[str_] := StringMatchQ[str, Verbatim["*"] ~~ __ ~~ Verbatim["*"]];
+boldedQ[str_] := StringMatchQ[str, Verbatim["*"] ~~ __ ~~ Verbatim["*"]] || StringMatchQ[str, "<span style='font-weight:bold'>" ~~ __ ~~ "</span>"];

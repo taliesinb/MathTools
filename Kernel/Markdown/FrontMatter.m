@@ -4,12 +4,15 @@ MarkdownFrontMatter[path_String | File[path_String]] := Scope[
   
   path //= NormalizePath;
 
+  If[!FileExistsQ[path], ReturnFailed[]];
+
   str = ReadString[path];
 
   If[StringStartsQ[str, "{"],
     jsonStr = FirstStringCase[str, json:(StartOfString ~~ "{\n" ~~ Shortest[___] ~~ "\n}\n") :> json];
     If[StringQ[jsonStr],
       res = Developer`ReadRawJSONString @ jsonStr;
+      res = res /. Null -> None;
       If[AssociationQ[res], Return @ res]
     ];
   ];
@@ -37,11 +40,14 @@ getMarkdownUnixTime[path_String] := Scope[
 
 PublicFunction[NotebookFrontMatter]
 
+NotebookFrontMatter[_] := $Failed;
+
 NotebookFrontMatter[nb_NotebookObject] :=
   NotebookFrontMatter @ NotebookFileName @ nb;
 
 $frontMatterMetadataCache = UAssociation[];
 
+(* TODO: deal with notebooks that have changed in FE but haven't been saved yet! *)
 NotebookFrontMatter[path_String | File[path_String]] := Scope[
   
   path //= NormalizePath;
@@ -58,7 +64,7 @@ NotebookFrontMatter[path_String | File[path_String]] := Scope[
   numbering = StringTrim @ FirstStringCase[filebase, DigitCharacter.. ~~ " ", ""];
   weight = If[numbering === "", 999, FromDigits @ numbering];
 
-  {title, taggingRules} = getNotebookData[path];
+  {title, subTitle, taggingRules} = getNotebookData[path];
   SetNone[title, trimNumberPrefix @ filebase];
   fileDate = DatePlus[fileDate, -1]; (* to force Hugo to render the page *)
   dateString = DateString[fileDate, {"Year", "-", "Month", "-", "Day"}];
@@ -68,6 +74,7 @@ NotebookFrontMatter[path_String | File[path_String]] := Scope[
     "date" -> dateString,
     "weight" -> weight,
     "title" -> title,
+    "summary" -> subTitle,
     "notebookpath" -> path,
     KeySelect[taggingRules, StringQ[#] && LowerCaseQ[StringTake[#, 1]]&]
   ];
@@ -76,7 +83,7 @@ NotebookFrontMatter[path_String | File[path_String]] := Scope[
 
   Label[Done];
 
-  result["relativepath"] = RelativePath[$baseImportPath, FileNameDrop @ path];
+  result["relativepath"] = ReplaceNone[RelativePath[$notebookPath, FileNameDrop @ path], ""];
 
   If[$frontMatterFunction =!= None,
     result //= $frontMatterFunction;
@@ -88,9 +95,25 @@ NotebookFrontMatter[path_String | File[path_String]] := Scope[
 getNotebookData[path_String] := Scope[
   nb = Get @ path;
   title = FirstCase[nb, Cell[title_String, "Title"|"Chapter"|"Section", ___] :> title, None, Infinity];
+  subTitle = FirstCase[nb, Cell[subtitle_String, "Subtitle", ___] :> subtitle, None, Infinity];
+  SetNone[subTitle, notebookFirstLine @ nb];
   taggingRules = LookupOption[nb, TaggingRules];
   If[RuleListQ[taggingRules], taggingRules //= Association];
   SetAutomatic[taggingRules, <||>];
   KeyDropFrom[taggingRules, "TryRealOnly"];
-  {title, taggingRules}
+  {title, subTitle, taggingRules}
+];
+
+notebookFirstLine[nb_] :=
+  FirstCase[nb,
+    Cell[b_ /; FreeQ[b, _GraphicsBox], "Text", ___] :>
+      With[{res = boxesFirstLine @ b}, res /; StringLength[res] > 5],
+    None, Infinity
+  ];
+
+boxesFirstLine[b_] := Scope[
+  str = Quiet @ CatchMessage @ textCellToMarkdown @ b;
+  If[!StringQ[str], Return[None]];
+  split = StringSplit[str, w:("." | "?" | "!" | "...") ~~ (EndOfString | EndOfLine | WhitespaceCharacter) :> w, 2];
+  StringTrim @ StringJoin @ Take[split, UpTo[2]]
 ];

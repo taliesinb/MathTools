@@ -6,9 +6,14 @@ ToKatexString[e_] := boxesToKatexString @ ToBoxes[e, StandardForm];
 
 PrivateFunction[boxesToKatexString]
 
+ToKatexString::partial = "Could not fully evaluate katex equivalents.";
+
 boxesToKatexString[boxes_] := Scope[
-  $currentKatexInputBoxes = cleanupInlineBoxes @ boxes;
-  katexString = StringJoin @ ReplaceRepeated[$katexAppliedRule] @ boxToKatex @ $currentKatexInputBoxes;
+  $inputBoxes = boxes;
+  interm = boxToKatex @ cleanupInlineBoxes @ boxes;
+  flatTerms = Flatten @ List @ ReplaceRepeated[$katexAppliedRule] @ interm;
+  If[!StringVectorQ[flatTerms], ReturnFailed["partial"]];
+  katexString = StringJoin @ flatTerms;
   StringTrim @ StringReplace[$WLSymbolToKatexRegex] @ katexString
 ];
 
@@ -29,7 +34,7 @@ boxToKatex = Case[
   e_List := Map[%, e];
   e:(_String[___]) := Map[%, e];
 
-  c_Cell := Block[{$inlineMathTemplate = Identity}, textBoxesToMarkdown @ c];
+  c_Cell := Block[{$inlineMathTemplate = Identity}, textBoxesToMarkdownInner @ c];
   TemplateBox[args_, tag_] := templateBoxToKatex[tag -> args];
 
   StyleBox[e_, "Text"] := {"\\textrm{", boxToInlineText @ e, "}"};
@@ -59,16 +64,23 @@ boxToKatex = Case[
   RowBox[{"{", e__, "}"}] := {"\{", % /@ {e}, "\}"};
   RowBox[e_] := Map[%, e];
 
+  ButtonBox[title_, BaseStyle -> "Hyperlink"|Hyperlink, ButtonData -> {URL[url_String], _}, ___] :=
+    {"\\href{", url, "}{", % @ title, "}"};
+
   TagBox[e_, __] := % @ e;
   RowBox[{"(", "\[NoBreak]", GridBox[grid_, ___], "\[NoBreak]", ")"}] := {"\\begin{pmatrix}", StringRiffle[MatrixMap[%, grid], "\\\\", "&"], "\\end{pmatrix}"};
   UnderoverscriptBox[e_, b_, c_] := % @ SuperscriptBox[SubscriptBox[e, b], c];
-  FractionBox[a_, b_] := {"\\frac{", a, "}{", b, "}"};
+  FractionBox[a_, b_] := {"\\frac{", % @ a, "}{", % @ b, "}"};
   RowBox[list_] := Map[%, list];
 
-  other_ := (
-    Message[ToKatexString::badbox, InputForm @ other, Framed @ RawBoxes[other]];
-    StringJoin["\\noKatexForm{", StringReplace[ToString[Head @ other, InputForm], $katexEscape], "}"]
-  );
+  other_ := Scope[
+    head = ToPrettifiedString @ Head @ other;
+    Message[ToKatexString::badbox, MsgExpr @ other];
+    Print["OUTER BOXES:"]; Print @ ToPrettifiedString[$inputBoxes, MaxDepth -> 3, MaxLength -> 10];
+    Print["RAW BOXES:"]; Print @ ToPrettifiedString[other, MaxDepth -> 3, MaxLength -> 10];
+    Print["FORMATTED BOXES:"]; Print @ RawBoxes @ Replace[other, BoxData[bd_] :> bd];
+    StringJoin["\\noKatexForm{", StringReplace[head, $katexEscape], "}"]
+  ];
 ];
 
 $katexEscape = {
@@ -103,7 +115,7 @@ templateBoxToKatex = Case[
   {$ -> boxToKatex}
 ];
 
-ToKatexString::badbox = "Box `` correspoding to `` has no Katex conversion.";
+ToKatexString::badbox = "Box expression `` has no Katex conversion.";
 ToKatexString::badtemplatebox = "TemplateBox `` corresponding to `` has no $TemplateKatexFunction defined.";
 
 dispatchTemplateBox[tag_, args_] := Scope[

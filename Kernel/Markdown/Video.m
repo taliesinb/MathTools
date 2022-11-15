@@ -1,6 +1,16 @@
-PrivateFunction[videoCellToMarkdown]
+PrivateFunction[videoBoxToMarkdown]
 
-videoCellToMarkdown[TemplateBox[{_, srcPath_, ___}, "VideoBox1", ___]] := Scope[
+videoBoxToMarkdown[TemplateBox[{_, srcPath_, ___}, "VideoBox1", ___]] :=
+  videoPathToMarkdown @ srcPath;
+
+videoBoxToMarkdown[TemplateBox[assoc_Association, "VideoBox2", ___]] :=
+  videoPathToMarkdown @ assoc["resourcePath"]
+
+videoBoxToMarkdown[_] := videoPathToMarkdown[None];
+
+videoPathToMarkdown[other_] := "#### Invalid Video";
+
+videoPathToMarkdown[srcPath_String | File[srcPath_String]] := Scope[
   
   If[!FileExistsQ[srcPath], Return @ "#### Missing video file"];
   
@@ -14,20 +24,19 @@ videoCellToMarkdown[TemplateBox[{_, srcPath_, ___}, "VideoBox1", ___]] := Scope[
     EnsureDirectory[$rasterizationPath];
     If[!FileExistsQ[videoPath], CopyFile[srcPath, videoPath]];
   ];
-  mdvPrint["Copying file from ", MsgPath @ srcPath, " to ", MsgPath @ videoPath];
+  VPrint["Copying file from ", MsgPath @ srcPath, " to ", MsgPath @ videoPath];
 
   {w, h} = Ceiling[videoDims / 2];
-  relativePath = toEmbedPath[$relativeRasterizationPath, videoFileName, videoPath];
+  relativePath = toEmbedPath[$rasterizationURL, videoFileName, videoPath];
   
-  $fileVideoTemplate @ Association[
+  $fileAnimatedImageTemplate @ Association[
     "width" -> w, "height" -> h,
     "videopath" -> videoPath,
-    "relativepath" -> relativePath
+    "url" -> relativePath
   ]
 ]
-
-videoCellToMarkdown[_] := "#### Invalid Video"
 
 $rasterSizeCache = <||>;
 
 getVideoRasterSize[path_] := CacheTo[$rasterSizeCache, path, First @ Information[Video[path], "OriginalRasterSize"]];
+

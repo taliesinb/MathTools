@@ -1,3 +1,44 @@
+PrivateFunction[cellToRasterMarkdown]
+
+ToMarkdownString::badimgtemp = "Setting of FileImageTemplate (or StringImageTemplate) did not return a markdown string.";
+ToMarkdownString::badrastres = "Setting of RasterizationFunction did not return a valid association.";
+
+cellToRasterMarkdown[cell_] := Scope[
+
+  If[$rasterizationFunction === None, Return["#### Placeholder for image"]];
+
+  thisTag = Nothing;
+  cell = cell /. TagBox[contents_, "ClassTaggedForm"[tag_]] :> (thisTag = tag; contents);
+  rasterizationResult = $rasterizationFunction @ cell;
+
+  If[!AssociationQ[rasterizationResult],
+    Message[ToMarkdownString::badrastres];
+    Return["#### Invalid rasterization result"];
+  ];
+
+  rasterizationResult["classlist"] = StringRiffle[{"raster", thisTag}, " "];
+  rasterizationResult["caption"] = Replace[$lastCaption, None -> ""];
+
+  Switch[rasterizationResult["type"],
+    "String",
+      markdown = $stringImageTemplate @ rasterizationResult,
+    "File",
+      markdown = $fileImageTemplate @ rasterizationResult,
+    _,
+      Message[ToMarkdownString::badrastres];
+      Return @ "#### Invalid rasterization result"
+  ];
+
+  If[!StringQ[markdown],
+    Message[ToMarkdownString::badimgtemp];
+    markdown = "#### Invalid image template result";
+  ];
+
+  markdown
+];
+
+(**************************************************************************************************)
+
 PrivateFunction[linearSyntaxRasterizationFunction]
 
 linearSyntaxRasterizationFunction[cell_] := Association[
@@ -88,7 +129,7 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
     Goto[skipRasterization];
   ];
 
-  If[!$dryRun, EnsureDirectory @ $rasterizationPath];
+  whenWet @ EnsureDirectory @ $rasterizationPath;
 
   (* did we already export this result in a previous session? *)
   imagePath = First[FileNames[objHash <> "_*_*." <> fileExt, $rasterizationPath], None];
@@ -106,7 +147,7 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
     {image, imageDims} = result;
     imageHash = Base36Hash @ image;
     {w, h} = imageDims;
-    mdvPrint["* Rasterization yielded image of size ", w, " by ", h];
+    VPrint["* Rasterization yielded image of size ", w, " by ", h];
     dimsStr = StringJoin[IntegerString[w, 10, 4], "_", IntegerString[h, 10, 4]];
     imageFileName = StringJoin[objHash, "_", imageHash, "_", dimsStr, ".", fileExt];
   ];
@@ -115,11 +156,11 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
 
   (* export *)
   If[!FileExistsQ[imagePath] || !$rasterizationCaching,
-    mdvPrint["* Exporting image to ", MsgPath @ imagePath];
-    If[!$dryRun, Check[
+    VPrint["* Exporting image to ", MsgPath @ imagePath];
+    whenWet @ Check[
       Export[imagePath, image, exportArgs],
       Print["Rasterization failed: ", Thumbnail @ image];
-    ]];
+    ];
   ];
 
   (* create and return markdown *)
@@ -128,7 +169,7 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
   width = Ceiling @ First[imageDims * 0.5];
   url = toEmbedPath[$rasterizationURL, imageFileName, imagePath];
 
-  If[!$dryRun, $rasterMetadataCache[cacheKey] ^= {imageDims, imageFileName, imagePath}];
+  whenWet[$rasterMetadataCache[cacheKey] ^= {imageDims, imageFileName, imagePath}];
 
   Association[
     "type" -> "File",

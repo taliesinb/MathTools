@@ -69,26 +69,17 @@ insertAtFirstNonheader[lines_List, template_] := Scope[
 
 (**************************************************************************************************)
 
-PrivateVariable[$verbose]
-
-$verbose = False;
-
-PrivateFunction[mdvPrint]
-
-SetHoldAllComplete[mdvPrint];
-mdvPrint[args___] /; TrueQ[$verbose] :=
-  Print[args];
-
-(**************************************************************************************************)
-
 PrivateMacro[setupMarkdownGlobals]
 
+PrivateVariable[$markdownGlobalsHash]
+
+PrivateVariable[$allowTableHeaderSkip]
 PrivateVariable[$anchorTemplate]
 PrivateVariable[$classAttributeTemplate]
 PrivateVariable[$externalImportTemplate]
 PrivateVariable[$fileAnimatedImageTemplate]
 PrivateVariable[$fileImageTemplate]
-PrivateVariable[$fileVideoTemplate]
+PrivateVariable[$fileAnimatedImageTemplate]
 PrivateVariable[$inlineLinkTemplate]
 PrivateVariable[$inlineMathTemplate]
 PrivateVariable[$katexPostprocessor]
@@ -98,37 +89,30 @@ PrivateVariable[$rasterizationFunction]
 PrivateVariable[$rawHTMLTemplate]
 PrivateVariable[$stringImageTemplate]
 
-PrivateVariable[$embedPreludeLink]
-PrivateVariable[$exportPathFunction]
-PrivateVariable[$frontMatterFunction]
-PrivateVariable[$headingDepthOffset]
-PrivateVariable[$includeFrontMatter]
-PrivateVariable[$katexPreludePath]
-PrivateVariable[$markdownFlavor]
-PrivateVariable[$notebookCaching]
-PrivateVariable[$rasterizationCaching]
-
-$frontMatterFunction = None;
+General::badmdflav = "`` is not a valid setting for MarkdownFlavor.";
 
 DefineLiteralMacro[setupMarkdownGlobals,
 setupMarkdownGlobals[] := Quoted[
   UnpackOptions[
-    $embedPreludeLink,
-    $exportPathFunction,
+    $embedKatexPrelude,
     $headingDepthOffset,
-    $katexPreludePath,
     $markdownFlavor,
-    $notebookCaching,
-    $rasterizationCaching
+    $rasterizationCaching,
+    $rasterizationPath,
+    $rasterizationURL,
+    $includeFrontMatter,
+    $frontMatterFunction
   ];
-  flavorFields = Lookup[$flavorData, $markdownFlavor, ReturnFailed[]];
+  SetAutomatic[$rasterizationURL, "/raster"];
+  flavorFields = Lookup[$flavorData, $markdownFlavor, Message[General::badmdflav, $markdownFlavor]; ReturnFailed[]];
   UnpackAssociation[flavorFields,
+    $allowTableHeaderSkip,
     $anchorTemplate,
     $classAttributeTemplate,
     $externalImportTemplate,
     $fileAnimatedImageTemplate, (* currently unused *)
     $fileImageTemplate,
-    $fileVideoTemplate,
+    $fileAnimatedImageTemplate,
     $inlineLinkTemplate,
     $inlineMathTemplate,
     $katexPostprocessor,
@@ -141,54 +125,52 @@ setupMarkdownGlobals[] := Quoted[
   rfunc = OptionValue[RasterizationFunction];
   If[rfunc =!= Automatic, $rasterizationFunction = rfunc];
   SetInherited[$fileAnimatedImageTemplate, $fileImageTemplate];
-  SetInherited[$fileVideoTemplate, $fileImageTemplate];
+  (* this lets us cache against this hash: *)
+  $markdownGlobalsHash = Hash[{$embedKatexPrelude, $headingDepthOffset, $markdownFlavor, $rasterizationURL, $markdownFlavor, $rasterizationFunction}];
 ]];
 
 (**************************************************************************************************)
 
-PrivateMacro[setupRasterizationPath]
+PublicScopedOption[FrontMatterFunction]
+SetUsage @ "FrontMatterFunction is a markdown export option that is applied to the association of front matter and can add or modify it."
 
-PrivateVariable[$rasterizationPath, $rasterizationURL]
+PublicScopedOption[HeadingDepthOffset]
+SetUsage @ "HeadingDepthOffset is a markdown export option that applies an offset to the numeric weight of heading-type styles ('Title' = 0, 'Section' = 1, etc) to determine their HTML / markdown equivalent."
 
+PublicScopedOption[IncludeFrontMatter]
+SetUsage @ "IncludeFrontMatter  is a markdown export option that specifies frontmatter should be written at the start of the markdown."
+
+PublicScopedOption[MarkdownFlavor]
+SetUsage @ "MarkdownFlavor is a markdown export option that customizes many details of markdown export behavior to one of a set of named behaviors."
+
+PublicScopedOption[RasterizationCaching]
+SetUsage @ "RasterizationCaching is a markdown export option that enables per-raster caching of rasterized output cells."
+
+PublicScopedOption[RasterizationPath]
+SetUsage @ "RasterizationPath is a markdown export option that determines the directory to which rasterized images and video are written.
+* If a relative path is provided it is resolved under the setting of %BaseExportPath.
+* If Automatic is provided a temporary directory will be used."
 $rasterizationPath = $TemporaryDirectory;
+
+PublicScopedOption[RasterizationURL]
+SetUsage @ "RasterizationURL is a markdown export option that determines the URL prefix to use for raster URLs."
 $rasterizationURL = None;
 
-DefineLiteralMacro[setupRasterizationPath,
-setupRasterizationPath[baseDir_, default_] := Quoted[
-  UnpackOptions[$rasterizationPath, $rasterizationURL];
-  SetAutomatic[$rasterizationPath, default];
-  $rasterizationPath //= NormalizePath;
-  If[!AbsolutePathQ[$rasterizationPath],
-    $rasterizationPath = ToFileName[baseDir, $rasterizationPath]];
-]];
-
-(**************************************************************************************************)
-
-PublicOption[EmbedPreludeLink, ExportPathFunction, HeadingDepthOffset, KatexPreludePath, MarkdownFlavor, NotebookCaching]
-PublicOption[RasterizationCaching, RasterizationPath, RasterizationURL, RasterizationFunction]
-
-SetUsage @ "EmbedPreludeLink is an option to various markdown-related functions."
-SetUsage @ "ExportPathFunction is an option to various markdown-related functions."
-SetUsage @ "HeadingDepthOffset is an option to various markdown-related functions."
-SetUsage @ "KatexPreludePath is an option to various markdown-related functions."
-SetUsage @ "MarkdownFlavor is an option to various markdown-related functions."
-SetUsage @ "NotebookCaching is an option to various markdown-related functions."
-SetUsage @ "RasterizationCaching is an option to various markdown-related functions."
-SetUsage @ "RasterizationPath is an option to various markdown-related functions that determines the path to place rasterized outputs.
-* The default value of RasterizationPath is Automatic, which will use the relative directory './OutputImages'."
-SetUsage @ "RasterizationURL is an option to various markdown-related functions that determines the path prefix to use for raster URLs."
-SetUsage @ "RasterizationFunction is an override of the default rasterization function used by the given markdown flavor."
-
+PublicScopedOption[RasterizationFunction]
+SetUsage @ "RasterizationFunction is a markdown export option that overrides the default rasterization function used by the current markdown flavor."
 
 PrivateVariable[$genericMarkdownOptions]
+(* these are the core options supported by ToMarkdownString, but that don't involve creating output files *)
+
+PublicScopedOption[EmbedKatexPrelude]
+SetUsage @ "EmbedKatexPrelude is a markdown export option that specifies whether the Katex prelude should be embedded (if True), or linked (if 'Link') at the top of each file."
 
 $genericMarkdownOptions = {
-  EmbedPreludeLink -> True,
-  ExportPathFunction -> None,
+  EmbedKatexPrelude -> False,
+  FrontMatterFunction -> None,
   HeadingDepthOffset -> 0,
-  KatexPreludePath -> None,
+  IncludeFrontMatter -> False,
   MarkdownFlavor -> "Preview",
-  NotebookCaching -> False,
   RasterizationCaching -> True,
   RasterizationPath -> Automatic,
   RasterizationURL -> None,
@@ -197,43 +179,60 @@ $genericMarkdownOptions = {
 
 (**************************************************************************************************)
 
-PublicVariable[$DefaultImportPath, $DefaultExportPath]
+PublicScopedOption[NotebookPath]
+SetUsage @ "NotebookPath is a markdown export option that gives the containing directory that is used to choose the relative URL to use for a given input notebook file.
+* If None, or if the file is outside this directory, the relative URL is at top-level.
+* If Automatic, the path is taken to be the container of the input file, or the input directory itself."
 
-$DefaultImportPath = ExpandFileName @ "~";
-$DefaultExportPath = FileNameJoin[{$TemporaryDirectory, "QuiverGeometryMarkdown"}];
+PublicScopedOption[NotebookCaching]
+SetUsage @ "NotebookCaching is a markdown export option that enables per-notebook caching of emitted markdown."
+$notebookCaching = False;
 
-SetUsage @ "$DefaultImportPath determines the default used when %ImportPath is not specified."
-SetUsage @ "$DefaultExportPath determines the default used when %ExportPath is not specified."
+PublicScopedOption[BaseExportPath]
+SetUsage @ "BaseExportPath is a markdown export option that determines how relative output paths are interpreted, defaults to a fresh temporary directory.
+* BaseExportPath only controls how relative paths for other options are resolved."
 
-PublicOption[BaseExportPath, BaseImportPath, CollatedPagePath, DryRun, IncludeFrontMatter, ExportPath, FrontMatterFunction, ImportPath, Verbose]
+PublicScopedOption[KatexPreludePath]
+SetUsage @ "KatexPreludePath is a markdown export option that specifies a path to write global katex definitions to.
+* If a relative path is provided it is resolved under the setting of %BaseExportPath."
 
-SetUsage @ "ImportPath is an option to various markdown-related functions that determines the import path.
-* The default value of ImportPath is $DefaultImportPath."
-SetUsage @ "ExportPath is an option to various markdown-related functions that determines the export path.
-* The default value of ExportPath is $DefaultExportPath."
-SetUsage @ "BaseImportPath is an option to various markdown-related functions that determines the base import path.
-* BaseImportPath determines the base path with which relative paths are resolved."
-SetUsage @ "BaseExportPath is an option to various markdown-related functions that determines the base export path.
-* BaseExportPath determines the base path with which relative paths are resolved."
-SetUsage @ "CollatedPagePath is an option to various markdown exporting functions."
-SetUsage @ "IncludeFrontMatter is an option to various markdown-related functions."
-SetUsage @ "FrontMatterFunction is an option to various markdown exporting functions."
-SetUsage @ "DryRun is an option to various markdown exporting functions."
-SetUsage @ "Verbose is an option to various markdown exporting functions."
+PublicScopedOption[MarkdownPath]
+SetUsage @ "MarkdownPath is a markdown export option that determines the directory to write markdown files to.
+* If a relative path is provided it is resolved under the setting of %BaseExportPath."
+
+PublicScopedOption[ExportPathFunction]
+SetUsage @ "ExportPathFunction is a markdown export option that gives a function to rewrite relative paths of input notebooks to determine their URL."
+$exportPathFunction = None;
+
+PublicScopedOption[Verbose]
+SetUsage @ "Verbose is a markdown export option that prints every action that will be taken."
+$verbose = False;
+
+PublicScopedOption[DryRun]
+SetUsage @ "DryRun is a markdown export option that specifies no files should be written."
+
+PrivateFunction[whenWet]
+SetHoldAll[whenWet];
+whenWet[args___, last_] /; !TrueQ[$dryRun] := last;
+whenWet[___] := Null;
 
 PrivateVariable[$genericExportMarkdownOptions]
+(* these are the additional options consumed by ExportToMarkdown, BuildSite, etc.
+also change defaults to be more meaningful for large-scale exports, as opposed to ToMarkdownString *)
 
 $genericExportMarkdownOptions = JoinOptions[
+  MarkdownFlavor -> "Base",
+  IncludeFrontMatter -> True,
   $genericMarkdownOptions,
-  BaseExportPath -> None,
-  BaseImportPath -> None,
-  CollatedPagePath -> None,
-  DryRun -> False,
-  ExportPath :> $DefaultExportPath,
-  FrontMatterFunction -> None,
-  ImportPath :> $DefaultImportPath,
-  IncludeFrontMatter -> False,
+  NotebookPath -> Automatic,
+  NotebookCaching -> False,
+  BaseExportPath -> Automatic,
+  KatexPreludePath -> None,
+  MarkdownPath -> Automatic,
+  ExportPathFunction -> None,
   MaxItems -> Infinity,
-  Verbose -> Automatic
+  Verbose -> Automatic,
+  DryRun -> False
 ];
+
 

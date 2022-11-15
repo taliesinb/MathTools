@@ -1,93 +1,113 @@
 PublicFunction[ExportToMarkdown]
 
-Options[ExportToMarkdown] = $genericExportMarkdownOptions;
+SetUsage @ "
+ExportToMarkdown[inputdir$, opts$$] converts all notebooks in inputdir$ to markdown files that are written to disk.
+ExportToMarkdown[inputfile$, opts$$] converts input notebook to markdown and writes it to disk.
+ExportToMarkdown[notebook$, opts$$] converts a notebook object.
+* A list of markdown files written is returned.
+* The following options are supported:
+| %NotebookPath | Automatic | the directory that determines relative paths for input files, defaults to location of input |
+| %BaseExportPath | Automatic | the directory that determines how relative output paths are interpreted, defaults to a fresh temporary directory |
+| %MarkdownPath | 'markdown' | the directory to write markdown material to |
+| %ExportPathFunction | None | function that determines the path to write markdown files to |
+| %NotebookCaching | False | whether to skip converting notebook files that have already been processed and haven't changed |
+| %KatexPreludePath | 'katex.tex' | the path to write katex definitions to |
+| %DryRun | False | don't actually write any files |
+| %Verbose | Automatic | print all actions |
+| %RasterizationPath | 'raster' | the directory to write rasterized images and video to |
+| %RasterizationURL | 'raster' | the URL fragment to use for output images and video |
+| %MaxItems | limit the number of items written |
+| %IncludeFrontMatter | if True, will embed front matter into written markdown files |
+| %EmbedKatexPrelude | if True, will embed Katex prelude directly in markdown, if 'Link', will be linked externally |
+| %FrontMatterFunction | function to synthesize additional front matter data to be written into markdown files |
+* %ExportPathFunction
+* %RasterizationPath, %MarkdownPath, %KatexPreludePath can be relative (resolved relative to %BaseExportPath), or absolute.
+* %BaseExportPath -> Automatic will cause a fresh temporary directory to be created whenever any of the rasterization, markdown, or katex output paths are relative.
+* If %KatexPreludePath ends in '.md', the Katex prelude will be embedded in markdown and written to the path. If it ends in '.tex', it will be written verbatim.
+"
 
-PrivateVariable[$dryRun, $baseImportPath, $baseExportPath]
+Options[ExportToMarkdown] = $genericExportMarkdownOptions;
 
 $dryRun = False;
 
-(* avoids a problem with GIFImageQuantize running the first time on a fresh kernel *)
-initPNGExport[] := (Clear[initPNGExport]; Quiet @ ExportString[ConstantImage[1, {2, 2}], "PNG", CompressionLevel -> 1]);
-
-ExportToMarkdown::badcpp = "Bad CollatedPagePath ``."
 ExportToMarkdown::expdirne = "Export directory `` does not exist."
+ExportToMarkdown::badinspec = "Import specification should be an existing directory, file, or NotebookObject."
+ExportToMarkdown::emptyinp = "No files found to export."
 
 $includeFrontMatter = False;
 $frontMatterFunction = None;
 
-ExportToMarkdown[importSpec_, exportSpec_, OptionsPattern[]] := Scope @ CatchMessage[
+ExportToMarkdown[inputSpec_, opts:OptionsPattern[]] := Scope @ CatchMessage[
   
   UnpackOptions[
-    $baseImportPath, $baseExportPath, $dryRun, $verbose,
-    $includeFrontMatter, $frontMatterFunction,
-    importPath, exportPath, maxItems, collatedPagePath
+    $notebookPath, $baseExportPath, $markdownPath, $katexPreludePath,
+    $exportPathFunction, $notebookCaching,
+    maxItems, $verbose, $dryRun
   ];
+
   $dryRun = $dryRun =!= False;
   SetAutomatic[$verbose, $dryRun];
+  VPrint["ExportToMarkdown[\n", "  ", ToPrettifiedString @ inputSpec, ", ", StringTake[ToPrettifiedString @ {DeleteDuplicateOptionKeys @ opts}, 2;;-2], "]"];
   If[$verbose === "KeyModifiers", $verbose = ModifierKeysPressedQ[]];
   
-  $baseImportPath //= NormalizePath;
-  $baseExportPath //= NormalizePath;
+  (* input will be a NotebookObject or list of File objects *)
+  {input, inputPath} = Match[inputSpec,
+    nb_NotebookObject                                                  :> {nb, NotebookDirectory @ nb},
+    co_CellObject                                                      :> {co, NotebookDirectory @ ParentNotebook @ co},
+    (path_String | File[path_String]) ? DirectoryQ                     :> {enumerateFiles["*.nb", path], path},
+    (path_String | File[path_String]) /; FileExtension[path] === "nb"  :> {File @ path, DirectoryName @ path},
+    _                                                                  :> ReturnFailed["badinspec"]
+  ];
 
+  SetAutomatic[$notebookPath, inputPath];
+  $notebookPath //= NormalizePath;
+
+  (* MarkdownFlavor, RastizationPath, RastizerationURL, RasterizationCaching, etc. *)
   setupMarkdownGlobals[];
-  initPNGExport[];
+  SetAutomatic[$rasterizationPath, "raster"];
+  SetAutomatic[$markdownPath, "markdown"];
+  SetAutomatic[$katexPreludePath, "katex.tex"];
 
-  {ipath, opath} = resolveImportExportPaths[importSpec, importPath, exportSpec, exportPath];
-  inputs = parseInputSpec @ ipath;
-  
-  If[ListQ[inputs] && maxItems =!= Infinity,
-    inputs = If[IntegerQ[maxItems], Take[inputs, UpTo @ maxItems], Take[inputs, maxItems]]];
-  
-  outputDir = If[StringEndsQ[opath, ".md"], FileNameDrop @ opath, opath];
-  If[FileType[outputDir] =!= Directory,
-    If[StringStartsQ[outputDir, $TemporaryDirectory], EnsureDirectory @ outputDir,
-      ThrowMessage["expdirne", MsgPath @ outputDir]]];
+  (* when BaseExportPath unspecified, only bother to create the temporary directory if one of the output paths is specified as relative, because otherwise BEP has no utilitiy *)
+  SetAutomatic[$baseExportPath, If[AnyTrue[{$rasterizationPath, $markdownPath, $katexPreludePath}, RelativePathQ], CreateDirectory[], None]];
+  $rasterizationPath //= ToAbsolutePath[$baseExportPath];
+  $markdownPath      //= ToAbsolutePath[$baseExportPath];
+  $katexPreludePath  //= ToAbsolutePath[$baseExportPath];
 
-  setupRasterizationPath[outputDir, "OutputImages"];
-  mdvPrint["Rasterizing to ", MsgPath @ $rasterizationPath, " embedded as \"", $rasterizationURL, "\""];
+  If[ListQ[input] && maxItems =!= Infinity,
+    input = If[IntegerQ[maxItems], Take[input, UpTo @ maxItems], Take[input, maxItems]]];
+  If[input === {}, ReturnFailed["emptyinp"]];
+
+  VPrint["Rasterizing to ", MsgPath @ $rasterizationPath, " embedded as \"", $rasterizationURL, "\""];
+  ensureDirectory[{$rasterizationPath, $markdownPath, If[StringQ[$katexPreludePath], FileNameDrop @ $katexPreludePath, None]}];
 
   If[StringQ[$katexPreludePath],
-    preludePath = NormalizePath @ $katexPreludePath;
-    If[Not @ AbsolutePathQ @ preludePath,
-      preludePath = ToFileName[outputDir, preludePath]];
-    mdvPrint["Writing prelude to ", MsgPath @ preludePath, "."];
+    VPrint["Writing prelude to ", MsgPath @ $katexPreludePath, "."];
     prelude = $KatexPrelude;
-    If[StringEndsQ[preludePath, ".md"],
+    If[StringEndsQ[$katexPreludePath, ".md"],
       prelude = $markdownPostprocessor @ $multilineMathTemplate @ $katexPostprocessor @ prelude];
-    ExportUTF8[preludePath, StringReplace[prelude, "\n" -> " "]];
-  ];
-
-  fileList = doImportExport[inputs, opath, StringEndsQ[opath, ".md"]];
-
-  If[StringQ[collatedPagePath],
-    Which[
-      !StringEndsQ[collatedPagePath, ".md"], ReturnFailed["badcpp", collatedPagePath],
-      AbsolutePathQ[collatedPagePath], Null,
-      DirectoryQ[opath], collatedPagePath = ToFileName[opath, collatedPagePath],
-      True, ReturnFailed["badcpp", collatedPagePath]
+    whenWet[
+      EnsureDirectory @ FileNameDrop @ $katexPreludePath;
+      ExportUTF8[$katexPreludePath, StringReplace[prelude, "\n" -> " "]];
     ];
-    doImportExport[inputs, collatedPagePath, True];
   ];
 
-  mdvPrint["Wrote files: ", MsgPath @ fileList];
+  VPrint["Writing markdown files to: ", MsgPath @ $markdownPath];
+  fileList = Map[exportItem, ToList @ input];
+
+  VPrint["Wrote files: ", MsgPath @ fileList];
   
   fileList
 ];
 
 (**************************************************************************************************)
 
-ExportToMarkdown::badinspec = "Import specification should be a directory, file, notebook, or CellGroup."
-
-parseInputSpec = Case[
-  nb_NotebookObject                    := nb;
-  c_CellObject | c_CellGroup           := c;
-  path_String ? DirectoryQ             := enumerateFiles["*.nb", path];
-  path_String ? (StringContainsQ["*"]) := enumerateFiles[path];
-  path_String                          := File[path];
-  other_                               := ThrowMessage["badinspec", other];
-]
-
-ExportToMarkdown::emptynbdir = "Import directory `` does not contain any notebooks."
+ensureDirectory[list_List] := Scan[ensureDirectory, list];
+ensureDirectory[dir_String] :=
+  If[!DirectoryQ[dir],
+    VPrint["Directory ", MsgPath @ dir, " does not exist, creating."];
+    whenWet @ EnsureDirectory @ dir;
+  ];
 
 enumerateFiles[spec___, path_] := Scope[
   files = FileNames[spec, path, Infinity] // Select[StringFreeQ["XXX"]];
@@ -98,131 +118,60 @@ enumerateFiles[spec___, path_] := Scope[
 
 (**************************************************************************************************)
 
-$notebookP = _File | _NotebookObject | _CellGroup | _Cell;
-
-ExportToMarkdown::msgs = "Messages issued during export of ``."
-
-(* this joins several notebooks into a single file *)
-doImportExport[spec:($notebookP | {$notebookP..}), exportPath_, True] := Scope[
-  If[$notebookCaching && MatchQ[spec, _File],
-    If[getMarkdownUnixTime[exportPath] === UnixTime[FileDate[First @ spec]],
-      mdvPrint["* Skipping unchanged notebook ", MsgPath @ spec];
-      Return @ exportPath;
-    ];
-  ];
-  dbgSpec = If[Head[spec] === File, MsgPath @@ spec, spec];
-  mdvPrint["* Exporting ", dbgSpec, " to ", MsgPath @ exportPath];
-  Check[
-    result = toMarkdownStringInner @ spec,
-    Message[ExportToMarkdown::msgs, dbgSpec];
-  ];
-  If[!StringQ[result], ThrowMessage["nbimportfail", spec]];
-  If[$includeFrontMatter && MatchQ[spec, _NotebookObject | _File],
-    frontMatter = Developer`ToJSON @ NotebookFrontMatter @ spec;
-    frontMatter //= StringReplace["\\/" -> "/"]; (* weird bug in ToJSON *)
-    result = StringJoin[frontMatter, "\n\n", result];
-  ];
-  If[$dryRun, exportPath, ExportUTF8[exportPath, result]]
-];
-
-doImportExport[single:$notebookP, exportPath_, False] :=
-  doImportExport[single, toExportFileName[exportPath, single], True];
-
-doImportExport[multi:{$notebookP..}, exportPath_, False] :=
-  doImportExport[#, exportPath, False]& /@ multi;
-
-ExportToMarkdown::nbimportfail = "Failed to convert notebook or notebooks ``."
-doImportExport[spec_, _, _] := ThrowMessage["nbimportfail", spec];
-
+exportItem[item_] := exportItemTo[item, itemMarkdownPath @ item];
 
 (**************************************************************************************************)
 
-PrivateFunction[toExportFileName]
+ExportToMarkdown::msgs = "Messages issued during export of ``."
 
-General::nbrelpath = "Could not express path `` relative to BaseImportPath of ``."
-General::badexppf = "Output of ExportPathFunction was not a string."
+notebookAlreadyExportedQ[nbPath_, mdPath] := And[
+  $notebookCaching,
+  getMarkdownUnixTime[mdPath] === UnixTime[FileDate @ nbPath]
+];
 
-toExportFileName[exportPath_, obj_] := Scope[
-  nbPath = getNotebookPath @ obj;
-  mdFileName = filenameToMDFileName @ FileBaseName @ nbPath;
-  If[StringQ[$baseImportPath],
-    relPath = RelativePath[$baseImportPath, FileNameDrop @ nbPath];
-    If[!StringQ[relPath], ThrowMessage["nbrelpath", MsgPath @ nbPath, MsgPath @ $baseImportPath]];
-    dirPrefix = ToLowerCase @ relPath;
-    If[dirPrefix =!= "", mdFileName = FileNameJoin[{dirPrefix, mdFileName}]];
+exportItemTo[File[nbPath_], mdPath_] /; notebookAlreadyExportedQ[nbPath, mdPath] := (
+  VPrint["* Skipping unchanged notebook ", MsgPath @ nbPath];
+  Nothing
+);
+
+General::nbmdfail = "Cannot convert notebook at `` to markdown."
+
+exportItemTo[item_, mdPath_] := Scope[
+  dbgSpec = If[Head[item] === File, MsgPath @ item, item];
+  VPrint["* Exporting ", dbgSpec, " to ", MsgPath @ mdPath];
+  Check[
+    result = toMarkdownStringInner @ item,
+    Message[ExportToMarkdown::msgs, dbgSpec];
   ];
+  If[!StringQ[result], ThrowMessage["nbmdfail", dbgSpec]];
+  If[$dryRun, mdPath, ExportUTF8[mdPath, result]]
+];
+
+(**************************************************************************************************)
+
+PrivateFunction[itemMarkdownPath]
+
+General::badexppf = "Output of ExportPathFunction was not a string."
+General::badnbpath = "There is no path associated with the given notebook."
+
+itemMarkdownPath[item_] := Scope[
+  nbPath = ToNotebookPath @ item;
+  If[FailureQ[nbPath], ThrowFailure["badnbpath"]];
+  mdFileName = StringJoin[titleToURL @ FileBaseName @ nbPath, ".md"];
+
+  (* if there is a NotebookPath set, we will extract the difference between item's path and it,
+  and use this fragment as a prefix for the output path *)
+  If[StringQ[$notebookPath] && $notebookPath =!= "",
+    relPath = RelativePath[$notebookPath, FileNameDrop @ nbPath];
+    relPath //= ReplaceNone[""]; (* paths outside $notebookPath will be put at top level *)
+    mdFileName = FileNameJoin[{ToLowerCase @ relPath, mdFileName}];
+  ];
+
   If[$exportPathFunction =!= None,
     mdFileName //= $exportPathFunction;
     If[!StringQ[mdFileName], ThrowMessage["badexppf"]];
   ];
-  FileNameJoin[{exportPath, mdFileName}]
+
+  FileNameJoin[{$markdownPath, mdFileName}]
 ];
 
-getNotebookPath = Case[
-  nb_NotebookObject                 := NotebookFileName @ nb;
-  nb_Notebook                       := "Untitled.nb";
-  CellGroup[{c_, ___}, ___]         := % @ c;
-  co_CellObject                     := % @ ParentNotebook @ co;
-  None                              := "Untitled.nb";
-  File[file_] | file_String         := file;
-];
-
-filenameToMDFileName = Case[
-  ""         := "Untitled.md";
-  path_      := titleToURL[path] <> ".md";
-];
-
-(**************************************************************************************************)
-
-ExportToMarkdown::noexportwc = "Export path `` cannot contain wildcards."
-ExportToMarkdown::neimportpath = "Import specification `` does not correspond to an existing file or directory."
-
-resolveImportExportPaths[ispec_, ipath_, ospec_, opath_] := Scope[
-  i = resolvePath["Import", ispec, ipath];
-  o = resolvePath["Export", ospec, opath];
-  If[StringQ[i] && !FileExistsQ[i], ThrowMessage["neimportpath", MsgPath @ i]];
-  If[StringContainsQ[o, "*"], ThrowMessage["noexportwc", MsgPath @ o]];
-  {i, o}
-]
-
-(**************************************************************************************************)
-
-ioTypeSymbol = <|"Import" -> ImportPath, "Export" -> ExportPath|>;
-
-ExportToMarkdown::noautopath = "`` path specification of Automatic requires `` to be set."
-resolvePath[type_, Automatic, None] :=
-  ThrowMessage["noautopath", type, ioTypeSymbol @ type];
-
-resolvePath[type_, Automatic, base_String] :=
-  checkFileExt[type] @ NormalizePath @ base;
-
-resolvePath[type_, File[path_], base_] :=
-  resolvePath[type, path, base];
-
-resolvePath[type_, path_String ? AbsolutePathQ, base_] :=
-  checkFileExt[type] @ NormalizePath @ path;
-
-resolvePath[type_, path_String, base_String] /; StringFreeQ[path, "~"] :=
-  checkFileExt[type] @ ToFileName[base, path];
-
-ExportToMarkdown::badrelpath = "Relative `` path specification `` requires `` to be set."
-resolvePath[type_, path_String, None] :=
-  ThrowMessage["badrelpath", ToLowerCase @ type, MsgPath @ path, ioTypeSymbol @ type];
-
-resolvePath["Import", nb_NotebookObject, base_] :=
-  nb;
-
-resolvePath["Import", c_CellObject | c_CellGroup, base_] :=
-  c;
-
-ExportToMarkdown::badpathspec = "`` path specification `` does not appear to be valid."
-resolvePath[type_, path_, base_] :=
-  ThrowMessage["badpathspec", type, path];
-
-$ioFileExt = <|"Import" -> "" | "nb", "Export" -> "" | "md"|>;
-
-ExportToMarkdown::notmdext = "`` file specification `` does not end in \".md\"."
-checkFileExt[type_][file_] := If[
-  MatchQ[FileExtension @ file, $ioFileExt @ type], file,
-  ThrowMessage["notmdext", type, MsgPath @ file]
-];
