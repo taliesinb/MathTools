@@ -149,3 +149,24 @@ SequenceRiffle[a_, b_, r_] := Sequence[a, r, b];
 SequenceRiffle[a_, b_, c_, r_] := Sequence[a, r, b, r, c];
 SequenceRiffle[a_, b_, c_, d_, r_] := Sequence[a, r, b, r, c, r, d];
 SequenceRiffle[seq__, r_] := Sequence @@ Riffle[{seq}, r];
+
+(**************************************************************************************************)
+
+PublicFunction[ReplaceInSequence]
+
+ReplaceInSequence[_][] := Sequence[];
+ReplaceInSequence[rule_][seq___] := Sequence @@ Replace[{seq}, rule, {1}];
+
+(**************************************************************************************************)
+
+PublicFunction[DeleteDuplicateOptionKeys]
+
+DeleteDuplicateOptionKeys[] := Sequence[];
+DeleteDuplicateOptionKeys[seq___] := Sequence @@ DeleteDuplicatesBy[{seq}, First /* toStringKey];
+
+toStringKey = Case[
+  s_Symbol := SymbolName[s];
+  str_String := str;
+  e_ := e;
+]
+

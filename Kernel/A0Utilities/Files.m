@@ -4,6 +4,24 @@ $CacheDirectory = LocalPath["Data"];
 
 (**************************************************************************************************)
 
+PublicFunction[EnsureDirectoryShallow]
+
+General::filenotdir = "Provided path `` should be to a directory, not a file."
+General::deepnotexists = "Provided path `` does not exist and neither does its parent, so won't create."
+
+EnsureDirectoryShallow[_] := $Failed;
+EnsureDirectoryShallow[path_String | File[path_String]] := Scope[
+  path //= NormalizePath;
+  Which[
+    FileExistsQ[path] && DirectoryQ[path],                  path,
+    FileQ[path],                                            ThrowMessage["filenotdir", MsgPath @ path],
+    !FileExistsQ[path] && !DirectoryQ[FileNameDrop[path]],  ThrowMessage["deepnotexists", MsgPath @ path],
+    True,                                                   VPrint["Creating directory ", MsgPath @ path]; If[!$dryRun, CreateDirectory[path]]
+  ]
+];
+
+(**************************************************************************************************)
+
 PrivateFunction[CacheFilePath]
 
 CacheFilePath[name_, args___] :=
@@ -29,10 +47,21 @@ PrivateFunction[EnsureExport]
 EnsureExport[filepath_, expr_] := Scope[
   If[!FileExistsQ[filepath],
     dir = DirectoryName @ filepath;
-    If[!FileExistsQ[dir], EnsureDirectory @ dir];
+    If[!FileExistsQ[dir], EnsureDirectoryShallow @ dir];
     Export[filepath, expr];
   ];
   expr
+];
+
+(**************************************************************************************************)
+
+PrivateFunction[ToNotebookPath]
+
+ToNotebookPath = Case[
+  nb_NotebookObject          := Quiet @ Check[NotebookFileName @ nb, $Failed];
+  co_CellObject              := % @ ParentNotebook @ co;
+  File[file_] | file_String  := If[ToLowerCase[FileExtension[file]] == "nb", NormalizePath @ file, $Failed];
+  _                          := $Failed;
 ];
 
 (**************************************************************************************************)
@@ -42,7 +71,7 @@ PublicFunction[CopyUnicodeToClipboard]
 CopyUnicodeToClipboard[text_] := Scope[
   out = FileNameJoin[{$TemporaryDirectory, "temp_unicode.txt"}];
   Export[out, text, CharacterEncoding -> "UTF-8"];
-  Run["osascript -e 'set the clipboard to ( do shell script \"cat " <> out <> "\" )'"];
+  RunAppleScript["set the clipboard to ( do shell script \"cat " <> out <> "\" )"];
   DeleteFile[out];
 ];
 
@@ -59,6 +88,12 @@ PublicFunction[ImportUTF8]
 
 ImportUTF8[path_] :=
   Import[path, "Text", CharacterEncoding -> "UTF8"];
+
+(**************************************************************************************************)
+
+PublicFunction[PrettyPut]
+
+PrettyPut[expr_, path_] := ExportUTF8[path, ToPrettifiedString @ expr];
 
 (**************************************************************************************************)
 
@@ -91,10 +126,34 @@ ExportUTF8WithBackup[path_, contents_, currentContents_:Automatic] := Scope[
 PublicFunction[AbsolutePathQ]
 
 AbsolutePathQ = Case[
-  s_String /; $SystemID === "Windows" := StringStartsQ[s, LetterCharacter ~~ ":\\"];
+  s_String /; $WindowsQ := StringStartsQ[s, LetterCharacter ~~ ":\\"];
   s_String := StringStartsQ[s, $PathnameSeparator | "~"];
   _ := False;
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[RelativePathQ]
+
+RelativePathQ = Case[
+  s_String := !AbsolutePathQ[s];
+  _ := False;
+];
+
+(**************************************************************************************************)
+
+PublicFunction[ToAbsolutePath]
+
+SetUsage @ "
+ToAbsolutePath[path$, baseDir$] ensures path$ is an absolute path, resolving it relative to baseDir$ if necessary.
+ToAbsolutePath[baseDir$] is an operator form of ToAbsolutePath.
+"
+
+ToAbsolutePath[path_String ? AbsolutePathQ, base_] := NormalizePath @ path;
+ToAbsolutePath[path_String, base_String] := NormalizePath @ FileNameJoin[{base, path}];
+ToAbsolutePath[None, _] := None;
+ToAbsolutePath[_, _] := $Failed;
+ToAbsolutePath[base_][spec_] := ToAbsolutePath[spec, base];
 
 (**************************************************************************************************)
 
@@ -116,6 +175,7 @@ NormalizePath = Case[
 $pathNormalizationRules = {
   StartOfString ~~ "~" :> $HomeDirectory,
   $PathnameSeparator ~~ Except[$PathnameSeparator].. ~~ $PathnameSeparator ~~ ".." ~~ $PathnameSeparator :> $PathnameSeparator,
+  $PathnameSeparator ~~ EndOfString :> "",
   $PathnameSeparator ~~ "." :> ""
 }
 
@@ -131,3 +191,13 @@ ToFileName[""|None, file_String] :=
 
 ToFileName[base_String, file_String] :=
   NormalizePath @ FileNameJoin[{base, file}];
+
+(**************************************************************************************************)
+
+PrivateFunction[ReplaceFileExtension]
+
+ReplaceFileExtension[path_, None] :=
+  FileNameJoin[{FileNameDrop @ path, FileBaseName[path]}];
+
+ReplaceFileExtension[path_, ext_] :=
+  FileNameJoin[{FileNameDrop @ path, FileBaseName[path] <> "." <> ext}];

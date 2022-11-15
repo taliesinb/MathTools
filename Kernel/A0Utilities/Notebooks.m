@@ -240,7 +240,7 @@ CellReplaceBoxes[nbData_, rule_, typePattern_:_] :=
 (**************************************************************************************************)
 
 CopyFileToClipboard[path_] := If[
-  Run["osascript -e 'tell app \"Finder\" to set the clipboard to ( POSIX file \"" <> path <> "\" )'"] === 0,
+  RunAppleScript["tell app \"Finder\" to set the clipboard to ( POSIX file \"" <> path <> "\" )"] === 0,
   path,
   $Failed
 ];
