@@ -100,7 +100,8 @@ TrivialBundleGraph[base:$modIntListP, fiber:$modIntListP, opts:OptionsPattern[]]
   If[baseDim + fiberDim >= 4, ReturnFailed[]];
   displayMethod = If[MatchQ[baseFiber, {_, _}], "Total", "Color"];
   esf = MakeModulusEdgeShapeFunction @@ baseFiber;
-  TrivialBundleGraph[baseQuiver, fiberQuiber, opts,
+  TrivialBundleGraph[
+    baseQuiver, fiberQuiber, opts,
     SectionDisplayMethod -> displayMethod,
     EdgeShapeFunction -> esf, EdgeLabelStyle -> None,
     ImagePadding -> If[esf =!= Automatic, 30, Automatic],

@@ -1,3 +1,12 @@
+PublicFunction[NotebookObjectQ]
+
+NotebookObjectQ = Case[
+  _NotebookObject := True;
+  _               := False;
+];
+
+(**************************************************************************************************)
+
 PublicFunction[WithExternalMessageCapture]
 
 $tmpMessageFilePath = FileNameJoin[{$TemporaryDirectory, "messages.txt"}];
@@ -105,6 +114,19 @@ extendedCells[nb_, extend_:False] := Scope[
 ];
 
 cellType[cell_] := CurrentValue[cell, "CellStyleName"];
+
+(**************************************************************************************************)
+
+PublicFunction[CopyPreviousCellRaw]
+
+(* this is useful for testing *)
+
+CopyPreviousCellRaw[] := Scope[
+  cellExpr = NotebookRead @ PreviousCell[];
+  cellExpr = Take[cellExpr, 2];
+  CopyToClipboard @ ToPrettifiedString @ cellExpr;
+];
+
 
 (**************************************************************************************************)
 

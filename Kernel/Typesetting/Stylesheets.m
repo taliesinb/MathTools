@@ -18,8 +18,8 @@ UpdateQuiverGeometryStylesheet[] := Scope[
   ];
 
   If[!FileExistsQ[$QuiverGeometryStylesheetPath],
-      NotebookSave[template, $QuiverGeometryStylesheetPath];
-      Return[]];
+    NotebookSave[template, $QuiverGeometryStylesheetPath];
+    Return[]];
 
   nb = NotebookOpen[$QuiverGeometryStylesheetPath, Visible -> True];
   If[Head[nb] =!= NotebookObject, ReturnFailed["open", $QuiverGeometryStylesheetPath]];
@@ -70,7 +70,7 @@ ApplyQuiverGeometryNotebookStyles[] :=
 
 ApplyQuiverGeometryNotebookStyles[nb_NotebookObject] := (SetOptions[nb,
   StyleDefinitions -> $QuiverGeometryStylesheetPath,
-  DockedCells -> createQGNotebookDockedCells[]
+  DockedCells -> None
 ]; nb);
 
 ApplyQuiverGeometryNotebookStyles[dir_String ? DirectoryQ] :=
@@ -168,6 +168,12 @@ FindMissingTemplateBoxDefinitions[nb_, ref_:Automatic] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[QuiverGeometryStyleNames]
+
+QuiverGeometryStyleNames[] := NotebookStyleDataNames[$QuiverGeometryStylesheetPath];
+
+(**************************************************************************************************)
+
 PublicFunction[ApplyQuiverGeometryStylesheet]
 
 ApplyQuiverGeometryStylesheet[] := (
@@ -188,69 +194,6 @@ CreateQuiverGeometryNotebook[] :=
      Cell["Subsection", "Subsection"],
      Cell["Item 1", "Item"],
      Cell["Item 2", "Item"]},
-    StyleDefinitions -> $QuiverGeometryStylesheetPath,
-    DockedCells -> createQGNotebookDockedCells[]
+    StyleDefinitions -> $QuiverGeometryStylesheetPath
   ];
 
-createQGNotebookDockedCells[] := With[
-  {qgPath = QuiverGeometryPackageLoader`$initFile},
-  {getQG = Function[If[DownValues[QuiverGeometryPackageLoader`Load] === {}, Get[qgPath]]]},
-  {buttons = Map[makeButton, {
-    " open: ",
-    " md "              :> (getQG[]; RunAsyncWithMessagePopup @ rebuildCurrentPageThen @ SystemOpen[QGSiteMarkdownPath[]]),
-    " web "             :> (getQG[]; RunAsyncWithMessagePopup @ rebuildCurrentPageThen @ OpenQGSiteWebpageURL[]),
-    " iA "              :> (getQG[]; RunAsyncWithMessagePopup @ PreviewInIAWriter @ SelectedCellGroup[]),
-    " \[UpArrow] "      :> (getQG[]; ExtendCellSelection[]),
-    " site: ",
-    " clear "           :> (getQG[]; RunAsyncWithMessagePopup @ ClearQGSite[]),
-    " deploy "          :> (getQG[]; RunAsyncWithMessagePopup @ DeployQGSite[]),
-    " load: ",
-    " QG "              :> Module[{res = Check[Get[qgPath], $Failed]}, If[res =!= $Failed, ApplyQuiverGeometryNotebookStyles[]; Beep[], Pause[0.1]; Beep[]; Pause[0.1]; Beep[]; SetSelectedNotebook @ First @ Notebooks["Messages"]]],
-    " QG fast "         :> Module[{res = Check[QuiverGeometryPackageLoader`Load[False], $Failed]}, If[res =!= $Failed, Beep[], Pause[0.1]; Beep[]; Pause[0.1]; Beep[]; SetSelectedNotebook @ First @ Notebooks["Messages"]]],
-    None,
-    " styles "          :> (getQG[]; RunAsyncWithMessagePopup @ UpdateQuiverGeometryStylesheet[])
-  }]},
-  Cell[BoxData @ ToBoxes @ Row[buttons, "   "], "DockedCell"]
-];
-
-makeButton[None] := Spacer[5];
-
-makeButton[txt_String] := Style[txt, "Text"];
-
-makeButton[txt_ :> code_] := Button[
-  Style[" " <> txt <> " ", White],
-  code,
-  Appearance -> FrontEndResource["FEExpressions", "OrangeButtonNinePatchAppearance"]
-]
-
-SetHoldFirst[rebuildCurrentPageThen];
-rebuildCurrentPageThen[body_] := Scope[
-  NotebookSave[];
-  res = BuildQGSite[EvaluationNotebook[], Verbose -> "KeyModifiers", NotebookCaching -> False];
-  If[FailureQ[res], ReturnFailed[]];
-  body
-];
-
-SetHoldRest[chainNotFailed];
-chainNotFailed[$Failed, b_] := $Failed
-chainNotFailed[a_, b_] := b;
-
-(**************************************************************************************************)
-
-PublicFunction["RunAsyncWithMessagePopup"]
-
-SetHoldFirst[RunAsyncWithMessagePopup];
-
-RunAsyncWithMessagePopup[body_] := Block[{res, msg},
-  msg = First @ Notebooks["Messages"];
-  Quiet @ NotebookDelete @ Cells[msg];
-  res = Check[body, $Failed];
-  If[ModifierKeysPressedQ[], Print[res]];
-  If[FailureQ[res],
-    BadBeep[];
-    Quiet @ SetSelectedNotebook @ msg
-  ,
-    GoodBeep[];
-  ];
-  res
-];

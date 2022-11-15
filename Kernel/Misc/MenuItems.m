@@ -3,9 +3,15 @@ With[{qgPath = QuiverGeometryPackageLoader`$initFile},
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["CDFPreview", {
     Delimiter,
     MenuItem[
-      "&Export to markdown",
-      KernelExecute[QuiverGeometry`QGNotebookExport[]],
-      FrontEnd`MenuKey["e", FrontEnd`Modifiers -> {"Command", "Option"}],
+      "Open as markdown",
+      KernelExecute[SystemOpen @ QuiverGeometry`BuildSitePage[]],
+      FrontEnd`MenuKey["'", FrontEnd`Modifiers -> {"Command", "Shift"}],
+      MenuEvaluator -> Automatic
+    ],
+    MenuItem[
+      "Serve to browser",
+      KernelExecute[QuiverGeometry`ServeSitePage[]],
+      FrontEnd`MenuKey["h", FrontEnd`Modifiers -> {"Command", "Shift"}],
       MenuEvaluator -> Automatic
     ],
     MenuItem[

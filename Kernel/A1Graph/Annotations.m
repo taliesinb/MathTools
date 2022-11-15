@@ -89,7 +89,7 @@ joinAnnotation[graph_, key_, newAnnotations_] := Scope[
 PublicFunction[GraphVertexData]
 PrivateFunction[setupGraphVertexData]
 
-defineLiteralMacro[setupGraphVertexData,
+DefineLiteralMacro[setupGraphVertexData,
   setupGraphVertexData[graph_, extra___Rule] := (
     $graphVertexIndex = AssociationRange @ VertexList @ graph;
     $graphVertexData = LookupVertexAnnotations[graph, All];
@@ -113,7 +113,7 @@ GraphVertexData[vertex_, key_] :=
 PublicFunction[GraphEdgeData]
 PrivateFunction[setupGraphEdgeData]
 
-defineLiteralMacro[setupGraphEdgeData,
+DefineLiteralMacro[setupGraphEdgeData,
   setupGraphEdgeData[graph_, extra___Rule] := (
     $graphEdgeIndex = AssociationRange @ EdgeList @ graph;
     $graphEdgeData = LookupEdgeAnnotations[graph, All];
