@@ -1,18 +1,23 @@
 Begin["QuiverGeometryPackageLoader`Private`"];
 
-Get["GeneralUtilities`"];
+Needs["GeneralUtilities`"];
 
 Unprotect[EpilogFunction];
 ClearAll[EpilogFunction];
 
 (*************************************************************************************************)
 
+(* Fix GU's ability to open files in subl on MacOS *)
+If[$OperatingSystem === "MacOSX",
+  GeneralUtilities`Packages`PackagePrivate`$sublimePath = "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl";
+];
+
 (* we will immediately resolve these system symbols, which will take care of the vast majority of Package`PackageSymbol cases *)
 $coreSymbols = {
   (* package symbols: *) Package`Package,
      Package`PackageExport, Package`PackageScope, Package`PackageImport,
      Package`SystemMacro,   Package`SystemVariable,  Package`SystemFunction,  Package`SystemOption,  Package`SystemHead,  Package`SystemSymbol,  Package`SystemForm,  Package`SystemObject, Package`SystemFormBox,
-     Package`PublicMacro,   Package`PublicVariable,  Package`PublicFunction,  Package`PublicOption,  Package`PublicHead,  Package`PublicSymbol,  Package`PublicForm,  Package`PublicObject, Package`PublicFormBox,
+     Package`PublicMacro,   Package`PublicVariable,  Package`PublicFunction,  Package`PublicOption,  Package`PublicHead,  Package`PublicSymbol,  Package`PublicForm,  Package`PublicObject, Package`PublicFormBox, Package`PublicScopedOption,
      Package`PrivateMacro,  Package`PrivateVariable, Package`PrivateFunction, Package`PrivateOption, Package`PrivateHead, Package`PrivateSymbol, Package`PrivateForm, Package`PrivateObject, Package`PrivateFormBox,
   (* system symbols: *) True, False, None, Automatic, Inherited, All, Full, Indeterminate, Null, $Failed, Span, UpTo,
   (* object heads: *)
@@ -113,10 +118,18 @@ $initialSymbolResolutionDispatch = Dispatch[{
   Package`PackageSymbol["UAssociation"]                                      :> Data`UnorderedAssociation,
   Package`PackageSymbol["$PackageFileName"]                                  :> RuleCondition[QuiverGeometryPackageLoader`$CurrentFile],
   Package`PackageSymbol["$PackageDirectory"]                                 :> RuleCondition[QuiverGeometryPackageLoader`$PackageDirectory],
+  p:Package`PackageSymbol["PublicScopedOption"][___]                         :> RuleCondition @ processScopedDeclaration[p, Package`PublicOption, Package`PrivateVariable],
   p:Package`PackageSymbol["PublicFormBox"][___]                              :> RuleCondition @ processFormBoxes[p, Package`PublicForm, Package`PublicFunction],
   p:Package`PackageSymbol["PrivateFormBox"][___]                             :> RuleCondition @ processFormBoxes[p, Package`PrivateForm, Package`PrivateFunction],
   p:Package`PackageSymbol["SystemFormBox"][___]                              :> RuleCondition @ processFormBoxes[p, Package`SystemForm, Package`SystemFunction]
 }];
+
+(* turns PublicScopedOption[Foo] into PublicOption[Foo], PrivateVariable[$foo] *)
+processScopedDeclaration[p_, pubFn_, privFn_] :=
+   Package`PackageSplice @@ Cases[p, Package`PackageSymbol[name_String] :> {
+    pubFn[Package`PackageSymbol @ name],
+    privFn[Package`PackageSymbol @ StringJoin["$", ToLowerCase @ StringTake[name, 1], StringDrop[name, 1]]]
+  }];
 
 (* turns PublicFormBox[Applied] into PublicForm[AppliedForm], PublicFunction[AppliedBox] *)
 processFormBoxes[p_, formFn_, boxFn_] :=
@@ -153,14 +166,14 @@ observeTextFile[path_] := Module[{fileModTime},
   ];
 ];
 
-VPrint[args___] := If[QuiverGeometryPackageLoader`$Verbose, Print[args]];
+LVPrint[args___] := If[QuiverGeometryPackageLoader`$Verbose, Print[args]];
 
 readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
   {cachedModTime, cachedContents} = Lookup[$fileContentCache, path, {$Failed, $Failed}];
   fileModTime = UnixTime @ FileDate[path, "Modification"];
   isDirty = FailureQ[cachedContents] || cachedModTime =!= fileModTime;
   If[isDirty,
-    VPrint["Reading \"" <> path <> "\""];
+    LVPrint["Reading \"" <> path <> "\""];
     contents = loadFileContents[path, context];
     $fileContentCache[path] = {fileModTime, contents};
   ,
@@ -288,7 +301,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
         addPackageSymbolsToBag[$publicSymbols,  expr, Package`PublicMacro  | Package`PublicVariable  | Package`PublicFunction  | Package`PublicHead  | Package`PublicSymbol  | Package`PublicForm  | Package`PublicObject];
         addPackageSymbolsToBag[$privateSymbols, expr, Package`PrivateMacro | Package`PrivateVariable | Package`PrivateFunction | Package`PrivateHead | Package`PrivateSymbol | Package`PrivateForm | Package`PrivateObject | Package`PrivateOption];
         If[!requiresFullReload && isDirty && initPathQ[path],
-          VPrint["Dirty package \"", path, "\" is forcing a full reload."];
+          LVPrint["Dirty package \"", path, "\" is forcing a full reload."];
           requiresFullReload = True;
         ];
         {path, context, expr, isDirty}
@@ -301,7 +314,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
   
   Quiet @ Remove["QuiverGeometryPackageLoader`Scratch`*"]; (* <- dumping ground for SyntaxLength *)
   If[result === $Failed,
-    VPrint["Reading failed."];
+    LVPrint["Reading failed."];
     Return[$Failed]];
 
   Scan[observeTextFile, $textFiles];
@@ -312,7 +325,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
   ];
 
   If[cachingEnabled && ($loadedFileCount == 0 || $packageExpressions === {}) && $changedTextFileCount == 0,
-    VPrint["No contents changed, skipping evaluation."];
+    LVPrint["No contents changed, skipping evaluation."];
     Return[{}];
   ];
 
@@ -321,11 +334,11 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
     QuiverGeometry`$PathAlgebra, None];
 
   If[requiresFullReload,
-    VPrint["Clearing all symbols."];
+    LVPrint["Clearing all symbols."];
     Construct[ClearAll, mainContext <> "*", mainContext <> "**`*"];
   ,
     dirtyContexts = Part[$packageExpressions, All, 2];
-    VPrint["Clearing dirty contexts: ", dirtyContexts];
+    LVPrint["Clearing dirty contexts: ", dirtyContexts];
     Apply[ClearAll, Map[# <> "*"&, dirtyContexts]];
   ];
 
@@ -343,10 +356,10 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
 
   On[General::shdw];
 
-  VPrint["Finding suspicious lines."];
+  LVPrint["Finding suspicious lines."];
   QuiverGeometryPackageLoader`$SuspiciousPackageLines = findSuspiciousPackageLines[$packageExpressions];
 
-  VPrint["Read ", Length[$packageExpressions], " packages."];
+  LVPrint["Read ", Length[$packageExpressions], " packages."];
   $packageExpressions
 ];
 
@@ -371,7 +384,7 @@ QuiverGeometryPackageLoader`EvaluatePackages[packagesList_List] := Block[
   QuiverGeometryPackageLoader`$FileTimings = <||>;
   QuiverGeometryPackageLoader`$FileLineTimings  = <||>;
   $formsChanged = $failEval = False;
-  VPrint["Evaluating packages."];
+  LVPrint["Evaluating packages."];
   loadUserFile["user_init.m"];
   result = GeneralUtilities`WithMessageHandler[
     Scan[evaluatePackage, packagesList],
@@ -407,7 +420,7 @@ loadUserFile[name_] := Block[{path},
   path = toUserFilePath[name];
   If[!FileExistsQ[path], Return[]];
   Block[{$Context = $userContext, $ContextPath = $userContextPath},
-    VPrint["Loading \"", name, "\""];
+    LVPrint["Loading \"", name, "\""];
     Get @ path;
   ];
 ];
@@ -420,7 +433,7 @@ MakeBoxes[pd_Package`PackageData, StandardForm] :=
 evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
   $currentPath = path; $currentFileLineTimings = <||>; $failCount = 0;
   If[$failEval, Return[$Failed, Catch]];
-  VPrint["Evaluating \"", path, "\""];
+  LVPrint["Evaluating \"", path, "\""];
   $formsChanged = Or[$formsChanged, StringContainsQ[context, "`Typesetting`Forms`"]]; (* to avoid expensive symbol enum *)
   QuiverGeometryPackageLoader`$FileTimings[path] = First @ AbsoluteTiming[
     Block[{$Context = context}, Catch[Scan[evaluateExpression, packageData], evaluateExpression]];
@@ -431,8 +444,8 @@ evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
 ];
 
 evaluatePackage[spec_] := (
-  VPrint["Invalid package data."];
-  VPrint[Shallow @ spec];
+  LVPrint["Invalid package data."];
+  LVPrint[Shallow @ spec];
   Abort[];
 );
 
@@ -479,14 +492,16 @@ $lastLoadSuccessful = False;
 QuiverGeometryPackageLoader`Read[cachingEnabled_:True, fullReload_:True] :=
   QuiverGeometryPackageLoader`ReadPackages["QuiverGeometry`", QuiverGeometryPackageLoader`$SourceDirectory, cachingEnabled, fullReload];
 
-QuiverGeometryPackageLoader`Load[fullReload_:True, fullRead_:False] := PreemptProtect @ Block[{packages},
+QuiverGeometryPackageLoader`Load[fullReload_:True, fullRead_:False] := Block[
+  {$AllowInternet = False},
+  FinishDynamic[];
+  PreemptProtect @ Block[{packages},
   packages = QuiverGeometryPackageLoader`Read[!fullRead, fullReload];
   If[FailureQ[packages], ReturnFailed[]];
   QuiverGeometryPackageLoader`$LoadCount++;
   If[!FailureQ[QuiverGeometryPackageLoader`EvaluatePackages @ packages],
     $lastLoadSuccessful = True];
-  If[$PreviousPathAlgebra =!= None,
-    QuiverGeometry`$PathAlgebra = $PreviousPathAlgebra];
+  ]
 ];
 
 QuiverGeometryPackageLoader`$LoadCount = 0;

@@ -24,7 +24,7 @@ $wrapperP = Annotation | EventHandler;
 (* TODO: introduce CoordinateVector3Q, CoordinateVector2Q, etc *)
 GraphicsPrimitivesQ = Case[
   list_List                                         := AllTrue[list, GraphicsPrimitivesQ];
-  Style[s_, ___ ? GraphicsDirectiveQ]               := % @ s;
+  Style[s_, ___ ? styleElementQ]                    := % @ s;
   anno:$AnnotationP                                 := % @ First @ anno;
   Rectangle[$Coord2P]                               := True;
   Rectangle[$Coord2P, $Coord2P, ___Rule]            := True;
@@ -54,6 +54,12 @@ GraphicsPrimitivesQ = Case[
   $ColorPattern | _Opacity                          := True;
   e_                                               := GraphicsDirectiveQ[e]
 ];
+
+styleElementQ = Case[
+  None                   := True;
+  _ ? GraphicsDirectiveQ := True;
+  _                      := False;
+]
 
 (**************************************************************************************************)
 

@@ -1,19 +1,252 @@
-PublicObject[DiscreteAnimationObject]
+PublicOption[MaxFrames]
+SetUsage @ "
+MaxFrames is an option for animation-related functions that puts an upper bound on the number of frames to render.
+"
 
-SetHoldFirst[DiscreteAnimationObject];
-SetHoldFirst[makeDiscreteGraphics];
+PublicOption[AnimationLooping]
+PublicSymbol[Bidirectional]
+SetUsage @ "
+AnimationLooping is an option for animation-related functions that has the following settings:
+* True (default)
+* Bidirectional
+* False
+"
 
-declareBoxFormatting[
-  g:DiscreteAnimationObject[_, _Integer] :> makeDiscreteAnimationObjectBoxes[g]
+PublicOption[AnimationType]
+SetUsage @ "
+AnimationType is an option for animation-related functions that specifies whether an animation is discrete or continuous:
+* With the setting AnimationType -> 'Discrete', the animation is discrete.
+* With the setting AnimationType -> 'Continuous', the animation is continuous.
+"
+
+PublicOption[AnimationDuration]
+SetUsage @ "AnimationDuration is an option for animation-related functions that specifies the target length of an animation."
+
+PublicOption[AnimationOrigin]
+SetUsage @ "AnimationOrigin is an option for animation-related functions that specifies the origin of an animation."
+
+PublicOption[FrameDuration]
+SetUsage @ "FrameDuration is an option for animation-related functions that specifies the length in seconds of a single frame."
+
+PublicOption[FrameCount]
+SetUsage @ "FrameCount is an option for animation-related functions that specifies the number of frames in an animation."
+
+(**************************************************************************************************)
+
+PublicFunction[DiscreteAnimation]
+PublicFunction[ContinuousAnimation]
+
+Options[DiscreteAnimation] = {
+  FrameDuration -> Automatic,
+  FrameRate -> Automatic,
+  AnimationDuration -> Automatic,
+  AnimationLooping -> True,
+  AnimationOrigin -> None
+};
+
+Options[ContinuousAnimation] = {
+  FrameDuration -> Automatic,
+  FrameRate -> Automatic,
+  AnimationDuration -> 4,
+  AnimationLooping -> True,
+  AnimationOrigin -> None
+}
+
+SetUsage @ "
+DiscreteAnimation[expr$, n$] creates a %AnimationObject[$$] in which \[FormalT] runs from 1 to n$.
+DiscreteAnimation[expr$] chooses n$ automatically.
+* AnimationPart and AnimationRange can be used within the expression.
+* The following options are supported:
+| %FrameDuration | Automatic | time to devote to each frame |
+| %FrameRate | Automatic | rate of frames during playback |
+| %AnimationDuration | Automatic | duration of the full animation |
+| %AnimationLooping | True | whether to loop the video |
+"
+
+SetUsage @ "
+ContinuousAnimation[expr$] creates a %AnimationObject[$$] in which \[FormalT] runs from 0 to 1.
+ContinuousAnimation[Animate[$$]] turns an ^Animate[$$] object into the equivalent %AnimationObject[$$].
+* AnimationPart, AnimationRange, and AnimationBetween can be used within the expression.
+* The following options are supported:
+| FrameTime | Automatic | time to devote to each frame |
+| FrameRate | Automatic | rate of frames during playback |
+| AnimationDuration | Automatic | duration of the full animation |
+| AnimationLooping | True | whether to loop the video |
+"
+
+(* user construction *)
+DiscreteAnimation[obj_, nmax:Except[_Rule]:Automatic, opts___Rule] :=
+  CatchMessage @ makeDiscreteAnimation[Unevaluated @ obj, nmax, opts];
+
+ContinuousAnimation[obj_, opts___Rule] :=
+  CatchMessage @ makeContinuousAnimation[Unevaluated @ obj, opts];
+
+(**************************************************************************************************)
+
+$optsSpec = (_Rule | _RuleDelayed)...;
+
+(* this is what ListAnimate evaluates to *)
+DiscreteAnimation[HoldPattern @ Manipulate[PaneSelector[rules:{___Rule}, _Dynamic, ___], {_, __Integer, AnimationRate -> fps_, ___}, ___]] := CatchMessage @ Scope[
+  vals = Values[rules];
+  makeDiscreteAnimation[
+    AnimationPart[vals],
+    Automatic,
+    FrameRate -> fps, AnimationOrigin -> "ListAnimate"
+  ]
+]
+
+(**************************************************************************************************)
+
+(* this is what Animate evaluates to *)
+ContinuousAnimation[HoldPattern[Manipulate][expr_, {{var_Symbol, __} | var_Symbol, min_, max_, ___}, $optsSpec]] := With[
+  {scale = max - min},
+  makeContinuousAnimation[
+    Hold[expr] /. HoldPattern[var] :> (\[FormalT] * scale) + min
+  ]
 ];
 
-makeDiscreteAnimationObjectBoxes[DiscreteAnimationObject[g_, n_]] :=
-  ToBoxes @ makeAnimatedThumbnail[
-    makeDiscreteGraphics[g, n],
-    128, $Teal
+(**************************************************************************************************)
+
+(* list manipulate *)
+DiscreteAnimation[HoldPattern[Manipulate][expr_, {{var_Symbol, __} | var_Symbol, l_List}, $optsSpec]] :=
+  makeDiscreteAnimation[
+    Hold[expr] /. HoldPattern[var] :> AnimationPart[l],
+    Automatic,
+    AnimationOrigin -> "Manipulate"
+  ];
+
+(**************************************************************************************************)
+
+(* stepped manipulate *)
+DiscreteAnimation[HoldPattern[Manipulate][expr_, {{var_Symbol, __} | var_Symbol, min_, max_, step_ ? NumericQ, ___}, $optsSpec]] := CatchMessage @ With[
+  {scale = max - min, min2 = min, max2 = max, step2 = step},
+  makeDiscreteAnimation[
+    Hold[expr] /. HoldPattern[var] :> AnimationRange[min2, max2, step2],
+    Automatic,
+    AnimationOrigin -> "Manipulate"
+  ]
+];
+
+(**************************************************************************************************)
+
+General::manipanim = "Could not figure out how to convert Manipulate into an animation."
+
+ContinuousAnimation[m_Manipulate] := (Message[ContinuousAnimation::manipanim]; $Failed);
+DiscreteAnimation[_Manipulate] := (Message[DiscreteAnimation::manipanim]; $Failed);
+
+(**************************************************************************************************)
+
+makeDiscreteAnimation[Hold[obj_] | obj_, nmax_, opts___Rule] := Scope[
+  hobj = Hold[obj] /. $discreteAnimationRules;
+  n = DeepCases[hobj, AnimationPart[l_List, _] :> Length[l]];
+  If[n === {}, n = {1}];
+  SetAutomatic[nmax, Infinity];
+  n = Min[Max @ n, nmax];
+  hobj //= ReplaceAll[\[FormalN] -> n];
+  animationMetadata = optsToAssoc[DiscreteAnimation, opts];
+  animationMetadata["FrameCount"] = n;
+  animationMetadata["AnimationType"] = "Discrete";
+  animationMetadata["ExpressionHash"] = Base36Hash @ hobj;
+  solveFrameStuff[animationMetadata];
+  Replace[hobj, Hold[e_] :> AnimationObject[e, animationMetadata]]
+];
+
+$discreteAnimationRules = {
+  AnimationPart[p_] :> RuleCondition @ AnimationPart[p, \[FormalT]],
+  AnimationRange[args___] :> RuleCondition @ AnimationPart[Range[args], \[FormalT]],
+  AnimationBetween[a_, b_] :> RuleCondition @ NumericLerp[a, b, \[FormalT] / \[FormalN]]
+};
+
+(**************************************************************************************************)
+
+makeContinuousAnimation[Hold[obj_] | obj_, opts___Rule] := Scope[
+  hobj = Hold[obj] /. $continuousAnimationRules;
+  animationMetadata = optsToAssoc[ContinuousAnimation, opts];
+  animationMetadata["FrameCount"] = Automatic;
+  solveFrameStuff[animationMetadata];
+  animationMetadata["AnimationType"] = "Continuous";
+  animationMetadata["ExpressionHash"] = Base36Hash @ hobj;
+  Replace[hobj, Hold[e_] :> AnimationObject[e, animationMetadata]]
+];
+
+$continuousAnimationRules = {
+  AnimationPart[p_] :> RuleCondition @ AnimationPart[p, \[FormalT] * Length[p]],
+  AnimationRange[args___] :> RuleCondition @ AnimationPart[Range[args], \[FormalT]],
+  AnimationBetween[a_, b_] :> RuleCondition @ NumericLerp[a, b, \[FormalT]]
+};
+
+
+(**************************************************************************************************)
+
+optsToAssoc[head_Symbol, opts___] := KeyMap[SymbolName, Association[Options[head], opts]];
+optsToAssoc[None, opts___] := KeyMap[SymbolName, Association[opts]];
+
+(**************************************************************************************************)
+
+PublicFunction[ManipulateAnimation]
+
+ManipulateAnimation = Case[
+
+  m:HoldPattern[Manipulate[expr_, Repeated[_List, {2, Infinity}], opts:$optSpec]] :=
+    % @ reduceManipulate @ m;
+
+  m:HoldPattern[Manipulate[_, $discSpec, $optSpec]] := DiscreteAnimation[m];
+
+  m:HoldPattern[Manipulate[_PaneSelector, ___]] := DiscreteAnimation[m];
+
+  m:HoldPattern[Manipulate[_, $contSpec, $optSpec]] := ContinuousAnimation[m];
+
+  m_Manipulate := (Message[ManipulateAnimation::manipanim]; $Failed);
+
+  _ := $Failed;
+,
+  {
+    $discSpec -> ({{_Symbol, __} | _Symbol, _List} | {{_Symbol, __} | _Symbol, _, _, _ ? NumericQ, ___Rule}),
+    $contSpec -> ({{_Symbol, __} | _Symbol, _, _, ___Rule}),
+    $optSpec -> ((_Rule | _RuleDelayed)...)
+  }
+]
+
+(* TODO: do this left and right, and make a whole complex of it *)
+
+reduceManipulate = Case[
+
+  HoldPattern @ Manipulate[expr_, {{sym_Symbol, init_, ___}, ___}, rest__List, opts___] :=
+    %[Manipulate[expr, rest, opts] /. sym -> init];
+
+  HoldPattern @ Manipulate[expr_, {sym_Symbol, list_List, ___}, rest__List, opts___] :=
+    %[Manipulate[expr, rest, opts] /. sym -> First[list]];
+
+  HoldPattern @ Manipulate[expr_, {sym_Symbol, min_, ___}, rest__List, opts___] :=
+    %[Manipulate[expr, rest, opts] /. sym -> min];
+
+  other_ := other;
+]
+
+(**************************************************************************************************)
+
+PublicObject[AnimationObject]
+
+SetHoldFirst[AnimationObject];
+
+declareBoxFormatting[
+  g:AnimationObject[_, _Association ? Developer`HoldAtomQ] :> With[{res = animatedThumbnailBoxes[g]}, res /; res =!= $Failed]
+];
+
+animatedThumbnailBoxes[g_] := Scope[
+  res = g["AnimatedThumbnail"];
+  If[Head[res] =!= FrameBox, ReturnFailed[], res]
+];
+
+(**************************************************************************************************)
+
+obj_AnimationObject["AnimatedThumbnail"] :=
+  makeAnimatedThumbnail[
+    obj["GraphicsList", MaxFrames -> 8],
+    4, 128, Switch[obj["AnimationType"], "Continuous", $Purple, "Discrete", $Teal]
   ]
 
-makeAnimatedThumbnail[frames_, maxSize_, color_] :=
+makeAnimatedThumbnail[frames_, frameRate_, maxSize_, color_] :=
   Framed[
     imgs = FastRasterizeListCenterPadded @ frames;
     dims = ImageDimensions /@ imgs;
@@ -21,108 +254,177 @@ makeAnimatedThumbnail[frames_, maxSize_, color_] :=
     AnimatedImage[
       imgs,
       AnimationRepetitions -> Infinity,
-      FrameRate -> 2
+      FrameRate -> frameRate
     ],
     FrameStyle -> color
   ];
 
-g_DiscreteAnimationObject["VideoToClipboard", args___] :=
-  CopyFileToClipboard @ VideoFilePath @ g["Video", args]
+(**************************************************************************************************)
 
-CopyFileToClipboard[g_DiscreteAnimationObject] :=
-  g["VideoToClipboard"];
+obj_AnimationObject["VideoToClipboard", args___] := CopyFileToClipboard @ VideoFilePath @ obj["Video", args];
 
-g_DiscreteAnimationObject["Video", frameTime_:1/2] := Scope[
-  numFrames = Last @ g; fps = 1.0 / frameTime;
-  If[fps == Round[fps], fps //= Round];
-  path = File @ CacheVideoFilePath["ao", Hash[g], numFrames, fps];
+(**************************************************************************************************)
+
+CopyFileToClipboard[g_AnimationObject] := g["VideoToClipboard"];
+
+Unprotect[SystemOpen];
+SystemOpen[HoldPattern @ Video[File[path_String], ___]] := SystemOpen @ path;
+Protect[SystemOpen];
+
+(**************************************************************************************************)
+
+(obj:AnimationObject[g_, _])["Video", opts___Rule] := Scope[
+  metadata = obj["ResolvedMetadata", opts];
+  UnpackAssociation[metadata, frameRate, frameCount, expressionHash];
+  frameCount //= Round;
+  If[frameRate == Round[frameRate], frameRate //= Round];
+  path = File @ CacheVideoFilePath["ao", expressionHash, frameCount, frameRate];
   If[FileExistsQ[path], Video @ path,
-    VideoRasterizeList[g["Frames", numFrames], path, fps]
+    frames = obj["FrameList", opts];
+    VideoRasterizeList[frames, path, frameRate]
   ]
-];
-
-g_DiscreteAnimationObject["Manipulate"] :=
-  Construct[Animate, First @ g, {\[FormalT], 1, Last @ g, 1}]
-
-g_DiscreteAnimationObject["AnimatedImage"] :=
-  AnimatedImage[g["Frames"], FrameRate -> 2];
-
-g_DiscreteAnimationObject["Frames"] :=
-  FastRasterizeListCenterPadded @ g["Graphics"];
-
-DiscreteAnimationObject[g_, n_]["Graphics"] :=
-  makeDiscreteGraphics[g, n];
-
-makeDiscreteGraphics[g_, n_] :=  Scope[
-  f = Construct[Function, \[FormalT], Unevaluated @ g];
-  Map[f, Range @ n]
 ];
 
 (**************************************************************************************************)
 
-PublicFunction[AnimationPart]
+AnimationObject[_, assoc_Association]["AnimationType"] = assoc["AnimationType"];
 
-DiscreteAnimationObject::aplen = "AnimationPart lengths do not match."
+AnimationObject[_, assoc_Association]["Metadata"] := assoc;
 
-DiscreteAnimationObject[obj_] := Scope[
-  hobj = Hold[obj] /. AnimationPart[p_] :> AnimationPart[p, \[FormalT]];
-  n = DeepCases[hobj, AnimationPart[l_List, _] :> Length[l]];
-  If[n === {}, Return @ DiscreteAnimationObject[obj, 1]];
-  If[!AllEqualQ[n], ReturnFailed["aplen"]];
-  Replace[hobj, Hold[e_] :> DiscreteAnimationObject[e, First @ n]]
+AnimationObject[_, assoc_Association]["ResolvedMetadata", opts___] := Scope[
+  metadata = solveFrameStuff[assoc, <|AnimationDuration -> 4, FrameRate -> 30|>];
+  metadata
 ];
 
-DiscreteAnimationObject[Hold[e_], n_] := DiscreteAnimationObject[e, n];
+contQ[meta_] := meta["AnimationType"] === "Continuous";
 
 (**************************************************************************************************)
 
-PublicFunction[AnimationPart]
-
-AnimationPart[e_, i_Integer] := Part[e, i];
+AnimationObject[_, meta_]["RangeSpec"] :=
+  If[contQ[meta],
+    {\[FormalT], 0, 1},
+    {\[FormalT], 1, meta["FrameCount"]}
+  ];
 
 (**************************************************************************************************)
 
-PublicObject[AnimationObject]
+AnimationObject[g_, meta_]["Manipulate"] :=
+  Construct[
+    Animate, Unevaluated @ g,
+    toRangeSpec @ meta
+  ];
 
-declareBoxFormatting[
-  g:AnimationObject[_] :> makeAnimationObjectBoxes[g]
+toRangeSpec[meta_] := If[contQ[meta],
+  {\[FormalT], 0, 1},
+  {\[FormalT], 1, meta["FrameCount"]}
 ];
 
-makeAnimationObjectBoxes[AnimationObject[g_]] :=
-  ToBoxes @ makeAnimatedThumbnail[
-    makeDiscreteGraphics[g, n],
-    128, $Purple
-  ]
+(**************************************************************************************************)
 
-g_AnimationObject["VideoToClipboard", args___] :=
-  CopyFileToClipboard @ VideoFilePath @ g["Video", args]
+obj_AnimationObject["AnimatedImage", opts___Rule] := Scope[
+  meta = obj["ResolvedMetadata", opts];
+  frames = obj["FrameList", opts];
+  AnimatedImage[frames, FrameRate -> meta["FrameRate"]]
+]
 
-CopyFileToClipboard[g_AnimationObject] :=
-  g["VideoToClipboard"];
+(**************************************************************************************************)
 
-g_AnimationObject["Video", n_:1, fps_Integer:30] := Scope[
-  numFrames = Max[n * fps];
-  path = File @ CacheVideoFilePath["ao", Hash[g], numFrames, fps];
-  If[FileExistsQ[path], Video @ path,
-    VideoRasterizeList[g["Frames", numFrames], path, fps]
-  ]
+obj_AnimationObject["FrameList", opts___Rule] := CatchMessage @
+  FastRasterizeListCenterPadded @ obj["GraphicsList", opts];
+
+(**************************************************************************************************)
+
+AnimationObject[g_, _]["GraphicsFunction"] := CatchMessage @
+  Construct[Function, \[FormalT], Unevaluated @ g];
+
+(**************************************************************************************************)
+
+obj_AnimationObject["GraphicsList", opts___Rule] := CatchMessage[
+  meta = obj["ResolvedMetadata", opts];
+  fn = obj["GraphicsFunction"];
+  times = getFrameTimes[meta, Lookup[{opts}, MaxFrames, Infinity]];
+  Map[fn, times]
 ];
 
-g_AnimationObject["Manipulate"] :=
-  Construct[Animate, First @ g, {\[FormalT], 0, 1}]
+(**************************************************************************************************)
 
-g_AnimationObject["AnimatedImage", n_Integer] :=
-  AnimatedImage[g["Frames", n * 30], FrameRate -> 30];
-
-g_AnimationObject["Frames", n_Integer] :=
-  FastRasterizeListCenterPadded @ g["Graphics", n];
-
-AnimationObject[g_]["Graphics", n_] := makeGraphics[g, n];
-
-makeGraphics[g_, n_] :=  Scope[
-  f = Construct[Function, \[FormalT], g];
-  Map[f, Interpolated[0., 1., n]]
+getFrameTimes[meta_, max_] := Scope[
+  num = meta["FrameCount"];
+  frameTimes = If[contQ[meta], Lerp[0, 1, Into[num]], Range[1, num]];
+  If[IntegerQ[max] && num > max, frameTimes = Part[frameTimes, Round @ Lerp[1, num, Into @ max]]];
+  frameTimes
 ];
+
+(**************************************************************************************************)
+
+PrivateFunction[solveFrameStuff]
+
+solveFrameStuff[assoc_Association, hints:_Association:<||>] := Scope[
+  UnpackAssociation[assoc, frameRate, frameDuration, frameCount, animationDuration, "Default" -> Automatic];
+  checkDone = Function[
+    setInv[frameRate, frameDuration];
+    setTimes[animationDuration, frameCount, frameDuration];
+    setInv[frameRate, frameDuration];
+    res = PackAssociation[frameRate, frameDuration, frameCount, animationDuration];
+    If[AllTrue[res, numQ], Return[Join[assoc, res], Block]]
+  ];
+  checkDone[];
+  KeyValueScan[
+    {key, val} |-> Switch[key,
+      FrameRate,         frameRate = val;         checkDone[],
+      FrameCount,        frameCount = val;        checkDone[],
+      FrameDuration,     frameDuration = val;     checkDone[],
+      AnimationDuration, animationDuration = val; checkDone[]
+    ],
+    hints
+  ];
+  $Failed
+];
+
+autQ = MatchQ[Automatic];
+numQ = NumericQ;
+
+General::inconstf = "Inconsistency between FrameDuration, FrameCount, AnimationDuration, and the number of frames."
+
+SetHoldAll[setInv, setTimes];
+setInv[a_ ? numQ, b_ ? autQ] := Set[b, 1 / a];
+setInv[a_ ? autQ, b_ ? numQ] := Set[a, 1 / b];
+setInv[a_ ? numQ, b_ ? numQ] := If[a != 1 / b, ThrowMessage["inconstf"]];
+
+setTimes[a_ ? autQ, b_ ? numQ, c_ ? numQ] := Set[a, b * c];
+setTimes[a_ ? numQ, b_ ? autQ, c_ ? numQ] := Set[b, a / c];
+setTimes[a_ ? numQ, b_ ? numQ, c_ ? autQ] := Set[c, a / b];
+setTimes[a_ ? autQ, b_ ? autQ, c_ ? numQ] := Null;
+setTimes[a_ ? numQ, b_ ? numQ, c_ ? numQ] := If[a != b * c, ThrowMessage["inconstf"]];
+
+(**************************************************************************************************)
+
+declareGraphicsFormatting[{
+    AnimationPart[p_List, ___] :> First[p],
+    AnimationRange[args___] :> First[Range[args]],
+    AnimationBetween[a_, b_] :> a
+  },
+  Graphics|Graphics3D
+]
+
+(**************************************************************************************************)
+
+PublicFunction[AnimationPart, AnimationRange, AnimationBetween]
+
+SetUsage @ "
+AnimationPart[list$] will take values from a list during a discrete animation.
+"
+
+AnimationPart[e_, i_Integer] := With[{e2 = e}, {n = Length[e2]}, Part[e2, Clip[i, {1, n}]]];
+
+SetUsage @ "
+AnimationRange[n$] will take on values 1 through n$ during a discrete animation.
+"
+
+SetUsage @ "
+AnimationBetween[a$, b$] will interpolate between a$ and b$ during a continuous animation."
+
+(* TODO: Make AnimationBetween *find* a lerp for more complex objections. *)
 
 (**************************************************************************************************)
 
@@ -144,7 +446,7 @@ FindAnimationLerp[a_, b_, OptionsPattern[]] := Scope[
     If[ContainsQ[res, \[FormalQ]],
       res = res /. \[FormalQ] -> (\[FormalT]^2 * (2 - \[FormalT]^2))
     ];
-    AnimationObject @ res
+    ContinuousAnimation @ res
   ]
 ];
 
@@ -241,13 +543,15 @@ linearLerp[a_, b_, t_] := a * (1 - t) + (b * t);
 
 (**************************************************************************************************)
 
-Graphics3DSpinAnimation[g_Graphics3D, angleDelta_] := Scope[
+PublicFunction[Graphics3DSpinAnimation]
+
+Graphics3DSpinAnimation[g_Graphics3D, angleDelta_:1] := Scope[
   viewPoint = LookupOption[g, ViewPoint, Automatic];
   angles0 = ToSpherical @ viewPoint;
   angles1 = applyAngleDelta[angles0, angleDelta];
   viewPoint01 = ComposedNumericLerp[FromSpherical, angles0, angles1, \[FormalT]];
   gSpin = ReplaceOptions[g, ViewPoint -> viewPoint01];
-  AnimationObject[gSpin]
+  ContinuousAnimation[gSpin]
 ];
 
 applyAngleDelta[{r_, a_, b_}, {dr_, da_, db_}] := {r + dr, a + Pi * da, b + Tau * db};

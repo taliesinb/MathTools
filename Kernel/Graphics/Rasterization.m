@@ -2,9 +2,11 @@ toExportNotebook[expr_, background_] :=
 	toExportCell[expr, Background -> background, StyleDefinitions -> $QGStyleDefs];
 
 (* we do this because custom stylesheet makes rasterization substantially slower. TODO: also check for known TemplateBox string names! *)
-toExportNotebook[expr_, background_] /; FreeQ[expr, _Symbol ? QuiverGeometrySymbolQ] :=
+toExportNotebook[expr_, background_] /; FreeQ[expr, _Symbol ? QuiverGeometrySymbolQ] && FreeQ[expr, TemplateBox[_, $qgTemplateBoxP]] :=
 	toExportCell[expr, Background -> background];
 	
+$qgTemplateBoxP := $qgTemplateBoxP = Apply[Alternatives, QuiverGeometryStyleNames[]];
+
 $exportCellOptions = Sequence[
 	ShowCellBracket -> False, CellMargins -> 0,
 	CellFrame -> None, CellFrameMargins -> 0, CellContext -> "Global`",
@@ -23,6 +25,8 @@ $QGStyleDefs := $QGStyleDefs = With[{path = $QuiverGeometryStylesheetPath}, File
 
 SetHoldAll[QuiverGeometrySymbolQ]
 QuiverGeometrySymbolQ[s_Symbol] := StringStartsQ[Context[s], "QuiverGeometry`"];
+
+toExportPacket[expr_] := toExportPacket[expr, None];
 
 toExportPacket[expr_, background_] := ExportPacket[
 	toExportNotebook[expr, background],
@@ -73,7 +77,7 @@ FastRasterizeList[expr_List] := MathLink`CallFrontEnd @ Map[toExportPacket, expr
 
 PublicFunction[FastRasterizeListCenterPadded]
 
-FastRasterizeListCenterPadded[expr_List] = CenterPadImages @ FastRasterizeList[expr];
+FastRasterizeListCenterPadded[expr_List] := CenterPadImages @ FastRasterizeList[expr];
  
 (*************************************************************************************************)
 
