@@ -124,25 +124,146 @@ procDestructArg[argSpec_] := With[
 
 (**************************************************************************************************)
 
+PublicMacro[Echoing]
+
+Echoing /: (lhs_ := Echoing[rhs_]) := EchoSetDelayed[lhs, rhs];
+
+(**************************************************************************************************)
+
+PublicFunction[EchoSetDelayed, LabeledEchoSetDelayed]
+
+Attributes[EchoSetDelayed] = {HoldAll, SequenceHold};
+Attributes[LabeledEchoSetDelayed] = {HoldRest, SequenceHold};
+
+$esdTab = 0;
+$pendingEchoPrint = None;
+
+EchoSetDelayed[lhs_, rhs_] := LabeledEchoSetDelayed[Null, lhs, rhs];
+
+$openColor := $openColor = Lighter[$Green, 0.95];
+$closeColor := $closeColor = Lighter[$Orange, 0.95];
+$openCloseColor := $openCloseColor = Lighter[$Purple, 0.95];
+
+$word = RegularExpression["[a-zA-Z`$0-9]+"];
+
+PrivateFunction[lhsEchoStr, clickCopyBox]
+
+clickCopyBox[str_, expr_] := ClickBox[str, CopyToClipboard[Unevaluated @ ExpressionCell[expr, "Input"]]];
+
+Attributes[lhsEchoStr] = {HoldAllComplete};
+lhsEchoStr[lhs_] := Block[{res},
+  res = ToPrettifiedString[Unevaluated @ lhs, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3];
+  If[StringMatchQ[res, $word ~~ "[" ~~ ___ ~~ "]"],
+    {head, rest} = StringSplit[res, "[", 2];
+    If[StringContainsQ[head, "`"], head = Last @ StringSplit[head, "`"]];
+    RowBox[{StyleBox[head, Bold], "[", StringDrop[rest, -1], "]"}]
+  ,
+    res
+  ]
+];
+
+rhsEchoStr[$UNSET] := "?";
+rhsEchoStr[rhs_] := ToPrettifiedString[Unevaluated @ rhs, MaxDepth -> 4, MaxLength -> 64, MaxIndent -> 3];
+
+LabeledEchoSetDelayed[label_, esdLhs_, esdRhs_] := SetDelayed[(esdLhsVar:esdLhs), Module[
+  {esdLhsStr, esdLhsBoxes, esdResult = $UNSET, esdRhsStr, esdRhsBoxes},
+  Internal`WithLocalSettings[
+    esdLhsStr = lhsEchoStr @ esdLhsVar;
+    If[$pendingEchoPrint =!= None,
+      Apply[printEchoCell, $pendingEchoPrint];
+      $pendingEchoPrint = None;
+    ];
+    esdLhsBoxes = clickCopyBox[esdLhsStr, Unevaluated @ esdLhsVar];
+    (* If[label =!= Null, esdLhsStr = TextString[label] <> ": " <> esdLhsStr]; *)
+    $pendingEchoPrint = {RowBox[{esdLhsBoxes, "\[Function]"}], $openColor, $esdTab, label};
+    $esdTab++;
+  ,
+    esdResult = esdRhs
+  ,
+    $esdTab--;
+    esdRhsStr = rhsEchoStr @ esdResult;
+    esdRhsBoxes = clickCopyBox[esdRhsStr, esdResult];
+    If[$pendingEchoPrint === None,
+      printEchoCell[RowBox[{"\[Function]", esdRhsBoxes}], $closeColor, $esdTab, label];
+    ,
+      esdRhsBoxes = RowBox[{esdLhsBoxes, StyleBox["\[Function]", Bold], esdRhsBoxes}];
+      printEchoCell[esdRhsBoxes, $openCloseColor, $esdTab, label];
+    ];
+    $pendingEchoPrint = None;
+  ]
+]];
+
+(**************************************************************************************************)
+
+PrivateFunction[printEchoCell]
+
+$currentEchoWindow = None;
+$currentEchoLine = 0;
+
+printEchoCell[boxes_, color_,  tab_, label_] := Module[{cell, label2},
+  label2 = If[label =!= Null && label =!= None, TextString[label], None];
+  cell = Cell[BoxData @ boxes, "Echo",
+    Background -> color,
+    CellMargins -> {{65 + tab * 40, Inherited}, {Inherited, Inherited}},
+    CellFrameLabels -> {{None, label2}, {None, None}},
+  ShowCellLabel -> False,
+    ShowStringCharacters -> True,
+    CellGroupingRules -> {"ItemGrouping", 100 + If[color === $closeColor, 10 * tab + 1, 10 * tab]},
+    CellDingbat -> None,
+    ShowGroupOpener -> True,
+    CellLabelAutoDelete -> False
+  ];
+  EchoCellPrint @ cell
+];
+
+(**************************************************************************************************)
+
+PrivateFunction[EchoCellPrint]
+
+EchoCellPrint[cells2_] := Module[{cells},
+  cells = ToList[cells2];
+  If[$Line =!= $currentEchoLine,
+    $currentEchoLine = $Line;
+    If[Options[$currentEchoWindow] === $Failed, $currentEchoWindow = None];
+    If[$currentEchoWindow === None,
+      $currentEchoWindow = CreateDocument[cells, Saveable -> False, WindowTitle -> "Echo"];
+    ,
+      NotebookPut[Notebook[cells], $currentEchoWindow]
+    ];
+    SelectionMove[$currentEchoWindow, After, Notebook];
+  ,
+    NotebookWrite[$currentEchoWindow, cells, After]
+  ];
+];
+
+(* TODO: fully hijack Echo, Print, Message, etc *)
+
+(**************************************************************************************************)
+
 (* this takes the place of MatchValues in GU *)
 
-PublicMacro[Case]
+PublicMacro[Case, EchoCase]
 PublicSymbol[$]
 
-SetHoldAll[Case, setupCases];
+SetHoldAll[Case, EchoCase, setupCases];
 
-Case /: (Set|SetDelayed)[sym_Symbol, Case[args___]] := setupCases[sym, args];
+Case /: (Set|SetDelayed)[sym_Symbol, Case[args___]] := setupCases[sym, False, args];
+EchoCase /: (Set|SetDelayed)[sym_Symbol, EchoCase[args___]] := setupCases[sym, True, args];
 
-setupCases[sym_Symbol, CompoundExpression[args__SetDelayed, rewrites_List]] :=
-  setupCases[sym, CompoundExpression[args], rewrites];
+setupCases[sym_Symbol, echo_, CompoundExpression[args__SetDelayed, rewrites_List]] :=
+  setupCases[sym, echo, CompoundExpression[args], rewrites];
 
-setupCases[sym_Symbol, CompoundExpression[args__SetDelayed, Null...], rewrites_:{}] := Module[{holds},
+setupCases[sym_Symbol, echo_, CompoundExpression[args__SetDelayed, Null...], rewrites_:{}] := Module[{holds, counter = 0},
   Clear[sym];
   holds = Hold @@@ Hold[args];
   holds = ReplaceAll[holds, procRewrites @ rewrites];
   PrependTo[holds, Hold[case_, UnmatchedCase[sym, case]]];
   holds = ReplaceAll[holds, HoldPattern[Out[] | $]  :> sym];
-  Replace[List @@ holds, Hold[a___, b_] :> SetDelayed[sym[a], b], {1}];
+  If[echo,
+    Replace[List @@ holds, Hold[a___, b_] :> LabeledEchoSetDelayed[counter++, sym[a], b], {1}];
+  ,
+    Replace[List @@ holds, Hold[a___, b_] :> SetDelayed[sym[a], b], {1}];
+  ]
 ];
 
 Case::baddef = "Bad case definition for ``."

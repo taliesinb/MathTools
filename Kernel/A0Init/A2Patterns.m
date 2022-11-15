@@ -60,6 +60,13 @@ $OpacityPattern is a pattern that matches an opacity specification.
 
 (**************************************************************************************************)
 
+PrivateVariable[$NotebookOrPathP, $PathP]
+
+$NotebookOrPathP = _NotebookObject | File[_String] | _String;
+$PathP = File[_String] | _String;
+
+(**************************************************************************************************)
+
 PrivateFunction[ListOrAssociationOf]
 
 ListOrAssociationOf[pattern_] := {Repeated[pattern]} | Association[Repeated[_ -> pattern]];

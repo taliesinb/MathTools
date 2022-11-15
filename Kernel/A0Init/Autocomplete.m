@@ -3,8 +3,8 @@ PrivateFunction[declareFunctionAutocomplete, declareSyntaxInfo]
 If[$Notebooks,
 
 declareFunctionAutocomplete[function_Symbol, spec_] := With[
-  {functionName = SymbolName[function]},
-    FE`Evaluate[FEPrivate`AddSpecialArgCompletion[functionName -> spec]]
+  {functionName = SymbolName[function], spec2 = spec /. {None -> 0, File -> 2, Directory -> 8}},
+    FE`Evaluate[FEPrivate`AddSpecialArgCompletion[functionName -> spec2]]
   ];
 declareFunctionAutocomplete[___] := Panic["BadArgs"];
 

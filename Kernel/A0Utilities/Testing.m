@@ -1,117 +1,111 @@
 PrivateFunction[RunImageTests]
 
+PublicFunction[RunInputOutputTests]
+
+Options[RunInputOutputTests] = {
+  Verbose -> True,
+  DryRun -> False
+};
+
 RunInputOutputTests::noindir = "Input directory not found at ``.";
 RunInputOutputTests::notests = "No tests present in ``.";
 
-RunInputOutputTests[] := Scope[
+RunInputOutputTests[OptionsPattern[]] := Scope[
+  UnpackOptions[$verbose, $dryRun];
   inDir = LocalPath["Tests", "Inputs"];
-  If[!FileExistsQ[inDir], ReturnFailed["noindir", inDir]];
+  If[!DirectoryQ[inDir], ReturnFailed["noindir", inDir]];
   outDir = LocalPath["Tests", "Outputs"];
   testFiles = FileNames["*.m", inDir];
   If[testFiles === {}, ReturnFailed["notests", inDir]];
-  EnsureDirectory[outDir];
+  EnsureDirectoryShallow[outDir];
   Scan[runFileTest[#, outDir]&, testFiles];
 ];
 
 RunInputOutputTests::badtestfile = "Could not read list of expressions from test file ``.";
-RunInputOutputTests::badlen = "Number of outputs changed (`` to ``).";
-RunInputOutputTests::makeoutput = "Output file `` does not exist, creating now."
+RunInputOutputTests::lendifferbad = "Number of outputs differs (ground truth ``, ran ``), and overlap doesn't match.";
+RunInputOutputTests::lendiffergood = "Number of outputs differs (ground truth ``, ran ``), and overlap matches; modifying output file to match.";
+RunInputOutputTests::makeoutput = "Output file `` does not exist or is empty, creating now."
+RunInputOutputTests::badinputs = "Could not obtain a list of input expressions from ``."
 
 runFileTest[inputPath_, outDir_] := Scope[
   inputFileName = FileNameTake @ inputPath;
-  Print["Running ", inputFileName];
+  VPrint["Reading inputs from ", MsgPath @ inputPath];
   inputs = readExpressionList @ inputPath;
-  newOutputs = Replace[inputs, Hold[e_] :> e, {1}];
-  If[FailureQ[newOutputs], ReturnFailed[]];
+  If[FailureQ[inputs], ReturnFailed[]];
+  VPrint["Evaluating ", Length @ inputs, " expressions."];
+  $numStatements = 0;
+  newOutputs = Replace[inputs, {
+    Hold[ce:CompoundExpression[___, Null]] :> (ce; $numStatements++; Nothing),
+    Hold[e_] :> e
+    }, {1}];
+  If[$numStatements > 0, VPrint["Encountered ", $numStatements, " preparation statements."]];
   outputPath = FileNameJoin[{outDir, inputFileName}];
-  If[!FileExistsQ[outputPath],
-    Message[RunInputOutputTests::makeoutput, outputPath];
-    makeOutputFiles[inputs, outputPath];
+  If[!FileExistsQ[outputPath] || FileByteCount[outputPath] == 0,
+    Message[RunInputOutputTests::makeoutput, outputPath];s
+    writeExpressionList[outputPath, newOutputs];
     Return[Null]
   ];
+  VPrint["Reading expected outputs from ", MsgPath @ outputPath];
   oldOutputs = readExpressionList @ outputPath;
-  If[Length[newOutputs] =!= Length[oldOutputs],
-    ReturnFailed[RunInputOutputTests::badlen, Length[oldOutputs], Length[newOutputs]]];
-  $inputPath = inputPath; $outputPath = outputPath;
-  ScanThread[compareOutputs, {Range @ Length @ newOutputs, newOutputs, oldOutputs}]
+  If[FailureQ[oldOutputs], ReturnFailed[]];
+  oldOutputs = Replace[oldOutputs, Hold[e_] :> e, {1}];
+  newCount = Length[newOutputs];
+  oldCount = Length[oldOutputs];
+  minCount = Min[newCount, oldCount];
+  If[newCount =!= oldCount,
+    If[Take[newOutputs, minCount] === Take[oldOutputs, minCount],
+      Message[RunInputOutputTests::lendiffergood, oldCount, newCount];
+      writeExpressionList[outputPath, newOutputs];
+      Return[Null]
+    ];
+    ReturnFailed[RunInputOutputTests::lendifferbad, oldCount, newCount]
+  ];
+  $inputPath = inputPath;
+  VPrint["Comparing ", newCount " expressions."];
+  ScanThread[compareOutputs, {Range @ newCount, newOutputs, oldOutputs}];
 ];
 
-RunInputOutputTests::ioexprfail = "Result #`` from \"``\" changed. Input form shown below.";
-RunInputOutputTests::iorastmissing = "Result #`` from \"``\" requires rasterization, but no raster file exists at \"``\"."
-RunInputOutputTests::iorastextra = "Result #`` from \"``\" does not require rasterization, but a raster file exists at \"``\"."
-RunInputOutputTests::iorastfail = "Result #`` from \"``\" does not match previous rasterization stored in \"``\". Images shown below."
+RunInputOutputTests::ioexprfail = "Result #`` from `` changed.";
 
 compareOutputs[part_, newOutput_, oldOutput_] := Scope[
   If[newOutput =!= oldOutput,
     Message[RunInputOutputTests::ioexprfail, part, $inputPath];
-    Print[Framed @ FlipView[Shallow[InputForm @ #, {4, 50}, _NumericArray]& /@ {newOutput, oldOutput}, ImageSize -> All]];
-  ];
-  rasterQ = requiresRasterizationQ[newOutput];
-  rasterPath = makeRasterPath[part];
-  rasterExists = FileExistsQ[rasterPath];
-  Switch[
-    {rasterQ, rasterExists},
-    {True, False}, Message[RunInputOutputTests::iorastmissing, part, $inputPath, rasterPath],
-    {False, True}, Message[RunInputOutputTests::iorastextra, part, $inputPath, rasterPath],
-    {True, True},
-      thisImage = rasterizeExpression[newOutput];
-      prevImage = Import[rasterPath, "PNG", IncludeMetaInformation -> False];
-      If[ImageData[thisImage] != ImageData[prevImage],
-        Message[RunInputOutputTests::iorastfail, part, $inputPath, rasterPath];
-        Print[Framed @ FlipView[{thisImage, prevImage}, ImageSize -> All]]
-      ]
+    VPrint[Framed @ FlipView[flipViewForm /@ {newOutput, oldOutput}, ImageSize -> All]];
   ];
 ];
 
-makeOutputFiles[inputs_List, outputPath_] := Scope[
-  writeExpressionList[outputPath, inputs];
-  $outputPath = outputPath;
-  PartValueScan[writeAuxFile, inputs];
+flipViewForm = Case[
+  e_TextRasterFile  := e;
+  e_Image           := Thumbnail[e];
+  e_                := ToPrettifiedString[e];
 ];
 
-writeAuxFile[part_, output_] := Scope[
-  If[!requiresRasterizationQ[output], Return[]];
-  path = makeRasterPath[part];
-  If[FileExistsQ[path], Return[]];
-  img = rasterizeExpression[output];
-  Export[path, img, "PNG", IncludeMetaInformation -> False]
-];
-
-requiresRasterizationQ = Case[
-  _Graph | _Labeled | _Legended | _Framed | _Graphics | _Graphics3D | _Image | _Grid | _Row | _Column | _RasterizedForm := True;
-  head_Symbol[___] := FormatValues[head] =!= {};
-  head_[___] := requiresRasterizationQ[head];
-  _List | Association := False;
-  atom_Symbol := FormatValues[atom] =!= {};
-  _ := False;
-];
-
-makeRasterPath[part_] := $outputPath <> "." <> IntegerString[part, 10, 3] <> ".png";
-
-rasterizeExpression[expr_] := Rasterize[expr, ImageFormattingWidth -> Infinity, ImageResolution -> 144];
-
-
-(*
-idea: always expect a .m file as output. if it is not present, create it from scratch with the given outputs.
-if it is present, compare the fresh outputs with previous outputs.
-in addition, if the output would be rasterized by the markdown code, then check if there is a corresponding NAME.000.png
-file. If not, create it. If so, compare it, and report discrepancies.
-we can ALSO produce KaTeX, and store that in a NAME.000.tex file.
-
-when saving and loading expressions, we should try typeset them nicely. We should compress arrays nicely. Anything with more than like 8 entries.
-*)
+$testContext = "QuiverGeometry`TestHarness`";
+$testContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`", "QuiverGeometry`Shortcuts`"};
 
 readExpressionList[path_] := Block[
-  {$Context = "QuiverGeometry`TestHarness`", $ContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`", "QuiverGeometry`Shortcuts`"}, result},
-  result = ReadList[path];
-  If[ListQ[result], result /. $decompressExpressionRules,
-    Message[RunInputOutputTests::badtestfile, path]; $Failed]
+  {$Context = $testContext, $ContextPath = $testContextPath, result},
+  result = ReadList[path, Hold[Expression]];
+  If[!ListQ[result],
+    Message[RunInputOutputTests::badtestfile, path];
+    ReturnFailed[];
+  ];
+  result //= ReplaceAll[$decompressExpressionRules];
+  result //= DeleteCases[Hold[Null]];
+  result
 ];
 
 writeExpressionList[path_, list_] := Block[
-  {$Context = "QuiverGeometry`TestHarness`", $ContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`", "QuiverGeometry`Shortcuts`"}},
-  Scan[Write[path, #]&, list /. $compressExpressionRules];
-  Close[path];
+  {$Context = $testContext, $ContextPath = $testContextPath},
+  VPrint["Writing ", Length @ list, " expressions to ", MsgPath @ path];
+  If[$dryRun, Return[]];
+  str = StringRiffle[Map[toOutString, list /. $compressExpressionRules], "\n\n"];
+  ExportUTF8[path, str];
+];
+
+toOutString = Case[
+  s_String    := StringReplace[ToString[s, InputForm], "\\n" -> "\n"];
+  e_          := ToPrettifiedString[e, MaxIndent -> 4];
 ];
 
 $compressExpressionRules = l_List /; LeafCount[Unevaluated @ l] > 8 && ArrayQ[Unevaluated @ l] && PackedArrayQ[ToPackedArray[l]] :>
@@ -119,7 +113,38 @@ $compressExpressionRules = l_List /; LeafCount[Unevaluated @ l] > 8 && ArrayQ[Un
 
 $decompressExpressionRules = CompressedArray[c_] :> RuleCondition[Uncompress[c]];
 
+SystemHead[CompressedArray]
 
-SystemHead["CompressedArray"]
+(**************************************************************************************************)
 
+(* this evaluates to a file containing a raster of the thing, with path being a
+content-based hash.
+TODO: TestExpressionOutline, which should use a compact format to represent the entire tree of stuff.
+*)
 
+PublicFunction[TestRaster]
+PublicObject[TextRasterFile]
+
+toRasterPath[hash_] := LocalPath["Tests", "Rasters", hash <> ".png"];
+
+TestRaster[expr_] := Scope[
+  img = FastRasterize[expr];
+  hash = Base36Hash[img];
+  rasterPath = toRasterPath[hash];
+  If[!FileExistsQ[rasterPath] || FileByteCount[rasterPath] === 0,
+    VPrint["Writing image of dimensions ", ImageDimensions @ img, " to ", MsgPath @ rasterPath];
+    whenWet @ Export[rasterPath, img]];
+  TextRasterFile[hash]
+];
+
+declareBoxFormatting[
+  TextRasterFile[str_String] :> makeTextRasterFileboxes[str]
+]
+
+makeTextRasterFileboxes[str_String] := Scope[
+  rasterPath = toRasterPath[str];
+  If[!FileExistsQ[rasterPath] || !ImageQ[Quiet[img = Import @ rasterPath]],
+    RowBox[{"TextRasterFile", "[", ToBoxes @ tightColoredBoxes[rasterPath, $LightRed], "]"}],
+    RowBox[{"TextRasterFile", "[", ToBoxes @ ImageResize[img, 200], "]"}]
+  ]
+]

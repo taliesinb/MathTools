@@ -1,3 +1,11 @@
+PrivateFunction[VPrint]
+
+SetHoldAllComplete[VPrint];
+VPrint[args___] /; TrueQ[$verbose] :=
+  Print[If[TrueQ[$dryRun], Style["> ", LightGray], ""], args];
+
+(**************************************************************************************************)
+
 PublicFunction[EchoEdgeList]
 
 EchoEdgeList = EchoFunction[EdgeList]
@@ -20,6 +28,58 @@ EchoGraphicsScope[e_] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[PrintQGStack]
+
+$stackFile = FileNameJoin[{$TemporaryDirectory, "qg_stack.m"}];
+
+PrintQGStack[label_:None] := StackInhibit @ Block[
+  {stack, cells},
+  stack = Stack[_];
+  Beep[];
+  $isFirst = True;
+  cells = toStackCell /@ stack;
+  CreateDocument[cells, Background -> Lighter[$Blue, 0.95]];
+];
+
+(**************************************************************************************************)
+
+SetHoldAllComplete[toStackCell];
+
+toStackCell[HoldForm[e_]] := toStackCell @ e;
+
+toStackCell[tssRhs:(head_Symbol[___])] /; QGSymbolQ[head] := Module[{boxes},
+  boxes = clickCopyBox[lhsEchoStr @ tssRhs, Unevaluated @ tssRhs];
+  Cell[
+    BoxData @ boxes, "Output",
+    ShowCellLabel -> False, ShowStringCharacters -> True,
+    CellGroupingRules -> {"ItemGrouping", If[$isFirst, $isFirst = False; 180, 200]}, CellDingbat -> None
+  ]
+];
+
+toStackCell[_] := Nothing;
+
+(**************************************************************************************************)
+
+SetHoldAllComplete[extractHead];
+
+extractHead[HoldForm[e_]] := extractHead @ e;
+extractHead[Catch[_, _, QuiverGeometry`Init`Macros`ThrownMessageHandler[func_Symbol]]] := HoldForm[func];
+extractHead[CompoundExpression[first_, Null]] := extractHead @ first;
+extractHead[head_Symbol[___]] := If[QGSymbolQ[head], HoldForm[head], Nothing];
+extractHead[head_[___]] := extractHead[head];
+extractHead[_] := Nothing;
+
+QGSymbolQ[s_Symbol ? Developer`HoldAtomQ] := StringStartsQ[Context @ Unevaluated @ s, "QuiverGeometry`"] && System`Private`HasAnyEvaluationsQ[s];
+QGSymbolQ[_] := False;
+
+(**************************************************************************************************)
+
+SetHoldAllComplete[debugStr];
+
+debugStr[lhs_] := ToPrettifiedString[Unevaluated @ lhs, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3]
+
+(**************************************************************************************************)
+
 PublicFunction[EchoGraphics]
 
 EchoGraphics[e_] := (AppendTo[$prims, e]; e);
@@ -34,6 +94,13 @@ EchoDimensions[e_] := (Echo[Row[Dimensions @ e, "\[Times]", BaseStyle -> $DarkBl
 
 (**************************************************************************************************)
 
+PublicHead[MsgExpr]
+
+MsgExpr[p_MsgPath] := p;
+MsgExpr[e_] := ToPrettifiedString[e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0];
+
+(**************************************************************************************************)
+
 PublicHead[MsgPath]
 
 MsgPath[p_MsgFile] := p;
@@ -44,15 +111,10 @@ MakeBoxes[MsgPath[s_String], StandardForm] := msgPathBoxes[s];
 MakeBoxes[MsgPath[s_String], TraditionalForm] := msgPathBoxes[s];
 
 msgPathBoxes[path_String] := With[
-  {type = FileType[path]},
-  {color = Switch[Quiet @ FileType @ path, None, $LightRed, Directory, $LightBlue, File, $LightGray, True, $LightRed]},
+  {type = If[StringStartsQ[path, ("http" | "https" | "git" | "file" | "ssh") ~~ ":"], "URL", Quiet @ FileType @ path]},
+  {color = Switch[type, None, $LightRed, Directory, $LightBlue, File, $LightGray, "URL", $LightPurple, _, $LightRed]},
   ToBoxes @ ClickForm[
-    Framed[Style[path, FontFamily -> "Source Code Pro", FontSize -> 10, Bold, FontColor -> Black],
-      Background -> color, FrameStyle -> Darker[color, .2],
-      ContentPadding -> False, RoundingRadius -> 2,
-      ImageSize -> {Automatic, 16}, FrameMargins -> {{5, 5}, {0, 0}},
-      BaselinePosition -> Baseline
-    ],
+    tightColoredBoxes[path, color],
     If[
       ModifierKeysPressedQ[],
       trySystemOpen @ path,
@@ -75,10 +137,15 @@ sysOpen[s_String] := Switch[
 
 (**************************************************************************************************)
 
-PublicFunction[WebpageOpen]
+PrivateFunction[tightColoredBoxes]
 
-(* works best if you have "Fast Duplicate Tab Closer" extension installed *)
-WebpageOpen[s_String] := Run["open -a \"Google Chrome.app\" " <> s];
+tightColoredBoxes[str_String, color_] := Framed[
+  Style[str, FontFamily -> "Source Code Pro", FontSize -> 10, Bold, FontColor -> Black],
+  Background -> color, FrameStyle -> Darker[color, .2],
+  ContentPadding -> False, RoundingRadius -> 2,
+  ImageSize -> {Automatic, 16}, FrameMargins -> {{5, 5}, {0, 0}},
+  BaselinePosition -> Baseline
+];
 
 (**************************************************************************************************)
 
@@ -98,3 +165,29 @@ BadBeep[] := (Beep[]; Pause[0.1]; Beep[]);
 PrivateFunction[ModifierKeysPressedQ]
 
 ModifierKeysPressedQ[] := $Notebooks && (CurrentValue["ModifierKeys"] =!= {});
+
+PublicFunction[PerformSelfLinting]
+
+PerformSelfLinting[] := Scope[
+  DeleteCases[{} | <||>] @ Association[
+    "MissingPackageScopes" -> findMissingPackageScopes[],
+    "SuspiciousPackageLines" -> QuiverGeometryPackageLoader`$SuspiciousPackageLines
+  ]
+];
+
+findMissingPackageScopes[] := Scope[
+  privateSymbols = Names["QuiverGeometry`**`*"];
+  privateSymbolNames = Last /@ StringSplit[privateSymbols, "`"];
+  moduleSymbols = Select[DeleteDuplicates @ privateSymbolNames, StringEndsQ["$"]];
+  moduleSymbols = Join[moduleSymbols, StringDrop[moduleSymbols, -1]];
+  privateSymbolAssoc = AssociationThread[privateSymbols, privateSymbolNames];
+  privateSymbolAssoc //= Select[StringLength[#] >= 4&];
+  privateSymbolAssoc //= Discard[ElementQ[moduleSymbols]];
+  collisionsAssoc = Select[PositionIndex[privateSymbolAssoc], Length[#] > 1&];
+  collisionsAssoc //= Select[possibleMissingPackageScope];
+  collisionsAssoc
+]
+
+possibleMissingPackageScope[names_] :=
+  CountDistinct[ToExpression[names, InputForm, System`Private`HasAnyEvaluationsQ]] > 1;
+
