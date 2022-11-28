@@ -207,7 +207,7 @@ GraphPlotScope[graph_, body_] := Scope[
     $GraphPlotImageWidth := $GraphPlotImageWidth = First[$GraphPlotImageSize; LookupImageSize @ $Graph];
 
     (* before we have called the user function, guess the range based on the vertex and edge coordinates *)
-    $GraphIs3D := $GraphIs3D = CoordinateMatrixQ[$VertexCoordinates, 3];
+    $GraphIs3D := $GraphIs3D = CoordinateMatrix3DQ[$VertexCoordinates];
     $GraphPlotRange := $GraphPlotRange = computeCoordinateBounds[];
     $GraphPlotSize := $GraphPlotSize = rangeSize[$GraphPlotRange];
     $GraphPlotSizeX := Part[$GraphPlotSize, 1];
@@ -363,7 +363,7 @@ getRankedMinDistance[coords_] := Scope[
 ];
 
 computeGraphPlotAspectRatio[] := Scope[
-  If[CoordinateMatrixQ[$VertexCoordinates, 3],
+  If[CoordinateMatrix3DQ[$VertexCoordinates],
     viewOptions = LookupExtendedOption[$Graph, ViewOptions];
     SetAutomatic[viewOptions, $automaticViewOptions];
     vertexCoords = Part[$VertexCoordinates, $VertexParts];
@@ -1223,7 +1223,7 @@ extractCardinalArrowhead[c_][prims_] := ReplaceAll[
 ]
 
 computeCenterPoint[{{xl_, yl_}, {xh_, yh_}}, side_] := Scope[
-  xm = (xl + xh)/2; ym = (yl + yh) / 2;
+  xm = Avg[xl, xh]; ym = Avg[yl, yh];
   Match[side,
     Bottom  :> {xm, yl},
     Top     :> {xm, yh},

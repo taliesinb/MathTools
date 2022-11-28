@@ -1,4 +1,20 @@
-PublicFunction["Unthread"]
+PublicFunction[PostComposeFunction]
+
+PostComposeFunction[HoldPattern[Function][body_], fn2_] := Function[fn2[body]];
+PostComposeFunction[HoldPattern[Function][var_, body_], fn2_] := Function[var, fn2[body]];
+PostComposeFunction[HoldPattern[Function][var_, body_, attr_], fn2_] := Function[var, fn2[body], attr];
+PostComposeFunction[fn_, fn2_] := fn /* fn2;
+
+(**************************************************************************************************)
+
+PublicFunction[ConstructHoldComplete]
+
+ConstructHoldComplete[fn_Function, args___] :=
+  PostComposeFunction[fn, HoldComplete][args];
+
+(**************************************************************************************************)
+
+PublicFunction[Unthread]
 
 (* todo: implement these as macros, and better yet as syntax in Loader.m *)
 

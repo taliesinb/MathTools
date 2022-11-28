@@ -174,7 +174,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
   ];
 
   If[NumericQ[coordinateRotation],
-    If[CoordinateMatrixQ[vertexCoordinates, 3],
+    If[CoordinateMatrix3DQ[vertexCoordinates],
       $vertexCoordinates //= SphericalRotateVector[coordinateRotation];
       $edgeCoordinateLists //= SphericalRotateVector[coordinateRotation];
     ,
@@ -183,7 +183,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     ];
   ];
 
-  If[CoordinateMatrixQ[vertexCoordinates, 3] && layoutDimension == 2,
+  If[CoordinateMatrix3DQ[vertexCoordinates] && layoutDimension == 2,
     SetAutomatic[viewOptions, $automaticViewOptions];
     viewOptions = Association[PlotRange -> CoordinateBounds[vertexCoordinates], viewOptions];
     viewTransform = ConstructGraphicsViewTransform[viewOptions];
@@ -340,10 +340,10 @@ nudgeOverlappingVertices[coords_, nudgeDistance_, plotRange_] := Scope[
     nudgeScale = If[nudgeScale === 0, 1, Max[nudgeScale, 0.1]];
   ];
   dupPos = Select[Length[#] > 1&] @ PositionIndex[Round[coords, nudgeScale / 40]];
-  is3D = CoordinateMatrixQ[coords, 3];
+  is3D = CoordinateMatrix3DQ[coords];
   If[Length[dupPos] === 0, Return @ coords];
   If[Length[dupPos] === 1 && num == 1,
-    points = If[CoordinateMatrixQ[coords, 3],
+    points = If[CoordinateMatrix3DQ[coords],
       SpherePoints[num] * nudgeScale/5,
       CirclePoints[{nudgeScale/5, Tau * .25/num}, num]
     ];

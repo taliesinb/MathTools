@@ -328,7 +328,7 @@ $pathTemplate = StringFunction @ """<path d="#1" fill="none" stroke="#2" stroke-
 svg[BezierCurve[pnts_ ? cmq]] := $pathTemplate[bezierToPath @ pnts,  $context["pathcolor"], $context["paththickness"]];
 
 bezierToPath[{a_, b_, c_, d_}] := StringJoin[
-  "M", toPair @ a, " Q", toPairList @ {b, (b + c)/2}, " T", toPair @ d
+  "M", toPair @ a, " Q", toPairList @ {b, Avg[b, c]}, " T", toPair @ d
 ];
 
 (* bezierToPath[pnts_] := Scope[

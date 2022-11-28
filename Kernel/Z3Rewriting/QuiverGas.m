@@ -462,7 +462,7 @@ drawArrowAlong[{a_, b_}] /; EuclideanDistance[a, b] >= 2 :=
 
 drawArrowAlong[{a_, b_}] := Scope[
   y = 0.5 * Normalize[b - a];
-  m = Mean[{b, a}];
+  m = Avg[b, a];
   x = VectorRotate90[y];
   GeometricTransformation[$gasArrow, {Trans[y, x], m}]
 ];

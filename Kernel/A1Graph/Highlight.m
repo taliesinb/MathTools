@@ -675,7 +675,7 @@ applyMod = Case[
 
 shrinkSegment[d_][segment_] := Scope[
   {a, b} = FirstLast @ segment;
-  mid = Mean[{a, b}];
+  mid = Avg[a, b];
   a2 = PointAlongLine[{a, mid}, d];
   b2 = PointAlongLine[{b, mid}, d];
   scaling = EuclideanDistance[mid, a2] / EuclideanDistance[mid, a];
@@ -733,7 +733,7 @@ applyBendBetween[segment1_, segment2_, d_, dtheta_] := Scope[
   p2 = Last @ truncated2;
   q = Last @ segment1;
   d1 = p1 - q; d2 = p2 - q;
-  r = Mean[{Norm @ d1, Norm @ d2}];
+  r = Avg[Norm @ d1, Norm @ d2];
   a1 = ArcTan @@ d1; a2 = ArcTan @@ d2;
   If[dtheta === Automatic,
     While[a2 < a1, a2 += Tau]; as1 = DeleteDuplicates @ Append[a2] @ Range[a1, a2, Tau / 16];
@@ -779,7 +779,7 @@ applyShoulderBetween[segment1_, segment2_, d_, dtheta_] := Scope[
     shoulderPoints = DiscretizeCurve[{truncated1, q, Reverse @ truncated2}]
   ,
     d1 = p1 - q; d2 = p2 - q;
-    r = Mean[{Norm @ d1, Norm @ d2}];
+    r = Avg[Norm @ d1, Norm @ d2];
     a1 = ArcTan @@ d1;
     shoulderPoints = DiscretizeCurve[{p1, q, AngleVector[q, {r, a1 + dtheta}]}];
     offset = Last[shoulderPoints] - q;

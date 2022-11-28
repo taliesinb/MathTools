@@ -646,7 +646,7 @@ chooseTicks[2, min_, max_] :=
   {min, max};
 
 chooseTicks[3, min_, max_] :=
-  {min, Mean[{min, max}], max};
+  {min, Avg[min, max], max};
 
 chooseTicks[n_, min_, max_] := Scope[
   dx = max - min;
@@ -932,6 +932,9 @@ literalColorFunction[colors_] := Scope[
 ];
 
 (**************************************************************************************************)
+
+(* TODO: make this into FlatColor[color], which has a graphics format value to turn it into
+the underlying directive! *)
 
 PublicFunction[Color3D]
 

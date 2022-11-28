@@ -194,7 +194,7 @@ toHighlightItem = Case[
   {i_, j_} := Scope[
     {xmin, xmax} = xfunc /@ fromSpan[ncols, j]; xmin //= Min; xmax //= Max;
     {ymin, ymax} = yfunc /@ fromSpan[nrows, i]; ymin //= Max; ymax //= Min;
-    Rectangle[{xmin, ymin}, {xmax, ymax}, RoundingRadius -> Mean[{cellw, cellh}]/5]
+    Rectangle[{xmin, ymin}, {xmax, ymax}, RoundingRadius -> Avg[cellw, cellh]/5]
   ];
 ];
 

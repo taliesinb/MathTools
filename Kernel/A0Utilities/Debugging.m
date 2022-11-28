@@ -28,6 +28,65 @@ EchoGraphicsScope[e_] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[DynamicPointGraphics]
+
+DynamicPointGraphics[n_Integer, fn_] := Replace[
+  ConstructHoldComplete[fn, \[FormalX]],
+  HoldComplete[body_] :>
+    DynamicModule @@ Hold[
+      {\[FormalX] = CirclePoints[n]},
+      LocatorPane[Dynamic[\[FormalX]], Graphics[Dynamic @ body, PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None]]
+    ]
+];
+
+(* DynamicPointGraphics[{n_Integer, {min_, max_}}, fn_] := Replace[
+  ConstructHoldComplete[fn, \[FormalX], \[FormalY]],
+  HoldComplete[body_] :>
+    DynamicModule @@ Hold[
+      {\[FormalX] = CirclePoints[n], \[FormalY] = Avg[min, max]},
+      Labeled[
+      LocatorPane[Dynamic[\[FormalX]],
+        Graphics[
+          Dynamic[body, TrackedSymbols :> {\[FormalX], \[FormalY]}],
+          PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None
+        ]
+      ], Slider[Dynamic @ \[FormalY], {min, max}]]
+    ]
+];
+ *)
+DynamicPointGraphics[{n_Integer, specSeq__}, fn_] := With[
+  {specList = {specSeq}},
+  {specData = MapThread[toDynSpec, {{specSeq}, Take[$formals, Length @ specList]}]},
+  {specVars = Prepend[\[FormalX]] @ Part[specData, All, 1],
+   initList = Prepend[CirclePoints[n]] @ Part[specData, All, 2],
+   controls = Part[specData, All, 3]},
+  {specSets = MapThread[SET, {specVars, initList}]},
+  Replace[
+    ConstructHoldComplete[fn, Sequence @@ specVars],
+    HoldComplete[body_] :>
+      Apply[DynamicModule, Hold[
+        specSets,
+        Labeled[
+          LocatorPane[Dynamic[\[FormalX]], Graphics[
+            Dynamic[body, TrackedSymbols :> specVars],
+            PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None
+          ]],
+          Column[controls]
+        ]
+      ] /. SET -> Set]
+  ]
+];
+
+$formals = {\[FormalA], \[FormalB], \[FormalC], \[FormalD], \[FormalE], \[FormalF], \[FormalD]}
+
+toDynSpec[{min_ ? NumericQ, max_ ? NumericQ}, sym_] := {sym, Avg[min, max], Slider[Dynamic @ sym, {min, max}]};
+toDynSpec[max_ ? NumericQ, sym_] := toDynSpec[{0, max}, sym];
+toDynSpec[list_List, sym_] := {sym, First @ list, RadioButtonBar[Dynamic @ sym, list]};
+
+(* DynamicPointGraphics[3, {Red, Map[Disk[#, .1] &, #]} &] *)
+
+(**************************************************************************************************)
+
 PublicFunction[PrintQGStack]
 
 $stackFile = FileNameJoin[{$TemporaryDirectory, "qg_stack.m"}];
@@ -77,6 +136,26 @@ QGSymbolQ[_] := False;
 SetHoldAllComplete[debugStr];
 
 debugStr[lhs_] := ToPrettifiedString[Unevaluated @ lhs, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3]
+
+(**************************************************************************************************)
+
+PublicFunction[FindMatchingDownValue]
+
+SetHoldAllComplete[FindMatchingDownValue]
+
+FindMatchingDownValue[head_Symbol[args___]] := Block[
+  {dvs = DownValues[head], head, res},
+  DownValues[head] = Append[MapIndexed[{rule, ind} |-> replaceRHS[rule, First[ind]], dvs], HoldPattern[_head] -> None];
+  res = head[args];
+  If[res === None, Return @ None];
+  If[!IntegerQ[res], Return[$Failed]];
+  Print[res];
+  Part[dvs, res]
+];
+
+replaceRHS[lhs_ :> rhs_, num_] := lhs :> num;
+replaceRHS[lhs_ :> (Verbatim[Condition][rhs_, cond_]), num_] := lhs :> Condition[num, cond];
+replaceRHS[_] := Nothing;
 
 (**************************************************************************************************)
 
@@ -158,7 +237,6 @@ BadBeep[] := Run["afplay /System/Library/Sounds/Sosumi.aiff&"];
 GoodBeep[] := Beep[];
 BadBeep[] := (Beep[]; Pause[0.1]; Beep[]);
 ];
-
 
 (**************************************************************************************************)
 

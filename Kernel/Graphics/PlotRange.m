@@ -2,7 +2,7 @@ PrivateFunction[ToSquarePlotRange]
 
 ToSquarePlotRange[{{x1_, x2_}, {y1_, y2_}}] := Scope[
   w = x2 - x1; h = y2 - y1;
-  d2 = Max[w, h] / 2; x = Mean[{x1, x2}]; y = Mean[{y1, y2}];
+  d2 = Max[w, h] / 2; x = Avg[x1, x2]; y = Avg[y1, y2];
   {{x - d2, x + d2}, {y - d2, y + d2}}
 ];
 

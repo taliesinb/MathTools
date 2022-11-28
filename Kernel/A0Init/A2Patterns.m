@@ -101,7 +101,10 @@ $Coord3PairP = {$Coord3P, $Coord3P};
 
 (**************************************************************************************************)
 
-PrivateVariable[$CoordMatP, $CoordMaybeMatP, $CoordMatsP, $CoordMaybeMatsP]
+PrivateVariable[$CoordMatP, $CoordMat2P, $CoordMat3P, $CoordMaybeMatP, $CoordMatsP, $CoordMaybeMatsP]
+
+$CoordMat2P = _List ? CoordinateMatrix2DQ;
+$CoordMat3P = _List ? CoordinateMatrix3DQ;
 
 $CoordMatP = _List ? CoordinateMatrixQ;
 $CoordMaybeMatP = _List ? CoordinateVectorOrMatrixQ;

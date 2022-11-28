@@ -194,56 +194,122 @@ ZerosQ[m_] := FreeQ[m, Complex] && MinMax[m] === {0, 0};
 
 (**************************************************************************************************)
 
-PublicFunction[CoordinateVectorQ]
+PublicFunction[NumericVectorQ, CoordinateVectorQ, CoordinateVector2DQ, CoordinateVector3DQ]
+
+NumericVectorQ[e_List] := VectorQ[e, NumericQ];
 
 CoordinateVectorQ[{Repeated[_ ? NumericQ, {2, 3}]}] := True;
 CoordinateVectorQ[{_ ? NumericQ, _ ? NumericQ}, 2] := True;
 CoordinateVectorQ[{_ ? NumericQ, _ ? NumericQ, _ ? NumericQ}, 3] := True;
+
+CoordinateVector2DQ[{_ ? NumericQ, _ ? NumericQ}] := True;
+CoordinateVector3DQ[{_ ? NumericQ, _ ? NumericQ, _ ? NumericQ}] := True;
+
+NumericVectorQ[___] := False;
 CoordinateVectorQ[___] := False;
+CoordinateVector2DQ[___] := False;
+CoordinateVector3DQ[___] := False;
 
 (**************************************************************************************************)
 
-PublicFunction[CoordinatePairQ]
+PublicFunction[CoordinatePairQ, CoordinatePair2DQ, CoordinatePair3DQ]
 
-CoordinatePairQ[{_, _} ? CoordinateVectorQ] := True;
-CoordinatePairQ[_] := False;
+CoordinatePairQ[{_ ? CoordinateVectorQ, _ ? CoordinateVectorQ}] := True;
+CoordinatePair2DQ[{_ ? CoordinateVector2DQ, _ ? CoordinateVector2DQ}] := True;
+CoordinatePair3DQ[{_ ? CoordinateVector3DQ, _ ? CoordinateVector3DQ}] := True;
 
-(**************************************************************************************************)
-
-PublicFunction[CoordinateMatrixQ]
-
-CoordinateMatrixQ[matrix_, n_:2|3] :=
-  MatrixQ[matrix] && MatchQ[InnerDimension @ matrix, n];
+CoordinatePairQ[___] := False;
+CoordinatePair2DQ[___] := False;
+CoordinatePair3DQ[___] := False;
 
 (**************************************************************************************************)
 
-PublicFunction[CoordinateMatricesQ]
+PublicFunction[NumericMatrixQ, CoordinateMatrixQ, CoordinateMatrix2DQ, CoordinateMatrix3DQ]
 
-CoordinateMatricesQ[list_] :=
-  VectorQ[list, CoordinateMatrixQ];
+NumericMatrixQ[matrix_List] := MatrixQ[matrix, NumericQ];
 
-CoordinateMatricesQ[list_, n_] :=
-  VectorQ[list, CoordinateMatrixQ[#, n]&];
+CoordinateMatrixQ[matrix_List, n_:2|3] := MatrixQ[matrix, NumericQ] && MatchQ[InnerDimension @ matrix, n];
+
+CoordinateMatrix2DQ[matrix_List] := CoordinateMatrixQ[matrix, 2];
+CoordinateMatrix3DQ[matrix_List] := CoordinateMatrixQ[matrix, 3];
+
+NumericMatrixQ[___] := False;
+CoordinateMatrixQ[___] := False;
+CoordinateMatrix2DQ[___] := False;
+CoordinateMatrix3DQ[___] := False;
 
 (**************************************************************************************************)
 
-PublicFunction[CoordinateVectorOrMatrixQ]
+PublicFunction[NumericMatricesQ, CoordinateMatricesQ, CoordinateMatrices2DQ, CoordinateMatrices3DQ]
 
-CoordinateVectorOrMatrixQ[array_] := ArrayQ[array, 1|2] && MatchQ[InnerDimension @ array, 2|3];
+NumericMatricesQ[list_List] := VectorQ[list, NumericMatrixQ];
+
+CoordinateMatricesQ[list_List] := VectorQ[list, CoordinateMatrixQ];
+CoordinateMatricesQ[list_List, 2] := VectorQ[list, CoordinateMatrix2DQ];
+CoordinateMatricesQ[list_List, 3] := VectorQ[list, CoordinateMatrix3DQ];
+CoordinateMatricesQ[list_List, n_] := VectorQ[list, CoordinateMatrixQ[#, n]&];
+
+CoordinateMatrices2DQ[list_List] := VectorQ[list, CoordinateMatrix2DQ];
+CoordinateMatrices3DQ[list_List] := VectorQ[list, CoordinateMatrix3DQ];
+
+NumericMatricesQ[___] := False;
+CoordinateMatricesQ[___] := False;
+CoordinateMatrices2DQ[___] := False;
+CoordinateMatrices3DQ[___] := False;
 
 (**************************************************************************************************)
 
-PublicFunction[CoordinateMatrixOrMatricesQ]
+PublicFunction[NumericVectorOrMatrixQ, CoordinateVectorOrMatrixQ, CoordinateVectorOrMatrix2DQ, CoordinateVectorOrMatrix3DQ]
+
+NumericVectorOrMatrixQ[list_List] := ArrayQ[list, 1|2, NumericQ];
+
+CoordinateVectorOrMatrixQ[array_List, n_:2|3] := NumericVectorOrMatrixQ[array] && MatchQ[InnerDimension @ array, n];
+CoordinateVectorOrMatrix2DQ[array_List] := CoordinateVectorOrMatrixQ[array, 2];
+CoordinateVectorOrMatrix3DQ[array_List] := CoordinateVectorOrMatrixQ[array, 3];
+
+NumericVectorOrMatrixQ[___] := False;
+CoordinateVectorOrMatrixQ[___] := False;
+CoordinateVectorOrMatrix2DQ[___] := False;
+CoordinateVectorOrMatrix3DQ[___] := False;
+
+(**************************************************************************************************)
+
+PublicFunction[NumericMatrixOrMatricesQ, CoordinateMatrixOrMatricesQ, CoordinateMatrixOrMatrices2DQ, CoordinateMatrixOrMatrices3DQ]
+
+NumericMatrixOrMatricesQ[{} | {{}}] := True;
+NumericMatrixOrMatricesQ[e_List] := NumericMatrixQ[e] || NumericMatricesQ[e];
+NumericMatrixOrMatricesQ[___] := False;
 
 CoordinateMatrixOrMatricesQ[{} | {{}}] := True;
-CoordinateMatrixOrMatricesQ[e_] := CoordinateMatrixQ[e] || CoordinateMatricesQ[e];
+CoordinateMatrixOrMatricesQ[e_List] := CoordinateMatrixQ[e] || CoordinateMatricesQ[e];
+CoordinateMatrixOrMatricesQ[e_List, 2] := CoordinateMatrixOrMatrices2DQ[e];
+CoordinateMatrixOrMatricesQ[e_List, 3] := CoordinateMatrixOrMatrices3DQ[e];
+CoordinateMatrixOrMatricesQ[e_List, n_] := CoordinateMatrixQ[e, n] || CoordinateMatricesQ[e, n];
+CoordinateMatrixOrMatricesQ[___] := False;
+
+CoordinateMatrixOrMatrices2DQ[{} | {{}}] := True;
+CoordinateMatrixOrMatrices2DQ[e_List] := CoordinateMatrix2DQ[e] || CoordinateMatrices2DQ[e];
+CoordinateMatrixOrMatrices2DQ[___] := False;
+
+CoordinateMatrixOrMatrices3DQ[{} | {{}}] := True;
+CoordinateMatrixOrMatrices3DQ[e_List] := CoordinateMatrix3DQ[e] || CoordinateMatrices3DQ[e];
+CoordinateMatrixOrMatrices3DQ[___] := False;
 
 (**************************************************************************************************)
 
-PublicFunction[CoordinateArrayQ]
+PublicFunction[NumArrayQ, CoordinateArrayQ, CoordinateArray2DQ, CoordinateArray3DQ]
 
-CoordinateArrayQ[array_, n_:2|3] :=
-  ArrayQ[array, 3] && MatchQ[InnerDimension @ array, n];
+(* we call this NumArrayQ because NumericArrayQ exists in System` and checks whether something is a NumericArray *)
+NumArrayQ[array_List] := ArrayQ[array, _, NumericQ];
+CoordinateArrayQ[array_List, n_:2|3] := ArrayQ[array, 3, NumericQ] && MatchQ[InnerDimension @ array, n];
+
+CoordinateArray2DQ[array_List] := CoordinateArrayQ[array, 2];
+CoordinateArray3DQ[array_List] := CoordinateArrayQ[array, 3];
+
+NumArrayQ[___] := False;
+CoordinateArrayQ[___] := False;
+CoordinateArray2DQ[___] := False;
+CoordinateArray3DQ[___] := False;
 
 (**************************************************************************************************)
 

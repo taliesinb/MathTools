@@ -50,6 +50,13 @@ Protect[Grid]
 
 (**************************************************************************************************)
 
+PublicFunction[PrintGraphicsFormatDefinitions]
+
+PrintGraphicsFormatDefinitions[sym_Symbol] := PrintDefinitions @
+  Select[DownValues[Typeset`MakeBoxes], ContainsQ[sym]];
+
+(**************************************************************************************************)
+
 PrivateFunction[declareGraphicsFormatting]
 
 declareGraphicsFormatting[lhs_ :> rhs_, type_:Graphics|Graphics3D] :=

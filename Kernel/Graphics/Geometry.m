@@ -146,9 +146,30 @@ regionComponentPolygon[region_] := Scope[
 
 PublicFunction[DiscretizeCurve]
 
-DiscretizeCurve[points_, f_:BezierCurve] := Scope[
-  region = DiscretizeGraphics @ f @ ToPacked @ points;
-  ToPacked @ Catenate @ region["EdgeCoordinates"]
+SetUsage @ "
+DiscretizeCurve[points$] gives a discretized path for a %BezierCurve through those points.
+DiscretizeCurve[points$, f$] gives a discretized path for f$[points$].
+DiscretizeCurve[object$] supports the following objects:
+| %Line[$$] | returns the line unchanged |
+| %Circle[$$] | samples the circle as a 32-gon, or between the provided angle endpoints |
+| %BezierCurve[$$] | samples the curve using %DiscretizeGraphics |
+| %BSplineCurve[$$] | as above |
+"
+
+DiscretizeCurve[points_List, f_:BezierCurve] := DiscretizeCurve[f[points]];
+
+DiscretizeCurve[Line[points_]] := ToPackedReal @ points;
+
+DiscretizeCurve[Circle[center:$Coord2P, radius_ ? NumericQ, {t1_ ? NumericQ, t2_ ? NumericQ}]] :=
+  ToPackedReal @ CircleVector[center, radius, DeleteDuplicates @ Append[t2] @ Range[t1, t2, Tau / 32 * Sign[t2 - t1]]];
+
+$tau32 = N @ Append[0] @ Range[0, Tau - 0.01, Tau / 48];
+DiscretizeCurve[Circle[center:$Coord2P, radius_ ? NumericQ]] :=
+  ToPackedReal @ CircleVector[center, radius, $tau32];
+
+DiscretizeCurve[curve:(BezierCurve|BSplineCurve)[___]] := Scope[
+  region = DiscretizeGraphics @ MapAt[ToPacked, curve, 1];
+  ToPackedReal @ Catenate @ region["EdgeCoordinates"]
 ];
 
 (**************************************************************************************************)
