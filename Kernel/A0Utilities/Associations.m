@@ -5,6 +5,24 @@ MergeAssocations[f_, assocs_] :=
 
 (**************************************************************************************************)
 
+PublicFunction[LookupChain]
+
+SetUsage @ "
+LookupChain[dict$, key$] looks up key$ in dict$, returning Automatic if not found.
+LookupChain[dict$1 -> dict$2 -> $$, key$] looks up key$ in dict$1, then in dict$2 if not found, etc.
+LookupChain[spec$, {key$1, key$2, $$}] returns a list of results.
+* Any dict$ can be an association or list of rules.
+"
+
+LookupChain[dict_, keys_] := Lookup[dict, keys, Automatic];
+LookupChain[dict1_ -> dict2_, keys_] := Lookup[dict1, keys, Return[iLookup[dict1 -> dict2, keys], Lookup]];
+
+iLookup[dict1_ -> dict2_, key_] := Lookup[dict1, key, iLookup[dict2, key]];
+iLookup[dict1_ -> dict2_, keys_List] := Map[key |-> Lookup[dict1, key, iLookup[dict2, key]], keys];
+iLookup[dict1_, key_] := Lookup[dict1, key, Automatic];
+
+(**************************************************************************************************)
+
 PublicFunction[AssociationRange, RangeAssociation]
 
 SetRelatedSymbolGroup[AssociationRange, RangeAssociation, RuleRange];

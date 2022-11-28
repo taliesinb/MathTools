@@ -408,6 +408,22 @@ mUnpackOptionsAs[head_, opts_, syms_] :=
 
 (**************************************************************************************************)
 
+PrivateMacro[UnpackAssociationSymbols]
+
+DefineMacro[UnpackAssociationSymbols,
+UnpackAssociationSymbols[assoc_, syms__Symbol] :=
+  mUnpackAssociationSymbols[assoc, {syms}]
+];
+
+SetHoldAllComplete[mUnpackAssociationSymbols];
+mUnpackAssociationSymbols[assoc_, syms_] :=
+  ToQuoted[Set, Quoted[syms], With[{syms2 = Map[Symbol, symbolsToCapitalizedStrings @ syms]}, Quoted[Lookup[assoc, syms2]]]];
+
+mUnpackAssociationSymbols[chain_Rule, syms_] :=
+  ToQuoted[Set, Quoted[syms], With[{syms2 = Map[Symbol, symbolsToCapitalizedStrings @ syms]}, Quoted[LookupChain[chain, syms2]]]];
+
+(**************************************************************************************************)
+
 SetHoldAllComplete[symbolsToCapitalizedStrings];
 
 symbolsToCapitalizedStrings[syms_] := Map[
@@ -415,7 +431,7 @@ symbolsToCapitalizedStrings[syms_] := Map[
   Unevaluated @ syms
 ];
 
-capitalizeFirstLetter[str_String] :=
+capitalizeFirstLetter[str_String] := capitalizeFirstLetter[str] =
   If[StringStartsQ[str, "$"], capitalizeFirstLetter @ StringDrop[str, 1],
     ToUpperCase[StringTake[str, 1]] <> StringDrop[str, 1]];
 
