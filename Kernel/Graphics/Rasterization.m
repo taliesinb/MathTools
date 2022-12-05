@@ -13,6 +13,13 @@ $exportCellOptions = Sequence[
 	GraphicsBoxOptions -> {ImageSize -> Medium}, Graphics3DBoxOptions -> {ImageSize -> Medium}
 ];
 
+(* toExportNotebook[Cell[CellGroupData[cells_, ___], ___] | CellGroupData[cells_, ___], background_] :=
+	Notebook
+ *)
+
+toExportCell[c:(Cell[CellGroupData[cells_, ___], ___] | CellGroupData[cells_, ___]), opts___] :=
+	Notebook[List @ c, opts, ShowCellBracket -> False, CellContext -> "Global`"];
+
 toExportCell[Cell[args___], opts___] :=
 	Cell[args, $exportCellOptions, opts];
 

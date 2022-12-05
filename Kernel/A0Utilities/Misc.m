@@ -8,6 +8,21 @@ Tau = 2 * Pi;
 
 (**************************************************************************************************)
 
+PublicFunction[DeepFirstCase]
+
+SetHoldRest[DeepFirstCase];
+DeepFirstCase[expr_, patt_, except_:None] :=
+  FirstCase[expr, patt, except, Infinity, Heads -> True];
+
+(**************************************************************************************************)
+
+PublicFunction[FloorCeiling]
+
+SetListable[FloorCeiling];
+FloorCeiling[i_] := {Floor @ i, Ceiling @ i}
+
+(**************************************************************************************************)
+
 PublicFunction[Avg]
 
 Avg[] := 0;

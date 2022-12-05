@@ -196,7 +196,10 @@ PrivateFunction[SetInitialValue]
 
 SetHoldAllComplete[SetInitialValue];
 
-SetInitialValue[sym_Symbol, body_] := If[!System`Private`HasImmediateValueQ[sym], sym = body];
+SetInitialValue[sym_Symbol, body_] := If[!System`Private`HasImmediateValueQ[sym],
+  QuiverGeometryPackageLoader`DeclarePreservedVariable[sym];
+  Set[sym, body]
+];
 
 (**************************************************************************************************)
 

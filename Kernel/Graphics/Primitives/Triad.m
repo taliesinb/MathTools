@@ -1,6 +1,6 @@
 PublicHead[Triad]
 
-PublicOption[TriadColor, TriadOpacity, TriadBendOptions, InteriorOffset, TriadEdgeThickness, TriadStrip, TriadArrowhead, TriadStripRadius, TriadLegs, TriadLegColor, TriadLegThickness]
+PublicOption[TriadColor, TriadOpacity, TriadBendOptions, InteriorOffset, TriadEdgeThickness, TriadStrip, TriadArrowhead, TriadStripRadius, TriadLegs, TriadLegColor, TriadLegThickness, TriadLegWidth]
 
 $triadOffset = 0.05;
 
@@ -8,7 +8,7 @@ declareGraphicsFormatting[Triad[p:{$Coord3P, $Coord3P, $Coord3P}, opts___Rule] :
 declareGraphicsFormatting[Triad[p:{$Coord2P, $Coord2P, $Coord2P}, opts___Rule] :> triadBoxes[False, p, opts], Graphics];
 
 Options[Triad] = {
-  TriadBendOptions -> {BendRadius -> 0.1, BendShape -> "Arc"},
+  TriadBendOptions -> {BendRadius -> 0.1, BendShape -> None},
   InteriorOffset -> 0.1,
   TriadColor -> GrayLevel[0, 0.5],
   TriadOpacity -> 1,
@@ -18,7 +18,8 @@ Options[Triad] = {
   TriadArrowhead -> False,
   TriadLegs -> True,
   TriadLegColor -> $Gray,
-  TriadLegThickness -> 3
+  TriadLegThickness -> 3,
+  TriadLegWidth -> None
 };
 
 AssociateTo[$MakeBoxesStyleData, Options[Triad]];
@@ -29,7 +30,7 @@ triadBoxes[is3d_, {a_, b_, c_}, opts___Rule] := Scope[
     {opts} -> $MakeBoxesStyleData,
     triadBendOptions, triadColor, triadOpacity, interiorOffset,
     triadEdgeThickness, triadStrip, triadArrowhead, triadStripRadius, triadLegs, triadLegColor,
-    triadLegThickness
+    triadLegThickness, triadLegWidth
   ];
   triadEdgeColor = Darker[triadColor, .3];
   triadColor = SetColorOpacity[triadColor, triadOpacity];
@@ -39,9 +40,10 @@ triadBoxes[is3d_, {a_, b_, c_}, opts___Rule] := Scope[
     If[triadLegs,
       {oa, ob, oc} = orig;
       legs = MapThread[
-        makeLine[#1, #2, triadLegThickness]&,
+        makeLine[{ClosestPointOnLine[#1, #2], #2}, #3, triadLegThickness, triadLegWidth]&,
         (* use nearest point on line to find the matching point *)
-        {{{Avg[oa, ob], Avg[a, b]}, {Avg[ob, oc], Avg[b, c]}, {Avg[oc, oa], Avg[c, a]}},
+        {{List[oa, ob], List[ob, oc], List[oc, oa]},
+         {Avg[a, b], Avg[b, c], Avg[c, a]},
          triadLegColor * {1, 1, 1}}
       ];
     ];
@@ -60,7 +62,7 @@ triadBoxes[is3d_, {a_, b_, c_}, opts___Rule] := Scope[
 
   points = BendyCurvePoints[{a, b, c}, Lookup[triadBendOptions, BendRadius, .1], Lookup[triadBendOptions, BendShape, "Arc"]];
   polygon = makePolygon[points, triadColor, triadEdgeColor, triadEdgeThickness];
-  edge = makeLine[{a, b, c, a}, triadEdgeColor, triadEdgeThickness];
+  edge = makeLine[{a, b, c, a}, triadEdgeColor, triadEdgeThickness, None];
 
   If[TrueQ @ triadArrowhead,
     arrowhead = arrowheadBoxes[
@@ -81,8 +83,12 @@ offsetToMean[points_, d_] := Scope[
   PointAlongLine[{#, mean}, d]& /@ points
 ];
 
-makeLine[_, 0|0., _] := {};
-makeLine[points_, color_, thickness_] :=
+makeLine[_, _, 0|0., None] := {};
+
+makeLine[points_, color_, thickness_, width_ ? NumericQ] :=
+  ToBoxes[Style[ExtrudedLine[points, width], color]];
+
+makeLine[points_, color_, thickness_, _] :=
   StyleBox[
     Construct[If[$3d, Line3DBox, LineBox], points],
     AbsoluteThickness @ thickness, color

@@ -89,11 +89,11 @@ PrivateVariable[$NumberP, $CoordP, $Coord2P, $Coord3P, $CoordPairP, $Coord2PairP
 
 (* TODO: $Coord2VectorP, etc *)
 
-$NumberP = _ ? NumberQ;
+$NumberP = _ ? NumericQ;
 
-$CoordP = {_ ? NumberQ, _ ? NumberQ} | {_ ? NumberQ, _ ? NumberQ, _ ? NumberQ};
-$Coord2P = {_ ? NumberQ, _ ? NumberQ};
-$Coord3P = {_ ? NumberQ, _ ? NumberQ, _ ? NumberQ};
+$CoordP = {_ ? NumericQ, _ ? NumericQ} | {_ ? NumericQ, _ ? NumericQ, _ ? NumericQ};
+$Coord2P = {_ ? NumericQ, _ ? NumericQ};
+$Coord3P = {_ ? NumericQ, _ ? NumericQ, _ ? NumericQ};
 
 $CoordPairP = _List ? CoordinatePairQ;
 $Coord2PairP = {$Coord2P, $Coord2P};

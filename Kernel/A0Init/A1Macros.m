@@ -20,18 +20,20 @@ Scope[body_, defs__] := mScopeWithDefs[body, {defs}, Block]
 ];
 Protect[Scope];
 
-SetHoldAllComplete[mScopeWithDefs, procScopeDef, quotedSetDelayed];
+SetHoldAllComplete[mScopeWithDefs, procScopeDef, quotedSetDelayed, nocontextName];
+
+$privScope = "QuiverGeometry`Private`";
 
 mScopeWithDefs[body2_, defs2_, type_] := Module[
-  {lhsHeadName, lhsSymbolP, aliasSymbols, held, aliasRules, body, defs},
-  lhsHeadName = Construct[QualifiedSymbolName, First @ $LHSHead];
+  {lhsHeadPrefix, lhsSymbolP, aliasSymbols, held, aliasRules, body, defs},
+  lhsHeadPrefix = StringJoin[$privScope, Replace[$LHSHead, Quoted[s_] :> SymbolName[Unevaluated @ s]], "$"];
   body = Quoted[body2]; defs = Hold[defs2];
   lhsSymbolP = Compose[HoldPattern, Alternatives @@ $LHSPatternSymbols] /. Quoted[q_] :> q;
   aliasRules = DeleteDuplicates @ DeepCases[defs, s:lhsSymbolP :> HoldPattern[s]];
   aliasRules = # -> Apply[GeneralUtilities`Control`PackagePrivate`toAliasedSymbol, #]& /@ aliasRules;
   body = body /. aliasRules;
   defs = defs /. aliasRules;
-  Block[{$lhsHeadName = lhsHeadName, $bodyRules = {}},
+  Block[{$lhsHeadPrefix = lhsHeadPrefix, $bodyRules = {}},
     Apply[procScopeDef, defs //. Quoted[q_] :> q];
     body = body /. $bodyRules;
   ];
@@ -45,14 +47,14 @@ procScopeDef[list_List] := Scan[procScopeDef, Unevaluated @ list];
 procScopeDef[r_RuleDelayed | r_Rule] := AppendTo[$bodyRules, r];
 
 procScopeDef[SetDelayed[head_Symbol[args___], rhs_]] := With[
-  {head2 = Symbol[$lhsHeadName <> "$" <> SymbolName[head]]},
+  {head2 = Symbol @ StringJoin[$lhsHeadPrefix, SymbolName @ Unevaluated @ head]},
   {rule = HoldPattern[head] -> head2},
   AppendTo[$bodyRules, rule];
   SetDelayed @@ ReplaceAll[Hold[head[args], rhs], rule]
 ];
 
 procScopeDef[SetDelayed[head_Symbol[args___][args2___], rhs_]] := With[
-  {head2 = Symbol[$lhsHeadName <> "$" <> SymbolName[head]]},
+  {head2 = Symbol @ StringJoin[$lhsHeadPrefix, SymbolName @ Unevaluated @ head]},
   {rule = HoldPattern[head] -> head2},
   AppendTo[$bodyRules, rule];
   SetDelayed @@ ReplaceAll[Hold[head[args][args2], rhs], rule]

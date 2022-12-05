@@ -73,7 +73,8 @@ Options[SpacedRow] = {
   RiffleItem -> ($srRiffleItem = None),
   FontSize -> ($srLabelFontSize = 15),
   SpliceForms -> ($srSpliceForms = True),
-  ClickFunction -> ($srClickFunction = None)
+  ClickFunction -> ($srClickFunction = None),
+  Background -> ($srBackground = Automatic)
 };
 
 (* this is because i don't trust OptionsPattern to not capture rules used as label specs.
@@ -98,6 +99,7 @@ SpacedRow[elems__, RiffleItem -> item_] := Block[{$srRiffleItem = item}, SpacedR
 SpacedRow[elems__, FontSize -> sz_] := Block[{$srLabelFontSize = sz}, SpacedRow[elems]];
 SpacedRow[elems__, SpliceForms -> b_] := Block[{$srSpliceForms = b}, SpacedRow[elems]];
 SpacedRow[elems__, ClickFunction -> c_] := Block[{$srClickFunction = c}, SpacedRow[elems]];
+SpacedRow[elems__, Background -> b_] := Block[{$srBackground = b}, SpacedRow[elems]];
 
 wrappedItemFunc[f_][EndOfLine] := EndOfLine;
 wrappedItemFunc[f_][e_] := f @ e;
@@ -169,16 +171,19 @@ SpacedRow[elems__] := Scope[
       Alignment -> alignment,
       Spacings -> {{0, hspacings}, {0, vspacings}},
       ItemStyle -> styles,
-      BaseStyle -> $srBaseStyle
+      BaseStyle -> $srBaseStyle,
+      Background -> $srBackground
     ]
   ,
     If[$srTransposed,
       Column[items,
         Spacings -> $srSpacings/20, BaseStyle -> ToList[$srItemStyle, $srBaseStyle],
-        Alignment -> alignment
+        Alignment -> alignment,
+        Background -> $srBackground
       ],
       Row[items, Spacer[$srSpacings],
-        BaseStyle -> ToList[$srItemStyle, $srBaseStyle]
+        BaseStyle -> ToList[$srItemStyle, $srBaseStyle],
+        Background -> $srBackground
       ]
     ]
   ]

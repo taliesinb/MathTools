@@ -14,10 +14,10 @@ boxesToInputText[boxes_] := Scope[
     "AllowExportAutoReplacements" -> False
   ];
   If[!MatchQ[result, {_String, _, _}], ReturnFailed[]];
-  StringReplace[First @ result, {"\\" <> $nl -> "", $sentinel -> $nl}]
+  StringReplace[$sentinel -> $nl] @ StringReplace[{"\\" <> $nl -> "", $nl ~~ " "... -> "", "\t" -> "    "}] @ First @ result
 ];
 
-$sentinel = "^^^^!@@";
+$sentinel = "^^^^!";
 $nl = "\n";
 
 $nlPre = {$nl -> $nl2, $inl -> $inl2};

@@ -7,6 +7,23 @@ ClearAll[EpilogFunction];
 
 (*************************************************************************************************)
 
+QuiverGeometryPackageLoader`$SourceDirectory = DirectoryName @ $InputFileName;
+
+QuiverGeometryPackageLoader`$PackageDirectory = ParentDirectory @ QuiverGeometryPackageLoader`$SourceDirectory;
+
+QuiverGeometryPackageLoader`$LoaderFileName = $InputFileName;
+
+QuiverGeometryPackageLoader`$CurrentFile = None;
+
+QuiverGeometryPackageLoader`$PreservedVariables = {};
+
+Attributes[QuiverGeometryPackageLoader`DeclarePreservedVariable] = {HoldAll};
+QuiverGeometryPackageLoader`DeclarePreservedVariable[var_] :=
+  If[!MemberQ[QuiverGeometryPackageLoader`$PreservedVariables, Hold @ var],
+    AppendTo[QuiverGeometryPackageLoader`$PreservedVariables, Hold @ var]];
+
+(*************************************************************************************************)
+
 (* Fix GU's ability to open files in subl on MacOS *)
 If[$OperatingSystem === "MacOSX",
   GeneralUtilities`Packages`PackagePrivate`$sublimePath = "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl";
@@ -110,19 +127,20 @@ makeResolvedSymbol[name_String] := ToExpression[name, InputForm, ResolvedSymbol]
 
 $lowerCaseSymbolRegex = RegularExpression["[$]?[a-z]"];
 
-$initialSymbolResolutionDispatch = Dispatch[{
+$initialSymbolResolutionDispatch = With[{kernelInit = FileNameJoin[{QuiverGeometryPackageLoader`$PackageDirectory, "Kernel", "init.m"}]}, Dispatch[{
   (* Package`PackageSymbol[name_String] /; StringStartsQ[name, $lowerCaseSymbolRegex] :> RuleCondition[makeResolvedSymbol[name]], *)
   Package`PackageSymbol["SetUsage"][usageString_String]                      :> RuleCondition[rewriteSetUsage[usageString]],
   Package`PackageSymbol[name_String] /; StringMatchQ[name, $coreSymbolRegex] :> RuleCondition[$coreSymbolAssociation[name]],
   Package`PackageSymbol[name_String] /; StringContainsQ[name, "`"]           :> RuleCondition[makeResolvedSymbol[name]],
   Package`PackageSymbol["UAssociation"]                                      :> Data`UnorderedAssociation,
-  Package`PackageSymbol["$PackageFileName"]                                  :> RuleCondition[QuiverGeometryPackageLoader`$CurrentFile],
-  Package`PackageSymbol["$PackageDirectory"]                                 :> RuleCondition[QuiverGeometryPackageLoader`$PackageDirectory],
+  p:Package`PackageSymbol["$PackageFileName"]                                :> RuleCondition[QuiverGeometryPackageLoader`$CurrentFile],
+  p:Package`PackageSymbol["$PackageDirectory"]                               :> RuleCondition[QuiverGeometryPackageLoader`$PackageDirectory],
+  p:Package`PackageSymbol["$PackageInitializer"]                             :> If[DownValues[QuiverGeometryPackageLoader`Load] === {}, Get @ kernelInit],
   p:Package`PackageSymbol["PublicScopedOption"][___]                         :> RuleCondition @ processScopedDeclaration[p, Package`PublicOption, Package`PrivateVariable],
   p:Package`PackageSymbol["PublicFormBox"][___]                              :> RuleCondition @ processFormBoxes[p, Package`PublicForm, Package`PublicFunction],
   p:Package`PackageSymbol["PrivateFormBox"][___]                             :> RuleCondition @ processFormBoxes[p, Package`PrivateForm, Package`PrivateFunction],
   p:Package`PackageSymbol["SystemFormBox"][___]                              :> RuleCondition @ processFormBoxes[p, Package`SystemForm, Package`SystemFunction]
-}];
+}]];
 
 (* turns PublicScopedOption[Foo] into PublicOption[Foo], PrivateVariable[$foo] *)
 processScopedDeclaration[p_, pubFn_, privFn_] :=
@@ -265,7 +283,8 @@ fileSortingTuple[path_] := {
 
 QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled_:True, fullReload_:True] := Block[
   {$directory, $files, $textFiles, $privateSymbols, $systemSymbols, $publicSymbols, $packageExpressions, $packageRules,
-   $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result, requiresFullReload
+   $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result, requiresFullReload,
+   $preservedValues
   },
 
   Off[General::shdw];
@@ -329,10 +348,11 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
     Return[{}];
   ];
 
-  $PreviousPathAlgebra = If[
-    System`Private`HasImmediateValueQ[QuiverGeometry`$PathAlgebra],
-    QuiverGeometry`$PathAlgebra, None];
-
+  $preservedValues = Replace[
+    QuiverGeometryPackageLoader`$PreservedVariables,
+    Hold[sym_] :> RuleCondition @ With[{val = sym}, Hold[Set[sym, val]]],
+    {1}
+  ];
   If[requiresFullReload,
     LVPrint["Clearing all symbols."];
     Construct[ClearAll, mainContext <> "*", mainContext <> "**`*"];
@@ -341,6 +361,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
     LVPrint["Clearing dirty contexts: ", dirtyContexts];
     Apply[ClearAll, Map[# <> "*"&, dirtyContexts]];
   ];
+  Scan[First, $preservedValues];
 
   $systemSymbols = DeleteDuplicates @ Internal`BagPart[$systemSymbols, All];
   $publicSymbols = DeleteDuplicates @ Internal`BagPart[$publicSymbols, All];
@@ -476,16 +497,6 @@ handleMessage[f_Failure] := Block[{fileLine},
 ];
 
 (*************************************************************************************************)
-
-QuiverGeometryPackageLoader`$SourceDirectory = DirectoryName @ $InputFileName;
-
-QuiverGeometryPackageLoader`$PackageDirectory = ParentDirectory @ QuiverGeometryPackageLoader`$SourceDirectory;
-
-QuiverGeometryPackageLoader`$LoaderFileName = $InputFileName;
-
-QuiverGeometryPackageLoader`$CurrentFile = None;
-
-$PreviousPathAlgebra = None;
 
 $lastLoadSuccessful = False;
 

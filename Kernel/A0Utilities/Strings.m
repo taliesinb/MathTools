@@ -3,6 +3,20 @@ PublicFunction[LowerCaseFirst, UpperCaseFirst]
 LowerCaseFirst[str_String] := StringJoin[ToLowerCase @ StringTake[str, 1], StringDrop[str, 1]];
 UpperCaseFirst[str_String] := StringJoin[ToUpperCase @ StringTake[str, 1], StringDrop[str, 1]];
 
+(**************************************************************************************************)
+
+PublicFunction[UpperCaseFirstQ, LowerCaseFirstQ]
+
+SetListable[UpperCaseFirstQ, LowerCaseFirstQ]
+
+UpperCaseFirstQ[""] = False;
+UpperCaseFirstQ[str_String] := UpperCaseQ @ StringTake[str, 1];
+
+LowerCaseFirstQ[""] = False;
+LowerCaseFirstQ[str_String] := LowerCaseQ @ StringTake[str, 1];
+
+(**************************************************************************************************)
+
 PublicFunction[UpperCaseLast, LowerCaseLast]
 
 UpperCaseLast[str_String] := StringJoin[StringDrop[str, -1], ToUpperCase @ StringTake[str, -1]];

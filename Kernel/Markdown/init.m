@@ -101,7 +101,8 @@ setupMarkdownGlobals[] := Quoted[
     $rasterizationPath,
     $rasterizationURL,
     $includeFrontMatter,
-    $frontMatterFunction
+    $frontMatterFunction,
+    $rasterizeInputOutputPairs
   ];
   SetAutomatic[$rasterizationURL, "/raster"];
   flavorFields = Lookup[$flavorData, $markdownFlavor, Message[General::badmdflav, $markdownFlavor]; ReturnFailed[]];
@@ -159,11 +160,16 @@ $rasterizationURL = None;
 PublicScopedOption[RasterizationFunction]
 SetUsage @ "RasterizationFunction is a markdown export option that overrides the default rasterization function used by the current markdown flavor."
 
-PrivateVariable[$genericMarkdownOptions]
-(* these are the core options supported by ToMarkdownString, but that don't involve creating output files *)
-
 PublicScopedOption[EmbedKatexPrelude]
 SetUsage @ "EmbedKatexPrelude is a markdown export option that specifies whether the Katex prelude should be embedded (if True), or linked (if 'Link') at the top of each file."
+
+PublicScopedOption[RasterizeInputOutputPairs]
+SetUsage @ "RasterizeInputOutputPairs is a markdown export option that specifies whether the input / output cell pairs should be rasterized as one unit."
+$rasterizeInputOutputPairs = False;
+
+
+PrivateVariable[$genericMarkdownOptions]
+(* these are the core options supported by ToMarkdownString, but that don't involve creating output files *)
 
 $genericMarkdownOptions = {
   EmbedKatexPrelude -> False,
@@ -174,7 +180,8 @@ $genericMarkdownOptions = {
   RasterizationCaching -> True,
   RasterizationPath -> Automatic,
   RasterizationURL -> None,
-  RasterizationFunction -> Automatic
+  RasterizationFunction -> Automatic,
+  RasterizeInputOutputPairs -> False
 }
 
 (**************************************************************************************************)

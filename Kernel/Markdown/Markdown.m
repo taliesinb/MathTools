@@ -158,6 +158,9 @@ cellToMarkdown = Case[
       Cell[BoxData[{linesR}], s]
     }];
 
+  c:Cell[CellGroupData[{Cell[_, "Input", ___], Cell[_, "Output", ___]}, Open]] /; TrueQ[$rasterizeInputOutputPairs] :=
+    cellToRasterMarkdown @ c;
+
   Cell[e_, style_, ___] :=
     cellToMarkdownInner0 @ Cell[e, style];
 
@@ -232,7 +235,7 @@ cellToMarkdownInner1 = Case[
        
   Cell[code_, "ExternalLanguage"]        := ($lastExternalCodeCell = code; StringJoin["```python\n", code, "\n```"]);
 
-  Cell[b_, "Output"] /; ContainsQ[b, "LinkHand"] := Nothing;
+  (* Cell[b_, "Output"] /; ContainsQ[b, "LinkHand"] := (Beep[]; Nothing); *)
   Cell[b_, "Output"]                     := outputCellToMarkdown @ b;
 
   Cell[s_String, "PythonOutput"]         := plaintextCodeToMarkdown @ s;

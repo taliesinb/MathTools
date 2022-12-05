@@ -102,7 +102,7 @@ LineLineIntersectionPoint[l1_, l2_] := Scope[
   d = DistanceToLine[l1, p];
   scale = Min[EuclideanDistance @@ l1, EuclideanDistance @@ l2];
   If[d <= scale / 10,
-    Mean[p, ClosestPointOnLine[l1, p]],
+    Avg[p, ClosestPointOnLine[l1, p]],
     $Failed
   ]
 ]
@@ -407,6 +407,98 @@ getPointAndVec[coords_, i_] := Scope[
   {p0, p1, p2} = Part[coords, i + {-1, 0, 1}];
   {p1, Normalize @ Avg[p1 - p0, p2 - p1]}
 ]
+
+(**************************************************************************************************)
+
+PublicFunction[VectorListAlongLine]
+
+VectorListAlongLine[{}] := {};
+
+VectorListAlongLine[{a_}] := {{a, a * 0}};
+
+VectorListAlongLine[{a_, b_}] := Scope[
+  d = Normalize[b - a];
+  {{a, d}, {Avg[a, b], d}, {b, d}}
+];
+
+VectorListAlongLine[coords_] := Scope[
+  diffs = Normalize /@ Differences[coords];
+  n = Length[coords];
+  is = Range[1, n, 1/2]; Part[is, -1] = -1; i1 = i2 = 0;
+  Map[toVecListElem, is]
+,
+  toVecListElem[1] := {First @ coords, First @ diffs},
+  toVecListElem[-1] := {Last @ coords, Last @ diffs},
+  toVecListElem[i_Integer] := {Part[coords, i], Normalize @ Mean @ Part[diffs, {i-1, i}]},
+  toVecListElem[i_Rational] := ({i1, i2} = FloorCeiling @ i; {Mean @ Part[coords, {i1, i2}], Part[diffs, i1]})
+];
+
+(**************************************************************************************************)
+
+ToOuterPolygon[poly_] := OuterPolygon @ CanonicalizePolygon[WindingPolygon[poly, "NonzeroRule"], Full];
+
+(**************************************************************************************************)
+
+$cornerPoly = N @ Reverse @ CirclePoints[16];
+ExtrudeLineToPolygon2[coords_, width_] := Scope[
+  d = 0;
+  poly = ToPackedReal @ Join[ApplyWindowed[toRect, coords], Threaded[#] + width * $cornerPoly& /@ Take[coords, {2, -2}]];
+  ToOuterPolygon @ poly
+,
+  toRect[p1_, p2_] := (
+    d = VectorRotate90[Normalize[p2 - p1]] * width;
+    {p1 + d, p2 + d, p2 - d, p1 - d}
+  )
+]
+
+PublicFunction[ExtrudeLineToPolygon, ExtrudeLineToPolygon2]
+
+ExtrudeLineToPolygon[coords_, width_] := Scope[
+  vecs = ToPackedReal @ vectorListAlongLineEdged[N @ coords, width / 32.];
+  {points, dirs} = Transpose @ vecs;
+  left = Threaded[points] + width * VectorRotate90[dirs];
+  right = Threaded[points] + width * VectorRotate90CW[dirs];
+  $failed = False;
+  left //= trimIntersections; right //= trimIntersections;
+  poly = Join[left, Reverse @ right];
+  poly = OuterPolygon @ CanonicalizePolygon[WindingPolygon[poly, "NonzeroRule"], Full];
+  poly
+]
+
+trimIntersections[p_] := Scope[
+  p = p;
+  d = Differences[p];
+  Do[
+    If[Dot[Part[d, i], Part[d, i + 1]] < 0,
+      p0 = LineLineIntersectionPoint[Part[p, i + {0, 1}], Part[p, i + {3, 4}]];
+      If[FailureQ[p0], $failed ^= True, Part[p, i + {1, 2, 3}] = p0];
+    ],
+    {i, 1, Length[p] - 4, 3}
+  ];
+  ToPackedReal @ Map[First, Split[p]]
+]
+
+vectorListAlongLineEdged[{a_, b_}, _] := Scope[
+  d = Normalize[b - a];
+  {{a, d}, {Avg[a, b], d}, {b, d}}
+];
+
+vectorListAlongLineEdged[coords_, w_] := Scope[
+  diffs = Normalize /@ Differences[coords];
+  n = Length[coords];
+  is = Range[1, n]; Part[is, -1] = -1; i1 = i2 = 0;
+  Map[toVecListElem, is]
+,
+  toVecListElem[1] := {First @ coords, First @ diffs},
+  toVecListElem[-1] := {Last @ coords, Last @ diffs},
+  toVecListElem[i_Integer] := Splice @ {
+    {a, b, c} = Part[coords, {i - 1, i, i + 1}];
+    {d1, d2} = Part[diffs, {i - 1, i}];
+    {PointAlongLine[{b, a}, w], d1},
+    {Part[coords, i], Normalize @ Mean @ Part[diffs, {i-1, i}]},
+    {PointAlongLine[{b, c}, w], d2}
+  }
+];
 
 (**************************************************************************************************)
 

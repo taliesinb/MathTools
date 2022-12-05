@@ -35,7 +35,8 @@ DynamicPointGraphics[n_Integer, fn_] := Replace[
   HoldComplete[body_] :>
     DynamicModule @@ Hold[
       {\[FormalX] = CirclePoints[n]},
-      LocatorPane[Dynamic[\[FormalX]], Graphics[Dynamic @ body, PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None]]
+      LocatorPane[Dynamic[\[FormalX]], Graphics[Dynamic @ body, PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None]],
+      Initialization :> $PackageInitializer
     ]
 ];
 
@@ -72,7 +73,8 @@ DynamicPointGraphics[{n_Integer, specSeq__}, fn_] := With[
             PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None
           ]],
           Column[controls]
-        ]
+        ],
+        Initialization :> $PackageInitializer
       ] /. SET -> Set]
   ]
 ];
@@ -177,6 +179,7 @@ PublicHead[MsgExpr]
 
 MsgExpr[p_MsgPath] := p;
 MsgExpr[e_] := ToPrettifiedString[e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0];
+MsgExpr[e_, n_] := ToPrettifiedString[e, MaxDepth -> n, MaxLength -> 4, MaxIndent -> 0];
 
 (**************************************************************************************************)
 

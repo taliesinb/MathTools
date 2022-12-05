@@ -16,7 +16,7 @@ ArrowheadExtrusion -> 0.1
 Options[BendyArrow] = JoinOptions[
   Arrowhead,
   ArrowheadAnchor -> Automatic,
-  ArrowheadPosition -> 0.5,
+  ArrowheadPosition -> Automatic,
   ArrowShaftThickness -> 2,
   ArrowShaftColor -> Black,
   ArrowShaftOpacity -> 1,
@@ -29,6 +29,8 @@ Options[BendyArrow] = JoinOptions[
 
 AssociateTo[$MakeBoxesStyleData, KeyTake[Options[BendyArrow], {ArrowheadPosition, ArrowShaftThickness, ArrowShaftColor, ArrowShaftOpacity, ArrowPathShrinking}]];
 
+PrivateFunction[bendyArrowBoxes]
+
 bendyArrowBoxes[is3d_, points_, opts___Rule] := Scope[
   UnpackAssociationSymbols[
     {opts} -> $MakeBoxesStyleData,
@@ -36,6 +38,7 @@ bendyArrowBoxes[is3d_, points_, opts___Rule] := Scope[
     arrowShaftThickness, arrowShaftColor, arrowShaftOpacity, arrowPathShrinking
   ];
   UnpackAssociationSymbols[{opts} -> {}, arrowheadAnchor];
+  SetAutomatic[arrowheadPosition, 0.5];
   SetAutomatic[arrowheadAnchor, arrowheadPosition];
   SetAutomatic[arrowheadLength, LineLength[points] * 0.1];
   If[NumericQ[arrowPathShrinking], points = ShrinkPolygon[points, arrowPathShrinking]];

@@ -1,6 +1,6 @@
 PrivateFunction[cellToRasterMarkdown]
 
-ToMarkdownString::badimgtemp = "Setting of FileImageTemplate (or StringImageTemplate) did not return a markdown string.";
+ToMarkdownString::badimgtemp = "Setting of FileImageTemplate (or StringImageTemplate) did not return a markdown string: ``.";
 ToMarkdownString::badrastres = "Setting of RasterizationFunction did not return a valid association.";
 
 cellToRasterMarkdown[cell_] := Scope[
@@ -21,8 +21,10 @@ cellToRasterMarkdown[cell_] := Scope[
 
   Switch[rasterizationResult["type"],
     "String",
+      If[$stringImageTemplate === None, Print[MsgExpr[cell], rasterizationResult]];
       markdown = $stringImageTemplate @ rasterizationResult,
     "File",
+      If[$fileImageTemplate === None, Print[MsgExpr[cell], rasterizationResult]];
       markdown = $fileImageTemplate @ rasterizationResult,
     _,
       Message[ToMarkdownString::badrastres];
@@ -30,7 +32,7 @@ cellToRasterMarkdown[cell_] := Scope[
   ];
 
   If[!StringQ[markdown],
-    Message[ToMarkdownString::badimgtemp];
+    Message[ToMarkdownString::badimgtemp, MsgExpr @ markdown];
     markdown = "#### Invalid image template result";
   ];
 
@@ -100,7 +102,7 @@ standardRasterizationFunction[cell_] :=
   cachedGenericRasterize[cell, rasterizeImage, "png", CompressionLevel -> 1];
 
 rasterizeImage[obj_] := Scope[
-  img = CachedFastRasterize[obj];
+  img = If[TrueQ @ $rasterizationCaching, CachedFastRasterize, FastRasterize] @ obj;
   {img, ImageDimensions @ img}
 ]
 

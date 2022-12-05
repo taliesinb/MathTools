@@ -1,6 +1,6 @@
 PublicFunction[ToPrettifiedString]
 
-PublicOption[MaxIndent, MaxDepth, MaxLength, CompactingWidth]
+PublicOption[MaxIndent, MaxDepth, MaxLength, CompactingWidth, InlineHeads, FullSymbolContext]
 
 (* not the same as GeneralUtilities`ToPrettyString *)
 
@@ -8,17 +8,22 @@ Options[ToPrettifiedString] = {
   MaxIndent -> 5,
   MaxDepth -> Infinity,
   MaxLength -> Infinity,
-  CompactingWidth -> 48
+  CompactingWidth -> 48,
+  InlineHeads -> {Quantity, Entity, Interval},
+  FullSymbolContext -> True
 }
 
 ToPrettifiedString[e_, OptionsPattern[]] := Scope[
-  {$maxIndent, $maxWidth, $maxDepth, $maxLength} = OptionValue[{MaxIndent, CompactingWidth, MaxDepth, MaxLength}];
+  {$maxIndent, $maxWidth, $maxDepth, $maxLength, $inlineHeads, $fullSymbolContext} = OptionValue[{MaxIndent, CompactingWidth, MaxDepth, MaxLength, InlineHeads, FullSymbolContext}];
   $ContextPath = {"System`", "QuiverGeometry`", "GeneralUtilities`"};
+  If[!$fullSymbolContext, $ContextPath = Join[$ContextPath, getAllSymbolContexts @ HoldComplete @ e]];
   $depth = 0;
   Block[{FilterOptions}, pretty0[e]]
 ]
 
 $fatHeadP = (_NumericArray | _SparseArray | _Image | _Video | _AnimatedImage | _Graph) ? Developer`HoldAtomQ;
+
+getAllSymbolContexts[e_] := DeepUniqueCases[e, s_Symbol ? Developer`HoldAtomQ :> Context[Unevaluated @ s]];
 
 (**************************************************************************************************)
 
@@ -27,6 +32,8 @@ SetHoldAllComplete[pretty0, pretty1, pretty1wrap, pretty2, prettyRule, prettyRul
 pretty0[e_] /; TrueQ[$depth > $maxDepth] := $ellipsisString;
 
 pretty0[e_] /; TrueQ[$depth == $maxDepth] := prettyDeep[e];
+
+pretty0[e:((s_Symbol)[___])] /; MemberQ[$inlineHeads, HoldPattern @ s] := pretty2[e];
 
 pretty0[e_] := Block[{$depth = $depth + 1},
 
@@ -74,7 +81,7 @@ _List                 := StringJoin["{", $ellipsisString, "}"];
 
 SetHoldAllComplete[symbolString, prettyHead];
 
-symbolString[s_Symbol ? Developer`HoldAtomQ] := SymbolName[Unevaluated @ s];
+symbolString[s_Symbol ? Developer`HoldAtomQ] := If[$fullSymbolContext, ToString[Unevaluated @ s, InputForm], SymbolName[Unevaluated @ s]];
 symbolString[_] := $ellipsisString;
 
 prettyHead[h_[___]] := symbolString[h];

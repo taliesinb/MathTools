@@ -25,6 +25,9 @@ boxToKatex = Case[
   "," := ",";
   " " := " ";
   "_" := "\\_";
+  "->" := " \\to ";
+  "<|" := " \\left<\\left| ";
+  "|>" := " \\right|\\right> ";
   e_String := e;
   
   KatexFunction[s_String] := PrefixSlash @ s;
