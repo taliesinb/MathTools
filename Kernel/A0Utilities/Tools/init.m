@@ -82,10 +82,13 @@ RunTool[args1___, WorkingDirectory -> dir_, args2___] := Block[{$wdir = Normaliz
 $oto = Automatic;
 RunTool[args1___, OpenToolOutput -> oto_, args2___] := Block[{$oto = oto}, RunTool[args1, args2]];
 
+RunTool::badrp = "RunProcess failed to return an association, returned: ``"
+
 RunTool[cmd_, args___] := Scope @ Block[{$verbose = ReplaceAutomatic[$tverbose, $dryRun]},
 	cmdPath = findTool[cmd];
 	args = procArg /@ {args};
-	argStr = StringRiffle[Flatten[{cmdPath, args}], " "];
+	args2 = BashEscape /@ args;
+	argStr = StringRiffle[Flatten[{cmdPath, args2}], " "];
 	If[$inTerm,
 		RunInTerminalWindow[If[StringQ[$wdir], $wdir, "~"], argStr];
 		Return @ True
@@ -94,16 +97,16 @@ RunTool[cmd_, args___] := Scope @ Block[{$verbose = ReplaceAutomatic[$tverbose, 
 	argStr2 = argStr <> " &>" <> tmpOut;
 	If[$wdir =!= None,
 		VPrint["Running \"", argStr, "\" in ", MsgPath @ $wdir];
-		If[$dryRun, res = 0, Internal`WithLocalSettings[SetDirectory[$wdir], res = Run @ argStr2, ResetDirectory[]]];
+		If[$dryRun, exitCode = 0, Internal`WithLocalSettings[SetDirectory[$wdir], exitCode = RunUTF8 @ argStr2, ResetDirectory[]]];
 	,
 		VPrint["Running \"", argStr, "\""];
-		res = If[$dryRun, 0, Run @ argStr2];
+		exitCode = If[$dryRun, 0, RunUTF8 @ argStr2];
 	];
-	success = res === 0;
+	success = exitCode === 0;
 	showOut = $oto;
 	SetAutomatic[showOut, !success];
 	If[TrueQ[showOut],
-		stream = OpenAppend[tmpOut];
+		stream = OpenAppend[tmpOut, CharacterEncoding -> "UTF8"];
 		WriteLine[stream, "#### tool input follows ####"];
 		If[$wdir =!= None, WriteLine[stream, "cd \"" <> $wdir <> "\""]];
 		WriteLine[stream, argStr];
@@ -116,7 +119,26 @@ RunTool[cmd_, args___] := Scope @ Block[{$verbose = ReplaceAutomatic[$tverbose, 
 procArg[_ -> (Automatic|None)] := Nothing;
 procArg[k_String -> v_] := k <> "=" <> procArg[v];
 procArg[e_] := procArg @ TextString[e];
-procArg[e_String] := If[StringContainsQ[e, " "], "\"" <> e <> "\"", e];
+procArg[e_String] := e;
+
+(**************************************************************************************************)
+
+PublicFunction[RunUTF8]
+
+$tmpBashFile = FileNameJoin[{$TemporaryDirectory, "qg.sh"}];
+
+RunUTF8[str_String] /; ASCIIQ[str] := Run[str];
+RunUTF8[str_String] := (
+	ExportUTF8[$tmpBashFile, str];
+	FilePrint[$tmpBashFile];
+	Run["/bin/bash -e " <> $tmpBashFile]
+);
+
+(**************************************************************************************************)
+
+PublicFunction[BashEscape]
+
+BashEscape[s_String] := If[MatchQ[s, ASCIIWord], s, StringJoin["'", StringReplace[s, {"'" -> "\\'", "\\" -> "\\\\"}], "'"]];
 
 (**************************************************************************************************)
 
