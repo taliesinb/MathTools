@@ -52,6 +52,7 @@ GraphicsPrimitivesQ = Case[
   (Polygon|Polyhedron)[_, $CoordMaybeMatsP]         := True;
   (Text|Inset)[_, $CoordP, ___]                     := True;
   $ColorPattern | _Opacity                          := True;
+  head_Symbol[___] /; TrueQ[$customGraphicsHeadQ @ head] := True;
   e_                                               := GraphicsDirectiveQ[e]
 ];
 

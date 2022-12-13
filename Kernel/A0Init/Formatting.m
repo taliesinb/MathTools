@@ -59,9 +59,15 @@ PrintGraphicsFormatDefinitions[sym_Symbol] := PrintDefinitions @
 
 PrivateFunction[declareGraphicsFormatting]
 
-declareGraphicsFormatting[lhs_ :> rhs_, type_:Graphics|Graphics3D] :=
-  Typeset`MakeBoxes[expr:lhs, StandardForm | TraditionalForm, type] :=
-    Construct[InterpretationBox, rhs, expr];
+PrivateSymbol[$customGraphicsHeadQ]
+
+$customGraphicsHeadQ = <||>;
+
+declareGraphicsFormatting[lhs_ :> rhs_, type_:Graphics|Graphics3D] := With[
+  {lhsHead = First @ PatternHead @ lhs},
+  $customGraphicsHeadQ[lhsHead] = True;
+  Typeset`MakeBoxes[expr:lhs, StandardForm | TraditionalForm, type] := Construct[InterpretationBox, rhs, expr]
+];
 
 declareGraphicsFormatting[list_List, type_:Graphics|Graphics3D] :=
   Scan[declareGraphicsFormatting[#, type]&, list];

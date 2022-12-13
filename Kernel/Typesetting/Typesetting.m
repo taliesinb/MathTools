@@ -40,9 +40,9 @@ PublicFormBox[Click]
 SetHoldRest[ClickForm, ClickBox];
 
 MakeBoxes[ClickForm[elem_, fn_], form_] := ClickBox[MakeBoxes[elem, form], fn];
-(* MakeBoxes[ClickForm[elem_, fn_], TraditionalForm] := ClickBox[MakeBoxes[elem, TraditionalForm], fn];
- *)
 Typeset`MakeBoxes[ClickForm[elem_, fn_], form_, type:Graphics|Graphics3D] := ClickBox[Typeset`MakeBoxes[elem, form, type], fn];
+
+$customGraphicsHeadQ[ClickBox] = True;
 
 ClickBox[box_, body_] := TagBox[
   TagBox[box, EventHandlerTag[{"MouseClicked" :> body, Method -> "Preemptive", PassEventsDown -> Automatic, PassEventsUp -> True}]],
@@ -53,16 +53,44 @@ ClickBox[box_, body_] := TagBox[
 
 PublicFunction[NiceTooltip]
 
-NiceTooltip[g_, None] := g;
+MakeBoxes[NiceTooltip[a_, b_], form_] := NiceTooltipBoxes[MakeBoxes[a, form], MakeBoxes[b, form]];
+MakeBoxes[NiceTooltip[a_, None], form_] := MakeBoxes[a, Form];
 
-NiceTooltip[g_, e_] :=
-  Tooltip[g,
-    Pane[e, 20, BaseStyle -> {FontSize -> 15, "Output"},
-      ImageMargins -> {{10, 10}, {5, 5}}, ImageSize -> {{30, 300}, {30, 300}},
-      Alignment -> Center
-    ],
-    TooltipStyle -> {Background -> White, CellFrameColor -> None, CellFrame -> 0}
+Typeset`MakeBoxes[NiceTooltip[a_, b_], form_, graphics_] := NiceTooltipBoxes[Typeset`MakeBoxes[a, form, graphics], MakeBoxes[b, form]];
+Typeset`MakeBoxes[NiceTooltip[a_, None], form_, graphics_] := MakeBoxes[a, form, graphics];
+
+$customGraphicsHeadQ[NiceTooltip] = True;
+
+(**************************************************************************************************)
+
+PublicFunction[Flipper]
+
+MakeBoxes[Flipper[a_, b_], form_] := FlipperBoxes[MakeBoxes[a, form], MakeBoxes[b, form]];
+
+FlipperBoxes[a_, b_] :=
+  DynamicModuleBox[
+    {flippervar$$ = 1},
+    TagBox[TagBox[
+      PaneSelectorBox[{1 -> a,  2 -> b}, Dynamic[flippervar$$], ImageSize -> Automatic, ImageMargins -> 5],
+      EventHandlerTag[{"MouseClicked" :> Set[flippervar$$, Mod[flippervar$$ + 1, 2, 1]]}]
+    ], MouseAppearanceTag["LinkHand"]],
+    DynamicModuleValues -> {flippervar$$}
   ];
+
+(**************************************************************************************************)
+
+PrivateFunction[NiceTooltipBoxes]
+
+NiceTooltipBoxes[a_, b_] := TooltipBox[a,
+  PaneBox[b,
+    BaseStyle -> {FontSize -> 15, "Output"},
+    ImageMargins -> {{5, 5}, {5, 5}},
+    ImageSize -> {{30, 300}, {30, 300}}, Alignment -> Center,
+    ImageSize -> 20
+  ],
+  TooltipStyle -> {Background -> GrayLevel[1], CellFrameColor -> None, CellFrame -> 0},
+  TooltipDelay -> 0
+] ~TagBox~ MouseAppearanceTag["Arrow"];
 
 (**************************************************************************************************)
 
