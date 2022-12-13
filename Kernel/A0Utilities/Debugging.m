@@ -141,6 +141,15 @@ debugStr[lhs_] := ToPrettifiedString[Unevaluated @ lhs, MaxDepth -> 4, MaxLength
 
 (**************************************************************************************************)
 
+PublicFunction[FindDefinitionsContaining]
+
+FindDefinitionsContaining[context_, pattern_] := Scope[
+  symbols = Names[{context <> "*", context <> "**`*"}];
+  Select[ContainsQ[pattern]] @ Catenate @ Map[Definitions, symbols]
+]
+
+(**************************************************************************************************)
+
 PublicFunction[FindMatchingDownValue]
 
 SetHoldAllComplete[FindMatchingDownValue]
@@ -151,7 +160,6 @@ FindMatchingDownValue[head_Symbol[args___]] := Block[
   res = head[args];
   If[res === None, Return @ None];
   If[!IntegerQ[res], Return[$Failed]];
-  Print[res];
   Part[dvs, res]
 ];
 
@@ -180,6 +188,7 @@ PublicHead[MsgExpr]
 MsgExpr[p_MsgPath] := p;
 MsgExpr[e_] := ToPrettifiedString[e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0];
 MsgExpr[e_, n_] := ToPrettifiedString[e, MaxDepth -> n, MaxLength -> 4, MaxIndent -> 0];
+MsgExpr[e_, n_, m_] := ToPrettifiedString[e, MaxDepth -> n, MaxLength -> m, MaxIndent -> 0];
 
 (**************************************************************************************************)
 
