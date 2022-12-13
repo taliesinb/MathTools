@@ -647,3 +647,45 @@ OnFailed[e_, _] := e;
 
 OnFailed[$Failed, e_, _] := e;
 OnFailed[e_, _, s_] := s;
+
+(**************************************************************************************************)
+
+PrivateFunction[declareStringPattern, declareStringLetterPattern, spRecurse, spBlob]
+
+declareStringLetterPattern = Case[
+  sym_Symbol -> str_String := %[sym -> {"[" <> str <> "]", str}];
+  sym_Symbol -> {outer_, inner_} := Module[{},
+    StringPattern`Dump`SingleCharInGroupRules //= addOrUpdateRule[sym -> inner];
+    StringPattern`Dump`SingleCharacterQ[Verbatim[sym]] := True;
+    StringPattern`Dump`rules //= addOrUpdateRule[sym -> outer];
+    StringPattern`Dump`$StringPatternObjects //= appendIfAbsent[Hold @ sym];
+  ];
+  Sequence[rules__] := Scan[%, {rules}];
+];
+
+$spDeclarationRules = {
+  s_String /; StringContainsQ[s, "□"] :> RuleCondition @ StringReplace[s, "□" :> "[^\n]+?"],
+  spRecurse[s_] :> ReplaceRepeated[s, StringPattern`Dump`rules],
+  spBlob -> StringPattern`Dump`SP
+}
+
+declareStringPattern = Case[
+  rule_RuleDelayed := Module[
+    {rule2 = rule /. $spDeclarationRules},
+    StringPattern`Dump`rules //= addOrUpdateRule[MapAt[HoldPattern, rule2, 1]];
+  ];
+  Sequence[rules__] := Scan[%, {rules}];
+];
+
+appendIfAbsent[item_][list_] :=
+  If[MemberQ[list, Verbatim @ item], list, Append[list, item]];
+
+addOrUpdateRule[list_List, rule:(_[lhs_, rhs_])] := Module[{pos},
+  pos = Position[list, (Rule|RuleDelayed)[Verbatim[lhs], _], {1}];
+  If[pos === {},
+    Append[list, rule],
+    ReplacePart[list, pos -> rule]
+  ]
+]
+
+addOrUpdateRule[rule_][list_] := addOrUpdateRule[list, rule];

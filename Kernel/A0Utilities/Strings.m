@@ -61,6 +61,13 @@ StringFindDelimitedPosition[str_, {start_, mid_, stop_}] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[StringDeepCases]
+
+StringDeepCases[expr_, pattern_] := Catenate @ DeepCases[expr, s_String :> StringCases[s, pattern]];
+StringDeepCases[pattern_][expr_] := StringDeepCases[expr, pattern];
+
+(**************************************************************************************************)
+
 PublicFunction[FirstStringCase]
 
 SetHoldRest[FirstStringCase];
@@ -161,3 +168,90 @@ StringTrimRight[right_][str_] := StringTrimRight[str, right];
 StringTrimLeftRight[str_String, left_, right_] := StringDelete[StringDelete[str, StartOfString ~~ left], right ~~ EndOfString];
 StringTrimLeftRight[list_List, left_, right_] := Map[StringTrimLeftRight[#, left, right]&, list];
 StringTrimLeftRight[left_, right_][str_] := StringTrimLeftRight[str, left, right];
+
+(**************************************************************************************************)
+
+PublicVariable[$LowercaseGreekLetters, $UppercaseGreekLetters, $GreekLetters]
+
+$LowercaseGreekLetters = "\[Alpha]\[Beta]\[Gamma]\[Delta]\[CurlyEpsilon]\[Epsilon]\[Zeta]\[Eta]\[Theta]\[Iota]\[Kappa]\[Lambda]\[Mu]\[Nu]\[Xi]\[Pi]\[Rho]\[Sigma]\[Tau]\[CurlyPhi]\[Phi]\[Chi]\[Psi]\[Omega]";
+$UppercaseGreekLetters = "\[CapitalGamma]\[CapitalPi]\[CapitalSigma]\[CapitalOmega]\[CapitalPhi]";
+$GreekLetters = StringJoin[$LowercaseGreekLetters, $UppercaseGreekLetters];
+
+(**************************************************************************************************)
+
+PublicSymbol[ASCIILetter, LowercaseLetter, UppercaseLetter, LowercaseGreekLetter, UppercaseGreekLetter, GreekLetter, DoubleQuote]
+
+declareStringLetterPattern[
+  ASCIILetter -> "a-zA-Z0-9",
+  LowercaseLetter -> "[:lower:]",
+  UppercaseLetter -> "[:upper:]",
+  LowercaseGreekLetter -> $LowercaseGreekLetters,
+  UppercaseGreekLetter -> $UppercaseGreekLetters,
+  GreekLetter -> $GreekLetters,
+  DoubleQuote -> "\""
+];
+
+(**************************************************************************************************)
+
+PublicSymbol[ASCIIWord, LowercaseWord, TitlecaseWord, TitlecasePhrase]
+
+declareStringPattern[
+  Word :> """\b(?:[[:alpha:]]+?)(?:'s|n't)?\b""",
+  ASCIIWord :> """\b(?:[a-zA-Z0-9]+?)\b""",
+  LowercaseWord :> "\\b[[:lower:]]+\\b",
+  TitlecaseWord :> "\\b[[:upper:]][[:lower:]]+\\b",
+  TitlecasePhrase :> """\b[[:upper:]][[:lower:]]+(?: (?:of |or |and |in |on |the |by |a |the )?[[:upper:]][[:lower:]]+)*\b"""
+];
+
+(**************************************************************************************************)
+
+PublicHead[Maybe, NegativeLookbehind, NegativeLookahead, PositiveLookbehind, PositiveLookahead]
+
+declareStringPattern[
+  Maybe[lhs_]              :> spBlob @ StringPattern`Dump`QuestionMark @ spRecurse @ lhs,
+  NegativeLookbehind[lhs_] :> spBlob["(?<!", spRecurse @ lhs, ")"],
+  PositiveLookbehind[lhs_] :> spBlob["(?<=", spRecurse @ lhs, ")"],
+  NegativeLookahead[lhs_]  :> spBlob["(?!", spRecurse @ lhs, ")"],
+  PositiveLookahead[lhs_]  :> spBlob["(?=", spRecurse @ lhs, ")"]
+];
+
+(**************************************************************************************************)
+
+PublicHead[LineFragment, DelineatedPhrase, ParentheticalPhrase, SingleQuotedPhrase, DoubleQuotedPhrase, HyperlinkPattern]
+
+(* tested on https://regex101.com *)
+(* $hyperlinkRegexp = """(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))"""; *)
+
+(* $textFragment = "(?:(?:[[:alnum:]][[:alnum:] ?!,;()'\"-]*[[:alnum:]])|[[:alnum:]])"; *)
+
+declareStringPattern[
+  LineFragment             :> spBlob["[^\n]*"],
+  (* TextFragment             :> spBlob[$textFragment], *)
+  DelineatedPhrase[l_, r_] :> spBlob[spRecurse @ l, "[^\n]*?", spRecurse @ r],
+  ParentheticalPhrase      :> spBlob["""(?<!\S)\(□\)"""],
+  SingleQuotedPhrase       :> spBlob["""(?<!\S)(?:'□')|(?:‘□’)"""],
+  DoubleQuotedPhrase       :> spBlob["""(?<!\S)(?:"□")|(?:“□”)"""],
+  HyperlinkPattern         :> spBlob["""(?<!\S)https?://[[:alnum:]-]+(?:\.[[:alnum:]-]+)*(?:/[[:alnum:]-_]*)*(?:\?[[:alnum:]=&+%-]+)?"""]
+];
+
+(**************************************************************************************************)
+
+PublicHead[MarkdownHeadingPattern, MarkdownNoteLinkPattern, MarkdownHyperlinkPattern, MarkdownInlineCodePattern, MarkdownBlockCodePattern, MarkdownEmphasisPattern]
+
+$emphasisFragment = StringReplace["""(?:(?:\*Z\*)|(?:/Z/)|(?:(?<!\S)_Z_(?!\S)))""", "Z" -> """(?:(?:\S[^\n]*?\S)|\S)"""];
+
+declareStringPattern[
+  MarkdownHeadingPattern    :> "^#{1,4} (?:[^\n])+$",
+  MarkdownNoteLinkPattern   :> "\\[\\[□\\]\\]",
+  MarkdownHyperlinkPattern  :> "\\[□\\]\\(http[^ \n]+\\)",
+  MarkdownInlineCodePattern :> "`□`",
+  MarkdownBlockCodePattern  :> "^```[^`]+\n```",
+  MarkdownEmphasisPattern   :> $emphasisFragment
+];
+
+(**************************************************************************************************)
+
+PublicFunction[SingleLetterQ]
+
+SingleLetterQ[s_String] := StringLength[s] == 1;
+SingleLetterQ[_] := False;
