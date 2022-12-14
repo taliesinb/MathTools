@@ -14,20 +14,13 @@ ArrowheadExtrusion -> 0.1
 *)
 
 Options[BendyArrow] = JoinOptions[
-  Arrowhead,
-  ArrowheadAnchor -> Automatic,
-  ArrowheadPosition -> Automatic,
-  ArrowShaftThickness -> 2,
-  ArrowShaftColor -> Black,
-  ArrowShaftOpacity -> 1,
-  ArrowPathShrinking -> None,
-  BendRadius -> 0.1,
-  BendShape -> "Arc"
+  $extendedArrowOptions,
+  $bendOptions
 ];
 
 (* ArrowShaftColor -> Inherited will use the current stroke color etc *)
 
-AssociateTo[$MakeBoxesStyleData, KeyTake[Options[BendyArrow], {ArrowheadPosition, ArrowShaftThickness, ArrowShaftColor, ArrowShaftOpacity, ArrowPathShrinking}]];
+(**************************************************************************************************)
 
 PrivateFunction[bendyArrowBoxes]
 
@@ -49,6 +42,6 @@ bendyArrowBoxes[is3d_, points_, opts___Rule] := Scope[
   arrowhead = arrowheadBoxes[pos, dir,
     ArrowheadPlane -> PlaneRightTowards[center],
     ArrowheadLength -> arrowheadLength, ArrowheadAnchor -> arrowheadAnchor, opts];
-  {line, TooltipBox[arrowhead, ToBoxes @ arrowheadAnchor]}
+  {line, arrowhead}
 ]
 

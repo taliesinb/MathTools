@@ -130,6 +130,7 @@ pretty1 = Case[
   e:$fatHeadP                    := pretty2[e];
   e:(_Symbol[])                  := pretty2[e];
   head_Symbol[args___]           := indentedBlock[pretty2[head] <> "[", MapUnevaluated[pretty0, {args}], "]"];
+  head_[args___]                 := indentedBlock[pretty1[head] <> "[", MapUnevaluated[pretty0, {args}], "]"];
   atom_ ? Developer`HoldAtomQ    := pretty2[atom];
 ,
   {HAQ -> ? Developer`HoldAtomQ, $fatHeadP}

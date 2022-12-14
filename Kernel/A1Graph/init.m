@@ -6,7 +6,7 @@ PublicOption[ArrowheadShape, ArrowheadSize, ArrowheadStyle, ArrowheadPosition, T
 
 PublicOption[VertexColorFunction, EdgeColorFunction, VertexColorRules, EdgeColorRules, RegionColorRules]
 
-PublicOption[VertexTooltips, VertexClickFunction, EdgeTooltips]
+PublicOption[VertexTooltips, VertexClickFunction, EdgeTooltips, EdgeOpacity, VertexOpacity]
 
 PublicOption[CardinalColors, CardinalColorRules, CardinalColorFunction]
 
@@ -53,6 +53,7 @@ $extendedGraphOptionsRules = {
   ArrowheadShape                      -> Automatic,
   ArrowheadSize                       -> 15,
   ArrowheadStyle                      -> Automatic,
+  ArrowheadOpacity                    -> None,
   AspectRatioClipping                 -> True,
   CardinalColorFunction               -> None,
   CardinalColorRules                  -> None,
@@ -73,6 +74,7 @@ $extendedGraphOptionsRules = {
   EdgeThickness                       -> Automatic,
   EdgeTooltips                        -> None,
   EdgeLength                          -> None,
+  EdgeOpacity                         -> 0.18,
   EpilogFunction                      -> None,
   ExtendImagePadding                  -> True,
   FrameFade                           -> None,
@@ -108,6 +110,7 @@ $extendedGraphOptionsRules = {
   VertexLabelSpacing                  -> 0,
   VertexLabelOrientation              -> Automatic,
   VertexLayout                        -> Automatic,
+  VertexOpacity                       -> 1,
   VertexOverlapResolution             -> None,
   VertexTooltips                      -> None,
   ViewOptions                         -> Automatic,

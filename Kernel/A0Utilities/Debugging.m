@@ -1,8 +1,8 @@
 PrivateFunction[VPrint]
 
 SetHoldAllComplete[VPrint];
-VPrint[args___] /; TrueQ[$verbose] :=
-  Print[If[TrueQ[$dryRun], Style["> ", LightGray], ""], args];
+VPrint[args___] :=
+  If[TrueQ[$verbose], Print[If[TrueQ[$dryRun], Style["> ", LightGray], ""], args]];
 
 (**************************************************************************************************)
 

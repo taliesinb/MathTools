@@ -35,3 +35,46 @@ Typeset`MakeBoxes[Style[System`Dump`x_, System`Dump`y___], System`Dump`fmt_, Sys
         Typeset`Hold[StyleBox[System`Dump`g, System`Dump`h, StripOnInput -> False]]
     ]
   ];
+
+(**************************************************************************************************)
+
+PrivateVariable[$arrowheadOptions]
+
+$arrowheadOptions = {
+  ArrowheadPlane -> None,
+  ArrowheadLength -> Automatic,
+  ArrowheadShape -> "EquilateralTriangle",
+  ArrowheadColor -> GrayLevel[0.5],
+  ArrowheadAnchor -> 0.5,
+  ArrowheadOpacity -> None,
+  ArrowheadEdgeThickness -> 1
+}
+
+(**************************************************************************************************)
+
+PrivateVariable[$extendedArrowOptions]
+
+$extendedArrowOptions = JoinOptions[
+  $arrowheadOptions,
+  ArrowheadAnchor -> Automatic,
+  ArrowheadPosition -> Automatic,
+  ArrowShaftThickness -> 2,
+  ArrowShaftColor -> Black,
+  ArrowShaftOpacity -> 1,
+  ArrowPathShrinking -> None
+];
+
+AssociateTo[$MakeBoxesStyleData, $extendedArrowOptions];
+
+(**************************************************************************************************)
+
+PrivateVariable[$bendOptions]
+
+$bendOptions = {
+  BendRadius -> 0.1,
+  BendShape -> "Arc"
+};
+
+(**************************************************************************************************)
+
+AssociateTo[$MakeBoxesStyleData, KeyTake[Options[BendyArrow], {ArrowheadPosition, ArrowShaftThickness, ArrowShaftColor, ArrowShaftOpacity, ArrowPathShrinking}]];

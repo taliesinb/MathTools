@@ -1,4 +1,4 @@
-If[!TrueQ[QuiverGeometryPackageLoader`$menuModified],
+If[!TrueQ[QuiverGeometryPackageLoader`$menuModified] && $FrontEnd =!= Null,
 With[{qgPath = QuiverGeometryPackageLoader`$initFile},
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["CDFPreview", {
     Delimiter,
@@ -38,5 +38,3 @@ With[{qgPath = QuiverGeometryPackageLoader`$initFile},
   }]];
   QuiverGeometryPackageLoader`$menuModified = True;
 ]];
-
-"Balance"

@@ -8,27 +8,19 @@ Arrowhead[pos$, dir$] is a graphics primitive that renders as an arrowhead begin
 | ArrowheadShape | the shape of the arrowhead, as a string |
 | ArrowheadColor | the color of the arrowhead |
 | ArrowheadAnchor | anchor point of the arrowhead on the position, ranging from 0 (back) to 1 (front) |
+| ArrowheadOpacity | opacity of the arrowhead |
 "
 
-PublicOption[ArrowheadPlane, ArrowheadLength, ArrowheadShape, ArrowheadColor, ArrowheadAnchor, ArrowheadEdgeThickness]
+PublicOption[ArrowheadPlane, ArrowheadLength, ArrowheadShape, ArrowheadColor, ArrowheadAnchor, ArrowheadEdgeThickness, ArrowheadOpacity, ArrowheadTooltip]
 
-Options[Arrowhead] = {
-  ArrowheadPlane -> None,
-  ArrowheadLength -> Automatic,
-  ArrowheadShape -> "EquilateralTriangle",
-  ArrowheadColor -> GrayLevel[0.5],
-  ArrowheadAnchor -> 0.5,
-  ArrowheadEdgeThickness -> 1
-}
-
-AssociateTo[$MakeBoxesStyleData, Options[Arrowhead]];
+Options[Arrowhead] = $arrowheadOptions;
 
 declareGraphicsFormatting[Arrowhead[pos:$Coord2P, dir:$Coord2P, rest___Rule]  :> arrowheadBoxes[pos, dir, rest], Graphics];
 declareGraphicsFormatting[Arrowhead[pos:$Coord3P, dir:$Coord3P, rest___Rule]  :> arrowheadBoxes[pos, dir, rest], Graphics3D];
 
 (**************************************************************************************************)
 
-Arrowhead::badshape = "`` is not a valid setting of ArrowheadShape."
+Arrowhead::badshape = "`` is not a valid setting of ArrowheadShape, which should be one of ``."
 
 PrivateFunction[arrowheadBoxes]
 
@@ -36,22 +28,29 @@ arrowheadBoxes[pos_, dir_, opts___Rule] := Scope[
   UnpackAssociationSymbols[
     {opts} -> $MakeBoxesStyleData,
     arrowheadPlane, arrowheadLength, arrowheadShape, arrowheadColor, arrowheadAnchor,
-    arrowheadEdgeThickness, arrowheadEdgeColor
+    arrowheadEdgeThickness, arrowheadEdgeColor, arrowheadOpacity
   ];
+  tooltip = Lookup[{opts}, ArrowheadTooltip, None];
+  SetAutomatic[arrowheadOpacity, None];
   SetAutomatic[arrowheadLength, Norm @ dir];
   {dx, dy} = resolvePlane[pos, dir, arrowheadPlane, arrowheadLength];
-  If[Max[Abs[dx]] < .0001 || arrowheadShape === "Cone",
+  is3d = InnerDimension[pos] === 3;
+  If[is3d && (Max[Abs[dx]] < .0001 || arrowheadShape === "Cone"),
     pos2 = pos - arrowheadAnchor * dy;
     polygon = Construct[ConeBox, ToPacked @ {pos2, pos2 + dy}, arrowheadLength * 0.333];
   ,
-    points = Lookup[$arrowheadShapes, arrowheadShape, Message[Arrowhead::badshape, arrowheadShape]; Return[{}]];
+    points = Lookup[$arrowheadShapes, arrowheadShape, Message[Arrowhead::badshape, arrowheadShape, StringRiffle[Keys @ $arrowheadShapes, ", "]]; Return[{}]];
     polygon = toOrientedPolygon[pos, dx, dy, points, arrowheadAnchor];
   ];
   edgeColor = Darker[arrowheadColor, .2];
-  StyleBox[polygon,
-    FaceForm[{Sequence @@ Color3D @ arrowheadColor}],
-    If[arrowheadEdgeThickness == 0, EdgeForm[None], EdgeForm[{AbsoluteThickness[arrowheadEdgeThickness], edgeColor}]]
-  ]
+  opacity = If[NumericQ[arrowheadOpacity], Opacity @ arrowheadOpacity, Sequence @@ {}];
+  boxes = StyleBox[polygon,
+    opacity,
+    If[arrowheadColor === None, FaceForm @ None, If[is3d, FaceForm[{Sequence @@ Color3D @ arrowheadColor}], FaceForm @ arrowheadColor]],
+    If[arrowheadEdgeThickness == 0, EdgeForm @ None, EdgeForm[{AbsoluteThickness[arrowheadEdgeThickness], opacity, edgeColor}]]
+  ];
+  If[tooltip =!= None, boxes = NiceTooltipBoxes[boxes, ToBoxes @ tooltip]];
+  boxes
 ]
 
 toOrientedPolygon[pos_, dx_, dy_, points_, anchor_] :=
@@ -68,9 +67,13 @@ $arrowheadShapes = <|
   "LeftWideTriangle"         -> {{-1, 0}, {0, 1}, {0, 0}},
   "RightWideTriangle"        -> {{0, 0}, {0, 1}, {1, 0}},
 
-  "NarrowTriangle"           -> {{-0.75, 0}, {0, 1}, {0.75, 0}},
-  "LeftNarrowTriangle"       -> {{-0.75, 0}, {0, 1}, {0, 0}},
-  "RightNarrowTriangle"      -> {{0, 0}, {0, 1}, {0.75, 0}},
+  "Triangle"           -> {{-0.75, 0}, {0, 1}, {0.75, 0}},
+  "LeftTriangle"       -> {{-0.75, 0}, {0, 1}, {0, 0}},
+  "RightTriangle"      -> {{0, 0}, {0, 1}, {0.75, 0}},
+
+  "NarrowTriangle"           -> {{-0.5, 0}, {0, 1}, {0.5, 0}},
+  "NarrowLeftTriangle"       -> {{-0.5, 0}, {0, 1}, {0, 0}},
+  "NarrowRightTriangle"      -> {{0, 0}, {0, 1}, {0.5, 0}},
 
   "PointedTriangle"          -> {{-0.57735, -0.30764}, {0., 0.}, {0.57735, -0.30764}, {0., 1.}},
   "LeftPointedTriangle"      -> {{-0.57735, -0.30764}, {0., 0.}, {0., 1.}},

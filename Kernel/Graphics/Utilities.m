@@ -346,6 +346,22 @@ PointAlongLine[coords_List, d_ ? NumericQ] :=
 
 (**************************************************************************************************)
 
+PublicFunction[SampleLineEvery]
+
+SetUsage @ "
+SampleLineEvery[path$, d$] returns a list of points sampled every distance d$.
+* The initial and endpoint are always sampled.
+* The sample distance can be smaller, but no smaller than necessary to sample evenly."
+
+toEveryD[total_, d_] := Into @ Ceiling[total / d];
+
+SampleLineEvery[{a_, b_}, d_] := Lerp[a, b, toEveryD[EuclideanDistance[a, b], d]];
+
+(* TODO: speed up this step! *)
+SampleLineEvery[path_List, d_] := PointAlongLine[path, Scaled @ #]& /@ N[Lerp[0, 1, toEveryD[LineLength @ path, d]]];
+
+(**************************************************************************************************)
+
 PublicFunction[VectorAlongLine]
 
 SetUsage @ "

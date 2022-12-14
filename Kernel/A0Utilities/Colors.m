@@ -25,6 +25,20 @@ SetColorOpacity[opacity_][expr_] :=
 
 (**************************************************************************************************)
 
+PublicFunction[SetOpaque]
+
+$opaqueRules = Dispatch[{
+  RGBColor[r_, g_, b_, ___] :> RGBColor[r, g, b, 1],
+  RGBColor[{r_, g_, b_, ___}] :> RGBColor[r, g, b, 1],
+  GrayLevel[g_, ___] :> GrayLevel[g, 1],
+  Hue[h_, s_:1, v_:1, ___] :> Hue[h, s, v, 1],
+  c:(_Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Length[c] === 3 :> Append[c, 1]
+}];
+
+SetOpaque[expr_] := expr /. $opaqueRules;
+
+(**************************************************************************************************)
+
 PublicFunction[SetColorLightness]
 
 SetColorLightness[expr_, lightness_] :=

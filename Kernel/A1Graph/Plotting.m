@@ -456,14 +456,14 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     UnpackExtendedThemedOptions[graph,
       arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, twoWayStyle,
       visibleCardinals, labelCardinals, vertexBackground,
-      edgeSetback, edgeThickness, edgeLength,
+      edgeSetback, edgeThickness, edgeLength, edgeOpacity, arrowheadOpacity,
 
       vertexColorFunction, vertexColorRules, vertexAnnotations,
         edgeColorFunction,   edgeColorRules,   edgeAnnotations,
       regionColorRules,
 
       vertexTooltips, edgeTooltips,
-      vertexClickFunction,
+      vertexClickFunction, vertexOpacity,
 
       viewOptions, graphLegend,
       additionalImagePadding, aspectRatioClipping, extendImagePadding,
@@ -680,8 +680,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       Goto[skipEdges];
     ];
 
-    SetAutomatic[edgeStyle, If[edgeColorFunction =!= None, {}, GrayLevel[0, .18]]];
-    edgeStyle //= toDirectiveOptScan[setEdgeStyleGlobals];
+    SetAutomatic[edgeStyle, If[edgeColorFunction =!= None, {}, GrayLevel[0]]];
 
     SetAutomatic[edgeShapeFunction, "Arrow"];
     If[Or[
@@ -750,7 +749,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     |>;
 
     edgeGraphics = Annotation[
-      Style[edgeItems, edgeStyle, edgeThickness],
+      Style[edgeItems, edgeStyle, edgeThickness, If[edgeOpacity === None, Sequence @@ {}, Opacity @ edgeOpacity]],
       edgeInfo, "EdgePrimitivesRoot"
     ];
   ];
@@ -1485,6 +1484,8 @@ createEdgePrimitives[indices_, drawFn_, arrowheads_, cardinal_] /; StringQ[edgeS
 ];
 
 createEdgePrimitives[indices_, drawFn_, arrowheads_, cardinal_] := Scope[
+  edgeWeights = GraphEdgeData[All, EdgeWeight];
+  maxEdgeWeight = Max @ edgeWeights;
   primitives = Map[
     index |-> applyDrawFn[edgeShapeFunction, <|
       "Coordinates" -> Part[$EdgeCoordinateLists, index],
@@ -1492,6 +1493,8 @@ createEdgePrimitives[indices_, drawFn_, arrowheads_, cardinal_] := Scope[
       "Source" -> Part[$EdgeList, index, 1],
       "Target" -> Part[$EdgeList, index, 2],
       "EdgeIndex" -> index,
+      "Weight" -> Part[edgeWeights, index],
+      "WeightFraction" -> Part[edgeWeights, index] / maxEdgeWeight,
       "Counter" :> $esfCounter++,
       "Style" -> edgeStyle,
       "LabelStyle" -> simpleEdgeLabelStyle,
@@ -1799,17 +1802,23 @@ drawOriginalVertexWithSize[color_, size_][pos_] := Scope[
 
 (**************************************************************************************************)
 
-drawCustomShapeFunction[fn_, size_][pos_, color_] :=
+drawCustomShapeFunction[fn_, size_][pos_, color_] := Scope[
+  vertexWeights = GraphVertexData[All, VertexWeight];
+  maxVertexWeight = Max @ weights;
   Map[drawIndividualCustomShapeFunction[fn, size, color], pos];
+];
 
 drawIndividualCustomShapeFunction[fn_, size_, color_][pos_] := Scope[
   index = IndexOf[$VertexCoordinates, pos];
   vertex = Part[$VertexList, index];
+  vertexWeight = Part[vertexWeights, index];
   $vertexDataInfo = <|
     "Coordinates" -> pos,
     "VertexIndex" -> index,
     "Vertex" -> vertex,
     "Size" -> size,
+    "Weight" -> vertexWeight,
+    "WeightFraction" -> vertexWeight / maxVertexWeight,
     "PointSize" -> plotSizeToPointSize @ size,
     "Color" -> removeSingleton @ color,
     "LabelStyle" -> simpleVertexLabelStyle,
@@ -2239,11 +2248,12 @@ $uniformPayloadSizes = False;
 generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {labelStyle_, labelPosition_, labelSpacing_, labelBaseStyle_, labelOrientation_}, annotations_, isVertices_] := Scope[
   $annotationKeys = Keys @ annotations;
   $labelNames = names;
+  $labelWeights := $labelWeights = If[isVertices, LookupVertexAnnotations[$Graph, VertexWeight], LookupEdgeAnnotations[$Graph, EdgeWeight]];
   coordinates = Part[coordinates, parts];
   $annotations = annotations;
   $labeledElemSize = size / 2;
   $spacings = 0; $labelZOrder = 0;
-  $isVertices = isVertices; $labelFontSize = None;
+  $isVertices = isVertices; $labelFontSize = None; $labelFontWeight = None; $labelFontFamily = None;
   $labelSizeScale = 1; $labelScaledPos = None; $labelY = None; $labelX = None; $labelBackground = GrayLevel[1.0, 0.6];
   $labelBaseStyle = None; $labelOffset = None;
   $adjacencyIndex = None; $meanCoordinates = Mean @ coordinates;
@@ -2258,6 +2268,8 @@ generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {lab
   SetNone[$labelX, 0]; SetNone[$labelY, 0];
   labelStyle //= DeleteCases[sspec:$SizePattern /; ($labelSizeScale = toNumericSizeScale @ sspec; True)];
   If[$labelFontSize =!= None, PrependTo[labelStyle, FontSize -> $labelFontSize]];
+  If[$labelFontWeight =!= None, PrependTo[labelStyle, FontWeight -> $labelFontWeight]];
+  If[$labelFontFamily =!= None, PrependTo[labelStyle, FontFamily -> $labelFontFamily]];
   $magnifier = If[$labelSizeScale == 1, Identity, Magnify[#, $labelSizeScale]&];
   {payloadFunction, placerFunction} = processLabelSpec[spec];
   indices = If[parts === All, Range @ Length @ names, parts];
@@ -2300,6 +2312,8 @@ ExtendedGraphPlot::badsubopt = "`` is not a recognized suboption. Recognized opt
 setLabelStyleGlobals = Case[
   ItemSize -> size:$SizePattern           := $labelSizeScale = toNumericSizeScale @ size;
   FontSize -> sz_                         := $labelFontSize = sz;
+  FontWeight -> w_                        := $labelFontWeight = w;
+  FontFamily -> f_                        := $labelFontFamily = f;
   Background -> o:$opacityPattern         := $labelBackground = GrayLevel[1.0, toNumericOpacity @ o];
   Background -> None                      := $labelBackground = None;
   Background -> c:$ColorPattern           := $labelBackground = c;
@@ -2339,7 +2353,7 @@ setLabelStyleGlobals = Case[
   LabelOrientation -> "Aligned"           := ($labelOrientation = "Aligned");
   Spacings|LabelSpacing -> n_ := $spacings = N[n];
 
-  rule_ := failPlot["badsubopt", rule, commaString @ {ItemSize, BaseStyle, Background, LabelPosition, LabelOrientation, Spacings}];
+  rule_ := failPlot["badsubopt", rule, commaString @ {ItemSize, FontSize, FontWeight, FontFamily, BaseStyle, Background, ZOrder, LabelPosition, LabelOrientation, Spacings}];
   {NQ -> NumericQ}
 ];
 
@@ -2368,6 +2382,7 @@ toPayloadFunction = Case[
   "Index"               := getIndex;
   "Tag" | "Cardinal"    := getCardinal;
   assoc_Association     := lookupPayloadInAssoc[assoc];
+  "Weight"              := getWeight;
   list_List ? (SameLengthQ[$labelNames])
                         := Part[list, #]&;
   key_ -> f_            := %[key] /* postProcF[toFunc @ f];
@@ -2406,6 +2421,7 @@ lookupPayloadInAssoc[assoc_][i_] :=
 
 getIndex[i_] := i;
 getName[i_] := Part[$labelNames, i];
+getWeight[i_] := Part[$labelWeights, i];
 getCardinal[i_] := If[ListQ[$EdgeTags], Part[$EdgeTags, i], None];
 getAnnotation[name_][i_] := Part[$annotations, name, i];
 
@@ -2672,6 +2688,8 @@ AttachGraphPlotAnnotation[name_String] := (
 (**************************************************************************************************)
 
 PrivateFunction[ApplyFinalTransforms]
+
+(* do this via a GraphStyleTransform operator graphics primitive *)
 
 ApplyFinalTransforms[g:(_Graphics|_Graphics3D)] :=
   MapAt[ApplyFinalTransforms, g, 1];
