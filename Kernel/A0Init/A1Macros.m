@@ -242,6 +242,21 @@ EchoCellPrint[cells2_] := Module[{cells},
 
 (**************************************************************************************************)
 
+PublicMacro[BadArguments]
+
+Clear[BadArguments];
+General::badarguments = "Bad arguments.";
+
+BadArguments /: (Set|SetDelayed)[lhsHead_Symbol[lhs___], BadArguments[]] :=
+  SetDelayed[lhsHead[lhs], Message[MessageName[lhsHead, "badarguments"]]; $Failed];
+
+BadArguments /: (Set|SetDelayed)[Verbatim[Blank][lhsHead_Symbol], BadArguments[]] :=
+  SetDelayed[_lhsHead, Message[MessageName[lhsHead, "badarguments"]]; $Failed];
+
+DefineMacro[BadArguments, BadArguments[] := Quoted[Message[MessageName[$LHSHead, "badarguments"]]; Return[$Failed]]];
+
+(**************************************************************************************************)
+
 (* this takes the place of MatchValues in GU *)
 
 PublicMacro[Case, EchoCase]
@@ -251,6 +266,10 @@ SetHoldAll[Case, EchoCase, setupCases];
 
 Case /: (Set|SetDelayed)[sym_Symbol, Case[args___]] := setupCases[sym, False, args];
 EchoCase /: (Set|SetDelayed)[sym_Symbol, EchoCase[args___]] := setupCases[sym, True, args];
+
+setupCases[sym_Symbol, echo_, arg_SetDelayed] := setupCases[sym, echo, CompoundExpression[arg], {}];
+
+setupCases[sym_Symbol, echo_, arg_SetDelayed, rewrites_List] := setupCases[sym, echo, CompoundExpression[arg], rewrites];
 
 setupCases[sym_Symbol, echo_, CompoundExpression[args__SetDelayed, rewrites_List]] :=
   setupCases[sym, echo, CompoundExpression[args], rewrites];
@@ -270,7 +289,7 @@ setupCases[sym_Symbol, echo_, CompoundExpression[args__SetDelayed, Null...], rew
 
 Case::baddef = "Bad case definition for ``."
 
-setupCases[sym_, args___] := Message[Case::baddef, sym];
+setupCases[sym_, echo_, args___] := Message[Case::baddef, sym];
 
 SetHoldAllComplete[procRewrites];
 procRewrites[s_Symbol ? System`Private`HasImmediateValueQ] := HoldPattern[s] -> s;

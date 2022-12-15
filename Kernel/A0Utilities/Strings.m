@@ -31,6 +31,12 @@ ToTitleString[s_String] :=
 
 (**************************************************************************************************)
 
+PublicFunction[StringCaseSplit]
+
+StringCaseSplit[s_String] := StringSplit[s, RegularExpression["(?<=[a-z])(?=[A-Z])"]];
+
+(**************************************************************************************************)
+
 PrivateFunction[commaString]
 
 qs[s_String] := PrefixSlash[s];
@@ -168,6 +174,21 @@ StringTrimRight[right_][str_] := StringTrimRight[str, right];
 StringTrimLeftRight[str_String, left_, right_] := StringDelete[StringDelete[str, StartOfString ~~ left], right ~~ EndOfString];
 StringTrimLeftRight[list_List, left_, right_] := Map[StringTrimLeftRight[#, left, right]&, list];
 StringTrimLeftRight[left_, right_][str_] := StringTrimLeftRight[str, left, right];
+
+(**************************************************************************************************)
+
+PublicFunction[SplitFirstLastName]
+
+$chineseName = "[A-Z][a-z]{1,4}";
+$chineseNamePattern = RegularExpression[$chineseName <> " " <> $chineseName <> " " <> $chineseName];
+
+SplitFirstLastName[str_String] := Which[
+  StringMatchQ[str, TitlecaseWord ~~ (" " ~~ LowercaseWord).. ~~ TitlecaseWord], StringSplit[str, " ", 2],
+  StringMatchQ[str, $chineseNamePattern],                                        StringReverse @ Reverse @ StringSplit[StringReverse @ str, " ", 2],
+  StringContainsQ[str, ", "],                                                    Reverse @ StringSplit[str, ", ", 2],
+  StringContainsQ[str, " "],                                                     StringSplit[str, " ", 2],
+  True,                                                                          {str}
+];
 
 (**************************************************************************************************)
 

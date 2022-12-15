@@ -1,16 +1,22 @@
 xmlFilePath[id_] := LocalPath["Data", "Arxiv", "XML", id <> ".m"]
-pdfFilePath[id_] := LocalPath["Data", "Arxiv", "PDF", id <> ".pdf"]
 
 (**************************************************************************************************)
 
 PublicFunction[ImportArxivPage]
 
+PublicOption[DownloadPDF, PDFPath]
+
+Options[ImportArxivPage] = {
+  DownloadPDF -> True,
+  PDFPath -> Automatic
+}
+
 ImportArxivPage::badurl = "URL `` does not contain a valid id."
 ImportArxivPage::baddl = "URL `` could not be imported as XML."
 ImportArxivPage::badxml = "URL `` was downloaded as XML that did not contain a title."
 
-ImportArxivPage[str_String] := Scope[
-	id = FirstStringCase[str, num:(Repeated[DigitCharacter, 4] ~~ "." ~~ Repeated[DigitCharacter, {4, 7}]) :> num];
+ImportArxivPage[str_String, opts:OptionsPattern[]] := Scope[
+	id = FirstStringCase[str, num:$arixvIDRegexp :> num];
 	If[!StringQ[id], ReturnFailed["badurl", str]];
 	xmlPath = xmlFilePath[id];
 	If[FileExistsQ[xmlPath],
@@ -30,7 +36,7 @@ ImportArxivPage[str_String] := Scope[
 	data = Association[
     VectorApply[
       #1 -> DeepFirstCase[xml, XMLMetaPattern[#2, content_] :> StringTrim[content]]&,
-      {"Title" -> "citation_title", "Abstract" -> "citation_abstract", "URL" -> "og:url", "PDFUrl" -> "citation_pdf_url", "Date" -> "citation_date"}
+      {"Title" -> "citation_title", "Abstract" -> "citation_abstract", "URL" -> "og:url", "PDFURL" -> "citation_pdf_url", "Date" -> "citation_date"}
     ],
     "URL" -> DeepFirstCase[xml, XMLElement["meta", {"property" -> "og:url", "content" -> content_}, _] :> content],
     "Authors" -> DeepCases[xml, XMLMetaPattern["citation_author", content_] :> fromLastFirstName[content]],
@@ -38,13 +44,23 @@ ImportArxivPage[str_String] := Scope[
     "SecondarySubjects" -> secondarySubjects,
     "Subjects" -> Join[primarySubjects, secondarySubjects]
   ];
+  UnpackOptions[downloadPDF, pDFPath];
+  localPdfPath = toPDFPath[pDFPath, data["Title"]];
+  data["PDFFilePath"] = Which[
+    FileExistsQ[localPdfPath], localPdfPath,
+    downloadPDF,               ArxivDownloadPDF[data, FilterOptions @ opts],
+    True,                      None
+  ];
   data
-]
+];
+
+$arixvIDRegexp = ((Repeated[DigitCharacter, 4] ~~ ".") | ("hep-th" ~~ ("/" | "."))) ~~ Repeated[DigitCharacter, {4, 7}];
 
 $pageTemplate = StringFunction @ "https://arxiv.org/abs/#1"
 
 XMLMetaPattern[name_, patt_] := XMLElement["meta", {"name" -> name, "content" -> patt}, _];
 
+fromLastFirstName["Hooft, Gerard 't"] := {"Gerard", "'t Hooft"};
 fromLastFirstName[str_] := Scope[
   If[StringFreeQ[str, ","], Return @ List @ str];
   MapFirst[stripInitials] @ Reverse @ StringTrim @ StringSplit[str, ",", 2]
@@ -54,8 +70,8 @@ stripInitials = StringReplaceRepeated[(" ".. ~~ LetterCharacter ~~ ".") -> " "] 
 
 extractSubjects[e_] := Flatten @ StringCases[
   Flatten @ DeepCases[e, _String],
-  human:(LetterCharacter.. ~~ (" " | " - " ~~ LetterCharacter..)...) ~~ " (" ~~ superfield:((LetterCharacter|"-")..) ~~ Repeated["." ~~ subfield:LetterCharacter.., {0,1}] ~~ ")" :>
-    Labeled[DeleteCases[""] @ {ToLowerCase @ superfield, ToLowerCase @ subfield}, human]
+  human:(LetterCharacter.. ~~ (" " | " - " ~~ LetterCharacter..)...) ~~ " (" ~~ field:((LetterCharacter|"-").. ~~ Repeated["." ~~ LetterCharacter.., {0,1}]) ~~ ")" :>
+    Labeled[ToLowerCase @ field, human]
 ];
 
 (**************************************************************************************************)
@@ -65,6 +81,7 @@ PublicVariable[$KnownAuthors]
 SetInitialValue[$KnownAuthors, {}];
 
 PaperPageTitle[authors_, title_] := Scope[
+  authors //= VectorReplace[str_String :> SplitFirstLastName[str]];
   If[Length[authors] > 3,
     authors2 = Cases[authors, {_, Alternatives @@ $KnownAuthors}];
     If[Length[authors2] <= 1, authors2 = Part[authors, {1, 2, -1}]];
@@ -74,80 +91,232 @@ PaperPageTitle[authors_, title_] := Scope[
     authorSurnames = authors[[All, -1]];
   ];
   authorPrefix = StringRiffle[authorSurnames, ", "];
+  title //= StringReplace[{"$" -> "", "\\'e" -> "é", "\\\"o" -> "ö"}];
   heading = StringJoin[authorPrefix, ": \"", title, "\""];
   heading
 ]
 
 (**************************************************************************************************)
 
-PublicFunction[DownloadArxivPDF]
+PublicFunction[ArxivDownloadPDF]
+
+PublicVariable[$PDFPath]
 
 PublicOption[PDFPath, AllowRename]
 
-Options[DownloadArxivPDF] = {
-  PDFPath -> Automatic,
+SetInitialValue[$PDFPath, With[{path = NormalizePath @ "~/Dropbox/doc/paper"}, If[FileExistsQ[path], path, Automatic]]];
+
+Options[ArxivDownloadPDF] = {
+  PDFPath :> $PDFPath,
   Verbose -> Automatic,
   DryRun -> False,
   AllowRename -> True
 };
 
-DownloadArxivPDF::baddl = "Failed to download `` to ``."
-DownloadArxivPDF::rename = "Existing candidate `` found, but renames are forbidden."
+ArxivDownloadPDF::baddl = "Failed to download `` to ``."
+ArxivDownloadPDF::norename = "Existing candidate `` found, but renames are forbidden."
+ArxivDownloadPDF::badrename = "Could not rename `` to ``."
 
-DownloadArxivPDF[assoc_Association, OptionsPattern[]] := Scope[
-  UnpackAssociation[assoc, authors, title, pdfUrl:"PDFUrl"];
+toPDFPath[Automatic, title_] := toPDFPath[LocalPath["Data", "Arxiv", "PDF"], title];
+toPDFPath[pdfPath_, title_] := Scope[
+  fileName = StringReplace[StringReplace[title, ":" -> " - "], Repeated[" ", {2, Infinity}] -> " "];
+  FileNameJoin[{pdfPath, fileName <> ".pdf"}]
+]
+
+ArxivDownloadPDF[id_String, opts:OptionsPattern[]] := Scope[
+  result = ImportArxivPage[id, DownloadPDF -> False, FilterOptions @ opts];
+  If[AssociationQ[result], ArxivDownloadPDF[result, opts], $Failed]
+];
+
+ArxivDownloadPDF[assoc_Association, OptionsPattern[]] := Scope[
+  UnpackAssociation[assoc, authors, title, pdfUrl:"PDFURL"];
   UnpackOptions[$verbose, $dryRun, pDFPath, allowRename];
   SetAutomatic[$verbose, $dryRun];
   title = PaperPageTitle[authors, title];
-  localFileName = StringReplace[StringReplace[title, ":" -> " - "], Repeated[" ", {2, Infinity}] -> " "];
-  If[pDFPath === Automatic,
-    localPath = pdfFilePath[localFileName],
-    localPath = FileNameJoin[{pDFPath, localFileName <> ".pdf"}];
-  ];
-  If[FileExistsQ[localPath],
-    VPrint["File ", MsgPath @ localPath, " already exists, skipping download."];
-    Return[localPath]];
-  If[pDFPath =!= Automatic,
-    partialTitle = Part[StringSplit[localFileName, "\""], 2];
+
+  localPdfPath = toPDFPath[pDFPath, title];
+  If[FileExistsQ[localPdfPath],
+    VPrint["File ", MsgPath @ localPdfPath, " already exists, skipping download."];
+    Return[localPdfPath]];
+
+  pdfFileName = FileNameTake @ localPdfPath;
+  pdfDir = FileNameDrop @ localPdfPath;
+
+  partialTitle = Part[StringSplit[pdfFileName, "\""], 2];
+  If[StringLength[partialTitle] > 8,
     titleGlob = StringJoin["*", StringReplace[partialTitle, "'"|":" -> "*"], "*.pdf"];
-    targets = FileNames[titleGlob, pDFPath, IgnoreCase -> True];
+    targets = FileNames[titleGlob, pdfDir, IgnoreCase -> True];
     If[Length[targets] === 1,
       target = First @ targets;
-      VPrint["Found existing candidate ", MsgPath @ target, ", renaming to ", MsgPath @ localPath, "."];
+      VPrint["Found existing candidate ", MsgPath @ target, ", renaming to ", MsgPath @ localPdfPath, "."];
       If[!TrueQ[allowRename], VPrint["Renames forbidden, skipping"];
-        ReturnFailed["rename", MsgPath @ target]];
-      whenWet @ RenameFile[target, localPath];
-      Return @ localPath
+        ReturnFailed["norename", MsgPath @ target]];
+      whenWet @ MoveFile[target, localPdfPath]
+      Return @ localPdfPath
     ];
   ];
-  VPrint["Downloading ", MsgPath @ pdfUrl, " to ", MsgPath @ localPath];
+
+  VPrint["Downloading ", MsgPath @ pdfUrl, " to ", MsgPath @ localPdfPath];
   whenWet[
-    tmpPath = FileNameJoin[{$TemporaryDirectory, localFileName <> ".pdf"}];
+    tmpPath = FileNameJoin[{$TemporaryDirectory, pdfFileName}];
     result = Block[{$AllowInternet = True}, Check[URLDownload[pdfUrl, tmpPath], $Failed]];
-    If[!MatchQ[result, File[_]], ReturnFailed["baddl", MsgPath @ pdfUrl, MsgPath @ localPath]];
-    RenameFile[tmpPath, localPath];
+    If[!MatchQ[result, File[_]], ReturnFailed["baddl", MsgPath @ pdfUrl, MsgPath @ localPdfPath]];
+    MoveFile[tmpPath, localPdfPath];
   ];
-  localPath
+  localPdfPath
 ]
 
 (**************************************************************************************************)
 
-PublicFunction[ArxivDataToMarkdown]
+$ArxivTaxonomyDictionary := $ArxivTaxonomyDictionary = Association[
+  Rule[ToLowerCase[#1], #2]& @@@ StringExtract[ImportUTF8 @ LocalPath["Kernel", "External", "ArxivTaxonomy.txt"], "\n" -> All, "\t" -> All]
+];
 
-ArxivDataToMarkdown[data_Association] := Scope[
+(**************************************************************************************************)
+
+PublicFunction[ArxivPageToMarkdown]
+
+Options[ArxivPageToMarkdown] = {
+  PDFPath :> $PDFPath,
+  DownloadPDF -> True
+}
+
+ArxivPageToMarkdown[id_String, opts:OptionsPattern[]] :=
+  ArxivPageToMarkdown[ImportArxivPage[id, opts], opts];
+
+ArxivPageToMarkdown[data_Association, OptionsPattern[]] := Scope[
+  UnpackOptions[pDFPath];
   UnpackAssociation[data, authors, subjects, title, abstract, url:"URL"];
   title = PaperPageTitle[authors, title];
-  authorLinks = StringRiffle[StringJoin["[[", #1, " ", #2, "]]"]& @@@ authors, ", "];
-  authorPrefix = StringRiffle[authorSurnames, ", "];
+  authorLinks = StringRiffle[toAuthorLink /@ authors, ", "];
   abstract //= StringReplace["\n" ~~ Repeated[" "... ~~ "\n"] :> "\n"];
-  subjectString = StringRiffle["#field/" <> #1& @@@ subjects, ", "];
+  subjectString = StringRiffle[removeDupPrefix @ Lookup[$ArxivTaxonomyDictionary, ToLowerCase @ StripLabel @ subjects, Nothing], ", "];
+  localPDFPath = toPDFPath[pDFPath, title];
+  downloadTag = If[FileExistsQ[localPDFPath], "#meta/downloaded", "#todo/download"];
   StringJoin[
     "# ", title, "\n",
     "\n",
     "#doc/paper in ", subjectString, " by ", authorLinks, "\n",
     "\n",
+    downloadTag, "\n",
     url,
     "\n\n",
     "> ", abstract
   ]
+];
+
+toAuthorLink = Case[
+  str_String      := StringJoin["[[", str, "]]"];
+  {first_, last_} := StringJoin["[[", first, " ", last, "]]"];
+  {last_}         := last;
+];
+
+removeDupPrefix[list_] := Select[DeleteDuplicates @ list, elem |-> NoneTrue[DeleteCases[elem] @ list, other |-> StringStartsQ[other, elem]]];
+
+(**************************************************************************************************)
+
+PublicFunction[ArxivSearch]
+
+PublicOption[PaperAuthor, PaperTitle, PaperAbstract, PaperID]
+
+Options[ArxivSearch] = {
+  PaperAuthor -> None,
+  PaperTitle -> None,
+  PaperAbstract -> None,
+  PaperID -> None
+};
+
+ArxivSearch::badhtml = "Did not obtain a valid HTML result."
+
+ArxivSearch[opts___Rule] := Scope[
+  url = toSearchString[{opts}];
+  hash = Base36Hash[url];
+  htmlPath = xmlFilePath @ hash;
+  If[FileExistsQ[htmlPath] && (UnixTime[] - UnixTime[FileDate[htmlPath]]) < 60 * 60 * 24,
+    VPrint["Getting cached data from ", MsgPath @ htmlPath];
+    searchResults = ImportUTF8[htmlPath];
+  ,
+    searchResults = Block[{$AllowInternet = True}, Import[url, "Text"]];
+    If[!StringQ[searchResults] || !StringContainsQ[searchResults, "Advanced Search"], ReturnFailed["badhtml", url]];
+    ExportUTF8[htmlPath, searchResults];
+  ];
+  ids = StringCases[searchResults, "<a href=\"https://arxiv.org/abs/" ~~ id:Except["\""].. ~~ "\"" :> id];
+  If[ids === {}, Return @ {}];
+  If[Length[ids] > 32, ids = Take[ids, 32]];
+  ArxivAPISearch[PaperID -> ids]
+];
+
+$searchSpecTemplate = StringFunction @ "&terms-#1-operator=AND&terms-#1-term=#3&terms-#1-field=#2";
+
+$arxivSearchTemplate = StringFunction @ "https://arxiv.org/search/advanced?advanced=#1&abstracts=show&size=50&order=-announced_date_first";
+
+toSearchString[rules_List] := Scope[
+  $index = 0;
+  $arxivSearchTemplate @ StringJoin @ Map[toSearchStringFragment, Sort @ rules]
+];
+
+toSearchStringFragment = Case[
+  (_Symbol -> None)            := Nothing;
+  (field_Symbol -> q_String)   := $searchSpecTemplate[$index++, fieldToType @ field, StringReplace["%20" -> "+"] @ URLEncode @ q];
+];
+
+fieldToType = <|PaperAuthor -> "author", PaperTitle -> "title", PaperAbstract -> "abstract", PaperID -> "id"|>;
+
+(**************************************************************************************************)
+
+PrivateFunction[ArxivAPISearch]
+
+Options[ArxivAPISearch] = Options[ArxivSearch];
+
+ArxivAPISearch::badxml = "Did not obtain a valid XML result."
+
+ArxivAPISearch[opts___Rule] := Scope[
+  url = $arxivAPISearchURL;
+  searchQuery = StringRiffle[Map[toAPISearchString, Sort @ {opts}], "+AND+"];
+  url //= addQueryElem["search_query", searchQuery];
+
+  idList = ToList @ ReplaceNone[{}] @ Lookup[{opts}, PaperID, {}];
+  idQuery = encodeAPIQuery @ StringRiffle[idList, ","];
+  url //= addQueryElem["id_list", idQuery];
+
+  hash = Base36Hash[url];
+  xmlPath = xmlFilePath @ hash;
+  If[FileExistsQ[xmlPath] && (UnixTime[] - UnixTime[FileDate[xmlPath]]) < 60 * 60 * 24,
+    VPrint["Getting cached data from ", MsgPath @ xmlPath];
+    xml = Get[xmlPath];
+  ,
+    xml = Block[{$AllowInternet = True}, Import[url, "XML"]];
+    If[!ContainsQ[xml, XMLElement["id", ___]], ReturnFailed["badxml", url]];
+    Export[xmlPath, xml];
+  ];
+  entries = DeepCases[xml, XMLElement["entry", {}, entryData_] :> extractAPIEntryData[entryData]];
+  entries
+];
+
+addQueryElem[name_, ""][url_] := url;
+addQueryElem[name_, val_][url_] := StringJoin[url, "&", name, "=", val];
+
+toAPISearchString = Case[
+  (_ -> None) := Nothing;
+  (PaperID -> _) := Nothing;
+  (PaperAuthor -> q_) := "au:" <> encodeAPIQuery[q];
+  (PaperTitle -> q_) := "ti:" <> encodeAPIQuery[q];
+  (PaperAbstract -> q_) := "abs:" <> encodeAPIQuery[q];
+];
+
+encodeAPIQuery[a_] := URLEncode @ If[StringContainsQ[a, " "], "\"" <> a <> "\"", a];
+
+$arxivAPISearchURL = "http://export.arxiv.org/api/query?start=0&max_results=100";
+
+extractAPIEntryData[xml_] := Scope[
+  assoc = Association[
+   "Title" -> DeepFirstCase[xml, XMLElement["title",{},{title_}] :> title],
+   "URL" -> DeepFirstCase[xml, XMLElement["id", {}, {id_}] :> StringReplace[id, "http://" -> "https://"]],
+   "Abstract" -> DeepFirstCase[xml, XMLElement["summary", _, {data_}] :> data],
+   "Authors" -> DeepCases[xml, XMLElement["name", _, {data_}] :> data],
+   "PublishDate" -> DeepFirstCase[xml, XMLElement["published", _, {date_}] :> DateObject[date]],
+   "Subjects" -> DeleteDuplicates @ DeepCases[xml, ("term" -> term_String) :> term]
+  ];
+  assoc["PDFURL"] = StringReplace[assoc["URL"], "/abs/" -> "/pdf/"] <> ".pdf";
+  assoc
 ];

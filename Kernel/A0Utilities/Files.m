@@ -79,21 +79,56 @@ CopyUnicodeToClipboard[text_] := Scope[
 
 PublicFunction[ExportUTF8]
 
-ExportUTF8[path_, string_] :=
+ExportUTF8[path_String, string_String] :=
   Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
+
+_ExportUTF8 := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[ExportUTF8Dated]
+
+ExportUTF8Dated::badtime = "Creation and modification times should be DateObjects."
+
+ExportUTF8Dated[path_String, string_String, creation_, modification_:Automatic] := Scope[
+  path //= NormalizePath;
+  Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
+  creation //= toDateObject;
+  modification //= toDateObject;
+  If[!DateDateObjectQ[creation], BadArguments[]];
+  If[modification === Automatic,
+    SetFileDate[path, creation]
+  ,
+    If[!DateDateObjectQ[modification], BadArguments[]];
+    SetFileDate[path, creation];
+    SetFileDate[path, modification, "Modification"];
+  ];
+  path
+];
+
+toDateObject = Case[
+  n_ ? NumericQ := DateObject[n];
+  other_        := other;
+];
+
+_ExportUTF8Dated := BadArguments[];
 
 (**************************************************************************************************)
 
 PublicFunction[ImportUTF8]
 
-ImportUTF8[path_] :=
+ImportUTF8[path_String] :=
   Import[path, "Text", CharacterEncoding -> "UTF8"];
+
+_ImportUTF8 := BadArguments[];
 
 (**************************************************************************************************)
 
 PublicFunction[PrettyPut]
 
-PrettyPut[expr_, path_] := ExportUTF8[path, ToPrettifiedString @ expr];
+PrettyPut[expr_, path_String] := ExportUTF8[path, ToPrettifiedString @ expr];
+
+_PrettyPut := BadArguments[];
 
 (**************************************************************************************************)
 
