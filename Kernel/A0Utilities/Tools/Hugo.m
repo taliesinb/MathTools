@@ -18,9 +18,10 @@ HugoNewSite[dir_String, opts:OptionsPattern[]] := Scope[
   SetAutomatic[$verbose, $dryRun];
 
   dir //= NormalizePath;
+  configFile = PathJoin[dir, "config.toml"];
   If[FileExistsQ[dir],
     If[!DirectoryQ[dir], ReturnFailed[]];
-    If[DirectoryQ[dir] && FileExistsQ[FileNameJoin[{dir, "config.toml"}]], ReturnFailed["exists", MsgPath @ dir]];
+    If[DirectoryQ[dir] && FileExistsQ[configFile], ReturnFailed["exists", MsgPath @ dir]];
   ];
   parent = FileNameDrop[dir];
   If[!DirectoryQ[parent], ReturnFailed["noparent", MsgPath @ dir]];
@@ -36,9 +37,9 @@ HugoNewSite[dir_String, opts:OptionsPattern[]] := Scope[
 
   config = $hugoConfigTemplate[<|"SiteName" -> siteName, "HugoTheme" -> hugoTheme|>];
 
-  whenWet @ ExportUTF8[FileNameJoin[{dir, "config.toml"}], config];
+  whenWet @ ExportUTF8[configFile, config];
 
-  themeTarget = FileNameJoin[{dir, "themes", hugoTheme}];
+  themeTarget = PathJoin[dir, "themes", hugoTheme];
   VPrint[If[$PosixQ, "Symlinking", "Copying"], " theme from ", MsgPath @ themeDir, " to ", MsgPath @ themeTarget];
   whenWet @ SymLink[themeDir, themeTarget];
 

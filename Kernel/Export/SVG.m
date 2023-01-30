@@ -377,7 +377,7 @@ fromColStr = Case[
 
 PublicFunction[LegacyToSVGString]
 
-$vectorTemporaryFile = FileNameJoin[{$TemporaryDirectory, "wl_vector.svg"}];
+$vectorTemporaryFile := $vectorTemporaryFile = TemporaryPath["vector.svg"];
 
 LegacyToSVGString[g_] := Scope[
   res = System`ConvertersDump`ExportVectorFormat[$vectorTemporaryFile, g, "SVG"];

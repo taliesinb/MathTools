@@ -39,7 +39,7 @@ runFileTest[inputPath_, outDir_] := Scope[
     Hold[e_] :> e
     }, {1}];
   If[$numStatements > 0, VPrint["Encountered ", $numStatements, " preparation statements."]];
-  outputPath = FileNameJoin[{outDir, inputFileName}];
+  outputPath = PathJoin[outDir, inputFileName];
   If[!FileExistsQ[outputPath] || FileByteCount[outputPath] == 0,
     Message[RunInputOutputTests::makeoutput, outputPath];s
     writeExpressionList[outputPath, newOutputs];

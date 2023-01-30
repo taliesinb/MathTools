@@ -34,7 +34,7 @@ PandocExportMDToHTML[inpath_String -> infiles:{___String}, outpath_String] := Sc
 	inlen = StringLength @ inpath;
 	Map[
 		infile |-> (
-			outfile = FileNameJoin[{outpath, ReplaceFileExtension[StringDrop[infile, inlen], "html"]}];
+			outfile = PathJoin[outpath, ReplaceFileExtension[StringDrop[infile, inlen], "html"]];
 			PandocConvert[infile, outfile]
 		),
 		NormalizePath /@ infiles

@@ -18,7 +18,7 @@ videoPathToMarkdown[srcPath_String | File[srcPath_String]] := Scope[
 
   videoFileName = FileNameTake @ srcPath;
 
-  videoPath = FileNameJoin[{$rasterizationPath, videoFileName}];
+  videoPath = PathJoin[$rasterizationPath, videoFileName];
 
   If[!$dryRun,
     EnsureDirectory[$rasterizationPath];

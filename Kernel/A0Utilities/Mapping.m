@@ -12,11 +12,26 @@ PublicFunction[ConstructHoldComplete]
 ConstructHoldComplete[fn_Function, args___] :=
   PostComposeFunction[fn, HoldComplete][args];
 
+ConstructHoldComplete[Apply[fn_Function], {args___}] :=
+  PostComposeFunction[fn, HoldComplete][args];
+
+ConstructHoldComplete[fn_, args___] :=
+  HoldComplete[fn[args]];
+
+(**************************************************************************************************)
+
+PublicFunction[ApplyHoldComplete]
+
+ConstructHoldComplete[fn_Function, args___] :=
+  PostComposeFunction[fn, HoldComplete][args];
+
 (**************************************************************************************************)
 
 PublicFunction[Unthread]
 
 (* todo: implement these as macros, and better yet as syntax in Loader.m *)
+
+ClearAll[Unthread];
 
 Unthread /: head_Symbol[l___, Unthread[a_], r___] := With[
   {u = Unique["\[FormalO]"]},

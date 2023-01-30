@@ -154,7 +154,7 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
     imageFileName = StringJoin[objHash, "_", imageHash, "_", dimsStr, ".", fileExt];
   ];
 
-  imagePath = FileNameJoin[{$rasterizationPath, imageFileName}];
+  imagePath = PathJoin[$rasterizationPath, imageFileName];
 
   (* export *)
   If[!FileExistsQ[imagePath] || !$rasterizationCaching,
@@ -185,7 +185,7 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
 PrivateFunction[toEmbedPath]
 
 toEmbedPath[None, imageFileName_, imagePath_] := "file://" <> imagePath;
-toEmbedPath[rasterizationURL_, imageFileName_, _] := NormalizePath @ FileNameJoin[{rasterizationURL, imageFileName}];
+toEmbedPath[rasterizationURL_, imageFileName_, _] := NormalizePath @ PathJoin[rasterizationURL, imageFileName];
 
 toDimsString[{w_, h_}] := StringJoin[IntegerString[w, 10, 4], "_", IntegerString[h, 10, 4]];
 

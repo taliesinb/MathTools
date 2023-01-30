@@ -1,6 +1,6 @@
 $serverFunctions = <||>;
 
-$hugoNewSite = Function @ If[!FileExistsQ[FileNameJoin[{#BaseExportPath, "config.toml"}]], HugoNewSite[#BaseExportPath, FilterOptions @ #]];
+$hugoNewSite = Function @ If[!FileExistsQ[PathJoin[#BaseExportPath, "config.toml"]], HugoNewSite[#BaseExportPath, FilterOptions @ #]];
 $hugoBuildSite = Function @ HugoBuild[#BaseExportPath, FilterOptions @ #];
 $hugoServeSite = Function @ HugoServe[#BaseExportPath, FilterOptions @ #];
 
@@ -209,7 +209,7 @@ CreateSite[siteName_String, opts:OptionsPattern[]] := CatchMessage @ Scope[
   If[!StringQ[siteName], ReturnFailed["arg1"]];
   UnpackOptions[notebookPath, markdownFlavor, baseExportPath, baseURL, siteGenerator, overwriteTarget, $dryRun, $verbose];
 
-  SetAutomatic[baseExportPath, If[!DirectoryQ[$SitesDirectory], Automatic, FileNameJoin[{$SitesDirectory, siteName}]]];
+  SetAutomatic[baseExportPath, If[!DirectoryQ[$SitesDirectory], Automatic, PathJoin[$SitesDirectory, siteName]]];
 
   If[!StringQ[notebookPath], ReturnFailed["pathns", NotebookPath]];
   If[!StringQ[baseExportPath], ReturnFailed["pathns", BaseExportPath]];

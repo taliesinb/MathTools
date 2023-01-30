@@ -267,6 +267,6 @@ ExportUsages[n_] := Scope[
   usageString = DumpUsagesToString[n];
   (* fullString = StringJoin["\\\\[", $KatexPrelude, "\n\\\\]\n\n", usageString]; *)
   fullString = processForFranklin @ StringJoin["$$\n", $KatexPrelude, "\n$$\n\n", usageString];
-  exportPath = FileNameJoin[{$MarkdownExportDirectory, "Usages.md"}];
+  exportPath = PathJoin[$MarkdownExportDirectory, "Usages.md"];
   Export[exportPath, fullString, "Text", CharacterEncoding -> "UTF-8"]
 ];

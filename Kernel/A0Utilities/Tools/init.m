@@ -11,7 +11,7 @@ ToolAvailableQ[name_] := StringQ @ findTool1[name];
 
 (**************************************************************************************************)
 
-PrivateFunction[toolKeyTranslationRules]
+PrivateFunction[toolKeyTranslationRules, toolKeyTranslationRules2]
 
 toolKeyTranslationRules[rules_] := Append[_ -> Nothing][(#1 -> v_) :> (#2 -> v)& @@@ rules];
 
@@ -19,7 +19,7 @@ toolKeyTranslationRules[rules_] := Append[_ -> Nothing][(#1 -> v_) :> (#2 -> v)&
 
 PrivateFunction[findTool]
 
-$binaryPaths = {"/usr/local/bin", "/usr/bin", "/usr/sbin", "/sbin", "/bin", $HomeDirectory, "/Applications", FileNameJoin[{$HomeDirectory, "/Applications"}]};
+$binaryPaths = {"/usr/local/bin", "/usr/bin", "/usr/sbin", "/sbin", "/bin", $HomeDirectory, "/Applications", PathJoin[$HomeDirectory, "/Applications"]};
 
 General::toolnp = "Tool `` is not present in any of the normal binary paths. Please install it.";
 
@@ -28,7 +28,7 @@ SetHoldRest[findTool];
 findTool[name_String] := findTool[name, ThrowMessage["toolnp", name]];
 findTool[name_String, else_] := ReplaceNone[findTool1[name], else];
 
-findTool1[name_] := findTool1[name] = SelectFirst[FileNameJoin[{#, name}]& /@ $binaryPaths, FileExistsQ, None];
+findTool1[name_] := findTool1[name] = SelectFirst[PathJoin[#, name]& /@ $binaryPaths, FileExistsQ, None];
 
 (**************************************************************************************************)
 
@@ -60,9 +60,6 @@ $genericToolOpts = {
 	StandaloneTerminal -> False
 }
 
-$tmpOut = FileNameJoin[{$TemporaryDirectory, "wltool_out.txt"}];
-$tmpSuffix = " &>" <> $tmpOut;
-
 $dryRun = True;
 RunTool[args1___, DryRun -> bool_, args2___] := Block[{$dryRun = bool}, RunTool[args1, args2]];
 
@@ -82,6 +79,9 @@ RunTool[args1___, WorkingDirectory -> dir_, args2___] := Block[{$wdir = Normaliz
 $oto = Automatic;
 RunTool[args1___, OpenToolOutput -> oto_, args2___] := Block[{$oto = oto}, RunTool[args1, args2]];
 
+$oto = Automatic;
+RunTool[args1___, OpenToolOutput -> oto_, args2___] := Block[{$oto = oto}, RunTool[args1, args2]];
+
 RunTool::badrp = "RunProcess failed to return an association, returned: ``"
 
 RunTool[cmd_, args___] := Scope @ Block[{$verbose = ReplaceAutomatic[$tverbose, $dryRun]},
@@ -93,7 +93,7 @@ RunTool[cmd_, args___] := Scope @ Block[{$verbose = ReplaceAutomatic[$tverbose, 
 		RunInTerminalWindow[If[StringQ[$wdir], $wdir, "~"], argStr];
 		Return @ True
 	];
-	tmpOut = FileNameJoin[{$TemporaryDirectory, "qg." <> cmd <> ".out.txt"}];
+	tmpOut = MakeTemporaryFile["tool", cmd <> ".#.out"];
 	argStr2 = argStr <> " &>" <> tmpOut;
 	If[$wdir =!= None,
 		VPrint["Running \"", argStr, "\" in ", MsgPath @ $wdir];
@@ -125,20 +125,40 @@ procArg[e_String] := e;
 
 PublicFunction[RunUTF8]
 
-$tmpBashFile = FileNameJoin[{$TemporaryDirectory, "qg.sh"}];
-
 RunUTF8[str_String] /; ASCIIQ[str] := Run[str];
-RunUTF8[str_String] := (
-	ExportUTF8[$tmpBashFile, str];
-	FilePrint[$tmpBashFile];
-	Run["/bin/bash -e " <> $tmpBashFile]
-);
+RunUTF8[str_String] := Scope[
+	tmpFile = MakeTemporaryFile["tool", Base36Hash[str] <> ".sh"];
+	ExportUTF8[tmpFile, str];
+	Run["/bin/bash -e " <> tmpFile]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[RunToolOutput]
+
+RunToolOutput[args__, Verbose -> t_] := Block[{$tverbose = t}, RunToolOutput[args]];
+
+RunToolOutput[cmd_, args___] := Scope[
+	cmdPath = findTool[cmd];
+	args = procArg /@ {args};
+	args2 = BashEscape /@ args;
+	inFile = MakeTemporaryFile["tool", cmd <> ".#.sh"];
+	outFile = inFile <> ".out"; errFile = inFile <> ".err";
+	argStr = StringRiffle[Flatten[{cmdPath, args2, "1>" <> outFile, " 2>" <> errFile}], " "];
+	VPrint["Running \"", cmdPath, " ", StringRiffle[args2, " "]	, "\"."];
+	ExportUTF8[inFile, argStr];
+	If[Run["/bin/bash -e " <> inFile] =!= 0,
+		VPrint["Tool failed, returned error:", ImportUTF8 @ errFile];
+		ReturnFailed[]
+	];
+	ImportUTF8[outFile]
+]
 
 (**************************************************************************************************)
 
 PublicFunction[BashEscape]
 
-BashEscape[s_String] := If[MatchQ[s, ASCIIWord], s, StringJoin["'", StringReplace[s, {"'" -> "\\'", "\\" -> "\\\\"}], "'"]];
+BashEscape[s_String] := If[StringMatchQ[s, RegularExpression["[a-zA-Z_-]+"]], s, StringJoin["'", StringReplace[s, {"'" -> "\\'", "\\" -> "\\\\"}], "'"]];
 
 (**************************************************************************************************)
 

@@ -16,9 +16,8 @@ RunInTerminalWindow[directory_String, command_String] := Scope[
 
 PublicFunction[RunAppleScript]
 
-$scriptFile = FileNameJoin[{$TemporaryDirectory, "qg_temp_applescript.scpt"}];
-
 RunAppleScript[cmd_] := (
+    $scriptFile = MakeTemporaryFile["applescript.#.scpt"];
     ExportUTF8[$scriptFile, cmd];
     res = Run["osascript " <> $scriptFile];
     If[res === 0, Null, $Failed]

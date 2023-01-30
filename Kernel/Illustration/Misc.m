@@ -56,7 +56,7 @@ ExportNotebookOutputs[destination_String, prefix_String:"", sz_:3] := Scope[
   Print["# of cells: ", Length @ outputCells];
   $i = 1;
   Scan[cell |-> (
-    path = FileNameJoin[{destination, prefix <> IntegerString[$i++, 10, 3] <> ".png"}];
+    path = PathJoin[destination, prefix <> IntegerString[$i++, 10, 3] <> ".png"];
     image = Rasterize[cell, ImageFormattingWidth -> Infinity, ImageResolution -> Ceiling[144 * sz]];
     Print["Rasterizing ", ImageDimensions[image], " to ", path];
     Export[path, image])

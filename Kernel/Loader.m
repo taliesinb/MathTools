@@ -200,7 +200,7 @@ readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
   {contents, isDirty}
 ];
 
-loadFileContents[path_, context_] := Module[{str, contents},
+loadFileContents[path_, context_] := Module[{str, contents}, Block[{$currentContext = context},
   $loadedFileCount++; QuiverGeometryPackageLoader`$CurrentFile = path;
   str = StringReplace[fileStringUTF8 @ path, $stringProcessingRules];
   If[MatchQ[str, Whitespace] || str === "", Return @ Package`PackageData[]];
@@ -208,17 +208,24 @@ loadFileContents[path_, context_] := Module[{str, contents},
   If[FailureQ[contents], handleSyntaxError[path]];
   Block[{$Context = context}, contents = contents /. $initialSymbolResolutionDispatch /. ResolvedSymbol[sym_] :> sym];
   contents
-];
+]];
 
 $stringProcessingRules = {
   RegularExpression["(?s)\"\"\"(.*?)\"\"\""] :>
     StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""],
+  RegularExpression["(?s)ExpressionTable\\[\n(.*?)\n\\]"] :>
+    StringJoin["QuiverGeometryLoader`ExpressionTable[\"", $currentContext, "\", \"", StringTrim @ StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\"]"],
 (*   RegularExpression["(?s)(?<=\\s)`(.*?)`(?=\\s)"] :>
     StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""],
  *)
   RegularExpression[" ~!~ ([^\n]+)"] :> " ~NotMatchQ~ " <> bracketRHS["$1"],
   RegularExpression[" ~~~ ([^\n]+)"] :> " ~MatchQ~ " <> bracketRHS["$1"]
 }
+
+QuiverGeometryLoader`ExpressionTable[context_String, str_String] := Block[
+  {stream = StringToStream[str], $ContextPath = Append[$globalImports, "QuiverGeometry`"], $Context = context},
+  Replace[ReadList[stream, Hold[Expression]], Hold[Times[a___]] :> {a}, {1}]
+];
 
 (**************************************************************************************************)
 

@@ -72,7 +72,7 @@ $validPartitionCache = <||>;
 computeValidPartitions[{vertexList_, outTable_, allowGraphContractions_, permittedMatrix_, quiver_}] := Scope[
 
   path = CacheFilePath["QuiverContractions", vertexList, outTable, permittedMatrix];
-  Hold @ If[FileExistsQ[path], Return @ Import @ path];
+  Hold @ If[FileExistsQ[path], Return @ ImportMX @ path];
 
   vertexCount = Length @ vertexList;
   partitionGraph = RangePartitionGraph @ vertexCount;

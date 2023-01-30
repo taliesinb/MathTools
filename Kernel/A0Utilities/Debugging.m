@@ -91,7 +91,7 @@ toDynSpec[list_List, sym_] := {sym, First @ list, RadioButtonBar[Dynamic @ sym, 
 
 PublicFunction[PrintQGStack]
 
-$stackFile = FileNameJoin[{$TemporaryDirectory, "qg_stack.m"}];
+$stackFile := $stackFile = TemporaryPath["stack.m"];
 
 PrintQGStack[label_:None] := StackInhibit @ Block[
   {stack, cells},
@@ -215,15 +215,18 @@ msgPathBoxes[path_String] := With[
 ];
 
 trySystemOpen[s_String] := Scope[
-  If[FileExistsQ[s],                    Return @ sysOpen @ s];
-  If[FileExistsQ[s = FileNameDrop @ s], Return @ sysOpen @ s];
-  If[FileExistsQ[s = FileNameDrop @ s], Return @ sysOpen @ s];
+  If[StringStartsQ[s, "http://" | "https://"], Return @ SystemOpen @ s];
+  If[FileExistsQ[s],                           Return @ sysOpen @ s];
+  If[FileExistsQ[s = FileNameDrop @ s],        Return @ sysOpen @ s];
+  If[FileExistsQ[s = FileNameDrop @ s],        Return @ sysOpen @ s];
+  If[FileExistsQ[s = FileNameDrop @ s],        Return @ sysOpen @ s];
 ];
 
 sysOpen[s_String] := Switch[
   FileExtension[s],
-  "nb",      SetSelectedNotebook @ NotebookOpen[s, Visible -> True],
-  _,         SystemOpen @ NormalizePath @ s
+  "nb" | "m", SetSelectedNotebook @ NotebookOpen[s, Visible -> True],
+  "mx",       SetSelectedNotebook @ CreateDocument @ TextCell[ImportMX @ s, "Input"],
+  _,          SystemOpen @ NormalizePath @ s
 ];
 
 (**************************************************************************************************)
@@ -281,3 +284,73 @@ findMissingPackageScopes[] := Scope[
 possibleMissingPackageScope[names_] :=
   CountDistinct[ToExpression[names, InputForm, System`Private`HasAnyEvaluationsQ]] > 1;
 
+
+(**************************************************************************************************)
+
+PublicVariable[$XMLElementFormatting]
+
+SetInitialValue[$XMLElementFormatting, True];
+
+Unprotect[XMLElement];
+MakeBoxes[el:XMLElement[_String, _List, _List], StandardForm] /; TrueQ[$XMLElementFormatting] := xmlElementBoxes[el];
+Protect[XMLElement];
+
+xmlStyleBox[b_, c1_, c2_, f_:Bold] :=
+  FrameBox[StyleBox[DeployBox @ b, f], Background -> c1, FrameStyle -> c2, Alignment -> Baseline, FrameMargins -> {{5, 5}, {2, 0}}];
+
+xmlLeafCount = Case[
+  _ := 1;
+  XMLElement[_, _, list_List] := 1 + Total[% /@ list];
+];
+
+xmlElementHeadBox[xml:XMLElement[str_String, attrs_List, content_], showCount_:True] := With[
+  {ci = Mod[Hash @ str, 9]},
+  {c1 = Part[$LightColorPalette, ci], c2 = Part[$ColorPalette, ci]},
+  {lc = xmlLeafCount[xml], ec = Length @ Developer`ToList @ content},
+  {ls = Which[!showCount, "", lc <= 1, "", ec == lc, lc, True, {ec, "/", lc}]},
+  {b1 = xmlStyleBox[str, c1, c2]},
+  {b1 = If[ls === "", b1, RowBox[{b1, " ", StyleBox[TextString[Row @ Flatten @ {"\"(", ls, ")\""}], Plain, Smaller, c2]}]]},
+  If[attrs === {}, b1,
+    NiceTooltipBoxes[b1, ToBoxes[Grid[Transpose[MapFirst[Map[Style[#, Bold]&], KeysValues @ attrs]], Alignment -> Left, Spacings -> {1, .5}]], 1000]
+  ]
+];
+
+printXML[xml_] := Block[{$XMLElementFormatting = False}, CellPrint @ TextCell[xml, "Input"]];
+
+xmlOpenerBox[xml_, a_, b_List] := With[
+  {a1 = ClickBox[a, If[CurrentValue["ShiftKey"], printXML[xml], open$$ = !TrueQ[open$$]]]},
+  {a1b = TightColumnBox[Prepend[b, a1]]},
+  DynamicModuleBox[
+    {open$$ = 1},
+    DynamicBox[
+      If[TrueQ @ open$$, a1b, a1],
+      TrackedSymbols :> {open$$}
+    ],
+    DynamicModuleValues -> {open$$}
+  ]
+];
+
+ClearAll[xmlElementBoxes];
+
+xmlElementBoxes[xml:XMLElement[str_String, attrs_List, {content_} | content_String]] := With[
+  {b1 = ClickBox[xmlElementHeadBox[xml, False], If[CurrentValue["ShiftKey"], printXML @ xml]]},
+  TightRowBox[{b1, xmlElementBoxes[content]}]
+];
+
+xmlElementBoxes[xml:XMLElement[str_String, attrs_List, {}]] :=
+  ClickBox[xmlElementHeadBox[xml], If[CurrentValue["ShiftKey"], printXML @ xml]];
+
+xmlElementBoxes[xml:XMLElement[str_String, attrs_List, content_List]] := With[
+  {b1 = xmlElementHeadBox[xml]},
+  xmlOpenerBox[xml,
+    b1,
+    Map[TightRowBox[{TemplateBox[{5}, "Spacer1"], xmlElementBoxes[#]}]&, content]
+  ]
+];
+
+xmlElementBoxes[s2_String] := With[{s = StringTrim @ s2}, ClickBox[
+  xmlStyleBox[ToBoxes @ If[StringLength[s] > 20, StringTake[s, 20] <> "\[Ellipsis]", s], GrayLevel[0.9], $Gray, Plain],
+  If[CurrentValue["ShiftKey"], printXML[s]]
+]];
+
+xmlElementBoxes[o_] := "?";

@@ -4,7 +4,7 @@ Options[ToMarkdownString] = $genericMarkdownOptions;
 
 ToMarkdownString[spec_, returnVec:True|False:False, opts:OptionsPattern[]] := Scope[
   setupMarkdownGlobals[];
-  SetAutomatic[$rasterizationPath, ToFileName[$TemporaryDirectory, "raster"]];
+  SetAutomatic[$rasterizationPath, TemporaryPath["raster"]];
   toMarkdownStringInner[spec, returnVec]
 ];
 

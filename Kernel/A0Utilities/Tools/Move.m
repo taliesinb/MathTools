@@ -5,13 +5,25 @@ MoveFile::badsource = "Source `` does not exist."
 MoveFile::badtargetdir = "Parent of target `` does not exist."
 MoveFile::targetex = "Target `` already exists."
 
-MoveFile[source_String, target_String] := Scope[
+Options[MoveFile] = {
+  OverwriteTarget -> False
+};
+
+MoveFile[source_String, target_String, OptionsPattern[]] := Scope[
   source //= NormalizePath;
   target //= NormalizePath;
+  UnpackOptions[overwriteTarget];
   VPrint["Moving ", MsgPath @ source, " to ", MsgPath @ target];
   If[!FileExistsQ[source], ReturnFailed["badsource", MsgPath @ source]];
   isDir = DirectoryQ[source];
-  If[FileExistsQ[target], ReturnFailed["targetex", MsgPath @ target]];
+  If[FileExistsQ[target],
+    If[overwriteTarget,
+      VPrint["Target exists, trashing."];
+      TrashFile[target]
+    ,
+      ReturnFailed["targetex", MsgPath @ target]
+    ]
+  ];
   If[!DirectoryQ[FileNameDrop[target]], ReturnFailed["badtargetdir", MsgPath @ target]];
   If[$dryRun,
     success = True
@@ -27,3 +39,16 @@ MoveFile[source_String, target_String] := Scope[
 
 MoveFile[_, _] := $Failed;
 
+(**************************************************************************************************)
+
+PublicFunction[TrashFile]
+
+TrashFile::nofile = "File `` does not exist.";
+
+TrashFile[path_String] := Scope[
+  If[!FileExistsQ[path], ReturnFailed["nofile", MsgPath @ path]];
+  trashName = FileNameTake[path] <> "." <> RandomString[6];
+  trashPath = TemporaryPath["Trash", trashName];
+  MoveFile[path, trashPath];
+  trashPath
+];

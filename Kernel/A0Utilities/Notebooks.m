@@ -9,7 +9,7 @@ NotebookObjectQ = Case[
 
 PublicFunction[WithExternalMessageCapture]
 
-$tmpMessageFilePath = FileNameJoin[{$TemporaryDirectory, "messages.txt"}];
+$tmpMessageFilePath := $tmpMessageFilePath = TemporaryPath["messages.txt"];
 
 SetHoldFirst[WithExternalMessageCapture];
 
@@ -179,7 +179,7 @@ PublicFunction[CopyImageGalleryToClipboard]
 
 $galleryCount = 0;
 newImageGalleryTempDir[] := Scope[
-  dir = FileNameJoin[{$TemporaryDirectory, "temp_image_gallery", IntegerString @ $galleryCount++}];
+  dir = TemporaryPath["temp_image_gallery", IntegerString[$galleryCount++]];
   If[FileExistsQ[dir], DeleteDirectory[dir, DeleteContents -> True]];
   EnsureDirectory @ dir
 ];
@@ -199,7 +199,7 @@ CopyImageGalleryToClipboard[args___] := Scope[
 ];
 
 saveToGalleryFile[image_, {i_}] := Scope[
-  path = FileNameJoin[{$galleryDir, IntegerString[i] <> ".png"}];
+  path = PathJoin[$galleryDir, IntegerString[i] <> ".png"];
   Export[path, image, CompressionLevel -> 1];
   path
 ]

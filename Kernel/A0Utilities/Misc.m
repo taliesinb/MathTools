@@ -119,3 +119,4 @@ SetHoldFirst @ notInternalSymbolQ;
 
 notInternalSymbolQ[sym_Symbol] := !StringEndsQ[SymbolName @ Unevaluated @ sym, "$"];
 notInternalSymbolQ[_] := True;
+

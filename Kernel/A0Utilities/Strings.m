@@ -177,21 +177,6 @@ StringTrimLeftRight[left_, right_][str_] := StringTrimLeftRight[str, left, right
 
 (**************************************************************************************************)
 
-PublicFunction[SplitFirstLastName]
-
-$chineseName = "[A-Z][a-z]{1,4}";
-$chineseNamePattern = RegularExpression[$chineseName <> " " <> $chineseName <> " " <> $chineseName];
-
-SplitFirstLastName[str_String] := Which[
-  StringMatchQ[str, TitlecaseWord ~~ (" " ~~ LowercaseWord).. ~~ TitlecaseWord], StringSplit[str, " ", 2],
-  StringMatchQ[str, $chineseNamePattern],                                        StringReverse @ Reverse @ StringSplit[StringReverse @ str, " ", 2],
-  StringContainsQ[str, ", "],                                                    Reverse @ StringSplit[str, ", ", 2],
-  StringContainsQ[str, " "],                                                     StringSplit[str, " ", 2],
-  True,                                                                          {str}
-];
-
-(**************************************************************************************************)
-
 PublicVariable[$LowercaseGreekLetters, $UppercaseGreekLetters, $GreekLetters]
 
 $LowercaseGreekLetters = "\[Alpha]\[Beta]\[Gamma]\[Delta]\[CurlyEpsilon]\[Epsilon]\[Zeta]\[Eta]\[Theta]\[Iota]\[Kappa]\[Lambda]\[Mu]\[Nu]\[Xi]\[Pi]\[Rho]\[Sigma]\[Tau]\[CurlyPhi]\[Phi]\[Chi]\[Psi]\[Omega]";
@@ -200,12 +185,13 @@ $GreekLetters = StringJoin[$LowercaseGreekLetters, $UppercaseGreekLetters];
 
 (**************************************************************************************************)
 
-PublicSymbol[ASCIILetter, LowercaseLetter, UppercaseLetter, LowercaseGreekLetter, UppercaseGreekLetter, GreekLetter, DoubleQuote]
+PublicSymbol[ASCIILetter, LowercaseLetter, UppercaseLetter, AlphanumericCharacter, LowercaseGreekLetter, UppercaseGreekLetter, GreekLetter, DoubleQuote]
 
 declareStringLetterPattern[
   ASCIILetter -> "a-zA-Z0-9",
   LowercaseLetter -> "[:lower:]",
   UppercaseLetter -> "[:upper:]",
+  AlphanumericCharacter -> "[:alnum:]",
   LowercaseGreekLetter -> $LowercaseGreekLetters,
   UppercaseGreekLetter -> $UppercaseGreekLetters,
   GreekLetter -> $GreekLetters,
@@ -214,14 +200,46 @@ declareStringLetterPattern[
 
 (**************************************************************************************************)
 
-PublicSymbol[ASCIIWord, LowercaseWord, TitlecaseWord, TitlecasePhrase]
+PublicHead[ExceptLetterClass, LetterClass]
+
+$letterClassExceptRules = {
+  "^" -> "\\^"
+};
 
 declareStringPattern[
-  Word :> """\b(?:[[:alpha:]]+?)(?:'s|n't)?\b""",
-  ASCIIWord :> """\b(?:[a-zA-Z0-9]+?)\b""",
-  LowercaseWord :> "\\b[[:lower:]]+\\b",
-  TitlecaseWord :> "\\b[[:upper:]][[:lower:]]+\\b",
-  TitlecasePhrase :> """\b[[:upper:]][[:lower:]]+(?: (?:of |or |and |in |on |the |by |a |the )?[[:upper:]][[:lower:]]+)*\b"""
+  LetterClass[class_String] :> StringJoin["[", StringReplace[class, $letterClassExceptRules], "]"],
+  ExceptLetterClass[class_String] :> StringJoin["[^", StringReplace[class, $letterClassExceptRules], "]"]
+]
+
+(**************************************************************************************************)
+
+PublicFunction[ExpandPosixCharacterClasses]
+
+ExpandPosixCharacterClasses[expr_] := expr /. str_String :> RuleCondition @ StringReplace[str, $classTranslations];
+
+$classTranslations = {
+  "[:upper:]" -> "A-Z",
+  "[:lower:]" -> "a-z"
+  "[:digit:]" -> "0-9"
+  "[:alnum:]" -> "0-9A-Za-z",
+  "[:alpha:]" -> "a-zA-Z",
+  "[:blank:]" -> " \t",
+  "[:punct:]" -> "!\"#$%&'()*+,-./:;<=>?@\\\\\\[\\]^_`{|}~",
+  "[:space:]" -> "\n\t\r ",
+  "[:xdigit:]" -> "0-9A-Fa-f"
+}
+
+(**************************************************************************************************)
+
+PublicSymbol[ASCIIWord, LowercaseWord, TitlecaseWord, TitlecasePhrase, FullNamePhrase]
+
+declareStringPattern[
+  Word            :> """\b(?:[[:alpha:]]+?)(?:'s|n't)?\b""",
+  ASCIIWord       :> """\b(?:[a-zA-Z0-9]+?)\b""",
+  LowercaseWord   :> "\\b[[:lower:]]+\\b",
+  TitlecaseWord   :> "\\b[[:upper:]][[:lower:]]+\\b",
+  TitlecasePhrase :> """\b[[:upper:]][[:lower:]]+(?: (?:of |or |and |in |on |the |by |a |the )?[[:upper:]][[:lower:]]+)*\b""",
+  FullNamePhrase  :> """\b[[:upper:]][[:lower:]]+(?: [[:upper:]]\.?)*(?: van| der| de| von| st| del)*(?: [[:upper:]][[:lower:]]+\b)+"""
 ];
 
 (**************************************************************************************************)
@@ -276,3 +294,10 @@ PublicFunction[SingleLetterQ]
 
 SingleLetterQ[s_String] := StringLength[s] == 1;
 SingleLetterQ[_] := False;
+
+(**************************************************************************************************)
+
+PublicFunction[RandomString]
+
+$base36Chars = Characters @ "abcdefghijklmnopqrstuvwxyz0123456789";
+RandomString[n_Integer] := StringJoin @ Part[$base36Chars, RandomInteger[{1, 36}, n]];

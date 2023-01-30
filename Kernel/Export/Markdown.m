@@ -164,7 +164,7 @@ itemMarkdownPath[item_] := Scope[
   If[StringQ[$notebookPath] && $notebookPath =!= "",
     relPath = RelativePath[$notebookPath, FileNameDrop @ nbPath];
     relPath //= ReplaceNone[""]; (* paths outside $notebookPath will be put at top level *)
-    mdFileName = FileNameJoin[{ToLowerCase @ relPath, mdFileName}];
+    mdFileName = PathJoin[ToLowerCase @ relPath, mdFileName];
   ];
 
   If[$exportPathFunction =!= None,
@@ -172,6 +172,6 @@ itemMarkdownPath[item_] := Scope[
     If[!StringQ[mdFileName], ThrowMessage["badexppf"]];
   ];
 
-  FileNameJoin[{$markdownPath, mdFileName}]
+  PathJoin[$markdownPath, mdFileName]
 ];
 

@@ -119,3 +119,10 @@ PublicFunction[IndexIn]
 IndexIn[item_, index_] := FirstPosition[index, item, Null, {1}];
 IndexIn[index_][item_] := IndexIn[item, index];
 
+(**************************************************************************************************)
+
+PublicFunction[DuplicateIndices, DuplicateIndicesBy]
+
+DuplicateIndices[list_List | list_Association] := Select[Length[#] > 1&] @ Values @ PositionIndex @ list;
+
+DuplicateIndicesBy[list_List | list_Association, fn_] := DuplicateIndices @ Map[fn, list];

@@ -708,3 +708,79 @@ addOrUpdateRule[list_List, rule:(_[lhs_, rhs_])] := Module[{pos},
 ]
 
 addOrUpdateRule[rule_][list_] := addOrUpdateRule[list, rule];
+
+(**************************************************************************************************)
+
+PublicFunction[PathJoin]
+
+PathJoin[args___String] := FileNameJoin[{args}];
+
+_PathJoin := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicVariable[$TemporaryQGDirectory]
+
+$TemporaryQGDirectory := $TemporaryQGDirectory = EnsureDirectory[PathJoin[$TemporaryDirectory, "qg"]];
+
+(**************************************************************************************************)
+
+PublicFunction[TemporaryPath]
+
+TemporaryPath[file_String] := PathJoin[$TemporaryQGDirectory, args];
+TemporaryPath[args__String, file_String] := PathJoin[EnsureDirectory @ PathJoin[$TemporaryQGDirectory, args], file];
+
+(**************************************************************************************************)
+
+PublicFunction[MakeTemporaryFile]
+
+SetInitialValue[$tempFileCounter, 0];
+
+MakeTemporaryFile[args___String, name_String] := Scope[
+  fileName = StringReplace[name, "#" :> StringJoin[IntegerString[$ProcessID], "_", IntegerString[$tempFileCounter++, 10, 5]]];
+  TemporaryPath[args, fileName]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[PatchDatasetCodebase]
+
+PatchDatasetCodebase[] := (
+  Dataset;
+  TypeSystem`$TypeStandardFormsEnabled = True;
+  GeneralUtilities`Formatting`PackagePrivate`fullbox[DirectedInfinity[1]] := "\[Infinity]"
+  Dataset`DisplayWithType[data_] := Column[{data,  Dataset`GetType[data]}, Alignment -> Center];
+  Dataset`DisplayShapeFunction[ds_, size_:{8,8}] := Block[{type},
+    type = Dataset`GetType[ds];
+    PrettyForm @ TypeSystem`PackageScope`chooseShape[Normal @ ds, type, type, size, {}]
+  ];
+  Unprotect[TypeSystem`NestedGrid`PackagePrivate`formatAtom];
+  TypeSystem`NestedGrid`PackagePrivate`formatAtom[d:DateObject[_, "Instant", "Gregorian", ___]] := DateString[d, {"Day", "/","Month","/","YearShort"," ","Time"}];
+  ToExpression @ """
+    Begin["TypeSystem`Summary`PackagePrivate`"];
+    assocBox[t_List] := bracket["Assoc", RowBox @ Riffle[MapApply[ruleBox, t], $comma]];
+    bracket[head_, args___] := RowBox[{head, "[", args, "]"}]
+    $framestyle = LightGray;
+    lengthBox[b_, n_] := SubscriptBox[b, RowBox[{" ", lengthFieldBox @ n}]];
+    bracket[head_, args___] := RowBox[{head, GridBox[{{ItemBox["", Frame -> {{True, None}, {True, True}}], args, ItemBox["", Frame -> {{False, True}, {True, True}}]}},
+      ColumnSpacings -> {0, 0, 0}, GridFrameMargins->{{0.1,.1},{.1,0.1}}]}];
+    tbox[TypeSystem`Tuple[t_List]] := bracket["Tuple", dividedColumnBox[Map[typeBox, t], {Left}]];
+    dividedColumnBox[list_, align_] := GridBox[Developer`ToList /@ list, ColumnSpacings -> {1, 1, 0}, ColumnAlignments -> align, FrameStyle -> $LightGray, GridBoxDividers->{"Columns"->False,"Rows"->{False,{True},False}}];
+    tbox[TypeSystem`Vector[t_, n_]] := lengthBox[bracket["List", typeBox @ t], n];
+    tbox[TypeSystem`Struct[k_List, v_List]] := bracket["Record", structEntries @ MapThread[fieldBox, Unevaluated @ {k, v}]];
+    structEntries[list_List] := dividedColumnBox[Riffle[#, deemph @ "\[Rule]"]& /@ list, {Right, Center, Left}];
+    stringBox[s_String] := StyleBox[ToString[s, InputForm], FontColor -> Gray, FontFamily -> "Verdana", FontWeight -> Normal]
+    tbox[TypeSystem`Atom[TypeSystem`Enumeration[fields__String]]] := RowBox[{"Either", "[", " ", RowBox @ Riffle[Map[stringBox] @ List @ fields, $comma]," ", "]"}];
+    tbox[TypeSystem`Atom[q:Quantity[1, unit_]]] := RowBox[{letterBox @ "Quant", "[", stringBox @ quantString[q], "]"}];
+    quantString[q_System`Quantity] := StringTrim[ToString @ QuantityForm[q,"Abbreviation"], "1\[InvisibleSpace] "];
+    End[];
+  """
+);
+
+(**************************************************************************************************)
+
+PublicFunction[WithInternet]
+
+SetAttributes[WithInternet, HoldAll];
+
+WithInternet[body_] := Block[{$AllowInternet = True}, body];

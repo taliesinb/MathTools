@@ -41,7 +41,7 @@ DownloadGithubRepo[userName_String, repo_String, OptionsPattern[]] := Scope[
   localDir = ReplaceFileExtension[localFile, None];
   If[DirectoryQ[localDir], Goto["SkipDownload"]];
   VPrint["Downloading ", MsgPath @ url, " to ", MsgPath @ localFile];
-  Block[{$AllowInternet = True}, res = URLDownload[url, localFile, All, TimeConstraint -> 20]];
+  WithInternet[res = URLDownload[url, localFile, All, TimeConstraint -> 20]];
   If[res["StatusCode"] =!= 200 || !MatchQ[res["File"], _File],
     Quiet @ DeleteFile[localFile];
     ReturnFailed["baddownload", url, MsgPath @ localFile]

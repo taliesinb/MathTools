@@ -34,7 +34,7 @@ SiteGarbageCollectRasters[site_, OptionsPattern[]] := Scope[
   VPrint["* Searching ", Length @ markdownFiles, " markdown files in ", MsgPath @ markdownSearchPath, "."];
  
   matches = Flatten @ StringCases[markdownContent, markdownPattern];
-  matches = Map[FileNameJoin[{$rasterizationPath, FileNameTake[#]}]&, matches];
+  matches = Map[PathJoin[$rasterizationPath, FileNameTake[#]]&, matches];
   VPrint["* Found ", Length @ matches, " referenced images."];
 
   If[Length[matches] == 0, ReturnFailed[]];

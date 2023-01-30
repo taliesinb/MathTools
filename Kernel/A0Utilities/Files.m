@@ -28,7 +28,7 @@ CacheFilePath[name_, args___] :=
   CacheFilePath[name, args, FileExtension -> "mx"]
 
 CacheFilePath[name_, args___, FileExtension -> ext_] :=
-  FileNameJoin[{$CacheDirectory, name, StringJoin[Riffle[toCacheArgString /@ {args}, "_"], ".", ext]}];
+  PathJoin[$CacheDirectory, name, StringJoin[Riffle[toCacheArgString /@ {args}, "_"], ".", ext]];
 
 $simpleArgP = _Integer | _String | None | Infinity | False | True;
 
@@ -69,11 +69,88 @@ ToNotebookPath = Case[
 PublicFunction[CopyUnicodeToClipboard]
 
 CopyUnicodeToClipboard[text_] := Scope[
-  out = FileNameJoin[{$TemporaryDirectory, "temp_unicode.txt"}];
+  out = TemporaryPath["clipboard.txt"];
   Export[out, text, CharacterEncoding -> "UTF-8"];
   RunAppleScript["set the clipboard to ( do shell script \"cat " <> out <> "\" )"];
   DeleteFile[out];
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[ImportJSONString]
+
+ImportJSONString::badjson = "String `` does not appear to be valid JSON.";
+
+ImportJSONString[str_String] := Scope[
+  json = Quiet @ Check[Developer`ReadRawJSONString @ str, $Failed];
+  If[FailureQ[json], ReturnFailed["badjson", MsgExpr @ str]];
+  json /. Null -> None
+];
+
+_ImportJSONString := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[ImportJSON]
+
+ImportJSON::badjson = "File `` does not appear to be valid JSON."
+
+ImportJSON[path_String] := Scope[
+  path //= NormalizePath;
+  If[!FileExistsQ[path], ReturnFailed[]];
+  json = Quiet @ Check[Developer`ReadRawJSONFile @ path, $Failed];
+  If[FailureQ[json], Message[ImportJSON::badjson, MsgPath @ path]];
+  json /. Null -> None
+];
+
+_ImportJSON := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[ExportJSON]
+
+ExportJSON[path_String, expr_] := Scope[
+  path //= NormalizePath;
+  outStr = Developer`WriteRawJSONString[expr, Compact -> 4];
+  outStr = StringReplace[outStr, "\\/" -> "/"];
+  ExportUTF8[path, outStr]
+];
+
+_ExportJSON := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[ImportMX]
+
+ImportMX::nefile = "File `` does not exist.";
+ImportMX::fail = "File `` is corrupt.";
+
+ImportMX[path_String] := Block[
+  {System`Private`ConvertersPrivateDumpSymbol, path2 = NormalizePath @ path},
+  If[FailureQ[Quiet @ Check[Get[path2], $Failed]] || Head[System`Private`ConvertersPrivateDumpSymbol] =!= HoldComplete,
+    If[!FileExistsQ[path2],
+      Message[ImportMX::nefile, MsgPath @ path2],
+      Message[ImportMX::fail, MsgPath @ path2]
+    ];
+    $Failed
+  ,
+    First @ System`Private`ConvertersPrivateDumpSymbol
+  ]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[ExportMX]
+
+ExportMX::fail = "Could not write expression to ``.";
+ExportMX[path_String, expr_] := Block[
+  {System`Private`ConvertersPrivateDumpSymbol = HoldComplete[expr], path2 = NormalizePath @ path},
+  If[FailureQ @ Quiet @ Check[DumpSave[path2, System`Private`ConvertersPrivateDumpSymbol], $Failed],
+    Message[ExportMX::fail, MsgPath @ path2]; $Failed,
+    path2
+  ]
+];
+
 
 (**************************************************************************************************)
 
@@ -134,7 +211,7 @@ _PrettyPut := BadArguments[];
 
 PrivateFunction[LocalPath]
 
-LocalPath[args___] := FileNameJoin[{$PackageDirectory, args}];
+LocalPath[args___] := PathJoin[$PackageDirectory, args];
 
 (**************************************************************************************************)
 
@@ -185,7 +262,7 @@ ToAbsolutePath[baseDir$] is an operator form of ToAbsolutePath.
 "
 
 ToAbsolutePath[path_String ? AbsolutePathQ, base_] := NormalizePath @ path;
-ToAbsolutePath[path_String, base_String] := NormalizePath @ FileNameJoin[{base, path}];
+ToAbsolutePath[path_String, base_String] := NormalizePath @ PathJoin[base, path];
 ToAbsolutePath[None, _] := None;
 ToAbsolutePath[_, _] := $Failed;
 ToAbsolutePath[base_][spec_] := ToAbsolutePath[spec, base];
@@ -225,14 +302,20 @@ ToFileName[""|None, file_String] :=
   NormalizePath @ file;
 
 ToFileName[base_String, file_String] :=
-  NormalizePath @ FileNameJoin[{base, file}];
+  NormalizePath @ PathJoin[base, file];
 
 (**************************************************************************************************)
 
 PrivateFunction[ReplaceFileExtension]
 
 ReplaceFileExtension[path_, None] :=
-  FileNameJoin[{FileNameDrop @ path, FileBaseName[path]}];
+  PathJoin[FileNameDrop @ path, FileBaseName @ path];
 
 ReplaceFileExtension[path_, ext_] :=
-  FileNameJoin[{FileNameDrop @ path, FileBaseName[path] <> "." <> ext}];
+  PathJoin[FileNameDrop @ path, FileBaseName[path] <> "." <> ext];
+
+(**************************************************************************************************)
+
+PublicFunction[FileAge]
+
+FileAge[path_] := UnixTime[] - UnixTime[FileDate[path]];
