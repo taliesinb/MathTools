@@ -63,6 +63,18 @@ $QuiverGeometryStylesheetPath = LocalPath["StyleSheets", "QuiverGeometry.nb"];
 
 (**************************************************************************************************)
 
+PublicFunction[ApplyPrivateQuiverGeometryNotebookStyles]
+
+ApplyPrivateQuiverGeometryNotebookStyles[] := (
+  SetOptions[EvaluationNotebook[],
+    StyleDefinitions -> GeneratePrivateQuiverGeometryStylesheet[],
+    DockedCells -> None
+  ];
+);
+
+
+(**************************************************************************************************)
+
 PublicFunction[ApplyQuiverGeometryNotebookStyles]
 
 ApplyQuiverGeometryNotebookStyles[] :=

@@ -1,9 +1,11 @@
-PublicVariable[$KatexPrelude]
+PublicVariable[$KatexPrelude, $KatexPreludeFile]
 
-$KatexPrelude := $KatexPrelude = computeKatexPrelude[];
+SetInitialValue[$KatexPreludeFile, "KatexPrelude.tex"];
 
-computeKatexPrelude[] := Scope[
-  base = ImportUTF8 @ LocalPath["Kernel", "Markdown", "KatexPrelude.tex"];
+$KatexPrelude := computeKatexPrelude[$KatexPreludeFile];
+
+computeKatexPrelude[file_] := computeKatexPrelude[file] = Scope[
+  base = ImportUTF8 @ LocalPath["Kernel", "Markdown", file];
   add = EmitKatexFunctionDefinitions[];
   StringJoin[base, "\n\n", add]
 ];

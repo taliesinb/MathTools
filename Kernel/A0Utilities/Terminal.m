@@ -2,14 +2,14 @@ PublicFunction[RunInTerminalWindow]
 
 $runInTerminalTemplate = StringFunction @ StringTrim @ """
 tell application "Terminal"
-    do script "cd '#1'; #2"
-    activate
+  do script "cd '#1'; #2"
+  activate
 end tell
 """
 
 RunInTerminalWindow[directory_String, command_String] := Scope[
-    cmd = $runInTerminalTemplate[NormalizePath @ directory, command];
-    RunAppleScript[cmd]
+  cmd = $runInTerminalTemplate[NormalizePath @ directory, command];
+  RunAppleScript[cmd]
 ]
 
 (**************************************************************************************************)
@@ -17,8 +17,8 @@ RunInTerminalWindow[directory_String, command_String] := Scope[
 PublicFunction[RunAppleScript]
 
 RunAppleScript[cmd_] := (
-    $scriptFile = MakeTemporaryFile["applescript.#.scpt"];
-    ExportUTF8[$scriptFile, cmd];
-    res = Run["osascript " <> $scriptFile];
-    If[res === 0, Null, $Failed]
+  $scriptFile = MakeTemporaryFile["applescript.#.scpt"];
+  ExportUTF8[$scriptFile, cmd];
+  res = Run["osascript " <> $scriptFile];
+  If[res === 0, Null, $Failed]
 );

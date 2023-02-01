@@ -90,6 +90,10 @@ _                            _          \longmapsto         ⟼
 \[ThinSpace]                 _          \thinspace          _
 \[MediumSpace]               _          \medspace           _
 \[ThickSpace]                _          \thickspace         _
+\[NegativeVeryThinSpace]     _          \negvthinspace      _
+\[NegativeThinSpace]         _          \negthinspace       _
+\[NegativeMediumSpace]       _          \negmedspace        _
+\[NegativeThickSpace]        _          \negthickspace      _
                                                              
 \[ExponentialE]              E          e                   ⅇ
 \[ImaginaryI]                I          i                   ⅈ

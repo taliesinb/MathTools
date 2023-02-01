@@ -203,7 +203,7 @@ DownloadPaper[assoc_Association, OptionsPattern[]] := Scope[
   res = SafeURLDownload[pdfUrl, localPdfPath, OverwriteTarget -> True];
   If[!StringQ[res] || !FileExistsQ[res], ReturnFailed[]];
 
-  If[EChoHold[FileByteCount[res] < $minPaperSize],
+  If[FileByteCount[res] < $minPaperSize,
     VPrint["Downloaded file ", MsgPath @ res, " is too small, deleting."];
     TrashFile[res];
     ReturnFailed[];

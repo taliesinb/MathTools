@@ -195,6 +195,8 @@ $Arrowheads = {{"left", "right", "up", "down"}, {LeftArrowheadSymbol, RightArrow
     
 $Factors = {{"f", "b", "n", "F", "FB"}, {ForwardFactorSymbol, BackwardFactorSymbol, NeutralFactorSymbol, ForwardBackwardNeutralFactorSymbol, ForwardBackwardFactorSymbol}};
 
+$scriptCapitals = Characters /@ {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", "𝒜ℬ𝒞𝒟ℰℱ𝒢ℋℐ𝒥𝒦ℒℳ𝒩𝒪𝒫𝒬ℛ𝒮𝒯𝒰𝒱𝒲𝒳𝒴𝒵"};
+
 $quiverLetters = "FPQRGBS";
 
 decSymTable["$#",               Identity,                                   $Greek, $Greek];
@@ -213,6 +215,11 @@ symbolTable["$SqQ#",            SquareQuiverSymbol,                         $Mod
 symbolTable["$CbcQ#",           CubicQuiverSymbol,                          $ModQuiverDims];
 symbolTable["$CbcQ#",           TriangularQuiverSymbol,                     $ModQuiverDims];
 symbolTable["$CbcQ#",           GridQuiverSymbol,                           $ModQuiverDims];
+
+
+decSymTable["$C#",              CategorySymbol,                             $scriptCapitals];
+decSymTable["$Co#",             CategoryObjectSymbol,                       "abcdeuvwxyz"];
+decSymTable["$Ca#",             CategoryArrowSymbol,                        "efghjklmnpqrstuvw"];
                     
 decSymTable["$gv#",             VertexSymbol,                               $rom, "ghuvwtxyz"];
 symbolTable["$gv#",             VertexSymbol,                               "NESW"];

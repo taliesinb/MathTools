@@ -3,7 +3,7 @@ PublicVariable[$SymbolTranslationTable]
 $SymbolTranslationTable = Block[{str},
   rawString = ImportUTF8 @ LocalPath["Kernel", "Markdown", "SymbolTranslation.txt"];
   rawString //= StringReplace[{StartOfLine ~~ " "... ~~ "\n" -> "", " \\" -> " \\\\", "\"" -> "\\\""}];
-  parsedString = StringTrim @ ToExpression["\"" <> rawString <> "\"", InputForm];
+  parsedString = StringTrim[ToExpression["\"" <> rawString <> "\"", InputForm], " " | "\n"];
   table = StringExtract[parsedString, "\n" -> All, " ".. -> All] /. "_" -> None;
   table
 ];

@@ -40,6 +40,16 @@ RaiseBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> -n];
 
 (**************************************************************************************************)
 
+PublicFunction[DefineSymbolForm]
+
+DefineSymbolForm[formSym_Symbol] := With[
+  {name = SymbolName @ formSym},
+  DefineStandardTraditionalForm[formSym[e_] :> TBox[MakeQGBoxes @ e, name]];
+  DefineTemplateBox[name -> $1]
+];
+
+(**************************************************************************************************)
+
 PublicFunction[DefineUnaryForm]
   
 DefineUnaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
@@ -63,6 +73,20 @@ DefineBinaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
     boxFn[e_, f_] := TBox[e, f, name];
     DefineStandardTraditionalForm[formSym[e_, f_] :> boxFn[MakeQGBoxes @ e, MakeQGBoxes @ f]],
     DefineStandardTraditionalForm[formSym[e_, f_] :> TBox[MakeQGBoxes @ e, MakeQGBoxes @ f, name]]
+  ];
+  DefineTemplateBox[name -> boxes]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineTernaryForm]
+
+DefineTernaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
+  {name = SymbolName @ formSym},
+  If[boxFn =!= None,
+    boxFn[e_, f_] := TBox[e, f, name];
+    DefineStandardTraditionalForm[formSym[e_, f_, g_] :> boxFn[MakeQGBoxes @ e, MakeQGBoxes @ f, MakeQGBoxes @ g]],
+    DefineStandardTraditionalForm[formSym[e_, f_, g_] :> TBox[MakeQGBoxes @ e, MakeQGBoxes @ f, MakeQGBoxes @ g, name]]
   ];
   DefineTemplateBox[name -> boxes]
 ];
@@ -107,7 +131,7 @@ DefineConstantSymbolForm[sym_Symbol, boxes_] := With[
 PublicFunction[DefineUnaryStyleForm]
 
 DefineUnaryStyleForm[formSym_, style_, boxSym_:None] :=
-  DefineUnaryFormBox[formSym, StyleBox[$1, style], boxSym];
+  DefineUnaryForm[formSym, StyleBox[$1, style], boxSym];
 
 (**************************************************************************************************)
 
@@ -637,18 +661,19 @@ PublicFunction[DeclareLocalStyles]
 DeclareLocalStyles::taggingrules = "Could not update tagging rules.";
 
 SetHoldAll[DeclareLocalStyles];
-DeclareLocalStyles[e___] := Scope[
+DeclareLocalStyles[e___] := Scope @ Internal`InheritedBlock[{$templateToKatexFunction},
   $expressionToTemplateBoxRules = <||>;
   $templateBoxDisplayFunction = $katexDisplayFunction = <||>;
   $templateBoxNameCounts = <||>;
-  $templateToKatexFunction = <||>;
+  $templateToKatexFunction0 = $templateToKatexFunction;
   (e);
   privateStylesheet = GeneratePrivateQuiverGeometryStylesheet[];
   SetOptions[EvaluationNotebook[], StyleDefinitions -> privateStylesheet];
   katex = EmitKatexFunctionDefinitions[];
   currentRules = Lookup[Options[EvaluationNotebook[], TaggingRules], TaggingRules, <||>];
   If[!AssociationQ[currentRules], ReturnFailed["taggingrules"]];
-  taggingRules = Join[currentRules, <|"KatexDefinitions" -> katex, "TemplateToKatexFunctions" -> $templateToKatexFunction|>];
+  $newKatexFuncs = KeyDrop[$templateToKatexFunction, Keys @ $templateToKatexFunction0];
+  taggingRules = Join[currentRules, <|"KatexDefinitions" -> katex, "TemplateToKatexFunctions" -> $newKatexFuncs|>];
   SetOptions[EvaluationNotebook[], TaggingRules -> taggingRules];
 ];
 

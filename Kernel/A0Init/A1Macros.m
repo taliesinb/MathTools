@@ -245,13 +245,13 @@ EchoCellPrint[cells2_] := Module[{cells},
 PublicMacro[BadArguments]
 
 Clear[BadArguments];
-General::badarguments = "Bad arguments.";
+General::badarguments = "Bad arguments: ``.";
 
 BadArguments /: (Set|SetDelayed)[lhsHead_Symbol[lhs___], BadArguments[]] :=
-  SetDelayed[lhsHead[lhs], Message[MessageName[lhsHead, "badarguments"]]; $Failed];
+  SetDelayed[$LHS:lhsHead[lhs], Message[MessageName[lhsHead, "badarguments"], MsgExpr @ Unevaluated @ $LHS]; $Failed];
 
 BadArguments /: (Set|SetDelayed)[Verbatim[Blank][lhsHead_Symbol], BadArguments[]] :=
-  SetDelayed[_lhsHead, Message[MessageName[lhsHead, "badarguments"]]; $Failed];
+  SetDelayed[$LHS_lhsHead, Message[MessageName[lhsHead, "badarguments"], MsgExpr @ Unevaluated @ $LHS]; $Failed];
 
 DefineMacro[BadArguments, BadArguments[] := Quoted[Message[MessageName[$LHSHead, "badarguments"]]; Return[$Failed]]];
 
@@ -727,7 +727,7 @@ $TemporaryQGDirectory := $TemporaryQGDirectory = EnsureDirectory[PathJoin[$Tempo
 
 PublicFunction[TemporaryPath]
 
-TemporaryPath[file_String] := PathJoin[$TemporaryQGDirectory, args];
+TemporaryPath[file_String] := PathJoin[$TemporaryQGDirectory, file];
 TemporaryPath[args__String, file_String] := PathJoin[EnsureDirectory @ PathJoin[$TemporaryQGDirectory, args], file];
 
 (**************************************************************************************************)
