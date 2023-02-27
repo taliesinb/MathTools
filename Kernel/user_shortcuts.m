@@ -217,10 +217,20 @@ symbolTable["$CbcQ#",           TriangularQuiverSymbol,                     $Mod
 symbolTable["$CbcQ#",           GridQuiverSymbol,                           $ModQuiverDims];
 
 
+QuiverGeometry`Shortcuts`Arr[x_, y_] := MorphismForm[x, y];
+QuiverGeometry`Shortcuts`Arr[l_, x_, y_] := NamedMorphismForm[l, x, y];
+
 decSymTable["$C#",              CategorySymbol,                             $scriptCapitals];
-decSymTable["$Co#",             CategoryObjectSymbol,                       "abcdeuvwxyz"];
-decSymTable["$Ca#",             CategoryArrowSymbol,                        "efghjklmnpqrstuvw"];
-                    
+decSymTable["$O#",              CategoryObjectSymbol,                       "abcdeuvwxyzst"];
+symbolTable["$IdA#",            IdArrow[CategoryObjectSymbol[#]]&,          "abcdeuvwxyzst"];
+decSymTable["$A#",              CategoryArrowSymbol,                        "efghjklmnpqrstuvw"];
+
+QuiverGeometry`Shortcuts`Hom[x_, y_] := HomForm[x, y];
+QuiverGeometry`Shortcuts`Hom[c_, x_, y_] := ExplicitHomForm[c, x, y];
+
+makeSym["MPF",                  MonoidalProductForm];
+makeSym["CPF",                  CartesianProductForm];
+
 decSymTable["$gv#",             VertexSymbol,                               $rom, "ghuvwtxyz"];
 symbolTable["$gv#",             VertexSymbol,                               "NESW"];
 decSymTable["$gv#",             VertexSymbol,                               "o", "o"];
@@ -229,7 +239,7 @@ symbolTable["$gv#1#2#3",        VertexSymbol[#2[#3[#1]]]&,                  Join
 makeSym["VVPF",                 VerticalVertexProductForm];
 makeSym["VPF",                  VertexProductForm];
 makeSym["EPF",                  EdgeProductForm];
-makeSym["CPF",                  CardinalProductForm];
+
 makeSym["QPAF",                 QuiverProductAppliedForm];
 makeSym["CQPAF",                CompactQuiverProductAppliedForm];
 makeSym["LQPF",                 LockedQuiverProductForm];
