@@ -10,7 +10,7 @@ ToKatexString::partial = "Could not fully evaluate katex equivalents.";
 
 boxesToKatexString[boxes_] := Scope[
   $inputBoxes = boxes;
-  interm = boxToKatex @ cleanupInlineBoxes @ boxes;
+  interm = boxToKatex @ tryEvalBox @ cleanupInlineBoxes @ boxes;
   flatTerms = Flatten @ List @ ReplaceRepeated[$katexAppliedRule] @ interm;
   If[!StringVectorQ[flatTerms], ReturnFailed["partial"]];
   katexString = StringJoin @ flatTerms;
@@ -20,6 +20,13 @@ boxesToKatexString[boxes_] := Scope[
 $katexAppliedRule = {
   (s_String)[args___] :> {"\\" <> s <> "{", Riffle[{args}, "}{"], "}"}
 }
+
+$unevalBoxP = RowBox[{_, "[", _, "]"}] | RowBox[{_, "@" | "/@" | "@@" | "@@@" | "//", _}];
+
+tryEvalBox = Case[
+  boxes : $unevalBoxP := ToBoxes[cleanupInlineBoxes @ Check[toInlineExpression[boxes, StandardForm], $Failed], StandardForm];
+  boxes_ := boxes;
+];
 
 boxToKatex = Case[
   "," := ",";
@@ -62,6 +69,7 @@ boxToKatex = Case[
   SubscriptBox[e_, b_] := {% @ e, "_", toBracket @ b};
   OverscriptBox[e_, "^"] := {"\\hat{", % @ e, "}"};
   
+  RowBox[{h_, "[", RowBox[args_List], "]"}] := {% @ h, "(", Map[%, args], ")"};
   RowBox[{a_, "\[DirectedEdge]", b_}] := "de"[% @ a, % @ b];
   RowBox[{a_, "\[UndirectedEdge]", b_}] := "ue"[% @ a, % @ b];
   RowBox[{"{", e__, "}"}] := {"\{", % /@ {e}, "\}"};

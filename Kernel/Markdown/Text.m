@@ -42,13 +42,13 @@ textCellToMarkdown[e_] := Scope[
     Return[""]
   ];
   Check[
-    text = StringTrim @ $textPostProcessor @ StringJoin @ textCellToMarkdownOuter @ e;
+    text = StringTrim @ StringJoin @ textCellToMarkdownOuter @ e;
   ,
     Message[ToMarkdownString::msgs];
-    PrintBadCell @ e;
+    Print[MsgExpr[text, 6, 50]];
+    PrintBadCell[e];
   ];
-  If[!StringQ[text], Return["bad text"]];
-  If[StringContainsQ[text, "\\badDispatch"], PrintBadCell @ text];
+  If[!StringQ[text], Return["### Markdown generation failed"]];
   If[StringContainsQ[text, $forbiddenStrings], Return[""]];
   (* these are disabled for now because they involve the assumption that $ is the katex delimiter, and they
   have other QG-specific things in them *)
@@ -152,7 +152,6 @@ procTextualNewlines = Case[
   other_                      := other;
 ];
 
-
 toMultilineMath[boxes_] := $multilineMathTemplate @ baseToMath @ procTextualNewlines @ boxes;
 toInlineMath[boxes_]    := $inlineMathTemplate @ baseToMath @ boxes;
 
@@ -164,6 +163,11 @@ baseToMath[box_] /; StringQ[$localKatexDefinitions] := Block[
 
 baseToMath[box_] := $katexPostprocessor @ boxesToKatexString @ box;
 
+(**************************************************************************************************)
+(*
+asInlineMath[e_] := StringJoin["\[LeftSkeleton]0", e, "0\[RightSkeleton]"];
+asMultilineMath[e_] := StringJoin["\[LeftSkeleton]1", e, "1\[RightSkeleton]"];
+ *)
 (**************************************************************************************************)
 
 PrivateFunction[textBoxesToMarkdown]
@@ -177,7 +181,7 @@ this will allow us to interpret $ as coming soley from user and not a result of 
 $lastSpace = True;
 textBoxesToMarkdown = Case[
   str_String :=
-    checkLastSpace @ str;
+    $textPostProcessor @ StringJoin @ checkLastSpace @ str;
 
   list_List :=
     Map[%, list];
@@ -211,7 +215,8 @@ textBoxesToMarkdown = Case[
     StringJoin["[", linkText, "](", url, ")", StringRepeat["\n", numNewlines]]
   ];
 
-  StyleBox[boxes_, opts___] := styleBoxToMarkdown @ StyleBox[boxes, Apply[Sequence] @ Sort @ List @ FilterOptions[styleBoxToMarkdown, opts]];
+  StyleBox[boxes_, opts___] :=
+    $textPostProcessor @ StringJoin @ styleBoxToMarkdown @ StyleBox[boxes, Apply[Sequence] @ Sort @ List @ FilterOptions[styleBoxToMarkdown, opts]];
 
   other_ := complainBoxes[other];
 ];

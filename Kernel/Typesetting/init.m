@@ -40,102 +40,25 @@ RaiseBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> -n];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineSymbolForm]
-
-DefineSymbolForm[formSym_Symbol] := With[
-  {name = SymbolName @ formSym},
-  DefineStandardTraditionalForm[formSym[e_] :> TBox[MakeQGBoxes @ e, name]];
-  DefineTemplateBox[name -> $1]
-];
-
-(**************************************************************************************************)
-
-PublicFunction[DefineUnaryForm]
-  
-DefineUnaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
-  {name = SymbolName @ formSym},
-  If[boxFn =!= None,
-    boxFn[e_] := TBox[e, name];
-    DefineStandardTraditionalForm[formSym[e_] :> boxFn[MakeQGBoxes @ e]],
-    DefineStandardTraditionalForm[formSym[e_] :> TBox[MakeQGBoxes @ e, name]]
-  ];
-  DefineTemplateBox[name -> boxes]
-];
-
-
-(**************************************************************************************************)
-
-PublicFunction[DefineBinaryForm]
-  
-DefineBinaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
-  {name = SymbolName @ formSym},
-  If[boxFn =!= None,
-    boxFn[e_, f_] := TBox[e, f, name];
-    DefineStandardTraditionalForm[formSym[e_, f_] :> boxFn[MakeQGBoxes @ e, MakeQGBoxes @ f]],
-    DefineStandardTraditionalForm[formSym[e_, f_] :> TBox[MakeQGBoxes @ e, MakeQGBoxes @ f, name]]
-  ];
-  DefineTemplateBox[name -> boxes]
-];
-
-(**************************************************************************************************)
-
-PublicFunction[DefineTernaryForm]
-
-DefineTernaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
-  {name = SymbolName @ formSym},
-  If[boxFn =!= None,
-    boxFn[e_, f_] := TBox[e, f, name];
-    DefineStandardTraditionalForm[formSym[e_, f_, g_] :> boxFn[MakeQGBoxes @ e, MakeQGBoxes @ f, MakeQGBoxes @ g]],
-    DefineStandardTraditionalForm[formSym[e_, f_, g_] :> TBox[MakeQGBoxes @ e, MakeQGBoxes @ f, MakeQGBoxes @ g, name]]
-  ];
-  DefineTemplateBox[name -> boxes]
-];
-
-(**************************************************************************************************)
-
-PublicFunction[DefineRiffledForm]
-  
-DefineRiffledForm[formSym_Symbol, boxes_, riffledBox_, boxFn_:None] := With[
-  {name = SymbolName @ formSym, isSimple = SameQ[boxes, RowBox[$1]]},
-  If[boxFn =!= None,
-    If[isSimple,
-      boxFn[e_] := e; boxFn[] := "",
-      boxFn[e_] := TBox[e, name]];
-    boxFn[seq___] := TBox[Riffle[{seq}, riffledBox], name];
-    DefineStandardTraditionalForm[formSym[e_] :> boxFn[MakeQGBoxes[e]]];
-    DefineStandardTraditionalForm[formSym[seq___] :> boxFn[MakeQGBoxSequence[seq]]]
-  ,
-  If[isSimple,
-      DefineStandardTraditionalForm[{formSym[e_] :> "", formSym[e_] :> MakeQGBoxes[e]}],
-      DefineStandardTraditionalForm[formSym[e_] :> TBox[MakeQGBoxes[e], name]]];
-    DefineStandardTraditionalForm[formSym[seq___] :> TBox[Riffle[MakeQGBoxes /@ {seq}, riffledBox], name]]
-  ];
-  If[isSimple,
-    DefineTemplateBox[name -> DBox[boxes], {}, #&],
-    DefineTemplateBox[name -> DBox[boxes]]
-  ];
-];
-
-(**************************************************************************************************)
-
-PublicFunction[DefineConstantSymbolForm]
-
-DefineConstantSymbolForm[sym_Symbol, boxes_] := With[
-  {lname = LowerCaseFirst @ SymbolName @ sym},
-  DefineStandardTraditionalForm[sym :> SBox[lname]];
-  DefineTemplateBox[lname -> boxes]
-]
-  
-(**************************************************************************************************)
-
-PublicFunction[DefineUnaryStyleForm]
-
-DefineUnaryStyleForm[formSym_, style_, boxSym_:None] :=
-  DefineUnaryForm[formSym, StyleBox[$1, style], boxSym];
-
-(**************************************************************************************************)
-
 PublicFunction[DefineTemplateBox]
+
+SetUsage @ "
+DefineTemplateBox['tname$' -> boxes$] defines the template %DisplayFunction for %TemplateBox[$$, 'tname$'] to be the \
+literal value of boxes$, where $1, $2, etc are the slots. Evaluation is not allowed because DisplayFunctions \
+cannot do anything other than simple substitution anyway.
+DefineTemplateBox[templateSpec$, katexSpec$] defines the Katex display function definition that will be embedded into prelude.
+DefineTemplateBox[templateSpec$, katexSpec$, conversionSpec$] defines how to convert a %TemplateBox[$$] into a call to Katex display function.
+* The Katex display function spec katexSpec$ can be one of:
+| Automatic | use katexified version of boxes$ present in the %TemplateBox definition (the first argument) |
+| kboxes$ | use katexified version of kboxes$ |
+| 'kname$' -> spec$ | names the katex display function 'kname$', rather than shortening 'tname$' |
+* The conversion from a %TemplateBox into Katex display template call is described by conversionSpec$:
+| Automatic | convert %TemplateBox[args$$, 'tname$'] into \\kname${args$$} |
+| 'tname$' -> Function[$$] | convert %TemplateBox[args$$, 'tname$'] by applying function to args$$ |
+| 'tname$' \[RuleDelayed] body | do a literal replacement of $1, $2, etc in body$  |
+* The name of Automatic will use the same 'tname$' as the first argument.
+* Any of the specs can be lists, these will be scanned over.
+"
 
 DefineTemplateBox = Case[
   boxSpec_List := Scan[%, boxSpec];
@@ -158,16 +81,16 @@ procTSpec = Case[
 DefineTemplateBox::arg1 = "First argument `` is invalid.";
 
 procKSpec = Case[
-  Automatic := $[Automatic -> Automatic];
-  Automatic -> boxes_ := $[toKname[$tname] -> boxes];
-  name_String -> Automatic := $[name -> $tboxes];
-  specs:{___Rule} := Last[Map[procKSpec, specs], None];
+  Automatic                              := $[Automatic -> Automatic];
+  Automatic -> boxes_                    := $[toKname[$tname] -> boxes];
+  name_String -> Automatic               := $[name -> $tboxes];
+  specs:{___Rule}                        := Last[Map[procKSpec, specs], None];
   name_String -> boxes:Except[_Function] := (
     $kname = name;
     $katexDisplayFunction[name] = toSlotFn[boxes] //. KatexSwitch[_, b_] :> b;
   );
-  boxes:Except[_Rule] := $[Automatic -> boxes];
-  spec_ := ThrowMessage["arg2", spec, $tname];
+  boxes:Except[_Rule]                    := $[Automatic -> boxes];
+  spec_                                  := ThrowMessage["arg2", spec, $tname];
 ];
 DefineTemplateBox::arg2 = "Second argument `` for TBox `` is invalid.";
 
@@ -242,7 +165,344 @@ PrintTemplateBoxDefinitions[] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[DefineTaggedForm]
+
+SetRelatedSymbolGroup[DefineTaggedForm, DefineUnaryForm]
+SetRelatedSymbolGroup[DefineUnaryForm, DefineBinaryForm, DefineTernaryForm]
+SetRelatedSymbolGroup[DefineBinaryForm, DefineLiteralInfixBinaryForm]
+SetRelatedSymbolGroup[DefineInfixForm, DefineLiteralInfixForm]
+SetRelatedSymbolGroup[DefineRiffledForm, DefineLiteralRiffledForm]
+SetRelatedSymbolGroup[DefineInfixForm, DefineRiffledForm, DefineLeftRightForm]
+SetRelatedSymbolGroup[DefineLiteralInfixForm, DefineLiteralRiffledForm, DefineLiteralLeftRightForm]
+SetRelatedSymbolGroup[DefineLeftRightForm, DefineLiteralLeftRightForm]
+SetRelatedSymbolGroup[DefineUnaryForm, DefineUnaryStyleForm]
+
+SetUsage @ "
+DefineTaggedForm[symbol$] defines symbol$[arg$1] to boxify to %TemplateBox[{arg$1}, 'symbol$'], \
+which displays as arg$1.
+* A shortened katex macro is set up, which looks like \\sym{arg$1}.
+"
+
+SetListable[DefineTaggedForm];
+
+DefineTaggedForm[formSym_Symbol] := With[
+  {name = SymbolName @ formSym},
+  DefineStandardTraditionalForm[formSym[e_] :> TBox[MakeQGBoxes @ e, name]];
+  DefineTemplateBox[name -> $1]
+];
+
+_DefineTaggedForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineUnaryForm]
+
+SetUsage @ "
+DefineUnaryForm[symbol$, boxes$] defines symbol$[arg$1] to boxify to %TemplateBox[{arg$1}, 'symbol$'], \
+which displays as boxes$ where $1 is substituted.
+* A shortened katex macro is set up, which looks like \\sym{arg$1}.
+* A third argument specifies a box function which can be called to construct the underlying boxes directly.
+"
+
+DefineUnaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
+  {name = SymbolName @ formSym},
+  If[boxFn =!= None,
+    boxFn[e_] := TBox[e, name];
+    DefineStandardTraditionalForm[formSym[e_] :> boxFn[MakeQGBoxes @ e]],
+    DefineStandardTraditionalForm[formSym[e_] :> TBox[MakeQGBoxes @ e, name]]
+  ];
+  DefineTemplateBox[name -> boxes]
+];
+
+_DefineUnaryForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineBinaryForm]
+
+SetUsage @ "
+DefineBinaryForm[symbol$, boxes$] defines symbol$[arg$1, arg$2] to boxify to %TemplateBox[{arg$1, arg$2}, 'symbol$'], \
+which displays as boxes$ where $1, $2 are substituted.
+* A shortened katex macro is set up, which looks like \\sym{arg$1, arg$2}.
+* A third argument specifies a box function which can be called to construct the underlying boxes directly.
+"
+
+DefineBinaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
+  {name = SymbolName @ formSym},
+  If[boxFn =!= None,
+    boxFn[e_, f_] := TBox[e, f, name];
+    DefineStandardTraditionalForm[formSym[e_, f_] :> boxFn[MakeQGBoxes @ e, MakeQGBoxes @ f]],
+    DefineStandardTraditionalForm[formSym[e_, f_] :> TBox[MakeQGBoxes @ e, MakeQGBoxes @ f, name]]
+  ];
+  DefineTemplateBox[name -> boxes]
+];
+
+_DefineBinaryForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineTernaryForm]
+
+SetUsage @ "
+DefineTernaryForm[symbol$, boxes$] defines symbol$[arg$1, arg$2, arg$3] to boxify to %TemplateBox[{arg$1, arg$2, arg$3}, 'symbol$'], \
+which displays as boxes$ where $1, $2, $3 are substituted.
+* A shortened katex macro is set up, which looks like \\sym{arg$1, arg$2, arg$3}.
+* A third argument specifies a box function which can be called to construct the underlying boxes directly.
+"
+
+DefineTernaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
+  {name = SymbolName @ formSym},
+  If[boxFn =!= None,
+    boxFn[e_, f_] := TBox[e, f, name];
+    DefineStandardTraditionalForm[formSym[e_, f_, g_] :> boxFn[MakeQGBoxes @ e, MakeQGBoxes @ f, MakeQGBoxes @ g]],
+    DefineStandardTraditionalForm[formSym[e_, f_, g_] :> TBox[MakeQGBoxes @ e, MakeQGBoxes @ f, MakeQGBoxes @ g, name]]
+  ];
+  DefineTemplateBox[name -> boxes]
+];
+
+_DefineTernaryForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineLiteralInfixBinaryForm]
+
+SetUsage @ "
+DefineLiteralInfixBinaryForm[symbol$, infixBox$] defines symbol$[arg$1, arg$2] to boxify to %RowBox[{arg$1, infixBox$, arg$2}].
+* No katex macro is set up.
+* The bare head symbol$ just displays as infixBox$.
+"
+
+DefineLiteralInfixBinaryForm[formSym_Symbol, infixBox_] :=
+  DefineStandardTraditionalForm[{
+    formSym :> infixBox,
+    formSym[a_, b_] :> RBox[MakeQGBoxes @ a, RBox[" ", infixBox, " "], MakeQGBoxes @ b]
+  }];
+
+_DefineLiteralInfixBinaryForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineLiteralInfixForm]
+
+SetUsage @ "
+DefineLiteralInfixForm[symbol$, infixBox$] defines symbol$[arg$1, arg$2, $$] to boxify to %RowBox[{arg$1, infixBox$, arg$2, infixBox$, $$}].
+* No katex macro is set up.
+* The bare head symbol$ just displays as infixBox$.
+* symbol$[] display as nothing.
+* symbol$[arg$1] displays as arg$1.
+* DefineLiteralInfixForm uses only %DefineStandardTraditionalForm internally.
+"
+
+DefineLiteralInfixForm[formSym_Symbol, infixBox_] :=
+  DefineStandardTraditionalForm[{
+    formSym :> infixBox,
+    formSym[] :> "",
+    formSym[e_] :> MakeQGBoxes[e],
+    formSym[seq__] :> RowBox[Riffle[MakeQGBoxes /@ {seq}, RBox[" ", infixBox, " "]]]
+  }];
+
+_DefineLiteralInfixForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineInfixForm]
+
+SetUsage @ "
+DefineInfixForm[symbol$, infixBox$] defines symbol$[arg$1, arg$2, $$] to boxify to %TemplateBox[{arg$1, infixBox$, arg$2, infixBox$, $$}, 'symbol$'], \
+which displays as RowBox[{arg$1, infixBox$, arg$2, infixBox$, $$}].
+* A shortened katex macro is set up, which looks like \\sym{arg$1, arg$2, $$}.
+* The bare head symbol$ just displays as infixBox$.
+* symbol$[] display as nothing.
+* symbol$[arg$1] displays as arg$1.
+"
+
+DefineInfixForm[formSym_Symbol, riffledBox_] := With[
+  {name = SymbolName @ formSym},
+  DefineStandardTraditionalForm[{
+    formSym :> riffledBox,
+    formSym[] :> "",
+    formSym[e_] :> MakeQGBoxes[e],
+    formSym[seq__] :> TBox[Riffle[MakeQGBoxes /@ {seq}, RBox[" ", riffledBox, " "]], name]
+  }];
+  DefineTemplateBox[name -> DBox[RowBox[$1]], {}, #&]
+];
+
+_DefineInfixForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineLeftRightForm]
+
+SetUsage @ "
+DefineLeftRightForm[symbol$, leftBox$, rightBox$] defines symbol$[arg$] to boxify to %TemplateBox[{arg$}, 'symbol'], \
+which displays as %RowBox[{leftBox$, arg$, rightBox$}].
+* A shortened Katex macro is also set up.
+* If they are single characters, Katex \\left and \\right is used for the left and right boxes.
+"
+
+DefineLeftRightForm[formSym_Symbol, leftBox_, rightBox_] := With[
+  {name = SymbolName @ formSym, lbox = toLrBox[leftBox, "\\left"], rbox = toLrBox[rightBox, "\\right"]},
+  DefineStandardTraditionalForm[
+    formSym[arg_] :> TBox[MakeQGBoxes @ arg, name]
+  ];
+  DefineTemplateBox[name -> RBox[lbox, " ", $1, " ", rbox]]
+];
+
+toLrBox[s_String ? SingleLetterQ, wrapper_] := KatexSwitch[s, wrapper[s]];
+toLrBox[other_, _] := other;
+
+_DefineLeftRightForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineLiteralLeftRightForm]
+
+SetUsage @ "
+DefineLiteralLeftRightForm[symbol$, leftBox$, rightBox$] defines symbol$[arg$] to boxify to %RowBox[{leftBox$, arg$, rightBox$}].
+* No katex macro is set up.
+* If they are single characters, Katex \\left and \\right is used for the left and right boxes via the 'katexSwitch' template box.
+* DefineLiteralInfixForm uses only %DefineStandardTraditionalForm internally.
+"
+
+DefineLiteralLeftRightForm[formSym_Symbol, lbox_, rbox_] := With[
+  {name = SymbolName @ formSym},
+  If[SingleLetterQ[lbox],
+    DefineStandardTraditionalForm[
+      formSym[arg_] :> With[{box = MakeQGBoxes @ arg},
+        TBox[
+          RBox[lbox, box, rbox],
+          RBox["left"[lbox], " ", box, " ", "right"[rbox]],
+          "katexSwitch"
+        ]
+      ]
+    ],
+    DefineStandardTraditionalForm[
+      formSym[arg_] :> RBox[lbox, MakeQGBoxes @ arg, rbox]
+    ]
+  ];
+];
+
+_DefineLiteralLeftRightForm := BadArguments[];
+
+DefineTemplateBox["katexSwitch" -> $1, {}, "katexSwitch" :> $2];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineRiffledForm]
+
+SetUsage @ "
+DefineRiffledForm[symbol$, containerBoxes$, riffleBox$] defines symbol$[$$] to boxify to %TemplateBox[{{$$}}, 'symbol'], \
+which displays as containerBoxes$ with $1 substituted to be a list of boxes riffled with riffleBox$.
+* A shortened Katex macro is also set up.
+* DBox should be used in container$ to ensure the single template argument, a list, is processed correctly.
+* A fourth argument specifies a box function which can be called to construct the underlying boxes directly.
+"
+
+DefineRiffledForm[formSym_Symbol, boxes_, riffledBox_, boxFn_:None] := With[
+  {name = SymbolName @ formSym, isSimple = SameQ[boxes, RowBox[$1]]},
+  If[boxFn =!= None,
+    If[isSimple,
+      boxFn[e_] := e; boxFn[] := "",
+      boxFn[e_] := TBox[e, name]
+    ];
+    boxFn[seq___] := TBox[Riffle[{seq}, riffledBox], name];
+    DefineStandardTraditionalForm[formSym[seq___] :> boxFn[MakeQGBoxSequence[seq]]]
+  ,
+    If[isSimple,
+      DefineStandardTraditionalForm[{formSym[] :> "", formSym[e_] :> MakeQGBoxes[e]}],
+      DefineStandardTraditionalForm[{formSym[] :> TBox[{}, name], formSym[e_] :> TBox[List @ MakeQGBoxes[e], name]}]
+    ];
+    DefineStandardTraditionalForm[formSym[seq___] :> TBox[Riffle[MakeQGBoxes /@ {seq}, riffledBox], name]]
+  ];
+  If[isSimple,
+    DefineTemplateBox[name -> DBox[boxes], {}, #&],
+    DefineTemplateBox[name -> DBox[boxes]]
+  ];
+];
+
+_DefineRiffledForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineLiteralRiffledForm]
+
+SetUsage @ "
+DefineLiteralRiffledForm[symbol$, containerBoxes$, riffleBox$] defines symbol$[$$] to boxify to containerBoxes$ \
+with $1 substituted to be a list of boxes riffled with riffleBox$.
+* No shortened Katex macro is set up.
+* If container$ is RowBox[$1], a %TemplateBox will not be created for zero and single arg cases.
+* A fourth argument specifies a box function which can be called to construct the underlying boxes directly.
+* DefineLiteralRiffledForm uses only %DefineStandardTraditionalForm internally.
+"
+
+DefineLiteralRiffledForm[formSym_Symbol, containerBoxes_, riffledBox_, boxFn_:None] := With[
+  {containerFn = Construct[Function, containerBoxes] /. $1 :> Riffle[#1, riffledBox]},
+  If[boxFn =!= None,
+    boxFn[seq___] := containerFn @ {seq};
+    DefineStandardTraditionalForm[formSym[seq___] :> boxFn[MakeQGBoxSequence[seq]]]
+  ,
+    DefineStandardTraditionalForm[formSym[seq___] :> containerFn @ Map[MakeQGBoxes, {seq}]]
+  ];
+];
+
+_DefineLiteralRiffledForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineSymbolForm]
+
+SetUsage @ "
+DefineSymbolForm[symbol$ -> boxes$] defines symbol$ to boxify to %TemplateBox[{}, 'symbol'].
+* A shortened Katex macro is also set up.
+"
+
+SetListable[DefineSymbolForm];
+
+DefineSymbolForm[sym_Symbol -> boxes_] := With[
+  {lname = LowerCaseFirst @ SymbolName @ sym},
+  DefineStandardTraditionalForm[sym :> SBox[lname]];
+  DefineTemplateBox[lname -> boxes]
+]
+
+_DefineSymbolForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineLiteralSymbolForm]
+
+SetUsage @ "
+DefineLiteralSymbolForm[symbol$ -> boxes$] defines symbol$ to boxify to boxes$.
+* No shortened Katex macro is set up.
+* DefineLiteralSymbolForm uses only %DefineStandardTraditionalForm internally.
+"
+
+SetListable[DefineLiteralSymbolForm];
+
+DefineLiteralSymbolForm[sym_Symbol -> boxes_] :=
+  DefineStandardTraditionalForm[sym :> boxes];
+
+_DefineLiteralSymbolForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineUnaryStyleForm]
+
+SetUsage @ "
+DefineUnaryStyleForm[symbol$, style$] defines symbol$[$$] to boxify to %StyleBox[$$, style$].
+* DefineUnaryStyleForm uses %DefineUnaryForm internally.
+* A third argument specifies a box function which can be called to construct the underlying boxes directly.
+"
+
+DefineUnaryStyleForm[formSym_, style_, boxSym_:None] :=
+  DefineUnaryForm[formSym, StyleBox[$1, style], boxSym];
+
+(**************************************************************************************************)
+
 PublicHead[KatexSwitch]
+
+SetUsage @ "
+KatexSwitch[wlForm$, kForm$] displays as wlForm$ but converts to Katex as kForm$.
+"
 
 toTName[base_, 1] := base;
 toTName[base_, 0] := LowerCaseFirst @ base;

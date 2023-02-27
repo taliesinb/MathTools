@@ -186,11 +186,11 @@ PrintBadCell[c_Cell] :=
   CellPrint @ ReplaceOptions[c, {Background -> RGBColor[1,0.95,0.95], CellDingbat -> "!"}];
 
 PrintBadCell[e_] :=
-  CellPrint @ Cell[e, "Text", Background -> RGBColor[1,0.95,0.95], CellDingbat -> "!"]
+  CellPrint @ Cell[e, "Text", Background -> RGBColor[1,0.95,0.95], CellDingbat -> "!"];
 
 (**************************************************************************************************)
 
-ToMarkdownString::badcell = "Error occurred while converting cell. cellToMarkdownInner1 did not return a string (or Nothing). Instead it returned expression with head ``, see $LastFailedMarkdownOutput. Entire bad cell is printed below.";
+ToMarkdownString::badcell = "Error occurred while converting cell. cellToMarkdownInner1 did not return a string (or Nothing). Instead it returned expression ``, see $LastFailedMarkdownOutput. Entire bad cell is printed below.";
 
 cellToMarkdownInner0[cell_] := Scope[
   result = cellToMarkdownInner1[cell];
@@ -198,7 +198,8 @@ cellToMarkdownInner0[cell_] := Scope[
     result
   ,
     $LastFailedMarkdownInput ^= cell; $LastFailedMarkdownOutput ^= result;
-    Message[ToMarkdownString::badcell, Head @ result];
+    Message[ToMarkdownString::badcell, MsgExpr @ result];
+    PrintBadCell[MsgExpr @ result];Beep[];
     PrintBadCell[cell];
     "### BAD CELL"
   ]

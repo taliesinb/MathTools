@@ -330,7 +330,9 @@ _                            _          \smallblacktriangleleft  ⏴
 \[GothicCapitalX]            _          \mathfrak{X}        𝔛
 \[GothicCapitalY]            _          \mathfrak{Y}        𝔜
 \[GothicCapitalZ]            _          \mathfrak{Z}        ℨ
-                                                             
+
+_                            _          \bbcolon            ﹕
+_                            _          \bbsemicolon        ﹔
 \[DoubleStruckA]             _          \mathbb{a}          𝕒
 \[DoubleStruckB]             _          \mathbb{b}          𝕓
 \[DoubleStruckC]             _          \mathbb{c}          𝕔

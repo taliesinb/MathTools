@@ -1,7 +1,7 @@
 PrivateSymbol[$inlineWLExprReplacement, $inlineWLExprReplacement2, $inlineWLVarReplacement]
 
 ToMarkdownString::inlinewlbox = "Inline WL \"``\" did not generate valid KateX.";
-ToMarkdownString::inlinewlsym = "Inline WL \"``\" generated novel symbol.";
+ToMarkdownString::inlinewlsym = "Inline WL \"``\" generated novel symbol(s): ``.";
 
 $inlineWLExprReplacement = "$[" ~~ s:Shortest[Repeated[Except["\n"]]] ~~ "]$" :> createInlineMath[s];
 $inlineWLExprReplacement2 = "((" ~~ s:Shortest[Repeated[Except["\n"]]] ~~ "))" :> createInlineMath[s];
@@ -11,7 +11,7 @@ TODO: ue this instead: RegularExpression @ "(\\(\\([^\n]+\\)\\))|(\\$[[:alpha:]]
 *)
 
 createInlineMath[str_String] := Scope[
-  res = toInlineExpression[str];
+  res = toInlineExpression[str, InputForm];
   If[FailureQ[res], res = badInlinePlaceholder[str]];
 
   katex = $katexPostprocessor @ boxesToKatexString @ ToBoxes[res, StandardForm];
@@ -26,17 +26,17 @@ ToMarkdownString::inlinewlmsg = "Inline WL \"``\" generated messages while evalu
 
 PrivateFunction[toInlineExpression]
 
-toInlineExpression[str_String] := Block[
+toInlineExpression[str_, form_] := Block[
   {$Context = "QuiverGeometryPackageLoader`Scratch`",
    $ContextPath = {"System`", "Global`", "QuiverGeometry`", "QuiverGeometry`Shortcuts`"},
    result},
-  held = Quiet @ Check[ToExpression[str, InputForm, Hold], $Failed];
+  held = Quiet @ Check[ToExpression[str, form, Hold], $Failed];
   If[FailureQ @ held,
     Message[ToMarkdownString::inlinewlsyn, str];
     Return @ $Failed;
   ];
   If[Names["QuiverGeometryPackageLoader`Scratch`*"] =!= {},
-    Message[ToMarkdownString::inlinewlsym, str];
+    Message[ToMarkdownString::inlinewlsym, str, Names["QuiverGeometryPackageLoader`Scratch`*"]];
     Quiet @ Remove["QuiverGeometryPackageLoader`Scratch`*"];
     Return @ $Failed;
   ];

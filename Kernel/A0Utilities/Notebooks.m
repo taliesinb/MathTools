@@ -385,8 +385,6 @@ ToggleInlineCells[cell_CellObject] := Scope[
   ];
 ];
 
-When two paths are(( PCF[ CP[$gva,$gvb,$gvc], CP[$gvc,$gvd] ] = CP[$gva,$gvb,$gvc,$gvd] ))
-
 $toggledInlineCellP = FormBox[TagBox[_, "ToggledInlineCell" -> _], _];
 
 toggleToText = Case[
@@ -420,7 +418,7 @@ splitToCode[str_String] :=
   }];
 
 makeToggledInlineCell[str_] := Scope[
-  expr = toInlineExpression[str];
+  expr = toInlineExpression[str, InputForm];
   If[FailureQ[expr], BadBeep[]; Return @ str];
   boxes = ToBoxes[expr, StandardForm];
   boxes = TagBox[boxes, "ToggledInlineCell" -> str];
