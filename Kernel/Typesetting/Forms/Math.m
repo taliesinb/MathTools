@@ -47,13 +47,13 @@ declareSumLikeFormatting[ProductForm, "indexProd"];
 
 PublicForm[PlusForm]
 
-declareInfixSymbol[PlusForm] // usingCustomKatex[" + "];
+DefineLiteralInfixForm[PlusForm, " + "]
 
 (**************************************************************************************************)
 
 PublicForm[SubtractForm]
 
- declareInfixSymbol[SubtractForm] // usingCustomKatex[" - "];
+declareInfixSymbol[SubtractForm] // usingCustomKatex[" - "];
 
 (**************************************************************************************************)
 
@@ -65,14 +65,14 @@ declareUnaryForm[MinusForm];
 
 PublicForm[TimesForm]
 
-declareInfixSymbol[TimesForm] // usingCustomKatex["times"];
+DefineLiteralInfixForm[TimesForm, "\[Times]"]
 
 (**************************************************************************************************)
 
-PublicForm[ParenthesesForm, SpacedParenthesesForm]
+PublicFormBox[Parentheses, SpacedParentheses]
 
-declareCommaRiffledForm[ParenthesesForm, "paren"];
-declareCommaRiffledForm[SpacedParenthesesForm, "paren"];
+DefineLiteralRiffledForm[ParenthesesForm, RBox["(", RowBox[$1], ")"], ",", ParenthesesBox];
+DefineLiteralRiffledForm[SpacedParenthesesForm, RBox["(", RowBox[$1], ")"], RBox[",", "\[MediumSpace]"], SpacedParenthesesBox];
 
 (**************************************************************************************************)
 
@@ -86,8 +86,8 @@ declareBoxFormatting[
 
 PublicForm[CeilingForm, FloorForm]
 
-declareUnaryForm[CeilingForm]
-declareUnaryForm[FloorForm]
+DefineLiteralLeftRightForm[CeilingForm, "\[LeftCeiling]", "\[RightCeiling]"]
+DefineLiteralLeftRightForm[FloorForm, "\[LeftFloor]", "\[RightFloor]"]
 
 (**************************************************************************************************)
 

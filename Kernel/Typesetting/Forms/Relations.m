@@ -1,13 +1,12 @@
 PublicForm[ElementOfForm, NotElementOfForm]
 
-declareBoxFormatting[
-  ElementOfForm[a__, b_] :> makeTemplateBox[CommaRowForm[a], b, "ElementOfForm"],
-  ElementOfForm[a_, b_] :> makeTemplateBox[a, b, "ElementOfForm"],
-  NotElementOfForm[a_, b_] :> makeTemplateBox[a, b, "NotElementOfForm"]
-];
+DefineLiteralInfixBinaryForm[ElementOfForm, "\[Element]"];
+DefineLiteralInfixBinaryForm[NotElementOfForm, "\[NotElement]"];
 
-$TemplateKatexFunction["ElementOfForm"] = "elemOf";
-$TemplateKatexFunction["NotElementOfForm"] = "notElemOf";
+DefineStandardTraditionalForm[{
+  ElementOfForm[a_, as__, b_] :> MakeBoxes @ ElementOfForm[CommaRowForm[a, as], b],
+  NotElementOfForm[a_, as__, b_] :> MakeBoxes @ ElementOfForm[CommaRowForm[a, as], b]
+}];
 
 (**************************************************************************************************)
 

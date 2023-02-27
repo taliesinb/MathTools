@@ -41,13 +41,9 @@ declareBinaryForm[RepeatedMultisetForm];
 
 PublicForm[SetUnionForm, SetIntersectionForm, SetRelativeComplementForm]
 
-declareInfixSymbol[{SetUnionForm, SetIntersectionForm, SetRelativeComplementForm}];
-
-(**************************************************************************************************)
-
-PublicForm[MultisetUnionForm, MultisetIntersectionForm, MultisetRelativeComplementForm, MultisetSumForm]
-
-declareInfixSymbol[{MultisetUnionForm, MultisetIntersectionForm, MultisetRelativeComplementForm, MultisetSumForm}];
+DefineInfixForm[SetUnionForm, "\[Union]"]
+DefineInfixForm[SetIntersectionForm, "\[Intersection]"]
+DefineBinaryForm[SetRelativeComplementForm, RBox[$1, " - ", $2]]
 
 (**************************************************************************************************)
 
@@ -164,7 +160,7 @@ $TemplateKatexFunction["AssociativeArrayForm"] = applyRiffled["assocArray", ","]
 
 PublicForm[CartesianProductForm]
 
-declareInfixSymbol[CartesianProductForm];
+DefineInfixForm[CartesianProductForm, "\[Times]"];
 
 (**************************************************************************************************)
 
