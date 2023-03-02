@@ -2,7 +2,7 @@ PrivateFunction[outputCellToMarkdown]
 
 outputCellToMarkdown = Case[
 
-  b:BoxData[TemplateBox[_, _ ? textTagQ]]                     := textCellToMarkdown @ b;
+  b:BoxData[TemplateBox[_, _ ? textTagQ] | TagBox[_, "QG"]]   := textCellToMarkdown @ b;
 
   BoxData[t:TemplateBox[_, "VideoBox1" | "VideoBox2", ___]]   := videoBoxToMarkdown @ t;
 
@@ -25,6 +25,7 @@ execution to pure text output when it would otherwise involve rasterization or K
 TODO: support italic, bold, etc. *)
 
 pureTextBoxesQ = Case[
+  TagBox[_, "QG"]                              := False;
   RowBox[e_List]                               := VectorQ[e, pureTextBoxesQ];
   e_List                                       := VectorQ[e, pureTextBoxesQ];
   FormBox[_ButtonBox ? pureTextBoxesQ, _]      := True;

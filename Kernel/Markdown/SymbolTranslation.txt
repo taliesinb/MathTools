@@ -139,8 +139,8 @@ _                            Reals      \R                  ℝ
 \[Implies]                   _          \implies            ⟹
                                                              
 \[EmptySet]                  _          \emptyset           ∅
-\[Element]                   _          \elem               ∈
-\[NotElement]                _          \nelem              ∉
+\[Element]                   _          \in                 ∈
+\[NotElement]                _          \notin              ∉
 \[Subset]                    _          \sub                ⊂
 \[NotSubset]                 _          \nsubset            ⊄
 \[SubsetEqual]               _          \subseteq           ⊆

@@ -101,8 +101,7 @@ $TemplateKatexFunction["ThinSpacedForm"] = katexAliasRiffled["enspace"];
 
 PublicForm[MapsToForm]
 
-declareBinaryForm[MapsToForm] // usingCustomKatex["mto"];
-$TemplateKatexFunction["MapsToSymbol"] = katexAlias["mtoSymbol"];
+DefineLiteralInfixBinaryForm[MapsToForm, "\[RightTeeArrow]"];
 
 (**************************************************************************************************)
 

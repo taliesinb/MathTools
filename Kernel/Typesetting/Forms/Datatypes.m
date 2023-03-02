@@ -55,14 +55,7 @@ declareUnaryForm[PowerSetForm];
 
 PublicForm[SetSymbolForm, SignedSetSymbolForm, SetElementSymbolForm, SignedSetElementSymbolForm, MultisetSymbolForm, MultisetElementSymbolForm, SignedMultisetSymbolForm, SignedMultisetElementSymbolForm]
 
-declareSymbolFormExplicit[SetSymbolForm];
-declareSymbolFormExplicit[MultisetSymbolForm];
-declareSymbolFormExplicit[SignedSetSymbolForm];
-declareSymbolFormExplicit[SignedMultisetSymbolForm];
-declareSymbolFormExplicit[SetElementSymbolForm];
-declareSymbolFormExplicit[SignedSetElementSymbolForm];
-declareSymbolFormExplicit[MultisetElementSymbolForm];
-declareSymbolFormExplicit[SignedMultisetElementSymbolForm];
+DefineTaggedForm[{SetSymbolForm, MultisetSymbolForm, SignedSetSymbolForm, SignedMultisetSymbolForm, SetElementSymbolForm, SignedSetElementSymbolForm, MultisetElementSymbolForm, SignedMultisetElementSymbolForm}]
 
 (**************************************************************************************************)
 

@@ -47,7 +47,7 @@ declareSumLikeFormatting[ProductForm, "indexProd"];
 
 PublicForm[PlusForm]
 
-DefineLiteralInfixForm[PlusForm, " + "]
+DefineLiteralInfixForm[PlusForm, "+"]
 
 (**************************************************************************************************)
 

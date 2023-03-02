@@ -40,6 +40,10 @@ RaiseBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> -n];
 
 (**************************************************************************************************)
 
+tagAsMath[t_] := TagBox[t /. TagBox[e_, "QG"] :> e, "QG"];
+
+(**************************************************************************************************)
+
 PublicFunction[DefineTemplateBox]
 
 SetUsage @ "
@@ -274,8 +278,8 @@ DefineLiteralInfixBinaryForm[symbol$, infixBox$] defines symbol$[arg$1, arg$2] t
 
 DefineLiteralInfixBinaryForm[formSym_Symbol, infixBox_] :=
   DefineStandardTraditionalForm[{
-    formSym :> infixBox,
-    formSym[a_, b_] :> RBox[MakeQGBoxes @ a, RBox[" ", infixBox, " "], MakeQGBoxes @ b]
+    formSym :> tagAsMath @ infixBox,
+    formSym[a_, b_] :> tagAsMath @ RBox[MakeQGBoxes @ a, RBox[" ", infixBox, " "], MakeQGBoxes @ b]
   }];
 
 _DefineLiteralInfixBinaryForm := BadArguments[];
@@ -295,10 +299,10 @@ DefineLiteralInfixForm[symbol$, infixBox$] defines symbol$[arg$1, arg$2, $$] to 
 
 DefineLiteralInfixForm[formSym_Symbol, infixBox_] :=
   DefineStandardTraditionalForm[{
-    formSym :> infixBox,
+    formSym :> tagAsMath @ infixBox,
     formSym[] :> "",
-    formSym[e_] :> MakeQGBoxes[e],
-    formSym[seq__] :> RowBox[Riffle[MakeQGBoxes /@ {seq}, RBox[" ", infixBox, " "]]]
+    formSym[e_] :> tagAsMath @ MakeQGBoxes[e],
+    formSym[seq__] :> tagAsMath @ RowBox[Riffle[MakeQGBoxes /@ {seq}, RBox[" ", infixBox, " "]]]
   }];
 
 _DefineLiteralInfixForm := BadArguments[];
@@ -377,7 +381,7 @@ DefineLiteralLeftRightForm[formSym_Symbol, lbox_, rbox_] := With[
       ]
     ],
     DefineStandardTraditionalForm[
-      formSym[arg_] :> RBox[lbox, MakeQGBoxes @ arg, rbox]
+      formSym[arg_] :> tagAsMath @ RBox[lbox, MakeQGBoxes @ arg, rbox]
     ]
   ];
 ];
@@ -439,9 +443,9 @@ DefineLiteralRiffledForm[formSym_Symbol, containerBoxes_, riffledBox_, boxFn_:No
   {containerFn = Construct[Function, containerBoxes] /. $1 :> Riffle[#1, riffledBox]},
   If[boxFn =!= None,
     boxFn[seq___] := containerFn @ {seq};
-    DefineStandardTraditionalForm[formSym[seq___] :> boxFn[MakeQGBoxSequence[seq]]]
+    DefineStandardTraditionalForm[formSym[seq___] :> tagAsMath @ boxFn[MakeQGBoxSequence[seq]]]
   ,
-    DefineStandardTraditionalForm[formSym[seq___] :> containerFn @ Map[MakeQGBoxes, {seq}]]
+    DefineStandardTraditionalForm[formSym[seq___] :> tagAsMath @ containerFn @ Map[MakeQGBoxes, {seq}]]
   ];
 ];
 
@@ -479,7 +483,7 @@ DefineLiteralSymbolForm[symbol$ -> boxes$] defines symbol$ to boxify to boxes$.
 SetListable[DefineLiteralSymbolForm];
 
 DefineLiteralSymbolForm[sym_Symbol -> boxes_] :=
-  DefineStandardTraditionalForm[sym :> boxes];
+  DefineStandardTraditionalForm[sym :> tagAsMath @ boxes];
 
 _DefineLiteralSymbolForm := BadArguments[];
 

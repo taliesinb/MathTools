@@ -2,7 +2,7 @@
 
 PublicForm[PrimedForm]
 
-declareUnaryWrapperForm[PrimedForm];
+DefineUnaryForm[PrimedForm, SuperscriptBox[$1, "\[Prime]"]]
 
 (**************************************************************************************************)
 
