@@ -150,10 +150,15 @@ UnsameOperator[f_][g_] := UnsameQ[f, g];
 
 (**************************************************************************************************)
 
-PublicFunction[StyleOperator]
+PublicFunction[StyleOperator, StyleBoxOperator]
 
+StyleOperator[] = Identity;
 StyleOperator[None] = Identity;
 StyleOperator[spec___][e_] := Style[e, spec];
+
+StyleBoxOperator[] = Identity;
+StyleBoxOperator[None] = Identity;
+StyleBoxOperator[spec___][e_] := StyleBox[e, spec];
 
 (**************************************************************************************************)
 

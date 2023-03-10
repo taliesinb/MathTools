@@ -2244,6 +2244,15 @@ $rasterSizeFixupRules = {
 
 PublicOption[LabelPosition, LabelOrientation]
 
+SetUsage @ "
+LabelOrientation is an option that determines how labels are oriented, and can accept the following settings:
+| Vertical | align labels vertically |
+| Horizontal | align labels horizontally |
+| n$ | align labels at n$ degrees |
+| 'Aligned' | align labels with the underlying object |
+| 'Upright' | align labels with underlying object, but make sure they are never upside down (not implemented) |
+"
+
 $uniformPayloadSizes = False;
 generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {labelStyle_, labelPosition_, labelSpacing_, labelBaseStyle_, labelOrientation_}, annotations_, isVertices_] := Scope[
   $annotationKeys = Keys @ annotations;
@@ -2514,6 +2523,10 @@ placeLabelAt[None | _Missing, _, _] := Nothing;
 
 makeMagnifier[1|1.0] := Identity;
 makeMagnifier[scale_] := Magnify[#, scale]&;
+
+(**************************************************************************************************)
+
+
 
 (**************************************************************************************************)
 

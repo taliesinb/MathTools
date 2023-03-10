@@ -28,6 +28,12 @@ EchoGraphicsScope[e_] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[ToGraphicsBoxes]
+
+ToGraphicsBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics] //. InterpretationBox[b_, _] :> b;
+
+(**************************************************************************************************)
+
 PublicFunction[DynamicPointGraphics]
 
 DynamicPointGraphics[n_Integer, fn_] := Replace[

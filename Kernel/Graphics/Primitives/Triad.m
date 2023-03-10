@@ -60,7 +60,11 @@ triadBoxes[is3d_, {a_, b_, c_}, opts___Rule] := Scope[
     strip = StyleBox[strip, EdgeForm @ None];
   ];
 
-  points = BendyCurvePoints[{a, b, c}, Lookup[triadBendOptions, BendRadius, .1], Lookup[triadBendOptions, BendShape, "Arc"]];
+  points = rollingCurvePoints @ RollingCurve[
+    {a, b, c},
+    BendRadius -> Lookup[triadBendOptions, BendRadius, .1],
+    BendShape -> Lookup[triadBendOptions, BendShape, "Arc"]
+  ];
   polygon = makePolygon[points, triadColor, triadEdgeColor, triadEdgeThickness];
   edge = makeLine[{a, b, c, a}, triadEdgeColor, triadEdgeThickness, None];
 

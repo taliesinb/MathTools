@@ -513,7 +513,7 @@ QuiverGeometryPackageLoader`Read[cachingEnabled_:True, fullReload_:True] :=
 QuiverGeometryPackageLoader`Load[fullReload_:True, fullRead_:False] := Block[
   {$AllowInternet = False},
   FinishDynamic[];
-  PreemptProtect @ Block[{packages},
+  Block[{packages},
   packages = QuiverGeometryPackageLoader`Read[!fullRead, fullReload];
   If[FailureQ[packages], ReturnFailed[]];
   QuiverGeometryPackageLoader`$LoadCount++;

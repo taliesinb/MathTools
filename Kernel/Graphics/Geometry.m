@@ -149,11 +149,13 @@ PublicFunction[DiscretizeCurve]
 SetUsage @ "
 DiscretizeCurve[points$] gives a discretized path for a %BezierCurve through those points.
 DiscretizeCurve[points$, f$] gives a discretized path for f$[points$].
-DiscretizeCurve[object$] supports the following objects:
+DiscretizeCurve[object$] supports the following existing graphics primitives:
 | %Line[$$] | returns the line unchanged |
 | %Circle[$$] | samples the circle as a 32-gon, or between the provided angle endpoints |
 | %BezierCurve[$$] | samples the curve using %DiscretizeGraphics |
 | %BSplineCurve[$$] | as above |
+* The following custom primitives are also supported:
+* %ElbowCurve, %RollingCurve, %VectorCurve, %CompassCurve, %LoopCurve, %SetbackCurve
 "
 
 DiscretizeCurve[points_List, f_:BezierCurve] := DiscretizeCurve[f[points]];
@@ -171,6 +173,27 @@ DiscretizeCurve[curve:(BezierCurve|BSplineCurve)[___]] := Scope[
   region = DiscretizeGraphics @ MapAt[ToPacked, curve, 1];
   ToPackedReal @ Catenate @ region["EdgeCoordinates"]
 ];
+
+DiscretizeCurve[BezierCurve[points_List]] :=
+  DiscretizeCurve @ BezierCurve[points, SplineDegree -> 3];
+
+DiscretizeCurve[BezierCurve[points_List, SplineDegree -> n_Integer]] := Replace[
+  GeometricFunctions`BezierCurve[ToPackedReal @ points, SplineDegree -> n],
+  {GraphicsComplex[coords_List, Line[indices_List]] :> ToPackedReal @ Part[coords, indices], _ :> $Failed}
+];
+
+DiscretizeCurve[ElbowCurve[a_, b_, amount_:Automatic]] :=
+  DiscretizeCurve @ BezierCurve @ elbowBezierCurvePoints[a, b, amount];
+
+DiscretizeCurve[c_RollingCurve] := rollingCurvePoints @ c;
+
+DiscretizeCurve[c_CompassCurve] := compassCurvePoints @ c;
+
+DiscretizeCurve[c_LoopCurve] := loopCurvePoints @ c;
+
+DiscretizeCurve[c_SetbackCurve] := setbackCurvePoints @ c;
+
+DiscretizeCurve[VectorCurve[pos_, dir_]] := ToPackedReal @ {pos, pos + dir};
 
 (**************************************************************************************************)
 

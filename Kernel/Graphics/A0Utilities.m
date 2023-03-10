@@ -22,7 +22,7 @@ CosSin[theta_] := {Cos[theta], Sin[theta]};
 
 (**************************************************************************************************)
 
-PublicFunction[VectorReflect]
+PublicFunction[VectorReflect, VectorReflectHorizontal, VectorReflectVertical]
 
 SetUsage @ "
 VectorReflect[v$, rv$] reflects the vector v$ in the hyperplane perpendicular to rv$.
@@ -31,6 +31,9 @@ VectorReflect[v$, rv$] reflects the vector v$ in the hyperplane perpendicular to
 VectorReflect[v_, rv_] := Expand[v - (2 * Dot[rv, v] / Dot[rv, rv]) * rv];
 VectorReflect[v_, rv_ ? System`Private`ValidQ] := Expand[v - (2 * Dot[rv, v]) * rv]; (* TODO: remove this, it is used in RootSystem somehow *)
 VectorReflect[rv_][v_] := VectorReflect[v, rv];
+
+VectorReflectHorizontal[v_] := Threaded[{-1, 1}] * v;
+VectorReflectVertical[v_] := Threaded[{1, -1}] * v;
 
 (**************************************************************************************************)
 
@@ -189,56 +192,6 @@ SetLengthTo[r_][x_] := SetLengthTo[x, r];
 
 (**************************************************************************************************)
 
-PublicFunction[BendyCurvePoints]
-
-SetUsage @ "
-BendyCurvePoints[path$, r$] returns a version of path in which line segments are connected by bends of radius r$.
-BendyCurvePoints[path$, r$, 'type$''] uses a specific kind of corner, one can be one of:
-| 'Arc' | a circular bend of radius r$ (default) |
-| 'Line' | a linear corner starting where the arc would start |
-| 'Bezier' | a bezier curve with control point being the corner |
-| None | return the path unchanged |
-* A circular bend will be possible for the given radius if the points themselves are too close together, in this case a smaller radius is used.
-"
-
-(*
-TODO: allow the maximum distance from the corner to be specified, after which the radius will be decreased
-TODO: fix arcs that interact with eachother badly and cause 'jumps'. *)
-
-BendyCurvePoints::badshape = "Shape `` not recognized."
-
-BendyCurvePoints[points_, radius_, None] := points;
-
-BendyCurvePoints[points_, radius_:1, shape_:"Arc"] := zBendyCurvePoints[points, radius, shape] = Scope[
-  $radius = N @ radius; $shape = ReplaceAutomatic[shape, "Arc"];
-  coords = ApplyWindowed[makeBend, points, 3];
-  ToPackedReal @ Prepend[First @ points] @ Append[Last @ points] @ Catenate @ N @ coords
-];
-
-makeBend[a_, b_, c_] := Scope[
-  l1 = {a, b}; l2 = {c, b};
-  l1p = DisplaceLineTowards[l1, c, $radius];
-  l2p = DisplaceLineTowards[l2, a, $radius];
-  z = LineLineIntersectionPoint[l1p, l2p];
-  If[FailureQ[z],
-    r = Min[EuclideanDistance[a, b], EuclideanDistance[c, b]];
-    d = EuclideanDistance[PointAlongLine[{b, a}, r], PointAlongLine[{b, c}, r]] * 0.495;
-    Return @ Block[{$radius = d}, makeBend[a, b, c]];
-  ];
-  p1 = ClosestPointOnLine[l1, z];
-  p2 = ClosestPointOnLine[l2, z];
-  arc = Switch[$shape,
-    "Arc",    ArcBetween[z, {p1, p2}, b],
-    "Line",   Line[{p1, p2}],
-    "Bezier", BezierCurve[{p1, b, p2}],
-    _,        (Message[BendyCurvePoints::badshape, $shape]; {b})
-  ];
-  arcPoints = ToPackedReal @ DiscretizeCurve @ arc;
-  arcPoints
-]
-
-(**************************************************************************************************)
-
 PublicFunction[ClosestPointOnLine]
 
 SetUsage @ "
@@ -280,8 +233,11 @@ SetbackCoordinates[path$, {d$1, d$2}] truncates by distance d$1 from start and d
 * Line segments will be dropped if the truncated distance exceeds the length of that segment.
 "
 
-SetbackCoordinates[spec_, 0|0.] :=
+SetbackCoordinates[spec_, 0|0.|None] :=
   spec;
+
+SetbackCoordinates[spec_, Scaled[s_]] :=
+  SetbackCoordinates[spec, LineLength[spec] * s];
 
 SetbackCoordinates[spec_, d_ ? NumericQ] :=
   SetbackCoordinates[spec, {d, d}];
@@ -447,73 +403,6 @@ VectorListAlongLine[coords_] := Scope[
   toVecListElem[-1] := {Last @ coords, Last @ diffs},
   toVecListElem[i_Integer] := {Part[coords, i], Normalize @ Mean @ Part[diffs, {i-1, i}]},
   toVecListElem[i_Rational] := ({i1, i2} = FloorCeiling @ i; {Mean @ Part[coords, {i1, i2}], Part[diffs, i1]})
-];
-
-(**************************************************************************************************)
-
-ToOuterPolygon[poly_] := OuterPolygon @ CanonicalizePolygon[WindingPolygon[poly, "NonzeroRule"], Full];
-
-(**************************************************************************************************)
-
-$cornerPoly = N @ Reverse @ CirclePoints[16];
-ExtrudeLineToPolygon2[coords_, width_] := Scope[
-  d = 0;
-  poly = ToPackedReal @ Join[ApplyWindowed[toRect, coords], Threaded[#] + width * $cornerPoly& /@ Take[coords, {2, -2}]];
-  ToOuterPolygon @ poly
-,
-  toRect[p1_, p2_] := (
-    d = VectorRotate90[Normalize[p2 - p1]] * width;
-    {p1 + d, p2 + d, p2 - d, p1 - d}
-  )
-]
-
-PublicFunction[ExtrudeLineToPolygon, ExtrudeLineToPolygon2]
-
-ExtrudeLineToPolygon[coords_, width_] := Scope[
-  vecs = ToPackedReal @ vectorListAlongLineEdged[N @ coords, width / 32.];
-  {points, dirs} = Transpose @ vecs;
-  left = Threaded[points] + width * VectorRotate90[dirs];
-  right = Threaded[points] + width * VectorRotate90CW[dirs];
-  $failed = False;
-  left //= trimIntersections; right //= trimIntersections;
-  poly = Join[left, Reverse @ right];
-  poly = OuterPolygon @ CanonicalizePolygon[WindingPolygon[poly, "NonzeroRule"], Full];
-  poly
-]
-
-trimIntersections[p_] := Scope[
-  p = p;
-  d = Differences[p];
-  Do[
-    If[Dot[Part[d, i], Part[d, i + 1]] < 0,
-      p0 = LineLineIntersectionPoint[Part[p, i + {0, 1}], Part[p, i + {3, 4}]];
-      If[FailureQ[p0], $failed ^= True, Part[p, i + {1, 2, 3}] = p0];
-    ],
-    {i, 1, Length[p] - 4, 3}
-  ];
-  ToPackedReal @ Map[First, Split[p]]
-]
-
-vectorListAlongLineEdged[{a_, b_}, _] := Scope[
-  d = Normalize[b - a];
-  {{a, d}, {Avg[a, b], d}, {b, d}}
-];
-
-vectorListAlongLineEdged[coords_, w_] := Scope[
-  diffs = Normalize /@ Differences[coords];
-  n = Length[coords];
-  is = Range[1, n]; Part[is, -1] = -1; i1 = i2 = 0;
-  Map[toVecListElem, is]
-,
-  toVecListElem[1] := {First @ coords, First @ diffs},
-  toVecListElem[-1] := {Last @ coords, Last @ diffs},
-  toVecListElem[i_Integer] := Splice @ {
-    {a, b, c} = Part[coords, {i - 1, i, i + 1}];
-    {d1, d2} = Part[diffs, {i - 1, i}];
-    {PointAlongLine[{b, a}, w], d1},
-    {Part[coords, i], Normalize @ Mean @ Part[diffs, {i-1, i}]},
-    {PointAlongLine[{b, c}, w], d2}
-  }
 ];
 
 (**************************************************************************************************)

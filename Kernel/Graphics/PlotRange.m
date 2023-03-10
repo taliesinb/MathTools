@@ -96,28 +96,39 @@ kernelPlotRange[g_Graphics3D | g_Graphics] := Module[
 expandMultiArrowInGC[g_] := g /.
   Arrow[segments:{{__Integer}..}, opts___] :> RuleCondition[Map[Arrow[#, opts]&, segments]];
 
-plotRangeExpand[g_] := g /.
-  gc_GraphicsComplex :> RuleCondition[Normal @ expandMultiArrowInGC @ gc] /. {
+$expanderRules := $expanderRules = Dispatch @ {
   Invisible[e_] :> e,
   StadiumShape[{a_, b_}, r_] :> RuleCondition[{Disk[a, r], Disk[b, r]}],
   CapsuleShape[{a_, b_}, r_] :> RuleCondition[{Sphere[a, r], Sphere[b, r]}],
   Cube[p:{_, _, _}:{0,0,0}, l_:1] :> RuleCondition[Sphere[p, l/2]],
-  c:$CustomPrimitiveP :> RuleCondition[With[{h = $ghead}, Typeset`MakeBoxes[c, StandardForm, h]] //. $graphicsBoxReplacements],
+  c:$customGraphicsP :> RuleCondition[With[{h = $ghead}, Typeset`MakeBoxes[c, StandardForm, h]] //. $graphicsBoxReplacements],
   a:$AnnotationP :> RuleCondition[plotRangeExpand @ First @ a],
   Inset[_, pos_, $centerOSpecP, {w_, h_}] :> RuleCondition[Rectangle[pos - {w,h}/2, pos + {w,h}/2]]
-} /. t_Translate :> RuleCondition @ BakeGraphicsTransformations[t];
+};
+
+plotRangeExpand[g_] := g /.
+  gc_GraphicsComplex :> RuleCondition[Normal @ expandMultiArrowInGC @ gc] //. $expanderRules /. t_Translate :> RuleCondition @ BakeGraphicsTransformations[t];
 
 $graphicsBoxSymbols = {
-  PointBox, CircleBox, DiskBox, RectangleBox, PolygonBox,
-  LineBox, ArrowBox,
-  TextBox, TooltipBox, StyleBox, InsetBox, RotationBox, GeometricTransformationBox,
-  GraphicsBox, GraphicsGroupBox, RasterBox, GraphicsComplexBox,
-  BSplineCurveBox, BezierCurveBox, FilledCurveBox, JoinedCurveBox,
-  SphereBox, CylinderBox, TubeBox, ConeBox, CuboidBox
+  PointBox, Point3DBox,
+  CircleBox, DiskBox, RectangleBox, PolygonBox, Polygon3DBox, PolyhedronBox,
+  LineBox, Line3DBox, ArrowBox, Arrow3DBox,
+  TextBox, Text3DBox,
+  TooltipBox, StyleBox,
+  InsetBox, Inset3DBox,
+  GeometricTransformationBox, GeometricTransformation3DBox,
+  GraphicsBox, Graphics3DBox,
+  GraphicsGroupBox, GraphicsGroup3DBox, GraphicsComplexBox, GraphicsComplex3DBox,
+  RasterBox, Raster3DBox,
+  BSplineCurveBox, BSplineCurve3DBox, BezierCurveBox, BezierCurve3DBox, FilledCurveBox, JoinedCurveBox,
+  SphereBox, CylinderBox, TubeBox, ConeBox, CuboidBox, HexahedronBox, TetrahedronBox,
+  ConicHullRegionBox, ConicHullRegion3DBox
 };
 
 $boxSymbolToOrdinarySymbol := $boxSymbolToOrdinarySymbol =
-  AssociationMap[Symbol[StringDrop[SymbolName[#], -3]]&, $graphicsBoxSymbols];
+  AssociationMap[SymbolName /* boxNameToOrdinaryName /* Symbol, $graphicsBoxSymbols];
+
+boxNameToOrdinaryName[name_] := StringDelete[name, {"3D", "Box"}];
 
 $graphicsBoxReplacements := $graphicsBoxReplacements =
   Dispatch @ Join[Normal @ $boxSymbolToOrdinarySymbol, {InterpretationBox[a_, _] :> a}];

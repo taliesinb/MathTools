@@ -11,8 +11,6 @@ Arrowhead[pos$, dir$] is a graphics primitive that renders as an arrowhead begin
 | ArrowheadOpacity | opacity of the arrowhead |
 "
 
-PublicOption[ArrowheadPlane, ArrowheadLength, ArrowheadShape, ArrowheadColor, ArrowheadAnchor, ArrowheadEdgeThickness, ArrowheadOpacity, ArrowheadTooltip]
-
 Options[Arrowhead] = $arrowheadOptions;
 
 declareGraphicsFormatting[Arrowhead[pos:$Coord2P, dir:$Coord2P, rest___Rule]  :> arrowheadBoxes[pos, dir, rest], Graphics];
@@ -94,6 +92,10 @@ ArrowheadPlane is an option for %Arrowhead, %HalfArrowhead that determines the p
 | None | draw arrowhead as a cone |
 * The produced plane is never skew, in other words the right axis is always orthogonal to up axis.
 "
+
+(**************************************************************************************************)
+
+PrivateFunction[resolvePlane]
 
 resolvePlane[pos_, dir_, plane_, size_] := Scope[
   dy = dir;

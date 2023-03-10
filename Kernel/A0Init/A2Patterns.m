@@ -114,7 +114,7 @@ $CoordMaybeMatsP = _List ? CoordinateMatrixOrMatricesQ;
 
 (**************************************************************************************************)
 
-PrivateVariable[$ArcP, $RegionP, $AnnotationP, $CustomPrimitiveP]
+PrivateVariable[$ArcP, $RegionP, $AnnotationP]
 
 headToPattern[e_] := Apply[Alternatives, Blank /@ e];
 
@@ -132,15 +132,13 @@ $RegionP = headToPattern @ {
 (* TODO: handle all wrappers *)
 $AnnotationP = headToPattern @ {Annotation, Tooltip, EventHandler, ClickForm};
 
-$CustomPrimitiveP = headToPattern @ {CenteredCuboid, CenteredRectangle, VectorArrow, Arrowhead, AxesFlag};
-
 (**************************************************************************************************)
 
 PrivateVariable[$GPrimVecH, $GPrimVecVecH, $GPrimVecsH]
 
-$GPrimVecH = AxesFlag;
+$GPrimVecH = CompassCurve | AxesFlag;
 
-$GPrimVecVecH = Cuboid | Rectangle;
+$GPrimVecVecH = Cuboid | Rectangle | ElbowCurve;
 
 $GPrimVecsH = Point;
 
@@ -158,21 +156,25 @@ $GPrimPairRadH = Cylinder | Cone | CapsuleShape | StadiumShape;
 
 PrivateVariable[$GPrimVecDeltaH]
 
-(* TOD: InfinitePlane, ConicHull, etc *)
+(* TOD: InfinitePlane, HalfPlane, ConicHull, etc *)
 
-$GPrimVecDeltaH = VectorArrow | Arrowhead | InfiniteLine | HalfLine;
+$GPrimVecDeltaH = VectorCurve | Arrowhead | InfiniteLine | HalfLine;
 
 PrivateVariable[$GPrimMatH, $GPrimMatsH, $GPrimMatsRadH]
 
-$GPrimMatH = BSplineCurve | BezierCurve | Polygon | Polyhedron;
+$GPrimMatH = BSplineCurve | BezierCurve | Polygon | Polyhedron | RollingCurve | ExtendedArrow | MorphismArrow | Simplex;
 
-$GPrimMatsH = Polygon | Polyhedron | Line | Arrow | FilledCurve;
+$GPrimMatsH = Polygon | Polyhedron | Line | Arrow | FilledCurve | Triangle;
 
 $GPrimMatsRadH = Tube
 
-PrivateVariable[$GPrimAnyVecH]
+PrivateVariable[$GPrimAnyVecH, $GPrimThruVecH, $GPrimThruH]
 
 $GPrimAnyVecH = Text | Inset | PlaneInset;
+
+$GPrimThruVecH = Translate;
+
+$GPrimThruH = Rotate | GeometricTransformation | Scale | Style | Annotation | Tooltip | StatusArea | PopupWindow | Mouseover | Hyperlink | EventHandler | Button;
 
 PrivateVariable[$GPrimVH, $GPrimVVH, $GPrimVRH, $GPrimVDH, $GPrimAVH]
 

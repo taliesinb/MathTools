@@ -59,6 +59,6 @@ YoutubeDL[url_String, opts___Rule] := Scope[
     )&,
     opts
   ];
-  ZRunTool["youtube-dl", url, Sequence @@ args]
+  RunTool["youtube-dl", url, Sequence @@ args]
 ]
 

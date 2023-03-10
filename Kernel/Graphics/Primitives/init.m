@@ -38,6 +38,8 @@ Typeset`MakeBoxes[Style[System`Dump`x_, System`Dump`y___], System`Dump`fmt_, Sys
 
 (**************************************************************************************************)
 
+PublicOption[ArrowheadPlane, ArrowheadLength, ArrowheadShape, ArrowheadColor, ArrowheadAnchor, ArrowheadEdgeThickness, ArrowheadOpacity, ArrowheadTooltip]
+
 PrivateVariable[$arrowheadOptions]
 
 $arrowheadOptions = {
@@ -52,29 +54,121 @@ $arrowheadOptions = {
 
 (**************************************************************************************************)
 
+PublicOption[ArrowShaftThickness, ArrowShaftColor, ArrowShaftOpacity, ArrowShaftDashing, ArrowShaftMasking, ArrowPathShrinking, ArrowPathSetback]
+
+PublicOption[LabelOrientation, LabelFontSize, LabelBackground, LabelSpacing]
+
 PrivateVariable[$extendedArrowOptions]
 
 $extendedArrowOptions = JoinOptions[
   $arrowheadOptions,
   ArrowheadAnchor -> Automatic,
   ArrowheadPosition -> Automatic,
-  ArrowShaftThickness -> 2,
+  ArrowShaftThickness -> 1,
   ArrowShaftColor -> Black,
   ArrowShaftOpacity -> 1,
-  ArrowPathShrinking -> None
+  ArrowShaftDashing -> None,
+  ArrowShaftMasking -> None,
+  ArrowPathShrinking -> None,
+  ArrowPathSetback -> None,
+  LabelOrientation -> Automatic,
+  LabelFontSize -> Inherited,
+  LabelBackground -> None,
+  LabelSpacing -> Automatic
 ];
 
 AssociateTo[$MakeBoxesStyleData, $extendedArrowOptions];
 
 (**************************************************************************************************)
 
-PrivateVariable[$bendOptions]
+PublicOption[DecorationWidth]
 
-$bendOptions = {
-  BendRadius -> 0.1,
-  BendShape -> "Arc"
-};
+PrivateVariable[$morphismArrowOptions]
+
+$morphismArrowOptions = Normal @ KeyTake[$extendedArrowOptions, {
+  ArrowPathSetback, ArrowShaftThickness, ArrowShaftColor, ArrowShaftDashing,
+  LabelOrientation, LabelFontSize, LabelBackground
+}] ~Join~ {DecorationWidth -> 15};
+
+AssociateTo[$MakeBoxesStyleData, $morphismArrowOptions];
 
 (**************************************************************************************************)
 
-AssociateTo[$MakeBoxesStyleData, KeyTake[Options[BendyArrow], {ArrowheadPosition, ArrowShaftThickness, ArrowShaftColor, ArrowShaftOpacity, ArrowPathShrinking}]];
+PrivateFunction[makeShaftStyler]
+
+DefineMacro[makeShaftStyler,
+makeShaftStyler[color_, opacity_, thickness_, dashing_] := Quoted @ DeleteNone[StyleBoxOperator[
+    If[ColorQ @ color, color, None],
+    If[NumberQ @ opacity, Opacity @ opacity, None],
+    If[NumberQ @ thickness, AbsoluteThickness @ thickness, None],
+    Switch[dashing, _Dashing, dashing, None, None, _, Dashing @ dashing]
+  ]]
+];
+
+(**************************************************************************************************)
+
+AssociateTo[$MakeBoxesStyleData, {
+  BendRadius -> 0.1,
+  BendShape -> "Arc"
+}];
+
+(**************************************************************************************************)
+
+PrivateFunction[recurseGraphicsCoordinates]
+
+recurseGraphicsCoordinates[f_, primitives_, igc_:False] := Scope[
+  $f = f; $igc = igc;
+  rgc[primitives]
+]
+
+$GPrimVec1H = Flatten @ Alternatives[$GPrimVecH, $GPrimVecRadH, $GPrimVecDeltaH];
+$GPrimVec12H = $GPrimVecVecH;
+$GPrimVecs1H = Flatten @ Alternatives[$GPrimVecsH, $GPrimVecsRadH, $GPrimPairH, $GPrimPairRadH, $GPrimMatH, $GPrimMatsH, $GPrimMatsRadH];
+$GPrimOuterH = Graphics | Graphics3D;
+(* ^ these could be more selective but here just rely on mapping at level -1 *)
+
+$GArrowH = Arrow | ExtendedArrow;
+
+PrivateVariable[$GArrowIntP, $GCurveIntP]
+
+$GCurveIntP = _ElbowCurve | _RollingCurve | _VectorCurve | _CompassCurve | _LoopCurve | _SetbackCurve | _Line | _BezierCurve | _BSplineCurve;
+$GArrowIntP = Join[_JoinedCurve | _Tube, $GCurveIntP];
+
+rgc = Case[
+  (h:$GArrowH)[e:$GArrowIntP, a___] := h[% @ e, a];
+  (h:$GPrimVec1H)[v_, a___]         := h[$f[v, h], a];
+  (h:$GPrimVec12H)[v_, w_, a___]    := h[Sequence @@ $f[{v, w}, h], a];
+  (h:$GPrimVecs1H)[v_, a___]        := h[$f[v, h], a];
+  (h:$GTrans1V)[g_, v_, a___]       := h[% @ g, $f[v, h], a];
+  (h:$GPrimThruH)[g_, a___]         := h[% @ g, a];
+  (h:$GPrimThruVecH)[g_, v_, a___]  := h[% @ g, $f[v, h], a];
+  (h:$GPrimAnyVecH)[a_, v_, b___]   := h[a, $f[v, h], b];
+  GraphicsComplex[v_, g_]           := GraphicsComplex[$f[v, GraphicsComplex], If[$igc, % @ g, g]];
+  GridComplex[v_, g_]               := % @ gridComplexPrimitives @ g;
+  GraphicsStyleData[d_, g_]         := GraphicsStyleData[d, % @ g];
+  list_List                         := Map[%, list];
+  (h:$GPrimOuterH)[g_, a___]        := h[% @ g, a];
+  other_                            := other;
+]
+
+(**************************************************************************************************)
+
+PrivateFunction[ExpandGraphicsComplex]
+
+ExpandGraphicsComplex[g_] := ReplaceAll[g,
+  GraphicsComplex[c_, g2_] :>
+    RuleCondition @ recurseGraphicsCoordinates[
+      ReplaceAll[#, i_Integer :> RuleCondition[Part[c, i]]]&,
+      g2, True
+    ]
+];
+
+(**************************************************************************************************)
+
+PrivateFunction[toCurvePoints]
+
+toCurvePoints = Case[
+  e_List         := e;
+  Tube[e_]       := % @ e;
+  other_         := DiscretizeCurve @ other;
+];
