@@ -85,18 +85,6 @@ removeDupPrefix[list_] := Select[DeleteDuplicates @ list, elem |-> NoneTrue[Dele
 
 (**************************************************************************************************)
 
-PublicFunction[CreatePaperBearNote]
-
-Options[CreatePaperBearNote] = Options[PaperToMarkdown];
-
-CreatePaperBearNote[page_, opts:OptionsPattern[]] := Scope[
-  result = CreatePaperBearNote[page, opts];
-  If[!StringQ[result], ReturnFailed[]];
-  CreateBearNote[result]
-];
-
-(**************************************************************************************************)
-
 PublicVariable[$KnownAuthors]
 
 SetInitialValue[$KnownAuthors, {}];

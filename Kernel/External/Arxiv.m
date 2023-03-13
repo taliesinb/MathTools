@@ -4,7 +4,7 @@ xmlFilePath[id_] := LocalPath["Data", "Arxiv", id <> ".m"]
 
 PublicSymbol[ArxivPaperIDPattern]
 
-declareStringPattern[ArxivPaperIDPattern :> "(?ms)(?:\\d{1,4}\\.|hep-th[/.]|gr-qc[/.])\\d{4,7}(?:v\\d)?"]
+declareStringPattern[ArxivPaperIDPattern :> "(?ms)(?:\\d{1,4}\\.|hep-th[/.]|gr-qc[/.]|q-alg[/.])\\d{4,7}(?:v\\d)?"]
 
 (**************************************************************************************************)
 

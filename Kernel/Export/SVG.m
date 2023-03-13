@@ -20,8 +20,8 @@ ToSVGString[g_Graphics] := Scope[
   Block[{$context = $context},
     parseContext[AbsoluteThickness[1]];
     parseContext[AbsolutePointSize[3]];
-  	contents = StringJoin @ svg[prims];
-  	If[ColorQ @ background, contents = StringJoin[makeBackgroundRect @ toColStr @background, contents]];
+  	contents = StringJoin @ toSvg[prims];
+  	If[ColorQ @ background, contents = StringJoin[makeBackgroundRect @ toColStr @ background, contents]];
   ];
 
   If[$styles =!= <||>,
@@ -118,9 +118,9 @@ Scan[parseContext, {
 
 (**************************************************************************************************)
 
-svg[list_List] := freshContext @ StringRiffle[Map[parseListElem, list] /. Null -> "", "\n"]
+toSvg[list_List] := freshContext @ StringRiffle[Map[parseListElem, list] /. Null -> "", "\n"]
 
-parseListElem[e_] := OnFailed[parseContext @ e, svg @ e, Nothing];
+parseListElem[e_] := OnFailed[parseContext @ e, toSvg @ e, Nothing];
 
 (**************************************************************************************************)
 
@@ -129,9 +129,9 @@ ToSVGString::unkstyle = "Unknown style directive ``."
 parseStyleElem[e_] := OnFailed[parseContext @ e, svgFail["unkstyle", e]];
 parseStyleElem[StripOnInput -> _] := Null;
 
-svg[Style[prim_, specs___]] := freshContext[
+toSvg[Style[prim_, specs___]] := freshContext[
 	Scan[parseStyleElem, {specs}];
-	svg[prim]
+	toSvg[prim]
 ];
 
 (**************************************************************************************************)
@@ -152,22 +152,22 @@ Scan[parseStyleElem, {
 
 toFS[fsz_] := fsz / $width * $xsize;
 
-svg[Inset[e:Except[_Graphics], pos_, ImageScaled[o:{_, _}]]] :=
-  svg[Text[e, pos, o * 2 - 1]];
+toSvg[Inset[e:Except[_Graphics], pos_, ImageScaled[o:{_, _}]]] :=
+  toSvg[Text[e, pos, o * 2 - 1]];
 
-svg[Inset[e:Except[_Graphics], pos_]] :=
-  svg[Text[e, pos]];
+toSvg[Inset[e:Except[_Graphics], pos_]] :=
+  toSvg[Text[e, pos]];
 
-svg[Text[Style[content_, sargs___], targs___]] :=
-  svg[Style[Text[content, targs], sargs]];
+toSvg[Text[Style[content_, sargs___], targs___]] :=
+  toSvg[Style[Text[content, targs], sargs]];
 
-svg[Text[content_, {x_, y_}]] := svg[Text[content, {x, y}, {0, 0}]]
+toSvg[Text[content_, {x_, y_}]] := toSvg[Text[content, {x, y}, {0, 0}]]
 
-svg[_Arrowheads] := "";
+toSvg[_Arrowheads] := "";
 
-svg[_Arrow] := "";
+toSvg[_Arrow] := "";
 
-svg[Text[content_, {x_, y_}, {ax_, ay_}]] := Scope[
+toSvg[Text[content_, {x_, y_}, {ax_, ay_}]] := Scope[
 	style = cachedStyle[$textStyleTemplate] @ contextSeq[FontSlant, FontWeight, FontSize, FontFamily];
   content2 = content //. Column[a_, __] :> Column[a];
   anchor = Switch[clip[ax], -1, "start", 0, "middle", 1, "end"];
@@ -205,32 +205,32 @@ $digitRules = RuleThread[Range[0,9], Characters @ "abcdefghij"];
 
 (**************************************************************************************************)
 
-svg[Inset[g_Graphics, pos_, ___]] := svg[Translate[g, pos]];
+toSvg[Inset[g_Graphics, pos_, ___]] := toSvg[Translate[g, pos]];
 
 (**************************************************************************************************)
 
-svg[Translate[g_, {x_, y_}]] :=  $translateTemplate[toX @ x, toY @ y, svg @ g];
+toSvg[Translate[g_, {x_, y_}]] :=  $translateTemplate[toX @ x, toY @ y, toSvg @ g];
 
 $translateTemplate = StringFunction @ """<g transform="translate(#1 #2)">#3</g>""";
 
 (**************************************************************************************************)
 
-svg[Rotate[g_, theta_]] := svg[Rotate[g, theta, {0, 0}]];
-svg[Rotate[g_, theta_, {x_, y_}]] :=  $rotateTemplate[theta, toX @ x, toY @ y, svg @ g];
+toSvg[Rotate[g_, theta_]] := toSvg[Rotate[g, theta, {0, 0}]];
+toSvg[Rotate[g_, theta_, {x_, y_}]] :=  $rotateTemplate[theta, toX @ x, toY @ y, toSvg @ g];
 
 $rotateTemplate = StringFunction @ """<g transform="rotate(#1 #2 #3)>#3</g>""";
 
 (**************************************************************************************************)
 
-svg[Rotate[g_, theta_]] := svg[Rotate[g, theta, {0, 0}]];
-svg[Rotate[g_, theta_, {x_, y_}]] :=  $rotateTemplate[theta, toX @ x, toY @ y, svg @ g];
+toSvg[Rotate[g_, theta_]] := toSvg[Rotate[g, theta, {0, 0}]];
+toSvg[Rotate[g_, theta_, {x_, y_}]] :=  $rotateTemplate[theta, toX @ x, toY @ y, toSvg @ g];
 
 $rotateTemplate = StringFunction @ """<g transform="rotate(#1 #2 #3)>#3</g>""";
 
 (**************************************************************************************************)
 
-svg[GeometricTransformation[g_, m:{{_, _}, {_, _}} ? rmq]] = svg[GeometricTransformation[g, {m, {0, 0}}]];
-svg[GeometricTransformation[g_, {{{a_, c_}, {b_, d_}} ? rmq, {e_, f_} ? rvq}]] := Scope[
+toSvg[GeometricTransformation[g_, m:{{_, _}, {_, _}} ? rmq]] = toSvg[GeometricTransformation[g, {m, {0, 0}}]];
+toSvg[GeometricTransformation[g_, {{{a_, c_}, {b_, d_}} ? rmq, {e_, f_} ? rvq}]] := Scope[
   {e, f} = {toX @ e, toY @ f};
   $transformTemplate[theta, a, b, e, c, d, f];
 ];
@@ -239,35 +239,35 @@ $transformTemplate = StringFunction @ """<g transform="matrix(#2 #3 #4 #5 #6 #7)
 
 (**************************************************************************************************)
 
-svgMap[f_, coords_] := StringRiffle[Map[svg[f[#]]&, coords], "\n"];
+svgMap[f_, coords_] := StringRiffle[Map[toSvg[f[#]]&, coords], "\n"];
 
 (**************************************************************************************************)
 
 (* TODO: factor fill, stroke, stroke-width *)
 $circleTemplate = StringFunction @ """<circle fill="none" stroke="#4" stroke-width="#5" cx="#1" cy="#2" r="#3"/>""";
 
-svg[Circle[{x_ ? nq, y_ ? nq}, r_:1]] := $circleTemplate[toX @ x, toY @ y, toP @ r, $context["pathcolor"], $context["paththickness"]];
+toSvg[Circle[{x_ ? nq, y_ ? nq}, r_:1]] := $circleTemplate[toX @ x, toY @ y, toP @ r, $context["pathcolor"], $context["paththickness"]];
 
-svg[Circle[coords_ ? cmq, r_:1]] := svgMap[Circle[#, r]&, coords];
+toSvg[Circle[coords_ ? cmq, r_:1]] := svgMap[Circle[#, r]&, coords];
 
 (**************************************************************************************************)
 
 $diskTemplate = StringFunction @ """<circle fill="#4" stroke="#5" stroke-width="#6" cx="#1" cy="#2" r="#3"/>""";
 
-svg[Disk[{x_ ? nq, y_ ? nq}, r_:1]] := $diskTemplate[toX @ x, toY @ y, r, $context["fill"], $context["edgecolor"], $context["edgethickness"]];
+toSvg[Disk[{x_ ? nq, y_ ? nq}, r_:1]] := $diskTemplate[toX @ x, toY @ y, r, $context["fill"], $context["edgecolor"], $context["edgethickness"]];
 
-svg[Disk[coords_ ? cmq, r_:1]] := svgMap[Disk[#, r]&, coords];
+toSvg[Disk[coords_ ? cmq, r_:1]] := svgMap[Disk[#, r]&, coords];
 
 (**************************************************************************************************)
 
 $rectangleTemplate = StringFunction @ """<rect x="#1" y="#2" width="#3" height="#4" fill="#5" stroke="#6" stroke-width="#7"/>""";
 
-svg[Rectangle[{x1_ ? nq, y1_ ? nq}, {x2_ ? nq, y2_ ? nq}]] :=
+toSvg[Rectangle[{x1_ ? nq, y1_ ? nq}, {x2_ ? nq, y2_ ? nq}]] :=
 	$rectangleTemplate[rectSeq[x1, y1, x2, y2], $context["fill"], $context["edgecolor"], $context["edgethickness"]];
 
 $roundedRectangleTemplate = StringFunction @ """<rect x="#1" y="#2" width="#3" height="#4" fill="#5" stroke="#6" stroke-width="#7" rx="#8"/>""";
 
-svg[Rectangle[{x1_ ? nq, y1_ ? nq}, {x2_ ? nq, y2_ ? nq}, RoundingRadius -> r_]] :=
+toSvg[Rectangle[{x1_ ? nq, y1_ ? nq}, {x2_ ? nq, y2_ ? nq}, RoundingRadius -> r_]] :=
 	$rectangleTemplate[rectSeq[x1, y1, x2, y2], $context["fill"], $context["edgecolor"], $context["edgethickness"], r];
 
 rectSeq[x1_, y1_, x2_, y2_] := Seq[toX @ Min[x1, x2], toY @ Max[y1, y2], toP @ Abs[x2 - x1], toP @ Abs[y2 - y1]];
@@ -277,27 +277,27 @@ makeBackgroundRect[color_] := $rectangleTemplate[$xmin, $ymax, $xsize, $ysize, c
 
 $polygonTemplate = StringFunction @ """<polygon points="#1" fill="#2 stroke="#3 stroke-width="#4" "/>""";
 
-svg[Polygon[points_ ? cmq]] := $polygonTemplate[pairList[points], $context["fill"], $context["edgecolor"], $context["edgethickness"]];
+toSvg[Polygon[points_ ? cmq]] := $polygonTemplate[pairList[points], $context["fill"], $context["edgecolor"], $context["edgethickness"]];
 
-svg[Polygon[coords_ ? caq]] := svgMap[Polygon, coords];
+toSvg[Polygon[coords_ ? caq]] := svgMap[Polygon, coords];
 
 (**************************************************************************************************)
 
 $polylineTemplate = StringFunction @ """<polyline points="#1" fill="none" stroke="#2" stroke-width="#3"/>""";
 
-svg[Line[points_ ? cmq]] := $polylineTemplate[pairList[points], $context["pathcolor"], $context["paththickness"]];
+toSvg[Line[points_ ? cmq]] := $polylineTemplate[pairList[points], $context["pathcolor"], $context["paththickness"]];
 
 $lineTemplate = StringFunction @ """<line x1="#1" y1="#2" x2="#3" y2="#4" stroke="#5" stroke-width="#6"/>""";
 
-svg[Line[{{x1_, y1_}, {x2_, y2_}} ? cmq]] := $lineTemplate[toX @ x1, toY @ y1, toX @ x2, toY @ y2, $context["pathcolor"], $context["paththickness"]];
+toSvg[Line[{{x1_, y1_}, {x2_, y2_}} ? cmq]] := $lineTemplate[toX @ x1, toY @ y1, toX @ x2, toY @ y2, $context["pathcolor"], $context["paththickness"]];
 
-svg[Line[coords_ ? caq]] := svgMap[Line, coords];
+toSvg[Line[coords_ ? caq]] := svgMap[Line, coords];
 
 (**************************************************************************************************)
 
-svg[Point[{x_ ? nq, y_ ? nq}]] := $circleTemplate[x, -y, $context["pointsize"] / 2];
+toSvg[Point[{x_ ? nq, y_ ? nq}]] := $circleTemplate[x, -y, $context["pointsize"] / 2];
 
-svg[Point[coords_ ? cmq]] := svgMap[Point, coords];
+toSvg[Point[coords_ ? cmq]] := svgMap[Point, coords];
 
 (**************************************************************************************************)
 
@@ -325,7 +325,7 @@ in all the right places
 
 $pathTemplate = StringFunction @ """<path d="#1" fill="none" stroke="#2" stroke-width="#3"/>""";
 
-svg[BezierCurve[pnts_ ? cmq]] := $pathTemplate[bezierToPath @ pnts,  $context["pathcolor"], $context["paththickness"]];
+toSvg[BezierCurve[pnts_ ? cmq]] := $pathTemplate[bezierToPath @ pnts,  $context["pathcolor"], $context["paththickness"]];
 
 bezierToPath[{a_, b_, c_, d_}] := StringJoin[
   "M", toPair @ a, " Q", toPairList @ {b, Avg[b, c]}, " T", toPair @ d
@@ -349,7 +349,7 @@ bezierToPath[{a_, b_, c_, d_}] := StringJoin[
 
 ToSVGString::unkprim = "Unknown primitive ``."
 
-svg[other_] := (svgFail["unkprim", other]; "");
+toSvg[other_] := (svgFail["unkprim", other]; "");
 
 (**************************************************************************************************)
 
@@ -384,3 +384,12 @@ LegacyToSVGString[g_] := Scope[
   If[res === $vectorTemporaryFile, ReadString @ res, $Failed]
 ];
 
+(**************************************************************************************************)
+
+PublicFunction[ExportSVG]
+
+ExportSVG[file_String, graphics_] := Scope[
+  svg = ToSVGString @ graphics;
+  If[!StringQ[svg], ReturnFailed[]];
+  ExportUTF8[file, svg]
+];
