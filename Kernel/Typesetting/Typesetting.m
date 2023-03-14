@@ -49,10 +49,14 @@ Typeset`MakeBoxes[RightClickForm[elem_, fn_], form_, type:Graphics|Graphics3D] :
 $customGraphicsHeadQ[ClickBox] = True;
 $customGraphicsHeadQ[RightClickBox] = True;
 
+ClickBox[box_, None] := box;
+
 ClickBox[box_, body_] := TagBox[
   TagBox[box, EventHandlerTag[{{"MouseClicked", 1} :> body, Method -> "Preemptive", PassEventsDown -> Automatic, PassEventsUp -> True}]],
   MouseAppearanceTag["LinkHand"]
 ];
+
+RightClickBox[box_, None] := box;
 
 RightClickBox[box_, body_] := TagBox[
   TagBox[box, EventHandlerTag[{{"MouseClicked", 2} :> body, Method -> "Preemptive", PassEventsDown -> Automatic, PassEventsUp -> True}]],
@@ -144,11 +148,59 @@ OpenerColumnBox[a_, b_] := With[
 
 (**************************************************************************************************)
 
-PublicFunction[MapFlipper]
+PublicFunction[Browser]
 
-MakeBoxes[MapFlipper[f_, list_List], form_] := MapFlipperBoxes[f, list];
+Options[Browser] = {
+  ClickFunction -> None
+};
 
-MapFlipperBoxes[f_, list_List] := With[
+MakeBoxes[Browser[list_List, opts___Rule], form_] := BrowserBoxes[list, opts];
+
+BrowserBoxes[list_List, opts:OptionsPattern[]] := With[
+  {n$$ = Length @ list},
+  {blue = $LightBlue, gray = GrayLevel[0.95], purple = $LightPurple},
+  {clickFn = OptionValue[Browser, {opts}, ClickFunction]},
+  {itemBox = FrameBox[
+    DynamicBox[
+      ClickBox[
+        ToBoxes @ Set[r$$, Part[list, i$$]],
+        clickFn @ r$$
+      ],
+      TrackedSymbols :> {i$$}],
+    FrameMargins -> 10, FrameStyle -> $LightGray
+   ],
+   buttonRowBox = RowBox[{
+      StyledClickBox["\[LeftArrowBar]", Set[i$$, 1]],
+      StyledClickBox["\[LeftArrow]", Set[i$$, Mod[i$$ - 1, n$$, 1]]],
+      StyledClickBox[
+        DynamicBox @ PaneBox[StyleBox[RowBox[{i$$, "/", n$$}], Plain, 14], ImageSize -> {82, 10}, Alignment -> Center, BaselinePosition -> Baseline],
+        Set[i$$, Mod[i$$ + If[CurrentValue["ShiftKey"], -1, 1], n$$, 1]],
+        GrayLevel[0.9], $Gray
+      ],
+      StyledClickBox["\[RightArrow]", Set[i$$, Mod[i$$ + 1, n$$, 1]]],
+      StyledClickBox["\[RightArrowBar]", Set[i$$, n$$]],
+      StyledClickBox["\[DownArrow]", CellPrint @ With[{li = Part[list, i$$]}, ExpressionCell[li, "Input"]], $LightPink, $Pink]
+    }],
+   progressBox = DynamicProgressBarBox[{i$$, n$$}, {200, 10}]
+  },
+  DynamicModuleBox[
+    {i$$ = 1, r$$ = None},
+    GridBox[
+      {{buttonRowBox}, {progressBox}, {itemBox}},
+      GridBoxSpacings -> {"Rows" -> {0.1, 0.1, {.5}}},
+      GridBoxAlignment -> {"Columns" -> {{Left}}}
+    ],
+    DynamicModuleValues -> {i$$}
+  ]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[MappedBrowser]
+
+MakeBoxes[MappedBrowser[f_, list_List], form_] := MappedBrowserBoxes[f, list];
+
+MappedBrowserBoxes[f_, list_List] := With[
   {n$$ = Length @ list},
   {blue = $LightBlue, gray = GrayLevel[0.95], purple = $LightPurple},
   {itemBox = FrameBox[

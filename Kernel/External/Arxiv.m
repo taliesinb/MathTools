@@ -166,7 +166,7 @@ ArxivAPISearch[opts___Rule] := Scope[
     Export[xmlPath, xml];
   ];
   entries = DeepCases[xml, XMLElement["entry", {}, entryData_] :> extractAPIEntryData[entryData]];
-  entries
+  Reverse @ SortBy[entries, Key["Date"]]
 ];
 
 addQueryElem[name_, ""][url_] := url;

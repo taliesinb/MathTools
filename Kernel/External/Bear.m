@@ -257,9 +257,21 @@ AppendToBearNote[titleOrID_String, text_String] := Scope[
   SystemOpen @ $AppendToBearNoteTemplate[id, URLEncode @ StringJoin["\n\n", StringTrim @ text]];
 ]
 
+AppendToBearNote[titleOrID_String, images:_Image | {__Image}] := Scope[
+  id = If[BearNoteUUIDQ[titleOrID], titleOrID, FindBearNote @ titleOrID];
+  If[FailureQ[id], ReturnFailed["notfound", titleOrID]];
+  Scan[
+    image |-> SystemOpen @ $AppendImageToBearNoteTemplate[id, CreateUUID[] <> ".png", URLEncode @ imagePNGBase64 @ image],
+    ToList @ images
+  ];
+]
+
+imagePNGBase64[img_] := Base64String @ Normal @ ExportByteArray[img, "PNG"];
+
 _AppendToBearNote := BadArguments[];
 
 $AppendToBearNoteTemplate = StringFunction @ "bear://x-callback-url/add-text?id=#1&mode=append&exclude_trashed=true&new_line=true&text=#2";
+$AppendImageToBearNoteTemplate = StringFunction @ "bear://x-callback-url/add-file?id=#1&mode=append&filename=#2&file=#3";
 
 (*************************************************************************************************)
 

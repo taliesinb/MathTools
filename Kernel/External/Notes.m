@@ -11,7 +11,8 @@ Options[URLToMarkdown] = {
 URLToMarkdown[url_String, opts:OptionsPattern[]] := Scope[
   domain = ToLowerCase @ URLParse[url, "Domain"];
   If[!StringQ[domain], ReturnFailed["noturl", url]];
-  Switch[domain,
+  Switch[
+    StringTrimLeft[domain, "www."],
     "scholar.google.com",       ScholarPageToMarkdown[url, opts],
     "arxiv.org",                ArxivPageToMarkdown[url, opts],
     "youtube.com" | "youtu.be", YoutubeToMarkdown[url, FilterOptions @ opts],
