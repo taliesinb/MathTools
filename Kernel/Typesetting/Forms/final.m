@@ -1,21 +1,30 @@
+(**************************************************************************************************)
+
+PublicForm[SymbolForm]
+
+DefineTaggedForm[SymbolForm]
+
+(**************************************************************************************************)
+
+(* TODO: Put these in SymbolTranslation.m *)
 $binaryRelationMapping = <|
   Equal              -> "=",
   Plus               -> "+",
-  Unequal            -> "\[NotEqual]",
-  Subset             -> "\[Subset]",
-  SubsetEqual        -> "\[SubsetEqual]",
-  Superset           -> "\[Superset]",
-  SupersetEqual      -> "\[SupersetEqual]",
-  NotSubset          -> "\[NotSubset]",
-  NotSubsetEqual     -> "\[NotSubsetEqual]",
-  NotSuperset        -> "\[NotSuperset]",
-  NotSupersetEqual   -> "\[NotSupersetEqual]",
-  TildeEqual         -> "\[TildeEqual]",
-  TildeFullEqual     -> "\[TildeFullEqual]",
-  TildeTilde         -> "\[TildeTilde]",
-  LessEqual          -> "\[LessEqual]",
+  Unequal            -> "≠",
+  Subset             -> "⊂",
+  SubsetEqual        -> "⊆",
+  Superset           -> "⊃",
+  SupersetEqual      -> "⊇",
+  NotSubset          -> "⊄",
+  NotSubsetEqual     -> "⊈",
+  NotSuperset        -> "⊅",
+  NotSupersetEqual   -> "⊉",
+  TildeEqual         -> "≃",
+  TildeFullEqual     -> "≅",
+  TildeTilde         -> "≈",
+  LessEqual          -> "≤",
   Less               -> "<",
-  GreaterEqual       -> "\[GreaterEqual]",
+  GreaterEqual       -> "≥",
   Greater            -> ">"
 |>;
 
@@ -24,7 +33,7 @@ $binaryRelationMapping = <|
 PublicForm[Form]
 
 declareBoxFormatting[
-  Form[e_] :> MakeQGBoxes @ e
+  Form[e_] :> TagBox[MakeQGBoxes @ e, "QG"]
 ]
 
 (**************************************************************************************************)
@@ -44,7 +53,6 @@ $domainsP = Alternatives[Integers, Reals, Rationals, Complexes, Naturals, Positi
 (* this is the general dispatch mechanism for a form of unknown type *)
 MakeQGBoxes = Case[
   None | Null               := "";
-  s:namedFnP                := MakeBoxes @ s;
   d:domainsP                := MakeBoxes @ d;
   e:symP                    := symbolBoxes @ e;
   e_Subtract                := algebraBoxes[e, "SubtractForm"];
@@ -74,8 +82,7 @@ MakeQGBoxes = Case[
   RightComposition[a___]    := MakeBoxes @ RightFunctionCompositionForm[a];
   s_String                  := s;
   other_                    := MakeBoxes @ other,
-  {lsymsP -> $literalSymbolsP, symP -> Rest[$rawSymbolP], namedFnP -> Alternatives @@ $namedFunctions,
-    binHeads -> $binaryRelationHeads, domainsP -> $domainsP}
+  {lsymsP -> $literalSymbolsP, symP -> Rest[$rawSymbolP], binHeads -> $binaryRelationHeads, domainsP -> $domainsP}
 ];
 
 $TemplateKatexFunction["InvisibleForm"] := "phantom";

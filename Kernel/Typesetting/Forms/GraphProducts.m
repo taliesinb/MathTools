@@ -1,4 +1,4 @@
-PublicForm[GraphProductForm, GraphUnionForm]
+PublicForm[GraphUnionForm, GraphProductForm]
 
 PublicForm[DependentQuiverProductForm]
 
@@ -8,21 +8,16 @@ PublicForm[StrongIndependentQuiverProductForm, StrongQuiverProductForm]
 
 PublicForm[CartesianQuiverProductForm]
 
-(* PublicForm[LeftStrongQuiverProductForm, RightStrongQuiverProductForm]
+DefineInfixForm[GraphUnionForm,             WideOpBox @ "\[SquareUnion]"]
+DefineInfixForm[GraphProductForm,           WideOpBox @ "\[Times]"]
+DefineInfixForm[CartesianQuiverProductForm, WideOpBox @ "\[EmptySquare]"]
 
-PublicForm[LeftFiberQuiverProductForm, RightFiberQuiverProductForm]
- *)
-declareInfixSymbol[
-  {GraphUnionForm, GraphProductForm, DependentQuiverProductForm,
-    LockedQuiverProductForm,
-    LeftFreeQuiverProductForm, RightFreeQuiverProductForm,
-    StrongIndependentQuiverProductForm,
-    CartesianQuiverProductForm,
-    StrongQuiverProductForm
-    (* , LeftFiberQuiverProductForm, RightFiberQuiverProductForm,
-    LeftStrongQuiverProductForm, RightStrongQuiverProductForm,  *)},
-  QuiverSymbol
-];
+DefineInfixBinaryForm[DependentQuiverProductForm,         WideOpBox @ "\[Times]"]
+DefineInfixBinaryForm[LockedQuiverProductForm,            WideOpBox @ "\[LowerRightArrow]"]
+DefineInfixBinaryForm[LeftFreeQuiverProductForm,          WideOpBox @ "\:2aab"]
+DefineInfixBinaryForm[RightFreeQuiverProductForm,         WideOpBox @ "\:2aaa"]
+DefineInfixBinaryForm[StrongIndependentQuiverProductForm, WideOpBox @ "\:2a1d"]
+DefineInfixBinaryForm[StrongQuiverProductForm,            WideOpBox @ "\:29d1"]
 
 (**************************************************************************************************)
 
@@ -30,18 +25,20 @@ PublicForm[VerticalVertexProductForm, VerticalCardinalProductForm]
 
 PublicForm[VertexProductForm, EdgeProductForm, CardinalProductForm]
 
-declareBinaryForm[VerticalVertexProductForm];
-declareBinaryForm[VerticalCardinalProductForm];
+DefineBinaryForm[VerticalVertexProductForm, FractionBox[$1, $2]]
+DefineBinaryForm[VerticalCardinalProductForm, FractionBox[$1, $2]]
 
-declareCommaRiffledForm[VertexProductForm, "vertexProduct"];
-declareCommaRiffledForm[EdgeProductForm, "edgeProduct"];
-declareCommaRiffledForm[CardinalProductForm, "cardinalProduct"];
+DefineStandardTraditionalForm[{
+  VertexProductForm[a_, b_] :> MakeBoxes[TupleForm[a, b]],
+  EdgeProductForm[a_, b_]     :> MakeBoxes[TupleForm[a, b]],
+  CardinalProductForm[a_, b_] :> MakeBoxes[TupleForm[a, b]]
+}];
 
 (**************************************************************************************************)
 
 PublicForm[ComponentSuperQuiverOfForm]
 
-declareInfixSymbol[ComponentSuperQuiverOfForm]
+DefineInfixForm[ComponentSuperQuiverOfForm, WideOpBox @ "\[Succeeds]"]
 
 (**************************************************************************************************)
 
@@ -64,7 +61,17 @@ compactQuiverProductAppliedKatex[f_, args__] := {"{", f, "} / {(", Riffle[{args}
 
 PublicSymbol[ForwardFactorSymbol, BackwardFactorSymbol, NeutralFactorSymbol, ForwardBackwardFactorSymbol, ForwardBackwardNeutralFactorSymbol]
 
-declareConstantSymbol[
-  {ForwardFactorSymbol, BackwardFactorSymbol, NeutralFactorSymbol,
-  ForwardBackwardFactorSymbol, ForwardBackwardNeutralFactorSymbol}
+factorSymbolBox[wl_, k_] := KBox[
+  StyleBox[AdjustmentBox[wl, BoxBaselineShift -> -0.2], SpanMinSize -> 1.15, SpanMaxSize -> 1.15, FontWeight -> "Bold", FontFamily ->   "KaTeX_WLBypass"],
+  KOrd @ k
 ];
+
+overlay[args___] := OverlayBox[{args}, BaselinePosition -> Baseline];
+
+DefineSymbolForm[{
+  ForwardFactorSymbol                 -> factorSymbolBox["\:3191", "\\uparrow"],
+  BackwardFactorSymbol                -> factorSymbolBox["\:3193", "\\downarrow"],
+  NeutralFactorSymbol                 -> factorSymbolBox["\:21af", "\\updownarrow"],
+  ForwardBackwardFactorSymbol         -> factorSymbolBox[overlay["\:3191", "\:3193"], "\\shornarrow"],
+  ForwardBackwardNeutralFactorSymbol  -> factorSymbolBox[overlay["\:3191", "\:3193", "\:3212"], """\mathrlap{\downarrow}{\mathrlap{\uparrow}{\endash}}"""]
+}];

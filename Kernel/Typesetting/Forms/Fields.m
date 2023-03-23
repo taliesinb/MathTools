@@ -1,39 +1,25 @@
 PublicForm[FiniteFieldSymbol]
 
-declareBoxFormatting[
-  FiniteFieldSymbol[n_] :> makeTemplateBox[n, "FiniteField"]
-];
-
-$TemplateKatexFunction["FiniteField"] = "finiteField";
+DefineUnaryForm[FiniteFieldSymbol, SubscriptBox["\[DoubleStruckCapitalF]", $1]];
 
 (**************************************************************************************************)
 
 PublicForm[BaseFieldSymbol]
 
-BaseFieldSymbol[] := BaseFieldSymbol["K"];
-
-declareBoxFormatting[
-  BaseFieldSymbol[s_] :> makeTemplateBox[s, "BaseFieldSymbolForm"]
-];
-
-$TemplateKatexFunction["BaseFieldSymbolForm"] = "baseField";
+DefineTaggedForm[BaseFieldSymbol];
 
 (**************************************************************************************************)
 
 PublicForm[FieldSymbol]
 
-FieldSymbol[] := FieldSymbol["K"];
-
-$fieldAliases = <|
-  "C" -> "Complexes",
-  "R" -> "Reals",
-  "Q" -> "Rationals"
-|>
-
-declareAlgebraicSymbol[FieldSymbol, $fieldAliases];
+DefineTaggedForm[FieldSymbol, Aliases -> <|
+  "C" -> Complexes,
+  "R" -> Reals,
+  "Q" -> Rationals
+|>];
 
 (**************************************************************************************************)
 
 PublicForm[LinearCombinationCoefficientSymbol]
 
-declareSymbolForm[LinearCombinationCoefficientSymbol];
+DefineTaggedForm[LinearCombinationCoefficientSymbol];

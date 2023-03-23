@@ -120,3 +120,10 @@ SetHoldFirst @ notInternalSymbolQ;
 notInternalSymbolQ[sym_Symbol] := !StringEndsQ[SymbolName @ Unevaluated @ sym, "$"];
 notInternalSymbolQ[_] := True;
 
+(**************************************************************************************************)
+
+PublicFunction[ModIncrement, ModDecrement]
+
+SetHoldFirst[ModIncrement, ModDecrement];
+ModIncrement[var_, n_] := Set[var, Mod[var + 1, n, 1]];
+ModDecrement[var_, n_] := Set[var, Mod[var - 1, n, 1]];

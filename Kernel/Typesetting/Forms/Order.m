@@ -1,61 +1,54 @@
 PublicForm[LatticeSymbol, MeetSemilatticeSymbol, JoinSemilatticeSymbol, PosetSymbol]
 
-declareSymbolFormExplicit[LatticeSymbol]
-declareSymbolFormExplicit[MeetSemilatticeSymbol]
-declareSymbolFormExplicit[JoinSemilatticeSymbol]
-declareSymbolFormExplicit[PosetSymbol]
+DefineTaggedForm[{LatticeSymbol, MeetSemilatticeSymbol, JoinSemilatticeSymbol, PosetSymbol}]
+
+PublicForm[LatticeElementSymbol, MeetSemilatticeElementSymbol, JoinSemilatticeElementSymbol, PosetElementSymbol]
+
+DefineTaggedForm[{LatticeElementSymbol, MeetSemilatticeElementSymbol, JoinSemilatticeElementSymbol, PosetElementSymbol}]
 
 (**************************************************************************************************)
 
 PublicSymbol[LatticeTopSymbol, LatticeBottomSymbol, SemilatticeTopSymbol, SemilatticeBottomSymbol]
 
-declareConstantSymbol[{LatticeTopSymbol, LatticeBottomSymbol, SemilatticeTopSymbol, SemilatticeBottomSymbol}];
+DefineSymbolForm[{
+  LatticeTopSymbol        -> "\[DownTee]",
+  SemilatticeTopSymbol    -> "\[DownTee]",
+  LatticeBottomSymbol     -> "\[UpTee]",
+  SemilatticeBottomSymbol -> "\[UpTee]"
+}];
 
 (**************************************************************************************************)
 
-PublicForm[LatticeElementSymbol, MeetSemilatticeElementSymbol, JoinSemilatticeElementSymbol, PosetElementSymbol]
+PublicForm[LatticeMeetForm, SemilatticeMeetForm, SemilatticeSemimeetForm]
 
-declareSymbolFormExplicit[LatticeElementSymbol];
-declareSymbolFormExplicit[MeetSemilatticeElementSymbol];
-declareSymbolFormExplicit[JoinSemilatticeElementSymbol];
-declareSymbolFormExplicit[PosetElementSymbol];
+DefineInfixForm[#, KBox[WideOpBox @ ForceKatexCharBox["\[And]"], "\[Wedge]"]]& /@
+  {LatticeMeetForm, SemilatticeMeetForm, SemilatticeSemimeetForm}
 
-(**************************************************************************************************)
+PublicForm[LatticeJoinForm, SemilatticeJoinForm, SemilatticeSemijoinForm]
 
-PublicForm[LatticeMeetForm, LatticeJoinForm]
-
-declareInfixSymbol[{LatticeMeetForm, LatticeJoinForm}, LatticeElementSymbol];
-
-(**************************************************************************************************)
-
-PublicForm[SemilatticeMeetForm, SemilatticeJoinForm]
-
-declareInfixSymbol[SemilatticeMeetForm, MeetSemilatticeElementSymbol];
-declareInfixSymbol[SemilatticeJoinForm, JoinSemilatticeElementSymbol];
-
-(**************************************************************************************************)
-
-PublicForm[SemilatticeSemimeetForm, SemilatticeSemijoinForm]
-
-declareInfixSymbol[SemilatticeSemimeetForm, JoinSemilatticeElementSymbol];
-declareInfixSymbol[SemilatticeSemijoinForm, MeetSemilatticeElementSymbol];
+DefineInfixForm[#, KBox[WideOpBox @ ForceKatexCharBox @ "\[Or]", "\[Vee]"]]& /@
+  {LatticeJoinForm, SemilatticeJoinForm, SemilatticeSemijoinForm};
 
 (**************************************************************************************************)
 
 PublicForm[PosetGreaterForm, PosetGreaterEqualForm, PosetLessForm, PosetLessEqualForm, PosetCoversForm, PosetCoveredByForm]
 
-declareInfixSymbol[PosetGreaterForm, PosetElementSymbol];
-declareInfixSymbol[PosetGreaterEqualForm, PosetElementSymbol];
-declareInfixSymbol[PosetLessForm, PosetElementSymbol];
-declareInfixSymbol[PosetLessEqualForm, PosetElementSymbol];
-declareInfixSymbol[PosetCoversForm, PosetElementSymbol];
-declareInfixSymbol[PosetCoveredByForm, PosetElementSymbol];
+DefineInfixForm[#1, OpBox @ #2]& @@@ ExpressionTable[
+  PosetGreaterForm        ">"
+  PosetGreaterEqualForm   "≥"
+  PosetLessForm           "<"
+  PosetLessEqualForm      "≤"
+  PosetCoversForm         "⋗"
+  PosetCoveredByForm      "⋖"
+]
 
 (**************************************************************************************************)
 
 PublicForm[LatticeGreaterForm, LatticeGreaterEqualForm, LatticeLessForm, LatticeLessEqualForm]
 
-declareInfixSymbol[LatticeGreaterForm, LatticeElementSymbol];
-declareInfixSymbol[LatticeGreaterEqualForm, LatticeElementSymbol];
-declareInfixSymbol[LatticeLessForm, LatticeElementSymbol];
-declareInfixSymbol[LatticeLessEqualForm, LatticeElementSymbol];
+DefineInfixForm[#1, OpBox @ #2]& @@@ ExpressionTable[
+  LatticeGreaterForm        ">"
+  LatticeGreaterEqualForm   "≥"
+  LatticeLessForm           "<"
+  LatticeLessEqualForm      "≤"
+]

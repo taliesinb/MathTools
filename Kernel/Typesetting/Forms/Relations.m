@@ -1,7 +1,7 @@
 PublicForm[ElementOfForm, NotElementOfForm]
 
-DefineLiteralInfixBinaryForm[ElementOfForm, "\[Element]"];
-DefineLiteralInfixBinaryForm[NotElementOfForm, "\[NotElement]"];
+DefineInfixBinaryForm[ElementOfForm, WideOpBox @ "\[Element]"];
+DefineInfixBinaryForm[NotElementOfForm, WideOpBox @ "\[NotElement]"];
 
 DefineStandardTraditionalForm[{
   ElementOfForm[a_, as__, b_] :> MakeBoxes @ ElementOfForm[CommaRowForm[a, as], b],
@@ -12,7 +12,7 @@ DefineStandardTraditionalForm[{
 
 PublicForm[PathRelationForm]
 
-declareBoxFormatting[
+(* declareBoxFormatting[
   PathRelationForm[args__] :>
     TemplateBox[MapUnevaluated[wordBoxes, {args}], "PathRelationForm"],
   PathRelationForm[] :>
@@ -21,71 +21,72 @@ declareBoxFormatting[
 
 $TemplateKatexFunction["PathRelationForm"] = katexAliasRiffled["pathIso"]
 $TemplateKatexFunction["PathRelationSymbol"] = katexAlias["pathIso"];
+ *)
+(* Cell[StyleData["PathRelationForm", StyleDefinitions -> StyleData[
+ "CardinalFont"]],
+ TemplateBoxOptions->{DisplayFunction->(RowBox[{
+    TemplateSlotSequence[1,
+     TemplateBox[{},
+      "PathRelationSymbol"]]}]& \
+)},ExpressionUUID->"53ad7f34-c559-4822-af7a-78183f5961fb"],
+
+Cell[StyleData["PathRelationSymbol", StyleDefinitions -> StyleData[
+ "CardinalFont"]],
+ TemplateBoxOptions->{
+ DisplayFunction->(
+  "\[VeryThinSpace]\[TildeEqual]\[VeryThinSpace]"& \
+)},ExpressionUUID->"abd84d09-6f9a-4dce-850a-402058fb4bb2"]
+}, Open  ]],
+ *)
 
 (**************************************************************************************************)
 
-PublicForm[TailEqualForm, HeadEqualForm, ApproxEqualForm, IsomorphicForm, HomeomorphicForm, CongruentForm, IdenticallyEqualForm, HomotopicForm, DefEqualForm, SyntaxEqualForm, DotEqualForm, ColonEqualForm]
-
-declareInfixSymbol[{ApproxEqualForm, IsomorphicForm, HomeomorphicForm, HomotopicForm, DefEqualForm, SyntaxEqualForm,
-  DotEqualForm, ColonEqualForm, TailEqualForm, HeadEqualForm, CongruentForm, IdenticallyEqualForm}];
-
-(**************************************************************************************************)
-
-PublicForm[EqualForm, NotEqualForm]
-
-declareInfixSymbol[EqualForm] // usingCustomKatex[" = "];
-declareInfixSymbol[NotEqualForm] // usingCustomKatex[" \\neq "];
-
-(**************************************************************************************************)
-
-PublicForm[LessForm, LessEqualForm, GreaterForm, GreaterEqualForm]
-
-declareInfixSymbol[LessForm] // usingCustomKatex[" < "];
-declareInfixSymbol[LessEqualForm] // usingCustomKatex[" \\le "];
-declareInfixSymbol[GreaterForm] // usingCustomKatex[" > "];
-declareInfixSymbol[GreaterEqualForm] // usingCustomKatex[" \\ge "];
-
-(**************************************************************************************************)
-
+PublicForm[TailEqualForm, HeadEqualForm]
+PublicForm[BijectiveForm, ApproxEqualForm, IsomorphicForm, HomeomorphicForm, CongruentForm, IdenticallyEqualForm, HomotopicForm, DefEqualForm, SyntaxEqualForm, UnderdotEqualForm, DotEqualForm, ColonEqualForm]
+PublicForm[EqualForm, NotEqualForm, LessForm, LessEqualForm, GreaterForm, GreaterEqualForm]
 PublicForm[SubsetForm, SubsetEqualForm, SupersetForm, SupersetEqualForm]
-
-declareInfixSymbol[SubsetForm] // usingCustomKatex[" \\subset "];
-declareInfixSymbol[SubsetEqualForm] // usingCustomKatex[" \\subseteq "];
-declareInfixSymbol[SupersetForm] // usingCustomKatex[" \\supset "];
-declareInfixSymbol[SupersetEqualForm] // usingCustomKatex[" \\supseteq "];
-
-(**************************************************************************************************)
-
 PublicForm[SubmultisetForm, SubmultisetEqualForm, SupermultisetForm, SupermultisetEqualForm]
 
-declareInfixSymbol[SubmultisetForm] // usingCustomKatex[" \\submset "];
-declareInfixSymbol[SubmultisetEqualForm] // usingCustomKatex[" \\submseteq "];
-declareInfixSymbol[SupermultisetForm] // usingCustomKatex[" \\supmset "];
-declareInfixSymbol[SupermultisetEqualForm] // usingCustomKatex[" \\supmseteq "];
-
-(**************************************************************************************************)
-
-PublicForm[BijectiveForm]
-
-declareInfixSymbol[BijectiveForm];
+DefineInfixForm[#1, OpBox @ #2]& @@@ ExpressionTable[
+  TailEqualForm                UnderdotBox["="]
+  HeadEqualForm                OverdotBox["="]
+  BijectiveForm                "≈"
+  ApproxEqualForm              "≈"
+  IsomorphicForm               "≃"
+  HomeomorphicForm             "≅"
+  HomotopicForm                "≃"
+  DefEqualForm                 "≝"
+  SyntaxEqualForm              GrayBox["≡"]
+  UnderdotEqualForm            UnderdotBox["="]
+  DotEqualForm                 OverdotBox["="]
+  ColonEqualForm               "≔"
+  CongruentForm                "≡"
+  IdenticallyEqualForm         "≡"
+  EqualForm                    "="
+  NotEqualForm                 "≠"
+  LessForm                     "<"
+  LessEqualForm                "≤"
+  GreaterForm                  ">"
+  GreaterEqualForm             "≥"
+  SubsetForm                   "⊂"
+  SubsetEqualForm              "⊆"
+  SupersetForm                 "⊃"
+  SupersetEqualForm            "⊇"
+  SubmultisetForm              OverdotBox @ "⊂"
+  SubmultisetEqualForm         OverdotBox @ "⊆"
+  SupermultisetForm            OverdotBox @ "⊃"
+  SupermultisetEqualForm       OverdotBox @ "⊇"
+]
 
 (**************************************************************************************************)
 
 PublicForm[BinaryRelationForm]
 
-declareBoxFormatting[
-  BinaryRelationForm[relation_String][args__] :>
-    makeTypedTemplateBox[relation -> None, args, "BinaryRelationForm"]
-]
-
-$TemplateKatexFunction["BinaryRelationForm"] = Function[riffled[#1][##2]];
+DefineStandardTraditionalForm[{
+  BinaryRelationForm[r_String] :> KBox[KWideOp @ r, KBin @ r],
+  br_BinaryRelationForm[args___] :> AppliedBox[MakeBoxes @ br, MakeQGBoxSequence @ args]
+}];
 
 (**************************************************************************************************)
 
-PublicForm[AppliedRelationForm]
-
-declareBoxFormatting[
-  AppliedRelationForm[a_, b_, c_] :> makeTemplateBox[a, b, c, "AppliedRelationForm"]
-];
-
-$TemplateKatexFunction["AppliedRelationForm"] = applyRiffled["appliedRelation", " "];
+(* AppliedRelationForm was removed, not sure it's use *)

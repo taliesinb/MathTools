@@ -7,7 +7,7 @@ UpdateQuiverGeometryStylesheet::save = "Could not save existing stylesheet at ``
 UpdateQuiverGeometryStylesheet[] := Scope[
   template = Get @ LocalPath["StyleSheets", "QuiverGeometry.template.nb"];
   template = DeleteCases[template, ExpressionUUID -> _, {0, Infinity}];
-  cells = KeyValueMap[makeTemplateBoxStyleCell, $templateBoxDisplayFunction];
+  cells = KeyValueMap[makeTemplateBoxStyleCell, $notebookDisplayFunction];
   template //= ReplaceAll[Cell[StyleData["Dummy"], ___] :> Splice[cells]];
 
   hash = Base36Hash[template];
@@ -39,7 +39,7 @@ GeneratePrivateQuiverGeometryStylesheet[] := Scope[
     FrontEndVersion -> "13.1 for Mac OS X x86 (64-bit) (June 16, 2022)",
     StyleDefinitions -> "PrivateStylesheetFormatting.nb"
   ];
-  cells = KeyValueMap[makeTemplateBoxStyleCell, $templateBoxDisplayFunction];
+  cells = KeyValueMap[makeTemplateBoxStyleCell, $notebookDisplayFunction];
   template //= ReplaceAll[Cell[StyleData["Dummy"], ___] :> Splice[cells]];
   template
 ];
@@ -102,10 +102,10 @@ ApplyQuiverGeometryNotebookStyles[file_String ? FileQ] := Scope[
 PublicVariable[UpdateLegacyNotebook]
 
 createLegacyReplacementRules[] := Scope[
-  keys = Select[Keys @ $templateBoxDisplayFunction, LowerCaseQ[StringTake[#, 1]]&];
+  keys = Select[Keys @ $notebookDisplayFunction, LowerCaseQ[StringTake[#, 1]]&];
   symbolRules = Map[
     UpperCaseFirst[#] -> #&,
-    Select[Keys @ $templateBoxDisplayFunction, LowerCaseQ[StringTake[#, 1]]&]
+    Select[Keys @ $notebookDisplayFunction, LowerCaseQ[StringTake[#, 1]]&]
   ];
   colorRules = {
     "RedGreenForm" -> "TealForm", "RedBlueForm" -> "PinkForm", "GreenBlueForm" -> "OrangeForm"
@@ -155,26 +155,26 @@ UpdateLegacyNotebook[dir_String] /; FileType[dir] === Directory :=
 (**************************************************************************************************)
 
 PublicFunction[NotebookStyleDataNames]
-PublicFunction[NotebookTemplateBoxNames]
+PublicFunction[NotebookTemplateNames]
 PublicFunction[FindMissingTemplateBoxDefinitions]
 
 (* $defaultStyleSheetStyleNames := $defaultStyleSheetStyleNames =
   getStyleDataNames @ System`Convert`CommonDump`GetStyleSheet["Core.nb"];
  *)
 
-NotebookTemplateBoxNames[nb_:Automatic] :=
+NotebookTemplateNames[nb_:Automatic] :=
   DeepUniqueCases[ToNotebookExpression @ nb, TemplateBox[_, name_String] :> name];
 
 NotebookStyleDataNames[nb_:Automatic] :=
   DeepUniqueCases[ToNotebookExpression @ nb, Cell[StyleData[style_String, ___], ___] :> style];
 
-$builtinTemplateBoxNames = {"RowWithSeparators", "RowWithSeparator", "Spacer1", "Ceiling", "Floor"};
+$builtinTemplateNames = {"RowWithSeparators", "RowWithSeparator", "Spacer1", "Ceiling", "Floor"};
 
 FindMissingTemplateBoxDefinitions[] := FindMissingTemplateBoxDefinitions @ Automatic;
 FindMissingTemplateBoxDefinitions[nb_, ref_:Automatic] := Scope[
   SetAutomatic[ref, $QuiverGeometryStylesheetPath];
-  availableNames = Join[NotebookStyleDataNames @ ref, $builtinTemplateBoxNames];
-  notebookNames = NotebookTemplateBoxNames @ nb;
+  availableNames = Join[NotebookStyleDataNames @ ref, $builtinTemplateNames];
+  notebookNames = NotebookTemplateNames @ nb;
   Complement[notebookNames, availableNames]
 ];
 

@@ -1,180 +1,125 @@
 SystemSymbol[Naturals, PositiveNaturals, Primes]
 
-(* SetUsage @ "Naturals represents the natural numbers."
-SetUsage @ "PositiveNaturals represents the positive natural numbers."
-SetUsage @ "Primes represents the prime numbers."
- *)
-DeclareTemplateBoxRules[
-  Naturals                   -> "\[DoubleStruckN]",
-  PositiveNaturals           -> SuperscriptBox["\[DoubleStruckCapitalN]", "+"],
-  PositiveReals              -> SuperscriptBox["\[DoubleStruckCapitalR]", "+"],
-  Primes                     -> "\[DoubleStruckCapitalP]",
-  Reals                      -> "\[DoubleStruckCapitalR]"
-]
+DefineSymbolForm[{
+  Naturals         -> KBox["\[DoubleStruckCapitalN]", "\\N"],
+  Reals            -> KBox["\[DoubleStruckCapitalR]", "\\R"],
+  Integers         -> KBox["\[DoubleStruckCapitalZ]", "\\Z"],
+  Complexes        -> KBox["\[DoubleStruckCapitalC]", "\\Complex"],
+  Rationals        -> KBox["\[DoubleStruckCapitalQ]", "\\mathbb{Q}"],
+  Primes           -> "\[DoubleStruckCapitalP]",
+  PositiveNaturals -> SuperscriptBox[KBox["\[DoubleStruckCapitalN]", "\\N"], "+"],
+  PositiveIntegers -> SuperscriptBox[KBox["\[DoubleStruckCapitalZ]", "\\Z"], "+"],
+  PositiveReals    -> SuperscriptBox[KBox["\[DoubleStruckCapitalR]", "\\R"], "+"]
+}];
 
 (**************************************************************************************************)
 
 PublicSymbol[PiSymbol, TauSymbol]
 
-DeclareTemplateBoxRules[
+DefineSymbolForm[{
   PiSymbol                   -> "\[Pi]",
   TauSymbol                  -> "\[Tau]"
-];
-
-(**************************************************************************************************)
-
-PublicForm[IndexedMaxForm, IndexedMinForm]
-
-declareSumLikeFormatting[IndexedMaxForm, "indexMax"];
-declareSumLikeFormatting[IndexedMinForm, "indexMin"];
+}];
 
 (**************************************************************************************************)
 
 PublicForm[ConditionedForm]
 
-declareBoxFormatting[
-  ConditionedForm[SumForm[a_, i_], cond_] :> MakeBoxes @ SumForm[a, i, cond]
-];
+DefineStandardTraditionalForm[{
+  ConditionedForm[(i_IndexedForm)[a_], cond_] :> MakeBoxes[i[a, cond]],
+  ConditionedForm[a_, b_] :> MakeBoxes[SuchThatForm[a, b]]
+}];
 
 (**************************************************************************************************)
 
 PublicForm[SumForm, ProductForm]
 
-declareSumLikeFormatting[SumForm, "indexSum"];
-declareSumLikeFormatting[ProductForm, "indexProd"];
+DefineLegacyIndexedForm[SumForm, "\[Sum] "];
+DefineLegacyIndexedForm[ProductForm, "\[Product] "];
 
 (**************************************************************************************************)
 
-PublicForm[PlusForm]
+PublicForm[TimesForm, PlusForm]
 
-DefineLiteralInfixForm[PlusForm, "+"]
-
-(**************************************************************************************************)
-
-PublicForm[SubtractForm]
-
-declareInfixSymbol[SubtractForm] // usingCustomKatex[" - "];
+DefineInfixForm[PlusForm,  OpBox @ "+"]
+DefineInfixForm[TimesForm, OpBox @ "\[Times]"]
 
 (**************************************************************************************************)
 
-PublicForm[MinusForm]
+PublicForm[MinusForm, SubtractForm, DivideForm, InlineDivideForm]
 
-declareUnaryForm[MinusForm];
-
-(**************************************************************************************************)
-
-PublicForm[TimesForm]
-
-DefineLiteralInfixForm[TimesForm, "\[Times]"]
+DefineInfixBinaryForm[SubtractForm, OpBox @ "-"];
+DefineUnaryForm[MinusForm, RBox["\[Minus]\!", $1]];
+DefineBinaryForm[DivideForm, KBox[FractionBox[$1, $2], "frac"[$1, $2]]];
+DefineBinaryForm[InlineDivideForm, RBox[$1, KBox[OpBox @ "/", "/"], $2]]
 
 (**************************************************************************************************)
 
-PublicFormBox[Parentheses, SpacedParentheses]
+PublicForm[FloorForm, CeilingForm]
 
-DefineLiteralRiffledForm[ParenthesesForm, RBox["(", RowBox[$1], ")"], ",", ParenthesesBox];
-DefineLiteralRiffledForm[SpacedParenthesesForm, RBox["(", RowBox[$1], ")"], RBox[",", "\[MediumSpace]"], SpacedParenthesesBox];
-
-(**************************************************************************************************)
-
-PublicForm[NoParenthesesForm]
-
-declareBoxFormatting[
-  NoParenthesesForm[e_] :> MakeQGBoxes @ e
-];
-
-(**************************************************************************************************)
-
-PublicForm[CeilingForm, FloorForm]
-
-DefineLiteralLeftRightForm[CeilingForm, "\[LeftCeiling]", "\[RightCeiling]"]
-DefineLiteralLeftRightForm[FloorForm, "\[LeftFloor]", "\[RightFloor]"]
-
-(**************************************************************************************************)
-
-PublicForm[DivideForm, InlineDivideForm]
-
-declareBinaryForm[DivideForm] // usingCustomKatex["frac"];
-declareInfixSymbol[InlineDivideForm] // usingCustomKatex[" / "];
+DefineUnaryForm[FloorForm, LeftRightBox["\[LeftFloor]", $1, "\[RightFloor]"]];
+DefineUnaryForm[CeilingForm, LeftRightBox["\[LeftCeiling]", $1, "\[RightCeiling]"]];
 
 (**************************************************************************************************)
 
 PublicForm[ImplicitTimesForm, SpacedImplicitTimesForm]
 
-declareInfixSymbol[ImplicitTimesForm] // usingCustomKatex[" \\, "];
-declareInfixSymbol[SpacedImplicitTimesForm] // usingCustomKatex[" \\; "];
+DefineInfixForm[ImplicitTimesForm,       KBox["\[VeryThinSpace]", "\\,"]];
+DefineInfixForm[SpacedImplicitTimesForm, KBox["\[VeryThinSpace] ", "\\;\\,"]];
 
 (**************************************************************************************************)
 
 PublicForm[LimitForm]
 
-declareBinaryForm[LimitForm];
+DefineBinaryForm[LimitForm, RBox[SubscriptBox[FunctionBox @ "lim", $2], " ", $1]]
 
 (**************************************************************************************************)
 
 PublicForm[DividesForm]
 
-declareInfixSymbol[DividesForm];
+DefineInfixForm[DividesForm, WideOpBox @ "\[Divides]"];
 
 (**************************************************************************************************)
 
 PublicForm[InverseForm]
 
-declareUnaryForm[InverseForm];
+DefineUnaryForm[InverseForm, InverseBox @ $1];
 
 (**************************************************************************************************)
 
 PublicForm[ClosedIntervalForm, OpenIntervalForm, ClosedOpenIntervalForm, OpenClosedIntervalForm]
 
-declareBinaryForm[ClosedIntervalForm];
-declareBinaryForm[OpenIntervalForm];
-declareBinaryForm[ClosedOpenIntervalForm];
-declareBinaryForm[OpenClosedIntervalForm];
+DefineBinaryForm[ClosedIntervalForm,     RBox["[", $1, ",", " ", $2, "]"]];
+DefineBinaryForm[OpenIntervalForm,       RBox["(", $1, ",", " ", $2, ")"]];
+DefineBinaryForm[ClosedOpenIntervalForm, RBox["[", $1, ",", " ", $2, ")"]];
+DefineBinaryForm[OpenClosedIntervalForm, RBox["(", $1, ",", " ", $2, "]"]];
 
 (**************************************************************************************************)
 
 PublicForm[IntegerRangeForm]
 
-declareBoxFormatting[
-  IntegerRangeForm[1, n_] :> makeTemplateBox[n, "OneToNForm"],
-  IntegerRangeForm[0, n_] :> makeTemplateBox[n, "ZeroToNForm"]
-]
-
-$TemplateKatexFunction["OneToNForm"] = "oneTo"
-$TemplateKatexFunction["ZeroToNForm"] = "zeroTo"
+DefineBinaryForm[IntegerRangeForm, RBox[$1, "\[InvisibleSpace]..", $2]];
 
 (**************************************************************************************************)
 
 PublicForm[HomomorphismMappingForm]
 
-declareBoxFormatting[
-  HomomorphismMappingForm[rules__] :>
-    TemplateBox[
-      MapUnevaluated[assocRuleBox, {rules}],
-      "HomomorphismMappingForm"
-    ]
-]
+DefineCommaForm[HomomorphismMappingForm, RBox[LeftBox @ "\[LeftAngleBracket]", $wlThinSpace, $1, $wlThinSpace, RightBox @ "\[RightAngleBracket]"]];
 
-SetHoldAllComplete[assocRuleBox];
-assocRuleBox = Case[
-  a_ -> b_ := MakeBoxes @ MapsToForm[a, b];
-  other_   := MakeQGBoxes @ other;
-];
-
-$TemplateKatexFunction["HomomorphismMappingForm"] = applyRiffled["homomorphismMapping", ","];
+DefineRuleAsMapsTo[HomomorphismMappingForm];
 
 (**************************************************************************************************)
 
 PublicForm[FactorialForm, PowerForm]
 
-declareUnaryForm[FactorialForm];
-declareBinaryForm[PowerForm];
+DefineUnaryForm[FactorialForm, RBox[$1, "!"]]
+DefineBinaryForm[PowerForm, SuperscriptBox[$1, $2]]
 
 (**************************************************************************************************)
 
 PublicForm[KroneckerDeltaForm]
-PublicSymbol[KroneckerDeltaSymbol]
 
-declareNAryForm[KroneckerDeltaForm, KroneckerDeltaSymbol, ","];
+DefineCommaForm[KroneckerDeltaForm, SubscriptBox["\[Delta]", $1], HeadBoxes -> "\[Delta]"]
 
 
 

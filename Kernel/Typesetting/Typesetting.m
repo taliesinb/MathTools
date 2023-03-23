@@ -148,95 +148,6 @@ OpenerColumnBox[a_, b_] := With[
 
 (**************************************************************************************************)
 
-PublicFunction[Browser]
-
-Options[Browser] = {
-  ClickFunction -> None
-};
-
-MakeBoxes[Browser[list_List, opts___Rule], form_] := BrowserBoxes[list, opts];
-
-BrowserBoxes[list_List, opts:OptionsPattern[]] := With[
-  {n$$ = Length @ list},
-  {blue = $LightBlue, gray = GrayLevel[0.95], purple = $LightPurple},
-  {clickFn = OptionValue[Browser, {opts}, ClickFunction]},
-  {itemBox = FrameBox[
-    DynamicBox[
-      ClickBox[
-        ToBoxes @ Set[r$$, Part[list, i$$]],
-        clickFn @ r$$
-      ],
-      TrackedSymbols :> {i$$}],
-    FrameMargins -> 10, FrameStyle -> $LightGray
-   ],
-   buttonRowBox = RowBox[{
-      StyledClickBox["\[LeftArrowBar]", Set[i$$, 1]],
-      StyledClickBox["\[LeftArrow]", Set[i$$, Mod[i$$ - 1, n$$, 1]]],
-      StyledClickBox[
-        DynamicBox @ PaneBox[StyleBox[RowBox[{i$$, "/", n$$}], Plain, 14], ImageSize -> {82, 10}, Alignment -> Center, BaselinePosition -> Baseline],
-        Set[i$$, Mod[i$$ + If[CurrentValue["ShiftKey"], -1, 1], n$$, 1]],
-        GrayLevel[0.9], $Gray
-      ],
-      StyledClickBox["\[RightArrow]", Set[i$$, Mod[i$$ + 1, n$$, 1]]],
-      StyledClickBox["\[RightArrowBar]", Set[i$$, n$$]],
-      StyledClickBox["\[DownArrow]", CellPrint @ With[{li = Part[list, i$$]}, ExpressionCell[li, "Input"]], $LightPink, $Pink]
-    }],
-   progressBox = DynamicProgressBarBox[{i$$, n$$}, {200, 10}]
-  },
-  DynamicModuleBox[
-    {i$$ = 1, r$$ = None},
-    GridBox[
-      {{buttonRowBox}, {progressBox}, {itemBox}},
-      GridBoxSpacings -> {"Rows" -> {0.1, 0.1, {.5}}},
-      GridBoxAlignment -> {"Columns" -> {{Left}}}
-    ],
-    DynamicModuleValues -> {i$$}
-  ]
-];
-
-(**************************************************************************************************)
-
-PublicFunction[MappedBrowser]
-
-MakeBoxes[MappedBrowser[f_, list_List], form_] := MappedBrowserBoxes[f, list];
-
-MappedBrowserBoxes[f_, list_List] := With[
-  {n$$ = Length @ list},
-  {blue = $LightBlue, gray = GrayLevel[0.95], purple = $LightPurple},
-  {itemBox = FrameBox[
-    DynamicBox[ToBoxes @ Set[r$$, f @ Part[list, i$$]], TrackedSymbols :> {i$$}],
-    FrameMargins -> 10, FrameStyle -> $LightGray],
-   buttonRowBox = RowBox[{
-      StyledClickBox["\[LeftArrowBar]", Set[i$$, 1]],
-      StyledClickBox["\[LeftArrow]", Set[i$$, Mod[i$$ - 1, n$$, 1]]],
-      StyledClickBox[
-        DynamicBox @ PaneBox[StyleBox[RowBox[{i$$, "/", n$$}], Plain, 14], ImageSize -> {82, 10}, Alignment -> Center, BaselinePosition -> Baseline],
-        Set[i$$, Mod[i$$ + If[CurrentValue["ShiftKey"], -1, 1], n$$, 1]],
-        GrayLevel[0.9], $Gray
-      ],
-      StyledClickBox["\[RightArrow]", Set[i$$, Mod[i$$ + 1, n$$, 1]]],
-      StyledClickBox["\[RightArrowBar]", Set[i$$, n$$]],
-      StyledClickBox["\[DownArrow]", CellPrint @ With[{li = Part[list, i$$]}, ExpressionCell[deferSub[f, li], "Input"]], $LightPink, $Pink],
-      StyledClickBox["\[DownArrowBar]", CellPrint @ ExpressionCell[{i$$, Part[list, i$$], r$$}, "Input"], $LightPink, $Pink]
-    }],
-   progressBox = DynamicProgressBarBox[{i$$, n$$}, {200, 10}]
-  },
-  DynamicModuleBox[
-    {i$$ = 1, r$$ = None},
-    GridBox[
-      {{buttonRowBox}, {progressBox}, {itemBox}},
-      GridBoxSpacings -> {"Rows" -> {0.1, 0.1, {.5}}},
-      GridBoxAlignment -> {"Columns" -> {{Left}}}
-    ],
-    DynamicModuleValues -> {i$$}
-  ]
-];
-
-
-deferSub[f_, i_] := Apply[Defer, ConstructHoldComplete[f, i]];
-
-(**************************************************************************************************)
-
 PublicFunction[DynamicProgressBarBox]
 
 SetHoldFirst @ DynamicProgressBarBox;
@@ -262,12 +173,31 @@ mouseMoveBox[box_, body_] := TagBox[
 
 (**************************************************************************************************)
 
+PrivateFunction[StyledClickBox]
+
 SetHoldRest[StyledClickBox];
 
-StyledClickBox[text_, action_, c1_:$LightBlue, c2_:$Blue] := ClickBox[buttonBox[text, c1, c2], action];
+StyledClickBox[text_, action_] := StyledClickBox[text, action, Automatic];
+StyledClickBox[text_, action_, color_] := ClickBox[buttonBox[text, color], action];
 
-buttonBox[e_, c1_:$LightBlue, c2_:$Blue] := FrameBox[
-  StyleBox[DeployBox @ e, Bold, 15], Background -> c1, FrameStyle -> c2, Alignment -> Baseline, FrameMargins -> {{5, 5}, {2, 0}}];
+buttonBox[e_, c_String] := buttonBox[e, $bboxColors @ c];
+buttonBox[e_, Automatic] := buttonBox[e, {$LightBlue, $Blue}];
+buttonBox[e_, c_] := buttonBox[e, {OklabLighter @ c, c}];
+buttonBox[e_, {c1_, c2_}] := FrameBox[
+  StyleBox[DeployBox @ e, Bold, 15],
+  Background -> c1, FrameStyle -> c2,
+  Alignment -> Baseline, FrameMargins -> {{5, 5}, {2, 0}}
+];
+
+$bboxColors = <|
+  "Gray" -> {GrayLevel[0.9], $Gray},
+  "Blue" -> {$LightBlue, $Blue},
+  "Green" -> {$LightGreen, $Green},
+  "Red" -> {$LightRed, $Red},
+  "Pink" -> {$LightPink, $Pink},
+  "LightPurple" -> {$LightPurple, $Purple},
+  "Orange" -> {$LightOrange, $Orange}
+|>;
 
 (**************************************************************************************************)
 

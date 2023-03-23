@@ -2,8 +2,8 @@
 \[Rule]                      ->         \to                 →
 \[TwoWayRule]                <->        \leftrightarrow     ↔
 \[RuleDelayed]               :>         \ruledelayed        ⧴
-\[DirectedEdge]              _          \desym              _
-\[UndirectedEdge]            _          \uesym              _
+\[DirectedEdge]              _          \mathbin{↣}         _
+\[UndirectedEdge]            _          \mathbin{↢}         _
 \[LessEqual]                 <=         \le                 ≤
 \[GreaterEqual]              >=         \ge                 ≥
 \[NotEqual]                  !=         \ne                 ≠
@@ -80,12 +80,15 @@ _                            _          \longmapsto         ⟼
 \[Hyphen]                    -          \hyphen             ‐
 \[Dash]                      -          \endash             –
 \[LongDash]                  --         \emdash             —
+_                            _          \quad                
+_                            _          \enspace             
 \[OpenCurlyQuote]            '          \lq                 ‘
 \[CloseCurlyQuote]           '          \rq                 ’
 \[OpenCurlyDoubleQuote]      \"         \dlq                “
 \[CloseCurlyDoubleQuote]     \"         \drq                ”
-                                                             
-\[InvisibleSpace]            _          \nobreakspace       _
+
+\[NonBreakingSpace]          _          \nobreakspace       _
+\[InvisibleSpace]            _          \phantom{}          _
 \[VeryThinSpace]             _          \vthinspace         _
 \[ThinSpace]                 _          \thinspace          _
 \[MediumSpace]               _          \medspace           _
@@ -145,7 +148,7 @@ _                            Reals      \R                  ℝ
 \[NotSubset]                 _          \nsubset            ⊄
 \[SubsetEqual]               _          \subseteq           ⊆
 \[NotSubsetEqual]            _          \nsubseteq          ⊈
-\[Superset]                  _          \sup                ⊃
+\[Superset]                  _          \supset             ⊃
 \[NotSuperset]               _          \nsupset            ⊅
 \[SupersetEqual]             _          \supseteq           ⊇
 \[NotSupersetEqual]          _          \nsupseteq          ⊉
@@ -216,7 +219,7 @@ _                            _          \smallblacktriangleleft  ⏴
 \[LeftAngleBracket]          _          \langle             ⟨
 \[RightAngleBracket]         _          \rangle             ⟩
 \[LeftBracketingBar]         _          \lvert              ∣
-\[RightBracketingBar]        _          \rrert              ∣
+\[RightBracketingBar]        _          \rvert              ∣
 \[VerticalBar]               _          \vert               ∣
 \[LeftDoubleBracketingBar]   _          \lVert              ∥
 \[RightDoubleBracketingBar]  _          \rVert              ∥

@@ -1,35 +1,94 @@
+PublicForm[StyleDecorated]
+
+StyleDecorated[style_][head_[args___]] := StyleDecorated[style, head][args];
+
+DefineStandardTraditionalForm[
+  StyleDecorated[style_, head_][args___] :> styleDecoratedBoxes[head, style, args]
+]
+
+SetHoldAll[styleDecoratedBoxes];
+
+styleDecoratedBoxes[head_, style_, args___] := Scope[
+  kboxes = boxes = MakeBoxes[head[args]];
+  boxes //= EvaluateTemplateBox;
+  kboxes //= evalKatexRepeated;
+  $style = StyleBoxOperator @@ ToList[style];
+  KBox[
+    StyleBox[applyDecoratedStyle @ boxes, "QuiverGeometryBase"],
+    $style = stripLR /* $style; applyDecoratedStyle @ kboxes
+  ]
+];
+
+$LRSisterPatt = "\[CenterDot]" | AdjustmentBox["\[CenterDot]", ___] | (_String ? (StringContainsQ["\\cdot"]));
+
+applyDecoratedStyle = Case[
+  StyleBox[b_, opts___] := StyleBox[% @ b, opts];
+  AdjustmentBox[b_, opts___] := AdjustmentBox[% @ b, opts];
+  RowBox[{left_, ileft:$LRSisterPatt, middle___, iright:$LRSisterPatt, right_}] :=
+    RowBox[{$style @ left, $style @ ileft, middle, $style @ iright, $style @ right}];
+  RowBox[{left_, middle___, right_}] :=
+    RowBox[{$style @ left, middle, $style @ right}];
+  GridBox[{{left_, ileft:$LRSisterPatt, middle___, iright:$LRSisterPatt, right_}}, opts___] :=
+    GridBox[{{$style @ left, $style @ ileft, middle, $style @ iright, $style @ right}}, opts];
+  GridBox[{{left_, middle___, right_}}, opts___] :=
+    GridBox[{{$style @ left, middle, $style @ right}}, opts];
+];
+
+
+
+stripLR = Case[
+  s_String := StringTrimLeft[s, {"\\left", "\\right"}];
+  other_   := other;
+];
+
+evalKatexRepeated = Case[
+  TemplateBox[args_List, name_String] /; KeyExistsQ[$katexDisplayFunction, name] :=
+    % @ Apply[Replace[$katexDisplayFunction @ name, macro_String :> $katexMacros[macro]], args];
+  other_ := other;
+]
+
 (**************************************************************************************************)
 
-PublicForm[PrimedForm]
+(**************************************************************************************************)
 
-DefineUnaryForm[PrimedForm, SuperscriptBox[$1, "\[Prime]"]]
+PublicFormBox[Primed, DoublePrimed]
+
+DefineUnaryForm[PrimedForm, SuperscriptBox[$1, "\[Prime]"], BoxFunction -> PrimedBox]
+DefineUnaryForm[DoublePrimedForm, SuperscriptBox[$1, "\[DoublePrime]"], BoxFunction -> DoublePrimedBox]
+
+(**************************************************************************************************)
+
+PublicForm[UnderdotForm, OverdotForm, OverdoubledotForm]
+
+DefineUnaryForm[UnderdotForm, UnderdotBox[$1]]
+DefineUnaryForm[OverdotForm, OverdotBox[$1]]
+DefineUnaryForm[OverdoubledotForm, OverdoubledotBox[$1]]
 
 (**************************************************************************************************)
 
 PublicForm[PositiveSignedPartForm, NegativeSignedPartForm]
 
-declareUnaryWrapperForm[PositiveSignedPartForm];
-declareUnaryWrapperForm[NegativeSignedPartForm];
+DefineUnaryForm[PositiveSignedPartForm, SuperscriptBox[$1, "+"]]
+DefineUnaryForm[NegativeSignedPartForm, SuperscriptBox[$1, "-"]]
 
 (**************************************************************************************************)
 
-PublicForm[SignedForm]
+PublicFormBox[Signed]
 
-declareUnaryWrapperForm[SignedForm]
-declareAppliedFormatting[SignedForm];
-
-(**************************************************************************************************)
-
-PublicForm[FamilyModifierForm]
-
-declareUnaryWrapperForm[FamilyModifierForm]
+DefineUnaryForm[SignedForm, SuperscriptBox[$1, "*"], BoxFunction -> SignedBox]
 
 (**************************************************************************************************)
 
-PublicForm[WhiteCircleModifierForm, BlackCircleModifierForm]
+PublicFormBox[FamilyModifier]
 
-declareUnaryForm[WhiteCircleModifierForm];
-declareUnaryForm[BlackCircleModifierForm];
+DefineUnaryForm[FamilyModifierForm, StyleBox[$1, Bold], BoxFunction -> FamilyModifierBox]
+
+(**************************************************************************************************)
+
+PublicFormBox[WhiteCircleModifier, BlackCircleModifier]
+
+DefineUnaryForm[WhiteCircleModifierForm, SuperscriptBox[$1, "\[SmallCircle]"], BoxFunction -> WhiteCircleModifierBox]
+DefineUnaryForm[BlackCircleModifierForm, SuperscriptBox[$1, "\[FilledSmallCircle]"], BoxFunction -> BlackCircleModifierBox]
 
 (**************************************************************************************************)
 
@@ -37,45 +96,19 @@ PublicForm[ImageModifierForm, PreimageModifierForm, MultiImageModifierForm, Mult
 
 PublicForm[MultiImageColorModifierForm, MultiPreimageColorModifierForm]
 
-declareUnaryForm[ImageModifierForm];
-declareUnaryForm[PreimageModifierForm];
-declareUnaryForm[MultiImageModifierForm];
-declareUnaryForm[MultiPreimageModifierForm];
-declareUnaryForm[MultiImageColorModifierForm];
-declareUnaryForm[MultiPreimageColorModifierForm];
-
-declareAppliedFormatting[ImageModifierForm];
-declareAppliedFormatting[PreimageModifierForm];
-declareAppliedFormatting[MultiImageModifierForm];
-declareAppliedFormatting[MultiPreimageModifierForm];
-declareAppliedFormatting[MultiImageColorModifierForm];
-declareAppliedFormatting[MultiPreimageColorModifierForm];
-
-declareBoxFormatting[
-  f_ImageModifierForm[args___] :> MakeBoxes @ AppliedForm[f, args],
-  f_PreimageModifierForm[args___] :> MakeBoxes @ AppliedForm[f, args],
-  f_MultiImageModifierForm[args___] :> MakeBoxes @ AppliedForm[f, args],
-  f_MultiPreimageModifierForm[args___] :> MakeBoxes @ AppliedForm[f, args],
-  f_MultiImageColorModifierForm[args___] :> MakeBoxes @ AppliedForm[f, args],
-  f_MultiPreimageColorModifierForm[args___] :> MakeBoxes @ AppliedForm[f, args]
-];
-
-(**************************************************************************************************)
-
-PublicForm[InvertedBoxForm]
-
-SetHoldFirst[InvertedBoxForm];
-InvertedBoxForm[e_] := makeTemplateBox[e, "InvertedForm"]
-
-$TemplateKatexFunction["InvertedForm"] = "inverted";
-
-InvertedForm[(c:$colorFormP)[e_]] := c[InvertedForm[e]];
+DefineUnaryForm[ImageModifierForm, SuperscriptBox[$1, "\[RightArrow]"]]
+DefineUnaryForm[PreimageModifierForm, SuperscriptBox[$1, "\[LeftArrow]"]]
+DefineUnaryForm[MultiImageModifierForm, SuperscriptBox[$1, "\[RightTeeArrow]"]]
+DefineUnaryForm[MultiPreimageModifierForm, SuperscriptBox[$1, "\[LeftTeeArrow]"]]
+DefineUnaryForm[MultiImageColorModifierForm, StyleBox[$1, RGBColor[{0.73, 0.27, 0.27}]]]
+DefineUnaryForm[MultiPreimageColorModifierForm, StyleBox[$1, RGBColor[{0.05, 0.48, 0.50}]]]
 
 (**************************************************************************************************)
 
 PublicForm[NegatedForm]
 
-declareUnaryWrapperForm[NegatedForm]
+DefineUnaryForm[NegatedForm, KBox[OverscriptBox[$1, "_"], "bar"[$1]]]
+DefineUnaryForm[InvertedForm, KBox[UnderscriptBox[$1, "_"], "underbar"[$1]]];
 
 (**************************************************************************************************)
 

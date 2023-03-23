@@ -85,10 +85,6 @@ Inverted /: DirectedEdge[a_, b_, Inverted[c_]] := DirectedEdge[b, a, c];
 Inverted[CardinalSet[cards_]] := CardinalSet[Inverted /@ cards];
 Inverted[None] := None;
 
-declareBoxFormatting[
-  Inverted[e_] :> InvertedBoxForm[e]
-];
-
 (**************************************************************************************************)
 
 PublicHead[InvertAwareSort]
@@ -127,10 +123,6 @@ PublicForm[InvertedForm]
 SetUsage @ "
 InvertedForm[e$] displays as Underbar[e$].
 "
-
-declareBoxFormatting[
-  InvertedForm[e_] :> InvertedBoxForm[e]
-];
 
 (**************************************************************************************************)
 

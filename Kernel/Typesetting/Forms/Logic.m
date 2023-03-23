@@ -1,43 +1,47 @@
 PublicForm[ExistsForm, ForAllForm]
 
-declareBinaryForm[ExistsForm] // usingCustomKatex["existsForm"];
-declareBinaryForm[ForAllForm] // usingCustomKatex["forAllForm"];
+existsBox[a_] := RBox["\[Exists]", "\[ThinSpace]", a];
+forAllBox[a_] := RBox["\[ForAll]", "\[ThinSpace]", a];
 
+DefineStandardTraditionalForm[{
+  ExistsForm[a_, rest__] :> TBox[MakeQGBoxes @ a, CommaRowBox @ MakeQGBoxSequence[rest], "ExistsForm"],
+  ExistsForm[a_] :> TBox[MakeQGBoxes @ a, "UnconditionalExistsForm"],
+  ExistsForm :> "\[Exists]",
+  ForAllForm[a_, rest__] :> TBox[MakeQGBoxes @ a, CommaRowBox @ MakeQGBoxSequence[rest], "ForAllForm"],
+  ForAllForm[a_] :> TBox[MakeQGBoxes @ a, "UnconditionalForAllForm"],
+  ForAllForm :> "\[ForAll]"
+}];
 
-$TemplateKatexFunction["ForAllSymbol"] = katexAlias["forall"];
-$TemplateKatexFunction["ExistsSymbol"] = katexAlias["exists"];
+DefineTemplateBox[ExistsForm, "UnconditionalExistsForm", existsBox[$1], None];
+DefineTemplateBox[ForAllForm, "UnconditionalForAllForm", forAllBox[$1], None];
+DefineTemplateBox[ExistsForm, "ExistsForm", RBox[existsBox @ $1, OpBox @ ":", $2], None]
+DefineTemplateBox[ForAllForm, "ForAllForm", RBox[forAllBox @ $1, OpBox @ ":", $2], None]
 
 (**************************************************************************************************)
 
-PublicForm[AndForm, OrForm]
+PublicForm[AndForm, OrForm, XorForm, NandForm]
 
-declareInfixSymbol[{AndForm, OrForm}];
+DefineInfixForm[AndForm,  OpBox @ "\[And]"];
+DefineInfixForm[OrForm,   OpBox @ "\[Or]"];
+DefineInfixForm[XorForm,  OpBox @ "\[Xor]"];
+DefineInfixForm[NandForm, OpBox @ "\[Nand]"];
 
 (**************************************************************************************************)
 
 PublicForm[NotForm]
 
-declareUnaryForm[NotForm, maybeParen[SymbolForm]] // usingCustomKatex["notted"];
+DefineUnaryForm[NotForm, RBox["\[Not]", $1], HeadBoxes -> "\[Not]"];
 
 (**************************************************************************************************)
 
-PublicForm[ImpliesForm, ImpliedByForm]
+PublicForm[ImpliesForm, ImpliedByForm, EquivalentForm]
 
-declareInfixSymbol[ImpliesForm] // usingCustomKatex["implies"];
-declareInfixSymbol[ImpliedByForm] // usingCustomKatex["implied"];
-
-(**************************************************************************************************)
-
-PublicForm[EquivalentForm]
-
-declareInfixSymbol[EquivalentForm] // usingCustomKatex["iff"];
+DefineInfixBinaryForm[ImpliesForm, WideOpBox @ "⟹"]
+DefineInfixBinaryForm[ImpliedByForm, WideOpBox @ "⟸"];
+DefineInfixBinaryForm[EquivalentForm, WideOpBox @ "⟺"]
 
 (**************************************************************************************************)
 
 PublicForm[SuchThatForm]
 
-declareBoxFormatting[
-  SuchThatForm[a_, b_] :> makeTemplateBox[a, b, "SuchThatForm"]
-];
-
-$TemplateKatexFunction["SuchThatForm"] = "suchThat";
+DefineInfixBinaryForm[SuchThatForm, KBox[StyleBox["\[ThinSpace]\[VerticalSeparator]\[ThickSpace]", FontSize -> 20], KBin["\\vert"]]]

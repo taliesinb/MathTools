@@ -1,169 +1,139 @@
 PublicForm[GraphSymbol, EdgeSymbol, VertexSymbol]
 
-GraphSymbol[] := GraphSymbol["G"];
-
-declareSymbolForm[GraphSymbol];
-declareSymbolForm[EdgeSymbol];
+DefineTaggedForm[{GraphSymbol, EdgeSymbol, VertexSymbol}];
 
 (**************************************************************************************************)
 
-PublicForm[EdgesSymbol, VerticesSymbol]
+PublicForm[GraphEdgesSymbol, GraphVerticesSymbol]
 
-declareBoxFormatting[
-  EdgesSymbol[q_] :> makeHintedTemplateBox[q -> QuiverSymbol, "EdgesSymbolForm"],
-  EdgesSymbol[] :> SBox["EdgesSymbol"],
-  VerticesSymbol[q_] :> makeHintedTemplateBox[q -> QuiverSymbol, "VerticesSymbolForm"],
-  VerticesSymbol[] :> SBox["VerticesSymbol"]
-]
+DefineNamedFunctionSymbolForm[{
+  GraphEdgesSymbol -> "E",
+  GraphVerticesSymbol -> "V"
+}];
 
-$TemplateKatexFunction["EdgesSymbolForm"] = "edges";
-$TemplateKatexFunction["VerticesSymbolForm"] = "vertices";
+PublicForm[HeadVertexForm, TailVertexForm]
 
-$TemplateKatexFunction["EdgesSymbol"] = "edges";
-$TemplateKatexFunction["VerticesSymbol"] = "vertices";
-
-(**************************************************************************************************)
-
-PublicForm[VertexSymbol, HeadVertexForm, TailVertexForm]
-
-declareSymbolForm[VertexSymbol];
-declareUnaryForm[TailVertexForm];
-declareUnaryForm[HeadVertexForm];
-
-$TemplateKatexFunction["HeadVertexForm"] = "hvert";
-$TemplateKatexFunction["TailVertexForm"] = "tvert";
-$TemplateKatexFunction["VertexSymbolForm"] = "vert";
-
-(* for legacy notebooks: *)
-$TemplateKatexFunction["HeadVertexSymbolForm"] = "hvert";
-$TemplateKatexFunction["TailVertexSymbolForm"] = "tvert";
+DefineUnaryForm[HeadVertexForm, OverdotBox[$1]]
+DefineUnaryForm[TailVertexForm, UnderdotBox[$1]];
 
 (**************************************************************************************************)
 
 PublicSymbol[PlaceholderVertexSymbol, HeadVertexSymbol, TailVertexSymbol]
 
-declareConstantSymbol[PlaceholderVertexSymbol] // usingCustomKatex["placeholderVertexSymbol"];
-declareConstantSymbol[HeadVertexSymbol] // usingCustomKatex["headVertexSymbol"];
-declareConstantSymbol[TailVertexSymbol] // usingCustomKatex["tailVertexSymbol"];
+DefineSymbolForm[{
+  PlaceholderVertexSymbol -> KBox["\[FilledSquare]", """\mathrlap{◨}{◧}"""],
+  HeadVertexSymbol -> "\:25e8",
+  TailVertexSymbol -> "\:25e7"
+}];
 
 (**************************************************************************************************)
 
 PublicSymbol[InverseArrowheadSymbol, ArrowheadSymbol, UpArrowheadSymbol, DownArrowheadSymbol, LeftArrowheadSymbol, RightArrowheadSymbol]
 
-DeclareTemplateBoxRules[
+DefineSymbolForm[{
   InverseArrowheadSymbol -> "⏵",
   ArrowheadSymbol        -> "⏴",
   UpArrowheadSymbol      -> "⏶",
   DownArrowheadSymbol    -> "⏷",
   LeftArrowheadSymbol    -> "⏴",
   RightArrowheadSymbol   -> "⏵"
-]
+}]
 
 (**************************************************************************************************)
 
 PublicForm[VertexCountOfForm]
 
-declareUnaryForm[VertexCountOfForm, QuiverSymbol];
+DefineUnaryForm[VertexCountOfForm, RBox[LeftBox @ "\[LeftBracketingBar]", $wlThinSpace, $1, $wlThinSpace, RightBox @ "\[RightBracketingBar]"]]
 
 (**************************************************************************************************)
 
-PublicForm[UndirectedEdgeForm]
+PublicForm[DirectedEdgeSymbol, UndirectedEdgeSymbol]
 
-declareBoxFormatting[
-  UndirectedEdgeForm[a_, b_] :>
-    makeHintedTemplateBox[a -> VertexSymbol, b -> VertexSymbol, "UndirectedEdgeForm"],
-  UndirectedEdgeForm[a_, b_, c_] :>
-    toLongEdgeForm @ makeHintedTemplateBox[a -> VertexSymbol, b -> VertexSymbol, c -> CardinalSymbol, "TaggedUndirectedEdgeForm"]
-]
-
-$TemplateKatexFunction["UndirectedEdgeForm"] = "ue";
-$TemplateKatexFunction["TaggedUndirectedEdgeForm"] = "tue";
-$TemplateKatexFunction["LongTaggedUndirectedEdgeForm"] = "tue";
+DefineSymbolForm[{
+  DirectedEdgeSymbol   -> KBox["\[DirectedEdge]", "\\desym"],
+  UndirectedEdgeSymbol -> KBox["\[UndirectedEdge]", "\\uesym"]
+}]
 
 (**************************************************************************************************)
 
-PublicForm[DirectedEdgeForm]
+PublicForm[TaggedDirectedEdgeSymbol, TaggedUndirectedEdgeSymbol]
 
-declareBoxFormatting[
-  DirectedEdgeForm[a_, b_] :>
-    makeHintedTemplateBox[a -> VertexSymbol, b -> VertexSymbol, "DirectedEdgeForm"],
-  DirectedEdgeForm[a_, b_, c_] :>
-    toLongEdgeForm @ makeHintedTemplateBox[a -> VertexSymbol, b -> VertexSymbol, c -> CardinalSymbol, "TaggedDirectedEdgeForm"],
-  DirectedEdgeForm[a_, b_, c_, d_] :>
-    toLongEdgeForm @ makeTemplateBox[a, b, c, d, "MultiTaggedDirectedEdgeForm"]
+makeTaggedEdgeBoxes[sym_, katex_] := KBox[
+  OverscriptBox[sym, StyleBox[$1, ScriptSizeMultipliers -> 0.1, ImageSizeMultipliers -> {0.02, 0.02}]],
+  {katex, "{", $1, "}"}
+];
 
-]
+DefineUnaryForm[TaggedDirectedEdgeSymbol, makeTaggedEdgeBoxes["\[DirectedEdge]", "\\xundirectededge"], KatexMacroName -> "tde", BoxFunction -> taggedDEBox]
+DefineUnaryForm[TaggedUndirectedEdgeSymbol, makeTaggedEdgeBoxes["\[UndirectedEdge]", "\\xrightedge"], KatexMacroName -> "tue", BoxFunction -> taggedUEBox]
 
-longTagQ[e_] := Count[e, "CardinalSymbolForm", {0, Infinity}] > 1;
-longTagQ[TemplateBox[_, "CardinalProductForm"]] := True;
+(**************************************************************************************************)
 
-toLongEdgeForm[TemplateBox[{a_, b_, tag_}, form_String]] /; longTagQ[tag] :=
-  TemplateBox[{a, b, tag}, "Long" <> form];
+PublicForm[MultiTaggedDirectedEdgeSymbol, MultiTaggedUndirectedEdgeSymbol]
 
-toLongEdgeForm[other_] := other;
+makeMultiTaggedEdgeBoxes[sym_, katex_] := KBox[
+  UnderoverscriptBox[sym,
+    StyleBox[$2, ScriptSizeMultipliers -> 0.1, ImageSizeMultipliers -> {0.02, 0.02}],
+    StyleBox[$1, ScriptSizeMultipliers -> 0.1, ImageSizeMultipliers -> {0.02, 0.02}]
+  ],
+  {"\\operatornamewithlimits{", katex, "{", $1, "}}\\limits_{", $2, "}"}
+];
 
-$TemplateKatexFunction["DirectedEdgeForm"] = "de";
-$TemplateKatexFunction["TaggedDirectedEdgeForm"] = "tde";
-$TemplateKatexFunction["MultiTaggedDirectedEdgeForm"] = "mtde";
-$TemplateKatexFunction["LongTaggedDirectedEdgeForm"] = "tde";
+(* {"""\underset{\raisebox{0.15em}{\scriptsize $""", $2, "$}}{", katex <> "{", $1, "}}\\;"} *)
+
+DefineBinaryForm[MultiTaggedDirectedEdgeSymbol, makeMultiTaggedEdgeBoxes["\[DirectedEdge]", "\\xundirectededge"], KatexMacroName -> "mtde", BoxFunction -> multitaggedDEBox]
+DefineBinaryForm[MultiTaggedUndirectedEdgeSymbol, makeMultiTaggedEdgeBoxes["\[UndirectedEdge]", "\\xrightedge"], KatexMacroName -> "mtue", BoxFunction -> multitaggedUEBox]
+
+(**************************************************************************************************)
+
+PublicForm[DirectedEdgeForm, UndirectedEdgeForm]
+
+DefineInfixBinaryForm[DirectedEdgeForm, OpBox @ ToBoxes @ DirectedEdgeSymbol];
+DefineInfixBinaryForm[UndirectedEdgeForm, OpBox @ ToBoxes @ UndirectedEdgeSymbol];
+
+DefineStandardTraditionalForm[{
+  DirectedEdgeForm[a_, b_, c_]       :> TBox[MakeQGBoxes @ a, MakeQGBoxes @ b, MakeQGBoxes @ c, "TaggedDirectedEdgeForm"],
+  UndirectedEdgeForm[a_, b_, c_]     :> TBox[MakeQGBoxes @ a, MakeQGBoxes @ b, MakeQGBoxes @ c, "TaggedUndirectedEdgeForm"],
+  DirectedEdgeForm[a_, b_, c_, d_]   :> TBox[MakeQGBoxes @ a, MakeQGBoxes @ b, MakeQGBoxes @ c, MakeQGBoxes @ d, "MultiTaggedDirectedEdgeForm"],
+  UndirectedEdgeForm[a_, b_, c_, d_] :> TBox[MakeQGBoxes @ a, MakeQGBoxes @ b, MakeQGBoxes @ c, MakeQGBoxes @ d, "MultiTaggedUndirectedEdgeForm"],
+  DirectedEdgeForm[a_, b_, CardinalProductForm[c_, d_]] :> MakeBoxes @ DirectedEdgeForm[a, b, c, d]
+}];
+
+DefineTemplateBox[DirectedEdgeForm,   "TaggedDirectedEdgeForm", RBox[$1, " ", taggedDEBox[$3], " ", $2], None];
+DefineTemplateBox[UndirectedEdgeForm, "TaggedUndirectedEdgeForm", RBox[$1, " ", taggedUEBox[$3], " ", $2], None];
+DefineTemplateBox[DirectedEdgeForm,   "MultiTaggedDirectedEdgeForm", RBox[$1, " ", multitaggedDEBox[$3, $4], " ", $2], None];
+DefineTemplateBox[UndirectedEdgeForm, "MultiTaggedUndirectedEdgeForm", RBox[$1, " ", multitaggedUEBox[$3, $4], " ", $2], None];
 
 (**************************************************************************************************)
 
 PublicForm[GraphHomomorphismSymbol]
 
-GraphHomomorphismSymbol[] := GraphHomomorphismSymbol["\[Pi]"]
-
-declareBoxFormatting[
-  
-  GraphHomomorphismSymbol[f_] :>
-    TemplateBox[List @ rawSymbolBoxes @ f, "GraphHomomorphismSymbolForm"]
-
-]
-
-$TemplateKatexFunction["GraphHomomorphismSymbolForm"] = "graphHomomorphism";
-
-(**************************************************************************************************)
-
-PublicForm[FromToForm]
-
-declareInfixSymbol[FromToForm, VertexSymbol, True];
+DefineTaggedForm[GraphHomomorphismSymbol]
 
 (**************************************************************************************************)
 
 PublicForm[VertexOfForm, EdgeOfForm, PathOfForm]
 
-declareBoxFormatting[
-  VertexOfForm[a_, b_] :> makeHintedTemplateBox[a -> VertexSymbol, b -> QuiverSymbol, "VertexOfForm"],
-  EdgeOfForm[a_, b_] :> makeHintedTemplateBox[a -> EdgeSymbol, b -> QuiverSymbol, "EdgeOfForm"],
-  PathOfForm[a_, b_] :> makeHintedTemplateBox[a -> PathSymbol, b -> QuiverSymbol, "PathOfForm"]
-];
-
-$TemplateKatexFunction["VertexOfForm"] = "vertOf";
-$TemplateKatexFunction["EdgeOfForm"] = "edgeOf";
-$TemplateKatexFunction["PathOfForm"] = "pathOf";
+DefineInfixBinaryForm[VertexOfForm, WideOpBox @ SubscriptBox["\[Element]", "v"]];
+DefineInfixBinaryForm[EdgeOfForm,   WideOpBox @ SubscriptBox["\[Element]", "e"]];
+DefineInfixBinaryForm[PathOfForm,   WideOpBox @ SubscriptBox["\[Element]", "p"]];
 
 (**************************************************************************************************)
 
 PublicForm[IndexedGraphUnionForm, IndexedGraphDisjointUnionForm]
 
-declareSumLikeFormatting[IndexedGraphUnionForm, "indexGraphUnion"];
-declareSumLikeFormatting[IndexedGraphDisjointUnionForm, "indexGraphDisjointUnion"];
+DefineLegacyIndexedForm[IndexedGraphUnionForm, KBox["\[Union]", "\\bigcup"]];
+DefineLegacyIndexedForm[IndexedGraphDisjointUnionForm, KBox[LowerBox[StyleBox["\[SquareUnion]", FontSize -> Large], .15], "\\bigsqcup"]];
 
 (**************************************************************************************************)
 
 PublicForm[GraphRegionIntersectionForm, GraphRegionUnionForm]
 
-declareInfixSymbol[{GraphRegionIntersectionForm, GraphRegionUnionForm}]
+DefineInfixForm[GraphRegionUnionForm,        OpBox @ StyleBox["\[Union]", ScriptSizeMultipliers -> 1]];
+DefineInfixForm[GraphRegionIntersectionForm, OpBox @ StyleBox["\[Intersection]", ScriptSizeMultipliers -> 1]];
 
 (**************************************************************************************************)
 
 PublicForm[GraphIsomorphismSymbol]
 
-DeclareTypedSymbolTemplateBox[GraphIsomorphismSymbol]
-
-(**************************************************************************************************)
-
-PublicForm[GraphAutomorphismsFunction]
-
-DeclareFunctionTemplateBox[GraphAutomorphismsFunction, "Aut"]
+DefineTaggedForm[GraphIsomorphismSymbol]
 

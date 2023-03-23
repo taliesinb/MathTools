@@ -8,20 +8,20 @@ DefineTaggedForm[CategoryArrowSymbol]
 
 PublicForm[MonoidalProductForm]
 
-DefineInfixForm[MonoidalProductForm, "\[CircleTimes]"]
+DefineInfixForm[MonoidalProductForm, OpBox @ "\[CircleTimes]"]
 
 (**************************************************************************************************)
 
 PublicForm[MorphismForm, NamedMorphismForm]
 
-DefineBinaryForm[MorphismForm, RBox[$1, KatexSwitch["\[ThinSpace]\[Rule]\[ThinSpace]", "\[Rule]"], $2], MorphismBox]
-DefineTernaryForm[NamedMorphismForm, RBox[$1, KatexSwitch["\[ThinSpace]:\[ThinSpace]", ":"], MorphismBox[$2, $3]]]
+DefineBinaryForm[MorphismForm, RBox[$1, OpBox["\[Rule]"], $2], BoxFunction -> MorphismBox]
+DefineTernaryForm[NamedMorphismForm, RBox[$1, OpBox[":"], MorphismBox[$2, $3]]]
 
 (**************************************************************************************************)
 
 PublicForm[ThenForm]
 
-DefineLiteralRiffledForm[ThenForm, RowBox[$1], "﹔", ThenBox];
+DefineInfixForm[ThenForm, KBox[StyleBox[" ﹔ ", FontFamily -> "KaTeX_AMS"], "﹔"], BoxFunction -> ThenBox];
 
 (**************************************************************************************************)
 
@@ -50,9 +50,9 @@ PublicForm[IdArrow, HomForm, ExplicitHomForm]
 
 DefineUnaryForm[IdArrow, SubscriptBox[FunctionBox["id"], $1]]
 
-DefineBinaryForm[HomForm, ZAppliedBox[FunctionBox["hom"], $1, $2]]
+DefineBinaryForm[HomForm, AppliedBox[FunctionBox["hom"], $1, $2]]
 
-DefineTernaryForm[ExplicitHomForm, ZAppliedBox[$1, $2, $3]]
+DefineTernaryForm[ExplicitHomForm, AppliedBox[$1, $2, $3]]
 
 (**************************************************************************************************)
 

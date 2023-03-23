@@ -501,6 +501,7 @@ SitePageData[nb_] := Scope @ CatchMessage[
 
   {siteName, path} = findContainingSite @ nb;
   unpackSiteData[siteName, $exportPathFunction, $notebookPath, $markdownPath, $baseExportPath, baseURL, SiteGenerator];
+  (* TODO: support additional 'subpath' that goes within markdownpath, used to put things under content/XXX *)
   $markdownPath //= ToAbsolutePath[$baseExportPath];
 
   mdPath = itemMarkdownPath[path];

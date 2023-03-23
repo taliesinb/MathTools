@@ -1,30 +1,30 @@
 PublicForm[CoversForm, CoveredByForm, StrictlyCoversForm, StrictlyCoveredByForm]
 
-DeclareBinaryRelationTemplateBox[CoversForm, "\[SquareSupersetEqual]"]
-DeclareBinaryRelationTemplateBox[CoveredByForm, "\[SquareSubsetEqual]"]
-DeclareBinaryRelationTemplateBox[StrictlyCoversForm, "\[SquareSuperset]"]
-DeclareBinaryRelationTemplateBox[StrictlyCoveredByForm, "\[SquareSubset]"]
+DefineInfixForm[CoversForm,            WideOpBox @ "\[SquareSupersetEqual]"]
+DefineInfixForm[CoveredByForm,         WideOpBox @ "\[SquareSubsetEqual]"]
+DefineInfixForm[StrictlyCoversForm,    WideOpBox @ "\[SquareSuperset]"]
+DefineInfixForm[StrictlyCoveredByForm, WideOpBox @ "\[SquareSubset]"]
 
 (**************************************************************************************************)
 
 PublicForm[IndexedCoveringForm, GraphIndexedCoveringForm, QuiverIndexedCoveringForm]
 
-DeclareIndexedBinaryRelationTemplateBox[IndexedCoveringForm, "\[SquareSupersetEqual]"]
-DeclareIndexedBinaryRelationTemplateBox[GraphIndexedCoveringForm, "\[SquareSupersetEqual]"]
-DeclareIndexedBinaryRelationTemplateBox[QuiverIndexedCoveringForm, "\[SquareSupersetEqual]"]
+DefineIndexedInfixBinaryForm[IndexedCoveringForm,       "\[SquareSupersetEqual]"]
+DefineIndexedInfixBinaryForm[GraphIndexedCoveringForm,  "\[SquareSupersetEqual]"]
+DefineIndexedInfixBinaryForm[QuiverIndexedCoveringForm, "\[SquareSupersetEqual]"]
 
 (**************************************************************************************************)
 
 PublicForm[ContractionLatticeSymbol]
 
-DeclareDerivedSymbolTemplateBox[ContractionLatticeSymbol]
+DefineTaggedForm[ContractionLatticeSymbol];
 
 (**************************************************************************************************)
 
 PublicForm[ContractionProductForm, ContractionSumForm]
 
-DeclareNAryOperatorTemplateBox[ContractionProductForm, "\[CenterDot]"]
-DeclareNAryOperatorTemplateBox[ContractionSumForm, "\[SquareUnion]"]
+DefineInfixForm[ContractionProductForm, WideOpBox @ "\[CenterDot]"]
+DefineInfixForm[ContractionSumForm,     WideOpBox @ "\[SquareUnion]"]
 
 (**************************************************************************************************)
 
@@ -42,11 +42,11 @@ OrderedContractionSetForm[index_][set_] :=
 
 PublicForm[IsContractedForm, IsNotContractedForm]
 
-DeclareIndexedBinaryRelationTemplateBox[IsContractedForm, "\[Tilde]"]
-DeclareIndexedBinaryRelationTemplateBox[IsNotContractedForm, "\[NotTilde]"]
+DefineIndexedInfixBinaryForm[IsContractedForm,    "\[Tilde]"]
+DefineIndexedInfixBinaryForm[IsNotContractedForm, "\[NotTilde]"]
 
 (**************************************************************************************************)
 
 PublicForm[ContractedRelationForm]
 
-DeclareNAryRelationTemplateBox[ContractedRelationForm, "\[Tilde]"]
+DefineInfixForm[ContractedRelationForm, WideOpBox @ "\[Tilde]"]

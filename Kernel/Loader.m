@@ -204,7 +204,8 @@ loadFileContents[path_, context_] := Module[{str, contents}, Block[{$currentCont
   $loadedFileCount++; QuiverGeometryPackageLoader`$CurrentFile = path;
   str = StringReplace[fileStringUTF8 @ path, $stringProcessingRules];
   If[MatchQ[str, Whitespace] || str === "", Return @ Package`PackageData[]];
-  contents = Check[Package`ToPackageExpression @ str, $Failed];
+  contents = TimeConstrained[Check[Package`ToPackageExpression @ str, $Failed], 1];
+  If[Head[contents] =!= Package`PackageData, contents === $Failed];
   If[FailureQ[contents], handleSyntaxError[path]];
   Block[{$Context = context}, contents = contents /. $initialSymbolResolutionDispatch /. ResolvedSymbol[sym_] :> sym];
   contents
@@ -238,7 +239,8 @@ If[!ValueQ[QuiverGeometryPackageLoader`$SystemOpenEnabled], QuiverGeometryPackag
 DoSystemOpen[s_] := If[QuiverGeometryPackageLoader`$SystemOpenEnabled, SystemOpen[s]];
 
 handleSyntaxError[path_] := Scope[
-  errors = GeneralUtilities`FindSyntaxErrors[path];
+  Print["Syntax error in ", path];
+  errors = TimeConstrained[GeneralUtilities`FindSyntaxErrors[path], 2, {}];
   Beep[];
   If[errors =!= {},
     Print["Aborting; syntax errors:"];

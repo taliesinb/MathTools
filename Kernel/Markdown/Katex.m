@@ -28,11 +28,13 @@ tryEvalBox = Case[
   boxes_ := boxes;
 ];
 
+PrivateFunction[boxToKatex]
+
 boxToKatex = Case[
   "," := ",";
   " " := " ";
   "_" := "\\_";
-  "->" := " \\to ";
+  "->"|"\[Rule]" := " \\to ";
   "<|" := " \\left<\\left| ";
   "|>" := " \\right|\\right> ";
   e_String := e;
@@ -45,13 +47,16 @@ boxToKatex = Case[
   e:(_String[___]) := Map[%, e];
 
   c_Cell := Block[{$inlineMathTemplate = Identity}, textBoxesToMarkdownInner @ c];
-  TemplateBox[args_, tag_] := templateBoxToKatex[tag -> args];
+
+  TemplateBox[{a_, b_}, "katexSwitch"] := % @ b; (* <- shortcircuit, since it is so common *)
+  tb:TemplateBox[_List, _String] := TemplateBoxToKatex[tb];
 
   StyleBox[e_, "Text"] := {"\\textrm{", boxToInlineText @ e, "}"};
-  StyleBox[e_, directives___] := Fold[applyStyle, % @ e, {directives}];
+  StyleBox[e_, directives___] := katexStyleOperator[directives] @ % @ e;
   DynamicBox[e_, ___] := % @ e;
 
   AdjustmentBox[e_, BoxBaselineShift -> n_] := {"\\raisebox{" <> TextString[-n] <> "em}{", % @ e, "}"};
+  AdjustmentBox[e_, ___] := % @ e;
   
   OverscriptBox[e_, "^"] := {"\\hat{", % @ e, "}"};
   OverscriptBox[e_, "\[RightVector]"] := {"\\vector{", % @ e, "}"};
@@ -61,7 +66,7 @@ boxToKatex = Case[
   OverscriptBox[e_, f_] := {"\\overset{", % @ f, "}{", % @ e, "}"};
 
   UnderscriptBox[e_, "_"] := {"\\underline{", % @ e, "}"};
-  UnderscriptBox[e_, "."] := {"\\underdot{", % @ e, "}"};
+  UnderscriptBox[e_, "."] := Part[UnderdotBox[% @ e], {1, 2}];
   UnderscriptBox[e_, f_] := {"\\underset{", % @ f, "}{", % @ e, "}"};
 
   SuperscriptBox[e_, b_] := {% @ e, "^", toBracket @ b};
@@ -70,9 +75,13 @@ boxToKatex = Case[
   OverscriptBox[e_, "^"] := {"\\hat{", % @ e, "}"};
   
   RowBox[{h_, "[", RowBox[args_List], "]"}] := {% @ h, "(", Map[%, args], ")"};
-  RowBox[{a_, "\[DirectedEdge]", b_}] := "de"[% @ a, % @ b];
-  RowBox[{a_, "\[UndirectedEdge]", b_}] := "ue"[% @ a, % @ b];
-  RowBox[{"{", e__, "}"}] := {"\{", % /@ {e}, "\}"};
+
+  RowBox[{a_, "\[DirectedEdge]", b_}] := % @ TBox[a, b, "DirectedEdgeForm"];
+  RowBox[{a_, "\[UndirectedEdge]", b_}] := % @ TBox[a, b, "UndirectedEdgeForm"];
+  RowBox[{a_, "\[Function]", b_}] := % @ TBox[a, b, "MapsToForm"];
+
+  RowBox[{"{", e__, "}"}] := {"\\{", % /@ {e}, "\\}"};
+  RowBox[{"(", e__, ")"}] := {"\\left(", % /@ {e}, "\\right)"};
   RowBox[e_] := Map[%, e];
 
   ButtonBox[title_, BaseStyle -> "Hyperlink"|Hyperlink, ButtonData -> {URL[url_String], _}, ___] :=
@@ -90,9 +99,11 @@ boxToKatex = Case[
     Print["OUTER BOXES:"]; Print @ ToPrettifiedString[$inputBoxes, MaxDepth -> 3, MaxLength -> 10];
     Print["RAW BOXES:"]; Print @ ToPrettifiedString[other, MaxDepth -> 3, MaxLength -> 10];
     Print["FORMATTED BOXES:"]; Print @ RawBoxes @ Replace[other, BoxData[bd_] :> bd];
-    StringJoin["\\noKatexForm{", StringReplace[head, $katexEscape], "}"]
+    errorKatex @ StringReplace[head, $katexEscape]
   ];
 ];
+
+ToKatexString::badbox = "Box expression `` has no Katex conversion.";
 
 $katexEscape = {
   "\\" -> "/"
@@ -100,65 +111,26 @@ $katexEscape = {
 
 boxToInlineText[e_] := TextString[e];
 
-templateBoxToKatex = Case[
-  "Naturals" -> {}                  := "\\mathbb{N}";
-  "PositiveNaturals" -> {}          := "\\mathbb{N}^+";
-  "PositiveReals" -> {}             := "\\mathbb{R}^+";
-  "Primes" -> {}                    := "\\mathbb{P}";
-  "Integers" -> {}                  := "\\mathbb{Z}";
-  "Rationals" -> {}                 := "\\mathbb{Q}";
-  "Reals" -> {}                     := "\\mathbb{R}";
-  "Complexes" -> {}                 := "\\mathbb{C}";
-  "Superscript" -> {a_, b_}         := $ @ SuperscriptBox[a, b];
-  "Subscript" -> {a_, b_}           := $ @ SubscriptBox[a, b];
-  "DirectedEdge" -> {a_, b_, t_}    := "tde"[$ @ a, $ @ b, $ @ t];
-  "UndirectedEdge" -> {a_, b_, t_}  := "ude"[$ @ a, $ @ b, $ @ t];
-  "Subsuperscript" -> {a_, b_, c_}  := $ @ SuperscriptBox[SubscriptBox[a, b], c];
-  "ContractionProduct" -> t_        := dispatchTemplateBox["ContractionProductForm", t]; (* legacy *)
-  "ContractionProductSymbol" -> t_  := dispatchTemplateBox["contractionProductForm", t]; (* legacy *)
-  "ContractionSum" -> t_            := dispatchTemplateBox["ContractionSumForm", t]; (* legacy *)
-  "ContractionSumSymbol" -> t_      := dispatchTemplateBox["contractionSumForm", t]; (* legacy *)
-  "ContractionLatticeSymbolForm" -> t_  := dispatchTemplateBox["ContractionLatticeSymbol", t]; (* legacy *)
-  "IsContractedInForm" -> t_        := dispatchTemplateBox["IsContractedForm2", t]; (* legacy *)
-  "IsNotContractedInForm" -> t_     := dispatchTemplateBox["IsNotContractedForm2", t]; (* legacy *)
-  tag_ -> args_                     := dispatchTemplateBox[tag, args]
-,
-  {$ -> boxToKatex}
+(**************************************************************************************************)
+
+katexStyleOperator[args___] := Fold[#1 /* styleToKatexFunction[#2]&, Identity, {args}];
+
+styleToKatexFunction := Case[
+  (FontColor -> c_) | (c_ ? ColorQ)                           := StringJoin["textcolor{#", ColorHexString @ c, "}"];
+  (FontWeight -> "Bold"|Bold) | "Bold"|Bold                   := "mathbf";
+  (FontWeight -> "Italic"|Italic) | "Italic"|Italic           := "mathit";
+  Underlined                                                  := "underline";
+  Struckthrough                                               := "struckthrough";
+  "MathText" | "MathTextFont"                                 := "textrm";
+  "RomanMathFont"                                             := "mathrm";
+  "CaligraphicMathFont"                                       := "mathcal";
+  "FrakturMathFont"                                           := "mathfrak";
+  "SansSerifMathFont"                                         := "mathsf";
+  "ScriptMathFont"                                            := "mathscr"
+  "TypewriterMathFont"                                        := "mathtt";
+  _                                                           := Identity;
 ];
 
-ToKatexString::badbox = "Box expression `` has no Katex conversion.";
-ToKatexString::badtemplatebox = "TemplateBox `` corresponding to `` has no $TemplateKatexFunction defined.";
-
-dispatchTemplateBox[tag_, args_] := Scope[
-  fn = Lookup[$TemplateKatexFunction, tag, Lookup[$templateToKatexFunction, tag, None]];
-  If[fn === None && AssociationQ[$localTemplateToKatexFunctions],
-    fn = Lookup[$localTemplateToKatexFunctions, tag, None]];
-  If[fn === None,
-    (* this is slower than the others, but will allow ToKatexString to pick up local styles when run interactively *)
-    fn = CurrentValue[{TaggingRules, "TemplateToKatexFunctions", tag}];
-    If[fn === Inherited, fn = None];
-  ];
-  If[fn === None,
-    Message[ToKatexString::badtemplatebox, tag, Framed @ RawBoxes[TemplateBox[args, tag]]];
-    Return["badDispatch"[tag]];
-  ];
-  res = fn @@ args;
-  boxToKatex @ res (* recurese *)
-];
-
-applyStyle = Case[
-
-  Sequence[e_, (FontWeight -> "Bold" | Bold) | "Bold" | Bold]         := {"\\mathbf{", e, "}"};
-
-  Sequence[e_, (FontWeight -> "Italic" | Italic) | "Italic" | Italic] := {"\\mathif{", e, "}"};
-  
-  Sequence[e_, (FontColor -> c_) | (c_ ? ColorQ)]                     := {"\\textcolor{#", ColorHexString @ c, "}{", e, "}"};
-
-  Sequence[e_, style_] := e;
-];
-
-
-applyInlineStyle[e_, _] := e;
 
 toBracket = Case[
   e_String /; StringLength[e] === 1 := e;
@@ -177,3 +149,33 @@ cleanupInlineBoxes = RightComposition[
       }]
   }
 ];
+
+(**************************************************************************************************)
+
+PrivateFunction[errorKatex]
+
+errorKatex[tag_] := StringJoin["""\textbf{\textcolor{e1432d}{""", tag, "}}"];
+
+(**************************************************************************************************)
+
+PublicFunction[TemplateBoxToKatex]
+
+ToKatexString::badtemplatebox = "TemplateBox `` corresponding to `` has no $TemplateKatexFunction defined.";
+
+TemplateBoxToKatex[TemplateBox[args_List, tag_String]] := Scope[
+  fn = Lookup[$katexDisplayFunction, tag, None];
+  If[fn === None && AssociationQ[$localKatexDisplayFunction],
+    fn = Lookup[$localKatexDisplayFunction, tag, None]];
+  If[fn === None,
+    (* this is slower than the others, but will allow ToKatexString to pick up local styles when run interactively *)
+    fn = CurrentValue[{TaggingRules, "KatexDisplayFunctions", tag}];
+    If[fn === Inherited, fn = None];
+  ];
+  If[fn === None,
+    Message[ToKatexString::badtemplatebox, tag, Framed @ RawBoxes[TemplateBox[args, tag]]];
+    Return @ errorKatex @ tag;
+  ];
+  res = fn @@ args;
+  boxToKatex @ res (* recurse *)
+];
+

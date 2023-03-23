@@ -1,72 +1,48 @@
 PublicForm[TranspositionForm]
 
-declareBinaryForm[TranspositionForm];
+DefineInfixBinaryForm[TranspositionForm, OpBox @ "\[TwoWayRule]"]
 
 (**************************************************************************************************)
 
 PublicForm[PermutationCycleForm]
 
-declareBoxFormatting[
-  PermutationCycleForm[a_, b_] :> MakeBoxes @ TranspositionForm[a, b],
+DefineInfixForm[PermutationCycleForm, OpBox @ "\[Rule]"]
 
-  PermutationCycleForm[args__] :> TemplateBox[
-    With[{list = MapUnevaluated[MakeQGBoxes, {args}]},
-      Append[list, First @ list]
-    ],
-    "PermutationCycleForm"
-  ]
-];
-
-$TemplateKatexFunction["PermutationCycleForm"] =
-  applyRiffled["permutationCycle", "\\permutationCycleSymbol "];
+DefineStandardTraditionalForm[{
+  PermutationCycleForm[l_, r_]      :> ToBoxes @ TranspositionForm[l, r],
+  PermutationCycleForm[l_, m__, r_] :> TBox[MakeQGBoxSequence[l, m , r], MakeQGBoxes @ l, "PermutationCycleForm"]
+}];
 
 (**************************************************************************************************)
 
 PublicForm[StandardPermutationForm]
 
-declareBoxFormatting[
-  StandardPermutationForm[Cycles[{}]] :>
-    TemplateBox[
-      List @ standardCycleBoxes @ {},
-      "StandardPermutationForm"
-    ],
-  StandardPermutationForm[Cycles[list:{___List}]] :>
-    TemplateBox[
-      standardCycleBoxes /@ list,
-      "StandardPermutationForm"
-    ]
-];
+DefineStandardTraditionalForm[{
+  StandardPermutationForm[Cycles[{}]] :> TBox[standardCycleBoxes @ {}, "StandardPermutationForm"],
+  StandardPermutationForm[Cycles[list:{___List}]] :> TBox[Apply[TightRowBox, standardCycleBoxes /@ list], "StandardPermutationForm"]
+}];
+
+DefineTemplateBox[StandardPermutationForm, "StandardPermutationForm", $1, None];
 
 (**************************************************************************************************)
 
 PublicForm[StandardPermutationCycleForm]
 
-declareBoxFormatting[
-  StandardPermutationCycleForm[list_List] :>
-    standardCycleBoxes @ list
+DefineStandardTraditionalForm[
+  StandardPermutationCycleForm[list_List] :> standardCycleBoxes @ list
 ];
 
-standardCycleBoxes[list_] := TemplateBox[MakeQGBoxes /@ list, "StandardPermutationCycleForm"]
+standardCycleBoxes[list_List] := TemplateBox[MakeQGBoxes /@ list, "StandardPermutationCycleForm"]
+
+DefineTemplateBox[StandardPermutationCycleForm, "StandardPermutationCycleForm", ParenthesesBox[$$1], None];
 
 (**************************************************************************************************)
 
 PublicForm[PermutationForm]
 
-declareBoxFormatting[
+DefineTemplateBox[PermutationForm, "PermutationForm", RiffledBox[OpBox[";"]] @ $$1, None];
 
-  PermutationForm[Cycles[list:{___List}] | list:{___List}] :>
-    TemplateBox[
-      ToBoxes /@ (PermutationCycleForm @@@ list),
-      "PermutationSetForm"
-    ],
-
-  PermutationForm[Cycles[{list_List}]] :>
-    ToBoxes @ (PermutationCycleForm @@ list),
-
-  PermutationForm[Cycles[{}]] :>
-    MakeBoxes @ GroupElementSymbol @ "e"
+DefineStandardTraditionalForm[
+  PermutationForm[Cycles[{}]] :> MakeBoxes @ GroupIdentitySymbol
 ];
-
-$TemplateKatexFunction["PermutationSetForm"] =
-  applyRiffled["permutationSet", "\\permutationSetSymbol "]
 

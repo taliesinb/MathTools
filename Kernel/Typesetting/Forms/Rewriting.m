@@ -83,9 +83,3 @@ declareBinaryForm[RewriteForm]
 declareBoxFormatting[
   RewriteForm[a_, b_, i_] :> MakeBoxes[RewriteForm[a, b]]
 ];
-
-(**************************************************************************************************)
-
-PublicForm[RewritingRuleForm]
-
-declareBinaryForm[RewritingRuleForm]

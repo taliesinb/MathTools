@@ -109,6 +109,10 @@ singleColumnBoxes[items_List, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
+DefineNotebookDisplayFunction["GridForm", #1&];
+
+(**************************************************************************************************)
+
 Options[makeSingleGridBoxes] = Options[GridForm];
 
 makeSingleGridBoxes[grid_, opts:OptionsPattern[]] := Scope[
@@ -207,34 +211,36 @@ labelBoxes[labelFn_, labels_] := ToBoxes[labelFn[#]]& /@ labels;
 
 PrivateVariable[$infixFormCharacters]
 
+(* TODO: pull this programmatically from DefineInfixForm, SymbolTranslation.txt etc *)
+
 $infixFormCharacters = Association[
-  EqualForm             -> "=",                 NotEqualForm            -> "\[NotEqual]",
+  EqualForm             -> "=",                 NotEqualForm            -> "≠",
   DefEqualForm          -> "≝",
   ColonEqualForm        -> "≔",
   DotEqualForm          -> "≐",
-  IdenticallyEqualForm  -> "\[Congruent]",
+  IdenticallyEqualForm  -> "≡",
 
-  ElementOfForm         -> "\[Element]",
-  Subset                -> "\[Subset]",         SubsetEqual             -> "\[SubsetEqual]",
-  Superset              -> "\[Superset]",       SupersetEqual           -> "\[SupersetEqual]",
-  CartesianProductForm  -> "\[Times]",
+  ElementOfForm         -> "∈",
+  Subset                -> "⊂",                 SubsetEqual             -> "⊆",
+  Superset              -> "⊃",                 SupersetEqual           -> "⊇",
+  CartesianProductForm  -> "×",
 
   Less                  -> "<",                 Greater                 -> ">",
-  LessEqual             -> "\[LessEqual]",      GreaterEqual            -> "\[GreaterEqual]",
+  LessEqual             -> "≤",                 GreaterEqual            -> "≥",
 
-  AndForm               -> "\[And]",            OrForm                  -> "\[Or]",
+  AndForm               -> "∧",                 OrForm                  -> "∨",
   
-  ImpliesForm           -> "\[Implies]",
-  EquivalentForm        -> "\[Equivalent]",
-  IsomorphicForm        -> "\[TildeEqual]",
-  HomeomorphicForm      -> "\[TildeFullEqual]",
-  BijectiveForm         -> "\[TildeTilde]",
+  ImpliesForm           -> "⟹",
+  EquivalentForm        -> "⟺",
+  IsomorphicForm        -> "≃",
+  HomeomorphicForm      -> "≅",
+  BijectiveForm         -> "≈",
 
-  PlusForm              -> "+",                 TimesForm               -> "\[Times]",
+  PlusForm              -> "+",                 TimesForm               -> "×",
 
-  GraphUnionForm        -> "\[SquareUnion]",
-  SetUnionForm          -> "\[Union]",          SetIntersectionForm     -> "\[Intersection]",
-  SetRelativeComplementForm -> "\[Backslash]",
+  GraphUnionForm        -> "⊔",
+  SetUnionForm          -> "⋃",                 SetIntersectionForm     -> "⋂",
+  SetRelativeComplementForm -> "∖",
 
   RewriteForm           -> "\[Rule]"
 ];
@@ -267,7 +273,7 @@ makeGridEntryBox = Case[
 
 (**************************************************************************************************)
 
-$TemplateKatexFunction["GridForm"] = katexGrid;
+DefineKatexDisplayFunction["GridForm", katexGrid[#]&];
 
 katexGrid[g_GridBox] :=
   katexGridBoxDispatch @@ getGridData[g];
@@ -297,9 +303,15 @@ katexGridBoxDispatch[entries_, alignments_, rowSpacings_, colSpacings_] :=
 
 createKatexGridBody[entries_, rowSpacings_] :=
   assembleKatexGridRows[
-    Riffle[#, " & "]& /@ entries,
+    Riffle[#, " & "]& /@ MatrixMap[stripQuotes, entries],
     rowSpacings
   ];
+
+stripQuotes = Case[
+  s_String /; StringMatchQ[s, "\"*\""] := StringTake[s, {2, -2}];
+  StyleBox[e_, other___]               := StyleBox[stripQuotes @ e, other];
+  other_                               := other;
+];
 
 assembleKatexGridRows[lines_, Automatic | {Automatic..}] :=
   Riffle[lines, "\\\\\n"];
@@ -491,6 +503,8 @@ declareBoxFormatting[
     equationGridFormBoxes[{args}, OptionValue[EquationGridForm, {opts}, {Alignment, RowSpacings, ColumnSpacings}]]
 ];
 
+DefineNotebookDisplayFunction["EquationGridForm", #1&];
+
 equationGridFormBoxes[rows_, {alignment_, rowSpacings_, colSpacings_}] :=
   TBoxOp["EquationGridForm"] @ createGridBox[
     MapUnevaluated[equationGridRow, rows],
@@ -510,8 +524,8 @@ equationGridRow = Case[
   e_IdenticallyEqualForm := riffledEqGridRow["\[Congruent]", e];
   e_Less           := riffledEqGridRow["<", e];
   e_Greater        := riffledEqGridRow[">", e];
-  e_LessEqual      := riffledEqGridRow["\[LessEqual]", e];
-  e_GreaterEqual   := riffledEqGridRow["\[GreaterEqual]", e];
+  e_LessEqual      := riffledEqGridRow["≤", e];
+  e_GreaterEqual   := riffledEqGridRow["≥", e];
   e_Subset         := riffledEqGridRow["\[Subset]", e];
   e_SubsetEqual    := riffledEqGridRow["\[SubsetEqual]", e];
   e_Superset       := riffledEqGridRow["\[Superset]", e];
@@ -541,8 +555,9 @@ padArray[rows_] := Scope[
   PadRight[#, maxLen, ""]& /@ rows
 ];
 
-$TemplateKatexFunction["EquationGridForm"] = katexEquationGrid;
+DefineKatexDisplayFunction["EquationGridForm", katexEquationGrid[#1]&];
 
+(* TODO: replace this with riffled! *)
 $equationSymbolRules = {
   "="                                             -> "&= ",
   "\[NotEqual]"                                   -> "&\\neq ",
@@ -572,7 +587,7 @@ $equationSymbolRules = {
   ">"                                             -> "&\\gt",
   "<="                                            -> "&\\le",
   ">="                                            -> "&\\ge",
-  " "                                             -> "\, ",
+  " "                                             -> "\\, ",
   "\t"                                            -> "&\\quad "
 }
 

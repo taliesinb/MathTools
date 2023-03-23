@@ -340,6 +340,12 @@ LookupTaggingRule[_, _] := None;
 
 (**************************************************************************************************)
 
+PrivateFunction[PrintInputCell]
+
+PrintInputCell[e_] := CellPrint @ ExpressionCell[e, "Input"];
+
+(**************************************************************************************************)
+
 PublicFunction[ToggleInlineCells]
 
 $LastConvertedCellBuffer = {};

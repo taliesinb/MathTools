@@ -6,12 +6,7 @@ FunctionSignatureForm[f_, a_List, b_] :=
 FunctionSignatureForm[f_, a_, b_List] :=
   FunctionSignatureForm[f, a, TupleForm @@ b];
 
-declareBoxFormatting[
-  FunctionSignatureForm[f_, a_, b_] :>
-    makeTypedTemplateBox[f -> FunctionSymbol, a, b, "FunctionSignatureForm"]
-]
-
-$TemplateKatexFunction["FunctionSignatureForm"] = "functionSignature";
+DefineTernaryForm[FunctionSignatureForm, RBox[$1, OpBox @ ":", $2, OpBox @ "\[Rule]", $3], KatexMacroName -> "fs"];
 
 (**************************************************************************************************)
 
@@ -23,212 +18,191 @@ PartialFunctionSignatureForm[f_, a_List, b_] :=
 PartialFunctionSignatureForm[f_, a_, b_List] :=
   PartialFunctionSignatureForm[f, a, TupleForm @@ b];
 
-declareBoxFormatting[
-  PartialFunctionSignatureForm[f_, a_, b_] :>
-    makeTypedTemplateBox[f -> FunctionSymbol, a, b, "PartialFunctionSignatureForm"]
-]
-
-$TemplateKatexFunction["PartialFunctionSignatureForm"] = "partialFunctionSignature";
+DefineTernaryForm[PartialFunctionSignatureForm, RBox[$1, OpBox @ ":", $2, OpBox @ "\[RightVector]", $3], KatexMacroName -> "pfs"];
 
 (**************************************************************************************************)
 
 PublicForm[FunctionGraphForm]
 
-declareUnaryForm[FunctionGraphForm];
+DefineUnaryForm[FunctionGraphForm, SubscriptBox["G", $1]];
 
 (**************************************************************************************************)
 
 PublicForm[FunctionSpaceForm, FiniteTotalFunctionSpaceForm]
 
-declareBoxFormatting[
-  FunctionSpaceForm[from_, to_] :> makeHintedTemplateBox[from, to -> BaseFieldSymbol, "FunctionSpaceForm"],
-  FiniteTotalFunctionSpaceForm[from_, to_] :> makeHintedTemplateBox[from, to -> BaseFieldSymbol, "FiniteTotalFunctionSpaceForm"]
-];
-
-$TemplateKatexFunction["FunctionSpaceForm"] = "functionSpace"
-$TemplateKatexFunction["FiniteTotalFunctionSpaceForm"] = "finiteTotalFunctionSpace"
+DefineBinaryForm[FunctionSpaceForm, SubscriptBox[$2, $1]];
+DefineBinaryForm[FiniteTotalFunctionSpaceForm, SuperscriptBox[$2, RBox["\[Subset]", $1]]]
 
 (**************************************************************************************************)
 
 PublicForm[FunctionTypeForm]
 
-declareBinaryForm[FunctionTypeForm]
+DefineBinaryForm[FunctionTypeForm, RBox[$1, " \[Rule] ", $2]]
 
 (**************************************************************************************************)
 
-PublicForm[FunctionSymbol]
-PrivateVariable[$namedFunctions]
+PublicForm[FunctionCompositionForm, RightFunctionCompositionForm]
 
-$namedFunctions = {
-  VertexListFunction,
+DefineInfixForm[FunctionCompositionForm,      OpBox @ "\[SmallCircle]"];
+DefineInfixForm[RightFunctionCompositionForm, OpBox @ "\[FilledSmallCircle]"];
+
+DefineStandardTraditionalForm[{
+  f_FunctionCompositionForm[args___] :> MakeQGBoxes[AppliedForm[ParenthesesForm[f], args]],
+  f_RightFunctionCompositionForm[args___] :> MakeQGBoxes[AppliedForm[ParenthesesForm[f], args]]
+}]
+
+(**************************************************************************************************)
+
+(* replaces OperatorAppliedForm *)
+PublicForm[OperatorCompositionForm]
+
+DefineInfixForm[OperatorCompositionForm, KBox["\[InvisibleSpace]", "\\,"]];
+
+(**************************************************************************************************)
+
+PublicForm[FunctionSymbolForm]
+
+DefineTaggedForm[FunctionSymbolForm]
+
+DefineStandardTraditionalForm[fn_FunctionSymbolForm[args___] :> MakeBoxes[AppliedForm[fn, args]]];
+
+(**************************************************************************************************)
+
+PublicForm[NamedFunctionForm]
+
+DefineUnaryForm[NamedFunctionForm, FunctionBox @ $1]
+
+DefineStandardTraditionalForm[nfs_NamedFunctionForm[args___] :> MakeBoxes[AppliedForm[nfs, args]]];
+
+(**************************************************************************************************)
+
+PublicSymbol[AndFunction, OrFunction, NotFunction, XorFunction, NandFunction, ParityFunction]
+
+DefineNamedFunctionSymbolForm[{
   AndFunction,
   OrFunction,
   NotFunction,
-  EdgeListFunction,
-  CardinalListFunction,
-  SignedCardinalListFunction,
-  SignedLengthFunction,
-  LengthFunction,
-  WordFunction,
-  PathListFunction,
-  HeadVertexFunction, TailVertexFunction,
-  AutomorphismsFunction, EndomorphismsFunction,
-  BasisFunction,
-  SupportFunction,
+  XorFunction,
+  NandFunction,
+  ParityFunction
+}]
+
+(**************************************************************************************************)
+
+PublicSymbol[AutomorphismsFunction, GraphAutomorphismsFunction, EndomorphismsFunction, GraphEndomorphismsFunction]
+
+DefineNamedFunctionSymbolForm[{
+  AutomorphismsFunction -> "Aut",
+  GraphAutomorphismsFunction -> "Aut",
+  EndomorphismsFunction -> "End",
+  GraphEndomorphismsFunction -> "End"
+}];
+
+(**************************************************************************************************)
+
+PublicSymbol[VertexListFunction, MinimalContractionsFunction, MinimalContractionSetsFunction, EdgeListFunction, PathListFunction, CardinalListFunction, SignedCardinalListFunction, SignedLengthFunction, LengthFunction, LCMFunction, HeadVertexFunction, TailVertexFunction, WordFunction]
+
+DefineNamedFunctionSymbolForm[{
+  VertexListFunction -> "vertices",
+  MinimalContractionsFunction -> "MCSets",
+  MinimalContractionSetsFunction -> "MC",
+  EdgeListFunction -> "edges",
+  PathListFunction -> "paths",
+  CardinalListFunction -> "cards",
+  SignedCardinalListFunction -> "cards*",
+  SignedLengthFunction -> "len*",
+  LengthFunction -> "len",
+  LCMFunction -> "lcm",
+  HeadVertexFunction -> "head",
+  TailVertexFunction -> "tail",
+  WordFunction
+}]
+
+(**************************************************************************************************)
+
+PublicSymbol[SplitFunction, BasisFunction, SupportFunction, GradeFunction, CoefficientFunction]
+
+DefineNamedFunctionSymbolForm[{
   SplitFunction,
-  LCMFunction,
+  BasisFunction,
+  SupportFunction -> "supp",
   GradeFunction,
   ModFunction,
-  MinimalContractionsFunction,
-  MinimalContractionSetsFunction,
-  CoefficientFunction,
+  CoefficientFunction -> "coeff",
+  TorusFunction,
+  MobiusFunction
+}]
+
+(**************************************************************************************************)
+
+PublicSymbol[TorusFunction, MobiusFunction]
+
+DefineNamedFunctionSymbolForm[{
+  TorusFunction,
+  MobiusFunction
+}]
+
+(**************************************************************************************************)
+
+PublicSymbol[MaxFunction, MinFunction, SinFunction, CosFunction, TanFunction, ArcTanFunction]
+
+DefineNamedFunctionSymbolForm[{
   MaxFunction,
   MinFunction,
   SinFunction,
   CosFunction,
   TanFunction,
-  ArcTanFunction,
-  TorusFunction,
-  MobiusFunction,
+  ArcTanFunction -> "atan"
+}]
+
+(**************************************************************************************************)
+
+PublicSymbol[ModFunction, ClipFunction, SignFunction, StepFunction, DomainFunction, CodomainFunction, ProjectionFunction, LiftFunction, IdentityFunction, TotalFunction]
+
+DefineNamedFunctionSymbolForm[{
+  ModFunction,
   ClipFunction,
-  SignFunction,
+  SignFunction -> "sgn",
   StepFunction,
-  DomainFunction,
-  CodomainFunction,
-  ProjectionFunction,
+  DomainFunction -> "dom",
+  CodomainFunction -> "cod",
+  ProjectionFunction -> "proj",
   LiftFunction,
-  IdentityFunction,
-  TotalFunction,
-  SrcFunction, SourceFunction,
-  TgtFunction, TargetFunction,
-  StateJoinFunction,
-  StateMeetFunction,
-  StateExtentFunction,
-  StateIntentFunction,
-  StateComposeFunction,
-  StateDecomposeFunction
-};
-
-$functionHeads = {
-  FunctionSymbol, PathMapSymbol,
-  GroupoidHomomorphismSymbol, GroupHomomorphismSymbol,
-  GroupoidFunctionSymbol, GroupFunctionSymbol,
-  PathHomomorphismSymbol, GraphHomomorphismSymbol,
-  InverseForm,
-  VertexFieldSymbol, EdgeFieldSymbol,
-  TransportMapSymbol,
-  VertexSymbol, QuiverSymbol
-}
-
-setupGrabbingRule[sym_] := (
-  sym /: Subscript[sym[inner_], rest__] := sym[Subscript[inner, rest]];
-  sym /: Superscript[sym[inner_], rest__] := sym[Superscript[inner, rest]];
-  sym /: Subsuperscript[sym[inner_], rest__] := sym[Subsuperscript[inner, rest]];
-  f_sym[args__] := AppliedForm[f, args];
-);
-
-PrivateVariable[$functionFormP]
-
-Scan[setupGrabbingRule, $functionHeads];
-
-$functionFormP = Alternatives @@ Join[
-  Blank /@ $functionHeads,
-  $namedFunctions
-];
-
-SetHoldAllComplete[symOrStringMatchingQ];
-
-symOrStringMatchingQ[s_String, patt_] := StringMatchQ[s, patt];
-symOrStringMatchingQ[s_Symbol, patt_] := StringMatchQ[SymbolName[Unevaluated @ s], patt];
-symOrStringMatchingQ[_, _] := False;
-
-declareBoxFormatting[
-
-  FunctionSymbol[f:$functionFormP] :>
-    MakeBoxes @ f,
-
-  FunctionSymbol[f_] :>
-    makeTemplateBox[f, "FunctionSymbolForm"]
-];
-
-$TemplateKatexFunction["FunctionSymbolForm"] = "function";
+  IdentityFunction -> "id",
+  TotalFunction -> "tot"
+}]
 
 (**************************************************************************************************)
 
-PublicForm[FunctionCompositionForm]
+PublicSymbol[StateMeetFunction, StateJoinFunction, StateExtentFunction, StateIntentFunction, StateComposeFunction, StateDecomposeFunction]
 
-declareInfixSymbol[FunctionCompositionForm, FunctionSymbol, True];
-
-declareBoxFormatting[
-  f_FunctionCompositionForm[args___] :> MakeBoxes[AppliedForm[ParenthesesForm[f], args]]
-]
-
-(**************************************************************************************************)
-
-PublicForm[RightFunctionCompositionForm]
-
-declareInfixSymbol[RightFunctionCompositionForm, FunctionSymbol, True];
-
-declareBoxFormatting[
-  f_RightFunctionCompositionForm[args___] :> MakeBoxes[AppliedForm[ParenthesesForm[f], args]]
-]
+DefineNamedFunctionSymbolForm[{
+  StateMeetFunction -> "disj",
+  StateJoinFunction -> "conj",
+  StateExtentFunction -> "extent",
+  StateIntentFunction -> "intent",
+  StateComposeFunction -> "glue",
+  StateDecomposeFunction -> "melt"
+}]
 
 (**************************************************************************************************)
-
-PublicForm[AppliedForm]
-
-declareBoxFormatting[
-  AppliedForm[f_, args__] :> makeTypedTemplateBox[f -> FunctionSymbol, args, "AppliedForm"]
-];
-
-$TemplateKatexFunction["AppliedForm"] = appliedKatex;
-
-appliedKatex[f_, args___] := {f, "(", Riffle[{args}, ","], ")"};
-
-(**************************************************************************************************)
-
-PublicForm[OperatorAppliedForm]
-
-declareBoxFormatting[
-  OperatorAppliedForm[f_, g_] :> makeTemplateBox[f, g, "OperatorAppliedForm"]
-];
-
-$TemplateKatexFunction["OperatorAppliedForm"] = operatorAppliedKatex;
-
-operatorAppliedKatex[f_, g_] := {f, "\,", g};
-
-(**************************************************************************************************)
-
-PublicSymbol[AndFunction, OrFunction, NotFunction]
-
-PublicSymbol[VertexListFunction, MinimalContractionsFunction, MinimalContractionSetsFunction, EdgeListFunction, PathListFunction, CardinalListFunction, SignedCardinalListFunction, SignedLengthFunction, LengthFunction, LCMFunction, HeadVertexFunction, TailVertexFunction, SplitFunction, WordFunction, AutomorphismsFunction, EndomorphismsFunction, BasisFunction, SupportFunction, GradeFunction, ModFunction, CoefficientFunction, MaxFunction, MinFunction, SinFunction, CosFunction, TanFunction, ArcTanFunction, TorusFunction, MobiusFunction]
-
-PublicSymbol[ClipFunction, SignFunction, StepFunction, DomainFunction, CodomainFunction, ProjectionFunction, LiftFunction, IdentityFunction, TotalFunction]
-
-PublicSymbol[StateMeetFunction, StateJoinFunction, StateExtentFunction, StateIntentFunction]
-
-PublicSymbol[StateComposeFunction, StateDecomposeFunction]
 
 PublicSymbol[SrcFunction, SourceFunction, TargetFunction, TgtFunction]
 
-declareFunctionFormatting[sym_] := With[
-  {name = StringDelete[SymbolName[sym], "Function"]},
-  declareBoxFormatting[
-    sym :> TemplateBox[{name}, "NamedFunctionSymbolForm"],
-    sym[args___] :> makeTypedTemplateBox[sym, args, "AppliedForm"]
-  ]
-];
+DefineNamedFunctionSymbolForm[{
+  SrcFunction -> "src", SourceFunction,
+  TgtFunction -> "tgt", TargetFunction
+}]
 
-Scan[declareFunctionFormatting, $namedFunctions];
+(**************************************************************************************************)
 
-$TemplateKatexFunction["NamedFunctionSymbolForm"] = namedFuncKatex;
+PublicForm[FromToForm]
 
-(* to avoid conflict with built-in Katex: *)
-namedFuncKatex["And"] := "\\andFn";
-namedFuncKatex["Or"] := "\\orFn";
-namedFuncKatex["Not"] := "\\Not";
+DefineInfixBinaryForm[FromToForm, WideOpBox @ "\[RightTeeArrow]"];
 
-namedFuncKatex["Word"] := "\\wordOf"; (* because 'word' already menas wordForm *)
-namedFuncKatex["LCM"] := "\\lcm"; (* lowercase *)
-namedFuncKatex["Mod"] := "\\modFunction"; (* becuase mod already defined *)
-namedFuncKatex[s_String] := namedFuncKatex[s] = PrefixSlash @ LowerCaseFirst @ s;
+(**************************************************************************************************)
+
+PublicForm[MapsToForm]
+
+DefineInfixBinaryForm[MapsToForm, WideOpBox @ "\[RightTeeArrow]"];
+

@@ -21,7 +21,7 @@ katexNary[op_][a_, b_, c_, d_, e_] := op[a][b][c][d][e];
 PrivateFunction[declareAppliedFormatting]
 
 declareAppliedFormatting[sym_Symbol] :=
-  declareBoxFormatting[
+  declareBoxFormatting[s
     (f_sym)[args___] :> MakeBoxes @ AppliedForm[f, args]
   ];
 
@@ -190,7 +190,7 @@ declareCommaRiffledForm[symbol_, katex_] := With[
 ];
 
 getStyleHead[style_] := Scope[
-  fn = Lookup[$TemplateKatexFunction, style, $templateToKatexFunction @ style];
+  fn = Lookup[$TemplateKatexFunction, style, $templateToKatexMacro @ style];
   Replace[fn, {
     (s_String | Function[s_[#]]) :> PrefixSlash[s]
   }]
@@ -251,71 +251,12 @@ makeSubSupBoxes = Case[
 
 (**************************************************************************************************)
 
-PrivateFunction[declareAlgebraicSymbol]
-
-declareAlgebraicSymbol[sym_Symbol, aliases_] := With[
-  {symName = SymbolName @ sym},
-  {formName = symName <> "Form"},
-
-  declareBoxFormatting[
-
-    sym[s_String /; KeyExistsQ[aliases, s]] :>
-      TemplateBox[List @ TemplateBox[{}, Lookup[aliases, s]], formName],
-
-    sym[s_Symbol /; MemberQ[aliases, HoldSymbolName @ s]] :>
-      ToBoxes @ sym @ First @ IndexOf[aliases, SymbolName @ s],
-
-    sym[e_, power_] :> With[
-      {inner = MakeBoxes @ sym[e]},
-      TemplateBox[List @ TemplateBox[{inner, MakeQGBoxes @ power}, "PowerForm"], formName]
-    ],
-
-    sym[n_] :>
-      TemplateBox[List @ rawSymbolBoxes @ n, formName]
-
-  ];
-
-  $TemplateKatexFunction[formName] = ToLowerCase @ StringTrim[symName, "Symbol"];
-];
-
-(**************************************************************************************************)
-
-PrivateFunction[declareLieGroupOrAlgebraForm]
-
-declareLieGroupOrAlgebraForm[list_List] :=
-  Scan[declareLieGroupOrAlgebraForm, list];
-
-declareLieGroupOrAlgebraForm[symbol_Symbol] := With[
-  {name = SymbolName @ symbol},
-  {katex = LowerCaseFirst @ StringTrim[name, "Form"]},
-  declareBoxFormatting[
-    symbol[n_] :> MakeBoxes @ symbol[n, Reals],
-    symbol[n_, f_] :> TemplateBox[{rawSymbolBoxes @ n, fieldOrRingBoxes @ f}, name]
-  ];
-  $TemplateKatexFunction[name] = katex;
-];
-
-fieldOrRingBoxes = Case[
-  f:fieldsP      := MakeBoxes @ FieldSymbol @ f;
-  r:ringsP       := MakeBoxes @ RingSymbol @ r;
-  sr:semiringsP  := MakeBoxes @ SemiringSymbol @ sr;
-  n_Integer      := MakeBoxes @ FiniteFieldSymbol[n];
-  other_         := MakeQGBoxes @ other,
-  {
-    fieldsP     -> Alternatives[Reals, Complexes, Rationals, "R", "C", "Q", "K"],
-    ringsP      -> Alternatives[Integers, "Z"],
-    semiringsP  -> Alternatives[Naturals, "N"]
-  }
-]
-
-(**************************************************************************************************)
-
 PrivateSymbol[symbolBoxes]
 
 symbolBoxes = Case[
   s:($symbolFormsP)   := MakeBoxes @ s;
-  InvertedForm[n_]     := % @ Inverted @ n;
-  Inverted[n_]         := InvertedBoxForm @ RawBoxes @ % @ n;
+  InvertedForm[n_]    := % @ Inverted @ n;
+  (* Inverted[n_]        := InvertedBoxForm @  % @ n; *)
   f_PlainTextForm     := MakeBoxes @ f;
   other_              := rawSymbolBoxes @ other;
 ];
@@ -426,15 +367,4 @@ declareBoxFormatting[
   RawSymbolForm[p_] :>
     rawSymbolBoxes @ p
 ];
-
-(**************************************************************************************************)
-
-PublicForm[SymbolForm]
-
-declareBoxFormatting[
-  SymbolForm[p_] :>
-    TemplateBox[List @ symbolBoxes @ p, "SymbolForm"]
-];
-
-$TemplateKatexFunction["SymbolForm"] = "sym";
 

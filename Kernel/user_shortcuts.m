@@ -221,10 +221,11 @@ QuiverGeometry`Shortcuts`Arr[x_, y_] := MorphismForm[x, y];
 QuiverGeometry`Shortcuts`Arr[l_, x_, y_] := NamedMorphismForm[l, x, y];
 
 decSymTable["$C#",              CategorySymbol,                             $scriptCapitals];
-decSymTable["$O#",              CategoryObjectSymbol,                       "abcdeuvwxyzst"];
+decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzst"];
 symbolTable["$IdA#",            IdArrow[CategoryObjectSymbol[#]]&,          "abcdeuvwxyzst"];
 decSymTable["$A#",              CategoryArrowSymbol,                        "efghjklmnpqrstuvw"];
 
+QuiverGeometry`Shortcuts`$Ostar = CategoryObjectSymbol["*"];
 QuiverGeometry`Shortcuts`Hom[x_, y_] := HomForm[x, y];
 QuiverGeometry`Shortcuts`Hom[c_, x_, y_] := ExplicitHomForm[c, x, y];
 
@@ -267,8 +268,8 @@ decSymTable["$M#",              MatrixSymbol,                               $ROM
 $coloredCards = "rgb" -> {QuiverGeometry`Shortcuts`$crr, QuiverGeometry`Shortcuts`$cgg, QuiverGeometry`Shortcuts`$cbb};
 decSymTable["$MM#",             MatrixSymbol[Subscript["M", #]]&,           $coloredCards];
 
-decSymTable["$f#",              FunctionSymbol,                             $RomanGreek, $RomGre];
-symbolTable["$f#1#2",           #2[FunctionSymbol[#1]]&,                    $Rom, $ImagePreimage];
+decSymTable["$f#",              FunctionSymbolForm,                         $RomanGreek, $RomGre];
+symbolTable["$f#1#2",           #2[FunctionSymbolForm[#1]]&,                $Rom, $ImagePreimage];
                     
 decSymTable["$top#",            TopologicalSpaceSymbolForm,                 $ROMAN, $ROM];
 decSymTable["$Bproj#",          BundleProjectionSymbolForm,                 "\[Pi]"];

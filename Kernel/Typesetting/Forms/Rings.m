@@ -9,31 +9,19 @@ PublicForm[StyledSemiringProductForm, StyledSemiringSumForm]
 
 PublicForm[RingSymbol]
 
-RingSymbol[] := RingSymbol["R"];
-
-$ringAliases =   <|
-  "Z" -> "Integers"
-|>
-
-declareAlgebraicSymbol[RingSymbol, $ringAliases];
+DefineTaggedForm[RingSymbol, Aliases -> <|"Z" -> Integers|>];
 
 (**************************************************************************************************)
 
 PublicForm[SemiringSymbol]
 
-$semiringAliases = <|
-  "N" -> "Naturals"
-|>
-
-declareAlgebraicSymbol[SemiringSymbol, $semiringAliases];
+DefineTaggedForm[SemiringSymbol, Aliases -> <|"N" -> Naturals|>];
 
 (**************************************************************************************************)
 
 PublicForm[RingElementSymbol]
 
-RingElementSymbol[] := RingElementSymbol["r"];
-
-declareSymbolForm[RingElementSymbol];
+DefineTaggedForm[RingElementSymbol];
 
 (**************************************************************************************************)
 

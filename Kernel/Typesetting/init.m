@@ -1,4 +1,4 @@
-PublicFunction[TBox, TBoxOp, SBox, RBox, GBox]
+PublicFunction[TBox, TBoxOp, SBox, RBox, GBox, KBox]
 
 TBox[args___, form_] := TemplateBox[{args}, form];
 TBoxOp[form_][args___] := TemplateBox[{args}, form];
@@ -17,137 +17,345 @@ GBox[entries_, alignments_, rowSpacings_, colSpacings_] :=
 prepend0[list_List] := Prepend[list, 0];
 prepend0[e_] := e;
 
+KBox[wl_, kb_] := TemplateBox[{wl, kb}, "katexSwitch"];
+
 (**************************************************************************************************)
 
-PublicSymbol[$0, $1, $2, $3, $4, $5]
+PublicFunction[OpBox, WideOpBox, VeryWideOpBox]
+
+OpBox[b_] := KBox[RBox["\[ThinSpace]", b, "\[ThinSpace]"], KBin @ b];
+OpBox["/"] := "/";
+
+WideOpBox[b_] := KBox[RBox[" ", b, " "], KBin @ b];
+VeryWideOpBox[b_] := KBox[RBox["  ", b, "  "], KBin @ b];
+
+(**************************************************************************************************)
+
+PublicFunction[OverdotBox, OverdoubledotBox, UnderdotBox]
+
+OverdoubledotBox[b_] := KBox[OverscriptBox[b, ".."], "ddot"[b]];
+
+OverdotBox[b_] := KBox[OverscriptBox[b, "."], "dot"[b]];
+OverdotBox["="] := KBox["≐", "\\doteq"];
+
+UnderdotBox[b_] := KBox[UnderscriptBox[b, LowerBox[".", .1]], {"""\underset{\raisebox{0.3em}{.}}{""", b, "}"}];
+UnderdotBox["="] := KBox[UnderscriptBox[b, LowerBox[".", .1]], {"""\underset{\raisebox{0.3em}{.}}{""", b, "}"}];
+
+(**************************************************************************************************)
+
+PublicFunction[MarginBox]
+
+MarginBox[boxes_, {left_, right_}] := MarginBox[boxes, {left, right}, {0, 0}];
+MarginBox[boxes_, {left_, right_}, {bottom_, top_}] := AdjustmentBox[boxes, BoxMargins -> {{left, right}, {bottom, top}}];
+
+(**************************************************************************************************)
+
+PublicFunction[HatBox]
+
+HatBox[box_] := KBox[OverscriptBox[box, "^"], "hat" @ box];
+
+(**************************************************************************************************)
+
+PublicFunction[UnlimitedSpanBox, ForceKatexCharBox]
+
+UnlimitedSpanBox[e_] := StyleBox[e, SpanAdjustments -> {{0, 0}, {0, 0}}, SpanMaxSize->Infinity, SpanMinSize -> 1.5];
+
+ForceKatexCharBox[e_] := StyleBox[e, FontFamily -> "KaTeX_Main", PrivateFontOptions -> {"OperatorSubstitution" -> False}];
+
+(**************************************************************************************************)
+
+PublicFormBox[Raise, Lower]
+
+DefineStandardTraditionalForm[RaiseForm[e_, n_ ? NumericQ] :> RaiseBox[MakeBoxes @ e, n]];
+DefineStandardTraditionalForm[LowerForm[e_, n_ ? NumericQ] :> LowerBox[MakeBoxes @ e, n]];
+
+RaiseBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> -n];
+LowerBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> n];
+
+(**************************************************************************************************)
+
+PublicFunction[KOrd, KBin]
+
+KOrd[k_] := "mathord"[k];
+KBin[k_] := "mathbin"[k];
+
+(**************************************************************************************************)
+
+PublicVariable[$PipeBox]
+
+$PipeBox = KBox["|", "\\middle|"];
+
+(**************************************************************************************************)
+
+PublicFunction[FunctionBox]
+
+FunctionBox[e_] := KBox[e, "op"[e]];
+
+(**************************************************************************************************)
+
+PublicFunction[InverseBox]
+
+InverseBox[b_] := SuperscriptBox[b, RBox["-", "1"]];
+
+(**************************************************************************************************)
+
+PublicFunction[UnderbraceBox, OverbraceBox]
+
+UnderbraceBox[a_, b_] := KBox[UnderscriptBox[UnderscriptBox[a, "\[UnderBrace]"], b], SubscriptBox["underbrace"[a], b]];
+OverbraceBox[a_, b_] := KBox[OverscriptBox[OverscriptBox[a, "\[OverBrace]"], b], SuperscriptBox["overbrace"[a], b]];
+
+(**************************************************************************************************)
+
+PrivateFunction[LeftBox, RightBox, DelimiterBox, LeftRightBox]
+
+DelimiterBox[e_] := StyleBox[e, "DelimiterFont"];
+
+LeftBox[d_String] := KBox[DelimiterBox @ d, "\\left" <> d];
+LeftBox["{"] := KBox[DelimiterBox @ "{", "\\left\\{"];
+LeftBox["|"] := KBox["\[LeftBracketingBar]", "\\left\\lvert"];
+LeftBox["||"] := KBox["\[LeftDoubleBracketingBar]", "\\left\\lVert"];
+
+RightBox[d_String] := KBox[DelimiterBox @ d, "\\right" <> d];
+RightBox["}"] := KBox[DelimiterBox @ "}", "\\right\\}"];
+RightBox["|"] := KBox["\[RightBracketingBar]", "\\right\\rvert"];
+RightBox["||"] := KBox["\[RightDoubleBracketingBar]", "\\right\\rVert"];
+
+LeftRightBox[l_, inner___, r_] := RBox[LeftBox @ l, inner, RightBox @ r];
+
+_LeftBox := BadArguments[];
+_RightBox := BadArguments[];
+_LeftRightBox := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[BracesBox, AngleBracketBox, ParenthesesBox, SquareBracketBox, DoubleSquareBracketBox, BarBox, DoubleBarBox]
+
+BracesBox[inner___]              := LeftRightBox["{", inner, "}"];
+AngleBracketBox[inner___]        := LeftRightBox["⟨", inner, "⟩"];
+ParenthesesBox[inner___]         := LeftRightBox["(", inner, ")"];
+SquareBracketBox[inner___]       := LeftRightBox["[", inner, "]"];
+DoubleSquareBracketBox[inner___] := LeftRightBox["⟦", inner, "⟧"];
+BarBox[inner___]                 := LeftRightBox["|", inner, "|"];
+DoubleBarBox[inner___]           := LeftRightBox["||", inner, "||"];
+
+(**************************************************************************************************)
+
+PublicSymbol[$0, $1, $2, $3, $4, $5, $$1, $$2, $$3]
+
+$slotRules = {$1 -> Slot[1], $2 -> Slot[2], $3 -> Slot[3], $4 -> Slot[4], $5 -> Slot[5], $$1 -> SlotSequence[1], $$2 -> SlotSequence[2], $$3 -> SlotSequence[3]};
+
+toSlotFn[None] := None;
+
+toSlotFn[body_] := Function[body] /. $slotRules;
+
+(**************************************************************************************************)
+
+PublicFunction[SpecializeToNotebookBoxes, SpecializeToKatexBoxes]
+
+SpecializeToNotebookBoxes[e_] := e //. $toWLBoxes;
+SpecializeToKatexBoxes[e_] := e //. $toKBoxes;
+
+$toWLBoxes = Dispatch @ {
+  HoldPattern[RBox[args___]] :> RowBox[{args}],
+  KBox[wl_, _] :> wl, HoldPattern[KBox[wl_, _]] :> wl,
+  $wlThinSpace -> "\[ThinSpace]", $kSpace :> Sequence[]
+};
+
+$toKBoxes = Dispatch @ {
+  HoldPattern[RBox[args___]] :> RowBox[{args}],
+  KBox[_, kb_] :> kb, HoldPattern[KBox[_, kb_]] :> kb,
+  $wlThinSpace -> Sequence[], $kSpace -> " ",
+  TagBox[b_, "QG"] :> b
+};
+
+PrivateSymbol[$wlThinSpace, $kSpace]
+
+(**************************************************************************************************)
 
 PublicFunction[DefineStandardTraditionalForm]
 
-DefineStandardTraditionalForm[list_] := Scan[DefineStandardTraditionalForm, list];
+DefineStandardTraditionalForm[list_List] := Scan[DefineStandardTraditionalForm, list];
 
 DefineStandardTraditionalForm[lhs_ :> rhs_] := (
   MakeBoxes[lhs, StandardForm] := rhs;
   MakeBoxes[l:lhs, TraditionalForm] := MakeBoxes @ l;
 )
 
-(**************************************************************************************************)
-
-PublicFormBox[Raise]
-
-DefineStandardTraditionalForm[RaiseForm[e_, n_ ? NumericQ] :> RaiseBox[MakeBoxes @ e, n]];
-
-RaiseBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> -n];
+_DefineStandardTraditionalForm := BadArguments[];
 
 (**************************************************************************************************)
+
+PublicOption[BoxFunction]
+
+SetUsage @ "
+BoxFunction is an option to various DefineXXX functions that specifies a symbol to attach box-construction code to.
+"
+
+attachBoxFunctionDefs[None, _] := Null;
+attachBoxFunctionDefs[sym_Symbol, fn_] := SetDelayed[sym[args___], fn[args]];
+
+(**************************************************************************************************)
+
+PublicOption[HeadBoxes]
+
+SetUsage @ "
+HeadBoxes is an option to various DefineXXX functions that specifies boxes to associate with the pure head.
+"
+
+attachHeadBoxes[None, _] := Null;
+attachHeadBoxes[boxes_, sym_Symbol] := DefineStandardTraditionalForm[sym :> boxes];
+
+(**************************************************************************************************)
+
+PublicOption[KatexMacroName]
+
+SetUsage @ "
+KatexMacroName is an option to various DefineXXX functions that specifies the name of the Katex global macro to set up.
+* The following settings can be used:
+| None | the macro will be used and literal expansion will be used instead |
+| Automatic | a name will be derived from the template box name |
+| 'name$' | the given name will be used |
+"
+
+$kNameRules = {RegularExpression @ "^[a-z][a-z]?", "Gray" -> "G", RegularExpression @ "[A-Z][A-Za-z]", "1" -> "Ⅰ", "2" -> "Ⅱ", "3" -> "Ⅲ", "4" -> "Ⅳ"};
+templateNameToMacroName = Case[
+  str_String ? LowerCaseQ := StringTake[str, 2];
+  str_String := StringJoin @ StringCases[str, $kNameRules];
+];
+
+(**************************************************************************************************)
+
+PublicOption[TemplateName]
+
+SetUsage @ "
+TemplateName is an option to various DefineXXX functions that specifies the name of the template box.
+* The following settings can be used:
+| 'name$' | use the given name |
+| Automatic | use the name of the associated symbol |
+"
+
+makeTemplateName[symbol_Symbol, Automatic] := SymbolName @ symbol;
+makeTemplateName[symbol_, name_String] := name;
+
+_makeTemplateName := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicOption[Boxification]
+
+SetUsage @ "
+Boxification is an option to various DefineXXX functions that specifies the function to boxify arguments.
+"
+
+toSequenceBoxifyFn[MakeQGBoxes] = MakeQGBoxSequence;
+toSequenceBoxifyFn[fn_] := Function[Null, Sequence @@ MapUnevaluated[fn, {##}]];
+
+(**************************************************************************************************)
+
+$defineOpts = {
+  BoxFunction -> None,
+  Boxification -> MakeQGBoxes,
+  KatexMacroName -> None,
+  TemplateName -> Automatic,
+  HeadBoxes -> None
+};
+
+(**************************************************************************************************)
+
+PrivateFunction[tagAsMath]
 
 tagAsMath[t_] := TagBox[t /. TagBox[e_, "QG"] :> e, "QG"];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineTemplateBox]
-
-SetUsage @ "
-DefineTemplateBox['tname$' -> boxes$] defines the template %DisplayFunction for %TemplateBox[$$, 'tname$'] to be the \
-literal value of boxes$, where $1, $2, etc are the slots. Evaluation is not allowed because DisplayFunctions \
-cannot do anything other than simple substitution anyway.
-DefineTemplateBox[templateSpec$, katexSpec$] defines the Katex display function definition that will be embedded into prelude.
-DefineTemplateBox[templateSpec$, katexSpec$, conversionSpec$] defines how to convert a %TemplateBox[$$] into a call to Katex display function.
-* The Katex display function spec katexSpec$ can be one of:
-| Automatic | use katexified version of boxes$ present in the %TemplateBox definition (the first argument) |
-| kboxes$ | use katexified version of kboxes$ |
-| 'kname$' -> spec$ | names the katex display function 'kname$', rather than shortening 'tname$' |
-* The conversion from a %TemplateBox into Katex display template call is described by conversionSpec$:
-| Automatic | convert %TemplateBox[args$$, 'tname$'] into \\kname${args$$} |
-| 'tname$' -> Function[$$] | convert %TemplateBox[args$$, 'tname$'] by applying function to args$$ |
-| 'tname$' \[RuleDelayed] body | do a literal replacement of $1, $2, etc in body$  |
-* The name of Automatic will use the same 'tname$' as the first argument.
-* Any of the specs can be lists, these will be scanned over.
-"
-
-DefineTemplateBox = Case[
-  boxSpec_List := Scan[%, boxSpec];
-  boxSpec_ := $[boxSpec, Automatic, Automatic];
-  Seq[tSpec_, kSpec_] := $[tSpec, kSpec, Automatic];
-  Seq[tSpec_, kSpec_, cSpec_] := Scope @ QuiverGeometry`PackageScope`CatchMessage[
-    $tname = $tboxes = $kname = None;
-    procTSpec[tSpec]; procKSpec[kSpec]; procCSpec[cSpec /. $0 -> $kname];
-    {$tname, $kname}
-  ];
-];
-
-procTSpec = Case[
-  name_String -> boxes:Except[_Function] := (
-    $tname = name; $tboxes = boxes;
-    $templateBoxDisplayFunction[name] = toSlotFn[boxes]  //. KatexSwitch[b_, _] :> b;
-  );
-  spec_ := ThrowMessage["arg1", spec];
-];
-DefineTemplateBox::arg1 = "First argument `` is invalid.";
-
-procKSpec = Case[
-  Automatic                              := $[Automatic -> Automatic];
-  Automatic -> boxes_                    := $[toKname[$tname] -> boxes];
-  name_String -> Automatic               := $[name -> $tboxes];
-  specs:{___Rule}                        := Last[Map[procKSpec, specs], None];
-  name_String -> boxes:Except[_Function] := (
-    $kname = name;
-    $katexDisplayFunction[name] = toSlotFn[boxes] //. KatexSwitch[_, b_] :> b;
-  );
-  boxes:Except[_Rule]                    := $[Automatic -> boxes];
-  spec_                                  := ThrowMessage["arg2", spec, $tname];
-];
-DefineTemplateBox::arg2 = "Second argument `` for TBox `` is invalid.";
-
-procCSpec = Case[
-  Automatic := $[$tname :> Automatic];
-  name_ :> Automatic := $[name -> Construct[Function, $kname[##]]];
-  specs:{___RuleDelayed} := Last[Map[procCSpec, specs]];
-  fn_Function := $[$tname -> fn];
-  name_String :> body_ := $[name -> toSlotFn @ Unevaluated @ body];
-  name_String -> fn_Function := (
-    $templateToKatexFunction[name] = fn;
-  );
-  spec_ := ThrowMessage["arg3", spec, $tname];
-];
-DefineTemplateBox::arg3 = "Third argument `` for TBox `` is invalid.";
-
-(**************************************************************************************************)
-
-PrivateFunction[toKname]
-
-$kNameRules = {RegularExpression @ "^[a-z][a-z]?", "Gray" -> "G", RegularExpression @ "[A-Z][A-Za-z]", "1" -> "Ⅰ", "2" -> "Ⅱ", "3" -> "Ⅲ", "4" -> "Ⅳ"};
-toKname = Case[
-  str_String ? LowerCaseQ := StringTake[str, 2];
-  str_String := StringJoin @ StringCases[str, $kNameRules];
-];
-
-$slotRules = {$1 -> Slot[1], $2 -> Slot[2], $3 -> Slot[3], $4 -> Slot[4], $5 -> Slot[5]};
-toSlotFn[None] := None;
-toSlotFn[body_] := Function[body] /. $slotRules;
-
-(**************************************************************************************************)
-
-PublicVariable[$expressionToTemplateBoxRules, $templateBoxDisplayFunction, $katexDisplayFunction, $templateToKatexFunction]
+PublicVariable[$notebookDisplayFunction, $katexDisplayFunction, $katexMacros, $symbolToTemplateName, $symbolToKatexMacroName]
 
 PublicFunction[ClearTemplateBoxDefinitions]
 
 ClearTemplateBoxDefinitions[] := (
-  $expressionToTemplateBoxRules = <||>;
-  $templateBoxDisplayFunction = $katexDisplayFunction = <||>;
-  $templateBoxNameCounts = <||>;
-  $templateToKatexFunction = <||>;
+  $notebookDisplayFunction = $katexDisplayFunction = $katexMacros = $symbolToTemplateName = $symbolToKatexMacroName = <||>;
 );
 
 ClearTemplateBoxDefinitions[];
 
 (**************************************************************************************************)
 
-PublicFunction[TemplateBoxNameQ]
+PrivateFunction[DefineNotebookDisplayFunction, DefineKatexDisplayFunction, DefineKatexMacro]
 
-TemplateBoxNameQ[str_] :=
-  KeyExistsQ[$TemplateKatexFunction, str] || KeyExistsQ[$templateToKatexFunction, str] || (
-    AssociationQ[$localTemplateToKatexFunctions] && KeyExistsQ[$localTemplateToKatexFunctions, str]
-  );
+DefineNotebookDisplayFunction[templateName_String, fn_Function] := (
+  $notebookDisplayFunction[templateName] = SpecializeToNotebookBoxes[fn];
+);
+
+DefineKatexDisplayFunction[templateName_String, fn_Function] := (
+  $katexDisplayFunction[templateName] = SpecializeToKatexBoxes[fn];
+);
+
+DefineKatexDisplayFunction[templateName_, fn_, None] :=
+  DefineKatexDisplayFunction[templateName, fn];
+
+DefineKatexDisplayFunction[templateName_, fn_, macroName_String] := (
+  $katexDisplayFunction[templateName] = macroName;
+  DefineKatexMacro[macroName, fn];
+);
+
+DefineKatexMacro[name_String, fn_Function] := (
+  $katexMacros[name] = SpecializeToKatexBoxes[fn];
+);
+
+(**************************************************************************************************)
+
+AssociateSymbolToTemplateName[sym_Symbol, name_String] := KeyAppendTo[$symbolToTemplateName, sym, name];
+AssociateSymbolToKatexMacro[sym_Symbol, name_String]   := KeyAppendTo[$symbolToKatexMacroName, sym, name];
+AssociateSymbolToKatexMacro[sym_Symbol, None]          := Null;
+
+(**************************************************************************************************)
+
+_DefineNotebookDisplayFunction = BadArguments[];
+_DefineKatexDisplayFunction = BadArguments[];
+_DefineKatexMacro = BadArguments[];
+_AssociateSymbolToTemplateName = BadArguments[];
+_AssociateSymbolToKatexMacro = BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineTemplateBox]
+
+(* kmacro: If Automatic, base name on template box name, if None, don't set up a macro *)
+DefineTemplateBox[symbol_Symbol, templateName_String, boxes_, katexMacroName_] := Scope[
+  SetAutomatic[katexMacroName, templateNameToMacroName @ templateName];
+  AssociateSymbolToTemplateName[symbol, templateName];
+  AssociateSymbolToKatexMacro[symbol, katexMacroName];
+  fn = toSlotFn @ boxes;
+  DefineNotebookDisplayFunction[templateName, fn];
+  DefineKatexDisplayFunction[templateName, fn, katexMacroName];
+  fn
+];
+
+_DefineTemplateBox = BadArguments[];
+
+(**************************************************************************************************)
+
+DefineKatexMacro["op", "operatorname"[#1]&];
+
+(**************************************************************************************************)
+
+PublicForm[KatexSwitch]
+
+SetUsage @ "
+KatexSwitch[wlForm$, kForm$] displays as wlForm$ but converts to Katex as kForm$.
+"
+
+DefineStandardTraditionalForm[KatexSwitch[wl_, k_] :> KBox[MakeQGBoxes @ wl, MakeQGBoxes @ k]];
+DefineTemplateBox[KatexSwitch, "katexSwitch", KBox[$1, $2], None]
+
+(**************************************************************************************************)
+
+PublicFunction[TemplateNameQ]
+
+TemplateNameQ[name_] := Or[
+  KeyExistsQ[$katexDisplayFunction, name],
+  AssociationQ[$localKatexDisplayFunction] && KeyExistsQ[$localKatexDisplayFunction, name]
+];
 
 (**************************************************************************************************)
 
@@ -155,44 +363,94 @@ PublicFunction[PrintTemplateBoxDefinitions]
 
 PrintTemplateBoxDefinitions[] := Scope[
   Print @ SpacedColumn[
-    "Formatting rules" -> Grid[InputForm /@ $expressionToTemplateBoxRules],
     "Display functions" -> SpacedRow[
-      "Template" -> Grid[$templateBoxDisplayFunction],
+      "Template" -> Grid[$notebookDisplayFunction],
       "Katex" -> Grid[$katexDisplayFunction]
     ],
-    "TemplateToKatexFunction" -> Grid[$templateToKatexFunction],
     "KatexDefinitions" -> Pane @ EmitKatexFunctionDefinitions[],
-    "NameCounts" -> Grid[$templateBoxNameCounts],
     Spacings -> 100
   ];
 ]
 
 (**************************************************************************************************)
 
-PublicFunction[DefineTaggedForm]
+PublicFormBox[Riffled]
+
+DefineStandardTraditionalForm[
+  RiffledForm[head_][args___] :> RiffledBox[MakeQGBoxes @ head][MakeQGBoxSequence @ args]
+]
+
+DefineNotebookDisplayFunction["RiffledForm", Function[RowBox[{TemplateSlotSequence[2, #1]}]]];
+DefineKatexDisplayFunction["RiffledForm", Function[Riffle[{##2}, #1]]];
+AssociateSymbolToTemplateName[RiffledForm, "RiffledForm"]
+
+RiffledBox[rif_][args___] := TemplateBox[{rif, args}, "RiffledForm"];
+
+(**************************************************************************************************)
+
+PublicFormBox[CommaRow]
+
+DefineStandardTraditionalForm[
+  CommaRowForm[a___] :> CommaRowBox[MakeQGBoxSequence[a]]
+];
+
+CommaRowBox[] := ""
+CommaRowBox[a_] := a;
+CommaRowBox[a__] := TBox[a, "CommaRowForm"];
+
+DefineNotebookDisplayFunction["CommaRowForm", Function[RowBox[{TemplateSlotSequence[1, ", "]}]]];
+DefineKatexDisplayFunction["CommaRowForm", Riffle[{##}, ","]&];
+AssociateSymbolToTemplateName[CommaRowForm, "CommaRowForm"];
+
+(**************************************************************************************************)
+
+PublicFormBox[TightRow]
+
+DefineStandardTraditionalForm[
+  TightRowForm[a___] :> TightRowBox[MakeQGBoxSequence[a]]
+];
+
+TightRowBox[] := RBox[];
+TightRowBox[a_] := a;
+TightRowBox[a__] := TBox[a, "TightRowForm"];
+
+DefineNotebookDisplayFunction["TightRowForm", Function[RowBox[{TemplateSlotSequence[1]}]]];
+DefineKatexDisplayFunction["TightRowForm", {##}&];
+AssociateSymbolToTemplateName[TightRowForm, "TightRowForm"];
+
+(**************************************************************************************************)
 
 SetRelatedSymbolGroup[DefineTaggedForm, DefineUnaryForm]
-SetRelatedSymbolGroup[DefineUnaryForm, DefineBinaryForm, DefineTernaryForm]
-SetRelatedSymbolGroup[DefineBinaryForm, DefineLiteralInfixBinaryForm]
-SetRelatedSymbolGroup[DefineInfixForm, DefineLiteralInfixForm]
-SetRelatedSymbolGroup[DefineRiffledForm, DefineLiteralRiffledForm]
-SetRelatedSymbolGroup[DefineInfixForm, DefineRiffledForm, DefineLeftRightForm]
-SetRelatedSymbolGroup[DefineLiteralInfixForm, DefineLiteralRiffledForm, DefineLiteralLeftRightForm]
-SetRelatedSymbolGroup[DefineLeftRightForm, DefineLiteralLeftRightForm]
-SetRelatedSymbolGroup[DefineUnaryForm, DefineUnaryStyleForm]
+SetRelatedSymbolGroup[DefineUnaryForm, DefineBinaryForm, DefineTernaryForm, DefineNAryForm]
+SetRelatedSymbolGroup[DefineBinaryForm, DefineIndexedBinaryForm]
+SetRelatedSymbolGroup[DefineInfixForm]
+SetRelatedSymbolGroup[DefineUnaryForm, DefineStyleForm]
+
+(**************************************************************************************************)
+
+PublicFunction[DefineTaggedForm]
+
+PublicOption[Aliases]
 
 SetUsage @ "
 DefineTaggedForm[symbol$] defines symbol$[arg$1] to boxify to %TemplateBox[{arg$1}, 'symbol$'], \
 which displays as arg$1.
-* A shortened katex macro is set up, which looks like \\sym{arg$1}.
+* If the %KatexMacroName option is not None, a shortened katex macro is set up, which looks like \\sym{arg$1}.
+* The option Aliases specifies what string arguments should be rewritten to arbitrary expressions.
 "
 
 SetListable[DefineTaggedForm];
 
-DefineTaggedForm[formSym_Symbol] := With[
-  {name = SymbolName @ formSym},
-  DefineStandardTraditionalForm[formSym[e_] :> TBox[MakeQGBoxes @ e, name]];
-  DefineTemplateBox[name -> $1]
+Options[DefineTaggedForm] = JoinOptions[$defineOpts, Aliases -> None];
+
+DefineTaggedForm[formSym_Symbol, OptionsPattern[]] := With[
+  {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
+  {boxify = OptionValue[Boxification], aliases = OptionValue[Aliases]},
+  DefineStandardTraditionalForm[formSym[e_] :> TBox[boxify @ e, name]];
+  DefineTemplateBox[formSym, name, $1, OptionValue[KatexMacroName]];
+  If[AssociationQ[aliases], DefineStandardTraditionalForm[
+      formSym[alias_String /; KeyExistsQ[aliases, alias]] :> ToBoxes @ formSym[Lookup[aliases, alias]]
+  ]];
 ];
 
 _DefineTaggedForm := BadArguments[];
@@ -204,18 +462,20 @@ PublicFunction[DefineUnaryForm]
 SetUsage @ "
 DefineUnaryForm[symbol$, boxes$] defines symbol$[arg$1] to boxify to %TemplateBox[{arg$1}, 'symbol$'], \
 which displays as boxes$ where $1 is substituted.
-* A shortened katex macro is set up, which looks like \\sym{arg$1}.
-* A third argument specifies a box function which can be called to construct the underlying boxes directly.
+* If the %KatexMacroName option is not None, a shortened katex macro is set up, which looks like \\sym{arg$1}.
+* If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
 "
 
-DefineUnaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
-  {name = SymbolName @ formSym},
-  If[boxFn =!= None,
-    boxFn[e_] := TBox[e, name];
-    DefineStandardTraditionalForm[formSym[e_] :> boxFn[MakeQGBoxes @ e]],
-    DefineStandardTraditionalForm[formSym[e_] :> TBox[MakeQGBoxes @ e, name]]
-  ];
-  DefineTemplateBox[name -> boxes]
+Options[DefineUnaryForm] = $defineOpts;
+
+DefineUnaryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
+  {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
+  {boxify = OptionValue[Boxification]},
+  {fn = TBox[#1, name]&},
+  attachBoxFunctionDefs[OptionValue[BoxFunction], fn];
+  attachHeadBoxes[OptionValue[HeadBoxes], formSym];
+  DefineStandardTraditionalForm[formSym[e_] :> fn[boxify @ e]];
+  DefineTemplateBox[formSym, name, boxes, OptionValue[KatexMacroName]]
 ];
 
 _DefineUnaryForm := BadArguments[];
@@ -227,18 +487,20 @@ PublicFunction[DefineBinaryForm]
 SetUsage @ "
 DefineBinaryForm[symbol$, boxes$] defines symbol$[arg$1, arg$2] to boxify to %TemplateBox[{arg$1, arg$2}, 'symbol$'], \
 which displays as boxes$ where $1, $2 are substituted.
-* A shortened katex macro is set up, which looks like \\sym{arg$1, arg$2}.
-* A third argument specifies a box function which can be called to construct the underlying boxes directly.
+* If the %KatexMacroName option is not None, a shortened katex macro is set up, which looks like \\sym{arg$1, arg$2}.
+* If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
 "
 
-DefineBinaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
-  {name = SymbolName @ formSym},
-  If[boxFn =!= None,
-    boxFn[e_, f_] := TBox[e, f, name];
-    DefineStandardTraditionalForm[formSym[e_, f_] :> boxFn[MakeQGBoxes @ e, MakeQGBoxes @ f]],
-    DefineStandardTraditionalForm[formSym[e_, f_] :> TBox[MakeQGBoxes @ e, MakeQGBoxes @ f, name]]
-  ];
-  DefineTemplateBox[name -> boxes]
+Options[DefineBinaryForm] = $defineOpts;
+
+DefineBinaryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
+  {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
+  {boxify = OptionValue[Boxification]},
+  {fn = TBox[#1, #2, name]&},
+  attachBoxFunctionDefs[OptionValue[BoxFunction], fn];
+  attachHeadBoxes[OptionValue[HeadBoxes], formSym];
+  DefineStandardTraditionalForm[formSym[a_, b_] :> fn[boxify @ a, boxify @ b]];
+  DefineTemplateBox[formSym, name, boxes, OptionValue[KatexMacroName]]
 ];
 
 _DefineBinaryForm := BadArguments[];
@@ -247,697 +509,272 @@ _DefineBinaryForm := BadArguments[];
 
 PublicFunction[DefineTernaryForm]
 
+Options[DefineTernaryForm] = $defineOpts;
+
 SetUsage @ "
 DefineTernaryForm[symbol$, boxes$] defines symbol$[arg$1, arg$2, arg$3] to boxify to %TemplateBox[{arg$1, arg$2, arg$3}, 'symbol$'], \
 which displays as boxes$ where $1, $2, $3 are substituted.
-* A shortened katex macro is set up, which looks like \\sym{arg$1, arg$2, arg$3}.
-* A third argument specifies a box function which can be called to construct the underlying boxes directly.
+* If the %KatexMacroName option is not None, a shortened katex macro is set up, which looks like \\sym{arg$1, arg$2}.
+* If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
 "
 
-DefineTernaryForm[formSym_Symbol, boxes_, boxFn_:None] := With[
-  {name = SymbolName @ formSym},
-  If[boxFn =!= None,
-    boxFn[e_, f_] := TBox[e, f, name];
-    DefineStandardTraditionalForm[formSym[e_, f_, g_] :> boxFn[MakeQGBoxes @ e, MakeQGBoxes @ f, MakeQGBoxes @ g]],
-    DefineStandardTraditionalForm[formSym[e_, f_, g_] :> TBox[MakeQGBoxes @ e, MakeQGBoxes @ f, MakeQGBoxes @ g, name]]
-  ];
-  DefineTemplateBox[name -> boxes]
+DefineTernaryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
+  {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
+  {boxify = OptionValue[Boxification]},
+  {fn = TBox[#1, #2, #3, name]&},
+  attachBoxFunctionDefs[OptionValue[BoxFunction], fn];
+  attachHeadBoxes[OptionValue[HeadBoxes], formSym];
+  DefineStandardTraditionalForm[formSym[a_, b_, c_] :> fn[boxify @ a, boxify @ b, boxify @ c]];
+  DefineTemplateBox[formSym, name, boxes, OptionValue[KatexMacroName]]
 ];
 
 _DefineTernaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineLiteralInfixBinaryForm]
+PublicFunction[DefineNAryForm]
+
+Options[DefineNAryForm] = $defineOpts;
 
 SetUsage @ "
-DefineLiteralInfixBinaryForm[symbol$, infixBox$] defines symbol$[arg$1, arg$2] to boxify to %RowBox[{arg$1, infixBox$, arg$2}].
-* No katex macro is set up.
-* The bare head symbol$ just displays as infixBox$.
+DefineNAryForm[symbol$, boxes$] defines symbol$[arg$1, $$, arg$n] to boxify to %TemplateBox[{arg$1, $$, arg$n}, 'symbol$'], \
+which displays as boxes$ where $1, $2, $3 are substituted.
+* No %KatexMacroName option is available, because katex macros do not support variable arity.
+* If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
 "
 
-DefineLiteralInfixBinaryForm[formSym_Symbol, infixBox_] :=
-  DefineStandardTraditionalForm[{
-    formSym :> tagAsMath @ infixBox,
-    formSym[a_, b_] :> tagAsMath @ RBox[MakeQGBoxes @ a, RBox[" ", infixBox, " "], MakeQGBoxes @ b]
-  }];
+DefineNAryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
+  {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
+  {boxify = toSequenceBoxifyFn[OptionValue[Boxification]]},
+  {fn = TBox[##, name]&},
+  attachBoxFunctionDefs[OptionValue[BoxFunction], fn];
+  attachHeadBoxes[OptionValue[HeadBoxes], formSym];
+  DefineStandardTraditionalForm[formSym[seq___] :> fn @ boxify @ seq];
+  DefineTemplateBox[formSym, name, boxes, OptionValue[KatexMacroName]]
+];
 
-_DefineLiteralInfixBinaryForm := BadArguments[];
-
-(**************************************************************************************************)
-
-PublicFunction[DefineLiteralInfixForm]
-
-SetUsage @ "
-DefineLiteralInfixForm[symbol$, infixBox$] defines symbol$[arg$1, arg$2, $$] to boxify to %RowBox[{arg$1, infixBox$, arg$2, infixBox$, $$}].
-* No katex macro is set up.
-* The bare head symbol$ just displays as infixBox$.
-* symbol$[] display as nothing.
-* symbol$[arg$1] displays as arg$1.
-* DefineLiteralInfixForm uses only %DefineStandardTraditionalForm internally.
-"
-
-DefineLiteralInfixForm[formSym_Symbol, infixBox_] :=
-  DefineStandardTraditionalForm[{
-    formSym :> tagAsMath @ infixBox,
-    formSym[] :> "",
-    formSym[e_] :> tagAsMath @ MakeQGBoxes[e],
-    formSym[seq__] :> tagAsMath @ RowBox[Riffle[MakeQGBoxes /@ {seq}, RBox[" ", infixBox, " "]]]
-  }];
-
-_DefineLiteralInfixForm := BadArguments[];
+_DefineNAryForm := BadArguments[];
 
 (**************************************************************************************************)
 
 PublicFunction[DefineInfixForm]
 
+Options[DefineInfixForm] = JoinOptions[$defineOpts, HeadBoxes -> Automatic];
+
 SetUsage @ "
 DefineInfixForm[symbol$, infixBox$] defines symbol$[arg$1, arg$2, $$] to boxify to %TemplateBox[{arg$1, infixBox$, arg$2, infixBox$, $$}, 'symbol$'], \
 which displays as RowBox[{arg$1, infixBox$, arg$2, infixBox$, $$}].
-* A shortened katex macro is set up, which looks like \\sym{arg$1, arg$2, $$}.
 * The bare head symbol$ just displays as infixBox$.
 * symbol$[] display as nothing.
 * symbol$[arg$1] displays as arg$1.
+* If the %KatexMacroName option is not None, a shortened katex macro is set up, which looks like \\sym{arg$1, arg$2, $$}.
+* If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
 "
 
-DefineInfixForm[formSym_Symbol, riffledBox_] := With[
-  {name = SymbolName @ formSym},
-  DefineStandardTraditionalForm[{
-    formSym :> riffledBox,
-    formSym[] :> "",
-    formSym[e_] :> MakeQGBoxes[e],
-    formSym[seq__] :> TBox[Riffle[MakeQGBoxes /@ {seq}, RBox[" ", riffledBox, " "]], name]
-  }];
-  DefineTemplateBox[name -> DBox[RowBox[$1]], {}, #&]
-];
+(* TODO: replace Padding mechanism by unifying mathbin / mathop on the K side with thin space padding on the M side *)
+
+DefineInfixForm[formSym_Symbol, infixBox_, opts:OptionsPattern[]] :=
+  DefineNAryForm[formSym, RiffledBox[infixBox][$$1], HeadBoxes -> infixBox, FilterOptions @ opts];
 
 _DefineInfixForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineLeftRightForm]
+PublicFormBox[Applied]
 
-SetUsage @ "
-DefineLeftRightForm[symbol$, leftBox$, rightBox$] defines symbol$[arg$] to boxify to %TemplateBox[{arg$}, 'symbol'], \
-which displays as %RowBox[{leftBox$, arg$, rightBox$}].
-* A shortened Katex macro is also set up.
-* If they are single characters, Katex \\left and \\right is used for the left and right boxes.
-"
+DefineStandardTraditionalForm[{
+  AppliedForm[fn_, args___] :> AppliedBox[MakeQGBoxes @ fn, MakeQGBoxSequence @ args]
+}];
 
-DefineLeftRightForm[formSym_Symbol, leftBox_, rightBox_] := With[
-  {name = SymbolName @ formSym, lbox = toLrBox[leftBox, "\\left"], rbox = toLrBox[rightBox, "\\right"]},
-  DefineStandardTraditionalForm[
-    formSym[arg_] :> TBox[MakeQGBoxes @ arg, name]
-  ];
-  DefineTemplateBox[name -> RBox[lbox, " ", $1, " ", rbox]]
-];
+AppliedBox[fn_, args__] := TBox[fn, CommaRowBox[args], "appliedForm"];
+AppliedBox[fn_] := TBox[fn, "emptyAppliedForm"];
 
-toLrBox[s_String ? SingleLetterQ, wrapper_] := KatexSwitch[s, wrapper[s]];
-toLrBox[other_, _] := other;
-
-_DefineLeftRightForm := BadArguments[];
+DefineTemplateBox[AppliedForm, "appliedForm", RBox[$1, KBox["(", "\\lparen "], $2, KBox[")", "\\rparen "]], None];
+DefineTemplateBox[AppliedForm, "emptyAppliedForm", RBox[$1, KBox["(", "\\lparen "], KBox[")", "\\rparen "]], None];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineLiteralLeftRightForm]
+PublicFunction[DefineInfixBinaryForm]
+
+Options[DefineInfixBinaryForm] = Options @ DefineInfixForm;
 
 SetUsage @ "
-DefineLiteralLeftRightForm[symbol$, leftBox$, rightBox$] defines symbol$[arg$] to boxify to %RowBox[{leftBox$, arg$, rightBox$}].
-* No katex macro is set up.
-* If they are single characters, Katex \\left and \\right is used for the left and right boxes via the 'katexSwitch' template box.
-* DefineLiteralInfixForm uses only %DefineStandardTraditionalForm internally.
+DefineInfixBinaryForm[symbol$, infixBox$] defines symbol$[arg$1, arg$2] to boxify to %TemplateBox[{arg$1, arg$2}, 'symbol$'], \
+which displays as RowBox[{arg$1, infixBox$, arg$2}].
+* The bare head symbol$ just displays as infixBox$.
+* If the %KatexMacroName option is not None, a shortened katex macro is set up, which looks like \\sym{arg$1, arg$2, $$}.
+* If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
 "
 
-DefineLiteralLeftRightForm[formSym_Symbol, lbox_, rbox_] := With[
-  {name = SymbolName @ formSym},
-  If[SingleLetterQ[lbox],
-    DefineStandardTraditionalForm[
-      formSym[arg_] :> With[{box = MakeQGBoxes @ arg},
-        TBox[
-          RBox[lbox, box, rbox],
-          RBox["left"[lbox], " ", box, " ", "right"[rbox]],
-          "katexSwitch"
-        ]
-      ]
-    ],
-    DefineStandardTraditionalForm[
-      formSym[arg_] :> tagAsMath @ RBox[lbox, MakeQGBoxes @ arg, rbox]
-    ]
-  ];
-];
+DefineInfixBinaryForm[formSym_Symbol, infixBox_, OptionsPattern[]] :=
+  DefineBinaryForm[formSym, RBox[$1, infixBox, $2], HeadBoxes -> infixBox, FilterOptions @ opts];
 
-_DefineLiteralLeftRightForm := BadArguments[];
-
-DefineTemplateBox["katexSwitch" -> $1, {}, "katexSwitch" :> $2];
+_DefineInfixBinaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineRiffledForm]
+PublicFunction[DefineIndexedInfixBinaryForm]
 
 SetUsage @ "
-DefineRiffledForm[symbol$, containerBoxes$, riffleBox$] defines symbol$[$$] to boxify to %TemplateBox[{{$$}}, 'symbol'], \
-which displays as containerBoxes$ with $1 substituted to be a list of boxes riffled with riffleBox$.
-* A shortened Katex macro is also set up.
-* DBox should be used in container$ to ensure the single template argument, a list, is processed correctly.
-* A fourth argument specifies a box function which can be called to construct the underlying boxes directly.
+DefineIndexedInfixBinaryForm[symbol$, boxes$] defines symbol$[arg$1, arg$2] to boxify to %TemplateBox[{arg$1, arg$2}, 'symbol$'], \
+which displays as RowBox[{arg$1, infixBox$, arg$2}], and defines symbol$[arg$1, arg$2, arg$3] to boxify to \
+%TemplateBox[{arg$1, arg$2, arg$3, 'symbol$indexed'], which displays as RowBox[{arg$1, SubscriptBox[infixBox$, arg$3], arg$2}].
 "
 
-DefineRiffledForm[formSym_Symbol, boxes_, riffledBox_, boxFn_:None] := With[
-  {name = SymbolName @ formSym, isSimple = SameQ[boxes, RowBox[$1]]},
-  If[boxFn =!= None,
-    If[isSimple,
-      boxFn[e_] := e; boxFn[] := "",
-      boxFn[e_] := TBox[e, name]
-    ];
-    boxFn[seq___] := TBox[Riffle[{seq}, riffledBox], name];
-    DefineStandardTraditionalForm[formSym[seq___] :> boxFn[MakeQGBoxSequence[seq]]]
-  ,
-    If[isSimple,
-      DefineStandardTraditionalForm[{formSym[] :> "", formSym[e_] :> MakeQGBoxes[e]}],
-      DefineStandardTraditionalForm[{formSym[] :> TBox[{}, name], formSym[e_] :> TBox[List @ MakeQGBoxes[e], name]}]
-    ];
-    DefineStandardTraditionalForm[formSym[seq___] :> TBox[Riffle[MakeQGBoxes /@ {seq}, riffledBox], name]]
-  ];
-  If[isSimple,
-    DefineTemplateBox[name -> DBox[boxes], {}, #&],
-    DefineTemplateBox[name -> DBox[boxes]]
-  ];
-];
+Options[DefineIndexedInfixBinaryForm] = Options @ DefineInfixForm;
 
-_DefineRiffledForm := BadArguments[];
+DefineIndexedInfixBinaryForm[formSym_Symbol, infixBox_, opts:OptionsPattern[]] := (
+  DefineUnaryForm[formSym, OpBox @ SubscriptBox[infixBox, $1], TemplateName -> StringJoin[SymbolName @ formSym, "Head"]];
+  DefineTernaryForm[formSym, RBox[$1, OpBox @ SubscriptBox[infixBox, $3], $2], FilterOptions @ opts];
+);
+
+_DefineIndexedInfixBinaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineLiteralRiffledForm]
+PublicFunction[DefineCommaForm]
+
+PublicOption[HeadBoxes]
+
+Options[DefineCommaForm] = $defineOpts;
 
 SetUsage @ "
-DefineLiteralRiffledForm[symbol$, containerBoxes$, riffleBox$] defines symbol$[$$] to boxify to containerBoxes$ \
-with $1 substituted to be a list of boxes riffled with riffleBox$.
-* No shortened Katex macro is set up.
-* If container$ is RowBox[$1], a %TemplateBox will not be created for zero and single arg cases.
-* A fourth argument specifies a box function which can be called to construct the underlying boxes directly.
-* DefineLiteralRiffledForm uses only %DefineStandardTraditionalForm internally.
-"
+DefineCommaForm[symbol$, boxes$] defines symbol$[arg$1, arg$2, $$] to boxify to %TemplateBox[{arg$1, arg$2, $$}, 'symbol$'], \
+which displays as boxes$ with $1 substituted with CommaRowBox[arg$1, arg$2, $$].
+* A shortened katex macro is set up, which looks like \\sym{arg$1, arg$2, $$}.
+* The option %HeadBoxes can be used to define how symbol% itself should boxify.
+* If the %KatexMacroName option is not None, a shortened katex macro is set up, which looks like \\sym{arg$1, arg$2}.
+* If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
+";
 
-DefineLiteralRiffledForm[formSym_Symbol, containerBoxes_, riffledBox_, boxFn_:None] := With[
-  {containerFn = Construct[Function, containerBoxes] /. $1 :> Riffle[#1, riffledBox]},
-  If[boxFn =!= None,
-    boxFn[seq___] := containerFn @ {seq};
-    DefineStandardTraditionalForm[formSym[seq___] :> tagAsMath @ boxFn[MakeQGBoxSequence[seq]]]
-  ,
-    DefineStandardTraditionalForm[formSym[seq___] :> tagAsMath @ containerFn @ Map[MakeQGBoxes, {seq}]]
-  ];
+DefineCommaForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
+  {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
+  {boxify = toSequenceBoxifyFn[OptionValue[Boxification]]},
+  {fn = TBox[CommaRowBox[##], name]&},
+  attachBoxFunctionDefs[OptionValue[BoxFunction], fn];
+  defineHeadboxes[formSymbol, OptionValue[HeadBoxes]];
+  DefineStandardTraditionalForm[formSym[seq___] :> fn @ boxify @ seq];
+  DefineTemplateBox[formSym, name, boxes, OptionValue[KatexMacroName]]
 ];
 
-_DefineLiteralRiffledForm := BadArguments[];
+_DefineCommaForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineRuleAsMapsTo]
+
+DefineRuleAsMapsTo[head_] := DefineStandardTraditionalForm[
+  head[l___, Rule[lhs_, rhs_], r___] :> MakeBoxes[head[l, MapsToForm[lhs, rhs], r]]
+]
 
 (**************************************************************************************************)
 
 PublicFunction[DefineSymbolForm]
 
+Options[DefineSymbolForm] = $defineOpts
+
 SetUsage @ "
-DefineSymbolForm[symbol$ -> boxes$] defines symbol$ to boxify to %TemplateBox[{}, 'symbol'].
-* A shortened Katex macro is also set up.
+DefineSymbolForm[symbol$ -> boxes$] defines symbol$ to boxify to %TemplateBox[{}, 'symbol$'].
+* If the %KatexMacroName option is not None, a shortened katex macro is set up, which looks like \\sym.
 "
 
 SetListable[DefineSymbolForm];
 
-DefineSymbolForm[sym_Symbol -> boxes_] := With[
-  {lname = LowerCaseFirst @ SymbolName @ sym},
-  DefineStandardTraditionalForm[sym :> SBox[lname]];
-  DefineTemplateBox[lname -> boxes]
+DefineSymbolForm[sym_Symbol -> boxes_, OptionsPattern[]] := With[
+  {name = makeTemplateName[sym, OptionValue[TemplateName]]},
+  DefineStandardTraditionalForm[sym :> SBox[name]];
+  DefineTemplateBox[sym, name, boxes, OptionValue[KatexMacroName]]
 ]
 
 _DefineSymbolForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineLiteralSymbolForm]
+PublicFunction[DefineNamedFunctionSymbolForm]
+
+DefineNamedFunctionSymbolForm = Case[
+  list_List                 := Map[%, list];
+  sym_Symbol                := %[sym -> ToLowerCase @ StringTrimRight[SymbolName @ sym, "Function"]];
+  sym_Symbol -> name_       := DefineStandardTraditionalForm[{
+    sym          :> FunctionBox @ name,
+    sym[args___] :> ToBoxes @ AppliedForm[sym, args]
+  }];
+];
+
+_DefineNamedFunctionSymbolForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PrivateFunction[KConstruct]
+
+KConstruct[str_String] := StringJoin["\\", str, " "];
+KConstruct[str_String, args__] := str[args];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineStyleForm]
+
+Options[DefineStyleForm] = $defineOpts;
 
 SetUsage @ "
-DefineLiteralSymbolForm[symbol$ -> boxes$] defines symbol$ to boxify to boxes$.
-* No shortened Katex macro is set up.
-* DefineLiteralSymbolForm uses only %DefineStandardTraditionalForm internally.
+DefineStyleForm[symbol$, style$] defines symbol$[$$] to boxify to %StyleBox[$$, style$].
+* DefineStyleForm uses %DefineUnaryForm internally.
 "
 
-SetListable[DefineLiteralSymbolForm];
-
-DefineLiteralSymbolForm[sym_Symbol -> boxes_] :=
-  DefineStandardTraditionalForm[sym :> tagAsMath @ boxes];
-
-_DefineLiteralSymbolForm := BadArguments[];
+DefineStyleForm[formSym_, style_, opts:OptionsPattern[]] :=
+  DefineUnaryForm[formSym, StyleBox[$1, style], opts];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineUnaryStyleForm]
+PublicForm[IndexedForm]
 
-SetUsage @ "
-DefineUnaryStyleForm[symbol$, style$] defines symbol$[$$] to boxify to %StyleBox[$$, style$].
-* DefineUnaryStyleForm uses %DefineUnaryForm internally.
-* A third argument specifies a box function which can be called to construct the underlying boxes directly.
-"
+DefineStandardTraditionalForm[{
+  IndexedForm[head_]                  :> MakeQGBoxes @ head,
+  IndexedForm[head_, Null|None]       :> MakeQGBoxes @ IndexedForm[head],
+  IndexedForm[head_, sub_]            :> SubscriptBox[MakeQGBoxes @ head, makeSubSupBoxes @ sub],
+  IndexedForm[head_, sub_, Null|None] :> MakeBoxes @ IndexedForm[head, sub],
+  IndexedForm[head_, sub_, sup_]      :> SubsuperscriptBox[MakeQGBoxes @ head, makeSubSupBoxes @ sub, makeSubSupBoxes @ sup],
+  IndexedForm[head_, Null|None, sup_] :> SuperscriptBox[MakeQGBoxes @ head, makeSubSupBoxes @ sup],
+  (i_IndexedForm)[arg_]               :> RBox[MakeBoxes @ i, " ", MakeQGBoxes @ arg],
+  (i_IndexedForm)[arg_, cond_]        :> RBox[MakeBoxes @ i, " ", MakeQGBoxes @ SuchThatForm[arg, cond]]
+}]
 
-DefineUnaryStyleForm[formSym_, style_, boxSym_:None] :=
-  DefineUnaryForm[formSym, StyleBox[$1, style], boxSym];
+PublicFunction[DefineLegacyIndexedForm]
+
+DefineLegacyIndexedForm[head_Symbol, boxes_] := DefineStandardTraditionalForm[{
+  head                          :> boxes,
+  head[arg_, rest___]           :> MakeBoxes @ IndexedForm[RawBoxes @ boxes, rest][arg],
+  head[arg_, a_, b_, cond_] :> MakeBoxes @ IndexedForm[RawBoxes @ boxes, a, b][arg, cond]
+}]
 
 (**************************************************************************************************)
 
-PublicHead[KatexSwitch]
-
-SetUsage @ "
-KatexSwitch[wlForm$, kForm$] displays as wlForm$ but converts to Katex as kForm$.
-"
-
-toTName[base_, 1] := base;
-toTName[base_, 0] := LowerCaseFirst @ base;
-toTName[base_, n_] := StringJoin[base, IntegerString @ n];
-
-PrivateFunction[toKName]
-
-toKSuffix[n_] := Switch[n, 0, "Ⅹ", 1, "", 2, "Ⅱ", 3, "Ⅲ", 4, "Ⅳ", 5, "Ⅴ"];
-toKName[base_, 0] := LowerCaseFirst @ toKName[base, 1];
-toKName[base_, n_] := StringJoin[StringCases[base, {"Gray" -> "G", RegularExpression @ "[A-Z][A-Za-z]"}], toKSuffix @ n];
-
-General::tboxrulecount = "Too many rules for head ``."
-
-DefineLiteralMacro[registerTemplateBoxName,
-  registerTemplateBoxName[head_, n_] := Quoted[
-    $head = head;
-    headName = SymbolName @ head;
-    nameCount = ReplaceAutomatic[n, KeyIncrement[$templateBoxNameCounts, head]];
-    If[nameCount >= 5, ThrowMessage["tboxrulecount", $head]];
-    $tName = toTName[headName, nameCount];
-    $kName = toKName[headName, nameCount];
-  ]
+SetHoldAllComplete[makeSubSupBoxes]
+makeSubSupBoxes = Case[
+  list_List := MakeBoxes @ SubstackForm @ list;
+  e_        := MakeQGBoxes @ e;
 ];
 
 (**************************************************************************************************)
 
-SetHoldAll[setTemplateBoxForm];
-
-(* this is the most general case, which handles var arg patterns etc.
-we have various special purpose declaration functions to avoid engaging with this *)
-
-setTemplateBoxForm[lhs_ :> rhs_] :=
-  setTemplateBoxForm[lhs, rhs];
-
-setTemplateBoxForm[lhs:(head_Symbol[___]), rhs_] := Scope[
-  
-  registerTemplateBoxName[head, Automatic];
-
-  (* extract pattern variables, but put sequence one at the end
-      head[a_, b_]    ==>  {a, b}
-      head[a_, b__]   ==>  {a, b}
-      head[a__, b_]   ==>  {b, a}
-  *)
-  {syms, vsym} = getPatternSymbols[lhs, rhs];
-  
-  (* tell MakeBoxes how to convert head[a_, b_] into TBox[{a, b}, "head"] *)
-  registerTemplateBoxRules[lhs, syms];
-
-  registerSlotFn[rhs, syms, vsym]
-]
-
-SetHoldAll[getPatternSymbols];
-
-$varPatternP = _BlankSequence | _BlankNullSequence | _Repeated;
-
-TemplateBoxForm::multivar = "Multiple variable-length pattern symbols in `` are not supported.";
-
-getPatternSymbols[lhs_, rhs_] := Scope[
-  syms = Cases[Unevaluated @ lhs, Verbatim[Pattern][sym_Symbol, Except[$varPatternP]] :> sym, Infinity, Heads -> True];
-  varSyms = Cases[Unevaluated @ lhs, Verbatim[Pattern][sym_Symbol, $varPatternP] :> sym, Infinity, Heads -> True];
-  syms = Select[syms, ContainsQ[Unevaluated @ rhs, #]&]; (* drop unused symbols *)
-  If[Length[var] > 1, ThrowMessage["multivar", $head]];
-  {DeleteDuplicates @ Join[syms, varSyms], First[varSyms, None]}
-];
-
-
-(**************************************************************************************************)
-
-SetHoldFirst[registerSlotFn];
-
-registerSlotFn[rhs_, syms_, vsym_] := Scope[
-
-  nsyms = Length @ syms;
-
-  (* convert the RHS to be a pure function that contains only #1, #2, ...
-      head[a_, b_]  :> foo[b, a]                        ==>  foo[#2, #1]&
-      head[a_, b__] :> foo[b, a]                        ==>  foo[##2, #1]&
-      head[a_, b__] :> foo[SequenceRiffle[b, "+"], a]   ==>  foo[TemplateSlotSequence[2, "+"], #1]&
-   *)
-  slotTuple = Slot /@ Range[nsyms];
-  If[vsym =!= None, slotTuple //= ReplacePart[{nsyms, 0} -> SlotSequence]];
-  slotFn = Function[rhs] /. RuleThread[syms, slotTuple];
-  slotFn = slotFn /. HoldPattern[SequenceRiffle[SlotSequence[i_], r_]] :> TemplateSlotSequence[i, r];
-  slotFn = slotFn //. $displayFunctionReplacements;
-  riffleElem = FirstCase[slotFn, TemplateSlotSequence[_, r_] :> r, None, Infinity];
-
-  (* set up $templateBoxDisplayFunction and $katexDisplayFunction *)
-  registerDisplayFunction[slotFn];
-  
-  (* set up katexBoxRules to convert from TBox[{a, b}, "head"] to "head"[a, b]
-     if there is a SlotSequence, we turn it into a tuple
-     if there is a TemplateSlotSequence, we turn into a riffled tuple
-  *)
-  templateToKatexFn = Construct[Function, $kName @@ slotTuple];
-  If[vsym =!= None,
-    seqRule = If[riffleElem =!= None,
-      With[{r = riffleElem}, s_SlotSequence :> Riffle[List[s], r]],
-      s_SlotSequence :> List[s]
-    ];
-    templateToKatexFn = templateToKatexFn /. seqRule;
-  ];
-  registerTemplateToKatexFunction[templateToKatexFn];
-
-  {$tName, $kName}
-];
-
-$displayFunctionReplacements = {
-  TEval[e_]                            :> RuleCondition @ e,
-  (* HoldPattern[TBox[s_Slot][arg_]]      :> TemplateBox[{arg, s}, "ParameterizedTemplateBox"], *)
-  HoldPattern[RBox[r___]]              :> RowBox[{r}],
-  HoldPattern[SBox[s_]]                  :> TemplateBox[{}, s],
-  HoldPattern[TBox[args___, s_]]         :> TemplateBox[{args}, s],
-  HoldPattern[TBoxOp[s_String][args___]] :> TemplateBox[{args}, s]
-};
-
-(**************************************************************************************************)
-
-(* this is the case in which the template wants to processes arguments at boxification time
-before storing them in the TemplateBox. *)
-
-setTemplateBoxForm[lhs:(head_Symbol[___]), With[withClause_, rhs_]] := Scope[
-
-  registerTemplateBoxName[head, Automatic];
-
-  (* get all symbols used in RHS, and injected by With *)
-  {syms, vsym} = getPatternSymbols[lhs, rhs];
-  withSyms = getWithSymbols[withClause];
-
-  (* have MakeBoxes evaluate the With, yielding the right tuple to put in TBox  *)
-  registerStagedTemplateBoxRules[lhs, Evaluate @ syms, Evaluate @ $tName, Evaluate @ withSyms, withClause];
-  
-  (* we continue as the normal setTemplateBoxForm does, where our tuple will now
-  have some additional variables at the beginning *)
-  registerSlotFn[rhs, Join[withSyms, syms], vsym];
-];
-
-SetHoldAll[getWithSymbols];
-
-getWithSymbols[vars__] := Cases[Unevaluated @ {vars}, HoldPattern @ Set[v_Symbol, _] :> v, 2];
-
-(**************************************************************************************************)
-
-(* this is a case in which user declared boxes for a lone symbol, so there are no arguments
-to worry about *)
-
-setTemplateBoxForm[head_Symbol, rhs_] := Scope[
-  
-  registerTemplateBoxName[head, 0];
-  
-  registerTemplateBoxRules[head, {}];
-
-  fn = Function[rhs] //. $displayFunctionReplacements;
-  registerDisplayFunction[fn];
-
-  registerTemplateToKatexFunction[Construct[Function, PrefixSlash @ $kName]];
-
-  {$tName, $kName} (* used by other code sometimes *)
-];
-
-TemplateBoxForm::badspec = "Unknown call setTemplateBoxForm[``]";
-
-setTemplateBoxForm[args___] := (Message[TemplateBoxForm::badspec, SequenceForm[args]]; $Failed);
-
-(**************************************************************************************************)
-
-registerTemplateToKatexFunction[fn_] :=
-  $templateToKatexFunction[$tName] = fn //. KatexSwitch[a_, b_] :> b;
-
-registerTemplateToKatexFunction[] :=
-  $templateToKatexFunction[$tName] = PrefixSlash @ $kName;
-
-(**************************************************************************************************)
-
-(* this takes an arbtirary box function and then processes it to turn it into a templateBoxDisplayFunction
-and a katexDefinition, that will live in stylesheet and prelude respectively *)
-
-registerDisplayFunction[displayFn_] := (
-
-  (* set up $templateBoxDisplayFunction, which defines for MMA frontend will display TBox[{a, b}, "head"] at runtime.
-     will later produce a style definition in a notebook stylesheet. *)
-  $templateBoxDisplayFunction[$tName] = displayFn //. KatexSwitch[a_, b_] :> a;
-
-  (* set up $katexDisplayFunction, which defines how Katex will display "head"[a, b] at runtime.
-     will later produce a \gdef expression that goes in the Katex prelude *)
-  $katexDisplayFunction[$kName] ^= displayFn //. {
-    KatexSwitch[a_, b_] :> b,
-    SlotSequence -> Slot,
-    TemplateSlotSequence[i_, r_] :> Slot[i],
-    RowBox[e_List] :> e
-  };
-);
-
-(**************************************************************************************************)
-
-SetHoldFirst[registerTemplateBoxRules];
-
-registerTemplateBoxRules[lhs_, syms_] :=
-  registerTemplateBoxRules[lhs, syms, $tName];
-
-registerTemplateBoxRules[lhs_, syms_, tName_] :=
-  registerTemplateBoxRules2[lhs, TemplateBox[MakeQGBoxes /@ syms, tName]];
-
-registerTemplateBoxRules[lhs_, {}, tName_] :=
-  registerTemplateBoxRules2[lhs, TemplateBox[{}, tName]];
-
-SetHoldAll[registerStagedTemplateBoxRules];
-
-registerStagedTemplateBoxRules[lhs_, syms_, tName_, withSyms_, withClause__] :=
-  registerTemplateBoxRules2[lhs, With[withClause, TemplateBox[Join[withSyms, MakeQGBoxes /@ syms], tName]]];
-
-registerStagedTemplateBoxRules[lhs_, {}, tName_, withSyms_, withClause__] :=
-  registerTemplateBoxRules2[lhs, With[withClause, TemplateBox[withSyms, tName]]];
-
-SetHoldAll[registerTemplateBoxRules2];
-
-registerTemplateBoxRules2[lhs_, rhs_] := (
-  KeyAppendTo[$expressionToTemplateBoxRules, $head, HoldPattern[lhs] :> rhs];
-  $BoxFormattingHeadQ[$head] = True;
-  MakeBoxes[lhs, StandardForm] := rhs;
-  MakeBoxes[lhs, TraditionalForm] := rhs;
-)
-
-(**************************************************************************************************)
-
-(* this handle both registering a display function and the template to katex conversion, which is
-trivial *)
-
-registerOneArgTemplate[displayFn_] := (
-
-  registerDisplayFunction[displayFn];
-
-  registerTemplateToKatexFunction[];
-
-);
-
-(* this optimizes the case where the katex does nothing, which is most kinds of symbols.
-here we don't bother to register a $katexDisplayFunction, to avoid bloat *)
-
-registerOneArgTemplate[Identity | (#&)] := (
-
-  $templateBoxDisplayFunction[$tName] = (#&);
-
-  registerTemplateToKatexFunction[(#&)];
-);
-
-(**************************************************************************************************)
-(** EXPOSED INTERFACE TO USERS                                                                   **)
-(**************************************************************************************************)
-
-PublicFunction[TemplateBoxForm]
-
-TemplateBoxForm /: SetDelayed[TemplateBoxForm[lhs_], rhs_] :=
-  CatchMessage @ setTemplateBoxForm[lhs, rhs];
-
-(**************************************************************************************************)
-
-(* this takes a constant head that should act like e.g. PiSymbol *)
-
-PublicFunction[DeclareConstantSymbolTemplateBox]
-
-DeclareConstantSymbolTemplateBox[head_ -> rhs_] :=
-  setTemplateBoxForm[head, rhs];
-
-DeclareConstantSymbolTemplateBox[head_, rhs_] :=
-  setTemplateBoxForm[head, rhs];
-
-(**************************************************************************************************)
-
-(* this takes a head that should apply a style *)
-
-PublicFunction[DeclareUnaryTemplateBox]
-
-DeclareUnaryTemplateBox[head_, style_:None] := CatchMessage @ Scope[
-
-  registerTemplateBoxName[head, 1];
-  
-  registerTemplateBoxRules[head[s_], {s}];
-
-  registerOneArgTemplate @ toStyleBoxFn @ style;
-];
-
-toStyleBoxFn = Case[
-  s_String     := StyleBox[#, s]&;
-  fn_Function  := fn;
-  None         := #&;
-];
-
-(**************************************************************************************************)
-
-(* this takes a head that should act like e.g. GraphSymbol, VertexSymbol, etc. *)
-
-PublicFunction[DeclareTypedSymbolTemplateBox]
-
-DeclareTypedSymbolTemplateBox[head_, fn_:None] :=
-  DeclareUnaryTemplateBox[head, fn];
-
-  (**************************************************************************************************)
-
-(* this takes a head that should act like e.g. PathQuiverSymbol *)
-
-PublicFunction[DeclareDerivedSymbolTemplateBox]
-
-DeclareDerivedSymbolTemplateBox[head_, fn_:None] :=
-  DeclareUnaryTemplateBox[head, fn];
-
-(**************************************************************************************************)
-
-(* this takes a head that should act like e.g. VertexListFunction *)
-
-PublicFunction[DeclareFunctionTemplateBox]
-
-DeclareFunctionTemplateBox[head_, rhs_] := Scope[
-
-  $head = head;
-
-  (* Evaluate forces the FunctionBox to evaluate now, since KatexSwitch needs to be literally present *)
-  {$tName, $kName} = setTemplateBoxForm[head, Evaluate @ FunctionBox @ rhs];
-
-  applyRule = HoldPattern[head[args___]] :> TemplateBox[Prepend[MakeQGBoxes /@ {args}, $headBox], "AppliedForm"];
-  applyRule = applyRule /. $headBox -> SBox[$tName];
-  
-  registerTemplateBoxRules2 @@ applyRule;
-];
-
-(**************************************************************************************************)
-
-PublicFunction[DeclareTemplateBoxRules]
-
-(* this is used to define many simultaneous tepmlates via the same codepath as
-TemplateBoxForm[lhs] := rhs *)
-
-DeclareTemplateBoxRules[rules__] :=
-  CatchMessage @ Scan[declareTemplateBoxRule, {rules}];
-
-DeclareTemplateBoxRules::badrule = "Expression `` is not a Rule or RuleDelayed.";
-
-declareTemplateBoxRule = Case[
-  (Rule|RuleDelayed)[lhs_, rhs_]  := setTemplateBoxForm[lhs, rhs];
-  Null                            := Null;
-  other_                          := ThrowMessage["badrule", InputForm @ other];
-];
-
-(**************************************************************************************************)
-
-declareNullaryTemplateBox[head_, boxes_] := Scope[
-  {tName, kName} = setTemplateBoxForm[head, boxes];
-  KatexSwitch[SBox @ tName, PrefixSlash @ kName]
-];
-
-(**************************************************************************************************)
-
-PublicFunction[DeclareNAryRelationTemplateBox]
-
-DeclareNAryRelationTemplateBox[head_, boxes_] := Scope[
-  riff = declareNullaryTemplateBox[head, boxes];
-  setTemplateBoxForm[head[args___], RBox[SequenceRiffle[args, RBox[" ", TEval @ riff, " "]]]];
-];
-
-(**************************************************************************************************)
-
-PublicFunction[DeclareNAryOperatorTemplateBox]
-
-DeclareNAryOperatorTemplateBox[head_, boxes_] :=
-  DeclareNAryRelationTemplateBox[head, boxes];
-
-(**************************************************************************************************)
-
-PublicFunction[DeclareBinaryRelationTemplateBox]
-
-DeclareBinaryRelationTemplateBox[head_, boxes_] := Scope[
-  riff = declareNullaryTemplateBox[head, boxes];
-  setTemplateBoxForm[head[a_, b_], RBox[a, " ", TEval @ riff, " ", b]]
-];
-
-(**************************************************************************************************)
-
-PublicFunction[DeclareIndexedBinaryRelationTemplateBox]
-
-DeclareIndexedBinaryRelationTemplateBox[head_, boxes_] := Scope[
-  riff = declareNullaryTemplateBox[head, boxes];
-  setTemplateBoxForm[head[a_, b_], RBox[a, " ", TEval @ riff, " ", b]];
-  setTemplateBoxForm[head[a_, b_, l_], RBox[a, " ", SubscriptBox[TEval @ riff, l], " ", b]]
-];
-
-(**************************************************************************************************)
-
-PublicFunction[DeclareInfixTemplateBox]
-
-DeclareInfixTemplateBox[head_, boxes_] :=
-  DeclareBinaryRelationTemplateBox[head, boxes];
-
-(**************************************************************************************************)
-
-PublicFunction[DeclareSequenceTemplateBox, DeclareStyledSequenceTemplateBox]
-
-DeclareSequenceTemplateBox[head_, left_, right_] :=
-  setTemplateBoxForm[head[args___], RBox[left, SequenceRiffle[args, ", "], right]];
-
-DeclareStyledSequenceTemplateBox[head_, left_, right_] :=
-  setTemplateBoxForm[
-    head[style_, args___] :> With[
-      {styledL = RuntimeTBox[style, left],
-       styledR = RuntimeTBox[style, left]},
-      RBox[
-        styledL,
-        SequenceRiffle[args, ", "],
-        styledR
-      ]
-    ]
-  ];
-
-(**************************************************************************************************)
-
-PublicFunction[DeclareLocalStyles]
-
-DeclareLocalStyles::taggingrules = "Could not update tagging rules.";
-
-SetHoldAll[DeclareLocalStyles];
-DeclareLocalStyles[e___] := Scope @ Internal`InheritedBlock[{$templateToKatexFunction},
-  $expressionToTemplateBoxRules = <||>;
-  $templateBoxDisplayFunction = $katexDisplayFunction = <||>;
-  $templateBoxNameCounts = <||>;
-  $templateToKatexFunction0 = $templateToKatexFunction;
+PublicFunction[DefineLocalTemplates]
+
+DefineLocalTemplates::taggingrules = "Could not update tagging rules.";
+
+SetHoldAll[DefineLocalTemplates];
+DefineLocalTemplates[e___] := Scope @ Internal`InheritedBlock[{$katexMacros, $katexDisplayFunction},
+  $notebookDisplayFunction = <||>;
+  $katexMacros0 = $katexMacros;
+  $katexDisplayFunction0 = $katexDisplayFunction;
   (e);
   privateStylesheet = GeneratePrivateQuiverGeometryStylesheet[];
   SetOptions[EvaluationNotebook[], StyleDefinitions -> privateStylesheet];
-  katex = EmitKatexFunctionDefinitions[];
+  katex = EmitKatexMacroDefinitions[];
   currentRules = Lookup[Options[EvaluationNotebook[], TaggingRules], TaggingRules, <||>];
   If[!AssociationQ[currentRules], ReturnFailed["taggingrules"]];
-  $newKatexFuncs = KeyDrop[$templateToKatexFunction, Keys @ $templateToKatexFunction0];
-  taggingRules = Join[currentRules, <|"KatexDefinitions" -> katex, "TemplateToKatexFunctions" -> $newKatexFuncs|>];
+  $katexDisplayFunction1 = KeyDrop[$katexDisplayFunction, Keys @ $katexDisplayFunction0];
+  $katexMacros1 = KeyDrop[$katexMacros, Keys @ $katexMacros0];
+  taggingRules = Join[currentRules, <|"KatexDisplayFunctions" -> $katexDisplayFunction1, "KatexMacros" -> $katexMacros1|>];
   SetOptions[EvaluationNotebook[], TaggingRules -> taggingRules];
 ];
 
@@ -950,145 +787,77 @@ DBox[e_] := DynamicBox[e, DestroyAfterEvaluation -> True, TrackedSymbols -> {}];
 
 (**************************************************************************************************)
 
-PublicFunction[RedForm, GreenForm, BlueForm, OrangeForm, PinkForm, TealForm, GrayForm, PurpleForm]
-PublicFunction[LightRedForm, LightGreenForm, LightBlueForm, LightOrangeForm, LightPinkForm, LightTealForm, LightGrayForm, LightPurpleForm]
-PublicFunction[DarkRedForm, DarkGreenForm, DarkBlueForm, DarkOrangeForm, DarkPinkForm, DarkTealForm, DarkGrayForm, DarkPurpleForm]
-PublicFunction[BoldForm, ItalicForm, UnderlinedForm, StruckthroughForm, PlainTextForm, MathTextForm]
+PublicFormBox[Red, Green, Blue, Orange, Pink, Teal, Gray, Purple]
+PublicFormBox[LightRed, LightGreen, LightBlue, LightOrange, LightPink, LightTeal, LightGray, LightPurple]
+PublicFormBox[DarkRed, DarkGreen, DarkBlue, DarkOrange, DarkPink, DarkTeal, DarkGray, DarkPurple, MultisetColor]
 
-PrivateFunction[RedBox, GreenBox, BlueBox, OrangeBox, PinkBox, TealBox, GrayBox, PurpleBox]
-PrivateFunction[LightRedBox, LightGreenBox, LightBlueBox, LightOrangeBox, LightPinkBox, LightTealBox, LightGrayBox, LightPurpleBox]
-PrivateFunction[DarkRedBox, DarkGreenBox, DarkBlueBox, DarkOrangeBox, DarkPinkBox, DarkTealBox, DarkGrayBox, DarkPurpleBox]
-PrivateFunction[BoldBox, ItalicBox, UnderlinedBox, StruckthroughBox, PlainTextBox, MathTextBox]
+PublicFormBox[Bold, Italic, Underlind, Struckthrough, Plaintext, MathText, Roman, Fraktur, Caligraphic, SansSerif, Typewriter]
 
-defineStyleFormAndBox[form_, box_, style_] := With[
-  {tName = SymbolName[form]},
-  {kName = toKName[tName, 0]},
-  MakeBoxes[form[e_], StandardForm]     := box[MakeBoxes[e, StandardForm]];
-  MakeBoxes[form[e_], TraditionalForm]  := box[MakeBoxes[e, TraditionalForm]];
-  box[e_]                               := TemplateBox[{e}, tName];
-  (* TODO: replace this with single call to registerSingleArgTemplateBox *)
-  $templateBoxDisplayFunction[tName]    = toFrontendStyleFunction[style];
-  $templateToKatexFunction[tName]       = Function[kName[#]];
-  $katexDisplayFunction[kName]          = toKatexStyleFunction[style];
+SystemSymbol[ScriptForm]
+PublicSymbol[ScriptBox]
+
+Unprotect[ScriptForm]; (* it's an undocumented system symbol! *)
+
+DefineStyleForm[#1, #3, BoxFunction -> #2]& @@@ ExpressionTable[
+  RedForm             RedBox             $Red
+  GreenForm           GreenBox           $Green
+  BlueForm            BlueBox            $Blue
+  OrangeForm          OrangeBox          $Orange
+  PinkForm            PinkBox            $Pink
+  TealForm            TealBox            $Teal
+  GrayForm            GrayBox            $Gray
+  PurpleForm          PurpleBox          $Purple
+  LightRedForm        LightRedBox        $LightRed
+  LightGreenForm      LightGreenBox      $LightGreen
+  LightBlueForm       LightBlueBox       $LightBlue
+  LightOrangeForm     LightOrangeBox     $LightOrange
+  LightPinkForm       LightPinkBox       $LightPink
+  LightTealForm       LightTealBox       $LightTeal
+  LightGrayForm       LightGrayBox       $LightGray
+  LightPurpleForm     LightPurpleBox     $LightPurple
+  DarkRedForm         DarkRedBox         $DarkRed
+  DarkGreenForm       DarkGreenBox       $DarkGreen
+  DarkBlueForm        DarkBlueBox        $DarkBlue
+  DarkOrangeForm      DarkOrangeBox      $DarkOrange
+  DarkPinkForm        DarkPinkBox        $DarkPink
+  DarkTealForm        DarkTealBox        $DarkTeal
+  DarkGrayForm        DarkGrayBox        $DarkGray
+  DarkPurpleForm      DarkPurpleBox      $DarkPurple
+  MultisetColorForm   MultisetColorBox   RGBColor[{0.73, 0.27, 0.27}]
+  BoldForm            BoldBox            Bold
+  ItalicForm          ItalicBox          Italic
+  UnderlinedForm      UnderlinedBox      Underlined
+  StruckthroughForm   StruckthroughBox   Struckthrough
+  PlainTextForm       PlainTextBox       "MathText"
+  MathTextForm        MathTextBox        "MathTextFont"
+  RomanForm           RomanBox           "RomanMathFont"
+  ScriptForm          ScriptBox          "ScriptMathFont"
+  FrakturForm         FrakturBox         "FrakturMathFont"
+  CaligraphicForm     CaligraphicBox     "CaligraphicMathFont"
+  SansSerifForm       SansSerifBox       "SansSerifMathFont"
+  TypewriterForm      TypewriterBox      "TypewriterMathFont"
 ];
-
-toFrontendStyleFunction = Case[
-  style_                := StyleBox[#1, style]&;
-  KatexForm[style_, _]  := % @ style;
-];
-
-toKatexStyleFunction = Case[
-  color_ ? ColorQ       := % @ StringJoin["textcolor{", ColorHexString @ color, "}"];
-  str_String            := Function[str[#]];
-  KatexForm[_, style_]  := % @ style;
-];
-
-MapApply[
-  defineStyleFormAndBox,
-  {
-    {RedForm,            RedBox,             $Red},
-    {GreenForm,          GreenBox,           $Green},
-    {BlueForm,           BlueBox,            $Blue},
-    {OrangeForm,         OrangeBox,          $Orange},
-    {PinkForm,           PinkBox,            $Pink},
-    {TealForm,           TealBox,            $Teal},
-    {GrayForm,           GrayBox,            $Gray},
-    {PurpleForm,         PurpleBox,          $Purple},
-    {LightRedForm,       LightRedBox,        $LightRed},
-    {LightGreenForm,     LightGreenBox,      $LightGreen},
-    {LightBlueForm,      LightBlueBox,       $LightBlue},
-    {LightOrangeForm,    LightOrangeBox,     $LightOrange},
-    {LightPinkForm,      LightPinkBox,       $LightPink},
-    {LightTealForm,      LightTealBox,       $LightTeal},
-    {LightGrayForm,      LightGrayBox,       $LightGray},
-    {LightPurpleForm,    LightPurpleBox,     $LightPurple},
-    {DarkRedForm,        DarkRedBox,         $DarkRed},
-    {DarkGreenForm,      DarkGreenBox,       $DarkGreen},
-    {DarkBlueForm,       DarkBlueBox,        $DarkBlue},
-    {DarkOrangeForm,     DarkOrangeBox,      $DarkOrange},
-    {DarkPinkForm,       DarkPinkBox,        $DarkPink},
-    {DarkTealForm,       DarkTealBox,        $DarkTeal},
-    {DarkGrayForm,       DarkGrayBox,        $DarkGray},
-    {DarkPurpleForm,     DarkPurpleBox,      $DarkPurple},
-    {BoldForm,           BoldBox,            KatexForm[Bold, "mathbf"]},
-    {ItalicForm,         ItalicBox,          KatexForm[Italic, "mathit"]},
-    {UnderlinedForm,     UnderlinedBox,      KatexForm[Underlined, "underline"]},
-    {StruckthroughForm,  StruckthroughBox,   KatexForm[Struckthrough, "struckthrough"]},
-    {PlainTextForm,      PlainTextBox,       KatexForm["MathText", "textrm"]},
-    {MathTextForm,       MathTextBox,        KatexForm["MathTextFont", "textrm"]}
-  }
-];
-
-PrivateSymbol["$colorNameP"]
-
-$colorNameP = Alternatives[
-  "RedForm", "GreenForm", "BlueForm", "OrangeForm", "PinkForm", "TealForm", "GrayForm", "PurpleForm",
-  "LightRedForm", "LightGreenForm", "LightBlueForm", "LightOrangeForm", "LightPinkForm", "LightTealForm", "LightGrayForm", "LightPurpleForm",
-  "DarkRedForm", "DarkGreenForm", "DarkBlueForm", "DarkOrangeForm", "DarkPinkForm", "DarkTealForm", "DarkGrayForm", "DarkPurpleForm"
-];
-
-MakeBoxes[PlainTextForm[e_], StandardForm]     := PlainTextBox[MakeQGBoxes @ e];
-MakeBoxes[PlainTextForm[e_], TraditionalForm]  := PlainTextBox[MakeQGBoxes @ e];
-MakeBoxes[MathTextForm[e_], StandardForm]      := MathTextBox[MakeQGBoxes @ e];
-MakeBoxes[MathTextForm[e_], TraditionalForm]   := MathTextBox[MakeQGBoxes @ e];
-  
-(**************************************************************************************************)
-
-PrivateFunction[FunctionBox]
-
-FunctionBox[e_String] := KatexSwitch[e, StringJoin["\\operatorname{", e, "}"]];
 
 (**************************************************************************************************)
 
-PublicFormBox[ZNamedFunction]
+PublicFunction[EvaluateTemplateBox, EvaluateTemplateBoxFull]
 
-DefineUnaryForm[ZNamedFunctionForm, KatexSwitch[$1, "operatorname"[$1]], ZNamedFunctionBox]
+EvaluateTemplateBox[expr_] := ReplaceAll[expr, tb:TemplateBox[_List, _String] :> RuleCondition @ evalTB[tb]];
+EvaluateTemplateBoxFull[expr_] := ReplaceRepeated[expr, tb:TemplateBox[_List, _String] :> RuleCondition @ evalTB[tb]];
 
-(**************************************************************************************************)
-
-PublicFormBox[ZSpaceRiffled, ZCommaRiffled, ZRiffled]
-
-DefineStandardTraditionalForm[
-  ZRiffledForm[seq___, r_] :> ZRiffledBox[MakeQGBoxSequence @ seq, MakeQGBoxes @ r]
+evalTB := Case[
+  TemplateBox[args_List, name_String] /; KeyExistsQ[$notebookDisplayFunction, name] := Apply[$notebookDisplayFunction @ name, args];
+  tb:TemplateBox[_List, _String]                                                    := BoxForm`TemplateBoxToDisplayBoxes[tb];
 ];
 
-ZRiffledBox[r_] := "";
-ZRiffledBox[e_, r_] := e;
-ZRiffledBox[seq__, r_] := RowBox @ Riffle[{seq}, r];
+PublicFunction[EvaluateTemplateBoxAsKatex, EvaluateTemplateBoxAsKatexFull]
 
-DefineRiffledForm[ZCommaRiffledForm, RowBox[$1], ", ", ZCommaRiffledBox];
-DefineRiffledForm[ZSpaceRiffledForm, RowBox[$1], " ", ZSpaceRiffledBox];
+EvaluateTemplateBoxAsKatex[expr_] := ReplaceAll[expr, tb:TemplateBox[_List, _String] :> RuleCondition @ evalTBK[tb]];
+EvaluateTemplateBoxAsKatexFull[expr_] := ReplaceRepeated[expr, tb:TemplateBox[_List, _String] :> RuleCondition @ evalTBK[tb]];
 
-(**************************************************************************************************)
-
-PublicFormBox[ZApplied]
-
-DefineStandardTraditionalForm[
-  ZAppliedForm[f_, args___] :> ZAppliedBox[MakeQGBoxes @ f, MakeQGBoxSequence @ args]
-];
-
-DefineTemplateBox[
-  "ZAppliedForm" -> RBox[$1, "(", $2, ")"]
-];
-
-ZAppliedBox[f_, args___] := TBox[f, ZCommaRiffledBox @ args, "ZAppliedForm"]
-
-(**************************************************************************************************)
-
-PublicFunction[EvaluateTemplateBox]
-
-EvaluateTemplateBox = BoxForm`TemplateBoxToDisplayBoxes
-
-(**************************************************************************************************)
-
-PrivateFunction[RuntimeTBox]
-
-(* this isn't right, since KatexSwitch has to evaluate ahead of time *)
-
-RuntimeTBox[param_Symbol, arg_] := With[
-  {name = SymbolName @ param},
-  {kName = toKName[name, 1], tName = toTName[name, 1]},
-  KatexSwitch[TemplateBox[{arg, tName}, "ParameterizedTemplateBox"], kName[arg]]
+evalTBK := Case[
+  TemplateBox[args_List, name_String] /; KeyExistsQ[$katexDisplayFunction, name] := Apply[$katexDisplayFunction @ name, args];
+  other_ := other;
 ];
 
 (**************************************************************************************************)
@@ -1104,3 +873,4 @@ $compactNumberOptions = {
   NegationStyle -> "Color",
   InversionStyle -> UnderBar
 };
+

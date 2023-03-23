@@ -1,95 +1,111 @@
-PublicForm[GeneralLinearAlgebraForm, GeneralLinearGroupForm]
+PublicForm[NamedLieGroup]
 
-declareLieGroupOrAlgebraForm[{GeneralLinearAlgebraForm, GeneralLinearGroupForm}];
+DefineStandardTraditionalForm[{
+  NamedLieGroup[name_String] :> TBox[name, "NamedLieGroup"],
+  NamedLieGroup[name_String, dim_] :> AppliedBox[MakeBoxes @ NamedLieGroup[name], MakeQGBoxes @ dim],
+  NamedLieGroup[name_String, dim_, field_] :> AppliedBox[MakeBoxes @ NamedLieGroup[name], MakeQGBoxes @ dim, fieldOrRingBoxes @ field]
+}];
 
-PublicForm[SpecialLinearAlgebraForm, SpecialLinearGroupForm]
+DefineTemplateBox[NamedLieGroup, "NamedLieGroup", SansSerifBox[$1], None];
 
-declareLieGroupOrAlgebraForm[{SpecialLinearAlgebraForm, SpecialLinearGroupForm}];
+(**************************************************************************************************)
 
-PublicForm[ProjectiveGeneralLinearAlgebraForm, ProjectiveGeneralLinearGroupForm]
+PublicForm[NamedLieAlgebra]
 
-declareLieGroupOrAlgebraForm[{ProjectiveGeneralLinearAlgebraForm, ProjectiveGeneralLinearGroupForm}];
+DefineStandardTraditionalForm[{
+  NamedLieAlgebra[name_String] :> TBox[name, "NamedLieAlgebra"],
+  NamedLieAlgebra[name_String, dim_] :> AppliedBox[MakeBoxes @ NamedLieAlgebra[name], MakeQGBoxes @ dim],
+  NamedLieAlgebra[name_String, dim_, field_] :> AppliedBox[MakeBoxes @ NamedLieAlgebra[name], MakeQGBoxes @ dim, fieldOrRingBoxes @ field]
+}];
 
-PublicForm[ProjectiveSpecialLinearAlgebraForm, ProjectiveSpecialLinearGroupForm]
+DefineTemplateBox[NamedLieAlgebra, "NamedLieAlgebra", FrakturBox[$1], None];
 
-declareLieGroupOrAlgebraForm[{ProjectiveSpecialLinearAlgebraForm, ProjectiveSpecialLinearGroupForm}];
+(**************************************************************************************************)
 
-PublicForm[OrthogonalAlgebraForm, OrthogonalGroupForm]
+fieldOrRingBoxes = Case[
+  f:fieldsP      := MakeBoxes @ FieldSymbol @ f;
+  r:ringsP       := MakeBoxes @ RingSymbol @ r;
+  sr:semiringsP  := MakeBoxes @ SemiringSymbol @ sr;
+  n_Integer      := MakeBoxes @ FiniteFieldSymbol[n];
+  other_         := MakeQGBoxes @ other,
+  {
+    fieldsP     -> Alternatives[Reals, Complexes, Rationals, "R", "C", "Q", "K"],
+    ringsP      -> Alternatives[Integers, "Z"],
+    semiringsP  -> Alternatives[Naturals, "N"]
+  }
+]
 
-declareLieGroupOrAlgebraForm[{OrthogonalAlgebraForm, OrthogonalGroupForm}];
+(**************************************************************************************************)
 
-PublicForm[SpecialOrthogonalAlgebraForm, SpecialOrthogonalGroupForm]
+PublicForm[GeneralLinearGroupForm, SpecialLinearGroupForm, ProjectiveGeneralLinearGroupForm, ProjectiveSpecialLinearGroupForm, OrthogonalGroupForm, SpecialOrthogonalGroupForm, UnitaryGroupForm, SpecialUnitaryGroupForm, SpinGroupForm, PinGroupForm]
+PublicForm[GeneralLinearAlgebraForm, SpecialLinearAlgebraForm, ProjectiveGeneralLinearAlgebraForm, ProjectiveSpecialLinearAlgebraForm, OrthogonalAlgebraForm, SpecialOrthogonalAlgebraForm, UnitaryAlgebraForm, SpecialUnitaryAlgebraForm, SpinAlgebraForm, PinAlgebraForm]
 
-declareLieGroupOrAlgebraForm[{SpecialOrthogonalAlgebraForm, SpecialOrthogonalGroupForm}];
+defineLieGroupAlgebra[name_String, groupSym_Symbol, algebraSym_Symbol] := With[
+  {algebraName = ToLowerCase @ name},
+  DefineStandardTraditionalForm[{
+    groupSym[args___] :>   MakeBoxes @ NamedLieGroup[name, args],
+    algebraSym[args___] :> MakeBoxes @ NamedLieAlgebra[algebraName, args]
+  }];
+];
 
-PublicForm[UnitaryAlgebraForm, UnitaryGroupForm]
+_defineLieGroupAlgebra := BadArguments[];
 
-declareLieGroupOrAlgebraForm[{UnitaryAlgebraForm, UnitaryGroupForm}];
-
-PublicForm[SpecialUnitaryAlgebraForm, SpecialUnitaryGroupForm]
-
-declareLieGroupOrAlgebraForm[{SpecialUnitaryAlgebraForm, SpecialUnitaryGroupForm}];
-
-PublicForm[SpinAlgebraForm, SpinGroupForm]
-
-declareLieGroupOrAlgebraForm[{SpinAlgebraForm, SpinGroupForm}];
-
-PublicForm[PinAlgebraForm, PinGroupForm]
-
-declareLieGroupOrAlgebraForm[{PinAlgebraForm, PinGroupForm}];
-
-PublicForm[SymmetricGroupForm]
-
-declareUnaryForm[SymmetricGroupForm];
+defineLieGroupAlgebra @@@ ExpressionTable[
+  "GL"    GeneralLinearGroupForm              GeneralLinearAlgebraForm
+  "SL"    SpecialLinearGroupForm              SpecialLinearAlgebraForm
+  "PGL"   ProjectiveGeneralLinearGroupForm    ProjectiveGeneralLinearAlgebraForm
+  "PSL"   ProjectiveSpecialLinearGroupForm    ProjectiveSpecialLinearAlgebraForm
+  "O"     OrthogonalGroupForm                 OrthogonalAlgebraForm
+  "SO"    SpecialOrthogonalGroupForm          SpecialOrthogonalAlgebraForm
+  "U"     UnitaryGroupForm                    UnitaryAlgebraForm
+  "SU"    SpecialUnitaryGroupForm             SpecialUnitaryAlgebraForm
+  "Spin"  SpinGroupForm                       SpinAlgebraForm
+  "Pin"   PinGroupForm                        PinAlgebraForm
+]
 
 (**************************************************************************************************)
 
 PublicForm[GroupSymbol]
 
-GroupSymbol[] := GroupSymbol["G"];
-
-declareAlgebraicSymbol[GroupSymbol, $groupoidAliases];
+DefineTaggedForm[GroupSymbol, Aliases -> <|"Z" -> Integers|>]
 
 (**************************************************************************************************)
 
-PublicForm[FreeGroupForm]
+PublicForm[SymmetricGroupForm, AlternatingGroupForm, FreeGroupForm, CyclicGroupForm]
 
-declareUnaryForm[FreeGroupForm];
-
-(**************************************************************************************************)
-
-PublicForm[CyclicGroupForm]
-
-declareBoxFormatting[
-  CyclicGroupForm[n_] :> makeTemplateBox[n, "CyclicGroupForm"]
-]
-
-$TemplateKatexFunction["CyclicGroupForm"] = "cyclicGroup";
+DefineUnaryForm[SymmetricGroupForm, AppliedBox[RomanBox @ "Sym", $1]];
+DefineUnaryForm[AlternatingGroupForm, AppliedBox[RomanBox @ "Alt", $1]];
+DefineUnaryForm[FreeGroupForm, SubscriptBox["F", $1]]
+DefineUnaryForm[CyclicGroupForm, SubscriptBox["\[DoubleStruckCapitalZ]", $1]]
 
 (**************************************************************************************************)
 
 PublicForm[GroupDirectProductForm]
 
-declareInfixSymbol[GroupDirectProductForm, GroupSymbol, True];
+DefineInfixForm[GroupDirectProductForm, WideOpBox @ "\[Times]"];
 
 (**************************************************************************************************)
 
 PublicForm[GroupPresentationSymbol]
 
-declareSymbolForm[GroupPresentationSymbol] // usingCustomKatex["presentation"];
+DefineTaggedForm[GroupPresentationSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[GroupPresentationForm, GroupRelationForm, GroupGeneratorSymbol, GroupRelatorSymbol]
+PublicForm[GroupPresentationForm]
 
-declareBoxFormatting[
+DefineBinaryForm[GroupPresentationForm, AngleBracketBox[$1, "\[MediumSpace]", $PipeBox, "\[MediumSpace]", $2]]
+
+DefineStandardTraditionalForm[
   GroupPresentationForm[lhs_, rhs_] :>
-    TemplateBox[
-      {groupGeneratorBoxes @ lhs,
-       groupRelationSetBoxes @ rhs},
+    TBox[
+      groupGeneratorBoxes @ lhs,
+      groupRelationSetBoxes @ rhs,
       "GroupPresentationForm"
     ]
 ];
+
+(* ^ override the ruels set up by DefineBinaryForm *)
 
 SetHoldAllComplete[groupGeneratorBoxes, groupRelationSetBoxes, groupRelationBoxes];
 
@@ -106,8 +122,6 @@ groupRelationBoxes = Case[
   a_                    := groupRelationTermBoxes @ a;
 ];
 
-$TemplateKatexFunction["GroupPresentationForm"] = "groupPresentation"
-
 groupGeneratorBoxes = Case[
   list_List               := TemplateBox[MapUnevaluated[%, list], "CommaRowForm"];
   s:(symP | _Integer)     := MakeBoxes @ GroupGeneratorSymbol @ s;
@@ -118,193 +132,145 @@ groupGeneratorBoxes = Case[
   symP -> $rawSymbolP
 ]
 
-declareSymbolForm[GroupGeneratorSymbol];
-declareSymbolForm[GroupRelatorSymbol];
+(**************************************************************************************************)
 
-declareBoxFormatting[
-  GroupRelationForm[a_, b_] :>
-    TemplateBox[
-      MapUnevaluated[groupRelationTermBoxes, {a, b}],
-      "GroupRelationForm"
-    ],
-  GroupRelationForm[a_] :>
-    TemplateBox[List @ groupRelationTermBoxes @ a, "GroupRelationForm"],
-  GroupRelationForm[] :>
-    SBox["GroupRelationSymbol"]
-]
+PublicForm[GroupRelationForm]
+
+DefineInfixBinaryForm[GroupRelationForm, OpBox["="], TemplateName -> "BinaryGroupRelationForm", Boxification -> groupRelationTermBoxes]
+DefineTaggedForm[GroupRelationForm, TemplateName -> "UnaryGroupRelationForm", Boxification -> groupRelationTermBoxes]
 
 SetHoldAllComplete[groupRelationTermBoxes];
 
 groupRelationTermBoxes = Case[
-  list_List                   := TemplateBox[MapUnevaluated[%, list], "ImplicitGroupMultiplicationForm"];
-  (Power|PowerForm|GroupPowerForm)[g_, e_]  := TemplateBox[{% @ g, MakeQGBoxes @ e}, "GroupPowerForm"];
-  1                           := MakeBoxes @ GroupElementSymbol["e"];
-  s:symP                      := MakeBoxes @ GroupElementSymbol @ s;
-  GroupInverseForm[e_]        := TemplateBox[List @ % @ e, "GroupInverseForm"];
-  CardinalSymbol[s_]          := MakeBoxes @ GroupElementSymbol @ s;
-  e_ ? unaryWrappedQ          := recurseWrapperBoxes[e, %] /. "InvertedForm" -> "GroupInverseForm";
-  ge_GroupElementSymbol       := MakeBoxes @ ge;
-  ge_GroupIdentitySymbol      := MakeBoxes @ ge;
-  gg_GroupGeneratorSymbol     := MakeBoxes @ gg;
-  gm_GroupMultiplicationForm  := MakeBoxes @ gm;
-  gm_ImplicitGroupMultiplicationForm  := MakeBoxes @ gm;
-  GroupCommutatorForm[a_, b_] := TemplateBox[{% @ a, % @ b}, "GroupCommutatorForm"];
+  list_List                                := TemplateBox[MapUnevaluated[%, list], "ImplicitGroupMultiplicationForm"];
+  (Power|PowerForm|GroupPowerForm)[g_, e_] := TemplateBox[{% @ g, MakeQGBoxes @ e}, "GroupPowerForm"];
+  1                                        := MakeBoxes @ GroupElementSymbol["e"];
+  s:symP                                   := MakeBoxes @ GroupElementSymbol @ s;
+  GroupInverseForm[e_]                     := TemplateBox[List @ % @ e, "GroupInverseForm"];
+  CardinalSymbol[s_]                       := MakeBoxes @ GroupElementSymbol @ s;
+  e_ ? unaryWrappedQ                       := recurseWrapperBoxes[e, %] /. "InvertedForm" -> "GroupInverseForm";
+  ge_GroupElementSymbol                    := MakeBoxes @ ge;
+  ge_GroupIdentitySymbol                   := MakeBoxes @ ge;
+  gg_GroupGeneratorSymbol                  := MakeBoxes @ gg;
+  gm_GroupMultiplicationForm               := MakeBoxes @ gm;
+  gm_ImplicitGroupMultiplicationForm       := MakeBoxes @ gm;
+  GroupCommutatorForm[a_, b_]              := TemplateBox[{% @ a, % @ b}, "GroupCommutatorForm"];
 ,
   symP -> $rawSymbolP
 ];
 
-declareInfixKatexAlias["GroupRelation", "groupRelationIso"];
-
 (**************************************************************************************************)
 
-$TemplateKatexFunction["IdentityElementForm"] = "identityElement"
+PublicForm[GroupGeneratorSymbol, GroupRelatorSymbol]
+
+DefineTaggedForm[{GroupGeneratorSymbol, GroupRelatorSymbol}];
 
 (**************************************************************************************************)
 
 PublicForm[GroupCommutatorForm]
 
-declareBinaryForm[GroupCommutatorForm];
+DefineBinaryForm[GroupCommutatorForm, SquareBracketBox[$1, ", ", $2]];
 
 (**************************************************************************************************)
 
 PublicForm[GroupPowerForm]
 
-declareBinaryForm[GroupPowerForm];
+DefineBinaryForm[GroupPowerForm, SuperscriptBox[$1, $2]];
 
 (**************************************************************************************************)
 
 PublicForm[GroupFunctionSymbol, GroupHomomorphismSymbol]
 
-GroupFunctionSymbol[] := GroupoidFunctionSymbol["\[Pi]"]
-
-declareSymbolForm[GroupFunctionSymbol];
-declareSymbolForm[GroupHomomorphismSymbol];
+DefineTaggedForm[{GroupFunctionSymbol, GroupHomomorphismSymbol}];
 
 (**************************************************************************************************)
 
 PublicForm[GroupoidFunctionSymbol, GroupoidHomomorphismSymbol]
 
-GroupoidFunctionSymbol[] := GroupoidFunctionSymbol["\[Mu]"]
-
-declareSymbolForm[GroupoidFunctionSymbol];
-declareSymbolForm[GroupoidHomomorphismSymbol];
+DefineTaggedForm[{GroupoidFunctionSymbol, GroupoidHomomorphismSymbol}];
 
 (**************************************************************************************************)
 
 PublicForm[GroupoidSymbol]
 
-$groupoidAliases = <|
-  "N" -> "Naturals",
-  "C" -> "Complexes",
-  "R" -> "Reals",
-  "Z" -> "Integers",
-  "Q" -> "Rationals"
-|>
-
-GroupoidSymbol["\[Gamma]"] := PathGroupoidSymbol["Q"];
-
-declareAlgebraicSymbol[GroupoidSymbol, $groupoidAliases];
+DefineTaggedForm[GroupoidSymbol, Aliases -> <|"N" -> Naturals|>];
 
 (**************************************************************************************************)
 
 PublicForm[ActionGroupoidSymbol]
 
-declareSymbolForm[ActionGroupoidSymbol, ActionSymbol];
+DefineTaggedForm[ActionGroupoidSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[ActionSymbol, SelfActionSymbol]
+PublicForm[ActionSymbol, SelfActionForm]
 
-declareSymbolForm[ActionSymbol];
-declareSymbolForm[SelfActionSymbol, GroupSymbol];
+(* SelfActionForm was SelfActionSymbol *)
+
+DefineTaggedForm[ActionSymbol];
+
+DefineUnaryForm[SelfActionForm, HatBox[$1]];
 
 (**************************************************************************************************)
 
 PublicForm[GroupElementSymbol, GroupoidElementSymbol]
 
-GroupElementSymbol[] := GroupElementSymbol["g"];
-GroupoidElementSymbol[] := GroupoidElementSymbol["g"];
-
-declareSymbolForm[GroupElementSymbol];
-declareSymbolForm[GroupoidElementSymbol];
+DefineTaggedForm[{GroupElementSymbol, GroupoidElementSymbol}];
 
 (**************************************************************************************************)
 
 PublicForm[GroupIdentitySymbol, GroupoidIdentitySymbol]
 
-GroupIdentitySymbol[] := GroupIdentitySymbol["e"];
-GroupoidIdentitySymbol[] := GroupoidIdentitySymbol["e"];
-
-declareSymbolForm[GroupIdentitySymbol];
-declareSymbolForm[GroupoidIdentitySymbol];
+DefineSymbolForm[{GroupIdentitySymbol -> "1", GroupoidIdentitySymbol -> "1"}]
+(* What are these for? *)
 
 (**************************************************************************************************)
 
 PublicForm[GroupoidIdentityElement]
 
-declareBinaryForm[GroupoidIdentityElement]
-
-GroupoidIdentityElement[e_] := GroupoidIdentityElement["1", e];
+DefineUnaryForm[GroupoidIdentityElement, SubscriptBox["1", $1]]
 
 (**************************************************************************************************)
 
-PublicForm[GroupInverseForm, GroupoidInverseForm]
+PublicForm[GroupInverseForm]
 
-declareUnaryForm[GroupInverseForm, maybeParen[GroupElementSymbol|GroupGeneratorSymbol]];
-declareUnaryForm[GroupoidInverseForm, maybeParen[GroupoidElementSymbol]];
+DefineUnaryForm[GroupInverseForm, InverseBox[$1]]
 
 (**************************************************************************************************)
 
 PublicForm[GroupMultiplicationForm, ImplicitGroupMultiplicationForm, GroupoidMultiplicationForm]
 
-$grouplikeTerms = Alternatives[
-  GroupElementSymbol, GroupElementSymbol, GroupIdentitySymbol, GroupGeneratorSymbol, GroupPowerForm, GroupInverseForm, PathSymbol, TupleForm,
-  RingElementSymbol, RingBasisElementForm, WordRingElementSymbol, WordRingBasisElementForm
-];
-
-$groupoidlikeTerms = Alternatives[
-  GroupoidElementSymbol, GroupoidIdentitySymbol, GroupIdentitySymbol, GroupElementSymbol, GroupGeneratorSymbol, GroupPowerForm, GroupInverseForm, PathSymbol, TupleForm
-];
-
-declareInfixSymbol[GroupMultiplicationForm, maybeParen @ $grouplikeTerms] // usingCustomKatex["Gmult"];
-declareInfixSymbol[ImplicitGroupMultiplicationForm, maybeParen @ $grouplikeTerms] // usingCustomKatex["iGmult"];
-declareInfixSymbol[GroupoidMultiplicationForm, maybeParen @ $groupoidlikeTerms] // usingCustomKatex["gmult"];
+DefineInfixForm[GroupMultiplicationForm, OpBox @ "\[Star]"];
+DefineInfixForm[ImplicitGroupMultiplicationForm, "\[VeryThinSpace]"];
+DefineInfixForm[GroupoidMultiplicationForm, OpBox @ "\[Star]"];
 
 (**************************************************************************************************)
 
 PublicForm[GroupSmallDotForm, GroupLargeDotForm]
 
-declareInfixSymbol[GroupSmallDotForm, maybeParen @ $grouplikeTerms] // usingCustomKatex["gdot"];
-declareInfixSymbol[GroupLargeDotForm, maybeParen @ $grouplikeTerms] // usingCustomKatex["gDot"];
+DefineInfixForm[GroupSmallDotForm, KBox[OpBox @ "\[CenterDot]", """\cdot """]];
+DefineInfixForm[GroupLargeDotForm, KBox[OpBox @ "\[Bullet]", """\,\raisebox{0.1em}{\tiny∙}\,"""]];
 
 (**************************************************************************************************)
 
 PublicForm[GroupWordRewritingForm]
 
-declareBoxFormatting[
-  GroupWordRewritingForm[args__] :>
-    TemplateBox[
-      MapUnevaluated[groupWordRewritingRuleBox, {args}],
-      "GroupWordRewritingForm"
-  ]
-];
+DefineCommaForm[GroupWordRewritingForm, AngleBracketBox[$1], Boxification -> groupWordRewritingRuleBox]
 
 SetHoldAllComplete[groupWordRewritingRuleBox];
 groupWordRewritingRuleBox = Case[
-  a_ -> b_ := MakeBoxes @ RewritingRuleForm[a, b];
+  a_ -> b_ := MakeBoxes @ MapsToForm[a, b];
   other_   := MakeQGBoxes @ other;
 ];
-
-$TemplateKatexFunction["GroupWordRewritingForm"] = applyRiffled["groupWordRewriting", ","];
 
 (**************************************************************************************************)
 
 PublicForm[SemigroupProductForm]
 
-declareInfixSymbol[SemigroupProductForm] // usingCustomKatex["sgdot"];
+DefineInfixForm[SemigroupProductForm, KBox[OpBox @ "\[SmallCircle]", """\mathbin{\raisebox{0.15em}{\tiny∙}}"""]]
 
 (**************************************************************************************************)
 
 PublicForm[MonoidProductForm]
 
-declareInfixSymbol[MonoidProductForm] // usingCustomKatex["mdot"];
+DefineInfixForm[MonoidProductForm, OpBox @ "\[CenterDot]"]

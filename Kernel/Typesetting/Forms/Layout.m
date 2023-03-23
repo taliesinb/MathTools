@@ -1,16 +1,12 @@
 PublicForm[ConcatenationForm]
 
-declareNAryForm[ConcatenationForm];
-
-$TemplateKatexFunction["ConcatenationForm"] = applyRiffled["concat", " "];
+DefineNAryForm[ConcatenationForm, KBox[RBox[$$1], RiffledBox[" "][$$1]]]
 
 (**************************************************************************************************)
 
 PublicForm[SpacedConcatenationForm]
 
-declareNAryForm[SpacedConcatenationForm];
-
-$TemplateKatexFunction["SpacedConcatenationForm"] = applyRiffled["concat", "\,"];
+DefineInfixForm[SpacedConcatenationForm, KBox[" ", "\\,"]];
 
 (**************************************************************************************************)
 
@@ -33,7 +29,7 @@ declareBoxFormatting[
 
 PublicForm[PadForm]
 
-DefineUnaryForm[PadForm, KatexSwitch[RBox[" ", $1, " "], RBox["\;", $1, "\;"]]]
+DefineUnaryForm[PadForm, KBox[RBox[" ", $1, " "], RBox["\;", $1, "\;"]]]
 (* TODO: migrate away from the old ones, rename the form names *)
 
 (**************************************************************************************************)
@@ -41,31 +37,33 @@ DefineUnaryForm[PadForm, KatexSwitch[RBox[" ", $1, " "], RBox["\;", $1, "\;"]]]
 PublicForm[CommaAndForm]
 
 declareBoxFormatting[
-  CommaAndForm[a_, b_] :> MakeBoxes @ TextAndForm[a, b],
-  CommaAndForm[most__, a_, b_] :> MakeBoxes @ CommaRowForm[most, TextAndForm[a, b]]
+  CommaAndForm[a_] :> tagAsMath @ MakeBoxes @ a,
+  CommaAndForm[a_, b_] :> tagAsMath @ MakeBoxes @ TextAndForm[a, b],
+  CommaAndForm[most__, a_, b_] :> tagAsMath @ MakeBoxes @ CommaRowForm[most, TextAndForm[a, b]]
 ]
 
 (**************************************************************************************************)
 
 PublicForm[TextAndForm]
 
-declareInfixSymbol[TextAndForm] // usingCustomKatex["textAnd"];
+DefineInfixForm[TextAndForm, MathTextBox[" and "]];
 
 (**************************************************************************************************)
 
-PublicForm[CommaRowForm]
+PublicForm[EmSpace, EnSpace]
 
-declareNAryForm[CommaRowForm];
+PrivateVariable[$EmSpaceBox, $EnSpaceBox]
 
-$TemplateKatexFunction["CommaRowForm"] = riffled[","];
+$EmSpaceBox = KBox["\[ThickSpace]\[ThickSpace]\[ThickSpace]\[ThinSpace]", "\\quad "];
+$EnSpaceBox = KBox["\[ThickSpace]\[MediumSpace]", "\\enspace "];
+
+DefineSymbolForm[{EmSpace -> $EmSpaceBox, EnSpace -> $EnSpaceBox}]
 
 (**************************************************************************************************)
 
 PublicForm[SpacedCommaRowForm]
 
-declareNAryForm[SpacedCommaRowForm];
-
-$TemplateKatexFunction["SpacedCommaRowForm"] = riffled[",\;"];
+DefineInfixForm[SpacedCommaRowForm, KBox[",  ", ",\\;"]]
 
 (**************************************************************************************************)
 
@@ -85,61 +83,56 @@ spacerBox[n_] := TemplateBox[{n}, "Spacer1"];
 
 PublicForm[SpacedRowForm]
 
-declareNAryForm[SpacedRowForm];
-
-$TemplateKatexFunction["SpacedRowForm"] = katexAliasRiffled["quad"];
+DefineInfixForm[SpacedRowForm, $EmSpaceBox];
 
 (**************************************************************************************************)
 
 PublicForm[ThinSpacedForm]
 
-declareNAryForm[ThinSpacedForm];
-
-$TemplateKatexFunction["ThinSpacedForm"] = katexAliasRiffled["enspace"];
+DefineInfixForm[ThinSpacedForm, $EnSpaceBox];
 
 (**************************************************************************************************)
 
-PublicForm[MapsToForm]
+PublicForm[RowForm]
 
-DefineLiteralInfixBinaryForm[MapsToForm, "\[RightTeeArrow]"];
-
-(**************************************************************************************************)
-
-PublicForm[RowForm, TermRowForm]
-
-declareNAryForm[RowForm];
-declareNAryForm[TermRowForm];
-
-$TemplateKatexFunction["RowForm"] = riffled[" "];
-$TemplateKatexFunction["TermRowForm"] = riffled[" "];
+DefineInfixForm[RowForm, KBox["\[ThinSpace]", "\\,"]];
 
 (**************************************************************************************************)
 
-PublicForm[PiecewiseForm]
+PublicForm[PiecewiseForm, OtherwiseSymbol]
 
-declareBoxFormatting[
-  PiecewiseForm[cases__Rule] :> makePiecewiseBoxes[{cases}],
-  OtherwiseSymbol :> SBox["OtherwiseSymbol"]
+DefineSymbolForm[OtherwiseSymbol -> KBox[RomanBox["otherwise"], "\\text{otherwise}"]];
+
+DefineStandardTraditionalForm[
+  PiecewiseForm[cases__Rule] :> makePiecewiseBoxes[{cases}]
 ];
+
+(**************************************************************************************************)
 
 SetHoldAllComplete[makePiecewiseBoxes, makePiecewiseRow]
 
 makePiecewiseBoxes[rules_List] := Scope[
   entries = MapUnevaluated[makePiecewiseRow, rules];
-  grid = GridBox[
-    {{"\[Piecewise]", GridBox[
-      entries,
-      ColumnAlignments -> {Left}, ColumnSpacings -> 1.2, ColumnWidths -> Automatic
-    ]}},
-    ColumnAlignments -> {Left}, ColumnSpacings -> 0.5, ColumnWidths -> Automatic
-  ];
-  TemplateBox[List @ grid, "PiecewiseForm"]
-]
+  casesGrid = GridBox[entries, ColumnAlignments -> {Left}, ColumnSpacings -> 1.2, ColumnWidths -> Automatic];
+  TBox[casesGrid, "PiecewiseForm"]
+];
 
-$TemplateKatexFunction["PiecewiseForm"] = katexPiecewise;
-$TemplateKatexFunction["OtherwiseSymbol"] = "\\text{otherwise}"&;
+makePiecewiseRow[All -> value_] :=
+  {MakeQGBoxes @ value, MakeBoxes @ OtherwiseSymbol}
 
-katexPiecewise[GridBox[{{_, GridBox[entries_, ___]}}, ___]] := {
+makePiecewiseRow[case_ -> value_] :=
+  {MakeQGBoxes @ value, MakeQGBoxes @ case};
+
+DefineNotebookDisplayFunction["PiecewiseForm", GridBox[
+  {{"\[Piecewise]", #1}},
+  ColumnAlignments -> {Left}, ColumnSpacings -> 0.5, ColumnWidths -> Automatic
+]&];
+
+(**************************************************************************************************)
+
+DefineKatexDisplayFunction["PiecewiseForm", katexPiecewise[#]&]
+
+katexPiecewise[GridBox[entries_, ___]] := {
   "\\begin{cases}\n",
   katexPiecewiseRow @@@ entries,
   "\\end{cases}\n"
@@ -151,84 +144,27 @@ katexPiecewiseRow[case_, value_] :=
 katexPiecewiseRow[case_, o:SBox["OtherwiseSymbol"]] :=
   {case, " &", o, "\n"};
 
-makePiecewiseRow[All -> value_] :=
-  {MakeQGBoxes @ value, MakeBoxes @ OtherwiseSymbol}
-
-makePiecewiseRow[case_ -> value_] :=
-  {MakeQGBoxes @ value, MakeQGBoxes @ case};
-
 (**************************************************************************************************)
 
 PublicForm[SubstackForm]
 
-declareBoxFormatting[
-  SubstackForm[list_List] :> TemplateBox[
-    List @ GridBox[MapUnevaluated[List @ MakeQGBoxesOrComma @ #&, list], RowSpacings -> 0],
+DefineStandardTraditionalForm[
+  SubstackForm[list_List] :> TBox[
+    GridBox[MapUnevaluated[makeSubstackRow, list], RowSpacings -> 0, BaseStyle -> Small],
     "SubstackForm"
   ]
-]
-
-SetHoldAllComplete[MakeQGBoxesOrComma]
-MakeQGBoxesOrComma = Case[
-  {elems__} := MakeBoxes @ SpacedCommaRowForm @ elems;
-  other_    := MakeQGBoxes @ other
 ];
 
-$TemplateKatexFunction["SubstackForm"] = substackKatex
+SetHoldAllComplete[makeSubstackRow]
+
+makeSubstackRow = Case[
+  {elems__} := List @ MakeBoxes @ RiffledForm[","][elems];
+  other_    := List @ MakeQGBoxes @ other
+];
+
+DefineNotebookDisplayFunction["SubstackForm", #1&];
+
+DefineKatexDisplayFunction["SubstackForm", substackKatex[#]&]
 
 substackKatex[GridBox[entries_, ___]] :=
   "substack" @ Riffle[Catenate @ entries, "\\\\"];
-
-(**************************************************************************************************)
-
-PublicForm[InfixForm]
-
-declareBoxFormatting[
-  InfixForm[symbol_String][args___] :> makeTemplateBox[symbol, args, "InfixForm"],
-  InfixForm[symbol_][args___] :> makeTemplateBox[symbol[], args, "InfixForm"],
-  InfixForm[symbol_String] :> symbol,
-  InfixForm[symbol_] :> MakeBoxes @ symbol[]
-];
-
-$TemplateKatexFunction["InfixForm"] = katexInfix;
-
-katexInfix[op_, rest___] := Riffle[{rest}, RBox["\\,", op, "\\,"]];
-
-(**************************************************************************************************)
-
-PublicForm[StyledInfixForm]
-
-declareBoxFormatting[
-  StyledInfixForm[style_, symbol_][args__] :> makeTemplateBox[style @ symbol[], args, "InfixForm"],
-  StyledInfixForm[style_, symbol_] :> MakeBoxes @ style @ symbol[]
-];
-
-(**************************************************************************************************)
-
-PublicForm[ParenthesesLabeledForm, ParenthesesRepeatedForm, UnderbraceLabeledForm, UnderbraceRepeatedForm, OverbraceLabeledForm, OverbraceRepeatedForm]
-
-declareBoxFormatting[
-  ParenthesesLabeledForm[a_, l_] :> makeTemplateBox[a, l, "ParenthesesLabeledForm"],
-  ParenthesesRepeatedForm[a_, n_] :> makeTemplateBox[a, n, "ParenthesesRepeatedForm"],
-  UnderbraceLabeledForm[a_, l_] :> makeTemplateBox[a, l, "UnderbraceLabeledForm"],
-  UnderbraceRepeatedForm[a_, n_] :> makeTemplateBox[a, n, "UnderbraceRepeatedForm"],
-  OverbraceLabeledForm[a_, l_] :> makeTemplateBox[a, l, "OverbraceLabeledForm"],
-  OverbraceRepeatedForm[a_, n_] :> makeTemplateBox[a, n, "OverbraceRepeatedForm"]
-];
-
-$TemplateKatexFunction["ParenthesesLabeledForm"] = "parenLabeled";
-$TemplateKatexFunction["ParenthesesRepeatedForm"] = "parenRepeated";
-$TemplateKatexFunction["UnderbraceLabeledForm"] = "underLabeled";
-$TemplateKatexFunction["UnderbraceRepeatedForm"] = "underRepeated";
-$TemplateKatexFunction["OverbraceLabeledForm"] = "overLabeled";
-$TemplateKatexFunction["OverbraceRepeatedForm"] = "overRepeated";
-
-(**************************************************************************************************)
-
-PublicForm[ModulusLabeledForm]
-
-declareBoxFormatting[
-  ModulusLabeledForm[a_, m_] :> makeTemplateBox[a, m, "ModulusLabeledForm"]
-];
-
-$TemplateKatexFunction["ModulusLabeledForm"] = "modLabeled";
