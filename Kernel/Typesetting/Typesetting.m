@@ -96,16 +96,16 @@ FlipperBoxes[a_, b_] :=
 
 (**************************************************************************************************)
 
-PublicFunction[TightRowBox, TightColumnBox]
+PublicFunction[TightRowGridBox, TightColumnGridBox]
 
-TightRowBox[list_] :=
+TightRowGridBox[list_] :=
   GridBox[{list},
     GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Top}}},
     GridBoxSpacings  -> {"Rows" -> {0, {0.5}, 0}, "Columns" -> {0, {0.5}, 0}},
     GridFrameMargins -> {{0, 0}, {0, 0}}
   ]
 
-TightColumnBox[list_] :=
+TightColumnGridBox[list_] :=
   GridBox[List /@ list,
     GridBoxAlignment -> {"Columns" -> {{Left}}, "Rows" -> {{Top}}},
     GridBoxSpacings  -> {"Rows" -> {0, {0.5}, 0}, "Columns" -> {0, {0.5}, 0}},
@@ -121,7 +121,7 @@ OpenerColumnBox[a_] := a;
 OpenerColumnBox[a_, b__] := With[
   {a1 = ClickBox[a, open$$ = False],
    a2 = ClickBox[a, open$$ = True]},
-  {a1b = TightColumnBox[Prepend[{b}, a1]]},
+  {a1b = TightColumnGridBox[Prepend[{b}, a1]]},
   DynamicModuleBox[
     {open$$ = 1},
     DynamicBox[
@@ -135,7 +135,7 @@ OpenerColumnBox[a_, b__] := With[
 OpenerColumnBox[a_, b_] := With[
   {a1 = ClickBox[a, open$$ = False],
    a2 = ClickBox[a, open$$ = True]},
-  {a1b = TightColumnBox[Prepend[{b}, a1]]},
+  {a1b = TightColumnGridBox[Prepend[{b}, a1]]},
   DynamicModuleBox[
     {open$$ = 1},
     DynamicBox[

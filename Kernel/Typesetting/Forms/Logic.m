@@ -3,6 +3,8 @@ PublicForm[ExistsForm, ForAllForm]
 existsBox[a_] := RBox["\[Exists]", "\[ThinSpace]", a];
 forAllBox[a_] := RBox["\[ForAll]", "\[ThinSpace]", a];
 
+(* TODO: replace part of this with DefineRestCommaForm *)
+
 DefineStandardTraditionalForm[{
   ExistsForm[a_, rest__] :> TBox[MakeQGBoxes @ a, CommaRowBox @ MakeQGBoxSequence[rest], "ExistsForm"],
   ExistsForm[a_] :> TBox[MakeQGBoxes @ a, "UnconditionalExistsForm"],

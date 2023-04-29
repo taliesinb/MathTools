@@ -325,7 +325,7 @@ printXML[xml_] := Block[{$XMLElementFormatting = False}, CellPrint @ TextCell[xm
 
 xmlOpenerBox[xml_, a_, b_List] := With[
   {a1 = ClickBox[a, If[CurrentValue["ShiftKey"], printXML[xml], open$$ = !TrueQ[open$$]]]},
-  {a1b = TightColumnBox[Prepend[b, a1]]},
+  {a1b = TightColumnGridBox[Prepend[b, a1]]},
   DynamicModuleBox[
     {open$$ = 1},
     DynamicBox[
@@ -340,7 +340,7 @@ ClearAll[xmlElementBoxes];
 
 xmlElementBoxes[xml:XMLElement[str_String, attrs_List, {content_} | content_String]] := With[
   {b1 = ClickBox[xmlElementHeadBox[xml, False], If[CurrentValue["ShiftKey"], printXML @ xml]]},
-  TightRowBox[{b1, xmlElementBoxes[content]}]
+  TightRowGridBox[{b1, xmlElementBoxes[content]}]
 ];
 
 xmlElementBoxes[xml:XMLElement[str_String, attrs_List, {}]] :=
@@ -350,7 +350,7 @@ xmlElementBoxes[xml:XMLElement[str_String, attrs_List, content_List]] := With[
   {b1 = xmlElementHeadBox[xml]},
   xmlOpenerBox[xml,
     b1,
-    Map[TightRowBox[{TemplateBox[{5}, "Spacer1"], xmlElementBoxes[#]}]&, content]
+    Map[TightRowGridBox[{TemplateBox[{5}, "Spacer1"], xmlElementBoxes[#]}]&, content]
   ]
 ];
 

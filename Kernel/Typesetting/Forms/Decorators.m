@@ -32,9 +32,9 @@ applyDecoratedStyle = Case[
     GridBox[{{$style @ left, $style @ ileft, middle, $style @ iright, $style @ right}}, opts];
   GridBox[{{left_, middle___, right_}}, opts___] :=
     GridBox[{{$style @ left, middle, $style @ right}}, opts];
+  UnderscriptBox[a_, b_] := UnderscriptBox[a, $style @ b];
+  "underlinesegment"[a_] := $style @ "underlinesegment"[StyleBox[a, Black]];
 ];
-
-
 
 stripLR = Case[
   s_String := StringTrimLeft[s, {"\\left", "\\right"}];
@@ -48,6 +48,13 @@ evalKatexRepeated = Case[
 ]
 
 (**************************************************************************************************)
+
+PublicForm[Undersegment]
+
+DefineUnaryForm[Undersegment, KBox[
+  UnderscriptBox[$1, "\[LeftRightVector]"],
+  "underlinesegment"[$1]
+]]
 
 (**************************************************************************************************)
 

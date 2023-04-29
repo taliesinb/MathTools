@@ -126,38 +126,6 @@ cellToMarkdown = Case[
   Cell[e_, style:Except["Input" | "Code"], ___, CellTags -> tag_String, ___] :=
     Splice @ {$anchorTemplate @ tag, cellToMarkdownInner0 @ Cell[e, style]};
 
-  (* JS: style applied incorrectly to contents of cell *)
-  Cell[TextData[StyleBox[contents_, style_String]], "Text", ___] :=
-    % @ Cell[contents, style];
-
-  (* JS: cell missing style, can happen in embedded cells *)
-  Cell[b_BoxData] := % @ Cell[b, "Text"];
-
-  (* JS: this is a degenerate kind of cell pasted in another cell *)
-  Cell[TextData[c_Cell], ___] := % @ c;
-
-  (* JS: this handles image-containing cells that are embedded as lines of text *)
-  Cell[TextData[{linesL___String, outCell:$graphicsCell, linesR___String}], s:$textStyleP, ___] :=
-    Splice @ Map[%, {
-      Cell[TextData[{linesL}], s],
-      outCell,
-      Cell[TextData[{linesR}], s]
-    }];
-
-  (* JS: empty cells produce by previous splicing rule *)
-  Cell[TextData[{("" | "\n")...}], ___] := Nothing;
-
-  (* JS: no-op cells *)
-  Cell[TextData[""] | BoxData[""] | "", ___] := Nothing;
-
-  (* JS: the copyright notice *)
-  Cell[BoxData[{linesL___, g_GraphicsBox, linesR___}], s:$textStyleP, ___] :=
-    Splice @ Map[%, {
-      Cell[BoxData[{linesL}], s],
-      Cell[BoxData[g], "Output"],
-      Cell[BoxData[{linesR}], s]
-    }];
-
   c:Cell[CellGroupData[{Cell[_, "Input", ___], Cell[_, "Output", ___]}, Open]] /; TrueQ[$rasterizeInputOutputPairs] :=
     cellToRasterMarkdown @ c;
 
@@ -211,6 +179,8 @@ cellToMarkdownInner1 = Case[
 
   Cell["Under construction.", _]         := bannerToMarkdown @ "UNDER CONSTRUCTION";
   Cell[e_, "Banner"]                     := bannerToMarkdown @ e;
+
+  Cell[BoxData[TemplateBox[{_, str_String}, "StringBlockForm"]], _] := "<pre>\n" <> str <> "\n</pre>";
 
   c:Cell[BoxData[GraphicsBox[TagBox[_, _BoxForm`ImageTag, ___], ___]], _] := cellToRasterMarkdown @ c;
 

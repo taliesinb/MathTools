@@ -72,31 +72,6 @@ ApplyPrivateQuiverGeometryNotebookStyles[] := (
   ];
 );
 
-
-(**************************************************************************************************)
-
-PublicFunction[ApplyQuiverGeometryNotebookStyles]
-
-ApplyQuiverGeometryNotebookStyles[] :=
-  ApplyQuiverGeometryNotebookStyles @ EvaluationNotebook[];
-
-ApplyQuiverGeometryNotebookStyles[nb_NotebookObject] := (SetOptions[nb,
-  StyleDefinitions -> $QuiverGeometryStylesheetPath,
-  DockedCells -> None
-]; nb);
-
-ApplyQuiverGeometryNotebookStyles[dir_String ? DirectoryQ] :=
-  Map[ApplyQuiverGeometryNotebookStyles, Select[StringFreeQ["XXX"]] @ FileNames["*.nb", dir, Infinity]];
-
-ApplyQuiverGeometryNotebookStyles[file_String ? FileQ] := Scope[
-  nb = NotebookOpen[file, Visible -> False];
-  ApplyQuiverGeometryNotebookStyles[nb];
-  SetOptions[nb, Visible -> True];
-  NotebookSave[nb];
-  NotebookClose[nb];
-  file
-];
-
 (**************************************************************************************************)
 
 PublicVariable[UpdateLegacyNotebook]

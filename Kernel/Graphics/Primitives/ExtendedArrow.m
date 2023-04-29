@@ -13,6 +13,8 @@ ArrowheadPosition -> Every[dist] will repeat it every dist!
 ArrowheadExtrusion -> 0.1
 *)
 
+PrivateFunction[extendedArrowBoxes]
+
 extendedArrowBoxes[is3d_, points_, opts___] := Scope[
   UnpackAssociationSymbols[
     {opts} -> $MakeBoxesStyleData,

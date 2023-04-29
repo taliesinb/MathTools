@@ -89,8 +89,8 @@ _                            _          \enspace             
 
 \[NonBreakingSpace]          _          \nobreakspace       _
 \[InvisibleSpace]            _          \phantom{}          _
-\[VeryThinSpace]             _          \vthinspace         _
-\[ThinSpace]                 _          \thinspace          _
+\[VeryThinSpace]             _          \mkern{1pt}         _
+\[ThinSpace]                 _          \mkern{-1pt}        _
 \[MediumSpace]               _          \medspace           _
 \[ThickSpace]                _          \thickspace         _
 \[NegativeVeryThinSpace]     _          \negvthinspace      _
@@ -163,6 +163,10 @@ _                            Reals      \R                  ℝ
 \[CirclePlus]                _          \oplus              ⊕
 \[CircleMinus]               _          \ominus             ⊖
 \[CircleDot]                 _          \odot               ⊙
+_                            _          \ominus             ⊖
+_                            _          \oslash             ⊘
+_                            _          \circledast         ⊛
+_                            _          \circledcircle      ⊚
 \[Times]                     *          \times              ×
 \[Divide]                    /          \divide             ÷
 \[PlusMinus]                 _          \pm                 ±

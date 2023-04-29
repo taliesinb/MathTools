@@ -1,73 +1,92 @@
 PublicForm[TupleSymbol]
 
-declareSymbolForm[TupleSymbol] // usingCustomKatex["tupleSym"];
+DefineTaggedForm[TupleSymbol];
 
 (**************************************************************************************************)
 
 PublicForm[TuplePartForm]
 
-declareBoxFormatting[
-  TuplePartForm[t_, i_] :> makeHintedTemplateBox[t -> maybeParen[TupleSymbol], i, "TuplePartForm"]
-]
+PublicFunction[PartBox]
 
-$TemplateKatexFunction["TuplePartForm"] = "tuplePart";
+PartBox[a_, rest___] := RBox[a, DoubleSquareBracketBox[rest]];
+
+DefineBinaryForm[TuplePartForm, PartBox[$1, $2]];
 
 (**************************************************************************************************)
 
 PublicForm[MatrixPartForm, SubMatrixPartForm]
 
-declareBoxFormatting[
-  MatrixPartForm[m_, i_, j_] :> makeHintedTemplateBox[m -> maybeParen[MatrixSymbol], i -> MatrixRowPartForm, j -> MatrixColumnPartForm, "MatrixPartForm"],
-  SubMatrixPartForm[m_, i_, j_] :> makeHintedTemplateBox[m -> maybeParen[MatrixSymbol], i -> MatrixRowPartForm, j -> MatrixColumnPartForm, "SubMatrixPartForm"]
-]
-
-$TemplateKatexFunction["MatrixPartForm"] = "matrixPart";
-$TemplateKatexFunction["SubMatrixPartForm"] = "subMatrixPart";
-
-(**************************************************************************************************)
-
-PublicForm[MatrixRowPartForm, MatrixColumnPartForm]
-
-declareUnaryWrapperForm[MatrixRowPartForm];
-declareUnaryWrapperForm[MatrixColumnPartForm];
+DefineTernaryForm[MatrixPartForm, PartBox[$1, $2, $3]];
+DefineTernaryForm[SubMatrixPartForm, PartBox[$1, $2, $3]];
 
 (**************************************************************************************************)
 
 PublicForm[MatrixDotForm, MatrixPlusForm]
 
-declareInfixSymbol[MatrixDotForm, maybeParen[MatrixSymbol|TranslationVectorForm|TupleSymbol]]
-declareInfixSymbol[MatrixPlusForm, maybeParen[MatrixSymbol|TranslationVectorForm|TupleSymbol]]
+DefineInfixForm[MatrixDotForm, OpBox["\[CenterDot]"]];
+DefineInfixForm[MatrixPlusForm, OpBox["+"]];
 
 (**************************************************************************************************)
 
 PublicForm[MatrixSymbol]
 
-MatrixSymbol[] := MatrixSymbol["M"];
-
-declareSymbolForm[MatrixSymbol];
+DefineTaggedForm[MatrixSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[SmallMatrixForm, NormalMatrixForm]
+PublicForm[SmallMatrixForm, NormalMatrixForm, PMatrixForm, BMatrixForm, VMatrixForm]
 
-declareBoxFormatting[
-  SmallMatrixForm[array_] :>
-    TemplateBox[MapUnevaluated[matrixRowBoxes, array], "SmallMatrixForm"],
+DefineStandardTraditionalForm[{
+  SmallMatrixForm[array_List]  :> makeMatrixGrid[array, "SmallMatrixForm", FontSize -> Smaller],
+  NormalMatrixForm[array_List] :> makeMatrixGrid[array, "NormalMatrixForm"],
+  PMatrixForm[array_List]      :> makeMatrixGrid[array, "PMatrixForm"],
+  BMatrixForm[array_List]      :> makeMatrixGrid[array, "BMatrixForm"],
+  VMatrixForm[array_List]      :> makeMatrixGrid[array, "VMatrixForm"]
+}];
 
-  NormalMatrixForm[array_] :>
-    TemplateBox[MapUnevaluated[matrixRowBoxes, array], "NormalMatrixForm"]
-];
+SetHoldAllComplete[matrixBoxes, matrixRowBoxes, makeMatrixGrid]
+matrixRowBoxes[row_List] := MapUnevaluated[MakeQGBoxes, row];
 
-SetHoldAllComplete[matrixRowBoxes]
+makeMatrixGrid[array_, templateName_, style___] := TBox[GridBox[
+  MapUnevaluated[matrixRowBoxes, array], BaseStyle -> {style, "QuiverGeometryBase"},
+  ColumnsEqual -> True, RowsEqual -> True,
+  GridBoxSpacings -> {"Columns" -> {{0.3}}, "Rows" -> {{0.3}}}
+], templateName];
 
-matrixRowBoxes[row_List] :=
-  TemplateBox[MapUnevaluated[MakeQGBoxes, row], "MatrixRowForm"];
+DefineNotebookDisplayFunction["SmallMatrixForm", #1&];
+DefineNotebookDisplayFunction["NormalMatrixForm", #1&];
+DefineNotebookDisplayFunction["PMatrixForm", RowBox[{"(", #1, ")"}]&];
+DefineNotebookDisplayFunction["BMatrixForm", RowBox[{"[", #1, "]"}]&];
+DefineNotebookDisplayFunction["VMatrixForm", RowBox[{"\[LeftBracketingBar]", #1, "\[RightBracketingBar]"}]&];
 
-$TemplateKatexFunction["SmallMatrixForm"] = smallMatrixKatex;
-$TemplateKatexFunction["NormalMatrixForm"] = normalMatrixKatex;
-$TemplateKatexFunction["MatrixRowForm"] = matrixRowKatex;
+DefineKatexDisplayFunction["SmallMatrixForm", makeKatexMatrix["smallmatrix", #]&];
+DefineKatexDisplayFunction["NormalMatrixForm", makeKatexMatrix["matrix", #]&];
+DefineKatexDisplayFunction["PMatrixForm", makeKatexMatrix["pmatrix", #]&];
+DefineKatexDisplayFunction["BMatrixForm", makeKatexMatrix["bmatrix", #]&];
+DefineKatexDisplayFunction["VMatrixForm", makeKatexMatrix["vmatrix", #]&];
 
-smallMatrixKatex[rows___] := {"{\\begin{smallmatrix}", Riffle[{rows}, "\\\\"], "\\end{smallmatrix}}"};
-normalMatrixKatex[rows___] := {"{\\begin{pmatrix}", Riffle[{rows}, "\\\\"], "\\end{pmatrix}}"};
+makeKatexMatrix[name_, GridBox[rows_, ___]] := {"{\\begin{" <> name <> "}", Riffle[rowKatex /@ rows, "\\\\"], "\\end{" <> name <> "}}"};
+rowKatex[row_List] := Riffle[row, "&"];
 
-matrixRowKatex[cols___] := Riffle[{cols}, "&"];
+(**************************************************************************************************)
+
+PublicForm[ArraySymbol]
+
+DefineTaggedForm[ArraySymbol];
+
+(**************************************************************************************************)
+
+PublicForm[ArrayPlusForm, ArrayMinusForm, ArraySubtractForm, ArrayTimesForm, ArrayDivideForm]
+
+DefineInfixForm[ArrayPlusForm,  OpBox @ "+"]
+DefineInfixForm[ArrayTimesForm, OpBox @ "\[Times]"]
+DefineInfixBinaryForm[ArraySubtractForm, OpBox @ "-"];
+DefineUnaryForm[ArrayMinusForm, RBox["\[Minus]\!", $1]];
+DefineBinaryForm[ArrayDivideForm,  RBox[$1, KBox[OpBox @ "/", "/"], $2]];
+
+(**************************************************************************************************)
+
+PublicForm[ArrayPartForm]
+
+DefineRestCommaForm[ArrayPartForm, PartBox[$1, $2]];
+

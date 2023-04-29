@@ -99,10 +99,16 @@ InverseBox[b_] := SuperscriptBox[b, RBox["-", "1"]];
 
 (**************************************************************************************************)
 
-PublicFunction[UnderbraceBox, OverbraceBox]
+PublicFunction[Overbracketbox, UnderbracketBox, UnderbraceBox, OverbraceBox, UnderparenthesisBox, OverparenthesisBox]
 
 UnderbraceBox[a_, b_] := KBox[UnderscriptBox[UnderscriptBox[a, "\[UnderBrace]"], b], SubscriptBox["underbrace"[a], b]];
 OverbraceBox[a_, b_] := KBox[OverscriptBox[OverscriptBox[a, "\[OverBrace]"], b], SuperscriptBox["overbrace"[a], b]];
+
+UnderbracketBox[a_, b_] := KBox[UnderscriptBox[UnderscriptBox[a, "\[UnderBracket]"], b], SubscriptBox["underbracket"[a], b]];
+OverbracketBox[a_, b_] := KBox[OverscriptBox[OverscriptBox[a, "\[OverBracket]"], b], SuperscriptBox["overbracket"[a], b]];
+
+UnderparenthesisBox[a_, b_] := KBox[UnderscriptBox[UnderscriptBox[a, "\[UnderParenthesis]"], b], SubscriptBox["undergroup"[a], b]];
+OverparenthesisBox[a_, b_] := KBox[OverscriptBox[OverscriptBox[a, "\[OverParenthesis]"], b], SuperscriptBox["overgroup"[a], b]];
 
 (**************************************************************************************************)
 
@@ -641,7 +647,6 @@ Options[DefineCommaForm] = $defineOpts;
 SetUsage @ "
 DefineCommaForm[symbol$, boxes$] defines symbol$[arg$1, arg$2, $$] to boxify to %TemplateBox[{arg$1, arg$2, $$}, 'symbol$'], \
 which displays as boxes$ with $1 substituted with CommaRowBox[arg$1, arg$2, $$].
-* A shortened katex macro is set up, which looks like \\sym{arg$1, arg$2, $$}.
 * The option %HeadBoxes can be used to define how symbol% itself should boxify.
 * If the %KatexMacroName option is not None, a shortened katex macro is set up, which looks like \\sym{arg$1, arg$2}.
 * If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
@@ -658,6 +663,32 @@ DefineCommaForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
 ];
 
 _DefineCommaForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[DefineRestCommaForm]
+
+Options[DefineRestCommaForm] = $defineOpts;
+
+SetUsage @ "
+DefineRestCommaForm[symbol$, boxes$] defines symbol$[arg$1, arg$2, $$] to boxify to %TemplateBox[{arg$1, arg$2}, 'symbol$'], \
+which displays as boxes$ with $2 substituted with CommaRowBox[arg$1, arg$2, $$].
+* The option %HeadBoxes can be used to define how symbol% itself should boxify.
+* If the %KatexMacroName option is not None, a shortened katex macro is set up, which looks like \\sym{arg$1, arg$2}.
+* If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
+";
+
+DefineRestCommaForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
+  {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
+  {boxify = toSequenceBoxifyFn[OptionValue[Boxification]]},
+  {fn = TBox[#1, CommaRowBox[##2], name]&},
+  attachBoxFunctionDefs[OptionValue[BoxFunction], fn];
+  defineHeadboxes[formSymbol, OptionValue[HeadBoxes]];
+  DefineStandardTraditionalForm[formSym[seq__] :> fn @ boxify @ seq];
+  DefineTemplateBox[formSym, name, boxes, OptionValue[KatexMacroName]]
+];
+
+_DefineRestCommaForm := BadArguments[];
 
 (**************************************************************************************************)
 
@@ -721,8 +752,21 @@ DefineStyleForm[symbol$, style$] defines symbol$[$$] to boxify to %StyleBox[$$, 
 * DefineStyleForm uses %DefineUnaryForm internally.
 "
 
-DefineStyleForm[formSym_, style_, opts:OptionsPattern[]] :=
+DefineStyleForm[formSym_, style_, opts:OptionsPattern[]] := (
+  $styleFormData[formSym] = style;
   DefineUnaryForm[formSym, StyleBox[$1, style], opts];
+);
+
+(**************************************************************************************************)
+
+PrivateFunction[StyleFormHeadQ, StyleFormData]
+
+$styleFormData = UAssociation[];
+
+StyleFormHeadQ[s_Symbol] := StyleFormData[s] =!= None;
+StyleFormHeadQ[_] := False;
+
+StyleFormData[s_Symbol] := Lookup[$styleFormData, s, None];
 
 (**************************************************************************************************)
 
@@ -769,7 +813,6 @@ DefineLocalTemplates[e___] := Scope @ Internal`InheritedBlock[{$katexMacros, $ka
   (e);
   privateStylesheet = GeneratePrivateQuiverGeometryStylesheet[];
   SetOptions[EvaluationNotebook[], StyleDefinitions -> privateStylesheet];
-  katex = EmitKatexMacroDefinitions[];
   currentRules = Lookup[Options[EvaluationNotebook[], TaggingRules], TaggingRules, <||>];
   If[!AssociationQ[currentRules], ReturnFailed["taggingrules"]];
   $katexDisplayFunction1 = KeyDrop[$katexDisplayFunction, Keys @ $katexDisplayFunction0];
@@ -791,7 +834,7 @@ PublicFormBox[Red, Green, Blue, Orange, Pink, Teal, Gray, Purple]
 PublicFormBox[LightRed, LightGreen, LightBlue, LightOrange, LightPink, LightTeal, LightGray, LightPurple]
 PublicFormBox[DarkRed, DarkGreen, DarkBlue, DarkOrange, DarkPink, DarkTeal, DarkGray, DarkPurple, MultisetColor]
 
-PublicFormBox[Bold, Italic, Underlind, Struckthrough, Plaintext, MathText, Roman, Fraktur, Caligraphic, SansSerif, Typewriter]
+PublicFormBox[Bold, Italic, Underlined, Struckthrough, Plaintext, MathText, Roman, Fraktur, Caligraphic, SansSerif, Typewriter]
 
 SystemSymbol[ScriptForm]
 PublicSymbol[ScriptBox]
@@ -825,6 +868,7 @@ DefineStyleForm[#1, #3, BoxFunction -> #2]& @@@ ExpressionTable[
   DarkPurpleForm      DarkPurpleBox      $DarkPurple
   MultisetColorForm   MultisetColorBox   RGBColor[{0.73, 0.27, 0.27}]
   BoldForm            BoldBox            Bold
+  UnderlinedForm      Underlinedbox      Underlined
   ItalicForm          ItalicBox          Italic
   UnderlinedForm      UnderlinedBox      Underlined
   StruckthroughForm   StruckthroughBox   Struckthrough

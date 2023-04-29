@@ -512,33 +512,34 @@ equationGridFormBoxes[rows_, {alignment_, rowSpacings_, colSpacings_}] :=
   ];
 
 equationGridRow = Case[
-  Divider          := {"---"};
-  e_List           := MapUnevaluated[MakeQGBoxesOrNull, e];
-  Aligned[e_]      := % @ List @ Aligned @ e;
-  e_EqualForm      := riffledEqGridRow["=", e];
-  e_NotEqualForm   := riffledEqGridRow["\[NotEqual]", e];
-  e_DefEqualForm   := riffledEqGridRow["≝", e];
-  e_DotEqualForm := riffledEqGridRow["≐", e];
-  e_ColonEqualForm := riffledEqGridRow["≔", e];
-  e_SyntaxEqualForm := riffledEqGridRow["≑", e];
+  Divider                := {"---"};
+  e_List                 := MapUnevaluated[MakeQGBoxesOrNull, e];
+  Aligned[e_]            := % @ List @ Aligned @ e;
+  e_EqualForm            := riffledEqGridRow["=", e];
+  e_NotEqualForm         := riffledEqGridRow["\[NotEqual]", e];
+  e_DefEqualForm         := riffledEqGridRow["≝", e];
+  e_DotEqualForm         := riffledEqGridRow["≐", e];
+  e_ColonEqualForm       := riffledEqGridRow["≔", e];
+  e_SyntaxEqualForm      := riffledEqGridRow["≑", e];
   e_IdenticallyEqualForm := riffledEqGridRow["\[Congruent]", e];
-  e_Less           := riffledEqGridRow["<", e];
-  e_Greater        := riffledEqGridRow[">", e];
-  e_LessEqual      := riffledEqGridRow["≤", e];
-  e_GreaterEqual   := riffledEqGridRow["≥", e];
-  e_Subset         := riffledEqGridRow["\[Subset]", e];
-  e_SubsetEqual    := riffledEqGridRow["\[SubsetEqual]", e];
-  e_Superset       := riffledEqGridRow["\[Superset]", e];
-  e_SupersetEqual  := riffledEqGridRow["\[SupersetEqual]", e];
-  e_ElementOfForm  := riffledEqGridRow["\[Element]", e];
-  e_AndForm        := riffledEqGridRow["\[And]", e];
-  e_OrForm         := riffledEqGridRow["\[Or]", e];
-  e_ImpliesForm    := riffledEqGridRow["\[Implies]", e];
-  e_EquivalentForm := riffledEqGridRow["\[Equivalent]", e];
-  e_IsomorphicForm := riffledEqGridRow["\[TildeEqual]", e];
-  e_HomeomorphicForm := riffledEqGridRow["\[TildeFullEqual]", e];
-  e_BijectiveForm  := riffledEqGridRow["\[TildeTilde]", e];
-  e_RewriteForm    := riffledEqGridRow["\[Rule]", e];
+  e_Less                 := riffledEqGridRow["<", e];
+  e_Greater              := riffledEqGridRow[">", e];
+  e_LessEqual            := riffledEqGridRow["≤", e];
+  e_GreaterEqual         := riffledEqGridRow["≥", e];
+  e_Subset               := riffledEqGridRow["\[Subset]", e];
+  e_SubsetEqual          := riffledEqGridRow["\[SubsetEqual]", e];
+  e_Superset             := riffledEqGridRow["\[Superset]", e];
+  e_SupersetEqual        := riffledEqGridRow["\[SupersetEqual]", e];
+  e_ElementOfForm        := riffledEqGridRow["\[Element]", e];
+  e_AndForm              := riffledEqGridRow["\[And]", e];
+  e_OrForm               := riffledEqGridRow["\[Or]", e];
+  e_ImpliesForm          := riffledEqGridRow["\[Implies]", e];
+  e_EquivalentForm       := riffledEqGridRow["\[Equivalent]", e];
+  e_IsomorphicForm       := riffledEqGridRow["\[TildeEqual]", e];
+  e_HomeomorphicForm     := riffledEqGridRow["\[TildeFullEqual]", e];
+  e_BijectiveForm        := riffledEqGridRow["\[TildeTilde]", e];
+  e_RewriteForm          := riffledEqGridRow["\[Rule]", e];
+  e_MapsBetweenForm      := riffledEqGridRow["\[LeftRightArrow]", e];
 ];
 
 riffledEqGridRow[div_, _[args__]] :=
@@ -563,19 +564,19 @@ $equationSymbolRules = {
   "\[NotEqual]"                                   -> "&\\neq ",
   "+"                                             -> "&+ ",
   "\[Element]"                                    -> "&\\in ",
-  "≔" | SBox["ColonEqualSymbol"]                  -> "&\\coloneqq ",
-  "≐" | SBox["DotEqualSymbol"]                    -> "&\\doteq ",
-  "≑" | SBox["SyntaxEqualSymbol"]                 -> "&\\syntaxEqualSymbol ",
-  ":="                                            -> "&\\defEqualSymbol ", (* LEGACY *)
-  "≝" | SBox["DefEqualSymbol"]                    -> "&\\defEqualSymbol ",
+  "≔"                                             -> "&\\coloneqq ",
+  "≐"                                             -> "&\\doteq ",
+  "≑"                                             -> "&≝",
+  "≝"                                             -> "&≝",
   "---"                                           -> "\\hline",
   "\[Subset]"                                     -> "&\\subset ",
   "\[SubsetEqual]"                                -> "&\\subseteq ",
   "\[Superset]"                                   -> "&\\supset ",
   "\[SupersetEqual]"                              -> "&\\supseteq ",
   "where"                                         -> "&\\text{where} ",
-  "\[TildeEqual]" | SBox["IsomorphicSymbol"]      -> "&\\isomorphicSymbol",
-  "\[TildeFullEqual]" | SBox["HomeomorphicSymbol"]  -> "&\\homeomorphicSymbol",
+  "\[TildeEqual]"                                 -> "&\[TildeEqual]",
+  "\[TildeFullEqual]"                             -> "&\[TildeFullEqual]",
+  "\[LeftRightArrow]"                             -> "&\[LeftRightArrow]",
   "\[TildeTilde]"                                 -> "&\[TildeTilde] ",
   "=>"                                            -> "&\[Implies] ",
   "\[Implies]"                                    -> "&\[Implies] ",

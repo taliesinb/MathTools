@@ -1,22 +1,10 @@
-PublicVariable[$KatexPrelude, $KatexPreludeFile]
+PublicVariable[$KatexPrelude]
 
-SetInitialValue[$KatexPreludeFile, "KatexPrelude.tex"];
+$KatexPrelude := computeKatexPrelude[];
 
-$KatexPrelude := computeKatexPrelude[$KatexPreludeFile];
-
-computeKatexPrelude[file_] := computeKatexPrelude[file] = Scope[
-  base = ImportUTF8 @ LocalPath["Kernel", "Markdown", file];
-  add = EmitKatexMacroDefinitions[];
-  StringJoin[base, "\n\n", add]
-];
-
-(**************************************************************************************************)
-
-PublicFunction[EmitKatexMacroDefinitions]
-
-EmitKatexMacroDefinitions[] := Scope[
+computeKatexPrelude[] := Scope[
   defs = KeyValueMap[toKatexMacroDefinition, $katexMacros];
-  StringRiffle[defs, "\n"]
+  StringRiffle[defs, "  "]
 ];
 
 toSlotStr = <|1 -> "#1", 2 -> "#2", 3 -> "#3", 4 -> "#4", 5 -> "#5"|>

@@ -12,6 +12,16 @@ DefineInfixForm[MonoidalProductForm, OpBox @ "\[CircleTimes]"]
 
 (**************************************************************************************************)
 
+PublicForm[NaryMonoidalFunctionForm]
+
+DefineUnaryForm[NaryMonoidalFunctionForm, SuperscriptBox["\[CircleTimes]", $1]];
+
+DefineStandardTraditionalForm[
+  n_NaryMonoidalFunctionForm[args___] :> MakeBoxes @ AppliedForm[n, args]
+];
+
+(**************************************************************************************************)
+
 PublicForm[MorphismForm, NamedMorphismForm]
 
 DefineBinaryForm[MorphismForm, RBox[$1, OpBox["\[Rule]"], $2], BoxFunction -> MorphismBox]

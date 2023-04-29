@@ -221,8 +221,8 @@ QuiverGeometry`Shortcuts`Arr[x_, y_] := MorphismForm[x, y];
 QuiverGeometry`Shortcuts`Arr[l_, x_, y_] := NamedMorphismForm[l, x, y];
 
 decSymTable["$C#",              CategorySymbol,                             $scriptCapitals];
-decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzst"];
-symbolTable["$IdA#",            IdArrow[CategoryObjectSymbol[#]]&,          "abcdeuvwxyzst"];
+decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzstABCDEUVWXYZST"];
+symbolTable["$IdA#",            IdArrow[CategoryObjectSymbol[#]]&,          "01abcdeuvwxyzstABCDEUVWXYZST"];
 decSymTable["$A#",              CategoryArrowSymbol,                        "efghjklmnpqrstuvw"];
 
 QuiverGeometry`Shortcuts`$Ostar = CategoryObjectSymbol["*"];
@@ -263,7 +263,9 @@ symbolTable["$gvtail#1",        VertexSymbol[#1[TailVertexSymbol]]&,        Mayb
 decSymTable["$ge#",             EdgeSymbol,                                 $rom, "e"];
 symbolTable["$ge#1#2",          EdgeSymbol[#2[#1]]&,                        $roman, $Style];
                     
-decSymTable["$M#",              MatrixSymbol,                               $ROM <> "I", "ABCMXYZ"];
+decSymTable["$M#",              MatrixSymbol,                               $ROM <> "I", "ABCDMNPQRSTUVWXYZ"];
+
+decSymTable["$Arr#",            ArraySymbol,                                $ROM <> "I", "ABCDMNPQRSTUVWXYZ"];
 
 $coloredCards = "rgb" -> {QuiverGeometry`Shortcuts`$crr, QuiverGeometry`Shortcuts`$cgg, QuiverGeometry`Shortcuts`$cbb};
 decSymTable["$MM#",             MatrixSymbol[Subscript["M", #]]&,           $coloredCards];
@@ -408,7 +410,7 @@ symbolTable["$VsR#",            RealVectorSpaceForm,                        $fie
 symbolTable["$VsC#",            ComplexVectorSpaceForm,                     $fieldLetters, $Dimensions];
     
 $cellRingLetters = "kKRCQZNQ";
-$matrixDims =
+
 symbolTable["$GL#1#2",          GeneralLinearGroupForm,                     $Dimensions, $cellRingLetters];
 symbolTable["$SL#1#2",          SpecialLinearGroupForm,                     $Dimensions, $cellRingLetters];
 symbolTable["$SO#1#2",          SpecialOrthogonalGroupForm,                 $Dimensions, $cellRingLetters];
@@ -590,3 +592,6 @@ makeSym["EGP", ExtendedGraphPlot];
 makeSym["EG", ExtendedGraph];
 
 makeSym["PS", ToPrettifiedString]
+
+makeSym["PCF", PreformattedCodeForm]
+makeSym["NAF", NestedArrayForm]

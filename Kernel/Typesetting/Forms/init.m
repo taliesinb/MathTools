@@ -177,35 +177,6 @@ declareNAryForm[symbol_Symbol, empty_:None, sep_:" "] := With[
   $TemplateKatexFunction[symbolName] = applyRiffled[katexName, sep];
 ];
 
-(**************************************************************************************************)
-
-PrivateFunction[declareCommaRiffledForm, applyStyledRiffled, declareStyledCommaRiffledForm]
-
-declareCommaRiffledForm[symbol_, katex_] := With[
-  {formName = SymbolName[symbol]},
-  declareBoxFormatting[
-    symbol[args___] :> makeTemplateBox[args, formName]
-  ];
-  $TemplateKatexFunction[formName] = applyRiffled[katex, ","];
-];
-
-getStyleHead[style_] := Scope[
-  fn = Lookup[$TemplateKatexFunction, style, $templateToKatexMacro @ style];
-  Replace[fn, {
-    (s_String | Function[s_[#]]) :> PrefixSlash[s]
-  }]
-];
-
-applyStyledRiffled[katex_, sep_][style_, args___] :=
-  katex[getStyleHead[style], riffled[sep][args]];
-
-declareStyledCommaRiffledForm[symbol_, katex_] := With[
-  {formName = SymbolName[symbol]},
-  declareBoxFormatting[
-    symbol[style_][args___] :> MapAt[Prepend[SymbolName @ style], 1] @ makeTemplateBox[args, formName]
-  ];
-  $TemplateKatexFunction[formName] = applyStyledRiffled[katex, ","]
-];
 
 (**************************************************************************************************)
 
@@ -343,6 +314,9 @@ toTypedSymbol = Case[
   arg_                              := MakeQGBoxes @ arg
 ]
 
+
+(* TODO: USE InputAliases!!! *)
+
 (**************************************************************************************************)
 
 PublicForm[ClassTaggedForm]
@@ -367,4 +341,28 @@ declareBoxFormatting[
   RawSymbolForm[p_] :>
     rawSymbolBoxes @ p
 ];
+
+(**************************************************************************************************)
+
+PublicForm[PreformattedCodeForm]
+
+declareBoxFormatting[
+  PreformattedCodeForm[s_String] :> preformattedCodeBoxes[s]
+];
+
+(*
+─
+-─―‒-–—⸻⸺
+─
+*)
+
+PrivateFunction[preformattedCodeBoxes, fixExtensibleChars]
+
+preformattedCodeBoxes[str_String] := Scope[
+  boxes = fixExtensibleChars @ ToString[str, InputForm];
+  TemplateBox[{Construct[InterpretationBox, boxes, str], str}, "StringBlockForm"]
+];
+
+fixExtensibleChars[str_String] := StringReplace[str, {"\[VerticalLine]" -> "⎥", "\[HorizontalLine]" -> "—"}];
+
 

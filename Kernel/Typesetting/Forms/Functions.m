@@ -18,7 +18,7 @@ PartialFunctionSignatureForm[f_, a_List, b_] :=
 PartialFunctionSignatureForm[f_, a_, b_List] :=
   PartialFunctionSignatureForm[f, a, TupleForm @@ b];
 
-DefineTernaryForm[PartialFunctionSignatureForm, RBox[$1, OpBox @ ":", $2, OpBox @ "\[RightVector]", $3], KatexMacroName -> "pfs"];
+DefineTernaryForm[PartialFunctionSignatureForm, RBox[$1, OpBox @ ":", $2, OpBox @ "\[RightVector]", $3]];
 
 (**************************************************************************************************)
 
@@ -206,3 +206,8 @@ PublicForm[MapsToForm]
 
 DefineInfixBinaryForm[MapsToForm, WideOpBox @ "\[RightTeeArrow]"];
 
+(**************************************************************************************************)
+
+PublicForm[MapsBetweenForm]
+
+DefineInfixBinaryForm[MapsBetweenForm, WideOpBox @ "\[LeftRightArrow]"];

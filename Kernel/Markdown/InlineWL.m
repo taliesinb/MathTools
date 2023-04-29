@@ -26,18 +26,39 @@ ToMarkdownString::inlinewlmsg = "Inline WL \"``\" generated messages while evalu
 
 PrivateFunction[toInlineExpression]
 
+checkedToExpression[str_, form_] :=
+  Quiet @ Check[ToExpression[str, form, Hold], $Failed];
+
+(* tuples, very common *)
+checkedToExpression[RowBox[{"(", RowBox[list:{Repeated[PatternSequence[_, ","]], _}], ")"}], StandardForm] :=
+  Replace[
+    Construct[
+      Hold,
+      TupleForm @@ Map[checkedToExpression[#, StandardForm]&, Part[list, 1;;-1;;2]]
+    ],
+    {Hold[h_] :> h},
+    {2}
+  ];
+
+SetHoldComplete[singleScratchSymbolQ]
+
+singleScratchSymbolQ[s_Symbol] := Context[Unevaluated @ s] === "QuiverGeometryPackageLoader`Scratch`" && StringLength[SymbolName[Unevaluated @ s]] === 1;
+singleScratchSymbolQ[_] := False;
+
 toInlineExpression[str_, form_] := Block[
   {$Context = "QuiverGeometryPackageLoader`Scratch`",
    $ContextPath = {"System`", "Global`", "QuiverGeometry`", "QuiverGeometry`Shortcuts`"},
-   result},
-  held = Quiet @ Check[ToExpression[str, form, Hold], $Failed];
+   result, scratchNames, held, eval},
+  held = checkedToExpression[str, form] /. (s_Symbol ? singleScratchSymbolQ) :> SymbolForm[SymbolName[s]];
   If[FailureQ @ held,
     Message[ToMarkdownString::inlinewlsyn, str];
     Return @ $Failed;
   ];
-  If[Names["QuiverGeometryPackageLoader`Scratch`*"] =!= {},
-    Message[ToMarkdownString::inlinewlsym, str, Names["QuiverGeometryPackageLoader`Scratch`*"]];
-    Quiet @ Remove["QuiverGeometryPackageLoader`Scratch`*"];
+  (* single-letter symbols are allowed, and evaluate to SymbolForm[...] *)
+  scratchNames = Select[Names["QuiverGeometryPackageLoader`Scratch`*"], StringLength[#] > 37&];
+  If[scratchNames =!= {},
+    Message[ToMarkdownString::inlinewlsym, str, scratchNames];
+    Quiet @ Remove[scratchNames];
     Return @ $Failed;
   ];
   held //= Replace[Hold[Times[a___]] :> Hold[CommaRowForm[a]]];

@@ -52,8 +52,8 @@ textCellToMarkdown[e_] := Scope[
   If[StringContainsQ[text, $forbiddenStrings], Return[""]];
   (* these are disabled for now because they involve the assumption that $ is the katex delimiter, and they
   have other QG-specific things in them *)
-(*text //= StringReplace[$finalStringFixups1];
-  text //= StringReplace[$finalStringFixups2]; *)
+(*text //= StringReplace[$finalStringFixups1];*)
+  text //= StringReplace[$finalStringFixups2];
   text //= deblockIndent; (* JS *)
   text
 ]
@@ -239,23 +239,33 @@ Options[styleBoxToMarkdown] = {FontWeight -> "Plain", FontSlant -> "Plain", Font
 wordQ[e_] := StringQ[e] && StringMatchQ[e, WordCharacter..];
 
 styleBoxToMarkdown = Case[ 
+  StyleBox[e_String, "PreformattedCode"] := "<code>" <> e <> "</code>";
   StyleBox[e_String, FontSlant -> Italic|"Italic"] /; TrueQ[$lastSpace] && wordQ[e]                             := wrapWith[e, "*"];
   StyleBox[e_String, FontWeight -> Bold|"Bold"] /; TrueQ[$lastSpace] && wordQ[e]                                := wrapWith[e, "**"];
   StyleBox[e_String, FontSlant  -> Italic|"Italic", FontWeight -> Bold|"Bold"] /; TrueQ[$lastSpace] && wordQ[e] := wrapWith[e, "***"];
-  StyleBox[e_, rules___] := $styledSpanTemplate[textBoxesToMarkdown @ e, StringRiffle[toStylePropVal /@ {rules}, ";"]];
+  StyleBox[e_, rules___] := htmlStyledString[textBoxesToMarkdown @ e, {rules}];
 ]
 
+PrivateFunction[htmlStyledString]
+
+htmlStyledString[str_String, rules_List] := Scope[
+  styleStr = StringRiffle[toStylePropVal /@ rules, ";"];
+  If[styleStr === "", str, $styledSpanTemplate[str, styleStr]]
+];
+
 toStylePropVal = Case[
+  color_? ColorQ                      := %[FontColor -> color];
+  Bold                                := %[FontWeight -> Bold];
+  Italic                              := %[FontSlant -> Italic];
   FontColor -> (color_? ColorQ)       := "color:" <> Image`Utilities`toHEXcolor[color];
   FontWeight -> "Bold"|Bold           := "font-weight:bold";
   FontWeight -> Plain|"Plain"         := "font-weight:normal";
   FontSlant -> "Italic"|Italic        := "font-style:italic";
   FontSlant -> Plain|"Plain"          := "font-style:normal";
-  _ := Nothing
+  _                                   := Nothing
 ]
 
 $styledSpanTemplate = StringFunction @ "<span style='#2'>#1</span>"
-$colorSpanTemplate = StringFunction @ "<font color='#2'>#1</font>"
 
 styledMD[e___] := Print["Can't handle: ", e];
 

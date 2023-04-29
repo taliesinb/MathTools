@@ -1,0 +1,9 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+			"folder_exclude_patterns": ["Fonts", "Scrach", "Data/Github", "Zig", "Zig2", "Scratch", "Data/Arxiv", "Data/Scholar", "Data/Video", "Data/Youtube"]
+		}
+	]
+}

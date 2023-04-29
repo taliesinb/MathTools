@@ -53,6 +53,11 @@ DefineUnaryForm[MinusForm, RBox["\[Minus]\!", $1]];
 DefineBinaryForm[DivideForm, KBox[FractionBox[$1, $2], "frac"[$1, $2]]];
 DefineBinaryForm[InlineDivideForm, RBox[$1, KBox[OpBox @ "/", "/"], $2]]
 
+PublicForm[MinusOneForm, PlusOneForm]
+
+DefineUnaryForm[MinusOneForm, RBox[$1, OpBox @ "\[Minus]", "1"]];
+DefineUnaryForm[PlusOneForm, RBox[$1, OpBox @ "+", "1"]];
+
 (**************************************************************************************************)
 
 PublicForm[FloorForm, CeilingForm]

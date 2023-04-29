@@ -40,9 +40,27 @@ DefineTemplateBox[StandardPermutationCycleForm, "StandardPermutationCycleForm", 
 
 PublicForm[PermutationForm]
 
-DefineTemplateBox[PermutationForm, "PermutationForm", RiffledBox[OpBox[";"]] @ $$1, None];
+DefineTemplateBox[StandardPermutationCycleForm, "StandardPermutationCycleForm", RiffledBox[OpBox[";"]] @ $$1, None];
 
 DefineStandardTraditionalForm[
   PermutationForm[Cycles[{}]] :> MakeBoxes @ GroupIdentitySymbol
 ];
+
+(* declareBoxFormatting[
+
+  PermutationForm[Cycles[list:{___List}] | list:{___List}] :>
+    TemplateBox[
+      ToBoxes /@ (PermutationCycleForm @@@ list),
+      "PermutationSetForm"
+    ],
+
+  PermutationForm[Cycles[{list_List}]] :>
+    ToBoxes @ (PermutationCycleForm @@ list),
+
+  PermutationForm[Cycles[{}]] :>
+    MakeBoxes @ GroupElementSymbol @ "e"
+];
+ *)
+$TemplateKatexFunction["PermutationSetForm"] =
+  applyRiffled["permutationSet", "\\permutationSetSymbol "]
 

@@ -42,3 +42,9 @@ PublicForm[OverbraceLabeledForm, OverbraceRepeatedForm]
 
 DefineBinaryForm[OverbraceLabeledForm, OverbraceBox[$1, $2]]
 DefineBinaryForm[OverbraceRepeatedForm, OverbraceBox[$1, nTimesBox @ $2]]
+
+(**************************************************************************************************)
+
+PublicForm[ShapeLabeledForm]
+
+DefineRestCommaForm[ShapeLabeledForm, OverbraceBox[$1, ParenthesesBox @ $2]];

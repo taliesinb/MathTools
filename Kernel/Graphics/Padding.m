@@ -35,6 +35,7 @@ StandardizePadding[spec$] standardizes a padding specification spec$.
 | {h$, v$} | pad by h$ horizontally and v$ vertically |
 | {{l$, r$}, {b$, t$}} | explicit padding |
 | {Left -> l$, $$} | per-side padding |
+* Sides can be Horizontal or Vertical to indicate both sides.
 "
 
 StandardizePadding = Case[

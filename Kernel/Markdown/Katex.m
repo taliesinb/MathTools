@@ -21,7 +21,8 @@ $katexAppliedRule = {
   (s_String)[args___] :> {"\\" <> s <> "{", Riffle[{args}, "}{"], "}"}
 }
 
-$unevalBoxP = RowBox[{_, "[", _, "]"}] | RowBox[{_, "@" | "/@" | "@@" | "@@@" | "//", _}];
+$infixBoxP = "@" | "/@" | "@@" | "@@@" | "//" | "+" | "-" | "^" | "/" | ">" | "<" | "<=" | "\[LessEqual]" | ">=" | "\[GreaterEqual]" | "==" | "===" | "\[Equal]";
+$unevalBoxP = RowBox[{_, "[", _, "]"}] | RowBox[{_, $infixBoxP, _}] | RowBox[{_, $infixBoxP, _, $infixBoxP, _}] | RowBox[{"(", _, ")"}];
 
 tryEvalBox = Case[
   boxes : $unevalBoxP := ToBoxes[cleanupInlineBoxes @ Check[toInlineExpression[boxes, StandardForm], $Failed], StandardForm];
@@ -46,7 +47,7 @@ boxToKatex = Case[
   e_List := Map[%, e];
   e:(_String[___]) := Map[%, e];
 
-  c_Cell := Block[{$inlineMathTemplate = Identity}, textBoxesToMarkdownInner @ c];
+  c_Cell := Block[{$inlineMathTemplate = Identity}, textBoxesToMarkdown @ c];
 
   TemplateBox[{a_, b_}, "katexSwitch"] := % @ b; (* <- shortcircuit, since it is so common *)
   tb:TemplateBox[_List, _String] := TemplateBoxToKatex[tb];
@@ -128,6 +129,7 @@ styleToKatexFunction := Case[
   "SansSerifMathFont"                                         := "mathsf";
   "ScriptMathFont"                                            := "mathscr"
   "TypewriterMathFont"                                        := "mathtt";
+  "PreformattedCode"                                          := "mathtt";
   _                                                           := Identity;
 ];
 

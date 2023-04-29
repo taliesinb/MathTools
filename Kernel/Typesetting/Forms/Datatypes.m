@@ -1,6 +1,8 @@
-PublicForm[TupleForm]
+PublicForm[TupleForm, StyledTupleForm]
 
 DefineCommaForm[TupleForm, ParenthesesBox[$1], KatexMacroName -> "tuple"]
+
+StyledTupleForm[style_] := StyleDecorated[style, TupleForm];
 
 (**************************************************************************************************)
 
@@ -12,7 +14,9 @@ DefineCommaForm[SignedSetForm, BracesBox[$1]];
 DefineKatexDisplayFunction["setForm", "set"[#]&];
 (* ^ override the KatexDisplayFunction that DefineCommaForm set up *)
 
-DeclareStyledSequenceTemplateBox[StyledSetForm, "{", "}"];
+DefineStandardTraditionalForm[
+  StyledSetForm[style_][args___] :> ToBoxes @ StyleDecorated[style, SetForm][args]
+]
 
 (**************************************************************************************************)
 
@@ -32,7 +36,7 @@ PublicForm[ListForm, StyledListForm]
 
 DefineCommaForm[ListForm, SquareBracketBox["\[VeryThinSpace]", $1, "\[VeryThinSpace]"], KatexMacroName -> "list"];
 
-declareStyledCommaRiffledForm[StyledListForm, "styledList"];
+StyledListForm[style_] := StyleDecorated[style, ListForm];
 
 (**************************************************************************************************)
 
@@ -63,8 +67,8 @@ DefineCommaForm[SignedMultisetForm, RBox[ToBoxes @ MultisetOpen, $1, ToBoxes @ M
 DefineCommaForm[MultisetForm,       BracesDotBox[$1], BoxFunction -> MultisetBox]
 DefineCommaForm[SignedMultisetForm, BracesDotBox[$1]]
 
-declareStyledCommaRiffledForm[StyledMultisetForm, "styledMultiset"];
-declareStyledCommaRiffledForm[StyledSignedMultisetForm, "styledSignedMultiset"];
+StyledMultisetForm[style_] := StyleDecorated[style, MulitsetForm];
+StyledSignedMultisetForm[style_] := StyleDecorated[style, SignedMulitsetForm];
 
 (**************************************************************************************************)
 

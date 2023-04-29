@@ -3,17 +3,17 @@
 (*** Wolfram Notebook File ***)
 (* http://www.wolfram.com/nb *)
 
-(* CreatedBy='Mathematica 12.3' *)
+(* CreatedBy='Mathematica 13.2' *)
 
 (*CacheID: 234*)
 (* Internal cache information:
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[      8173,        206]
-NotebookOptionsPosition[      5090,        167]
-NotebookOutlinePosition[      5486,        183]
-CellTagsIndexPosition[      5443,        180]
+NotebookDataLength[      9090,        230]
+NotebookOptionsPosition[      5722,        188]
+NotebookOutlinePosition[      6118,        204]
+CellTagsIndexPosition[      6075,        201]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -30,6 +30,27 @@ Cell[StyleData["Dummy"],ExpressionUUID->"6c24eed3-dc50-4cd5-84c8-aa6e2bae6d01"]
 Cell[CellGroupData[{
 
 Cell["Base", "Section",ExpressionUUID->"74a57e80-0723-497b-8260-40916d1867b5"],
+
+Cell[StyleData["PreformattedCode"],
+ CellMargins->{{66, 10}, {7, 8}},
+ LineSpacing->{1, 0},
+ TabSpacings->{2.5},
+ AutoSpacing->False,
+ ShowStringCharacters->False,
+ AutoMultiplicationSymbol->False,
+ SingleLetterItalics->True,
+ MenuCommandKey:>"0",
+ FontFamily->"Fira Code",
+ PrivateFontOptions->{"OperatorSubstitution"->False},
+ TemplateBoxOptions->{
+ DisplayFunction:>(#& \
+)},ExpressionUUID->"e6f112ba-4b09-4a98-a1f3-6ce2f8de7b7b"],
+
+Cell[StyleData["StringBlockForm", StyleDefinitions -> StyleData[
+ "PreformattedCode"]],
+ TemplateBoxOptions->{
+ DisplayFunction:>(#& \
+)},ExpressionUUID->"5692aaa3-cd2e-41fe-96ff-07b73f4bd4b9"],
 
 Cell[StyleData["DelimiterFont"],
  AutoSpacing->False,
@@ -189,26 +210,31 @@ Cell[777, 26, 79, 0, 34, 24, 0, "StyleData", "Dummy", "All",ExpressionUUID->"6c2
 }, Open  ]],
 Cell[CellGroupData[{
 Cell[893, 31, 78, 0, 67, "Section",ExpressionUUID->"74a57e80-0723-497b-8260-40916d1867b5"],
-Cell[974, 33, 287, 8, 37, 32, 0, "StyleData", "DelimiterFont", "All",ExpressionUUID->"823ae0bd-9605-4134-b87a-21cd0296d047"],
-Cell[1264, 43, 225, 6, 37, 27, 0, "StyleData", "MathFont", "All",ExpressionUUID->"73a3b0b5-de22-4e3c-b934-e1a1116e1cdf"],
-Cell[1492, 51, 230, 6, 37, 28, 0, "StyleData", "ArrowFont", "All",ExpressionUUID->"f7ad071a-8903-44c9-8906-e221af3336ab"],
-Cell[1725, 59, 223, 6, 40, 26, 0, "StyleData", "AMSFont", "All",ExpressionUUID->"0e21c67b-f548-4b4d-9607-8b87ba54cb75"],
-Cell[1951, 67, 241, 6, 34, 36, 0, "StyleData", "LiteralStringFont", "All",ExpressionUUID->"980e6e4e-c4fc-46d8-bf4c-ca9cf5a1f08c"],
-Cell[2195, 75, 230, 6, 37, 31, 0, "StyleData", "MathTextFont", "All",ExpressionUUID->"f81c41e9-e8cf-4a8b-bf3b-cf9396f387d7"],
-Cell[2428, 83, 231, 6, 37, 32, 0, "StyleData", "RomanMathFont", "All",ExpressionUUID->"9b1466f1-a0a4-4308-ab27-c308e8e8ea00"],
-Cell[2662, 91, 233, 6, 35, 33, 0, "StyleData", "ScriptMathFont", "All",ExpressionUUID->"26623a48-9cd7-4e59-baea-4f2e32479d0f"],
-Cell[2898, 99, 243, 6, 34, 38, 0, "StyleData", "CaligraphicMathFont", "All",ExpressionUUID->"5c25097e-bf97-4f0a-8571-fdb37024378a"],
-Cell[3144, 107, 239, 6, 34, 36, 0, "StyleData", "SansSerifMathFont", "All",ExpressionUUID->"e449bd62-01c1-43e9-a1e3-ec68495770c2"],
-Cell[3386, 115, 241, 6, 34, 37, 0, "StyleData", "TypewriterMathFont", "All",ExpressionUUID->"a38923bf-0cd5-41a7-be60-749e6cf8abc0"],
-Cell[3630, 123, 258, 7, 34, 34, 0, "StyleData", "FrakturMathFont", "All",ExpressionUUID->"ec542fd5-9d9a-4b00-b019-e9ee5d31ad2b"],
-Cell[3891, 132, 236, 6, 34, 31, 0, "StyleData", "CardinalFont", "All",ExpressionUUID->"f061dfbd-2361-4c43-8a10-92731b3fd43c"],
-Cell[4130, 140, 251, 6, 37, 34, 0, "StyleData", "MultiSymbolFont", "All",ExpressionUUID->"a14f87c3-23d2-4229-847e-65b1359670c8"],
-Cell[4384, 148, 160, 2, 37, 82, 1, "StyleData", "QuiverGeometryBase", "All",ExpressionUUID->"22b8d04a-668a-4703-9491-8f9fc9fa84fc"],
-Cell[4547, 152, 139, 1, 37, 84, 1, "StyleData", "QuiverGeometrySymbol", "All",ExpressionUUID->"8fa82ead-03d9-48ea-8396-a90f8b31f808"],
-Cell[4689, 155, 170, 2, 35, 96, 1, "StyleData", "QuiverGeometryScriptSymbol", "All",ExpressionUUID->"30712e5c-0696-4c9b-821f-47df3547a307"],
-Cell[4862, 159, 212, 5, 34, 86, 1, "StyleData", "QuiverGeometryVariable", "All",ExpressionUUID->"25871f28-7aa1-48c1-92fd-c03ff0af0ce0"]
+Cell[974, 33, 433, 13, 44, 35, 0, "StyleData", "PreformattedCode", "All",ExpressionUUID->"e6f112ba-4b09-4a98-a1f3-6ce2f8de7b7b",
+ MenuCommandKey:>"0"],
+Cell[1410, 48, 193, 4, 44, 87, 1, "StyleData", "StringBlockForm", "All",ExpressionUUID->"5692aaa3-cd2e-41fe-96ff-07b73f4bd4b9"],
+Cell[1606, 54, 287, 8, 37, 32, 0, "StyleData", "DelimiterFont", "All",ExpressionUUID->"823ae0bd-9605-4134-b87a-21cd0296d047"],
+Cell[1896, 64, 225, 6, 37, 27, 0, "StyleData", "MathFont", "All",ExpressionUUID->"73a3b0b5-de22-4e3c-b934-e1a1116e1cdf"],
+Cell[2124, 72, 230, 6, 37, 28, 0, "StyleData", "ArrowFont", "All",ExpressionUUID->"f7ad071a-8903-44c9-8906-e221af3336ab"],
+Cell[2357, 80, 223, 6, 40, 26, 0, "StyleData", "AMSFont", "All",ExpressionUUID->"0e21c67b-f548-4b4d-9607-8b87ba54cb75"],
+Cell[2583, 88, 241, 6, 34, 36, 0, "StyleData", "LiteralStringFont", "All",ExpressionUUID->"980e6e4e-c4fc-46d8-bf4c-ca9cf5a1f08c"],
+Cell[2827, 96, 230, 6, 37, 31, 0, "StyleData", "MathTextFont", "All",ExpressionUUID->"f81c41e9-e8cf-4a8b-bf3b-cf9396f387d7"],
+Cell[3060, 104, 231, 6, 37, 32, 0, "StyleData", "RomanMathFont", "All",ExpressionUUID->"9b1466f1-a0a4-4308-ab27-c308e8e8ea00"],
+Cell[3294, 112, 233, 6, 35, 33, 0, "StyleData", "ScriptMathFont", "All",ExpressionUUID->"26623a48-9cd7-4e59-baea-4f2e32479d0f"],
+Cell[3530, 120, 243, 6, 34, 38, 0, "StyleData", "CaligraphicMathFont", "All",ExpressionUUID->"5c25097e-bf97-4f0a-8571-fdb37024378a"],
+Cell[3776, 128, 239, 6, 34, 36, 0, "StyleData", "SansSerifMathFont", "All",ExpressionUUID->"e449bd62-01c1-43e9-a1e3-ec68495770c2"],
+Cell[4018, 136, 241, 6, 34, 37, 0, "StyleData", "TypewriterMathFont", "All",ExpressionUUID->"a38923bf-0cd5-41a7-be60-749e6cf8abc0"],
+Cell[4262, 144, 258, 7, 34, 34, 0, "StyleData", "FrakturMathFont", "All",ExpressionUUID->"ec542fd5-9d9a-4b00-b019-e9ee5d31ad2b"],
+Cell[4523, 153, 236, 6, 34, 31, 0, "StyleData", "CardinalFont", "All",ExpressionUUID->"f061dfbd-2361-4c43-8a10-92731b3fd43c"],
+Cell[4762, 161, 251, 6, 37, 34, 0, "StyleData", "MultiSymbolFont", "All",ExpressionUUID->"a14f87c3-23d2-4229-847e-65b1359670c8"],
+Cell[5016, 169, 160, 2, 37, 82, 1, "StyleData", "QuiverGeometryBase", "All",ExpressionUUID->"22b8d04a-668a-4703-9491-8f9fc9fa84fc"],
+Cell[5179, 173, 139, 1, 37, 84, 1, "StyleData", "QuiverGeometrySymbol", "All",ExpressionUUID->"8fa82ead-03d9-48ea-8396-a90f8b31f808"],
+Cell[5321, 176, 170, 2, 35, 96, 1, "StyleData", "QuiverGeometryScriptSymbol", "All",ExpressionUUID->"30712e5c-0696-4c9b-821f-47df3547a307"],
+Cell[5494, 180, 212, 5, 34, 86, 1, "StyleData", "QuiverGeometryVariable", "All",ExpressionUUID->"25871f28-7aa1-48c1-92fd-c03ff0af0ce0"]
 }, Open  ]]
 }
 ]
 *)
+
+(* End of internal cache information *)
 

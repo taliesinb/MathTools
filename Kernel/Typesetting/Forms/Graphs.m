@@ -63,8 +63,8 @@ makeTaggedEdgeBoxes[sym_, katex_] := KBox[
   {katex, "{", $1, "}"}
 ];
 
-DefineUnaryForm[TaggedDirectedEdgeSymbol, makeTaggedEdgeBoxes["\[DirectedEdge]", "\\xundirectededge"], KatexMacroName -> "tde", BoxFunction -> taggedDEBox]
-DefineUnaryForm[TaggedUndirectedEdgeSymbol, makeTaggedEdgeBoxes["\[UndirectedEdge]", "\\xrightedge"], KatexMacroName -> "tue", BoxFunction -> taggedUEBox]
+DefineUnaryForm[TaggedDirectedEdgeSymbol, makeTaggedEdgeBoxes["\[DirectedEdge]", "\\xundirectededge"], BoxFunction -> taggedDEBox]
+DefineUnaryForm[TaggedUndirectedEdgeSymbol, makeTaggedEdgeBoxes["\[UndirectedEdge]", "\\xrightedge"], BoxFunction -> taggedUEBox]
 
 (**************************************************************************************************)
 
@@ -80,8 +80,8 @@ makeMultiTaggedEdgeBoxes[sym_, katex_] := KBox[
 
 (* {"""\underset{\raisebox{0.15em}{\scriptsize $""", $2, "$}}{", katex <> "{", $1, "}}\\;"} *)
 
-DefineBinaryForm[MultiTaggedDirectedEdgeSymbol, makeMultiTaggedEdgeBoxes["\[DirectedEdge]", "\\xundirectededge"], KatexMacroName -> "mtde", BoxFunction -> multitaggedDEBox]
-DefineBinaryForm[MultiTaggedUndirectedEdgeSymbol, makeMultiTaggedEdgeBoxes["\[UndirectedEdge]", "\\xrightedge"], KatexMacroName -> "mtue", BoxFunction -> multitaggedUEBox]
+DefineBinaryForm[MultiTaggedDirectedEdgeSymbol, makeMultiTaggedEdgeBoxes["\[DirectedEdge]", "\\xundirectededge"], BoxFunction -> multitaggedDEBox]
+DefineBinaryForm[MultiTaggedUndirectedEdgeSymbol, makeMultiTaggedEdgeBoxes["\[UndirectedEdge]", "\\xrightedge"], BoxFunction -> multitaggedUEBox]
 
 (**************************************************************************************************)
 
