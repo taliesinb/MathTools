@@ -25,7 +25,7 @@ PaperToMarkdown[data_Association, OptionsPattern[]] := Scope[
   title = PaperPageTitle[authors, title];
   If[Length[authors] > 8,
     authors = SortBy[authors, {!MemberQ[$KnownAuthors, If[ListQ[#], StringRiffle[#, " "], #]], Position[authors, #]}&];
-    authorLinks = StringRiffle[Append["et al"] @ Take[Map[toAuthorLink2, authors], 12], ", "]
+    authorLinks = StringRiffle[Append["et al"] @ Take[Map[toAuthorLink2, authors], UpTo @ 12], ", "]
   ,
     authorLinks = StringRiffle[toAuthorLink /@ authors, ", "]
   ];
@@ -85,15 +85,16 @@ removeDupPrefix[list_] := Select[DeleteDuplicates @ list, elem |-> NoneTrue[Dele
 
 (**************************************************************************************************)
 
+PublicFunction[PaperPageTitle]
 PublicVariable[$KnownAuthors]
 
-SetInitialValue[$KnownAuthors, {}];
+$KnownAuthors := $KnownAuthors = BearPeople[];
 
 PaperPageTitle[authors_, title_] := Scope[
   authors //= VectorReplace[str_String :> SplitFirstLastName[str]];
   If[Length[authors] > 4,
     knownAuthorAssoc = ConstantAssociation[VectorReplace[$KnownAuthors, str_String :> SplitFirstLastName[str]], 0];
-    authors2 = SortBy[authors, Lookup[knownAuthorAssoc, #, 1]&];
+    authors2 = SortBy[authors, Lookup[knownAuthorAssoc, Key @ #, 1]&];
     authors2 = Take[authors2, UpTo[4]];
     lastAuthor = Last @ authors;
     If[MemberQ[authors2, lastAuthor], authors2 = Append[lastAuthor] @ DeleteCases[authors2, lastAuthor]];
