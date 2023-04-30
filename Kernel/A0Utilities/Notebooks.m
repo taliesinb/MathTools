@@ -346,6 +346,26 @@ PrintInputCell[e_] := CellPrint @ ExpressionCell[e, "Input"];
 
 (**************************************************************************************************)
 
+PublicFunction[InsertTextualTableCell]
+
+InsertTextualTableCell[rows_, cols_] := Scope[
+  cell = Cell[
+    BoxData @ GridBox[
+      Table[Cell["\[Placeholder]", "Text"], rows, cols],
+      BaseStyle -> "Text",
+      FrameStyle -> GrayLevel[0.9],
+      GridBoxDividers -> {"Columns" -> {{True}}, "Rows" -> {{True}}},
+      GridBoxSpacings -> {"Rows" -> {{1}}, "Columns" -> {{2}}},
+      GridBoxAlignment -> {"Columns" -> {{Left}}}
+    ],
+    "Text"
+  ];
+  SelectionMove[EvaluationNotebook[], After, Cell];
+  NotebookWrite[EvaluationNotebook[], cell, Placeholder (* doesn't work! *)];
+];
+
+(**************************************************************************************************)
+
 PublicFunction[ToggleInlineCells]
 
 $LastConvertedCellBuffer = {};

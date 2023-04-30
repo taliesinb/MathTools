@@ -27,6 +27,16 @@ With[{qgPath = QuiverGeometryPackageLoader`$initFile},
       MenuEvaluator -> Automatic, Method -> "Queued"
     ]
   }]];
+  LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["InsertSplitBreak", {
+    Delimiter,
+      Menu["Table cell", {
+          MenuItem["1-column table cell", KernelExecute[QuiverGeometry`InsertTextualTableCell[3, 1]], MenuEvaluator -> Automatic],
+          MenuItem["2-column table cell", KernelExecute[QuiverGeometry`InsertTextualTableCell[3, 2]], MenuEvaluator -> Automatic],
+          MenuItem["3-column table cell", KernelExecute[QuiverGeometry`InsertTextualTableCell[3, 3]], MenuEvaluator -> Automatic],
+          MenuItem["4-column table cell", KernelExecute[QuiverGeometry`InsertTextualTableCell[3, 4]], MenuEvaluator -> Automatic],
+          MenuItem["5-column table cell", KernelExecute[QuiverGeometry`InsertTextualTableCell[3, 5]], MenuEvaluator -> Automatic]
+      }]
+  }]];
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["Balance", {
     Delimiter,
     MenuItem[

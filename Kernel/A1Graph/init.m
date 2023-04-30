@@ -1,5 +1,7 @@
 PublicOption[VertexLayout, VertexOverlapResolution, GraphOrigin]
 
+PublicOption[EdgeLayout]
+
 PublicOption[GraphMetric]
 
 PublicOption[ArrowheadShape, ArrowheadSize, ArrowheadStyle, ArrowheadPosition, TwoWayStyle]
@@ -74,6 +76,7 @@ $extendedGraphOptionsRules = {
   EdgeThickness                       -> Automatic,
   EdgeTooltips                        -> None,
   EdgeLength                          -> None,
+  EdgeLayout                          -> Automatic,
   EdgeOpacity                         -> 0.18,
   EpilogFunction                      -> None,
   ExtendImagePadding                  -> True,

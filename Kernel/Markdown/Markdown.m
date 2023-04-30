@@ -167,7 +167,7 @@ cellToMarkdownInner0[cell_] := Scope[
   ,
     $LastFailedMarkdownInput ^= cell; $LastFailedMarkdownOutput ^= result;
     Message[ToMarkdownString::badcell, MsgExpr @ result];
-    PrintBadCell[MsgExpr @ result];Beep[];
+    PrintBadCell[MsgExpr[result, 6, 20]]; Beep[];
     PrintBadCell[cell];
     "### BAD CELL"
   ]
@@ -195,6 +195,7 @@ cellToMarkdownInner1 = Case[
   Cell[e_, "Equation"]                   := mathCellToMarkdown @ e;
   Cell[e_, "Exercise"]                   := StringJoin["**Task**: ", textCellToMarkdown @ e];
 
+  Cell[BoxData[grid:GridBox[___, BaseStyle -> "Text", ___]], "Text"] := textGridToMarkdown @ grid;
   Cell[e_, "Text"]                       := insertLinebreaksOutsideKatex[textCellToMarkdown @ e, 120];
   Cell[e_, "Item" | "Item1"]             := StringJoin["* ",     textCellToMarkdown @ e];
   Cell[e_, "Subitem"]                    := StringJoin["\t* ",   textCellToMarkdown @ e];
@@ -208,6 +209,8 @@ cellToMarkdownInner1 = Case[
 
   (* Cell[b_, "Output"] /; ContainsQ[b, "LinkHand"] := (Beep[]; Nothing); *)
   Cell[b_, "Output"]                     := outputCellToMarkdown @ b;
+
+  Cell[code_String, "PreformattedCode"]  := toCodeMarkdown[code, True];
 
   Cell[s_String, "PythonOutput"]         := plaintextCodeToMarkdown @ s;
   e:Cell[_, "PythonOutput"]              := cellToRasterMarkdown @ e;

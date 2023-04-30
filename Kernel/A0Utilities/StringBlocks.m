@@ -1,8 +1,8 @@
-PublicForm[StringGrid]
+PublicForm[StringMatrix]
 
-PublicOption[RowAlignment, ColumnAlignment, FramePadding]
+PublicOption[RowAlignment, ColumnAlignment, FramePadding, RowFrames, RowFrameStyle, SpanningFrame]
 
-Options[StringGrid] = {
+Options[StringMatrix] = {
   RowAlignment -> Top,
   ColumnAlignment -> Left,
   RowSpacings -> 0,
@@ -10,11 +10,14 @@ Options[StringGrid] = {
   Dividers -> None,
   Frame -> None,
   FramePadding -> None,
-  FrameStyle -> None
+  FrameStyle -> None,
+  RowFrames -> None,
+  RowFrameStyle -> None,
+  SpanningFrame -> False
 };
 
 DefineStandardTraditionalForm[
-  grid:StringGrid[_List, ___Rule] :> preformattedCodeBoxes @ StringBlock @ grid
+  grid:StringMatrix[_List, ___Rule] :> ToBoxes @ StringBlockForm @ grid
 ]
 
 (**************************************************************************************************)
@@ -26,20 +29,22 @@ Options[StringRow] = {
   ColumnSpacings -> 0,
   Frame -> None,
   FramePadding -> None,
-  FrameStyle -> None
+  FrameStyle -> None,
+  SpanningFrame -> False
 }
 
 DefineStandardTraditionalForm[
-  row:StringRow[_List, ___Rule] :> preformattedCodeBoxes @ StringBlock @ row
+  row:StringRow[_List, ___Rule] :> ToBoxes @ StringBlockForm @ row
 ];
 
 Options[rowBlock] = Options[StringRow];
 
 rowBlock[items_, OptionsPattern[]] := Scope[
-  UnpackOptions[rowAlignment, columnSpacings, frame, framePadding, frameStyle];
+  UnpackOptions[rowAlignment, columnSpacings, frame, framePadding, frameStyle, spanningFrame];
+  If[columnSpacings =!= 0, items = riffle[items, Spacer[columnSpacings]]];
   block = hstackBlocks[items, rowAlignment];
   block = blockPadding[block, framePadding];
-  hframeBlock[block, frame, frameStyle]
+  hframeBlock[block, frame, frameStyle, spanningFrame]
 ];
 
 (**************************************************************************************************)
@@ -51,20 +56,22 @@ Options[StringColumn] = {
   RowSpacings -> 0,
   Frame -> None,
   FramePadding -> None,
-  FrameStyle -> None
+  FrameStyle -> None,
+  SpanningFrame -> False
 }
 
 DefineStandardTraditionalForm[
-  col:StringColumn[_List, ___Rule] :> preformattedCodeBoxes @ StringBlock @ col
+  col:StringColumn[_List, ___Rule] :> ToBoxes @ StringBlockForm @ col
 ];
 
 Options[columnBlock] = Options[StringColumn];
 
 columnBlock[items_, OptionsPattern[]] := Scope[
-  UnpackOptions[columnAlignment, rowSpacings, frame, framePadding];
+  UnpackOptions[columnAlignment, rowSpacings, frame, framePadding, frameStyle, spanningFrame];
+  If[rowSpacings =!= 0, items = riffle[items, Spacer[{1, rowSpacings}]]];
   block = vstackBlocks[items, columnAlignment];
   block = blockPadding[block, framePadding];
-  vframeBlock[block, frame, frameStyle]
+  hframeBlock[block, frame, frameStyle, spanningFrame]
 ];
 
 (**************************************************************************************************)
@@ -136,7 +143,8 @@ processBlock = Case[
   VBlock[args_, align_, delim_]                       := vstackBlocks[riffle[% /@ args, delim], align];
 
   Grid[rows_List, opts___Rule]                        := processGrid[rows, opts];
-  StringGrid[rows_List, opts___Rule]                  := gstackBlocks[MatrixMap[%, rows], opts];
+
+  StringMatrix[rows_List, opts___Rule]                := gstackBlocks[MatrixMap[%, rows], opts];
 
   StringColumn[items_, opts___Rule]                   := columnBlock[% /@ items, opts];
   StringRow[items_, opts___Rule]                      := rowBlock[% /@ items, opts];
@@ -153,8 +161,8 @@ processBlock = Case[
   StyleDecorated[s_, ListForm][e___]                  := hframeBlock[processHoriz @ e, "[]", s];
   StyleDecorated[s_, SetForm][e___]                   := hframeBlock[processHoriz @ e, "{}", s];
 
-  Undersegment[e_]                                    := vframeBlock[% @ e, {None, "SquareBottom"}];
-  UnderlinedForm[e_]                                  := vframeBlock[% @ e, {None, "-"}];
+  Undersegment[e_]                                    := vframeBlock[% @ e, {None, "SquareBottom"}, True];
+  UnderlinedForm[e_]                                  := vframeBlock[% @ e, {None, "-"}, True];
 
   na_NestedArrayForm                                  := % @ nestedArrayRender @ na;
   head_Symbol[arg_] /; StyleFormHeadQ[head]           := % @ Style[arg, StyleFormData @ head];
@@ -188,6 +196,7 @@ applyStyle[s_List] := Apply[applyStyle, s];
 
 as_applyStyle[list_List] := Map[as, list];
 _applyStyle[s_$hspace] := s;
+_applyStyle[None] := None;
 applyStyle[s___][e_String] := Style[e, s];
 
 (**************************************************************************************************)
@@ -200,7 +209,7 @@ processVert[] := spacerBlock[1, 1];
 processVert[a_] := processBlock @ a;
 processVert[a__] := processBlock @ Column[{a}];
 
-Options[processGrid] = JoinOptions[StringGrid,
+Options[processGrid] = JoinOptions[StringMatrix,
   Alignment -> {Left, Top},
   Spacings -> {0, 0}
 ];
@@ -306,17 +315,25 @@ blockPadding[block:$block[elems_, w_, h_], framePadding_] := Scope[
 
 $extFrameP = _String | None | Dashed;
 
-Options[gstackBlocks] = Options[StringGrid];
+Options[gstackBlocks] = Options[StringMatrix];
 
 $hframeSpec = {$extFrameP, $extFrameP} | _String | _StyleDecorated[{$extFrameP, $extFrameP} | _String];
 gstackBlocks[rows_List, OptionsPattern[]] := Scope[
-  UnpackOptions[rowAlignment, columnAlignment, rowSpacings, columnSpacings, dividers, frame, framePadding, frameStyle];
+  UnpackOptions[rowAlignment, columnAlignment, rowSpacings, columnSpacings, dividers, frame, framePadding, frameStyle, rowFrames, rowFrameStyle, spanningFrame];
   rows = riffleCols[columnSpacings] @ riffleRows[rowSpacings] @ rows;
-  widths = Part[rows, All, All, 2];
-  heights = Part[rows, All, All, 3];
-  maxWidths = Max /@ Transpose[widths];
-  maxHeights = Max /@ heights;
+  widths = Part[rows, All, All, 2]; heights = Part[rows, All, All, 3]; maxWidths = Max /@ Transpose[widths]; maxHeights = Max /@ heights;
   items = MapIndexed[gpadBlock, rows, {2}];
+  If[StringQ[rowFrames],
+    {lext, rext} = Lookup[$hextTableNames, rowFrames];
+    jump = If[rowSpacings === 0, All, 1;;-1;;2];
+    If[lext =!= None, items = MapAt[hframeBlock[#, {lext, None}, rowFrameStyle, spanningFrame]&, items, {jump, 1}]];
+    If[rext =!= None, items = MapAt[hframeBlock[#, {None, rext}, rowFrameStyle, spanningFrame]&, items, {jump, -1}]];
+    If[rowSpacings =!= 0,
+      If[lext =!= None, items = MapAt[hframeBlock[#, {" ", None}, None, True]&, items, {2;;-1;;2, 1}]];
+      If[rext =!= None, items = MapAt[hframeBlock[#, {None, " "}, None, True]&, items, {2;;-1;;2, -1}]];
+    ];
+    widths = Part[items, All, All, 2]; heights = Part[items, All, All, 3]; maxWidths = Max /@ Transpose[widths]; maxHeights = Max /@ heights;
+  ];
   totalWidth = Total @ maxWidths; totalHeight = Total @ maxHeights;
   If[dividers === All,
     items = addDivs[items, maxWidths, maxHeights];
@@ -344,7 +361,7 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
       ];
       apply8patch[block, sfn /@ StringJoin /@ we, sfn /@ sn, sfn /@ If[frame === "Round", $roundCompass, $squareCompass]],
     {$extFrameP, $extFrameP} | _String,
-      hframeBlock[block, frame, frameStyle],
+      hframeBlock[block, frame, frameStyle, spanningFrame],
     False | None,
       block
   ]
@@ -407,6 +424,7 @@ apply8patch[rows_, {w_, e_}, {s_, n_}, {nw_, ne_, sw_, se_}] :=
 hextTable = Case[
   None                := None;
   "|"                 := ext1["│"];
+  " "                 := ext1[" "];
   Dashed              := ext1["┊"];
   "RoundLeft"         := ext3["(", "╭", "│", "╰"];
   "RoundRight"        := ext3[")", "╮", "│", "╯"];
@@ -445,16 +463,16 @@ $hextTableNames = Association[
 
 StringBlock::badframe = "`` is not a valid spec for Frame, which should be one of ``."
 
-hframeBlock[arg1_, arg2_] := hframeBlock[arg1, arg2, None];
+hframeBlock[arg1_, arg2_] := hframeBlock[arg1, arg2, None, True];
 
-hframeBlock[block_, name_String, style_] :=
-  hframeBlock[block, Lookup[$hextTableNames, name, ThrowMessage["badframe", name, Keys @ $hextTableNames]], style];
+hframeBlock[block_, name_String, style_, spanning_] :=
+  hframeBlock[block, Lookup[$hextTableNames, name, ThrowMessage["badframe", name, Keys @ $hextTableNames]], style, spanning];
 
-hframeBlock[block_, None | {None, None}, style_] := block;
+hframeBlock[block_, None | {None, None}, style_, _] := block;
 
-hframeBlock[$block[grid_, w_, h_], {l_, r_}, style_] := Scope[
+hframeBlock[$block[grid_, w_, h_], {l_, r_}, style_, spanning_] := Scope[
   $n = h; sfn = applyStyle @ style;
-  {lext, rext} = Map[sfn, extend[hextTable[#]]]& /@ {l, r};
+  {lext, rext} = MapThread[Map[sfn, extend[hextTable[#1], spanning, #2]]&, {{l, r}, {False, True}}];
   grid2 = MapThread[DeleteNone @ Flatten @ {#1, #2, #3}&, {lext, grid, rext}];
   $block[grid2, w + If[l === None, 0, 1] + If[r === None, 0, 1], h]
 ];
@@ -487,15 +505,16 @@ $vextTableNames = Association[
   "DoubleSquare" -> {"DoubleSquareTop", "DoubleSquareBottom"}
 ];
 
-vframeBlock[arg1_, arg2_] := vframeBlock[arg1, arg2, None];
+vframeBlock[arg1_, arg2_] := vframeBlock[arg1, arg2, None, True];
 
-vframeBlock[block_, name_String, style_] :=
-  vframeBlock[block, Lookup[$vextTableNames, name, ThrowMessage["badframe", name, Keys @ $vextTableNames]], style];
+vframeBlock[block_, name_String, style_, spanning_] :=
+  vframeBlock[block, Lookup[$vextTableNames, name, ThrowMessage["badframe", name, Keys @ $vextTableNames]], style, spanning];
 
-vframeBlock[block_, None | {None, None}, _] := block;
-vframeBlock[$block[grid_, w_, h_], {t_, b_}, style_] := Scope[
+vframeBlock[block_, None | {None, None}, _, _] := block;
+
+vframeBlock[$block[grid_, w_, h_], {t_, b_}, style_, spanning_] := Scope[
   $n = w; sfn = StyleOperator @ style;
-  {bext, text} = Map[sfn, extend[vextTable[#]]]& /@ {b, t};
+  {bext, text} = MapThread[Map[sfn, extend[vextTable[#1], spanning, #2]]&, {{b, t}, {False, True}}];
   grid2 = grid;
   If[text =!= None, PrependTo[grid2, text]];
   If[bext =!= None, AppendTo[grid2, bext]];
@@ -504,8 +523,11 @@ vframeBlock[$block[grid_, w_, h_], {t_, b_}, style_] := Scope[
 
 (**************************************************************************************************)
 
-extend = Case[
-  None                     := ConstantArray[None, $n];
+extend[None, _, _] := ConstantArray[None, $n];
+extend[s_, False, side_] := ReplacePart[ConstantArray[" ", $n], If[side, -1, 1] -> First[s]];
+extend[s_, True, side_] := extendSpanning[s];
+
+extendSpanning = Case[
   ext1[c_]                 := ConstantArray[c, $n];
   ext3[s_, l_, m_, r_]     := If[$n === 1, {s}, Flatten @ {l, ConstantArray[m, $n - 2], r}];
   ext5[s_, l_, a_, m_, b_, r_] := Scope[

@@ -1,3 +1,15 @@
+PrivateFunction[toProcessedKatexString]
+
+toProcessedKatexString[boxes_] /; StringQ[$localKatexDefinitions] := Block[
+  {localDefs = $localKatexDefinitions, res},
+  Clear[$localKatexDefinitions];
+  StringJoin[localDefs, "\n", toProcessedKatexString @ boxes]
+];
+
+toProcessedKatexString[box_] := $katexPostprocessor @ boxesToKatexString @ box;
+
+(**************************************************************************************************)
+
 PublicFunction[ToKatexString]
 
 ToKatexString[e_] := boxesToKatexString @ ToBoxes[e, StandardForm];
@@ -10,7 +22,8 @@ ToKatexString::partial = "Could not fully evaluate katex equivalents.";
 
 boxesToKatexString[boxes_] := Scope[
   $inputBoxes = boxes;
-  interm = boxToKatex @ tryEvalBox @ cleanupInlineBoxes @ boxes;
+  evalBoxes = cleanupInlineBoxes @ boxes;
+  interm = boxToKatex @ evalBoxes;
   flatTerms = Flatten @ List @ ReplaceRepeated[$katexAppliedRule] @ interm;
   If[!StringVectorQ[flatTerms], ReturnFailed["partial"]];
   katexString = StringJoin @ flatTerms;
@@ -20,14 +33,6 @@ boxesToKatexString[boxes_] := Scope[
 $katexAppliedRule = {
   (s_String)[args___] :> {"\\" <> s <> "{", Riffle[{args}, "}{"], "}"}
 }
-
-$infixBoxP = "@" | "/@" | "@@" | "@@@" | "//" | "+" | "-" | "^" | "/" | ">" | "<" | "<=" | "\[LessEqual]" | ">=" | "\[GreaterEqual]" | "==" | "===" | "\[Equal]";
-$unevalBoxP = RowBox[{_, "[", _, "]"}] | RowBox[{_, $infixBoxP, _}] | RowBox[{_, $infixBoxP, _, $infixBoxP, _}] | RowBox[{"(", _, ")"}];
-
-tryEvalBox = Case[
-  boxes : $unevalBoxP := ToBoxes[cleanupInlineBoxes @ Check[toInlineExpression[boxes, StandardForm], $Failed], StandardForm];
-  boxes_ := boxes;
-];
 
 PrivateFunction[boxToKatex]
 
@@ -138,6 +143,10 @@ toBracket = Case[
   e_String /; StringLength[e] === 1 := e;
   other_ := {"{", boxToKatex @ other, "}"};
 ];
+
+(**************************************************************************************************)
+
+PrivateFunction[cleanupInlineBoxes]
 
 cleanupInlineBoxes = RightComposition[
   ReplaceRepeated @ {

@@ -139,7 +139,7 @@ mathCellToMarkdown = Case[
   b_            := toMultilineMath @ b
 ]
 
-(**************************************************************************************************)
+toMultilineMath[boxes_] := $multilineMathTemplate @ toProcessedKatexString @ procTextualNewlines @ boxes;
 
 (* this ensures that manual linebreaks inside e.g. Equation cells produce katex line breaks *)
 $katexNewline = "\\\\\n";
@@ -152,22 +152,6 @@ procTextualNewlines = Case[
   other_                      := other;
 ];
 
-toMultilineMath[boxes_] := $multilineMathTemplate @ baseToMath @ procTextualNewlines @ boxes;
-toInlineMath[boxes_]    := $inlineMathTemplate @ baseToMath @ boxes;
-
-baseToMath[box_] /; StringQ[$localKatexDefinitions] := Block[
-  {localDefs = $localKatexDefinitions, res},
-  Clear[$localKatexDefinitions];
-  StringJoin[localDefs, "\n", baseToMath[box]]
-];
-
-baseToMath[box_] := $katexPostprocessor @ boxesToKatexString @ box;
-
-(**************************************************************************************************)
-(*
-asInlineMath[e_] := StringJoin["\[LeftSkeleton]0", e, "0\[RightSkeleton]"];
-asMultilineMath[e_] := StringJoin["\[LeftSkeleton]1", e, "1\[RightSkeleton]"];
- *)
 (**************************************************************************************************)
 
 PrivateFunction[textBoxesToMarkdown]
@@ -181,7 +165,7 @@ this will allow us to interpret $ as coming soley from user and not a result of 
 $lastSpace = True;
 textBoxesToMarkdown = Case[
   str_String :=
-    $textPostProcessor @ StringJoin @ checkLastSpace @ str;
+    $textPostProcessor @ subColorShortcodes @ StringJoin @ checkLastSpace @ str;
 
   list_List :=
     Map[%, list];
@@ -192,17 +176,13 @@ textBoxesToMarkdown = Case[
   RowBox[e_List] :=
     % @ e;
 
-  (* JS notebooks *)
-  Cell[BoxData[FormBox[b_ButtonBox, _]]] := % @ b;
-
-  Cell[BoxData[g_GraphicsBox], ___] :=
-    complainBoxes[g];
-
   Cell[BoxData[b_], ___] :=
-    toInlineMath @ b;
+    inlineCellToMarkdown[b, True];
 
   Cell[TextData[text_, ___], ___] :=
-    text;
+    % @ text;
+
+  Cell[boxes_, "Text"] := % @ boxes;
 
   StyleBox[str_String /; StringMatchQ[str, Whitespace], ___] :=
     ($lastSpace = True; " ");
@@ -221,15 +201,6 @@ textBoxesToMarkdown = Case[
   other_ := complainBoxes[other];
 ];
 
-complainBoxes[other_] := Scope[
-  Message[ToMarkdownString::badmdbox, MsgExpr @ other];
-  headStr = ToPrettifiedString @ Head @ other;
-  PrintQGStackSymbols[];
-  "**CANNOT CONVERT TEXTUAL BOXES TO MARKDOWN**\n```\n" <> ToPrettifiedString[other, MaxDepth -> 3, MaxLength -> 10, MaxIndent -> 3] <> "\n```\n"
-];
-
-ToMarkdownString::badmdbox = "Cannot form markdown for boxes that appeared within a textual context: ``."
-
 checkLastSpace[list_List] := Map[checkLastSpace, list];
 checkLastSpace[s_String /; StringEndsQ[s, " "|"\t"]] := ($lastSpace = True; s);
 checkLastSpace[other_] := ($lastSpace = False; other);
@@ -245,6 +216,21 @@ styleBoxToMarkdown = Case[
   StyleBox[e_String, FontSlant  -> Italic|"Italic", FontWeight -> Bold|"Bold"] /; TrueQ[$lastSpace] && wordQ[e] := wrapWith[e, "***"];
   StyleBox[e_, rules___] := htmlStyledString[textBoxesToMarkdown @ e, {rules}];
 ]
+
+(**************************************************************************************************)
+
+PrivateFunction[complainBoxes]
+
+complainBoxes[other_] := Scope[
+  Message[ToMarkdownString::badmdbox, MsgExpr @ other];
+  headStr = ToPrettifiedString @ Head @ other;
+  PrintQGStackSymbols[];
+  "**CANNOT CONVERT TEXTUAL BOXES TO MARKDOWN**\n```\n" <> ToPrettifiedString[other, MaxDepth -> 3, MaxLength -> 10, MaxIndent -> 3] <> "\n```\n"
+];
+
+ToMarkdownString::badmdbox = "Cannot form markdown for boxes that appeared within a textual context: ``."
+
+(**************************************************************************************************)
 
 PrivateFunction[htmlStyledString]
 
@@ -275,3 +261,12 @@ wrapWith[e_, wrap_] := Scope[
   p2 = StringEndsQ[e, Whitespace];
   {If[p1, " ", {}], wrap, StringTrim @ e, wrap, If[p2, " ", {}]}
 ];
+
+(**************************************************************************************************)
+
+$shortcodeP = "F:" | "\\n" | "^{" | "_{";
+
+subColorShortcodes[str_String] := StringReplace[str, {
+  code:("`" ~~ body:Shortest[___] ~~ "`") :> If[StringFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, False]],
+  code:("```" ~~ body:Shortest[___] ~~ "```") :> If[StringFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, True]]
+}]

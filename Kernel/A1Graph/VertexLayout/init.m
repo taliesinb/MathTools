@@ -51,7 +51,8 @@ ExtractGraphPrimitiveCoordinates::badvcoordlen = "VertexCoordinates has length `
 ExtractGraphPrimitiveCoordinates::badvcoords = "Initial setting of VertexCoordinates is not a matrix of coordinates.";
 ExtractGraphPrimitiveCoordinates::glayoutfail = "Failed to layout graph, using circle.";
 ExtractGraphPrimitiveCoordinates::badctrans = "CoordinateTransformFunction produced invalid values, using circle.";
-ExtractGraphPrimitiveCoordinates::layoutobjres = "Layout object `` failed to returned a valid result.";
+ExtractGraphPrimitiveCoordinates::badvertexlayout = "Invalid result returned by VertexLayout object ``.";
+ExtractGraphPrimitiveCoordinates::badedgelayout = "Invalid result returned by EdgeLayout object ``.";
 
 ExtractGraphPrimitiveCoordinates[graph_] := Scope[
 
@@ -81,7 +82,8 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
 
   UnpackExtendedThemedOptions[graph,
     vertexLayout, layoutDimension, viewOptions, coordinateTransformFunction, coordinateRotation, vertexOverlapResolution,
-    vertexCoordinateRules, vertexCoordinateFunction, selfLoopRadius, multiEdgeDistance, packingSpacing
+    vertexCoordinateRules, vertexCoordinateFunction, selfLoopRadius, multiEdgeDistance, packingSpacing,
+    edgeLayout
   ];
 
   (* process VertexCoordinateFunction, VertexCoordinateRules, and VertexCoordinates to produce a single
@@ -164,9 +166,19 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
   If[MatchQ[result, {_ ? CoordinateMatrixQ, _ ? CoordinateMatricesQ}],
     {$vertexCoordinates, $edgeCoordinateLists} = result;
   ,
-    Message[ExtractGraphPrimitiveCoordinates::layoutobjres, Shallow @ vertexLayout];
+    Message[ExtractGraphPrimitiveCoordinates::badvertexlayout, MsgExpr @ vertexLayout];
     $vertexCoordinates = CirclePoints @ vertexCount;
     $edgeCoordinateLists = Part[$vertexCoordinates, {#1, #2}]& @@@ edgeList;
+  ];
+
+  If[!MatchQ[edgeLayout, None | Automatic],
+    data["VertexCoordinates"] = $vertexCoordinates;
+    data["EdgeCoordinateLists"] = $edgeCoordinateLists;
+    result = edgeLayout @ data;
+    If[!CoordinateMatricesQ[result],
+      Message[ExtractGraphPrimitiveCoordinates::badedgelayout, MsgExpr @ edgeLayout],
+      $edgeCoordinateLists = ToPackedReal @ result;
+    ];
   ];
 
   If[coordinateTransformFunction ~!~ None | {},
@@ -452,9 +464,6 @@ applyNearest[points_] := Scope[
 ];
 
 nudgeDuplicate[z_][p_] := p + Normalize[Cross[z - p]] * Im[$nudge2] + Normalize[z - p] * Re[$nudge2];
-
-DuplicateIndices[list_] :=
-  Select[Length[#] > 1&] @ Values @ PositionIndex @ $vertexCoordinates;
 
 applyCoordinateTransform["RaiseHorizontalTreeNodes"] := raiseTreeNodes[True];
 applyCoordinateTransform["RaiseVerticalTreeNodes"] := raiseTreeNodes[False];

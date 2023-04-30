@@ -49,8 +49,34 @@ procNA[Grid | "Grid", rest___] := procNA[{Grid, RowSpacings -> 1}, rest];
 procNA[Grid | "Grid"] := procNA[{Grid}];
 
 procNA[{Grid |"Grid", opts___Rule}, rest___][array_] := If[!MatrixQ[array, True&], procNA["Row"] @ array,
-  StringGrid[MatrixMap[procNA[rest], array], opts, RowSpacings -> 0, ColumnSpacings -> 1]
+  StringMatrix[MatrixMap[procNA[rest], array], opts, RowSpacings -> 0, ColumnSpacings -> 1]
 ];
+
+procNA[(t:"Row"|"SpanningRow") -> col_, rest___][array_] :=
+  StringRow[
+    Map[procNA[rest], array],
+    ColumnSpacings -> If[SeqLength[rest] == 0, 1, 0],
+    Frame -> "[]", FrameStyle -> col,
+    SpanningFrame -> (t == "SpanningRow")
+  ];
+
+procNA[(t:"Column"|"SpanningColumn") -> col_, rest___][array_] :=
+  StringColumn[
+    Map[procNA[rest], array],
+    RowSpacings -> If[SeqLength[rest] == 0, 0, If[(t == "SpanningColumn"), 1, 0]],
+    Frame -> "[]", FrameStyle -> col,
+    SpanningFrame -> (t == "SpanningColumn")
+  ];
+
+procNA[(t:"Grid"|"SpanningGrid") -> {col1_, col2_}, rest___][array_] :=
+  StringMatrix[
+    MatrixMap[procNA[rest], array],
+    ColumnSpacings -> If[SeqLength[rest] == 0, 1, 0],
+    RowSpacings ->    If[SeqLength[rest] == 0 && (t == "SpanningGrid"), 1, 0],
+    Frame -> "[]", FrameStyle -> col1,
+    RowFrames -> "[]", RowFrameStyle -> col2,
+    SpanningFrame -> (t == "SpanningGrid")
+  ];
 
 procNA[] := Identity;
 
