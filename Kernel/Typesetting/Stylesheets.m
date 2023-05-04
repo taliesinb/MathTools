@@ -7,7 +7,10 @@ UpdateQuiverGeometryStylesheet::save = "Could not save existing stylesheet at ``
 UpdateQuiverGeometryStylesheet[] := Scope[
   template = Get @ LocalPath["StyleSheets", "QuiverGeometry.template.nb"];
   template = DeleteCases[template, ExpressionUUID -> _, {0, Infinity}];
-  cells = KeyValueMap[makeTemplateBoxStyleCell, $notebookDisplayFunction];
+  cells = Join[
+    KeyValueMap[makeTemplateBoxStyleCell, $notebookDisplayFunction],
+    generateNotebookColorPaletteStyles @ $ColorPalette
+  ];
   template //= ReplaceAll[Cell[StyleData["Dummy"], ___] :> Splice[cells]];
 
   hash = Base36Hash[template];
@@ -51,8 +54,6 @@ makeTemplateBoxStyleCell[name_, fn_] := Cell[
   TemplateBoxOptions -> {DisplayFunction -> fn}
 ];
 
-
-
 (**************************************************************************************************)
 
 PublicVariable[$QuiverGeometryStylesheetPath]
@@ -71,6 +72,14 @@ ApplyPrivateQuiverGeometryNotebookStyles[] := (
     DockedCells -> None
   ];
 );
+
+(**************************************************************************************************)
+
+generateNotebookColorPaletteStyles[palette_List] :=
+  MapIndex1[
+    Cell[StyleData["Color" <> IntegerString[#2]], FontColor -> #1]&,
+    palette
+  ];
 
 (**************************************************************************************************)
 

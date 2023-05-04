@@ -1,8 +1,3 @@
-
-
-
-(**************************************************************************************************)
-
 PrivateFunction[toCodeMarkdown]
 
 $subSuperRules = {
@@ -40,22 +35,36 @@ $shortcodeRules = {
   "^" ~~ sup:DigitCharacter :> StringJoin["<sup>", sup, "</sup>"]
 };
 
+(**************************************************************************************************)
+
 $colorShortcodeMapping = <|
-  "RF" -> $Red,
-  "GF" -> $Green,
-  "BF" -> $Blue,
-  "OF" -> $Orange,
-  "TF" -> $Teal,
+  "RF"  -> $Red,
+  "GF"  -> $Green,
+  "BF"  -> $Blue,
+  "OF"  -> $Orange,
+  "TF"  -> $Teal,
   "GrF" -> $Gray,
   "PiF" -> $Pink,
-  "PF" -> $Purple
+  "PuF" -> $Purple,
+  "1F"  -> "Color1",
+  "2F"  -> "Color2",
+  "3F"  -> "Color3",
+  "4F"  -> "Color4",
+  "5F"  -> "Color5",
+  "6F"  -> "Color6",
+  "7F"  -> "Color7",
+  "8F"  -> "Color8"
 |>;
-
-PrivateVariable[$colorShortcodeMappingInverse]
-
-$colorShortcodeMappingInverse = Association @ Reverse[Normal @ $colorShortcodeMapping, 2];
 
 $colorShortCodes = Apply[Alternatives, Keys @ $colorShortcodeMapping];
 
-applyShortcode[code_, next_] := htmlStyledString[next, {FontColor -> Lookup[$colorShortcodeMapping, code]}];
+applyShortcode[code_, next_] :=
+  htmlStyledString[next, {FontColor -> Lookup[$colorShortcodeMapping, code]}];
+
+(**************************************************************************************************)
+
+PrivateVariable[$colorShortcodeMappingInverse]
+
+$colorShortcodeMappingInverse := AssociationInvert[$colorShortcodeMapping];
+
 

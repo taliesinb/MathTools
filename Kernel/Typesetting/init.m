@@ -821,12 +821,25 @@ PublicFormBox[Red, Green, Blue, Orange, Pink, Teal, Gray, Purple]
 PublicFormBox[LightRed, LightGreen, LightBlue, LightOrange, LightPink, LightTeal, LightGray, LightPurple]
 PublicFormBox[DarkRed, DarkGreen, DarkBlue, DarkOrange, DarkPink, DarkTeal, DarkGray, DarkPurple, MultisetColor]
 
+PublicForm[Color1Form, Color2Form, Color3Form, Color4Form, Color5Form, Color6Form, Color7Form, Color8Form]
+
 PublicFormBox[Bold, Italic, Underlined, Struckthrough, PlainText, MathText, Roman, Fraktur, Caligraphic, SansSerif, Typewriter]
 
 SystemSymbol[ScriptForm]
 PublicSymbol[ScriptBox]
 
 Unprotect[ScriptForm]; (* it's an undocumented system symbol! *)
+
+DefineStyleForm[#1, SymbolicFontColor[#2]]& @@@ ExpressionTable[
+  Color1Form  1
+  Color2Form  2
+  Color3Form  3
+  Color4Form  4
+  Color5Form  5
+  Color6Form  6
+  Color7Form  7
+  Color8Form  8
+]
 
 DefineStyleForm[#1, #3, BoxFunction -> #2]& @@@ ExpressionTable[
   RedForm             RedBox             $Red
@@ -904,4 +917,3 @@ $compactNumberOptions = {
   NegationStyle -> "Color",
   InversionStyle -> UnderBar
 };
-

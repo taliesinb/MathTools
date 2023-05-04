@@ -261,6 +261,16 @@ CellReplaceBoxes[nbData_, rule_, typePattern_:_] :=
 
 (**************************************************************************************************)
 
+PublicFunction[CellFindBoxes]
+
+CellFindBoxes[nbData_, rule_, typePattern_:_] :=
+  Catenate @ DeepCases[nbData,
+    Cell[contents_, type:typePattern, opts___] :>
+      RuleCondition @ DeepCases[contents, rule]
+  ];
+
+(**************************************************************************************************)
+
 CopyFileToClipboard[path_] := If[
   RunAppleScript["tell app \"Finder\" to set the clipboard to ( POSIX file \"" <> path <> "\" )"] === 0,
   path,
@@ -308,7 +318,23 @@ mapVerbatim = Case[
   lhs_ :> rhs_ := Verbatim[lhs] :> RuleCondition[rhs];
 ];
 
-$replacementCellTypes = "Output" | "Text" | "Section" | "Subsection" | "Subsubsection" | "Item" | "SubItem" | "Subsubitem";
+$replacementCellTypes = "Output" | "Text" | "Section" | "Subsection" | "Subsubsection" | "Item" | "SubItem" | "Subsubitem" | "PreformattedCode";
+
+(**************************************************************************************************)
+
+PublicFunction[FindBoxesInCurrentNotebook]
+
+Options[FindBoxesInCurrentNotebook] = {CellTypes -> Automatic};
+
+FindBoxesInCurrentNotebook[boxRules_, OptionsPattern[]] := Scope[
+  UnpackOptions[cellTypes];
+  nb = EvaluationNotebook[];
+  nbData = NotebookGet[nb];
+  If[Head[nbData] =!= Notebook, ReturnFailed[]];
+  SetAutomatic[cellTypes, $replacementCellTypes];
+  SetAll[cellTypes, _];
+  CellFindBoxes[nbData, boxRules, cellTypes]
+];
 
 (**************************************************************************************************)
 

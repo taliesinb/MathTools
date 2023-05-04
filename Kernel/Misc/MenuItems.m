@@ -30,8 +30,8 @@ With[{qgPath = QuiverGeometryPackageLoader`$initFile},
   }]];
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["ClearCellOptions", {
     Delimiter,
-    Sequence @@ MapApply[
-      MenuItem[#1, FontColor -> #2]&, {
+    Menu["Named Colors",
+      MenuItem[#1, FontColor -> #2]& @@@ {
       {"Red",    $Red},
       {"Green",  $Green},
       {"Blue",   $Blue},
@@ -40,6 +40,18 @@ With[{qgPath = QuiverGeometryPackageLoader`$initFile},
       {"Orange", $Orange},
       {"Purple", $Purple},
       {"Gray",   $Gray}
+  }]}]];
+  LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["ClearCellOptions", {
+    Delimiter,
+    Menu["Indexed Colors", (* todo: replace with DynamicFontColor *)
+      MenuItem[#1, FontColor :> CurrentValue[{StyleDefinitions, #2, FontColor}], MenuKey[#1, Modifiers->{"Option"}]]& @@@ {
+      "1" -> "Color1",
+      "2" -> "Color2",
+      "3" -> "Color3",
+      "4" -> "Color4",
+      "5" -> "Color5",
+      "6" -> "Color6",
+      "7" -> "Color7"
   }]}]];
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["InsertSplitBreak", {
     Delimiter,

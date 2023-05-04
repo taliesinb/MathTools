@@ -249,7 +249,15 @@ ToMarkdownString::badmdbox = "Cannot form markdown for boxes that appeared withi
 
 (**************************************************************************************************)
 
-PrivateFunction[htmlStyledString]
+PrivateFunction[htmlStyledString, toStylePropVal]
+
+htmlStyledString[str_String, {FontColor :> CurrentValue[{StyleDefinitions, name_, FontColor}]}] :=
+  htmlStyledString[str, {FontColor -> name}];
+
+htmlStyledString[str_String, {FontColor -> name_String}] :=
+  $classSpanTemplate[str, name];
+
+$classSpanTemplate = StringFunction @ "<span class='#2'>#1</span>";
 
 htmlStyledString[str_String, rules_List] := Scope[
   styleStr = StringRiffle[toStylePropVal /@ rules, ";"];

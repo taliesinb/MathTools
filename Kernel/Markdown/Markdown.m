@@ -27,7 +27,11 @@ toMarkdownStringInner[spec_, returnVec_:False] := Scope[
   If[$embedKatexPrelude === True,
     katexMarkdown = $markdownPostprocessor @ $multilineMathTemplate @ $katexPostprocessor @ $KatexPrelude;
     lines = insertAtFirstNonheader[lines, {katexMarkdown}]];
-  result = StringJoin @ {Riffle[lines, "\n\n"], "\n\n"};
+  result = StringJoin @ {
+    $customStylesTemplate[{"Color1", "Color2", "Color3", "Color4", "Color5", "Color6", "Color7", "Color8"}],
+    Riffle[lines, "\n\n"],
+    "\n\n"
+  };
   If[!StringQ[result], ReturnFailed[]];
   result //= StringReplace[$codeJoining] /* StringReplace[$markdownTableReplacement] /* $markdownPostprocessor /* StringTrim;
   If[$includeFrontMatter && AssociationQ[frontMatter = NotebookFrontMatter @ spec],

@@ -138,8 +138,10 @@ cellStyling[e_, {}] := e;
 inputStyling[e_, {l___, "Subscript", r___}] := {"_{", inputStyling[e, {l, r}], "}"};
 inputStyling[e_, {l___, "Midscript", r___}] := {"_{", inputStyling[e, {l, r}], "}"};
 inputStyling[e_, {l___, "Superscript", r___}] := {"^{", inputStyling[e, {l, r}], "}"};
-inputStyling[e_ ? SingleLetterQ, {FontColor -> color_}] := {$colorShortcodeMappingInverse[color], ":", e};
-inputStyling[e_, {FontColor -> color_}] := {$colorShortcodeMappingInverse[color], "{", e, "}"};
+inputStyling[e_ ? SingleLetterQ, {FontColor :> CurrentValue[{StyleDefinitions, cname_, FontColor}]}] := {"F", StringTake[cname, -1], ":", e};
+inputStyling[e_, {FontColor :> CurrentValue[{StyleDefinitions, cname_, FontColor}]}] := {"F", StringTake[cname, -1], "{", e, "}"};
+inputStyling[e_ ? SingleLetterQ, {FontColor -> color_}] := {$colorShortcodeMappingInverse @ color, ":", e};
+inputStyling[e_, {FontColor -> color_}] := {$colorShortcodeMappingInverse @ color, "{", e, "}"};
 inputStyling[e_, s_] := e;
 
 htmlStyling[e_, {l___, "Subscript", r___}] := {"<sub>", htmlStyling[e, {l, r}], "</sub>"};
@@ -254,6 +256,7 @@ StringBlock::badfs = "Setting of FrameStyle -> `` should be a color or None.";
 
 normFrameStyle = Case[
   color_ ? ColorQ      := FontColor -> color;
+  i_Integer            := makeDynamicFontColor[i];
   r:Rule[FontColor, _] := r;
   other_               := (Message[StringBlock::badfs, other]; None);
   None                 := None;
@@ -261,10 +264,12 @@ normFrameStyle = Case[
 
 normStyle = Case[
   color_ ? ColorQ := FontColor -> color;
+  i_Integer       := makeDynamicFontColor[i];
   Bold            := FontWeight -> Bold;
   Italic          := FontSlant -> Italic;
   Plain           := Splice[{FontWeight -> Plain, FontSlant -> Plain}];
   r:Rule[FontWeight|FontSlant|FontColor, _] := r;
+  r:RuleDelayed[FontColor, _] := r;
   s:"Subscript"|"Superscript" := s;
   _               := Nothing;
 ];

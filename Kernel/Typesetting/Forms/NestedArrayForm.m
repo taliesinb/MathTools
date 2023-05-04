@@ -26,9 +26,30 @@ nestedArrayBoxes[na_NestedArrayForm] :=
 
 (**************************************************************************************************)
 
+PublicVariable[$AxisPalette]
+
+$AxisPalette = {1, 2, 3, 4, 5, 6};
+
+NestedArrayForm::badaxiscolor = "`` is not a valid axis color."
+toAxisColor = Case[
+  n_Integer       := Part[ReplaceAutomatic[$axisPaletteSpec, $AxisPalette], n];
+  color_ ? ColorQ := color;
+  None            := None;
+  other_          := ThrowMessage["badaxiscolor", other];
+];
+
+(**************************************************************************************************)
+
 PrivateFunction[nestedArrayRender]
 
 $defaultSpanning = True;
+$axisPaletteSpec = Automatic;
+
+nestedArrayRender[NestedArrayForm[array_, axisSpec___, AxisPalette -> spec_]] := Scope[
+  $axisPaletteSpec = spec;
+  nestedArrayRender @ NestedArrayForm[array, axisSpec]
+];
+
 nestedArrayRender[NestedArrayForm[array_, axisSpec___, SpanningFrame -> spec_]] := Scope[
   $defaultSpanning = TrueQ[spec];
   nestedArrayRender @ NestedArrayForm[array, axisSpec]
@@ -36,16 +57,18 @@ nestedArrayRender[NestedArrayForm[array_, axisSpec___, SpanningFrame -> spec_]] 
 
 nestedArrayRender[NestedArrayForm[array_]] := Scope[
   spec = Switch[ArrayDepth @ array,
-    1, {"Row" -> $Red},
-    2, {"Grid" -> {$Red, $Green}},
-    3, {"Column" -> $Red, "Grid" -> {$Green, $Blue}},
-    4, {"Grid" -> {$Red, $Green}, "Grid" -> {$Blue, $Pink}}
+    1, {"Row" -> 1},
+    2, {"Grid" -> {1, 2}},
+    3, {"Column" -> 1, "Grid" -> {2, 3}},
+    4, {"Grid" -> {1, 2}, "Grid" -> {3, 4}}
   ];
   nestedArrayRender @ NestedArrayForm[array, Sequence @@ spec]
 ];
 
-nestedArrayRender[NestedArrayForm[array_, axisSpec___]] :=
-  procNA[axisSpec] @ array;
+nestedArrayRender[NestedArrayForm[array_, axisSpec___]] := CatchMessage[
+  NestedArrayForm,
+  procNA[axisSpec] @ array
+];
 
 ClearAll[procNA];
 
@@ -73,31 +96,38 @@ procNA[(t:"Row"|"SpanningRow"|"NormalRow"|"Column"|"NormalColumn"|"SpanningColum
 procNA[(t:"Grid"|"NormalGrid"|"SpanningGrid"), rest___] :=
   procNA[t -> {None, None}, rest];
 
+NestedArrayForm::notlist = "`` is not a list, but `` was specified.";
+
 procNA[(t:"Row"|"SpanningRow"|"NormalRow") -> col_, rest___][array_] :=
   StringRow[
+    If[!ListQ[array], ThrowMessage["notlist", array, t]];
     Map[procNA[rest], array],
     ColumnSpacings -> third[col, If[SeqLength[rest] == 0, 1, 0]],
-    Frame -> "[]", FrameStyle -> first[col, col],
+    Frame -> "[]", FrameStyle -> toAxisColor @ first[col, col],
     FramePadding -> {Horizontal -> second[col, 0]},
     SpanningFrame -> shouldSpanQ[t]
   ];
 
 procNA[(t:"Column"|"SpanningColumn"|"NormalColumn") -> col_, rest___][array_] :=
   StringColumn[
+    If[!ListQ[array], ThrowMessage["notlist", array, t]];
     Map[procNA[rest], array],
-    Frame -> "[]", FrameStyle -> first[col, col],
+    Frame -> "[]", FrameStyle -> toAxisColor @ first[col, col],
     RowSpacings -> third[col, 0],
     FramePadding -> {Horizontal -> second[col, 0]},
     SpanningFrame -> shouldSpanQ[t]
   ];
 
+NestedArrayForm::notmatrix = "`` is not a matrix, but `` was specified.";
+
 procNA[(t:"Grid"|"SpanningGrid"|"NormalGrid") -> {col1_, col2_}, rest___][array_] :=
   StringMatrix[
+    If[!MatrixQ[array, True&], ThrowMessage["notmatrix", array, t]];
     MatrixMap[procNA[rest], array],
     RowSpacings -> third[col1, 0],
     ColumnSpacings -> third[col2, If[SeqLength[rest] == 0, 1, 0]],
-    Frame -> "[]", FrameStyle -> first[col1, col1],
-    RowFrames -> "[]", RowFrameStyle -> first[col2, col2],
+    Frame -> "[]", FrameStyle -> toAxisColor @ first[col1, col1],
+    RowFrames -> "[]", RowFrameStyle -> toAxisColor @ first[col2, col2],
     FramePadding -> {Horizontal -> second[col1, 0]},
     SpanningFrame -> shouldSpanQ[t]
   ];

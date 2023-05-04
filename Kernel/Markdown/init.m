@@ -96,6 +96,7 @@ PrivateVariable[$multilineMathTemplate]
 PrivateVariable[$rasterizationFunction]
 PrivateVariable[$rawHTMLTemplate]
 PrivateVariable[$stringImageTemplate]
+PrivateVariable[$customStylesTemplate]
 
 General::badmdflav = "`` is not a valid setting for MarkdownFlavor.";
 
@@ -130,7 +131,8 @@ setupMarkdownGlobals[] := Quoted[
     $multilineMathTemplate,
     $rasterizationFunction,
     $rawHTMLTemplate,
-    $stringImageTemplate
+    $stringImageTemplate,
+    $customStylesTemplate
   ];
   rfunc = OptionValue[RasterizationFunction];
   If[rfunc =!= Automatic, $rasterizationFunction = rfunc];
