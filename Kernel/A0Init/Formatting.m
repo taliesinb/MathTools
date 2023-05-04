@@ -17,6 +17,19 @@ declareFormatting[___] := Panic["BadFormatting"]
 
 (**************************************************************************************************)
 
+PublicFunction[DefineStandardTraditionalForm]
+
+DefineStandardTraditionalForm[list_List] := Scan[DefineStandardTraditionalForm, list];
+
+DefineStandardTraditionalForm[lhs_ :> rhs_] := (
+  MakeBoxes[lhs, StandardForm] := rhs;
+  MakeBoxes[l:lhs, TraditionalForm] := MakeBoxes @ l;
+)
+
+_DefineStandardTraditionalForm := BadArguments[];
+
+(**************************************************************************************************)
+
 PrivateFunction[declareBoxFormatting]
 PrivateVariable[$BoxFormattingHeadQ]
 

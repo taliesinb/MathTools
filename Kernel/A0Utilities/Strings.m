@@ -181,11 +181,25 @@ PublicVariable[$LowercaseGreekLetters, $UppercaseGreekLetters, $GreekLetters]
 
 $LowercaseGreekLetters = "\[Alpha]\[Beta]\[Gamma]\[Delta]\[CurlyEpsilon]\[Epsilon]\[Zeta]\[Eta]\[Theta]\[Iota]\[Kappa]\[Lambda]\[Mu]\[Nu]\[Xi]\[Pi]\[Rho]\[Sigma]\[Tau]\[CurlyPhi]\[Phi]\[Chi]\[Psi]\[Omega]";
 $UppercaseGreekLetters = "\[CapitalGamma]\[CapitalPi]\[CapitalSigma]\[CapitalOmega]\[CapitalPhi]";
+
 $GreekLetters = StringJoin[$LowercaseGreekLetters, $UppercaseGreekLetters];
 
 (**************************************************************************************************)
 
-PublicSymbol[ASCIILetter, LowercaseLetter, UppercaseLetter, AlphanumericCharacter, LowercaseGreekLetter, UppercaseGreekLetter, GreekLetter, DoubleQuote]
+PublicVariable[$LowercaseDoubleStruckLetters, $UppercaseDoubleStruckLetters, $DoubleStruckDigits, $DoubleStruckCharacters]
+
+$LowercaseDoubleStruckLetters = "𝕒𝕓𝕔𝕕𝕖𝕗𝕘𝕙𝕚𝕛𝕜𝕝𝕞𝕟𝕠𝕡𝕢𝕣𝕤𝕥𝕦𝕧𝕨𝕩𝕪𝕫";
+$UppercaseDoubleStruckLetters = "𝔸𝔹ℂ𝔻𝔼𝔽𝔾ℍ𝕀𝕁𝕂𝕃𝕄ℕ𝕆ℙℚℝ𝕊𝕋𝕌𝕍𝕎𝕏𝕐ℤ";
+$DoubleStruckDigits = "𝟘𝟙𝟚𝟛𝟜𝟝𝟞𝟟𝟠𝟡";
+
+$DoubleStruckCharacters = StringJoin[$LowercaseDoubleStruckLetters, $UppercaseDoubleStruckLetters, $DoubleStruckDigits];
+
+(**************************************************************************************************)
+
+PublicSymbol[ASCIILetter, LowercaseLetter, UppercaseLetter, AlphanumericCharacter]
+PublicSymbol[LowercaseGreekLetter, UppercaseGreekLetter, GreekLetter]
+PublicSymbol[DoubleQuote]
+PublicSymbol[LowercaseDoubleStruckLetter, UppercaseDoubleStruckLetter, DoubleStruckDigit, DoubleStruckCharacter]
 
 declareStringLetterPattern[
   ASCIILetter -> "a-zA-Z0-9",
@@ -195,6 +209,10 @@ declareStringLetterPattern[
   LowercaseGreekLetter -> $LowercaseGreekLetters,
   UppercaseGreekLetter -> $UppercaseGreekLetters,
   GreekLetter -> $GreekLetters,
+  LowercaseDoubleStruckLetter -> $LowercaseDoubleStruckLetters,
+  UppercaseDoubleStruckLetter -> $UppercaseDoubleStruckLetters,
+  DoubleStruckDigit -> $DoubleStruckDigits,
+  DoubleStruckCharacter -> $DoubleStruckCharacters,
   DoubleQuote -> "\""
 ];
 

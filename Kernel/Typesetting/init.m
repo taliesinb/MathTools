@@ -178,19 +178,6 @@ PrivateSymbol[$wlThinSpace, $kSpace]
 
 (**************************************************************************************************)
 
-PublicFunction[DefineStandardTraditionalForm]
-
-DefineStandardTraditionalForm[list_List] := Scan[DefineStandardTraditionalForm, list];
-
-DefineStandardTraditionalForm[lhs_ :> rhs_] := (
-  MakeBoxes[lhs, StandardForm] := rhs;
-  MakeBoxes[l:lhs, TraditionalForm] := MakeBoxes @ l;
-)
-
-_DefineStandardTraditionalForm := BadArguments[];
-
-(**************************************************************************************************)
-
 PublicOption[BoxFunction]
 
 SetUsage @ "
@@ -834,7 +821,7 @@ PublicFormBox[Red, Green, Blue, Orange, Pink, Teal, Gray, Purple]
 PublicFormBox[LightRed, LightGreen, LightBlue, LightOrange, LightPink, LightTeal, LightGray, LightPurple]
 PublicFormBox[DarkRed, DarkGreen, DarkBlue, DarkOrange, DarkPink, DarkTeal, DarkGray, DarkPurple, MultisetColor]
 
-PublicFormBox[Bold, Italic, Underlined, Struckthrough, Plaintext, MathText, Roman, Fraktur, Caligraphic, SansSerif, Typewriter]
+PublicFormBox[Bold, Italic, Underlined, Struckthrough, PlainText, MathText, Roman, Fraktur, Caligraphic, SansSerif, Typewriter]
 
 SystemSymbol[ScriptForm]
 PublicSymbol[ScriptBox]

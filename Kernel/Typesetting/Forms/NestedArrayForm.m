@@ -28,6 +28,22 @@ nestedArrayBoxes[na_NestedArrayForm] :=
 
 PrivateFunction[nestedArrayRender]
 
+$defaultSpanning = True;
+nestedArrayRender[NestedArrayForm[array_, axisSpec___, SpanningFrame -> spec_]] := Scope[
+  $defaultSpanning = TrueQ[spec];
+  nestedArrayRender @ NestedArrayForm[array, axisSpec]
+];
+
+nestedArrayRender[NestedArrayForm[array_]] := Scope[
+  spec = Switch[ArrayDepth @ array,
+    1, {"Row" -> $Red},
+    2, {"Grid" -> {$Red, $Green}},
+    3, {"Column" -> $Red, "Grid" -> {$Green, $Blue}},
+    4, {"Grid" -> {$Red, $Green}, "Grid" -> {$Blue, $Pink}}
+  ];
+  nestedArrayRender @ NestedArrayForm[array, Sequence @@ spec]
+];
+
 nestedArrayRender[NestedArrayForm[array_, axisSpec___]] :=
   procNA[axisSpec] @ array;
 
@@ -45,38 +61,50 @@ procNA[(head:$headP)[spec_], rest___][array_] :=
 procNA[(styleHead_Symbol ? StyleFormHeadQ)[(head:$headP)[inner_]], rest___][array_] :=
   StyleDecorated[StyleFormData @ styleHead, head][procNA[inner, rest] @ array];
 
-procNA[Grid | "Grid", rest___] := procNA[{Grid, RowSpacings -> 1}, rest];
-procNA[Grid | "Grid"] := procNA[{Grid}];
-
-procNA[{Grid |"Grid", opts___Rule}, rest___][array_] := If[!MatrixQ[array, True&], procNA["Row"] @ array,
-  StringMatrix[MatrixMap[procNA[rest], array], opts, RowSpacings -> 0, ColumnSpacings -> 1]
+shouldSpanQ[s_String] := Which[
+  StringStartsQ[s, "Spanning"], True,
+  StringStartsQ[s, "Normal"], False,
+  True, $defaultSpanning
 ];
 
-procNA[(t:"Row"|"SpanningRow") -> col_, rest___][array_] :=
+procNA[(t:"Row"|"SpanningRow"|"NormalRow"|"Column"|"NormalColumn"|"SpanningColumn"), rest___] :=
+  procNA[t -> None, rest];
+
+procNA[(t:"Grid"|"NormalGrid"|"SpanningGrid"), rest___] :=
+  procNA[t -> {None, None}, rest];
+
+procNA[(t:"Row"|"SpanningRow"|"NormalRow") -> col_, rest___][array_] :=
   StringRow[
     Map[procNA[rest], array],
-    ColumnSpacings -> If[SeqLength[rest] == 0, 1, 0],
-    Frame -> "[]", FrameStyle -> col,
-    SpanningFrame -> (t == "SpanningRow")
+    ColumnSpacings -> third[col, If[SeqLength[rest] == 0, 1, 0]],
+    Frame -> "[]", FrameStyle -> first[col, col],
+    FramePadding -> {Horizontal -> second[col, 0]},
+    SpanningFrame -> shouldSpanQ[t]
   ];
 
-procNA[(t:"Column"|"SpanningColumn") -> col_, rest___][array_] :=
+procNA[(t:"Column"|"SpanningColumn"|"NormalColumn") -> col_, rest___][array_] :=
   StringColumn[
     Map[procNA[rest], array],
-    RowSpacings -> If[SeqLength[rest] == 0, 0, If[(t == "SpanningColumn"), 1, 0]],
-    Frame -> "[]", FrameStyle -> col,
-    SpanningFrame -> (t == "SpanningColumn")
+    Frame -> "[]", FrameStyle -> first[col, col],
+    RowSpacings -> third[col, 0],
+    FramePadding -> {Horizontal -> second[col, 0]},
+    SpanningFrame -> shouldSpanQ[t]
   ];
 
-procNA[(t:"Grid"|"SpanningGrid") -> {col1_, col2_}, rest___][array_] :=
+procNA[(t:"Grid"|"SpanningGrid"|"NormalGrid") -> {col1_, col2_}, rest___][array_] :=
   StringMatrix[
     MatrixMap[procNA[rest], array],
-    ColumnSpacings -> If[SeqLength[rest] == 0, 1, 0],
-    RowSpacings ->    If[SeqLength[rest] == 0 && (t == "SpanningGrid"), 1, 0],
-    Frame -> "[]", FrameStyle -> col1,
-    RowFrames -> "[]", RowFrameStyle -> col2,
-    SpanningFrame -> (t == "SpanningGrid")
+    RowSpacings -> third[col1, 0],
+    ColumnSpacings -> third[col2, If[SeqLength[rest] == 0, 1, 0]],
+    Frame -> "[]", FrameStyle -> first[col1, col1],
+    RowFrames -> "[]", RowFrameStyle -> first[col2, col2],
+    FramePadding -> {Horizontal -> second[col1, 0]},
+    SpanningFrame -> shouldSpanQ[t]
   ];
+
+first[{a_, ___}, _] := a;      first[_, e_] := e;
+second[{a_, b_, ___}, _] := b; second[_, e_] := e;
+third[{a_, b_, c_}, _] := c;   third[_, e_] := e;
 
 procNA[] := Identity;
 

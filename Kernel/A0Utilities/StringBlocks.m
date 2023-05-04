@@ -41,6 +41,7 @@ Options[rowBlock] = Options[StringRow];
 
 rowBlock[items_, OptionsPattern[]] := Scope[
   UnpackOptions[rowAlignment, columnSpacings, frame, framePadding, frameStyle, spanningFrame];
+  frameStyle //= normFrameStyle;
   If[columnSpacings =!= 0, items = riffle[items, Spacer[columnSpacings]]];
   block = hstackBlocks[items, rowAlignment];
   block = blockPadding[block, framePadding];
@@ -68,6 +69,7 @@ Options[columnBlock] = Options[StringColumn];
 
 columnBlock[items_, OptionsPattern[]] := Scope[
   UnpackOptions[columnAlignment, rowSpacings, frame, framePadding, frameStyle, spanningFrame];
+  frameStyle //= normFrameStyle;
   If[rowSpacings =!= 0, items = riffle[items, Spacer[{1, rowSpacings}]]];
   block = vstackBlocks[items, columnAlignment];
   block = blockPadding[block, framePadding];
@@ -86,6 +88,9 @@ declareBoxFormatting[
   sb:StringBlockForm[_, ___Rule] :> makeStringBlockFormBoxes[sb]
 ]
 
+(* the first template slot is linear syntax for FE display,
+the second is HTML, which is ready to be inserted straight into markdown as-is.
+*)
 makeStringBlockFormBoxes[StringBlockForm[b_, opts___Rule]] :=
   TemplateBox[{
     ToString[#, InputForm]& @ fixExtensibleChars @ StringBlock[b, StylingFunction -> "Linear", opts],
@@ -107,17 +112,47 @@ StringBlock[e_, OptionsPattern[]] := CatchMessage @ Scope[
   $styleStack = {};
   $stylingFunction = Switch[stylingFunction,
     "Linear", linearStyling,
-    "HTML",   htmlColorStyling,
+    "HTML",   htmlStyling,
+    "Input",  inputStyling,
+    "Cell",   cellStyling,
     None,     #1&,
     _,        stylingFunction
   ];
-  StringJoin @ blockToStrings @ processBlock @ e
+  fragments = blockToStrings @ processBlock @ e;
+  If[stylingFunction === "Cell",
+    Cell[
+      TextData @ ReplaceRepeated[Flatten @ fragments, {l___, ls_String, rs_String, r___} :> {l, ls <> rs, r}],
+      "PreformattedCode"
+    ],
+    StringJoin @ fragments
+  ]
 ];
 
-htmlColorStyling[e_, styles_] := htmlStyledString[e, styles];
+(* these have special code in toCodeMarkdown to pick them up *)
+cellStyling[e_, {l___, "Subscript", r___}] := Cell[BoxData @ SubscriptBox["", cellStyling[e, {l, r}]]];
+cellStyling[e_, {l___, "Midscript", r___}] := StyleBox[cellStyling[e, {l, r}], FontSize -> 9.2];
+cellStyling[e_, {l___, "Superscript", r___}] := Cell[BoxData @ SuperscriptBox["", cellStyling[e, {l, r}]]]
+cellStyling[e_, {s__}] := StyleBox[e, s];
+cellStyling[e_, {}] := e;
 
-linearStyling[e_, {}] := e;
-linearStyling[e_, {s___}] := ToString[Style[e, s], StandardForm];
+inputStyling[e_, {l___, "Subscript", r___}] := {"_{", inputStyling[e, {l, r}], "}"};
+inputStyling[e_, {l___, "Midscript", r___}] := {"_{", inputStyling[e, {l, r}], "}"};
+inputStyling[e_, {l___, "Superscript", r___}] := {"^{", inputStyling[e, {l, r}], "}"};
+inputStyling[e_ ? SingleLetterQ, {FontColor -> color_}] := {$colorShortcodeMappingInverse[color], ":", e};
+inputStyling[e_, {FontColor -> color_}] := {$colorShortcodeMappingInverse[color], "{", e, "}"};
+inputStyling[e_, s_] := e;
+
+htmlStyling[e_, {l___, "Subscript", r___}] := {"<sub>", htmlStyling[e, {l, r}], "</sub>"};
+htmlStyling[e_, {l___, "Midscript", r___}] := {"<sub>", htmlStyling[e, {l, r}], "</sub>"};
+htmlStyling[e_, {l___, "Superscript", r___}] := {"<sup>", htmlStyling[e, {l, r}], "</sup>"};
+htmlStyling[e_, style_] := htmlStyledString[e, style];
+
+linearStyling[e_, {l___, "Subscript", r___}] := linearStyling[Subscript["", e], {l, r}];
+linearStyling[e_, {l___, "Midscript", r___}] := linearStyling[Subscript["", e], {l, r}];
+linearStyling[e_, {l___, "Superscript", r___}] := linearStyling[Superscript["", e], {l, r}];
+linearStyling[e_String, {}] := e;
+linearStyling[e_, {}] := ToString[e, StandardForm];
+linearStyling[e_, {s__}] := ToString[Style[e, s], StandardForm];
 
 StringBlock::badalign = "Bad alignment ``: should be one of ``."
 
@@ -125,8 +160,15 @@ blockToStrings = Case[
   $block[e_List, _, _] := Riffle[rowToStrings /@ e, "\n"];
 ];
 
+repChar[s_, w_Integer] := ConstantArray[s, w];
+repChar[s_, w_] := Flatten[{
+  repChar[s, Floor[w]],
+  Style[#, "Midscript"]& /@ repChar[s, Round[FractionalPart[w] * 4/3]]
+}];
+
 rowToStrings = Case[
-  $hspace[w_]        := ConstantArray[" ", w];
+  $hspace[w_Integer] := repChar[" ", w];
+  $hspace[w_]        := % @ repChar[" ", w];
   e_String           := e;
   None               := "";
   Style[e_, args___] := $stylingFunction[% @ e, ToList[args]];
@@ -153,9 +195,14 @@ processBlock = Case[
   VerticalModifierForm[ListForm[e___]]                := hframeBlock[processVert @ e, "[]"];
   VerticalModifierForm[SetForm[e___]]                 := hframeBlock[processVert @ e, "{}"];
 
+  Labeled[a_, l_]                                     := columnBlock[% /@ {a, l}, ColumnAlignment -> Center, RowSpacings -> 1];
+
+  ParenthesesForm[e_]                                 := hframeBlock[% @ e, "()"];
   TupleForm[e___]                                     := hframeBlock[processHoriz @ e, "()"];
   ListForm[e___]                                      := hframeBlock[processHoriz @ e, "[]"];
   SetForm[e___]                                       := hframeBlock[processHoriz @ e, "{}"];
+  Subscript[a_, b_]                                   := % @ Row[{a, Style[b, "Subscript"]}, Alignment -> Bottom];
+  Superscript[a_, b_]                                 := % @ Row[{a, Style[b, "Superscript"]}, Alignment -> Top];
 
   StyleDecorated[s_, TupleForm][e___]                 := hframeBlock[processHoriz @ e, "()", s];
   StyleDecorated[s_, ListForm][e___]                  := hframeBlock[processHoriz @ e, "[]", s];
@@ -166,8 +213,16 @@ processBlock = Case[
 
   na_NestedArrayForm                                  := % @ nestedArrayRender @ na;
   head_Symbol[arg_] /; StyleFormHeadQ[head]           := % @ Style[arg, StyleFormData @ head];
+
+  str_String /; StringContainsQ[str, "\!\(\*"]        := % @ parseLinearSyntax @ str;
+  str_String                                          := makeSingleBlock @ str;
   item_                                               := makeSingleBlock @ TextString @ item;
-  Style[item_, style___]                              := Block[{$styleStack = joinStyles[normStyle /@ {style}, $styleStack]}, % @ item];
+
+  Style[item_, style___]                              := Internal`InheritedBlock[
+    {$styleStack},
+    $styleStack = joinStyles[normStyle /@ {style}, $styleStack];
+    % @ item
+  ];
   Spacer[w_Integer]                                   := % @ Spacer[{w, 1}];
   Spacer[{w_Integer, h_Integer}]                      := spacerBlock[w, h];
   Spacer[0] | Spacer[{0,0}] | None | Nothing          := None;
@@ -177,16 +232,44 @@ processBlock = Case[
 
 (**************************************************************************************************)
 
+parseLinearSyntax[str_] /; StringFreeQ[str, "\!\(\*"] := str;
+
+linearBalancedQ[str_] := StringCount[str, "\("] == StringCount[str, "\)"];
+
+parseLinearSyntax[str_] := Row @ StringCases[str, {
+  "\!\(\*" ~~ inner:Shortest[___] ~~ "\)" /; linearBalancedQ[inner] :> parseInnerLinearSyntax[inner],
+  fragment__ /; StringFreeQ[fragment, "\!"] :> fragment
+}];
+
+parseInnerLinearSyntax[str_] := Scope[
+  str2 = StringReplace[str,
+    "\(" ~~ inner:Shortest[___] ~~ "\)" /; linearBalancedQ[inner] :> "\"" <> inner <> "\""
+  ];
+  ToExpression[str] /. {StyleBox -> Style, SubscriptBox -> Subscript, SuperscriptBox -> Superscript, RowBox -> Row}
+];
+
+(**************************************************************************************************)
+
+StringBlock::badfs = "Setting of FrameStyle -> `` should be a color or None.";
+
+normFrameStyle = Case[
+  color_ ? ColorQ      := FontColor -> color;
+  r:Rule[FontColor, _] := r;
+  other_               := (Message[StringBlock::badfs, other]; None);
+  None                 := None;
+]
+
 normStyle = Case[
   color_ ? ColorQ := FontColor -> color;
   Bold            := FontWeight -> Bold;
   Italic          := FontSlant -> Italic;
   Plain           := Splice[{FontWeight -> Plain, FontSlant -> Plain}];
   r:Rule[FontWeight|FontSlant|FontColor, _] := r;
+  s:"Subscript"|"Superscript" := s;
   _               := Nothing;
 ];
 
-joinStyles[s1_, s2_] := DeleteDuplicates[Join[s1, s2], First[#1] === First[#2]&];
+joinStyles[s1_, s2_] := DeleteDuplicates[Join[s1, s2], First[#1, "ZZ"] === First[#2, "YY"]&];
 
 applyStyleStack[e_] := applyStyle[Sequence @@ $styleStack] @ e;
 
@@ -196,6 +279,7 @@ applyStyle[s_List] := Apply[applyStyle, s];
 
 as_applyStyle[list_List] := Map[as, list];
 _applyStyle[s_$hspace] := s;
+_applyStyle[" "] := " ";
 _applyStyle[None] := None;
 applyStyle[s___][e_String] := Style[e, s];
 
@@ -233,7 +317,9 @@ riffle[args_, Spacer[0] | Spacer[{0,0}] | None | Nothing] := args;
 riffle[args_, e_] := Most @ Catenate @ Transpose @ {args, ConstantArray[processBlock @ e, Length @ args]};
 
 makeSingleBlock[s_String] /; StringContainsQ[s, "\n"] := makeBlock @ StringSplit[s, "\n"];
-makeSingleBlock[elem_] := $block[{applyStyleStack @ elem}, atomWidth @ elem, 1];
+makeSingleBlock[elem_] := Scope[frags = applyStyleStack @ elem;
+  $block[List @ frags, atomWidth @ frags, 1]
+];
 
 makeBlock[rows_List, align_:Left] := Scope[
   widths = atomWidth /@ rows;
@@ -255,6 +341,7 @@ hpadAtom[tw_, halign_][atom_, w_] := Scope[
 ];
 
 atomWidth = Case[
+  Style[e_, ___, "Superscript" | "Subscript", ___] := (% @ e) * 3 / 4;
   Style[e_, ___]    := % @ e;
   e_List            := Total[% /@ e];
   s_String          := StringLength @ s;
@@ -320,6 +407,8 @@ Options[gstackBlocks] = Options[StringMatrix];
 $hframeSpec = {$extFrameP, $extFrameP} | _String | _StyleDecorated[{$extFrameP, $extFrameP} | _String];
 gstackBlocks[rows_List, OptionsPattern[]] := Scope[
   UnpackOptions[rowAlignment, columnAlignment, rowSpacings, columnSpacings, dividers, frame, framePadding, frameStyle, rowFrames, rowFrameStyle, spanningFrame];
+  frameStyle //= normFrameStyle;
+  rowFrameStyle //= normFrameStyle;
   rows = riffleCols[columnSpacings] @ riffleRows[rowSpacings] @ rows;
   widths = Part[rows, All, All, 2]; heights = Part[rows, All, All, 3]; maxWidths = Max /@ Transpose[widths]; maxHeights = Max /@ heights;
   items = MapIndexed[gpadBlock, rows, {2}];
@@ -352,14 +441,17 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
     totalWidth = Part[block, 2]; totalHeight = Part[block, 3];
     True | "Round" | "Square",
       sfn = applyStyle @ frameStyle;
-      If[divs,
+      If[dividers === All,
         we = makeNotchedSides["│", {"├", "┤"}, totalHeight, maxHeights];
         sn = makeNotchedSides["─", {"┴", "┬"}, totalWidth, maxWidths];
       ,
         we = ConstantArray["│", {2, totalHeight}];
-        sn = ConstantArray["─", {2, totalWidth}];
+        sn = ConstantArray[repChar["─", totalWidth], 2];
       ];
-      apply8patch[block, sfn /@ StringJoin /@ we, sfn /@ sn, sfn /@ If[frame === "Round", $roundCompass, $squareCompass]],
+      $block[
+        apply8patch[First @ block, MatrixMap[sfn, we], sfn /@ sn, sfn /@ If[frame === "Round", $roundCompass, $squareCompass]],
+        totalWidth + 2, totalHeight + 2
+      ],
     {$extFrameP, $extFrameP} | _String,
       hframeBlock[block, frame, frameStyle, spanningFrame],
     False | None,
@@ -369,7 +461,9 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
   gpadBlock[elem_, {r_, c_}] := vpadBlock[Part[maxHeights, r], rowAlignment] @ hpadBlock[Part[maxWidths, c], columnAlignment] @ elem
 ];
 
+StringBlock::fracwid = "Fractional width `` occurred in unsupported context."
 makeNotchedSides[char_, {notch1_, notch2_}, n_, sizes_] := Scope[
+  If[!IntegerQ[n], ThrowMessage["fracwid", n]];
   notches = Accumulate[Most[sizes] + 1];
   side = ConstantArray[char, n];
   List[
@@ -398,7 +492,7 @@ addDivs[items_, ws_, hs_] := Scope[
 ];
 
 makeVBar[h_] := $block[ConstantArray["│", h], 1, h];
-makeHBar[w_] := $block[List @ ConstantArray["─", w], w, 1];
+makeHBar[w_] := $block[List @ repChar["─", w], w, 1];
 
 (**************************************************************************************************)
 
@@ -407,7 +501,7 @@ $squareCompass = {"┌", "┐", "└", "┘"};
 
 makeFrame[$block[rows_, w_, h_], r_] := Scope[
   we = ConstantArray["│", {2, h}];
-  sn = ConstantArray["─", {2, w}];
+  sn = ConstantArray[repChar["─", w], 2];
   rows2 = apply8patch[rows, we, sn, If[r, $roundCompass, $squareCompass]];
   $block[rows2, w + 2, h + 2]
 ]
@@ -456,6 +550,7 @@ $hextTableNames = Association[
   "DoubleSquare" -> {"DoubleSquareLeft", "DoubleSquareRight"},
   "Floor"        -> {"LeftFloor", "RightFloor"},
   "Ceiling"      -> {"LeftCeiling", "RightCeiling"},
+  "["            -> {"[", None},
   "[]"           -> {"[", "]"},
   "{}"           -> {"{", "}"},
   "()"           -> {"(", ")"}
