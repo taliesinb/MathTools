@@ -14,6 +14,7 @@ $flavorData["Base", "FileImageTemplate"]          = genericImageLinkTemplate;
 $flavorData["Base", "FileAnimatedImageTemplate"]  = Inherited;
 $flavorData["Base", "InlineLinkTemplate"]         = defaultLinkTemplate;
 $flavorData["Base", "InlineMathTemplate"]         = wrapDollar;
+$flavorData["Base", "KatexFontTemplate"]          = wrapDollar;
 $flavorData["Base", "KatexPostprocessor"]         = Identity;
 $flavorData["Base", "MarkdownPostprocessor"]      = Identity;
 $flavorData["Base", "MultilineMathTemplate"]      = wrapDoubleDollar;
@@ -49,10 +50,14 @@ $flavorData["Hugo", "ClassAttributeTemplate"]     = hugoClassAttr;
 $flavorData["Hugo", "FileImageTemplate"]          = genericImageTagTemplate;
 $flavorData["Hugo", "FileAnimatedImageTemplate"]  = genericAnimatedImageTagTemplate;
 $flavorData["Hugo", "InlineMathTemplate"]         = StringJoin["{{<k `", #, "`>}}"]&;
+$flavorData["Hugo", "KatexFontTemplate"]          = hugoKatexFontFunction;
 $flavorData["Hugo", "MultilineMathTemplate"]      = StringJoin["{{<kk `", #, "`>}}"]&;
 $flavorData["Hugo", "KatexPostprocessor"]         = splitOpenBraces;
 $flavorData["Hugo", "RawHTMLTemplate"]            = Identity;
 $flavorData["Hugo", "ExternalImportTemplate"]     = StringFunction @ """{{< readfile file="#1" >}}""";
+
+hugoKatexFontFunction[str_String] := $katexFontSpanTemplate[str, If[StringContainsQ[str, DoubleStruckCharacter], "AMS", "Regular"]];
+$katexFontSpanTemplate = StringFunction @ """<span style='font-family="KaTeX_#2"'>#1</span>""";
 
 hugoClassAttr[class_] := str |-> StringJoin[StringTrim @ str, "\n{", StringRiffle[StringJoinLeft[".", class], ", "], "}\n"];
 
@@ -84,6 +89,7 @@ MacroEvaluate @ UnpackAssociation[
   $fileAnimatedImageTemplate,
   $inlineLinkTemplate,
   $inlineMathTemplate,
+  $katexFontTemplate,
   $katexPostprocessor,
   $markdownPostprocessor,
   $multilineMathTemplate,

@@ -29,7 +29,7 @@ toMarkdownStringInner[spec_, returnVec_:False] := Scope[
     lines = insertAtFirstNonheader[lines, {katexMarkdown}]];
   result = StringJoin @ {Riffle[lines, "\n\n"], "\n\n"};
   If[!StringQ[result], ReturnFailed[]];
-  result //= StringReplace[$markdownTableReplacement] /* $markdownPostprocessor /* StringTrim;
+  result //= StringReplace[$codeJoining] /* StringReplace[$markdownTableReplacement] /* $markdownPostprocessor /* StringTrim;
   If[$includeFrontMatter && AssociationQ[frontMatter = NotebookFrontMatter @ spec],
     frontMatter = frontMatter /. None -> Null;
     frontMatter //= Developer`WriteRawJSONString /* StringReplace["\\/" -> "/"]; (* weird bug in ToJSON *)
@@ -38,6 +38,10 @@ toMarkdownStringInner[spec_, returnVec_:False] := Scope[
   If[!StringQ[result], ReturnFailed[]];
   result
 ];
+
+(**************************************************************************************************)
+
+$codeJoining = "⋮</pre>\n\n<pre>" -> "";
 
 (**************************************************************************************************)
 
@@ -180,8 +184,6 @@ cellToMarkdownInner1 = Case[
   Cell["Under construction.", _]         := bannerToMarkdown @ "UNDER CONSTRUCTION";
   Cell[e_, "Banner"]                     := bannerToMarkdown @ e;
 
-  Cell[BoxData[TemplateBox[{_, str_String}, "StringBlockForm"]], _] := "<pre>\n" <> str <> "\n</pre>";
-
   c:Cell[BoxData[GraphicsBox[TagBox[_, _BoxForm`ImageTag, ___], ___]], _] := cellToRasterMarkdown @ c;
 
   Cell[e_, "Title"]                      := StringJoin[headingDepth @ -1, textCellToMarkdown @ e];
@@ -207,10 +209,9 @@ cellToMarkdownInner1 = Case[
        
   Cell[code_, "ExternalLanguage"]        := ($lastExternalCodeCell = code; StringJoin["```python\n", code, "\n```"]);
 
-  (* Cell[b_, "Output"] /; ContainsQ[b, "LinkHand"] := (Beep[]; Nothing); *)
   Cell[b_, "Output"]                     := outputCellToMarkdown @ b;
 
-  Cell[code_String, "PreformattedCode"]  := toCodeMarkdown[code, True];
+  Cell[code_, "PreformattedCode"]        := toCodeMarkdown[code, True];
 
   Cell[s_String, "PythonOutput"]         := plaintextCodeToMarkdown @ s;
   e:Cell[_, "PythonOutput"]              := cellToRasterMarkdown @ e;
@@ -231,7 +232,7 @@ PrivateVariable[$lastCaption, $lastExternalCodeCell]
 $lastCaption = $lastExternalCodeCell = None;
 
 $outputCaptionPattern = RowBox[{"(*", RowBox[{"CAPTION", ":", caption___}], "*)"}] :>
-  StringJoin @ textBoxesToMarkdownOuter @ RowBox[{caption}];
+  textToMarkdown @ RowBox[{caption}];
 
 headingDepth[n_] := StringRepeat["#", Max[n + $headingDepthOffset, 1]] <> " ";
 

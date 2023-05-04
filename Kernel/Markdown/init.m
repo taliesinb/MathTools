@@ -26,6 +26,7 @@ SymbolTranslationData[schema_] := Scope[
 (**************************************************************************************************)
 
 makeLiteralReplacementRule[assoc_, wrap_] := ModuleScope[
+  If[!wrap, assoc = Association @ Select[Normal @ assoc, Apply[#1 =!= assoc[#2]&]]];
   keys = Keys[assoc];
   patt = StringJoin["(", Riffle[keys, "|"], ")"];
   re = RegularExpression @ StringReplace[patt, "$" -> "\\$"];
@@ -43,6 +44,12 @@ $WLSymbolToKatexRegex = makeLiteralReplacementRule[SymbolTranslationData[<|"Symb
 PublicVariable[$WLSymbolToUnicode]
 
 $WLSymbolToUnicode = makeLiteralReplacementRule[SymbolTranslationData[<|"Symbol" -> "Unicode"|>], False]
+
+(**************************************************************************************************)
+
+PrivateFunction[wlCharactersToUnicode]
+
+wlCharactersToUnicode[s_String] := StringReplace[s, $WLSymbolToUnicode];
 
 (**************************************************************************************************)
 
@@ -82,6 +89,7 @@ PrivateVariable[$fileImageTemplate]
 PrivateVariable[$fileAnimatedImageTemplate]
 PrivateVariable[$inlineLinkTemplate]
 PrivateVariable[$inlineMathTemplate]
+PrivateVariable[$katexFontTemplate]
 PrivateVariable[$katexPostprocessor]
 PrivateVariable[$markdownPostprocessor]
 PrivateVariable[$multilineMathTemplate]
@@ -116,6 +124,7 @@ setupMarkdownGlobals[] := Quoted[
     $fileAnimatedImageTemplate,
     $inlineLinkTemplate,
     $inlineMathTemplate,
+    $katexFontTemplate,
     $katexPostprocessor,
     $markdownPostprocessor,
     $multilineMathTemplate,

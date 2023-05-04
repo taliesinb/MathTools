@@ -42,7 +42,7 @@ textCellToMarkdown[e_] := Scope[
     Return[""]
   ];
   Check[
-    text = StringTrim @ StringJoin @ textCellToMarkdownOuter @ e;
+    text = StringTrim @ textToMarkdown @ e;
   ,
     Message[ToMarkdownString::msgs];
     Print[MsgExpr[text, 6, 50]];
@@ -93,10 +93,24 @@ $finalStringFixups2 = {
 
 WhiteString = _String ? (StringMatchQ[Whitespace]);
 
-textCellToMarkdownOuter = Case[
+(**************************************************************************************************)
+
+PrivateFunction[textToMarkdown]
+
+(* textToMarkdown yields an entire paragraph worth of text, and can be called from several contexts,
+like a cell of a textual table, or the boxes of a Text cell *)
+textToMarkdown[e_] := Scope[
+  str = iTextToMarkdown @ e;
+  str //= StringJoin;
+  str //= processInlineCodeBlocks;
+  str //= wlCharactersToUnicode;
+  str
+];
+
+iTextToMarkdown = Case[
 
   BoxData[t:TagBox[_, "ClassTaggedForm"[_]]]                              := % @ t;
-  TagBox[box_, "ClassTaggedForm"[tag_]]                                   := $classAttributeTemplate[{tag}] @ textCellToMarkdownOuter @ box;
+  TagBox[box_, "ClassTaggedForm"[tag_]]                                   := $classAttributeTemplate[{tag}] @ % @ box;
 
   BoxData[box_ ? pureTextBoxesQ]                                          := textBoxesToMarkdown @ box;
   BoxData[box_]                                                           := toMultilineMath @ box;
@@ -157,15 +171,18 @@ procTextualNewlines = Case[
 PrivateFunction[textBoxesToMarkdown]
 
 PrivateVariable[$textPostProcessor]
+
+PrivateVariable[$allowMDemph]
+
 $textPostProcessor = Identity;
 
 (* TODO: just wrap inline math with a symbolic wrapper, then replace that with inlineMathTemplate later.
 this will allow us to interpret $ as coming soley from user and not a result of inlineMathTemplate *)
 
-$lastSpace = True;
+$lastSpace = $allowMDemph = True;
 textBoxesToMarkdown = Case[
   str_String :=
-    $textPostProcessor @ subColorShortcodes @ StringJoin @ checkLastSpace @ str;
+    $textPostProcessor @ StringJoin @ checkLastSpace @ str;
 
   list_List :=
     Map[%, list];
@@ -211,9 +228,9 @@ wordQ[e_] := StringQ[e] && StringMatchQ[e, WordCharacter..];
 
 styleBoxToMarkdown = Case[ 
   StyleBox[e_String, "PreformattedCode"] := "<code>" <> e <> "</code>";
-  StyleBox[e_String, FontSlant -> Italic|"Italic"] /; TrueQ[$lastSpace] && wordQ[e]                             := wrapWith[e, "*"];
-  StyleBox[e_String, FontWeight -> Bold|"Bold"] /; TrueQ[$lastSpace] && wordQ[e]                                := wrapWith[e, "**"];
-  StyleBox[e_String, FontSlant  -> Italic|"Italic", FontWeight -> Bold|"Bold"] /; TrueQ[$lastSpace] && wordQ[e] := wrapWith[e, "***"];
+  StyleBox[e_String, FontSlant -> Italic|"Italic"] /; TrueQ[$lastSpace && $allowMDemph] && wordQ[e]                             := wrapWith[e, "*"];
+  StyleBox[e_String, FontWeight -> Bold|"Bold"] /; TrueQ[$lastSpace && $allowMDemph] && wordQ[e]                                := wrapWith[e, "**"];
+  StyleBox[e_String, FontSlant  -> Italic|"Italic", FontWeight -> Bold|"Bold" && $allowMDemph] /; TrueQ[$lastSpace] && wordQ[e] := wrapWith[e, "***"];
   StyleBox[e_, rules___] := htmlStyledString[textBoxesToMarkdown @ e, {rules}];
 ]
 
@@ -264,9 +281,9 @@ wrapWith[e_, wrap_] := Scope[
 
 (**************************************************************************************************)
 
-$shortcodeP = "F:" | "\\n" | "^{" | "_{";
+$shortcodeP = "</span>" | "\n" | "F{" | "F:" | "\\n" | "^{" | "_{" | ("_" ~~ DigitCharacter) | ("^" ~~ DigitCharacter);
 
-subColorShortcodes[str_String] := StringReplace[str, {
+processInlineCodeBlocks[str_String] := StringReplace[str, {
   code:("`" ~~ body:Shortest[___] ~~ "`") :> If[StringFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, False]],
   code:("```" ~~ body:Shortest[___] ~~ "```") :> If[StringFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, True]]
 }]

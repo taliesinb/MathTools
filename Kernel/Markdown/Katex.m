@@ -165,7 +165,7 @@ cleanupInlineBoxes = RightComposition[
 
 PrivateFunction[errorKatex]
 
-errorKatex[tag_] := StringJoin["""\textbf{\textcolor{e1432d}{""", tag, "}}"];
+errorKatex[tag_] := StringJoin["""\textbf{\textcolor{e1432d}{bad template box: """, tag, "}}"];
 
 (**************************************************************************************************)
 

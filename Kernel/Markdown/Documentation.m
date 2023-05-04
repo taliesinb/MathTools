@@ -172,7 +172,7 @@ lineInnerMarkdown = Case[
 TSymbolP = (TLiteralSymbol|TMain|TSymbol|TOptionSymbol);
 
 markdownDispatch = Case[
-  s_String := wlToUnicode[s];
+  s_String := wlCharactersToUnicode[s];
   l_List := Map[$f, l];
   TAssoc[args___] := {"<|", mapSeq[$f, args], "|>"};
   TBrace[args___] := {"{", mapSeq[$f, args], "}"};
@@ -191,8 +191,6 @@ mathMarkdown[TMathSpan[args___]] := {"$",
    StringTrim @ StringJoin @ markdownDispatch[innerMathMarkdown, {args}],
    "$"
 };
-
-wlToUnicode[s_] := StringReplace[s, $WLSymbolToUnicode];
 
 $infixTranslation = StringJoin["\,{", #, "}\,"]& /@ Take[SymbolTranslationData[<|"InputForm" -> "Katex"|>], 12];
 $infixTranslation["=="] = "\,⩵\,";

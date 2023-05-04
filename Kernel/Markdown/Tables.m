@@ -24,10 +24,11 @@ createMarkdownTable[ostr_String] := Scope[
 (**************************************************************************************************)
 
 toMarkdownTableString[grid_, allowCompact_] := Scope[
-  If[!MatrixQ[grid],
+  If[!MatrixQ[grid, True&],
     Print["Bad table!"];
     Print["First row is: ", First @ grid];
     Print["Row lengths are: ", Length /@ grid];
+    PrintIF[grid];
     Return["BADTABLE"];
   ];
   ncols = Length @ First @ grid;
@@ -64,7 +65,7 @@ textGridToMarkdown[GridBox[grid_, opts___]] := Scope[
 
 gridElementToMarkdown = Case[
   Cell[TextData[Cell[BoxData @ FormBox[boxes_, ___], ___], ___], ___] := inlineCellToMarkdown[boxes, False];
-  Cell[text_, "Text"] := textBoxesToMarkdown[text];
-  str_String := textBoxesToMarkdown[str];
+  Cell[text_, "Text"] := textToMarkdown @ text;
+  str_String := textToMarkdown @ str;
   other_ := Print["UNKNOWN GRID ELEMENT: ", MsgExpr[other, 5, 40]];
 ];

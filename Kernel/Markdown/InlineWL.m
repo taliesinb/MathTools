@@ -10,6 +10,9 @@ $inlineWLVarReplacement = s:("$" ~~ WordCharacter ~~ RepeatedNull[WordCharacter 
 TODO: ue this instead: RegularExpression @ "(\\(\\([^\n]+\\)\\))|(\\$[[:alpha:]][[:alpha:][:digit:]$]*\\b)";
 *)
 
+createInlineMath[str_String /; StringLength[str] == 2] :=
+  $katexFontTemplate @ StringDrop[str, 1];
+
 createInlineMath[str_String] := Scope[
   res = toInlineExpression[str, InputForm];
   If[FailureQ[res], res = badInlinePlaceholder[str]];
@@ -86,6 +89,7 @@ inlineCellToMarkdown[boxes_, inline_] := Scope[
     (* TODO: support inline images *)
     TemplateBox[{_, _}, "StringBlockForm"],
       (* TODO: introduce $inlineHTMLCodeTemplate for this *)
+
       If[inline, "<code>", "<pre>"] <> Part[evalBoxes, 1, 2] <> If[inline, "</code>", "</pre>"],
 
     _,
