@@ -105,7 +105,8 @@ procNA[(t:"Row"|"SpanningRow"|"NormalRow") -> col_, rest___][array_] :=
     ColumnSpacings -> third[col, If[SeqLength[rest] == 0, 1, 0]],
     Frame -> "[]", FrameStyle -> toAxisColor @ first[col, col],
     FramePadding -> {Horizontal -> second[col, 0]},
-    SpanningFrame -> shouldSpanQ[t]
+    SpanningFrame -> shouldSpanQ[t],
+    Background -> fourth[col, None]
   ];
 
 procNA[(t:"Column"|"SpanningColumn"|"NormalColumn") -> col_, rest___][array_] :=
@@ -115,12 +116,13 @@ procNA[(t:"Column"|"SpanningColumn"|"NormalColumn") -> col_, rest___][array_] :=
     Frame -> "[]", FrameStyle -> toAxisColor @ first[col, col],
     RowSpacings -> third[col, 0],
     FramePadding -> {Horizontal -> second[col, 0]},
-    SpanningFrame -> shouldSpanQ[t]
+    SpanningFrame -> shouldSpanQ[t],
+    Background -> fourth[col, None]
   ];
 
 NestedArrayForm::notmatrix = "`` is not a matrix, but `` was specified.";
 
-procNA[(t:"Grid"|"SpanningGrid"|"NormalGrid") -> {col1_, col2_}, rest___][array_] :=
+procNA[(t:"Grid"|"SpanningGrid"|"NormalGrid") -> {col1_, col2_, col3_:None}, rest___][array_] :=
   StringMatrix[
     If[!MatrixQ[array, True&], ThrowMessage["notmatrix", array, t]];
     MatrixMap[procNA[rest], array],
@@ -130,12 +132,14 @@ procNA[(t:"Grid"|"SpanningGrid"|"NormalGrid") -> {col1_, col2_}, rest___][array_
     RowFrames -> "[]", RowFrameStyle -> toAxisColor @ first[col2, col2],
     FramePadding -> {Horizontal -> second[col1, 0]},
     RowFramePadding -> second[col2, 0],
-    SpanningFrame -> shouldSpanQ[t]
+    SpanningFrame -> shouldSpanQ[t],
+    Background -> col3
   ];
 
-first[{a_, ___}, _] := a;      first[_, e_] := e;
-second[{a_, b_, ___}, _] := b; second[_, e_] := e;
-third[{a_, b_, c_}, _] := c;   third[_, e_] := e;
+first[{a_, ___}, _] := a;         first[_, e_] := e;
+second[{a_, b_, ___}, _] := b;    second[_, e_] := e;
+third[{a_, b_, c_}, _] := c;      third[_, e_] := e;
+fourth[{a_, b_, c_, d_}, _] := d; fourth[_, e_] := e;
 
 procNA[] := Identity;
 

@@ -68,7 +68,7 @@ hugoCustomStylesFunction[styleNames_] := Scope[
       ], ";"], "}"},
       styleNames
     ],
-    "</style>"
+    "</style>\n\n"
   ]
 ];
 

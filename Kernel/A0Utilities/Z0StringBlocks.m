@@ -14,7 +14,8 @@ Options[StringMatrix] = {
   RowFrames -> None,
   RowFrameStyle -> None,
   RowFramePadding -> None,
-  SpanningFrame -> False
+  SpanningFrame -> False,
+  Background -> None
 };
 
 DefineStandardTraditionalForm[
@@ -31,7 +32,8 @@ Options[StringRow] = {
   Frame -> None,
   FramePadding -> None,
   FrameStyle -> None,
-  SpanningFrame -> False
+  SpanningFrame -> False,
+  Background -> None
 }
 
 DefineStandardTraditionalForm[
@@ -41,12 +43,12 @@ DefineStandardTraditionalForm[
 Options[rowBlock] = Options[StringRow];
 
 rowBlock[items_, OptionsPattern[]] := Scope[
-  UnpackOptions[rowAlignment, columnSpacings, frame, framePadding, frameStyle, spanningFrame];
+  UnpackOptions[rowAlignment, columnSpacings, frame, framePadding, frameStyle, spanningFrame, background];
   frameStyle //= normFrameStyle;
   If[columnSpacings =!= 0, items = riffle[items, Spacer[columnSpacings]]];
   block = hstackBlocks[items, rowAlignment];
   block = blockPadding[block, framePadding];
-  hframeBlock[block, frame, frameStyle, spanningFrame]
+  hframeBlock[block, frame, frameStyle, spanningFrame, background]
 ];
 
 (**************************************************************************************************)
@@ -59,7 +61,8 @@ Options[StringColumn] = {
   Frame -> None,
   FramePadding -> None,
   FrameStyle -> None,
-  SpanningFrame -> False
+  SpanningFrame -> False,
+  Background -> None
 }
 
 DefineStandardTraditionalForm[
@@ -69,12 +72,12 @@ DefineStandardTraditionalForm[
 Options[columnBlock] = Options[StringColumn];
 
 columnBlock[items_, OptionsPattern[]] := Scope[
-  UnpackOptions[columnAlignment, rowSpacings, frame, framePadding, frameStyle, spanningFrame];
+  UnpackOptions[columnAlignment, rowSpacings, frame, framePadding, frameStyle, spanningFrame, background];
   frameStyle //= normFrameStyle;
   If[rowSpacings =!= 0, items = riffle[items, Spacer[{1, rowSpacings}]]];
   block = vstackBlocks[items, columnAlignment];
   block = blockPadding[block, framePadding];
-  hframeBlock[block, frame, frameStyle, spanningFrame]
+  hframeBlock[block, frame, frameStyle, spanningFrame, background]
 ];
 
 (**************************************************************************************************)
@@ -166,7 +169,7 @@ linearStyling[e_, {s__}] := ToString[Style[e, s], StandardForm];
 StringBlock::badalign = "Bad alignment ``: should be one of ``."
 
 blockToStrings = Case[
-  $block[e_List, _, _] := Riffle[rowToStrings /@ e, "\n"];
+  $block[e_List, _, _] := Riffle[rowToStrings[Flatten @ #]& /@ e, "\n"];
 ];
 
 StringBlock::spacefail = "Spacer `` could not be achieved with combination of normal and superscript characters."
@@ -185,6 +188,8 @@ repChar[s_, w_] := Scope[
 rowToStrings = Case[
   $hspace[w_Integer] := repChar[" ", w];
   $hspace[w_]        := % @ repChar[" ", w];
+  {l___, $sbg[col_], Shortest[m___], $ebg[col_], r___} /; Count[{l}, _$sbg] === Count[{l}, _$ebg] :=
+    {% @ {l}, $stylingFunction[StringJoin @ % @ {m}, normStyle /@ {Background -> col}], % @ {r}};
   e_String           := e;
   None               := "";
   Style[e_, args___] := $stylingFunction[% @ e, ToList[args]];
@@ -290,7 +295,9 @@ normFrameStyle = Case[
 
 normStyle = Case[
   color_ ? ColorQ := FontColor -> color;
-  i_Integer       := currentStyleSetting[FontColor, "Color" <> IntegerString[i]];
+  i_Integer       := %[FontColor -> i];
+  FontColor -> i_Integer  := currentStyleSetting[FontColor, "Color" <> IntegerString[i]];
+  Background -> i_Integer := currentStyleSetting[Background, "Background" <> IntegerString[i]];
   Bold            := FontWeight -> Bold;
   Italic          := FontSlant -> Italic;
   Plain           := Splice[{FontWeight -> Plain, FontSlant -> Plain}];
@@ -459,7 +466,7 @@ Options[gstackBlocks] = Options[StringMatrix];
 
 $hframeSpec = {$extFrameP, $extFrameP} | _String | _StyleDecorated[{$extFrameP, $extFrameP} | _String];
 gstackBlocks[rows_List, OptionsPattern[]] := Scope[
-  UnpackOptions[rowAlignment, columnAlignment, rowSpacings, columnSpacings, dividers, frame, framePadding, frameStyle, rowFrames, rowFrameStyle, rowFramePadding, spanningFrame];
+  UnpackOptions[rowAlignment, columnAlignment, rowSpacings, columnSpacings, dividers, frame, framePadding, frameStyle, rowFrames, rowFrameStyle, rowFramePadding, spanningFrame, background];
   frameStyle //= normFrameStyle;
   rowFrameStyle //= normFrameStyle;
   rows = riffleCols[columnSpacings] @ riffleRows[rowSpacings] @ rows;
@@ -472,11 +479,11 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
       items = MapAt[padBlock[#, Left -> rowFramePadding]&, items, {All, 1}];
       items = MapAt[padBlock[#, Right -> rowFramePadding]&, items, {All, -1}];
     ];
-    If[lext =!= None, items = MapAt[hframeBlock[#, {lext, None}, rowFrameStyle, spanningFrame]&, items, {jump, 1}]];
-    If[rext =!= None, items = MapAt[hframeBlock[#, {None, rext}, rowFrameStyle, spanningFrame]&, items, {jump, -1}]];
+    If[lext =!= None, items = MapAt[hframeBlock[#, {lext, None}, rowFrameStyle, spanningFrame, None]&, items, {jump, 1}]];
+    If[rext =!= None, items = MapAt[hframeBlock[#, {None, rext}, rowFrameStyle, spanningFrame, None]&, items, {jump, -1}]];
     If[rowSpacings =!= 0,
-      If[lext =!= None, items = MapAt[hframeBlock[#, {" ", None}, None, True]&, items, {2;;-1;;2, 1}]];
-      If[rext =!= None, items = MapAt[hframeBlock[#, {None, " "}, None, True]&, items, {2;;-1;;2, -1}]];
+      If[lext =!= None, items = MapAt[hframeBlock[#, {" ", None}, None, True, None]&, items, {2;;-1;;2, 1}]];
+      If[rext =!= None, items = MapAt[hframeBlock[#, {None, " "}, None, True, None]&, items, {2;;-1;;2, -1}]];
     ];
     widths = Part[items, All, All, 2]; heights = Part[items, All, All, 3]; maxWidths = Max /@ Transpose[widths]; maxHeights = Max /@ heights;
   ];
@@ -510,7 +517,7 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
         totalWidth + 2, totalHeight + 2
       ],
     {$extFrameP, $extFrameP} | _String,
-      hframeBlock[block, frame, frameStyle, spanningFrame],
+      hframeBlock[block, frame, frameStyle, spanningFrame, background],
     False | None,
       block
   ]
@@ -615,17 +622,18 @@ $hextTableNames = Association[
 
 StringBlock::badframe = "`` is not a valid spec for Frame, which should be one of ``."
 
-hframeBlock[arg1_, arg2_] := hframeBlock[arg1, arg2, None, True];
+hframeBlock[arg1_, arg2_] := hframeBlock[arg1, arg2, None, True, None];
 
-hframeBlock[block_, name_String, style_, spanning_] :=
-  hframeBlock[block, Lookup[$hextTableNames, name, ThrowMessage["badframe", name, Keys @ $hextTableNames]], style, spanning];
+hframeBlock[block_, name_String, rest___] :=
+  hframeBlock[block, Lookup[$hextTableNames, name, ThrowMessage["badframe", name, Keys @ $hextTableNames]], rest];
 
-hframeBlock[block_, None | {None, None}, style_, _] := block;
+hframeBlock[block_, None | {None, None}, ___] := block;
 
-hframeBlock[$block[grid_, w_, h_], {l_, r_}, style_, spanning_] := Scope[
+hframeBlock[$block[grid_, w_, h_], {l_, r_}, style_, spanning_, background_] := Scope[
   $n = h; sfn = applyStyle @ style;
   {lext, rext} = MapThread[Map[sfn, extend[hextTable[#1], spanning, #2]]&, {{l, r}, {False, True}}];
   grid2 = MapThread[DeleteNone @ Flatten @ {#1, #2, #3}&, {lext, grid, rext}];
+  If[background =!= None, grid2 = ToList[$sbg[background], #, $ebg[background]]& /@ grid2];
   $block[grid2, w + If[l === None, 0, 1] + If[r === None, 0, 1], h]
 ];
 

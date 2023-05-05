@@ -290,7 +290,7 @@ wrapWith[e_, wrap_] := Scope[
 
 (**************************************************************************************************)
 
-$shortcodeP = "</span>" | "\n" | "B{" | "B:" | "F{" | "F:" | "\\n" | "^{" | "_{" | ("_" | "^" ~~ DigitCharacter);
+$shortcodeP = "</span>" | "\n" | "B{" | "B:" | "F{" | "F:" | "\\n" | "^{" | "_{" | ("_" | "^" ~~ DigitCharacter) | DoubleStruckLetter;
 
 processInlineCodeBlocks[str_String] := StringReplace[str, {
   code:("`" ~~ body:Shortest[___] ~~ "`") :> If[StringFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, False]],
