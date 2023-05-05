@@ -1,6 +1,37 @@
-PublicFunction[ColorHexString]
+PublicFunction[HexColorString]
 
-ColorHexString[color_] := ColorHexString[color] = StringDrop[Image`Utilities`toHEXcolor[color], 1];
+HexColorString[c:$ColorPattern] := HexColorString[c] = toHexColor @ ToRGB @ c;
+_HexColorString := BadArguments[];
+
+toHexColor[c_List] := toHexColor[c] = StringJoin @ IntegerString[Floor[(255 * c) + 1 / 2], 16, 2];
+_toHexColor := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicFunction[FromHexColorString]
+
+FromHexColorString[str_String] /; StringLength[str] == 6 := fromHexColor[str];
+_FromHexColorString := BadArguments[];
+
+SetListable[fromHexValue];
+fromHexColor[s_] := fromHexColor[s] = RGBColor @ N @ fromHexValue @ StringTake[s, {{1, 2}, {3, 4}, {5, 6}}];
+fromHexValue[s_] := FromDigits[s, 16] / 255.;
+
+(**************************************************************************************************)
+
+PublicFunction[HTMLColorString, FromHTMLColorString]
+
+HTMLColorString[None] := "none";
+HTMLColorString[Black] := "black";
+HTMLColorString[White] := "white";
+HTMLColorString[c:$ColorPattern] := HTMLColorString[c] = StringJoin["#", HexColorString @ c];
+_HTMLColorString := BadArguments[];
+
+FromHTMLColorString["none"] := None;
+FromHTMLColorString["black"] := Black;
+FromHTMLColorString["white"] := White;
+FromHTMLColorString[str_String] /; StringLength[str] == 7 := FromHexColorString @ StringDrop[str, 1];
+_FromHTMLColorString := BadArguments[];
 
 (**************************************************************************************************)
 
@@ -209,13 +240,6 @@ ToOklab[e_] := RGBToOklab[ToRGB[e]];
 FromOklab[lab_List] := RGBColor @@ OklabToRGB[lab];
 FromOklab[lab_List ? MatrixQ] := RGBColor @@@ OklabToRGB[lab]
 
-$toRGBRules = Dispatch[{
-  RGBColor[r_, g_, b_] :> {r, g, b},
-  RGBColor[{r_, g_, b_}] :> {r, g, b},
-  c:(_GrayLevel | _XYZColor | _CMYKColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) :>
-    RuleCondition[List @@ ColorConvert[c, "RGB"]]
-}];
-
 normalizeLightness[colors_, fraction_:1] := Scope[
   {l, a, b} = Transpose @ ToOklab[colors];
   l[[All]] = (Mean[l] * fraction) + l[[All]] * (1 - fraction);
@@ -227,6 +251,13 @@ normalizeLightness[colors_, fraction_:1] := Scope[
 PrivateFunction[ToRGB]
 
 ToRGB[e_] := ReplaceAll[e, $toRGBRules];
+
+$toRGBRules = Dispatch[{
+  RGBColor[r_, g_, b_, ___] :> {r, g, b},
+  RGBColor[{r_, g_, b_, ___}] :> {r, g, b},
+  c:(_GrayLevel | _XYZColor | _CMYKColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) :>
+    RuleCondition[List @@ ColorConvert[c, "RGB"]]
+}];
 
 (**************************************************************************************************)
 

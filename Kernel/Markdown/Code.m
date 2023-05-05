@@ -23,10 +23,10 @@ toCodeMarkdown[code_, multiline_] := Scope[
 ];
 
 $shortcodeRules = {
-  (code:$colorShortCodes ~~ ":" ~~ next_) :> applyShortcode[code, next],
-  (code:$colorShortCodes ~~ "{" ~~ body:Except["\n"|"}"].. ~~ "}") :> applyShortcode[code, body],
-  "\[DoubleStruckCapitalK]" | "𝕂" -> "<span style='font-weight:bold'>K</span>",
-  "\[DoubleStruckCapitalV]" | "𝕍" -> "<span style='font-weight:bold'>V</span>", (* Fira Code doesn't have well-sized DS letters outside R,C,N,Z etc *)
+  (code:$colorShortcodeP ~~ ":" ~~ next_) :> applyShortcode[code, next],
+  (code:$colorShortcodeP ~~ "{" ~~ body:Except["\n"|"}"].. ~~ "}") :> applyShortcode[code, body],
+  (* Fira Code doesn't have well-sized DS letters outside R,C,N,Z etc *)
+  l:DoubleStruckLetter :> doubleStruckToBoldRoman[l],
   "\\n" | "\n" ~~ s:" ".. :> StringJoin["<br>", ConstantArray["&nbsp;", StringLength @ s]],
   "\\n" | "\n" -> "<br>",
   "^{" ~~ sup:Shortest[___] ~~ "}" :> StringJoin["<sup>", sup, "</sup>"],
@@ -37,34 +37,51 @@ $shortcodeRules = {
 
 (**************************************************************************************************)
 
-$colorShortcodeMapping = <|
-  "RF"  -> $Red,
-  "GF"  -> $Green,
-  "BF"  -> $Blue,
-  "OF"  -> $Orange,
-  "TF"  -> $Teal,
-  "GrF" -> $Gray,
-  "PiF" -> $Pink,
-  "PuF" -> $Purple,
-  "1F"  -> "Color1",
-  "2F"  -> "Color2",
-  "3F"  -> "Color3",
-  "4F"  -> "Color4",
-  "5F"  -> "Color5",
-  "6F"  -> "Color6",
-  "7F"  -> "Color7",
-  "8F"  -> "Color8"
+$doubleStruckLetterList = Characters @ $DoubleStruckLetters;
+$romanLetterList = Characters @ $RomanLetters;
+
+doubleStruckToBoldRoman[char:("ℂ" | "ℕ" | "ℚ" | "ℝ" | "ℤ")] := char;
+doubleStruckToBoldRoman[char_] := $boldFontTemplate @ Part[$romanLetterList, IndexOf[$doubleStruckLetterList, char]];
+
+$boldFontTemplate = StringFunction @ "<span style='font-weight:bold'>#1</span>";
+
+(**************************************************************************************************)
+
+$textColorShortcodes = <|
+  "RF"  -> $Red,     "1F"  -> "Color1",
+  "BF"  -> $Blue,    "2F"  -> "Color2",
+  "GF"  -> $Green,   "3F"  -> "Color3",
+  "OrF" -> $Orange,  "4F"  -> "Color4",
+  "PuF" -> $Purple,  "5F"  -> "Color5",
+  "TeF" -> $Teal,    "6F"  -> "Color6",
+  "GrF" -> $Gray,    "7F"  -> "Color7",
+  "PiF" -> $Pink,    "8F"  -> "Color8",
+  "YeF" -> $Yellow,  "9F"  -> "Color9"
 |>;
 
-$colorShortCodes = Apply[Alternatives, Keys @ $colorShortcodeMapping];
+$backgroundShortcodes = <|
+  "1B" -> "Background1",
+  "2B" -> "Background2",
+  "3B" -> "Background3",
+  "4B" -> "Background4",
+  "5B" -> "Background5",
+  "6B" -> "Background6",
+  "7B" -> "Background7",
+  "8B" -> "Background8"
+|>;
 
-applyShortcode[code_, next_] :=
-  htmlStyledString[next, {FontColor -> Lookup[$colorShortcodeMapping, code]}];
+$colorShortcodeP = Join[AssociationKeyPattern @ $textColorShortcodes, AssociationKeyPattern @ $backgroundShortcodes];
+
+applyShortcode[code_ /; StringMatchQ[code, _ ~~ "B"], text_] :=
+  htmlStyledString[text, {Background -> Lookup[$backgroundShortcodes, code]}];
+
+applyShortcode[code_, text_] :=
+  htmlStyledString[text, {FontColor -> Lookup[$textColorShortcodes, code]}];
 
 (**************************************************************************************************)
 
 PrivateVariable[$colorShortcodeMappingInverse]
 
-$colorShortcodeMappingInverse := AssociationInvert[$colorShortcodeMapping];
+$colorShortcodeMappingInverse := AssociationInvert[$textColorShortcodes];
 
 

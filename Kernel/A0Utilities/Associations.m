@@ -23,6 +23,12 @@ iLookup[dict1_, key_] := Lookup[dict1, key, Automatic];
 
 (**************************************************************************************************)
 
+PublicFunction[AssociationKeyPattern]
+
+AssociationKeyPattern[assoc_Association] := Apply[Alternatives, Keys @ assoc];
+
+(**************************************************************************************************)
+
 PublicFunction[AssociationRange, RangeAssociation]
 
 SetRelatedSymbolGroup[AssociationRange, RangeAssociation, RuleRange];

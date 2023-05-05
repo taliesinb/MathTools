@@ -363,9 +363,6 @@ toColStr = Case[
 	c_ ? ColorQ   := Set[toColStr[c], toHexColor[c]];
 ];
 
-toHexColor[e_] := toHexColor[e] = Image`Utilities`toHEXcolor[e];
-fromHexColor[s_] := RGBColor @ Map[FromDigits[#, 16]/255.&, StringPartition[StringDrop[s, 1], 2]];
-
 fromColStr = Case[
   "none"                            := None;
   "black"                           := Black;

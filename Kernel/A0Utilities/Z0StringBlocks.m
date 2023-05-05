@@ -1,6 +1,6 @@
 PublicForm[StringMatrix]
 
-PublicOption[RowAlignment, ColumnAlignment, FramePadding, RowFrames, RowFrameStyle, SpanningFrame]
+PublicOption[RowAlignment, ColumnAlignment, FramePadding, RowFrames, RowFrameStyle, RowFramePadding, SpanningFrame]
 
 Options[StringMatrix] = {
   RowAlignment -> Top,
@@ -13,6 +13,7 @@ Options[StringMatrix] = {
   FrameStyle -> None,
   RowFrames -> None,
   RowFrameStyle -> None,
+  RowFramePadding -> None,
   SpanningFrame -> False
 };
 
@@ -101,6 +102,12 @@ makeStringBlockFormBoxes[StringBlockForm[b_, opts___Rule]] :=
 
 (**************************************************************************************************)
 
+PublicFunction[HighlightBackgroundAt]
+
+HighlightBackgroundAt[n_Integer, parts___] := MapAt[BackgroundNForm[n], {{parts}}];
+
+(**************************************************************************************************)
+
 PublicFunction[StringBlock]
 
 PublicOption[StylingFunction]
@@ -135,13 +142,13 @@ cellStyling[e_, {l___, "Superscript", r___}] := Cell[BoxData @ SuperscriptBox[""
 cellStyling[e_, {s__}] := StyleBox[e, s];
 cellStyling[e_, {}] := e;
 
+wrapCode[code_, str_] := If[SingleLetterQ[str], {name, ":", str}, {name, "{", str, "}"}];
+
 inputStyling[e_, {l___, "Subscript", r___}] := {"_{", inputStyling[e, {l, r}], "}"};
 inputStyling[e_, {l___, "Midscript", r___}] := {"_{", inputStyling[e, {l, r}], "}"};
 inputStyling[e_, {l___, "Superscript", r___}] := {"^{", inputStyling[e, {l, r}], "}"};
-inputStyling[e_ ? SingleLetterQ, {FontColor :> CurrentValue[{StyleDefinitions, cname_, FontColor}]}] := {"F", StringTake[cname, -1], ":", e};
-inputStyling[e_, {FontColor :> CurrentValue[{StyleDefinitions, cname_, FontColor}]}] := {"F", StringTake[cname, -1], "{", e, "}"};
-inputStyling[e_ ? SingleLetterQ, {FontColor -> color_}] := {$colorShortcodeMappingInverse @ color, ":", e};
-inputStyling[e_, {FontColor -> color_}] := {$colorShortcodeMappingInverse @ color, "{", e, "}"};
+inputStyling[e_, {currentStyleSetting[FontColor, cname_]}] := wrapCode[{"F", StringTake[cname, -1]}, e];
+inputStyling[e_, {FontColor -> color_}] := wrapCode[$colorShortcodeMappingInverse @ color, e];
 inputStyling[e_, s_] := e;
 
 htmlStyling[e_, {l___, "Subscript", r___}] := {"<sub>", htmlStyling[e, {l, r}], "</sub>"};
@@ -162,11 +169,18 @@ blockToStrings = Case[
   $block[e_List, _, _] := Riffle[rowToStrings /@ e, "\n"];
 ];
 
+StringBlock::spacefail = "Spacer `` could not be achieved with combination of normal and superscript characters."
+
 repChar[s_, w_Integer] := ConstantArray[s, w];
-repChar[s_, w_] := Flatten[{
-  repChar[s, Floor[w]],
-  Style[#, "Midscript"]& /@ repChar[s, Round[FractionalPart[w] * 4/3]]
-}];
+repChar[s_, w_] := Scope[
+  w2 = w; c = 0;
+  While[Abs[w2 - Round[w2]] > 0.0001, w2 -= 3/4; c++];
+  If[w2 < 0, ThrowMessage["spacefail", w]];
+  Flatten[{
+    repChar[s, Round[w2]],
+    Style[StringJoin @ repChar[s, c], "Midscript"]
+  }]
+];
 
 rowToStrings = Case[
   $hspace[w_Integer] := repChar[" ", w];
@@ -206,6 +220,10 @@ processBlock = Case[
   Subscript[a_, b_]                                   := % @ Row[{a, Style[b, "Subscript"]}, Alignment -> Bottom];
   Superscript[a_, b_]                                 := % @ Row[{a, Style[b, "Superscript"]}, Alignment -> Top];
 
+  Padded[e_, spec_]                                   := padBlock[% @ e, spec];
+  StringForm[t_String, args___, Alignment -> align_]  := stringFormBlock[t, {args}, align];
+  StringForm[t_String, args___]                       := stringFormBlock[t, {args}, Top];
+
   StyleDecorated[s_, TupleForm][e___]                 := hframeBlock[processHoriz @ e, "()", s];
   StyleDecorated[s_, ListForm][e___]                  := hframeBlock[processHoriz @ e, "[]", s];
   StyleDecorated[s_, SetForm][e___]                   := hframeBlock[processHoriz @ e, "{}", s];
@@ -234,6 +252,14 @@ processBlock = Case[
 
 (**************************************************************************************************)
 
+stringFormBlock[template_, args_List, align_] :=
+  processBlock @ Row[
+    Riffle[StringSplit[template, "``", All], args],
+    Alignment -> align
+  ];
+
+(**************************************************************************************************)
+
 parseLinearSyntax[str_] /; StringFreeQ[str, "\!\(\*"] := str;
 
 linearBalancedQ[str_] := StringCount[str, "\("] == StringCount[str, "\)"];
@@ -256,20 +282,20 @@ StringBlock::badfs = "Setting of FrameStyle -> `` should be a color or None.";
 
 normFrameStyle = Case[
   color_ ? ColorQ      := FontColor -> color;
-  i_Integer            := makeDynamicFontColor[i];
-  r:Rule[FontColor, _] := r;
+  i_Integer            := currentStyleSetting[FontColor, "Color" <> IntegerString[i]];
+  r:Rule[FontColor|Background, _] := r;
   other_               := (Message[StringBlock::badfs, other]; None);
   None                 := None;
 ]
 
 normStyle = Case[
   color_ ? ColorQ := FontColor -> color;
-  i_Integer       := makeDynamicFontColor[i];
+  i_Integer       := currentStyleSetting[FontColor, "Color" <> IntegerString[i]];
   Bold            := FontWeight -> Bold;
   Italic          := FontSlant -> Italic;
   Plain           := Splice[{FontWeight -> Plain, FontSlant -> Plain}];
-  r:Rule[FontWeight|FontSlant|FontColor, _] := r;
-  r:RuleDelayed[FontColor, _] := r;
+  r:Rule[FontWeight|FontSlant|FontColor|Background, _] := r;
+  r:RuleDelayed[FontColor|Background, _] := r;
   s:"Subscript"|"Superscript" := s;
   _               := Nothing;
 ];
@@ -338,12 +364,17 @@ makeBlock[rows_List, align_:Left] := Scope[
 hpadAtom[tw_, halign_][atom_, w_] := Scope[
   d = tw - w;
   If[d <= 0, atom, Switch[halign,
-    Left,  Flatten @ {atom, $hspace @ d},
-    Right, Flatten @ {$hspace @ d, atom},
-    Center, Flatten @ {$hspace @ Floor[d/2], atom, $hspace @ Ceiling[d / 2]},
+    Left,   padAtomLeftRight[{0, d}] @ atom,
+    Right,  padAtomLeftRight[{d, 0}] @ atom,
+    Center, padAtomLeftRight[FloorCeiling[d/2]] @ atom,
     _,      ThrowMessage["badalign", halign, {Left, Center, Right}]
   ]]
 ];
+
+padAtomLeftRight[{0, 0}] := Identity;
+padAtomLeftRight[{0, r_}][row_] := Flatten @ {row, $hspace @ r};
+padAtomLeftRight[{l_, 0}][row_] := Flatten @ {$hspace @ l, row};
+padAtomLeftRight[{l_, r_}][row_] := Flatten @ {$hspace @ l, row, $hspace @ r};
 
 atomWidth = Case[
   Style[e_, ___, "Superscript" | "Subscript", ___] := (% @ e) * 3 / 4;
@@ -352,6 +383,20 @@ atomWidth = Case[
   s_String          := StringLength @ s;
   $hspace[n_]       := n;
 ];
+
+(**************************************************************************************************)
+
+padBlock[block:$block[cols_List, w_, h_], pspec_] := Scope[
+  {{l, r}, {b, t}} = Round @ StandardizePadding @ pspec;
+  If[l == r == b == t == 0, Return @ block];
+  w2 = w + l + r; h2 = h + b + t;
+  $block[
+    padBottomTop[{b, t}, w2] @ padLeftRight[{l, r}] @ cols,
+    w2, h2
+  ]
+];
+
+padLeftRight[spec_][rows_] := Map[padAtomLeftRight[spec], rows];
 
 (**************************************************************************************************)
 
@@ -379,15 +424,18 @@ hstackBlocks[cols_List, valign_] := Scope[
 vpadBlock[th_, valign_][$block[rows_, w_, h_]] := Scope[
   d = th - h;
   extendedRows = If[d <= 0, rows, Switch[valign,
-    Top,    Join[rows, hspaceList[d, w]],
-    Bottom, Join[hspaceList[d, w], rows],
-    Center, Join[hspaceList[Floor[d / 2], w], rows, hspaceList[Ceiling[d / 2], w]],
+    Top,    padBottomTop[{d, 0}, w] @ rows,
+    Bottom, padBottomTop[{0, d}, w] @ rows,
+    Center, padBottomTop[FloorCeiling[d/2], w] @ rows,
     _,      ThrowMessage["badalign", valign, {Top, Center, Bottom}]
   ]];
   $block[extendedRows, w, th]
 ];
 
 hspaceList[h_, w_] := ConstantArray[$hspace[w], h];
+
+padBottomTop[{0, 0}, _] := Identity;
+padBottomTop[{b_, t_}, w_][rows_] := Join[hspaceList[t, w], rows, hspaceList[b, w]];
 
 (**************************************************************************************************)
 
@@ -411,7 +459,7 @@ Options[gstackBlocks] = Options[StringMatrix];
 
 $hframeSpec = {$extFrameP, $extFrameP} | _String | _StyleDecorated[{$extFrameP, $extFrameP} | _String];
 gstackBlocks[rows_List, OptionsPattern[]] := Scope[
-  UnpackOptions[rowAlignment, columnAlignment, rowSpacings, columnSpacings, dividers, frame, framePadding, frameStyle, rowFrames, rowFrameStyle, spanningFrame];
+  UnpackOptions[rowAlignment, columnAlignment, rowSpacings, columnSpacings, dividers, frame, framePadding, frameStyle, rowFrames, rowFrameStyle, rowFramePadding, spanningFrame];
   frameStyle //= normFrameStyle;
   rowFrameStyle //= normFrameStyle;
   rows = riffleCols[columnSpacings] @ riffleRows[rowSpacings] @ rows;
@@ -420,6 +468,10 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
   If[StringQ[rowFrames],
     {lext, rext} = Lookup[$hextTableNames, rowFrames];
     jump = If[rowSpacings === 0, All, 1;;-1;;2];
+    If[IntegerQ[rowFramePadding] && rowFramePadding > 0,
+      items = MapAt[padBlock[#, Left -> rowFramePadding]&, items, {All, 1}];
+      items = MapAt[padBlock[#, Right -> rowFramePadding]&, items, {All, -1}];
+    ];
     If[lext =!= None, items = MapAt[hframeBlock[#, {lext, None}, rowFrameStyle, spanningFrame]&, items, {jump, 1}]];
     If[rext =!= None, items = MapAt[hframeBlock[#, {None, rext}, rowFrameStyle, spanningFrame]&, items, {jump, -1}]];
     If[rowSpacings =!= 0,

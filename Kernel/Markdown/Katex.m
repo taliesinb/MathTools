@@ -122,7 +122,7 @@ boxToInlineText[e_] := TextString[e];
 katexStyleOperator[args___] := Fold[#1 /* styleToKatexFunction[#2]&, Identity, {args}];
 
 styleToKatexFunction := Case[
-  (FontColor -> c_) | (c_ ? ColorQ)                           := StringJoin["textcolor{#", ColorHexString @ c, "}"];
+  (FontColor -> c_) | (c_ ? ColorQ)                           := StringJoin["textcolor{#", HexColorString @ c, "}"];
   (FontWeight -> "Bold"|Bold) | "Bold"|Bold                   := "mathbf";
   (FontWeight -> "Italic"|Italic) | "Italic"|Italic           := "mathit";
   Underlined                                                  := "underline";

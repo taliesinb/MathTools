@@ -129,12 +129,6 @@ joinLetters[{a_, b_}] := {Map[StringJoin, a], b};
 makeTuples[e_, n_Integer] := Tuples[e, n];
 makeTuples[e_, m_Integer ;; n_Integer] := Catenate @ Table[Tuples[e, i], {i, m, n}];
 
-$romanL = "abcdefghijklmnpqrstuvwxyz";
-$romanU = ToUpperCase @ $romanL;
-
-$romanLS = "abcfghstuvwxyz";
-$romanUS = ToUpperCase @ $romanLS;
-
 $greekL = "\[Alpha]\[Beta]\[Gamma]\[Delta]\[CurlyEpsilon]\[Epsilon]\[Zeta]\[Eta]\[Theta]\[Iota]\[Kappa]\[Lambda]\[Mu]\[Nu]\[Xi]\[Pi]\[Rho]\[Sigma]\[Tau]\[CurlyPhi]\[Phi]\[Chi]\[Psi]\[Omega]";
 $greekLS = "\[Alpha]\[Beta]\[Gamma]\[Pi]\[Rho]\[Sigma]\[Omega]\[Phi]";
 
@@ -143,12 +137,12 @@ $greekUS = "\[CapitalGamma]\[CapitalPi]\[CapitalSigma]\[CapitalOmega]\[CapitalPh
 
 toIteratorData[lower_, upper_] := parseIterator /@ {lower, upper, lower <> upper};
 
-{$roman,        $ROMAN,         $Roman}         = toIteratorData[$romanL, $romanU];
+{$roman,        $ROMAN,         $Roman}         = toIteratorData[$LowercaseRomanLetters, $UppercaseRomanLetters];
 {$greek,        $GREEK,         $Greek}         = toIteratorData[$greekL, $greekU];
-{$romangreek,   $ROMANGREEK,    $RomanGreek}    = toIteratorData[$romanL <> $greekL, $romanU <> $greekU]
-{$rom,          $ROM,           $Rom}           = toIteratorData[$romanLS, $romanUS];
+{$romangreek,   $ROMANGREEK,    $RomanGreek}    = toIteratorData[$LowercaseRomanLetters <> $greekL, $UppercaseRomanLetters <> $greekU]
+{$rom,          $ROM,           $Rom}           = toIteratorData[$LowercaseRomanLetters, $UppercaseRomanLetters];
 {$gre,          $GRE,           $Gre}           = toIteratorData[$greekLS, $greekUS];
-{$romgre,       $ROMGRE,        $RomGre}        = toIteratorData[$romanLS <> $greekLS, $romanUS <> $greekUS];
+{$romgre,       $ROMGRE,        $RomGre}        = toIteratorData[$LowercaseRomanLetters <> $greekLS, $UppercaseRomanLetters <> $greekUS];
 
 SubOp[i_][e_] := Subscript[e, i];
 SupOp[i_][e_] := Superscript[e, i];

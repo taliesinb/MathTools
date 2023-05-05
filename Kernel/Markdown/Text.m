@@ -251,10 +251,10 @@ ToMarkdownString::badmdbox = "Cannot form markdown for boxes that appeared withi
 
 PrivateFunction[htmlStyledString, toStylePropVal]
 
-htmlStyledString[str_String, {FontColor :> CurrentValue[{StyleDefinitions, name_, FontColor}]}] :=
-  htmlStyledString[str, {FontColor -> name}];
+htmlStyledString[str_String, {currentStyleSetting[opt:FontColor|Background, name_]}] :=
+  htmlStyledString[str, {opt -> name}];
 
-htmlStyledString[str_String, {FontColor -> name_String}] :=
+htmlStyledString[str_String, {FontColor|Background -> name_String}] :=
   $classSpanTemplate[str, name];
 
 $classSpanTemplate = StringFunction @ "<span class='#2'>#1</span>";
@@ -268,7 +268,8 @@ toStylePropVal = Case[
   color_? ColorQ                      := %[FontColor -> color];
   Bold                                := %[FontWeight -> Bold];
   Italic                              := %[FontSlant -> Italic];
-  FontColor -> (color_? ColorQ)       := "color:" <> Image`Utilities`toHEXcolor[color];
+  FontColor -> (color_? ColorQ)       := "color:" <> HTMLColorString[color];
+  Background -> (color_? ColorQ)      := "background-color:" <> HTMLColorString[color];
   FontWeight -> "Bold"|Bold           := "font-weight:bold";
   FontWeight -> Plain|"Plain"         := "font-weight:normal";
   FontSlant -> "Italic"|Italic        := "font-style:italic";
@@ -289,7 +290,7 @@ wrapWith[e_, wrap_] := Scope[
 
 (**************************************************************************************************)
 
-$shortcodeP = "</span>" | "\n" | "F{" | "F:" | "\\n" | "^{" | "_{" | ("_" ~~ DigitCharacter) | ("^" ~~ DigitCharacter);
+$shortcodeP = "</span>" | "\n" | "B{" | "B:" | "F{" | "F:" | "\\n" | "^{" | "_{" | ("_" | "^" ~~ DigitCharacter);
 
 processInlineCodeBlocks[str_String] := StringReplace[str, {
   code:("`" ~~ body:Shortest[___] ~~ "`") :> If[StringFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, False]],

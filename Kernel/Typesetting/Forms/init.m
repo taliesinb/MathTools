@@ -364,5 +364,3 @@ preformattedCodeBoxes[str_String] := Scope[
 ];
 
 fixExtensibleChars[str_String] := StringReplace[str, {"\[VerticalLine]" -> "⎥", "\[HorizontalLine]" -> "—"}];
-
-

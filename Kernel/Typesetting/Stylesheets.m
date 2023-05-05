@@ -9,7 +9,7 @@ UpdateQuiverGeometryStylesheet[] := Scope[
   template = DeleteCases[template, ExpressionUUID -> _, {0, Infinity}];
   cells = Join[
     KeyValueMap[makeTemplateBoxStyleCell, $notebookDisplayFunction],
-    generateNotebookColorPaletteStyles @ $ColorPalette
+    generateNotebookColorPaletteStyles[$ColorPalette, $LightColorPalette]
   ];
   template //= ReplaceAll[Cell[StyleData["Dummy"], ___] :> Splice[cells]];
 
@@ -75,11 +75,10 @@ ApplyPrivateQuiverGeometryNotebookStyles[] := (
 
 (**************************************************************************************************)
 
-generateNotebookColorPaletteStyles[palette_List] :=
-  MapIndex1[
-    Cell[StyleData["Color" <> IntegerString[#2]], FontColor -> #1]&,
-    palette
-  ];
+generateNotebookColorPaletteStyles[palette_List, lightPalette_List] := Join[
+  MapIndex1[Cell[StyleData["Color" <> IntegerString[#2]], FontColor -> #1]&, palette],
+  MapIndex1[Cell[StyleData["Background" <> IntegerString[#2]], Background -> #1]&, lightPalette]
+];
 
 (**************************************************************************************************)
 

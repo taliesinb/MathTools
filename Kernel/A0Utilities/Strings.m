@@ -177,29 +177,42 @@ StringTrimLeftRight[left_, right_][str_] := StringTrimLeftRight[str, left, right
 
 (**************************************************************************************************)
 
+PublicVariable[$LowercaseRomanLetters, $UppercaseRomanLetters, $RomanLetters]
+
+$LowercaseRomanLetters = "abcdefghijklmnopqrstuvwxyz";
+$UppercaseRomanLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+$RomanLetters = StringJoin[$LowercaseRomanLetters, $UppercaseRomanLetters];
+
+(**************************************************************************************************)
+
 PublicVariable[$LowercaseGreekLetters, $UppercaseGreekLetters, $GreekLetters]
 
 $LowercaseGreekLetters = "\[Alpha]\[Beta]\[Gamma]\[Delta]\[CurlyEpsilon]\[Epsilon]\[Zeta]\[Eta]\[Theta]\[Iota]\[Kappa]\[Lambda]\[Mu]\[Nu]\[Xi]\[Pi]\[Rho]\[Sigma]\[Tau]\[CurlyPhi]\[Phi]\[Chi]\[Psi]\[Omega]";
 $UppercaseGreekLetters = "\[CapitalGamma]\[CapitalPi]\[CapitalSigma]\[CapitalOmega]\[CapitalPhi]";
-
 $GreekLetters = StringJoin[$LowercaseGreekLetters, $UppercaseGreekLetters];
 
 (**************************************************************************************************)
 
-PublicVariable[$LowercaseDoubleStruckLetters, $UppercaseDoubleStruckLetters, $DoubleStruckDigits, $DoubleStruckCharacters]
+PublicVariable[$LowercaseDoubleStruckLetters, $UppercaseDoubleStruckLetters, $DoubleStruckLetters, $DoubleStruckDigits, $DoubleStruckCharacters]
 
 $LowercaseDoubleStruckLetters = "𝕒𝕓𝕔𝕕𝕖𝕗𝕘𝕙𝕚𝕛𝕜𝕝𝕞𝕟𝕠𝕡𝕢𝕣𝕤𝕥𝕦𝕧𝕨𝕩𝕪𝕫";
 $UppercaseDoubleStruckLetters = "𝔸𝔹ℂ𝔻𝔼𝔽𝔾ℍ𝕀𝕁𝕂𝕃𝕄ℕ𝕆ℙℚℝ𝕊𝕋𝕌𝕍𝕎𝕏𝕐ℤ";
+$DoubleStruckLetters = StringJoin[$LowercaseDoubleStruckLetters, $UppercaseDoubleStruckLetters];
 $DoubleStruckDigits = "𝟘𝟙𝟚𝟛𝟜𝟝𝟞𝟟𝟠𝟡";
+$DoubleStruckCharacters = StringJoin[$DoubleStruckLetters, $DoubleStruckDigits];
 
-$DoubleStruckCharacters = StringJoin[$LowercaseDoubleStruckLetters, $UppercaseDoubleStruckLetters, $DoubleStruckDigits];
+(**************************************************************************************************)
+
+PublicVariable[$UppercaseWLDoubleStruckLetters]
+
+$UppercaseWLDoubleStruckLetters = "\[DoubleStruckCapitalA]\[DoubleStruckCapitalB]\[DoubleStruckCapitalC]\[DoubleStruckCapitalD]\[DoubleStruckCapitalE]\[DoubleStruckCapitalF]\[DoubleStruckCapitalG]\[DoubleStruckCapitalH]\[DoubleStruckCapitalI]\[DoubleStruckCapitalJ]\[DoubleStruckCapitalK]\[DoubleStruckCapitalL]\[DoubleStruckCapitalM]\[DoubleStruckCapitalN]\[DoubleStruckCapitalO]\[DoubleStruckCapitalP]\[DoubleStruckCapitalQ]\[DoubleStruckCapitalR]\[DoubleStruckCapitalS]\[DoubleStruckCapitalT]\[DoubleStruckCapitalU]\[DoubleStruckCapitalV]\[DoubleStruckCapitalW]\[DoubleStruckCapitalX]\[DoubleStruckCapitalY]\[DoubleStruckCapitalZ]";
 
 (**************************************************************************************************)
 
 PublicSymbol[ASCIILetter, LowercaseLetter, UppercaseLetter, AlphanumericCharacter]
 PublicSymbol[LowercaseGreekLetter, UppercaseGreekLetter, GreekLetter]
 PublicSymbol[DoubleQuote]
-PublicSymbol[LowercaseDoubleStruckLetter, UppercaseDoubleStruckLetter, DoubleStruckDigit, DoubleStruckCharacter]
+PublicSymbol[LowercaseDoubleStruckLetter, UppercaseDoubleStruckLetter, DoubleStruckLetter, DoubleStruckDigit, DoubleStruckCharacter]
 
 declareStringLetterPattern[
   ASCIILetter -> "a-zA-Z0-9",
@@ -211,6 +224,7 @@ declareStringLetterPattern[
   GreekLetter -> $GreekLetters,
   LowercaseDoubleStruckLetter -> $LowercaseDoubleStruckLetters,
   UppercaseDoubleStruckLetter -> $UppercaseDoubleStruckLetters,
+  DoubleStruckLetter -> $DoubleStruckLetters,
   DoubleStruckDigit -> $DoubleStruckDigits,
   DoubleStruckCharacter -> $DoubleStruckCharacters,
   DoubleQuote -> "\""

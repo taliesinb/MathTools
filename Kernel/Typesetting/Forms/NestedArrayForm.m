@@ -129,6 +129,7 @@ procNA[(t:"Grid"|"SpanningGrid"|"NormalGrid") -> {col1_, col2_}, rest___][array_
     Frame -> "[]", FrameStyle -> toAxisColor @ first[col1, col1],
     RowFrames -> "[]", RowFrameStyle -> toAxisColor @ first[col2, col2],
     FramePadding -> {Horizontal -> second[col1, 0]},
+    RowFramePadding -> second[col2, 0],
     SpanningFrame -> shouldSpanQ[t]
   ];
 

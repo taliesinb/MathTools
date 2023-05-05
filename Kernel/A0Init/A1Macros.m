@@ -631,13 +631,9 @@ DefineLiteralMacro[SetScaledFactor, SetScaledFactor[lhs_, scale_] := If[MatchQ[l
 
 (**************************************************************************************************)
 
-PrivateMacro[SymbolicFontColor]
+PrivateFunction[currentStyleSetting]
 
-DefineLiteralMacro[SymbolicFontColor,
-  SymbolicFontColor[i_] := With[{sname = "Color" <> IntegerString[i]},
-    FontColor :> CurrentValue[{StyleDefinitions, sname, FontColor}]
-  ]
-];
+currentStyleSetting[option_, stylename_] := option :> CurrentValue[{StyleDefinitions, stylename, option}];
 
 (**************************************************************************************************)
 

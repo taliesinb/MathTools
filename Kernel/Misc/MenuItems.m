@@ -32,27 +32,44 @@ With[{qgPath = QuiverGeometryPackageLoader`$initFile},
     Delimiter,
     Menu["Named Colors",
       MenuItem[#1, FontColor -> #2]& @@@ {
-      {"Red",    $Red},
-      {"Green",  $Green},
-      {"Blue",   $Blue},
-      {"Pink",   $Pink},
-      {"Teal",   $Teal},
-      {"Orange", $Orange},
-      {"Purple", $Purple},
-      {"Gray",   $Gray}
-  }]}]];
-  LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["ClearCellOptions", {
-    Delimiter,
-    Menu["Indexed Colors", (* todo: replace with DynamicFontColor *)
-      MenuItem[#1, FontColor :> CurrentValue[{StyleDefinitions, #2, FontColor}], MenuKey[#1, Modifiers->{"Option"}]]& @@@ {
-      "1" -> "Color1",
-      "2" -> "Color2",
-      "3" -> "Color3",
-      "4" -> "Color4",
-      "5" -> "Color5",
-      "6" -> "Color6",
-      "7" -> "Color7"
-  }]}]];
+        "Red"    -> $Red,
+        "Blue"   -> $Blue,
+        "Green"  -> $Green,
+        "Orange" -> $Orange,
+        "Purple" -> $Purple,
+        "Teal"   -> $Teal,
+        "Gray"   -> $Gray,
+        "Pink"   -> $Pink,
+        "Yellow" -> $Yellow
+      }
+    ],
+    Menu["Indexed Colors",
+      Construct[MenuItem, #1, currentStyleSetting[FontColor, #2], FrontEnd`MenuKey[#1, FrontEnd`Modifiers->{"Option"}]]& @@@ {
+        "1" -> "Color1",
+        "2" -> "Color2",
+        "3" -> "Color3",
+        "4" -> "Color4",
+        "5" -> "Color5",
+        "6" -> "Color6",
+        "7" -> "Color7",
+        "8" -> "Color8",
+        "9" -> "Color9"
+      }
+    ],
+    Menu["Indexed Backgrounds",
+      Construct[MenuItem, #1, currentStyleSetting[Background, #2], FrontEnd`MenuKey[#1, FrontEnd`Modifiers->{"Option", "Command"}]]& @@@ {
+        "1" -> "Background1",
+        "2" -> "Background2",
+        "3" -> "Background3",
+        "4" -> "Background4",
+        "5" -> "Background5",
+        "6" -> "Background6",
+        "7" -> "Background7",
+        "8" -> "Background8",
+        "9" -> "Background9"
+      }
+    ]
+  }]];
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["InsertSplitBreak", {
     Delimiter,
       Menu["Table cell", {
