@@ -21,7 +21,7 @@ $flavorData["Base", "MultilineMathTemplate"]      = wrapDoubleDollar;
 $flavorData["Base", "RasterizationFunction"]      = standardRasterizationFunction;
 $flavorData["Base", "RawHTMLTemplate"]            = blankString;
 $flavorData["Base", "StringImageTemplate"]        = None;
-$flavorData["Base", "CustomStylesTemplate"]       = blankString;
+$flavorData["Base", "CustomStylesTemplate"]       = None;
 
 (**************************************************************************************************)
 

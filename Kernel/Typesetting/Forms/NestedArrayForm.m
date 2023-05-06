@@ -26,9 +26,10 @@ nestedArrayBoxes[na_NestedArrayForm] :=
 
 (**************************************************************************************************)
 
-PublicVariable[$AxisPalette]
+PublicVariable[$AxisPalette, $NestedArrayFrame]
 
-$AxisPalette = {1, 2, 3, 4, 5, 6};
+SetInitialValue[$AxisPalette, {1, 2, 3, 4, 5, 6}];
+SetInitialValue[$NestedArrayFrame, "[]"];
 
 NestedArrayForm::badaxiscolor = "`` is not a valid axis color."
 toAxisColor = Case[
@@ -96,15 +97,33 @@ procNA[(t:"Row"|"SpanningRow"|"NormalRow"|"Column"|"NormalColumn"|"SpanningColum
 procNA[(t:"Grid"|"NormalGrid"|"SpanningGrid"), rest___] :=
   procNA[t -> {None, None}, rest];
 
+procNA["Parentheses"|"Paren", rest___] :=
+  procNA["Parentheses" -> None, rest];
+
+procNA["LeftParentheses"|"LeftParen", rest___] :=
+  procNA["LeftParentheses" -> None, rest];
+
+procNA["Parentheses"|"Paren" -> col_, rest___][array_] :=
+  StyleDecorated[col, ParenthesesForm] @ procNA[rest] @ array;
+
+procNA["LeftParentheses"|"LeftParen" -> col_, rest___][array_] :=
+  StringFrame[procNA[rest] @ array, Frame -> "(", FrameStyle -> col];
+
+procNA[StringForm[str_, args___], rest___][array_] :=
+  StringForm[str, args, procNA[rest] @ array];
+
 NestedArrayForm::notlist = "`` is not a list, but `` was specified.";
+
+autoRightPadding[] := If[$NestedArrayFrame === "[", 1, 0]
+autoRightPadding[___] := 0;
 
 procNA[(t:"Row"|"SpanningRow"|"NormalRow") -> col_, rest___][array_] :=
   StringRow[
     If[!ListQ[array], ThrowMessage["notlist", array, t]];
     Map[procNA[rest], array],
     ColumnSpacings -> third[col, If[SeqLength[rest] == 0, 1, 0]],
-    Frame -> "[]", FrameStyle -> toAxisColor @ first[col, col],
-    FramePadding -> {Horizontal -> second[col, 0]},
+    Frame -> $NestedArrayFrame, FrameStyle -> toAxisColor @ first[col, col],
+    FramePadding -> {Left -> second[col, 0], Right -> second[col, autoRightPadding[rest]]},
     SpanningFrame -> shouldSpanQ[t],
     Background -> fourth[col, None]
   ];
@@ -113,9 +132,9 @@ procNA[(t:"Column"|"SpanningColumn"|"NormalColumn") -> col_, rest___][array_] :=
   StringColumn[
     If[!ListQ[array], ThrowMessage["notlist", array, t]];
     Map[procNA[rest], array],
-    Frame -> "[]", FrameStyle -> toAxisColor @ first[col, col],
+    Frame -> $NestedArrayFrame, FrameStyle -> toAxisColor @ first[col, col],
     RowSpacings -> third[col, 0],
-    FramePadding -> {Horizontal -> second[col, 0]},
+    FramePadding -> {Left -> second[col, 0], Right -> second[col, autoRightPadding[rest]]},
     SpanningFrame -> shouldSpanQ[t],
     Background -> fourth[col, None]
   ];
@@ -128,9 +147,9 @@ procNA[(t:"Grid"|"SpanningGrid"|"NormalGrid") -> {col1_, col2_, col3_:None}, res
     MatrixMap[procNA[rest], array],
     RowSpacings -> third[col1, 0],
     ColumnSpacings -> third[col2, If[SeqLength[rest] == 0, 1, 0]],
-    Frame -> "[]", FrameStyle -> toAxisColor @ first[col1, col1],
-    RowFrames -> "[]", RowFrameStyle -> toAxisColor @ first[col2, col2],
-    FramePadding -> {Horizontal -> second[col1, 0]},
+    Frame -> $NestedArrayFrame, FrameStyle -> toAxisColor @ first[col1, col1],
+    RowFrames -> $NestedArrayFrame, RowFrameStyle -> toAxisColor @ first[col2, col2],
+    FramePadding -> {Left -> second[col1, 0], Right -> second[col1, autoRightPadding[rest]]},
     RowFramePadding -> second[col2, 0],
     SpanningFrame -> shouldSpanQ[t],
     Background -> col3

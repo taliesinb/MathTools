@@ -82,6 +82,27 @@ columnBlock[items_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
+PublicForm[StringFrame]
+
+Options[StringFrame] = {
+  Frame -> True,
+  FrameStyle -> None,
+  Background -> None
+};
+
+DefineStandardTraditionalForm[
+  frame:StringFrame[_, ___Rule] :> ToBoxes @ StringBlockForm @ frame
+];
+
+Options[frameBlock] = Options[StringFrame];
+
+frameBlock[block_, OptionsPattern[]] := Scope[
+  UnpackOptions[frame, frameStyle, background];
+  hframeBlock[block, frame, frameStyle, True, background]
+];
+
+(**************************************************************************************************)
+
 PublicForm[StringBlockForm]
 
 Options[StringBlockForm] = {
@@ -212,6 +233,8 @@ processBlock = Case[
   StringColumn[items_, opts___Rule]                   := columnBlock[% /@ items, opts];
   StringRow[items_, opts___Rule]                      := rowBlock[% /@ items, opts];
 
+  StringFrame[item_, opts___Rule]                     := frameBlock[% @ item, opts];
+
   VerticalModifierForm[TupleForm[e___]]               := hframeBlock[processVert @ e, "()"];
   VerticalModifierForm[ListForm[e___]]                := hframeBlock[processVert @ e, "[]"];
   VerticalModifierForm[SetForm[e___]]                 := hframeBlock[processVert @ e, "{}"];
@@ -229,9 +252,10 @@ processBlock = Case[
   StringForm[t_String, args___, Alignment -> align_]  := stringFormBlock[t, {args}, align];
   StringForm[t_String, args___]                       := stringFormBlock[t, {args}, Top];
 
-  StyleDecorated[s_, TupleForm][e___]                 := hframeBlock[processHoriz @ e, "()", s];
-  StyleDecorated[s_, ListForm][e___]                  := hframeBlock[processHoriz @ e, "[]", s];
-  StyleDecorated[s_, SetForm][e___]                   := hframeBlock[processHoriz @ e, "{}", s];
+  StyleDecorated[s_, TupleForm][e___]                 := hframeBlock[processHoriz @ e, "()", s, True, None];
+  StyleDecorated[s_, ListForm][e___]                  := hframeBlock[processHoriz @ e, "[]", s, True, None];
+  StyleDecorated[s_, SetForm][e___]                   := hframeBlock[processHoriz @ e, "{}", s, True, None];
+  StyleDecorated[s_, ParenthesesForm][e___]           := hframeBlock[processHoriz @ e, "()", s, True, None];
 
   Undersegment[e_]                                    := vframeBlock[% @ e, {None, "SquareBottom"}, True];
   UnderlinedForm[e_]                                  := vframeBlock[% @ e, {None, "-"}, True];
@@ -251,6 +275,8 @@ processBlock = Case[
   Spacer[w_Integer]                                   := % @ Spacer[{w, 1}];
   Spacer[{w_Integer, h_Integer}]                      := spacerBlock[w, h];
   Spacer[0] | Spacer[{0,0}] | None | Nothing          := None;
+
+  Framed[e_, opts__Rule]                              := frameBlock[e, opts];
   Framed[e_]                                          := makeFrame[% @ e, False];
   Framed[e_, RoundingRadius -> n_]                    := makeFrame[% @ e, n > 0];
 ];
@@ -615,10 +641,15 @@ $hextTableNames = Association[
   "Floor"        -> {"LeftFloor", "RightFloor"},
   "Ceiling"      -> {"LeftCeiling", "RightCeiling"},
   "["            -> {"[", None},
+  "{"            -> {"{", None},
+  "("            -> {"(", None},
   "[]"           -> {"[", "]"},
   "{}"           -> {"{", "}"},
   "()"           -> {"(", ")"}
 ];
+
+
+(**************************************************************************************************)
 
 StringBlock::badframe = "`` is not a valid spec for Frame, which should be one of ``."
 
