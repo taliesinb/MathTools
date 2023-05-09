@@ -9,7 +9,7 @@ UpdateQuiverGeometryStylesheet[] := Scope[
   template = DeleteCases[template, ExpressionUUID -> _, {0, Infinity}];
   cells = Join[
     KeyValueMap[makeTemplateBoxStyleCell, $notebookDisplayFunction],
-    generateNotebookColorPaletteStyles[$ColorPalette, $LightColorPalette]
+    generateNotebookColorPaletteStyles[$ColorPalette, Map[OklabLighter[#, 0.1]&] @ $LightColorPalette]
   ];
   template //= ReplaceAll[Cell[StyleData["Dummy"], ___] :> Splice[cells]];
 

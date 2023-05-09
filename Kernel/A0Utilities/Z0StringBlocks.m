@@ -103,6 +103,86 @@ frameBlock[block_, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
+PublicForm[FrameLabeled]
+
+Options[FrameLabeled] = {
+  LabelSpacing -> {1, 0},
+  LabelStyle -> $Gray,
+  FrameTicks -> False (* TODO: make this introduce little marks in the gap *)
+};
+
+DefineStandardTraditionalForm[
+  frame:FrameLabeled[_, ___] :> ToBoxes @ StringBlockForm @ frame
+];
+
+Options[frameLabeled] = Options[FrameLabeled];
+
+frameLabeled[block_, specs_, OptionsPattern[]] := Scope[
+  UnpackOptions[labelSpacing, frameTicks, labelStyle];
+  {hlabelSpacing, vlabelSpacing} = {1, 1} * labelSpacing;
+  $hoffset = 0; $voffset = 0; $labelStyleFn = StyleOperator @ labelStyle;
+  Fold[applyFrameLabel, block, ToList @ specs]
+];
+
+StringBlock::badflspec = "Bad FrameLabel spec ``."
+
+applyFrameLabel[block_, side_ -> Style[items_, style___]] := Scope[
+  $labelStyleFn = StyleOperator @ style;
+  applyFrameLabel[block, side -> items]
+];
+
+toLabelItems[pos_Integer -> label_] := pos -> label;
+toLabelItems[pos_ -> labels_] := Scope[
+  labels //= toLabelValues;
+  pos = If[Head[pos] == Span, Part[Range[100], pos], pos];
+  Splice @ RuleThread[Take[pos, Length @ labels], labels]
+];
+
+toLabelValues = Case[
+  str_String := Characters @ str;
+  list_List := list;
+]
+
+applyFrameLabel[block_, side:(Left|Right) -> spec_] := Scope[
+  items = Map[toLabelItems, ToList @ spec];
+  isLeft = side === Left;
+  rows = ConstantArray[$block[{""}, 0, 1], Part[block, 3]];
+  rules = (#1 + $voffset) -> clipOneLine[processBlock @ $labelStyleFn @ #2]& @@@ Sort[items];
+  rows = ReplacePart[rows, rules];
+  labelBlock = vstackBlocks[rows, If[isLeft, Right, Left]];
+  labelBlock = padBlock[labelBlock, If[isLeft, Right, Left] -> hlabelSpacing];
+  If[isLeft, $hoffset ^= $hoffset + Part[labelBlock, 2]];
+  hstackBlocks[If[isLeft, {labelBlock, block}, {block, labelBlock}], Top]
+];
+
+StringBlock::overlapfl = "Overlapping FrameLabel spec ``."
+
+applyFrameLabel[block_, side:(Top|Bottom) -> spec_] := Scope[
+  isTop = side === Top;
+  spec = Map[toLabelItems, ToList @ spec];
+  {positions, items} = KeysValues @ Sort @ spec;
+  positions += $hoffset;
+  itemBlocks = Map[processBlock @ $labelStyleFn @ #&, items];
+  itemWidths = Part[itemBlocks, All, 2];
+  gaps = Differences @ Prepend[1] @ positions;
+  gaps -= Prepend[0] @ Most @ itemWidths;
+  If[Min[gaps] < 0, ThrowMessage["overlapfl", side -> spec]];
+  spacerBlocks = Map[spacerBlock[#, 1]&, gaps];
+  blocks = Catenate @ Transpose[{spacerBlocks, itemBlocks}];
+  labelBlock = hstackBlocks[blocks, If[isTop, Bottom, Top]];
+  If[isTop, $voffset ^= $voffset + Part[labelBlock, 3]];
+  vstackBlocks[If[isTop, {labelBlock, block}, {block, labelBlock}], Left]
+];
+
+applyFrameLabel[_, spec_] := ThrowMessage["badflspec", spec];
+
+clipOneLine = Case[
+  block:$block[_, _, 1] := block;
+  $block[rows_, w_, _] := $block[Take[rows, 1], w, 1]
+];
+
+(**************************************************************************************************)
+
 PublicForm[StringBlockForm]
 
 Options[StringBlockForm] = {
@@ -190,7 +270,7 @@ linearStyling[e_, {s__}] := ToString[Style[e, s], StandardForm];
 StringBlock::badalign = "Bad alignment ``: should be one of ``."
 
 blockToStrings = Case[
-  $block[e_List, _, _] := Riffle[rowToStrings[Flatten @ #]& /@ e, "\n"];
+  $block[e_List, _, _] := Riffle[rowToStrings[Flatten @ {#}]& /@ e, "\n"];
 ];
 
 StringBlock::spacefail = "Spacer `` could not be achieved with combination of normal and superscript characters."
@@ -235,30 +315,28 @@ processBlock = Case[
 
   StringFrame[item_, opts___Rule]                     := frameBlock[% @ item, opts];
 
-  VerticalModifierForm[TupleForm[e___]]               := hframeBlock[processVert @ e, "()"];
-  VerticalModifierForm[ListForm[e___]]                := hframeBlock[processVert @ e, "[]"];
-  VerticalModifierForm[SetForm[e___]]                 := hframeBlock[processVert @ e, "{}"];
-
   Labeled[a_, l_]                                     := columnBlock[% /@ {a, l}, ColumnAlignment -> Center, RowSpacings -> 1];
 
   ParenthesesForm[e_]                                 := hframeBlock[% @ e, "()"];
-  TupleForm[e___]                                     := hframeBlock[processHoriz @ e, "()"];
-  ListForm[e___]                                      := hframeBlock[processHoriz @ e, "[]"];
-  SetForm[e___]                                       := hframeBlock[processHoriz @ e, "{}"];
+  TupleForm[e___]                                     := delimBlock[{e}, "()", None];
+  ListForm[e___]                                      := delimBlock[{e}, "[]", None];
+  SetForm[e___]                                       := delimBlock[{e}, "{}", None];
+  StyleDecorated[s_, TupleForm|ParenthesesForm][e___] := delimBlock[{e}, "()", s];
+  StyleDecorated[s_, ListForm][e___]                  := delimBlock[{e}, "[]", s];
+  StyleDecorated[s_, SetForm][e___]                   := delimBlock[{e}, "{}", s];
+
   Subscript[a_, b_]                                   := % @ Row[{a, Style[b, "Subscript"]}, Alignment -> Bottom];
   Superscript[a_, b_]                                 := % @ Row[{a, Style[b, "Superscript"]}, Alignment -> Top];
 
   Padded[e_, spec_]                                   := padBlock[% @ e, spec];
+
   StringForm[t_String, args___, Alignment -> align_]  := stringFormBlock[t, {args}, align];
   StringForm[t_String, args___]                       := stringFormBlock[t, {args}, Top];
 
-  StyleDecorated[s_, TupleForm][e___]                 := hframeBlock[processHoriz @ e, "()", s, True, None];
-  StyleDecorated[s_, ListForm][e___]                  := hframeBlock[processHoriz @ e, "[]", s, True, None];
-  StyleDecorated[s_, SetForm][e___]                   := hframeBlock[processHoriz @ e, "{}", s, True, None];
-  StyleDecorated[s_, ParenthesesForm][e___]           := hframeBlock[processHoriz @ e, "()", s, True, None];
-
   Undersegment[e_]                                    := vframeBlock[% @ e, {None, "SquareBottom"}, True];
   UnderlinedForm[e_]                                  := vframeBlock[% @ e, {None, "-"}, True];
+  p_PixelForm                                         := % @ ToBoxes[p];
+  r_FadedRationalForm                                 := % @ ToBoxes[r];
 
   na_NestedArrayForm                                  := % @ nestedArrayRender @ na;
   head_Symbol[arg_] /; StyleFormHeadQ[head]           := % @ Style[arg, StyleFormData @ head];
@@ -267,7 +345,9 @@ processBlock = Case[
   str_String                                          := makeSingleBlock @ str;
   item_                                               := makeSingleBlock @ TextString @ item;
 
-  Style[item_, style___]                              := Internal`InheritedBlock[
+  FrameLabeled[e_, opts___]                           := frameLabeled[% @ e, opts];
+
+  (Style|StyleBox)[item_, style___]                   := Internal`InheritedBlock[
     {$styleStack},
     $styleStack = joinStyles[normStyle /@ {style}, $styleStack];
     % @ item
@@ -349,13 +429,15 @@ applyStyle[s___][e_String] := Style[e, s];
 
 (**************************************************************************************************)
 
-processHoriz[] := spacerBlock[1, 1];
-processHoriz[a_] := processBlock @ a;
-processHoriz[a__] := processBlock @ Row[{a}, ","];
+delimBlock[e_List, frame_, style_] := hframeBlock[processHoriz @ e, frame, None, style, True, None];
 
-processVert[] := spacerBlock[1, 1];
-processVert[a_] := processBlock @ a;
-processVert[a__] := processBlock @ Column[{a}];
+processHoriz[{}] := spacerBlock[1, 1];
+processHoriz[{a_}] := processBlock @ a;
+processHoriz[{a__}] := processBlock @ Row[{a}, ","];
+
+processVert[{}] := spacerBlock[1, 1];
+processVert[{a_}] := processBlock @ a;
+processVert[{a__}] := processBlock @ Column[{a}];
 
 Options[processGrid] = JoinOptions[StringMatrix,
   Alignment -> {Left, Top},
@@ -429,6 +511,7 @@ padBlock[block:$block[cols_List, w_, h_], pspec_] := Scope[
   ]
 ];
 
+padLeftRight[{0, 0}] := Identity;
 padLeftRight[spec_][rows_] := Map[padAtomLeftRight[spec], rows];
 
 (**************************************************************************************************)
@@ -457,9 +540,10 @@ hstackBlocks[cols_List, valign_] := Scope[
 vpadBlock[th_, valign_][$block[rows_, w_, h_]] := Scope[
   d = th - h;
   extendedRows = If[d <= 0, rows, Switch[valign,
-    Top,    padBottomTop[{d, 0}, w] @ rows,
-    Bottom, padBottomTop[{0, d}, w] @ rows,
-    Center, padBottomTop[FloorCeiling[d/2], w] @ rows,
+    Top,        padBottomTop[{d, 0}, w] @ rows,
+    Bottom,     padBottomTop[{0, d}, w] @ rows,
+    Center,     padBottomTop[FloorCeiling[d/2], w] @ rows,
+    _Integer,   o = Clip[valign - 1, {0, d}]; padBottomTop[{d - o, o}, w] @ rows,
     _,      ThrowMessage["badalign", valign, {Top, Center, Bottom}]
   ]];
   $block[extendedRows, w, th]
@@ -492,7 +576,13 @@ Options[gstackBlocks] = Options[StringMatrix];
 
 $hframeSpec = {$extFrameP, $extFrameP} | _String | _StyleDecorated[{$extFrameP, $extFrameP} | _String];
 gstackBlocks[rows_List, OptionsPattern[]] := Scope[
-  UnpackOptions[rowAlignment, columnAlignment, rowSpacings, columnSpacings, dividers, frame, framePadding, frameStyle, rowFrames, rowFrameStyle, rowFramePadding, spanningFrame, background];
+  UnpackOptions[
+    rowAlignment, rowSpacings,
+    columnAlignment, columnSpacings,
+    dividers, frame, framePadding, frameStyle,
+    rowFrames, rowFrameStyle, rowFramePadding,
+    spanningFrame, background
+  ];
   frameStyle //= normFrameStyle;
   rowFrameStyle //= normFrameStyle;
   rows = riffleCols[columnSpacings] @ riffleRows[rowSpacings] @ rows;
@@ -652,8 +742,6 @@ $hextTableNames = Association[
 (**************************************************************************************************)
 
 StringBlock::badframe = "`` is not a valid spec for Frame, which should be one of ``."
-
-hframeBlock[arg1_, arg2_] := hframeBlock[arg1, arg2, None, True, None];
 
 hframeBlock[block_, name_String, rest___] :=
   hframeBlock[block, Lookup[$hextTableNames, name, ThrowMessage["badframe", name, Keys @ $hextTableNames]], rest];

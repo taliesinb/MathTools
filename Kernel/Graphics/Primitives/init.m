@@ -54,7 +54,7 @@ $arrowheadOptions = {
 
 (**************************************************************************************************)
 
-PublicOption[ArrowShaftThickness, ArrowShaftColor, ArrowShaftOpacity, ArrowShaftDashing, ArrowShaftMasking, ArrowPathShrinking, ArrowPathSetback]
+PublicOption[ArrowShaftThickness, ArrowShaftColor, ArrowShaftOpacity, ArrowShaftDashing, ArrowShaftMasking, ArrowPathShrinking, ArrowPathSetback, ArrowPathOffset]
 
 PublicOption[LabelOrientation, LabelFontSize, LabelBackground, LabelSpacing]
 
@@ -71,6 +71,7 @@ $extendedArrowOptions = JoinOptions[
   ArrowShaftMasking -> None,
   ArrowPathShrinking -> None,
   ArrowPathSetback -> None,
+  ArrowPathOffset -> None,
   LabelOrientation -> Automatic,
   LabelFontSize -> Inherited,
   LabelBackground -> None,

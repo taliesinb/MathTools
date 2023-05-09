@@ -102,10 +102,11 @@ RestColumns[matrix_] := Part[matrix, All, 2 ;; All];
 
 PublicFunction[PrependColumn]
 
-SetRelatedSymbolGroup[PrependColumn, AppendColumn];
+SetRelatedSymbolGroup[PrependColumn, AppendColumn, InsertColumn, DeleteColumn];
 
 SetUsage @ "
 PrependColumn[matrix$, column$] gives a matrix in which the list column$ has been prepended.
+PrependColumn[column$] is the operator form of PrependColumn.
 "
 
 PrependColumn[matrix_, column_] := Transpose @ Prepend[Transpose @ matrix, column];
@@ -117,10 +118,35 @@ PublicFunction[AppendColumn]
 
 SetUsage @ "
 AppendColumn[matrix$, column$] gives a matrix in which the list column$ has been appended.
+AppendColumn[column$] is the operator form of AppendColumn.
 "
 
 AppendColumn[matrix_, column_] := Transpose @ Append[Transpose @ matrix, column];
 AppendColumn[column_][matrix_] := AppendColumn[matrix, column];
+
+(**************************************************************************************************)
+
+PublicFunction[InsertColumn]
+
+SetUsage @ "
+InsertColumn[matrix$, column$, n$] gives a matrix in which the list column$ has been inserted at position n$.
+InsertColumn[matrix$, n$] is the operator form of InsertColumn.
+"
+
+InsertColumn[matrix_, column_, n_] := Transpose @ Insert[Transpose @ matrix, column, n];
+InsertColumn[column_, n_][matrix_] := PrependColumn[matrix, column, n];
+
+(**************************************************************************************************)
+
+PublicFunction[DeleteColumn]
+
+SetUsage @ "
+DeleteColumn[matrix$, n$] gives a matrix in which the n$'th column has been deleted.
+DeleteColumn[n$] is the operator form of InsertColumn.
+"
+
+DeleteColumn[matrix_, n_] := Transpose @ Delete[Transpose @ matrix, n];
+DeleteColumn[n_][matrix_] := DeleteColumn[matrix, n];
 
 (**************************************************************************************************)
 
@@ -138,6 +164,13 @@ PrependConstantColumn[item_][matrix_] := PrependConstantColumn[matrix, item];
 
 (**************************************************************************************************)
 
+PublicFunction[InsertConstantColumn]
+
+InsertConstantColumn[matrix_, item_, n_] := Map[Insert[item, n], matrix];
+InsertConstantColumn[item_, n_][matrix_] := InsertConstantColumn[matrix, item, n];
+
+(**************************************************************************************************)
+
 PublicFunction[AppendConstantRow]
 
 AppendConstantRow[matrix_, item_] := Append[matrix, ConstantArray[item, Length @ First @ matrix]];
@@ -149,6 +182,13 @@ PublicFunction[PrependConstantRow]
 
 PrependConstantRow[matrix_, item_] := Prepend[matrix, ConstantArray[item, Length @ First @ matrix]];
 PrependConstantRow[item_][matrix_] := PrependConstantRow[matrix, item];
+
+(**************************************************************************************************)
+
+PublicFunction[InsertConstantRow]
+
+InsertConstantRow[matrix_, item_, n_] := Insert[matrix, ConstantArray[item, Length @ First @ matrix], n];
+InsertConstantRow[item_, n_][matrix_] := InsertConstantRow[matrix, item, n];
 
 (**************************************************************************************************)
 (** Idiomatic construction of matrices                                                            *)

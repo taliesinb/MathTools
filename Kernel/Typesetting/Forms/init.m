@@ -329,8 +329,10 @@ declareBoxFormatting[
 
 PublicForm[RasterizedForm]
 
+(* TODO: this isn't picked up by the markdown code at all! *)
 declareBoxFormatting[
-  RasterizedForm[form_] :> TagBox[ToBoxes @ form, "Rasterized"]
+  RasterizedForm[form_] :> TagBox[ToBoxes @ form, "RasterizationOptions"[]],
+  RasterizedForm[form_, opts__] :> TagBox[ToBoxes @ form, "RasterizationOptions"[opts]]
 ];
 
 (**************************************************************************************************)

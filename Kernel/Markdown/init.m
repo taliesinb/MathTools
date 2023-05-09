@@ -100,6 +100,8 @@ PrivateVariable[$customStylesTemplate]
 
 General::badmdflav = "`` is not a valid setting for MarkdownFlavor.";
 
+$rasterizationCaching = True;
+
 DefineLiteralMacro[setupMarkdownGlobals,
 setupMarkdownGlobals[] := Quoted[
   UnpackOptions[
@@ -162,7 +164,7 @@ PublicScopedOption[RasterizationPath]
 SetUsage @ "RasterizationPath is a markdown export option that determines the directory to which rasterized images and video are written.
 * If a relative path is provided it is resolved under the setting of %BaseExportPath.
 * If Automatic is provided a temporary directory will be used."
-$rasterizationPath = $TemporaryDirectory;
+$rasterizationPath := $rasterizationPath = TemporaryPath["rasters"];
 
 PublicScopedOption[RasterizationURL]
 SetUsage @ "RasterizationURL is a markdown export option that determines the URL prefix to use for raster URLs."

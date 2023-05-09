@@ -20,13 +20,13 @@ extendedArrowBoxes[is3d_, points_, opts___] := Scope[
     {opts} -> $MakeBoxesStyleData,
     arrowheadPosition, arrowheadLength,
     arrowShaftColor, arrowShaftOpacity, arrowShaftThickness, arrowShaftDashing,
-    arrowPathShrinking, arrowPathSetback
+    arrowPathShrinking, arrowPathSetback, arrowPathOffset
   ];
   UnpackAssociationSymbols[{opts} -> {}, arrowheadAnchor];
   SetAutomatic[arrowheadPosition, 1.0];
   points //= toCurvePoints;
   points = SetbackCoordinates[points, arrowPathSetback];
-
+  If[arrowPathOffset =!= None, points += Threaded[arrowPathOffset]];
   If[MatchQ[arrowheadPosition, Offset[_ ? NumericQ, _ ? NumericQ]],
     arrowheadPosition = Last[arrowheadPosition] + (First[arrowheadPosition] / LineLength[points])];
   SetAutomatic[arrowheadAnchor, arrowheadPosition];

@@ -26,7 +26,7 @@ $shortcodeRules = {
   (code:$colorShortcodeP ~~ ":" ~~ next_) :> applyShortcode[code, next],
   (code:$colorShortcodeP ~~ "{" ~~ body:Except["\n"|"}"].. ~~ "}") :> applyShortcode[code, body],
   (* Fira Code doesn't have well-sized DS letters outside R,C,N,Z etc *)
-  l:DoubleStruckLetter :> doubleStruckToBoldRoman[l],
+  l:DoubleStruckCharacter :> doubleStruckToBoldRoman[l],
   "\\n" | "\n" ~~ s:" ".. :> StringJoin["<br>", ConstantArray["&nbsp;", StringLength @ s]],
   "\\n" | "\n" -> "<br>",
   "^{" ~~ sup:Shortest[___] ~~ "}" :> StringJoin["<sup>", sup, "</sup>"],
@@ -37,11 +37,11 @@ $shortcodeRules = {
 
 (**************************************************************************************************)
 
-$doubleStruckLetterList = Characters @ $DoubleStruckLetters;
-$romanLetterList = Characters @ $RomanLetters;
+$doubleStruckCharacterList = Characters @ $DoubleStruckCharacters;
+$romanCharacterList = Characters @ StringJoin[$RomanLetters, "0123456789"];
 
 doubleStruckToBoldRoman[char:("ℂ" | "ℕ" | "ℚ" | "ℝ" | "ℤ")] := char;
-doubleStruckToBoldRoman[char_] := $boldFontTemplate @ Part[$romanLetterList, IndexOf[$doubleStruckLetterList, char]];
+doubleStruckToBoldRoman[char_] := $boldFontTemplate @ Part[$romanCharacterList, IndexOf[$doubleStruckCharacterList, char]];
 
 $boldFontTemplate = StringFunction @ "<span style='font-weight:bold'>#1</span>";
 
@@ -67,7 +67,8 @@ $backgroundShortcodes = <|
   "5B" -> "Background5",
   "6B" -> "Background6",
   "7B" -> "Background7",
-  "8B" -> "Background8"
+  "8B" -> "Background8",
+  "9B" -> "Background9"
 |>;
 
 $colorShortcodeP = Join[AssociationKeyPattern @ $textColorShortcodes, AssociationKeyPattern @ $backgroundShortcodes];

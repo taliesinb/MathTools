@@ -372,12 +372,14 @@ PrintInputCell[e_] := CellPrint @ ExpressionCell[e, "Input"];
 
 (**************************************************************************************************)
 
-PublicFunction[InsertTextualTableCell]
+PublicFunction[InsertCellTable]
 
-InsertTextualTableCell[rows_, cols_] := Scope[
+$textPlaceholder = Cell["\[Placeholder]", "Text"];
+
+InsertCellTable[rows_, cols_] := Scope[
   cell = Cell[
     BoxData @ GridBox[
-      Table[Cell["\[Placeholder]", "Text"], rows, cols],
+      ConstantArray[$textPlaceholder, {rows, cols}],
       BaseStyle -> "Text",
       FrameStyle -> GrayLevel[0.9],
       GridBoxDividers -> {"Columns" -> {{True}}, "Rows" -> {{True}}},
@@ -389,6 +391,34 @@ InsertTextualTableCell[rows_, cols_] := Scope[
   SelectionMove[EvaluationNotebook[], After, Cell];
   NotebookWrite[EvaluationNotebook[], cell, Placeholder (* doesn't work! *)];
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[CellTableAddRow, CellTableAddColumn, CellTableDeleteRow, CellTableDeleteColumn, CellTableMoveRow, CellTableMoveColumn]
+
+General::nottexttable = "Previous cell is not a textual table.";
+
+CellTableAddRow[n_Integer:-1] := CatchMessage @ modifyPreviousTextTable[InsertConstantRow[$textPlaceholder, n]];
+CellTableAddColumn[n_Integer:-1] := CatchMessage @ modifyPreviousTextTable[InsertConstantColumn[$textPlaceholder, n]];
+CellTableDeleteRow[n_Integer:-1] := CatchMessage @ modifyPreviousTextTable[Delete[n]];
+CellTableDeleteColumn[n_Integer:-1] := CatchMessage @ modifyPreviousTextTable[DeleteColumn[n]];
+CellTableMoveRow[a_Integer -> b_Integer] := CatchMessage @ modifyPreviousTextTable[moveRow[a -> b]];
+CellTableMoveColumn[a_Integer -> b_Integer] := CatchMessage @ modifyPreviousTextTable[moveCol[a -> b]];
+
+modifyPreviousTextTable[fn_] := Scope[
+  prevCell = PreviousCell[];
+  cell = NotebookRead[prevCell];
+  If[!MatchQ[cell, Cell[BoxData @ GridBox[_, BaseStyle -> "Text", ___], "Text", ___]],
+    ThrowMessage["nottexttable"]];
+  cell[[1, 1, 1]] //= fn;
+  NotebookWrite[prevCell, cell];
+]
+
+moveRow[a_ -> -1][list_] := moveRow[a -> Length[list]][list];
+moveRow[-1 -> b_][list_] := moveRow[Length[list] -> b][list];
+moveRow[a_ -> b_][list_] := Insert[Delete[list, a], Part[list, a], b];
+
+moveCol[rule_][list_] := Transpose @ moveRow[rule][Transpose @ list];
 
 (**************************************************************************************************)
 

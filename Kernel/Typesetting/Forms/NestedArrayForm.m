@@ -28,12 +28,11 @@ nestedArrayBoxes[na_NestedArrayForm] :=
 
 PublicVariable[$AxisPalette, $NestedArrayFrame]
 
-SetInitialValue[$AxisPalette, {1, 2, 3, 4, 5, 6}];
-SetInitialValue[$NestedArrayFrame, "[]"];
+SetInitialValue[$NestedArrayFrame, "["];
 
 NestedArrayForm::badaxiscolor = "`` is not a valid axis color."
 toAxisColor = Case[
-  n_Integer       := Part[ReplaceAutomatic[$axisPaletteSpec, $AxisPalette], n];
+  n_Integer       := Part[ReplaceAutomatic[$axisPaletteSpec, Range[9]], n];
   color_ ? ColorQ := color;
   None            := None;
   other_          := ThrowMessage["badaxiscolor", other];
@@ -45,6 +44,19 @@ PrivateFunction[nestedArrayRender]
 
 $defaultSpanning = True;
 $axisPaletteSpec = Automatic;
+$itemFunction = defaultItemFunction;
+
+defaultItemFunction = Case[
+  False  := "F";
+  True   := "T";
+  r_Real := TextString[NumberForm[r, 2]];
+  other_ := other;
+];
+
+nestedArrayRender[NestedArrayForm[array_, axisSpec___, Frame -> spec_]] := Scope[
+  $NestedArrayFrame = spec;
+  nestedArrayRender @ NestedArrayForm[array, axisSpec]
+];
 
 nestedArrayRender[NestedArrayForm[array_, axisSpec___, AxisPalette -> spec_]] := Scope[
   $axisPaletteSpec = spec;
@@ -53,6 +65,11 @@ nestedArrayRender[NestedArrayForm[array_, axisSpec___, AxisPalette -> spec_]] :=
 
 nestedArrayRender[NestedArrayForm[array_, axisSpec___, SpanningFrame -> spec_]] := Scope[
   $defaultSpanning = TrueQ[spec];
+  nestedArrayRender @ NestedArrayForm[array, axisSpec]
+];
+
+nestedArrayRender[NestedArrayForm[array_, axisSpec___, ItemFunction -> itemFn_]] := Scope[
+  $itemFunction = itemFn;
   nestedArrayRender @ NestedArrayForm[array, axisSpec]
 ];
 
@@ -160,7 +177,7 @@ second[{a_, b_, ___}, _] := b;    second[_, e_] := e;
 third[{a_, b_, c_}, _] := c;      third[_, e_] := e;
 fourth[{a_, b_, c_, d_}, _] := d; fourth[_, e_] := e;
 
-procNA[] := Identity;
+procNA[][e_] := $itemFunction @ e;
 
 NestedArrayForm::badspec = "Unknown spec ``";
 procNA[spec_, ___][array_] := (Message[NestedArrayForm::badspec, MsgExpr @ spec]; "?");

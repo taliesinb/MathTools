@@ -49,7 +49,9 @@ toMarkdownTableString[grid_, allowCompact_] := Scope[
   StringJoin[StringTrim @ tableStr, "\n\n"]
 ];
 
-toMarkdownTableRowString[cols_] := StringJoin["| ", Riffle[cols, " | "], " |\n"];
+toMarkdownTableRowString[cols_] := StringJoin["| ", Riffle[StringReplace[cols, $tableEscape], " | "], " |\n"];
+
+$tableEscape = "|" -> "&#x007C;"
 
 boldedQ[str_] := StringMatchQ[str, Verbatim["*"] ~~ __ ~~ Verbatim["*"]] || StringMatchQ[str, "<span style='font-weight:bold'>" ~~ __ ~~ "</span>"];
 

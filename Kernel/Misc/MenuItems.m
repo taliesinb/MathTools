@@ -16,6 +16,12 @@ With[{qgPath = QuiverGeometryPackageLoader`$initFile},
       MenuEvaluator -> Automatic
     ],
     MenuItem[
+      "Build page",
+      KernelExecute[QuiverGeometry`BuildSitePage[]],
+      FrontEnd`MenuKey["j", FrontEnd`Modifiers -> {"Command", "Shift"}],
+      MenuEvaluator -> Automatic
+    ],
+    MenuItem[
       "Reload Quiver&Geometry",
       KernelExecute[QuiverGeometryPackageLoader`Load[False]],
       FrontEnd`MenuKey["g", FrontEnd`Modifiers -> {"Command", "Option"}],
@@ -73,11 +79,11 @@ With[{qgPath = QuiverGeometryPackageLoader`$initFile},
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["InsertSplitBreak", {
     Delimiter,
       Menu["Table cell", {
-          MenuItem["1-column table cell", KernelExecute[QuiverGeometry`InsertTextualTableCell[6, 1]], MenuEvaluator -> Automatic],
-          MenuItem["2-column table cell", KernelExecute[QuiverGeometry`InsertTextualTableCell[6, 2]], MenuEvaluator -> Automatic],
-          MenuItem["3-column table cell", KernelExecute[QuiverGeometry`InsertTextualTableCell[6, 3]], MenuEvaluator -> Automatic],
-          MenuItem["4-column table cell", KernelExecute[QuiverGeometry`InsertTextualTableCell[6, 4]], MenuEvaluator -> Automatic],
-          MenuItem["5-column table cell", KernelExecute[QuiverGeometry`InsertTextualTableCell[6, 5]], MenuEvaluator -> Automatic]
+          MenuItem["1-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 1]], MenuEvaluator -> Automatic],
+          MenuItem["2-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 2]], MenuEvaluator -> Automatic],
+          MenuItem["3-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 3]], MenuEvaluator -> Automatic],
+          MenuItem["4-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 4]], MenuEvaluator -> Automatic],
+          MenuItem["5-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 5]], MenuEvaluator -> Automatic]
       }]
   }]];
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["Balance", {

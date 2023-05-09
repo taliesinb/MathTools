@@ -203,12 +203,6 @@ $DoubleStruckCharacters = StringJoin[$DoubleStruckLetters, $DoubleStruckDigits];
 
 (**************************************************************************************************)
 
-PublicVariable[$UppercaseWLDoubleStruckLetters]
-
-$UppercaseWLDoubleStruckLetters = "\[DoubleStruckCapitalA]\[DoubleStruckCapitalB]\[DoubleStruckCapitalC]\[DoubleStruckCapitalD]\[DoubleStruckCapitalE]\[DoubleStruckCapitalF]\[DoubleStruckCapitalG]\[DoubleStruckCapitalH]\[DoubleStruckCapitalI]\[DoubleStruckCapitalJ]\[DoubleStruckCapitalK]\[DoubleStruckCapitalL]\[DoubleStruckCapitalM]\[DoubleStruckCapitalN]\[DoubleStruckCapitalO]\[DoubleStruckCapitalP]\[DoubleStruckCapitalQ]\[DoubleStruckCapitalR]\[DoubleStruckCapitalS]\[DoubleStruckCapitalT]\[DoubleStruckCapitalU]\[DoubleStruckCapitalV]\[DoubleStruckCapitalW]\[DoubleStruckCapitalX]\[DoubleStruckCapitalY]\[DoubleStruckCapitalZ]";
-
-(**************************************************************************************************)
-
 PublicSymbol[ASCIILetter, LowercaseLetter, UppercaseLetter, AlphanumericCharacter]
 PublicSymbol[LowercaseGreekLetter, UppercaseGreekLetter, GreekLetter]
 PublicSymbol[DoubleQuote]
@@ -326,6 +320,13 @@ PublicFunction[SingleLetterQ]
 
 SingleLetterQ[s_String] := StringLength[s] == 1;
 SingleLetterQ[_] := False;
+
+(**************************************************************************************************)
+
+PublicFunction[HexIntegerString]
+
+SetListable[HexIntegerString];
+HexIntegerString[e_Integer] := IntegerString[e, 16];
 
 (**************************************************************************************************)
 

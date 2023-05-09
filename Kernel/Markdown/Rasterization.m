@@ -9,7 +9,11 @@ cellToRasterMarkdown[cell_] := Scope[
 
   thisTag = Nothing;
   cell = cell /. TagBox[contents_, "ClassTaggedForm"[tag_]] :> (thisTag = tag; contents);
-  rasterizationResult = $rasterizationFunction @ cell;
+
+  rasterizationOptions = Sequence[];
+  cell = cell /. TagBox[contents_, "RasterizationOptions"[opts___]] :> (rasterizationOptions = opts; contents);
+
+  rasterizationResult = $rasterizationFunction[cell, rasterizationOptions];
 
   If[!AssociationQ[rasterizationResult],
     Message[ToMarkdownString::badrastres];
@@ -43,7 +47,7 @@ cellToRasterMarkdown[cell_] := Scope[
 
 PrivateFunction[linearSyntaxRasterizationFunction]
 
-linearSyntaxRasterizationFunction[cell_] := Association[
+linearSyntaxRasterizationFunction[cell_, ___] := Association[
   "type" -> "String",
   "linearSyntax" -> ToString[RawBoxes @ Part[cell, 1, 1], StandardForm]
 ];
@@ -90,16 +94,16 @@ ExportBase64[img_Image, args___] := Base64String @ ToCharacterCode @ ExportStrin
 
 PrivateFunction[standardRasterizationFunction]
 
-standardRasterizationFunction[Cell[BoxData[t:TagBox[_, _BoxForm`AnimatedImageTag]], ___]] :=
+standardRasterizationFunction[Cell[BoxData[t:TagBox[_, _BoxForm`AnimatedImageTag]], ___], ___] :=
   standardRasterizationFunction @ ToExpression[t, StandardForm];
 
-standardRasterizationFunction[a_AnimatedImage] :=
-  cachedGenericRasterize[a, rasterizeAnimatedImage, "gif"];
+standardRasterizationFunction[a_AnimatedImage, opts___] :=
+  cachedGenericRasterize[a, rasterizeAnimatedImage, {"Format" -> "gif", opts}];
 
 rasterizeAnimatedImage[a_AnimatedImage] := {a, a["RasterSize"]};
 
-standardRasterizationFunction[cell_] :=
-  cachedGenericRasterize[cell, rasterizeImage, "png", CompressionLevel -> 1];
+standardRasterizationFunction[cell_, opts___Rule] :=
+  cachedGenericRasterize[cell, rasterizeImage, {opts}];
 
 rasterizeImage[obj_] := Scope[
   img = If[TrueQ @ $rasterizationCaching, CachedFastRasterize, FastRasterize] @ obj;
@@ -108,37 +112,44 @@ rasterizeImage[obj_] := Scope[
 
 (**************************************************************************************************)
 
-PrivateFunction[jpegRasterizationFunction]
-
-jpegRasterizationFunction[cell_] :=
-  cachedGenericRasterize[cell, rasterizeImage, "jpeg", CompressionLevel -> 0.3];
-
-(**************************************************************************************************)
-
 $rasterMetadataCache = UAssociation[];
 
-cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
+cachedGenericRasterize[obj_, rasterizeFn_, exportOpts_] := Scope[
+
+  exportOpts = Join[exportOpts, $rasterizationOptions];
+  fileExt = ToLowerCase @ Lookup[exportOpts, "Format", "png"];
+  exportOpts //= DeleteCases["Format" -> _];
 
   If[$rasterizationPath === None, Return @ None];
 
   (* did we already export this result in this session? *)
+  fileExt //= ToLowerCase;
   objHash = Base36Hash @ obj;
-  cacheKey = {objHash, $rasterizationURL, $rasterizationPath};
+  exportOpts = Sort @ DeleteDuplicatesBy[exportOpts, First];
+  optsHash = If[exportOpts === {}, None, Base36Hash @ exportOpts];
+  optsHashStr = If[optsHash =!= None, "_" <> optsHash, ""];
+
+  cacheKey = {objHash, optsHash, $rasterizationURL, $rasterizationPath};
   cacheValue = Lookup[$rasterMetadataCache, Key @ cacheKey, None];
   If[ListQ[cacheValue] && $rasterizationCaching,
     (* this cache gives us enough info to generate the markdown without looking for the file on disk *)
     {imageDims, imageFileName, imagePath} = cacheValue;
-    Goto[skipRasterization];
+    If[FileExistsQ[imagePath], Goto[skipRasterization]];
   ];
 
   whenWet @ EnsureDirectory @ $rasterizationPath;
 
-  (* did we already export this result in a previous session? *)
-  imagePath = First[FileNames[objHash <> "_*_*." <> fileExt, $rasterizationPath], None];
+  (* did we already export this result in a previous session? here, we will take the most recent file,
+  which we assume represents the image dimensions that were passed to this function, which in theory
+  might not be the case but probably is! *)
+  filePattern = StringJoin[objHash, "_*_*", optsHashStr, ".", fileExt];
+  imagePath = First[FileNames[filePattern, $rasterizationPath], None];
   If[StringQ[imagePath] && $rasterizationCaching,
     imageFileName = FileNameTake @ imagePath;
-    imageDims = FromDigits /@ StringExtract[FileBaseName @ imagePath, "_" -> {3, 4}];
-    Goto[skipRasterization]];
+    baseName = FileBaseName @ imagePath;
+    imageDims = FromDigits /@ StringExtract[baseName, "_" -> {3, 4}];
+    Goto[skipRasterization];
+  ];
 
   (* rasterize *)
   If[$dryRun,
@@ -151,7 +162,7 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
     {w, h} = imageDims;
     VPrint["* Rasterization yielded image of size ", w, " by ", h];
     dimsStr = StringJoin[IntegerString[w, 10, 4], "_", IntegerString[h, 10, 4]];
-    imageFileName = StringJoin[objHash, "_", imageHash, "_", dimsStr, ".", fileExt];
+    imageFileName = StringJoin[objHash, "_", imageHash, "_", dimsStr, optsHashStr, ".", fileExt];
   ];
 
   imagePath = PathJoin[$rasterizationPath, imageFileName];
@@ -160,8 +171,11 @@ cachedGenericRasterize[obj_, rasterizeFn_, fileExt_, exportArgs___] := Scope[
   If[!FileExistsQ[imagePath] || !$rasterizationCaching,
     VPrint["* Exporting image to ", MsgPath @ imagePath];
     whenWet @ Check[
-      Export[imagePath, image, exportArgs],
-      Print["Rasterization failed: ", Thumbnail @ image];
+      If[fileExt == "png" && !MemberQ[exportOpts, CompressionLevel -> _],
+        AppendTo[exportOpts, CompressionLevel -> 1]];
+      VPrint["Export[", MsgPath @ imagePath, ", ", ImageDimensions @ image, ", ", exportOpts, "]"];
+      Export[imagePath, image, Sequence @@ exportOpts],
+      Print["Export[", MsgPath @ imagePath, ", ", Thumbnail @ image, ", ...] failed."];
     ];
   ];
 

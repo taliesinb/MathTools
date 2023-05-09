@@ -180,6 +180,7 @@ $textPostProcessor = Identity;
 this will allow us to interpret $ as coming soley from user and not a result of inlineMathTemplate *)
 
 $lastSpace = $allowMDemph = True;
+ClearAll[textBoxesToMarkdown];
 textBoxesToMarkdown = Case[
   str_String :=
     $textPostProcessor @ StringJoin @ checkLastSpace @ str;
@@ -201,7 +202,7 @@ textBoxesToMarkdown = Case[
 
   Cell[boxes_, "Text"] := % @ boxes;
 
-  StyleBox[str_String /; StringMatchQ[str, Whitespace], ___] :=
+  StyleBox[str_String /; StringMatchQ[str, Whitespace], style___] /; FreeQ[{style}, Background] :=
     ($lastSpace = True; " ");
 
   FormBox[b_ButtonBox, _] := % @ b;
@@ -222,7 +223,7 @@ checkLastSpace[list_List] := Map[checkLastSpace, list];
 checkLastSpace[s_String /; StringEndsQ[s, " "|"\t"]] := ($lastSpace = True; s);
 checkLastSpace[other_] := ($lastSpace = False; other);
 
-Options[styleBoxToMarkdown] = {FontWeight -> "Plain", FontSlant -> "Plain", FontColor -> None};
+Options[styleBoxToMarkdown] = {FontWeight -> "Plain", FontSlant -> "Plain", FontColor -> None, Background -> None};
 
 wordQ[e_] := StringQ[e] && StringMatchQ[e, WordCharacter..];
 
@@ -290,7 +291,11 @@ wrapWith[e_, wrap_] := Scope[
 
 (**************************************************************************************************)
 
-$shortcodeP = "</span>" | "\n" | "B{" | "B:" | "F{" | "F:" | "\\n" | "^{" | "_{" | ("_" | "^" ~~ DigitCharacter) | DoubleStruckLetter;
+$shortcodeP = RegularExpression @ ToRegularExpression @ Alternatives[
+  "</span>", "\n", "B{", "B:", "F{", "F:", "\\n", "^{", "_{", ("_" | "^") ~~ DigitCharacter,
+  DoubleStruckCharacter,
+  First @ $WLSymbolToUnicode
+];
 
 processInlineCodeBlocks[str_String] := StringReplace[str, {
   code:("`" ~~ body:Shortest[___] ~~ "`") :> If[StringFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, False]],

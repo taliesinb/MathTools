@@ -6,6 +6,14 @@ VPrint[args___] :=
 
 (**************************************************************************************************)
 
+PublicFunction[Verbosely]
+
+SetHoldAllComplete[Verbosely]
+
+Verbosely[e_] := Block[{$verbose = True}, e];
+
+(**************************************************************************************************)
+
 PublicFunction[EchoEdgeList]
 
 EchoEdgeList = EchoFunction[EdgeList]
@@ -28,9 +36,10 @@ EchoGraphicsScope[e_] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[ToGraphicsBoxes]
+PublicFunction[ToGraphicsBoxes, ToGraphics3DBoxes]
 
 ToGraphicsBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics] //. InterpretationBox[b_, _] :> b;
+ToGraphics3DBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics3D] //. InterpretationBox[b_, _] :> b;
 
 (**************************************************************************************************)
 

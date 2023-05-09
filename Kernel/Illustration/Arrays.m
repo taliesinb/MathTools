@@ -9,12 +9,37 @@ NeutralGraphics3D[prims_, opts___] := Graphics3D[
   BaseStyle -> {RenderingOptions -> {"3DRenderingEngine" -> "OpenGL", "3DRenderingMethod" -> "BSPTree"}},
   Method -> {"ShrinkWrap" -> True}
 ]
-
 stripG3D = Case[
   l_List := Map[%, l];
   Graphics3D[g_, ___] := g;
   e_ := e;
 ];
+
+(**************************************************************************************************)
+
+PublicForm[PixelForm]
+
+DefineStandardTraditionalForm[{
+  PixelForm[{r_, g_, b_}] :> StyleBox["\[FilledSquare]", FontColor -> RGBColor[r, g, b]],
+  PixelForm[g_ ? NumberQ] :> StyleBox["\[FilledSquare]", FontColor -> GrayLevel[g]]
+}];
+
+(**************************************************************************************************)
+
+PublicForm[FadedRationalForm]
+
+makeFade[r_] := GrayLevel[(1 - r)/1.5];
+
+DefineStandardTraditionalForm[{
+  FadedRationalForm[0]   :> StyleBox["0", FontColor -> makeFade[0]],
+  FadedRationalForm[1/2] :> StyleBox["½", FontColor -> makeFade[1/2]],
+  FadedRationalForm[1]   :> StyleBox["1", FontColor -> makeFade[1]],
+  FadedRationalForm[n_]  :> IntegerString[n],
+  FadedRationalForm[3/4] :> StyleBox["¾", FontColor -> makeFade[3/4]],
+  FadedRationalForm[1/4] :> StyleBox["¼", FontColor -> makeFade[1/4]],
+  FadedRationalForm[1/3] :> StyleBox["⅓", FontColor -> makeFade[1/3]],
+  FadedRationalForm[2/3] :> StyleBox["⅔", FontColor -> makeFade[2/3]]
+}];
 
 (**************************************************************************************************)
 
@@ -77,7 +102,8 @@ makeCube[dims_, pos_] := Scope[
 applyStyle[e_, Automatic] := e;
 applyStyle[e_, None] := {};
 applyStyle[e_, Transparent] := Style[e, FaceEdgeForm[Transparent]];
-applyStyle[e_, c_? ColorQ] := Style[e, FaceEdgeForm[c]];
+applyStyle[e_, o:Opacity[_, _]] := Style[e, FaceEdgeForm[o]];
+applyStyle[e_, c_ ? ColorQ] := Style[e, FaceEdgeForm[c]];
 applyStyle[e_, s_] := Style[e, Seq @@ ToList[s]];
 
 (**************************************************************************************************)
@@ -345,11 +371,11 @@ CubeAxes[origin_, size_, {lx_, ly_, lz_}, OptionsPattern[]] := Scope[
     labelScale = 0
   ];
   spec = Lookup[$cubeAxesOrient, labelPosition, ReturnFailed["badlabelpos", orient]];
-  spec = spec /. {$s -> labelScale, $i -> (1 - labelScale)};
+  spec = MapThread[#1 /. {$s -> #2, $i -> (1 - #2)}&, {spec, labelScale * {1, 1, 1}}];
   MapThread[
     If[hideTrivialAxes && #4 === 1, Nothing,
-    CubeEdgeText[#1, origin, size, Seq @@ #2, InsetScale -> insetScale, BaseStyle -> baseStyle, IncludeArrow -> #3, CubeOffset -> cubeOffset, Spacing -> spacing]]&,
-    {{lx, ly, lz}, spec, includeArrow * {1,1,1}, size}
+    CubeEdgeText[#1, origin, size, Seq @@ #2, InsetScale -> insetScale, BaseStyle -> baseStyle, IncludeArrow -> #3, CubeOffset -> cubeOffset, Spacing -> #5]]&,
+    {{lx, ly, lz}, spec, includeArrow * {1,1,1}, size, spacing * {1,1,1}}
   ]
 ];
 

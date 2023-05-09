@@ -589,3 +589,5 @@ makeSym["PS", ToPrettifiedString]
 
 makeSym["PCF", PreformattedCodeForm]
 makeSym["NAF", NestedArrayForm]
+
+makeSym["SBF", StringBlockForm]

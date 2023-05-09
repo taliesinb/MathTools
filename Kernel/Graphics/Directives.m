@@ -112,6 +112,7 @@ toFECol[e_] := e;
 
 FaceEdgeForm[face_, edge_] := Directive[FaceForm[toFECol @ face], EdgeForm[toFECol @ edge]];
 FaceEdgeForm[color_ ? ColorQ] := Directive[FaceForm[color], EdgeForm[Darker[color, .2]]];
+FaceEdgeForm[Opacity[o_, color_ ? ColorQ]] := FaceEdgeForm @ SetColorOpacity[color, o];
 FaceEdgeForm[d_Directive] := d;
 FaceEdgeForm[e_] := e;
 FaceEdgeForm[Automatic] = {};

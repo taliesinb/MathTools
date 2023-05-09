@@ -49,7 +49,7 @@ toMarkdownStringInner[spec_, returnVec_:False] := Scope[
 
 (**************************************************************************************************)
 
-$codeJoining = "⋮</pre>\n\n<pre>" -> "";
+$codeJoining = "⋮</pre>\n\n<pre>" | "</pre>\n\n<pre>⋮" -> "";
 
 (**************************************************************************************************)
 
@@ -96,13 +96,15 @@ toMarkdownLines[nb_NotebookObject] :=
 toMarkdownLines[list_List] :=
   Flatten[Riffle[Map[toMarkdownLines, list], "---"], 1];
 
-PrivateFunction[$localKatexDefinitions, $localTemplateToKatexFunctions]
+PrivateFunction[$localKatexDefinitions, $localTemplateToKatexFunctions, $rasterizationOptions]
 
 $localKatexDefinitions = None;
 $localTemplateToKatexFunctions = None;
+$rasterizationOptions = {};
 
 toMarkdownLines[Notebook[cells_List, opts___]] := Scope[
   taggingRules = Lookup[{opts}, TaggingRules, <||>];
+  $rasterizationOptions = Lookup[taggingRules, "RasterizationOptions", {}];
   If[StringQ[katexDefs = taggingRules["KatexDefinitions"]],
     VPrint["Applying local katex definitions: \n", katexDefs];
     $localKatexDefinitions = katexDefs];
