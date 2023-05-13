@@ -40,6 +40,11 @@ DeclareArgumentCount[LookupImageSize, 1];
 
 Options[LookupImageSize] = {AspectRatio -> Automatic};
 
+(* use shortcut for Graphs, otherwise we'd have to call ExtendedGraphPlot to calculate this properly.
+this isn't 100% accurate, however, since it can't know how much label padding etc. will be involved *)
+LookupImageSize[g_Graph, ___] :=
+  Lookup[ComputeExtendedGraphImageSizeData[g], "ImageSize"];
+
 LookupImageSize[obj_, OptionsPattern[]] := Scope[
   {imageSize, aspectRatio} = LookupOption[obj, {ImageSize, AspectRatio}];
   SetAutomatic[aspectRatio, OptionValue @ AspectRatio];

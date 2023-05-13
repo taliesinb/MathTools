@@ -302,6 +302,18 @@ DefineGraphTheme["TransitiveQuiver3D",
 
 (**************************************************************************************************)
 
+PublicFunction[DisconnectedQuiver]
+
+Options[DisconnectedQuiver] = $ExtendedGraphOptions;
+
+DisconnectedQuiver[list_List, opts:OptionsPattern[]] :=
+  ExtendedGraph[list, {}, VertexLayout -> LinearLayout[], opts];
+
+DisconnectedQuiver[n_Integer, opts:OptionsPattern[]] :=
+  ExtendedGraph[Range[n], {}, VertexLayout -> LinearLayout[], opts];
+
+(**************************************************************************************************)
+
 PublicFunction[LineQuiver]
 
 Options[LineQuiver] = JoinOptions[

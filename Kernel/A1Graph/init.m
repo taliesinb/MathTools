@@ -14,6 +14,10 @@ PublicOption[CardinalColors, CardinalColorRules, CardinalColorFunction]
 
 PublicOption[VertexLabelPosition, VertexLabelSpacing, VertexLabelBaseStyle, VertexLabelOrientation]
 
+PublicOption[VertexLabelRules, VertexLabelFunction]
+
+PublicOption[EdgeLabelRules, EdgeLabelFunction]
+
 PublicOption[VertexFontSize, VertexBackground]
 
 PublicOption[EdgeLabelPosition, EdgeLabelSpacing, EdgeLabelBaseStyle, EdgeLabelOrientation]
@@ -69,8 +73,10 @@ $extendedGraphOptionsRules = {
   EdgeColorFunction                   -> None,
   EdgeColorRules                      -> None,
   EdgeLabelBaseStyle                  -> None,
-  EdgeLabelPosition                   -> Automatic,
+  EdgeLabelFunction                   -> None,
   EdgeLabelOrientation                -> Automatic,
+  EdgeLabelPosition                   -> Automatic,
+  EdgeLabelRules                      -> None,
   EdgeLabelSpacing                    -> 0,
   EdgeSetback                         -> Automatic,
   EdgeThickness                       -> Automatic,
@@ -109,9 +115,11 @@ $extendedGraphOptionsRules = {
   VertexCoordinateRules               -> None,
   VertexFontSize                      -> None,
   VertexLabelBaseStyle                -> None,
-  VertexLabelPosition                 -> Automatic,
-  VertexLabelSpacing                  -> 0,
+  VertexLabelFunction                 -> None,
   VertexLabelOrientation              -> Automatic,
+  VertexLabelPosition                 -> Automatic,
+  VertexLabelRules                    -> None,
+  VertexLabelSpacing                  -> 0,
   VertexLayout                        -> Automatic,
   VertexOpacity                       -> 1,
   VertexOverlapResolution             -> None,

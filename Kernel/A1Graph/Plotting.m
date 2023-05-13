@@ -410,6 +410,17 @@ GraphAnnotationData[annotation_] :=
 
 (**************************************************************************************************)
 
+PrivateFunction[ComputeExtendedGraphImageSizeData]
+
+(* HACKY: This lets us get info about how big a graph will want to draw
+even if it has EdgeLength etc target sizes in it *)
+ComputeExtendedGraphImageSizeData[g_Graph] := Scope[
+  $returnRawImageSize = True;
+  Catch[ExtendedGraphPlot[g], $rawImageSizeDataTag]
+];
+
+(**************************************************************************************************)
+
 PublicVariable[$GraphPlotVerboseMode]
 
 $GraphPlotVerboseMode = False;
@@ -470,10 +481,12 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       prologFunction, epilogFunction,
       useAbsoluteSizes,
 
-      vertexLabelPosition,  edgeLabelPosition,
-      vertexLabelSpacing,   edgeLabelSpacing,
-      vertexLabelBaseStyle, edgeLabelBaseStyle,
+      vertexLabelPosition,    edgeLabelPosition,
+      vertexLabelSpacing,     edgeLabelSpacing,
+      vertexLabelBaseStyle,   edgeLabelBaseStyle,
       vertexLabelOrientation, edgeLabelOrientation,
+      vertexLabelRules,       edgeLabelRules,
+      vertexLabelFunction,    edgeLabelFunction,
 
       peripheralVertices, frameFade
     ];
@@ -521,6 +534,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       If[aspectRatioClipping, aspectRatio = Clip[$GraphPlotAspectRatio, {0.3, 2}]];
       {imageWidth, imageHeight} = ToNumericImageSize[imageSize, aspectRatio];
     ];
+
     If[aspectRatioClipping,
       If[$GraphIs3D,
         (* this makes 3D rotation less zoomy *)
@@ -548,6 +562,11 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       "ImageSize" -> imageSize, "EffectiveImageSize" -> {effectiveImageWidth, effectiveImageHeight},
       "ImagePadding" -> imagePadding, "AdditionalImagePadding" -> additionalImagePadding
     }];
+
+    If[TrueQ[$returnRawImageSize], Throw[<|
+      "ImageSize" -> imageSize, "EffectiveImageSize" -> {effectiveImageWidth, effectiveImageHeight},
+      "ImagePadding" -> imagePadding, "AdditionalImagePadding" -> additionalImagePadding
+    |>, $rawImageSizeDataTag]];
 
     edgeCenters = lineCenter /@ $EdgeCoordinateLists;
 
@@ -763,10 +782,10 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     (* for label style, support: Opacity, as well as Tiny, Small, etc. Medium corresponds to ordinary size. *)
 
     vertexLabels //= removeSingleton;
-    If[vertexLabels =!= None || vertexTooltips =!= None,
+    If[vertexLabels =!= None || vertexTooltips =!= None || vertexLabelRules =!= None || vertexLabelFunction =!= None,
       SetNone[vertexSize, $GraphMaxSafeVertexSize / 5];
       {vertexLabelItems, zorder} = generateLabelPrimitives[
-        vertexLabels, vertexTooltips,
+        vertexLabels, vertexLabelRules, vertexLabelFunction, vertexTooltips,
         $VertexList, $VertexCoordinates, $VertexParts,
         vertexSize,
         {vertexLabelStyle, vertexLabelPosition, vertexLabelSpacing, vertexLabelBaseStyle, vertexLabelOrientation},
@@ -780,10 +799,10 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ];
 
     edgeLabels //= removeSingleton;
-    If[edgeLabels =!= None || edgeTooltips =!= None,
+    If[edgeLabels =!= None || edgeTooltips =!= None || edgeLabelRules =!= None || edgeLabelFunction =!= None,
       SetAutomatic[arrowheadSize, 0];
       {edgeLabelItems, zorder} = generateLabelPrimitives[
-        edgeLabels, edgeTooltips,
+        edgeLabels, edgeLabelRules, edgeLabelFunction, edgeTooltips,
         $EdgeList, edgeCenters, $EdgeParts,
         Max[arrowheadSize] * $GraphPlotSizeX,
         {edgeLabelStyle, edgeLabelPosition, edgeLabelSpacing, edgeLabelBaseStyle, edgeLabelOrientation},
@@ -1196,7 +1215,8 @@ $emptySizeInfo = <|"PlotRange" -> 0, "ImageSize" -> 0, "Fraction" -> 0|>;
 
 findVertexList = Case[
   All := Range @ $VertexCount;
-  spec_ := ToList @ findVertex @ spec
+  spec_List := Map[findVertex, spec];
+  spec_ := ToList @ findVertex @ spec;
 ];
 
 findEdgeList = Case[
@@ -1212,6 +1232,8 @@ postProcPrims[All][vals_] := vals;
 
 postProcPrims[spec_ ? GraphRegionElementQ][vals_] :=
   If[vals === {}, failPlot["gvnoprim", spec], vals];
+
+postProcPrims[spec_List][vals_] := vals;
 
 postProcPrims[spec_][vals_] :=
   First[vals, failPlot["gvnoprim", spec]];
@@ -2254,7 +2276,7 @@ LabelOrientation is an option that determines how labels are oriented, and can a
 "
 
 $uniformPayloadSizes = False;
-generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {labelStyle_, labelPosition_, labelSpacing_, labelBaseStyle_, labelOrientation_}, annotations_, isVertices_] := Scope[
+generateLabelPrimitives[labelSpec_,  labelRules_, labelFn_, tspec_, names_, coordinates_, parts_, size_, {labelStyle_, labelPosition_, labelSpacing_, labelBaseStyle_, labelOrientation_}, annotations_, isVertices_] := Scope[
   $annotationKeys = Keys @ annotations;
   $labelNames = names;
   $labelWeights := $labelWeights = If[isVertices, LookupVertexAnnotations[$Graph, VertexWeight], LookupEdgeAnnotations[$Graph, EdgeWeight]];
@@ -2280,16 +2302,13 @@ generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {lab
   If[$labelFontWeight =!= None, PrependTo[labelStyle, FontWeight -> $labelFontWeight]];
   If[$labelFontFamily =!= None, PrependTo[labelStyle, FontFamily -> $labelFontFamily]];
   $magnifier = If[$labelSizeScale == 1, Identity, Magnify[#, $labelSizeScale]&];
-  {payloadFunction, placerFunction} = processLabelSpec[spec];
+  {payloadFunction, placerFunction} = processLabelSpec[labelSpec, labelRules, labelFn];
   indices = If[parts === All, Range @ Length @ names, parts];
   labelElements = tooltipElements = Nothing;
   If[payloadFunction =!= None,
     payloads = Map[payloadFunction, indices];
     $uniformPayloadSizes = ArrayQ[payloads];
-    labelElements = MapThread[
-      placerFunction[labelForm @ #3, #1, #2]&,
-      {coordinates, indices, payloads}
-    ];
+    labelElements = MapThread[procPayload, {payloads, coordinates, indices}];
     labelElements = Style[labelElements, labelStyle];
   ];
   If[tspec =!= None,
@@ -2304,6 +2323,18 @@ generateLabelPrimitives[spec_, tspec_, names_, coordinates_, parts_, size_, {lab
   elements = removeSingleton @ {labelElements, tooltipElements};
   {elements, $labelZOrder}
 ];
+
+procPayload = Case[
+  Sequence[Null, _, _] := Nothing;
+  Sequence[payload_, coord_, ind_] :=
+    placerFunction[labelForm @ payload, coord, ind];
+  Sequence[Placed[payload_, labelPos_], coord_, ind_] := Scope[
+    $labelY = $labelX = None;
+    setLabelStyleGlobals[LabelPosition -> labelPos];
+    SetNone[$labelX, 0]; SetNone[$labelY, 0];
+    %[payload, coord, ind]
+  ];
+]
 
 toDirectiveOptScan[f_][{Automatic}] :=
   Directive[];
@@ -2345,6 +2376,8 @@ setLabelStyleGlobals = Case[
   LabelPosition -> Bottom|Below           := SetNone[$labelY, 1.25];
   LabelPosition -> Center                 := $labelX = $labelY = 0;
   LabelPosition -> "Radial"               := ($labelX = $labelY = "Radial");
+  LabelPosition -> "XSign"                := ($labelX = "Sign"; $labelY = 0);
+  LabelPosition -> "YSign"                := ($labelX = 0; $labelY = "Sign");
   LabelPosition -> "Aligned"              := ($labelX = $labelY = "Aligned");
   LabelPosition -> {x_ ? NQ, y_ ? NQ}     := ($labelX = N[x]; $labelY = N[y]);
   LabelPosition -> specs:{__}             := Scan[%[LabelPosition -> #]&, specs];
@@ -2368,14 +2401,28 @@ setLabelStyleGlobals = Case[
 
 $keyP = _String | _Association | (_List ? (SameLengthQ[$labelNames]));
 
-processLabelSpec = Case[
+processLabelSpec[spec_, None, None] := processLabelSpec1[spec];
+
+processLabelSpec[spec_, None, fn_] :=
+  {getName /* fn, placeLabelAt};
+
+processLabelSpec[spec_, {rules___}, fn_] := With[
+  {fallbackFn = Which[
+    MatchQ[spec, $payloadP], toPayloadFunction @ spec,
+    fn =!= None, getName /* fn,
+    True, Null&
+  ]},
+  {payloadFn = Function[ind, Replace[getName[ind], {rules, _ :> fallbackFn[ind]}]]},
+  {payloadFn, placeLabelAt}
+];
+
+processLabelSpec1 = Case[
   None                          := {None, None};
   Automatic | All               := %["Name"];
   Tooltip                       := %[Placed["Name", Tooltip]];
   p:$payloadP                   := {toPayloadFunction @ p, placeLabelAt};
   Tooltip[p:$payloadP]          := {toPayloadFunction @ p, placeTooltipAt};
   Placed[p:$payloadP, Tooltip]  := {toPayloadFunction @ p, placeTooltipAt};
-
   other_                        := failPlot["badlabelspec", other];
   {$payloadP -> $keyP | Rule[$keyP, _]}
 ];
@@ -2466,6 +2513,16 @@ placeLabelAt[label_, pos_, index_] /; ($labelX === Automatic) := Scope[
   edgeCoords = Mean /@ Part[$EdgeCoordinateLists, adjacentEdges];
   bestOffset = MaximumBy[$labelOffsets, sumOfDistances[pos - #, edgeCoords]&];
   {$labelX, $labelY} = dim3to2[bestOffset] * {1.7, 1.1};
+  placeLabelAt[label, pos, index]
+];
+
+placeLabelAt[label_, pos_, index_] /; ($labelX === "Sign") := Scope[
+  $labelX = -Sign @ Part[pos - $meanCoordinates, 1];
+  placeLabelAt[label, pos, index]
+];
+
+placeLabelAt[label_, pos_, index_] /; ($labelY === "Sign") := Scope[
+  $labelY = -Sign @ Part[pos - $meanCoordinates, 2];
   placeLabelAt[label, pos, index]
 ];
 

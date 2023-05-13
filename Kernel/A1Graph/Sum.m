@@ -1,9 +1,9 @@
-PublicFunction[GraphSum]
+PublicFunction[GraphDisjointSum]
 
 SetUsage @ "
-GraphSum[{g$1, g$2, $$}] takes the sum of a list of graphs g$i, yielding a single graph with vertices SumVertex[v$, i$], \
+GraphDisjointSum[{g$1, g$2, $$}] takes the sum of a list of graphs g$i, yielding a single graph with vertices SumVertex[v$, i$], \
 where v$ is a vertex from g$i.
-GraphSum[<|k$1 -> g$1, k$2 -> g$2, $$|>] yields a graph with vertices SumVertex[v$, k$i].
+GraphDisjointSum[<|k$1 -> g$1, k$2 -> g$2, $$|>] yields a graph with vertices SumVertex[v$, k$i].
 * Any of the graphs g$i can also be an expression g$i -> vertex$. All such vertices will be contracted.
 "
 
@@ -17,8 +17,8 @@ relabelSumComponent[graph_ -> joinVertex_, index_] := (
 );
 
 (* TODO: capture and combine the options of all the subgraphs *)
-GraphSum[graphs:ListOrAssociationOf[_Graph | Rule[_Graph, _]], opts:OptionsPattern[Graph]] := Scope[
+GraphDisjointSum[graphs:ListOrAssociationOf[_Graph | Rule[_Graph, _]], opts:OptionsPattern[Graph]] := Scope[
   $contractions = {};
   union = GraphUnion[Sequence @@ MapIndexed[relabelSumComponent[#1, indexToLabel[#2]], graphs], opts];
-  GraphContract[union, $contractions]
+  GraphContract[union, $contractions']
 ];
