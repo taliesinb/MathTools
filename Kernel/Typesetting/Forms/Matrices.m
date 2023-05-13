@@ -90,3 +90,12 @@ PublicForm[ArrayPartForm]
 
 DefineRestCommaForm[ArrayPartForm, PartBox[$1, $2]];
 
+(**************************************************************************************************)
+
+PublicForm[LiftedForm, MappedForm]
+
+DefineUnaryForm[LiftedForm, SuperscriptBox[$1, "\[UpArrow]"]];
+DefineUnaryForm[MappedForm, SuperscriptBox[$1, "\[UpArrow]"]];
+
+
+

@@ -899,7 +899,7 @@ The clist$, groups$, cfunc$ are as following:
 * clist$ is a list of color$i for each list$i.
 * groups$ is an association from pairs of colors and values to positions of list$ at which they occur
 * cfunc$ is a color function that can be applied to new values.
-* See %ToColorPalette for allowed settings of palette$ (the default used is 'Basic').
+* See %ToColorPalette for allowed settings of palette$ (the default used is Automatic).
 * cfunc$ will be either a %ContinuousColorFunction or a %DiscreteColorFunction.
 * If list$ consists of colors, these will be used verbatim.
 "
@@ -916,7 +916,7 @@ discreteColorPalette = Case[
 ];
 
 coloringColorPalette = Case[
-  Automatic := Part[ToColorPalette["Basic"], {1, 2, 3, 5, 4, 6}];
+  Automatic := Part[ToColorPalette[Automatic], {1, 2, 3, 5, 4, 6}];
   other_ := ToColorPalette[other];
 ];
 

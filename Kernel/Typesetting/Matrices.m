@@ -54,7 +54,7 @@ CompactMatrixForm
 
 Options[CompactMatrixForm] = Options[makeCompactMatrixFormBoxes] = $compactMatrixOptions;
 
-declareBoxFormatting[
+DefineStandardTraditionalForm[
   CompactMatrixForm[e_, opts___Rule] :> makeCompactMatrixFormBoxes[e, opts]
 ];
 

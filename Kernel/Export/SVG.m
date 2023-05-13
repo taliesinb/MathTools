@@ -21,7 +21,7 @@ ToSVGString[g_Graphics] := Scope[
     parseContext[AbsoluteThickness[1]];
     parseContext[AbsolutePointSize[3]];
   	contents = StringJoin @ toSvg[prims];
-  	If[ColorQ @ background, contents = StringJoin[makeBackgroundRect @ toColStr @ background, contents]];
+  	If[ColorQ @ background, contents = StringJoin[makeBackgroundRect @ HTMLColorString @ background, contents]];
   ];
 
   If[$styles =!= <||>,
@@ -71,9 +71,11 @@ svgFail[msg_String, args___] := Message[MessageName[ToSVGString, msg], args];
 
 (**************************************************************************************************)
 
+SetHTMLColorOpacity[o_][col_] := HTMLColorString @ SetColorOpacity[o] @ FromHTMLColorString @ col;
+
 parseContext = Case[
-  color_ ? ColorQ                         := $context["fill"] = $context["pathcolor"] = toColStr @ color;
-  Opacity[a_]                             := ($context["fill"] //= fromColStr /* SetColorOpacity[o] /* toColStr; $context["pathcolor"] //= fromColStr /* SetColorOpacity[o] /* toColStr);
+  color_ ? ColorQ                         := $context["fill"] = $context["pathcolor"] = HTMLColorString @ color;
+  Opacity[a_]                             := ($context["fill"] //= SetHTMLColorOpacity[o]; $context["pathcolor"] //= SetHTMLColorOpacity[o];)
   PointSize[ps_ ? nq]                     := $context["pointsize"] = psToPixels @ ps;
   AbsolutePointSize[ps_ ? nq]             := $context["pointsize"] = apsToPixels @ ps;
   EdgeForm[e_]                            := parseEdgeForm[e];
@@ -93,18 +95,18 @@ parseEdgeForm = Case[
   (Thickness|AbsoluteThickness)[s_Symbol] := % @ AbsoluteThickness @ Lookup[$thicknessRules, s];
   AbsoluteThickness[s_ ? nq]              := $context["edgethickness"] = apsToPixels @ s;
   Thickness[s_ ? nq]                      := $context["edgethickness"] = psToPixels @ s;
-  color_ ? ColorQ                         := $context["edgecolor"] = toColStr @ color;
+  color_ ? ColorQ                         := $context["edgecolor"] = HTMLColorString @ color;
   None | Transparent                      := $context["edgecolor"] = None;
-  Opacity[a_]                             := $context["edgecolor"] //= fromColStr /* SetColorOpacity[o] /* toColStr;
+  Opacity[a_]                             := $context["edgecolor"] //= SetHTMLColorOpacity[o];
   list_List                               := Scan[%, list];
-	(* thickness etc *)
+  (* thickness etc *)
 ]
-	
+
 (* need to keep track of opacity separetly, and applyit to any colors that come after *)
 parseFaceForm = Case[
-	Opacity[o_, c_ ? ColorQ]         := % @ SetColorOpacity[c, o];
-  Opacity[o_]                      := $context["fill"] //= fromColStr /* SetColorOpacity[o] /* toColStr;
-	color_ ? ColorQ 				         := $context["fill"] = toColStr @ color;
+  Opacity[o_, c_ ? ColorQ]         := % @ SetColorOpacity[c, o];
+  Opacity[o_]                      := $context["fill"] //= SetHTMLColorOpacity[o];
+  color_ ? ColorQ                  := $context["fill"] = HTMLColorString @ color;
   None | Transparent               := $context["fill"] = None;
   list_List                        := Scan[%, list];
 ]
@@ -355,20 +357,6 @@ toSvg[other_] := (svgFail["unkprim", other]; "");
 
 toPair[{x_, y_}] := StringJoin[IntegerString @ toX @ x, " ", IntegerString @ toY @ y];
 toPairList[points_] := StringJoin @ Riffle[toPair /@ points, ","];
-
-toColStr = Case[
-  None          := "none";
-	Black 				:= "black";
-	White 				:= "white";
-	c_ ? ColorQ   := Set[toColStr[c], toHexColor[c]];
-];
-
-fromColStr = Case[
-  "none"                            := None;
-  "black"                           := Black;
-  "white"                           := White;
-  s_String /; StringStartsQ[s, "#"] := fromHexColor[s];
-];
 
 (**************************************************************************************************)
 

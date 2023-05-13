@@ -14,7 +14,7 @@ Options[MultiGridForm] = {
   ColumnLabels -> None
 };
 
-declareBoxFormatting[
+DefineStandardTraditionalForm[
   MultiGridForm[grids__List, opts___Rule] :> makeMultiGridBoxes[{grids}, opts]
 ];
 
@@ -35,7 +35,7 @@ Options[GridForm] = {
   ColumnLabels -> None
 };
 
-declareBoxFormatting[
+DefineStandardTraditionalForm[
   GridForm[rows_List, opts___Rule] :> makeSingleGridBoxes[rows, opts]
 ];
 
@@ -45,7 +45,7 @@ PublicForm[GridRowsForm]
 
 Options[GridRowsForm] = Options[GridForm];
 
-declareBoxFormatting[
+DefineStandardTraditionalForm[
   GridRowsForm[rows__, opts___Rule] :> makeSingleGridBoxes[{rows}, opts]
 ];
 
@@ -60,7 +60,7 @@ Options[GridColumnsForm] = Options[multiColumnBoxes] = {
   Alignment -> Center
 }
 
-declareBoxFormatting[
+DefineStandardTraditionalForm[
   GridColumnsForm[cols__, opts___Rule] :> multiColumnBoxes[{cols}, opts]
 ];
 
@@ -80,10 +80,8 @@ multiColumnBoxes[cols_List, opts:OptionsPattern[]] := Scope[
 
 PublicForm[SingleColumnForm]
 
-declareBoxFormatting[
-
+DefineStandardTraditionalForm[
   SingleColumnForm[args__, opts___Rule] :> singleColumnBoxes[{args}, opts]
-
 ]
 
 Options[SingleColumnForm] = Options[singleColumnBoxes] = {
@@ -348,7 +346,7 @@ toAlignmentLetter = Case[
 
 PublicSymbol[Aligner]
 
-declareBoxFormatting[
+DefineStandardTraditionalForm[
   Aligner :> SBox["Aligner"]
 ];
 
@@ -366,7 +364,7 @@ Options[FlowAlignedGridForm] = {
   Alignment -> Center
 }
 
-declareBoxFormatting[
+DefineStandardTraditionalForm[
   FlowAlignedGridForm[args__, opts___Rule] :> makeFlowAlignedGridForm[{args}, opts]
 ]
 
@@ -467,7 +465,7 @@ toRowBox = Case[
 PublicForm[EquationCascadeForm]
 
 SetHoldAllComplete[equationCascadeFormBoxes]
-declareBoxFormatting[
+DefineStandardTraditionalForm[
   EquationCascadeForm[first_, second_, rest__] :>
     equationCascadeFormBoxes[first, second, rest]
 ]
@@ -498,7 +496,7 @@ Options[EquationGridForm] = {
   Alignment -> {Right, Center, Left}
 }
 
-declareBoxFormatting[
+DefineStandardTraditionalForm[
   EquationGridForm[args__, opts:OptionsPattern[]] :>
     equationGridFormBoxes[{args}, OptionValue[EquationGridForm, {opts}, {Alignment, RowSpacings, ColumnSpacings}]]
 ];

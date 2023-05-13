@@ -19,12 +19,20 @@ declareFormatting[___] := Panic["BadFormatting"]
 
 PublicFunction[DefineStandardTraditionalForm]
 
+PublicFunction[HasBoxFormQ]
+
+$BoxFormHeadAssoc = UAssociation[];
+
 DefineStandardTraditionalForm[list_List] := Scan[DefineStandardTraditionalForm, list];
 
 DefineStandardTraditionalForm[lhs_ :> rhs_] := (
+  AssociateTo[$BoxFormHeadAssoc, PatternHead[lhs] -> True];
   MakeBoxes[lhs, StandardForm] := rhs;
   MakeBoxes[l:lhs, TraditionalForm] := MakeBoxes @ l;
 )
+
+HasBoxFormQ[head_Symbol[___] | head_Symbol] := Lookup[$BoxFormHeadAssoc, Hold[head], False];
+HasBoxFormQ[_] := False;
 
 _DefineStandardTraditionalForm := BadArguments[];
 

@@ -32,7 +32,7 @@ $binaryRelationMapping = <|
 
 PublicForm[Form]
 
-declareBoxFormatting[
+DefineStandardTraditionalForm[
   Form[e_] :> TagBox[MakeQGBoxes @ e, "QG"]
 ]
 

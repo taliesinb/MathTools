@@ -909,6 +909,7 @@ EvaluateTemplateBox[expr_] := ReplaceAll[expr, tb:TemplateBox[_List, _String] :>
 EvaluateTemplateBoxFull[expr_] := ReplaceRepeated[expr, tb:TemplateBox[_List, _String] :> RuleCondition @ evalTB[tb]];
 
 evalTB := Case[
+  TemplateBox[{a_, b_}, "katexSwitch"] := a;
   TemplateBox[args_List, name_String] /; KeyExistsQ[$notebookDisplayFunction, name] := Apply[$notebookDisplayFunction @ name, args];
   tb:TemplateBox[_List, _String]                                                    := BoxForm`TemplateBoxToDisplayBoxes[tb];
 ];

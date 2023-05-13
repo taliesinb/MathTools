@@ -1,3 +1,9 @@
+PublicFunction[PreviewLastCell]
+
+PreviewLastCell[] := ToMarkdownString[PreviousCell[], MarkdownFlavor -> "Hugo"];
+
+(**************************************************************************************************)
+
 PublicFunction[ToMarkdownString]
 
 Options[ToMarkdownString] = $genericMarkdownOptions;
@@ -28,11 +34,8 @@ toMarkdownStringInner[spec_, returnVec_:False] := Scope[
     katexMarkdown = $markdownPostprocessor @ $multilineMathTemplate @ $katexPostprocessor @ $KatexPrelude;
     lines = insertAtFirstNonheader[lines, {katexMarkdown}]
   ];
-  If[$customStylesTemplate =!= None,
-    customStyles = $customStylesTemplate[{
-      "Color1", "Color2", "Color3", "Color4", "Color5", "Color6", "Color7", "Color8",
-      "Background1", "Background2", "Background3", "Background4", "Background5", "Background6", "Background7", "Background8"
-    }];
+  If[$embedCustomStyles === True,
+    customStyles = generateCustomStyles[];
     lines = insertAtFirstNonheader[lines, {customStyles}];
   ];
   result = StringJoin @ Riffle[Append[""] @ lines, "\n\n"];
@@ -45,6 +48,27 @@ toMarkdownStringInner[spec_, returnVec_:False] := Scope[
   ];
   If[!StringQ[result], ReturnFailed[]];
   result
+];
+
+(**************************************************************************************************)
+
+(* TODO: put globals in CSS, only emit local overrides *)
+generateCustomStyles[] := Scope[
+  styleNames = {
+    "Color1", "Color2", "Color3", "Color4", "Color5", "Color6", "Color7", "Color8",
+    "Background1", "Background2", "Background3", "Background4", "Background5", "Background6", "Background7", "Background8", "Background9"
+  };
+  StringJoin[
+    "<style>",
+    Map[
+      styleName |-> {".", styleName, "{", Riffle[Map[
+        toStylePropVal,
+        CurrentValue[{StyleDefinitions, styleName}]
+      ], ";"], "}"},
+      styleNames
+    ],
+    "</style>\n\n"
+  ]
 ];
 
 (**************************************************************************************************)

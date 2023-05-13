@@ -1,3 +1,27 @@
+PublicFunction[ToStringBlock]
+PublicVariable[$StringBlockHeads]
+
+$StringBlockHeads = {};
+
+PrivateFunction[processCustomBlock]
+
+ClearAll[processCustomBlock];
+
+ToStringBlock /: SetDelayed[ToStringBlock[lhs_], rhs_] := With[
+  {head = First @ PatternHead[lhs]},
+  AppendTo[$StringBlockHeads, head];
+  DefineStandardTraditionalForm[block:lhs :> ToBoxes @ StringBlockForm @ block];
+  held = HoldComplete[processCustomBlock[lhs] := rhs];
+  held = held /. {
+    ToStringBlock -> processBlock,
+    Verbatim[OptionsPattern[]] -> $opts___Rule,
+    UnpackOptions[syms___] :> UnpackOptionsAs[head, $opts, syms]
+  };
+  First @ held
+];
+
+(**************************************************************************************************)
+
 PublicForm[StringMatrix]
 
 PublicOption[RowAlignment, ColumnAlignment, FramePadding, RowFrames, RowFrameStyle, RowFramePadding, SpanningFrame]
@@ -18,9 +42,44 @@ Options[StringMatrix] = {
   Background -> None
 };
 
-DefineStandardTraditionalForm[
-  grid:StringMatrix[_List, ___Rule] :> ToBoxes @ StringBlockForm @ grid
-]
+StringBlock::notmatrix = "Expected a matrix, found ``."
+
+ToStringBlock[StringMatrix[rows_List, opts___Rule]] := Scope[
+  If[!MatrixQ[rows, True&], ThrowMessage["notmatrix", MsgExpr @ rows]];
+  gstackBlocks[MatrixMap[ToStringBlock, rows], opts]
+];
+
+(**************************************************************************************************)
+
+PublicForm[StringBlockTemplate]
+
+StringBlock::badtemplate = "Template `` should be a string or list of strings."
+StringBlock::badtemplatearg = "`` reqeuested, but only `` available."
+ToStringBlock[StringBlockTemplate[template_, args___]] := Scope[
+  lines = Switch[template,
+    _String,     StringSplit[template, "\n"],
+    {___String}, template,
+    _,           ThrowMessage["badtemplate", template];
+  ];
+  items = {args};
+  $sbtAlign = Center;
+  If[MatchQ[Last[items, None], Alignment -> _], $sbtAlign = Part[items, -1, 2]; items = Most[items]];
+  items = Map[ToStringBlock, items];
+  lines = StringReplace[lines, {
+    "#" ~~ i:DigitCharacter :> $rawBlock @ SafePart[items, FromDigits @ i],
+    "%" ~~ i:DigitCharacter :> $rawBlock @ blockToHSpace @ SafePart[items, FromDigits @ i]
+  }] /. Missing["PartAbsent", j_] :> ThrowMessage["badtemplatearg", j, Length @ items];
+  verticalBlocks = Map[blockLine, lines];
+  vstackBlocks[verticalBlocks, Left]
+];
+
+blockLine = Case[
+  StringExpression[a___] := % @ {a};
+  s_String               := % @ {s};
+  list_List              := hstackBlocks[Map[processBlock, list], $sbtAlign];
+];
+
+blockToHSpace[$block[_, w_, h_]] := spacerBlock[w, 1];
 
 (**************************************************************************************************)
 
@@ -36,13 +95,8 @@ Options[StringRow] = {
   Background -> None
 }
 
-DefineStandardTraditionalForm[
-  row:StringRow[_List, ___Rule] :> ToBoxes @ StringBlockForm @ row
-];
-
-Options[rowBlock] = Options[StringRow];
-
-rowBlock[items_, OptionsPattern[]] := Scope[
+ToStringBlock[StringRow[items_List, OptionsPattern[]]] := Scope[
+  items = Map[ToStringBlock, items];
   UnpackOptions[rowAlignment, columnSpacings, frame, framePadding, frameStyle, spanningFrame, background];
   frameStyle //= normFrameStyle;
   If[columnSpacings =!= 0, items = riffle[items, Spacer[columnSpacings]]];
@@ -65,13 +119,8 @@ Options[StringColumn] = {
   Background -> None
 }
 
-DefineStandardTraditionalForm[
-  col:StringColumn[_List, ___Rule] :> ToBoxes @ StringBlockForm @ col
-];
-
-Options[columnBlock] = Options[StringColumn];
-
-columnBlock[items_, OptionsPattern[]] := Scope[
+ToStringBlock[StringColumn[items_List, OptionsPattern[]]] := Scope[
+  items = Map[ToStringBlock, items];
   UnpackOptions[columnAlignment, rowSpacings, frame, framePadding, frameStyle, spanningFrame, background];
   frameStyle //= normFrameStyle;
   If[rowSpacings =!= 0, items = riffle[items, Spacer[{1, rowSpacings}]]];
@@ -90,15 +139,9 @@ Options[StringFrame] = {
   Background -> None
 };
 
-DefineStandardTraditionalForm[
-  frame:StringFrame[_, ___Rule] :> ToBoxes @ StringBlockForm @ frame
-];
-
-Options[frameBlock] = Options[StringFrame];
-
-frameBlock[block_, OptionsPattern[]] := Scope[
+ToStringBlock[StringFrame[item_, OptionsPattern[]]] := Scope[
   UnpackOptions[frame, frameStyle, background];
-  hframeBlock[block, frame, frameStyle, True, background]
+  hframeBlock[ToStringBlock @ item, frame, frameStyle, True, background]
 ];
 
 (**************************************************************************************************)
@@ -111,13 +154,8 @@ Options[FrameLabeled] = {
   FrameTicks -> False (* TODO: make this introduce little marks in the gap *)
 };
 
-DefineStandardTraditionalForm[
-  frame:FrameLabeled[_, ___] :> ToBoxes @ StringBlockForm @ frame
-];
-
-Options[frameLabeled] = Options[FrameLabeled];
-
-frameLabeled[block_, specs_, OptionsPattern[]] := Scope[
+ToStringBlock[FrameLabeled[item_, specs_, OptionsPattern[]]] := Scope[
+  item //= ToStringBlock;
   UnpackOptions[labelSpacing, frameTicks, labelStyle];
   {hlabelSpacing, vlabelSpacing} = {1, 1} * labelSpacing;
   $hoffset = 0; $voffset = 0; $labelStyleFn = StyleOperator @ labelStyle;
@@ -189,9 +227,9 @@ Options[StringBlockForm] = {
   StylingFunction -> "Linear"
 }
 
-declareBoxFormatting[
+DefineStandardTraditionalForm[
   sb:StringBlockForm[_, ___Rule] :> makeStringBlockFormBoxes[sb]
-]
+];
 
 (* the first template slot is linear syntax for FE display,
 the second is HTML, which is ready to be inserted straight into markdown as-is.
@@ -298,26 +336,26 @@ rowToStrings = Case[
 ];
 
 processBlock = Case[
-  Row[args_List, opts___Rule]                         := % @ HBlock[args, Lookup[{opts}, Alignment, Top], None];
-  Row[args_List, delim:Except[_Rule], opts___Rule]    := % @ HBlock[args, Lookup[{opts}, Alignment, Top], delim];
+
+  $rawBlock[block_]                                   := block;
+
+  Invisible[elem_]                                    := Apply[spacerBlock[#2, #3]&, % @ elem];
+
+  (Row|RowBox)[args_List, opts___Rule]                         := % @ HBlock[args, Lookup[{opts}, Alignment, Top], None];
+  (Row|RowBox)[args_List, delim:Except[_Rule], opts___Rule]    := % @ HBlock[args, Lookup[{opts}, Alignment, Top], delim];
   HBlock[args_, align_, delim_]                       := hstackBlocks[riffle[% /@ args, delim], align];
 
+  TagBox[GridBox[rows_List, ___], "Column"]           := % @ Column[rows];
   Column[args_List, opts___Rule]                      := % @ Column[args, Lookup[{opts}, Alignment, Left], Lookup[{opts}, Spacings, 0]];
   Column[args_List, align:Except[_Rule]:Left, spacing:Except[_Rule]:0] := % @ VBlock[args, align, Spacer @ spacing];
   VBlock[args_, align_, delim_]                       := vstackBlocks[riffle[% /@ args, delim], align];
 
+  gb_GridBox | TagBox[gb_GridBox, "Grid"]             := processGridBox[gb];
   Grid[rows_List, opts___Rule]                        := processGrid[rows, opts];
 
-  StringMatrix[rows_List, opts___Rule]                := gstackBlocks[MatrixMap[%, rows], opts];
+  Labeled[a_, l_]                                     := % @ StringColumn[{a, l}, ColumnAlignment -> Center, RowSpacings -> 1];
 
-  StringColumn[items_, opts___Rule]                   := columnBlock[% /@ items, opts];
-  StringRow[items_, opts___Rule]                      := rowBlock[% /@ items, opts];
-
-  StringFrame[item_, opts___Rule]                     := frameBlock[% @ item, opts];
-
-  Labeled[a_, l_]                                     := columnBlock[% /@ {a, l}, ColumnAlignment -> Center, RowSpacings -> 1];
-
-  ParenthesesForm[e_]                                 := hframeBlock[% @ e, "()"];
+  ParenthesesForm[e_]                                 := delimBlock[{e}, "()", None];
   TupleForm[e___]                                     := delimBlock[{e}, "()", None];
   ListForm[e___]                                      := delimBlock[{e}, "[]", None];
   SetForm[e___]                                       := delimBlock[{e}, "{}", None];
@@ -325,8 +363,8 @@ processBlock = Case[
   StyleDecorated[s_, ListForm][e___]                  := delimBlock[{e}, "[]", s];
   StyleDecorated[s_, SetForm][e___]                   := delimBlock[{e}, "{}", s];
 
-  Subscript[a_, b_]                                   := % @ Row[{a, Style[b, "Subscript"]}, Alignment -> Bottom];
-  Superscript[a_, b_]                                 := % @ Row[{a, Style[b, "Superscript"]}, Alignment -> Top];
+  (Subscript|SubscriptBox)[a_, b_]                    := % @ Row[{a, Style[b, "Subscript"]}, Alignment -> Bottom];
+  (Superscript|SuperscriptBox)[a_, b_]                := % @ Row[{a, Style[b, "Superscript"]}, Alignment -> Top];
 
   Padded[e_, spec_]                                   := padBlock[% @ e, spec];
 
@@ -338,15 +376,19 @@ processBlock = Case[
   p_PixelForm                                         := % @ ToBoxes[p];
   r_FadedRationalForm                                 := % @ ToBoxes[r];
 
+  FunctionTypeForm[a_, b_]                            := hstackBlocks[{% @ a, makeSingleBlock @ "->", % @ b}, Center];
+
   na_NestedArrayForm                                  := % @ nestedArrayRender @ na;
   head_Symbol[arg_] /; StyleFormHeadQ[head]           := % @ Style[arg, StyleFormData @ head];
 
   str_String /; StringContainsQ[str, "\!\(\*"]        := % @ parseLinearSyntax @ str;
   str_String                                          := makeSingleBlock @ str;
-  item_                                               := makeSingleBlock @ TextString @ item;
+  Null                                                := $block[{""}, 0, 1];
+  item_                                               := processCustomBlock @ item;
 
-  FrameLabeled[e_, opts___]                           := frameLabeled[% @ e, opts];
-
+(*   LiftedForm[s_String]                                := makeSingleBlock @ StringJoin[s, "\:0302"];
+  MappedForm[s_String]                                := makeSingleBlock @ StringJoin[s, "\:0302"];
+ *)
   (Style|StyleBox)[item_, style___]                   := Internal`InheritedBlock[
     {$styleStack},
     $styleStack = joinStyles[normStyle /@ {style}, $styleStack];
@@ -356,10 +398,41 @@ processBlock = Case[
   Spacer[{w_Integer, h_Integer}]                      := spacerBlock[w, h];
   Spacer[0] | Spacer[{0,0}] | None | Nothing          := None;
 
-  Framed[e_, opts__Rule]                              := frameBlock[e, opts];
+  Framed[e_, opts__Rule]                              := % @ StringFrame[e, opts];
   Framed[e_]                                          := makeFrame[% @ e, False];
   Framed[e_, RoundingRadius -> n_]                    := makeFrame[% @ e, n > 0];
 ];
+
+(**************************************************************************************************)
+
+processCustomBlock[item_] :=
+  If[HasBoxFormQ[item],
+    processBlock @ ReplaceAll[EvaluateTemplateBoxFull @ ToBoxes @ item, $boxFixups],
+    makeSingleBlock @ TextString @ item];
+
+$boxFixups = SubscriptBox[a_String, b_] /; StringEndsQ[a, " "] :> SubscriptBox[StringTrim @ a, b];
+
+(**************************************************************************************************)
+
+trimBlock[block:$block[rows_, w_, h_]] := Scope[
+  rows = rows //. {
+    {l___, $hspace[s1_], $hspace[s2_]} :> {l, $hspace[s1 + s2]},
+    {l___, s:" ".., r___$hspace} :> {l, $hspace[Length @ {s}], r}
+  };
+  spaceLens = rightSpaceLen /@ rows;
+  trimCount = Min[spaceLens];
+  If[trimCount == 0, Return @ block];
+  $block[trimRowRight, w - trimCount, h]
+];
+
+rightSpaceLen = Case[
+  {___, $hspace[s_]} := s;
+  _                  := 0;
+]
+
+trimRowRight = Case[
+  {l___, $hspace[s_]} := If[s - trimCount <= 0, {l}, {l, $hspace[s - trimCount]}];
+]
 
 (**************************************************************************************************)
 
@@ -400,18 +473,25 @@ normFrameStyle = Case[
 ]
 
 normStyle = Case[
-  color_ ? ColorQ := FontColor -> color;
-  i_Integer       := %[FontColor -> i];
-  FontColor -> i_Integer  := currentStyleSetting[FontColor, "Color" <> IntegerString[i]];
-  Background -> i_Integer := currentStyleSetting[Background, "Background" <> IntegerString[i]];
-  Bold            := FontWeight -> Bold;
-  Italic          := FontSlant -> Italic;
-  Plain           := Splice[{FontWeight -> Plain, FontSlant -> Plain}];
+  color_ ? ColorQ                                      := FontColor -> color;
+  i_Integer                                            := %[FontColor -> i];
+  FontColor -> i_Integer                               := currentStyleSetting[FontColor, "Color" <> IntegerString[i]];
+  Background -> i_Integer                              := currentStyleSetting[Background, "Background" <> IntegerString[i]];
+  Bold                                                 := FontWeight -> Bold;
+  Italic                                               := FontSlant -> Italic;
+  Plain                                                := Splice[{FontWeight -> Plain, FontSlant -> Plain}];
+  Rule[FontVariations, vars_List]                      := Splice @ Map[normFontVar, vars];
+  Underlined                                           := Underlined;
   r:Rule[FontWeight|FontSlant|FontColor|Background, _] := r;
-  r:RuleDelayed[FontColor|Background, _] := r;
-  s:"Subscript"|"Superscript" := s;
-  _               := Nothing;
+  r:RuleDelayed[FontColor|Background, _]               := r;
+  s:"Subscript"|"Superscript"                          := s;
+  _                                                    := Nothing;
 ];
+
+normFontVar = Case[
+  "Underline" -> True := Underlined;
+  _                   := Nothing
+]
 
 joinStyles[s1_, s2_] := DeleteDuplicates[Join[s1, s2], First[#1, "ZZ"] === First[#2, "YY"]&];
 
@@ -429,11 +509,53 @@ applyStyle[s___][e_String] := Style[e, s];
 
 (**************************************************************************************************)
 
-delimBlock[e_List, frame_, style_] := hframeBlock[processHoriz @ e, frame, None, style, True, None];
+$gridBoxDefaults = <|GridBoxAlignment -> {}, GridBoxSpacings -> {}, GridBoxFrame -> None, GridBoxBackground -> None, GridBoxDividers -> None|>;
+
+processGridBox[GridBox[rows_List, opts___Rule]] := Scope[
+
+  UnpackAnonymousOptions[{opts}, $gridBoxDefaults, gridBoxAlignment, gridBoxSpacings, gridBoxFrame, gridBoxBackground, gridBoxDividers];
+  {h, w} = Dimensions[rows, 2];
+
+  background = If[MatchQ[gridBoxBackground, {"Columns" -> {{_}}}], Part[gridBoxBackground, 1, 2, 1, 1], None];
+  frame = MatchQ[gridBoxFrame, {"ColumnsIndexed" -> {{{1, -1}, {1, -1}} -> True}}];
+  dividers = Switch[gridBoxDividers,
+    {"Columns" -> {{True}}, "Rows" -> {{True}}}, frame = True; Center,
+    {"Columns" -> {False, {True}, False}, "Rows" -> {False, {True}, False}}, Center,
+    _, None
+  ];
+
+  rowAlignments = Lookup[{opts},    RowAlignments, expandRepSpec[h] @ Lookup[gridBoxAlignment, "Rows", Top]];
+  colAlignments = Lookup[{opts}, ColumnAlignments, expandRepSpec[w] @ Lookup[gridBoxAlignment, "Columns", Left]];
+  rowSpacings = Lookup[{opts},        RowSpacings, expandRepSpec[h] @ ReplaceAll[Lookup[gridBoxSpacings, "Rows", 1.0], {Automatic -> 1, None -> 0}]];
+  colSpacings = Lookup[{opts},     ColumnSpacings, expandRepSpec[w] @ ReplaceAll[Lookup[gridBoxSpacings, "Columns", 0.8], {Automatic -> 0.8, None -> 0}]];
+
+  rowSpacings = Round[rowSpacings - 1.0];
+  colSpacings = Round[colSpacings];
+
+  gstackBlocks[
+    MatrixMap[processBlock, rows],
+    ColumnAlignment -> colAlignments, RowAlignment -> rowAlignments,
+    ColumnSpacings -> colSpacings, RowSpacings -> rowSpacings,
+    Frame -> frame, Background -> background, Dividers -> dividers
+  ]
+]
+
+$atomSpecP = _Symbol | _Integer | _Real | _Rational;
+expandRepSpec[n_][spec:$atomSpecP] := Table[spec, n];
+expandRepSpec[n_][{{spec:$atomSpecP}}] := Table[spec, n];
+expandRepSpec[n_][{left___, spec_Symbol, right___}] := ToList[left, Table[spec, n - SeqLength[left, right]], right];
+expandRepSpec[n_][{left___, spec:{__Symbol}, right___}] := With[
+  {n2 = n - SeqLength[left, right]},
+  ToList[left, TakeOperator[n2] @ Catenate @ Table[spec, Ceiling[n2 / SeqLength[spec]]], right]
+];
+
+(**************************************************************************************************)
+
+delimBlock[e_List, frame_, style_] := hframeBlock[processHoriz @ e, frame, style, True, None];
 
 processHoriz[{}] := spacerBlock[1, 1];
 processHoriz[{a_}] := processBlock @ a;
-processHoriz[{a__}] := processBlock @ Row[{a}, ","];
+processHoriz[{a__}] := processBlock @ Row[{a}, ",", Alignment -> Center];
 
 processVert[{}] := spacerBlock[1, 1];
 processVert[{a_}] := processBlock @ a;
@@ -516,6 +638,8 @@ padLeftRight[spec_][rows_] := Map[padAtomLeftRight[spec], rows];
 
 (**************************************************************************************************)
 
+vstackBlocks[{b_$block}, _] := b;
+
 vstackBlocks[rows_List, halign_] := Scope[
   widths = Part[rows, All, 2];
   heights = Part[rows, All, 3];
@@ -528,6 +652,8 @@ hpadBlock[tw_, halign_][$block[rows_, w_, h_]] :=
   $block[hpadAtom[tw, halign][#, w]& /@ rows, tw, h];
 
 (**************************************************************************************************)
+
+hstackBlocks[{b_$block}, _] := b;
 
 hstackBlocks[cols_List, valign_] := Scope[
   widths = Part[cols, All, 2];
@@ -572,8 +698,10 @@ blockPadding[block:$block[elems_, w_, h_], framePadding_] := Scope[
 
 $extFrameP = _String | None | Dashed;
 
+StringBlock::badgridframe = "Frame -> `` is not a valid setting."
 Options[gstackBlocks] = Options[StringMatrix];
 
+(* TODO: fix column spacings producing spurious central frames in Dividers -> Center *)
 $hframeSpec = {$extFrameP, $extFrameP} | _String | _StyleDecorated[{$extFrameP, $extFrameP} | _String];
 gstackBlocks[rows_List, OptionsPattern[]] := Scope[
   UnpackOptions[
@@ -585,26 +713,31 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
   ];
   frameStyle //= normFrameStyle;
   rowFrameStyle //= normFrameStyle;
+  {numRows, numCols} = Dimensions[rows, 2];
   rows = riffleCols[columnSpacings] @ riffleRows[rowSpacings] @ rows;
   widths = Part[rows, All, All, 2]; heights = Part[rows, All, All, 3]; maxWidths = Max /@ Transpose[widths]; maxHeights = Max /@ heights;
+  If[!ListQ[rowAlignment], rowAlignment = Table[rowAlignment, numRows]];
+  If[!ListQ[columnAlignment], columnAlignment = Table[columnAlignment, numCols]];
+  If[Total[rowSpacings] != 0, rowAlignment = Riffle[rowAlignment, Top]];
+  If[Total[columnSpacings] != 0, columnAlignment = Riffle[columnAlignment, Left]];
   items = MapIndexed[gpadBlock, rows, {2}];
   If[StringQ[rowFrames],
     {lext, rext} = Lookup[$hextTableNames, rowFrames];
-    jump = If[rowSpacings === 0, All, 1;;-1;;2];
+    jump = If[Total[rowSpacings] === 0, All, 1;;-1;;2];
     If[IntegerQ[rowFramePadding] && rowFramePadding > 0,
       items = MapAt[padBlock[#, Left -> rowFramePadding]&, items, {All, 1}];
       items = MapAt[padBlock[#, Right -> rowFramePadding]&, items, {All, -1}];
     ];
     If[lext =!= None, items = MapAt[hframeBlock[#, {lext, None}, rowFrameStyle, spanningFrame, None]&, items, {jump, 1}]];
     If[rext =!= None, items = MapAt[hframeBlock[#, {None, rext}, rowFrameStyle, spanningFrame, None]&, items, {jump, -1}]];
-    If[rowSpacings =!= 0,
+    If[Total[rowSpacings] =!= 0,
       If[lext =!= None, items = MapAt[hframeBlock[#, {" ", None}, None, True, None]&, items, {2;;-1;;2, 1}]];
       If[rext =!= None, items = MapAt[hframeBlock[#, {None, " "}, None, True, None]&, items, {2;;-1;;2, -1}]];
     ];
     widths = Part[items, All, All, 2]; heights = Part[items, All, All, 3]; maxWidths = Max /@ Transpose[widths]; maxHeights = Max /@ heights;
   ];
   totalWidth = Total @ maxWidths; totalHeight = Total @ maxHeights;
-  If[dividers === All,
+  If[dividers === Center,
     items = addDivs[items, maxWidths, maxHeights];
     totalWidth += Length[maxWidths] - 1;
     totalHeight += Length[maxHeights] - 1;
@@ -621,7 +754,7 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
     totalWidth = Part[block, 2]; totalHeight = Part[block, 3];
     True | "Round" | "Square",
       sfn = applyStyle @ frameStyle;
-      If[dividers === All,
+      If[dividers === Center,
         we = makeNotchedSides["│", {"├", "┤"}, totalHeight, maxHeights];
         sn = makeNotchedSides["─", {"┴", "┬"}, totalWidth, maxWidths];
       ,
@@ -635,10 +768,12 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
     {$extFrameP, $extFrameP} | _String,
       hframeBlock[block, frame, frameStyle, spanningFrame, background],
     False | None,
-      block
+      block,
+    _,
+      ThrowMessage["badgridframe", frame];
   ]
 ,
-  gpadBlock[elem_, {r_, c_}] := vpadBlock[Part[maxHeights, r], rowAlignment] @ hpadBlock[Part[maxWidths, c], columnAlignment] @ elem
+  gpadBlock[elem_, {r_, c_}] := vpadBlock[Part[maxHeights, r], Part[rowAlignment, r]] @ hpadBlock[Part[maxWidths, c], Part[columnAlignment, c]] @ elem
 ];
 
 StringBlock::fracwid = "Fractional width `` occurred in unsupported context."
@@ -654,9 +789,11 @@ makeNotchedSides[char_, {notch1_, notch2_}, n_, sizes_] := Scope[
 
 riffleCols[0] := Identity;
 riffleCols[n_][rows_] := riffle[#, Spacer[n]]& /@ rows;
+riffleCols[ns_List][rows_] := If[Total[ns] == 0, rows, MapThread[riffle[#1, $rawBlock @ spacerBlock[#2, 1]]&, {rows, PadRight[ns, Length @ rows]}]];
 
 riffleRows[0] = Identity;
 riffleRows[n_][rows_] := Transpose[riffle[#, Spacer[{1, n}]]& /@ Transpose[rows]];
+riffleRows[ns_List][rows_] := If[Total[ns] == 0, rows, Transpose @ MapThread[riffle[#1, Spacer[{1, #2}]]&, {Transpose @ rows, PadRight[ns, Length @ Transpose @ rows]}]];
 
 addDivs[items_, ws_, hs_] := Scope[
   Table[
@@ -815,30 +952,4 @@ extendSpanning = Case[
     Flatten @ {l, ConstantArray[a, Floor @ n2], m, ConstantArray[a, Ceiling @ n2], r}
   ]
 ];
-
-(* left vertical box line:  ⎸
-right vertical box line: ⎹
-open box: ␣
-H       ─ ━ ┄ ┅ ┈ ┉
-V       │ ┃ ┆ ┇ ┊ ┋
-D R     ┌ ┏
-U R     └ ┗
-D L     ┐ ┓
-U L     ┘ ┛
-V R     ├ ┣  ┠
-V L     ┤ ┫  ┨
-H D     ┬ ┳  ┯
-H U     ┴ ┻  ┷
-H V     ┼ ╋
-
-═ ║ ╔ ╗ ╚ ╝ ╠ ╦ ╪ ╬ ╟ ╢ ╤ ╧
-╭ ╮
-╯ ╰ ╱ ╲ ╳ ╴ ╵ ╶ ╷ ╸ ╹ ╺ ╻
-
-corners:
- ⌟  ⌞⌝⌜
- ⌏⌎⌍
-*)
-
-(**************************************************************************************************)
 

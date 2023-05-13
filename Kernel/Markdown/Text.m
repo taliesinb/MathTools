@@ -223,15 +223,27 @@ checkLastSpace[list_List] := Map[checkLastSpace, list];
 checkLastSpace[s_String /; StringEndsQ[s, " "|"\t"]] := ($lastSpace = True; s);
 checkLastSpace[other_] := ($lastSpace = False; other);
 
-Options[styleBoxToMarkdown] = {FontWeight -> "Plain", FontSlant -> "Plain", FontColor -> None, Background -> None};
+Options[styleBoxToMarkdown] = {
+  FontWeight -> "Plain",
+  FontSlant -> "Plain",
+  FontColor -> None,
+  Background -> None,
+  FontVariations -> {}
+};
 
 wordQ[e_] := StringQ[e] && StringMatchQ[e, WordCharacter..];
+canEmphWrapQ[e_] := TrueQ[$lastSpace] && TrueQ[$allowMDemph] && wordQ[e];
+
+$boldP = Bold | "Bold";
+$italicP = Italic | "Italic";
+$plainP = Plain | "Plain";
 
 styleBoxToMarkdown = Case[ 
   StyleBox[e_String, "PreformattedCode"] := "<code>" <> e <> "</code>";
-  StyleBox[e_String, FontSlant -> Italic|"Italic"] /; TrueQ[$lastSpace && $allowMDemph] && wordQ[e]                             := wrapWith[e, "*"];
-  StyleBox[e_String, FontWeight -> Bold|"Bold"] /; TrueQ[$lastSpace && $allowMDemph] && wordQ[e]                                := wrapWith[e, "**"];
-  StyleBox[e_String, FontSlant  -> Italic|"Italic", FontWeight -> Bold|"Bold" && $allowMDemph] /; TrueQ[$lastSpace] && wordQ[e] := wrapWith[e, "***"];
+  StyleBox[e_String, FontSlant -> $italicP] /; canEmphWrapQ[e]                        := wrapWith[e, "*"];
+  StyleBox[e_String, FontWeight -> $boldP] /; canEmphWrapQ[e]                         := wrapWith[e, "**"];
+  StyleBox[e_String, FontSlant  -> $italicP, FontWeight -> $boldP] /; canEmphWrapQ[e] := wrapWith[e, "***"];
+  StyleBox[e_String, FontVariations -> {"Underline" -> True}] /; canEmphWrapQ[e]      := wrapWith[e, "_"];
   StyleBox[e_, rules___] := htmlStyledString[textBoxesToMarkdown @ e, {rules}];
 ]
 
@@ -266,16 +278,19 @@ htmlStyledString[str_String, rules_List] := Scope[
 ];
 
 toStylePropVal = Case[
-  color_? ColorQ                      := %[FontColor -> color];
-  Bold                                := %[FontWeight -> Bold];
-  Italic                              := %[FontSlant -> Italic];
-  FontColor -> (color_? ColorQ)       := "color:" <> HTMLColorString[color];
-  Background -> (color_? ColorQ)      := "background-color:" <> HTMLColorString[color];
-  FontWeight -> "Bold"|Bold           := "font-weight:bold";
-  FontWeight -> Plain|"Plain"         := "font-weight:normal";
-  FontSlant -> "Italic"|Italic        := "font-style:italic";
-  FontSlant -> Plain|"Plain"          := "font-style:normal";
-  _                                   := Nothing
+  color_? ColorQ                           := %[FontColor -> color];
+  Bold                                     := %[FontWeight -> Bold];
+  Italic                                   := %[FontSlant -> Italic];
+  FontVariations -> {"Underline" -> True}  := %[Underlined];
+  FontVariations -> {"Underline" -> False} := "text-decoration: none";
+  Underlined                               := "text-decoration: underline";
+  FontColor -> (color_? ColorQ)            := "color:" <> HTMLColorString[color];
+  Background -> (color_? ColorQ)           := "background-color:" <> HTMLColorString[color];
+  FontWeight -> $boldP                     := "font-weight:bold";
+  FontWeight -> $plainP                    := "font-weight:normal";
+  FontSlant -> $italicP                    := "font-style:italic";
+  FontSlant -> $plainP                     := "font-style:normal";
+  _                                        := Nothing
 ]
 
 $styledSpanTemplate = StringFunction @ "<span style='#2'>#1</span>"

@@ -121,7 +121,7 @@ DefineUnaryForm[InvertedForm, KBox[UnderscriptBox[$1, "_"], "underbar"[$1]]];
 
 PublicForm[VerticalModifierForm]
 
-declareBoxFormatting[
+DefineStandardTraditionalForm[
   VerticalModifierForm[inner_, args___] :> rewriteToVerticalOuter[MakeQGBoxes[inner], args]
 ];
 

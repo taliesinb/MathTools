@@ -2,10 +2,10 @@ PrivateForm[ModForm]
 
 ModForm[x_, Infinity|0] := x;
 
-declareBoxFormatting[
+DefineStandardTraditionalForm[{
   ModForm[a_, b_] :> modBox[MakeBoxes @ a, b],
   ModForm[a_, b_List] :> RowBox[{MakeBoxes @ a, " % ", StyleBox[MakeBoxes @ b, $Blue]}]
-];
+}];
 
 modBox[a_, b_] := SubscriptBox[a, StyleBox[numBox @ b, $Blue]];
 

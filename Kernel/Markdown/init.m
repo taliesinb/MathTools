@@ -96,7 +96,6 @@ PrivateVariable[$multilineMathTemplate]
 PrivateVariable[$rasterizationFunction]
 PrivateVariable[$rawHTMLTemplate]
 PrivateVariable[$stringImageTemplate]
-PrivateVariable[$customStylesTemplate]
 
 General::badmdflav = "`` is not a valid setting for MarkdownFlavor.";
 
@@ -106,6 +105,7 @@ DefineLiteralMacro[setupMarkdownGlobals,
 setupMarkdownGlobals[] := Quoted[
   UnpackOptions[
     $embedKatexPrelude,
+    $embedCustomStyles,
     $headingDepthOffset,
     $markdownFlavor,
     $rasterizationCaching,
@@ -133,14 +133,13 @@ setupMarkdownGlobals[] := Quoted[
     $multilineMathTemplate,
     $rasterizationFunction,
     $rawHTMLTemplate,
-    $stringImageTemplate,
-    $customStylesTemplate
+    $stringImageTemplate
   ];
   rfunc = OptionValue[RasterizationFunction];
   If[rfunc =!= Automatic, $rasterizationFunction = rfunc];
   SetInherited[$fileAnimatedImageTemplate, $fileImageTemplate];
   (* this lets us cache against this hash: *)
-  $markdownGlobalsHash = Hash[{$embedKatexPrelude, $headingDepthOffset, $markdownFlavor, $rasterizationURL, $markdownFlavor, $rasterizationFunction}];
+  $markdownGlobalsHash = Hash[{$embedKatexPrelude, $embedCustomStyles, $headingDepthOffset, $markdownFlavor, $rasterizationURL, $markdownFlavor, $rasterizationFunction}];
 ]];
 
 (**************************************************************************************************)
@@ -176,6 +175,9 @@ SetUsage @ "RasterizationFunction is a markdown export option that overrides the
 PublicScopedOption[EmbedKatexPrelude]
 SetUsage @ "EmbedKatexPrelude is a markdown export option that specifies whether the Katex prelude should be embedded (if True), or linked (if 'Link') at the top of each file."
 
+PublicScopedOption[EmbedCustomStyles]
+SetUsage @ "EmbedCustomStyles is a markdown export option that specifies whether custom styles should be embedded at the top of each file."
+
 PublicScopedOption[RasterizeInputOutputPairs]
 SetUsage @ "RasterizeInputOutputPairs is a markdown export option that specifies whether the input / output cell pairs should be rasterized as one unit."
 $rasterizeInputOutputPairs = False;
@@ -186,6 +188,7 @@ PrivateVariable[$genericMarkdownOptions]
 
 $genericMarkdownOptions = {
   EmbedKatexPrelude -> False,
+  EmbedCustomStyles -> False,
   FrontMatterFunction -> None,
   HeadingDepthOffset -> 0,
   IncludeFrontMatter -> False,

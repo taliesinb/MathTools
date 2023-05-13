@@ -85,7 +85,7 @@ nestedArrayRender[NestedArrayForm[array_]] := Scope[
 
 nestedArrayRender[NestedArrayForm[array_, axisSpec___]] := CatchMessage[
   NestedArrayForm,
-  procNA[axisSpec] @ array
+  Block[{$dims = {}, $pos = {}, $hor = {}}, procNA[axisSpec] @ array]
 ];
 
 ClearAll[procNA];
@@ -131,13 +131,13 @@ procNA[StringForm[str_, args___], rest___][array_] :=
 
 NestedArrayForm::notlist = "`` is not a list, but `` was specified.";
 
-autoRightPadding[] := If[$NestedArrayFrame === "[", 1, 0]
+autoRightPadding[] := If[$NestedArrayFrame =!= "[", 0, If[And @@ Pick[ThreadEqual[$pos, $dims], $hor], 0, 1]];
 autoRightPadding[___] := 0;
 
 procNA[(t:"Row"|"SpanningRow"|"NormalRow") -> col_, rest___][array_] :=
   StringRow[
     If[!ListQ[array], ThrowMessage["notlist", array, t]];
-    Map[procNA[rest], array],
+    vectorMapNA[procNA[rest], array, True],
     ColumnSpacings -> third[col, If[SeqLength[rest] == 0, 1, 0]],
     Frame -> $NestedArrayFrame, FrameStyle -> toAxisColor @ first[col, col],
     FramePadding -> {Left -> second[col, 0], Right -> second[col, autoRightPadding[rest]]},
@@ -148,7 +148,7 @@ procNA[(t:"Row"|"SpanningRow"|"NormalRow") -> col_, rest___][array_] :=
 procNA[(t:"Column"|"SpanningColumn"|"NormalColumn") -> col_, rest___][array_] :=
   StringColumn[
     If[!ListQ[array], ThrowMessage["notlist", array, t]];
-    Map[procNA[rest], array],
+    vectorMapNA[procNA[rest], array, False],
     Frame -> $NestedArrayFrame, FrameStyle -> toAxisColor @ first[col, col],
     RowSpacings -> third[col, 0],
     FramePadding -> {Left -> second[col, 0], Right -> second[col, autoRightPadding[rest]]},
@@ -161,7 +161,7 @@ NestedArrayForm::notmatrix = "`` is not a matrix, but `` was specified.";
 procNA[(t:"Grid"|"SpanningGrid"|"NormalGrid") -> {col1_, col2_, col3_:None}, rest___][array_] :=
   StringMatrix[
     If[!MatrixQ[array, True&], ThrowMessage["notmatrix", array, t]];
-    MatrixMap[procNA[rest], array],
+    matrixMapNA[procNA[rest], array],
     RowSpacings -> third[col1, 0],
     ColumnSpacings -> third[col2, If[SeqLength[rest] == 0, 1, 0]],
     Frame -> $NestedArrayFrame, FrameStyle -> toAxisColor @ first[col1, col1],
@@ -181,6 +181,16 @@ procNA[][e_] := $itemFunction @ e;
 
 NestedArrayForm::badspec = "Unknown spec ``";
 procNA[spec_, ___][array_] := (Message[NestedArrayForm::badspec, MsgExpr @ spec]; "?");
+
+vectorMapNA[f_, array_, isH_] := Internal`InheritedBlock[
+  {$dims = Append[$dims, Length @ array], $pos = Append[$pos, 0], $hor = Append[$hor, isH]},
+  MapIndex1[{a, i} |-> (Part[$pos, -1] = i; f[a]), array]
+];
+
+matrixMapNA[f_, array_] := Internal`InheritedBlock[
+  {$dims = Join[$dims, Dimensions[array, 2]], $pos = Join[$pos, {0, 0}], $hor = Join[$hor, {False, True}]},
+  MapIndexed[{a, i} |-> (Part[$pos, {-2, -1}] = i; f[a]), array, {2}]
+];
 
 (* unpackSpec[d_][list_List] := PadRight[list, d, Last @ list];
 unpackSpec[d_][RepeatedSpec[elems__]] := Take[Catenate @ ConstantArray[{elems}, d], d];

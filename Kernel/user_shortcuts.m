@@ -591,3 +591,5 @@ makeSym["PCF", PreformattedCodeForm]
 makeSym["NAF", NestedArrayForm]
 
 makeSym["SBF", StringBlockForm]
+
+QuiverGeometry`Shortcuts`PLC := QuiverGeometry`PreviewLastCell[];

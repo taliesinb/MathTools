@@ -21,7 +21,6 @@ $flavorData["Base", "MultilineMathTemplate"]      = wrapDoubleDollar;
 $flavorData["Base", "RasterizationFunction"]      = standardRasterizationFunction;
 $flavorData["Base", "RawHTMLTemplate"]            = blankString;
 $flavorData["Base", "StringImageTemplate"]        = None;
-$flavorData["Base", "CustomStylesTemplate"]       = None;
 
 (**************************************************************************************************)
 
@@ -56,21 +55,6 @@ $flavorData["Hugo", "MultilineMathTemplate"]      = StringJoin["{{<kk `", #, "`>
 $flavorData["Hugo", "KatexPostprocessor"]         = splitOpenBraces;
 $flavorData["Hugo", "RawHTMLTemplate"]            = Identity;
 $flavorData["Hugo", "ExternalImportTemplate"]     = StringFunction @ """{{< readfile file="#1" >}}""";
-$flavorData["Hugo", "CustomStylesTemplate"]       = hugoCustomStylesFunction;
-
-hugoCustomStylesFunction[styleNames_] := Scope[
-  StringJoin[
-    "<style>",
-    Map[
-      styleName |-> {".", styleName, "{", Riffle[Map[
-        toStylePropVal,
-        CurrentValue[{StyleDefinitions, styleName}]
-      ], ";"], "}"},
-      styleNames
-    ],
-    "</style>\n\n"
-  ]
-];
 
 (* TODO: fill in more cases here, like Typewriter, SanSerif, etc. and make them match up with the TypewriteForm etc. *)
 hugoKatexFontFunction[str_String] := $katexFontSpanTemplate[str, If[StringContainsQ[str, DoubleStruckCharacter], "blackboard", "math"]];
@@ -112,8 +96,7 @@ MacroEvaluate @ UnpackAssociation[
   $multilineMathTemplate,
   $rasterizationFunction,
   $rawHTMLTemplate,
-  $stringImageTemplate,
-  $customStylesTemplate
+  $stringImageTemplate
 ];
 
 (**************************************************************************************************)

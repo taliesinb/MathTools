@@ -17,23 +17,27 @@ toCodeMarkdown[code_, multiline_] := Scope[
     ` ` inside a textual context, via processInlineCodeBlock *)
     code //= wlCharactersToUnicode
   ];
-  code2 = StringReplace[code, $shortcodeRules];
-  res = StringJoin @ If[multiline, {"<pre>", code2, "</pre>"}, {"<code>", code2, "</code>"}];
+  code //= subShortCodes;
+  res = StringJoin @ If[multiline, {"<pre>", code, "</pre>"}, {"<code>", code, "</code>"}];
   res
 ];
 
+subShortCodes[s_String] := StringReplace[s, $shortcodeRules];
+
 $shortcodeRules = {
   (code:$colorShortcodeP ~~ ":" ~~ next_) :> applyShortcode[code, next],
-  (code:$colorShortcodeP ~~ "{" ~~ body:Except["\n"|"}"].. ~~ "}") :> applyShortcode[code, body],
+  (code:$colorShortcodeP ~~ "{" ~~ body:Except["\n"|"}"].. ~~ "}") :> applyShortcode[code, balancedQ @ body],
   (* Fira Code doesn't have well-sized DS letters outside R,C,N,Z etc *)
   l:DoubleStruckCharacter :> doubleStruckToBoldRoman[l],
   "\\n" | "\n" ~~ s:" ".. :> StringJoin["<br>", ConstantArray["&nbsp;", StringLength @ s]],
   "\\n" | "\n" -> "<br>",
-  "^{" ~~ sup:Shortest[___] ~~ "}" :> StringJoin["<sup>", sup, "</sup>"],
-  "_{" ~~ sub:Shortest[___] ~~ "}" :> StringJoin["<sub>", sub, "</sub>"],
+  "^{" ~~ sup:Shortest[___] ~~ "}" /; balancedQ[sup] :> StringJoin["<sup>", subShortCodes @ sup, "</sup>"],
+  "_{" ~~ sub:Shortest[___] ~~ "}" /; balancedQ[sub] :> StringJoin["<sub>", subShortCodes @ sub, "</sub>"],
   "_" ~~ sub:DigitCharacter :> StringJoin["<sub>", sub, "</sub>"],
   "^" ~~ sup:DigitCharacter :> StringJoin["<sup>", sup, "</sup>"]
 };
+
+balancedQ[a_] := StringCount[a, "{"] == StringCount[a, "}"];
 
 (**************************************************************************************************)
 
@@ -56,7 +60,8 @@ $textColorShortcodes = <|
   "TeF" -> $Teal,    "6F"  -> "Color6",
   "GrF" -> $Gray,    "7F"  -> "Color7",
   "PiF" -> $Pink,    "8F"  -> "Color8",
-  "YeF" -> $Yellow,  "9F"  -> "Color9"
+  "YeF" -> $Yellow,  "9F"  -> "Color9",
+  "UF" -> "Underlined"
 |>;
 
 $backgroundShortcodes = <|
@@ -72,6 +77,9 @@ $backgroundShortcodes = <|
 |>;
 
 $colorShortcodeP = Join[AssociationKeyPattern @ $textColorShortcodes, AssociationKeyPattern @ $backgroundShortcodes];
+
+applyShortcode["UF", text_] :=
+  htmlStyledString[text, {Underlined}];
 
 applyShortcode[code_ /; StringMatchQ[code, _ ~~ "B"], text_] :=
   htmlStyledString[text, {Background -> Lookup[$backgroundShortcodes, code]}];
