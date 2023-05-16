@@ -11,7 +11,7 @@ toCodeMarkdown[code_, multiline_] := Scope[
     (* this path is taken if we have been called because of a standalone "PreformattedCode" Cell with
     complex internal formatting like StyleBox etc. *)
     code //= ReplaceAll[$subSuperRules];
-    code //= textToMarkdown (* this will call wlCharactersToUnicode *)
+    code //= textToMarkdown; (* this will call wlCharactersToUnicode *)
   ,
     (* this path is taken if we have an Output cell with a "StringBlockForm" TemplateBox, or if we have
     ` ` inside a textual context, via processInlineCodeBlock *)

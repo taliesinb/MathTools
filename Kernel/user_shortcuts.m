@@ -592,4 +592,6 @@ makeSym["NAF", NestedArrayForm]
 
 makeSym["SBF", StringBlockForm]
 
+makeSym["SBT", StringBlockTemplate]
+
 QuiverGeometry`Shortcuts`PLC := QuiverGeometry`PreviewLastCell[];

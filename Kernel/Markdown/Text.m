@@ -202,7 +202,7 @@ textBoxesToMarkdown = Case[
 
   Cell[boxes_, "Text"] := % @ boxes;
 
-  StyleBox[str_String /; StringMatchQ[str, Whitespace], style___] /; FreeQ[{style}, Background] :=
+  StyleBox[str_String /; StringMatchQ[str, Whitespace], style___] /; FreeQ[{style}, Background | "StrikeThrough"] :=
     ($lastSpace = True; " ");
 
   FormBox[b_ButtonBox, _] := % @ b;
@@ -266,6 +266,11 @@ PrivateFunction[htmlStyledString, toStylePropVal]
 
 htmlStyledString[str_String, {currentStyleSetting[opt:FontColor|Background, name_]}] :=
   htmlStyledString[str, {opt -> name}];
+
+htmlStyledString[str_String, {l___, FontVariations -> {"StrikeThrough" -> True}, r___}] :=
+  "<sub>" <> htmlStyledString[str, {l, r}] <> "</sub>";
+
+htmlStyledString[str_String, {}] := str;
 
 htmlStyledString[str_String, {FontColor|Background -> name_String}] :=
   $classSpanTemplate[str, name];

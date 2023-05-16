@@ -231,6 +231,9 @@ _                            _          \smallblacktriangleleft  ⏴
 \[VerticalSeparator]         _          \vert               ∣
 \[LeftDoubleBracket]         [[         \llbracket          ⟦
 \[RightDoubleBracket]        ]]         \rrbracket          ⟧
+\[SpanFromLeft]              _          _                   ⋯
+\[SpanFromAbove]             _          _                   ⋮
+\[SpanFromBoth]              _          _                   ⋱
                                                              
 \[ScriptA]                   _          \mathscr{a}         𝒶
 \[ScriptB]                   _          \mathscr{b}         𝒷

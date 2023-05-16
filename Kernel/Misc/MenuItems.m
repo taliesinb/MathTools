@@ -36,6 +36,7 @@ With[{qgPath = QuiverGeometryPackageLoader`$initFile},
   }]];
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["ClearCellOptions", {
     Delimiter,
+    MenuItem["Struckthrough", FrontEnd`FontVariationsStrikeThrough->Toggle],
     Menu["Named Colors",
       MenuItem[#1, FontColor -> #2]& @@@ {
         "Red"    -> $Red,

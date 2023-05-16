@@ -1,3 +1,8 @@
+PrivateHead[$block, $hspace]
+
+(**************************************************************************************************)
+
+
 PublicFunction[ToStringBlock]
 PublicVariable[$StringBlockHeads]
 
@@ -159,7 +164,7 @@ ToStringBlock[FrameLabeled[item_, specs_, OptionsPattern[]]] := Scope[
   UnpackOptions[labelSpacing, frameTicks, labelStyle];
   {hlabelSpacing, vlabelSpacing} = {1, 1} * labelSpacing;
   $hoffset = 0; $voffset = 0; $labelStyleFn = StyleOperator @ labelStyle;
-  Fold[applyFrameLabel, block, ToList @ specs]
+  Fold[applyFrameLabel, item, ToList @ specs]
 ];
 
 StringBlock::badflspec = "Bad FrameLabel spec ``."
@@ -482,6 +487,7 @@ normStyle = Case[
   Plain                                                := Splice[{FontWeight -> Plain, FontSlant -> Plain}];
   Rule[FontVariations, vars_List]                      := Splice @ Map[normFontVar, vars];
   Underlined                                           := Underlined;
+  Struckthrough                                        := "Subscript";
   r:Rule[FontWeight|FontSlant|FontColor|Background, _] := r;
   r:RuleDelayed[FontColor|Background, _]               := r;
   s:"Subscript"|"Superscript"                          := s;
@@ -489,8 +495,9 @@ normStyle = Case[
 ];
 
 normFontVar = Case[
-  "Underline" -> True := Underlined;
-  _                   := Nothing
+  "Underline" -> True     := Underlined;
+  "StrikeThrough" -> True := "Subscript";
+  _                       := Nothing
 ]
 
 joinStyles[s1_, s2_] := DeleteDuplicates[Join[s1, s2], First[#1, "ZZ"] === First[#2, "YY"]&];
