@@ -84,7 +84,7 @@ highlightSpecToRules[dims_, spec_] := Scope[
   Which[
     $count == 0,        Null,
     1 <= $count <= 8,   rules = rules /. indexedColor[i_] :> Part[$ColorPalette, i + 1],
-    True,               rules = rules /. indexedColor[i_] :> OklabHue[0.6 * i / $count]
+    True,               rules = rules /. indexedColor[i_] :> OkHue[0.6 * i / $count]
   ];
   rules
 ]

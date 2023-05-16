@@ -10,6 +10,12 @@ DropOperator[spec___][e_] := Drop[e, spec];
 
 (**************************************************************************************************)
 
+PublicFunction[ClipOperator]
+
+ClipOperator[spec_][e_] := Clip[e, spec];
+
+(**************************************************************************************************)
+
 PublicFunction[PartOperator]
 
 PartOperator[spec___][e_] := Part[e, spec];

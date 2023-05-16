@@ -103,7 +103,7 @@ ComplexVectorQ[list$] gives True if list$ is a vector of complex-valued numbers.
 * See %ContainsComplexQ.
 "
 
-ComplexVectorQ[list_] := VectorQ[list, NumericQ] && !FreeQ[list, Complex];
+ComplexVectorQ[list_] := VectorQ[list, NumericQ] && ContainsComplexQ[list];
 
 (**************************************************************************************************)
 
@@ -114,7 +114,7 @@ ContainsComplexQ[expr$] gives True if expr$ contains at least one Complex expres
 * See %ComplexVectorQ.
 "
 
-ContainsComplexQ[expr_] := !FreeQ[expr, Complex];
+ContainsComplexQ[expr_] := Internal`HasComplex[expr];
 
 (**************************************************************************************************)
 

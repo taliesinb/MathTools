@@ -501,6 +501,44 @@ Interpolated[a_, b_, n_] := Table[b * i + a * (1 - i), {i, 0, 1, 1/(n-1)}];
 
 (**************************************************************************************************)
 
+PublicFunction[AngleComplex, AnglePair]
+
+AngleComplex[theta_] := Complex @@ AnglePair[theta];
+AngleComplex[theta_List] := ToPackedComplex @ Apply[Complex, AnglePair[theta], {-2}];
+
+SetListable[AnglePair];
+AnglePair[theta_] := CosSin @ N[Tau * theta];
+
+(**************************************************************************************************)
+
+PublicFunction[VectorNormSquared]
+
+VectorNormSquared[vec_ ? NumericVectorQ] := Total[vec ^ 2];
+VectorNormSquared[array_List] := Total[ToPackedReal[array]^2, {-1}];
+
+(**************************************************************************************************)
+
+PublicFunction[Gaussian, VectorGaussian]
+
+Gaussian[num_, lambda_] := Exp[-(num/lambda)^2];
+
+VectorGaussian[array_List, lambda_] := Exp[VectorNormSquared[array] / -lambda^2];
+
+(**************************************************************************************************)
+
+PublicFunction[Softmax]
+
+Softmax[array_List] := Normalize[Abs @ Exp @ ToPackedReal @ N @ array, Total /* Max];
+
+(**************************************************************************************************)
+
+PublicFunction[RandomUnitComplex]
+
+RandomUnitComplex[] := RandomUnitComplex[{}];
+RandomUnitComplex[dims_] := AngleComplex @ RandomReal[1, dims];
+
+(**************************************************************************************************)
+
 PublicFunction[AngleRange]
 
 SetRelatedSymbolGroup[AngleRange, AngleDifference];

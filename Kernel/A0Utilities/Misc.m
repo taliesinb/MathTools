@@ -8,6 +8,13 @@ Tau = 2 * Pi;
 
 (**************************************************************************************************)
 
+PublicFunction[RescaleTo]
+
+RescaleTo[array_, range_] := Rescale[array, MinMax @ array, range]
+RescaleTo[range_][array_] := RescaleTo[array, range];
+
+(**************************************************************************************************)
+
 PublicFunction[DeepFirstCase]
 
 SetHoldRest[DeepFirstCase];

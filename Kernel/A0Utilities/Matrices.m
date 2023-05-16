@@ -6,24 +6,53 @@ FormalSymbolArray[dims_, offset_:0] := Block[{n = 0 + offset}, Array[Symbol @ Fr
 
 (**************************************************************************************************)
 
-
 PublicFunction[CatenateVectors]
 
 CatenateVectors[vecLists_] := Join[Sequence @@ vecLists, 2];
 
 (**************************************************************************************************)
+
+PublicFunction[LevelPart]
+
+LevelPart[array_, -2 -> part_] := LevelPart[array, (ArrayDepth[array]-1) -> part];
+LevelPart[array_, -1 -> part_] := LevelPart[array, ArrayDepth[array] -> part];
+LevelPart[array_, 1 -> part_] := Part[array, part];
+LevelPart[array_, 2 -> part_] := Part[array, All, part];
+LevelPart[array_, 3 -> part_] := Part[array, All, All, part];
+LevelPart[array_, 4 -> part_] := Part[array, All, All, All, part];
+LevelPart[array_, 5 -> part_] := Part[array, All, All, All, All, part];
+
+LevelPart[array_, depth_Integer -> part_] :=
+  Part[array, Append[ConstantArray[All, If[depth < 0, depth + ArrayDepth[array], depth - 1]], part]];
+
+LevelPart[array_, spec_List] := Scope[
+  part = ConstantArray[All, ArrayDepth @ array];
+  Part[array, Sequence @@ ReplacePart[part, spec]]
+]
+
+LevelPart[spec_][array_] := LevelPart[array, spec];
+
+(**************************************************************************************************)
+
+PublicFunction[TupleArray]
+
+TupleArray[arrays_List] := ToPacked @ Transpose[arrays, RotateRight @ Range[ArrayDepth @ arrays]];
+
+(**************************************************************************************************)
+
+PublicFunction[FromTupleArray]
+
+FromTupleArray[array_] := ToPacked @ Transpose[array, RotateLeft @ Range[ArrayDepth @ array]];
+
+(**************************************************************************************************)
 (** Packing                                                                                       *)
 (**************************************************************************************************)
 
-PrivateFunction[ToPacked]
+PrivateFunction[ToPacked, ToPackedReal, ToPackedComplex]
 
 ToPacked = ToPackedArray;
-
-(**************************************************************************************************)
-
-PrivateFunction[ToPackedReal]
-
 ToPackedReal[e_] := ToPackedArray[e, Real];
+ToPackedComplex[e_] := ToPackedArray[N @ e, Complex];
 
 (**************************************************************************************************)
 

@@ -248,6 +248,20 @@ normalizeLightness[colors_, fraction_:1] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[ToOkLCH, FromOkLCH]
+
+ToOkLCH[color_] := toLCH @ ToOklab[color];
+
+toLCH[{l_, a_, b_}] := {l, Norm @ {a, b}, Mod[ArcTan2[a, b] / Tau, 1]};
+toLCH[matrix_ ? MatrixQ] := ToPackedReal @ Map[toLCH, matrix];
+
+FromOkLCH[lch_List] := FromOklab @ fromLCH[lch];
+
+fromLCH[{l_, c_, h_}] := {l, c * Cos[h * Tau], c * Sin[h * Tau]};
+fromLCH[matrix_ ? MatrixQ] := ToPackedReal @ Map[fromLCH, matrix];
+
+(**************************************************************************************************)
+
 PrivateFunction[ToRGB]
 
 ToRGB[e_] := ReplaceAll[e, $toRGBRules];
@@ -268,14 +282,14 @@ NormalizeColorLightness[colors_List, fraction_:1] :=
 
 (**************************************************************************************************)
 
-PublicVariable[$ColorPalette]
+PublicVariable[$ColorPalette, $NormalColorPalette]
 
 PublicVariable[$Blue, $Red, $Yellow, $Green, $Pink, $Teal, $Orange, $Purple, $Gray]
 
 {$Blue, $Red, $Green, $Pink, $Teal, $Yellow, $Orange, $Purple, $Gray} =
   Map[RGBColor, StringSplit @ "#3e81c3 #e1432d #4ea82a #c74883 #47a5a7 #f6e259 #dc841a #8b7ebe #929292"]
 
-$ColorPalette = {$Red, $Blue, $Green, $Orange, $Purple, $Teal, $Gray, $Pink, $Yellow};
+$ColorPalette = $NormalColorPalette = {$Red, $Blue, $Green, $Orange, $Purple, $Teal, $Gray, $Pink, $Yellow};
 
 PublicVariable[$DarkColorPalette, $DarkBlue, $DarkRed, $DarkYellow, $DarkGreen, $DarkPink, $DarkTeal, $DarkOrange, $DarkPurple, $DarkGray]
 
@@ -328,7 +342,7 @@ $ecnp = Alternatives @@ $ExtendedColorNames;
 ToColorPalette::invalid = "`` is not a valid color palette.";
 
 ToColorPalette = Case[
-  Automatic | "Medium"          := $ColorPalette;
+  Automatic | "Medium"          := $NormalColorPalette;
   "Light"                       := $LightColorPalette;
   "Dark"                        := $DarkColorPalette;
   spec_ -> "Light"              := OklabLighter @ % @ spec;
@@ -492,7 +506,7 @@ ContinuousColorFunction[values_, colors_, OptionsPattern[]] := Scope[
   interp = Interpolation[Trans[values, okLabValues], InterpolationOrder -> 1];
   UnpackOptions[ticks];
   System`Private`ConstructNoEntry[
-    ColorFunctionObject, "Linear", values, interp /* OklabToRGB, ticks
+    ColorFunctionObject, "Linear", MinMax @ values, values, interp /* OklabToRGB, ticks
   ]
 ];
 
@@ -552,9 +566,10 @@ PublicFunction[ColorFunctionCompose]
 ColorFunctionCompose[cfunc_ColorFunctionObject ? System`Private`NoEntryQ, func_] :=
   cfuncCompose[cfunc, func];
 
-cfuncCompose[ColorFunctionObject[type_, values_, func_, ticks_], composedFunc_] :=
+(* TODO: update minMax and values by inverting composedFunc where possible *)
+cfuncCompose[ColorFunctionObject[type_, minMax_, values_, func_, ticks_], composedFunc_] :=
   System`Private`ConstructNoEntry[
-    ColorFunctionObject, type, values, composedFunc /* func, ticks
+    ColorFunctionObject, type, {-Infinity, Infinity}, values, composedFunc /* ClipOperator[minMax] /* func, ticks
   ];
 
 (**************************************************************************************************)
@@ -572,15 +587,15 @@ SetUsage @ "
 ColorFunctionObject[$$] represents a function that takes values and returns colors.
 "
 
-ColorFunctionObject[_, _, func_, _][value_] := RGBColor @ func[value];
-ColorFunctionObject[_, _, func_, _][value_List] := Map[RGBColor, Map[func, value]];
+ColorFunctionObject[_, minMax_, _, func_, _][value_] := RGBColor @ func @ Clip[value, minMax];
+ColorFunctionObject[_, minMax_, _, func_, _][value_List] := Map[RGBColor, Map[func, Clip[value, minMax]]];
 
 ColorFunctionObject["Discrete", assoc_][value_] := Lookup[assoc, Key @ value, Gray];
 ColorFunctionObject["Discrete", assoc_][value_List] := Lookup[assoc, Key @ value, Lookup[assoc, value, Gray]];
 
 ColorFunctionObject /: Normal[cf_ColorFunctionObject ? System`Private`NoEntryQ] := getNormalCF[cf];
 
-getNormalCF[ColorFunctionObject[_, _, func_, _]] := func /* RGBColor;
+getNormalCF[ColorFunctionObject[_, minMax_, _, func_, _]] := ClipOperator[minMax] /* func /* RGBColor;
 getNormalCF[ColorFunctionObject["Discrete", assoc_]] := assoc;
 
 (**************************************************************************************************)
@@ -598,14 +613,13 @@ makeGradientRaster[values_, func_, size_, transposed_] := Scope[
   Raster[array, arrayRange]
 ];
 
-formatColorFunction[ColorFunctionObject["Linear", values_, func_, ticks_]] := Scope[
+formatColorFunction[ColorFunctionObject["Linear", {min_, max_}, values_, func_, ticks_]] := Scope[
   raster = makeGradientRaster[values, func, 200, False];
   graphics = Graphics[raster,
     ImageSize -> {200, 8},
     PlotRangePadding -> 0, PlotRange -> {All, {0, 1}},
     ImagePadding -> 0, BaselinePosition -> Scaled[0.05], AspectRatio -> Full
   ];
-  {min, max} = MinMax[values];
   Row[{graphics, "  ", "(", min, " to ", max, ")"}, BaseStyle -> {FontFamily -> "Avenir"}]
 ]
 
@@ -623,7 +637,7 @@ declareFormatting[
 ];
 
 $colorLegendHeight = 100; $colorLegendWidth = 5;
-colorFunctionLegend[ColorFunctionObject["Linear", values_, func_, ticks_]] :=
+colorFunctionLegend[ColorFunctionObject["Linear", _, values_, func_, ticks_]] :=
   ContinuousColorLegend[values, func, ticks];
 
 (**************************************************************************************************)
@@ -991,14 +1005,34 @@ Color3D[c_] := Directive[Glow @ c, GrayLevel[0, ColorOpacity[c]], Specularity @ 
 
 PublicFunction[ComplexHue]
 
-ComplexHue[c_] := ColorConvert[Hue[Arg[c]/Tau+.05, Min[Sqrt[Abs[c]]/1.2,1], .9], RGBColor];
+ComplexHue[c_] := OkHue[Arg[c]/Tau, Min[Sqrt[Abs[c]]/1.2,1], .9];
 
 (**************************************************************************************************)
 
-PublicFunction[OklabHue]
+PublicFunction[OkHue]
 
-$OklabHueFunction := $OklabHueFunction = ContinuousColorFunction[
-  {0 -> RGBColor[0.8, 0.2, 0.12], 3/12 -> RGBColor[0.7, 0.65, 0.05], 5/12 -> RGBColor[0.1, 0.6, 0.15], 6/12 -> RGBColor[0.05, 0.48, 0.50], 8/12 -> RGBColor[0.15, 0.20, 0.65], 12/12 -> RGBColor[0.8, 0.2, 0.12]}
+(* the balance here is between having slightly tweaked saturation and lightness for the primary colors when
+the saturation is high, towards a uniform gray/black when saturation and lightness deviate from 1. we use
+blendTowardsUniform to do that *)
+
+(* these correspond to choices from $ColorPalette *)
+$rainbowLCH = {
+  {0/7, {0.609824, 0.198256, 0.086415}},
+  {1/7, {0.692448, 0.150783, 0.175395}},
+  {2.2/7, {0.651561, 0.181149, 0.384725}},
+  {3.4/7, {0.666954, 0.158087, 0.547703}},
+  {4.5/7, {0.590379, 0.152313, 0.695439}},
+  {5.5/7, {0.629937, 0.155579, 0.813240}},
+  {6.5/7, {0.591410, 0.171150, 0.985718}},
+  {7/7, {0.609824, 0.198256, 1.086415}}
+};
+
+$rainbowLCHFn = Interpolation[$rainbowLCH, InterpolationOrder -> 1];
+
+blendTowardUniform[l_, s_][a_, b_] := Lerp[a, b, Clip[0.7 * ((1 - l)^2/2 + (1 - s)^2), {0, 1}]];
+
+OkHue[h_, s_:1, l_:1] := FromOkLCH[
+  {blendTowardUniform[l, s][#1, 0.63] * l+(1-s)/2.75,
+   blendTowardUniform[l, s][1.2 * #2 * s, 0.2 * s],
+   #3}& @@ $rainbowLCHFn[Mod[h, 1]]
 ];
-
-OklabHue[c_] := $OklabHueFunction[Mod[c, 1, 0]];

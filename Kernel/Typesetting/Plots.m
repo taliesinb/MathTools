@@ -1,7 +1,6 @@
 PublicFunction[FadedMeshImage]
 
-FadedMeshImage[array_, blockSize_] := Scope[
-  fadeFactor = 0.8;
+FadedMeshImage[array_, blockSize_, fadeFactor_:0.8, frame_:None] := Scope[
   dims = Dimensions @ array;
   If[!ArrayQ[array, _, Developer`MachineRealQ] || !MatchQ[dims, {_, _, 3} | {_, _}],
     ReturnFailed["baddata"]];
@@ -15,6 +14,13 @@ FadedMeshImage[array_, blockSize_] := Scope[
   Do[Part[fade, All, r * b2 + 1, All] = fadeFactor, {r, 0, h}];
   Do[Part[fade, All, All, c * b2 + 1] = fadeFactor, {c, 0, w}];
   pixels *= fade;
+  If[frame =!= None,
+    frameStyle = getFrameMeshColor @ frame;
+    Part[pixels, All, All, 1] = frameStyle;
+    Part[pixels, All, All, w2] = frameStyle;
+    Part[pixels, All, 1, All] = frameStyle;
+    Part[pixels, All, h2, All] = frameStyle;
+  ];
   Image[pixels, Interleaving -> False, ImageSize -> {w2, h2}]
 ]
 
@@ -25,13 +31,6 @@ paintBlockAdditive[v_, {r_, c_}] := Module[
 
 multRow[val_, row_] := Part[pixels, All, row, All] *= val;
 multCol[val_, col_] := Part[pixels, All, All, col] *= val;
-
-multFrame[val_, cspec___] := (
-  Part[pixels, All, 1, cspec] *= val;
-  Part[pixels, All, w2, cspec] *= val;
-  Part[pixels, 1, All, cspec] *= val;
-  Part[pixels, h2, All, cspec] *= val;
-);
 
 (**************************************************************************************************)
 
@@ -47,33 +46,51 @@ Options[MeshImage] = {
 
 MeshImage[array_, blockSize_, OptionsPattern[]] := Scope[
   UnpackOptions[frame, mesh, frameStyle, meshStyle];
+  If[MatchQ[meshStyle, Opacity[_]] && TrueQ[mesh],
+    Return @ FadedMeshImage[array, blockSize, 1 - First[meshStyle], If[TrueQ @ frame, frameStyle, None]]];
   frameStyle //= getFrameMeshColor;
   meshStyle //= getFrameMeshColor;
-  {b1, b2} = blockSize + {If[mesh, -1, 0], 1};
   dims = Dimensions @ array;
   If[!ArrayQ[array, _, Developer`MachineRealQ] || !MatchQ[dims, {_, _, 3} | {_, _}],
     ReturnFailed["baddata"]];
-  hasColor = Length[dims] == 3;
   {h, w} = Take[dims, 2];
+  If[!mesh,
+    image = ImageResize[Image[array], blockSize * w];
+    If[frame, image = ImagePad[image, 1, frameStyle]];
+    Return @ Image[image, ImageSize -> {{w, h} * blockSize + If[frame, 2, 0]}];
+  ];
+  {b1, b2} = blockSize + {-1, 1};
+  hasColor = Length[dims] == 3;
   d = If[frame, 0, 1];
   {h2, w2} = 1 + {h, w} * b2 - 2d;
-  pixels = ConstantArray[frameStyle, If[hasColor, {h2, w2, 3}, {h2, w2}]];
+  pixels = ToPackedReal @ ConstantArray[N @ meshStyle, If[hasColor, {h2, w2, 3}, {h2, w2}]];
   If[frame, If[hasColor, paintFrame[All], paintFrame[]]];
-  ScanIndexed[paintBlock, Developer`ToPackedArray @ array, {2}];
+  pixels //= ToPackedReal;
+  ScanIndexed[If[hasColor && b1 == 2, paintBlockSafe, paintBlock], Developer`ToPackedArray @ array, {2}];
   Image[pixels, ImageSize -> {w2, h2}]
 ];
 
 getFrameMeshColor = Case[
-  GrayLevel[n_] :=  N @ n;
-  _ :=              Return[$Failed, Block];
+  GrayLevel[n_]   := N @ n;
+  Opacity[_]      := 0;
+  _               := Return[$Failed, Block];
 ]
 
 paintFrame[cspec___] := (
-  Part[pixels, All, 1, cspec] = meshStyle;
-  Part[pixels, All, w2, cspec] = meshStyle;
-  Part[pixels, 1, All, cspec] = meshStyle;
-  Part[pixels, h2, All, cspec] = meshStyle;
+  Part[pixels, All, 1, cspec] = frameStyle;
+  Part[pixels, All, w2, cspec] = frameStyle;
+  Part[pixels, 1, All, cspec] = frameStyle;
+  Part[pixels, h2, All, cspec] = frameStyle;
 );
+
+(* because otherwise the slice of size 3 gets matched with the size 3 of v *)
+paintBlockSafe[v_, {r_, c_}] := Module[
+  {r1 = (r * b2) - d, c1 = (c * b2) - d, p1, p2},
+  p1 = (r1 - b1) ;; r1; p2 = (c1 - b1) ;; c1;
+  Part[pixels, p1, p2, 1] = Part[v, 1];
+  Part[pixels, p1, p2, 2] = Part[v, 2];
+  Part[pixels, p1, p2, 3] = Part[v, 3];
+];
 
 paintBlock[v_, {r_, c_}] := Module[
   {r1 = (r * b2) - d, c1 = (c * b2) - d},
@@ -89,7 +106,8 @@ Options[CompactArrayPlot] = {
   ColorFunction -> Automatic,
   ColorLegend -> None,
   Frame -> True,
-  Mesh -> True
+  Mesh -> True,
+  MeshStyle -> GrayLevel[0.8]
 };
 
 CompactArrayPlot::badrank = "Array should be of rank 2 or 3, but had rank ``.";
@@ -99,8 +117,8 @@ CompactArrayPlot::interr = "Internal error while processing array.";
 CompactArrayPlot::badcvals = "ColorFunction produced non-RGB values, first was: ``.";
 
 CompactArrayPlot[array_, OptionsPattern[]] := Scope[
-  UnpackOptions[pixelConstrained, colorFunction, colorLegend, frame, mesh];
-  array //= ToPackedReal;
+  UnpackOptions[pixelConstrained, colorFunction, colorLegend, frame, mesh, meshStyle];
+  array //= ToPacked;
   dims = Dimensions @ array; ndims = Length @ dims;
   If[array === {} || MemberQ[dims, 0], Return[Spacer[1]]];
   If[ndims < 2 || ndims > 3, ReturnFailed["badrank", ndims]];
@@ -112,10 +130,12 @@ CompactArrayPlot[array_, OptionsPattern[]] := Scope[
   SetAutomatic[colorFunction, Which[
     isRGB,
       None,
-    Developer`PackedArrayQ[array, Real] && UnitIntervalArrayQ[array],
+    PackedArrayQ[array, Real] && UnitIntervalArrayQ[array],
       None,
-    Developer`PackedArrayQ[array, Integer] && UnitIntervalArrayQ[array],
+    PackedArrayQ[array, Integer] && UnitIntervalArrayQ[array],
       None,
+    PackedArrayQ[array, Complex] || ContainsComplexQ[array],
+      ComplexHue,
     ArrayQ[array, 2, ColorQ],
       RGBColor,
     True,
@@ -129,10 +149,10 @@ CompactArrayPlot[array_, OptionsPattern[]] := Scope[
     array = ToPackedReal @ MatrixMap[cfunc, array];
     If[ArrayQ[array, 2, ColorQ],
       array = ToPackedReal @ ToRGB @ array];
-    If[!PackedArrayQ[array], ReturnFailed["badcvals"]];
+    If[!PackedArrayQ[array], ReturnFailed["badcvals", MsgExpr[SelectFirst[array, !MatchQ[#, $Coord3P]&], 20, 200]]];
   ];
   If[!PackedArrayQ[array], ReturnFailed["interr"]];
-  graphics = MeshImage[array, pixelConstrained, Frame -> frame, Mesh -> mesh];
+  graphics = MeshImage[array, pixelConstrained, Frame -> frame, Mesh -> mesh, MeshStyle -> meshStyle];
   SetAutomatic[colorLegend, colorFunction];
   If[colorLegend =!= None, graphics //= ApplyLegend[colorLegend]];
   graphics

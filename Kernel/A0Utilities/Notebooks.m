@@ -506,3 +506,11 @@ makeToggledInlineCell[str_] := Scope[
   boxes = TagBox[boxes, "ToggledInlineCell" -> str];
   Cell[BoxData @ FormBox[boxes, TraditionalForm]]
 ];
+
+(**************************************************************************************************)
+
+PublicForm[CellWrapper]
+
+(* TODO: This helps capture keypressed for EventHandler to work nicely! *)
+
+DefineStandardTraditionalForm[CellWrapper[a_] :> With[{b = ToBoxes[a]}, Cell[BoxData @ b,ShowSelection->False]]];
