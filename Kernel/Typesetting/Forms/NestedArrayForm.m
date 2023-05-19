@@ -158,6 +158,9 @@ procNA[(t:"Column"|"SpanningColumn"|"NormalColumn") -> col_, rest___][array_] :=
 
 NestedArrayForm::notmatrix = "`` is not a matrix, but `` was specified.";
 
+procNA[(t:"ReverseGrid"|"ReverseSpanningGrid"|"ReverseNormalGrid") -> spec_, rest___][array_] :=
+  procNA[StringTrimLeft[t, "Reverse"] -> spec, rest] @ Transpose @ array;
+
 procNA[(t:"Grid"|"SpanningGrid"|"NormalGrid") -> {col1_, col2_, col3_:None}, rest___][array_] :=
   StringMatrix[
     If[!MatrixQ[array, True&], ThrowMessage["notmatrix", array, t]];

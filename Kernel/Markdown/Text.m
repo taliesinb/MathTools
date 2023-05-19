@@ -28,6 +28,7 @@ $nlPost = {$nl2 -> $nl, $inl2 -> $inl, "\\" <> $nl -> ""};
 (**************************************************************************************************)
 
 PrivateFunction[textCellToMarkdown]
+PrivateVariable[$forbiddenStrings]
 
 (* Todo: introduce simple caching *)
 

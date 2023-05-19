@@ -18,6 +18,7 @@ toCodeMarkdown[code_, multiline_] := Scope[
     code //= wlCharactersToUnicode
   ];
   code //= subShortCodes;
+  If[StringContainsQ[code, $forbiddenStrings], Return @ ""];
   res = StringJoin @ If[multiline, {"<pre>", code, "</pre>"}, {"<code>", code, "</code>"}];
   res
 ];

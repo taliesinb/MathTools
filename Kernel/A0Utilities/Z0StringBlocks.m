@@ -358,7 +358,7 @@ processBlock = Case[
   gb_GridBox | TagBox[gb_GridBox, "Grid"]             := processGridBox[gb];
   Grid[rows_List, opts___Rule]                        := processGrid[rows, opts];
 
-  Labeled[a_, l_]                                     := % @ StringColumn[{a, l}, ColumnAlignment -> Center, RowSpacings -> 1];
+  Labeled[a_, l_]                                     := % @ StringColumn[{a, l}, ColumnAlignment -> Center, RowSpacings -> 0];
 
   ParenthesesForm[e_]                                 := delimBlock[{e}, "()", None];
   TupleForm[e___]                                     := delimBlock[{e}, "()", None];
@@ -386,6 +386,8 @@ processBlock = Case[
   na_NestedArrayForm                                  := % @ nestedArrayRender @ na;
   head_Symbol[arg_] /; StyleFormHeadQ[head]           := % @ Style[arg, StyleFormData @ head];
 
+  f_FractionBox                                       := makeSingleBlock @ evalFracBox[f];
+
   str_String /; StringContainsQ[str, "\!\(\*"]        := % @ parseLinearSyntax @ str;
   str_String                                          := makeSingleBlock @ str;
   Null                                                := $block[{""}, 0, 1];
@@ -406,16 +408,35 @@ processBlock = Case[
   Framed[e_, opts__Rule]                              := % @ StringFrame[e, opts];
   Framed[e_]                                          := makeFrame[% @ e, False];
   Framed[e_, RoundingRadius -> n_]                    := makeFrame[% @ e, n > 0];
+
+  RawBoxes[b_]                                        := processBoxes @ b;
 ];
 
 (**************************************************************************************************)
 
 processCustomBlock[item_] :=
   If[HasBoxFormQ[item],
-    processBlock @ ReplaceAll[EvaluateTemplateBoxFull @ ToBoxes @ item, $boxFixups],
+    processBoxes @ ToBoxes @ item,
     makeSingleBlock @ TextString @ item];
 
+processBoxes[boxes_] :=
+  processBlock @ ReplaceAll[EvaluateTemplateBoxFull @ boxes, $boxFixups]
+
 $boxFixups = SubscriptBox[a_String, b_] /; StringEndsQ[a, " "] :> SubscriptBox[StringTrim @ a, b];
+
+evalFracBox = Case[
+(*   FractionBox["1", "2"] := "½";
+  FractionBox["1", "3"] := "⅓";
+  FractionBox["2", "3"] := "⅔";
+  FractionBox["1", "4"] := "¼";
+  FractionBox["3", "4"] := "¾";
+  FractionBox["1", "5"] := "⅕";
+  FractionBox["2", "5"] := "⅖";
+  FractionBox["3", "5"] := "⅗";
+  FractionBox["4", "5"] := "⅘";
+ *)
+  FractionBox[i_String, j_String] := StringJoin[i, "/", j];
+]
 
 (**************************************************************************************************)
 

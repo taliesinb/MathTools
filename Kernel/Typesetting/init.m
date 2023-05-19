@@ -910,9 +910,15 @@ EvaluateTemplateBoxFull[expr_] := ReplaceRepeated[expr, tb:TemplateBox[_List, _S
 
 evalTB := Case[
   TemplateBox[{a_, b_}, "katexSwitch"] := a;
-  TemplateBox[args_List, name_String] /; KeyExistsQ[$notebookDisplayFunction, name] := Apply[$notebookDisplayFunction @ name, args];
+  TemplateBox[args_List, name_String] /; KeyExistsQ[$notebookDisplayFunction, name] := Apply[replaceTemplateSlots @ $notebookDisplayFunction @ name, args];
   tb:TemplateBox[_List, _String]                                                    := BoxForm`TemplateBoxToDisplayBoxes[tb];
 ];
+
+replaceTemplateSlots[e_] := ReplaceRepeated[e, {
+  TemplateSlot[n_Integer] :> Slot[n],
+  TemplateSlotSequence[n_Integer] :> SlotSequence[n],
+  TemplateSlotSequence[n_Integer, riff_] :> SequenceRiffle[SlotSequence[n], riff]
+}];
 
 PublicFunction[EvaluateTemplateBoxAsKatex, EvaluateTemplateBoxAsKatexFull]
 
