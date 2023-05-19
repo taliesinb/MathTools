@@ -177,7 +177,7 @@ symbolicForm = Case[
   f_Form := f;
   t_Text := First @ t;
 
-  (a_ = b_) := Row[{% @ a, " = ", % @ b}];
+  Set[a_, b_] := Row[{% @ a, " = ", % @ b}];
 
   a_Symbol := symbolForm[HoldSymbolName @ a];
 
@@ -203,9 +203,9 @@ symbolicForm = Case[
   PathBackwardDifference[t_, p_] := differenceForm[t, "\[Minus]", p];
   PathCentralDifference[t_, p_] := differenceForm[t, None, p];
 
-  PathGradient[p_] := Row[{"\[Gradient]", "\[VeryThinSpace]", % @ p}];
-  PathDivergence[p_] := Row[{OverDot["\[Gradient]"], "\[VeryThinSpace]", % @ p}];
-  PathLaplacian[p_] := Row[{Overscript["\[Gradient]", "\[DoubleDot]"], "\[VeryThinSpace]", % @ p}];
+  PathGradient[p_] := Row[{"∇", "\[VeryThinSpace]", % @ p}];
+  PathDivergence[p_] := Row[{OverDot["∇"], "\[VeryThinSpace]", % @ p}];
+  PathLaplacian[p_] := Row[{Overscript["∇", "\[DoubleDot]"], "\[VeryThinSpace]", % @ p}];
   PathSplit[p_Symbol] := PathSplitForm[symbolForm[HoldSymbolName @ p]];
 
   (head:symbolicHeads)[t_ ? isSuppressed, a_] :=
