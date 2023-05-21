@@ -111,6 +111,7 @@ $extendedGraphOptionsRules = {
   VertexClickFunction                 -> None,
   VertexColorFunction                 -> None,
   VertexColorRules                    -> None,
+  VertexColors                        -> None,
   VertexCoordinateFunction            -> None,
   VertexCoordinateRules               -> None,
   VertexFontSize                      -> None,

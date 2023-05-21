@@ -934,6 +934,9 @@ coloringColorPalette = Case[
   other_ := ToColorPalette[other];
 ];
 
+$white = GrayLevel[0.98];
+$black = GrayLevel[0.1];
+
 ApplyColoring[data_List, palette_:Automatic] := Scope[
   If[ColorVectorQ[data], Return @ literalColorFunction[data]];
   $ColorPalette = coloringColorPalette[palette];
@@ -948,11 +951,16 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   If[containsNull, nullPos = posIndex[Null]; KeyDropFrom[posIndex, Null]];
   uniqueValues = Keys @ posIndex;
   count = Length @ uniqueValues;
+  sortedUniqueValues = Sort @ uniqueValues;
   colorFunction = Which[
     ColorVectorQ[uniqueValues],
       Identity,
-    uniqueValues === {0, 1} || uniqueValues === {1, 0},
-      DiscreteColorFunction[{0, 1}, {White, Black}],
+    sortedUniqueValues === {0, 1},
+      DiscreteColorFunction[{0, 1}, {$white, $black}],
+    sortedUniqueValues === {-1, 1},
+      DiscreteColorFunction[{-1, 1}, {$Red, $Blue}],
+    sortedUniqueValues === {-1, 0, 1},
+      DiscreteColorFunction[{-1, 0, 1}, {$Red, $white, $Blue}],
     Length[uniqueValues] == 1,
       DiscreteColorFunction[uniqueValues, {Gray}],
     (PermutedRangeQ[uniqueValues] || PermutedRangeQ[uniqueValues + 1]) && count <= 12,
@@ -962,7 +970,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
       ContinuousColorFunction[nUniqueValues, Automatic],
     ComplexVectorQ[nUniqueValues],
       nUniqueValues //= Re;
-      ColorFunctionCompose[ContinuousColorFunction[nUniqueValues, Automatic], Re],
+      ComplexHue,
     MatrixQ[nUniqueValues, Internal`RealValuedNumericQ],
       norms = Norm /@ nUniqueValues;
       ColorFunctionCompose[ContinuousColorFunction[norms, Automatic], Norm],
@@ -1006,6 +1014,8 @@ Color3D[c_] := Directive[Glow @ c, GrayLevel[0, ColorOpacity[c]], Specularity @ 
 PublicFunction[ComplexHue]
 
 ComplexHue[c_] := OkHue[Arg[c]/Tau, Min[Sqrt[Abs[c]]/1.2,1], .9];
+
+ComplexHue /: Normal[ComplexHue] := ComplexHue;
 
 (**************************************************************************************************)
 

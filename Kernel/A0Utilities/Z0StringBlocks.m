@@ -27,6 +27,49 @@ ToStringBlock /: SetDelayed[ToStringBlock[lhs_], rhs_] := With[
 
 (**************************************************************************************************)
 
+PublicForm[StringTable]
+
+PublicOption[TableHeadingStyle]
+
+Options[StringTable] = {
+  TableHeadings -> None,
+  TableHeadingStyle -> $Gray
+}
+
+ToStringBlock[StringTable[rows_List, OptionsPattern[]]] := Scope[
+  If[!MatrixQ[rows, True&], ThrowMessage["notmatrix", MsgExpr @ rows]];
+  items = MatrixMap[ToStringBlock, rows];
+  UnpackOptions[tableHeadings, tableHeadingStyle];
+  {rowStyle, colStyle} = tableHeadingStyle * {1, 1};
+  SetAutomatic[tableHeadings, {Automatic, Automatic}];
+  SetNone[tableHeadings, {None, None}];
+  If[!MatchQ[tableHeadings, {_, _}], ReturnFailed[]];
+  {rowHeadings, colHeadings} = tableHeadings;
+  {numRows, numCols} = Dimensions[rows, 2];
+  colAlignment = ConstantArray[Left, numCols];
+  If[rowHeadings =!= None,
+    $headingStyleFn = StyleOperator @ rowStyle;
+    rowHeadings = procTableHeadings[rowHeadings, numRows];
+    items = MapThread[Prepend, {items, rowHeadings}];
+  ];
+  If[colHeadings =!= None,
+    $headingStyleFn = StyleOperator @ colStyle;
+    colHeadings = procTableHeadings[colHeadings, numCols];
+    If[rowHeadings =!= None, PrependTo[colHeadings, spacerBlock[1, 1]]];
+    PrependTo[colAlignment, Right];
+    PrependTo[items, colHeadings];
+  ];
+  gstackBlocks[items, ColumnSpacings -> 1, ColumnAlignment -> colAlignment]
+];
+
+StringBlock::badtableheading = "`` is not a recognized setting for TableHeadings."
+procTableHeadings[Automatic, n_] := procTableHeadings[Range @ n, n];
+procTableHeadings[str_String, n_] := procTableHeadings[Characters @ str, n]
+procTableHeadings[list_List, n_] := processBlock[$headingStyleFn[#]]& /@ PadRight[list, n, ""];
+procTableHeadings[other_, _] := ThrowMessage["badtableheading", other];
+
+(**************************************************************************************************)
+
 PublicForm[StringMatrix]
 
 PublicOption[RowAlignment, ColumnAlignment, FramePadding, RowFrames, RowFrameStyle, RowFramePadding, SpanningFrame]

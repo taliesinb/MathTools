@@ -464,6 +464,10 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       plotRange, plotRangePadding, frame, frameLabel
     ];
 
+    UnpackExtendedOptions[graph,
+      vertexColors
+    ];
+
     UnpackExtendedThemedOptions[graph,
       arrowheadShape, arrowheadStyle, arrowheadSize, arrowheadPosition, twoWayStyle,
       visibleCardinals, labelCardinals, vertexBackground,
@@ -637,18 +641,20 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   GPPrint["Vertex graphics"];
   FunctionSection[
 
+    hasVertexColors = vertexColors =!= None || vertexColorFunction =!= None || vertexColorRules =!= None;
+
     $vertexEdgeThickness = 1;
     $vertexSizeOverrides = None;
     $defaultVertexSize = Which[
       edgeStyle === None,           Scaled @ 0.6,
-      vertexColorFunction =!= None, Scaled @ 0.5,
+      hasVertexColors,              Scaled @ 0.5,
       True,                         Max[0.3, AbsolutePointSize[6]]
     ];
     $inheritedVertexSize = False;
     vertexSize = processVertexSize @ removeSingleton @ vertexSize;
     vertexSizeImage = plotSizeToImageSize @ vertexSize;
 
-    SetAutomatic[vertexShapeFunction, If[vertexColorFunction =!= None, "Disk", "Point"]];
+    SetAutomatic[vertexShapeFunction, If[hasVertexColors, "Disk", "Point"]];
 
     lighting = None;
 
@@ -673,7 +679,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     SetAutomatic[vertexStyle, defaultVertexColor];
 
     vertexItems = drawViaColorFunc[
-      vertexColorFunction, vertexDrawFunc, $VertexCount, $VertexParts, None,
+      vertexColors, vertexColorFunction, vertexDrawFunc, $VertexCount, $VertexParts, None,
       vertexColorDataProvider, VertexColorFunction
     ];
 
@@ -741,7 +747,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     ];
 
     edgeItems = drawViaColorFunc[
-      edgeColorFunction, arrowheadDrawFn, $EdgeCount, $EdgeParts, $fadedEdgeParts,
+      None, edgeColorFunction, arrowheadDrawFn, $EdgeCount, $EdgeParts, $fadedEdgeParts,
       edgeColorDataProvider, EdgeColorFunction
     ];
 
@@ -1959,9 +1965,9 @@ insetDisk[size_][pos_] := Inset[Graphics[Disk[{0, 0}, 1], AspectRatio -> 1], pos
 
 (**************************************************************************************************)
 
-drawViaColorFunc[colorFn_, drawFn_, count_, parts_, fadedParts_, dataProviderFn_, optSymbol_] := Scope[
+drawViaColorFunc[colors_, colorFn_, drawFn_, count_, parts_, fadedParts_, dataProviderFn_, optSymbol_] := Scope[
 
-  If[colorFn === None,
+  If[colorFn === None && colors === None,
 
     result = If[fadedParts === None,
       drawFn[Part[Range @ count, parts], {}]
@@ -1977,14 +1983,15 @@ drawViaColorFunc[colorFn_, drawFn_, count_, parts_, fadedParts_, dataProviderFn_
     Return @ SimplifyGraphicsPrimitives @ result;
   ];
 
-
   colorGroupFn = If[MatchQ[colorFn, Tooltip[_]],
     colorFn = First @ colorFn;
     toColorDrawFuncWithTooltip[drawFn],
     toColorDrawFunc[drawFn]
   ];
 
-  {colorList, colorGroups, colorFunctionObject} = obtainColors[colorFn, dataProviderFn, optSymbol];
+  If[ListQ[colors], colors = PadRight[colors, count, $Gray]];
+
+  {colorList, colorGroups, colorFunctionObject} = obtainColors[colors, colorFn, dataProviderFn, optSymbol];
   If[!MatchQ[colorFunctionObject, ColorFunctionObject["Discrete", Identity]],
     automaticLegends["Colors"] ^= colorFunctionObject];
 
@@ -1993,11 +2000,15 @@ drawViaColorFunc[colorFn_, drawFn_, count_, parts_, fadedParts_, dataProviderFn_
   SimplifyGraphicsPrimitives @ KeyValueMap[colorGroupFn, colorGroups]
 ];
 
-obtainColors[colorFn_, dataProviderFn_, optSymbol_] := Scope[
+obtainColors[colors_, colorFn_, dataProviderFn_, optSymbol_] := Scope[
   palette = Automatic;
   colorFn //= Replace[Paletted[d_, p_] :> (palette = p; d)];
 
-  colorData = Check[dataProviderFn @ colorFn, $FailedMessages];
+  If[colors =!= None && colorFn === None,
+    colorData = colors;
+  ,
+    colorData = Check[dataProviderFn @ colorFn, $FailedMessages];
+  ];
 
   If[FailureQ[colorData] || colorData === None, failPlot["badcolfn", optSymbol]];
   If[colorData === $FailedMessages, failPlot["msgcolfn", optSymbol]];
@@ -2054,12 +2065,13 @@ PublicFunction[LookupVertexColors]
 
 LookupVertexColors[graph_Graph, vertices_:All] := Scope[
   GraphScope[graph,
-    UnpackExtendedOptions[graph, vertexColorFunction, vertexColorRules];
+    UnpackExtendedThemedOptions[graph, vertexColorFunction, vertexColorRules];
+    UnpackExtendedOptions[graph, vertexColors];
     processVertexColorRules[vertexColorRules];
     If[vertices =!= All, $VertexList = vertices];
-    If[vertexColorFunction === None, Return @ None];
+    If[vertexColorFunction === None && vertexColors === None, Return @ None];
     {colorList, colorGroups, colorFunctionObject} = obtainColors[
-      vertexColorFunction, vertexColorDataProvider, VertexColorFunction
+      vertexColors, vertexColorFunction, vertexColorDataProvider, VertexColorFunction
     ];
     AssociationThread[$VertexList, colorList]
   ]
@@ -2077,7 +2089,7 @@ LookupEdgeColors[graph_Graph, edges_:All] := Scope[
     If[edges =!= All, $EdgeList = edges];
     If[edgeColorFunction === None, Return @ None];
     {colorList, colorGroups, colorFunctionObject} = obtainColors[
-      edgeColorFunction, edgeColorDataProvider, EdgeColorFunction
+      None, edgeColorFunction, edgeColorDataProvider, EdgeColorFunction
     ];
     AssociationThread[$EdgeList, colorList]
   ]
@@ -2669,12 +2681,9 @@ PublicFunction[PlotGraphVector]
 PlotGraphVector[graph_Graph, opts___Rule][vector_List] :=
   PlotGraphVector[graph, vector, opts];
 
-PlotGraphVector[graph_Graph, vector_, opts___Rule] := GraphPlot[graph,
+PlotGraphVector[graph_Graph, vector_, opts___Rule] := ExtendedGraphPlot[graph,
   EdgeShapeFunction -> "Line", EdgeStyle -> LightGray,
-  VertexShape -> MapThread[
-    #1 -> ComplexDisk[#2, 20, 1]&,
-    {VertexList[graph], vector}
-  ],
+  VertexColors -> vector,
   opts, VertexLabels -> None
 ];
 

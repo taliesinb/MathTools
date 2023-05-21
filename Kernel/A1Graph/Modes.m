@@ -4,7 +4,7 @@ complexSortingValue[c_] := {-Round[Abs[c], 0.01], Mod[Arg[c+ $MachineEpsilon * I
 
 PlotGraphModes[graph_Graph, k_:4, columns:_Integer:4, opts:OptionsPattern[Graph]] := Scope[
   vertices = VertexList[graph];
-  trans = N @ ToMarkovMatrix[graph];
+  trans = AdjacencyMatrix[graph];
   {values, vectors} = Eigensystem[trans, k];
   ordering = OrderingBy[values, complexSortingValue];
   values = Part[values, ordering];
@@ -20,7 +20,7 @@ PlotGraphModes[graph_Graph, k_:4, columns:_Integer:4, opts:OptionsPattern[Graph]
     Column[{
       PlotGraphVector[graph, #1, opts, opts2, ImagePadding -> {{5,  5}, {10, 5}}],
       Style[TextString[NumberForm[Chop @ #2, 3]] // StringReplace[" " -> ""], If[Abs[#2] == 1.0, Bold, {}]],
-      ComplexGraphicalRow[#2, 25],
+      #2,
       Row[{"#", i++}, BaseStyle -> Gray]
     }, Alignment->Center, Spacings -> 0]&,
     {vectors, values}
