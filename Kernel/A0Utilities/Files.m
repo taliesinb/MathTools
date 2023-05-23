@@ -1,6 +1,6 @@
-PrivateVariable[$CacheDirectory]
+PrivateVariable[$QGCacheDirectory]
 
-$CacheDirectory = LocalPath["Data"];
+$QGCacheDirectory = LocalPath["Data"];
 
 (**************************************************************************************************)
 
@@ -28,7 +28,7 @@ CacheFilePath[name_, args___] :=
   CacheFilePath[name, args, FileExtension -> "mx"]
 
 CacheFilePath[name_, args___, FileExtension -> ext_] :=
-  PathJoin[$CacheDirectory, name, StringJoin[Riffle[toCacheArgString /@ {args}, "_"], ".", ext]];
+  PathJoin[$QGCacheDirectory, name, StringJoin[Riffle[toCacheArgString /@ {args}, "_"], ".", ext]];
 
 $simpleArgP = _Integer | _String | None | Infinity | False | True;
 
