@@ -1,5 +1,12 @@
 PublicHead[GridComplex, GridOffset]
 
+SetUsage @ "
+GridComplex[labels$, primitives$] represents a grid of graphics primitives where labels$ is a grid of \
+abstract labels that are interpreted in primitives$ as referring to 2D coordinates.
+GridComplex[{coord$1 -> label$1, coord$2 -> label$2, $$}, $$] manually specifies coordinates of labels.
+GridComplex[$$, scale$] establishes a width and height of scale$ for the 2D coordinates.
+"
+
 Typeset`MakeBoxes[gc:GridComplex[_List, _, _:Automatic], form:StandardForm | TraditionalForm, type:Graphics|Graphics3D] :=
   gridComplexBoxes[gc, form, type];
 
@@ -9,6 +16,11 @@ gridComplexBoxes[gc_GridComplex, form_, type_] := Scope[
 ];
 
 (**************************************************************************************************)
+
+readGrid[rules:{({_, _} -> _)..}] := Scope[
+  $gridCoords = Association @ Reverse[rules, {2}];
+  {$gridCoords, Max /@ Transpose @ Values @ $gridCoords}
+]
 
 readGrid[rows_List] := Scope[
   $gridCoords = <||>;
