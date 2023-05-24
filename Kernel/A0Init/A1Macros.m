@@ -34,8 +34,9 @@ mScopeWithDefs[body2_, defs2_, type_] := Module[
   body = body /. aliasRules;
   defs = defs /. aliasRules;
   Block[{$lhsHeadPrefix = lhsHeadPrefix, $bodyRules = {}},
-    Apply[procScopeDef, defs //. Quoted[q_] :> q];
+    defs = Apply[procScopeDef, defs //. Quoted[q_] :> q];
     body = body /. $bodyRules;
+    evalSecondaryDefs @ defs;
   ];
   If[aliasRules =!= {}, body = ToQuoted[Block, toAliasSet /@ aliasRules, body]];
   GeneralUtilities`Control`PackagePrivate`mScope @@ Append[body, type]
@@ -43,24 +44,29 @@ mScopeWithDefs[body2_, defs2_, type_] := Module[
 
 toAliasSet[_[s_]-> a_] := Quoted @ Set[a, s];
 
-procScopeDef[list_List] := Scan[procScopeDef, Unevaluated @ list];
+procScopeDef[list_List] := Map[procScopeDef, Unevaluated @ list];
+
 procScopeDef[r_RuleDelayed | r_Rule] := AppendTo[$bodyRules, r];
 
 procScopeDef[SetDelayed[head_Symbol[args___], rhs_]] := With[
   {head2 = Symbol @ StringJoin[$lhsHeadPrefix, SymbolName @ Unevaluated @ head]},
   {rule = HoldPattern[head] -> head2},
   AppendTo[$bodyRules, rule];
-  SetDelayed @@ ReplaceAll[Hold[head[args], rhs], rule]
+  ReplaceAll[Hold[head[args], rhs], rule]
 ];
 
 procScopeDef[SetDelayed[head_Symbol[args___][args2___], rhs_]] := With[
   {head2 = Symbol @ StringJoin[$lhsHeadPrefix, SymbolName @ Unevaluated @ head]},
   {rule = HoldPattern[head] -> head2},
   AppendTo[$bodyRules, rule];
-  SetDelayed @@ ReplaceAll[Hold[head[args][args2], rhs], rule]
+  ReplaceAll[Hold[head[args][args2], rhs], rule]
 ];
 
 procScopeDef[e_] := Print[Hold[e]];
+
+evalSecondaryDefs[Null] := Null;
+evalSecondaryDefs[e_List] := Map[evalSecondaryDefs, e];
+evalSecondaryDefs[h_Hold] := SetDelayed @@ ReplaceAll[h, $bodyRules];
 
 (**************************************************************************************************)
 

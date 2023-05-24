@@ -594,4 +594,6 @@ makeSym["SBF", StringBlockForm]
 
 makeSym["SBT", StringBlockTemplate]
 
+makeSym["TGB", ToGraphicsBoxes]
+
 QuiverGeometry`Shortcuts`PLC := QuiverGeometry`PreviewLastCell[];

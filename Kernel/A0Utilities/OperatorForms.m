@@ -28,6 +28,12 @@ PartOfOperator[e_][p___] := Part[e, p];
 
 (**************************************************************************************************)
 
+PublicFunction[ContainedInQ]
+
+ContainedInQ[expr_][patt_] := !FreeQ[expr, patt];
+
+(**************************************************************************************************)
+
 PublicFunction[DotOperator]
 
 DotOperator[matrix_][other_] := Dot[matrix, other]
