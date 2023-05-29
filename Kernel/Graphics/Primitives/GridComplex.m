@@ -7,6 +7,8 @@ GridComplex[{coord$1 -> label$1, coord$2 -> label$2, $$}, $$] manually specifies
 GridComplex[$$, scale$] establishes a width and height of scale$ for the 2D coordinates.
 "
 
+declareCustomGraphicsHead[GridComplex];
+
 Typeset`MakeBoxes[gc:GridComplex[_List, _, _:Automatic], form:StandardForm | TraditionalForm, type:Graphics|Graphics3D] :=
   gridComplexBoxes[gc, form, type];
 

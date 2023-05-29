@@ -166,10 +166,12 @@ PublicFunction[StyleOperator, StyleBoxOperator]
 
 StyleOperator[] = Identity;
 StyleOperator[None] = Identity;
+StyleOperator[spec___][Nothing] := Nothing;
 StyleOperator[spec___][e_] := Style[e, spec];
 
 StyleBoxOperator[] = Identity;
 StyleBoxOperator[None] = Identity;
+StyleBoxOperator[spec___][Nothing] := Nothing;
 StyleBoxOperator[spec___][e_] := StyleBox[e, spec];
 
 (**************************************************************************************************)

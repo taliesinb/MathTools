@@ -373,6 +373,15 @@ expandColorPalette[colors_] := Join[colors, OklabBlend /@ (UnorderedPairs @ colo
 
 (**************************************************************************************************)
 
+PublicFunction[ToRainbowColor]
+
+ToRainbowColor = Case[
+  i_Integer := Part[$NormalColorPalette, i];
+  col_ := col;
+];
+
+(**************************************************************************************************)
+
 PublicFunction[GrayColorQ]
 
 GrayColorQ[_GrayLevel] := True;

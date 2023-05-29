@@ -27,7 +27,7 @@ DefineStandardTraditionalForm[list_List] := Scan[DefineStandardTraditionalForm, 
 
 DefineStandardTraditionalForm[lhs_ :> rhs_] := (
   AssociateTo[$BoxFormHeadAssoc, PatternHead[lhs] -> True];
-  MakeBoxes[lhs, StandardForm] := rhs;
+  MakeBoxes[lhs /; Refresh[!BoxForm`UseTextFormattingQ, None], StandardForm] := rhs;
   MakeBoxes[l:lhs, TraditionalForm] := MakeBoxes @ l;
 )
 
@@ -78,19 +78,22 @@ PrintGraphicsFormatDefinitions[sym_Symbol] := PrintDefinitions @
 
 (**************************************************************************************************)
 
-PrivateFunction[declareGraphicsFormatting]
+PrivateFunction[declareGraphicsFormatting, declareCustomGraphicsHead]
 
 PrivateSymbol[$customGraphicsHeadQ, $customGraphicsP]
 
 $customGraphicsHeadQ = <||>;
 $customGraphicsP = Alternatives[];
 
-declareGraphicsFormatting[lhs_ :> rhs_, type_:Graphics|Graphics3D] := With[
-  {lhsHead = First @ PatternHead @ lhs},
-  $customGraphicsHeadQ[lhsHead] = True;
-  AppendTo[$customGraphicsP, Blank @ lhsHead];
+declareCustomGraphicsHead[head_Symbol] := (
+  $customGraphicsHeadQ[head] = True;
+  AppendTo[$customGraphicsP, Blank @ head];
+);
+
+declareGraphicsFormatting[lhs_ :> rhs_, type_:Graphics|Graphics3D] := (
+  declareCustomGraphicsHead[First @ PatternHead @ lhs];
   Typeset`MakeBoxes[expr:lhs, StandardForm | TraditionalForm, type] := Construct[InterpretationBox, rhs, expr]
-];
+);
 
 declareGraphicsFormatting[list_List, type_:Graphics|Graphics3D] :=
   Scan[declareGraphicsFormatting[#, type]&, list];

@@ -14,6 +14,24 @@ SetGraphicsScale[g_Graphics, scale_:40, padding_:1] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[ScaleGraphics]
+
+PublicOption[GraphicsScale]
+
+Options[ScaleGraphics] = JoinOptions[
+  GraphicsScale -> 40,
+  Graphics
+];
+
+ScaleGraphics[prims_, opts:OptionsPattern[]] :=
+  SetGraphicsScale[
+    Graphics[prims, FilterOptions @ opts],
+    OptionValue[GraphicsScale],
+    OptionValue[ImagePadding]
+  ];
+
+(**************************************************************************************************)
+
 PublicFunction[SetScalableGraphicsFontSize]
 
 SetScalableGraphicsFontSize[g_Graphics, imageSize_:Automatic] := Scope[
