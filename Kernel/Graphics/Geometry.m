@@ -193,6 +193,10 @@ DiscretizeCurve[c_LoopCurve] := loopCurvePoints @ c;
 
 DiscretizeCurve[c_SetbackCurve] := setbackCurvePoints @ c;
 
+DiscretizeCurve[c_CircuitCurve] := circuitCurvePoints @ c;
+
+DiscretizeCurve[c_SmoothedCurve] := smoothedCurvePoints @ c;
+
 DiscretizeCurve[VectorCurve[pos_, dir_]] := ToPackedReal @ {pos, pos + dir};
 
 (**************************************************************************************************)
