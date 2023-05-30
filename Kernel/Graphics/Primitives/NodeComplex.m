@@ -25,7 +25,7 @@ NodeComplex::available = "Available vars shown below.";
 NodeComplex::unresolved = "Unresolved variable `` that compiles to ``.";
 
 nodeComplexBoxes[NodeComplex[nodes_, opts___Rule]] := Scope @ CatchMessage[NodeComplex,
-  $path = $var[]; $eqs = {}; $aliases = <||>;
+  $path = $var[]; $eqs = {}; $aliases = <||>; $isAutomaticSize = <||>;
   UnpackOptionsAs[NodeComplex, {opts}, epilog, prolog, background, epilogStyle, prologStyle];
   $epilogFn = StyleBoxOperator @ epilogStyle;
   $prologFn = StyleBoxOperator @ prologStyle;
@@ -33,7 +33,7 @@ nodeComplexBoxes[NodeComplex[nodes_, opts___Rule]] := Scope @ CatchMessage[NodeC
   addEqns[{subPath[$T] -> 0, subPath[$L] -> 0}];
   eqs = Flatten @ $eqs;
   vars = DeepUniqueCases[eqs, _$var];
-  solutions = SolveCyclicEquations[eqs, EquationVariables -> vars];
+  solutions = SolveCyclicEquations[eqs, EquationVariables -> vars, ExpandLinearEquations -> True];
   boxes = boxes /. d_$delayed :> RuleCondition @ processDelayedSection[d];
   result = boxes /. solutions;
   If[ContainsQ[result, _$var],
@@ -70,6 +70,8 @@ $T = Top;
 $B = Bottom;
 $L = Left;
 $R = Right;
+$H = "H";
+$W = "W";
 
 $sideToCoords = <|
   Center      -> {$LR, $TB},
@@ -99,11 +101,12 @@ toAbsVar[v_$relvar, b_$var] := Join[b, $var @@ v];
 
 (**************************************************************************************************)
 
-PublicHead[NodeColumn, NodeRow, NodeFrame, NodeEpilog, NodeProlog, NodeBox, NodeDisk, PortSkeleton]
+PublicHead[NodeColumn, NodeRow, NodeGrid, NodeFrame, NodeEpilog, NodeProlog, NodeBox, NodeDisk, PortSkeleton]
 
 processNode = Case[
   NodeColumn[nodes_List, opts___Rule] := columnLayout[nodes, {opts}];
   NodeRow[nodes_List, opts___Rule]    := rowLayout[nodes, {opts}];
+  NodeGrid[spec_List, opts___Rule]    := gridLayout[spec, {opts}];
   NodeFrame[interior_]                := nodeFrame[interior];
 
   NodeEpilog[node_, epilog_]          := nodeEpilog[node, epilog];
@@ -131,6 +134,7 @@ printEqns[] := (Print @ Column @ Flatten @ $eqs);
 
 createAlias := Case[
   None       := Null;
+  i_Integer  := % @ TextString[i];
   str_String := AssociateTo[$aliases, str -> $path];
 ];
 
@@ -138,6 +142,7 @@ subPath[] := $path;
 subPath[e_, f_List] := Map[subPath[e, #]&, f];
 subPath[e_List, f_] := Map[subPath[#, f]&, e];
 subPath[e_, f_] := Append[Append[$path, e], f];
+subPath[e_, f_, g_] := Append[Append[Append[$path, e], f], g];
 subPath[e_] := Append[$path, e];
 
 (**************************************************************************************************)
@@ -168,12 +173,12 @@ nodeProlog[node_, prolog_] := {$delayed[prolog, $path], processNode[node]};
 (**************************************************************************************************)
 
 columnLayout[nodes_List, opts_] :=
-  hvNodeLayout[NodeColumn, nodes, opts, {Left, Right}, {$T, $B, "H", $L, $R, "W"}, -1];
+  hvNodeLayout[NodeColumn, nodes, opts, {Left, Right}, {$T, $B, $H, $L, $R, $W}, -1];
 
 (**************************************************************************************************)
 
 rowLayout[nodes_List, opts_] :=
-  hvNodeLayout[NodeRow, nodes, opts, {Top, Bottom}, {$L, $R, "W", $T, $B, "H"}, 1];
+  hvNodeLayout[NodeRow, nodes, opts, {Top, Bottom}, {$L, $R, $W, $T, $B, $H}, 1];
 
 (**************************************************************************************************)
 
@@ -225,6 +230,144 @@ hvNodeLayout[head_, nodes_List, opts_, {startSym_, endSym_}, {mainStart_, mainEn
 
 (**************************************************************************************************)
 
+NodeGrid::badspec = "Spec should be a dense matrix of items or a list of rules mapping position to item.";
+
+Options[NodeGrid] = {
+  RowAlignments -> Top,
+  ColumnAlignments -> Left,
+  RowSpacings -> .5,
+  ColumnSpacings -> .5,
+  FrameMargins -> 0
+}
+
+gridLayout[spec_List, opts_List] := Scope[
+  UnpackOptionsAs[NodeGrid, {opts}, rowAlignments, columnAlignments, rowSpacings, columnSpacings, frameMargins];
+  $halign = columnAlignments; $valign = rowAlignments;
+  $hspacing = columnSpacings; $vspacing = rowSpacings;
+  CatchMessage[NodeGrid, parseGridItems[spec]]
+];
+
+NodeGrid::unspecsize = "Cannot choose a `` for at least one ``.";
+
+parseGridItems = Case[
+  rules:{__Rule}  := Scope[
+    $singletonsR = $singletonsC = <||>;
+    {maxR, maxC} = Map[Max, Transpose @ MatrixMap[parseSpan, Keys @ rules]];
+
+    $hspacing ^= expandRepSpec[maxC-1] @ $hspacing;
+    $vspacing ^= expandRepSpec[maxR-1] @ $vspacing;
+    rangeR = Range @ maxR;
+    rangeC = Range @ maxC;
+
+    (* vars for row heights, column widths *)
+    varsH = subPath["Rows", #, $H]& /@ rangeR;
+    varsW = subPath["Cols", #, $W]& /@ rangeC;
+
+    items = Map[$i = 1; parseGridRuleItem, rules];
+
+    (* obtain RHS for row heights, column widths, removing widths and heights that are inherited from the row/column itself *)
+    allSizesC = Lookup[$singletonsC, rangeC, ThrowMessage["unspecsize", "width", "column"]];
+    allSizesR = Lookup[$singletonsR, rangeR, ThrowMessage["unspecsize", "height", "row"]];
+    sizesC = maxRCSize /@ allSizesC;
+    sizesR = maxRCSize /@ allSizesR;
+
+    (* equate these vars to these maxes *)
+    addEqns @ RuleThread[varsH, sizesR];
+    addEqns @ RuleThread[varsW, sizesC];
+
+    (* RHS for total widths, heights *)
+    {{marginL, marginR}, {marginB, marginT}} = StandardizePadding[frameMargins];
+    height = Total[ListRiffle[varsH, $vspacing]] + marginB + marginT;
+    width = Total[ListRiffle[varsW, $hspacing]] + marginL + marginR;
+
+    (* frame equations *)
+    addFrameEqns[width, height];
+
+    (* equate left and right of columns based on width vars *)
+    addEqns @ MapIndex1[subPath["Cols", #2, $R] -> subPath["Cols", #2, $L] + #1&, varsW];
+
+    (* equate top and bottom of rows based on height vars *)
+    addEqns @ MapIndex1[subPath["Rows", #2, $B] -> subPath["Rows", #2, $T] - #1&, varsH];
+
+    (* join outer dividers to frame *)
+    addEqns @ {
+      subPath[$T] -> subPath["Rows", 1, $T]    + marginT,
+      subPath[$L] -> subPath["Cols", 1, $L]    - marginL,
+      subPath[$B] -> subPath["Rows", maxR, $B] - marginB,
+      subPath[$R] -> subPath["Cols", maxC, $R] + marginR
+    };
+
+    (* gaps between rows and columns *)
+    addEqns @ ApplyWindowed[subPath["Cols", #1, $R] -> subPath["Cols", #2, $L] - Part[$hspacing, #1]&, rangeC];
+    addEqns @ ApplyWindowed[subPath["Rows", #1, $B] -> subPath["Rows", #2, $T] + Part[$vspacing, #1]&, rangeR];
+
+    items
+  ];
+  grid:{__List}  := % @ Catenate @ MapIndexed[#2 -> #1&, grid, {2}];
+  other          := ThrowMessage["badspec"];
+];
+
+maxRCSize[list_] := Max @ Replace[Discard[list, Lookup[$isAutomaticSize, #, False]&], {} -> {1}];
+
+NodeGrid::baditemalign = "Item Alignment -> `` is invalid."
+
+parseGridRuleItem = Case[
+  Rule[rc:{_, _}, Item[item_, Alignment -> align_]] := Scope[
+    Switch[align,
+      Center,      $halign = Center; $valign = Center,
+      Left|Right,  $halign = align;  $valign = Center,
+      Top|Bottom,  $halign = Center; $valign = align,
+      TopLeft,     $halign = Left;   $valign = Top,
+      TopRight,    $halign = Right;  $valign = Top,
+      BottomLeft,  $halign = Left;   $valign = Bottom,
+      BottomRight, $halign = Right;  $valign = Bottom,
+      {Left|Right|Center, Top|Bottom|Center}, {$halign, $valign} = align,
+      _,           ThrowMessage["baditemalign", align];
+    ];
+    % @ Rule[rc, item]
+  ];
+  Rule[rc:{_, _}, item_] := Scope[
+    {{rs, re}, {cs, ce}} = Map[parseSpan, rc];
+    l = subPath["Cols", cs, $L]; r = subPath["Cols", ce, $R];
+    t = subPath["Rows", rs, $T]; b = subPath["Rows", re, $B];
+    addEqns @ {
+      Switch[$halign,
+        Left,   subPath[$i, $L] -> l,
+        Right,  subPath[$i, $R] -> r,
+        Center, subPath[$i, $LR] -> (l + r)/2
+      ],
+      Switch[$valign,
+        Top,    subPath[$i, $T] -> t,
+        Bottom, subPath[$i, $B] -> b,
+        Center, subPath[$i, $TB] -> (t + b)/2
+      ]
+    };
+    If[rs == re, KeyAppendTo[$singletonsR, rs, subPath[$i, $H]]];
+    If[cs == ce, KeyAppendTo[$singletonsC, cs, subPath[$i, $W]]];
+    $defaultNodeSize := {totalSpanningWidth @ Range[cs, ce], totalSpanningHeight @ Range[rs, re]};
+    node = processNode[item, $i++]
+  ];
+  _        := ThrowMessage["badspec"];
+]
+
+totalSpanningWidth[indices_]  := Plus[Total @ Part[varsW, indices], Total @ Part[$hspacing, Most @ indices]];
+totalSpanningHeight[indices_] := Plus[Total @ Part[varsH, indices], Total @ Part[$vspacing, Most @ indices]];
+
+NodeGrid::badspan = "Bad item position ``.";
+parseSpan = Case[
+  i_Integer                  := {i, i};
+  Span[i_Integer, j_Integer] := {i, j};
+  other_                     := ThrowMessage["badspan", other];
+]
+
+getMax = Case[
+  i_Integer    := i;
+  _;;i_Integer := i;
+  _            := ThrowMessage["badspec"];
+]
+
+(**************************************************************************************************)
+
 Options[PortSkeleton] = {
   PortSpacing -> 0.2,
   PortSize -> 0.05,
@@ -250,16 +393,12 @@ portSkeletonBox[w_, nodePorts_, opts___Rule] := Scope[
 (**************************************************************************************************)
 
 addFrameEqns[w_, h_] := addEqns @ {
-  subPath["W"] -> w,
-  subPath["H"] -> h,
-  subPath[$B]  -> subPath[$T]  - subPath["H"],
-  subPath[$T]  -> subPath[$B]  + subPath["H"],
-  subPath[$R]  -> subPath[$L]  + subPath["W"],
-  subPath[$L]  -> subPath[$R]  - subPath["W"],
-  subPath[$L]  -> subPath[$LR] - subPath["W"]/2,
-  subPath[$T]  -> subPath[$TB] + subPath["H"]/2,
-  subPath[$LR] -> (subPath[$L] + subPath[$R])/2,
-  subPath[$TB] -> (subPath[$B] + subPath[$T])/2
+  subPath[$W]  -> w,
+  subPath[$H]  -> h,
+  subPath[$B]  -> subPath[$T]  - subPath[$H],
+  subPath[$R]  -> subPath[$L]  + subPath[$W],
+  subPath[$LR] -> subPath[$L] + subPath[$W]/2,
+  subPath[$TB] -> subPath[$B] + subPath[$H]/2
 }
 
 PublicOption[NodePorts, NodeLabelStyle, NodeLabelColor, FrameColor, FrameThickness]
@@ -344,6 +483,7 @@ procPortSpec = Case[
   n_Integer      := Range @ n;
   s_String       := Characters @ s;
   l_List         := l;
+  l:{___Integer} := Set[portFaceColor, l];
   spec_          := ThrowMessage["badportspec", spec];
 ];
 
@@ -356,7 +496,7 @@ processNodeBoxPorts = Case[
   lhs_ -> Style[rhs_, PortEdgeThickness -> s_, rest___] := Scope[portEdgeThickness = s; %[lhs -> Style[rhs, rest]]];
   lhs_ -> Style[rhs_, HiddenPorts -> s_, rest___]       := Scope[hiddenPorts = s;       %[lhs -> Style[rhs, rest]]];
   lhs_ -> Style[rhs_] := %[lhs -> rhs];
-  (side:Left|Right|Top|Bottom) -> spec_ := Scope[
+  (side:Left|Right|Top|Bottom) -> spec_ := Scope @ Block[{portFaceColor = portFaceColor},
     ports = procPortSpec @ spec;
     n = Length @ ports;
     offsets = If[RuleQ[spec], Keys @ spec, makePortOffsets @ n];
@@ -368,7 +508,7 @@ processNodeBoxPorts = Case[
       Top,    Threaded[{subPath[$LR], subPath[$T]}] + Thread[{offsets, 0}]
     ];
     addEqns @ RuleThread[subPath[side, ports], portCoords];
-    absPorts = If[IntegerVectorQ[ports], SeqFirst[ports + $po, $po += n], ports];
+    absPorts = If[RangeQ[ports], SeqFirst[ports + $po, $po += n], ports];
     addEqns @ RuleThread[subPath["Port", absPorts], portCoords];
     centerVec = Switch[side, Center, {0, 0}, Left, {1, 0}, Right, {-1, 0}, Top, {0, -1}, Bottom, {0, 1}];
     makePorts[portCoords, ConstantArray[centerVec, n], absPorts]
@@ -483,16 +623,23 @@ makeHalfSquare[coords_, dirs_, face_, edge_, thickness_] :=
 makeDisk[coords_, r_, None, edge_, thickness_] := StyleBox[mapMatrix[CircleBox, coords, r], EdgeForm[{edge, AbsoluteThickness @ thickness}]];
 makeDisk[coords_, r_, face_, edge_, thickness_] := StyleBox[mapMatrix[DiskBox, coords, r], FaceEdgeForm[face, edge, thickness]];
 
-makePoint[coords_, r_, face_] := StyleBox[PointBox[coords], PointSize[2 * r / $var["W"]], face];
+makePoint[coords_, r_, face_] := StyleBox[PointBox[coords], PointSize[2 * r / $var[$W]], face];
 makeLozenge[coords_, r_, face_, edge_, thickness_] := StyleBox[ToGraphicsBoxes @ StadiumShape[coords, r], FaceEdgeForm[face, edge, thickness]];
 
 (**************************************************************************************************)
 
+$defaultNodeSize = {1, 1};
+$boxSizeP = $NumberP | Automatic | Inherited;
+
 toNodeBoxInterior = Case[
-  pos:$Coord2P := {pos, None};
-  sz:$NumberP := {{sz, sz}, None};
-  other_       := Scope[
-    size = subPath[All, {"W", "H"}] + {lmargin + rmargin, bmargin + tmargin};
+  sz:$boxSizeP               := % @ {sz, sz};
+  {w:$boxSizeP, h:$boxSizeP} := {
+    {ReplaceAutomatic[w, $isAutomaticSize[subPath[$W]] = True; First @ $defaultNodeSize],
+     ReplaceAutomatic[h, $isAutomaticSize[subPath[$H]] = True; Last @ $defaultNodeSize]},
+    None
+  };
+  other_                     := Scope[
+    size = subPath[All, {$W, $H}] + {lmargin + rmargin, bmargin + tmargin};
     interior = processNode[other, All];
     addEqns @ {
       subPath[All, $L] -> subPath[$L] + lmargin,

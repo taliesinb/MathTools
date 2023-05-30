@@ -48,21 +48,14 @@ procScopeDef[list_List] := Map[procScopeDef, Unevaluated @ list];
 
 procScopeDef[r_RuleDelayed | r_Rule] := AppendTo[$bodyRules, r];
 
-procScopeDef[SetDelayed[head_Symbol[args___], rhs_]] := With[
+procScopeDef[SetDelayed[lhs:(head_Symbol | (head_Symbol[___]) | ((head_Symbol)[___][___])), rhs_]] := With[
   {head2 = Symbol @ StringJoin[$lhsHeadPrefix, SymbolName @ Unevaluated @ head]},
   {rule = HoldPattern[head] -> head2},
   AppendTo[$bodyRules, rule];
-  ReplaceAll[Hold[head[args], rhs], rule]
+  ReplaceAll[Hold[lhs, rhs], rule]
 ];
 
-procScopeDef[SetDelayed[head_Symbol[args___][args2___], rhs_]] := With[
-  {head2 = Symbol @ StringJoin[$lhsHeadPrefix, SymbolName @ Unevaluated @ head]},
-  {rule = HoldPattern[head] -> head2},
-  AppendTo[$bodyRules, rule];
-  ReplaceAll[Hold[head[args][args2], rhs], rule]
-];
-
-procScopeDef[e_] := Print[Hold[e]];
+procScopeDef[e_] := Print["Invalid secondary definition: ", Hold[e]];
 
 evalSecondaryDefs[Null] := Null;
 evalSecondaryDefs[e_List] := Map[evalSecondaryDefs, e];
@@ -234,7 +227,7 @@ EchoCellPrint[cells2_] := Module[{cells},
     $currentEchoLine = $Line;
     If[Options[$currentEchoWindow] === $Failed, $currentEchoWindow = None];
     If[$currentEchoWindow === None,
-      $currentEchoWindow = CreateDocument[cells, Saveable -> False, WindowTitle -> "Echo"];
+      $currentEchoWindow = CreateDocument[cells, Saveable -> False, WindowTitle -> "Echo", Saveable -> False];
     ,
       NotebookPut[Notebook[cells], $currentEchoWindow]
     ];
@@ -643,7 +636,7 @@ currentStyleSetting[option_, stylename_] := option :> CurrentValue[{StyleDefinit
 
 (**************************************************************************************************)
 
-PrivateMacro[ReplaceNone, ReplaceMissing, ReplaceAutomatic]
+PrivateMacro[ReplaceNone, ReplaceMissing, ReplaceAutomatic, ReplaceInherited]
 
 defineReplacer[symbol_, pattern_] := (
   DefineLiteralMacro[symbol,
@@ -656,6 +649,7 @@ defineReplacer[symbol_, pattern_] := (
 defineReplacer[ReplaceNone, None];
 defineReplacer[ReplaceMissing, _Missing];
 defineReplacer[ReplaceAutomatic, Automatic];
+defineReplacer[ReplaceInherited, Inherited];
 
 (**************************************************************************************************)
 

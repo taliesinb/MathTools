@@ -611,7 +611,12 @@ processGridBox[GridBox[rows_List, opts___Rule]] := Scope[
   ]
 ]
 
+(**************************************************************************************************)
+
+PrivateFunction[expandRepSpec]
+
 $atomSpecP = _Symbol | _Integer | _Real | _Rational;
+expandRepSpec[n_][spec:{$atomSpecP..}] := PadRight[spec, n, Last @ spec];
 expandRepSpec[n_][spec:$atomSpecP] := Table[spec, n];
 expandRepSpec[n_][{{spec:$atomSpecP}}] := Table[spec, n];
 expandRepSpec[n_][{left___, spec_Symbol, right___}] := ToList[left, Table[spec, n - SeqLength[left, right]], right];
@@ -653,7 +658,7 @@ spacerBlock[w_, h_] := $block[ConstantArray[$hspace[w], h], w, h];
 
 riffle[{}, _] := {};
 riffle[args_, Spacer[0] | Spacer[{0,0}] | None | Nothing] := args;
-riffle[args_, e_] := Most @ Catenate @ Transpose @ {args, ConstantArray[processBlock @ e, Length @ args]};
+riffle[args_, e_] := ScalarRiffle[args, processBlock @ e];
 
 makeSingleBlock[s_String] /; StringContainsQ[s, "\n"] := makeBlock @ StringSplit[s, "\n"];
 makeSingleBlock[elem_] := Scope[frags = applyStyleStack @ elem;

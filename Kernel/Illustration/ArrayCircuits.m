@@ -81,8 +81,8 @@ DerivedRainbowArrayNode[n_, interior_, epilog_List, opts___Rule] :=
 DerivedRainbowArrayNode[n_, interior_, opts___Rule] :=
   NodeBox[interior, opts, NodeAlias -> "G",
     NodePorts -> {
-      Top -> Style[n, $keyInPortStyle],
-      Bottom -> Style[1, $valueOutPortStyle]
+      Top -> Style[n, PortShape -> "InnerDisk"],
+      Bottom -> Style[1, $rainbowValueOutPortStyle]
     },
     $defaultNodeStyle, FrameColor -> $DarkGray
   ];
@@ -93,7 +93,8 @@ PublicFunction[ClassicalArrayNode, RainbowArrayNode]
 
 $ClassicalArrayNodeStyle = $LightGray;
 
-ClassicalArrayNode[interior_, name_, n_, opts___Rule] :=
+ClassicalArrayNode[name_, n_, opts___Rule] := ClassicalArrayNode[name, n, Automatic, opts];
+ClassicalArrayNode[name_, n_, interior_, opts___Rule] :=
   NodeBox[interior, opts, NodeLabel -> name, NodeAlias -> name,
     NodePorts -> {
       Top -> Style[n, $keyInPortStyle],
@@ -102,10 +103,11 @@ ClassicalArrayNode[interior_, name_, n_, opts___Rule] :=
     $defaultNodeStyle, FrameColor -> $ClassicalArrayNodeStyle
   ];
 
-RainbowArrayNode[interior_, name_, cols_List, opts___Rule] :=
+RainbowArrayNode[name_, cols_List, opts___Rule] := RainbowArrayNode[name, cols, Automatic, opts];
+RainbowArrayNode[name_, cols_List, interior_, opts___Rule] :=
   NodeBox[interior, opts, NodeLabel -> name, NodeAlias -> name,
     NodePorts -> {
-      Top -> Style[Length @ cols, PortShape -> "InnerDisk", PortFaceColor -> Map[ToRainbowColor, cols]],
+      Top -> Style[cols, PortShape -> "InnerDisk"],
       Bottom -> Style[1, $rainbowValueOutPortStyle]
     },
     $defaultNodeStyle, FrameColor -> $ClassicalArrayNodeStyle
@@ -115,7 +117,8 @@ RainbowArrayNode[interior_, name_, cols_List, opts___Rule] :=
 
 PublicFunction[BubbleValueNode]
 
-BubbleValueNode[interior_, name_, n_, opts___Rule] :=
+BubbleValueNode[name_, n_, opts___Rule] := BubbleValueNode[name, n, Automatic, opts];
+BubbleValueNode[name_, n_, interior_, opts___Rule] :=
   NodeBox[interior, opts, NodeAlias -> name,
     RoundingRadius -> .5,
     NodePorts -> {
@@ -137,19 +140,36 @@ KeyPortSkeleton[args___] := PortSkeleton[args, $keyPortStyle,
 
 (**************************************************************************************************)
 
-PublicFunction[CircuitKeyWire, CircuitValueWire, RainbowKeyWire, RainbowValueWire]
+PublicFunction[CircuitKeyWire, CircuitValueWire, CircuitBubbleWire, RainbowKeyWire, RainbowValueWire]
 
-RainbowKeyWire[port1_, port2_, color_] := Style[SetbackCurve[SmoothedCurve @ CircuitCurve[{port1, port2}], 0.05], ToRainbowColor @ color];
-RainbowValueWire[port1_, port2_] := Style[SetbackCurve[SmoothedCurve @ CircuitCurve[{port1, port2}], 0.05], $RainbowValueWireStyle];
+toWireInPort = Case[
+  key_String       := %[key -> 1];
+  key_String -> i_ := NodeOutPort[key, i];
+  i_Integer        := NodeInPort["G", i];
+  other_           := other;
+];
 
-CircuitKeyWire[port1_, port2_] := Style[SetbackCurve[SmoothedCurve @ CircuitCurve[{port1, port2}], 0.05], $KeyWireStyle];
-CircuitValueWire[port1_, port2_] := Style[SetbackCurve[SmoothedCurve @ CircuitCurve[{port1, port2}], 0.05], $ValueWireStyle];
+toWireOutPort = Case[
+  key_String       := %[key -> 1];
+  key_String -> i_ := NodeInPort[key, i];
+  i_Integer        := NodeOutPort["G", i];
+  other_           := other;
+];
+
+wireCurve[a_, b_] := SetbackCurve[SmoothedCurve @ CircuitCurve[{toWireInPort @ a, toWireOutPort @ b}], 0.05];
+
+RainbowKeyWire[port1_, port2_, color_]   := Style[wireCurve[port1, port2], ToRainbowColor @ color];
+RainbowValueWire[port1_, port2_]         := Style[wireCurve[port1, port2], $RainbowValueWireStyle];
+RainbowValueWire[port1_, port2_, color_] := Style[wireCurve[port1, port2], ToRainbowColor @ color];
+CircuitKeyWire[port1_, port2_]           := Style[wireCurve[port1, port2], $KeyWireStyle];
+CircuitValueWire[port1_, port2_]         := Style[wireCurve[port1, port2], $ValueWireStyle];
+CircuitBubbleWire[port1_, port2_]        := Style[wireCurve[port1, port2], $BubbleWireStyle];
 
 (**************************************************************************************************)
 
 PublicFunction[KeyFunctionNode]
 
-KeyFunctionNode[interior_, name_, n_, opts___Rule] :=
+KeyFunctionNode[name_, n_, interior_, opts___Rule] :=
   NodeBox[interior, opts, NodeLabel -> name, NodeAlias -> name,
   NodePorts -> {
     Top -> Style[n, $keyInPortStyle],
@@ -164,7 +184,8 @@ PublicFunction[ScalarFunctionNode, RainbowScalarFunctionNode]
 
 $ScalarFunctionNodeStyle = $LightGray;
 
-ScalarFunctionNode[interior_, name_, n_, opts___Rule] :=
+ScalarFunctionNode[name_, n_, opts___Rule] := ScalarFunctionNode[name, n, Automatic, opts];
+ScalarFunctionNode[name_, n_, interior_, opts___Rule] :=
   NodeBox[interior, opts, NodeLabel -> name, NodeAlias -> name,
   NodePorts -> {
     Top -> Style[n, $valueInPortStyle],
@@ -173,7 +194,8 @@ ScalarFunctionNode[interior_, name_, n_, opts___Rule] :=
   $defaultNodeStyle, FrameColor -> $ScalarFunctionNodeStyle
 ];
 
-RainbowScalarFunctionNode[interior_, name_, n_, opts___Rule] :=
+RainbowScalarFunctionNode[name_, n_, opts___Rule] := RainbowScalarFunctionNode[name, n, Automatic, opts];
+RainbowScalarFunctionNode[name_, n_, interior_, opts___Rule] :=
   NodeBox[interior, opts, NodeLabel -> name, NodeAlias -> name,
   NodePorts -> {
     Top -> Style[n, $rainbowValueInPortStyle],

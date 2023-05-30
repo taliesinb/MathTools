@@ -23,5 +23,7 @@ SetUsage @ "
 RuleThread[{key$1, key$2, $$}, {val$1, val$2, $$}] gives the list {$$, key$i -> val$i, $$}.
 "
 
-RuleThread[keys_, values_] :=
+RuleThread[keys_List, values_List] /; Length[keys] === Length[values] :=
   MapThread[Rule, {keys, values}];
+
+_RuleThread := BadArguments[];

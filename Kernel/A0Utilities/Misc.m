@@ -15,6 +15,19 @@ RescaleTo[range_][array_] := RescaleTo[array, range];
 
 (**************************************************************************************************)
 
+PublicFunction[ListRiffle, ScalarRiffle]
+
+ListRiffle[list_List, {}] := list;
+ListRiffle[list_List, riffleList_List] := Scope[
+  riff = PadRight[riffleList, Length[list], Last @ riffleList];
+  Most @ Catenate @ Transpose[{list, riff}]
+];
+
+ScalarRiffle[list_List, scalar_] :=
+  Most @ Catenate @ Transpose[{list, ConstantArray[scalar, Length @ list]}];
+
+(**************************************************************************************************)
+
 PublicFunction[DeepFirstCase]
 
 SetHoldRest[DeepFirstCase];
