@@ -15,6 +15,12 @@ RescaleTo[range_][array_] := RescaleTo[array, range];
 
 (**************************************************************************************************)
 
+PublicFunction[ListPart]
+
+ListPart[l_List, p_] := Part[l, p];
+
+(**************************************************************************************************)
+
 PublicFunction[ListRiffle, ScalarRiffle]
 
 ListRiffle[list_List, {}] := list;

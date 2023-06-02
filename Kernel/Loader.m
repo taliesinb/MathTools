@@ -206,7 +206,7 @@ loadFileContents[path_, context_] := Module[{str, contents}, Block[{$currentCont
   If[MatchQ[str, Whitespace] || str === "", Return @ Package`PackageData[]];
   contents = TimeConstrained[Check[Package`ToPackageExpression @ str, $Failed], 1];
   If[Head[contents] =!= Package`PackageData, contents === $Failed];
-  If[FailureQ[contents], handleSyntaxError[path]];
+  If[FailureQ[contents], handleSyntaxError[path, str]];
   Block[{$Context = context}, contents = contents /. $initialSymbolResolutionDispatch /. ResolvedSymbol[sym_] :> sym];
   contents
 ]];
@@ -238,9 +238,12 @@ bracketRHS[s_] := Block[{$Context = "QuiverGeometryPackageLoader`Scratch`", len}
 If[!ValueQ[QuiverGeometryPackageLoader`$SystemOpenEnabled], QuiverGeometryPackageLoader`$SystemOpenEnabled = True];
 DoSystemOpen[s_] := If[QuiverGeometryPackageLoader`$SystemOpenEnabled, SystemOpen[s]];
 
-handleSyntaxError[path_] := Scope[
+handleSyntaxError[path_, str_] := Scope[
   Print["Syntax error in ", path];
-  errors = TimeConstrained[GeneralUtilities`FindSyntaxErrors[path], 2, {}];
+  tmpPath = FileNameJoin[{$TemporaryDirectory, "syntax_error_file.m"}];
+  Export[tmpPath, str, "Text", CharacterEncoding -> "UTF8"];
+  errors = TimeConstrained[GeneralUtilities`FindSyntaxErrors[tmpPath], 2, {}];
+  errors = errors /. tmpPath -> path;
   Beep[];
   If[errors =!= {},
     Print["Aborting; syntax errors:"];
@@ -466,7 +469,7 @@ evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
   LVPrint["Evaluating \"", path, "\""];
   $formsChanged = Or[$formsChanged, StringContainsQ[context, "`Typesetting`Forms`"]]; (* to avoid expensive symbol enum *)
   QuiverGeometryPackageLoader`$FileTimings[path] = First @ AbsoluteTiming[
-    Block[{$Context = context}, Catch[Scan[evaluateExpression, packageData], evaluateExpression]];
+    Block[{$Context = context}, Catch[Scan[evaluateExpression, packageData], $evaluateExpressionTag]];
   ];
   QuiverGeometryPackageLoader`$FileLineTimings[path] = $currentFileLineTimings;
 ,
@@ -500,7 +503,7 @@ handleMessage[f_Failure] := Block[{fileLine},
   fileLine = GeneralUtilities`FileLine[$currentPath, $currentLineNumber];
   Print["Aborting; message ", HoldForm @@ f["HeldMessageTemplate"], " occurred at ", fileLine];
   Print[FailureString @ f];
-  Throw[$Failed, evaluateExpression];
+  Throw[$Failed, $evaluateExpressionTag];
   DoSystemOpen[fileLine];
 
 ];

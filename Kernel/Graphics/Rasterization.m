@@ -2,7 +2,7 @@ toExportNotebook[expr_, background_] :=
 	toExportCell[expr, Background -> background, StyleDefinitions -> $QGStyleDefs];
 
 (* we do this because custom stylesheet makes rasterization substantially slower. TODO: also check for known TemplateBox string names! *)
-toExportNotebook[expr_, background_] /; FreeQ[expr, _Symbol ? QuiverGeometrySymbolQ] && FreeQ[expr, TemplateBox[_, $qgTemplateBoxP]] :=
+toExportNotebook[expr_ ? DoesNotRequireQGStylesQ, background_] :=
 	toExportCell[expr, Background -> background];
 	
 $qgTemplateBoxP := $qgTemplateBoxP = Apply[Alternatives, QuiverGeometryStyleNames[]];
@@ -28,9 +28,13 @@ toExportCell[expr_, opts___] := Cell[
 	$exportCellOptions, opts
 ];
 
+DoesNotRequireQGStylesQ[expr_] :=
+	FreeQ[expr, _Symbol ? QuiverGeometrySymbolQ] && FreeQ[expr, TemplateBox[_, $qgTemplateBoxP]] && FreeQ[expr, s_String /; StringContainsQ[s, "StyleDefinitions"]];
+
 $QGStyleDefs := $QGStyleDefs = With[{path = $QuiverGeometryStylesheetPath}, FileName[{}, path, CharacterEncoding -> "UTF-8"]];
 
 SetHoldAll[QuiverGeometrySymbolQ]
+QuiverGeometrySymbolQ[StyleDefinitions] := True;
 QuiverGeometrySymbolQ[s_Symbol] := StringStartsQ[Context[s], "QuiverGeometry`"];
 
 toExportPacket[expr_] := toExportPacket[expr, None];

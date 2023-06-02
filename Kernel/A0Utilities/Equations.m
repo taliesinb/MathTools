@@ -2,6 +2,8 @@ PublicFunction[SolveCyclicEquations]
 
 PublicOption[AllowPartialSolutions, EquationVariables, ExpandLinearEquations]
 
+PrivateHead[NoLinearExpand]
+
 SetUsage @ "
 SolveCyclicEquations[rules$] solves a set of equations that are expressed as rules, each of the form var$ -> expr$.
 * The var$ can be any expression, anywhere it appears in another expr$ will be substituted.
@@ -18,7 +20,7 @@ Options[SolveCyclicEquations] = {
   Verbose -> False
 };
 
-SolveCyclicEquations::badsol = "Could not verify solution: ``.";
+SolveCyclicEquations::badsol = "The following variables have inconsistent values: ``. More info printed below for each value.";
 SolveCyclicEquations::partsol = "Solution is partial. Have `` solved variables out of ``, unsolved variables: ``.";
 
 SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
@@ -29,7 +31,7 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
     vars = Union[lhss, equationVariables]
   ];
   varP = Alternatives @@ vars;
-  If[expandLinearEquations, eqns = Flatten @ Map[toSubEquations, eqns]];
+  If[expandLinearEquations, eqns = ReplaceAll[NoLinearExpand[t_] :> t] @ Flatten @ Map[toSubEquations, eqns]];
   varI = AssociationRange @ vars;
   eqns = DeleteDuplicates @ Flatten @ VectorReplace[eqns, rule:(_ -> varP) :> {rule, Reverse @ rule}];
   (* printEqns[eqns]; *)
@@ -48,9 +50,10 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
   solveStep[SelectIndices[solved, TrueQ]];
   If[TrueQ @ verifySolutions,
     If[AnyTrue[eqns /. solutions, Apply[Unequal]],
-      Message[SolveCyclicEquations::badsol, Column[
-        StringForm["``\t(`` = ``)", #, HoldForm[#] /. solutions, Last[#] /. solutions]& /@ Select[eqns, TrueQ[Unequal @@ (# /. solutions)]&]
-      ]];
+      badEqns =  Select[eqns, TrueQ[Unequal @@ (# /. solutions)]&];
+      badVars = Union @ Keys @ badEqns;
+      Message[SolveCyclicEquations::badsol, Row[badVars, ", "]];
+      KeyValueScan[printBadSolEqs, AssociationMap[Select[eqns, ContainsQ[#]]&, badVars]];
     ];
   ];
   If[FalseQ @ allowPartialSolutions,
@@ -86,13 +89,28 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
 ,
   toSubEquations := Case[
     rule_ := rule;
-    eq:Rule[lhs_, rhs:(_Times|_Plus)] := Scope[
+    eq:Rule[lhs_, rhs:(_Times|_Plus)] /; FreeQ[rhs, Max|Min|ComposeWhenList] := Scope[
       zero = lhs - rhs;
       vars = DeepUniqueCases[rhs, varP];
-      {eq, # -> SolveLinearTermFor[#, zero, 0]& /@ vars}
+      eqns = # -> SolveLinearTermFor[#, zero, 0]& /@ vars;
+      {eq, DeleteCases[eqns, _ -> None]}
     ]
   ]
 ];
+
+printBadSolEqs[var_, eqns_List] := (
+  Print["Var ", var, " cannot simultaneously satisfy following equations: "];
+  Print[Grid[
+    {Inactive[Equal] @@ #, Construct[HoldForm, Inactive[Equal] @@ #] /. solutions, Last[#] /. solutions}& /@ eqns,
+    Spacings -> {1.5, 2}, Dividers -> All, Alignment -> Left
+  ]];
+);
+
+eqStr[e_] := ToPrettifiedString[e, FullSymbolContext -> False];
+
+(**************************************************************************************************)
+
+PrivateFunction[printEqns]
 
 printEqns[eqns_] := Print @ Multicolumn[Pane[#1, ImageSize -> 100] -> Pane[Column[#2, Dividers -> All], ImageSize -> 250]& @@@ (Sort @ Normal @ Merge[eqns, Identity]), 4, Appearance -> "Horizontal", ItemSize -> Full];
 

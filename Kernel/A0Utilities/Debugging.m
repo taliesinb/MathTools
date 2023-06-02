@@ -201,9 +201,9 @@ EchoDimensions[e_] := (Echo[Row[Dimensions @ e, "\[Times]", BaseStyle -> $DarkBl
 PublicHead[MsgExpr]
 
 MsgExpr[p_MsgPath] := p;
-MsgExpr[e_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0];
-MsgExpr[e_, n_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> n, MaxLength -> 4, MaxIndent -> 0];
-MsgExpr[e_, n_, m_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> n, MaxLength -> m, MaxIndent -> 0];
+MsgExpr[e_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False];
+MsgExpr[e_, n_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> n, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False];
+MsgExpr[e_, n_, m_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> n, MaxLength -> m, MaxIndent -> 0, FullSymbolContext -> False];
 
 (**************************************************************************************************)
 

@@ -1,7 +1,7 @@
 PublicVariable[$KeyWireStyle, $ValueWireStyle, $RainbowValueWireStyle, $BubbleWireStyle, $ClassicalArrayNodeStyle, $ScalarFunctionNodeStyle]
 
 $KeyWireStyle = $Purple;
-$ValueWireStyle = $Orange;
+$ValueWireStyle = $Gray;
 $RainbowValueWireStyle = $Gray;
 $BubbleWireStyle = $Blue;
 
@@ -89,7 +89,7 @@ DerivedRainbowArrayNode[n_, interior_, opts___Rule] :=
 
 (**************************************************************************************************)
 
-PublicFunction[ClassicalArrayNode, RainbowArrayNode]
+PublicFunction[ClassicalArrayNode, RainbowArrayNode, MultisetNode]
 
 $ClassicalArrayNodeStyle = $LightGray;
 
@@ -112,6 +112,16 @@ RainbowArrayNode[name_, cols_List, interior_, opts___Rule] :=
     },
     $defaultNodeStyle, FrameColor -> $ClassicalArrayNodeStyle
   ];
+
+MultisetNode[name_, n_, interior_, opts___Rule] :=
+  NodeBox[interior, opts, NodeAlias -> name,
+    NodePorts -> {
+      Top -> Style[n, PortShape -> None],
+      Bottom -> Style[1, PortShape -> None]
+    },
+    $defaultNodeStyle, FrameColor -> $ClassicalArrayNodeStyle, RoundingRadius -> 0.1
+  ];
+
 
 (**************************************************************************************************)
 
@@ -140,7 +150,7 @@ KeyPortSkeleton[args___] := PortSkeleton[args, $keyPortStyle,
 
 (**************************************************************************************************)
 
-PublicFunction[CircuitKeyWire, CircuitValueWire, CircuitBubbleWire, RainbowKeyWire, RainbowValueWire]
+PublicFunction[CircuitKeyWire, CircuitMultiKeyWire, CircuitValueWire, CircuitBubbleWire, RainbowKeyWire, RainbowValueWire]
 
 toWireInPort = Case[
   key_String       := %[key -> 1];
@@ -158,10 +168,17 @@ toWireOutPort = Case[
 
 wireCurve[a_, b_] := SetbackCurve[SmoothedCurve @ CircuitCurve[{toWireInPort @ a, toWireOutPort @ b}], 0.05];
 
+getPortColors[i_Integer | (_ -> i_Integer), _] := i;
+getPortColors[_, i_Integer | (_ -> i_Integer)] := i;
+getPortColors[_, _] := $Failed;
+
+RainbowKeyWire[port1_, port2_]           := RainbowKeyWire[port1, port2, getPortColors[port1, port2]];
 RainbowKeyWire[port1_, port2_, color_]   := Style[wireCurve[port1, port2], ToRainbowColor @ color];
 RainbowValueWire[port1_, port2_]         := Style[wireCurve[port1, port2], $RainbowValueWireStyle];
 RainbowValueWire[port1_, port2_, color_] := Style[wireCurve[port1, port2], ToRainbowColor @ color];
+
 CircuitKeyWire[port1_, port2_]           := Style[wireCurve[port1, port2], $KeyWireStyle];
+CircuitMultiKeyWire[port1_, port2_]      := Style[Translate[wireCurve[port1, port2], {{-0.1, 0}, {0, 0}, {0.1, 0}}], $KeyWireStyle, AbsoluteThickness[2]];
 CircuitValueWire[port1_, port2_]         := Style[wireCurve[port1, port2], $ValueWireStyle];
 CircuitBubbleWire[port1_, port2_]        := Style[wireCurve[port1, port2], $BubbleWireStyle];
 
@@ -209,8 +226,8 @@ RainbowScalarFunctionNode[name_, n_, interior_, opts___Rule] :=
 
 PublicFunction[ArrayCircuitGraphics]
 
-ArrayCircuitGraphics[nodes_] := ScaleGraphics[
+ArrayCircuitGraphics[nodes_, opts___Rule] := ScaleGraphics[
   NodeComplex[nodes, PrologStyle -> {AbsoluteThickness[3]}, EpilogStyle -> {AbsoluteThickness[3]}],
-  ImagePadding -> 5,
+  ImagePadding -> StandardizePadding @ Lookup[{opts}, ImagePadding, 5],
   GraphicsScale -> 40
 ];

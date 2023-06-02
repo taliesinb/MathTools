@@ -10,6 +10,22 @@ With[{fmv := GeneralUtilities`Control`PackagePrivate`findMutatedVariables},
 
 (**************************************************************************************************)
 
+PublicMacro[EchoScope]
+
+DefineMacro[EchoScope,
+EchoScope[body_] := mEchoScope[body, {}],
+EchoScope[body_, defs__] := mEchoScope[body, {defs}]
+];
+
+SetHoldAllComplete[mEchoScope];
+
+mEchoScope[body_, defs_] := Module[{},
+  hold = HoldComplete[iLabeledEchoSet[Null, $LHS, body], defs, Block] /. Set -> EchoSet;
+  mScopeWithDefs @@ hold
+];
+
+(**************************************************************************************************)
+
 (* add ability for Scope to take additional arguments, which are local function definitions. if these
 use arguments of original function they will still work, via a suitable Block and alias *)
 
@@ -23,6 +39,9 @@ Protect[Scope];
 SetHoldAllComplete[mScopeWithDefs, procScopeDef, quotedSetDelayed, nocontextName];
 
 $privScope = "QuiverGeometry`Private`";
+
+mScopeWithDefs[body_, {}, type_] :=
+  GeneralUtilities`Control`PackagePrivate`mScope[body, type];
 
 mScopeWithDefs[body2_, defs2_, type_] := Module[
   {lhsHeadPrefix, lhsSymbolP, aliasSymbols, held, aliasRules, body, defs},
@@ -74,6 +93,12 @@ With[{io := GeneralUtilities`IndexOf},
     ];
   ];
   Protect[io];
+];
+
+With[{mdn := GeneralUtilities`Debugging`PackagePrivate`makeDefinitionNotebook},
+  DownValues[mdn] = ReplaceAll[DownValues[mdn], {
+    Rule[WindowSize, {600, Automatic}] -> Rule[WindowSize, {1200, Automatic}]
+  }];
 ];
 
 (**************************************************************************************************)
@@ -131,29 +156,116 @@ Echoing /: (lhs_ := Echoing[rhs_]) := EchoSetDelayed[lhs, rhs];
 
 (**************************************************************************************************)
 
+PublicFunction[LabeledEchoSet]
+
+Attributes[LabeledEchoSet] = {HoldAll, SequenceHold};
+
+LabeledEchoSet[label_, esLhs_, esRhs_] := Set[esLhs, iLabeledEchoSet[label, esLhs, esRhs]];
+
+Unprotect[EchoSet];
+ClearAll[EchoSet];
+Attributes[EchoSet] = {HoldAll, SequenceHold};
+EchoSet[var_, rhs_] := Set[var, iLabeledEchoSet[Null, $multiES[var], rhs]];
+EchoSet[var1_, EchoSet[var2_, rhs_]] := Set[var1, Set[var2, iLabeledEchoSet[Null, $multiES[var1, var2], rhs]]];
+EchoSet[var1_, EchoSet[var2_, EchoSet[var3_, rhs_]]] := Set[var1, Set[var2, Set[var3, iLabeledEchoSet[Null, $multiES[var1, var2, var3], rhs]]]];
+EchoSet[var1_, EchoSet[var2_, EchoSet[var3_, EchoSet[var4_, rhs_]]]] := Set[var1, Set[var2, Set[var3, Set[var4, iLabeledEchoSet[Null, $multiES[var1, var2, var3, var4], rhs]]]]];
+EchoSet[var1_, EchoSet[var2_, EchoSet[var3_, EchoSet[var4_, EchoSet[var5_, rhs_]]]]] := Set[var1, Set[var2, Set[var3, Set[var4, Set[var5, iLabeledEchoSet[Null, $multiES[var1, var2, var3, var5], rhs]]]]]];
+Protect[EchoSet];
+
+(**************************************************************************************************)
+
 PublicFunction[EchoSetDelayed, LabeledEchoSetDelayed]
 
 Attributes[EchoSetDelayed] = {HoldAll, SequenceHold};
 Attributes[LabeledEchoSetDelayed] = {HoldRest, SequenceHold};
 
-$esdTab = 0;
-$pendingEchoPrint = None;
-
 EchoSetDelayed[lhs_, rhs_] := LabeledEchoSetDelayed[Null, lhs, rhs];
 
-$openColor := $openColor = Lighter[$Green, 0.95];
-$closeColor := $closeColor = Lighter[$Orange, 0.95];
-$openCloseColor := $openCloseColor = Lighter[$Purple, 0.95];
+LabeledEchoSetDelayed[label_, esdLhs_, esdRhs_] := SetDelayed[(esdLhsVar:esdLhs), iLabeledEchoSet[label, esdLhsVar, esdRhs]];
 
-$word = RegularExpression["[a-zA-Z`$0-9]+"];
+(**************************************************************************************************)
 
-PrivateFunction[lhsEchoStr, clickCopyBox]
+$esdTab = 0;
+$pendingEchoPrint = None;
+$callStack = ConstantArray[Null, 512];
+
+Attributes[iLabeledEchoSet] = {HoldAllComplete};
+
+iLabeledEchoSet[label_, esdLhsVar_, esdRhs_] := Module[
+  {esdLhsStr, esdLhsBoxes, esdResult = $UNSET, esdRhsStr, esdRhsBoxes, arrowStr},
+  Internal`WithLocalSettings[
+    esdLhsStr = lhsEchoStr @ esdLhsVar;
+    arrowStr = If[MatchQ[Unevaluated @ esdLhsVar, _$multiES], " = ", "\[Function]"];
+    If[$pendingEchoPrint =!= None,
+      Apply[printEchoCell, $pendingEchoPrint];
+      $pendingEchoPrint = None;
+    ];
+    Part[$callStack, Max[$esdTab + 1, 1]] = Replace[Apply[HoldForm, PatternHead @ esdLhsVar], HoldForm[$multiES] -> Set];
+    esdLhsBoxes = clickCopyBox[esdLhsStr, Unevaluated @ esdLhsVar];
+    (* If[label =!= Null, esdLhsStr = TextString[label] <> ": " <> esdLhsStr]; *)
+    $pendingEchoPrint = {RowBox[{esdLhsBoxes, arrowStr}], $openColor, $esdTab, label};
+    $esdTab++;
+  ,
+    esdResult = If[$esdTab < 16, esdRhs, esDepthExceeded[]]
+  ,
+    $esdTab--;
+    esdRhsStr = rhsEchoStr @ esdResult;
+    esdRhsBoxes = clickCopyBox[esdRhsStr, esdResult];
+    If[$pendingEchoPrint === None,
+      printEchoCell[RowBox[{arrowStr, esdRhsBoxes}], $closeColor, $esdTab, label];
+    ,
+      esdRhsBoxes = RowBox[{esdLhsBoxes, StyleBox[arrowStr, Bold], esdRhsBoxes}];
+      printEchoCell[esdRhsBoxes, $openCloseColor, $esdTab, label];
+    ];
+    $pendingEchoPrint = None;
+  ]
+];
+
+General::callDepthExceeded = "Depth exceeded, aborting. Call stack: ``.";
+General::tooManyEchos = "Too many echos, aborting. Call stack: ``.";
+
+esDepthExceeded[] := (
+  Message[General::callDepthExceeded, callStackString[]];
+  Abort[];
+)
+
+tooManyEchos[] := (
+  Message[General::tooManyEchos, callStackString[]];
+  $totalEchos = 0;
+  Abort[];
+);
+
+callStackString[] := TextString @ Row[
+  Replace[
+    If[$esdTab < 10,
+      Take[$callStack, $esdTab],
+      Join[Take[$callStack, 6], {"\[Ellipsis]"}, Part[$callStack, {$esdTab-2, $esdTab}]]
+    ],
+    HoldForm[sym_] :> SymbolName[Unevaluated @ sym],
+    {1}
+  ],
+  ", "
+];
 
 clickCopyBox[str_, expr_] := ClickBox[str, CopyToClipboard[Unevaluated @ ExpressionCell[expr, "Input"]]];
 
+(**************************************************************************************************)
+
+PrivateFunction[lhsEchoStr, clickCopyBox]
+
+$word = RegularExpression["[a-zA-Z`$0-9]+"];
+
 Attributes[lhsEchoStr] = {HoldAllComplete};
+Attributes[symbolStr] = {HoldAllComplete};
+
+symbolStr[a_Symbol] := HoldSymbolName[a];
+symbolStr[other_] := ToPrettifiedString[Unevaluated @ other, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3, FullSymbolContext -> False];
+
+lhsEchoStr[$multiES[a_]] := symbolStr[a];
+lhsEchoStr[$multiES[a_, b__]] := StringJoin[symbolStr[a], " = ", lhsEchoStr[$multiES[b]]];
+
 lhsEchoStr[lhs_] := Block[{res},
-  res = ToPrettifiedString[Unevaluated @ lhs, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3];
+  res = ToPrettifiedString[Unevaluated @ lhs, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3, FullSymbolContext -> False];
   If[StringMatchQ[res, $word ~~ "[" ~~ ___ ~~ "]"],
     {head, rest} = StringSplit[res, "[", 2];
     If[StringContainsQ[head, "`"], head = Last @ StringSplit[head, "`"]];
@@ -163,36 +275,15 @@ lhsEchoStr[lhs_] := Block[{res},
   ]
 ];
 
-rhsEchoStr[$UNSET] := "?";
-rhsEchoStr[rhs_] := ToPrettifiedString[Unevaluated @ rhs, MaxDepth -> 4, MaxLength -> 64, MaxIndent -> 3];
+$openColor := $openColor = Lighter[$Green, 0.95];
+$closeColor := $closeColor = Lighter[$Orange, 0.95];
+$openCloseColor := $openCloseColor = Lighter[$Purple, 0.95];
 
-LabeledEchoSetDelayed[label_, esdLhs_, esdRhs_] := SetDelayed[(esdLhsVar:esdLhs), Module[
-  {esdLhsStr, esdLhsBoxes, esdResult = $UNSET, esdRhsStr, esdRhsBoxes},
-  Internal`WithLocalSettings[
-    esdLhsStr = lhsEchoStr @ esdLhsVar;
-    If[$pendingEchoPrint =!= None,
-      Apply[printEchoCell, $pendingEchoPrint];
-      $pendingEchoPrint = None;
-    ];
-    esdLhsBoxes = clickCopyBox[esdLhsStr, Unevaluated @ esdLhsVar];
-    (* If[label =!= Null, esdLhsStr = TextString[label] <> ": " <> esdLhsStr]; *)
-    $pendingEchoPrint = {RowBox[{esdLhsBoxes, "\[Function]"}], $openColor, $esdTab, label};
-    $esdTab++;
-  ,
-    esdResult = esdRhs
-  ,
-    $esdTab--;
-    esdRhsStr = rhsEchoStr @ esdResult;
-    esdRhsBoxes = clickCopyBox[esdRhsStr, esdResult];
-    If[$pendingEchoPrint === None,
-      printEchoCell[RowBox[{"\[Function]", esdRhsBoxes}], $closeColor, $esdTab, label];
-    ,
-      esdRhsBoxes = RowBox[{esdLhsBoxes, StyleBox["\[Function]", Bold], esdRhsBoxes}];
-      printEchoCell[esdRhsBoxes, $openCloseColor, $esdTab, label];
-    ];
-    $pendingEchoPrint = None;
-  ]
-]];
+(**************************************************************************************************)
+
+rhsEchoStr[$UNSET] := "?";
+rhsEchoStr[$DEPTHEXCEEDED] = "!";
+rhsEchoStr[rhs_] := ToPrettifiedString[Unevaluated @ rhs, MaxDepth -> 4, MaxLength -> 64, MaxIndent -> 3, FullSymbolContext -> False];
 
 (**************************************************************************************************)
 
@@ -200,8 +291,11 @@ PrivateFunction[printEchoCell]
 
 $currentEchoWindow = None;
 $currentEchoLine = 0;
+$totalEchos = 0;
 
 printEchoCell[boxes_, color_,  tab_, label_] := Module[{cell, label2},
+  If[$totalEchos++ > 256, tooManyEchos[]];
+  If[tab > 10, Return[]];
   label2 = If[label =!= Null && label =!= None, TextString[label], None];
   cell = Cell[BoxData @ boxes, "Echo",
     Background -> color,
@@ -224,10 +318,10 @@ PrivateFunction[EchoCellPrint]
 EchoCellPrint[cells2_] := Module[{cells},
   cells = ToList[cells2];
   If[$Line =!= $currentEchoLine,
-    $currentEchoLine = $Line;
+    $currentEchoLine = $Line; $totalEchos = 0;
     If[Options[$currentEchoWindow] === $Failed, $currentEchoWindow = None];
     If[$currentEchoWindow === None,
-      $currentEchoWindow = CreateDocument[cells, Saveable -> False, WindowTitle -> "Echo", Saveable -> False];
+      $currentEchoWindow = CreateDocument[cells, Saveable -> False, WindowTitle -> "Echo"];
     ,
       NotebookPut[Notebook[cells], $currentEchoWindow]
     ];
@@ -256,6 +350,20 @@ DefineMacro[BadArguments, BadArguments[] := Quoted[Message[MessageName[$LHSHead,
 
 (**************************************************************************************************)
 
+(* This is for the benefit of existing code that uses UnmatchedCase *)
+Unprotect[UnmatchedCase];
+Clear[UnmatchedCase];
+UnmatchedCase[] := Panic["UnmatchedCase"];
+UnmatchedCase[head_, case_] := Panic["UnmatchedCase[" <> SymbolName[head] <> "]", "``", MsgExpr @ Unevaluated @ case];
+
+General::unmatchedcase = "Case unmatched: ``";
+UnmatchedCase2[head_Symbol, case_] := (
+  Message[MessageName[head, "unmatchedcase"], MsgExpr @ Unevaluated @ case];
+  UnmatchedCase[head, case];
+);
+
+(**************************************************************************************************)
+
 (* this takes the place of MatchValues in GU *)
 
 PublicMacro[Case, EchoCase]
@@ -277,7 +385,7 @@ setupCases[sym_Symbol, echo_, CompoundExpression[args__SetDelayed, Null...], rew
   Clear[sym];
   holds = Hold @@@ Hold[args];
   holds = ReplaceAll[holds, procRewrites @ rewrites];
-  PrependTo[holds, Hold[case_, UnmatchedCase[sym, case]]];
+  PrependTo[holds, Hold[case_, UnmatchedCase2[sym, case]]];
   holds = ReplaceAll[holds, HoldPattern[Out[] | $]  :> sym];
   If[echo,
     Replace[List @@ holds, Hold[a___, b_] :> LabeledEchoSetDelayed[counter++, sym[a], b], {1}];
@@ -782,6 +890,16 @@ PatchDatasetCodebase[] := (
     End[];
   """
 );
+
+(**************************************************************************************************)
+
+PrivateFunction[LengthEqualOrMessage]
+
+SetHoldFirst[LengthEqualOrMessage];
+LengthEqualOrMessage[msg_MessageName, list1_, list2_] := With[
+  {l1 = Length[list1], l2 = Length[list2]},
+  If[l1 =!= l2, Message[msg, l1, l2]; False, True]
+];
 
 (**************************************************************************************************)
 
