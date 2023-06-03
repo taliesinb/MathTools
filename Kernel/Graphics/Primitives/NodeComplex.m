@@ -389,12 +389,13 @@ Options[PortSkeleton] = {
   PortEdgeThickness -> 1,
   PortFaceColor -> Black,
   HiddenPorts -> None,
-  NodeAlias -> None
+  NodeAlias -> None,
+  PortPositions -> Automatic
 }
 
 portSkeletonBox[w_, nodePorts_, opts___Rule] := Scope[
   UnpackOptionsAs[PortSkeleton, {opts},
-    portSpacing, portSize, portShape, portEdgeColor, portFaceColor, portEdgeThickness, hiddenPorts, nodeAlias
+    portSpacing, portSize, portShape, portEdgeColor, portFaceColor, portEdgeThickness, hiddenPorts, nodeAlias, portPositions
   ];
   createAlias[nodeAlias];
   $po = 0;
@@ -543,7 +544,7 @@ PortPositions is an option for %NodeBox that specifies where ports will be place
 "
 
 NodeBox::badPortPositionLen = "PortPositions was specified with `` values, but `` are present."
-NodeBox::badPortPositions = "PortPositions was not a recognized setting.";
+NodeBox::badPortPositions = "PortPositions -> `` was not a recognized setting.";
 
 processNodeBoxPorts = Case[
   lhs_ -> Style[rhs_, PortSpacing -> s_, rest___]       := Scope[portSpacing = s;       %[lhs -> Style[rhs, rest]]];
@@ -575,7 +576,7 @@ processNodeBoxPorts = Case[
       Inherited,         globalPortOrdinates,
       AbsoluteOffset[_], Part[portCoords, All, portXY] += First[portPosSpec]; Null,
       _List,             toSemidelayedPortPositions @ portPosSpec,
-      _,                 Message[NodeBox::badPortPositions]; Null
+      _,                 Message[NodeBox::badPortPositions, portPositions]; Null
     ];
     If[ListQ[portCoordOverrides] && LengthEqualOrMessage[NodeBox::badPortPositionLen, portCoordOverrides, portCoords],
       (* fill in the relevant ordinate of ports from provided port positions *)
@@ -628,7 +629,7 @@ processNodeDiskPorts = Case[
   spec:(_String | _Integer) := Scope[
     ports = procPortSpec @ spec;
     n = Length @ ports;
-    makeCirclePorts[ports, 0, Range[0, n-1] / n]
+    makeCirclePorts[ports, 0.25, Range[0, n-1] / n]
   ];
   list_List := Map[%, list];
   None      := {};
@@ -638,7 +639,7 @@ processNodeDiskPorts = Case[
 makeCirclePorts[ports_, initAngle_, angles_] := Scope[
   angles = AnglePair[initAngle + angles];
   portCoords = Threaded[currentCenter[]] + angles * subPath["Radius"];
-  addEqns @ RuleThread[subPath["Port", ports], portCoords];
+  addEqns @ RuleThread[subPath["PortNumber", ports], portCoords];
   makePorts[portCoords, -angles, ports]
 ]
 
@@ -716,7 +717,7 @@ makeHalfSquare[coords_, dirs_, face_, edge_, thickness_] :=
     FaceEdgeForm[face, edge, thickness]
   ];
 
-makeDisk[coords_, r_, None, edge_, thickness_] := StyleBox[mapMatrix[CircleBox, coords, r], EdgeForm[{edge, AbsoluteThickness @ thickness}]];
+makeDisk[coords_, r_, None, edge_, thickness_] := StyleBox[mapMatrix[CircleBox, coords, r], edge, AbsoluteThickness @ thickness];
 makeDisk[coords_, r_, face_, edge_, thickness_] := StyleBox[mapMatrix[DiskBox, coords, r], FaceEdgeForm[face, edge, thickness]];
 
 makePoint[coords_, r_, face_] := StyleBox[PointBox[coords], PointSize[2 * r / $var[$W]], face];

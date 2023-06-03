@@ -223,6 +223,7 @@ attachTicks[dims_, opts:OptionsPattern[CubeArray]][e_] := Scope[
 ,
   makeTickItems[list_List] := Map[makeTickItems, list],
   makeTickItems[Style[p_, rest___]] := Block[{ticksStyle = ToList[rest, ticksStyle]}, makeTickItems @ p],
+  makeTickItems[None] := {},
   makeTickItems[sym_Symbol] := Scope[
     {axis, coordFn, {vx, vy}, {offx, offy}} = toAxisIterator[sym];
     max = Part[dims, axis]; flip = MemberQ[flipTicks, axis];

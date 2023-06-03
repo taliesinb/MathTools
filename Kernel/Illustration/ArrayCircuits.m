@@ -89,9 +89,16 @@ DerivedRainbowArrayNode[n_, interior_, opts___Rule] :=
 
 (**************************************************************************************************)
 
-PublicFunction[ClassicalArrayNode, RainbowArrayNode, MultisetNode]
+PublicFunction[ClassicalRelationNode, ClassicalArrayNode, RainbowArrayNode, MultisetNode]
 
 $ClassicalArrayNodeStyle = $LightGray;
+
+ClassicalRelationNode[name_, n_, r_, opts___Rule] :=
+  NodeDisk[r, opts, NodeLabel -> name, NodeAlias -> name,
+    NodePorts -> n,
+    PortShape -> "Disk", PortSize -> 0.1,
+    $defaultNodeStyle, FrameColor -> $ClassicalArrayNodeStyle
+  ];
 
 ClassicalArrayNode[name_, n_, opts___Rule] := ClassicalArrayNode[name, n, Automatic, opts];
 ClassicalArrayNode[name_, n_, interior_, opts___Rule] :=
@@ -113,12 +120,14 @@ RainbowArrayNode[name_, cols_List, interior_, opts___Rule] :=
     $defaultNodeStyle, FrameColor -> $ClassicalArrayNodeStyle
   ];
 
-MultisetNode[name_, n_, interior_, opts___Rule] :=
+MultisetNode[name_, n_, interior_, opts___Rule] := MultisetNode[name, n, interior, {}, opts];
+MultisetNode[name_, n_, interior_, epilog_List, opts___Rule] :=
   NodeBox[interior, opts, NodeAlias -> name,
     NodePorts -> {
       Top -> Style[n, PortShape -> None],
       Bottom -> Style[1, PortShape -> None]
     },
+    Epilog -> epilog,
     $defaultNodeStyle, FrameColor -> $ClassicalArrayNodeStyle, RoundingRadius -> 0.1
   ];
 

@@ -256,7 +256,7 @@ makeNotationArrow[w_, h_, thickness_, style___, opts___Rule] := Scope[
     CapForm["Round"], JoinForm["Round"], AbsoluteThickness[thickness], $DarkGray,
     style, line, head},
     opts,
-    ImageSize -> {w + 2, h + 2}, PlotRangePadding -> 0, ImagePadding -> {{1, 1}, {1, 1}},
+    ImageSize -> {w + 2, h + 2} + 2*thickness, PlotRangePadding -> 0, ImagePadding -> {{1, 1}, {1, 1}} * thickness,
     BaselinePosition -> Center
   ]
 ];

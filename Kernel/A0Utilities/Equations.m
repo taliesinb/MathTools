@@ -49,7 +49,7 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
   solvedHistory = {solved};
   solveStep[SelectIndices[solved, TrueQ]];
   If[TrueQ @ verifySolutions,
-    If[AnyTrue[eqns /. solutions, Apply[Unequal]],
+    If[AnyTrue[MatrixMap[Chop, eqns /. solutions], Apply[Unequal]],
       badEqns =  Select[eqns, TrueQ[Unequal @@ (# /. solutions)]&];
       badVars = Union @ Keys @ badEqns;
       Message[SolveCyclicEquations::badsol, Row[badVars, ", "]];
