@@ -23,6 +23,15 @@ iLookup[dict1_, key_] := Lookup[dict1, key, Automatic];
 
 (**************************************************************************************************)
 
+PublicFunction[AssociationMapThread]
+
+AssociationMapThread[f_, assoc_Association] := With[
+  {keys = Keys @ assoc},
+  Map[f[AssociationThread[keys, #]]&, Transpose @ Values @ assoc]
+];
+
+(**************************************************************************************************)
+
 PublicFunction[AssociationKeyPattern]
 
 AssociationKeyPattern[assoc_Association] := Apply[Alternatives, Keys @ assoc];

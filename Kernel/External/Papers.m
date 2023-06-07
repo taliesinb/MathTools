@@ -17,7 +17,7 @@ Options[PaperToMarkdown] = {
 
 PaperToMarkdown[$Failed, ___] := $Failed;
 
-PaperToMarkdown::addtextabs = "AdditionalText seems to contain abstract for article \"``\"."
+PaperToMarkdown::addtextabs = "AdditionalText seems to contain abstract for article \"``\".";
 PaperToMarkdown[data_Association, OptionsPattern[]] := Scope[
   UnpackOptions[pDFPath, downloadPDF, $verbose, additionalText];
   UnpackAssociation[data, authors, title, origin, subjects, abstract, url:"URL"];

@@ -119,7 +119,7 @@ iTextToMarkdown = Case[
   TextData @ Cell[BoxData[box_FormBox], ___]                              := toMultilineMath @ box;
   TextData @ Cell[BoxData[boxes:{Repeated[_FormBox | WhiteString]}], ___] := toMultilineMath @ RowBox @ replaceIndentingNewlines @ boxes;
 
-  other_ := Block[{$lastSpace = True}, textBoxesToMarkdown @ other];
+  other_ := Block[{$lastSpace = True, $backtickCount = 0}, textBoxesToMarkdown @ other];
 ];
 
 replaceIndentingNewlines[boxes_] :=
@@ -180,6 +180,7 @@ $textPostProcessor = Identity;
 (* TODO: just wrap inline math with a symbolic wrapper, then replace that with inlineMathTemplate later.
 this will allow us to interpret $ as coming soley from user and not a result of inlineMathTemplate *)
 
+$backtickCount = 0;
 $lastSpace = $allowMDemph = True;
 ClearAll[textBoxesToMarkdown];
 textBoxesToMarkdown = Case[
@@ -221,7 +222,7 @@ textBoxesToMarkdown = Case[
 ];
 
 checkLastSpace[list_List] := Map[checkLastSpace, list];
-checkLastSpace[s_String /; StringEndsQ[s, " "|"\t"]] := ($lastSpace = True; s);
+checkLastSpace[s_String] := ($lastSpace = StringEndsQ[s, " "|"\t"]; $backtickCount += StringCount[s, "`"]; s);
 checkLastSpace[other_] := ($lastSpace = False; other);
 
 Options[styleBoxToMarkdown] = {
@@ -233,7 +234,7 @@ Options[styleBoxToMarkdown] = {
 };
 
 wordQ[e_] := StringQ[e] && StringMatchQ[e, WordCharacter..];
-canEmphWrapQ[e_] := TrueQ[$lastSpace] && TrueQ[$allowMDemph] && wordQ[e];
+canEmphWrapQ[e_] := TrueQ[$lastSpace] && TrueQ[$allowMDemph] && TrueQ[EvenQ @ $backtickCount] && wordQ[e];
 
 $boldP = Bold | "Bold";
 $italicP = Italic | "Italic";

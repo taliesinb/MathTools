@@ -271,6 +271,47 @@ CellFindBoxes[nbData_, rule_, typePattern_:_] :=
 
 (**************************************************************************************************)
 
+PublicFunction[EvaluateInitializationCellsContaining]
+
+EvaluateInitializationCellsContaining[token_String] := Scope[
+  cells = FindCellObjects[token, "Code"];
+  Scan[cell |-> (
+      SelectionMove[cell, All, CellContents];
+      FrontEndExecute[FrontEndToken["EvaluateCells"]];
+    ),
+    cells
+  ];
+]
+
+(**************************************************************************************************)
+
+PublicFunction[NewNotebookFromCellsContaining]
+
+NewNotebookFromCellsContaining[token_, type_:All] := Scope[
+  nb = NotebookGet[EvaluationNotebook[]];
+  cells = FindCellObjects[token, type];
+  cellData = NotebookRead[cells];
+  NotebookPut @ ReplacePart[nb, 1 -> cellData]
+]
+
+(**************************************************************************************************)
+
+PublicFunction[FindCellObjects]
+
+FindCellObjects[boxPattern_, cellType_:All] := Scope[
+  cells = If[cellType === All, Cells[], Cells[CellStyle -> cellType]];
+  cellData = Part[NotebookRead[cells], All, 1];
+  test = If[StringPatternQ[boxPattern], cellContainsStringQ, cellContainsQ][boxPattern];
+  indices = SelectIndices[cellData, test];
+  Part[cells, indices]
+];
+
+cellContainsStringQ[patt_][str_String | BoxData[str_String] | TextData[str_String]] := StringContainsQ[str, patt];
+cellContainsStringQ[patt_][expr_] := ContainsQ[expr, patt];
+cellContainsQ[patt_][expr_] := ContainsQ[expr, patt];
+
+(**************************************************************************************************)
+
 CopyFileToClipboard[path_] := If[
   RunAppleScript["tell app \"Finder\" to set the clipboard to ( POSIX file \"" <> path <> "\" )"] === 0,
   path,

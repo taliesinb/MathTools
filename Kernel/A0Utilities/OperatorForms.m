@@ -40,6 +40,15 @@ DotOperator[matrix_][other_] := Dot[matrix, other]
 
 (**************************************************************************************************)
 
+PublicFunction[ReplaceAllOperator]
+
+ReplaceAllOperator[][other_] := other;
+ReplaceAllOperator[r1_][other_] := other /. r1;
+ReplaceAllOperator[r1_, r2_][other_] := other /. r1 /. r2;
+ReplaceAllOperator[r1_, r2_, r3___][other_] := ReplaceAllOperator[r3][other /. r1 /. r2];
+
+(**************************************************************************************************)
+
 PublicFunction[DotRightOperator]
 
 DotRightOperator[matrix_][other_] := Dot[other, matrix]

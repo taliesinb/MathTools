@@ -112,7 +112,17 @@ eqStr[e_] := ToPrettifiedString[e, FullSymbolContext -> False];
 
 PrivateFunction[printEqns]
 
-printEqns[eqns_] := Print @ Multicolumn[Pane[#1, ImageSize -> 100] -> Pane[Column[#2, Dividers -> All], ImageSize -> 250]& @@@ (Sort @ Normal @ Merge[eqns, Identity]), 4, Appearance -> "Horizontal", ItemSize -> Full];
+printEqns[{}] := Print["---no equations---"];
+printEqns[eqns_] := Print @ Grid[
+  Catenate /@ Partition[
+    formatEqn @@@ (Sort @ Normal @ Merge[eqns, Identity]),
+    UpTo[4]
+  ],
+  ItemSize -> Full, Spacings -> 2, Alignment -> {{Right, Left}, Center},
+  Dividers -> $Gray
+];
+
+formatEqn[lhs_, rhs_] := {lhs, Column[rhs, Dividers -> {None, {None, {$LightGray}, None}}]};
 
 (**************************************************************************************************)
 

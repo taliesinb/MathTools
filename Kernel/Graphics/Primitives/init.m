@@ -132,7 +132,7 @@ $GArrowH = Arrow | ExtendedArrow;
 
 PrivateVariable[$GArrowIntP, $GCurveIntP]
 
-$GCurveIntP = _ElbowCurve | _RollingCurve | _VectorCurve | _CompassCurve | _LoopCurve | _SetbackCurve | _CircuitCurve | _SmoothedCurve | _Line | _BezierCurve | _BSplineCurve;
+$GCurveIntP = _ElbowCurve | _RollingCurve | _VectorCurve | _CompassCurve | _LoopCurve | _SetbackCurve | _SnakeCurve | _CircuitCurve | _SmoothedCurve | _Line | _BezierCurve | _BSplineCurve;
 $GArrowIntP = Join[_JoinedCurve | _Tube, $GCurveIntP];
 
 rgc = Case[

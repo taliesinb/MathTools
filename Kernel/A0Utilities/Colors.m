@@ -355,7 +355,7 @@ ToColorPalette = Case[
   spec_                         := (Message[ToColorPalette::invalid, spec]; $Failed)
 ];
 
-getNamedColorSet[set_, variant_] := Scope[
+getNamedColorSet[set_, variant_] := getNamedColorSet[set, variant] = Scope[
   colors = $ExtendedColorsGrouped[set, variant];
   If[MissingQ[colors], ReturnFailed[]];
   Values @ colors
@@ -376,8 +376,15 @@ expandColorPalette[colors_] := Join[colors, OklabBlend /@ (UnorderedPairs @ colo
 PublicFunction[ToRainbowColor]
 
 ToRainbowColor = Case[
-  i_Integer := Part[$NormalColorPalette, i];
-  col_ := col;
+  0                         := $LightGray;
+  i_Integer                 := Part[$NormalColorPalette, i];
+  col_ ? ColorQ             := col;
+  s:(Automatic | None)      := s;
+  other_                    := $Gray;
+  Sequence[i_, _]           := % @ i;
+  Sequence[s:Automatic | None, _] := s;
+  Sequence[_, 0]            := $LightGray;
+  Sequence[name_String, n_] := Part[ToColorPalette @ name, n];
 ];
 
 (**************************************************************************************************)

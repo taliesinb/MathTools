@@ -14,6 +14,13 @@ SetGraphicsScale[g_Graphics, scale_:40, padding_:1] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[DimensionToAbsoluteThickness, AbsoluteThicknessToDimension]
+
+DimensionToAbsoluteThickness[n_, scale_] := n * scale;
+AbsoluteThicknessToDimension[t_, scale_] := t / scale;
+
+(**************************************************************************************************)
+
 PublicFunction[ScaleGraphics]
 
 PublicOption[GraphicsScale]

@@ -26,6 +26,11 @@ doubleUpCurve = Case[
 
 $extrusionCache = UAssociation[];
 
+ExtrudeCurveToPolygon[Line[{a_, b_}] | {a_, b_}, r_] := Scope[
+  d = VectorRotate90[Normalize[b - a]] * r;
+  Polygon[{a + d, b + d, b - d, a - d}]
+]
+
 ExtrudeCurveToPolygon[curve_, r_] := Scope[
 	key = Hash @ {curve, r};
 	result = $extrusionCache @ key;
