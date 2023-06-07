@@ -80,6 +80,16 @@ applyMultisetFixups[e_] := e /. {
 
 (**************************************************************************************************)
 
+PublicFunction[AggregationNode, RainbowAggregationNode]
+
+AggregationNode[name_, n_ -> agg_, rest___] := MultisetNode[
+  name, n, rest, PortShape -> {In -> "Disk", Out -> Labeled["OuterDiamond", Style[agg, FontSize -> 14], TopRight]}
+];
+
+RainbowAggregationNode[args___] := AggregationNode[args, PortColor -> {In -> "Medium", Out -> $ValueWireStyle}];
+
+(**************************************************************************************************)
+
 PublicFunction[RainbowArrayNode]
 
 $rainbowArrayNodeStyle = Sequence[

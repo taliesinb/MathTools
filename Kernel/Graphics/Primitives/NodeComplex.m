@@ -488,9 +488,10 @@ addFrameEqns[w_, h_] := addEqns @ {
 
 PublicOption[NodePorts, NodeLabelStyle, NodeLabelColor, FrameColor, FrameThickness, FrameLabelSpacing, FrameLabelStyle]
 PublicOption[PortSpacing, PortPositions, PortSize, PortShape, PortEdgeColor, PortColor, PortEdgeThickness, HiddenPorts, PortPositions]
-PublicVariable[$NodeComplexLabelStyle]
+PublicVariable[$NodeComplexLabelStyle, $PortLabelStyle]
 
 SetInitialValue[$NodeComplexLabelStyle, {FontSize  -> 16, FontFamily -> "Fira Code", FontWeight -> "Bold"}];
+SetInitialValue[$PortLabelStyle, {FontSize -> 11, FontFamily -> "Fira Code"}];
 
 Options[NodeDisk] = {
   Background        -> None,
@@ -506,6 +507,7 @@ Options[NodeDisk] = {
   NodeLabelColor    -> None,
   NodeLabelStyle    :> $NodeComplexLabelStyle,
   NodePorts         -> None,
+  PortLabelStyle    :> $PortLabelStyle,
   PortEdgeColor     -> Automatic,
   PortEdgeThickness -> 1,
   PortColor         -> Black,
@@ -577,7 +579,8 @@ nodeBox[head_, spec_, opts___Rule] := Scope @ CatchMessage[head,
   UnpackOptionsAs[head, {opts},
     background, nodePorts, nodeLabel, nodeLabelStyle, nodeLabelColor,
     frameMargins, epilog, prolog, nodeAlias,
-    portSpacing, portSize, portShape, portEdgeColor, portColor, portEdgeThickness, portPositions,
+    portLabelStyle,
+    (* portSpacing, portSize, portShape, portEdgeColor, portColor, portEdgeThickness, portPositions, *)
     frameColor, background, frameThickness,
     frameLabel, frameLabelSpacing, frameLabelStyle
   ];
@@ -634,13 +637,6 @@ makeDelayed[prims_] := $delayedBoxes[$scoped[$path, prims]];
 
 (**************************************************************************************************)
 
-$sideToLabelOffset = <|
-        Left -> { 1,  0},       Right -> {-1,  0},
-     TopLeft -> { 1, -1},    TopRight -> {-1, -1},
-  BottomLeft -> { 1,  1}, BottomRight -> {-1,  1},
-      Bottom -> { 0,  1},         Top -> { 0, -1}
-|>;
-
 General::badNodeFrameLabel = "`` is not a valid spec for FrameLabel.";
 makeFrameLabel = Case[
   None | {}  := Nothing;
@@ -649,8 +645,7 @@ makeFrameLabel = Case[
   side:$SidePattern -> label_ := Scope[
     coords = Lookup[$sideToCoords, side, Failure["badNodeFrameLabel", side -> label]];
     coords = subPath /@ coords;
-    offset = Lookup[$sideToLabelOffset, side] * (1 + frameLabelSpacing);
-    makeDelayed @ Text[Style[label, frameLabelStyle], coords, offset]
+    makeLabel[label, coords, side, frameLabelSpacing, frameLabelStyle]
   ];
 ]
 
@@ -663,7 +658,6 @@ makePortOffsets[n_, portSpacing_] := Scope[
 
 General::badNodePortSpec = "`` is not a valid port specification."
 procPortSpec = Case[
-  Rule[_, spec_]      := % @ spec;
   n_Integer           := Range @ n;
   s_String            := {s};
   l_List              := l;
@@ -718,10 +712,15 @@ sideSpecializedPortData[side_] := MapThread[
   {$portData, $defaultPortData}
 ];
 
+portDataRules[rules___] := SymbolName[#1] -> #2& @@@ {rules};
+
 processNodeBoxPorts = Case[
-  _ -> {} := {};
-  side_ -> Style[spec_, rules___Rule] := Block[{$portData = $portData},
-    AssociateTo[$portData, SymbolName[#1] -> #2& @@@ {rules}];
+  None                                  := {};
+  _ -> {}                               := {};
+  list_List                             := Map[%, list];
+  spec_                                 := ThrowMessage["badNodePortSpec", spec];
+  side_ -> Style[spec_, rules___Rule]   := Internal`InheritedBlock[{$portData},
+    AssociateTo[$portData, portDataRules[rules]];
     %[side -> spec]
   ];
   (side:Left|Right|Top|Bottom) -> spec_ := Scope[
@@ -760,13 +759,10 @@ processNodeBoxPorts = Case[
     centerVec = Switch[side, Center, {0, 0}, Left, {1, 0}, Right, {-1, 0}, Top, {0, -1}, Bottom, {0, 1}];
     makePorts @ <|"coords" -> portCoords, "dirs" -> ConstantArray[centerVec, n], "ports" -> ports, $sidePortData|>
   ];
-  list_List := Map[%, list];
-  None      := {};
-  spec_     := ThrowMessage["badNodePortSpec", spec];
 ];
 
 makePortPaths[kind_, ports_List] := Scope[
-  ports = ports /. {Invisible[i_] :> i, Style[s_, ___] :> s};
+  ports = ports /. {Invisible[p_] :> p, Style[p_, ___] :> p, Placed[p_, ___] :> p};
   portPaths = subPath[kind[#]]& /@ ports;
   i = 1; indexedPortPaths = subPath[kind[PortIndex[i++]]]& /@ ports;
   $varAliases ^= {$varAliases,
@@ -845,7 +841,7 @@ procPortListSpec[{rules__Rule, All -> def_}, n_, _] := procPortListSpec[{rules},
 makePorts[data_Association] := Scope[
   n = Length @ data["ports"];
   AssociationMapThread[
-    $makeSinglePort,
+    makeSinglePort[#ports, #]&,
     MapThread[
       procPortListSpec[#1, n, #2]&,
       KeyDrop[KeyUnion[{data, $defaultPortData}], {"PortPositions", "PortSpacing"}]
@@ -853,11 +849,18 @@ makePorts[data_Association] := Scope[
   ]
 ];
 
-$makeSinglePort = Function[
-  If[MatchQ[#ports, _Invisible], {},
-  applyGraphicsOffset[shapeOffset[#PortShape] * #dirs] @ Lookup[$shapeToFn, #PortShape, ThrowMessage["badNodePortShape", #PortShape, Keys @ $shapeToFn]] @
+$shapeP = _String | _Labeled | _Placed;
+makeSinglePort = Case[
+  Sequence[_Invisible, _]                        := {};
+  Sequence[Style[p_, s:$shapeP, opts___], data_] := %[Style[p, PortShape -> s, opts], data];
+  Sequence[Style[p_, opts___], data_]            := $makeSinglePortFn @ Association[data, portDataRules @ opts];
+  Sequence[_, data_]                             := $makeSinglePortFn @ data;
+];
+
+$makeSinglePortFn = Function[
+  applyGraphicsOffset[shapeOffset[#PortShape] * #dirs] @ shapeToFn[#PortShape] @
   Append[#, "FET" -> toFET[#ports, #PortColor, #PortEdgeColor, #PortEdgeThickness]]
-]];
+];
 
 applyGraphicsOffset[{0|0., 0|0.}][e_] := e;
 applyGraphicsOffset[offset_][e_] := Construct[GeometricTransformationBox, e, AbsoluteThicknessToDimension[#, 40]& /@ offset];
@@ -867,13 +870,24 @@ toFET[i_Integer, f_, e_, t_]                               := {ToRainbowColor[f,
 toFET[_, f_, e_, t_]                                       := {ToRainbowColor @ f, ToRainbowColor @ e, t};
 
 shapeOffset = Case[
-  _ := 0;
-  s_String := Which[
+  _                   := 0;
+  s_String            := Which[
     StringStartsQ[s, "Inner"], 1,
     StringStartsQ[s, "Outer"], -1,
     True, 0
   ];
+  Labeled[_, _, pos_] := % @ Placed[Null, pos];
+  Placed[_, Below|BottomLeft|Bottom|BottomRight]    := 1;
+  Placed[_, Above|TopLeft|Top|TopRight]             := -1;
 ]
+
+shapeToFn := Case[
+  shape_ := Lookup[$shapeToFn, shape, ThrowMessage["badNodePortShape", shape, Keys @ $shapeToFn]];
+  Placed[label_, pos_Symbol] := Function[
+    makeLabel[label, #coords, pos, 0.2, portLabelStyle]
+  ];
+  Labeled[shape_, label_, pos_] := ApplyThrough[{% @ shape, % @ Placed[label, pos]}]
+];
 
 $shapeToFn = <|
   "Point"        -> Function[makePoint[#coords, #PortSize, #FET]],
@@ -910,6 +924,23 @@ makeHalfSquare[pos_, {x_, y_}, fet_]  := applyStyle[Construct[PolygonBox, Thread
 
 makeDisk[pos_, r_, fet_] := applyStyle[DiskBox[pos, r], fet];
 makePoint[pos_, r_, fet_] := StyleBox[PointBox[pos], PointSize[2 * r / $var[$W]], First @ fet];
+
+(**************************************************************************************************)
+
+General::badLabelPosition = "Bad label position ``."
+makeLabel[label_, coords_, side_, spacing_, style_] := Scope[
+  offset = Lookup[$sideToLabelOffset, side, ThrowMessage["badLabelPosition", side]] * (1 + spacing);
+  makeDelayed @ Text[label, coords, offset, BaseStyle -> style]
+]
+
+$sideToLabelOffset = <|
+        Left -> { 1,  0},       Right -> {-1,  0},
+     TopLeft -> { 1, -1},    TopRight -> {-1, -1},
+  BottomLeft -> { 1,  1}, BottomRight -> {-1,  1},
+      Bottom -> { 0,  1},         Top -> { 0, -1},
+       Below -> { 0,  1},       Above -> { 0, -1},
+      Center -> { 0,  0}
+|>;
 
 (**************************************************************************************************)
 

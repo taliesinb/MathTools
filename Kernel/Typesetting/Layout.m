@@ -237,6 +237,8 @@ MakeArrow[w_:50, h_:15, thickness_:1, style_:Black] =
 
 PublicFunction[SpacedArrow]
 
+SpacedArrow[l_] := l;
+
 SpacedArrow[l__, "ArrowColor" -> color_, r___] := Block[{$arrowColor = color},
   SpacedArrow[l, r]
 ];
@@ -245,8 +247,14 @@ SpacedArrow[l__, "ArrowThickness" -> thick_, r___] := Block[{$arrowThickness = t
   SpacedArrow[l, r]
 ];
 
-SpacedArrow[a_, b_, rest___] :=
+SpacedArrow[a_, b_, rest___Rule] :=
   SpacedRow[a, $smallNotationArrow, b, rest];
+
+SpacedArrow[a_, b_, c:Except[_Rule], rest___Rule] :=
+  SpacedRow[a, $smallNotationArrow, b, $smallNotationArrow, c, rest];
+
+SpacedArrow[a_, b_, c:Except[_Rule], d:Except[_Rule], rest___Rule] :=
+  SpacedRow[a, $smallNotationArrow, b, $smallNotationArrow, c, $smallNotationArrow, d, rest];
 
 makeNotationArrow[w_, h_, thickness_, style___, opts___Rule] := Scope[
   h2 = h/2;
