@@ -853,7 +853,8 @@ $shapeP = _String | _Labeled | _Placed;
 makeSinglePort = Case[
   Sequence[_Invisible, _]                        := {};
   Sequence[Style[p_, s:$shapeP, opts___], data_] := %[Style[p, PortShape -> s, opts], data];
-  Sequence[Style[p_, opts___], data_]            := $makeSinglePortFn @ Association[data, portDataRules @ opts];
+  Sequence[Style[p_, n_Integer], data_]          := %[Style[p, PortColor -> n, opts], data];
+  Sequence[Style[p_, opts___Rule], data_]        := $makeSinglePortFn @ Association[data, portDataRules @ opts];
   Sequence[_, data_]                             := $makeSinglePortFn @ data;
 ];
 

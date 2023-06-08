@@ -46,11 +46,30 @@ Options[CircuitCurve] = JoinOptions[
 
 declareGraphicsFormatting[c:CircuitCurve[{$Coord2P, $Coord2P}, ___Rule] :> circuitCurveBoxes[c], Graphics];
 
+
+
 Clear[circuitCurveBoxes];
 circuitCurveBoxes[curve:CircuitCurve[_, opts:OptionsPattern[CircuitCurve]]] := Scope[
   UnpackOptionsAs[CircuitCurve, {opts}, lineThickness, setbackDistance];
   points = ToPackedReal @ circuitCurvePoints @ curve;
   If[lineThickness === None, Return @ Construct[LineBox, points]];
+  If[lineThickness < 0,
+    points = ToPackedReal @ circuitCurvePoints @ curve;
+    {{xs, ys}, {xe, ye}} = {first, last} = FirstLast @ points;
+    dir = Normalize[last - first] * Abs[lineThickness]/2;
+    normal = VectorRotate90[dir];
+    dist = If[MatrixQ[setbackDistance], Last, Identity] @ setbackDistance;
+    points2 = SetbackCoordinates[points, -dist/1.1];
+    pointsL = Select[points2 + Threaded[normal], ys >= Last[#] >= ye&];
+    pointsR = Select[Reverse[points2] - Threaded[normal], ys >= Last[#] >= ye&];
+    pointsL = Prepend[{Part[pointsL, 1, 1], ys}] @ Append[{Part[pointsL, -1, 1], ye}] @ pointsL;
+    pointsR = Append[{Part[pointsR, -1, 1], ys}] @ Prepend[{Part[pointsR, 1, 1], ye}] @ pointsR;
+    polygon = Join[{first}, pointsL, {last}, pointsR];
+    Return @ {
+      StyleBox[Construct[PolygonBox, polygon], EdgeForm[None]],
+      StyleBox[Construct[LineBox, {pointsL, pointsR}], GrayLevel[0, .4], AbsoluteThickness[1]]
+    };
+  ];
   d = VectorRotate90[Normalize[Last[points] - First[points]]] * lineThickness/2;
   dist = If[MatrixQ[setbackDistance], Last, Identity] @ setbackDistance;
   points2 = SetbackCoordinates[points, -dist/1.1];

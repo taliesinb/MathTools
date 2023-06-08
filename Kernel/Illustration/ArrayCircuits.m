@@ -239,7 +239,7 @@ getPortColors[a_, b_] := (Message[RainbowWire::noAutoColor, a, b]; $Failed);
 
 PublicFunction[ApplyWireOptions]
 
-ApplyWireOptions[style___][e_] := e /. CircuitCurve[args___] :> CircuitCurve[args, style];
+ApplyWireOptions[style___][e_] := e /. CircuitCurve[c_, opts___] :> CircuitCurve[c, style, opts];
 withWireBundleStyle = ApplyWireOptions[SetbackDistance -> {{0.2, 0.05}, {0.1, 0.06}}, LineThickness -> 12];
 
 RainbowWire[port1_, port2_, color_:Automatic]  := wireCurve[port1, port2, color];
@@ -306,5 +306,5 @@ PublicFunction[ArrayCircuitGraphics]
 ArrayCircuitGraphics[nodes_, opts___Rule] := ScaleGraphics[
   NodeComplex[nodes, PrologStyle -> {AbsoluteThickness[3]}, EpilogStyle -> {AbsoluteThickness[3]}],
   ImagePadding -> StandardizePadding @ Lookup[{opts}, ImagePadding, {All -> 1, Bottom -> 6}],
-  GraphicsScale -> 40
+  GraphicsScale -> 40, BaseStyle -> {FontFamily -> "Fira Code"}
 ];

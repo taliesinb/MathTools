@@ -30,6 +30,12 @@ SameLengthQ[a_][b_] := SameLengthQ[a, b];
 
 (**************************************************************************************************)
 
+PublicFunction[ListVectorQ]
+
+ListVectorQ[e_] := VectorQ[e, ListQ];
+
+(**************************************************************************************************)
+
 PublicFunction[RealVectorQ]
 
 SetUsage @ "
