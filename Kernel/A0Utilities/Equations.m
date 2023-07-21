@@ -53,7 +53,8 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
       badEqns =  Select[eqns, TrueQ[Unequal @@ (# /. solutions)]&];
       badVars = Union @ Keys @ badEqns;
       Message[SolveCyclicEquations::badsol, Row[badVars, ", "]];
-      KeyValueScan[printBadSolEqs, AssociationMap[Select[eqns, ContainsQ[#]]&, badVars]];
+      (* TODO: print equation dependency graph, highlight bad nodes, label equations, etc *)
+      KeyValueScan[printBadSolEqs, TakeOperator[UpTo[2]] @ AssociationMap[Select[eqns, ContainsQ[#]]&, badVars]];
     ];
   ];
   If[FalseQ @ allowPartialSolutions,
@@ -101,7 +102,10 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
 printBadSolEqs[var_, eqns_List] := (
   Print["Var ", var, " cannot simultaneously satisfy following equations: "];
   Print[Grid[
-    {Inactive[Equal] @@ #, Construct[HoldForm, Inactive[Equal] @@ #] /. solutions, Last[#] /. solutions}& /@ eqns,
+    ReplaceAll[
+      {Inactive[Equal] @@ #, Construct[HoldForm, Inactive[Equal] @@ #] /. solutions, Last[#] /. solutions}& /@ eqns,
+      var -> Style[var, Bold]
+    ],
     Spacings -> {1.5, 2}, Dividers -> All, Alignment -> Left
   ]];
 );

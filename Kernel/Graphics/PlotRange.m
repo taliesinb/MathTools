@@ -86,11 +86,20 @@ $centerOSpecP = Center | Automatic | {Center, Center} | Scaled[{.5, .5}] | {Scal
 $ghead = Graphics;
 
 kernelPlotRange[g_Graphics3D | g_Graphics] := Module[
-  {g2 = Block[{$ghead = Head @ g}, plotRangeExpand @ g]},
+  {g2 = Block[{$ghead = Head @ g}, plotRangeExpand @ g], coord},
   res = Quiet @ PlotRange @ g2;
-  If[!MatrixQ[res], g2 //= DeleteCases[(s_Symbol -> _) /; Context[s] =!= "System`"]];
+  If[!MatrixQ[res],
+    g2 //= DeleteCases[(s_Symbol -> _) /; Context[s] =!= "System`"];
   (* ^ deal with weird option 'ViewSize' that appears on reinterpreting Graphics3D *)
-  PlotRange @ g2
+    res = Quiet @ PlotRange @ g2;
+  ];
+  If[!MatrixQ[res], Return @ $Failed];
+  If[First[res] === {-1., 1.} || Last[res] === {-1., 1.},
+    (* this occurs when a plot is completely flat horizontally or vertically *)
+    coord = DeepFirstCase[g2, $CoordP] + $MachineEpsilon;
+    res = Quiet @ PlotRange @ MapAt[{#, Point[coord]}&, g2, 1];
+  ];
+  res
 ];
 
 expandMultiArrowInGC[g_] := g /.
@@ -131,7 +140,7 @@ $boxSymbolToOrdinarySymbol := $boxSymbolToOrdinarySymbol =
 boxNameToOrdinaryName[name_] := StringDelete[name, {"3D", "Box"}];
 
 $graphicsBoxReplacements := $graphicsBoxReplacements =
-  Dispatch @ Join[Normal @ $boxSymbolToOrdinarySymbol, {InterpretationBox[a_, _] :> a}];
+  Dispatch @ Join[Normal @ $boxSymbolToOrdinarySymbol, {InterpretationBox[a_, _] :> a, Typeset`Hold[h_] :> h}];
 
 (**************************************************************************************************)
 

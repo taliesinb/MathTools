@@ -163,7 +163,10 @@ DiscretizeCurve[points_List, f_:BezierCurve] := DiscretizeCurve[f[points]];
 DiscretizeCurve[Line[points_]] := ToPackedReal @ points;
 
 DiscretizeCurve[Circle[center:$Coord2P, radius_ ? NumericQ, {t1_ ? NumericQ, t2_ ? NumericQ}]] :=
-  ToPackedReal @ CircleVector[center, radius, DeleteDuplicates @ Append[t2] @ Range[t1, t2, Tau / 32 * Sign[t2 - t1]]];
+  ToPackedReal @ CircleVector[center, radius, angRange[t1, t2]];
+
+angRange[t_, t_] := {t};
+angRange[t1_, t2_] := DeleteDuplicates @ Append[t2] @ Range[t1, t2, (t2 - t1) / Ceiling[32 - Min[24, 16/Abs[t2-t1]]]];
 
 $tau32 = N @ Append[0] @ Range[0, Tau - 0.01, Tau / 48];
 DiscretizeCurve[Circle[center:$Coord2P, radius_ ? NumericQ]] :=

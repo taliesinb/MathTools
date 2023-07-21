@@ -108,7 +108,7 @@ ArxivSearch[opts___Rule] := Scope[
   url = toSearchString[{opts}];
   hash = Base36Hash[url];
   htmlPath = xmlFilePath @ hash;
-  If[FileExistsQ[htmlPath] && FileAge[htmlPage] < 60 * 60 * 24,
+  If[FileExistsQ[htmlPath] && FileAge[htmlPath] < 60 * 60 * 24,
     VPrint["Getting cached data from ", MsgPath @ htmlPath];
     searchResults = ImportUTF8[htmlPath];
   ,

@@ -163,7 +163,7 @@ procNA[(t:"ReverseGrid"|"ReverseSpanningGrid"|"ReverseNormalGrid") -> spec_, res
 
 procNA[(t:"Grid"|"SpanningGrid"|"NormalGrid") -> {col1_, col2_, col3_:None}, rest___][array_] :=
   StringMatrix[
-    If[!MatrixQ[array, True&], ThrowMessage["notmatrix", array, t]];
+    If[!AnyMatrixQ[array], ThrowMessage["notmatrix", array, t]];
     matrixMapNA[procNA[rest], array],
     RowSpacings -> third[col1, 0],
     ColumnSpacings -> third[col2, If[SeqLength[rest] == 0, 1, 0]],

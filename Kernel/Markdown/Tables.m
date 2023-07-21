@@ -24,7 +24,7 @@ createMarkdownTable[ostr_String] := Scope[
 (**************************************************************************************************)
 
 toMarkdownTableString[grid_, allowCompact_] := Scope[
-  If[!MatrixQ[grid, True&],
+  If[!AnyMatrixQ[grid],
     Print["Bad table!"];
     Print["First row is: ", First @ grid];
     Print["Row lengths are: ", Length /@ grid];

@@ -261,12 +261,12 @@ tagAsMath[t_] := TagBox[t /. TagBox[e_, "QG"] :> e, "QG"];
 
 (**************************************************************************************************)
 
-PublicVariable[$notebookDisplayFunction, $katexDisplayFunction, $katexMacros, $symbolToTemplateName, $symbolToKatexMacroName]
+PublicVariable[$notebookDisplayFunction, $notebookDisplayFunctionBases, $katexDisplayFunction, $katexMacros, $symbolToTemplateName, $symbolToKatexMacroName]
 
 PublicFunction[ClearTemplateBoxDefinitions]
 
 ClearTemplateBoxDefinitions[] := (
-  $notebookDisplayFunction = $katexDisplayFunction = $katexMacros = $symbolToTemplateName = $symbolToKatexMacroName = <||>;
+  $notebookDisplayFunction = $katexDisplayFunction = $katexMacros = $symbolToTemplateName = $symbolToKatexMacroName = $notebookDisplayFunctionBases =<||>;
 );
 
 ClearTemplateBoxDefinitions[];

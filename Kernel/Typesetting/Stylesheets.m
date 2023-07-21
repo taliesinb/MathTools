@@ -49,9 +49,12 @@ GeneratePrivateQuiverGeometryStylesheet[] := Scope[
 
 PrivateFunction[makeTemplateBoxStyleCell]
 
-makeTemplateBoxStyleCell[name_, fn_] := Cell[
-  StyleData[name, StyleDefinitions -> StyleData["QuiverGeometryBase"]],
-  TemplateBoxOptions -> {DisplayFunction -> fn}
+makeTemplateBoxStyleCell[name_, fn_] := With[
+  {base = Lookup[$notebookDisplayFunctionBases, name, "QuiverGeometryBase"]},
+  Cell[
+    StyleData[name, StyleDefinitions -> StyleData[base]],
+    TemplateBoxOptions -> {DisplayFunction -> fn}
+  ]
 ];
 
 (**************************************************************************************************)

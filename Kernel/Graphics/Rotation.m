@@ -26,3 +26,42 @@ RotateVector[vec_List, t_] :=
   Dot[{{Cos[t], -Sin[t]}, {Sin[t], Cos[t]}}, vec];
 
 RotateVector[t_][vec_] := RotateVector[vec, t];
+
+(**************************************************************************************************)
+
+PublicFunction[ScaleRotateTranslateVector]
+
+ScaleRotateTranslateVector[scale_, angle_, trans_List, points_List] :=
+  TranslateVector[trans, ScaleRotateVector[scale, angle, points]];
+
+ScaleRotateTranslateVector[s_, a_, t_][points_] := ScaleRotateTranslateVector[s, a, t, points];
+
+(**************************************************************************************************)
+
+PublicFunction[ScaleRotateVector]
+
+ScaleRotateVector[scale_, angle_List, points_List] :=
+  ScaleRotateVector[scale, PairAngle @ angle, points];
+
+ScaleRotateVector[scale_, angle_, points_List] :=
+  scale * Dot[points, rotationMatrix @ angle];
+
+ScaleRotateVector[s_, a_][points_] := ScaleRotateVector[s, a, points];
+
+(**************************************************************************************************)
+
+$pi = N[Pi];
+$tau = N[Tau];
+
+rotationMatrix[0|0.|Tau|$tau|(-Tau)|(-$tau)] := {{1, 0}, {0, 1}};
+rotationMatrix[Pi|$pi|(-Pi)|(-$pi)] := {{-1, 0}, {0, -1}};
+rotationMatrix[angle_] := Transpose @ ToPacked @ Chop @ RotationMatrix @ N @ angle;
+
+
+(**************************************************************************************************)
+
+PublicFunction[TranslateVector]
+
+TranslateVector[trans_List, points_List] := Threaded[trans] + points;
+
+TranslateVector[t_][points_] := TranslateVector[t, points];

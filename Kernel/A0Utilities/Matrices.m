@@ -293,7 +293,10 @@ CoordinatePair3DQ[___] := False;
 
 (**************************************************************************************************)
 
-PublicFunction[NumericMatrixQ, CoordinateMatrixQ, CoordinateMatrix2DQ, CoordinateMatrix3DQ]
+PublicFunction[AnyMatrixQ, NumericMatrixQ, CoordinateMatrixQ, CoordinateMatrix2DQ, CoordinateMatrix3DQ]
+
+AnyMatrixQ[{} | {{}}] := True;
+AnyMatrixQ[list_List] := Length[Dimensions[list, 2]] == 2;
 
 NumericMatrixQ[matrix_List] := MatrixQ[matrix, NumericQ];
 
@@ -302,6 +305,7 @@ CoordinateMatrixQ[matrix_List, n_:2|3] := MatrixQ[matrix, NumericQ] && MatchQ[In
 CoordinateMatrix2DQ[matrix_List] := CoordinateMatrixQ[matrix, 2];
 CoordinateMatrix3DQ[matrix_List] := CoordinateMatrixQ[matrix, 3];
 
+AnyMatrixQ[___] := False;
 NumericMatrixQ[___] := False;
 CoordinateMatrixQ[___] := False;
 CoordinateMatrix2DQ[___] := False;
@@ -309,7 +313,9 @@ CoordinateMatrix3DQ[___] := False;
 
 (**************************************************************************************************)
 
-PublicFunction[NumericMatricesQ, CoordinateMatricesQ, CoordinateMatrices2DQ, CoordinateMatrices3DQ]
+PublicFunction[AnyMatricesQ, NumericMatricesQ, CoordinateMatricesQ, CoordinateMatrices2DQ, CoordinateMatrices3DQ]
+
+AnyMatricesQ[list_List] := VectorQ[list, AnyMatrixQ];
 
 NumericMatricesQ[list_List] := VectorQ[list, NumericMatrixQ];
 
@@ -321,6 +327,7 @@ CoordinateMatricesQ[list_List, n_] := VectorQ[list, CoordinateMatrixQ[#, n]&];
 CoordinateMatrices2DQ[list_List] := VectorQ[list, CoordinateMatrix2DQ];
 CoordinateMatrices3DQ[list_List] := VectorQ[list, CoordinateMatrix3DQ];
 
+AnyMatricesQ[___] := False;
 NumericMatricesQ[___] := False;
 CoordinateMatricesQ[___] := False;
 CoordinateMatrices2DQ[___] := False;
@@ -343,7 +350,11 @@ CoordinateVectorOrMatrix3DQ[___] := False;
 
 (**************************************************************************************************)
 
-PublicFunction[NumericMatrixOrMatricesQ, CoordinateMatrixOrMatricesQ, CoordinateMatrixOrMatrices2DQ, CoordinateMatrixOrMatrices3DQ]
+PublicFunction[MatrixOrMatricesQ, NumericMatrixOrMatricesQ, CoordinateMatrixOrMatricesQ, CoordinateMatrixOrMatrices2DQ, CoordinateMatrixOrMatrices3DQ]
+
+MatrixOrMatricesQ[{} | {{}}] := True;
+MatrixOrMatricesQ[e_List] := AnyMatrixQ[e] || AnyMatricesQ[e];
+MatrixOrMatricesQ[___] := False;
 
 NumericMatrixOrMatricesQ[{} | {{}}] := True;
 NumericMatrixOrMatricesQ[e_List] := NumericMatrixQ[e] || NumericMatricesQ[e];

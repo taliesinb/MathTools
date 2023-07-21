@@ -36,8 +36,9 @@ PaperToMarkdown[data_Association, OptionsPattern[]] := Scope[
     None
   ];
   localPDFPath = toPDFPath[pDFPath, title];
+
   If[!FileExistsQ[localPDFPath] && downloadPDF && origin === "Arxiv",
-    ArxivDownloadPDF[data, PDFPath -> pDFPath, Verbose -> $verbose]
+    DownloadPaper[data, PDFPath -> pDFPath, Verbose -> $verbose]
   ];
   downloadTag = If[FileExistsQ[localPDFPath], "#meta/downloaded", "#todo/download"];
   If[StringQ[additionalText],

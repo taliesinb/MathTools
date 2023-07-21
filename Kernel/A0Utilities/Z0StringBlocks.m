@@ -37,7 +37,7 @@ Options[StringTable] = {
 }
 
 ToStringBlock[StringTable[rows_List, OptionsPattern[]]] := Scope[
-  If[!MatrixQ[rows, True&], ThrowMessage["notmatrix", MsgExpr @ rows]];
+  If[!AnyMatrixQ[rows], ThrowMessage["notmatrix", MsgExpr @ rows]];
   items = MatrixMap[ToStringBlock, rows];
   UnpackOptions[tableHeadings, tableHeadingStyle];
   {rowStyle, colStyle} = tableHeadingStyle * {1, 1};
@@ -93,7 +93,7 @@ Options[StringMatrix] = {
 StringBlock::notmatrix = "Expected a matrix, found ``."
 
 ToStringBlock[StringMatrix[rows_List, opts___Rule]] := Scope[
-  If[!MatrixQ[rows, True&], ThrowMessage["notmatrix", MsgExpr @ rows]];
+  If[!AnyMatrixQ[rows], ThrowMessage["notmatrix", MsgExpr @ rows]];
   gstackBlocks[MatrixMap[ToStringBlock, rows], opts]
 ];
 

@@ -495,7 +495,7 @@ CreateBearArxivPages::badmd = "Could not create markdown for data ``.";
 CreateBearArxivPages[assocs:{__Association}, opts:OptionsPattern[]] := Scope[
   assocs = ReverseSortBy[assocs, Key["Date"]];
   list = Map[assoc |-> (
-    res = ArxivPageToMarkdown[assoc, opts];
+    res = PaperToMarkdown[assoc, opts];
     If[!StringQ[res], ReturnFailed["badmd", MsgExpr @ assoc]];
     CreateBearNote[res]
   ),

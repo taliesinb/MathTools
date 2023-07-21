@@ -501,13 +501,16 @@ Interpolated[a_, b_, n_] := Table[b * i + a * (1 - i), {i, 0, 1, 1/(n-1)}];
 
 (**************************************************************************************************)
 
-PublicFunction[AngleComplex, AnglePair]
+PublicFunction[AngleComplex, AnglePair, PairAngle]
 
 AngleComplex[theta_] := Complex @@ AnglePair[theta];
 AngleComplex[theta_List] := ToPackedComplex @ Apply[Complex, AnglePair[theta], {-2}];
 
 SetListable[AnglePair];
 AnglePair[theta_] := CosSin @ N[Tau * theta];
+
+PairAngle[{x_, y_}] := ArcTan[x, y];
+PairAngle[{0|0., 0|0.}] := 0;
 
 (**************************************************************************************************)
 
@@ -582,3 +585,18 @@ ImageToGraphics[img_, {xalign_, yalign_}, size_] := Scope[
   ]
 ];
 
+(**************************************************************************************************)
+
+PrivateFunction[ToAlignmentPair]
+
+ToAlignmentPair[align_] := Switch[align,
+  Center,      {Center, Center},
+  Left|Right,  {align,  Center},
+  Top|Bottom,  {Center, align},
+  TopLeft,     {Left,   Top},
+  TopRight,    {Right,  Top},
+  BottomLeft,  {Left,   Bottom},
+  BottomRight, {Right,  Bottom},
+  {Left|Right|Center, Top|Bottom|Center}, align,
+  _,           $Failed
+];

@@ -273,7 +273,9 @@ CellFindBoxes[nbData_, rule_, typePattern_:_] :=
 
 PublicFunction[EvaluateInitializationCellsContaining]
 
-EvaluateInitializationCellsContaining[token_String] := Scope[
+General::notstrpatt = "`` is not a string pattern."
+EvaluateInitializationCellsContaining[token_] := Scope[
+  If[!StringPatternQ[token], ReturnFailed["notstrpatt", token]];
   cells = FindCellObjects[token, "Code"];
   Scan[cell |-> (
       SelectionMove[cell, All, CellContents];

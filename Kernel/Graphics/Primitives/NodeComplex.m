@@ -9,9 +9,9 @@ $W = "W";
 
 (**************************************************************************************************)
 
-PublicHead[NodeComplex, NodeColumn, NodeRow, NodeGrid, NodeBox, AbsoluteOffset]
+PublicHead[NodeComplex, NodeColumn, NodeRow, NodeGrid, NodeBox, AbsoluteOffset, ManualNodeLayout]
 
-PublicOption[NodeLabel, NodePorts, NodeAlias, PrologStyle, EpilogStyle]
+PublicOption[NodeLabel, NodePorts, NodeAlias, PrologStyle, EpilogStyle, NodePalette]
 
 PrivateHead[$node, $var, $tagvar, $relvar]
 
@@ -29,12 +29,15 @@ Options[NodeComplex] = {
   Epilog -> None,
   EpilogStyle -> None,
   PrologStyle -> None,
-  Background -> None
+  Background -> None,
+  NodePalette -> None
 };
 
 nodeComplexBoxes[NodeComplex[nodes_, opts___Rule]] := Scope @ CatchMessage[NodeComplex,
-  $path = $var["Root"]; $eqs = {}; $nodeAliases = <||>; $varAliases = {}; $isAutomaticSize = <||>; $uniqueMeanInd = 0; $portPositionDefaults = {}; $meanConnectionEqs = {};
-  UnpackOptionsAs[NodeComplex, {opts}, epilog, prolog, background, epilogStyle, prologStyle];
+  $path = $var["Root"]; $eqs = {}; $nodeAliases = <||>; $varAliases = {}; $isAutomaticSize = <||>;
+  $uniqueMeanInd = 0; $portPositionDefaults = {}; $meanConnectionEqs = {}; $meanEqCycles = Null;
+  UnpackOptionsAs[NodeComplex, {opts}, epilog, prolog, background, epilogStyle, prologStyle, nodePalette];
+withNodePalette[nodePalette,
   $epilogFn = StyleBoxOperator @ epilogStyle;
   $prologFn = StyleBoxOperator @ prologStyle;
   boxes = attachProEpi[prolog, epilog] @ processNode[nodes];
@@ -62,7 +65,7 @@ nodeComplexBoxes[NodeComplex[nodes_, opts___Rule]] := Scope @ CatchMessage[NodeC
     $delayedBoxes[e_]          :> RuleCondition[ToGraphicsBoxes @ e]
   ];
   result
-];
+]];
 
 DefineStandardTraditionalForm[
   $var[args___] :> ToBoxes @ Style[Row @ Riffle[{args}, ":"], FontFamily -> "Fira Code", FontColor -> $Blue]
@@ -73,7 +76,7 @@ DefineStandardTraditionalForm[
 NodeComplex::unresolvedVar = "Variable `` in `` that compiles to `` was not present in solution. Equations defining it are printed below, followed by those mentioning it.";
 NodeComplex::matchingVars = "Vars similar to `` are ``.";
 NodeComplex::matchingVars = "Vars similar to `` are ``.";
-NodeComplex::meanConnectionEquations = "Mean connection equations printed below.";
+NodeComplex::meanConnectionEquations = "Mean connection equations printed below, followed by any detected cycles.";
 
 complainUnresolved[result_, var_, nodeCoord_] := Scope[
   context = Extract[result, SafeDrop[First @ Position[result, var], -3]] /. ($fromNC[_, n_] :> n) /. (var|nodeCoord -> Style["XXX", Black, Bold]);
@@ -102,29 +105,45 @@ meanConnectionEquations[eqns_, boxes_] := Scope[
   meanVars = DeepUniqueCases[{eqns, boxes}, $var[___, "InMean" | "OutMean"]];
   If[meanVars === {}, Return[{}]];
   iConns = oConns = <||>;
-  DeepCases[
+  cEdges = DeepCases[
     boxes /. $fromNC[v_, _] :> v,
     CircuitCurve[{a_$var, b_$var}, ___] :> (
       KeyAppendTo[oConns, a, b];
       KeyAppendTo[iConns, b, a];
+      DirectedEdge[a, b]
     )
   ];
-  meanEqs = Map[# -> meanVarRHS[Last @ #, Most @ #]&, meanVars];
+  meanEqs = Map[toMeanVarRule, meanVars];
   varP = Alternatives @@ vars;
   meanEqDepGraph = Graph @ Flatten @ Cases[meanEqs, Rule[a_, b_] :> Thread[Most[a] -> DeepCases[b, _$var]]];
-  meanEqCycles = FindCycle[meanEqDepGraph, 2, All];
-  (* this occurs when two ports involve eachother in their means. here the downstream port gets its default position to break the cycle *)
-  Scan[
-    cycle |-> AppendTo[meanEqs, depVar = Part[cycle, 1, 1]; depVar -> Lookup[$portPositionDefaults, depVar]],
-    meanEqCycles
+  $meanEqCycles ^= meanEqCycles = FindCycle[meanEqDepGraph, 2, All];
+  If[meanEqCycles =!= {},
+    (* this occurs when two ports involve eachother in their means.
+    here the downstream port gets its default position to break the cycle *)
+    varTopOrderSort = AssociationRange @ TopologicalSort @ Graph @ cEdges;
+    meanEqCycleBreakVars = chooseCycleVarToBreak /@ meanEqCycles;
+    meanEqs //= Map[filterMeanEqToRemoveCycleVar];
+
   ];
   $meanConnectionEqs ^= meanEqs
 ];
 
-meanVarRHS[type_, var_] := Mean @ Lookup[
+filterMeanEqToRemoveCycleVar[var_ -> rhs_] :=
+  If[ElementQ[Most @ var, meanEqCycleBreakVars],
+    var -> Lookup[$portPositionDefaults, Most @ var],
+    var -> rhs
+  ];
+
+noExpand[v:(_$var | _List)] := v;
+noExpand[e_] := NoLinearExpand[e];
+
+toMeanVarRule[var_] := var -> meanVarRHS[Last @ var, Most @ var];
+meanVarRHS[type_, var_] := noExpand @ Mean @ Lookup[
   If[type === "InMean", iConns, oConns],
   var, List @ Lookup[$portPositionDefaults, var, {0,0}]
 ];
+
+chooseCycleVarToBreak[cycle_List] := MaximumBy[Part[cycle, All, 1], varTopOrderSort];
 
 (**************************************************************************************************)
 
@@ -185,17 +204,18 @@ toVar[args_] := $var[args];
 
 (**************************************************************************************************)
 
-PublicHead[NodeColumn, NodeRow, NodeGrid, NodeFrame, NodeEpilog, NodeProlog, NodeBox, NodeDisk, PortSkeleton]
+PublicHead[NodeColumn, NodeRow, NodeGrid, NodeFrame, NodeBox, NodeDisk, PortSkeleton, NodePort]
 
 General::badNodeSpec = "Invalid node expression: ``.";
+
 processNode = Case[
+
+  ManualNodeLayout[nodes_List, size_List, opts___Rule] := manualNodeLayout[nodes, size, opts];
+
   NodeColumn[nodes_List, opts___Rule] := columnLayout[nodes, {opts}];
   NodeRow[nodes_List, opts___Rule]    := rowLayout[nodes, {opts}];
   NodeGrid[spec_List, opts___Rule]    := gridLayout[spec, {opts}];
   NodeFrame[interior_]                := nodeFrame[interior];
-
-  NodeEpilog[node_, epilog_]          := nodeEpilog[node, epilog];
-  NodeProlog[node_, prolog_]          := nodeProlog[node, prolog];
 
   PortSkeleton[args___]               := portSkeletonBox[args];
 
@@ -204,6 +224,9 @@ processNode = Case[
 
   Spacer[{w_, h_}]                    := emptyBox[w, h];
   Padded[node_, spec_]                := paddedNode[node, spec];
+
+  Pane[text_, size_, opts___Rule]     := paneNode[text, size, opts];
+  p_Point                             := (emptyBox[0, 0]; makeDelayed @ Translate[p, currentCenter[]]);
 
   node_                               := ThrowMessage["badNodeSpec", MsgExpr @ node];
 
@@ -232,36 +255,70 @@ subPath[e_] := Append[$path, e];
 
 (**************************************************************************************************)
 
-paddedNode[node_, spec_] := Scope[
-  {{l, r}, {b, t}} = StandardizePadding @ spec;
+SetHoldRest[withNodePalette];
+withNodePalette[None | Automatic | {}, body_] := body;
+withNodePalette[palette_, body_] := Internal`InheritedBlock[
+  {$nodePalette},
+  AssociateTo[$nodePalette, Map[ToRainbowColor, Association @ palette]];
+  body
+];
 
+$nodePalette = <||>;
+toRainbowColor[i_] := Lookup[$nodePalette, i, ToRainbowColor @ i];
+toRainbowColor[p_, i_] := Lookup[$nodePalette, p, Lookup[$nodePalette, i, ToRainbowColor[p, i]]];
+
+applyNodePalette[e_] := e /. $portColor[p_] :> RuleCondition[Lookup[$nodePalette, p]];
+
+(**************************************************************************************************)
+
+paddedNode[interior_, spec_] := Scope[
+  {{lmargin, rmargin}, {bmargin, tmargin}} = StandardizePadding[spec];
+  {{$w, $h}, interior} = toNodeBoxInterior @ interior;
+  addFrameEqns[$w, $h];
+  interior
 ];
 
 emptyBox[w_, h_] := (addFrameEqns[w, h]; {})
 
 (**************************************************************************************************)
 
+Options[paneNode] = {
+  Background -> None, FrameColor -> None, FrameThickness -> 1, RoundingRadius -> None, Alignment -> Center
+};
+
+paneNode[text_, {w_, h_}, OptionsPattern[]] := Scope[
+  UnpackOptions[frameColor, background, frameThickness, roundingRadius, alignment];
+  addFrameEqns[w, h];
+  fet = {toRainbowColor @ background, toRainbowColor @ frameColor, frameThickness};
+  boxPrimitives = makeRoundedRect[subPath /@ {$L, $B}, subPath /@ {$R, $T}, roundingRadius, fet];
+  align = {1.2, 1} * -Lookup[$sideToLabelOffset, alignment];
+  labelPos = subPath /@ Lookup[$sideToCoords, alignment];
+  List[
+    boxPrimitives,
+    makeDelayed @ {
+      Style[Point[labelPos], Opacity[0]],
+      Text[text, labelPos, align, BaseStyle -> ToList[FontWeight -> "Regular", $NodeComplexLabelStyle]]
+    }
+  ]
+];
+
+(**************************************************************************************************)
+
 nodeFrame[node_] :=
   {
-    StyleBox[
-      makeRect[subPath[{$L, $B}], subPath[{$R, $T}], None, $Gray, 1],
-      FaceForm[None], EdgeForm[$Red]
-    ],
+    makeRect[subPath /@ {$L, $B}, subPath /@ {$R, $T}, {None, $Red, 1}],
     processNode[node]
   };
 
 (**************************************************************************************************)
 
-nodeEpilog[node_, epilog_] := {processNode @ node, makeDelayed @ epilog};
-nodeProlog[node_, prolog_] := {makeDelayed @ prolog, processNode @ node};
-
-(**************************************************************************************************)
-
+columnLayout[l___, NodePalette -> p_, r___] := withNodePalette[p, columnLayout[l, r]];
 columnLayout[nodes_List, opts_] :=
   hvNodeLayout[NodeColumn, nodes, opts, {Left, Right}, {$T, $B, $H, $L, $R, $W}, -1];
 
 (**************************************************************************************************)
 
+rowLayout[l___, NodePalette -> p_, r___] := withNodePalette[p, rowLayout[l, r]];
 rowLayout[nodes_List, opts_] :=
   hvNodeLayout[NodeRow, nodes, opts, {Top, Bottom}, {$L, $R, $W, $T, $B, $H}, 1];
 
@@ -273,7 +330,8 @@ Options[NodeRow] = Options[NodeColumn] = {
   FrameMargins -> 0,
   Spacings -> .5,
   Epilog -> None,
-  Prolog -> None
+  Prolog -> None,
+  NodePalette -> None
 };
 
 NodeComplex::badalign = "Alignment -> `` not valid for ``."
@@ -315,6 +373,37 @@ hvNodeLayout[head_, nodes_List, opts_, {startSym_, endSym_}, {mainStart_, mainEn
 
 (**************************************************************************************************)
 
+Options[ManualNodeLayout] = {
+  Alignment -> Center,
+  Epilog -> None,
+  Prolog -> None,
+  NodeAlias -> None
+};
+
+manualNodeLayout[nodes_List, {w_, h_}, OptionsPattern[ManualNodeLayout]] := Scope[
+  UnpackOptions[alignment, epilog, prolog, nodeAlias];
+  createNodeAlias[nodeAlias];
+  {$halign, $valign} = ToAlignmentPair @ alignment;
+  addFrameEqns[w, h];
+  nodes = MapIndex1[processManualNode, nodes];
+  attachProEpi[prolog, epilog] @ nodes
+]
+
+processManualNode[pos_ -> Item[node_, Alignment -> align_], i_] := Scope[
+  {$halign, $valign} = ToAlignmentPair @ align;
+  processManualNode[pos -> node, i]
+];
+
+processManualNode[{x_, y_} -> node_, i_] := (
+  addEqns @ {
+    subPath[i, Switch[$valign, Top,  $T, Center, $TB, Bottom, $B]] -> subPath[$T] - y,
+    subPath[i, Switch[$halign, Left, $L, Center, $LR,  Right, $R]] -> subPath[$L] + x
+  };
+  processNode[node, i]
+);
+
+(**************************************************************************************************)
+
 NodeGrid::badNodeGridSpec = "Spec `` should be a dense matrix of items or a list of rules mapping position to item.";
 
 Options[NodeGrid] = {
@@ -322,14 +411,24 @@ Options[NodeGrid] = {
   ColumnAlignments -> Left,
   RowSpacings -> .5,
   ColumnSpacings -> .5,
-  FrameMargins -> 0
+  FrameMargins -> 0,
+  Epilog -> None,
+  Prolog -> None,
+  NodePalette -> None
 }
 
+gridLayout[spec_List, {l___, NodePalette -> p_, r___}] :=
+  withNodePalette[p, gridLayout[spec, {l, r}]];
+
 gridLayout[spec_List, opts_List] := Scope[
-  UnpackOptionsAs[NodeGrid, {opts}, rowAlignments, columnAlignments, rowSpacings, columnSpacings, frameMargins];
+  UnpackOptionsAs[NodeGrid, {opts},
+    rowAlignments, columnAlignments, rowSpacings, columnSpacings, frameMargins,
+    prolog, epilog
+  ];
   $halign = columnAlignments; $valign = rowAlignments;
   $hspacing = columnSpacings; $vspacing = rowSpacings;
-  CatchMessage[NodeGrid, parseGridItems[spec]]
+  items = CatchMessage[NodeGrid, parseGridItems[spec]];
+  attachProEpi[prolog, epilog] @ items
 ];
 
 NodeGrid::unspecsize = "Cannot choose a `` for at least one ``.";
@@ -398,20 +497,14 @@ NodeGrid::baditemalign = "Item Alignment -> `` is invalid."
 
 parseGridRuleItem = Case[
   Rule[rc:{_, _}, Item[item_, Alignment -> align_]] := Scope[
-    Switch[align,
-      Center,      $halign = Center; $valign = Center,
-      Left|Right,  $halign = align;  $valign = Center,
-      Top|Bottom,  $halign = Center; $valign = align,
-      TopLeft,     $halign = Left;   $valign = Top,
-      TopRight,    $halign = Right;  $valign = Top,
-      BottomLeft,  $halign = Left;   $valign = Bottom,
-      BottomRight, $halign = Right;  $valign = Bottom,
-      {Left|Right|Center, Top|Bottom|Center}, {$halign, $valign} = align,
-      _,           ThrowMessage["baditemalign", align];
-    ];
+    pair = ToAlignmentPair[align];
+    If[FailureQ[pair], ThrowMessage["baditemalign", align]];
+    {$halign, $valign} = pair;
     % @ Rule[rc, item]
   ];
-  Rule[rc:{_, _}, item_] := Scope[
+(*   Rule[pos_, Translate[item_, delta_]] :=
+    Translate[%[pos -> item],
+ *)  Rule[rc:{_, _}, item_] := Scope[
     {{rs, re}, {cs, ce}} = Map[parseSpan, rc];
     l = subPath["Cols", cs, $L]; r = subPath["Cols", ce, $R];
     t = subPath["Rows", rs, $T]; b = subPath["Rows", re, $B];
@@ -469,11 +562,15 @@ portSkeletonBox[w_, nodePorts_, opts___Rule] := Scope[
   UnpackOptionsAs[PortSkeleton, {opts}, nodeAlias];
   createNodeAlias[nodeAlias];
   $w = w;
+  $isNodeDisk = False;
   {$portData, $defaultPortData} = OptionValueAssociations[PortSkeleton, replaceIO @ {opts}, $portOptionKeys];
   portPrimitives = Flatten @ processNodeBoxPorts[Bottom -> nodePorts];
   addFrameEqns[$w, 0];
   portPrimitives
 ];
+
+portSkeletonBox[str_String, opts___Rule] :=
+  portSkeletonBox[.5, 1, PortStyleData[str], opts];
 
 (**************************************************************************************************)
 
@@ -490,10 +587,10 @@ PublicOption[NodePorts, NodeLabelStyle, NodeLabelColor, FrameColor, FrameThickne
 PublicOption[PortSpacing, PortPositions, PortSize, PortShape, PortEdgeColor, PortColor, PortEdgeThickness, HiddenPorts, PortPositions]
 PublicVariable[$NodeComplexLabelStyle, $PortLabelStyle]
 
-SetInitialValue[$NodeComplexLabelStyle, {FontSize  -> 16, FontFamily -> "Fira Code", FontWeight -> "Bold"}];
-SetInitialValue[$PortLabelStyle, {FontSize -> 11, FontFamily -> "Fira Code"}];
+SetInitialValue[$NodeComplexLabelStyle, {FontSize  -> 16, FontWeight -> "Bold", BaseStyle -> "PreformattedCode"}];
+SetInitialValue[$PortLabelStyle, {FontSize -> 11, BaseStyle -> "PreformattedCode"}];
 
-Options[NodeDisk] = {
+Options[NodeDisk] = Options[NodeBox] = {
   Background        -> None,
   Epilog            -> None,
   FrameColor        -> $Gray,
@@ -506,6 +603,7 @@ Options[NodeDisk] = {
   NodeLabel         -> None,
   NodeLabelColor    -> None,
   NodeLabelStyle    :> $NodeComplexLabelStyle,
+  NodePalette       -> None,
   NodePorts         -> None,
   PortLabelStyle    :> $PortLabelStyle,
   PortEdgeColor     -> Automatic,
@@ -515,13 +613,9 @@ Options[NodeDisk] = {
   PortShape         -> "Disk",
   PortSize          -> 0.05,
   PortSpacing       -> Automatic,
-  Prolog            -> None
-}
-
-Options[NodeBox] = JoinOptions[
-  NodeDisk,
+  Prolog            -> None,
   RoundingRadius    -> None
-]
+}
 
 SetUsage @ "
 NodeBox[interior$] represents a rectangular node in a %NodeComplex.
@@ -575,42 +669,41 @@ DefineLiteralMacro[OptionValueAssociations,
   }
 ];
 
+nodeBox[l___, NodePalette -> p_, r___] := withNodePalette[p, nodeBox[l, r]];
 nodeBox[head_, spec_, opts___Rule] := Scope @ CatchMessage[head,
   UnpackOptionsAs[head, {opts},
     background, nodePorts, nodeLabel, nodeLabelStyle, nodeLabelColor,
     frameMargins, epilog, prolog, nodeAlias,
     portLabelStyle,
     (* portSpacing, portSize, portShape, portEdgeColor, portColor, portEdgeThickness, portPositions, *)
-    frameColor, background, frameThickness,
+    frameColor, background, frameThickness, roundingRadius,
     frameLabel, frameLabelSpacing, frameLabelStyle
   ];
 
+  $isNodeDisk = head === NodeDisk;
   {$portData, $defaultPortData} = OptionValueAssociations[head, replaceIO @ {opts}, $portOptionKeys];
   createNodeAlias[nodeAlias];
 
   {{lmargin, rmargin}, {bmargin, tmargin}} = StandardizePadding[frameMargins];
   {{$w, $h}, interior} = toNodeBoxInterior @ spec;
 
-  portPrimitives = If[head === NodeBox, processNodeBoxPorts, processNodeDiskPorts] @ replaceIO @ nodePorts;
+  portPrimitives = If[$isNodeDisk, processNodeDiskPorts, processNodeBoxPorts] @ replaceIO @ nodePorts;
   portPrimitives //= Flatten;
   If[portPrimitives === {}, portPrimitives = Nothing];
 
   addFrameEqns[$w, $h];
 
-  fet = {background, frameColor, frameThickness};
-  boxPrimitives = Switch[head,
-    NodeBox,
-      UnpackOptionsAs[NodeBox, {opts}, roundingRadius];
-      makeRoundedRect[subPath /@ {$L, $B}, subPath /@ {$R, $T}, roundingRadius, fet]
-    ,
-    NodeDisk,
-      addEqns[subPath["Radius"], Max[$w, $h]/2];
-      makeDisk[currentCenter[], subPath["Radius"], fet]
+  fet = {toRainbowColor @ background, toRainbowColor @ frameColor, frameThickness};
+  boxPrimitives = If[$isNodeDisk,
+    addEqns[subPath["Radius"], Max[$w, $h]/2];
+    makeDisk[currentCenter[], subPath["Radius"], fet]
+  ,
+    makeRoundedRect[subPath /@ {$L, $B}, subPath /@ {$R, $T}, roundingRadius, fet]
   ];
 
   labelPrimitives = If[nodeLabel === None, Nothing,
     ToGraphicsBoxes @ Text[
-      StyleOperator[ToRainbowColor @ nodeLabelColor] @ StyleOperator[nodeLabelStyle] @ nodeLabel,
+      StyleOperator[toRainbowColor @ nodeLabelColor] @ StyleOperator[nodeLabelStyle] @ nodeLabel,
       currentCenter[]
     ]];
 
@@ -633,7 +726,7 @@ attachProEpi[None, None][prims_] := prims;
 attachProEpi[pro_, epi_][prims_] := {$prologFn @ makeDelayed @ pro, prims, $epilogFn @ makeDelayed @ epi};
 
 makeDelayed[None | {}] := Nothing;
-makeDelayed[prims_] := $delayedBoxes[$scoped[$path, prims]];
+makeDelayed[prims_] := $delayedBoxes[$scoped[$path, applyNodePalette @ prims]];
 
 (**************************************************************************************************)
 
@@ -867,8 +960,9 @@ applyGraphicsOffset[{0|0., 0|0.}][e_] := e;
 applyGraphicsOffset[offset_][e_] := Construct[GeometricTransformationBox, e, AbsoluteThicknessToDimension[#, 40]& /@ offset];
 
 toFET[Style[p_, c:($ColorPattern | _Integer)], f_, e_, t_] := toFET[p, c, e, t];
-toFET[i_Integer, f_, e_, t_]                               := {ToRainbowColor[f, i], ToRainbowColor[e, i], t};
-toFET[_, f_, e_, t_]                                       := {ToRainbowColor @ f, ToRainbowColor @ e, t};
+toFET[p_, f_, e_, t_] /; KeyExistsQ[$nodePalette, p]       := {toRainbowColor @ $nodePalette @ p, toRainbowColor @ e, t};
+toFET[i_Integer, f_, e_, t_]                               := {toRainbowColor[f, i], toRainbowColor[e, i], t};
+toFET[_, f_, e_, t_]                                       := {toRainbowColor @ f, toRainbowColor @ e, t};
 
 shapeOffset = Case[
   _                   := 0;
@@ -882,12 +976,15 @@ shapeOffset = Case[
   Placed[_, Above|TopLeft|Top|TopRight]             := -1;
 ]
 
+$needsRounding := $isNodeDisk || TrueQ[roundingRadius >= $w/2];
+
 shapeToFn := Case[
-  shape_ := Lookup[$shapeToFn, shape, ThrowMessage["badNodePortShape", shape, Keys @ $shapeToFn]];
-  Placed[label_, pos_Symbol] := Function[
-    makeLabel[label, #coords, pos, 0.2, portLabelStyle]
-  ];
-  Labeled[shape_, label_, pos_] := ApplyThrough[{% @ shape, % @ Placed[label, pos]}]
+  str_String /; StringStartsQ[str, "DownHalf"] := Function[shapeToFn[If[Part[#dirs, 2] > 0, "Outer", "Inner"] <> StringDrop[str, 8]][##]];
+  "InnerDisk" /; TrueQ[$needsRounding] := Function[makeHalfDisk[#coords, -#dirs, {#PortSize, $w/2}, #FET]];
+  "OuterDisk" /; TrueQ[$needsRounding] := Function[makeHalfDisk[#coords,  #dirs, {#PortSize, $w/2}, #FET]];
+  shape_                               := Lookup[$shapeToFn, shape, ThrowMessage["badNodePortShape", shape, Keys @ $shapeToFn]];
+  Placed[label_, pos_Symbol]           := Function[makeLabel[label, #coords, pos, 0.2, portLabelStyle]];
+  Labeled[shape_, label_, pos_]        := ApplyThrough[{% @ shape, % @ Placed[label, pos]}]
 ];
 
 $shapeToFn = <|
@@ -905,26 +1002,46 @@ $shapeToFn = <|
 
 (**************************************************************************************************)
 
-applyStyle[PolygonBox[coords_], {None,  edge_, thickness_}] := StyleBox[LineBox[coords], edge, AbsoluteThickness @ thickness];
+applyStyle[fet_][obj_] := applyStyle[obj, fet];
+applyStyle[PolygonBox[coords_], {None,  edge_, thickness_}] := StyleBox[Construct[LineBox, closePath @ coords], edge, AbsoluteThickness @ thickness];
 applyStyle[DiskBox[args__],     {None,  edge_, thickness_}] := StyleBox[CircleBox[args], edge, AbsoluteThickness @ thickness];
 applyStyle[other_,              {face_, edge_, thickness_}] := StyleBox[other, FaceEdgeForm[face, edge, thickness]];
 
+closePath[coords_] := If[First[coords] === Last[coords], coords, Append[First @ coords] @ coords];
+
 (**************************************************************************************************)
+
+makePolygon[points_] := Construct[PolygonBox, points];
 
 makeRoundedRect[c1_, c2_, r_, fet_] := makeRect[c1, c2, fet, RoundingRadius -> r];
 makeRoundedRect[c1_, c2_, None|0|0., fet_] := makeRect[c1, c2, fet];
 
-makeRect[c1_, c2_, fet_, opts___Rule] := applyStyle[RectangleBox[c1, c2, opts], fet];
+makeRect[c1_, c2_, fet_, opts___Rule] := applyStyle[fet] @ RectangleBox[c1, c2, opts];
 makeSquare[p_, r_, fet_] := makeRect[p - r, p + r, fet];
 
-halfCirclePoints[ang_] := halfCirclePoints[ang] = DiscretizeCurve[Circle[{0,0}, 1, {ang - Pi/2, ang + Pi/2}]];
-makeHalfDisk[pos_, dir_, r_, fet_] := applyStyle[Construct[PolygonBox, Threaded[pos] + r * halfCirclePoints[ArcTan2 @@ dir]], fet];
+Clear[arcPoints];
+arcPoints[ang_] := arcPoints[ang] = DiscretizeCurve[Circle[{0,0}, 1, {-ang, ang}]];
+$halfCirclePoints = arcPoints[Pi/2];
 
-makeHalfDiamond[pos_, {x_, y_}, fet_] := applyStyle[Construct[PolygonBox, Threaded[pos] + {{-y, x}, {x, y}, {y, -x}}], fet];
-makeHalfSquare[pos_, {x_, y_}, fet_]  := applyStyle[Construct[PolygonBox, Threaded[pos] + {{-y, x}, {x - y, x + y}, {x + y, -x + y}, {y, -x}}], fet];
+makeHalfDisk[pos_, dir_, r_, fet_] := applyStyle[fet] @ makePolygon @ ScaleRotateTranslateVector[r, PairAngle @ dir, pos, $halfCirclePoints];
 
-makeDisk[pos_, r_, fet_] := applyStyle[DiskBox[pos, r], fet];
+makeHalfDisk[pos_, dir_, {r1_, r2_}, fet_] := With[
+  {dtheta1 = r1 / r2},
+  {dtheta2 = Pi/2 * (1 - dtheta1/2.5)},
+  applyStyle[fet] @ makePolygon @ Join[
+    ScaleRotateTranslateVector[r2, dir, pos - dir * r2, arcPoints[dtheta1]],
+    ScaleRotateTranslateVector[r1, -dir, pos, arcPoints[dtheta2]]
+  ]
+];
+
+makeHalfDiamond[pos_, {x_, y_}, fet_] := applyStyle[fet] @ makePolygon @ TranslateVector[pos] @ {{-y, x}, {x, y}, {y, -x}};
+makeHalfSquare[pos_, {x_, y_}, fet_]  := applyStyle[fet] @ makePolygon @ TranslateVector[pos] @ {{-y, x}, {x - y, x + y}, {x + y, -x + y}, {y, -x}};
+
+makeDisk[pos_, r_, fet_] := applyStyle[fet] @ DiskBox[pos, r];
 makePoint[pos_, r_, fet_] := StyleBox[PointBox[pos], PointSize[2 * r / $var[$W]], First @ fet];
+
+(**************************************************************************************************)
+
 
 (**************************************************************************************************)
 
@@ -947,6 +1064,7 @@ $sideToLabelOffset = <|
 
 $defaultNodeSize = {1, 1};
 $boxSizeP = $NumberP | Automatic | Inherited;
+$intOrSpanP = _Integer | _Span;
 
 toNodeBoxInterior = Case[
   sz:$boxSizeP               := % @ {sz, sz};
@@ -954,6 +1072,10 @@ toNodeBoxInterior = Case[
     {ReplaceAutomatic[w, $isAutomaticSize[subPath[$W]] = True; First @ $defaultNodeSize],
      ReplaceAutomatic[h, $isAutomaticSize[subPath[$H]] = True; Last @ $defaultNodeSize]},
     None
+  };
+  rules:{({$intOrSpanP, $intOrSpanP} -> _)..} := {
+    {subPath[$W], subPath[$H]},
+    gridLayout[rules, {FrameMargins -> .75}]
   };
   other_                     := Scope[
     size = subPath[All, {$W, $H}] + {lmargin + rmargin, bmargin + tmargin};
