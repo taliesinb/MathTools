@@ -188,21 +188,24 @@ _RenameBearNote := BadArguments[];
 
 PublicFunction[GlobalBearStringReplace]
 
+Clear[GlobalBearStringReplace];
 Options[GlobalBearStringReplace] = {
   Verbose -> Automatic,
   DryRun -> False,
-  VerifyResult -> True
+  VerifyResult -> True,
+  IgnoreCase -> False
 };
 
 GlobalBearStringReplace::badpatt = "Not a valid pattern: ``."
 GlobalBearStringReplace::notfound = "No notes containing regex pattern \"``\"."
 GlobalBearStringReplace[rules_, opts:OptionsPattern[]] := Scope[
-  UnpackOptions[$verbose, $dryRun, verifyResult];
+  UnpackOptions[$verbose, $dryRun, verifyResult, ignoreCase];
   SetAutomatic[$verbose, $dryRun];
   rules //= ToList;
   lhsPattern = First /@ rules;
   lhsPattern = If[Length[lhsPattern] === 1, First @ lhsPattern, Alternatives @@ lhsPattern];
   regex = ToRegularExpression @ lhsPattern;
+  If[TrueQ @ ignoreCase, regex = StringInsert[regex, "i", 3]];
   If[!StringQ[regex], ReturnFailed["badpatt", regex]];
   VPrint["Searching against regexp \"", regex, "\""];
   With[{re = regex}, query = EntityFunction[z, StringContainsQ[z["ZTEXT"], RegularExpression @ re]]];
@@ -211,35 +214,8 @@ GlobalBearStringReplace[rules_, opts:OptionsPattern[]] := Scope[
   VPrint["Obtained ", Length @ res, " results."];
   Scan[
     TransformBearNote[
-      #, StringReplace @ rules,
-      Verbose -> $verbose, DryRun -> $dryRun, VerifyResult -> verifyResult
-    ]&,
-    res
-  ];
-]
-
-(*************************************************************************************************)
-
-PublicFunction[GlobalBearLineCases]
-
-GlobalBearL::badpatt = "Not a valid pattern: ``."
-
-GlobalBearStringReplace[rules_, opts:OptionsPattern[]] := Scope[
-  UnpackOptions[$verbose, $dryRun, verifyResult];
-  SetAutomatic[$verbose, $dryRun];
-  rules //= ToList;
-  lhsPattern = First /@ rules;
-  lhsPattern = If[Length[lhsPattern] === 1, First @ lhsPattern, Alternatives @@ lhsPattern];
-  regex = ToRegularExpression @ lhsPattern;
-  If[!StringQ[regex], ReturnFailed["badpatt", regex]];
-  VPrint["Searching against regexp \"", regex, "\""];
-  With[{re = regex}, query = EntityFunction[z, StringContainsQ[z["ZTEXT"], RegularExpression @ re]]];
-  res = EntityValue[FilteredEntityClass[$BearNote, query], "ZUNIQUEIDENTIFIER"];
-  If[!MatchQ[res, {__String}], ReturnFailed["notfound", regex]];
-  VPrint["Obtained ", Length @ res, " results."];
-  Scan[
-    TransformBearNote[
-      #, StringReplace @ rules,
+      #,
+      StringReplace[rules, IgnoreCase -> ignoreCase],
       Verbose -> $verbose, DryRun -> $dryRun, VerifyResult -> verifyResult
     ]&,
     res
@@ -366,7 +342,8 @@ BearNoteText[titleOrID_String] := Scope[
 
 PublicFunction[BearNoteUUIDQ]
 
-$BearNoteUUIDRegEx = RegularExpression["[A-Z0-9]{8}(?:-[A-Z0-9]{4}){3}-[A-Z0-9]{12}-[A-Z0-9]{3,6}-[A-Z0-9]{16}"];
+"30A395FF-FF7D-4B9D-97B5-FB29E3C9A8B2"
+$BearNoteUUIDRegEx = RegularExpression["[A-Z0-9]{8}(?:-[A-Z0-9]{4}){3}-[A-Z0-9]{12}(?:-[A-Z0-9]{3,6}-[A-Z0-9]{16})?"];
 BearNoteUUIDQ[s_String] := StringMatchQ[s, $BearNoteUUIDRegEx];
 
 (*************************************************************************************************)

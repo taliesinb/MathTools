@@ -841,7 +841,7 @@ processNodeBoxPorts = Case[
       "MatchIn" | "MatchOut", toPortPositions @ ConstantArray[portPosSpec, n],
       AbsoluteOffset[_],      Part[portCoords, All, portXY] += First[portPosSpec]; Null,
       _List,                  toPortPositions @ portPosSpec,
-      _,                      Message[NodeBox::badPortPositions, portPositions]; Null
+      _,                      Message[NodeBox::badPortPositions, portPosSpec]; Null
     ];
     If[ListQ[portCoordOverrides] && LengthEqualOrMessage[NodeBox::badPortPositionLen, portCoordOverrides, portCoords],
       (* fill in the relevant ordinate of ports from provided port positions *)

@@ -516,7 +516,7 @@ QuiverGeometryPackageLoader`Read[cachingEnabled_:True, fullReload_:True] :=
   QuiverGeometryPackageLoader`ReadPackages["QuiverGeometry`", QuiverGeometryPackageLoader`$SourceDirectory, cachingEnabled, fullReload];
 
 QuiverGeometryPackageLoader`Load[fullReload_:True, fullRead_:False] := Block[
-  {$AllowInternet = False},
+  {$AllowInternet = False, URLSubmit = Print["URLSubmit[", Row[{##}, " "], "]"]&},
   FinishDynamic[];
   Block[{packages},
   packages = QuiverGeometryPackageLoader`Read[!fullRead, fullReload];

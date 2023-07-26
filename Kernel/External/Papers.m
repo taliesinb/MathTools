@@ -41,7 +41,7 @@ PaperToMarkdown[data_Association, OptionsPattern[]] := Scope[
     DownloadPaper[data, PDFPath -> pDFPath, Verbose -> $verbose]
   ];
   downloadTag = If[FileExistsQ[localPDFPath], "#meta/downloaded", "#todo/download"];
-  If[StringQ[additionalText],
+  If[StringQ[additionalText] && StringTrim[additionalText] =!= "",
     additionalText //= StringTrim /* StringDelete[("> " <> abstract) | abstract] /* StringTrim;
     If[EditDistance[additionalText, abstract] < StringLength[abstract] * 0.05,
       Message[PaperToMarkdown::addtexttabs, title]];

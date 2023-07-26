@@ -51,7 +51,7 @@ ExtractTitleAuthor[title_String] := Scope[
   Scan[FirstStringCase[title, #]&, {
     StartOfString ~~ t___ ~~ "(" ~~ Shortest[p___] ~~ ")" ~~ EndOfString :>
       If[PossibleFullNameQ[p], person = p; title = t; Goto[Done]],
-    StartOfString ~~ Shortest[p___] ~~ (": " | " - " | " | ") ~~ t___ ~~ "" ~~ EndOfString :>
+    StartOfString ~~ Shortest[p___] ~~ (": " | " - " | " -- " | " --- " | " | ") ~~ t___ ~~ "" ~~ EndOfString :>
       If[PossibleFullNameQ[p], person = p; title = t; Goto[Done]],
     StartOfString ~~ t___ ~~ " - " ~~ p___ ~~ "" ~~ EndOfString :>
       If[PossibleFullNameQ[p], person = p; title = t; Goto[Done]],

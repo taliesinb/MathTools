@@ -43,7 +43,8 @@ YoutubeVideoMetadata[url_String, OptionsPattern[]] := Scope[
 getYTID[url_String] := Which[
   StringMatchQ[url, YoutubeIDPattern], url,
   StringContainsQ[url, "watch?v="], FirstStringCase[url, "watch?v=" ~~ id:YoutubeIDPattern :> id],
-  StringContainsQ[url, ".be/"], FirstStringCase[url, ".be/" ~~ id:YoutubeIDPattern :> id],
+  StringContainsQ[url, ".be/"],     FirstStringCase[url, ".be/" ~~ id:YoutubeIDPattern :> id],
+  StringContainsQ[url, "/live/"],   FirstStringCase[url, "/live/" ~~ id:YoutubeIDPattern :> id],
   True, None
 ];
 
@@ -67,11 +68,13 @@ YoutubeToMarkdown[url_String] := Scope[
 ];
 
 YoutubeToMarkdown[data_Association] := Scope[
+  If[!KeyExistsQ[data, "channel"], data["channel"] = "anonymous"];
   UnpackAssociation[data, channel:"channel", title:"title", description:"description", url:"webpage_url", date:"upload_date"];
   If[StringMatchQ[date, RegularExpression["20[0-9]{6}"]], date = StringInsert[date, "/", {5, 7}]];
   rawChannel = channel;
   person = Lookup[$UploaderToPerson, channel];
   channel = Lookup[$UploaderToChannel, rawChannel];
+  title = StringReplace[title, "/" -> "-"];
   If[!StringQ[person],
     {person2, title2} = ExtractTitleAuthor[title];
     If[StringQ[person2], person = person2; title = title2]];
@@ -104,8 +107,9 @@ YoutubeToMarkdown[data_Association] := Scope[
   ]
 ]
 
-trimDescription[s_] := StringReplaceRepeated[s, {"#" -> "", (" "... ~~ "\n\n") -> ". ", ("\n"|"\r") -> " ", "  " -> " ",
+trimDescription[s_] := StringTrim @ StringReplaceRepeated[s, {"#" -> "", (" "... ~~ "\n\n") -> ". ", ("\n"|"\r") -> " ", "  " -> " ",
   link:HyperlinkPattern :> link,
+  ("To try everything Brilliant has to offer" ~~ ___ ~~ " premium subscription." ~~ ("."..))  -> "",
   a:LetterCharacter ~~ m:("/"|"*"|"_") ~~ b:LetterCharacter :> a <> " " <> m <> " " <> b}];
 
 findPerson1[e_] := Block[{},
@@ -118,20 +122,25 @@ findPerson1[e_] := Block[{},
 ]
 
 findPerson2[e_] := Block[
-  {$authors = Complement[$KnownAuthors, $DeadPeople, {"Peter M Neumann", "St John", "3Blue1Brown"}]},
+  {$authors = Complement[$KnownAuthors, $DeadPeople, {"Peter M Neumann", "St John", "3Blue1Brown"}],
+   authorLastNames, trimFullNames},
   Scan[author |-> (
     If[StringContainsQ[e, author, IgnoreCase -> True], Return[author, Block]]
     ),
     $authors
   ];
-  Scan[author |-> (
-    lastName = Last @ SplitFirstLastName @ author;
-    If[StringLength[lastName] > 3 && StringContainsQ[e, WordBoundary ~~ lastName ~~ WordBoundary, IgnoreCase -> True],
+  authorLastNames = ExtractLastName /@ $authors;
+  trimFullNames = StringDelete[e, TitlecaseWord ~~ " " ~~ TitlecaseWord];
+  ScanThread[{author, lastName} |-> (
+    If[StringLength[lastName] > 3 && Count[authorLastNames, lastName] == 1 && StringContainsQ[trimFullNames, WordBoundary ~~ lastName ~~ WordBoundary, IgnoreCase -> True],
       Return[author, Block]]
     ),
-    $authors
+    {$authors, authorLastNames}
   ];
-  StringCases[e, ("by ") ~~ name:FullNamePhrase :> If[PossibleFullNameQ[name], Return[name, Block]]];
+  StringCases[
+    StringDelete[e, "music" ~~ ___, IgnoreCase -> True],
+    ("by ") ~~ name:FullNamePhrase :> If[PossibleFullNameQ[name], Return[name, Block]]
+  ];
   None
 ];
 

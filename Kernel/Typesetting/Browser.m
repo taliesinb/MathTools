@@ -92,6 +92,10 @@ pickBrowserBoxes[list_List, opts:OptionsPattern[]] := With[
 
 PublicFunction[MappedBrowser]
 
+SetUsage @ "
+MappedBrowser[f$, list$] maps f$ over list$, showing the results in an interactive browser.
+"
+
 MakeBoxes[MappedBrowser[f_, list_List], form_] := mappedBrowserBoxes[f, list];
 
 mappedBrowserBoxes[f_, list_List] := With[
