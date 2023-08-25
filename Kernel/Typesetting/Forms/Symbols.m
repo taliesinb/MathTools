@@ -2,6 +2,8 @@ PublicSymbol[NotApplicableSymbol, UnknownSymbol, EmptySetSymbol, TickSymbol, Uni
 
 PublicSymbol[BarTokenSymbol, FilledTokenSymbol, FilledSquareTokenSymbol, FilledRectangleTokenSymbol, EmptyTokenSymbol, EmptySquareTokenSymbol, EmptyRectangleTokenSymbol]
 
+PublicSymbol[FatArrowSymbol, FatLeftArrowSymbol]
+
 DefineSymbolForm @ {
   NotApplicableSymbol        -> GrayBox["---"],
   UnknownSymbol              -> GrayBox["?"],
@@ -16,7 +18,9 @@ DefineSymbolForm @ {
   FilledRectangleTokenSymbol -> "\[FilledRectangle]",
   EmptyTokenSymbol           -> "\[EmptyCircle]",
   EmptySquareTokenSymbol     -> "\[EmptySquare]",
-  EmptyRectangleTokenSymbol  -> "\[EmptyRectangle]"
+  EmptyRectangleTokenSymbol  -> "\[EmptyRectangle]",
+  FatArrowSymbol             -> BoldBox["\[RightArrow]"],
+  FatLeftArrowSymbol         -> BoldBox["\[LeftArrow]"]
 };
 
 (**************************************************************************************************)
@@ -60,3 +64,13 @@ DefineSymbolForm[#1 -> #2["\[FilledCircle]"]]& @@@ ExpressionTable[
   PurpleToken  PurpleBox
   GrayToken    GrayBox
 ];
+
+(**************************************************************************************************)
+
+PublicSymbol[ExtendedDoubleRightArrow, ExtendedDoubleLeftArrow]
+
+DefineStandardTraditionalForm[{
+  ExtendedDoubleRightArrow[n_] :> GridBox[{{ItemBox["\[DoubleRightArrow]", ItemSize -> n]}}],
+  ExtendedDoubleLeftArrow[n_] :> GridBox[{{ItemBox["\[DoubleLeftArrow]", ItemSize -> n]}}]
+}]
+

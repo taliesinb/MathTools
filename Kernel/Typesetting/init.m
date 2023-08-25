@@ -381,19 +381,28 @@ RiffledBox[rif_][args___] := TemplateBox[{rif, args}, "RiffledForm"];
 
 (**************************************************************************************************)
 
-PublicFormBox[CommaRow]
+PublicFormBox[CommaRow, TightCommaRow]
 
-DefineStandardTraditionalForm[
-  CommaRowForm[a___] :> CommaRowBox[MakeQGBoxSequence[a]]
-];
+DefineStandardTraditionalForm[{
+  CommaRowForm[a___] :> CommaRowBox[MakeQGBoxSequence[a]],
+  TightCommaRowForm[a___] :> TightCommaRowBox[MakeQGBoxSequence[a]]
+}];
 
 CommaRowBox[] := ""
 CommaRowBox[a_] := a;
 CommaRowBox[a__] := TBox[a, "CommaRowForm"];
 
+TightCommaRowBox[] := ""
+TightCommaRowBox[a_] := a;
+TightCommaRowBox[a__] := TBox[a, "TightCommaRowForm"];
+
 DefineNotebookDisplayFunction["CommaRowForm", Function[RowBox[{TemplateSlotSequence[1, ", "]}]]];
 DefineKatexDisplayFunction["CommaRowForm", Riffle[{##}, ","]&];
 AssociateSymbolToTemplateName[CommaRowForm, "CommaRowForm"];
+
+DefineNotebookDisplayFunction["TightCommaRowForm", Function[RowBox[{TemplateSlotSequence[1, ","]}]]];
+DefineKatexDisplayFunction["TightCommaRowForm", Riffle[{##}, ","]&];
+AssociateSymbolToTemplateName[TightCommaRowForm, "TightCommaRowForm"];
 
 (**************************************************************************************************)
 
@@ -560,30 +569,40 @@ which displays as RowBox[{arg$1, infixBox$, arg$2, infixBox$, $$}].
 * The bare head symbol$ just displays as infixBox$.
 * symbol$[] display as nothing.
 * symbol$[arg$1] displays as arg$1.
+* symbol$[symbol$[arg$1, arg$2], arg$3], etc. introduces brackets as necessary.
 * If the %KatexMacroName option is not None, a shortened katex macro is set up, which looks like \\sym{arg$1, arg$2, $$}.
 * If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
 "
 
 (* TODO: replace Padding mechanism by unifying mathbin / mathop on the K side with thin space padding on the M side *)
 
-DefineInfixForm[formSym_Symbol, infixBox_, opts:OptionsPattern[]] :=
-  DefineNAryForm[formSym, RiffledBox[infixBox][$$1], HeadBoxes -> infixBox, FilterOptions @ opts];
+DefineInfixForm[formSym_Symbol, infixBox_, opts:OptionsPattern[]] := First @ {
+  res = DefineNAryForm[formSym, RiffledBox[infixBox][$$1], HeadBoxes -> infixBox, FilterOptions @ opts],
+  DefineStandardTraditionalForm[
+    f:formSym[___, _formSym, ___] :> ToBoxes @ VectorReplace[f, z_formSym :> ParenthesesForm @ z]
+  ]
+};
 
 _DefineInfixForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFormBox[Applied]
+PublicFormBox[Applied, TightApplied]
 
 DefineStandardTraditionalForm[{
-  AppliedForm[fn_, args___] :> AppliedBox[MakeQGBoxes @ fn, MakeQGBoxSequence @ args]
+  AppliedForm[fn_, args___] :> AppliedBox[MakeQGBoxes @ fn, MakeQGBoxSequence @ args],
+  TightAppliedForm[fn_, args___] :> TightAppliedBox[MakeQGBoxes @ fn, MakeQGBoxSequence @ args]
 }];
 
 AppliedBox[fn_, args__] := TBox[fn, CommaRowBox[args], "appliedForm"];
 AppliedBox[fn_] := TBox[fn, "emptyAppliedForm"];
 
+TightAppliedBox[fn_, args__] := TBox[fn, TightCommaRowBox[args], "appliedForm"];
+TightAppliedBox[fn_] := TBox[fn, "emptyAppliedForm"];
+
 DefineTemplateBox[AppliedForm, "appliedForm", RBox[$1, KBox["(", "\\lparen "], $2, KBox[")", "\\rparen "]], None];
 DefineTemplateBox[AppliedForm, "emptyAppliedForm", RBox[$1, KBox["(", "\\lparen "], KBox[")", "\\rparen "]], None];
+
 
 (**************************************************************************************************)
 

@@ -215,15 +215,20 @@ QuiverGeometry`Shortcuts`Arr[x_, y_] := MorphismForm[x, y];
 QuiverGeometry`Shortcuts`Arr[l_, x_, y_] := NamedMorphismForm[l, x, y];
 
 decSymTable["$C#",              CategorySymbol,                             $scriptCapitals];
-decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzstABCDEUVWXYZST"];
-symbolTable["$IdA#",            IdArrow[CategoryObjectSymbol[#]]&,          "01abcdeuvwxyzstABCDEUVWXYZST"];
-decSymTable["$A#",              CategoryArrowSymbol,                        "efghjklmnpqrstuvw"];
+decSymTable["$Fun#",            FunctorSymbol,                              "ABCDEFGHUVPLR"];
+decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzstABCDEIUVWMNPXYZST"];
+symbolTable["$IdA#",            IdArrow[CategoryObjectSymbol[#]]&,          "01abcdeuvwxyzstABCDEIUVWMNPXYZST"];
+symbolTable["$NT#",             NaturalTransformationSymbol,                "\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]"];
+decSymTable["$A#",              CategoryArrowSymbol,                        "01efghjklmnpqrstuvwI\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]"];
+symbolTable["$1A#",             OneArrow[CategoryObjectSymbol[#]]&,         "abcdeuvwxyzstABCDEIUVWMNPXYZST"];
+
 
 QuiverGeometry`Shortcuts`$Ostar = CategoryObjectSymbol["*"];
 QuiverGeometry`Shortcuts`Hom[x_, y_] := HomForm[x, y];
 QuiverGeometry`Shortcuts`Hom[c_, x_, y_] := ExplicitHomForm[c, x, y];
 
 makeSym["MPF",                  MonoidalProductForm];
+makeSym["TMPF",                 TightMonoidalProductForm];
 makeSym["CPF",                  CartesianProductForm];
 
 decSymTable["$gv#",             VertexSymbol,                               $rom, "ghuvwtxyz"];

@@ -162,7 +162,7 @@ $GPrimVecDeltaH = VectorCurve | Arrowhead | InfiniteLine | HalfLine;
 
 PrivateVariable[$GPrimMatH, $GPrimMatsH, $GPrimMatsRadH]
 
-$GPrimMatH = BSplineCurve | BezierCurve | Polygon | Polyhedron | RollingCurve | ExtendedArrow | MorphismArrow | Simplex;
+$GPrimMatH = BSplineCurve | BezierCurve | Polygon | Polyhedron | RollingCurve | ExtendedArrow | MorphismArrow | PathedText | Simplex;
 
 $GPrimMatsH = Polygon | Polyhedron | Line | Arrow | FilledCurve | Triangle;
 

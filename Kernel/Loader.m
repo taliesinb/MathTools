@@ -5,6 +5,14 @@ Needs["GeneralUtilities`"];
 Unprotect[EpilogFunction];
 ClearAll[EpilogFunction];
 
+(* this can trigger paclet downloads, which if $AllowInternet = False will cause a message
+here, so we Quiet it *)
+Quiet[
+  Style;
+  SyntaxInformation[Style];
+  Options[Style];
+];
+
 (*************************************************************************************************)
 
 QuiverGeometryPackageLoader`$SourceDirectory = DirectoryName @ $InputFileName;

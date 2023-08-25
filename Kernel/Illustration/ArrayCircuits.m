@@ -105,6 +105,12 @@ applyMultisetFixups[e_] := e /. {
 
 (**************************************************************************************************)
 
+PublicFunction[PartSumNode]
+
+
+
+(**************************************************************************************************)
+
 PublicFunction[AggregationNode, RainbowAggregationNode]
 
 PortStyleData["Rainbow"] = Sequence[
@@ -229,7 +235,7 @@ RainbowBubbleTensorNode[name_, n_, r_, opts___Rule] :=
 PublicFunction[KeyPortSkeleton]
 
 $keyPortSkeletonStyle = Sequence[
-  PortStyle["Key"],
+  PortStyleData["Key"],
   PortPositions -> {Out -> "MatchOut"},
   $defaultNodeStyle
 ]

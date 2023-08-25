@@ -45,11 +45,14 @@ ToGraphics3DBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics3D] //. Inte
 
 PublicFunction[DynamicPointGraphics]
 
+circlePoints[2] := {{-1, 0}, {1, 0}};
+circlePoints[n_] := Reverse @ CirclePoints[n];
+
 DynamicPointGraphics[n_Integer, fn_] := Replace[
   ConstructHoldComplete[fn, \[FormalX]],
   HoldComplete[body_] :>
     DynamicModule @@ Hold[
-      {\[FormalX] = CirclePoints[n]},
+      {\[FormalX] = circlePoints[n]},
       LocatorPane[Dynamic[\[FormalX]], Graphics[Dynamic @ body, PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None]],
       Initialization :> $PackageInitializer
     ]
@@ -74,7 +77,7 @@ DynamicPointGraphics[{n_Integer, specSeq__}, fn_] := With[
   {specList = {specSeq}},
   {specData = MapThread[toDynSpec, {{specSeq}, Take[$formals, Length @ specList]}]},
   {specVars = Prepend[\[FormalX]] @ Part[specData, All, 1],
-   initList = Prepend[CirclePoints[n]] @ Part[specData, All, 2],
+   initList = Prepend[circlePoints[n]] @ Part[specData, All, 2],
    controls = Part[specData, All, 3]},
   {specSets = MapThread[SET, {specVars, initList}]},
   Replace[

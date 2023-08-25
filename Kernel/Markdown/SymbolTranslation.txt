@@ -78,8 +78,8 @@ _                            _          \longmapsto         ⟼
                                                              
 \[RawDollar]                 $          \mathdollar         $
 \[Hyphen]                    -          \hyphen             ‐
-\[Dash]                      -          \endash             –
-\[LongDash]                  --         \emdash             —
+\[Dash]                      -          \text{--}           –
+\[LongDash]                  --         \text{---}          —
 _                            _          \quad                
 _                            _          \enspace             
 \[OpenCurlyQuote]            '          \lq                 ‘

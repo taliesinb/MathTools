@@ -402,6 +402,8 @@ PublicFunction[OklabBlend]
 SetUsage @ "
 OklabBlend[colors$] blends a list of ordinary colors, but in OkLAB colorspace.
 OklabBlend[colors$, i$] blends part $i between the colors, where $i runs from 0 to 1.
+OklabBlend[colors$, {i$1, i$2, $$}] returns a vector of blended colors.
+OklabBlend[colors$, Into[n$]] returns a vector of n$ equally spaced blended colors.
 "
 
 DeclareArgumentCount[OklabBlend, 1];
@@ -410,16 +412,15 @@ OklabBlend[colors_List] := FromOklab @ Mean @ ToOklab[colors];
 
 OklabBlend[colors_List, i_] := oklabInterpolation[colors, i] // FromOklab;
 
-(**************************************************************************************************)
+OklabBlend[colors_List, i_Into] := oklabInterpolation[colors, List @ Lerp[0, 1, i]] // FromOklab;
 
-PublicFunction[OklabBlendFunction]
-
-OklabBlendFunction[colors_, Automatic] := OklabInterpolation[colors] /* FromOklab
+OklabBlend[colors_List, i_List] := oklabInterpolation[colors, {i}] // FromOklab;
 
 oklabInterpolation[colors_, args___] :=
   Interpolation[
     Trans[Lerp[0, 1, Into @ Length @ colors], ToOklab @ colors],
-    args
+    args,
+    InterpolationOrder -> 1
   ];
 
 (**************************************************************************************************)

@@ -135,6 +135,15 @@ DefineNamedFunctionSymbolForm[{
 
 (**************************************************************************************************)
 
+PublicSymbol[LimitFunction, ColimitFunction]
+
+DefineNamedFunctionSymbolForm[{
+  LimitFunction -> "lim",
+  ColimitFunction -> "colim"
+}]
+
+(**************************************************************************************************)
+
 PublicSymbol[TorusFunction, MobiusFunction]
 
 DefineNamedFunctionSymbolForm[{

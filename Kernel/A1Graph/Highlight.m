@@ -229,11 +229,6 @@ processStyleSpec[spec_, f_] := Scope[
   iProcessStyleSpec @ spec
 ];
 
-Block[{URLSubmit = Print}, (* this is now needed in 13.3, SyntaxInformation seems to be causing it *)
-  Style;
-  SyntaxInformation[Style];
-  Options[Style];
-];
 
 $additionalStyleOptions = {
   PerformanceGoal, PathStyle, RegionStyle, ArrowheadPosition, ArrowheadSize, ArrowheadStyle, PointSize, HighlightRadius, DiskRadius,

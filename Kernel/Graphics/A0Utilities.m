@@ -99,7 +99,8 @@ LineLineIntersectionPoint[line$1, line$2] gives the point where two line segment
 
 LineLineIntersectionPoint[l1_, l2_] := Scope[
   r = BooleanRegion[And, Line /@ {l1, l2}];
-  If[MatchQ[r, Point[_]], Return @ Part[r, 1, 1]];
+  If[MatchQ[r, Point[$PointP]], Return @ Part[r, 1]];
+  If[MatchQ[r, Point[{$PointP, ___}]], Return @ Part[r, 1, 1]];
   p = First @ l2;
   Do[p = ClosestPointOnLine[l2, ClosestPointOnLine[l1, p]], 10];
   d = DistanceToLine[l1, p];
@@ -230,29 +231,96 @@ PublicFunction[SetbackCoordinates]
 SetUsage @ "
 SetbackCoordinates[path$, d$] truncates the endpoints of a path by distance d$ towards its interior.
 SetbackCoordinates[path$, {d$1, d$2}] truncates by distance d$1 from start and d$2 from end.
+SetbackCoordinates[{path$1, path$2}, $$] truncates several paths at once.
 * Line segments will be dropped if the truncated distance exceeds the length of that segment.
+* The entire line will become a zero length line if the truncated distance exceeds the entire length.
+* Specifications can be a single spec or a pair of:
+| d$ | a distance in regular coordinates |
+| Scaled[f$] | a fraction of the line length |
+| Offset[p$] | a setback in absolute points |
+| Offset[p$, d$] | setback distance d$ then absolute points p$ |
+* Using Offset[$$] only works for straight lines.
 "
 
-SetbackCoordinates[spec_, 0|0.|None] :=
+$nullSBSpecP = 0 | 0. | None | Offset[0|0.] | Offset[0|0., 0|0.];
+$SBSpecP = $NumberP | Offset[$NumberP] | Offset[$NumberP, $NumberP];
+
+SetbackCoordinates[spec_, $nullSBSpecP | {$nullSBSpecP, $nullSBSpecP}] :=
   spec;
-
-SetbackCoordinates[spec_, Scaled[s_]] :=
-  SetbackCoordinates[spec, LineLength[spec] * s];
-
-SetbackCoordinates[spec_, d_ ? NumericQ] :=
-  SetbackCoordinates[spec, {d, d}];
 
 SetbackCoordinates[spec_ ? CoordinateArrayQ, d_] :=
   SetbackCoordinates[#, d]& /@ spec;
 
-SetbackCoordinates[{a_, b_}, {d1_, d2_}] := Scope[
-  If[EuclideanDistance[a, b] < d1 + d2, Return[{Avg[a, b]}]];
-  dx = Normalize[b - a];
-  {a + dx * d1 , b - dx * d2}
+SetbackCoordinates[spec_, Scaled[s_ ? NumberQ]] :=
+  SetbackCoordinates[spec, LineLength[spec] * s];
+
+SetbackCoordinates[spec_, d:$SBSpecP] :=
+  SetbackCoordinates[spec, {d, d}];
+
+(* we can preserve absolute offsets here for simple lines, but in general we can't walk
+a complex line in points since we don't know how it will resolve later when a scale is chosen *)
+SetbackCoordinates[{a_, b_}, Offset[d_]] := SetbackCoordinates[{a, b}, {Offset[d], Offset[d]}]
+
+toAbsRel = Case[
+  d:$NumberP                      := {0, d};
+  Offset[p:$NumberP]              := {p, 0};
+  Offset[p:$NumberP, d:$NumberP]  := {p, d};
 ];
 
-SetbackCoordinates[coords_, {d1_, d2_}] :=
+SetbackCoordinates[{a_, b_}, spec:{Repeated[$SBSpecP, 2]} /; ContainsQ[spec, Offset]] := Scope[
+  dx = N @ Normalize[b - a];
+  {abs, rel} = Transpose @ Map[toAbsRel, spec];
+  {a, b} = SetbackCoordinates[{a, b}, rel];
+  {d1, d2} = N @ abs;
+  {Offset[dx * d1, a], Offset[-dx * d2, b]} /. Offset[{0., 0.}, p_] :> p
+];
+
+SetbackCoordinates[{a_, b_}, {d1_ ? NumberQ, d2_ ? NumberQ}] := Scope[
+  If[EuclideanDistance[a, b] < d1 + d2, Return @ emptyLine[a, b]];
+  dx = N @ Normalize[b - a];
+  {a + dx * d1, b - dx * d2}
+];
+
+SetbackCoordinates[coords_, {d1_ ? NumberQ, d2_ ? NumberQ}] :=
   setbackHalf[setbackHalf[coords, d1], -d2]
+
+SetbackCoordinates::invalidspec = "Invalid setback specification ``."
+SetbackCoordinates[coords_, other_] := (
+  Message[SetbackCoordinates::invalidspec, other];
+  coords
+);
+
+emptyLine[a_, b_] := Scope[mid = Avg[a, b]; {mid, mid}];
+
+(**************************************************************************************************)
+
+PublicFunction[ExtendSetback]
+
+ExtendSetback[b_][a_] := ExtendSetback[a, b];
+ExtendSetback[a:$NumberP, b:$NumberP] := a + b;
+
+ExtendSetback[$nullSBSpecP, $nullSBSpecP] := 0;
+ExtendSetback[$nullSBSpecP, b_] := b;
+ExtendSetback[a_, $nullSBSpecP] := a;
+
+ExtendSetback[{a1_, a2_}, {b1_, b2_}] := {extendSB1[a1, b1], extendSB1[a2, b2]};
+ExtendSetback[a_, {b1_, b2_}] := {extendSB1[a, b1], extendSB1[a, b2]};
+ExtendSetback[{a1_, a2_}, b_] := {extendSB1[a1, b], extendSB1[a2, b]};
+ExtendSetback[a_, b_] := extendSB1[a, b];
+
+extendSB1[a:$NumberP, b:$NumberP] := a + b;
+extendSB1[a_, b_] := Scope[
+  {a, b} = Map[toAbsRel, {a, b}];
+  fromAbsRel[a + b]
+];
+
+fromAbsRel = Case[
+  {0|0., d}  := d;
+  {p_, 0|0.} := Offset[p];
+  {p_, d_}   := Offset[p, d];
+];
+
+(**************************************************************************************************)
 
 setbackHalf[{}, _] := {};
 setbackHalf[coords_, 0|0.] := coords;
@@ -329,7 +397,7 @@ VectorAlongLine[path$, Scaled[f$]] takes the fraction f$ along the path.
 VectorAlongLine[p:{_, _}, d_ ? NumericQ] := vectorAlongSegment[p, d];
 
 VectorAlongLine[coords_, Scaled[1|1.]] := getPointAndVec[coords, Length @ coords];
-VectorAlongLine[coords_, Scaled[0|0.]] := getPointAndVec[coords, 1];
+VectorAlongLine[coords_, Scaled[0|0.]|0|0.] := getPointAndVec[coords, 1];
 
 VectorAlongLine[coords_, Scaled[d_]] := VectorAlongLine[coords, LineLength[coords] * d];
 
@@ -350,13 +418,21 @@ VectorAlongLine[coords_List, d_ ? NumericQ] := vectorAlongLine[coords, d];
 (**************************************************************************************************)
 
 vectorAlongSegment[{a_, b_}, d_] := Scope[
-  delta = Normalize[b - a];
+  delta = safeNormDelta[a, b];
   {a + delta * d, delta}
 ];
 
+safeNormDelta[a_, Offset[_, b_]] := safeNormDelta[a, b];
+safeNormDelta[Offset[_, a_], b_] := safeNormDelta[a, b];
+safeNormDelta[a_, b_] := N @ Normalize[b - a];
+
+safeEuclideanDistance[Offset[_, a_], b_] := safeEuclideanDistance[a, b];
+safeEuclideanDistance[a_, Offset[_, b_]] := safeEuclideanDistance[a, b];
+safeEuclideanDistance[a_, b_] := EuclideanDistance[a, b];
+
 vectorAlongLine[coords_, d_] := Scope[
   prev = First @ coords; total = 0;
-  n = LengthWhile[coords, curr |-> (total += EuclideanDistance[curr, prev]; prev = curr; total < d)];
+  n = LengthWhile[coords, curr |-> (total += safeEuclideanDistance[curr, prev]; prev = curr; total < d)];
   If[n == Length[coords], Return @ getPointAndVec[coords, n]];
   rem = total - d;
   If[rem == 0,
@@ -365,19 +441,21 @@ vectorAlongLine[coords_, d_] := Scope[
   ]
 ];
 
+getPointAndVec[{coord_}, 1] := {coord, {0, 0}};
+
 getPointAndVec[coords_, 1] := Scope[
   {p1, p2} = Part[coords, {1, 2}];
-  {p1, Normalize @ (p2 - p1)}
+  {p1, safeNormDelta[p1, p2]}
 ]
 
 getPointAndVec[coords_, n_] /; n == Length[coords] := Scope[
   {p0, p1} = Part[coords, {-2, -1}];
-  {p1, Normalize @ (p1 - p0)}
+  {p1, safeNormDelta[p0, p1]}
 ]
 
 getPointAndVec[coords_, i_] := Scope[
   {p0, p1, p2} = Part[coords, i + {-1, 0, 1}];
-  {p1, Normalize @ Avg[p1 - p0, p2 - p1]}
+  {p1, N @ Normalize @ Avg[p1 - p0, p2 - p1]}
 ]
 
 (**************************************************************************************************)
@@ -414,8 +492,8 @@ LineLength[path$] returns the total length of a line.
 "
 
 LineLength[{}] := 0;
-LineLength[{a_, b_}] := EuclideanDistance[a, b];
-LineLength[list_] := Total @ ApplyWindowed[EuclideanDistance, list];
+LineLength[{a_, b_}] := EuclideanDistance @@ RemoveOffsets[{a, b}];
+LineLength[list_] := Total @ ApplyWindowed[EuclideanDistance, RemoveOffsets @ list];
 
 (**************************************************************************************************)
 
@@ -600,3 +678,21 @@ ToAlignmentPair[align_] := Switch[align,
   {Left|Right|Center, Top|Bottom|Center}, align,
   _,           $Failed
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[ContainsOffsetsQ]
+
+ContainsOffsetsQ[points_] := ContainsQ[points, _Offset];
+
+(**************************************************************************************************)
+
+PublicFunction[RemoveOffsets]
+
+RemoveOffsets[points_] := points /. Offset[_, p_] :> p;
+
+(**************************************************************************************************)
+
+PublicFunction[SimplifyOffsets]
+
+SimplifyOffsets[points_] := points //. Offset[d1_, Offset[d2_, p_]] :> Offset[d1 + d2, p];

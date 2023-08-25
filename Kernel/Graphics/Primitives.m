@@ -25,7 +25,7 @@ $locs = Association[
 PublicHead[PatternShading3D]
 
 declareGraphicsFormatting[
-  PatternShading3D[color_ ? $ColorP, density_ ? NumericQ] :> patternShading3DBoxes[color, density]
+  PatternShading3D[color_ ? $ColorPattern, density_ ? NumericQ] :> patternShading3DBoxes[color, density]
 ]
 
 PatternShading3D[color_, density_:5] := toSurfaceAppearance[

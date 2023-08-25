@@ -19,6 +19,9 @@ patchDownValuesWithInheritedBlock[
   $MakeBoxesStyleData
 ]
 
+Typeset`MakeBoxes[ x_List, fmt_, head_, Options] :=
+  Map[Function[{y}, Typeset`MakeBoxes[y, fmt, head, Options], HoldFirst], Unevaluated[x]]
+
 (* patchDownValuesWithInheritedBlock[
   Typeset`MakeBoxes,
   Typeset`MakeBoxes[Style[System`Dump`x_, System`Dump`y___], System`Dump`fmt_, System`Dump`head_],
@@ -35,6 +38,12 @@ Typeset`MakeBoxes[Style[System`Dump`x_, System`Dump`y___], System`Dump`fmt_, Sys
         Typeset`Hold[StyleBox[System`Dump`g, System`Dump`h, StripOnInput -> False]]
     ]
   ];
+
+(* we do this so nested lists localize ambient styles *)
+Typeset`MakeBoxes[ System`Dump`g_List, System`Dump`fmt_, System`Dump`head_] := Internal`InheritedBlock[
+  {QuiverGeometry`$MakeBoxesStyleData},
+  Map[ Function[{System`Dump`x}, Typeset`MakeBoxes[System`Dump`x, System`Dump`fmt, System`Dump`head], HoldAllComplete], Unevaluated[System`Dump`g]]
+];
 
 (**************************************************************************************************)
 
@@ -70,12 +79,8 @@ $extendedArrowOptions = JoinOptions[
   ArrowShaftDashing -> None,
   ArrowShaftMasking -> None,
   ArrowPathShrinking -> None,
-  ArrowPathSetback -> None,
-  ArrowPathOffset -> None,
-  LabelOrientation -> Automatic,
-  LabelFontSize -> Inherited,
-  LabelBackground -> None,
-  LabelSpacing -> Automatic
+  ArrowPathSetback -> Automatic,
+  ArrowPathOffset -> None
 ];
 
 AssociateTo[$MakeBoxesStyleData, $extendedArrowOptions];
@@ -87,9 +92,15 @@ PublicOption[DecorationWidth]
 PrivateVariable[$morphismArrowOptions]
 
 $morphismArrowOptions = Normal @ KeyTake[$extendedArrowOptions, {
-  ArrowPathSetback, ArrowShaftThickness, ArrowShaftColor, ArrowShaftDashing,
-  LabelOrientation, LabelFontSize, LabelBackground
-}] ~Join~ {DecorationWidth -> 15};
+  ArrowPathSetback, ArrowShaftColor, ArrowShaftOpacity, ArrowShaftThickness, ArrowShaftDashing, ArrowShaftMasking
+}] ~Join~ {
+  DecorationWidth -> 15,
+  LabelPosition -> Automatic,
+  LabelOrientation -> Automatic,
+  LabelFontSize -> Inherited,
+  LabelBackground -> Automatic,
+  LabelSpacing -> Automatic
+};
 
 AssociateTo[$MakeBoxesStyleData, $morphismArrowOptions];
 
@@ -132,7 +143,7 @@ $GArrowH = Arrow | ExtendedArrow;
 
 PrivateVariable[$GArrowIntP, $GCurveIntP]
 
-$GCurveIntP = _ElbowCurve | _RollingCurve | _VectorCurve | _CompassCurve | _LoopCurve | _SetbackCurve | _SnakeCurve | _CircuitCurve | _SmoothedCurve | _Line | _BezierCurve | _BSplineCurve;
+$GCurveIntP = _ElbowCurve | _RollingCurve | _VectorCurve | _CompassCurve | _LoopCurve | _SetbackCurve | _SnakeCurve | _HorizontalCurve | _VerticalCurve | _AnchoredCurve | _CircuitCurve | _SmoothedCurve | _Line | _BezierCurve | _BSplineCurve;
 $GArrowIntP = Join[_JoinedCurve | _Tube, $GCurveIntP];
 
 rgc = Case[

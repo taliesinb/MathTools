@@ -49,9 +49,9 @@ $flavorData["Hugo", "AnchorTemplate"]             = StringFunction @ """<span id
 $flavorData["Hugo", "ClassAttributeTemplate"]     = hugoClassAttr;
 $flavorData["Hugo", "FileImageTemplate"]          = genericImageTagTemplate;
 $flavorData["Hugo", "FileAnimatedImageTemplate"]  = genericAnimatedImageTagTemplate;
-$flavorData["Hugo", "InlineMathTemplate"]         = StringJoin["{{<k `", #, "`>}}"]&;
+$flavorData["Hugo", "InlineMathTemplate"]         = StringJoin["{{<k \"", #, "\">}}"]&;
 $flavorData["Hugo", "KatexFontTemplate"]          = hugoKatexFontFunction;
-$flavorData["Hugo", "MultilineMathTemplate"]      = StringJoin["{{<kk `", #, "`>}}"]&;
+$flavorData["Hugo", "MultilineMathTemplate"]      = StringJoin["{{<kk \"", #, "\">}}"]&;
 $flavorData["Hugo", "KatexPostprocessor"]         = splitOpenBraces;
 $flavorData["Hugo", "RawHTMLTemplate"]            = Identity;
 $flavorData["Hugo", "ExternalImportTemplate"]     = StringFunction @ """{{< readfile file="#1" >}}""";
