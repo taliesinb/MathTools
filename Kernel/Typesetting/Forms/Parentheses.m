@@ -1,6 +1,8 @@
-PublicForm[ParenthesesForm, SpacedParenthesesForm]
+PublicForm[ParenthesesForm, TightParenthesesForm, SpacedParenthesesForm]
 
 DefineCommaForm[ParenthesesForm, ParenthesesBox[$1]];
+
+DefineCommaForm[TightParenthesesForm, RBox["(", $1, ")"]];
 
 DefineStandardTraditionalForm[SpacedParenthesesForm[a___] :> MakeBoxes @ ParenthesesForm[SpacedCommaRowForm[a]]];
 

@@ -63,6 +63,10 @@ PublicFormBox[Primed, DoublePrimed]
 DefineUnaryForm[PrimedForm, SuperscriptBox[$1, "\[Prime]"], BoxFunction -> PrimedBox]
 DefineUnaryForm[DoublePrimedForm, SuperscriptBox[$1, "\[DoublePrime]"], BoxFunction -> DoublePrimedBox]
 
+PublicForm[InvisiblePrimedForm]
+
+DefineUnaryForm[InvisiblePrimedForm, SuperscriptBox[$1, StyleBox["\[Prime]", ShowContents -> False]]]
+
 (**************************************************************************************************)
 
 PublicForm[UnderdotForm, OverdotForm, OverdoubledotForm]

@@ -40,6 +40,7 @@ applyCustomizeHandler[handler_][item_, rule_Rule] := Module[
 PrivateFunction[customizedBlock]
 
 Customized::badspec = "Customization spec `` is not a list of rules, ignoring it."
+Customized::badopt2 = "Unknown custom option ``, ignoring it. Available options are: ``."
 
 (* customizedBlock takes the Customized and a rule of option symbols to var symbols (opts :> globals),
 and modifies those of them that are customized within an InheritedBlock, then calls innerFn  *)
@@ -56,9 +57,9 @@ customizedBlock[Customized[item_, rules__], opts_ :> globals_, innerFn_] :=
 SetHoldFirst[setCustomizedVar];
 
 setCustomizedVar[globals_, opts_][opt_ -> value_] := With[
-  {ind = FirstIndex[opts, opt]},
-  If[ind === None,
-    Message[Customized::badopt, opt],
+  {ind = SelectFirstIndex[opts, MatchQ[opt, #]&]},
+  If[MissingQ[ind],
+    Message[Customized::badopt2, opt, opts],
     Apply[Set, Append[Extract[Unevaluated @ globals, ind, Hold], value]]
   ]
 ];

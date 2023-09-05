@@ -1,6 +1,6 @@
 PublicFunction[SetGraphicsScale]
 
-SetGraphicsScale[g_Graphics, scale_:40, padding_:1] := Scope[
+SetGraphicsScale[g_Graphics, scale_:40, padding_:1, adjustFonts_:True] := Scope[
   g = NormalizePlotRange[g];
   plotRange = {{xmin, xmax}, {ymin, ymax}} = GraphicsPlotRange @ g;
   xwidth = xmax - xmin; ywidth = ymax - ymin;
@@ -8,8 +8,10 @@ SetGraphicsScale[g_Graphics, scale_:40, padding_:1] := Scope[
   padding //= StandardizePadding; SetAll[padding, 1];
   size = (dims * scale) + (2 * Map[Total, padding]); imageWidth = First @ size;
   pointsToScaled = Scaled[# / imageWidth]&;
-  g = g /. (FontSize -> p_) :> RuleCondition[FontSize -> pointsToScaled[p]];
-  ReplaceOptions[g, {ImageSize -> size, ImagePadding -> padding, PlotRange -> plotRange}]
+  If[adjustFonts,
+    g = g /. (FontSize -> p_) :> RuleCondition[FontSize -> pointsToScaled[p]];
+  ];
+  ReplaceOptions[g, {ImageSize -> size, ImagePadding -> padding, PlotRange -> plotRange, PlotRangePadding -> 0}]
 ]
 
 (**************************************************************************************************)
@@ -23,10 +25,11 @@ AbsoluteThicknessToDimension[t_, scale_] := t / scale;
 
 PublicFunction[ScaleGraphics]
 
-PublicOption[GraphicsScale]
+PublicOption[GraphicsScale, AdjustFontSize]
 
 Options[ScaleGraphics] = JoinOptions[
   GraphicsScale -> 40,
+  AdjustFontSize -> True,
   Graphics
 ];
 
@@ -34,7 +37,8 @@ ScaleGraphics[prims_, opts:OptionsPattern[]] :=
   SetGraphicsScale[
     Graphics[prims, FilterOptions @ opts],
     OptionValue[GraphicsScale],
-    OptionValue[ImagePadding]
+    OptionValue[ImagePadding],
+    OptionValue[AdjustFontSize]
   ];
 
 (**************************************************************************************************)

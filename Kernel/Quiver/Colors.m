@@ -79,7 +79,7 @@ ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardin
   {"x", "y", "z"},
     $xyzColors,
   {Repeated[$colorFormed]},
-    AssociationThread[cardinals, Lookup[$colorFormAssoc, Part[cardinals, All, 0]]],
+    AssociationThread[cardinals, StyleFormData /@ Part[cardinals, All, 0]],
   set_ /; SubsetQ[Keys @ $rgbwxColors, set],
     KeyTake[$rgbwxColors, cardinals],
   _,

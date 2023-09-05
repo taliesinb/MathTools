@@ -56,7 +56,9 @@ HatBox[box_] := KBox[OverscriptBox[box, "^"], "hat" @ box];
 
 (**************************************************************************************************)
 
-PublicFunction[UnlimitedSpanBox, ForceKatexCharBox]
+PublicFunction[NoSpanBox, UnlimitedSpanBox, ForceKatexCharBox]
+
+NoSpanBox[e_] := StyleBox[e, SpanMaxSize -> 1];
 
 UnlimitedSpanBox[e_] := StyleBox[e, SpanAdjustments -> {{0, 0}, {0, 0}}, SpanMaxSize->Infinity, SpanMinSize -> 1.5];
 

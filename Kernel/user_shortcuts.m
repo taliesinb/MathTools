@@ -148,7 +148,7 @@ SubOp[i_][e_] := Subscript[e, i];
 SupOp[i_][e_] := Superscript[e, i];
 
 $Style := $Style = parseIterator["r g b rg gb rb p" -> {RedForm, GreenForm, BlueForm, OrangeForm, TealForm, PinkForm, PurpleForm}];
-$ExtendedStyle := $ExtendedStyle = parseIterator["r dr lr g dg lg b db lb rg drg lrg gb dgb lgb rb drb lrb p dp lp w0 w1 w2 dk k lk" -> {RedForm, DarkRedForm, LightRedForm, GreenForm, DarkGreenForm, LightGreenForm, BlueForm, DarkBlueForm, LightBlueForm, OrangeForm, DarkOrangeForm, LightOrangeForm, TealForm, DarkTealForm, LightTealForm, PinkForm, DarkPinkForm, LightPinkForm, PurpleForm, DarkPurpleForm, LightPurpleForm, DarkGrayForm, MediumGrayForm, LightGrayForm, DarkGrayForm, MediumGrayForm, LightGrayForm}];
+$ExtendedStyle := $ExtendedStyle = parseIterator["r dr lr g dg lg b db lb rg drg lrg gb dgb lgb rb drb lrb p dp lp w0 w1 w2 dk k lk" -> {RedForm, DarkRedForm, LightRedForm, GreenForm, DarkGreenForm, LightGreenForm, BlueForm, DarkBlueForm, LightBlueForm, OrangeForm, DarkOrangeForm, LightOrangeForm, TealForm, DarkTealForm, LightTealForm, PinkForm, DarkPinkForm, LightPinkForm, PurpleForm, DarkPurpleForm, LightPurpleForm, DarkGrayForm, GrayForm, LightGrayForm, DarkGrayForm, GrayForm, LightGrayForm}];
 
 $intScripts := $intScripts = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, $si, $sj, $sk, $sm, $sn, $sM, $sN, \[FormalI]};
 $natScripts := $natScripts = {0, 1, 2, 3, 4, 5, 6, $si, $sj, $sk, $sm, $sn, $sM, $sN, \[FormalI]};
@@ -215,13 +215,16 @@ QuiverGeometry`Shortcuts`Arr[x_, y_] := MorphismForm[x, y];
 QuiverGeometry`Shortcuts`Arr[l_, x_, y_] := NamedMorphismForm[l, x, y];
 
 decSymTable["$C#",              CategorySymbol,                             $scriptCapitals];
-decSymTable["$Fun#",            FunctorSymbol,                              "ABCDEFGHUVPLR"];
-decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzstABCDEIUVWMNPXYZST"];
+decSymTable["$Fun#",            FunctorSymbol,                              "ABCDEFGHUVPLRST"];
+decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzstABCDEIUVWMNLPRSTXYZ"];
 symbolTable["$IdA#",            IdArrow[CategoryObjectSymbol[#]]&,          "01abcdeuvwxyzstABCDEIUVWMNPXYZST"];
-symbolTable["$NT#",             NaturalTransformationSymbol,                "\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]"];
-decSymTable["$A#",              CategoryArrowSymbol,                        "01efghjklmnpqrstuvwI\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]"];
+decSymTable["$NT#",             NaturalTransformationSymbol,                "\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]\[Gamma]\[Delta]\[Epsilon]\[Sigma]"];
+decSymTable["$A#",              CategoryArrowSymbol,                        "01efghjklmnpqrstuvwILR\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]"];
 symbolTable["$1A#",             OneArrow[CategoryObjectSymbol[#]]&,         "abcdeuvwxyzstABCDEIUVWMNPXYZST"];
 
+
+QuiverGeometry`Shortcuts`HCF = HorizontalCompositionForm;
+QuiverGeometry`Shortcuts`VCF = VerticalCompositionForm;
 
 QuiverGeometry`Shortcuts`$Ostar = CategoryObjectSymbol["*"];
 QuiverGeometry`Shortcuts`Hom[x_, y_] := HomForm[x, y];

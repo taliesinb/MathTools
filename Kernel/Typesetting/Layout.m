@@ -32,6 +32,14 @@ ClickCopy[e_] := With[
 
 (**************************************************************************************************)
 
+DefineStandardTraditionalForm[{
+  Padded[e_, {l:$NumberP, r:$NumberP}] :> AdjustmentBox[ToBoxes @ e, BoxMargins -> {{l, r}, {0, 0}}],
+  Padded[e_, {{l:$NumberP, r:$NumberP}, {b:$NumberP, t:$NumberP}}] :> AdjustmentBox[ToBoxes @ e, BoxMargins -> {{l, r}, {b, t}}],
+  Padded[e_, r:(_Rule | {__Rule} | $NumberP)] :> AdjustmentBox[ToBoxes @ e, BoxMargins -> StandardizePadding[r]]
+}];
+
+(**************************************************************************************************)
+
 PublicOption[Transposed, RiffleItem, ForceGrid]
 
 SetUsage @ "Transposed is an option to %SpacedRow, %AlgebraicRow, etc."
@@ -183,7 +191,8 @@ SpacedRow[elems__] := Scope[
       ],
       Row[items, Spacer[$srSpacings],
         BaseStyle -> ToList[$srItemStyle, $srBaseStyle],
-        Background -> $srBackground
+        Background -> $srBackground,
+        Alignment -> alignment (* BUG: this actually has no effect on row *)
       ]
     ]
   ]

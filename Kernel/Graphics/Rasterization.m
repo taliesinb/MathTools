@@ -69,6 +69,9 @@ PublicFunction[ClearRasterizationCache]
 
 ClearRasterizationCache[] := (
 	QuiverGeometryLoader`$RasterizationCache = UAssociation[];
+	QuiverGeometryLoader`$FloodFillHash = UAssociation[];
+	QuiverGeometryLoader`$RegionRasterizationCache = UAssociation[];
+	QuiverGeometryLoader`$TransparentRasterizationCache = UAssociation[];
 	QuiverGeometryLoader`$Base64RasterizationCache = UAssociation[];
 )
 
@@ -144,4 +147,48 @@ CenterPadImages[images_List] := Scope[
   ConformImages[images, {Max, Max}, "Pad", Padding -> White]
 ];
 
+(**************************************************************************************************)
 
+PublicFunction[FloodFill]
+
+If[!AssociationQ[QuiverGeometryLoader`$FloodFillHash],
+	QuiverGeometryLoader`$FloodFillHash = UAssociation[];
+	QuiverGeometryLoader`$RegionRasterizationCache = UAssociation[];
+	QuiverGeometryLoader`$TransparentRasterizationCache = UAssociation[];
+];
+
+FloodFill[g_Graphics, rules_] := FloodFill[g -> g, rules];
+
+FloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules:{__Rule}] := Scope[
+	fullHash = Hash[{lhs, rules}];
+	result = Lookup[QuiverGeometryLoader`$FloodFillHash, fullHash];
+	If[ImageQ[result], Return @ result];
+  len = Length @ rules;
+  annos = Style[Annotation[Invisible @ Point[#1], #2, "FillPoint"], Antialiasing->None]& @@@ rules;
+  annoGraphics = Graphics[{{AbsolutePointSize[1], annos}, prims}, opts];
+  {image, regions} = cachedImageRegionRasterize @ annoGraphics;
+  image2 = cachedTransparentRasterize @ g2;
+  fillPoints = Cases[regions, ({color_, "FillPoint"} -> {{x1_, y1_}, {x2_, y2_}}) :> {Round @ {Avg[x1, x2], Avg[y1, y2]}, color}];
+  bin = Binarize @ image;
+  comps = MorphologicalComponents[bin, 0.01];
+  comps = Dilation[comps, 1];
+  fillCoords = 2 * Part[fillPoints, All, 1];
+  fillColors = ToRGB @ Part[fillPoints, All, 2];
+  compValues = Extract[comps, Reverse[fillCoords, 2]];
+  compRules = ToPackedReal /@ AssociationMap[v |-> (
+    i = IndexOf[compValues, v];
+    If[MissingQ[i], {0.,0.,0.,0.}, Append[Part[fillColors, i], 1.]]
+  ), Range[0, Max[comps]]];
+  compColors = ToPackedReal @ Map[compRules, comps, {2}];
+  compImage = Image[compColors, "Real32", ColorSpace->"RGB"];
+  {image, bin, fillPoints, compImage};
+  result = ImageCompose[compImage, image2];
+  QuiverGeometryLoader`$FloodFillHash[fullHash] ^= result;
+  result
+];
+
+cachedImageRegionRasterize[graphics_] :=
+	CacheTo[QuiverGeometryLoader`$RegionRasterizationCache, Hash[graphics], Rasterize[graphics, {"Image", "Regions"}]];
+
+cachedTransparentRasterize[graphics_] :=
+	CacheTo[QuiverGeometryLoader`$TransparentRasterizationCache, Hash[graphics], Rasterize[graphics, Background -> Transparent]];

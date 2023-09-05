@@ -1,5 +1,7 @@
 PublicHead[CenteredCuboid, CenteredRectangle]
 
+Options[CenteredRectangle] = {RoundingRadius -> 0};
+
 CenteredCuboid[pos_] := CenteredCuboid[pos, 1];
 CenteredRectangle[pos_] := CenteredRectangle[pos, 1];
 
@@ -9,6 +11,6 @@ declareGraphicsFormatting[
 ]
 
 declareGraphicsFormatting[
-  CenteredRectangle[pos:$Coord2P, sz:$Coord2P|$NumberP] :> Construct[RectangleBox, pos - sz/2, pos + sz/2],
+  CenteredRectangle[pos:$Coord2P, sz:$Coord2P|$NumberP, opts___Rule] :> Construct[RectangleBox, pos - sz/2, pos + sz/2, opts],
   Graphics
 ];

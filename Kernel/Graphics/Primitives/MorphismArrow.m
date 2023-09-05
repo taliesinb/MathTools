@@ -219,6 +219,7 @@ parseMorphismLabel = Case[
         Center,        0,
         Left | Right,  {dx, dy} = dir; If[dy > 0 || (dy == 0. && dx < 0), 1, -1] * If[labelPosition === Left, 1, -1],
         Above | Below, {dx, dy} = dir; If[dx > 0 || (dx == 0. && dy < 0), 1, -1] * If[labelPosition === Above, 1, -1],
+        $Coord2P,      0,
         _,             Message[MorphismArrow::badpos, labelPosition]; 0
       ]
     ]
@@ -235,6 +236,10 @@ morphismLabelBoxes[label_, {pos_, dir_}, anchor_, ypos_] := Scope[
   above = ypos === 1;
   dir2 = If[above, VectorRotate90, VectorRotate90CW] @ dir;
   pos = Offset[Normalize[dir2] * labelSpacing, pos];
+  If[MatchQ[labelPosition, $Coord2P],
+    offset = labelPosition;
+    dir = {1, 0}
+  ,
   Switch[labelOrientation,
     Aligned,
       offset = {anchor * 2 - 1, ypos * -1},
@@ -259,10 +264,12 @@ morphismLabelBoxes[label_, {pos_, dir_}, anchor_, ypos_] := Scope[
       If[yf, Part[offset, 1] *= -1];
       If[labelPosition === Center, offset = {0, 0}];
       dir = {1, 0},
+    "Manual",
+      offset = labelPosition,
     _,
       Message[MorphismArrow::badalign, labelOrientation];
       offset = {0, 0}
-  ];
+  ]];
   Label[Done];
   If[MatchQ[label, _Image],
     {iw, ih} = ImageDimensions @ label;

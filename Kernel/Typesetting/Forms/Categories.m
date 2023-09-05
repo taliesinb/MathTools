@@ -6,6 +6,13 @@ DefineTaggedForm[CategoryArrowSymbol]
 
 (**************************************************************************************************)
 
+PublicForm[SliceCategoryForm, PullbackStarForm]
+
+DefineInfixBinaryForm[SliceCategoryForm, "/"];
+DefineUnaryForm[PullbackStarForm, SuperscriptBox[$1, "*"]];
+
+(**************************************************************************************************)
+
 PublicForm[OppositeCategoryForm]
 
 DefineUnaryForm[OppositeCategoryForm, SuperscriptBox[$1, "𝗈𝗉"]];
@@ -130,8 +137,8 @@ DefineBinaryForm[CompactFunctorCategoryForm, SuperscriptBox[$2, $1]]
 
 PublicForm[HorizontalCompositionForm, VerticalCompositionForm, DiskCompositionForm, TightCompositionForm, CompositionForm]
 
-DefineInfixForm[HorizontalCompositionForm, "\[SmallCircle]"];
-DefineInfixForm[VerticalCompositionForm, "\[SmallCircle]"];
+DefineInfixForm[HorizontalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\[VeryThinSpace]\[EmptySmallCircle]\[VeryThinSpace]", 3], 0.5]];
+DefineInfixForm[VerticalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\[VeryThinSpace]\[FilledSmallCircle]\[VeryThinSpace]", 3], 0.5]];
 
 DefineInfixForm[DiskCompositionForm, "\[SmallCircle]"];
 DefineInfixForm[TightCompositionForm, "\[NegativeThinSpace]"];

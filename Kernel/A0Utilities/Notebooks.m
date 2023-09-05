@@ -160,6 +160,17 @@ CopyRetinaImageToClipboard[expr_, crop_:False] := (
 
 (**************************************************************************************************)
 
+PublicFunction[CopyBearImageToClipboard]
+
+CopyBearImageToClipboard[expr_] := (
+  CopyToClipboard @ ImageCropAndPad @ Rasterize[expr /. (RawImageSize -> _) -> Sequence[], ImageFormattingWidth -> Infinity, ImageResolution -> (144*2), Background -> White];
+  expr
+)
+
+ImageCropAndPad[img_] := ImagePad[ImageCrop[img], 50, White];
+
+(**************************************************************************************************)
+
 PublicFunction[FastCopyRetinaImageToClipboard]
 
 FastCopyRetinaImageToClipboard[expr_, crop_:True] := (

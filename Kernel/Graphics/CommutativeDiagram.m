@@ -8,22 +8,35 @@ CommutativeDiagram[objects$, arrows$] evaluates to a graphics object that contai
 | {rule$, label$} | a labeled arrow |
 | {rule$, label$, type$} | a labeled arrow of type type$ |
 | %MorphismArrow[$$] | a fully specified arrow |
-* the type$ given above can be one of 'Iso', 'Epi', 'Mono', 'Hook', 'MapsTo'.
+* the type$ given above include 'Iso', 'Epi', 'Mono', 'MapsTo', 'DoubleArrow', 'Equality', 'Line'.
 "
 
-declareGraphicsFormatting[cd:CommutativeDiagram[_List, _List, ___] :> cdToBoxes[cd], Graphics];
+Options[CommutativeDiagram] = {
+  Transposed -> False,
+  GraphicsScale -> None,
+  Alignment -> Center
+}
+
+declareGraphicsFormatting[cd:CommutativeDiagram[_List, _List, ___Rule] :> cdToBoxes[cd], Graphics];
 
 cdToBoxes[cd_] := ToGraphicsBoxes @ cdToPrimitives[cd];
 
-Format[cd:CommutativeDiagram[_List, _List, ___], StandardForm] := Graphics[{ArrowPathSetback -> 0.15, cdToPrimitives[cd]}];
+Format[cd:CommutativeDiagram[a1_List, a2_List, opts___Rule], StandardForm] :=
+  ScaleGraphics[
+    cdToPrimitives[CommutativeDiagram[a1, a2, opts, ArrowPathSetback -> 0.15]],
+    GraphicsScale -> Lookup[{opts}, GraphicsScale, 60],
+    ImagePadding -> Lookup[{opts}, ImagePadding, 10],
+    AdjustFontSize -> False
+  ];
 
-cdToPrimitives[CommutativeDiagram[grid_List, arrows_List, scale_:Automatic, opts___Rule]] := Scope[
+cdToPrimitives[CommutativeDiagram[grid_List, arrows_List, opts___Rule]] := Scope[
+  UnpackOptionsAs[CommutativeDiagram, {FilterOptions[CommutativeDiagram, opts]}, transposed, alignment];
   $objectLabels = {};
   gridSpec = parseGridSpec @ grid;
   arrowPrimitives = parseMorphism /@ arrows;
   {
-    FontSize -> 20, FontFamily -> "KaTeX_Main", opts,
-    GridComplex[gridSpec, {$objectLabels, arrowPrimitives}, scale]
+    LabelFontSize -> 18, FontSize -> 20, FontFamily -> "KaTeX_Main", opts,
+    GridComplex[gridSpec, {$objectLabels, arrowPrimitives}, Transposed -> transposed]
   }
 ]
 
@@ -35,12 +48,32 @@ parseGridSpec = Case[
 parseObject = Case[
   obj_             := % @ Rule[obj, obj];
   Rule[lbl_, None] := lbl;
-  Rule[lbl_, obj_] := (AppendTo[$objectLabels, Text[obj, lbl]]; lbl);
+  Rule[lbl_, obj_] := (AppendTo[$objectLabels, fmtLabel[lbl, obj]]; lbl);
 ]
+
+fmtLabel[lbl_, obj_] := Text[obj, lbl, Lookup[$sideToLabelOffset, alignment]];
+fmtLabel[lbl_, c_Customized] := customizedBlock[c, {Alignment} :> {alignment}, fmtLabel[lbl, #]&];
 
 parseMorphism = Case[
   opt:(_Symbol -> _)                          := opt;
   r_Rule                                      := % @ {r};
-  {Rule[s_, t_], lbl_:None, type_:Automatic}  := MorphismArrow[{s, t}, Switch[lbl, None, {}, _List, lbl, _, {{0.5, Above} -> lbl}], type];
+  de_DirectedEdge                             := % @ {de};
+  de_DirectedEdge -> rhs_                     := % @ {de, rhs};
+  {Rule[s_, t_] | DirectedEdge[s_, t_], lbl_:None, type_:Automatic} :=
+    MorphismArrow[{s, t}, Switch[lbl, None, {}, _List, lbl, _, {{0.5, Above} -> lbl}], type];
   other_                                      := other;
 ]
+
+
+PublicFunction[CommutativeSquare]
+
+CommutativeSquare[{nw_, ne_, se_, sw_}, {n_, e_, s_, w_}, opts___Rule] :=
+  CommutativeDiagram[
+    {{1, 1} -> "NW" -> nw, {2, 1} -> "NE" -> ne, {1, 2} -> "SW" -> sw, {2, 2} -> "SE" -> se},
+    {MorphismArrow[{"NW", "NE"}, n, LabelPosition -> Above],
+     MorphismArrow[{"NE", "SE"}, e, LabelPosition -> Right],
+     MorphismArrow[{"NW", "SW"}, w, LabelPosition -> Left],
+     MorphismArrow[{"SW", "SE"}, s, LabelPosition -> Bottom]},
+    opts, GraphicsScale -> 125
+  ];
+

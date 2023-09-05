@@ -152,6 +152,13 @@ SequenceRiffle[seq__, r_] := Sequence @@ Riffle[{seq}, r];
 
 (**************************************************************************************************)
 
+PublicFunction[SequenceTake, SequenceDrop]
+
+SequenceTake[r_][seq___] := Sequence @@ Take[{seq}, r];
+SequenceDrop[r_][seq___] := Sequence @@ Drop[{seq}, r];
+
+(**************************************************************************************************)
+
 PublicFunction[ReplaceInSequence]
 
 ReplaceInSequence[_][] := Sequence[];

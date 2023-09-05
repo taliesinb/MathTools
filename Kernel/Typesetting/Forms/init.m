@@ -281,26 +281,13 @@ makeTypedTemplateBox[args___, tag_] :=
 
 (**************************************************************************************************)
 
-PrivateVariable[$colorFormP, $colorFormAssoc]
+PrivateVariable[$colorFormP]
 
 $colorFormP = Alternatives[
-  LightRedForm, LightGreenForm, LightBlueForm,
-  RedForm, BlueForm, GreenForm,
-  PinkForm, TealForm, OrangeForm, PurpleForm,
-
-  DarkRedForm, DarkBlueForm, DarkGreenForm,
-  DarkPinkForm, DarkTealForm, DarkOrangeForm, DarkPurpleForm,
-
-  DarkGrayForm, MediumGrayForm, LightGrayForm
+  LightRedForm, LightBlueForm, LightGreenForm, LightOrangeForm, LightPurpleForm, LightPinkForm, LightTealForm, LightGrayForm,
+  RedForm,           BlueForm,      GreenForm,      OrangeForm,      PurpleForm,      PinkForm,      TealForm,      GrayForm,
+  DarkRedForm,   DarkBlueForm,  DarkGreenForm,  DarkOrangeForm,  DarkPurpleForm,  DarkPinkForm,  DarkTealForm,  DarkGrayForm
 ];
-
-$colorFormAssoc = <|
-  LightRedForm -> $LightRed, LightGreenForm -> $LightGreen, LightBlueForm -> $LightBlue,
-  RedForm -> $Red, BlueForm -> $Blue, GreenForm -> $Green,
-  DarkRedForm -> $DarkRed, DarkBlueForm -> $DarkBlue, DarkGreenForm -> $DarkGreen,
-  PinkForm -> $Pink, TealForm -> $Teal, OrangeForm -> $Orange, PurpleForm -> $Purple,
-  DarkGrayForm -> $DarkGray, MediumGrayForm -> $Gray, LightGrayForm -> $LightGray
-|>;
 
 toTypedSymbol = Case[
   Rule[Form[e_], _]                 := MakeQGBoxes @ e;

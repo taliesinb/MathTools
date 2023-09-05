@@ -1051,6 +1051,8 @@ makeLabel[label_, coords_, side_, spacing_, style_] := Scope[
   makeDelayed @ Text[label, coords, offset, BaseStyle -> style]
 ]
 
+PrivateVariable[$sideToLabelOffset]
+
 $sideToLabelOffset = <|
         Left -> { 1,  0},       Right -> {-1,  0},
      TopLeft -> { 1, -1},    TopRight -> {-1, -1},
