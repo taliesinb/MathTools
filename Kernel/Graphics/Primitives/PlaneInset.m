@@ -73,13 +73,13 @@ $textureCoords = Association[
 
 PublicFunction[ClearTextureCache]
 
-ClearTextureCache[] := (QuiverGeometryLoader`$TextureBoxCache = UAssociation[];)
+ClearTextureCache[] := (QuiverGeometryCaches`$TextureBoxCache = UAssociation[];)
 
-If[!AssociationQ[QuiverGeometryLoader`$TextureBoxCache],
-  QuiverGeometryLoader`$TextureBoxCache = UAssociation[]];
+If[!AssociationQ[QuiverGeometryCaches`$TextureBoxCache],
+  QuiverGeometryCaches`$TextureBoxCache = UAssociation[]];
 
 cachedTextureBoxAndSize[object_] :=
-  CacheTo[QuiverGeometryLoader`$TextureBoxCache, Hash @ object, textureBoxesAndSize @ object];
+  CacheTo[QuiverGeometryCaches`$TextureBoxCache, Hash @ object, textureBoxesAndSize @ object];
 
 textureBoxesAndSize[object_] := Scope[
   img = FastRasterize[Style[object, LineSpacing -> 0.1], Background -> Transparent];

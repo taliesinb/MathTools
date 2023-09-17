@@ -150,7 +150,7 @@ TrivialBundleGraph[baseGraph_, fiberGraph_, opts:OptionsPattern[]] := Scope[
     VisibleCardinals -> BundleCardinal[None, _] | BundleCardinal[_, None],
     GraphTheme -> "BundleGraph"
   ];
-  KeyDropFrom[QuiverGeometryLoader`$BundleGraphCache, Hash @ bundleGraph];
+  KeyDropFrom[QuiverGeometryCaches`$BundleGraphCache, Hash @ bundleGraph];
   getBundleGraphData[bundleGraph, baseGraph, fiberGraph, sectionDisplayMethod];
   bundleGraph
 ];

@@ -1,8 +1,8 @@
 PublicFunction[CachedURLFetch]
 
-SetInitialValue[QuiverGeometryLoader`$URLFetchCache, UAssociation[]];
+SetInitialValue[QuiverGeometryCaches`$URLFetchCache, UAssociation[]];
 
-CachedURLFetch[url_] := CacheTo[QuiverGeometryLoader`$URLFetchCache, url, WithInternet @ URLFetch[url, $urlFetchOptions]];
+CachedURLFetch[url_] := CacheTo[QuiverGeometryCaches`$URLFetchCache, url, WithInternet @ URLFetch[url, $urlFetchOptions]];
 
 (**************************************************************************************************)
 

@@ -170,14 +170,14 @@ procNodeCoordinate = Case[
   NodeOutPort[p_:Null, port_]     := makeVar[p, $PortOut[port]];
   NodeCorner[x_, y_]              := {ListPart[% @ x, 1], ListPart[% @ y, 2]};
   NodeCenter[p_:Null]             := {makeVar[p, $LR], makeVar[p, $TB]};
-  NodeSide[p_:Null, side_Symbol]  := makeVar[p, #]& /@ $sideToCoords[side];
+  NodeSide[p_:Null, side_Symbol]  := makeVar[p, #]& /@ $sideToCoordVars[side];
   NodePort[p_:Null, port_]        := makeVar[p, $Port[port]];
 ];
 
 makeVar[Null, p_] := $relvar[p];
 makeVar[s_, p_] := $var[s, p];
 
-$sideToCoords = <|
+$sideToCoordsVars = <|
   Center      -> {$LR, $TB},
   Top         -> {$LR, $T},
   Bottom      -> {$LR, $B},
@@ -291,8 +291,8 @@ paneNode[text_, {w_, h_}, OptionsPattern[]] := Scope[
   addFrameEqns[w, h];
   fet = {toRainbowColor @ background, toRainbowColor @ frameColor, frameThickness};
   boxPrimitives = makeRoundedRect[subPath /@ {$L, $B}, subPath /@ {$R, $T}, roundingRadius, fet];
-  align = {1.2, 1} * -Lookup[$sideToLabelOffset, alignment];
-  labelPos = subPath /@ Lookup[$sideToCoords, alignment];
+  align = {1.2, 1} * -Lookup[$SideToCoords, alignment];
+  labelPos = subPath /@ Lookup[$sideToCoordVars, alignment];
   List[
     boxPrimitives,
     makeDelayed @ {
@@ -736,7 +736,7 @@ makeFrameLabel = Case[
   other_     := %[Top -> other];
   list_List  := Map[%, list];
   side:$SidePattern -> label_ := Scope[
-    coords = Lookup[$sideToCoords, side, Failure["badNodeFrameLabel", side -> label]];
+    coords = Lookup[$sideToCoordVars, side, Failure["badNodeFrameLabel", side -> label]];
     coords = subPath /@ coords;
     makeLabel[label, coords, side, frameLabelSpacing, frameLabelStyle]
   ];
@@ -1047,20 +1047,9 @@ makePoint[pos_, r_, fet_] := StyleBox[PointBox[pos], PointSize[2 * r / $var[$W]]
 
 General::badLabelPosition = "Bad label position ``."
 makeLabel[label_, coords_, side_, spacing_, style_] := Scope[
-  offset = Lookup[$sideToLabelOffset, side, ThrowMessage["badLabelPosition", side]] * (1 + spacing);
+  offset = -Lookup[$SideToCoords, side, ThrowMessage["badLabelPosition", side]] * (1 + spacing);
   makeDelayed @ Text[label, coords, offset, BaseStyle -> style]
 ]
-
-PrivateVariable[$sideToLabelOffset]
-
-$sideToLabelOffset = <|
-        Left -> { 1,  0},       Right -> {-1,  0},
-     TopLeft -> { 1, -1},    TopRight -> {-1, -1},
-  BottomLeft -> { 1,  1}, BottomRight -> {-1,  1},
-      Bottom -> { 0,  1},         Top -> { 0, -1},
-       Below -> { 0,  1},       Above -> { 0, -1},
-      Center -> { 0,  0}
-|>;
 
 (**************************************************************************************************)
 

@@ -74,7 +74,7 @@ when we undecimate. so we don't compress in terms of the number of sections.
 
 PublicFunction[FindAllBundleSections]
 
-SetInitialValue[QuiverGeometryLoader`$AllBundleSectionsCache, UAssociation[]];
+SetInitialValue[QuiverGeometryCaches`$AllBundleSectionsCache, UAssociation[]];
 
 Options[BundleSectionComponents] = {
   FiberSymmetries -> None
@@ -86,7 +86,7 @@ FindAllBundleSections[bundle_Graph, n:Except[_Rule], opts:OptionsPattern[]] := S
   If[!BundleGraphQ[bundle], ReturnFailed["notbundle"]];
 
   hash = Hash @ bundle; key = hash[opts];
-  allSections = Lookup[QuiverGeometryLoader`$AllBundleSectionsCache, key, None];
+  allSections = Lookup[QuiverGeometryCaches`$AllBundleSectionsCache, key, None];
   If[allSections =!= None, Goto[Skip]];
 
   bundleData = getBundleGraphData[bundle];
@@ -102,7 +102,7 @@ FindAllBundleSections[bundle_Graph, n:Except[_Rule], opts:OptionsPattern[]] := S
   allSections //= Select[Length[First[#]] === bn&];
   allSections //= Sort;
 
-  QuiverGeometryLoader`$AllBundleSectionsCache[key] ^= allSections;
+  QuiverGeometryCaches`$AllBundleSectionsCache[key] ^= allSections;
 
   Label[Skip];
   safeRandomSample[n] @ allSections

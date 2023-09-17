@@ -388,18 +388,18 @@ toUndirectedEdge[from_, to_] := UndirectedEdge[from, to];
 PrivateFunction[CachedMultiwaySystem]
 PublicFunction[ClearMultiwayCache]
 
-ClearMultiwayCache[] := (QuiverGeometryLoader`$MultiwaySystemCache = CreateDataStructure["LeastRecentlyUsedCache", 8]);
+ClearMultiwayCache[] := (QuiverGeometryCaches`$MultiwaySystemCache = CreateDataStructure["LeastRecentlyUsedCache", 8]);
 
-SetInitialValue[QuiverGeometryLoader`$MultiwaySystemCache, None];
+SetInitialValue[QuiverGeometryCaches`$MultiwaySystemCache, None];
 
 CachedMultiwaySystem[args___] := Scope[
   hash = Hash @ {args};
-  If[QuiverGeometryLoader`$MultiwaySystemCache === None, ClearMultiwayCache[]];
-  cachedValue = QuiverGeometryLoader`$MultiwaySystemCache["Lookup", hash, Null&];
+  If[QuiverGeometryCaches`$MultiwaySystemCache === None, ClearMultiwayCache[]];
+  cachedValue = QuiverGeometryCaches`$MultiwaySystemCache["Lookup", hash, Null&];
   If[cachedValue =!= Null, Return @ cachedValue];
   result = MultiwaySystem[args];
   If[!FailureQ[result],
-    QuiverGeometryLoader`$MultiwaySystemCache["Insert", hash -> result]];
+    QuiverGeometryCaches`$MultiwaySystemCache["Insert", hash -> result]];
   result
 ];
 

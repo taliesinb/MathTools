@@ -100,9 +100,10 @@ assemblePrimitives = Case[
   ];
 ];
 
-Clear[QuiverGeometryLoader`$BoundingBoxCache];
-If[!AssociationQ[QuiverGeometryLoader`$BoundingBoxCache],
-QuiverGeometryLoader`$BoundingBoxCache = UAssociation[];
+(* TODO: Move this into Rasterization.m *)
+Clear[QuiverGeometryCaches`$BoundingBoxCache];
+If[!AssociationQ[QuiverGeometryCaches`$BoundingBoxCache],
+QuiverGeometryCaches`$BoundingBoxCache = UAssociation[];
 ];
 
 cachedBoundingBox[Text[t_, ___, BaseStyle -> baseStyle_, ___]] :=
@@ -115,7 +116,7 @@ cachedBoundingBox[Inset[t_, ___]] :=
   cachedBoundingBox[t];
 
 cachedBoundingBox[t_] := CacheTo[
-  QuiverGeometryLoader`$BoundingBoxCache,
+  QuiverGeometryCaches`$BoundingBoxCache,
   Hash[{t, $baseStyle}],
   Take[Rasterize[Style[t, Seq @@ ToList[$baseStyle]], "BoundingBox"], 2]
 ];
@@ -166,7 +167,7 @@ assemble = Case[
     {a, s1} = List @@ assemble[a];
     {b, s2} = List @@ assemble[b];
     sp = Lookup[{opt}, Spacing, 0];
-    add = $sideToVec[side] * s2 + $sideToVec[side] * sp;
+    add = $SideToCoords[side] * s2 + $SideToCoords[side] * sp;
     Sized[{a, Translate[b, -alignAgainst[s1, s2, side] + add]}, s1]
   ];
 
@@ -184,14 +185,6 @@ assemble = Case[
 
   primitives_ := assemblePrimitives @ primitives;
 ];
-
-$sideToVec = <|
-  Left -> {-1, 0},
-  Bottom -> {0, -1},
-  Right -> {1, 0},
-  Top -> {0, 1}
-|>
-
 
 assembleSRow[list_List, {valign_, hspacing_}] := Scope[
   sizes = Part[list, All, 2];

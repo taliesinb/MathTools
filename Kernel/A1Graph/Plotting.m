@@ -2239,7 +2239,7 @@ applyLabelPadding[graphics_, vertexLabelStyle_] := Scope[
 ];
 
 textCorners[text:outerText[content_, pos_, align_:{0,0}, ___]] :=
-  offsetCorners[pos, imageSizeToPlotSize @ textRasterSize @ Apply[Text, text], align]
+  offsetCorners[pos, imageSizeToPlotSize @ TextRasterSize @ Apply[Text, text], align]
 
 textCorners[_] := Nothing;
 
@@ -2252,29 +2252,6 @@ offsetCorners[p_, _, _] := (* 3D *)
   {p};
 
 offsetToPadding[o_, s_] := Switch[Sign[o], 1, {s, 0}, 0, {s, s}/2, -1, {0, s}];
-
-textRasterSize[Text[content_, ___List, opts___Rule]] :=
-  1 + CachedRasterSize[styleAsText[content, opts]] / 2;
-
-textRasterSize[_] := {0, 0};
-
-styleAsText[a_, l___] := Style[a, "Graphics", l];
-styleAsText[a_, l___, BaseStyle -> s_, r___] := Style[a, "Graphics", Sequence @@ ToList @ s, l, r];
-
-PublicFunction[ClearRasterSizeCache]
-
-ClearRasterSizeCache[] := ($rasterSizeCache = <||>;);
-
-PublicFunction[CachedRasterSize]
-
-$rasterSizeCache = <||>;
-CachedRasterSize[Null] := {0, 0};
-CachedRasterSize[e_] := CacheTo[$rasterSizeCache, e, Rasterize[e /. $rasterSizeFixupRules, "RasterSize"]];
-
-$rasterSizeFixupRules = {
-  Inverted[z_] :> z,
-  (ImageSizeRaw -> _) :> Sequence[] (* <- we use ImageSizeRaw for internal purposes but it messes up rasterization *)
-};
 
 PublicOption[LabelPosition, LabelOrientation]
 

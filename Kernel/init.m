@@ -14,7 +14,10 @@ If[$VersionNumber < 12.2,
 
   QuiverGeometryPackageLoader`Load[True, True];
 
-  If[!MemberQ[$ContextPath, "QuiverGeometry`"], AppendTo[$ContextPath, "QuiverGeometry`"]];
+  If[!MemberQ[$ContextPath, "QuiverGeometry`"],
+    AppendTo[$ContextPath, "QuiverGeometry`"];
+    AppendTo[$ContextPath, "QuiverGeometryCaches`"];
+  ];
 ];
 
 ];
