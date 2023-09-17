@@ -13,6 +13,15 @@ Quiet[
   Options[Style];
 ];
 
+(* moved from A0Usage.m because this runs slowly:
+the default behavior of System`InformationDump` will introduce LineSpacing that messes up
+my SetUsage inline tables, so remove it. *)
+
+dummy::usage = "Dummy";
+ToBoxes[Information[dummy]];
+System`InformationDump`subtitleStyled[sub_] := Style[sub, "InformationUsageText"];
+
+
 (*************************************************************************************************)
 
 QuiverGeometryPackageLoader`$SourceDirectory = DirectoryName @ $InputFileName;
@@ -304,7 +313,7 @@ fileSortingTuple[path_] := {
 QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled_:True, fullReload_:True] := Block[
   {$directory, $files, $textFiles, $privateSymbols, $systemSymbols, $publicSymbols, $packageExpressions, $packageRules,
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result, requiresFullReload,
-   $preservedValues
+   $preservedValues, $ignoreFiles
   },
 
   Off[General::shdw];
@@ -315,6 +324,13 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
   $trimmedMainContext = StringTrim[mainContext, "`"];
 
   $filesToSkip = FileNames[{"Loader.m", "init.m", "*.old.m"}, $directory];
+  $ignoreFiles = FileNames["user_ignore.m", $directory];
+
+  If[Length[$ignoreFiles] === 1,
+    $ignoreFiles = StringTrim @ StringSplit[ReadString @ First @ $ignoreFiles, "\n"];
+    $filesToSkip = Join[$filesToSkip, FileNames[$ignoreFiles, $directory, Infinity]];
+  ];
+
   $userFiles = FileNames["user_*.m", $directory];
   $files = Sort @ Complement[FileNames["*.m", $directory, Infinity], Join[$filesToSkip, $userFiles]];
   $files = SortBy[$files, fileSortingTuple];
@@ -435,6 +451,13 @@ QuiverGeometryPackageLoader`EvaluatePackages[packagesList_List] := Block[
   If[userFileChangedQ["user_final.m"], loadUserFile["user_final.m"]];
   If[(Length[packagesList] > 10) || formsChanged || userFileChangedQ["user_shortcuts.m"], loadUserFile["user_shortcuts.m"]];
   result
+];
+
+QuiverGeometryPackageLoader`DirectoryTimings[] := Block[{pathLen},
+  pathLen = StringLength @ AbsoluteFileName @ ExpandFileName @ QuiverGeometryPackageLoader`$SourceDirectory;
+  fileTimings = Normal @ QuiverGeometryPackageLoader`$FileTimings;
+  groupTimings = MapAt[First @ StringSplit[StringDrop[#, pathLen], $PathnameSeparator]&, fileTimings, {All, 1}];
+  ReverseSort @ Merge[groupTimings, Total]
 ];
 
 If[!AssociationQ[$userFileModTimes], $userFileModTimes = Association[]];

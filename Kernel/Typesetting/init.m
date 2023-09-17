@@ -21,6 +21,30 @@ KBox[wl_, kb_] := TemplateBox[{wl, kb}, "katexSwitch"];
 
 (**************************************************************************************************)
 
+PrivateFunction[setupFormDefinitionCaching]
+
+setupFormDefinitionCaching[fn_Symbol] := (
+  expr_fn /; TrueQ[$fdCacheEnabled] := Block[
+    {key = getFDCacheKey[expr], hash = Hash[Unevaluated @ expr], res, pair, $fdCacheEnabled = False},
+    pair = Lookup[$formDefinitionCache, key];
+    If[ListQ[pair] && Last[pair] === hash, res = First @ pair,
+      res = expr;
+      AssociateTo[$formDefinitionCache, key -> {res, hash}];
+    ];
+    res
+  ];
+);
+
+SetInitialValue[$formDefinitionCache, UAssociation[]];
+
+$fdCacheEnabled = True;
+
+SetHoldAllComplete[getFDCacheKey];
+getFDCacheKey[e:(fn_[sym_, ___])] := Hold[fn, sym];
+_getFDCacheKey := BadArguments[];
+
+(**************************************************************************************************)
+
 PublicFunction[OpBox, WideOpBox, VeryWideOpBox]
 
 OpBox[b_] := KBox[RBox["\[ThinSpace]", b, "\[ThinSpace]"], KBin @ b];
@@ -263,15 +287,27 @@ tagAsMath[t_] := TagBox[t /. TagBox[e_, "QG"] :> e, "QG"];
 
 (**************************************************************************************************)
 
-PublicVariable[$notebookDisplayFunction, $notebookDisplayFunctionBases, $katexDisplayFunction, $katexMacros, $symbolToTemplateName, $symbolToKatexMacroName]
-
 PublicFunction[ClearTemplateBoxDefinitions]
 
-ClearTemplateBoxDefinitions[] := (
-  $notebookDisplayFunction = $katexDisplayFunction = $katexMacros = $symbolToTemplateName = $symbolToKatexMacroName = $notebookDisplayFunctionBases =<||>;
-);
+PrivateVariable[$notebookDisplayFunction, $katexDisplayFunction, $katexMacros, $symbolToTemplateName, $symbolToKatexMacroName, $notebookDisplayFunctionBases
+]
 
-ClearTemplateBoxDefinitions[];
+SetInitialValue[$notebookDisplayFunction, <||>];
+SetInitialValue[$katexDisplayFunction, <||>];
+SetInitialValue[$katexMacros, <||>];
+SetInitialValue[$symbolToTemplateName, <||>];
+SetInitialValue[$symbolToKatexMacroName, <||>];
+SetInitialValue[$notebookDisplayFunctionBases, <||>];
+
+ClearTemplateBoxDefinitions[] := (
+  $notebookDisplayFunction =
+  $katexDisplayFunction =
+  $katexMacros =
+  $symbolToTemplateName =
+  $symbolToKatexMacroName =
+  $notebookDisplayFunctionBases =
+  <||>;
+);
 
 (**************************************************************************************************)
 
@@ -472,6 +508,8 @@ which displays as boxes$ where $1 is substituted.
 
 Options[DefineUnaryForm] = $defineOpts;
 
+setupFormDefinitionCaching[DefineUnaryForm];
+
 DefineUnaryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
   {boxify = OptionValue[Boxification]},
@@ -496,6 +534,8 @@ which displays as boxes$ where $1, $2 are substituted.
 "
 
 Options[DefineBinaryForm] = $defineOpts;
+
+setupFormDefinitionCaching[DefineBinaryForm];
 
 DefineBinaryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
@@ -522,6 +562,8 @@ which displays as boxes$ where $1, $2, $3 are substituted.
 * If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
 "
 
+setupFormDefinitionCaching[DefineTernaryForm];
+
 DefineTernaryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
   {boxify = OptionValue[Boxification]},
@@ -546,6 +588,8 @@ which displays as boxes$ where $1, $2, $3 are substituted.
 * No %KatexMacroName option is available, because katex macros do not support variable arity.
 * If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
 "
+
+setupFormDefinitionCaching[DefineNAryForm];
 
 DefineNAryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
@@ -578,8 +622,10 @@ which displays as RowBox[{arg$1, infixBox$, arg$2, infixBox$, $$}].
 
 (* TODO: replace Padding mechanism by unifying mathbin / mathop on the K side with thin space padding on the M side *)
 
+setupFormDefinitionCaching[DefineInfixForm];
+
 DefineInfixForm[formSym_Symbol, infixBox_, opts:OptionsPattern[]] := First @ {
-  res = DefineNAryForm[formSym, RiffledBox[infixBox][$$1], HeadBoxes -> infixBox, FilterOptions @ opts],
+  DefineNAryForm[formSym, RiffledBox[infixBox][$$1], HeadBoxes -> infixBox, FilterOptions @ opts],
   DefineStandardTraditionalForm[
     f:formSym[___, _formSym, ___] :> ToBoxes @ VectorReplace[f, z_formSym :> ParenthesesForm @ z]
   ]
@@ -620,6 +666,8 @@ which displays as RowBox[{arg$1, infixBox$, arg$2}].
 * If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
 "
 
+setupFormDefinitionCaching[DefineInfixBinaryForm];
+
 DefineInfixBinaryForm[formSym_Symbol, infixBox_, OptionsPattern[]] :=
   DefineBinaryForm[formSym, RBox[$1, infixBox, $2], HeadBoxes -> infixBox, FilterOptions @ opts];
 
@@ -636,6 +684,8 @@ which displays as RowBox[{arg$1, infixBox$, arg$2}], and defines symbol$[arg$1, 
 "
 
 Options[DefineIndexedInfixBinaryForm] = Options @ DefineInfixForm;
+
+setupFormDefinitionCaching[DefineIndexedInfixBinaryForm];
 
 DefineIndexedInfixBinaryForm[formSym_Symbol, infixBox_, opts:OptionsPattern[]] := (
   DefineUnaryForm[formSym, OpBox @ SubscriptBox[infixBox, $1], TemplateName -> StringJoin[SymbolName @ formSym, "Head"]];
@@ -659,6 +709,8 @@ which displays as boxes$ with $1 substituted with CommaRowBox[arg$1, arg$2, $$].
 * If the %KatexMacroName option is not None, a shortened katex macro is set up, which looks like \\sym{arg$1, arg$2}.
 * If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
 ";
+
+setupFormDefinitionCaching[DefineCommaForm];
 
 DefineCommaForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
@@ -686,6 +738,8 @@ which displays as boxes$ with $2 substituted with CommaRowBox[arg$1, arg$2, $$].
 * If the %BoxFunction option is not None, the symbol provided will be set up so it can be called to construct the underlying boxes directly.
 ";
 
+setupFormDefinitionCaching[DefineRestCommaForm];
+
 DefineRestCommaForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
   {boxify = toSequenceBoxifyFn[OptionValue[Boxification]]},
@@ -701,6 +755,8 @@ _DefineRestCommaForm := BadArguments[];
 (**************************************************************************************************)
 
 PublicFunction[DefineRuleAsMapsTo]
+
+setupFormDefinitionCaching[DefineRuleAsMapsTo];
 
 DefineRuleAsMapsTo[head_] := DefineStandardTraditionalForm[
   head[l___, Rule[lhs_, rhs_], r___] :> MakeBoxes[head[l, MapsToForm[lhs, rhs], r]]
@@ -719,6 +775,8 @@ DefineSymbolForm[symbol$ -> boxes$] defines symbol$ to boxify to %TemplateBox[{}
 
 SetListable[DefineSymbolForm];
 
+setupFormDefinitionCaching[DefineSymbolForm];
+
 DefineSymbolForm[sym_Symbol -> boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[sym, OptionValue[TemplateName]]},
   DefineStandardTraditionalForm[sym :> SBox[name]];
@@ -731,7 +789,11 @@ _DefineSymbolForm := BadArguments[];
 
 PublicFunction[DefineNamedFunctionSymbolForm]
 
-DefineNamedFunctionSymbolForm = Case[
+setupFormDefinitionCaching[DefineNamedFunctionSymbolForm];
+
+DefineNamedFunctionSymbolForm[e_] := iDefineNamedFunctionSymbolForm[e];
+
+iDefineNamedFunctionSymbolForm = Case[
   list_List                 := Map[%, list];
   sym_Symbol                := %[sym -> ToLowerCase @ StringTrimRight[SymbolName @ sym, "Function"]];
   sym_Symbol -> name_       := DefineStandardTraditionalForm[{
@@ -760,6 +822,8 @@ DefineStyleForm[symbol$, style$] defines symbol$[$$] to boxify to %StyleBox[$$, 
 * DefineStyleForm uses %DefineUnaryForm internally.
 "
 
+setupFormDefinitionCaching[DefineStyleForm];
+
 DefineStyleForm[formSym_, style_, opts:OptionsPattern[]] := (
   $styleFormData[formSym] = style;
   DefineUnaryForm[formSym, StyleBox[$1, style], opts];
@@ -769,7 +833,7 @@ DefineStyleForm[formSym_, style_, opts:OptionsPattern[]] := (
 
 PrivateFunction[StyleFormHeadQ, StyleFormData]
 
-$styleFormData = UAssociation[];
+SetInitialValue[$styleFormData, UAssociation[]];
 
 StyleFormHeadQ[s_Symbol] := StyleFormData[s] =!= None;
 StyleFormHeadQ[_] := False;
@@ -791,7 +855,11 @@ DefineStandardTraditionalForm[{
   (i_IndexedForm)[arg_, cond_]        :> RBox[MakeBoxes @ i, " ", MakeQGBoxes @ SuchThatForm[arg, cond]]
 }]
 
+(**************************************************************************************************)
+
 PublicFunction[DefineLegacyIndexedForm]
+
+setupFormDefinitionCaching[DefineLegacyIndexedForm];
 
 DefineLegacyIndexedForm[head_Symbol, boxes_] := DefineStandardTraditionalForm[{
   head                          :> boxes,

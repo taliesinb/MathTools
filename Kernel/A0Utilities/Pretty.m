@@ -133,7 +133,7 @@ pretty1 = Case[
   head_[args___]                 := indentedBlock[pretty1[head] <> "[", MapUnevaluated[pretty0, {args}], "]"];
   atom_ ? Developer`HoldAtomQ    := pretty2[atom];
 ,
-  {HAQ -> ? Developer`HoldAtomQ, $fatHeadP}
+  {$fatHeadP}
 ];
 
 makeTab[n_] := makeTab[n] = StringRepeat["  ", n];

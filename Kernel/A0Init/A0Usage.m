@@ -183,15 +183,6 @@ storeRawUsageString[rawUsageString_String] := Block[
 
 (**************************************************************************************************)
 
-(* the default behavior of System`InformationDump` will introduce LineSpacing that messes up
-my SetUsage inline tables, so remove it. *)
-
-dummy::usage = "Dummy";
-ToBoxes[Information[dummy]];
-System`InformationDump`subtitleStyled[sub_] := Style[sub, "InformationUsageText"];
-
-(**************************************************************************************************)
-
 PrivateFunction[SetInitialValue]
 
 SetHoldAllComplete[SetInitialValue];
