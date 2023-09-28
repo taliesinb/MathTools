@@ -423,7 +423,7 @@ ComputeExtendedGraphImageSizeData[g_Graph] := Scope[
 
 PublicVariable[$GraphPlotVerboseMode]
 
-$GraphPlotVerboseMode = False;
+SetInitialValue[$GraphPlotVerboseMode, False];
 
 SetHoldAllComplete[GPPrint];
 graphSkeleton[g_Graph] := StringJoin["Graph[«", IntegerString @ VertexCount @ g, "», «", IntegerString @ EdgeCount @ g, "»]"];
@@ -431,7 +431,7 @@ GPPrint[args___] /; $GraphPlotVerboseMode := Print[args];
 
 PublicFunction[ExtendedGraphPlottingFunction]
 
-ExtendedGraphPlot::badcolors = "CardinalColors should be an association from cardinals to colors.";
+ExtendedGraphPlot::badcolors = "CardinalColors -> `` should be an association from cardinals to colors.";
 ExtendedGraphPlot::badpadding = "Padding option `` was invalid."
 ExtendedGraphPlot::badthickness = "EdgeThickness -> `` was invalid."
 
@@ -500,7 +500,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   GPPrint["Options processing"];
   FunctionSection[
     cardinalColors = LookupCardinalColors[graph];
-    If[!AssociationQ[cardinalColors], failPlot["badcolors"]];
+    If[!AssociationQ[cardinalColors], failPlot["badcolors", MsgExpr @ cardinalColors]];
 
     SetNone[vertexAnnotations, <||>];
     SetNone[edgeAnnotations, <||>];
@@ -526,6 +526,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         Rule["LongestNonLoopEdge", sz:$numOrNumPairP]  :> computeEdgeLengthBasedImageSize[1.0, sz, False],
         Rule["ShortestEdge", sz:$numOrNumPairP]        :> computeEdgeLengthBasedImageSize[0.0, sz, False],
         Rule["ShortestNonLoopEdge", sz:$numOrNumPairP] :> computeEdgeLengthBasedImageSize[0.0, sz, True],
+        Rule["ClosestVertices", sz:$numOrNumPairP]     :> computeVertexPairBasedImageSize[sz],
         Rule["Edge", sz:$numOrNumPairP]                :> computeEdgeLengthBasedImageSize[0.1, sz, True],
         Rule["MedianEdge", sz:$numOrNumPairP]          :> computeEdgeLengthBasedImageSize[0.5, sz, False],
         Rule["MedianNonLoopEdge", sz:$numOrNumPairP]   :> computeEdgeLengthBasedImageSize[0.5, sz, True],
@@ -678,6 +679,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     SetAutomatic[vertexStyle, defaultVertexColor];
 
+    GPPrint["Drawing vertices"];
     vertexItems = drawViaColorFunc[
       vertexColors, vertexColorFunction, vertexDrawFunc, $VertexCount, $VertexParts, None,
       vertexColorDataProvider, VertexColorFunction
@@ -1088,6 +1090,13 @@ computeEdgeLengthBasedImageSize[q_, edgeSize_, ignoreLoops_] := Scope[
   Max[#, 10]& /@ N[Take[$GraphPlotSize, 2] * scaling]
 ];
 
+computeVertexPairBasedImageSize[pairSize_] := Scope[
+  dists = DistanceMatrix[$VertexCoordinates];
+  minDist = Min @ Table[Min @ Drop[Part[dists, n], n], {n, 1, Length[$VertexCoordinates]-1}];
+  scaling = pairSize / minDist;
+  Max[#, 10]& /@ N[Take[$GraphPlotSize, 2] * scaling]
+];
+
 deleteLoops[coords_] := Discard[coords, First[#] == Last[#]&];
 
 imageSizeToImageFraction[sz_] := sz / effectiveImageWidth;
@@ -1179,7 +1188,7 @@ evalGraphicsValue = Case[
       postProcPrims[vertex];
 
   GraphicsValue[{"EdgeCoordinates", edge_}] :=
-    Part[$edgeCoordinateLists, findEdgeList @ edge] //
+    Part[$EdgeCoordinateLists, findEdgeList @ edge] //
       postProcPrims[edge];
 
   GraphicsValue[{"EdgePrimitives", edge_}] :=
@@ -1227,6 +1236,7 @@ findVertexList = Case[
 
 findEdgeList = Case[
   All := Range @ $EdgeCount;
+  spec_List := Catenate @ Map[findEdge, spec];
   spec_ := ToList @ findEdge @ spec
 ];
 
@@ -1832,14 +1842,14 @@ drawOriginalVertexWithSize[color_, size_][pos_] := Scope[
 
 drawCustomShapeFunction[fn_, size_][pos_, color_] := Scope[
   vertexWeights = GraphVertexData[All, VertexWeight];
-  maxVertexWeight = Max @ weights;
-  Map[drawIndividualCustomShapeFunction[fn, size, color], pos];
+  maxVertexWeight = If[ListQ[vertexWeights], Max @ weights, None];
+  Map[drawIndividualCustomShapeFunction[fn, size, color], pos]
 ];
 
 drawIndividualCustomShapeFunction[fn_, size_, color_][pos_] := Scope[
   index = IndexOf[$VertexCoordinates, pos];
   vertex = Part[$VertexList, index];
-  vertexWeight = Part[vertexWeights, index];
+  vertexWeight = If[ListQ[vertexWeights], Part[vertexWeights, index], None];
   $vertexDataInfo = <|
     "Coordinates" -> pos,
     "VertexIndex" -> index,

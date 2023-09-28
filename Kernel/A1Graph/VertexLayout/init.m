@@ -49,6 +49,7 @@ ecoords$ is a list of coordinate matrices in the same order as EdgeList[graph$].
 ExtractGraphPrimitiveCoordinates::badvcoordrules = "VertexCoordinateRules is not a list of rules.";
 ExtractGraphPrimitiveCoordinates::badvcoordlen = "VertexCoordinates has length ``, but should have length ``.";
 ExtractGraphPrimitiveCoordinates::badvcoords = "Initial setting of VertexCoordinates is not a matrix of coordinates.";
+ExtractGraphPrimitiveCoordinates::badvcoordfunc = "Setting of VertexCoordinateFunction -> `` is not valid.";
 ExtractGraphPrimitiveCoordinates::glayoutfail = "Failed to layout graph, using circle.";
 ExtractGraphPrimitiveCoordinates::badctrans = "CoordinateTransformFunction produced invalid values, using circle.";
 ExtractGraphPrimitiveCoordinates::badvertexlayout = "Invalid result returned by VertexLayout object ``.";
@@ -83,7 +84,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
   UnpackExtendedThemedOptions[graph,
     vertexLayout, layoutDimension, viewOptions, coordinateTransformFunction, coordinateRotation, vertexOverlapResolution,
     vertexCoordinateRules, vertexCoordinateFunction, selfLoopRadius, multiEdgeDistance, packingSpacing,
-    edgeLayout
+    edgeLayout, additionalVertexLayoutOptions
   ];
 
   (* process VertexCoordinateFunction, VertexCoordinateRules, and VertexCoordinates to produce a single
@@ -98,7 +99,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     vertexCoordinateFunction =!= None,
       vertexCoordinates = Map[vertexCoordinateFunction, vertexList];
       If[!CoordinateMatrixQ[vertexCoordinates, _],
-        Message[ExtractGraphPrimitiveCoordinates::badvcoordfunc];
+        Message[ExtractGraphPrimitiveCoordinates::badvcoordfunc, MsgExpr @ vertexCoordinateFunction];
         vertexCoordinates = Automatic;
       ];
     ,
@@ -162,11 +163,18 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
       Null
   ];
 
+  If[additionalVertexLayoutOptions =!= {},
+    With[{seq = Sequence @@ additionalVertexLayoutOptions},
+      vertexLayout = Insert[vertexLayout, Unevaluated @ seq, FirstIndex[vertexLayout, _Rule, -1]]
+    ];
+  ];
+
   result = vertexLayout @ data;
   If[MatchQ[result, {_ ? CoordinateMatrixQ, _ ? CoordinateMatricesQ}],
     {$vertexCoordinates, $edgeCoordinateLists} = result;
   ,
     Message[ExtractGraphPrimitiveCoordinates::badvertexlayout, MsgExpr @ vertexLayout];
+    Print[result];
     $vertexCoordinates = CirclePoints @ vertexCount;
     $edgeCoordinateLists = Part[$vertexCoordinates, {#1, #2}]& @@@ edgeList;
   ];
@@ -334,6 +342,7 @@ displaceVertexIntersectingEdges[{a_, b_}] := Scope[
   {a, Splice @ halfBend[a - dy/2, dx, -dy], Splice @ Reverse @ halfBend[b + dy/2, dx, dy], b}
 ];
 
+displaceVertexIntersectingEdges[other_] := other;
 
 $bendMatrix = {{0.,0.},{0.04,0.19},{0.15,0.35},{0.31,0.46},{0.5,0.5},{0.69,0.46},{0.85,0.35},{0.96,0.19},{1.,0.}};
 halfBend[p_, x_, y_] := Threaded[p] + Dot[$bendMatrix, ToPacked @ {x, y}];

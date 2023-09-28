@@ -1,4 +1,4 @@
-PublicOption[VertexLayout, VertexOverlapResolution, GraphOrigin]
+PublicOption[VertexLayout, AdditionalVertexLayoutOptions, VertexOverlapResolution, GraphOrigin]
 
 PublicOption[EdgeLayout]
 
@@ -30,7 +30,7 @@ PublicOption[FrameFade]
 
 PublicOption[VisibleCardinals, ViewRegion, ViewOptions, ViewRotation, LayoutDimension, AdditionalImagePadding, ExtendImagePadding]
 
-PublicOption[CoordinateTransformFunction, CoordinateRotation]
+PublicOption[VertexCoordinateFunction, CoordinateTransformFunction, CoordinateRotation]
 
 PublicOption[LabelCardinals, AspectRatioClipping, PrologFunction, UseAbsoluteSizes, SelfLoopRadius, MultiEdgeDistance, PackingSpacing]
 
@@ -122,6 +122,7 @@ $extendedGraphOptionsRules = {
   VertexLabelRules                    -> None,
   VertexLabelSpacing                  -> 0,
   VertexLayout                        -> Automatic,
+  AdditionalVertexLayoutOptions       -> {},
   VertexOpacity                       -> 1,
   VertexOverlapResolution             -> None,
   VertexTooltips                      -> None,

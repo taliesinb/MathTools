@@ -44,7 +44,7 @@ SetAttributes[{scanToTree}, HoldRest];
 
 scanToTree[pos_, HoldForm[e_]] := scanToTree[pos, e];
 
-scanToTree[pos_, e:(head_Symbol[___])] /; head =!= Form := Scope[
+scanToTree[pos_, e:(head_Symbol[___])] /; !MatchQ[head, Form | RGBColor | GrayLevel] := Scope[
   n = Length[Unevaluated @ e];
   Internal`StuffBag[$verts, pos];
   $degree[pos] ^= n;
@@ -66,7 +66,7 @@ scanToTree[pos_, Slot[n_Integer | n_String]] := Scope[
   Internal`StuffBag[$verts, pos];
   $degree[pos] ^= 0;
   $data[pos] ^= n;
-  $type[pos] = "Slot";
+  $type[pos] ^= "Slot";
 ];
 
 scanToTree[pos_, e_] := Scope[
@@ -83,7 +83,7 @@ scanToTree[pos_, e_Symbol /; MemberQ[$slotSymbols, e]] := Scope[
   Internal`StuffBag[$verts, pos];
   $degree[pos] ^= 0;
   $data[pos] ^= e;
-  $type[pos] = "Slot";
+  $type[pos] ^= "Slot";
 ];
 
 DefineGraphTheme["ExpressionTreeGraph",
@@ -94,6 +94,7 @@ DefineGraphTheme["ExpressionTreeGraph",
   EdgeStyle -> $LightGray, (* makes HalfCenter bending look good *)
   ImageSize -> "ShortestEdge" -> 50,
   BaselinePosition -> Top,
+  EdgeOpacity -> None,
   VertexShapeFunction -> ExpressionTreeGraphVertexShape,
   ArrowheadShape -> None
 ];
@@ -123,12 +124,14 @@ DefineGraphTheme["NestedListGraph",
   VertexLayout -> TreeVertexLayout[
     Orientation -> Top, Balanced -> False, RootVertex -> {}, RootOrientation -> "Sink", BendStyle -> "Top",
     StretchFactor -> 0.75, BendRadius -> 1,
-    PreserveBranchOrder -> True],
+    PreserveBranchOrder -> True
+  ],
   EdgeStyle -> $LightGray, (* makes HalfCenter bending look good *)
-  ImageSize -> "ShortestEdge" -> 20,
+  ImageSize -> "ClosestVertices" -> 16,
   VertexSize -> 5,
   BaselinePosition -> Top,
   VertexColorFunction -> "LeafData",
+  EdgeOpacity -> None,
   ArrowheadShape -> None
 ];
 
