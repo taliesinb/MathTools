@@ -333,6 +333,12 @@ CopyFileToClipboard[path_] := If[
 
 (**************************************************************************************************)
 
+PublicFunction[PasteFromClipboard]
+
+PasteFromClipboard[] := ReadString["!pbpaste"];
+
+(**************************************************************************************************)
+
 PublicFunction[ToNotebookExpression]
 
 ToNotebookExpression = Case[

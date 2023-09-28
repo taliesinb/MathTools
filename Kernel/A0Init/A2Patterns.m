@@ -38,7 +38,7 @@ SetUsage @ "
 $SizePattern is a pattern that matches a (potentially compound) symbol side, like Left, Top, or TopLeft.
 "
 
-PrivateVariable[$SideToCoords]
+PrivateVariable[$SideToCoords, $CoordsToSide]
 
 $SideToCoords = <|
   Left        -> {-1,  0},
@@ -53,6 +53,37 @@ $SideToCoords = <|
   TopRight    -> { 1,  1},
   Center      -> { 0,  0}
 |>
+
+$CoordsToSide = InvertAssociation[$SideToCoords]
+
+PrivateVariable[$FlipSideRules]
+
+$FlipSideRules = {
+  Left -> Right,
+  Right -> Left,
+  Top -> Bottom,
+  Bottom -> Top,
+  BottomLeft  -> TopRight,
+  BottomRight -> TopLeft,
+  TopLeft     -> BottomRight,
+  TopRight    -> BottomLeft
+};
+
+PrivateFunction[ApplyFlip]
+
+SetUsage @ "
+ApplyFlip[pos$, {flipx$, flipy$}] flips a pair of coordinates based on booleans flipx$ and flipy$.
+ApplyFlip[pos$, flip$, trans$] swaps the coordinates if trans$ is True before flipping.
+ApplyFlip[side$, flip$] transforms a symbolic side e.g. Top, Bottom, TopRight, Center, etc. and returns another symbol.
+* ApplyFlip also works on Above and Below and returns these when given.
+"
+
+ApplyFlip[{x_, y_}, {flipX_, flipY_}, transpose_:False] :=
+  If[transpose, Reverse, Identity] @ {If[flipX, -1, 1] * x, If[flipY, -1, 1] * y};
+
+ApplyFlip[sym_Symbol, args___] := $CoordsToSide @ Sign @ ApplyFlip[$SideToCoords @ sym, args];
+
+ApplyFlip[ab:(Above|Below), args___] := ApplyFlip[ab /. {Above -> Top, Below -> Bottom}, args] /. {Top -> Above, Bottom -> Below};
 
 (**************************************************************************************************)
 

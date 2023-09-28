@@ -20,13 +20,6 @@ ConstructHoldComplete[fn_, args___] :=
 
 (**************************************************************************************************)
 
-PublicFunction[ApplyHoldComplete]
-
-ConstructHoldComplete[fn_Function, args___] :=
-  PostComposeFunction[fn, HoldComplete][args];
-
-(**************************************************************************************************)
-
 PublicFunction[Unthread]
 
 (* todo: implement these as macros, and better yet as syntax in Loader.m *)
@@ -88,6 +81,15 @@ PublicFunction[ThreadAnd, ThreadOr, ThreadNot]
 ThreadAnd[args__] := And @@@ Trans[args];
 ThreadOr[args__] := Or @@@ Trans[args];
 ThreadNot[arg_List] := Map[Not, arg];
+
+(**************************************************************************************************)
+
+PublicFunction[ThreadMin, ThreadMax]
+
+SetListable[ThreadMin, ThreadMax]
+
+ThreadMin[a__] := Min[a];
+ThreadMax[a__] := Max[a];
 
 (**************************************************************************************************)
 

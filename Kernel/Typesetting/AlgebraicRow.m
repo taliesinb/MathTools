@@ -298,8 +298,6 @@ sumForm[args_] := Scope[
   Row[res, "\[ThinSpace]"]\[ThinSpace]
 ];
 
-HoldNumericQ[n_] := NumericQ[Unevaluated @ n];
-
 sumTermForm[Times[-1, a_]] := {"\[ThinSpace]\[Minus]\[ThinSpace]", symbolicForm @ a};
 sumTermForm[Times[n_ ? HoldNumericQ, a_]] := {n, symbolicForm @ a};
 sumTermForm[a_] := {"\[ThinSpace]+\[ThinSpace]", symbolicForm @ a};

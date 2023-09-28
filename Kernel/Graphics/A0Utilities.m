@@ -22,6 +22,15 @@ CosSin[theta_] := {Cos[theta], Sin[theta]};
 
 (**************************************************************************************************)
 
+PublicFunction[ClockwiseCirclePoints]
+
+SetUsage @ "
+ClockwiseCirclePoints[n$] gives n$ equally spaced clockwise points with the first point at {0, 1}."
+
+ClockwiseCirclePoints[n_] := AngleVector /@ (Pi/2 - Range[0, Tau-1/n, Tau/n]);
+
+(**************************************************************************************************)
+
 PublicFunction[VectorReflect, VectorReflectHorizontal, VectorReflectVertical]
 
 SetUsage @ "
@@ -99,16 +108,46 @@ LineLineIntersectionPoint[line$1, line$2] gives the point where two line segment
 
 LineLineIntersectionPoint[l1_, l2_] := Scope[
   r = BooleanRegion[And, Line /@ {l1, l2}];
-  If[MatchQ[r, Point[$PointP]], Return @ Part[r, 1]];
-  If[MatchQ[r, Point[{$PointP, ___}]], Return @ Part[r, 1, 1]];
-  p = First @ l2;
-  Do[p = ClosestPointOnLine[l2, ClosestPointOnLine[l1, p]], 10];
-  d = DistanceToLine[l1, p];
-  scale = Min[EuclideanDistance @@ l1, EuclideanDistance @@ l2];
-  If[d <= scale / 10,
-    Avg[p, ClosestPointOnLine[l1, p]],
-    $Failed
+  Switch[r,
+    Point[$CoordP],
+      Part[r, 1],
+    Point[{$CoordP, ___}],
+      Part[r, 1, 1],
+    Line[_],
+      Part[r, 1, 1],
+    _,
+      p = First @ l2;
+      Do[p = ClosestPointOnLine[l2, ClosestPointOnLine[l1, p]], 10];
+      d = DistanceToLine[l1, p];
+      scale = Min[EuclideanDistance @@ l1, EuclideanDistance @@ l2];
+      If[d <= scale / 10,
+        Avg[p, ClosestPointOnLine[l1, p]],
+        $Failed
+      ]
   ]
+]
+
+(**************************************************************************************************)
+
+PublicFunction[LineRectangleIntersectionPoint]
+
+SetUsage @ "
+LineRectangleIntersectionPoint[line$1, rectangle$] gives the point where a line and a rectangle cross.
+* The rectangle should be specified as {{x$min, y$min}, {x$max, y$max}}.
+"
+
+LineRectangleIntersectionPoint[l1_List, {{x1_, y1_}, {x2_, y2_}}] := Scope[
+  points = Map[
+    BooleanRegion[And, {Line @ N @ l1, Line @ N @ #1}]&,
+    {{{x1, y1}, {x1, y2}},
+     {{x1, y2}, {x2, y2}},
+     {{x2, y2}, {x2, y1}},
+     {{x2, y1}, {x1, y1}}}
+  ];
+  points = DeepCases[points, $Coord2P];
+  p1 = First @ l1;
+  If[points === {}, p1,
+    MinimumBy[points, EuclideanDistance[#, p1]&]]
 ]
 
 (**************************************************************************************************)
@@ -227,6 +266,7 @@ DisplaceLineTowards[line:{a_, b_}, point_, dist_] := Scope[
 (**************************************************************************************************)
 
 PublicFunction[SetbackCoordinates]
+PublicHead[Rectangular]
 
 SetUsage @ "
 SetbackCoordinates[path$, d$] truncates the endpoints of a path by distance d$ towards its interior.
@@ -239,11 +279,18 @@ SetbackCoordinates[{path$1, path$2}, $$] truncates several paths at once.
 | Scaled[f$] | a fraction of the line length |
 | Offset[p$] | a setback in absolute points |
 | Offset[p$, d$] | setback distance d$ then absolute points p$ |
+| Rectangular[{x$, y$}] | separate distances in the x$ and y$ directions |
 * Using Offset[$$] only works for straight lines.
 "
 
-$nullSBSpecP = 0 | 0. | None | Offset[0|0.] | Offset[0|0., 0|0.];
-$SBSpecP = $NumberP | Offset[$NumberP] | Offset[$NumberP, $NumberP];
+$zeroP = 0|0.;
+$zeroRP = Rectangular[{$zeroP,$zerop}];
+$zeroFP = $zeroP | $zeroRP;
+$nullSBSpecP = None | $zeroFP | Offset[$zeroP] | Offset[$zeroP, $zeroFP];
+
+$rectP = Rectangular[$Coord2P];
+$numRectP = $NumberP | $rectP;
+$sbSpecP = $numRectP | Offset[$NumberP] | Offset[$NumberP, $numRectP];
 
 SetbackCoordinates[spec_, $nullSBSpecP | {$nullSBSpecP, $nullSBSpecP}] :=
   spec;
@@ -254,25 +301,19 @@ SetbackCoordinates[spec_ ? CoordinateArrayQ, d_] :=
 SetbackCoordinates[spec_, Scaled[s_ ? NumberQ]] :=
   SetbackCoordinates[spec, LineLength[spec] * s];
 
-SetbackCoordinates[spec_, d:$SBSpecP] :=
+SetbackCoordinates[spec_, d:$sbSpecP] :=
   SetbackCoordinates[spec, {d, d}];
 
 (* we can preserve absolute offsets here for simple lines, but in general we can't walk
 a complex line in points since we don't know how it will resolve later when a scale is chosen *)
 SetbackCoordinates[{a_, b_}, Offset[d_]] := SetbackCoordinates[{a, b}, {Offset[d], Offset[d]}]
 
-toAbsRel = Case[
-  d:$NumberP                      := {0, d};
-  Offset[p:$NumberP]              := {p, 0};
-  Offset[p:$NumberP, d:$NumberP]  := {p, d};
-];
-
-SetbackCoordinates[{a_, b_}, spec:{Repeated[$SBSpecP, 2]} /; ContainsQ[spec, Offset]] := Scope[
-  dx = N @ Normalize[b - a];
-  {abs, rel} = Transpose @ Map[toAbsRel, spec];
+SetbackCoordinates[{a_, b_}, spec:{Repeated[$sbSpecP, 2]} /; ContainsQ[spec, Offset]] := Scope[
+  dx = safeNormDelta[a, b];
+  {abs, rel} = Transpose @ Map[toAbsRelOffset, spec];
   {a, b} = SetbackCoordinates[{a, b}, rel];
   {d1, d2} = N @ abs;
-  {Offset[dx * d1, a], Offset[-dx * d2, b]} /. Offset[{0., 0.}, p_] :> p
+  {Offset[dx * d1, a], Offset[-dx * d2, b]} // SimplifyOffsets
 ];
 
 SetbackCoordinates[{a_, b_}, {d1_ ? NumberQ, d2_ ? NumberQ}] := Scope[
@@ -281,7 +322,7 @@ SetbackCoordinates[{a_, b_}, {d1_ ? NumberQ, d2_ ? NumberQ}] := Scope[
   {a + dx * d1, b - dx * d2}
 ];
 
-SetbackCoordinates[coords_, {d1_ ? NumberQ, d2_ ? NumberQ}] :=
+SetbackCoordinates[coords_, {d1:$numRectP, d2:$numRectP}] :=
   setbackHalf[setbackHalf[coords, d1], -d2]
 
 SetbackCoordinates::invalidspec = "Invalid setback specification ``."
@@ -308,26 +349,62 @@ ExtendSetback[a_, {b1_, b2_}] := {extendSB1[a, b1], extendSB1[a, b2]};
 ExtendSetback[{a1_, a2_}, b_] := {extendSB1[a1, b], extendSB1[a2, b]};
 ExtendSetback[a_, b_] := extendSB1[a, b];
 
-extendSB1[a:$NumberP, b:$NumberP] := a + b;
-extendSB1[a_, b_] := Scope[
-  {a, b} = Map[toAbsRel, {a, b}];
-  fromAbsRel[a + b]
-];
-
-fromAbsRel = Case[
-  {0|0., d}  := d;
-  {p_, 0|0.} := Offset[p];
-  {p_, d_}   := Offset[p, d];
+extendSB1 = Case[
+  Seq[$nullSBSpecP, $nullSBSpecP] := 0;
+  Seq[$nullSBSpecP, e_] := e;
+  Seq[e_, $nullSBSpecP] := e;
+  Seq[a_, b_] := fromAbsRelOffset[Plus @@ Map[toAbsRelOffset, {a, b}]];
 ];
 
 (**************************************************************************************************)
 
+fromAbsRelOffset = Case[
+  {$zeroP, $zeroFP} := 0;
+  {$zeroP, d_}      := d;
+  {p_, $zeroFP}     := Offset[p];
+  {p_, d_}          := Offset[p, d];
+];
+
+toAbsRelOffset = Case[
+  d:$numRectP                     := {0, d};
+  Offset[p:$NumberP]              := {p, 0};
+  Offset[p:$NumberP, d:$numRectP] := {p, d};
+];
+
+Rectangular /: Plus[Rectangular[p_],  d:$NumberP] := Rectangular[p + d];
+Rectangular /: Plus[Rectangular[p1_], Rectangular[p2_]] := Rectangular[p1 + p2];
+
+(**************************************************************************************************)
+
 setbackHalf[{}, _] := {};
+setbackHalf[p:{_}, _] := p;
 setbackHalf[coords_, 0|0.] := coords;
 setbackHalf[coords_, d_ ? Negative] := Reverse @ setbackHalf[Reverse @ coords, Abs[d]];
+setbackHalf[coords_, -r_Rectangular] := Reverse @ setbackHalf[Reverse @ coords, r];
+
 setbackHalf[coords_, d_] := takeLine[coords, d];
 
-takeLine[coords_List, d_] := Scope[
+takeLine[{a_, b_}, Rectangular[{d1:$NumberP, d2:$NumberP}]] := Scope[
+  sz = {d1,d2}/2;
+  c = LineRectangleIntersectionPoint[{b, a}, {a - sz, a + sz}];
+  {c, b}
+];
+
+takeLine[path_, Rectangular[{d1:$NumberP, d2:$NumberP}]] := Scope[
+  a = First[path];
+  sz = {d1,d2}/2; rect = {a-sz, a+sz};
+  c = LineRectangleIntersectionPoint[path, rect];
+  n = LengthWhile[path, RegionMember[Rectangle @@ rect]];
+  DeleteDuplicates @ Prepend[Drop[path, n], c]
+];
+
+takeLine[{a_, b_}, d:$NumberP] := (
+  If[EuclideanDistance[a, b] < d, Return @ emptyLine[a, b]];
+  dx = N @ Normalize[b - a];
+  {a + dx * d, b}
+);
+
+takeLine[coords_List, d:$NumberP] := Scope[
   prev = First @ coords; total = 0;
   n = LengthWhile[coords, curr |-> (total += EuclideanDistance[curr, prev]; prev = curr; total < d)];
   If[n == Length[coords], Return @ Last @ coords];
@@ -392,6 +469,7 @@ SetUsage @ "
 VectorAlongLine[path$, d$] returns the pair {pos$, dir$} for the point distance d$ along line path$.
 VectorAlongLine[path$, Scaled[f$]] takes the fraction f$ along the path.
 * If f$ is less than 0 or greater than 1 the point is extrapolated from the tangent at the end of the path.
+* Paths of length 2 can have Offset endpoints and these will be correctly handled, though dir$ will ignore the offset.
 "
 
 VectorAlongLine[p:{_, _}, d_ ? NumericQ] := vectorAlongSegment[p, d];
@@ -399,18 +477,35 @@ VectorAlongLine[p:{_, _}, d_ ? NumericQ] := vectorAlongSegment[p, d];
 VectorAlongLine[coords_, Scaled[1|1.]] := getPointAndVec[coords, Length @ coords];
 VectorAlongLine[coords_, Scaled[0|0.]|0|0.] := getPointAndVec[coords, 1];
 
+VectorAlongLine[{a:$CoordP, b:$CoordP}, Scaled[d_]] :=
+  {Lerp[a, b, d], N @ Normalize[b - a]};
+
+VectorAlongLine[{a_, b_} ? ContainsOffsetsQ, Scaled[d_]] := Scope[
+  {aa, ar} = toAbsRelVec @ a;
+  {ba, br} = toAbsRelVec @ b;
+  ca = Lerp[aa, ba, d];
+  cr = Lerp[ar, br, d];
+  {Offset[ca, cr], safeNormDelta[a, b]}
+];
+
+toAbsRelVec = Case[
+  Offset[o_, p_] := {o, p};
+  p_             := {{0, 0}, p};
+];
+
 VectorAlongLine[coords_, Scaled[d_]] := VectorAlongLine[coords, LineLength[coords] * d];
 
 (* TODO: this doesn't take the length of the path into account *)
 VectorAlongLine[coords_, Scaled[d_] /; d > 1] := Scope[
   {pos, dir} = getPointAndVec[coords, Length @ coords];
-  pos += dir * (d - 1) * LineLength[coords];
-  {pos, dir}
+  pos = safePlus[pos, dir * (d - 1) * LineLength[coords]];
+  {pos, dir} // SimplifyOffsets
 ];
+
 VectorAlongLine[coords_, Scaled[d_] /; d < 0] := Scope[
   {pos, dir} = getPointAndVec[coords, 1];
-  pos += dir * d * LineLength[coords];
-  {pos, dir}
+  pos = safePlus[pos, dir * d * LineLength[coords]];
+  {pos, dir} // SimplifyOffsets
 ];
 
 VectorAlongLine[coords_List, d_ ? NumericQ] := vectorAlongLine[coords, d];
@@ -421,6 +516,11 @@ vectorAlongSegment[{a_, b_}, d_] := Scope[
   delta = safeNormDelta[a, b];
   {a + delta * d, delta}
 ];
+
+safePlus[p1_, Offset[o_, p2_]] := Offset[o, p1 + p2];
+safePlus[Offset[o_, p1_], p2_] := Offset[o, p1 + p2];
+safePlus[Offset[o1_, p1_], Offset[o2_, p1_]] := Offset[o1 + o2, p1 + p2];
+safePlus[p1_, p2_] := p1 + p2;
 
 safeNormDelta[a_, Offset[_, b_]] := safeNormDelta[a, b];
 safeNormDelta[Offset[_, a_], b_] := safeNormDelta[a, b];
@@ -565,7 +665,7 @@ Lerp[a_, b_, Into[1]] := (a + b) / 2;
 Lerp[a_, b_, Into[2]] := {a, b};
 Lerp[a_, b_, Into[n_]] := Lerp[a, b, Range[0, 1, 1/(n-1)]]
 
-Lerp[n_][a_, b_] :=Lerp[a, b, n];
+Lerp[n_][a_, b_] := Lerp[a, b, n];
 
 (**************************************************************************************************)
 
@@ -695,4 +795,7 @@ RemoveOffsets[points_] := points /. Offset[_, p_] :> p;
 
 PublicFunction[SimplifyOffsets]
 
-SimplifyOffsets[points_] := points //. Offset[d1_, Offset[d2_, p_]] :> Offset[d1 + d2, p];
+SimplifyOffsets[points_] := points //. {
+  Offset[d1_, Offset[d2_, p_]] :> Offset[d1 + d2, p],
+  Offset[{$zeroP, $zerpP}, p_] :> p
+};

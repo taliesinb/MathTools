@@ -30,9 +30,12 @@ MaximumIndexBy[{e$1, e$2, $$}, f$] gives the first index i$ for which f$[e$i] is
 MinimumIndexBy[list_, f_] :=
   First @ Ordering[f /@ list, 1];
 
+MinimumIndexBy[{}, _] := None;
 
 MaximumIndexBy[list_, f_] :=
   First @ Ordering[f /@ list, -1];
+
+MaximumIndexBy[{}, _] := None;
 
 (**************************************************************************************************)
 
@@ -63,24 +66,32 @@ MaximumIndex[{e$1, e$2, $$}] gives the first index i$ for which e$i is maximal a
 MinimumIndex[list_] :=
   First @ Ordering[list, 1];
 
+MinimumIndex[{}] := None;
+
 MaximumIndex[list_] :=
   First @ Ordering[list, -1];
+
+MaximumIndex[{}] := None;
 
 (**************************************************************************************************)
 
 SetUsage @ "
-MinimumBy[{e$1, e$2, $$}, f$] gives the first index i$ for which f$[e$i] is minimal as computed by Ordering.
+MinimumBy[{e$1, e$2, $$}, f$] gives the first e$i for which f$[e$i] is minimal as computed by Ordering.
 "
 
 SetUsage @ "
-MaximumBy[{e$1, e$2, $$}, f$] gives the first index i$ for which f$[e$i] is maximal as computed by Ordering.
+MaximumBy[{e$1, e$2, $$}, f$] gives the first e$i for which f$[e$i] is maximal as computed by Ordering.
 "
 
 MinimumBy[list_, f_] :=
   Part[list, First @ Ordering[f /@ list, 1]];
 
+MinimumBy[{}, _] := None;
+
 MaximumBy[list_, f_] :=
   Part[list, First @ Ordering[f /@ list, -1]];
+
+MaximumBy[{}, _] := None;
 
 (**************************************************************************************************)
 
@@ -95,8 +106,12 @@ Maximum[{e$1, e$2, $$}] gives the maximal e$i as computed by Ordering.
 Minimum[list_] :=
   Part[list, First @ Ordering[list, 1]];
 
+Minimum[{}] := None;
+
 Maximum[list_] :=
   Part[list, First @ Ordering[list, -1]];
+
+Maximum[{}] := None;
 
 (**************************************************************************************************)
 

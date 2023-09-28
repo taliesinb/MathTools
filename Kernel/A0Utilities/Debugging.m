@@ -58,21 +58,6 @@ DynamicPointGraphics[n_Integer, fn_] := Replace[
     ]
 ];
 
-(* DynamicPointGraphics[{n_Integer, {min_, max_}}, fn_] := Replace[
-  ConstructHoldComplete[fn, \[FormalX], \[FormalY]],
-  HoldComplete[body_] :>
-    DynamicModule @@ Hold[
-      {\[FormalX] = CirclePoints[n], \[FormalY] = Avg[min, max]},
-      Labeled[
-      LocatorPane[Dynamic[\[FormalX]],
-        Graphics[
-          Dynamic[body, TrackedSymbols :> {\[FormalX], \[FormalY]}],
-          PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None
-        ]
-      ], Slider[Dynamic @ \[FormalY], {min, max}]]
-    ]
-];
- *)
 DynamicPointGraphics[{n_Integer, specSeq__}, fn_] := With[
   {specList = {specSeq}},
   {specData = MapThread[toDynSpec, {{specSeq}, Take[$formals, Length @ specList]}]},
@@ -204,9 +189,9 @@ EchoDimensions[e_] := (Echo[Row[Dimensions @ e, "\[Times]", BaseStyle -> $DarkBl
 PublicHead[MsgExpr]
 
 MsgExpr[p_MsgPath] := p;
-MsgExpr[e_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False];
-MsgExpr[e_, n_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> n, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False];
-MsgExpr[e_, n_, m_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> n, MaxLength -> m, MaxIndent -> 0, FullSymbolContext -> False];
+MsgExpr[e_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
+MsgExpr[e_, n_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> n, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
+MsgExpr[e_, n_, m_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> n, MaxLength -> m, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
 
 (**************************************************************************************************)
 

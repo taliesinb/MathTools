@@ -52,7 +52,7 @@ DefineSymbolForm @ {
 
 (**************************************************************************************************)
 
-PublicSymbol[RedToken, OrangeToken, GreenToken, TealToken, BlueToken, PinkToken, PurpleToken, GrayToken]
+PublicSymbol[RedToken, OrangeToken, GreenToken, TealToken, BlueToken, PinkToken, PurpleToken, GrayToken, WhiteToken]
 
 DefineSymbolForm[#1 -> #2["\[FilledCircle]"]]& @@@ ExpressionTable[
   RedToken     RedBox
@@ -64,6 +64,8 @@ DefineSymbolForm[#1 -> #2["\[FilledCircle]"]]& @@@ ExpressionTable[
   PurpleToken  PurpleBox
   GrayToken    GrayBox
 ];
+
+DefineSymbolForm[WhiteToken -> "\[EmptyCircle]"];
 
 (**************************************************************************************************)
 

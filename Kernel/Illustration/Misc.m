@@ -33,8 +33,8 @@ VertexField1DPlot[vals_] := ListLinePlot[vals,
 
 PublicFunction[UnitGraphics]
 
-UnitGraphics[g_, n_:1] := Graphics[g,
-  ImageSize -> Medium, PlotRange -> {{-n, n}, {-n, n}}, PlotRangePadding -> Scaled[0.1],
+UnitGraphics[g_, n_:1, opts___Rule] := Graphics[g, opts,
+  ImageSize -> 300, PlotRange -> {{-n, n}, {-n, n}}, PlotRangePadding -> Scaled[0.1],
   Frame -> True, FrameTicks -> None, GridLines -> {Range[-n, n, n / 5], Range[-n, n, n / 5]}
 ];
 

@@ -6,12 +6,12 @@ SetHoldAllComplete[patchDownValuesWithInheritedBlock, applyIB];
 
 patchDownValuesWithInheritedBlock[defSym_Symbol, lhsPatt_, blockSym_Symbol] := Block[{dv, pos},
   dv = DownValues[defSym];
-  pos = Position[dv, Verbatim[HoldPattern[lhsPatt]] :> rhs_ /; FreeQ[Hold[rhs], Internal`InheritedBlock], 1];
+  pos = Position[dv, Verbatim[HoldPattern[lhsPatt]] :> rhs_ /; FreeQ[Hold[rhs], InheritedBlock], 1];
   If[pos === {}, Return[$Failed]];
   DownValues[defSym] = MapIndices[applyIB[blockSym], pos, dv];
 ]
 
-applyIB[blockSym_][lhs_ :> rhs_] := lhs :> Internal`InheritedBlock[{blockSym}, rhs];
+applyIB[blockSym_][lhs_ :> rhs_] := lhs :> InheritedBlock[{blockSym}, rhs];
 
 patchDownValuesWithInheritedBlock[
   System`Dump`InheritAmbientSettings,
@@ -31,7 +31,7 @@ Typeset`MakeBoxes[ x_List, fmt_, head_, Options] :=
 
 (* we do this so styles get made before the styled object, so that changes to $MakeBoxesStyleData will get picked up *)
 Typeset`MakeBoxes[Style[System`Dump`x_, System`Dump`y___], System`Dump`fmt_, System`Dump`head_] :=
-  Internal`InheritedBlock[{QuiverGeometry`$MakeBoxesStyleData},
+  InheritedBlock[{QuiverGeometry`$MakeBoxesStyleData},
     With[{
       System`Dump`h = Map[Function[{System`Dump`z}, Typeset`MakeBoxes[System`Dump`z, System`Dump`fmt, System`Dump`head], HoldAllComplete], Unevaluated @ {System`Dump`y}],
       System`Dump`g = Typeset`MakeBoxes[System`Dump`x, System`Dump`fmt, System`Dump`head]},
@@ -40,7 +40,7 @@ Typeset`MakeBoxes[Style[System`Dump`x_, System`Dump`y___], System`Dump`fmt_, Sys
   ];
 
 (* we do this so nested lists localize ambient styles *)
-Typeset`MakeBoxes[ System`Dump`g_List, System`Dump`fmt_, System`Dump`head_] := Internal`InheritedBlock[
+Typeset`MakeBoxes[ System`Dump`g_List, System`Dump`fmt_, System`Dump`head_] := InheritedBlock[
   {QuiverGeometry`$MakeBoxesStyleData},
   Map[ Function[{System`Dump`x}, Typeset`MakeBoxes[System`Dump`x, System`Dump`fmt, System`Dump`head], HoldAllComplete], Unevaluated[System`Dump`g]]
 ];
@@ -63,7 +63,7 @@ $arrowheadOptions = {
 
 (**************************************************************************************************)
 
-PublicOption[ArrowShaftThickness, ArrowShaftColor, ArrowShaftOpacity, ArrowShaftDashing, ArrowShaftMasking, ArrowPathShrinking, ArrowPathSetback, ArrowPathOffset]
+PublicOption[ArrowShaftThickness, ArrowShaftColor, ArrowShaftOpacity, ArrowShaftDashing, ArrowShaftMasking, ArrowShaftHidden, ArrowPathShrinking, ArrowPathSetback, ArrowPathOffset, ArrowPathReversed]
 
 PublicOption[LabelOrientation, LabelFontSize, LabelBackground, LabelSpacing]
 
@@ -80,6 +80,7 @@ $extendedArrowOptions = JoinOptions[
   ArrowShaftMasking -> None,
   ArrowPathShrinking -> None,
   ArrowPathSetback -> Automatic,
+  Setback -> Automatic,
   ArrowPathOffset -> None
 ];
 
@@ -99,7 +100,10 @@ $morphismArrowOptions = Normal @ KeyTake[$extendedArrowOptions, {
   LabelOrientation -> Automatic,
   LabelFontSize -> Inherited,
   LabelBackground -> Automatic,
-  LabelSpacing -> Automatic
+  LabelSpacing -> Automatic,
+  ArrowPathReversed -> False,
+  ArrowShaftHidden -> False,
+  LabelRectification -> True
 };
 
 AssociateTo[$MakeBoxesStyleData, $morphismArrowOptions];

@@ -257,7 +257,7 @@ subPath[e_] := Append[$path, e];
 
 SetHoldRest[withNodePalette];
 withNodePalette[None | Automatic | {}, body_] := body;
-withNodePalette[palette_, body_] := Internal`InheritedBlock[
+withNodePalette[palette_, body_] := InheritedBlock[
   {$nodePalette},
   AssociateTo[$nodePalette, Map[ToRainbowColor, Association @ palette]];
   body
@@ -812,7 +812,7 @@ processNodeBoxPorts = Case[
   _ -> {}                               := {};
   list_List                             := Map[%, list];
   spec_                                 := ThrowMessage["badNodePortSpec", spec];
-  side_ -> Style[spec_, rules___Rule]   := Internal`InheritedBlock[{$portData},
+  side_ -> Style[spec_, rules___Rule]   := InheritedBlock[{$portData},
     AssociateTo[$portData, portDataRules[rules]];
     %[side -> spec]
   ];

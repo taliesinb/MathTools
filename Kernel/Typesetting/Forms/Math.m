@@ -92,6 +92,12 @@ DefineUnaryForm[InverseForm, InverseBox @ $1];
 
 (**************************************************************************************************)
 
+PublicForm[InverseSubscriptForm]
+
+DefineNAryForm[InverseSubscriptForm, SubsuperscriptBox[$1, RiffledBox[","][$$2], RBox["-", "1"]]];
+
+(**************************************************************************************************)
+
 PublicForm[ClosedIntervalForm, OpenIntervalForm, ClosedOpenIntervalForm, OpenClosedIntervalForm]
 
 DefineBinaryForm[ClosedIntervalForm,     RBox["[", $1, ",", " ", $2, "]"]];

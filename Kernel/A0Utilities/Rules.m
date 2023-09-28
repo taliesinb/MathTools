@@ -26,4 +26,10 @@ RuleThread[{key$1, key$2, $$}, {val$1, val$2, $$}] gives the list {$$, key$i -> 
 RuleThread[keys_List, values_List] /; Length[keys] === Length[values] :=
   MapThread[Rule, {keys, values}];
 
+RuleThread::badlen = "Key length `` doesn't match value length ``. First key is ``."
+RuleThread[keys_List, values_List] := (
+  Message[RuleThread::badlen, Length @ keys, Length @ values, MsgExpr @ First @ keys];
+  $Failed;
+);
+
 _RuleThread := BadArguments[];

@@ -11,6 +11,12 @@ modBox[a_, b_] := SubscriptBox[a, StyleBox[numBox @ b, $Blue]];
 
 (**************************************************************************************************)
 
+PublicFunction[TightFramed]
+
+TightFramed[expr_, opts___] := Framed[expr, ContentPadding -> False, FrameMargins -> None, opts];
+
+(**************************************************************************************************)
+
 PublicFunction[LargeLabeled]
 
 Options[LargeLabeled] = JoinOptions[

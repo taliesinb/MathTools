@@ -85,7 +85,7 @@ generateNotebookColorPaletteStyles[palette_List, lightPalette_List] := Join[
 
 (**************************************************************************************************)
 
-PublicVariable[UpdateLegacyNotebook]
+PublicFunction[UpdateLegacyNotebook]
 
 createLegacyReplacementRules[] := Scope[
   keys = Select[Keys @ $notebookDisplayFunction, LowerCaseQ[StringTake[#, 1]]&];

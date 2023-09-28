@@ -211,7 +211,10 @@ BoxFunction is an option to various DefineXXX functions that specifies a symbol 
 "
 
 attachBoxFunctionDefs[None, _] := Null;
-attachBoxFunctionDefs[sym_Symbol, fn_] := SetDelayed[sym[args___], fn[args]];
+attachBoxFunctionDefs[sym_Symbol, fn_] := (
+  QuiverGeometryPackageLoader`DeclarePreservedFunction[sym]; (* <- this ensures that after caching and reloading, box function definitions aren't wiped *)
+  SetDelayed[sym[args___], fn[args]]
+);
 
 (**************************************************************************************************)
 
@@ -882,7 +885,7 @@ PublicFunction[DefineLocalTemplates]
 DefineLocalTemplates::taggingrules = "Could not update tagging rules.";
 
 SetHoldAll[DefineLocalTemplates];
-DefineLocalTemplates[e___] := Scope @ Internal`InheritedBlock[{$katexMacros, $katexDisplayFunction},
+DefineLocalTemplates[e___] := Scope @ InheritedBlock[{$katexMacros, $katexDisplayFunction},
   $notebookDisplayFunction = <||>;
   $katexMacros0 = $katexMacros;
   $katexDisplayFunction0 = $katexDisplayFunction;
@@ -1032,3 +1035,43 @@ $compactNumberOptions = {
   NegationStyle -> "Color",
   InversionStyle -> UnderBar
 };
+
+(**************************************************************************************************)
+
+PublicFunction[FormToPlainString]
+
+FormToPlainString::noformstr = "Cannot convert form `` to a plain string. Resulting boxes were ``.";
+
+FormToPlainString = Case[
+  name_String := ToNonDecoratedRoman @ name;
+  Sized[obj_, _] := % @ obj;
+  Customized[obj_, ___] := % @ obj;
+  g_Graph := "graph";
+  form_ := Scope[
+    boxes = EvaluateTemplateBoxFull @ ToBoxes @ form;
+    str = boxToString @ boxes;
+    If[!StringQ[str], ReturnFailed["noformstr", MsgExpr @ form, InputForm @ boxes]];
+    StringReplace[ToSpelledGreek @ ToNonDecoratedRoman @ str, $plainStringReplacements]
+  ];
+]
+
+boxToString = Case[
+  head_Symbol[arg_] /; StyleBoxFunctionQ[head] := % @ arg;
+  StyleBox[e_, ___]      := % @ e;
+  AdjustmentBox[e_, ___] := % @ e;
+  RowBox[e_]             := StringJoin @ Map[%, e];
+  SubsuperscriptBox[e_, a_, b_] := StringJoin[% @ e, "^", % @ b, "_", % @ a];
+  SuperscriptBox[e_, "\[Prime]"] := StringJoin[% @ e, "'"];
+  SubscriptBox[e_, s_]   := StringJoin[% @ e, "_", % @ s];
+  SuperscriptBox[e_, s_] := StringJoin[% @ e, "^", % @ s];
+  e_String               := If[StringMatchQ[e, "\"*\""], StringTake[e, {2, -2}], e];
+  other_                 := $Failed;
+];
+
+$plainStringReplacements = {"\[FilledCircle]" -> "@", "\[FilledSmallCircle]" -> "@", "\[CircleTimes]" -> "*", "\[CirclePlus]" -> "+"}
+
+(**************************************************************************************************)
+
+PublicForm[MathForm]
+
+DefineTaggedForm[MathForm]

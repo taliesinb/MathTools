@@ -85,6 +85,7 @@ FastRasterSize[expr_, returnBaseline_:False] := Scope[
 PublicFunction[ClearRasterizationCache]
 
 ClearRasterizationCache[] := (
+	QuiverGeometryCaches`$GradientRasterizationCache = UAssociation[];
 	QuiverGeometryCaches`$RasterSizeCache = UAssociation[];
 	QuiverGeometryCaches`$RasterizationCache = UAssociation[];
 	QuiverGeometryCaches`$RegionRasterizationCache = UAssociation[];
@@ -92,6 +93,10 @@ ClearRasterizationCache[] := (
 	QuiverGeometryCaches`$Base64RasterizationCache = UAssociation[];
 	clearFloodFillCaches[];
 )
+
+If[!AssociationQ[QuiverGeometryCaches`$GradientRasterizationCache],
+	ClearRasterizationCache[];
+];
 
 (*************************************************************************************************)
 
@@ -188,6 +193,7 @@ FloodFill[g_Graphics, rules___] := FloodFill[g -> g, rules];
 FloodFill::errimg = "Rasterized graphics contains an error: ``.";
 FloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules:{__Rule}, OptionsPattern[]] := Scope[
 	UnpackOptions[sensitivity];
+	baseline = Lookup[Options[g2], BaselinePosition, Automatic];
 	fullHash = Hash[{lhs, rules, sensitivity}];
 	result = Lookup[QuiverGeometryCaches`$FloodFillHash, fullHash];
 	If[ImageQ[result], Return @ result];
@@ -212,6 +218,7 @@ FloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules:{__Rule}, Option
   compImage = Image[compColors, "Real32", ColorSpace->"RGB"];
   {image, bin, fillPoints, compImage};
   result = ImageCompose[compImage, image2];
+  result = Image[result, BaselinePosition -> baseline];
   QuiverGeometryCaches`$FloodFillHash[fullHash] ^= result;
   result
 ];

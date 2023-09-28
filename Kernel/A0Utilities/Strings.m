@@ -185,11 +185,43 @@ $RomanLetters = StringJoin[$LowercaseRomanLetters, $UppercaseRomanLetters];
 
 (**************************************************************************************************)
 
-PublicVariable[$LowercaseGreekLetters, $UppercaseGreekLetters, $GreekLetters]
+PublicVariable[$LowercaseUnicodeScriptLetters, $UppercaseUnicodeScriptLetters, $UnicodeScriptLetters]
 
-$LowercaseGreekLetters = "\[Alpha]\[Beta]\[Gamma]\[Delta]\[CurlyEpsilon]\[Epsilon]\[Zeta]\[Eta]\[Theta]\[Iota]\[Kappa]\[Lambda]\[Mu]\[Nu]\[Xi]\[Pi]\[Rho]\[Sigma]\[Tau]\[CurlyPhi]\[Phi]\[Chi]\[Psi]\[Omega]";
-$UppercaseGreekLetters = "\[CapitalGamma]\[CapitalPi]\[CapitalSigma]\[CapitalOmega]\[CapitalPhi]";
-$GreekLetters = StringJoin[$LowercaseGreekLetters, $UppercaseGreekLetters];
+$LowercaseUnicodeScriptLetters = "𝒶𝒷𝒸𝒹ℯ𝒻ℊ𝒽𝒾𝒿𝓀𝓁𝓂𝓃ℴ𝓅𝓆𝓇𝓈𝓉𝓊𝓋𝓌𝓍𝓎𝓏";
+$UppercaseUnicodeScriptLetters = "𝒜ℬ𝒞𝒟ℰℱ𝒢ℋℐ𝒥𝒦ℒℳ𝒩𝒪𝒫𝒬ℛ𝒮𝒯𝒰𝒱𝒲𝒳𝒴𝒵";
+$UnicodeScriptLetters = StringJoin[$LowercaseUnicodeScriptLetters, $UppercaseUnicodeScriptLetters];
+
+(**************************************************************************************************)
+
+PublicVariable[$LowercaseScriptLetters, $UppercaseScriptLetters, $ScriptLetters]
+
+$LowercaseScriptLetters = "\[ScriptA]\[ScriptB]\[ScriptC]\[ScriptD]\[ScriptE]\[ScriptF]\[ScriptG]\[ScriptH]\[ScriptI]\[ScriptJ]\[ScriptK]\[ScriptL]\[ScriptM]\[ScriptN]\[ScriptO]\[ScriptP]\[ScriptQ]\[ScriptR]\[ScriptS]\[ScriptT]\[ScriptU]\[ScriptV]\[ScriptW]\[ScriptX]\[ScriptY]\[ScriptZ]";
+$UppercaseScriptLetters = "\[ScriptCapitalA]\[ScriptCapitalB]\[ScriptCapitalC]\[ScriptCapitalD]\[ScriptCapitalE]\[ScriptCapitalF]\[ScriptCapitalG]\[ScriptCapitalH]\[ScriptCapitalI]\[ScriptCapitalJ]\[ScriptCapitalK]\[ScriptCapitalL]\[ScriptCapitalM]\[ScriptCapitalN]\[ScriptCapitalO]\[ScriptCapitalP]\[ScriptCapitalQ]\[ScriptCapitalR]\[ScriptCapitalS]\[ScriptCapitalT]\[ScriptCapitalU]\[ScriptCapitalV]\[ScriptCapitalW]\[ScriptCapitalX]\[ScriptCapitalY]\[ScriptCapitalZ]";
+$ScriptLetters = StringJoin[$LowercaseScriptLetters, $UppercaseScriptLetters];
+
+(**************************************************************************************************)
+
+PublicVariable[$LowercaseSanSerifLetters, $UppercaseSanSerifLetters, $SanSerifLetters]
+
+$LowercaseSanSerifLetters = "𝖺𝖻𝖼𝖽𝖾𝖿𝗀𝗁𝗂𝗃𝗄𝗅𝗆𝗇𝗈𝗉𝗊𝗋𝗌𝗍𝗎𝗏𝗐𝗑𝗒𝗓";
+$UppercaseSanSerifLetters = "𝖠𝖡𝖢𝖣𝖤𝖥𝖦𝖧𝖨𝖩𝖪𝖫𝖬𝖭𝖮𝖯𝖰𝖱𝖲𝖳𝖴𝖵𝖶𝖷𝖸𝖹";
+$SanSerifLetters = StringJoin[$LowercaseSanSerifLetters, $UppercaseSanSerifLetters];
+
+(**************************************************************************************************)
+
+PublicVariable[$LowercaseMonospaceLetters, $UppercaseMonospaceLetters, $MonospaceLetters]
+
+$LowercaseMonospaceLetters = "𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣";
+$UppercaseMonospaceLetters = "𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝚀𝚁𝚂𝚃𝚄𝚅𝚆𝚇𝚈𝚉";
+$MonospaceLetters = StringJoin[$LowercaseMonospaceLetters, $UppercaseMonospaceLetters];
+
+(**************************************************************************************************)
+
+PublicVariable[$LowercaseFrakturLetters, $UppercaseFrakturLetters, $FrakturLetters]
+
+$LowercaseFrakturLetters = "𝔞𝔟𝔠𝔡𝔢𝔣𝔤𝔥𝔦𝔧𝔨𝔩𝔪𝔫𝔬𝔭𝔮𝔯𝔰𝔱𝔲𝔳𝔴𝔵𝔶𝔷";
+$UppercaseFrakturLetters = "𝔄𝔅ℭ𝔇𝔈𝔉𝔊ℌℑ𝔍𝔎𝔏𝔐𝔑𝔒𝔓𝔔ℜ𝔖𝔗𝔘𝔙𝔚𝔛𝔜ℨ";
+$FrakturLetters = StringJoin[$LowercaseFrakturLetters, $UppercaseFrakturLetters];
 
 (**************************************************************************************************)
 
@@ -203,10 +235,48 @@ $DoubleStruckCharacters = StringJoin[$DoubleStruckLetters, $DoubleStruckDigits];
 
 (**************************************************************************************************)
 
+PublicFunction[ToNonDecoratedRoman]
+
+toStringRules[str1_, str2_] := RuleThread[Characters @ str1, Characters @ str2];
+
+$toNonDecoratedRoman := $toNonDecoratedRoman = Join[
+  toStringRules[$UnicodeScriptLetters, $RomanLetters],
+  toStringRules[$ScriptLetters, $RomanLetters],
+  toStringRules[$MonospaceLetters, $RomanLetters],
+  toStringRules[$FrakturLetters, $RomanLetters],
+  toStringRules[$DoubleStruckCharacters, StringJoin[$RomanLetters, "0123456789"]]
+]
+
+ToNonDecoratedRoman[str_String] := StringReplace[str, $toNonDecoratedRoman];
+
+(**************************************************************************************************)
+
+PublicVariable[$LowercaseGreekLetters, $UppercaseGreekLetters, $GreekLetters]
+
+$LowercaseGreekLetters = "\[Alpha]\[Beta]\[Gamma]\[Delta]\[CurlyEpsilon]\[Epsilon]\[Zeta]\[Eta]\[Theta]\[Iota]\[Kappa]\[Lambda]\[Mu]\[Nu]\[Xi]\[Pi]\[Rho]\[Sigma]\[Tau]\[CurlyPhi]\[Phi]\[Chi]\[Psi]\[Omega]";
+$UppercaseGreekLetters = "\[CapitalGamma]\[CapitalDelta]\[CapitalTheta]\[CapitalLambda]\[CapitalXi]\[CapitalPi]\[CapitalSigma]\[CapitalPhi]\[CapitalPsi]\[CapitalOmega]";
+$GreekLetters = StringJoin[$LowercaseGreekLetters, $UppercaseGreekLetters];
+
+(**************************************************************************************************)
+
+PublicFunction[ToSpelledGreek]
+
+$spelledGreek = "alpha beta gamma delta curlyepsilon epsilon zeta eta theta iota kappa lambda mu nu xi pi rho sigma tau curlyphi phi chi psi omega Gamma Delta Theta Lambda Xi Pi Sigma Phi Psi Omega";
+$toSpelledGreek := $toSpelledGreek = RuleThread[Characters @ $GreekLetters, StringSplit @ $spelledGreek];
+
+ToSpelledGreek[str_String] := StringReplace[str, $toSpelledGreek];
+
+(**************************************************************************************************)
+
 PublicSymbol[ASCIILetter, LowercaseLetter, UppercaseLetter, AlphanumericCharacter]
 PublicSymbol[LowercaseGreekLetter, UppercaseGreekLetter, GreekLetter]
 PublicSymbol[DoubleQuote]
 PublicSymbol[LowercaseDoubleStruckLetter, UppercaseDoubleStruckLetter, DoubleStruckLetter, DoubleStruckDigit, DoubleStruckCharacter]
+PublicSymbol[LowercaseUnicodeScriptLetter, UppercaseUnicodeScriptLetter, UnicodeScriptLetter]
+PublicSymbol[LowercaseScriptLetter, UppercaseScriptLetter, ScriptLetter]
+PublicSymbol[LowercaseSanSerifLetter, UppercaseSanSerifLetter, SanSerifLetter]
+PublicSymbol[LowercaseMonospaceLetter, UppercaseMonospaceLetter, MonospaceLetter]
+PublicSymbol[LowercaseFrakturLetter, UppercaseFrakturLetter, FrakturLetter]
 
 declareStringLetterPattern[
   ASCIILetter -> "a-zA-Z0-9",
@@ -221,6 +291,11 @@ declareStringLetterPattern[
   DoubleStruckLetter -> $DoubleStruckLetters,
   DoubleStruckDigit -> $DoubleStruckDigits,
   DoubleStruckCharacter -> $DoubleStruckCharacters,
+  LowercaseUnicodeScriptLetter -> $LowercaseUnicodeScriptLetters, UppercaseUnicodeScriptLetter -> $UppercaseUnicodeScriptLetters, UnicodeScriptLetter -> $UnicodeScriptLetters,
+  LowercaseScriptLetter -> $LowercaseScriptLetters, UppercaseScriptLetter -> $UppercaseScriptLetters, ScriptLetter -> $ScriptLetters,
+  LowercaseSanSerifLetter -> $LowercaseSanSerifLetters, UppercaseSanSerifLetter -> $UppercaseSanSerifLetters, SanSerifLetter -> $SanSerifLetters,
+  LowercaseMonospaceLetter -> $LowercaseMonospaceLetters, UppercaseMonospaceLetter -> $UppercaseMonospaceLetters, MonospaceLetter -> $MonospaceLetters,
+  LowercaseFrakturLetter -> $LowercaseFrakturLetters, UppercaseFrakturLetter -> $UppercaseFrakturLetters, FrakturLetter -> $FrakturLetters,
   DoubleQuote -> "\""
 ];
 
@@ -296,7 +371,7 @@ declareStringPattern[
   ParentheticalPhrase      :> spBlob["""(?<!\S)\(□\)"""],
   SingleQuotedPhrase       :> spBlob["""(?<!\S)(?:'□')|(?:‘□’)"""],
   DoubleQuotedPhrase       :> spBlob["""(?<!\S)(?:"□")|(?:“□”)"""],
-  HyperlinkPattern         :> spBlob["""(?<!\S)https?://[[:alnum:]-]+(?:\.[[:alnum:]-]+)*(?:/[[:alnum:]-_]*)*(?:\?[[:alnum:]=&+%-]+)?"""]
+  HyperlinkPattern         :> spBlob["""(?<!\S)https?://[[:alnum:]-]+(?:\.[[:alnum:]-]+)*(?:/[[:alnum:]-_.]*)*(?:\?[[:alnum:]=&+%-.]+)?"""]
 ];
 
 (**************************************************************************************************)

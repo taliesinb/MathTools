@@ -310,7 +310,7 @@ PrivateVariable[$paletteUsageString]
 $paletteUsageString = StringTrim @ "
 * palette$ can be an one of the following:
 | Automatic | the default color palette |
-| 'Light', 'Dark' | a lighter or darker version of the default palette |
+| 'Light', 'Medium', 'Dark' | a lighter or darker version of the default palette |
 | spec$ -> 'Light' | a lighter version of spec$ |
 | spec$ -> 'Dark' | a darker version of spec$ |
 | {c$1, c$2, $$} | an explicit list of colors |

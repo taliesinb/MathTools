@@ -48,7 +48,7 @@ and modifies those of them that are customized within an InheritedBlock, then ca
 customizedBlock[Customized[item_], _, innerFn_] := innerFn @ item;
 
 customizedBlock[Customized[item_, rules__], opts_ :> globals_, innerFn_] :=
-  Internal`InheritedBlock[
+  InheritedBlock[
     globals,
     Scan[setCustomizedVar[globals, opts], {rules}];
     innerFn @ item
@@ -66,3 +66,11 @@ setCustomizedVar[globals_, opts_][opt_ -> value_] := With[
 
 setCustomizedVar[globals_, opts_][bad_] :=
   Message[Customized::notrule, bad];
+
+PrivateFunction[setGlobalsFromRules]
+
+setGlobalsFromRules[ruleOrRules_, opts_ :> globals_] :=
+  Scan[setCustomizedVar[globals, opts], ToList @ ruleOrRules];
+
+
+

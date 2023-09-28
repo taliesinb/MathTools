@@ -24,6 +24,93 @@ processPadding[head_, paddingSpec_] := Scope[
 
 (**************************************************************************************************)
 
+PrivateFunction[FindAutomaticPadding]
+
+FindAutomaticPadding[g_Graphics, scale_] := Scope[
+  oldBounds = GraphicsPlotRange[g];
+  $scale = scale; $aps = 1; $pnts = {}; $fontSize = Inherited; $fontFamily = Inherited; $fontWeight = Inherited;
+  autoPad @ ReplaceAll[NCache[_, n_] :> n] @ First @ ToBoxes @ g;
+  newBounds = CoordinateBounds @ Join[$pnts /. Offset[off_, pos_] :> pos + (off / $scale), Transpose @ oldBounds];
+  If[False,
+    {{x1, x2}, {y1, y2}} = oldBounds; size = ({x2 - x1, y2 - y1} * scale) + 160;
+    Print @ ReplaceOptions[g, {
+      Epilog -> {Red, Point @ $pnts,
+        FaceForm @ None, EdgeForm @ Blue, Rectangle @@ Transpose[oldBounds],
+        EdgeForm @ Green, Rectangle @@ Transpose[newBounds]},
+        ImagePadding -> 80, ImageSize -> size}];
+  ];
+  Abs[newBounds - oldBounds]
+];
+
+$interP = TagBox|Annotation|InterpretationBox;
+
+(* TODO: support Offset, and allow for EdgeThickness, properly handle FontSize and FontFamily *)
+autoPad = Case[
+  Translate[g_, p_]              := Block[{$t = $t + p}, % @ g];
+  l_List                         := InheritedBlock[{$aps = $aps}, Scan[%, l]];
+  FontSize -> fs_                := $fontSize = fs;
+  FontFamily -> ff_              := $fontFamily = ff;
+  FontWeight -> fw_              := $fontWeight = fw;
+  AbsolutePointSize[ps_]         := ($aps = ps);
+  (PointBox|Point)[p:$Coord2P]   := With[{s = $aps/$scale/2}, padPoint[{p + {s,s}, p + {s,-s}, p + {-s,-s}, p + {-s,s}}]];
+  (PointBox|Point)[l_List]       := Scan[%[Point[#]]&, p];
+  (Style|StyleBox)[b_, ___]      := % @ b;
+  $interP[b_, ___]               := % @ b;
+  e:(_Text | _Inset | _InsetBox) := autoPadTextOrInset[e];
+  c:$customGraphicsP             := % @ Typeset`MakeBoxes[c, StandardForm, Graphics];
+  other_                         := Null;
+];
+
+$autoFS := {FontSize -> $fontSize, FontFamily -> $fontFamily, FontWeight -> $fontWeight};
+
+autoPadTextOrInset = Case[
+
+  InsetBox[FormBox[txt_, TraditionalForm], pos_, offset:Except[_Rule]:ImageScaled[{0.5,0.5}], sz_:Automatic, dir:Except[_Rule]:{1,0}, opts___Rule] :=
+    % @ Text[RawBoxes @ txt, pos, Replace[offset, ImageScaled[s_] :> (s - 0.5) * 2], dir, opts];
+
+  InsetBox[GraphicsBox[prims_, ___], pos_, offset_, Automatic, dir_:{1, 0}] := Scope[
+    Null;
+  ];
+
+  InsetBox[GraphicsBox[prims_, ___, ImageSize -> isize_, ___], pos_, origin_, Automatic, dir_:{1, 0}] := Scope[
+    {w, h} = isize;
+    {{x1, x2}, {y1, y2}} = plotRange = GraphicsPlotRange[prims];
+    {pw, ph} = {x2 - x1, y2 - y1};
+    aspectRatio = (y2 - y1) / (x2 - x1);
+    {ox, oy} = Replace[origin, ImageScaled[{a_, b_}] :> {Lerp[x1, x2, a], Lerp[y1, y2, b]}];
+    SetAutomatic[w, h / aspectRatio];
+    scale = (w / pw) / $scale;
+    dirx = Normalize[dir]; diry = VectorRotate90[dirx];
+    {l, r} = {x2 - ox, x1 - ox} * scale; l *= dirx; r *= dirx;
+    {b, t} = {y2 - oy, y1 - oy} * scale; b *= diry; t *= diry;
+    padPoint[Threaded[pos] + {l + b, l + t, r + t, r + b}]
+  ];
+
+  Text[txt_, pos_, offset:Except[_Rule]:{0,0}, dirx:Except[_Rule]:{1,0}, opts___Rule] := Scope[
+    pos = fixPos @ pos;
+    If[FreeQ[{opts}, BaseStyle], opts = Sequence[opts, BaseStyle -> $autoFS]];
+    {w, h} = TextRasterSize @ Text[txt, pos, opts] + 1;
+    dirx = Normalize[dirx] / $scale;
+    diry = VectorRotate90[dirx];
+    dirx = dirx * w/2;
+    diry = diry * h/2;
+    off = Mean[{dirx, diry} * offset] * -2;
+    padPoint[Threaded[off] + {pos - dirx - diry, pos - dirx + diry, pos + dirx - diry, pos + dirx + diry}];
+  ];
+
+  other_ := PrintIF[other];
+];
+
+fixPos = Case[
+  Offset[off_, pos_] := pos + (off / $scale);
+  pos_               := pos;
+]
+
+padPoint[p_? MatrixQ] := JoinTo[$pnts, p];
+padPoint[p_] := AppendTo[$pnts, p];
+
+(**************************************************************************************************)
+
 PrivateFunction[StandardizePadding]
 
 SetUsage @ "

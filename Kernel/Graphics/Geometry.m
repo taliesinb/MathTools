@@ -185,7 +185,7 @@ DiscretizeCurve[BezierCurve[points_List, SplineDegree -> n_Integer]] := Replace[
   {GraphicsComplex[coords_List, Line[indices_List]] :> ToPackedReal @ Part[coords, indices], _ :> $Failed}
 ];
 
-DiscretizeCurve[ElbowCurve[a_, b_, amount_:Automatic]] :=
+DiscretizeCurve[ElbowCurve[{a_, b_}, amount_:Automatic]] :=
   DiscretizeCurve @ BezierCurve @ elbowBezierCurvePoints[a, b, amount];
 
 DiscretizeCurve[c_RollingCurve] := rollingCurvePoints @ c;
@@ -208,8 +208,11 @@ DiscretizeCurve[c_SmoothedCurve] := smoothedCurvePoints @ c;
 
 DiscretizeCurve[c_AnchoredCurve] := anchoredCurvePoints @ c;
 
-DiscretizeCurve[VectorCurve[pos_, dir_]] := ToPackedReal @ {pos, pos + dir};
-DiscretizeCurve[VectorCurve[dir_]] := ToPackedReal @ {Zeros @ Length @ dir, dir};
+DiscretizeCurve[c:VectorCurve] := vectorCurvePoints @ c;
+
+DiscretizeCurve::badcurve = "Cannot discretize unrecognized curve ``. Returning a dummy path.";
+
+DiscretizeCurve[e_] := (Message[DiscretizeCurve::badcurve, e]; {{0, 0}, {1, 0}});
 
 (**************************************************************************************************)
 

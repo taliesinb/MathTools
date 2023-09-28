@@ -33,6 +33,7 @@ ClickCopy[e_] := With[
 (**************************************************************************************************)
 
 DefineStandardTraditionalForm[{
+  Padded[e_] :> ToBoxes[Padded[e, {0.1, 0.1}]],
   Padded[e_, {l:$NumberP, r:$NumberP}] :> AdjustmentBox[ToBoxes @ e, BoxMargins -> {{l, r}, {0, 0}}],
   Padded[e_, {{l:$NumberP, r:$NumberP}, {b:$NumberP, t:$NumberP}}] :> AdjustmentBox[ToBoxes @ e, BoxMargins -> {{l, r}, {b, t}}],
   Padded[e_, r:(_Rule | {__Rule} | $NumberP)] :> AdjustmentBox[ToBoxes @ e, BoxMargins -> StandardizePadding[r]]
@@ -57,9 +58,16 @@ SpacedColumnRow[items___] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[EqualRow]
+
+EqualRow[a___] := SpacedRow[a, RiffleItem -> LargeSymbolForm["="], Spacings -> 0];
+
+(**************************************************************************************************)
+
 PublicFunction[SpacedRow]
 PublicOption[SpliceForms, IndexTooltip, ClickFunction]
 
+(* TODO: convert this to using customizedBlock *)
 $srColumnRow = False;
 
 Options[SpacedRow] = {

@@ -38,10 +38,10 @@ $gcCoords = $gcXYZ = None;
 procPrim = Case[
 
   (* recurse through lists *)
-  list_List                        := Internal`InheritedBlock[{$style}, Scan[%, list]];
+  list_List                        := InheritedBlock[{$style}, Scan[%, list]];
 
   (* apply styles *)
-  Style[e_, s___]                  := Internal`InheritedBlock[{$style}, Scan[procStyle, {s}]; % @ e];
+  Style[e_, s___]                  := InheritedBlock[{$style}, Scan[procStyle, {s}]; % @ e];
 
   GraphicsComplex[coords_, prims_] := Scope[$gcXYZ = $xyz @ ($gcCoords = coords); procPrim @ prims];
 

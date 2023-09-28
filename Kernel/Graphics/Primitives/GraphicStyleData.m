@@ -7,7 +7,7 @@ $GraphicsStyleData = <||>;
 Typeset`MakeBoxes[GraphicsStyleData[assoc_Association, primitives_], form:StandardForm | TraditionalForm, type:Graphics|Graphics3D] :=
   graphicsStyleDataBoxes[assoc, primitives, form, type];
 
-graphicsStyleDataBoxes[assoc_, primitives_, form_, type_] := Internal`InheritedBlock[{$GraphicsStyleData},
+graphicsStyleDataBoxes[assoc_, primitives_, form_, type_] := InheritedBlock[{$GraphicsStyleData},
   $GraphicsStyleData = Merge[{$GraphicsStyleData, assoc}, mergeGraphicsStyleRules];
   Typeset`MakeBoxes[primitives, form, type]
 ];

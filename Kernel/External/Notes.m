@@ -49,3 +49,21 @@ CreateNotesFromURLList[urls:{__String}, opts:OptionsPattern[]] := Scope[
   If[!StringVectorQ[results], ReturnFailed[]];
   StringRiffle[results, "\n"]
 ]
+
+PublicFunction[CreateNotesFromClipboardList]
+
+$validNotePagesP = "scholar.google.com" | "arxiv.org" | "youtube.com" | "youtu.be";
+
+CreateNotesFromClipboardList[] := (
+  clipboard = PasteFromClipboard[];
+  urls = StringCases[clipboard, HyperlinkPattern];
+  If[!StringVectorQ[urls], ReturnFailed[]];
+  urls = DeleteDuplicates @ Select[urls, StringContainsQ[$validNotePagesP]];
+  If[urls === {}, Return @ ""];
+  CreateNotesFromURLList[urls]
+);
+
+
+
+
+

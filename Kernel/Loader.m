@@ -21,7 +21,6 @@ dummy::usage = "Dummy";
 ToBoxes[Information[dummy]];
 System`InformationDump`subtitleStyled[sub_] := Style[sub, "InformationUsageText"];
 
-
 (*************************************************************************************************)
 
 QuiverGeometryPackageLoader`$SourceDirectory = DirectoryName @ $InputFileName;
@@ -32,12 +31,17 @@ QuiverGeometryPackageLoader`$LoaderFileName = $InputFileName;
 
 QuiverGeometryPackageLoader`$CurrentFile = None;
 
-QuiverGeometryPackageLoader`$PreservedVariables = {};
+QuiverGeometryPackageLoader`$PreservedVariables = Data`UnorderedAssociation[];
+QuiverGeometryPackageLoader`$PreservedFunctions = Data`UnorderedAssociation[];
 
 Attributes[QuiverGeometryPackageLoader`DeclarePreservedVariable] = {HoldAll};
 QuiverGeometryPackageLoader`DeclarePreservedVariable[var_] :=
-  If[!MemberQ[QuiverGeometryPackageLoader`$PreservedVariables, Hold @ var],
-    AppendTo[QuiverGeometryPackageLoader`$PreservedVariables, Hold @ var]];
+  AssociateTo[QuiverGeometryPackageLoader`$PreservedVariables, Hold[var] -> True];
+
+Attributes[QuiverGeometryPackageLoader`DeclarePreservedFunction] = {HoldAll};
+QuiverGeometryPackageLoader`DeclarePreservedFunction[fn_] :=
+  AssociateTo[QuiverGeometryPackageLoader`$PreservedFunctions, Hold[fn] -> True];
+
 
 (*************************************************************************************************)
 
@@ -124,7 +128,9 @@ $coreSymbols = {
   (* general utilities; *)
   GeneralUtilities`Scope, GeneralUtilities`ContainsQ, GeneralUtilities`ScanIndexed,
   GeneralUtilities`DeclareArgumentCount, GeneralUtilities`Match, GeneralUtilities`MatchValues,
-  GeneralUtilities`ReturnFailed, GeneralUtilities`UnpackOptions
+  GeneralUtilities`ReturnFailed, GeneralUtilities`UnpackOptions,
+  (* internal *)
+  Internal`InheritedBlock
 };
 
 $coreSymbols = Sort @ DeleteDuplicates @ $coreSymbols;
@@ -313,7 +319,7 @@ fileSortingTuple[path_] := {
 QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled_:True, fullReload_:True] := Block[
   {$directory, $files, $textFiles, $privateSymbols, $systemSymbols, $publicSymbols, $packageExpressions, $packageRules,
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result, requiresFullReload,
-   $preservedValues, $ignoreFiles
+   $preservedValues, $preservedDownValues, $ignoreFiles
   },
 
   Off[General::shdw];
@@ -385,10 +391,18 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
   ];
 
   $preservedValues = Replace[
-    QuiverGeometryPackageLoader`$PreservedVariables,
-    Hold[sym_] :> RuleCondition @ With[{val = sym}, Hold[Set[sym, val]]],
+    Keys @ QuiverGeometryPackageLoader`$PreservedVariables,
+    Hold[sym_] :> With[{val = sym}, Hold[sym = val]],
     {1}
   ];
+
+  (* for things like RedBox that would otherwise we wiped out due to form definition caching mechanism *)
+  $preservedDownValues = Replace[
+    Keys @ QuiverGeometryPackageLoader`$PreservedFunctions,
+    Hold[sym_] :> With[{dv = DownValues[sym]}, Hold[DownValues[sym] = dv]],
+    {1}
+  ];
+
   If[requiresFullReload,
     LVPrint["Clearing all symbols."];
     Construct[ClearAll, mainContext <> "*", mainContext <> "**`*"];
@@ -397,7 +411,8 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
     LVPrint["Clearing dirty contexts: ", dirtyContexts];
     Apply[ClearAll, Map[# <> "*"&, dirtyContexts]];
   ];
-  Scan[First, $preservedValues];
+  ReleaseHold[$preservedValues];
+  ReleaseHold[$preservedDownValues];
 
   $systemSymbols = DeleteDuplicates @ Internal`BagPart[$systemSymbols, All];
   $publicSymbols = DeleteDuplicates @ Internal`BagPart[$publicSymbols, All];

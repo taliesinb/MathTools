@@ -219,7 +219,7 @@ decSymTable["$Fun#",            FunctorSymbol,                              "ABC
 decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzstABCDEIUVWMNLPRSTXYZ"];
 symbolTable["$IdA#",            IdArrow[CategoryObjectSymbol[#]]&,          "01abcdeuvwxyzstABCDEIUVWMNPXYZST"];
 decSymTable["$NT#",             NaturalTransformationSymbol,                "\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]\[Gamma]\[Delta]\[Epsilon]\[Sigma]"];
-decSymTable["$A#",              CategoryArrowSymbol,                        "01efghjklmnpqrstuvwILR\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]"];
+decSymTable["$A#",              CategoryArrowSymbol,                        "01efghjklmnpqrstuvwILMNR\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]"];
 symbolTable["$1A#",             OneArrow[CategoryObjectSymbol[#]]&,         "abcdeuvwxyzstABCDEIUVWMNPXYZST"];
 
 
@@ -549,6 +549,7 @@ makeSym["MS", MatrixSymbol];
 makeSym["PFSF", PartialFunctionSignatureForm];
 makeSym["FSF", FunctionSignatureForm];
 makeSym["AF", AppliedForm];
+makeSym["IAF", ImplicitAppliedForm];
 
 makeSym["EOF", ElementOfForm];
 
@@ -585,6 +586,13 @@ makeSym["BF", BlueForm];
 makeSym["RGF", OrangeForm];
 makeSym["RBF", PinkForm];
 makeSym["GBF", TealForm];
+
+makeSym["DRF", DarkRedForm];
+makeSym["DGF", DarkGreenForm];
+makeSym["DBF", DarkBlueForm];
+makeSym["DRGF", DarkOrangeForm];
+makeSym["DRBF", DarkPinkForm];
+makeSym["DGBF", DarkTealForm];
 
 makeSym["BSMF", BoundSignedMultiplicityFunctionForm];
 makeSym["BMF", BoundMultiplicityFunctionForm];

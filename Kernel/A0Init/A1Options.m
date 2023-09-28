@@ -110,3 +110,15 @@ UpdateOptions[object$, option$, f$] returns a new object with the old value of o
 
 UpdateOptions[obj_, option_, func_] :=
   ReplaceOptions[obj, option -> func[LookupOption[obj, option]]];
+
+(**************************************************************************************************)
+
+PublicOption[HighlightStyle, HighlightColor, HighlightOpacity]
+
+PublicOption[ZOrder]
+
+PublicOption[LabelPosition, LabelOrientation, LabelRectification]
+
+PublicOption[ArrowheadShape, ArrowheadSize, ArrowheadStyle, ArrowheadPosition]
+
+PublicOption[ArrowheadPathSetback, Setback]

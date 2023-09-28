@@ -113,6 +113,42 @@ ComplexVectorQ[list_] := VectorQ[list, NumericQ] && ContainsComplexQ[list];
 
 (**************************************************************************************************)
 
+PublicFunction[HoldNumericQ]
+
+SetUsage @ "
+HoldNumericQ[n$] returns True if n$ is numeric.
+"
+
+SetHoldAllComplete[HoldNumericQ];
+
+HoldNumericQ[e_] := NumericQ[Unevaluated @ e];
+
+(**************************************************************************************************)
+
+PublicFunction[HoldPackedArrayQ]
+
+SetHoldAllComplete[HoldPackedArrayQ];
+
+SetUsage @ "
+HoldPackedArrayQ[arr$] returns True if arr$ is a packed array.
+"
+
+HoldPackedArrayQ[e_] := PackedArrayQ[Unevaluated @ e];
+
+(**************************************************************************************************)
+
+PublicFunction[HoldNumericArrayQ]
+
+SetHoldAllComplete[HoldNumericArrayQ];
+
+SetUsage @ "
+HoldNumericArrayQ[arr$] returns True if arr$ is rectangular array containing numeric values.
+"
+
+HoldNumericArrayQ[e_] := PackedArrayQ[Unevaluated @ e] || ArrayQ[Unevaluated @ e, _, HoldNumericQ];
+
+(**************************************************************************************************)
+
 PublicFunction[ContainsComplexQ]
 
 SetUsage @ "

@@ -1,12 +1,21 @@
 PublicFunction[SetGraphicsScale]
 
+SetGraphicsScale::nobounds = "Cannot find bounds for ``."
 SetGraphicsScale[g_Graphics, scale_:40, padding_:1, adjustFonts_:True] := Scope[
   g = NormalizePlotRange[g];
-  plotRange = {{xmin, xmax}, {ymin, ymax}} = GraphicsPlotRange @ g;
+  plotRange = GraphicsPlotRange @ g;
+  If[!MatrixQ[plotRange],
+    Message[SetGraphicsScale::nobounds, MsgExpr[g, 6, 30]];
+    Return[g]
+  ];
+  {{xmin, xmax}, {ymin, ymax}} = plotRange;
   xwidth = xmax - xmin; ywidth = ymax - ymin;
   dims = {xwidth, ywidth};
-  padding //= StandardizePadding; SetAll[padding, 1];
-  size = (dims * scale) + (2 * Map[Total, padding]); imageWidth = First @ size;
+  SetAutomatic[padding, FindAutomaticPadding[g, scale] * scale];
+  padding //= StandardizePadding;
+  SetAll[padding, 1];
+  totalPadding = Map[Total, padding];
+  size = (dims * scale) + totalPadding; imageWidth = First @ size;
   pointsToScaled = Scaled[# / imageWidth]&;
   If[adjustFonts,
     g = g /. (FontSize -> p_) :> RuleCondition[FontSize -> pointsToScaled[p]];
@@ -30,7 +39,8 @@ PublicOption[GraphicsScale, AdjustFontSize]
 Options[ScaleGraphics] = JoinOptions[
   GraphicsScale -> 40,
   AdjustFontSize -> True,
-  Graphics
+  Graphics,
+  ImagePadding -> 1
 ];
 
 ScaleGraphics[prims_, opts:OptionsPattern[]] :=

@@ -85,6 +85,8 @@ $centerOSpecP = Center | Automatic | {Center, Center} | Scaled[{.5, .5}] | {Scal
 
 $ghead = Graphics;
 
+GraphicsPlotRange::failed = "Cannot find plot range for ``, using unit plot range.";
+
 kernelPlotRange[g_Graphics3D | g_Graphics] := Module[
   {g2 = Block[{$ghead = Head @ g}, plotRangeExpand @ g], coord},
   res = Quiet @ PlotRange @ g2;
@@ -93,7 +95,10 @@ kernelPlotRange[g_Graphics3D | g_Graphics] := Module[
   (* ^ deal with weird option 'ViewSize' that appears on reinterpreting Graphics3D *)
     res = Quiet @ PlotRange @ g2;
   ];
-  If[!MatrixQ[res], Return @ $Failed];
+  If[!MatrixQ[res],
+    Message[GraphicsPlotRange::failed, MsgExpr[g, 6, 30]];
+    res = {{-1, 1}, {-1, 1}};
+  ];
   If[First[res] === {-1., 1.} || Last[res] === {-1., 1.},
     (* this occurs when a plot is completely flat horizontally or vertically *)
     coord = DeepFirstCase[g2, $CoordP] + $MachineEpsilon;
@@ -107,11 +112,14 @@ expandMultiArrowInGC[g_] := g /.
 
 $expanderRules := $expanderRules = Dispatch @ {
   Invisible[e_] :> e,
+  Text[_, pos_, ___] :> RuleCondition[Point[pos]],
   StadiumShape[{a_, b_}, r_] :> RuleCondition[{Disk[a, r], Disk[b, r]}],
   CapsuleShape[{a_, b_}, r_] :> RuleCondition[{Sphere[a, r], Sphere[b, r]}],
   Cube[p:{_, _, _}:{0,0,0}, l_:1] :> RuleCondition[Sphere[p, l/2]],
+  (JoinedCurve|JoinedCurveBox)[e_List] :> e,
   c:$customGraphicsP :> RuleCondition[With[{h = $ghead}, Typeset`MakeBoxes[c, StandardForm, h]] //. $graphicsBoxReplacements],
   a:$AnnotationP :> RuleCondition[plotRangeExpand @ First @ a],
+  (StyleBox|Style)[e_, ___] :> e,
   Inset[_, pos_, $centerOSpecP, {w_, h_}] :> RuleCondition[Rectangle[pos - {w,h}/2, pos + {w,h}/2]]
 };
 

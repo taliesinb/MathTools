@@ -13,6 +13,12 @@ DefineUnaryForm[PullbackStarForm, SuperscriptBox[$1, "*"]];
 
 (**************************************************************************************************)
 
+PublicForm[DualObjectForm]
+
+DefineUnaryForm[DualObjectForm, SuperscriptBox[$1, "*"]];
+
+(**************************************************************************************************)
+
 PublicForm[OppositeCategoryForm]
 
 DefineUnaryForm[OppositeCategoryForm, SuperscriptBox[$1, "𝗈𝗉"]];
@@ -41,6 +47,8 @@ PublicForm[NaturalTransformationSymbol]
 DefineTaggedForm[NaturalTransformationSymbol]
 
 DefineStandardTraditionalForm[{
+  InverseForm[n_NaturalTransformationSymbol[args___]] :> MakeBoxes[InverseSubscriptForm[n, args]],
+  InverseForm[n_NaturalTransformationSymbol][args___] :> MakeBoxes[InverseForm[n[args]]],
   n_NaturalTransformationSymbol[args___] :> MakeBoxes @ Subscript[n, args],
   n_NaturalTransformationSymbol[args___][args2___] :> MakeBoxes @ AppliedForm[Subscript[n, args], args2],
   n_NaturalTransformationSymbol[][args2___] :> MakeBoxes @ AppliedForm[n, args2]
@@ -50,16 +58,21 @@ DefineStandardTraditionalForm[{
 
 PublicForm[AssociatorForm, LeftUnitorForm, RightUnitorForm, BraidingForm]
 
+$ntFormToSym = <|AssociatorForm -> "\[Alpha]", LeftUnitorForm -> "\[Lambda]", RightUnitorForm -> "\[Rho]", BraidingForm -> "\[Beta]"|>;
+$ntP = Alternatives @@ Keys[$ntFormToSym];
+
 DefineStandardTraditionalForm[{
-  AssociatorForm             :> MakeBoxes[NaturalTransformationSymbol["\[Alpha]"]],
-  AssociatorForm[a_, b_, c_] :> MakeBoxes[NaturalTransformationSymbol["\[Alpha]"][a,b,c]],
-  LeftUnitorForm             :> MakeBoxes[NaturalTransformationSymbol["\[Lambda]"]],
-  LeftUnitorForm[a_]         :> MakeBoxes[NaturalTransformationSymbol["\[Lambda]"][a]],
-  RightUnitorForm            :> MakeBoxes[NaturalTransformationSymbol["\[Rho]"]],
-  RightUnitorForm[a_]        :> MakeBoxes[NaturalTransformationSymbol["\[Rho]"][a]],
-  BraidingForm               :> MakeBoxes[NaturalTransformationSymbol["\[Beta]"]],
-  BraidingForm[a_, b_]       :> MakeBoxes[NaturalTransformationSymbol["\[Beta]"][a,b]]
-}]
+  InverseForm[(h:$ntP)[a__]]  :> MakeBoxes[InverseForm[h][a]],
+  InverseForm[h:$ntP][a__]    :> With[{nt = $ntFormToSym[h]}, MakeBoxes[InverseForm[NaturalTransformationSymbol[nt]][a]]],
+  AssociatorForm              :> MakeBoxes[NaturalTransformationSymbol["\[Alpha]"]],
+  AssociatorForm[a_, b_, c_]  :> MakeBoxes[NaturalTransformationSymbol["\[Alpha]"][a,b,c]],
+  LeftUnitorForm              :> MakeBoxes[NaturalTransformationSymbol["\[Lambda]"]],
+  LeftUnitorForm[a_]          :> MakeBoxes[NaturalTransformationSymbol["\[Lambda]"][a]],
+  RightUnitorForm             :> MakeBoxes[NaturalTransformationSymbol["\[Rho]"]],
+  RightUnitorForm[a_]         :> MakeBoxes[NaturalTransformationSymbol["\[Rho]"][a]],
+  BraidingForm                :> MakeBoxes[NaturalTransformationSymbol["\[Beta]"]],
+  BraidingForm[a_, b_]        :> MakeBoxes[NaturalTransformationSymbol["\[Beta]"][a,b]]
+}];
 
 (**************************************************************************************************)
 
@@ -135,36 +148,81 @@ DefineBinaryForm[CompactFunctorCategoryForm, SuperscriptBox[$2, $1]]
 
 (**************************************************************************************************)
 
-PublicForm[HorizontalCompositionForm, VerticalCompositionForm, DiskCompositionForm, TightCompositionForm, CompositionForm]
+PublicForm[HorizontalCompositionForm, VerticalCompositionForm, DiskCompositionForm, SpacedDiskCompositionForm, TightCompositionForm, CompositionForm]
 
 DefineInfixForm[HorizontalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\[VeryThinSpace]\[EmptySmallCircle]\[VeryThinSpace]", 3], 0.5]];
 DefineInfixForm[VerticalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\[VeryThinSpace]\[FilledSmallCircle]\[VeryThinSpace]", 3], 0.5]];
 
+DefineInfixForm[SpacedDiskCompositionForm, "\[ThinSpace]\[SmallCircle]\[ThinSpace]"];
 DefineInfixForm[DiskCompositionForm, "\[SmallCircle]"];
 DefineInfixForm[TightCompositionForm, "\[NegativeThinSpace]"];
 DefineInfixForm[CompositionForm, ""];
 
 (**************************************************************************************************)
 
-PublicForm[IdArrow, OneArrow, HomForm, ExplicitHomForm]
+PublicForm[IdArrow, OneArrow, HomForm, TightHomForm, ExplicitHomForm]
 
 DefineUnaryForm[IdArrow, SubscriptBox[FunctionBox["id"], $1]]
 DefineUnaryForm[OneArrow, SubscriptBox[FunctionBox["1"], $1]]
 
 DefineBinaryForm[HomForm, AppliedBox[FunctionBox["hom"], $1, $2]]
+DefineBinaryForm[TightHomForm, TightAppliedBox[FunctionBox["hom"], $1, $2]]
 
 DefineTernaryForm[ExplicitHomForm, AppliedBox[$1, $2, $3]]
 
 (**************************************************************************************************)
 
-PublicForm[FunctorSymbol]
+PublicForm[CovariantHomFunctorForm, ContravariantHomFunctorForm]
+
+DefineStandardTraditionalForm[{
+  CovariantHomFunctorForm[arg_]     :> ToBoxes @ HomForm[arg, FunctorPlaceholderSymbol],
+  ContravariantHomFunctorForm[arg_] :> ToBoxes @ HomForm[FunctorPlaceholderSymbol, arg]
+}];
+
+(**************************************************************************************************)
+
+PublicForm[CompactCovariantHomFunctorForm, CompactContravariantHomFunctorForm]
+
+DefineUnaryForm[CompactCovariantHomFunctorForm, SubscriptBox[FunctionBox["h"], $1]]
+DefineUnaryForm[CompactContravariantHomFunctorForm, SuperscriptBox[FunctionBox["h"], $1]]
+
+(**************************************************************************************************)
+
+PublicForm[FunctorSymbol, LeftFunctorSymbol, RightFunctorSymbol]
+PublicVariable[$UseLeftRightArrowFunctors]
+
+SetInitialValue[$UseLeftRightArrowFunctors, True];
 
 DefineTaggedForm[FunctorSymbol]
 
-DefineStandardTraditionalForm[fn_FunctorSymbol[args___] :> MakeBoxes[TightAppliedForm[fn, args]]];
+DefineStandardTraditionalForm[{
+  FunctorSymbol["Left"] :> ToBoxes[FunctorSymbol[If[$UseLeftRightArrowFunctors, "\[FilledLeftTriangle]", "L"]]],
+  FunctorSymbol["Right"] :> ToBoxes[FunctorSymbol[If[$UseLeftRightArrowFunctors, "\[FilledRightTriangle]", "R"]]],
+  fn_FunctorSymbol[args___] :> MakeBoxes[TightAppliedForm[fn, args]],
+  LeftFunctorSymbol :> MakeBoxes[FunctorSymbol["Left"]],
+  RightFunctorSymbol :> MakeBoxes[FunctorSymbol["Right"]]
+}];
+
+(**************************************************************************************************)
+
+PublicForm[ColoredFunctorSymbol]
+
+DefineStandardTraditionalForm[{
+  ColoredFunctorSymbol[FunctorSymbol[name_], args___] :> MakeBoxes[ColoredFunctorSymbol[name, args]],
+  ColoredFunctorSymbol[name_, col1_, col2_, sz_] :> MakeBoxes[
+    ColorGradientForm[
+      Style[FunctorSymbol @ name, FontSize -> sz],
+      {col1, col2},
+      "DilationFactor" -> 1, "CompressionFactor" -> 0.5
+    ]
+  ],
+  cf_ColoredFunctorSymbol[args___] :> NoSpanBox @ ToBoxes @ AppliedForm[cf, args]
+}]
+
 
 (**************************************************************************************************)
 
 PublicForm[ImplicitAppliedForm]
 
 DefineBinaryForm[ImplicitAppliedForm, RBox[$1, $2]]
+

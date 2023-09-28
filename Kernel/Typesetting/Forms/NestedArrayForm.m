@@ -185,12 +185,12 @@ procNA[][e_] := $itemFunction @ e;
 NestedArrayForm::badspec = "Unknown spec ``";
 procNA[spec_, ___][array_] := (Message[NestedArrayForm::badspec, MsgExpr @ spec]; "?");
 
-vectorMapNA[f_, array_, isH_] := Internal`InheritedBlock[
+vectorMapNA[f_, array_, isH_] := InheritedBlock[
   {$dims = Append[$dims, Length @ array], $pos = Append[$pos, 0], $hor = Append[$hor, isH]},
   MapIndex1[{a, i} |-> (Part[$pos, -1] = i; f[a]), array]
 ];
 
-matrixMapNA[f_, array_] := Internal`InheritedBlock[
+matrixMapNA[f_, array_] := InheritedBlock[
   {$dims = Join[$dims, Dimensions[array, 2]], $pos = Join[$pos, {0, 0}], $hor = Join[$hor, {False, True}]},
   MapIndexed[{a, i} |-> (Part[$pos, {-2, -1}] = i; f[a]), array, {2}]
 ];

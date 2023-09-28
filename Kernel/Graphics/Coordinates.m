@@ -307,8 +307,8 @@ $primitiveP = _Point | _Line | _InfiniteLine | _HalfLine | _Arrow | _FilledCurve
 
 zsort = Case[
 
-  list_List                                   := Internal`InheritedBlock[{$zstyle}, Scan[zsort, list]];
-  Style[e_, s___]                             := Internal`InheritedBlock[{$zstyle}, Scan[zstyle, {s}]; zsort @ e];
+  list_List                                   := InheritedBlock[{$zstyle}, Scan[zsort, list]];
+  Style[e_, s___]                             := InheritedBlock[{$zstyle}, Scan[zstyle, {s}]; zsort @ e];
 
   (* TODO: handle GraphicsComplex, GraphicsTransform / Translate / Rotate etc *)
 

@@ -1,14 +1,20 @@
 PublicForm[HorizontalCurve, VerticalCurve]
 
-declareGraphicsFormatting[c:(HorizontalCurve[$Coord2P, $NumberP] | HorizontalCurve[$NumberP]) :> Construct[LineBox, horizontalCurvePoints @ c], Graphics];
-declareGraphicsFormatting[c:(VerticalCurve[$Coord2P, $NumberP] | VerticalCurve[$NumberP])     :> Construct[LineBox, verticalCurvePoints @ c], Graphics];
+declareGraphicsFormatting[c:(HorizontalCurve[$Coord2P, $NumberP|$Coord2P] | HorizontalCurve[$NumberP|$Coord2P]) :> Construct[LineBox, horizontalCurvePoints @ c], Graphics];
+declareGraphicsFormatting[c:(VerticalCurve[$Coord2P, $NumberP|$Coord2P] | VerticalCurve[$NumberP|$Coord2P])     :> Construct[LineBox, verticalCurvePoints @ c], Graphics];
 
 (**************************************************************************************************)
 
 PrivateFunction[horizontalCurvePoints, verticalCurvePoints]
 
-horizontalCurvePoints[HorizontalCurve[pos_, p_]] := {pos, pos + {p, 0}};
-horizontalCurvePoints[HorizontalCurve[p_]] := {{0,0}, {p, 0}};
+horizontalCurvePoints = Case[
+  HorizontalCurve[p_]               := % @ HorizontalCurve[{0, 0}, p];
+  HorizontalCurve[pos_, p_]         := ToPackedReal @ {pos, pos + {p, 0}};
+  HorizontalCurve[pos_, {p1_, p2_}] := ToPackedReal @ {pos + {p1, 0}, pos + {p2, 0}};
+];
 
-verticalCurvePoints[VerticalCurve[pos_, p_]] := {pos, pos + {0, p}};
-verticalCurvePoints[VerticalCurve[p_]] := {{0,0}, {0, p}};
+verticalCurvePoints = Case[
+  VerticalCurve[p_]               := % @ VerticalCurve[{0, 0}, p];
+  VerticalCurve[pos_, p_]         := ToPackedReal @ {pos, pos + {0, p}};
+  VerticalCurve[pos_, {p1_, p2_}] := ToPackedReal @ {pos + {0, p1}, pos + {0, p2}}
+];

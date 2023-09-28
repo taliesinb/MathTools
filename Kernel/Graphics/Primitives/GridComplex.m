@@ -7,11 +7,9 @@ abstract labels that are interpreted in primitives$ as referring to 2D coordinat
 GridComplex[{coord$1 -> label$1, coord$2 -> label$2, $$}, $$] manually specifies coordinates of labels.
 * GridComplex takes the following options:
 | GridScale | the size of individual cells |
-| Transposed | whether coordinates correspond to {x$,y$} or {y$,x$} |
 "
 
 Options[GridComplex] = {
-  Transposed -> True,
   GridScale -> 1
 }
 
@@ -54,11 +52,10 @@ ExpandGridComplex[g_] := ReplaceAll[g, gc:GridComplex[_List, _, ___Rule] :> Rule
 PrivateFunction[gridComplexPrimitives]
 
 gridComplexPrimitives[GridComplex[grid_List, primitives_, opts:OptionsPattern[]]] := Scope[
-  UnpackOptionsAs[GridComplex, {opts}, gridScale, transposed];
+  UnpackOptionsAs[GridComplex, {opts}, gridScale];
   {coords, size} = readGrid @ grid;
   {r, c} = size;
   SetAutomatic[gridScale, 1];
-  If[!transposed, coords = Reverse[coords, 2]; {r,c} = {c,r}];
   rules = Dispatch @ Normal @ VectorApply[{#2 - 1, r - #1} * gridScale&, coords];
   border = Invisible @ Point @ {{0, 0}-gridScale/5, ({c, r} - 1 + 1/5) * gridScale};
   replacement = # /. rules /. GridOffset[d_, p_] :> p + gridScale * d&;

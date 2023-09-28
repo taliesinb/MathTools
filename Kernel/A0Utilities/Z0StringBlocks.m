@@ -439,7 +439,7 @@ processBlock = Case[
 (*   LiftedForm[s_String]                                := makeSingleBlock @ StringJoin[s, "\:0302"];
   MappedForm[s_String]                                := makeSingleBlock @ StringJoin[s, "\:0302"];
  *)
-  (Style|StyleBox)[item_, style___]                   := Internal`InheritedBlock[
+  (Style|StyleBox)[item_, style___]                   := InheritedBlock[
     {$styleStack},
     $styleStack = joinStyles[normStyle /@ {style}, $styleStack];
     % @ item

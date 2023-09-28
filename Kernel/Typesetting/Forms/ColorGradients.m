@@ -18,12 +18,10 @@ Options[ColorGradientRasterize] = {
   "CompressionFactor" -> 0
 }
 
-$gradientRasterizeCache = UAssociation[];
-
 ColorGradientRasterize[expr_, colors_, OptionsPattern[]] := Scope[
   UnpackOptions[dilationFactor, compressionFactor];
   hash = Hash[{expr, colors, dilationFactor, compressionFactor}];
-  result = Lookup[$gradientRasterizeCache, hash];
+  result = Lookup[QuiverGeometryCaches`$GradientRasterizationCache, hash];
   If[ImageQ[result], Return @ result];
   {raster, boundingBox} = Rasterize[expr, {"Image", "BoundingBox"}, Background -> Transparent, ImageResolution -> 144];
   {bbw, bbh, dh} = boundingBox;
@@ -41,7 +39,7 @@ ColorGradientRasterize[expr_, colors_, OptionsPattern[]] := Scope[
   grad = ImageResize[Image[{colors}], {w, h}, Resampling -> "Nearest"];
   result = SetAlphaChannel[grad, Clip[4 * Blur[mask, dilationFactor]]];
   result = Image[result, BaselinePosition -> baselinePos, ImageSize -> {w, h}/2, Options @ raster];
-  If[ImageQ[result], $gradientRasterizeCache[hash] ^= result];
+  If[ImageQ[result], QuiverGeometryCaches`$GradientRasterizationCache[hash] ^= result];
   result
 ];
 
