@@ -57,9 +57,9 @@ ToPrettifiedString[e_, OptionsPattern[]] := Scope[
 ]
 
 
-$fatHeadP = (_NumericArray | _SparseArray | _Image | _Video | _AnimatedImage) ? Developer`HoldAtomQ;
+$fatHeadP = (_NumericArray | _SparseArray | _Image | _Video | _AnimatedImage) ? HoldAtomQ;
 
-getAllSymbolContexts[e_] := DeepUniqueCases[e, s_Symbol ? Developer`HoldAtomQ :> Context[Unevaluated @ s]];
+getAllSymbolContexts[e_] := DeepUniqueCases[e, s_Symbol ? HoldAtomQ :> Context[Unevaluated @ s]];
 
 (**************************************************************************************************)
 
@@ -71,7 +71,7 @@ pretty0[e_] /; TrueQ[$depth == $maxDepth] := prettyDeep[e];
 
 pretty0[e:((s_Symbol)[___])] /; MemberQ[$inlineHeads, HoldPattern @ s] := pretty2[e];
 
-pretty0[r_Real ? Developer`HoldAtomQ] /; TrueQ[$compactRealNumbers] := RealDigitsString[r, 2]
+pretty0[r_Real ? HoldAtomQ] /; TrueQ[$compactRealNumbers] := RealDigitsString[r, 2]
 
 pretty0[e_] := Block[{$depth = $depth + 1},
 
@@ -95,7 +95,7 @@ prettyDeep = Case[
   a_ ? smallQ                             := pretty2[a];
   e_                                      := prettyLong[e];
 ,
-  {HAQ -> Developer`HoldAtomQ, $fatHeadP}
+  {HAQ -> HoldAtomQ, $fatHeadP}
 ];
 
 (**************************************************************************************************)
@@ -117,12 +117,12 @@ _List                 := StringJoin["{", $ellipsisString, "}"];
   g_Graph ? HAQ         := StringJoin["Graph[«", IntegerString @ VertexCount @ g, "», «", IntegerString @ EdgeCount @ g, "», ", $ellipsisString, "]"];
   _                     := $ellipsisString;
 ,
-  {HAQ -> Developer`HoldAtomQ, $fatHeadP}
+  {HAQ -> HoldAtomQ, $fatHeadP}
 ]
 
 SetHoldAllComplete[symbolString, prettyHead];
 
-symbolString[s_Symbol ? Developer`HoldAtomQ] := If[$fullSymbolContext, ToString[Unevaluated @ s, InputForm], SymbolName[Unevaluated @ s]];
+symbolString[s_Symbol ? HoldAtomQ] := If[$fullSymbolContext, ToString[Unevaluated @ s, InputForm], SymbolName[Unevaluated @ s]];
 symbolString[_] := $ellipsisString;
 
 prettyHead[h_[___]] := symbolString[h];
@@ -138,13 +138,13 @@ smallQ = Case[
   _Integer ? HAQ  := True;
   _               := False;
 ,
-  {HAQ -> Developer`HoldAtomQ}
+  {HAQ -> HoldAtomQ}
 ];
 
 wideQ[_Sequence] := False;
 wideQ[e_] := (2*LeafCount[Unevaluated @ e] > $maxWidth) || (2*ByteCount[Unevaluated @ e]/48) > $maxWidth;
 
-longQ[e_String ? Developer`HoldAtomQ] := StringLength[Unevaluated @ e] > $maxLength;
+longQ[e_String ? HoldAtomQ] := StringLength[Unevaluated @ e] > $maxLength;
 longQ[e_] := Length[Unevaluated @ e] > $maxLength;
 
 shortQ[s_] := StringLength[s] <= $maxWidth || StringLength[StringDelete[s, "\!\(\*StyleBox[" ~~ Shortest[__] ~~ "Rule[StripOnInput, False]]\)"]] <= $maxWidth;
@@ -154,7 +154,7 @@ shortQ[s_] := StringLength[s] <= $maxWidth || StringLength[StringDelete[s, "\!\(
 SetHoldAllComplete[pretty1, pretty1wrap];
 
 pretty1wrap[e_ ? longQ] := prettyLong[e];
-pretty1wrap[e_ ? Developer`HoldAtomQ] := pretty2[e];
+pretty1wrap[e_ ? HoldAtomQ] := pretty2[e];
 pretty1wrap[e_] := "(" <> pretty1[e] <> ")";
 pretty1wrap[e_List | e_Association] := pretty1[e];
 
@@ -180,7 +180,7 @@ pretty1 = Case[
   head_[args___]                 := indentedBlock[pretty1[head] <> "[", MapUnevaluated[pretty0, {args}], "]"];
   atom_ ? HAQ                    := pretty2[atom];
 ,
-  {$fatHeadP, HAQ -> Developer`HoldAtomQ}
+  {$fatHeadP, HAQ -> HoldAtomQ}
 ];
 
 makeTab[n_] := If[IntegerQ[$tabSize], makeSpaceTab[n * $tabSize], makeTabTab[n]];

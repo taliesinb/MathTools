@@ -192,12 +192,12 @@ imageXYZ[e_] := Transpose[Take[e, 3] / maybeThreaded[Part[e, 4]]];
 PublicFunction[PrimitiveCoordinates]
 
 PrimitiveCoordinates[g_] := Scope[
-  $coords = Internal`Bag[];
+  $coords = Bag[];
   DeepCasees[g, $coordDispatch];
-  Internal`BagPart[$coords, All]
+  BagPart[$coords, All]
 ];
 
-stuffCoords[c_] := Internal`StuffBag[$coords, c, Which[CoordinateVectorQ[c], 0, CoordinateMatrixQ[c], 1, CoordinateMatricesQ[c], 2]];
+stuffCoords[c_] := StuffBag[$coords, c, Which[CoordinateVectorQ[c], 0, CoordinateMatrixQ[c], 1, CoordinateMatricesQ[c], 2]];
 
 $coordDispatch = Dispatch @ {
   (head:$GPrimVDH)[c_List ? stuffCoords, _, rest___] :> Null,
@@ -293,9 +293,9 @@ GraphicsZSort[prims_, trans_] := Scope[
     _,                    ReturnFailed["badtrans", res]
   ];
   $zstyle = {Black, Opacity[1]};
-  $zindex = Internal`Bag[];
+  $zindex = Bag[];
   zsort @ prims;
-  $zindex = Association @ Internal`BagPart[$zindex, All];
+  $zindex = Association @ BagPart[$zindex, All];
   KeyValueMap[fromZandStyle, KeySort @ $zindex]
 ];
 
@@ -329,7 +329,7 @@ zsort = Case[
 
 zinsert[coords_, prim_] := Scope[
   z = If[CoordinateVectorQ[coords], $zfn @ coords, Mean[$zfn /@ coords]];
-  Internal`StuffBag[$zindex, {-z, DeleteCases[$zstyle, Black | Opacity[1]]} -> prim]
+  StuffBag[$zindex, {-z, DeleteCases[$zstyle, Black | Opacity[1]]} -> prim]
 ];
 
 zstyle := Case[

@@ -1,7 +1,11 @@
 PublicForm[HorizontalCurve, VerticalCurve]
 
-declareGraphicsFormatting[c:(HorizontalCurve[$Coord2P, $NumberP|$Coord2P] | HorizontalCurve[$NumberP|$Coord2P]) :> Construct[LineBox, horizontalCurvePoints @ c], Graphics];
-declareGraphicsFormatting[c:(VerticalCurve[$Coord2P, $NumberP|$Coord2P] | VerticalCurve[$NumberP|$Coord2P])     :> Construct[LineBox, verticalCurvePoints @ c], Graphics];
+declareGraphicsFormatting[{
+  c:HorizontalCurve[$Coord2P, $NumberP|$Coord2P] :> Construct[LineBox, horizontalCurvePoints @ c],
+  c:VerticalCurve[$Coord2P, $NumberP|$Coord2P] :> Construct[LineBox, verticalCurvePoints @ c],
+  c:HorizontalCurve[$NumberP|$Coord2P] :> Construct[LineBox, horizontalCurvePoints @ c],
+  c:VerticalCurve[$NumberP|$Coord2P]     :> Construct[LineBox, verticalCurvePoints @ c]
+}, Graphics];
 
 (**************************************************************************************************)
 

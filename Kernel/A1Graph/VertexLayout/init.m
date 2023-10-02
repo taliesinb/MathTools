@@ -174,7 +174,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     {$vertexCoordinates, $edgeCoordinateLists} = result;
   ,
     Message[ExtractGraphPrimitiveCoordinates::badvertexlayout, MsgExpr @ vertexLayout];
-    Print[result];
+    If[ListQ[result], PrintPF /@ result, PrintPF[result]];
     $vertexCoordinates = CirclePoints @ vertexCount;
     $edgeCoordinateLists = Part[$vertexCoordinates, {#1, #2}]& @@@ edgeList;
   ];

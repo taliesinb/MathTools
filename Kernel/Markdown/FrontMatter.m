@@ -11,7 +11,7 @@ MarkdownFrontMatter[path_String | File[path_String]] := Scope[
   If[StringStartsQ[str, "{"],
     jsonStr = FirstStringCase[str, json:(StartOfString ~~ "{\n" ~~ Shortest[___] ~~ "\n}\n") :> json];
     If[StringQ[jsonStr],
-      res = Developer`ReadRawJSONString @ jsonStr;
+      res = ReadRawJSONString @ jsonStr;
       res = res /. Null -> None;
       If[AssociationQ[res], Return @ res]
     ];

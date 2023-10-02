@@ -1,3 +1,47 @@
+PublicFunction[ReapGraphics]
+
+$dbEnabled = False;
+
+SetHoldFirst[ReapGraphics];
+
+ReapGraphics[body_, opts___Rule] := Scope[
+  $dgBag = Bag[]; $extraDg = {};
+  $dbEnabled = True;
+  result = body;
+  debugPrims = BagPart[$dgBag, All];
+  Print @ Row @ Prepend[$extraDg, Graphics[
+    {FaceForm[None], EdgeForm[Opacity[0.5]], debugPrims},
+    opts,
+    PlotRangePadding -> Scaled[0.15],
+    Frame -> True, FrameTicks -> False,
+    ImageSize -> 200
+  ]];
+  result
+];
+
+(**************************************************************************************************)
+
+PublicFunction[SowGraphics, EchoDebugGraphics]
+
+SetHoldAll[SowGraphics];
+
+SowGraphics[e__] /; TrueQ[$dbEnabled] := sowDGexpr[e];
+SowGraphics[__] := Null;
+
+EchoDebugGraphics[e_] /; TrueQ[$dbEnabled] := (SowGraphics[e]; e)
+EchoDebugGraphics[e_] := e;
+
+$graphicsHead = Point | Polygon | Circle | Disk | Rectangle;
+sowDGexpr = Case[
+  g_Graphics                := AppendTo[$extraDg, ReplaceOptions[g, {ImageSize -> 200, Frame -> True, FrameTicks -> False}]];
+  Seq[c:($ColorPattern|_Integer), p_] := % @ Style[p, EdgeForm @ ToRainbowColor @ c];
+  p:$Coord2P                := % @ Point @ p;
+  p:$CoordMat2P             := % @ Point @ p;
+  p_                        := StuffBag[$dgBag, p];
+];
+
+(**************************************************************************************************)
+
 PrivateFunction[VPrint]
 
 SetHoldAllComplete[VPrint];
@@ -133,7 +177,7 @@ extractHead[head_Symbol[___]] := If[QGSymbolQ[head], HoldForm[head], Nothing];
 extractHead[head_[___]] := extractHead[head];
 extractHead[_] := Nothing;
 
-QGSymbolQ[s_Symbol ? Developer`HoldAtomQ] := StringStartsQ[Context @ Unevaluated @ s, "QuiverGeometry`"] && System`Private`HasAnyEvaluationsQ[s];
+QGSymbolQ[s_Symbol ? HoldAtomQ] := StringStartsQ[Context @ Unevaluated @ s, "QuiverGeometry`"] && System`Private`HasAnyEvaluationsQ[s];
 QGSymbolQ[_] := False;
 
 (**************************************************************************************************)
@@ -309,7 +353,7 @@ xmlLeafCount = Case[
 xmlElementHeadBox[xml:XMLElement[str_String, attrs_List, content_], showCount_:True] := With[
   {ci = Mod[Hash @ str, 9]},
   {c1 = Part[$LightColorPalette, ci], c2 = Part[$ColorPalette, ci]},
-  {lc = xmlLeafCount[xml], ec = Length @ Developer`ToList @ content},
+  {lc = xmlLeafCount[xml], ec = Length @ ToList @ content},
   {ls = Which[!showCount, "", lc <= 1, "", ec == lc, lc, True, {ec, "/", lc}]},
   {b1 = xmlStyleBox[str, c1, c2]},
   {b1 = If[ls === "", b1, RowBox[{b1, " ", StyleBox[TextString[Row @ Flatten @ {"\"(", ls, ")\""}], Plain, Smaller, c2]}]]},

@@ -92,6 +92,7 @@ $extendedGraphOptionsRules = {
   GraphOrigin                         -> None,
   GraphPlottingFunction               -> None,
   GraphRegionHighlight                -> None,
+  GraphicsScale                       -> None,
   GraphTheme                          -> None,
   HighlightColor                      -> Automatic,
   HighlightOpacity                    -> Automatic,

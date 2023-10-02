@@ -45,8 +45,8 @@ RangePartitionIndices[n_] := Scope[
   $partBag
 ];
 
-rangPartRecurse[parts_, {}] := Internal`StuffBag[$partBag, parts];
-rangPartRecurse[parts_, rem:{_}] := Internal`StuffBag[$partBag, Append[parts, rem]];
+rangPartRecurse[parts_, {}] := StuffBag[$partBag, parts];
+rangPartRecurse[parts_, rem:{_}] := StuffBag[$partBag, Append[parts, rem]];
 rangPartRecurse[parts_, rem_] := Scope @ Scan[
   {first, rest} = TakeDrop[rem, 1];
   rangPartRecurse[

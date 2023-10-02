@@ -299,21 +299,21 @@ collectPathData[body_] := Scope[
 (**************************************************************************************************)
 
 
-sowVertex[v_] := Internal`StuffBag[$vertexBag, v];
+sowVertex[v_] := StuffBag[$vertexBag, v];
 
-sowVertexList[v_] := Internal`StuffBag[$vertexBag, v, 1];
+sowVertexList[v_] := StuffBag[$vertexBag, v, 1];
 
-sowEdge[i_Integer] := (Internal`StuffBag[$edgeBag, i]; True);
+sowEdge[i_Integer] := (StuffBag[$edgeBag, i]; True);
 
 sowEdge[Inverted[i_Integer]] := (
-  Internal`StuffBag[$edgeBag, i];
-  Internal`StuffBag[$inversionBag, Internal`BagLength[$edgeBag]];
+  StuffBag[$edgeBag, i];
+  StuffBag[$inversionBag, BagLength[$edgeBag]];
   True
 );
 
 sowEdge[_] := False;
 
-sowEdgeList[i_List] := Internal`StuffBag[$edgeBag, i, 1];
+sowEdgeList[i_List] := StuffBag[$edgeBag, i, 1];
 
 (**************************************************************************************************)
 

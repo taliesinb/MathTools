@@ -11,7 +11,7 @@ MultisetDynamics[rules_, init_, T_] := Scope[
   rates = rulesToRates[rules, vars];
   effects = rulesToEffects[rules, vars];
   state = Values[init]; nrules = Length[rules]; indices = Range[nrules]; steps = 0; tweight = 0;
-  list = {}; t = 0; times = Internal`Bag[{0.}]; states = Internal`Bag[{state}]; densities = Internal`Bag[];
+  list = {}; t = 0; times = Bag[{0.}]; states = Bag[{state}]; densities = Bag[];
   While[t <= T && steps++ < 10^8,
     weights = rates @@ state;
     If[Total[weights] == 0, Break[]];
@@ -20,13 +20,13 @@ MultisetDynamics[rules_, init_, T_] := Scope[
     tweight = Total[weights];
     If[tweight > 10^9, Break[]];
     t += RandomVariate[ExponentialDistribution[tweight]];
-    Internal`StuffBag[states, state];
-    Internal`StuffBag[times, t];
-    Internal`StuffBag[densities, tweight];
+    StuffBag[states, state];
+    StuffBag[times, t];
+    StuffBag[densities, tweight];
   ];
-  states = Internal`BagPart[states, All];
-  times = Internal`BagPart[times, All];
-  densities = Internal`BagPart[densities, All];
+  states = BagPart[states, All];
+  times = BagPart[times, All];
+  densities = BagPart[densities, All];
   If[MatchQ[Dimensions[states], {_, 1}], states = Flatten[states]];
   metadata = {"EventDensities" -> densities, "InitialEventDensity" -> First[densities], "TimePeriod" -> T};
   TimeSeries[states, {times}, MetaInformation -> metadata]

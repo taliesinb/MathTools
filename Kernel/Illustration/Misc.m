@@ -31,12 +31,36 @@ VertexField1DPlot[vals_] := ListLinePlot[vals,
 
 (**************************************************************************************************)
 
-PublicFunction[UnitGraphics]
+PublicFunction[GridGraphics]
 
-UnitGraphics[g_, n_:1, opts___Rule] := Graphics[g, opts,
-  ImageSize -> 300, PlotRange -> {{-n, n}, {-n, n}}, PlotRangePadding -> Scaled[0.1],
-  Frame -> True, FrameTicks -> None, GridLines -> {Range[-n, n, n / 5], Range[-n, n, n / 5]}
+SetUsage @ "
+GridGraphics[g$] displays g$ over plot range {-1, 1}, with some padding.
+GridGraphics[g$, n$] displays g$ over plot range {-n$, n$}.
+* each unit of plot range corresponds to 100 pixels, e.g. %GraphicsScale -> 100.
+* minor gridlines occur at every 0.2, and major at every 1 plotrange.
+"
+
+Options[GridGraphics] = {
+  GraphicsScale -> 100
+};
+
+GridGraphics[g_, opts___Rule] := GridGraphics[g, 1, opts];
+
+GridGraphics[g_, n_Integer, opts___Rule] :=
+  GridGraphics[g, {-n, n}, opts];
+
+GridGraphics[g_, {l_, h_}, opts___Rule] := Graphics[g,
+  FilterOptions @ opts,
+  ImageSize -> (((h - l)+.2)) * Lookup[{opts}, GraphicsScale, 100],
+  PlotRange -> {{l-.1, h+.1}, {l-.1, h+.1}},
+  Frame -> True, FrameTicks -> None, GridLines -> {
+      glPair /@ Range[l, h, .2],
+      glPair /@ Range[l, h, .2]
+    }, GridLinesStyle -> GrayLevel[0.9]
 ];
+
+glPair[0|0.] := {0, GrayLevel[0.4]};
+glPair[i_] := If[i == Round[i], {i, GrayLevel[0.7]}, i];
 
 (**************************************************************************************************)
 

@@ -65,3 +65,11 @@ PublicFunction[TranslateVector]
 TranslateVector[trans_List, points_List] := Threaded[trans] + points;
 
 TranslateVector[t_][points_] := TranslateVector[t, points];
+
+(**************************************************************************************************)
+
+PublicFunction[RotateToMatrix]
+
+RotateToMatrix[dirx_] :=
+  ToPackedReal @ Transpose[{dirx, VectorRotate90 @ dirx}];
+

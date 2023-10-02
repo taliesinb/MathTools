@@ -76,6 +76,29 @@ ConstantAssociation[keys_List, constant_] := AssociationThread[keys, ConstantArr
 
 (**************************************************************************************************)
 
+PublicFunction[LookupOrMessageKeys]
+
+General::unrecognizedName = "`` is not a recognized name, which include: ``.";
+
+SetUsage @ "
+LookupOrMessageKeys[assoc$, key$, default$] returns the value associated with key$, or issues a message if there is none.
+LookupOrMessageKeys[$$, msg$] uses a custom message.
+* msg$ should be of the form symbol::msgname, whose first slot will be given key$ and second will be given available keys.
+"
+SetHoldRest[LookupOrMessageKeys];
+
+LookupOrMessageKeys[assoc_, key_, default_] :=
+  LookupOrMessageKeys[assoc, key, default, General::unrecognizedName];
+
+LookupOrMessageKeys[assoc_, key_, default_, msg_] := With[{key2 = key},
+  Lookup[assoc, Key @ key2,
+    Message[msg, MsgExpr @ key, TextString[Row[MsgExpr /@ Keys @ assoc, ", "]]];
+    default
+  ]
+];
+
+(**************************************************************************************************)
+
 PublicFunction[GroupPairs]
 
 SetUsage @ "

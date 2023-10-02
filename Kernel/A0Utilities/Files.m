@@ -82,7 +82,7 @@ PublicFunction[ImportJSONString]
 ImportJSONString::badjson = "String `` does not appear to be valid JSON.";
 
 ImportJSONString[str_String] := Scope[
-  json = Quiet @ Check[Developer`ReadRawJSONString @ str, $Failed];
+  json = Quiet @ Check[ReadRawJSONString @ str, $Failed];
   If[FailureQ[json], ReturnFailed["badjson", MsgExpr @ str]];
   json /. Null -> None
 ];
@@ -98,7 +98,7 @@ ImportJSON::badjson = "File `` does not appear to be valid JSON."
 ImportJSON[path_String] := Scope[
   path //= NormalizePath;
   If[!FileExistsQ[path], ReturnFailed[]];
-  json = Quiet @ Check[Developer`ReadRawJSONFile @ path, $Failed];
+  json = Quiet @ Check[ReadRawJSONFile @ path, $Failed];
   If[FailureQ[json], Message[ImportJSON::badjson, MsgPath @ path]];
   json /. Null -> None
 ];
@@ -111,7 +111,7 @@ PublicFunction[ExportJSON]
 
 ExportJSON[path_String, expr_] := Scope[
   path //= NormalizePath;
-  outStr = Developer`WriteRawJSONString[expr, Compact -> 4];
+  outStr = WriteRawJSONString[expr, Compact -> 4];
   outStr = StringReplace[outStr, "\\/" -> "/"];
   ExportUTF8[path, outStr]
 ];

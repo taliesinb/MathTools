@@ -87,7 +87,7 @@ $customGraphicsP = Alternatives[];
 
 declareCustomGraphicsHead[head_Symbol] := (
   $customGraphicsHeadQ[head] = True;
-  AppendTo[$customGraphicsP, Blank @ head];
+  If[FreeQ[$customGraphicsP, head], AppendTo[$customGraphicsP, Blank @ head]];
 );
 
 declareGraphicsFormatting[lhs_ :> rhs_, type_:Graphics|Graphics3D] := (

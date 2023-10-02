@@ -220,15 +220,15 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
   outVertices = OutVertices @ edges;
   edgeSubsets //= Select[DuplicateFreeQ[Part[inVertices, #]] && DuplicateFreeQ[Part[outVertices, #]]&];
   If[$EnumerateVerboseMode, Print["# edge subsets: ", Length @ edgeSubsets]];
-  graphs = Internal`Bag[]; undirectedEdgeTuples = Internal`Bag[];
+  graphs = Bag[]; undirectedEdgeTuples = Bag[];
 (*   Array[
     List /* (indexTuple |-> If[OrderedQ[indexTuple],
       edgeTuple = Part[edgeSubsets, indexTuple];
       If[Union[Part[edgeMask, Flatten @ edgeTuple]] === undirectedEdgeRange,
         graph = Graph[vertices, Flatten @ MapIndexed[{indices, cardinal} |-> Map[Append[First @ cardinal], Part[edges, indices]], edgeTuple]];
         If[WeaklyConnectedGraphQ @ graph,
-          Internal`StuffBag[graphs, graph];
-          Internal`StuffBag[undirectedEdgeTuples, Mod[edgeTuple, undirectedEdgeCount, 1]];
+          StuffBag[graphs, graph];
+          StuffBag[undirectedEdgeTuples, Mod[edgeTuple, undirectedEdgeCount, 1]];
          ]
       ];
     ]),
@@ -242,19 +242,19 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
       If[Union[Part[edgeMask, Flatten @ edgeTuple]] === undirectedEdgeRange,
         graph = Graph[vertices, Flatten @ MapIndex1[{indices, cardinal} |-> Map[Append[cardinal], Part[edges, indices]], edgeTuple]];
         If[WeaklyConnectedGraphQ @ graph,
-          Internal`StuffBag[graphs, graph];
-          Internal`StuffBag[undirectedEdgeTuples, Mod[edgeTuple, undirectedEdgeCount, 1]];
+          StuffBag[graphs, graph];
+          StuffBag[undirectedEdgeTuples, Mod[edgeTuple, undirectedEdgeCount, 1]];
         ]
       ];
     ),
     Length @ edgeSubsets, cardCount
   ];
-  graphs = Internal`BagPart[graphs, All];
+  graphs = BagPart[graphs, All];
   graphRange = Range @ Length @ graphs;
   If[$EnumerateVerboseMode, Print["creating line graphs"]];
   lineGraphs = LineGraphFixed /@ graphs; edgeCounts = EdgeCount /@ graphs; edgeTags = EdgeTags /@ graphs;
   If[$EnumerateVerboseMode, Print["# total graphs: ", Length @ graphs]];
-  undirectedEdgeTuples = Internal`BagPart[undirectedEdgeTuples, All];
+  undirectedEdgeTuples = BagPart[undirectedEdgeTuples, All];
   graphSignature = i |-> {
     Part[edgeCounts, i],
     countsSignature @ Part[edgeTags, i],
@@ -391,13 +391,13 @@ iEnumerateQuiverSkeletons[n_Integer, allowSelfLoops_] := Scope[
   edges = Flatten @ Table[UndirectedEdge[i, j], {i, 1, n}, {j, i, n}];
   If[!allowSelfLoops, edges //= DeleteCases[UndirectedEdge[i_, i_]]];
   edgeSubsets = Subsets[edges, {1, Length @ edges}];
-  bag = Internal`Bag[];
+  bag = Bag[];
   Scan[subset |-> If[Union @ AllVertices[edges] === vertices,
     graph = Graph[vertices, subset];
-    If[ConnectedGraphQ[graph], Internal`StuffBag[bag, graph]]],
+    If[ConnectedGraphQ[graph], StuffBag[bag, graph]]],
     edgeSubsets
   ];
-  graphs = Internal`BagPart[bag, All];
+  graphs = BagPart[bag, All];
   graphs = GroupBy[graphs, VertexDegree /* Sort];
   graphs = Join @@ Map[
     DeleteDuplicates[#, IsomorphicGraphQ]&,

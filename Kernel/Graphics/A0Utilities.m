@@ -22,16 +22,24 @@ CosSin[theta_] := {Cos[theta], Sin[theta]};
 
 (**************************************************************************************************)
 
-PublicFunction[ClockwiseCirclePoints]
+PublicFunction[ClockwiseCirclePoints, AnticlockwiseCirclePoints]
 
 SetUsage @ "
-ClockwiseCirclePoints[n$] gives n$ equally spaced clockwise points with the first point at {0, 1}."
+ClockwiseCirclePoints[n$] gives n$ equally spaced clockwise points with the first point at {0, 1}.
+ClockwiseCirclePoints[n$, side$] starts at a symbolic side like Top, Left, etc.
+"
 
-ClockwiseCirclePoints[n_] := AngleVector /@ (Pi/2 - Range[0, Tau-1/n, Tau/n]);
+SetUsage @ "
+AnticlockwiseCirclePoints[n$] gives n$ equally spaced anti-clockwise points with the first point at {0, 1}.
+AnticlockwiseCirclePoints[n$, side$] starts at a symbolic side like Top, Left, etc.
+"
+
+ClockwiseCirclePoints[n_, side_:Top] := AngleVector /@ ($SideToRadians[side] - Range[0, Tau-1/n, Tau/n]);
+AnticlockwiseCirclePoints[n_, side_:Top] := AngleVector /@ ($SideToRadians[side] + Range[0, Tau-1/n, Tau/n]);
 
 (**************************************************************************************************)
 
-PublicFunction[VectorReflect, VectorReflectHorizontal, VectorReflectVertical]
+PublicFunction[VectorReflect]
 
 SetUsage @ "
 VectorReflect[v$, rv$] reflects the vector v$ in the hyperplane perpendicular to rv$.
@@ -41,8 +49,28 @@ VectorReflect[v_, rv_] := Expand[v - (2 * Dot[rv, v] / Dot[rv, rv]) * rv];
 VectorReflect[v_, rv_ ? System`Private`ValidQ] := Expand[v - (2 * Dot[rv, v]) * rv]; (* TODO: remove this, it is used in RootSystem somehow *)
 VectorReflect[rv_][v_] := VectorReflect[v, rv];
 
+(**************************************************************************************************)
+
+PublicFunction[VectorReflectHorizontal, VectorReflectVertical, VectorTranspose]
+
+SetUsage @ "
+VectorReflectHorizontal[v$] reflects the vector v$ horizontally$.
+"
+
 VectorReflectHorizontal[v_] := Threaded[{-1, 1}] * v;
+
+SetUsage @ "
+VectorReflectVertical[v$] reflects the vector v$ vertically.
+"
+
 VectorReflectVertical[v_] := Threaded[{1, -1}] * v;
+
+SetUsage @ "
+VectorTranspose[v$] switches the role of x$ and y$.
+"
+
+VectorTranspose[v_?MatrixQ] := Reverse[v, 2];
+VectorTranspose[v_List] := Reverse[v];
 
 (**************************************************************************************************)
 
@@ -58,7 +86,7 @@ setupRotFunc[sym_, angle_, cw_] := With[
   {nmatrix = ToPackedReal @ N @ matrix},
   SetUsage @ $rotUsage[SymbolName[sym], angle, If[cw, "clockwise", "counterclockwise"]];
   sym[vec_List]                                    := Dot[vec, matrix];
-  sym[vec_List] /; ArrayQ[vec, _, Developer`RealQ] := Dot[ToPackedArray[vec, Real], nmatrix];
+  sym[vec_List] /; ArrayQ[vec, _, RealQ] := Dot[ToPackedArray[vec, Real], nmatrix];
 ];
 
 setupRotFunc @@@ {
@@ -498,13 +526,13 @@ VectorAlongLine[coords_, Scaled[d_]] := VectorAlongLine[coords, LineLength[coord
 (* TODO: this doesn't take the length of the path into account *)
 VectorAlongLine[coords_, Scaled[d_] /; d > 1] := Scope[
   {pos, dir} = getPointAndVec[coords, Length @ coords];
-  pos = safePlus[pos, dir * (d - 1) * LineLength[coords]];
+  pos = coordPlus[pos, dir * (d - 1) * LineLength[coords]];
   {pos, dir} // SimplifyOffsets
 ];
 
 VectorAlongLine[coords_, Scaled[d_] /; d < 0] := Scope[
   {pos, dir} = getPointAndVec[coords, 1];
-  pos = safePlus[pos, dir * d * LineLength[coords]];
+  pos = coordPlus[pos, dir * d * LineLength[coords]];
   {pos, dir} // SimplifyOffsets
 ];
 
@@ -512,15 +540,18 @@ VectorAlongLine[coords_List, d_ ? NumericQ] := vectorAlongLine[coords, d];
 
 (**************************************************************************************************)
 
+(* TODO: expose this and other such Offset-aware functions properly *)
+PrivateFunction[coordPlus]
+
 vectorAlongSegment[{a_, b_}, d_] := Scope[
   delta = safeNormDelta[a, b];
   {a + delta * d, delta}
 ];
 
-safePlus[p1_, Offset[o_, p2_]] := Offset[o, p1 + p2];
-safePlus[Offset[o_, p1_], p2_] := Offset[o, p1 + p2];
-safePlus[Offset[o1_, p1_], Offset[o2_, p1_]] := Offset[o1 + o2, p1 + p2];
-safePlus[p1_, p2_] := p1 + p2;
+coordPlus[p1_, Offset[o_, p2_]] := Offset[o, p1 + p2];
+coordPlus[Offset[o_, p1_], p2_] := Offset[o, p1 + p2];
+coordPlus[Offset[o1_, p1_], Offset[o2_, p1_]] := Offset[o1 + o2, p1 + p2];
+coordPlus[p1_, p2_] := p1 + p2;
 
 safeNormDelta[a_, Offset[_, b_]] := safeNormDelta[a, b];
 safeNormDelta[Offset[_, a_], b_] := safeNormDelta[a, b];
@@ -799,3 +830,15 @@ SimplifyOffsets[points_] := points //. {
   Offset[d1_, Offset[d2_, p_]] :> Offset[d1 + d2, p],
   Offset[{$zeroP, $zerpP}, p_] :> p
 };
+
+(**************************************************************************************************)
+
+PublicFunction[ResolveOffsets]
+
+ResolveOffsets[e_, scale_ ? NumberQ] :=
+  ReplaceAll[e, {
+    Offset[o_, p] :> RuleCondition[p + o / scale],
+    Offset[o_] :> RuleCondition[o / scale]
+  }];
+
+ResolveOffsets[e_, _] := e;

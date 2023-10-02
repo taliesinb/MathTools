@@ -98,7 +98,7 @@ extendedCells[nb_, extend_:False] := Scope[
     If[MatchQ[type, "Code" | "Input" | "Output" | "Section" | "Subsection" | "Subsubsection" | "Chapter" | "Title"],
       SelectionMove[nb, All, CellGroup]];
     If[!nextPrev && extend && MatchQ[type, "Text" | "Item" | "SubItem"],
-      cpos = Lookup[Developer`CellInformation[First @ cells], "CursorPosition"];
+      cpos = Lookup[CellInformation[First @ cells], "CursorPosition"];
       If[cpos === "CellBracket",
         SelectionMove[nb, All, CellGroup],
         SelectionMove[nb, All, Cell]
@@ -401,7 +401,7 @@ FindBoxesInCurrentNotebook[boxRules_, OptionsPattern[]] := Scope[
 PrivateFunction[CellCursorPosition]
 
 CellCursorPosition[cell_CellObject] := Scope[
-  info = Developer`CellInformation[cell];
+  info = CellInformation[cell];
   If[!RuleListQ[info], None, First[Lookup[info, "CursorPosition", None], None]]
 ];
 

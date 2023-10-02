@@ -95,6 +95,7 @@ PrivateVariable[$morphismArrowOptions]
 $morphismArrowOptions = Normal @ KeyTake[$extendedArrowOptions, {
   ArrowPathSetback, ArrowShaftColor, ArrowShaftOpacity, ArrowShaftThickness, ArrowShaftDashing, ArrowShaftMasking
 }] ~Join~ {
+  GraphicsScale -> None,
   DecorationWidth -> 15,
   LabelPosition -> Automatic,
   LabelOrientation -> Automatic,
@@ -103,7 +104,8 @@ $morphismArrowOptions = Normal @ KeyTake[$extendedArrowOptions, {
   LabelSpacing -> Automatic,
   ArrowPathReversed -> False,
   ArrowShaftHidden -> False,
-  LabelRectification -> True
+  LabelRectification -> True,
+  TextModifiers -> {}
 };
 
 AssociateTo[$MakeBoxesStyleData, $morphismArrowOptions];

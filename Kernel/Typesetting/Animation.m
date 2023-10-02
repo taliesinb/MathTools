@@ -230,7 +230,7 @@ PublicObject[AnimationObject]
 SetHoldFirst[AnimationObject];
 
 declareBoxFormatting[
-  g:AnimationObject[_, _Association ? Developer`HoldAtomQ] :> With[{res = animatedThumbnailBoxes[g]}, res /; res =!= $Failed]
+  g:AnimationObject[_, _Association ? HoldAtomQ] :> With[{res = animatedThumbnailBoxes[g]}, res /; res =!= $Failed]
 ];
 
 animatedThumbnailBoxes[g_] := Scope[

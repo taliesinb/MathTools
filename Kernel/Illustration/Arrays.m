@@ -49,14 +49,14 @@ $lhsSpecP2 = $lhsSpecP | {___, _ -> Each, ___} | {___, Each, ___};
 
 procHighlightSpec = Case[
   lhs:$lhsSpecP2 := % @ List @ lhs;
-  other_ := Map[procHighlightRule, Developer`ToList @ other];
+  other_ := Map[procHighlightRule, ToList @ other];
 ];
 
 procHighlightRule = Case[
   lhs:{___, _ -> Each, ___} := MapTuples[procHighlightRule, VectorReplace[lhs, {(i_Integer -> Each) :> Thread[i -> Range[Part[$dims, i]]], other_ :> List[other]}]];
   lhs:{___, Each, ___} := MapTuples[procHighlightRule, MapIndex1[If[#1 === Each, Range @ Part[$dims, #2], List @ #1]&, lhs]];
   lhs:$lhsSpecP := % @ Rule[lhs, Automatic];
-  Rule[lhs_, col_ /; ColorQ[col] || col === Automatic] := procHighlightLHS[Developer`ToList @ lhs] -> ReplaceAutomatic[col, indexedColor[$count++]];
+  Rule[lhs_, col_ /; ColorQ[col] || col === Automatic] := procHighlightLHS[ToList @ lhs] -> ReplaceAutomatic[col, indexedColor[$count++]];
 ];
 
 procHighlightLHS = Case[

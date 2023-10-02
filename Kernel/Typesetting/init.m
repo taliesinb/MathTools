@@ -1048,12 +1048,17 @@ FormToPlainString = Case[
   Customized[obj_, ___] := % @ obj;
   g_Graph := "graph";
   form_ := Scope[
-    boxes = EvaluateTemplateBoxFull @ ToBoxes @ form;
+    boxes = EvaluateTemplateBoxFull @ ToBoxes @ ReplaceRepeated[form, $plainStrNormalizationRules];
     str = boxToString @ boxes;
     If[!StringQ[str], ReturnFailed["noformstr", MsgExpr @ form, InputForm @ boxes]];
     StringReplace[ToSpelledGreek @ ToNonDecoratedRoman @ str, $plainStringReplacements]
   ];
 ]
+
+$plainStrNormalizationRules = {
+  ColoredFunctorSymbol[sym_, ___] :> sym,
+  ColorGradientForm[sym_, ___] :> sym
+};
 
 boxToString = Case[
   head_Symbol[arg_] /; StyleBoxFunctionQ[head] := % @ arg;

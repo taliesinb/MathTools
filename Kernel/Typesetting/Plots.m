@@ -2,13 +2,13 @@ PublicFunction[FadedMeshImage]
 
 FadedMeshImage[array_, blockSize_, fadeFactor_:0.8, frame_:None] := Scope[
   dims = Dimensions @ array;
-  If[!ArrayQ[array, _, Developer`MachineRealQ] || !MatchQ[dims, {_, _, 3} | {_, _}],
+  If[!ArrayQ[array, _, MachineRealQ] || !MatchQ[dims, {_, _, 3} | {_, _}],
     ReturnFailed["baddata"]];
   {h, w} = Take[dims, 2];
   {b1, b2} = blockSize + {If[True, -1, 0], 1}; d = 0;
   {h2, w2} = 1 + {h, w} * b2 - 2d;
   pixels = ConstantArray[0., {3, h2, w2}]; fade = ConstantArray[1., {3, h2, w2}];
-  ScanIndexed[paintBlockAdditive, Developer`ToPackedArray @ array, {2}];
+  ScanIndexed[paintBlockAdditive, ToPackedArray @ array, {2}];
   Do[multRow[0.5, r * b2 + 1], {r, 1, h - 1}];
   Do[multCol[0.5, c * b2 + 1], {c, 1, w - 1}];
   Do[Part[fade, All, r * b2 + 1, All] = fadeFactor, {r, 0, h}];
@@ -51,7 +51,7 @@ MeshImage[array_, blockSize_, OptionsPattern[]] := Scope[
   frameStyle //= getFrameMeshColor;
   meshStyle //= getFrameMeshColor;
   dims = Dimensions @ array;
-  If[!ArrayQ[array, _, Developer`MachineRealQ] || !MatchQ[dims, {_, _, 3} | {_, _}],
+  If[!ArrayQ[array, _, MachineRealQ] || !MatchQ[dims, {_, _, 3} | {_, _}],
     ReturnFailed["baddata"]];
   {h, w} = Take[dims, 2];
   If[!mesh,
@@ -66,7 +66,7 @@ MeshImage[array_, blockSize_, OptionsPattern[]] := Scope[
   pixels = ToPackedReal @ ConstantArray[N @ meshStyle, If[hasColor, {h2, w2, 3}, {h2, w2}]];
   If[frame, If[hasColor, paintFrame[All], paintFrame[]]];
   pixels //= ToPackedReal;
-  ScanIndexed[If[hasColor && b1 == 2, paintBlockSafe, paintBlock], Developer`ToPackedArray @ array, {2}];
+  ScanIndexed[If[hasColor && b1 == 2, paintBlockSafe, paintBlock], ToPackedArray @ array, {2}];
   Image[pixels, ImageSize -> {w2, h2}]
 ];
 
@@ -176,11 +176,11 @@ BinaryArrayPlot[array_, digits:(_Integer|Automatic), OptionsPattern[]] := Scope[
   UnpackOptions[pixelConstrained];
   {min, max} = MinMax @ array;
   Which[
-    VectorQ[array, Internal`NonNegativeIntegerQ],
+    VectorQ[array, NonNegativeIntegerQ],
       SetAutomatic[digits, If[max == 0, 0, Floor[1 + Log2 @ max]]];
       array = BinaryDigits[array, digits];
     ,
-    MatrixQ[array, Internal`NonNegativeIntegerQ],
+    MatrixQ[array, NonNegativeIntegerQ],
       If[IntegerQ[digits] && InnerDimension[array] > digits,
         array = Take[array, All, digits]];
       If[max > 1, ReturnFailed[]];

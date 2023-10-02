@@ -43,7 +43,7 @@ toMarkdownStringInner[spec_, returnVec_:False] := Scope[
   result //= StringReplace[$codeJoining] /* StringReplace[$markdownTableReplacement] /* $markdownPostprocessor /* StringTrim;
   If[$includeFrontMatter && AssociationQ[frontMatter = NotebookFrontMatter @ spec],
     frontMatter = frontMatter /. None -> Null;
-    frontMatter //= Developer`WriteRawJSONString /* StringReplace["\\/" -> "/"]; (* weird bug in ToJSON *)
+    frontMatter //= WriteRawJSONString /* StringReplace["\\/" -> "/"]; (* weird bug in ToJSON *)
     result = StringJoin[frontMatter, "\n\n", result];
   ];
   If[!StringQ[result], ReturnFailed[]];

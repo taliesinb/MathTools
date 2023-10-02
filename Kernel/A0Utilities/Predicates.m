@@ -43,7 +43,7 @@ RealVectorQ[list$] gives True if list$ is a vector of real-valued numbers.
 * Integers, rationals, etc. are considered real-valued numbers.
 "
 
-RealVectorQ[list_] := VectorQ[list, Internal`RealValuedNumberQ];
+RealVectorQ[list_] := VectorQ[list, RealValuedNumberQ];
 
 (**************************************************************************************************)
 
@@ -97,7 +97,7 @@ RealVectorQ[list$] gives True if list$ is a matrix of real-valued numbers.
 * Integers, rationals, etc. are considered real-valued numbers.
 "
 
-RealMatrixQ[list_] := MatrixQ[list, Internal`RealValuedNumberQ];
+RealMatrixQ[list_] := MatrixQ[list, RealValuedNumberQ];
 
 (**************************************************************************************************)
 
@@ -156,7 +156,7 @@ ContainsComplexQ[expr$] gives True if expr$ contains at least one Complex expres
 * See %ComplexVectorQ.
 "
 
-ContainsComplexQ[expr_] := Internal`HasComplex[expr];
+ContainsComplexQ[expr_] := HasComplex[expr];
 
 (**************************************************************************************************)
 

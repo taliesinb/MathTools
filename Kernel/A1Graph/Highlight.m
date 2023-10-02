@@ -131,13 +131,13 @@ requirePadding[p_] := $requiredPadding = Max[$requiredPadding, p];
 
 $translation = None;
 sowHighlight[g_] /; $translation =!= None :=
-  Internal`StuffBag[$highlightsBag, {$zorder, Internal`BagLength[$highlightsBag], Translate[g, $translation]}];
+  StuffBag[$highlightsBag, {$zorder, BagLength[$highlightsBag], Translate[g, $translation]}];
 
-sowHighlight[g_] := Internal`StuffBag[$highlightsBag, {$zorder, Internal`BagLength[$highlightsBag], g}];
+sowHighlight[g_] := StuffBag[$highlightsBag, {$zorder, BagLength[$highlightsBag], g}];
 
-sowLegend[name_, color_] := Internal`StuffBag[$legendsBag, name -> color];
+sowLegend[name_, color_] := StuffBag[$legendsBag, name -> color];
 
-debugGraphic[g_] := (Internal`StuffBag[$highlightsBag, {100, 100, {Black, g}}]; g);
+debugGraphic[g_] := (StuffBag[$highlightsBag, {100, 100, {Black, g}}]; g);
 
 echoGraphic[g_] := (Echo[Graphics[g, ImageSize -> {200, 200}]]; g);
 
@@ -616,7 +616,7 @@ joinSegments[segments_, adjustments_, shouldJoin_] := Scope[
   numSegments = Length @ segments;
   $offsetVector = 0; isLast = False;
   $segments = segments;
-  lineBag = Internal`Bag[];
+  lineBag = Bag[];
   VectorReplace[adjustments, {
     Rule[{z_, _}, {"Shrink", n_}] :> (Part[$segments, z] //= shrinkSegment[n * bendRange]),
     Rule[{z_, _}, {"Short", n_}] :> (Part[$segments, {z, z + 1}] //= shortSegment[n * bendRange])
@@ -628,13 +628,13 @@ joinSegments[segments_, adjustments_, shouldJoin_] := Scope[
     segment = PlusVector[$offsetVector] @ Part[$segments, i];
     applyMod @ Lookup[adjustments, i, None];
     If[shouldJoin,
-      Internal`StuffBag[lineBag, If[i === 1, Identity, Rest] @ segment, 1],
-      Internal`StuffBag[lineBag, segment]
+      StuffBag[lineBag, If[i === 1, Identity, Rest] @ segment, 1],
+      StuffBag[lineBag, segment]
     ];
   ,
     {i, 1, numSegments}
   ];
-  Internal`BagPart[lineBag, All]
+  BagPart[lineBag, All]
 ];
 
 applyMod = Case[

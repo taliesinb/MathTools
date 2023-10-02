@@ -483,7 +483,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       viewOptions, graphLegend,
       additionalImagePadding, aspectRatioClipping, extendImagePadding,
       prologFunction, epilogFunction,
-      useAbsoluteSizes,
+      useAbsoluteSizes, graphicsScale,
 
       vertexLabelPosition,    edgeLabelPosition,
       vertexLabelSpacing,     edgeLabelSpacing,
@@ -520,6 +520,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       If[$VertexParts === All && Length[$VertexList] > 1000, Large,
         graphPlotSizeScalingFunction[If[$GraphIs3D, 30, 15] * ($GraphPlotSizeX / $GraphMaxSafeVertexSize)]]];
 
+    If[NumericQ[graphicsScale],
+      imageSize = scaleToImageSize @ graphicsScale;
+    ];
     If[RuleQ[imageSize],
       {imageWidth, imageHeight} = Match[imageSize,
         Rule["LongestEdge", sz:$numOrNumPairP]         :> computeEdgeLengthBasedImageSize[1.0, sz, False],
@@ -1087,15 +1090,16 @@ computeEdgeLengthBasedImageSize[q_, edgeSize_, ignoreLoops_] := Scope[
   quantile = EdgeLengthScale[If[ignoreLoops, deleteLoops, Identity] @ $EdgeCoordinateLists, q];
   scaling = edgeSize / quantile;
   If[$GraphIs3D, scaling *= 1.5];
-  Max[#, 10]& /@ N[Take[$GraphPlotSize, 2] * scaling]
+  scaleToImageSize[scaling]
 ];
 
 computeVertexPairBasedImageSize[pairSize_] := Scope[
-  dists = DistanceMatrix[$VertexCoordinates];
-  minDist = Min @ Table[Min @ Drop[Part[dists, n], n], {n, 1, Length[$VertexCoordinates]-1}];
+  minDist = MinimumDistance[N @ $VertexCoordinates];
   scaling = pairSize / minDist;
-  Max[#, 10]& /@ N[Take[$GraphPlotSize, 2] * scaling]
+  scaleToImageSize[scaling]
 ];
+
+scaleToImageSize[scaling_] := Max[#, 10]& /@ N[Take[$GraphPlotSize, 2] * scaling];
 
 deleteLoops[coords_] := Discard[coords, First[#] == Last[#]&];
 

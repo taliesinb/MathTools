@@ -193,7 +193,7 @@ Attributes[iLabeledEchoSet] = {HoldAllComplete};
 
 iLabeledEchoSet[label_, esdLhsVar_, esdRhs_] := Module[
   {esdLhsStr, esdLhsBoxes, esdResult = $UNSET, esdRhsStr, esdRhsBoxes, arrowStr},
-  Internal`WithLocalSettings[
+  WithLocalSettings[
     esdLhsStr = lhsEchoStr @ esdLhsVar;
     arrowStr = If[MatchQ[Unevaluated @ esdLhsVar, _$multiES], " = ", "\[Function]"];
     If[$pendingEchoPrint =!= None,
@@ -879,7 +879,7 @@ PatchDatasetCodebase[] := (
     bracket[head_, args___] := RowBox[{head, GridBox[{{ItemBox["", Frame -> {{True, None}, {True, True}}], args, ItemBox["", Frame -> {{False, True}, {True, True}}]}},
       ColumnSpacings -> {0, 0, 0}, GridFrameMargins->{{0.1,.1},{.1,0.1}}]}];
     tbox[TypeSystem`Tuple[t_List]] := bracket["Tuple", dividedColumnBox[Map[typeBox, t], {Left}]];
-    dividedColumnBox[list_, align_] := GridBox[Developer`ToList /@ list, ColumnSpacings -> {1, 1, 0}, ColumnAlignments -> align, FrameStyle -> $LightGray, GridBoxDividers->{"Columns"->False,"Rows"->{False,{True},False}}];
+    dividedColumnBox[list_, align_] := GridBox[ToList /@ list, ColumnSpacings -> {1, 1, 0}, ColumnAlignments -> align, FrameStyle -> $LightGray, GridBoxDividers->{"Columns"->False,"Rows"->{False,{True},False}}];
     tbox[TypeSystem`Vector[t_, n_]] := lengthBox[bracket["List", typeBox @ t], n];
     tbox[TypeSystem`Struct[k_List, v_List]] := bracket["Record", structEntries @ MapThread[fieldBox, Unevaluated @ {k, v}]];
     structEntries[list_List] := dividedColumnBox[Riffle[#, deemph @ "\[Rule]"]& /@ list, {Right, Center, Left}];

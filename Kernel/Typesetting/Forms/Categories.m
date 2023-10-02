@@ -191,7 +191,7 @@ DefineUnaryForm[CompactContravariantHomFunctorForm, SuperscriptBox[FunctionBox["
 PublicForm[FunctorSymbol, LeftFunctorSymbol, RightFunctorSymbol]
 PublicVariable[$UseLeftRightArrowFunctors]
 
-SetInitialValue[$UseLeftRightArrowFunctors, True];
+SetInitialValue[$UseLeftRightArrowFunctors, False];
 
 DefineTaggedForm[FunctorSymbol]
 
@@ -225,4 +225,131 @@ DefineStandardTraditionalForm[{
 PublicForm[ImplicitAppliedForm]
 
 DefineBinaryForm[ImplicitAppliedForm, RBox[$1, $2]]
+
+(**************************************************************************************************)
+
+PublicForm[MonoidalTreeForm]
+
+DefineStandardTraditionalForm[{MonoidalTreeForm[e_, opts___Rule] :> monoidalTreeFormBoxes[e, opts]}];
+
+monoidalTreeFormBoxes[cd_CommutativeDiagram, ___] :=
+  ToBoxes @ Append[cd, TextModifiers -> <|
+    "Objects"   -> MonoidalTreeForm,
+    "Morphisms" -> Function[morphisms, MonoidalTreeForm[morphisms, GraphicsScale -> 10, VertexSize -> 4]]
+  |>]
+
+monoidalTreeFormBoxes[e_, opts___Rule] :=
+  ToBoxes @ MonoidalTree[e, opts];
+
+(**************************************************************************************************)
+
+PublicFunction[MonoidalTree]
+
+MonoidalTree[e_, opts___Rule] := Scope[
+  $epilog = {};
+  treeList = toMonoidalTreeList[e, {}];
+  RainbowTree[
+    treeList,
+    AdditionalVertexLayoutOptions -> {
+      BendRadius -> 0.3,
+      FanoutStyle -> Top,
+      LayerDepths -> 1,
+      FilterOptions[TreeVertexLayout, opts]
+    },
+    Epilog -> $epilog,
+    opts,
+    GraphicsScale -> 15
+  ]
+];
+
+(**************************************************************************************************)
+
+toMonoidalTreeList = Case[
+
+  Seq[(MonoidalProductForm|TightMonoidalProductForm)[args__], pos_] :=
+    MapIndexStack[%, pos, {args}];
+
+  Seq[color:($ColorPattern | _Integer), _] := color;
+
+  Seq[(OneArrow|IdentityArrow)[e_], pos_] := %[e, pos];
+
+  Seq[(CategoryObjectSymbol|CategoryArrowSymbol|NaturalTransformationSymbol)[sym_String], _] :=
+    symbolToRainbowInteger @ sym;
+
+  Seq[AssociatorForm[a_, b_, c_], pos_] := (
+    addAssociatorDecoration[pos, False];
+    MapIndexStack[%, pos, {a, b, c}]
+  );
+
+ Seq[InverseForm[AssociatorForm[a_, b_, c_]], pos_] := (
+    addAssociatorDecoration[pos, True];
+    MapIndexStack[%, pos, {a, b, c}]
+  );
+
+ Seq[BraidingForm[a_, b_], pos_] := (
+    addBraidingDecoration[pos];
+    MapIndexStack[%, pos, {a, b}]
+  );
+
+ Seq[LeftUnitorForm[a_], pos_] := (
+    addUnitorDecoration[pos, 1];
+    MapIndexStack[%, pos, {-1, a}]
+  );
+
+ Seq[RightUnitorForm[a_], pos_] := (
+    addUnitorDecoration[pos, 2];
+    MapIndexStack[%, pos, {a, -1}]
+  );
+
+  Seq[other_, pos_] := (Message[MonoidalTree::badleaf, MsgExpr @ other, pos]; Null)
+];
+
+symbolToRainbowInteger[sym_String] := romanToInteger @ ToLowerCase @ ToSpelledGreek @ ToNonDecoratedRoman @ sym;
+
+MonoidalTree::badleaf = "Unrecognized leaf expression `` at position ``.";
+
+(**************************************************************************************************)
+
+PublicForm[RainbowCategoryForm]
+
+DefineStandardTraditionalForm[{
+  RainbowCategoryForm[form_] :> rainbowCategoryFormBoxes[form]
+}];
+
+rainbowCategoryFormBoxes[form_] := ToBoxes[form /. {
+  CategoryObjectSymbol[s_] :> symbolToRainbowSymbol[s],
+  CategoryArrowSymbol[s_] :> symbolToRainbowSymbol[s]
+}];
+
+symbolToRainbowSymbol["I"|"1"] := "\[EmptyCircle]";
+symbolToRainbowSymbol[s_] := Style["\[FilledCircle]", ToRainbowColor @ symbolToRainbowInteger @ s]
+
+(**************************************************************************************************)
+
+romanToInteger[s_] := Lookup[$romanToInteger, s];
+
+$romanToInteger = <|
+  "i" -> -1, "1" -> -1,
+  "1" -> 1, "2" -> 2, "3" -> 3, "4" -> 4, "5" -> 5,
+  "a" -> 1, "b" -> 2, "c" -> 3, "d" -> 4, "e" -> 5,
+  "f" -> 1, "g" -> 2, "h" -> 3,
+  "m" -> 1, "n" -> 2, "p" -> 3,
+  "x" -> 1, "y" -> 2, "z" -> 3,
+  "mu" -> 6, "eps" -> 7, "alpha" -> 8, "rho" -> 1, "lambda" -> 2, "eta" -> 3
+|>;
+
+addUnitorDecoration[pos_, i_] := AppendTo[$epilog,
+  Line[
+    GraphicsValue[{"VertexCoordinates", {Append[pos, i]}}, First /* Function[{{-.2, .4} + #, {.2, .4} + #}]]
+  ]
+];
+
+addAssociatorDecoration[pos_, isRev_] := AppendTo[$epilog, {
+  Arrowhead[GraphicsValue[{"VertexCoordinates", {Append[pos, 1]}}, First /* PlusOperator[{0, .5}]], {0, 1}/4, ArrowheadColor -> $Black, ArrowheadShape -> "StraightArrow"],
+  Arrowhead[GraphicsValue[{"VertexCoordinates", {Append[pos, 3]}}, First /* PlusOperator[{0, .5}]], -{0, 1}/4, ArrowheadColor -> $Black, ArrowheadShape -> "StraightArrow"]
+}];
+
+addBraidingDecoration[vertex_] := AppendTo[$epilog,
+  Text["\[LeftRightArrow]", GraphicsValue[{"VertexCoordinates", {vertex}}, First], {-0.1, 1}, BaseStyle -> {FontSize -> 9}]
+];
 

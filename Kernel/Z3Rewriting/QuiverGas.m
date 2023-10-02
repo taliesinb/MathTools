@@ -372,7 +372,9 @@ compileScatterGather[fn_, type_, gatherMatrix_ ? PackedArrayQ, scatterVector_ ? 
   {flow = \[FormalCapitalF], gatheredFlow = \[FormalCapitalG], newFlow = \[FormalCapitalH],
    scatterVectorSymbol = \[FormalCapitalV]},
   {gatheredSymbols = Take[$formals, Length @ gatherMatrix]},
-  {gatherSet = MapThread[{var, gather} |-> Hold[Set[var, Part[flow, gather]]], {gatheredSymbols, Developer`FromPackedArray[gatherMatrix, 1]}]},
+  {gatherSet = MapThread[
+    {var, gather} |-> Hold[Set[var, Part[flow, gather]]],
+    {gatheredSymbols, FromPackedArray[gatherMatrix, 1]}]},
   {body = HoldComplete[Compile[
     {{flow, _type, 1}}, HModule[
       Eval @ Join[{gatheredFlow, newFlow}, gatheredSymbols],

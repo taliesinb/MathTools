@@ -1,33 +1,32 @@
 PublicObject[TreeVertexLayout]
-PublicOption[Orientation, RootVertex, RootOrientation, Balanced, BendStyle, BendRadius, StretchFactor, PreserveBranchOrder, ManualOffsetInsertions, LayerDepthInterpolation]
+PublicOption[Orientation, RootVertex, RootOrientation, Balanced, FanoutStyle, BendRadius, StretchFactor, PreserveBranchOrder]
 
 Options[TreeVertexLayout] = {
   Orientation             -> Top,
   RootVertex              -> Automatic,
   Balanced                -> False,
   RootOrientation         -> "Source",
-  BendStyle               -> Automatic,
+  FanoutStyle             -> Automatic,
   PreserveBranchOrder     -> False,
-  BendRadius              -> 0.25,
+  BendRadius              -> Automatic,
   LayerDepthInterpolation -> None,
-  StretchFactor           -> 1,
-  ManualOffsetInsertions  -> {}
+  StretchFactor           -> 1
 };
 
 SetUsage @ "
-TreeVertexLayout[$$] is a layout engine for ExtendedGraph that supports the following options:
+TreeVertexLayout[$$] is a layout engine for ExtendedGraph based on the kernel 'LayeredEmbedding' that supports the following options:
 | %Orientation | one of Top or Left |
 | %RootVertex | which vertex is chosen as the root |
-| %Balanced | whether to use postprocess layout with electrical graviational layout |
+| %Balanced | whether to use postprocess layout with electrical gravitational layout |
 | %RootOrientation | 'Sink' if root is a sink, 'Source' if it is a source |
-| %BendStyle | where to put the fan-out between a parent and its children |
+| %FanoutStyle | where to put the fan-out between a parent and its children |
 | %PreserveBranchOrder | whether to preserve order of edges in branches |
 | %BendRadius | bend radius of parent-to-child edges |
 | %StretchFactor | amount to deform major axis of layout |
-| %ManualOffsetInsertions | list of rules specifying offsets to introduce at particular vertex indices |
 * %RootVertex can be one of vertex$, None, Automatic, %IndexedVertex[n$], GraphOrigin 'Source'.
 * %Balanced can be one of True, False, steps$, {steps$, delta$}.
-* %BendStyle can be one of Top, Center, Bottom, or 'MidCenter'.
+* %FanoutStyle can be one of Top, Center, Bottom, or 'Circuit'.
+* use %OrderedTreeVertexLayout for a more predictable layout that doesn't do smart packing of subtrees.
 "
 
 TreeVertexLayout::dim3 = "TreeVertexLayout[] does not work with LayoutDimension -> 3, using SpringElectricalLayout[] instead.";
@@ -40,7 +39,7 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
     Return @ VertexEdgeCoordinateData[data, {"SpringElectricalEmbedding"}]
   ];
 
-  UnpackOptions[orientation, rootVertex, balanced, rootOrientation, bendStyle, bendRadius, preserveBranchOrder, stretchFactor, manualOffsetInsertions, layerDepthInterpolation];
+  UnpackOptions[orientation, rootVertex, balanced, rootOrientation, fanoutStyle, bendRadius, preserveBranchOrder, stretchFactor];
 
   graphOrigin = LookupExtendedOption[graph, GraphOrigin];
   rootIndex = Switch[rootVertex,
@@ -68,15 +67,6 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
   }];
 
   obtainNewEdges = False;
-  If[manualOffsetInsertions =!= {},
-    off = {0, 0};
-    vertexCoordinates //= MapIndex1[{pos, ind} |-> (
-      off += Lookup[manualOffsetInsertions, ind, {0, 0}];
-      pos + off
-    )];
-    obtainNewEdges = True;
-  ];
-
   If[balanceSteps > 0,
     {coordsX, coordsY} = rever @ Transpose @ vertexCoordinates; ocoordsX = coordsX; widthTarget = Max[coordsX] - Min[coordsX];
 
@@ -86,18 +76,8 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
     obtainNewEdges = True;
   ];
 
-  If[ListQ[layerDepthInterpolation],
-    {coordsX, coordsY} = rever @ Transpose @ vertexCoordinates;
-    coordsY *= -1;
-    coordsY //= RescaleTo[{0, 1}];
-    interp = Interpolation[Transpose[{Lerp[0, 1, Into @ Length @ layerDepthInterpolation], -layerDepthInterpolation}], InterpolationOrder -> 1];
-    coordsY = Map[interp, coordsY];
-    vertexCoordinates = Transpose @ rever @ {coordsX, coordsY};
-    obtainNewEdges = True;
-  ];
-
   If[obtainNewEdges,
-    edgeCoordinateLists = ExtractIndices[vertexCoordinates, If[rootOrientation === "Sink", ReverseEdges, Identity] @ EdgePairs[graph]];
+    edgeCoordinateLists = ExtractIndices[vertexCoordinates, If[rootOrientation === "Sink", ReverseEdges, Identity] @ EdgePairs[indexGraph]];
   ];
 
   If[stretchFactor =!= 1,
@@ -106,62 +86,86 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
     {vertexCoordinates, edgeCoordinateLists} = {vertexCoordinates, edgeCoordinateLists} /. {x_Real, y_Real} :> {x * stretchX, y * stretchY}
   ];
 
-  Switch[bendStyle,
-    "Top" | Top,
-      edgeCoordinateLists //= Map[bendTop],
-    "Center" | Center,
-      edgeCoordinateLists //= Map[bendCenter],
-    "HalfCenter" | "MidCenter",
-      edgeCoordinateLists //= Map[bendCenterHalf],
-    "Bottom",
-      edgeCoordinateLists //= Map[bendBottom],
-    _,
-      Message[TreeVertexLayout::badopt, BendStyle -> bendStyle];
-  ];
+  edgeCoordinateLists = applyTreeEdgeCoordinateFanoutStyle[edgeCoordinateLists, bendRadius, fanoutStyle];
+
   edgeCoordinateLists = fixEdgeVertexIntersections[vertexCoordinates, edgeCoordinateLists];
+
   {vertexCoordinates, edgeCoordinateLists}
 ];
+
+(**************************************************************************************************)
+
+PrivateFunction[applyTreeEdgeCoordinateFanoutStyle]
+
+applyTreeEdgeCoordinateFanoutStyle[edgeCoordinateLists_, bendRadius_, fanoutStyle_] := Scope[
+  $r = bendRadius;
+  SetAutomatic[$r, 0.333 * MinimumDistance[Join[
+    Part[edgeCoordinateLists, All, 1],
+    Part[edgeCoordinateLists, All, -1]]]
+  ];
+  Switch[fanoutStyle,
+    "Top" | Top,
+      Map[bendTop, edgeCoordinateLists],
+    "Circuit",
+      Map[bendCenter, edgeCoordinateLists],
+    "Center" | Center,
+      Map[bendCenterFraction[#, 0.5]&, edgeCoordinateLists],
+    Center -> _,
+      Map[bendCenterFraction[#, Last @ fanoutStyle]&, edgeCoordinateLists],
+    "Bottom" | Bottom,
+      Map[bendBottom, edgeCoordinateLists],
+    Automatic | None,
+      edgeCoordinateLists,
+    _,
+      Message[TreeVertexLayout::badopt, fanoutStyle -> fanoutStyle];
+      edgeCoordinateLists
+  ]
+]
 
 bendCenter[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
   If[Min[Abs[ax - bx], Abs[ay - by]] < 0.001, Return @ {a, b}];
   aby = (ay + by) / 2;
   abx = (ax + bx) / 2;
   c = {ax, aby}; d = {bx, aby};
-  ca = ptAlong[c, a, bendRadius];
-  cd = ptAlong[c, d, bendRadius]; Part[cd, 1] //= ClipOperator[Sort @ {ax, abx}];
-  dc = ptAlong[d, c, bendRadius]; Part[dc, 1] //= ClipOperator[Sort @ {bx, abx}];
-  db = ptAlong[d, b, bendRadius];
+  ca = ptAlong[c, a, $r];
+  cd = ptAlong[c, d, $r]; Part[cd, 1] //= ClipOperator[Sort @ {ax, abx}];
+  dc = ptAlong[d, c, $r]; Part[dc, 1] //= ClipOperator[Sort @ {bx, abx}];
+  db = ptAlong[d, b, $r];
   Join[{a}, DiscretizeCurve[{ca, c, cd}], DiscretizeCurve[{dc, d, db}], {b}]
 ];
 
-bendCenterHalf[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
+bendCenterFraction[{a:{ax_, ay_}, b:{bx_, by_}}, f_] := Scope[
   If[Min[Abs[ax - bx], Abs[ay - by]] < 0.001, Return @ {a, b}];
-  aby = (ay + by) / 2;
+  aby = Lerp[ay, by, f];
+  If[isMidX[bx], Return @ {{bx, aby}, {bx, by}}];
   c = {ax, aby}; d = {bx, aby};
-  ca = ptAlong[c, a, bendRadius];
-  cd = ptAlong[c, d, bendRadius];
-  dc = ptAlong[d, c, bendRadius];
-  db = ptAlong[d, b, bendRadius];
+  ca = ptAlong[c, a, $r];
+  cd = ptAlong[c, d, $r];
+  dc = ptAlong[d, c, $r];
+  db = ptAlong[d, b, $r];
   Join[{a, c}, DiscretizeCurve[{dc, d, db}], {b}]
 ];
 
+isMidX[x_] := Norm[FractionalPart[x] - $firstLastDelta] < $firstLastDelta/128;
+
 bendTop[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
   If[Min[Abs[ax - bx], Abs[ay - by]] < 0.001, Return @ {a, b}];
+  If[isMidX[bx], Return @ {{bx, ay}, {bx, by}}];
   c = {bx, ay};
-  ca = ptAlong[c, a, bendRadius];
-  cb = ptAlong[c, b, bendRadius];
+  ca = ptAlong[c, a, $r];
+  cb = ptAlong[c, b, $r];
   Join[{a}, DiscretizeCurve[{ca, c, cb}], {b}]
 ];
 
 bendBottom[{a:{ax_, ay_}, b:{bx_, by_}}] := Scope[
   If[Min[Abs[ax - bx], Abs[ay - by]] < 0.001, Return @ {a, b}];
   c = {ax, by};
-  ca = ptAlong[c, a, bendRadius];
-  cb = ptAlong[c, b, bendRadius];
+  ca = ptAlong[c, a, $r];
+  cb = ptAlong[c, b, $r];
   Join[{a}, DiscretizeCurve[{ca, c, cb}], {b}]
 ];
 
 bendBottom[line_] := line;
 bendTop[line_] := line;
 bendCenter[line_] := line;
-bendCenterHalf[line_] := line;
+bendCenterFraction[line_, _] := line;

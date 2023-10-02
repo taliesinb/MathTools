@@ -132,6 +132,18 @@ MapIndex1[f_][list_] := MapIndex1[f, list];
 
 (**************************************************************************************************)
 
+PublicFunction[MapIndexStack]
+
+SetUsage @ "
+MapIndexStack[f$, stack$, list$] maps f$ over list$, passing the index appended to stack$ as a second argument.
+MapIndexStack[f$, stack$] is the operator form of MapIndexStack.
+* This is useful to recurse over subexpressions while recording where you are.
+"
+
+MapIndexStack[f_, stack_, list_] := MapIndex1[f[#1, Append[stack, #2]]&, list];
+
+(**************************************************************************************************)
+
 PublicFunction[PartValueMap]
 
 PartValueMap[f_, list_List] := MapIndexed[Function[{argX, partX}, f[First @ partX, argX]], list];

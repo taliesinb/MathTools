@@ -71,7 +71,7 @@ Options[ExportToJupyter] = {
   MaxItems -> Infinity
 };
 
-$JupyterTemplate := $JupyterTemplate = Developer`ReadRawJSONFile[LocalPath["Kernel", "Export", "Template.ipynb"]];
+$JupyterTemplate := $JupyterTemplate = ReadRawJSONFile[LocalPath["Kernel", "Export", "Template.ipynb"]];
 
 $isJupyterTarget = False;
 
@@ -91,7 +91,7 @@ ExportToJupyter[nb:_NotebookObject:Automatic, target_String, OptionsPattern[]] :
   paras = Take[paras, UpTo[maxItems]];
   cellsData = Map[ipyPara, paras];
   ipyNb = ReplacePart[$JupyterTemplate, "cells" -> cellsData];
-  outStr = Developer`WriteRawJSONString[ipyNb, Compact -> 4];
+  outStr = WriteRawJSONString[ipyNb, Compact -> 4];
   outStr = StringReplace[outStr, "\\/" -> "/"];
   target = NormalizePath @ target;
   dir = FileNameDrop[target];
@@ -173,7 +173,7 @@ ImportJupyterNotebook::invdata = "Invalid data: got ``, expected ``.";
 ImportJupyterNotebook[path_String] := Scope[
   path //= AbsoluteFileName;
   If[!FileExistsQ[path], ReturnFailed["nefile", MsgPath @ path]];
-  json = Developer`ReadRawJSONFile @ path;
+  json = ReadRawJSONFile @ path;
   If[!Association[json], ReturnFailed["invdata", Head @ json, Association]];
   cellData = json["cells"];
   If[!ListQ[cellData], ReturnFailed["invdata", Head @ cellData, List]];

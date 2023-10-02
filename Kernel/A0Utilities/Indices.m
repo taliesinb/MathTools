@@ -77,10 +77,10 @@ ExtractIndices[array$, indices$] gives a list of the parts of array$ given by in
 * indices$ can be an array of any depth, whose values are positive integer parts.
 "
 
-ExtractIndices[array_, indices_List /; VectorQ[indices, Internal`NonNegativeMachineIntegerQ]] :=
+ExtractIndices[array_, indices_List /; VectorQ[indices, NonNegativeMachineIntegerQ]] :=
   Part[array, indices];
 
-ExtractIndices[array_, indices_List /; MatrixQ[indices, Internal`NonNegativeMachineIntegerQ]] :=
+ExtractIndices[array_, indices_List /; MatrixQ[indices, NonNegativeMachineIntegerQ]] :=
   Part[array, #]& /@ indices;
 
 ExtractIndices[array_, indices_List] := Map[Part[array, #]&, indices, {-1}]

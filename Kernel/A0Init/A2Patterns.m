@@ -69,6 +69,20 @@ $FlipSideRules = {
   TopRight    -> BottomLeft
 };
 
+PrivateVariable[$SideToRadians]
+
+$SideToRadians = <|
+  Left        ->  4/4 * Pi,
+  TopLeft     ->  3/4 * Pi,
+  Top         ->  2/4 * Pi,
+  TopRight    ->  1/4 * Pi,
+  Right       ->  0,
+  BottomRight -> -1/4 * Pi,
+  Bottom      -> -2/4 * Pi,
+  BottomLeft  -> -3/4 * Pi
+|>;
+
+
 PrivateFunction[ApplyFlip]
 
 SetUsage @ "
@@ -205,7 +219,7 @@ PrivateVariable[$GPrimVecDeltaH]
 
 (* TOD: InfinitePlane, HalfPlane, ConicHull, etc *)
 
-$GPrimVecDeltaH = VectorCurve | Arrowhead | InfiniteLine | HalfLine;
+$GPrimVecDeltaH = VectorCurve | Arrowhead | InfiniteLine | HalfLine | NamedIcon;
 
 PrivateVariable[$GPrimMatH, $GPrimMatsH, $GPrimMatsRadH]
 

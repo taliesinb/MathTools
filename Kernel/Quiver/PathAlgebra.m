@@ -663,7 +663,7 @@ WordVector[word_String] /; $PathAlgebraQ := Scope[
   Scan[card |-> (
       edgeList = Part[tagOutEdgeTable @ card, headVertices];
       headVertices = Part[tagOutTable @ card, headVertices];
-      Internal`StuffBag[pathEdges, edgeList]
+      StuffBag[pathEdges, edgeList]
     ),
     word
   ]];

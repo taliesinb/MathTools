@@ -57,11 +57,14 @@ $coreSymbols = {
      Package`SystemMacro,   Package`SystemVariable,  Package`SystemFunction,  Package`SystemOption,  Package`SystemHead,  Package`SystemSymbol,  Package`SystemForm,  Package`SystemObject, Package`SystemFormBox,
      Package`PublicMacro,   Package`PublicVariable,  Package`PublicFunction,  Package`PublicOption,  Package`PublicHead,  Package`PublicSymbol,  Package`PublicForm,  Package`PublicObject, Package`PublicFormBox, Package`PublicScopedOption,
      Package`PrivateMacro,  Package`PrivateVariable, Package`PrivateFunction, Package`PrivateOption, Package`PrivateHead, Package`PrivateSymbol, Package`PrivateForm, Package`PrivateObject, Package`PrivateFormBox,
+
   (* system symbols: *) True, False, None, Automatic, Inherited, All, Full, Indeterminate, Null, $Failed, Span, UpTo,
+
   (* object heads: *)
     Symbol, Integer, String, Complex, Real, Rational,
     List, Association, Image, SparseArray, Rasterize,
     Graph, Rule, RuleDelayed, TwoWayRule, DirectedEdge, UndirectedEdge,
+
   (* system function: *)
     Map, Scan, MapAt, MapIndexed, MapThread, Apply, Fold, FoldList, FixedPoint, Riffle,
     Composition, Function, Identity, Construct, Slot,
@@ -124,13 +127,28 @@ $coreSymbols = {
     Attributes, SetAttributes, Protect, Unprotect, Clear, ClearAll,
     DownValues, UpValues, SubValues, Set, SetDelayed,
     Flat, OneIdentity, HoldFirst, HoldRest, HoldAll, HoldAllComplete,
+
   (* system scopes: *) With, Block, Module,
-  (* general utilities; *)
+
+  (* common GeneralUtilities` symbols *)
   GeneralUtilities`Scope, GeneralUtilities`ContainsQ, GeneralUtilities`ScanIndexed,
   GeneralUtilities`DeclareArgumentCount, GeneralUtilities`Match, GeneralUtilities`MatchValues,
   GeneralUtilities`ReturnFailed, GeneralUtilities`UnpackOptions,
-  (* internal *)
-  Internal`InheritedBlock
+
+  (* whitelisted Internal` symbols; some of these look useful so putting them here for now *)
+  Internal`InheritedBlock, Internal`StuffBag, Internal`BagPart, Internal`Bag, Internal`BagLength,
+  Internal`NonNegativeIntegerQ, Internal`NonNegativeMachineIntegerQ, Internal`NonPositiveIntegerQ,
+  Internal`PositiveIntegerQ, Internal`PositiveMachineIntegerQ, Internal`RealValuedNumberQ, Internal`RealValuedNumericQ,
+  Internal`NonPositiveMachineIntegerQ, Internal`RepetitionFromMultiplicity, Internal`WithLocalSettings,
+  Internal`Reciprocal, Internal`OutermostToInnermost, Internal`PatternPresentQ, Internal`PatternFreeQ, Internal`SyntacticNegativeQ,
+
+  (* whitelisted Developer` symbols *)
+  Developer`AssociationVectorQ, Developer`Base64StringQ, Developer`DecodeBase64, Developer`DecodeBase64ToByteArray, Developer`EmptyQ,
+  Developer`NotEmptyQ, Developer`HoldAtomQ, Developer`HoldSymbolQ, Developer`ListOrAssociationQ, Developer`MachineComplexQ,
+  Developer`MachineIntegerQ, Developer`MachineRealQ, Developer`PackedArrayQ, Developer`PackedArrayForm, Developer`ReadRawJSONFile,
+  Developer`ReadRawJSONString, Developer`ReadRawJSONStream, Developer`RealQ, Developer`StringOrStringVectorQ,
+  Developer`StringVectorQ, Developer`SymbolQ, Developer`ToList, Developer`ToPackedArray, Developer`FromPackedArray, Developer`WriteRawJSONFile,
+  Developer`WriteRawJSONString, Developer`WriteRawJSONStream, Developer`CellInformation
 };
 
 $coreSymbols = Sort @ DeleteDuplicates @ $coreSymbols;
@@ -343,7 +361,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
 
   $textFiles = FileNames[{"*.txt", "*.tex"}, $directory, Infinity];
 
-  $globalImports = {"System`", "GeneralUtilities`", "Developer`"};
+  $globalImports = {"System`", "GeneralUtilities`"};
 
   $systemSymbols = Internal`Bag[];
   $publicSymbols = Internal`Bag[];
@@ -411,6 +429,8 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
     LVPrint["Clearing dirty contexts: ", dirtyContexts];
     Apply[ClearAll, Map[# <> "*"&, dirtyContexts]];
   ];
+
+  LVPrint["Copying preserved values."];
   ReleaseHold[$preservedValues];
   ReleaseHold[$preservedDownValues];
 
@@ -418,12 +438,15 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
   $publicSymbols = DeleteDuplicates @ Internal`BagPart[$publicSymbols, All];
   $privateSymbols = DeleteDuplicates @ Internal`BagPart[$privateSymbols, All];
 
+  LVPrint["Creating symbols."];
   $systemDispatch = createSymbolsInContextAndDispatchTable[$systemSymbols, "System`", {}];
   $publicDispatch = createSymbolsInContextAndDispatchTable[$publicSymbols, $mainContext, {}];
   $privateDispatch = createSymbolsInContextAndDispatchTable[$privateSymbols, $mainContext <> "PackageScope`", {}];
 
+  LVPrint["Recognizing symbols."];
   $packageExpressions = $packageExpressions /. $systemDispatch /. $publicDispatch /. $privateDispatch;
 
+  LVPrint["Resolving unrecognized symbols."];
   $packageExpressions //= Map[resolveRemainingSymbols];
 
   On[General::shdw];

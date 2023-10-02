@@ -795,6 +795,16 @@ DistanceMatrix[points1_ ? RealMatrixQ, points2_ ? RealMatrixQ] := (
 
 (**************************************************************************************************)
 
+PublicFunction[MinimumDistance]
+
+MinimumDistance[{}] := 0;
+MinimumDistance[coords_] := Scope[
+  dists = DistanceMatrix[N @ coords];
+  Min @ DeleteCases[Flatten @ dists, 0|0.]
+];
+
+(**************************************************************************************************)
+
 PublicFunction[SquaredDistanceMatrix]
 
 SquaredDistanceMatrix[{}] := {};

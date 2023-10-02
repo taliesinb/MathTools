@@ -198,8 +198,8 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
       |>];
   ];
 
-  transitionListsBag = Internal`Bag[];
-  indexTransitionListsBag = Internal`Bag[];
+  transitionListsBag = Bag[];
+  indexTransitionListsBag = Bag[];
 
   stackPushList[thisGenVertices, DropOperator[numPrologVertices] @ Trans[initialIds, initialVertices]];
 
@@ -223,10 +223,10 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
 
   If[ContainsQ[result, "EdgeLabels"],
     If[directedEdges === False, ReturnFailed[MultiwaySystem::undedgelabels]];
-    edgeLabelsBag = Internal`Bag[];
+    edgeLabelsBag = Bag[];
     $extractLabelBlock := (
       labels = Replace[successors, {Labeled[_, l_] :> l, _ -> None}, {1}];
-      Internal`StuffBag[edgeLabelsBag, labels, 1];
+      StuffBag[edgeLabelsBag, labels, 1];
       labels = Replace[labels, Inverted[c_] :> c, {1}];
     );
   ];
@@ -284,7 +284,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     If[isLastGeneration, $excludeFrontierBlock];
 
     (* add the transitions lists to its bag *)
-    Internal`StuffBag[transitionListsBag, {vertex, successors}];
+    StuffBag[transitionListsBag, {vertex, successors}];
     edgeCount += Length[successors];
 
     (* obtain pure labels if necessary *)
@@ -310,7 +310,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
         {successorsIds, labeledSuccessors}
       ]
     ];
-    Internal`StuffBag[indexTransitionListsBag, {vertexId, relabeledSuccessorsIds}];
+    StuffBag[indexTransitionListsBag, {vertexId, relabeledSuccessorsIds}];
 
     (* add all new vertices to the next generation *)
     stackPushList[nextGenVertices,
@@ -332,8 +332,8 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   ];
 
   (* calculate results *)
-  transitionLists := transitionLists = Internal`BagPart[transitionListsBag, All];
-  indexTransitionLists := indexTransitionLists = Internal`BagPart[indexTransitionListsBag, All];
+  transitionLists := transitionLists = BagPart[transitionListsBag, All];
+  indexTransitionLists := indexTransitionLists = BagPart[indexTransitionListsBag, All];
 
   vertices := Normal[vertexArray];
   vertexCount := vertexArray["Length"];
@@ -351,7 +351,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     indexTransitionLists, {1}
   ];
 
-  edgeLabels := edgeLabels = Internal`BagPart[edgeLabelsBag, All];
+  edgeLabels := edgeLabels = BagPart[edgeLabelsBag, All];
 
   graph := ExtendedGraph[vertices, edges, FilterOptions @ opts];
   indexGraph := Graph[Range @ vertexCount, indexEdges, FilterOptions @ opts];

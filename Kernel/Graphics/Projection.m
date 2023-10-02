@@ -13,13 +13,13 @@ Graphics3DProjection[g:Graphics3D[primitives_, ___], opts:OptionsPattern[]] := S
   $gvtAssoc = Last[trans];
   $xyz = ToXYZFunction @ trans;
   $style = {Black, Opacity[1]};
-  $index = Internal`Bag[];
+  $index = Bag[];
 
   $scale := $scale = PlotRangeScale @ g;
 
   $zfactor = 1; (* If[$gvtAssoc["ViewProjection"] === "Orthographic", -1, 1]; *)
   procPrim @ primitives;
-  $index = KeySort @ Merge[Internal`BagPart[$index, All], Identity];
+  $index = KeySort @ Merge[BagPart[$index, All], Identity];
   {$zmin, $zmax} = MinMax @ FirstColumn @ Keys @ $index;
 
   primitives2D = KeyValueMap[If[$zFade =!= None, fromZandStyleFaded, fromZandStyle], $index];
@@ -176,6 +176,6 @@ xyzMulti[coord_] := $xyz /@ coord;
 
 (**************************************************************************************************)
 
-insert[z_, obj_] /; $zFade === None := Internal`StuffBag[$index, {$zfactor * z, DeleteCases[$style, Black | Opacity[1]]} -> obj];
-insert[z_, obj_] := Internal`StuffBag[$index, {$zfactor * z, $style} -> obj];
+insert[z_, obj_] /; $zFade === None := StuffBag[$index, {$zfactor * z, DeleteCases[$style, Black | Opacity[1]]} -> obj];
+insert[z_, obj_] := StuffBag[$index, {$zfactor * z, $style} -> obj];
 

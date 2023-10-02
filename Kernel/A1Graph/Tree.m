@@ -23,10 +23,10 @@ scanExpression[e_] := scanToTree[{}, e];
 
 makeTreeGraph[e_, scanFn_, theme_, rules___] := Scope[
   $type = $degree = $data = $leafData = Association[];
-  $edges = Internal`Bag[]; $verts = Internal`Bag[]; $slotSymbols = {};
+  $edges = Bag[]; $verts = Bag[]; $slotSymbols = {};
   scanFn @ e;
-  verts = Internal`BagPart[$verts, All];
-  edges = Internal`BagPart[$edges, All];
+  verts = BagPart[$verts, All];
+  edges = BagPart[$edges, All];
   ExtendedGraph[
     verts, edges,
     FilterOptions[rules],
@@ -46,7 +46,7 @@ scanToTree[pos_, HoldForm[e_]] := scanToTree[pos, e];
 
 scanToTree[pos_, e:(head_Symbol[___])] /; !MatchQ[head, Form | RGBColor | GrayLevel] := Scope[
   n = Length[Unevaluated @ e];
-  Internal`StuffBag[$verts, pos];
+  StuffBag[$verts, pos];
   $degree[pos] ^= n;
   $data[pos] ^= head;
   $leafData[pos] ^= Null;
@@ -56,14 +56,14 @@ scanToTree[pos_, e:(head_Symbol[___])] /; !MatchQ[head, Form | RGBColor | GrayLe
       subPos = Append[pos, i],
       Evaluate @ Extract[Unevaluated @ e, i, HoldForm]
     ];
-    Internal`StuffBag[$edges, subPos -> pos];
+    StuffBag[$edges, subPos -> pos];
   ,
     {i, n}
   ];
 ];
 
 scanToTree[pos_, Slot[n_Integer | n_String]] := Scope[
-  Internal`StuffBag[$verts, pos];
+  StuffBag[$verts, pos];
   $degree[pos] ^= 0;
   $data[pos] ^= n;
   $type[pos] ^= "Slot";
@@ -71,7 +71,7 @@ scanToTree[pos_, Slot[n_Integer | n_String]] := Scope[
 
 scanToTree[pos_, e_] := Scope[
   If[Head[e] === Form, e //= First];
-  Internal`StuffBag[$verts, pos];
+  StuffBag[$verts, pos];
   $degree[pos] ^= 0;
   $data[pos] ^= e;
   $leafData[pos] ^= e;
@@ -80,16 +80,17 @@ scanToTree[pos_, e_] := Scope[
 
 $slotSymbols = {};
 scanToTree[pos_, e_Symbol /; MemberQ[$slotSymbols, e]] := Scope[
-  Internal`StuffBag[$verts, pos];
+  StuffBag[$verts, pos];
   $degree[pos] ^= 0;
   $data[pos] ^= e;
   $type[pos] ^= "Slot";
 ];
 
 DefineGraphTheme["ExpressionTreeGraph",
-  VertexLayout -> TreeVertexLayout[
-    Orientation -> Top, Balanced -> False, RootVertex -> {}, RootOrientation -> "Sink", BendStyle -> "HalfCenter",
-    PreserveBranchOrder -> True],
+  VertexLayout -> OrderedTreeVertexLayout[
+    RootVertex -> {}, RootOrientation -> "Sink", FanoutStyle -> Center,
+    BendRadius -> 1
+  ],
   ImagePadding -> {Vertical -> 15, Horizontal -> 30},
   EdgeStyle -> $LightGray, (* makes HalfCenter bending look good *)
   ImageSize -> "ShortestEdge" -> 50,
@@ -121,18 +122,29 @@ NestedListGraph[e_, rules:OptionsPattern[]] := Scope[
 ];
 
 DefineGraphTheme["NestedListGraph",
-  VertexLayout -> TreeVertexLayout[
-    Orientation -> Top, Balanced -> False, RootVertex -> {}, RootOrientation -> "Sink", BendStyle -> "Top",
-    StretchFactor -> 0.75, BendRadius -> 1,
-    PreserveBranchOrder -> True
+  VertexLayout -> OrderedTreeVertexLayout[
+    RootVertex -> {}, RootOrientation -> "Sink", FanoutStyle -> Center -> 0.33,
+    BendRadius -> 1
   ],
   EdgeStyle -> $LightGray, (* makes HalfCenter bending look good *)
-  ImageSize -> "ClosestVertices" -> 16,
   VertexSize -> 5,
+  GraphicsScale -> 15,
   BaselinePosition -> Top,
   VertexColorFunction -> "LeafData",
   EdgeOpacity -> None,
   ArrowheadShape -> None
+];
+
+(**************************************************************************************************)
+
+PublicFunction[RainbowTree]
+
+RainbowTree[e_, rules:OptionsPattern[]] := Scope[
+  makeTreeGraph[e, scanExpression, "RainbowTree", rules]
+];
+
+DefineGraphTheme["RainbowTree" -> "NestedListGraph",
+  VertexColorFunction -> "LeafData" -> ToRainbowColor
 ];
 
 (**************************************************************************************************)
@@ -288,7 +300,7 @@ scanHyperedge[path_, value_] := Scope[
   p = Hyperedge[path];
   $content[p] = value;
   res = toHyperedgePart[p, value];
-  If[res =!= p, Internal`StuffBag[$hyperedges, DirectedEdge[p, res, None]]];
+  If[res =!= p, StuffBag[$hyperedges, DirectedEdge[p, res, None]]];
 ];
 
 toHyperedgePart[path_, ref_Hyperedge] :=
@@ -303,21 +315,21 @@ toHyperedgePart[path_, atom_] :=
   addAtomVertex[atom];
 
 addHyperedgeVertex[path_, value_] := (
-  Internal`StuffBag[$vertices, path];
+  StuffBag[$vertices, path];
   $type[path] = SymbolName @ Head @ value;
   $content[path] = value;
   path
 )
 
 addAtomVertex[atom_] := (
-  Internal`StuffBag[$vertices, atom];
+  StuffBag[$vertices, atom];
   $type[atom] = "Atom";
   $content[atom] = atom;
   atom
 );
 
 addPathEdge[path_][subPart_, subValue_] :=
-  Internal`StuffBag[
+  StuffBag[
     $hyperedges,
     DirectedEdge[path, toHyperedgePart[Append[path, subPart], subValue], subPart]
   ];

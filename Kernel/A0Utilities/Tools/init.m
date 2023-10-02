@@ -97,7 +97,7 @@ RunTool[cmd_, args___] := Scope @ Block[{$verbose = ReplaceAutomatic[$tverbose, 
 	argStr2 = argStr <> " &>" <> tmpOut;
 	If[$wdir =!= None,
 		VPrint["Running \"", argStr, "\" in ", MsgPath @ $wdir];
-		If[$dryRun, exitCode = 0, Internal`WithLocalSettings[SetDirectory[$wdir], exitCode = RunUTF8 @ argStr2, ResetDirectory[]]];
+		If[$dryRun, exitCode = 0, WithLocalSettings[SetDirectory[$wdir], exitCode = RunUTF8 @ argStr2, ResetDirectory[]]];
 	,
 		VPrint["Running \"", argStr, "\""];
 		exitCode = If[$dryRun, 0, RunUTF8 @ argStr2];

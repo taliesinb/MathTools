@@ -36,6 +36,12 @@ NormalizePlotRange[graphics_, OptionsPattern[]] := Scope[
 
 PublicFunction[GraphicsPlotRange]
 
+(* TODO: it makes more sense to have a single function that determines a good plot range AND
+extra image padding at the same time. you can't avoid doing toboxes to do this in any case since
+that's what FindAutomaticPadding does. the below code is such a shitshow and the kernel ignores all
+kinds of corner cases like apply geometric transformations that you're building a half-baked full solution
+in any case. *)
+
 SetUsage @ "
 GraphicsPlotRange[graphics$] yields the %PlotRange that will be used when graphics$ is rendered.
 * graphics$ can be a %Graphics[$$], %Graphics3D[$$], their box equivalents, or a list of graphics primitives.
@@ -88,7 +94,9 @@ $ghead = Graphics;
 GraphicsPlotRange::failed = "Cannot find plot range for ``, using unit plot range.";
 
 kernelPlotRange[g_Graphics3D | g_Graphics] := Module[
-  {g2 = Block[{$ghead = Head @ g}, plotRangeExpand @ g], coord},
+  {g2, res, coord, $ghead = Head @ g},
+  g2 = InheritedBlock[{$MakeBoxesStyleData}, plotRangeRecurse @ g];
+  g2 = plotRangeExpand @ g2;
   res = Quiet @ PlotRange @ g2;
   If[!MatrixQ[res],
     g2 //= DeleteCases[(s_Symbol -> _) /; Context[s] =!= "System`"];
@@ -111,17 +119,40 @@ expandMultiArrowInGC[g_] := g /.
   Arrow[segments:{{__Integer}..}, opts___] :> RuleCondition[Map[Arrow[#, opts]&, segments]];
 
 $expanderRules := $expanderRules = Dispatch @ {
-  Invisible[e_] :> e,
-  Text[_, pos_, ___] :> RuleCondition[Point[pos]],
-  StadiumShape[{a_, b_}, r_] :> RuleCondition[{Disk[a, r], Disk[b, r]}],
-  CapsuleShape[{a_, b_}, r_] :> RuleCondition[{Sphere[a, r], Sphere[b, r]}],
-  Cube[p:{_, _, _}:{0,0,0}, l_:1] :> RuleCondition[Sphere[p, l/2]],
-  (JoinedCurve|JoinedCurveBox)[e_List] :> e,
-  c:$customGraphicsP :> RuleCondition[With[{h = $ghead}, Typeset`MakeBoxes[c, StandardForm, h]] //. $graphicsBoxReplacements],
-  a:$AnnotationP :> RuleCondition[plotRangeExpand @ First @ a],
-  (StyleBox|Style)[e_, ___] :> e,
-  Inset[_, pos_, $centerOSpecP, {w_, h_}] :> RuleCondition[Rectangle[pos - {w,h}/2, pos + {w,h}/2]]
+  RawBoxes[b_]                             :> RuleCondition[b /. $graphicsBoxReplacements],
+  Invisible[e_]                            :> e,
+  Text[_, pos_, ___]                       :> RuleCondition[Point[pos]],
+  StadiumShape[{a_, b_}, r_]               :> RuleCondition[{Disk[a, r], Disk[b, r]}],
+  CapsuleShape[{a_, b_}, r_]               :> RuleCondition[{Sphere[a, r], Sphere[b, r]}],
+  Cube[p:{_, _, _}:{0,0,0}, l_:1]          :> RuleCondition[Sphere[p, l/2]],
+  (JoinedCurve|JoinedCurveBox)[e_List]     :> e,
+  a:$AnnotationP                           :> RuleCondition[plotRangeExpand @ First @ a],
+  (StyleBox|Style)[e_, ___]                :> e,
+  Inset[_, pos_, ___]                      :> Point[pos],
+  Translate[g_, t_]                        :> RuleCondition[applyGeomTrans[g, None, t]],
+  Rotate[g_, t_]                           :> RuleCondition[applyGeomTrans[g, RotationMatrix @ t, None]],
+  GeometricTransformation[g_, m_ ? MatrixQ]       :> RuleCondition[applyGeomTrans[g, m, None]],
+  GeometricTransformation[g_, {m_ ? MatrixQ, t_}] :> RuleCondition[applyGeomTrans[g, m, t]],
+  Inset[_, pos_, $centerOSpecP, {w_, h_}]  :> RuleCondition[Rectangle[pos - {w,h}/2, pos + {w,h}/2]]
 };
+
+(* TODO: put this into their own function *)
+applyGeomTrans[g_, None | {{1., 0.}, {0., 1.}}, t_] := GraphicsTransformCoordinates[PlusOperator[Threaded[t]], g];
+applyGeomTrans[g_, m_, t_]   := GraphicsTransformCoordinates[DotRightOperator[m] /* PlusOperator[Threaded[t]], g];
+applyGeomTrans[g_, m_, None] := GraphicsTransformCoordinates[DotRightOperator[m], g];
+
+(* this tracks $MakeBoxesStyleData changes in the primitive tree, so that when we use render $customGraphicsP
+we will pick up the right options for them *)
+plotRangeRecurse = Case[
+  (head:Translate|Rotate|GeometricTransformation|Graphics|Graphics3D)[g_, a___] := head[% @ g, a];
+  l_List                         := InheritedBlock[{$MakeBoxesStyleData}, Map[%, l]];
+  Rule[key_Symbol, val_]         := ($MakeBoxesStyleData[key] = val);
+  other_                         := If[TrueQ @ $customGraphicsHeadQ @ Head @ other,
+    With[{h = $ghead}, Typeset`MakeBoxes[other, StandardForm, h]] //. $graphicsBoxReplacements,
+    other
+  ]
+];
+
 
 plotRangeExpand[g_] := g /.
   gc_GraphicsComplex :> RuleCondition[Normal @ expandMultiArrowInGC @ gc] //. $expanderRules /. t_Translate :> RuleCondition @ BakeGraphicsTransformations[t];

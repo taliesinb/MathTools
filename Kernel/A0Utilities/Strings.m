@@ -31,9 +31,9 @@ ToTitleString[s_String] :=
 
 (**************************************************************************************************)
 
-PublicFunction[StringCaseSplit]
+PublicFunction[CamelCaseSplit]
 
-StringCaseSplit[s_String] := StringSplit[s, RegularExpression["(?<=[a-z])(?=[A-Z])"]];
+CamelCaseSplit[s_String] := StringSplit[s, RegularExpression["(?<=[a-z])(?=[A-Z])"]];
 
 (**************************************************************************************************)
 

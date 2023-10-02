@@ -209,12 +209,12 @@ InfiniteAbelianGroup[n$, 'Redundant'] uses a redundant representation by forming
 "
 
 declareGroup[
-  InfiniteAbelianGroup[n_ ? Internal`PositiveIntegerQ] :> {
+  InfiniteAbelianGroup[n_ ? PositiveIntegerQ] :> {
     "Generators" :> makeInfiniteAbelianGenerators[n],
     "Order" :> Infinity,
     "Format" :> supNo1[$IntZ, n]
   },
-  InfiniteAbelianGroup[n_ ? Internal`PositiveIntegerQ, "Redundant"] :> {
+  InfiniteAbelianGroup[n_ ? PositiveIntegerQ, "Redundant"] :> {
     "Generators" :> makeInfiniteRedundantAbelianGenerators[n],
     "Order" :> Infinity,
     "Format" :> supNo1[Row[{$IntZ, "*"}], n]

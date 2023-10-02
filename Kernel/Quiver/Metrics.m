@@ -157,7 +157,7 @@ fspEval1[MetricShortestPathFunction[{v1_, All}, data_], v2_] :=
 
 findShortestPath[start_, end_, {distanceMatrix_, adjacentVertexTable_, adjacentEdgeTags_, cardinals_}] := Scope[
   vertex = start;
-  pathBag = Internal`Bag[{start}];
+  pathBag = Bag[{start}];
   moveCounts = ConstantAssociation[cardinals, 0];
   While[vertex =!= end,
     adjacentVertices = Part[adjacentVertexTable, vertex];
@@ -166,9 +166,9 @@ findShortestPath[start_, end_, {distanceMatrix_, adjacentVertexTable_, adjacentE
     bestIndex = MinimumBy[distanceTies, moveCounts[Part[adjacentTags, #]]&];
     vertex = Part[adjacentVertices, bestIndex];
     moveCounts[Part[adjacentTags, bestIndex]] += 1;
-    Internal`StuffBag[pathBag, vertex];
+    StuffBag[pathBag, vertex];
   ];
-  Internal`BagPart[pathBag, All]
+  BagPart[pathBag, All]
 ];
 
 (**************************************************************************************************)

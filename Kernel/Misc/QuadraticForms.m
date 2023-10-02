@@ -5,7 +5,7 @@ QuadraticForm::badspec =
 
 QuadraticForm[spec_, OptionsPattern[]] := Scope[
   matrix = Which[
-    Internal`PositiveIntegerQ[spec], IdentityMatrix[spec],
+    PositiveIntegerQ[spec], IdentityMatrix[spec],
     RealVectorQ[spec], DiagonalMatrix[spec],
     RealMatrixQ[spec], spec,
     True, ReturnFailed["badspec"]

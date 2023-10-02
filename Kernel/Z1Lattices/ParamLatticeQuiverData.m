@@ -301,11 +301,11 @@ makeCubeFace[n_][dir_, x_, y_] := Scope[
   ,
     {i, num}, {j, num}
   ];
-  Internal`StuffBag[$points, p, 2];
+  StuffBag[$points, p, 2];
 ];
 
 makeCubeEdge[b_, {r_, g_}] :=
-  Internal`StuffBag[$edges, DirectedEdge[r, g, b]];
+  StuffBag[$edges, DirectedEdge[r, g, b]];
 
 cubeFactory[<|"n" -> n_, "MaxDepth" -> _|>, userOpts_] := Scope[
 

@@ -11,7 +11,7 @@ SetGraphicsScale[g_Graphics, scale_:40, padding_:1, adjustFonts_:True] := Scope[
   {{xmin, xmax}, {ymin, ymax}} = plotRange;
   xwidth = xmax - xmin; ywidth = ymax - ymin;
   dims = {xwidth, ywidth};
-  SetAutomatic[padding, FindAutomaticPadding[g, scale] * scale];
+  SetAutomatic[padding, FindAutomaticPadding[g, scale] * scale + 1];
   padding //= StandardizePadding;
   SetAll[padding, 1];
   totalPadding = Map[Total, padding];
@@ -51,6 +51,45 @@ ScaleGraphics[prims_, opts:OptionsPattern[]] :=
     OptionValue[AdjustFontSize]
   ];
 
+(* (**************************************************************************************************)
+
+PublicFunction[EmbedInsetBoxesWithScale]
+
+SetUsage @ "
+EmbedInsetBoxesWithScale[primitives$, scale$] uses a given graphics scale to eliminate InsetBoxes.
+* the scale is used to understand how each InsetBox's ImageSize corresponds to plotrange coordinates.
+"
+
+(* EmbedInsetBoxesWithScale[primitives_, scale_] := Scope[
+  $scale = scale;
+  ReplaceAll[primitives,
+    InsetBox[GraphicsBox[prims_, ___, ImageSize -> sz_, ___],
+  ]
+];
+ *)
+
+PublicFunction[EmbedInsetBoxWithScale]
+
+EmbedInsetBoxWithScale[i:InsetBox[g_GraphicsBox, ___], scale_] := Scope[
+  $scale = scale;
+  {iw, ih} = boxSizeSpec @ i;
+  {gw, gh} = boxSizeSpec @ g;
+
+]
+
+(* embedInsetBox = Case[
+  i:InsetBox[g_GraphicsBox_, ___], pos_, offset_, Automatic, dir_] :=
+  InsetBox[GraphicsBox[prims_, ___], pos_, offset_, {w, h_}]
+];
+ *)
+boxSizeSpec = Case[
+  GraphicsBox[___, ImageSize -> sz_, ___] := % @ sz;
+  InsetBox[_, _, _, sz_, ___]             := % @ sz;
+  w:$NumberP                              := {w, Automatic};
+  {w:$NumberP, h:$NumberP}                := {w, h};
+  _                                       := {Automatic, Automatic};
+];
+ *)
 (**************************************************************************************************)
 
 PublicFunction[SetScalableGraphicsFontSize]

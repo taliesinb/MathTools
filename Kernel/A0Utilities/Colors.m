@@ -376,11 +376,14 @@ expandColorPalette[colors_] := Join[colors, OklabBlend /@ (UnorderedPairs @ colo
 PublicFunction[ToRainbowColor]
 
 ToRainbowColor = Case[
+  -2                        := $Black;
+  -1                        := $White;
   0                         := $LightGray;
   i_Integer                 := Part[$NormalColorPalette, i];
   col_ ? ColorQ             := col;
   s:(Automatic | None)      := s;
   other_                    := $Gray;
+  Null                      := Transparent;
   Sequence[i_, _]           := % @ i;
   Sequence[s:Automatic | None, _] := s;
   Sequence[_, 0]            := $LightGray;
@@ -505,7 +508,7 @@ ContinuousColorFunction::badvalues = "Cannot choose an automatic coloring for no
 
 ContinuousColorFunction[values_List, Automatic, opts:OptionsPattern[]] := Scope[
   Which[
-    VectorQ[values, Internal`RealValuedNumericQ],
+    VectorQ[values, RealValuedNumericQ],
       ChooseContinuousColorFunction[values, opts],
     True,
       Message[ContinuousColorFunction::badvalues]; $Failed
@@ -857,7 +860,7 @@ ChooseContinuousColorFunction[ab:{$NumberP, $NumberP}, OptionsPattern[]] := Scop
 ];
 
 ChooseContinuousColorFunction[list_List, opts:OptionsPattern[]] := Scope[
-  If[!VectorQ[list, Internal`RealValuedNumericQ] || Length[list] < 2, ReturnFailed[]];
+  If[!VectorQ[list, RealValuedNumericQ] || Length[list] < 2, ReturnFailed[]];
   ChooseContinuousColorFunction[MinMax @ list, opts]
 ];
 
@@ -988,7 +991,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
     ComplexVectorQ[nUniqueValues],
       nUniqueValues //= Re;
       ComplexHue,
-    MatrixQ[nUniqueValues, Internal`RealValuedNumericQ],
+    MatrixQ[nUniqueValues, RealValuedNumericQ],
       norms = Norm /@ nUniqueValues;
       ColorFunctionCompose[ContinuousColorFunction[norms, Automatic], Norm],
     True,

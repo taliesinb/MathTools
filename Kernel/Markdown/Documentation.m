@@ -1,5 +1,5 @@
 tokenizeUsage[str_String] :=
-  Developer`ToList[
+  ToList[
     TOpen[TLineGroup], TOpen[TLine],
     DeleteCases[ ""|"\n"] @ StringSplit[str, Append[$tokenRules, wholeWord[word:$currentMainSymbol] :> TMain[word]]],
     TClose[TLine], TClose[TLineGroup]
