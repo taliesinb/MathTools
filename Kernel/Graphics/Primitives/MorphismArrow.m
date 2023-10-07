@@ -11,11 +11,11 @@ MorphismArrow[path$, label$] attachs a given label.
 | Bottom | below shaft when arrow is left to right |
 | Center | on top of shaft |
 MorphismArrow[path$, label$, decoration$] applies one or more arrowhead decorations.
-* named decorations corresponding to category theory are 'Iso', 'Epi', 'Mono', 'Hook', 'MapsTo', 'Proarrow', 'DoubleArrow', 'Equality'.
+* named decorations corresponding to category theory include:
+* 'Iso', 'Epi', 'Mono', 'Hook', 'MapsTo', 'Proarrow', 'DoubleArrow', 'DoubleIso', 'Equality', 'Adjoint', 'LongAdjoint'.
 * decorations can also be a list of rules of the form pos$ -> type$.
 * pos$ runs from 0 (begining of shaft) to 1 (end of shaft).
-* %Offset[delta$, pos$] can apply a constant offset to the pos$.
-* type$ is one of 'ShortArrow', 'Arrow', 'GentleArrow', 'StraightArrow', 'UpHook', 'DownHook', 'Bar', 'SkewBar', 'Disk'.
+* type$ includes the icon names in %NamedIcon as well as 'ShortArrow', 'LongArrow', and 'ShortBar'.
 * the following options are supported:
 | %Setback | how far to set back path from endpoints |
 | %ArrowPathReversed | whether to reverse the entire arrow |
@@ -149,15 +149,11 @@ parseMorphismArrowhead = Case[
 MorphismArrow::badarrowspec = "Bad arrowhead spec ``.."
 MorphismArrow::badarrownamespec = "`` is not a valid name. Names include: ``."
 
-morphismArrowheadBoxes[curvePos:$NumberP, shape_] :=
-  morphismArrowheadBoxes[Offset[0, curvePos], shape];
-
-(* this offset mechanism is not used anywhere, and maybe makes more sense to mean plotrange displacement
-*along* the curve if it were to be kept *)
-morphismArrowheadBoxes[Offset[offset:$NumberP, curvePos:$NumberP], shape_] := Scope[
+morphismArrowheadBoxes[curvePos:$NumberP, shape_] := Scope[
   {pos, dir} = VectorAlongLine[$path, Scaled @ curvePos];
-  If[offset != 0, pos = coordPlus[pos, Offset[dir * offset * $size, {0, 0}]]];
-  rawNamedIconBoxes[pos, dir, shape /. $arrowAliases, graphicsScale, $size, 1, Automatic, arrowThickness, curvePos]
+  rawNamedIconBoxes[
+    ResolveOffsets[pos, graphicsScale],
+    dir, shape /. $arrowAliases, graphicsScale, $size, 1, Automatic, arrowThickness, curvePos]
 ];
 
 (**************************************************************************************************)
@@ -190,7 +186,7 @@ $namedMorphismArrowheadSpecs = <|
 
   "BarBar"           -> {0 -> "Bar", 1 -> "Bar"},
 
-  "ExtendedAdjoint"  -> {0 -> "Bar"},
+  "LongAdjoint"      -> {0 -> "Bar"},
   "Adjoint"          -> {0.5 -> "Tee"}
 |>;
 

@@ -52,7 +52,7 @@ $scalingRules = {Huge -> 1.75, Large -> 1.5, MediumLarge -> 1.25, Medium -> 1, M
 PrivateFunction[rawNamedIconBoxes]
 
 rawNamedIconBoxes[pos_, dir_, name_, graphicsScale_, imageSize_, scaling_, color_, thickness_, align_] := Scope[
-  If[Head[name] === Reversed, name //= First; dir *= -1; If[NumberQ @ align, align //= OneMinus]];
+  If[Head[name] === Reversed, name //= First; dir = dir * -1; If[NumberQ @ align, align //= OneMinus]];
   If[Head[name] === Repeating, {name, reps} = List @@ name, reps = None];
   If[Head[name] === Sized, {name, scaling} = List @@ name];
   $imageSize = imageSize * scaling * {1, 1};

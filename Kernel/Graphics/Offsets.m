@@ -195,7 +195,7 @@ PublicFunction[ResolveOffsets]
 
 ResolveOffsets[e_, scale_ ? NumberQ] :=
   ReplaceAll[e, {
-    Offset[o_, p] :> RuleCondition[p + o / scale],
+    Offset[o_, p_] :> RuleCondition[p + o / scale],
     Offset[o_] :> RuleCondition[o / scale]
   }];
 
