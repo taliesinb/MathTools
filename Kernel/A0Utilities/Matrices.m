@@ -75,9 +75,8 @@ PlusVector[vector$] is an operator form of PlusVector.
 * PlusVector is useful because normally matrix$ + vector$ adds vector$ column-wise to matrix$ via Listability.
 "
 
-PlusVector[matrix_, 0|0.|{0.,0.}] := matrix;
-PlusVector[matrix_, v_] := v + #& /@ matrix;
-PlusVector[v_][matrix_] := PlusVector[matrix, v];
+PlusVector[matrix_, v_] := Threaded[v] + matrix;
+PlusVector[v_][matrix_] := Threaded[v] + matrix;
 
 (**************************************************************************************************)
 (** Column / row accessors                                                                        *)
@@ -545,9 +544,10 @@ AppendOnes = Case[
 
 (**************************************************************************************************)
 
-PublicFunction[Zeros]
+PublicFunction[Zeros, ZerosLike]
 
 Zeros[i_] := ConstantArray[0, i];
+ZerosLike[arr_] := ConstantArray[0, Dimensions @ arr];
 
 (**************************************************************************************************)
 

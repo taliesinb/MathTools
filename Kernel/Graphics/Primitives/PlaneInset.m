@@ -1,11 +1,5 @@
 PublicHead[PlaneInset]
 
-declareGraphicsFormatting[
-
-  PlaneInset[object_, origin_, vectors:({_List, _List}|_String), offset:_List:{0, 0}, rule___Rule] :> planeInsetBoxes[object, origin, vectors, offset, rule]
-
-];
-
 PublicOption[FlipX, FlipY, FlipZ, InsetScale]
 
 Options[PlaneInset] = {
@@ -21,7 +15,14 @@ Options[PlaneInset] = {
   FontFamily -> Inherited
 };
 
-planeInsetBoxes[object_, origin_, orient_String, f_, opts:OptionsPattern[PlaneInset]] := Scope[
+DeclareGraphicsPrimitive[PlaneInset, "Opaque,Opaque,Pair", planeInsetBoxes, {3}];
+
+planeInsetBoxes[PlaneInset[object_, origin_, vectors:({_List, _List}|_String), offset:_List:{0, 0}, rule___Rule]] :=
+  rawPlaneInsetBoxes[object, origin, vectors, offset, rule]
+
+(**************************************************************************************************)
+
+rawPlaneInsetBoxes[object_, origin_, orient_String, f_, opts:OptionsPattern[PlaneInset]] := Scope[
   UnpackOptions[viewVector];
   viewVector //= Normalize;
   Switch[orient,
@@ -35,11 +36,11 @@ planeInsetBoxes[object_, origin_, orient_String, f_, opts:OptionsPattern[PlaneIn
     "YZ",
       vx = {0, 1, 0}; vy = {0, 0, 1}
   ];
-  planeInsetBoxes[object, origin, {vx, vy}, f, opts]
+  rawPlaneInsetBoxes[object, origin, {vx, vy}, f, opts]
 ];
 
 fracPair[f_] := f/2 + {-0.5, 0.5};
-planeInsetBoxes[object_, origin_, {vx_, vy_}, {fx_, fy_}, OptionsPattern[PlaneInset]] := Scope[
+rawPlaneInsetBoxes[object_, origin_, {vx_, vy_}, {fx_, fy_}, OptionsPattern[PlaneInset]] := Scope[
   UnpackOptions[viewVector, flipX, flipY, insetScale, baseStyle, textAlignment, lineSpacing, fontSize, fontColor, fontFamily];
   baseStyle = ToList[baseStyle, FontSize -> fontSize, FontFamily -> fontFamily, FontColor -> fontColor, LineSpacing -> lineSpacing, TextAlignment -> textAlignment];
   baseStyle //= DeleteCases[_ -> Inherited];
@@ -61,8 +62,9 @@ planeInsetBoxes[object_, origin_, {vx_, vy_}, {fx_, fy_}, OptionsPattern[PlaneIn
 addStyle[Text[t_, rest___], style___] := Text[Style[t, style], rest];
 addStyle[other_, style___] := Style[other, style];
 
+_rawPlaneInsetBoxes := BadArguments[];
 
-planeInsetBoxes[args___] := Print[{args}];
+(**************************************************************************************************)
 
 $textureCoords = Association[
   {False, False} -> ToPacked[{{0,0}, {0,1}, {1,1}, {1,0}}],
@@ -71,12 +73,7 @@ $textureCoords = Association[
   {True, True}   -> ToPacked[{{1,1}, {1,0}, {0,0}, {0,1}}]
 ];
 
-PublicFunction[ClearTextureCache]
-
-ClearTextureCache[] := (QuiverGeometryCaches`$TextureBoxCache = UAssociation[];)
-
-If[!AssociationQ[QuiverGeometryCaches`$TextureBoxCache],
-  QuiverGeometryCaches`$TextureBoxCache = UAssociation[]];
+(**************************************************************************************************)
 
 cachedTextureBoxAndSize[object_] :=
   CacheTo[QuiverGeometryCaches`$TextureBoxCache, Hash @ object, textureBoxesAndSize @ object];

@@ -553,7 +553,7 @@ replaceWithColor[g_, c_, preserveArrowheads_:False] :=
   ReplaceAll[g, {
     t_Text :> t,
     If[preserveArrowheads, a_Arrowheads :> a, Nothing],
-    Directive[Glow[_], rest___] :> Directive[Glow[c], rest], (* <- 3d color *)
+    Color3D[_] :> Color3D[c],
     Inset[z_Graphics, args__] :> Inset[SetFrameColor[z, c], args],
     $ColorPattern -> c
   }];

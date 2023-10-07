@@ -1020,14 +1020,39 @@ literalColorFunction[colors_] := Scope[
 
 (**************************************************************************************************)
 
-(* TODO: make this into FlatColor[color], which has a graphics format value to turn it into
-the underlying directive! *)
+PublicForm[Color3D]
 
-PublicFunction[Color3D]
+DeclareGraphicsPrimitive[Color3D, "Color", color3DBoxes, {3}];
 
-Color3D[Opacity[o_, color_]] := Color3D @ SetColorOpacity[color, o];
-Color3D[Opacity[o_]] := Directive[GrayLevel[0, o], Specularity @ 0];
-Color3D[c_] := Directive[Glow @ c, GrayLevel[0, ColorOpacity[c]], Specularity @ 0];
+color3DBoxes = Case[
+  Color3D[Opacity[o_, color_]] := % @ Color3D @ SetColorOpacity[color, o];
+  Color3D[Opacity[o_]] := Directive[GrayLevel[0, o], Specularity @ 0];
+  Color3D[c_] := Directive[Glow @ c, GrayLevel[0, ColorOpacity[c]], Specularity @ 0];
+];
+
+(**************************************************************************************************)
+
+PublicForm[SolidEdgeForm]
+
+SetUsage @ "
+SolidEdgeForm[face$, edge$] colors solid primitives to have face color face$ and edge color $edge.
+SolidEdgeForm[face$] is equivalent to SolidEdgeForm[face$, Automatic].
+* if face$ is automatic, it is a lighter form of edge$.
+* if edge$ is Automatic, it is a darker form of face$.
+"
+DeclareGraphicsPrimitive[SolidEdgeForm, "Color,Color", solidEdgeFormBoxes, {2, 3}];
+
+solidEdgeFormBoxes[se_] :=
+  Apply[Directive[FaceForm @ #1, EdgeForm @ #2]&, solidEdgeColors @ se];
+
+PrivateFunction[solidEdgeColors]
+
+solidEdgeColors = Case[
+  SolidEdgeForm[f_] := % @ SolidEdgeForm[f, Automatic];
+  SolidEdgeForm[f_, e_] := {f, e};
+  SolidEdgeForm[Automatic, e_] := {OklabLighter[e, .1], e};
+  SolidEdgeForm[f_, Automatic] :=  {f, OklabDarker[f, .1]};
+];
 
 (**************************************************************************************************)
 

@@ -1,11 +1,14 @@
 PublicHead[AnchoredCurve]
 
-declareGraphicsFormatting[ac:AnchoredCurve[_, $Coord2P | ($NumberP -> $Coord2P)] :> Construct[LineBox, anchoredCurvePoints @ ac], Graphics];
+(* todo: replace AnchoredCurve with just Anchored, which works on any graphics primitive *)
 
-PrivateFunction[anchoredCurvePoints]
+DeclareCurvePrimitive[AnchoredCurve, anchoredCurvePoints];
 
-anchoredCurvePoints[AnchoredCurve[curve_, anchor_]] := Scope[
-  points = toCurvePoints @ curve;
+SignPrimitive["Curve,Vector", AnchoredCurve];
+
+(**************************************************************************************************)
+
+anchoredCurvePoints[AnchoredCurve[points:$CoordMat2P, anchor:$Coord2P | ($NumberP -> $Coord2P)]] := Scope[
   {anchorPos, anchorTarget} = Switch[anchor,
     _Rule, FirstLast @ anchor,
     _,     {0.5, anchor}

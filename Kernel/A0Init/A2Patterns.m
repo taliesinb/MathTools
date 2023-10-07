@@ -146,7 +146,7 @@ $PosIntOrInfinityP = _Integer ? Positive | Infinity;
 
 (**************************************************************************************************)
 
-PrivateVariable[$NumberP, $CoordP, $Coord2P, $Coord3P, $CoordPairP, $Coord2PairP, $Coord3PairP]
+PrivateVariable[$NumberP, $ExtCoordP, $CoordP, $Coord2P, $Coord3P, $CoordPairP, $Coord2PairP, $Coord3PairP]
 
 (* TODO: $Coord2VectorP, etc *)
 
@@ -155,6 +155,8 @@ $NumberP = _ ? NumericQ;
 $CoordP = {_ ? NumericQ, _ ? NumericQ} | {_ ? NumericQ, _ ? NumericQ, _ ? NumericQ};
 $Coord2P = {_ ? NumericQ, _ ? NumericQ};
 $Coord3P = {_ ? NumericQ, _ ? NumericQ, _ ? NumericQ};
+
+$ExtCoordP = $CoordP | _Offset;
 
 $CoordPairP = _List ? CoordinatePairQ;
 $Coord2PairP = {$Coord2P, $Coord2P};
@@ -192,56 +194,3 @@ $RegionP = headToPattern @ {
 
 (* TODO: handle all wrappers *)
 $AnnotationP = headToPattern @ {Annotation, Tooltip, EventHandler, ClickForm};
-
-(**************************************************************************************************)
-
-PrivateVariable[$GPrimVecH, $GPrimVecVecH, $GPrimVecsH]
-
-$GPrimVecH = CompassCurve | AxesFlag;
-
-$GPrimVecVecH = Cuboid | Rectangle | ElbowCurve;
-
-$GPrimVecsH = Point;
-
-PrivateVariable[$GPrimVecRadH, $GPrimVecsRadH]
-
-$GPrimVecRadH = Circle | Disk | Annulus | Cube;
-
-$GPrimVecsRadH = Sphere | Ball | CenteredRectangle | CenteredCuboid;
-
-PrivateVariable[$GPrimPairH, $GPrimPairRadH]
-
-$GPrimPairH = InfiniteLine | HalfLine;
-
-$GPrimPairRadH = Cylinder | Cone | CapsuleShape | StadiumShape;
-
-PrivateVariable[$GPrimVecDeltaH]
-
-(* TOD: InfinitePlane, HalfPlane, ConicHull, etc *)
-
-$GPrimVecDeltaH = VectorCurve | Arrowhead | InfiniteLine | HalfLine | NamedIcon;
-
-PrivateVariable[$GPrimMatH, $GPrimMatsH, $GPrimMatsRadH]
-
-$GPrimMatH = BSplineCurve | BezierCurve | Polygon | Polyhedron | RollingCurve | ExtendedArrow | MorphismArrow | PathedText | Simplex;
-
-$GPrimMatsH = Polygon | Polyhedron | Line | Arrow | FilledCurve | Triangle;
-
-$GPrimMatsRadH = Tube
-
-PrivateVariable[$GPrimAnyVecH, $GPrimThruVecH, $GPrimThruH]
-
-$GPrimAnyVecH = Text | Inset | PlaneInset;
-
-$GPrimThruVecH = Translate;
-
-$GPrimThruH = Rotate | GeometricTransformation | Scale | Style | Annotation | Tooltip | StatusArea | PopupWindow | Mouseover | Hyperlink | EventHandler | Button;
-
-PrivateVariable[$GPrimVH, $GPrimVVH, $GPrimVRH, $GPrimVDH, $GPrimAVH]
-
-$GPrimVH = DeleteDuplicates @ Flatten @ Alternatives[$GPrimVecH, $GPrimVecsH, $GPrimMatH, $GPrimMatsH, $GPrimPairH];
-$GPrimVRH = DeleteDuplicates @ Flatten @ Alternatives[$GPrimVecRadH, $GPrimVecsRadH, $GPrimMatsRadH, $GPrimPairRadH];
-$GPrimVVH = $GPrimVecVecH;
-$GPrimVDH = $GPrimVecDeltaH;
-$GPrimAVH = $GPrimAnyVecH;
-

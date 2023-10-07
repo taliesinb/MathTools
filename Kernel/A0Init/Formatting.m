@@ -78,30 +78,6 @@ PrintGraphicsFormatDefinitions[sym_Symbol] := PrintDefinitions @
 
 (**************************************************************************************************)
 
-PrivateFunction[declareGraphicsFormatting, declareCustomGraphicsHead]
-
-PrivateSymbol[$customGraphicsHeadQ, $customGraphicsP]
-
-$customGraphicsHeadQ = <||>;
-$customGraphicsP = Alternatives[];
-
-declareCustomGraphicsHead[head_Symbol] := (
-  $customGraphicsHeadQ[head] = True;
-  If[FreeQ[$customGraphicsP, head], AppendTo[$customGraphicsP, Blank @ head]];
-);
-
-declareGraphicsFormatting[lhs_ :> rhs_, type_:Graphics|Graphics3D] := (
-  declareCustomGraphicsHead[First @ PatternHead @ lhs];
-  Typeset`MakeBoxes[expr:lhs, StandardForm | TraditionalForm, type] := Construct[InterpretationBox, rhs, expr]
-);
-
-declareGraphicsFormatting[list_List, type_:Graphics|Graphics3D] :=
-  Scan[declareGraphicsFormatting[#, type]&, list];
-
-declareGraphicsFormatting[___] := Panic["BadGraphicsFormatting"];
-
-(**************************************************************************************************)
-
 PrivateFunction[make2DBoxes, make3DBoxes]
 
 make2DBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics];

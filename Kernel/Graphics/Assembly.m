@@ -101,7 +101,6 @@ assemblePrimitives = Case[
 ];
 
 (* TODO: Move this into Rasterization.m *)
-Clear[QuiverGeometryCaches`$BoundingBoxCache];
 If[!AssociationQ[QuiverGeometryCaches`$BoundingBoxCache],
 QuiverGeometryCaches`$BoundingBoxCache = UAssociation[];
 ];

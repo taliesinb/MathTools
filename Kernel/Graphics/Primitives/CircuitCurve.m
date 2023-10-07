@@ -1,19 +1,17 @@
 PublicForm[SnakeCurve]
 
-declareGraphicsFormatting[c:SnakeCurve[{$Coord2P, $Coord2P}, opts___Rule] :> snakeCurveBoxes[c], Graphics];
-
-snakeCurveBoxes[c_] := Construct[LineBox, ToPackedReal @ snakeCurvePoints[c]];
-
-(**************************************************************************************************)
-
-PrivateFunction[snakeCurvePoints]
-
 PublicOption[Orientation, SplitPosition]
 
 Options[SnakeCurve] = {
   Orientation -> Horizontal,
   SplitPosition -> "Middle"
 };
+
+DeclareCurvePrimitive[SnakeCurve, snakeCurvePoints];
+
+SignPrimitive["Curve", SnakeCurve];
+
+(**************************************************************************************************)
 
 snakeCurvePoints[SnakeCurve[c:{{x_, _}, {x_, _}}, ___Rule]] := c;
 snakeCurvePoints[SnakeCurve[c:{{_, y_}, {_, y_}}, ___Rule]] := c;
@@ -28,14 +26,11 @@ snakeCurvePoints[SnakeCurve[{a_, b_}, opts:OptionsPattern[SnakeCurve]]] := Scope
   DeleteDuplicates @ N @ {a, mid1, mid2, b}
 ];
 
-
 (**************************************************************************************************)
 
 PublicForm[CircuitCurve]
 
-PublicOption[SetbackDistance]
-
-PrivateFunction[circuitCurvePoints, LineThickness]
+PublicOption[SetbackDistance, LineThickness]
 
 Options[CircuitCurve] = JoinOptions[
   SnakeCurve,
@@ -44,14 +39,14 @@ Options[CircuitCurve] = JoinOptions[
   LineThickness -> None
 ];
 
-declareGraphicsFormatting[c:CircuitCurve[{$Coord2P, $Coord2P}, ___Rule] :> circuitCurveBoxes[c], Graphics];
+DeclareCurvePrimitive[CircuitCurve, circuitCurvePoints, circuitCurveBoxes];
 
+SignPrimitive["Curve | Pair", CircuitCurve];
 
+(**************************************************************************************************)
 
-Clear[circuitCurveBoxes];
-circuitCurveBoxes[curve:CircuitCurve[_, opts:OptionsPattern[CircuitCurve]]] := Scope[
+circuitCurveBoxes[CircuitCurve[points:$CoordMat2P, opts:OptionsPattern[CircuitCurve]]] := Scope[
   UnpackOptionsAs[CircuitCurve, {opts}, lineThickness, setbackDistance];
-  points = ToPackedReal @ circuitCurvePoints @ curve;
   If[lineThickness === None, Return @ Construct[LineBox, points]];
   If[lineThickness < 0,
     points = ToPackedReal @ circuitCurvePoints @ curve;
@@ -85,8 +80,10 @@ circuitCurveBoxes[curve:CircuitCurve[_, opts:OptionsPattern[CircuitCurve]]] := S
   }
 ];
 
+(**************************************************************************************************)
+
 CircuitCurve::badBendStyle = "BendStyle -> `` should be one of 'Arc', 'Smooth', or 'None'."
-circuitCurvePoints[CircuitCurve[points_, opts:OptionsPattern[CircuitCurve]]] := Scope[
+circuitCurvePoints[CircuitCurve[points:$CoordPairP, opts:OptionsPattern[CircuitCurve]]] := Scope[
   points = snakeCurvePoints @ SnakeCurve[points, FilterOptions @ opts];
   UnpackOptionsAs[CircuitCurve, {opts}, bendStyle, setbackDistance];
   curve = Switch[bendStyle,

@@ -1,6 +1,6 @@
 PublicHead[BoundingRectangle]
 
-declareGraphicsFormatting[c:BoundingRectangle[$CoordMat2P] :> boundingRectangleBoxes[c], Graphics];
+DeclareGraphicsPrimitive[BoundingRectangle, "Pair", boundingRectangleBoxes]
 
-boundingRectangleBoxes[BoundingRectangle[{{xmin_, xmax_}, {ymin_, ymax_}}]] :=
+boundingRectangleBoxes[BoundingRectangle[{{xmin:$NumberP, xmax:$NumberP}, {ymin:$NumberP, ymax:$NumberP}}]] :=
   RectangleBox[{xmin, ymin}, {xmax, ymax}];

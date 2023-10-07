@@ -399,13 +399,13 @@ setTimes[a_ ? numQ, b_ ? numQ, c_ ? numQ] := If[a != b * c, ThrowMessage["incons
 
 (**************************************************************************************************)
 
-declareGraphicsFormatting[{
-    AnimationPart[p_List, ___] :> First[p],
-    AnimationRange[args___] :> First[Range[args]],
-    AnimationBetween[a_, b_] :> a
-  },
-  Graphics|Graphics3D
-]
+DeclareGraphicsPrimitive[AnimationPart, "Primitives", animationBoxes];
+DeclareGraphicsPrimitive[AnimationRange, "Opaque", animationBoxes];
+DeclareGraphicsPrimitive[AnimationBetween, "Primitives,Primitives", animationBoxes];
+
+animationBoxes[AnimationPart[p_List, ___]] := ToGraphicsBoxes @ First @ p;
+animationBoxes[AnimationRange[args___]] := ToGraphicsBoxes @ First @ Range[args];
+animationBoxes[AnimationBetween[a_, b_]] := ToGraphicsBoxes @ a;
 
 (**************************************************************************************************)
 

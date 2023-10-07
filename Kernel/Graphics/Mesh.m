@@ -36,8 +36,11 @@ MeshLines[pos:{_, _, _}, num:{_, _, _}, opts:OptionsPattern[]] := CatchMessage @
 
   primitives = makeMesh3D[pos, num, opts];
 
-  GraphicsTransformCoordinates[zVector, primitives]
+  zMatrix = ToPacked @ Transpose @ {{1, 0, x}, {0, 1, y}};
+
+  AffineTransformPrimitives[primitives, zMatrix];
 ];
+
 (**************************************************************************************************)
 
 PublicFunction[MeshLines3D]

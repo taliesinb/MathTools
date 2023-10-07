@@ -3,32 +3,31 @@ PublicHead[MorphismArrow]
 SetUsage @ "
 MorphismArrow[path$] renders as a commutative-diagram style arrow following path$.
 MorphismArrow[path$, label$] attachs a given label.
-* Each label specification can be a single spec or a list of specs of the form pos$ -> label$.
-* Each label$ can be a string or Style[$$] expression or Placed[label$, placement$], where placement is one of:
+* label$ can be a single spec or a list of specs of the form pos$ -> label$.
+* each label$ can be a string or Style[$$] expression or Placed[label$, placement$], where placement is one of:
 | Above | always vertically above shaft (default) |
 | Below | always vertically below shaft |
 | Top | above shaft when arrow is left to right |
 | Bottom | below shaft when arrow is left to right |
 | Center | on top of shaft |
 MorphismArrow[path$, label$, decoration$] applies one or more arrowhead decorations.
-* Named decorations corresponding to category theory are 'Iso', 'Epi', 'Mono', 'Hook', 'MapsTo', 'Proarrow', 'DoubleArrow', 'Equality'.
-* Decorations can also be a list of rules of the form pos$ -> type$.
+* named decorations corresponding to category theory are 'Iso', 'Epi', 'Mono', 'Hook', 'MapsTo', 'Proarrow', 'DoubleArrow', 'Equality'.
+* decorations can also be a list of rules of the form pos$ -> type$.
 * pos$ runs from 0 (begining of shaft) to 1 (end of shaft).
-* Offset[delta$, pos$] can apply a constant offset to the pos$.
+* %Offset[delta$, pos$] can apply a constant offset to the pos$.
 * type$ is one of 'ShortArrow', 'Arrow', 'GentleArrow', 'StraightArrow', 'UpHook', 'DownHook', 'Bar', 'SkewBar', 'Disk'.
-* The following options are supported:
-| %ArrowPathSetback | how far to set back path from endpoints |
+* the following options are supported:
+| %Setback | how far to set back path from endpoints |
 | %ArrowPathReversed | whether to reverse the entire arrow |
-| %ArrowShaftThickness | thickness of arrow shaft |
-| %ArrowShaftColor | color of arrow shaft |
-| %ArrowShaftDashing | dashing to apply to arrow shaft |
+| %ArrowThickness | thickness of arrow shaft |
+| %ArrowColor | color of arrow shaft |
+| %ArrowDashing | dashing to apply to arrow shaft |
 | %ArrowShaftHidden | whether to hide the arrow shaft |
+| %ArrowheadSize | size of applied arrowhead decorations |
 | %LabelRectification | whether to ensure labels never appear upside down |
 | %LabelOrientation | orientation of label |
 | %LabelFontSize | size of label |
 | %LabelBackground | background of label |
-| %DecorationWidth | size of applied arrowhead decorations |
-% The option %Setback is an alias for %ArrowPathSetback.
 * %LabelOrientation can be one of the following:
 | Horizontal | appear horizontally (automatic) with offset to avoid clipping shaft |
 | 'Aligned' | aligned to the shaft |
@@ -39,175 +38,171 @@ MorphismArrow[path$, label$, decoration$] applies one or more arrowhead decorati
 | Towards[coord$] | choose the side closest to coord$ |
 "
 
-declareGraphicsFormatting[
-  {
-    MorphismArrow[path:($CoordMat2P | $GArrowIntP), labelData:Except[_Rule], arrowData:(_List|_String|Automatic|None), opts___Rule] :> morphismArrowBoxes[path, labelData, arrowData, opts],
-    MorphismArrow[path:($CoordMat2P | $GArrowIntP), labelData:Except[_Rule], opts___Rule]                            :> morphismArrowBoxes[path, labelData, Automatic, opts],
-    MorphismArrow[path:($CoordMat2P | $GArrowIntP), opts___Rule]                                                     :> morphismArrowBoxes[path, {}, Automatic, opts]
-  },
-  Graphics
-];
-
 Options[MorphismArrow] = $morphismArrowOptions;
 
-morphismArrowBoxes[{a_} | {a_, a_}, rest___] /; MatchQ[a, $CoordP] :=
+DeclareGraphicsPrimitive[MorphismArrow, "Curve", morphismArrowBoxes];
+
+(**************************************************************************************************)
+
+morphismArrowBoxes[MorphismArrow[{a_} | {a_, a_}, rest___]] /; MatchQ[a, $CoordP] :=
   morphismArrowBoxes[LoopCurve[a, {0, 1} * .25], rest];
 
-morphismArrowBoxes[curve_, labelData_, arrowData_, opts___Rule] := Scope[
+morphismArrowBoxes[MorphismArrow[curve_, opts___Rule]] :=
+  morphismArrowBoxes[MorphismArrow[curve, None, "Arrow", opts]];
+
+morphismArrowBoxes[MorphismArrow[curve_, labelData_, opts___Rule]] :=
+  morphismArrowBoxes[MorphismArrow[curve, labelData, "Arrow", opts]];
+
+morphismArrowBoxes[e_] := Print[e];
+morphismArrowBoxes[MorphismArrow[curve_, labelData_, arrowData_, opts___Rule]] := Scope[
 
   UnpackAssociationSymbols[
     {opts} -> $MakeBoxesStyleData,
-    arrowPathSetback, arrowPathOffset, arrowPathReversed, decorationWidth,
-    arrowShaftColor, arrowShaftOpacity, arrowShaftThickness, arrowShaftDashing, arrowShaftMasking, arrowShaftHidden,
-    labelPosition, labelOrientation, labelRectification, labelFontSize, labelBackground, c, labelSpacing, setback
+    arrowPathSetback, arrowPathOffset, arrowPathReversed, arrowheadSize,
+    arrowColor, arrowOpacity, arrowThickness, arrowDashing, arrowMasking, arrowShaftHidden,
+    labelPosition, labelOrientation, labelRectification, labelFontSize, labelBackground, labelSpacing, setback,
+    textModifiers, graphicsScale
   ];
 
+  $size = arrowheadSize;
   arrowPathReversed //= TrueQ;
-
   If[labelOrientation === "Aligned", labelOrientation = Aligned];
 
-  SetAutomatic[arrowPathSetback, setback];
-  SetAutomatic[arrowPathSetback, 0.1];
+  SetAutomatic[setback, arrowPathSetback];
+  SetAutomatic[setback, 0.1];
   shaftExtraThickness = 0;
 
-  If[MatchQ[arrowData, "DoubleArrow" | "Equality" | "DoubleIso"] && arrowPathOffset === None, arrowPathOffset = 2];
+  multiOffset = toMultiOffset @ arrowData;
+  If[multiOffset =!= None, arrowPathOffset = multiOffset];
 
-  extraSetback = Switch[arrowData,
-    "DoubleIso",   {Offset[decorationWidth/2], Offset[decorationWidth/2]},
-    "DoubleArrow", {0, Offset[decorationWidth/2]},
-    "Hook",        {Offset[decorationWidth/3], 0},
-    "Mono",        {Offset[decorationWidth/3], 0},
-    _,             None
+  points = CurveToPoints @ curve;
+  If[points == {}, Return @ {}];
+
+  (* apply setback *)
+  Switch[arrowData, "Hook" | "Mono",
+    extraSetback = {Offset[$size/3], 0};
+    If[arrowPathReversed, extraSetback //= Reverse];
+    setback //= ExtendSetback[extraSetback];
   ];
-  If[arrowPathReversed  && ListQ[extraSetback], extraSetback //= Reverse];
-  arrowPathSetback //= ExtendSetback[extraSetback];
-
-  If[MatchQ[arrowData, "DoubleArrow" | "Equality" | "DoubleIso"] && NumberQ[arrowPathOffset],
-    shaftExtraThickness += 5;
-    arrowPathOffset = "Perpendicular" -> Offset[#]& /@ (arrowPathOffset * {-1, 1});
-  ];
-
-  points = toCurvePoints @ curve;
-  points = SetbackCoordinates[points, arrowPathSetback];
+  points = SetbackCoordinates[points, setback];
   If[arrowPathReversed, points //= Reverse];
   $path = points;
 
   SetAutomatic[labelPosition, Above];
   labelPositionOnShaft = 0.5;
 
-  SetInherited[labelFontSize, decorationWidth];
-  $lineStyler = makeShaftStyler[arrowShaftColor, arrowShaftOpacity, arrowShaftThickness, arrowShaftDashing];
+  SetInherited[labelFontSize, $size];
+  $lineStyler = ShaftStyleBoxOperator[arrowColor, arrowOpacity, arrowThickness, arrowDashing];
 
-  SetAutomatic[labelSpacing, If[labelOrientation === Aligned, arrowShaftThickness, {0.3, 0.1} * labelFontSize] + shaftExtraThickness];
+  If[arrowPathOffset =!= None,
+    maxOffsetY = Max[0, Abs @ DeepCases[arrowPathOffset, AlignedOffset[c_List] :> LevelPart[c, -1 -> 2]]];
+    shaftExtraThickness += maxOffsetY;
+  ];
+
+  SetAutomatic[labelSpacing, If[labelOrientation === Aligned, arrowThickness, {0.3, 0.1} * labelFontSize] + shaftExtraThickness];
   arrowhead = parseMorphismArrowhead @ arrowData;
+  $textModifierFn = toModifierFunction @ textModifiers;
   label = Map[parseMorphismLabel, ToList @ labelData];
 
-  points = applyPathOffset[points, arrowPathOffset];
+  {points, isMulti} = applyPathOffset[points, arrowPathOffset];
   line = Construct[LineBox, points];
-  SetAutomatic[arrowShaftMasking, arrowShaftThickness + 20];
-  mask = If[!NumberQ[arrowShaftMasking], Nothing,
-    makeShaftStyler[White, None, arrowShaftMasking, None] @ line
+  SetAutomatic[arrowMasking, arrowThickness + 20];
+  mask = If[!NumberQ[arrowMasking], Nothing,
+    ShaftStyleBoxOperator[White, None, arrowMasking, None] @ line
   ];
   If[MatchQ[arrowData, "Adjoint" | "Empty"] || arrowShaftHidden, line = {}];
 
   {mask, $lineStyler @ line, arrowhead, label}
 ];
 
-PublicHead[Reversed]
+(**************************************************************************************************)
 
-MorphismArrow::badarrowspec = "Bad arrowhead spec ``."
-parseMorphismArrowhead = Case[
-  "Line"             := %[{}];
-  "Iso"              := %[{0 -> Reversed["Arrow"], 1 -> "Arrow"}];
-  "DoubleIso"        := %[{Offset[.65, 0] -> Reversed["LongArrow"], Offset[.65, 1] -> "LongArrow"}];
-  "Epi"              := %[{1 -> "ShortArrow", Offset[-1, 1] -> "ShortArrow"}];
-  "Mono"             := %[{Offset[-1, 0] -> "DownHook", 1 -> "GentleArrow"}];
-  (* "Mono"             := %[{Offset[-1, 0] -> "GentleArrow", 1 -> "GentleArrow"}]; *)
-  "Hook"             := %[{Offset[-1, 0] -> "UpHook", 1 -> "GentleArrow"}];
-  "MapsTo"           := %[{0 -> "Bar", 1 -> "Arrow"}];
-  "Proarrow"         := %[{0.5 -> "ShortBar", 1 -> "Arrow"}];
-  "DoubleArrow"      := %[{Offset[.65, 1] -> "LongArrow"}];
-  "ExtendedAdjoint"  := %[{0 -> "ShortBar"}];
-  "Adjoint"          := %[{0.5 -> "Tee"}];
-  "Equality"         := %[{}];
-  "Arrow"|Automatic  := %[{1 -> "Arrow"}];
-  "DiskArrow"        := %[{0 -> "SmallDisk", 1 -> "Arrow"}];
-  "ReversedArrow"    := %[{0 -> Reversed["Arrow"]}];
-  None | "Line" | "Hidden" := {};
-  other_String       := (Message[MorphismArrow::badarrowspec, MsgExpr @ other]; {});
-  rules:{___Rule}    := MapApply[morphismArrowheadBoxes, rules];
-]
-
-morphismArrowheadBoxes[anchor:$NumberP, shape_] := morphismArrowheadBoxes[Offset[0, anchor], shape];
-
-morphismArrowheadBoxes[Offset[offset:$NumberP, anchor:$NumberP], shape_] := Scope[
-  {pos, dir} = VectorAlongLine[$path, Scaled[anchor]];
-  isReversed = If[MatchQ[shape, Reversed[_]], shape = First @ shape; True, False];
-  {width, heightScale, shape2} = Lookup[$morphismArrowheadLines, shape, ReturnFailed[]];
-  If[isReversed, dir *= -1; anchor = 1 - anchor];
-  toOrientedLine[pos, dir, anchor, offset, width, heightScale, shape2]
+toMultiOffset = Case[
+  "DoubleArrow"    := makeAlignedOff[$doubleY, $doubleArrowX, 0, 1];
+  "DoubleIso"      := makeAlignedOff[$doubleY, $doubleArrowX, 1, 1];
+  "TripleArrow"    := makeAlignedOff[$tripleY, $tripleArrowY, 0, 1];
+  "TripleIso"      := makeAlignedOff[$tripleY, $tripleArrowY, 1, 1];
+  "Equality"       := makeAlignedOff[$doubleY, 0, 0, 0];
+  "TripleEquality" := makeAlignedOff[$tripleY, 0, 0, 0];
+  _                := None;
 ];
 
-_morphismArrowheadBoxes := BadArguments[];
+SetListable[makeAlignedOff];
+makeAlignedOff[y_, x_, x1_, x2_] := AlignedOffset[{{x * x1, y}, {x * -x2, y}}];
+makeAlignedOff[0, _, _, _] := None;
+
+$doubleY := Max[Floor[$size/7], 1] * {1, -1};
+$doubleArrowX := $size * 0.6;
+$tripleY := Max[Floor[$size/5], 2] * {1, 0, -1};
+$tripleArrowY := $size * 0.7;
 
 (**************************************************************************************************)
 
-toOrientedLine[Offset[off_, pos_], dirx_, anchor_, offset_, width_, heightScale_, DiskBox[coords_, r_]] :=
-  {AbsolutePointSize[r * decorationWidth], PointBox[Offset[off, coords + pos]]};
+parseMorphismArrowhead = Case[
+  None            := {};
+  Automatic       := % @ "Arrow";
+  name_String     := % @ LookupOrMessageKeys[$namedMorphismArrowheadSpecs, name, {}, MorphismArrow::badarrownamespec];
+  other_          := (Message[MorphismArrow::badarrowspec, MsgExpr @ other]; {});
+  rules:{___Rule} := MapApply[morphismArrowheadBoxes, rules];
+]
 
-toOrientedLine[pos_, dirx_, anchor_, offset_, width_, heightScale_, DiskBox[coords_, r_]] :=
-  {AbsolutePointSize[r * decorationWidth], PointBox[coords + pos]};
+MorphismArrow::badarrowspec = "Bad arrowhead spec ``.."
+MorphismArrow::badarrownamespec = "`` is not a valid name. Names include: ``."
 
-toOrientedLine[pos_, dirx_, anchor_, offset_, width_, heightScale_, boxes_] := {
-  Construct[
-    InsetBox,
-    Construct[GraphicsBox,
-      DeleteCases[$lineStyler, _Dashing] @ boxes,
-      ImageSize -> {Automatic, decorationWidth * heightScale * 1.2},
-      PlotRangeClipping -> False, PlotRangePadding -> Scaled[0.1] (* this prevents cutoff arrowheads when rotating *),
-      AspectRatio -> Automatic,
-      ImagePadding -> None
-    ],
-    pos,
-    {-(1 - anchor + offset) * width, 0},
-    Automatic,
-    dirx
-  ]
-};
+morphismArrowheadBoxes[curvePos:$NumberP, shape_] :=
+  morphismArrowheadBoxes[Offset[0, curvePos], shape];
 
-cr$0 = 0.00000000;
-cr$1 = 1.00005519;
-cr$2 = 0.55342686;
-cr$3 = 0.99873585;
+(* this offset mechanism is not used anywhere, and maybe makes more sense to mean plotrange displacement
+*along* the curve if it were to be kept *)
+morphismArrowheadBoxes[Offset[offset:$NumberP, curvePos:$NumberP], shape_] := Scope[
+  {pos, dir} = VectorAlongLine[$path, Scaled @ curvePos];
+  If[offset != 0, pos = coordPlus[pos, Offset[dir * offset * $size, {0, 0}]]];
+  rawNamedIconBoxes[pos, dir, shape /. $arrowAliases, graphicsScale, $size, 1, Automatic, arrowThickness, curvePos]
+];
 
-$hookPoints = {{0, 1-cr$1}, {-cr$2, 1-cr$3}, {-cr$3, 1-cr$2}, {-cr$1, 1}, {-cr$3, 1+cr$2}, {-cr$2, 1+cr$3}, {cr$0-0.2, 1+cr$1}}/2;
+(**************************************************************************************************)
 
-makeSymmetricArrow[head_[coords_, a___]] := Construct[JoinedCurveBox, {head[coords, a], Construct[head, VectorReflectVertical @ Reverse @ coords, a]}];
+$hookSize = 1.2;
 
-$morphismArrowheadLines = <|
-  "LongArrow"         -> {1.6, 1.0,  makeSymmetricArrow @ BezierCurve @ {{-1.6, -1.0}, {-1.5, -0.25}, {0, 0}}},
-  "ShortArrow"        -> {0.5, 1.0,  makeSymmetricArrow @ BezierCurve @ {{-0.6, -1.0}, {-0.5, -0.25}, {0, 0}}},
-  "Arrow"             -> {1.0, 1.0,  makeSymmetricArrow @ BezierCurve @ {{-1.0, -1.0}, {-0.9, -0.25}, {0, 0}}},
-  "GentleArrow"       -> {1.0, 1.0,  makeSymmetricArrow @ BezierCurve @ {{-1.0, -1.0}, {-0.5, -0.25}, {0, 0}}},
-  "StraightArrow"     -> {1.0, 1.0,  LineBox @ {{-1, -1}, {0, 0}, {-1, 1}}},
-  "Triangle"          -> {1.0, 0.7,  Construct[PolygonBox, Threaded[{1, .7}] * {{-1, -1}, {0, 0}, {-1, 1}}]},
-  "UpHook"            -> {1.1, 0.85, Construct[BezierCurveBox, $hookPoints]},
-  "DownHook"          -> {1.1, 0.85, Construct[BezierCurveBox, VectorReflectVertical @ $hookPoints]},
-  "Bar"               -> {0.0, 1.0,  LineBox[{{0, -1/2}, {0, 1/2}}]},
-  "ShortBar"          -> {0.0, 0.6,  LineBox[{{0, -1/3}, {0, 1/3}}]},
-  "SkewBar"           -> {0.0, 1.0,  LineBox[{{-1, -1}, {0, 1}}/2]},
-  "Disk"              -> {0.0, 1.0,  DiskBox[{0, 0}, .5]},
-  "SmallDisk"         -> {0.0, 1.0,  DiskBox[{0, 0}, .25]},
-  "Tee"               -> {0.0, 0.8,  Construct[LineBox, Threaded[{-0.5, 0}] + {{{0, 1}, {0, -1}}, {{0, 0}, {1.25, 0}}}]}
+$namedMorphismArrowheadSpecs = <|
+  "Line"             -> {},
+
+  "Arrow"            -> {1 -> "Arrow"},
+  "Proarrow"         -> {0.5 -> "ShortBar", 1 -> "Arrow"},
+  "DoubleArrow"      -> {1 -> "LongArrow"},
+  "TripleArrow"      -> {1 -> "LongArrow"},
+
+  "DotDot"           -> {0 -> "Dot", 1 -> "Dot"},
+  "DotArrow"         -> {0 -> "Dot", 1 -> "Arrow"},
+  "ReversedArrow"    -> {0 -> "ReversedArrow"},
+
+  "Iso"              -> {0 -> "ReversedArrow", 1 -> "Arrow"},
+  "DoubleIso"        -> {0 -> Reversed["LongArrow"], 1 -> "LongArrow"},
+  "TripleIso"        -> {0 -> Reversed["LongArrow"], 1 -> "LongArrow"},
+
+  "Equality"         -> {},
+  "TripleEquality"   -> {},
+
+  "Epi"              -> {1 -> Repeating["ShortArrow", {-0.8, 0}]},
+  "Mono"             -> {0 -> Sized["LowerHook", $hookSize], 1 -> "Arrow"},
+  "Hook"             -> {0 -> Sized["UpperHook", $hookSize], 1 -> "Arrow"},
+  "MapsTo"           -> {0 -> "Bar", 1 -> "Arrow"},
+
+  "BarBar"           -> {0 -> "Bar", 1 -> "Bar"},
+
+  "ExtendedAdjoint"  -> {0 -> "Bar"},
+  "Adjoint"          -> {0.5 -> "Tee"}
 |>;
 
-(* approximations to circles by bezier, from https://spencermortensen.com/articles/bezier-circle/ *)
+$arrowAliases = {
+  "Arrow" -> "CurvedArrow",
+  "ReversedArrow" -> Reversed @ "CurvedArrow",
+  "LongArrow" -> Sized["CurvedArrow", {2, 1}],
+  "ShortArrow" -> Sized["CurvedArrow", {2/3, 1}],
+  "ShortBar" -> Sized["Bar", {1, 1/2}]
+}
 
-(*)
-quarter: BezierCurve[{{cr$0, cr$1}, {cr$2, cr$3}, {cr$3, cr$2}, {cr$1, cr$0}}]
-half: BezierCurve[{{cr$0, cr$1}, {cr$2,cr$3}, {cr$3,cr$2}, {cr$1, cr$0}, {cr$3, -cr$2}, {cr$2, -cr$3}, {cr$0, -cr$1}}]
-full = BezierCurve[{{cr$0, cr$1}, {cr$2,cr$3}, {cr$3,cr$2}, {cr$1, cr$0}, {cr$3, -cr$2}, {cr$2, -cr$3}, {cr$0, -cr$1}, {-cr$2, -cr$3}, {-cr$3, -cr$2}, {-cr$1, cr$0}, {-cr$3,cr$2}, {-cr$2,cr$3}, {cr$0, cr$1}}]
-*)
+_morphismArrowheadBoxes := BadArguments[];
 
 (**************************************************************************************************)
 
@@ -234,7 +229,7 @@ parseMorphismLabel = Case[
 
   item_ := Scope[
     {pos, dir} = RemoveOffsets @ VectorAlongLine[$path, Scaled[labelPositionOnShaft]];
-    morphismLabelBoxes[item, {pos, dir}, labelPositionOnShaft, labelPositionToSide[labelPosition, pos, dir]]
+    morphismLabelBoxes[$textModifierFn @ item, {pos, dir}, labelPositionOnShaft, labelPositionToSide[labelPosition, pos, dir]]
   ];
 ];
 
@@ -323,7 +318,7 @@ morphismLabelBoxes[label_, {pos_, dir_}, anchor_, side_] := Scope[
     background = ReplaceAutomatic[labelBackground, If[labelPosition === Center, White, None]];
     text = Text[label, pos, offset, dir, BaseStyle -> baseStyle, Background -> background];
   ];
-  Construct[Typeset`MakeBoxes, text, StandardForm, Graphics]
+  ToGraphicsBoxes @ text
 ];
 
 (**************************************************************************************************)

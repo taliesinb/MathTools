@@ -9,74 +9,65 @@ Arrowhead[pos$, dir$] is a graphics primitive that renders as an arrowhead begin
 | ArrowheadColor | the color of the arrowhead |
 | ArrowheadAnchor | anchor point of the arrowhead on the position, ranging from 0 (back) to 1 (front) |
 | ArrowheadOpacity | opacity of the arrowhead |
+| ArrowheadThickness | thickness of the edge of the arrowhead |
+* see usage of %ArrowheadPlane for more information.
+* %ArrowheadLength -> Automatic takes the length from the norm of dir$.
+* %ArrowHeadColor -> %SolidEdgeForm[face$, edge$] tints the face and edge of the arrowhead differntly.
 "
 
 Options[Arrowhead] = $arrowheadOptions;
 
-declareGraphicsFormatting[Arrowhead[pos:$Coord2P, dir:$Coord2P, rest___Rule]  :> arrowheadBoxes[pos, dir, rest], Graphics];
-declareGraphicsFormatting[Arrowhead[pos:$Coord3P, dir:$Coord3P, rest___Rule]  :> arrowheadBoxes[pos, dir, rest], Graphics3D];
+DeclareGraphicsPrimitive[Arrowhead, "Vector,Delta", arrowheadBoxes, {2, 3}];
 
 (**************************************************************************************************)
-
-Arrowhead::badshape = "`` is not a valid setting of ArrowheadShape, which should be one of ``."
 
 PrivateFunction[arrowheadBoxes]
 
-arrowheadBoxes[pos_, dir_, opts___Rule] := Scope[
+Arrowhead::unknownArrowhead = "ArrowheadShape -> `` is not one of ``."
+
+arrowheadBoxes[Arrowhead[pos:$ExtCoordP, dir:$CoordP, opts___Rule]] := Scope[
+
   UnpackAssociationSymbols[
     {opts} -> $MakeBoxesStyleData,
     arrowheadPlane, arrowheadLength, arrowheadShape, arrowheadColor, arrowheadAnchor,
-    arrowheadEdgeThickness, arrowheadEdgeColor, arrowheadOpacity
+    arrowheadThickness, arrowheadOpacity
   ];
+
+  {pos, off} = FromOffsetCoord @ pos;
+  is3d = Length[pos] == 3;
+
   tooltip = Lookup[{opts}, ArrowheadTooltip, None];
-  SetAutomatic[arrowheadOpacity, None];
+
   SetAutomatic[arrowheadLength, Norm @ dir];
-  {dx, dy} = resolvePlane[pos, dir, arrowheadPlane, arrowheadLength];
-  is3d = InnerDimension[pos] === 3;
-  If[is3d && (Max[Abs[dx]] < .0001 || arrowheadShape === "Cone"),
-    pos2 = pos - arrowheadAnchor * dy;
-    polygon = Construct[ConeBox, ToPacked @ {pos2, pos2 + dy}, arrowheadLength * 0.333];
+
+  iconData = LookupOrMessageKeys[$namedIconData, arrowheadShape, $Failed, Arrowhead::unknownArrowhead];
+  If[FailureQ[iconData], Return @ {}];
+  {prims, boxes2D, boxes3D, {boundX, boundY, {l, r}}, solid} = iconData;
+
+  $styler = SolidEmptyStyleBoxOperator[solid, arrowheadThickness, arrowheadOpacity, arrowheadColor];
+  rotMatrix = resolvePlane[pos, dir, arrowheadPlane, arrowheadLength];
+
+  If[is3d && (arrowheadShape === "Cone"),
+    Null
+(*     pos2 = pos - arrowheadAnchor * dy;
+    boxes = Construct[ConeBox, ToPacked @ {pos2, pos2 + dy}, arrowheadLength * 0.333];
+ *)
   ,
-    points = Lookup[$arrowheadShapes, arrowheadShape, Message[Arrowhead::badshape, arrowheadShape, StringRiffle[Keys @ $arrowheadShapes, ", "]]; Return[{}]];
-    polygon = toOrientedPolygon[pos, dx, dy, points, arrowheadAnchor];
+    dx = SetLengthTo[dir, arrowheadLength];
+    pos2 = ToPackedReal[pos - Lerp[l, r, arrowheadAnchor] * dx];
+    boxes23D = If[is3d, boxes3D, boxes2D];
+    If[Norm[off] != 0,
+      off = Dot[off, rotMatrix];
+      boxes23D = boxes23D /. c:$CoordP :> RuleCondition @ Offset[off, c]];
+    boxes = If[is3d,
+      Construct[GeometricTransformation3DBox, $styler @ boxes23D, {rotMatrix, pos2}],
+      Construct[GeometricTransformationBox, $styler @ boxes23D, {rotMatrix, pos2}]
+    ];
   ];
-  edgeColor = Darker[arrowheadColor, .2];
-  opacity = If[NumericQ[arrowheadOpacity], Opacity @ arrowheadOpacity, Sequence @@ {}];
-  boxes = StyleBox[polygon,
-    opacity,
-    If[arrowheadColor === None, FaceForm @ None, If[is3d, FaceForm[{Sequence @@ Color3D @ arrowheadColor}], FaceForm @ arrowheadColor]],
-    If[arrowheadEdgeThickness == 0, EdgeForm @ None, EdgeForm[{AbsoluteThickness[arrowheadEdgeThickness], opacity, edgeColor}]]
-  ];
+
   If[tooltip =!= None, boxes = NiceTooltipBoxes[boxes, ToBoxes @ tooltip]];
   boxes
-]
-
-toOrientedPolygon[pos_, dx_, dy_, points_, anchor_] :=
-  Construct[If[Length[dx] == 2, PolygonBox, Polygon3DBox], Threaded[pos] + Dot[points - Threaded[{0, anchor}], {dx, dy}]];
-
-(**************************************************************************************************)
-
-$arrowheadShapes = <|
-  "EquilateralTriangle"      -> {{-0.57735, 0}, {0, 1}, {0.57735, 0}},
-  "LeftEquilateralTriangle"  -> {{-0.57735, 0}, {0, 1}, {0, 0}},
-  "RightEquilateralTriangle" -> {{0, 0}, {0, 1}, {0.57735, 0}},
-
-  "WideTriangle"             -> {{-1, 0}, {0, 1}, {1, 0}},
-  "LeftWideTriangle"         -> {{-1, 0}, {0, 1}, {0, 0}},
-  "RightWideTriangle"        -> {{0, 0}, {0, 1}, {1, 0}},
-
-  "Triangle"           -> {{-0.75, 0}, {0, 1}, {0.75, 0}},
-  "LeftTriangle"       -> {{-0.75, 0}, {0, 1}, {0, 0}},
-  "RightTriangle"      -> {{0, 0}, {0, 1}, {0.75, 0}},
-
-  "NarrowTriangle"           -> {{-0.5, 0}, {0, 1}, {0.5, 0}},
-  "NarrowLeftTriangle"       -> {{-0.5, 0}, {0, 1}, {0, 0}},
-  "NarrowRightTriangle"      -> {{0, 0}, {0, 1}, {0.5, 0}},
-
-  "PointedTriangle"          -> {{-0.57735, -0.30764}, {0., 0.}, {0.57735, -0.30764}, {0., 1.}},
-  "LeftPointedTriangle"      -> {{-0.57735, -0.30764}, {0., 0.}, {0., 1.}},
-  "RightPointedTriangle"     -> {{0., 0.}, {0.57735, -0.30764}, {0., 1.}}
-|>
+];
 
 (**************************************************************************************************)
 
@@ -97,17 +88,17 @@ ArrowheadPlane is an option for %Arrowhead, %HalfArrowhead that determines the p
 
 PrivateFunction[resolvePlane]
 
-resolvePlane[pos_, dir_, plane_, size_] := Scope[
-  dy = dir;
-  dx = resolvePlaneDX[pos, dy, plane];
-  {SetLengthTo[dx, size], SetLengthTo[dy, size]}
+resolvePlane[pos:{_, _}, dx_, _, size_] :=
+  RotateToMatrix @ SetLengthTo[dx, size];
+
+resolvePlane[pos_, dx_, plane_, size_] := Scope[
+  dy = resolvePlaneDY[pos, dx, plane];
+  ToPackedReal @ Transpose @ {SetLengthTo[dx, size], SetLengthTo[dy, size]}
 ]
 
-resolvePlaneDX[{_, _}, dy_, _] := VectorRotate90CW[dy];
-resolvePlaneDX[pos_, dy_, None] := pos * 0;
-resolvePlaneDX[pos_, dy_, PlaneRightPointing[dir_]] := VectorReject[dir, dy];
-resolvePlaneDX[pos_, dy_, PlaneRightTowards[pos2_]] := VectorReject[pos2 - pos, dy];
-resolvePlaneDX[pos_, dy_, PlaneNormalPointing[dir_]] := Cross[dy, dir];
-resolvePlaneDX[pos_, dy_, PlaneNormalTowards[pos2_]] := Cross[dy, pos2 - pos];
-
-(**************************************************************************************************)
+resolvePlaneDY[pos_, dx_, None] := pos * 0;
+(* TODO: fix these, since these were wrt dy *)
+resolvePlaneDY[pos_, dx_, PlaneRightPointing[dir_]] := VectorReject[dir, dy];
+resolvePlaneDY[pos_, dx_, PlaneRightTowards[pos2_]] := VectorReject[pos2 - pos, dy];
+resolvePlaneDY[pos_, dx_, PlaneNormalPointing[dir_]] := Cross[dy, dir];
+resolvePlaneDY[pos_, dx_, PlaneNormalTowards[pos2_]] := Cross[dy, pos2 - pos];

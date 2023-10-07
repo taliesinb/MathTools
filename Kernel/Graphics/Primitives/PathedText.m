@@ -1,18 +1,17 @@
 PublicHead[PathedText]
 
 SetUsage @ "
-PathedText[path, text]
+PathedText[curve$, text$] displays text$ along curve$
 "
 
-declareGraphicsFormatting[
-  {
-    PathedText[path:($CoordMat2P | $GArrowIntP), labelData_, opts___Rule] :> pathedTextBoxes[path, labelData, opts]
-  },
-  Graphics
-];
-
 Options[PathedText] = {
-	LabelFontSize -> Inherited,
-	LabelBackground -> None
+  LabelFontSize -> Inherited,
+  LabelBackground -> None
 };
 
+DeclareGraphicsPrimitive[PathedText, "Curve", pathedTextBoxes0];
+
+(**************************************************************************************************)
+
+pathedTextBoxes0[PathedText[curve_, labelData_, opts___Rule]] :=
+  pathedTextBoxes[CurveToPoints @ curve, labelData, opts];

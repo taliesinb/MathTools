@@ -2785,7 +2785,7 @@ applyToPrimitivesType[primitives_, f_, type_] := ReplaceAll[primitives,
 $fadePrimitivesRules = {
   t_Text :> t,
   a:Annotation[_, "FrameLabel" | "Protected"] :> a,
-  Directive[Glow[_], opts___] :> Directive[Glow[LightGray], opts],
+  Color3D[_] :> Color3D[LightGray],
   _Opacity -> Opacity[1],
   (VertexColors -> c_List) :> (VertexColors -> c),
   (* (VertexColors -> c_List) :> (VertexColors -> Map[GrayLevel[0.85, ColorOpacity @ #]&, Echo @ c]), *)
@@ -2798,7 +2798,7 @@ semitransparentArrowheads[primitives_] := ReplaceAll[primitives,
   a_Arrowheads :>
     ReplaceAll[a, {
       c:$ColorPattern :> SetColorOpacity[c, .4],
-      Directive[Glow[c_], opts___] :> Color3D[Opacity[.3, c]]
+      Color3D[c_] :> Color3D[Opacity[.3, c]]
     }]
 ];
 

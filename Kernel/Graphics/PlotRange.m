@@ -129,20 +129,15 @@ $expanderRules := $expanderRules = Dispatch @ {
   a:$AnnotationP                           :> RuleCondition[plotRangeExpand @ First @ a],
   (StyleBox|Style)[e_, ___]                :> e,
   Inset[_, pos_, ___]                      :> Point[pos],
-  Translate[g_, t_]                        :> RuleCondition[applyGeomTrans[g, None, t]],
-  Rotate[g_, t_]                           :> RuleCondition[applyGeomTrans[g, RotationMatrix @ t, None]],
-  GeometricTransformation[g_, m_ ? MatrixQ]       :> RuleCondition[applyGeomTrans[g, m, None]],
-  GeometricTransformation[g_, {m_ ? MatrixQ, t_}] :> RuleCondition[applyGeomTrans[g, m, t]],
+  Translate[g_, t_]                        :> RuleCondition[GraphicsTransformAffine[g, None, t]],
+  Rotate[g_, t_]                           :> RuleCondition[GraphicsTransformAffine[g, RotationMatrix @ t, None]],
+  GeometricTransformation[g_, m_ ? MatrixQ]       :> RuleCondition[GraphicsTransformAffine[g, m, None]],
+  GeometricTransformation[g_, {m_ ? MatrixQ, t_}] :> RuleCondition[GraphicsTransformAffine[g, m, t]],
   Inset[_, pos_, $centerOSpecP, {w_, h_}]  :> RuleCondition[Rectangle[pos - {w,h}/2, pos + {w,h}/2]]
 };
 
-(* TODO: put this into their own function *)
-applyGeomTrans[g_, None | {{1., 0.}, {0., 1.}}, t_] := GraphicsTransformCoordinates[PlusOperator[Threaded[t]], g];
-applyGeomTrans[g_, m_, t_]   := GraphicsTransformCoordinates[DotRightOperator[m] /* PlusOperator[Threaded[t]], g];
-applyGeomTrans[g_, m_, None] := GraphicsTransformCoordinates[DotRightOperator[m], g];
-
-(* this tracks $MakeBoxesStyleData changes in the primitive tree, so that when we use render $customGraphicsP
-we will pick up the right options for them *)
+(* this tracks $MakeBoxesStyleData changes in the primitive tree, so that when we use render custom
+graphics primitives we will pick up the right options for them *)
 plotRangeRecurse = Case[
   (head:Translate|Rotate|GeometricTransformation|Graphics|Graphics3D)[g_, a___] := head[% @ g, a];
   l_List                         := InheritedBlock[{$MakeBoxesStyleData}, Map[%, l]];
@@ -178,8 +173,17 @@ $boxSymbolToOrdinarySymbol := $boxSymbolToOrdinarySymbol =
 
 boxNameToOrdinaryName[name_] := StringDelete[name, {"3D", "Box"}];
 
+PrivateVariable[$graphicsBoxReplacements]
+
 $graphicsBoxReplacements := $graphicsBoxReplacements =
   Dispatch @ Join[Normal @ $boxSymbolToOrdinarySymbol, {InterpretationBox[a_, _] :> a, Typeset`Hold[h_] :> h}];
+
+(**************************************************************************************************)
+
+PrivateVariable[$primitiveToBoxReplacements]
+
+$primitiveToBoxReplacements := $primitiveToBoxReplacements =
+  Dispatch @ Cases[$graphicsBoxReplacements, Rule[box_Symbol, prim_Symbol] :> Rule[prim, box]];
 
 (**************************************************************************************************)
 

@@ -209,7 +209,6 @@ PublicFunction[DownloadPDFMirror, FindPDFMirrorURL]
 
 PublicVariable[$SciHubServers]
 
-Clear[$SciHubServers];
 SetInitialValue[$SciHubServers, {
   "https://sci.hubbza.co.za/",
   "https://www.libgen.tw/",

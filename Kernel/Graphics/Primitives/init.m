@@ -47,23 +47,23 @@ Typeset`MakeBoxes[ System`Dump`g_List, System`Dump`fmt_, System`Dump`head_] := I
 
 (**************************************************************************************************)
 
-PublicOption[ArrowheadPlane, ArrowheadLength, ArrowheadShape, ArrowheadColor, ArrowheadAnchor, ArrowheadEdgeThickness, ArrowheadOpacity, ArrowheadTooltip]
+PublicOption[ArrowheadPlane, ArrowheadLength, ArrowheadShape, ArrowheadColor, ArrowheadAnchor, ArrowheadThickness, ArrowheadOpacity, ArrowheadTooltip]
 
 PrivateVariable[$arrowheadOptions]
 
 $arrowheadOptions = {
   ArrowheadPlane -> None,
   ArrowheadLength -> Automatic,
-  ArrowheadShape -> "EquilateralTriangle",
-  ArrowheadColor -> GrayLevel[0.5],
+  ArrowheadShape -> "FilledKite",
+  ArrowheadColor -> GrayLevel[0],
   ArrowheadAnchor -> 0.5,
   ArrowheadOpacity -> None,
-  ArrowheadEdgeThickness -> 1
+  ArrowheadThickness -> 1
 }
 
 (**************************************************************************************************)
 
-PublicOption[ArrowShaftThickness, ArrowShaftColor, ArrowShaftOpacity, ArrowShaftDashing, ArrowShaftMasking, ArrowShaftHidden, ArrowPathShrinking, ArrowPathSetback, ArrowPathOffset, ArrowPathReversed]
+PublicOption[ArrowThickness, ArrowColor, ArrowOpacity, ArrowDashing, ArrowMasking, ArrowShaftHidden, ArrowPathSetback, ArrowPathOffset, ArrowPathReversed]
 
 PublicOption[LabelOrientation, LabelFontSize, LabelBackground, LabelSpacing]
 
@@ -73,13 +73,12 @@ $extendedArrowOptions = JoinOptions[
   $arrowheadOptions,
   ArrowheadAnchor -> Automatic,
   ArrowheadPosition -> Automatic,
-  ArrowShaftThickness -> 1,
-  ArrowShaftColor -> Black,
-  ArrowShaftOpacity -> 1,
-  ArrowShaftDashing -> None,
-  ArrowShaftMasking -> None,
-  ArrowPathShrinking -> None,
-  ArrowPathSetback -> Automatic,
+  ArrowThickness -> 1,
+  ArrowColor -> Black,
+  ArrowOpacity -> 1,
+  ArrowDashing -> None,
+  ArrowMasking -> None,
+  ArrowPathSetback -> Automatic, (* legacy *)
   Setback -> Automatic,
   ArrowPathOffset -> None
 ];
@@ -88,15 +87,15 @@ AssociateTo[$MakeBoxesStyleData, $extendedArrowOptions];
 
 (**************************************************************************************************)
 
-PublicOption[DecorationWidth]
+PublicOption[ArrowheadSize]
 
 PrivateVariable[$morphismArrowOptions]
 
 $morphismArrowOptions = Normal @ KeyTake[$extendedArrowOptions, {
-  ArrowPathSetback, ArrowShaftColor, ArrowShaftOpacity, ArrowShaftThickness, ArrowShaftDashing, ArrowShaftMasking
+  ArrowPathSetback, ArrowColor, ArrowOpacity, ArrowThickness, ArrowDashing, ArrowMasking
 }] ~Join~ {
   GraphicsScale -> None,
-  DecorationWidth -> 15,
+  ArrowheadSize -> 15,
   LabelPosition -> Automatic,
   LabelOrientation -> Automatic,
   LabelFontSize -> Inherited,
@@ -112,19 +111,6 @@ AssociateTo[$MakeBoxesStyleData, $morphismArrowOptions];
 
 (**************************************************************************************************)
 
-PrivateFunction[makeShaftStyler]
-
-DefineMacro[makeShaftStyler,
-makeShaftStyler[color_, opacity_, thickness_, dashing_] := Quoted @ DeleteNone[StyleBoxOperator[
-    If[ColorQ @ color, color, None],
-    If[NumberQ @ opacity, Opacity @ opacity, None],
-    If[NumberQ @ thickness, AbsoluteThickness @ thickness, None],
-    Switch[dashing, _Dashing, dashing, None, None, _, Dashing @ dashing]
-  ]]
-];
-
-(**************************************************************************************************)
-
 AssociateTo[$MakeBoxesStyleData, {
   BendRadius -> 0.1,
   BendShape -> "Arc"
@@ -132,42 +118,41 @@ AssociateTo[$MakeBoxesStyleData, {
 
 (**************************************************************************************************)
 
-PrivateFunction[recurseGraphicsCoordinates]
+PublicFunction[ReplacePrimitiveCoordinates]
 
-recurseGraphicsCoordinates[f_, primitives_, igc_:False] := Scope[
-  $f = f; $igc = igc;
-  rgc[primitives]
+SetUsage @ "
+ReplacePrimitiveCoordinates[prims$, rules$] replaces all primitive coordinates present in prims$ via rules$.
+"
+
+ReplacePrimitiveCoordinates[prims_, rules_] := Scope[
+  $vectorF = $matrixF = ReplaceAll @ Dispatch @ rules;
+  ReplaceAll[prims, $rpcDispatch]
 ]
 
-$GPrimVec1H = Flatten @ Alternatives[$GPrimVecH, $GPrimVecRadH, $GPrimVecDeltaH];
-$GPrimVec12H = $GPrimVecVecH;
-$GPrimVecs1H = Flatten @ Alternatives[$GPrimVecsH, $GPrimVecsRadH, $GPrimPairH, $GPrimPairRadH, $GPrimMatH, $GPrimMatsH, $GPrimMatsRadH];
-$GPrimOuterH = Graphics | Graphics3D;
-(* ^ these could be more selective but here just rely on mapping at level -1 *)
+$rpcDispatch := $rpcDispatch = Dispatch @ With[{
+  $vecvec    = Alternatives @@ PrimitiveSignatureLookup["Vector,Vector"],
+  $vec       = Alternatives @@ PrimitiveSignatureLookup["Vector?Radius | Vector,Delta"],
+  $matrixy   = Alternatives @@ PrimitiveSignatureLookup["Pair?Radius | Matrix?Radius | Matrices?Radius | Curve?Radius"],
+  $opvec     = Alternatives @@ PrimitiveSignatureLookup["Opaque,Vector"],
+  $primvec   = Alternatives @@ PrimitiveSignatureLookup["Primitives,Vector"],
+  $rules     = Alternatives @@ PrimitiveSignatureLookup["Rules,Primitives"],
+  $op        = Alternatives @@ PrimitiveSignatureLookup["Opaque"]}, {
 
-$GArrowH = Arrow | ExtendedArrow;
+  e:($op)[___]                        :> e,
 
-PrivateVariable[$GArrowIntP, $GCurveIntP]
+  (* we revert the undocumented behavior that InfiniteLine[{"A", "B"}] evaluates to InfiniteLine[{0, 0}, {"A", "B"}] *)
+  i:InfiniteLine[{0, 0}, $Coord2P]    :> i,
+  InfiniteLine[{0, 0}, ab:{_, _}]     :> RuleCondition @ InfiniteLine[$vectorF /@ ab],
 
-$GCurveIntP = _ElbowCurve | _RollingCurve | _VectorCurve | _CompassCurve | _LoopCurve | _SetbackCurve | _SnakeCurve | _HorizontalCurve | _VerticalCurve | _AnchoredCurve | _CircuitCurve | _SmoothedCurve | _Line | _BezierCurve | _BSplineCurve;
-$GArrowIntP = Join[_JoinedCurve | _Tube, $GCurveIntP];
+  (h:$vecvec)[v_, w_, a___]           :> RuleCondition @ h[$vectorF @ v, $vectorF @ w, a],
+  (h:$matrixy)[m_List, a___]          :> RuleCondition @ h[$matrixF @ m, a],
+  (h:$vec)[v_, a___]                  :> RuleCondition @ h[$vectorF @ v, a],
+  (h:$opvec)[f_, v_, a___]            :> RuleCondition @ h[f, $vectorF @ v, a],
+  (h:$primvec)[f_, v_, a___]          :> RuleCondition @ h[f /. $rpcDispatch, $vectorF @ v, a],
+  (h:$rules)[r_, p_, a___]            :> RuleCondition @ h[$ruleF @ r, p /. $rpcDispatch, a]
+}];
 
-rgc = Case[
-  (h:$GArrowH)[e:$GArrowIntP, a___] := h[% @ e, a];
-  (h:$GPrimVec1H)[v_, a___]         := h[$f[v, h], a];
-  (h:$GPrimVec12H)[v_, w_, a___]    := h[Sequence @@ $f[{v, w}, h], a];
-  (h:$GPrimVecs1H)[v_, a___]        := h[$f[v, h], a];
-  (h:$GTrans1V)[g_, v_, a___]       := h[% @ g, $f[v, h], a];
-  (h:$GPrimThruH)[g_, a___]         := h[% @ g, a];
-  (h:$GPrimThruVecH)[g_, v_, a___]  := h[% @ g, $f[v, h], a];
-  (h:$GPrimAnyVecH)[a_, v_, b___]   := h[a, $f[v, h], b];
-  GraphicsComplex[v_, g_]           := GraphicsComplex[$f[v, GraphicsComplex], If[$igc, % @ g, g]];
-  GridComplex[v_, g_]               := % @ gridComplexPrimitives @ g;
-  GraphicsStyleData[d_, g_]         := GraphicsStyleData[d, % @ g];
-  list_List                         := Map[%, list];
-  (h:$GPrimOuterH)[g_, a___]        := h[% @ g, a];
-  other_                            := other;
-]
+$ruleF[e_] := VectorReplace[e, Rule[c_, o_] :> Rule[$vectorF[c], o]];
 
 (**************************************************************************************************)
 
@@ -175,9 +160,9 @@ PrivateFunction[ExpandGraphicsComplex]
 
 ExpandGraphicsComplex[g_] := ReplaceAll[g,
   GraphicsComplex[c_, g2_] :>
-    RuleCondition @ recurseGraphicsCoordinates[
-      ReplaceAll[#, i_Integer :> RuleCondition[Part[c, i]]]&,
-      g2, True
+    RuleCondition @ ReplacePrimitiveCoordinates[
+      g2,
+      i_Integer :> RuleCondition[Part[c, i]]
     ]
 ];
 

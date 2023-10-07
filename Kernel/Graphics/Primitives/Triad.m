@@ -2,11 +2,6 @@ PublicHead[Triad]
 
 PublicOption[TriadColor, TriadOpacity, TriadBendOptions, InteriorOffset, TriadEdgeThickness, TriadStrip, TriadArrowhead, TriadStripRadius, TriadLegs, TriadLegColor, TriadLegThickness, TriadLegWidth]
 
-$triadOffset = 0.05;
-
-declareGraphicsFormatting[Triad[p:{$Coord3P, $Coord3P, $Coord3P}, opts___Rule] :> triadBoxes[True, p, opts], Graphics3D];
-declareGraphicsFormatting[Triad[p:{$Coord2P, $Coord2P, $Coord2P}, opts___Rule] :> triadBoxes[False, p, opts], Graphics];
-
 Options[Triad] = {
   TriadBendOptions -> {BendRadius -> 0.1, BendShape -> None},
   InteriorOffset -> 0.1,
@@ -24,7 +19,15 @@ Options[Triad] = {
 
 AssociateTo[$MakeBoxesStyleData, Options[Triad]];
 
-triadBoxes[is3d_, {a_, b_, c_}, opts___Rule] := Scope[
+$triadOffset = 0.05;
+
+DeclareGraphicsPrimitive[Triad, "Matrix", triadBoxes, {2, 3}]
+
+triadBoxes[Triad[p:{$Coord3P, $Coord3P, $Coord3P}, opts___Rule]] := rawTriadBoxes[True, p, opts];
+triadBoxes[Triad[p:{$Coord2P, $Coord2P, $Coord2P}, opts___Rule]] := rawTriadBoxes[False, p, opts];
+
+(**************************************************************************************************)
+rawTriadBoxes[is3d_, {a_, b_, c_}, opts___Rule] := Scope[
   $3d = is3d;
   UnpackAssociationSymbols[
     {opts} -> $MakeBoxesStyleData,

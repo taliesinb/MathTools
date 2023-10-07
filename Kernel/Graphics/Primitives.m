@@ -24,15 +24,14 @@ $locs = Association[
 
 PublicHead[PatternShading3D]
 
-declareGraphicsFormatting[
-  PatternShading3D[color_ ? $ColorPattern, density_ ? NumericQ] :> patternShading3DBoxes[color, density]
-]
+DeclareGraphicsPrimitive[PatternShading3D, "Color", patternShading3DBoxes, {3}];
 
-PatternShading3D[color_, density_:5] := toSurfaceAppearance[
-  "UseScreenSpace" -> 1, "FeatureColor" -> color,
-  "Shape" -> "Line", "StepCount" -> 1, "Tiling" -> {1, 1}*density,
-  "IsTwoTone" -> 1
-];
+patternShading3DBoxes[PatternShading3D[color:$ColorPattern, density:$NumberP:5]] :=
+  ToGraphics3DBoxes @ toSurfaceAppearance[
+    "UseScreenSpace" -> 1, "FeatureColor" -> color,
+    "Shape" -> "Line", "StepCount" -> 1, "Tiling" -> {1, 1}*density,
+    "IsTwoTone" -> 1
+  ];
 
 Options[toSurfaceAppearance] = {
   "StepCount" -> 1, "Tiling" -> {5, 5},
@@ -52,12 +51,10 @@ toSurfaceAppearance[opts:OptionsPattern[toSurfaceAppearance]] :=
 
 PublicHead[AnnotatedCoordinate]
 
-(* AnnotatedCoordinate gets transformed by GraphicsTransformCoordinates but doesn't actually render.
+(* AnnotatedCoordinate gets transformed by MapPrimitiveCoordinates but doesn't actually render.
 used to keep track of named coordinates as they are transformed for later processing. *)
 
-declareGraphicsFormatting[
-  AnnotatedCoordinate[_, _] :> {}
-]
+DeclareGraphicsPrimitive[AnnotatedCoordinate, "Matrix", {}&];
 
 (**************************************************************************************************)
 

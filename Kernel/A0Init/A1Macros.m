@@ -356,6 +356,8 @@ Clear[UnmatchedCase];
 UnmatchedCase[] := Panic["UnmatchedCase"];
 UnmatchedCase[head_, case_] := Panic["UnmatchedCase[" <> SymbolName[head] <> "]", "``", MsgExpr @ Unevaluated @ case];
 
+PrivateFunction[UnmatchedCase2]
+
 General::unmatchedcase = "Case unmatched: ``";
 UnmatchedCase2[head_Symbol, case_] := (
   Message[MessageName[head, "unmatchedcase"], MsgExpr @ Unevaluated @ case];
@@ -908,3 +910,17 @@ PublicFunction[WithInternet]
 SetAttributes[WithInternet, HoldAll];
 
 WithInternet[body_] := Block[{$AllowInternet = True}, body];
+
+(**************************************************************************************************)
+
+PublicFunction[VectorListableQ]
+
+VectorListableQ[sym_Symbol] := MemberQ[Attributes @ sym, Listable];
+VectorListableQ[HoldPattern[Function[___, Listable | {___, Listable, ___}]]] := True;
+VectorListableQ[_] := False;
+
+PrivateFunction[setVectorListableOperator]
+
+setVectorListableOperator[syms__Symbol] := Scan[setVectorListableOperator, {syms}];
+setVectorListableOperator[sym_Symbol] := (VectorListableQ[_sym] := True;)
+_setVectorListableOperator := BadArguments[];

@@ -31,11 +31,19 @@ VertexField1DPlot[vals_] := ListLinePlot[vals,
 
 (**************************************************************************************************)
 
+PublicFunction[PlainGraphics]
+
+PlainGraphics[args___] := Graphics[args, Frame -> True, FrameTicks -> None, PlotRangePadding -> 0, ImagePadding -> 1];
+
+(**************************************************************************************************)
+
 PublicFunction[GridGraphics]
 
 SetUsage @ "
 GridGraphics[g$] displays g$ over plot range {-1, 1}, with some padding.
 GridGraphics[g$, n$] displays g$ over plot range {-n$, n$}.
+GridGraphics[g$, {min$, max$}] displays g$ over plot range {min$, max$}.
+GridGraphics[g$, {{x$1, x$2}, {{y$1, y$2}}}] sets range for x$ and y$.
 * each unit of plot range corresponds to 100 pixels, e.g. %GraphicsScale -> 100.
 * minor gridlines occur at every 0.2, and major at every 1 plotrange.
 "
@@ -46,16 +54,19 @@ Options[GridGraphics] = {
 
 GridGraphics[g_, opts___Rule] := GridGraphics[g, 1, opts];
 
-GridGraphics[g_, n_Integer, opts___Rule] :=
-  GridGraphics[g, {-n, n}, opts];
+GridGraphics[g_, n_?NumberQ, opts___Rule] :=
+  GridGraphics[g, {{-n, n}, {-n, n}}, opts];
 
-GridGraphics[g_, {l_, h_}, opts___Rule] := Graphics[g,
+GridGraphics[g_, {min_?NumberQ, max_?NumberQ}, opts___Rule] :=
+  GridGraphics[g, {{min, max}, {min, max}}, opts];
+
+GridGraphics[g_, {{x1_, x2_}, {y1_, y2_}}, opts___Rule] := Graphics[g,
   FilterOptions @ opts,
-  ImageSize -> (((h - l)+.2)) * Lookup[{opts}, GraphicsScale, 100],
-  PlotRange -> {{l-.1, h+.1}, {l-.1, h+.1}},
+  ImageSize -> (({x2 - x1, y2 - y1}+.2) * Lookup[{opts}, GraphicsScale, 100]),
+  PlotRange -> {{x1-.1, x2+.1}, {y1-.1, y2+.1}},
   Frame -> True, FrameTicks -> None, GridLines -> {
-      glPair /@ Range[l, h, .2],
-      glPair /@ Range[l, h, .2]
+      glPair /@ Range[x1, x2, .2],
+      glPair /@ Range[y1, y2, .2]
     }, GridLinesStyle -> GrayLevel[0.9]
 ];
 

@@ -293,159 +293,6 @@ DisplaceLineTowards[line:{a_, b_}, point_, dist_] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[SetbackCoordinates]
-PublicHead[Rectangular]
-
-SetUsage @ "
-SetbackCoordinates[path$, d$] truncates the endpoints of a path by distance d$ towards its interior.
-SetbackCoordinates[path$, {d$1, d$2}] truncates by distance d$1 from start and d$2 from end.
-SetbackCoordinates[{path$1, path$2}, $$] truncates several paths at once.
-* Line segments will be dropped if the truncated distance exceeds the length of that segment.
-* The entire line will become a zero length line if the truncated distance exceeds the entire length.
-* Specifications can be a single spec or a pair of:
-| d$ | a distance in regular coordinates |
-| Scaled[f$] | a fraction of the line length |
-| Offset[p$] | a setback in absolute points |
-| Offset[p$, d$] | setback distance d$ then absolute points p$ |
-| Rectangular[{x$, y$}] | separate distances in the x$ and y$ directions |
-* Using Offset[$$] only works for straight lines.
-"
-
-$zeroP = 0|0.;
-$zeroRP = Rectangular[{$zeroP,$zerop}];
-$zeroFP = $zeroP | $zeroRP;
-$nullSBSpecP = None | $zeroFP | Offset[$zeroP] | Offset[$zeroP, $zeroFP];
-
-$rectP = Rectangular[$Coord2P];
-$numRectP = $NumberP | $rectP;
-$sbSpecP = $numRectP | Offset[$NumberP] | Offset[$NumberP, $numRectP];
-
-SetbackCoordinates[spec_, $nullSBSpecP | {$nullSBSpecP, $nullSBSpecP}] :=
-  spec;
-
-SetbackCoordinates[spec_ ? CoordinateArrayQ, d_] :=
-  SetbackCoordinates[#, d]& /@ spec;
-
-SetbackCoordinates[spec_, Scaled[s_ ? NumberQ]] :=
-  SetbackCoordinates[spec, LineLength[spec] * s];
-
-SetbackCoordinates[spec_, d:$sbSpecP] :=
-  SetbackCoordinates[spec, {d, d}];
-
-(* we can preserve absolute offsets here for simple lines, but in general we can't walk
-a complex line in points since we don't know how it will resolve later when a scale is chosen *)
-SetbackCoordinates[{a_, b_}, Offset[d_]] := SetbackCoordinates[{a, b}, {Offset[d], Offset[d]}]
-
-SetbackCoordinates[{a_, b_}, spec:{Repeated[$sbSpecP, 2]} /; ContainsQ[spec, Offset]] := Scope[
-  dx = safeNormDelta[a, b];
-  {abs, rel} = Transpose @ Map[toAbsRelOffset, spec];
-  {a, b} = SetbackCoordinates[{a, b}, rel];
-  {d1, d2} = N @ abs;
-  {Offset[dx * d1, a], Offset[-dx * d2, b]} // SimplifyOffsets
-];
-
-SetbackCoordinates[{a_, b_}, {d1_ ? NumberQ, d2_ ? NumberQ}] := Scope[
-  If[EuclideanDistance[a, b] < d1 + d2, Return @ emptyLine[a, b]];
-  dx = N @ Normalize[b - a];
-  {a + dx * d1, b - dx * d2}
-];
-
-SetbackCoordinates[coords_, {d1:$numRectP, d2:$numRectP}] :=
-  setbackHalf[setbackHalf[coords, d1], -d2]
-
-SetbackCoordinates::invalidspec = "Invalid setback specification ``."
-SetbackCoordinates[coords_, other_] := (
-  Message[SetbackCoordinates::invalidspec, other];
-  coords
-);
-
-emptyLine[a_, b_] := Scope[mid = Avg[a, b]; {mid, mid}];
-
-(**************************************************************************************************)
-
-PublicFunction[ExtendSetback]
-
-ExtendSetback[b_][a_] := ExtendSetback[a, b];
-ExtendSetback[a:$NumberP, b:$NumberP] := a + b;
-
-ExtendSetback[$nullSBSpecP, $nullSBSpecP] := 0;
-ExtendSetback[$nullSBSpecP, b_] := b;
-ExtendSetback[a_, $nullSBSpecP] := a;
-
-ExtendSetback[{a1_, a2_}, {b1_, b2_}] := {extendSB1[a1, b1], extendSB1[a2, b2]};
-ExtendSetback[a_, {b1_, b2_}] := {extendSB1[a, b1], extendSB1[a, b2]};
-ExtendSetback[{a1_, a2_}, b_] := {extendSB1[a1, b], extendSB1[a2, b]};
-ExtendSetback[a_, b_] := extendSB1[a, b];
-
-extendSB1 = Case[
-  Seq[$nullSBSpecP, $nullSBSpecP] := 0;
-  Seq[$nullSBSpecP, e_] := e;
-  Seq[e_, $nullSBSpecP] := e;
-  Seq[a_, b_] := fromAbsRelOffset[Plus @@ Map[toAbsRelOffset, {a, b}]];
-];
-
-(**************************************************************************************************)
-
-fromAbsRelOffset = Case[
-  {$zeroP, $zeroFP} := 0;
-  {$zeroP, d_}      := d;
-  {p_, $zeroFP}     := Offset[p];
-  {p_, d_}          := Offset[p, d];
-];
-
-toAbsRelOffset = Case[
-  d:$numRectP                     := {0, d};
-  Offset[p:$NumberP]              := {p, 0};
-  Offset[p:$NumberP, d:$numRectP] := {p, d};
-];
-
-Rectangular /: Plus[Rectangular[p_],  d:$NumberP] := Rectangular[p + d];
-Rectangular /: Plus[Rectangular[p1_], Rectangular[p2_]] := Rectangular[p1 + p2];
-
-(**************************************************************************************************)
-
-setbackHalf[{}, _] := {};
-setbackHalf[p:{_}, _] := p;
-setbackHalf[coords_, 0|0.] := coords;
-setbackHalf[coords_, d_ ? Negative] := Reverse @ setbackHalf[Reverse @ coords, Abs[d]];
-setbackHalf[coords_, -r_Rectangular] := Reverse @ setbackHalf[Reverse @ coords, r];
-
-setbackHalf[coords_, d_] := takeLine[coords, d];
-
-takeLine[{a_, b_}, Rectangular[{d1:$NumberP, d2:$NumberP}]] := Scope[
-  sz = {d1,d2}/2;
-  c = LineRectangleIntersectionPoint[{b, a}, {a - sz, a + sz}];
-  {c, b}
-];
-
-takeLine[path_, Rectangular[{d1:$NumberP, d2:$NumberP}]] := Scope[
-  a = First[path];
-  sz = {d1,d2}/2; rect = {a-sz, a+sz};
-  c = LineRectangleIntersectionPoint[path, rect];
-  n = LengthWhile[path, RegionMember[Rectangle @@ rect]];
-  DeleteDuplicates @ Prepend[Drop[path, n], c]
-];
-
-takeLine[{a_, b_}, d:$NumberP] := (
-  If[EuclideanDistance[a, b] < d, Return @ emptyLine[a, b]];
-  dx = N @ Normalize[b - a];
-  {a + dx * d, b}
-);
-
-takeLine[coords_List, d:$NumberP] := Scope[
-  prev = First @ coords; total = 0;
-  n = LengthWhile[coords, curr |-> (total += EuclideanDistance[curr, prev]; prev = curr; total < d)];
-  If[n == Length[coords], Return @ Last @ coords];
-  rem = total - d;
-  newCoords = Drop[coords, n];
-  If[rem == 0,
-    newCoords,
-    Prepend[newCoords, PointAlongLine[Part[coords, {n + 1, n}], rem]]
-  ]
-];
-
-(**************************************************************************************************)
-
 PublicFunction[PointTowards]
 
 SetUsage @ "
@@ -509,16 +356,11 @@ VectorAlongLine[{a:$CoordP, b:$CoordP}, Scaled[d_]] :=
   {Lerp[a, b, d], N @ Normalize[b - a]};
 
 VectorAlongLine[{a_, b_} ? ContainsOffsetsQ, Scaled[d_]] := Scope[
-  {aa, ar} = toAbsRelVec @ a;
-  {ba, br} = toAbsRelVec @ b;
+  {ar, aa} = FromOffsetCoord @ a;
+  {br, ba} = FromOffsetCoord @ b;
   ca = Lerp[aa, ba, d];
   cr = Lerp[ar, br, d];
-  {Offset[ca, cr], safeNormDelta[a, b]}
-];
-
-toAbsRelVec = Case[
-  Offset[o_, p_] := {o, p};
-  p_             := {{0, 0}, p};
+  {Offset[ca, cr], coordNormDelta[a, b]}
 ];
 
 VectorAlongLine[coords_, Scaled[d_]] := VectorAlongLine[coords, LineLength[coords] * d];
@@ -540,30 +382,14 @@ VectorAlongLine[coords_List, d_ ? NumericQ] := vectorAlongLine[coords, d];
 
 (**************************************************************************************************)
 
-(* TODO: expose this and other such Offset-aware functions properly *)
-PrivateFunction[coordPlus]
-
 vectorAlongSegment[{a_, b_}, d_] := Scope[
-  delta = safeNormDelta[a, b];
+  delta = coordNormDelta[a, b];
   {a + delta * d, delta}
 ];
 
-coordPlus[p1_, Offset[o_, p2_]] := Offset[o, p1 + p2];
-coordPlus[Offset[o_, p1_], p2_] := Offset[o, p1 + p2];
-coordPlus[Offset[o1_, p1_], Offset[o2_, p1_]] := Offset[o1 + o2, p1 + p2];
-coordPlus[p1_, p2_] := p1 + p2;
-
-safeNormDelta[a_, Offset[_, b_]] := safeNormDelta[a, b];
-safeNormDelta[Offset[_, a_], b_] := safeNormDelta[a, b];
-safeNormDelta[a_, b_] := N @ Normalize[b - a];
-
-safeEuclideanDistance[Offset[_, a_], b_] := safeEuclideanDistance[a, b];
-safeEuclideanDistance[a_, Offset[_, b_]] := safeEuclideanDistance[a, b];
-safeEuclideanDistance[a_, b_] := EuclideanDistance[a, b];
-
 vectorAlongLine[coords_, d_] := Scope[
   prev = First @ coords; total = 0;
-  n = LengthWhile[coords, curr |-> (total += safeEuclideanDistance[curr, prev]; prev = curr; total < d)];
+  n = LengthWhile[coords, curr |-> (total += coordDistance[curr, prev]; prev = curr; total < d)];
   If[n == Length[coords], Return @ getPointAndVec[coords, n]];
   rem = total - d;
   If[rem == 0,
@@ -576,12 +402,12 @@ getPointAndVec[{coord_}, 1] := {coord, {0, 0}};
 
 getPointAndVec[coords_, 1] := Scope[
   {p1, p2} = Part[coords, {1, 2}];
-  {p1, safeNormDelta[p1, p2]}
+  {p1, coordNormDelta[p1, p2]}
 ]
 
 getPointAndVec[coords_, n_] /; n == Length[coords] := Scope[
   {p0, p1} = Part[coords, {-2, -1}];
-  {p1, safeNormDelta[p0, p1]}
+  {p1, coordNormDelta[p0, p1]}
 ]
 
 getPointAndVec[coords_, i_] := Scope[
@@ -810,35 +636,3 @@ ToAlignmentPair[align_] := Switch[align,
   _,           $Failed
 ];
 
-(**************************************************************************************************)
-
-PublicFunction[ContainsOffsetsQ]
-
-ContainsOffsetsQ[points_] := ContainsQ[points, _Offset];
-
-(**************************************************************************************************)
-
-PublicFunction[RemoveOffsets]
-
-RemoveOffsets[points_] := points /. Offset[_, p_] :> p;
-
-(**************************************************************************************************)
-
-PublicFunction[SimplifyOffsets]
-
-SimplifyOffsets[points_] := points //. {
-  Offset[d1_, Offset[d2_, p_]] :> Offset[d1 + d2, p],
-  Offset[{$zeroP, $zerpP}, p_] :> p
-};
-
-(**************************************************************************************************)
-
-PublicFunction[ResolveOffsets]
-
-ResolveOffsets[e_, scale_ ? NumberQ] :=
-  ReplaceAll[e, {
-    Offset[o_, p] :> RuleCondition[p + o / scale],
-    Offset[o_] :> RuleCondition[o / scale]
-  }];
-
-ResolveOffsets[e_, _] := e;

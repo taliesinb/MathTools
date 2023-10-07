@@ -6,17 +6,15 @@ ElbowCurve[{a$, b$}, side$ -> d$] bends towards the given direction side$ such T
 * The distance d$ can be a numeric value or Scaled[$$] to indicate a proportion of the line's length.
 "
 
-declareGraphicsFormatting[ElbowCurve[{a:$Coord2P, b:$Coord2P}, amount_:Automatic] :> elbowCurveBoxes[a, b, amount], Graphics];
+DeclareCurvePrimitive[ElbowCurve, elbowCurvePoints];
 
-elbowCurveBoxes[a_, b_, amount_] := Construct[BezierCurveBox, ToPackedReal @ elbowBezierCurvePoints[a, b, amount]];
+SignPrimitive["Curve", ElbowCurve];
 
 (**************************************************************************************************)
 
-PrivateFunction[elbowBezierCurvePoints]
-
 ElbowCurve::baddist = "Elbow distance `` is not a numeric value.";
 
-elbowBezierCurvePoints[a_, b_, amount_] := Scope[
+elbowCurvePoints[ElbowCurve[{a:$Coord2P, b:$Coord2P}, amount_]] := Scope[
   mid = Avg[a, b];
   delta = Normalize @ VectorRotate90[b - a];
   If[MatchQ[amount, $SidePattern|Above|Below -> _],
@@ -30,5 +28,6 @@ elbowBezierCurvePoints[a_, b_, amount_] := Scope[
     Return @ {a, b}
   ];
   delta *= amount;
-  {a, mid + delta, b}
+  DiscretizeCurve @ BezierCurve @ {a, mid + delta, b}
 ];
+

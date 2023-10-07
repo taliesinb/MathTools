@@ -19,11 +19,6 @@ SetUsage @ "
 NodeComplex[$$]
 "
 
-Typeset`MakeBoxes[gc:NodeComplex[___], form:StandardForm | TraditionalForm, type:Graphics] :=
-  nodeComplexBoxes[gc];
-
-declareCustomGraphicsHead[NodeComplex];
-
 Options[NodeComplex] = {
   Prolog -> None,
   Epilog -> None,
@@ -32,6 +27,10 @@ Options[NodeComplex] = {
   Background -> None,
   NodePalette -> None
 };
+
+DeclareGraphicsPrimitive[NodeComplex, "Opaque", nodeComplexBoxes];
+
+(**************************************************************************************************)
 
 nodeComplexBoxes[NodeComplex[nodes_, opts___Rule]] := Scope @ CatchMessage[NodeComplex,
   $path = $var["Root"]; $eqs = {}; $nodeAliases = <||>; $varAliases = {}; $isAutomaticSize = <||>;
@@ -1019,7 +1018,6 @@ makeRoundedRect[c1_, c2_, None|0|0., fet_] := makeRect[c1, c2, fet];
 makeRect[c1_, c2_, fet_, opts___Rule] := applyStyle[fet] @ RectangleBox[c1, c2, opts];
 makeSquare[p_, r_, fet_] := makeRect[p - r, p + r, fet];
 
-Clear[arcPoints];
 arcPoints[ang_] := arcPoints[ang] = DiscretizeCurve[Circle[{0,0}, 1, {-ang, ang}]];
 $halfCirclePoints = arcPoints[Pi/2];
 

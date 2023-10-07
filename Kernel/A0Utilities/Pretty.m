@@ -1,16 +1,21 @@
 (* this overrides GU`PrettyForm *)
 PrettyForm /: MakeBoxes[PrettyForm[expr_], StandardForm] :=
-  ToPrettifiedString[Unevaluated @ expr, MaxIndent -> 10, CompactingWidth -> 180, TabSize -> None];
+  ToPrettifiedString[Unevaluated @ expr, MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None];
 
 HoldPrettyForm /: MakeBoxes[HoldPrettyForm[expr_], StandardForm] :=
-  ToPrettifiedString[Unevaluated @ expr, MaxIndent -> 10, CompactingWidth -> 180, TabSize -> None];
+  ToPrettifiedString[Unevaluated @ expr, MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None];
 
 (**************************************************************************************************)
 
 PublicForm[CompactPrettyForm]
 
 CompactPrettyForm /: MakeBoxes[CompactPrettyForm[expr_], StandardForm] :=
-  ToPrettifiedString[Unevaluated @ expr, MaxIndent -> 10, CompactingWidth -> 180, ElideLargeArrays -> True, InlineColors -> True, CompactRealNumbers -> True, TabSize -> None];
+  ToPrettifiedString[
+    Unevaluated @ expr,
+    MaxIndent -> 10, FullSymbolContext -> False, ColorSymbolContext -> True,
+    CompactingWidth -> 150, ElideLargeArrays -> True, InlineColors -> True,
+    CompactRealNumbers -> True, TabSize -> None
+  ];
 
 (**************************************************************************************************)
 
@@ -28,6 +33,7 @@ Options[ToPrettifiedString] = {
   InlineHeads -> {Quantity, Entity, Interval},
   TabSize -> 2,
   FullSymbolContext -> True,
+  ColorSymbolContext -> False,
   CompressLargeSubexpressions -> True,
   ElideLargeArrays -> False,
   InlineColors -> False,
@@ -45,11 +51,12 @@ $fullSymbolContext = True;
 $elideLargeArrays = False;
 $inlineColors = False;
 $compactRealNumbers = False;
+$colorSymbolContext = False;
 $tabSize = 2;
 
 ToPrettifiedString[e_, OptionsPattern[]] := Scope[
-  {$maxIndent, $maxWidth, $maxDepth, $maxLength, $tabSize, $inlineHeads, $fullSymbolContext, $prettyCompression, $elideLargeArrays, $inlineColors, $compactRealNumbers} = OptionValue[
-  {MaxIndent, CompactingWidth, MaxDepth, MaxLength, TabSize, InlineHeads, FullSymbolContext, CompressLargeSubexpressions, ElideLargeArrays, InlineColors, CompactRealNumbers}];
+  {$maxIndent, $maxWidth, $maxDepth, $maxLength, $tabSize, $inlineHeads, $fullSymbolContext, $colorSymbolContext, $prettyCompression, $elideLargeArrays, $inlineColors, $compactRealNumbers} = OptionValue[
+  {MaxIndent, CompactingWidth, MaxDepth, MaxLength, TabSize, InlineHeads, FullSymbolContext, ColorSymbolContext, CompressLargeSubexpressions, ElideLargeArrays, InlineColors, CompactRealNumbers}];
   $ContextPath = {"System`", "QuiverGeometry`", "GeneralUtilities`"};
   If[!$fullSymbolContext, $ContextPath = Join[$ContextPath, getAllSymbolContexts @ HoldComplete @ e]];
   $depth = 0;
@@ -110,7 +117,7 @@ prettyLong = Case[
     prefix = If[$maxLength > 5, StringTake[ToString[StringTake[str, $maxLength - 5], InputForm], {2, -2}], ""];
     StringJoin["\"", prefix, $ellipsisString, "\""]
   ];
-_List                 := StringJoin["{", $ellipsisString, "}"];
+  _List                 := StringJoin["{", $ellipsisString, "}"];
   _Association ? HAQ    := StringJoin["<|", $ellipsisString, "|>"];
   (h_Symbol ? HAQ)[___] := StringJoin[symbolString @ h, "[", $ellipsisString, "]"];
   e:$fatHeadP           := StringJoin[prettyHead @ e, "[", $ellipsisString, "]"];
@@ -122,7 +129,23 @@ _List                 := StringJoin["{", $ellipsisString, "}"];
 
 SetHoldAllComplete[symbolString, prettyHead];
 
-symbolString[s_Symbol ? HoldAtomQ] := If[$fullSymbolContext, ToString[Unevaluated @ s, InputForm], SymbolName[Unevaluated @ s]];
+symbolString[s_Symbol ? HoldAtomQ] :=
+  If[$colorSymbolContext, colorByContext[Context[s]], Identity] @
+  If[$fullSymbolContext, ToString[Unevaluated @ s, InputForm], SymbolName[Unevaluated @ s]];
+
+symbolString[_] := "?";
+
+wrapColor[col_, con_][str_] := StringJoin[
+  "\!\(\*TooltipBox[StyleBox[", str, ",", ToString @ col, "],\"", con, "\"]",
+  "\)"
+];
+
+colorByContext["System`" | "Internal`" | "GeneralUtilities`" | "Developer`" | "QuiverGeometry`"] := Identity;
+colorByContext["Global`"] := wrapColor[$Teal, "Global`"];
+colorByContext["QuiverGeometry`Private`"] := wrapColor[$Orange, "QuiverGeometry`Private`"];
+colorByContext[con_] := wrapColor[$Red, con];
+
+
 symbolString[_] := $ellipsisString;
 
 prettyHead[h_[___]] := symbolString[h];
@@ -155,18 +178,29 @@ SetHoldAllComplete[pretty1, pretty1wrap];
 
 pretty1wrap[e_ ? longQ] := prettyLong[e];
 pretty1wrap[e_ ? HoldAtomQ] := pretty2[e];
-pretty1wrap[e_] := "(" <> pretty1[e] <> ")";
+pretty1wrap[e:(_Blank | _BlankSequence | _BlankNullSequence)] := pretty1[e];
 pretty1wrap[e_List | e_Association] := pretty1[e];
+pretty1wrap[e_] := "(" <> pretty1[e] <> ")";
 
 pretty1 = Case[
-  Verbatim[Rule][a_, b_]         := prettyRule[a, b];
-  Verbatim[RuleDelayed][a_, b_]  := prettyRuleDelayed[" :> ", a, b];
-  Verbatim[Plus][args__]         := prettyInfix[" + ", args];
-  Verbatim[Times][args__]        := prettyInfix[" * ", args];
-  Verbatim[Minus][arg_]          := "-" <> pretty1wrap[arg];
-  Verbatim[Times][-1, arg_]      := "-" <> pretty1wrap[arg];
-  Verbatim[DirectedEdge][a1_, a2_] := prettyInfix[" \[DirectedEdge] ", a1, a2];
-  Verbatim[UndirectedEdge][a1_, a2_] := prettyInfix[" \[UndirectedEdge] ", a1, a2];
+  Verbatim[Rule][a_, b_]              := prettyRule[a, b];
+  Verbatim[RuleDelayed][a_, b_]       := prettyRuleDelayed[a, b];
+  Verbatim[Plus][args__]              := prettyInfix[" + ", args];
+  Verbatim[Times][args__]             := prettyInfix[" * ", args];
+  Verbatim[PatternTest][a_, b_ ? HSQ] := prettyInfix[" ? ", a, b];
+  Verbatim[Pattern][s_ ? HSQ, b_]     := prettyInfix[":", s, b];
+  Verbatim[Blank][]                     := "_";
+  Verbatim[Blank][s_ ? HSQ]             := "_" <> symbolString[s];
+  Verbatim[BlankSequence][]             := "__";
+  Verbatim[BlankSequence][s_ ? HSQ]     := "__" <> symbolString[s];
+  Verbatim[BlankNullSequence][]         := "___";
+  Verbatim[BlankNullSequence][s_ ? HSQ] := "___" <> symbolString[s];
+  Verbatim[Pattern][s_ ? HSQ, p:(_Blank | _BlankSequence | _BlankNullSequence)] := symbolString[s] <> pretty1[p];
+  Verbatim[Alternatives][a__]         := prettyInfix[" | ", a];
+  Verbatim[Minus][arg_]               := "-" <> pretty1wrap[arg];
+  Verbatim[Times][-1, arg_]           := "-" <> pretty1wrap[arg];
+  Verbatim[DirectedEdge][a1_, a2_]    := prettyInfix[" \[DirectedEdge] ", a1, a2];
+  Verbatim[UndirectedEdge][a1_, a2_]  := prettyInfix[" \[UndirectedEdge] ", a1, a2];
   col:(_RGBColor | _GrayLevel) /; TrueQ[$inlineColors] && ColorQ[Unevaluated @ col] := prettyInlineColor[col];
   list_List /; TrueQ[$elideLargeArrays] && HoldNumericArrayQ[list] && beefyNumericArrayQ[list] := prettyElidedList[list];
   list_List /; TrueQ[$prettyCompression] && HoldPackedArrayQ[list] && holdLeafCount[list] > 128 := prettyCompressed[list];
@@ -177,16 +211,34 @@ pretty1 = Case[
   e:(_Symbol[])                  := pretty2[e];
   g_Graph ? HAQ                  := prettyGraph[g];
   head_Symbol[args___]           := indentedBlock[pretty2[head] <> "[", MapUnevaluated[pretty0, {args}], "]"];
-  head_[args___]                 := indentedBlock[pretty1[head] <> "[", MapUnevaluated[pretty0, {args}], "]"];
+  head_[args___]                 := indentedBlock[pretty1wrap[head] <> "[", MapUnevaluated[pretty0, {args}], "]"];
   atom_ ? HAQ                    := pretty2[atom];
 ,
-  {$fatHeadP, HAQ -> HoldAtomQ}
+  {$fatHeadP, HAQ -> HoldAtomQ, HSQ -> HoldSymbolQ}
 ];
 
 makeTab[n_] := If[IntegerQ[$tabSize], makeSpaceTab[n * $tabSize], makeTabTab[n]];
 
 makeTabTab[n_] := makeTabTab[n] = StringRepeat["\t", n];
 makeSpaceTab[n_] := makeSpaceTab[n] = StringRepeat[" ", n];
+
+(**************************************************************************************************)
+
+$literalPatternVariables = Hold[
+  $ColorPattern, $OpacityPattern,
+  $NumberP,
+  $CoordP, $Coord2P, $Coord3P, $CoordPairP, $Coord2PairP, $Coord3PairP, $CoordMat2P, $CoordMat3P, $CoordMatP, $CoordMaybeMatP, $CoordMatsP, $CoordMaybeMatsP,
+  $SidePattern, $SizePattern,
+  $RulePattern, $RuleListPattern
+];
+
+Scan[
+  Function[s, With[{v = s},
+    pretty1wrap[Verbatim[v]] := symbolString[s];
+    pretty1[Verbatim[v]] := symbolString[s];
+  ], HoldAll],
+  $literalPatternVariables
+];
 
 (**************************************************************************************************)
 
@@ -249,6 +301,7 @@ prettyGraph[g_Graph] := With[{v = VertexList[g], e = EdgeList[g], o = Options[g]
 
 pretty2 = Case[
   e:$fatHeadP /; TrueQ[$prettyCompression] := prettyCompressed[e];
+  e_Symbol := symbolString[e];
   e_ := ToString[Unevaluated @ e, InputForm];
 ,
   {$fatHeadP}

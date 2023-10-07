@@ -290,7 +290,6 @@ Grouped[e_] := e;
 
 (**************************************************************************************************)
 
-Clear[sumTermForm];
 SetHoldAll[sumForm, sumTermForm, HoldNumericQ];
 sumForm[args_] := Scope[
   res = Flatten @ Map[sumTermForm, Unevaluated[args]];

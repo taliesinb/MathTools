@@ -259,6 +259,14 @@ MapFirst[f_][list_] := MapFirst[f, list];
 
 (**************************************************************************************************)
 
+PublicFunction[MapFirstLast]
+
+MapFirstLast[{f_, g_}, list_] := SafeMapAt[g, SafeMapAt[f, list, 1], -1];
+MapFirstLast[f_, list_] := SafeMapAt[f, SafeMapAt[f, list, 1], -1];
+MapFirstLast[f_][list_] := MapFirstLast[f, list];
+
+(**************************************************************************************************)
+
 PublicFunction[MapLast]
 
 MapLast[f_, list_] := SafeMapAt[f, list, -1];

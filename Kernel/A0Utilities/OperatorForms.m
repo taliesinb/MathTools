@@ -1,10 +1,14 @@
 PublicFunction[TakeOperator]
 
+SetUsage @ "TakeOperator[spec$$] is the operator form of %Take."
+
 TakeOperator[spec___][e_] := Take[e, spec];
 
 (**************************************************************************************************)
 
 PublicFunction[DropOperator]
+
+SetUsage @ "DropOperator[spec$$] is the operator form of %Drop."
 
 DropOperator[spec___][e_] := Drop[e, spec];
 
@@ -12,11 +16,15 @@ DropOperator[spec___][e_] := Drop[e, spec];
 
 PublicFunction[ClipOperator]
 
+SetUsage @ "ClipOperator[spec$] is the operator form of %Clip."
+
 ClipOperator[spec_][e_] := Clip[e, spec];
 
 (**************************************************************************************************)
 
 PublicFunction[PartOperator]
+
+SetUsage @ "PartOperator[parts$$] is the operator form of %Part."
 
 PartOperator[spec___][e_] := Part[e, spec];
 
@@ -24,23 +32,58 @@ PartOperator[spec___][e_] := Part[e, spec];
 
 PublicFunction[PartOfOperator]
 
+SetUsage @ "PartOfOperator[expr$] uses its argument(s) as a %Part spec for expr$."
+
 PartOfOperator[e_][p___] := Part[e, p];
 
 (**************************************************************************************************)
 
 PublicFunction[ContainedInQ]
 
+SetUsage @ "ContainedInQ[expr$] yields true when its argumet is present in expr$ in any position."
+
 ContainedInQ[expr_][patt_] := !FreeQ[expr, patt];
 
 (**************************************************************************************************)
 
-PublicFunction[DotOperator]
+PublicFunction[DotOperator, DotRightOperator]
+
+SetUsage @ "
+DotOperator[m$][v$] returns %Dot[m$, v$].
+DotOperator[m$, b$][v$] returns %Dot[m$, v$] + b$.
+"
+
+SetUsage @ "
+DotRightOperator[m$][v$] returns %Dot[v$, m$].
+DotRightOperator[m$, b$][v$] returns %Dot[v$, m$] + b$.
+"
+
+setVectorListableOperator[DotOperator, DotRightOperator];
 
 DotOperator[matrix_][other_] := Dot[matrix, other]
+DotOperator[matrix_, vector_][other_] := Threaded[vector] + Dot[matrix, other];
+
+DotRightOperator[matrix_][other_] := Dot[other, matrix]
+DotRightOperator[matrix_, vector_][other_] := Threaded[vector] + Dot[other, matrix];
+
+(**************************************************************************************************)
+
+PublicFunction[AffineOperator]
+
+SetUsage @ "
+AffineOperator[m$,b$] applies %Dot[m$, x$] + $b to a single vector x$ or a list of such vectors.
+AffineOperator[m$] just applies %Dot[m$, x$].
+* AffineOperator evaluates to DotRightOperator which stores the transposed version of m$."
+
+AffineOperator[matrix_] := DotRightOperator[Transpose @ ToPacked @ matrix];
+AffineOperator[matrix_, {(0|0.)..}] := DotRightOperator @ Transpose @ ToPacked @ matrix;
+AffineOperator[matrix_, vector_] := DotRightOperator[Transpose @ ToPacked @ matrix, vector];
 
 (**************************************************************************************************)
 
 PublicFunction[ReplaceAllOperator]
+
+SetUsage @ "ReplaceAll[rules$] is the operator form of %ReplaceAll."
 
 ReplaceAllOperator[][other_] := other;
 ReplaceAllOperator[r1_][other_] := other /. r1;
@@ -49,13 +92,12 @@ ReplaceAllOperator[r1_, r2_, r3___][other_] := ReplaceAllOperator[r3][other /. r
 
 (**************************************************************************************************)
 
-PublicFunction[DotRightOperator]
-
-DotRightOperator[matrix_][other_] := Dot[other, matrix]
-
-(**************************************************************************************************)
-
 PublicFunction[TimesOperator, ThreadedTimesOperator]
+
+SetUsage @ "TimesOperator[n$] is the operator form of %Times."
+SetUsage @ "ThreadedTimesOperator[arr$] multiplies its argument by %Threaded[arr$]."
+
+setVectorListableOperator[TimesOperator, ThreadedTimesOperator];
 
 TimesOperator[a_][b_] := a * b;
 ThreadedTimesOperator[a_ ? NumberQ] := TimesOperator @ a;
@@ -63,7 +105,20 @@ ThreadedTimesOperator[a_] := TimesOperator[Threaded[a]]
 
 (**************************************************************************************************)
 
+PublicFunction[OffsetOperator]
+
+SetUsage @ "OffsetOperator[off$] is the operator form of %Offset."
+
+OffsetOperator[off_][p_] := Offset[off, p];
+
+(**************************************************************************************************)
+
 PublicFunction[PlusOperator, ThreadedPlusOperator]
+
+SetUsage @ "PlusOperator[n$] is the operator form of %Times."
+SetUsage @ "ThreadedPlusOperator[arr$] adds its argument to %Threaded[arr$]."
+
+setVectorListableOperator[PlusOperator, ThreadedPlusOperator];
 
 PlusOperator[a_][b_] := a + b;
 ThreadedPlusOperator[a_ ? NumberQ] := PlusOperator @ a;
@@ -182,6 +237,87 @@ StyleBoxOperator[] = Identity;
 StyleBoxOperator[None] = Identity;
 StyleBoxOperator[spec___][Nothing] := Nothing;
 StyleBoxOperator[spec___][e_] := StyleBox[e, spec];
+
+(**************************************************************************************************)
+
+PrivateFunction[InvisibleOperator]
+
+InvisibleOperator[___] := {};
+
+(**************************************************************************************************)
+
+PrivateFunction[SolidEmptyStyleBoxOperator]
+
+SolidEmptyStyleBoxOperator[True, args___] := SolidStyleBoxOperator[args];
+SolidEmptyStyleBoxOperator[False, args___] := EmptyStyleBoxOperator[args];
+
+(**************************************************************************************************)
+
+PrivateFunction[EmptyStyleBoxOperator]
+
+SetUsage @ "
+EmptyStyleBoxOperator[thickness$, opacity$, color$]
+* color$ can be %SolidEdgeColor[$$], the edge color will be used.
+"
+
+EmptyStyleBoxOperator = Case[
+  Seq[t_, o_, s_SolidEdgeForm] := %[t, o, Last @ solidEdgeColors @ s];
+  Seq[_, _, None]              := InvisibleOperator;
+  Seq[0, _, _]                 := InvisibleOperator;
+  Seq[t_, o_, c_]              := StyleBoxOperator[toThick @ t, toOpacity @ o, toColor @ c]
+];
+
+(**************************************************************************************************)
+
+PrivateFunction[SolidStyleBoxOperator]
+
+SetUsage @ "
+SolidStyleBoxOperator[thickness$, opacity$, color$]
+* color$ can be %SolidEdgeColor[$$], the face and edge colors will be used.
+"
+
+toFaceForm[o_, {c_, _} | c_] :=
+  FaceForm[{toOpacity @ o, toColor @ c}];
+
+(* Subtle issue: we must ignore opacity for edges because they are extend both within and without
+the underlying polygon, and so produce a weird stripe if they are semiopaque *)
+toEdgeForm = Case[
+  Seq[0|None, _] := EdgeForm @ None;
+  Seq[_, None]   := EdgeForm @ None;
+  Seq[t_, {_, c_} | c_]   := EdgeForm @ {toThick @ t, toColor @ c};
+];
+
+SolidStyleBoxOperator = Case[
+  Seq[t_, o_, s_SolidEdgeForm] := %[t, o, solidEdgeColors @ s];
+  Seq[t_, o_, c_]              := StyleBoxOperator[toFaceForm[o, c], toEdgeForm[t, c]];
+];
+
+(**************************************************************************************************)
+
+PrivateFunction[ShaftStyleBoxOperator]
+
+ShaftStyleBoxOperator[s_SolidEdgeForm, args___] :=
+  ShaftStyleBoxOperator[Last @ solidEdgeColors @ s, args];
+
+ShaftStyleBoxOperator[color_, opacity_, thickness_, dashing_] :=
+  StyleBoxOperator[
+    If[ColorQ @ color, color, Seq[]],
+    If[NumberQ @ opacity, Opacity @ opacity, Seq[]],
+    If[NumberQ @ thickness, AbsoluteThickness @ thickness, Seq[]],
+    Switch[dashing, _Dashing, dashing, None, Seq[], _, Dashing @ dashing]
+  ];
+
+(**************************************************************************************************)
+
+toThick[Automatic | None] := Seq[];
+toThick[n_] := AbsoluteThickness[n];
+
+toColor[Automatic] := Seq[];
+toColor[None] := Opacity[0];
+toColor[col_] := col;
+
+toOpacity[Automatic | None] := Seq[];
+toOpacity[o_] := Opacity[o];
 
 (**************************************************************************************************)
 

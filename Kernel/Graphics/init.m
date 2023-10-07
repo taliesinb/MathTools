@@ -38,11 +38,3 @@ PublicVariable[$ExtendedColorNames]
 
 $ExtendedColorNames = Keys @ $ExtendedColorsGrouped;
 
-(**************************************************************************************************)
-
-PublicVariable[$GraphicsPrimitiveSignatureTable]
-
-(* TODO: fill these in, making it possible to autogenerate patterns like $GPrimVecH *)
-$GraphicsPrimitiveSignatureTable = {
-  
-};

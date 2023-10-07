@@ -1,13 +1,12 @@
 PublicHead[CompassCurve]
 
-declareGraphicsFormatting[cc:CompassCurve[$Coord3P, _String] :> Construct[Line3DBox, compassCurvePoints @ cc], Graphics3D];
-declareGraphicsFormatting[cc:CompassCurve[$Coord2P, _String] :> Construct[LineBox, compassCurvePoints @ cc], Graphics];
+DeclareAtomicCurvePrimitive[CompassCurve, compassCurvePoints];
+
+SignPrimitive["Vector", CompassCurve];
 
 (**************************************************************************************************)
 
-PrivateFunction[compassCurvePoints]
-
-compassCurvePoints[CompassCurve[start_, spec_]] :=
+compassCurvePoints[CompassCurve[start:$Coord2P, spec_]] :=
   ToPackedReal @ FoldList[#1 + parseWord[#2]&, start, StringSplit @ spec];
 
 parseWord[word_String /; StringMatchQ[word, DigitCharacter ~~ "/" ~~ DigitCharacter]] :=

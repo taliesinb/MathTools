@@ -1,13 +1,10 @@
 PublicHead[SetbackCurve]
 
-declareGraphicsFormatting[c:SetbackCurve[$CoordMat3P | $GCurveIntP, ___] :> Construct[Line3DBox, setbackCurvePoints @ c], Graphics3D];
-declareGraphicsFormatting[c:SetbackCurve[$CoordMat2P | $GCurveIntP, ___] :> Construct[LineBox,   setbackCurvePoints @ c], Graphics];
+DeclareCurvePrimitive[SetbackCurve, setbackCurveCoordinates];
+
+SignPrimitive["Curve,Radius", SetbackCurve];
 
 (**************************************************************************************************)
 
-PrivateFunction[setbackCurvePoints]
-
-setbackCurvePoints[SetbackCurve[curve_, d_]] := Scope[
-  points = toCurvePoints @ curve;
-  SetbackCoordinates[points, d]
-]
+setbackCurveCoordinates[SetbackCurve[points:$CoordMatP, spec_]] :=
+  SetbackCoordinates[points, spec];

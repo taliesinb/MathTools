@@ -91,6 +91,7 @@ ClearRasterizationCache[] := (
 	QuiverGeometryCaches`$RegionRasterizationCache = UAssociation[];
 	QuiverGeometryCaches`$TransparentRasterizationCache = UAssociation[];
 	QuiverGeometryCaches`$Base64RasterizationCache = UAssociation[];
+	QuiverGeometryCaches`$TextureBoxCache = UAssociation[];
 	clearFloodFillCaches[];
 )
 

@@ -188,7 +188,6 @@ _RenameBearNote := BadArguments[];
 
 PublicFunction[GlobalBearStringReplace]
 
-Clear[GlobalBearStringReplace];
 Options[GlobalBearStringReplace] = {
   Verbose -> Automatic,
   DryRun -> False,

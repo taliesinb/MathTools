@@ -154,8 +154,7 @@ DiscretizeCurve[object$] supports the following existing graphics primitives:
 | %Circle[$$] | samples the circle as a 32-gon, or between the provided angle endpoints |
 | %BezierCurve[$$] | samples the curve using %DiscretizeGraphics |
 | %BSplineCurve[$$] | as above |
-* The following custom primitives are also supported:
-* %ElbowCurve, %RollingCurve, %VectorCurve, %CompassCurve, %LoopCurve, %SetbackCurve
+* Custom path primitives like %ElbowCurve, %RollingCurve, etc. are also supported.
 "
 
 DiscretizeCurve[points_List, f_:BezierCurve] := DiscretizeCurve[f[points]];
@@ -172,6 +171,9 @@ $tau32 = N @ Append[0] @ Range[0, Tau - 0.01, Tau / 48];
 DiscretizeCurve[Circle[center:$Coord2P, radius_ ? NumericQ]] :=
   ToPackedReal @ CircleVector[center, radius, $tau32];
 
+DiscretizeCurve[curve:(BezierCurve|BSplineCurve)[line:{_, _}]] :=
+  ToPackedReal @ line;
+
 DiscretizeCurve[curve:(BezierCurve|BSplineCurve)[___]] := Scope[
   region = DiscretizeGraphics @ MapAt[ToPacked, curve, 1];
   ToPackedReal @ Catenate @ region["EdgeCoordinates"]
@@ -185,34 +187,9 @@ DiscretizeCurve[BezierCurve[points_List, SplineDegree -> n_Integer]] := Replace[
   {GraphicsComplex[coords_List, Line[indices_List]] :> ToPackedReal @ Part[coords, indices], _ :> $Failed}
 ];
 
-DiscretizeCurve[ElbowCurve[{a_, b_}, amount_:Automatic]] :=
-  DiscretizeCurve @ BezierCurve @ elbowBezierCurvePoints[a, b, amount];
-
-DiscretizeCurve[c_RollingCurve] := rollingCurvePoints @ c;
-
-DiscretizeCurve[c_CompassCurve] := compassCurvePoints @ c;
-
-DiscretizeCurve[c_LoopCurve] := loopCurvePoints @ c;
-
-DiscretizeCurve[c_SetbackCurve] := setbackCurvePoints @ c;
-
-DiscretizeCurve[c_CircuitCurve] := circuitCurvePoints @ c;
-
-DiscretizeCurve[c_SnakeCurve] := snakeCurvePoints @ c;
-
-DiscretizeCurve[c_HorizontalCurve] := horizontalCurvePoints @ c;
-
-DiscretizeCurve[c_VerticalCurve] := verticalCurvePoints @ c;
-
-DiscretizeCurve[c_SmoothedCurve] := smoothedCurvePoints @ c;
-
-DiscretizeCurve[c_AnchoredCurve] := anchoredCurvePoints @ c;
-
-DiscretizeCurve[c:VectorCurve] := vectorCurvePoints @ c;
-
 DiscretizeCurve::badcurve = "Cannot discretize unrecognized curve ``. Returning a dummy path.";
 
-DiscretizeCurve[e_] := (Message[DiscretizeCurve::badcurve, e]; {{0, 0}, {1, 0}});
+DiscretizeCurve[e_] := CurveToPoints[e];
 
 (**************************************************************************************************)
 

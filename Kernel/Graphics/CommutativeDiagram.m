@@ -1,6 +1,6 @@
 PublicSymbol[CommutativeDiagram]
 
-PublicOption[DebugLabelBounds, AutoSetback, Origin]
+PublicOption[DebugBounds, AutoSetback, Origin]
 
 SetUsage @ "
 CommutativeDiagram[items$] evaluates to a graphics object that contains a commutative diagram.
@@ -38,7 +38,7 @@ The following options are supported:
 | %Alignment | alignment of text labels of objects |
 | %Setback | additional setback distances of arrows, in pixels |
 | %AutoSetback | whether to automatically calculate per-object setbacks |
-| %DebugLabelBounds | whether to show red rectangles around object bounds |
+| %DebugBounds | whether to show red rectangles around object bounds |
 | %LabelFontSize | font size to use for morphisms |
 | %FontSize | font size to use for objects |
 | %TextModifiers | list of modifiers to apply to object and morphism labels |
@@ -74,7 +74,7 @@ Options[CommutativeDiagram] = JoinOptions[
   ArrowPathSetback       -> Automatic,
   Setback                -> Automatic,
   AutoSetback            -> True,
-  DebugLabelBounds       -> False,
+  DebugBounds            -> False,
   LabelFontSize          -> 18,
   FontFamily             :> $MathFont,
   FontSize               -> 20,
@@ -84,17 +84,17 @@ Options[CommutativeDiagram] = JoinOptions[
   $morphismArrowOptions
 ];
 
+DeclareGraphicsPrimitive[CommutativeDiagram, "Rules", cdToBoxes];
+
+cdToBoxes[cd_] := ToGraphicsBoxes @ cdToPrimitives @ cd;
+
+(**************************************************************************************************)
+
 $cdPatterns = {
   CommutativeDiagram[_List, _List, ___Rule],
   CommutativeDiagram[Rule[_List, _List], _List, ___Rule],
   CommutativeDiagram[_List, ___Rule]
 };
-
-declareGraphicsFormatting[Map[cd:# :> cdToBoxes[cd]&, $cdPatterns], Graphics];
-
-cdToBoxes[cd_] := ToGraphicsBoxes @ cdToPrimitives @ cd;
-
-(**************************************************************************************************)
 
 Scan[(Format[cd:#, StandardForm] := cdToGraphics[cd])&, $cdPatterns];
 
@@ -125,7 +125,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   UnpackOptionsAs[CommutativeDiagram,
     {FilterOptions[CommutativeDiagram, opts]},
     alignment, arrowPathSetback, setback, labelFontSize, fontSize, fontFamily,
-    graphicsScale, autoSetback, debugLabelBounds,
+    graphicsScale, autoSetback, debugBounds,
     transposed, flipX, flipY, textModifiers, origin, colorRules
   ];
   $objectNames = {};
@@ -145,7 +145,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
     ]
   ];
 
-  calculateLabelSizes = autoSetback || debugLabelBounds;
+  calculateLabelSizes = autoSetback || debugBounds;
   objectPrimitives = parseObject /@ items;
 
   SetAutomatic[arrowPathSetback, setback];
@@ -160,7 +160,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   saveMorphismCoords @ morphismPrimitives;
   primitives = {objectPrimitives, morphismPrimitives};
   primitives = primitives /. $coordinateCanonicalizationRules;
-  primitives = recurseGraphicsCoordinates[ReplaceAll[#, $coordReplacement]&, primitives];
+  primitives = ReplacePrimitiveCoordinates[primitives, $coordReplacement];
   arrowOpts = DeleteOptions[
     {FilterOptions[MorphismArrow, opts]},
     {ArrowPathSetback, LabelFontSize, LabelFontSize, GraphicsScale}];
@@ -247,17 +247,19 @@ PublicHead[EqualityMorphism, UniqueMorphism, DoubleMorphism, Morphism, ProMorphi
 
 $morphismHeadP = Morphism | DoubleMorphism | UniqueMorphism | EqualityMorphism | ProMorphism | AdjointMorphism;
 
-declareGraphicsFormatting @ Map[
-  head |-> m_head :> With[{m2 = toMorphism[m]}, If[m2 === m, $Failed, Typeset`MakeBoxes[m2, StandardForm, Graphics]]],
-  List @@ $morphismHeadP
+Scan[DeclareGraphicsPrimitive[#, "Curve", fixedMorphismBoxes]&, $morphismHeadP];
+
+fixedMorphismBoxes[m_] := With[
+  {m2 = toMorphism[m]},
+  If[m2 === m, $Failed, ToGraphicsBoxes @ m2]
 ];
 
 toMorphism := Case[
   Morphism[args___] := MorphismArrow[args];
-  UniqueMorphism[path_, lbl:Except[_Rule]:None, args___]   := MorphismArrow[path, lbl, args, ArrowShaftDashing -> Dashed];
+  UniqueMorphism[path_, lbl:Except[_Rule]:None, args___]   := MorphismArrow[path, lbl, args, ArrowDashing -> Dashed];
   EqualityMorphism[path_, lbl:Except[_Rule]:None, args___] := MorphismArrow[path, lbl, "Equality", args];
   ProMorphism[path_, lbl:Except[_Rule]:None, args___]      := MorphismArrow[path, lbl, "Proarrow", args];
-  AdjointMorphism[path_, args___]                          := MorphismArrow[toHigherPath @ path, None, "Adjoint", args, ArrowShaftThickness -> 1.25];
+  AdjointMorphism[path_, args___]                          := MorphismArrow[toHigherPath @ path, None, "Adjoint", args, ArrowThickness -> 1.25];
   DoubleMorphism[path_, lbl:Except[_Rule]:None, args___]   := MorphismArrow[toHigherPath @ path, lbl, "DoubleArrow", args];
   other_ := other;
 ];
@@ -403,7 +405,7 @@ resolveCurvePos[MorphismArrow[curve_, ___], pos_] :=
 
 CommutativeDiagram::morphcoordsfail = "Cannot resolve position along curve ``."
 resolveCurvePos[curve_, pos_] := Scope[
-  curve = recurseGraphicsCoordinates[ReplaceAll[#, $coordReplacement]&, curve];
+  curve = ReplacePrimitiveCoordinates[curve, $coordReplacement];
   points = DiscretizeCurve @ curve;
   If[!CoordinateMatrix2DQ[points], Message[CommutativeDiagram::morphcoordsfail, curve]; Return @ {0, 0}];
   PointAlongLine[points, Scaled[pos]]
@@ -440,7 +442,7 @@ fmtLabel[lbl_, obj_] := Scope[
       size = MapThread[ReplaceAutomatic, {size, isize}];
     ];
     $objectSizes[lbl] ^= size;
-    If[debugLabelBounds,
+    If[debugBounds,
       Tooltip[
         {text, FaceForm[None], EdgeForm[Red], If[NumberQ @ size, {Red, Circle[lbl, size/graphicsScale]}, CenteredRectangle[lbl, size/graphicsScale]]},
         Round[size * graphicsScale]

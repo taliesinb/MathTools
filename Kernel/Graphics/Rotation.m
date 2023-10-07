@@ -19,15 +19,35 @@ SphericalRotateVector[t_][vec_] := SphericalRotateVector[vec, t];
 
 PublicFunction[RotateVector]
 
-RotateVector[vecs:{___List} | vecs_Association, t_] :=
-  Map[RotateVector[#, t]&, vecs];
+setVectorListableOperator[RotateVector];
 
-RotateVector[vec_List, t_] :=
-  Dot[{{Cos[t], -Sin[t]}, {Sin[t], Cos[t]}}, vec];
+RotateVector[vec_List ? CoordinateVectorOrMatrix2DQ, t_] :=
+  Dot[vec, {{Cos[t], Sin[t]}, {-Sin[t], Cos[t]}}];
+
+RotateVector[vecs_List | vecs_Association, t_] :=
+  Map[RotateVector[#, t]&, vecs];
 
 RotateVector[t_][vec_] := RotateVector[vec, t];
 
 (**************************************************************************************************)
+
+PublicFunction[RotateVectorTo]
+
+setVectorListableOperator[RotateVectorTo];
+
+RotateVectorTo[vec_List ? CoordinateVectorOrMatrix2DQ, to_] :=
+  Dot[vec, rotToTrans @ to];
+
+RotateVectorTo[vecs_List | vecs_Association, to_] :=
+  Map[RotateVectorTo[to], vecs];
+
+RotateVectorTo[t_] := DotRightOperator @ rotToTrans @ t;
+
+rotToTrans[dirx_] := ToPackedReal @ List[dirx, VectorRotate90 @ dirx];
+
+(**************************************************************************************************)
+
+(* TODO: make these properly listable! *)
 
 PublicFunction[ScaleRotateTranslateVector]
 
@@ -57,10 +77,11 @@ rotationMatrix[0|0.|Tau|$tau|(-Tau)|(-$tau)] := {{1, 0}, {0, 1}};
 rotationMatrix[Pi|$pi|(-Pi)|(-$pi)] := {{-1, 0}, {0, -1}};
 rotationMatrix[angle_] := Transpose @ ToPacked @ Chop @ RotationMatrix @ N @ angle;
 
-
 (**************************************************************************************************)
 
 PublicFunction[TranslateVector]
+
+setVectorListableOperator[TranslateVector];
 
 TranslateVector[trans_List, points_List] := Threaded[trans] + points;
 

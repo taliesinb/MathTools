@@ -1,13 +1,6 @@
 PublicHead[RollingCurve]
 PublicOption[BendRadius, BendShape]
 
-Options[RollingCurve] = {BendRadius -> 0.1, BendShape -> "Arc"};
-
-AssociateTo[$MakeBoxesStyleData, Options[RollingCurve]];
-
-declareGraphicsFormatting[rc:RollingCurve[$CoordMat3P | $GCurveIntP, ___Rule] :> Construct[Line3DBox, rollingCurvePoints @ rc], Graphics3D];
-declareGraphicsFormatting[rc:RollingCurve[$CoordMat2P | $GCurveIntP, ___Rule] :> Construct[LineBox, rollingCurvePoints @ rc], Graphics];
-
 SetUsage @ "
 RollingCurve[path$] represents a curve in which line segments are connected by circular bends.
 * RollingCurve supports the following options:
@@ -22,9 +15,15 @@ RollingCurve[path$] represents a curve in which line segments are connected by c
 * %DiscretizeCurve can be used to obtain the points for a given rolling curve.
 "
 
-(**************************************************************************************************)
+Options[RollingCurve] = {BendRadius -> 0.1, BendShape -> "Arc"};
 
-PrivateFunction[rollingCurvePoints]
+AssociateTo[$MakeBoxesStyleData, Options[RollingCurve]];
+
+DeclareCurvePrimitive[RollingCurve, rollingCurvePoints];
+
+SignPrimitive["Curve", RollingCurve];
+
+(**************************************************************************************************)
 
 (*
 TODO: allow the maximum distance from the corner to be specified, after which the radius will be decreased
@@ -33,20 +32,18 @@ TODO: fix arcs that interact with eachother badly and cause 'jumps'. *)
 RollingCurve::badshape = "Shape `` not recognized."
 RollingCurve::interr = "Internal error."
 
-ClearAll[rollingCurvePoints];
-
 rollingCurvePoints[RollingCurve[curve_, opts___Rule]] := Scope[
   UnpackAssociationSymbols[
     {opts} -> $MakeBoxesStyleData,
     bendRadius, bendShape
   ];
-  rollingCurvePoints[curve, bendRadius, bendShape]
+  toRollingCurvePoints[curve, bendRadius, bendShape]
 ]
 
-rollingCurvePoints[curve_, radius_, None] := curve;
+toRollingCurvePoints[curve_, radius_, None] := curve;
 
 $rollingCurveCache = UAssociation[];
-rollingCurvePoints[curve_, radius_:1, shape_:"Arc"] := Scope[
+toRollingCurvePoints[curve_, radius_:1, shape_:"Arc"] := Scope[
   key = {curve, radius, shape};
   result = $rollingCurveCache @ key;
   If[!MissingQ[result], Return @ result];
