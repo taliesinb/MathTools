@@ -203,7 +203,7 @@ GraphRegionElementQ = Case[
 PublicHead[VertexPattern, EdgePattern]
 
 SetUsage @ "VertexPattern[pattern$] represent a vertex that matches pattern$."
-SetUsage @ "EdgePattern[src$, dst$] represents an edge that matches src$ \[DirectedEdge] dst$."
+SetUsage @ "EdgePattern[src$, dst$] represents an edge that matches src$ => dst$."
 
 (* zSetUsage @ "
 Path[src$, {c$1, $$, c$n}] represents a path starting at src$ and taking cardinals c$i in tern.

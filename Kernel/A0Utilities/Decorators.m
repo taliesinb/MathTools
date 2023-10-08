@@ -74,7 +74,7 @@ PublicHead[Inverted]
 
 SetUsage @ "
 Inverted[elem$] represents the inversion of elem$.
-* Inverted[a$ \[DirectedEdge] b$] represents the edge a$ \[DirectedEdge] b$ traversed in the reverse direction.
+* Inverted[%DirectedEdge[a$, b$]] represents the edge a$ => b$ traversed in the reverse direction.
 * %DirectedEdge[a$, b$, Inverted[c$]] evaluates to %DirectedEdge[b$, a$, c$].
 * Inverted[Inverted[c$]] evaluates to c$.
 * Inverted[c$] display as %Underbar[c$].

@@ -23,7 +23,7 @@ vertex with index u$i is adjacent to vertex with index v$i.
 * Note that AdjacentPairs is not given in the same order as %EdgeList[graph$], and \
 in general might have fewer values when there are multiple edges between the same \
 pair of vertices. Use EdgePairs if this matters.
-* The relation is undirected, so that a$ \[DirectedEdge] b$ generates both {a$, b$} and {b$, a$}.
+* The relation is undirected, so that a$ => b$ generates both {a$, b$} and {b$, a$}.
 * Use AdjacentPairs[graph, 'Directed'] to obtain the directed form.
 "
 

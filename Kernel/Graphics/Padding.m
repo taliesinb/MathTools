@@ -63,17 +63,20 @@ autoPad = Case[
 
 $autoFS := {FontSize -> $fontSize, FontFamily -> $fontFamily, FontWeight -> $fontWeight};
 
+FindAutomaticPadding::badisize = "Bad ImageSize -> ``."
+FindAutomaticPadding::unrecog = "Unrecognized ``."
+
 autoPadInset = Case[
 
   InsetBox[FormBox[txt_, TraditionalForm], pos_, offset:Except[_Rule]:ImageScaled[{0.5,0.5}], sz_:Automatic, dir:Except[_Rule]:{1,0}, opts___Rule] :=
-    % @ Text[RawBoxes @ txt, pos, Replace[offset, ImageScaled[s_] :> (s - 0.5) * 2], dir, opts];
+    padText @ Text[RawBoxes @ txt, pos, Replace[offset, ImageScaled[s_] :> (s - 0.5) * 2], dir, opts];
 
-  i:InsetBox[g_GraphicsBox, pos_, origin_:{0,0}, Automatic, dir_:{1, 0}] := Scope[
+  i:InsetBox[g_GraphicsBox, pos_, origin_:{0,0}, Automatic, dir_:{1, 0}, ___] := Scope[
     isize = LookupOption[g, ImageSize, None];
     Switch[isize,
       $NumberP, w = isize,
       $Coord2P, {w, h} = isize,
-      _, Print[i]; Return[];
+      _, Message[FindAutomaticPadding::badisize, MsgExpr @ isize]; Return[];
     ];
     {{x1, x2}, {y1, y2}} = plotRange = GraphicsPlotRange @ g;
     {pw, ph} = {x2 - x1, y2 - y1};
@@ -88,9 +91,19 @@ autoPadInset = Case[
     padPoly[pos, {l + b, l + t, r + t, r + b}];
   ];
 
-  i_InsetBox := Print[MsgExpr[i]];
+  other_ := (Message[FindAutomaticPadding::unrecog, MsgExpr @ other];);
+];
 
-  other_ := PrintIF[other];
+padText[Text[txt_, pos_, offset:Except[_Rule]:{0,0}, dirx:Except[_Rule]:{1,0}, opts___Rule]] := Scope[
+  pos = ResolveOffsets[pos, $scale];
+  If[FreeQ[{opts}, BaseStyle], opts = Sequence[opts, BaseStyle -> $autoFS]];
+  {w, h} = TextRasterSize @ Text[txt, pos, opts] + 1;
+  dirx = Normalize[dirx] / $scale;
+  diry = VectorRotate90[dirx];
+  dirx = dirx * w/2;
+  diry = diry * h/2;
+  off = Mean[{dirx, diry} * offset] * -2;
+  padPoly[off + pos, {dirx -diry, -dirx +diry, dirx -diry, dirx + diry}];
 ];
 
 padPoly[p_, pnts_] := padPoly[Threaded[p] + pnts];

@@ -134,9 +134,10 @@ makeIconInline[pos_, dirx_, prims_, graphicsScale_] := Scope[
   If[$debugBounds, prims //= addDebugBounds];
   If[$originx != 0,
     prims = Construct[GeometricTransformationBox, prims, -$origin]];
-  rotMatrix = ToPackedReal @ Transpose @ {dirx, VectorRotate90 @ dirx};
+  dirs = {dirx, VectorRotate90 @ dirx} * $imageSize;
+  rotMatrix = ToPackedReal @ Transpose @ dirs;
   (* prims = {prims, FaceForm[None], EdgeForm[Red], RectangleBox[{-1, -1}, {1, 1}]}; *)
-  transform = {rotMatrix * (0.5 * $imageSize / graphicsScale), pos};
+  transform = {rotMatrix * (0.5 / graphicsScale), pos};
   $styler @ Construct[GeometricTransformationBox, prims, transform]
 ];
 

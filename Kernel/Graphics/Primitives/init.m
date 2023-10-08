@@ -134,8 +134,9 @@ $rpcDispatch := $rpcDispatch = Dispatch @ With[{
   $vec       = Alternatives @@ PrimitiveSignatureLookup["Vector?Radius | Vector,Delta"],
   $matrixy   = Alternatives @@ PrimitiveSignatureLookup["Pair?Radius | Matrix?Radius | Matrices?Radius | Curve?Radius"],
   $opvec     = Alternatives @@ PrimitiveSignatureLookup["Opaque,Vector"],
-  $primvec   = Alternatives @@ PrimitiveSignatureLookup["Primitives,Vector"],
-  $rules     = Alternatives @@ PrimitiveSignatureLookup["Rules,Primitives"],
+  $primvec   = Alternatives @@ PrimitiveSignatureLookup["Primitives,Vector | Curve,Vector"],
+  $rulesprim = Alternatives @@ PrimitiveSignatureLookup["Rules,Primitives"],
+  $rules     = Alternatives @@ PrimitiveSignatureLookup["Rules"],
   $op        = Alternatives @@ PrimitiveSignatureLookup["Opaque"]}, {
 
   e:($op)[___]                        :> e,
@@ -149,7 +150,8 @@ $rpcDispatch := $rpcDispatch = Dispatch @ With[{
   (h:$vec)[v_, a___]                  :> RuleCondition @ h[$vectorF @ v, a],
   (h:$opvec)[f_, v_, a___]            :> RuleCondition @ h[f, $vectorF @ v, a],
   (h:$primvec)[f_, v_, a___]          :> RuleCondition @ h[f /. $rpcDispatch, $vectorF @ v, a],
-  (h:$rules)[r_, p_, a___]            :> RuleCondition @ h[$ruleF @ r, p /. $rpcDispatch, a]
+  (h:$rulesprim)[r_, p_, a___]        :> RuleCondition @ h[$ruleF @ r, p /. $rpcDispatch, a],
+  (h:$rules)[r_, a___]                :> RuleCondition @ h[$ruleF @ r, a]
 }];
 
 $ruleF[e_] := VectorReplace[e, Rule[c_, o_] :> Rule[$vectorF[c], o]];

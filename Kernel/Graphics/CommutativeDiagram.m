@@ -12,26 +12,23 @@ The list items$ can consist of objects, morphisms, and arbitrary graphics primit
 * obj$ can be wrapped in %Sized[$$, {w$, h$}] or %Sized[$$, diam$] which indicates overrides the automatically calculated size for purposes of arrow setback.
 * pos$ is a coordinate pair {x$, y$} running down the page and to the right.
 * a morphism can be one of:
-| src$ \[DirectedEdge] dst$ | an unlabeled arrow between objects with given names |
-| src$ \[DirectedEdge] dst$ -> label$ | a labeled arrow |
+| src$ => dst$ | an unlabeled arrow between objects with given names |
+| src$ => dst$ -> label$ | a labeled arrow |
 | {edge$, label$} | a labeled arrow |
-| {edge$, label$, type$} | a labeled arrow of type type$ |
-| {edge$, label$, type$, opts$$} | specify options |
+| {edge$, label$, type$, $$} | a labeled arrow of type type$, and any additional options |
 | %MorphismArrow[$$] | a fully specified arrow |
-| %UniqueMorphism[$$], %DoubleMorphism[$$], $$ | any of the family of pre-specified morphisms |
+* %Morphism[$$], %UniqueMorphism[$$], %DoubleMorphism[$$], etc. that prespecify morphism type can be used for readability.
 * sources and destinations can be objects or previously-declared morphisms
 * names for objects and morphisms can be given as integers (referring to the objects in order they appear), or strings.
 * string names are automatically generated from objects and morphisms using %FormToPlainString, which spells out greek, ignored tagged forms, etc.
 * multiple identical automatic names have successive integers appended to them.
-* morphisms can also be specified using 'lbl$1' \[DirectedEdge] 'lbl$2'.
+* morphisms can also be specified using 'lbl$1' => 'lbl$2'.
 * the type$ given above include 'Iso', 'Epi', 'Mono', 'MapsTo', 'DoubleArrow', 'Equality', 'Line', but pre-specified morphism heads are clearer.
-* the special head %ObjectCoordinates[obj$] can be used to refer to the location of an object or centroid of a set of objects, see usage for more info.
-* the special head %MorphismCoordinates[$$] can specify the coordinates along a morphisms path, see usage for more info.
-* the spec obj$ can be an integer or string name or list of these.
+* %ObjectCoordinates[$$] and %MorphismCoordinates[$$] can be used to refer symbolically to locations or centroids of objects and morphisms, see their usages.
 * %LabelPosition -> 'Outer' evaluates to %LabelPosition -> %AwayFrom[%ObjectCoordinates['Center']].
 * %LabelPosition -> 'Inner' evaluates to %LabelPosition -> %Towards[%ObjectCoordinates['Center']].
 The following options are supported:
-| %Transposed | whether to interpret positions as {x$, y$} (False) or ${y$, x$} (True) |
+| %Transposed | whether to interpret positions as {x$, y$} (False) or {y$, x$} (True) |
 | %FlipX | whether to flip horizontally |
 | %FlipY | whether to flip vertically |
 | %GraphicsScale | size of one coordinate unit in pixels |
@@ -60,9 +57,9 @@ MorphismCoordinates[$$] represents the half-way point along the given arrow's pa
 MorphismCoordinates[$$, pos$] represents a given point along the arrow's path.
 MorphismCoordinates[n$] represents the n$th declared morphism.
 MorphismCoordinates['name$'] represents the given named morphism.
-MorphismCoordinates['src$' \[DirectedEdge] 'dst$'] represents the first morphism between endpoints.
-MorphismCoordinates['src$' \[DirectedEdge] 'dst$' -> n$] represents the n$th morphism between endpoints.
-* generally it is not needed, since morphisms can be specified using their names or the spec 'lbl$1' \[DirectedEdge] 'lbl$2'.
+MorphismCoordinates['src$' => 'dst$'] represents the first morphism between endpoints.
+MorphismCoordinates['src$' => 'dst$' -> n$] represents the n$th morphism between endpoints.
+* generally it is not needed, since morphisms can be specified using their names or the spec 'lbl$1' => 'lbl$2'.
 * %DoubleMorphism automatically uses %MorphismCoordinates when necessary."
 
 Options[CommutativeDiagram] = JoinOptions[
@@ -307,7 +304,7 @@ makeAutoName[expr_, list_] := Scope[
   autoName = FormToPlainString @ expr;
   If[MemberQ[list, autoName],
     names = autoName <> #& /@ {"2", "3", "4", "5", "6", "8", "9", "10", "11", "12"};
-    autoName = First @ Complement[names, list]
+    autoName = SelectFirst[names, !MemberQ[list, #]&];
   ];
   autoName
 ];
@@ -337,8 +334,8 @@ parseMorphism = Case[
   de_DirectedEdge                                    := % @ {de};
   de_DirectedEdge -> rhs_                            := % @ {de, rhs};
 
-  {DirectedEdge[s_, t_], lbl_:None, type_:Automatic} :=
-    processMorphism1 @ MorphismArrow[{s, t}, Switch[lbl, None, {}, _List, lbl, _, {{0.5, Above} -> lbl}], type];
+  {DirectedEdge[s_, t_], lbl_:None, args___} :=
+    processMorphism1 @ MorphismArrow[{s, t}, Switch[lbl, None, {}, _List, lbl, _, {{0.5, Above} -> lbl}], args];
 
   cd_CommutativeDiagram                              := flipSymbolicPositions @ Append[cd, Unevaluated @ $inheritedOptions];
 
@@ -525,7 +522,7 @@ lookupObjectSize = Case[
 
 CommutativeDiagram::resolvesrctgt = "Cannot resolve source and target of MorphismArrow with path ``."
 findSourceTarget = Case[
-  DirectedEdge[a_, b_]                := % @ {a, b};
+  a_ => b_                            := % @ {a, b};
   {a_, b_}                            := findST /@ {a, b};
   {a_, __, b_}                        := % @ {a, b};
   ElbowCurve[{a_, b_}, ___]           := % @ {a, b};
@@ -548,12 +545,15 @@ findST = Case[
 
 PublicFunction[CommutativeSquare]
 
-CommutativeSquare[{nw_, ne_, se_, sw_}, {n_, e_, s_, w_}, opts___Rule] :=
+CommutativeSquare[{nw_, ne_, sw_, se_}, {n_, s_, w_, e_, extra___}, opts___Rule] :=
   CommutativeDiagram[
     {{1, 1} -> "NW" -> nw, {2, 1} -> "NE" -> ne, {1, 2} -> "SW" -> sw, {2, 2} -> "SE" -> se},
-    {MorphismArrow[{"NW", "NE"}, n, LabelPosition -> Above],
-     MorphismArrow[{"NE", "SE"}, e, LabelPosition -> Right],
-     MorphismArrow[{"NW", "SW"}, w, LabelPosition -> Left],
-     MorphismArrow[{"SW", "SE"}, s, LabelPosition -> Bottom]},
-    opts
+    {MorphismArrow @@ ToList["NW" => "NE", n],
+     MorphismArrow @@ ToList["NE" => "SE", e],
+     MorphismArrow @@ ToList["NW" => "SW", w],
+     MorphismArrow @@ ToList["SW" => "SE", s],
+     extra},
+    opts,
+    LabelPosition -> "Outer"
   ];
+

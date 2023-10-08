@@ -42,6 +42,7 @@ Options[ToPrettifiedString] = {
 
 (* for debugging *)
 $depth = 0;
+$shortenDepth = 0;
 $prettyCompression = True;
 $maxIndent = 8;
 $maxDepth = 8;
@@ -59,7 +60,7 @@ ToPrettifiedString[e_, OptionsPattern[]] := Scope[
   {MaxIndent, CompactingWidth, MaxDepth, MaxLength, TabSize, InlineHeads, FullSymbolContext, ColorSymbolContext, CompressLargeSubexpressions, ElideLargeArrays, InlineColors, CompactRealNumbers}];
   $ContextPath = {"System`", "QuiverGeometry`", "GeneralUtilities`"};
   If[!$fullSymbolContext, $ContextPath = Join[$ContextPath, getAllSymbolContexts @ HoldComplete @ e]];
-  $depth = 0;
+  $depth = $shortenDepth = 0;
   Block[{FilterOptions}, pretty0[e]]
 ]
 
@@ -168,13 +169,17 @@ wideQ[_Sequence] := False;
 wideQ[e_] := (2*LeafCount[Unevaluated @ e] > $maxWidth) || (2*ByteCount[Unevaluated @ e]/48) > $maxWidth;
 
 longQ[e_String ? HoldAtomQ] := StringLength[Unevaluated @ e] > $maxLength;
+longQ[(_?HoldAtomQ)[Shortest[a___], ___Rule]] := Length[Unevaluated @ e] > $maxLength;
 longQ[e_] := Length[Unevaluated @ e] > $maxLength;
 
-shortQ[s_] := StringLength[s] <= $maxWidth || StringLength[StringDelete[s, "\!\(\*StyleBox[" ~~ Shortest[__] ~~ "Rule[StripOnInput, False]]\)"]] <= $maxWidth;
+shortQ[s_] := shortStringQ[s] || shortStringQ[StringDelete[s, "\!\(\*StyleBox[" ~~ Shortest[__] ~~ "Rule[StripOnInput, False]]\)"]];
+
+shortStringQ[s_] := tabStringLength[s] <= ($maxWidth - ($depth + $shortenDepth) * Replace[$tabSize, None -> 4]);
+tabStringLength[s_] := StringLength[StringReplace[s, "\t" -> "    "]];
 
 (**************************************************************************************************)
 
-SetHoldAllComplete[pretty1, pretty1wrap];
+SetHoldAllComplete[pretty1, pretty1wrap, indentArgs];
 
 pretty1wrap[e_ ? longQ] := prettyLong[e];
 pretty1wrap[e_ ? HoldAtomQ] := pretty2[e];
@@ -199,23 +204,25 @@ pretty1 = Case[
   Verbatim[Alternatives][a__]         := prettyInfix[" | ", a];
   Verbatim[Minus][arg_]               := "-" <> pretty1wrap[arg];
   Verbatim[Times][-1, arg_]           := "-" <> pretty1wrap[arg];
-  Verbatim[DirectedEdge][a1_, a2_]    := prettyInfix[" \[DirectedEdge] ", a1, a2];
-  Verbatim[UndirectedEdge][a1_, a2_]  := prettyInfix[" \[UndirectedEdge] ", a1, a2];
+  Verbatim[DirectedEdge][a1_, a2_]    := prettyInfix[" => ", a1, a2];
+  Verbatim[UndirectedEdge][a1_, a2_]  := prettyInfix[" <=> ", a1, a2];
   col:(_RGBColor | _GrayLevel) /; TrueQ[$inlineColors] && ColorQ[Unevaluated @ col] := prettyInlineColor[col];
   list_List /; TrueQ[$elideLargeArrays] && HoldNumericArrayQ[list] && beefyNumericArrayQ[list] := prettyElidedList[list];
   list_List /; TrueQ[$prettyCompression] && HoldPackedArrayQ[list] && holdLeafCount[list] > 128 := prettyCompressed[list];
-  list_List                      := indentedBlock["{", MapUnevaluated[pretty0, list], "}"];
+  list_List                      := indentedBlock["{", indentArgs @ list, "}"];
   assoc_Association /; AssociationQ[Unevaluated[assoc]]
                                  := indentedBlock["<|", KeyValueMap[prettyRule, Unevaluated @ assoc], "|>"];
   e:$fatHeadP                    := pretty2[e];
   e:(_Symbol[])                  := pretty2[e];
   g_Graph ? HAQ                  := prettyGraph[g];
-  head_Symbol[args___]           := indentedBlock[pretty2[head] <> "[", MapUnevaluated[pretty0, {args}], "]"];
-  head_[args___]                 := indentedBlock[pretty1wrap[head] <> "[", MapUnevaluated[pretty0, {args}], "]"];
+  head_Symbol[args___]           := indentedBlock[pretty2[head] <> "[", indentArgs @ {args}, "]"];
+  head_[args___]                 := indentedBlock[pretty1wrap[head] <> "[", indentArgs @ {args}, "]"];
   atom_ ? HAQ                    := pretty2[atom];
 ,
   {$fatHeadP, HAQ -> HoldAtomQ, HSQ -> HoldSymbolQ}
 ];
+
+indentArgs[list_] := Block[{$shortenDepth = $shortenDepth + 1}, MapUnevaluated[pretty0, list]];
 
 makeTab[n_] := If[IntegerQ[$tabSize], makeSpaceTab[n * $tabSize], makeTabTab[n]];
 
@@ -258,7 +265,18 @@ prettyElidedList[list_] := With[
 (**************************************************************************************************)
 
 indentedBlock[begin_, {}, end_] := begin <> end;
-indentedBlock[begin_, {line_String}, end_] := StringJoin[begin, line, end];
+
+indentedBlock[begin_ ? (StringEndsQ["["]), {line_String} /; StringLength[line] > 8, "]"] :=
+  StringJoin[StringDrop[begin, -1] <> " @ ", deIndent @ line];
+
+indentedBlock["{", {line_String} /; StringLength[line] > 8, "}"] :=
+  StringJoin["List @ ", deIndent @ line];
+
+indentedBlock[begin_, {line_String}, end_] :=
+  StringJoin[begin, deIndent @ line, end];
+
+deIndent[line_String] := StringReplace[line, "\n\t" -> "\n"];
+
 indentedBlock[begin_, list_List, end_] := With[
   {t1 = makeTab[$depth], t2 = makeTab[$depth - 1]},
 

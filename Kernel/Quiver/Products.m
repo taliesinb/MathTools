@@ -34,7 +34,7 @@ PublicFunction[LockedQuiverProduct]
 SetUsage @ "
 LockedQuiverProduct[g1$, g$2] gives the dependent graph product of graph g$1 and g$2.
 * The vertices of the product are tuples {v$1, v$2}, where v$i is a vertex of g$i.
-* The edges of the product are edges {v$1, v$2} \[DirectedEdge] {w$1, w$2}.
+* The edges of the product are edges {v$1, v$2} => {w$1, w$2}.
 "
 
 Options[LockedQuiverProduct] = JoinOptions[

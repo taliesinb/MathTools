@@ -576,7 +576,7 @@ $equationSymbolRules = {
   "\[TildeFullEqual]"                             -> "&\[TildeFullEqual]",
   "\[LeftRightArrow]"                             -> "&\[LeftRightArrow]",
   "\[TildeTilde]"                                 -> "&\[TildeTilde] ",
-  "=>"                                            -> "&\[Implies] ",
+  (* "=>"                                            -> "&\[Implies] ", TODO: work around DirectedEdge sugar *)
   "\[Implies]"                                    -> "&\[Implies] ",
   "\[And]"                                        -> "&\[And] ",
   "\[Or]"                                         -> "&\[Or] ",

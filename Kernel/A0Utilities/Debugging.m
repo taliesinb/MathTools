@@ -82,8 +82,10 @@ EchoGraphicsScope[e_] := Scope[
 
 PublicFunction[ToGraphicsBoxes, ToGraphics3DBoxes]
 
-ToGraphicsBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics] //. InterpretationBox[b_, _] :> b;
-ToGraphics3DBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics3D] //. InterpretationBox[b_, _] :> b;
+ToGraphicsBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics] //. $gboxSimpRules;
+ToGraphics3DBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics3D] //. $gboxSimpRules;
+
+$gboxSimpRules = {InterpretationBox[b_, _] :> b, Typeset`Hold[h_] :> h};
 
 (**************************************************************************************************)
 

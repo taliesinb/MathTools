@@ -53,7 +53,6 @@ morphismArrowBoxes[MorphismArrow[curve_, opts___Rule]] :=
 morphismArrowBoxes[MorphismArrow[curve_, labelData_, opts___Rule]] :=
   morphismArrowBoxes[MorphismArrow[curve, labelData, "Arrow", opts]];
 
-morphismArrowBoxes[e_] := Print[e];
 morphismArrowBoxes[MorphismArrow[curve_, labelData_, arrowData_, opts___Rule]] := Scope[
 
   UnpackAssociationSymbols[
@@ -76,7 +75,7 @@ morphismArrowBoxes[MorphismArrow[curve_, labelData_, arrowData_, opts___Rule]] :
   If[multiOffset =!= None, arrowPathOffset = multiOffset];
 
   points = CurveToPoints @ curve;
-  If[points == {}, Return @ {}];
+  If[points == {} || FailureQ[points], Return @ {}];
 
   (* apply setback *)
   Switch[arrowData, "Hook" | "Mono",
@@ -96,7 +95,7 @@ morphismArrowBoxes[MorphismArrow[curve_, labelData_, arrowData_, opts___Rule]] :
 
   If[arrowPathOffset =!= None,
     maxOffsetY = Max[0, Abs @ DeepCases[arrowPathOffset, AlignedOffset[c_List] :> LevelPart[c, -1 -> 2]]];
-    shaftExtraThickness += maxOffsetY;
+    shaftExtraThickness += maxOffsetY + 2;
   ];
 
   SetAutomatic[labelSpacing, If[labelOrientation === Aligned, arrowThickness, {0.3, 0.1} * labelFontSize] + shaftExtraThickness];

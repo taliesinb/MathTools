@@ -93,6 +93,10 @@ addInlinePane[str_String] := StringJoin[
 
 (**************************************************************************************************)
 
+replaceEllipsis[str_String] := StringReplace[str, "\[Ellipsis]" -> "..."];
+
+(**************************************************************************************************)
+
 $gridBoxL = "\(\*TagBox[GridBox[";
 $gridBoxR = ", \"Grid\"]\)";
 $shorterGridBoxL = "\(\*PaneBox[GridBox[";
@@ -142,7 +146,7 @@ If[!AssociationQ[GeneralUtilities`Private`$SetUsageFormatCache],
 ];
 
 customSetUsageProcessor = Composition[
-  colorMainSymbol,
+  replaceEllipsis, colorMainSymbol,
   addHeaderLines, shortenGridBoxes,
   GeneralUtilities`Code`PackagePrivate`fmtUsageString,
   colorOtherSymbols, colorLiterals

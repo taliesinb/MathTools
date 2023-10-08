@@ -250,9 +250,11 @@ loadFileContents[path_, context_] := Module[{str, contents}, Block[{$currentCont
   If[FailureQ[contents], handleSyntaxError[path, str]];
   Block[{$Context = context}, contents = contents /. $initialSymbolResolutionDispatch /. ResolvedSymbol[sym_] :> sym];
   contents
-]];
+]];F
 
 $stringProcessingRules = {
+  "=>" -> "\[DirectedEdge]",
+  "<=>" -> "\[UndirectedEdge]",
   RegularExpression["(?s)\"\"\"(.*?)\"\"\""] :>
     StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""],
   RegularExpression["(?s)ExpressionTable\\[\n(.*?)\n\\]"] :>

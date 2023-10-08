@@ -278,14 +278,19 @@ PublicFunction[CustomPrimitiveToBoxes]
 
 SetHoldFirst[CustomPrimitiveToBoxes];
 
-General::badgprimusage = "Unrecognized usage ``."
+General::unrecogprim = "Unrecognized usage ``.";
+General::failprim = "Failed to boxify ``.";
+
 CustomPrimitiveToBoxes[prim_] := With[
   {fn = $customPrimitiveFns @ Head @ Unevaluated @ prim},
   {res = Block[{UnmatchedCase2 = Throw[$Failed, CustomPrimitiveToBoxes]&},
     Catch[fn @ prim, CustomPrimitiveToBoxes]]},
-  If[Head[res] === fn || res === $Failed,
-    Message[General::badgprimusage, MsgExpr @ prim]; {},
-    res
+  Which[
+    Head[res] === fn, gprimMsg[prim, "unrecogprim"],
+    res === $Failed,  gprimMsg[prim, "failprim"],
+    True,             res
   ]
 ];
+
+gprimMsg[prim:(h_[___]), msg_] := Message[MessageName[h, msg], MsgExpr @ prim];
 
