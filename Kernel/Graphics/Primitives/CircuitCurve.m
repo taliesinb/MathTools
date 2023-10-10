@@ -30,7 +30,7 @@ snakeCurvePoints[SnakeCurve[{a_, b_}, opts:OptionsPattern[SnakeCurve]]] := Scope
 
 PublicForm[CircuitCurve]
 
-PublicOption[SetbackDistance, LineThickness]
+PublicOption[BendStyle, SetbackDistance, LineThickness]
 
 Options[CircuitCurve] = JoinOptions[
   SnakeCurve,

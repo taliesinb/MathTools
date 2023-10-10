@@ -213,20 +213,6 @@ DeployBox[b_] := TagBox[b, "Deploy", DefaultBaseStyle -> "Deploy"];
 
 (**************************************************************************************************)
 
-PrivateFunction[NiceTooltipBoxes]
-
-NiceTooltipBoxes[a_, b_, wh_:{300, 300}] := TooltipBox[a,
-  PaneBox[b,
-    BaseStyle -> {FontSize -> 15, "Output"},
-    ImageMargins -> {{5, 5}, {5, 5}},
-    ImageSize -> {{30, First[wh, wh]}, {30, Last[wh, wh]}}, Alignment -> Center
-  ],
-  TooltipStyle -> {Background -> GrayLevel[1], CellFrameColor -> None, CellFrame -> 0},
-  TooltipDelay -> 0
-] ~TagBox~ MouseAppearanceTag["Arrow"];
-
-(**************************************************************************************************)
-
 PublicFunction[ColorFramed]
 
 ColorFramed[boxes_, color_] := Framed[boxes, ContentPadding -> False, FrameStyle -> color];

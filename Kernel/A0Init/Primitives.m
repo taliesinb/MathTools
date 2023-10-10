@@ -161,7 +161,9 @@ SignPrimitive["Curve", {RollingCurve, VectorCurve, SetbackCurve, AnchoredCurve, 
 
 (**************************************************************************************************)
 
-PublicFunction[DeclareCurvePrimitive, DeclareAtomicCurvePrimitive]
+PrivateFunction[DeclareCurvePrimitive, DeclareAtomicCurvePrimitive, DeclareCurveAlias]
+
+PrivateVariable[$customCurveHeadQ]
 
 SetUsage @ "
 DeclareCurvePrimitive[head$, curveFn$] declares that head$ is a curve primitive whose points are defined by curveFn$.
@@ -172,9 +174,14 @@ DeclareCurvePrimitive[$$, boxFn$] declares that boxes should be produced by boxF
 "
 
 SetUsage @ "
-DeclareCurvePrimitive[$$] is like %DeclareCurvePrimitive but does not normalize its first argument to a path.
+DeclareAtomicCurvePrimitive[$$] is like %DeclareCurvePrimitive but does not normalize its first argument to a path.
 "
 
+SetUsage @ "
+DeclareCurveAlias[head$, aliasFn$] declares that head$ is a curve that rewrites itself to another curve via aliasFn$.
+"
+
+SetInitialValue[$customCurveAliasFn, UAssociation[]];
 SetInitialValue[$customCurveHeadQ, UAssociation[]];
 SetInitialValue[$customCurveFn, UAssociation[]];
 SetInitialValue[$customCurveBoxesFn, UAssociation[]];
@@ -194,36 +201,69 @@ DeclareAtomicCurvePrimitive[head_, args___] := (
   $customCurveIsRecursive[head] = False;
 );
 
+DeclareCurveAlias[head_, fn_] := (
+  head /: Normal[curve_head] := resolveCurveAlias[curve, Identity];
+  $customCurveAliasFn[head] = fn;
+)
+
 toLineBox[e_] := Construct[LineBox, First @ e];
 
 (**************************************************************************************************)
 
-PublicFunction[CurveToBoxes, CurveToPoints]
+PrivateFunction[CurveToEndpoints]
 
-General::unrecogcurvepath = "Curve `` is not recognized.";
+CurveToEndpoints[curve_] := Scope[
+  extractEnds @ curve
+];
+
+extractEnds = Case[
+  {a_, ___, b_}         := {a, b};
+  Line[list_List]       := % @ list;
+  Arrow[list_List, ___] := % @ list;
+  DirectedEdge[a_, b_]  := {a, b};
+  ObjectCoordinates[{a_, b_}] := ObjectCoordinates /@ {a, b};
+  MorphismCoordinates[{a_, b_}] := MorphismCoordinates /@ {a, b};
+  head_[first_, ___] := If[
+    KeyExistsQ[$customCurveHeadQ, head] || KeyExistsQ[$customCurveAliasFn, head],
+    % @ first,
+    $Failed
+  ]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[CurveToBoxes]
+
+General::notcurve = "`` is not a curve."
+General::badinnercurve = "`` contained an invalid curve.";
+General::unrecogcurve = "Curve `` is not recognized.";
+General::failcurve = "Curve `` did not produce a valid path."
+General::failcurveboxes = "Curve `` failed to boxify."
 
 CurveToBoxes[curve_] := Scope[
   points = CurveToPoints @ curve;
   If[FailureQ[points], Return @ {}];
-  curveBoxesFn = Lookup[$customCurveBoxesFn, Head @ curve];
-  boxes = Construct[curveBoxesFn, ReplacePart[curve, 1 -> points]];
-  head = Head[boxes];
-  If[head === curveBoxesFn || FailureQ[boxes],
-    Message[General::unrecogcurvepath, MsgExpr @ curve];
-    {}
-  ,
-    boxes
+  fn = Lookup[$customCurveBoxesFn, Head @ curve];
+  res = Construct[fn, ReplacePart[curve, 1 -> points]];
+  Which[
+    Head[res] === fn, gprimMsg[curve, "unrecogcurve"],
+    res === $Failed,  gprimMsg[curve, "failcurveboxes"],
+    True,             res
   ]
 ];
 
-General::badcurvepath = "Curve `` did not produce a valid path."
-General::notcurve = "`` is not a curve."
-General::badinnercurve = "`` contained an invalid curve.";
+CurveToBoxes[curve_] /; KeyExistsQ[$customCurveAliasFn, Head @ curve] :=
+  Replace[resolveCurveAlias[curve, CurveToBoxes], $Failed -> curve];
+
+(**************************************************************************************************)
+
+PublicFunction[CurveToPoints]
 
 CurveToPoints[curve:(_Line | _Circle | _BezierCurve | _BSplineCurve)] :=
   DiscretizeCurve[curve];
 
 $ctpMsg = True;
+
 CurveToPoints[curve_] := Scope[
   If[CoordinateMatrixQ @ curve, Return @ curve];
   curveFn = Lookup[$customCurveFn, Head @ curve];
@@ -234,7 +274,7 @@ CurveToPoints[curve_] := Scope[
   If[$customCurveIsRecursive @ Head @ curve,
     innerPath = Block[{$ctpMsg = False}, CurveToPoints @ First @ curve];
     If[FailureQ[innerPath],
-      If[$ctpMsg, Message[General::badinnercurve, MsgExpr @ curve]];
+      If[$ctpMsg, gprimMsg[curve, "badinnercurve"]];
       ReturnFailed[];
     ];
     points = curveFn @ ReplacePart[curve, 1 -> innerPath];
@@ -242,10 +282,26 @@ CurveToPoints[curve_] := Scope[
     points = curveFn @ curve;
   ];
   If[!CoordinateMatrixQ[points],
-    If[$ctpMsg, Message[General::badcurvepath, MsgExpr @ curve]];
+    If[$ctpMsg, gprimMsg[curve, If[Head[points] === curveFn, "unrecogcurve", "failcurve"]]];
     ReturnFailed[];
   ];
   points
+];
+
+CurveToPoints[curve_] /; KeyExistsQ[$customCurveAliasFn, Head @ curve] :=
+  resolveCurveAlias[curve, CurveToPoints];
+
+(**************************************************************************************************)
+
+resolveCurveAlias[curve_, fn_] := Scope[
+  aliasFn = Lookup[$customCurveAliasFn, Head @ curve];
+  res = aliasFn @ curve;
+  If[Head[res] === aliasFn || res === curve || res === $Failed,
+    If[$ctpMsg || fn == CurveToBoxes, gprimMsg[curve, "unrecogcurve"]];
+    If[type === CurveToBoxes, {}, $Failed]
+  ,
+    fn @ res
+  ]
 ];
 
 (**************************************************************************************************)
@@ -292,5 +348,6 @@ CustomPrimitiveToBoxes[prim_] := With[
   ]
 ];
 
-gprimMsg[prim:(h_[___]), msg_] := Message[MessageName[h, msg], MsgExpr @ prim];
+gprimMsg[prim:(h_[___]), msg_] := (Message[MessageName[h, msg], MsgExpr @ prim]; {})
+_gprimMsg := BadArguments[];
 

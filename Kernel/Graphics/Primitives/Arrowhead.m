@@ -11,6 +11,7 @@ Arrowhead[pos$, dir$] is a graphics primitive that renders as an arrowhead begin
 | ArrowheadOpacity | opacity of the arrowhead |
 | ArrowheadThickness | thickness of the edge of the arrowhead |
 * see usage of %ArrowheadPlane for more information.
+* %ArrowheadAnchor -> Center will use the midpoint of the entire bounding box.
 * %ArrowheadLength -> Automatic takes the length from the norm of dir$.
 * %ArrowHeadColor -> %SolidEdgeForm[face$, edge$] tints the face and edge of the arrowhead differntly.
 "
@@ -54,7 +55,10 @@ arrowheadBoxes[Arrowhead[pos:$ExtCoordP, dir:$CoordP, opts___Rule]] := Scope[
  *)
   ,
     dx = SetLengthTo[dir, arrowheadLength];
-    pos2 = ToPackedReal[pos - Lerp[l, r, arrowheadAnchor] * dx];
+    pos2 = ToPackedReal @ If[arrowheadAnchor === Center,
+      pos - Mean[boundX] * dx,
+      pos - Lerp[l, r, arrowheadAnchor] * dx
+    ];
     boxes23D = If[is3d, boxes3D, boxes2D];
     If[Norm[off] != 0,
       off = Dot[off, rotMatrix];

@@ -2,6 +2,8 @@ PublicSymbol[CommutativeDiagram]
 
 PublicOption[DebugBounds, AutoSetback, Origin]
 
+PublicVariable[$CommutativeDiagramColorRules]
+
 SetUsage @ "
 CommutativeDiagram[items$] evaluates to a graphics object that contains a commutative diagram.
 CommutativeDiagram[objects$, morphisms$] is a legacy form that is also supported.
@@ -47,8 +49,9 @@ SetUsage @ "
 ObjectCoordinates[$$] can be used as a symbolic coordinate in %CommutativeDiagram.
 ObjectCoordinates[i$] represents the coordinate of object i$.
 ObjectCoordinates['name$'] refers to the coordinates of the given named object.
-ObjectCoordinates[{obj$1, obj$2, $$}] refers to the mean coordinate of several objects.
+ObjectCoordinates[{obj$1, obj$2, $$}] returns a list of object coordinates.
 ObjectCoordinates['Center'] refers to the center point of the bounding box of all objects.
+ObjectCoordinates[spec$, fn$] applies fn$ to the resolve of ObjectCoordinates[spec$].
 "
 
 SetUsage @ "
@@ -68,7 +71,6 @@ Options[CommutativeDiagram] = JoinOptions[
   FlipY                  -> False,
   GraphicsScale          -> 120,
   Alignment              -> Center,
-  ArrowPathSetback       -> Automatic,
   Setback                -> Automatic,
   AutoSetback            -> True,
   DebugBounds            -> False,
@@ -77,13 +79,15 @@ Options[CommutativeDiagram] = JoinOptions[
   FontSize               -> 20,
   TextModifiers          -> {},
   Origin                 -> {0, 0},
-  ColorRules             -> {},
+  ColorRules             -> Automatic,
   $morphismArrowOptions
 ];
 
 DeclareGraphicsPrimitive[CommutativeDiagram, "Rules", cdToBoxes];
 
 cdToBoxes[cd_] := ToGraphicsBoxes @ cdToPrimitives @ cd;
+
+SetInitialValue[$CommutativeDiagramColorRules, {}];
 
 (**************************************************************************************************)
 
@@ -121,8 +125,8 @@ $inheritedOptions = Sequence[];
 cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   UnpackOptionsAs[CommutativeDiagram,
     {FilterOptions[CommutativeDiagram, opts]},
-    alignment, arrowPathSetback, setback, labelFontSize, fontSize, fontFamily,
-    graphicsScale, autoSetback, debugBounds,
+    alignment, $setback, labelFontSize, fontSize, fontFamily,
+    graphicsScale, $autoSetback, $debugBounds,
     transposed, flipX, flipY, textModifiers, origin, colorRules
   ];
   $objectNames = {};
@@ -133,6 +137,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $morphismCurves = Association[];
   $inheritedOptions = opts;
 
+  SetAutomatic[colorRules, $CommutativeDiagramColorRules];
   colorModifierFn = toRecoloringFunction @ colorRules;
   {$objectTextModifierFn, $morphismTextModifierFn} = Map[
     Composition[toModifierFunction[#], colorModifierFn]&,
@@ -142,29 +147,35 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
     ]
   ];
 
-  calculateLabelSizes = autoSetback || debugBounds;
+  $calculateLabelSizes = $autoSetback || $debugBounds;
+
+  $currentFontSize = fontSize; (* <- for recoloring rule *)
   objectPrimitives = parseObject /@ items;
 
-  SetAutomatic[arrowPathSetback, setback];
-  SetAutomatic[arrowPathSetback, Rectangular[{10, 0}]];
-  initialArrowPathSetback = arrowPathSetback;
+  SetAutomatic[$setback, Rectangular[{15, 5}]];
+  initialSetback = $setback;
+
+  $toHigherPath = toHigherPath;
+  $currentFontSize = labelFontSize; (* <- for recoloring rule *)
   morphismPrimitives = parseMorphism /@ items;
   morphismPrimitives //= ReplaceAll[$morphismCanonicalizationRules];
 
   $objectCoordinates = MapColumn[# + origin&, 2, $objectCoordinates];
   $coordReplacement = Dispatch @ Append[$objectCoordinates, z_String :> unresolvedCoord[z]];
-  $centerCoords := $centerCoords = resolveObjCoords["Center"];
+  $biasedCenterCoords := $biasedCenterCoords = resolveObjectCoords[ObjectCoordinates["BiasedCenter"]];
+
+  (* we save these so we can call resolveCoordinates *)
   saveMorphismCoords @ morphismPrimitives;
-  primitives = {objectPrimitives, morphismPrimitives};
-  primitives = primitives /. $coordinateCanonicalizationRules;
+  primitives = resolveCoordinates @ {objectPrimitives, morphismPrimitives};
   primitives = ReplacePrimitiveCoordinates[primitives, $coordReplacement];
   arrowOpts = DeleteOptions[
     {FilterOptions[MorphismArrow, opts]},
-    {ArrowPathSetback, LabelFontSize, LabelFontSize, GraphicsScale}];
+    {Setback, LabelFontSize, LabelFontSize, GraphicsScale}];
   {
     Sequence @@ arrowOpts,
+    BendRadius -> 0.25,
     GraphicsScale -> graphicsScale,
-    ArrowPathSetback -> initialArrowPathSetback,
+    Setback -> initialSetback,
     LabelFontSize -> labelFontSize,
     FontSize -> fontSize,
     FontFamily -> fontFamily,
@@ -193,15 +204,10 @@ $morphismCanonicalizationRules = {
 
 $primitiveCanonicalizationRules = {
   cd_CommutativeDiagram :> cd,
-  Rule[ArrowPathSetback, sb_] :>
-    RuleCondition @ Rule[ArrowPathSetback, toScaled[sb]],
+  Rule[Setback, sb_] :>
+    RuleCondition @ Rule[Setback, toScaled[sb]],
   Rule[LabelPosition, s:("Outer"|"Inner")] :>
-    RuleCondition @ Rule[LabelPosition, If[s === "Outer", AwayFrom, Towards][$centerCoords]]
-};
-
-$coordinateCanonicalizationRules = {
-  ObjectCoordinates[o_] :> RuleCondition @ resolveObjCoords[o],
-  c_MorphismCoordinates :> RuleCondition @ resolveMorphismCoords[c]
+    RuleCondition @ Rule[LabelPosition, If[s === "Outer", AwayFrom, Towards][$biasedCenterCoords]]
 };
 
 toScaled = Case[
@@ -225,52 +231,81 @@ cdToPrimitives[other_] := (
 
 (**************************************************************************************************)
 
-CommutativeDiagram::badrecolor = "Bad recoloring rules ``."
+CommutativeDiagram::badrecolor = "Bad recoloring rule element ``."
 toRecoloringFunction = Case[
-  {}            := Identity;
-  list:{__Rule} := ReplaceAll @ Map[toRecolorRule, list];
+  {} | None     := Identity;
+  list_List     := ReplaceAll @ Map[toRecolorRule, list];
   other_        := (Message[CommutativeDiagram::badrecolor, other]; Identity);
 ];
 
 toRecolorRule = Case[
-  a_ -> (form_?StyleFormHeadQ) := (z:a) :> RuleCondition[form[z]];
-  a_ -> color:$ColorPattern    := (z:a) :> Style[z, color];
-  other_                       := (Message[CommutativeDiagram::badrecolor, other]; Nothing);
+  (f:FunctorSymbol[name_]) -> {c1_, c2_} :=
+    RuleDelayed[f, RuleCondition @ ColoredFunctorSymbol[name, c1, c2, $currentFontSize]];
+  other_ -> {c1_, c2_} :=
+    RuleDelayed[f, RuleCondition @ ColoredFunctorSymbol[name, c1, c2, $currentFontSize]];
+  a_ -> (form_?StyleFormHeadQ) :=
+    RuleDelayed[(z:a), RuleCondition[form[z]]];
+  a_ -> color:$ColorPattern    :=
+    RuleDelayed[(z:a), Style[z, color]];
+  _Rule := (
+    Message[CommutativeDiagram::badrecolor, other];
+    Nothing
+  );
+  a_ /; MemberQ[$CommutativeDiagramColorRules, a -> _] := Splice @ Cases[
+    $CommutativeDiagramColorRules,
+    rule:Rule[a, _] :> %[rule]
+  ];
+  other_ := (
+    Message[CommutativeDiagram::badrecolor, other];
+    Nothing
+  );
 ];
 
 (**************************************************************************************************)
 
-PublicHead[EqualityMorphism, UniqueMorphism, DoubleMorphism, Morphism, ProMorphism, AdjointMorphism]
+PublicHead[EqualityMorphism, UniqueMorphism, DoubleMorphism, Morphism, ProMorphism, AdjointMorphism, LongAdjointMorphism]
 
-$morphismHeadP = Morphism | DoubleMorphism | UniqueMorphism | EqualityMorphism | ProMorphism | AdjointMorphism;
+$morphismHeadP = Morphism | DoubleMorphism | UniqueMorphism | EqualityMorphism | ProMorphism | AdjointMorphism | LongAdjointMorphism;
 
-Scan[DeclareGraphicsPrimitive[#, "Curve", fixedMorphismBoxes]&, $morphismHeadP];
+Scan[DeclareCurveAlias[#, toMorphism]&, $morphismHeadP];
+
+(*
+Scan[DeclareGraphicsPrimitive[#, "Curve", fixedMorphismBoxes]&, $morphismHeadP]; *)
 
 fixedMorphismBoxes[m_] := With[
   {m2 = toMorphism[m]},
   If[m2 === m, $Failed, ToGraphicsBoxes @ m2]
 ];
 
+$toHigherPath = Identity;
 toMorphism := Case[
   Morphism[args___] := MorphismArrow[args];
   UniqueMorphism[path_, lbl:Except[_Rule]:None, args___]   := MorphismArrow[path, lbl, args, ArrowDashing -> Dashed];
   EqualityMorphism[path_, lbl:Except[_Rule]:None, args___] := MorphismArrow[path, lbl, "Equality", args];
   ProMorphism[path_, lbl:Except[_Rule]:None, args___]      := MorphismArrow[path, lbl, "Proarrow", args];
-  AdjointMorphism[path_, args___]                          := MorphismArrow[toHigherPath @ path, None, "Adjoint", args, ArrowThickness -> 1.25];
-  DoubleMorphism[path_, lbl:Except[_Rule]:None, args___]   := MorphismArrow[toHigherPath @ path, lbl, "DoubleArrow", args];
+  AdjointMorphism[path_, args___]                          := MorphismArrow[$toHigherPath @ path, None, "Adjoint", args, ArrowThickness -> 1.25];
+  LongAdjointMorphism[path_, args___]                      := MorphismArrow[$toHigherPath @ path, None, "LongAdjoint", args, ArrowThickness -> 1.25];
+  DoubleMorphism[path_, lbl:Except[_Rule]:None, args___]   := MorphismArrow[$toHigherPath @ path, lbl, "DoubleArrow", args];
   other_ := other;
 ];
 
 toHigherPath = Case[
-  {a_, b_} := {toHigherPathElem @ a, toHigherPathElem @ b};
-  other_   := other;
+  {a_, b_} | (a_ => b_)          := {toHigherPathElem @ a, toHigherPathElem @ b};
+  MorphismCoordinates[ab:{_, _}] := Map[toHigherPathElem @ MorphismCoordinates @ #&, ab];
+  head_Symbol[path_, args___] /; $customCurveHeadQ[head] := head[toHigherPath @ path, args];
+  other_                         := other;
 ];
 
+$higherCoordP = _DirectedEdge | _UndirectedEdge | Rule[_, _Integer] | _String | _Integer;
+CommutativeDiagram::badhighercoord = "2-morphism endpoint `` is not recognized."
 toHigherPathElem = Case[
   name_String /; MemberQ[$objectNames, name] := name;
-  {a_, b_}                                   := {a, b};
-  Placed[path_, pos:$NumberP]                := MorphismCoordinates[path, pos];
-  path_                                      := MorphismCoordinates[path];
+  pos:$CoordP                                := pos;
+  m_MorphismCoordinates                      := m;
+  o_ObjectCoordinates                        := o;
+  Placed[spec:$higherCoordP, pos:$NumberP]   := MorphismCoordinates[spec, pos];
+  spec:$higherCoordP                         := MorphismCoordinates[spec];
+  spec_                                      := (Message[CommutativeDiagram::badhighercoord, MsgExpr @ spec]; {0, 0})
 ];
 
 (**************************************************************************************************)
@@ -316,7 +351,7 @@ parseMorphism = Case[
   {_, _} -> _                                        := Nothing;
   ({__List} -> _List) ? threadedObjectsQ             := Nothing;
   Null                                               := Nothing;
-  ArrowPathSetback|Setback -> sb_                    := (arrowPathSetback = sb; Nothing);
+  Setback -> sb_                                     := ($setback = sb; Nothing);
   opt:(_Symbol -> _)                                 := flipSymbolicPositions @ opt;
 
   DirectedEdge[a_, DirectedEdge[b_, c_]] :=
@@ -344,16 +379,32 @@ parseMorphism = Case[
 
 (**************************************************************************************************)
 
+$coordinateCanonicalizationRules = {
+  cd_CommutativeDiagram :> cd,
+  c_ObjectCoordinates :> RuleCondition @ resolveObjectCoords[c],
+  c_MorphismCoordinates :> RuleCondition @ resolveMorphismCoords[c]
+};
+
+resolveCoordinates[e_] := ReplaceAll[e, $coordinateCanonicalizationRules];
+
+(**************************************************************************************************)
+
 PublicHead[ObjectCoordinates, MorphismCoordinates]
 
 CommutativeDiagram::badobjlbl = "No object named `` in ObjectCoordinates."
 CommutativeDiagram::badobjspec = "`` is not a valid specification for ObjectCoordinates."
-resolveObjCoords = Case[
-  All        := Mean @ Values @ $objectCoordinates;
-  "Center"   := Mean @ CoordinateBoundingBox @ Values @ $objectCoordinates;
-  i_Integer  := If[1 < Abs[i] < Length[$objectCoordinates], Part[$objectCoordinates, i, 2], Message[CommutativeDiagram::badobjspec, spec]; {0, 0}];
-  lbl_String := Lookup[$objectCoordinates, lbl, Message[CommutativeDiagram::badobjlbl, lbl]; {0, 0}];
-  list_List  := Mean[% /@ list];
+CommutativeDiagram::objcspeclen = "Object coordinates for `` requested, but only `` available."
+
+$allObjCoords := Values @ $objectCoordinates;
+
+resolveObjectCoords = Case[
+  ObjectCoordinates[All]            := $allObjCoords;
+  ObjectCoordinates["Center"]       := Mean @ CoordinateBoundingBox @ $allObjCoords;
+  ObjectCoordinates["BiasedCenter"] := Lerp[Mean @ $allObjCoords, % @ ObjectCoordinates @ "Center", .9];
+  ObjectCoordinates[i_Integer]      := ReplaceMissing[SafePart[$objectCoordinates, i, 2], Message[CommutativeDiagram::objcspeclen, i, Length @ $objectCoordinates]; {0, 0}];
+  ObjectCoordinates[lbl_String]     := Lookup[$objectCoordinates, lbl, Message[CommutativeDiagram::badobjlbl, lbl]; {0, 0}];
+  ObjectCoordinates[list_List]      := Map[% @ ObjectCoordinates[#]&, list];
+  ObjectCoordinates[spec_, fn_]     := fn @ % @ ObjectCoordinates[spec];
   spec_      := (Message[CommutativeDiagram::badobjspec, spec]; {0, 0});
 ]
 
@@ -361,8 +412,8 @@ CommutativeDiagram::badmorphspec = "Cannot resolve morphism coordinates for ``."
 resolveMorphismCoords = Case[
   MorphismCoordinates[spec_]                 := % @ MorphismCoordinates[spec, .5];
   MorphismCoordinates[list_List, pos_]       := Map[% @ MorphismCoordinates[#, pos]&, list];
-  MorphismCoordinates[curve_, pos_?NumberQ]  := resolveCurvePos[resolveMorphism @ curve, pos];
-  other_                                     := (Message[CommutativeDiagram::badmorphspec, other]; {0, 0});
+  MorphismCoordinates[curve_, pos_?NumberQ]  := resolveCurvePos[resolveCoordinates @ resolveMorphism @ curve, pos];
+  other_                                     := (Message[CommutativeDiagram::badmorphspec, MsgExpr @ other]; {0, 0});
 ];
 
 CommutativeDiagram::badmorphname = "No morphism with name ``."
@@ -371,13 +422,14 @@ CommutativeDiagram::badmorphconnind = "No morphism with index `` for connection 
 CommutativeDiagram::badmorphind = "No morphism with index ``."
 
 resolveMorphism = Case[
-  spec_DirectedEdge | spec_UndirectedEdge := %[spec -> 1];
-  name_String        := Scope[
+  spec_DirectedEdge | spec_UndirectedEdge :=
+    %[spec -> 1];
+  name_String := Scope[
     ind = IndexOf[$morphismNames, name];
     If[MissingQ[ind], ReturnFailed[CommutativeDiagram::badmorphname, name]];
     Part[$morphismCurves @ name, 1]
   ];
-  i_Integer          := Scope[
+  i_Integer := Scope[
     morph = SafePart[$morphismCurves @ None, i];
     If[MissingQ[morph], ReturnFailed[CommutativeDiagram::badmorphind, i]];
     morph
@@ -388,7 +440,7 @@ resolveMorphism = Case[
     If[MissingQ[morph], ReturnFailed[CommutativeDiagram::badmorphconnind, i, name]];
     morph
   ];
-  other_                   := Message[CommutativeDiagram::badmorphspec, other];
+  other_ := Message[CommutativeDiagram::badmorphspec, other];
 ];
 
 (**************************************************************************************************)
@@ -424,13 +476,13 @@ fmtLabel[lbl_, Sized[obj_, size_]] := Scope[
 ];
 
 fmtLabel[lbl_, None] := (
-  If[calculateLabelSizes, $objectSizes[lbl] = ReplaceAutomatic[$itemSize, {1, 1}]];
+  If[$calculateLabelSizes, $objectSizes[lbl] = ReplaceAutomatic[$itemSize, {1, 1}]];
   Nothing
 );
 
 fmtLabel[lbl_, obj_] := Scope[
   text = Text[$objectTextModifierFn @ obj, lbl, Lookup[$SideToCoords, alignment]];
-  If[calculateLabelSizes,
+  If[$calculateLabelSizes,
     size = $itemSize;
     If[ContainsQ[size, Automatic],
       text2 = Append[text, BaseStyle -> {FontSize -> fontSize, FontFamily -> fontFamily}];
@@ -439,7 +491,7 @@ fmtLabel[lbl_, obj_] := Scope[
       size = MapThread[ReplaceAutomatic, {size, isize}];
     ];
     $objectSizes[lbl] ^= size;
-    If[debugBounds,
+    If[$debugBounds,
       Tooltip[
         {text, FaceForm[None], EdgeForm[Red], If[NumberQ @ size, {Red, Circle[lbl, size/graphicsScale]}, CenteredRectangle[lbl, size/graphicsScale]]},
         Round[size * graphicsScale]
@@ -458,8 +510,7 @@ fmtLabel[lbl_, c_Customized] := customizedBlock[c, {Alignment} :> {alignment}, f
 $digits = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"};
 saveMorphismCoords = Case[
   e_List                    := Scan[%, e];
-  MorphismArrow[path_, rest___] := Scope[
-    If[ContainsQ[path, MorphismCoordinates], Return[]];
+  m:(MorphismArrow|$morphismHeadP)[path_, rest___] := Scope[
     KeyAppendTo[$morphismCurves, None, path];
     st = findSourceTarget @ path;
     If[st === None, Return[]];
@@ -495,18 +546,18 @@ processMorphism1 = Case[
 ];
 
 processMorphism2 = Case[
-  ma_MorphismArrow /; TrueQ[autoSetback] && FreeQ[ma, ArrowPathSetback|Setback] := Scope[
+  ma_MorphismArrow /; TrueQ[$autoSetback] && FreeQ[ma, Setback] := Scope[
     path = First @ ma;
     st = findSourceTarget @ path;
     If[st === None, Return @ ma];
     {src, tgt} = st;
     {sz1, sz2} = lookupObjectSize /@ {src, tgt};
     setback = Map[makeEndpointSetback, {sz1, sz2}];
-    setback = ExtendSetback[setback, arrowPathSetback];
-    % @ Append[ma, ArrowPathSetback -> setback]
+    setback = ExtendSetback[setback, $setback];
+    % @ Append[ma, Setback -> setback]
   ];
   ma_MorphismArrow /; TrueQ[$morphismTextModifierFn =!= Identity] && FreeQ[ma, TextModifiers] :=
-    % @ Append[ma, TextModifiers -> $morphismTextModifierFn];
+    % @ Append[ma, TextModifiers -> ($morphismTextModifierFn /. HoldPattern[$currentFontSize] :> RuleCondition[$currentFontSize])];
   other_ := other;
 ]
 
@@ -522,22 +573,25 @@ lookupObjectSize = Case[
 
 CommutativeDiagram::resolvesrctgt = "Cannot resolve source and target of MorphismArrow with path ``."
 findSourceTarget = Case[
-  a_ => b_                            := % @ {a, b};
-  {a_, b_}                            := findST /@ {a, b};
-  {a_, __, b_}                        := % @ {a, b};
-  ElbowCurve[{a_, b_}, ___]           := % @ {a, b};
-  CircuitCurve[path_, ___]            := % @ path;
+  {a_, b_} | (a_ => b_)               := findST /@ {a, b};
   HorizontalCurve[a_, ___]            := % @ {a, None};
   VerticalCurve[a_, ___]              := % @ {a, None};
   MorphismCoordinates[list_List, ___] := None;
   _AnchoredCurve                      := None;
-  other_                              := (Message[CommutativeDiagram::resolvesrctgt, other]; None);
+  other_                              := Scope[
+    st = CurveToEndpoints[other];
+    If[FailureQ[st],
+      Message[CommutativeDiagram::resolvesrctgt, other]; None,
+      findST /@ st
+    ]
+  ];
 ];
 
 findST = Case[
   _                        := None;
   v_ ? CoordinateVector2DQ := v;
   name_String              := name;
+  ObjectCoordinates[spec_] := % @ spec;
   i_Integer                := getObjectName[i];
 ]
 
@@ -545,15 +599,215 @@ findST = Case[
 
 PublicFunction[CommutativeSquare]
 
+SetUsage @ "
+CommutativeSquare[{nw$, ne$, sw$, se$}, {n$, s$, w$, e$}] constructs a %CommutativeDiagram with 4 objects and 4 morphisms.
+* additional morphisms can be specified after the four.
+* the morphisms n$, s$, w$, e$ can be given as label$ or {label$, type$, opts$$}.
+"
+
 CommutativeSquare[{nw_, ne_, sw_, se_}, {n_, s_, w_, e_, extra___}, opts___Rule] :=
   CommutativeDiagram[
-    {{1, 1} -> "NW" -> nw, {2, 1} -> "NE" -> ne, {1, 2} -> "SW" -> sw, {2, 2} -> "SE" -> se},
-    {MorphismArrow @@ ToList["NW" => "NE", n],
-     MorphismArrow @@ ToList["NE" => "SE", e],
-     MorphismArrow @@ ToList["NW" => "SW", w],
-     MorphismArrow @@ ToList["SW" => "SE", s],
+    {{1, 1} -> nw, {2, 1} -> ne, {1, 2} -> sw, {2, 2} -> se},
+    {toComSugarArrow[1 => 2, n],
+     toComSugarArrow[2 => 4, e],
+     toComSugarArrow[1 => 3, w],
+     toComSugarArrow[3 => 4, s],
      extra},
     opts,
     LabelPosition -> "Outer"
   ];
 
+(**************************************************************************************************)
+
+PublicFunction[InTriangleDiagram, OutTriangleDiagram]
+
+SetUsage @ "
+InTriangleDiagram[{l$, r$, b$}, {lr$, lb$, rb$}] constructs a %CommutativeDiagram with 3 objects and 3 morphisms connecting them.
+InTriangleDiagram[$$, side$] places b$ below on side side$.
+* side$ can be %Left, %Center, or %Right.
+* the morphisms can be given as label$ or {label$, type$, opts$$}.
+* additional morphisms can be included after the three.
+"
+
+SetUsage @ "
+OutTriangleDiagram[{t$, l$, r$}, {tl$, tr$, lr$}] constructs a %CommutativeDiagram with 3 objects and 3 morphisms connecting them.
+OutTriangleDiagram[$$, side$] places x$ below on side side$.
+* side$ can be %Left, %Center, or %Right.
+* the morphisms can be given as label$ or {label$, type$, opts$$}.
+* additional morphisms can be included after the three.
+"
+
+$triCoord = With[{r = 1.125, s = 1.41421}, {Left -> {0, r}, Center -> {s/2, s}, Right -> {r, r}}];
+
+InTriangleDiagram[{l_, r_, b_, obs___}, {lr_, lb_, rb_, mors___}, side:(Left|Center|Right):Center, opts___Rule] :=
+  commutativeTriangle[{l, r, b, obs}, {lr, lb, rb, mors}, False, side, opts];
+
+OutTriangleDiagram[{t_, l_, r_, obs___}, {tl_, tr_, lr_, mors___}, side:(Left|Center|Right):Center, opts___Rule] :=
+  commutativeTriangle[{l, r, t, obs}, {lr, tl, tr, mors}, True, side, opts];
+
+commutativeTriangle[{l_, r_, x_, obs___}, {l2r_, l2x_, r2x_, mors___}, top_, side_, opts___] := Scope[
+  {xx, rx} = Lookup[$triCoord, side] + 1;
+  {xy, lry} = If[top, {1, 2}, {2, 1}];
+  rev = If[top, Identity, Reverse];
+  CommutativeDiagram[Flatten @ {
+    {{xx, xy}  -> x, {1, lry}  -> l, {rx, lry} -> r},
+    obs,
+    toComSugarArrow[rev[1 => 2], l2x],
+    toComSugarArrow[rev[1 => 3], r2x],
+    toComSugarArrow[2 => 3, l2r],
+    mors},
+    LabelPosition -> "Outer",
+    opts
+  ]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[DoubleTriangleDiagram]
+
+SetUsage @ "
+DoubleTriangleDiagram[{l$, m$, r$, x$}, {lm$, rm$, lx$, m$, rx$}] constructs a %CommutativeDiagram with 4 objects and 5 morphisms connecting them.
+DoubleTriangleDiagram[$$, side$] places the bottom object on side$.
+* l$ is placed on the left, m$ in the middle, r$ on the right, and x$ below or above.
+* the morphisms can be given as label$ or head$[label$, opts$$], where head$ is %Morphism, DoubleMorphism%, etc.
+* the direction of the arrows between l$, m, r$ and x$ are always downward.
+* additional morphisms can be included after the four.
+"
+
+With[{r = 1.125, s = 1.41421}, {t = s/2},
+$cdtCoordRules = {
+  Top         -> {{0, 1}, {s, 1}, {t, 0}},
+  TopRight    -> {{0, 1}, {r, 1}, {r, 0}},
+  BottomLeft  -> {{0, 0}, {r, 0}, {0, 1}},
+  Bottom      -> {{0, 0}, {s, 0}, {t, 1}},
+  BottomRight -> {{0, 0}, {r, 0}, {r, 1}}
+}];
+
+DoubleTriangleDiagram[{l_, m_, r_, x_}, {lm_, rm_, lx_, mx_, rx_, extra___}, side:(Bottom|Top):Bottom, opts___Rule] := Scope[
+  pos = {{1, 1}, {2, 1}, {3, 1}, {2, 2}};
+  rev = Identity;
+  If[side === Top, rev = Reverse; pos //= MapAt[If[# == 2, 1, 2]&, {All, 2}]];
+  CommutativeDiagram[{
+    Splice @ RuleThread[pos, {l, m, r, x}],
+    toComSugarArrow[1 => 2, lm],
+    toComSugarArrow[3 => 2, rm],
+    toComSugarArrow[rev[1 => 4], lx],
+    toComSugarArrow[rev[2 => 4], mx],
+    toComSugarArrow[rev[3 => 4], rx],
+    extra},
+    LabelPosition -> "Outer",
+    opts
+  ]
+];
+
+toComSugarArrow[edge_, (head:$morphismHeadP)[args___]] := head[edge, args];
+toComSugarArrow[edge_, label_] := MorphismArrow @@ ToList[edge, label];
+toComSugarArrow[edge_, Reversed[label_]] := toComSugarArrow[Reverse @ edge, label];
+
+(**************************************************************************************************)
+
+PublicFunction[ParallelArrowDiagram]
+
+SetUsage @ "
+ParallelArrowDiagram[{l$, r$}, {t$, b$, v$}] constructs a %CommutativeDiagram with 2 objects and 2 morphisms connecting them.
+ParallelArrowDiagram[$$, {t$, b$, v$}] specifies the double morphism v$ between the two parallel morphisms.
+ParallelArrowDiagram[{pos$l -> l$, pos$r -> r$}, $$] specifies positions for l$ and r$.
+* l$ is placed on the left, r$ on the right.
+* $t connects l$ and r$ above, and b$ connects l$ and r$ below. v$ is a vertical double morphism between them.
+"
+
+ParallelArrowDiagram[{lp_ -> l_, rp_ -> r_}, {t_, b_, v_:Null, rest___}, opts___Rule] := Scope[
+  rev = If[Head[v] === Reversed, v //= First; Reverse, Identity];
+  curve = Lookup[{opts}, CurveFunction, TrapezoidCurve];
+  bend = Lookup[{opts}, BendRadius, .33];
+  CommutativeDiagram[{
+    lp -> l, rp -> r,
+    toComSugarArrow[curve[{OC @ 1, OC @ 2}, bend], t],
+    toComSugarArrow[curve[{OC @ 1, OC @ 2}, -bend], b],
+    If[v =!= Null, DoubleMorphism[MorphismCoordinates[rev @ {1, 2}], v, Setback -> 10, LabelPosition -> Right]],
+    rest
+  }, LabelPosition -> "Outer", FilterOptions @ opts]
+];
+
+ParallelArrowDiagram[{l:Except[_Rule], r:Except[_Rule]}, morphisms_List, opts___Rule] :=
+  ParallelArrowDiagram[{{1, 1} -> l, {2, 1} -> r}, morphisms, opts];
+
+(**************************************************************************************************)
+
+PublicFunction[AdjunctionDiagram]
+
+SetUsage @ "
+AdjunctionDiagram[{l$, r$}, {lr$, rl$}] constructs a %CommutativeDiagram representing the adjunction between l$ and r$.
+AdjunctionDiagram[{pos$l -> l$, pos$r -> r$}, $$] specifies positions for l$ and r$.
+"
+
+AdjunctionDiagram[{lpos_ -> l_, rpos_ -> r_}, {lr_, rl_, extra___}, opts___Rule] := Scope[
+  curve = Lookup[{opts}, CurveFunction, TrapezoidCurve];
+  bend = Lookup[{opts}, BendRadius, .33];
+  CommutativeDiagram[{
+    lpos -> l, rpos -> r,
+    toComSugarArrow[curve[{OC @ 1, OC @ 2}, bend], lr],
+    toComSugarArrow[curve[{OC @ 2, OC @ 1}, bend], rl],
+    LongAdjointMorphism[2 => 1, Setback -> 30],
+    extra},
+    LabelPosition -> "Outer", FilterOptions @ opts
+  ]
+];
+
+AdjunctionDiagram[{l_, r_}, morphisms_List, opts___Rule] :=
+  AdjunctionDiagram[{{1, 1} -> l, {2, 1} -> r}, morphisms, opts]
+
+(**************************************************************************************************)
+
+PublicFunction[AdjointTripleDiagram]
+
+SetUsage @ "
+AdjointTripleDiagram[{a$, b$}, {l$, r$, ba$}] constructs a %CommutativeDiagram representing a triple adjunction.
+* l$ is the morphism on the left, r$ is the morphism on the right, and ba$ is the reverse morphism.
+"
+
+OC = ObjectCoordinates;
+
+AdjointTripleDiagram[{a_, b_}, {abl_, abr_, ba_, extra___}, opts___Rule] := Scope[
+  curve = Lookup[{opts}, CurveFunction, TrapezoidCurve];
+  bend = Lookup[{opts}, BendRadius, .5];
+  setback = Lookup[{opts}, "AdjointSetback", 5];
+  CommutativeDiagram[{
+    {1, 1} -> a, {1, 2} -> b,
+    toComSugarArrow[curve[{OC @ 1, OC @ 2}, -bend], abl],
+    toComSugarArrow[curve[{OC @ 1, OC @ 2}, bend], abr],
+    toComSugarArrow[ObjectCoordinates @ {2,1}, ba],
+    AdjointMorphism[3 => 1, Setback -> {0, setback}], AdjointMorphism[2 => 3, Setback -> {setback, 0}],
+    extra},
+    FilterOptions @ opts,
+    LabelPosition -> Center, LabelOrientation -> Horizontal
+  ]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[ArrowDiagram]
+
+SetUsage @ "
+ArrowDiagram[a$, b$, f$] constructs a %CommutativeDiagram consisting of a single arrow f$ between a% and b%.
+* pos$ -> obj$ specifies obj$ should be at position pos$, defaulting to below a$.
+"
+
+ArrowDiagram[a_, b_, f_, opts___Rule] := Scope[
+  $apos = {1, 1};
+  CommutativeDiagram[{
+    sadApos[a], sadBpos[b],
+    toComSugarArrow[1 => 2, f]
+  }, opts]
+]
+
+sadApos = Case[
+  r_Rule := ($apos = First @ r; r);
+  obj_   := $apos -> obj;
+]
+
+sadBpos = Case[
+  Rule[side:$SidePattern|Above|Below, obj_] := Plus[$apos, {1, -1} * Lookup[$SideToCoords, side]] -> obj;
+  r_Rule := r;
+  obj_ := % @ Rule[Below, obj];
+]

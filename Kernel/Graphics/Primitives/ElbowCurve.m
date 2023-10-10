@@ -8,7 +8,7 @@ ElbowCurve[{a$, b$}, side$ -> d$] bends towards the given direction side$ such T
 
 DeclareCurvePrimitive[ElbowCurve, elbowCurvePoints];
 
-SignPrimitive["Curve", ElbowCurve];
+SignPrimitive["Curve | Curve,Radius", ElbowCurve];
 
 (**************************************************************************************************)
 
@@ -27,7 +27,7 @@ elbowCurvePoints[ElbowCurve[{a:$Coord2P, b:$Coord2P}, amount_]] := Scope[
     Message[ElbowCurve::baddist, amount];
     Return @ {a, b}
   ];
-  delta *= amount;
+  delta *= amount * 2;
   DiscretizeCurve @ BezierCurve @ {a, mid + delta, b}
 ];
 

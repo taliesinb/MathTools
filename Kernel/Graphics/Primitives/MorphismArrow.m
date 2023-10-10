@@ -26,8 +26,11 @@ MorphismArrow[path$, label$, decoration$] applies one or more arrowhead decorati
 | %ArrowheadSize | size of applied arrowhead decorations |
 | %LabelRectification | whether to ensure labels never appear upside down |
 | %LabelOrientation | orientation of label |
+| %LabelPosition | where the label is positioned |
 | %LabelFontSize | size of label |
 | %LabelBackground | background of label |
+| %LabelOffset | absolute offset applied after label is positioned |
+| %DebugLabels | whether to put a dot on the label anchors |
 * %LabelOrientation can be one of the following:
 | Horizontal | appear horizontally (automatic) with offset to avoid clipping shaft |
 | 'Aligned' | aligned to the shaft |
@@ -40,7 +43,9 @@ MorphismArrow[path$, label$, decoration$] applies one or more arrowhead decorati
 
 Options[MorphismArrow] = $morphismArrowOptions;
 
-DeclareGraphicsPrimitive[MorphismArrow, "Curve", morphismArrowBoxes];
+DeclareCurvePrimitive[MorphismArrow, First, morphismArrowBoxes];
+
+SignPrimitive["Curve", MorphismArrow]
 
 (**************************************************************************************************)
 
@@ -53,16 +58,17 @@ morphismArrowBoxes[MorphismArrow[curve_, opts___Rule]] :=
 morphismArrowBoxes[MorphismArrow[curve_, labelData_, opts___Rule]] :=
   morphismArrowBoxes[MorphismArrow[curve, labelData, "Arrow", opts]];
 
-morphismArrowBoxes[MorphismArrow[curve_, labelData_, arrowData_, opts___Rule]] := Scope[
+morphismArrowBoxes[MorphismArrow[points_, labelData_, arrowData_, opts___Rule]] := Scope[
 
   UnpackAssociationSymbols[
     {opts} -> $MakeBoxesStyleData,
     arrowPathSetback, arrowPathOffset, arrowPathReversed, arrowheadSize,
     arrowColor, arrowOpacity, arrowThickness, arrowDashing, arrowMasking, arrowShaftHidden,
-    labelPosition, labelOrientation, labelRectification, labelFontSize, labelBackground, labelSpacing, setback,
-    textModifiers, graphicsScale
+    labelPosition, labelOrientation, labelRectification, labelFontSize, labelBackground, labelSpacing, setback, labelOffset,
+    textModifiers, graphicsScale, $debugLabels
   ];
 
+  SetAutomatic[labelOffset, 0];
   $size = arrowheadSize;
   arrowPathReversed //= TrueQ;
   If[labelOrientation === "Aligned", labelOrientation = Aligned];
@@ -73,9 +79,6 @@ morphismArrowBoxes[MorphismArrow[curve_, labelData_, arrowData_, opts___Rule]] :
 
   multiOffset = toMultiOffset @ arrowData;
   If[multiOffset =!= None, arrowPathOffset = multiOffset];
-
-  points = CurveToPoints @ curve;
-  If[points == {} || FailureQ[points], Return @ {}];
 
   (* apply setback *)
   Switch[arrowData, "Hook" | "Mono",
@@ -101,6 +104,11 @@ morphismArrowBoxes[MorphismArrow[curve_, labelData_, arrowData_, opts___Rule]] :
   SetAutomatic[labelSpacing, If[labelOrientation === Aligned, arrowThickness, {0.3, 0.1} * labelFontSize] + shaftExtraThickness];
   arrowhead = parseMorphismArrowhead @ arrowData;
   $textModifierFn = toModifierFunction @ textModifiers;
+
+  (* label should be set back abit from big arrowheads. TODO: make this uniform *)
+(*   If[NumberQ[graphicsScale] && arrowData ~~~ "DoubleArrow" | "TripleArrow",
+    $path = SetbackCoordinates[$path, {0, $size / graphicsScale}]];
+ *)
   label = Map[parseMorphismLabel, ToList @ labelData];
 
   {points, isMulti} = applyPathOffset[points, arrowPathOffset];
@@ -210,15 +218,15 @@ parseMorphismLabel = Case[
   x:$NumberP -> item_ :=
     Block[{labelPositionOnShaft = x}, % @ item];
 
-  {x:$NumberP, pos:Above|Below|Center|Top|Bottom|Left|Right} -> item_ :=
+  {x:$NumberP, pos:$SidePattern|Center|Above|Below} -> item_ :=
     Block[{labelPositionOnShaft = x, labelPosition = pos}, % @ item];
 
   Placed[item_, pos_] :=
     Block[{labelPosition = pos}, % @ item];
 
   c_Customized := customizedBlock[c,
-    {LabelSpacing, LabelOrientation, LabelFontSize, LabelBackground, LabelPosition} :>
-    {labelSpacing, labelOrientation, labelFontSize, labelBackground, labelPosition},
+    {LabelSpacing, LabelOrientation, LabelFontSize, LabelBackground, LabelPosition, LabelOffset} :>
+    {labelSpacing, labelOrientation, labelFontSize, labelBackground, labelPosition, labelOffset},
     %
   ];
 
@@ -240,8 +248,9 @@ labelPositionToSide[labelPos_, pos_, dir_] := Scope[
     Center,             0,
     Left | Right,       {dx, dy} = dir; If[dy > 0 || (dy == 0. && dx < 0), 1, -1] * If[labelPosition === Left, 1, -1],
     Above | Below,      {dx, dy} = dir; If[dx > 0 || (dx == 0. && dy < 0), 1, -1] * If[labelPosition === Above, 1, -1],
-    Towards[$Coord2P], sideTowards[First @ labelPos, pos, dir],
-    AwayFrom[$Coord2P],  sideTowards[pos, First @ labelPos, dir],
+    $SidePattern,       sideTowards[Lookup[$SideToCoords, labelPos] * 1000, pos, dir],
+    Towards[$Coord2P],  sideTowards[First @ labelPos, pos, dir],
+    AwayFrom[$Coord2P], sideTowards[pos, First @ labelPos, dir],
     $Coord2P,           0,
     _,                  Message[MorphismArrow::badpos, labelPos]; 0
   ]
@@ -285,7 +294,8 @@ morphismLabelBoxes[label_, {pos_, dir_}, anchor_, side_] := Scope[
   ];
   above = side === 1;
   dir2 = If[above, VectorRotate90, VectorRotate90CW] @ dir;
-  pos = Offset[Normalize[dir2] * labelSpacing, pos];
+  If[Not[labelPosition === Center && labelOrientation ~~~ Automatic | Horizontal],
+    pos = Offset[Normalize[dir2] * labelSpacing + labelOffset, pos]];
   If[MatchQ[labelPosition, $Coord2P],
     offset = labelPosition;
     dir = {1, 0}
@@ -311,8 +321,10 @@ morphismLabelBoxes[label_, {pos_, dir_}, anchor_, side_] := Scope[
   ,
     baseStyle = {FontSize -> labelFontSize, FontFamily -> "KaTeX_Main"};
     background = ReplaceAutomatic[labelBackground, If[labelPosition === Center, White, None]];
+    If[$debugLabels, background = RGBColor[1,.9,.9]];
     text = Text[label, pos, offset, dir, BaseStyle -> baseStyle, Background -> background];
   ];
+  If[$debugLabels, text = NiceTooltip[{text, Red, Point @ pos}, <|"pos" -> pos, "offset" -> offset, "dir" -> dir|>]];
   ToGraphicsBoxes @ text
 ];
 
@@ -327,7 +339,7 @@ pathedTextBoxes[curve_, labelData_, opts___Rule] := Scope[
     labelFontSize, labelBackground, labelOrientation
   ];
 
-  $path = toCurvePoints @ curve;
+  $path = CurveToPoints @ curve;
   labelPosition = Center;
   labelOrientation = Aligned;
   labelPositionOnShaft = 0.5;

@@ -83,6 +83,14 @@ PrependLast[list_] := Prepend[list, Last @ list];
 
 (**************************************************************************************************)
 
+PublicFunction[PrependAppend]
+
+PrependAppend[{}, a_, b_] := {a, b};
+PrependAppend[list_, a_, b_] := Append[Prepend[list, a], b];
+PrependAppend[a_, b_][list_] := PrependAppend[list, a, b];
+
+(**************************************************************************************************)
+
 PublicFunction[DropWhile]
 
 SetUsage @ "

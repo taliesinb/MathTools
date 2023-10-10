@@ -43,19 +43,26 @@ rollingCurvePoints[RollingCurve[curve_, opts___Rule]] := Scope[
 toRollingCurvePoints[curve_, radius_, None] := curve;
 
 $rollingCurveCache = UAssociation[];
-toRollingCurvePoints[curve_, radius_:1, shape_:"Arc"] := Scope[
+toRollingCurvePoints[points_, radius_:1, shape_:"Arc"] := Scope[
   key = {curve, radius, shape};
   result = $rollingCurveCache @ key;
   If[!MissingQ[result], Return @ result];
-  points = toCurvePoints @ curve;
   $radius = N @ radius; $shape = ReplaceAutomatic[shape, "Arc"];
-  coords = ApplyWindowed[makeBend, points, 3];
-  result = ToPackedReal @ Prepend[First @ points] @ Append[Last @ points] @ Catenate @ N @ coords;
-  AssociateTo[$rollingCurveCache, key -> result];
+  coords = ApplyWindowed[If[shape === "Spline", makeSplineBend, makeBend], points, 3];
+  result = ToPackedReal @ PrependAppend[First @ points, Last @ points] @ Catenate @ N @ coords;
+  If[shape === "Spline", result = DiscretizeCurve @ BSplineCurve @ result];
+  zAssociateTo[$rollingCurveCache, key -> result];
   result
 ];
 
 (**************************************************************************************************)
+
+
+makeSplineBend[a_, b_, c_] := {
+  PointAlongLine[{b, a}, $radius],
+  b,
+  PointAlongLine[{b, c}, $radius]
+};
 
 makeBend[a_, b_, c_] := Scope[
   l1 = {a, b}; l2 = {c, b};

@@ -2,7 +2,7 @@ PublicHead[ShrunkCurve]
 
 DeclareCurvePrimitive[ShrunkCurve, shrunkCurvePoints];
 
-SignPrimitive["Curve,Radius", shrunkCurvePoints];
+SignPrimitive["Curve,Radius", ShrunkCurve];
 
 (**************************************************************************************************)
 

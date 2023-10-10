@@ -34,6 +34,8 @@ ClickCopy[e_] := With[
 
 DefineStandardTraditionalForm[{
   Padded[e_] :> ToBoxes[Padded[e, {0.1, 0.1}]],
+  Padded[head_, opts___][args___] :> ToBoxes @ Apply[head, Map[Padded[#, opts]&, {args}]],
+  Padded[e_, n:$NumberP] :> AdjustmentBox[ToBoxes @ e, BoxMargins -> {{n, n}, {0, 0}}],
   Padded[e_, {l:$NumberP, r:$NumberP}] :> AdjustmentBox[ToBoxes @ e, BoxMargins -> {{l, r}, {0, 0}}],
   Padded[e_, {{l:$NumberP, r:$NumberP}, {b:$NumberP, t:$NumberP}}] :> AdjustmentBox[ToBoxes @ e, BoxMargins -> {{l, r}, {b, t}}],
   Padded[e_, r:(_Rule | {__Rule} | $NumberP)] :> AdjustmentBox[ToBoxes @ e, BoxMargins -> StandardizePadding[r]]

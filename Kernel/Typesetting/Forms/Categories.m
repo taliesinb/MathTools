@@ -219,7 +219,6 @@ DefineStandardTraditionalForm[{
   cf_ColoredFunctorSymbol[args___] :> NoSpanBox @ ToBoxes @ AppliedForm[cf, args]
 }]
 
-
 (**************************************************************************************************)
 
 PublicForm[ImplicitAppliedForm]
@@ -344,9 +343,10 @@ addUnitorDecoration[pos_, i_] := AppendTo[$epilog,
   ]
 ];
 
+(* TODO: use NamedIcon instead here *)
 addAssociatorDecoration[pos_, isRev_] := AppendTo[$epilog, {
-  Arrowhead[GraphicsValue[{"VertexCoordinates", {Append[pos, 1]}}, First /* PlusOperator[{0, .5}]], {0, 1}/4, ArrowheadColor -> $Black, ArrowheadShape -> "StraightArrow"],
-  Arrowhead[GraphicsValue[{"VertexCoordinates", {Append[pos, 3]}}, First /* PlusOperator[{0, .5}]], -{0, 1}/4, ArrowheadColor -> $Black, ArrowheadShape -> "StraightArrow"]
+  Arrowhead[GraphicsValue[{"VertexCoordinates", {Append[pos, 1]}}, First /* PlusOperator[{0, .5}]], {0, 1}/4, ArrowheadColor -> $Black, ArrowheadShape -> "Arrow", ArrowheadAnchor -> Center],
+  Arrowhead[GraphicsValue[{"VertexCoordinates", {Append[pos, 3]}}, First /* PlusOperator[{0, .5}]], -{0, 1}/4, ArrowheadColor -> $Black, ArrowheadShape -> "Arrow", ArrowheadAnchor -> Center]
 }];
 
 addBraidingDecoration[vertex_] := AppendTo[$epilog,

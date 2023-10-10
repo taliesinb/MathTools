@@ -87,7 +87,7 @@ AssociateTo[$MakeBoxesStyleData, $extendedArrowOptions];
 
 (**************************************************************************************************)
 
-PublicOption[ArrowheadSize]
+PublicOption[ArrowheadSize, DebugLabels]
 
 PrivateVariable[$morphismArrowOptions]
 
@@ -104,6 +104,7 @@ $morphismArrowOptions = Normal @ KeyTake[$extendedArrowOptions, {
   ArrowPathReversed -> False,
   ArrowShaftHidden -> False,
   LabelRectification -> True,
+  DebugLabels -> False,
   TextModifiers -> {}
 };
 
@@ -168,12 +169,3 @@ ExpandGraphicsComplex[g_] := ReplaceAll[g,
     ]
 ];
 
-(**************************************************************************************************)
-
-PrivateFunction[toCurvePoints]
-
-toCurvePoints = Case[
-  e_List         := e;
-  Tube[e_]       := % @ e;
-  other_         := DiscretizeCurve @ other;
-];
