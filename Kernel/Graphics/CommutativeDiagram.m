@@ -811,3 +811,27 @@ sadBpos = Case[
   r_Rule := r;
   obj_ := % @ Rule[Below, obj];
 ]
+
+(**************************************************************************************************)
+
+PublicFunction[CommutativePentagon, CommutativeHexagon]
+
+$pentagonPoints := $pentagonPoints = VectorReflectVertical @ ClockwiseCirclePoints[5];
+
+CommutativePentagon[objs:{_, _, _, _, _}, arrows:{_, _, _, _, _}, opts___Rule] :=
+  commutativeNgon[5, objs, arrows, opts];
+
+CommutativeHexagon[objs:{_, _, _, _, _, _}, arrows:{_, _, _, _, _, _}, opts___Rule] :=
+  commutativeNgon[6, objs, arrows, opts];
+
+(**************************************************************************************************)
+
+ngonPoints[n_] := ngonPoints[n] = VectorReflectVertical @ ClockwiseCirclePoints @ n;
+
+commutativeNgon[n_, objects_, arrows_, opts___Rule] := CommutativeDiagram[
+  ngonPoints[n] -> objects,
+  MapIndex1[toComSugarArrow[#2 => Mod[#2 + 1, n, 1], #1]&, arrows],
+  FontSize -> 14, LabelFontSize -> 15, GraphicsScale -> 150,
+  LabelPosition -> "Outer", Setback -> 10, opts
+]
+

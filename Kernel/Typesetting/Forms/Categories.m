@@ -130,6 +130,51 @@ DefineTernaryForm[FunctorSignatureForm, RBox[$1, OpBox @ ":", $2, OpBox @ "\[Rul
 
 (**************************************************************************************************)
 
+PublicForm[FunctorAppliedForm]
+PublicVariable[$FunctorAppliedForm]
+
+SetInitialValue[$FunctorAppliedForm, ImplicitAppliedForm];
+
+DefineStandardTraditionalForm[{
+  FunctorAppliedForm[head_, arg_] :> ToBoxes @ $FunctorAppliedForm[head, arg],
+  FunctorAppliedForm[head_, args__] :> MakeBoxes @ TightAppliedForm[head, args]
+}]
+
+SetListable[DeclareFunctorlike];
+DeclareFunctorlike[sym_Symbol] := DefineStandardTraditionalForm[
+  head_sym[args__] :> ToBoxes @ FunctorAppliedForm[head, args]
+];
+
+(**************************************************************************************************)
+
+PublicForm[FunctorSymbol, LeftFunctorSymbol, RightFunctorSymbol]
+PublicVariable[$UseLeftRightArrowFunctors]
+
+SetInitialValue[$UseLeftRightArrowFunctors, False];
+
+DefineTaggedForm[FunctorSymbol]
+
+DefineStandardTraditionalForm[{
+  FunctorSymbol["Left"] :> ToBoxes[FunctorSymbol[If[$UseLeftRightArrowFunctors, "\[FilledLeftTriangle]", "L"]]],
+  FunctorSymbol["Right"] :> ToBoxes[FunctorSymbol[If[$UseLeftRightArrowFunctors, "\[FilledRightTriangle]", "R"]]],
+  LeftFunctorSymbol :> MakeBoxes[FunctorSymbol["Left"]],
+  RightFunctorSymbol :> MakeBoxes[FunctorSymbol["Right"]]
+}];
+
+DeclareFunctorlike[FunctorSymbol]
+
+(**************************************************************************************************)
+
+PublicForm[FunctorPowerForm]
+
+DefineStandardTraditionalForm[
+  FunctorPowerForm[f_, n_] :> ToBoxes @ PowerForm[f, n]
+];
+
+DeclareFunctorlike[FunctorPowerForm];
+
+(**************************************************************************************************)
+
 PublicForm[DiagonalFunctorForm, LimitFunctorForm, ColimitFunctorForm, LeftKanExtensionForm, RightKanExtensionForm]
 
 DefineUnaryForm[DiagonalFunctorForm, SubscriptBox["\[CapitalDelta]", $1]]
@@ -138,6 +183,8 @@ DefineUnaryForm[ColimitFunctorForm, SubscriptBox[FunctionBox["colim"], $1]]
 
 DefineUnaryForm[LeftKanExtensionForm, SubscriptBox[FunctionBox["Lan"], $1]]
 DefineUnaryForm[RightKanExtensionForm, SubscriptBox[FunctionBox["Ran"], $1]]
+
+DeclareFunctorlike[{DiagonalFunctorForm, LimitFunctorForm, ColimitFunctorForm, LeftKanExtensionForm, RightKanExtensionForm}];
 
 (**************************************************************************************************)
 
@@ -188,23 +235,6 @@ DefineUnaryForm[CompactContravariantHomFunctorForm, SuperscriptBox[FunctionBox["
 
 (**************************************************************************************************)
 
-PublicForm[FunctorSymbol, LeftFunctorSymbol, RightFunctorSymbol]
-PublicVariable[$UseLeftRightArrowFunctors]
-
-SetInitialValue[$UseLeftRightArrowFunctors, False];
-
-DefineTaggedForm[FunctorSymbol]
-
-DefineStandardTraditionalForm[{
-  FunctorSymbol["Left"] :> ToBoxes[FunctorSymbol[If[$UseLeftRightArrowFunctors, "\[FilledLeftTriangle]", "L"]]],
-  FunctorSymbol["Right"] :> ToBoxes[FunctorSymbol[If[$UseLeftRightArrowFunctors, "\[FilledRightTriangle]", "R"]]],
-  fn_FunctorSymbol[args___] :> MakeBoxes[TightAppliedForm[fn, args]],
-  LeftFunctorSymbol :> MakeBoxes[FunctorSymbol["Left"]],
-  RightFunctorSymbol :> MakeBoxes[FunctorSymbol["Right"]]
-}];
-
-(**************************************************************************************************)
-
 PublicForm[ColoredFunctorSymbol]
 
 DefineStandardTraditionalForm[{
@@ -216,7 +246,7 @@ DefineStandardTraditionalForm[{
       "DilationFactor" -> 1, "CompressionFactor" -> 0.5
     ]
   ],
-  cf_ColoredFunctorSymbol[args___] :> NoSpanBox @ ToBoxes @ AppliedForm[cf, args]
+  cf_ColoredFunctorSymbol[args___] :> NoSpanBox @ ToBoxes @ FunctorAppliedForm[cf, args]
 }]
 
 (**************************************************************************************************)
@@ -345,9 +375,14 @@ addUnitorDecoration[pos_, i_] := AppendTo[$epilog,
 
 (* TODO: use NamedIcon instead here *)
 addAssociatorDecoration[pos_, isRev_] := AppendTo[$epilog, {
-  Arrowhead[GraphicsValue[{"VertexCoordinates", {Append[pos, 1]}}, First /* PlusOperator[{0, .5}]], {0, 1}/4, ArrowheadColor -> $Black, ArrowheadShape -> "Arrow", ArrowheadAnchor -> Center],
-  Arrowhead[GraphicsValue[{"VertexCoordinates", {Append[pos, 3]}}, First /* PlusOperator[{0, .5}]], -{0, 1}/4, ArrowheadColor -> $Black, ArrowheadShape -> "Arrow", ArrowheadAnchor -> Center]
+  associatorArrowhead[Append[pos, If[isRev, 3, 1]],  {0, 1}/4],
+  associatorArrowhead[Append[pos, If[isRev, 1, 3]], -{0, 1}/4]
 }];
+
+associatorArrowhead[pos_, dir_] := Arrowhead[
+  GraphicsValue[{"VertexCoordinates", {pos}}, First /* PlusOperator[{0, .5}]], dir,
+  ArrowheadColor -> $Black, ArrowheadShape -> "Arrow", ArrowheadAnchor -> Center
+];
 
 addBraidingDecoration[vertex_] := AppendTo[$epilog,
   Text["\[LeftRightArrow]", GraphicsValue[{"VertexCoordinates", {vertex}}, First], {-0.1, 1}, BaseStyle -> {FontSize -> 9}]

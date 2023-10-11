@@ -243,9 +243,9 @@ RemainingNotebook[] := Scope[
 PublicFunction[ReplaceInCurrentNotebook, CellTypes, ReplaceExistingNotebook]
 
 Options[ReplaceInCurrentNotebook] = {
-  CellTypes -> Automatic,
-  ReplaceExistingNotebook -> True
-}
+  CellTypes -> "Input" | "Code",
+  ReplaceExistingNotebook -> False
+};
 
 ReplaceInCurrentNotebook[rule_, opts:OptionsPattern[]] := Scope[
   ReplaceBoxesInCurrentNotebook[
@@ -258,7 +258,41 @@ toBoxRules = Case[
   e_List := Map[%, e];
   a_ -> b_ := Rule[MakeBoxes @ a, MakeBoxes @ b];
   a_ :> b_ := Rule[MakeBoxes @ a, MakeBoxes @ b];
+  l_LexicalRule := RawBoxes @ makeLexicalRule[l];
 ];
+
+(**************************************************************************************************)
+
+PublicHead[LexicalPattern, LexicalRule]
+
+SetHoldAll[LexicalPattern, LexicalRule, lexicalPatternBoxes, makeLexicalRule];
+
+DefineStandardTraditionalForm[LexicalPattern[e_] :> lexicalPatternBoxes @ e];
+
+lexicalPatternBoxes[e_] := Block[{BoxForm`UseTextFormattingQ}, MakeBoxes @@ ReplaceAll[
+  Hold @ e, {
+    Verbatim[Pattern][p_, rhs_] :> RuleCondition @ RawBoxes @ Construct[Pattern, p, lexicalPatternBoxes @ rhs],
+    s:(_String | Verbatim[_] | Verbatim[__] | Verbatim[___]) :> RawBoxes[s]
+  }
+]];
+
+$whitespacePatt = ___String ? WhitespaceQ;
+
+addWhitespacePatts = Case[
+  RowBox[{head_, "[", args_, "]"}] := RowBox[{head, "[", $whitespacePatt, % @ args, $whitespacePatt, "]"}];
+  RowBox[list_List] := RowBox[PrependAppend[$whitespacePatt, $whitespacePatt] @ Riffle[% /@ list, $whitespacePatt]];
+  other_ := other;
+]
+
+LexicalRule /: Normal[l_LexicalRule] := makeLexicalRule[l];
+
+makeLexicalRule[LexicalRule[lhs_, rhs_] | LexicalRule[lhs_ :> rhs_]] := With[
+  {lhsBoxes = addWhitespacePatts @ lexicalPatternBoxes @ lhs, patSymRules = toPatRule /@ PatternSymbols[lhs]},
+  {rhsBoxes = lexicalPatternBoxes @@ ReplaceAll[Hold[rhs], patSymRules]},
+  Construct[RuleDelayed, lhsBoxes, rhsBoxes]
+];
+
+toPatRule[Hold[sym_]] := HoldPattern[sym] -> RawBoxes[sym];
 
 (**************************************************************************************************)
 
@@ -374,6 +408,7 @@ ReplaceBoxesInCurrentNotebook[boxRules_, OptionsPattern[]] := Scope[
 
 mapVerbatim = Case[
   e_List := Map[%, e];
+  RawBoxes[r_RuleDelayed] := r;
   lhs_ -> rhs_ := Verbatim[lhs] -> rhs;
   lhs_ :> rhs_ := Verbatim[lhs] :> RuleCondition[rhs];
 ];
