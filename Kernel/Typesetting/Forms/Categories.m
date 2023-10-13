@@ -195,27 +195,36 @@ DefineBinaryForm[CompactFunctorCategoryForm, SuperscriptBox[$2, $1]]
 
 (**************************************************************************************************)
 
-PublicForm[HorizontalCompositionForm, VerticalCompositionForm, DiskCompositionForm, SpacedDiskCompositionForm, TightCompositionForm, CompositionForm]
+PublicForm[HorizontalCompositionForm, VerticalCompositionForm, DiskCompositionForm, SpacedDiskCompositionForm, SpacedCompositionForm, TightCompositionForm, CompositionForm]
 
 DefineInfixForm[HorizontalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\[VeryThinSpace]\[EmptySmallCircle]\[VeryThinSpace]", 3], 0.5]];
 DefineInfixForm[VerticalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\[VeryThinSpace]\[FilledSmallCircle]\[VeryThinSpace]", 3], 0.5]];
 
+DefineInfixForm[SpacedCompositionForm, "\[VeryThinSpace]"]
 DefineInfixForm[SpacedDiskCompositionForm, "\[ThinSpace]\[SmallCircle]\[ThinSpace]"];
 DefineInfixForm[DiskCompositionForm, "\[SmallCircle]"];
 DefineInfixForm[TightCompositionForm, "\[NegativeThinSpace]"];
 DefineInfixForm[CompositionForm, ""];
 
+DefineStandardTraditionalForm[
+  SpacedCompositionForm[gs:(GradientSymbol["\[RightArrow]", ___]..)] :>
+    RowBox @ Riffle[Map[ToBoxes, Reverse @ {gs}], "\[VeryThinSpace]"]
+]
+
 (**************************************************************************************************)
 
-PublicForm[IdArrow, OneArrow, HomForm, TightHomForm, ExplicitHomForm]
+PublicForm[IdArrow, OneArrow, HomForm, TightHomForm, CompactHomForm, ExplicitHomForm]
 
 DefineUnaryForm[IdArrow, SubscriptBox[FunctionBox["id"], $1]]
 DefineUnaryForm[OneArrow, SubscriptBox[FunctionBox["1"], $1]]
 
-DefineBinaryForm[HomForm, AppliedBox[FunctionBox["hom"], $1, $2]]
-DefineBinaryForm[TightHomForm, TightAppliedBox[FunctionBox["hom"], $1, $2]]
+DefineBinaryForm[HomForm, NoSpanBox @ AppliedBox[FunctionBox["hom"], $1, $2]]
+DefineBinaryForm[TightHomForm, NoSpanBox @ TightAppliedBox[FunctionBox["hom"], $1, $2]]
+DefineBinaryForm[CompactHomForm, GridBox[
+  {{FunctionBox["h"], SmallerBox @ SmallerBox @ SmallerBox @ $1}, {"\[SpanFromAbove]", SmallerBox @ SmallerBox @ SmallerBox @ $2}},
+  RowSpacings -> 0, ColumnSpacings -> .1, RowAlignments->Center, GridFrameMargins -> {{0, 0}, {0, 0}}, RowMinHeight -> 0.5]];
 
-DefineTernaryForm[ExplicitHomForm, AppliedBox[$1, $2, $3]]
+DefineTernaryForm[ExplicitHomForm, NoSpanBox @ TightAppliedBox[$1, $2, $3]]
 
 (**************************************************************************************************)
 
@@ -228,26 +237,71 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicForm[CompactCovariantHomFunctorForm, CompactContravariantHomFunctorForm]
+PublicForm[CompactHomForm, CompactCovariantHomFunctorForm, CompactContravariantHomFunctorForm]
 
-DefineUnaryForm[CompactCovariantHomFunctorForm, SubscriptBox[FunctionBox["h"], $1]]
-DefineUnaryForm[CompactContravariantHomFunctorForm, SuperscriptBox[FunctionBox["h"], $1]]
+DefineUnaryForm[CompactCovariantHomFunctorForm, SuperscriptBox[FunctionBox["h"], $1]]
+DefineUnaryForm[CompactContravariantHomFunctorForm, SubscriptBox[FunctionBox["h"], AdjustmentBox[$1, BoxMargins -> {{.1, 0}, {0, 0}}]]]
+
+DefineStandardTraditionalForm[{
+  c_CompactCovariantHomFunctorForm[arg_] :> NoSpanBox @ MakeBoxes[AppliedForm[c, arg]],
+  c_CompactContravariantHomFunctorForm[arg_] :> NoSpanBox @ MakeBoxes[AppliedForm[c, arg]]
+}]
 
 (**************************************************************************************************)
 
-PublicForm[ColoredFunctorSymbol]
+PublicForm[GradientSymbol]
 
 DefineStandardTraditionalForm[{
-  ColoredFunctorSymbol[FunctorSymbol[name_], args___] :> MakeBoxes[ColoredFunctorSymbol[name, args]],
-  ColoredFunctorSymbol[name_, col1_, col2_, sz_] :> MakeBoxes[
-    ColorGradientForm[
-      Style[FunctorSymbol @ name, FontSize -> sz],
-      {col1, col2},
+
+(*    GradientSymbol[sym_, col1_, col2_, sz_:16] :>
+    ToBoxes @ AdjustmentForm[ColorGradientForm[
+      Style[sym, FontSize -> sz],
+      ToRainbowColor /@ {col1, col2},
       "DilationFactor" -> 1, "CompressionFactor" -> 0.5
-    ]
-  ],
-  cf_ColoredFunctorSymbol[args___] :> NoSpanBox @ ToBoxes @ FunctorAppliedForm[cf, args]
-}]
+    ], {{0, 0}, {0, -0.7}}],
+  (*     ^ this ensures that e.g. AppliedForm doesn't have big brackets when wrapping a GradientSymbol *),
+ *)
+  GradientSymbol[sym_, col1_, col2_, sz_:16] :>
+    ToBoxes @ ColorGradientForm[
+      Style[sym, FontSize -> sz],
+      ToRainbowColor /@ {col1, col2},
+      "DilationFactor" -> 1, "CompressionFactor" -> 0.5
+    ],
+
+  GradientSymbol["\[RightArrow]", col1_, col2_, sz_:16] :>
+    gradientArrowBoxes[col1, col2, sz],
+
+  (g:GradientSymbol[_FunctorSymbol, ___])[args___] :>
+    NoSpanBox @ ToBoxes @ FunctorAppliedForm[g, args],
+
+  (h_GradientSymbol)[args___] :>
+    NoSpanBox @ ToBoxes @ AppliedForm[h, args]
+}];
+
+$rightArrowPath := $rightArrowPath = Uncompress @ "
+1:eJxTTMoPSmViYGDQB2IQLf1oz12BWLYDhiolp+TXrNr/2WIBi5gI2wETYxA4vH9l45H9b7tYDzgn
+TPrWmnV2f3HCD1nlSywHVm2Z/uUY16X9DGDAcgCs3PjyfrsdZwNXLL1oD+P3ifyvUlE/vf+OlcNDM7
+OX+7n9XsisT7u4/0tpy5T4j6/3/+ZZwVqvcHl/rJ9Q5DnN9/vteSZ93959aX/dgpY8TruP+9uvSs6b
+XnJ+v6Xdmu7zBz7tP/IxMbaG7dj+jVaHP09693n/XXavF9MebN4v0Pzk79tFX/anmWy7a3Jslr09c9
+ZB+RNf9htpvFvbaHXAvknY6vjqyC8w99hPehTf/yTl8/5H6hM6mZZ9sl8uv++jfP75/YHMnfW3RT/b
+u0D9+6zQgVNH4wvUP4f3mx+p3K2464u9KTS8oPbYZ0HtNYPK/5swz/qk21I43x6i3v7+ko25yxZ+sa
+99fcTPpWujvdZb1b0bm77YR/Hx7E922WVvN5EjfLnDF/u8Y7n/JCQP2qPZb384deXxHJ4v9qo1/jf3
+Wh+xh4aD/WFIuNiHRc3jd636bM9yPjfZYO1JezT/2D/4sC3q3stP9tvck79uMj1n3yXl8ef2uhP2HD
+6X9gWs/WwfDXUHzF0MUHD2DAh8sY+EyO+HyXdC9O+H6Z9xnFF1w4IL+9PTQOCT/S2B52/bXlzar7Qw
++F/C1Q/2t6H8vXsjmO1C39nPgqqHpLfX9kL17RccfsLTjz1a+rJHS3/2sPQJ8x8s/RpBwwuWvq2h4Q
+8AA9xygg==";
+
+gradientArrowBoxes[col1_, col2_, sz_] := Construct[
+  GraphicsBox,
+  {
+    ToGraphicsBoxes @ LinearGradientFilling[{0.4 -> ToRainbowColor[col1], 0.7 -> ToRainbowColor[col2]}],
+    Construct[PolygonBox, $rightArrowPath]
+  },
+  PlotRange -> {{-2.8, 1.3}, {-1.3, 1.3}},
+  ImagePadding -> {{0, 1}, {0, 0}},
+  BaselinePosition -> Scaled[0.05],
+  ImageSize -> {Automatic, sz/2+1}
+];
 
 (**************************************************************************************************)
 
@@ -303,7 +357,7 @@ toMonoidalTreeList = Case[
   Seq[(OneArrow|IdentityArrow)[e_], pos_] := %[e, pos];
 
   Seq[(CategoryObjectSymbol|CategoryArrowSymbol|NaturalTransformationSymbol)[sym_String], _] :=
-    symbolToRainbowInteger @ sym;
+    ToRainbowInteger @ sym;
 
   Seq[AssociatorForm[a_, b_, c_], pos_] := (
     addAssociatorDecoration[pos, False];
@@ -333,39 +387,34 @@ toMonoidalTreeList = Case[
   Seq[other_, pos_] := (Message[MonoidalTree::badleaf, MsgExpr @ other, pos]; Null)
 ];
 
-symbolToRainbowInteger[sym_String] := romanToInteger @ ToLowerCase @ ToSpelledGreek @ ToNonDecoratedRoman @ sym;
-
 MonoidalTree::badleaf = "Unrecognized leaf expression `` at position ``.";
 
 (**************************************************************************************************)
 
 PublicForm[RainbowCategoryForm]
 
-DefineStandardTraditionalForm[{
+DefineStandardTraditionalForm[
   RainbowCategoryForm[form_] :> rainbowCategoryFormBoxes[form]
+];
+
+$rainbowCDOptions = {ColorRules -> "Rainbow", SymbolReplacements -> "DiskArrow"};
+rainbowCategoryFormBoxes[form_] := ToBoxes[form /. {
+  cd_CommutativeDiagram                :> RuleCondition @ ReplaceOptions[cd, $rainbowCDOptions],
+  (* TODO: remove these, they are outdated *)
+  CategoryObjectSymbol[s_]             :> symbolToRainbowSymbol[s],
+  CategoryArrowSymbol[s_]              :> symbolToRainbowSymbol[s]
 }];
 
-rainbowCategoryFormBoxes[form_] := ToBoxes[form /. {
-  CategoryObjectSymbol[s_] :> symbolToRainbowSymbol[s],
-  CategoryArrowSymbol[s_] :> symbolToRainbowSymbol[s]
-}];
+toGradientMorphism[thing_, f_, g_] :=
+  GradientSymbol[thing, ToRainbowInteger @ f, ToRainbowInteger @ g, 16];
+
+toGradientMorphism[_CategoryArrowSymbol, f_, g_] :=
+  GradientSymbol["\[RightArrow]", ToRainbowInteger @ f, ToRainbowInteger @ g, 16];
 
 symbolToRainbowSymbol["I"|"1"] := "\[EmptyCircle]";
-symbolToRainbowSymbol[s_] := Style["\[FilledCircle]", ToRainbowColor @ symbolToRainbowInteger @ s]
+symbolToRainbowSymbol[s_] := Style["\[FilledCircle]", ToRainbowColor @ ToRainbowInteger @ s]
 
 (**************************************************************************************************)
-
-romanToInteger[s_] := Lookup[$romanToInteger, s];
-
-$romanToInteger = <|
-  "i" -> -1, "1" -> -1,
-  "1" -> 1, "2" -> 2, "3" -> 3, "4" -> 4, "5" -> 5,
-  "a" -> 1, "b" -> 2, "c" -> 3, "d" -> 4, "e" -> 5,
-  "f" -> 1, "g" -> 2, "h" -> 3,
-  "m" -> 1, "n" -> 2, "p" -> 3,
-  "x" -> 1, "y" -> 2, "z" -> 3,
-  "mu" -> 6, "eps" -> 7, "alpha" -> 8, "rho" -> 1, "lambda" -> 2, "eta" -> 3
-|>;
 
 addUnitorDecoration[pos_, i_] := AppendTo[$epilog,
   Line[

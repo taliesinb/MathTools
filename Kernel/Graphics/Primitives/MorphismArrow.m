@@ -34,11 +34,11 @@ MorphismArrow[path$, label$, decoration$] applies one or more arrowhead decorati
 * %LabelOrientation can be one of the following:
 | Horizontal | appear horizontally (automatic) with offset to avoid clipping shaft |
 | 'Aligned' | aligned to the shaft |
-% The option %LabelPosition can be one of the following:
+* The option %LabelPosition can be one of the following:
 | side$ | a symbolic side like Top, Left, TopLeft, Center, etc. |
 | {dx$, dy$} | fix a particular offset from the arrow's path |
-| AwayFrom[coord$] | choose the side furthest from coord$ |
-| Towards[coord$] | choose the side closest to coord$ |
+| %AwayFrom[coord$] | choose the side furthest from coord$ |
+| %Towards[coord$] | choose the side closest to coord$ |
 "
 
 Options[MorphismArrow] = $morphismArrowOptions;
@@ -63,7 +63,7 @@ morphismArrowBoxes[MorphismArrow[points_, labelData_, arrowData_, opts___Rule]] 
   UnpackAssociationSymbols[
     {opts} -> $MakeBoxesStyleData,
     arrowPathSetback, arrowPathOffset, arrowPathReversed, arrowheadSize,
-    arrowColor, arrowOpacity, arrowThickness, arrowDashing, arrowMasking, arrowShaftHidden,
+    $arrowColor, arrowOpacity, arrowThickness, arrowDashing, arrowMasking, arrowShaftHidden,
     labelPosition, labelOrientation, labelRectification, labelFontSize, labelBackground, labelSpacing, setback, labelOffset,
     textModifiers, graphicsScale, $debugLabels
   ];
@@ -93,8 +93,9 @@ morphismArrowBoxes[MorphismArrow[points_, labelData_, arrowData_, opts___Rule]] 
   SetAutomatic[labelPosition, Above];
   labelPositionOnShaft = 0.5;
 
+  If[arrowData === "Empty", labelPosition = Center; labelOrientation = Aligned];
   SetInherited[labelFontSize, $size];
-  $lineStyler = ShaftStyleBoxOperator[arrowColor, arrowOpacity, arrowThickness, arrowDashing];
+  $lineStyler = ShaftStyleBoxOperator[$arrowColor, arrowOpacity, arrowThickness, arrowDashing];
 
   If[arrowPathOffset =!= None,
     maxOffsetY = Max[0, Abs @ DeepCases[arrowPathOffset, AlignedOffset[c_List] :> LevelPart[c, -1 -> 2]]];
@@ -117,7 +118,7 @@ morphismArrowBoxes[MorphismArrow[points_, labelData_, arrowData_, opts___Rule]] 
   mask = If[!NumberQ[arrowMasking], Nothing,
     ShaftStyleBoxOperator[White, None, arrowMasking, None] @ line
   ];
-  If[MatchQ[arrowData, "Adjoint" | "Empty"] || arrowShaftHidden, line = {}];
+  If[MatchQ[arrowData, "Adjoint" | "Empty" | "Element"] || arrowShaftHidden, line = {}];
 
   {mask, $lineStyler @ line, arrowhead, label}
 ];
@@ -160,7 +161,7 @@ morphismArrowheadBoxes[curvePos:$NumberP, shape_] := Scope[
   {pos, dir} = VectorAlongLine[$path, Scaled @ curvePos];
   rawNamedIconBoxes[
     ResolveOffsets[pos, graphicsScale],
-    dir, shape /. $arrowAliases, graphicsScale, $size, 1, Automatic, arrowThickness, curvePos]
+    dir, shape /. $arrowAliases, graphicsScale, $size, 1, $arrowColor, arrowThickness, curvePos]
 ];
 
 (**************************************************************************************************)
@@ -169,6 +170,7 @@ $hookSize = 1.2;
 
 $namedMorphismArrowheadSpecs = <|
   "Line"             -> {},
+  "Empty"            -> {},
 
   "Arrow"            -> {1 -> "Arrow"},
   "Proarrow"         -> {0.5 -> "ShortBar", 1 -> "Arrow"},
@@ -194,7 +196,8 @@ $namedMorphismArrowheadSpecs = <|
   "BarBar"           -> {0 -> "Bar", 1 -> "Bar"},
 
   "LongAdjoint"      -> {0 -> "Bar"},
-  "Adjoint"          -> {0.5 -> "Tee"}
+  "Adjoint"          -> {0.5 -> "Tee"},
+  "Element"          -> {0.5 -> "Element"}
 |>;
 
 $arrowAliases = {
@@ -295,7 +298,11 @@ morphismLabelBoxes[label_, {pos_, dir_}, anchor_, side_] := Scope[
   above = side === 1;
   dir2 = If[above, VectorRotate90, VectorRotate90CW] @ dir;
   If[Not[labelPosition === Center && labelOrientation ~~~ Automatic | Horizontal],
-    pos = Offset[Normalize[dir2] * labelSpacing + labelOffset, pos]];
+    off2 = If[Head[labelOffset] === AlignedOffset,
+      Total[First[labelOffset] * {dir, dir2}],
+      labelOffset
+    ];
+    pos = Offset[dir2 * labelSpacing + off2, pos]];
   If[MatchQ[labelPosition, $Coord2P],
     offset = labelPosition;
     dir = {1, 0}
@@ -325,7 +332,7 @@ morphismLabelBoxes[label_, {pos_, dir_}, anchor_, side_] := Scope[
     text = Text[label, pos, offset, dir, BaseStyle -> baseStyle, Background -> background];
   ];
   If[$debugLabels, text = NiceTooltip[{text, Red, Point @ pos}, <|"pos" -> pos, "offset" -> offset, "dir" -> dir|>]];
-  ToGraphicsBoxes @ text
+  fixLinearGradientFilling[dir] @ ToGraphicsBoxes @ text
 ];
 
 (**************************************************************************************************)

@@ -8,6 +8,10 @@ With[{fmv := GeneralUtilities`Control`PackagePrivate`findMutatedVariables},
   ];
 ];
 
+Unprotect[MapColumn]
+MapColumn[f_, n_][expr_] := MapColumn[f, n, expr];
+Protect[MapColumn];
+
 (**************************************************************************************************)
 
 PublicMacro[EchoScope]

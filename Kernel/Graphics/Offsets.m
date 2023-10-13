@@ -65,7 +65,12 @@ SetbackCoordinates[coords_, other_] := (
   coords
 );
 
-emptyLine[a_, b_] := Scope[mid = Avg[a, b]; {mid, mid}];
+$emptyLineD = 0.0001;
+emptyLine[a_, b_] := Scope[
+  mid = Avg[a, b];
+  d = (b-a) * $emptyLineD;
+  {mid - d, mid + d}
+];
 
 (**************************************************************************************************)
 
@@ -108,6 +113,7 @@ setbackHalf[coords_, d_] := takeLine[coords, d];
 takeLine[{a_, b_}, Rectangular[{d1:$NumberP, d2:$NumberP}]] := Scope[
   sz = {d1,d2}/2;
   c = LineRectangleIntersectionPoint[{b, a}, {a - sz, a + sz}];
+  If[Norm[c - b] == 0., c = Lerp[b, a, $emptyLineD]];
   {c, b}
 ];
 

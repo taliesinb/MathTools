@@ -314,7 +314,7 @@ GeometricTransformPrimitives[g_, {m:$CoordMatP, t:$CoordP}] :=
 GeometricTransformPrimitives[g_, m:$CoordMatP] :=
   AffineTransformPrimitives[g, m, None];
 
-GeometricTransformPrimitives[g_, fn_ ? System`Private`MightEvaluateWhenAppliedQ] :=
+GeometricTransformPrimitives[g_, fn_ ? MightEvaluateWhenAppliedQ] :=
   MapPrimitiveCoordinates[onCoords[fn], g];
 
 onCoords[fn_][e_ ? CoordinateMatricesQ] := Map[fn, e];

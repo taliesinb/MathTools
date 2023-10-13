@@ -1774,7 +1774,7 @@ processVertexShapeFunction[spec_] := Scope[
       failPlot["badvshapefuncstr", spec, commaString @ $validVertexShapes];
     ,
     _,
-      If[!System`Private`MightEvaluateWhenAppliedQ[spec],
+      If[!MightEvaluateWhenAppliedQ[spec],
         failPlot["badvshapefunc"]];
       vertexDrawFunc = drawCustomShapeFunction[spec, $vertexSize];
   ];
@@ -2062,7 +2062,7 @@ edgeColorDataProvider = Case[
 
   "Random"                  := RandomChoice[$ColorPalette, $EdgeCount];
 
-  fn_ ? System`Private`MightEvaluateWhenAppliedQ := Map[fn, $EdgeList];
+  fn_ ? MightEvaluateWhenAppliedQ := Map[fn, $EdgeList];
 
   _                         := $Failed
 ];
@@ -2139,7 +2139,7 @@ vertexColorDataProvider = Case[
 
   "Random"                  := RandomChoice[$ColorPalette, $VertexCount];
 
-  fn_ ? System`Private`MightEvaluateWhenAppliedQ := Map[fn, $VertexList];
+  fn_ ? MightEvaluateWhenAppliedQ := Map[fn, $VertexList];
 
   _                         := $Failed;
 ];

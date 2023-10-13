@@ -43,6 +43,14 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
+PublicHead[FramedForm]
+
+DefineStandardTraditionalForm[FramedForm[e_] :> framedBoxes[e]]
+
+framedBoxes[e_] := FrameBox[ToBoxes @ e, ContentPadding -> False, FrameStyle -> $LightGray, FrameMargins -> {{3, 2}, {3, 4}}, RoundingRadius -> 4]
+
+(**************************************************************************************************)
+
 PublicOption[Transposed, RiffleItem, ForceGrid]
 
 SetUsage @ "Transposed is an option to %SpacedRow, %AlgebraicRow, etc."

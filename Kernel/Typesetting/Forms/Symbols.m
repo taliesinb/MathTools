@@ -2,7 +2,7 @@ PublicSymbol[NotApplicableSymbol, UnknownSymbol, EmptySetSymbol, TickSymbol, Uni
 
 PublicSymbol[BarTokenSymbol, FilledTokenSymbol, FilledSquareTokenSymbol, FilledRectangleTokenSymbol, EmptyTokenSymbol, EmptySquareTokenSymbol, EmptyRectangleTokenSymbol]
 
-PublicSymbol[FatArrowSymbol, FatLeftArrowSymbol]
+PublicSymbol[FatArrowSymbol, FatLeftArrowSymbol, RightArrowSymbol, LeftArrowSymbol]
 
 DefineSymbolForm @ {
   NotApplicableSymbol        -> GrayBox["---"],
@@ -20,7 +20,9 @@ DefineSymbolForm @ {
   EmptySquareTokenSymbol     -> "\[EmptySquare]",
   EmptyRectangleTokenSymbol  -> "\[EmptyRectangle]",
   FatArrowSymbol             -> BoldBox["\[RightArrow]"],
-  FatLeftArrowSymbol         -> BoldBox["\[LeftArrow]"]
+  FatLeftArrowSymbol         -> BoldBox["\[LeftArrow]"],
+  RightArrowSymbol           -> "\[RightArrow]",
+  LeftArrowSymbol            -> "\[LeftArrow]"
 };
 
 (**************************************************************************************************)

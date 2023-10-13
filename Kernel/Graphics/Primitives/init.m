@@ -74,7 +74,7 @@ $extendedArrowOptions = JoinOptions[
   ArrowheadAnchor -> Automatic,
   ArrowheadPosition -> Automatic,
   ArrowThickness -> 1,
-  ArrowColor -> Black,
+  ArrowColor -> Automatic,
   ArrowOpacity -> 1,
   ArrowDashing -> None,
   ArrowMasking -> None,

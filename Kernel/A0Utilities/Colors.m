@@ -392,6 +392,28 @@ ToRainbowColor = Case[
 
 (**************************************************************************************************)
 
+PublicFunction[ToRainbowInteger]
+
+ToRainbowInteger = Case[
+
+  s_String := Lookup[$romanToInteger, ToLowerCase @ ToSpelledGreek @ ToNonDecoratedRoman @ s, None];
+
+  CategoryObjectSymbol[s_String] := % @ s;
+
+];
+
+$romanToInteger = <|
+  "i" -> -1, "1" -> -1,
+  "1" -> 1, "2" -> 2, "3" -> 3, "4" -> 4, "5" -> 5,
+  "a" -> 1, "b" -> 2, "c" -> 3, "d" -> 4, "e" -> 5,
+  "f" -> 1, "g" -> 2, "h" -> 3,
+  "m" -> 1, "n" -> 2, "p" -> 3,
+  "x" -> 1, "y" -> 2, "z" -> 3,
+  "mu" -> 6, "eps" -> 7, "alpha" -> 8, "rho" -> 1, "lambda" -> 2, "eta" -> 3
+|>;
+
+(**************************************************************************************************)
+
 PublicFunction[GrayColorQ]
 
 GrayColorQ[_GrayLevel] := True;

@@ -38,7 +38,7 @@ PublicFunction[DeepFirstCase]
 
 SetHoldRest[DeepFirstCase];
 DeepFirstCase[expr_, patt_, except_:None] :=
-  FirstCase[expr, patt, except, Infinity, Heads -> True];
+  FirstCase[expr, patt, except, {0, Infinity}, Heads -> True];
 
 (**************************************************************************************************)
 

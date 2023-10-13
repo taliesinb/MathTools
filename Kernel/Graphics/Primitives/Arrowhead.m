@@ -26,6 +26,7 @@ PrivateFunction[arrowheadBoxes]
 
 Arrowhead::unknownArrowhead = "ArrowheadShape -> `` is not one of ``."
 
+(* shouldn't this just be rawIconBoxes? seems like we are duplicating here *)
 arrowheadBoxes[Arrowhead[pos:$ExtCoordP, dir:$CoordP, opts___Rule]] := Scope[
 
   UnpackAssociationSymbols[

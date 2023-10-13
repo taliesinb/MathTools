@@ -174,13 +174,13 @@ findShortestPath[start_, end_, {distanceMatrix_, adjacentVertexTable_, adjacentE
 (**************************************************************************************************)
 
 toMetricDistanceOperator = Case[
-  "Euclidean"                                      := RootSumSquare;
-  "Chessboard"                                     := ChessboardMetric;
-  qf_QuadraticFormObject                           := Values /* ToPacked /* qf;
-  list_List ? RealVectorQ                          := SignatureMetric[list];
-  func_ ? System`Private`MightEvaluateWhenAppliedQ := func /* checkMetricNumeric;
-  n_Integer                                        := PowerMetric[n];
-  expr_                                            := Message[General::badgmetricfn, expr];
+  "Euclidean"                       := RootSumSquare;
+  "Chessboard"                      := ChessboardMetric;
+  qf_QuadraticFormObject            := Values /* ToPacked /* qf;
+  list_List ? RealVectorQ           := SignatureMetric[list];
+  func_ ? MightEvaluateWhenAppliedQ := func /* checkMetricNumeric;
+  n_Integer                         := PowerMetric[n];
+  expr_                             := Message[General::badgmetricfn, expr];
 ];
 
 General::badgmetricfn =

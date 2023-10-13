@@ -148,7 +148,10 @@ $coreSymbols = {
   Developer`MachineIntegerQ, Developer`MachineRealQ, Developer`PackedArrayQ, Developer`PackedArrayForm, Developer`ReadRawJSONFile,
   Developer`ReadRawJSONString, Developer`ReadRawJSONStream, Developer`RealQ, Developer`StringOrStringVectorQ,
   Developer`StringVectorQ, Developer`SymbolQ, Developer`ToList, Developer`ToPackedArray, Developer`FromPackedArray, Developer`WriteRawJSONFile,
-  Developer`WriteRawJSONString, Developer`WriteRawJSONStream, Developer`CellInformation
+  Developer`WriteRawJSONString, Developer`WriteRawJSONStream, Developer`CellInformation,
+
+  (* and this *)
+  System`Private`MightEvaluateWhenAppliedQ
 };
 
 $coreSymbols = Sort @ DeleteDuplicates @ $coreSymbols;

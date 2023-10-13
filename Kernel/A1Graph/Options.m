@@ -21,7 +21,7 @@ $layoutDimensionPattern = Alternatives[
 ];
 
 $graphMetricPattern = Alternatives[
-  Automatic, "Euclidean", "Chessboard", _QuadraticFormObject, _List, _Integer, _ ? System`Private`MightEvaluateWhenAppliedQ
+  Automatic, "Euclidean", "Chessboard", _QuadraticFormObject, _List, _Integer, _ ? MightEvaluateWhenAppliedQ
 ];
 
 $viewOptionKeysPattern = Alternatives[

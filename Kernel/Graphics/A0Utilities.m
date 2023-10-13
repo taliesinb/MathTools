@@ -309,6 +309,7 @@ PublicFunction[PointAlongLine]
 SetUsage @ "
 PointAlongLine[path$, d$] returns the point at distance d$ along line path$.
 PointAlongLine[path$, Scaled[f$]] takes the fraction f$ along the path.
+PointAlongLine[d$] is the operator form of PointAlongLine.
 "
 
 PointAlongLine[{a_, b_}, d_ ? NumericQ] :=
@@ -319,6 +320,8 @@ PointAlongLine[coords_, Scaled[d_]] :=
 
 PointAlongLine[coords_List, d_ ? NumericQ] :=
   First @ vectorAlongLine[coords, d];
+
+PointAlongLine[d_][coords_] := PointAlongLine[coords, d];
 
 (**************************************************************************************************)
 
@@ -635,4 +638,23 @@ ToAlignmentPair[align_] := Switch[align,
   {Left|Right|Center, Top|Bottom|Center}, align,
   _,           $Failed
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[LineDilation, LineUnionDilation]
+
+LineDilation[line:{_, _}, r_] := Polygon @ ToPackedReal @ Part[First @ RegionDilation[Line @ N @ line, r], Join[Range[1, 37, 4], Range[38, 74, 4]]]
+LineDilation[line_, r_] := Polygon @ ToPackedReal @ Part[First @ RegionDilation[Line @ N @ line, r], 1;;;;4];
+LineUnionDilation[lines_, r_] := Replace[MeshPrimitives[RegionUnion @@ Map[LineDilation[#, r]&, lines], "Polygon"], {z_} :> z];
+
+(**************************************************************************************************)
+
+PrivateFunction[fixLinearGradientFilling]
+
+fixLinearGradientFilling[dir_][boxes_] :=
+  boxes /. SurfaceAppearance["GradientFilling", l___, "GradientAngle" -> ang_, r___] :> RuleCondition[
+    With[{ang2 = ang + N[Apply[ArcTan2, dir]]},
+      SurfaceAppearance["GradientFilling", l, "GradientAngle" -> ang2, r]
+    ]
+  ];
 

@@ -34,6 +34,16 @@ toImplicitAppliedForm[boxes_] := ReplaceRepeated[boxes,
 
 (**************************************************************************************************)
 
+PublicForm[UsingExplicitAppliedForm]
+
+DefineFormModifier[UsingExplicitAppliedForm, toExplicitAppliedForm];
+
+toExplicitAppliedForm[boxes_] := ReplaceRepeated[boxes,
+  TemplateBox[list_, "ImplicitAppliedForm"] :> TemplateBox[list, "appliedForm"]
+];
+
+(**************************************************************************************************)
+
 PublicForm[UsingTightForm]
 
 DefineFormModifier[UsingTightForm, toTightForm];

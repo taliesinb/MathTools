@@ -80,6 +80,13 @@ HatBox[box_] := KBox[OverscriptBox[box, "^"], "hat" @ box];
 
 (**************************************************************************************************)
 
+PublicForm[NoSpanForm, UnlimitedSpanForm]
+
+DefineStandardTraditionalForm[{
+  NoSpanForm[e_]        :> NoSpanBox @ MakeBoxes @ e,
+  UnlimitedSpanForm[e_] :> UnlimitedSpanBox @ MakeBoxes @ e
+}]
+
 PublicFunction[NoSpanBox, UnlimitedSpanBox, ForceKatexCharBox]
 
 NoSpanBox[e_] := StyleBox[e, SpanMaxSize -> 1];
@@ -97,6 +104,14 @@ DefineStandardTraditionalForm[LowerForm[e_, n_ ? NumericQ] :> LowerBox[MakeBoxes
 
 RaiseBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> -n];
 LowerBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> n];
+
+(**************************************************************************************************)
+
+PublicForm[AdjustmentForm]
+
+DefineStandardTraditionalForm[
+  AdjustmentForm[e_, b_] :> AdjustmentBox[MakeBoxes @ e, BoxMargins -> b]
+];
 
 (**************************************************************************************************)
 
@@ -913,7 +928,7 @@ PublicFormBox[Red, Green, Blue, Orange, Pink, Teal, Gray, Purple]
 PublicFormBox[LightRed, LightGreen, LightBlue, LightOrange, LightPink, LightTeal, LightGray, LightPurple]
 PublicFormBox[DarkRed, DarkGreen, DarkBlue, DarkOrange, DarkPink, DarkTeal, DarkGray, DarkPurple, MultisetColor]
 
-PublicFormBox[Bold, Italic, Underlined, Struckthrough, PlainText, MathText, Roman, Fraktur, Caligraphic, SansSerif, Typewriter]
+PublicFormBox[Bold, Italic, Underlined, Struckthrough, Larger, Smaller, PlainText, MathText, Roman, Fraktur, Caligraphic, SansSerif, Typewriter]
 
 SystemSymbol[ScriptForm]
 PublicSymbol[ScriptBox]
@@ -951,6 +966,8 @@ DefineStyleForm[#1, #3, BoxFunction -> #2]& @@@ ExpressionTable[
   ItalicForm          ItalicBox          Italic
   UnderlinedForm      UnderlinedBox      Underlined
   StruckthroughForm   StruckthroughBox   Struckthrough
+  LargerForm          LargerBox          Larger
+  SmallerForm         SmallerBox         Smaller
   PlainTextForm       PlainTextBox       "MathText"
   MathTextForm        MathTextBox        "MathTextFont"
   RomanForm           RomanBox           "RomanMathFont"
@@ -1056,14 +1073,16 @@ FormToPlainString = Case[
 ]
 
 $plainStrNormalizationRules = {
-  ColoredFunctorSymbol[sym_, ___] :> sym,
-  ColorGradientForm[sym_, ___] :> sym
+  GradientSymbol[sym_, ___]       :> sym,
+  ColorGradientForm[sym_, ___]    :> sym,
+  CompactHomForm[a_,b_]           :> HomForm[a, b]
 };
 
 boxToString = Case[
   head_Symbol[arg_] /; StyleBoxFunctionQ[head] := % @ arg;
   StyleBox[e_, ___]      := % @ e;
   AdjustmentBox[e_, ___] := % @ e;
+  FrameBox[e_, ___]      := StringJoin["[", % @ e, "]"];
   RowBox[e_]             := StringJoin @ Map[%, e];
   SubsuperscriptBox[e_, a_, b_] := StringJoin[% @ e, "^", % @ b, "_", % @ a];
   SuperscriptBox[e_, "\[Prime]"] := StringJoin[% @ e, "'"];
