@@ -1,16 +1,16 @@
-PublicForm[FiniteFieldSymbol]
+PublicTypesettingForm[FiniteFieldSymbol]
 
 DefineUnaryForm[FiniteFieldSymbol, SubscriptBox["\[DoubleStruckCapitalF]", $1]];
 
 (**************************************************************************************************)
 
-PublicForm[BaseFieldSymbol]
+PublicTypesettingForm[BaseFieldSymbol]
 
 DefineTaggedForm[BaseFieldSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[FieldSymbol]
+PublicTypesettingForm[FieldSymbol]
 
 DefineTaggedForm[FieldSymbol, Aliases -> <|
   "C" -> Complexes,
@@ -20,6 +20,6 @@ DefineTaggedForm[FieldSymbol, Aliases -> <|
 
 (**************************************************************************************************)
 
-PublicForm[LinearCombinationCoefficientSymbol]
+PublicTypesettingForm[LinearCombinationCoefficientSymbol]
 
 DefineTaggedForm[LinearCombinationCoefficientSymbol];

@@ -1,4 +1,4 @@
-PublicForm[GradientForm]
+PublicTypesettingForm[GradientForm]
 
 declareBoxFormatting[
   GradientForm[q_] :> makeHintedTemplateBox[q -> VertexFieldSymbol, "GradientForm"],
@@ -10,7 +10,7 @@ $TemplateKatexFunction["GradientSymbol"] = katexAlias["grad"];
 
 (**************************************************************************************************)
 
-PublicForm[DivergenceForm]
+PublicTypesettingForm[DivergenceForm]
 
 declareBoxFormatting[
   DivergenceForm[q_] :> makeHintedTemplateBox[q -> EdgeFieldSymbol, "DivergenceForm"],
@@ -22,7 +22,7 @@ $TemplateKatexFunction["DivergenceSymbol"] = katexAlias["div"];
 
 (**************************************************************************************************)
 
-PublicForm[LaplacianForm]
+PublicTypesettingForm[LaplacianForm]
 
 declareBoxFormatting[
   LaplacianForm[q_] :> makeHintedTemplateBox[q -> EdgeFieldSymbol, "LaplacianForm"],
@@ -34,7 +34,7 @@ $TemplateKatexFunction["LaplacianSymbol"] = katexAlias["laplacian"];
 
 (**************************************************************************************************)
 
-PublicForm[PartialDifferentialOfForm]
+PublicTypesettingForm[PartialDifferentialOfForm]
 
 declareBoxFormatting[
   PartialDifferentialOfForm[x_] :>
@@ -48,6 +48,6 @@ $TemplateKatexFunction["PartialDifferentialSymbol"] = katexAlias["partial"];
 
 (**************************************************************************************************)
 
-PublicForm[LieBracketForm]
+PublicTypesettingForm[LieBracketForm]
 
 declareBinaryForm[LieBracketForm];

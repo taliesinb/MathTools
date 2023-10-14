@@ -1,4 +1,4 @@
-PublicHead[NiceTooltip]
+PublicGraphicsPrimitive[NiceTooltip]
 
 DeclareGraphicsPrimitive[NiceTooltip, "Primitives", niceTooltipBoxes, {2, 3}];
 
@@ -24,7 +24,7 @@ MakeBoxes[NiceTooltip[a_, None], form_] := MakeBoxes[a, Form];
 
 (**************************************************************************************************)
 
-PrivateFunction[NiceTooltipBoxes]
+PrivateBoxFunction[NiceTooltipBoxes]
 
 NiceTooltipBoxes[a_, b_, wh_:{300, 300}] := TooltipBox[a,
   PaneBox[

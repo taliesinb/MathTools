@@ -1,4 +1,4 @@
-PublicForm[CoversForm, CoveredByForm, StrictlyCoversForm, StrictlyCoveredByForm]
+PublicTypesettingForm[CoversForm, CoveredByForm, StrictlyCoversForm, StrictlyCoveredByForm]
 
 DefineInfixForm[CoversForm,            WideOpBox @ "\[SquareSupersetEqual]"]
 DefineInfixForm[CoveredByForm,         WideOpBox @ "\[SquareSubsetEqual]"]
@@ -7,7 +7,7 @@ DefineInfixForm[StrictlyCoveredByForm, WideOpBox @ "\[SquareSubset]"]
 
 (**************************************************************************************************)
 
-PublicForm[IndexedCoveringForm, GraphIndexedCoveringForm, QuiverIndexedCoveringForm]
+PublicTypesettingForm[IndexedCoveringForm, GraphIndexedCoveringForm, QuiverIndexedCoveringForm]
 
 DefineIndexedInfixBinaryForm[IndexedCoveringForm,       "\[SquareSupersetEqual]"]
 DefineIndexedInfixBinaryForm[GraphIndexedCoveringForm,  "\[SquareSupersetEqual]"]
@@ -15,20 +15,20 @@ DefineIndexedInfixBinaryForm[QuiverIndexedCoveringForm, "\[SquareSupersetEqual]"
 
 (**************************************************************************************************)
 
-PublicForm[ContractionLatticeSymbol]
+PublicTypesettingForm[ContractionLatticeSymbol]
 
 DefineTaggedForm[ContractionLatticeSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[ContractionProductForm, ContractionSumForm]
+PublicTypesettingForm[ContractionProductForm, ContractionSumForm]
 
 DefineInfixForm[ContractionProductForm, WideOpBox @ "\[CenterDot]"]
 DefineInfixForm[ContractionSumForm,     WideOpBox @ "\[SquareUnion]"]
 
 (**************************************************************************************************)
 
-PublicForm[ContractionSetForm, OrderedContractionSetForm]
+PublicTypesettingForm[ContractionSetForm, OrderedContractionSetForm]
 
 ContractionSetForm[{RepeatedNull[{_}]}] := "";
 
@@ -40,13 +40,13 @@ OrderedContractionSetForm[index_][set_] :=
 
 (**************************************************************************************************)
 
-PublicForm[IsContractedForm, IsNotContractedForm]
+PublicTypesettingForm[IsContractedForm, IsNotContractedForm]
 
 DefineIndexedInfixBinaryForm[IsContractedForm,    "\[Tilde]"]
 DefineIndexedInfixBinaryForm[IsNotContractedForm, "\[NotTilde]"]
 
 (**************************************************************************************************)
 
-PublicForm[ContractedRelationForm]
+PublicTypesettingForm[ContractedRelationForm]
 
 DefineInfixForm[ContractedRelationForm, WideOpBox @ "\[Tilde]"]

@@ -1,4 +1,4 @@
-PublicHead[VectorCurve]
+PublicGraphicsPrimitive[VectorCurve]
 
 DeclareAtomicCurvePrimitive[VectorCurve, vectorCurvePoints];
 

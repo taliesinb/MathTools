@@ -1,4 +1,4 @@
-PrivateObject[ManualVertexLayout]
+PublicObject[ManualVertexLayout]
 
 ManualVertexLayout::vnotspec = "Vertices must be specified to use ManualVertexLayout."
 

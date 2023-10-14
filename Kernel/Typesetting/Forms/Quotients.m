@@ -1,4 +1,4 @@
-PublicForm[QuotientForm, CompactQuotientForm, MultilineQuotientForm]
+PublicTypesettingForm[QuotientForm, CompactQuotientForm, MultilineQuotientForm]
 
 declareBoxFormatting[
   QuotientForm[a_, b_] :>
@@ -15,7 +15,7 @@ $TemplateKatexFunction["CompactQuotientForm"] = "compactQuotient";
 
 (**************************************************************************************************)
 
-PublicForm[TranslationVectorForm]
+PublicTypesettingForm[TranslationVectorForm]
 
 declareCommaRiffledForm[TranslationVectorForm, "translationVector"];
 
@@ -35,7 +35,7 @@ Cell[StyleData["TranslationVectorForm", StyleDefinitions -> StyleData[
 
 (**************************************************************************************************)
 
-PublicForm[PathQuotientSymbol]
+PublicTypesettingForm[PathQuotientSymbol]
 
 SetUsage @ "
 PathQuotientSymbol[q$, mu$] represents the path quiver on quiver q$.

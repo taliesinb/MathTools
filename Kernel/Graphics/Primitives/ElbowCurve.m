@@ -1,4 +1,4 @@
-PublicForm[ElbowCurve]
+PublicGraphicsPrimitive[ElbowCurve]
 
 SetUsage @ "
 ElbowCurve[{a$, b$}, d$] represents a curve from a$ to b$ bent to the left by a given distance d$.

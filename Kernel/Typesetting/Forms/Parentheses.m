@@ -1,4 +1,4 @@
-PublicForm[ParenthesesForm, TightParenthesesForm, SpacedParenthesesForm]
+PublicTypesettingForm[ParenthesesForm, TightParenthesesForm, SpacedParenthesesForm]
 
 DefineCommaForm[ParenthesesForm, ParenthesesBox[$1]];
 
@@ -8,7 +8,7 @@ DefineStandardTraditionalForm[SpacedParenthesesForm[a___] :> MakeBoxes @ Parenth
 
 (**************************************************************************************************)
 
-PublicForm[NoParenthesesForm]
+PublicTypesettingForm[NoParenthesesForm]
 
 DefineTaggedForm[NoParenthesesForm]
 
@@ -19,13 +19,13 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicForm[NTimesForm]
+PublicTypesettingForm[NTimesForm]
 
 DefineUnaryForm[NTimesForm, RBox[$1, MathTextBox @ " times"], BoxFunction -> nTimesBox]
 
 (**************************************************************************************************)
 
-PublicForm[ParenthesesLabeledForm, ParenthesesRepeatedForm, ModulusLabeledForm]
+PublicTypesettingForm[ParenthesesLabeledForm, ParenthesesRepeatedForm, ModulusLabeledForm]
 
 DefineBinaryForm[ParenthesesLabeledForm, RBox[$1, $EmSpaceBox, ParenthesesBox[$2]], BoxFunction -> parenthesesLabeledBox]
 DefineBinaryForm[ParenthesesRepeatedForm, parenthesesLabeledBox[$1, nTimesBox @ $2]]
@@ -33,20 +33,20 @@ DefineBinaryForm[ModulusLabeledForm, RBox[$1, $EmSpaceBox, RomanBox[ParenthesesB
 
 (**************************************************************************************************)
 
-PublicForm[UnderbraceLabeledForm, UnderbraceRepeatedForm]
+PublicTypesettingForm[UnderbraceLabeledForm, UnderbraceRepeatedForm]
 
 DefineBinaryForm[UnderbraceLabeledForm, UnderbraceBox[$1, $2]]
 DefineBinaryForm[UnderbraceRepeatedForm, UnderbraceBox[$1, nTimesBox @ $2]]
 
 (**************************************************************************************************)
 
-PublicForm[OverbraceLabeledForm, OverbraceRepeatedForm]
+PublicTypesettingForm[OverbraceLabeledForm, OverbraceRepeatedForm]
 
 DefineBinaryForm[OverbraceLabeledForm, OverbraceBox[$1, $2]]
 DefineBinaryForm[OverbraceRepeatedForm, OverbraceBox[$1, nTimesBox @ $2]]
 
 (**************************************************************************************************)
 
-PublicForm[ShapeLabeledForm]
+PublicTypesettingForm[ShapeLabeledForm]
 
 DefineRestCommaForm[ShapeLabeledForm, OverbraceBox[$1, ParenthesesBox @ $2]];

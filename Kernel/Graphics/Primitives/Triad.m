@@ -1,4 +1,4 @@
-PublicHead[Triad]
+PublicGraphicsPrimitive[Triad]
 
 PublicOption[TriadColor, TriadOpacity, TriadBendOptions, InteriorOffset, TriadEdgeThickness, TriadStrip, TriadArrowhead, TriadStripRadius, TriadLegs, TriadLegColor, TriadLegThickness, TriadLegWidth]
 

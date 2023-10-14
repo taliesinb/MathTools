@@ -608,9 +608,9 @@ PadColumns[ragged_, n_, item_] := Scope[
 (** Block matrix functions                                                                        *)
 (**************************************************************************************************)
 
-PublicFunction[BlockDiagonalMatrix]
+PublicFunction[BlockDiagonalMatrix2]
 
-BlockDiagonalMatrix[blocks_] := Scope[
+BlockDiagonalMatrix2[blocks_] := Scope[
   range = Range @ Length @ blocks;
   If[!MatchQ[blocks, {Repeated[_ ? MatrixQ]}], ReturnFailed[]];
   superMatrix = DiagonalMatrix[range] /. RuleThread[range, blocks];

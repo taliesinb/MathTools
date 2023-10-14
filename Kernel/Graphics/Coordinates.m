@@ -58,7 +58,7 @@ ConstructGraphicsViewTransform[viewAssoc_Association] := Scope[
 
   transformMatrix = ToPackedReal @ TransformationMatrix @ trans;
 
-(*   transformMatrix = ToPackedReal @ BlockDiagonalMatrix[{
+(*   transformMatrix = ToPackedReal @ BlockDiagonalMatrix2[{
     ToPackedReal @ trans["AffineMatrix"], Ones[{1,1}]
   }];
  *)

@@ -11,7 +11,7 @@ StripColorForms[expr_] := expr //. $colorFormP[z_] :> z;
 
 (**************************************************************************************************)
 
-PublicForm[StyledOperatorForm]
+PublicTypesettingForm[StyledOperatorForm]
 
 declareBoxFormatting[
   StyledOperatorForm[f_][e_] :>

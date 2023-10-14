@@ -1,4 +1,4 @@
-PublicHead[CenteredCuboid, CenteredRectangle]
+PublicGraphicsPrimitive[CenteredCuboid, CenteredRectangle]
 
 Options[CenteredRectangle] = {RoundingRadius -> 0};
 

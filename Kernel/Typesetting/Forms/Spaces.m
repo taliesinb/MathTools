@@ -1,4 +1,4 @@
-PublicForm[TopologicalSpaceSymbolForm, BundleSectionSymbolForm, BundleProjectionSymbolForm]
+PublicTypesettingForm[TopologicalSpaceSymbolForm, BundleSectionSymbolForm, BundleProjectionSymbolForm]
 
 declareSymbolForm[TopologicalSpaceSymbolForm]
 declareSymbolForm[BundleSectionSymbolForm]
@@ -6,7 +6,7 @@ declareSymbolForm[BundleProjectionSymbolForm]
 
 (**************************************************************************************************)
 
-PublicForm[BundleFunctionStyleForm, BundleGraphStyleForm, BundleProjectionStyleForm, BundleSectionStyleForm]
+PublicTypesettingForm[BundleFunctionStyleForm, BundleGraphStyleForm, BundleProjectionStyleForm, BundleSectionStyleForm]
 
 f_BundleFunctionStyleForm[arg__] := AppliedForm[f, arg];
 f_BundleGraphStyleForm[arg__] := AppliedForm[f, arg];
@@ -18,13 +18,13 @@ declareUnaryForm[BundleGraphStyleForm]
 declareUnaryForm[BundleProjectionStyleForm]
 declareUnaryForm[BundleSectionStyleForm]
 
-PublicForm[TotalSpaceStyleForm, BaseSpaceStyleForm, FiberSpaceStyleForm]
+PublicTypesettingForm[TotalSpaceStyleForm, BaseSpaceStyleForm, FiberSpaceStyleForm]
 
 declareUnaryForm[TotalSpaceStyleForm]
 declareUnaryForm[BaseSpaceStyleForm]
 declareUnaryForm[FiberSpaceStyleForm]
 
-PublicForm[BaseSpaceElementStyleForm, FiberSpaceElementStyleForm, TotalSpaceElementStyleForm]
+PublicTypesettingForm[BaseSpaceElementStyleForm, FiberSpaceElementStyleForm, TotalSpaceElementStyleForm]
 
 declareUnaryForm[BaseSpaceElementStyleForm]
 declareUnaryForm[FiberSpaceElementStyleForm]
@@ -32,13 +32,13 @@ declareUnaryForm[TotalSpaceElementStyleForm]
 
 (**************************************************************************************************)
 
-PublicForm[TopologicalQuotientSpaceForm]
+PublicTypesettingForm[TopologicalQuotientSpaceForm]
 
 declareBinaryForm[TopologicalQuotientSpaceForm]
 
 (**************************************************************************************************)
 
-PublicForm[CircleSpaceForm]
+PublicTypesettingForm[CircleSpaceForm]
 
 declareUnaryForm[CircleSpaceForm];
 
@@ -48,7 +48,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PublicForm[RealVectorSpaceForm, ComplexVectorSpaceForm]
+PublicTypesettingForm[RealVectorSpaceForm, ComplexVectorSpaceForm]
 
 declareUnaryForm[RealVectorSpaceForm]
 declareUnaryForm[ComplexVectorSpaceForm]

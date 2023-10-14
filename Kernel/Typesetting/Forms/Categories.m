@@ -1,4 +1,4 @@
-PublicForm[CategorySymbol, CategoryObjectSymbol, CategoryArrowSymbol]
+PublicTypesettingForm[CategorySymbol, CategoryObjectSymbol, CategoryArrowSymbol]
 
 DefineTaggedForm[CategorySymbol]
 DefineTaggedForm[CategoryObjectSymbol]
@@ -6,33 +6,33 @@ DefineTaggedForm[CategoryArrowSymbol]
 
 (**************************************************************************************************)
 
-PublicForm[SliceCategoryForm, PullbackStarForm]
+PublicTypesettingForm[SliceCategoryForm, PullbackStarForm]
 
 DefineInfixBinaryForm[SliceCategoryForm, "/"];
 DefineUnaryForm[PullbackStarForm, SuperscriptBox[$1, "*"]];
 
 (**************************************************************************************************)
 
-PublicForm[DualObjectForm]
+PublicTypesettingForm[DualObjectForm]
 
 DefineUnaryForm[DualObjectForm, SuperscriptBox[$1, "*"]];
 
 (**************************************************************************************************)
 
-PublicForm[OppositeCategoryForm]
+PublicTypesettingForm[OppositeCategoryForm]
 
 DefineUnaryForm[OppositeCategoryForm, SuperscriptBox[$1, "𝗈𝗉"]];
 
 (**************************************************************************************************)
 
-PublicForm[MonoidalProductForm, TightMonoidalProductForm]
+PublicTypesettingForm[MonoidalProductForm, TightMonoidalProductForm]
 
 DefineInfixForm[MonoidalProductForm, OpBox @ "\[CircleTimes]"]
 DefineInfixForm[TightMonoidalProductForm, "\[CircleTimes]"]
 
 (**************************************************************************************************)
 
-PublicForm[NaryMonoidalFunctionForm]
+PublicTypesettingForm[NaryMonoidalFunctionForm]
 
 DefineUnaryForm[NaryMonoidalFunctionForm, SuperscriptBox["\[CircleTimes]", $1]];
 
@@ -42,7 +42,7 @@ DefineStandardTraditionalForm[
 
 (**************************************************************************************************)
 
-PublicForm[NaturalTransformationSymbol]
+PublicTypesettingForm[NaturalTransformationSymbol]
 
 DefineTaggedForm[NaturalTransformationSymbol]
 
@@ -56,7 +56,7 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicForm[AssociatorForm, LeftUnitorForm, RightUnitorForm, BraidingForm]
+PublicTypesettingForm[AssociatorForm, LeftUnitorForm, RightUnitorForm, BraidingForm]
 
 $ntFormToSym = <|AssociatorForm -> "\[Alpha]", LeftUnitorForm -> "\[Lambda]", RightUnitorForm -> "\[Rho]", BraidingForm -> "\[Beta]"|>;
 $ntP = Alternatives @@ Keys[$ntFormToSym];
@@ -76,20 +76,20 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicForm[MorphismForm, NamedMorphismForm]
+PublicTypesettingForm[MorphismForm, NamedMorphismForm]
 
 DefineBinaryForm[MorphismForm, RBox[$1, OpBox["\[Rule]"], $2], BoxFunction -> MorphismBox]
 DefineTernaryForm[NamedMorphismForm, RBox[$1, OpBox[":"], MorphismBox[$2, $3]]]
 
 (**************************************************************************************************)
 
-PublicForm[ThenForm]
+PublicTypesettingForm[ThenForm]
 
 DefineInfixForm[ThenForm, KBox[StyleBox[" ﹔ ", FontFamily -> "KaTeX_AMS"], "﹔"], BoxFunction -> ThenBox];
 
 (**************************************************************************************************)
 
-PublicForm[CatCat, CatSet, CatFinSet, CatGrp, CatMat, CatKVect, CatMon, CatPoly, CatRel, CatRing, CatRMod, CatTop, CatFunct, CatAlg]
+PublicTypesettingForm[CatCat, CatSet, CatFinSet, CatGrp, CatMat, CatKVect, CatMon, CatPoly, CatRel, CatRing, CatRMod, CatTop, CatFunct, CatAlg]
 
 DefineSymbolForm @ {
   CatCat      -> "𝖢𝖺𝗍",
@@ -110,7 +110,7 @@ DefineSymbolForm @ {
 
 (**************************************************************************************************)
 
-PublicForm[InternalHomSymbol, FunctorPlaceholderSymbol]
+PublicTypesettingForm[InternalHomSymbol, FunctorPlaceholderSymbol]
 
 DefineInfixBinaryForm[InternalHomSymbol, "\[ThinSpace]⊸\[ThinSpace]"];
 
@@ -118,7 +118,7 @@ DefineSymbolForm[FunctorPlaceholderSymbol -> "\[Dash]"];
 
 (**************************************************************************************************)
 
-PublicForm[FunctorSignatureForm]
+PublicTypesettingForm[FunctorSignatureForm]
 
 FunctorSignatureForm[f_, a_List, b_] :=
   FunctorSignatureForm[f, CartesianProductForm @@ a, b];
@@ -130,7 +130,7 @@ DefineTernaryForm[FunctorSignatureForm, RBox[$1, OpBox @ ":", $2, OpBox @ "\[Rul
 
 (**************************************************************************************************)
 
-PublicForm[FunctorAppliedForm]
+PublicTypesettingForm[FunctorAppliedForm]
 PublicVariable[$FunctorAppliedForm]
 
 SetInitialValue[$FunctorAppliedForm, ImplicitAppliedForm];
@@ -147,7 +147,7 @@ DeclareFunctorlike[sym_Symbol] := DefineStandardTraditionalForm[
 
 (**************************************************************************************************)
 
-PublicForm[FunctorSymbol, LeftFunctorSymbol, RightFunctorSymbol]
+PublicTypesettingForm[FunctorSymbol, LeftFunctorSymbol, RightFunctorSymbol]
 PublicVariable[$UseLeftRightArrowFunctors]
 
 SetInitialValue[$UseLeftRightArrowFunctors, False];
@@ -165,7 +165,7 @@ DeclareFunctorlike[FunctorSymbol]
 
 (**************************************************************************************************)
 
-PublicForm[FunctorPowerForm]
+PublicTypesettingForm[FunctorPowerForm]
 
 DefineStandardTraditionalForm[
   FunctorPowerForm[f_, n_] :> ToBoxes @ PowerForm[f, n]
@@ -175,7 +175,7 @@ DeclareFunctorlike[FunctorPowerForm];
 
 (**************************************************************************************************)
 
-PublicForm[DiagonalFunctorForm, LimitFunctorForm, ColimitFunctorForm, LeftKanExtensionForm, RightKanExtensionForm]
+PublicTypesettingForm[DiagonalFunctorForm, LimitFunctorForm, ColimitFunctorForm, LeftKanExtensionForm, RightKanExtensionForm]
 
 DefineUnaryForm[DiagonalFunctorForm, SubscriptBox["\[CapitalDelta]", $1]]
 DefineUnaryForm[LimitFunctorForm, SubscriptBox[FunctionBox["lim"], $1]]
@@ -188,14 +188,14 @@ DeclareFunctorlike[{DiagonalFunctorForm, LimitFunctorForm, ColimitFunctorForm, L
 
 (**************************************************************************************************)
 
-PublicForm[FunctorCategoryForm, CompactFunctorCategoryForm]
+PublicTypesettingForm[FunctorCategoryForm, CompactFunctorCategoryForm]
 
 DefineBinaryForm[FunctorCategoryForm, RBox["[", $1, ",", $2, "]"]]
 DefineBinaryForm[CompactFunctorCategoryForm, SuperscriptBox[$2, $1]]
 
 (**************************************************************************************************)
 
-PublicForm[HorizontalCompositionForm, VerticalCompositionForm, DiskCompositionForm, SpacedDiskCompositionForm, SpacedCompositionForm, TightCompositionForm, CompositionForm]
+PublicTypesettingForm[HorizontalCompositionForm, VerticalCompositionForm, DiskCompositionForm, SpacedDiskCompositionForm, SpacedCompositionForm, TightCompositionForm, CompositionForm]
 
 DefineInfixForm[HorizontalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\[VeryThinSpace]\[EmptySmallCircle]\[VeryThinSpace]", 3], 0.5]];
 DefineInfixForm[VerticalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\[VeryThinSpace]\[FilledSmallCircle]\[VeryThinSpace]", 3], 0.5]];
@@ -213,7 +213,7 @@ DefineStandardTraditionalForm[
 
 (**************************************************************************************************)
 
-PublicForm[IdArrow, OneArrow, HomForm, TightHomForm, CompactHomForm, ExplicitHomForm]
+PublicTypesettingForm[IdArrow, OneArrow, HomForm, TightHomForm, CompactHomForm, ExplicitHomForm]
 
 DefineUnaryForm[IdArrow, SubscriptBox[FunctionBox["id"], $1]]
 DefineUnaryForm[OneArrow, SubscriptBox[FunctionBox["1"], $1]]
@@ -228,7 +228,7 @@ DefineTernaryForm[ExplicitHomForm, NoSpanBox @ TightAppliedBox[$1, $2, $3]]
 
 (**************************************************************************************************)
 
-PublicForm[CovariantHomFunctorForm, ContravariantHomFunctorForm]
+PublicTypesettingForm[CovariantHomFunctorForm, ContravariantHomFunctorForm]
 
 DefineStandardTraditionalForm[{
   CovariantHomFunctorForm[arg_]     :> ToBoxes @ HomForm[arg, FunctorPlaceholderSymbol],
@@ -237,7 +237,7 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicForm[CompactHomForm, CompactCovariantHomFunctorForm, CompactContravariantHomFunctorForm]
+PublicTypesettingForm[CompactHomForm, CompactCovariantHomFunctorForm, CompactContravariantHomFunctorForm]
 
 DefineUnaryForm[CompactCovariantHomFunctorForm, SuperscriptBox[FunctionBox["h"], $1]]
 DefineUnaryForm[CompactContravariantHomFunctorForm, SubscriptBox[FunctionBox["h"], AdjustmentBox[$1, BoxMargins -> {{.1, 0}, {0, 0}}]]]
@@ -249,7 +249,7 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicForm[GradientSymbol]
+PublicTypesettingForm[GradientSymbol]
 
 DefineStandardTraditionalForm[{
 
@@ -305,13 +305,13 @@ gradientArrowBoxes[col1_, col2_, sz_] := Construct[
 
 (**************************************************************************************************)
 
-PublicForm[ImplicitAppliedForm]
+PublicTypesettingForm[ImplicitAppliedForm]
 
 DefineBinaryForm[ImplicitAppliedForm, RBox[$1, $2]]
 
 (**************************************************************************************************)
 
-PublicForm[MonoidalTreeForm]
+PublicTypesettingForm[MonoidalTreeForm]
 
 DefineStandardTraditionalForm[{MonoidalTreeForm[e_, opts___Rule] :> monoidalTreeFormBoxes[e, opts]}];
 
@@ -391,7 +391,7 @@ MonoidalTree::badleaf = "Unrecognized leaf expression `` at position ``.";
 
 (**************************************************************************************************)
 
-PublicForm[RainbowCategoryForm]
+PublicTypesettingForm[RainbowCategoryForm]
 
 DefineStandardTraditionalForm[
   RainbowCategoryForm[form_] :> rainbowCategoryFormBoxes[form]

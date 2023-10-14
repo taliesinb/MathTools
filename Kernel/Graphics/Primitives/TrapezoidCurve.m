@@ -1,4 +1,4 @@
-PublicForm[TrapezoidCurve]
+PublicGraphicsPrimitive[TrapezoidCurve]
 
 SetUsage @ "
 TrapezoidCurve[{a$, b$}, d$] represents a curve from a$ to b$ with a trapezoidal bend to the left by distance d$.

@@ -1,4 +1,5 @@
-PrivateFunction[declareFormatting]
+PrivateSpecialFunction[declareFormatting]
+
 PrivateVariable[$isTraditionalForm]
 
 getPatternHead[sym_Symbol] := sym;
@@ -17,7 +18,7 @@ declareFormatting[___] := Panic["BadFormatting"]
 
 (**************************************************************************************************)
 
-PublicFunction[DefineStandardTraditionalForm]
+PrivateSpecialFunction[DefineStandardTraditionalForm]
 
 PublicFunction[HasBoxFormQ]
 
@@ -38,7 +39,8 @@ _DefineStandardTraditionalForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PrivateFunction[declareBoxFormatting]
+PrivateSpecialFunction[declareBoxFormatting]
+
 PrivateVariable[$BoxFormattingHeadQ]
 
 SetHoldAllComplete[getPatternHead];

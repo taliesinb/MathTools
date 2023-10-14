@@ -24,7 +24,7 @@ applyFormModifier[boxes_, fn_] := InheritedBlock[
 
 (**************************************************************************************************)
 
-PublicForm[UsingImplicitAppliedForm]
+PublicTypesettingForm[UsingImplicitAppliedForm]
 
 DefineFormModifier[UsingImplicitAppliedForm, toImplicitAppliedForm];
 
@@ -34,7 +34,7 @@ toImplicitAppliedForm[boxes_] := ReplaceRepeated[boxes,
 
 (**************************************************************************************************)
 
-PublicForm[UsingExplicitAppliedForm]
+PublicTypesettingForm[UsingExplicitAppliedForm]
 
 DefineFormModifier[UsingExplicitAppliedForm, toExplicitAppliedForm];
 
@@ -44,7 +44,7 @@ toExplicitAppliedForm[boxes_] := ReplaceRepeated[boxes,
 
 (**************************************************************************************************)
 
-PublicForm[UsingTightForm]
+PublicTypesettingForm[UsingTightForm]
 
 DefineFormModifier[UsingTightForm, toTightForm];
 

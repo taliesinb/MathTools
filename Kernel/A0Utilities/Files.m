@@ -293,19 +293,6 @@ $pathNormalizationRules = {
 
 (**************************************************************************************************)
 
-PrivateFunction[ToFileName]
-
-ToFileName[""|None, ""|None] :=
-  $Failed;
-
-ToFileName[""|None, file_String] :=
-  NormalizePath @ file;
-
-ToFileName[base_String, file_String] :=
-  NormalizePath @ PathJoin[base, file];
-
-(**************************************************************************************************)
-
 PrivateFunction[ReplaceFileExtension]
 
 ReplaceFileExtension[path_, None] :=

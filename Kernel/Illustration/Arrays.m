@@ -17,7 +17,7 @@ stripG3D = Case[
 
 (**************************************************************************************************)
 
-PublicForm[PixelForm]
+PublicTypesettingForm[PixelForm]
 
 DefineStandardTraditionalForm[{
   PixelForm[{r_, g_, b_}] :> StyleBox["\[FilledSquare]", FontColor -> RGBColor[r, g, b]],
@@ -26,7 +26,7 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicForm[FadedRationalForm]
+PublicTypesettingForm[FadedRationalForm]
 
 makeFade[r_] := GrayLevel[(1 - r)/1.5];
 

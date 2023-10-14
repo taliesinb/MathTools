@@ -1,4 +1,4 @@
-PublicForm[NamedIcon]
+PublicGraphicsPrimitive[NamedIcon]
 
 PublicOption[IconThickness, IconColor, IconScaling]
 

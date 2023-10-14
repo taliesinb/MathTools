@@ -9,7 +9,9 @@ $W = "W";
 
 (**************************************************************************************************)
 
-PublicHead[NodeComplex, NodeColumn, NodeRow, NodeGrid, NodeBox, AbsoluteOffset, ManualNodeLayout]
+PublicGraphicsPrimitive[NodeComplex]
+
+PublicHead[NodeColumn, NodeRow, NodeGrid, NodeBox, AbsoluteOffset, ManualNodeLayout]
 
 PublicOption[NodeLabel, NodePorts, NodeAlias, PrologStyle, EpilogStyle, NodePalette]
 

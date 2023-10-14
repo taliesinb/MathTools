@@ -1,31 +1,31 @@
-PublicForm[SemiringProductForm, SemiringSumForm]
+PublicTypesettingForm[SemiringProductForm, SemiringSumForm]
 
 declareInfixSymbol[SemiringProductForm] // usingCustomKatex["srdot"];
 declareInfixSymbol[SemiringSumForm] // usingCustomKatex["srplus"];
 
-PublicForm[StyledSemiringProductForm, StyledSemiringSumForm]
+PublicTypesettingForm[StyledSemiringProductForm, StyledSemiringSumForm]
 
 (**************************************************************************************************)
 
-PublicForm[RingSymbol]
+PublicTypesettingForm[RingSymbol]
 
 DefineTaggedForm[RingSymbol, Aliases -> <|"Z" -> Integers|>];
 
 (**************************************************************************************************)
 
-PublicForm[SemiringSymbol]
+PublicTypesettingForm[SemiringSymbol]
 
 DefineTaggedForm[SemiringSymbol, Aliases -> <|"N" -> Naturals|>];
 
 (**************************************************************************************************)
 
-PublicForm[RingElementSymbol]
+PublicTypesettingForm[RingElementSymbol]
 
 DefineTaggedForm[RingElementSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[RingUnitElementForm]
+PublicTypesettingForm[RingUnitElementForm]
 
 RingUnitElementForm[e_] := RingUnitElementForm["1", e];
 
@@ -33,13 +33,13 @@ declareBinaryForm[RingUnitElementForm];
 
 (**************************************************************************************************)
 
-PublicForm[RingZeroElementSymbol]
+PublicTypesettingForm[RingZeroElementSymbol]
 
 declareConstantSymbol[RingZeroElementSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[RingBasisElementForm]
+PublicTypesettingForm[RingBasisElementForm]
 
 declareUnaryForm[RingBasisElementForm];
 
@@ -67,36 +67,36 @@ declareDerivedRingForm[symbol_Symbol, type_:Automatic] := With[
 
 (**************************************************************************************************)
 
-PublicForm[MatrixRingForm]
+PublicTypesettingForm[MatrixRingForm]
 
 declareDerivedRingForm[MatrixRingForm];
 
 (**************************************************************************************************)
 
-PublicForm[MultisetSemiringForm, SignedMultisetRingForm]
+PublicTypesettingForm[MultisetSemiringForm, SignedMultisetRingForm]
 
 (* why not declareDerivedRingForm ? *)
 declareBinaryForm[MultisetSemiringForm];
 declareBinaryForm[SignedMultisetRingForm];
 
-PublicForm[MultisetSemiringSymbolForm, SignedMultisetRingSymbolForm]
+PublicTypesettingForm[MultisetSemiringSymbolForm, SignedMultisetRingSymbolForm]
 
 declareSymbolFormExplicit[MultisetSemiringSymbolForm];
 declareSymbolFormExplicit[SignedMultisetRingSymbolForm];
 
-PublicForm[MultisetSemiringProductForm, MultisetSemiringSumForm]
+PublicTypesettingForm[MultisetSemiringProductForm, MultisetSemiringSumForm]
 
 declareInfixSymbol[MultisetSemiringProductForm] // usingCustomKatex["msrdot"];
 declareInfixSymbol[MultisetSemiringSumForm] // usingCustomKatex["msrplus"];
 
-PublicForm[SignedMultisetRingProductForm, SignedMultisetRingSumForm]
+PublicTypesettingForm[SignedMultisetRingProductForm, SignedMultisetRingSumForm]
 
 declareInfixSymbol[SignedMultisetRingProductForm] // usingCustomKatex["smrdot"];
 declareInfixSymbol[SignedMultisetRingSumForm] // usingCustomKatex["smrplus"];
 
 (**************************************************************************************************)
 
-PublicForm[PolynomialRingForm]
+PublicTypesettingForm[PolynomialRingForm]
 
 declareDerivedRingForm[PolynomialRingForm, VariableForm];
 

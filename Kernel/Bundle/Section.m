@@ -1,4 +1,4 @@
-PublicHead[BundleSection]
+PublicObject[BundleSection]
 
 BundleSection::usage := "BundleSection[<|b$1 -> f$1, b$2 -> f$2, $$|>, hash$] represents a section of a bundle graph with hash hash$."
 

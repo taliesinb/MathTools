@@ -1,4 +1,4 @@
-PublicHead[CurveExtrusion]
+PublicGraphicsPrimitive[CurveExtrusion]
 
 DeclareGraphicsPrimitive[CurveExtrusion, "Curve,Radius | Matrix,Radius", curveExtrusionBoxes];
 

@@ -11,7 +11,7 @@ InvertedQ[_] = False;
 
 (**************************************************************************************************)
 
-PublicForm[Modulo]
+PublicTypesettingForm[Modulo]
 
 SetUsage @ "
 Modulo[n$] represents a modulo dimension n$.
@@ -118,7 +118,7 @@ StripInverted = Case[
 
 (**************************************************************************************************)
 
-PublicForm[InvertedForm]
+PublicTypesettingForm[InvertedForm]
 
 SetUsage @ "
 InvertedForm[e$] displays as Underbar[e$].

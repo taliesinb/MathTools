@@ -1,4 +1,4 @@
-PublicHead[PathedText]
+PublicGraphicsPrimitive[PathedText]
 
 SetUsage @ "
 PathedText[curve$, text$] displays text$ along curve$

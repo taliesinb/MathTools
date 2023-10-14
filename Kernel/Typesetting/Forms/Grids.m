@@ -2,7 +2,7 @@ PublicOption[ItemForm, GridSpacings, SpillLength, RowLabels, ColumnLabels]
 
 (**************************************************************************************************)
 
-PublicForm[MultiGridForm]
+PublicTypesettingForm[MultiGridForm]
 
 Options[MultiGridForm] = {
   Alignment -> Automatic,
@@ -20,7 +20,7 @@ DefineStandardTraditionalForm[
 
 (**************************************************************************************************)
 
-PublicForm[GridForm]
+PublicTypesettingForm[GridForm]
 
 Options[GridForm] = {
   Alignment -> None,
@@ -41,7 +41,7 @@ DefineStandardTraditionalForm[
 
 (**************************************************************************************************)
 
-PublicForm[GridRowsForm]
+PublicTypesettingForm[GridRowsForm]
 
 Options[GridRowsForm] = Options[GridForm];
 
@@ -51,7 +51,7 @@ DefineStandardTraditionalForm[
 
 (**************************************************************************************************)
 
-PublicForm[GridColumnsForm]
+PublicTypesettingForm[GridColumnsForm]
 
 Options[GridColumnsForm] = Options[multiColumnBoxes] = {
   ItemForm -> None,
@@ -78,7 +78,7 @@ multiColumnBoxes[cols_List, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PublicForm[SingleColumnForm]
+PublicTypesettingForm[SingleColumnForm]
 
 DefineStandardTraditionalForm[
   SingleColumnForm[args__, opts___Rule] :> singleColumnBoxes[{args}, opts]
@@ -354,7 +354,7 @@ $TemplateKatexFunction["Aligner"] = "&"&;
 
 (**************************************************************************************************)
 
-PublicForm[FlowAlignedGridForm]
+PublicTypesettingForm[FlowAlignedGridForm]
 PublicOption[AlignmentSet]
 
 Options[FlowAlignedGridForm] = {
@@ -462,7 +462,7 @@ toRowBox = Case[
 
 (**************************************************************************************************)
 
-PublicForm[EquationCascadeForm]
+PublicTypesettingForm[EquationCascadeForm]
 
 SetHoldAllComplete[equationCascadeFormBoxes]
 DefineStandardTraditionalForm[
@@ -479,8 +479,8 @@ equationCascadeFormBoxes[first_, second_, rest__] :=
 
 (**************************************************************************************************)
 
-PublicForm[EquationGridForm]
-PublicForm[Aligned]
+PublicTypesettingForm[EquationGridForm]
+PublicTypesettingForm[Aligned]
 PublicSymbol[Divider]
 
 SetUsage @ "
@@ -543,7 +543,7 @@ equationGridRow = Case[
 riffledEqGridRow[div_, _[args__]] :=
   Riffle[MapUnevaluated[MakeQGBoxesOrNull, {args}], div];
 
-PrivateSymbol[MakeQGBoxesOrNull]
+PrivateBoxFunction[MakeQGBoxesOrNull]
 
 MakeQGBoxesOrNull[Aligned[e_]] := Splice @ MapUnevaluated[MakeQGBoxes, {Aligner, e, Aligner}];
 MakeQGBoxesOrNull[Null|None] := "";

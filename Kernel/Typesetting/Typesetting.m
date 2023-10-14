@@ -1,4 +1,4 @@
-PrivateForm[ModForm]
+PublicTypesettingForm[ModForm]
 
 ModForm[x_, Infinity|0] := x;
 
@@ -34,15 +34,15 @@ LargeLabeled[e_, l_, opts:OptionsPattern[]] :=
 
 (**************************************************************************************************)
 
-PublicForm[EllipsisForm]
+PublicTypesettingForm[EllipsisForm]
 
 EllipsisForm[list_, n_] := If[Length[list] > n, Append[Take[list, n], $LargeEllipsis], list];
 EllipsisForm[n_][list_] := EllipsisForm[list, n];
 
 (**************************************************************************************************)
 
-PublicFormBox[Click]
-PublicFormBox[RightClick]
+PublicTypesettingFormBox[ClickForm]
+PublicTypesettingFormBox[RightClickForm]
 
 SetHoldRest[ClickForm, ClickBox, RightClickForm, RightClickBox];
 
@@ -179,7 +179,7 @@ mouseMoveBox[box_, body_] := TagBox[
 
 (**************************************************************************************************)
 
-PrivateFunction[StyledClickBox]
+PrivateBoxFunction[StyledClickBox]
 
 SetHoldRest[StyledClickBox];
 
@@ -207,7 +207,7 @@ $bboxColors = <|
 
 (**************************************************************************************************)
 
-PrivateFunction[DeployBox]
+PrivateBoxFunction[DeployBox]
 
 DeployBox[b_] := TagBox[b, "Deploy", DefaultBaseStyle -> "Deploy"];
 

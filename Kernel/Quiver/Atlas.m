@@ -1,4 +1,4 @@
-PublicForm[ChartSymbol]
+PublicTypesettingForm[ChartSymbol]
 
 SetUsage @ "
 ChartSymbol[sub$] represents a chart and formats as C$sub.

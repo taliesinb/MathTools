@@ -1,10 +1,10 @@
-PublicForm[TupleSymbol]
+PublicTypesettingForm[TupleSymbol]
 
 DefineTaggedForm[TupleSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[TuplePartForm]
+PublicTypesettingForm[TuplePartForm]
 
 PublicFunction[PartBox]
 
@@ -14,27 +14,27 @@ DefineBinaryForm[TuplePartForm, PartBox[$1, $2]];
 
 (**************************************************************************************************)
 
-PublicForm[MatrixPartForm, SubMatrixPartForm]
+PublicTypesettingForm[MatrixPartForm, SubMatrixPartForm]
 
 DefineTernaryForm[MatrixPartForm, PartBox[$1, $2, $3]];
 DefineTernaryForm[SubMatrixPartForm, PartBox[$1, $2, $3]];
 
 (**************************************************************************************************)
 
-PublicForm[MatrixDotForm, MatrixPlusForm]
+PublicTypesettingForm[MatrixDotForm, MatrixPlusForm]
 
 DefineInfixForm[MatrixDotForm, OpBox["\[CenterDot]"]];
 DefineInfixForm[MatrixPlusForm, OpBox["+"]];
 
 (**************************************************************************************************)
 
-PublicForm[MatrixSymbol]
+PublicTypesettingForm[MatrixSymbol]
 
 DefineTaggedForm[MatrixSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[SmallMatrixForm, NormalMatrixForm, PMatrixForm, BMatrixForm, VMatrixForm]
+PublicTypesettingForm[SmallMatrixForm, NormalMatrixForm, PMatrixForm, BMatrixForm, VMatrixForm]
 
 DefineStandardTraditionalForm[{
   SmallMatrixForm[array_List]  :> makeMatrixGrid[array, "SmallMatrixForm", FontSize -> Smaller],
@@ -70,13 +70,13 @@ rowKatex[row_List] := Riffle[row, "&"];
 
 (**************************************************************************************************)
 
-PublicForm[ArraySymbol]
+PublicTypesettingForm[ArraySymbol]
 
 DefineTaggedForm[ArraySymbol];
 
 (**************************************************************************************************)
 
-PublicForm[ArrayPlusForm, ArrayMinusForm, ArraySubtractForm, ArrayTimesForm, ArrayDivideForm]
+PublicTypesettingForm[ArrayPlusForm, ArrayMinusForm, ArraySubtractForm, ArrayTimesForm, ArrayDivideForm]
 
 DefineInfixForm[ArrayPlusForm,  OpBox @ "+"]
 DefineInfixForm[ArrayTimesForm, OpBox @ "\[Times]"]
@@ -86,13 +86,13 @@ DefineBinaryForm[ArrayDivideForm,  RBox[$1, KBox[OpBox @ "/", "/"], $2]];
 
 (**************************************************************************************************)
 
-PublicForm[ArrayPartForm]
+PublicTypesettingForm[ArrayPartForm]
 
 DefineRestCommaForm[ArrayPartForm, PartBox[$1, $2]];
 
 (**************************************************************************************************)
 
-PublicForm[LiftedForm, MappedForm]
+PublicTypesettingForm[LiftedForm, MappedForm]
 
 DefineUnaryForm[LiftedForm, SuperscriptBox[$1, "\[UpArrow]"]];
 DefineUnaryForm[MappedForm, SuperscriptBox[$1, "\[UpArrow]"]];

@@ -1,4 +1,4 @@
-PrivateFunction[declareFunctionAutocomplete, declareSyntaxInfo]
+PrivateSpecialFunction[declareFunctionAutocomplete, declareSyntaxInfo]
 
 If[$Notebooks,
 

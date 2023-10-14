@@ -1,8 +1,8 @@
-PublicForm[LatticeSymbol, MeetSemilatticeSymbol, JoinSemilatticeSymbol, PosetSymbol]
+PublicTypesettingForm[LatticeSymbol, MeetSemilatticeSymbol, JoinSemilatticeSymbol, PosetSymbol]
 
 DefineTaggedForm[{LatticeSymbol, MeetSemilatticeSymbol, JoinSemilatticeSymbol, PosetSymbol}]
 
-PublicForm[LatticeElementSymbol, MeetSemilatticeElementSymbol, JoinSemilatticeElementSymbol, PosetElementSymbol]
+PublicTypesettingForm[LatticeElementSymbol, MeetSemilatticeElementSymbol, JoinSemilatticeElementSymbol, PosetElementSymbol]
 
 DefineTaggedForm[{LatticeElementSymbol, MeetSemilatticeElementSymbol, JoinSemilatticeElementSymbol, PosetElementSymbol}]
 
@@ -19,19 +19,19 @@ DefineSymbolForm[{
 
 (**************************************************************************************************)
 
-PublicForm[LatticeMeetForm, SemilatticeMeetForm, SemilatticeSemimeetForm]
+PublicTypesettingForm[LatticeMeetForm, SemilatticeMeetForm, SemilatticeSemimeetForm]
 
 DefineInfixForm[#, KBox[WideOpBox @ ForceKatexCharBox["\[And]"], "\[Wedge]"]]& /@
   {LatticeMeetForm, SemilatticeMeetForm, SemilatticeSemimeetForm}
 
-PublicForm[LatticeJoinForm, SemilatticeJoinForm, SemilatticeSemijoinForm]
+PublicTypesettingForm[LatticeJoinForm, SemilatticeJoinForm, SemilatticeSemijoinForm]
 
 DefineInfixForm[#, KBox[WideOpBox @ ForceKatexCharBox @ "\[Or]", "\[Vee]"]]& /@
   {LatticeJoinForm, SemilatticeJoinForm, SemilatticeSemijoinForm};
 
 (**************************************************************************************************)
 
-PublicForm[PosetGreaterForm, PosetGreaterEqualForm, PosetLessForm, PosetLessEqualForm, PosetCoversForm, PosetCoveredByForm]
+PublicTypesettingForm[PosetGreaterForm, PosetGreaterEqualForm, PosetLessForm, PosetLessEqualForm, PosetCoversForm, PosetCoveredByForm]
 
 DefineInfixForm[#1, OpBox @ #2]& @@@ ExpressionTable[
   PosetGreaterForm        ">"
@@ -44,7 +44,7 @@ DefineInfixForm[#1, OpBox @ #2]& @@@ ExpressionTable[
 
 (**************************************************************************************************)
 
-PublicForm[LatticeGreaterForm, LatticeGreaterEqualForm, LatticeLessForm, LatticeLessEqualForm]
+PublicTypesettingForm[LatticeGreaterForm, LatticeGreaterEqualForm, LatticeLessForm, LatticeLessEqualForm]
 
 DefineInfixForm[#1, OpBox @ #2]& @@@ ExpressionTable[
   LatticeGreaterForm        ">"

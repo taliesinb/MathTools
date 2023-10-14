@@ -3,19 +3,19 @@ this combination of LocalStateSymbolForm, LocalState, and their corresponding ka
 should be factorized
 *)
 
-PublicForm[GlobalStateSymbol, RegionalStateSymbol, LocalStateSymbol]
+PublicTypesettingForm[GlobalStateSymbol, RegionalStateSymbol, LocalStateSymbol]
 
 declareSymbolFormExplicit[LocalStateSymbol];
 declareSymbolFormExplicit[RegionalStateSymbol];
 declareSymbolFormExplicit[GlobalStateSymbol];
 
-PublicForm[KeySubStateSymbol, ValueSubStateSymbol]
+PublicTypesettingForm[KeySubStateSymbol, ValueSubStateSymbol]
 declareSymbolFormExplicit[KeySubStateSymbol];
 declareSymbolFormExplicit[ValueSubStateSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[RegionalSubstateForm, RegionalSuperstateForm, IncomparableRegionalStatesForm, ComparableRegionalStatesForm]
+PublicTypesettingForm[RegionalSubstateForm, RegionalSuperstateForm, IncomparableRegionalStatesForm, ComparableRegionalStatesForm]
 
 declareInfixSymbol[RegionalSubstateForm];
 declareInfixSymbol[RegionalSuperstateForm];
@@ -24,26 +24,26 @@ declareInfixSymbol[ComparableRegionalStatesForm];
 
 (**************************************************************************************************)
 
-PublicForm[LHSStateForm, RHSStateForm]
+PublicTypesettingForm[LHSStateForm, RHSStateForm]
 
 declareUnaryForm[LHSStateForm] // usingCustomKatex["lhsState"];
 declareUnaryForm[RHSStateForm] // usingCustomKatex["rhsState"];
 
 (**************************************************************************************************)
 
-PublicForm[RewriteLHSRegionalStateForm, RewriteRHSRegionalStateForm]
+PublicTypesettingForm[RewriteLHSRegionalStateForm, RewriteRHSRegionalStateForm]
 
 declareUnaryForm[RewriteLHSRegionalStateForm]
 declareUnaryForm[RewriteRHSRegionalStateForm]
 
 (**************************************************************************************************)
 
-PublicForm[LocalStateForm, RegionalStateForm]
+PublicTypesettingForm[LocalStateForm, RegionalStateForm]
 
 declareBinaryForm[LocalStateForm]
 declareNAryForm[RegionalStateForm, EmptyRegionalState];
 
-PublicForm[StringRegionalStateForm]
+PublicTypesettingForm[StringRegionalStateForm]
 
 StringRegionalStateForm[str_, {i_, j_}] /; j < i :=
   makeStrRegState[str, Join[Range[i, i + StringLength[str] - j - 1], Range[1, j]]];
@@ -62,20 +62,20 @@ declareConstantSymbol[{InvalidRegionalState, EmptyRegionalState}];
 
 (**************************************************************************************************)
 
-PublicForm[LocalStatesForm, GlobalStatesForm, RegionalStatesForm]
+PublicTypesettingForm[LocalStatesForm, GlobalStatesForm, RegionalStatesForm]
 
 declareUnaryForm[LocalStatesForm, RewritingSystemSymbol];
 declareUnaryForm[GlobalStatesForm, RewritingSystemSymbol];
 declareUnaryForm[RegionalStatesForm, RewritingSystemSymbol];
 
-PublicForm[KeySubStatesForm, ValueSubStatesForm]
+PublicTypesettingForm[KeySubStatesForm, ValueSubStatesForm]
 
 declareUnaryForm[KeySubStatesForm, RewritingSystemSymbol];
 declareUnaryForm[ValueSubStatesForm, RewritingSystemSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[InfixStateComposeForm, InfixStateMeetForm, InfixStateJoinForm]
+PublicTypesettingForm[InfixStateComposeForm, InfixStateMeetForm, InfixStateJoinForm]
 
 declareInfixSymbol[InfixStateComposeForm];
 declareInfixSymbol[InfixStateMeetForm];

@@ -604,7 +604,7 @@ makeToggledInlineCell[str_] := Scope[
 
 (**************************************************************************************************)
 
-PublicForm[CellWrapper]
+PublicGraphicsDirective[CellWrapper]
 
 (* TODO: This helps capture keypressed for EventHandler to work nicely! *)
 

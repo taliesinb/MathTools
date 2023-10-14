@@ -263,7 +263,7 @@ $GraphThemeData = <|
 
 (**************************************************************************************************)
 
-PublicFunction[DefineGraphTheme]
+PublicSpecialFunction[DefineGraphTheme]
 
 (* TODO: eventually have graph themes be able to chain other graph themes dynamically *)
 DefineGraphTheme[name_String -> parent_String, opts___Rule] :=

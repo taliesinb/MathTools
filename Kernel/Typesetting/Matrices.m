@@ -46,7 +46,7 @@ matrixGridBoxes[entries_, {w_, h_}, frameStyle_] := GridBox[entries,
 
 (**************************************************************************************************)
 
-PublicForm[CompactMatrixForm]
+PublicTypesettingForm[CompactMatrixForm]
 
 SetUsage @ "
 CompactMatrixForm
@@ -85,7 +85,7 @@ renderRepresentationMatrix[matrix_, isTraditional_:False, opts___] :=
 
 (**************************************************************************************************)
 
-PublicForm[LabeledMatrixForm]
+PublicTypesettingForm[LabeledMatrixForm]
 
 declareFormatting[
   LabeledMatrixForm[expr_] :> formatLabeledMatrices[expr]

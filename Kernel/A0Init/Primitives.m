@@ -161,7 +161,7 @@ SignPrimitive["Curve", {RollingCurve, VectorCurve, SetbackCurve, AnchoredCurve, 
 
 (**************************************************************************************************)
 
-PrivateFunction[DeclareCurvePrimitive, DeclareAtomicCurvePrimitive, DeclareCurveAlias]
+PrivateSpecialFunction[DeclareCurvePrimitive, DeclareAtomicCurvePrimitive, DeclareCurveAlias]
 
 PrivateVariable[$customCurveHeadQ]
 
@@ -306,7 +306,7 @@ resolveCurveAlias[curve_, fn_] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[DeclareGraphicsPrimitive]
+PrivateSpecialFunction[DeclareGraphicsPrimitive]
 
 SetUsage @ "
 DeclareGraphicsPrimitive[head$, signature$, fn$] declares that head$ is a custom graphics primitive with given argument signature(s) that boxifies via fn$.

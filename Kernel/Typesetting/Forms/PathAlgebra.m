@@ -15,14 +15,14 @@ pathOrWordBoxes = Case[
 
 (**************************************************************************************************)
 
-PublicForm[VertexFieldSymbol, EdgeFieldSymbol]
+PublicTypesettingForm[VertexFieldSymbol, EdgeFieldSymbol]
 
 declareSymbolForm[VertexFieldSymbol];
 declareSymbolForm[EdgeFieldSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[PathVectorSpaceSymbol, PathVectorSymbol, PathWeightSymbol]
+PublicTypesettingForm[PathVectorSpaceSymbol, PathVectorSymbol, PathWeightSymbol]
 
 PathVectorSpaceSymbol[] := PathVectorSpaceSymbol["P"];
 
@@ -32,7 +32,7 @@ declareSymbolForm[PathWeightSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[BasisPathVectorSymbol, BasisPathWeightSymbol]
+PublicTypesettingForm[BasisPathVectorSymbol, BasisPathWeightSymbol]
 
 BasisPathVectorSymbol[sub_] := BasisPathVectorSymbol["p", sub];
 BasisPathWeightSymbol[sub_] := BasisPathWeightSymbol["p", sub];
@@ -47,7 +47,7 @@ $TemplateKatexFunction["BasisPathWeightSymbolForm"] = "basisPathWeight";
 
 (**************************************************************************************************)
 
-PublicForm[EdgeFieldsSymbol, VertexFieldsSymbol]
+PublicTypesettingForm[EdgeFieldsSymbol, VertexFieldsSymbol]
 
 declareBoxFormatting[
   EdgeFieldsSymbol[k_] :> MakeBoxes @ FunctionSpaceForm[EdgesSymbol[], k],
@@ -64,7 +64,7 @@ declareConstantSymbol[UnitVertexFieldSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[WordVectorForm]
+PublicTypesettingForm[WordVectorForm]
 
 WordVectorForm[p_String, args___] := WordVectorForm[ToPathWord @ p, args]
 
@@ -114,7 +114,7 @@ PublicVariable[$PathComposeSymbol]
 
 $PathComposeSymbol = "\[Proportion]";
 
-PublicForm[PathComposeForm]
+PublicTypesettingForm[PathComposeForm]
 
 declareBoxFormatting[
   PathComposeForm[a_, b__] :>
@@ -129,7 +129,7 @@ $TemplateKatexFunction["PathComposeSymbol"] = "pathComposeSymbol";
 
 (**************************************************************************************************)
 
-PublicForm[PathIntegralForm]
+PublicTypesettingForm[PathIntegralForm]
 
 declareBoxFormatting[
   PathIntegralForm[a_, b_] :>
@@ -144,7 +144,7 @@ $TemplateKatexFunction["PathIntegralSymbol"] = "pathIntegralSymbol";
 
 (**************************************************************************************************)
 
-PublicForm[PathDotForm]
+PublicTypesettingForm[PathDotForm]
 
 declareBoxFormatting[
   PathDotForm[a_, b_] :>
@@ -159,7 +159,7 @@ $TemplateKatexFunction["PathDotSymbol"] = "pathDotSymbol";
 
 (**************************************************************************************************)
 
-PublicForm[PathTranslateForm, PathLeftTranslateForm]
+PublicTypesettingForm[PathTranslateForm, PathLeftTranslateForm]
 
 declareBoxFormatting[
   PathTranslateForm[] :>
@@ -179,7 +179,7 @@ $TemplateKatexFunction["PathTranslateSymbol"] = katexAlias["translateSymbol"];
 
 (**************************************************************************************************)
 
-PublicForm[PathBackwardTranslateForm, PathLeftBackwardTranslateForm]
+PublicTypesettingForm[PathBackwardTranslateForm, PathLeftBackwardTranslateForm]
 
 declareBoxFormatting[
   PathBackwardTranslateForm[] :>
@@ -199,7 +199,7 @@ $TemplateKatexFunction["PathBackwardTranslateSymbol"] = katexAlias["backwardTran
 
 (**************************************************************************************************)
 
-PublicForm[PathHeadVectorForm]
+PublicTypesettingForm[PathHeadVectorForm]
 
 declareBoxFormatting[
   PathHeadVectorForm[a_] :>
@@ -210,7 +210,7 @@ $TemplateKatexFunction["PathHeadVectorForm"] = "pathHeadVector";
 
 (**************************************************************************************************)
 
-PublicForm[PathTailVectorForm]
+PublicTypesettingForm[PathTailVectorForm]
 
 declareBoxFormatting[
   PathTailVectorForm[a_] :>
@@ -221,7 +221,7 @@ $TemplateKatexFunction["PathTailVectorForm"] = "pathTailVector";
 
 (**************************************************************************************************)
 
-PublicForm[PathTailVertexForm, PathHeadVertexForm, PathTailForm, PathHeadForm]
+PublicTypesettingForm[PathTailVertexForm, PathHeadVertexForm, PathTailForm, PathHeadForm]
 
 declareUnaryForm[PathTailVertexForm, PathSymbol];
 declareUnaryForm[PathHeadVertexForm, PathSymbol];
@@ -230,7 +230,7 @@ declareUnaryForm[PathHeadForm, PathSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[PathSplitForm]
+PublicTypesettingForm[PathSplitForm]
 
 declareBoxFormatting[
   PathSplitForm[a_] :>
@@ -239,7 +239,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PublicForm[PathReverseForm]
+PublicTypesettingForm[PathReverseForm]
 
 declareBoxFormatting[
   PathReverseForm[a_] :>
@@ -253,13 +253,13 @@ $TemplateKatexFunction["PathReverseSymbol"] = "pathReverse";
 
 (**************************************************************************************************)
 
-PublicForm[CompactBasisSymbolForm]
+PublicTypesettingForm[CompactBasisSymbolForm]
 
 declareSymbolForm[CompactBasisSymbolForm, PathVectorSpaceSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[CompactPathCovariantDifferenceForm, PathCovariantDifferenceForm]
+PublicTypesettingForm[CompactPathCovariantDifferenceForm, PathCovariantDifferenceForm]
 
 declareBinaryForm[CompactPathCovariantDifferenceForm, PathVectorSymbol];
 declareBinaryForm[PathCovariantDifferenceForm, PathVectorSymbol];
@@ -277,7 +277,7 @@ $TemplateKatexFunction["PathCovariantDifferenceForm"] = "covariantDifference";
  *)
 (**************************************************************************************************)
 
-PublicForm[PathForwardDifferenceForm]
+PublicTypesettingForm[PathForwardDifferenceForm]
 
 PathForwardDifferenceForm[w_String] :=
   PathForwardDifferenceForm @ toPathWordOrSymbol @ w;
@@ -296,7 +296,7 @@ $TemplateKatexFunction["PathForwardDifferenceSymbol"] = "forwardDifference";
 
 (**************************************************************************************************)
 
-PublicForm[PathBackwardDifferenceForm]
+PublicTypesettingForm[PathBackwardDifferenceForm]
 
 PathBackwardDifferenceForm[w_String] :=
   PathBackwardDifferenceForm @ toPathWordOrSymbol @ w;
@@ -315,7 +315,7 @@ $TemplateKatexFunction["PathBackwardDifferenceSymbol"] = "backwardDifference";
 
 (**************************************************************************************************)
 
-PublicForm[PathCentralDifferenceForm]
+PublicTypesettingForm[PathCentralDifferenceForm]
 
 PathCentralDifferenceForm[w_String] :=
   PathCentralDifferenceForm @ toPathWordOrSymbol @ w;

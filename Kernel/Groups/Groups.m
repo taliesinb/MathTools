@@ -166,7 +166,7 @@ constructDirectProductGenerators[generatorLists_List] := Scope[
   Association @ MapIndex1[
     {genList, i} |-> KeyValueMap[
       {label, gen} |-> (
-        labelFn[label, i] -> BlockDiagonalMatrix[ReplacePart[identities, i -> gen]]
+        labelFn[label, i] -> BlockDiagonalMatrix2[ReplacePart[identities, i -> gen]]
       ),
       genList
     ],

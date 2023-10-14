@@ -23,11 +23,11 @@ System`InformationDump`subtitleStyled[sub_] := Style[sub, "InformationUsageText"
 
 (*************************************************************************************************)
 
+QuiverGeometryPackageLoader`$LoaderFileName = $InputFileName;
+
 QuiverGeometryPackageLoader`$SourceDirectory = DirectoryName @ $InputFileName;
 
 QuiverGeometryPackageLoader`$PackageDirectory = ParentDirectory @ QuiverGeometryPackageLoader`$SourceDirectory;
-
-QuiverGeometryPackageLoader`$LoaderFileName = $InputFileName;
 
 QuiverGeometryPackageLoader`$CurrentFile = None;
 
@@ -51,112 +51,20 @@ If[$OperatingSystem === "MacOSX",
 ];
 
 (* we will immediately resolve these system symbols, which will take care of the vast majority of Package`PackageSymbol cases *)
-$coreSymbols = {
-  (* package symbols: *) Package`Package,
-     Package`PackageExport, Package`PackageScope, Package`PackageImport,
-     Package`SystemMacro,   Package`SystemVariable,  Package`SystemFunction,  Package`SystemOption,  Package`SystemHead,  Package`SystemSymbol,  Package`SystemForm,  Package`SystemObject, Package`SystemFormBox,
-     Package`PublicMacro,   Package`PublicVariable,  Package`PublicFunction,  Package`PublicOption,  Package`PublicHead,  Package`PublicSymbol,  Package`PublicForm,  Package`PublicObject, Package`PublicFormBox, Package`PublicScopedOption,
-     Package`PrivateMacro,  Package`PrivateVariable, Package`PrivateFunction, Package`PrivateOption, Package`PrivateHead, Package`PrivateSymbol, Package`PrivateForm, Package`PrivateObject, Package`PrivateFormBox,
-
-  (* system symbols: *) True, False, None, Automatic, Inherited, All, Full, Indeterminate, Null, $Failed, Span, UpTo,
-
-  (* object heads: *)
-    Symbol, Integer, String, Complex, Real, Rational,
-    List, Association, Image, SparseArray, Rasterize,
-    Graph, Rule, RuleDelayed, TwoWayRule, DirectedEdge, UndirectedEdge,
-
-  (* system function: *)
-    Map, Scan, MapAt, MapIndexed, MapThread, Apply, Fold, FoldList, FixedPoint, Riffle,
-    Composition, Function, Identity, Construct, Slot,
-    Tuples, Subsets, Permutations,
-    AppendTo, PrependTo, AssociateTo, ApplyTo, Normal,
-    Sort, Reverse, SortBy, GroupBy, GatherBy, Ordering, Count, Counts, CountsBy, DeleteDuplicates, DeleteDuplicatesBy,
-    Head, First, Last, Rest, Most, Part, Extract, Select, SelectFirst, Cases, FirstCase, Pick, Gather, Split, Partition, DeleteCases, Transpose, RotateLeft, RotateRight,
-    Position, FirstPosition,
-    Length, Dimensions, Prepend, Append, Take, Drop, Join, Catenate, Flatten, Union, Intersection, Complement, Range, Insert, Delete,
-    Replace, ReplacePart, ReplaceAll, ReplaceRepeated,
-    StringJoin, StringTake, StringDrop, StringCases, StringLength, TextString, StringTrim, StringReplace, StringRiffle, Characters, StringSplit, StringInsert, StringDelete, StringPadLeft, StringPadRight,
-    RegularExpression, StringExpression, StartOfString, EndOfString, NumberString,
-    Keys, KeyTake, KeyDrop, KeySort, Values, Key, AssociationMap, AssociationThread, AssociationQ, Lookup, KeyMap, KeyValueMap, Thread, Dispatch,
-    PositionIndex, Merge,
-    Options, OptionsPattern, OptionValue, SetOptions,
-    AllTrue, AnyTrue, NoneTrue,
-    StringQ, AssociationQ, ListQ, IntegerQ, FailureQ, VectorQ, MatrixQ, ArrayQ, NumberQ, GraphQ, NumericQ, BooleanQ,
-    FreeQ, MemberQ, MatchQ, SameQ, UnsameQ, Equal, TrueQ, MissingQ,
-    StringMatchQ, StringFreeQ, StringContainsQ, StringStartsQ, StringEndsQ, DuplicateFreeQ,
-    And, Or, Not, EqualTo, Greater, GreaterThan, Less, LessThan, LessEqual, LessEqualThan, GreaterEqual, GreaterEqualThan, Between, Positive, Negative, NonNegative,
-    If, While, Which, Do, Switch, Return, Throw, Catch, Break, Continue, Table, ConstantArray,
-    IdentityMatrix, UnitVector, Transpose, ArrayFlatten, ArrayReshape, Inverse, RotationMatrix,
-    Repeated, Verbatim, HoldPattern, Condition, RuleCondition, Except, PatternTest, Alternatives,
-    Hold, HoldComplete, Sequence, Splice,
-    Message, MessageName, Echo, EchoTiming, EchoFunction, Quiet, Check, General, Print, Assert,
-    Sqrt, Power, Abs, Dot, Cross, Times, Plus, Minus, Subtract, Divide, Min, Max, Mod, MinMax, Floor, Ceiling, Round,
-    N, Pi, Sin, Cos, Tan, Tanh, ArcTan, Re, Im, Exp, Log, Log10,
-    Total, Mean, Median, Norm, Normalize, Clip, EuclideanDistance,
-    Interpolation, InterpolationOrder,
-    TranslationTransform, ScalingTransform, RotationTransform, TransformationMatrix, AffineTransform, GeometricTransformation,
-    ImageSize, ImagePadding, ImageMargins, ContentPadding, FrameMargins, PlotRange, PlotRangePadding, PlotRangeClipping, BaseStyle, ColorFunction, ColorFunctionScaling,
-    Frame, FrameTicks, Ticks, FrameStyle, FontFamily, FontWeight, FontSize, ItemSize,
-    EdgeStyle, VertexStyle, EdgeShapeFunction, VertexShapeFunction, GraphLayout, DirectedEdges,
-    EdgeList, VertexList, IndexGraph, VertexCount, EdgeCount, AdjacencyMatrix, Subgraph, PathGraph, GraphPlot, Graph3D,
-    Style, Labeled, Tooltip, Framed, Legended, Placed,
-    StyleBox, TooltipBox, FrameBox,
-    Row, Column, Grid, SpanFromLeft, SpanFromAbove, SpanFromBoth, TextAlignment, Baseline, BaselinePosition, Alignment, AlignmentPoint, Spacings, Dividers,
-    RowBox, GridBox,
-    Graphics, Graphics3D, GraphicsGroup, GraphicsComplex, Raster,
-    GraphicsBox, Graphics3DBox, GraphicsGroupBox, GraphicsComplexBox, RasterBox,
-    Subscript, Superscript, Subsuperscript, UnderBar, OverBar,
-    SubscriptBox, Superscript, SubsuperscriptBox,
-    RGBColor, GrayLevel, Hue, CMYKColor, XYZColor, LABColor, LCHColor, LUVColor, ColorConvert, Lighter, Darker,
-    (* Red, Green, Blue, Yellow, Orange, Brown, Purple, Pink, Cyan, Magenta, Black, White, LightGray, Gray,
-    LightRed, LightGreen, LightBlue, LightYellow, LightOrange, LightBrown, LightPurple, LightPink, LightCyan, LightMagenta, *)
-    Opacity, Directive, Thickness, AbsoluteThickness, PointSize, AbsolutePointSize, Offset, Scaled, EdgeForm, FaceForm,
-    AspectRatio,
-    Inset, Translate, Rotate, Annotate, Annotation, Text,
-    InsetBox, RotationBox, GeometricTransformationBox, GeometricTransformation3DBox, TextBox, Text3DBox,
-    Left, Right, Above, Below, Before, After, Center, Top, Bottom,
-    Tiny, Small, Medium, Large,
-    Line, Circle, Rectangle, Triangle, Disk, Point, Polygon, Arrow, Arrowheads, BezierCurve, BSplineCurve, JoinedCurve, FilledCurve,
-    LineBox, CircleBox, RectangleBox, DiskBox, PointBox, PolygonBox, ArrowBox, BezierCurveBox, BSplineCurveBox, JoinedCurveBox, FilledCurveBox,
-    HalfLine, InfiniteLine, InfinitePlane,
-    Sphere, Tube, Cuboid, Cylinder, Cone, Polyhedron,
-    SphereBox, TubeBox, CuboidBox, CylinderBox, ConeBox,
-    ViewCenter, ViewVector, ViewPoint, ViewMatrix, ViewProjection, ViewAngle,
-    MakeBoxes, ToBoxes, Format, TraditionalForm, StandardForm, RawBoxes, NumberForm, EngineeringForm, InputForm,
-    SymbolName, Names,
-    Attributes, SetAttributes, Protect, Unprotect, Clear, ClearAll,
-    DownValues, UpValues, SubValues, Set, SetDelayed,
-    Flat, OneIdentity, HoldFirst, HoldRest, HoldAll, HoldAllComplete,
-
-  (* system scopes: *) With, Block, Module,
-
-  (* common GeneralUtilities` symbols *)
-  GeneralUtilities`Scope, GeneralUtilities`ContainsQ, GeneralUtilities`ScanIndexed,
-  GeneralUtilities`DeclareArgumentCount, GeneralUtilities`Match, GeneralUtilities`MatchValues,
-  GeneralUtilities`ReturnFailed, GeneralUtilities`UnpackOptions,
-
-  (* whitelisted Internal` symbols; some of these look useful so putting them here for now *)
-  Internal`InheritedBlock, Internal`StuffBag, Internal`BagPart, Internal`Bag, Internal`BagLength,
-  Internal`NonNegativeIntegerQ, Internal`NonNegativeMachineIntegerQ, Internal`NonPositiveIntegerQ,
-  Internal`PositiveIntegerQ, Internal`PositiveMachineIntegerQ, Internal`RealValuedNumberQ, Internal`RealValuedNumericQ,
-  Internal`NonPositiveMachineIntegerQ, Internal`RepetitionFromMultiplicity, Internal`WithLocalSettings,
-  Internal`Reciprocal, Internal`OutermostToInnermost, Internal`PatternPresentQ, Internal`PatternFreeQ, Internal`SyntacticNegativeQ,
-
-  (* whitelisted Developer` symbols *)
-  Developer`AssociationVectorQ, Developer`Base64StringQ, Developer`DecodeBase64, Developer`DecodeBase64ToByteArray, Developer`EmptyQ,
-  Developer`NotEmptyQ, Developer`HoldAtomQ, Developer`HoldSymbolQ, Developer`ListOrAssociationQ, Developer`MachineComplexQ,
-  Developer`MachineIntegerQ, Developer`MachineRealQ, Developer`PackedArrayQ, Developer`PackedArrayForm, Developer`ReadRawJSONFile,
-  Developer`ReadRawJSONString, Developer`ReadRawJSONStream, Developer`RealQ, Developer`StringOrStringVectorQ,
-  Developer`StringVectorQ, Developer`SymbolQ, Developer`ToList, Developer`ToPackedArray, Developer`FromPackedArray, Developer`WriteRawJSONFile,
-  Developer`WriteRawJSONString, Developer`WriteRawJSONStream, Developer`CellInformation,
-
-  (* and this *)
-  System`Private`MightEvaluateWhenAppliedQ
-};
+$coreSymbols = Get @ FileNameJoin[{QuiverGeometryPackageLoader`$SourceDirectory, "SymbolTable.m"}];
 
 $coreSymbols = Sort @ DeleteDuplicates @ $coreSymbols;
 
 $coreSymbolNames = SymbolName /@ $coreSymbols;
+$coreSymbolContexts = Context /@ $coreSymbols;
+
+$corePackageSymbols = DeleteCases[Package`PublicScopedOption | Package`PublicTypesettingFormBox] @ Pick[$coreSymbols, $coreSymbolContexts, "Package`"];
+$corePackageSymbolNames = SymbolName /@ $corePackageSymbols;
+
+makePackageSymbolHeadP[s_] := Apply[Alternatives, Pick[$corePackageSymbols, StringStartsQ[$corePackageSymbolNames, s]]];
+$systemPackageDeclarationHeadP = makePackageSymbolHeadP["System"];
+$publicPackageDeclarationHeadP = makePackageSymbolHeadP["Public"];
+$privatePackageDeclarationHeadP = makePackageSymbolHeadP["Private"];
 
 toRegexPattern["$Failed"] := "(\\$Failed)";
 toRegexPattern[str_] := "(" <> str <> ")";
@@ -180,24 +88,23 @@ $initialSymbolResolutionDispatch = With[{kernelInit = FileNameJoin[{QuiverGeomet
   p:Package`PackageSymbol["$PackageFileName"]                                :> RuleCondition[QuiverGeometryPackageLoader`$CurrentFile],
   p:Package`PackageSymbol["$PackageDirectory"]                               :> RuleCondition[QuiverGeometryPackageLoader`$PackageDirectory],
   p:Package`PackageSymbol["$PackageInitializer"]                             :> If[DownValues[QuiverGeometryPackageLoader`Load] === {}, Get @ kernelInit],
-  p:Package`PackageSymbol["PublicScopedOption"][___]                         :> RuleCondition @ processScopedDeclaration[p, Package`PublicOption, Package`PrivateVariable],
-  p:Package`PackageSymbol["PublicFormBox"][___]                              :> RuleCondition @ processFormBoxes[p, Package`PublicForm, Package`PublicFunction],
-  p:Package`PackageSymbol["PrivateFormBox"][___]                             :> RuleCondition @ processFormBoxes[p, Package`PrivateForm, Package`PrivateFunction],
-  p:Package`PackageSymbol["SystemFormBox"][___]                              :> RuleCondition @ processFormBoxes[p, Package`SystemForm, Package`SystemFunction]
+  p:Package`PackageSymbol["PublicScopedOption"][___]                         :> RuleCondition @ processScopedOption[p],
+  p:Package`PackageSymbol["PublicTypesettingFormBox"][___]                   :> RuleCondition @ processTypesettingFormBox[p]
 }]];
 
 (* turns PublicScopedOption[Foo] into PublicOption[Foo], PrivateVariable[$foo] *)
-processScopedDeclaration[p_, pubFn_, privFn_] :=
+processScopedOption[p_] :=
    Package`PackageSplice @@ Cases[p, Package`PackageSymbol[name_String] :> {
-    pubFn[Package`PackageSymbol @ name],
-    privFn[Package`PackageSymbol @ StringJoin["$", ToLowerCase @ StringTake[name, 1], StringDrop[name, 1]]]
+    Package`PublicOption[Package`PackageSymbol @ name],
+    Package`PrivateVariables[Package`PackageSymbol @ StringJoin["$", ToLowerCase @ StringTake[name, 1], StringDrop[name, 1]]]
   }];
 
-(* turns PublicFormBox[Applied] into PublicForm[AppliedForm], PublicFunction[AppliedBox] *)
-processFormBoxes[p_, formFn_, boxFn_] :=
+(* turns PublicTypesettingFormBox[AppliedForm] into PublicTypesettingForm[AppliedForm], PrivateBoxFunction[AppliedBox] *)
+processTypesettingFormBox[p_] :=
    Package`PackageSplice @@ Cases[p, Package`PackageSymbol[name_String] :> {
-    formFn[Package`PackageSymbol[name <> "Form"]],
-    boxFn[Package`PackageSymbol[name <> "Box"]]
+    Package`PublicTypesettingForm[Package`PackageSymbol[name]],
+    If[!StringEndsQ[name, "Form"], Print["ERROR: PublicTypesettingFormBox ", name]];
+    Package`PrivateBoxFunction[Package`PackageSymbol[StringDrop[name, -4] <> "Box"]]
   }];
 
 (* this means SetUsage doesn't have to resolve the symbol later, which is expensive. *)
@@ -235,7 +142,7 @@ readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
   fileModTime = UnixTime @ FileDate[path, "Modification"];
   isDirty = FailureQ[cachedContents] || cachedModTime =!= fileModTime;
   If[isDirty,
-    LVPrint["Reading \"" <> path <> "\""];
+    zLVPrint["Reading \"" <> path <> "\""];
     contents = loadFileContents[path, context];
     $fileContentCache[path] = {fileModTime, contents};
   ,
@@ -313,15 +220,18 @@ filePathToContext[path_] := Block[{str, subContext, contextList},
 toSymbolReplacementRule[name_, ResolvedSymbol[sym_]] :=
   Package`PackageSymbol[name] :> sym;
 
+(* not sure why, but Complement::heads is sometimes issued for context QuiverGeometry`PackageScope` *)
 createSymbolsInContextAndDispatchTable[names_, context_, contextPath_] := Block[
-  {$Context = context, $ContextPath = contextPath, rules},
-  Dispatch @ MapThread[toSymbolReplacementRule, {names, ToExpression[names, InputForm, ResolvedSymbol]}]
+  {$Context = context, $ContextPath = contextPath, rules, resolvedSyms},
+  resolvedSyms = ToExpression[names, InputForm, ResolvedSymbol];
+  rules = MapThread[toSymbolReplacementRule, {names, resolvedSyms}];
+  Dispatch @ rules
 ];
 
 addPackageSymbolsToBag[bag_, expr_, head_] := (
   Internal`StuffBag[bag, Cases[expr, e:head[Package`PackageSymbol[_String]..] :> Part[List @@ e, All, 1], {2}], 2];
   Cases[expr, splice_Package`PackageSplice :> addPackageSymbolsToBag[bag, splice, head], {2}];
-  (* ^= pick up PublicFormBox etc *)
+  (* ^= pick up PublicTypesettingFormBox etc *)
 );
 
 addPackageCasesToBag[bag_, expr_, rule_] :=
@@ -339,20 +249,23 @@ fileSortingTuple[path_] := {
     path
   };
 
+(* because $ContextPath is not allowed to be empty -- this results in weird internal messages *)
+$dummyContextPath = {"QuiverGeometryLoader`DummyContext`"};
+
 QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled_:True, fullReload_:True] := Block[
   {$directory, $files, $textFiles, $privateSymbols, $systemSymbols, $publicSymbols, $packageExpressions, $packageRules,
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result, requiresFullReload,
    $preservedValues, $preservedDownValues, $ignoreFiles
   },
 
-  Off[General::shdw];
+  Off[General::shdw]; (* because things like SetUsage, SetAutomatic, etc have QG local definitions *)
 
   $directory = AbsoluteFileName @ ExpandFileName @ mainPath;
   $mainContext = mainContext;
   $mainPathLength = StringLength[$directory];
   $trimmedMainContext = StringTrim[mainContext, "`"];
 
-  $filesToSkip = FileNames[{"Loader.m", "init.m", "*.old.m"}, $directory];
+  $filesToSkip = FileNames[{"Loader.m", "init.m", "*.old.m", "SymbolTable.m"}, $directory];
   $ignoreFiles = FileNames["user_ignore.m", $directory];
 
   If[Length[$ignoreFiles] === 1,
@@ -381,9 +294,9 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
         context = filePathToContext @ path;
         {expr, isDirty} = readPackageFile[path, context];
         If[isDirty, dirtyCount++];
-        addPackageSymbolsToBag[$systemSymbols,  expr, Package`SystemMacro  | Package`SystemVariable  | Package`SystemFunction  | Package`SystemHead  | Package`SystemSymbol  | Package`SystemForm  | Package`SystemObject | Package`PublicOption | Package`SystemOption];
-        addPackageSymbolsToBag[$publicSymbols,  expr, Package`PublicMacro  | Package`PublicVariable  | Package`PublicFunction  | Package`PublicHead  | Package`PublicSymbol  | Package`PublicForm  | Package`PublicObject];
-        addPackageSymbolsToBag[$privateSymbols, expr, Package`PrivateMacro | Package`PrivateVariable | Package`PrivateFunction | Package`PrivateHead | Package`PrivateSymbol | Package`PrivateForm | Package`PrivateObject | Package`PrivateOption];
+        addPackageSymbolsToBag[$systemSymbols,  expr, $systemPackageDeclarationHeadP];
+        addPackageSymbolsToBag[$publicSymbols,  expr, $publicPackageDeclarationHeadP];
+        addPackageSymbolsToBag[$privateSymbols, expr, $privatePackageDeclarationHeadP];
         If[!requiresFullReload && isDirty && initPathQ[path],
           LVPrint["Dirty package \"", path, "\" is forcing a full reload."];
           requiresFullReload = True;
@@ -443,10 +356,10 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
   $publicSymbols = DeleteDuplicates @ Internal`BagPart[$publicSymbols, All];
   $privateSymbols = DeleteDuplicates @ Internal`BagPart[$privateSymbols, All];
 
-  LVPrint["Creating symbols."];
-  $systemDispatch = createSymbolsInContextAndDispatchTable[$systemSymbols, "System`", {}];
-  $publicDispatch = createSymbolsInContextAndDispatchTable[$publicSymbols, $mainContext, {}];
-  $privateDispatch = createSymbolsInContextAndDispatchTable[$privateSymbols, $mainContext <> "PackageScope`", {}];
+  LVPrint["Creating symbols (", Length @ $systemSymbols, " system, ", Length @ $publicSymbols, " public, ", Length @ $privateSymbols, " private)."];
+  $systemDispatch = createSymbolsInContextAndDispatchTable[$systemSymbols, "System`", $dummyContextPath];
+  $publicDispatch = createSymbolsInContextAndDispatchTable[$publicSymbols, $mainContext, $dummyContextPath];
+  $privateDispatch = createSymbolsInContextAndDispatchTable[$privateSymbols, $mainContext <> "PackageScope`", $dummyContextPath];
 
   LVPrint["Recognizing symbols."];
   $packageExpressions = $packageExpressions /. $systemDispatch /. $publicDispatch /. $privateDispatch;
@@ -520,6 +433,7 @@ QuiverGeometryPackageLoader`ReloadUserFile[name_] := loadUserFile @ name;
   
 $userContext = "QuiverGeometryPackageLoader`Private`User`";
 $userContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"};
+$fileContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"};
 
 toUserFilePath[name_] := FileNameJoin[{QuiverGeometryPackageLoader`$SourceDirectory, name}];
 
@@ -543,7 +457,7 @@ evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
   LVPrint["Evaluating \"", path, "\""];
   $formsChanged = Or[$formsChanged, StringContainsQ[context, "`Typesetting`Forms`"]]; (* to avoid expensive symbol enum *)
   QuiverGeometryPackageLoader`$FileTimings[path] = First @ AbsoluteTiming[
-    Block[{$Context = context}, Catch[Scan[evaluateExpression, packageData], $evaluateExpressionTag]];
+    Block[{$Context = context, $ContextPath = $fileContextPath}, Catch[Scan[evaluateExpression, packageData], $evaluateExpressionTag]];
   ];
   QuiverGeometryPackageLoader`$FileLineTimings[path] = $currentFileLineTimings;
 ,

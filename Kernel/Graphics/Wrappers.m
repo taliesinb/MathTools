@@ -1,4 +1,4 @@
-PublicForm[LegendForm]
+PublicTypesettingForm[LegendForm]
 
 SetUsage @ "
 LegendForm[expr$] renders as a form of expr$ that is suitable for use in %Legended.

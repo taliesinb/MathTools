@@ -22,7 +22,7 @@ $locs = Association[
 
 (**************************************************************************************************)
 
-PublicHead[PatternShading3D]
+PublicGraphicsDirective[PatternShading3D]
 
 DeclareGraphicsPrimitive[PatternShading3D, "Color", patternShading3DBoxes, {3}];
 
@@ -49,7 +49,7 @@ toSurfaceAppearance[opts:OptionsPattern[toSurfaceAppearance]] :=
 
 (**************************************************************************************************)
 
-PublicHead[AnnotatedCoordinate]
+PublicGraphicsPrimitive[AnnotatedCoordinate]
 
 (* AnnotatedCoordinate gets transformed by MapPrimitiveCoordinates but doesn't actually render.
 used to keep track of named coordinates as they are transformed for later processing. *)

@@ -43,7 +43,7 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicHead[FramedForm]
+PublicTypesettingForm[FramedForm]
 
 DefineStandardTraditionalForm[FramedForm[e_] :> framedBoxes[e]]
 

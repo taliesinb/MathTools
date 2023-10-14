@@ -25,7 +25,7 @@ quiverGasRewritingSystemProperty[data_, "CayleyFunction", opts___Rule] := Scope[
 
 (**************************************************************************************************)
 
-PublicHead[GraphGasState]
+PublicObject[GraphGasState]
 
 GraphGasState::badedge = "One or more edges were not present in the graph."
 
@@ -131,7 +131,7 @@ toCardinalList[list_] := If[!SubsetQ[$cardinals, list],
 
 (**************************************************************************************************)
 
-PublicHead[QuiverGasObject]
+PublicObject[QuiverGasObject]
 
 MakeBoxes[object_QuiverGasObject ? System`Private`HoldNoEntryQ, form_] :=
   quiverGasObjectBoxes[object, form];
@@ -388,7 +388,7 @@ compileScatterGather[fn_, type_, gatherMatrix_ ? PackedArrayQ, scatterVector_ ? 
 
 (**************************************************************************************************)
 
-PublicHead[QuiverGasEvolutionData]
+PublicObject[QuiverGasEvolutionData]
 
 MakeBoxes[QuiverGasEvolutionData[_QuiverGasObject, flow_List], form_] :=
   RowBox @ Flatten @ {"QuiverGasEvolutionData", "[",

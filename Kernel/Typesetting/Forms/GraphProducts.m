@@ -1,12 +1,12 @@
-PublicForm[GraphUnionForm, GraphProductForm]
+PublicTypesettingForm[GraphUnionForm, GraphProductForm]
 
-PublicForm[DependentQuiverProductForm]
+PublicTypesettingForm[DependentQuiverProductForm]
 
-PublicForm[LockedQuiverProductForm, LeftFreeQuiverProductForm, RightFreeQuiverProductForm]
+PublicTypesettingForm[LockedQuiverProductForm, LeftFreeQuiverProductForm, RightFreeQuiverProductForm]
 
-PublicForm[StrongIndependentQuiverProductForm, StrongQuiverProductForm]
+PublicTypesettingForm[StrongIndependentQuiverProductForm, StrongQuiverProductForm]
 
-PublicForm[CartesianQuiverProductForm]
+PublicTypesettingForm[CartesianQuiverProductForm]
 
 DefineInfixForm[GraphUnionForm,             WideOpBox @ "\[SquareUnion]"]
 DefineInfixForm[GraphProductForm,           WideOpBox @ "\[Times]"]
@@ -21,9 +21,9 @@ DefineInfixBinaryForm[StrongQuiverProductForm,            WideOpBox @ "\:29d1"]
 
 (**************************************************************************************************)
 
-PublicForm[VerticalVertexProductForm, VerticalCardinalProductForm]
+PublicTypesettingForm[VerticalVertexProductForm, VerticalCardinalProductForm]
 
-PublicForm[VertexProductForm, EdgeProductForm, CardinalProductForm]
+PublicTypesettingForm[VertexProductForm, EdgeProductForm, CardinalProductForm]
 
 DefineBinaryForm[VerticalVertexProductForm, FractionBox[$1, $2]]
 DefineBinaryForm[VerticalCardinalProductForm, FractionBox[$1, $2]]
@@ -36,13 +36,13 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicForm[ComponentSuperQuiverOfForm]
+PublicTypesettingForm[ComponentSuperQuiverOfForm]
 
 DefineInfixForm[ComponentSuperQuiverOfForm, WideOpBox @ "\[Succeeds]"]
 
 (**************************************************************************************************)
 
-PublicForm[QuiverProductAppliedForm, CompactQuiverProductAppliedForm]
+PublicTypesettingForm[QuiverProductAppliedForm, CompactQuiverProductAppliedForm]
 
 declareBoxFormatting[
   QuiverProductAppliedForm[poly_, graphs__] :> makeTemplateBox[poly, graphs, "QuiverProductAppliedForm"],

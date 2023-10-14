@@ -1,4 +1,4 @@
-PublicHead[HalfCircle, HalfDisk]
+PublicGraphicsPrimitive[HalfCircle, HalfDisk]
 
 DeclareGraphicsPrimitive[HalfCircle, "Vector,Delta", halfCircleBoxes]
 DeclareGraphicsPrimitive[HalfDisk, "Vector,Delta", halfDiskBoxes]

@@ -1,4 +1,4 @@
-PublicHead[SetbackCurve]
+PublicGraphicsPrimitive[SetbackCurve]
 
 DeclareCurvePrimitive[SetbackCurve, setbackCurveCoordinates];
 

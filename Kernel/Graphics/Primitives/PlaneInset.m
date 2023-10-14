@@ -1,4 +1,4 @@
-PublicHead[PlaneInset]
+PublicGraphicsPrimitive[PlaneInset]
 
 PublicOption[FlipX, FlipY, FlipZ, InsetScale]
 

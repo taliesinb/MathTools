@@ -1,4 +1,4 @@
-PublicHead[CompassCurve]
+PublicGraphicsPrimitive[CompassCurve]
 
 DeclareAtomicCurvePrimitive[CompassCurve, compassCurvePoints];
 

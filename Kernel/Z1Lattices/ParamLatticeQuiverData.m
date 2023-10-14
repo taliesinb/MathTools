@@ -21,7 +21,7 @@ $ParameterizedLatticeNames = {};
 
 (**************************************************************************************************)
 
-PublicFunction[DefineParameterizedLatticeQuiver]
+PrivateSpecialFunction[DefineParameterizedLatticeQuiver]
 
 DefineParameterizedLatticeQuiver[name_String, func_, params_] := (
   AppendTo[$ParameterizedLatticeNames, name];

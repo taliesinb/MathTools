@@ -1,4 +1,4 @@
-PublicHead[EmptyRectangle]
+PublicGraphicsPrimitive[EmptyRectangle]
 
 DeclareGraphicsPrimitive[EmptyRectangle, "Vector,Vector", emptyRectangleBoxes]
 
@@ -12,7 +12,7 @@ emptyRectangleBoxes[EmptyRectangle[{x1:$NumberP, y1:$NumberP}, {x2:$NumberP, y2:
 
 (**************************************************************************************************)
 
-PublicHead[EmptyPolygon]
+PublicGraphicsPrimitive[EmptyPolygon]
 
 DeclareGraphicsPrimitive[EmptyPolygon, "Matrix | Matrices", emptyPolygonBoxes, {2, 3}]
 

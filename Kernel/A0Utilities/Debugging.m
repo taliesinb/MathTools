@@ -80,7 +80,7 @@ EchoGraphicsScope[e_] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[ToGraphicsBoxes, ToGraphics3DBoxes]
+PrivateBoxFunction[ToGraphicsBoxes, ToGraphics3DBoxes]
 
 ToGraphicsBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics] //. $gboxSimpRules;
 ToGraphics3DBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics3D] //. $gboxSimpRules;
@@ -89,7 +89,7 @@ $gboxSimpRules = {InterpretationBox[b_, _] :> b, Typeset`Hold[h_] :> h};
 
 (**************************************************************************************************)
 
-PublicFunction[DynamicPointGraphics]
+PublicDebugFunction[DynamicPointGraphics]
 
 circlePoints[2] := {{-1, 0}, {1, 0}};
 circlePoints[n_] := Reverse @ CirclePoints[n];
@@ -138,7 +138,7 @@ toDynSpec[list_List, sym_] := {sym, First @ list, RadioButtonBar[Dynamic @ sym, 
 
 (**************************************************************************************************)
 
-PublicFunction[PrintQGStack]
+PublicDebugFunction[PrintQGStack]
 
 $stackFile := $stackFile = TemporaryPath["stack.m"];
 
@@ -190,7 +190,7 @@ debugStr[lhs_] := ToPrettifiedString[Unevaluated @ lhs, MaxDepth -> 4, MaxLength
 
 (**************************************************************************************************)
 
-PublicFunction[FindDefinitionsContaining]
+PublicDebugFunction[FindDefinitionsContaining]
 
 FindDefinitionsContaining[context_, pattern_] := Scope[
   symbols = Names[{context <> "*", context <> "**`*"}];
@@ -199,7 +199,7 @@ FindDefinitionsContaining[context_, pattern_] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[FindMatchingDownValue]
+PublicDebugFunction[FindMatchingDownValue]
 
 SetHoldAllComplete[FindMatchingDownValue]
 
@@ -218,7 +218,7 @@ replaceRHS[_] := Nothing;
 
 (**************************************************************************************************)
 
-PublicFunction[EchoGraphics]
+PublicDebugFunction[EchoGraphics]
 
 EchoGraphics[e_] := (AppendTo[$prims, e]; e);
 EchoGraphics[{x_ ? RealVectorQ, y_ ? RealVectorQ}] := (EchoGraphics @ Trans[x, y]; {x, y});
@@ -226,13 +226,13 @@ EchoGraphics[points_ ? RealMatrixQ] := (AppendTo[$prims, Point @ points]; points
 
 (**************************************************************************************************)
 
-PublicFunction[EchoDimensions]
+PublicDebugFunction[EchoDimensions]
 
 EchoDimensions[e_] := (Echo[Row[Dimensions @ e, "\[Times]", BaseStyle -> $DarkBlue]]; e);
 
 (**************************************************************************************************)
 
-PublicHead[MsgExpr]
+PublicTypesettingForm[MsgExpr]
 
 MsgExpr[p_MsgPath] := p;
 MsgExpr[e_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
@@ -241,7 +241,7 @@ MsgExpr[e_, n_, m_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> n, MaxLen
 
 (**************************************************************************************************)
 
-PublicHead[MsgPath]
+PublicTypesettingForm[MsgPath]
 
 MsgPath[p_MsgFile] := p;
 MsgPath[File[p_]] := MsgPath[p];
@@ -308,7 +308,7 @@ PrivateFunction[ModifierKeysPressedQ]
 
 ModifierKeysPressedQ[] := $Notebooks && (CurrentValue["ModifierKeys"] =!= {});
 
-PublicFunction[PerformSelfLinting]
+PublicDebugFunction[PerformSelfLinting]
 
 PerformSelfLinting[] := Scope[
   DeleteCases[{} | <||>] @ Association[

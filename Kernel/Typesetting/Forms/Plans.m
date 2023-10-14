@@ -1,4 +1,4 @@
-PublicForm[RouteSymbol, MultirouteSymbol, PlanSymbol, MultiwordSymbol]
+PublicTypesettingForm[RouteSymbol, MultirouteSymbol, PlanSymbol, MultiwordSymbol]
 
 declareSymbolFormExplicit[RouteSymbol];
 declareSymbolFormExplicit[MultirouteSymbol];
@@ -7,7 +7,7 @@ declareSymbolFormExplicit[MultiwordSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[RouteForm, MultirouteForm]
+PublicTypesettingForm[RouteForm, MultirouteForm]
 
 RouteForm[a_, b_String, c_] := RouteForm[a, ToPathWord @ b, c];
 
@@ -23,7 +23,7 @@ $TemplateKatexFunction["MultirouteForm"] = "multiroute";
 
 (**************************************************************************************************)
 
-PublicForm[PlanRingSymbol]
+PublicTypesettingForm[PlanRingSymbol]
 
 declareSymbolForm[PlanRingSymbol, QuiverSymbol]
 

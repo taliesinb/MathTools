@@ -1,4 +1,4 @@
-PublicForm[DebugPoints]
+PublicGraphicsPrimitive[DebugPoints]
 
 SetUsage @ "
 DebugPoints[points$] displays as points that are labeled with their indices.

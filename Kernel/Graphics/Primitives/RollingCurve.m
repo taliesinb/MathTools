@@ -1,4 +1,5 @@
-PublicHead[RollingCurve]
+PublicGraphicsPrimitive[RollingCurve]
+
 PublicOption[BendRadius, BendShape]
 
 SetUsage @ "

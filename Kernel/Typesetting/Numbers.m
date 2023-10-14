@@ -53,7 +53,7 @@ tradBox[b_] := StyleBox[FormBox[b, TraditionalForm], ShowStringCharacters -> Fal
 
 (**************************************************************************************************)
 
-PublicForm[LeftBar, RightBar]
+PublicTypesettingForm[LeftBar, RightBar]
 
 SetUsage @ "LeftBar[x$] typesets as a vertical line to the left of x$."
 SetUsage @ "RightBar[x$] typesets as a vertical line to the right of x$."

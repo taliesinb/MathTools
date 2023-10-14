@@ -1,4 +1,4 @@
-PublicHead[Arrowhead]
+PublicGraphicsPrimitive[Arrowhead]
 
 SetUsage @ "
 Arrowhead[pos$, dir$] is a graphics primitive that renders as an arrowhead beginning at pos$ and pointing in direction dir$.

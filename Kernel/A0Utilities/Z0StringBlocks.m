@@ -27,7 +27,7 @@ ToStringBlock /: SetDelayed[ToStringBlock[lhs_], rhs_] := With[
 
 (**************************************************************************************************)
 
-PublicForm[StringTable]
+PublicTypesettingForm[StringTable]
 
 PublicOption[TableHeadingStyle]
 
@@ -70,7 +70,7 @@ procTableHeadings[other_, _] := ThrowMessage["badtableheading", other];
 
 (**************************************************************************************************)
 
-PublicForm[StringMatrix]
+PublicTypesettingForm[StringMatrix]
 
 PublicOption[RowAlignment, ColumnAlignment, FramePadding, RowFrames, RowFrameStyle, RowFramePadding, SpanningFrame]
 
@@ -99,7 +99,7 @@ ToStringBlock[StringMatrix[rows_List, opts___Rule]] := Scope[
 
 (**************************************************************************************************)
 
-PublicForm[StringBlockTemplate]
+PublicTypesettingForm[StringBlockTemplate]
 
 StringBlock::badtemplate = "Template `` should be a string or list of strings."
 StringBlock::badtemplatearg = "`` reqeuested, but only `` available."
@@ -131,7 +131,7 @@ blockToHSpace[$block[_, w_, h_]] := spacerBlock[w, 1];
 
 (**************************************************************************************************)
 
-PublicForm[StringRow]
+PublicTypesettingForm[StringRow]
 
 Options[StringRow] = {
   RowAlignment -> Top,
@@ -155,7 +155,7 @@ ToStringBlock[StringRow[items_List, OptionsPattern[]]] := Scope[
 
 (**************************************************************************************************)
 
-PublicForm[StringColumn]
+PublicTypesettingForm[StringColumn]
 
 Options[StringColumn] = {
   ColumnAlignment -> Left,
@@ -179,7 +179,7 @@ ToStringBlock[StringColumn[items_List, OptionsPattern[]]] := Scope[
 
 (**************************************************************************************************)
 
-PublicForm[StringFrame]
+PublicTypesettingForm[StringFrame]
 
 Options[StringFrame] = {
   Frame -> True,
@@ -194,7 +194,7 @@ ToStringBlock[StringFrame[item_, OptionsPattern[]]] := Scope[
 
 (**************************************************************************************************)
 
-PublicForm[FrameLabeled]
+PublicTypesettingForm[FrameLabeled]
 
 Options[FrameLabeled] = {
   LabelSpacing -> {1, 0},
@@ -269,7 +269,7 @@ clipOneLine = Case[
 
 (**************************************************************************************************)
 
-PublicForm[StringBlockForm]
+PublicTypesettingForm[StringBlockForm]
 
 Options[StringBlockForm] = {
   StylingFunction -> "Linear"

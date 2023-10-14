@@ -9,7 +9,7 @@ declareTypeForm[head_Symbol, katex_:Automatic] := With[
 
 (**************************************************************************************************)
 
-PublicForm[PathTypeForm, VertexTypeForm, EdgeTypeForm]
+PublicTypesettingForm[PathTypeForm, VertexTypeForm, EdgeTypeForm]
 
 declareTypeForm[PathTypeForm]
 declareTypeForm[VertexTypeForm]
@@ -17,7 +17,7 @@ declareTypeForm[EdgeTypeForm]
 
 (**************************************************************************************************)
 
-PublicForm[SetTypeForm, SignedSetTypeForm, OrderedSetTypeForm, ListTypeForm, CyclicListTypeForm, TupleTypeForm, MultisetTypeForm, SignedMultisetTypeForm]
+PublicTypesettingForm[SetTypeForm, SignedSetTypeForm, OrderedSetTypeForm, ListTypeForm, CyclicListTypeForm, TupleTypeForm, MultisetTypeForm, SignedMultisetTypeForm]
 
 (* TODO: These aren't used *)
 declareTypeForm[SetTypeForm]

@@ -1,4 +1,4 @@
-PublicForm[HorizontalCurve, VerticalCurve]
+PublicGraphicsPrimitive[HorizontalCurve, VerticalCurve]
 
 DeclareAtomicCurvePrimitive[HorizontalCurve, axisCurvePoints];
 DeclareAtomicCurvePrimitive[VerticalCurve, axisCurvePoints];

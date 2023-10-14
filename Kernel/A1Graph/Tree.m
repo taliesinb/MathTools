@@ -149,7 +149,7 @@ DefineGraphTheme["RainbowTree" -> "NestedListGraph",
 
 (**************************************************************************************************)
 
-PublicHead[Polynomial]
+PublicObject[Polynomial]
 
 SetAttributes[Polynomial, HoldRest];
 

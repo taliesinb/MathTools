@@ -1,27 +1,27 @@
-PublicHead[ExtendedArrow]
+PublicGraphicsPrimitive[ExtendedArrow]
 
-SetUsage @ "
+(* SetUsage @ "
 ExtendedArrow[path$] is a more featureful alternative to %Arrow.
 * The following options that specify the style of the shaft are supported:
-| ArrowheadPosition | scaled arrowhead position between 0 and 1 along the path |
-| ArrowheadLength | size of arrowhead, defaulting to a fraction of arrow length |
-| ArrowThickness | thickness of the arrow shaft and head |
-| ArrowColor | color of arrow shaft and head |
-| ArrowOpacity | opacity of arrow shaft and head |
-| ArrowDashing | dashing of the arrow shaft |
-| Setback | setback distance of path endpoints |
-| ArrowPathOffset | offset the path of the arrow shaft |
+| %ArrowheadPosition | scaled arrowhead position between 0 and 1 along the path |
+| %ArrowheadLength | size of arrowhead, defaulting to a fraction of arrow length |
+| %ArrowThickness | thickness of the arrow shaft and head |
+| %ArrowColor | color of arrow shaft and head |
+| %ArrowOpacity | opacity of arrow shaft and head |
+| %rrowDashing | dashing of the arrow shaft |
+| %Setback | setback distance of path endpoints |
+| %ArrowPathOffset | offset the path of the arrow shaft |
 * %ArrowPathOffset can be used to duplicate the path to make double, etc. lines, see its usage.
 * additional options can customize the arrowhead:
-| ArrowheadPlane | how to orient the arrowhead primitives when in 3D |
-| ArrowheadShape | the named shape of the arrowhead, as in %NamedIcon |
-| ArrowheadColor | override the color of the arrowhead |
-| ArrowheadThickness | override the thickness of the arrowhead |
-| ArrowheadAnchor | where along the arrowhead it is anchored to arrowhead position |
-| ArrowheadOpacity | opacity of the arrowhead |
+| %ArrowheadPlane | how to orient the arrowhead primitives when in 3D |
+| %ArrowheadShape | the named shape of the arrowhead, as in %NamedIcon |
+| %ArrowheadColor | override the color of the arrowhead |
+| %ArrowheadThickness | override the thickness of the arrowhead |
+| %ArrowheadAnchor | where along the arrowhead it is anchored to arrowhead position |
+| %ArrowheadOpacity | opacity of the arrowhead |
 * colors can be specified as %SolidEdgeForm, which tints the edge and face of arrowhead differently.
 "
-
+ *)
 Options[ExtendedArrow] = $extendedArrowOptions;
 
 DeclareGraphicsPrimitive[ExtendedArrow, "Curve", extendedArrowBoxes, {2, 3}];

@@ -1,4 +1,4 @@
-PublicForm[ExistsForm, ForAllForm]
+PublicTypesettingForm[ExistsForm, ForAllForm]
 
 existsBox[a_] := RBox["\[Exists]", "\[ThinSpace]", a];
 forAllBox[a_] := RBox["\[ForAll]", "\[ThinSpace]", a];
@@ -21,7 +21,7 @@ DefineTemplateBox[ForAllForm, "ForAllForm", RBox[forAllBox @ $1, OpBox @ ":", $2
 
 (**************************************************************************************************)
 
-PublicForm[AndForm, OrForm, XorForm, NandForm]
+PublicTypesettingForm[AndForm, OrForm, XorForm, NandForm]
 
 DefineInfixForm[AndForm,  OpBox @ "\[And]"];
 DefineInfixForm[OrForm,   OpBox @ "\[Or]"];
@@ -30,13 +30,13 @@ DefineInfixForm[NandForm, OpBox @ "\[Nand]"];
 
 (**************************************************************************************************)
 
-PublicForm[NotForm]
+PublicTypesettingForm[NotForm]
 
 DefineUnaryForm[NotForm, RBox["\[Not]", $1], HeadBoxes -> "\[Not]"];
 
 (**************************************************************************************************)
 
-PublicForm[ImpliesForm, ImpliedByForm, EquivalentForm]
+PublicTypesettingForm[ImpliesForm, ImpliedByForm, EquivalentForm]
 
 DefineInfixBinaryForm[ImpliesForm, WideOpBox @ "⟹"]
 DefineInfixBinaryForm[ImpliedByForm, WideOpBox @ "⟸"];
@@ -44,6 +44,6 @@ DefineInfixBinaryForm[EquivalentForm, WideOpBox @ "⟺"]
 
 (**************************************************************************************************)
 
-PublicForm[SuchThatForm]
+PublicTypesettingForm[SuchThatForm]
 
 DefineInfixBinaryForm[SuchThatForm, KBox[StyleBox["\[ThinSpace]\[VerticalSeparator]\[ThickSpace]", FontSize -> 20], KBin["\\vert"]]]

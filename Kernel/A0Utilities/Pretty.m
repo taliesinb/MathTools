@@ -7,7 +7,7 @@ HoldPrettyForm /: MakeBoxes[HoldPrettyForm[expr_], StandardForm] :=
 
 (**************************************************************************************************)
 
-PublicForm[CompactPrettyForm]
+PublicTypesettingForm[CompactPrettyForm]
 
 CompactPrettyForm /: MakeBoxes[CompactPrettyForm[expr_], StandardForm] :=
   ToPrettifiedString[

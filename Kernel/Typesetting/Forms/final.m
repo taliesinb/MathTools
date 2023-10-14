@@ -1,6 +1,6 @@
 (**************************************************************************************************)
 
-PublicForm[SymbolForm]
+PublicTypesettingForm[SymbolForm]
 
 DefineTaggedForm[SymbolForm]
 
@@ -30,7 +30,7 @@ $binaryRelationMapping = <|
 
 (**************************************************************************************************)
 
-PublicForm[Form]
+PublicTypesettingForm[Form]
 
 DefineStandardTraditionalForm[
   Form[e_] :> TagBox[MakeQGBoxes @ e, "QG"]

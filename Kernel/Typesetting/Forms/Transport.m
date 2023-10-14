@@ -1,4 +1,4 @@
-PublicForm[CardinalRewriteForm]
+PublicTypesettingForm[CardinalRewriteForm]
 
 declareBoxFormatting[
   CardinalRewriteForm[a_, b_] :>
@@ -9,7 +9,7 @@ $TemplateKatexFunction["CardinalRewriteForm"] = "cardinalRewrite"
 
 (**************************************************************************************************)
 
-PublicForm[ChartSymbolForm]
+PublicTypesettingForm[ChartSymbolForm]
 
 declareBoxFormatting[
   ChartSymbolForm[elem_] :>
@@ -39,20 +39,20 @@ $TemplateKatexFunction["TransportMapSymbol"] = "transportMapSymbol"
 (**************************************************************************************************)
 
 (* how is this different from wordgroup? *)
-PublicForm[CardinalGroupSymbolForm]
+PublicTypesettingForm[CardinalGroupSymbolForm]
 
 declareSymbolForm[CardinalGroupSymbolForm, SymbolForm];
 
 (**************************************************************************************************)
 
 (* this doesn't have any katex, and what is it for? shouldn't it be a word group? *)
-(* PublicForm[CardinalGroupoidSymbolForm]
+(* PublicTypesettingForm[CardinalGroupoidSymbolForm]
 
 declareSymbolForm[CardinalGroupoidSymbolForm, SymbolForm];
  *)
 (**************************************************************************************************)
 
-PublicForm[TransportAtlasSymbolForm]
+PublicTypesettingForm[TransportAtlasSymbolForm]
 
 declareBoxFormatting[
   TransportAtlasSymbolForm[q_] :> makeTypedTemplateBox[q -> QuiverSymbol, "TransportAtlasSymbolForm"],

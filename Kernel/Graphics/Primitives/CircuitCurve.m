@@ -1,4 +1,4 @@
-PublicForm[SnakeCurve]
+PublicGraphicsPrimitive[SnakeCurve]
 
 PublicOption[Orientation, SplitPosition]
 
@@ -28,7 +28,7 @@ snakeCurvePoints[SnakeCurve[{a_, b_}, opts:OptionsPattern[SnakeCurve]]] := Scope
 
 (**************************************************************************************************)
 
-PublicForm[CircuitCurve]
+PublicGraphicsPrimitive[CircuitCurve]
 
 PublicOption[BendStyle, SetbackDistance, LineThickness]
 

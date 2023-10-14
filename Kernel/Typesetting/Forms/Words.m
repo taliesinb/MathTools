@@ -1,4 +1,4 @@
-PublicForm[WordGroupSymbol, WordRingSymbol]
+PublicTypesettingForm[WordGroupSymbol, WordRingSymbol]
 
 (* TODO: factor this into declare01SymbolForm *)
 declareSymbolForm[WordGroupSymbol, QuiverSymbol]
@@ -17,7 +17,7 @@ $TemplateKatexFunction["PlanRingSymbol"] = katexAlias["planRingSymbol"];
 
 (**************************************************************************************************)
 
-PublicForm[WordRingElementSymbol]
+PublicTypesettingForm[WordRingElementSymbol]
 
 WordRingElementSymbol[] := WordRingElementSymbol["\[Omega]"];
 
@@ -25,13 +25,13 @@ declareSymbolForm[WordRingElementSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[WordRingBasisElementForm]
+PublicTypesettingForm[WordRingBasisElementForm]
 
 declareUnaryForm[WordRingBasisElementForm];
 
 (**************************************************************************************************)
 
-PublicForm[RepeatedPowerForm]
+PublicTypesettingForm[RepeatedPowerForm]
 
 declareBinaryForm[RepeatedPowerForm];
 
@@ -47,7 +47,7 @@ $TemplateKatexFunction["WordSymbolForm"] = "wordSymbol";
 
 (**************************************************************************************************)
 
-PublicForm[WordForm]
+PublicTypesettingForm[WordForm]
 
 WordForm[s_String] := WordForm @ ToPathWord @ s;
 
@@ -61,7 +61,7 @@ $TemplateKatexFunction["WordForm"] = "word";
 $cardP = _CardinalSymbol | InvertedForm[_CardinalSymbol] | MirrorForm[_CardinalSymbol] ;
 $maybeColoredCardP = $colorFormP[$cardP] | $cardP;
 
-PrivateFunction[cardinalBox, wordBoxes]
+PrivateBoxFunction[cardinalBox, wordBoxes]
 
 SetHoldAllComplete[wordBoxes, cardinalBox];
 wordBoxes = Case[
@@ -143,7 +143,7 @@ $colorCardinalRules = {
 
 (**************************************************************************************************)
 
-PublicForm[PlainWordForm]
+PublicTypesettingForm[PlainWordForm]
 
 PlainWordForm[s_String] := PlainWordForm @ ToPathWord @ s;
 

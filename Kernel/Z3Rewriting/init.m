@@ -29,7 +29,7 @@ and reporting failure. *)
 
 (**************************************************************************************************)
 
-PrivateFunction[declareRewritingSystemDispatch, rewritingSystemProperty]
+PrivateSpecialFunction[declareRewritingSystemDispatch, rewritingSystemProperty]
 
 $rewritingSystemProperyDispatch = <||>;
 

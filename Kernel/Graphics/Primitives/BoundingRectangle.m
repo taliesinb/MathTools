@@ -1,4 +1,4 @@
-PublicHead[BoundingRectangle]
+PublicGraphicsPrimitive[BoundingRectangle]
 
 DeclareGraphicsPrimitive[BoundingRectangle, "Pair", boundingRectangleBoxes]
 

@@ -1,4 +1,4 @@
-PublicForm[VariableForm]
+PublicTypesettingForm[VariableForm]
 
 declareBoxFormatting[
   VariableForm[p_] :>
@@ -10,13 +10,13 @@ $TemplateKatexFunction["VariableForm"] = "variable";
 
 (**************************************************************************************************)
 
-PublicForm[PolynomialSymbol]
+PublicTypesettingForm[PolynomialSymbol]
 
 declareSymbolForm[PolynomialSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[PolyForm]
+PublicTypesettingForm[PolyForm]
 
 declareBoxFormatting[
   PolyForm[args__] :>
@@ -30,7 +30,7 @@ $TemplateKatexFunction["PolynomialForm"] = "poly";
 
 (**************************************************************************************************)
 
-PublicForm[QuiverProductPolyForm]
+PublicTypesettingForm[QuiverProductPolyForm]
 
 declareBoxFormatting[
   QuiverProductPolyForm[args__] :>

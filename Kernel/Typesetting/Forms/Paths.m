@@ -1,4 +1,4 @@
-PrivateFunction[graphOrQuiverBoxes]
+PrivateBoxFunction[graphOrQuiverBoxes]
 
 graphOrQuiverBoxes = Case[
   g_GraphSymbol | g_QuiverSymbol := MakeBoxes @ g;
@@ -11,7 +11,7 @@ graphOrQuiverBoxes = Case[
 
 (**************************************************************************************************)
 
-PublicForm[PathGroupoidSymbol]
+PublicTypesettingForm[PathGroupoidSymbol]
 
 PathGroupoidSymbol[] := PathGroupoidSymbol["Q"];
 
@@ -24,7 +24,7 @@ $TemplateKatexFunction["PathGroupoidSymbolForm"] = "pathGroupoid";
 
 (**************************************************************************************************)
 
-PublicForm[PathQuiverSymbol]
+PublicTypesettingForm[PathQuiverSymbol]
 
 SetUsage @ "
 PathQuiverSymbol[q$] represents the path quiver on quiver q$.
@@ -34,7 +34,7 @@ declareSymbolForm[PathQuiverSymbol, QuiverSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[ForwardPathQuiverSymbol]
+PublicTypesettingForm[ForwardPathQuiverSymbol]
 
 SetUsage @ "
 ForwardPathQuiverSymbol[q$] represents the path quiver on quiver q$.
@@ -53,7 +53,7 @@ $TemplateKatexFunction["ForwardPathQuiverSymbolForm"] = "forwardPathQuiver";
 
 (**************************************************************************************************)
 
-PublicForm[BackwardPathQuiverSymbol]
+PublicTypesettingForm[BackwardPathQuiverSymbol]
 
 SetUsage @ "
 BackwardPathQuiverSymbol[q$] represents the path quiver on quiver q$.
@@ -71,7 +71,7 @@ $TemplateKatexFunction["BackwardPathQuiverSymbolForm"] = "backwardPathQuiver";
 
 (**************************************************************************************************)
 
-PublicForm[ParenPathWordForm, ParenEmptyPathWordForm]
+PublicTypesettingForm[ParenPathWordForm, ParenEmptyPathWordForm]
 
 declareBoxFormatting[
   ParenPathWordForm[a_, b_, c_] :> ReplacePart[MakeBoxes @ PathWordForm[a, b, c], 2 -> "ParenPathWordForm"],
@@ -82,7 +82,7 @@ $TemplateKatexFunction["ParenPathWordForm"] = "parenPathWord";
 
 (**************************************************************************************************)
 
-PublicForm[EmptyPathWordForm]
+PublicTypesettingForm[EmptyPathWordForm]
 
 declareBoxFormatting[
   EmptyPathWordForm[v_] :>
@@ -91,7 +91,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PublicForm[PathWordForm]
+PublicTypesettingForm[PathWordForm]
 
 PathWordForm[a_, b_String, c_] := PathWordForm[a, ToPathWord @ b, c];
 
@@ -117,7 +117,7 @@ $TemplateKatexFunction["PathWordForm"] = "pathWord";
 
 (**************************************************************************************************)
 
-PublicForm[PathHomomorphismSymbol]
+PublicTypesettingForm[PathHomomorphismSymbol]
 
 PathHomomorphismSymbol[] := PathHomomorphismSymbol["\[Rho]"]
 
@@ -125,7 +125,7 @@ declareSymbolForm[PathHomomorphismSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[PathMapSymbol]
+PublicTypesettingForm[PathMapSymbol]
 
 PathMapSymbol[] := PathMapSymbol["\[Mu]"];
 
@@ -138,7 +138,7 @@ $TemplateKatexFunction["PathMapSymbolForm"] = "pathMap";
 
 (**************************************************************************************************)
 
-PublicForm[PathWordRewritingForm]
+PublicTypesettingForm[PathWordRewritingForm]
 
 declareBoxFormatting[
   PathWordRewritingForm[args__] :>
@@ -162,7 +162,7 @@ declareConstantSymbol[{NullPath, NullElement}];
 
 (**************************************************************************************************)
 
-PublicForm[PathSymbol]
+PublicTypesettingForm[PathSymbol]
 
 PathSymbol[] := PathSymbol["P"];
 

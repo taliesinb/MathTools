@@ -1,4 +1,4 @@
-PublicForm[StyleDecorated]
+PublicTypesettingForm[StyleDecorated]
 
 StyleDecorated[style_][head_[args___]] := StyleDecorated[style, head][args];
 
@@ -49,7 +49,7 @@ evalKatexRepeated = Case[
 
 (**************************************************************************************************)
 
-PublicForm[Undersegment]
+PublicTypesettingForm[Undersegment]
 
 DefineUnaryForm[Undersegment, KBox[
   UnderscriptBox[$1, "\[LeftRightVector]"],
@@ -58,18 +58,18 @@ DefineUnaryForm[Undersegment, KBox[
 
 (**************************************************************************************************)
 
-PublicFormBox[Primed, DoublePrimed]
+PublicTypesettingFormBox[PrimedForm, DoublePrimedForm]
 
 DefineUnaryForm[PrimedForm, SuperscriptBox[$1, "\[Prime]"], BoxFunction -> PrimedBox]
 DefineUnaryForm[DoublePrimedForm, SuperscriptBox[$1, "\[DoublePrime]"], BoxFunction -> DoublePrimedBox]
 
-PublicForm[InvisiblePrimedForm]
+PublicTypesettingForm[InvisiblePrimedForm]
 
 DefineUnaryForm[InvisiblePrimedForm, SuperscriptBox[$1, StyleBox["\[Prime]", ShowContents -> False]]]
 
 (**************************************************************************************************)
 
-PublicForm[UnderdotForm, OverdotForm, OverdoubledotForm]
+PublicTypesettingForm[UnderdotForm, OverdotForm, OverdoubledotForm]
 
 DefineUnaryForm[UnderdotForm, UnderdotBox[$1]]
 DefineUnaryForm[OverdotForm, OverdotBox[$1]]
@@ -77,35 +77,35 @@ DefineUnaryForm[OverdoubledotForm, OverdoubledotBox[$1]]
 
 (**************************************************************************************************)
 
-PublicForm[PositiveSignedPartForm, NegativeSignedPartForm]
+PublicTypesettingForm[PositiveSignedPartForm, NegativeSignedPartForm]
 
 DefineUnaryForm[PositiveSignedPartForm, SuperscriptBox[$1, "+"]]
 DefineUnaryForm[NegativeSignedPartForm, SuperscriptBox[$1, "-"]]
 
 (**************************************************************************************************)
 
-PublicFormBox[Signed]
+PublicTypesettingFormBox[SignedForm]
 
 DefineUnaryForm[SignedForm, SuperscriptBox[$1, "*"], BoxFunction -> SignedBox]
 
 (**************************************************************************************************)
 
-PublicFormBox[FamilyModifier]
+PublicTypesettingFormBox[FamilyModifierForm]
 
 DefineUnaryForm[FamilyModifierForm, StyleBox[$1, Bold], BoxFunction -> FamilyModifierBox]
 
 (**************************************************************************************************)
 
-PublicFormBox[WhiteCircleModifier, BlackCircleModifier]
+PublicTypesettingFormBox[WhiteCircleModifierForm, BlackCircleModifierForm]
 
 DefineUnaryForm[WhiteCircleModifierForm, SuperscriptBox[$1, "\[SmallCircle]"], BoxFunction -> WhiteCircleModifierBox]
 DefineUnaryForm[BlackCircleModifierForm, SuperscriptBox[$1, "\[FilledSmallCircle]"], BoxFunction -> BlackCircleModifierBox]
 
 (**************************************************************************************************)
 
-PublicForm[ImageModifierForm, PreimageModifierForm, MultiImageModifierForm, MultiPreimageModifierForm]
+PublicTypesettingForm[ImageModifierForm, PreimageModifierForm, MultiImageModifierForm, MultiPreimageModifierForm]
 
-PublicForm[MultiImageColorModifierForm, MultiPreimageColorModifierForm]
+PublicTypesettingForm[MultiImageColorModifierForm, MultiPreimageColorModifierForm]
 
 DefineUnaryForm[ImageModifierForm, SuperscriptBox[$1, "\[RightArrow]"]]
 DefineUnaryForm[PreimageModifierForm, SuperscriptBox[$1, "\[LeftArrow]"]]
@@ -116,14 +116,14 @@ DefineUnaryForm[MultiPreimageColorModifierForm, StyleBox[$1, RGBColor[{0.05, 0.4
 
 (**************************************************************************************************)
 
-PublicForm[NegatedForm]
+PublicTypesettingForm[NegatedForm]
 
 DefineUnaryForm[NegatedForm, KBox[OverscriptBox[$1, "_"], "bar"[$1]]]
 DefineUnaryForm[InvertedForm, KBox[UnderscriptBox[$1, "_"], "underbar"[$1]]];
 
 (**************************************************************************************************)
 
-PublicForm[VerticalModifierForm]
+PublicTypesettingForm[VerticalModifierForm]
 
 DefineStandardTraditionalForm[
   VerticalModifierForm[inner_, args___] :> rewriteToVerticalOuter[MakeQGBoxes[inner], args]

@@ -1,4 +1,6 @@
-PublicHead[GridComplex, GridOffset]
+PublicGraphicsPrimitive[GridComplex]
+
+PublicHead[GridOffset]
 PublicOption[GridScale]
 
 SetUsage @ "

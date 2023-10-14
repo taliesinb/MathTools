@@ -1,4 +1,4 @@
-PublicForm[ElementOfForm, NotElementOfForm]
+PublicTypesettingForm[ElementOfForm, NotElementOfForm]
 
 DefineInfixBinaryForm[ElementOfForm, WideOpBox @ "\[Element]"];
 DefineInfixBinaryForm[NotElementOfForm, WideOpBox @ "\[NotElement]"];
@@ -10,7 +10,7 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicForm[PathRelationForm]
+PublicTypesettingForm[PathRelationForm]
 
 (* declareBoxFormatting[
   PathRelationForm[args__] :>
@@ -41,11 +41,11 @@ Cell[StyleData["PathRelationSymbol", StyleDefinitions -> StyleData[
 
 (**************************************************************************************************)
 
-PublicForm[TailEqualForm, HeadEqualForm]
-PublicForm[BijectiveForm, ApproxEqualForm, IsomorphicForm, HomeomorphicForm, CongruentForm, IdenticallyEqualForm, HomotopicForm, DefEqualForm, SyntaxEqualForm, UnderdotEqualForm, DotEqualForm, ColonEqualForm]
-PublicForm[EqualForm, NotEqualForm, LessForm, LessEqualForm, GreaterForm, GreaterEqualForm]
-PublicForm[SubsetForm, SubsetEqualForm, SupersetForm, SupersetEqualForm]
-PublicForm[SubmultisetForm, SubmultisetEqualForm, SupermultisetForm, SupermultisetEqualForm]
+PublicTypesettingForm[TailEqualForm, HeadEqualForm]
+PublicTypesettingForm[BijectiveForm, ApproxEqualForm, IsomorphicForm, HomeomorphicForm, CongruentForm, IdenticallyEqualForm, HomotopicForm, DefEqualForm, SyntaxEqualForm, UnderdotEqualForm, DotEqualForm, ColonEqualForm]
+PublicTypesettingForm[EqualForm, NotEqualForm, LessForm, LessEqualForm, GreaterForm, GreaterEqualForm]
+PublicTypesettingForm[SubsetForm, SubsetEqualForm, SupersetForm, SupersetEqualForm]
+PublicTypesettingForm[SubmultisetForm, SubmultisetEqualForm, SupermultisetForm, SupermultisetEqualForm]
 
 DefineInfixForm[#1, OpBox @ #2]& @@@ ExpressionTable[
   TailEqualForm                UnderdotBox["="]
@@ -80,7 +80,7 @@ DefineInfixForm[#1, OpBox @ #2]& @@@ ExpressionTable[
 
 (**************************************************************************************************)
 
-PublicForm[BinaryRelationForm]
+PublicTypesettingForm[BinaryRelationForm]
 
 DefineStandardTraditionalForm[{
   BinaryRelationForm[r_String] :> KBox[KWideOp @ r, KBin @ r],

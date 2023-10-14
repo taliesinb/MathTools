@@ -1,4 +1,4 @@
-PublicHead[GraphicsStyleData]
+PublicGraphicsPrimitive[GraphicsStyleData]
 
 PrivateVariable[$GraphicsStyleData]
 

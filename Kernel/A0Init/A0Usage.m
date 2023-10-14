@@ -187,7 +187,7 @@ storeRawUsageString[rawUsageString_String] := Block[
 
 (**************************************************************************************************)
 
-PrivateFunction[SetInitialValue]
+PrivateMutatingFunction[SetInitialValue]
 
 SetHoldAllComplete[SetInitialValue];
 
@@ -198,7 +198,7 @@ SetInitialValue[sym_Symbol, body_] := If[!System`Private`HasImmediateValueQ[sym]
 
 (**************************************************************************************************)
 
-PrivateFunction[SetUsage]
+PrivateMutatingFunction[SetUsage]
 
 PublicVariable[$DisableSetUsage]
 

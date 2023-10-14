@@ -1,4 +1,4 @@
-PublicForm[LoopCurve]
+PublicGraphicsPrimitive[LoopCurve]
 
 DeclareAtomicCurvePrimitive[LoopCurve, loopCurvePoints];
 

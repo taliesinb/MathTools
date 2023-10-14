@@ -1,4 +1,4 @@
-PublicForm[TupleForm, StyledTupleForm]
+PublicTypesettingForm[TupleForm, StyledTupleForm]
 
 DefineCommaForm[TupleForm, ParenthesesBox[$1], KatexMacroName -> "tuple"]
 
@@ -6,7 +6,7 @@ StyledTupleForm[style_] := StyleDecorated[style, TupleForm];
 
 (**************************************************************************************************)
 
-PublicForm[SetForm, StyledSetForm]
+PublicTypesettingForm[SetForm, StyledSetForm]
 
 DefineCommaForm[SetForm, BracesBox[$1]]
 DefineCommaForm[SignedSetForm, BracesBox[$1]];
@@ -20,7 +20,7 @@ DefineStandardTraditionalForm[
 
 (**************************************************************************************************)
 
-PublicForm[AssociativeArrayForm]
+PublicTypesettingForm[AssociativeArrayForm]
 
 DefineCommaForm[AssociativeArrayForm, AngleBracketBox["\[VeryThinSpace]", $1, "\[VeryThinSpace]"]];
 
@@ -28,11 +28,11 @@ DefineRuleAsMapsTo[AssociativeArrayForm];
 
 (**************************************************************************************************)
 
-PublicForm[SignedSetForm]
+PublicTypesettingForm[SignedSetForm]
 
 (**************************************************************************************************)
 
-PublicForm[ListForm, StyledListForm]
+PublicTypesettingForm[ListForm, StyledListForm]
 
 DefineCommaForm[ListForm, SquareBracketBox["\[VeryThinSpace]", $1, "\[VeryThinSpace]"], KatexMacroName -> "list"];
 
@@ -59,7 +59,7 @@ BracesDotBox[inner___] := LeftRightDotBox["{", inner, "}"]
 
 (**************************************************************************************************)
 
-PublicForm[MultisetForm, StyledMultisetForm, SignedMultisetForm, StyledSignedMultisetForm]
+PublicTypesettingForm[MultisetForm, StyledMultisetForm, SignedMultisetForm, StyledSignedMultisetForm]
 
 (* DefineCommaForm[MultisetForm, RBox[ToBoxes @ MultisetOpen, $1, ToBoxes @ MultisetClose]]
 DefineCommaForm[SignedMultisetForm, RBox[ToBoxes @ MultisetOpen, $1, ToBoxes @ MultisetClose]]
@@ -72,13 +72,13 @@ StyledSignedMultisetForm[style_] := StyleDecorated[style, SignedMulitsetForm];
 
 (**************************************************************************************************)
 
-PublicForm[RepeatedMultisetForm]
+PublicTypesettingForm[RepeatedMultisetForm]
 
 DefineInfixBinaryForm[RepeatedMultisetForm, "\[ThinSpace]"];
 
 (**************************************************************************************************)
 
-PublicForm[SetUnionForm, SetIntersectionForm, SetRelativeComplementForm]
+PublicTypesettingForm[SetUnionForm, SetIntersectionForm, SetRelativeComplementForm]
 
 DefineInfixForm[SetUnionForm, OpBox @ "\[Union]"]
 DefineInfixForm[SetIntersectionForm, OpBox @ "\[Intersection]"]
@@ -86,7 +86,7 @@ DefineInfixBinaryForm[SetRelativeComplementForm, OpBox @ "-"]
 
 (**************************************************************************************************)
 
-PublicForm[PowerSetForm]
+PublicTypesettingForm[PowerSetForm]
 
 DefineNamedFunctionSymbolForm[
   PowerSetForm -> CaligraphicBox @ "P"
@@ -94,27 +94,27 @@ DefineNamedFunctionSymbolForm[
 
 (**************************************************************************************************)
 
-PublicForm[SetSymbolForm, SetElementSymbolForm]
+PublicTypesettingForm[SetSymbolForm, SetElementSymbolForm]
 
 DefineTaggedForm[{SetSymbolForm, SetElementSymbolForm}];
 
-PublicForm[MultisetSymbolForm, MultisetElementSymbolForm]
+PublicTypesettingForm[MultisetSymbolForm, MultisetElementSymbolForm]
 
 DefineTaggedForm[{MultisetSymbolForm, MultisetElementSymbolForm}];
 
-PublicForm[SignedSetSymbolForm, SignedSetElementSymbolForm]
+PublicTypesettingForm[SignedSetSymbolForm, SignedSetElementSymbolForm]
 
 DefineTaggedForm[{SignedSetSymbolForm, SignedSetElementSymbolForm}]
 
-PublicForm[SignedMultisetSymbolForm, SignedMultisetElementSymbolForm]
+PublicTypesettingForm[SignedMultisetSymbolForm, SignedMultisetElementSymbolForm]
 
 DefineTaggedForm[{SignedMultisetSymbolForm, SignedMultisetElementSymbolForm}]
 
 (**************************************************************************************************)
 
-PublicForm[SubsetsForm, MultisetsForm]
+PublicTypesettingForm[SubsetsForm, MultisetsForm]
 
-PublicForm[SignedSubsetsForm, SignedMultisetsForm]
+PublicTypesettingForm[SignedSubsetsForm, SignedMultisetsForm]
 
 DefineNamedFunctionSymbolForm[{
   SubsetsForm -> CaligraphicBox @ "S",
@@ -135,28 +135,28 @@ DefineSymbolForm[{
 
 (**************************************************************************************************)
 
-PublicForm[MultisetMultiplicityForm, SignedMultisetMultiplicityForm]
+PublicTypesettingForm[MultisetMultiplicityForm, SignedMultisetMultiplicityForm]
 
 DefineInfixBinaryForm[MultisetMultiplicityForm, ToBoxes @ MultisetMultiplicitySymbol];
 DefineInfixBinaryForm[SignedMultisetMultiplicityForm, ToBoxes @ SignedMultisetMultiplicitySymbol];
 
 (**************************************************************************************************)
 
-PublicForm[BoundMultiplicityFunctionForm, BoundSignedMultiplicityFunctionForm]
+PublicTypesettingForm[BoundMultiplicityFunctionForm, BoundSignedMultiplicityFunctionForm]
 
 DefineUnaryForm[BoundMultiplicityFunctionForm, SuperscriptBox[$1, ToBoxes @ MultisetMultiplicitySymbol]]
 DefineUnaryForm[BoundSignedMultiplicityFunctionForm, SuperscriptBox[$1, ToBoxes @ SignedMultisetMultiplicitySymbol]]
 
 (**************************************************************************************************)
 
-PublicForm[SetToMultisetForm, MultisetToSetForm]
+PublicTypesettingForm[SetToMultisetForm, MultisetToSetForm]
 
 DefineUnaryForm[SetToMultisetForm, SuperscriptBox[$1, "\[UpArrow]"]]
 DefineUnaryForm[MultisetToSetForm, SuperscriptBox[$1, "\[DownArrow]"]]
 
 (**************************************************************************************************)
 
-PublicForm[SetConstructorForm, ListConstructorForm, MultisetConstructorForm, AssociativeArrayConstructorForm, CardinalityConstructorForm]
+PublicTypesettingForm[SetConstructorForm, ListConstructorForm, MultisetConstructorForm, AssociativeArrayConstructorForm, CardinalityConstructorForm]
 
 SetHoldAllComplete[makeConstructorBoxes, toColGrid];
 
@@ -210,7 +210,7 @@ DefineKatexDisplayFunction["AssociativeArrayConstructorForm", AngleBracketBox[st
 
 (**************************************************************************************************)
 
-PublicForm[CartesianProductForm, CartesianSumForm, TensorProductForm, DirectSumForm]
+PublicTypesettingForm[CartesianProductForm, CartesianSumForm, TensorProductForm, DirectSumForm]
 
 DefineInfixForm[CartesianProductForm, OpBox @ "\[Times]"];
 DefineInfixForm[CartesianSumForm,     OpBox @  "+"];
@@ -219,14 +219,14 @@ DefineInfixForm[DirectSumForm,        OpBox @ "\[CirclePlus]"];
 
 (**************************************************************************************************)
 
-PublicForm[IndexedUnionForm, IndexedIntersectionForm]
+PublicTypesettingForm[IndexedUnionForm, IndexedIntersectionForm]
 
 DefineLegacyIndexedForm[IndexedUnionForm, KBox["\[Union] ", "\\bigcup"]]
 DefineLegacyIndexedForm[IndexedIntersectionForm, KBox["\[Intersection] ", "\\bigcap"]]
 
 (**************************************************************************************************)
 
-PublicForm[SetCardinalityForm, MultisetCardinalityForm]
+PublicTypesettingForm[SetCardinalityForm, MultisetCardinalityForm]
 
 DefineUnaryForm[SetCardinalityForm,      RBox["\[LeftBracketingBar]", RBox["\[ThinSpace]", $1, "\[ThinSpace]"], "\[RightBracketingBar]"]]
 DefineUnaryForm[MultisetCardinalityForm, RBox["\[LeftBracketingBar]", RBox["\[ThinSpace]", $1, "\[ThinSpace]"], "\[RightBracketingBar]"]]

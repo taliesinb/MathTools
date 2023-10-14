@@ -121,4 +121,4 @@ PublicOption[LabelPosition, LabelOrientation, LabelRectification]
 
 PublicOption[ArrowheadShape, ArrowheadSize, ArrowheadStyle, ArrowheadPosition]
 
-PublicOption[ArrowheadPathSetback, Setback]
+PublicOption[ArrowPathSetback, Setback]

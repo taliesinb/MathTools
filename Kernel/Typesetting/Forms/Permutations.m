@@ -1,10 +1,10 @@
-PublicForm[TranspositionForm]
+PublicTypesettingForm[TranspositionForm]
 
 DefineInfixBinaryForm[TranspositionForm, OpBox @ "\[TwoWayRule]"]
 
 (**************************************************************************************************)
 
-PublicForm[PermutationCycleForm]
+PublicTypesettingForm[PermutationCycleForm]
 
 DefineInfixForm[PermutationCycleForm, OpBox @ "\[Rule]"]
 
@@ -15,7 +15,7 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicForm[StandardPermutationForm]
+PublicTypesettingForm[StandardPermutationForm]
 
 DefineStandardTraditionalForm[{
   StandardPermutationForm[Cycles[{}]] :> TBox[standardCycleBoxes @ {}, "StandardPermutationForm"],
@@ -26,7 +26,7 @@ DefineTemplateBox[StandardPermutationForm, "StandardPermutationForm", $1, None];
 
 (**************************************************************************************************)
 
-PublicForm[StandardPermutationCycleForm]
+PublicTypesettingForm[StandardPermutationCycleForm]
 
 DefineStandardTraditionalForm[
   StandardPermutationCycleForm[list_List] :> standardCycleBoxes @ list
@@ -38,7 +38,7 @@ DefineTemplateBox[StandardPermutationCycleForm, "StandardPermutationCycleForm", 
 
 (**************************************************************************************************)
 
-PublicForm[PermutationForm]
+PublicTypesettingForm[PermutationForm]
 
 DefineTemplateBox[StandardPermutationCycleForm, "StandardPermutationCycleForm", RiffledBox[OpBox[";"]] @ $$1, None];
 

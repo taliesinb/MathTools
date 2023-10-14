@@ -2,7 +2,7 @@ PublicSymbol[CommutativeDiagram]
 
 PublicOption[DebugBounds, AutoSetback, Origin, SymbolReplacements, CloneOptions, CloningFunction, DiagramScaling, DefaultMorphism]
 
-PublicHead[Outwards, Inwards]
+PublicSymbol[Outwards, Inwards]
 
 SetUsage @ "
 CommutativeDiagram[items$] evaluates to a graphics object that contains a commutative diagram.
@@ -357,7 +357,7 @@ toReplacementFunction[rules_, colorFn_] := Scope[
 
 (**************************************************************************************************)
 
-PublicHead[EqualityMorphism, MapsToMorphism, UniqueMorphism, DoubleMorphism, Morphism, ProMorphism, AdjointMorphism, LongAdjointMorphism, LineMorphism]
+PublicGraphicsPrimitive[EqualityMorphism, MapsToMorphism, UniqueMorphism, DoubleMorphism, Morphism, ProMorphism, AdjointMorphism, LongAdjointMorphism, LineMorphism]
 
 $morphismHeadP = Morphism | DoubleMorphism | UniqueMorphism | EqualityMorphism | MapsToMorphism | ProMorphism | AdjointMorphism | LongAdjointMorphism | LineMorphism;
 

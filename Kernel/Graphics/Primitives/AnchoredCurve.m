@@ -1,4 +1,4 @@
-PublicHead[AnchoredCurve]
+PublicGraphicsPrimitive[AnchoredCurve]
 
 (* todo: replace AnchoredCurve with just Anchored, which works on any graphics primitive *)
 

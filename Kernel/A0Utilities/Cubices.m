@@ -101,8 +101,7 @@ RandomCubix[n_, k_] := Table[RandomCubix[n], k];
 
 (**************************************************************************************************)
 
-PublicForm[ThreeMatrixForm]
-PrivateForm[ThreeMatrixForm]
+PublicTypesettingForm[ThreeMatrixForm]
 
 declareBoxFormatting[
   ThreeMatrixForm[expr_] :> ToBoxes[expr /. m_List ? ThreeArrayQ :> SingleThreeMatrixForm[m]],

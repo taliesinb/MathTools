@@ -4,7 +4,7 @@ $LatticeData = <||>
 $LatticeNames = {};
 $LatticeClassNames = {"2D", "3D"};
 
-PublicFunction[DefineLatticeQuiver]
+PrivateSpecialFunction[DefineLatticeQuiver]
 
 SetUsage @ "
 DefineLatticeQuiver[fields$] defines a new lattice described by fields$ and add its to \

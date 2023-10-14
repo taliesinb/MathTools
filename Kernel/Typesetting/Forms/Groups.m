@@ -1,4 +1,4 @@
-PublicForm[NamedLieGroup]
+PublicTypesettingForm[NamedLieGroup]
 
 DefineStandardTraditionalForm[{
   NamedLieGroup[name_String] :> TBox[name, "NamedLieGroup"],
@@ -10,7 +10,7 @@ DefineTemplateBox[NamedLieGroup, "NamedLieGroup", SansSerifBox[$1], None];
 
 (**************************************************************************************************)
 
-PublicForm[NamedLieAlgebra]
+PublicTypesettingForm[NamedLieAlgebra]
 
 DefineStandardTraditionalForm[{
   NamedLieAlgebra[name_String] :> TBox[name, "NamedLieAlgebra"],
@@ -37,8 +37,8 @@ fieldOrRingBoxes = Case[
 
 (**************************************************************************************************)
 
-PublicForm[GeneralLinearGroupForm, SpecialLinearGroupForm, ProjectiveGeneralLinearGroupForm, ProjectiveSpecialLinearGroupForm, OrthogonalGroupForm, SpecialOrthogonalGroupForm, UnitaryGroupForm, SpecialUnitaryGroupForm, SpinGroupForm, PinGroupForm]
-PublicForm[GeneralLinearAlgebraForm, SpecialLinearAlgebraForm, ProjectiveGeneralLinearAlgebraForm, ProjectiveSpecialLinearAlgebraForm, OrthogonalAlgebraForm, SpecialOrthogonalAlgebraForm, UnitaryAlgebraForm, SpecialUnitaryAlgebraForm, SpinAlgebraForm, PinAlgebraForm]
+PublicTypesettingForm[GeneralLinearGroupForm, SpecialLinearGroupForm, ProjectiveGeneralLinearGroupForm, ProjectiveSpecialLinearGroupForm, OrthogonalGroupForm, SpecialOrthogonalGroupForm, UnitaryGroupForm, SpecialUnitaryGroupForm, SpinGroupForm, PinGroupForm]
+PublicTypesettingForm[GeneralLinearAlgebraForm, SpecialLinearAlgebraForm, ProjectiveGeneralLinearAlgebraForm, ProjectiveSpecialLinearAlgebraForm, OrthogonalAlgebraForm, SpecialOrthogonalAlgebraForm, UnitaryAlgebraForm, SpecialUnitaryAlgebraForm, SpinAlgebraForm, PinAlgebraForm]
 
 defineLieGroupAlgebra[name_String, groupSym_Symbol, algebraSym_Symbol] := With[
   {algebraName = ToLowerCase @ name},
@@ -65,13 +65,13 @@ defineLieGroupAlgebra @@@ ExpressionTable[
 
 (**************************************************************************************************)
 
-PublicForm[GroupSymbol]
+PublicTypesettingForm[GroupSymbol]
 
 DefineTaggedForm[GroupSymbol, Aliases -> <|"Z" -> Integers|>]
 
 (**************************************************************************************************)
 
-PublicForm[SymmetricGroupForm, AlternatingGroupForm, FreeGroupForm, CyclicGroupForm]
+PublicTypesettingForm[SymmetricGroupForm, AlternatingGroupForm, FreeGroupForm, CyclicGroupForm]
 
 DefineUnaryForm[SymmetricGroupForm, AppliedBox[RomanBox @ "Sym", $1]];
 DefineUnaryForm[AlternatingGroupForm, AppliedBox[RomanBox @ "Alt", $1]];
@@ -80,19 +80,19 @@ DefineUnaryForm[CyclicGroupForm, SubscriptBox["\[DoubleStruckCapitalZ]", $1]]
 
 (**************************************************************************************************)
 
-PublicForm[GroupDirectProductForm]
+PublicTypesettingForm[GroupDirectProductForm]
 
 DefineInfixForm[GroupDirectProductForm, WideOpBox @ "\[Times]"];
 
 (**************************************************************************************************)
 
-PublicForm[GroupPresentationSymbol]
+PublicTypesettingForm[GroupPresentationSymbol]
 
 DefineTaggedForm[GroupPresentationSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[GroupPresentationForm]
+PublicTypesettingForm[GroupPresentationForm]
 
 DefineBinaryForm[GroupPresentationForm, AngleBracketBox[$1, "\[MediumSpace]", $PipeBox, "\[MediumSpace]", $2]]
 
@@ -134,7 +134,7 @@ groupGeneratorBoxes = Case[
 
 (**************************************************************************************************)
 
-PublicForm[GroupRelationForm]
+PublicTypesettingForm[GroupRelationForm]
 
 DefineInfixBinaryForm[GroupRelationForm, OpBox["="], TemplateName -> "BinaryGroupRelationForm", Boxification -> groupRelationTermBoxes]
 DefineTaggedForm[GroupRelationForm, TemplateName -> "UnaryGroupRelationForm", Boxification -> groupRelationTermBoxes]
@@ -161,49 +161,49 @@ groupRelationTermBoxes = Case[
 
 (**************************************************************************************************)
 
-PublicForm[GroupGeneratorSymbol, GroupRelatorSymbol]
+PublicTypesettingForm[GroupGeneratorSymbol, GroupRelatorSymbol]
 
 DefineTaggedForm[{GroupGeneratorSymbol, GroupRelatorSymbol}];
 
 (**************************************************************************************************)
 
-PublicForm[GroupCommutatorForm]
+PublicTypesettingForm[GroupCommutatorForm]
 
 DefineBinaryForm[GroupCommutatorForm, SquareBracketBox[$1, ", ", $2]];
 
 (**************************************************************************************************)
 
-PublicForm[GroupPowerForm]
+PublicTypesettingForm[GroupPowerForm]
 
 DefineBinaryForm[GroupPowerForm, SuperscriptBox[$1, $2]];
 
 (**************************************************************************************************)
 
-PublicForm[GroupFunctionSymbol, GroupHomomorphismSymbol]
+PublicTypesettingForm[GroupFunctionSymbol, GroupHomomorphismSymbol]
 
 DefineTaggedForm[{GroupFunctionSymbol, GroupHomomorphismSymbol}];
 
 (**************************************************************************************************)
 
-PublicForm[GroupoidFunctionSymbol, GroupoidHomomorphismSymbol]
+PublicTypesettingForm[GroupoidFunctionSymbol, GroupoidHomomorphismSymbol]
 
 DefineTaggedForm[{GroupoidFunctionSymbol, GroupoidHomomorphismSymbol}];
 
 (**************************************************************************************************)
 
-PublicForm[GroupoidSymbol]
+PublicTypesettingForm[GroupoidSymbol]
 
 DefineTaggedForm[GroupoidSymbol, Aliases -> <|"N" -> Naturals|>];
 
 (**************************************************************************************************)
 
-PublicForm[ActionGroupoidSymbol]
+PublicTypesettingForm[ActionGroupoidSymbol]
 
 DefineTaggedForm[ActionGroupoidSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[ActionSymbol, SelfActionForm]
+PublicTypesettingForm[ActionSymbol, SelfActionForm]
 
 (* SelfActionForm was SelfActionSymbol *)
 
@@ -213,32 +213,32 @@ DefineUnaryForm[SelfActionForm, HatBox[$1]];
 
 (**************************************************************************************************)
 
-PublicForm[GroupElementSymbol, GroupoidElementSymbol]
+PublicTypesettingForm[GroupElementSymbol, GroupoidElementSymbol]
 
 DefineTaggedForm[{GroupElementSymbol, GroupoidElementSymbol}];
 
 (**************************************************************************************************)
 
-PublicForm[GroupIdentitySymbol, GroupoidIdentitySymbol]
+PublicTypesettingForm[GroupIdentitySymbol, GroupoidIdentitySymbol]
 
 DefineSymbolForm[{GroupIdentitySymbol -> "1", GroupoidIdentitySymbol -> "1"}]
 (* What are these for? *)
 
 (**************************************************************************************************)
 
-PublicForm[GroupoidIdentityElement]
+PublicTypesettingForm[GroupoidIdentityElement]
 
 DefineUnaryForm[GroupoidIdentityElement, SubscriptBox["1", $1]]
 
 (**************************************************************************************************)
 
-PublicForm[GroupInverseForm]
+PublicTypesettingForm[GroupInverseForm]
 
 DefineUnaryForm[GroupInverseForm, InverseBox[$1]]
 
 (**************************************************************************************************)
 
-PublicForm[GroupMultiplicationForm, ImplicitGroupMultiplicationForm, GroupoidMultiplicationForm]
+PublicTypesettingForm[GroupMultiplicationForm, ImplicitGroupMultiplicationForm, GroupoidMultiplicationForm]
 
 DefineInfixForm[GroupMultiplicationForm, OpBox @ "\[Star]"];
 DefineInfixForm[ImplicitGroupMultiplicationForm, "\[VeryThinSpace]"];
@@ -246,14 +246,14 @@ DefineInfixForm[GroupoidMultiplicationForm, OpBox @ "\[Star]"];
 
 (**************************************************************************************************)
 
-PublicForm[GroupSmallDotForm, GroupLargeDotForm]
+PublicTypesettingForm[GroupSmallDotForm, GroupLargeDotForm]
 
 DefineInfixForm[GroupSmallDotForm, KBox[OpBox @ "\[CenterDot]", """\cdot """]];
 DefineInfixForm[GroupLargeDotForm, KBox[OpBox @ "\[Bullet]", """\,\raisebox{0.1em}{\tiny∙}\,"""]];
 
 (**************************************************************************************************)
 
-PublicForm[GroupWordRewritingForm]
+PublicTypesettingForm[GroupWordRewritingForm]
 
 DefineCommaForm[GroupWordRewritingForm, AngleBracketBox[$1], Boxification -> groupWordRewritingRuleBox]
 
@@ -265,12 +265,12 @@ groupWordRewritingRuleBox = Case[
 
 (**************************************************************************************************)
 
-PublicForm[SemigroupProductForm]
+PublicTypesettingForm[SemigroupProductForm]
 
 DefineInfixForm[SemigroupProductForm, KBox[OpBox @ "\[SmallCircle]", """\mathbin{\raisebox{0.15em}{\tiny∙}}"""]]
 
 (**************************************************************************************************)
 
-PublicForm[MonoidProductForm]
+PublicTypesettingForm[MonoidProductForm]
 
 DefineInfixForm[MonoidProductForm, OpBox @ "\[CenterDot]"]

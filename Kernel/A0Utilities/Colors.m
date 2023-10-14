@@ -1042,7 +1042,7 @@ literalColorFunction[colors_] := Scope[
 
 (**************************************************************************************************)
 
-PublicForm[Color3D]
+PublicGraphicsDirective[Color3D]
 
 DeclareGraphicsPrimitive[Color3D, "Color", color3DBoxes, {3}];
 
@@ -1054,7 +1054,7 @@ color3DBoxes = Case[
 
 (**************************************************************************************************)
 
-PublicForm[SolidEdgeForm]
+PublicGraphicsDirective[SolidEdgeForm]
 
 SetUsage @ "
 SolidEdgeForm[face$, edge$] colors solid primitives to have face color face$ and edge color $edge.

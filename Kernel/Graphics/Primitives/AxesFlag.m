@@ -1,4 +1,4 @@
-PublicHead[AxesFlag]
+PublicGraphicsPrimitive[AxesFlag]
 
 DeclareGraphicsPrimitive[AxesFlag, "Vector?Radius", axesFlagBoxes, {2, 3}];
 
@@ -19,7 +19,7 @@ styleTooltip[box_, s_, t_] := TooltipBox[StyleBox[box, s], t];
 
 (**************************************************************************************************)
 
-PublicHead[VectorArrow]
+PublicGraphicsPrimitive[VectorArrow]
 
 DeclareGraphicsPrimitive[VectorArrow, "Vector,Delta", vectorArrowBoxes, {2, 3}];
 

@@ -1,4 +1,4 @@
-PublicForm[NestedArrayForm]
+PublicTypesettingForm[NestedArrayForm]
 
 (* PublicOption[AxisDirection, AxisDelimiters]
 

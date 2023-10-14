@@ -51,7 +51,7 @@ SquareBracketList[list_, fs_:16] := Row[{$lbrac, Row[list, $comma], $rbrac}, Bas
 
 (**************************************************************************************************)
 
-PublicForm[SymbolicPlus, SymbolicTimes]
+PublicTypesettingForm[SymbolicPlus, SymbolicTimes]
 
 SetListable[SymbolicPlus, SymbolTimes, SymbolicVerticalPlus, SymbolVerticalTimes, SymbolicDiagonalPlus, SymbolVerticalTimes];
 
@@ -71,7 +71,7 @@ abs[Style[a_, r___]] := Style[abs @ a, r];
 MakeBoxes[SymbolicTimes[a___], form_] :=
   ToBoxes[Row[{a}, "\[Times]"], form];
 
-PublicForm[SymbolicVerticalPlus, SymbolVerticalTimes]
+PublicTypesettingForm[SymbolicVerticalPlus, SymbolVerticalTimes]
 
 gridOp[elems_, op_] :=
   Grid[ReplacePart[{op, #} & /@ elems, {1, 1} -> ""],
@@ -82,7 +82,7 @@ MakeBoxes[SymbolicVerticalPlus[a___], form_] :=
 MakeBoxes[SymbolVerticalTimes[a___], form_] :=
   ToBoxes[gridOp[{a}, "\[Times]"], form];
 
-PublicForm[SymbolicDiagonalPlus, SymbolVerticalTimes]
+PublicTypesettingForm[SymbolicDiagonalPlus, SymbolVerticalTimes]
 
 SetListable[SymbolicDiagonalPlus, SymbolVerticalTimes];
 MakeBoxes[SymbolicDiagonalPlus[a_, b_], form_] :=

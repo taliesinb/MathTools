@@ -1,4 +1,5 @@
-PrivateFunction[declareObjectPropertyDispatch, getObjectData]
+PrivateSpecialFunction[declareObjectPropertyDispatch, getObjectData]
+
 PrivateVariable[$SelfObject]
 
 getObjectData[_] := $Failed;

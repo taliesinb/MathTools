@@ -1,4 +1,4 @@
-PublicForm[FunctionSignatureForm]
+PublicTypesettingForm[FunctionSignatureForm]
 
 FunctionSignatureForm[f_, a_List, b_] :=
   FunctionSignatureForm[f, TupleForm @@ a, b];
@@ -10,7 +10,7 @@ DefineTernaryForm[FunctionSignatureForm, RBox[$1, OpBox @ ":", $2, OpBox @ "\[Ru
 
 (**************************************************************************************************)
 
-PublicForm[PartialFunctionSignatureForm]
+PublicTypesettingForm[PartialFunctionSignatureForm]
 
 PartialFunctionSignatureForm[f_, a_List, b_] :=
   PartialFunctionSignatureForm[f, TupleForm @@ a, b];
@@ -22,26 +22,26 @@ DefineTernaryForm[PartialFunctionSignatureForm, RBox[$1, OpBox @ ":", $2, OpBox 
 
 (**************************************************************************************************)
 
-PublicForm[FunctionGraphForm]
+PublicTypesettingForm[FunctionGraphForm]
 
 DefineUnaryForm[FunctionGraphForm, SubscriptBox["G", $1]];
 
 (**************************************************************************************************)
 
-PublicForm[FunctionSpaceForm, FiniteTotalFunctionSpaceForm]
+PublicTypesettingForm[FunctionSpaceForm, FiniteTotalFunctionSpaceForm]
 
 DefineBinaryForm[FunctionSpaceForm, SubscriptBox[$2, $1]];
 DefineBinaryForm[FiniteTotalFunctionSpaceForm, SuperscriptBox[$2, RBox["\[Subset]", $1]]]
 
 (**************************************************************************************************)
 
-PublicForm[FunctionTypeForm]
+PublicTypesettingForm[FunctionTypeForm]
 
 DefineBinaryForm[FunctionTypeForm, RBox[$1, " \[Rule] ", $2]]
 
 (**************************************************************************************************)
 
-PublicForm[FunctionCompositionForm, RightFunctionCompositionForm]
+PublicTypesettingForm[FunctionCompositionForm, RightFunctionCompositionForm]
 
 DefineInfixForm[FunctionCompositionForm,      OpBox @ "\[SmallCircle]"];
 DefineInfixForm[RightFunctionCompositionForm, OpBox @ "\[FilledSmallCircle]"];
@@ -54,13 +54,13 @@ DefineStandardTraditionalForm[{
 (**************************************************************************************************)
 
 (* replaces OperatorAppliedForm *)
-PublicForm[OperatorCompositionForm]
+PublicTypesettingForm[OperatorCompositionForm]
 
 DefineInfixForm[OperatorCompositionForm, KBox["\[InvisibleSpace]", "\\,"]];
 
 (**************************************************************************************************)
 
-PublicForm[FunctionSymbolForm]
+PublicTypesettingForm[FunctionSymbolForm]
 
 DefineTaggedForm[FunctionSymbolForm]
 
@@ -68,7 +68,7 @@ DefineStandardTraditionalForm[fn_FunctionSymbolForm[args___] :> MakeBoxes[Applie
 
 (**************************************************************************************************)
 
-PublicForm[NamedFunctionForm]
+PublicTypesettingForm[NamedFunctionForm]
 
 DefineUnaryForm[NamedFunctionForm, FunctionBox @ $1]
 
@@ -205,18 +205,18 @@ DefineNamedFunctionSymbolForm[{
 
 (**************************************************************************************************)
 
-PublicForm[FromToForm]
+PublicTypesettingForm[FromToForm]
 
 DefineInfixBinaryForm[FromToForm, WideOpBox @ "\[RightTeeArrow]"];
 
 (**************************************************************************************************)
 
-PublicForm[MapsToForm]
+PublicTypesettingForm[MapsToForm]
 
 DefineInfixBinaryForm[MapsToForm, WideOpBox @ "\[RightTeeArrow]"];
 
 (**************************************************************************************************)
 
-PublicForm[MapsBetweenForm]
+PublicTypesettingForm[MapsBetweenForm]
 
 DefineInfixBinaryForm[MapsBetweenForm, WideOpBox @ "\[LeftRightArrow]"];

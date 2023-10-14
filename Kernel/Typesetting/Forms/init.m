@@ -18,7 +18,7 @@ katexNary[op_][a_, b_, c_, d_, e_] := op[a][b][c][d][e];
 
 (**************************************************************************************************)
 
-PrivateFunction[declareAppliedFormatting]
+PrivateSpecialFunction[declareAppliedFormatting]
 
 declareAppliedFormatting[sym_Symbol] :=
   declareBoxFormatting[s
@@ -27,7 +27,7 @@ declareAppliedFormatting[sym_Symbol] :=
 
 (**************************************************************************************************)
 
-PrivateFunction[declareSymbolForm, declareSymbolFormExplicit]
+PrivateSpecialFunction[declareSymbolForm, declareSymbolFormExplicit]
 
 declareSymbolForm::badsym = "Name of symbol `` should end in SymbolForm."
 declareSymbolForm::notsym = "First arg `` is not a symbol."
@@ -57,7 +57,7 @@ iDeclareSymbolForm[head_, type_, fullName_] := Scope[
 
 (**************************************************************************************************)
 
-PrivateFunction[declareUnaryWrapperForm]
+PrivateSpecialFunction[declareUnaryWrapperForm]
 
 $unaryWrapperFormName = <||>;
 
@@ -86,7 +86,7 @@ usingCustomKatex[katex_String] := Function[body, Block[{$customKatex = katex}, b
 
 (**************************************************************************************************)
 
-PrivateFunction[declareInfixSymbol]
+PrivateSpecialFunction[declareInfixSymbol]
 
 declareInfixSymbol[form_] := declareInfixSymbol[form, None, False];
 
@@ -111,7 +111,7 @@ declareInfixSymbol[form_, hint_, wrapped_] := With[
 
 (**************************************************************************************************)
 
-PrivateFunction[declareInfixKatexAlias, declareWrappedInfixKatexAlias]
+PrivateSpecialFunction[declareInfixKatexAlias, declareWrappedInfixKatexAlias]
 
 declareInfixKatexAlias[baseName_, katexName_] := (
   $TemplateKatexFunction[baseName <> "Form"] = katexAliasRiffled[katexName];
@@ -125,7 +125,7 @@ declareWrappedInfixKatexAlias[baseName_, katexName_] := (
 
 (**************************************************************************************************)
 
-PrivateFunction[declareConstantSymbol]
+PrivateSpecialFunction[declareConstantSymbol]
 
 declareConstantSymbol[forms_List] := Scan[declareConstantSymbol, forms];
 
@@ -142,7 +142,7 @@ declareConstantSymbol[symbol_Symbol] := With[
 
 (**************************************************************************************************)
 
-PrivateFunction[declareUnaryForm, declareBinaryForm, declareUnaryBinaryForm, declareNAryForm]
+PrivateSpecialFunction[declareUnaryForm, declareBinaryForm, declareUnaryBinaryForm, declareNAryForm]
 
 declareUnaryForm[symbol_Symbol, hint_:None] :=
   declareUnaryBinaryForm[symbol, hint, False];
@@ -194,7 +194,7 @@ $symbolFormsP = Alternatives[
 
 (**************************************************************************************************)
 
-PrivateFunction[declareSumLikeFormatting]
+PrivateSpecialFunction[declareSumLikeFormatting]
 
 declareSumLikeFormatting[form_Symbol, katexName_String] := With[
   {formName = SymbolName @ form},
@@ -222,7 +222,7 @@ makeSubSupBoxes = Case[
 
 (**************************************************************************************************)
 
-PrivateSymbol[symbolBoxes]
+PrivateBoxFunction[symbolBoxes]
 
 symbolBoxes = Case[
   s:($symbolFormsP)   := MakeBoxes @ s;
@@ -306,7 +306,7 @@ toTypedSymbol = Case[
 
 (**************************************************************************************************)
 
-PublicForm[ClassTaggedForm]
+PublicTypesettingForm[ClassTaggedForm]
 
 declareBoxFormatting[
   ClassTaggedForm[form_, tag_] :> TagBox[ToBoxes @ form, "ClassTaggedForm"[tag]]
@@ -314,7 +314,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PublicForm[RasterizedForm]
+PublicTypesettingForm[RasterizedForm]
 
 (* TODO: this isn't picked up by the markdown code at all! *)
 declareBoxFormatting[
@@ -324,7 +324,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PublicForm[RawSymbolForm]
+PublicTypesettingForm[RawSymbolForm]
 
 declareBoxFormatting[
   RawSymbolForm[p_] :>
@@ -333,7 +333,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PublicForm[PreformattedCodeForm]
+PublicTypesettingForm[PreformattedCodeForm]
 
 declareBoxFormatting[
   PreformattedCodeForm[s_String] :> preformattedCodeBoxes[s]

@@ -1,4 +1,4 @@
-PublicHead[SmoothedCurve]
+PublicGraphicsPrimitive[SmoothedCurve]
 
 DeclareCurvePrimitive[SmoothedCurve, smoothedCurvePoints];
 

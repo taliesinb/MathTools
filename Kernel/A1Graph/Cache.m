@@ -9,7 +9,7 @@ SetHoldAllComplete[GraphCache];
 
 (**************************************************************************************************)
 
-PrivateFunction[declareGraphCacheFriendly]
+PrivateSpecialFunction[declareGraphCacheFriendly]
 
 declareGraphCacheFriendly[sym_] := (
   System`Private`SetValid[sym];

@@ -1,17 +1,17 @@
-PublicForm[GraphSymbol, EdgeSymbol, VertexSymbol]
+PublicTypesettingForm[GraphSymbol, EdgeSymbol, VertexSymbol]
 
 DefineTaggedForm[{GraphSymbol, EdgeSymbol, VertexSymbol}];
 
 (**************************************************************************************************)
 
-PublicForm[GraphEdgesSymbol, GraphVerticesSymbol]
+PublicTypesettingForm[GraphEdgesSymbol, GraphVerticesSymbol]
 
 DefineNamedFunctionSymbolForm[{
   GraphEdgesSymbol -> "E",
   GraphVerticesSymbol -> "V"
 }];
 
-PublicForm[HeadVertexForm, TailVertexForm]
+PublicTypesettingForm[HeadVertexForm, TailVertexForm]
 
 DefineUnaryForm[HeadVertexForm, OverdotBox[$1]]
 DefineUnaryForm[TailVertexForm, UnderdotBox[$1]];
@@ -41,13 +41,13 @@ DefineSymbolForm[{
 
 (**************************************************************************************************)
 
-PublicForm[VertexCountOfForm]
+PublicTypesettingForm[VertexCountOfForm]
 
 DefineUnaryForm[VertexCountOfForm, RBox[LeftBox @ "\[LeftBracketingBar]", $wlThinSpace, $1, $wlThinSpace, RightBox @ "\[RightBracketingBar]"]]
 
 (**************************************************************************************************)
 
-PublicForm[DirectedEdgeSymbol, UndirectedEdgeSymbol]
+PublicTypesettingForm[DirectedEdgeSymbol, UndirectedEdgeSymbol]
 
 DefineSymbolForm[{
   DirectedEdgeSymbol   -> KBox["\[DirectedEdge]", "\\desym"],
@@ -56,7 +56,7 @@ DefineSymbolForm[{
 
 (**************************************************************************************************)
 
-PublicForm[TaggedDirectedEdgeSymbol, TaggedUndirectedEdgeSymbol]
+PublicTypesettingForm[TaggedDirectedEdgeSymbol, TaggedUndirectedEdgeSymbol]
 
 makeTaggedEdgeBoxes[sym_, katex_] := KBox[
   OverscriptBox[sym, StyleBox[$1, ScriptSizeMultipliers -> 0.1, ImageSizeMultipliers -> {0.02, 0.02}]],
@@ -68,7 +68,7 @@ DefineUnaryForm[TaggedUndirectedEdgeSymbol, makeTaggedEdgeBoxes["\[UndirectedEdg
 
 (**************************************************************************************************)
 
-PublicForm[MultiTaggedDirectedEdgeSymbol, MultiTaggedUndirectedEdgeSymbol]
+PublicTypesettingForm[MultiTaggedDirectedEdgeSymbol, MultiTaggedUndirectedEdgeSymbol]
 
 makeMultiTaggedEdgeBoxes[sym_, katex_] := KBox[
   UnderoverscriptBox[sym,
@@ -85,7 +85,7 @@ DefineBinaryForm[MultiTaggedUndirectedEdgeSymbol, makeMultiTaggedEdgeBoxes["\[Un
 
 (**************************************************************************************************)
 
-PublicForm[DirectedEdgeForm, UndirectedEdgeForm]
+PublicTypesettingForm[DirectedEdgeForm, UndirectedEdgeForm]
 
 DefineInfixBinaryForm[DirectedEdgeForm, OpBox @ ToBoxes @ DirectedEdgeSymbol];
 DefineInfixBinaryForm[UndirectedEdgeForm, OpBox @ ToBoxes @ UndirectedEdgeSymbol];
@@ -105,13 +105,13 @@ DefineTemplateBox[UndirectedEdgeForm, "MultiTaggedUndirectedEdgeForm", RBox[$1, 
 
 (**************************************************************************************************)
 
-PublicForm[GraphHomomorphismSymbol]
+PublicTypesettingForm[GraphHomomorphismSymbol]
 
 DefineTaggedForm[GraphHomomorphismSymbol]
 
 (**************************************************************************************************)
 
-PublicForm[VertexOfForm, EdgeOfForm, PathOfForm]
+PublicTypesettingForm[VertexOfForm, EdgeOfForm, PathOfForm]
 
 DefineInfixBinaryForm[VertexOfForm, WideOpBox @ SubscriptBox["\[Element]", "v"]];
 DefineInfixBinaryForm[EdgeOfForm,   WideOpBox @ SubscriptBox["\[Element]", "e"]];
@@ -119,21 +119,21 @@ DefineInfixBinaryForm[PathOfForm,   WideOpBox @ SubscriptBox["\[Element]", "p"]]
 
 (**************************************************************************************************)
 
-PublicForm[IndexedGraphUnionForm, IndexedGraphDisjointUnionForm]
+PublicTypesettingForm[IndexedGraphUnionForm, IndexedGraphDisjointUnionForm]
 
 DefineLegacyIndexedForm[IndexedGraphUnionForm, KBox["\[Union]", "\\bigcup"]];
 DefineLegacyIndexedForm[IndexedGraphDisjointUnionForm, KBox[LowerBox[StyleBox["\[SquareUnion]", FontSize -> Large], .15], "\\bigsqcup"]];
 
 (**************************************************************************************************)
 
-PublicForm[GraphRegionIntersectionForm, GraphRegionUnionForm]
+PublicTypesettingForm[GraphRegionIntersectionForm, GraphRegionUnionForm]
 
 DefineInfixForm[GraphRegionUnionForm,        OpBox @ StyleBox["\[Union]", ScriptSizeMultipliers -> 1]];
 DefineInfixForm[GraphRegionIntersectionForm, OpBox @ StyleBox["\[Intersection]", ScriptSizeMultipliers -> 1]];
 
 (**************************************************************************************************)
 
-PublicForm[GraphIsomorphismSymbol]
+PublicTypesettingForm[GraphIsomorphismSymbol]
 
 DefineTaggedForm[GraphIsomorphismSymbol]
 

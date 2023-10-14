@@ -1,4 +1,4 @@
-PublicHead[ShrunkCurve]
+PublicGraphicsPrimitive[ShrunkCurve]
 
 DeclareCurvePrimitive[ShrunkCurve, shrunkCurvePoints];
 

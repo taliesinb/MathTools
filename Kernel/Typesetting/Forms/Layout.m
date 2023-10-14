@@ -1,10 +1,10 @@
-PublicForm[ConcatenationForm]
+PublicTypesettingForm[ConcatenationForm]
 
 DefineNAryForm[ConcatenationForm, KBox[RBox[$$1], RiffledBox[" "][$$1]]]
 
 (**************************************************************************************************)
 
-PublicForm[SpacedConcatenationForm]
+PublicTypesettingForm[SpacedConcatenationForm]
 
 DefineInfixForm[SpacedConcatenationForm, KBox[" ", "\\,"]];
 
@@ -17,7 +17,7 @@ GeneralUtilities`CommaForm[arg:Except[_List], rest___] :=
 
 (**************************************************************************************************)
 
-PublicForm[SpacedCommaForm, SpacedForm]
+PublicTypesettingForm[SpacedCommaForm, SpacedForm]
 
 declareBoxFormatting[
 (*   CommaForm[args___] :> CommaRowForm[args], *)
@@ -27,14 +27,14 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PublicForm[PadForm]
+PublicTypesettingForm[PadForm]
 
 DefineUnaryForm[PadForm, KBox[RBox[" ", $1, " "], RBox["\;", $1, "\;"]]]
 (* TODO: migrate away from the old ones, rename the form names *)
 
 (**************************************************************************************************)
 
-PublicForm[CommaAndForm]
+PublicTypesettingForm[CommaAndForm]
 
 declareBoxFormatting[
   CommaAndForm[a_] :> tagAsMath @ MakeBoxes @ a,
@@ -44,13 +44,13 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PublicForm[TextAndForm]
+PublicTypesettingForm[TextAndForm]
 
 DefineInfixForm[TextAndForm, MathTextBox[" and "]];
 
 (**************************************************************************************************)
 
-PublicForm[EmSpace, EnSpace]
+PublicTypesettingForm[EmSpace, EnSpace]
 
 PrivateVariable[$EmSpaceBox, $EnSpaceBox]
 
@@ -61,13 +61,13 @@ DefineSymbolForm[{EmSpace -> $EmSpaceBox, EnSpace -> $EnSpaceBox}]
 
 (**************************************************************************************************)
 
-PublicForm[SpacedCommaRowForm]
+PublicTypesettingForm[SpacedCommaRowForm]
 
 DefineInfixForm[SpacedCommaRowForm, KBox[",  ", ",\\;"]]
 
 (**************************************************************************************************)
 
-PrivateFunction[spacerBox]
+PrivateBoxFunction[spacerBox]
 
 $TemplateKatexFunction["Spacer1"] = katexPtSpacer;
 
@@ -81,25 +81,25 @@ spacerBox[n_] := TemplateBox[{n}, "Spacer1"];
 
 (**************************************************************************************************)
 
-PublicForm[SpacedRowForm]
+PublicTypesettingForm[SpacedRowForm]
 
 DefineInfixForm[SpacedRowForm, $EmSpaceBox];
 
 (**************************************************************************************************)
 
-PublicForm[ThinSpacedForm]
+PublicTypesettingForm[ThinSpacedForm]
 
 DefineInfixForm[ThinSpacedForm, $EnSpaceBox];
 
 (**************************************************************************************************)
 
-PublicForm[RowForm]
+PublicTypesettingForm[RowForm]
 
 DefineInfixForm[RowForm, KBox["\[ThinSpace]", "\\,"]];
 
 (**************************************************************************************************)
 
-PublicForm[PiecewiseForm, OtherwiseSymbol]
+PublicTypesettingForm[PiecewiseForm, OtherwiseSymbol]
 
 DefineSymbolForm[OtherwiseSymbol -> KBox[RomanBox["otherwise"], "\\text{otherwise}"]];
 
@@ -146,7 +146,7 @@ katexPiecewiseRow[case_, o:SBox["OtherwiseSymbol"]] :=
 
 (**************************************************************************************************)
 
-PublicForm[SubstackForm]
+PublicTypesettingForm[SubstackForm]
 
 DefineStandardTraditionalForm[
   SubstackForm[list_List] :> TBox[

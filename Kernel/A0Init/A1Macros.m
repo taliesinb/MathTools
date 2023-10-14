@@ -14,7 +14,7 @@ Protect[MapColumn];
 
 (**************************************************************************************************)
 
-PublicMacro[EchoScope]
+PublicDebugFunction[EchoScope]
 
 DefineMacro[EchoScope,
 EchoScope[body_] := mEchoScope[body, {}],
@@ -154,13 +154,13 @@ procDestructArg[argSpec_] := With[
 
 (**************************************************************************************************)
 
-PublicMacro[Echoing]
+PublicDebugFunction[Echoing]
 
 Echoing /: (lhs_ := Echoing[rhs_]) := EchoSetDelayed[lhs, rhs];
 
 (**************************************************************************************************)
 
-PublicFunction[LabeledEchoSet]
+PublicDebugFunction[LabeledEchoSet]
 
 Attributes[LabeledEchoSet] = {HoldAll, SequenceHold};
 
@@ -178,7 +178,7 @@ Protect[EchoSet];
 
 (**************************************************************************************************)
 
-PublicFunction[EchoSetDelayed, LabeledEchoSetDelayed]
+PublicDebugFunction[EchoSetDelayed, LabeledEchoSetDelayed]
 
 Attributes[EchoSetDelayed] = {HoldAll, SequenceHold};
 Attributes[LabeledEchoSetDelayed] = {HoldRest, SequenceHold};
@@ -317,7 +317,7 @@ printEchoCell[boxes_, color_,  tab_, label_] := Module[{cell, label2},
 
 (**************************************************************************************************)
 
-PrivateFunction[EchoCellPrint]
+PublicDebugFunction[EchoCellPrint]
 
 EchoCellPrint[cells2_] := Module[{cells},
   cells = ToList[cells2];
@@ -339,7 +339,7 @@ EchoCellPrint[cells2_] := Module[{cells},
 
 (**************************************************************************************************)
 
-PublicMacro[BadArguments]
+PublicSpecialFunction[BadArguments]
 
 Clear[BadArguments];
 General::badarguments = "Bad arguments: ``.";
@@ -372,7 +372,8 @@ UnmatchedCase2[head_Symbol, case_] := (
 
 (* this takes the place of MatchValues in GU *)
 
-PublicMacro[Case, EchoCase]
+PublicScopingFunction[Case]
+PublicDebugFunction[EchoCase]
 PublicSymbol[$]
 
 SetHoldAll[Case, EchoCase, setupCases];
@@ -480,7 +481,7 @@ defineCheckArgMacro[CheckIsGraphics, GraphicsQ, "notgraphics"];
 
 (**************************************************************************************************)
 
-PublicFunction[PackAssociation]
+PublicMacro[PackAssociation]
 
 PackAssociation::usage = "PackAssociation[sym1, sym2, ...] creates an association whose keys are the title-cased names of sym_i \
 and values are their values.";
@@ -494,7 +495,7 @@ packAssocRule[s_] := ToTitleCase[HoldSymbolName[s]] -> Quoted[s];
 
 (**************************************************************************************************)
 
-PublicFunction[UnpackTuple]
+PublicMacro[UnpackTuple]
 
 General::badtuple = "Argument `` should be a single value or a list of `` values."
 
@@ -696,7 +697,7 @@ mGraphCachedScope[graph_, key_, body_] := With[{body2 = MacroExpand @ Scope @ bo
 
 (**************************************************************************************************)
 
-PrivateFunction[CatchMessage]
+PublicSpecialFunction[CatchMessage]
 
 DefineMacro[CatchMessage,
 CatchMessage[body_] := Quoted[Catch[body, ThrownMessage[_], ThrownMessageHandler[$LHSHead]]],
@@ -706,7 +707,9 @@ CatchMessage[head_, body_] := Quoted[Catch[body, ThrownMessage[_], ThrownMessage
 ThrownMessageHandler[msgHead_Symbol][{args___}, ThrownMessage[msgName_String]] :=
   (Message[MessageName[msgHead, msgName], args]; $Failed);
 
-PrivateFunction[ThrowMessage]
+(**************************************************************************************************)
+
+PublicSpecialFunction[ThrowMessage]
 
 ThrowMessage[msgName_String, msgArgs___] :=
   Throw[{msgArgs}, ThrownMessage[msgName]];
@@ -721,7 +724,8 @@ FunctionSection[expr_] := Quoted[expr]
 
 (**************************************************************************************************)
 
-PrivateMacro[SetAutomatic, SetMissing, SetNone, SetAll, SetInherited]
+(* some of these are already defined in GU, but aren't macros, so have our own versions here *)
+PrivateMutatingFunction[SetAutomatic, SetMissing, SetNone, SetAll, SetInherited]
 
 defineSetter[symbol_, value_] := (
   DefineLiteralMacro[symbol, symbol[lhs_, rhs_] := If[lhs === value, lhs = rhs, lhs]];
@@ -738,7 +742,7 @@ SetHoldAll[SetMissing];
 
 (**************************************************************************************************)
 
-PrivateMacro[SetScaledFactor]
+PublicMutatingFunction[SetScaledFactor]
 
 DefineLiteralMacro[SetScaledFactor, SetScaledFactor[lhs_, scale_] := If[MatchQ[lhs, Scaled[_ ? NumericQ]], lhs //= First /* N; lhs *= scale]];
 
@@ -789,7 +793,7 @@ OnFailed[e_, _, s_] := s;
 
 (**************************************************************************************************)
 
-PrivateFunction[declareStringPattern, declareStringLetterPattern, spRecurse, spBlob]
+PrivateSpecialFunction[declareStringPattern, declareStringLetterPattern, spRecurse, spBlob]
 
 declareStringLetterPattern = Case[
   sym_Symbol -> str_String := %[sym -> {"[" <> str <> "]", str}];

@@ -22,7 +22,7 @@ rewritingRuleBoxes = Case[
   other_   := MakeQGBoxes @ other;
 ];
 
-PublicForm[GenericRewritingSystemSymbol, StringRewritingSystemSymbol, CircularStringRewritingSystemSymbol, TuringMachineRewritingSystemSymbol, GraphRewritingSystemSymbol, HypergraphRewritingSystemSymbol, CellularAutomatonRewritingSystemSymbol, PetriNetRewritingSystemSymbol]
+PublicTypesettingForm[GenericRewritingSystemSymbol, StringRewritingSystemSymbol, CircularStringRewritingSystemSymbol, TuringMachineRewritingSystemSymbol, GraphRewritingSystemSymbol, HypergraphRewritingSystemSymbol, CellularAutomatonRewritingSystemSymbol, PetriNetRewritingSystemSymbol]
 
 declareNamedRewritingSystem[GenericRewritingSystemSymbol];
 declareNamedRewritingSystem[StringRewritingSystemSymbol];
@@ -35,7 +35,7 @@ declareNamedRewritingSystem[PetriNetRewritingSystemSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[RewritingSystemStateBindingForm]
+PublicTypesettingForm[RewritingSystemStateBindingForm]
 
 declareBoxFormatting[
   RewritingSystemStateBindingForm[sys_, state_] :>
@@ -46,7 +46,7 @@ $TemplateKatexFunction["RewritingSystemStateBindingForm"] = "rewritingStateBindi
 
 (**************************************************************************************************)
 
-PublicForm[RewritingSystemSymbol]
+PublicTypesettingForm[RewritingSystemSymbol]
 
 RewritingSystemSymbol[] := RewritingSystemSymbol["R"];
 
@@ -54,7 +54,7 @@ declareSymbolForm[RewritingSystemSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[MultiwayGraphForm]
+PublicTypesettingForm[MultiwayGraphForm]
 
 declareBoxFormatting[
   MultiwayGraphForm[rs_, init_, d_] :>
@@ -67,7 +67,7 @@ $TemplateKatexFunction["MultiwayGraphForm"] = applyRiffled["multiwayBFS", ","];
 
 (**************************************************************************************************)
 
-PublicForm[ExpressionRewriteMatchForm]
+PublicTypesettingForm[ExpressionRewriteMatchForm]
 
 declareBoxFormatting[
   ExpressionRewriteMatchForm[{a___}] :> MakeBoxes[TupleForm[a]],
@@ -76,7 +76,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PublicForm[RewriteForm]
+PublicTypesettingForm[RewriteForm]
 
 declareBinaryForm[RewriteForm]
 

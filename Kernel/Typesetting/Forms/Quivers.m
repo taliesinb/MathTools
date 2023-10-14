@@ -1,6 +1,6 @@
 (**************************************************************************************************)
 
-PublicForm[LatticeQuiverForm]
+PublicTypesettingForm[LatticeQuiverForm]
 
 declareBoxFormatting[
   LatticeQuiverForm[fq_, v_, cv_, d_] :>
@@ -11,7 +11,7 @@ $TemplateKatexFunction["LatticeQuiverForm"] = applyRiffled["latticeBFS", ","];
 
 (**************************************************************************************************)
 
-PublicForm[QuiverSymbol]
+PublicTypesettingForm[QuiverSymbol]
 
 QuiverSymbol[] := QuiverSymbol["Q"];
 
@@ -40,7 +40,7 @@ declareBindingForm[form_, katexName_, argBoxFn_] := With[
 
 (**************************************************************************************************)
 
-PublicForm[BindingRuleForm]
+PublicTypesettingForm[BindingRuleForm]
 
 declareInfixSymbol[BindingRuleForm];
 
@@ -61,7 +61,7 @@ makeCardinalSizeBindingRuleBoxes = Case[
 
 (**************************************************************************************************)
 
-PublicForm[CompactBindingRuleForm]
+PublicTypesettingForm[CompactBindingRuleForm]
 
 declareInfixSymbol[CompactBindingRuleForm];
 
@@ -72,7 +72,7 @@ makeCardinalBindingRuleBoxes = Case[
 
 (**************************************************************************************************)
 
-PublicForm[CayleyQuiverSymbolForm]
+PublicTypesettingForm[CayleyQuiverSymbolForm]
 
 declareUnaryForm[CayleyQuiverSymbolForm, GroupPresentationSymbol];
 
@@ -82,7 +82,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PublicForm[CayleyQuiverBindingForm, ActionQuiverBindingForm]
+PublicTypesettingForm[CayleyQuiverBindingForm, ActionQuiverBindingForm]
 
 declareBindingForm[CayleyQuiverBindingForm, "bindCayleyQuiver", makeGeneratorBindingRuleBoxes];
 declareBindingForm[ActionQuiverBindingForm, "bindActionQuiver", makeGeneratorBindingRuleBoxes];
@@ -98,31 +98,31 @@ makeGeneratorBindingRuleBoxes = Case[
 
 (**************************************************************************************************)
 
-PublicForm[SubSizeBindingForm]
+PublicTypesettingForm[SubSizeBindingForm]
 
 declareBindingForm[SubSizeBindingForm, "subSize", makeSizeBindingRuleBoxes];
 
 (**************************************************************************************************)
 
-PublicForm[SizeBindingForm]
+PublicTypesettingForm[SizeBindingForm]
 
 declareBindingForm[SizeBindingForm, "bindSize", makeSizeBindingRuleBoxes];
 
 (**************************************************************************************************)
 
-PublicForm[CardinalBindingForm]
+PublicTypesettingForm[CardinalBindingForm]
 
 declareBindingForm[CardinalBindingForm, "bindCards", makeCardinalBindingRuleBoxes];
 
 (**************************************************************************************************)
 
-PublicForm[CardinalSizeBindingForm]
+PublicTypesettingForm[CardinalSizeBindingForm]
 
 declareBindingForm[CardinalSizeBindingForm, "bindCardSize", makeCardinalSizeBindingRuleBoxes];
 
 (**************************************************************************************************)
 
-PublicForm[SerialCardinal, ParallelCardinal]
+PublicTypesettingForm[SerialCardinal, ParallelCardinal]
 
 declareBoxFormatting[
   SerialCardinal[args__] :>
@@ -141,7 +141,7 @@ $TemplateKatexFunction["ParallelCardinalForm"] = katexAliasRiffled["parallelCard
 
 (**************************************************************************************************)
 
-PublicForm[CardinalSymbol]
+PublicTypesettingForm[CardinalSymbol]
 
 declareSymbolForm[CardinalSymbol];
 
@@ -156,7 +156,7 @@ $TemplateKatexFunction["NegatedCardinalSymbolForm"] = "ncard";
 
 (**************************************************************************************************)
 
-PublicForm[MirrorForm]
+PublicTypesettingForm[MirrorForm]
 
 declareUnaryWrapperForm[MirrorForm]
 
@@ -198,13 +198,13 @@ declareTwoParameterNamedQuiverSymbol[symbol_] := With[
 
 (**************************************************************************************************)
 
-PublicForm[BouquetQuiverSymbol, GridQuiverSymbol, TreeQuiverSymbol]
+PublicTypesettingForm[BouquetQuiverSymbol, GridQuiverSymbol, TreeQuiverSymbol]
 
 declareTwoParameterNamedQuiverSymbol[BouquetQuiverSymbol];
 declareTwoParameterNamedQuiverSymbol[GridQuiverSymbol];
 declareTwoParameterNamedQuiverSymbol[TreeQuiverSymbol];
 
-PublicForm[LineQuiverSymbol, CycleQuiverSymbol, SquareQuiverSymbol, CubicQuiverSymbol, TriangularQuiverSymbol, HexagonalQuiverSymbol, RhombilleQuiverSymbol]
+PublicTypesettingForm[LineQuiverSymbol, CycleQuiverSymbol, SquareQuiverSymbol, CubicQuiverSymbol, TriangularQuiverSymbol, HexagonalQuiverSymbol, RhombilleQuiverSymbol]
 
 declareNamedQuiverSymbol[LineQuiverSymbol];
 declareNamedQuiverSymbol[CycleQuiverSymbol];
@@ -216,7 +216,7 @@ declareNamedQuiverSymbol[CubicQuiverSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[ToroidalModifierForm]
+PublicTypesettingForm[ToroidalModifierForm]
 
 declareUnaryWrapperForm[ToroidalModifierForm];
 
@@ -226,19 +226,19 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PublicForm[AffineModifierForm]
+PublicTypesettingForm[AffineModifierForm]
 
 declareUnaryWrapperForm[AffineModifierForm];
 
 (**************************************************************************************************)
 
-PublicForm[ModuloForm]
+PublicTypesettingForm[ModuloForm]
 
 declareUnaryWrapperForm[ModuloForm]
 
 (**************************************************************************************************)
 
-PublicForm[QuiverSizeSymbol]
+PublicTypesettingForm[QuiverSizeSymbol]
 
 declareBoxFormatting[
   QuiverSizeSymbol[Null] :> "",
@@ -250,7 +250,7 @@ declareBoxFormatting[
 
 (**************************************************************************************************)
 
-PublicForm[StarModifierForm]
+PublicTypesettingForm[StarModifierForm]
 
 declareUnaryWrapperForm[StarModifierForm];
 
@@ -268,27 +268,27 @@ declareNamedBindingSymbol[symbol_] := With[
 
 (**************************************************************************************************)
 
-PublicForm[TranslationPathValuationSymbol, StarTranslationPathValuationSymbol]
+PublicTypesettingForm[TranslationPathValuationSymbol, StarTranslationPathValuationSymbol]
 
 declareNamedBindingSymbol[TranslationPathValuationSymbol];
 declareNamedBindingSymbol[StarTranslationPathValuationSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[TranslationWordHomomorphismSymbol, StarTranslationWordHomomorphismSymbol]
+PublicTypesettingForm[TranslationWordHomomorphismSymbol, StarTranslationWordHomomorphismSymbol]
 
 declareNamedBindingSymbol[TranslationWordHomomorphismSymbol];
 declareNamedBindingSymbol[StarTranslationWordHomomorphismSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[TranslationPresentationSymbol, StarTranslationPresentationSymbol]
+PublicTypesettingForm[TranslationPresentationSymbol, StarTranslationPresentationSymbol]
 
 declareNamedBindingSymbol[TranslationPresentationSymbol];
 declareNamedBindingSymbol[StarTranslationPresentationSymbol];
 
 (**************************************************************************************************)
 
-PublicForm[CardinalSequenceForm]
+PublicTypesettingForm[CardinalSequenceForm]
 
 declareInfixSymbol[CardinalSequenceForm, CardinalSymbol];

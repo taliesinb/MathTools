@@ -1,4 +1,4 @@
-PublicHead[MorphismArrow]
+PublicGraphicsPrimitive[MorphismArrow]
 
 SetUsage @ "
 MorphismArrow[path$] renders as a commutative-diagram style arrow following path$.

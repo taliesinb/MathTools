@@ -1,4 +1,4 @@
-PublicForm[ColorGradientForm]
+PublicTypesettingForm[ColorGradientForm]
 
 DefineStandardTraditionalForm[{
   ColorGradientForm[expr_, colors:{$ColorPattern..}, opts___Rule] :> colorGradientBoxes[expr, colors, opts],

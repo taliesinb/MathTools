@@ -1,4 +1,4 @@
-PublicFunction[TBox, TBoxOp, SBox, RBox, GBox, KBox]
+PrivateBoxFunction[TBox, TBoxOp, SBox, RBox, GBox, KBox]
 
 TBox[args___, form_] := TemplateBox[{args}, form];
 TBoxOp[form_][args___] := TemplateBox[{args}, form];
@@ -45,7 +45,7 @@ _getFDCacheKey := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[OpBox, WideOpBox, VeryWideOpBox]
+PrivateBoxFunction[OpBox, WideOpBox, VeryWideOpBox]
 
 OpBox[b_] := KBox[RBox["\[ThinSpace]", b, "\[ThinSpace]"], KBin @ b];
 OpBox["/"] := "/";
@@ -55,7 +55,7 @@ VeryWideOpBox[b_] := KBox[RBox["  ", b, "  "], KBin @ b];
 
 (**************************************************************************************************)
 
-PublicFunction[OverdotBox, OverdoubledotBox, UnderdotBox]
+PrivateBoxFunction[OverdotBox, OverdoubledotBox, UnderdotBox]
 
 OverdoubledotBox[b_] := KBox[OverscriptBox[b, ".."], "ddot"[b]];
 
@@ -67,27 +67,27 @@ UnderdotBox["="] := KBox[UnderscriptBox[b, LowerBox[".", .1]], {"""\underset{\ra
 
 (**************************************************************************************************)
 
-PublicFunction[MarginBox]
+PrivateBoxFunction[MarginBox]
 
 MarginBox[boxes_, {left_, right_}] := MarginBox[boxes, {left, right}, {0, 0}];
 MarginBox[boxes_, {left_, right_}, {bottom_, top_}] := AdjustmentBox[boxes, BoxMargins -> {{left, right}, {bottom, top}}];
 
 (**************************************************************************************************)
 
-PublicFunction[HatBox]
+PrivateBoxFunction[HatBox]
 
 HatBox[box_] := KBox[OverscriptBox[box, "^"], "hat" @ box];
 
 (**************************************************************************************************)
 
-PublicForm[NoSpanForm, UnlimitedSpanForm]
+PublicTypesettingFormBox[NoSpanForm, UnlimitedSpanForm]
 
 DefineStandardTraditionalForm[{
   NoSpanForm[e_]        :> NoSpanBox @ MakeBoxes @ e,
   UnlimitedSpanForm[e_] :> UnlimitedSpanBox @ MakeBoxes @ e
 }]
 
-PublicFunction[NoSpanBox, UnlimitedSpanBox, ForceKatexCharBox]
+PrivateBoxFunction[ForceKatexCharBox]
 
 NoSpanBox[e_] := StyleBox[e, SpanMaxSize -> 1];
 
@@ -97,7 +97,7 @@ ForceKatexCharBox[e_] := StyleBox[e, FontFamily -> "KaTeX_Main", PrivateFontOpti
 
 (**************************************************************************************************)
 
-PublicFormBox[Raise, Lower]
+PublicTypesettingFormBox[RaiseForm, LowerForm]
 
 DefineStandardTraditionalForm[RaiseForm[e_, n_ ? NumericQ] :> RaiseBox[MakeBoxes @ e, n]];
 DefineStandardTraditionalForm[LowerForm[e_, n_ ? NumericQ] :> LowerBox[MakeBoxes @ e, n]];
@@ -107,7 +107,7 @@ LowerBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> n];
 
 (**************************************************************************************************)
 
-PublicForm[AdjustmentForm]
+PublicTypesettingForm[AdjustmentForm]
 
 DefineStandardTraditionalForm[
   AdjustmentForm[e_, b_] :> AdjustmentBox[MakeBoxes @ e, BoxMargins -> b]
@@ -115,32 +115,32 @@ DefineStandardTraditionalForm[
 
 (**************************************************************************************************)
 
-PublicFunction[KOrd, KBin]
+PrivateBoxFunction[KOrd, KBin]
 
 KOrd[k_] := "mathord"[k];
 KBin[k_] := "mathbin"[k];
 
 (**************************************************************************************************)
 
-PublicVariable[$PipeBox]
+PrivateVariable[$PipeBox]
 
 $PipeBox = KBox["|", "\\middle|"];
 
 (**************************************************************************************************)
 
-PublicFunction[FunctionBox]
+PrivateBoxFunction[FunctionBox]
 
 FunctionBox[e_] := KBox[e, "op"[e]];
 
 (**************************************************************************************************)
 
-PublicFunction[InverseBox]
+PrivateBoxFunction[InverseBox]
 
 InverseBox[b_] := SuperscriptBox[b, RBox["-", "1"]];
 
 (**************************************************************************************************)
 
-PublicFunction[Overbracketbox, UnderbracketBox, UnderbraceBox, OverbraceBox, UnderparenthesisBox, OverparenthesisBox]
+PrivateBoxFunction[Overbracketbox, UnderbracketBox, UnderbraceBox, OverbraceBox, UnderparenthesisBox, OverparenthesisBox]
 
 UnderbraceBox[a_, b_] := KBox[UnderscriptBox[UnderscriptBox[a, "\[UnderBrace]"], b], SubscriptBox["underbrace"[a], b]];
 OverbraceBox[a_, b_] := KBox[OverscriptBox[OverscriptBox[a, "\[OverBrace]"], b], SuperscriptBox["overbrace"[a], b]];
@@ -153,7 +153,7 @@ OverparenthesisBox[a_, b_] := KBox[OverscriptBox[OverscriptBox[a, "\[OverParenth
 
 (**************************************************************************************************)
 
-PrivateFunction[LeftBox, RightBox, DelimiterBox, LeftRightBox]
+PrivateBoxFunction[LeftBox, RightBox, DelimiterBox, LeftRightBox]
 
 DelimiterBox[e_] := StyleBox[e, "DelimiterFont"];
 
@@ -175,7 +175,7 @@ _LeftRightBox := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[BracesBox, AngleBracketBox, ParenthesesBox, SquareBracketBox, DoubleSquareBracketBox, BarBox, DoubleBarBox]
+PrivateBoxFunction[BracesBox, AngleBracketBox, ParenthesesBox, SquareBracketBox, DoubleSquareBracketBox, BarBox, DoubleBarBox]
 
 BracesBox[inner___]              := LeftRightBox["{", inner, "}"];
 AngleBracketBox[inner___]        := LeftRightBox["⟨", inner, "⟩"];
@@ -307,8 +307,7 @@ tagAsMath[t_] := TagBox[t /. TagBox[e_, "QG"] :> e, "QG"];
 
 PublicFunction[ClearTemplateBoxDefinitions]
 
-PrivateVariable[$notebookDisplayFunction, $katexDisplayFunction, $katexMacros, $symbolToTemplateName, $symbolToKatexMacroName, $notebookDisplayFunctionBases
-]
+PrivateVariable[$notebookDisplayFunction, $katexDisplayFunction, $katexMacros, $symbolToTemplateName, $symbolToKatexMacroName, $notebookDisplayFunctionBases]
 
 SetInitialValue[$notebookDisplayFunction, <||>];
 SetInitialValue[$katexDisplayFunction, <||>];
@@ -329,7 +328,7 @@ ClearTemplateBoxDefinitions[] := (
 
 (**************************************************************************************************)
 
-PrivateFunction[DefineNotebookDisplayFunction, DefineKatexDisplayFunction, DefineKatexMacro]
+PrivateSpecialFunction[DefineNotebookDisplayFunction, DefineKatexDisplayFunction, DefineKatexMacro]
 
 DefineNotebookDisplayFunction[templateName_String, fn_Function] := (
   $notebookDisplayFunction[templateName] = SpecializeToNotebookBoxes[fn];
@@ -367,7 +366,7 @@ _AssociateSymbolToKatexMacro = BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineTemplateBox]
+PublicSpecialFunction[DefineTemplateBox]
 
 (* kmacro: If Automatic, base name on template box name, if None, don't set up a macro *)
 DefineTemplateBox[symbol_Symbol, templateName_String, boxes_, katexMacroName_] := Scope[
@@ -388,7 +387,7 @@ DefineKatexMacro["op", "operatorname"[#1]&];
 
 (**************************************************************************************************)
 
-PublicForm[KatexSwitch]
+PublicTypesettingForm[KatexSwitch]
 
 SetUsage @ "
 KatexSwitch[wlForm$, kForm$] displays as wlForm$ but converts to Katex as kForm$.
@@ -423,7 +422,7 @@ PrintTemplateBoxDefinitions[] := Scope[
 
 (**************************************************************************************************)
 
-PublicFormBox[Riffled]
+PublicTypesettingFormBox[RiffledForm]
 
 DefineStandardTraditionalForm[
   RiffledForm[head_][args___] :> RiffledBox[MakeQGBoxes @ head][MakeQGBoxSequence @ args]
@@ -437,7 +436,7 @@ RiffledBox[rif_][args___] := TemplateBox[{rif, args}, "RiffledForm"];
 
 (**************************************************************************************************)
 
-PublicFormBox[CommaRow, TightCommaRow]
+PublicTypesettingFormBox[CommaRowForm, TightCommaRowForm]
 
 DefineStandardTraditionalForm[{
   CommaRowForm[a___] :> CommaRowBox[MakeQGBoxSequence[a]],
@@ -462,7 +461,7 @@ AssociateSymbolToTemplateName[TightCommaRowForm, "TightCommaRowForm"];
 
 (**************************************************************************************************)
 
-PublicFormBox[TightRow]
+PublicTypesettingFormBox[TightRowForm]
 
 DefineStandardTraditionalForm[
   TightRowForm[a___] :> TightRowBox[MakeQGBoxSequence[a]]
@@ -486,7 +485,7 @@ SetRelatedSymbolGroup[DefineUnaryForm, DefineStyleForm]
 
 (**************************************************************************************************)
 
-PublicFunction[DefineTaggedForm]
+PublicSpecialFunction[DefineTaggedForm]
 
 PublicOption[Aliases]
 
@@ -515,7 +514,7 @@ _DefineTaggedForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineUnaryForm]
+PublicSpecialFunction[DefineUnaryForm]
 
 SetUsage @ "
 DefineUnaryForm[symbol$, boxes$] defines symbol$[arg$1] to boxify to %TemplateBox[{arg$1}, 'symbol$'], \
@@ -542,7 +541,7 @@ _DefineUnaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineBinaryForm]
+PublicSpecialFunction[DefineBinaryForm]
 
 SetUsage @ "
 DefineBinaryForm[symbol$, boxes$] defines symbol$[arg$1, arg$2] to boxify to %TemplateBox[{arg$1, arg$2}, 'symbol$'], \
@@ -569,7 +568,7 @@ _DefineBinaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineTernaryForm]
+PublicSpecialFunction[DefineTernaryForm]
 
 Options[DefineTernaryForm] = $defineOpts;
 
@@ -596,7 +595,7 @@ _DefineTernaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineNAryForm]
+PublicSpecialFunction[DefineNAryForm]
 
 Options[DefineNAryForm] = $defineOpts;
 
@@ -623,7 +622,7 @@ _DefineNAryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineInfixForm]
+PublicSpecialFunction[DefineInfixForm]
 
 Options[DefineInfixForm] = JoinOptions[$defineOpts, HeadBoxes -> Automatic];
 
@@ -653,7 +652,7 @@ _DefineInfixForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFormBox[Applied, TightApplied]
+PublicTypesettingFormBox[AppliedForm, TightAppliedForm]
 
 DefineStandardTraditionalForm[{
   AppliedForm[fn_, args___] :> AppliedBox[MakeQGBoxes @ fn, MakeQGBoxSequence @ args],
@@ -672,7 +671,7 @@ DefineTemplateBox[AppliedForm, "emptyAppliedForm", RBox[$1, KBox["(", "\\lparen 
 
 (**************************************************************************************************)
 
-PublicFunction[DefineInfixBinaryForm]
+PublicSpecialFunction[DefineInfixBinaryForm]
 
 Options[DefineInfixBinaryForm] = Options @ DefineInfixForm;
 
@@ -693,7 +692,7 @@ _DefineInfixBinaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineIndexedInfixBinaryForm]
+PublicSpecialFunction[DefineIndexedInfixBinaryForm]
 
 SetUsage @ "
 DefineIndexedInfixBinaryForm[symbol$, boxes$] defines symbol$[arg$1, arg$2] to boxify to %TemplateBox[{arg$1, arg$2}, 'symbol$'], \
@@ -714,7 +713,7 @@ _DefineIndexedInfixBinaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineCommaForm]
+PublicSpecialFunction[DefineCommaForm]
 
 PublicOption[HeadBoxes]
 
@@ -744,7 +743,7 @@ _DefineCommaForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineRestCommaForm]
+PublicSpecialFunction[DefineRestCommaForm]
 
 Options[DefineRestCommaForm] = $defineOpts;
 
@@ -772,7 +771,7 @@ _DefineRestCommaForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineRuleAsMapsTo]
+PublicSpecialFunction[DefineRuleAsMapsTo]
 
 setupFormDefinitionCaching[DefineRuleAsMapsTo];
 
@@ -782,7 +781,7 @@ DefineRuleAsMapsTo[head_] := DefineStandardTraditionalForm[
 
 (**************************************************************************************************)
 
-PublicFunction[DefineSymbolForm]
+PublicSpecialFunction[DefineSymbolForm]
 
 Options[DefineSymbolForm] = $defineOpts
 
@@ -805,7 +804,7 @@ _DefineSymbolForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineNamedFunctionSymbolForm]
+PublicSpecialFunction[DefineNamedFunctionSymbolForm]
 
 setupFormDefinitionCaching[DefineNamedFunctionSymbolForm];
 
@@ -831,7 +830,7 @@ KConstruct[str_String, args__] := str[args];
 
 (**************************************************************************************************)
 
-PublicFunction[DefineStyleForm]
+PublicSpecialFunction[DefineStyleForm]
 
 Options[DefineStyleForm] = $defineOpts;
 
@@ -860,7 +859,7 @@ StyleFormData[s_Symbol] := Lookup[$styleFormData, s, None];
 
 (**************************************************************************************************)
 
-PublicForm[IndexedForm]
+PublicTypesettingForm[IndexedForm]
 
 DefineStandardTraditionalForm[{
   IndexedForm[head_]                  :> MakeQGBoxes @ head,
@@ -875,7 +874,7 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicFunction[DefineLegacyIndexedForm]
+PrivateSpecialFunction[DefineLegacyIndexedForm]
 
 setupFormDefinitionCaching[DefineLegacyIndexedForm];
 
@@ -895,7 +894,7 @@ makeSubSupBoxes = Case[
 
 (**************************************************************************************************)
 
-PublicFunction[DefineLocalTemplates]
+PublicSpecialFunction[DefineLocalTemplates]
 
 DefineLocalTemplates::taggingrules = "Could not update tagging rules.";
 
@@ -917,21 +916,21 @@ DefineLocalTemplates[e___] := Scope @ InheritedBlock[{$katexMacros, $katexDispla
 
 (**************************************************************************************************)
 
-PublicFunction[DBox]
+PrivateBoxFunction[DBox]
 
 (* this is needed because DisplayFunction -> (RowBox[#]&) where # is a list does not work! *)
 DBox[e_] := DynamicBox[e, DestroyAfterEvaluation -> True, TrackedSymbols -> {}];
 
 (**************************************************************************************************)
 
-PublicFormBox[Red, Green, Blue, Orange, Pink, Teal, Gray, Purple]
-PublicFormBox[LightRed, LightGreen, LightBlue, LightOrange, LightPink, LightTeal, LightGray, LightPurple]
-PublicFormBox[DarkRed, DarkGreen, DarkBlue, DarkOrange, DarkPink, DarkTeal, DarkGray, DarkPurple, MultisetColor]
+PublicTypesettingFormBox[RedForm, GreenForm, BlueForm, OrangeForm, PinkForm, TealForm, GrayForm, PurpleForm]
+PublicTypesettingFormBox[LightRedForm, LightGreenForm, LightBlueForm, LightOrangeForm, LightPinkForm, LightTealForm, LightGrayForm, LightPurpleForm]
+PublicTypesettingFormBox[DarkRedForm, DarkGreenForm, DarkBlueForm, DarkOrangeForm, DarkPinkForm, DarkTealForm, DarkGrayForm, DarkPurpleForm, MultisetColorForm]
 
-PublicFormBox[Bold, Italic, Underlined, Struckthrough, Larger, Smaller, PlainText, MathText, Roman, Fraktur, Caligraphic, SansSerif, Typewriter]
+PublicTypesettingFormBox[BoldForm, ItalicForm, UnderlinedForm, StruckthroughForm, LargerForm, SmallerForm, PlainTextForm, MathTextForm, RomanForm, FrakturForm, CaligraphicForm, SansSerifForm, TypewriterForm]
 
 SystemSymbol[ScriptForm]
-PublicSymbol[ScriptBox]
+PrivateBoxFunction[ScriptBox]
 
 Unprotect[ScriptForm]; (* it's an undocumented system symbol! *)
 
@@ -980,9 +979,9 @@ DefineStyleForm[#1, #3, BoxFunction -> #2]& @@@ ExpressionTable[
 
 (**************************************************************************************************)
 
-PublicForm[Color1Form, Color2Form, Color3Form, Color4Form, Color5Form, Color6Form, Color7Form, Color8Form, ColorNForm]
+PublicTypesettingForm[Color1Form, Color2Form, Color3Form, Color4Form, Color5Form, Color6Form, Color7Form, Color8Form, ColorNForm]
 
-PublicForm[Background1Form, Background2Form, Background3Form, Background4Form, Background5Form, Background6Form, Background7Form, Background8Form, BackgroundNForm]
+PublicTypesettingForm[Background1Form, Background2Form, Background3Form, Background4Form, Background5Form, Background6Form, Background7Form, Background8Form, BackgroundNForm]
 
 ColorNForm[n_Integer] := Part[{Color1Form, Color2Form, Color3Form, Color4Form, Color5Form, Color6Form, Color7Form, Color8Form}, n];
 
@@ -1096,6 +1095,6 @@ $plainStringReplacements = {"\[FilledCircle]" -> "@", "\[FilledSmallCircle]" -> 
 
 (**************************************************************************************************)
 
-PublicForm[MathForm]
+PublicTypesettingForm[MathForm]
 
 DefineTaggedForm[MathForm]

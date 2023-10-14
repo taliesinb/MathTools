@@ -23,7 +23,7 @@ DefineSymbolForm[{
 
 (**************************************************************************************************)
 
-PublicForm[ConditionedForm]
+PublicTypesettingForm[ConditionedForm]
 
 DefineStandardTraditionalForm[{
   ConditionedForm[(i_IndexedForm)[a_], cond_] :> MakeBoxes[i[a, cond]],
@@ -32,73 +32,73 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicForm[SumForm, ProductForm]
+PublicTypesettingForm[SumForm, ProductForm]
 
 DefineLegacyIndexedForm[SumForm, "\[Sum] "];
 DefineLegacyIndexedForm[ProductForm, "\[Product] "];
 
 (**************************************************************************************************)
 
-PublicForm[TimesForm, PlusForm]
+PublicTypesettingForm[TimesForm, PlusForm]
 
 DefineInfixForm[PlusForm,  OpBox @ "+"]
 DefineInfixForm[TimesForm, OpBox @ "\[Times]"]
 
 (**************************************************************************************************)
 
-PublicForm[MinusForm, SubtractForm, DivideForm, InlineDivideForm]
+PublicTypesettingForm[MinusForm, SubtractForm, DivideForm, InlineDivideForm]
 
 DefineInfixBinaryForm[SubtractForm, OpBox @ "-"];
 DefineUnaryForm[MinusForm, RBox["\[Minus]\!", $1]];
 DefineBinaryForm[DivideForm, KBox[FractionBox[$1, $2], "frac"[$1, $2]]];
 DefineBinaryForm[InlineDivideForm, RBox[$1, KBox[OpBox @ "/", "/"], $2]]
 
-PublicForm[MinusOneForm, PlusOneForm]
+PublicTypesettingForm[MinusOneForm, PlusOneForm]
 
 DefineUnaryForm[MinusOneForm, RBox[$1, OpBox @ "\[Minus]", "1"]];
 DefineUnaryForm[PlusOneForm, RBox[$1, OpBox @ "+", "1"]];
 
 (**************************************************************************************************)
 
-PublicForm[FloorForm, CeilingForm]
+PublicTypesettingForm[FloorForm, CeilingForm]
 
 DefineUnaryForm[FloorForm, LeftRightBox["\[LeftFloor]", $1, "\[RightFloor]"]];
 DefineUnaryForm[CeilingForm, LeftRightBox["\[LeftCeiling]", $1, "\[RightCeiling]"]];
 
 (**************************************************************************************************)
 
-PublicForm[ImplicitTimesForm, SpacedImplicitTimesForm]
+PublicTypesettingForm[ImplicitTimesForm, SpacedImplicitTimesForm]
 
 DefineInfixForm[ImplicitTimesForm,       KBox["\[VeryThinSpace]", "\\,"]];
 DefineInfixForm[SpacedImplicitTimesForm, KBox["\[VeryThinSpace] ", "\\;\\,"]];
 
 (**************************************************************************************************)
 
-PublicForm[LimitForm]
+PublicTypesettingForm[LimitForm]
 
 DefineBinaryForm[LimitForm, RBox[SubscriptBox[FunctionBox @ "lim", $2], " ", $1]]
 
 (**************************************************************************************************)
 
-PublicForm[DividesForm]
+PublicTypesettingForm[DividesForm]
 
 DefineInfixForm[DividesForm, WideOpBox @ "\[Divides]"];
 
 (**************************************************************************************************)
 
-PublicForm[InverseForm]
+PublicTypesettingForm[InverseForm]
 
 DefineUnaryForm[InverseForm, InverseBox @ $1];
 
 (**************************************************************************************************)
 
-PublicForm[InverseSubscriptForm]
+PublicTypesettingForm[InverseSubscriptForm]
 
 DefineNAryForm[InverseSubscriptForm, SubsuperscriptBox[$1, RiffledBox[","][$$2], RBox["-", "1"]]];
 
 (**************************************************************************************************)
 
-PublicForm[ClosedIntervalForm, OpenIntervalForm, ClosedOpenIntervalForm, OpenClosedIntervalForm]
+PublicTypesettingForm[ClosedIntervalForm, OpenIntervalForm, ClosedOpenIntervalForm, OpenClosedIntervalForm]
 
 DefineBinaryForm[ClosedIntervalForm,     RBox["[", $1, ",", " ", $2, "]"]];
 DefineBinaryForm[OpenIntervalForm,       RBox["(", $1, ",", " ", $2, ")"]];
@@ -107,13 +107,13 @@ DefineBinaryForm[OpenClosedIntervalForm, RBox["(", $1, ",", " ", $2, "]"]];
 
 (**************************************************************************************************)
 
-PublicForm[IntegerRangeForm]
+PublicTypesettingForm[IntegerRangeForm]
 
 DefineBinaryForm[IntegerRangeForm, RBox[$1, "\[InvisibleSpace]..", $2]];
 
 (**************************************************************************************************)
 
-PublicForm[HomomorphismMappingForm]
+PublicTypesettingForm[HomomorphismMappingForm]
 
 DefineCommaForm[HomomorphismMappingForm, RBox[LeftBox @ "\[LeftAngleBracket]", $wlThinSpace, $1, $wlThinSpace, RightBox @ "\[RightAngleBracket]"]];
 
@@ -121,14 +121,14 @@ DefineRuleAsMapsTo[HomomorphismMappingForm];
 
 (**************************************************************************************************)
 
-PublicForm[FactorialForm, PowerForm]
+PublicTypesettingForm[FactorialForm, PowerForm]
 
 DefineUnaryForm[FactorialForm, RBox[$1, "!"]]
 DefineBinaryForm[PowerForm, SuperscriptBox[$1, $2]]
 
 (**************************************************************************************************)
 
-PublicForm[KroneckerDeltaForm]
+PublicTypesettingForm[KroneckerDeltaForm]
 
 DefineCommaForm[KroneckerDeltaForm, SubscriptBox["\[Delta]", $1], HeadBoxes -> "\[Delta]"]
 

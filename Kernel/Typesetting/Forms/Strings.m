@@ -1,10 +1,10 @@
 (**************************************************************************************************)
 
-PublicForm[DoubleQuotedStringForm, QuotedCharacterForm, WildcardStringForm]
+PublicTypesettingForm[DoubleQuotedStringForm, QuotedCharacterForm, WildcardStringForm]
 
-PublicForm[LiteralStringForm, StringSymbolForm]
+PublicTypesettingForm[LiteralStringForm, StringSymbolForm]
 
-PublicForm[LiteralCharacterForm, CharacterSymbolForm]
+PublicTypesettingForm[LiteralCharacterForm, CharacterSymbolForm]
 
 declareBoxFormatting[
   DoubleQuotedStringForm[args___] :>
