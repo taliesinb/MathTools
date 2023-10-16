@@ -80,7 +80,7 @@ EchoGraphicsScope[e_] := Scope[
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[ToGraphicsBoxes, ToGraphics3DBoxes]
+PrivateTypesettingBoxFunction[ToGraphicsBoxes, ToGraphics3DBoxes]
 
 ToGraphicsBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics] //. $gboxSimpRules;
 ToGraphics3DBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics3D] //. $gboxSimpRules;
@@ -89,7 +89,7 @@ $gboxSimpRules = {InterpretationBox[b_, _] :> b, Typeset`Hold[h_] :> h};
 
 (**************************************************************************************************)
 
-PublicDebugFunction[DynamicPointGraphics]
+PublicDebuggingFunction[DynamicPointGraphics]
 
 circlePoints[2] := {{-1, 0}, {1, 0}};
 circlePoints[n_] := Reverse @ CirclePoints[n];
@@ -138,7 +138,7 @@ toDynSpec[list_List, sym_] := {sym, First @ list, RadioButtonBar[Dynamic @ sym, 
 
 (**************************************************************************************************)
 
-PublicDebugFunction[PrintQGStack]
+PublicDebuggingFunction[PrintQGStack]
 
 $stackFile := $stackFile = TemporaryPath["stack.m"];
 
@@ -190,7 +190,7 @@ debugStr[lhs_] := ToPrettifiedString[Unevaluated @ lhs, MaxDepth -> 4, MaxLength
 
 (**************************************************************************************************)
 
-PublicDebugFunction[FindDefinitionsContaining]
+PublicDebuggingFunction[FindDefinitionsContaining]
 
 FindDefinitionsContaining[context_, pattern_] := Scope[
   symbols = Names[{context <> "*", context <> "**`*"}];
@@ -199,7 +199,7 @@ FindDefinitionsContaining[context_, pattern_] := Scope[
 
 (**************************************************************************************************)
 
-PublicDebugFunction[FindMatchingDownValue]
+PublicDebuggingFunction[FindMatchingDownValue]
 
 SetHoldAllComplete[FindMatchingDownValue]
 
@@ -218,7 +218,7 @@ replaceRHS[_] := Nothing;
 
 (**************************************************************************************************)
 
-PublicDebugFunction[EchoGraphics]
+PublicDebuggingFunction[EchoGraphics]
 
 EchoGraphics[e_] := (AppendTo[$prims, e]; e);
 EchoGraphics[{x_ ? RealVectorQ, y_ ? RealVectorQ}] := (EchoGraphics @ Trans[x, y]; {x, y});
@@ -226,7 +226,7 @@ EchoGraphics[points_ ? RealMatrixQ] := (AppendTo[$prims, Point @ points]; points
 
 (**************************************************************************************************)
 
-PublicDebugFunction[EchoDimensions]
+PublicDebuggingFunction[EchoDimensions]
 
 EchoDimensions[e_] := (Echo[Row[Dimensions @ e, "\[Times]", BaseStyle -> $DarkBlue]]; e);
 
@@ -308,7 +308,7 @@ PrivateFunction[ModifierKeysPressedQ]
 
 ModifierKeysPressedQ[] := $Notebooks && (CurrentValue["ModifierKeys"] =!= {});
 
-PublicDebugFunction[PerformSelfLinting]
+PublicDebuggingFunction[PerformSelfLinting]
 
 PerformSelfLinting[] := Scope[
   DeleteCases[{} | <||>] @ Association[
@@ -332,7 +332,6 @@ findMissingPackageScopes[] := Scope[
 
 possibleMissingPackageScope[names_] :=
   CountDistinct[ToExpression[names, InputForm, System`Private`HasAnyEvaluationsQ]] > 1;
-
 
 (**************************************************************************************************)
 

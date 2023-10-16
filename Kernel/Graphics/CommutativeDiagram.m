@@ -1,4 +1,4 @@
-PublicSymbol[CommutativeDiagram]
+PublicTypesettingForm[CommutativeDiagram]
 
 PublicOption[DebugBounds, AutoSetback, Origin, SymbolReplacements, CloneOptions, CloningFunction, DiagramScaling, DefaultMorphism]
 

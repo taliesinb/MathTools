@@ -1,4 +1,4 @@
-PrivateBoxFunction[graphOrQuiverBoxes]
+PrivateTypesettingBoxFunction[graphOrQuiverBoxes]
 
 graphOrQuiverBoxes = Case[
   g_GraphSymbol | g_QuiverSymbol := MakeBoxes @ g;

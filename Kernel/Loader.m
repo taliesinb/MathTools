@@ -29,6 +29,8 @@ QuiverGeometryPackageLoader`$SourceDirectory = DirectoryName @ $InputFileName;
 
 QuiverGeometryPackageLoader`$PackageDirectory = ParentDirectory @ QuiverGeometryPackageLoader`$SourceDirectory;
 
+QuiverGeometryPackageLoader`$SymbolTableFile = FileNameJoin[{QuiverGeometryPackageLoader`$SourceDirectory, "SymbolTable.m"}];
+
 QuiverGeometryPackageLoader`$CurrentFile = None;
 
 QuiverGeometryPackageLoader`$PreservedVariables = Data`UnorderedAssociation[];
@@ -51,7 +53,7 @@ If[$OperatingSystem === "MacOSX",
 ];
 
 (* we will immediately resolve these system symbols, which will take care of the vast majority of Package`PackageSymbol cases *)
-$coreSymbols = Get @ FileNameJoin[{QuiverGeometryPackageLoader`$SourceDirectory, "SymbolTable.m"}];
+$coreSymbols = DeleteCases[_Hold] @ Catenate @ Values @ Get @ QuiverGeometryPackageLoader`$SymbolTableFile;
 
 $coreSymbols = Sort @ DeleteDuplicates @ $coreSymbols;
 
@@ -60,6 +62,23 @@ $coreSymbolContexts = Context /@ $coreSymbols;
 
 $corePackageSymbols = DeleteCases[Package`PublicScopedOption | Package`PublicTypesettingFormBox] @ Pick[$coreSymbols, $coreSymbolContexts, "Package`"];
 $corePackageSymbolNames = SymbolName /@ $corePackageSymbols;
+$corePackageSymbolClasses = StringTrim[$corePackageSymbolNames, {"System", "Public", "Private"}];
+$legacyPackageDirs = {"Package", "PackageExport", "PackageImport", "PackageScope"};
+
+(* rule that will scan all packages and add symbols to their classes,  headPattern_[sym_] -> (class -> sym) *)
+toAlt[{a_}] := a;
+toAlt[a_List] := Alternatives @@ a;
+$symbolClassRules = KeyValueMap[
+  #2[z___] :> (#1 -> extractStrings[z])&,
+  KeyDrop[$legacyPackageDirs] @
+    Merge[Thread[$corePackageSymbolClasses -> $corePackageSymbols], toAlt]
+];
+
+extractStrings[z___] := DeepCases[{z}, _String];
+
+(* association from symbol class, like Symbol, TypesettingForm, etc to list of these symbols.
+we don't care about System/Private/Public at all *)
+QuiverGeometryPackageLoader`$SymbolClasses = $initSymClasses = Association["Package" -> $corePackageSymbolNames];
 
 makePackageSymbolHeadP[s_] := Apply[Alternatives, Pick[$corePackageSymbols, StringStartsQ[$corePackageSymbolNames, s]]];
 $systemPackageDeclarationHeadP = makePackageSymbolHeadP["System"];
@@ -71,6 +90,7 @@ toRegexPattern[str_] := "(" <> str <> ")";
 $coreSymbolRegex = RegularExpression @ StringJoin @ Riffle[Map[toRegexPattern, Sort @ $coreSymbolNames], "|"];
 
 $coreSymbolAssociation = AssociationThread[$coreSymbolNames, $coreSymbols];
+
 
 (*************************************************************************************************)
 
@@ -96,15 +116,15 @@ $initialSymbolResolutionDispatch = With[{kernelInit = FileNameJoin[{QuiverGeomet
 processScopedOption[p_] :=
    Package`PackageSplice @@ Cases[p, Package`PackageSymbol[name_String] :> {
     Package`PublicOption[Package`PackageSymbol @ name],
-    Package`PrivateVariables[Package`PackageSymbol @ StringJoin["$", ToLowerCase @ StringTake[name, 1], StringDrop[name, 1]]]
+    Package`PrivateVariable[Package`PackageSymbol @ StringJoin["$", ToLowerCase @ StringTake[name, 1], StringDrop[name, 1]]]
   }];
 
-(* turns PublicTypesettingFormBox[AppliedForm] into PublicTypesettingForm[AppliedForm], PrivateBoxFunction[AppliedBox] *)
+(* turns PublicTypesettingFormBox[AppliedForm] into PublicTypesettingForm[AppliedForm], PrivateTypesettingBoxFunction[AppliedBox] *)
 processTypesettingFormBox[p_] :=
    Package`PackageSplice @@ Cases[p, Package`PackageSymbol[name_String] :> {
     Package`PublicTypesettingForm[Package`PackageSymbol[name]],
     If[!StringEndsQ[name, "Form"], Print["ERROR: PublicTypesettingFormBox ", name]];
-    Package`PrivateBoxFunction[Package`PackageSymbol[StringDrop[name, -4] <> "Box"]]
+    Package`PrivateTypesettingBoxFunction[Package`PackageSymbol[StringDrop[name, -4] <> "Box"]]
   }];
 
 (* this means SetUsage doesn't have to resolve the symbol later, which is expensive. *)
@@ -142,7 +162,7 @@ readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
   fileModTime = UnixTime @ FileDate[path, "Modification"];
   isDirty = FailureQ[cachedContents] || cachedModTime =!= fileModTime;
   If[isDirty,
-    zLVPrint["Reading \"" <> path <> "\""];
+    LVPrint["Reading \"" <> path <> "\""];
     contents = loadFileContents[path, context];
     $fileContentCache[path] = {fileModTime, contents};
   ,
@@ -255,11 +275,12 @@ $dummyContextPath = {"QuiverGeometryLoader`DummyContext`"};
 QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled_:True, fullReload_:True] := Block[
   {$directory, $files, $textFiles, $privateSymbols, $systemSymbols, $publicSymbols, $packageExpressions, $packageRules,
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result, requiresFullReload,
-   $preservedValues, $preservedDownValues, $ignoreFiles
+   $preservedValues, $preservedDownValues, $ignoreFiles, $symClasses
   },
 
   Off[General::shdw]; (* because things like SetUsage, SetAutomatic, etc have QG local definitions *)
 
+  $symClasses = If[fullReload, $initSymClasses, QuiverGeometryPackageLoader`$SymbolClasses];
   $directory = AbsoluteFileName @ ExpandFileName @ mainPath;
   $mainContext = mainContext;
   $mainPathLength = StringLength[$directory];
@@ -308,6 +329,17 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
   ,
     failRead
   ];
+
+  LVPrint["Populating symbol class table."];
+  $symClasses = Union /@ Merge[{
+    $symClasses,
+    DeleteDuplicates @ Merge[
+      Map[rule |-> DeepCases[$packageExpressions, rule], $symbolClassRules],
+      Apply[Union]
+    ]},
+    Apply[Union]
+  ];
+  QuiverGeometryPackageLoader`$SymbolClasses = $symClasses;
   
   Quiet @ Remove["QuiverGeometryPackageLoader`Scratch`*"]; (* <- dumping ground for SyntaxLength *)
   If[result === $Failed,

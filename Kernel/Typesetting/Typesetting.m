@@ -179,7 +179,7 @@ mouseMoveBox[box_, body_] := TagBox[
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[StyledClickBox]
+PrivateTypesettingBoxFunction[StyledClickBox]
 
 SetHoldRest[StyledClickBox];
 
@@ -207,7 +207,7 @@ $bboxColors = <|
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[DeployBox]
+PrivateTypesettingBoxFunction[DeployBox]
 
 DeployBox[b_] := TagBox[b, "Deploy", DefaultBaseStyle -> "Deploy"];
 

@@ -14,7 +14,7 @@ Protect[MapColumn];
 
 (**************************************************************************************************)
 
-PublicDebugFunction[EchoScope]
+PublicDebuggingFunction[EchoScope]
 
 DefineMacro[EchoScope,
 EchoScope[body_] := mEchoScope[body, {}],
@@ -154,13 +154,13 @@ procDestructArg[argSpec_] := With[
 
 (**************************************************************************************************)
 
-PublicDebugFunction[Echoing]
+PublicDebuggingFunction[Echoing]
 
 Echoing /: (lhs_ := Echoing[rhs_]) := EchoSetDelayed[lhs, rhs];
 
 (**************************************************************************************************)
 
-PublicDebugFunction[LabeledEchoSet]
+PublicDebuggingFunction[LabeledEchoSet]
 
 Attributes[LabeledEchoSet] = {HoldAll, SequenceHold};
 
@@ -178,7 +178,7 @@ Protect[EchoSet];
 
 (**************************************************************************************************)
 
-PublicDebugFunction[EchoSetDelayed, LabeledEchoSetDelayed]
+PublicDebuggingFunction[EchoSetDelayed, LabeledEchoSetDelayed]
 
 Attributes[EchoSetDelayed] = {HoldAll, SequenceHold};
 Attributes[LabeledEchoSetDelayed] = {HoldRest, SequenceHold};
@@ -317,7 +317,7 @@ printEchoCell[boxes_, color_,  tab_, label_] := Module[{cell, label2},
 
 (**************************************************************************************************)
 
-PublicDebugFunction[EchoCellPrint]
+PublicDebuggingFunction[EchoCellPrint]
 
 EchoCellPrint[cells2_] := Module[{cells},
   cells = ToList[cells2];
@@ -373,7 +373,7 @@ UnmatchedCase2[head_Symbol, case_] := (
 (* this takes the place of MatchValues in GU *)
 
 PublicScopingFunction[Case]
-PublicDebugFunction[EchoCase]
+PublicDebuggingFunction[EchoCase]
 PublicSymbol[$]
 
 SetHoldAll[Case, EchoCase, setupCases];

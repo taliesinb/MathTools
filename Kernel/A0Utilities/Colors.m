@@ -284,19 +284,19 @@ NormalizeColorLightness[colors_List, fraction_:1] :=
 
 PublicVariable[$ColorPalette, $NormalColorPalette]
 
-PublicVariable[$Blue, $Red, $Yellow, $Green, $Pink, $Teal, $Orange, $Purple, $Gray, $White, $Black]
+PublicGraphicsDirective[$Blue, $Red, $Yellow, $Green, $Pink, $Teal, $Orange, $Purple, $Gray, $White, $Black]
 
 {$Blue, $Red, $Green, $Pink, $Teal, $Yellow, $Orange, $Purple, $Gray, $White, $Black} =
   Map[RGBColor, StringSplit @ "#3e81c3 #e1432d #4ea82a #c74883 #47a5a7 #f6e259 #dc841a #8b7ebe #929292 #f3f3f3 #404040"]
 
 $ColorPalette = $NormalColorPalette = {$Red, $Blue, $Green, $Orange, $Purple, $Teal, $Gray, $Pink, $Yellow, $White, $Black};
 
-PublicVariable[$DarkColorPalette, $DarkBlue, $DarkRed, $DarkYellow, $DarkGreen, $DarkPink, $DarkTeal, $DarkGray, $DarkOrange, $DarkPurple, $DarkWhite, $DarkBlack]
+PublicGraphicsDirective[$DarkColorPalette, $DarkBlue, $DarkRed, $DarkYellow, $DarkGreen, $DarkPink, $DarkTeal, $DarkGray, $DarkOrange, $DarkPurple, $DarkWhite, $DarkBlack]
 
 {$DarkRed, $DarkBlue, $DarkGreen, $DarkOrange, $DarkPurple, $DarkTeal, $DarkGray, $DarkPink, $DarkYellow, $DarkWhite, $DarkBlack} =
   $DarkColorPalette = OklabDarker @ $ColorPalette;
 
-PublicVariable[$LightColorPalette, $LightBlue, $LightRed, $LightYellow, $LightGreen, $LightPink, $LightTeal, $LightGray, $LightOrange, $LightPurple, $LightGray, $LightWhite, $LightBlack]
+PublicGraphicsDirective[$LightColorPalette, $LightBlue, $LightRed, $LightYellow, $LightGreen, $LightPink, $LightTeal, $LightGray, $LightOrange, $LightPurple, $LightGray, $LightWhite, $LightBlack]
 
 {$LightRed, $LightBlue, $LightGreen, $LightOrange, $LightPurple, $LightTeal, $LightGray, $LightPink, $LightYellow, $LightWhite, $LightBlack} =
   $LightColorPalette = OklabLighter @ $ColorPalette;

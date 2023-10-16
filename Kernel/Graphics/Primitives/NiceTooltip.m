@@ -24,7 +24,7 @@ MakeBoxes[NiceTooltip[a_, None], form_] := MakeBoxes[a, Form];
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[NiceTooltipBoxes]
+PrivateTypesettingBoxFunction[NiceTooltipBoxes]
 
 NiceTooltipBoxes[a_, b_, wh_:{300, 300}] := TooltipBox[a,
   PaneBox[

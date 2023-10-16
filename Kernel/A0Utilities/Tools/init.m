@@ -82,7 +82,7 @@ RunTool[args1___, OpenToolOutput -> oto_, args2___] := Block[{$oto = oto}, RunTo
 $oto = Automatic;
 RunTool[args1___, OpenToolOutput -> oto_, args2___] := Block[{$oto = oto}, RunTool[args1, args2]];
 
-RunTool::badrp = "RunProcess failed to return an association, returned: ``"
+RunTool::badrp = "Run failed to return an association, returned: ``"
 
 RunTool[cmd_, args___] := Scope @ Block[{$verbose = ReplaceAutomatic[$tverbose, $dryRun]},
 	cmdPath = findTool[cmd];

@@ -67,7 +67,7 @@ DefineInfixForm[SpacedCommaRowForm, KBox[",  ", ",\\;"]]
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[spacerBox]
+PrivateTypesettingBoxFunction[spacerBox]
 
 $TemplateKatexFunction["Spacer1"] = katexPtSpacer;
 

@@ -14,7 +14,7 @@ AlgebraicColumn[args___] := Scope[$arColumn = True; AlgebraicRow[args]];
 
 (**************************************************************************************************)
 
-PublicHead[PathAlgebraicForm]
+PublicTypesettingForm[PathAlgebraicForm]
 
 SetHoldAllComplete[PathAlgebraicForm];
 

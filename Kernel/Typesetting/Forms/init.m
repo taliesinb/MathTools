@@ -222,7 +222,7 @@ makeSubSupBoxes = Case[
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[symbolBoxes]
+PrivateTypesettingBoxFunction[symbolBoxes]
 
 symbolBoxes = Case[
   s:($symbolFormsP)   := MakeBoxes @ s;

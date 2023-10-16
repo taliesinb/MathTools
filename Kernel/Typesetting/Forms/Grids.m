@@ -543,7 +543,7 @@ equationGridRow = Case[
 riffledEqGridRow[div_, _[args__]] :=
   Riffle[MapUnevaluated[MakeQGBoxesOrNull, {args}], div];
 
-PrivateBoxFunction[MakeQGBoxesOrNull]
+PrivateTypesettingBoxFunction[MakeQGBoxesOrNull]
 
 MakeQGBoxesOrNull[Aligned[e_]] := Splice @ MapUnevaluated[MakeQGBoxes, {Aligner, e, Aligner}];
 MakeQGBoxesOrNull[Null|None] := "";

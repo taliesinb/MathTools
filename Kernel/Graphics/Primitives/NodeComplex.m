@@ -15,8 +15,6 @@ PublicHead[NodeColumn, NodeRow, NodeGrid, NodeBox, AbsoluteOffset, ManualNodeLay
 
 PublicOption[NodeLabel, NodePorts, NodeAlias, PrologStyle, EpilogStyle, NodePalette]
 
-PrivateHead[$node, $var, $tagvar, $relvar]
-
 SetUsage @ "
 NodeComplex[$$]
 "
@@ -585,7 +583,7 @@ addFrameEqns[w_, h_] := addEqns @ {
 }
 
 PublicOption[NodePorts, NodeLabelStyle, NodeLabelColor, FrameColor, FrameThickness, FrameLabelSpacing, FrameLabelStyle]
-PublicOption[PortSpacing, PortPositions, PortSize, PortShape, PortEdgeColor, PortColor, PortEdgeThickness, HiddenPorts, PortPositions]
+PublicOption[PortSpacing, PortPositions, PortSize, PortShape, PortEdgeColor, PortColor, PortEdgeThickness, HiddenPorts, PortPositions, PortLabelStyle]
 PublicVariable[$NodeComplexLabelStyle, $PortLabelStyle]
 
 SetInitialValue[$NodeComplexLabelStyle, {FontSize  -> 16, FontWeight -> "Bold", BaseStyle -> "PreformattedCode"}];

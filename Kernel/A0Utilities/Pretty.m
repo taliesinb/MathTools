@@ -7,6 +7,8 @@ HoldPrettyForm /: MakeBoxes[HoldPrettyForm[expr_], StandardForm] :=
 
 (**************************************************************************************************)
 
+PublicOption[ColorSymbolContext]
+
 PublicTypesettingForm[CompactPrettyForm]
 
 CompactPrettyForm /: MakeBoxes[CompactPrettyForm[expr_], StandardForm] :=

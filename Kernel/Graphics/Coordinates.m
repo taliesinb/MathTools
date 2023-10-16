@@ -164,7 +164,7 @@ ToZFunction[GraphicsViewTransform[tmatrix_, _]] := Function[
 
 zVector[tmatrix_, input_] := imageZ @ Dot[tmatrix, Append[input, 1]];
 
-zMatrix[tmatrix_, input_] := Transpose @ imageZ @ Dot[tmatrix, AppendConstnatRow[1] @ Transpose @ input];
+zMatrix[tmatrix_, input_] := Transpose @ imageZ @ Dot[tmatrix, AppendConstantRow[1] @ Transpose @ input];
 
 imageZ[a_] := ToPacked[Part[a, 3] / maybeThreaded[Part[a, 4]]];
 

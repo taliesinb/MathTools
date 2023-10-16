@@ -61,7 +61,7 @@ $TemplateKatexFunction["WordForm"] = "word";
 $cardP = _CardinalSymbol | InvertedForm[_CardinalSymbol] | MirrorForm[_CardinalSymbol] ;
 $maybeColoredCardP = $colorFormP[$cardP] | $cardP;
 
-PrivateBoxFunction[cardinalBox, wordBoxes]
+PrivateTypesettingBoxFunction[cardinalBox, wordBoxes]
 
 SetHoldAllComplete[wordBoxes, cardinalBox];
 wordBoxes = Case[

@@ -226,7 +226,7 @@ UnsameOperator[f_][g_] := UnsameQ[f, g];
 
 (**************************************************************************************************)
 
-PublicBoxFunction[StyleOperator, StyleBoxOperator]
+PublicTypesettingBoxFunction[StyleOperator, StyleBoxOperator]
 
 StyleOperator[] = Identity;
 StyleOperator[None] = Identity;
@@ -240,20 +240,20 @@ StyleBoxOperator[spec___][e_] := StyleBox[e, spec];
 
 (**************************************************************************************************)
 
-PublicBoxFunction[InvisibleOperator]
+PublicTypesettingBoxFunction[InvisibleOperator]
 
 InvisibleOperator[___] := {};
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[SolidEmptyStyleBoxOperator]
+PrivateTypesettingBoxFunction[SolidEmptyStyleBoxOperator]
 
 SolidEmptyStyleBoxOperator[True, args___] := SolidStyleBoxOperator[args];
 SolidEmptyStyleBoxOperator[False, args___] := EmptyStyleBoxOperator[args];
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[EmptyStyleBoxOperator]
+PrivateTypesettingBoxFunction[EmptyStyleBoxOperator]
 
 SetUsage @ "
 EmptyStyleBoxOperator[thickness$, opacity$, color$]
@@ -269,7 +269,7 @@ EmptyStyleBoxOperator = Case[
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[SolidStyleBoxOperator]
+PrivateTypesettingBoxFunction[SolidStyleBoxOperator]
 
 SetUsage @ "
 SolidStyleBoxOperator[thickness$, opacity$, color$]
@@ -294,7 +294,7 @@ SolidStyleBoxOperator = Case[
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[ShaftStyleBoxOperator]
+PrivateTypesettingBoxFunction[ShaftStyleBoxOperator]
 
 ShaftStyleBoxOperator[s_SolidEdgeForm, args___] :=
   ShaftStyleBoxOperator[Last @ solidEdgeColors @ s, args];

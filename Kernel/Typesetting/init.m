@@ -1,4 +1,4 @@
-PrivateBoxFunction[TBox, TBoxOp, SBox, RBox, GBox, KBox]
+PrivateTypesettingBoxFunction[TBox, TBoxOp, SBox, RBox, GBox, KBox]
 
 TBox[args___, form_] := TemplateBox[{args}, form];
 TBoxOp[form_][args___] := TemplateBox[{args}, form];
@@ -45,7 +45,7 @@ _getFDCacheKey := BadArguments[];
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[OpBox, WideOpBox, VeryWideOpBox]
+PrivateTypesettingBoxFunction[OpBox, WideOpBox, VeryWideOpBox]
 
 OpBox[b_] := KBox[RBox["\[ThinSpace]", b, "\[ThinSpace]"], KBin @ b];
 OpBox["/"] := "/";
@@ -55,7 +55,7 @@ VeryWideOpBox[b_] := KBox[RBox["  ", b, "  "], KBin @ b];
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[OverdotBox, OverdoubledotBox, UnderdotBox]
+PrivateTypesettingBoxFunction[OverdotBox, OverdoubledotBox, UnderdotBox]
 
 OverdoubledotBox[b_] := KBox[OverscriptBox[b, ".."], "ddot"[b]];
 
@@ -67,14 +67,14 @@ UnderdotBox["="] := KBox[UnderscriptBox[b, LowerBox[".", .1]], {"""\underset{\ra
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[MarginBox]
+PrivateTypesettingBoxFunction[MarginBox]
 
 MarginBox[boxes_, {left_, right_}] := MarginBox[boxes, {left, right}, {0, 0}];
 MarginBox[boxes_, {left_, right_}, {bottom_, top_}] := AdjustmentBox[boxes, BoxMargins -> {{left, right}, {bottom, top}}];
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[HatBox]
+PrivateTypesettingBoxFunction[HatBox]
 
 HatBox[box_] := KBox[OverscriptBox[box, "^"], "hat" @ box];
 
@@ -87,7 +87,7 @@ DefineStandardTraditionalForm[{
   UnlimitedSpanForm[e_] :> UnlimitedSpanBox @ MakeBoxes @ e
 }]
 
-PrivateBoxFunction[ForceKatexCharBox]
+PrivateTypesettingBoxFunction[ForceKatexCharBox]
 
 NoSpanBox[e_] := StyleBox[e, SpanMaxSize -> 1];
 
@@ -115,7 +115,7 @@ DefineStandardTraditionalForm[
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[KOrd, KBin]
+PrivateTypesettingBoxFunction[KOrd, KBin]
 
 KOrd[k_] := "mathord"[k];
 KBin[k_] := "mathbin"[k];
@@ -128,19 +128,19 @@ $PipeBox = KBox["|", "\\middle|"];
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[FunctionBox]
+PrivateTypesettingBoxFunction[FunctionBox]
 
 FunctionBox[e_] := KBox[e, "op"[e]];
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[InverseBox]
+PrivateTypesettingBoxFunction[InverseBox]
 
 InverseBox[b_] := SuperscriptBox[b, RBox["-", "1"]];
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[Overbracketbox, UnderbracketBox, UnderbraceBox, OverbraceBox, UnderparenthesisBox, OverparenthesisBox]
+PrivateTypesettingBoxFunction[Overbracketbox, UnderbracketBox, UnderbraceBox, OverbraceBox, UnderparenthesisBox, OverparenthesisBox]
 
 UnderbraceBox[a_, b_] := KBox[UnderscriptBox[UnderscriptBox[a, "\[UnderBrace]"], b], SubscriptBox["underbrace"[a], b]];
 OverbraceBox[a_, b_] := KBox[OverscriptBox[OverscriptBox[a, "\[OverBrace]"], b], SuperscriptBox["overbrace"[a], b]];
@@ -153,7 +153,7 @@ OverparenthesisBox[a_, b_] := KBox[OverscriptBox[OverscriptBox[a, "\[OverParenth
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[LeftBox, RightBox, DelimiterBox, LeftRightBox]
+PrivateTypesettingBoxFunction[LeftBox, RightBox, DelimiterBox, LeftRightBox]
 
 DelimiterBox[e_] := StyleBox[e, "DelimiterFont"];
 
@@ -175,7 +175,7 @@ _LeftRightBox := BadArguments[];
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[BracesBox, AngleBracketBox, ParenthesesBox, SquareBracketBox, DoubleSquareBracketBox, BarBox, DoubleBarBox]
+PrivateTypesettingBoxFunction[BracesBox, AngleBracketBox, ParenthesesBox, SquareBracketBox, DoubleSquareBracketBox, BarBox, DoubleBarBox]
 
 BracesBox[inner___]              := LeftRightBox["{", inner, "}"];
 AngleBracketBox[inner___]        := LeftRightBox["⟨", inner, "⟩"];
@@ -916,7 +916,7 @@ DefineLocalTemplates[e___] := Scope @ InheritedBlock[{$katexMacros, $katexDispla
 
 (**************************************************************************************************)
 
-PrivateBoxFunction[DBox]
+PrivateTypesettingBoxFunction[DBox]
 
 (* this is needed because DisplayFunction -> (RowBox[#]&) where # is a list does not work! *)
 DBox[e_] := DynamicBox[e, DestroyAfterEvaluation -> True, TrackedSymbols -> {}];
@@ -930,7 +930,7 @@ PublicTypesettingFormBox[DarkRedForm, DarkGreenForm, DarkBlueForm, DarkOrangeFor
 PublicTypesettingFormBox[BoldForm, ItalicForm, UnderlinedForm, StruckthroughForm, LargerForm, SmallerForm, PlainTextForm, MathTextForm, RomanForm, FrakturForm, CaligraphicForm, SansSerifForm, TypewriterForm]
 
 SystemSymbol[ScriptForm]
-PrivateBoxFunction[ScriptBox]
+PrivateTypesettingBoxFunction[ScriptBox]
 
 Unprotect[ScriptForm]; (* it's an undocumented system symbol! *)
 

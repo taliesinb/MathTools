@@ -26,7 +26,7 @@ Options[NamedIcon] = {
   DebugBounds    -> False
 };
 
-AssociateTo[$MakeBoxesStyleData, KeyTake[Options @ NamedIcon, {IconThickness, IconStyle, IconScaling}]];
+AssociateTo[$MakeBoxesStyleData, KeyTake[Options @ NamedIcon, {IconThickness, IconScaling}]];
 
 DeclareGraphicsPrimitive[NamedIcon, "Vector,Delta", namedIconBoxes];
 

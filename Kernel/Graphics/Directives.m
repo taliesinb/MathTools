@@ -16,6 +16,7 @@ SystemSymbol[TopLeft, TopRight, BottomLeft, BottomRight]
 
 PrivateVariable[$colorNormalizationRules]
 
+(* TODO: set these up as actual graphics directives *)
 $colorNormalizationRules = {
   Red -> $Red, Orange -> $Orange, Yellow -> $Yellow, Green -> $Green, Blue -> $Blue, Purple -> $Purple, Pink -> $Pink, Cyan -> $Teal,
   LightRed -> $LightRed, LightYellow -> $LightYellow, LightGreen -> $LightGreen, LightBlue -> $LightBlue, LightPink -> $LightPink, LightPurple -> $LightPurple, LightCyan -> $LightTeal
@@ -23,7 +24,7 @@ $colorNormalizationRules = {
 
 (**************************************************************************************************)
 
-SystemSymbol[VeryTransparent, HalfTransparent, PartlyTransparent, Opaque]
+SystemGraphicsDirective[VeryTransparent, HalfTransparent, PartlyTransparent, Opaque]
 
 VeryTransparent::usage = HalfTransparent::usage = PartlyTransparent::usage = Opaque::usage = "";
 
@@ -48,7 +49,7 @@ $opacityNormalizationRules = {
 
 (**************************************************************************************************)
 
-SystemSymbol[VeryThick, MediumThick, SlightlyThick, SlightlyThin, MediumThin, VeryThin]
+SystemGraphicsDirective[VeryThick, MediumThick, SlightlyThick, SlightlyThin, MediumThin, VeryThin]
 
 (* how AbsoluteThickness works:
   Thin/AT[Tiny] = AT[0.25],
@@ -105,8 +106,9 @@ normalizeStyles[e_] := ReplaceAll[e, $styleNormalizationRules];
 
 (**************************************************************************************************)
 
-PublicFunction[FaceEdgeForm]
+SystemGraphicsDirective[FaceEdgeForm]
 
+(* TODO: retire this in favor of SolidEdgeForm *)
 toFECol[color_ -> op_] := Opacity[op, color];
 toFECol[e_] := e;
 
