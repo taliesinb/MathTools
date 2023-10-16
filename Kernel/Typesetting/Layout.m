@@ -45,9 +45,16 @@ DefineStandardTraditionalForm[{
 
 PublicTypesettingForm[FramedForm]
 
-DefineStandardTraditionalForm[FramedForm[e_] :> framedBoxes[e]]
+DefineStandardTraditionalForm[{
+  FramedForm[e_] :> framedBoxes[e, Automatic],
+  FramedForm[e_, col_] :> framedBoxes[e, col]
+}]
 
-framedBoxes[e_] := FrameBox[ToBoxes @ e, ContentPadding -> False, FrameStyle -> $LightGray, FrameMargins -> {{3, 2}, {3, 4}}, RoundingRadius -> 4]
+framedBoxes[e_, color_] := FrameBox[
+  ToBoxes @ e,
+  ContentPadding -> False, FrameStyle -> ReplaceAutomatic[color, $LightGray],
+  FrameMargins -> {{3, 2}, {3, 4}}, RoundingRadius -> 4
+]
 
 (**************************************************************************************************)
 

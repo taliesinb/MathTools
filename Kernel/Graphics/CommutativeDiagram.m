@@ -349,6 +349,8 @@ toReplacementFunction[rules_, colorFn_] := Scope[
       lhs -> ReplaceAll[colorFn[lhs], rule],
       rule
     ],
+  parseRep[rule_RuleDelayed] :=
+    rule,
   parseRep[spec_] := (
     Message[CommutativeDiagram::badrepspec, spec];
     Nothing
@@ -880,15 +882,18 @@ processMorphismWithCloning[ma_MorphismArrow] := Scope[
 
   st = findSourceTarget @ First @ ma;
   If[!StringVectorQ[clonedSt = Lookup[$cloneChildren, st]], Return @ ma];
+  (* if the morphism's endpoints were both cloned, we need to create a cloned morphism *)
 
   ma2 = ma;
+
+  (* come up with a label for the clone morphism *)
   label = SafePart[ma, 2];
   If[MatchQ[label, Cloned[_, _]],
     {Part[ma2, 2], clonedLabel} = List @@ label,
     clonedLabel = None
   ];
 
-  (* link the corresponding cloned objects to eachother *)
+  (* generate the clone morphism that links the clone objects *)
   cloneLink = processClonedMorphism @ If[$cloneInteriorLinkFn === Inherited,
     DeleteCases[ReplacePart[ma, {1 -> clonedSt, 2 -> clonedLabel}], Setback -> {__Rectangular}],
     $cloneInteriorLinkFn[clonedSt, clonedLabel]
@@ -896,7 +901,7 @@ processMorphismWithCloning[ma_MorphismArrow] := Scope[
   If[cloneLink === Nothing, Return @ ma2];
   AppendTo[$cloneInteriorLinks, cloneLink];
 
-  (* link the cloned morphism to the original morphism *)
+  (* link the cloned morphism to the original morphism, if desired *)
   cloneLinkPath = MorphismCoordinates[DirectedEdge @@@ {st, clonedSt}];
   morphismLink = processClonedMorphismLink @ $cloneMorphismLinkFn[cloneLinkPath, None];
   If[morphismLink === Nothing, Return @ ma2];
@@ -966,8 +971,8 @@ CommutativeSquare[{nw_, ne_, sw_, se_}, {n_, s_, w_, e_, extra___}, opts___Rule]
      toComSugarArrow[1 => 3, w],
      toComSugarArrow[3 => 4, s],
      extra},
-    opts,
-    LabelPosition -> Outwards
+    LabelPosition -> Outwards,
+    opts
   ];
 
 (**************************************************************************************************)
