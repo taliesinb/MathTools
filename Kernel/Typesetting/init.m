@@ -24,7 +24,7 @@ KBox[wl_, kb_] := TemplateBox[{wl, kb}, "katexSwitch"];
 PrivateFunction[setupFormDefinitionCaching]
 
 setupFormDefinitionCaching[fn_Symbol] := (
-  expr_fn /; TrueQ[$fdCacheEnabled] := Block[
+  expr_fn /; TrueQ[$fdCacheEnabled] && FreeQ[Unevaluated @ expr, BoxFunction] := Block[
     {key = getFDCacheKey[expr], hash = Hash[Unevaluated @ expr], res, pair, $fdCacheEnabled = False},
     pair = Lookup[$formDefinitionCache, key];
     If[ListQ[pair] && Last[pair] === hash, res = First @ pair,
@@ -961,7 +961,7 @@ DefineStyleForm[#1, #3, BoxFunction -> #2]& @@@ ExpressionTable[
   DarkPurpleForm      DarkPurpleBox      $DarkPurple
   MultisetColorForm   MultisetColorBox   RGBColor[{0.73, 0.27, 0.27}]
   BoldForm            BoldBox            Bold
-  UnderlinedForm      Underlinedbox      Underlined
+  UnderlinedForm      UnderlinedBox      Underlined
   ItalicForm          ItalicBox          Italic
   UnderlinedForm      UnderlinedBox      Underlined
   StruckthroughForm   StruckthroughBox   Struckthrough

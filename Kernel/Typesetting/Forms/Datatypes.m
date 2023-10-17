@@ -184,8 +184,8 @@ makeConstructorDisplayFunction[lbrac_, rbrac_, lmod_:Nothing, rmod_:Nothing] := 
     GridBoxSpacings -> {"Columns" -> {0, lmod, .2, .3, .4, .2, rmod, 0}},
     GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
     GridBoxFrame -> {"ColumnsIndexed" -> {{{1, -1}, {1, -1}} -> GrayLevel[0, 0]}},
-    GridBoxSpacings -> {"Columns"->{{0}}, "Rows"->{{0}}},
-    GridBoxDividers -> {"Columns" -> cspec}
+    GridBoxSpacings -> {"Columns"->{{0}}, "Rows"->{{0}}}
+    (* GridBoxDividers -> {"Columns" -> cspec} *)
     (* GridBoxAlignment -> {"Rows" ->  {{Center}}} *)
   ], SpanAdjustments -> {{0, 0}, {0, 0}}, SpanMaxSize->Infinity]&;
 

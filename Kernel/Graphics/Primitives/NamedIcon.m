@@ -4,6 +4,7 @@ PublicOption[IconThickness, IconColor, IconScaling]
 
 SetUsage @ "
 NamedIcon[pos$, dir$, 'name$'] represents a named curve at pos$ with direction dir$.
+NamedIcon['name$'] typesets in %StandardForm as a right-pointing icon.
 * the boxified form uses an InsetBox, unless GraphicsScale is set, in which case it produces primitives directly.
 * the following options are supported:
 | %AlignmentPoint | ranging from 0 to 1, where 0 is the back and 1 is the front (default 0.5) |
@@ -32,12 +33,26 @@ DeclareGraphicsPrimitive[NamedIcon, "Vector,Delta", namedIconBoxes];
 
 (**************************************************************************************************)
 
+$iconNameP = _String | _Sized | _Reversed | _Repeating;
+DefineStandardTraditionalForm[
+  ni:NamedIcon[$iconNameP, ___Rule] :> namedIconTypesettingBoxes[ni]
+];
+
+namedIconTypesettingBoxes[NamedIcon[name_, opts___]] := Scope[
+  UnpackOptionsAs[NamedIcon, {opts}, iconColor, iconScaling, iconThickness, imageSize, alignmentPoint, $debugBounds];
+  inset = rawNamedIconBoxes[pos, dir, name, None, imageSize, iconScaling /. $scalingRules, iconColor, iconThickness, alignmentPoint /. $alignmentRules];
+  If[!MatchQ[inset, _InsetBox], Return @ StyleBox["?", Red]];
+  Append[First @ inset, BaselinePosition -> (Scaled[0.5] -> Axis)]
+]
+
+(**************************************************************************************************)
+
 NamedIcon::unknownIcon = "`` is not a known icon. Known icons include ``.";
 
 PublicHead[Reversed, Repeating]
 
 $debugBounds = False;
-namedIconBoxes[NamedIcon[pos:$Coord2P|_Offset, dir:$Coord2P, name:(_String | _Sized | _Reversed | _Repeating), opts:OptionsPattern[]]] := Scope[
+namedIconBoxes[NamedIcon[pos:$Coord2P|_Offset, dir:$Coord2P, name:$iconNameP, opts:OptionsPattern[]]] := Scope[
   UnpackAssociationSymbols[{opts} -> $MakeBoxesStyleData,
     graphicsScale, iconColor, iconScaling, iconThickness];
   UnpackOptionsAs[NamedIcon, {opts}, imageSize, alignmentPoint, $debugBounds];
