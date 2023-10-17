@@ -299,6 +299,9 @@ PrivateTypesettingBoxFunction[ShaftStyleBoxOperator]
 ShaftStyleBoxOperator[s_SolidEdgeForm, args___] :=
   ShaftStyleBoxOperator[Last @ solidEdgeColors @ s, args];
 
+ShaftStyleBoxOperator[{c1_, c2_}, o_, t_, d_] :=
+  LineBoxGradientOperator[{c1, c2}] /* ShaftStyleBoxOperator[None, o, t, d];
+
 ShaftStyleBoxOperator[color_, opacity_, thickness_, dashing_] :=
   StyleBoxOperator[
     If[ColorQ @ color, color, Seq[]],
@@ -306,6 +309,19 @@ ShaftStyleBoxOperator[color_, opacity_, thickness_, dashing_] :=
     If[NumberQ @ thickness, AbsoluteThickness @ thickness, Seq[]],
     Switch[dashing, _Dashing, dashing, None, Seq[], _, Dashing @ dashing]
   ];
+
+(**************************************************************************************************)
+
+PrivateTypesettingBoxFunction[LineBoxGradientOperator]
+
+LineBoxGradientOperator[cols_][LineBox[points_]] := Scope[
+  dists = Prepend[0] @ Accumulate @ MapWindowed[Apply @ EuclideanDistance, N @ RemoveOffsets @ points];
+  colors = OklabBlend[cols, dists / Last[dists]];
+  Construct[LineBox, points, VertexColors -> colors]
+];
+
+l_LineBoxGradientOperator[StyleBox[p_, other___]] := StyleBox[l @ p, other];
+_LineBoxGradientOperator[other_] := EchoPF @ other;
 
 (**************************************************************************************************)
 

@@ -1,6 +1,6 @@
 PublicTypesettingForm[CommutativeDiagram]
 
-PublicOption[DebugBounds, AutoSetback, Origin, SymbolReplacements, CloneOptions, CloningFunction, DiagramScaling, DefaultMorphism]
+PublicOption[DebugBounds, AutoSetback, Origin, SymbolReplacements, CloneOptions, CloningFunction, DiagramScaling, DefaultMorphism, MorphismColors]
 
 PublicSymbol[Outwards, Inwards]
 
@@ -50,7 +50,8 @@ The following options are supported:
 | %SymbolReplacements | rules to rewrite contents of objects and morphisms prior to display |
 | %CloneOptions | how to display %Cloned objects |
 | %CloningFunction | function to produce %Cloned objects and morphisms |
-| %DefaultMorphism | the default morphism to use |
+| %DefaultMorphism | the default morphism to use, which is %MorphismArrow |
+| %MorphismColors | how to color morphisms |
 "
 
 SetUsage @ "
@@ -108,6 +109,7 @@ Options[CommutativeDiagram] = JoinOptions[
   CloneOptions           -> {},
   CloningFunction        -> None,
   DefaultMorphism        -> MorphismArrow,
+  MorphismColors         -> None,
   $morphismArrowOptions
 ];
 
@@ -154,7 +156,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
     alignment, $setback, labelFontSize, fontSize, fontFamily,
     graphicsScale, $autoSetback, $debugBounds,
     transposed, flipX, flipY, diagramScaling, origin,
-    textModifiers, colorRules, symbolReplacements,
+    textModifiers, colorRules, morphismColors, symbolReplacements,
     cloneOptions, cloningFunction,
     $defaultMorphism
   ];
@@ -179,6 +181,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
       {textModifiers, textModifiers}
     ]
   ];
+  $morphismColorFunction = processMorphismColors[morphismColors];
 
   $calculateLabelSizes = $autoSetback || $debugBounds;
   SetAutomatic[$setback, Rectangular[{15, 5}]];
@@ -195,7 +198,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $toHigherPath = toHigherPath;
   $clonesExist = Length[$cloneChildren] > 0;
   $currentFontSize = labelFontSize; (* <- for recoloring rule *)
-  If[$saveMorphGradColors, saveMorphGradColors @ items];
+  If[$saveMorphGradColors, saveMorphismGradColors @ items];
 
   morphismPrimitives = parseMorphism /@ items;
   If[$clonesExist, morphismPrimitives = {
@@ -304,6 +307,14 @@ toRecolorRule = Case[
     RuleDelayed[z_CategoryArrowSymbol, RuleCondition @ GradientSymbol[z, $gradColor[z, 1], $gradColor[z, 2], $currentFontSize]]
   );
 
+  "RainbowFunctors" := (
+    RuleDelayed[FunctorSymbol[z_][arg_], RuleCondition @ Style[arg, ToRainbowColor @ ToRainbowInteger @ z]]
+  );
+
+  "FramedFunctors" := (
+    RuleDelayed[FunctorSymbol[z_][arg_], RuleCondition @ FramedForm[arg, ToRainbowColor @ ToRainbowInteger @ z]]
+  );
+
   f_ -> {a:$colorP, b:$colorP} := With[{c1 = toCol @ a, c2 = toCol @ b},
     RuleDelayed[f, RuleCondition @ GradientSymbol[f, c1, c2, $currentFontSize]]
   ];
@@ -321,6 +332,30 @@ toRecolorRule = Case[
     Message[CommutativeDiagram::badrecolor, other];
     Nothing
   );
+];
+
+(**************************************************************************************************)
+
+SetUsage @ "
+MorphismColors is an option to %CommuativeDiagram which can be:
+| None | no colors |
+| Automatic | color arrows as gradient between colors of their endpoints |
+";
+
+processMorphismColors = Case[
+  None := None;
+  Automatic := (
+    $saveMorphGradColors = True;
+    morphismGradColors
+  )
+];
+
+morphismGradColors[ma:MorphismArrow[path_, ___]] := Scope[
+  st = findSourceTarget @ path;
+  If[!StringVectorQ[st], Return @ None];
+  cols = Lookup[$morphGradColors, DirectedEdge @@ st];
+  If[!ColorVectorQ[cols], Return @ None];
+  cols
 ];
 
 (**************************************************************************************************)
@@ -811,7 +846,7 @@ processMorphism1 = Case[
 
 (**************************************************************************************************)
 
-(* attach automatic setbacks and text modifiers *)
+(* attach automatic setbacks, text modifiers, and arrow colors *)
 processMorphism2 = Case[
 
   (* TODO: setback intefereces with cloning *)
@@ -831,6 +866,11 @@ processMorphism2 = Case[
     % @ Append[ma, TextModifiers -> modifiers]
   ];
 
+  ma_MorphismArrow /; TrueQ[$morphismColorFunction =!= None] && FreeQ[ma, ArrowColor] := Scope[
+    col = $morphismColorFunction @ ma;
+    If[col === None, ma, % @ Append[ma, ArrowColor -> col]]
+  ];
+
   other_ := processMorphism3 @ other;
 ];
 
@@ -839,20 +879,28 @@ resolveGradColors[ma_] := With[
   ma /. $gradColor[m_, i_] :> Part[gradColors[m], i]
 ];
 
-saveMorphGradColors = Case[
+saveMorphismGradColors = Case[
 
   e_List := Scan[%, e];
 
-  m:(MorphismArrow|$morphismHeadP)[path_, lbl_, ___] := Scope[
-    st = Lookup[$objects, findSourceTarget @ path];
+  m:(MorphismArrow|$morphismHeadP)[path_, ___] := Scope[
+    stRaw = findSourceTarget @ path;
+    st = Lookup[$objects, stRaw];
     If[ContainsQ[st, Missing], Return[]];
     stColored = $objectTextModifierFn /@ st;
-    colors = DeepFirstCase[#, Style[___, c:$ColorPattern, ___] :> c]& /@ stColored;
-    If[Length[colors] == 2, AssociateTo[$morphGradColors, Replace[lbl, Cloned[c_, _] :> c] -> colors]];
+    colors = findColor /@ stColored;
+    If[Length[colors] == 2,
+      (* save by label and by edge *)
+      lbl = SafePart[m, 2];
+      If[!RuleQ[lbl] && !MissingQ[lbl], AssociateTo[$morphGradColors, Replace[lbl, Cloned[c_, _] :> c] -> colors]];
+      AssociateTo[$morphGradColors, Apply[DirectedEdge, stRaw] -> colors];
+    ];
   ];
 
-  _ := Null
+  _ := Null;
 ];
+
+findColor[e_] := DeepFirstCase[e, (Style[___, c:$ColorPattern, ___] | FramedForm[_, c:$ColorPattern]) :> c];
 
 makeEndpointSetback = Case[
   {a_, b_} := Rectangular[{a, b}];

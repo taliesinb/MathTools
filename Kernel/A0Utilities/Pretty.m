@@ -238,7 +238,10 @@ $literalPatternVariables = Hold[
   $NumberP,
   $CoordP, $Coord2P, $Coord3P, $CoordPairP, $Coord2PairP, $Coord3PairP, $CoordMat2P, $CoordMat3P, $CoordMatP, $CoordMaybeMatP, $CoordMatsP, $CoordMaybeMatsP,
   $SidePattern, $SizePattern,
-  $RulePattern, $RuleListPattern
+  $RulePattern, $RuleListPattern,
+  $Blue, $Red, $Green, $Pink, $Teal, $Yellow, $Orange, $Purple, $Gray, $White, $Black,
+  $DarkRed, $DarkBlue, $DarkGreen, $DarkOrange, $DarkPurple, $DarkTeal, $DarkGray, $DarkPink, $DarkYellow, $DarkWhite, $DarkBlack,
+  $LightRed, $LightBlue, $LightGreen, $LightOrange, $LightPurple, $LightTeal, $LightGray, $LightPink, $LightYellow, $LightWhite, $LightBlack
 ];
 
 Scan[

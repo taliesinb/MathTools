@@ -208,7 +208,7 @@ DefineInfixForm[TightCompositionForm, "\[NegativeThinSpace]"];
 DefineInfixForm[CompositionForm, ""];
 
 DefineStandardTraditionalForm[
-  SpacedCompositionForm[gs:(GradientSymbol["\[RightArrow]", ___]..)] :>
+  SpacedCompositionForm[gs:(GradientSymbol[RightArrowSymbol | "\[RightArrow]", ___]..)] :>
     RowBox @ Riffle[Map[ToBoxes, Reverse @ {gs}], "\[VeryThinSpace]"]
 ]
 
@@ -250,7 +250,9 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicTypesettingForm[GradientSymbol]
+PublicTypesettingForm[GradientSymbol, GradientArrowSymbol]
+
+GradientArrowSymbol[args___] := GradientSymbol[RightArrowSymbol, args];
 
 DefineStandardTraditionalForm[{
 
@@ -269,7 +271,7 @@ DefineStandardTraditionalForm[{
       "DilationFactor" -> 1, "CompressionFactor" -> 0.5
     ],
 
-  GradientSymbol["\[RightArrow]", col1_, col2_, sz_:16] :>
+  GradientSymbol[RightArrowSymbol | "\[RightArrow]", col1_, col2_, sz_:16] :>
     gradientArrowBoxes[col1, col2, sz],
 
   (g:GradientSymbol[_FunctorSymbol, ___])[args___] :>

@@ -31,6 +31,7 @@ MorphismArrow[path$, label$, decoration$] applies one or more arrowhead decorati
 | %LabelBackground | background of label |
 | %LabelOffset | absolute offset applied after label is positioned |
 | %DebugLabels | whether to put a dot on the label anchors |
+* %ArrowColor -> {c$s, c$t} uses a gradient between colors c$s, c$t.
 * %LabelOrientation can be one of the following:
 | Horizontal | appear horizontally (automatic) with offset to avoid clipping shaft |
 | 'Aligned' | aligned to the shaft |
@@ -161,8 +162,13 @@ morphismArrowheadBoxes[curvePos:$NumberP, shape_] := Scope[
   {pos, dir} = VectorAlongLine[$path, Scaled @ curvePos];
   rawNamedIconBoxes[
     ResolveOffsets[pos, graphicsScale],
-    dir, shape /. $arrowAliases, graphicsScale, $size, 1, $arrowColor, arrowThickness, curvePos]
+    dir, shape /. $arrowAliases, graphicsScale, $size, 1,
+    resolveArrowheadColor[$arrowColor, curvePos],
+    arrowThickness, curvePos]
 ];
+
+resolveArrowheadColor[{c1_, c2_}, pos_] := Blend[{c1, c2}, pos];
+resolveArrowheadColor[c1_, _] := c1;
 
 (**************************************************************************************************)
 
