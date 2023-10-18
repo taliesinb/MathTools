@@ -313,7 +313,7 @@ wrapWith[e_, wrap_] := Scope[
 
 (**************************************************************************************************)
 
-$shortcodeP = RegularExpression @ ToRegularExpression @ Alternatives[
+$shortcodeP := $shortcodeP = RegularExpression @ ToRegularExpression @ Alternatives[
   "</span>", "\n", "B{", "B:", "F{", "F:", "\\n", "^{", "_{", ("_" | "^") ~~ DigitCharacter,
   DoubleStruckCharacter,
   First @ $WLSymbolToUnicode

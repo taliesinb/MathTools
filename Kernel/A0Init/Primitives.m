@@ -1,6 +1,28 @@
-PrivateSymbol[$customGraphicsHeadQ]
+PrivateVariable[$graphicsHeadQ, $builtinGraphicsHeadQ, $customGraphicsHeadQ]
+PrivateVariable[$graphicsHeadP, $builtinGraphicsHeadP, $customGraphicsHeadP]
 
-SetInitialValue[$customGraphicsHeadQ, <||>];
+SetInitialValue[$graphicsHeadQ, $builtinGraphicsHeadQ, $customGraphicsHeadQ, UAssociation[]];
+SetInitialValue[$graphicsHeadP, $builtinGraphicsHeadP, $customGraphicsHeadP, Alternatives[]];
+
+SetHoldAll[insertQP];
+insertQP[qsym_, psym_, key_] := (
+  AssociateTo[qsym, key -> True];
+  AppendUniqueTo[psym, key];
+)
+
+declareGraphicsHead[head_Symbol] := (
+  insertQP[$graphicsHeadQ, $graphicsHeadP, head];
+  If[SystemSymbolQ @ head,
+    insertQP[$builtinGraphicsHeadQ, $builtinGraphicsHeadP, head],
+    insertQP[$customGraphicsHeadQ, $customGraphicsHeadP, head];
+  ];
+);
+
+(**************************************************************************************************)
+
+PrivateVariable[$primHeadToPrimBoxHead]
+
+SetInitialValue[$primHeadToPrimBoxHead, UAssociation[]];
 
 (**************************************************************************************************)
 
@@ -33,6 +55,8 @@ SignPrimitive[sig_, heads_List | heads_Alternatives] :=
 $head = None;
 SignPrimitive[sig_, head_Symbol] := CatchMessage @ Scope[
   $head = head;
+  boxHeadName = "System`" <> SymbolName[head] <> "Box";
+  $boxHead = If[NameQ[boxHeadName], Symbol @ boxHeadName, None];
   Scan[procSignature, toSignatures @ sig];
 ];
 
@@ -46,13 +70,16 @@ toSignatures = Case[
 handleOpt[s_] /; StringContainsQ[s, "?"] := Splice[{StringDelete[s, "?" ~~ ___], StringReplace[s, "?"->","]}];
 handleOpt[s_] := s;
 
-SetInitialValue[$primToSigs, UAssociation[]];
-SetInitialValue[$sigToPrims, UAssociation[]];
-SetInitialValue[$sigElemToPrims, UAssociation[]];
+SetInitialValue[$primToSigs, $sigToPrims, $sigToPrimBoxes, $sigElemToPrims, UAssociation[]];
 
 procSignature[str_String] := Scope[
   sigElems = parseSignatureString @ str;
   KeyUnionTo[$sigToPrims, sigElems, {$head}];
+  declareGraphicsHead[$head];
+  If[$boxHead =!= None,
+    KeyUnionTo[$sigToPrimBoxes, sigElems, {$boxHead}];
+    AssociateTo[$primHeadToPrimBoxHead, $head -> $boxHead];
+  ];
   KeyUnionTo[$primToSigs, $head, {sigElems}];
   ScanIndex1[procSignatureElem, sigElems];
 ];
@@ -113,6 +140,12 @@ iPrimitiveSignatureLookup = Case[
   sym_Symbol :=
     Lookup[$primToSigs, sym, Message[PrimitiveSignatureLookup::nosym, sym]; {}];
 ];
+
+(**************************************************************************************************)
+
+PublicFunction[PrimitiveBoxSignatureLookup]
+
+PrimitiveBoxSignatureLookup[arg_] := Block[{$sigToPrims = $sigToPrimBoxes}, PrimitiveSignatureLookup[arg]];
 
 (**************************************************************************************************)
 
@@ -181,15 +214,13 @@ SetUsage @ "
 DeclareCurveAlias[head$, aliasFn$] declares that head$ is a curve that rewrites itself to another curve via aliasFn$.
 "
 
-SetInitialValue[$customCurveAliasFn, UAssociation[]];
-SetInitialValue[$customCurveHeadQ, UAssociation[]];
-SetInitialValue[$customCurveFn, UAssociation[]];
-SetInitialValue[$customCurveBoxesFn, UAssociation[]];
-SetInitialValue[$customCurveIsRecursive, UAssociation[]];
+SetInitialValue[$customCurveAliasFn, $customCurveFn, $customCurveBoxesFn, UAssociation[]];
+SetInitialValue[$customCurveHeadQ, $customCurveIsRecursive, UAssociation[]];
+SetInitialValue[$customCurveHeadP, Alternatives[]];
 
 DeclareCurvePrimitive[head_Symbol, curveFn_, boxesFn_:Automatic] := (
-  $customGraphicsHeadQ[head] = True;
-  $customCurveHeadQ[head] = True;
+  declareGraphicsHead[head];
+  insertQP[$customCurveHeadQ, $customCurveHeadP, head];
   $customCurveIsRecursive[head] = True;
   $customCurveFn[head] = curveFn;
   $customCurveBoxesFn[head] = ReplaceAutomatic[boxesFn, toLineBox];
@@ -320,7 +351,6 @@ SetInitialValue[$customPrimitiveFns, UAssociation[]];
 
 DeclareGraphicsPrimitive[head_Symbol, signature_, fn_, dims_:{2}] := (
   If[FailureQ @ SignPrimitive[signature, head], ReturnFailed[]];
-  $customGraphicsHeadQ[head] = True;
   $customPrimitiveFns[head] = fn;
   If[MemberQ[dims, 2], Typeset`MakeBoxes[e_head, StandardForm | TraditionalForm, Graphics] := CustomPrimitiveToBoxes[e]];
   If[MemberQ[dims, 3], Typeset`MakeBoxes[e_head, StandardForm | TraditionalForm, Graphics3D] := CustomPrimitiveToBoxes[e]];

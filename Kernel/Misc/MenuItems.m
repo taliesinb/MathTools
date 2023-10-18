@@ -1,6 +1,6 @@
 (* see /Applications/Mathematica.app/Contents/SystemFiles/FrontEnd/TextResources/Macintosh/MenuSetup.tr for info on anchors *)
-If[!TrueQ[QuiverGeometryPackageLoader`$menuModified] && $FrontEnd =!= Null,
-With[{qgPath = QuiverGeometryPackageLoader`$initFile},
+If[!TrueQ[QuiverGeometryLoader`$menuModified] && $FrontEnd =!= Null,
+With[{qgPath = QuiverGeometryLoader`$initFile},
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["CDFPreview", {
     Delimiter,
     MenuItem[
@@ -23,7 +23,7 @@ With[{qgPath = QuiverGeometryPackageLoader`$initFile},
     ],
     MenuItem[
       "Reload Quiver&Geometry",
-      KernelExecute[QuiverGeometryPackageLoader`Load[False]],
+      KernelExecute[QuiverGeometryLoader`Load[False]],
       FrontEnd`MenuKey["g", FrontEnd`Modifiers -> {"Command", "Option"}],
       MenuEvaluator -> Automatic, Method -> "Queued"
     ],
@@ -96,5 +96,5 @@ With[{qgPath = QuiverGeometryPackageLoader`$initFile},
       MenuEvaluator -> Automatic
     ]
   }]];
-  QuiverGeometryPackageLoader`$menuModified = True;
+  QuiverGeometryLoader`$menuModified = True;
 ]];

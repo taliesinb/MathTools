@@ -38,6 +38,8 @@ DefineStandardTraditionalForm[
   ni:NamedIcon[$iconNameP, ___Rule] :> namedIconTypesettingBoxes[ni]
 ];
 
+PrivateFunction[namedIconTypesettingBoxes]
+
 namedIconTypesettingBoxes[NamedIcon[name_, opts___]] := Scope[
   UnpackOptionsAs[NamedIcon, {opts}, iconColor, iconScaling, iconThickness, imageSize, alignmentPoint, $debugBounds];
   inset = rawNamedIconBoxes[pos, dir, name, None, imageSize, iconScaling /. $scalingRules, iconColor, iconThickness, alignmentPoint /. $alignmentRules];

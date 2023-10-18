@@ -74,7 +74,7 @@ addTermToIndex[support_][term_] := Scan[
 DefineGraphTheme["PartitionLattice",
 	VertexLayout -> TreeVertexLayout[],
 	VertexTooltips -> "Name",
-	ArrowheadPosition -> Around[0.5,.1],
+	ArrowheadPosition -> Spread[0.5,.1],
 	ArrowheadSize -> 15
 ];
 

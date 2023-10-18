@@ -76,7 +76,7 @@ DefineStandardTraditionalForm[nfs_NamedFunctionForm[args___] :> MakeBoxes[Applie
 
 (**************************************************************************************************)
 
-PublicSymbol[AndFunction, OrFunction, NotFunction, XorFunction, NandFunction, ParityFunction]
+PublicTypesettingForm[AndFunction, OrFunction, NotFunction, XorFunction, NandFunction, ParityFunction]
 
 DefineNamedFunctionSymbolForm[{
   AndFunction,
@@ -89,7 +89,7 @@ DefineNamedFunctionSymbolForm[{
 
 (**************************************************************************************************)
 
-PublicSymbol[AutomorphismsFunction, GraphAutomorphismsFunction, EndomorphismsFunction, GraphEndomorphismsFunction]
+PublicTypesettingForm[AutomorphismsFunction, GraphAutomorphismsFunction, EndomorphismsFunction, GraphEndomorphismsFunction]
 
 DefineNamedFunctionSymbolForm[{
   AutomorphismsFunction -> "Aut",
@@ -100,42 +100,7 @@ DefineNamedFunctionSymbolForm[{
 
 (**************************************************************************************************)
 
-PublicSymbol[VertexListFunction, MinimalContractionsFunction, MinimalContractionSetsFunction, EdgeListFunction, PathListFunction, CardinalListFunction, SignedCardinalListFunction, SignedLengthFunction, LengthFunction, LCMFunction, HeadVertexFunction, TailVertexFunction, WordFunction]
-
-DefineNamedFunctionSymbolForm[{
-  VertexListFunction -> "vertices",
-  MinimalContractionsFunction -> "MCSets",
-  MinimalContractionSetsFunction -> "MC",
-  EdgeListFunction -> "edges",
-  PathListFunction -> "paths",
-  CardinalListFunction -> "cards",
-  SignedCardinalListFunction -> "cards*",
-  SignedLengthFunction -> "len*",
-  LengthFunction -> "len",
-  LCMFunction -> "lcm",
-  HeadVertexFunction -> "head",
-  TailVertexFunction -> "tail",
-  WordFunction
-}]
-
-(**************************************************************************************************)
-
-PublicSymbol[SplitFunction, BasisFunction, SupportFunction, GradeFunction, CoefficientFunction]
-
-DefineNamedFunctionSymbolForm[{
-  SplitFunction,
-  BasisFunction,
-  SupportFunction -> "supp",
-  GradeFunction,
-  ModFunction,
-  CoefficientFunction -> "coeff",
-  TorusFunction,
-  MobiusFunction
-}]
-
-(**************************************************************************************************)
-
-PublicSymbol[LimitFunction, ColimitFunction]
+PublicTypesettingForm[LimitFunction, ColimitFunction]
 
 DefineNamedFunctionSymbolForm[{
   LimitFunction -> "lim",
@@ -144,16 +109,7 @@ DefineNamedFunctionSymbolForm[{
 
 (**************************************************************************************************)
 
-PublicSymbol[TorusFunction, MobiusFunction]
-
-DefineNamedFunctionSymbolForm[{
-  TorusFunction,
-  MobiusFunction
-}]
-
-(**************************************************************************************************)
-
-PublicSymbol[MaxFunction, MinFunction, SinFunction, CosFunction, TanFunction, ArcTanFunction]
+PublicTypesettingForm[MaxFunction, MinFunction, SinFunction, CosFunction, TanFunction, ArcTanFunction]
 
 DefineNamedFunctionSymbolForm[{
   MaxFunction,
@@ -162,45 +118,6 @@ DefineNamedFunctionSymbolForm[{
   CosFunction,
   TanFunction,
   ArcTanFunction -> "atan"
-}]
-
-(**************************************************************************************************)
-
-PublicSymbol[ModFunction, ClipFunction, SignFunction, StepFunction, DomainFunction, CodomainFunction, ProjectionFunction, LiftFunction, IdentityFunction, TotalFunction]
-
-DefineNamedFunctionSymbolForm[{
-  ModFunction,
-  ClipFunction,
-  SignFunction -> "sgn",
-  StepFunction,
-  DomainFunction -> "dom",
-  CodomainFunction -> "cod",
-  ProjectionFunction -> "proj",
-  LiftFunction,
-  IdentityFunction -> "id",
-  TotalFunction -> "tot"
-}]
-
-(**************************************************************************************************)
-
-PublicSymbol[StateMeetFunction, StateJoinFunction, StateExtentFunction, StateIntentFunction, StateComposeFunction, StateDecomposeFunction]
-
-DefineNamedFunctionSymbolForm[{
-  StateMeetFunction -> "disj",
-  StateJoinFunction -> "conj",
-  StateExtentFunction -> "extent",
-  StateIntentFunction -> "intent",
-  StateComposeFunction -> "glue",
-  StateDecomposeFunction -> "melt"
-}]
-
-(**************************************************************************************************)
-
-PublicSymbol[SrcFunction, SourceFunction, TargetFunction, TgtFunction]
-
-DefineNamedFunctionSymbolForm[{
-  SrcFunction -> "src", SourceFunction,
-  TgtFunction -> "tgt", TargetFunction
 }]
 
 (**************************************************************************************************)

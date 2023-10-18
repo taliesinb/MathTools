@@ -571,7 +571,7 @@ applyCoordinateTransform[{"PolarProjection", h_}] := Scope[
   applyCoordinateTransform[Apply[{x, y, z} |-> {x / (h-z), y/(h-z)}]];
 ];
 
-$namedTransforms = <|
+$namedTransforms := $namedTransforms = <|
   "Rotate0" -> Identity,
   "Rotate45" -> RotationTransform[45 * Degree],
   "Rotate60" -> RotationTransform[60 * Degree],
@@ -636,10 +636,7 @@ ptAlong[a_, b_, d_] := Which[d <= 0, a, d >= EuclideanDistance[a, b], b, True, P
 squareSelfLoop[line_] := line;
 
 applyCoordinateTransform[name_String] := Scope[
-  trans = Lookup[$namedTransforms, name,
-    Message[ExtendedGraphPlot::badcoordtransname, name, commaString @ Keys @ $namedTransforms];
-    $Failed
-  ];
+  trans = LookupOrMessageKeys[$namedTransforms, name, $Failed];
   If[FailureQ[trans], ReturnFailed[]];
   applyCoordinateTransform @ trans
 ];

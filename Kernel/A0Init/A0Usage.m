@@ -187,14 +187,36 @@ storeRawUsageString[rawUsageString_String] := Block[
 
 (**************************************************************************************************)
 
+PrivateMutatingFunction[AppendUniqueTo]
+
+SetHoldFirst[AppendUniqueTo];
+AppendUniqueTo[var_, value_] := If[!MemberQ[var, value], AppendTo[var, value]];
+
+(**************************************************************************************************)
+
 PrivateMutatingFunction[SetInitialValue]
 
-SetHoldAllComplete[SetInitialValue];
+SetHoldAllComplete[SetInitialValue, SetDelayedInitialValue];
+
+SetInitialValue[sym_Symbol, other__Symbol, body_] := (SetInitialValue[sym, body]; SetInitialValue[other, body]);
 
 SetInitialValue[sym_Symbol, body_] := If[!System`Private`HasImmediateValueQ[sym],
-  QuiverGeometryPackageLoader`DeclarePreservedVariable[sym];
+  QuiverGeometryLoader`DeclarePreservedVariable[sym];
   Set[sym, body]
 ];
+
+(**************************************************************************************************)
+
+PrivateMutatingFunction[SetDelayedInitialValue]
+
+SetDelayedInitialValue[sym_Symbol, other__Symbol, body_] := (SetDelayedInitialValue[sym, body]; SetDelayedInitialValue[other, body]);
+
+SetDelayedInitialValue[sym_Symbol, body_] := If[!System`Private`HasOwnEvaluationsQ[sym],
+  QuiverGeometryLoader`DeclarePreservedVariable[sym];
+  SetDelayed[sym, body]
+];
+
+_SetDelayedInitialValue := Print["Bad SetDelayedInitialValue"];
 
 (**************************************************************************************************)
 

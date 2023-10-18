@@ -313,7 +313,7 @@ PublicDebuggingFunction[PerformSelfLinting]
 PerformSelfLinting[] := Scope[
   DeleteCases[{} | <||>] @ Association[
     "MissingPackageScopes" -> findMissingPackageScopes[],
-    "SuspiciousPackageLines" -> QuiverGeometryPackageLoader`$SuspiciousPackageLines
+    "SuspiciousPackageLines" -> QuiverGeometryLoader`$SuspiciousPackageLines
   ]
 ];
 

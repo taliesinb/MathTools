@@ -24,7 +24,7 @@ KBox[wl_, kb_] := TemplateBox[{wl, kb}, "katexSwitch"];
 PrivateFunction[setupFormDefinitionCaching]
 
 setupFormDefinitionCaching[fn_Symbol] := (
-  expr_fn /; TrueQ[$fdCacheEnabled] && FreeQ[Unevaluated @ expr, BoxFunction] := Block[
+  expr_fn /; TrueQ[$fdCacheEnabled] := Block[
     {key = getFDCacheKey[expr], hash = Hash[Unevaluated @ expr], res, pair, $fdCacheEnabled = False},
     pair = Lookup[$formDefinitionCache, key];
     If[ListQ[pair] && Last[pair] === hash, res = First @ pair,
@@ -227,7 +227,7 @@ BoxFunction is an option to various DefineXXX functions that specifies a symbol 
 
 attachBoxFunctionDefs[None, _] := Null;
 attachBoxFunctionDefs[sym_Symbol, fn_] := (
-  QuiverGeometryPackageLoader`DeclarePreservedFunction[sym]; (* <- this ensures that after caching and reloading, box function definitions aren't wiped *)
+  QuiverGeometryLoader`DeclarePreservedFunction[sym]; (* <- this ensures that after caching and reloading, box function definitions aren't wiped *)
   SetDelayed[sym[args___], fn[args]]
 );
 
@@ -309,12 +309,7 @@ PublicFunction[ClearTemplateBoxDefinitions]
 
 PrivateVariable[$notebookDisplayFunction, $katexDisplayFunction, $katexMacros, $symbolToTemplateName, $symbolToKatexMacroName, $notebookDisplayFunctionBases]
 
-SetInitialValue[$notebookDisplayFunction, <||>];
-SetInitialValue[$katexDisplayFunction, <||>];
-SetInitialValue[$katexMacros, <||>];
-SetInitialValue[$symbolToTemplateName, <||>];
-SetInitialValue[$symbolToKatexMacroName, <||>];
-SetInitialValue[$notebookDisplayFunctionBases, <||>];
+SetInitialValue[$notebookDisplayFunction, $katexDisplayFunction, $katexMacros, $symbolToTemplateName, $symbolToKatexMacroName, $notebookDisplayFunctionBases, <||>];
 
 ClearTemplateBoxDefinitions[] := (
   $notebookDisplayFunction =
@@ -351,6 +346,8 @@ DefineKatexMacro[name_String, fn_Function] := (
 );
 
 (**************************************************************************************************)
+
+PrivateSpecialFunction[AssociateSymbolToTemplateName, AssociateSymbolToKatexMacro]
 
 AssociateSymbolToTemplateName[sym_Symbol, name_String] := KeyAppendTo[$symbolToTemplateName, sym, name];
 AssociateSymbolToKatexMacro[sym_Symbol, name_String]   := KeyAppendTo[$symbolToKatexMacroName, sym, name];

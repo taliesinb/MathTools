@@ -76,7 +76,7 @@ DefineInfixForm[#1, OpBox @ #2]& @@@ ExpressionTable[
   SubmultisetEqualForm         OverdotBox @ "⊆"
   SupermultisetForm            OverdotBox @ "⊃"
   SupermultisetEqualForm       OverdotBox @ "⊇"
-]
+];
 
 (**************************************************************************************************)
 

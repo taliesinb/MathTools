@@ -1,6 +1,6 @@
-PublicVariable[$SymbolTranslationTable]
+$symbolTranslationTable := $symbolTranslationTable = computeSymbolTranslationTable[];
 
-$SymbolTranslationTable = Block[{str},
+computeSymbolTranslationTable[] := Block[{str},
   rawString = ImportUTF8 @ LocalPath["Kernel", "Markdown", "SymbolTranslation.txt"];
   rawString //= StringReplace[{StartOfLine ~~ " "... ~~ "\n" -> "", " \\" -> " \\\\", "\"" -> "\\\""}];
   parsedString = StringTrim[ToExpression["\"" <> rawString <> "\"", InputForm], " " | "\n"];
@@ -19,7 +19,7 @@ SymbolTranslationData[schema_] := Scope[
   func = Construct[Function, schema /. {
     "Symbol" -> #1, "InputForm" -> #2, "Katex" -> #3, "Unicode" -> #4
   }];
-  results = func @@@ $SymbolTranslationTable;
+  results = func @@@ $symbolTranslationTable;
   Discard[results, ContainsQ[None]]
 ];
 
@@ -39,11 +39,11 @@ makeLiteralReplacementRule[assoc_, wrap_] := ModuleScope[
 
 PublicVariable[$WLSymbolToKatexRegex]
 
-$WLSymbolToKatexRegex = makeLiteralReplacementRule[SymbolTranslationData[<|"Symbol" -> "Katex"|>], True]
+$WLSymbolToKatexRegex := $WLSymbolToKatexRegex = makeLiteralReplacementRule[SymbolTranslationData[<|"Symbol" -> "Katex"|>], True]
 
 PublicVariable[$WLSymbolToUnicode]
 
-$WLSymbolToUnicode = makeLiteralReplacementRule[SymbolTranslationData[<|"Symbol" -> "Unicode"|>], False]
+$WLSymbolToUnicode := $WLSymbolToUnicode = makeLiteralReplacementRule[SymbolTranslationData[<|"Symbol" -> "Unicode"|>], False]
 
 (**************************************************************************************************)
 

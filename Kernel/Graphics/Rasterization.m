@@ -153,7 +153,7 @@ VideoRasterizeList[frames_, name_:Automatic, frameRate_:30] := Scope[
 
 PrivateFunction[VideoFilePath]
 
-VideoFilePath[v_Video] := First @ Information[v, "ResourcePath"]
+VideoFilePath[HoldPattern @ v_Video] := First @ Information[v, "ResourcePath"]
 
 (*************************************************************************************************)
 

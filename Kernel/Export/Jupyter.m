@@ -236,7 +236,7 @@ procTextCell[s_List] := markdownCell @ StringJoin @ s;
 
 parseMD[str_String] /; StringFreeQ[str, "*"|"_"] := str;
 
-Quiet[
+Block[{Message, MessageName}, (* prevents the RuleDelayed::rhs message from even loading, which is slow disk access *)
 markdownSpan[left_, symbol_, right_] := left ~~ symbol:((WordCharacter) | (WordCharacter ~~ Shortest[___] ~~ WordCharacter)) ~~ right;
 ];
 

@@ -1,17 +1,15 @@
-Begin["QuiverGeometryPackageLoader`Private`"];
+Begin["QuiverGeometryLoader`Private`"];
 
 Needs["GeneralUtilities`"];
 
-Unprotect[EpilogFunction];
-ClearAll[EpilogFunction];
+LVPrint[args___] := If[QuiverGeometryLoader`$Verbose, Print[args]];
 
-(* this can trigger paclet downloads, which if $AllowInternet = False will cause a message
-here, so we Quiet it *)
-Quiet[
-  Style;
-  SyntaxInformation[Style];
-  Options[Style];
-];
+LVPrint["Prelude."];
+
+(* these symbols cause expensive packages to load, and appear as options to Style *)
+Unprotect[EpilogFunction, LLMEvaluator, LLMEvaluatorNames];
+ClearAll[EpilogFunction, LLMEvaluator, LLMEvaluatorNames];
+Quiet[Style; Options[Style]];
 
 (* moved from A0Usage.m because this runs slowly:
 the default behavior of System`InformationDump` will introduce LineSpacing that messes up
@@ -23,37 +21,42 @@ System`InformationDump`subtitleStyled[sub_] := Style[sub, "InformationUsageText"
 
 (*************************************************************************************************)
 
-QuiverGeometryPackageLoader`$LoaderFileName = $InputFileName;
+QuiverGeometryLoader`$LoaderFileName = $InputFileName;
 
-QuiverGeometryPackageLoader`$SourceDirectory = DirectoryName @ $InputFileName;
+QuiverGeometryLoader`$SourceDirectory = DirectoryName @ $InputFileName;
 
-QuiverGeometryPackageLoader`$PackageDirectory = ParentDirectory @ QuiverGeometryPackageLoader`$SourceDirectory;
+QuiverGeometryLoader`$PackageDirectory = ParentDirectory @ QuiverGeometryLoader`$SourceDirectory;
 
-QuiverGeometryPackageLoader`$SymbolTableFile = FileNameJoin[{QuiverGeometryPackageLoader`$SourceDirectory, "SymbolTable.m"}];
+QuiverGeometryLoader`$SymbolTableFile = FileNameJoin[{QuiverGeometryLoader`$SourceDirectory, "SymbolTable.m"}];
 
-QuiverGeometryPackageLoader`$CurrentFile = None;
+QuiverGeometryLoader`$CurrentFile = None;
 
-QuiverGeometryPackageLoader`$PreservedVariables = Data`UnorderedAssociation[];
-QuiverGeometryPackageLoader`$PreservedFunctions = Data`UnorderedAssociation[];
+QuiverGeometryLoader`$PreservedVariables = Data`UnorderedAssociation[];
+QuiverGeometryLoader`$PreservedFunctions = Data`UnorderedAssociation[];
 
-Attributes[QuiverGeometryPackageLoader`DeclarePreservedVariable] = {HoldAll};
-QuiverGeometryPackageLoader`DeclarePreservedVariable[var_] :=
-  AssociateTo[QuiverGeometryPackageLoader`$PreservedVariables, Hold[var] -> True];
+Attributes[QuiverGeometryLoader`DeclarePreservedVariable] = {HoldAll};
+QuiverGeometryLoader`DeclarePreservedVariable[var_] :=
+  AssociateTo[QuiverGeometryLoader`$PreservedVariables, Hold[var] -> True];
 
-Attributes[QuiverGeometryPackageLoader`DeclarePreservedFunction] = {HoldAll};
-QuiverGeometryPackageLoader`DeclarePreservedFunction[fn_] :=
-  AssociateTo[QuiverGeometryPackageLoader`$PreservedFunctions, Hold[fn] -> True];
+Attributes[QuiverGeometryLoader`DeclarePreservedFunction] = {HoldAll};
+QuiverGeometryLoader`DeclarePreservedFunction[fn_] :=
+  AssociateTo[QuiverGeometryLoader`$PreservedFunctions, Hold[fn] -> True];
 
 
 (*************************************************************************************************)
+
+(* we set $CurrentFileName where necessary so TraceLoading will say the right location *)
+GeneralUtilities`$CurrentFileName = QuiverGeometryLoader`$LoaderFileName;
 
 (* Fix GU's ability to open files in subl on MacOS *)
 If[$OperatingSystem === "MacOSX",
   GeneralUtilities`Packages`PackagePrivate`$sublimePath = "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl";
 ];
 
+LVPrint["Reading core symbols from SymbolTable.m."];
+
 (* we will immediately resolve these system symbols, which will take care of the vast majority of Package`PackageSymbol cases *)
-$coreSymbols = DeleteCases[_Hold] @ Catenate @ Values @ Get @ QuiverGeometryPackageLoader`$SymbolTableFile;
+$coreSymbols = DeleteCases[_Hold] @ Catenate @ Values @ Get @ QuiverGeometryLoader`$SymbolTableFile;
 
 $coreSymbols = Sort @ DeleteDuplicates @ $coreSymbols;
 
@@ -62,23 +65,23 @@ $coreSymbolContexts = Context /@ $coreSymbols;
 
 $corePackageSymbols = DeleteCases[Package`PublicScopedOption | Package`PublicTypesettingFormBox] @ Pick[$coreSymbols, $coreSymbolContexts, "Package`"];
 $corePackageSymbolNames = SymbolName /@ $corePackageSymbols;
-$corePackageSymbolClasses = StringTrim[$corePackageSymbolNames, {"System", "Public", "Private"}];
+$corePackageSymbolGroups = StringTrim[$corePackageSymbolNames, {"System", "Public", "Private"}];
 $legacyPackageDirs = {"Package", "PackageExport", "PackageImport", "PackageScope"};
 
-(* rule that will scan all packages and add symbols to their classes,  headPattern_[sym_] -> (class -> sym) *)
+(* rule that will scan all packages and add symbols to their groups,  headPattern_[sym_] -> (group -> sym) *)
 toAlt[{a_}] := a;
 toAlt[a_List] := Alternatives @@ a;
-$symbolClassRules = KeyValueMap[
+$symbolGroupRules = KeyValueMap[
   #2[z___] :> (#1 -> extractStrings[z])&,
   KeyDrop[$legacyPackageDirs] @
-    Merge[Thread[$corePackageSymbolClasses -> $corePackageSymbols], toAlt]
+    Merge[Thread[$corePackageSymbolGroups -> $corePackageSymbols], toAlt]
 ];
 
 extractStrings[z___] := DeepCases[{z}, _String];
 
-(* association from symbol class, like Symbol, TypesettingForm, etc to list of these symbols.
+(* association from symbol group, like Symbol, TypesettingForm, etc to list of these symbols.
 we don't care about System/Private/Public at all *)
-QuiverGeometryPackageLoader`$SymbolClasses = $initSymClasses = Association["Package" -> $corePackageSymbolNames];
+QuiverGeometryLoader`$SymbolGroups = $initSymGroups = Association["Package" -> $corePackageSymbolNames];
 
 makePackageSymbolHeadP[s_] := Apply[Alternatives, Pick[$corePackageSymbols, StringStartsQ[$corePackageSymbolNames, s]]];
 $systemPackageDeclarationHeadP = makePackageSymbolHeadP["System"];
@@ -87,10 +90,13 @@ $privatePackageDeclarationHeadP = makePackageSymbolHeadP["Private"];
 
 toRegexPattern["$Failed"] := "(\\$Failed)";
 toRegexPattern[str_] := "(" <> str <> ")";
+
+LVPrint["Creating core symbols regexp."];
 $coreSymbolRegex = RegularExpression @ StringJoin @ Riffle[Map[toRegexPattern, Sort @ $coreSymbolNames], "|"];
 
 $coreSymbolAssociation = AssociationThread[$coreSymbolNames, $coreSymbols];
 
+GeneralUtilities`$CurrentFileName =.;
 
 (*************************************************************************************************)
 
@@ -99,15 +105,15 @@ makeResolvedSymbol[name_String] := ToExpression[name, InputForm, ResolvedSymbol]
 
 $lowerCaseSymbolRegex = RegularExpression["[$]?[a-z]"];
 
-$initialSymbolResolutionDispatch = With[{kernelInit = FileNameJoin[{QuiverGeometryPackageLoader`$PackageDirectory, "Kernel", "init.m"}]}, Dispatch[{
+$initialSymbolResolutionDispatch = With[{kernelInit = FileNameJoin[{QuiverGeometryLoader`$PackageDirectory, "Kernel", "init.m"}]}, Dispatch[{
   (* Package`PackageSymbol[name_String] /; StringStartsQ[name, $lowerCaseSymbolRegex] :> RuleCondition[makeResolvedSymbol[name]], *)
   Package`PackageSymbol["SetUsage"][usageString_String]                      :> RuleCondition[rewriteSetUsage[usageString]],
   Package`PackageSymbol[name_String] /; StringMatchQ[name, $coreSymbolRegex] :> RuleCondition[$coreSymbolAssociation[name]],
   Package`PackageSymbol[name_String] /; StringContainsQ[name, "`"]           :> RuleCondition[makeResolvedSymbol[name]],
   Package`PackageSymbol["UAssociation"]                                      :> Data`UnorderedAssociation,
-  p:Package`PackageSymbol["$PackageFileName"]                                :> RuleCondition[QuiverGeometryPackageLoader`$CurrentFile],
-  p:Package`PackageSymbol["$PackageDirectory"]                               :> RuleCondition[QuiverGeometryPackageLoader`$PackageDirectory],
-  p:Package`PackageSymbol["$PackageInitializer"]                             :> If[DownValues[QuiverGeometryPackageLoader`Load] === {}, Get @ kernelInit],
+  p:Package`PackageSymbol["$PackageFileName"]                                :> RuleCondition[QuiverGeometryLoader`$CurrentFile],
+  p:Package`PackageSymbol["$PackageDirectory"]                               :> RuleCondition[QuiverGeometryLoader`$PackageDirectory],
+  p:Package`PackageSymbol["$PackageInitializer"]                             :> If[DownValues[QuiverGeometryLoader`Load] === {}, Get @ kernelInit],
   p:Package`PackageSymbol["PublicScopedOption"][___]                         :> RuleCondition @ processScopedOption[p],
   p:Package`PackageSymbol["PublicTypesettingFormBox"][___]                   :> RuleCondition @ processTypesettingFormBox[p]
 }]];
@@ -155,8 +161,6 @@ observeTextFile[path_] := Module[{fileModTime},
   ];
 ];
 
-LVPrint[args___] := If[QuiverGeometryPackageLoader`$Verbose, Print[args]];
-
 readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
   {cachedModTime, cachedContents} = Lookup[$fileContentCache, path, {$Failed, $Failed}];
   fileModTime = UnixTime @ FileDate[path, "Modification"];
@@ -172,7 +176,7 @@ readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
 ];
 
 loadFileContents[path_, context_] := Module[{str, contents}, Block[{$currentContext = context},
-  $loadedFileCount++; QuiverGeometryPackageLoader`$CurrentFile = path;
+  $loadedFileCount++; QuiverGeometryLoader`$CurrentFile = path;
   str = StringReplace[fileStringUTF8 @ path, $stringProcessingRules];
   If[MatchQ[str, Whitespace] || str === "", Return @ Package`PackageData[]];
   contents = TimeConstrained[Check[Package`ToPackageExpression @ str, $Failed], 1];
@@ -203,13 +207,13 @@ QuiverGeometryLoader`ExpressionTable[context_String, str_String] := Block[
 
 (**************************************************************************************************)
 
-bracketRHS[s_] := Block[{$Context = "QuiverGeometryPackageLoader`Scratch`", len},
+bracketRHS[s_] := Block[{$Context = "QuiverGeometryLoader`Scratch`", len},
   len = SyntaxLength[s];
   "(" <> StringInsert[s, ")", len+1]
 ];
 
-If[!ValueQ[QuiverGeometryPackageLoader`$SystemOpenEnabled], QuiverGeometryPackageLoader`$SystemOpenEnabled = True];
-DoSystemOpen[s_] := If[QuiverGeometryPackageLoader`$SystemOpenEnabled, SystemOpen[s]];
+If[!ValueQ[QuiverGeometryLoader`$SystemOpenEnabled], QuiverGeometryLoader`$SystemOpenEnabled = True];
+DoSystemOpen[s_] := If[QuiverGeometryLoader`$SystemOpenEnabled, SystemOpen[s]];
 
 handleSyntaxError[path_, str_] := Scope[
   Print["Syntax error in ", path];
@@ -272,15 +276,16 @@ fileSortingTuple[path_] := {
 (* because $ContextPath is not allowed to be empty -- this results in weird internal messages *)
 $dummyContextPath = {"QuiverGeometryLoader`DummyContext`"};
 
-QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled_:True, fullReload_:True] := Block[
+QuiverGeometryLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled_:True, fullReload_:True] := Block[
   {$directory, $files, $textFiles, $privateSymbols, $systemSymbols, $publicSymbols, $packageExpressions, $packageRules,
    $mainContext, $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result, requiresFullReload,
-   $preservedValues, $preservedDownValues, $ignoreFiles, $symClasses
+   $preservedValues, $preservedDownValues, $ignoreFiles, $symGroups,
+   GeneralUtilities`$CurrentFileName = QuiverGeometryLoader`$LoaderFileName
   },
 
   Off[General::shdw]; (* because things like SetUsage, SetAutomatic, etc have QG local definitions *)
 
-  $symClasses = If[fullReload, $initSymClasses, QuiverGeometryPackageLoader`$SymbolClasses];
+  $symGroups = If[fullReload, $initSymGroups, QuiverGeometryLoader`$SymbolGroups];
   $directory = AbsoluteFileName @ ExpandFileName @ mainPath;
   $mainContext = mainContext;
   $mainPathLength = StringLength[$directory];
@@ -311,7 +316,7 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
   requiresFullReload = fullReload;
   result = Catch[
     $packageExpressions = Map[
-      path |-> Block[{expr, context, isDirty},
+      path |-> Block[{expr, context, isDirty, GeneralUtilities`$CurrentFileName = path},
         context = filePathToContext @ path;
         {expr, isDirty} = readPackageFile[path, context];
         If[isDirty, dirtyCount++];
@@ -330,18 +335,20 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
     failRead
   ];
 
-  LVPrint["Populating symbol class table."];
-  $symClasses = Union /@ Merge[{
-    $symClasses,
-    DeleteDuplicates @ Merge[
-      Map[rule |-> DeepCases[$packageExpressions, rule], $symbolClassRules],
+  If[dirtyCount > 0,
+    LVPrint["Populating symbol group table."];
+    $symGroups = Union /@ Merge[{
+      $symGroups,
+      DeleteDuplicates @ Merge[
+        Map[rule |-> DeepCases[$packageExpressions, rule], $symbolGroupRules],
+        Apply[Union]
+      ]},
       Apply[Union]
-    ]},
-    Apply[Union]
+    ];
+    QuiverGeometryLoader`$SymbolGroups = $symGroups;
   ];
-  QuiverGeometryPackageLoader`$SymbolClasses = $symClasses;
-  
-  Quiet @ Remove["QuiverGeometryPackageLoader`Scratch`*"]; (* <- dumping ground for SyntaxLength *)
+
+  Quiet @ Remove["QuiverGeometryLoader`Scratch`*"]; (* <- dumping ground for SyntaxLength *)
   If[result === $Failed,
     LVPrint["Reading failed."];
     Return[$Failed]];
@@ -358,15 +365,20 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
     Return[{}];
   ];
 
+  LVPrint["Updating preserved values."];
   $preservedValues = Replace[
-    Keys @ QuiverGeometryPackageLoader`$PreservedVariables,
-    Hold[sym_] :> With[{val = sym}, Hold[sym = val]],
+    Keys @ QuiverGeometryLoader`$PreservedVariables,
+    Hold[sym_] :> If[System`Private`HasImmediateValueQ[sym],
+      With[{val = sym}, Hold[sym = val]],
+      With[{ov = OwnValues[sym]}, Hold[OwnValues[sym] = ov]]
+    ],
     {1}
   ];
 
-  (* for things like RedBox that would otherwise we wiped out due to form definition caching mechanism *)
+  LVPrint["Updating preserved functions."];
+  (* for things like RedBox that would otherwise be wiped out due to form definition caching mechanism *)
   $preservedDownValues = Replace[
-    Keys @ QuiverGeometryPackageLoader`$PreservedFunctions,
+    Keys @ QuiverGeometryLoader`$PreservedFunctions,
     Hold[sym_] :> With[{dv = DownValues[sym]}, Hold[DownValues[sym] = dv]],
     {1}
   ];
@@ -402,13 +414,13 @@ QuiverGeometryPackageLoader`ReadPackages[mainContext_, mainPath_, cachingEnabled
   On[General::shdw];
 
   LVPrint["Finding suspicious lines."];
-  QuiverGeometryPackageLoader`$SuspiciousPackageLines = findSuspiciousPackageLines[$packageExpressions];
+  QuiverGeometryLoader`$SuspiciousPackageLines = findSuspiciousPackageLines[$packageExpressions];
 
   LVPrint["Read ", Length[$packageExpressions], " packages."];
   $packageExpressions
 ];
 
-QuiverGeometryPackageLoader`$SuspiciousPackageLines = {};
+QuiverGeometryLoader`$SuspiciousPackageLines = {};
 
 $badControlStatementPatterns = Alternatives[
   w_Switch /; EvenQ[Length[Unevaluated @ w]],
@@ -423,11 +435,12 @@ positionToFileLine[_, _] := Nothing;
 findSuspiciousPackageLines[pdata_] :=
   positionToFileLine /@ Position[$packageExpressions, $badControlStatementPatterns];
 
-QuiverGeometryPackageLoader`EvaluatePackages[packagesList_List] := Block[
-  {$currentPath, $currentLineNumber, $formsChanged, result, initialFile, finalFile},
+QuiverGeometryLoader`EvaluatePackages[packagesList_List] := Block[
+  {$currentPath, $currentLineNumber, $formsChanged, result, initialFile, finalFile,
+   GeneralUtilities`$CurrentFileName = QuiverGeometryLoader`$LoaderFileName, $Line = 0},
   $currentPath = ""; $currentLineNumber = 0;
-  QuiverGeometryPackageLoader`$FileTimings = <||>;
-  QuiverGeometryPackageLoader`$FileLineTimings  = <||>;
+  QuiverGeometryLoader`$FileTimings = <||>;
+  QuiverGeometryLoader`$FileLineTimings  = <||>;
   $formsChanged = $failEval = False;
   LVPrint["Evaluating packages."];
   loadUserFile["user_init.m"];
@@ -441,9 +454,18 @@ QuiverGeometryPackageLoader`EvaluatePackages[packagesList_List] := Block[
   result
 ];
 
-QuiverGeometryPackageLoader`DirectoryTimings[] := Block[{pathLen},
-  pathLen = StringLength @ AbsoluteFileName @ ExpandFileName @ QuiverGeometryPackageLoader`$SourceDirectory;
-  fileTimings = Normal @ QuiverGeometryPackageLoader`$FileTimings;
+QuiverGeometryLoader`FileTimings[] :=
+  ReverseSort @ QuiverGeometryLoader`$FileTimings;
+
+QuiverGeometryLoader`ExpensiveFileTimings[] :=
+  ReverseSort @ Select[# > 0.008&] @ QuiverGeometryLoader`$FileTimings;
+
+QuiverGeometryLoader`ExpensiveLineTimings[] :=
+  DeleteCases[<||>] @ Map[Select[# > 0.01&]] @ QuiverGeometryLoader`$FileLineTimings;
+
+QuiverGeometryLoader`DirectoryTimings[] := Block[{pathLen},
+  pathLen = StringLength @ AbsoluteFileName @ ExpandFileName @ QuiverGeometryLoader`$SourceDirectory;
+  fileTimings = Normal @ QuiverGeometryLoader`$FileTimings;
   groupTimings = MapAt[First @ StringSplit[StringDrop[#, pathLen], $PathnameSeparator]&, fileTimings, {All, 1}];
   ReverseSort @ Merge[groupTimings, Total]
 ];
@@ -459,15 +481,15 @@ userFileChangedQ[name_] := Block[{path, modTime, lastModTime},
   lastModTime != modTime
 ];
 
-QuiverGeometryPackageLoader`ReloadUserFile[] := QuiverGeometryPackageLoader`ReloadUserFile["user_final.m"];
+QuiverGeometryLoader`ReloadUserFile[] := QuiverGeometryLoader`ReloadUserFile["user_final.m"];
 
-QuiverGeometryPackageLoader`ReloadUserFile[name_] := loadUserFile @ name;
+QuiverGeometryLoader`ReloadUserFile[name_] := loadUserFile @ name;
   
-$userContext = "QuiverGeometryPackageLoader`Private`User`";
+$userContext = "QuiverGeometryLoader`Private`User`";
 $userContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"};
 $fileContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"};
 
-toUserFilePath[name_] := FileNameJoin[{QuiverGeometryPackageLoader`$SourceDirectory, name}];
+toUserFilePath[name_] := FileNameJoin[{QuiverGeometryLoader`$SourceDirectory, name}];
 
 loadUserFile[name_] := Block[{path},
   path = toUserFilePath[name];
@@ -488,10 +510,12 @@ evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
   If[$failEval, Return[$Failed, Catch]];
   LVPrint["Evaluating \"", path, "\""];
   $formsChanged = Or[$formsChanged, StringContainsQ[context, "`Typesetting`Forms`"]]; (* to avoid expensive symbol enum *)
-  QuiverGeometryPackageLoader`$FileTimings[path] = First @ AbsoluteTiming[
-    Block[{$Context = context, $ContextPath = $fileContextPath}, Catch[Scan[evaluateExpression, packageData], $evaluateExpressionTag]];
+  QuiverGeometryLoader`$FileTimings[path] = First @ AbsoluteTiming[
+    Block[{$Context = context, $ContextPath = $fileContextPath, GeneralUtilities`$CurrentFileName = path},
+      Catch[Scan[evaluateExpression, packageData], $evaluateExpressionTag]
+    ];
   ];
-  QuiverGeometryPackageLoader`$FileLineTimings[path] = $currentFileLineTimings;
+  QuiverGeometryLoader`$FileLineTimings[path] = $currentFileLineTimings;
 ,
   MacroEvaluate, catchMacroFailure
 ];
@@ -510,7 +534,7 @@ catchMacroFailure[$Failed, _] := handleMessage @
 catchMacroFailure[f_Failure, _] := handleMessage @ f;
 
 evaluateExpression[{lineNumber_, expr_}] := If[$failEval, $Failed,
-  $currentLineNumber = lineNumber;
+  $Line = $currentLineNumber = lineNumber;
   $currentFileLineTimings[lineNumber] = First @ AbsoluteTiming[{expr}];
 ];
 
@@ -532,27 +556,27 @@ handleMessage[f_Failure] := Block[{fileLine},
 
 $lastLoadSuccessful = False;
 
-QuiverGeometryPackageLoader`Read[cachingEnabled_:True, fullReload_:True] :=
-  QuiverGeometryPackageLoader`ReadPackages["QuiverGeometry`", QuiverGeometryPackageLoader`$SourceDirectory, cachingEnabled, fullReload];
+QuiverGeometryLoader`Read[cachingEnabled_:True, fullReload_:True] :=
+  QuiverGeometryLoader`ReadPackages["QuiverGeometry`", QuiverGeometryLoader`$SourceDirectory, cachingEnabled, fullReload];
 
-QuiverGeometryPackageLoader`Load[fullReload_:True, fullRead_:False] := Block[
+QuiverGeometryLoader`Load[fullReload_:True, fullRead_:False] := Block[
   {$AllowInternet = False, URLSubmit = Print["URLSubmit[", Row[{##}, " "], "]"]&},
   FinishDynamic[];
   Block[{packages},
-  packages = QuiverGeometryPackageLoader`Read[!fullRead, fullReload];
+  packages = QuiverGeometryLoader`Read[!fullRead, fullReload];
   If[FailureQ[packages], ReturnFailed[]];
-  QuiverGeometryPackageLoader`$LoadCount++;
-  If[!FailureQ[QuiverGeometryPackageLoader`EvaluatePackages @ packages],
+  QuiverGeometryLoader`$LoadCount++;
+  If[!FailureQ[QuiverGeometryLoader`EvaluatePackages @ packages],
     $lastLoadSuccessful = True];
   ]
 ];
 
-QuiverGeometryPackageLoader`$LoadCount = 0;
+QuiverGeometryLoader`$LoadCount = 0;
 
-selfModTime[] := UnixTime @ FileDate[QuiverGeometryPackageLoader`$LoaderFileName, "Modification"];
+selfModTime[] := UnixTime @ FileDate[QuiverGeometryLoader`$LoaderFileName, "Modification"];
 
-QuiverGeometryPackageLoader`$SelfModTime = selfModTime[];
+QuiverGeometryLoader`$SelfModTime = selfModTime[];
 
-QuiverGeometryPackageLoader`NeedsSelfLoad[] := selfModTime[] =!= QuiverGeometryPackageLoader`$SelfModTime;
+QuiverGeometryLoader`NeedsSelfLoad[] := selfModTime[] =!= QuiverGeometryLoader`$SelfModTime;
 
 End[];

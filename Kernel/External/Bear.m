@@ -280,7 +280,7 @@ RegisterBearEntities[] := Scope[
 
 PublicVariable[$BearNote]
 
-SetInitialValue[$BearNote, $BearNote2];
+SetDelayedInitialValue[$BearNote, $BearNote2];
 
 $BearNote2 := $BearNote2 = (Quiet @ RegisterBearEntities[]; "ZSFNOTE");
 
@@ -403,7 +403,7 @@ makeFEC[field_, body_] := With[
   FilteredEntityClass[$BearNote, EntityFunction[z, body]] /. ($Z :> z[prop]) /. (re_RegularExpression) :> ExpandPosixCharacterClasses[re]
 ];
 
-combineEntityFunctions[fns:{__EntityFunction}] :=
+combineEntityFunctions[fns:{HoldPattern[__EntityFunction]}] :=
   FilteredEntityClass[$BearNote, Construct[EntityFunction, z, (Hold @@ fns)[[All, 2]]] /. Hold -> And];
 
 $bearFieldDict = Association[

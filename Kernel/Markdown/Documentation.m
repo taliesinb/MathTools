@@ -192,9 +192,11 @@ mathMarkdown[TMathSpan[args___]] := {"$",
    "$"
 };
 
-$infixTranslation = StringJoin["\,{", #, "}\,"]& /@ Take[SymbolTranslationData[<|"InputForm" -> "Katex"|>], 12];
-$infixTranslation["=="] = "\,⩵\,";
-$infixTranslation["==="] = "\,⩶\,";
+$infixTranslation := $infixTranslation = Association[
+  StringJoin["\,{", #, "}\,"]& /@ Take[SymbolTranslationData[<|"InputForm" -> "Katex"|>], 12],
+  "==" -> "\,⩵\,",
+  "===" -> "\,⩶\,"
+];
 
 katexEscape[s_] := StringReplace[s, $WLSymbolToKatexRegex];
 

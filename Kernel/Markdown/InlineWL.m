@@ -47,11 +47,11 @@ checkedToExpression[RowBox[{"(", RowBox[list:{Repeated[PatternSequence[_, ","]],
 
 SetHoldComplete[singleScratchSymbolQ]
 
-singleScratchSymbolQ[s_Symbol] := Context[Unevaluated @ s] === "QuiverGeometryPackageLoader`Scratch`" && StringLength[SymbolName[Unevaluated @ s]] === 1;
+singleScratchSymbolQ[s_Symbol] := Context[Unevaluated @ s] === "QuiverGeometryLoader`Scratch`" && StringLength[SymbolName[Unevaluated @ s]] === 1;
 singleScratchSymbolQ[_] := False;
 
 toInlineExpression[str_, form_] := Block[
-  {$Context = "QuiverGeometryPackageLoader`Scratch`",
+  {$Context = "QuiverGeometryLoader`Scratch`",
    $ContextPath = {"System`", "Global`", "QuiverGeometry`", "QuiverGeometry`Shortcuts`"},
    result, scratchNames, held, eval},
   held = checkedToExpression[str, form] /. (s_Symbol ? singleScratchSymbolQ) :> SymbolForm[SymbolName[s]];
@@ -60,7 +60,7 @@ toInlineExpression[str_, form_] := Block[
     Return @ $Failed;
   ];
   (* single-letter symbols are allowed, and evaluate to SymbolForm[...] *)
-  scratchNames = Select[Names["QuiverGeometryPackageLoader`Scratch`*"], StringLength[#] > 37&];
+  scratchNames = Select[Names["QuiverGeometryLoader`Scratch`*"], StringLength[#] > 37&];
   If[scratchNames =!= {},
     Message[ToMarkdownString::inlinewlsym, str, scratchNames];
     Quiet @ Remove[scratchNames];

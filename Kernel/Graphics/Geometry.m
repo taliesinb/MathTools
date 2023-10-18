@@ -144,6 +144,16 @@ regionComponentPolygon[region_] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[TextToPolygon]
+
+TextToPolygon[text_, fontSize_, fontFamily_] :=
+  TextToPolygon[text, fontSize, fontFamily] = (
+  RegionPolygon @ BoundaryDiscretizeGraphics[Text @ Style[text, FontSize -> fontSize, FontFamily -> fontFamily],
+  _Text, MaxCellMeasure -> 0.05
+]);
+
+(**************************************************************************************************)
+
 PublicFunction[DiscretizeCurve]
 
 SetUsage @ "

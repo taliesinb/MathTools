@@ -97,10 +97,10 @@ PrivateFunction[standardRasterizationFunction]
 standardRasterizationFunction[Cell[BoxData[t:TagBox[_, _BoxForm`AnimatedImageTag]], ___], ___] :=
   standardRasterizationFunction @ ToExpression[t, StandardForm];
 
-standardRasterizationFunction[a_AnimatedImage, opts___] :=
+standardRasterizationFunction[HoldPattern @ a_AnimatedImage, opts___] :=
   cachedGenericRasterize[a, rasterizeAnimatedImage, {"Format" -> "gif", opts}];
 
-rasterizeAnimatedImage[a_AnimatedImage] := {a, a["RasterSize"]};
+rasterizeAnimatedImage[HoldPattern @ a_AnimatedImage] := {a, a["RasterSize"]};
 
 standardRasterizationFunction[cell_, opts___Rule] :=
   cachedGenericRasterize[cell, rasterizeImage, {opts}];

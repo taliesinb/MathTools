@@ -4,7 +4,12 @@ DeclareGraphicsPrimitive[EmptyRectangle, "Vector,Vector", emptyRectangleBoxes]
 
 (* we use CurveClosed to ensure that we dont get endpoint clashes *)
 
-emptyRectangleBoxes[EmptyRectangle[{x1:$NumberP, y1:$NumberP}, {x2:$NumberP, y2:$NumberP}]] :=
+emptyRectangleBoxes[EmptyRectangle[a:$Coord2P, b:$Coord2P]] :=
+  EmptyRectangleBox[a, b];
+
+PrivateTypesettingBoxFunction[EmptyRectangleBox]
+
+EmptyRectangleBox[{x1_, y1_}, {x2_, y2_}] :=
   JoinedCurveBox[
     List @ Line @ {{x1, y1}, {x2, y1}, {x2, y2}, {x1, y2}},
     CurveClosed -> True

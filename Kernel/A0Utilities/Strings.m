@@ -108,7 +108,7 @@ CommonStringSuffixLength[strings_ ? StringVectorQ] :=
 
 PrivateVariable[$Alphabet]
 
-$Alphabet = Join[Alphabet["English"], Alphabet["Greek"]];
+$Alphabet = Characters @ "abcdefghijklmnopqrstuvwxyz\[Alpha]\[Beta]\[Gamma]\[Delta]\[CurlyEpsilon]\[Zeta]\[Eta]\[Theta]\[Iota]\[Kappa]\[Lambda]\[Mu]\[Nu]\[Xi]\[Omicron]\[Pi]\[Rho]\[Sigma]\[Tau]\[Upsilon]\[CurlyPhi]\[Chi]\[Psi]\[Omega]";
 $Alphabet = Join[$Alphabet, ToUpperCase[$Alphabet]];
 
 (**************************************************************************************************)
@@ -150,6 +150,12 @@ PrefixSlash[s_] := StringJoin["\\", s];
 PrivateFunction[WrapQuotes]
 
 WrapQuotes[s_] := StringJoin["\"", s, "\""];
+
+(**************************************************************************************************)
+
+PrivateFunction[QuotedStringQ]
+
+QuotedStringQ[s_] := StringMatchQ[s, "\"*\""];
 
 (**************************************************************************************************)
 

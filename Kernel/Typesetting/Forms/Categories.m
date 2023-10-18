@@ -56,6 +56,18 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
+PublicTypesettingForm[SrcFunction, SourceFunction, TargetFunction, TgtFunction, DomainFunction, CodomainFunction, IdentityFunction]
+
+DefineNamedFunctionSymbolForm[{
+  DomainFunction -> "dom",
+  CodomainFunction -> "cod",
+  IdentityFunction -> "id",
+  SrcFunction -> "src", SourceFunction,
+  TgtFunction -> "tgt", TargetFunction
+}]
+
+(**************************************************************************************************)
+
 PublicTypesettingForm[AssociatorForm, LeftUnitorForm, RightUnitorForm, BraidingForm]
 
 $ntFormToSym = <|AssociatorForm -> "\[Alpha]", LeftUnitorForm -> "\[Lambda]", RightUnitorForm -> "\[Rho]", BraidingForm -> "\[Beta]"|>;
@@ -147,19 +159,9 @@ DeclareFunctorlike[sym_Symbol] := DefineStandardTraditionalForm[
 
 (**************************************************************************************************)
 
-PublicTypesettingForm[FunctorSymbol, LeftFunctorSymbol, RightFunctorSymbol]
-PublicVariable[$UseLeftRightArrowFunctors]
-
-SetInitialValue[$UseLeftRightArrowFunctors, False];
+PublicTypesettingForm[FunctorSymbol]
 
 DefineTaggedForm[FunctorSymbol]
-
-DefineStandardTraditionalForm[{
-  FunctorSymbol["Left"] :> ToBoxes[FunctorSymbol[If[$UseLeftRightArrowFunctors, "\[FilledLeftTriangle]", "L"]]],
-  FunctorSymbol["Right"] :> ToBoxes[FunctorSymbol[If[$UseLeftRightArrowFunctors, "\[FilledRightTriangle]", "R"]]],
-  LeftFunctorSymbol :> MakeBoxes[FunctorSymbol["Left"]],
-  RightFunctorSymbol :> MakeBoxes[FunctorSymbol["Right"]]
-}];
 
 DeclareFunctorlike[FunctorSymbol]
 
@@ -264,6 +266,8 @@ DefineStandardTraditionalForm[{
     ], {{0, 0}, {0, -0.7}}],
   (*     ^ this ensures that e.g. AppliedForm doesn't have big brackets when wrapping a GradientSymbol *),
  *)
+
+  (* TODO: turn text into a shape (see documentation), then use LinearGradientFilling on it *)
   GradientSymbol[sym_, col1_, col2_, sz_:16] :>
     ToBoxes @ ColorGradientForm[
       Style[sym, FontSize -> sz],
@@ -293,6 +297,8 @@ Wh+xh4aD/WFIuNiHRc3jd636bM9yPjfZYO1JezT/2D/4sC3q3stP9tvck79uMj1n3yXl8ef2uhP2HD
 6X9gWs/WwfDXUHzF0MUHD2DAh8sY+EyO+HyXdC9O+H6Z9xnFF1w4IL+9PTQOCT/S2B52/bXlzar7Qw
 +F/C1Q/2t6H8vXsjmO1C39nPgqqHpLfX9kL17RccfsLTjz1a+rJHS3/2sPQJ8x8s/RpBwwuWvq2h4Q
 8AA9xygg==";
+
+PrivateFunction[gradientArrowBoxes]
 
 gradientArrowBoxes[col1_, col2_, sz_] := Construct[
   GraphicsBox,

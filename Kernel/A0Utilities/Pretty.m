@@ -32,7 +32,7 @@ Options[ToPrettifiedString] = {
   MaxDepth -> Infinity,
   MaxLength -> Infinity,
   CompactingWidth -> 48,
-  InlineHeads -> {Quantity, Entity, Interval},
+  InlineHeads -> {"Quantity", "Entity", "Interval"},
   TabSize -> 2,
   FullSymbolContext -> True,
   ColorSymbolContext -> False,
@@ -67,7 +67,7 @@ ToPrettifiedString[e_, OptionsPattern[]] := Scope[
 ]
 
 
-$fatHeadP = (_NumericArray | _SparseArray | _Image | _Video | _AnimatedImage) ? HoldAtomQ;
+$fatHeadP = HoldPattern[_NumericArray | _SparseArray | _Image | _Video | _AnimatedImage] ? HoldAtomQ;
 
 getAllSymbolContexts[e_] := DeepUniqueCases[e, s_Symbol ? HoldAtomQ :> Context[Unevaluated @ s]];
 
@@ -79,7 +79,7 @@ pretty0[e_] /; TrueQ[$depth > $maxDepth] := $ellipsisString;
 
 pretty0[e_] /; TrueQ[$depth == $maxDepth] := prettyDeep[e];
 
-pretty0[e:((s_Symbol)[___])] /; MemberQ[$inlineHeads, HoldPattern @ s] := pretty2[e];
+pretty0[e:((s_Symbol)[___])] /; MemberQ[$inlineHeads, SymbolName @ s] := pretty2[e];
 
 pretty0[r_Real ? HoldAtomQ] /; TrueQ[$compactRealNumbers] := RealDigitsString[r, 2]
 

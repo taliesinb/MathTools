@@ -1466,7 +1466,9 @@ drawArrowheadEdges[cs:CardinalSet[cardinals_], indices_] := Scope[
   createEdgePrimitives[indices, multiArrow, arrowheads, cs]
 ];
 
-makeMultiarrowheadPositions[num_, Around[mn_, sd_]] := Scope[
+PublicHead[Spread]
+
+makeMultiarrowheadPositions[num_, Spread[mn_, sd_]] := Scope[
   p = mn + sd * Standardize[Range @ num];
   {min, max} = MinMax @ p;
   Which[
@@ -1579,7 +1581,7 @@ makeArrowheadsElement[cardinal_] := Scope[
   If[shape === None, Return @ Nothing];
   shape = attachCardinalAnnotation[shape, cardinal];
   If[labelCardinals =!= False, shape = attachArrowheadLabel[shape, cardinal, size, labelCardinals]];
-  element = {size, Replace[position, Around[m_, _] :> m], shape};
+  element = {size, Replace[position, Spread[m_, _] :> m], shape};
   If[InvertedQ[cardinal], element //= TransformArrowheads[$inversionStyle]];
   element
 ];

@@ -1,6 +1,6 @@
 PrivateSpecialFunction[declareFunctionAutocomplete, declareSyntaxInfo]
 
-If[$Notebooks,
+If[$Notebooks && QuiverGeometryLoader`$AttachSyntaxInformation === True,
 
 declareFunctionAutocomplete[function_Symbol, spec_] := With[
   {functionName = SymbolName[function], spec2 = spec /. {None -> 0, File -> 2, Directory -> 8}},

@@ -52,8 +52,7 @@ getYTID[url_String] := Which[
 
 PublicFunction[$UploaderToPerson, $UploaderToChannel]
 
-SetInitialValue[$UploaderToPerson, <||>];
-SetInitialValue[$UploaderToChannel, <||>];
+SetInitialValue[$UploaderToPerson, $UploaderToChannel, <||>];
 
 (**************************************************************************************************)
 

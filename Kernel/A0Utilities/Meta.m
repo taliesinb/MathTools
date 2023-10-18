@@ -33,7 +33,7 @@ GenerateSublimeSyntaxFiles[] := Scope[
   template = ImportUTF8 @ inFile;
   groups = ImportMX @ LocalPath["Data", "Syntax", "SystemSymbols.mx"];
   groups //= KeySortBy[groupSortIndex];
-  localGroups = QuiverGeometryPackageLoader`$SymbolClasses;
+  localGroups = QuiverGeometryLoader`$SymbolGroups;
   KeyValueMap[addToGroup, localGroups];
   guSymbols = Names["GeneralUtilities`*"];
   guSymbols //= Select[StringLength[#] > 2 && StringStartsQ[#, UppercaseLetter] &];
