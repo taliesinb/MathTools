@@ -207,6 +207,8 @@ ResolveOffsets[e_, scale_ ? NumberQ] :=
 
 ResolveOffsets[e_, _] := e;
 
+ResolveOffsets[scale_][e_] := ResolveOffsets[e, scale];
+
 (**************************************************************************************************)
 
 (* TODO: expose this and other such Offset-aware functions properly *)

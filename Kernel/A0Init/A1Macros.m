@@ -495,7 +495,7 @@ packAssocRule[s_] := ToTitleCase[HoldSymbolName[s]] -> Quoted[s];
 
 (**************************************************************************************************)
 
-PublicMacro[UnpackTuple]
+PrivateMutatingFunction[UnpackTuple]
 
 General::badtuple = "Argument `` should be a single value or a list of `` values."
 
@@ -528,7 +528,7 @@ mUnpackTuple[val_, s1_Symbol, s2_Symbol, s3_Symbol, s4_Symbol, s5_Symbol] :=
 
 (**************************************************************************************************)
 
-PrivateMacro[UnpackOptionsAs]
+PrivateMutatingFunction[UnpackOptionsAs]
 
 DefineMacro[UnpackOptionsAs,
 UnpackOptionsAs[head_Symbol, opts_, syms__Symbol] :=
@@ -543,7 +543,7 @@ mUnpackOptionsAs[head_, opts_, syms_] :=
 
 (**************************************************************************************************)
 
-PrivateMacro[UnpackAssociationSymbols]
+PrivateMutatingFunction[UnpackAssociationSymbols]
 
 DefineMacro[UnpackAssociationSymbols,
 UnpackAssociationSymbols[assoc_, syms__Symbol] :=
@@ -572,7 +572,7 @@ capitalizeFirstLetter[str_String] := capitalizeFirstLetter[str] =
 
 (**************************************************************************************************)
 
-PrivateMacro[UnpackStringOptions]
+PrivateMutatingFunction[UnpackStringOptions]
 
 DefineMacro[UnpackStringOptions,
 UnpackStringOptions[options_, default_, syms__Symbol] :=
@@ -591,7 +591,7 @@ mUnpackStringOptions[options_, default_, syms_] :=
 
 (**************************************************************************************************)
 
-PrivateMacro[UnpackAnonymousOptions]
+PrivateMutatingFunction[UnpackAnonymousOptions]
 
 DefineMacro[UnpackAnonymousOptions,
 UnpackAnonymousOptions[object_, default_, syms__Symbol] :=
@@ -610,7 +610,7 @@ mUnpackAnonymousOptions[object_, default_, syms_] :=
 
 (**************************************************************************************************)
 
-PrivateMacro[UnpackAnonymousThemedOptions]
+PrivateMutatingFunction[UnpackAnonymousThemedOptions]
 
 DefineMacro[UnpackAnonymousThemedOptions,
 UnpackAnonymousThemedOptions[object_, default_, syms__Symbol] :=
@@ -628,7 +628,7 @@ mUnpackAnonymousThemedOptions[object_, default_, syms_] :=
   ];
 (**************************************************************************************************)
 
-PrivateMacro[UnpackExtendedThemedOptions]
+PrivateMutatingFunction[UnpackExtendedThemedOptions]
 
 DefineMacro[UnpackExtendedThemedOptions,
 UnpackExtendedThemedOptions[graph_, syms___Symbol] :=
@@ -646,7 +646,7 @@ mUnpackExtendedThemedOptions[graph_, syms_] :=
 
 (**************************************************************************************************)
 
-PrivateMacro[UnpackExtendedOptions]
+PrivateMutatingFunction[UnpackExtendedOptions]
 
 DefineMacro[UnpackExtendedOptions,
 UnpackExtendedOptions[graph_, syms___Symbol] :=
@@ -856,7 +856,7 @@ TemporaryPath[args__String, file_String] := PathJoin[EnsureDirectory @ PathJoin[
 
 (**************************************************************************************************)
 
-PublicFunction[MakeTemporaryFile]
+PublicSpecialFunction[MakeTemporaryFile]
 
 SetInitialValue[$tempFileCounter, 0];
 
@@ -927,7 +927,7 @@ VectorListableQ[sym_Symbol] := MemberQ[Attributes @ sym, Listable];
 VectorListableQ[HoldPattern[Function[___, Listable | {___, Listable, ___}]]] := True;
 VectorListableQ[_] := False;
 
-PrivateFunction[setVectorListableOperator]
+PrivateMutatingFunction[setVectorListableOperator]
 
 setVectorListableOperator[syms__Symbol] := Scan[setVectorListableOperator, {syms}];
 setVectorListableOperator[sym_Symbol] := (VectorListableQ[_sym] := True;)

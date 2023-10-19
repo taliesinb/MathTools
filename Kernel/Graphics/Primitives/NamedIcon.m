@@ -123,6 +123,7 @@ makeIconInset[pos_, dir_, prims_] := Scope[
       ImageSize -> $imageSize * {1.3, 1.3},
       PlotRangeClipping -> False,
       PlotRange -> {{-1, 1}, {-1, 1}} * 1.3,
+      PlotRangePadding -> None,
       AspectRatio -> (Last[$imageSize] / First[$imageSize]),
       ImagePadding -> None
     ],
@@ -151,10 +152,8 @@ makeIconInline[pos_, dirx_, prims_, graphicsScale_] := Scope[
   If[$debugBounds, prims //= addDebugBounds];
   If[$originx != 0,
     prims = Construct[GeometricTransformationBox, prims, -$origin]];
-  dirs = {dirx, VectorRotate90 @ dirx} * $imageSize;
-  rotMatrix = ToPackedReal @ Transpose @ dirs;
-  (* prims = {prims, FaceForm[None], EdgeForm[Red], RectangleBox[{-1, -1}, {1, 1}]}; *)
-  transform = {rotMatrix * (0.5 / graphicsScale), pos};
+  rotMatrix = RotateToMatrix[dirx * ($imageSize * 0.5 / graphicsScale)];
+  transform = {rotMatrix, pos};
   $styler @ Construct[GeometricTransformationBox, prims, transform]
 ];
 

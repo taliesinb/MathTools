@@ -156,7 +156,7 @@ Grid, Row, Column, Pane, Spacer, Framed, Item,
 Dynamic, EventHandler,
 Deploy, Defer,
 Invisible, Magnify, Overlay,
-MouseAppearance, Mouseover, StatusArea,
+MouseAppearance, Mouseover, StatusArea, PopupWindow,
 Button, ButtonBar, Checkbox, CheckboxBar, Slider, Slider2D, ProgressIndicator, RadioButton, RadioButtonBar, FlipView,
 Subscript, Subsuperscript, Superscript, Underscript, Overscript, OverDot, UnderBar, OverBar, Element,
 TraditionalForm, StandardForm, InputForm, StringForm
@@ -187,10 +187,10 @@ Rotate, Translate, Scale, GeometricTransformation,
 (* TranslationTransform, ScalingTransform, RotationTransform, TransformationMatrix, AffineTransform, *)
 Graphics, Graphics3D,
 Inset, Text, GraphicsGroup, GraphicsComplex, Raster,
-Line, Circle, Rectangle, Triangle, Disk, DiskSegment, Point, Polygon, Arrow, Arrowheads,
-BezierCurve, BSplineCurve, JoinedCurve, FilledCurve,
+Line, Circle, Annulus, Rectangle, Triangle, Disk, DiskSegment, Point, Polygon, Arrow, Arrowheads,
+BezierCurve, Simplex, BSplineCurve, JoinedCurve, FilledCurve,
 HalfLine, InfiniteLine, InfinitePlane,
-Sphere, Tube, Cube, Cuboid, Cylinder, Cone, CapsuleShape
+Sphere, Tube, Cube, Cuboid, Cylinder, Cone, CapsuleShape, StadiumShape
 },
 
 {"System`", "GraphicsBoxFunction"} -> {

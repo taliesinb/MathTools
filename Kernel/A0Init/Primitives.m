@@ -1,8 +1,8 @@
-PrivateVariable[$graphicsHeadQ, $builtinGraphicsHeadQ, $customGraphicsHeadQ]
-PrivateVariable[$graphicsHeadP, $builtinGraphicsHeadP, $customGraphicsHeadP]
+PrivateVariable[$graphicsHeadQ, $builtinGraphicsHeadQ, $customGraphicsHeadQ, $graphicsBoxHeadQ]
+PrivateVariable[$graphicsHeadP, $builtinGraphicsHeadP, $customGraphicsHeadP, $graphicsBoxHeadP]
 
-SetInitialValue[$graphicsHeadQ, $builtinGraphicsHeadQ, $customGraphicsHeadQ, UAssociation[]];
-SetInitialValue[$graphicsHeadP, $builtinGraphicsHeadP, $customGraphicsHeadP, Alternatives[]];
+SetInitialValue[$graphicsHeadQ, $builtinGraphicsHeadQ, $customGraphicsHeadQ, $graphicsBoxHeadQ, UAssociation[]];
+SetInitialValue[$graphicsHeadP, $builtinGraphicsHeadP, $customGraphicsHeadP, $graphicsBoxHeadP, Alternatives[]];
 
 SetHoldAll[insertQP];
 insertQP[qsym_, psym_, key_] := (
@@ -68,21 +68,33 @@ toSignatures = Case[
 ]
 
 handleOpt[s_] /; StringContainsQ[s, "?"] := Splice[{StringDelete[s, "?" ~~ ___], StringReplace[s, "?"->","]}];
+handleOpt[s_] /; StringContainsQ[s, "!"] := Except[StringDelete[s, "!" ~~ ___], StringReplace[s, "!"->","]];
 handleOpt[s_] := s;
 
-SetInitialValue[$primToSigs, $sigToPrims, $sigToPrimBoxes, $sigElemToPrims, UAssociation[]];
+SetInitialValue[$primToSigs, $sigToPrims, $sigElemToPrims, UAssociation[]];
+SetInitialValue[$primBoxToSigs, $sigToPrimBoxes, $sigElemToPrimBoxes, UAssociation[]];
 
 procSignature[str_String] := Scope[
   sigElems = parseSignatureString @ str;
   KeyUnionTo[$sigToPrims, sigElems, {$head}];
   declareGraphicsHead[$head];
   If[$boxHead =!= None,
-    KeyUnionTo[$sigToPrimBoxes, sigElems, {$boxHead}];
+    registerBoxHeadSigs[sigElems];
     AssociateTo[$primHeadToPrimBoxHead, $head -> $boxHead];
   ];
   KeyUnionTo[$primToSigs, $head, {sigElems}];
-  ScanIndex1[procSignatureElem, sigElems];
+  ScanIndex1[KeyUnionTo[$sigElemToPrims, {#2, #1}, {$head}]&, sigElems];
 ];
+
+registerBoxHeadSigs[sigElems_] := (
+  KeyUnionTo[$sigToPrimBoxes, sigElems, {$boxHead}];
+  KeyUnionTo[$primBoxToSigs, $boxHead, {sigElems}];
+  ScanIndex1[KeyUnionTo[$sigElemToPrimBoxes, {#2, #1}, {$boxHead}]&, sigElems];
+  insertQP[$graphicsBoxHeadQ, $graphicsBoxHeadP, $boxHead];
+);
+
+(* TagBox has no corresponding form, so we register it manually *)
+Block[{$boxHead = TagBox}, registerBoxHeadSigs[{$PrimitivesArg}]];
 
 General::badprimsig = "Bad signature `` for graphics primitive ``."
 procSignature[shape_] := ThrowMessage["badprimsig", shape, $head];
@@ -107,8 +119,6 @@ parseSigElem = Case[
   e_           := ThrowMessage["badprimsigelem", e, $head];
 ];
 
-procSignatureElem[type_, pos_] := KeyUnionTo[$sigElemToPrims, {pos, type}, {$head}];
-
 (**************************************************************************************************)
 
 PublicFunction[PrimitiveSignatureLookup]
@@ -131,8 +141,11 @@ iPrimitiveSignatureLookup = Case[
   rules:{__Rule} :=
     Intersection @@ Map[%, rules];
 
-  sig_String /; StringContainsQ[sig, "|"|"?"] :=
+  sig_String /; StringContainsQ[sig, "|"|"?"|"!"] :=
     Union @@ Map[%, toSignatures @ sig];
+
+  Verbatim[Except][a_, b_] :=
+    Complement[% @ a, % @ b];
 
   sig_String :=
     Lookup[$sigToPrims, Key @ parseSignatureString @ sig, {}];
@@ -145,52 +158,44 @@ iPrimitiveSignatureLookup = Case[
 
 PublicFunction[PrimitiveBoxSignatureLookup]
 
-PrimitiveBoxSignatureLookup[arg_] := Block[{$sigToPrims = $sigToPrimBoxes}, PrimitiveSignatureLookup[arg]];
+SetUsage @ "
+PrimitiveBoxSignatureLookup is like %PrimitiveSignatureLookup but returns graphics primitive boxes.
+"
+
+PrimitiveBoxSignatureLookup[arg_] := Block[
+  {$sigToPrims = $sigToPrimBoxes},
+  PrimitiveSignatureLookup[arg]
+];
 
 (**************************************************************************************************)
 
-(*
-SignPrimitive["Vector", CompassCurve | AxesFlag | HorizontalCurve | VerticalCurve]
-*)
 SignPrimitive["Vector,Vector", Cuboid | Rectangle]; (* EmptyRectangle *)
 
 SignPrimitive["Vector | Matrix", Point];
 SignPrimitive["Matrix | Matrices", Polygon | Polyhedron | Line | Triangle];
 
-(* CenteredRectangle | CenteredCuboid *)
 SignPrimitive["Vector?Radius | Matrix?Radius", Circle | Disk | Sphere | Ball];
 SignPrimitive["Vector?Radius", Annulus | Cube];
 
-(* AnnotatedCoordinate ExtendedArrow | MorphismArrow | PathedText | RollingCurve | SetbackCurve | SmoothedCurve *)
 SignPrimitive["Matrix", GraphicsComplex | BSplineCurve | BezierCurve | Simplex];
 
-(* AnnotatedCoordinate ExtendedArrow | MorphismArrow | PathedText | RollingCurve | SetbackCurve | SmoothedCurve *)
 SignPrimitive["Matrix?Radius | Matrices?Radius | Curve?Radius", Tube];
 
-(* CircuitCurve | SnakeCurve *)
 SignPrimitive["Pair", InfiniteLine | HalfLine];
 
 SignPrimitive["Curve", Arrow];
 
-(* ElbowCurve *)
 SignPrimitive["Pair?Radius", Cylinder | Cone | CapsuleShape | StadiumShape];
 
-(* VectorCurve | LoopCurve | Arrowhead | NamedIcon *)
 SignPrimitive["Vector,Delta", InfiniteLine | HalfLine];
 
-(* PlaneInset | AnchoredCurve *)
 SignPrimitive["Opaque,Vector", Text | Inset];
 
 SignPrimitive["Opaque", Arrowheads];
 
 SignPrimitive["Primitives,Vector", Translate];
 
-SignPrimitive["Primitives", Rotate | GeometricTransformation | Scale | Style | Annotation | Tooltip | StatusArea | PopupWindow | Mouseover | Hyperlink | EventHandler | Button];
-
-(*
-primitives whose first argument is a curve that is cooerced to a list of points
-SignPrimitive["Curve", {RollingCurve, VectorCurve, SetbackCurve, AnchoredCurve, CircuitCurve, SmoothedCurve, Arrow, MorphismArrow}]
-*)
+SignPrimitive["Primitives", Rotate | GeometricTransformation | Scale | Interpretation | Style | Annotation | Tooltip | StatusArea | PopupWindow | Mouseover | Hyperlink | EventHandler | Button];
 
 (**************************************************************************************************)
 

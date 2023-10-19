@@ -71,7 +71,7 @@ DotRightOperator[matrix_, vector_][other_] := Threaded[vector] + Dot[other, matr
 PublicFunction[AffineOperator]
 
 SetUsage @ "
-AffineOperator[m$,b$] applies %Dot[m$, x$] + $b to a single vector x$ or a list of such vectors.
+AffineOperator[m$,b$] applies %Dot[m$, x$] + b$ to a single vector x$ or a list of such vectors.
 AffineOperator[m$] just applies %Dot[m$, x$].
 * AffineOperator evaluates to DotRightOperator which stores the transposed version of m$."
 

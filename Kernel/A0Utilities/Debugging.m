@@ -82,6 +82,7 @@ EchoGraphicsScope[e_] := Scope[
 
 PrivateTypesettingBoxFunction[ToGraphicsBoxes, ToGraphics3DBoxes]
 
+ToGraphicsBoxes[{}] := {};
 ToGraphicsBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics] //. $gboxSimpRules;
 ToGraphics3DBoxes[e_] := Typeset`MakeBoxes[e, StandardForm, Graphics3D] //. $gboxSimpRules;
 

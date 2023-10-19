@@ -46,6 +46,7 @@ PublicFunction[FloorCeiling]
 
 SetListable[FloorCeiling];
 FloorCeiling[i_] := {Floor @ i, Ceiling @ i}
+FloorCeiling[i_, n_] := {Floor[i, n], Ceiling[i, n]}
 
 (**************************************************************************************************)
 
