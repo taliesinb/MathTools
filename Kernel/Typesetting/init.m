@@ -840,7 +840,7 @@ setupFormDefinitionCaching[DefineStyleForm];
 
 DefineStyleForm[formSym_, style_, opts:OptionsPattern[]] := (
   $styleFormData[formSym] = style;
-  DefineUnaryForm[formSym, StyleBox[$1, style], opts];
+  DefineUnaryForm[formSym, StyleBox[$1, style]];
 );
 
 (**************************************************************************************************)
@@ -931,7 +931,13 @@ PrivateTypesettingBoxFunction[ScriptBox]
 
 Unprotect[ScriptForm]; (* it's an undocumented system symbol! *)
 
-DefineStyleForm[#1, #3, BoxFunction -> #2]& @@@ ExpressionTable[
+(* BoxFunction will make a templatebox, which is an unnecessary level of indirection *)
+makeInlineStyleForm[formSym_, boxSym_, style_] := (
+  DefineStyleForm[formSym, style];
+  boxSym[z_] := StyleBox[z, style]
+);
+
+makeInlineStyleForm @@@ ExpressionTable[
   RedForm             RedBox             $Red
   GreenForm           GreenBox           $Green
   BlueForm            BlueBox            $Blue

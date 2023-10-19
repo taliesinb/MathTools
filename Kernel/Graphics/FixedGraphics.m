@@ -77,6 +77,7 @@ FixedGraphics::badInsetSize = "Inset size `` should be a single number or a pair
 FixedGraphics::badInset = "Unrecognized inset ``."
 
 embedInset = Case[
+
   i:InsetBox[GraphicsBox[boxes_, opts___Rule], pos_:{0,0}, origin_:Automatic, insetSize_:Automatic, dir_:Automatic] := Scope[
     SetAutomatic[dir, {1, 0}];
     pos //= ResolveOffsets[$graphicsScale];
@@ -105,7 +106,7 @@ embedInset = Case[
     InsetBox[l, p2, r]
   ];
 
-  i:InsetBox[_FormBox, _] := i;
+  i:InsetBox[_FormBox, ___] := i;
 
   expr_ := (Message[FixedGraphics::badInset, MsgExpr @ expr]; expr)
 ];

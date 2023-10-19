@@ -38,6 +38,7 @@ GenerateSublimeSyntaxFiles[] := Scope[
   guSymbols = Names["GeneralUtilities`*"];
   guSymbols //= Select[StringLength[#] > 2 && StringStartsQ[#, UppercaseLetter] &];
   addToGroup["Function", guSymbols];
+  addToGroup["SpecialFunction", {"ExpressionTable"}];
   {regexpSections, symbolSections} = Transpose @ KeyValueMap[makeSplitDefs, groups];
   completionLists = KeyValueMap[makeCompletionDefs, groups];
   regexpDefs = StringRiffle[regexpSections, "\n"];

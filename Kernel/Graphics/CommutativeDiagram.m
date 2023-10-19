@@ -5,7 +5,7 @@ PublicOption[DebugBounds, AutoSetback, Origin, SymbolReplacements, CloneOptions,
 PublicSymbol[Outwards, Inwards]
 
 SetUsage @ "
-CommutativeDiagram[items$] evaluates to a graphics object that contains a commutative diagram.
+CommutativeDiagram[items$] evaluates to a %FixedGraphics object that depicts a commutative diagram.
 CommutativeDiagram[objects$, morphisms$] is a legacy form that is also supported.
 The list items$ can consist of objects, morphisms, and arbitrary graphics primitives in any order, described below:
 * an object can be one of:
@@ -128,11 +128,9 @@ $cdPatterns = {
 Scan[(Format[cd:#, StandardForm] := cdToGraphics[cd])&, $cdPatterns];
 
 cdToGraphics[cd:CommutativeDiagram[Shortest[___], opts___Rule]] :=
-  ScaleGraphics[
+  FixedGraphics[
     cdToPrimitives[cd],
-    GraphicsScale -> Lookup[{opts}, GraphicsScale, 120],
-    ImagePadding -> Lookup[{opts}, ImagePadding, Automatic],
-    AdjustFontSize -> False
+    GraphicsScale -> Lookup[{opts}, GraphicsScale, 120]
   ];
 
 (**************************************************************************************************)
@@ -224,7 +222,6 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   result = {
     Sequence @@ arrowOpts,
     BendRadius -> 0.25,
-    GraphicsScale -> graphicsScale,
     Setback -> initialSetback,
     LabelFontSize -> labelFontSize,
     FontSize -> fontSize,

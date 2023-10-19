@@ -201,7 +201,7 @@ $stringProcessingRules = {
 }
 
 QuiverGeometryLoader`ExpressionTable[context_String, str_String] := Block[
-  {stream = StringToStream[str], $ContextPath = Append[$globalImports, "QuiverGeometry`"], $Context = context},
+  {stream = StringToStream[str], $ContextPath = $expressionTableContextPath, $Context = context},
   Replace[ReadList[stream, Hold[Expression]], Hold[Times[a___]] :> {a}, {1}]
 ];
 
@@ -486,7 +486,7 @@ QuiverGeometryLoader`ReloadUserFile[] := QuiverGeometryLoader`ReloadUserFile["us
 QuiverGeometryLoader`ReloadUserFile[name_] := loadUserFile @ name;
   
 $userContext = "QuiverGeometryLoader`Private`User`";
-$userContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"};
+$expressionTableContextPath = $userContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"};
 $fileContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"};
 
 toUserFilePath[name_] := FileNameJoin[{QuiverGeometryLoader`$SourceDirectory, name}];
