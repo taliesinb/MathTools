@@ -85,9 +85,9 @@ FastRasterSize[expr_, returnBaseline_:False] := Scope[
 PublicFunction[ClearRasterizationCache]
 
 ClearRasterizationCache[] := (
-	QuiverGeometryCaches`$GradientRasterizationCache = UAssociation[];
 	QuiverGeometryCaches`$RasterSizeCache = UAssociation[];
 	QuiverGeometryCaches`$RasterizationCache = UAssociation[];
+	QuiverGeometryCaches`$GradientRasterizationCache = UAssociation[];
 	QuiverGeometryCaches`$RegionRasterizationCache = UAssociation[];
 	QuiverGeometryCaches`$TransparentRasterizationCache = UAssociation[];
 	QuiverGeometryCaches`$Base64RasterizationCache = UAssociation[];
@@ -95,7 +95,7 @@ ClearRasterizationCache[] := (
 	clearFloodFillCaches[];
 )
 
-If[!AssociationQ[QuiverGeometryCaches`$GradientRasterizationCache],
+If[!AssociationQ[QuiverGeometryCaches`$RasterizationCache],
 	ClearRasterizationCache[];
 ];
 
@@ -103,7 +103,7 @@ If[!AssociationQ[QuiverGeometryCaches`$GradientRasterizationCache],
 
 PublicFunction[CachedFastRasterize]
 
-CachedFastRasterize[expr_] := CacheTo[QuiverGeometryCaches`$RasterizationCache, Hash[expr], FastRasterize[expr]];
+CachedFastRasterize[expr_] := MaybeCacheTo[QuiverGeometryCaches`$RasterizationCache, Hash[expr], FastRasterize[expr]];
 
 (*************************************************************************************************)
 
@@ -123,10 +123,7 @@ PublicFunction[CachedFastRasterizeList]
 
 (* we might need to delete ImageSizeRaw here ... *)
 
-If[!AssociationQ[QuiverGeometryCaches`$RasterizationCache],
-	QuiverGeometryCaches`$RasterizationCache = UAssociation[]];
-
-CachedFastRasterizeList[expr_List] := CacheTo[QuiverGeometryCaches`$RasterizationCache, Hash[expr], FastRasterizeList[expr]];
+CachedFastRasterizeList[expr_List] := MaybeCacheTo[QuiverGeometryCaches`$RasterizationCache, Hash[expr], FastRasterizeList[expr]];
 
 (*************************************************************************************************)
 
@@ -181,9 +178,7 @@ clearFloodFillCaches[] := (
 	QuiverGeometryCaches`$TransparentRasterizationCache = UAssociation[];
 )
 
-If[!AssociationQ[QuiverGeometryCaches`$FloodFillHash] || Length[QuiverGeometryCaches`$FloodFillHash] > 32,
-	clearFloodFillCaches[];
-];
+If[!AssociationQ[QuiverGeometryCaches`$FloodFillHash], clearFloodFillCaches[]];
 
 Options[FloodFill] = {
 	"Sensitivity" -> 0.001
@@ -196,8 +191,10 @@ FloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules:{__Rule}, Option
 	UnpackOptions[sensitivity];
 	baseline = Lookup[Options[g2], BaselinePosition, Automatic];
 	fullHash = Hash[{lhs, rules, sensitivity}];
-	result = Lookup[QuiverGeometryCaches`$FloodFillHash, fullHash];
-	If[ImageQ[result], Return @ result];
+	If[$CachingEnabled,
+		result = Lookup[QuiverGeometryCaches`$FloodFillHash, fullHash];
+		If[ImageQ[result], Return @ result];
+	];
   len = Length @ rules;
   annos = Style[Annotation[Invisible @ Point[#1], #2, "FillPoint"], Antialiasing->None]& @@@ rules;
   annoGraphics = Graphics[{{AbsolutePointSize[1], annos}, prims}, opts];
@@ -220,15 +217,15 @@ FloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules:{__Rule}, Option
   {image, bin, fillPoints, compImage};
   result = ImageCompose[compImage, image2];
   result = Image[result, BaselinePosition -> baseline];
-  QuiverGeometryCaches`$FloodFillHash[fullHash] ^= result;
+  If[$CachingEnabled, QuiverGeometryCaches`$FloodFillHash[fullHash] ^= result];
   result
 ];
 
 cachedImageRegionRasterize[graphics_] :=
-	CacheTo[QuiverGeometryCaches`$RegionRasterizationCache, Hash[graphics], Rasterize[graphics, {"Image", "Regions"}]];
+	MaybeCacheTo[QuiverGeometryCaches`$RegionRasterizationCache, Hash[graphics], Rasterize[graphics, {"Image", "Regions"}]];
 
 cachedTransparentRasterize[graphics_] :=
-	CacheTo[QuiverGeometryCaches`$TransparentRasterizationCache, Hash[graphics], Rasterize[graphics, Background -> Transparent]];
+	MaybeCacheTo[QuiverGeometryCaches`$TransparentRasterizationCache, Hash[graphics], Rasterize[graphics, Background -> Transparent]];
 
 (**************************************************************************************************)
 
@@ -260,7 +257,7 @@ styleAsText[a_, l___, BaseStyle -> s_, r___] := Style[applyCurrentFormModifiers 
 PublicFunction[CachedRasterSize]
 
 CachedRasterSize[Null, returnBaseline_:False] := If[returnBaseline, {0, 0, 0}, {0, 0}];
-CachedRasterSize[expr_, returnBaseline_:False] := CacheTo[
+CachedRasterSize[expr_, returnBaseline_:False] := MaybeCacheTo[
 	QuiverGeometryCaches`$RasterSizeCache, {expr, returnBaseline},
 	FastRasterSize[expr /. $rasterSizeFixupRules, returnBaseline]
 ];

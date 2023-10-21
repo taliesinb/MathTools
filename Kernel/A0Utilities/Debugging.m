@@ -21,6 +21,38 @@ ReapGraphics[body_, opts___Rule] := Scope[
 
 (**************************************************************************************************)
 
+PublicTypesettingForm[BoxesDebugForm]
+
+DefineStandardTraditionalForm[f_BoxesDebugForm :> boxesDebugFormBoxes[f]];
+
+boxesDebugFormBoxes[BoxesDebugForm[g_]] := Scope[
+  contentBoxes = MakeBoxes @ g;
+  framedContentBoxes = FrameBox[contentBoxes, FrameStyle -> GrayLevel[0.9]];
+  framedContentBoxes = PaneBox[framedContentBoxes, ImageSize -> {{250, 800}, Full}];
+  codeBoxes = ToBoxes @ PrettyCodeForm @ contentBoxes;
+  framedCodeBoxes = FrameBox[
+    StyleBox[codeBoxes, "Input", 10],
+    Background -> GrayLevel[0.95], FrameStyle -> GrayLevel[0.9]
+  ];
+  GridBox[{{framedContentBoxes, "     ", framedCodeBoxes}}, RowAlignments -> Center]
+];
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[PrettyCodeForm]
+
+DefineStandardTraditionalForm[f_PrettyCodeForm :> prettyCodeBoxes[f]];
+
+prettyCodeBoxes[PrettyCodeForm[e_, opts___Rule]] := Scope[
+  codeBoxes = MakeBoxes @ CompactPrettyFullForm[e, opts, CompactingWidth -> 100];
+  FrameBox[
+    StyleBox[codeBoxes, "Code", 10],
+    Background -> GrayLevel[0.95], FrameStyle -> GrayLevel[0.9]
+  ]
+];
+
+(**************************************************************************************************)
+
 PublicFunction[SowGraphics, EchoDebugGraphics]
 
 SetHoldAll[SowGraphics];
@@ -42,11 +74,27 @@ sowDGexpr = Case[
 
 (**************************************************************************************************)
 
-PrivateFunction[VPrint]
+PrivateSpecialFunction[VPrint]
 
 SetHoldAllComplete[VPrint];
 VPrint[args___] :=
   If[TrueQ[$verbose], Print[If[TrueQ[$dryRun], Style["> ", LightGray], ""], args]];
+
+
+(**************************************************************************************************)
+
+PrivateSpecialFunction[VMessage]
+
+SetHoldFirst[VMessage];
+
+(* TODO: fix case where message starts with a ``. *)
+VMessage[msg_, args___] := If[TrueQ[$verbose],
+  Print @@ Map[msgStyle, Riffle[StringSplit[msg, "``"], {args}]],
+  Message[msg, args]
+];
+
+msgStyle[e_String | e_Integer] := Style[e, $DarkRed, Bold];
+msgStyle[e_] := e;
 
 (**************************************************************************************************)
 
@@ -248,21 +296,35 @@ MsgPath[p_MsgFile] := p;
 MsgPath[File[p_]] := MsgPath[p];
 MsgPath[l_List] := Map[MsgPath, l];
 
+MsgPath /: SystemOpen[MsgPath[s_, n_:None]] := openMsgPath[s, n];
+
 MakeBoxes[MsgPath[s_String], StandardForm] := msgPathBoxes[s];
 MakeBoxes[MsgPath[s_String], TraditionalForm] := msgPathBoxes[s];
 
-msgPathBoxes[path_String] := With[
+MakeBoxes[MsgPath[s_String, n_Integer], StandardForm] := msgPathBoxes[s, n];
+MakeBoxes[MsgPath[s_String, n_Integer], TraditionalForm] := msgPathBoxes[s, n];
+
+msgPathBoxes[path_String, line_:None] := With[
   {type = If[StringStartsQ[path, ("http" | "https" | "git" | "file" | "ssh") ~~ ":"], "URL", Quiet @ FileType @ path]},
   {color = Switch[type, None, $LightRed, Directory, $LightBlue, File, $LightGray, "URL", $LightPurple, _, $LightRed]},
   ToBoxes @ ClickForm[
-    tightColoredBoxes[path, color],
-    If[
-      ModifierKeysPressedQ[],
-      trySystemOpen @ path,
-      Beep[]; CopyToClipboard @ ToString[path, InputForm]
-    ]
+    tightColoredBoxes[If[IntegerQ[line], StringJoin[path, ":", IntegerString @ line], path], color],
+    openMsgPath[path, line]
   ]
 ];
+
+(**************************************************************************************************)
+
+PrivateFunction[openMsgPath]
+
+openMsgPath[path_String, None] := If[
+  ModifierKeysPressedQ[],
+  trySystemOpen @ path,
+  Beep[]; CopyToClipboard @ ToString[path, InputForm]
+];
+
+openMsgPath[path_String, line_Integer] :=
+  SystemOpen @ FileLine[path, line];
 
 trySystemOpen[s_String] := Scope[
   If[StringStartsQ[s, "http://" | "https://"], Return @ SystemOpen @ s];
@@ -274,9 +336,9 @@ trySystemOpen[s_String] := Scope[
 
 sysOpen[s_String] := Switch[
   FileExtension[s],
-  "nb" | "m", SetSelectedNotebook @ NotebookOpen[s, Visible -> True],
-  "mx",       SetSelectedNotebook @ CreateDocument @ TextCell[ImportMX @ s, "Input"],
-  _,          SystemOpen @ NormalizePath @ s
+  "nb" | "m" | "wl", SystemOpen @ FileLine[s, 1],
+  "mx",              SetSelectedNotebook @ CreateDocument @ TextCell[ImportMX @ s, "Input"],
+  _,                 SystemOpen @ NormalizePath @ s
 ];
 
 (**************************************************************************************************)

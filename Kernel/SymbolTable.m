@@ -101,7 +101,8 @@ GeneralUtilities`CacheTo,
 GeneralUtilities`JoinTo, GeneralUtilities`UnionTo,
 GeneralUtilities`KeyAddTo, GeneralUtilities`KeyAppendTo, GeneralUtilities`KeyJoinTo, GeneralUtilities`KeyPrependTo, GeneralUtilities`KeyUnionTo,
 GeneralUtilities`SetRelatedSymbolGroup,
-GeneralUtilities`SetHoldFirst, GeneralUtilities`SetHoldAll, GeneralUtilities`SetHoldAllComplete, GeneralUtilities`SetHoldRest, GeneralUtilities`SetListable
+GeneralUtilities`SetHoldFirst, GeneralUtilities`SetHoldAll, GeneralUtilities`SetHoldAllComplete, GeneralUtilities`SetHoldRest, GeneralUtilities`SetListable,
+GeneralUtilities`UnpackOptions
 },
 
 {"System`", "SpecialFunction"} -> {
@@ -121,15 +122,14 @@ CreateNotebook, NotebookPut, NotebookWrite,
 EvaluationNotebook, FrontEndExecute,
 PreviousCell, NextCell, ParentCell, Cells, SelectedCells, SelectionMove, NotebookSelection,
 CurrentValue, Message,
-SyntaxInformation, Attributes, DownValues, OwnValues, UpValues, SubValues, FormatValues, DefaultValues
+SyntaxInformation, Attributes, DownValues, OwnValues, UpValues, SubValues, FormatValues, DefaultValues,
+CopyToClipboard
 },
 
 {"System`", "DebuggingFunction"} -> {
-Print, CellPrint, System`PrintIF, System`PrintPF,
+Print, CellPrint, System`PrintIF, System`PrintPF, System`PrintFF, System`Capture,
 In, InString, Out,
 EchoTiming, EchoFunction, EchoLabel, Echo, System`EchoIF, System`EchoPF, System`EchoFF, System`EchoGPF,
-System`Capture,
-CopyToClipboard,
 URLFetch, URLRead,
 Abort, AbortProtect,
 Hold[Z1,Z2,Z3,Z4,Z5,Z6,Z7,Z8,Z9]
@@ -146,7 +146,7 @@ ViewCenter, ViewVector, ViewPoint, ViewMatrix, ViewProjection, ViewAngle,
 Frame, FrameTicks, Ticks, FrameStyle, FontFamily, FontWeight, FontSize, FontColor,
 InterpolationOrder,
 EdgeStyle, VertexStyle, EdgeShapeFunction, VertexShapeFunction, GraphLayout, DirectedEdges,
-Lighting, ColorRules, PlotStyle, FillingStyle, MeshStyle, Epilog, Prolog
+Lighting, ColorRules, PlotStyle, FillingStyle, MeshStyle, Epilog, Prolog, Verbose
 },
 
 {"System`", "TypesettingForm"} -> {
@@ -221,13 +221,14 @@ Internal`InheritedBlock
 
 {"GeneralUtilites`", "SpecialFunction"} -> {
 GeneralUtilities`ReturnFailed, GeneralUtilities`ThrowFailure, GeneralUtilities`CatchFailure,
-GeneralUtilities`DefineMacro, GeneralUtilities`DefineLiteralMacro, GeneralUtilities`Seq
+GeneralUtilities`DefineMacro, GeneralUtilities`DefineLiteralMacro, GeneralUtilities`Seq,
+GeneralUtilities`DeclareArgumentCount
 },
 
 {"GeneralUtilities`", "Function"} -> {
 GeneralUtilities`ContainsQ, GeneralUtilities`ScanIndexed,
-GeneralUtilities`DeclareArgumentCount, GeneralUtilities`Match, GeneralUtilities`MatchValues,
-GeneralUtilities`UnpackOptions, GeneralUtilities`KeyValueScan,
+GeneralUtilities`Match, GeneralUtilities`MatchValues,
+GeneralUtilities`KeyValueScan,
 GeneralUtilities`SafePart, GeneralUtilities`SafeDrop, GeneralUtilities`SafeTake,
 GeneralUtilities`DeepCases, GeneralUtilities`DeepUniqueCases,
 GeneralUtilities`FilterOptions, GeneralUtilities`IndexOf,

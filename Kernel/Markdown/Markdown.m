@@ -101,7 +101,7 @@ toMarkdownLines[File[path_String]] /; FileExtension[path] === "nb" := Scope[
   nb = Quiet @ Get @ path;
   If[MatchQ[nb, Notebook[{__Cell}, ___]],
     result = toMarkdownLines @ nb;
-    If[$notebookCaching, CacheTo[$notebookToMarkdownCache, path, {result, fileDate}]];
+    If[$notebookCaching, MaybeCacheTo[$notebookToMarkdownCache, path, {result, fileDate}]];
     result
   ,
     Message[General::badnbread, path];

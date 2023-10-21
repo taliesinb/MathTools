@@ -2,7 +2,7 @@ PublicFunction[CachedURLFetch]
 
 SetInitialValue[QuiverGeometryCaches`$URLFetchCache, UAssociation[]];
 
-CachedURLFetch[url_] := CacheTo[QuiverGeometryCaches`$URLFetchCache, url, WithInternet @ URLFetch[url, $urlFetchOptions]];
+CachedURLFetch[url_] := MaybeCacheTo[QuiverGeometryCaches`$URLFetchCache, url, WithInternet @ URLFetch[url, $urlFetchOptions]];
 
 (**************************************************************************************************)
 

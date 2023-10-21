@@ -402,11 +402,13 @@ MonoidalTree::badleaf = "Unrecognized leaf expression `` at position ``.";
 
 PublicTypesettingForm[RainbowCategoryForm]
 
+(* TODO: retire this, since DiagramColorRules is a much more precise mechanism for this *)
+
 DefineStandardTraditionalForm[
   RainbowCategoryForm[form_] :> rainbowCategoryFormBoxes[form]
 ];
 
-$rainbowCDOptions = {ColorRules -> "Rainbow", SymbolReplacements -> "DiskArrow"};
+$rainbowCDOptions = {ColorRules -> "GradientArrows", SymbolReplacements -> "DiskArrow"};
 rainbowCategoryFormBoxes[form_] := ToBoxes[form /. {
   cd_CommutativeDiagram                :> RuleCondition @ ReplaceOptions[cd, $rainbowCDOptions],
   (* TODO: remove these, they are outdated *)

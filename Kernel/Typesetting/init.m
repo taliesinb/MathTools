@@ -325,7 +325,10 @@ ClearTemplateBoxDefinitions[] := (
 
 PrivateSpecialFunction[DefineNotebookDisplayFunction, DefineKatexDisplayFunction, DefineKatexMacro]
 
+SetInitialValue[$qgTemplateBoxNameQ, UAssociation[]];
+
 DefineNotebookDisplayFunction[templateName_String, fn_Function] := (
+  $qgTemplateBoxNameQ[templateName] = True;
   $notebookDisplayFunction[templateName] = SpecializeToNotebookBoxes[fn];
 );
 
@@ -395,10 +398,10 @@ DefineTemplateBox[KatexSwitch, "katexSwitch", KBox[$1, $2], None]
 
 (**************************************************************************************************)
 
-PublicFunction[TemplateNameQ]
+PublicFunction[QGTemplateNameQ]
 
-TemplateNameQ[name_] := Or[
-  KeyExistsQ[$katexDisplayFunction, name],
+QGTemplateNameQ[name_] := Or[
+  $qgTemplateBoxNameQ @ name,
   AssociationQ[$localKatexDisplayFunction] && KeyExistsQ[$localKatexDisplayFunction, name]
 ];
 
@@ -500,6 +503,7 @@ Options[DefineTaggedForm] = JoinOptions[$defineOpts, Aliases -> None];
 DefineTaggedForm[formSym_Symbol, OptionsPattern[]] := With[
   {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
   {boxify = OptionValue[Boxification], aliases = OptionValue[Aliases]},
+  $unaryFormQ[formSym] = True;
   DefineStandardTraditionalForm[formSym[e_] :> TBox[boxify @ e, name]];
   DefineTemplateBox[formSym, name, $1, OptionValue[KatexMacroName]];
   If[AssociationQ[aliases], DefineStandardTraditionalForm[
@@ -512,6 +516,10 @@ _DefineTaggedForm := BadArguments[];
 (**************************************************************************************************)
 
 PublicSpecialFunction[DefineUnaryForm]
+
+PrivateVariable[$unaryFormQ]
+
+SetInitialValue[$unaryFormQ, UAssociation[]];
 
 SetUsage @ "
 DefineUnaryForm[symbol$, boxes$] defines symbol$[arg$1] to boxify to %TemplateBox[{arg$1}, 'symbol$'], \
@@ -528,6 +536,7 @@ DefineUnaryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
   {boxify = OptionValue[Boxification]},
   {fn = TBox[#1, name]&},
+  $unaryFormQ[formSym] = True;
   attachBoxFunctionDefs[OptionValue[BoxFunction], fn];
   attachHeadBoxes[OptionValue[HeadBoxes], formSym];
   DefineStandardTraditionalForm[formSym[e_] :> fn[boxify @ e]];
@@ -1014,6 +1023,41 @@ DefineStyleForm[#1, currentStyleSetting[Background, #2]]& @@@ ExpressionTable[
 
 (**************************************************************************************************)
 
+PrivateFunction[ExpandTemplateBox]
+
+ExpandTemplateBox = Case[
+  TemplateBox[{a_, b_}, "katexSwitch"]         := a;
+  tb:TemplateBox[_, _String ? QGTemplateNameQ] := ExpandQGTemplateBox @ tb;
+  tb:TemplateBox[_List, _String]               := ExpandNotebookTemplateBox @ tb;
+];
+
+(**************************************************************************************************)
+
+PrivateFunction[ExpandQGTemplateBox, QGTemplateBoxQ]
+
+ExpandQGTemplateBox = Case[
+  TemplateBox[args_List, name_String] := Apply[replaceTemplateSlots @ $notebookDisplayFunction @ name, args];
+]
+
+QGTemplateBoxQ[TemplateBox[_List, _String ? QGTemplateNameQ]] := True;
+QGTemplateBoxQ[_] := False;
+
+replaceTemplateSlots[e_] := ReplaceRepeated[e, {
+  TemplateSlot[n_Integer] :> Slot[n],
+  TemplateSlotSequence[n_Integer] :> SlotSequence[n],
+  TemplateSlotSequence[n_Integer, riff_] :> SequenceRiffle[SlotSequence[n], riff]
+}];
+
+(**************************************************************************************************)
+
+PublicFunction[ExpandNotebookTemplateBox]
+
+ExpandNotebookTemplateBox = Case[
+  tb:TemplateBox[_List, _String] := BoxForm`TemplateBoxToDisplayBoxes[tb];
+];
+
+(**************************************************************************************************)
+
 PublicFunction[EvaluateTemplateBox, EvaluateTemplateBoxFull]
 
 EvaluateTemplateBox[expr_] := ReplaceAll[expr, tb:TemplateBox[_List, _String] :> RuleCondition @ evalTB[tb]];
@@ -1021,15 +1065,9 @@ EvaluateTemplateBoxFull[expr_] := ReplaceRepeated[expr, tb:TemplateBox[_List, _S
 
 evalTB := Case[
   TemplateBox[{a_, b_}, "katexSwitch"] := a;
-  TemplateBox[args_List, name_String] /; KeyExistsQ[$notebookDisplayFunction, name] := Apply[replaceTemplateSlots @ $notebookDisplayFunction @ name, args];
-  tb:TemplateBox[_List, _String]                                                    := BoxForm`TemplateBoxToDisplayBoxes[tb];
+  tb:TemplateBox[_, name_String] /; KeyExistsQ[$notebookDisplayFunction, name] := ExpandQGTemplateBox @ tb;
+  tb:TemplateBox[_List, _String]                                               := ExpandNotebookTemplateBox @ tb;
 ];
-
-replaceTemplateSlots[e_] := ReplaceRepeated[e, {
-  TemplateSlot[n_Integer] :> Slot[n],
-  TemplateSlotSequence[n_Integer] :> SlotSequence[n],
-  TemplateSlotSequence[n_Integer, riff_] :> SequenceRiffle[SlotSequence[n], riff]
-}];
 
 PublicFunction[EvaluateTemplateBoxAsKatex, EvaluateTemplateBoxAsKatexFull]
 

@@ -94,3 +94,5 @@ PublicFunction[RotateToMatrix]
 RotateToMatrix[dirx_] :=
   ToPackedReal @ Transpose[{dirx, VectorRotate90 @ dirx}];
 
+RotateToMatrix[dirx_, {sx_, sy_}] :=
+  ToPackedReal @ Transpose[{dirx * sx, VectorRotate90 @ dirx * sy}];

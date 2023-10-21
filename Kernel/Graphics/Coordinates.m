@@ -41,6 +41,12 @@ MapPrimitiveCoordinates[{x_, y_} ? CoordinateVectorQ, expr_] :=
 
 $rulesF[e_] := VectorReplace[e, Rule[c:$CoordP, o_] :> Rule[$vectorF[c], o]];
 $vecDelta[a_, d_] := With[{a1 = $vectorF[a]}, {a1, $vectorF[a + d] - a1}];
+$radiusF = Case[
+  r:$NumberP := EuclideanDistance[$vectorF @ {0, r}, $vectorF @ {0, 0}] * Sign[r]; (* the sign is for ElbowCurve, which can take a negative value *)
+  r:$CoordP  := EuclideanDistance[$vectorF @ r, $vectorF @ {0, 0}]; (* TODO: doesn't do the right thing for shearing of an annulus *)
+  e_         := e;
+];
+
 
 (* we set up this dispatch so that we know (and test) whether to call
 $vec or $mat or $matList
@@ -54,8 +60,10 @@ the more specific cases first
 $mpcDispatch0 := $mpcDispatch0 = Dispatch @ With[{
   $vecvec    = Alternatives @@ PrimitiveSignatureLookup["Vector,Vector"],
   $vecdelta  = Alternatives @@ PrimitiveSignatureLookup["Vector,Delta"],
-  $vec       = Alternatives @@ PrimitiveSignatureLookup["Vector?Radius"],
-  $matrix    = Alternatives @@ PrimitiveSignatureLookup["Matrix?Radius | Pair?Radius | Curve?Radius"],
+  $vecrad    = Alternatives @@ PrimitiveSignatureLookup["Vector,Radius"],
+  $vec       = Alternatives @@ PrimitiveSignatureLookup["Vector!Radius"],
+  $matrixrad = Alternatives @@ PrimitiveSignatureLookup["Matrix,Radius | Pair,Radius | Curve,Radius"],
+  $matrix    = Alternatives @@ PrimitiveSignatureLookup["Matrix!Radius | Pair!Radius | Curve!Radius"],
   $matrices  = Alternatives @@ PrimitiveSignatureLookup["Matrices?Radius"],
   $opvec     = Alternatives @@ PrimitiveSignatureLookup["Opaque,Vector|Primitives,Vector"],
   $op        = Alternatives @@ PrimitiveSignatureLookup["Opaque"],
@@ -66,7 +74,9 @@ $mpcDispatch0 := $mpcDispatch0 = Dispatch @ With[{
   e:($op)[___]                            :> e,
   (h:$vecvec)[v:vecP, w:vecP, a___]       :> RuleCondition @ h[$vectorF @ v, $vectorF @ w, a],
   (h:$vecdelta)[v:vecP, d:vecP, a___]     :> RuleCondition @ h[Seq @@ $vecDelta[v, d], a],
+  (h:$vecrad)[v:vecP, r_, a___]           :> RuleCondition @ h[$vectorF @ v, $radiusF @ r, a],
   (h:$vec)[v:vecP, a___]                  :> RuleCondition @ h[$vectorF @ v, a],
+  (h:$matrixrad)[m:matP, r_, a___]        :> RuleCondition @ h[$matrixF @ m, $radiusF @ r, a],
   (h:$matrix)[m:matP, a___]               :> RuleCondition @ h[$matrixF @ m, a],
   (h:$matrices)[v:matListP, a___]         :> RuleCondition @ h[$matrixF /@ v, a],
   (h:$rules)[r_List, p_, a___]            :> RuleCondition @ h[$rulesF @ r, p /. $mpcDispatch, a],

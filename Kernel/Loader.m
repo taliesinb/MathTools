@@ -201,8 +201,10 @@ $stringProcessingRules = {
 }
 
 QuiverGeometryLoader`ExpressionTable[context_String, str_String] := Block[
-  {stream = StringToStream[str], $ContextPath = $expressionTableContextPath, $Context = context},
-  Replace[ReadList[stream, Hold[Expression]], Hold[Times[a___]] :> {a}, {1}]
+  {stream = StringToStream[str], $ContextPath = $expressionTableContextPath, $Context = context, result},
+  result = Replace[ReadList[stream, Hold[Expression]], Hold[Times[a___]] :> {a}, {1}];
+  Close[stream];
+  result
 ];
 
 (**************************************************************************************************)

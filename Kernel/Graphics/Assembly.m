@@ -114,7 +114,7 @@ cachedBoundingBox[Text[t_, ___]] :=
 cachedBoundingBox[Inset[t_, ___]] :=
   cachedBoundingBox[t];
 
-cachedBoundingBox[t_] := CacheTo[
+cachedBoundingBox[t_] := MaybeCacheTo[
   QuiverGeometryCaches`$BoundingBoxCache,
   Hash[{t, $baseStyle}],
   Take[Rasterize[Style[t, Seq @@ ToList[$baseStyle]], "BoundingBox"], 2]

@@ -1,22 +1,44 @@
 (* this overrides GU`PrettyForm *)
 PrettyForm /: MakeBoxes[PrettyForm[expr_], StandardForm] :=
-  ToPrettifiedString[Unevaluated @ expr, MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None];
+  ToPrettifiedString[InternalHoldForm @ expr, MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None];
+
+PrettyForm /: MakeBoxes[PrettyForm[expr_, opts__], StandardForm] :=
+  ToPrettifiedString[InternalHoldForm @ expr, opts, MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None];
+
+HoldPrettyForm /: MakeBoxes[HoldPrettyForm[expr_, opts__], StandardForm] :=
+  ToPrettifiedString[InternalHoldForm @ expr, opts, MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None];
 
 HoldPrettyForm /: MakeBoxes[HoldPrettyForm[expr_], StandardForm] :=
-  ToPrettifiedString[Unevaluated @ expr, MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None];
+  ToPrettifiedString[InternalHoldForm @ expr, MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None];
 
 (**************************************************************************************************)
 
 PublicOption[ColorSymbolContext]
 
-PublicTypesettingForm[CompactPrettyForm]
+PublicHead[InternalHoldForm]
 
-CompactPrettyForm /: MakeBoxes[CompactPrettyForm[expr_], StandardForm] :=
+SetHoldAllComplete[InternalHoldForm]
+
+PublicTypesettingForm[CompactPrettyForm, CompactPrettyFullForm]
+
+$compactOpts = Sequence[
+  MaxIndent -> 10, FullSymbolContext -> False, ColorSymbolContext -> True,
+  CompactingWidth -> 150, InlineColors -> True,
+  CompactRealNumbers -> True, TabSize -> None
+];
+
+CompactPrettyForm /: MakeBoxes[CompactPrettyForm[expr_, opts___Rule], StandardForm] :=
   ToPrettifiedString[
-    Unevaluated @ expr,
-    MaxIndent -> 10, FullSymbolContext -> False, ColorSymbolContext -> True,
-    CompactingWidth -> 150, ElideLargeArrays -> True, InlineColors -> True,
-    CompactRealNumbers -> True, TabSize -> None
+    InternalHoldForm @ expr,
+    opts,
+    $compactOpts, ElideLargeArrays -> True
+  ];
+
+CompactPrettyFullForm /: MakeBoxes[CompactPrettyFullForm[expr_, opts___Rule], StandardForm] :=
+  ToPrettifiedString[
+    InternalHoldForm @ expr,
+    opts,
+    $compactOpts, ElideLargeArrays -> False
   ];
 
 (**************************************************************************************************)
@@ -75,13 +97,15 @@ getAllSymbolContexts[e_] := DeepUniqueCases[e, s_Symbol ? HoldAtomQ :> Context[U
 
 SetHoldAllComplete[pretty0, pretty1, pretty1wrap, pretty2, prettyRule, prettyRuleDelayed, prettyInfix, prettyCompressed, prettyDeep, prettyLong, prettyHead, symbolString];
 
+pretty0[InternalHoldForm[e_]] := pretty0[e];
+
 pretty0[e_] /; TrueQ[$depth > $maxDepth] := $ellipsisString;
 
 pretty0[e_] /; TrueQ[$depth == $maxDepth] := prettyDeep[e];
 
 pretty0[e:((s_Symbol)[___])] /; MemberQ[$inlineHeads, SymbolName @ s] := pretty2[e];
 
-pretty0[r_Real ? HoldAtomQ] /; TrueQ[$compactRealNumbers] := RealDigitsString[r, 2]
+pretty0[r_Real ? HoldAtomQ]  := realString[r];
 
 pretty0[e_] := Block[{$depth = $depth + 1},
 
@@ -93,6 +117,10 @@ pretty0[e_] := Block[{$depth = $depth + 1},
 
   pretty1[e]
 ];
+
+(**************************************************************************************************)
+
+realString[r_] := If[TrueQ[$compactRealNumbers], RealDigitsString[r, 2], ToString[r]];
 
 (**************************************************************************************************)
 
@@ -162,6 +190,7 @@ smallQ = Case[
   _Symbol ? HAQ   := True;
   s_String ? HAQ  := StringLength[s] < 12 || StringMatchQ[s, LetterCharacter..];
   _Integer ? HAQ  := True;
+  _Real ? HAQ     := $compactRealNumbers;
   _               := False;
 ,
   {HAQ -> HoldAtomQ}
@@ -324,11 +353,21 @@ prettyGraph[g_Graph] := With[{v = VertexList[g], e = EdgeList[g], o = Options[g]
 
 pretty2 = Case[
   e:$fatHeadP /; TrueQ[$prettyCompression] := prettyCompressed[e];
-  e_Symbol := symbolString[e];
-  e_ := ToString[Unevaluated @ e, InputForm];
+  e_Symbol ? HAQ := symbolString[e];
+  e_Real ? HAQ   := realString[e];
+  e_ := compactReals @ ToString[Unevaluated @ e, InputForm];
 ,
   {$fatHeadP}
 ];
+
+(* this is super hacky but not sure how else to easily clip numbers once ToString is done *)
+compactReals[str_] := If[$compactRealNumbers && StringFreeQ[str, "\""],
+  StringReplace[str, {
+      l:"0".. ~~ "." ~~ Longest[m:"0"..] ~~ r:DigitCharacter.. :> StringJoin[l, ".", m, StringTake[r, UpTo @ 3]],
+      l:DigitCharacter.. ~~ "." ~~ r:Repeated[DigitCharacter, {3, Infinity}] :> StringJoin[l, ".", StringTake[r, 2]]
+  }],
+  str
+]
 
 (**************************************************************************************************)
 

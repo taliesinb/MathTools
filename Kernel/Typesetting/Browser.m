@@ -1,4 +1,4 @@
-PublicFunction[ListBrowser]
+PublicTypesettingForm[ListBrowser]
 
 Options[ListBrowser] = {
   ClickFunction -> None
@@ -37,7 +37,27 @@ listBrowserBoxes[list_List, opts:OptionsPattern[]] := With[
 
 (**************************************************************************************************)
 
-PublicFunction[PickBrowser]
+PublicTypesettingForm[LabeledFlipView]
+
+MakeBoxes[LabeledFlipView[list_List, opts___Rule], form_] := labeledFlipViewBoxes[list, opts];
+
+labeledFlipViewBoxes[list_List, opts___] := labeledFlipViewBoxes[MapIndex1[#2 -> #1&, list], opts];
+
+labeledFlipViewBoxes[items:{___Rule}, opts___] := With[
+  {range = Range @ Length @ items, keys = ToBoxes /@ Keys @ items, vals = ToBoxes /@ Values @ items},
+  {keys$$ = RuleThread[range, keys], vals$$ = RuleThread[range, vals]},
+  {isize = Lookup[{opts}, ImageSize, Automatic]},
+  DynamicModuleBox[{i$$ = 1},
+    GridBox[{
+      {StyleBox[TogglerBox[Dynamic[i$$], keys$$, ImageSize -> All], Bold, FontFamily -> "Fira", FontSize -> 10]},
+      {PaneSelectorBox[vals$$, Dynamic[i$$], ImageSize -> isize, Alignment -> {Left, Top}]}
+    }, ColumnAlignments -> Left, RowAlignments -> Left]
+  ]
+];
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[PickBrowser]
 
 Options[PickBrowser] = Options[ListBrowser];
 

@@ -207,6 +207,17 @@ SetInitialValue[sym_Symbol, body_] := If[!System`Private`HasImmediateValueQ[sym]
 
 (**************************************************************************************************)
 
+PrivateMutatingFunction[MaybeCacheTo]
+PublicVariable[$CachingEnabled]
+
+SetHoldAll[MaybeCacheTo];
+SetInitialValue[$CachingEnabled, True];
+
+MaybeCacheTo[c_, k_, v_] /; TrueQ[$CachingEnabled] := CacheTo[c, k, v];
+MaybeCacheTo[_, _, val_] := val;
+
+(**************************************************************************************************)
+
 PrivateMutatingFunction[SetDelayedInitialValue]
 
 SetDelayedInitialValue[sym_Symbol, other__Symbol, body_] := (SetDelayedInitialValue[sym, body]; SetDelayedInitialValue[other, body]);

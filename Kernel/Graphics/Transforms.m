@@ -46,11 +46,14 @@ TranslatePrimitiveBoxes[prims_, t_] := MapPrimitiveBoxCoordinates[ThreadedPlusOp
 
 (**************************************************************************************************)
 
-PublicFunction[ScalePrimitives]
+PublicFunction[ScalePrimitives, ScalePrimitiveBoxes]
 
-SetUsage @ "ScalePrimitives[g$, vec$] scales all primitive coordinates by vec$."
+SetUsage @ "ScalePrimitives[g$, {s$x, s$y}] scales all primitive coordinates."
+SetUsage @ "ScalePrimitiveBoxes[g$, {s$x, s$y}] scales all primitive box coordinates."
 
+(* TODO: fix the fact that this doesn't rescale Disk[{0,0}], since the radius is implicitly 1 *)
 ScalePrimitives[prims_, s_] := MapPrimitiveCoordinates[ThreadedTimesOperator[s], prims];
+ScalePrimitiveBoxes[prims_, s_] := MapPrimitiveBoxCoordinates[ThreadedTimesOperator[s], prims];
 
 (**************************************************************************************************)
 

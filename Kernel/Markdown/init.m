@@ -227,8 +227,8 @@ PublicScopedOption[ExportPathFunction]
 SetUsage @ "ExportPathFunction is a markdown export option that gives a function to rewrite relative paths of input notebooks to determine their URL."
 $exportPathFunction = None;
 
-PublicScopedOption[Verbose]
-SetUsage @ "Verbose is a markdown export option that prints every action that will be taken."
+(* NOTE: Verbose is now a System` symbol *)
+PrivateVariable[$verbose]
 $verbose = False;
 
 PublicScopedOption[DryRun]

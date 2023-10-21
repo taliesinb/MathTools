@@ -398,7 +398,7 @@ ToRainbowInteger = Case[
 
   s_String := Lookup[$romanToInteger, ToLowerCase @ ToSpelledGreek @ ToNonDecoratedRoman @ s, None];
 
-  CategoryObjectSymbol[s_String] := % @ s;
+  head_Symbol /; $unaryFormQ[head] := % @ First @ s;
 
 ];
 
@@ -409,6 +409,7 @@ $romanToInteger = <|
   "f" -> 1, "g" -> 2, "h" -> 3,
   "m" -> 1, "n" -> 2, "p" -> 3,
   "x" -> 1, "y" -> 2, "z" -> 3,
+  "l" -> 1, "r" -> 2,
   "mu" -> 6, "eps" -> 7, "alpha" -> 8, "rho" -> 1, "lambda" -> 2, "eta" -> 3
 |>;
 

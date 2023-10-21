@@ -1,6 +1,6 @@
 PublicTypesettingForm[CommutativeDiagram]
 
-PublicOption[DebugBounds, AutoSetback, Origin, SymbolReplacements, CloneOptions, CloningFunction, DiagramScaling, DefaultMorphism, MorphismColors]
+PublicOption[DebugBounds, AutoSetback, Origin, SymbolReplacements, CloneOptions, CloningFunction, DiagramScaling, DefaultMorphism, MorphismColors, DiagramColorRules]
 
 PublicSymbol[Outwards, Inwards]
 
@@ -29,7 +29,7 @@ The list items$ can consist of objects, morphisms, and arbitrary graphics primit
 * %ObjectCoordinates[$$] and %MorphismCoordinates[$$] can be used to refer symbolically to locations or centroids of objects and morphisms, see their usages.
 * %LabelPosition -> %Outwards evaluates to %LabelPosition -> %AwayFrom[%ObjectCoordinates['Center']].
 * %LabelPosition -> %Inwards evaluates to %LabelPosition -> %Towards[%ObjectCoordinates['Center']].
-* the special object %Cloned[obj$, elem$] will generate a clone of the object displaying as elem$ and a morphism to the clone.
+* the special object %Cloned[obj$, elem$] will generate a clone of the object   playing as elem$ and a morphism to the clone.
 * %Cloned[obj$, elem$, label$] will attach label$ to morphism that connects the object to its clone.
 * cloning can be customized as described by %CloneOptions.
 The following options are supported:
@@ -52,6 +52,7 @@ The following options are supported:
 | %CloningFunction | function to produce %Cloned objects and morphisms |
 | %DefaultMorphism | the default morphism to use, which is %MorphismArrow |
 | %MorphismColors | how to color morphisms |
+* for more information about %ColorRules, see the usage of %DiagramColorRules, which is an alias.
 "
 
 SetUsage @ "
@@ -110,6 +111,7 @@ Options[CommutativeDiagram] = JoinOptions[
   CloningFunction        -> None,
   DefaultMorphism        -> MorphismArrow,
   MorphismColors         -> None,
+  DiagramColorRules      -> Automatic,
   $morphismArrowOptions
 ];
 
@@ -154,7 +156,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
     alignment, $setback, labelFontSize, fontSize, fontFamily,
     graphicsScale, $autoSetback, $debugBounds,
     transposed, flipX, flipY, diagramScaling, origin,
-    textModifiers, colorRules, morphismColors, symbolReplacements,
+    textModifiers, colorRules, diagramColorRules, morphismColors, symbolReplacements,
     cloneOptions, cloningFunction,
     $defaultMorphism
   ];
@@ -169,10 +171,11 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $inheritedOptions = opts;
 
   $saveMorphGradColors = False;
-  colorModifierFn = toRecoloringFunction @ colorRules;
-  replacementFn = toReplacementFunction[symbolReplacements, colorModifierFn];
+  SetAutomatic[diagramColorRules, colorRules];
+  colorModifierFn = processColorRules @ diagramColorRules;
+  replacementFn = processSymbolReplacements[symbolReplacements, colorModifierFn];
   {$objectTextModifierFn, $morphismTextModifierFn} = Map[
-    (* we apply replacements first because multiple diagrams can come from one baseline... see note in toReplacementFunction *)
+    (* we apply replacements first because multiple diagrams can come from one baseline... see note in processSymbolReplacements *)
     Composition[toModifierFunction[#], replacementFn, colorModifierFn]&,
     If[AssociationQ[textModifiers],
       Lookup[textModifiers, {"Objects", "Morphisms"}, {}],
@@ -219,6 +222,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   arrowOpts = DeleteOptions[
     {FilterOptions[MorphismArrow, opts]},
     {Setback, LabelFontSize, LabelFontSize, GraphicsScale}];
+
   result = {
     Sequence @@ arrowOpts,
     BendRadius -> 0.25,
@@ -228,6 +232,10 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
     FontFamily -> fontFamily,
     primitives
   } /. $primitiveCanonicalizationRules;
+
+  (* this evaluates the TextModifiers now, for two reasons: they are chunky ReplaceAll expressions that show up in each MorphismArrow, and they can
+  contain references to localColorOf which will shortly go out of scope. maybe we can do this as parseMorphism time? not sure! *)
+  result //= applyMorphismTextModifiers;
 
   If[origin != {0, 0}, TranslatePrimitives[result, origin], result]
 ];
@@ -254,7 +262,6 @@ $primitiveCanonicalizationRules = {
   Inwards  :> Towards[$biasedCenter]
 };
 
-
 toScaled = Case[
   {a_, b_}              := {% @ a, % @ b};
   Rectangular[{a_, b_}] := Rectangular[N @ {a, b} / graphicsScale];
@@ -276,41 +283,81 @@ cdToPrimitives[other_] := (
 
 (**************************************************************************************************)
 
+SetUsage @ "
+DiagramColorRules is an option to %CommutativeDiagram that consists of rules for colors to apply to specific elements.
+* elements that are colored are contents of objects, as well as morphism labels.
+* rules can be in any of the following forms:
+| patt$ -> color$ | apply color$ to any expressions matching patt$ |
+| patt$ -> {color$1, color$2} | apply a gradient color to matching expressions |
+| head$ -> 'Rainbow' | color head$[name$] canonically based on name$ |
+| head$ -> 'Gradient' | color head$[name$] as gradient based on source and target of morphism labeled as name$ |
+| head$ -> 'Coloring' | typeset head$[name$][$$] as $$ with color based on name$ |
+| head$ -> 'Framing' | typeset head$[name$][$$] as framed $$ with frame color based on name$ |
+* 'Coloring' and 'Framing' will use the color associated with head$[name$], if there is one, or otherwise the canonical color for name$.
+* head$ must be a unary form like %CategoryObjectSymbol, %CategoryArrowSymbol, or %CategorySymbol.
+* the following named rulesets are supported:
+| 'Objects' | equivalent to %CategoryObjectSymbol -> 'Rainbow' |
+| 'Arrows' | equivalent to %CategoryArrowSymbol -> 'Rainbow' |
+| 'Functors' | equivalent to %FunctorSymbol -> 'Rainbow' |
+| 'Categories' | equivalent to %FunctorSymbol -> 'Rainbow' |
+| 'GradientArrows' | equivalent to {'Objects', %CategoryArrowSymbol -> 'Gradient'} |
+| 'GradientFunctors' | equivalent to {'Categories', %CategoryFunctorSymbol -> 'Gradient'} |
+| 'FramingFunctors' | depict functor application as a colored frame |
+"
 CommutativeDiagram::badrecolor = "Bad recoloring rule element ``."
 
-toRecoloringFunction = Case[
+processColorRules = Case[
   {} | None            := Identity;
   el:(_Rule | _String) := % @ {el};
   list_List            := ReplaceAll @ Map[toRecolorRule, list];
   other_               := (Message[CommutativeDiagram::badrecolor, other]; Identity);
 ];
 
-$colorP = _Integer | (_Symbol ? StyleFormHeadQ) | $ColorPattern;
+CommutativeDiagram::cruleNotUnaryForm = "Symbol `` provided as color rule element is not a unary form."
 
-toCol = Case[
-  s_Symbol := StyleFormData @ s;
-  other_ := other;
-]
+specialRecoloringRule[head_, "Rainbow"] :=
+  RuleDelayed[z_head, RuleCondition @ Style[z, ToRainbowColor @ ToRainbowInteger @ First @ z]];
+
+specialRecoloringRule[head_, "Gradient"] := (
+  $saveMorphGradColors = True;
+  RuleDelayed[z_head, RuleCondition @ GradientSymbol[z, $gradColor[z, 1], $gradColor[z, 2], $currentFontSize]]
+);
+
+specialRecoloringRule[head_, "Framing"] :=
+  RuleDelayed[z_head[e_], RuleCondition @ FramedForm[e, localColorOf[z]]];
+
+specialRecoloringRule[head_, "Coloring"] :=
+  RuleDelayed[z_head[e_], RuleCondition @ Style[e, localColorOf[z]]];
+
+PrivateFunction[localColorOf]
+
+(* so, this is used to ensure that if we've declared a color for a head like FunctorSymbol,
+we will use it for the 'Framing' / 'Coloring' spec above *)
+localColorOf[z_] := Scope[
+  z2 = colorModifierFn[z];
+  If[z2 =!= z, findColor @ z2, ToRainbowColor @ ToRainbowInteger @ First @ z]
+];
+
+$namedRecoloringElements = <|
+  "Objects"          -> {CategoryObjectSymbol -> "Rainbow"},
+  "Arrows"           -> {CategoryArrowSymbol  -> "Rainbow"},
+  "Functors"         -> {FunctorSymbol        -> "Rainbow"},
+  "Categories"       -> {CategorySymbol       -> "Rainbow"},
+  "GradientArrows"   -> {CategoryArrowSymbol  -> "Gradient", "Objects"},
+  "GradientFunctors" -> {FunctorSymbol        -> "Gradient", "Categories"},
+  "FramingFunctors"  -> {FunctorSymbol        -> "Framing"}
+|>;
+
+$colorP = _Integer | (_Symbol ? StyleFormHeadQ) | $ColorPattern;
 
 toRecolorRule = Case[
 
-  "Rainbow" := Splice[% /@ {"RainbowObjects", "RainbowArrows"}];
+  str_String := Splice[% /@ LookupOrMessageKeys[$namedRecoloringElements, str, {}]];
 
-  "RainbowObjects" :=
-    RuleDelayed[z_CategoryObjectSymbol, RuleCondition @ Style[z, ToRainbowColor @ ToRainbowInteger @ z]];
-
-  "RainbowArrows" := (
-    $saveMorphGradColors = True;
-    RuleDelayed[z_CategoryArrowSymbol, RuleCondition @ GradientSymbol[z, $gradColor[z, 1], $gradColor[z, 2], $currentFontSize]]
-  );
-
-  "RainbowFunctors" := (
-    RuleDelayed[FunctorSymbol[z_][arg_], RuleCondition @ Style[arg, ToRainbowColor @ ToRainbowInteger @ z]]
-  );
-
-  "FramedFunctors" := (
-    RuleDelayed[FunctorSymbol[z_][arg_], RuleCondition @ FramedForm[arg, ToRainbowColor @ ToRainbowInteger @ z]]
-  );
+  head_Symbol -> type:("Rainbow"|"Gradient"|"Framing"|"Coloring") := If[TrueQ @ $unaryFormQ[head],
+    specialRecoloringRule[head, type],
+    Message[CommutativeDiagram::cruleNotUnaryForm, head]; Nothing
+  ];
 
   f_ -> {a:$colorP, b:$colorP} := With[{c1 = toCol @ a, c2 = toCol @ b},
     RuleDelayed[f, RuleCondition @ GradientSymbol[f, c1, c2, $currentFontSize]]
@@ -330,6 +377,28 @@ toRecolorRule = Case[
     Nothing
   );
 ];
+
+toCol = Case[
+  s_Symbol  := StyleFormData @ s;
+  i_Integer := ToRainbowColor @ i;
+  other_    := other;
+]
+
+(**************************************************************************************************)
+
+applyMorphismTextModifiers[primitives_] := ReplaceAll[
+  primitives,
+  MorphismArrow[path_, lbl:Except[_Rule|None], lopts___, TextModifiers -> fn_, ropts___] :>
+    MorphismArrow[path, fixNestedColors[toModifierFunction[fn][lbl]], lopts, ropts]
+];
+
+(* this deals with the uncommon case when we have ColorRules -> {FunctorSymbol -> "Coloring", _ -> $Purple} AND
+SymbolReplacements -> "DiskArrow", where the purple would apply ahead of time to objects (due to the pre-apply rule),
+but once the object is colored purple it cannot be re-colored by the functor application becuase that purpleness is
+applied as a SymbolReplacement rule after coloring takes place *)
+
+fixNestedColors[Style[Style[a_, $ColorPattern], c:$ColorPattern]] := Style[a, c];
+fixNestedColors[other_] := other;
 
 (**************************************************************************************************)
 
@@ -362,22 +431,21 @@ replacement, so that we can replace $Af | $Ag to \[RightArrow] but *also* have t
 
 CommutativeDiagram::badrepspec = "SymbolReplacements -> `` is invalid.";
 
-toReplacementFunction[None | {}, _] := Identity;
+processSymbolReplacements[None | {}, _] := Identity;
 
-(* replace these with ObjectToken and MorphismToken *)
-$diskArrowRules = {
-  _CategoryObjectSymbol -> "\[FilledCircle]",
-  _CategoryArrowSymbol -> "\[RightArrow]"
-};
+processSymbolReplacements["DiskArrow", cf_] :=
+  processSymbolReplacements[{_CategoryObjectSymbol -> "\[FilledCircle]", _CategoryArrowSymbol -> "\[RightArrow]"}, cf]
 
-toReplacementFunction["DiskArrow", cf_] :=
-  toReplacementFunction[$diskArrowRules, cf]
+$functorDiskArrowRules = {_CategorySymbol -> "\[FilledCircle]", _FunctorSymbol -> "\[RightArrow]"};
 
-toReplacementFunction[rules_, colorFn_] := Scope[
+processSymbolReplacements["FunctorDiskArrow", cf_] :=
+  processSymbolReplacements[{_CategorySymbol -> "\[FilledCircle]", _FunctorSymbol -> "\[RightArrow]"}, cf]
+
+processSymbolReplacements[rules_, colorFn_] := Scope[
   ReplaceAll[parseRep /@ ToList[rules]]
 ,
   parseRep[rule:(lhs_ -> rhs_)] :=
-    If[colorFn[lhs] =!= lhs && colorFn[rhs] === rhs,
+    If[PatternFreeQ[lhs] && colorFn[lhs] =!= lhs && colorFn[rhs] === rhs,
       lhs -> ReplaceAll[colorFn[lhs], rule],
       rule
     ],
@@ -440,6 +508,17 @@ toHigherPathElem = Case[
   spec:$higherCoordP                         := MorphismCoordinates[spec];
   spec_                                      := (Message[CommutativeDiagram::badhighercoord, MsgExpr @ spec]; {0, 0})
 ];
+
+(**************************************************************************************************)
+
+PrivateFunction[toComSugarArrow]
+
+(* used in NamedDiagrams.m *)
+toComSugarArrow[edge_, Null] := Nothing;
+toComSugarArrow[edge_, (head:$morphismHeadP)[args___]] := head[edge, args];
+toComSugarArrow[edge_, label_] := Morphism @@ ToList[edge, label];
+toComSugarArrow[edge_, Reversed[label_]] := toComSugarArrow[Reverse @ edge, label];f$morphismHeadP
+toComSugarArrow[edge_, Reversed[Reversed[label_]]] := %[edge, label];
 
 (**************************************************************************************************)
 
@@ -770,7 +849,7 @@ fmtLabel[lbl_, None] := (
 );
 
 fmtLabel[lbl_, obj_] := Scope[
-  text = Text[$objectTextModifierFn @ obj, lbl, Lookup[$SideToCoords, alignment]];
+  text = Text[fixNestedColors @ $objectTextModifierFn @ obj, lbl, Lookup[$SideToCoords, alignment]];
   If[$calculateLabelSizes,
     size = $itemSize;
     If[ContainsQ[size, Automatic],
@@ -997,255 +1076,3 @@ findST = Case[
   ObjectCoordinates[spec_] := % @ spec;
   i_Integer                := getObjectName[i];
 ]
-
-(**************************************************************************************************)
-
-PublicFunction[CommutativeSquare]
-
-SetUsage @ "
-CommutativeSquare[{nw$, ne$, sw$, se$}, {n$, s$, w$, e$}] constructs a %CommutativeDiagram with 4 objects and 4 morphisms.
-* additional morphisms can be specified after the four.
-* the morphisms n$, s$, w$, e$ can be given as label$ or {label$, type$, opts$$}.
-"
-
-CommutativeSquare[{nw_, ne_, sw_, se_}, {n_, s_, w_, e_, extra___}, opts___Rule] :=
-  CommutativeDiagram[
-    {{1, 1} -> nw, {2, 1} -> ne, {1, 2} -> sw, {2, 2} -> se},
-    {toComSugarArrow[1 => 2, n],
-     toComSugarArrow[2 => 4, e],
-     toComSugarArrow[1 => 3, w],
-     toComSugarArrow[3 => 4, s],
-     extra},
-    LabelPosition -> Outwards,
-    opts
-  ];
-
-(**************************************************************************************************)
-
-PublicFunction[InTriangleDiagram, OutTriangleDiagram, CompositionTriangleDiagram]
-
-SetUsage @ "
-InTriangleDiagram[{l$, r$, b$}, {lr$, lb$, rb$}] constructs a %CommutativeDiagram with 3 objects and 3 morphisms connecting them.
-InTriangleDiagram[$$, side$] places b$ below on side side$.
-* side$ can be %Left, %Center, or %Right.
-* the morphisms can be given as label$ or {label$, type$, opts$$}.
-* additional morphisms can be included after the three.
-"
-
-SetUsage @ "
-OutTriangleDiagram[{t$, l$, r$}, {tl$, tr$, lr$}] constructs a %CommutativeDiagram with 3 objects and 3 morphisms connecting them.
-OutTriangleDiagram[$$, side$] places x$ below on side side$.
-* side$ can be %Left, %Center, or %Right.
-* the morphisms can be given as label$ or {label$, type$, opts$$}.
-* additional morphisms can be included after the three.
-"
-
-SetUsage @ "
-CompositionTriangleDiagram[{l$, t$, r$}, {lt$, tr$, lr$}] constructs a %CommutativeDiagram with 3 objects and 3 morphisms connecting them.
-* the morphisms can be given as label$ or {label$, type$, opts$$}.
-* additional morphisms can be included after the three.
-"
-
-$triCoord = With[{r = 1.1547}, {Left -> {0, r}, Center -> {r/2, r}, Right -> {r, r}}];
-
-InTriangleDiagram[{l_, r_, b_, obs___}, {lr_, lb_, rb_, mors___}, side:(Left|Center|Right):Center, opts___Rule] :=
-  commutativeTriangle[{l, r, b, obs}, {lr, lb, rb, mors}, False, side, opts];
-
-OutTriangleDiagram[{t_, l_, r_, obs___}, {tl_, tr_, lr_, mors___}, side:(Left|Center|Right):Center, opts___Rule] :=
-  commutativeTriangle[{l, r, t, obs}, {lr, tl, tr, mors}, True, side, opts];
-
-CompositionTriangleDiagram[{l_, t_, r_, obs___}, {l2t_, t2r_, l2r_, mors___}, side:(Top|Bottom):Top, opts___Rule] :=
-  commutativeTriangle[{l, r, t, obs}, {l2r, Reversed @ l2t, t2r, mors}, side === Top, Center, opts];
-
-commutativeTriangle[{l_, r_, x_, obs___}, {l2r_, l2x_, r2x_, mors___}, top_, side_, opts___] := Scope[
-  {xx, rx} = Lookup[$triCoord, side] + 1;
-  {xy, lry} = If[top, {1, 2}, {2, 1}];
-  rev = If[top, Identity, Reverse];
-  CommutativeDiagram[Flatten @ {
-    {{xx, xy}  -> x, {1, lry}  -> l, {rx, lry} -> r},
-    obs,
-    toComSugarArrow[rev[1 => 2], l2x],
-    toComSugarArrow[rev[1 => 3], r2x],
-    toComSugarArrow[2 => 3, l2r],
-    mors},
-    LabelPosition -> Outwards,
-    opts
-  ]
-];
-
-(**************************************************************************************************)
-
-PublicFunction[DoubleTriangleDiagram]
-
-SetUsage @ "
-DoubleTriangleDiagram[{l$, m$, r$, x$}, {lm$, rm$, lx$, m$, rx$}] constructs a %CommutativeDiagram with 4 objects and 5 morphisms connecting them.
-DoubleTriangleDiagram[$$, side$] places the bottom object on side$.
-* l$ is placed on the left, m$ in the middle, r$ on the right, and x$ below or above.
-* the morphisms can be given as label$ or head$[label$, opts$$], where head$ is %Morphism, DoubleMorphism%, etc.
-* the direction of the arrows between l$, m, r$ and x$ are always downward.
-* additional morphisms can be included after the four.
-"
-
-With[{r = 1.125, s = 1.41421}, {t = s/2},
-$cdtCoordRules = {
-  Top         -> {{0, 1}, {s, 1}, {t, 0}},
-  TopRight    -> {{0, 1}, {r, 1}, {r, 0}},
-  BottomLeft  -> {{0, 0}, {r, 0}, {0, 1}},
-  Bottom      -> {{0, 0}, {s, 0}, {t, 1}},
-  BottomRight -> {{0, 0}, {r, 0}, {r, 1}}
-}];
-
-DoubleTriangleDiagram[{l_, m_, r_, x_}, {lm_, rm_, lx_, mx_, rx_, extra___}, side:(Bottom|Top):Bottom, opts___Rule] := Scope[
-  pos = {{1, 1}, {2, 1}, {3, 1}, {2, 2}};
-  rev = Identity;
-  If[side === Top, rev = Reverse; pos //= MapAt[If[# == 2, 1, 2]&, {All, 2}]];
-  CommutativeDiagram[{
-    Splice @ RuleThread[pos, {l, m, r, x}],
-    toComSugarArrow[1 => 2, lm],
-    toComSugarArrow[3 => 2, rm],
-    toComSugarArrow[rev[1 => 4], lx],
-    toComSugarArrow[rev[2 => 4], mx],
-    toComSugarArrow[rev[3 => 4], rx],
-    extra},
-    LabelPosition -> Outwards,
-    opts
-  ]
-];
-
-toComSugarArrow[edge_, Null] := Nothing;
-toComSugarArrow[edge_, (head:$morphismHeadP)[args___]] := head[edge, args];
-toComSugarArrow[edge_, label_] := Morphism @@ ToList[edge, label];
-toComSugarArrow[edge_, Reversed[label_]] := toComSugarArrow[Reverse @ edge, label];
-toComSugarArrow[edge_, Reversed[Reversed[label_]]] := %[edge, label];
-
-(**************************************************************************************************)
-
-PublicFunction[ParallelArrowDiagram]
-
-SetUsage @ "
-ParallelArrowDiagram[{l$, r$}, {t$, b$, v$}] constructs a %CommutativeDiagram with 2 objects and 2 morphisms connecting them.
-ParallelArrowDiagram[$$, {t$, b$, v$}] specifies the double morphism v$ between the two parallel morphisms.
-ParallelArrowDiagram[{pos$l -> l$, pos$r -> r$}, $$] specifies positions for l$ and r$.
-* l$ is placed on the left, r$ on the right.
-* $t connects l$ and r$ above, and b$ connects l$ and r$ below. v$ is a vertical double morphism between them.
-"
-
-ParallelArrowDiagram[{lp_ -> l_, rp_ -> r_}, {t_, b_, v_:Null, rest___}, opts___Rule] := Scope[
-  rev = If[Head[v] === Reversed, v //= First; Reverse, Identity];
-  curve = Lookup[{opts}, CurveFunction, TrapezoidCurve];
-  bend = Lookup[{opts}, BendRadius, .33];
-  CommutativeDiagram[{
-    lp -> l, rp -> r,
-    toComSugarArrow[curve[{OC @ 1, OC @ 2}, bend], t],
-    toComSugarArrow[curve[{OC @ 1, OC @ 2}, -bend], b],
-    If[v =!= Null, DoubleMorphism[MorphismCoordinates[rev @ {1, 2}], v, Setback -> 10, LabelPosition -> Right]],
-    rest
-  }, LabelPosition -> Outwards, FilterOptions @ opts]
-];
-
-ParallelArrowDiagram[{l:Except[_Rule], r:Except[_Rule]}, morphisms_List, opts___Rule] :=
-  ParallelArrowDiagram[{{1, 1} -> l, {2, 1} -> r}, morphisms, opts];
-
-(**************************************************************************************************)
-
-PublicFunction[AdjunctionDiagram]
-
-SetUsage @ "
-AdjunctionDiagram[{l$, r$}, {lr$, rl$}] constructs a %CommutativeDiagram representing the adjunction between l$ and r$.
-AdjunctionDiagram[{pos$l -> l$, pos$r -> r$}, $$] specifies positions for l$ and r$.
-"
-
-AdjunctionDiagram[{lpos_ -> l_, rpos_ -> r_}, {lr_, rl_, extra___}, opts___Rule] := Scope[
-  curve = Lookup[{opts}, CurveFunction, TrapezoidCurve];
-  bend = Lookup[{opts}, BendRadius, .33];
-  CommutativeDiagram[{
-    lpos -> l, rpos -> r,
-    toComSugarArrow[curve[{OC @ 1, OC @ 2}, bend], lr],
-    toComSugarArrow[curve[{OC @ 2, OC @ 1}, bend], rl],
-    LongAdjointMorphism[2 => 1, Setback -> 30],
-    extra},
-    LabelPosition -> Outwards, FilterOptions @ opts
-  ]
-];
-
-AdjunctionDiagram[{l_, r_}, morphisms_List, opts___Rule] :=
-  AdjunctionDiagram[{{1, 1} -> l, {2, 1} -> r}, morphisms, opts]
-
-(**************************************************************************************************)
-
-PublicFunction[AdjointTripleDiagram]
-
-SetUsage @ "
-AdjointTripleDiagram[{a$, b$}, {l$, r$, ba$}] constructs a %CommutativeDiagram representing a triple adjunction.
-* l$ is the morphism on the left, r$ is the morphism on the right, and ba$ is the reverse morphism.
-"
-
-OC = ObjectCoordinates;
-
-AdjointTripleDiagram[{a_, b_}, {abl_, abr_, ba_, extra___}, opts___Rule] := Scope[
-  curve = Lookup[{opts}, CurveFunction, TrapezoidCurve];
-  bend = Lookup[{opts}, BendRadius, .5];
-  setback = Lookup[{opts}, "AdjointSetback", 5];
-  CommutativeDiagram[{
-    {1, 1} -> a, {1, 2} -> b,
-    toComSugarArrow[curve[{OC @ 1, OC @ 2}, -bend], abl],
-    toComSugarArrow[curve[{OC @ 1, OC @ 2}, bend], abr],
-    toComSugarArrow[ObjectCoordinates @ {2,1}, ba],
-    AdjointMorphism[3 => 1, Setback -> {0, setback}], AdjointMorphism[2 => 3, Setback -> {setback, 0}],
-    extra},
-    FilterOptions @ opts,
-    LabelPosition -> Center, LabelOrientation -> Horizontal
-  ]
-];
-
-(**************************************************************************************************)
-
-PublicFunction[ArrowDiagram]
-
-SetUsage @ "
-ArrowDiagram[a$, b$, f$] constructs a %CommutativeDiagram consisting of a single arrow f$ between a% and b%.
-* pos$ -> obj$ specifies obj$ should be at position pos$, defaulting to below a$.
-"
-
-ArrowDiagram[a_, b_, f_, opts___Rule] := Scope[
-  $apos = {1, 1};
-  CommutativeDiagram[{
-    sadApos[a], sadBpos[b],
-    toComSugarArrow[1 => 2, f]
-  }, opts]
-]
-
-sadApos = Case[
-  r_Rule := ($apos = First @ r; r);
-  obj_   := $apos -> obj;
-]
-
-sadBpos = Case[
-  Rule[side:$SidePattern|Above|Below, obj_] := Plus[$apos, {1, -1} * Lookup[$SideToCoords, side]] -> obj;
-  r_Rule := r;
-  obj_ := % @ Rule[Below, obj];
-]
-
-(**************************************************************************************************)
-
-PublicFunction[CommutativePentagon, CommutativeHexagon]
-
-$pentagonPoints := $pentagonPoints = VectorReflectVertical @ ClockwiseCirclePoints[5];
-
-CommutativePentagon[objs:{_, _, _, _, _}, arrows:{_, _, _, _, _}, opts___Rule] :=
-  commutativeNgon[5, objs, arrows, opts];
-
-CommutativeHexagon[objs:{_, _, _, _, _, _}, arrows:{_, _, _, _, _, _}, opts___Rule] :=
-  commutativeNgon[6, objs, arrows, opts];
-
-(**************************************************************************************************)
-
-ngonPoints[n_] := ngonPoints[n] = VectorReflectVertical @ ClockwiseCirclePoints @ n;
-
-commutativeNgon[n_, objects_, arrows_, opts___Rule] := CommutativeDiagram[
-  ngonPoints[n] -> objects,
-  MapIndex1[toComSugarArrow[#2 => Mod[#2 + 1, n, 1], #1]&, arrows],
-  FontSize -> 14, LabelFontSize -> 15, GraphicsScale -> 150,
-  LabelPosition -> Outwards, Setback -> 10, opts
-]
-

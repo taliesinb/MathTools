@@ -152,7 +152,7 @@ makeIconInline[pos_, dirx_, prims_, graphicsScale_] := Scope[
   If[$debugBounds, prims //= addDebugBounds];
   If[$originx != 0,
     prims = Construct[GeometricTransformationBox, prims, -$origin]];
-  rotMatrix = RotateToMatrix[dirx * ($imageSize * 0.5 / graphicsScale)];
+  rotMatrix = RotateToMatrix[dirx * 0.5 / graphicsScale, $imageSize];
   transform = {rotMatrix, pos};
   $styler @ Construct[GeometricTransformationBox, prims, transform]
 ];
