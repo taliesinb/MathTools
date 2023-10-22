@@ -21,7 +21,15 @@ KBox[wl_, kb_] := TemplateBox[{wl, kb}, "katexSwitch"];
 
 (**************************************************************************************************)
 
-PrivateFunction[setupFormDefinitionCaching]
+PrivateVariable[$unaryFormHeadQ, $styleFormHeadQ, $modifierFormHeadQ, $taggedFormHeadQ, $infixFormHeadQ, $binaryFormHeadQ, $naryFormHeadQ, $symbolFormHeadQ]
+
+SetInitialValue[$unaryFormHeadQ, $styleFormHeadQ, $modifierFormHeadQ, $taggedFormHeadQ, $infixFormHeadQ, $binaryFormHeadQ, $naryFormHeadQ, $symbolFormHeadQ, UAssociation[]];
+
+$styleFormHeadQ[Style] = True;
+
+(**************************************************************************************************)
+
+PrivateSpecialFunction[setupFormDefinitionCaching, clearFormDefinitionCache]
 
 setupFormDefinitionCaching[fn_Symbol] := (
   expr_fn /; TrueQ[$fdCacheEnabled] := Block[
@@ -34,6 +42,10 @@ setupFormDefinitionCaching[fn_Symbol] := (
     res
   ];
 );
+
+clearFormDefinitionCache[] := (
+  $formDefinitionCache = UAssociation[];
+)
 
 SetInitialValue[$formDefinitionCache, UAssociation[]];
 
@@ -63,7 +75,6 @@ OverdotBox[b_] := KBox[OverscriptBox[b, "."], "dot"[b]];
 OverdotBox["="] := KBox["≐", "\\doteq"];
 
 UnderdotBox[b_] := KBox[UnderscriptBox[b, LowerBox[".", .1]], {"""\underset{\raisebox{0.3em}{.}}{""", b, "}"}];
-UnderdotBox["="] := KBox[UnderscriptBox[b, LowerBox[".", .1]], {"""\underset{\raisebox{0.3em}{.}}{""", b, "}"}];
 
 (**************************************************************************************************)
 
@@ -477,7 +488,7 @@ AssociateSymbolToTemplateName[TightRowForm, "TightRowForm"];
 
 (**************************************************************************************************)
 
-SetRelatedSymbolGroup[DefineTaggedForm, DefineUnaryForm]
+SetRelatedSymbolGroup[DefineTaggedForm, DefineUnaryForm, DefineUnaryModifierForm]
 SetRelatedSymbolGroup[DefineUnaryForm, DefineBinaryForm, DefineTernaryForm, DefineNAryForm]
 SetRelatedSymbolGroup[DefineBinaryForm, DefineIndexedBinaryForm]
 SetRelatedSymbolGroup[DefineInfixForm]
@@ -503,7 +514,8 @@ Options[DefineTaggedForm] = JoinOptions[$defineOpts, Aliases -> None];
 DefineTaggedForm[formSym_Symbol, OptionsPattern[]] := With[
   {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
   {boxify = OptionValue[Boxification], aliases = OptionValue[Aliases]},
-  $unaryFormQ[formSym] = True;
+  $unaryFormHeadQ[formSym] = True;
+  $taggedFormHeadQ[formSym] = True;
   DefineStandardTraditionalForm[formSym[e_] :> TBox[boxify @ e, name]];
   DefineTemplateBox[formSym, name, $1, OptionValue[KatexMacroName]];
   If[AssociationQ[aliases], DefineStandardTraditionalForm[
@@ -516,10 +528,6 @@ _DefineTaggedForm := BadArguments[];
 (**************************************************************************************************)
 
 PublicSpecialFunction[DefineUnaryForm]
-
-PrivateVariable[$unaryFormQ]
-
-SetInitialValue[$unaryFormQ, UAssociation[]];
 
 SetUsage @ "
 DefineUnaryForm[symbol$, boxes$] defines symbol$[arg$1] to boxify to %TemplateBox[{arg$1}, 'symbol$'], \
@@ -536,7 +544,7 @@ DefineUnaryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
   {boxify = OptionValue[Boxification]},
   {fn = TBox[#1, name]&},
-  $unaryFormQ[formSym] = True;
+  $unaryFormHeadQ[formSym] = True;
   attachBoxFunctionDefs[OptionValue[BoxFunction], fn];
   attachHeadBoxes[OptionValue[HeadBoxes], formSym];
   DefineStandardTraditionalForm[formSym[e_] :> fn[boxify @ e]];
@@ -544,6 +552,22 @@ DefineUnaryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
 ];
 
 _DefineUnaryForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicSpecialFunction[DefineUnaryModifierForm]
+
+SetUsage @ "
+DefineUnaryModifierForm[$$] is like DefineUnaryForm[$$] but registers the form as a modifier.
+* modifiers have the property that BurrowModifiers and UnburrowModifiers will act on them.
+"
+
+DefineUnaryModifierForm[formSym_Symbol, args___] := (
+  $modifierFormHeadQ[formSym] = True;
+  DefineUnaryForm[formSym, args];
+)
+
+_DefineUnaryModifierForm := BadArguments[];
 
 (**************************************************************************************************)
 
@@ -564,6 +588,7 @@ DefineBinaryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
   {boxify = OptionValue[Boxification]},
   {fn = TBox[#1, #2, name]&},
+  $binaryFormHeadQ[formSym] = True;
   attachBoxFunctionDefs[OptionValue[BoxFunction], fn];
   attachHeadBoxes[OptionValue[HeadBoxes], formSym];
   DefineStandardTraditionalForm[formSym[a_, b_] :> fn[boxify @ a, boxify @ b]];
@@ -618,11 +643,16 @@ DefineNAryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[formSym, OptionValue[TemplateName]]},
   {boxify = toSequenceBoxifyFn[OptionValue[Boxification]]},
   {fn = TBox[##, name]&},
+  $naryFormHeadQ[formSym] = True;
   attachBoxFunctionDefs[OptionValue[BoxFunction], fn];
   attachHeadBoxes[OptionValue[HeadBoxes], formSym];
-  DefineStandardTraditionalForm[formSym[seq___] :> fn @ boxify @ seq];
+  DefineStandardTraditionalForm[formSym[seq___] :> applyReverseChain @ fn @ boxify @ seq];
   DefineTemplateBox[formSym, name, boxes, OptionValue[KatexMacroName]]
 ];
+
+(* this is used so that GradientSymbol["\[RightArrow]", ...] appears reversed in composition order! *)
+applyReverseChain[TemplateBox[targs:{TagBox[_, "ReverseChain"]..}, tname_]] := TemplateBox[Reverse @ Part[targs, All, 1], tname];
+applyReverseChain[e_] := e;
 
 _DefineNAryForm := BadArguments[];
 
@@ -648,6 +678,7 @@ which displays as RowBox[{arg$1, infixBox$, arg$2, infixBox$, $$}].
 setupFormDefinitionCaching[DefineInfixForm];
 
 DefineInfixForm[formSym_Symbol, infixBox_, opts:OptionsPattern[]] := First @ {
+  $infixFormHeadQ[formSym] = True;
   DefineNAryForm[formSym, RiffledBox[infixBox][$$1], HeadBoxes -> infixBox, FilterOptions @ opts],
   DefineStandardTraditionalForm[
     f:formSym[___, _formSym, ___] :> ToBoxes @ VectorReplace[f, z_formSym :> ParenthesesForm @ z]
@@ -802,6 +833,7 @@ setupFormDefinitionCaching[DefineSymbolForm];
 
 DefineSymbolForm[sym_Symbol -> boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[sym, OptionValue[TemplateName]]},
+  $symbolFormHeadQ[sym] = True;
   DefineStandardTraditionalForm[sym :> SBox[name]];
   DefineTemplateBox[sym, name, boxes, OptionValue[KatexMacroName]]
 ]
@@ -843,25 +875,26 @@ Options[DefineStyleForm] = $defineOpts;
 SetUsage @ "
 DefineStyleForm[symbol$, style$] defines symbol$[$$] to boxify to %StyleBox[$$, style$].
 * DefineStyleForm uses %DefineUnaryForm internally.
+* the resulting form has the property that BurrowModifiers and UnburrowModifiers will act on it.
 "
 
 setupFormDefinitionCaching[DefineStyleForm];
 
-DefineStyleForm[formSym_, style_, opts:OptionsPattern[]] := (
+DefineStyleForm[formSym_Symbol, style_, opts:OptionsPattern[]] := (
   $styleFormData[formSym] = style;
+  $styleFormHeadQ[formSym] = True;
+  $modifierFormHeadQ[formSym] = True;
   DefineUnaryForm[formSym, StyleBox[$1, style]];
 );
 
 (**************************************************************************************************)
 
-PrivateFunction[StyleFormHeadQ, StyleFormData]
+PrivateFunction[StyleFormData]
 
 SetInitialValue[$styleFormData, UAssociation[]];
 
-StyleFormHeadQ[s_Symbol] := StyleFormData[s] =!= None;
-StyleFormHeadQ[_] := False;
-
 StyleFormData[s_Symbol] := Lookup[$styleFormData, s, None];
+StyleFormData[] := $styleFormData;
 
 (**************************************************************************************************)
 
@@ -1023,6 +1056,38 @@ DefineStyleForm[#1, currentStyleSetting[Background, #2]]& @@@ ExpressionTable[
 
 (**************************************************************************************************)
 
+PublicTypesettingForm[StyledForm]
+
+SetUsage @ "
+StyledForm[expr$, dirs$$] effectively applies Style[$$, dirs$$] to the innermost part of expr$ that is not a unary form.
+* This is useful because wrapping a form like %FunctorSymbol['X'] with Style% will interference with its normal typesetting.
+* This is subtly different from doing BurrowModifiers @ Style[...] because the burrowed Style will not use MakeQGBoxes, and hence not show single-letter symbols as italics.
+"
+
+(* TODO: shouldn't all style heads work this way? *)
+StyledForm = Case[
+  Seq[(head_Symbol ? $unaryFormHeadQ)[arg_], dirs__] := head[%[arg, dirs]];
+  Seq[Style[arg_, s___], dirs__] := Style[StyledForm[arg, dirs], s];
+]
+$styleFormHeadQ[StyledForm] = True;
+
+(* does this work with Katex? *)
+DefineStandardTraditionalForm[StyledForm[e_, s___] :> StyleBox[MakeQGBoxes @ e, s]];
+
+(**************************************************************************************************)
+
+PrivateFunction[BurrowModifiers, UnburrowModifiers]
+
+SetUsage @ "BurrowModifiers[expr$] pushes all modifier-like heads (%Style, %PrimedForm%, %RedForm, $$) through tagged forms (%FunctionSymbol, %CategoryObjectSymbol, $$), making them innermost."
+SetUsage @ "UnburrowModifiers[expr$] pulls all modifier-like heads (%Style, %PrimedForm%, %RedForm, $$) through tagged forms (%FunctionSymbol, %CategoryObjectSymbol, $$), making them outermost."
+
+$modifierOrStyleFormHeadQ := $modifierOrStyleFormHeadQ = Join[$modifierFormHeadQ, $styleFormHeadQ];
+
+BurrowModifiers[e_]   := ReplaceRepeated[e, (mod_Symbol ? $modifierOrStyleFormHeadQ)[(tag_Symbol ? $taggedFormHeadQ)[sub_], s___] :> tag[mod[sub, s]]];
+UnburrowModifiers[e_] := ReplaceRepeated[e, (tag_Symbol ? $taggedFormHeadQ)[(mod_Symbol ? $modifierOrStyleFormHeadQ)[sub_, s___]] :> mod[tag[sub], s]];
+
+(**************************************************************************************************)
+
 PrivateFunction[ExpandTemplateBox]
 
 ExpandTemplateBox = Case[
@@ -1100,11 +1165,11 @@ PublicFunction[FormToPlainString]
 FormToPlainString::noformstr = "Cannot convert form `` to a plain string. Resulting boxes were ``.";
 
 FormToPlainString = Case[
-  name_String := ToNonDecoratedRoman @ name;
-  Sized[obj_, _] := % @ obj;
+  name_String           := ToNonDecoratedRoman @ name;
+  Sized[obj_, _]        := % @ obj;
   Customized[obj_, ___] := % @ obj;
-  g_Graph := "graph";
-  form_ := Scope[
+  g_Graph               := "graph";
+  form_                 := Scope[
     boxes = EvaluateTemplateBoxFull @ ToBoxes @ ReplaceRepeated[form, $plainStrNormalizationRules];
     str = boxToString @ boxes;
     If[!StringQ[str], ReturnFailed["noformstr", MsgExpr @ form, InputForm @ boxes]];
@@ -1113,23 +1178,24 @@ FormToPlainString = Case[
 ]
 
 $plainStrNormalizationRules = {
-  GradientSymbol[sym_, ___]       :> sym,
-  ColorGradientForm[sym_, ___]    :> sym,
-  CompactHomForm[a_,b_]           :> HomForm[a, b]
+  "\[RightArrow]"                       -> "->",
+  (head_Symbol ? $styleFormHeadQ)[arg_] :> arg;
+  GradientSymbol[sym_, ___]             :> sym,
+  ColorGradientForm[sym_, ___]          :> sym,
+  CompactHomForm[a_,b_]                 :> HomForm[a, b]
 };
 
 boxToString = Case[
-  head_Symbol[arg_] /; StyleBoxFunctionQ[head] := % @ arg;
-  StyleBox[e_, ___]      := % @ e;
-  AdjustmentBox[e_, ___] := % @ e;
-  FrameBox[e_, ___]      := StringJoin["[", % @ e, "]"];
-  RowBox[e_]             := StringJoin @ Map[%, e];
-  SubsuperscriptBox[e_, a_, b_] := StringJoin[% @ e, "^", % @ b, "_", % @ a];
-  SuperscriptBox[e_, "\[Prime]"] := StringJoin[% @ e, "'"];
-  SubscriptBox[e_, s_]   := StringJoin[% @ e, "_", % @ s];
-  SuperscriptBox[e_, s_] := StringJoin[% @ e, "^", % @ s];
-  e_String               := If[StringMatchQ[e, "\"*\""], StringTake[e, {2, -2}], e];
-  other_                 := $Failed;
+  StyleBox[e_, ___]                     := % @ e;
+  AdjustmentBox[e_, ___]                := % @ e;
+  FrameBox[e_, ___]                     := StringJoin["[", % @ e, "]"];
+  RowBox[e_]                            := StringJoin @ Map[%, e];
+  SubsuperscriptBox[e_, a_, b_]         := StringJoin[% @ e, "^", % @ b, "_", % @ a];
+  SuperscriptBox[e_, "\[Prime]"]        := StringJoin[% @ e, "'"];
+  SubscriptBox[e_, s_]                  := StringJoin[% @ e, "_", % @ s];
+  SuperscriptBox[e_, s_]                := StringJoin[% @ e, "^", % @ s];
+  e_String                              := If[StringMatchQ[e, "\"*\""], StringTake[e, {2, -2}], e];
+  other_                                := $Failed;
 ];
 
 $plainStringReplacements = {"\[FilledCircle]" -> "@", "\[FilledSmallCircle]" -> "@", "\[CircleTimes]" -> "*", "\[CirclePlus]" -> "+"}
@@ -1139,3 +1205,4 @@ $plainStringReplacements = {"\[FilledCircle]" -> "@", "\[FilledSmallCircle]" -> 
 PublicTypesettingForm[MathForm]
 
 DefineTaggedForm[MathForm]
+

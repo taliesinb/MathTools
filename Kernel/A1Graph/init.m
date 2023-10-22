@@ -8,7 +8,7 @@ PublicOption[ArrowheadShape, ArrowheadSize, ArrowheadStyle, ArrowheadPosition, T
 
 PublicOption[VertexColorFunction, EdgeColorFunction, VertexColorRules, EdgeColorRules, RegionColorRules]
 
-PublicOption[VertexTooltips, VertexClickFunction, EdgeTooltips, EdgeOpacity, VertexOpacity]
+PublicOption[VertexTooltips, VertexClickFunction, EdgeTooltips, VertexOpacity]
 
 PublicOption[CardinalColors, CardinalColorRules, CardinalColorFunction]
 

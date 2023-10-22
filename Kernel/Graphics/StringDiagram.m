@@ -531,7 +531,7 @@ procRhsSpec[pos_ -> obj_, i_] := Block[
 ];
 
 toObj = Case[
-  (h_ ? StyleFormHeadQ)[e_] := Block[{$head = h}, % @ e];
+  (h_Symbol ? $styleFormHeadQ)[e_] := Block[{$head = h}, % @ e];
   "f"      := % @ Padded[CategoryObjectSymbol["f"], Left -> 0.12];
   s_String := % @ CategoryObjectSymbol[s];
   e_       := $head["Point"[$head[e]]];

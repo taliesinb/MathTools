@@ -378,6 +378,13 @@ PublicSymbol[$]
 
 SetHoldAll[Case, EchoCase, setupCases];
 
+(* TODO: fix this not working:
+
+foo = Case[
+  Seq[a_, b_] /; cond[a] := ...
+]
+*)
+
 Case /: (Set|SetDelayed)[sym_Symbol, Case[args___]] := setupCases[sym, False, args];
 EchoCase /: (Set|SetDelayed)[sym_Symbol, EchoCase[args___]] := setupCases[sym, True, args];
 

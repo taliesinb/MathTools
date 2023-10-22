@@ -206,7 +206,7 @@ TestOutputGallery[string_String] := Scope[
 ];
 
 TestOutputGallery[data_] := Scope[
-  outputs = DeepCases[data, ExpressionAt[_, _, Construct[Hold, $testObjectP]]];
+  outputs = DeepCases[data, $testObjectP];
   If[outputs === {}, Return @ None];
   SpacedRow[outputs, Spacings -> 20, MaxWidth -> 8]
 ];
@@ -322,7 +322,7 @@ toValueIcon = Case[
   {objP -> $testObjectP}
 ];
 
-thumbnailize[e_] := ReplaceAll[e, i_Image ? HoldAtomQ :> RuleCondition @ ImageResize[i, UpTo @ 200]];
+thumbnailize[e_] := ReplaceAll[e, i_Image ? HoldAtomQ :> RuleCondition @ ImageResize[i, UpTo @ 250]];
 
 (**************************************************************************************************)
 

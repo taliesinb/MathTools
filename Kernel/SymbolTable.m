@@ -146,7 +146,8 @@ ViewCenter, ViewVector, ViewPoint, ViewMatrix, ViewProjection, ViewAngle,
 Frame, FrameTicks, Ticks, FrameStyle, FontFamily, FontWeight, FontSize, FontColor,
 InterpolationOrder,
 EdgeStyle, VertexStyle, EdgeShapeFunction, VertexShapeFunction, GraphLayout, DirectedEdges,
-Lighting, ColorRules, PlotStyle, FillingStyle, MeshStyle, Epilog, Prolog, Verbose
+Lighting, ColorRules, PlotStyle, FillingStyle, MeshStyle, Epilog, Prolog, Verbose,
+System`EdgeOpacity
 },
 
 {"System`", "TypesettingForm"} -> {

@@ -42,10 +42,12 @@ MapPrimitiveCoordinates[{x_, y_} ? CoordinateVectorQ, expr_] :=
 $rulesF[e_] := VectorReplace[e, Rule[c:$CoordP, o_] :> Rule[$vectorF[c], o]];
 $vecDelta[a_, d_] := With[{a1 = $vectorF[a]}, {a1, $vectorF[a + d] - a1}];
 $radiusF = Case[
-  r:$NumberP := EuclideanDistance[$vectorF @ {0, r}, $vectorF @ {0, 0}] * Sign[r]; (* the sign is for ElbowCurve, which can take a negative value *)
-  r:$CoordP  := EuclideanDistance[$vectorF @ r, $vectorF @ {0, 0}]; (* TODO: doesn't do the right thing for shearing of an annulus *)
-  e_         := e;
+  r:$NumberP                := radDist[{r, 0}] * Sign[r]; (* the sign is for ElbowCurve, which can take a negative value *)
+  {x:$NumberP, y:$NumberP}  := {radDist[{x, 0}] * Sign[x], radDist[{0, y}] * Sign[y]}; (* for {rx, ry} e.g. CenteredRectangle -- but doesn't do the right thing for horizontal stretching on HorizontalCurve *)
+  e_                        := e;
 ];
+
+radDist[v_] := EuclideanDistance[$vectorF @ v, $vectorF @ {0, 0}];
 
 
 (* we set up this dispatch so that we know (and test) whether to call

@@ -51,7 +51,7 @@ evalKatexRepeated = Case[
 
 PublicTypesettingForm[Undersegment]
 
-DefineUnaryForm[Undersegment, KBox[
+DefineUnaryModifierForm[Undersegment, KBox[
   UnderscriptBox[$1, "\[LeftRightVector]"],
   "underlinesegment"[$1]
 ]]
@@ -60,46 +60,46 @@ DefineUnaryForm[Undersegment, KBox[
 
 PublicTypesettingFormBox[PrimedForm, DoublePrimedForm]
 
-DefineUnaryForm[PrimedForm, SuperscriptBox[$1, "\[Prime]"], BoxFunction -> PrimedBox]
-DefineUnaryForm[DoublePrimedForm, SuperscriptBox[$1, "\[DoublePrime]"], BoxFunction -> DoublePrimedBox]
+DefineUnaryModifierForm[PrimedForm, SuperscriptBox[$1, "\[Prime]"], BoxFunction -> PrimedBox]
+DefineUnaryModifierForm[DoublePrimedForm, SuperscriptBox[$1, "\[DoublePrime]"], BoxFunction -> DoublePrimedBox]
 
 PublicTypesettingForm[InvisiblePrimedForm]
 
-DefineUnaryForm[InvisiblePrimedForm, SuperscriptBox[$1, StyleBox["\[Prime]", ShowContents -> False]]]
+DefineUnaryModifierForm[InvisiblePrimedForm, SuperscriptBox[$1, StyleBox["\[Prime]", ShowContents -> False]]]
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[UnderdotForm, OverdotForm, OverdoubledotForm]
 
-DefineUnaryForm[UnderdotForm, UnderdotBox[$1]]
-DefineUnaryForm[OverdotForm, OverdotBox[$1]]
-DefineUnaryForm[OverdoubledotForm, OverdoubledotBox[$1]]
+DefineUnaryModifierForm[UnderdotForm, UnderdotBox[$1]]
+DefineUnaryModifierForm[OverdotForm, OverdotBox[$1]]
+DefineUnaryModifierForm[OverdoubledotForm, OverdoubledotBox[$1]]
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[PositiveSignedPartForm, NegativeSignedPartForm]
 
-DefineUnaryForm[PositiveSignedPartForm, SuperscriptBox[$1, "+"]]
-DefineUnaryForm[NegativeSignedPartForm, SuperscriptBox[$1, "-"]]
+DefineUnaryModifierForm[PositiveSignedPartForm, SuperscriptBox[$1, "+"]]
+DefineUnaryModifierForm[NegativeSignedPartForm, SuperscriptBox[$1, "-"]]
 
 (**************************************************************************************************)
 
 PublicTypesettingFormBox[SignedForm]
 
-DefineUnaryForm[SignedForm, SuperscriptBox[$1, "*"], BoxFunction -> SignedBox]
+DefineUnaryModifierForm[SignedForm, SuperscriptBox[$1, "*"], BoxFunction -> SignedBox]
 
 (**************************************************************************************************)
 
 PublicTypesettingFormBox[FamilyModifierForm]
 
-DefineUnaryForm[FamilyModifierForm, StyleBox[$1, Bold], BoxFunction -> FamilyModifierBox]
+DefineUnaryModifierForm[FamilyModifierForm, StyleBox[$1, Bold], BoxFunction -> FamilyModifierBox]
 
 (**************************************************************************************************)
 
 PublicTypesettingFormBox[WhiteCircleModifierForm, BlackCircleModifierForm]
 
-DefineUnaryForm[WhiteCircleModifierForm, SuperscriptBox[$1, "\[SmallCircle]"], BoxFunction -> WhiteCircleModifierBox]
-DefineUnaryForm[BlackCircleModifierForm, SuperscriptBox[$1, "\[FilledSmallCircle]"], BoxFunction -> BlackCircleModifierBox]
+DefineUnaryModifierForm[WhiteCircleModifierForm, SuperscriptBox[$1, "\[SmallCircle]"], BoxFunction -> WhiteCircleModifierBox]
+DefineUnaryModifierForm[BlackCircleModifierForm, SuperscriptBox[$1, "\[FilledSmallCircle]"], BoxFunction -> BlackCircleModifierBox]
 
 (**************************************************************************************************)
 
@@ -107,19 +107,20 @@ PublicTypesettingForm[ImageModifierForm, PreimageModifierForm, MultiImageModifie
 
 PublicTypesettingForm[MultiImageColorModifierForm, MultiPreimageColorModifierForm]
 
-DefineUnaryForm[ImageModifierForm, SuperscriptBox[$1, "\[RightArrow]"]]
-DefineUnaryForm[PreimageModifierForm, SuperscriptBox[$1, "\[LeftArrow]"]]
-DefineUnaryForm[MultiImageModifierForm, SuperscriptBox[$1, "\[RightTeeArrow]"]]
-DefineUnaryForm[MultiPreimageModifierForm, SuperscriptBox[$1, "\[LeftTeeArrow]"]]
-DefineUnaryForm[MultiImageColorModifierForm, StyleBox[$1, RGBColor[{0.73, 0.27, 0.27}]]]
-DefineUnaryForm[MultiPreimageColorModifierForm, StyleBox[$1, RGBColor[{0.05, 0.48, 0.50}]]]
+(* i haven't thought through which of these should really be modifiers and which not *)
+DefineUnaryModifierForm[ImageModifierForm, SuperscriptBox[$1, "\[RightArrow]"]]
+DefineUnaryModifierForm[PreimageModifierForm, SuperscriptBox[$1, "\[LeftArrow]"]]
+DefineUnaryModifierForm[MultiImageModifierForm, SuperscriptBox[$1, "\[RightTeeArrow]"]]
+DefineUnaryModifierForm[MultiPreimageModifierForm, SuperscriptBox[$1, "\[LeftTeeArrow]"]]
+DefineUnaryModifierForm[MultiImageColorModifierForm, StyleBox[$1, RGBColor[{0.73, 0.27, 0.27}]]]
+DefineUnaryModifierForm[MultiPreimageColorModifierForm, StyleBox[$1, RGBColor[{0.05, 0.48, 0.50}]]]
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[NegatedForm]
 
-DefineUnaryForm[NegatedForm, KBox[OverscriptBox[$1, "_"], "bar"[$1]]]
-DefineUnaryForm[InvertedForm, KBox[UnderscriptBox[$1, "_"], "underbar"[$1]]];
+DefineUnaryModifierForm[NegatedForm, KBox[OverscriptBox[$1, "_"], "bar"[$1]]]
+DefineUnaryModifierForm[InvertedForm, KBox[UnderscriptBox[$1, "_"], "underbar"[$1]]];
 
 (**************************************************************************************************)
 

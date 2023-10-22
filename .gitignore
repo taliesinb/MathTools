@@ -8,6 +8,7 @@ Kernel/user_final.m
 Kernel/user_ignore.m
 .DS_Store
 StyleSheets/latest.m
+Tests/Objects/
 Data/*
 Scratch/*
 *.sublime-workspace

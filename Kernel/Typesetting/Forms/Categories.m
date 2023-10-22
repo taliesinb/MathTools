@@ -150,12 +150,15 @@ SetInitialValue[$FunctorAppliedForm, ImplicitAppliedForm];
 DefineStandardTraditionalForm[{
   FunctorAppliedForm[head_, arg_] :> ToBoxes @ $FunctorAppliedForm[head, arg],
   FunctorAppliedForm[head_, args__] :> MakeBoxes @ TightAppliedForm[head, args]
-}]
+}];
 
-SetListable[DeclareFunctorlike];
-DeclareFunctorlike[sym_Symbol] := DefineStandardTraditionalForm[
-  head_sym[args__] :> ToBoxes @ FunctorAppliedForm[head, args]
-];
+$functorLikeQ = UAssociation[];
+
+SetListable[declareFunctorLike];
+declareFunctorLike[sym_Symbol] := (
+  $functorLikeQ[sym] = True;
+  DefineStandardTraditionalForm[head_sym[args__] :> ToBoxes @ FunctorAppliedForm[head, args]]
+);
 
 (**************************************************************************************************)
 
@@ -163,7 +166,9 @@ PublicTypesettingForm[FunctorSymbol]
 
 DefineTaggedForm[FunctorSymbol]
 
-DeclareFunctorlike[FunctorSymbol]
+DefineStandardTraditionalForm[f_FunctorSymbol[g_FunctorSymbol[x_]] :> ToBoxes @ FunctorAppliedForm[TightCompositionForm[f, g], x]]
+
+declareFunctorLike[FunctorSymbol]
 
 (**************************************************************************************************)
 
@@ -173,7 +178,7 @@ DefineStandardTraditionalForm[
   FunctorPowerForm[f_, n_] :> ToBoxes @ PowerForm[f, n]
 ];
 
-DeclareFunctorlike[FunctorPowerForm];
+declareFunctorLike[FunctorPowerForm];
 
 (**************************************************************************************************)
 
@@ -186,7 +191,7 @@ DefineUnaryForm[ColimitFunctorForm, SubscriptBox[FunctionBox["colim"], $1]]
 DefineUnaryForm[LeftKanExtensionForm, SubscriptBox[FunctionBox["Lan"], $1]]
 DefineUnaryForm[RightKanExtensionForm, SubscriptBox[FunctionBox["Ran"], $1]]
 
-DeclareFunctorlike[{DiagonalFunctorForm, LimitFunctorForm, ColimitFunctorForm, LeftKanExtensionForm, RightKanExtensionForm}];
+declareFunctorLike[{DiagonalFunctorForm, LimitFunctorForm, ColimitFunctorForm, LeftKanExtensionForm, RightKanExtensionForm}];
 
 (**************************************************************************************************)
 
@@ -208,11 +213,6 @@ DefineInfixForm[SpacedDiskCompositionForm, "\[ThinSpace]\[SmallCircle]\[ThinSpac
 DefineInfixForm[DiskCompositionForm, "\[SmallCircle]"];
 DefineInfixForm[TightCompositionForm, "\[NegativeThinSpace]"];
 DefineInfixForm[CompositionForm, ""];
-
-DefineStandardTraditionalForm[
-  SpacedCompositionForm[gs:(GradientSymbol[RightArrowSymbol | "\[RightArrow]", ___]..)] :>
-    RowBox @ Riffle[Map[ToBoxes, Reverse @ {gs}], "\[VeryThinSpace]"]
-]
 
 (**************************************************************************************************)
 
@@ -256,18 +256,16 @@ PublicTypesettingForm[GradientSymbol, GradientArrowSymbol]
 
 GradientArrowSymbol[args___] := GradientSymbol[RightArrowSymbol, args];
 
+(* TODO: make GradientSymbol into a burrowing construt, so we don't need to special case it
+also, use Dynamic[CurrentValue[ScriptSize]] to make it work properly inside Superscript etc *)
+
 DefineStandardTraditionalForm[{
 
-(*    GradientSymbol[sym_, col1_, col2_, sz_:16] :>
-    ToBoxes @ AdjustmentForm[ColorGradientForm[
-      Style[sym, FontSize -> sz],
-      ToRainbowColor /@ {col1, col2},
-      "DilationFactor" -> 1, "CompressionFactor" -> 0.5
-    ], {{0, 0}, {0, -0.7}}],
-  (*     ^ this ensures that e.g. AppliedForm doesn't have big brackets when wrapping a GradientSymbol *),
- *)
+  (* this is so that we still recognize CategoryArrowSymbol["\[RightArrow]"] etc *)
+  GradientSymbol[(_Symbol ? $taggedFormHeadQ)[sub_], args___] :> ToBoxes @ GradientSymbol[sub, args],
 
-  (* TODO: turn text into a shape (see documentation), then use LinearGradientFilling on it *)
+  (* TODO: recognize $symbolFormHeadQ and resolve it in case we have a known icon for it! *)
+  (* TODO: turn text into a shape via ToGraphicsBox, then use LinearGradientFilling on it *)
   GradientSymbol[sym_, col1_, col2_, sz_:16] :>
     ToBoxes @ ColorGradientForm[
       Style[sym, FontSize -> sz],
@@ -275,15 +273,22 @@ DefineStandardTraditionalForm[{
       "DilationFactor" -> 1, "CompressionFactor" -> 0.5
     ],
 
-  GradientSymbol[RightArrowSymbol | "\[RightArrow]", col1_, col2_, sz_:16] :>
+  (* TODO: have a registry here, or more precisely move this RightArrow case straight into ToGraphicsBox *)
+  GradientSymbol["\[RightArrow]" | RightArrowSymbol, col1_, col2_, sz_:16] :>
     gradientArrowBoxes[col1, col2, sz],
 
+  (* TODO: retire these in favor of having GradientSymbol burrow itself, either via
+  ColorRules just doing a BurrowModifiers, or more broadly having all style forms burrow themselves *)
   (g:GradientSymbol[_FunctorSymbol, ___])[args___] :>
     NoSpanBox @ ToBoxes @ FunctorAppliedForm[g, args],
 
   (h_GradientSymbol)[args___] :>
     NoSpanBox @ ToBoxes @ AppliedForm[h, args]
 }];
+
+$styleFormHeadQ[GradientSymbol] = True;
+
+(**************************************************************************************************)
 
 $rightArrowPath := $rightArrowPath = Uncompress @ "
 1:eJxTTMoPSmViYGDQB2IQLf1oz12BWLYDhiolp+TXrNr/2WIBi5gI2wETYxA4vH9l45H9b7tYDzgn
@@ -300,7 +305,7 @@ Wh+xh4aD/WFIuNiHRc3jd636bM9yPjfZYO1JezT/2D/4sC3q3stP9tvck79uMj1n3yXl8ef2uhP2HD
 
 PrivateFunction[gradientArrowBoxes]
 
-gradientArrowBoxes[col1_, col2_, sz_] := Construct[
+gradientArrowBoxes[col1_, col2_, sz_] := TagBox[Construct[
   GraphicsBox,
   {
     ToGraphicsBoxes @ LinearGradientFilling[{0.4 -> ToRainbowColor[col1], 0.7 -> ToRainbowColor[col2]}],
@@ -310,7 +315,7 @@ gradientArrowBoxes[col1_, col2_, sz_] := Construct[
   ImagePadding -> {{0, 1}, {0, 0}},
   BaselinePosition -> Scaled[0.05],
   ImageSize -> {Automatic, sz/2+1}
-];
+], "ReverseChain"];
 
 (**************************************************************************************************)
 
@@ -327,7 +332,7 @@ DefineStandardTraditionalForm[{MonoidalTreeForm[e_, opts___Rule] :> monoidalTree
 monoidalTreeFormBoxes[cd_CommutativeDiagram, ___] :=
   ToBoxes @ Append[cd, TextModifiers -> <|
     "Objects"   -> MonoidalTreeForm,
-    "Morphisms" -> Function[morphisms, MonoidalTreeForm[morphisms, GraphicsScale -> 10, VertexSize -> 4]]
+    "Morphisms" -> Function[label, MonoidalTreeForm[label, GraphicsScale -> 10, VertexSize -> 4]]
   |>]
 
 monoidalTreeFormBoxes[e_, opts___Rule] :=
@@ -408,7 +413,7 @@ DefineStandardTraditionalForm[
   RainbowCategoryForm[form_] :> rainbowCategoryFormBoxes[form]
 ];
 
-$rainbowCDOptions = {ColorRules -> "GradientArrows", SymbolReplacements -> "DiskArrow"};
+$rainbowCDOptions = {ColorRules -> "GradientArrows", TextModifiers -> ObjectArrowIconForm};
 rainbowCategoryFormBoxes[form_] := ToBoxes[form /. {
   cd_CommutativeDiagram                :> RuleCondition @ ReplaceOptions[cd, $rainbowCDOptions],
   (* TODO: remove these, they are outdated *)
@@ -447,4 +452,29 @@ associatorArrowhead[pos_, dir_] := Arrowhead[
 addBraidingDecoration[vertex_] := AppendTo[$epilog,
   Text["\[LeftRightArrow]", GraphicsValue[{"VertexCoordinates", {vertex}}, First], {-0.1, 1}, BaseStyle -> {FontSize -> 9}]
 ];
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[ObjectArrowIconForm, CategoryFunctorIconForm]
+
+SetUsage @ "ObjectArrowIconForm[expr$] depicts all %CategoryObjectSymbols as disks and %CategoryArrowSymbols as arrows, preserving colors."
+SetUsage @ "CategoryFunctorIconForm[expr$] depicts all %CategorySymbols as disks and %CategoryFunctorSymbols as arrows, preserving colors."
+
+DefineStandardTraditionalForm[{
+  ObjectArrowIconForm[expr_] :> ToBoxes @ ReplaceAll[expr, {
+    c_CommutativeDiagram :> ReplaceOptions[c, TextModifiers -> ObjectArrowIconForm],
+    c_CategoryObjectSymbol :> replaceFormContents[c, "\[FilledCircle]"],
+    c_CategoryArrowSymbol :> replaceFormContents[c, "\[RightArrow]"]
+  }],
+  CategoryFunctorIconForm[expr_] :> ToBoxes @ ReplaceAll[expr, {
+    c_CommutativeDiagram :> ReplaceOptions[c, TextModifiers -> CategoryFunctorIconForm],
+    c_CategorySymbol :> replaceFormContents[c, "\[FilledCircle]"],
+    c_FunctorSymbol :> replaceFormContents[c, "\[RightArrow]"]
+  }]
+}];
+
+replaceFormContents[(tag_Symbol ? $taggedFormHeadQ)[sub_], new_] := tag[replaceFormContents[sub, new]];
+replaceFormContents[(mod_Symbol ? $styleFormHeadQ)[sub_, s___], new_] := mod[replaceFormContents[sub, new], s];
+replaceFormContents[(mod_Symbol ? $modifierFormHeadQ)[sub_, s___], new_] := replaceFormContents[sub, new];
+replaceFormContents[_, new_] := new;
 

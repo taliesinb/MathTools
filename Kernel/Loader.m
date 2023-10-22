@@ -111,9 +111,9 @@ $initialSymbolResolutionDispatch = With[{kernelInit = FileNameJoin[{QuiverGeomet
   Package`PackageSymbol[name_String] /; StringMatchQ[name, $coreSymbolRegex] :> RuleCondition[$coreSymbolAssociation[name]],
   Package`PackageSymbol[name_String] /; StringContainsQ[name, "`"]           :> RuleCondition[makeResolvedSymbol[name]],
   Package`PackageSymbol["UAssociation"]                                      :> Data`UnorderedAssociation,
-  p:Package`PackageSymbol["$PackageFileName"]                                :> RuleCondition[QuiverGeometryLoader`$CurrentFile],
-  p:Package`PackageSymbol["$PackageDirectory"]                               :> RuleCondition[QuiverGeometryLoader`$PackageDirectory],
-  p:Package`PackageSymbol["$PackageInitializer"]                             :> If[DownValues[QuiverGeometryLoader`Load] === {}, Get @ kernelInit],
+  Package`PackageSymbol["$PackageFileName"]                                  :> RuleCondition[QuiverGeometryLoader`$CurrentFile],
+  Package`PackageSymbol["$PackageDirectory"]                                 :> RuleCondition[QuiverGeometryLoader`$PackageDirectory],
+  Package`PackageSymbol["$PackageInitializer"]                               :> If[DownValues[QuiverGeometryLoader`Load] === {}, Get @ kernelInit],
   p:Package`PackageSymbol["PublicScopedOption"][___]                         :> RuleCondition @ processScopedOption[p],
   p:Package`PackageSymbol["PublicTypesettingFormBox"][___]                   :> RuleCondition @ processTypesettingFormBox[p]
 }]];

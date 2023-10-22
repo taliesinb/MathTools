@@ -427,7 +427,7 @@ processBlock = Case[
   FunctionTypeForm[a_, b_]                            := hstackBlocks[{% @ a, makeSingleBlock @ "->", % @ b}, Center];
 
   na_NestedArrayForm                                  := % @ nestedArrayRender @ na;
-  head_Symbol[arg_] /; StyleFormHeadQ[head]           := % @ Style[arg, StyleFormData @ head];
+  (head_Symbol ? $styleFormHeadQ)[arg_]               := % @ Style[arg, StyleFormData @ head];
 
   f_FractionBox                                       := makeSingleBlock @ evalFracBox[f];
 

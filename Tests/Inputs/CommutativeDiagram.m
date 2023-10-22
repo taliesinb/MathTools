@@ -16,7 +16,7 @@ $homColorRules = {
 };
 
 $homOptions = Sequence[
-	SymbolReplacements -> "DiskArrow",
+	TextModifiers -> ObjectArrowIconForm,
 	ColorRules -> $homColorRules,
 	CloneOptions -> "Element",
 	LabelOrientation -> Aligned
@@ -190,9 +190,9 @@ TestRaster @ CommutativeSquare[
 	 MapsToMorphism[{"x", "Fx"}], MapsToMorphism[{"x", "Gx"}],
 	 MapsToMorphism[{"y", "Fy"}], MapsToMorphism[{"y", "Gy"}]
 	 },
-	 ColorRules -> {"Functors", FunctorSymbol -> "Coloring", _ -> $Purple},
+	 ColorRules -> {"Functors", "ColoringFunctors", _ -> $Purple},
 	 SymbolReplacements -> {$Ox -> $Odisk, $Oy -> $Osqr},
-	 MorphismColors -> Automatic, DebugBounds -> False
+	 MorphismColors -> "Gradient", DebugBounds -> False
 ]
 
 
@@ -204,11 +204,8 @@ TestRaster @ CommutativeSquare[
 	{$FunF[$Ox], $FunG[$Ox], $FunF[$Oy], $FunG[$Oy]},
 	{$NTeta[$Ox], $NTeta[$Oy], $FunF[$Af], $FunG[$Af],
 	 ArrowDiagram[{0.3, 1} -> $Ox, $Oy, Morphism[$Af, LabelPosition -> Left]]},
-	 SymbolReplacements -> {
-	 $FunF[x_] :> Style[x, $Red],
-	 $FunG[y_] :> Style[y, $Blue]
-	 },
-	 MorphismColors -> Automatic
+	 ColorRules -> "ColoringFunctors",
+	 MorphismColors -> "Gradient"
 ]
 
 
@@ -220,7 +217,9 @@ TestRaster @ CommutativeSquare[
 (*Associator*)
 
 
-TestRaster @ CommutativeDiagram[{
+plainRainbowTreeRasters[e_] := {TestRaster @ e, TestRaster @ RainbowCategoryForm @ e, TestRaster @ MonoidalTreeForm @ e};
+
+plainRainbowTreeRasters @ CommutativeDiagram[{
 	{0, 0} -> "(AB)C" -> MPF[MPF[$OA, $OB], $OC], {1.3,0} -> "A(BC)" -> MPF[$OA, MPF[$OB, $OC]],
 	Morphism["(AB)C" \[DirectedEdge] "A(BC)", AssociatorForm[$OA, $OB, $OC]]}, 
 	FontSize -> 14
@@ -231,7 +230,7 @@ TestRaster @ CommutativeDiagram[{
 (*Pentagon law*)
 
 
-TestRaster @ CommutativePentagon[{
+plainRainbowTreeRasters @ CommutativePentagon[{
 	TMPF[TMPF[$OA, $OB], TMPF[$OC, $OD]],
 	TMPF[$OA, TMPF[$OB, TMPF[$OC, $OD]]],
 	TMPF[$OA, TMPF[TMPF[$OB, $OC], $OD]],
@@ -249,7 +248,7 @@ TestRaster @ CommutativePentagon[{
 (*Interaction of braiding with associator*)
 
 
-TestRaster @ CommutativeHexagon[{
+plainRainbowTreeRasters @ CommutativeHexagon[{
 	MPF[MPF[$OA,$OB],$OC],
 	MPF[$OA,MPF[$OB,$OC]],
 	MPF[MPF[$OB,$OC],$OA],
@@ -265,7 +264,7 @@ TestRaster @ CommutativeHexagon[{
 }]
 
 
-TestRaster @ CommutativeHexagon[{
+plainRainbowTreeRasters @ CommutativeHexagon[{
 	MPF[$OA,MPF[$OB,$OC]],
 	MPF[MPF[$OA,$OB],$OC],
 	MPF[$OC,MPF[$OA,$OB]],
@@ -285,7 +284,7 @@ TestRaster @ CommutativeHexagon[{
 (*Interaction of unitors with identity and associator*)
 
 
-TestRaster @ InTriangleDiagram[
+plainRainbowTreeRasters @ InTriangleDiagram[
 	{MPF[MPF[$OA, $OI], $OB], MPF[$OA, MPF[$OI, $OB]], MPF[$OA, $OB]},
 	{AssociatorForm[$OA,$OI,$OB], MPF[RightUnitorForm[$OA], $1AB], MPF[$1AA, LeftUnitorForm[$OB]]},
 	FontSize -> 18, DiagramScaling -> {1.4, 1}
@@ -296,7 +295,7 @@ TestRaster @ InTriangleDiagram[
 (*Interaction of unitors with identity and braiding*)
 
 
-TestRaster @ InTriangleDiagram[
+plainRainbowTreeRasters @ InTriangleDiagram[
 	{MPF[$OA, $OI], MPF[$OI, $OA], $OA},
 	{BraidingForm[$OA, $OI], LeftUnitorForm[$OA], RightUnitorForm[$OA]}
 ]
@@ -306,7 +305,7 @@ TestRaster @ InTriangleDiagram[
 (*Invertability of braiding*)
 
 
-TestRaster @ InTriangleDiagram[
+plainRainbowTreeRasters @ InTriangleDiagram[
 	{MPF[$OA, $OB], MPF[$OA, $OB], MPF[$OB, $OA]},
 	{EqualityMorphism[], BraidingForm[$OA, $OB], Reversed @ BraidingForm[$OB, $OA]}
 ]
@@ -667,3 +666,52 @@ TestRaster @ CommutativeDiagram[{
 		Origin -> {1.5, 0}
 	]
 }, ArrowPathReversed -> True] /. {$NTmu -> $NTdelta, $NTeta -> $NTeps}
+
+(* ::Section:: *)
+(*Whiskering*)
+
+$FunHF = FunctorSymbol[TightCompositionForm[$FunH, $FunF]];
+$FunHG = FunctorSymbol[TightCompositionForm[$FunH, $FunG]];
+$NTHeta = NaturalTransformationSymbol[CompositionForm[$FunH, $NTeta]];
+$whiskeringOpts = Sequence[
+	ColorRules -> {$Oc -> $Black, $NTeta -> RBF, $NTHeta -> $Gray, $FunHF -> RGF, $FunHG -> GBF, $FunF -> RF, $FunG -> BF, $FunH -> GF, $NTeta -> 0}
+];
+TestRaster @ CommutativeDiagram[{
+	{1,1} -> "C" -> $CC, {2,1} -> "D" -> $CD, {3,1} -> "E" -> $CE,
+	Morphism[TrapezoidCurve[{"C","D"}, .2], $FunF],
+	Morphism[TrapezoidCurve[{"C", "D"}, -.2], $FunG],
+	Morphism[{"D", "E"}, $FunH],
+	DoubleMorphism[{1, 2}, $NTeta, Setback -> 5]},
+	LabelFontSize -> 18, LabelPosition -> "Outer", LabelPosition -> AwayFrom[{0,-1}],
+	$whiskeringOpts,
+	MorphismColors -> Inherited
+]
+
+
+TestRaster @ CommutativeDiagram[{
+	{1, 0} -> "c" -> Sized[$Oc, {30, Automatic}],
+	{2, -.35} -> "Fc" -> $FunF[$Oc],
+	{3, -.35} -> "HFc" -> $FunHF[$Oc],
+	{2, .35} -> "Gc" -> $FunG[$Oc],
+	{3, .35} -> "HGc" -> $FunHG[$Oc],
+
+	MapsToMorphism[{"c", "Fc"}, ArrowColor -> $Red],
+	MapsToMorphism[{"c", "Gc"}, ArrowColor -> $Blue],
+
+	MapsToMorphism[{"Fc", "HFc"}, ArrowColor -> $Green],
+	MapsToMorphism[{"Gc", "HGc"}, ArrowColor -> $Green],
+
+	Morphism[{"Fc", "Gc"}, $NTeta[$Oc], ArrowColor -> $Pink],
+	Morphism[{"HFc", "HGc"}, $NTHeta[$Oc], ArrowColor -> $Gray]},
+	LabelPosition -> Right,
+	$whiskeringOpts
+]
+
+
+TestRaster @ CommutativeDiagram[{
+	{1,3} -> "C" -> $CC, {3,3} -> "E" -> $CE,
+	MorphismArrow[TrapezoidCurve[{"C","E"}, .3], $FunHF, ArrowColor -> $Orange, LabelPosition -> Above],
+	MorphismArrow[TrapezoidCurve[{"C","E"}, -.3], $FunHG, ArrowColor -> $Teal, LabelPosition -> Below],
+	DoubleMorphism[{1, 2}, $NTHeta, ArrowColor -> $Gray]},
+	MorphismColors -> Inherited, $whiskeringOpts
+]

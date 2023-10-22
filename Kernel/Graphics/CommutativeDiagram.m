@@ -79,8 +79,7 @@ SetUsage @ "
 SymbolReplacements is an option for CommutativeDiagram and consists of a list of rules.
 * each rule will be applied to objects and morphisms before display.
 * %ColorRules are applied after replacement.
-* however, if colors in %ColorRules would apply to the original entity but not the replacement, the color is carried over.
-* the special value 'DiskArrow' will replace all %CategoryObjectSymbols with disks and %CategoryArrowSymbols with arrows.
+* this feature can be used to make small tweaks to existing 'baseline' diagrams.
 "
 
 SetUsage @ "
@@ -173,10 +172,10 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $saveMorphGradColors = False;
   SetAutomatic[diagramColorRules, colorRules];
   colorModifierFn = processColorRules @ diagramColorRules;
-  replacementFn = processSymbolReplacements[symbolReplacements, colorModifierFn];
+  replacementFn = processSymbolReplacements[symbolReplacements];
+  extraModifiers = Composition[colorModifierFn, replacementFn];
   {$objectTextModifierFn, $morphismTextModifierFn} = Map[
-    (* we apply replacements first because multiple diagrams can come from one baseline... see note in processSymbolReplacements *)
-    Composition[toModifierFunction[#], replacementFn, colorModifierFn]&,
+    Composition[toModifierFunction[#], extraModifiers]&,
     If[AssociationQ[textModifiers],
       Lookup[textModifiers, {"Objects", "Morphisms"}, {}],
       {textModifiers, textModifiers}
@@ -221,7 +220,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
 
   arrowOpts = DeleteOptions[
     {FilterOptions[MorphismArrow, opts]},
-    {Setback, LabelFontSize, LabelFontSize, GraphicsScale}];
+    {Setback, LabelFontSize, LabelFontSize, GraphicsScale, TextModifiers}];
 
   result = {
     Sequence @@ arrowOpts,
@@ -233,8 +232,9 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
     primitives
   } /. $primitiveCanonicalizationRules;
 
-  (* this evaluates the TextModifiers now, for two reasons: they are chunky ReplaceAll expressions that show up in each MorphismArrow, and they can
-  contain references to localColorOf which will shortly go out of scope. maybe we can do this as parseMorphism time? not sure! *)
+  (* this evaluates the TextModifiers now, for two reasons: they are chunky ReplaceAll expressions that show up in if we call Normal on the CD and hence interfere with debugging
+  (and whose effect is impossible to see directly since they haven't applied yet), and they can contain references to localColorOf which will shortly go out of scope and
+  won't evaluate when boxifying. maybe we can do this as parseMorphism time? not sure! *)
   result //= applyMorphismTextModifiers;
 
   If[origin != {0, 0}, TranslatePrimitives[result, origin], result]
@@ -246,10 +246,18 @@ _cdToPrimitives := BadArguments[];
 
 PrivateFunction[toModifierFunction]
 
+SetUsage @ "
+TextModifiers is an option to %CommutativeDiagram that gives one or a list of modifier functions to apply after coloring and symbol replacement.
+* a list of rules can be given to, these will behave like SymbolReplacements, but will automatically replace through styles via (un)burrowing.
+"
+
+CommutativeDiagram::badModifier = "Element `` of TextModifiers should be None, a function, list of rules, or a list of these."
+
 toModifierFunction = Case[
-  {} | None | Identity := Identity;
-  f_                   := f;
-  list_List            := Composition @@ list;
+  {} | None | Identity            := Identity;
+  list_List                       := Composition @@ Map[%, Reverse @ list];
+  rules:$RuleListPattern          := UnburrowModifiers /* ReplaceAll[rules] /* BurrowModifiers;
+  fn_                             := fn;
 ];
 
 (**************************************************************************************************)
@@ -289,11 +297,11 @@ DiagramColorRules is an option to %CommutativeDiagram that consists of rules for
 * rules can be in any of the following forms:
 | patt$ -> color$ | apply color$ to any expressions matching patt$ |
 | patt$ -> {color$1, color$2} | apply a gradient color to matching expressions |
-| head$ -> 'Rainbow' | color head$[name$] canonically based on name$ |
+| head$ -> 'Rainbow' | color head$[name$] canonically based on %ToRainbowInteer[name$] |
 | head$ -> 'Gradient' | color head$[name$] as gradient based on source and target of morphism labeled as name$ |
-| head$ -> 'Coloring' | typeset head$[name$][$$] as $$ with color based on name$ |
+| head$ -> 'Coloring' | typeset head$[name$][$$] as $$ colored based on name$ |
 | head$ -> 'Framing' | typeset head$[name$][$$] as framed $$ with frame color based on name$ |
-* 'Coloring' and 'Framing' will use the color associated with head$[name$], if there is one, or otherwise the canonical color for name$.
+* 'Coloring' and 'Framing' will use the color associated with head$[name$], if there is one, or otherwise the canonical color for name$ |
 * head$ must be a unary form like %CategoryObjectSymbol, %CategoryArrowSymbol, or %CategorySymbol.
 * the following named rulesets are supported:
 | 'Objects' | equivalent to %CategoryObjectSymbol -> 'Rainbow' |
@@ -316,7 +324,7 @@ processColorRules = Case[
 CommutativeDiagram::cruleNotUnaryForm = "Symbol `` provided as color rule element is not a unary form."
 
 specialRecoloringRule[head_, "Rainbow"] :=
-  RuleDelayed[z_head, RuleCondition @ Style[z, ToRainbowColor @ ToRainbowInteger @ First @ z]];
+  RuleDelayed[z_head, RuleCondition @ StyledForm[z, ToRainbowColor @ ToRainbowInteger @ First @ z]];
 
 specialRecoloringRule[head_, "Gradient"] := (
   $saveMorphGradColors = True;
@@ -327,7 +335,7 @@ specialRecoloringRule[head_, "Framing"] :=
   RuleDelayed[z_head[e_], RuleCondition @ FramedForm[e, localColorOf[z]]];
 
 specialRecoloringRule[head_, "Coloring"] :=
-  RuleDelayed[z_head[e_], RuleCondition @ Style[e, localColorOf[z]]];
+  RuleDelayed[z_head[e_], RuleCondition @ StyledForm[e, localColorOf[z]]];
 
 PrivateFunction[localColorOf]
 
@@ -345,16 +353,27 @@ $namedRecoloringElements = <|
   "Categories"       -> {CategorySymbol       -> "Rainbow"},
   "GradientArrows"   -> {CategoryArrowSymbol  -> "Gradient", "Objects"},
   "GradientFunctors" -> {FunctorSymbol        -> "Gradient", "Categories"},
-  "FramingFunctors"  -> {FunctorSymbol        -> "Framing"}
+  "FramingFunctors"  -> {FunctorSymbol        -> "Framing"},
+  "ColoringFunctors" -> {FunctorSymbol        -> "Coloring"}
 |>;
 
-$colorP = _Integer | (_Symbol ? StyleFormHeadQ) | $ColorPattern;
+$colorP = _Integer | (_Symbol ? $styleFormHeadQ) | $ColorPattern;
+
+(*
+we've got to do something a bit tricky here, which is to deal with the fact
+that turning FunctorSymbol["X"] into Style[FunctorSymbol["X"], $Red] will ruin the
+normal typesetting behavior of things like FunctorSymbol["X"][...].
+
+hence the use of StyledForm, which burrows.
+
+TODO: do the same thing for GradientSymbol!
+*)
 
 toRecolorRule = Case[
 
   str_String := Splice[% /@ LookupOrMessageKeys[$namedRecoloringElements, str, {}]];
 
-  head_Symbol -> type:("Rainbow"|"Gradient"|"Framing"|"Coloring") := If[TrueQ @ $unaryFormQ[head],
+  head_Symbol -> type:("Rainbow"|"Gradient"|"Framing"|"Coloring") := If[TrueQ @ $unaryFormHeadQ[head],
     specialRecoloringRule[head, type],
     Message[CommutativeDiagram::cruleNotUnaryForm, head]; Nothing
   ];
@@ -364,7 +383,7 @@ toRecolorRule = Case[
   ];
 
   a_ -> c:$colorP := With[{c1 = toCol @ c},
-    RuleDelayed[(z:a), Style[z, c1]]
+    RuleDelayed[(z:a), StyledForm[z, c1]]
   ];
 
   other_Rule := (
@@ -388,33 +407,52 @@ toCol = Case[
 
 applyMorphismTextModifiers[primitives_] := ReplaceAll[
   primitives,
-  MorphismArrow[path_, lbl:Except[_Rule|None], lopts___, TextModifiers -> fn_, ropts___] :>
-    MorphismArrow[path, fixNestedColors[toModifierFunction[fn][lbl]], lopts, ropts]
+  MorphismArrow[path_, lbl:Except[_Rule], lopts___, TextModifiers -> fn_, ropts___] :>
+    MorphismArrow[path, applyToLabel[toModifierFunction[fn], lbl], lopts, ropts]
 ];
 
-(* this deals with the uncommon case when we have ColorRules -> {FunctorSymbol -> "Coloring", _ -> $Purple} AND
-SymbolReplacements -> "DiskArrow", where the purple would apply ahead of time to objects (due to the pre-apply rule),
-but once the object is colored purple it cannot be re-colored by the functor application becuase that purpleness is
-applied as a SymbolReplacement rule after coloring takes place *)
+applyToLabel = Case[
 
-fixNestedColors[Style[Style[a_, $ColorPattern], c:$ColorPattern]] := Style[a, c];
-fixNestedColors[other_] := other;
+  Seq[fn_, x_ -> item_] := x -> %[fn, item];
+
+  Seq[fn_, Placed[item_, p_]] := Placed[%[fn, item], p];
+
+  Seq[fn_, Customized[item_, opts___]] := Customized[%[fn, item], opts];
+
+  Seq[_, None] := None;
+
+  Seq[fn_, item_] := fn @ item;
+
+  Seq[fn_, list_List] := Map[%[fn, #]&, list];
+
+];
 
 (**************************************************************************************************)
 
 SetUsage @ "
 MorphismColors is an option to %CommuativeDiagram which can be:
 | None | no colors |
-| Automatic | color arrows as gradient between colors of their endpoints |
+| Inherited | inherit colors from the colors of their labels |
+| 'Gradient' | color arrows as gradient between colors of their endpoints |
 ";
 
+CommutativeDiagram::badMorphismColors = "MorphismColors -> `` is not recognized."
 processMorphismColors = Case[
   None := None;
-  Automatic := (
+
+  Inherited := morphismLabelColor;
+
+  "Gradient" := (
     $saveMorphGradColors = True;
     morphismGradColors
-  )
+  );
+
+  other_ := (Message[CommutativeDiagram::badMorphismColors, MsgExpr[other]]; None)
 ];
+
+morphismLabelColor[_] := None;
+morphismLabelColor[ma:MorphismArrow[_, lbl:Except[_Rule], ___]] :=
+  findColor @ colorModifierFn @ lbl;
 
 morphismGradColors[ma:MorphismArrow[path_, ___]] := Scope[
   st = findSourceTarget @ path;
@@ -426,35 +464,12 @@ morphismGradColors[ma:MorphismArrow[path_, ___]] := Scope[
 
 (**************************************************************************************************)
 
-(* if a replacement would prevent a color modifier from applying, we pre-apply it and then do the
-replacement, so that we can replace $Af | $Ag to \[RightArrow] but *also* have their colors applied *)
-
 CommutativeDiagram::badrepspec = "SymbolReplacements -> `` is invalid.";
 
-processSymbolReplacements[None | {}, _] := Identity;
-
-processSymbolReplacements["DiskArrow", cf_] :=
-  processSymbolReplacements[{_CategoryObjectSymbol -> "\[FilledCircle]", _CategoryArrowSymbol -> "\[RightArrow]"}, cf]
-
-$functorDiskArrowRules = {_CategorySymbol -> "\[FilledCircle]", _FunctorSymbol -> "\[RightArrow]"};
-
-processSymbolReplacements["FunctorDiskArrow", cf_] :=
-  processSymbolReplacements[{_CategorySymbol -> "\[FilledCircle]", _FunctorSymbol -> "\[RightArrow]"}, cf]
-
-processSymbolReplacements[rules_, colorFn_] := Scope[
-  ReplaceAll[parseRep /@ ToList[rules]]
-,
-  parseRep[rule:(lhs_ -> rhs_)] :=
-    If[PatternFreeQ[lhs] && colorFn[lhs] =!= lhs && colorFn[rhs] === rhs,
-      lhs -> ReplaceAll[colorFn[lhs], rule],
-      rule
-    ],
-  parseRep[rule_RuleDelayed] :=
-    rule,
-  parseRep[spec_] := (
-    Message[CommutativeDiagram::badrepspec, spec];
-    Nothing
-  )
+processSymbolReplacements = Case[
+  None | {}                               := Identity;
+  rules:($RulePattern | $RuleListPattern) := ReplaceAll[rules];
+  other_                                  := (Message[CommutativeDiagram::badrepspec, other]; Identity)
 ];
 
 (**************************************************************************************************)
@@ -849,7 +864,7 @@ fmtLabel[lbl_, None] := (
 );
 
 fmtLabel[lbl_, obj_] := Scope[
-  text = Text[fixNestedColors @ $objectTextModifierFn @ obj, lbl, Lookup[$SideToCoords, alignment]];
+  text = Text[$objectTextModifierFn @ obj, lbl, Lookup[$SideToCoords, alignment]];
   If[$calculateLabelSizes,
     size = $itemSize;
     If[ContainsQ[size, Automatic],
@@ -976,7 +991,10 @@ saveMorphismGradColors = Case[
   _ := Null;
 ];
 
-findColor[e_] := DeepFirstCase[e, (Style[___, c:$ColorPattern, ___] | FramedForm[_, c:$ColorPattern]) :> c];
+findColor[e_] := DeepFirstCase[e,
+  StyledForm[__, c:$ColorPattern, ___] :> c,
+  DeepFirstCase[e, (Style[___, c:$ColorPattern, ___] | _FramedForm[_, c:$ColorPattern]) :> c]
+];
 
 makeEndpointSetback = Case[
   {a_, b_} := Rectangular[{a, b}];

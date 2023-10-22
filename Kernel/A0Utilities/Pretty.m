@@ -351,13 +351,27 @@ prettyGraph[g_Graph] := With[{v = VertexList[g], e = EdgeList[g], o = Options[g]
 
 (**************************************************************************************************)
 
+$literalPatternVariableReplacements := $literalPatternVariableReplacements =
+  Cases[$literalPatternVariables, var_ :> With[{val = var},
+    RuleDelayed[Verbatim[val], var]
+  ]
+];
+
 pretty2 = Case[
   e:$fatHeadP /; TrueQ[$prettyCompression] := prettyCompressed[e];
   e_Symbol ? HAQ := symbolString[e];
   e_Real ? HAQ   := realString[e];
-  e_ := compactReals @ ToString[Unevaluated @ e, InputForm];
+  e_             := chunkToString[e];
 ,
   {$fatHeadP}
+];
+
+SetHoldAllComplete[chunkToString];
+chunkToString[e_] := With[{h = HoldComplete[e]},
+  Replace[
+    h /. $literalPatternVariableReplacements,
+    HoldComplete[z_] :> compactReals @ ToString[Unevaluated @ z, InputForm]
+  ]
 ];
 
 (* this is super hacky but not sure how else to easily clip numbers once ToString is done *)

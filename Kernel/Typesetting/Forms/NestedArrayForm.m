@@ -99,7 +99,7 @@ $headP = ListForm | TupleForm | SetForm;
 procNA[(head:$headP)[spec_], rest___][array_] :=
   head @ procNA[spec, rest] @ array;
 
-procNA[(styleHead_Symbol ? StyleFormHeadQ)[(head:$headP)[inner_]], rest___][array_] :=
+procNA[(styleHead_Symbol ? $styleFormHeadQ)[(head:$headP)[inner_]], rest___][array_] :=
   StyleDecorated[StyleFormData @ styleHead, head][procNA[inner, rest] @ array];
 
 shouldSpanQ[s_String] := Which[

@@ -398,7 +398,7 @@ ToRainbowInteger = Case[
 
   s_String := Lookup[$romanToInteger, ToLowerCase @ ToSpelledGreek @ ToNonDecoratedRoman @ s, None];
 
-  head_Symbol /; $unaryFormQ[head] := % @ First @ s;
+  head_Symbol /; $taggedFormHeadQ[head] := % @ First @ s;
 
 ];
 
