@@ -761,7 +761,7 @@ currentStyleSetting[option_, stylename_] := option :> CurrentValue[{StyleDefinit
 
 (**************************************************************************************************)
 
-PrivateMacro[ReplaceNone, ReplaceMissing, ReplaceAutomatic, ReplaceInherited]
+PrivateFunction[ReplaceNone, ReplaceMissing, ReplaceAutomatic, ReplaceInherited]
 
 defineReplacer[symbol_, pattern_] := (
   DefineLiteralMacro[symbol,

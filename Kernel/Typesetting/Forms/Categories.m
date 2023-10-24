@@ -262,7 +262,7 @@ also, use Dynamic[CurrentValue[ScriptSize]] to make it work properly inside Supe
 DefineStandardTraditionalForm[{
 
   (* this is so that we still recognize CategoryArrowSymbol["\[RightArrow]"] etc *)
-  GradientSymbol[(_Symbol ? $taggedFormHeadQ)[sub_], args___] :> ToBoxes @ GradientSymbol[sub, args],
+  GradientSymbol[(_Symbol ? $taggedFormHeadQ)[sub:("\[RightArrow]" | RightArrowSymbol)], args___] :> ToBoxes @ GradientSymbol[sub, args],
 
   (* TODO: recognize $symbolFormHeadQ and resolve it in case we have a known icon for it! *)
   (* TODO: turn text into a shape via ToGraphicsBox, then use LinearGradientFilling on it *)
@@ -286,7 +286,9 @@ DefineStandardTraditionalForm[{
     NoSpanBox @ ToBoxes @ AppliedForm[h, args]
 }];
 
-$styleFormHeadQ[GradientSymbol] = True;
+(* have to disable this because otherwise GradientSymbol burrows through tagged forms and they get
+rasterized incorrectly *)
+(* $styleFormHeadQ[GradientSymbol] = True; *)
 
 (**************************************************************************************************)
 

@@ -13,10 +13,6 @@ $exportCellOptions = Sequence[
 	GraphicsBoxOptions -> {ImageSize -> Medium}, Graphics3DBoxOptions -> {ImageSize -> Medium}
 ];
 
-(* toExportNotebook[Cell[CellGroupData[cells_, ___], ___] | CellGroupData[cells_, ___], background_] :=
-	Notebook
- *)
-
 toExportCell[c:(Cell[CellGroupData[cells_, ___], ___] | CellGroupData[cells_, ___]), opts___] :=
 	Notebook[List @ c, opts, ShowCellBracket -> False, CellContext -> "Global`"];
 
@@ -39,15 +35,15 @@ QuiverGeometrySymbolQ[s_Symbol] := StringStartsQ[Context[s], "QuiverGeometry`"];
 
 toExportPacket[expr_] := toExportPacket[expr, None];
 
-toExportPacket[expr_, background_] := ExportPacket[
+toExportPacket[expr_, background_, verbose_:False] := ExportPacket[
 	toExportNotebook[expr, background],
-	"ImageObjectPacket", ColorSpace -> RGBColor, Verbose -> False, "AlphaChannel" -> False,
+	"ImageObjectPacket", ColorSpace -> RGBColor, Verbose -> verbose, "AlphaChannel" -> False,
 	"DataCompression" -> False, ImageResolution -> 144
 ];
 
-toExportPacket[expr_, Transparent] := ExportPacket[
+toExportPacket[expr_, Transparent, verbose_:False] := ExportPacket[
 	toExportNotebook[expr, Transparent],
-	"ImageObjectPacket", ColorSpace -> RGBColor, Verbose -> False, "AlphaChannel" -> True,
+	"ImageObjectPacket", ColorSpace -> RGBColor, Verbose -> verbose, "AlphaChannel" -> True,
 	"DataCompression" -> False, ImageResolution -> 144
 ];
 
@@ -58,10 +54,35 @@ PublicFunction[FastRasterize]
 Options[FastRasterize] = {Background -> Automatic};
 
 FastRasterize::fail = "Failed to rasterize input with head ``. Result printed below.";
-FastRasterize[expr_, OptionsPattern[]] := Scope[
-	res = MathLink`CallFrontEnd @ toExportPacket[expr, OptionValue[Background]];
-	If[!ImageQ[res], Message[FastRasterize::fail, Head @ expr]; Print[res]; ConstantImage[Pink, {10, 10}], res]
+FastRasterize[expr_, opts:OptionsPattern[]] := Scope[
+	res = CallFrontEnd @ toExportPacket[expr, OptionValue[Background]];
+	If[ImageQ[res], res,
+		Message[FastRasterize::fail, Head @ expr];
+		Print[res];
+		ConstantImage[Pink, {10, 10}]
+	]
 ];
+
+(*************************************************************************************************)
+
+PublicFunction[FastRasterizeWithMetadata]
+
+Options[FastRasterizeWithMetadata] = {Background -> Automatic};
+
+FastRasterizeWithMetadata[expr_, opts:OptionsPattern[]] := Scope[
+	res = CallFrontEnd @ toExportPacket[expr, OptionValue[Background], True];
+	If[!MatchQ[res, {_Image, {__Rule}}],
+		Message[FastRasterize::fail, Head @ expr];
+		Return @ {ConstantImage[Pink, {10, 10}], {10, 10, 1}, {}};
+	];
+	{image, metadata} = res;
+	{boundingBox, baseline, regions} = Lookup[metadata, {"BoundingBox", Baseline, "Regions"}];
+	rasterSize = bboxToRasterSize[{Transpose @ boundingBox, baseline}];
+	regions = Map[toImageReg, regions];
+	{image, rasterSize, regions}
+];
+
+toImageReg[{anno_, {{a_, b_}, {c_, d_}}}] := anno -> {{a, d}, {b, c}};
 
 (*************************************************************************************************)
 
@@ -69,16 +90,21 @@ PublicFunction[FastRasterSize]
 
 FastRasterSize::fail = "Failed to obtain raster size for input with head ``. Result printed below.";
 FastRasterSize[expr_, returnBaseline_:False] := Scope[
-	res = MathLink`CallFrontEnd @ Insert[toExportPacket[expr, None], "BoundingBox", 2];
+	res = CallFrontEnd @ Insert[toExportPacket[expr, None], "BoundingBox", 2];
 	If[!MatchQ[res, {{{_, _}, {_, _}}, _}],
 		Message[FastRasterize::fail, Head @ expr];
-		If[returnBaseline, {1, 1, 0}, {1, 1}]
+		If[returnBaseline, {10, 10, 0}, {10, 10}]
 	,
-		{{{x1, x2}, {y1, y2}}, d} = res;
-		{w, h} = Floor[({y1 - x1, y2 - x2} * 144 / 72) + 1 / 2];
-		If[returnBaseline, {w, h, Floor[d + 1/2]}, {w, h}]
+		size = bboxToRasterSize @ res;
+		If[returnBaseline, size, Take[size, 2]]
  	]
  ];
+
+ bboxToRasterSize[{{{x1_, x2_}, {y1_, y2_}}, d_}] := Scope[
+ 	{w, h} = Floor[({y1 - x1, y2 - x2} * 2) + 1 / 2];
+ 	d = Floor[d * 2 + 1/2];
+ 	{w, h, d}
+ ]
 
 (*************************************************************************************************)
 
@@ -109,7 +135,7 @@ CachedFastRasterize[expr_] := MaybeCacheTo[QuiverGeometryCaches`$RasterizationCa
 
 PublicFunction[FastRasterizeList]
 
-FastRasterizeList[expr_List] := MathLink`CallFrontEnd @ Map[toExportPacket, expr];
+FastRasterizeList[expr_List] := CallFrontEnd @ Map[toExportPacket, expr];
 
 (*************************************************************************************************)
 
@@ -198,7 +224,7 @@ FloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules:{__Rule}, Option
   len = Length @ rules;
   annos = Style[Annotation[Invisible @ Point[#1], #2, "FillPoint"], Antialiasing->None]& @@@ rules;
   annoGraphics = Graphics[{{AbsolutePointSize[1], annos}, prims}, opts];
-  {image, regions} = cachedImageRegionRasterize @ annoGraphics;
+  {image, bounds, regions} = cachedImageRegionRasterize @ annoGraphics;
   image2 = cachedTransparentRasterize @ g2;
   If[ErrorImageQ[image] || ErrorImageQ[image2], Message[FloodFill::errimg, lhs]; Return @ ConstantImage[0.5, {5,5}]];
   fillPoints = Cases[regions, ({color_, "FillPoint"} -> {{x1_, y1_}, {x2_, y2_}}) :> {Round @ {Avg[x1, x2], Avg[y1, y2]}, color}];
@@ -221,11 +247,18 @@ FloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules:{__Rule}, Option
   result
 ];
 
+(* this needs to be upgraded to ask for QG stylesheets !*)
 cachedImageRegionRasterize[graphics_] :=
-	MaybeCacheTo[QuiverGeometryCaches`$RegionRasterizationCache, Hash[graphics], Rasterize[graphics, {"Image", "Regions"}]];
+	MaybeCacheTo[
+		QuiverGeometryCaches`$RegionRasterizationCache, Hash[graphics],
+		FastRasterizeWithMetadata[graphics]
+	];
 
 cachedTransparentRasterize[graphics_] :=
-	MaybeCacheTo[QuiverGeometryCaches`$TransparentRasterizationCache, Hash[graphics], Rasterize[graphics, Background -> Transparent]];
+	MaybeCacheTo[
+		QuiverGeometryCaches`$TransparentRasterizationCache, Hash[graphics],
+		FastRasterize[graphics, Background -> Transparent]
+	];
 
 (**************************************************************************************************)
 

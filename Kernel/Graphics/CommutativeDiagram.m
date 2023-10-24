@@ -171,8 +171,8 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
 
   $saveMorphGradColors = False;
   SetAutomatic[diagramColorRules, colorRules];
-  colorModifierFn = processColorRules @ diagramColorRules;
-  replacementFn = processSymbolReplacements[symbolReplacements];
+  colorModifierFn = parseDiagramColorRules @ diagramColorRules;
+  replacementFn = parseSymbolReplacements[symbolReplacements];
   extraModifiers = Composition[colorModifierFn, replacementFn];
   {$objectTextModifierFn, $morphismTextModifierFn} = Map[
     Composition[toModifierFunction[#], extraModifiers]&,
@@ -192,12 +192,12 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $objFn = $arrFn = Identity;
   {interiorLinkOptions, exteriorLinkOptions} = processCloneSpecs[cloneOptions, cloningFunction];
 
-  $currentFontSize = fontSize; (* <- for recoloring rule to produce the right GradientSymbol *)
+  $currentDiagramFontSize = fontSize; (* <- for recoloring rule to produce the right GradientSymbol *)
   objectPrimitives = parseObject /@ items;
 
   $toHigherPath = toHigherPath;
   $clonesExist = Length[$cloneChildren] > 0;
-  $currentFontSize = labelFontSize; (* <- for recoloring rule *)
+  $currentDiagramFontSize = labelFontSize; (* <- for recoloring rule *)
   If[$saveMorphGradColors, saveMorphismGradColors @ items];
 
   morphismPrimitives = parseMorphism /@ items;
@@ -255,8 +255,8 @@ CommutativeDiagram::badModifier = "Element `` of TextModifiers should be None, a
 
 toModifierFunction = Case[
   {} | None | Identity            := Identity;
-  list_List                       := Composition @@ Map[%, Reverse @ list];
   rules:$RuleListPattern          := UnburrowModifiers /* ReplaceAll[rules] /* BurrowModifiers;
+  list_List                       := Composition @@ Map[%, Reverse @ list];
   fn_                             := fn;
 ];
 
@@ -292,12 +292,12 @@ cdToPrimitives[other_] := (
 (**************************************************************************************************)
 
 SetUsage @ "
-DiagramColorRules is an option to %CommutativeDiagram that consists of rules for colors to apply to specific elements.
+DiagramColorRules is an option to %CommutativeDiagram and %StringDiagram that consists of rules for colors to apply to specific elements.
 * elements that are colored are contents of objects, as well as morphism labels.
 * rules can be in any of the following forms:
 | patt$ -> color$ | apply color$ to any expressions matching patt$ |
 | patt$ -> {color$1, color$2} | apply a gradient color to matching expressions |
-| head$ -> 'Rainbow' | color head$[name$] canonically based on %ToRainbowInteer[name$] |
+| head$ -> 'Rainbow' | color head$[name$] canonically based on %ToRainbowInteger[name$] |
 | head$ -> 'Gradient' | color head$[name$] as gradient based on source and target of morphism labeled as name$ |
 | head$ -> 'Coloring' | typeset head$[name$][$$] as $$ colored based on name$ |
 | head$ -> 'Framing' | typeset head$[name$][$$] as framed $$ with frame color based on name$ |
@@ -314,7 +314,10 @@ DiagramColorRules is an option to %CommutativeDiagram that consists of rules for
 "
 CommutativeDiagram::badrecolor = "Bad recoloring rule element ``."
 
-processColorRules = Case[
+PrivateFunction[parseDiagramColorRules]
+PrivateVariable[$currentDiagramFontSize]
+
+parseDiagramColorRules = Case[
   {} | None            := Identity;
   el:(_Rule | _String) := % @ {el};
   list_List            := ReplaceAll @ Map[toRecolorRule, list];
@@ -328,7 +331,7 @@ specialRecoloringRule[head_, "Rainbow"] :=
 
 specialRecoloringRule[head_, "Gradient"] := (
   $saveMorphGradColors = True;
-  RuleDelayed[z_head, RuleCondition @ GradientSymbol[z, $gradColor[z, 1], $gradColor[z, 2], $currentFontSize]]
+  RuleDelayed[z_head, RuleCondition @ GradientSymbol[z, $gradColor[z, 1], $gradColor[z, 2], $currentDiagramFontSize]]
 );
 
 specialRecoloringRule[head_, "Framing"] :=
@@ -343,7 +346,7 @@ PrivateFunction[localColorOf]
 we will use it for the 'Framing' / 'Coloring' spec above *)
 localColorOf[z_] := Scope[
   z2 = colorModifierFn[z];
-  If[z2 =!= z, findColor @ z2, ToRainbowColor @ ToRainbowInteger @ First @ z]
+  If[z2 =!= z, findInteriorColor @ z2, ToRainbowColor @ ToRainbowInteger @ First @ z]
 ];
 
 $namedRecoloringElements = <|
@@ -379,7 +382,7 @@ toRecolorRule = Case[
   ];
 
   f_ -> {a:$colorP, b:$colorP} := With[{c1 = toCol @ a, c2 = toCol @ b},
-    RuleDelayed[f, RuleCondition @ GradientSymbol[f, c1, c2, $currentFontSize]]
+    RuleDelayed[f, RuleCondition @ GradientSymbol[f, c1, c2, $currentDiagramFontSize]]
   ];
 
   a_ -> c:$colorP := With[{c1 = toCol @ c},
@@ -452,7 +455,7 @@ processMorphismColors = Case[
 
 morphismLabelColor[_] := None;
 morphismLabelColor[ma:MorphismArrow[_, lbl:Except[_Rule], ___]] :=
-  findColor @ colorModifierFn @ lbl;
+  findInteriorColor @ colorModifierFn @ lbl;
 
 morphismGradColors[ma:MorphismArrow[path_, ___]] := Scope[
   st = findSourceTarget @ path;
@@ -464,9 +467,11 @@ morphismGradColors[ma:MorphismArrow[path_, ___]] := Scope[
 
 (**************************************************************************************************)
 
+PrivateFunction[parseSymbolReplacements]
+
 CommutativeDiagram::badrepspec = "SymbolReplacements -> `` is invalid.";
 
-processSymbolReplacements = Case[
+parseSymbolReplacements = Case[
   None | {}                               := Identity;
   rules:($RulePattern | $RuleListPattern) := ReplaceAll[rules];
   other_                                  := (Message[CommutativeDiagram::badrepspec, other]; Identity)
@@ -952,7 +957,7 @@ processMorphism2 = Case[
   ];
 
   ma_MorphismArrow /; TrueQ[$morphismTextModifierFn =!= Identity] && FreeQ[ma, TextModifiers] := Scope[
-    modifiers = $morphismTextModifierFn /. HoldPattern[$currentFontSize] :> RuleCondition[$currentFontSize];
+    modifiers = $morphismTextModifierFn /. HoldPattern[$currentDiagramFontSize] :> RuleCondition[$currentDiagramFontSize];
     modifiers //= resolveGradColors;
     % @ Append[ma, TextModifiers -> modifiers]
   ];
@@ -979,7 +984,7 @@ saveMorphismGradColors = Case[
     st = Lookup[$objects, stRaw];
     If[ContainsQ[st, Missing], Return[]];
     stColored = $objectTextModifierFn /@ st;
-    colors = findColor /@ stColored;
+    colors = findInteriorColor /@ stColored;
     If[Length[colors] == 2,
       (* save by label and by edge *)
       lbl = SafePart[m, 2];
@@ -991,11 +996,6 @@ saveMorphismGradColors = Case[
   _ := Null;
 ];
 
-findColor[e_] := DeepFirstCase[e,
-  StyledForm[__, c:$ColorPattern, ___] :> c,
-  DeepFirstCase[e, (Style[___, c:$ColorPattern, ___] | _FramedForm[_, c:$ColorPattern]) :> c]
-];
-
 makeEndpointSetback = Case[
   {a_, b_} := Rectangular[{a, b}];
   a_       := a;
@@ -1004,6 +1004,15 @@ makeEndpointSetback = Case[
 lookupObjectSize = Case[
   s_String := Lookup[$objectSizes, s, {15, 15}];
   _        := {15, 15};
+];
+
+(**************************************************************************************************)
+
+PrivateFunction[findInteriorColor]
+
+findInteriorColor[e_] := DeepFirstCase[e,
+  StyledForm[__, c:$ColorPattern, ___] :> c,
+  DeepFirstCase[e, (Style[___, c:$ColorPattern, ___] | _FramedForm[_, c:$ColorPattern]) :> c]
 ];
 
 (**************************************************************************************************)

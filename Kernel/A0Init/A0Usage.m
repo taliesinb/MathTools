@@ -1,3 +1,14 @@
+PublicVariable[$FrontendQ]
+
+$FrontendQ = $FrontEnd =!= Null;
+
+If[!$FrontendQ,
+  (* this is so that e.g. Text inside graphics will still have FormBox[..., TraditionalForm] wrapped around it! *)
+  System`Dump`$textFormatType = TraditionalForm;
+]
+
+(**************************************************************************************************)
+
 $slotRegularExpression = RegularExpression["<\\*([^*]+)\\*>"];
 
 substituteUsageSlots[s_String] :=

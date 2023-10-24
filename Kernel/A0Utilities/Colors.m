@@ -380,7 +380,7 @@ ToRainbowColor = Case[
   -1                        := $White;
   0                         := $LightGray;
   i_Integer                 := Part[$NormalColorPalette, i];
-  col_ ? ColorQ             := col;
+  col_ ? ColorQ             := Lookup[$colorAliases, col, col];
   s:(Automatic | None)      := s;
   other_                    := $Gray;
   Null                      := Transparent;
@@ -388,6 +388,22 @@ ToRainbowColor = Case[
   Sequence[s:Automatic | None, _] := s;
   Sequence[_, 0]            := $LightGray;
   Sequence[name_String, n_] := Part[ToColorPalette @ name, n];
+];
+
+(**************************************************************************************************)
+
+PrivateVariable[$colorAliases]
+
+$colorAliases = UAssociation[
+  Red    -> $Red,    LightRed    -> $LightRed,
+  Blue   -> $Blue,   LightBlue   -> $LightBlue,
+  Green  -> $Green,  LightGreen  -> $LightGreen,
+  Orange -> $Orange, LightOrange -> $LightOrange,
+  Purple -> $Purple, LightPurple -> $LightPurple,
+  Pink   -> $Pink,   LightPink   -> $LightPink,
+  Cyan   -> $Teal,   LightCyan   -> $LightTeal,
+  Gray   -> $Gray,   LightGray   -> $LightGray,
+  White  -> $White,  Black       -> $Black
 ];
 
 (**************************************************************************************************)
@@ -453,7 +469,7 @@ oklabInterpolation[colors_, args___] :=
 
 PublicFunction[HumanBlend]
 
-HumanBlend[colors_List] := iHumanBlend @ Sort @ colors;
+HumanBlend[colors_List] := iHumanBlend @ Sort @ VectorReplace[colors, i_Integer :> ToRainbowColor[i]];
 
 iHumanBlend = Case[
   {}                := w2;

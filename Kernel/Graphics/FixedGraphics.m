@@ -108,6 +108,10 @@ embedInset = Case[
 
   i:InsetBox[_FormBox, ___] := i;
 
+  (* this happpens in the terminal, which doesn't add a FormBox apparently, though
+  i have since fixed that by using an internal variable in A0Usage.m *)
+  i:InsetBox[_, _, _ImageScaled] := i;
+
   expr_ := (Message[FixedGraphics::badInset, MsgExpr @ expr]; expr)
 ];
 

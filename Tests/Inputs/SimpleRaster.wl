@@ -1,0 +1,1 @@
+TestRaster @ CommutativeDiagram[{{0, 0} -> "A", {1, 1.1} -> "B", "A" \[DirectedEdge] "B" -> "F"}]

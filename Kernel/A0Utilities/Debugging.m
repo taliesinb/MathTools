@@ -119,7 +119,7 @@ EchoGraphicsScope[e_] := Scope[
   $prims = {};
   res = e;
   n = Length[$prims]; $i = 1;
-  Print @ Graphics[
+  Graphics[
     Map[{Opacity[$i++ / n], #}&, $prims],
     Frame -> True, PlotRangePadding -> Scaled[0.1]
   ];
@@ -298,6 +298,8 @@ MsgPath[l_List] := Map[MsgPath, l];
 
 MsgPath /: SystemOpen[MsgPath[s_, n_:None]] := openMsgPath[s, n];
 
+Format[MsgPath[s_String], OutputForm] := StringJoin["\"", s, "\""];
+Format[MsgPath[s_String, n_Integer], OutputForm] := StringJoin["\"", s, ":", IntegerString @ n, "\""];
 MakeBoxes[MsgPath[s_String], StandardForm] := msgPathBoxes[s];
 MakeBoxes[MsgPath[s_String], TraditionalForm] := msgPathBoxes[s];
 

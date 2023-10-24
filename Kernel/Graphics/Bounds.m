@@ -153,7 +153,7 @@ properInsetBounds = Case[
   i:InsetBox[_GraphicsBox, ___] :=
     boxBound @ embedInsetBoxWithScale[i, $gs];
 
-  InsetBox[FormBox[txt_, _], pos_, offset:Except[_Rule]:ImageScaled[{0.5,0.5}], size_:Automatic, dirx:Except[_Rule]:{1,0}, opts___Rule] := Scope[
+  InsetBox[FormBox[txt_, _] | txt_, pos_, offset:Except[_Rule]:ImageScaled[{0.5,0.5}], size_:Automatic, dirx:Except[_Rule]:{1,0}, opts___Rule] := Scope[
     pos = ResolveOffsets[pos, $gs];
     offset //= Replace[ImageScaled[s_] :> (s - 0.5) * 2];
     (* TODO: Maybe use DefaultBaseStyle here? *)
@@ -169,5 +169,5 @@ properInsetBounds = Case[
     StuffBag[$p, points, 1]
   ];
 
-  other_ := Message[FindAutomaticPadding::unsuppInset, MsgExpr @ other];
+  other_ := Message[PrimitiveBoxesBounds::unsuppInset, MsgExpr @ other];
 ];

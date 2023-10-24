@@ -7,6 +7,13 @@ NotebookObjectQ = Case[
 
 (**************************************************************************************************)
 
+PrivateFunction[CallFrontEnd]
+
+(* this allows FastRasterize etc to work from the terminal *)
+CallFrontEnd[e_] := If[$FrontendQ, MathLink`CallFrontEnd[e], System`ConvertersDump`Utilities`GetFromFE[e]];
+
+(**************************************************************************************************)
+
 PublicFunction[WithExternalMessageCapture]
 
 $tmpMessageFilePath := $tmpMessageFilePath = TemporaryPath["messages.txt"];

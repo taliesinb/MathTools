@@ -163,9 +163,11 @@ PartValueScan[f_][e_] := PartValueScan[f, e];
 PublicFunction[ScanIndex1]
 
 SetUsage @ "
-ScanIndex1[f, arg] is equivalent to ScanIndexed[f[#1, First[#2]]&, arg]
+ScanIndex1[f$, arg$] is equivalent to ScanIndexed[f$[#1, First[#2]]&, arg$]
+* ScanIndexed will not evaluate on arg$ if it is has attribute Hold etc.
 "
 
+(* TODO: fix the hold limitation *)
 ScanIndex1[f_, list_] := (MapIndexed[Function[{argX, partX}, f[argX, First @ partX];], list];)
 ScanIndex1[f_][list_] := ScanIndex1[f, list];
 

@@ -52,7 +52,7 @@ singleScratchSymbolQ[_] := False;
 
 toInlineExpression[str_, form_] := Block[
   {$Context = "QuiverGeometryLoader`Scratch`",
-   $ContextPath = {"System`", "Global`", "QuiverGeometry`", "QuiverGeometry`Shortcuts`"},
+   $ContextPath = {"System`", "Global`", "QuiverGeometry`", "QuiverGeometryShortcuts`"},
    result, scratchNames, held, eval},
   held = checkedToExpression[str, form] /. (s_Symbol ? singleScratchSymbolQ) :> SymbolForm[SymbolName[s]];
   If[FailureQ @ held,

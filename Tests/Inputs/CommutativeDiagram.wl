@@ -6,6 +6,8 @@
 (* ::Subsubsection:: *)
 (*Setup*)
 
+LoadShortcuts["Categories"]
+
 $homColorRules = {
 	$OA -> RF, $OB -> BF, $OApr -> RGF, $OBpr -> GF,
 	$Af -> {RF, RGF}, $Ag -> {BF, GF},
@@ -353,7 +355,7 @@ TestRaster @ InTriangleDiagram[
 (*Left and right Kan extension double*)
 
 
-TestRaster @  CommutativeDiagram[{
+TestRaster /@ {
 	InTriangleDiagram[
 		{$CD, $CC, $CDpr}, 
 		{$FunF, $FunP, Reversed @ LeftKanExtensionForm[$FunP][$FunF],
@@ -362,17 +364,16 @@ TestRaster @  CommutativeDiagram[{
 	InTriangleDiagram[
 		{$CD, $CC, $CDpr}, 
 		{$FunF, $FunP, Reversed @ RightKanExtensionForm[$FunP][$FunF],
-		 DoubleMorphism["D'" \[DirectedEdge] "F", $NTeps, Setback -> {30,15}]}, 
-		 Origin -> {2, 0}
+		 DoubleMorphism["D'" \[DirectedEdge] "F", $NTeps, Setback -> {30,15}]}
 	]
-}]
+}
 
 
 (* ::Subsubsection:: *)
 (*Left and right Kan extension double*)
 
 
-TestRaster @ CommutativeDiagram[{
+TestRaster /@ {
 	InTriangleDiagram[
 		{$CD, $CC, $CE}, 
 		{$FunF, $FunP, Reversed @ UniqueMorphism[$FunE, LabelPosition -> Above],
@@ -387,7 +388,7 @@ TestRaster @ CommutativeDiagram[{
 		 DoubleMorphism[4 \[DirectedEdge] 2, Setback -> 5], Text["right", {1.5,-2.25}]},
 		Left, Origin -> {1.75, 0}
 	]
-}]
+}
 
 
 (* ::Section:: *)
@@ -419,7 +420,7 @@ TestRaster @ AdjunctionDiagram[
 (*Adjunction triangles*)
 
 
-TestRaster @ CommutativeDiagram[{
+TestRaster /@ {
 	InTriangleDiagram[
 		{$FunL, CompositionForm[$FunL, $FunR, $FunL], $FunL},
 		{HCF[OneArrow[$FunL], $NTeta], EqualityMorphism[], HCF[$NTeps, OneArrow @ $FunL]},
@@ -430,7 +431,7 @@ TestRaster @ CommutativeDiagram[{
 		{Reversed @ HCF[$NTeta, OneArrow[$FunR]], HCF[OneArrow @ $FunR, $NTeps], EqualityMorphism[]},
 		Left, Origin -> {2, 0}
 	]
-}, ColorRules -> {}]
+}
 
 
 (* ::Subsubsection:: *)
@@ -456,17 +457,11 @@ filledSquare[a_, b_, f_, isRev_, opts___Rule] := CommutativeDiagram[{
 ];
 
 
-TestRaster @ CommutativeDiagram[{
-		gluedTriangles[$OC, $OD, $FunL, $FunR, $NTeta, $NTeps, False],
-		NamedIcon[{3.5, -1.5}, {1, 0}, "Equal", IconThickness -> 2],
-		filledSquare[$OC, $OD, $FunL, False, Origin -> {3, 0}]
-	}]
+TestRaster @ gluedTriangles[$OC, $OD, $FunL, $FunR, $NTeta, $NTeps, False]
+TestRaster @ filledSquare[$OC, $OD, $FunL, False, Origin -> {3, 0}]
 
-TestRaster @ CommutativeDiagram[{
-		gluedTriangles[$OD, $OC, $FunR, $FunL, $NTeps, $NTeta, True],
-		NamedIcon[{3.5, -1.5}, {1, 0}, "Equal", IconThickness -> 2],
-		filledSquare[$OD, $OC, $FunR, True, Origin -> {3, 0}]
-	}]
+TestRaster @ gluedTriangles[$OD, $OC, $FunR, $FunL, $NTeps, $NTeta, True]
+TestRaster @ filledSquare[$OD, $OC, $FunR, True, Origin -> {3, 0}]
 
 
 (* ::Subsubsection:: *)
@@ -517,18 +512,17 @@ TestRaster @ CommutativeSquare[
 ]
 
 
-TestRaster @ CommutativeDiagram[{
+TestRaster /@ {
 	CommutativeSquare[
 		{FunctorPowerForm[$FunT, 2] @ $Ox, $FunT @ $Ox, $FunT @ $Ox, $Ox},
-		{$FunT @ $Ah, $Ah, $NTmu[$Ox], $Ah}
+		{$FunT @ $Ah, $Ah, $NTmu[$Ox], $Ah}, LabelFontSize -> 18
 	],
 	InTriangleDiagram[
 		{$Ox, $FunT[$Ox], $Ox},
 		{$NTeta[$Ox], EqualityMorphism[], $Ah},
-		Right, Origin -> {1.5,0}
-	]},
-	LabelFontSize -> 18
-]
+		Right, Origin -> {1.5,0}, LabelFontSize -> 18
+	]
+}
 
 
 TestRaster @ CommutativeSquare[
@@ -615,28 +609,12 @@ TestRaster @ DoubleTriangleDiagram[
 ]
 
 
-(* ::Subsubsection:: *)
-(*Combined*)
-
-
-TestRaster @ CommutativeDiagram[{
-	CommutativeSquare[
-		{HCF[$FunT,$FunT,$FunT], HCF[$FunT,$FunT], HCF[$FunT,$FunT], $FunT},
-		{Padded[HCF][$FunT,$NTmu], $NTmu, Padded[HCF][$NTmu, $FunT], $NTmu}
-	],
-	DoubleTriangleDiagram[
-		{$FunT, HCF[$FunT,$FunT], $FunT, $FunT},
-		{Padded[HCF][$NTeta,$FunT], Padded[HCF][$FunT, $NTeta], EqualityMorphism[], $NTmu, {None, "Equality"}},
-		Origin -> {1.5, 0}
-	]
-}]
-
 
 (* ::Subsubsection:: *)
-(*Pointed combined*)
+(*Pointed*)
 
 
-TestRaster @ CommutativeDiagram[{
+TestRaster /@ {
 	CommutativeSquare[
 		{FunctorPowerForm[$FunT,3][$OX], FunctorPowerForm[$FunT,2][$OX], FunctorPowerForm[$FunT,2][$OX], $FunT[$OX]},
 		{$FunT[$NTmu[$OX]], $NTmu[$OX], $NTmu[$FunT[$OX]], $NTmu[$OX]},
@@ -648,24 +626,25 @@ TestRaster @ CommutativeDiagram[{
 		LabelFontSize -> 15,
 		Origin -> {1.75, 0}
 	]
-}]
+}
 
 
 (* ::Subsubsection:: *)
-(*Comonad combined*)
+(*Comonad*)
 
 
-TestRaster @ CommutativeDiagram[{
+TestRaster /@ ({
 	CommutativeSquare[
 		{HCF[$FunT,$FunT,$FunT], HCF[$FunT,$FunT], HCF[$FunT,$FunT], $FunT},
-		{Padded[HCF][$FunT,$NTmu], $NTmu, Padded[HCF][$NTmu, $FunT], $NTmu}
+		{Padded[HCF][$FunT,$NTmu], $NTmu, Padded[HCF][$NTmu, $FunT], $NTmu},
+		ArrowPathReversed -> True
 	],
 	DoubleTriangleDiagram[
 		{$FunT, HCF[$FunT,$FunT], $FunT, $FunT},
 		{Padded[HCF][$NTeta,$FunT], Padded[HCF][$FunT, $NTeta], EqualityMorphism[], $NTmu, {None, "Equality"}},
-		Origin -> {1.5, 0}
+		Origin -> {1.75, 0}, ArrowPathReversed -> True
 	]
-}, ArrowPathReversed -> True] /. {$NTmu -> $NTdelta, $NTeta -> $NTeps}
+} /. {$NTmu -> $NTdelta, $NTeta -> $NTeps})
 
 (* ::Section:: *)
 (*Whiskering*)

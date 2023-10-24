@@ -6,9 +6,9 @@ LVPrint[args___] := If[QuiverGeometryLoader`$Verbose, Print[args]];
 
 LVPrint["Prelude."];
 
-(* these symbols cause expensive packages to load, and appear as options to Style *)
-Unprotect[EpilogFunction, LLMEvaluator, LLMEvaluatorNames];
-ClearAll[EpilogFunction, LLMEvaluator, LLMEvaluatorNames];
+(* the first few symbols cause expensive packages to load, and appear as options to Style. RowLabels is put in System by GraphicsGrid. EdgeOpacit *)
+Unprotect[System`EpilogFunction, System`LLMEvaluator, System`LLMEvaluatorNames, System`RowLabels, System`ColumnLabels, System`EdgeOpacity];
+ClearAll[System`EpilogFunction, System`LLMEvaluator, System`LLMEvaluatorNames, System`RowLabels, System`ColumnLabels, System`EdgeOpacity];
 Quiet[Style; Options[Style]];
 
 (* moved from A0Usage.m because this runs slowly:
@@ -451,8 +451,9 @@ QuiverGeometryLoader`EvaluatePackages[packagesList_List] := Block[
     handleMessage
   ];
   If[$failEval, Return[$Failed, Block]];
-  If[userFileChangedQ["user_final.m"], loadUserFile["user_final.m"]];
-  If[(Length[packagesList] > 10) || formsChanged || userFileChangedQ["user_shortcuts.m"], loadUserFile["user_shortcuts.m"]];
+  If[userFileChangedQ["user_final.m"],
+    (* because it might want to load shortcuts or add PackageScope to the context path for debugging, and we want these changes to last! *)
+    $ContextPath = Join[$ContextPath, Complement[loadUserFile["user_final.m"], $ContextPath]]];
   result
 ];
 
@@ -493,13 +494,15 @@ $fileContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"
 
 toUserFilePath[name_] := FileNameJoin[{QuiverGeometryLoader`$SourceDirectory, name}];
 
-loadUserFile[name_] := Block[{path},
+loadUserFile[name_] := Block[{path, extraContexts},
   path = toUserFilePath[name];
   If[!FileExistsQ[path], Return[]];
   Block[{$Context = $userContext, $ContextPath = $userContextPath},
     LVPrint["Loading \"", name, "\""];
     Get @ path;
+    extraContexts = Complement[$ContextPath, $userContextPath];
   ];
+  extraContexts
 ];
 
 SetAttributes[evaluateExpression, HoldAllComplete];

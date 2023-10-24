@@ -8,7 +8,7 @@ boxesToInputText[boxes_] := Scope[
 
   boxes = ReplaceAll[boxes, s_String :> StringReplace[s, $nl -> $sentinel]];
 
-  result = MathLink`CallFrontEnd @ FrontEnd`ExportPacket[
+  result = CallFrontEnd @ FrontEnd`ExportPacket[
     Cell[BoxData @ boxes, "Output"],
     "InputText",
     "AllowExportAutoReplacements" -> False

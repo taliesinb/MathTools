@@ -87,7 +87,7 @@ N, Sin, Cos, Tan, Tanh, ArcTan, Re, Im, Exp, Log, Log10,
 Total, Mean, Median, Norm, Normalize, Clip, EuclideanDistance,
 Interpolation,
 EdgeList, VertexList, IndexGraph, VertexCount, EdgeCount, AdjacencyMatrix, Subgraph, PathGraph, GraphPlot, Graph3D,
-SymbolName, Names
+SymbolName, Names, CoordinateBoundingBox
 },
 
 {"System`", "MutatingFunction"} -> {
@@ -165,8 +165,10 @@ TraditionalForm, StandardForm, InputForm, StringForm
 
 {"System`", "TypesettingBoxFunction"} -> {
 GraphicsBox, Graphics3DBox, DynamicBox, DynamicModuleBox,
-RowBox, GridBox, SubscriptBox, SuperscriptBox, SubsuperscriptBox,
-StyleBox, TooltipBox, FrameBox, RawBoxes, AdjustmentBox, ErrorBox
+RowBox, GridBox, ItemBox, ButtonBox, PaneBox, PaneSelectorBox,
+SubscriptBox, SuperscriptBox, SubsuperscriptBox, FractionBox, OverscriptBox, UnderscriptBox, UnderoverscriptBox,
+StyleBox, TooltipBox, FrameBox, RawBoxes, AdjustmentBox, ErrorBox,
+TemplateBox, TagBox, InterpretationBox
 },
 
 {"System`", "GraphicsDirective"} -> {

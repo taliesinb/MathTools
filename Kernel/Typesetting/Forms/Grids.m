@@ -1,4 +1,4 @@
-PublicOption[ItemForm, GridSpacings, SpillLength, RowLabels, ColumnLabels]
+PublicOption[ItemForm, GridSpacings, SpillLength]
 
 (**************************************************************************************************)
 

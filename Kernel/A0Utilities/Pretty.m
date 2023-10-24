@@ -22,10 +22,17 @@ SetHoldAllComplete[InternalHoldForm]
 PublicTypesettingForm[CompactPrettyForm, CompactPrettyFullForm]
 
 $compactOpts = Sequence[
-  MaxIndent -> 10, FullSymbolContext -> False, ColorSymbolContext -> True,
-  CompactingWidth -> 150, InlineColors -> True,
+  MaxIndent -> 10, FullSymbolContext -> False, ColorSymbolContext -> $FrontendQ,
+  CompactingWidth -> 150, InlineColors -> $FrontendQ,
   CompactRealNumbers -> True, TabSize -> None
 ];
+
+Format[CompactPrettyForm[expr_, opts___Rule], OutputForm] :=
+  ToPrettifiedString[
+    InternalHoldForm @ expr,
+    opts,
+    $compactOpts, ElideLargeArrays -> True
+  ];
 
 CompactPrettyForm /: MakeBoxes[CompactPrettyForm[expr_, opts___Rule], StandardForm] :=
   ToPrettifiedString[
@@ -78,11 +85,14 @@ $inlineColors = False;
 $compactRealNumbers = False;
 $colorSymbolContext = False;
 $tabSize = 2;
+$compactRealLength = 2;
 
 ToPrettifiedString[e_, OptionsPattern[]] := Scope[
   {$maxIndent, $maxWidth, $maxDepth, $maxLength, $tabSize, $inlineHeads, $fullSymbolContext, $colorSymbolContext, $prettyCompression, $elideLargeArrays, $inlineColors, $compactRealNumbers} = OptionValue[
   {MaxIndent, CompactingWidth, MaxDepth, MaxLength, TabSize, InlineHeads, FullSymbolContext, ColorSymbolContext, CompressLargeSubexpressions, ElideLargeArrays, InlineColors, CompactRealNumbers}];
   $ContextPath = {"System`", "QuiverGeometry`", "GeneralUtilities`"};
+  $compactRealLength = If[IntegerQ[$compactRealNumbers], $compactRealNumbers, 2];
+  $compactRealNumbers = !FalseQ[$compactRealNumbers];
   If[!$fullSymbolContext, $ContextPath = Join[$ContextPath, getAllSymbolContexts @ HoldComplete @ e]];
   $depth = $shortenDepth = 0;
   Block[{FilterOptions}, pretty0[e]]
@@ -120,7 +130,7 @@ pretty0[e_] := Block[{$depth = $depth + 1},
 
 (**************************************************************************************************)
 
-realString[r_] := If[TrueQ[$compactRealNumbers], RealDigitsString[r, 2], ToString[r]];
+realString[r_] := If[TrueQ[$compactRealNumbers], RealDigitsString[r, $compactRealLength], ToString[r]];
 
 (**************************************************************************************************)
 
@@ -377,8 +387,8 @@ chunkToString[e_] := With[{h = HoldComplete[e]},
 (* this is super hacky but not sure how else to easily clip numbers once ToString is done *)
 compactReals[str_] := If[$compactRealNumbers && StringFreeQ[str, "\""],
   StringReplace[str, {
-      l:"0".. ~~ "." ~~ Longest[m:"0"..] ~~ r:DigitCharacter.. :> StringJoin[l, ".", m, StringTake[r, UpTo @ 3]],
-      l:DigitCharacter.. ~~ "." ~~ r:Repeated[DigitCharacter, {3, Infinity}] :> StringJoin[l, ".", StringTake[r, 2]]
+      l:"0".. ~~ "." ~~ Longest[m:"0"..] ~~ r:DigitCharacter.. :> StringJoin[l, ".", m, StringTake[r, UpTo @ $compactRealLength]],
+      l:DigitCharacter.. ~~ "." ~~ r:Repeated[DigitCharacter, {$compactRealLength + 1, Infinity}] :> StringJoin[l, ".", StringTake[r, $compactRealLength]]
   }],
   str
 ]

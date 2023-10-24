@@ -16,12 +16,35 @@ s_SeqLength        := Length[Unevaluated @ s];
 
 (**************************************************************************************************)
 
+PublicSpecialFunction[HoldSeqLength]
+
+SetHoldAll[HoldSeqLength];
+
+HoldSeqLength[]        := 0;
+HoldSeqLength[_]       := 1;
+HoldSeqLength[_, _]    := 2;
+HoldSeqLength[_, _, _] := 3;
+s_HoldSeqLength        := Length[s];
+
+(**************************************************************************************************)
+
 PublicFunction[SeqFirst, SeqLast, SeqMost, SeqRest]
 
 SeqFirst[a_, ___] := a;
 SeqLast[___, a_]  := a;
 SeqMost[a___, _]  := a;
 SeqRest[_, a___]  := a;
+
+(**************************************************************************************************)
+
+PublicFunction[HoldSeqFirst, HoldSeqLast, HoldSeqMost, HoldSeqRest]
+
+SetHoldAll[HoldSeqFirst, HoldSeqLast, HoldSeqMost, HoldSeqRest];
+
+HoldSeqFirst[a_, ___] := a;
+HoldSeqLast[___, a_]  := a;
+HoldSeqMost[a___, _]  := a;
+HoldSeqRest[_, a___]  := a;
 
 (**************************************************************************************************)
 

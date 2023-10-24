@@ -34,7 +34,10 @@ Options[RunTests] = {
 };
 
 RunTests::noindir = "Input directory not found at ``.";
-RunTests::notests = "No tests present in ``.";
+RunTests::notests = "No test files present in `` match ``.";
+
+$testsInPath := $testsInPath = LocalPath["Tests", "Inputs"];
+$testsOutPath := $testsOutPath = LocalPath["Tests", "Outputs"];
 
 RunTests[filePattern_String:All, OptionsPattern[]] := Scope[
 
@@ -42,7 +45,7 @@ RunTests[filePattern_String:All, OptionsPattern[]] := Scope[
   $CachingEnabled = !TrueQ[disableCaching];
 
   testFiles = findTestFiles[filePattern];
-  If[testFiles === {}, ReturnFailed["notests", inDir]];
+  If[testFiles === {}, ReturnFailed["notests", $testsInPath, filePattern]];
 
   EnsureDirectory[LocalPath["Tests", "Objects", #]]& /@ {"MX", "PNG", "WL"};
 
@@ -50,16 +53,15 @@ RunTests[filePattern_String:All, OptionsPattern[]] := Scope[
   EnsureDirectoryShallow[outDir];
 
   fileResults = Map[runFileTest[#, outDir]&, testFiles];
-  shortFiles = StringTrimLeft[testFiles, LocalPath["Tests", "Inputs"] <> $PathnameSeparator];
+  shortFiles = StringTrimLeft[testFiles, $testsInPath <> $PathnameSeparator];
   AssociationThread[shortFiles, fileResults]
 ];
 
 (**************************************************************************************************)
 
 findTestFiles[pattern_] := Scope[
-  inDir = LocalPath["Tests", "Inputs"];
-  If[!DirectoryQ[inDir], ReturnFailed["noindir", inDir]];
-  FileNames[If[pattern === All, "*.m", pattern], inDir]
+  If[!DirectoryQ[$testsInPath], ReturnFailed["noindir", $testsInPath]];
+  FileNames[If[pattern === All, "*.wl", pattern], $testsInPath]
 ];
 
 (**************************************************************************************************)
@@ -117,7 +119,8 @@ runFileTest[inputPath_, outDir_] := Scope[
       writeExpressionList[outputPath, newOutputs];
       VPrint["Vacuously done."]; Return[{newCount, 0}];
     ];
-    VMessage[RunTests::cantAutoAdd, oldCount, newCount]
+    VMessage[RunTests::cantAutoAdd, oldCount, newCount];
+    Return[$Failed];
   ];
 
   VPrint["Comparing ", newCount " expressions."];
@@ -126,7 +129,7 @@ runFileTest[inputPath_, outDir_] := Scope[
 
   If[$numFailed === 0,
     VPrint["All ", $numPassed, " tests passed!"],
-    VMessage[RunTests::someFailed, $numPassed, $numFailed];
+    VMessage[RunTests::someFailed, $numFailed, $numPassed];
   ];
 
   {$numPassed, $numFailed}
@@ -192,7 +195,7 @@ TestOutputGallery::lenMismatch = "Cannot match inputs from file(s) `` with expec
 TestOutputGallery[string_String] := Scope[
   inputFiles = findTestFiles[string];
   If[inputFiles === {}, ReturnFailed[]];
-  outputFiles = StringReplace[inputFiles, LocalPath["Tests", "Inputs"] -> LocalPath["Tests", "Outputs"]];
+  outputFiles = StringReplace[inputFiles, $testsInPath -> $testsOutPath];
   inputExprs = Flatten[readExpressionList /@ inputFiles];
   inputExprs //= DeleteCases[ExpressionAt[_, _, Hold[CompoundExpression[___, Null]]]];
   outputExprs = Flatten[readExpressionList /@ outputFiles];
@@ -208,13 +211,13 @@ TestOutputGallery[string_String] := Scope[
 TestOutputGallery[data_] := Scope[
   outputs = DeepCases[data, $testObjectP];
   If[outputs === {}, Return @ None];
-  SpacedRow[outputs, Spacings -> 20, MaxWidth -> 8]
+  SpacedRow[outputs, Spacings -> 20, MaxWidth -> 6]
 ];
 
 (**************************************************************************************************)
 
 $testContext = "QuiverGeometry`TestHarness`";
-$testContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`PackageScope`", "QuiverGeometry`Shortcuts`"};
+$testContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"};
 
 RunTests::badTestFile = "Could not read list of expressions from test file ``.";
 RunTests::syntaxError = "Syntax error at ``.";
@@ -227,6 +230,8 @@ readExpressionList[path_] := Block[
   exprs = Bag[];
   pos = 0;
   While[(expr = Check[Quiet @ Read[stream, Hold[Expression]], $Failed]) =!= EndOfFile,
+    (* this is a symptom that we should be executing as we go along ! *)
+    If[MatchQ[expr, Hold[_LoadShortcuts]], ReleaseHold @ expr; expr = Hold[Null]];
     If[expr === $Failed,
       VMessage[RunTests::syntaxError, streamPosToFileLine[path, StreamPosition @ stream]];
       Close[stream];
@@ -289,14 +294,25 @@ RunTests::testFail = "Result #`` generated at `` disagreed with output at ``.";
 compareOutputs[part_, ExpressionAt[inFile_, inPos_, newOutput_Hold], ExpressionAt[outFile_, outPos_, oldOutput_Hold]] /; newOutput =!= oldOutput := (
   $numFailed += 1;
   VMessage[RunTests::testFail, part, calcFileLine[inFile, inPos], calcFileLine[outFile, outPos]];
-  Print @ Grid[{{
-    Column[{
-      smallButton["replace", $LightRed, updateExpression[outFile, outPos, part, newOutput]],
-      smallButton["see in", $White, SystemOpen @ calcFileLine[inFile, inPos]],
-      smallButton["see out", $White, SystemOpen @ calcFileLine[outFile, outPos]]
-    }, Spacings -> 0.1], "  ",
-    LabeledFlipView[{"new" -> toValueIcon[newOutput], "old" -> toValueIcon[oldOutput]}]
-  }}, Alignment -> {Left, Top}];
+  If[$FrontEnd =!= Null,
+    Print @ Grid[{{
+      Column[{
+        smallButton["replace", $LightRed, updateExpression[outFile, outPos, part, newOutput]],
+        smallButton["see in", $White, SystemOpen @ calcFileLine[inFile, inPos]],
+        smallButton["see out", $White, SystemOpen @ calcFileLine[outFile, outPos]],
+        smallButton["diff", $Green,  printDiffs[oldOutput, newOutput]]
+      }, Spacings -> 0.1], "  ",
+      LabeledFlipView[{"new" -> toValueIcon[newOutput], "old" -> toValueIcon[oldOutput]}]
+    }}, Alignment -> {Left, Top}]
+  ,
+    Print["======================================="];
+    Print["Expected:"];
+    Print[CompactPrettyForm @@ oldOutput];
+    Print["\nOutput:"];
+    Print[CompactPrettyForm @@ newOutput];
+    Print["\nDiff:"];
+    printDiffs[oldOutput, newOutput];
+  ];
 )
 
 SetHoldRest[smallButton];
@@ -311,6 +327,16 @@ compareOutputs[___] := $numPassed += 1;
 
 (**************************************************************************************************)
 
+printDiffs[Hold[TestRasterObject[_, boxes1_]], Hold[TestRasterObject[_, boxes2_]]] :=
+  printDiffs[ImportMX @ objectPath @ boxes1, ImportMX @ objectPath @ boxes2];
+
+printDiffs[Hold[a_], Hold[b_]] :=
+  printDiffs[a, b];
+
+printDiffs[a_, b_] := Print @ Column @ FindExpressionDifferences[a, b];
+
+(**************************************************************************************************)
+
 (* just make a single icon form, and the objects have a single dispatch pathway that checks hash
 exists, etc *)
 
@@ -322,7 +348,12 @@ toValueIcon = Case[
   {objP -> $testObjectP}
 ];
 
-thumbnailize[e_] := ReplaceAll[e, i_Image ? HoldAtomQ :> RuleCondition @ ImageResize[i, UpTo @ 250]];
+thumbnailize[e_] := ReplaceAll[e, i_Image ? HoldAtomQ :> RuleCondition @ toThumbnail[i]];
+
+toThumbnail[i_] := Scope[
+  {w, h} = ImageDimensions[i];
+  If[w < 300 && h < 300, i, ImageResize[i, {300}]]
+];
 
 (**************************************************************************************************)
 
@@ -363,8 +394,11 @@ TestRaster[expr_] := TestRasterObject[
 ];
 
 declareBoxFormatting[
-  TestRasterObject[name_ ? testObjNameQ, _] :>
-    testObjFrame[$Orange, ToBoxes @ thumbnailize @ readObject @ name]
+  TestRasterObject[name_ ? testObjNameQ, mxName_String] :>
+    ClickBox[
+      testObjFrame[$Orange, ToBoxes @ thumbnailize @ readObject @ name],
+      SetSelectedNotebook @ CreateDocument @ TextCell[ImportMX @ objectPath @ mxName, "Input"]
+    ]
 ];
 
 (**************************************************************************************************)

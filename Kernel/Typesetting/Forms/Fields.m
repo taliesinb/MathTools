@@ -23,3 +23,10 @@ DefineTaggedForm[FieldSymbol, Aliases -> <|
 PublicTypesettingForm[LinearCombinationCoefficientSymbol]
 
 DefineTaggedForm[LinearCombinationCoefficientSymbol];
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[RealVectorSpaceForm, ComplexVectorSpaceForm]
+
+declareUnaryForm[RealVectorSpaceForm]
+declareUnaryForm[ComplexVectorSpaceForm]

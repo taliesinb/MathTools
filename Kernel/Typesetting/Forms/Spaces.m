@@ -45,10 +45,3 @@ declareUnaryForm[CircleSpaceForm];
 declareBoxFormatting[
   CircleSpaceForm[] :> SBox["CircleSpaceSymbol"]
 ]
-
-(**************************************************************************************************)
-
-PublicTypesettingForm[RealVectorSpaceForm, ComplexVectorSpaceForm]
-
-declareUnaryForm[RealVectorSpaceForm]
-declareUnaryForm[ComplexVectorSpaceForm]

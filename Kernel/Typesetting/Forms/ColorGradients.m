@@ -23,7 +23,7 @@ ColorGradientRasterize[expr_, colors_, OptionsPattern[]] := Scope[
   hash = Hash[{expr, colors, dilationFactor, compressionFactor}];
   result = Lookup[QuiverGeometryCaches`$GradientRasterizationCache, hash];
   If[ImageQ[result], Return @ result];
-  {raster, boundingBox} = Rasterize[expr, {"Image", "BoundingBox"}, Background -> Transparent, ImageResolution -> 144];
+  {raster, boundingBox, regions} = FastRasterizeWithMetadata[expr, Background -> Transparent];
   {bbw, bbh, dh} = boundingBox;
   baselinePos = Scaled[(bbh - dh-0.5) / bbh];
   mask = AlphaChannel @ raster;
