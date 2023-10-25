@@ -46,7 +46,7 @@ arrowheadBoxes[Arrowhead[pos:$ExtCoordP, dir:$CoordP, opts___Rule]] := Scope[
   If[FailureQ[iconData], Return @ {}];
   {prims, boxes2D, boxes3D, {boundX, boundY, {l, r}}, solid} = iconData;
 
-  $styler = SolidEmptyStyleBoxOperator[solid, arrowheadThickness, arrowheadOpacity, arrowheadColor];
+  $styler = SolidEmptyStyleBoxOperator[solid, arrowheadColor, arrowheadOpacity, arrowheadThickness];
   rotMatrix = resolvePlane[pos, dir, arrowheadPlane, arrowheadLength];
 
   If[is3d && (arrowheadShape === "Cone"),

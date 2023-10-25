@@ -248,7 +248,11 @@ InvisibleOperator[___] := {};
 
 PrivateTypesettingBoxFunction[SolidEmptyStyleBoxOperator]
 
-SolidEmptyStyleBoxOperator[True, args___] := SolidStyleBoxOperator[args];
+SetUsage @ "
+SolidEmptyStyleBoxOperator[isSolid$, color$, opacity$, thickness$] produces a box operator that will appropriately color solid or empty primitives.
+"
+
+SolidEmptyStyleBoxOperator[True, args___]  := SolidStyleBoxOperator[args];
 SolidEmptyStyleBoxOperator[False, args___] := EmptyStyleBoxOperator[args];
 
 (**************************************************************************************************)
@@ -256,15 +260,17 @@ SolidEmptyStyleBoxOperator[False, args___] := EmptyStyleBoxOperator[args];
 PrivateTypesettingBoxFunction[EmptyStyleBoxOperator]
 
 SetUsage @ "
-EmptyStyleBoxOperator[thickness$, opacity$, color$]
-* color$ can be %SolidEdgeColor[$$], the edge color will be used.
+EmptyStyleBoxOperator[color$, opacity$, thickness$] produces a StyleBoxOperator that will appropriately style thin primitives like %LineBox, %CircleBox, and %PointBox.
+* color$ can be %SolidEdgeColor[$$], in which case the edge color will be used.
+* if thickness$ is 0 or color$ is None, the operator will delete boxes.
 "
 
 EmptyStyleBoxOperator = Case[
-  Seq[t_, o_, s_SolidEdgeForm] := %[t, o, Last @ solidEdgeColors @ s];
-  Seq[_, _, None]              := InvisibleOperator;
-  Seq[0, _, _]                 := InvisibleOperator;
-  Seq[t_, o_, c_]              := StyleBoxOperator[toThick @ t, toOpacity @ o, toColor @ c]
+  Seq[s_SolidEdgeForm, o_, t_] := %[Last @ solidEdgeColors @ s, o,  t];
+  Seq[None, _, _]              := InvisibleOperator;
+  Seq[_, 0, _]                 := InvisibleOperator;
+  Seq[_, _, 0]                 := InvisibleOperator;
+  Seq[c_, o_, t_]              := StyleBoxOperator[toThick @ t, toOpacity @ o, toColor @ c]
 ];
 
 (**************************************************************************************************)
@@ -272,29 +278,35 @@ EmptyStyleBoxOperator = Case[
 PrivateTypesettingBoxFunction[SolidStyleBoxOperator]
 
 SetUsage @ "
-SolidStyleBoxOperator[thickness$, opacity$, color$]
-* color$ can be %SolidEdgeColor[$$], the face and edge colors will be used.
+SolidStyleBoxOperator[color$, opacity$, thickness$] produces a StyleBoxOperator that will appropriately style thick primitives like %PolygonBox and %DiskBox.
+* color$ can be %SolidEdgeColor[$$], in which case the face and edge colors will be used.
+* if thickness$ is 0 or color$ is None, the operator will delete boxes.
 "
 
-toFaceForm[o_, {c_, _} | c_] :=
-  FaceForm[{toOpacity @ o, toColor @ c}];
+toFaceForm[o_, {c_, _} | c_] := FaceForm[{toOpacity @ o, toColor @ c}];
 
 (* Subtle issue: we must ignore opacity for edges because they are extend both within and without
 the underlying polygon, and so produce a weird stripe if they are semiopaque *)
 toEdgeForm = Case[
-  Seq[0|None, _] := EdgeForm @ None;
-  Seq[_, None]   := EdgeForm @ None;
-  Seq[t_, {_, c_} | c_]   := EdgeForm @ {toThick @ t, toColor @ c};
+  Seq[0|None, _]        := EdgeForm @ None;
+  Seq[_, None]          := EdgeForm @ None;
+  Seq[t_, {_, c_} | c_] := EdgeForm @ {toThick @ t, toColor @ c};
 ];
 
 SolidStyleBoxOperator = Case[
-  Seq[t_, o_, s_SolidEdgeForm] := %[t, o, solidEdgeColors @ s];
-  Seq[t_, o_, c_]              := StyleBoxOperator[toFaceForm[o, c], toEdgeForm[t, c]];
+  Seq[s_SolidEdgeForm, o_, t_] := %[t, o, solidEdgeColors @ s];
+  Seq[c_, o_, t_]              := StyleBoxOperator[toFaceForm[o, c], toEdgeForm[t, c]];
 ];
 
 (**************************************************************************************************)
 
 PrivateTypesettingBoxFunction[ShaftStyleBoxOperator]
+
+SetUsage @ "
+ShaftStyleBoxOperator[color$, opacity$, thickness$, dashing$] produces a StyleBoxOperator that will style %LineBox appropriately.
+"
+
+(* TODO: introduce a formal ColorGradient[c1, c2] head *)
 
 ShaftStyleBoxOperator[s_SolidEdgeForm, args___] :=
   ShaftStyleBoxOperator[Last @ solidEdgeColors @ s, args];

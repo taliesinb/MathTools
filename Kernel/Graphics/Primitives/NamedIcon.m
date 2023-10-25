@@ -76,7 +76,7 @@ rawNamedIconBoxes[pos_, dir_, name_, graphicsScale_, imageSize_, scaling_, color
   iconData = LookupOrMessageKeys[$namedIconData, name, $Failed, NamedIcon::unknownIcon];
   If[FailureQ[iconData], Return @ {}];
   {prims, boxes, boxes3D, {{x1, x2}, {y1, y2}, {b1, b2}}, solid} = iconData;
-  $styler = SolidEmptyStyleBoxOperator[solid, thickness, None, color];
+  $styler = SolidEmptyStyleBoxOperator[solid, color, None, thickness];
   $originx = If[NumberQ @ align, Lerp[b1, b2, align], 0];
   $origin = {$originx, 0};
   makeIcon[
@@ -323,12 +323,27 @@ $leftArrowheadPoints = {{-1/2, 1/2}, {-1, 0}, {-1/2, -1/2}};
 $rightArrowheadPoints = {{1/2, 1/2}, {1, 0}, {1/2, -1/2}};
 $leftRightPrim = Line @ {First @ $hline, $leftArrowheadPoints, $rightArrowheadPoints};
 
+$rbaH = {-0.634471, 0.635029};
 $rotatedIcons := makeRotated @ {
   "RightArrow"         -> bound[$u, $h, $u, $z] @ Line @ {First @ $hline, $rightArrowheadPoints},
   "BarRightArrow"      -> bound[$u, $h, $u, $z] @ Line @ {$leftBar, First @ $hline, $rightArrowheadPoints},
   "RightHalfCircle"    -> bound[$r, $u, $r, $u] @ HalfCircle[{0,0}, {1, 0}],
-  "RightHalfDisk"      -> bound[$r, $u, $r, $u] @ HalfDisk[{0,0}, {1, 0}]
+  "RightHalfDisk"      -> bound[$r, $u, $r, $u] @ HalfDisk[{0,0}, {1, 0}],
+  "RightBoldArrow"     -> bound[$u, $rbaH, $u, $z] @ Polygon @ $rightBoldArrow
 };
+
+$rightBoldArrow := $rightBoldArrow = Uncompress @ "
+1:eJxTTMoPSmViYGDQB2IQDQEf9vfa9LTc5pu1/6D791dphe/3C/Vt+Pv34Kb9x+/Kn0tPfbdfwui4js
+jePfstL9lsDP3zZv8Cha9tqQsO7v+7PqZ+b+Lr/YJg9Yf2p24JPXye8YE9jN90s9GB//AF+8BrjK79C2
+/s73abt73v5Fn7mQXq/XN9bu8vnfn02mvJM/a72La68hfd2x88tWaV6+oz9tUvthjH33iwP2Rvg4pIzn
+n76SVrz9oEPdpvP68wYhXzJftEkWMfeCof7y/bltST+v2KfaKce7+D5pP9mxrE14mY3bCPvKvDMt33yf
+7LYktT2qJv2wtt+ue97uHj/VIbT62bwnbP/mvY0siuT4/2/7jVd7bs1Vt72Yfcaie27ttfX7jSY0/4O3
+tJqH+rbjek7k5+D/XPpv27JndWhXx6bz8BGl7Q8LOvyVE/F6bRZQ+Tl9zwamXoySlw/iyIenuDq95tmb
+fe22tntc2+obTQ/m734mjtPe/tdygzyTWvXGnPOmtf5LLq9/a8GQITPbZssEez316+KG/ffI/39v0mq6
+8VHNlsz2E+802p9nt76zmXaua1bLXvNms7dXXnO/sXM8PdTovutEfzj31tiWvTIZ139l8/JhpNbt5r/3
+CBzlS1nLv2gexrmr0tH9sf7UyLZpp1y94s80L8Ic4n9n6uy75fTLluP9mlvlYj6In9dYZnkxfqX4HL73
+kpH1UbexGuv1v7kcO/rnP2F41O7n3x86F9l9f+NzMDzth/bjK/JV/0wL4Tyg+pu+ucsuiufSdU/Uy5XT
+WXJt2yNzJNWWklBk8/9mjpyx4t/dnD0ifMf7D0KwANL1j6ngYNfwCjAY0W";
 
 (**************************************************************************************************)
 

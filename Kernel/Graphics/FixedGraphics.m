@@ -41,9 +41,11 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
   bounds = PrimitiveBoxesBounds[boxes, $graphicsScale];
   wh = EuclideanDistance @@@ bounds;
   imagePadding //= StandardizePadding;
-  If[TrueQ @ ticks,
+  tickPosition = Switch[ticks, True | Above, Above, Below, Below, _, None];
+  If[tickPosition =!= None,
     imagePadding += {{15, 30}, {30, 15}};
-    boxes = {boxes, boundingGridBoxes @ BoundingGrid[bounds, $graphicsScale]}
+    tickBoxes = boundingGridBoxes @ BoundingGrid[bounds, $graphicsScale];
+    boxes = If[tickPosition === Above, {boxes, tickBoxes}, {tickBoxes, boxes}];
   ];
   If[TrueQ @ debugBounds,
     boxes = {{FaceForm @ None, EdgeForm @ RGBColor[1, 0, 0, .5], RectangleBox @@ Transpose[bounds]}, boxes};
