@@ -433,7 +433,7 @@ EnumerateLattices[quivers_, cardinals_, group_, depth_, opts___Rule] := Scope[
   ];
   userOpts = {opts};
   {directedEdges} = LookupOption[userOpts, {DirectedEdges}];
-  userOpts //= DeleteOptions[DirectedEdges];
+  userOpts //= DropOptions[DirectedEdges];
   lattices = Map[
     quiver |-> LatticeGraph[
       PathRepresentation[quiver, group], DirectedEdges -> False, MaxNorm -> depth

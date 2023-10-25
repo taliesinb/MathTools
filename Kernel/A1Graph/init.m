@@ -186,7 +186,7 @@ $extendedGraphOptionSymbols2 = Append[$extendedGraphOptionSymbols, AnnotationRul
 splitUserGraphOptions[options___Rule] := Scope[
   options = {options};
   extOptions = DeleteDuplicatesBy[TakeOptions[options, $extendedGraphOptionSymbols], First];
-  options = Map[optionFixup] @ DeleteOptions[options, $extendedGraphOptionSymbols2];
+  options = Map[optionFixup] @ DropOptions[options, $extendedGraphOptionSymbols2];
   {options, checkGraphAnnotations @ extOptions}
 ];
 

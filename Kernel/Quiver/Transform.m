@@ -205,7 +205,7 @@ RenameCardinals[graph_Graph, renaming:{__Rule}] := Scope[
   replacer = ReplaceAll @ Dispatch @ renaming;
   edges = MapAt[replacer, edges, {All, 3}] /. DirectedEdge[a_, b_, Inverted[c_]] :> DirectedEdge[b, a, c];
   replacer = ReplaceAll @ Dispatch @ (renaming /. Inverted -> Identity);
-  opts = DeleteOptions[AnnotationRules] @ Options @ graph;
+  opts = DropOptions[AnnotationRules] @ Options @ graph;
   annos = Replace[
     ExtendedGraphAnnotations @ graph,
     opt:Rule[(VisibleCardinals | Cardinals | CardinalColors), _] :> replacer[opt],
@@ -269,7 +269,7 @@ TruncateQuiver[quiver_, cardinals:Except[_Rule], userOpts:OptionsPattern[]] := S
   };
   opts = Options @ quiver;
   opts = Replace[opts, (AnnotationRules -> annos_) :>
-    AnnotationRules -> DeleteOptions[annos, VertexAnnotations]];
+    AnnotationRules -> DropOptions[annos, VertexAnnotations]];
   Graph[
     truncVertices,
     truncEdges,

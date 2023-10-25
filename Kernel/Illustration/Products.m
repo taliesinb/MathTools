@@ -92,7 +92,7 @@ ConnectedComponentProductDecomposition[graphs_, terms_, userOpts:OptionsPattern[
     displayForm = {Automatic};
   ];
   UnpackOptions[maxWidth, spacings, transposed];
-  opts = SeqDeleteOptions[{MaxWidth, Spacings, Transposed}][userOpts];
+  opts = SeqDropOptions[{MaxWidth, Spacings, Transposed}][userOpts];
   base = GeneralQuiverProduct[graphs, terms, Automatic, opts,
     ImageSize -> 120, VertexSize -> 4, ArrowheadShape -> None,
     VertexOverlapResolution -> 0

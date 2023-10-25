@@ -434,7 +434,7 @@ qg_QuiverGasEvolutionData["ParticlePlot", part_, userOpts___Rule] := Scope[
 
   mesh = TrueQ @ Lookup[{userOpts}, Mesh, True];
   plotGraphics = If[mesh,
-    Part[CacheTo[$plotDataCache, graphHash, DeleteOptions[ImageSizeRaw] @ ExtendedGraphPlot[
+    Part[CacheTo[$plotDataCache, graphHash, DropOptions[ImageSizeRaw] @ ExtendedGraphPlot[
       graph, ImagePadding -> 5, EdgeThickness -> 1, VertexSize -> 5,
       ArrowheadShape -> None, EdgeStyle -> $LightGray, VertexStyle -> Black,
       EdgeLabelStyle -> None

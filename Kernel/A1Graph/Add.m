@@ -24,7 +24,7 @@ GraphAdd[graph_, newVertices_, newEdges_] := Scope[
   newGraph = Graph[
     Join[vertices, newVertices],
     Join[edges, newEdges],
-    Sequence @@ DeleteOptions[options, VertexCoordinates]
+    Sequence @@ DropOptions[options, VertexCoordinates]
   ];
   If[!GraphQ[newGraph], ReturnFailed[]];
   newGraph //= DeleteVertexAnnotations;

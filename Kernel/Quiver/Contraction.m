@@ -405,7 +405,7 @@ VertexPartitionGraphics[graph_, partition_List, opts:OptionsPattern[]] := Scope[
   vertexCoordsAssoc = LookupVertexCoordinates @ graph;
   vertexCoords = Values @ vertexCoordsAssoc;
   vertexCoordsBounds = CoordinateBounds[vertexCoords, Scaled[0.1]];
-  $partitionGraphicsOpts = SeqDeleteOptions["Style"][opts];
+  $partitionGraphicsOpts = SeqDropOptions["Style"][opts];
   termGraphicsFn = Switch[style,
     "Color", makeColoredCliqueGraphics,
     "Edges", makeEdgeCliqueGraphics,

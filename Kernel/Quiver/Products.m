@@ -194,7 +194,7 @@ Options[generalBinaryQuiverProduct] = Options[LockedQuiverProduct];
 generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, userOpts:OptionsPattern[]] := Scope[
   UnpackOptions[useCardinalSet, flattenProducts];
   opts = JoinOptions[ExtractExtendedGraphOptions /@ {a, b}];
-  opts //= DeleteOptions[{VertexCoordinates, VertexCoordinateRules, ImageSize, CardinalColors, CardinalColorFunction}];
+  opts //= DropOptions[{VertexCoordinates, VertexCoordinateRules, ImageSize, CardinalColors, CardinalColorFunction}];
   opts = JoinOptions[userOpts, opts];
   vertexLists = VertexList /@ {a, b};
   edgeLists = AddEdgeTags[EdgeList[#], None]& /@ {a, b};
@@ -203,7 +203,7 @@ generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, userOpts:OptionsPatter
   productVertices = Flatten @ Outer[VertexProduct, Sequence @@ vertexLists, 1];
   productEdges = DeleteDuplicates @ Flatten @ Outer[edgeProdFn, Sequence @@ edgeLists, 1];
   If[!EdgeListQ[productEdges], Print[productEdges]; ReturnFailed["interr", "invalid edges produced"]];
-  opts //= DeleteOptions[{VertexAnnotations, EdgeAnnotations, "UseCardinalSet", Cardinals, VertexColorFunction}];
+  opts //= DropOptions[{VertexAnnotations, EdgeAnnotations, "UseCardinalSet", Cardinals, VertexColorFunction}];
   vertexColorFunction = If[aColors === None || bColors === None, None,
     VertexProductColorFunction[aColors, bColors]
   ];
@@ -276,12 +276,12 @@ GeneralQuiverProduct[graphs_List, productTerms_List, components_:Automatic, user
   UnpackOptions[useCardinalSet, vertexCoordinateFunction, flattenProducts];
   graphs = toSimpleQuiver /@ graphs;
   If[graphs ~!~ {__Graph}, ReturnFailed["badgraphs"]];
-  opts = DeleteOptions[
+  opts = DropOptions[
     JoinOptions[ExtractExtendedGraphOptions /@ graphs],
     {VertexAnnotations, EdgeAnnotations, VertexCoordinates, VertexLayout, ImageSize, Cardinals}
   ];
   opts = JoinOptions[
-    DeleteOptions[{userOpts}, {"UseCardinalSet", "Components", "FlattenProducts", VertexCoordinateFunction}],
+    DropOptions[{userOpts}, {"UseCardinalSet", "Components", "FlattenProducts", VertexCoordinateFunction}],
     opts
   ];
   vertexLists = VertexList /@ graphs;

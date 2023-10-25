@@ -185,7 +185,7 @@ hexagonalTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, use
     2 (* for backward compatibility with old content *)
   ];
   opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
-  (* opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts; *)
+  (* opts = DropOptions[CoordinateTransformFunction] @ Flatten @ opts; *)
   {rep, opts}
 ];
 
@@ -201,7 +201,7 @@ trihexagonalTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, 
     2 (* for backward compatibility with old content *)
   ];
   opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
-  opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts;
+  opts = DropOptions[CoordinateTransformFunction] @ Flatten @ opts;
   {rep, opts}
 ];
 
@@ -220,7 +220,7 @@ rhombitrihexagonalTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> 
     6 -> {1 -> 2, 5 -> 4}
   |>;
   opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
-  opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts;
+  opts = DropOptions[CoordinateTransformFunction] @ Flatten @ opts;
   {rep, opts}
 ];
 
@@ -236,7 +236,7 @@ rhombilleTorusFactory[<|"w" -> w_, "h" -> h_, "t" -> t_, "MaxDepth" -> d_|>, use
     2 (* for backward compatibility with old content *)
   ];
   opts = chooseTorusOptions[userOpts, {w, h, d}, rep];
-  opts = DeleteOptions[CoordinateTransformFunction] @ Flatten @ opts;
+  opts = DropOptions[CoordinateTransformFunction] @ Flatten @ opts;
   {rep, opts}
 ];
 
@@ -414,7 +414,7 @@ positiveSquareLatticeDisclinationFactory[assoc_, userOpts_] := Scope[
       g -> {7 -> 2, 6 -> 1, 1 -> 4, 2 -> 3, 19 -> 8, 8 -> 9, 9 -> 10, 10 -> 11, 3 -> 12, 4 -> 13, 18 -> 7, 17 -> 6},
       b -> {3 -> 4, 4 -> 5, 2 -> 1, 1 -> 6, 9 -> 2, 10 -> 3, 11 -> 12, 12 -> 13, 13 -> 14, 14 -> 15, 5 -> 16, 6 -> 17}
     |>,
-    Apply[Sequence, DeleteOptions[Cardinals] @ Normal @ userOpts],
+    Apply[Sequence, DropOptions[Cardinals] @ Normal @ userOpts],
     VertexLayout -> SpringLayout[],
     CoordinateTransformFunction -> {{"Rotate", 90}, "ReflectHorizontal"}
   ];
@@ -549,5 +549,5 @@ atlasQuiver[charts_, transitions_, opts___Rule] := Quiver[
 
 toOptsSeq[assoc_] := Sequence @@ Normal[assoc];
 
-(* trimCardinalOpts[userOpts_] := Sequence @@ DeleteOptions[Normal @ userOpts, Cardinals]
+(* trimCardinalOpts[userOpts_] := Sequence @@ DropOptions[Normal @ userOpts, Cardinals]
  *)

@@ -215,7 +215,7 @@ ContractVertices[graph_Graph, glueList_List, userOpts:OptionsPattern[]] := Scope
   If[glueRules === {} && vertexCoordinates =!= "Mean",
     Return @ If[{userOpts} === {}, graph, ExtendedGraph[graph, userOpts]]];
   contractedEdgeList = Fold[gluingResult, edgeList, glueRules];
-  opts = Sequence @@ DeleteOptions[opts, {VertexCoordinates, VertexCoordinateRules}];
+  opts = Sequence @@ DropOptions[opts, {VertexCoordinates, VertexCoordinateRules}];
   vertexList = Sort @ AllUniqueVertices @ contractedEdgeList;
   If[vertexCoordinates === "Mean",
     oldCoords = LookupVertexCoordinates[graph];
@@ -243,7 +243,7 @@ ContractedGraph[edges_List, opts___Rule] :=
 ContractedGraph[graph_Graph, opts___Rule] := Scope[
 
   opts = {opts};
-  unContractedGraph = UnContractedGraph[graph, Sequence @@ DeleteOptions[opts, EdgeColorFunction]];
+  unContractedGraph = UnContractedGraph[graph, Sequence @@ DropOptions[opts, EdgeColorFunction]];
 
   baseVertexList = VertexList @ unContractedGraph;
   baseVertexColors = LookupVertexColors @ unContractedGraph;
@@ -280,7 +280,7 @@ ContractedGraph[graph_Graph, opts___Rule] := Scope[
     VertexLayout -> None,
     CardinalColorRules -> None,
     EdgeColorRules -> None,
-    Sequence @@ DeleteOptions[opts, {PlotRangePadding, EdgeColorFunction}],
+    Sequence @@ DropOptions[opts, {PlotRangePadding, EdgeColorFunction}],
     EdgeColorFunction -> edgeColorFunction,
     VertexColorFunction -> vertexColorFunction,
     VertexCoordinateFunction -> vertexCoordinateFunction,

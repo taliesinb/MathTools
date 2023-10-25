@@ -367,7 +367,7 @@ computeGraphPlotAspectRatio[] := Scope[
     viewOptions = LookupExtendedOption[$Graph, ViewOptions];
     SetAutomatic[viewOptions, $automaticViewOptions];
     vertexCoords = Part[$VertexCoordinates, $VertexParts];
-    viewOptions //= DeleteOptions["ShrinkWrap"];
+    viewOptions //= DropOptions["ShrinkWrap"];
     viewOptions = Association[PlotRange -> CoordinateBounds[vertexCoords], viewOptions];
     viewTransform = ConstructGraphicsViewTransform[viewOptions];
     If[ContainsQ[viewTransform, Indeterminate], Return[1, Block]];
@@ -609,7 +609,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         viewPoint //= SphericalRotateVector[viewRotation * Pi];
         viewOptions //= ReplaceOptions[ViewPoint -> viewPoint];
       ];
-      viewOptions //= DeleteOptions[{"ShrinkWrap", ViewRotation}];
+      viewOptions //= DropOptions[{"ShrinkWrap", ViewRotation}];
     ];
   ];
 

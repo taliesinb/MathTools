@@ -339,7 +339,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   If[plotLabel === Automatic && StringQ[latticeName],
     simpleOptions //= ReplaceOptions[PlotLabel -> ToTitleString[latticeName]]];
 
-  simpleOptions //= DeleteOptions[{VertexCoordinateFunction, Cardinals}];
+  simpleOptions //= DropOptions[{VertexCoordinateFunction, Cardinals}];
   If[wasAutoCardinalList, trueCardinalList = Automatic];
   SetAutomatic[trueCardinalList, CardinalList @ edgeList];
 
@@ -477,7 +477,7 @@ iGenerateLattice[head_, {latticeName_String, args___}, directedEdges_, opts:Opti
   {representation, customOptions} = FirstRest @ result;
   customOptions //= Flatten;
   If[KeyExistsQ[customOptions, MaxDepth],
-    options //= DeleteOptions[MaxDepth]];
+    options //= DropOptions[MaxDepth]];
 
   iGenerateLattice[head, representation, directedEdges, Sequence @@ options, Sequence @@ customOptions]
 ];

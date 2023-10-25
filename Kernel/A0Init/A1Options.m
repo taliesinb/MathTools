@@ -1,6 +1,6 @@
 PublicFunction[LookupOption]
 
-SetRelatedSymbolGroup[LookupOption, JoinOptions, DeleteOptions, TakeOptions, ReplaceOptions, UpdateOptions];
+SetRelatedSymbolGroup[LookupOption, JoinOptions, DropOptions, TakeOptions, ReplaceOptions, UpdateOptions];
 
 SetUsage @ "
 LookupOption[object$, option$] looks up the value of option$ in object$.
@@ -68,25 +68,25 @@ applyToObjectRules[expr_, fn_, _] := (Message[MessageName[fn, "exprNoOpts"], Msg
 
 (**************************************************************************************************)
 
-PublicFunction[DeleteOptions]
+PublicFunction[DropOptions]
 
 SetUsage @ "
-DeleteOptions[rules$, sym$] drops any rule whose key is sym$.
-DeleteOptions[rules$, {sym$, sym$2, $$}] drops rules whose keys are one of the sym$i.
-DeleteOptions[keySpec$] is an operator form of DeleteOptions that can be applied to lists of rules.
-* DeleteOptions works on %Graph, %Graphics, and some other whitelisted heads.
+DropOptions[rules$, sym$] drops any rule whose key is sym$.
+DropOptions[rules$, {sym$, sym$2, $$}] drops rules whose keys are one of the sym$i.
+DropOptions[keySpec$] is an operator form of DropOptions that can be applied to lists of rules.
+* DropOptions works on %Graph, %Graphics, and some other whitelisted heads.
 * use %OptionKeys to obtain keys to use as a second argument.
 "
 
-DeleteOptions[obj_, {}] := obj;
+DropOptions[obj_, {}] := obj;
 
-DeleteOptions[rules_List, key:(_Symbol | _String)] := DeleteCases[rules, (Rule|RuleDelayed)[key, _]];
+DropOptions[rules_List, key:(_Symbol | _String)] := DeleteCases[rules, (Rule|RuleDelayed)[key, _]];
 
-DeleteOptions[rules_List, opts_List] := FilterRules[rules, Complement[Keys @ rules, opts]];
+DropOptions[rules_List, opts_List] := FilterRules[rules, Complement[Keys @ rules, opts]];
 
-DeleteOptions[obj_, spec_] := applyToObjectRules[obj, DeleteOptions, spec];
+DropOptions[obj_, spec_] := applyToObjectRules[obj, DropOptions, spec];
 
-DeleteOptions[deleteSpec_][obj_] := DeleteOptions[obj, deleteSpec];
+DropOptions[deleteSpec_][obj_] := DropOptions[obj, deleteSpec];
 
 (**************************************************************************************************)
 
@@ -153,7 +153,7 @@ _UpdateOptions := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[SeqReplaceOptions, SeqTakeOptions, SeqDeleteOptions]
+PublicFunction[SeqReplaceOptions, SeqTakeOptions, SeqDropOptions]
 
 SetUsage @ "
 SeqReplaceOptions[$$][$$] is like %ReplaceOptions but operates on and returns sequences of rules.
@@ -168,10 +168,10 @@ SeqTakeOptions[$$][$$] is like %TakeOptions but operates on and returns sequence
 SeqTakeOptions[spec_][rules___] := Sequence @@ TakeOptions[{rules}, spec];
 
 SetUsage @ "
-SeqDeleteOptions[$$][$$] is like %DeleteOptions but operates on and returns sequences of rules.
+SeqDropOptions[$$][$$] is like %DropOptions but operates on and returns sequences of rules.
 * it only has an operator form."
 
-SeqDeleteOptions[spec_][rules___] := Sequence @@ DeleteOptions[{rules}, spec];
+SeqDropOptions[spec_][rules___] := Sequence @@ DropOptions[{rules}, spec];
 
 (**************************************************************************************************)
 

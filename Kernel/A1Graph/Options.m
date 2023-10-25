@@ -98,5 +98,5 @@ ExtractExtendedGraphOptions[graph_Graph] := Scope[
   opts = Options @ graph;
   annoRules = Lookup[opts, AnnotationRules, {}];
   graphProps = Lookup[annoRules, "GraphProperties", {}];
-  Join[DeleteOptions[opts, AnnotationRules], graphProps]
+  Join[DropOptions[opts, AnnotationRules], graphProps]
 ]

@@ -468,7 +468,7 @@ findLerp[g1:(Graphics|Graphics3D)[a_, oa___], g2:(Graphics|Graphics3D)[b_, ob___
     findLerp[a, b],
     ImageSize -> customOptLerp[ImageSize, imageSize, is1, is2],
     PlotRange -> customOptLerp[PlotRange, plotRange, pr1, pr2],
-    Sequence @@ DeleteOptions[unifyOpts[{oa}, {ob}], {ImageSize, PlotRange}]
+    Sequence @@ DropOptions[unifyOpts[{oa}, {ob}], {ImageSize, PlotRange}]
   ]
 ];
 

@@ -34,7 +34,7 @@ PublicFunction[PathQuiverPlot]
 PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___Rule] := Scope[
   If[!QuiverQ[fq], ReturnFailed[]];
   $fq = AnnotationDelete[fq, {ArrowheadShape, VertexLabels, EdgeLabels}]; (* <- so that the theme will take effect *)
-  $fq = DeleteOptions[$fq, ImageSize];
+  $fq = DropOptions[$fq, ImageSize];
   $v0 = v0;
   $scaling = 1.0;
   cardinals = CardinalList @ fq;

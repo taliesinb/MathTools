@@ -218,7 +218,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $coordReplacement = Append[resolveCoordinates @ Normal @ $objectCoords, z_String :> unresolvedCoord[z]];
   primitives = ReplacePrimitiveCoordinates[primitives, $coordReplacement];
 
-  arrowOpts = SeqDeleteOptions[{Setback, LabelFontSize, LabelFontSize, GraphicsScale, TextModifiers}] @ FilterOptions[MorphismArrow, opts];
+  arrowOpts = SeqDropOptions[{Setback, LabelFontSize, LabelFontSize, GraphicsScale, TextModifiers}] @ FilterOptions[MorphismArrow, opts];
 
   result = {
     arrowOpts,
