@@ -447,7 +447,7 @@ EnumerateLattices[quivers_, cardinals_, group_, depth_, opts___Rule] := Scope[
   ];
   lattices = SortBy[lattices, VertexCount];
   edgeHead = If[TrueQ @ directedEdges, DirectedEdge, UndirectedEdge];
-  userOpts = Sequence @@ TakeOptions[userOpts, Keys @ Options @ ExtendedGraph];
+  userOpts //= SeqTakeOptions[OptionKeys @ ExtendedGraph];
   lattices //= Map @ LatticeGraphToLatticeQuiver
 ]
 

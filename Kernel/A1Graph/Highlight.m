@@ -239,7 +239,7 @@ If[QuiverGeometryLoader`$AttachSyntaxInformation === True,
 Unprotect[Style];
 SyntaxInformation[Style] = ReplaceOptions[
   SyntaxInformation[Style],
-  "OptionNames" -> Union[Keys @ Options @ Style, SymbolName /@ $additionalStyleOptions]
+  "OptionNames" -> Union[OptionKeys @ Style, SymbolName /@ $additionalStyleOptions]
 ];
 Protect[Style];
 ];

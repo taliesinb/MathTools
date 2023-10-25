@@ -4,7 +4,7 @@ Options[PlainGraph] = $ExtendedGraphOptions;
 
 PlainGraph[graph_Graph, opts:OptionsPattern[]] := Scope[
   If[OptionValue[VertexCoordinates] === Inherited,
-    opts = Sequence @ ReplaceOptions[{opts}, VertexCoordinates -> Values[LookupVertexCoordinates @ graph]]
+    opts //= SeqReplaceOptions[VertexCoordinates -> Values[LookupVertexCoordinates @ graph]];
   ];
   ExtendedGraph[VertexList @ graph, EdgeList @ graph, opts]
 ];

@@ -220,7 +220,7 @@ ContractVertices[graph_Graph, glueList_List, userOpts:OptionsPattern[]] := Scope
   If[vertexCoordinates === "Mean",
     oldCoords = LookupVertexCoordinates[graph];
     vertexCoordinates = ContractedVertexCoordinateFunction[oldCoords] /@ vertexList;
-    userOpts = Sequence @@ ReplaceOptions[{userOpts}, VertexCoordinates -> vertexCoordinates];
+    userOpts //= SeqReplaceOptions[VertexCoordinates -> vertexCoordinates];
   ];
   ExtendedGraph[
     vertexList, contractedEdgeList,

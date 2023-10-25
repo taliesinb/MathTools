@@ -339,7 +339,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   If[plotLabel === Automatic && StringQ[latticeName],
     simpleOptions //= ReplaceOptions[PlotLabel -> ToTitleString[latticeName]]];
 
-  simpleOptions = DeleteOptions[simpleOptions, {VertexCoordinateFunction, Cardinals}];
+  simpleOptions //= DeleteOptions[{VertexCoordinateFunction, Cardinals}];
   If[wasAutoCardinalList, trueCardinalList = Automatic];
   SetAutomatic[trueCardinalList, CardinalList @ edgeList];
 

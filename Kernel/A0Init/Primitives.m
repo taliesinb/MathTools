@@ -357,6 +357,7 @@ SetInitialValue[$customPrimitiveFns, UAssociation[]];
 DeclareGraphicsPrimitive[head_Symbol, signature_, fn_, dims_:{2}] := (
   If[FailureQ @ SignPrimitive[signature, head], ReturnFailed[]];
   $customPrimitiveFns[head] = fn;
+  declareOptionableHead[head];
   If[MemberQ[dims, 2], Typeset`MakeBoxes[e_head, StandardForm | TraditionalForm, Graphics] := CustomPrimitiveToBoxes[e]];
   If[MemberQ[dims, 3], Typeset`MakeBoxes[e_head, StandardForm | TraditionalForm, Graphics3D] := CustomPrimitiveToBoxes[e]];
 );

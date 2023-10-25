@@ -200,7 +200,7 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   bottomPadding = Part[imagePadding, 2, 1];
   baselinePosition = Scaled[(bottomPadding + origHeight/2 - 8) / imageHeight];
 
-  inlineOptions = Sequence @@ DeleteOptions[List @ opts, {Background, ColorRules}];
+  inlineOptions = SeqDeleteOptions[{Background, ColorRules}][opts];
   graphics = Graphics[
     {AbsolutePointSize[5 + nodeEdgeThickness],
      inlineOptions, background,

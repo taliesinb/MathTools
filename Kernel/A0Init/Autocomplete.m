@@ -15,7 +15,7 @@ toOptionName[_] := Nothing;
 declareSyntaxInfo[function_Symbol, argPatterns_List] := Scope[
   info = {"ArgumentsPattern" -> argPatterns};
   If[ContainsQ[argPatterns, Verbatim[OptionsPattern[]]],
-    AppendTo[info, "OptionNames" -> Map[toOptionName, Keys @ Options @ function]]];
+    AppendTo[info, "OptionNames" -> Map[toOptionName, OptionKeys @ function]]];
   SyntaxInformation[function] = info;
 ];
 
