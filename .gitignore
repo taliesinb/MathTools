@@ -12,3 +12,4 @@ Tests/Objects/
 Data/*
 Scratch/*
 *.sublime-workspace
+*.glyphs

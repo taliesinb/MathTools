@@ -1,30 +1,3 @@
-$symbolTranslationTable := $symbolTranslationTable = computeSymbolTranslationTable[];
-
-computeSymbolTranslationTable[] := Block[{str},
-  rawString = ImportUTF8 @ LocalPath["Kernel", "Markdown", "SymbolTranslation.txt"];
-  rawString //= StringReplace[{StartOfLine ~~ " "... ~~ "\n" -> "", " \\" -> " \\\\", "\"" -> "\\\""}];
-  parsedString = StringTrim[ToExpression["\"" <> rawString <> "\"", InputForm], " " | "\n"];
-  table = StringExtract[parsedString, "\n" -> All, " ".. -> All] /. "_" -> None;
-  table
-];
-
-(**************************************************************************************************)
-
-PublicFunction[SymbolTranslationData]
-
-SymbolTranslationData[assoc_Association] :=
-  Association @ SymbolTranslationData[Normal @ assoc];
-
-SymbolTranslationData[schema_] := Scope[
-  func = Construct[Function, schema /. {
-    "Symbol" -> #1, "InputForm" -> #2, "Katex" -> #3, "Unicode" -> #4
-  }];
-  results = func @@@ $symbolTranslationTable;
-  Discard[results, ContainsQ[None]]
-];
-
-(**************************************************************************************************)
-
 makeLiteralReplacementRule[assoc_, wrap_] := ModuleScope[
   If[!wrap, assoc = Association @ Select[Normal @ assoc, Apply[#1 =!= assoc[#2]&]]];
   keys = Keys[assoc];
@@ -39,11 +12,11 @@ makeLiteralReplacementRule[assoc_, wrap_] := ModuleScope[
 
 PublicVariable[$WLSymbolToKatexRegex]
 
-$WLSymbolToKatexRegex := $WLSymbolToKatexRegex = makeLiteralReplacementRule[SymbolTranslationData[<|"Symbol" -> "Katex"|>], True]
+$WLSymbolToKatexRegex := $WLSymbolToKatexRegex = makeLiteralReplacementRule[MathCharacterData[<|"Symbol" -> "Katex"|>], True]
 
 PublicVariable[$WLSymbolToUnicode]
 
-$WLSymbolToUnicode := $WLSymbolToUnicode = makeLiteralReplacementRule[SymbolTranslationData[<|"Symbol" -> "Unicode"|>], False]
+$WLSymbolToUnicode := $WLSymbolToUnicode = makeLiteralReplacementRule[MathCharacterData[<|"Symbol" -> "Unicode"|>], False]
 
 (**************************************************************************************************)
 

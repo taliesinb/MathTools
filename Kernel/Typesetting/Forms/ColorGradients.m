@@ -1,3 +1,50 @@
+(*
+A note about a potential ColorGradient as directive.
+
+LinearGradientFilling only works on solid objects, but that's the only directive we could evaluate to.
+An 'axis gradient' that tells lines to gradiate between their start and end points could only
+ever be a transformer, rather than a directive.
+so we could have a transformer called ColorGradiated[primitives, {p1 -> col, p2 -> color}], with
+p1 and p2 being positions that could also be symbolic to indicate the bounding box of the contained
+primitives, and {c1, c2} being sugar for Horizontal -> {c1, c2} being sugar for {Left -> c1, Right -> c2}.
+could also have a Concentration -> 0 (endpoints) and 1 (hard jump in the middle).
+if we implement this as VertexColors we'd need to subdivide lines or polygons so that hard jumps
+would have an effect, which is pretty complex!
+
+for abstract color specs like to IconColor, we'd need a head like ColorGradient[{c1, c2}] etc.
+similarly for ArrowColor, which uses ShaftStyleBoxOperator, this would end up as a composition
+of a StyleBoxOperator with a ColorGradientBoxOperator that does the rewriting, and is also what
+ColorGradiated would evaluate to.
+
+we could then drop GradientSymbol completely, and instead implement it as the *typeset* form
+of ColorGradiated, which would internally call ToGraphics to turn its interior elements into a
+single GraphicsBox and then apply ColorGradientBoxOperator to it. this is all fairly composable.
+
+how about axis-aligned gradients? how exactly would we interpret complex specs like
+ColorGradient[{Top -> c1, Bottom -> c2}] when applied to shafts? one idea is to construct
+coordinate system *for* the line itself, in which Left is the start of the line and right
+is the end of the line. that's a lot of work for maybe not much payoff. maybe we just interpret
+ColorGradient[{c1, c2}] as the same as ColorGradient[Along -> {c1, c2}], where Along has a
+special meaning for lines.
+
+so that's probably a whole day project. what's a simpler stepping tone?
+
+what if we have a simple table mapping one-letter strings (and symbol heads) to
+their named icon equivalents. named icon itself could even apply it!
+
+probably i could introduce TextIcon which dispatches to NamedIcon and does this lookup. but it should
+have regular, bold, and semibold variants, all as polygons.
+it could store all the data on disk and load on demand. and it would ignore alignment.
+its typeset form would produce a DynamicBox that picks up the current font color and
+font size. later, ToGraphicsBox would be able to skip this dynamic step because it would track font properties
+during construction.
+
+initially, only the BoldXXXArrows would work with a color gradient.
+
+*)
+
+(**************************************************************************************************)
+
 PublicTypesettingForm[ColorGradientForm]
 
 DefineStandardTraditionalForm[{
@@ -78,11 +125,19 @@ DefineStandardTraditionalForm[{
     NoSpanBox @ ToBoxes @ AppliedForm[h, args]
 }];
 
+(* ok, so one way we can do this that will avoid having to hardcode fontsizes etc is by returning a
+
+DynamicBox @ Construct[GraphicsBox, {}, Background -> GrayLevel[0.2], ImageSize -> CurrentValue[FontSize], TrackedSymbols -> {}, DestroyAfterEvaluation -> True]
+
+weird we can't just put the dynamicbox aroudn the CurrentValue
+*)
+
 (* have to disable this because otherwise GradientSymbol burrows through tagged forms and they get
 rasterized incorrectly *)
 (* $styleFormHeadQ[GradientSymbol] = True; *)
 
 (**************************************************************************************************)
+
 
 $rightArrowPath := $rightArrowPath = Uncompress @ "
 1:eJxTTMoPSmViYGDQB2IQLf1oz12BWLYDhiolp+TXrNr/2WIBi5gI2wETYxA4vH9l45H9b7tYDzgn

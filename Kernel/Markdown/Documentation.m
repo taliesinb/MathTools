@@ -193,7 +193,7 @@ mathMarkdown[TMathSpan[args___]] := {"$",
 };
 
 $infixTranslation := $infixTranslation = Association[
-  StringJoin["\,{", #, "}\,"]& /@ Take[SymbolTranslationData[<|"InputForm" -> "Katex"|>], 12],
+  StringJoin["\,{", #, "}\,"]& /@ Take[MathCharacterData[<|"InputForm" -> "Katex"|>], 12],
   "==" -> "\,⩵\,",
   "===" -> "\,⩶\,"
 ];

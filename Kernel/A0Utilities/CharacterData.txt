@@ -1,9 +1,12 @@
+# Edge
 \[Function]                  |->        \mapsto             ↦
 \[Rule]                      ->         \to                 →
 \[TwoWayRule]                <->        \leftrightarrow     ↔
 \[RuleDelayed]               :>         \ruledelayed        ⧴
 \[DirectedEdge]              _          \mathbin{↣}         _
 \[UndirectedEdge]            _          \mathbin{↢}         _
+
+# Comparison
 \[LessEqual]                 <=         \le                 ≤
 \[GreaterEqual]              >=         \ge                 ≥
 \[NotEqual]                  !=         \ne                 ≠
@@ -17,7 +20,6 @@ _                            :=         \syntaxeqq          ≔
 \[LessEqualGreater]          _          \lesseqgtr          ⋚
 \[NotGreaterLess]            _          \ngtrless           ≹
 \[NotLessGreater]            _          \nlessgtr           ≸
-
 \[Precedes]                  _          \prec               ≺
 \[NotPrecedes]               _          \nprec              ⊀
 \[PrecedesEqual]             _          \preceq             ⪯
@@ -32,7 +34,6 @@ _                            :=         \syntaxeqq          ≔
 \[LeftTriangleEqual]         _          \unlhd              ⊲
 _                            _          \largerthan         ⪫
 _                            _          \smallerthan        ⪪
-                                                             
 \[Tilde]                     _          \sim                ∼
 \[NotTilde]                  _          \nsim               ≁
 \[TildeEqual]                _          \simeq              ≃
@@ -46,6 +47,7 @@ _                            _          \smallerthan        ⪪
 \[NotTildeFullEqual]         _          \ncong              ≆
 \[DotEqual]                  _          \doteq              ≐
 
+# Arrow
 \[DownArrow]                 _          \darr               ↓
 \[UpArrow]                   _          \uarr               ↑
 \[LowerRightArrow]           _          \searrow            ↘
@@ -75,7 +77,8 @@ _                            _          \longmapsfrom       ⟻
 \[LongRightArrow]            _          \longrightarrow     ⟶
 _                            _          \longmapsto         ⟼
 \[LongLeftRightArrow]        _          \longleftrightarrow ⟷
-                                                             
+
+# Punctuation
 \[RawDollar]                 $          \mathdollar         $
 \[Hyphen]                    -          \hyphen             ‐
 \[Dash]                      -          \text{--}           –
@@ -87,6 +90,7 @@ _                            _          \enspace             
 \[OpenCurlyDoubleQuote]      \"         \dlq                “
 \[CloseCurlyDoubleQuote]     \"         \drq                ”
 
+# Space
 \[NonBreakingSpace]          _          \nobreakspace       _
 \[InvisibleSpace]            _          \phantom{}          _
 \[VeryThinSpace]             _          \mkern{1pt}         _
@@ -97,17 +101,14 @@ _                            _          \enspace             
 \[NegativeThinSpace]         _          \negthinspace       _
 \[NegativeMediumSpace]       _          \negmedspace        _
 \[NegativeThickSpace]        _          \negthickspace      _
-                                                             
+
+# Constant
 \[ExponentialE]              E          e                   ⅇ
 \[ImaginaryI]                I          i                   ⅈ
 \[Pi]                        Pi         \pi                 𝜋
 \[Infinity]                  Infinity   \infty              ∞
-                                                             
-_                            Integers   \Z                  ℤ
-_                            Naturals   \N                  ℕ
-_                            Complexes  \Complex            ℂ
-_                            Reals      \R                  ℝ
-                                                             
+
+# Calculus Operator
 \[Integral]                  _          \int                ∫
 \[DifferentialD]             _          \diffd              𝕕
 \[PartialD]                  _          \partial            ∂
@@ -115,23 +116,17 @@ _                            Reals      \R                  ℝ
 \[DifferenceDelta]           _          \Delta              ∆
 \[Del]                       _          \nabla              ∇
                                                              
-\[Transpose]                 _          \suptrans           ᵀ
-\[ConjugateTranspose]        _          \supdagger          _
-                                                             
+# NAry
 \[Product]                   _          \prod               ∏
 \[Coproduct]                 _          \coprod             ∐
 \[Sum]                       _          \sum                ∑
-                                                             
-\[VerticalTilde]             _          \wr                 ≀
-\[Wedge]                     _          \wedge              ⋀
-\[Star]                      _          \star               ⋆
-\[Vee]                       _          \vee                ⋁
+
+# Misc
 \[CupCap]                    _          \asymp              ≍
 \[Cap]                       _          \frown              ⌢
 \[Cup]                       _          \smile              ⌣
-\[SquareUnion]               _          \sqcup              ⊔
-\[SquareIntersection]        _          \sqcap              ⊓
-                                                             
+
+# Logic
 \[ForAll]                    _          \forall             ∀
 \[Exists]                    _          \exists             ∃
 \[NotExists]                 _          \nexists            ∄
@@ -140,7 +135,8 @@ _                            Reals      \R                  ℝ
 \[Or]                        ||         \lor                ∨
 \[Equivalent]                _          \iff                ⟺
 \[Implies]                   _          \implies            ⟹
-                                                             
+
+# Set
 \[EmptySet]                  _          \emptyset           ∅
 \[Element]                   _          \in                 ∈
 \[NotElement]                _          \notin              ∉
@@ -158,7 +154,8 @@ _                            Reals      \R                  ℝ
 \[SquareSupersetEqual]       _          \sqsupseteq         ⊒
 \[SquareSubset]              _          \sqsubset           ⊏
 \[SquareSupersetEqual]       _          \sqsubseteq         ⊑
-                                                             
+
+# Operator
 \[CircleTimes]               _          \otimes             ⊗
 \[CirclePlus]                _          \oplus              ⊕
 \[CircleMinus]               _          \ominus             ⊖
@@ -171,11 +168,29 @@ _                            _          \circledcircle      ⊚
 \[Divide]                    /          \divide             ÷
 \[PlusMinus]                 _          \pm                 ±
 \[MinusPlus]                 _          \mp                 ∓
-                                                             
+\[CenterDot]                 _          \cdot               ⋅
+\[Minus]                     -          -                   −
+\[Backslash]                 \\         \setminus           ∖
+\[UpTee]                     _          \bot                ⊥
+\[DownTee]                   _          \top                ⊤
+\[RightTee]                  _          \vdash              ⊢
+\[LeftTee]                   _          \dashv              ⊣
+\[DoubleRightTee]            _          \Vdash              ⊨
+\[DoubleLeftTee]             _          \dashV              ⫤
+\[VerticalTilde]             _          \wr                 ≀
+\[Wedge]                     _          \wedge              ⋀
+\[Star]                      _          \star               ⋆
+\[Vee]                       _          \vee                ⋁
+\[SquareUnion]               _          \sqcup              ⊔
+\[SquareIntersection]        _          \sqcap              ⊓
+
+# Shape Operator
 \[SmallCircle]               _          \circ               ∘
 \[FilledSmallCircle]         _          \bullet             ∙
 \[EmptyCircle]               _          _                   ○
 \[FilledCircle]              _          _                   ●
+
+# Shape
 \[EmptyRectangle]            _          _                   ▯
 \[FilledRectangle]           _          _                   ▮
 \[EmptySquare]               _          _                   □
@@ -196,15 +211,9 @@ _                            _          \smallblacktriangleleft  ⏴
 \[Diamond]                   _          \diamond            ◇
 \[FilledDiamond]             _          _                   ◆
 
-\[CenterDot]                 _          \cdot               ⋅
-\[Minus]                     -          -                   −
-\[Backslash]                 \\         \setminus           ∖
-\[UpTee]                     _          \bot                ⊥
-\[DownTee]                   _          \top                ⊤
-\[RightTee]                  _          \vdash              ⊢
-\[LeftTee]                   _          \dashv              ⊣
-\[DoubleRightTee]            _          \Vdash              ⊨
-\[DoubleLeftTee]             _          \dashV              ⊨
+# Modifier
+\[Transpose]                 _          \suptrans           ᵀ
+\[ConjugateTranspose]        _          \supdagger          _
 \[Prime]                     _          \prime              ′
 \[DoublePrime]               _          \dprime             ″
 \[Dagger]                    _          \dag                †
@@ -216,6 +225,7 @@ _                            _          \smallblacktriangleleft  ⏴
 \[Sharp]                     _          \sharp              ♯
 \[Flat]                      _          \flat               ♭
 
+# Bracket
 \[LeftCeiling]               _          \lceil              ⌈
 \[RightCeiling]              _          \rceil              ⌉
 \[LeftFloor]                 _          \lfloor             ⌊
@@ -231,10 +241,13 @@ _                            _          \smallblacktriangleleft  ⏴
 \[VerticalSeparator]         _          \vert               ∣
 \[LeftDoubleBracket]         [[         \llbracket          ⟦
 \[RightDoubleBracket]        ]]         \rrbracket          ⟧
+
+# Ellipsis
 \[SpanFromLeft]              _          _                   ⋯
 \[SpanFromAbove]             _          _                   ⋮
 \[SpanFromBoth]              _          _                   ⋱
-                                                             
+
+# Script Letter
 \[ScriptA]                   _          \mathscr{a}         𝒶
 \[ScriptB]                   _          \mathscr{b}         𝒷
 \[ScriptC]                   _          \mathscr{c}         𝒸
@@ -287,7 +300,8 @@ _                            _          \smallblacktriangleleft  ⏴
 \[ScriptCapitalX]            _          \mathscr{X}         𝒳
 \[ScriptCapitalY]            _          \mathscr{Y}         𝒴
 \[ScriptCapitalZ]            _          \mathscr{Z}         𝒵
-                                                             
+
+# Gothic Letter
 \[GothicA]                   _          \mathfrak{a}        𝔞
 \[GothicB]                   _          \mathfrak{b}        𝔟
 \[GothicC]                   _          \mathfrak{c}        𝔠
@@ -341,8 +355,17 @@ _                            _          \smallblacktriangleleft  ⏴
 \[GothicCapitalY]            _          \mathfrak{Y}        𝔜
 \[GothicCapitalZ]            _          \mathfrak{Z}        ℨ
 
+# DoubleStruck Letter Domain
+_                            Integers   \Z                  ℤ
+_                            Naturals   \N                  ℕ
+_                            Complexes  \Complex            ℂ
+_                            Reals      \R                  ℝ
+
+# DoubleStruck Operator
 _                            _          \bbcolon            ﹕
 _                            _          \bbsemicolon        ﹔
+
+# DoubleStruck Letter
 \[DoubleStruckA]             _          \mathbb{a}          𝕒
 \[DoubleStruckB]             _          \mathbb{b}          𝕓
 \[DoubleStruckC]             _          \mathbb{c}          𝕔
@@ -406,6 +429,7 @@ _                            _          \bbsemicolon        ﹔
 \[DoubleStruckEight]         _          \mathbb{8}          𝟠
 \[DoubleStruckNine]          _          \mathbb{9}          𝟡
                                                              
+# Greek Letter
 \[Alpha]                     _          \alpha              α
 \[Beta]                      _          \beta               β
 \[Chi]                       _          \chi                χ
