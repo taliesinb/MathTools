@@ -59,7 +59,7 @@ ToStringBlock[StringTable[rows_List, OptionsPattern[]]] := Scope[
     PrependTo[colAlignment, Right];
     PrependTo[items, colHeadings];
   ];
-  gstackBlocks[items, ColumnSpacings -> 1, ColumnAlignment -> colAlignment]
+  gstackBlocks[items, ColumnSpacings -> 1, ColumnAlignments -> colAlignment]
 ];
 
 StringBlock::badtableheading = "`` is not a recognized setting for TableHeadings."
@@ -72,11 +72,11 @@ procTableHeadings[other_, _] := ThrowMessage["badtableheading", other];
 
 PublicTypesettingForm[StringMatrix]
 
-PublicOption[RowAlignment, ColumnAlignment, FramePadding, RowFrames, RowFrameStyle, RowFramePadding, SpanningFrame]
+PublicOption[FramePadding, RowFrames, RowFrameStyle, RowFramePadding, SpanningFrame]
 
 Options[StringMatrix] = {
-  RowAlignment -> Top,
-  ColumnAlignment -> Left,
+  RowAlignments -> Top,
+  ColumnAlignments -> Left,
   RowSpacings -> 0,
   ColumnSpacings -> 1,
   Dividers -> None,
@@ -134,7 +134,7 @@ blockToHSpace[$block[_, w_, h_]] := spacerBlock[w, 1];
 PublicTypesettingForm[StringRow]
 
 Options[StringRow] = {
-  RowAlignment -> Top,
+  RowAlignments -> Top,
   ColumnSpacings -> 0,
   Frame -> None,
   FramePadding -> None,
@@ -145,10 +145,10 @@ Options[StringRow] = {
 
 ToStringBlock[StringRow[items_List, OptionsPattern[]]] := Scope[
   items = Map[ToStringBlock, items];
-  UnpackOptions[rowAlignment, columnSpacings, frame, framePadding, frameStyle, spanningFrame, background];
+  UnpackOptions[rowAlignments, columnSpacings, frame, framePadding, frameStyle, spanningFrame, background];
   frameStyle //= normFrameStyle;
   If[columnSpacings =!= 0, items = riffle[items, Spacer[columnSpacings]]];
-  block = hstackBlocks[items, rowAlignment];
+  block = hstackBlocks[items, rowAlignments];
   block = blockPadding[block, framePadding];
   hframeBlock[block, frame, frameStyle, spanningFrame, background]
 ];
@@ -158,7 +158,7 @@ ToStringBlock[StringRow[items_List, OptionsPattern[]]] := Scope[
 PublicTypesettingForm[StringColumn]
 
 Options[StringColumn] = {
-  ColumnAlignment -> Left,
+  ColumnAlignments -> Left,
   RowSpacings -> 0,
   Frame -> None,
   FramePadding -> None,
@@ -169,10 +169,10 @@ Options[StringColumn] = {
 
 ToStringBlock[StringColumn[items_List, OptionsPattern[]]] := Scope[
   items = Map[ToStringBlock, items];
-  UnpackOptions[columnAlignment, rowSpacings, frame, framePadding, frameStyle, spanningFrame, background];
+  UnpackOptions[columnAlignments, rowSpacings, frame, framePadding, frameStyle, spanningFrame, background];
   frameStyle //= normFrameStyle;
   If[rowSpacings =!= 0, items = riffle[items, Spacer[{1, rowSpacings}]]];
-  block = vstackBlocks[items, columnAlignment];
+  block = vstackBlocks[items, columnAlignments];
   block = blockPadding[block, framePadding];
   hframeBlock[block, frame, frameStyle, spanningFrame, background]
 ];
@@ -401,7 +401,7 @@ processBlock = Case[
   gb_GridBox | TagBox[gb_GridBox, "Grid"]             := processGridBox[gb];
   Grid[rows_List, opts___Rule]                        := processGrid[rows, opts];
 
-  Labeled[a_, l_]                                     := % @ StringColumn[{a, l}, ColumnAlignment -> Center, RowSpacings -> 0];
+  Labeled[a_, l_]                                     := % @ StringColumn[{a, l}, ColumnAlignments -> Center, RowSpacings -> 0];
 
   ParenthesesForm[e_]                                 := delimBlock[{e}, "()", None];
   TupleForm[e___]                                     := delimBlock[{e}, "()", None];
@@ -595,35 +595,21 @@ processGridBox[GridBox[rows_List, opts___Rule]] := Scope[
     _, None
   ];
 
-  rowAlignments = Lookup[{opts},    RowAlignments, expandRepSpec[h] @ Lookup[gridBoxAlignment, "Rows", Top]];
-  colAlignments = Lookup[{opts}, ColumnAlignments, expandRepSpec[w] @ Lookup[gridBoxAlignment, "Columns", Left]];
-  rowSpacings = Lookup[{opts},        RowSpacings, expandRepSpec[h] @ ReplaceAll[Lookup[gridBoxSpacings, "Rows", 1.0], {Automatic -> 1, None -> 0}]];
-  colSpacings = Lookup[{opts},     ColumnSpacings, expandRepSpec[w] @ ReplaceAll[Lookup[gridBoxSpacings, "Columns", 0.8], {Automatic -> 0.8, None -> 0}]];
+  rowAlignments = Lookup[{opts},    RowAlignments, ParseCyclicSpec[h] @ Lookup[gridBoxAlignment, "Rows", Top]];
+  colAlignments = Lookup[{opts}, ColumnAlignments, ParseCyclicSpec[w] @ Lookup[gridBoxAlignment, "Columns", Left]];
+  rowSpacings = Lookup[{opts},        RowSpacings, ParseCyclicSpec[h] @ ReplaceAll[Lookup[gridBoxSpacings, "Rows", 1.0], {Automatic -> 1, None -> 0}]];
+  colSpacings = Lookup[{opts},     ColumnSpacings, ParseCyclicSpec[w] @ ReplaceAll[Lookup[gridBoxSpacings, "Columns", 0.8], {Automatic -> 0.8, None -> 0}]];
 
   rowSpacings = Round[rowSpacings - 1.0];
   colSpacings = Round[colSpacings];
 
   gstackBlocks[
     MatrixMap[processBlock, rows],
-    ColumnAlignment -> colAlignments, RowAlignment -> rowAlignments,
+    ColumnAlignments -> colAlignments, RowAlignments -> rowAlignments,
     ColumnSpacings -> colSpacings, RowSpacings -> rowSpacings,
     Frame -> frame, Background -> background, Dividers -> dividers
   ]
 ]
-
-(**************************************************************************************************)
-
-PrivateFunction[expandRepSpec]
-
-$atomSpecP = _Symbol | _Integer | _Real | _Rational;
-expandRepSpec[n_][spec:{$atomSpecP..}] := PadRight[spec, n, Last @ spec];
-expandRepSpec[n_][spec:$atomSpecP] := Table[spec, n];
-expandRepSpec[n_][{{spec:$atomSpecP}}] := Table[spec, n];
-expandRepSpec[n_][{left___, spec_Symbol, right___}] := ToList[left, Table[spec, n - SeqLength[left, right]], right];
-expandRepSpec[n_][{left___, spec:{__Symbol}, right___}] := With[
-  {n2 = n - SeqLength[left, right]},
-  ToList[left, TakeOperator[n2] @ Catenate @ Table[spec, Ceiling[n2 / SeqLength[spec]]], right]
-];
 
 (**************************************************************************************************)
 
@@ -648,7 +634,7 @@ processGrid[rows_, opts:OptionsPattern[]] := Scope[
   {cspace, rspace} = spacings * {1, 1};
   gstackBlocks[
     MatrixMap[processBlock, rows],
-    ColumnAlignment -> calign, RowAlignment -> ralign,
+    ColumnAlignments -> calign, RowAlignments -> ralign,
     ColumnSpacings -> cspace, RowSpacings -> rspace,
     FilterOptions @ opts
   ]
@@ -781,8 +767,8 @@ Options[gstackBlocks] = Options[StringMatrix];
 $hframeSpec = {$extFrameP, $extFrameP} | _String | _StyleDecorated[{$extFrameP, $extFrameP} | _String];
 gstackBlocks[rows_List, OptionsPattern[]] := Scope[
   UnpackOptions[
-    rowAlignment, rowSpacings,
-    columnAlignment, columnSpacings,
+    rowAlignments, rowSpacings,
+    columnAlignments, columnSpacings,
     dividers, frame, framePadding, frameStyle,
     rowFrames, rowFrameStyle, rowFramePadding,
     spanningFrame, background
@@ -792,10 +778,10 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
   {numRows, numCols} = Dimensions[rows, 2];
   rows = riffleCols[columnSpacings] @ riffleRows[rowSpacings] @ rows;
   widths = Part[rows, All, All, 2]; heights = Part[rows, All, All, 3]; maxWidths = Max /@ Transpose[widths]; maxHeights = Max /@ heights;
-  If[!ListQ[rowAlignment], rowAlignment = Table[rowAlignment, numRows]];
-  If[!ListQ[columnAlignment], columnAlignment = Table[columnAlignment, numCols]];
-  If[Total[rowSpacings] != 0, rowAlignment = Riffle[rowAlignment, Top]];
-  If[Total[columnSpacings] != 0, columnAlignment = Riffle[columnAlignment, Left]];
+  If[!ListQ[rowAlignments], rowAlignments = Table[rowAlignments, numRows]];
+  If[!ListQ[columnAlignments], columnAlignments = Table[columnAlignments, numCols]];
+  If[Total[rowSpacings] != 0, rowAlignments = Riffle[rowAlignments, Top]];
+  If[Total[columnSpacings] != 0, columnAlignments = Riffle[columnAlignments, Left]];
   items = MapIndexed[gpadBlock, rows, {2}];
   If[StringQ[rowFrames],
     {lext, rext} = Lookup[$hextTableNames, rowFrames];
@@ -849,7 +835,7 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
       ThrowMessage["badgridframe", frame];
   ]
 ,
-  gpadBlock[elem_, {r_, c_}] := vpadBlock[Part[maxHeights, r], Part[rowAlignment, r]] @ hpadBlock[Part[maxWidths, c], Part[columnAlignment, c]] @ elem
+  gpadBlock[elem_, {r_, c_}] := vpadBlock[Part[maxHeights, r], Part[rowAlignments, r]] @ hpadBlock[Part[maxWidths, c], Part[columnAlignments, c]] @ elem
 ];
 
 StringBlock::fracwid = "Fractional width `` occurred in unsupported context."

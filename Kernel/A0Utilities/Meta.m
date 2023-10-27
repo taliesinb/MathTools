@@ -18,7 +18,7 @@ CreateMultipleSymbols[___] := $Failed;
 
 (**************************************************************************************************)
 
-PublicFunction[GenerateSublimeSyntaxFiles]
+PublicFunction[UpdateSublimeSyntaxFiles]
 
 $sublimeSyntaxPath = "~/git/Sublime-WolframLanguage";
 
@@ -26,7 +26,7 @@ groupSortIndex[_] := 0;
 groupSortIndex["Option"] = 1;
 groupSortIndex["Function"] = 2;
 
-GenerateSublimeSyntaxFiles[] := Scope[
+UpdateSublimeSyntaxFiles[] := Scope[
   inFile = PathJoin[$sublimeSyntaxPath, "WolframLanguage.sublime-syntax.template"];
   outSyntaxFile = PathJoin[$sublimeSyntaxPath, "WolframLanguage.sublime-syntax"];
   outCompletionsFile = PathJoin[$sublimeSyntaxPath, "WolframLanguage.sublime-completions"];
@@ -38,6 +38,7 @@ GenerateSublimeSyntaxFiles[] := Scope[
   guSymbols = Names["GeneralUtilities`*"];
   guSymbols //= Select[StringLength[#] > 2 && StringStartsQ[#, UppercaseLetter] &];
   addToGroup["Function", guSymbols];
+  addToGroup["Function", {"UAssociation", "Repeat"}];
   addToGroup["SpecialFunction", {"ExpressionTable"}];
   {regexpSections, symbolSections} = Transpose @ KeyValueMap[makeSplitDefs, groups];
   completionLists = KeyValueMap[makeCompletionDefs, groups];

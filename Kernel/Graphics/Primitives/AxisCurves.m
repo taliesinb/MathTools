@@ -1,3 +1,16 @@
+PublicFunction[ToHorizontalLine, ToVerticalLine, ToDepthLine]
+
+ToHorizontalLine[{xmin_, xmax_}, rest__] := Line[tupled[{{xmin, ##}, {xmax, ##}}&][rest]];
+
+ToVerticalLine[x_, {ymin_, ymax_}, rest___] := Line[tupled[{{#1, ymin, ##2}, {#1, ymax, ##2}}&][x, rest]];
+
+ToDepthLine[x_, y_, {zmin_, zmax_}] := Line[tupled[{{##, zmin}, {##, zmax}}&][x, y]];
+
+tupled[f_][args:(Except[_List]..)] := f[args];
+tupled[f_][args__] := ApplyTuples[f, ToList /@ {args}];
+
+(**************************************************************************************************)
+
 PublicGraphicsPrimitive[HorizontalCurve, VerticalCurve]
 
 DeclareAtomicCurvePrimitive[HorizontalCurve, axisCurvePoints];

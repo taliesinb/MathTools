@@ -437,8 +437,8 @@ parseGridItems = Case[
     $singletonsR = $singletonsC = <||>;
     {maxR, maxC} = Map[Max, Transpose @ MatrixMap[parseSpan, Keys @ rules]];
 
-    $hspacing ^= expandRepSpec[maxC-1] @ $hspacing;
-    $vspacing ^= expandRepSpec[maxR-1] @ $vspacing;
+    $hspacing ^= ParseCyclicSpec[maxC-1] @ $hspacing;
+    $vspacing ^= ParseCyclicSpec[maxR-1] @ $vspacing;
     rangeR = Range @ maxR;
     rangeC = Range @ maxC;
 

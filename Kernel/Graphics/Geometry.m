@@ -146,13 +146,44 @@ regionComponentPolygon[region_] := Scope[
 
 PublicFunction[TextToPolygon]
 
-TextToPolygon[text_, fontSize_, fontFamily_] :=
-  TextToPolygon[text, fontSize, fontFamily] = (
-  RegionPolygon @ BoundaryDiscretizeGraphics[Text @ Style[text, FontSize -> fontSize, FontFamily -> fontFamily],
-  _Text, MaxCellMeasure -> 0.05
-]);
+SetUsage @ "
+TextToPolygon[text$, fontSize$, fontFamily$, fontWeight$] turns text into a polygon.
+* the 'OperatorSubstitution' option is used to ensure the font applies to characters like '['.
+* this means they are not rendered extensibly, so font$ should not be a %Row etc.
+* the result is cached.
+"
+
+TextToPolygon[text_, fontSize_, fontFamily_:$MathFont, fontWeight_:"Regular"] :=
+  TextToPolygon[text, fontSize, fontFamily, fontWeight] = Block[{polys},
+  polys = RegionPolygon @ BoundaryDiscretizeGraphics[
+    makeTPStyled[text, fontSize, fontFamily, fontWeight],
+    _Text, MaxCellMeasure -> 0.05
+  ];
+  If[MatchQ[polys, {__Polygon}], Polygon @ polys[[All, 1]], polys]
+];
+
+makeTPStyled[text_, fs_, ff_, fw_] := Text @ Style[text,
+  FontSize -> fs, FontFamily -> ff, FontWeight -> fw,
+  PrivateFontOptions -> {"OperatorSubstitution" -> False}
+];
 
 (**************************************************************************************************)
+
+(*
+
+TODO: exploit the following functions:
+
+System`Dump`BoundaryCurve can turn a StadiumShape, Annulus, DiskSegment into BSplineCurves
+
+System`Dump`BoundarySurface does same for CapsuleShape, SphericalShell, FilledTorus, Torus
+
+System`Dump`ProcessText handles Text[...]
+
+System`Dump`ProcessInset handles Inset[...]
+
+System`Dump`ProcessGraphicsComplex
+*)
+
 
 PublicFunction[DiscretizeCurve]
 

@@ -107,6 +107,23 @@ TakeOptions[takeSpec_][obj_] := TakeOptions[obj, takeSpec];
 
 (**************************************************************************************************)
 
+PublicFunction[RenameOptions]
+
+SetUsage @ "
+RenameOptions[rules$, key$s -> key$t] renames key$s to key$t in the LHS of the given rules.
+RenameOptions[rules$, {rename$1, rename$2, $$}] applies multiple renamings.
+RenameOptions[renameSpec$] is an operator form of RenameOptions that can be applied to lists of rules.
+"
+
+RenameOptions[rules_List, rename:(_Rule | {___Rule})] :=
+  MapColumn[Replace[rename], 1, rules];
+
+RenameOptions[spec_][rules_] := RenameOptions[rules, spec];
+
+RenameOptions[_, _] := BadArguments[];
+
+(**************************************************************************************************)
+
 PublicFunction[ReplaceOptions]
 
 SetUsage @ "
@@ -153,13 +170,7 @@ _UpdateOptions := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicFunction[SeqReplaceOptions, SeqTakeOptions, SeqDropOptions]
-
-SetUsage @ "
-SeqReplaceOptions[$$][$$] is like %ReplaceOptions but operates on and returns sequences of rules.
-* it only has an operator form."
-
-SeqReplaceOptions[spec_][rules___] := Sequence @@ ReplaceOptions[{rules}, spec];
+PublicFunction[SeqTakeOptions, SeqDropOptions, SeqRenameOptions, SeqReplaceOptions]
 
 SetUsage @ "
 SeqTakeOptions[$$][$$] is like %TakeOptions but operates on and returns sequences of rules.
@@ -172,6 +183,18 @@ SeqDropOptions[$$][$$] is like %DropOptions but operates on and returns sequence
 * it only has an operator form."
 
 SeqDropOptions[spec_][rules___] := Sequence @@ DropOptions[{rules}, spec];
+
+SetUsage @ "
+SeqRenameOptions[$$][$$] is like %RenameOptions but operates on and returns sequences of rules.
+* it only has an operator form."
+
+SeqRenameOptions[spec_][rules___] := Sequence @@ RenameOptions[{rules}, spec];
+
+SetUsage @ "
+SeqReplaceOptions[$$][$$] is like %ReplaceOptions but operates on and returns sequences of rules.
+* it only has an operator form."
+
+SeqReplaceOptions[spec_][rules___] := Sequence @@ ReplaceOptions[{rules}, spec];
 
 (**************************************************************************************************)
 

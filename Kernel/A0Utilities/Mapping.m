@@ -20,6 +20,18 @@ ConstructHoldComplete[fn_, args___] :=
 
 (**************************************************************************************************)
 
+PublicFunction[ThreadApply]
+
+SetUsage @ "
+ThreadApply[{f$1, f$2, $$}, {e$1, e$2, $$}] returns {f$1[e$1], f$2[e$2], $$}.
+ThreadApply[fns$] is the operator form of ThreadApply.
+"
+
+ThreadApply[fns_List, items_List] := MapThread[Construct, {fns, items}];
+ThreadApply[fns_][items_] := ThreadApply[fns, items];
+
+(**************************************************************************************************)
+
 PublicFunction[Unthread]
 
 (* todo: implement these as macros, and better yet as syntax in Loader.m *)

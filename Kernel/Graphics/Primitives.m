@@ -58,21 +58,6 @@ DeclareGraphicsPrimitive[AnnotatedCoordinate, "Matrix", {}&];
 
 (**************************************************************************************************)
 
-(**************************************************************************************************)
-
-PublicFunction[HorizontalLine, VerticalLine, DepthLine]
-
-HorizontalLine[{xmin_, xmax_}, rest__] := Line[tupled[{{xmin, ##}, {xmax, ##}}&][rest]];
-
-VerticalLine[x_, {ymin_, ymax_}, rest___] := Line[tupled[{{#1, ymin, ##2}, {#1, ymax, ##2}}&][x, rest]];
-
-DepthLine[x_, y_, {zmin_, zmax_}] := Line[tupled[{{##, zmin}, {##, zmax}}&][x, y]];
-
-tupled[f_][args:(Except[_List]..)] := f[args];
-tupled[f_][args__] := ApplyTuples[f, ToList /@ {args}];
-
-(**************************************************************************************************)
-
 (* CoordinateComplex is the generalization of Point, HorizontalLine, VerticalLine, etc. It's n'th argument
 represents the n'th coordinate, and any lists are implicitly treated as a set of elements whose
 cartesian product will be taken. Any CoordinateSegment[begin, end] will be treated as a segment on that
@@ -125,25 +110,6 @@ ccElement[p___, CoordinateSegment[al_, ah_], q___, CoordinateSegment[bl_, bh_], 
     {p, al, q, bl, r, cl, s},
     {p, ah, q, bh, r, ch, s}
   };
-
-(**************************************************************************************************)
-
-(**************************************************************************************************)
-
-(* in future, when having coordinate-based modifiers like (MeanInset) etc, see
-  PD@Take[DownValues[Typeset`MakeBoxes], {101, 200}]
-for inspiration
-
-also, System`Dump`BoundaryCurve can turn a StadiumShape, Annulus, DiskSegment into BSplineCurves
-
-System`Dump`BoundarySurface does same for CapsuleShape, SphericalShell, FilledTorus, Torus
-
-System`Dump`ProcessText handles Text[...]
-
-System`Dump`ProcessInset handles Inset[...]
-
-System`Dump`ProcessGraphicsComplex
-*)
 
 (**************************************************************************************************)
 

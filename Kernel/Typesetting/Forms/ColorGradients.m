@@ -18,7 +18,8 @@ ColorGradiated would evaluate to.
 
 we could then drop GradientSymbol completely, and instead implement it as the *typeset* form
 of ColorGradiated, which would internally call ToGraphics to turn its interior elements into a
-single GraphicsBox and then apply ColorGradientBoxOperator to it. this is all fairly composable.
+single GraphicsBox and then apply ColorGradientBoxOperator to it. it could even return a dynamic box
+that makes it typeset at the correct font size and script level. this is all fairly composable.
 
 how about axis-aligned gradients? how exactly would we interpret complex specs like
 ColorGradient[{Top -> c1, Bottom -> c2}] when applied to shafts? one idea is to construct
@@ -27,21 +28,60 @@ is the end of the line. that's a lot of work for maybe not much payoff. maybe we
 ColorGradient[{c1, c2}] as the same as ColorGradient[Along -> {c1, c2}], where Along has a
 special meaning for lines.
 
-so that's probably a whole day project. what's a simpler stepping tone?
+so that's probably a whole day project and maybe overly general. what's a simpler stepping tone?
 
-what if we have a simple table mapping one-letter strings (and symbol heads) to
-their named icon equivalents. named icon itself could even apply it!
+what if we have a simple table mapping one-letter strings (and symbol heads) to their named
+icon equivalents. named icon itself could even apply it!
 
 probably i could introduce TextIcon which dispatches to NamedIcon and does this lookup. but it should
 have regular, bold, and semibold variants, all as polygons.
-it could store all the data on disk and load on demand. and it would ignore alignment.
+it could compute this on demand from TextToPolygon and it would ignore alignment.
 its typeset form would produce a DynamicBox that picks up the current font color and
 font size. later, ToGraphicsBox would be able to skip this dynamic step because it would track font properties
 during construction.
 
 initially, only the BoldXXXArrows would work with a color gradient.
 
+ColorGradientForm[XXX[name$], cols] should turn into a TextIcon[name$, FontColor -> cols$]
+ColorGradientForm[BoldRightArrow | ..., cols] should turn into a TextIcon["\[RightArrow]", FontColor -> cols$, FontWeight -> Bold, FontFamily -> "Arial", $$]
+
+Internally it can do this by calling EvaluateTemplateBoxes etc and trying to deduce the underyling font weight and font family.
+
+TextIcon itself should return a DynamicBox so that it can be nested in ordinary text boxes as is.
 *)
+
+PublicTypesettingForm[TextIcon]
+
+Options[TextIcon] = {
+  FontColor -> Inherited,
+  FontWeight -> Inherited,
+  FontSize -> Inherited,
+  FontFamily -> Inherited
+}
+
+DefineStandardTraditionalForm[ti:TextIcon[_String, ___Rule] :> textIconBoxes[ti]];
+
+TextIcon::nostrpoly = "Could not form a Polygon for `` using FontSize -> ``, FontWeight -> ``, FontFamily -> ``.";
+
+textIconBoxes[TextIcon[s_String, opts___Rule]] := (
+  UnpackOptionsAs[TextIcon, opts, fontColor, fontWeight, fontSize, fontFamily];
+  SetInherited[fontColor, Black];
+  SetInherited[fontWeight, "Regular"];
+  SetInherited[fontSize, 16];
+  SetInherited[fontFamily, "KaTeX_Main"];
+
+  polygon = TextToPolygon[s, 20, fontFamily, fontWeight];
+  If[!MatchQ[polygon, _Polygon], Message[TextIcon::nostrpoly, MsgExpr @ s, MsgExpr @ fontSize, MsgExpr @ fontWeight, MsgExpr @ fontFamily]];
+
+  points = First @ polygon;
+  bounds = CoordinateBounds[points, 1];
+
+  Construct[GraphicsBox,
+    StyleBox[Construct[PolygonBox, points], FaceForm @ fontColor],
+    PlotRange -> bounds, PlotRangePadding -> 0, ImagePadding -> 0,
+    BaselinePosition -> baseline
+  ]
+)
 
 (**************************************************************************************************)
 

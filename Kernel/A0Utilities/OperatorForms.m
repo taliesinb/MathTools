@@ -261,7 +261,7 @@ PrivateTypesettingBoxFunction[EmptyStyleBoxOperator]
 
 SetUsage @ "
 EmptyStyleBoxOperator[color$, opacity$, thickness$] produces a StyleBoxOperator that will appropriately style thin primitives like %LineBox, %CircleBox, and %PointBox.
-* color$ can be %SolidEdgeColor[$$], in which case the edge color will be used.
+* color$ can be %SolidEdgeForm[$$], in which case the edge color will be used.
 * if thickness$ is 0 or color$ is None, the operator will delete boxes.
 "
 
@@ -279,7 +279,7 @@ PrivateTypesettingBoxFunction[SolidStyleBoxOperator]
 
 SetUsage @ "
 SolidStyleBoxOperator[color$, opacity$, thickness$] produces a StyleBoxOperator that will appropriately style thick primitives like %PolygonBox and %DiskBox.
-* color$ can be %SolidEdgeColor[$$], in which case the face and edge colors will be used.
+* color$ can be %SolidEdgeForm[$$], in which case the face and edge colors will be used.
 * if thickness$ is 0 or color$ is None, the operator will delete boxes.
 "
 

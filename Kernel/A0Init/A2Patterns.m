@@ -56,6 +56,10 @@ $SideToCoords = <|
 
 $CoordsToSide = InvertAssociation[$SideToCoords]
 
+PrivateVariable[$SideToUnitCoords]
+
+$SideToUnitCoords = Map[(# + 1)/2.&, $SideToCoords]
+
 PrivateVariable[$FlipSideRules]
 
 $FlipSideRules = {

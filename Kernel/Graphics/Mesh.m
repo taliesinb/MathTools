@@ -23,8 +23,8 @@ MeshLines[{xmin_, ymin_}, {ncols_, nrows_}, OptionsPattern[]] := CatchMessage @ 
     ],
     If[meshStyle === None, Nothing,
       Style[{
-        HorizontalLine[{xmin, xmax}, Range[ymin + cellh, ymax - cellh, cellh]],
-        VerticalLine[Range[xmin + cellw, xmax - cellw, cellw], {ymin, ymax}]
+        ToHorizontalLine[{xmin, xmax}, Range[ymin + cellh, ymax - cellh, cellh]],
+        ToVerticalLine[Range[xmin + cellw, xmax - cellw, cellw], {ymin, ymax}]
       }, Seq @@ ToList[meshStyle]]
     ]
   }
