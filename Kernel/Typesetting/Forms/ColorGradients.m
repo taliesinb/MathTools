@@ -63,7 +63,7 @@ DefineStandardTraditionalForm[ti:TextIcon[_String, ___Rule] :> textIconBoxes[ti]
 
 TextIcon::nostrpoly = "Could not form a Polygon for `` using FontSize -> ``, FontWeight -> ``, FontFamily -> ``.";
 
-textIconBoxes[TextIcon[s_String, opts___Rule]] := (
+textIconBoxes[TextIcon[s_String, opts___Rule]] := Scope[
   UnpackOptionsAs[TextIcon, opts, fontColor, fontWeight, fontSize, fontFamily];
   SetInherited[fontColor, Black];
   SetInherited[fontWeight, "Regular"];
@@ -81,7 +81,7 @@ textIconBoxes[TextIcon[s_String, opts___Rule]] := (
     PlotRange -> bounds, PlotRangePadding -> 0, ImagePadding -> 0,
     BaselinePosition -> baseline
   ]
-)
+]
 
 (**************************************************************************************************)
 

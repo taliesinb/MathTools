@@ -196,8 +196,8 @@ $stringProcessingRules = {
 (*   RegularExpression["(?s)(?<=\\s)`(.*?)`(?=\\s)"] :>
     StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""],
  *)
-  RegularExpression[" ~!~ ([^\n;&|]+)"] :> " ~NotMatchQ~ " <> bracketRHS["$1"],
-  RegularExpression[" ~~~ ([^\n;&|]+)"] :> " ~MatchQ~ " <> bracketRHS["$1"]
+  RegularExpression[" ~!~ ([^\n;&]+)"] :> " ~NotMatchQ~ " <> bracketRHS["$1"],
+  RegularExpression[" ~~~ ([^\n;&]+)"] :> " ~MatchQ~ " <> bracketRHS["$1"]
 }
 
 QuiverGeometryLoader`ExpressionTable[context_String, str_String] := Block[
@@ -210,7 +210,7 @@ QuiverGeometryLoader`ExpressionTable[context_String, str_String] := Block[
 (**************************************************************************************************)
 
 bracketRHS[s_] := bracketRHS[s] = Block[{$Context = "QuiverGeometryLoader`Scratch`", len},
-  len = SyntaxLength[s];
+  len = SyntaxLength @ StringDelete[s, "||" ~~ ___ ~~ EndOfString];
   "(" <> StringInsert[s, ")", len+1]
 ];
 
