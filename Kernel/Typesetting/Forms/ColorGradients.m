@@ -50,42 +50,64 @@ Internally it can do this by calling EvaluateTemplateBoxes etc and trying to ded
 TextIcon itself should return a DynamicBox so that it can be nested in ordinary text boxes as is.
 *)
 
-PublicTypesettingForm[TextIcon]
+PublicHead[ColorGradient]
 
-Options[TextIcon] = {
-  FontColor -> Inherited,
-  FontWeight -> Inherited,
-  FontSize -> Inherited,
-  FontFamily -> Inherited
-}
+PublicOption[CompressionFactor]
 
-DefineStandardTraditionalForm[ti:TextIcon[_String, ___Rule] :> textIconBoxes[ti]];
+SetUsage @ "
+ColorGradient[{c$1, c$2}] represents a color gradient between c$1 and c$2, defaulting to left-to-right.
+ColorGradient[{c$1, c$2}, dir$] represents an oriented color gradient in the given direction.
+* dir$ can be a symbolic direction like %Right, %Top, or a direction vector.
+* the option %CompressionFactor can range from 0 (totally linear) to 1 (hard jump).
+"
 
-TextIcon::nostrpoly = "Could not form a Polygon for `` using FontSize -> ``, FontWeight -> ``, FontFamily -> ``.";
+(**************************************************************************************************)
 
-textIconBoxes[TextIcon[str_String, opts___Rule]] := Scope[
+PublicFunction[CompressUnit]
 
-  UnpackOptionsAs[TextIcon, opts, fontColor, fontWeight, fontSize, fontFamily];
+CompressUnit[0|0.] := Identity;
+CompressUnit[c_][x_] := Clip[(x - 0.5)/(1 - c + $MachineEpsilon), {0, 1}];
 
-  SetInherited[fontColor, Black];
-  SetInherited[fontWeight, "Regular"];
-  SetInherited[fontSize, 16];
-  SetInherited[fontFamily, "KaTeX_Main"];
+(**************************************************************************************************)
 
-  result = TextToPolygon[str, 20, fontFamily, fontWeight];
+PublicFunction[ColorGradiateBoxes]
 
-  If[FailureQ[result],
-    Message[TextIcon::nostrpoly, MsgExpr @ s, MsgExpr @ fontSize, MsgExpr @ fontWeight, MsgExpr @ fontFamily];
-    Return @ {};
-  ];
+SetUsage @ "
+ColorGradiateBoxes[primitives$, bounds$, cspec$] applies a color gradient given by cspec$ to primitives$ over the given bounds.
+* cspec$ should be either a pair of colors or a %ColorGradient[$$] objects.
+"
 
-  {polygon, bounds} = result;
+parseColorGradient = Case[
+  ColorGradient[{c1_, c2_}] | {c1_, c2_}          := {First, Identity, OklabBlendOperator[{c1, c2}]};
+  ColorGradient[{c1_, c2_}, dir:$Coord2P]         := {DotOperator[dir], Identity, OklabBlendOperator[{c1, c2}]};
+  ColorGradient[spec_, side:$SidePattern]         := % @ ColorGradient[spec, $SideToCoords @ side];
+  ColorGradient[spec__, CompressionFactor -> c_]  := ReplacePart[% @ ColorGradient[spec], 2 -> CompressUnit[c]];
+]
 
-  Construct[GraphicsBox,
-    StyleBox[Construct[PolygonBox, points], FaceForm @ fontColor],
-    PlotRange -> bounds, PlotRangePadding -> 0, ImagePadding -> 0,
-    BaselinePosition -> baseline
-  ]
+ColorGradiateBoxes[primitives_, Automatic, cspec_] :=
+  ColorGradiateBoxes[primitives, PrimitiveBoxesBounds @ primitives, cspec];
+
+ColorGradiateBoxes[primitives_, {{x1_, x2_}, {y1_, y2_}}, cspec_] := Scope[
+  {toNumber, procNumber, toColor} = parseColorGradient @ cspec;
+  points = {{x1, y1}, {x1, y2}, {x2, y1}, {x2, y2}};
+  nums = toNumber /@ points;
+  minMax = MinMax @ nums;
+  $vcfunc = toColor @ procNumber @ Rescale[toNumber @ #, minMax]&;
+  attachVertexColors @ primitives
+];
+
+toVC = Case[
+  m_ ? CoordinateMatrixQ    := VertexColors -> Map[$vcfunc, m];
+  ms_ ? CoordinateMatricesQ := VertexColors -> MatrixMap[$vcfunc, ms];
+];
+
+(* TODO: use formal primitive dispatch mechanism here *)
+attachVertexColors = Case[
+  list_List                           := Map[%, list];
+  StyleBox[p_, o___]                  := Style[% @ p, o];
+  PolygonBox[array_List]              := Construct[PolygonBox, array, toVC @ array];
+  PolygonBox[rule:Rule[array_, _]]    := Construct[PolygonBox, rule, toVC @ array];
+  LineBox[array_]                     := Construct[LineBox, array, toVC @ array];
 ]
 
 (**************************************************************************************************)

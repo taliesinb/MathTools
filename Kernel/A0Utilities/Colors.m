@@ -275,6 +275,13 @@ $toRGBRules = Dispatch[{
 
 (**************************************************************************************************)
 
+PrivateFunction[FromRGB]
+
+FromRGB[rgb_List] := RGBColor @@ rgb;
+FromRGB[rgb_List ? MatrixQ] := RGBColor @@@ rgb;
+
+(**************************************************************************************************)
+
 PublicFunction[NormalizeColorLightness]
 
 NormalizeColorLightness[colors_List, fraction_:1] :=
@@ -439,7 +446,7 @@ GrayColorQ[_] := False;
 
 (**************************************************************************************************)
 
-PublicFunction[OklabBlend]
+PublicFunction[OklabBlend, OklabBlendOperator, BlendOperator]
 
 SetUsage @ "
 OklabBlend[colors$] blends a list of ordinary colors, but in OkLAB colorspace.
@@ -464,6 +471,18 @@ oklabInterpolation[colors_, args___] :=
     args,
     InterpolationOrder -> 1
   ];
+
+OklabBlendOperator[colors_List] :=
+  Interpolation[
+    Trans[Lerp[0, 1, Into @ Length @ colors], ToOklab @ colors],
+    InterpolationOrder -> 1
+  ] /* FromOklab;
+
+BlendOperator[colors_List] :=
+  Interpolation[
+    Trans[Lerp[0, 1, Into @ Length @ colors], ToRGB @ colors],
+    InterpolationOrder -> 1
+  ] /* FromRGB;
 
 (**************************************************************************************************)
 
