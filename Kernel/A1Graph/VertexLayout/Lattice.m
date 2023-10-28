@@ -17,7 +17,7 @@ LatticeLayout[opts:OptionsPattern[]][data_] := Scope[
 
   edgePairs = EdgePairs @ indexGraph;
 
-  wasVisited = ConstantArray[True, EdgeCount @ indexGraph];
+  wasVisited = Repeat[True, EdgeCount @ indexGraph];
   Part[wasVisited, visitedEdges] = True;
 
   edgeCoordinateLists = MapThread[makeLatticeEdge, {edgePairs, wasVisited}];

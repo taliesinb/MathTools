@@ -1,6 +1,6 @@
 (* see /Applications/Mathematica.app/Contents/SystemFiles/FrontEnd/TextResources/Macintosh/MenuSetup.tr for info on anchors *)
-If[!TrueQ[QuiverGeometryLoader`$menuModified] && $FrontEnd =!= Null,
-With[{qgPath = QuiverGeometryLoader`$initFile},
+If[!TrueQ[QuiverGeometryLoader`$menuModified] && $Notebooks,
+With[{qgPath = QuiverGeometryLoader`$InitFile},
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["CDFPreview", {
     Delimiter,
     MenuItem[

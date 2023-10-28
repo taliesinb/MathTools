@@ -46,7 +46,7 @@ ToStringBlock[StringTable[rows_List, OptionsPattern[]]] := Scope[
   If[!MatchQ[tableHeadings, {_, _}], ReturnFailed[]];
   {rowHeadings, colHeadings} = tableHeadings;
   {numRows, numCols} = Dimensions[rows, 2];
-  colAlignment = ConstantArray[Left, numCols];
+  colAlignment = Repeat[Left, numCols];
   If[rowHeadings =!= None,
     $headingStyleFn = StyleOperator @ rowStyle;
     rowHeadings = procTableHeadings[rowHeadings, numRows];
@@ -232,7 +232,7 @@ toLabelValues = Case[
 applyFrameLabel[block_, side:(Left|Right) -> spec_] := Scope[
   items = Map[toLabelItems, ToList @ spec];
   isLeft = side === Left;
-  rows = ConstantArray[$block[{""}, 0, 1], Part[block, 3]];
+  rows = Repeat[$block[{""}, 0, 1], Part[block, 3]];
   rules = (#1 + $voffset) -> clipOneLine[processBlock @ $labelStyleFn @ #2]& @@@ Sort[items];
   rows = ReplacePart[rows, rules];
   labelBlock = vstackBlocks[rows, If[isLeft, Right, Left]];
@@ -361,7 +361,7 @@ blockToStrings = Case[
 
 StringBlock::spacefail = "Spacer `` could not be achieved with combination of normal and superscript characters."
 
-repChar[s_, w_Integer] := ConstantArray[s, w];
+repChar[s_, w_Integer] := Repeat[s, w];
 repChar[s_, w_] := Scope[
   w2 = w; c = 0;
   While[Abs[w2 - Round[w2]] > 0.0001, w2 -= 3/4; c++];
@@ -640,7 +640,7 @@ processGrid[rows_, opts:OptionsPattern[]] := Scope[
   ]
 ]
 
-spacerBlock[w_, h_] := $block[ConstantArray[$hspace[w], h], w, h];
+spacerBlock[w_, h_] := $block[Repeat[$hspace[w], h], w, h];
 
 riffle[{}, _] := {};
 riffle[args_, Spacer[0] | Spacer[{0,0}] | None | Nothing] := args;
@@ -737,7 +737,7 @@ vpadBlock[th_, valign_][$block[rows_, w_, h_]] := Scope[
   $block[extendedRows, w, th]
 ];
 
-hspaceList[h_, w_] := ConstantArray[$hspace[w], h];
+hspaceList[h_, w_] := Repeat[$hspace[w], h];
 
 padBottomTop[{0, 0}, _] := Identity;
 padBottomTop[{b_, t_}, w_][rows_] := Join[hspaceList[t, w], rows, hspaceList[b, w]];
@@ -820,8 +820,8 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
         we = makeNotchedSides["│", {"├", "┤"}, totalHeight, maxHeights];
         sn = makeNotchedSides["─", {"┴", "┬"}, totalWidth, maxWidths];
       ,
-        we = ConstantArray["│", {2, totalHeight}];
-        sn = ConstantArray[repChar["─", totalWidth], 2];
+        we = Repeat["│", {2, totalHeight}];
+        sn = Repeat[repChar["─", totalWidth], 2];
       ];
       $block[
         apply8patch[First @ block, MatrixMap[sfn, we], sfn /@ sn, sfn /@ If[frame === "Round", $roundCompass, $squareCompass]],
@@ -842,7 +842,7 @@ StringBlock::fracwid = "Fractional width `` occurred in unsupported context."
 makeNotchedSides[char_, {notch1_, notch2_}, n_, sizes_] := Scope[
   If[!IntegerQ[n], ThrowMessage["fracwid", n]];
   notches = Accumulate[Most[sizes] + 1];
-  side = ConstantArray[char, n];
+  side = Repeat[char, n];
   List[
     ReplacePart[side, Transpose[List @ notches] -> notch1],
     ReplacePart[side, Transpose[List @ notches] -> notch2]
@@ -870,7 +870,7 @@ addDivs[items_, ws_, hs_] := Scope[
   ]
 ];
 
-makeVBar[h_] := $block[ConstantArray["│", h], 1, h];
+makeVBar[h_] := $block[Repeat["│", h], 1, h];
 makeHBar[w_] := $block[List @ repChar["─", w], w, 1];
 
 (**************************************************************************************************)
@@ -879,8 +879,8 @@ $roundCompass = {"╭", "╮", "╰", "╯"};
 $squareCompass = {"┌", "┐", "└", "┘"};
 
 makeFrame[$block[rows_, w_, h_], r_] := Scope[
-  we = ConstantArray["│", {2, h}];
-  sn = ConstantArray[repChar["─", w], 2];
+  we = Repeat["│", {2, h}];
+  sn = Repeat[repChar["─", w], 2];
   rows2 = apply8patch[rows, we, sn, If[r, $roundCompass, $squareCompass]];
   $block[rows2, w + 2, h + 2]
 ]
@@ -1001,17 +1001,17 @@ vframeBlock[$block[grid_, w_, h_], {t_, b_}, style_, spanning_] := Scope[
 
 (**************************************************************************************************)
 
-extend[None, _, _] := ConstantArray[None, $n];
-extend[s_, False, side_] := ReplacePart[ConstantArray[" ", $n], If[side, -1, 1] -> First[s]];
+extend[None, _, _] := Repeat[None, $n];
+extend[s_, False, side_] := ReplacePart[Repeat[" ", $n], If[side, -1, 1] -> First[s]];
 extend[s_, True, side_] := extendSpanning[s];
 
 extendSpanning = Case[
-  ext1[c_]                 := ConstantArray[c, $n];
-  ext3[s_, l_, m_, r_]     := If[$n === 1, {s}, Flatten @ {l, ConstantArray[m, $n - 2], r}];
+  ext1[c_]                 := Repeat[c, $n];
+  ext3[s_, l_, m_, r_]     := If[$n === 1, {s}, Flatten @ {l, Repeat[m, $n - 2], r}];
   ext5[s_, l_, a_, m_, b_, r_] := Scope[
     If[$n === 1, Return @ {s}];
     n2 = ($n - 3) / 2;
-    Flatten @ {l, ConstantArray[a, Floor @ n2], m, ConstantArray[a, Ceiling @ n2], r}
+    Flatten @ {l, Repeat[a, Floor @ n2], m, Repeat[a, Ceiling @ n2], r}
   ]
 ];
 

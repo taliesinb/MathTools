@@ -823,7 +823,7 @@ processNodeBoxPorts = Case[
     portSpacing = ReplaceAutomatic[$sidePortData["PortSpacing"], $w / (n + .333)];
     offsets = makePortOffsets[n, portSpacing];
     portCoords = Switch[side,
-      Center, ConstantArray[{subPath[$L], subPath[$TB]}, n],
+      Center, Repeat[{subPath[$L], subPath[$TB]}, n],
       Left,   Threaded[{subPath[$L], center = subPath[$TB]}] - Thread[{0, offsets}],
       Right,  Threaded[{subPath[$R], center = subPath[$TB]}] - Thread[{0, offsets}],
       Bottom, Threaded[{center = subPath[$LR], subPath[$B]}] + Thread[{offsets, 0}],
@@ -837,7 +837,7 @@ processNodeBoxPorts = Case[
     portCoordOverrides = Switch[
       portPosSpec,
       Automatic | None,       Null,
-      "MatchIn" | "MatchOut", toPortPositions @ ConstantArray[portPosSpec, n],
+      "MatchIn" | "MatchOut", toPortPositions @ Repeat[portPosSpec, n],
       AbsoluteOffset[_],      Part[portCoords, All, portXY] += First[portPosSpec]; Null,
       _List,                  toPortPositions @ portPosSpec,
       _,                      Message[NodeBox::badPortPositions, portPosSpec]; Null
@@ -849,7 +849,7 @@ processNodeBoxPorts = Case[
     ];
     addEqns @ RuleThread[portPaths, portCoords];
     centerVec = Switch[side, Center, {0, 0}, Left, {1, 0}, Right, {-1, 0}, Top, {0, -1}, Bottom, {0, 1}];
-    makePorts @ <|"coords" -> portCoords, "dirs" -> ConstantArray[centerVec, n], "ports" -> ports, $sidePortData|>
+    makePorts @ <|"coords" -> portCoords, "dirs" -> Repeat[centerVec, n], "ports" -> ports, $sidePortData|>
   ];
 ];
 
@@ -925,7 +925,7 @@ currentCenter[] := subPath /@ {$LR, $TB};
 
 General::badNodePortShape = "PortShape -> `` is not one of ``."
 
-procPortListSpec[spec_, n_, prev_] := ConstantArray[spec, n];
+procPortListSpec[spec_, n_, prev_] := Repeat[spec, n];
 procPortListSpec[spec_List, n_, prev_] := PadRight[spec, n, prev];
 procPortListSpec[rules:{__Rule}, n_, prev_] := VectorReplace[Range[n], Append[_ -> prev] @ rules];
 procPortListSpec[{rules__Rule, All -> def_}, n_, _] := procPortListSpec[{rules}, n, def];

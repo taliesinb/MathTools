@@ -56,12 +56,14 @@ linearSyntaxRasterizationFunction[cell_, ___] := Association[
 
 PrivateFunction[base64RasterizationFunction]
 
+CacheSymbol[$Base64RasterizationCache]
+
 base64RasterizationFunction[type_, retina_][e_] := Scope[
   
   type //= ToUpperCase;
   If[$CachingEnabled,
     hash = Hash[{e, type, retina}];
-    result = Lookup[QuiverGeometryCaches`$Base64RasterizationCache, hash];
+    result = Lookup[$Base64RasterizationCache, hash];
     If[AssociationQ[result], Return @ result];
   ];
 
@@ -78,7 +80,7 @@ base64RasterizationFunction[type_, retina_][e_] := Scope[
     "format" -> ToLowerCase[type],
     "encoded" -> encoded
   ];
-  If[$CachingEnabled, QuiverGeometryCaches`$Base64RasterizationCache[hash] ^= result];
+  If[$CachingEnabled, $Base64RasterizationCache[hash] ^= result];
   result
 ];
 

@@ -100,10 +100,8 @@ assemblePrimitives = Case[
   ];
 ];
 
-(* TODO: Move this into Rasterization.m *)
-If[!AssociationQ[QuiverGeometryCaches`$BoundingBoxCache],
-QuiverGeometryCaches`$BoundingBoxCache = UAssociation[];
-];
+(* TODO: use Rasterization utilities for this instead! *)
+CacheSymbol[$BoundingBoxCache]
 
 cachedBoundingBox[Text[t_, ___, BaseStyle -> baseStyle_, ___]] :=
   cachedBoundingBox[Style[t, BaseStyle -> baseStyle]];
@@ -115,7 +113,7 @@ cachedBoundingBox[Inset[t_, ___]] :=
   cachedBoundingBox[t];
 
 cachedBoundingBox[t_] := MaybeCacheTo[
-  QuiverGeometryCaches`$BoundingBoxCache,
+  $BoundingBoxCache,
   Hash[{t, $baseStyle}],
   Take[Rasterize[Style[t, Seq @@ ToList[$baseStyle]], "BoundingBox"], 2]
 ];

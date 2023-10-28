@@ -20,11 +20,11 @@ RootSystemObject /: Normal[rs_RootSystemObject] := rs["Roots"];
 reachableStates[func_, initialStates_, maxStates_:20] :=
   MultiwaySystem[func, initialStates, "VertexList", MaxVertices -> maxStates];
 
-setValidIfNormlized[e_] := If[Norm[e] == 1, System`Private`SetValid[e]];
+setValidIfNormlized[e_] := If[Norm[e] == 1, SetValid[e]];
 
 toCheckedAndPacked[e_] := Scope[
   e2 = ToPacked[List @@ e];
-  If[Norm[e2] == 1, System`Private`SetValid[e2]];
+  If[Norm[e2] == 1, SetValid[e2]];
   e2
 ];
 
@@ -50,11 +50,11 @@ makeRootSystemObject[generators_] := Scope[
     "Dimension" -> dim,
     "Count" -> Length[allRoots]
   |>;
-  System`Private`ConstructNoEntry[RootSystemObject, assoc]
+  ConstructNoEntry[RootSystemObject, assoc]
 ];
 
 declareFormatting[
-  rs_RootSystemObject ? System`Private`HoldNoEntryQ :>
+  rs_RootSystemObject ? HoldNoEntryQ :>
     plotRootSystemObject @ getObjectData @ rs,
   RootVector[vec_List] :> renderRootVector @ vec
 ];
@@ -69,7 +69,7 @@ SetUsage @ "
 RootSystemObjectQ[obj$] represents True if obj$ is a valid RootSystemObject[$$].
 "
 
-RootSystemObjectQ[_RootSystemObject ? System`Private`NoEntryQ] := True;
+RootSystemObjectQ[_RootSystemObject ? NoEntryQ] := True;
 RootSystemObjectQ[_] := False;
 
 (**************************************************************************************************)

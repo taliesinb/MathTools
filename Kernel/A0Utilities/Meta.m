@@ -38,7 +38,14 @@ UpdateSublimeSyntaxFiles[] := Scope[
   guSymbols = Names["GeneralUtilities`*"];
   guSymbols //= Select[StringLength[#] > 2 && StringStartsQ[#, UppercaseLetter] &];
   addToGroup["Function", guSymbols];
-  addToGroup["Function", {"UAssociation", "Repeat"}];
+  (* add each alias to the group of its target *)
+  MapApply[
+    {alias, target} |-> (
+      group = Part[SelectFirstIndex[QuiverGeometryLoader`$SymbolTable, MemberQ[#, target]&], 1, 2];
+      addToGroup[group, {alias}]
+    ),
+    QuiverGeometryLoader`$SymbolAliases
+  ];
   addToGroup["SpecialFunction", {"ExpressionTable"}];
   {regexpSections, symbolSections} = Transpose @ KeyValueMap[makeSplitDefs, groups];
   completionLists = KeyValueMap[makeCompletionDefs, groups];

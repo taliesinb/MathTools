@@ -22,7 +22,7 @@ LookupVertexAnnotations[graph_, key_] :=
 
 LookupVertexAnnotations[graph_, VertexWeight|"Weight"] := Scope[
   weights = AnnotationValue[graph, VertexWeight];
-  If[ListQ[weights], weights, ConstantArray[1, VertexCount @ graph]]
+  If[ListQ[weights], weights, Repeat[1, VertexCount @ graph]]
 ];
 
 LookupVertexAnnotations[graph_, All] := Scope[
@@ -65,7 +65,7 @@ LookupEdgeAnnotations[graph_, key_] :=
 
 LookupEdgeAnnotations[graph_, EdgeWeight|"Weight"] := Scope[
   weights = AnnotationValue[graph, EdgeWeight];
-  If[ListQ[weights], weights, ConstantArray[1, EdgeCount @ graph]]
+  If[ListQ[weights], weights, Repeat[1, EdgeCount @ graph]]
 ];
 
 LookupEdgeAnnotations[graph_, All] := Scope[

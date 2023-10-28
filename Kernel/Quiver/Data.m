@@ -116,7 +116,7 @@ TagVertexOutTable[graph_, invalid_:None] := Scope[
   cardinals = CardinalList @ graph;
   igraph = ToIndexGraph @ graph;
   cardinals = Join[cardinals, Inverted /@ cardinals];
-  outTables = ConstantAssociation[cardinals, ConstantArray[invalid, VertexCount @ igraph]];
+  outTables = ConstantAssociation[cardinals, Repeat[invalid, VertexCount @ igraph]];
   ({src, dst, tag} |-> (
       Part[outTables, Key @ tag, src] = dst;
       Part[outTables, Key @ Inverted @ tag, dst] = src;
@@ -224,7 +224,7 @@ tagVertexAdjacentEdgeTableInternal[graph_, none_, signed_] := Scope[
   cardinals = CardinalList @ graph;
   cardinals = Join[cardinals, Inverted /@ cardinals];
   cardInd = UAssociation @ AssociationRange @ cardinals;
-  vectors = ConstantArray[none, {Length @ cardinals, VertexCount @ graph}];
+  vectors = Repeat[none, {Length @ cardinals, VertexCount @ graph}];
   tags = EdgeTags @ graph;
   tagInds = Lookup[cardInd, tags];
   invTagInds = Lookup[cardInd, Inverted /@ tags];

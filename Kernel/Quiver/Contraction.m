@@ -90,7 +90,7 @@ computeValidPartitions[{vertexList_, outTable_, allowGraphContractions_, permitt
   isQuiverContraction = validQuiverPartitionQ[outTable, #]& /@ partitions;
   If[!allowGraphContractions,
     partitions = Pick[partitions, isQuiverContraction];
-    isQuiverContraction = ConstantArray[True, Length @ partitions];
+    isQuiverContraction = Repeat[True, Length @ partitions];
   ];
 
   contractionGraph = IndexGraph @ TransitiveReductionGraph @ Subgraph[partitionGraph, partitions];

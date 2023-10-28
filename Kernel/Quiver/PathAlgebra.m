@@ -51,10 +51,10 @@ Options[PathAlgebra] = {
 
 $graphOrLatticeSpec = _Graph | _String | {_String, __};
 
-PathAlgebra[quiver:$graphOrLatticeSpec, opts:OptionsPattern[]] ? System`Private`HoldEntryQ =
+PathAlgebra[quiver:$graphOrLatticeSpec, opts:OptionsPattern[]] ? HoldEntryQ =
   PathAlgebra[quiver, Integers, opts];
 
-PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Private`HoldEntryQ := Scope[
+PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? HoldEntryQ := Scope[
 
   If[MatchQ[quiver, _String | {_String, __}],
     quiver = LatticeQuiver[quiver]];
@@ -158,7 +158,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? System`Priva
   edgeToCard = AssociationThread[edgeRange, edgeTags];
   data["EdgeToCardinal"] = Join[edgeToCard, KeyMap[Inverted] @ Map[Inverted] @ edgeToCard];
 
-  System`Private`ConstructNoEntry[PathAlgebra, data]
+  ConstructNoEntry[PathAlgebra, data]
 ];
 
 $complexColorFunction = ComplexHue;
@@ -172,7 +172,7 @@ PublicFunction[PathAlgebra]
 
 declareObjectPropertyDispatch[PathAlgebra, pathAlgebraProperty];
 
-MakeBoxes[pa_PathAlgebra ? System`Private`HoldNoEntryQ, form_] :=
+MakeBoxes[pa_PathAlgebra ? HoldNoEntryQ, form_] :=
   PathAlgebraBoxes[pa, form];
 
 PathAlgebraBoxes[object:PathAlgebra[data_], form_] := Scope[
@@ -459,7 +459,7 @@ drawPathPrimitives[vertices_, style_] /; $reverseColor =!= None := Scope[
 
 lineColorRange[a_, b_, 2] := {a, b};
 lineColorRange[a_, b_, n_] :=
-  Join[ConstantArray[a, Floor[n / 2]], ConstantArray[b, Ceiling[n / 2]]];
+  Join[Repeat[a, Floor[n / 2]], Repeat[b, Ceiling[n / 2]]];
 
 drawPathPrimitives[vertices_, style_] :=
   Style[
@@ -669,7 +669,7 @@ WordVector[word_String] /; $PathAlgebraQ := Scope[
   ]];
 
   pathEdges = If[pathEdges === {},
-    ConstantArray[{}, Length @ vertexRange],
+    Repeat[{}, Length @ vertexRange],
     Transpose @ pathEdges
   ];
 
@@ -783,7 +783,7 @@ PublicFunction[VertexFieldWeights]
 
 VertexFieldWeights[PathVector[assoc_]] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[vertexCount];
-  weightVector = ConstantArray[0, vertexCount];
+  weightVector = Repeat[0, vertexCount];
   KeyValueScan[setVertexFieldWeight, assoc];
   weightVector
 ]

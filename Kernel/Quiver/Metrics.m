@@ -106,7 +106,7 @@ MetricFindShortestPath[graph_, start_, end_, OptionsPattern[]] := Scope[
 
   If[start =!= All && end =!= All,
     findShortestPath[start, end, data],
-    System`Private`ConstructNoEntry[MetricShortestPathFunction, {start, end}, data]
+    ConstructNoEntry[MetricShortestPathFunction, {start, end}, data]
   ]
 ];
 
@@ -116,7 +116,7 @@ computeShortestPathFunctionData[graph_, metric_] := Scope[
 
   distanceMatrix = toMetricDistanceOperator[metric] @ TaggedGraphDistanceMatrix[graph];
 
-  adjacentVertexTable = adjacentEdgeTags = ConstantArray[{}, VertexCount @ graph];
+  adjacentVertexTable = adjacentEdgeTags = Repeat[{}, VertexCount @ graph];
   Scan[
     Apply[{a, b, t} |-> (
         AppendTo[Part[adjacentVertexTable, a], b];
@@ -140,7 +140,7 @@ computeShortestPathFunctionData[graph_, metric_] := Scope[
 PublicFunction[MetricShortestPathFunction]
 
 declareFormatting[
-  MetricShortestPathFunction[spec_, data_] ? System`Private`HoldNoEntryQ :>
+  MetricShortestPathFunction[spec_, data_] ? HoldNoEntryQ :>
     MetricShortestPathFunction[spec, Skeleton @ Length @ First @ data]
 ];
 

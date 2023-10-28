@@ -75,8 +75,10 @@ $textureCoords = Association[
 
 (**************************************************************************************************)
 
+CacheSymbol[$TextureBoxCache]
+
 cachedTextureBoxAndSize[object_] :=
-  MaybeCacheTo[QuiverGeometryCaches`$TextureBoxCache, Hash @ object, textureBoxesAndSize @ object];
+  MaybeCacheTo[$TextureBoxCache, Hash @ object, textureBoxesAndSize @ object];
 
 textureBoxesAndSize[object_] := Scope[
   img = FastRasterize[Style[object, LineSpacing -> 0.1], Background -> Transparent];

@@ -22,8 +22,8 @@ SetHoldAllComplete[InternalHoldForm]
 PublicTypesettingForm[CompactPrettyForm, CompactPrettyFullForm]
 
 $compactOpts = Sequence[
-  MaxIndent -> 10, FullSymbolContext -> False, ColorSymbolContext -> $FrontendQ,
-  CompactingWidth -> 150, InlineColors -> $FrontendQ,
+  MaxIndent -> 10, FullSymbolContext -> False, ColorSymbolContext -> $Notebooks,
+  CompactingWidth -> 150, InlineColors -> $Notebooks,
   CompactRealNumbers -> True, TabSize -> None
 ];
 

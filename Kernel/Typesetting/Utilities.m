@@ -20,7 +20,7 @@ StandardizeRowColumnSpec[spec_List, n_] :=
   PadRight[spec, n, spec];
 
 StandardizeRowColumnSpec[item_, n_] :=
-  ConstantArray[item, n];
+  Repeat[item, n];
 
 StandardizeRowColumnSpec[Automatic|None, _] :=
   Automatic;

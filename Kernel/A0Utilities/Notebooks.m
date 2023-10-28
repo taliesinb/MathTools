@@ -10,7 +10,7 @@ NotebookObjectQ = Case[
 PrivateFunction[CallFrontEnd]
 
 (* this allows FastRasterize etc to work from the terminal *)
-CallFrontEnd[e_] := If[$FrontendQ, MathLink`CallFrontEnd[e], System`ConvertersDump`Utilities`GetFromFE[e]];
+CallFrontEnd[e_] := If[$Notebooks, MathLink`CallFrontEnd[e], System`ConvertersDump`Utilities`GetFromFE[e]];
 
 (**************************************************************************************************)
 
@@ -481,7 +481,7 @@ $textPlaceholder = Cell["\[Placeholder]", "Text"];
 InsertCellTable[rows_, cols_] := Scope[
   cell = Cell[
     BoxData @ GridBox[
-      ConstantArray[$textPlaceholder, {rows, cols}],
+      Repeat[$textPlaceholder, {rows, cols}],
       BaseStyle -> "Text",
       FrameStyle -> GrayLevel[0.9],
       GridBoxDividers -> {"Columns" -> {{True}}, "Rows" -> {{True}}},

@@ -108,28 +108,11 @@ FastRasterSize[expr_, returnBaseline_:False] := Scope[
 
 (*************************************************************************************************)
 
-PublicFunction[ClearRasterizationCache]
-
-ClearRasterizationCache[] := (
-	QuiverGeometryCaches`$RasterSizeCache = UAssociation[];
-	QuiverGeometryCaches`$RasterizationCache = UAssociation[];
-	QuiverGeometryCaches`$GradientRasterizationCache = UAssociation[];
-	QuiverGeometryCaches`$RegionRasterizationCache = UAssociation[];
-	QuiverGeometryCaches`$TransparentRasterizationCache = UAssociation[];
-	QuiverGeometryCaches`$Base64RasterizationCache = UAssociation[];
-	QuiverGeometryCaches`$TextureBoxCache = UAssociation[];
-	clearFloodFillCaches[];
-)
-
-If[!AssociationQ[QuiverGeometryCaches`$RasterizationCache],
-	ClearRasterizationCache[];
-];
-
-(*************************************************************************************************)
-
 PublicFunction[CachedFastRasterize]
 
-CachedFastRasterize[expr_] := MaybeCacheTo[QuiverGeometryCaches`$RasterizationCache, Hash[expr], FastRasterize[expr]];
+CacheSymbol[$RasterizationCache]
+
+CachedFastRasterize[expr_] := MaybeCacheTo[$RasterizationCache, Hash[expr], FastRasterize[expr]];
 
 (*************************************************************************************************)
 
@@ -149,7 +132,7 @@ PublicFunction[CachedFastRasterizeList]
 
 (* we might need to delete ImageSizeRaw here ... *)
 
-CachedFastRasterizeList[expr_List] := MaybeCacheTo[QuiverGeometryCaches`$RasterizationCache, Hash[expr], FastRasterizeList[expr]];
+CachedFastRasterizeList[expr_List] := MaybeCacheTo[$RasterizationCache, Hash[expr], FastRasterizeList[expr]];
 
 (*************************************************************************************************)
 
@@ -198,13 +181,7 @@ CenterPadImages[images_List] := Scope[
 
 PublicFunction[FloodFill]
 
-clearFloodFillCaches[] := (
-	QuiverGeometryCaches`$FloodFillHash = UAssociation[];
-	QuiverGeometryCaches`$RegionRasterizationCache = UAssociation[];
-	QuiverGeometryCaches`$TransparentRasterizationCache = UAssociation[];
-)
-
-If[!AssociationQ[QuiverGeometryCaches`$FloodFillHash], clearFloodFillCaches[]];
+CacheSymbol[$FloodFillCache, $RegionRasterizationCache, $TransparentRasterizationCache]
 
 Options[FloodFill] = {
 	"Sensitivity" -> 0.001
@@ -218,7 +195,7 @@ FloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules:{__Rule}, Option
 	baseline = Lookup[Options[g2], BaselinePosition, Automatic];
 	fullHash = Hash[{lhs, rules, sensitivity}];
 	If[$CachingEnabled,
-		result = Lookup[QuiverGeometryCaches`$FloodFillHash, fullHash];
+		result = Lookup[$FloodFillCache, fullHash];
 		If[ImageQ[result], Return @ result];
 	];
   len = Length @ rules;
@@ -243,20 +220,20 @@ FloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules:{__Rule}, Option
   {image, bin, fillPoints, compImage};
   result = ImageCompose[compImage, image2];
   result = Image[result, BaselinePosition -> baseline];
-  If[$CachingEnabled, QuiverGeometryCaches`$FloodFillHash[fullHash] ^= result];
+  If[$CachingEnabled, $FloodFillCache[fullHash] ^= result];
   result
 ];
 
 (* this needs to be upgraded to ask for QG stylesheets !*)
 cachedImageRegionRasterize[graphics_] :=
 	MaybeCacheTo[
-		QuiverGeometryCaches`$RegionRasterizationCache, Hash[graphics],
+		$RegionRasterizationCache, Hash[graphics],
 		FastRasterizeWithMetadata[graphics]
 	];
 
 cachedTransparentRasterize[graphics_] :=
 	MaybeCacheTo[
-		QuiverGeometryCaches`$TransparentRasterizationCache, Hash[graphics],
+		$TransparentRasterizationCache, Hash[graphics],
 		FastRasterize[graphics, Background -> Transparent]
 	];
 
@@ -289,9 +266,11 @@ styleAsText[a_, l___, BaseStyle -> s_, r___] := Style[applyCurrentFormModifiers 
 
 PublicFunction[CachedRasterSize]
 
+CacheSymbol[$RasterSizeCache]
+
 CachedRasterSize[Null, returnBaseline_:False] := If[returnBaseline, {0, 0, 0}, {0, 0}];
 CachedRasterSize[expr_, returnBaseline_:False] := MaybeCacheTo[
-	QuiverGeometryCaches`$RasterSizeCache, {expr, returnBaseline},
+	$RasterSizeCache, {expr, returnBaseline},
 	FastRasterSize[expr /. $rasterSizeFixupRules, returnBaseline]
 ];
 

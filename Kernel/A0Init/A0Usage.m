@@ -1,8 +1,4 @@
-PublicVariable[$FrontendQ]
-
-$FrontendQ = $FrontEnd =!= Null;
-
-If[!$FrontendQ,
+If[!$Notebooks,
   (* this is so that e.g. Text inside graphics will still have FormBox[..., TraditionalForm] wrapped around it! *)
   System`Dump`$textFormatType = TraditionalForm;
 ]
@@ -13,7 +9,7 @@ $slotRegularExpression = RegularExpression["<\\*([^*]+)\\*>"];
 
 substituteUsageSlots[s_String] :=
   StringReplace[s, "<*" ~~ Shortest[slot___] ~~ "*>" :> Block[
-    {$ContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"}},
+    {$ContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`Private`"}},
     toUsageStr[ToExpression[slot, InputForm]]
   ]];
 
@@ -211,7 +207,8 @@ SetHoldAllComplete[SetInitialValue, SetDelayedInitialValue];
 
 SetInitialValue[sym_Symbol, other__Symbol, body_] := (SetInitialValue[sym, body]; SetInitialValue[other, body]);
 
-SetInitialValue[sym_Symbol, body_] := If[!System`Private`HasImmediateValueQ[sym],
+SetInitialValue[sym_Symbol, body_] := If[
+  !HasImmediateValueQ[sym],
   QuiverGeometryLoader`DeclarePreservedVariable[sym];
   Set[sym, body]
 ];
@@ -233,7 +230,7 @@ PrivateMutatingFunction[SetDelayedInitialValue]
 
 SetDelayedInitialValue[sym_Symbol, other__Symbol, body_] := (SetDelayedInitialValue[sym, body]; SetDelayedInitialValue[other, body]);
 
-SetDelayedInitialValue[sym_Symbol, body_] := If[!System`Private`HasOwnEvaluationsQ[sym],
+SetDelayedInitialValue[sym_Symbol, body_] := If[!HasOwnEvaluationsQ[sym],
   QuiverGeometryLoader`DeclarePreservedVariable[sym];
   SetDelayed[sym, body]
 ];

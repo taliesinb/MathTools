@@ -101,7 +101,7 @@ RawPrimitivesGrid[itemBoxes_, pos_, opts___Rule] := Scope[
   {gx, gy} = pos - galign * totalSize;
 
   (* TODO: what would it mean to have Axis alignment, which would mean the origin ? *)
-  items = ConstantArray[Null, {numRows, numCols}];
+  items = Repeat[Null, {numRows, numCols}];
   dy = gy + totalHigh - fm;
   Do[
     dx = gx + fm;
@@ -167,5 +167,5 @@ parseValign = Case[
   e_ := (Message[PrimitivesGrid::badDirAlign, MsgExpr @ e, RowAlignments]; 0.5)
 ];
 
-repeatMax[n_] := ConstantArray[Max @ n, Length @ n];
+repeatMax[n_] := Repeat[Max @ n, Length @ n];
 

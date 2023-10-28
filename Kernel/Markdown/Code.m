@@ -30,7 +30,7 @@ $shortcodeRules = {
   (code:$colorShortcodeP ~~ "{" ~~ body:Except["\n"|"}"].. ~~ "}") :> applyShortcode[code, balancedQ @ body],
   (* Fira Code doesn't have well-sized DS letters outside R,C,N,Z etc *)
   l:DoubleStruckCharacter :> doubleStruckToBoldRoman[l],
-  "\\n" | "\n" ~~ s:" ".. :> StringJoin["<br>", ConstantArray["&nbsp;", StringLength @ s]],
+  "\\n" | "\n" ~~ s:" ".. :> StringJoin["<br>", Repeat["&nbsp;", StringLength @ s]],
   "\\n" | "\n" -> "<br>",
   "^{" ~~ sup:Shortest[___] ~~ "}" /; balancedQ[sup] :> StringJoin["<sup>", subShortCodes @ sup, "</sup>"],
   "_{" ~~ sub:Shortest[___] ~~ "}" /; balancedQ[sub] :> StringJoin["<sub>", subShortCodes @ sub, "</sub>"],

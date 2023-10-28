@@ -503,7 +503,7 @@ findLerp[a_Association, b_Association] :=
     MapThread[findLerp, {a, b}]
   ];
 
-findLerp[a_ ? System`Private`EntryQ, b_ ? System`Private`EntryQ] /; And[!AtomQ[a], !AtomQ[b], SameHeadQ[a, b], SameLengthQ[a, b]] := Block[
+findLerp[a_ ? EntryQ, b_ ? EntryQ] /; And[!AtomQ[a], !AtomQ[b], SameHeadQ[a, b], SameLengthQ[a, b]] := Block[
   {$headStack = Append[$headStack, Head @ a]},
   Apply[Head @ a, MapThread[findLerp, {List @@ a, List @@ b}]]
 ];

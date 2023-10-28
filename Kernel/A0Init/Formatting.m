@@ -22,17 +22,21 @@ PrivateSpecialFunction[DefineStandardTraditionalForm]
 
 PublicFunction[HasBoxFormQ]
 
-$BoxFormHeadAssoc = UAssociation[];
+CacheSymbol[$StandardTraditionalFormCache]
+
+$boxFormHeadAssoc = UAssociation[];
 
 DefineStandardTraditionalForm[list_List] := Scan[DefineStandardTraditionalForm, list];
 
-DefineStandardTraditionalForm[lhs_ :> rhs_] := (
-  AssociateTo[$BoxFormHeadAssoc, PatternHead[lhs] -> True];
-  MakeBoxes[lhs /; Refresh[!BoxForm`UseTextFormattingQ, None], StandardForm] := rhs;
-  MakeBoxes[l:lhs, TraditionalForm] := MakeBoxes @ l;
+DefineStandardTraditionalForm[rule:(lhs_ :> rhs_)] := (
+  AssociateTo[$boxFormHeadAssoc, PatternHead[lhs] -> True];
+  CacheTo[$StandardTraditionalFormCache, rule,
+    MakeBoxes[lhs /; Refresh[!BoxForm`UseTextFormattingQ, None], StandardForm] := rhs;
+    MakeBoxes[l:lhs, TraditionalForm] := MakeBoxes @ l;
+  ];
 )
 
-HasBoxFormQ[head_Symbol[___] | head_Symbol] := Lookup[$BoxFormHeadAssoc, Hold[head], False];
+HasBoxFormQ[head_Symbol[___] | head_Symbol] := Lookup[$boxFormHeadAssoc, Hold[head], False];
 HasBoxFormQ[_] := False;
 
 _DefineStandardTraditionalForm := BadArguments[];

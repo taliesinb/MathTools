@@ -7,11 +7,11 @@ bandEasingFunction[x_] := Tanh[$easeSpeed (x - 1)^1/9] + Tanh[$easeSpeed (x + 1)
 
 bandThetas[twists_, n_] := Interpolated[0, Pi * twists, n];
 bandThetas[1, n_] := Pi/2 * Map[bandEasingFunction, Interpolated[-1, 1, n]];
-bandThetas[0, n_] := ConstantArray[0, n];
+bandThetas[0, n_] := Repeat[0, n];
 
 bandThetas[twists_, x_List] := Pi * twists * x;
 bandThetas[1, x_List] := Pi/2 * Map[bandEasingFunction, x];
-bandThetas[0, x_List] := ConstantArray[0, Length @ x];
+bandThetas[0, x_List] := Repeat[0, Length @ x];
 
 
 PublicFunction[BandBoundaryPoints]
@@ -116,7 +116,7 @@ BandAxisPoints[opts:OptionsPattern[]] := Scope[
   {R, r} = bandRadii; n = bandPoints + 1;
   phi = Interpolated[-Pi, Pi, n];
   theta = bandThetas[bandTwists, n];
-  ToPacked @ Transpose @ N @ {R * Cos[phi], R * Sin[phi], ConstantArray[0, n]}
+  ToPacked @ Transpose @ N @ {R * Cos[phi], R * Sin[phi], Repeat[0, n]}
 ]
 
 (**************************************************************************************************)

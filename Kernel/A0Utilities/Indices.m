@@ -9,7 +9,7 @@ PublicFunction[EquivalenceClassLabels]
 
 EquivalenceClassLabels[list_] := Scope[
   n = Max[list];
-  arr = ConstantArray[0, n];
+  arr = Repeat[0, n];
   ScanIndexed[Set[Part[arr, #1], First[#2]]&, list];
   arr
 ]

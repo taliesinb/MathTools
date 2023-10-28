@@ -529,7 +529,7 @@ makeEndDiskPrimitives[indices_, styleName_, radius_] := Scope[
   If[Length[primitives] =!= Length[indices], ReturnFailed[]];
   frameRadius = radius / $GraphPlotEffectiveImageWidth * 2;
   diskRadius = radius / $GraphPlotEffectiveImageWidth * $graphPlotWidth;
-  isDisk = ConstantArray[False, Length @ indices];
+  isDisk = Repeat[False, Length @ indices];
   If[StringStartsQ[styleName, "Disk"|"Dot"], Part[isDisk, 1] = True];
   If[StringEndsQ[styleName, "Disk"|"Dot"], Part[isDisk, -1] = True];
   MapThread[makeEndDisk, {primitives, indices, isDisk}]

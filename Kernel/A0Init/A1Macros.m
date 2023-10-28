@@ -191,7 +191,7 @@ LabeledEchoSetDelayed[label_, esdLhs_, esdRhs_] := SetDelayed[(esdLhsVar:esdLhs)
 
 $esdTab = 0;
 $pendingEchoPrint = None;
-$callStack = ConstantArray[Null, 512];
+$callStack = Repeat[Null, 512];
 
 Attributes[iLabeledEchoSet] = {HoldAllComplete};
 
@@ -413,7 +413,7 @@ Case::baddef = "Bad case definition for ``."
 setupCases[sym_, echo_, args___] := Message[Case::baddef, sym];
 
 SetHoldAllComplete[procRewrites];
-procRewrites[s_Symbol ? System`Private`HasImmediateValueQ] := HoldPattern[s] -> s;
+procRewrites[s_Symbol ? HasImmediateValueQ] := HoldPattern[s] -> s;
 procRewrites[l_List] := Map[procRewrites, Unevaluated @ l];
 procRewrites[a_ -> b_] := HoldPattern[a] -> b;
 procRewrites[a_ :> b_] := HoldPattern[a] :> b;
@@ -778,13 +778,13 @@ defineReplacer[ReplaceInherited, Inherited];
 
 (**************************************************************************************************)
 
-PrivateVariable[$NotImplemented]
+PrivateSpecialFunction[$NotImplemented]
 
 $NotImplemented := Panic["NotImplemented"];
 
 (**************************************************************************************************)
 
-PrivateFunction[OnFailed]
+PrivateSpecialFunction[OnFailed]
 
 SetUsage @ "
 OnFailed[expr$, body$] evaluates and returns body$ if expr$ is $Failed, otherwise returns expr$.
@@ -920,7 +920,7 @@ LengthEqualOrMessage[msg_MessageName, list1_, list2_] := With[
 
 (**************************************************************************************************)
 
-PublicFunction[WithInternet]
+PublicSpecialFunction[WithInternet]
 
 SetAttributes[WithInternet, HoldAll];
 

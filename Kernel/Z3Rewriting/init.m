@@ -21,7 +21,7 @@ constructRewritingSystem[type_, rules_, opts:OptionsPattern[RewritingSystemObjec
     "CanonicalizationFunction" -> canonicalizationFunction,
     customProperties
   ];
-  System`Private`ConstructNoEntry[RewritingSystemObject, assoc]
+  ConstructNoEntry[RewritingSystemObject, assoc]
 ];
 
 (* TODO: system for normalizing rules (e.g. handling <->), allowing manually tagged rules,
@@ -44,13 +44,13 @@ declareRewritingSystemDispatch[type_, dispatchFunction_] :=
 PublicFunction[RewritingSystemObjectQ]
 
 RewritingSystemObjectQ = Case[
-  rs_RewritingSystemObject ? System`Private`HoldNoEntryQ := True;
+  rs_RewritingSystemObject ? HoldNoEntryQ := True;
   _ := False;
 ];
 
 (**************************************************************************************************)
 
-MakeBoxes[rs_RewritingSystemObject ? System`Private`HoldNoEntryQ, form_] :=
+MakeBoxes[rs_RewritingSystemObject ? HoldNoEntryQ, form_] :=
   rewritingSystemObjectBoxes[rs, form];
 
 rewritingSystemObjectBoxes[rs:RewritingSystemObject[data_], form_] := Scope[

@@ -30,7 +30,7 @@ GraphAdd[graph_, newVertices_, newEdges_] := Scope[
   newGraph //= DeleteVertexAnnotations;
   vertexCoordinates = Lookup[options, VertexCoordinates];
   If[CoordinateMatrixQ[vertexCoordinates],
-    vertexCoordinates = Join[vertexCoordinates, ConstantArray[0., {newVertexCount, InnerDimension @ vertexCoordinates}]];
+    vertexCoordinates = Join[vertexCoordinates, Repeat[0., {newVertexCount, InnerDimension @ vertexCoordinates}]];
     newVertexIndices = Range[newVertexCount] + oldVertexCount;
     adjTable = Drop[VertexAdjacencyTable @ newGraph, oldVertexCount];
     Do[

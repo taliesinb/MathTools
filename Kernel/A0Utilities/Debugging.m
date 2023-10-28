@@ -228,7 +228,7 @@ extractHead[head_Symbol[___]] := If[QGSymbolQ[head], HoldForm[head], Nothing];
 extractHead[head_[___]] := extractHead[head];
 extractHead[_] := Nothing;
 
-QGSymbolQ[s_Symbol ? HoldAtomQ] := StringStartsQ[Context @ Unevaluated @ s, "QuiverGeometry`"] && System`Private`HasAnyEvaluationsQ[s];
+QGSymbolQ[s_Symbol ? HoldAtomQ] := StringStartsQ[Context @ Unevaluated @ s, "QuiverGeometry`"] && HasAnyEvaluationsQ[s];
 QGSymbolQ[_] := False;
 
 (**************************************************************************************************)
@@ -396,7 +396,7 @@ findMissingPackageScopes[] := Scope[
 ]
 
 possibleMissingPackageScope[names_] :=
-  CountDistinct[ToExpression[names, InputForm, System`Private`HasAnyEvaluationsQ]] > 1;
+  CountDistinct[ToExpression[names, InputForm, HasAnyEvaluationsQ]] > 1;
 
 (**************************************************************************************************)
 

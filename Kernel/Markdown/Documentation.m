@@ -238,7 +238,7 @@ UsageToMarkdown[usage_String] :=
 
 
 UsageToMarkdown[mainSymbol_String -> usage_String] := Scope[
-  (* $currentMainSymbol will be picked up later by ParseUsageString, it's PackageScope *)
+  (* $currentMainSymbol will be picked up later by ParseUsageString, it's declared PrivateVariable *)
   $currentMainSymbol = mainSymbol;
   TokensToMarkdown @ ParseUsageString @ usage
 ];

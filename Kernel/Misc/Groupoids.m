@@ -58,7 +58,7 @@ constructGroupoid[assoc_] := Scope[
       None
     ];
   ];
-  System`Private`ConstructNoEntry[GroupoidObject, assoc]
+  ConstructNoEntry[GroupoidObject, assoc]
 ];
 
 declareObjectPropertyDispatch[GroupoidObject, groupoidProperty];
@@ -77,7 +77,7 @@ groupoidProperty[data_, "CompleteStates"] := Scope[
 
 (**************************************************************************************************)
 
-MakeBoxes[go_GroupoidObject ? System`Private`HoldNoEntryQ, form_] :=
+MakeBoxes[go_GroupoidObject ? HoldNoEntryQ, form_] :=
   groupoidObjectBoxes[go, form];
 
 groupoidObjectBoxes[object:GroupoidObject[data_], form_] := Scope[
@@ -160,7 +160,7 @@ GroupoidPermutationTable[groupoid_] := Scope[
 
 PublicFunction[GroupoidObjectQ]
 
-GroupoidObjectQ[go_GroupoidObject ? System`Private`HoldNoEntryQ] := True;
+GroupoidObjectQ[go_GroupoidObject ? HoldNoEntryQ] := True;
 GroupoidObjectQ[_] := False;
 
 (**************************************************************************************************)

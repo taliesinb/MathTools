@@ -31,13 +31,17 @@ $styleFormHeadQ[Style] = True;
 
 PrivateSpecialFunction[setupFormDefinitionCaching, clearFormDefinitionCache]
 
+CacheSymbol[$FormDefinitionCache]
+
 setupFormDefinitionCaching[fn_Symbol] := (
   expr_fn /; TrueQ[$fdCacheEnabled] := Block[
     {key = getFDCacheKey[expr], hash = Hash[Unevaluated @ expr], res, pair, $fdCacheEnabled = False},
-    pair = Lookup[$formDefinitionCache, key];
-    If[ListQ[pair] && Last[pair] === hash, res = First @ pair,
+    pair = Lookup[$FormDefinitionCache, key];
+    If[ListQ[pair] && Last[pair] === hash,
+      res = First @ pair
+    ,
       res = expr;
-      AssociateTo[$formDefinitionCache, key -> {res, hash}];
+      AssociateTo[$FormDefinitionCache, key -> {res, hash}];
     ];
     res
   ];
@@ -46,8 +50,6 @@ setupFormDefinitionCaching[fn_Symbol] := (
 clearFormDefinitionCache[] := (
   $formDefinitionCache = UAssociation[];
 )
-
-SetInitialValue[$formDefinitionCache, UAssociation[]];
 
 $fdCacheEnabled = True;
 
@@ -1008,7 +1010,6 @@ makeInlineStyleForm @@@ ExpressionTable[
   BoldForm            BoldBox            Bold
   UnderlinedForm      UnderlinedBox      Underlined
   ItalicForm          ItalicBox          Italic
-  UnderlinedForm      UnderlinedBox      Underlined
   StruckthroughForm   StruckthroughBox   Struckthrough
   LargerForm          LargerBox          Larger
   SmallerForm         SmallerBox         Smaller
@@ -1157,6 +1158,15 @@ $compactNumberOptions = {
   NegationStyle -> "Color",
   InversionStyle -> UnderBar
 };
+
+(**************************************************************************************************)
+
+(* these mirror SuperStar and SuperDagger in System` *)
+
+PublicTypesettingBoxFunction[SuperStarBox, SuperDaggerBox]
+
+SuperStarBox[e_] := SuperscriptBox[e, "*"];
+SuperDaggerBox[e_] := SuperscriptBox[e, "\[Dagger]"];
 
 (**************************************************************************************************)
 

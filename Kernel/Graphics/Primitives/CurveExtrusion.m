@@ -13,6 +13,8 @@ curveExtrusionBoxes[CurveExtrusion[curve_, r:$NumberP]] :=
 
 PublicFunction[ExtrudeCurveToPolygon]
 
+CacheSymbol[$CurveExtrusionCache]
+
 (* not sure why, but if you don't do this the resulting polygon is closed from the start to end point *)
 doubleUpCurve = Case[
 	BezierCurve[c_] := JoinedCurve[{BezierCurve @ c, BezierCurve @ Reverse @ c}];
@@ -20,8 +22,6 @@ doubleUpCurve = Case[
 	points_List     := % @ Line @ points;
 	curve_          := % @ DiscretizeCurve @ curve;
 ];
-
-$extrusionCache = UAssociation[];
 
 ExtrudeCurveToPolygon[Line[{a_, b_}] | {a_, b_}, r_] := Scope[
   d = VectorRotate90[Normalize[b - a]] * r;
@@ -31,7 +31,7 @@ ExtrudeCurveToPolygon[Line[{a_, b_}] | {a_, b_}, r_] := Scope[
 ExtrudeCurveToPolygon::failed = "Could not extrude curve ``."
 ExtrudeCurveToPolygon[curve_, r_] := Scope[
 	key = Hash @ {curve, r};
-	result = $extrusionCache @ key;
+	result = $CurveExtrusionCache @ key;
 	If[!MissingQ[result], Return @ result];
 	doubled = doubleUpCurve @ curve;
   region = DiscretizeGraphics @ doubled;
@@ -45,7 +45,7 @@ ExtrudeCurveToPolygon[curve_, r_] := Scope[
       Message[ExtrudeCurveToPolygon::failed, MsgExpr @ curve];
   	  result = $Failed;
   ];
-	AssociateTo[$extrusionCache, key -> result];
+	AssociateTo[$CurveExtrusionCache, key -> result];
 	result
 ];
 

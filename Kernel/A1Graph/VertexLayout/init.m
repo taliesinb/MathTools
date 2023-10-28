@@ -68,7 +68,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
 
   vertexList = VertexList @ graph;
   vertexCount = Length @ vertexList;
-  vertexCoordinates = ConstantArray[0., vertexCount];
+  vertexCoordinates = Repeat[0., vertexCount];
   edgeList = EdgeList @ igraph;
   edgeCount = Length @ edgeList;
 
@@ -238,8 +238,8 @@ VertexEdgeCoordinateData[data_Association, vertexLayout_] := Scope[
     layoutDimension
   ];
 
-  $vertexCoordinates = ConstantArray[None, vertexCount];
-  $edgeCoordinateLists = ConstantArray[{}, Length @ indexEdges];
+  $vertexCoordinates = Repeat[None, vertexCount];
+  $edgeCoordinateLists = Repeat[{}, Length @ indexEdges];
 
   graphLayout = {
     "VertexLayout" -> vertexLayout,

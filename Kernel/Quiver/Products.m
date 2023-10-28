@@ -360,7 +360,7 @@ edgeListTaggedTables[edgeList_] := Scope[
   b = OutVertices @ edgeList;
   c = If[Length @ First @ edgeList === 3,
     Part[edgeList, All, 3],
-    ConstantArray[None, Length @ edgeList]
+    Repeat[None, Length @ edgeList]
   ];
   oAssoc = Merge[Identity] @ RuleThread[a, Trans[b, c]];
   iAssoc = Merge[Identity] @ RuleThread[b, Trans[a, Inverted /@ c]];

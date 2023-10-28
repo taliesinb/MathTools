@@ -23,10 +23,10 @@ LevelPart[array_, 4 -> part_] := Part[array, All, All, All, part];
 LevelPart[array_, 5 -> part_] := Part[array, All, All, All, All, part];
 
 LevelPart[array_, depth_Integer -> part_] :=
-  Part[array, Append[ConstantArray[All, If[depth < 0, depth + ArrayDepth[array], depth - 1]], part]];
+  Part[array, Append[Repeat[All, If[depth < 0, depth + ArrayDepth[array], depth - 1]], part]];
 
 LevelPart[array_, spec_List] := Scope[
-  part = ConstantArray[All, ArrayDepth @ array];
+  part = Repeat[All, ArrayDepth @ array];
   Part[array, Sequence @@ ReplacePart[part, spec]]
 ]
 
@@ -201,21 +201,21 @@ InsertConstantColumn[item_, n_][matrix_] := InsertConstantColumn[matrix, item, n
 
 PublicFunction[AppendConstantRow]
 
-AppendConstantRow[matrix_, item_] := Append[matrix, ConstantArray[item, Length @ First @ matrix]];
+AppendConstantRow[matrix_, item_] := Append[matrix, Repeat[item, Length @ First @ matrix]];
 AppendConstantRow[item_][matrix_] := AppendConstantRow[matrix, item];
 
 (**************************************************************************************************)
 
 PublicFunction[PrependConstantRow]
 
-PrependConstantRow[matrix_, item_] := Prepend[matrix, ConstantArray[item, Length @ First @ matrix]];
+PrependConstantRow[matrix_, item_] := Prepend[matrix, Repeat[item, Length @ First @ matrix]];
 PrependConstantRow[item_][matrix_] := PrependConstantRow[matrix, item];
 
 (**************************************************************************************************)
 
 PublicFunction[InsertConstantRow]
 
-InsertConstantRow[matrix_, item_, n_] := Insert[matrix, ConstantArray[item, Length @ First @ matrix], n];
+InsertConstantRow[matrix_, item_, n_] := Insert[matrix, Repeat[item, Length @ First @ matrix], n];
 InsertConstantRow[item_, n_][matrix_] := InsertConstantRow[matrix, item, n];
 
 (**************************************************************************************************)
@@ -517,13 +517,13 @@ SetUsage @ "
 ZeroMatrix[n$] represents the zero n$ \[Times] n$ matrix.
 "
 
-ZeroMatrix[n_] := ConstantArray[0, {n, n}];
+ZeroMatrix[n_] := Repeat[0, {n, n}];
 
 (**************************************************************************************************)
 
 PublicFunction[Ones]
 
-Ones[i_] := ConstantArray[1, i];
+Ones[i_] := Repeat[1, i];
 
 (**************************************************************************************************)
 
@@ -546,8 +546,8 @@ AppendOnes = Case[
 
 PublicFunction[Zeros, ZerosLike]
 
-Zeros[i_] := ConstantArray[0, i];
-ZerosLike[arr_] := ConstantArray[0, Dimensions @ arr];
+Zeros[i_] := Repeat[0, i];
+ZerosLike[arr_] := Repeat[0, Dimensions @ arr];
 
 (**************************************************************************************************)
 
@@ -591,7 +591,7 @@ PadRows[ragged_, item_] := Scope[
 
 padToLength[n_, item_][vector_] := Scope[
   l = Length[vector];
-  If[l < n, Join[vector, ConstantArray[item, n - l]], vector]
+  If[l < n, Join[vector, Repeat[item, n - l]], vector]
 ];
 
 (**************************************************************************************************)
@@ -601,7 +601,7 @@ PublicFunction[PadColumns]
 PadColumns[ragged_, n_, item_] := Scope[
   full = PadRows[ragged, item];
   w = Length @ First @ full;
-  padToLength[n, ConstantArray[item, w]] @ full
+  padToLength[n, Repeat[item, w]] @ full
 ]
 
 (**************************************************************************************************)

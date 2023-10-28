@@ -30,7 +30,7 @@ ListRiffle[list_List, riffleList_List] := Scope[
 ];
 
 ScalarRiffle[list_List, scalar_] :=
-  Most @ Catenate @ Transpose[{list, ConstantArray[scalar, Length @ list]}];
+  Most @ Catenate @ Transpose[{list, Repeat[scalar, Length @ list]}];
 
 (**************************************************************************************************)
 

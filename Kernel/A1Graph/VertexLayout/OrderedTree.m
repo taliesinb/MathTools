@@ -76,14 +76,14 @@ OrderedTreeLayoutCoordinates[indexGraph_, root_, layerDepths_:Automatic] := Scop
   If[NumericQ[depths], depths //= ToList];
 
   $x = 1.;
-  $d = ConstantArray[0, vertexCount];
-  $ccount = ConstantArray[0, vertexCount];
-  $cindex = ConstantArray[0, vertexCount];
-  $parent = ConstantArray[0, vertexCount];
-  $xs = ConstantArray[0., vertexCount];
-  $ys = ConstantArray[0., vertexCount];
-  $bounds = ConstantArray[{}, vertexCount];
-  $isLast = $isFirst = ConstantArray[False, vertexCount];
+  $d = Repeat[0, vertexCount];
+  $ccount = Repeat[0, vertexCount];
+  $cindex = Repeat[0, vertexCount];
+  $parent = Repeat[0, vertexCount];
+  $xs = Repeat[0., vertexCount];
+  $ys = Repeat[0., vertexCount];
+  $bounds = Repeat[{}, vertexCount];
+  $isLast = $isFirst = Repeat[False, vertexCount];
   $outDeg = VertexOutDegree @ indexGraph;
   Part[$ccount, rootIndex] = -1;
 

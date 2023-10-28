@@ -7,7 +7,7 @@ FadedMeshImage[array_, blockSize_, fadeFactor_:0.8, frame_:None] := Scope[
   {h, w} = Take[dims, 2];
   {b1, b2} = blockSize + {If[True, -1, 0], 1}; d = 0;
   {h2, w2} = 1 + {h, w} * b2 - 2d;
-  pixels = ConstantArray[0., {3, h2, w2}]; fade = ConstantArray[1., {3, h2, w2}];
+  pixels = Repeat[0., {3, h2, w2}]; fade = Repeat[1., {3, h2, w2}];
   ScanIndexed[paintBlockAdditive, ToPackedArray @ array, {2}];
   Do[multRow[0.5, r * b2 + 1], {r, 1, h - 1}];
   Do[multCol[0.5, c * b2 + 1], {c, 1, w - 1}];
@@ -63,7 +63,7 @@ MeshImage[array_, blockSize_, OptionsPattern[]] := Scope[
   hasColor = Length[dims] == 3;
   d = If[frame, 0, 1];
   {h2, w2} = 1 + {h, w} * b2 - 2d;
-  pixels = ToPackedReal @ ConstantArray[N @ meshStyle, If[hasColor, {h2, w2, 3}, {h2, w2}]];
+  pixels = ToPackedReal @ Repeat[N @ meshStyle, If[hasColor, {h2, w2, 3}, {h2, w2}]];
   If[frame, If[hasColor, paintFrame[All], paintFrame[]]];
   pixels //= ToPackedReal;
   ScanIndexed[If[hasColor && b1 == 2, paintBlockSafe, paintBlock], ToPackedArray @ array, {2}];

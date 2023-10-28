@@ -9,7 +9,7 @@ RegionSubgraph::empty = "The specified region is empty."
 
 DeclareArgumentCount[RegionSubgraph, 2];
 
-declareSyntaxInfo[RegionSubgraph, {_, _, OptionsPattern[]}];
+declareSyntaxInfo[RegionSubgraph, {_, _}];
 
 RegionSubgraph[graph_, region_] := Scope[
   graph = CoerceToGraph[1];
@@ -237,7 +237,7 @@ GraphRegionVertexEdgeList[graph_, region_List] :=
   Match[
     GraphRegion[graph, region],
     r:{___GraphRegionData} :> {Part[r, All, 1], Part[r, All, 2]},
-    _ :> ConstantArray[$Failed, {2, Length @ region}]
+    _ :> Repeat[$Failed, {2, Length @ region}]
   ]
 
 (**************************************************************************************************)

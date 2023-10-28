@@ -146,23 +146,55 @@ regionComponentPolygon[region_] := Scope[
 
 PublicFunction[TextToPolygon]
 
+CacheSymbol[$TextToPolygonCache]
+
 SetUsage @ "
-TextToPolygon[text$, fontSize$, fontFamily$, fontWeight$] turns text into a polygon.
+TextToPolygon['text$', fontSize$, fontFamily$, fontWeight$] turns text into a polygon, returning a pair of the primitives and a bounding box.
 * the 'OperatorSubstitution' option is used to ensure the font applies to characters like '['.
 * this means they are not rendered extensibly, so font$ should not be a %Row etc.
 * the result is cached.
+* the polygon is shifted so that the baseline is exactly the X axis.
 "
 
-TextToPolygon[text_, fontSize_, fontFamily_:$MathFont, fontWeight_:"Regular"] :=
-  TextToPolygon[text, fontSize, fontFamily, fontWeight] = Block[{polys},
-  polys = RegionPolygon @ BoundaryDiscretizeGraphics[
+TextToPolygon[text_String, fontSize_, fontFamily_:$MathFont, fontWeight_:"Regular"] :=
+  MaybeCacheTo[$TextToPolygonCache, {text, fontSize, fontFamily, fontWeight},
+    iTextToPolygon[text, fontSize, fontFamily, fontWeight]];
+
+iTextToPolygon[text_, fontSize_, fontFamily_, fontWeight_] := Scope[
+
+  polygons = RegionPolygon @ BoundaryDiscretizeGraphics[
     makeTPStyled[text, fontSize, fontFamily, fontWeight],
     _Text, MaxCellMeasure -> 0.05
   ];
-  If[MatchQ[polys, {__Polygon}], Polygon @ polys[[All, 1]], polys]
+
+  (* was a whitespace string? *)
+  If[MatchQ[polygons, _Polygon | {_Polygon}], Return @ {{}, {{0, 0}, {0, 0}}}];
+
+  (* extract the final dot by its x position *)
+  dotIndex = MaximumIndexBy[polygons, DeepFirstCase[#, $NumberP]&];
+  dot = Part[polygons, dotIndex];
+  polygons = Delete[polygons, dotIndex];
+  {lr, {b, t}} = CoordinateBounds @ First @ dot;
+
+  $alignTrans = Threaded[{0, -b}];
+  polygons //= alignPolygons;
+
+  (* hacky but cheap *)
+  bounds = PrimitiveBoxesBounds[polygons /. {Polygon -> PolygonBox, Line -> LineBox, Disk -> DiskBox, Circle -> CircleBox}];
+
+  If[Length[polygons] === 1, polygons //= First];
+
+  List[polygons, bounds]
 ];
 
-makeTPStyled[text_, fs_, ff_, fw_] := Text @ Style[text,
+alignPolygons = Case[
+  m_ ? MatrixQ := ToPackedReal[$alignTrans + m];
+  list_List := % /@ list;
+  Polygon[m_List, o___] := Polygon[% @ m, o];
+  Polygon[r_Rule, o___] := Polygon[% /@ r, o];
+]
+
+makeTPStyled[text_, fs_, ff_, fw_] := Text @ Style[text <> ".",
   FontSize -> fs, FontFamily -> ff, FontWeight -> fw,
   PrivateFontOptions -> {"OperatorSubstitution" -> False}
 ];

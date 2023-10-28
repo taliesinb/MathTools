@@ -9,6 +9,13 @@ the typed Package` declarations that categorize QG's own symbols.
 *)
 
 {
+
+"SymbolAliases" -> {
+  "UAssociation" -> Data`UnorderedAssociation,
+  "Repeat"       -> ConstantArray
+},
+
+
 {"System`", "Package"} -> {
 Package`Package,
 Package`PackageExport, Package`PackageScope,  Package`PackageImport,
@@ -22,7 +29,9 @@ Package`PublicTypesettingForm, Package`PublicTypesettingFormBox,
 Package`PublicTypesettingBoxFunction, Package`PrivateTypesettingBoxFunction,
 Package`SystemGraphicsDirective, Package`PublicGraphicsPrimitive, Package`PublicGraphicsDirective,
 Package`PrivateSpecialFunction, Package`PublicSpecialFunction,
-Package`PublicScopingFunction
+Package`PublicScopingFunction,
+
+Package`CacheSymbol
 },
 
 {"System`", "Symbol"} -> {
@@ -113,8 +122,8 @@ Failure, $Failed, $Aborted, $TimedOut, Hold[$Context, $ContextPath],
 MakeBoxes, ToBoxes, ToExpression, MakeExpression,
 Break, Continue, Goto, Label,
 DynamicModule,
-ImportString, Import, Get, Read,  Hold @ ReadString,  ReadLine, ReadList, BinaryRead, BinaryReadList, ReadByteArray,
-ExportString, Export, Put, Write, WriteString,        WriteLine, BinaryWrite, BinarySerialize, BinaryDeserialize,
+ImportString, ImportByteArray, Import, Get, Read,  Hold @ ReadString,  ReadLine, ReadList, BinaryRead, BinaryReadList, ReadByteArray,
+ExportString, ExportByteArray, Export, Put, Write, WriteString,        WriteLine, BinaryWrite, BinarySerialize, BinaryDeserialize,
 Skip, Find, StreamPosition, SetStreamPosition, Streams,
 OpenRead, OpenWrite, OpenAppend, Close, CreateFile,
 NotebookGet, NotebookRead, Hold @ NotebookImport, NotebookSave, NotebookFind, NotebookOpen, NotebookClose,
@@ -187,13 +196,13 @@ Italic, Bold, Plain, Underlined, Struckthrough
 
 {"System`", "GraphicsPrimitive"} -> {
 Rotate, Translate, Scale, GeometricTransformation,
-(* TranslationTransform, ScalingTransform, RotationTransform, TransformationMatrix, AffineTransform, *)
 Graphics, Graphics3D,
 Inset, Text, GraphicsGroup, GraphicsComplex, Raster,
 Line, Circle, Annulus, Rectangle, Triangle, Disk, DiskSegment, Point, Polygon, Arrow, Arrowheads,
 BezierCurve, Simplex, BSplineCurve, JoinedCurve, FilledCurve,
 HalfLine, InfiniteLine, InfinitePlane,
-Sphere, Tube, Cube, Cuboid, Cylinder, Cone, CapsuleShape, StadiumShape
+Sphere, Tube, Cube, Cuboid, Cylinder, Cone, CapsuleShape, StadiumShape,
+FilledTorus, Dodecahedron, Icosahedron, Octahedron, Parallelepiped
 },
 
 {"System`", "GraphicsBoxFunction"} -> {
@@ -275,6 +284,16 @@ Developer`CellInformation
 },
 
 {"System`Private`", "Function"} -> {
-System`Private`MightEvaluateWhenAppliedQ
+System`Private`ConstructNoEntry, System`Private`EntryQ, System`Private`HasAnyCodesQ, System`Private`HasAnyEvaluationsQ, System`Private`HasDelayedValueQ,
+System`Private`HasDownCodeQ, System`Private`HasDownEvaluationsQ, System`Private`HasImmediateValueQ, System`Private`HasNoCodesQ, System`Private`HasNoEvaluationsQ,
+(* System`Private`HasOwnCodeQ, this got disabled *)
+System`Private`HasOwnEvaluationsQ, System`Private`HasPrintCodeQ, System`Private`HasSubCodeQ, System`Private`HasSubEvaluationsQ, System`Private`HasUpCodeQ,
+System`Private`HasUpEvaluationsQ, System`Private`HoldEntryQ, System`Private`HoldNoEntryQ, System`Private`HoldNotValidQ, System`Private`HoldValidQ,
+System`Private`MDataQ, System`Private`MightEvaluateQ, System`Private`MightEvaluateWhenAppliedQ, System`Private`NoEntryQ, System`Private`NotValidQ,
+System`Private`WillNotEvaluateQ, System`Private`WillNotEvaluateWhenAppliedQ, System`Private`SetNoEntry, System`Private`SetValid, System`Private`ValidQ
+},
+
+{"Data`", "Head"} -> {
+  Data`UnorderedAssociation
 }
 }

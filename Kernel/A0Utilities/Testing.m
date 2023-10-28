@@ -23,7 +23,6 @@ RunTests['patt$'] runs tests that match the string pattern patt$.
 | %DisableCaching | whether to disable all caching for purposes of reproducibility (default True) |
 "
 
-
 PublicOption[TestContentsPattern, DisableCaching]
 
 Options[RunTests] = {
@@ -38,6 +37,8 @@ RunTests::notests = "No test files present in `` match ``.";
 
 $testsInPath := $testsInPath = LocalPath["Tests", "Inputs"];
 $testsOutPath := $testsOutPath = LocalPath["Tests", "Outputs"];
+
+declareFunctionAutocomplete[RunTests, {FileNameTake /@ FileNames["*.wl", $testsInPath]}];
 
 RunTests[filePattern_String:All, OptionsPattern[]] := Scope[
 
@@ -217,7 +218,7 @@ TestOutputGallery[data_] := Scope[
 (**************************************************************************************************)
 
 $testContext = "QuiverGeometry`TestHarness`";
-$testContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`PackageScope`"};
+$testContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`Private`"};
 
 RunTests::badTestFile = "Could not read list of expressions from test file ``.";
 RunTests::syntaxError = "Syntax error at ``.";

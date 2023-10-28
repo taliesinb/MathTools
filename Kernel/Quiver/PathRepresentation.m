@@ -43,7 +43,7 @@ PathRepresentation[quiver_, representation_, initialVertex_:Automatic] := Scope[
 ];
 
 constructPathRepresentationObject[assoc_] :=
-  System`Private`ConstructNoEntry[PathRepresentationObject, assoc];
+  ConstructNoEntry[PathRepresentationObject, assoc];
 
 Format[LinearRepresentationObject[matrix_?MatrixQ], StandardForm] :=
   renderRepresentationMatrix[matrix];
@@ -99,7 +99,7 @@ SetUsage @ "
 PathRepresentationObject[$$] represents a Quiver with an associated representation.
 "
 
-PathRepresentationObject /: MakeBoxes[object:PathRepresentationObject[data_Association] ? System`Private`HoldNoEntryQ, format_] := ModuleScope[
+PathRepresentationObject /: MakeBoxes[object:PathRepresentationObject[data_Association] ? HoldNoEntryQ, format_] := ModuleScope[
   UnpackAssociation[data, quiver, generators, representation];
   dimension = representation["Dimension"];
   group = representation["Group"];
@@ -210,7 +210,7 @@ SetUsage @ "
 PathRepresentationObjectQ[obj$] returns True if obj$ is a valid PathRepresentationObject.
 "
 
-PathRepresentationObjectQ[_PathRepresentationObject ? System`Private`HoldNoEntryQ] := True;
+PathRepresentationObjectQ[_PathRepresentationObject ? HoldNoEntryQ] := True;
 PathRepresentationObjectQ[_] := False;
 
 

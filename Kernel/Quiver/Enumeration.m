@@ -232,7 +232,7 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
          ]
       ];
     ]),
-    ConstantArray[Length @ edgeSubsets, cardCount]
+    Repeat[Length @ edgeSubsets, cardCount]
   ]; *)
   If[$EnumerateVerboseMode, Print["creating graphs"]]; i1o = 0;
   OrderedTupleScan[

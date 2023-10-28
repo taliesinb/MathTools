@@ -1,3 +1,9 @@
+PublicFunction[DebugGraphics]
+
+DebugGraphics[g_, opts___] :=
+  FixedGraphics[g, Ticks -> True, opts];
+
+
 PublicTypesettingForm[FixedGraphics]
 
 PublicOption[ResolveInsetGraphics]

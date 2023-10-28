@@ -196,6 +196,6 @@ matrixMapNA[f_, array_] := InheritedBlock[
 ];
 
 (* unpackSpec[d_][list_List] := PadRight[list, d, Last @ list];
-unpackSpec[d_][RepeatedSpec[elems__]] := Take[Catenate @ ConstantArray[{elems}, d], d];
-unpackSpec[d_][e_] := ConstantArray[e, d];
+unpackSpec[d_][RepeatedSpec[elems__]] := Take[Catenate @ Repeat[{elems}, d], d];
+unpackSpec[d_][e_] := Repeat[e, d];
  *)

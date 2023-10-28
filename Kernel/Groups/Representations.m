@@ -37,14 +37,14 @@ constructLinearGroupRepresentation[data_] := Scope[
     AbelianGroupQ[group] || AllTrue[matrices, TranslationMatrixQ], "Abelian",
     True, "Mixed"
   ];
-  System`Private`ConstructNoEntry[LinearRepresentationObject, Append[data, "Type" -> type]]
+  ConstructNoEntry[LinearRepresentationObject, Append[data, "Type" -> type]]
 ];
 
 $representationIcon =
  Framed[Style["R", FontSize -> 20], FrameStyle -> Gray,
   ImageSize -> {35, 35}, Alignment -> Center]
 
-LinearRepresentationObject /: MakeBoxes[object:LinearRepresentationObject[data_Association] ? System`Private`HoldNoEntryQ, format_] := ModuleScope[
+LinearRepresentationObject /: MakeBoxes[object:LinearRepresentationObject[data_Association] ? HoldNoEntryQ, format_] := ModuleScope[
   UnpackAssociation[data, group, groupOrder, generators, dimension, type];
   BoxForm`ArrangeSummaryBox[
     LinearRepresentationObject, object, $representationIcon; None,
@@ -73,7 +73,7 @@ SetUsage @ "
 RepresentationObjectQ[rep$] returns True if rep$ is a valid LinearRepresentationObject[$$].
 "
 
-RepresentationObjectQ[_LinearRepresentationObject ? System`Private`HoldNoEntryQ] := True;
+RepresentationObjectQ[_LinearRepresentationObject ? HoldNoEntryQ] := True;
 RepresentationObjectQ[_] := False;
 
 (**************************************************************************************************)
@@ -147,9 +147,9 @@ ToLinearRepresentation[obj$] attempts to convert obj$ to a %LinearRepresentation
 "
 
 ToLinearRepresentation = Case[
-  r_LinearRepresentationObject ? System`Private`HoldNoEntryQ := r;
-  cq_PathRepresentationObject ? System`Private`HoldNoEntryQ  := cq["Representation"];
-  rs_RootSystemObject ? System`Private`HoldNoEntryQ          := LinearGroupRepresentation @ TranslationGroup @ rs;
+  r_LinearRepresentationObject ? HoldNoEntryQ := r;
+  cq_PathRepresentationObject ? HoldNoEntryQ  := cq["Representation"];
+  rs_RootSystemObject ? HoldNoEntryQ          := LinearGroupRepresentation @ TranslationGroup @ rs;
   g_ ? GroupQ                                                := LinearGroupRepresentation @ g;
   _                                                          := $Failed;
 ];

@@ -7,7 +7,7 @@ Options[LayerBundleGraph] = JoinOptions[
 
 LayerBundleGraph[list_List, opts:OptionsPattern[]] := Scope[
   UnpackOptions[layerDistance, layerScales, imageSize];
-  If[!ListQ[layerScales], layerScales = ConstantArray[layerScales, Length @ list]];
+  If[!ListQ[layerScales], layerScales = Repeat[layerScales, Length @ list]];
   $vertices = $edges = $coords = {};
   $dy = 0;
   ScanIndex1[procBundleLayer, list];

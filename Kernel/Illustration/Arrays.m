@@ -61,11 +61,11 @@ procHighlightRule = Case[
 
 procHighlightLHS = Case[
   specList:{$lhsP..} := If[Length[specList] =!= Length @ $dims,
-    QuiverGeometry`PackageScope`ThrowMessage["speccount"],
+    ThrowMessage["speccount"],
     Map[procAxisSpec, specList]
   ];
   specRules:{Rule[_Integer, $lhsP]..} := Scope[
-    spec = ConstantArray[_, Length @ $dims];
+    spec = Repeat[_, Length @ $dims];
     Set[spec[[#1]], procAxisSpec[#2]]& @@@ specRules;
     spec
   ]

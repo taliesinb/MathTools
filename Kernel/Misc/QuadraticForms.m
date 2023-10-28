@@ -10,7 +10,7 @@ QuadraticForm[spec_, OptionsPattern[]] := Scope[
     RealMatrixQ[spec], spec,
     True, ReturnFailed["badspec"]
   ];
-  System`Private`ConstructNoEntry[QuadraticFormObject, matrix]
+  ConstructNoEntry[QuadraticFormObject, matrix]
 ];
 
 matrixTranspose[matrix_ ? MatrixQ] := Transpose[matrix];
@@ -20,10 +20,10 @@ matrixTranspose[vector_] := vector;
 
 PublicObject[QuadraticFormObject]
 
-(QuadraticFormObject[matrix_] ? System`Private`HoldNoEntryQ)[arg_] := Dot[matrixTranspose @ arg, matrix, arg];
+(QuadraticFormObject[matrix_] ? HoldNoEntryQ)[arg_] := Dot[matrixTranspose @ arg, matrix, arg];
 
 declareFormatting[
-  qf_QuadraticFormObject ? System`Private`HoldNoEntryQ :> formatQuadraticForm @ qf
+  qf_QuadraticFormObject ? HoldNoEntryQ :> formatQuadraticForm @ qf
 ];
 
 (* formatQuadraticForm[QuadraticFormObject[matrix_]] :=
@@ -39,5 +39,5 @@ formatQuadraticFormMatrix[matrix_] :=
 
 PublicFunction[QuadraticFormQ]
 
-QuadraticFormQ[_QuadraticFormObject ? System`Private`HoldNoEntryQ] := True;
+QuadraticFormQ[_QuadraticFormObject ? HoldNoEntryQ] := True;
 QuadraticFormQ[_] := False;

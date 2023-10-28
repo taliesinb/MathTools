@@ -17,7 +17,7 @@ createMarkdownTable[ostr_String] := Scope[
   ncols = Length @ First @ grid;
   grid //= MatrixMap[StringReplace["\"" -> "'"]];
   grid //= MatrixReplace["**_**" -> ""];
-  grid //= VectorReplace[{"SPACER"} :> ConstantArray[" ", ncols]];
+  grid //= VectorReplace[{"SPACER"} :> Repeat[" ", ncols]];
   toMarkdownTableString[grid, allowCompact]
 ];
 
@@ -33,11 +33,11 @@ toMarkdownTableString[grid_, allowCompact_] := Scope[
   ];
   ncols = Length @ First @ grid;
   hasHeader = VectorQ[First @ grid, boldedQ];
-  strikeRow = ConstantArray["---", ncols];
+  strikeRow = Repeat["---", ncols];
   attrs = {};
   If[!hasHeader && $allowTableHeaderSkip,
     AppendTo[attrs, "table-no-header"];
-    dummyRow = ConstantArray["z", ncols];
+    dummyRow = Repeat["z", ncols];
     grid = Join[{dummyRow, strikeRow}, grid];
   ,
     postFn = Identity;

@@ -759,8 +759,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[$fadedEdgeParts =!= None,
       edgeItems = {
         {
-          Line[Part[$EdgeCoordinateLists, $fadedFromEdgeParts], VertexColors -> ConstantArray[{Transparent, Opacity[1]}, Length @ $fadedFromEdgeParts]],
-          Line[Part[$EdgeCoordinateLists, $fadedToEdgeParts],   VertexColors -> ConstantArray[{Opacity[1], Transparent}, Length @ $fadedFromEdgeParts]]
+          Line[Part[$EdgeCoordinateLists, $fadedFromEdgeParts], VertexColors -> Repeat[{Transparent, Opacity[1]}, Length @ $fadedFromEdgeParts]],
+          Line[Part[$EdgeCoordinateLists, $fadedToEdgeParts],   VertexColors -> Repeat[{Opacity[1], Transparent}, Length @ $fadedFromEdgeParts]]
         },
         edgeItems
       }
@@ -2153,8 +2153,8 @@ toFunc[f_] := f;
 
 resolveRegionRules[rules_, optSym_, default_:Gray] := Scope[
   defaultColor = FirstCase[rules, Rule[All, color:$ColorPattern] :> color, default, {1}];
-  $vertexValues = ConstantArray[defaultColor, $VertexCount];
-  $edgeValues = ConstantArray[defaultColor, $EdgeCount];
+  $vertexValues = Repeat[defaultColor, $VertexCount];
+  $edgeValues = Repeat[defaultColor, $EdgeCount];
   $optSym = optSym;
   $regionColor = $Red;
   Scan[applyRegionRule, rules];

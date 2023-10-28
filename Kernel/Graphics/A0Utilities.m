@@ -46,7 +46,7 @@ VectorReflect[v$, rv$] reflects the vector v$ in the hyperplane perpendicular to
 "
 
 VectorReflect[v_, rv_] := Expand[v - (2 * Dot[rv, v] / Dot[rv, rv]) * rv];
-VectorReflect[v_, rv_ ? System`Private`ValidQ] := Expand[v - (2 * Dot[rv, v]) * rv]; (* TODO: remove this, it is used in RootSystem somehow *)
+VectorReflect[v_, rv_ ? ValidQ] := Expand[v - (2 * Dot[rv, v]) * rv]; (* TODO: remove this, it is used in RootSystem somehow *)
 VectorReflect[rv_][v_] := VectorReflect[v, rv];
 
 (**************************************************************************************************)

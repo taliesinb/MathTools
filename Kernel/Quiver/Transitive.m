@@ -286,7 +286,7 @@ modEdgeShapeFunctionSpec[spec_, basis_] /; ContainsQ[spec, Modulo] := Scope[
 ];
 
 makeModOffset[Modulo[n_], vec_] := vec * #& /@ {-n, 0, n};
-makeModOffset[_, _] := ConstantArray[0, {1, dim}];
+makeModOffset[_, _] := Repeat[0, {1, dim}];
 
 modEdgeShapeFunctionSpec[spec_, basis_] := {};
 
@@ -417,7 +417,7 @@ GridQuiver[k_Integer, n:$ModIntP, opts:OptionsPattern[]] := Scope[
   If[IntegerQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
   SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
 
-  vertices = Flatten[Array[List, ConstantArray[StripModulo @ n, k]], k-1];
+  vertices = Flatten[Array[List, Repeat[StripModulo @ n, k]], k-1];
   edges = Flatten @ Table[Map[generalGridEdge[n, i], vertices], {i, 1, k}];
   vertices = vertexHead @@@ vertices;
 
@@ -536,7 +536,7 @@ LatticeQuiverCoordinates[quiver_Graph, latticeBasis_] := Scope[
   indexGraph = ToIndexGraph @ quiver;
   outTable = VertexOutVertexTagTable @ indexGraph;
   dims = Rest @ Dimensions @ Values @ latticeBasis;
-  coords = ConstantArray[0, Prepend[dims, VertexCount @ indexGraph]];
+  coords = Repeat[0, Prepend[dims, VertexCount @ indexGraph]];
   edgeBasis = Map[latticeBasis, EdgeTagAssociation @ indexGraph];
   edgeBasis = Join[edgeBasis, Map[Minus, KeyMap[Reverse, edgeBasis]]];
   edgeIndex = EdgePairIndexAssociation @ indexGraph;

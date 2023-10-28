@@ -17,8 +17,6 @@ PublicFunction[MultiwaySystem]
 
 DeclareArgumentCount[MultiwaySystem, 2];
 
-declareSyntaxInfo[MultiwaySystem, {_, _, OptionsPattern[]}];
-
 Options[MultiwaySystem] = JoinOptions[
   MaxVertices -> Infinity,
   MaxEdges -> Infinity,
@@ -35,6 +33,8 @@ Options[MultiwaySystem] = JoinOptions[
   SelfLoops -> True,
   PrologVertices -> {}
 ];
+
+declareSyntaxInfo[MultiwaySystem, {_, _, OptionsPattern[]}];
 
 stackPushList[stack_, list_] := Scan[item |-> stack["Push", item], list];
 arrayAppendList[array_, list_] := Scan[item |-> array["Append", item], list];
@@ -386,20 +386,21 @@ toUndirectedEdge[from_, to_] := UndirectedEdge[from, to];
 (**************************************************************************************************)
 
 PrivateFunction[CachedMultiwaySystem]
-PublicFunction[ClearMultiwayCache]
 
-ClearMultiwayCache[] := (QuiverGeometryCaches`$MultiwaySystemCache = CreateDataStructure["LeastRecentlyUsedCache", 8]);
+CacheSymbol[$MultiwaySystemCache]
 
-SetInitialValue[QuiverGeometryCaches`$MultiwaySystemCache, None];
+setupMultiwayCache[] := (
+  $MultiwaySystemCache = CreateDataStructure["LeastRecentlyUsedCache", 8]
+);
 
 CachedMultiwaySystem[args___] := Scope[
   hash = Hash @ {args};
-  If[QuiverGeometryCaches`$MultiwaySystemCache === None, ClearMultiwayCache[]];
-  cachedValue = QuiverGeometryCaches`$MultiwaySystemCache["Lookup", hash, Null&];
+  If[AssociationQ[$MultiwaySystemCache], setupMultiwayCache[]];
+  cachedValue = $MultiwaySystemCache["Lookup", hash, Null&];
   If[cachedValue =!= Null, Return @ cachedValue];
   result = MultiwaySystem[args];
   If[!FailureQ[result],
-    QuiverGeometryCaches`$MultiwaySystemCache["Insert", hash -> result]];
+    $MultiwaySystemCache["Insert", hash -> result]];
   result
 ];
 

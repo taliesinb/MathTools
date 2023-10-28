@@ -165,8 +165,8 @@ diffExpr[a:HoldComplete[_List ? HoldPackedArrayQ], b:HoldComplete[_List ? HoldPa
   diffArray[a, b];
 
 diffExpr[
-  HoldComplete[(h1_[Shortest[args1___], opts1:((_Symbol|_String) -> _)...]) ? System`Private`HoldEntryQ],
-  HoldComplete[(h2_[Shortest[args2___], opts2:((_Symbol|_String) -> _)...]) ? System`Private`HoldEntryQ]] := With[
+  HoldComplete[(h1_[Shortest[args1___], opts1:((_Symbol|_String) -> _)...]) ? HoldEntryQ],
+  HoldComplete[(h2_[Shortest[args2___], opts2:((_Symbol|_String) -> _)...]) ? HoldEntryQ]] := With[
     {head = HoldComplete @ h1},
     Or[
       withPosCrumb[0, $HeadCrumb,  diffExpr[HoldComplete @ h1, HoldComplete @ h2]],

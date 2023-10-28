@@ -57,7 +57,7 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
     ,
     cardinalDirs =!= None,
       If[cardinalDirs === "Linear",
-        cardinalDirs = ConstantArray[{1, 0}, Length @ cardinals];
+        cardinalDirs = Repeat[{1, 0}, Length @ cardinals];
         $scaling = 0.0
       ];
       If[Length[cardinalDirs] =!= Length[cardinals], ReturnFailed[]];

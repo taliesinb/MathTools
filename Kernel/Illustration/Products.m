@@ -5,7 +5,7 @@ GraphProductsRow[{l1_ -> q1_, l2_ -> q2_}, prodSeq:Repeated[{__Rule}]] := Scope[
   opts = Sequence[ArrowheadPosition -> 0.65, ImagePadding -> 15, Frame -> True];
   prods = {prodSeq};
   numProds = Length @ First @ List @ prodSeq;
-  topRow = Prepend[""] @ ConstantArray[q2, numProds];
+  topRow = Prepend[""] @ Repeat[q2, numProds];
   prodRows = Catenate @ Map[
     Function[prods,
       {prodLabels, prodFns} = KeysValues @ prods;

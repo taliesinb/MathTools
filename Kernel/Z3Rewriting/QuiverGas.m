@@ -78,7 +78,7 @@ QuiverGas[graph_, rules_, OptionsPattern[]] := Scope @ CatchMessage[
     "VertexCoordinates" -> vertexCoordinates
   |>];
 
-  System`Private`ConstructNoEntry[QuiverGasObject, data]
+  ConstructNoEntry[QuiverGasObject, data]
 ];
 
 (**************************************************************************************************)
@@ -133,7 +133,7 @@ toCardinalList[list_] := If[!SubsetQ[$cardinals, list],
 
 PublicObject[QuiverGasObject]
 
-MakeBoxes[object_QuiverGasObject ? System`Private`HoldNoEntryQ, form_] :=
+MakeBoxes[object_QuiverGasObject ? HoldNoEntryQ, form_] :=
   quiverGasObjectBoxes[object, form];
 
 quiverGasObjectBoxes[object:QuiverGasObject[data_], form_] := Scope[
@@ -175,7 +175,7 @@ Options[QuiverGasEvolve] = {
 };
 
 QuiverGasEvolve::badinit = "Could not resolve initial condition.";
-QuiverGasEvolve[qg:QuiverGasObject[assoc_] ? System`Private`NoEntryQ, init_, steps_Integer, OptionsPattern[]] := Scope[
+QuiverGasEvolve[qg:QuiverGasObject[assoc_] ? NoEntryQ, init_, steps_Integer, OptionsPattern[]] := Scope[
 
   UnpackAssociation[assoc, flowVectorSize, updateFunction, signedEdgeToIndex];
 
@@ -184,7 +184,7 @@ QuiverGasEvolve[qg:QuiverGasObject[assoc_] ? System`Private`NoEntryQ, init_, ste
   RandomSeeded[
     init = Switch[init,
       _List,                                 Normal @ ExtendedSparseArray[Lookup[signedEdgeToIndex, init, ReturnFailed["badinit"]], flowVectorSize],
-      i_Integer /; 1 <= i <= flowVectorSize, RandomSample @ Join[ConstantArray[1, init], ConstantArray[0, flowVectorSize - init]],
+      i_Integer /; 1 <= i <= flowVectorSize, RandomSample @ Join[Repeat[1, init], Repeat[0, flowVectorSize - init]],
       _Real | _Rational,                     RandomChoice[{init, 1 - init} -> {1, 0}, flowVectorSize],
       _,                                     ReturnFailed[]
     ],
@@ -293,7 +293,7 @@ quiverGasDataOld[g_, rules_] := Scope[
   gatherMatrix = inAdj /. signedEdgeToIndex;
 
   invertedGather = outAdj /. signedEdgeToIndex;
-  scatterVector = ConstantArray[Null, noneEdgeIndex];
+  scatterVector = Repeat[Null, noneEdgeIndex];
   ScanIndex1[Set[Part[scatterVector, #1], #2]&, Flatten @ invertedGather];
   scatterVector = ToPacked @ Most @ scatterVector;
   
@@ -329,7 +329,7 @@ quiverGasDataNew[g_, rules_] := Scope[
   invertedGather = outAdj /. signedEdgeToIndex;
 
   (* todo: compile this *)
-  scatterVector = ConstantArray[Null, noneEdgeIndex];
+  scatterVector = Repeat[Null, noneEdgeIndex];
   ScanIndex1[Set[Part[scatterVector, #1], #2]&, Flatten @ invertedGather];
   scatterVector = Most @ scatterVector;
   

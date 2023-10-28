@@ -1,19 +1,19 @@
-$baseContext = "QuiverGeometryShortcuts`";
+$shortcutsContext := QuiverGeometryLoader`$ShortcutsContext;
 
 (**************************************************************************************************)
 
 (* QuiverGeometry`Shortcuts`SetSymbol[name_String, value_] :=
-   CreateSymbol[$baseContext <> name, value];
+   CreateSymbol[$shortcutsContext <> name, value];
 
 QuiverGeometry`Shortcuts`CopySymbols[from_List, to_String] :=
     Scan[QuiverGeometry`Shortcuts`CopySymbols[#, to]&, from];
 
 QuiverGeometry`Shortcuts`CopySymbols[from_String, to_String] := Scope[
-    names = Names[$baseContext <> from <> "*"];
+    names = Names[$shortcutsContext <> from <> "*"];
     newNames = Part[StringSplit[names, "`", 1], All, -1];
     newNames = StringDrop[newNames, StringLength @ from];
     newNames = StringJoin[to, #]& /@ newNames;
-    CreateMultipleSymbols[$baseContext, newNames, Symbol /@ names]
+    CreateMultipleSymbols[$shortcutsContext, newNames, Symbol /@ names]
 ];
 *)
 (**************************************************************************************************)
@@ -28,7 +28,8 @@ LoadShortcuts::unknownGroup = "Shortcut group `` is not defined."
 
 LoadShortcuts[names_] := (
   Scan[loadShortcutGroup0, DeleteDuplicates @ Prepend["Core"] @ ToList[names]];
-  AppendUniqueTo[$ContextPath, $baseContext];
+  AppendUniqueTo[$ContextPath, $shortcutsContext];
+  $shortcutsContext
 )
 
 (**************************************************************************************************)
@@ -94,26 +95,26 @@ symbolTable[name_String, valueFn_, iterators___] := Scope[
   {nameTuples, valueTuples} = Transpose @ Map[parseIterator, {iterators}];
   names = ApplyTuples[nameFn, nameTuples];
   values = ApplyTuples[valueFn, valueTuples] //. $valueSimplification;
-  result = RuleThread[names, CreateMultipleSymbols[$baseContext, names, values]];
+  result = RuleThread[names, CreateMultipleSymbols[$shortcutsContext, names, values]];
   If[SeqLength[iterators] === 1,
     name2 = StringReplace[name, "#" -> ""];
     If[!StringEndsQ[name2, "$"], name2 = name2 <> "$"];
     (* TODO: if we introduce subcontexts will this collision check fail?? *)
-    If[!NameQ[$baseContext <> name2],
+    If[!NameQ[$shortcutsContext <> name2],
       PrependTo[result, makeSym[StringReplace[name2, "#" -> ""], valueFn]]]
   ];
   result
 ];
 
 makeSym["$", value_] := Null;
-makeSym[name_, value_] := With[{name2 = $baseContext <> name},
+makeSym[name_, value_] := With[{name2 = $shortcutsContext <> name},
     CreateSymbol[name2, value];
     name2 -> value
 ];
 
 SetHoldRest[makeDelayedSym];
 makeDelayedSym[name_, value_] :=
-  ToExpression[$baseContext <> name, InputForm, Function[sym, SetDelayed[sym, value];, HoldAll]];
+  ToExpression[$shortcutsContext <> name, InputForm, Function[sym, SetDelayed[sym, value];, HoldAll]];
 
 decSymTable[name_, fn_, it_] := decSymTable[name, fn, it, it];
 decSymTable[name_, fn_, it_, All] := decSymTable[name, fn, it, it];
@@ -167,7 +168,7 @@ toIteratorData[lower_, upper_] := parseIterator /@ {lower, upper, lower <> upper
 (**************************************************************************************************)
 
 SetListable[shortcutSymbol];
-shortcutSymbol[name_String] := Symbol[$baseContext <> name];
+shortcutSymbol[name_String] := Symbol[$shortcutsContext <> name];
 
 (**************************************************************************************************)
 

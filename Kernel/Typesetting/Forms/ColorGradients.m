@@ -63,18 +63,23 @@ DefineStandardTraditionalForm[ti:TextIcon[_String, ___Rule] :> textIconBoxes[ti]
 
 TextIcon::nostrpoly = "Could not form a Polygon for `` using FontSize -> ``, FontWeight -> ``, FontFamily -> ``.";
 
-textIconBoxes[TextIcon[s_String, opts___Rule]] := Scope[
+textIconBoxes[TextIcon[str_String, opts___Rule]] := Scope[
+
   UnpackOptionsAs[TextIcon, opts, fontColor, fontWeight, fontSize, fontFamily];
+
   SetInherited[fontColor, Black];
   SetInherited[fontWeight, "Regular"];
   SetInherited[fontSize, 16];
   SetInherited[fontFamily, "KaTeX_Main"];
 
-  polygon = TextToPolygon[s, 20, fontFamily, fontWeight];
-  If[!MatchQ[polygon, _Polygon], Message[TextIcon::nostrpoly, MsgExpr @ s, MsgExpr @ fontSize, MsgExpr @ fontWeight, MsgExpr @ fontFamily]];
+  result = TextToPolygon[str, 20, fontFamily, fontWeight];
 
-  points = First @ polygon;
-  bounds = CoordinateBounds[points, 1];
+  If[FailureQ[result],
+    Message[TextIcon::nostrpoly, MsgExpr @ s, MsgExpr @ fontSize, MsgExpr @ fontWeight, MsgExpr @ fontFamily];
+    Return @ {};
+  ];
+
+  {polygon, bounds} = result;
 
   Construct[GraphicsBox,
     StyleBox[Construct[PolygonBox, points], FaceForm @ fontColor],
@@ -100,6 +105,8 @@ colorGradientBoxes[expr_, colors_, opts___] := ToBoxes @ ColorGradientRasterize[
 
 PublicFunction[ColorGradientRasterize]
 
+CacheSymbol[$GradientRasterizationCache]
+
 Options[ColorGradientRasterize] = {
   "DilationFactor" -> 0,
   "CompressionFactor" -> 0
@@ -108,7 +115,7 @@ Options[ColorGradientRasterize] = {
 ColorGradientRasterize[expr_, colors_, OptionsPattern[]] := Scope[
   UnpackOptions[dilationFactor, compressionFactor];
   hash = Hash[{expr, colors, dilationFactor, compressionFactor}];
-  result = Lookup[QuiverGeometryCaches`$GradientRasterizationCache, hash];
+  result = Lookup[$GradientRasterizationCache, hash];
   If[ImageQ[result], Return @ result];
   {raster, boundingBox, regions} = FastRasterizeWithMetadata[expr, Background -> Transparent];
   {bbw, bbh, dh} = boundingBox;
@@ -126,7 +133,7 @@ ColorGradientRasterize[expr_, colors_, OptionsPattern[]] := Scope[
   grad = ImageResize[Image[{colors}], {w, h}, Resampling -> "Nearest"];
   result = SetAlphaChannel[grad, Clip[4 * Blur[mask, dilationFactor]]];
   result = Image[result, BaselinePosition -> baselinePos, ImageSize -> {w, h}/2, Options @ raster];
-  If[ImageQ[result], QuiverGeometryCaches`$GradientRasterizationCache[hash] ^= result];
+  If[ImageQ[result], $GradientRasterizationCache[hash] ^= result];
   result
 ];
 

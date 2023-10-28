@@ -1,16 +1,8 @@
-PublicFunction[ClearBundleData]
-
-ClearBundleData[] := QuiverGeometryCaches`$BundleGraphCache = UAssociation[];
-
-If[!AssociationQ[QuiverGeometryCaches`$BundleGraphCache],
-QuiverGeometryCaches`$BundleGraphCache = UAssociation[]
-];
-
-(**************************************************************************************************)
-
 PrivateFunction[bundleHashLookup]
 
-bundleHashLookup[hash_, prop___] := QuiverGeometryCaches`$BundleGraphCache[hash, prop];
+CacheSymbol[$BundleGraphCache]
+
+bundleHashLookup[hash_, prop___] := $BundleGraphCache[hash, prop];
 
 (**************************************************************************************************)
 
@@ -84,7 +76,7 @@ getBundleGraphData[bundleGraph_, baseGraph_:Automatic, fiberGraph_:None, section
     "SectionDisplayMethod" -> sectionDisplayMethod
   ];
 
-  AssociateTo[QuiverGeometryCaches`$BundleGraphCache, hash -> data];
+  AssociateTo[$BundleGraphCache, hash -> data];
 
   data
 ];

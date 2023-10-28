@@ -564,7 +564,7 @@ ContinuousColorFunction[values_, colors_, OptionsPattern[]] := Scope[
   values = N @ values;
   interp = Interpolation[Trans[values, okLabValues], InterpolationOrder -> 1];
   UnpackOptions[ticks];
-  System`Private`ConstructNoEntry[
+  ConstructNoEntry[
     ColorFunctionObject, "Linear", MinMax @ values, values, interp /* OklabToRGB, ticks
   ]
 ];
@@ -613,7 +613,7 @@ DiscreteColorFunction[values_, colors_] := Scope[
   checkColArgs[DiscreteColorFunction, values, colors];
   order = Ordering[values];
   values = Part[values, order]; colors = Part[colors, order];
-  System`Private`ConstructNoEntry[
+  ConstructNoEntry[
     ColorFunctionObject, "Discrete", AssociationThread[values, colors]
   ]
 ];
@@ -622,12 +622,12 @@ DiscreteColorFunction[values_, colors_] := Scope[
 
 PublicFunction[ColorFunctionCompose]
 
-ColorFunctionCompose[cfunc_ColorFunctionObject ? System`Private`NoEntryQ, func_] :=
+ColorFunctionCompose[cfunc_ColorFunctionObject ? NoEntryQ, func_] :=
   cfuncCompose[cfunc, func];
 
 (* TODO: update minMax and values by inverting composedFunc where possible *)
 cfuncCompose[ColorFunctionObject[type_, minMax_, values_, func_, ticks_], composedFunc_] :=
-  System`Private`ConstructNoEntry[
+  ConstructNoEntry[
     ColorFunctionObject, type, {-Infinity, Infinity}, values, composedFunc /* ClipOperator[minMax] /* func, ticks
   ];
 
@@ -635,7 +635,7 @@ cfuncCompose[ColorFunctionObject[type_, minMax_, values_, func_, ticks_], compos
 
 PublicFunction[ColorFunctionObjectQ]
 
-ColorFunctionObjectQ[_ColorFunctionObject ? System`Private`NoEntryQ] := True;
+ColorFunctionObjectQ[_ColorFunctionObject ? NoEntryQ] := True;
 ColorFunctionObjectQ[_] := False;
 
 (**************************************************************************************************)
@@ -652,7 +652,7 @@ ColorFunctionObject[_, minMax_, _, func_, _][value_List] := Map[RGBColor, Map[fu
 ColorFunctionObject["Discrete", assoc_][value_] := Lookup[assoc, Key @ value, Gray];
 ColorFunctionObject["Discrete", assoc_][value_List] := Lookup[assoc, Key @ value, Lookup[assoc, value, Gray]];
 
-ColorFunctionObject /: Normal[cf_ColorFunctionObject ? System`Private`NoEntryQ] := getNormalCF[cf];
+ColorFunctionObject /: Normal[cf_ColorFunctionObject ? NoEntryQ] := getNormalCF[cf];
 
 getNormalCF[ColorFunctionObject[_, minMax_, _, func_, _]] := ClipOperator[minMax] /* func /* RGBColor;
 getNormalCF[ColorFunctionObject["Discrete", assoc_]] := assoc;
@@ -660,7 +660,7 @@ getNormalCF[ColorFunctionObject["Discrete", assoc_]] := assoc;
 (**************************************************************************************************)
 
 declareFormatting[
-  cf_ColorFunctionObject ? System`Private`HoldNoEntryQ :> formatColorFunction[cf]
+  cf_ColorFunctionObject ? HoldNoEntryQ :> formatColorFunction[cf]
 ];
 
 makeGradientRaster[values_, func_, size_, transposed_] := Scope[
@@ -691,7 +691,7 @@ formatColorFunction[ColorFunctionObject["Discrete", Identity]] :=
   "ColorFunctionObject"["Discrete", Identity];
 
 declareFormatting[
-  LegendForm[cf_ColorFunctionObject ? System`Private`HoldNoEntryQ] :>
+  LegendForm[cf_ColorFunctionObject ? HoldNoEntryQ] :>
     colorFunctionLegend[cf]
 ];
 
@@ -1043,7 +1043,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   If[containsInd, AppendTo[colorsValues, {White, Indeterminate}]; AppendTo[posIndex, Indeterminate -> indPos]];
   If[containsNull, AppendTo[colorsValues, {Transparent, Null}]; AppendTo[posIndex, Null -> nullPos]];
   colorGroups = Merge[RuleThread[colorsValues, Values @ posIndex], Catenate];
-  colorList = ConstantArray[White, Length @ data];
+  colorList = Repeat[White, Length @ data];
   (* invert the PositionIndex-like association *)
   KeyValueScan[Set[Part[colorList, #2], Part[#1, 1]]&, colorGroups];
   {colorList, colorGroups, colorFunction}
@@ -1051,7 +1051,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
 
 literalColorFunction[colors_] := Scope[
   colorIndex = PositionIndex @ colors;
-  colorFunction = System`Private`ConstructNoEntry[
+  colorFunction = ConstructNoEntry[
     ColorFunctionObject, "Discrete", Identity
   ];
   {colors, KeyMap[{#, #}&, colorIndex], colorFunction}

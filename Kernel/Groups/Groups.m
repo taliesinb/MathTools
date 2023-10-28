@@ -452,6 +452,6 @@ groupWordPower[w_List, -1] := GroupWord[InvertReverse @ w];
 
 groupWordPower[w_List, n_Integer ? Negative] := groupWordPower[InvertReverse @ w, -n];
 
-groupWordPower[w_List, n_Integer ? Positive] := wordJoin @@ ConstantArray[w, n];
+groupWordPower[w_List, n_Integer ? Positive] := wordJoin @@ Repeat[w, n];
 
 wordJoin[words__List] := GroupWord[Join[words] //. $backtrackingRules];

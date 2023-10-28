@@ -84,9 +84,10 @@ DefineUnaryModifierForm[NegativeSignedPartForm, SuperscriptBox[$1, "-"]]
 
 (**************************************************************************************************)
 
-PublicTypesettingFormBox[SignedForm]
+PublicTypesettingForm[SignedForm]
 
-DefineUnaryModifierForm[SignedForm, SuperscriptBox[$1, "*"], BoxFunction -> SignedBox]
+(* TODO: introduce DaggerForm ? *)
+DefineUnaryModifierForm[SignedForm, SuperStarBox[$1]]
 
 (**************************************************************************************************)
 

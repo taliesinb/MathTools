@@ -56,7 +56,7 @@ applyToObjectRules[g_Graph, fn_, spec_] := ExtendedGraph[g, Sequence @@ fn[Extra
 General::atomNoOpts = "Atom `` is not a valid target for option manipulation.";
 applyToObjectRules[obj_ ? AtomQ, fn_, _] := (Message[MessageName[fn, "atomNoOpts"], obj]; obj)
 
-applyToObjectRules[(head_Symbol ? $optionableHeadQ)[Shortest[args___], opts:RepeatedNull[_Rule | RuleDelayed]] ? System`Private`EntryQ, fn_, spec_] :=
+applyToObjectRules[(head_Symbol ? $optionableHeadQ)[Shortest[args___], opts:RepeatedNull[_Rule | RuleDelayed]] ? EntryQ, fn_, spec_] :=
   head[args, Sequence @@ fn[{opts}, spec]];
 
 (* we would get to this point if no valid spec argument matched before dispatching here *)

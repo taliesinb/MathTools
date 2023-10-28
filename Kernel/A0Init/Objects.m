@@ -5,8 +5,8 @@ PrivateVariable[$SelfObject]
 getObjectData[_] := $Failed;
 
 declareObjectPropertyDispatch[head_Symbol, dispatch_Symbol] := (
-  getObjectData[head[data_Association] ? System`Private`NoEntryQ] := data;
-  (obj:Blank[head] ? System`Private`NoEntryQ)[key_String, opts___Rule] := Block[{$SelfObject = obj},
+  getObjectData[head[data_Association] ? NoEntryQ] := data;
+  (obj:Blank[head] ? NoEntryQ)[key_String, opts___Rule] := Block[{$SelfObject = obj},
     dispatch[getObjectData @ obj, key, opts]
   ];
   dispatch[data_, key_String] := Block[{res = Lookup[data, key, $Failed]}, res /; res =!= $Failed];

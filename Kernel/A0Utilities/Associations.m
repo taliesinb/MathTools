@@ -72,7 +72,7 @@ SetUsage @ "
 ConstantAssociation[{key$1, key$2, $$}, c_] gives the constant association <|$$, key$i -> c$, $$|>.
 "
 
-ConstantAssociation[keys_List, constant_] := AssociationThread[keys, ConstantArray[constant, Length @ keys]];
+ConstantAssociation[keys_List, constant_] := AssociationThread[keys, Repeat[constant, Length @ keys]];
 
 (**************************************************************************************************)
 
