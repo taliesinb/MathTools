@@ -310,9 +310,22 @@ msgPathBoxes[path_String, line_:None] := With[
   {type = If[StringStartsQ[path, ("http" | "https" | "git" | "file" | "ssh") ~~ ":"], "URL", Quiet @ FileType @ path]},
   {color = Switch[type, None, $LightRed, Directory, $LightBlue, File, $LightGray, "URL", $LightPurple, _, $LightRed]},
   ToBoxes @ ClickForm[
-    tightColoredBoxes[If[IntegerQ[line], StringJoin[path, ":", IntegerString @ line], path], color],
+    tightColoredBoxes[If[IntegerQ[line], StringJoin[shortenPath @ path, ":", IntegerString @ line], shortenPath @ path], color],
     openMsgPath[path, line]
   ]
+];
+
+shortenPath[str_] := Scope[
+  str = StringReplace[str, $HomeDirectory <> $PathnameSeparator -> "~/"];
+  If[StringLength[str] <= 20, Return @ str];
+
+  n = 0;
+  segs = Reverse @ FileNameSplit @ str;
+  segs2 = Reverse @ TakeWhile[segs, (n += StringLength[#]) < 22&];
+  If[segs2 === {}, segs2 = Take[segs, 1]];
+  If[Length[segs2] < Length[segs], PrependTo[segs2, "\[Ellipsis]"]];
+  str2 = FileNameJoin @ segs2;
+  If[StringLength[str2] < StringLength[str], str2, str]
 ];
 
 (**************************************************************************************************)

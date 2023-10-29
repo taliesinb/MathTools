@@ -43,15 +43,24 @@ MakeBoxes[LabeledFlipView[list_List, opts___Rule], form_] := labeledFlipViewBoxe
 
 labeledFlipViewBoxes[list_List, opts___] := labeledFlipViewBoxes[MapIndex1[#2 -> #1&, list], opts];
 
+LabeledFlipView::badLabelPos = "LabelPosition -> `` should be either Top or Left."
 labeledFlipViewBoxes[items:{___Rule}, opts___] := With[
   {range = Range @ Length @ items, keys = ToBoxes /@ Keys @ items, vals = ToBoxes /@ Values @ items},
   {keys$$ = RuleThread[range, keys], vals$$ = RuleThread[range, vals]},
-  {isize = Lookup[{opts}, ImageSize, Automatic]},
-  DynamicModuleBox[{i$$ = 1},
-    GridBox[{
-      {StyleBox[TogglerBox[Dynamic[i$$], keys$$, ImageSize -> All], Bold, FontFamily -> "Fira", FontSize -> 10]},
-      {PaneSelectorBox[vals$$, Dynamic[i$$], ImageSize -> isize, Alignment -> {Left, Top}]}
-    }, ColumnAlignments -> Left, RowAlignments -> Left]
+  {isize = Lookup[{opts}, ImageSize, Automatic], labelPos = Lookup[{opts}, LabelPosition, Top]},
+  {togglerBox = StyleBox[TogglerBox[Dynamic[i$$], keys$$, ImageSize -> All], Bold, FontFamily -> "Fira", FontSize -> 10]},
+  {paneSelectorBox = PaneSelectorBox[vals$$, Dynamic[i$$], ImageSize -> isize, Alignment -> {Left, Top}]},
+  Switch[labelPos,
+    Top,
+    DynamicModuleBox[{i$$ = 1},
+      GridBox[{{togglerBox}, {paneSelectorBox}}, ColumnAlignments -> Left, RowAlignments -> Center]
+    ],
+    Left,
+    DynamicModuleBox[{i$$ = 1},
+      GridBox[{{RotationBox[togglerBox, BoxRotation -> 1.5708], paneSelectorBox}}, ColumnAlignments -> Left, RowAlignments -> Left]
+    ],
+    _,
+    Message[LabeledFlipView::badLabelPos, labelPos]; $Failed
   ]
 ];
 

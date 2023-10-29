@@ -290,7 +290,7 @@ calcFileLine[file_String, pos_Integer] := Scope[
 
 (**************************************************************************************************)
 
-RunTests::testFail = "Result #`` generated at `` disagreed with output at ``.";
+RunTests::testFail = "Test #`` failed; `` versus ``.";
 
 compareOutputs[part_, ExpressionAt[inFile_, inPos_, newOutput_Hold], ExpressionAt[outFile_, outPos_, oldOutput_Hold]] /; newOutput =!= oldOutput := (
   $numFailed += 1;
@@ -303,10 +303,10 @@ compareOutputs[part_, ExpressionAt[inFile_, inPos_, newOutput_Hold], ExpressionA
         smallButton["see out", $White, SystemOpen @ calcFileLine[outFile, outPos]],
         smallButton["diff", $Green,  printDiffs[oldOutput, newOutput]]
       }, Spacings -> 0.1], "  ",
-      LabeledFlipView[{"new" -> toValueIcon[newOutput], "old" -> toValueIcon[oldOutput]}]
+      LabeledFlipView[{"new" -> toValueIcon[newOutput], "old" -> toValueIcon[oldOutput]}, LabelPosition -> Left]
     }}, Alignment -> {Left, Top}]
   ,
-    Print["======================================="];
+    Print["\n======================================="];
     Print["Expected:"];
     Print[CompactPrettyForm @@ oldOutput];
     Print["\nOutput:"];
@@ -319,7 +319,7 @@ compareOutputs[part_, ExpressionAt[inFile_, inPos_, newOutput_Hold], ExpressionA
 SetHoldRest[smallButton];
 smallButton[e_, c_, b_] := RawBoxes @ ClickBox[FrameBox[
   StyleBox[DeployBox @ e, 10],
-  Background -> c, FrameStyle -> OklabDarker[c],
+  Background -> c, FrameStyle -> OklabDarker[c], FontColor -> Black,
   Alignment -> Baseline, FrameMargins -> {{0, 0}, {0, 0}},
   ImageSize -> {60, 15}
 ], b];
@@ -328,13 +328,44 @@ compareOutputs[___] := $numPassed += 1;
 
 (**************************************************************************************************)
 
-printDiffs[Hold[TestRasterObject[_, boxes1_]], Hold[TestRasterObject[_, boxes2_]]] :=
-  printDiffs[ImportMX @ objectPath @ boxes1, ImportMX @ objectPath @ boxes2];
+printDiffs[Hold[a:{__TestRasterObject}], Hold[b:{__TestRasterObject}]] /; Length[a] === Length[b] :=
+  MapThread[printDiffs[Hold[#1], Hold[#2]]&, {a, b}];
 
-printDiffs[Hold[a_], Hold[b_]] :=
-  printDiffs[a, b];
+printDiffs[Hold @ TestRasterObject[img1_, box1_], Hold @ TestRasterObject[img2_, box2_]] := Scope[
+  imgs = Map[Image[Import @ objectPath @ #, Magnification -> 1]&, {img1, img2}];
+  boxes = Map[ImportMX @ objectPath @ #&, {box1, box2}];
+  EchoCellPrint @ Flatten @ List[
+    makeImageDiffCell @@ imgs,
+    makeDiffCells @@ boxes
+  ];
+];
 
-printDiffs[a_, b_] := Print @ Column @ FindExpressionDifferences[a, b];
+niceLabel[a_] := Style[a, FontFamily -> "Arial", Bold];
+
+makeImageDiffCell[a_, b_] :=
+  Cell[BoxData @ ToBoxes @ FlipView[{Labeled[a, niceLabel @ "old"], Labeled[b, niceLabel @ "new"]}], "Output"];
+
+printDiffs[Hold[a_], Hold[b_]] := EchoCellPrint @ Flatten @ makeDiffCells[a, b];
+
+makeDiffCells[a_, b_] := diffCell[a, b] /@ FindExpressionDifferences[a, b, MaxItems -> 5];
+
+diffCell[a_, b_][diff:ExpressionDifference[pos_, ___]] := With[
+  {chunks = extractChunk[a, b, pos]},
+  {Cell[BoxData @ ToBoxes @ diff, "Output"],
+   Cell[BoxData @ ToBoxes @ Row[CompactPrettyFullForm[#, CompactRealNumbers -> 5, CompactingWidth -> 100]& /@ chunks, "  \[NotEqual]  "], "Code"]}
+];
+
+extractChunk[a_, b_, {}] := {a, b};
+
+extractChunk[a_, b_, pos_] := Scope[
+  While[pos =!= {},
+    chunk1 = Extract[a, pos, InternalHoldForm];
+    chunk2 = Extract[b, pos, InternalHoldForm];
+    If[LeafCount[chunk1] > 8 || LeafCount[chunk2], Break[]];
+    pos //= Most;
+  ];
+  {chunk1, chunk2}
+];
 
 (**************************************************************************************************)
 
@@ -342,9 +373,10 @@ printDiffs[a_, b_] := Print @ Column @ FindExpressionDifferences[a, b];
 exists, etc *)
 
 toValueIcon = Case[
-  Hold[e_Image]  := thumbnailize @ e;
-  Hold[o:objP]   := o; (* has its own icon form *)
-  Hold[e_]       := PrettyCodeForm[e, CompactingWidth -> 50, ElideLargeArrays -> True];
+  Hold[e_Image]    := thumbnailize @ e;
+  Hold[o:objP]     := o; (* has its own icon form *)
+  Hold[e_]         := PrettyCodeForm[e, CompactingWidth -> 50, ElideLargeArrays -> True];
+  Hold[o:{objP..}] := Row[o, Spacer[5]];
 ,
   {objP -> $testObjectP}
 ];
@@ -353,7 +385,7 @@ thumbnailize[e_] := ReplaceAll[e, i_Image ? HoldAtomQ :> RuleCondition @ toThumb
 
 toThumbnail[i_] := Scope[
   {w, h} = ImageDimensions[i];
-  If[w < 300 && h < 300, i, ImageResize[i, {300}]]
+  Image[If[w < 300 && h < 300, i, ImageResize[i, {300}]], Magnification -> 1]
 ];
 
 (**************************************************************************************************)
