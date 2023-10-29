@@ -94,7 +94,7 @@ changeBox[prop_, a_, b_]        := RBox[propBox @ prop, ":", notSameBox[a, b]];
 plusBox[a_]                     := RBox[GreenBox @ BoldBox @ "+", " ", a];
 minusBox[a_]                    := RBox[RedBox @ BoldBox @ "-", " ", a];
 
-codeBox[a_]                     := StyleBox[a, "Code"];
+codeBox[a_]                     := StyleBox[a, "Code", Background -> None, FontColor -> Black];
 codeBox[HoldComplete[e_]]       := codeBox @ ToPrettifiedString[InternalHoldForm[e], MaxLength -> 20, MaxDepth -> 2, CompactRealNumbers -> 4];
 
 keysBox[list_List]              := RowBox @ Riffle[Map[keyBox, list], ","];

@@ -321,11 +321,11 @@ PublicDebuggingFunction[EchoCellPrint]
 
 EchoCellPrint[cells2_] := Module[{cells},
   cells = ToList[cells2];
-  If[$Line =!= $currentEchoLine,
+  needsNewWindow = $currentEchoWindow === None || Options[$currentEchoWindow] === $Failed;
+  If[$Line =!= $currentEchoLine || needsNewWindow,
     $currentEchoLine = $Line; $totalEchos = 0;
-    If[Options[$currentEchoWindow] === $Failed, $currentEchoWindow = None];
-    If[$currentEchoWindow === None,
-      $currentEchoWindow = CreateDocument[cells, Saveable -> False, WindowTitle -> "Echo"];
+    If[needsNewWindow,
+      $currentEchoWindow = CreateDebuggingWindow[cells]
     ,
       NotebookPut[Notebook[cells], $currentEchoWindow]
     ];
@@ -334,6 +334,18 @@ EchoCellPrint[cells2_] := Module[{cells},
     NotebookWrite[$currentEchoWindow, cells, After]
   ];
 ];
+
+(**************************************************************************************************)
+
+PublicSpecialFunction[CreateDebuggingWindow]
+
+CreateDebuggingWindow[cells_, w:_Integer:1000, opts___Rule] := CreateDocument[cells,
+  Saveable -> False, WindowTitle -> "Debugging",
+  WindowSize -> {w, Scaled[1]},
+  WindowMargins -> {{Automatic, 50}, {Automatic, Automatic}},
+  StyleDefinitions -> $DarkStylesheetPath,
+  opts
+]
 
 (* TODO: fully hijack Echo, Print, Message, etc *)
 

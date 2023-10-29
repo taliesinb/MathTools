@@ -27,26 +27,16 @@ $compactOpts = Sequence[
   CompactRealNumbers -> True, TabSize -> None
 ];
 
-Format[CompactPrettyForm[expr_, opts___Rule], OutputForm] :=
-  ToPrettifiedString[
-    InternalHoldForm @ expr,
-    opts,
-    $compactOpts, ElideLargeArrays -> True
-  ];
+cpfString[expr_, ela_, opts___] := ToPrettifiedString[
+  InternalHoldForm @ expr, opts,
+  $compactOpts, ElideLargeArrays -> ela
+];
 
-CompactPrettyForm /: MakeBoxes[CompactPrettyForm[expr_, opts___Rule], StandardForm] :=
-  ToPrettifiedString[
-    InternalHoldForm @ expr,
-    opts,
-    $compactOpts, ElideLargeArrays -> True
-  ];
+Format[CompactPrettyForm[expr_, opts___Rule], OutputForm] := cpfString[expr, True, opts];
+CompactPrettyForm /: MakeBoxes[CompactPrettyForm[expr_, opts___Rule], StandardForm] := cpfString[expr, True, opts];
 
-CompactPrettyFullForm /: MakeBoxes[CompactPrettyFullForm[expr_, opts___Rule], StandardForm] :=
-  ToPrettifiedString[
-    InternalHoldForm @ expr,
-    opts,
-    $compactOpts, ElideLargeArrays -> False
-  ];
+Format[CompactPrettyFullForm[expr_, opts___Rule], OutputForm] := cpfString[expr, False, opts];
+CompactPrettyFullForm /: MakeBoxes[CompactPrettyFullForm[expr_, opts___Rule], StandardForm] := cpfString[expr, False, opts];
 
 (**************************************************************************************************)
 

@@ -25,13 +25,14 @@ PublicTypesettingForm[BoxesDebugForm]
 
 DefineStandardTraditionalForm[f_BoxesDebugForm :> boxesDebugFormBoxes[f]];
 
+(* TODO: disable the ShowAutoStyles workaround, which is to make it readable in DarkMode *)
 boxesDebugFormBoxes[BoxesDebugForm[g_]] := Scope[
   contentBoxes = MakeBoxes @ g;
   framedContentBoxes = FrameBox[contentBoxes, FrameStyle -> GrayLevel[0.9]];
   framedContentBoxes = PaneBox[framedContentBoxes, ImageSize -> {{250, 800}, Full}];
   codeBoxes = ToBoxes @ PrettyCodeForm @ contentBoxes;
   framedCodeBoxes = FrameBox[
-    StyleBox[codeBoxes, "Input", 10],
+    StyleBox[codeBoxes, "Input", 10, Background -> None, FontColor -> Black, ShowAutoStyles -> False],
     Background -> GrayLevel[0.95], FrameStyle -> GrayLevel[0.9]
   ];
   GridBox[{{framedContentBoxes, "     ", framedCodeBoxes}}, RowAlignments -> Center]
@@ -46,7 +47,7 @@ DefineStandardTraditionalForm[f_PrettyCodeForm :> prettyCodeBoxes[f]];
 prettyCodeBoxes[PrettyCodeForm[e_, opts___Rule]] := Scope[
   codeBoxes = MakeBoxes @ CompactPrettyFullForm[e, opts, CompactingWidth -> 100];
   FrameBox[
-    StyleBox[codeBoxes, "Code", 10],
+    StyleBox[codeBoxes, "Code", 10, Background -> None, FontColor -> Black, ShowAutoStyles -> False],
     Background -> GrayLevel[0.95], FrameStyle -> GrayLevel[0.9]
   ]
 ];
@@ -311,17 +312,17 @@ msgPathBoxes[path_String, line_:None] := With[
   {color = Switch[type, None, $LightRed, Directory, $LightBlue, File, $LightGray, "URL", $LightPurple, _, $LightRed]},
   ToBoxes @ ClickForm[
     tightColoredBoxes[If[IntegerQ[line], StringJoin[shortenPath @ path, ":", IntegerString @ line], shortenPath @ path], color],
-    openMsgPath[path, line]
+    If[ModifierKeysPressedQ[], CopyToClipboard @ path, openMsgPath[path, line]]
   ]
 ];
 
 shortenPath[str_] := Scope[
   str = StringReplace[str, $HomeDirectory <> $PathnameSeparator -> "~/"];
-  If[StringLength[str] <= 20, Return @ str];
+  If[StringLength[str] <= 36, Return @ str];
 
   n = 0;
   segs = Reverse @ FileNameSplit @ str;
-  segs2 = Reverse @ TakeWhile[segs, (n += StringLength[#]) < 22&];
+  segs2 = Reverse @ TakeWhile[segs, (n += StringLength[#]) < 36&];
   If[segs2 === {}, segs2 = Take[segs, 1]];
   If[Length[segs2] < Length[segs], PrependTo[segs2, "\[Ellipsis]"]];
   str2 = FileNameJoin @ segs2;

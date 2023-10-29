@@ -3,5 +3,4 @@
 
 Get["~/git/qg/Kernel/init.m"];
 
-
-Print @ RunTests[]
+RunTests[];

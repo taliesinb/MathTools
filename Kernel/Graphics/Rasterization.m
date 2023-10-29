@@ -1,11 +1,21 @@
-toExportNotebook[expr_, background_] :=
-	toExportCell[expr, Background -> background, StyleDefinitions -> $QGStyleDefs];
+toExportNotebook[expr_, background_] := Scope[
+	nbOrCell = toExportCell[expr, Background -> background];
+	(* fast path: custom stylesheet makes rasterization substantially slower. *)
+	If[containsQGTemplates[nbOrCell], AppendTo[nbOrCell, StyleDefinitions -> $styleDefsFileName]];
+	nbOrCell
+];
 
-(* we do this because custom stylesheet makes rasterization substantially slower. TODO: also check for known TemplateBox string names! *)
-toExportNotebook[expr_ ? DoesNotRequireQGStylesQ, background_] :=
-	toExportCell[expr, Background -> background];
-	
+$styleDefsFileName := $styleDefsFileName = Construct[FileName, {}, $LightStylesheetPath, CharacterEncoding -> "UTF-8"];
+
+containsQGTemplates[expr_] := Or[
+	!FreeQ[expr, TemplateBox[_, $qgTemplateBoxP]],
+	!FreeQ[expr, s_String /; StringContainsQ[s, "StyleDefinitions"]] (* not sure what this second thing is for *)
+]
+
+(* TODO: just save these names as we populate them, rather than loading them from disk *)
 $qgTemplateBoxP := $qgTemplateBoxP = Apply[Alternatives, QuiverGeometryStyleNames[]];
+
+(*************************************************************************************************)
 
 $exportCellOptions = Sequence[
 	ShowCellBracket -> False, CellMargins -> 0,
@@ -24,14 +34,7 @@ toExportCell[expr_, opts___] := Cell[
 	$exportCellOptions, opts
 ];
 
-DoesNotRequireQGStylesQ[expr_] :=
-	FreeQ[expr, _Symbol ? QuiverGeometrySymbolQ] && FreeQ[expr, TemplateBox[_, $qgTemplateBoxP]] && FreeQ[expr, s_String /; StringContainsQ[s, "StyleDefinitions"]];
-
-$QGStyleDefs := $QGStyleDefs = With[{path = $QuiverGeometryStylesheetPath}, FileName[{}, path, CharacterEncoding -> "UTF-8"]];
-
-SetHoldAll[QuiverGeometrySymbolQ]
-QuiverGeometrySymbolQ[StyleDefinitions] := True;
-QuiverGeometrySymbolQ[s_Symbol] := StringStartsQ[Context[s], "QuiverGeometry`"];
+(*************************************************************************************************)
 
 toExportPacket[expr_] := toExportPacket[expr, None];
 
