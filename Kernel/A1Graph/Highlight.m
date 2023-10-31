@@ -235,13 +235,13 @@ $additionalStyleOptions = {
   PathRadius, EdgeSetback, SimplifyRegions, ZOrder, Cardinals, PathVertexHighlighting
 };
 
-If[QuiverGeometryLoader`$AttachSyntaxInformation === True,
-Unprotect[Style];
-SyntaxInformation[Style] = ReplaceOptions[
-  SyntaxInformation[Style],
-  "OptionNames" -> Union[OptionKeys @ Style, SymbolName /@ $additionalStyleOptions]
-];
-Protect[Style];
+IfSyntaxInfo[
+  Unprotect[Style];
+  SyntaxInformation[Style] = ReplaceOptions[
+    SyntaxInformation[Style],
+    "OptionNames" -> Union[OptionKeys @ Style, SymbolName /@ $additionalStyleOptions]
+  ];
+  Protect[Style];
 ];
 
 $namedTransformsPattern = "FadeGraph" | "FadeProtect" | "FadeEdges" | "FadeVertices" | "HideArrowheads" | "HideEdges" | "HideVertices" | "SemitransparentArrowheads";

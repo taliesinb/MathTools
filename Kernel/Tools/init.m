@@ -7,7 +7,7 @@ $WindowsQ := $OperatingSystem === "Windows"
 
 PrivateFunction[ToolAvailableQ]
 
-ToolAvailableQ[name_] := StringQ @ findTool1[name];
+ToolAvailableQ[name_] := StringQ @ iFindTool[name];
 
 (**************************************************************************************************)
 
@@ -17,18 +17,33 @@ toolKeyTranslationRules[rules_] := Append[_ -> Nothing][(#1 -> v_) :> (#2 -> v)&
 
 (**************************************************************************************************)
 
-PrivateFunction[findTool]
+PublicVariable[$BinaryPaths]
 
-$binaryPaths = {"/usr/local/bin", "/usr/bin", "/usr/sbin", "/sbin", "/bin", $HomeDirectory, "/Applications", PathJoin[$HomeDirectory, "/Applications"]};
+SetInitialValue[$BinaryPaths, {"/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/usr/sbin", "/sbin", "/bin", $HomeDirectory, "/Applications", PathJoin[$HomeDirectory, "/Applications"]}];
+
+(**************************************************************************************************)
+
+PublicFunction[FindTool]
 
 General::toolnp = "Tool `` is not present in any of the normal binary paths. Please install it.";
 
-SetHoldRest[findTool];
+SetHoldRest[FindTool];
 
-findTool[name_String] := findTool[name, ThrowMessage["toolnp", name]];
-findTool[name_String, else_] := ReplaceNone[findTool1[name], else];
+FindTool[name_String] := FindTool[name, Message[General::toolnp, name]; $Failed];
+FindTool[name_String, else_] := ReplaceNone[iFindTool[name], else];
 
-findTool1[name_] := findTool1[name] = SelectFirst[PathJoin[#, name]& /@ $binaryPaths, FileExistsQ, None];
+iFindTool[name_] := iFindTool[name] = SelectFirst[PathJoin[#, name]& /@ $BinaryPaths, FileExistsQ, None];
+
+(**************************************************************************************************)
+
+PrivateFunction[toolCommandString]
+
+toolCommandString[tool_, args___] := Scope[
+	cmdPath = FindTool[tool];
+	If[FailureQ @ cmdPath, ReturnFailed[]];
+	args = BashEscape /@ procArg /@ {args};
+	StringRiffle[Flatten[{cmdPath, args}], " "]
+];
 
 (**************************************************************************************************)
 
@@ -85,22 +100,20 @@ RunTool[args1___, OpenToolOutput -> oto_, args2___] := Block[{$oto = oto}, RunTo
 RunTool::badrp = "Run failed to return an association, returned: ``"
 
 RunTool[cmd_, args___] := Scope @ Block[{$verbose = ReplaceAutomatic[$tverbose, $dryRun]},
-	cmdPath = findTool[cmd];
-	args = procArg /@ {args};
-	args2 = BashEscape /@ args;
-	argStr = StringRiffle[Flatten[{cmdPath, args2}], " "];
+	cmdStr = toolCommandString[cmd, args];
+	If[FailureQ[cmdStr], Return @ False];
 	If[$inTerm,
-		RunInTerminalWindow[If[StringQ[$wdir], $wdir, "~"], argStr];
+		RunInTerminalWindow[If[StringQ[$wdir], $wdir, "~"], cmdStr];
 		Return @ True
 	];
 	tmpOut = MakeTemporaryFile["tool", cmd <> ".#.out"];
-	argStr2 = argStr <> " &>" <> tmpOut;
+	cmdStr2 = cmdStr <> " &>" <> tmpOut;
 	If[$wdir =!= None,
-		VPrint["Running \"", argStr, "\" in ", MsgPath @ $wdir];
-		If[$dryRun, exitCode = 0, WithLocalSettings[SetDirectory[$wdir], exitCode = RunUTF8 @ argStr2, ResetDirectory[]]];
+		VPrint["Running \"", cmdStr, "\" in ", MsgPath @ $wdir];
+		If[$dryRun, exitCode = 0, WithLocalSettings[SetDirectory[$wdir], exitCode = RunUTF8 @ cmdStr2, ResetDirectory[]]];
 	,
-		VPrint["Running \"", argStr, "\""];
-		exitCode = If[$dryRun, 0, RunUTF8 @ argStr2];
+		VPrint["Running \"", cmdStr, "\""];
+		exitCode = If[$dryRun, 0, RunUTF8 @ cmdStr2];
 	];
 	success = exitCode === 0;
 	showOut = $oto;
@@ -109,7 +122,7 @@ RunTool[cmd_, args___] := Scope @ Block[{$verbose = ReplaceAutomatic[$tverbose, 
 		stream = OpenAppend[tmpOut, CharacterEncoding -> "UTF8"];
 		WriteLine[stream, "#### tool input follows ####"];
 		If[$wdir =!= None, WriteLine[stream, "cd \"" <> $wdir <> "\""]];
-		WriteLine[stream, argStr];
+		WriteLine[stream, cmdStr];
 		Close[stream];
 		TextFileOpen[tmpOut];
 	];
@@ -139,7 +152,8 @@ PublicFunction[RunToolOutput]
 RunToolOutput[args__, Verbose -> t_] := Block[{$tverbose = t}, RunToolOutput[args]];
 
 RunToolOutput[cmd_, args___] := Scope[
-	cmdPath = findTool[cmd];
+	cmdPath = FindTool[cmd];
+	If[FailureQ[cmdPath], ReturnFailed[]];
 	args = procArg /@ {args};
 	args2 = BashEscape /@ args;
 	inFile = MakeTemporaryFile["tool", cmd <> ".#.sh"];

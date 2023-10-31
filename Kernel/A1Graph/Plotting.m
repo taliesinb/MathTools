@@ -1,59 +1,10 @@
-(* TODO: Add AlignmentPoint, much like BaselinePosition *)
-
-PrivateVariable[$graphRegionTable]
-
-$graphRegionTable = StringTrim @ "
-The following specifications describe paths in the graph:
-| %Path[v$, {c$1, $$, c$n}] | start at v$, move along cardinals c$i |
-| %Line[{v$1, v$2}] | the geodesic between v$1 and v$2 |
-| %Line[{v$1, v$2}, c$] | start at v$1, moving along c$, and end at v$2 |
-| %Line[{v$1, $$, v$n}] | the geodesic path between v$1 and v$2, v$2 and v$3, etc. |
-| %Polygon[{v$1, $$, v$n}] | geodesics between the v$i, taken cyclically |
-| %HalfLine[v$, c$] | a geodesic starting at v$ and continuing in the cardinal direction c$ |
-| %HalfLine[{v$1, v$2}] | a geodesic starting at v$1 and continuing through v$2 |
-| %InfiniteLine[v$, c$] | a geodesic with midpoint v$, and continuing in directions c$ and Inverted[c$] |
-| %InfiniteLine[{v$1, v$2}] | a geodesic intersecting v$1 and v$2 |
-| %Cycles[word$] | all  disjoint closed paths with given word |
-| %GraphPathData[$$] | a previously computed path |
-* Specifications taking a cardinal direction c$ also take a list {c$1, ..., c$n}, used cyclically.
-* %Path[$$, %PathAdjustments -> {adj$1, adj$2, $$}] gives a series of adjustments to how the path is drawn.
-
-The following specifications describe regions in the graph:
-| %Point[v$] | a single vertex v$ |
-| %DirectedEdge[v$1, v$2] | a literal edge between v$1 and v$2 |
-| %VertexPattern[patt$] | all vertices match patt$ |
-| %EdgePattern[v$1, v$2, t$] | all edges matching %DirectedEdge[v$1, v$2, t$] |
-| %Disk[v$, r$] | vertices within distance r$ of v$ |
-| %Annulus[v$1, {r$1, r$2}] | vertices with distance r$1 \[LessEqual] r$ \[LessEqual] r$2 |
-| %Circle[v$, r$] | vertices exactly distance r$ from v$ |
-| %Locus[r$1, r$2] | vertices whose distance to regions r$1 and r$2 is equal |
-| %Locus[r$1, r$2, 'Polar'] | vertices that straddle the equation d$ (r$1) - d$ (r$2) = 0 |
-| %Locus[r$1, r$2, d$] | vertices whose distance to regions r$1 and r$2 differs by less than d$ |
-| %GraphRegionBoundary[r$] | the vertices in region r$ adjacent to vertices not in r$ |
-| %GraphRegionComplement[r$1, r$2] | the complement of region r$1 with region r$2 |
-| %GraphRegionIntersection[r$1, r$2, $$] | the mutual intersection of regions r$i |
-| %GraphRegionUnion[r$1, r$2, $$] | the union of regions r$i |
-| %GraphRegionData[$$] | previously computed region |
-| %ConnectedSubgraph[region$] | all edges connecting vertices within region$ |
-
-## Distances
-
-* All distances are measured relative to the setting of %GraphMetric of the graph.
-* Specific regions like %Circle, %Disk etc accept an option %GraphMetric -> m$ to override this default.
-
-## Vertices
-
-* Specifications taking a vertex v$ can also take these symbolic forms:
-| %GraphOrigin | the 'origin vertex', if provided |
-| %RandomPoint | a randomly chosen vertex |
-| %Offset[v$, {c$1, $$}] | start at v$ and move along the cardinals c$i |
-"
-
 (**************************************************************************************************)
 
-PrivateVariable[$GraphRegionHighlightUsage]
+PublicOption[GraphRegionHighlight]
 
-$GraphRegionHighlightUsage = StringTrim @ "
+SetUsage @ "
+GraphRegionHighlight is an option to %ExtendedGraph that specifies one or more highlighting directives to highlight \
+specific regions of the graph when it is displayed.
 
 ## Highlight specifications
 
@@ -122,17 +73,7 @@ The following special named style elements control several settings:
 
 ## Region specifications
 
-<*$graphRegionTable*>
-"
-
-(**************************************************************************************************)
-
-PublicOption[GraphRegionHighlight]
-
-SetUsage @ "
-GraphRegionHighlight is an extended option to Graph that specifies one or more highlighting directives to highlight \
-specific regions of the graph when it is displayed.
-<*$GraphRegionHighlightUsage*>
+* see %GraphRegion for more information.
 "
 
 (**************************************************************************************************)
@@ -142,19 +83,12 @@ HighlightGraphRegion[graph$, highlights$] highlights regions of graph$ according
 * HighlightGraphRegion returns a %Graph in which the option %GraphRegionHighlight has been set to \
 highlights$.
 * Any existing highlights are preserved.
-<*$GraphRegionHighlightUsage*>
+* See %GraphRegionHighlight for specifications.
 "
 
 (**************************************************************************************************)
 
 PublicOption[GraphLegend]
-
-SetUsage @ "
-GraphLegend is an option to Quiver that creates a legend for the graph.
-* GraphLegend -> None specifies no additional legend
-* GraphLegend -> Automatic uses a legend for the cardinals
-* GraphLegend -> legend$ specifies a particular legend
-"
 
 (**************************************************************************************************)
 
@@ -1812,7 +1746,7 @@ drawSquare[size_][pos_, color_] :=
   edgedStyle[color] @ mapCoordArray[Rectangle[# - size / 2, # + size / 2]&, pos];
 
 (* todo: replace this with a single polygon *)
-$hexagonPoints = CirclePoints[{1, Tau/12}, 6] / Sqrt[2];
+$hexagonPoints := $hexagonPoints = CirclePoints[{1, Tau/12}, 6] / Sqrt[2];
 drawHexagon[size_][pos_, color_] :=
   edgedStyle[color] @ mapCoordArray[Polygon[PlusVector[$hexagonPoints * size, #]]&, pos];
 
@@ -2512,7 +2446,7 @@ dim3to2 = Case[
   p:{_, _}    := p
 ];
 
-$labelOffsets = N @ CirclePoints[{1, 0}, 8];
+$labelOffsets := $labelOffsets = N @ CirclePoints[{1, 0}, 8];
 placeLabelAt[label_, pos_, index_] /; ($labelX === Automatic) := Scope[
   adjacentEdges = Part[$adjacencyIndex, index];
   edgeCoords = Mean /@ Part[$EdgeCoordinateLists, adjacentEdges];

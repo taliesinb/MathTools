@@ -1,6 +1,6 @@
 (* see /Applications/Mathematica.app/Contents/SystemFiles/FrontEnd/TextResources/Macintosh/MenuSetup.tr for info on anchors *)
-If[!TrueQ[QuiverGeometryLoader`$menuModified] && $Notebooks,
-With[{qgPath = QuiverGeometryLoader`$InitFile},
+If[$Notebooks && !TrueQ[QuiverGeometryLoader`$DisableMenuItems] && !TrueQ[QuiverGeometryLoader`Private`$menuItemsAdded] && !TrueQ[QuiverGeometryLoader`$FastLoad],
+
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["CDFPreview", {
     Delimiter,
     MenuItem[
@@ -27,13 +27,30 @@ With[{qgPath = QuiverGeometryLoader`$InitFile},
       FrontEnd`MenuKey["g", FrontEnd`Modifiers -> {"Command", "Option"}],
       MenuEvaluator -> Automatic, Method -> "Queued"
     ],
-    MenuItem[
+    With[{qgPath = QuiverGeometryLoader`$InitFile}, MenuItem[
       "Load Quiver&Geometry",
       KernelExecute[Get[qgPath]],
       FrontEnd`MenuKey["g", FrontEnd`Modifiers -> {"Command", "Option", "Shift"}],
       MenuEvaluator -> Automatic, Method -> "Queued"
+    ]]
+  }]];
+
+  LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["SubsessionEvaluateCells", {
+    Delimiter,
+    MenuItem[
+      "Watch Cell",
+      KernelExecute[QuiverGeometryLoader`WatchCurrentCell[]],
+      FrontEnd`MenuKey["Return", FrontEnd`Modifiers->{"Option", "Command"}],
+      MenuEvaluator -> Automatic
+    ],
+    MenuItem[
+      "Add Watch Cell",
+      KernelExecute[QuiverGeometryLoader`WatchCurrentCellAdd[]],
+      FrontEnd`MenuKey["Return", FrontEnd`Modifiers->{"Option", "Command", "Shift"}],
+      MenuEvaluator -> Automatic
     ]
   }]];
+
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["ClearCellOptions", {
     Delimiter,
     MenuItem["Struckthrough", FrontEnd`FontVariationsStrikeThrough->Toggle],
@@ -96,5 +113,6 @@ With[{qgPath = QuiverGeometryLoader`$InitFile},
       MenuEvaluator -> Automatic
     ]
   }]];
-  QuiverGeometryLoader`$menuModified = True;
-]];
+  QuiverGeometryLoader`Private`$menuItemsAdded = True;
+
+];

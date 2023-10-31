@@ -4,7 +4,7 @@ PandocConvert::failed = "Pandoc failed on input `` and output ``.";
 
 PandocConvert[infile_String, outfile_String] := CatchMessage @ Scope[
 	res = RunTool["pandoc", "-i", infile, "-o", outfile, "--standalone", "--katex"];
-	If[FailureQ[res], ReturnFailed["failed", MsgPath[infile], MsgPath[outfile]]];
+	If[!TrueQ[res], ReturnFailed["failed", MsgPath[infile], MsgPath[outfile]]];
 	outfile
 ];
 

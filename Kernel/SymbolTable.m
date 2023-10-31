@@ -17,8 +17,6 @@ the typed Package` declarations that categorize QG's own symbols.
 
 
 {"System`", "Package"} -> {
-Package`Package,
-Package`PackageExport, Package`PackageScope,  Package`PackageImport,
 Package`SystemSymbol,  Package`SystemMacro,   Package`SystemVariable,  Package`SystemFunction,  Package`SystemHead,
 Package`PublicSymbol,  Package`PublicMacro,   Package`PublicVariable , Package`PublicFunction,  Package`PublicHead,
 Package`PrivateSymbol, Package`PrivateMacro,  Package`PrivateVariable, Package`PrivateFunction, Package`PrivateHead,
@@ -39,10 +37,11 @@ True, False, None, Automatic, Inherited, All, Full, Indeterminate, Null,
 Flat, OneIdentity, HoldFirst, HoldRest, HoldAll, HoldAllComplete,
 Left, Right, Above, Below, Before, After, Center, Top, Bottom, Tiny, Small, Medium, Large,
 SpanFromLeft, SpanFromAbove, SpanFromBoth, Baseline,
-E, Pi, StartOfString, EndOfString, StartOfLine, EndOfLine, NumberString,
+E, Pi, StartOfString, EndOfString, StartOfLine, EndOfLine, DigitCharacter, LetterCharacter, NumberString,
 Hold[Infinity],
-EndOfFile, Overflow, Underflow,
-Horizontal, Vertical, Into, Next, Previous
+Expression, EndOfFile, Overflow, Underflow,
+Horizontal, Vertical, Into, Next, Previous,
+Smaller, Larger
 },
 
 {"System`", "Head"} -> {
@@ -54,49 +53,60 @@ Threaded,
 File, URL, C,
 Slot, SlotSequence,
 Hold[TemplateSlot, TemplateSlotSequence], Typed, TypeSpecifier,
-HoldPattern, Condition, Alternatives, Pattern, PatternTest, Verbatim, Blank, BlankSequence, BlankNullSequence, Longest, Shortest, Except, KeyValuePattern, Optional, Repeated,
+HoldPattern, Condition, Alternatives, Pattern, PatternTest, Verbatim, Blank, BlankSequence, BlankNullSequence, Longest, Shortest, Except, KeyValuePattern, Optional, Repeated, RepeatedNull,
 CompoundExpression, Placed,
-SameAs, EqualTo, UnequalTo, LessThan, GreaterThan, LessEqualThan, GreaterEqualThan
+SameAs, EqualTo, UnequalTo, LessThan, GreaterThan, LessEqualThan, GreaterEqualThan, Notebook, FrontEndToken
 },
 
 {"System`", "Object"} -> {
 Graph,
 NumericArray, SparseArray,
-Image, Image3D,
+Image, Image3D, AnimatedImage,
 XMLElement, XMLObject,
 Cell, CellGroup, CellGroupData, TextData, BoxData,
-Hold[HTTPRequest, HTTPResponse]
+Hold[HTTPRequest, HTTPResponse],
+Hold[DataStructure, Region],
+NotebookObject, CompressedData
 },
 
 {"System`", "Function"} -> {
-Map, Scan, MapAt, MapIndexed, MapThread, Apply, Fold, FoldList, FixedPoint, Riffle,
+Map, MapApply, Scan, MapAt, MapIndexed, MapThread, Apply, Fold, FoldList, FixedPoint, Riffle,
 RightComposition, Composition, Function, Identity, Construct,
 Tuples, Subsets, Permutations,
 Normal,
-Rasterize,
-Sort, Reverse, SortBy, GroupBy, GatherBy, Ordering, Count, Counts, CountsBy, DeleteDuplicates, DeleteDuplicatesBy,
+Sort, SortBy, Reverse, ReverseSort, ReverseSortBy, GroupBy, GatherBy, Ordering, Count, Counts, CountsBy, DeleteDuplicates, DeleteDuplicatesBy,
 Head, First, Last, Rest, Most, Part, Extract, Select, SelectFirst, Cases, FirstCase, Pick, Gather, Split, Partition, DeleteCases, Transpose, RotateLeft, RotateRight,
 Position, FirstPosition,
 Length, Dimensions, Prepend, Append, Take, Drop, Join, Catenate, Flatten, Union, Intersection, Complement, Range, Insert, Delete,
-Replace, ReplacePart, ReplaceAll, ReplaceRepeated,
+ArrayDepth, Accumulate,
+Replace, ReplacePart, ReplaceAll, ReplaceList, ReplaceRepeated,
 StringJoin, StringTake, StringDrop, StringCases, StringLength, TextString, StringTrim, StringReplace, StringRiffle, Characters, StringSplit, StringInsert, StringDelete, StringPadLeft, StringPadRight,
+FromCharacterCode, ToCharacterCode, StringCount, StringExtract, StringPartition, StringPosition, StringRepeat, StringReplacePart, StringReverse,
 Keys, KeyTake, KeyDrop, KeySort, Values, Key, AssociationMap, AssociationThread, Lookup, KeyMap, KeyValueMap, Thread,
 PositionIndex, Merge,
-Options, OptionsPattern, OptionValue,
+Options, OptionsPattern, OptionValue, FilterRules,
 AllTrue, AnyTrue, NoneTrue,
 StringQ, AssociationQ, ListQ, IntegerQ, FailureQ, VectorQ, MatrixQ, ArrayQ, NumberQ, GraphQ, NumericQ, BooleanQ,
-FreeQ, MemberQ, MatchQ, SameQ, UnsameQ, Equal, TrueQ, MissingQ,
+FreeQ, MemberQ, MatchQ, SameQ, UnsameQ, Equal, Unequal, TrueQ, MissingQ,
 StringMatchQ, StringFreeQ, StringContainsQ, StringStartsQ, StringEndsQ, DuplicateFreeQ,
 And, Or, Not, Greater, Less, LessEqual, GreaterEqual, Between, Positive, Negative, NonNegative,
 If, While, Which, Do, Switch, Table, ConstantArray,
-Hold @ IdentityMatrix, UnitVector, ArrayFlatten, ArrayReshape, Inverse, Hold @ RotationMatrix,
-MessageName, Quiet, Check, General, Assert,
+UnitVector, ArrayFlatten, ArrayReshape, Inverse, Hold @ RotationMatrix, Hold @ IdentityMatrix,
+MessageName, Quiet, General, Assert,
 Sqrt, Power, Abs, Dot, Cross, Times, Plus, Minus, Subtract, Divide, Min, Max, Mod, MinMax, Floor, Ceiling, Round,
-N, Sin, Cos, Tan, Tanh, ArcTan, Re, Im, Exp, Log, Log10,
-Total, Mean, Median, Norm, Normalize, Clip, EuclideanDistance,
-Interpolation,
+N, Sin, Cos, Tan, Tanh, ArcTan, Re, Im, Exp, Log, Log10, Boole, Sign,
+Total, Mean, Median, Norm, Normalize, Clip, EuclideanDistance, Rescale, Standardize,
+Interpolation, Blend,
 EdgeList, VertexList, IndexGraph, VertexCount, EdgeCount, AdjacencyMatrix, Subgraph, PathGraph, GraphPlot, Graph3D,
-SymbolName, Names, CoordinateBoundingBox
+SymbolName, Names, NameQ,
+CoordinateBounds, CoordinateBoundsArray, CoordinateBoundingBox,
+(* TODO: Move these to special since they are IO and side-effecty? *)
+ParentDirectory, Directory, DirectoryName, DirectoryQ, CopyFile, CopyDirectory, DeleteFile, DeleteDirectory, CreateDirectory, RenameDirectory, RenameFile,
+FileNames, ExpandFileName, AbsoluteFileName, FileNameJoin, FileNameSplit, FileBaseName, FileByteCount, FileDate, FileExistsQ, FileExtension, FileNameTake, FileNameDrop,
+SubsetQ, EvenQ, OddQ, OrderedQ,
+ByteCount, Compress, Uncompress, Hash,
+Rasterize, ImageData, ImageResize, Hold @ ImageCrop, ImageTake,
+MaximalBy, MinimalBy
 },
 
 {"System`", "MutatingFunction"} -> {
@@ -115,31 +125,32 @@ GeneralUtilities`UnpackOptions
 },
 
 {"System`", "SpecialFunction"} -> {
-Return, Throw, Catch, RuleCondition,
+Return, Throw, Catch, RuleCondition, Evaluate,
 Splice, Sequence,
-Hold, HoldComplete, Unevaluated, Hold @ Nothing,
+ReleaseHold, Hold, HoldComplete, Unevaluated, Hold @ Nothing, CheckAbort, Check,
 Failure, $Failed, $Aborted, $TimedOut, Hold[$Context, $ContextPath],
 MakeBoxes, ToBoxes, ToExpression, MakeExpression,
 Break, Continue, Goto, Label,
 DynamicModule,
-ImportString, ImportByteArray, Import, Get, Read,  Hold @ ReadString,  ReadLine, ReadList, BinaryRead, BinaryReadList, ReadByteArray,
-ExportString, ExportByteArray, Export, Put, Write, WriteString,        WriteLine, BinaryWrite, BinarySerialize, BinaryDeserialize,
+ImportString, ImportByteArray, Import, Get, Read,  Hold @ ReadString,  Hold @ ReadLine, ReadList, BinaryRead, BinaryReadList, ReadByteArray,
+ExportString, ExportByteArray, Export, Put, Write, WriteString,        Hold @ WriteLine, BinaryWrite, BinarySerialize, BinaryDeserialize,
 Skip, Find, StreamPosition, SetStreamPosition, Streams,
-OpenRead, OpenWrite, OpenAppend, Close, CreateFile,
+OpenRead, OpenWrite, OpenAppend, Open, Close, CreateFile,
 NotebookGet, NotebookRead, Hold @ NotebookImport, NotebookSave, NotebookFind, NotebookOpen, NotebookClose,
-CreateNotebook, NotebookPut, NotebookWrite,
+CreateNotebook, NotebookPut, NotebookWrite, NotebookDelete,
 EvaluationNotebook, FrontEndExecute,
-PreviousCell, NextCell, ParentCell, Cells, SelectedCells, SelectionMove, NotebookSelection,
+PreviousCell, NextCell, ParentCell, Cells, SelectedCells, EvaluationCell, SelectionMove, NotebookSelection,
 CurrentValue, Message,
 SyntaxInformation, Attributes, DownValues, OwnValues, UpValues, SubValues, FormatValues, DefaultValues,
-CopyToClipboard
+CopyToClipboard,
+SetDirectory, ResetDirectory
 },
 
 {"System`", "DebuggingFunction"} -> {
 Print, CellPrint, System`PrintIF, System`PrintPF, System`PrintFF, System`Capture,
 In, InString, Out,
 EchoTiming, EchoFunction, EchoLabel, Echo, System`EchoIF, System`EchoPF, System`EchoFF, System`EchoGPF,
-URLFetch, URLRead,
+Hold @ URLFetch, Hold @ URLRead,
 Abort, AbortProtect,
 Hold[Z1,Z2,Z3,Z4,Z5,Z6,Z7,Z8,Z9]
 },
@@ -150,26 +161,30 @@ GeneralUtilities`EchoHold, GeneralUtilities`EchoHoldSet, GeneralUtilities`EchoHo
 
 {"System`", "Option"} -> {
 TextAlignment, BaselinePosition, Alignment, AlignmentPoint, Spacings, Dividers, AspectRatio,
-ImageSize, ImagePadding, ImageMargins, ContentPadding, FrameMargins, PlotRange, PlotRangePadding, PlotRangeClipping, BaseStyle, ColorFunction, ColorFunctionScaling,
+ImageResolution, ImageSize, ImagePadding, ImageMargins, ContentPadding, FrameMargins, PlotRange, PlotRangePadding, PlotRangeClipping, BaseStyle,
+ColorFunction, ColorFunctionScaling,
 ViewCenter, ViewVector, ViewPoint, ViewMatrix, ViewProjection, ViewAngle,
 Frame, FrameTicks, Ticks, FrameStyle, FontFamily, FontWeight, FontSize, FontColor,
 InterpolationOrder,
 EdgeStyle, VertexStyle, EdgeShapeFunction, VertexShapeFunction, GraphLayout, DirectedEdges,
 Lighting, ColorRules, PlotStyle, FillingStyle, MeshStyle, Epilog, Prolog, Verbose,
-System`EdgeOpacity
+System`EdgeOpacity, Heads, CharacterEncoding, CompressionLevel, Background, IgnoreCase,
+ItemSize, ItemStyle,
+RowAlignments, RowMinHeight, RowsEqual, RowSpacings,
+ColumnAlignments, ColumnsEqual, ColumnSpacings, ColumnWidths
 },
 
 {"System`", "TypesettingForm"} -> {
 Style,
 Annotation, Labeled, Legended, Hold[Callout], Hyperlink, Tooltip, Interpretation,
 Grid, Row, Column, Pane, Spacer, Framed, Item,
-Dynamic, EventHandler,
+Dynamic, EventHandler, Refresh,
 Deploy, Defer,
 Invisible, Magnify, Overlay,
 MouseAppearance, Mouseover, StatusArea, PopupWindow,
 Button, ButtonBar, Checkbox, CheckboxBar, Slider, Slider2D, ProgressIndicator, RadioButton, RadioButtonBar, FlipView,
 Subscript, Subsuperscript, Superscript, Underscript, Overscript, OverDot, UnderBar, OverBar, Element,
-TraditionalForm, StandardForm, InputForm, StringForm
+TraditionalForm, StandardForm, InputForm, StringForm, OutputForm, NumberForm, HoldForm
 },
 
 {"System`", "TypesettingBoxFunction"} -> {
@@ -188,9 +203,9 @@ PointSize, AbsolutePointSize,
 Offset, Scaled, ImageScaled,
 EdgeForm, FaceForm, Texture,
 SurfaceAppearance, CapForm, JoinForm, Hold[MaterialShading, StippleShading], Specularity, Glow,
-Hold[Transparent, Red, Green, Blue, Black, White, Gray, Cyan, Magenta, Yellow, Brown, Orange, Pink, Purple, LightRed, LightGreen, LightBlue, LightGray, LightCyan, LightMagenta, LightYellow, LightBrown, LightOrange, LightPink, LightPurple,
-Dashing, AbsoluteDashing, Dashed, Dotted, DotDashed],
+Hold[Transparent, Red, Green, Blue, Black, White, Gray, Cyan, Magenta, Yellow, Brown, Orange, Pink, Purple, LightRed, LightGreen, LightBlue, LightGray, LightCyan, LightMagenta, LightYellow, LightBrown, LightOrange, LightPink, LightPurple, Dashed, Dotted, DotDashed],
 Hold[Blurring, Haloing, DropShadowing],
+Dashing, AbsoluteDashing,
 Italic, Bold, Plain, Underlined, Struckthrough
 },
 

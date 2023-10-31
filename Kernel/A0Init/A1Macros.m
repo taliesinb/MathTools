@@ -321,7 +321,7 @@ PublicDebuggingFunction[EchoCellPrint]
 
 EchoCellPrint[cells2_] := Module[{cells},
   cells = ToList[cells2];
-  needsNewWindow = $currentEchoWindow === None || Options[$currentEchoWindow] === $Failed;
+  needsNewWindow = !ValidNotebookObjectQ[$currentEchoWindow];
   If[$Line =!= $currentEchoLine || needsNewWindow,
     $currentEchoLine = $Line; $totalEchos = 0;
     If[needsNewWindow,

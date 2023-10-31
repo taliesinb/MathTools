@@ -2,12 +2,10 @@ PrivateSpecialFunction[declareFunctionAutocomplete, declareSyntaxInfo]
 
 CacheSymbol[$AutocompleteCache, $SyntaxInformationCache]
 
-$syntaxInfoEnabled := TrueQ[$Notebooks && QuiverGeometryLoader`$AttachSyntaxInformation];
-
 (* in case the autocomplete possibilities are expensive *)
 SetHoldRest[declareFunctionAutocomplete];
 
-declareFunctionAutocomplete[function_Symbol, spec_] /; $syntaxInfoEnabled := Scope[
+declareFunctionAutocomplete[function_Symbol, spec_] := Scope @ IfSynaxInfo[
   functionName = SymbolName[function];
   spec = spec /. {None -> 0, File -> 2, Directory -> 8};
   CacheTo[$AutocompleteCache, {functionName, spec},
@@ -15,7 +13,7 @@ declareFunctionAutocomplete[function_Symbol, spec_] /; $syntaxInfoEnabled := Sco
   ];
 ];
 
-declareSyntaxInfo[function_Symbol, argPatterns_List] /; $syntaxInfoEnabled := Scope[
+declareSyntaxInfo[function_Symbol, argPatterns_List] := Scope @ IfSyntaxInfo[
   info = {"ArgumentsPattern" -> argPatterns};
   If[ContainsQ[argPatterns, Verbatim[OptionsPattern[]]],
     AppendTo[info, "OptionNames" -> Map[toOptionName, OptionKeys @ function]]];

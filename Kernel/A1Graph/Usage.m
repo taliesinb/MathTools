@@ -1,6 +1,5 @@
 SetUsage @ "
-ExtendedGraph[args$$] acts like Graph but accepts additional options and overrides how graphs are \
-displayed.
+ExtendedGraph[args$$] acts like Graph but accepts additional options and overrides how graphs are displayed.
 * The following options and additional options are supported:
 | %VertexLayout | None | the overall layout method to use for vertices |
 | %LayoutDimension | Automatic | number of dimensions of the graph layout |
@@ -37,10 +36,22 @@ displayed.
 | %Frame | False | whether to draw a frame |
 | %FrameStyle | Automatic | color of frame |
 
-## Arrowheads
+* %Frame -> True will draw a frame that encompasses the vertices and edges, plus any additional
+padding included by %ImagePadding. The effects of %AdditionalImagePadding will not be included.
 
-* Any of the specifications below can also be given in the form <|card$1 -> spec$1, $$|>.
+* padding, whether in %ImagePadding or %AdditionImagePadding, can be specified in these forms:
+| None | no padding |
+| n$ | pad by n$ on all sides |
+| {h$, v$} | pad by h$ horizontally and v$ vertically |
+| {{l$, r$}, {b$, t$}} | explicit padding |
+| {Left -> l$, $$} | per-side padding |
 
+* The special expression %GraphicsValue[$$] can be used in %Prolog, %Epilog, or by shape functions.
+It will be replaced with computed values after plotting is complete. See %GraphicsValue for more information.
+";
+
+SetUsage @ "
+ArrowheadShape is an option for %ExtendedGraph which can take the following values:
 * %ArrowheadShape accepts these settings:
 | 'Arrow' | solid kinded arrowhead (default) |
 | 'Line' | partial triangle formed by two lines |
@@ -57,8 +68,8 @@ displayed.
 | 'CrossBar' | a thick horizontal line |
 | 'Tube' | a tube |
 | None | no arrowheads |
-
-* In addition, %ArrowheadShape supports suboptions via {'shape$', subopts$$}:
+* any of the specifications below can also be given in the form <|card$1 -> spec$1, $$|>.
+* in addition, %ArrowheadShape supports suboptions via {'shape$', subopts$$}:
 | %InversionStyle | 'Flip' | how to plot inverted cardinals in %CardinalSet[$$] |
 | %TwoWayStyle | 'In' | how to plot inverted pairs in %CardinalSet[$$] |
 | %PairedDistance | 0 | how far away to plot inverted pairs |
@@ -76,8 +87,10 @@ displayed.
 | 'UnderBar' | drwa a inversion bar below arrowhead |
 
 * %PairedDistance -> size$ determines the separation of paired cardinals, in points.
+"
 
-* %ArrowheadSize accepts these settings:
+SetUsage @ "
+ArrowheadSize is an option for %ExtendedGraph which can take the following values:
 | Automatic | use a safe arrowhead size, depending on layout |
 | size$ | size$ in points in the final plot |
 | Small, Medium, $$ | symbolic size, with Medium being equivalent to 20 |
@@ -85,24 +98,31 @@ displayed.
 | %PointSize[f$] | a fraction f$ of the width of the final plot |
 | %Scaled[r$] | scale the default safe size by r$ |
 | %Max[$$], %Min[$$] | max or min of several specifications |
+"
 
-* %ArrowheadStyle can be set to a color or list of directives.
+SetUsage @ "
+ArrowheadStyle is an option for %ExtendedGraph which can be set to a color or list of directives.
+"
 
-* %CardinalColors -> <|card$1 -> col$1, $$|> determines the colors for arrowheads.
+SetUsage @ "
+CardinalColors is an option for %ExtendedGraph given as <|card$1 -> col$1, $$|> that determines the colors for arrowheads.
+"
 
-* %ArrowheadPosition -> r$ sets the position of the arrowhead to the fraction r$ along the \
-length of the edge.
+SetUsage @ "
+ArrowheadPosition is an option for %ExtendedGraph that sets the position of the arrowhead to the fraction r$ along the length of the edge.
+"
 
-* %LabelCardinals -> True will add a label to each arrowhead indicating its cardinal.
+SetUsage @ "
+ArrowheadPosition is an option for %ExtendedGraph that adds a label to each arrowhead indicating its cardinal.
+"
 
-## Edges
-
-* %EdgeShapeFunction controls how edges are drawn, indepedently of arrowheads, and accepts:
+SetUsage @ "
+EdgeShapeFunction is an option for %ExtendedGraph that controls how edges are drawn, indepedently of arrowheads, and accepts:
 | Automatic | use %Line or %Arrow as appropriate |
 | None | do not draw edges |
 | f$ | call f$ to obtain graphical primitives |
 
-If a function f$ is given, it is provided with an association containing the following keys:
+* if a function f$ is given, it is provided with an association containing the following keys:
 | 'Coordinates' | the list of {x$, y$} or {x$, y$, z$} coordinates |
 | 'Source' | the source vertex |
 | 'Target' | the target vertex |
@@ -113,10 +133,12 @@ If a function f$ is given, it is provided with an association containing the fol
 | 'Arrowheads' | the %Arrowheads[$$] expression (or None) |
 | 'LabelStyle' | setting of %EdgeLabelStyle |
 
-* The result can contain the expression %UniqueLabel[$$] inside a %Text[$$] primitive.
-This will be renumbered so that all labels are ordered according to x$, y$ screen position.
+* the result can contain the expression %UniqueLabel[$$] inside a %Text[$$] primitive.
+this will be renumbered so that all labels are ordered according to x$, y$ screen position.
+"
 
-* %EdgeColorFunction accepts these settings:
+SetUsage @ "
+EdgeShapeFunction is an option for %ExtendedGraph:
 | None | color via %EdgeStyle (default) |
 | 'Cardinal' | color by cardinal present on edge |
 | {e$1, e$2, $$} | use values e$i in same order as %VertexList |
@@ -125,14 +147,18 @@ This will be renumbered so that all labels are ordered according to x$, y$ scree
 | %Paletted[spec$, colors$] | use a given named or explicit color palette |
 * If a spec produces non-color values, edges will colored based on the type of data.
 * If %GraphLegend -> Automatic, a color legend will be shown.
+"
 
-* %EdgeSetback controls how far an edge should be set back from its endpoints.
+SetUsage @ "
+EdgeSetback is an option for %ExtendedGraph that controls how far an edge should be set back from its endpoints.
+"
 
-* %EdgeThickness controls the thickness of rendered edges, and is given in points.
+SetUsage @ "
+EdgeThickness is an option for %ExtendedGraph that controls the thickness of rendered edges, and is given in points.
+"
 
-## Vertices
-
-* %VertexShapeFunction controls how vertices are drawn and accepts these settings:
+SetUsage @ "
+VertexShapeFunction is an option for %ExtendedGraph that controls how vertices are drawn and accepts these settings:
 | Automatic | choose a method automatically |
 | 'Point' | use %Point[$$] |
 | 'Disk' | use %Disk[$$] |
@@ -141,8 +167,10 @@ This will be renumbered so that all labels are ordered according to x$, y$ scree
 | 'Square' | square (designed for 'Square' lattice) |
 | 'Hexagon' | hexagon (designed for 'Triangular' lattice) |
 | None | do not draw vertices |
+"
 
-* %VertexSize accepts these settings:
+SetUsage @ "
+VertexSize is an option for %ExtendedGraph that controls how large vertices appears and accepts these settings:
 | Automatic | use a safe default size, depending on layout |
 | size$ | size$ in points in the final plot |
 | Small, Medium, $$ | symbolic size, with Medium being equivalent to 5 |
@@ -151,8 +179,10 @@ This will be renumbered so that all labels are ordered according to x$, y$ scree
 | %Scaled[r$] | fraction r$ of the quantiles of inter-vertex distance |
 | {v$1 -> s$1, $$, %%All -> s$} | use specific sizes for specific vertices |
 | %Max[$$],% Min[$$] | max or min of several specifications |
+"
 
-* %VertexColorFunction accepts these settings:
+SetUsage @ "
+VertexColorFunction is an option for %ExtendedGraph that controls how vertices are colored:
 | None | color via %VertexStyle (default) |
 | 'key$' | color with values from setting of %VertexAnnotations |
 | {val$1, val$2, $$} | use values val$i in same order as %VertexList |
@@ -163,10 +193,10 @@ This will be renumbered so that all labels are ordered according to x$, y$ scree
 | %Paletted[spec$, colors$] | use a given named or explicit color palette |
 * If a spec produces non-color values, vertices will colored based on the type of data.
 * If %GraphLegend -> Automatic, a color legend will be shown.
+"
 
-## Metrics
-
-* %GraphMetric affects the behavior of %MetricDistance, %MetricDistanceMatrix, and %MetricFindShortestPath.
+SetUsage @ "
+GraphMetric is an option for %ExtendedGraph that affects the behavior of %MetricDistance, %MetricDistanceMatrix, and %MetricFindShortestPath.
 * The following settings are accepted:
 | Automatic | the default graph distance |
 | 'Euclidean' | root total square of per-cardinal distances |
@@ -175,22 +205,26 @@ This will be renumbered so that all labels are ordered according to x$, y$ scree
 | {s$1, s$2, $$} | use a particular signature |
 | n$ | use a homogenous form of degree n$ |
 | f$ | apply f$ to association of per-cardinal distances |
+"
 
-## Labeling
-
-* %VertexLabels determines how to label vertices, and accepts these settings:
+SetUsage @ "
+VertexLabels is an option for %ExtendedGraph that determines how to label vertices, and accepts these settings:
 | None | do not label vertices (default) |
 | Automatic | label with vertex names |
 | 'Index' | label with vertex indices |
 | 'key$' | label with values from VertexAnnotation |
 | %Tooltip[spec$] | label vertices via a tooltip |
+"
 
-* %EdgeLabels determines how to label edges, and accepts these settings:
+SetUsage @ "
+VertexLabels is an option for %ExtendedGraph that * %EdgeLabels determines how to label edges, and accepts these settings:
 | None | do not label edges |
 | 'Index' | label with edge index |
 | Automatic | label edges with their cardinals |
+"
 
-* %VertexLabelStyle and %EdgeLabelStyle accept these settings:
+SetUsage @ "
+VertexLabelStyle is an option for %ExtendedGraph that accepts these settings:
 | Automatic | default |
 | styles$ | a list, directive, or individual style |
 | {styles$, opt$ -> val$, $$} | provide suboptions |
@@ -201,36 +235,43 @@ Supported suboptions are:
 | %LabelPosition | one of Above, Below, Left, Right, Center, or Automatic |
 | %Spacings | size of offset from the labelled element |
 * %VertexLabelStyle -> {%LabelPosition -> Automatic} will maximize the distance to adjacent edges.
+"
 
-## Annotations
+SetUsage @ "
+EdgeLabelStyle is an option for %ExtendedGraph that accepts the same settings as %VertexLabelStyle.
+"
 
-* %VertexAnnotations can be set to an association between named properties and lists of values.
+SetUsage @ "
+VertexAnnotations is an option for %ExtendedGraph.
+* VertexAnnotations can be set to an association between named properties and lists of values.
 * The values should be in the same order and length as given by %VertexList.
 * These values are accessible via %VertexColorFunction and %VertexLabels.
+"
 
-* %EdgeAnnotations can be set to an asssocation between named properties and associations of values.
+SetUsage @ "
+EdgeAnnotations is an option for %ExtendedGraph.
+* EdgeAnnotations can be set to an asssocation between named properties and associations of values.
 * These associations should have keys that are edge indices.
 * Tthese values are accessible via %EdgeLabels.
+"
 
-## Highlights and colors
-
-* %GraphRegionHighlight takes a list of regions to highlight, see %GraphRegion.
-
-* %RegionColorRules can be a list of rules of the following forms:
+SetUsage @ "
+RegionColorRules is an option for %ExtendedGraph that can be a list of rules of the following forms:
 | region$ -> color$ | set color of vertices and edges within region, see %GraphRegion |
 | vertex$ -> color$ | set color of a specific vertex |
 | edge$ -> color$ | set color of a specific edge |
 | {spec$1, $$} -> color$ | set color of several elements at once |
+"
 
-## Legends
-
-* %GraphLegend accepts these settings:
+SetUsage @ "
+GraphLegend is an option for %ExtendedGraph that accepts these settings:
 | None | no legend |
 | Automatic | attach legends for cardinals, colors, highlights, etc |
 | expr$ | use a custom legend given by expr$ |
+";
 
-## Misc
-
+SetUsage @ "
+CoordinateTransformFunction is an option for %ExtendedGraph that transforms coordinates after layout.
 * %CoordinateTransformFunction can be a function, which will be applied to each coordinates, or one of:
 | {'Rotate', n$} | rotate by n$ degrees |
 | 'Rotate0' | don't rotate |
@@ -242,17 +283,4 @@ Supported suboptions are:
 | 'BendVertical' | bend vertical edges for layered digraphs |
 | {'Snap', n$} | snap vertices to n$ \[Times] n$ grid |
 | 'PolarProjection' | spherical polar projection |
-
-* %Padding, whether in %ImagePadding or %AdditionImagePadding, can be specified in these forms:
-| None | no padding |
-| n$ | pad by n$ on all sides |
-| {h$, v$} | pad by h$ horizontally and v$ vertically |
-| {{l$, r$}, {b$, t$}} | explicit padding |
-| {Left -> l$, $$} | per-side padding |
-
-* %Frame -> True will draw a frame that encompasses the vertices and edges, plus any additional
-padding included by %ImagePadding. The effects of %AdditionalImagePadding will not be included.
-
-* The special expression %GraphicsValue[$$] can be used in %Prolog, %Epilog, or by shape functions.
-It will be replaced with computed values after plotting is complete. See %GraphicsValue for more information.
 "

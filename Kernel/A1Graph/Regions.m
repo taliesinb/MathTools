@@ -2,7 +2,7 @@ PublicFunction[RegionSubgraph]
 
 SetUsage @ "
 RegionSubgraph[graph$, region$] gives a subgraph of graph$ described by region$, which can be one or more:
-<*$graphRegionTable*>
+* see %GraphRegion for how regions can be specified.
 "
 
 RegionSubgraph::empty = "The specified region is empty."
@@ -22,7 +22,7 @@ PublicFunction[RegionDelete]
 
 SetUsage @ "
 RegionDelete[graph$, region$] deletes the region specified by region$, which can be one or more of:
-<*$graphRegionTable*>
+* see %GraphRegion for how regions can be specified.
 "
 
 RegionDelete[graph_, region_] := Scope[
@@ -55,8 +55,52 @@ PublicFunction[GraphRegion]
 SetUsage @ "
 GraphRegion[graph$, region$] returns a list of %GraphRegionData and %GraphPathData objects, representing \
 the computed regions of graph$.
-<*$graphRegionTable*>
-"
+
+The following specifications describe paths in the graph:
+| %Path[v$, {c$1, $$, c$n}] | start at v$, move along cardinals c$i |
+| %Line[{v$1, v$2}] | the geodesic between v$1 and v$2 |
+| %Line[{v$1, v$2}, c$] | start at v$1, moving along c$, and end at v$2 |
+| %Line[{v$1, $$, v$n}] | the geodesic path between v$1 and v$2, v$2 and v$3, etc. |
+| %Polygon[{v$1, $$, v$n}] | geodesics between the v$i, taken cyclically |
+| %HalfLine[v$, c$] | a geodesic starting at v$ and continuing in the cardinal direction c$ |
+| %HalfLine[{v$1, v$2}] | a geodesic starting at v$1 and continuing through v$2 |
+| %InfiniteLine[v$, c$] | a geodesic with midpoint v$, and continuing in directions c$ and Inverted[c$] |
+| %InfiniteLine[{v$1, v$2}] | a geodesic intersecting v$1 and v$2 |
+| %Cycles[word$] | all  disjoint closed paths with given word |
+| %GraphPathData[$$] | a previously computed path |
+* Specifications taking a cardinal direction c$ also take a list {c$1, ..., c$n}, used cyclically.
+* %Path[$$, %PathAdjustments -> {adj$1, adj$2, $$}] gives a series of adjustments to how the path is drawn.
+
+The following specifications describe regions in the graph:
+| %Point[v$] | a single vertex v$ |
+| %DirectedEdge[v$1, v$2] | a literal edge between v$1 and v$2 |
+| %VertexPattern[patt$] | all vertices match patt$ |
+| %EdgePattern[v$1, v$2, t$] | all edges matching %DirectedEdge[v$1, v$2, t$] |
+| %Disk[v$, r$] | vertices within distance r$ of v$ |
+| %Annulus[v$1, {r$1, r$2}] | vertices with distance r$1 \[LessEqual] r$ \[LessEqual] r$2 |
+| %Circle[v$, r$] | vertices exactly distance r$ from v$ |
+| %Locus[r$1, r$2] | vertices whose distance to regions r$1 and r$2 is equal |
+| %Locus[r$1, r$2, 'Polar'] | vertices that straddle the equation d$ (r$1) - d$ (r$2) = 0 |
+| %Locus[r$1, r$2, d$] | vertices whose distance to regions r$1 and r$2 differs by less than d$ |
+| %GraphRegionBoundary[r$] | the vertices in region r$ adjacent to vertices not in r$ |
+| %GraphRegionComplement[r$1, r$2] | the complement of region r$1 with region r$2 |
+| %GraphRegionIntersection[r$1, r$2, $$] | the mutual intersection of regions r$i |
+| %GraphRegionUnion[r$1, r$2, $$] | the union of regions r$i |
+| %GraphRegionData[$$] | previously computed region |
+| %ConnectedSubgraph[region$] | all edges connecting vertices within region$ |
+
+## Distances
+
+* All distances are measured relative to the setting of %GraphMetric of the graph.
+* Specific regions like %Circle, %Disk etc accept an option %GraphMetric -> m$ to override this default.
+
+## Vertices
+
+* Specifications taking a vertex v$ can also take these symbolic forms:
+| %GraphOrigin | the 'origin vertex', if provided |
+| %RandomPoint | a randomly chosen vertex |
+| %Offset[v$, {c$1, $$}] | start at v$ and move along the cardinals c$i |
+";
 
 GraphRegion[graph_, region_] := Scope[
   graph = CoerceToGraph[1];

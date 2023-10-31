@@ -1,43 +1,61 @@
 BeginPackage["QuiverGeometryLoader`", {"GeneralUtilities`"}];
 
+(* contexts *)
 $PublicContext = "QuiverGeometry`";
 $PrivateContext = "QuiverGeometry`Private`";
 $CacheContext = "QuiverGeometryCaches`";
 $LoaderContext = "QuiverGeometryLoader`";
 $ShortcutsContext = "QuiverGeometryShortcuts`";
 
+(* file paths *)
 $LoaderFileName = $InputFileName;
 $SourceDirectory = DirectoryName @ $InputFileName;
 $PackageDirectory = ParentDirectory @ $SourceDirectory;
-$SymbolTable = None;
-$CurrentFile = None;
-$CurrentFileName = None;
 
 DeclarePreservedVariable
 DeclarePreservedFunction
 $PreservedVariables = Data`UnorderedAssociation[];
 $PreservedFunctions = Data`UnorderedAssociation[];
 
+(* these are changed livee during loading for various purposes *)
+$CurrentlyLoading = False;
 $LoadCount = 0;
-$Verbose
+$CurrentFile = None;
+$CurrentFileName = None;
+
+(* these are populated by loading and used for syntax generation later *)
 $SymbolAliases
 $SymbolGroups
-$SystemOpenEnabled
-$SuspiciousPackageLines
-$AttachSyntaxInformation
+$SymbolTable
 
+(* this needs to be set before calling the loader *)
+$Verbose
+
+(* these can be customized in user_init.m *)
+$SystemOpenEnabled
+$DisableSyntaxInformation
+$DisableMenuItems
+$DisableSetUsage
+$FastLoad (* <- does all the above *)
+
+(* these are used by the entrypoint init.m *)
 LoadSource
 ReadSource
 NeedsSelfLoad
 
+(* these are for optimizing load time and other debugging *)
 FileTimings
 FileLineTimings
 ExpensiveFileTimings
 ExpensiveFileLineTimings
 DirectoryTimings
+FindSuspiciousPackageLines
 
 ExpressionTable
-ResolvedSymbol
+
+WatchPrint
+WatchCurrentCell
+WatchCurrentCellAdd
 
 (*************************************************************************************************)
 
@@ -48,8 +66,8 @@ LVPrint[args___] := If[$Verbose, Print[args]];
 LVPrint["Prelude."];
 
 (* the first few symbols cause expensive packages to load, and appear as options to Style. RowLabels is put in System by GraphicsGrid. *)
-Unprotect[System`EdgeThickness, System`EpilogFunction, System`LLMEvaluator, System`LLMEvaluatorNames, System`RowLabels, System`ColumnLabels, System`EdgeOpacity];
-ClearAll[System`EdgeThickness, System`EpilogFunction, System`LLMEvaluator, System`LLMEvaluatorNames, System`RowLabels, System`ColumnLabels, System`EdgeOpacity];
+Unprotect[System`TemplateSlot, System`EdgeThickness, System`EpilogFunction, System`LLMEvaluator, System`LLMEvaluatorNames, System`RowLabels, System`ColumnLabels, System`EdgeOpacity];
+ClearAll[System`TemplateSlot, System`EdgeThickness, System`EpilogFunction, System`LLMEvaluator, System`LLMEvaluatorNames, System`RowLabels, System`ColumnLabels, System`EdgeOpacity];
 Quiet[Style; Options[Style]];
 
 (* moved from A0Usage.m because this runs slowly:
@@ -61,6 +79,10 @@ ToBoxes[Information[dummy]];
 System`InformationDump`subtitleStyled[sub_] := Style[sub, "InformationUsageText"];
 
 $baseContextPath = {"System`", "GeneralUtilities`", $PublicContext, $PrivateContext};
+
+EPrint[args___] := If[!$silent, Print[args]];
+
+$silent = False;
 
 (*************************************************************************************************)
 
@@ -101,7 +123,6 @@ $coreSymbolNames = SymbolName /@ $coreSymbols;
 $coreSymbolContexts = Context /@ $coreSymbols;
 
 $corePackageSymbols = Pick[$coreSymbols, $coreSymbolContexts, "Package`"];
-$corePackageSymbols //= DeleteCases[Package`PublicScopedOption | Package`PublicTypesettingFormBox];
 $corePackageSymbolNames = SymbolName /@ $corePackageSymbols;
 $corePackageSymbolGroups = StringTrim[$corePackageSymbolNames, {"System", "Public", "Private"}];
 $legacyPackageDirs = {"Package", "PackageExport", "PackageImport", "PackageScope"};
@@ -130,35 +151,32 @@ $cachePackageDeclarationHeadP = makePackageSymbolHeadP["Cache"];
 toRegexPattern["$Failed"] := "(\\$Failed)";
 toRegexPattern[str_] := "(" <> str <> ")";
 
-LVPrint["Creating core symbols regexp."];
-$coreSymbolRegex = RegularExpression @ StringJoin @ Riffle[Map[toRegexPattern, Sort @ $coreSymbolNames], "|"];
-
+$coreSymbolNames //= Sort;
 $coreSymbolAssociation = AssociationThread[$coreSymbolNames, $coreSymbols];
+
+$shadowedSymbolNames = {"DistanceMatrix", "Torus"};
+KeyDropFrom[$coreSymbolAssociation, $shadowedSymbolNames];
+$coreSymbolNames = Keys @ $coreSymbolAssociation;
 
 GeneralUtilities`$CurrentFileName =.;
 
 (*************************************************************************************************)
 
-SetAttributes[ResolvedSymbol, HoldAllComplete];
-makeResolvedSymbol[name_String] := ToExpression[name, InputForm, ResolvedSymbol];
+$initialSymbolResolutionDispatch1 = (q_Package`PackageSymbol :> RuleCondition[resolvePackageSymbol @@ q]);
 
-$lowerCaseSymbolRegex = RegularExpression["[$]?[a-z]"];
+Clear[resolvePackageSymbol];
+resolvePackageSymbol["$PackageFileName"] := $CurrentFile;
+resolvePackageSymbol["$PackageDirectory"] := $PackageDirectory;
+MapApply[Set[resolvePackageSymbol[#1], #2]&, $SymbolAliases];
+KeyValueMap[Set[resolvePackageSymbol[#1], #2]&, $coreSymbolAssociation];
+resolvePackageSymbol[o_] := Package`PackageSymbol[o];
 
-$initialSymbolResolutionDispatch = With[
-  {kernelInit = FileNameJoin[{$PackageDirectory, "Kernel", "init.m"}]},
-  Dispatch[{
-  (* Package`PackageSymbol[name_String] /; StringStartsQ[name, $lowerCaseSymbolRegex] :> RuleCondition[makeResolvedSymbol[name]], *)
-  Package`PackageSymbol["SetUsage"][usageString_String]                      :> RuleCondition[rewriteSetUsage[usageString]],
-  Package`PackageSymbol[name_String] /; StringMatchQ[name, $coreSymbolRegex] :> RuleCondition[$coreSymbolAssociation[name]],
-  Package`PackageSymbol[name_String] /; StringContainsQ[name, "`"]           :> RuleCondition[makeResolvedSymbol[name]],
-  Splice @ MapApply[Package`PackageSymbol[#1] -> #2&, $SymbolAliases],
-  Package`PackageSymbol["$PackageFileName"]                                  :> RuleCondition[$CurrentFile],
-  Package`PackageSymbol["$PackageDirectory"]                                 :> RuleCondition[$PackageDirectory],
-  Package`PackageSymbol["$PackageInitializer"]                               :> If[DownValues[QuiverGeometryLoader`LoadSource] === {}, Get @ kernelInit],
-  p:Package`PackageSymbol["PublicScopedOption"][___]                         :> RuleCondition @ processScopedOption[p],
-  p:Package`PackageSymbol["PublicTypesettingFormBox"][___]                   :> RuleCondition @ processTypesettingFormBox[p]
-  }]
-];
+$initialSymbolResolutionDispatch2 = Dispatch @ {
+  Package`PackageSymbol["SetUsage"][usageString_String]  :> RuleCondition[rewriteSetUsage[usageString]],
+  Package`PackageSymbol["$PackageInitializer"]           :> If[DownValues[QuiverGeometryLoader`LoadSource] === {}, Get @ kernelInit],
+  p:Package`PublicScopedOption[___]                      :> RuleCondition @ processScopedOption[p],
+  p:Package`PublicTypesettingFormBox[___]                :> RuleCondition @ processTypesettingFormBox[p]
+};
 
 (* turns PublicScopedOption[Foo] into PublicOption[Foo], PrivateVariable[$foo] *)
 processScopedOption[p_] :=
@@ -176,7 +194,8 @@ processTypesettingFormBox[p_] :=
   }];
 
 (* this means SetUsage doesn't have to resolve the symbol later, which is expensive. *)
-rewriteSetUsage[usageString_String] := Scope[
+rewriteSetUsage[usageString_String] := Block[
+  {symbolName},
   symbolName = StringCases[usageString, StartOfString ~~ WhitespaceCharacter... ~~ name:(Repeated["$", {0, 1}] ~~ WordCharacter..) :> name, 1];
   symbolName = First[symbolName, None];
   If[symbolName === None,
@@ -228,9 +247,9 @@ loadFileContents[path_, context_] := Module[{str, contents}, Block[{$currentCont
   contents = TimeConstrained[Check[Package`ToPackageExpression @ str, $Failed], 1];
   If[Head[contents] =!= Package`PackageData, contents === $Failed];
   If[FailureQ[contents], handleSyntaxError[path, str]];
-  Block[{$Context = context}, contents = contents /. $initialSymbolResolutionDispatch /. ResolvedSymbol[sym_] :> sym];
+  Block[{$Context = context}, contents = contents /. $initialSymbolResolutionDispatch1 /. $initialSymbolResolutionDispatch2];
   contents
-]];F
+]];
 
 $stringProcessingRules = {
   "=>" -> "\[DirectedEdge]",
@@ -254,19 +273,25 @@ bracketRHS[s_] := bracketRHS[s] = Block[{$Context = "QuiverGeometryLoader`Scratc
 If[!ValueQ[$SystemOpenEnabled], $SystemOpenEnabled = True];
 DoSystemOpen[s_] := If[$SystemOpenEnabled, SystemOpen[s]];
 
-handleSyntaxError[path_, str_] := Scope[
-  Print["Syntax error in ", path];
+handleSyntaxError[path_, str_] := Block[
+  {tmpPath, errors},
+  EPrint["Syntax error in ", path];
+  badBeep[];
   tmpPath = FileNameJoin[{$TemporaryDirectory, "syntax_error_file.m"}];
   Export[tmpPath, str, "Text", CharacterEncoding -> "UTF8"];
-  errors = TimeConstrained[FindSyntaxErrors[tmpPath], 2, {}];
-  errors = errors /. tmpPath -> path;
-  Beep[];
+  errors = TimeConstrained[Quiet @ FindSyntaxErrors[tmpPath], 2, {}];
+  errors = errors /. {tmpPath -> path, HoldPattern[StringTake[s_, _]] :> s}; (* work around bug in FSE if error is at last char *)
   If[errors =!= {},
-    Print["Aborting; syntax errors:"];
-    Scan[Print, Take[errors, UpTo[5]]];
+    EPrint["Aborting; syntax errors:"];
+    Scan[EPrint, Take[errors, UpTo[5]]];
     DoSystemOpen @ Part[errors, 1, 1];
   ];
   failRead[];
+];
+
+If[$OperatingSystem === "MacOSX",
+badBeep[] := Run["afplay /System/Library/Sounds/Sosumi.aiff&"],
+badBeep[] := (Beep[]; Pause[0.1]; Beep[]);
 ];
 
 (**************************************************************************************************)
@@ -293,21 +318,20 @@ filePathToContext[path_] := Block[{str, subContext, contextList},
   StringJoin[{#, "`"}& /@ contextList]
 ];
 
-toSymbolReplacementRule[name_, ResolvedSymbol[sym_]] :=
-  Package`PackageSymbol[name] :> sym;
-
 (* because $ContextPath is not allowed to be empty -- this results in weird internal messages.
 also, we need System` in there because otherwise General` shows up in other contexts, must
 be some quited message that gets generated *)
 $dummyContextPath = {"QuiverGeometryLoader`DummyContext`"};
 
-(* not sure why, but Complement::heads is sometimes issued for context QuiverGeometry`Private` *)
-createSymbolsInContextAndDispatchTable[names_, context_, contextPath_] := Block[
+createSymbolsInContextAndRules[names_, context_, contextPath_] := Block[
   {$Context = context, $ContextPath = contextPath, $NewSymbol, rules, resolvedSyms},
-  resolvedSyms = ToExpression[names, InputForm, ResolvedSymbol];
+  resolvedSyms = ToExpression[names, InputForm, Hold];
   rules = MapThread[toSymbolReplacementRule, {names, resolvedSyms}];
-  Dispatch @ rules
+  rules
 ];
+
+toSymbolReplacementRule[name_, Hold[sym_]] :=
+  Package`PackageSymbol[name] :> sym;
 
 addPackageSymbolsToBag[bag_, expr_, head_] := (
   Internal`StuffBag[bag, Cases[expr, e:head[Package`PackageSymbol[_String]..] :> Part[List @@ e, All, 1], {2}], 2];
@@ -318,9 +342,10 @@ addPackageSymbolsToBag[bag_, expr_, head_] := (
 addPackageCasesToBag[bag_, expr_, rule_] :=
   Internal`StuffBag[bag, Cases[expr, rule, {2}], 1];
 
-resolveRemainingSymbols[{path_, context_, packageData_Package`PackageData, _}] := Scope[
+resolveRemainingSymbols[{path_, context_, packageData_Package`PackageData, _}] := Module[
+  {unresolvedNames, dispatch},
   unresolvedNames = DeepUniqueCases[packageData, Package`PackageSymbol[name_] :> name];
-  dispatch = createSymbolsInContextAndDispatchTable[unresolvedNames, context, $globalImports];
+  dispatch = Dispatch @ createSymbolsInContextAndRules[unresolvedNames, context, $globalImports];
   {path, context, packageData /. dispatch}
 ];
 
@@ -330,12 +355,16 @@ fileSortingTuple[path_] := {
     path
   };
 
+(*************************************************************************************************)
+
 ReadSource[cachingEnabled_:True, fullReload_:True] := Block[
   {$directory, $files, $textFiles, $packageExpressions,
    $privateSymbols, $systemSymbols, $publicSymbols, $cacheSymbols,
+   cacheRules, $dispatch,
    $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result, requiresFullReload,
    $preservedValues, $preservedDownValues, $ignoreFiles, $symGroups,
-   GeneralUtilities`$CurrentFileName = $LoaderFileName
+   GeneralUtilities`$CurrentFileName = $LoaderFileName,
+   $CurrentlyLoading = True
   },
 
   Off[General::shdw]; (* because things like SetUsage, SetAutomatic, etc have QG local definitions *)
@@ -345,11 +374,11 @@ ReadSource[cachingEnabled_:True, fullReload_:True] := Block[
   $mainPathLength = StringLength[$SourceDirectory];
   $trimmedMainContext = StringTrim[$PublicContext, "`"];
 
-  $filesToSkip = FileNames[{"Loader.m", "init.m", "*.old.m", "SymbolTable.m"}, $directory];
+  $filesToSkip = FileNames[{"Loader.m", "Watcher.m", "init.m", "*.old.m", "SymbolTable.m"}, $directory];
   $ignoreFiles = FileNames["user_ignore.m", $directory];
 
   If[Length[$ignoreFiles] === 1,
-    $ignoreFiles = StringTrim @ StringSplit[ReadString @ First @ $ignoreFiles, "\n"];
+    $ignoreFiles = StringTrim @ StringSplit[FileString @ First @ $ignoreFiles, "\n"];
     $filesToSkip = Join[$filesToSkip, FileNames[$ignoreFiles, $directory, Infinity]];
   ];
 
@@ -391,6 +420,11 @@ ReadSource[cachingEnabled_:True, fullReload_:True] := Block[
     failRead
   ];
 
+  Quiet @ Remove["QuiverGeometryLoader`Scratch`*"]; (* <- dumping ground for SyntaxLength *)
+  If[result === $Failed,
+    LVPrint["Reading failed."];
+    Return[$Failed]];
+
   If[dirtyCount > 0,
     LVPrint["Populating symbol group table."];
     $symGroups = Union /@ Merge[{
@@ -403,11 +437,6 @@ ReadSource[cachingEnabled_:True, fullReload_:True] := Block[
     ];
     $SymbolGroups = $symGroups;
   ];
-
-  Quiet @ Remove["QuiverGeometryLoader`Scratch`*"]; (* <- dumping ground for SyntaxLength *)
-  If[result === $Failed,
-    LVPrint["Reading failed."];
-    Return[$Failed]];
 
   Scan[observeTextFile, $textFiles];
   Scan[observeTextFile, $userFiles];
@@ -458,27 +487,27 @@ ReadSource[cachingEnabled_:True, fullReload_:True] := Block[
   $cacheSymbols = DeleteDuplicates @ Internal`BagPart[$cacheSymbols, All];
 
   LVPrint["Creating symbols (", Length @ $systemSymbols, " system, ", Length @ $publicSymbols, " public, ", Length @ $privateSymbols, " private)."];
-  $systemDispatch = createSymbolsInContextAndDispatchTable[$systemSymbols, "System`", $dummyContextPath];
-  $publicDispatch = createSymbolsInContextAndDispatchTable[$publicSymbols, $PublicContext, $dummyContextPath];
-  $privateDispatch = createSymbolsInContextAndDispatchTable[$privateSymbols, $PrivateContext, $dummyContextPath];
-  $cacheDispatch = createSymbolsInContextAndDispatchTable[$cacheSymbols, $CacheContext, $dummyContextPath];
+
+  $dispatch = Dispatch @ Flatten @ List[
+    createSymbolsInContextAndRules[$systemSymbols, "System`", $dummyContextPath],
+    createSymbolsInContextAndRules[$publicSymbols, $PublicContext, $dummyContextPath],
+    createSymbolsInContextAndRules[$privateSymbols, $PrivateContext, $dummyContextPath],
+    cacheRules = createSymbolsInContextAndRules[$cacheSymbols, $CacheContext, $dummyContextPath]
+  ];
+
   (* this probably happens because of a Quieted message somewhere during symbol creation *)
   If[NameQ[$PrivateContext <> "General"], Remove[$PrivateContext <> "General"]];
 
   LVPrint["Initializing cache symbols."];
-  Scan[initCacheSymbol, Normal @ $cacheDispatch];
+  Scan[initCacheSymbol, cacheRules];
 
-  LVPrint["Recognizing symbols."];
-  (* TODO: unify these Dispatch heads for speed *)
-  $packageExpressions = $packageExpressions /. $systemDispatch /. $publicDispatch /. $privateDispatch /. $cacheDispatch;
+  LVPrint["Resolve known symbols."];
+  $packageExpressions = $packageExpressions /. $dispatch;
 
-  LVPrint["Resolving unrecognized symbols."];
+  LVPrint["Resolving unknown symbols."];
   $packageExpressions //= Map[resolveRemainingSymbols];
 
   On[General::shdw];
-
-  LVPrint["Finding suspicious lines."];
-  $SuspiciousPackageLines = findSuspiciousPackageLines[$packageExpressions];
 
   LVPrint["Read ", Length[$packageExpressions], " packages."];
   $packageExpressions
@@ -496,7 +525,10 @@ MakeBoxes[pd_Package`PackageData, StandardForm] :=
 
 (*************************************************************************************************)
 
-$SuspiciousPackageLines = {};
+FindSuspiciousPackageLines[] := Block[
+  {$packageExpressions = ReadSource[True, True]},
+  positionToFileLine /@ Position[$packageExpressions, $badControlStatementPatterns];
+];
 
 $badControlStatementPatterns = Alternatives[
   w_Switch /; EvenQ[Length[Unevaluated @ w]],
@@ -507,9 +539,6 @@ positionToFileLine[{fileNum_, 3, line_, rest___}] :=
   Part[$packageExpressions, fileNum, 3, line, rest, 0] -> FileLine[Part[$packageExpressions, fileNum, 1], Part[$packageExpressions, fileNum, 3, line, 1]];
 
 positionToFileLine[_, _] := Nothing;
-
-findSuspiciousPackageLines[pdata_] :=
-  positionToFileLine /@ Position[$packageExpressions, $badControlStatementPatterns];
 
 (*************************************************************************************************)
 
@@ -628,8 +657,8 @@ evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
 ];
 
 evaluatePackage[spec_] := (
-  LVPrint["Invalid package data."];
-  LVPrint[Shallow @ spec];
+  EPrint["Invalid package data."];
+  Print @ InputForm @ spec;
   Abort[];
 );
 
@@ -651,13 +680,13 @@ evaluateExpression[{lineNumber_, expr_}] := If[$failEval, $Failed,
 
 handleMessage[f_Failure] := Block[{fileLine},
   $failEval = True;
-  If[$failCount++ > 5, Print["Emergency abort!"]; Abort[]];
+  If[$failCount++ > 5, EPrint["Emergency abort!"]; Abort[]];
   (* ^ this is an emergency measure: it shouldn't happen but when we do get a long list of errors the
   OS can lock up for a while *)
   Beep[];
   fileLine = FileLine[$currentPath, $currentLineNumber];
-  Print["Aborting; message ", HoldForm @@ f["HeldMessageTemplate"], " occurred at ", fileLine];
-  Print[FailureString @ f];
+  EPrint["Aborting; message ", HoldForm @@ f["HeldMessageTemplate"], " occurred at ", fileLine];
+  EPrint[FailureString @ f];
   Throw[$Failed, $evaluateExpressionTag];
   DoSystemOpen[fileLine];
 
@@ -665,14 +694,16 @@ handleMessage[f_Failure] := Block[{fileLine},
 
 (*************************************************************************************************)
 
-LoadSource[fullReload_:True, fullRead_:False] := Block[
-  {$AllowInternet = False, URLSubmit = Print["URLSubmit[", Row[{##}, " "], "]"]&},
+LoadSource[fullReload_:True, fullRead_:False, silent_:False] := Block[
+  {$AllowInternet = False, URLSubmit = Print["URLSubmit[", Row[{##}, " "], "]"]&, $silent = silent, $CurrentlyLoading = True},
   FinishDynamic[];
+  $lastLoadSuccessful = False;
   Block[{packages = ReadSource[!fullRead, fullReload]},
-    If[FailureQ[packages], ReturnFailed[]];
+    If[FailureQ[packages], Return[False]];
     $LoadCount++;
     If[!FailureQ[evaluatePackageData @ packages], $lastLoadSuccessful = True];
-  ]
+  ];
+  $lastLoadSuccessful
 ];
 $lastLoadSuccessful = False;
 
@@ -683,6 +714,62 @@ selfModTime[] := UnixTime @ FileDate[$LoaderFileName, "Modification"];
 $lastSelfModTime = selfModTime[];
 
 NeedsSelfLoad[] := selfModTime[] =!= $lastSelfModTime;
+
+(*************************************************************************************************)
+
+(* mostly inherited from the Palette.nb stylesheet *)
+With[{watcherInitFile = FileNameJoin[{$SourceDirectory, "Watcher.m"}]},
+  $watcherNBexpr = Notebook[
+    {},
+    Evaluator -> "Watcher", WindowTitle -> "WatchPrint",
+    InitializationCellWarning -> False, Editable -> True, Saveable -> False,
+    WindowElements -> {}, WindowMargins -> {{Automatic, 0}, {Automatic, 0}},
+    WindowSize -> {1000, Scaled[0.8]},
+    WindowToolbars->{}, WindowFrame -> "Palette", Background -> White,
+    WindowElements -> {"StatusArea", "VerticalScrollBar"},
+    WindowFrameElements -> {"CloseBox", "ResizeArea"},
+    PrivateNotebookOptions -> {"ExcludeFromShutdown"->True},
+    ShowGroupOpener -> False,
+    WholeCellGroupOpener -> False, CellMargins -> 0,
+    PrivateCellOptions -> {"EvaluationUnmatchedStyle" -> {}},
+    CellOpen -> True, ShowCellLabel -> False, ShowCellTags -> False,
+
+    Initialization :> (
+      Get[watcherInitFile];
+      $ContextPath = $currentContextPath;
+      QuiverGeometryWatcher`InitWatcher[]
+    )
+  ];
+];
+
+ensureWatcherNb[] := Module[{nbs, nb},
+  nbs = Notebooks["WatchPrint"];
+  If[nbs === {},
+    nb = NotebookPut @ ReplaceAll[$watcherNBexpr, $currentContextPath -> $ContextPath];
+    FrontEndExecute[FrontEndToken[nb, "EvaluateInitialization"]];
+  ,
+    nb = First @ nbs;
+  ];
+  nb
+];
+
+WatchCurrentCell[] := WatchCellPrint[NotebookRead @ SelectedCells[], All];
+WatchCurrentCellAdd[] := WatchCellPrint[NotebookRead @ SelectedCells[], After];
+
+Attributes[WatchPrint] = {HoldFirst};
+WatchPrint[expr_] := Module[{code,
+  tpf = Symbol["QuiverGeometry`ToPrettifiedString"],
+  ihf = Symbol["QuiverGeometry`InternalHoldForm"]},
+  code = tpf @ ihf @ expr;
+  WatchCellPrint[Cell[BoxData @ code, "Code"], After];
+];
+
+WatchCellPrint[cell_, pos_] := Block[
+  {nb = ensureWatcherNb[]},
+  SelectionMove[nb, pos, Notebook, AutoScroll -> False];
+  NotebookWrite[nb, cell, All];
+  FrontEndExecute[FrontEndToken[nb, "Evaluate"]]
+];
 
 (*************************************************************************************************)
 

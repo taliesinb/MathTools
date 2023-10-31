@@ -7,6 +7,13 @@ NotebookObjectQ = Case[
 
 (**************************************************************************************************)
 
+PrivateFunction[ValidNotebookObjectQ]
+
+ValidNotebookObjectQ[nb_NotebookObject] := StringQ[Options[nb, "FrontEndVersion"]];
+ValidNotebookObjectQ[_] := False;
+
+(**************************************************************************************************)
+
 PrivateFunction[CallFrontEnd]
 
 (* this allows FastRasterize etc to work from the terminal *)

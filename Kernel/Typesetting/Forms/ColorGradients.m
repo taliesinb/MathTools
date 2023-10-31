@@ -153,7 +153,7 @@ ColorGradientRasterize[expr_, colors_, OptionsPattern[]] := Scope[
   colorFractions = Clip[((N @ Range[1, w]) - p) / (q - p), {0, 1}];
   colors = OklabBlend[colors, colorFractions];
   grad = ImageResize[Image[{colors}], {w, h}, Resampling -> "Nearest"];
-  result = SetAlphaChannel[grad, Clip[4 * Blur[mask, dilationFactor]]];
+  result = SetAlphaChannel[grad, ImageClip[ImageMultiply[Blur[mask, dilationFactor], 4]]];
   result = Image[result, BaselinePosition -> baselinePos, ImageSize -> {w, h}/2, Options @ raster];
   If[ImageQ[result], $GradientRasterizationCache[hash] ^= result];
   result

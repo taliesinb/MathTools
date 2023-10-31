@@ -359,7 +359,7 @@ PublicFunction[EnumerateQuiverSkeletons]
 mkCirclePoints[1] = {{0, 0}};
 mkCirclePoints[2] = {{-1, -1}, {1, 1}} * 0.7;
 mkCirclePoints[3] = {{0.866025, -0.75}, {0., 0.75}, {-0.866025, -0.75}};
-mkCirclePoints[4] = Part[CirclePoints[4], {1, 3, 2, 4}];
+mkCirclePoints[4] := mkCirclePoints[4] = Part[CirclePoints[4], {1, 3, 2, 4}];
 mkCirclePoints[n_] := N @ CirclePoints[n];
 
 makeSmallGraphOpts[n_, r_] := Sequence[

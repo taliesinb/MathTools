@@ -144,7 +144,7 @@ $extendedGraphOptionRulePattern = Rule[$extendedGraphOptionSymbolPattern, _];
 
 $notIntercepted = True;
 
-If[QuiverGeometryLoader`$AttachSyntaxInformation === True, SyntaxInformation[Graph]];
+IfSyntaxInfo[SyntaxInformation[Graph]];
 Graph; Options[Graph];
 
 $ignoredGraphOptionsSymbols = Alternatives[
@@ -173,8 +173,8 @@ Options[ExtendedGraph] = $ExtendedGraphOptions;
 (**************************************************************************************************)
 
 Unprotect[Graph];
-If[QuiverGeometryLoader`$AttachSyntaxInformation === True,
-SyntaxInformation[Graph] = ReplaceOptions[SyntaxInformation[Graph], "OptionNames" -> $extendedGraphSymbolNames];
+IfSyntaxInfo[
+  SyntaxInformation[Graph] = ReplaceOptions[SyntaxInformation[Graph], "OptionNames" -> $extendedGraphSymbolNames];
 ];
 
 HoldPattern[g:Graph[___]] /; MemberQ[Unevaluated @ g, $extendedGraphOptionRulePattern] && $notIntercepted :=

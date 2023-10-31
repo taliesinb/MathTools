@@ -195,7 +195,7 @@ FloodFill[g_Graphics, rules___] := FloodFill[g -> g, rules];
 FloodFill::errimg = "Rasterized graphics contains an error: ``.";
 FloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules:{__Rule}, OptionsPattern[]] := Scope[
 	UnpackOptions[sensitivity];
-	baseline = Lookup[Options[g2], BaselinePosition, Automatic];
+	baseline = Lookup[List @@ Rest[g2], BaselinePosition, Automatic];
 	fullHash = Hash[{lhs, rules, sensitivity}];
 	If[$CachingEnabled,
 		result = Lookup[$FloodFillCache, fullHash];

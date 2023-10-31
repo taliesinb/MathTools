@@ -18,6 +18,16 @@ toUsageStr[e_] := TextString[e];
 
 (**************************************************************************************************)
 
+PrivateSpecialFunction[IfSynaxInfo]
+
+SetHoldFirst[IfSynaxInfo];
+IfSynaxInfo[body_] := If[
+  $Notebooks && !TrueQ[QuiverGeometryLoader`$DisableSyntaxInformation] && !TrueQ[QuiverGeometryLoader`$FastLoad],
+  body
+];
+
+(**************************************************************************************************)
+
 $literalStringRegex = RegularExpression["'[A-Z][a-zA-Z0-9]+'"];
 $literalStringColor = RGBColor[{0.4, 0.4, 0.4}];
 
@@ -241,14 +251,10 @@ _SetDelayedInitialValue := Print["Bad SetDelayedInitialValue"];
 
 PrivateMutatingFunction[SetUsage]
 
-PublicVariable[$DisableSetUsage]
-
-SetInitialValue[$DisableSetUsage, False];
-
 preprocessUsageString[usageString_] :=
   FixedPoint[substituteUsageSlots, usageString]
 
-SetUsage[___] /; $DisableSetUsage := Null;
+SetUsage[___] /; TrueQ[QuiverGeometryLoader`$DisableSetUsage] || TrueQ[QuiverGeometryLoader`$FastLoad] := Null;
 
 SetUsage[usageString_String] :=
   GeneralUtilities`SetUsage[Evaluate @ preprocessUsageString @ usageString];

@@ -84,7 +84,7 @@ $rotUsage = StringFunction @ "
 setupRotFunc[sym_, angle_, cw_] := With[
   {matrix = RotationMatrix @ (If[cw, angle, -angle] * Degree)},
   {nmatrix = ToPackedReal @ N @ matrix},
-  SetUsage @ $rotUsage[SymbolName[sym], angle, If[cw, "clockwise", "counterclockwise"]];
+  SetUsage[sym, $rotUsage[SymbolName[sym], angle, If[cw, "clockwise", "counterclockwise"]]];
   sym[vec_List]                                    := Dot[vec, matrix];
   sym[vec_List] /; ArrayQ[vec, _, RealQ] := Dot[ToPackedArray[vec, Real], nmatrix];
 ];

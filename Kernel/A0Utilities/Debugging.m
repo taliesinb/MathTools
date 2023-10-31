@@ -54,6 +54,14 @@ prettyCodeBoxes[PrettyCodeForm[e_, opts___Rule]] := Scope[
 
 (**************************************************************************************************)
 
+PublicSpecialFunction[TraceFrontendCalls]
+
+SetHoldFirst[TraceFrontendCalls];
+
+TraceFrontendCalls[body_] := Flatten @ Trace[body, _MathLink`CallFrontEnd, TraceInternal -> True];
+
+(**************************************************************************************************)
+
 PublicFunction[SowGraphics, EchoDebugGraphics]
 
 SetHoldAll[SowGraphics];
