@@ -49,7 +49,8 @@ FileLineTimings
 ExpensiveFileTimings
 ExpensiveFileLineTimings
 DirectoryTimings
-FindSuspiciousPackageLines
+FindSuspiciousCodebaseLines
+FindCodebaseLines
 
 ExpressionTable
 
@@ -275,6 +276,7 @@ DoSystemOpen[s_] := If[$SystemOpenEnabled, SystemOpen[s]];
 
 handleSyntaxError[path_, str_] := Block[
   {tmpPath, errors},
+  If[$silent, failRead[]];
   EPrint["Syntax error in ", path];
   badBeep[];
   tmpPath = FileNameJoin[{$TemporaryDirectory, "syntax_error_file.m"}];
@@ -496,7 +498,7 @@ ReadSource[cachingEnabled_:True, fullReload_:True] := Block[
   ];
 
   (* this probably happens because of a Quieted message somewhere during symbol creation *)
-  If[NameQ[$PrivateContext <> "General"], Remove[$PrivateContext <> "General"]];
+  If[NameQ[$PrivateContext <> "General"], Construct[Remove, $PrivateContext <> "General"]];
 
   LVPrint["Initializing cache symbols."];
   Scan[initCacheSymbol, cacheRules];
@@ -525,18 +527,25 @@ MakeBoxes[pd_Package`PackageData, StandardForm] :=
 
 (*************************************************************************************************)
 
-FindSuspiciousPackageLines[] := Block[
-  {$packageExpressions = ReadSource[True, True]},
-  positionToFileLine /@ Position[$packageExpressions, $badControlStatementPatterns];
+Attributes[FindCodebaseLines] = {HoldFirst};
+
+FindCodebaseLines[pattern_] := Block[
+  {$packageExpressions = ReadSource[False, True]},
+  positionToFileLine /@ Position[$packageExpressions, HoldPattern @ pattern]
 ];
+
+(*************************************************************************************************)
+
+FindSuspiciousCodebaseLines[] :=
+  Construct[FindCodebaseLines, $badControlStatementPatterns];
 
 $badControlStatementPatterns = Alternatives[
   w_Switch /; EvenQ[Length[Unevaluated @ w]],
   w_Which /; OddQ[Length[Unevaluated @ w]]
 ];
 
-positionToFileLine[{fileNum_, 3, line_, rest___}] :=
-  Part[$packageExpressions, fileNum, 3, line, rest, 0] -> FileLine[Part[$packageExpressions, fileNum, 1], Part[$packageExpressions, fileNum, 3, line, 1]];
+positionToFileLine[pos:{fileNum_, 3, line_, rest___}] :=
+  FileLine[Part[$packageExpressions, fileNum, 1], Part[$packageExpressions, fileNum, 3, line, 1]];
 
 positionToFileLine[_, _] := Nothing;
 
@@ -723,17 +732,15 @@ With[{watcherInitFile = FileNameJoin[{$SourceDirectory, "Watcher.m"}]},
     {},
     Evaluator -> "Watcher", WindowTitle -> "WatchPrint",
     InitializationCellWarning -> False, Editable -> True, Saveable -> False,
-    WindowElements -> {}, WindowMargins -> {{Automatic, 0}, {Automatic, 0}},
+    WindowElements -> {"StatusArea", "HorizontalScrollBar", "VerticalScrollBar"},
+    WindowMargins -> {{Automatic, 0}, {Automatic, 0}},
     WindowSize -> {1000, Scaled[0.8]},
-    WindowToolbars->{}, WindowFrame -> "Palette", Background -> White,
-    WindowElements -> {"StatusArea", "VerticalScrollBar"},
-    WindowFrameElements -> {"CloseBox", "ResizeArea"},
-    PrivateNotebookOptions -> {"ExcludeFromShutdown"->True},
+    WindowToolbars -> {}, Background -> White,
     ShowGroupOpener -> False,
+    StyleDefinitions -> $LightStylesheetPath,
     WholeCellGroupOpener -> False, CellMargins -> 0,
     PrivateCellOptions -> {"EvaluationUnmatchedStyle" -> {}},
     CellOpen -> True, ShowCellLabel -> False, ShowCellTags -> False,
-
     Initialization :> (
       Get[watcherInitFile];
       $ContextPath = $currentContextPath;
@@ -753,8 +760,10 @@ ensureWatcherNb[] := Module[{nbs, nb},
   nb
 ];
 
-WatchCurrentCell[] := WatchCellPrint[NotebookRead @ SelectedCells[], All];
-WatchCurrentCellAdd[] := WatchCellPrint[NotebookRead @ SelectedCells[], After];
+selectedCellsAsCode[] := ReplaceAll[NotebookRead @ SelectedCells[], Cell[b_, "Input", r___] :> Cell[b, "Code", r]];
+
+WatchCurrentCell[] := WatchCellPrint[selectedCellsAsCode[], All];
+WatchCurrentCellAdd[] := WatchCellPrint[selectedCellsAsCode[], After];
 
 Attributes[WatchPrint] = {HoldFirst};
 WatchPrint[expr_] := Module[{code,

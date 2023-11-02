@@ -20,17 +20,20 @@ InitWatcher[] := If[MemberQ[$Packages, "QuiverGeometryLoader`"],
   SetOptions[EvaluationNotebook[], NotebookDynamicExpression :> Refresh[PollWatcher[], UpdateInterval -> 0.5]];
 ];
 
+$evalCount = 0;
 PollWatcher[] := Block[
-  {event, nb},
+  {event, nb = EvaluationNotebook[]},
   If[Head[$WatcherStream] =!= InputStream, $WatcherStream = QuiverGeometry`FSWatch[All]];
   If[QuiverGeometryLoader`$CurrentlyLoading, Return[]];
   event = ReadString[$WatcherStream, TimeConstraint -> 0];
   If[!StringQ[event], Return[]];
   event //= StringTrim;
+  If[!IntegerQ[$evalCount], $evalCount = 0]; $evalCount++;
   If[MatchQ[FileNameTake @ event, "Loader.m" | "Watcher.m"], Return[]];
   If[!QuiverGeometryLoader`LoadSource[False, True, True], Return[]];
-  FrontEndExecute[FrontEndToken[EvaluationNotebook[], "EvaluateInitialization"]];
-  goodBeep[];
+  SetOptions[nb, Background -> If[OddQ[$evalCount], GrayLevel[0.98], GrayLevel[1]]];
+  FrontEndExecute[FrontEndToken[nb, "EvaluateInitialization"]];
+  (* goodBeep[]; *)
 ];
 
 If[$OperatingSystem === "MacOSX",

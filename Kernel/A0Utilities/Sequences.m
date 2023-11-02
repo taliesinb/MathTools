@@ -1,8 +1,7 @@
 PublicFunction[Trans]
 
-Trans = Case[
-  Seq[seq___List] := Transpose[{seq}];
-];
+Trans[seq___List] := Transpose[{seq}];
+Trans[___] := BadArguments[];
 
 (**************************************************************************************************)
 

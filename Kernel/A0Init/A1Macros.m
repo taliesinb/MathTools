@@ -251,11 +251,11 @@ callStackString[] := TextString @ Row[
   ", "
 ];
 
-clickCopyBox[str_, expr_] := ClickBox[str, CopyToClipboard[Unevaluated @ ExpressionCell[expr, "Input"]]];
-
 (**************************************************************************************************)
 
 PrivateFunction[lhsEchoStr, clickCopyBox]
+
+clickCopyBox[str_, expr_] := ClickBox[str, CopyToClipboard[Unevaluated @ ExpressionCell[expr, "Input"]]];
 
 $word = RegularExpression["[a-zA-Z`$0-9]+"];
 
@@ -302,7 +302,7 @@ printEchoCell[boxes_, color_,  tab_, label_] := Module[{cell, label2},
   If[tab > 10, Return[]];
   label2 = If[label =!= Null && label =!= None, TextString[label], None];
   cell = Cell[BoxData @ boxes, "Echo",
-    Background -> color,
+    Background -> color, FontColor -> Black,
     CellMargins -> {{65 + tab * 40, Inherited}, {Inherited, Inherited}},
     CellFrameLabels -> {{None, label2}, {None, None}},
   ShowCellLabel -> False,
@@ -325,7 +325,7 @@ EchoCellPrint[cells2_] := Module[{cells},
   If[$Line =!= $currentEchoLine || needsNewWindow,
     $currentEchoLine = $Line; $totalEchos = 0;
     If[needsNewWindow,
-      $currentEchoWindow = CreateDebuggingWindow[cells]
+      $currentEchoWindow = CreateDebuggingWindow[cells, 1000, CellMargins -> 0]
     ,
       NotebookPut[Notebook[cells], $currentEchoWindow]
     ];
@@ -335,6 +335,8 @@ EchoCellPrint[cells2_] := Module[{cells},
   ];
 ];
 
+
+
 (**************************************************************************************************)
 
 PublicSpecialFunction[CreateDebuggingWindow]
@@ -343,7 +345,7 @@ CreateDebuggingWindow[cells_, w:_Integer:1000, opts___Rule] := CreateDocument[ce
   Saveable -> False, WindowTitle -> "Debugging",
   WindowSize -> {w, Scaled[1]},
   WindowMargins -> {{Automatic, 50}, {Automatic, Automatic}},
-  StyleDefinitions -> $DarkStylesheetPath,
+  StyleDefinitions -> $LightStylesheetPath,
   opts
 ]
 
@@ -380,6 +382,11 @@ UnmatchedCase2[head_Symbol, case_] := (
   UnmatchedCase[head, case];
 );
 
+UnmatchedCase2[head_Symbol, case___] := (
+  Message[MessageName[head, "unmatchedcase"], MsgExpr @ InternalHoldForm[case]];
+  UnmatchedCase[head, HoldForm[case]];
+);
+
 (**************************************************************************************************)
 
 (* this takes the place of MatchValues in GU *)
@@ -388,7 +395,7 @@ PublicScopingFunction[Case]
 PublicDebuggingFunction[EchoCase]
 PublicSymbol[$]
 
-SetHoldAll[Case, EchoCase, setupCases];
+SetHoldAll[Case, EchoCase, setupCases, setupPrefixCases];
 
 (* TODO: fix this not working:
 
@@ -397,21 +404,23 @@ foo = Case[
 ]
 *)
 
-Case /: (Set|SetDelayed)[sym_Symbol, Case[args___]] := setupCases[sym, False, args];
-EchoCase /: (Set|SetDelayed)[sym_Symbol, EchoCase[args___]] := setupCases[sym, True, args];
+Case     /: SetDelayed[sym_Symbol[pre___],     Case[args___]] := setupCases[sym, False, Hold[pre], args];
+EchoCase /: SetDelayed[sym_Symbol[pre___], EchoCase[args___]] := setupCases[sym, True,  Hold[pre], args];
+Case     /: (Set|SetDelayed)[sym_Symbol,     Case[args___]]   := setupCases[sym, False, Hold[], args];
+EchoCase /: (Set|SetDelayed)[sym_Symbol, EchoCase[args___]]   := setupCases[sym, True,  Hold[], args];
 
-setupCases[sym_Symbol, echo_, arg_SetDelayed] := setupCases[sym, echo, CompoundExpression[arg], {}];
+setupCases[a1_, a2_, a3_, arg_SetDelayed]                := setupCases[a1, a2, a3, CompoundExpression[arg], {}];
+setupCases[a1_, a2_, a3_, arg_SetDelayed, rewrites_List] := setupCases[a1, a2, a3, CompoundExpression[arg], rewrites];
 
-setupCases[sym_Symbol, echo_, arg_SetDelayed, rewrites_List] := setupCases[sym, echo, CompoundExpression[arg], rewrites];
+setupCases[a1_, a2_, a3_, CompoundExpression[args__SetDelayed, rewrites_List]] :=
+  setupCases[a1, a2, a3, CompoundExpression[args], rewrites];
 
-setupCases[sym_Symbol, echo_, CompoundExpression[args__SetDelayed, rewrites_List]] :=
-  setupCases[sym, echo, CompoundExpression[args], rewrites];
-
-setupCases[sym_Symbol, echo_, CompoundExpression[args__SetDelayed, Null...], rewrites_:{}] := Module[{holds, counter = 0},
-  Clear[sym];
+setupCases[sym_Symbol, echo_, pre_, CompoundExpression[args__SetDelayed, Null...], rewrites_:{}] := Module[
+  {holds, counter = 0},
   holds = Hold @@@ Hold[args];
+  If[pre =!= Hold[], holds //= Map[Join[pre, #]&]];
   holds = ReplaceAll[holds, procRewrites @ rewrites];
-  PrependTo[holds, Hold[case_, UnmatchedCase2[sym, case]]];
+  PrependTo[holds, Hold[case___, UnmatchedCase2[sym, case]]];
   holds = ReplaceAll[holds, HoldPattern[Out[] | $]  :> sym];
   If[echo,
     Replace[List @@ holds, Hold[a___, b_] :> LabeledEchoSetDelayed[counter++, sym[a], b], {1}];
@@ -422,7 +431,7 @@ setupCases[sym_Symbol, echo_, CompoundExpression[args__SetDelayed, Null...], rew
 
 Case::baddef = "Bad case definition for ``."
 
-setupCases[sym_, echo_, args___] := Message[Case::baddef, sym];
+setupCases[sym_, ___] := Message[Case::baddef, sym];
 
 SetHoldAllComplete[procRewrites];
 procRewrites[s_Symbol ? HasImmediateValueQ] := HoldPattern[s] -> s;

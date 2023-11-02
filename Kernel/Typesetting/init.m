@@ -1063,13 +1063,12 @@ SetUsage @ "
 StyledForm[expr$, dirs$$] effectively applies Style[$$, dirs$$] to the innermost part of expr$ that is not a unary form.
 * This is useful because wrapping a form like %FunctorSymbol['X'] with Style% will interference with its normal typesetting.
 * This is subtly different from doing BurrowModifiers @ Style[...] because the burrowed Style will not use MakeQGBoxes, and hence not show single-letter symbols as italics.
-"
+";
 
 (* TODO: shouldn't all style heads work this way? *)
-StyledForm = Case[
-  Seq[(head_Symbol ? $unaryFormHeadQ)[arg_], dirs__] := head[%[arg, dirs]];
-  Seq[Style[arg_, s___], dirs__] := Style[StyledForm[arg, dirs], s];
-]
+StyledForm[(head_Symbol ? $unaryFormHeadQ)[arg_], dirs__] := head[%[arg, dirs]];
+StyledForm[Style[arg_, s___], dirs__] := Style[StyledForm[arg, dirs], s];
+
 $styleFormHeadQ[StyledForm] = True;
 
 (* does this work with Katex? *)

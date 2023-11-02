@@ -30,6 +30,14 @@ $emptyBounds = {{-$eps, $eps}, {-$eps, $eps}};
 
 (**************************************************************************************************)
 
+PublicFunction[EnlargeBounds]
+
+EnlargeBounds[bounds_, pad_ ? NumericMatrixQ] := bounds + {{-1, 1}, {-1, 1}} * pad;
+EnlargeBounds[bounds_, {h:$NumberP, v:$NumberP}] := bounds + {{-1, 1} * h, {-1, 1} * v};
+EnlargeBounds[bounds_, n:$NumberP] := bounds + {{-1, 1}, {-1, 1}} * n;
+
+(**************************************************************************************************)
+
 (* boxBound is set up lazily so that the primitive box registery will have been populated *)
 
 toAlt[a_] := a;

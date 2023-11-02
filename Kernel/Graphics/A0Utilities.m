@@ -157,6 +157,69 @@ LineLineIntersectionPoint[l1_, l2_] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[InfiniteLineLineIntersectionPoint]
+
+SetUsage @ "
+InfiniteLineLineIntersectionPoint[{a$1, a$2}, {b$1, b$2}] gives the point where two line segments cross.
+* the lines are the taken to be infinite lines passing through {a$1, a$2}, etc.
+* if the lines are exactly parallel, None is returned.
+* if the intersection point is much further away then the length of a$, None is returned.
+"
+
+InfiniteLineLineIntersectionPoint[{a_, b_}, {c_, d_}] := Scope @ Quiet[
+  det = Det[Chop @ {a - b, c - d}];
+  If[Abs[det] < 0.0001 * Dist[a, b], None,
+    (Det[Chop @ {a, b}] * (c - d) - Det[Chop @ {c, d}] * (a - b)) / det
+  ]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[LineCircleIntersectionPoint]
+
+SetUsage @ "
+LineCircleIntersectionPoint[line$1, {p$, r$}] gives the point where %Line[line$] crosses %Circle[p$, r$].
+"
+
+LineCircleIntersectionPoint[l1_, {p_, r_}] := Scope[
+  r = BooleanRegion[And, {Line @ l1, Circle[p, r]}];
+  Switch[r,
+    Point[$CoordP],
+      Part[r, 1],
+    Point[{$CoordP, ___}],
+      Part[r, 1, 1],
+    Line[_],
+      Part[r, 1, 1],
+    _,
+      $Failed
+  ]
+]
+
+(**************************************************************************************************)
+
+PublicFunction[InfiniteLineCircleIntersectionPoint]
+
+SetUsage @ "
+InfiniteLineCircleIntersectionPoint[{a$, b$}, {p$, r$}] gives the point where %InfiniteLine[{a$, b$}] \
+crosses %Circle[p$, r$].
+"
+
+InfiniteLineCircleIntersectionPoint[l1_, {p_, r_}] := Scope[
+  r = BooleanRegion[And, {InfiniteLine @ l1, Circle[p, r]}];
+  Switch[r,
+    Point[$CoordP],
+      Part[r, 1],
+    Point[{$CoordP, ___}],
+      Part[r, 1, 1],
+    Line[_],
+      Part[r, 1, 1],
+    _,
+      $Failed
+  ]
+]
+
+(**************************************************************************************************)
+
 PublicFunction[LineRectangleIntersectionPoint]
 
 SetUsage @ "
@@ -270,13 +333,39 @@ ClosestPointOnLine[line_, p_] := RegionNearest[Line @ line, p];
 
 (**************************************************************************************************)
 
+PublicFunction[ClosestPointOnInfiniteLine]
+
+SetUsage @ "
+ClosestPointOnInfiniteLine[{a$, b$}, p$] returns the point on line passing through a$, b$ that is closest to p$.
+"
+
+ClosestPointOnInfiniteLine[{a_, b_}, p_] := p + VectorReject[b - p, a - b];
+
+(**************************************************************************************************)
+
 PublicFunction[DistanceToLine]
 
 SetUsage @ "
 DistanceToLine[path$, p$] returns the shortest distance from point p$ to line path$.
 "
 
+DistanceToLine[{a_, b_}, p_] :=
+  Max[
+    Norm @ VectorReject[p - b, a - b],
+    Min[Dist[p, a], Dist[p, b]]
+  ];
+
 DistanceToLine[line_, p_] := RegionDistance[Line @ line, p];
+
+(**************************************************************************************************)
+
+PublicFunction[DistanceToInfiniteLine]
+
+SetUsage @ "
+DistanceToInfiniteLine[{a$, b$}, p$] returns the distance from line passing through a$, b$ to point p$.
+"
+
+DistanceToInfiniteLine[{a_, b_}, p_] := Norm @ VectorReject[b - p, a - b];
 
 (**************************************************************************************************)
 

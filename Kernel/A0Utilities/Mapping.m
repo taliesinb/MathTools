@@ -20,6 +20,13 @@ ConstructHoldComplete[fn_, args___] :=
 
 (**************************************************************************************************)
 
+PublicFunction[ZipMap, ZipScan]
+
+ZipMap[f_, args___] := MapThread[f, {args}];
+ZipScan[f_, args___] := (ZipMap[f, args];);
+
+(**************************************************************************************************)
+
 PublicFunction[ThreadApply]
 
 SetUsage @ "
@@ -34,9 +41,17 @@ ThreadApply[fns_][items_] := ThreadApply[fns, items];
 
 PublicFunction[Unthread]
 
+SetUsage @ "
+Unthread[{e$1, e$2, $$}] turns the outer expression into a list of expressions, one for each e$i.
+* not just %List but any head is supported.
+"
+
 (* todo: implement these as macros, and better yet as syntax in Loader.m *)
 
 ClearAll[Unthread];
+
+Unthread /: Rule[lhs_, Unthread[rhs_]] :=
+  Unthread @ Map[lhs -> #&, rhs];
 
 Unthread /: head_Symbol[l___, Unthread[a_], r___] := With[
   {u = Unique["\[FormalO]"]},

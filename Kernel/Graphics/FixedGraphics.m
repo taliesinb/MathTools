@@ -17,6 +17,8 @@ Options[FixedGraphics] = {
   ImagePadding -> 2,
   PlotLabel -> None,
   Ticks -> False,
+  Frame -> False,
+  FrameMargins -> 5,
   DebugBounds -> False,
   ResolveInsetGraphics -> True,
   "UseGraphicsScale" -> True
@@ -33,7 +35,8 @@ FixedGraphicsBoxes[_] := "?";
 FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
   UnpackOptionsAs[FixedGraphics, {opts},
     background, baselinePosition, $graphicsScale, epilog, prolog, imagePadding,
-    ticks, debugBounds, resolveInsetGraphics, useGraphicsScale
+    ticks, debugBounds, resolveInsetGraphics, useGraphicsScale,
+    frame, frameMargins, plotLabel
   ];
   (* FontSize, FontFamily ? *)
   InheritedBlock[{$MakeBoxesStyleData},
@@ -45,7 +48,6 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
   boxes //= ReplaceAll[{i_InsetBox :> i, Offset[o_, p_] :> RuleCondition[p + o / $graphicsScale]}];
   If[resolveInsetGraphics, boxes //= ReplaceAll[i_InsetBox :> RuleCondition @ embedInset @ i]];
   bounds = PrimitiveBoxesBounds[boxes, $graphicsScale];
-  wh = EuclideanDistance @@@ bounds;
   imagePadding //= StandardizePadding;
   tickPosition = Switch[ticks, True | Above, Above, Below, Below, _, None];
   If[tickPosition =!= None,
@@ -53,9 +55,38 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
     tickBoxes = boundingGridBoxes @ BoundingGrid[bounds, $graphicsScale];
     boxes = If[tickPosition === Above, {boxes, tickBoxes}, {tickBoxes, boxes}];
   ];
+
+  decos = {};
   If[TrueQ @ debugBounds,
-    boxes = {{FaceForm @ None, EdgeForm @ RGBColor[1, 0, 0, .5], RectangleBox @@ Transpose[bounds]}, boxes};
+    AppendTo[decos, StyleBox[
+      RectangleBox @@ Transpose[bounds],
+      FaceForm @ None, EdgeForm @ RGBColor[1, 0, 0, .5]
+    ]];
   ];
+
+  If[TrueQ @ frame,
+    (* TODO: support FrameMargins *)
+    padding = StandardizePadding @ frameMargins;
+    If[FailureQ @ padding, BadOptionSetting[FixedGraphics, FrameMargins, frameMargins]];
+    bounds = EnlargeBounds[bounds, padding / $graphicsScale];
+    AppendTo[decos, StyleBox[
+      RectangleBox @@ Transpose[bounds],
+      FaceForm @ None, EdgeForm @ $Gray]];
+    bounds = EnlargeBounds[bounds, 1 / $graphicsScale];
+  ];
+
+  If[plotLabel =!= None,
+    spacing = 5;
+    labelPos = {Mean @ P1 @ bounds, P22[bounds] + spacing / $graphicsScale};
+    text = Text[plotLabel, labelPos, {0, -1}, BaseStyle -> {FontFamily -> "Arial", FontSize -> 12}];
+    {w, h} = TextRasterSize[text];
+    Part[bounds, 2, 2] += (h + spacing) / $graphicsScale;
+    AppendTo[decos, ToGraphicsBoxes @ text];
+  ];
+
+  If[decos =!= {}, epilog = If[epilog === {}, decos, {decos, epilog}]];
+
+  wh = EuclideanDistance @@@ bounds;
   imageSize = Ceiling[wh * $graphicsScale + Total[imagePadding]];
   Construct[GraphicsBox,
     boxes,

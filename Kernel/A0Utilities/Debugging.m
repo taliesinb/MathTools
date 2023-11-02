@@ -157,8 +157,14 @@ DynamicPointGraphics[n_Integer, fn_] := Replace[
   HoldComplete[body_] :>
     DynamicModule @@ Hold[
       {\[FormalX] = circlePoints[n]},
-      LocatorPane[Dynamic[\[FormalX]], Graphics[Dynamic @ body, PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None]],
-      Initialization :> $PackageInitializer
+      If[QuiverGeometryLoader`$CurrentlyLoading, "LOADING",
+        LocatorPane[Dynamic[\[FormalX]], Graphics[
+          Dynamic[safeDynamicEval @ body, TrackedSymbols :> {\[FormalX]}],
+          PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None
+        ]]
+      ],
+      Initialization :> $PackageInitializer,
+      TrackedSymbols :> {\[FormalX]}
     ]
 ];
 
@@ -166,22 +172,28 @@ DynamicPointGraphics[{n_Integer, specSeq__}, fn_] := With[
   {specList = {specSeq}},
   {specData = MapThread[toDynSpec, {{specSeq}, Take[$formals, Length @ specList]}]},
   {specVars = Prepend[\[FormalX]] @ Part[specData, All, 1],
-   initList = Prepend[circlePoints[n]] @ Part[specData, All, 2],
-   controls = Part[specData, All, 3]},
-  {specSets = MapThread[SET, {specVars, initList}]},
+   initList = Prepend[N @ circlePoints[n]] @ Part[specData, All, 2]},
+  {specSets = MapThread[SET, {specVars, initList}],
+   controls = Part[specData, All, 3],
+   heldFn = PostComposeFunction[fn, InternalHoldForm]},
   Replace[
     ConstructHoldComplete[fn, Sequence @@ specVars],
     HoldComplete[body_] :>
       Apply[DynamicModule, Hold[
         specSets,
         Labeled[
-          LocatorPane[Dynamic[\[FormalX]], Graphics[
+          If[QuiverGeometryLoader`$CurrentlyLoading, "LOADING", LocatorPane[Dynamic[\[FormalX]], Graphics[
             Dynamic[body, TrackedSymbols :> specVars],
             PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None
-          ]],
-          Column[controls]
+          ]]],
+          Row[{
+            Button[Style["\[DownArrow]", Bold], CellPrint @ Cell[BoxData @ ToPrettifiedString @ specVars, "Code"], Appearance -> None],
+            "  ", Column[controls], "  ",
+            Button[Style["\[DownArrow]", Bold], CellPrint @ Cell[BoxData @ ToPrettifiedString @ (heldFn @@ specVars), "Code"], Appearance -> None]
+          }]
         ],
-        Initialization :> $PackageInitializer
+        Initialization :> $PackageInitializer,
+        TrackedSymbols :> specVars
       ] /. SET -> Set]
   ]
 ];
@@ -193,6 +205,23 @@ toDynSpec[max_ ? NumericQ, sym_] := toDynSpec[{0, max}, sym];
 toDynSpec[list_List, sym_] := {sym, First @ list, RadioButtonBar[Dynamic @ sym, list]};
 
 (* DynamicPointGraphics[3, {Red, Map[Disk[#, .1] &, #]} &] *)
+
+(**************************************************************************************************)
+
+SetHoldFirst[safeDynamicEval];
+safeDynamicEval[body_] := Block[{eval, boxes, Print, Echo, EchoSet},
+  Catch[
+    WithMessageHandler[
+      eval = TimeConstrained[body, .2];
+      boxes = ToBoxes @ eval
+    ,
+      throwMessageTag
+    ],
+    $throwMessageTag
+  ]
+];
+
+throwMessageTag[_] := Throw[$Failed, $throwMessageTag];
 
 (**************************************************************************************************)
 
@@ -293,9 +322,9 @@ EchoDimensions[e_] := (Echo[Row[Dimensions @ e, "\[Times]", BaseStyle -> $DarkBl
 PublicTypesettingForm[MsgExpr]
 
 MsgExpr[p_MsgPath] := p;
-MsgExpr[e_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
-MsgExpr[e_, n_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> n, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
-MsgExpr[e_, n_, m_] := ToPrettifiedString[Unevaluated @ e, MaxDepth -> n, MaxLength -> m, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
+MsgExpr[e_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
+MsgExpr[e_, n_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> n, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
+MsgExpr[e_, n_, m_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> n, MaxLength -> m, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
 
 (**************************************************************************************************)
 

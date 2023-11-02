@@ -9,8 +9,9 @@ RollingCurve[path$] represents a curve in which line segments are connected by c
 | %BendShape | what curve to connect the segments with |
 * The settings of %BendShape can be:
 | 'Arc' | a circular bend of radius r$ (default) |
-| 'Line' | a linear corner starting where the arc would start |
+| 'Bevel' | a linear corner starting where the arc would start |
 | 'Bezier' | a bezier curve with control point being the corner |
+| 'Spline' | a simple spline curve |
 | None | return the path unchanged |
 * A circular bend will be possible for the given radius if the points themselves are too close together, in this case a smaller radius is used.
 * %DiscretizeCurve can be used to obtain the points for a given rolling curve.
@@ -30,7 +31,6 @@ SignPrimitive["Curve", RollingCurve];
 TODO: allow the maximum distance from the corner to be specified, after which the radius will be decreased
 TODO: fix arcs that interact with eachother badly and cause 'jumps'. *)
 
-RollingCurve::badshape = "Shape `` not recognized."
 RollingCurve::interr = "Internal error."
 
 rollingCurvePoints[RollingCurve[curve_, opts___Rule]] := Scope[
@@ -39,50 +39,95 @@ rollingCurvePoints[RollingCurve[curve_, opts___Rule]] := Scope[
     bendRadius, bendShape
   ];
   toRollingCurvePoints[curve, bendRadius, bendShape]
-]
+];
+
+CacheSymbol[$RollingCurveCache]
 
 toRollingCurvePoints[curve_, radius_, None] := curve;
 
 $rollingCurveCache = UAssociation[];
 toRollingCurvePoints[points_, radius_:1, shape_:"Arc"] := Scope[
-  key = {curve, radius, shape};
-  result = $rollingCurveCache @ key;
+
+  If[radius == 0 || shape === None, Return @ points];
+  key = Hash @ {points, radius, shape};
+  result = $RollingCurveCache @ key;
   If[!MissingQ[result], Return @ result];
-  $radius = N @ radius; $shape = ReplaceAutomatic[shape, "Arc"];
-  coords = ApplyWindowed[If[shape === "Spline", makeSplineBend, makeBend], points, 3];
-  result = ToPackedReal @ PrependAppend[First @ points, Last @ points] @ Catenate @ N @ coords;
-  If[shape === "Spline", result = DiscretizeCurve @ BSplineCurve @ result];
-  zAssociateTo[$rollingCurveCache, key -> result];
+
+  SetAutomatic[shape, "Arc"];
+  radius //= N;
+  points //= N;
+
+  dists = ApplyWindowed[Dist, points];
+
+  radii = MinOperator[radius] /@ ApplyWindowed[Min, dists];
+  triples = Partition[points, 3, 1];
+
+  If[shape === "Spline",
+    splinePoints = ZipMap[makeSplineBend, triples, radii];
+    result = DiscretizeCurve @ BSplineCurve @ splinePoints;
+  ,
+    If[!MatchQ[shape, "Arc" | "Bevel" | "Line" | "Bezier"],
+      BadOptionSetting[RollingCurve, BendShape, shape];
+      Return @ points;
+    ];
+    result = populateSegments[shape, FirstLast @ points, triples, radii];
+  ];
+  AssociateTo[$RollingCurveCache, key -> result];
+
   result
 ];
 
 (**************************************************************************************************)
 
-
-makeSplineBend[a_, b_, c_] := {
-  PointAlongLine[{b, a}, $radius],
+makeSplineBend[{a_, b_, c_}, r_] := {
+  PointAlongLine[{b, a}, r],
   b,
-  PointAlongLine[{b, c}, $radius]
+  PointAlongLine[{b, c}, r]
 };
 
-makeBend[a_, b_, c_] := Scope[
-  l1 = {a, b}; l2 = {c, b};
-  l1p = DisplaceLineTowards[l1, c, $radius];
-  l2p = DisplaceLineTowards[l2, a, $radius];
-  z = LineLineIntersectionPoint[l1p, l2p];
-  If[FailureQ[z],
-    r = Min[EuclideanDistance[a, b], EuclideanDistance[c, b]];
-    d = EuclideanDistance[PointAlongLine[{b, a}, r], PointAlongLine[{b, c}, r]] * 0.495;
-    Return @ Block[{$radius = d}, makeBend[a, b, c]];
+(**************************************************************************************************)
+
+populateSegments[shape_, {p1_, pn_}, triples_, radii_] := Scope[
+
+  rscale = 1;
+  Label[retry];
+  tuples = ZipMap[
+    {{a, b, c}, r} |-> (
+      l1 = {b, a}; l2 = {b, c};
+      If[(b - a) == (c - b), Return[Nothing]];
+      center = InfiniteLineLineIntersectionPoint[
+        DisplaceLineTowards[l1, c, r],
+        DisplaceLineTowards[l2, a, r]
+      ];
+      If[!MatchQ[center, $Coord2P], Nothing,
+      List[
+        center,
+        {ClosestPointOnInfiniteLine[l1, center],
+         ClosestPointOnInfiniteLine[l2, center]},
+        b
+      ]]
+    ),
+    triples, radii * rscale
   ];
-  p1 = ClosestPointOnLine[l1, z];
-  p2 = ClosestPointOnLine[l2, z];
-  arc = Switch[$shape,
-    "Arc",    ArcBetween[z, {p1, p2}, b],
-    "Line",   Line[{p1, p2}],
-    "Bezier", BezierCurve[{p1, b, p2}],
-    _,        Message[RollingCurve::badshape, $shape]; Line[{p1, p2}]
+
+  (* detect if we had a reversal *)
+  skeleton = PrependAppend[p1, pn] @ Catenate @ PA2 @ tuples;
+  deltas = ApplyWindowed[Subtract, skeleton];
+  dots = ApplyWindowed[Dot, deltas];
+  If[Min[dots] < 0,
+    rscale *= 0.95;
+    Goto[retry]
   ];
-  arcPoints = ToPackedReal @ DiscretizeCurve @ arc;
-  arcPoints
-]
+
+  (* create corners *)
+  If[MatchQ[shape, "Bevel" | "Line"], Return @ ToPacked @ skeleton];
+
+  fn = If[shape == "Arc",
+    ArcBetween /* DiscretizeCurve,
+    DiscretizeCurve[BezierCurve[Insert[#2, #3, 2]]]&
+  ];
+
+  PrependAppend[p1, pn] @ Catenate @ MapApply[fn, tuples]
+];
+
+

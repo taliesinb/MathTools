@@ -230,6 +230,7 @@ DiscretizeCurve[object$] supports the following existing graphics primitives:
 * Custom path primitives like %ElbowCurve, %RollingCurve, etc. are also supported.
 "
 
+(* TODO: remove this usage, i don't use it anymore? *)
 DiscretizeCurve[points_List, f_:BezierCurve] := DiscretizeCurve[f[points]];
 
 DiscretizeCurve[Line[points_]] := ToPackedReal @ points;
@@ -247,6 +248,7 @@ DiscretizeCurve[Circle[center:$Coord2P, radius_ ? NumericQ]] :=
 DiscretizeCurve[curve:(BezierCurve|BSplineCurve)[line:{_, _}]] :=
   ToPackedReal @ line;
 
+(* TODO: optimize this by calling Graphics`Mesh`DiscretizeGraphicsPrimitive directly *)
 DiscretizeCurve[curve:(BezierCurve|BSplineCurve)[___]] := Scope[
   region = DiscretizeGraphics @ MapAt[ToPacked, curve, 1];
   ToPackedReal @ Catenate @ region["EdgeCoordinates"]

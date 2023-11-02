@@ -8,11 +8,15 @@ SetUsage @ "
 CommutativeDiagram[items$] evaluates to a %FixedGraphics object that depicts a commutative diagram.
 CommutativeDiagram[objects$, morphisms$] is a legacy form that is also supported.
 The list items$ can consist of objects, morphisms, and arbitrary graphics primitives in any order, described below:
+
+## Objects
 * an object can be one of:
 | pos$ -> obj$ | object obj$ at position pos$, automatically named |
 | pos$ -> 'name$' -> obj$ | provide a string name |
 * obj$ can be wrapped in %Sized[$$, {w$, h$}] or %Sized[$$, diam$] which indicates overrides the automatically calculated size for purposes of arrow setback.
 * pos$ is a coordinate pair {x$, y$} running down the page and to the right.
+
+## Morphisms
 * a morphism can be one of:
 | src$ => dst$ | an unlabeled arrow between objects with given names |
 | src$ => dst$ -> label$ | a labeled arrow |
@@ -20,18 +24,28 @@ The list items$ can consist of objects, morphisms, and arbitrary graphics primit
 | {edge$, label$, type$, $$} | a labeled arrow of type type$, and any additional options |
 | %MorphismArrow[$$] | a fully specified arrow |
 * %Morphism[$$], %UniqueMorphism[$$], %DoubleMorphism[$$], etc. that prespecify morphism type can be used for readability.
+* the type$ given above include 'Iso', 'Epi', 'Mono', 'MapsTo', 'DoubleArrow', 'Equality', 'Line', but pre-specified morphism heads are clearer.
+* morphisms can also be specified using 'lbl$1' => 'lbl$2'.
+
+## Names
 * sources and destinations can be objects or previously-declared morphisms.
 * names for objects and morphisms can be given as integers (referring to the objects in order they appear), or strings.
 * string names are automatically generated from objects and morphisms using %FormToPlainString, which spells out greek, ignored tagged forms, etc.
 * multiple identical automatic names have successive integers appended to them.
-* morphisms can also be specified using 'lbl$1' => 'lbl$2'.
-* the type$ given above include 'Iso', 'Epi', 'Mono', 'MapsTo', 'DoubleArrow', 'Equality', 'Line', but pre-specified morphism heads are clearer.
+
+## Coordinates
 * %ObjectCoordinates[$$] and %MorphismCoordinates[$$] can be used to refer symbolically to locations or centroids of objects and morphisms, see their usages.
 * %LabelPosition -> %Outwards evaluates to %LabelPosition -> %AwayFrom[%ObjectCoordinates['Center']].
 * %LabelPosition -> %Inwards evaluates to %LabelPosition -> %Towards[%ObjectCoordinates['Center']].
+
+## Cloning
+
 * the special object %Cloned[obj$, elem$] will generate a clone of the object   playing as elem$ and a morphism to the clone.
 * %Cloned[obj$, elem$, label$] will attach label$ to morphism that connects the object to its clone.
 * cloning can be customized as described by %CloneOptions.
+
+## Options
+
 The following options are supported:
 | %Transposed | whether to interpret positions as {x$, y$} (False) or {y$, x$} (True) |
 | %FlipX | whether to flip horizontally |

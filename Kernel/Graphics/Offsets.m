@@ -2,6 +2,11 @@ PublicFunction[SetbackCoordinates]
 PublicHead[Rectangular]
 
 SetUsage @ "
+Rectangular[{r$x, r$y}] represents a rectangular setback.
+* r$x and r$y are half the size of the entire rectangle, since they are radii.
+"
+
+SetUsage @ "
 SetbackCoordinates[path$, d$] truncates the endpoints of a path by distance d$ towards its interior.
 SetbackCoordinates[path$, {d$1, d$2}] truncates by distance d$1 from start and d$2 from end.
 SetbackCoordinates[{path$1, path$2}, $$] truncates several paths at once.
@@ -12,7 +17,7 @@ SetbackCoordinates[{path$1, path$2}, $$] truncates several paths at once.
 | Scaled[f$] | a fraction of the line length |
 | Offset[p$] | a setback in absolute points |
 | Offset[p$, d$] | setback distance d$ then absolute points p$ |
-| Rectangular[{x$, y$}] | separate distances in the x$ and y$ directions |
+| Rectangular[{x$, y$}] | separate radii in the x$ and y$ directions |
 * Using Offset[$$] only works for straight lines.
 "
 

@@ -9,7 +9,7 @@ NotebookObjectQ = Case[
 
 PrivateFunction[ValidNotebookObjectQ]
 
-ValidNotebookObjectQ[nb_NotebookObject] := StringQ[Options[nb, "FrontEndVersion"]];
+ValidNotebookObjectQ[nb_NotebookObject] := ListQ @ Options[nb, "FrontEndVersion"];
 ValidNotebookObjectQ[_] := False;
 
 (**************************************************************************************************)

@@ -97,7 +97,11 @@ getAllSymbolContexts[e_] := DeepUniqueCases[e, s_Symbol ? HoldAtomQ :> Context[U
 
 SetHoldAllComplete[pretty0, pretty1, pretty1wrap, pretty2, prettyRule, prettyRuleDelayed, prettyInfix, prettyCompressed, prettyDeep, prettyLong, prettyHead, symbolString];
 
+pretty0[InternalHoldForm[a__]] := pretty0[Sequence[a]];
+
 pretty0[InternalHoldForm[e_]] := pretty0[e];
+
+pretty0[InternalHoldForm[]] := "Sequence[]";
 
 pretty0[e_] /; TrueQ[$depth > $maxDepth] := $ellipsisString;
 

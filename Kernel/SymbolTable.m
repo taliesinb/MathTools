@@ -12,7 +12,8 @@ the typed Package` declarations that categorize QG's own symbols.
 
 "SymbolAliases" -> {
   "UAssociation" -> Data`UnorderedAssociation,
-  "Repeat"       -> ConstantArray
+  "Repeat"       -> ConstantArray,
+  "Dist"         -> EuclideanDistance
 },
 
 

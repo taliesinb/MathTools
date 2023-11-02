@@ -54,7 +54,7 @@ $SideToCoords = <|
   Center      -> { 0,  0}
 |>
 
-$CoordsToSide = InvertAssociation[$SideToCoords]
+$CoordsToSide = InvertAssociation @ KeyDrop[$SideToCoords, {Below, Above}];
 
 PrivateVariable[$SideToUnitCoords]
 

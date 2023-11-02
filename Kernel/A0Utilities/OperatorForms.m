@@ -154,6 +154,13 @@ ModOperator[Infinity, _] = Identity;
 
 (**************************************************************************************************)
 
+PublicFunction[MinOperator, MaxOperator]
+
+MinOperator[n_][e_] := Min[n, e]
+MaxOperator[n_][e_] := Max[n, e];
+
+(**************************************************************************************************)
+
 PublicFunction[PlusOneMod]
 
 PlusOneMod[Infinity] := PlusOne;
