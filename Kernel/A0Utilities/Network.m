@@ -2,7 +2,7 @@ PublicFunction[CachedURLFetch]
 
 CacheSymbol[$URLFetchCache]
 
-CachedURLFetch[url_] := MaybeCacheTo[$URLFetchCache, url, WithInternet @ URLFetch[url, $urlFetchOptions]];
+CachedURLFetch[url_] := CachedInto[$URLFetchCache, url, WithInternet @ URLFetch[url, $urlFetchOptions]];
 
 (**************************************************************************************************)
 

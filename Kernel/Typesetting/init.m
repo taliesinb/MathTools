@@ -1066,7 +1066,7 @@ StyledForm[expr$, dirs$$] effectively applies Style[$$, dirs$$] to the innermost
 ";
 
 (* TODO: shouldn't all style heads work this way? *)
-StyledForm[(head_Symbol ? $unaryFormHeadQ)[arg_], dirs__] := head[%[arg, dirs]];
+StyledForm[(head_Symbol ? $unaryFormHeadQ)[arg_], dirs__] := head[StyledForm[arg, dirs]];
 StyledForm[Style[arg_, s___], dirs__] := Style[StyledForm[arg, dirs], s];
 
 $styleFormHeadQ[StyledForm] = True;

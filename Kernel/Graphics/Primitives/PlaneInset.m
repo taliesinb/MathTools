@@ -78,10 +78,10 @@ $textureCoords = Association[
 CacheSymbol[$TextureBoxCache]
 
 cachedTextureBoxAndSize[object_] :=
-  MaybeCacheTo[$TextureBoxCache, Hash @ object, textureBoxesAndSize @ object];
+  CachedInto[$TextureBoxCache, Hash @ object, textureBoxesAndSize @ object];
 
 textureBoxesAndSize[object_] := Scope[
-  img = FastRasterize[Style[object, LineSpacing -> 0.1], Background -> Transparent];
+  img = MakeImage[Style[object, LineSpacing -> 0.1], Transparent];
   dims = ImageDimensions @ img;
   texture = Construct[Typeset`MakeBoxes, Texture @ img, StandardForm, Graphics3D];
   {texture, dims}

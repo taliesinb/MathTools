@@ -16,7 +16,7 @@ ValidNotebookObjectQ[_] := False;
 
 PrivateFunction[CallFrontEnd]
 
-(* this allows FastRasterize etc to work from the terminal *)
+(* this allows MakeImage etc to work from the terminal *)
 CallFrontEnd[e_] := If[$Notebooks, MathLink`CallFrontEnd[e], System`ConvertersDump`Utilities`GetFromFE[e]];
 
 (**************************************************************************************************)

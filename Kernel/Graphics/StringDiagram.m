@@ -131,7 +131,7 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   $fontFamily = ReplaceAutomatic[nodeLabelFontFamily, fontFamily];
   labelSpacing = nodeLabelSpacing; labelPosition = nodeLabelPosition; labelOffset = nodeLabelOffset; labelBackground = nodeLabelBackground;
   boxColor = None; hasBottomLabels = hasTopLabels = hasLeftLabels = hasRightLabels = False;
-  $vcenter = False; $textModifierFn = boxTextModifierFn;
+  $textModifierFn = boxTextModifierFn;
   boxPrims = MapIndex1[$keyOff = 0; parseBox, boxes];
 
   UnpackOptions[wireColor, wireLabelPosition, wireLabelFontColor, wireLabelSpacing, wireLabelOffset, wireLabelBackground, wireLabelFontSize, wireLabelFontWeight, wireLabelFontFamily];
@@ -150,7 +150,6 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   $currentDiagramFontSize = $fontSize = ReplaceAutomatic[tickLabelFontSize, fontSize];
   $fontWeight = ReplaceAutomatic[tickLabelFontWeight, fontWeight];
   $fontFamily = ReplaceAutomatic[tickLabelFontFamily, fontFamily];
-  $vcenter = True;
   labelPosition = Left; labelSpacing = tickLabelSpacing;
   tickPrims = Map[parseFrameTick, frameTicks];
 
@@ -158,7 +157,6 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   $currentDiagramFontSize = $fontSize = ReplaceAutomatic[regionLabelFontSize, fontSize];
   $fontWeight = ReplaceAutomatic[regionLabelFontWeight, fontWeight];
   $fontFamily = ReplaceAutomatic[regionLabelFontFamily, fontFamily];
-  $vcenter = False;
   labelPosition = Center; labelSpacing = 10;
   $textModifierFn = regionTextModifierFn;
   regPrims = Map[parseReg, regions];
@@ -282,7 +280,6 @@ makeBox = Case[
 
   (h:"Disk"|NodeDisk|"Box"|NodeBox)[label_, r_:Automatic, opts___Rule] := Scope[
     SetAutomatic[r, nodeSize];
-    $vcenter = True;
     label //= $colorModifierFn;
     labelColor = extractColorFromLabel @ label;
     fc = Lookup[{opts}, FrameColor, If[ColorQ @ labelColor, OklabDarker[labelColor], ReplaceNone[boxColor, ReplaceNone[nodeFrameColor, defaultWireColor]]]];
@@ -509,7 +506,7 @@ makeLabel[label_, pos_] /; MatchQ[labelPosition, {__Symbol}] := Block[
   makeLabel[labelPosition = #; label, pos]& /@ posList
 ];
 
-makeLabel[label_, pos_] := With[{pos2 = Mean @ pos}, applyVCenter @ Text[
+makeLabel[label_, pos_] := With[{pos2 = Mean @ pos}, recenterText @ Text[
   $lastInnerLabel = label;
   $textModifierFn @ label,
   SimplifyOffsets @ Offset[
@@ -534,22 +531,36 @@ makeLabel[label_, pos_] := With[{pos2 = Mean @ pos}, applyVCenter @ Text[
   BaseStyle -> {FontWeight -> $fontWeight, FontSize -> $fontSize, FontColor -> $fontColor, FontFamily -> $fontFamily}
 ]];
 
-(* TODO: turns out i was the baseline WAS off by a factor of 2 (due to Retina and a bug in FastRasterSize), which is probably
-why i resorted to this complicated code. so i could remove this now! *)
-applyVCenter[txt:Text[label_, Offset[off_, pos_], args___]] /; TrueQ[$vcenter] := Scope[
-  img = TextRasterize[txt];
-  {w, h, bl} = TextRasterSize[txt, True];
-  rows = Mean /@ ImageData[Binarize[img]];
-  thresh = Lerp[Min @ rows, Max @ rows, 0.7];
-  delta1 = SelectFirstIndex[rows, # < thresh&] - 1;
-  delta2 = Length[rows] - SelectFirstIndex[Reverse @ rows, # < thresh&];
-  delta = -h/2 + Avg[delta1, delta2]/2;
-  pos2 = Offset[off + {0, delta}, pos];
-  text = Text[label, pos2, args];
-  text
+recenterText[txt:Text[label_, pos_, {0|0., 0|0.}, args___]] := Scope[
+  centroid =  TextCentroid @ txt;
+  Tooltip[Text[label, pos, (centroid * 2 - 1), args], {centroid, pos}]
 ];
 
-applyVCenter[text_] := text;
+recenterText[text_] := text;
+
+(**************************************************************************************************)
+
+CacheSymbol[$TextCentroidCache]
+
+PublicFunction[TextCentroid]
+
+TextCentroid[text_Text] := Scope @ CachedInto[
+  $TextCentroidCache, Hash @ text,
+  img = Binarize @ MakeTextImage[text];
+  {w, h} = ImageDimensions @ img;
+  xys = N @ PixelValuePositions[img, 0];
+  If[xys === {}, {.5, .5},
+    {xs, ys} = Transpose @ xys;
+    xs = Clip[xs, Quantile[xs, {.3, .7}]];
+    ys = Clip[ys, Quantile[ys, {.15, .9}]];
+    x = Mean @ xs; y = Mean @ MinMax @ ys;
+    x = Rescale[x, {1, w}];
+    y = Rescale[y, {1, h}];
+    If[Abs[x - .5] < .15, x = .5];
+    If[Abs[y - .5] < .05, y = Avg[y, .5]];
+    {x, y}
+  ]
+]
 
 (**************************************************************************************************)
 

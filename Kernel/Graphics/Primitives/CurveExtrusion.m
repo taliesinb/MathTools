@@ -29,23 +29,20 @@ ExtrudeCurveToPolygon[Line[{a_, b_}] | {a_, b_}, r_] := Scope[
 ]
 
 ExtrudeCurveToPolygon::failed = "Could not extrude curve ``."
-ExtrudeCurveToPolygon[curve_, r_] := Scope[
-	key = Hash @ {curve, r};
-	result = $CurveExtrusionCache @ key;
-	If[!MissingQ[result], Return @ result];
-	doubled = doubleUpCurve @ curve;
+ExtrudeCurveToPolygon[curve_, r_] := Scope @ CachedInto[
+  $CurveExtrusionCache, Hash @ {curve, r},
+
+  doubled = doubleUpCurve @ curve;
   region = DiscretizeGraphics @ doubled;
   dilation = RegionDilation[region, r];
   Switch[dilation,
     _MeshRegion,
-      result = RegionPolygon @ BoundaryMesh @ dilation,
+      RegionPolygon @ BoundaryMesh @ dilation,
     _Polygon,
-      result = dilation,
+      dilation,
     _,
       Message[ExtrudeCurveToPolygon::failed, MsgExpr @ curve];
-  	  result = $Failed;
-  ];
-	AssociateTo[$CurveExtrusionCache, key -> result];
-	result
+  	  $Failed
+  ]
 ];
 

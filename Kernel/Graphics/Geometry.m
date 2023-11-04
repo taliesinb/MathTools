@@ -157,7 +157,7 @@ TextToPolygon['text$', fontSize$, fontFamily$, fontWeight$] turns text into a po
 "
 
 TextToPolygon[text_String, fontSize_, fontFamily_:$MathFont, fontWeight_:"Regular"] :=
-  MaybeCacheTo[$TextToPolygonCache, {text, fontSize, fontFamily, fontWeight},
+  CachedInto[$TextToPolygonCache, {text, fontSize, fontFamily, fontWeight},
     iTextToPolygon[text, fontSize, fontFamily, fontWeight]];
 
 iTextToPolygon[text_, fontSize_, fontFamily_, fontWeight_] := Scope[

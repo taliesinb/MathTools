@@ -42,7 +42,7 @@ CompactPrettyFullForm /: MakeBoxes[CompactPrettyFullForm[expr_, opts___Rule], St
 
 PublicFunction[ToPrettifiedString]
 
-PublicOption[MaxIndent, MaxDepth, MaxLength, TabSize, CompactingWidth, InlineHeads, FullSymbolContext, CompressLargeSubexpressions, ElideLargeArrays, InlineColors, CompactRealNumbers]
+PublicOption[MaxIndent, MaxDepth, MaxLength, TabSize, CompactingWidth, InlineHeads, FullSymbolContext, CompressLargeSubexpressions, ElideLargeArrays, ElideAtomicHeads, InlineColors, CompactRealNumbers]
 
 (* not the same as GeneralUtilities`ToPrettyString *)
 
@@ -57,6 +57,7 @@ Options[ToPrettifiedString] = {
   ColorSymbolContext -> False,
   CompressLargeSubexpressions -> True,
   ElideLargeArrays -> False,
+  ElideAtomicHeads -> False,
   InlineColors -> False,
   CompactRealNumbers -> False
 }
@@ -71,6 +72,7 @@ $maxLength = 128;
 $inlineHeads = {};
 $fullSymbolContext = True;
 $elideLargeArrays = False;
+$elideAtomicHeads = False;
 $inlineColors = False;
 $compactRealNumbers = False;
 $colorSymbolContext = False;
@@ -78,8 +80,8 @@ $tabSize = 2;
 $compactRealLength = 2;
 
 ToPrettifiedString[e_, OptionsPattern[]] := Scope[
-  {$maxIndent, $maxWidth, $maxDepth, $maxLength, $tabSize, $inlineHeads, $fullSymbolContext, $colorSymbolContext, $prettyCompression, $elideLargeArrays, $inlineColors, $compactRealNumbers} = OptionValue[
-  {MaxIndent, CompactingWidth, MaxDepth, MaxLength, TabSize, InlineHeads, FullSymbolContext, ColorSymbolContext, CompressLargeSubexpressions, ElideLargeArrays, InlineColors, CompactRealNumbers}];
+  {$maxIndent, $maxWidth, $maxDepth, $maxLength, $tabSize, $inlineHeads, $fullSymbolContext, $colorSymbolContext, $prettyCompression,        $elideLargeArrays, $elideAtomicHeads, $inlineColors, $compactRealNumbers} = OptionValue[
+  {MaxIndent, CompactingWidth, MaxDepth, MaxLength, TabSize, InlineHeads, FullSymbolContext, ColorSymbolContext, CompressLargeSubexpressions, ElideLargeArrays,  ElideAtomicHeads, InlineColors, CompactRealNumbers}];
   $ContextPath = {"System`", "QuiverGeometry`", "GeneralUtilities`"};
   $compactRealLength = If[IntegerQ[$compactRealNumbers], $compactRealNumbers, 2];
   $compactRealNumbers = !FalseQ[$compactRealNumbers];
@@ -88,8 +90,7 @@ ToPrettifiedString[e_, OptionsPattern[]] := Scope[
   Block[{FilterOptions}, pretty0[e]]
 ]
 
-
-$fatHeadP = HoldPattern[_NumericArray | _SparseArray | _Image | _Video | _AnimatedImage] ? HoldAtomQ;
+$fatHeadP = HoldPattern[_ByteArray | _NumericArray | _SparseArray | _Image | _Video | _AnimatedImage] ? HoldAtomQ;
 
 getAllSymbolContexts[e_] := DeepUniqueCases[e, s_Symbol ? HoldAtomQ :> Context[Unevaluated @ s]];
 
@@ -114,7 +115,7 @@ pretty0[r_Real ? HoldAtomQ]  := realString[r];
 pretty0[e_] := Block[{$depth = $depth + 1},
 
   (* TODO: I think this was done out of laziness but doens't handle certain things that we want custom formatting for *)
-  If[!wideQ[e] && !$elideLargeArrays && FreeQ[Unevaluated @ e, _DirectedEdge|_UndirectedEdge|_Graph] && shortQ[str = pretty2[e]],
+  If[!wideQ[e] && !$elideLargeArrays && FreeQ[Unevaluated @ e, _DirectedEdge|_UndirectedEdge|_Graph|_Image|_NumericArray] && shortQ[str = pretty2[e]],
     Return @ str];
 
   If[longQ[e], Return @ prettyLong[e]];
@@ -137,14 +138,14 @@ prettyDeep = Case[
   a_ ? smallQ                             := pretty2[a];
   e_                                      := prettyLong[e];
 ,
-  {HAQ -> HoldAtomQ, $fatHeadP}
+  {HAQ -> HoldAtomQ}
 ];
 
 (**************************************************************************************************)
 
 $ellipsisString = "\[Ellipsis]";
 
-SetHoldAllComplete[prettyLong];
+SetHoldAllComplete[prettyLong, fatHeadString];
 
 prettyLong = Case[
   str_String              := Scope[
@@ -155,12 +156,14 @@ prettyLong = Case[
   _List                 := StringJoin["{", $ellipsisString, "}"];
   _Association ? HAQ    := StringJoin["<|", $ellipsisString, "|>"];
   (h_Symbol ? HAQ)[___] := StringJoin[symbolString @ h, "[", $ellipsisString, "]"];
-  e:$fatHeadP           := StringJoin[prettyHead @ e, "[", $ellipsisString, "]"];
+  e:$fatHeadP           := fatHeadString[e];
   g_Graph ? HAQ         := StringJoin["Graph[«", IntegerString @ VertexCount @ g, "», «", IntegerString @ EdgeCount @ g, "», ", $ellipsisString, "]"];
   _                     := $ellipsisString;
 ,
   {HAQ -> HoldAtomQ, $fatHeadP}
 ]
+
+fatHeadString[e_] := StringJoin[prettyHead @ e, "[", $ellipsisString, "]"];
 
 SetHoldAllComplete[symbolString, prettyHead];
 
@@ -184,6 +187,7 @@ colorByContext[con_] := wrapColor[$Red, con];
 symbolString[_] := $ellipsisString;
 
 prettyHead[h_[___]] := symbolString[h];
+prettyHead[_Graph] := "Graph";
 prettyHead[_] := $ellipsisString;
 
 (**************************************************************************************************)
@@ -247,9 +251,9 @@ pretty1 = Case[
   list_List                      := indentedBlock["{", indentArgs @ list, "}"];
   assoc_Association /; AssociationQ[Unevaluated[assoc]]
                                  := indentedBlock["<|", KeyValueMap[prettyRule, Unevaluated @ assoc], "|>"];
-  e:$fatHeadP                    := pretty2[e];
+  e:$fatHeadP                    := If[$elideAtomicHeads, fatHeadString[e], pretty2[e]];
   e:(_Symbol[])                  := pretty2[e];
-  g_Graph ? HAQ                  := prettyGraph[g];
+  g_Graph ? HAQ                  := If[$elideAtomicHeads, fatHeadString[g], prettyGraph[g]];
   head_Symbol[args___]           := indentedBlock[pretty2[head] <> "[", indentArgs @ {args}, "]"];
   head_[args___]                 := indentedBlock[pretty1wrap[head] <> "[", indentArgs @ {args}, "]"];
   atom_ ? HAQ                    := pretty2[atom];
@@ -297,8 +301,10 @@ holdLeafCount[e_] := LeafCount[Unevaluated @ e];
 beefyNumericArrayQ[list_] := holdLeafCount[list] >= If[ArrayQ[Unevaluated @ list, _, IntegerQ], 8, 4];
 prettyElidedList[list_] := With[
   {dims = Dimensions @ Unevaluated @ list},
-  StringJoin @ {"\[LeftAngleBracket]", Riffle[IntegerString /@ dims, ","], "\[RightAngleBracket]"}
+  StringJoin @ {"\[LeftAngleBracket]", dimsString @ dims, "\[RightAngleBracket]"}
 ];
+
+dimsString[list_] := Riffle[IntegerString /@ dims, ","];
 
 (**************************************************************************************************)
 

@@ -43,15 +43,10 @@ rollingCurvePoints[RollingCurve[curve_, opts___Rule]] := Scope[
 
 CacheSymbol[$RollingCurveCache]
 
-toRollingCurvePoints[curve_, radius_, None] := curve;
-
-$rollingCurveCache = UAssociation[];
-toRollingCurvePoints[points_, radius_:1, shape_:"Arc"] := Scope[
-
-  If[radius == 0 || shape === None, Return @ points];
-  key = Hash @ {points, radius, shape};
-  result = $RollingCurveCache @ key;
-  If[!MissingQ[result], Return @ result];
+toRollingCurvePoints[points_, 0, _] := points;
+toRollingCurvePoints[points_, _, None] := points;
+toRollingCurvePoints[points_, radius_:1, shape_:"Arc"] := Scope @ CachedInto[
+  $RollingCurveCache, Hash @ {points, radius, shape},
 
   SetAutomatic[shape, "Arc"];
   radius //= N;
@@ -72,7 +67,6 @@ toRollingCurvePoints[points_, radius_:1, shape_:"Arc"] := Scope[
     ];
     result = populateSegments[shape, FirstLast @ points, triples, radii];
   ];
-  AssociateTo[$RollingCurveCache, key -> result];
 
   result
 ];

@@ -28,6 +28,7 @@ PublicOption[TestContentsPattern, DisableCaching]
 Options[RunTests] = {
   Verbose -> False,
   DryRun -> False,
+  MaxItems -> Infinity,
   TestContentsPattern -> None,
   DisableCaching -> False
 };
@@ -42,8 +43,8 @@ declareFunctionAutocomplete[RunTests, {FileNameTake /@ FileNames["*.wl", $testsI
 
 RunTests[filePattern_String:All, OptionsPattern[]] := Scope[
 
-  UnpackOptions[$verbose, $dryRun, $testContentsPattern, disableCaching];
-  $CachingEnabled = !TrueQ[disableCaching];
+  UnpackOptions[$verbose, $dryRun, $testContentsPattern, disableCaching, $maxItems];
+  $EnableCaching = !TrueQ[disableCaching];
 
   testFiles = findTestFiles[filePattern];
   If[testFiles === {}, ReturnFailed["notests", $testsInPath, filePattern]];
@@ -53,6 +54,7 @@ RunTests[filePattern_String:All, OptionsPattern[]] := Scope[
   outDir = LocalPath["Tests", "Outputs"];
   EnsureDirectoryShallow[outDir];
 
+  $userAbort = False;
   fileResults = Map[runFileTest[#, outDir]&, testFiles];
   shortFiles = StringTrimLeft[testFiles, $testsInPath <> $PathnameSeparator];
 
@@ -76,11 +78,14 @@ findTestFiles[pattern_] := Scope[
 
 RunTests::cantAutoAdd = "``: expected outputs `` =!= actual outputs ``, and overlap does not match.";
 RunTests::someMessages = "``: some `` inputs produced messages, aborting.";
-RunTests::someFailed = "``: `` tests failed, `` tests passed."
+RunTests::someFailed = "``: `` tests failed, `` tests passed.";
+RunTests::userAbort = "User aborted testing.";
 
 countRealTests[inputs_] := Count[inputs, Except @ ExpressionAt[_, _, Hold[CompoundExpression[___, Null]]]];
 
 runFileTest[inputPath_, outDir_] := Scope[
+
+  If[$userAbort === True, ReturnFailed[]];
 
   msgPath = MsgPath @ inputPath;
   $fileContents = Association[];
@@ -105,9 +110,10 @@ runFileTest[inputPath_, outDir_] := Scope[
   VPrint["Evaluating ", numInputs, " inputs and comparing with ", oldCount, " outputs."];
   newOutputs = evalExpressionsJoint[inputs, oldOutputs];
   newCount = Length @ newOutputs;
+  If[$userAbort === True, VMessage[RunTests::userAbort]; ReturnFailed[]];
   If[$numMessages > 0, VMessage[RunTests::someMessages, msgPath, $numMessages]; ReturnFailed[]];
 
-  If[newCount =!= oldCount,
+  If[newCount =!= oldCount && !IntegerQ[$maxItems] && $numSkipped == 0,
     minCount = Min[newCount, oldCount];
     If[Part[newOutputs, 1;;minCount, 3] === Part[oldOutputs, 1;;minCount, 3],
       VPrint["Expected outputs ", newCount, " =!= actual outputs ", oldCount, ", but overlap matches; updating outputs."];
@@ -137,11 +143,14 @@ contentsMatchContentsPattern[e_] := Or[
 
 (**************************************************************************************************)
 
-$fileProgress = 0;
+$fileProgress = 0; $userAbort = False;
 printTemp[label_] := If[$Notebooks,
   $tmpProg = PrintTemporary[
-    Style[label, FontWeight -> Bold, FontFamily -> "Arial"], "  ",
-    RawBoxes @ ProgressIndicatorBox[Dynamic[$fileProgress]]
+    Pane[Style[label, FontWeight -> Bold, FontFamily -> "Arial"], 200],
+    "  ",
+    RawBoxes @ ProgressIndicatorBox[Dynamic[$fileProgress]],
+    "     ",
+    smallButton["abort", $LightRed, $userAbort = True]
   ],
   If[!$verbose, Print[]; Print[label, ":"]];
 ];
@@ -160,7 +169,7 @@ evalExpressionsJoint[inputs_, outputs_] := Block[
   printTemp[inputFileName];
   $numSkipped = $numRun = $numMessages = $numFailed = $numPassed = 0;
   $skipRemaining = False;
-  While[True,
+  While[!$userAbort && (++$numRun <= $maxItems),
     While[(iExpr = evalExpr @ SafePart[inputs, ++i]) === Nothing, Null];
     While[(oExpr = evalExpr @ SafePart[outputs, ++o]) === Nothing, Null];
     If[iExpr === oExpr === EndOfFile, Break[]];
@@ -212,7 +221,6 @@ evalExpr = Case[
       ],
       $Aborted
     ]},
-    $numRun++;
     handleExceptionalEvals[f, p, res];
     If[$numMessages >= 3, $skipRemaining = True; VMessage[ExpressionAt::overload]];
     ExpressionAt[f, p, res]
@@ -242,6 +250,12 @@ DefineStandardTraditionalForm[e:ExpressionAt[_String, _Integer, _Hold] :> makeEx
 
 makeExpressionAtBoxes[ExpressionAt[path_, pos_, h_Hold]] :=
   ClickBox[ToBoxes @ toValueIcon @ h, SystemOpen @ calcFileLine[path, pos]];
+
+(**************************************************************************************************)
+
+PublicFunction[ClearTestObjects]
+
+ClearTestObjects[] := DeleteDirectory[LocalPath["Tests", "Objects"], DeleteContents -> True];
 
 (**************************************************************************************************)
 
@@ -399,7 +413,9 @@ compareOutputs[part_, ExpressionAt[inFile_, inPos_, newOutput_Hold], ExpressionA
         smallButton["see out", $White, SystemOpen @ calcFileLine[outFile, outPos]],
         smallButton["more", $Green,  printMore[inFile, inPos, oldOutput, newOutput]]
       }, Spacings -> 0.4], "  ",
-      LabeledFlipView[{"new" -> toValueIcon[newOutput], "old" -> toValueIcon[oldOutput]}, LabelPosition -> Left]
+      LabeledFlipView[{
+        "new" -> toValueIcon[newOutput],
+        "old" -> toValueIcon[oldOutput]}, LabelPosition -> Left]
     }}, Alignment -> {Left, Center}]
   ,
     VMessage[RunTests::testFail, part, calcFileLine[inFile, inPos], calcFileLine[outFile, outPos]];
@@ -427,6 +443,8 @@ printDiffItem[a_, b_][diff:ExpressionDifference[pos_, ___]] := Scope[
     Print[diffPrettyForm @ chunk1, " =!= ", diffPrettyForm @ chunk2];
   ];
 ];
+
+compareOutputs[_, _, ExpressionAt[_, _, $Aborted]] := Null;
 
 _compareOutputs = BadArguments[];
 
@@ -540,7 +558,15 @@ makeDiffCells[Hold @ TestRasterObject[img1_, box1_], Hold @ TestRasterObject[img
     Cell["expected rasters", "Subsubsection"],
     makeImageDiffCell @@ imgs,
     Cell["box diffs", "Subsubsection"],
-    makeExprDiffCells @@ boxes
+    makeExprDiffCells @@ boxes,
+    Cell["box values", "Subsubsection"],
+    Cell[
+      BoxData @ RBox[
+        RBox["$oldBoxes", " ", "=", " ", ToBoxes @ Iconize @ First @ boxes, ";"], "\n",
+        RBox["$newBoxes", " ", "=", " ", ToBoxes @ Iconize @ Last @ boxes, ";"]
+      ],
+      "Code"
+    ]
   ]
 ];
 
@@ -638,7 +664,7 @@ PublicSpecialFunction[TestRaster]
 PublicObject[TestRasterObject]
 
 TestRaster[expr_] := TestRasterObject[
-  writeObject[FastRasterize @ expr, "png"],
+  writeObject[MakeImage @ expr, "png"],
   writeObject[ToBoxes @ expr, "mx"]
 ];
 

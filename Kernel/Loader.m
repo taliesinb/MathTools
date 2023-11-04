@@ -8,7 +8,7 @@ $LoaderContext = "QuiverGeometryLoader`";
 $ShortcutsContext = "QuiverGeometryShortcuts`";
 
 (* file paths *)
-$LoaderFileName = $InputFileName;
+$LoaderFileName = AbsoluteFileName @ ExpandFileName @ $InputFileName;
 $SourceDirectory = DirectoryName @ $InputFileName;
 $PackageDirectory = ParentDirectory @ $SourceDirectory;
 
@@ -19,9 +19,11 @@ $PreservedFunctions = Data`UnorderedAssociation[];
 
 (* these are changed livee during loading for various purposes *)
 $CurrentlyLoading = False;
-$LoadCount = 0;
 $CurrentFile = None;
 $CurrentFileName = None;
+
+$LoadCount = 0;
+$SourceFiles;
 
 (* these are populated by loading and used for syntax generation later *)
 $SymbolAliases
@@ -39,8 +41,9 @@ $DisableSetUsage
 $FastLoad (* <- does all the above *)
 
 (* these are used by the entrypoint init.m *)
-LoadSource
+SourceFiles
 ReadSource
+LoadSource
 NeedsSelfLoad
 
 (* these are for optimizing load time and other debugging *)
@@ -61,6 +64,9 @@ WatchCurrentCellAdd
 (*************************************************************************************************)
 
 Begin["`Private`"];
+
+$mainPathLength = StringLength @ $SourceDirectory;
+$trimmedMainContext = StringTrim[$PublicContext, "`"];
 
 LVPrint[args___] := If[$Verbose, Print[args]];
 
@@ -344,6 +350,8 @@ addPackageSymbolsToBag[bag_, expr_, head_] := (
 addPackageCasesToBag[bag_, expr_, rule_] :=
   Internal`StuffBag[bag, Cases[expr, rule, {2}], 1];
 
+$globalImports = {"System`", "GeneralUtilities`"};
+
 resolveRemainingSymbols[{path_, context_, packageData_Package`PackageData, _}] := Module[
   {unresolvedNames, dispatch},
   unresolvedNames = DeepUniqueCases[packageData, Package`PackageSymbol[name_] :> name];
@@ -351,72 +359,85 @@ resolveRemainingSymbols[{path_, context_, packageData_Package`PackageData, _}] :
   {path, context, packageData /. dispatch}
 ];
 
+(*************************************************************************************************)
+
+$skippedFilesPattern = {"Loader.m", "Watcher.m", "init.m", "*.old.m", "SymbolTable.m", "user_*.m"};
+
+SourceFiles[] := Block[
+  {skippedFiles, userIgnoreFile, ignoredFiles, sourceFiles},
+
+  skippedFiles = FileNames[$skippedFilesPattern, $SourceDirectory];
+
+  userIgnoreFile = FileNames["user_ignore.m", $SourceDirectory];
+
+  If[Length[userIgnoreFile] === 1,
+    ignoredFiles = StringTrim @ StringSplit[FileString @ First @ userIgnoreFile, "\n"];
+    skippedFiles = Join[skippedFiles, FileNames[ignoredFiles, $SourceDirectory, Infinity]];
+  ];
+
+  sourceFiles = FileNames["*.m", $SourceDirectory, Infinity];
+  sourceFiles = Sort @ Complement[sourceFiles, skippedFiles];
+
+  SortBy[sourceFiles, fileSortingTuple]
+];
+
 fileSortingTuple[path_] := {
-    StringFreeQ[path, "A0Init" | "A0Utilities"],
-    Which[StringEndsQ[path, "init.m"], -1, StringEndsQ[path, "final.m"], 1, True, 0],
-    path
-  };
+  StringFreeQ[path, "A0Init" | "A0Utilities"],
+  Which[StringEndsQ[path, "init.m"], -1, StringEndsQ[path, "final.m"], 1, True, 0],
+  path
+};
 
 (*************************************************************************************************)
 
 ReadSource[cachingEnabled_:True, fullReload_:True] := Block[
-  {$directory, $files, $textFiles, $packageExpressions,
-   $privateSymbols, $systemSymbols, $publicSymbols, $cacheSymbols,
-   cacheRules, $dispatch,
-   $trimmedMainContext, $mainPathLength, $exportRules, $scopeRules, result, requiresFullReload,
-   $preservedValues, $preservedDownValues, $ignoreFiles, $symGroups,
+  {sourceFiles, userFiles, textFiles,
+   packageExpressions,
+   systemSymbols, publicSymbols, privateSymbols, cacheSymbols,
+   cacheSymbolRules, symbolDispatch,
+   result, requiresFullReload,
+   preservedValues, preservedDownValues,
+   $loadedFileCount = 0, $changedTextFileCount = 0,
+   dirtyCount, symbolGroups,
    GeneralUtilities`$CurrentFileName = $LoaderFileName,
    $CurrentlyLoading = True
   },
 
   Off[General::shdw]; (* because things like SetUsage, SetAutomatic, etc have QG local definitions *)
 
-  $symGroups = If[fullReload, $initSymGroups, $SymbolGroups];
-  $directory = AbsoluteFileName @ ExpandFileName @ $SourceDirectory;
-  $mainPathLength = StringLength[$SourceDirectory];
-  $trimmedMainContext = StringTrim[$PublicContext, "`"];
+  symbolGroups = If[fullReload, $initSymGroups, $SymbolGroups];
 
-  $filesToSkip = FileNames[{"Loader.m", "Watcher.m", "init.m", "*.old.m", "SymbolTable.m"}, $directory];
-  $ignoreFiles = FileNames["user_ignore.m", $directory];
+  $SourceFiles = sourceFiles = SourceFiles[];
+  userFiles = FileNames["user_*.m", $SourceDirectory];
+  textFiles = FileNames[{"*.txt", "*.tex"}, $SourceDirectory, Infinity];
 
-  If[Length[$ignoreFiles] === 1,
-    $ignoreFiles = StringTrim @ StringSplit[FileString @ First @ $ignoreFiles, "\n"];
-    $filesToSkip = Join[$filesToSkip, FileNames[$ignoreFiles, $directory, Infinity]];
-  ];
+  If[!VectorQ[sourceFiles, StringQ],
+    LVPrint["Could not obtain source files."];
+    ReturnFailed[]];
 
-  $userFiles = FileNames["user_*.m", $directory];
-  $files = Sort @ Complement[FileNames["*.m", $directory, Infinity], Join[$filesToSkip, $userFiles]];
-  $files = SortBy[$files, fileSortingTuple];
-
-  $textFiles = FileNames[{"*.txt", "*.tex"}, $directory, Infinity];
-
-  $globalImports = {"System`", "GeneralUtilities`"};
-
-  $systemSymbols = Internal`Bag[];
-  $publicSymbols = Internal`Bag[];
-  $privateSymbols = Internal`Bag[];
-  $cacheSymbols = Internal`Bag[];
-  $loadedFileCount = $changedTextFileCount = 0;
+  systemSymbols = Internal`Bag[];
+  publicSymbols = Internal`Bag[];
+  privateSymbols = Internal`Bag[];
+  cacheSymbols = Internal`Bag[];
 
   dirtyCount = 0;
   requiresFullReload = fullReload;
   result = Catch[
-    $packageExpressions = Map[
+    packageExpressions = Map[
       path |-> Block[{expr, context, isDirty, GeneralUtilities`$CurrentFileName = path},
         context = filePathToContext @ path;
         {expr, isDirty} = readPackageFile[path, context];
         If[isDirty, dirtyCount++];
-        addPackageSymbolsToBag[$systemSymbols,  expr, $systemPackageDeclarationHeadP];
-        addPackageSymbolsToBag[$publicSymbols,  expr, $publicPackageDeclarationHeadP];
-        addPackageSymbolsToBag[$privateSymbols, expr, $privatePackageDeclarationHeadP];
-        addPackageSymbolsToBag[$cacheSymbols,   expr, $cachePackageDeclarationHeadP];
+        addPackageSymbolsToBag[systemSymbols,  expr, $systemPackageDeclarationHeadP];
+        addPackageSymbolsToBag[publicSymbols,  expr, $publicPackageDeclarationHeadP];
+        addPackageSymbolsToBag[privateSymbols, expr, $privatePackageDeclarationHeadP];
+        addPackageSymbolsToBag[cacheSymbols,   expr, $cachePackageDeclarationHeadP];
         If[!requiresFullReload && isDirty && initPathQ[path],
           LVPrint["Dirty package \"", path, "\" is forcing a full reload."];
           requiresFullReload = True;
         ];
         {path, context, expr, isDirty}
       ],
-      $files
+      sourceFiles
     ];
   ,
     failRead
@@ -429,31 +450,31 @@ ReadSource[cachingEnabled_:True, fullReload_:True] := Block[
 
   If[dirtyCount > 0,
     LVPrint["Populating symbol group table."];
-    $symGroups = Union /@ Merge[{
-      $symGroups,
+    symbolGroups = Union /@ Merge[{
+      symbolGroups,
       DeleteDuplicates @ Merge[
-        Map[rule |-> DeepCases[$packageExpressions, rule], $symbolGroupRules],
+        Map[rule |-> DeepCases[packageExpressions, rule], $symbolGroupRules],
         Apply[Union]
       ]},
       Apply[Union]
     ];
-    $SymbolGroups = $symGroups;
+    $SymbolGroups = symbolGroups;
   ];
 
-  Scan[observeTextFile, $textFiles];
-  Scan[observeTextFile, $userFiles];
+  Scan[observeTextFile, textFiles];
+  Scan[observeTextFile, userFiles];
 
   If[!requiresFullReload,
-    $packageExpressions = DeleteCases[$packageExpressions, {_, _, _, False}];
+    packageExpressions = DeleteCases[packageExpressions, {_, _, _, False}];
   ];
 
-  If[cachingEnabled && ($loadedFileCount == 0 || $packageExpressions === {}) && $changedTextFileCount == 0,
+  If[cachingEnabled && ($loadedFileCount == 0 || packageExpressions === {}) && $changedTextFileCount == 0,
     LVPrint["No contents changed, skipping evaluation."];
     Return[{}];
   ];
 
   LVPrint["Updating preserved values."];
-  $preservedValues = Replace[
+  preservedValues = Replace[
     Keys @ $PreservedVariables,
     Hold[sym_] :> If[System`Private`HasImmediateValueQ[sym],
       With[{val = sym}, Hold[sym = val]],
@@ -464,7 +485,7 @@ ReadSource[cachingEnabled_:True, fullReload_:True] := Block[
 
   LVPrint["Updating preserved functions."];
   (* for things like RedBox that would otherwise be wiped out due to form definition caching mechanism *)
-  $preservedDownValues = Replace[
+  preservedDownValues = Replace[
     Keys @ $PreservedFunctions,
     Hold[sym_] :> With[{dv = DownValues[sym]}, Hold[DownValues[sym] = dv]],
     {1}
@@ -474,45 +495,46 @@ ReadSource[cachingEnabled_:True, fullReload_:True] := Block[
     LVPrint["Clearing all symbols."];
     Construct[ClearAll, $PublicContext <> "*", $PublicContext <> "**`*"];
   ,
-    dirtyContexts = Part[$packageExpressions, All, 2];
+    dirtyContexts = Part[packageExpressions, All, 2];
     LVPrint["Clearing dirty contexts: ", dirtyContexts];
     Apply[ClearAll, Map[# <> "*"&, dirtyContexts]];
   ];
 
   LVPrint["Copying preserved values."];
-  ReleaseHold[$preservedValues];
-  ReleaseHold[$preservedDownValues];
+  ReleaseHold[preservedValues];
+  ReleaseHold[preservedDownValues];
 
-  $systemSymbols = DeleteDuplicates @ Internal`BagPart[$systemSymbols, All];
-  $publicSymbols = DeleteDuplicates @ Internal`BagPart[$publicSymbols, All];
-  $privateSymbols = DeleteDuplicates @ Internal`BagPart[$privateSymbols, All];
-  $cacheSymbols = DeleteDuplicates @ Internal`BagPart[$cacheSymbols, All];
+  systemSymbols = DeleteDuplicates @ Internal`BagPart[systemSymbols, All];
+  publicSymbols = DeleteDuplicates @ Internal`BagPart[publicSymbols, All];
+  privateSymbols = DeleteDuplicates @ Internal`BagPart[privateSymbols, All];
+  cacheSymbols = DeleteDuplicates @ Internal`BagPart[cacheSymbols, All];
 
-  LVPrint["Creating symbols (", Length @ $systemSymbols, " system, ", Length @ $publicSymbols, " public, ", Length @ $privateSymbols, " private)."];
+  LVPrint["Creating symbols (", Length @ systemSymbols, " system, ", Length @ publicSymbols, " public, ", Length @ privateSymbols, " private)."];
 
-  $dispatch = Dispatch @ Flatten @ List[
-    createSymbolsInContextAndRules[$systemSymbols, "System`", $dummyContextPath],
-    createSymbolsInContextAndRules[$publicSymbols, $PublicContext, $dummyContextPath],
-    createSymbolsInContextAndRules[$privateSymbols, $PrivateContext, $dummyContextPath],
-    cacheRules = createSymbolsInContextAndRules[$cacheSymbols, $CacheContext, $dummyContextPath]
+  symbolDispatch = Dispatch @ Flatten @ List[
+    createSymbolsInContextAndRules[systemSymbols, "System`", $dummyContextPath],
+    createSymbolsInContextAndRules[publicSymbols, $PublicContext, $dummyContextPath],
+    createSymbolsInContextAndRules[privateSymbols, $PrivateContext, $dummyContextPath],
+    cacheSymbolRules = createSymbolsInContextAndRules[cacheSymbols, $CacheContext, $dummyContextPath]
   ];
 
   (* this probably happens because of a Quieted message somewhere during symbol creation *)
   If[NameQ[$PrivateContext <> "General"], Construct[Remove, $PrivateContext <> "General"]];
 
   LVPrint["Initializing cache symbols."];
-  Scan[initCacheSymbol, cacheRules];
+  Scan[initCacheSymbol, cacheSymbolRules];
 
   LVPrint["Resolve known symbols."];
-  $packageExpressions = $packageExpressions /. $dispatch;
+  packageExpressions = packageExpressions /. symbolDispatch;
 
   LVPrint["Resolving unknown symbols."];
-  $packageExpressions //= Map[resolveRemainingSymbols];
+  packageExpressions //= Map[resolveRemainingSymbols];
 
   On[General::shdw];
 
-  LVPrint["Read ", Length[$packageExpressions], " packages."];
-  $packageExpressions
+  LVPrint["Read ", Length[packageExpressions], " packages."];
+
+  packageExpressions
 ];
 
 (*************************************************************************************************)
@@ -577,7 +599,6 @@ evaluatePackageData[packagesList_List] := Block[
 ];
 
 (*************************************************************************************************)
-
 
 FileTimings[] :=
   trimFiles @ ReverseSort @ $fileTimings;
@@ -692,7 +713,7 @@ handleMessage[f_Failure] := Block[{fileLine},
   If[$failCount++ > 5, EPrint["Emergency abort!"]; Abort[]];
   (* ^ this is an emergency measure: it shouldn't happen but when we do get a long list of errors the
   OS can lock up for a while *)
-  Beep[];
+  If[!$silent, Beep[]];
   fileLine = FileLine[$currentPath, $currentLineNumber];
   EPrint["Aborting; message ", HoldForm @@ f["HeldMessageTemplate"], " occurred at ", fileLine];
   EPrint[FailureString @ f];
@@ -737,7 +758,7 @@ With[{watcherInitFile = FileNameJoin[{$SourceDirectory, "Watcher.m"}]},
     WindowSize -> {1000, Scaled[0.8]},
     WindowToolbars -> {}, Background -> White,
     ShowGroupOpener -> False,
-    StyleDefinitions -> $LightStylesheetPath,
+    StyleDefinitions -> QuiverGeometry`$LightStylesheetPath,
     WholeCellGroupOpener -> False, CellMargins -> 0,
     PrivateCellOptions -> {"EvaluationUnmatchedStyle" -> {}},
     CellOpen -> True, ShowCellLabel -> False, ShowCellTags -> False,

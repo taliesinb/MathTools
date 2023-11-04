@@ -98,12 +98,9 @@ SetHoldFirst[VMessage];
 
 (* TODO: fix case where message starts with a ``. *)
 VMessage[msg_, args___] := If[TrueQ[$verbose],
-  Print @@ Map[msgStyle, Riffle[StringSplit[msg, "``"], {args}]],
+  Print @ Style[StringForm[msg, args], $DarkRed, Bold],
   Message[msg, args]
 ];
-
-msgStyle[e_String | e_Integer] := Style[e, $DarkRed, Bold];
-msgStyle[e_] := e;
 
 (**************************************************************************************************)
 
@@ -321,10 +318,11 @@ EchoDimensions[e_] := (Echo[Row[Dimensions @ e, "\[Times]", BaseStyle -> $DarkBl
 
 PublicTypesettingForm[MsgExpr]
 
+$msgExprOpts = Sequence[FullSymbolContext -> False, CompressLargeSubexpressions -> False, ElideAtomicHeads -> True, InlineColors -> True, CompactRealNumbers -> True];
 MsgExpr[p_MsgPath] := p;
-MsgExpr[e_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
-MsgExpr[e_, n_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> n, MaxLength -> 4, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
-MsgExpr[e_, n_, m_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> n, MaxLength -> m, MaxIndent -> 0, FullSymbolContext -> False, CompressLargeSubexpressions -> False];
+MsgExpr[e_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0, $msgExprOpts];
+MsgExpr[e_, n_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> n, MaxLength -> 4, MaxIndent -> 0, $msgExprOpts];
+MsgExpr[e_, n_, m_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> n, MaxLength -> m, MaxIndent -> 0, $msgExprOpts];
 
 (**************************************************************************************************)
 
@@ -346,10 +344,10 @@ MakeBoxes[MsgPath[s_String, n_Integer], TraditionalForm] := msgPathBoxes[s, n];
 
 msgPathBoxes[path_String, line_:None] := With[
   {type = If[StringStartsQ[path, ("http" | "https" | "git" | "file" | "ssh") ~~ ":"], "URL", Quiet @ FileType @ path]},
-  {color = Switch[type, None, $LightRed, Directory, $LightBlue, File, $LightGray, "URL", $LightPurple, _, $LightRed]},
+  {color = Switch[type, None, $LightRed, Directory, $LightBlue, File, GrayLevel[0.9], "URL", $LightPurple, _, $LightRed]},
   ToBoxes @ ClickForm[
     tightColoredBoxes[If[IntegerQ[line], StringJoin[shortenPath @ path, ":", IntegerString @ line], shortenPath @ path], color],
-    If[ModifierKeysPressedQ[], CopyToClipboard @ path, openMsgPath[path, line]]
+    openMsgPath[path, line]
   ]
 ];
 
@@ -372,8 +370,8 @@ PrivateFunction[openMsgPath]
 
 openMsgPath[path_String, None] := If[
   ModifierKeysPressedQ[],
-  trySystemOpen @ path,
-  Beep[]; CopyToClipboard @ ToString[path, InputForm]
+  Beep[]; CopyToClipboard @ ToString[path, InputForm],
+  trySystemOpen @ path
 ];
 
 openMsgPath[path_String, line_Integer] :=
@@ -402,7 +400,7 @@ tightColoredBoxes[str_String, color_] := Framed[
   Style[str, FontFamily -> "Source Code Pro", FontSize -> 10, Bold, FontColor -> Black],
   Background -> color, FrameStyle -> Darker[color, .2],
   ContentPadding -> False, RoundingRadius -> 2,
-  ImageSize -> {Automatic, 16}, FrameMargins -> {{5, 5}, {0, 0}},
+  ImageSize -> {Automatic, 13}, FrameMargins -> {{5, 5}, {0, 0}},
   BaselinePosition -> Baseline
 ];
 
@@ -518,3 +516,17 @@ xmlElementBoxes[s2_String] := With[{s = StringTrim @ s2}, ClickBox[
 ]];
 
 xmlElementBoxes[o_] := "?";
+
+(**************************************************************************************************)
+
+PublicVariable[CompareGraphics]
+
+CompareGraphics[a_, b_] := Image[ImageApply[toDiffColor, {makeImage[a], makeImage[b]}], Magnification -> 3];
+
+toDiffColor[a_, b_] := Which[a == b, {a, a, a}, a < b, {.9, a, a}, True, {b, .9, b}];
+
+makeImage = Case[
+  i_Image := ImageApply[Min, i];
+  o_      := ImageApply[Min, MakeImage[o]];
+];
+

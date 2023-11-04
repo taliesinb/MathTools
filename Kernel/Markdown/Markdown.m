@@ -84,14 +84,14 @@ initPNGExport[] := (Clear[initPNGExport]; Quiet @ ExportString[ConstantImage[1, 
 
 General::badnbread = "Could not read notebook ``, will be replaced with placeholder.";
 
-$notebookToMarkdownCache = UAssociation[];
+CacheSymbol[$NotebookToMarkdownCache]
 
 toMarkdownLines[File[path_String]] /; FileExtension[path] === "nb" := Scope[
   path = NormalizePath @ path;
   fileDate = Quiet @ FileDate @ path;
   cacheKey = <|"Path" -> path, "Hash" -> $markdownGlobalsHash, "DryRun" -> $dryRun|>;
   If[$notebookCaching,
-    {cachedResult, cachedDate} = Lookup[$notebookToMarkdownCache, path, {None, None}];
+    {cachedResult, cachedDate} = Lookup[$NotebookToMarkdownCache, path, {None, None}];
     If[ListQ[cachedResult] && fileDate === cachedDate,
       VPrint["  Using cached markdown for ", MsgPath @ path];
       Return @ cachedResult
@@ -101,7 +101,7 @@ toMarkdownLines[File[path_String]] /; FileExtension[path] === "nb" := Scope[
   nb = Quiet @ Get @ path;
   If[MatchQ[nb, Notebook[{__Cell}, ___]],
     result = toMarkdownLines @ nb;
-    If[$notebookCaching, MaybeCacheTo[$notebookToMarkdownCache, path, {result, fileDate}]];
+    If[$notebookCaching, AssociateTo[$NotebookToMarkdownCache, path -> {result, fileDate}]];
     result
   ,
     Message[General::badnbread, path];

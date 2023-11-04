@@ -30,7 +30,7 @@ DefineStandardTraditionalForm[list_List] := Scan[DefineStandardTraditionalForm, 
 
 DefineStandardTraditionalForm[rule:(lhs_ :> rhs_)] := (
   AssociateTo[$boxFormHeadAssoc, PatternHead[lhs] -> True];
-  CacheTo[$StandardTraditionalFormCache, rule,
+  CachedInto[$StandardTraditionalFormCache, rule,
     MakeBoxes[lhs /; Refresh[!BoxForm`UseTextFormattingQ, None], StandardForm] := rhs;
     MakeBoxes[l:lhs, TraditionalForm] := MakeBoxes @ l;
   ];

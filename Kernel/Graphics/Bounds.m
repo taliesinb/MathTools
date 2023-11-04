@@ -168,7 +168,7 @@ properInsetBounds = Case[
     offset //= Replace[ImageScaled[s_] :> (s - 0.5) * 2];
     (* TODO: Maybe use DefaultBaseStyle here? *)
     If[FreeQ[{opts}, BaseStyle], opts = Sequence[opts, BaseStyle -> $baseStyle]];
-    {w, h} = TextRasterSize @ Text[RawBoxes @ txt, pos, opts] + 1;
+    {w, h} = MakeTextImageSize @ Text[RawBoxes @ txt, pos, opts] + 1;
     dirx = Normalize[dirx] / $gs;
     diry = VectorRotate90[dirx];
     dirx = dirx * w/2.;

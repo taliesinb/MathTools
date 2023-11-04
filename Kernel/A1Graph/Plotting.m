@@ -954,7 +954,7 @@ processFrameLabel = Case[
 ];
 
 frameLabelSize[None] := {0, 0};
-frameLabelSize[label_] := 1 + CachedRasterSize[Text @ label] / 2;
+frameLabelSize[label_] := 1 + MakeImageSize[Text @ label] / 2;
 
 makeFrameLabelElement[None, _, _] := None;
 
@@ -1856,7 +1856,7 @@ toAspectSize[{w_, h_}, {{l_, r_}, {b_, t_}}, max_] :=
 
 maxCustomVertexShapeSize[shapes_] := Max[guessCustomShapeSize /@ shapes] / 2;
 
-guessCustomShapeSize[shape_] := CachedRasterSize @ Replace[
+guessCustomShapeSize[shape_] := MakeImageSize @ Replace[
   drawGraphicsWithColor[shape, {0, 0}, Black, vertexSize],
   Inset[e_, ___] :> e
 ];
@@ -2189,7 +2189,7 @@ applyLabelPadding[graphics_, vertexLabelStyle_] := Scope[
 ];
 
 textCorners[text:outerText[content_, pos_, align_:{0,0}, ___]] :=
-  offsetCorners[pos, imageSizeToPlotSize @ TextRasterSize @ Apply[Text, text], align]
+  offsetCorners[pos, imageSizeToPlotSize @ MakeTextImageSize @ Apply[Text, text], align]
 
 textCorners[_] := Nothing;
 

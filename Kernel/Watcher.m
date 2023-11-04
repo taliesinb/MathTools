@@ -23,19 +23,20 @@ InitWatcher[] := If[MemberQ[$Packages, "QuiverGeometryLoader`"],
 $evalCount = 0;
 PollWatcher[] := Block[
   {event, nb = EvaluationNotebook[]},
-  If[Head[$WatcherStream] =!= InputStream, $WatcherStream = QuiverGeometry`FSWatch[All]];
+  If[Head[$WatcherStream] =!= InputStream, beep[3]; $WatcherStream = QuiverGeometry`FSWatch[All]];
   If[QuiverGeometryLoader`$CurrentlyLoading, Return[]];
   event = ReadString[$WatcherStream, TimeConstraint -> 0];
   If[!StringQ[event], Return[]];
   event //= StringTrim;
   If[!IntegerQ[$evalCount], $evalCount = 0]; $evalCount++;
   If[MatchQ[FileNameTake @ event, "Loader.m" | "Watcher.m"], Return[]];
-  If[!QuiverGeometryLoader`LoadSource[False, True, True], Return[]];
+  If[!QuiverGeometryLoader`LoadSource[False, True, True], beep[2]; Return[]];
   SetOptions[nb, Background -> If[OddQ[$evalCount], GrayLevel[0.98], GrayLevel[1]]];
   FrontEndExecute[FrontEndToken[nb, "EvaluateInitialization"]];
   (* goodBeep[]; *)
 ];
 
+beep[n_] := (Beep[]; Do[Pause[0.1]; Beep[], {n-1}];)
 If[$OperatingSystem === "MacOSX",
 goodBeep[] := Run["afplay /System/Library/Sounds/Morse.aiff&"],
 goodBeep[] := Beep[];

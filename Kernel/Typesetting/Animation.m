@@ -248,7 +248,7 @@ obj_AnimationObject["AnimatedThumbnail"] :=
 
 makeAnimatedThumbnail[frames_, frameRate_, maxSize_, color_] :=
   Framed[
-    imgs = FastRasterizeListCenterPadded @ frames;
+    imgs = MakeImageListCenterPadded @ frames;
     dims = ImageDimensions /@ imgs;
     If[Max[dims] > maxSize, imgs = ImageResize[#, {maxSize}]& /@ imgs];
     AnimatedImage[
@@ -330,7 +330,7 @@ obj_AnimationObject["AnimatedImage", opts___Rule] := Scope[
 (**************************************************************************************************)
 
 obj_AnimationObject["FrameList", opts___Rule] := CatchMessage @
-  FastRasterizeListCenterPadded @ obj["GraphicsList", opts];
+  MakeImageListCenterPadded @ obj["GraphicsList", opts];
 
 (**************************************************************************************************)
 

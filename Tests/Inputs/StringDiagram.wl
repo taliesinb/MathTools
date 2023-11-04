@@ -6,8 +6,18 @@
 LoadShortcuts["Categories"]
 
 
-$nts={$NTalpha, $NTbeta, $NTgamma,$NTdelta,$NTeps,$NTeta,$NTgamma,$NTlambda,$NTmu};
-TestRaster @  StringDiagram[MapIndex1[({2*#2-8,Mod[#2*5,20,1]-11}) ->#1&, $nts],{}]
+(* ::Section:: *)
+(*Centering of text within disks*)
+
+
+toPos[i_] := {Mod[i, 5,1], Ceiling[i/5]-.5}*6 - 18;
+plotCharGrid[opts___] := StringDiagram[MapIndex1[toPos[#2] -> #1&,
+  Append["[ "] @ Characters["\[Gamma]\[Eta]\[Delta]\[Epsilon]\[Alpha]\[LongRightArrow]\[RightArrow]\[UpDownArrow]\[LeftArrow]\[LongLeftArrow]_*.^\[FilledSquare]\[FilledCircle]\[EmptyCircle]\[CircleDot]\[CirclePlus]\[CircleTimes]01234() ["]],{}, opts, DiagramSize -> {16,20}];
+$sizes = {1, 1.25, 1.5};
+ZipMap[
+  TestRaster @ plotCharGrid[GraphicsScale -> #1, NodeSize -> #2, FontSize -> #3]&,
+  5 * $sizes, 25 * $sizes, 20 * $sizes
+]
 
 
 (* ::Section:: *)
@@ -205,3 +215,4 @@ TestRaster @ StringDiagram[
   {Bottom \[UndirectedEdge] 1, 1 \[UndirectedEdge] Top, Bottom \[UndirectedEdge] 2, 2 \[UndirectedEdge] Top}, {},
   DiagramSize -> {6, 12}, ImagePadding -> 10, $adjOpts
 ]& @@@ {{-4, 4}, {0, 0}, {4, -4}}
+

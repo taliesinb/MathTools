@@ -886,7 +886,7 @@ fmtLabel[lbl_, obj_] := Scope[
     size = $itemSize;
     If[ContainsQ[size, Automatic],
       text2 = Append[text, BaseStyle -> {FontSize -> fontSize, FontFamily -> fontFamily}];
-      isize = N[TextRasterSize @ text2];
+      isize = N[MakeTextImageSize @ text2] + 1;
       If[size === Automatic, size = {Automatic, Automatic}];
       size = MapThread[ReplaceAutomatic, {size, isize}];
     ];

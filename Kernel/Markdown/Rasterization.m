@@ -61,27 +61,23 @@ CacheSymbol[$Base64RasterizationCache]
 base64RasterizationFunction[type_, retina_][e_] := Scope[
   
   type //= ToUpperCase;
-  If[$CachingEnabled,
-    hash = Hash[{e, type, retina}];
-    result = Lookup[$Base64RasterizationCache, hash];
-    If[AssociationQ[result], Return @ result];
-  ];
 
-  If[type === "PNG",
-    If[Head[e] === Cell, e = Append[e, Antialiasing -> False], e = Style[e, Antialiasing -> False]];
-  ];
+  CachedInto[$Base64RasterizationCache, Hash[{e, type, retina}],
 
-  img = Rasterize[e, ImageResolution -> If[retina, 144, 72]];
-  width = Round[First[ImageDimensions @ img] / If[retina, 2, 1]];
-  encoded = ExportBase64[img, type, CompressionLevel -> If[type === "PNG", 1.0, 0.2]];
-  result = Association[
-    "type" -> "String",
-    "width" -> width,
-    "format" -> ToLowerCase[type],
-    "encoded" -> encoded
-  ];
-  If[$CachingEnabled, $Base64RasterizationCache[hash] ^= result];
-  result
+    If[type === "PNG",
+      If[Head[e] === Cell, e = Append[e, Antialiasing -> False], e = Style[e, Antialiasing -> False]];
+    ];
+
+    img = Rasterize[e, ImageResolution -> If[retina, 144, 72]];
+    width = Round[First[ImageDimensions @ img] / If[retina, 2, 1]];
+    encoded = ExportBase64[img, type, CompressionLevel -> If[type === "PNG", 1.0, 0.2]];
+    Association[
+      "type" -> "String",
+      "width" -> width,
+      "format" -> ToLowerCase[type],
+      "encoded" -> encoded
+    ]
+  ]
 ];
 
 (**************************************************************************************************)
@@ -107,9 +103,11 @@ standardRasterizationFunction[cell_, opts___Rule] :=
   cachedGenericRasterize[cell, rasterizeImage, {opts}];
 
 rasterizeImage[obj_] := Scope[
-  img = If[TrueQ @ $rasterizationCaching, CachedFastRasterize, FastRasterize] @ obj;
+  img = If[TrueQ @ $rasterizationCaching, MakeImage, uncachedMakeImage] @ obj;
   {img, ImageDimensions @ img}
 ]
+
+uncachedMakeImage[obj_] := Block[{$EnableCaching = False}, MakeImage @ obj];
 
 (**************************************************************************************************)
 

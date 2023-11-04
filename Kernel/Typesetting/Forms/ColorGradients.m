@@ -136,27 +136,25 @@ Options[ColorGradientRasterize] = {
 
 ColorGradientRasterize[expr_, colors_, OptionsPattern[]] := Scope[
   UnpackOptions[dilationFactor, compressionFactor];
-  hash = Hash[{expr, colors, dilationFactor, compressionFactor}];
-  result = Lookup[$GradientRasterizationCache, hash];
-  If[ImageQ[result], Return @ result];
-  {raster, boundingBox, regions} = FastRasterizeWithMetadata[expr, Background -> Transparent];
-  {bbw, bbh, dh} = boundingBox;
-  baselinePos = Scaled[(bbh - dh-0.5) / bbh];
-  mask = AlphaChannel @ raster;
-  {w, h} = ImageDimensions @ mask;
-  totals = Total[ImageData[mask], {1}];
-  p = SelectFirstIndex[totals, # > 1&];
-  q = w + 1 - SelectFirstIndex[Reverse @ totals, # > 1&];
-  cShift = Clip[compressionFactor * (w-1)/2, {0, (q - p)/2 - 1}];
-  p += cShift;
-  q -= cShift;
-  colorFractions = Clip[((N @ Range[1, w]) - p) / (q - p), {0, 1}];
-  colors = OklabBlend[colors, colorFractions];
-  grad = ImageResize[Image[{colors}], {w, h}, Resampling -> "Nearest"];
-  result = SetAlphaChannel[grad, ImageClip[ImageMultiply[Blur[mask, dilationFactor], 4]]];
-  result = Image[result, BaselinePosition -> baselinePos, ImageSize -> {w, h}/2, Options @ raster];
-  If[ImageQ[result], $GradientRasterizationCache[hash] ^= result];
-  result
+  CachedInto[$GradientRasterizationCache, Hash[{expr, colors, dilationFactor, compressionFactor}],
+    {raster, rasterSize, boundingBox, regions} = MakeImageAndMetadata[expr, Transparent];
+    {bbw, bbh, dh} = rasterSize;
+    baselinePos = Scaled[(bbh - dh-0.5) / bbh];
+    mask = AlphaChannel @ raster;
+    {w, h} = ImageDimensions @ mask;
+    totals = Total[ImageData[mask], {1}];
+    p = SelectFirstIndex[totals, # > 1&];
+    q = w + 1 - SelectFirstIndex[Reverse @ totals, # > 1&];
+    cShift = Clip[compressionFactor * (w-1)/2, {0, (q - p)/2 - 1}];
+    p += cShift;
+    q -= cShift;
+    colorFractions = Clip[((N @ Range[1, w]) - p) / (q - p), {0, 1}];
+    colors = OklabBlend[colors, colorFractions];
+    grad = ImageResize[Image[{colors}], {w, h}, Resampling -> "Nearest"];
+    result = SetAlphaChannel[grad, ImageClip[ImageMultiply[Blur[mask, dilationFactor], 4]]];
+    result = Image[result, BaselinePosition -> baselinePos, ImageSize -> {w, h}/2, Options @ raster];
+    If[ImageQ[result], result, $Failed]
+  ]
 ];
 
 (**************************************************************************************************)

@@ -198,7 +198,7 @@ PublicFunction[SimplifyOffsets]
 
 SimplifyOffsets[points_] := points //. {
   Offset[d1_, Offset[d2_, p_]] :> Offset[d1 + d2, p],
-  Offset[{$zeroP, $zerpP}, p_] :> p
+  Offset[{$zeroP, $zeroP}, p_] :> p
 };
 
 

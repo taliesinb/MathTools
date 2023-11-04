@@ -79,7 +79,7 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
     spacing = 5;
     labelPos = {Mean @ P1 @ bounds, P22[bounds] + spacing / $graphicsScale};
     text = Text[plotLabel, labelPos, {0, -1}, BaseStyle -> {FontFamily -> "Arial", FontSize -> 12}];
-    {w, h} = TextRasterSize[text];
+    {w, h} = MakeTextImageSize[text] + 1;
     Part[bounds, 2, 2] += (h + spacing) / $graphicsScale;
     AppendTo[decos, ToGraphicsBoxes @ text];
   ];
