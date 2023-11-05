@@ -1,61 +1,160 @@
 PublicTypesettingForm[TextIcon]
 
+TextIcon @ "
+TextIcon['text$'] produces an inline %Graphics that contains graphics primitives depicting 'text$'.
+* certain Unicode characters like ➡︎ (%BoldRightArrowSymbol) have hard-coded primitives.
+* the resulting %Graphics is wrapped in %DynamicBox so that it will display with the current %FontSize.
+* the following options are supported:
+| %FontColor | a single color or a pair or %ColorGradient[$$] |
+| %FontWeight | font boldness |
+| %FontSize | %Inherited for dynamic behavior, or a fixed font size |
+| %FontFamily | font family to use, defaulting to $MathFont |
+| %Method | either 'Vector' or 'Raster' |
+| %ContentPadding | fix plot range vertically |
+| %Background | color of background |
+| %FormatType | either 'MathForm' or None |
+| %CompressionFactor | default %CompressionFactor to use for a color gradient |
+* for %Method -> 'Raster', an %Image[$$] object will be produced, and the text does not have to be a string.
+"
+
 Options[TextIcon] = {
-  FontColor -> Inherited,
-  FontWeight -> Inherited,
   FontSize -> Inherited,
-  FontFamily -> Inherited
+  FontColor -> Automatic,
+  FontWeight -> Automatic,
+  FontFamily -> Automatic,
+  FontSlant -> Automatic,
+  Method -> "Vector",
+  ContentPadding -> False,
+  Background -> None,
+  FormatType -> MathForm,
+  CompressionFactor -> 0.8
 }
 
-DefineStandardTraditionalForm[ti:TextIcon[_String, ___Rule] :> textIconBoxes[ti]];
+DefineStandardTraditionalForm[ti:TextIcon[_, ___Rule] :> textIconBoxes[ti]];
 
-TextIcon::nostrpoly = "Could not form a Polygon for `` using FontSize -> ``, FontWeight -> ``, FontFamily -> ``.";
+TextIcon::vectorOnlyStr = "Method -> \"Vector\" only supports strings, not ``.";
+TextIcon::nostrpoly = "Could not form a Polygon for `` using options ``.";
 
-textIconBoxes[TextIcon[str_String, opts___Rule]] := Scope[
+textIconBoxes[TextIcon[str_, opts___Rule]] := Scope[
 
-  UnpackOptionsAs[TextIcon, opts, fontColor, fontWeight, fontSize, fontFamily];
-
-  SetInherited[fontColor, Black];
-  SetInherited[fontWeight, "Regular"];
-  SetInherited[fontFamily, "KaTeX_Main"];
-
-  result = TextToPolygon[str, 20, fontFamily, fontWeight];
-
-  If[FailureQ[result],
-    Message[TextIcon::nostrpoly, MsgExpr @ s, MsgExpr @ fontSize, MsgExpr @ fontWeight, MsgExpr @ fontFamily];
-    Return @ {};
+  UnpackOptionsAs[TextIcon, opts,
+    fontSize, fontColor, fontWeight, fontFamily, fontSlant,
+    method, contentPadding, background, formatType, compressionFactor
   ];
 
-  {polygons, bounds} = result;
-  baseImageSize = BoundsToSize[bounds] / 20;
-  primBoxes = ToGraphicsBoxes @ polygons;
+  SetAutomatic[fontColor, Black];
+  SetAutomatic[fontWeight, "Regular"];
+  SetAutomatic[fontFamily, $MathFont];
 
-  primBoxes = Which[
-    Head[fontColor] === ColorGradient || PairQ[fontColor], ColorGradiateBoxes[primBoxes, bounds, fontColor],
-    ColorQ[fontColor],                                     StyleBox[primBoxes, FaceForm @ fontColor],
-    True,                                                  primBoxes
+  If[!ColorQ[fontColor],
+    fontColor = ToColorGradient[fontColor];
+    If[FreeQ[fontColor, CompressionFactor],
+      AppendTo[fontColor, CompressionFactor -> compressionFactor]];
   ];
 
-  gboxConstructor = makeTextIconGraphicsBox[primBoxes, bounds, baseImageSize];
-
-  If[fontSize === Inherited,
-    Function[Null, DynamicBox[With[{System`\[FormalF] = CurrentValue[FontSize]}, #]], HoldFirst] @@ gboxConstructor,
-    First[gboxConstructor /. System`\[FormalF] -> fontSize]
+  Switch[method,
+    "Raster",
+      SetAutomatic[fontSlant, Plain];
+      SetNone[formatType, Identity];
+      textIconRasterBoxes[str, fontSize, fontColor, fontWeight, fontFamily, fontSlant, formatType, contentPadding],
+    "Vector",
+      textIconVectorBoxes[str, fontSize, fontColor, fontWeight, fontFamily, fontSlant, formatType, contentPadding, background],
+    _,
+      BadOptionSetting[TextIcon, Method, method];
+      "?"
   ]
 ];
 
 (**************************************************************************************************)
 
+CacheSymbol[$TextIconVectorCache]
+
+textIconVectorBoxes[str_, fontSize_, fontColor_, fontWeight_, fontFamily_, fontSlant_, formatType_, contentPadding_, background_] := Scope @ CachedInto[
+  $TextIconVectorCache, Hash @ {str, fontSize, fontColor, fontWeight, fontFamily, fontSlant, formatType, contentPadding, background},
+
+  (* MathForm implies SingleLetterItalics, which we simulate here *)
+  SetAutomatic[fontSlant, If[formatType === MathForm && StringMatchQ[str, RomanLetter], Italic, Plain]];
+
+  If[!StringQ[str],
+    Message[TextIcon::vectorOnlyStr, MsgExpr @ str];
+    Return @ {};
+  ];
+
+  opts = Sequence[FontSize -> 20, FontFamily -> fontFamily, FontWeight -> fontWeight, FontSlant -> fontSlant];
+  result = TextToPolygon[str, opts];
+  If[FailureQ[result],
+    Message[TextIcon::nostrpoly, MsgExpr @ s, MsgExpr @ {opts}];
+    Return @ {};
+  ];
+
+  {polygons, bounds, bshift} = result;
+  If[contentPadding, bounds[[2]] = {-8, 21}, bounds[[2]] += {-2, 2}];
+  baseImageSize = BoundsToSize[bounds] / 20;
+  primBoxes = ToGraphicsBoxes @ polygons;
+
+  If[MatchQ[fontSlant, "Italic" | Italic], fontColor //= toItalicDir];
+  $disableAdjustment = False;
+  primBoxes = Which[
+    Head[fontColor] === ColorGradient,
+      $disableAdjustment = True;
+      ColorGradientBoxes[primBoxes, fontColor, bounds],
+    ColorQ[fontColor],     StyleBox[primBoxes, FaceForm @ fontColor],
+    True,                  primBoxes
+  ];
+  gboxConstructor = makeTextIconGraphicsBox[primBoxes, bounds, baseImageSize, background, bshift];
+  If[$disableAdjustment, gboxConstructor = gboxConstructor /. AdjustmentBox[b_, _] :> b];
+
+  If[fontSize === Inherited,
+    Function[Null, DynamicBox[
+      With[{System`\[FormalF] = CurrentValue[FontSize]}, #],
+      TrackedSymbols :> {}
+    ], HoldFirst] @@ gboxConstructor,
+    First[gboxConstructor /. System`\[FormalF] -> fontSize]
+  ]
+];
+
+$italicDir = {1, -0.27};
+toItalicDir = Case[
+  ColorGradient[col_, opts___Rule] := ColorGradient[col, $italicDir, opts];
+  other_                           := other
+];
+
+(**************************************************************************************************)
+
+CacheSymbol[$TextIconRasterCache]
+
+textIconRasterBoxes[str_, fontSize_Integer, fc_, fw_, ff_, fs_, form_, cp_] := CachedInto[
+  $TextIconRasterCache, {str, fontSize, fc, fw, ff, fs},
+  ToBoxes @ ColorGradientRasterize[
+    Style[
+      form @ str,
+      FontSize -> fontSize, FontFamily -> ff, FontWeight -> fw, FontSlant -> fs
+    ],
+    fc,
+    ContentPadding -> cp
+  ]
+];
+
+(* NOTE: SingleEvaluation prevents script scaling *)
+textIconRasterBoxes[str_, Inherited, fc_, fw_, ff_, fs_, form_, cp_] :=
+  DynamicBox[
+    textIconRasterBoxes[str, Round @ CurrentValue[FontSize], fc, fw, ff, fs, form, cp],
+    TrackedSymbols :> {}
+  ];
+
+(**************************************************************************************************)
+
+(* TODO: convert this to a TemplateBox! *)
 (* the internal Construct has to be in there, apparently the FE thinks the expression doesn't need dynamic evaluation otherwise *)
-makeTextIconGraphicsBox[boxes_, bounds_, baseImageSize_] :=
+makeTextIconGraphicsBox[boxes_, bounds_, baseImageSize_, background_, bshift_] :=
   Hold @ AdjustmentBox[
     Construct[
       GraphicsBox,
       boxes,
       PlotRange -> bounds, PlotRangePadding -> 0, AspectRatio -> Full, PlotRangeClipping -> False,
-      ImageSize -> Round[baseImageSize * System`\[FormalF] + 2, .5], ImagePadding -> {{1, 1}, {1, 1}},
-      BaselinePosition -> Axis
+      ImageSize -> Ceiling[baseImageSize * System`\[FormalF] + 2, .5], ImagePadding -> {{1, 1}, {1, 1}},
+      BaselinePosition -> Axis, Background -> background
     ],
-    -2 / System`\[FormalF]
+    BoxBaselineShift -> (-bshift / System`\[FormalF])
   ];
 

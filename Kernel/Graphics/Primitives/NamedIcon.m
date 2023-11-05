@@ -33,7 +33,26 @@ DeclareGraphicsPrimitive[NamedIcon, "Vector,Delta", namedIconBoxes];
 
 (**************************************************************************************************)
 
+(* TODO: update me when icons are added *)
+$knownIconNames = Uncompress @
+"1:eJx9ldtOwzAMhidx3AkYCG644lEY4yAxJEQH94VmEC1rStKx1yexm8RpCjco/mz/+d0k4+pdvizX
+vV5P75o/c67rbGgWNxv1w4prpeQ2m9hYSM2KNr3jQsT0xNDXqmKKwgsv0JlClSRlpeZy+5dUZwqlkp
+SVumdlLRjQtlRnCqWS1LkbMMlcxlN25smoncrg/B/lv/Nk8iR/aPILxfPyU7DsyItFCPs9GrsxPTmL
+x4s4GStSADsdCikn9j3fMxwHGPrOEGMHxgPnNhw3sRog8RkaYdN2YwsSewgPDJzxfC3LAibFAkdGzo
+8Dp7Ejiokn2g57pe0JJs4ctg/5kdcMpsM8hH3nCqLj2JJnxI/vAvlWV8yIDWDWw4OUq7Cpj6AIon0T
+Zd+bXDE4UShr4knsjlRBe1JF6cj7IWVkrITS5l04WI3mbrj6MBdxxyynuYJ3BAougEYb2OuQrdjWrm
+31gmHXTNZwjRd8zTRoP4uNxvsM2pgY+LiVfuKlifs+dnrI7erW2BbQYd5NJRjGuKco8A7ACkPr+lYI
+Xmmu4Wa/MVXzj1x4aBte+OdXjRcdTowt63DtX6uQmcltidEYvxHpHCEJzQMErr/JB4ljt/NDLpbNpz
+9qticIH1erxqoQNKZScJwjIgRg4GV83okAsKpTKQoy0bhBYaRhQ9xMriIMdQAfnK3NbzLe9827Zvg/
+Fpd4YG5Oshs+Ca/0C1HJWNE=";
+
+declareFunctionAutocomplete[NamedIcon, {$knownIconNames}];
+declareFunctionAutocomplete[NamedIconData, {$knownIconNames}];
+
+(**************************************************************************************************)
+
 $iconNameP = _String | _Sized | _Reversed | _Repeating;
+
 DefineStandardTraditionalForm[
   ni:NamedIcon[$iconNameP, ___Rule] :> namedIconTypesettingBoxes[ni]
 ];
@@ -329,10 +348,10 @@ $rotatedIcons := makeRotated @ {
   "BarRightArrow"      -> bound[$u, $h, $u, $z] @ Line @ {$leftBar, First @ $hline, $rightArrowheadPoints},
   "RightHalfCircle"    -> bound[$r, $u, $r, $u] @ HalfCircle[{0,0}, {1, 0}],
   "RightHalfDisk"      -> bound[$r, $u, $r, $u] @ HalfDisk[{0,0}, {1, 0}],
-  "RightBoldArrow"     -> bound[$u, $rbaH, $u, $z] @ Polygon @ $rightBoldArrow
+  "BoldRightArrow"     -> bound[$u, $rbaH, $u, $z] @ Polygon @ $boldRightArrow
 };
 
-$rightBoldArrow := $rightBoldArrow = Uncompress @ "
+$boldRightArrow := $boldRightArrow = Uncompress @ "
 1:eJxTTMoPSmViYGDQB2IQDQEf9vfa9LTc5pu1/6D791dphe/3C/Vt+Pv34Kb9x+/Kn0tPfbdfwui4js
 jePfstL9lsDP3zZv8Cha9tqQsO7v+7PqZ+b+Lr/YJg9Yf2p24JPXye8YE9jN90s9GB//AF+8BrjK79C2
 /s73abt73v5Fn7mQXq/XN9bu8vnfn02mvJM/a72La68hfd2x88tWaV6+oz9tUvthjH33iwP2Rvg4pIzn
@@ -422,6 +441,7 @@ setRightAligned[name_ -> bounded[curve_, {bx_, by_, {_, bb2_}}]] :=
 
 $namedIconData := $namedIconData = createIconData[];
 
+(* NOTE: make sure to update $knownIconNames with the keys from this lazy table so that autocomplete is correct *)
 createIconData[] := MapIndex1[makeIconData, DeleteCases[None | bounded[None, ___]] @ Association[
 
   $arrowIcons,
@@ -451,6 +471,13 @@ createIconData[] := MapIndex1[makeIconData, DeleteCases[None | bounded[None, ___
 (**************************************************************************************************)
 
 PublicFunction[NamedIconData]
+
+SetUsage @ "
+NamedIconData['name'] looks up a given icon and returns a tuple of icon data.
+NamedIconData[All] returns tuples for all icons.
+NamedIconData[] returns a list of icon names.
+* tuples take the form {prims$, boxes$, boxes3D$, {{x$1, x$2}, {y$1, y$2}, {b$1, b$2}}, solid$}.
+"
 
 NamedIconData[] := Keys @ $namedIconData;
 NamedIconData[All] := $namedIconData;

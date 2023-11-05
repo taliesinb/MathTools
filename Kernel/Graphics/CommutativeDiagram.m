@@ -1,6 +1,6 @@
 PublicTypesettingForm[CommutativeDiagram]
 
-PublicOption[DebugBounds, AutoSetback, Origin, SymbolReplacements, CloneOptions, CloningFunction, DiagramScaling, DefaultMorphism, MorphismColors, DiagramColorRules]
+PublicOption[DebugBounds, AutoSetback, Origin, SymbolReplacements, CloneOptions, CloningFunction, DiagramScaling, DefaultMorphism, MorphismColors, DiagramColorRules, GradientSymbolOptions]
 
 PublicSymbol[Outwards, Inwards]
 
@@ -66,6 +66,7 @@ The following options are supported:
 | %CloningFunction | function to produce %Cloned objects and morphisms |
 | %DefaultMorphism | the default morphism to use, which is %MorphismArrow |
 | %MorphismColors | how to color morphisms |
+| %GradientSymbolOptions | additional options to customize %GradientSymbol |
 * for more information about %ColorRules, see the usage of %DiagramColorRules, which is an alias.
 "
 
@@ -125,6 +126,7 @@ Options[CommutativeDiagram] = JoinOptions[
   DefaultMorphism        -> MorphismArrow,
   MorphismColors         -> None,
   DiagramColorRules      -> Automatic,
+  GradientSymbolOptions  -> {},
   $morphismArrowOptions
 ];
 
@@ -170,7 +172,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
     graphicsScale, $autoSetback, $debugBounds,
     transposed, flipX, flipY, diagramScaling, origin,
     textModifiers, colorRules, diagramColorRules, morphismColors, symbolReplacements,
-    cloneOptions, cloningFunction,
+    cloneOptions, cloningFunction, gradientSymbolOptions,
     $defaultMorphism
   ];
   $objectNames = {};
@@ -185,7 +187,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
 
   $saveMorphGradColors = False;
   SetAutomatic[diagramColorRules, colorRules];
-  colorModifierFn = parseDiagramColorRules @ diagramColorRules;
+  colorModifierFn = parseDiagramColorRules[diagramColorRules, gradientSymbolOptions];
   replacementFn = parseSymbolReplacements[symbolReplacements];
   extraModifiers = Composition[colorModifierFn, replacementFn];
   {$objectTextModifierFn, $morphismTextModifierFn} = Map[
@@ -206,12 +208,13 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $objFn = $arrFn = Identity;
   {interiorLinkOptions, exteriorLinkOptions} = processCloneSpecs[cloneOptions, cloningFunction];
 
+  items = desugar /@ items;
   $currentDiagramFontSize = fontSize; (* <- for recoloring rule to produce the right GradientSymbol *)
   objectPrimitives = parseObject /@ items;
 
   $toHigherPath = toHigherPath;
   $clonesExist = Length[$cloneChildren] > 0;
-  $currentDiagramFontSize = labelFontSize; (* <- for recoloring rule *)
+  $currentDiagramFontSize = labelFontSize;
   If[$saveMorphGradColors, saveMorphismGradColors @ items];
 
   morphismPrimitives = parseMorphism /@ items;
@@ -253,6 +256,33 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
 ];
 
 _cdToPrimitives := BadArguments[];
+
+(**************************************************************************************************)
+
+$legacyObjP = (_String|Integer);
+
+desugar = Case[
+
+  DirectedEdge[a_, DirectedEdge[b_, c_]] :=
+    Splice[% /@ {DirectedEdge[a, b], DirectedEdge[b, c]}];
+  DirectedEdge[a_, DirectedEdge[b_, DirectedEdge[c_, d_]]] :=
+    Splice[% /@ {DirectedEdge[a, b], DirectedEdge[b, c], DirectedEdge[c, d]}];
+  DirectedEdge[a_, DirectedEdge[b_, c_]] -> {r1_, r2_} :=
+    Splice[% /@ {DirectedEdge[a, b] -> r1, DirectedEdge[b, c] -> r2}];
+  DirectedEdge[a_, DirectedEdge[b_, DirectedEdge[c_, d_]]] -> {r1_, r2_, r3_} :=
+    Splice[% /@ {DirectedEdge[a, b] -> r1, DirectedEdge[b, c] -> r2, DirectedEdge[c, d] -> r3}];
+
+  a:$legacyObjP -> b:$legacyObjP                     := % @ {DirectedEdge[a, b]};
+  {a:$legacyObjP -> b:$legacyObjP, args__}           := % @ {DirectedEdge[a, b], args};
+  DirectedEdge[a_, b_, lbl]                          := % @ {DirectedEdge[a, b], lbl};
+  de_DirectedEdge                                    := % @ {de};
+  de_DirectedEdge -> rhs_                            := % @ {de, rhs};
+
+  {DirectedEdge[s_, t_], lbl_:None, args___} :=
+    MorphismArrow[{s, t}, lbl, args];
+
+  other_ := other;
+];
 
 (**************************************************************************************************)
 
@@ -305,7 +335,9 @@ cdToPrimitives[other_] := (
 
 SetUsage @ "
 DiagramColorRules is an option to %CommutativeDiagram and %StringDiagram that consists of rules for colors to apply to specific elements.
+
 * elements that are colored are contents of objects, as well as morphism labels.
+
 * rules can be in any of the following forms:
 | patt$ -> color$ | apply color$ to any expressions matching patt$ |
 | patt$ -> {color$1, color$2} | apply a gradient color to matching expressions |
@@ -313,8 +345,11 @@ DiagramColorRules is an option to %CommutativeDiagram and %StringDiagram that co
 | head$ -> 'Gradient' | color head$[name$] as gradient based on source and target of morphism labeled as name$ |
 | head$ -> 'Coloring' | typeset head$[name$][$$] as $$ colored based on name$ |
 | head$ -> 'Framing' | typeset head$[name$][$$] as framed $$ with frame color based on name$ |
+
 * 'Coloring' and 'Framing' will use the color associated with head$[name$], if there is one, or otherwise the canonical color for name$ |
+
 * head$ must be a unary form like %CategoryObjectSymbol, %CategoryArrowSymbol, or %CategorySymbol.
+
 * the following named rulesets are supported:
 | 'Objects' | equivalent to %CategoryObjectSymbol -> 'Rainbow' |
 | 'Arrows' | equivalent to %CategoryArrowSymbol -> 'Rainbow' |
@@ -329,7 +364,20 @@ CommutativeDiagram::badrecolor = "Bad recoloring rule element ``."
 PrivateFunction[parseDiagramColorRules]
 PrivateVariable[$currentDiagramFontSize]
 
-parseDiagramColorRules = Case[
+parseDiagramColorRules[e_, {opts__Rule}] := Scope[
+  rules = parseDiagramColorRules2[e];
+  rules = rules /. GradientSymbol[a___] :> GradientSymbol[a, opts]
+];
+
+parseDiagramColorRules[e_, {}] :=
+  parseDiagramColorRules2[e];
+
+parseDiagramColorRules[e_, o_] := (
+  BadOptionSetting[StringDiagram, GradientSymbolOptions, MsgExpr @ o];
+  parseDiagramColorRules2[e];
+)
+
+parseDiagramColorRules2 = Case[
   {} | None            := Identity;
   el:(_Rule | _String) := % @ {el};
   list_List            := ReplaceAll @ Map[toRecolorRule, list];
@@ -343,7 +391,7 @@ specialRecoloringRule[head_, "Rainbow"] :=
 
 specialRecoloringRule[head_, "Gradient"] := (
   $saveMorphGradColors = True;
-  RuleDelayed[z_head, RuleCondition @ GradientSymbol[z, $gradColor[z, 1], $gradColor[z, 2], $currentDiagramFontSize]]
+  RuleDelayed[z_head, RuleCondition @ GradientSymbol[z, ColorGradient[{$gradColor[z, 1], $gradColor[z, 2]}], FontSize -> $currentDiagramFontSize]]
 );
 
 specialRecoloringRule[head_, "Framing"] :=
@@ -394,7 +442,7 @@ toRecolorRule = Case[
   ];
 
   f_ -> {a:$colorP, b:$colorP} := With[{c1 = toCol @ a, c2 = toCol @ b},
-    RuleDelayed[f, RuleCondition @ GradientSymbol[f, c1, c2, $currentDiagramFontSize]]
+    RuleDelayed[f, RuleCondition @ GradientSymbol[f, ColorGradient[{c1, c2}], FontSize -> $currentDiagramFontSize]]
   ];
 
   a_ -> c:$colorP := With[{c1 = toCol @ c},
@@ -746,31 +794,12 @@ CommutativeDiagram::badclonespec = "CloneOptions -> `` is invalid."
 
 (**************************************************************************************************)
 
-$legacyObjP = (_String|Integer);
 parseMorphism = Case[
   {_, _} -> _                                        := Nothing;
   ({__List} -> _List) ? threadedObjectsQ             := Nothing;
   Null                                               := Nothing;
   Setback -> sb_                                     := ($setback = sb; Nothing);
   opt:(_Symbol -> _)                                 := flipSymbolicPositions @ opt;
-
-  DirectedEdge[a_, DirectedEdge[b_, c_]] :=
-    % /@ {DirectedEdge[a, b], DirectedEdge[b, c]};
-  DirectedEdge[a_, DirectedEdge[b_, DirectedEdge[c_, d_]]] :=
-    % /@ {DirectedEdge[a, b], DirectedEdge[b, c], DirectedEdge[c, d]};
-  DirectedEdge[a_, DirectedEdge[b_, c_]] -> {r1_, r2_} :=
-    % /@ {DirectedEdge[a, b] -> r1, DirectedEdge[b, c] -> r2};
-  DirectedEdge[a_, DirectedEdge[b_, DirectedEdge[c_, d_]]] -> {r1_, r2_, r3_} :=
-    % /@ {DirectedEdge[a, b] -> r1, DirectedEdge[b, c] -> r2, DirectedEdge[c, d] -> r3};
-
-  a:$legacyObjP -> b:$legacyObjP                     := % @ {DirectedEdge[a, b]};
-  {a:$legacyObjP -> b:$legacyObjP, args__}           := % @ {DirectedEdge[a, b], args};
-  DirectedEdge[a_, b_, lbl]                          := % @ {DirectedEdge[a, b], lbl};
-  de_DirectedEdge                                    := % @ {de};
-  de_DirectedEdge -> rhs_                            := % @ {de, rhs};
-
-  {DirectedEdge[s_, t_], lbl_:None, args___} :=
-    processMorphism1 @ MorphismArrow[{s, t}, Switch[lbl, None, {}, _List, lbl, _, {{0.5, Above} -> lbl}], args];
 
   cd_CommutativeDiagram                              := flipSymbolicPositions @ Append[cd, Unevaluated @ $inheritedOptions];
 
@@ -969,8 +998,7 @@ processMorphism2 = Case[
   ];
 
   ma_MorphismArrow /; TrueQ[$morphismTextModifierFn =!= Identity] && FreeQ[ma, TextModifiers] := Scope[
-    modifiers = $morphismTextModifierFn /. HoldPattern[$currentDiagramFontSize] :> RuleCondition[$currentDiagramFontSize];
-    modifiers //= resolveGradColors;
+    modifiers = resolveGradColors @ $morphismTextModifierFn;
     % @ Append[ma, TextModifiers -> modifiers]
   ];
 

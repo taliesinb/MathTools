@@ -275,6 +275,7 @@ ToSpelledGreek[str_String] := StringReplace[str, $toSpelledGreek];
 (**************************************************************************************************)
 
 PublicSymbol[ASCIILetter, LowercaseLetter, UppercaseLetter, AlphanumericCharacter]
+PublicSymbol[LowercaseRomanLetter, UppercaseRomanLetter, RomanLetter]
 PublicSymbol[LowercaseGreekLetter, UppercaseGreekLetter, GreekLetter]
 PublicSymbol[DoubleQuote]
 PublicSymbol[LowercaseDoubleStruckLetter, UppercaseDoubleStruckLetter, DoubleStruckLetter, DoubleStruckDigit, DoubleStruckCharacter]
@@ -289,6 +290,9 @@ declareStringLetterPattern[
   LowercaseLetter -> "[:lower:]",
   UppercaseLetter -> "[:upper:]",
   AlphanumericCharacter -> "[:alnum:]",
+  LowercaseRomanLetter -> $LowercaseRomanLetters,
+  UppercaseRomanLetter -> $UppercaseRomanLetters,
+  RomanLetter -> $RomanLetters,
   LowercaseGreekLetter -> $LowercaseGreekLetters,
   UppercaseGreekLetter -> $UppercaseGreekLetters,
   GreekLetter -> $GreekLetters,

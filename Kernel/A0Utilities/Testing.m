@@ -20,17 +20,17 @@ RunTests['patt$'] runs tests that match the string pattern patt$.
 | %Verbose | print every action performed |
 | %DryRun | do not actually write any changes to disk |
 | %TestContentsPattern | skip files whose inputs do not contain a set of patterns |
-| %DisableCaching | whether to disable all caching for purposes of reproducibility (default True) |
+| %OverwriteTarget | assume all tests are correct and overwrite existing outputs |
 "
 
-PublicOption[TestContentsPattern, DisableCaching]
+PublicOption[TestContentsPattern]
 
 Options[RunTests] = {
   Verbose -> False,
   DryRun -> False,
   MaxItems -> Infinity,
   TestContentsPattern -> None,
-  DisableCaching -> False
+  OverwriteTarget -> False
 };
 
 RunTests::noindir = "Input directory not found at ``.";
@@ -43,8 +43,9 @@ declareFunctionAutocomplete[RunTests, {FileNameTake /@ FileNames["*.wl", $testsI
 
 RunTests[filePattern_String:All, OptionsPattern[]] := Scope[
 
-  UnpackOptions[$verbose, $dryRun, $testContentsPattern, disableCaching, $maxItems];
-  $EnableCaching = !TrueQ[disableCaching];
+  UnpackOptions[$verbose, $dryRun, $testContentsPattern, $maxItems, $overwriteTarget];
+
+  ClearCacheSymbols[];
 
   testFiles = findTestFiles[filePattern];
   If[testFiles === {}, ReturnFailed["notests", $testsInPath, filePattern]];
@@ -102,10 +103,15 @@ runFileTest[inputPath_, outDir_] := Scope[
 
   $outputPath = outputPath = PathJoin[outDir, inputFileName];
 
-  VPrint["Reading expected outputs from ", MsgPath @ outputPath];
-  oldOutputs = readExpressionList @ outputPath;
-  oldCount = Length @ oldOutputs;
-  If[FailureQ[oldOutputs], ReturnFailed[]];
+  If[$overwriteTarget,
+    VPrint["OverwriteTarget -> True, skipping existing outputs."];
+    oldOutputs = {}; oldCount = 0;
+  ,
+    VPrint["Reading expected outputs from ", MsgPath @ outputPath];
+    oldOutputs = readExpressionList @ outputPath;
+    oldCount = Length @ oldOutputs;
+    If[FailureQ[oldOutputs], ReturnFailed[]];
+  ];
 
   VPrint["Evaluating ", numInputs, " inputs and comparing with ", oldCount, " outputs."];
   newOutputs = evalExpressionsJoint[inputs, oldOutputs];

@@ -42,9 +42,6 @@ during construction.
 
 initially, only the BoldXXXArrows would work with a color gradient.
 
-ColorGradientForm[XXX[name$], cols] should turn into a TextIcon[name$, FontColor -> cols$]
-ColorGradientForm[BoldRightArrow | ..., cols] should turn into a TextIcon["\[RightArrow]", FontColor -> cols$, FontWeight -> Bold, FontFamily -> "Arial", $$]
-
 Internally it can do this by calling EvaluateTemplateBoxes etc and trying to deduce the underyling font weight and font family.
 
 TextIcon itself should return a DynamicBox so that it can be nested in ordinary text boxes as is.
@@ -58,40 +55,81 @@ SetUsage @ "
 ColorGradient[{c$1, c$2}] represents a color gradient between c$1 and c$2, defaulting to left-to-right.
 ColorGradient[{c$1, c$2}, dir$] represents an oriented color gradient in the given direction.
 * dir$ can be a symbolic direction like %Right, %Top, or a direction vector.
+* integers will be interpreted as rainbow colors via %ToRainbowColor.
 * the option %CompressionFactor can range from 0 (totally linear) to 1 (hard jump).
 "
+
+ColorGradient::badGradientSpec = "`` is not a valid color gradient spec."
+parseColorGradient = Case[
+  {c1_, c2_} -> dir:$SidePattern                  := % @ ColorGradient[{c1, c2}, dir];
+  ColorGradient[{c1_, c2_}] | {c1_, c2_}          := {{1,0}, First, Identity, OklabBlendOperator[toRC /@ {c1, c2}]};
+  ColorGradient[{c1_, c2_}, dir:$Coord2P]         := {Normalize @ dir, DotOperator[dir], Identity, OklabBlendOperator[toRC /@ {c1, c2}]};
+  ColorGradient[spec_, side:$SidePattern]         := % @ ColorGradient[spec, $SideToCoords @ side];
+  ColorGradient[spec__, CompressionFactor -> c_]  := ReplacePart[% @ ColorGradient[spec], 3 -> CompressUnit[c]];
+  other_ := (
+    Message[ColorGradient::badGradientSpec, MsgExpr @ other];
+    {{1,0}, Identity, Identity, Red&}
+  );
+]
+
+toRC[e_] := If[ColorQ[e], e, ToRainbowColor[e]];
+
+(**************************************************************************************************)
+
+PublicFunction[ToColorGradient]
+
+ColorGradient::badSpec = "`` is not a valid color gradient specification."
+ToColorGradient = Case[
+  {c1_, c2_}          := ColorGradient[{c1, c2}];
+  {c1_, c2_} -> side_ := ColorGradient[{c1, c2}, side];
+  cg_ColorGradient    := cg;
+  other_              := (
+    Message[ColorGradient::badSpec, MsgExpr @ other];
+    ColorGradient[{Black, Black}];
+  )
+];
 
 (**************************************************************************************************)
 
 PublicFunction[CompressUnit]
 
 CompressUnit[0|0.] := Identity;
-CompressUnit[c_][x_] := Clip[(x - 0.5)/(1 - c + $MachineEpsilon), {0, 1}];
+CompressUnit[c_][x_] := Clip[(x - 0.5)/(1 - c + $MachineEpsilon) + 0.5, {0, 1}];
 
 (**************************************************************************************************)
 
-PublicFunction[ColorGradiateBoxes]
+PublicGraphicsPrimitive[ColorGradientStyle]
 
 SetUsage @ "
-ColorGradiateBoxes[primitives$, bounds$, cspec$] applies a color gradient given by cspec$ to primitives$ over the given bounds.
+ColorGradientStyle[prims$, cspec$] draws prims$ with the applied gradient cspec$.
+ColorGradientStyle[prims$, cspec$, bounds$] calculates the gradient over the coordinate bounds.
 * cspec$ should be either a pair of colors or a %ColorGradient[$$] objects.
 "
 
-parseColorGradient = Case[
-  ColorGradient[{c1_, c2_}] | {c1_, c2_}          := {First, Identity, OklabBlendOperator[{c1, c2}]};
-  ColorGradient[{c1_, c2_}, dir:$Coord2P]         := {DotOperator[dir], Identity, OklabBlendOperator[{c1, c2}]};
-  ColorGradient[spec_, side:$SidePattern]         := % @ ColorGradient[spec, $SideToCoords @ side];
-  ColorGradient[spec__, CompressionFactor -> c_]  := ReplacePart[% @ ColorGradient[spec], 2 -> CompressUnit[c]];
-]
+DeclareGraphicsPrimitive[ColorGradientStyle, "Primitives", colorGradiantFormBoxes];
 
-ColorGradiateBoxes[primitives_, Automatic, cspec_] :=
-  ColorGradiateBoxes[primitives, PrimitiveBoxesBounds @ primitives, cspec];
+colorGradiantFormBoxes[ColorGradientStyle[prims_, cspec_, bounds_:Automatic]] :=
+  ColorGradientBoxes[ToGraphicsBoxes @ prims, cspec, bounds];
 
-ColorGradiateBoxes[primitives_, {{x1_, x2_}, {y1_, y2_}}, cspec_] := Scope[
-  {toNumber, procNumber, toColor} = parseColorGradient @ cspec;
+(**************************************************************************************************)
+
+PublicTypesettingBoxFunction[ColorGradientBoxes]
+
+SetUsage @ "
+ColorGradientBoxes[primitives$, bounds$, cspec$] applies a color gradient given by cspec$ to primitives$ over the given bounds.
+* cspec$ should be either a pair of colors or a %ColorGradient[$$] objects.
+* the gradient is applied by attaching %VertexColors options to lines and %LinearGradientFilling to polygons and disks.
+"
+
+ColorGradientBoxes[primitives_, cspec_, Automatic] :=
+  ColorGradientBoxes[primitives, cspec, PrimitiveBoxesBounds @ primitives];
+
+ColorGradientBoxes[primitives_, cspec_, {{x1_, x2_}, {y1_, y2_}}] := Scope[
+  {dir, toNumber, procNumber, toColor} = parseColorGradient @ cspec;
   points = {{x1, y1}, {x1, y2}, {x2, y1}, {x2, y2}};
   nums = toNumber /@ points;
   minMax = MinMax @ nums;
+  $ang = ArcTan2 @@ N[dir];
   $vcfunc = toColor @ procNumber @ Rescale[toNumber @ #, minMax]&;
   attachVertexColors @ primitives
 ];
@@ -101,87 +139,130 @@ toVC = Case[
   ms_ ? CoordinateMatricesQ := VertexColors -> MatrixMap[$vcfunc, ms];
 ];
 
-(* TODO: use formal primitive dispatch mechanism here *)
+(* TODO: handle circles! *)
 attachVertexColors = Case[
   list_List                           := Map[%, list];
   StyleBox[p_, o___]                  := Style[% @ p, o];
-  PolygonBox[array_List]              := Construct[PolygonBox, array, toVC @ array];
+  s:$shapeP                           := fillShape[s];
   PolygonBox[rule:Rule[array_, _]]    := Construct[PolygonBox, rule, toVC @ array];
   LineBox[array_]                     := Construct[LineBox, array, toVC @ array];
+,
+  {$shapeP -> _PolygonBox | _DiskBox | _RectangleBox}
 ]
 
+fillShape[shape_] := Scope[
+  {{x1, x2}, {y1, y2}} = PrimitiveBoxesBounds @ shape;
+  w = x2 - x1; h = y2 - y1; m = Max[w, h];
+  comp = {w / m, h / m};
+  lgfNums = DotOperator[dir * comp] /@ {{-1, -1}, {-1, 1}, {1, 1}, {1, -1}};
+  {lgfMin, lgfMax} = MinMax @ lgfNums;
+  lgRange = Lerp[lgfMin, lgfMax, Into[12]]/2 + 0.5;
+  points = {{x1, y1}, {x1, y2}, {x2, y1}, {x2, y2}};
+  nums = Rescale[toNumber /@ points, minMax];
+  {min, max} = MinMax @ nums;
+  range = Lerp[min, max, Into[12]];
+  range //= Map[procNumber];
+  colors = toColor /@ range;
+  lgf = LinearGradientFilling[lgRange -> colors, $ang];
+  StyleBox[shape, ToGraphicsBoxes @ lgf]
+];
+
+rectRad[w_,h_,ang_] := Norm[{Clip[Tan[Pi/2. - ang]] * w, Clip[Tan[ang]] * h}];
+
 (**************************************************************************************************)
 
-PublicTypesettingForm[ColorGradientForm]
+PublicFunction[ImageCropVertical]
 
-DefineStandardTraditionalForm[{
-  ColorGradientForm[expr_, colors:{$ColorPattern..}, opts___Rule] :> colorGradientBoxes[expr, colors, opts],
-  cg_ColorGradientForm[args___] :> ToBoxes[AppliedForm[cg, args]]
-}]
-
-(**************************************************************************************************)
-
-colorGradientBoxes[expr_, colors_, opts___] := ToBoxes @ ColorGradientRasterize[expr, colors, opts]
+ImageCropVertical[img_Image, bt_:Automatic] := Scope[
+  {w, h} = ImageDimensions @ img;
+  If[bt === Automatic,
+    {{l, r}, {b, t}} = BorderDimensions[img],
+    {b, t} = bt
+  ];
+  baseline = LookupOption[img, BaselinePosition, Automatic];
+  cropped = ImagePad[img, {{0, 0}, -{b, t}}];
+  If[!MatchQ[baseline, _Scaled], Return @ cropped];
+  baseline //= First;
+  baseline = Clip[Rescale[baseline, {b, h - t} / h], {0, 1}];
+  Image[cropped, BaselinePosition -> Scaled[baseline], ImageSize -> {w, h - b - t}/2]
+];
 
 (**************************************************************************************************)
 
 PublicFunction[ColorGradientRasterize]
 
+PublicOption[DilationFactor]
+
 CacheSymbol[$GradientRasterizationCache]
 
 Options[ColorGradientRasterize] = {
-  "DilationFactor" -> 0,
-  "CompressionFactor" -> 0
+  DilationFactor -> 1,
+  ContentPadding -> True
 }
 
 ColorGradientRasterize[expr_, colors_, OptionsPattern[]] := Scope[
-  UnpackOptions[dilationFactor, compressionFactor];
-  CachedInto[$GradientRasterizationCache, Hash[{expr, colors, dilationFactor, compressionFactor}],
-    {raster, rasterSize, boundingBox, regions} = MakeImageAndMetadata[expr, Transparent];
-    {bbw, bbh, dh} = rasterSize;
-    baselinePos = Scaled[(bbh - dh-0.5) / bbh];
+  UnpackOptions[dilationFactor, contentPadding];
+  CachedInto[$GradientRasterizationCache, Hash @ {expr, colors, dilationFactor, contentPadding},
+
+  {raster, rasterSize, tmp, tmp} = MakeImageAndMetadata[expr, Transparent];
+  {w, h, dh} = rasterSize;
+  baselinePos = Scaled[(h - dh-0.5) / h];
+
+  If[MatchQ[colors, None | Automatic | Black],
+    result = Image[raster, BaselinePosition -> baselinePos, ImageSize -> {w, h}/2];
+  ,
+    {dir, toNumber, procNumber, toColor} = parseColorGradient @ colors;
     mask = AlphaChannel @ raster;
+
     {w, h} = ImageDimensions @ mask;
-    totals = Total[ImageData[mask], {1}];
-    p = SelectFirstIndex[totals, # > 1&];
-    q = w + 1 - SelectFirstIndex[Reverse @ totals, # > 1&];
-    cShift = Clip[compressionFactor * (w-1)/2, {0, (q - p)/2 - 1}];
-    p += cShift;
-    q -= cShift;
-    colorFractions = Clip[((N @ Range[1, w]) - p) / (q - p), {0, 1}];
-    colors = OklabBlend[colors, colorFractions];
-    grad = ImageResize[Image[{colors}], {w, h}, Resampling -> "Nearest"];
-    result = SetAlphaChannel[grad, ImageClip[ImageMultiply[Blur[mask, dilationFactor], 4]]];
+    pixels = PixelValuePositions[mask, 0];
+    {{x1, x2}, {y1, y2}} = CoordinateBounds[pixels];
+    points = {{x1, y1}, {x1, y2}, {x2, y1}, {x2, y2}};
+    nums = toNumber /@ points;
+    minMax = MinMax @ nums;
+
+    (* construct the masking gradient *)
+    grid = ToPackedReal @ Table[{x, y}, {y, h}, {x, w}];
+    dots = Dot[grid, Normalize @ dir];
+    dots = Clip[Rescale[dots, minMax], {0, 1}];
+    oklab = First[toColor] /@ procNumber[dots];
+    rgb = FromOklab /@ oklab;
+    gradImage = Image[rgb];
+
+    result = SetAlphaChannel[gradImage, ImageClip[ImageMultiply[Blur[mask, dilationFactor], 4]]];
     result = Image[result, BaselinePosition -> baselinePos, ImageSize -> {w, h}/2, Options @ raster];
-    If[ImageQ[result], result, $Failed]
-  ]
-];
+  ];
+
+  If[!ImageQ[result], Return @ $Failed];
+  If[!contentPadding, result //= ImageCropVertical];
+  result
+]];
 
 (**************************************************************************************************)
 
-PublicTypesettingForm[GradientSymbol, GradientArrowSymbol]
+PublicTypesettingForm[GradientSymbol]
 
-GradientArrowSymbol[args___] := GradientSymbol[RightArrowSymbol, args];
+SetUsage @ "
+GradientSymbol[symbol$, {c$1, c$2}] displays as symbol$ with a color gradient applied.
+GradientSymbol[symbol$, {c$1, c$2} -> side$] specifies a gradient direction.
+GradientSymbol[symbol$, ColorGradient[$$]] specifies gradient direction and compression factor.
+* symbol$ can be a string or a literal symbol like %BoldRightArrowSymbol.
 
-(* TODO: use Dynamic[CurrentValue[ScriptSize]] to make it work properly inside Superscript etc *)
+* internally, %GradientSymbol calls %TextIcon, and so the following options are available:
+| %CompressionFactor | the compression factor used for %ColorGradient if one is not specified |
+| %ContentPadding | whether to leave vertical padding |
+| %Method | 'Raster' or 'Vector' |
+| %FontSize | Inherited for dynamic, or a fixed number |
+| %FormatType | %MathForm or None |
+| %FontWeight | as usual |
+| %FontFamily | as usual |
+| %FontSlant | as usual |
+"
 
 DefineStandardTraditionalForm[{
 
-  (* this is so that we still recognize CategoryArrowSymbol["\[RightArrow]"] etc *)
-  GradientSymbol[(_Symbol ? $taggedFormHeadQ)[sub:("\[RightArrow]" | RightArrowSymbol)], args___] :> ToBoxes @ GradientSymbol[sub, args],
-
-  (* TODO: recognize $symbolFormHeadQ and resolve it in case we have a known icon for it! *)
   (* TODO: turn text into a shape via ToGraphicsBox, then use LinearGradientFilling on it *)
-  GradientSymbol[sym_, col1_, col2_, sz_:16] :>
-    ToBoxes @ ColorGradientForm[
-      Style[sym, FontSize -> sz],
-      ToRainbowColor /@ {col1, col2},
-      "DilationFactor" -> 1, "CompressionFactor" -> 0.5
-    ],
-
-  (* TODO: have a registry here, or more precisely move this RightArrow case straight into ToGraphicsBox *)
-  GradientSymbol["\[RightArrow]" | RightArrowSymbol, col1_, col2_, sz_:16] :>
-    gradientArrowBoxes[col1, col2, sz],
+  GradientSymbol[sym_, cspec_, opts___Rule] :> gradientSymbolBoxes[sym, cspec, opts],
 
   (* TODO: retire these in favor of having GradientSymbol burrow itself, either via
   ColorRules just doing a BurrowModifiers, or more broadly having all style forms burrow themselves *)
@@ -192,47 +273,30 @@ DefineStandardTraditionalForm[{
     NoSpanBox @ ToBoxes @ AppliedForm[h, args]
 }];
 
-(* ok, so one way we can do this that will avoid having to hardcode fontsizes etc is by returning a
+gradientSymbolBoxes[ReversedChainForm[f_], cspec_, opts___] :=
+  ToBoxes @ ReversedChainForm[GradientSymbol[f, cspec, opts]];
 
-DynamicBox @ Construct[GraphicsBox, {}, Background -> GrayLevel[0.2], ImageSize -> CurrentValue[FontSize], TrackedSymbols -> {}, DestroyAfterEvaluation -> True]
+gradientSymbolBoxes[sym_Symbol ? $symbolFormHeadQ, cspec_, opts___] :=
+  gradientSymbolBoxes[$literalSymbolFormTable @ sym, cspec, opts]
 
-weird we can't just put the dynamicbox aroudn the CurrentValue
-*)
+gradientSymbolBoxes[(_Symbol ? $taggedFormHeadQ)[inner_], args___]  /; FreeQ[{args}, "Raster"] :=
+  gradientSymbolBoxes[inner, args];
+
+gradientSymbolBoxes[str_String, cspec_, opts___] :=
+  ToBoxes @ TextIcon[str,
+    FilterOptions @ opts,
+    FontColor -> cspec,
+    FontWeight -> Bold
+  ];
+
+(* if we are rasterizing, we don't need to trim off style heads, let them do their thing *)
+gradientSymbolBoxes[expr_, cspec_, lopts___, Method -> "Raster", ropts___] :=
+  ToBoxes @ TextIcon[expr, FontColor -> cspec, lopts, Method -> "Raster", ropts];
+
+GradientSymbol::firstArg = "First argument `` should be a string or literal symbol."
+gradientSymbolBoxes[other_, ___] := (Message[GradientSymbol::firstArg, MsgExpr @ other]; "?");
 
 (* have to disable this because otherwise GradientSymbol burrows through tagged forms and they get
 rasterized incorrectly *)
 (* $styleFormHeadQ[GradientSymbol] = True; *)
 
-(**************************************************************************************************)
-
-
-$rightArrowPath := $rightArrowPath = Uncompress @ "
-1:eJxTTMoPSmViYGDQB2IQLf1oz12BWLYDhiolp+TXrNr/2WIBi5gI2wETYxA4vH9l45H9b7tYDzgn
-TPrWmnV2f3HCD1nlSywHVm2Z/uUY16X9DGDAcgCs3PjyfrsdZwNXLL1oD+P3ifyvUlE/vf+OlcNDM7
-OX+7n9XsisT7u4/0tpy5T4j6/3/+ZZwVqvcHl/rJ9Q5DnN9/vteSZ93959aX/dgpY8TruP+9uvSs6b
-XnJ+v6Xdmu7zBz7tP/IxMbaG7dj+jVaHP09693n/XXavF9MebN4v0Pzk79tFX/anmWy7a3Jslr09c9
-ZB+RNf9htpvFvbaHXAvknY6vjqyC8w99hPehTf/yTl8/5H6hM6mZZ9sl8uv++jfP75/YHMnfW3RT/b
-u0D9+6zQgVNH4wvUP4f3mx+p3K2464u9KTS8oPbYZ0HtNYPK/5swz/qk21I43x6i3v7+ko25yxZ+sa
-99fcTPpWujvdZb1b0bm77YR/Hx7E922WVvN5EjfLnDF/u8Y7n/JCQP2qPZb384deXxHJ4v9qo1/jf3
-Wh+xh4aD/WFIuNiHRc3jd636bM9yPjfZYO1JezT/2D/4sC3q3stP9tvck79uMj1n3yXl8ef2uhP2HD
-6X9gWs/WwfDXUHzF0MUHD2DAh8sY+EyO+HyXdC9O+H6Z9xnFF1w4IL+9PTQOCT/S2B52/bXlzar7Qw
-+F/C1Q/2t6H8vXsjmO1C39nPgqqHpLfX9kL17RccfsLTjz1a+rJHS3/2sPQJ8x8s/RpBwwuWvq2h4Q
-8AA9xygg==";
-
-PrivateFunction[gradientArrowBoxes]
-
-gradientArrowBoxes[col1_, col2_, sz_] := TagBox[Construct[
-  GraphicsBox,
-  {
-    ToGraphicsBoxes @ LinearGradientFilling[{0.4 -> ToRainbowColor[col1], 0.7 -> ToRainbowColor[col2]}],
-    Construct[PolygonBox, $rightArrowPath]
-  },
-  PlotRange -> {{-2.8, 1.3}, {-1.3, 1.3}},
-  ImagePadding -> {{0, 1}, {0, 0}},
-  BaselinePosition -> Scaled[0.05],
-  ImageSize -> {Automatic, sz/2+1}
-], "ReverseChain"];
-
-
-AlphaDilation[img_, 0] := img;
-AlphaDilation[img_, n_] := SetAlphaChannel[Erosion[RemoveAlphaChannel[img,White], n], Dilation[AlphaChannel @ img, n]];

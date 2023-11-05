@@ -1,8 +1,8 @@
 PublicSymbol[NotApplicableSymbol, UnknownSymbol, EmptySetSymbol, TickSymbol, UnitInterval, BlankSymbol, PlaceholderSquareSymbol]
 
-PublicSymbol[BarTokenSymbol, FilledTokenSymbol, FilledSquareTokenSymbol, FilledRectangleTokenSymbol, EmptyTokenSymbol, EmptySquareTokenSymbol, EmptyRectangleTokenSymbol]
+PublicSymbol[BarSymbol, FilledCircleSymbol, FilledSquareSymbol, FilledRectangleSymbol, CircleSymbol, SquareSymbol, RectangleSymbol]
 
-PublicSymbol[FatArrowSymbol, FatLeftArrowSymbol, RightArrowSymbol, LeftArrowSymbol]
+PublicSymbol[RightArrowSymbol, LeftArrowSymbol, UpArrowSymbol, DownArrowSymbol, UpDownArrowSymbol, LeftRightArrowSymbol]
 
 DefineSymbolForm @ {
   NotApplicableSymbol        -> GrayBox["---"],
@@ -12,18 +12,31 @@ DefineSymbolForm @ {
   UnitInterval               -> "\[DoubleStruckCapitalI]",
   BlankSymbol                -> GrayBox[KBox["\[VeryThinSpace]_\[VeryThinSpace]", "_"]],
   PlaceholderSquareSymbol    -> "\[EmptySquare]",
-  BarTokenSymbol             -> BoldBox["\[VeryThinSpace]|\[VeryThinSpace]"],
-  FilledTokenSymbol          -> "\[FilledCircle]",
-  FilledSquareTokenSymbol    -> "\[FilledSquare]",
-  FilledRectangleTokenSymbol -> "\[FilledRectangle]",
-  EmptyTokenSymbol           -> "\[EmptyCircle]",
-  EmptySquareTokenSymbol     -> "\[EmptySquare]",
-  EmptyRectangleTokenSymbol  -> "\[EmptyRectangle]",
-  FatArrowSymbol             -> BoldBox["\[RightArrow]"],
-  FatLeftArrowSymbol         -> BoldBox["\[LeftArrow]"],
+  BarSymbol                  -> BoldBox["\[VeryThinSpace]|\[VeryThinSpace]"],
+  FilledCircleSymbol         -> "\[FilledCircle]",
+  FilledSquareSymbol         -> "\[FilledSquare]",
+  FilledRectangleSymbol      -> "\[FilledRectangle]",
+  CircleSymbol               -> "\[EmptyCircle]",
+  SquareSymbol               -> "\[EmptySquare]",
+  RectangleSymbol            -> "\[EmptyRectangle]",
   RightArrowSymbol           -> "\[RightArrow]",
-  LeftArrowSymbol            -> "\[LeftArrow]"
+  LeftArrowSymbol            -> "\[LeftArrow]",
+  UpArrowSymbol              -> "\[UpArrow]",
+  DownArrowSymbol            -> "\[DownArrow]",
+  UpDownArrowSymbol          -> "\[UpDownArrow]",
+  LeftRightArrowSymbol       -> "\[LeftRightArrow]"
 };
+
+(**************************************************************************************************)
+
+PublicSymbol[BoldRightArrowSymbol, BoldLeftArrowSymbol, BoldUpArrowSymbol, BoldDownArrowSymbol]
+
+DefineIconSymbolForm @ {
+  BoldRightArrowSymbol     -> "➡︎",
+  BoldLeftArrowSymbol      -> "⬅︎",
+  BoldUpArrowSymbol        -> "⬆︎",
+  BoldDownArrowSymbol      -> "⬇︎"
+}
 
 (**************************************************************************************************)
 

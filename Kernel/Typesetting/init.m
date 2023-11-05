@@ -820,6 +820,12 @@ DefineRuleAsMapsTo[head_] := DefineStandardTraditionalForm[
 
 (**************************************************************************************************)
 
+PrivateVariable[$literalSymbolFormTable]
+
+SetInitialValue[$literalSymbolFormTable, UAssociation[]];
+
+(**************************************************************************************************)
+
 PublicSpecialFunction[DefineSymbolForm]
 
 Options[DefineSymbolForm] = $defineOpts
@@ -836,11 +842,32 @@ setupFormDefinitionCaching[DefineSymbolForm];
 DefineSymbolForm[sym_Symbol -> boxes_, OptionsPattern[]] := With[
   {name = makeTemplateName[sym, OptionValue[TemplateName]]},
   $symbolFormHeadQ[sym] = True;
+  $literalSymbolFormTable[sym] = boxes;
   DefineStandardTraditionalForm[sym :> SBox[name]];
   DefineTemplateBox[sym, name, boxes, OptionValue[KatexMacroName]]
 ]
 
 _DefineSymbolForm := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicSpecialFunction[DefineIconSymbolForm]
+
+SetUsage @ "
+DefineIconSymbolForm[symbol$ -> 'str$'] defines symbol$ to format as TextIcon['str$'].
+"
+
+SetListable[DefineIconSymbolForm]
+
+setupFormDefinitionCaching[DefineIconSymbolForm];
+
+DefineIconSymbolForm[sym_Symbol -> str_String] := (
+  $symbolFormHeadQ[sym] = True;
+  $literalSymbolFormTable[sym] = str;
+  DefineStandardTraditionalForm[sym :> ToBoxes @ TextIcon[str]]
+);
+
+_DefineIconSymbolForm := BadArguments[];
 
 (**************************************************************************************************)
 

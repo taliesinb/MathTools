@@ -75,7 +75,8 @@ Options[StringDiagram] = {
   TickLabelFontColor    -> Black,
 
   RegionFilling         -> "Explicit",
-  ColorRules            -> None
+  ColorRules            -> None,
+  GradientSymbolOptions -> {Method -> "Raster"}
 }
 
 SetUsage @ "
@@ -99,7 +100,7 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   UnpackOptions[
     flipX, flipY, wireThickness, nodeEdgeThickness, nodeBackground, frameThickness, frameColor, curveFunction,
     splitPosition, splitOrientation, background, baseThickness, halfFrame, imagePadding, epilog, fontSize, fontWeight, fontFamily,
-    diagramSize, imageSize, graphicsScale, textModifiers, frameTicks, colorRules, regionFilling
+    diagramSize, imageSize, graphicsScale, textModifiers, frameTicks, colorRules, regionFilling, gradientSymbolOptions
   ];
 
   $lastInnerLabel = None;
@@ -110,7 +111,7 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   SetAutomatic[wireThickness, baseThickness];
   SetAutomatic[nodeEdgeThickness, baseThickness];
 
-  $colorModifierFn = parseDiagramColorRules @ colorRules;
+  $colorModifierFn = parseDiagramColorRules[colorRules, gradientSymbolOptions];
   {boxTextModifierFn, wireTextModifierFn, regionTextModifierFn} = Map[
     toModifierFunction,
     If[AssociationQ[textModifiers],
@@ -381,8 +382,14 @@ parseWire = Case[
 extractColorFromLabel = Case[
   Customized[c_, ___]              := % @ c;
   (h:$colorFormP)[_]               := StyleFormData @ h;
-  GradientSymbol[_, c1_, c2_, ___] := OklabDarker @ HumanBlend[{c1, c2}];
+  GradientSymbol[_, cspec_, ___]   := OklabDarker @ HumanBlend[getGradColors @ cspec];
   e_                               := findInteriorColor[e];
+];
+
+getGradColors = Case[
+  c:{_, _}               := c;
+  c:{_, _} -> _          := c;
+  ColorGradient[c_, ___] := c;
 ];
 
 (**************************************************************************************************)
@@ -506,7 +513,7 @@ makeLabel[label_, pos_] /; MatchQ[labelPosition, {__Symbol}] := Block[
   makeLabel[labelPosition = #; label, pos]& /@ posList
 ];
 
-makeLabel[label_, pos_] := With[{pos2 = Mean @ pos}, recenterText @ Text[
+makeLabel[label_, pos_] := With[{pos2 = Mean @ pos}, CenterTextVertical @ Text[
   $lastInnerLabel = label;
   $textModifierFn @ label,
   SimplifyOffsets @ Offset[
@@ -530,37 +537,6 @@ makeLabel[label_, pos_] := With[{pos2 = Mean @ pos}, recenterText @ Text[
   Background -> labelBackground,
   BaseStyle -> {FontWeight -> $fontWeight, FontSize -> $fontSize, FontColor -> $fontColor, FontFamily -> $fontFamily}
 ]];
-
-recenterText[txt:Text[label_, pos_, {0|0., 0|0.}, args___]] := Scope[
-  centroid =  TextCentroid @ txt;
-  Tooltip[Text[label, pos, (centroid * 2 - 1), args], {centroid, pos}]
-];
-
-recenterText[text_] := text;
-
-(**************************************************************************************************)
-
-CacheSymbol[$TextCentroidCache]
-
-PublicFunction[TextCentroid]
-
-TextCentroid[text_Text] := Scope @ CachedInto[
-  $TextCentroidCache, Hash @ text,
-  img = Binarize @ MakeTextImage[text];
-  {w, h} = ImageDimensions @ img;
-  xys = N @ PixelValuePositions[img, 0];
-  If[xys === {}, {.5, .5},
-    {xs, ys} = Transpose @ xys;
-    xs = Clip[xs, Quantile[xs, {.3, .7}]];
-    ys = Clip[ys, Quantile[ys, {.15, .9}]];
-    x = Mean @ xs; y = Mean @ MinMax @ ys;
-    x = Rescale[x, {1, w}];
-    y = Rescale[y, {1, h}];
-    If[Abs[x - .5] < .15, x = .5];
-    If[Abs[y - .5] < .05, y = Avg[y, .5]];
-    {x, y}
-  ]
-]
 
 (**************************************************************************************************)
 

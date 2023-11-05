@@ -308,7 +308,8 @@ morphismLabelBoxes[label_, {pos_, dir_}, anchor_, side_] := Scope[
       Total[First[labelOffset] * {dir, dir2}],
       labelOffset
     ];
-    pos = Offset[dir2 * labelSpacing + off2, pos]];
+    pos = SimplifyOffsets @ Offset[dir2 * If[labelPosition === Center, 0, 1] * labelSpacing + off2, pos];
+  ];
   If[MatchQ[labelPosition, $Coord2P],
     offset = labelPosition;
     dir = {1, 0}

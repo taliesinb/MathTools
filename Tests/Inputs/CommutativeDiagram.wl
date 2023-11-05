@@ -39,9 +39,9 @@ contrahom2[a_, b_] := Morphism[{Placed[CompactContravariantHomFunctorForm[b][a],
 
 TestRaster @ CommutativeSquare[
 	{$OA, $OB, $OApr, $OBpr},
-	{LineMorphism[$Ak, -1], 
-	 LineMorphism[SpacedCompositionForm[$Aj, $Ak, $Al], -2], 
-	 Reversed @ LineMorphism[$Aj, -1], LineMorphism[$Al, -1]},
+	{LineMorphism[$Ak],
+	 LineMorphism[SpacedCompositionForm[$Al, $Ak, $Aj]],
+	 Reversed @ LineMorphism[$Aj], LineMorphism[$Al]},
 	$homOptions, 
 	LabelRectification -> False,
 	DiagramScaling -> .8
@@ -54,9 +54,9 @@ TestRaster @ CommutativeSquare[
 
 TestRaster @ CommutativeSquare[
 	{$OA, $OB, $OApr, $OBpr},
-	{LineMorphism[$Ak, -1], 
+	{LineMorphism[$Ak],
 	 Null, 
-	 Reversed @ LineMorphism[$Aj, -1], LineMorphism[$Al, -1]},
+	 Reversed @ LineMorphism[$Aj], LineMorphism[$Al]},
 	$homOptions, 
 	LabelRectification -> False,
 	DiagramScaling -> .5, FlipY -> True
@@ -80,9 +80,9 @@ TestRaster @ CommutativeDiagram[{
 	Morphism[{"A2", "hom(A, B')"}, None, "Element"],
 	
 	y1 = 1.5; y2 = 2.15; Setback -> 10,
-	{1,y1} -> $OA,   {1,y2} -> $OB, LineMorphism[{"A", "B"}, $Ak, {0, -1}],
-	{2,y1} -> $OApr, {2,y2} -> $OB, LineMorphism[{"A'", "B2"}, SpacedCompositionForm[$Aj, $Ak], {-10, -2}],
-	{0,y1} -> $OA,   {0,y2} -> $OBpr, LineMorphism[{"A2", "B'"}, SpacedCompositionForm[$Ak, $Al], {10, -2}]
+	{1,y1} -> $OA,   {1,y2} -> $OB, LineMorphism[{"A", "B"}, $Ak],
+	{2,y1} -> $OApr, {2,y2} -> $OB, LineMorphism[{"A'", "B2"}, SpacedCompositionForm[$Ak, $Aj], {-10, 0}],
+	{0,y1} -> $OA,   {0,y2} -> $OBpr, LineMorphism[{"A2", "B'"}, SpacedCompositionForm[$Al, $Ak], {10, 0}]
 
 }, $homOptions, LabelPosition -> Outwards, Setback -> 30, FlipX -> True,
 DiagramScaling -> {1.1, 1}]
@@ -158,7 +158,7 @@ TestRaster @ RainbowCategoryForm @ CompositionTriangleDiagram[
 
 TestRaster @ UsingExplicitAppliedForm @ RainbowCategoryForm @ CompositionTriangleDiagram[
 	{$OX, $OY, $OZ}, 
-	{LineMorphism[$Af,-1], LineMorphism[$Ag,-1], LineMorphism[SpacedCompositionForm[$Ag,$Af],-2]},
+	{LineMorphism[$Af,-1], LineMorphism[$Ag], LineMorphism[SpacedCompositionForm[$Ag,$Af]]},
 	CloneOptions -> {"FullFunctor", "ExteriorLinkOptions" -> {ArrowheadSize -> 5}},
 	GraphicsScale -> 250, CloningFunction -> {FramedForm, FramedForm}
 ]

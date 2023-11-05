@@ -137,7 +137,7 @@ RawPrimitivesGrid[itemBoxes_, pos_, opts___Rule] := Scope[
     prims = {prims, framePrim};
   ];
 
-  ReplaceNone[dividers, False];
+  SetNone[dividers, False];
   If[dividers =!= False,
     xs = Prepend[Accumulate[colWides + colSpace] - colSpace/2, 0] + gx + fm;
     ys = -Prepend[Accumulate[rowHighs + rowSpace] - rowSpace/2, 0] + gy + totalHigh - fm;
@@ -162,7 +162,7 @@ parseHalign = Case[
   e_ := (Message[PrimitivesGrid::badDirAlign, MsgExpr @ e, ColumnAlignments]; 0.5)
 ];
 parseValign = Case[
-  Bottom  := 0; Center := 0.5; Top := 1;
+  Bottom  := 1; Center := 0.5; Top := 0;
   r:$NumberP := r;
   e_ := (Message[PrimitivesGrid::badDirAlign, MsgExpr @ e, RowAlignments]; 0.5)
 ];

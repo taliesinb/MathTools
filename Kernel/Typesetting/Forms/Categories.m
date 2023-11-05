@@ -388,6 +388,14 @@ addBraidingDecoration[vertex_] := AppendTo[$epilog,
 
 (**************************************************************************************************)
 
+PublicTypesettingForm[ReversedChainForm]
+
+SetUsage @ "ReversedChainForm[form$] indicates that form$ should compose in reverse order."
+
+DefineStandardTraditionalForm[ReversedChainForm[form_] :> TagBox[ToBoxes[form], "ReverseChain"]];
+
+(**************************************************************************************************)
+
 PublicTypesettingForm[ObjectArrowIconForm, CategoryFunctorIconForm]
 
 SetUsage @ "ObjectArrowIconForm[expr$] depicts all %CategoryObjectSymbols as disks and %CategoryArrowSymbols as arrows, preserving colors."
@@ -397,12 +405,12 @@ DefineStandardTraditionalForm[{
   ObjectArrowIconForm[expr_] :> ToBoxes @ ReplaceAll[expr, {
     c_CommutativeDiagram :> ReplaceOptions[c, TextModifiers -> ObjectArrowIconForm],
     c_CategoryObjectSymbol :> replaceFormContents[c, "\[FilledCircle]"],
-    c_CategoryArrowSymbol :> replaceFormContents[c, "\[RightArrow]"]
+    c_CategoryArrowSymbol :> replaceFormContents[c, ReversedChainForm @ BoldRightArrowSymbol]
   }],
   CategoryFunctorIconForm[expr_] :> ToBoxes @ ReplaceAll[expr, {
     c_CommutativeDiagram :> ReplaceOptions[c, TextModifiers -> CategoryFunctorIconForm],
     c_CategorySymbol :> replaceFormContents[c, "\[FilledCircle]"],
-    c_FunctorSymbol :> replaceFormContents[c, "\[RightArrow]"]
+    c_FunctorSymbol :> replaceFormContents[c, ReversedChainForm @ BoldRightArrowSymbol]
   }]
 }];
 

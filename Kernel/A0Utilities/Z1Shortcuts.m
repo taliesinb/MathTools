@@ -310,11 +310,11 @@ loadShortcutGroup["Core"] := (
   decSymTable["$s#",              SymbolForm,                                 $RomanGreek];
   symbolTable["$s#1#2",           #2[SymbolForm[#1]]&,                        $RomGre, $style];
 
-  symbolTable["$disk#1",          #1[FilledTokenSymbol]&,                     maybe @ $extendedStyle];
-  symbolTable["$circ#1",          #1[EmptyTokenSymbol]&,                      maybe @ $extendedStyle];
-  symbolTable["$bar#1",           #1[BarTokenSymbol]&,                        maybe @ $extendedStyle];
-  makeSym["$Sq$k",                DarkGrayForm[FilledSquareTokenSymbol]];
-  symbolTable["$Sq$#",            #1[FilledSquareTokenSymbol]&, $style];
+  symbolTable["$disk#1",          #1[FilledCircleSymbol]&,                     maybe @ $extendedStyle];
+  symbolTable["$circ#1",          #1[CircleSymbol]&,                      maybe @ $extendedStyle];
+  symbolTable["$bar#1",           #1[BarSymbol]&,                        maybe @ $extendedStyle];
+  makeSym["$Sq$k",                DarkGrayForm[FilledSquareSymbol]];
+  symbolTable["$Sq$#",            #1[FilledSquareSymbol]&, $style];
 
   decSymTable["$f#",              FunctionSymbolForm,                         $RomanGreek, $RomGre];
 
@@ -397,8 +397,8 @@ loadShortcutGroup["Graphs"] := (
     makeSym["CQPF",                 CartesianQuiverProductForm];
     makeSym["SQPF",                 StrongQuiverProductForm];
 
-    symbolTable["$gvdisk#1",        VertexSymbol[#1[FilledTokenSymbol]]&,       maybe @ $extendedStyle];
-    symbolTable["$gvcirc#1",        VertexSymbol[#1[EmptyTokenSymbol]]&,        maybe @ $extendedStyle];
+    symbolTable["$gvdisk#1",        VertexSymbol[#1[FilledCircleSymbol]]&,       maybe @ $extendedStyle];
+    symbolTable["$gvcirc#1",        VertexSymbol[#1[CircleSymbol]]&,        maybe @ $extendedStyle];
 
     symbolTable["$gvsqr#1",         VertexSymbol[#1[PlaceholderVertexSymbol]]&, maybe @ $extendedStyle];
     symbolTable["$gvhead#1",        VertexSymbol[#1[HeadVertexSymbol]]&,        maybe @ $extendedStyle];

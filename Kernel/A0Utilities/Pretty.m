@@ -229,6 +229,8 @@ pretty1wrap[e_] := "(" <> pretty1[e] <> ")";
 pretty1 = Case[
   Verbatim[Rule][a_, b_]              := prettyRule[a, b];
   Verbatim[RuleDelayed][a_, b_]       := prettyRuleDelayed[a, b];
+  Verbatim[Set][args__]               := prettyInfix[" = ", args];
+  Verbatim[SetDelayed][args__]        := prettyInfix[" := ", args];
   Verbatim[Plus][args__]              := prettyInfix[" + ", args];
   Verbatim[Times][args__]             := prettyInfix[" * ", args];
   Verbatim[PatternTest][a_, b_ ? HSQ] := prettyInfix[" ? ", a, b];
@@ -304,7 +306,7 @@ prettyElidedList[list_] := With[
   StringJoin @ {"\[LeftAngleBracket]", dimsString @ dims, "\[RightAngleBracket]"}
 ];
 
-dimsString[list_] := Riffle[IntegerString /@ dims, ","];
+dimsString[dims_] := Riffle[IntegerString /@ dims, ","];
 
 (**************************************************************************************************)
 
@@ -313,9 +315,9 @@ indentedBlock[begin_, {}, end_] := begin <> end;
 indentedBlock[begin_ ? (StringEndsQ["["]), {line_String} /; StringLength[line] > 8, "]"] :=
   StringJoin[StringDrop[begin, -1] <> " @ ", deIndent @ line];
 
-indentedBlock["{", {line_String} /; StringLength[line] > 8, "}"] :=
+(* indentedBlock["{", {line_String} /; StringLength[line] > 8, "}"] :=
   StringJoin["List @ ", deIndent @ line];
-
+ *)
 indentedBlock[begin_, {line_String}, end_] :=
   StringJoin[begin, deIndent @ line, end];
 
