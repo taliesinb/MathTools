@@ -112,3 +112,28 @@ TextCentroid[text_Text] := Scope @ CachedInto[
     {x, y}
   ]
 ]
+
+(**************************************************************************************************)
+
+PrivateFunction[ApplyScriptScaling]
+
+SetUsage @ "
+ApplyScriptScaling[form$] attempts to adjust fixed-font-size forms when they occur in script position.
+* ApplyScriptScaling affects %GradientSymbol and %TextIcon.
+* this is achieved by consulting an internal registry that knows which forms apply script position to their arguments.
+"
+
+$formScriptingFormP := $formScriptingFormP =
+  Apply[Alternatives, Blank /@ Keys[$formScriptingArgumentPositions]];
+
+ApplyScriptScaling[expr_] := ReplaceAll[
+  expr,
+  sub:$formScriptingFormP :> RuleCondition @ rescriptSubExpr[sub]
+]
+
+rescriptSubExpr[sub_] := MapIndices[rescript, $formScriptingArgumentPositions @ Head @ sub, sub];
+
+$scalingHeadP = (GradientSymbol | TextIcon);
+rescript[e_] := ReplaceAll[e,
+  (h:$scalingHeadP)[l___, FontSize -> fs_, r___] :> h[l, FontSize -> Round[fs * 0.71], r]
+];

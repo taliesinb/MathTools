@@ -29,6 +29,26 @@ $styleFormHeadQ[Style] = True;
 
 (**************************************************************************************************)
 
+(* this is so that ApplyScriptScaling has a registry to work with *)
+
+PrivateSpecialFunction[registerFormScriptingArgPositions]
+PrivateVariable[$formScriptingArgumentPositions]
+
+SetInitialValue[$formScriptingArgumentPositions, UAssociation[]]
+
+registerFormScriptingArgPositions[heads_List, arg_] := Scan[registerFormScriptingArgPositions[#, arg]&, heads];
+registerFormScriptingArgPositions[head_Symbol, pos_] := (
+  KeyUnionTo[$formScriptingArgumentPositions, head, ToList[pos]];
+);
+registerFormScriptingArgPositions[_Symbol, {}] := Null;
+
+_registerFormScriptingArgPositions := BadArguments[];
+
+registerFormScriptingArgPositions[{Subscript, Superscript}, 2];
+registerFormScriptingArgPositions[Subsuperscript, {2, 3}]
+
+(**************************************************************************************************)
+
 PrivateSpecialFunction[setupFormDefinitionCaching, clearFormDefinitionCache]
 
 CacheSymbol[$FormDefinitionCache]
@@ -387,12 +407,25 @@ DefineTemplateBox[symbol_Symbol, templateName_String, boxes_, katexMacroName_] :
   AssociateSymbolToTemplateName[symbol, templateName];
   AssociateSymbolToKatexMacro[symbol, katexMacroName];
   fn = toSlotFn @ boxes;
+  registerFormScriptingArgPositions[symbol, findScriptingArgPositions[fn /. AdjustmentBox[b_, _] :> b]];
   DefineNotebookDisplayFunction[templateName, fn];
   DefineKatexDisplayFunction[templateName, fn, katexMacroName];
   fn
 ];
 
 _DefineTemplateBox = BadArguments[];
+
+(**************************************************************************************************)
+
+findScriptingArgPositions[fn_] :=
+  Catenate @ Map[patt |-> DeepCases[fn, patt], $scriptPositionPatterns];
+
+$scriptPositionPatterns = {
+  (SubscriptBox|SuperscriptBox)[_, Slot[n_]] :> n,
+  SubsuperscriptBox[_, _, Slot[n_]] :> n,
+  SubsuperscriptBox[_, Slot[n_], _] :> n,
+  StyleBox[Slot[n_], Smaller] :> n
+};
 
 (**************************************************************************************************)
 
@@ -1049,6 +1082,8 @@ makeInlineStyleForm @@@ ExpressionTable[
   SansSerifForm       SansSerifBox       "SansSerifMathFont"
   TypewriterForm      TypewriterBox      "TypewriterMathFont"
 ];
+
+registerFormScriptingArgPositions[SmallerForm, 1];
 
 (**************************************************************************************************)
 

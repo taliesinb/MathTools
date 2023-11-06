@@ -224,8 +224,8 @@ DefineUnaryForm[OneArrow, SubscriptBox[FunctionBox["1"], $1]]
 DefineBinaryForm[HomForm, NoSpanBox @ AppliedBox[FunctionBox["hom"], $1, $2]]
 DefineBinaryForm[TightHomForm, NoSpanBox @ TightAppliedBox[FunctionBox["hom"], $1, $2]]
 DefineBinaryForm[CompactHomForm, GridBox[
-  {{FunctionBox["h"], SmallerBox @ SmallerBox @ SmallerBox @ $1}, {"\[SpanFromAbove]", SmallerBox @ SmallerBox @ SmallerBox @ $2}},
-  RowSpacings -> 0, ColumnSpacings -> .1, RowAlignments->Center, GridFrameMargins -> {{0, 0}, {0, 0}}, RowMinHeight -> 0.5]];
+  {{ItemBox[FunctionBox["h"], Alignment -> Center], SmallerBox @ SmallerBox @ SmallerBox @ $1}, {"\[SpanFromAbove]", SmallerBox @ SmallerBox @ SmallerBox @ $2}},
+  RowSpacings -> -0.1, ColumnSpacings -> .1, RowAlignments->Bottom, GridFrameMargins -> {{0, 0}, {0, 0}}, RowMinHeight -> 0.5]];
 
 DefineTernaryForm[ExplicitHomForm, NoSpanBox @ TightAppliedBox[$1, $2, $3]]
 

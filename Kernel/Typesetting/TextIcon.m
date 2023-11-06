@@ -73,7 +73,7 @@ textIconVectorBoxes[str_, fontSize_, fontColor_, fontWeight_, fontFamily_, fontS
   $TextIconVectorCache, Hash @ {str, fontSize, fontColor, fontWeight, fontFamily, fontSlant, formatType, contentPadding, background},
 
   (* MathForm implies SingleLetterItalics, which we simulate here *)
-  SetAutomatic[fontSlant, If[formatType === MathForm && StringMatchQ[str, RomanLetter], Italic, Plain]];
+  SetAutomatic[fontSlant, If[formatType === MathForm && StringQ[str] && StringMatchQ[str, RomanLetter], Italic, Plain]];
 
   If[!StringQ[str],
     Message[TextIcon::vectorOnlyStr, MsgExpr @ str];
@@ -88,7 +88,7 @@ textIconVectorBoxes[str_, fontSize_, fontColor_, fontWeight_, fontFamily_, fontS
   ];
 
   {polygons, bounds, bshift} = result;
-  If[contentPadding, bounds[[2]] = {-8, 21}, bounds[[2]] += {-2, 2}];
+  If[contentPadding, bounds[[2]] = {-8, 21}, bounds[[2]] += {-1, 1}];
   baseImageSize = BoundsToSize[bounds] / 20;
   primBoxes = ToGraphicsBoxes @ polygons;
 

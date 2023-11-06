@@ -253,6 +253,7 @@ PublicFunction[MapIndices]
 SetUsage @ "
 MapIndices[f$, {i$1, i$2, $$},  {e$1, e$2, $$}] applies f$ selectively on elements e$(i$1), e$(i$2), $$.
 MapIndices[f$, indices$] is the operator form of MapIndices.
+* indices that don't exist are skipped.
 "
 
 MapIndices[f_, {}, expr_] := expr;
@@ -305,5 +306,14 @@ MapLast[f_][list_] := MapLast[f, list];
 
 PublicFunction[SafeMapAt]
 
-SafeMapAt[f_, expr_, part_] := Replace[MapAt[f, expr, part], _MapAt -> expr];
+SafeMapAt[f_, expr_, parts:{__List}] := Internal`UnsafeQuietCheck[
+  MapAt[f, expr, parts],
+  Fold[SafeMapAt[f, #1, #2]&, expr, parts]
+];
+
+SafeMapAt[f_, expr_, part_] := Internal`UnsafeQuietCheck[
+  MapAt[f, expr, part],
+  expr
+];
+
 SafeMapAt[f_, part_][expr_] := SafeMapAt[f, expr, part];

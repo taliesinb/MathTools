@@ -471,7 +471,7 @@ toCol = Case[
 applyMorphismTextModifiers[primitives_] := ReplaceAll[
   primitives,
   MorphismArrow[path_, lbl:Except[_Rule], lopts___, TextModifiers -> fn_, ropts___] :>
-    MorphismArrow[path, applyToLabel[toModifierFunction[fn], lbl], lopts, ropts]
+    MorphismArrow[path, ApplyScriptScaling @ applyToLabel[toModifierFunction[fn], lbl], lopts, ropts]
 ];
 
 applyToLabel = Case[
@@ -910,7 +910,7 @@ fmtLabel[lbl_, None] := (
 );
 
 fmtLabel[lbl_, obj_] := Scope[
-  text = Text[$objectTextModifierFn @ obj, lbl, Lookup[$SideToCoords, alignment]];
+  text = ApplyScriptScaling @ Text[$objectTextModifierFn @ obj, lbl, Lookup[$SideToCoords, alignment]];
   If[$calculateLabelSizes,
     size = $itemSize;
     If[ContainsQ[size, Automatic],

@@ -36,5 +36,7 @@ TestRaster @ Grid[{
   makeIconRow["a", "b", "c", TextIcon[#, FormatType -> None]&],
   makeIconRow["a", "b", "c", MathForm],
   makeIconRow["a", "b", "c", TextIcon[#, Method -> "Raster"]&],
+  makeIconRow["a", "b", "c", TextIcon[#, FontSize -> $sz]&],
+  ApplyScriptScaling @ makeIconRow["a", "b", "c", TextIcon[#, FontSize -> $sz]&],
   makeIconRow[BoldRightArrowSymbol, BoldRightArrowSymbol, BoldRightArrowSymbol, Identity]
 }, BaseStyle -> {FontSize -> $sz, FontFamily -> $MathFont}, Background->{{}, {{White, GrayLevel[0.9]}}}]
