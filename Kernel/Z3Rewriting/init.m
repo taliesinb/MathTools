@@ -15,7 +15,7 @@ RewritingSystemObject::badrules = "Invalid rewriting rules.";
 
 constructRewritingSystem[type_, rules_, opts:OptionsPattern[RewritingSystemObject]] := Scope[
   UnpackOptions[canonicalizationFunction, customProperties];
-  assoc = Association[
+  assoc = Assoc[
     "Type" -> type,
     "Rules" -> rules,
     "CanonicalizationFunction" -> canonicalizationFunction,
@@ -133,16 +133,16 @@ rewriteGraphQuiver[system_, initialStates_, isQuiver_, opts:OptionsPattern[Rewri
     GraphTheme -> If[isQuiver, "RewriteQuiver", "RewriteGraph"]
   };
 
-  If[Length[indexEdgeList] > 0,
+  If[Len[indexEdgeList] > 0,
     If[isQuiver,
       cards = Union @ Part[indexEdgeList, All, 3];
       If[cards =!= {None}, AppendTo[opts, Cardinals -> cards]];
     ,
-      If[(Length @ First @ indexEdgeList) === 3,
+      If[(Len @ P1 @ indexEdgeList) === 3,
         indexEdgeList = Take[indexEdgeList, All, 2]];
     ];
   ];
-  If[initialStates === All || Length[initialStates] > 1,
+  If[initialStates === All || Len[initialStates] > 1,
     AppendTo[opts, VertexLayout -> SpringElectricalLayout[]]];
 
   FromIndexedEdges[vertices, Union @ indexEdgeList, Seq @@ opts]

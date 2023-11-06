@@ -48,15 +48,15 @@ Options[MathCharacterData] = {
   "AllowNone" -> False
 };
 
-MathCharacterData[assoc_Association, args___] :=
-  Association @ MathCharacterData[Normal @ assoc, args];
+MathCharacterData[assoc_Assoc, args___] :=
+  Assoc @ MathCharacterData[Normal @ assoc, args];
 
 MathCharacterData[schema_, groups:Except[_Rule]:{}, OptionsPattern[]] := Scope[
   UnpackOptions[allowNone];
-  func = Construct[Function, schema] /. {
+  func = Construct[Fn, schema] /. {
     "Symbol" -> #1, "Name" -> #2, "InputForm" -> #3, "Katex" -> #4, "Unicode" -> #5, "Groups" -> #6,
-    "Code" :> If[#5 === None, None, First @ ToCharacterCode[#5]],
-    "HexCode" :> If[#5 === None, None, IntegerString[First @ ToCharacterCode[#5],16, 4]]
+    "Code" :> If[#5 === None, None, P1 @ ToCharacterCode[#5]],
+    "HexCode" :> If[#5 === None, None, IntegerString[P1 @ ToCharacterCode[#5],16, 4]]
   };
   table = $mathCharacterTable;
   If[groups =!= {}, groups //= ToList; table //= Select[SubsetQ[Part[#, 6], groups]&]];

@@ -14,7 +14,7 @@ SameSetQ[a_][b_] := SameSetQ[a, b];
 
 PublicFunction[SameHeadQ]
 
-SameHeadQ[a_, b_] := Head[a] === Head[b];
+SameHeadQ[a_, b_] := H[a] === H[b];
 SameHeadQ[a_][b_] := SameHeadQ[a, b];
 
 (**************************************************************************************************)
@@ -22,10 +22,10 @@ SameHeadQ[a_][b_] := SameHeadQ[a, b];
 PublicFunction[SameLengthQ]
 
 SetUsage @ "
-SameLengthQ[a$, b$] gives True if %Length[a$] === %Length[b$].
+SameLengthQ[a$, b$] gives True if %Len[a$] === %Len[b$].
 "
 
-SameLengthQ[a_, b_] := Length[a] === Length[b];
+SameLengthQ[a_, b_] := Len[a] === Len[b];
 SameLengthQ[a_][b_] := SameLengthQ[a, b];
 
 (**************************************************************************************************)
@@ -166,7 +166,7 @@ SetUsage @ "
 ContainsNegativeQ[expr$] gives True if expr$ contains at least one negative real, rational, or integer.
 "
 
-ContainsNegativeQ[expr_] := !FreeQ[expr, n_Real | n_Rational | n_Integer ? Negative];
+ContainsNegativeQ[expr_] := !FreeQ[expr, n_Real | n_Rational | n_Int ? Negative];
 
 (**************************************************************************************************)
 
@@ -188,7 +188,7 @@ SetUsage @ "
 PermutedRangeQ[list$] gives True if list$ is a permutation of {1, 2, $$, n$}.
 "
 
-PermutedRangeQ[list_] := VectorQ[list, IntegerQ] && MinMax[list] == {1, Length @ list};
+PermutedRangeQ[list_] := VectorQ[list, IntegerQ] && MinMax[list] == {1, Len @ list};
 
 (**************************************************************************************************)
 

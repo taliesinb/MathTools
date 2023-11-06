@@ -10,7 +10,7 @@ PublicFunction[BundleData]
 
 BundleData[bundleGraph_Graph, key_:All] := Scope[
   data = getBundleGraphData[bundleGraph];
-  If[!AssociationQ[data], ReturnFailed[]];
+  If[!AssocQ[data], ReturnFailed[]];
   If[key === All, data, Lookup[data, key]]
 ];
 
@@ -21,7 +21,7 @@ PrivateFunction[getBundleGraphData]
 getBundleGraphData[bundleGraph_, baseGraph_:Automatic, fiberGraph_:None, sectionDisplayMethod_:Inherited] := Scope[
   
   hash = Hash[bundleGraph];
-  If[AssociationQ[cachedValue = bundleHashLookup[hash]],
+  If[AssocQ[cachedValue = bundleHashLookup[hash]],
     Return @ cachedValue];
 
   bundleVertices = VertexList @ bundleGraph;
@@ -52,7 +52,7 @@ getBundleGraphData[bundleGraph_, baseGraph_:Automatic, fiberGraph_:None, section
 
   cardinalIndex = EdgeToTagIndex @ bundleGraph;
 
-  data = Association[
+  data = Assoc[
     "Hash" -> hash,
     "BundleGraph" -> bundleGraph,
     "BundleVertices" -> bundleVertices,

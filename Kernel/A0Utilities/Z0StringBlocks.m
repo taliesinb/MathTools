@@ -13,7 +13,7 @@ PrivateFunction[processCustomBlock]
 ClearAll[processCustomBlock];
 
 ToStringBlock /: SetDelayed[ToStringBlock[lhs_], rhs_] := With[
-  {head = First @ PatternHead[lhs]},
+  {head = P1 @ PatternHead[lhs]},
   AppendTo[$StringBlockHeads, head];
   DefineStandardTraditionalForm[block:lhs :> ToBoxes @ StringBlockForm @ block];
   held = HoldComplete[processCustomBlock[lhs] := rhs];
@@ -22,7 +22,7 @@ ToStringBlock /: SetDelayed[ToStringBlock[lhs_], rhs_] := With[
     Verbatim[OptionsPattern[]] -> $opts___Rule,
     UnpackOptions[syms___] :> UnpackOptionsAs[head, $opts, syms]
   };
-  First @ held
+  P1 @ held
 ];
 
 (**************************************************************************************************)
@@ -64,7 +64,7 @@ ToStringBlock[StringTable[rows_List, OptionsPattern[]]] := Scope[
 
 StringBlock::badtableheading = "`` is not a recognized setting for TableHeadings."
 procTableHeadings[Automatic, n_] := procTableHeadings[Range @ n, n];
-procTableHeadings[str_String, n_] := procTableHeadings[Characters @ str, n]
+procTableHeadings[str_Str, n_] := procTableHeadings[Characters @ str, n]
 procTableHeadings[list_List, n_] := processBlock[$headingStyleFn[#]]& /@ PadRight[list, n, ""];
 procTableHeadings[other_, _] := ThrowMessage["badtableheading", other];
 
@@ -105,8 +105,8 @@ StringBlock::badtemplate = "Template `` should be a string or list of strings."
 StringBlock::badtemplatearg = "`` reqeuested, but only `` available."
 ToStringBlock[StringBlockTemplate[template_, args___]] := Scope[
   lines = Switch[template,
-    _String,     StringSplit[template, "\n"],
-    {___String}, template,
+    _Str,     StringSplit[template, "\n"],
+    {___Str}, template,
     _,           ThrowMessage["badtemplate", template];
   ];
   items = {args};
@@ -116,14 +116,14 @@ ToStringBlock[StringBlockTemplate[template_, args___]] := Scope[
   lines = StringReplace[lines, {
     "#" ~~ i:DigitCharacter :> $rawBlock @ SafePart[items, FromDigits @ i],
     "%" ~~ i:DigitCharacter :> $rawBlock @ blockToHSpace @ SafePart[items, FromDigits @ i]
-  }] /. Missing["PartAbsent", j_] :> ThrowMessage["badtemplatearg", j, Length @ items];
+  }] /. Missing["PartAbsent", j_] :> ThrowMessage["badtemplatearg", j, Len @ items];
   verticalBlocks = Map[blockLine, lines];
   vstackBlocks[verticalBlocks, Left]
 ];
 
 blockLine = Case[
   StringExpression[a___] := % @ {a};
-  s_String               := % @ {s};
+  s_Str                  := % @ {s};
   list_List              := hstackBlocks[Map[processBlock, list], $sbtAlign];
 ];
 
@@ -217,15 +217,15 @@ applyFrameLabel[block_, side_ -> Style[items_, style___]] := Scope[
   applyFrameLabel[block, side -> items]
 ];
 
-toLabelItems[pos_Integer -> label_] := pos -> label;
+toLabelItems[pos_Int -> label_] := pos -> label;
 toLabelItems[pos_ -> labels_] := Scope[
   labels //= toLabelValues;
-  pos = If[Head[pos] == Span, Part[Range[100], pos], pos];
-  Splice @ RuleThread[Take[pos, Length @ labels], labels]
+  pos = If[H[pos] == Span, Part[Range[100], pos], pos];
+  Splice @ RuleThread[Take[pos, Len @ labels], labels]
 ];
 
 toLabelValues = Case[
-  str_String := Characters @ str;
+  str_Str := Characters @ str;
   list_List := list;
 ]
 
@@ -294,7 +294,7 @@ makeStringBlockFormBoxes[StringBlockForm[b_, opts___Rule]] :=
 
 PublicFunction[HighlightBackgroundAt]
 
-HighlightBackgroundAt[n_Integer, parts___] := MapAt[BackgroundNForm[n], {{parts}}];
+HighlightBackgroundAt[n_Int, parts___] := MapAt[BackgroundNForm[n], {{parts}}];
 
 (**************************************************************************************************)
 
@@ -318,7 +318,7 @@ StringBlock[e_, OptionsPattern[]] := CatchMessage @ Scope[
   fragments = blockToStrings @ processBlock @ e;
   If[stylingFunction === "Cell",
     Cell[
-      TextData @ ReplaceRepeated[Flatten @ fragments, {l___, ls_String, rs_String, r___} :> {l, ls <> rs, r}],
+      TextData @ ReplaceRepeated[Flatten @ fragments, {l___, ls_Str, rs_Str, r___} :> {l, ls <> rs, r}],
       "PreformattedCode"
     ],
     StringJoin @ fragments
@@ -349,7 +349,7 @@ htmlStyling[e_, style_] := htmlStyledString[e, style];
 linearStyling[e_, {l___, "Subscript", r___}] := linearStyling[Subscript["", e], {l, r}];
 linearStyling[e_, {l___, "Midscript", r___}] := linearStyling[Subscript["", e], {l, r}];
 linearStyling[e_, {l___, "Superscript", r___}] := linearStyling[Superscript["", e], {l, r}];
-linearStyling[e_String, {}] := e;
+linearStyling[e_Str, {}] := e;
 linearStyling[e_, {}] := ToString[e, StandardForm];
 linearStyling[e_, {s__}] := ToString[Style[e, s], StandardForm];
 
@@ -361,7 +361,7 @@ blockToStrings = Case[
 
 StringBlock::spacefail = "Spacer `` could not be achieved with combination of normal and superscript characters."
 
-repChar[s_, w_Integer] := Repeat[s, w];
+repChar[s_, w_Int] := Repeat[s, w];
 repChar[s_, w_] := Scope[
   w2 = w; c = 0;
   While[Abs[w2 - Round[w2]] > 0.0001, w2 -= 3/4; c++];
@@ -373,11 +373,11 @@ repChar[s_, w_] := Scope[
 ];
 
 rowToStrings = Case[
-  $hspace[w_Integer] := repChar[" ", w];
+  $hspace[w_Int] := repChar[" ", w];
   $hspace[w_]        := % @ repChar[" ", w];
   {l___, $sbg[col_], Shortest[m___], $ebg[col_], r___} /; Count[{l}, _$sbg] === Count[{l}, _$ebg] :=
     {% @ {l}, $stylingFunction[StringJoin @ % @ {m}, normStyle /@ {Background -> col}], % @ {r}};
-  e_String           := e;
+  e_Str           := e;
   None               := "";
   Style[e_, args___] := $stylingFunction[% @ e, ToList[args]];
   list_List          := % /@ list;
@@ -416,8 +416,8 @@ processBlock = Case[
 
   Padded[e_, spec_]                                   := padBlock[% @ e, spec];
 
-  StringForm[t_String, args___, Alignment -> align_]  := stringFormBlock[t, {args}, align];
-  StringForm[t_String, args___]                       := stringFormBlock[t, {args}, Top];
+  StringForm[t_Str, args___, Alignment -> align_]     := stringFormBlock[t, {args}, align];
+  StringForm[t_Str, args___]                          := stringFormBlock[t, {args}, Top];
 
   Undersegment[e_]                                    := vframeBlock[% @ e, {None, "SquareBottom"}, True];
   UnderlinedForm[e_]                                  := vframeBlock[% @ e, {None, "-"}, True];
@@ -431,21 +431,21 @@ processBlock = Case[
 
   f_FractionBox                                       := makeSingleBlock @ evalFracBox[f];
 
-  str_String /; StringContainsQ[str, "\!\(\*"]        := % @ parseLinearSyntax @ str;
-  str_String                                          := makeSingleBlock @ str;
+  str_Str /; StringContainsQ[str, "\!\(\*"]           := % @ parseLinearSyntax @ str;
+  str_Str                                             := makeSingleBlock @ str;
   Null                                                := $block[{""}, 0, 1];
   item_                                               := processCustomBlock @ item;
 
-(*   LiftedForm[s_String]                                := makeSingleBlock @ StringJoin[s, "\:0302"];
-  MappedForm[s_String]                                := makeSingleBlock @ StringJoin[s, "\:0302"];
+(*   LiftedForm[s_Str]                                := makeSingleBlock @ StringJoin[s, "\:0302"];
+  MappedForm[s_Str]                                   := makeSingleBlock @ StringJoin[s, "\:0302"];
  *)
   (Style|StyleBox)[item_, style___]                   := InheritedBlock[
     {$styleStack},
     $styleStack = joinStyles[normStyle /@ {style}, $styleStack];
     % @ item
   ];
-  Spacer[w_Integer]                                   := % @ Spacer[{w, 1}];
-  Spacer[{w_Integer, h_Integer}]                      := spacerBlock[w, h];
+  Spacer[w_Int]                                       := % @ Spacer[{w, 1}];
+  Spacer[{w_Int, h_Int}]                              := spacerBlock[w, h];
   Spacer[0] | Spacer[{0,0}] | None | Nothing          := None;
 
   Framed[e_, opts__Rule]                              := % @ StringFrame[e, opts];
@@ -465,7 +465,7 @@ processCustomBlock[item_] :=
 processBoxes[boxes_] :=
   processBlock @ ReplaceAll[EvaluateTemplateBoxFull @ boxes, $boxFixups]
 
-$boxFixups = SubscriptBox[a_String, b_] /; StringEndsQ[a, " "] :> SubscriptBox[StringTrim @ a, b];
+$boxFixups = SubscriptBox[a_Str, b_] /; StringEndsQ[a, " "] :> SubscriptBox[StringTrim @ a, b];
 
 evalFracBox = Case[
 (*   FractionBox["1", "2"] := "½";
@@ -478,7 +478,7 @@ evalFracBox = Case[
   FractionBox["3", "5"] := "⅗";
   FractionBox["4", "5"] := "⅘";
  *)
-  FractionBox[i_String, j_String] := StringJoin[i, "/", j];
+  FractionBox[i_Str, j_Str] := StringJoin[i, "/", j];
 ]
 
 (**************************************************************************************************)
@@ -486,7 +486,7 @@ evalFracBox = Case[
 trimBlock[block:$block[rows_, w_, h_]] := Scope[
   rows = rows //. {
     {l___, $hspace[s1_], $hspace[s2_]} :> {l, $hspace[s1 + s2]},
-    {l___, s:" ".., r___$hspace} :> {l, $hspace[Length @ {s}], r}
+    {l___, s:" ".., r___$hspace} :> {l, $hspace[Len @ {s}], r}
   };
   spaceLens = rightSpaceLen /@ rows;
   trimCount = Min[spaceLens];
@@ -535,7 +535,7 @@ StringBlock::badfs = "Setting of FrameStyle -> `` should be a color or None.";
 
 normFrameStyle = Case[
   color_ ? ColorQ      := FontColor -> color;
-  i_Integer            := currentStyleSetting[FontColor, "Color" <> IntegerString[i]];
+  i_Int            := currentStyleSetting[FontColor, "Color" <> IntegerString[i]];
   r:Rule[FontColor|Background, _] := r;
   other_               := (Message[StringBlock::badfs, other]; None);
   None                 := None;
@@ -543,9 +543,9 @@ normFrameStyle = Case[
 
 normStyle = Case[
   color_ ? ColorQ                                      := FontColor -> color;
-  i_Integer                                            := %[FontColor -> i];
-  FontColor -> i_Integer                               := currentStyleSetting[FontColor, "Color" <> IntegerString[i]];
-  Background -> i_Integer                              := currentStyleSetting[Background, "Background" <> IntegerString[i]];
+  i_Int                                                := %[FontColor -> i];
+  FontColor -> i_Int                                   := currentStyleSetting[FontColor, "Color" <> IntegerString[i]];
+  Background -> i_Int                                  := currentStyleSetting[Background, "Background" <> IntegerString[i]];
   Bold                                                 := FontWeight -> Bold;
   Italic                                               := FontSlant -> Italic;
   Plain                                                := Splice[{FontWeight -> Plain, FontSlant -> Plain}];
@@ -564,19 +564,19 @@ normFontVar = Case[
   _                       := Nothing
 ]
 
-joinStyles[s1_, s2_] := DeleteDuplicates[Join[s1, s2], First[#1, "ZZ"] === First[#2, "YY"]&];
+joinStyles[s1_, s2_] := DeleteDuplicates[Join[s1, s2], P1[#1, "ZZ"] === P1[#2, "YY"]&];
 
 applyStyleStack[e_] := applyStyle[Sequence @@ $styleStack] @ e;
 
-applyStyle[] := Identity;
-applyStyle[None] := Identity;
+applyStyle[] := Id;
+applyStyle[None] := Id;
 applyStyle[s_List] := Apply[applyStyle, s];
 
 as_applyStyle[list_List] := Map[as, list];
 _applyStyle[s_$hspace] := s;
 _applyStyle[" "] := " ";
 _applyStyle[None] := None;
-applyStyle[s___][e_String] := Style[e, s];
+applyStyle[s___][e_Str] := Style[e, s];
 
 (**************************************************************************************************)
 
@@ -646,7 +646,7 @@ riffle[{}, _] := {};
 riffle[args_, Spacer[0] | Spacer[{0,0}] | None | Nothing] := args;
 riffle[args_, e_] := ScalarRiffle[args, processBlock @ e];
 
-makeSingleBlock[s_String] /; StringContainsQ[s, "\n"] := makeBlock @ StringSplit[s, "\n"];
+makeSingleBlock[s_Str] /; StringContainsQ[s, "\n"] := makeBlock @ StringSplit[s, "\n"];
 makeSingleBlock[elem_] := Scope[frags = applyStyleStack @ elem;
   $block[List @ frags, atomWidth @ frags, 1]
 ];
@@ -655,7 +655,7 @@ makeBlock[rows_List, align_:Left] := Scope[
   widths = atomWidth /@ rows;
   maxWidth = Max @ widths;
   paddedRows = MapThread[hpadAtom[maxWidth, align], {rows, widths}];
-  $block[paddedRows, maxWidth, Length @ rows]
+  $block[paddedRows, maxWidth, Len @ rows]
 ];
 
 (**************************************************************************************************)
@@ -670,7 +670,7 @@ hpadAtom[tw_, halign_][atom_, w_] := Scope[
   ]]
 ];
 
-padAtomLeftRight[{0, 0}] := Identity;
+padAtomLeftRight[{0, 0}] := Id;
 padAtomLeftRight[{0, r_}][row_] := Flatten @ {row, $hspace @ r};
 padAtomLeftRight[{l_, 0}][row_] := Flatten @ {$hspace @ l, row};
 padAtomLeftRight[{l_, r_}][row_] := Flatten @ {$hspace @ l, row, $hspace @ r};
@@ -679,7 +679,7 @@ atomWidth = Case[
   Style[e_, ___, "Superscript" | "Subscript", ___] := (% @ e) * 3 / 4;
   Style[e_, ___]    := % @ e;
   e_List            := Total[% /@ e];
-  s_String          := StringLength @ s;
+  s_Str          := StringLength @ s;
   $hspace[n_]       := n;
 ];
 
@@ -695,7 +695,7 @@ padBlock[block:$block[cols_List, w_, h_], pspec_] := Scope[
   ]
 ];
 
-padLeftRight[{0, 0}] := Identity;
+padLeftRight[{0, 0}] := Id;
 padLeftRight[spec_][rows_] := Map[padAtomLeftRight[spec], rows];
 
 (**************************************************************************************************)
@@ -731,7 +731,7 @@ vpadBlock[th_, valign_][$block[rows_, w_, h_]] := Scope[
     Top,        padBottomTop[{d, 0}, w] @ rows,
     Bottom,     padBottomTop[{0, d}, w] @ rows,
     Center,     padBottomTop[FloorCeiling[d/2], w] @ rows,
-    _Integer,   o = Clip[valign - 1, {0, d}]; padBottomTop[{d - o, o}, w] @ rows,
+    _Int,   o = Clip[valign - 1, {0, d}]; padBottomTop[{d - o, o}, w] @ rows,
     _,      ThrowMessage["badalign", valign, {Top, Center, Bottom}]
   ]];
   $block[extendedRows, w, th]
@@ -739,7 +739,7 @@ vpadBlock[th_, valign_][$block[rows_, w_, h_]] := Scope[
 
 hspaceList[h_, w_] := Repeat[$hspace[w], h];
 
-padBottomTop[{0, 0}, _] := Identity;
+padBottomTop[{0, 0}, _] := Id;
 padBottomTop[{b_, t_}, w_][rows_] := Join[hspaceList[t, w], rows, hspaceList[b, w]];
 
 (**************************************************************************************************)
@@ -758,13 +758,13 @@ blockPadding[block:$block[elems_, w_, h_], framePadding_] := Scope[
 
 (**************************************************************************************************)
 
-$extFrameP = _String | None | Dashed;
+$extFrameP = _Str | None | Dashed;
 
 StringBlock::badgridframe = "Frame -> `` is not a valid setting."
 Options[gstackBlocks] = Options[StringMatrix];
 
 (* TODO: fix column spacings producing spurious central frames in Dividers -> Center *)
-$hframeSpec = {$extFrameP, $extFrameP} | _String | _StyleDecorated[{$extFrameP, $extFrameP} | _String];
+$hframeSpec = {$extFrameP, $extFrameP} | _Str | _StyleDecorated[{$extFrameP, $extFrameP} | _Str];
 gstackBlocks[rows_List, OptionsPattern[]] := Scope[
   UnpackOptions[
     rowAlignments, rowSpacings,
@@ -801,8 +801,8 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
   totalWidth = Total @ maxWidths; totalHeight = Total @ maxHeights;
   If[dividers === Center,
     items = addDivs[items, maxWidths, maxHeights];
-    totalWidth += Length[maxWidths] - 1;
-    totalHeight += Length[maxHeights] - 1;
+    totalWidth += Len[maxWidths] - 1;
+    totalHeight += Len[maxHeights] - 1;
   ];
   grid = Catenate @ Map[Flatten /@ Transpose[Part[#, All, 1]]&, items];
   block = $block[grid, totalWidth, totalHeight];
@@ -824,10 +824,10 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
         sn = Repeat[repChar["─", totalWidth], 2];
       ];
       $block[
-        apply8patch[First @ block, MatrixMap[sfn, we], sfn /@ sn, sfn /@ If[frame === "Round", $roundCompass, $squareCompass]],
+        apply8patch[P1 @ block, MatrixMap[sfn, we], sfn /@ sn, sfn /@ If[frame === "Round", $roundCompass, $squareCompass]],
         totalWidth + 2, totalHeight + 2
       ],
-    {$extFrameP, $extFrameP} | _String,
+    {$extFrameP, $extFrameP} | _Str,
       hframeBlock[block, frame, frameStyle, spanningFrame, background],
     False | None,
       block,
@@ -849,13 +849,13 @@ makeNotchedSides[char_, {notch1_, notch2_}, n_, sizes_] := Scope[
   ]
 ];
 
-riffleCols[0] := Identity;
+riffleCols[0] := Id;
 riffleCols[n_][rows_] := riffle[#, Spacer[n]]& /@ rows;
-riffleCols[ns_List][rows_] := If[Total[ns] == 0, rows, MapThread[riffle[#1, $rawBlock @ spacerBlock[#2, 1]]&, {rows, PadRight[ns, Length @ rows]}]];
+riffleCols[ns_List][rows_] := If[Total[ns] == 0, rows, MapThread[riffle[#1, $rawBlock @ spacerBlock[#2, 1]]&, {rows, PadRight[ns, Len @ rows]}]];
 
-riffleRows[0] = Identity;
+riffleRows[0] = Id;
 riffleRows[n_][rows_] := Transpose[riffle[#, Spacer[{1, n}]]& /@ Transpose[rows]];
-riffleRows[ns_List][rows_] := If[Total[ns] == 0, rows, Transpose @ MapThread[riffle[#1, Spacer[{1, #2}]]&, {Transpose @ rows, PadRight[ns, Length @ Transpose @ rows]}]];
+riffleRows[ns_List][rows_] := If[Total[ns] == 0, rows, Transpose @ MapThread[riffle[#1, Spacer[{1, #2}]]&, {Transpose @ rows, PadRight[ns, Len @ Transpose @ rows]}]];
 
 addDivs[items_, ws_, hs_] := Scope[
   Table[
@@ -865,8 +865,8 @@ addDivs[items_, ws_, hs_] := Scope[
       {False, True}, makeHBar[Part[ws, c]],
       {False, False}, $block[{"┼"}, 1, 1]
     ],
-    {r, 1, Length[hs], 1/2},
-    {c, 1, Length[ws], 1/2}
+    {r, 1, Len[hs], 1/2},
+    {c, 1, Len[ws], 1/2}
   ]
 ];
 
@@ -921,7 +921,7 @@ hextTable = Case[
   ")"                 := ext3[")", "⎞", "⎟", "⎠"];
 ];
 
-$hextTableNames = Association[
+$hextTableNames = Assoc[
   "Round"        -> {"RoundLeft", "RoundRight"},
   "MidRound"     -> {"MidRoundLeft", "MidRoundRight"},
   "Square"       -> {"SquareLeft", "SquareRight"},
@@ -942,7 +942,7 @@ $hextTableNames = Association[
 
 StringBlock::badframe = "`` is not a valid spec for Frame, which should be one of ``."
 
-hframeBlock[block_, name_String, rest___] :=
+hframeBlock[block_, name_Str, rest___] :=
   hframeBlock[block, Lookup[$hextTableNames, name, ThrowMessage["badframe", name, Keys @ $hextTableNames]], rest];
 
 hframeBlock[block_, None | {None, None}, ___] := block;
@@ -975,7 +975,7 @@ vextTable = Case[
   "DoubleSquareBottom" := ext3["═", "╘", "═", "╛"];
 ];
 
-$vextTableNames = Association[
+$vextTableNames = Assoc[
   "Round"        -> {"RoundTop", "RoundBottom"},
   "MidRound"     -> {"MidRoundTop", "MidRoundBottom"},
   "Square"       -> {"SquareTop", "SquareBottom"},
@@ -985,7 +985,7 @@ $vextTableNames = Association[
 
 vframeBlock[arg1_, arg2_] := vframeBlock[arg1, arg2, None, True];
 
-vframeBlock[block_, name_String, style_, spanning_] :=
+vframeBlock[block_, name_Str, style_, spanning_] :=
   vframeBlock[block, Lookup[$vextTableNames, name, ThrowMessage["badframe", name, Keys @ $vextTableNames]], style, spanning];
 
 vframeBlock[block_, None | {None, None}, _, _] := block;
@@ -1002,7 +1002,7 @@ vframeBlock[$block[grid_, w_, h_], {t_, b_}, style_, spanning_] := Scope[
 (**************************************************************************************************)
 
 extend[None, _, _] := Repeat[None, $n];
-extend[s_, False, side_] := ReplacePart[Repeat[" ", $n], If[side, -1, 1] -> First[s]];
+extend[s_, False, side_] := ReplacePart[Repeat[" ", $n], If[side, -1, 1] -> P1[s]];
 extend[s_, True, side_] := extendSpanning[s];
 
 extendSpanning = Case[

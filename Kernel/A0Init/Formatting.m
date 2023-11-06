@@ -3,7 +3,7 @@ PrivateSpecialFunction[declareFormatting]
 PrivateVariable[$isTraditionalForm]
 
 getPatternHead[sym_Symbol] := sym;
-getPatternHead[expr_] := First @ PatternHead @ expr;
+getPatternHead[expr_] := P1 @ PatternHead @ expr;
 
 declareFormatting[rules__RuleDelayed] := Scan[declareFormatting, {rules}];
 declareFormatting[lhs_ :> rhs_] :=
@@ -24,7 +24,7 @@ PublicFunction[HasBoxFormQ]
 
 CacheSymbol[$StandardTraditionalFormCache]
 
-$boxFormHeadAssoc = UAssociation[];
+$boxFormHeadAssoc = UAssoc[];
 
 DefineStandardTraditionalForm[list_List] := Scan[DefineStandardTraditionalForm, list];
 
@@ -49,7 +49,7 @@ PrivateVariable[$BoxFormattingHeadQ]
 
 SetHoldAllComplete[getPatternHead];
 
-$BoxFormattingHeadQ = UAssociation[];
+$BoxFormattingHeadQ = UAssoc[];
 
 declareBoxFormatting[rules__RuleDelayed] := Scan[declareBoxFormatting, {rules}];
 declareBoxFormatting[lhs_ :> rhs_] :=
@@ -72,7 +72,7 @@ padSummaryItem[a_, b_] := BoxForm`SummaryItem[{Pane[a <> ": ", 60], b}];
 (**************************************************************************************************)
 
 Unprotect[Grid]
-Grid[a_Association] := Grid[KeyValueMap[List, a], Alignment -> Left, Dividers -> All, ItemSize -> {{Automatic, 30}}];
+Grid[a_Assoc] := Grid[KeyValueMap[List, a], Alignment -> Left, Dividers -> All, ItemSize -> {{Automatic, 30}}];
 Protect[Grid]
 
 (**************************************************************************************************)

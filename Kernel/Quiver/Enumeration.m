@@ -30,7 +30,7 @@ UniqueEdgeColorings[graph_] := Scope[
   group = EdgeAutomorphismGroup @ graph;
   edgeCount = EdgeCount @ graph;
   edgeRange = Range @ edgeCount;
-  First /@ GroupOrbits[group, Permutations @ edgeRange]
+  P1 /@ GroupOrbits[group, Permutations @ edgeRange]
 ]
 
 (**************************************************************************************************)
@@ -39,7 +39,7 @@ PublicFunction[AllCardinalSets]
 
 AllCardinalSets[cardinals_] := Scope[
   cardinals = Join[cardinals, Inverted /@ cardinals];
-  numCardinals = Length @ cardinals;
+  numCardinals = Len @ cardinals;
   Subsets[cardinals, {1, numCardinals}]
 ];
 
@@ -59,8 +59,8 @@ CountQuivers[graph_, cardCount_] := CountQuivers[graph, cardCount] = Scope[
   res = EnumerateQuivers[graph, cardCount, False, True];
   Which[
     MissingQ[res], Indeterminate,
-    MemberQ[res, _Missing], AtLeast @ Total @ Map[Length] @ DeleteMissing @ res,
-    True, Total @ Map[Length] @ res
+    MemberQ[res, _Missing], AtLeast @ Total @ Map[Len] @ DeleteMissing @ res,
+    True, Total @ Map[Len] @ res
   ]
 ];
 
@@ -75,7 +75,7 @@ $EnableEnumerateCache = True;
 
 PublicFunction[EnumerateQuivers]
 
-EnumerateQuivers[n_Integer, args___] := Scope[
+EnumerateQuivers[n_Int, args___] := Scope[
   skeletons = EnumerateQuiverSkeletons[n];
   Join @@ Map[
     skeleton |-> Replace[EnumerateQuivers[skeleton, args], m_Missing :> {m}],
@@ -92,7 +92,7 @@ EnumerateQuivers[graph_, cardCount_, wrap_:True, noComp_:False] := Scope[
   If[!GraphQ[graph], ReturnFailed[]];
   graphs = iEnumerateQuivers[graph, cardCount, noComp];
   vertices = VertexList @ graph;
-  vertexCount = Length @ vertices;
+  vertexCount = Len @ vertices;
   If[wrap,
     opts = makeSmallGraphOpts[VertexCount @ graph, .5];
     CombineMultiedges @ ExtendedGraph[vertices, #, opts]& /@ graphs
@@ -130,14 +130,14 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
   If[cachedResult =!= None, Return @ cachedResult];
   If[noComp, Return @ Missing["NotComputed"]];
   vertices = VertexList @ graph;
-  vertexCount = Length @ vertices;
+  vertexCount = Len @ vertices;
   undirectedEdgeVertices = List @@@ edges;
-  undirectedEdgeCount = Length @ edges;
+  undirectedEdgeCount = Len @ edges;
   undirectedEdgeRange = Range @ undirectedEdgeCount;
   edges = DirectedEdge @@@ edges;
-  edges = Join[edges, Reverse /@ edges];
+  edges = Join[edges, Rev /@ edges];
   edgeMask = Join[undirectedEdgeRange, undirectedEdgeRange];
-  edgeCount = Length @ edges;
+  edgeCount = Len @ edges;
   edgeRange = Range @ edgeCount;
   edgeSubsets = Subsets[edgeRange, {1, edgeCount}];
   (* some edgesubsets are forbidden because they would mean that a cardinal labels a given vertex twice *)
@@ -145,22 +145,22 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
   inVertices = InVertices @ edges;
   outVertices = OutVertices @ edges;
   edgeSubsets //= Select[DuplicateFreeQ[Part[inVertices, #]] && DuplicateFreeQ[Part[outVertices, #]]&];
-  If[$EnumerateVerboseMode, Print["# edge subsets: ", Length @ edgeSubsets]];
+  If[$EnumerateVerboseMode, Print["# edge subsets: ", Len @ edgeSubsets]];
   edgeTuples = Tuples[edgeSubsets, cardCount];
   edgeTuples = DeleteDuplicates[Sort /@ edgeTuples];
   edgeTuples = Select[edgeTuples, Union[Part[edgeMask, Flatten @ #]] === undirectedEdgeRange&];
-  If[$EnumerateVerboseMode, Print["# edge tuples: ", Length @ edgeTuples]];
+  If[$EnumerateVerboseMode, Print["# edge tuples: ", Len @ edgeTuples]];
   (* edgeTuples is a list of length cardCount of which edges is cardinal is attached to *)
   graphs = Map[
     tuple |-> Graph[vertices, Flatten @ MapIndex1[{indices, cardinal} |-> Map[Append[cardinal], Part[edges, indices]], tuple]],
     edgeTuples
   ];
-  If[$EnumerateVerboseMode, Print["# total graphs: ", Length @ graphs]];
+  If[$EnumerateVerboseMode, Print["# total graphs: ", Len @ graphs]];
   connectedIndices = SelectIndices[graphs, WeaklyConnectedGraphQ];
   graphs = Part[graphs, connectedIndices];
   edgeTuples = Part[edgeTuples, connectedIndices];
   lineGraphs = LineGraphFixed /@ graphs; edgeCounts = EdgeCount /@ graphs; edgeTags = EdgeTags /@ graphs;
-  graphRange = Range @ Length @ graphs;
+  graphRange = Range @ Len @ graphs;
   collapseTupleElement = indices |-> Mod[indices, undirectedEdgeCount, 1];
   undirectedEdgeTuples = Map[tuples |-> Map[collapseTupleElement, tuples], edgeTuples];
   graphSignature = i |-> {
@@ -177,14 +177,14 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
       uet
     ],
  *)    (* the number of edges labelled by pairs of cardinals *)
-    Sort[Length[Intersection[#1, #2]]& @@@ UnorderedPairs[uet]],
+    Sort[Len[Intersection[#1, #2]]& @@@ UnorderedPairs[uet]],
     (* these are the number of times a given cardinal is labeled *)
     Sort @ Map[flatCountsSignature, uet]
   };
   graphRangeGrouped = GatherBy[graphRange, graphSignature];
   If[$EnumerateVerboseMode,
-    Print["# groups: ", Length @ graphRangeGrouped];
-    Print["max group size: ", Max[Length /@ graphRangeGrouped]];
+    Print["# groups: ", Len @ graphRangeGrouped];
+    Print["max group size: ", Max[Len /@ graphRangeGrouped]];
     Print["line graphs size: ", ByteCount @ lineGraphs];
   ];
   tagIsoQ = {a, b} |-> And[
@@ -204,14 +204,14 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
   If[cachedResult =!= None, Return @ cachedResult];
   If[noComp, Return @ Missing["NotComputed"]];
   vertices = VertexList @ graph;
-  vertexCount = Length @ vertices;
+  vertexCount = Len @ vertices;
   undirectedEdgeVertices = List @@@ edges;
-  undirectedEdgeCount = Length @ edges;
+  undirectedEdgeCount = Len @ edges;
   undirectedEdgeRange = Range @ undirectedEdgeCount;
   edges = DirectedEdge @@@ edges;
-  edges = Join[edges, Reverse /@ edges];
+  edges = Join[edges, Rev /@ edges];
   edgeMask = Join[undirectedEdgeRange, undirectedEdgeRange];
-  edgeCount = Length @ edges;
+  edgeCount = Len @ edges;
   edgeRange = Range @ edgeCount;
   edgeSubsets = Subsets[edgeRange, {1, edgeCount}];
   (* some edgesubsets are forbidden because they would mean that a cardinal labels a given vertex twice *)
@@ -219,20 +219,20 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
   inVertices = InVertices @ edges;
   outVertices = OutVertices @ edges;
   edgeSubsets //= Select[DuplicateFreeQ[Part[inVertices, #]] && DuplicateFreeQ[Part[outVertices, #]]&];
-  If[$EnumerateVerboseMode, Print["# edge subsets: ", Length @ edgeSubsets]];
+  If[$EnumerateVerboseMode, Print["# edge subsets: ", Len @ edgeSubsets]];
   graphs = Bag[]; undirectedEdgeTuples = Bag[];
 (*   Array[
     List /* (indexTuple |-> If[OrderedQ[indexTuple],
       edgeTuple = Part[edgeSubsets, indexTuple];
       If[Union[Part[edgeMask, Flatten @ edgeTuple]] === undirectedEdgeRange,
-        graph = Graph[vertices, Flatten @ MapIndexed[{indices, cardinal} |-> Map[Append[First @ cardinal], Part[edges, indices]], edgeTuple]];
+        graph = Graph[vertices, Flatten @ MapIndexed[{indices, cardinal} |-> Map[Append[P1 @ cardinal], Part[edges, indices]], edgeTuple]];
         If[WeaklyConnectedGraphQ @ graph,
           StuffBag[graphs, graph];
           StuffBag[undirectedEdgeTuples, Mod[edgeTuple, undirectedEdgeCount, 1]];
          ]
       ];
     ]),
-    Repeat[Length @ edgeSubsets, cardCount]
+    Repeat[Len @ edgeSubsets, cardCount]
   ]; *)
   If[$EnumerateVerboseMode, Print["creating graphs"]]; i1o = 0;
   OrderedTupleScan[
@@ -247,13 +247,13 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
         ]
       ];
     ),
-    Length @ edgeSubsets, cardCount
+    Len @ edgeSubsets, cardCount
   ];
   graphs = BagPart[graphs, All];
-  graphRange = Range @ Length @ graphs;
+  graphRange = Range @ Len @ graphs;
   If[$EnumerateVerboseMode, Print["creating line graphs"]];
   lineGraphs = LineGraphFixed /@ graphs; edgeCounts = EdgeCount /@ graphs; edgeTags = EdgeTags /@ graphs;
-  If[$EnumerateVerboseMode, Print["# total graphs: ", Length @ graphs]];
+  If[$EnumerateVerboseMode, Print["# total graphs: ", Len @ graphs]];
   undirectedEdgeTuples = BagPart[undirectedEdgeTuples, All];
   graphSignature = i |-> {
     Part[edgeCounts, i],
@@ -269,15 +269,15 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
       uet
     ],
  *)    (* the number of edges labelled by pairs of cardinals *)
-    Sort[Length[Intersection[#1, #2]]& @@@ UnorderedPairs[uet]],
+    Sort[Len[Intersection[#1, #2]]& @@@ UnorderedPairs[uet]],
     (* these are the number of times a given cardinal is labeled *)
     Sort @ Map[flatCountsSignature, uet]
   };
   If[$EnumerateVerboseMode, Print["creating groups"]];
   graphRangeGrouped = GatherBy[graphRange, graphSignature];
   If[$EnumerateVerboseMode,
-    Print["# groups: ", Length @ graphRangeGrouped];
-    Print["max group size: ", Max[Length /@ graphRangeGrouped]];
+    Print["# groups: ", Len @ graphRangeGrouped];
+    Print["max group size: ", Max[Len /@ graphRangeGrouped]];
     Print["graphs size: ", ByteCount @ graphs];
     Print["line graphs size: ", ByteCount @ lineGraphs];
   ];
@@ -295,7 +295,7 @@ iEnumerateQuivers[graph_, cardCount_, noComp_] /; $EnumerationImplementation ===
 OrderedTupleScan[f_, n_, m_] := Block[
   {$f = f, $n = n, $m = m, ots},
   ots[l_, 0] := $f[l];
-  ots[l_, j_] := Do[ots[Append[l, i], j-1], {i, Last[l], $n}];
+  ots[l_, j_] := Do[ots[Append[l, i], j-1], {i, PN[l], $n}];
   Do[ots[{i}, $m], {i, $n}]
 ];
 
@@ -303,9 +303,9 @@ flatCountsSignature[list_] := countsSignature @ Flatten @ list;
 countsSignature[list_] := Sort @ Values @ Counts @ list;
 
 graphsEqualModuloEdgeNaming[tags1_, tags2_, isoList_] :=
-  AnyTrue[isoList, iso |-> equalModuloNaming[Part[tags1, ReplaceAll[Range @ Length @ tags1, iso]], tags2]];
+  AnyTrue[isoList, iso |-> equalModuloNaming[Part[tags1, ReplaceAll[Range @ Len @ tags1, iso]], tags2]];
 
-equalModuloNaming[list1_, list2_] := First[ArrayLabeling[list1]] === First[ArrayLabeling[list2]];
+equalModuloNaming[list1_, list2_] := P1[ArrayLabeling[list1]] === P1[ArrayLabeling[list2]];
 
 (**************************************************************************************************)
 
@@ -319,7 +319,7 @@ IsomorphicTaggedGraphsQ[g1_, g2_] := Scope[
   edges1 = EdgeList @ g1; edges2 = EdgeList @ g2;
   Do[
     If[equalModuloNaming[
-      Part[edges1, ReplaceAll[Range @ Length @ edges1, iso], 3],
+      Part[edges1, ReplaceAll[Range @ Len @ edges1, iso], 3],
       Part[edges2, All, 3]], Return[True, Block]],
     {iso, isoList}
   ];
@@ -344,9 +344,9 @@ LineGraphFixed[g_] := Scope[
   outVertices = OutVertices[edges];
   inIndices = PositionIndex[inVertices];
   Graph[
-    Range @ Length @ edges,
+    Range @ Len @ edges,
     Flatten @ MapIndexed[
-      Thread[DirectedEdge[First @ #2, #1]]&,
+      Thread[DirectedEdge[P1 @ #2, #1]]&,
       Lookup[inIndices, outVertices]
     ]
   ]
@@ -374,7 +374,7 @@ makeSmallGraphOpts[n_, r_] := Sequence[
   BaselinePosition -> "Coordinate" -> 0
 ];
 
-EnumerateQuiverSkeletons[n_Integer] := Scope[
+EnumerateQuiverSkeletons[n_Int] := Scope[
   edgeLists = iEnumerateQuiverSkeletons[n, True];
   opts = makeSmallGraphOpts[n, .3];
   vertices = Range[n];
@@ -383,14 +383,14 @@ EnumerateQuiverSkeletons[n_Integer] := Scope[
 
 iEnumerateQuiverSkeletons[1, False] := {{}};
 
-iEnumerateQuiverSkeletons[n_Integer, allowSelfLoops_] := Scope[
+iEnumerateQuiverSkeletons[n_Int, allowSelfLoops_] := Scope[
   cacheName = If[allowSelfLoops, "EnumerateQuiverSkeletons", "EnumerateSimpleGraphs"];
   cachedResult = quiverCacheLoad[cacheName, None, n];
   If[cachedResult =!= None, Return @ cachedResult];
   vertices = Range[n];
   edges = Flatten @ Table[UndirectedEdge[i, j], {i, 1, n}, {j, i, n}];
   If[!allowSelfLoops, edges //= DeleteCases[UndirectedEdge[i_, i_]]];
-  edgeSubsets = Subsets[edges, {1, Length @ edges}];
+  edgeSubsets = Subsets[edges, {1, Len @ edges}];
   bag = Bag[];
   Scan[subset |-> If[Union @ AllVertices[edges] === vertices,
     graph = Graph[vertices, subset];
@@ -413,7 +413,7 @@ iEnumerateQuiverSkeletons[n_Integer, allowSelfLoops_] := Scope[
 
 PublicFunction[EnumerateSimpleGraphs]
 
-EnumerateSimpleGraphs[n_Integer] := Scope[
+EnumerateSimpleGraphs[n_Int] := Scope[
   edgeLists = iEnumerateQuiverSkeletons[n, False];
   opts = makeSmallGraphOpts[n, .3];
   If[n === 1, opts = Sequence[PlotRange -> {{-1, 1}, {-1, 1}} * 0.6, opts]];
@@ -486,7 +486,7 @@ rangePartitionSuccessors[part_] := Join @@ Table[
     Delete[part, {{i}, {j}}],
     Sort[Join @@ Part[part, {i, j}]]
   ],
-  {i, Length @ part}, {j, i+1, Length @ part}
+  {i, Len @ part}, {j, i+1, Len @ part}
 ];
 
 (**************************************************************************************************)
@@ -494,7 +494,7 @@ rangePartitionSuccessors[part_] := Join @@ Table[
 StrictlyIsomorphicSubgraphQ[sub_, super_] := Scope[
   iso = FindSubgraphIsomorphism[sub, super];
   If[iso === {}, Return @ False];
-  iso //= First;
+  iso //= P1;
   deg1 = VertexDegree[sub, #]& /@ Keys[iso];
   deg2 = VertexDegree[super, #]& /@ Values[iso];
   And[
@@ -511,8 +511,8 @@ GraphsCenterIsomorphicQ[n_][g1_, g2_] := Scope[
   v2 = Take[VertexList @ g2, UpTo[1]];
   Or[
     IsomorphicGraphQ[g1, g2],
-    StrictlyIsomorphicSubgraphQ[NeighborhoodGraph[g1, First @ v1, n], g2],
-    StrictlyIsomorphicSubgraphQ[NeighborhoodGraph[g2, First @ v2, n], g1],
+    StrictlyIsomorphicSubgraphQ[NeighborhoodGraph[g1, P1 @ v1, n], g2],
+    StrictlyIsomorphicSubgraphQ[NeighborhoodGraph[g2, P1 @ v2, n], g1],
     AnyTrue[
       NeighborhoodGraph[g1, #, n]& /@ Drop[v1, 1],
       StrictlyIsomorphicSubgraphQ[#, g2]&
@@ -527,7 +527,7 @@ GraphsCenterIsomorphicQ[n_][g1_, g2_] := Scope[
 PublicFunction[CenterIsomorphicDuplicates]
 
 CenterIsomorphicDuplicates[list_, n_] :=
-  Select[Gather[list, GraphsCenterIsomorphicQ[n]], Length[#] > 1&];
+  Select[Gather[list, GraphsCenterIsomorphicQ[n]], Len[#] > 1&];
 
 PublicFunction[DeleteCenterIsomorphicDuplicates]
 

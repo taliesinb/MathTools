@@ -52,15 +52,15 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
     cardinalDirs === Inherited,
       coords = AssociationThread[
         Map[LatticeVertex @ ToPathWord @ #&, VertexList @ fq],
-        First @ ExtractGraphPrimitiveCoordinates @ fq
+        P1 @ ExtractGraphPrimitiveCoordinates @ fq
       ];
     ,
     cardinalDirs =!= None,
       If[cardinalDirs === "Linear",
-        cardinalDirs = Repeat[{1, 0}, Length @ cardinals];
+        cardinalDirs = Repeat[{1, 0}, Len @ cardinals];
         $scaling = 0.0
       ];
-      If[Length[cardinalDirs] =!= Length[cardinals], ReturnFailed[]];
+      If[Len[cardinalDirs] =!= Len[cardinals], ReturnFailed[]];
       $cardinalDirs = AssociationThread[cardinals, cardinalDirs];
       $cardinalDirs = Join[$cardinalDirs, Map[Minus, KeyMap[Inverted, $cardinalDirs]]];
       coords = Map[wordToCoords, pathWords];
@@ -73,7 +73,7 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
   pathWordIndex = PositionIndex[pathWords2, 2];
   pathKeys = DeleteCases[{}] @ Keys @ pathWordIndex;
   edges = DeleteDuplicates @ Flatten @ {
-    If[doForward, Map[makeExtensionEdges[Most, Identity], pathKeys], Nothing],
+    If[doForward, Map[makeExtensionEdges[Most, Id], pathKeys], Nothing],
     If[doReverse, Map[makeExtensionEdges[Rest, MirrorForm], pathKeys], Nothing]
   };
   If[additionalEdges =!= Automatic,
@@ -95,7 +95,7 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
 makeExtensionEdges[wordFn_, mirrFn_][word_] := DirectedEdge[
   Part[vertices, removeSingleton @ pathWordIndex @ wordFn @ word],
   Part[vertices, removeSingleton @ pathWordIndex @ word],
-  mirrFn @ Last @ word
+  mirrFn @ PN @ word
 ]
 
 parseAdditionalEdge[DirectedEdge[a_, b_, c_]] :=
@@ -136,16 +136,16 @@ wordToCoords = Case[
 
 extractWord = Case[
   Path[_, word_, ___] := word;
-  list_List           := % @ First @ list;
+  list_List           := % @ P1 @ list;
   Labeled[spec_, _]   := % @ spec;
 ];
 
 parsePath = Case[
-  path_String                   := Path[$v0, ToPathWord @ path];
-  paths_List                    := Map[parsePath, paths];
-  Labeled[spec_, label_]        := Labeled[parsePath @ spec, label];
-  Rule[paths_List, adj_List]    := Splice[parsePath[# -> adj]& /@ paths];
-  Rule[path_String, adj_List]   := Path[$v0, ToPathWord @ path, PathAdjustments -> adj];
+  path_Str                   := Path[$v0, ToPathWord @ path];
+  paths_List                 := Map[parsePath, paths];
+  Labeled[spec_, label_]     := Labeled[parsePath @ spec, label];
+  Rule[paths_List, adj_List] := Splice[parsePath[# -> adj]& /@ paths];
+  Rule[path_Str, adj_List]   := Path[$v0, ToPathWord @ path, PathAdjustments -> adj];
   _ := $Failed;
 ];
 

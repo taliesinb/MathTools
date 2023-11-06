@@ -1,6 +1,6 @@
 PublicFunction[MarkdownFrontMatter]
 
-MarkdownFrontMatter[path_String | File[path_String]] := Scope[
+MarkdownFrontMatter[path_Str | File[path_Str]] := Scope[
   
   path //= NormalizePath;
 
@@ -13,7 +13,7 @@ MarkdownFrontMatter[path_String | File[path_String]] := Scope[
     If[StringQ[jsonStr],
       res = ReadRawJSONString @ jsonStr;
       res = res /. Null -> None;
-      If[AssociationQ[res], Return @ res]
+      If[AssocQ[res], Return @ res]
     ];
   ];
 
@@ -24,16 +24,16 @@ MarkdownFrontMatter[path_String | File[path_String]] := Scope[
 
 PrivateFunction[getMarkdownUnixTime]
 
-getMarkdownUnixTime[path_String] := Scope[
+getMarkdownUnixTime[path_Str] := Scope[
   Quiet[
     stream = OpenRead[path];
-    line = Last @ ReadList[stream, "String", 2];
+    line = PN @ ReadList[stream, "String", 2];
     Close[stream];
   ];
   If[!StringQ[line], Return[None]];
   matches = StringCases[line, "unixtime\":" ~~ d:DigitCharacter.. :> d, 1];
   If[matches === {}, Return[None]];
-  FromDigits @ First @ matches
+  FromDigits @ P1 @ matches
 ];
 
 (**************************************************************************************************)
@@ -45,16 +45,16 @@ NotebookFrontMatter[_] := $Failed;
 NotebookFrontMatter[nb_NotebookObject] :=
   NotebookFrontMatter @ NotebookFileName @ nb;
 
-$frontMatterMetadataCache = UAssociation[];
+$frontMatterMetadataCache = UAssoc[];
 
 (* TODO: deal with notebooks that have changed in FE but haven't been saved yet! *)
-NotebookFrontMatter[path_String | File[path_String]] := Scope[
+NotebookFrontMatter[path_Str | File[path_Str]] := Scope[
   
   path //= NormalizePath;
   fileDate = FileDate @ path;
   
   result = Lookup[$frontMatterMetadataCache, path, None];
-  If[AssociationQ[result],
+  If[AssocQ[result],
     cachedDate = Lookup[result, "unixtime", 0];
     If[cachedDate === UnixTime[fileDate], Goto[Done]];
   ];
@@ -69,7 +69,7 @@ NotebookFrontMatter[path_String | File[path_String]] := Scope[
   fileDate = DatePlus[fileDate, -1]; (* to force Hugo to render the page *)
   dateString = DateString[fileDate, {"Year", "-", "Month", "-", "Day"}];
 
-  result = Association[
+  result = Assoc[
     "unixtime" -> UnixTime @ fileDate,
     "date" -> dateString,
     "weight" -> weight,
@@ -92,13 +92,13 @@ NotebookFrontMatter[path_String | File[path_String]] := Scope[
   result
 ];
 
-getNotebookData[path_String] := Scope[
+getNotebookData[path_Str] := Scope[
   nb = Get @ path;
-  title = FirstCase[nb, Cell[title_String, "Title"|"Chapter"|"Section", ___] :> title, None, Infinity];
-  subTitle = FirstCase[nb, Cell[subtitle_String, "Subtitle", ___] :> subtitle, None, Infinity];
+  title = FirstCase[nb, Cell[title_Str, "Title"|"Chapter"|"Section", ___] :> title, None, Infinity];
+  subTitle = FirstCase[nb, Cell[subtitle_Str, "Subtitle", ___] :> subtitle, None, Infinity];
   SetNone[subTitle, notebookFirstLine @ nb];
   taggingRules = LookupOption[nb, TaggingRules];
-  If[RuleListQ[taggingRules], taggingRules //= Association];
+  If[RuleListQ[taggingRules], taggingRules //= Assoc];
   SetAutomatic[taggingRules, <||>];
   KeyDropFrom[taggingRules, "TryRealOnly"];
   {title, subTitle, taggingRules}

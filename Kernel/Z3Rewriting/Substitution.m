@@ -24,7 +24,7 @@ processSubRule = Case[
 
 SubstitutionRewritingSystem::invcyc = "Invalid Cycles[...] element ``."
 processCycle = Case[
-  s_String  := % @ StringToWord[s];
+  s_Str     := % @ StringToWord[s];
   {_} | {}  := Nothing;
   {a_, b_}  := processSubRule[TwoWayRule[a, b]];
   list_List := ApplyWindowedCyclic[Rule /* processSubRule, list];
@@ -38,7 +38,7 @@ normalizeInvRule = Case[
   other_                 := other;
 ];
 
-SubstitutionRewritingSystem[s_String, opts___] := Scope[
+SubstitutionRewritingSystem[s_Str, opts___] := Scope[
   chars = Characters[s];
   SubstitutionRewritingSystem[toSignedPermutationRules[chars], opts]
 ];

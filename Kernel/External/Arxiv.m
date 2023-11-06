@@ -10,7 +10,7 @@ declareStringPattern[ArxivPaperIDPattern :> "(?ms)(?:\\d{1,4}\\.|hep-th[/.]|gr-q
 
 PublicFunction[ArxivPageToMarkdown]
 
-ArxivPageToMarkdown[url_String, opts___Rule] := PaperToMarkdown[ImportArxivPage[url, FilterOptions @ opts], FilterOptions @ opts];
+ArxivPageToMarkdown[url_Str, opts___Rule] := PaperToMarkdown[ImportArxivPage[url, FilterOptions @ opts], FilterOptions @ opts];
 
 (**************************************************************************************************)
 
@@ -27,7 +27,7 @@ ImportArxivPage::badurl = "URL `` does not contain a valid id."
 ImportArxivPage::baddl = "URL `` could not be imported as XML."
 ImportArxivPage::badxml = "URL `` was downloaded as XML that did not contain a title."
 
-ImportArxivPage[str_String, opts:OptionsPattern[]] := Scope[
+ImportArxivPage[str_Str, opts:OptionsPattern[]] := Scope[
 	id = FirstStringCase[str, num:ArxivPaperIDPattern :> num];
 	If[!StringQ[id], ReturnFailed["badurl", str]];
 	xmlPath = xmlFilePath[id];
@@ -36,7 +36,7 @@ ImportArxivPage[str_String, opts:OptionsPattern[]] := Scope[
 	,
     url = $pageTemplate[id];
 		xml = WithInternet @ Import[url, "XMLObject"];
-    If[Head[xml] =!= XMLObject["Document"], ReturnFailed["baddl", url]];
+    If[H[xml] =!= XMLObject["Document"], ReturnFailed["baddl", url]];
     If[!ContainsQ[xml, XMLMetaPattern["citation_title", _]], ReturnFailed["badxml", url]];
     Export[xmlPath, xml];
   ];
@@ -45,7 +45,7 @@ ImportArxivPage[str_String, opts:OptionsPattern[]] := Scope[
   secondarySubjects = subjectSpan /. XMLElement["span", {"class" -> "primary-subject"}, ___] :> None;
   primarySubjects //= extractSubjects;
   secondarySubjects //= extractSubjects;
-	data = Association[
+	data = Assoc[
     VectorApply[
       #1 -> DeepFirstCase[xml, XMLMetaPattern[#2, content_] :> StringTrim[content]]&,
       {"Title" -> "citation_title", "Abstract" -> "citation_abstract", "URL" -> "og:url", "PDFURL" -> "citation_pdf_url", "Date" -> "citation_date"}
@@ -76,13 +76,13 @@ fromLastFirstName["Hooft, Gerard 't"] := {"Gerard", "'t Hooft"};
 
 fromLastFirstName[str_] := Scope[
   If[StringFreeQ[str, ","], Return @ List @ str];
-  MapFirst[stripInitials] @ Reverse @ StringTrim @ StringSplit[str, ",", 2]
+  MapFirst[stripInitials] @ Rev @ StringTrim @ StringSplit[str, ",", 2]
 ];
 
 stripInitials = StringReplaceRepeated[(" ".. ~~ LetterCharacter ~~ ".") -> " "] /* StringTrim;
 
 extractSubjects[e_] := Flatten @ StringCases[
-  Flatten @ DeepCases[e, _String],
+  Flatten @ DeepCases[e, _Str],
   human:(LetterCharacter.. ~~ (" " | " - " ~~ LetterCharacter..)...) ~~ " (" ~~ field:((LetterCharacter|"-").. ~~ Repeated["." ~~ LetterCharacter.., {0,1}]) ~~ ")" :>
     Labeled[ToLowerCase @ field, human]
 ];
@@ -118,7 +118,7 @@ ArxivSearch[opts___Rule] := Scope[
   ];
   ids = StringCases[searchResults, "<a href=\"https://arxiv.org/abs/" ~~ id:Except["\""].. ~~ "\"" :> id];
   If[ids === {}, Return @ {}];
-  If[Length[ids] >= 200, Message[ArxivSearch::toomany]; ids = Take[ids, 200]];
+  If[Len[ids] >= 200, Message[ArxivSearch::toomany]; ids = Take[ids, 200]];
   ArxivAPISearch[PaperID -> ids]
 ];
 
@@ -132,8 +132,8 @@ toSearchString[rules_List] := Scope[
 ];
 
 toSearchStringFragment = Case[
-  (_Symbol -> None)            := Nothing;
-  (field_Symbol -> q_String)   := $searchSpecTemplate[$index++, fieldToType @ field, StringReplace["%20" -> "+"] @ URLEncode @ q];
+  (_Symbol -> None)       := Nothing;
+  (field_Symbol -> q_Str) := $searchSpecTemplate[$index++, fieldToType @ field, StringReplace["%20" -> "+"] @ URLEncode @ q];
 ];
 
 fieldToType = <|PaperAuthor -> "author", PaperTitle -> "title", PaperAbstract -> "abstract", PaperID -> "id", PaperSubject -> "cross_list_category"|>;
@@ -166,7 +166,7 @@ ArxivAPISearch[opts___Rule] := Scope[
     Export[xmlPath, xml];
   ];
   entries = DeepCases[xml, XMLElement["entry", {}, entryData_] :> extractAPIEntryData[entryData]];
-  Reverse @ SortBy[entries, Key["Date"]]
+  Rev @ SortBy[entries, Key["Date"]]
 ];
 
 addQueryElem[name_, ""][url_] := url;
@@ -185,13 +185,13 @@ encodeAPIQuery[a_] := URLEncode @ If[StringContainsQ[a, " "], "\"" <> a <> "\"",
 $arxivAPISearchURL = "http://export.arxiv.org/api/query?start=0&max_results=100";
 
 extractAPIEntryData[xml_] := Scope[
-  assoc = Association[
+  assoc = Assoc[
    "Title" -> DeepFirstCase[xml, XMLElement["title",{},{title_}] :> title],
    "Authors" -> DeepCases[xml, XMLElement["name", _, {data_}] :> StringReplace[data, $authorNormalizationRules]],
    "Date" -> DeepFirstCase[xml, XMLElement["published", _, {date_}] :> DateObject[date]],
    "URL" -> DeepFirstCase[xml, XMLElement["id", {}, {id_}] :> StringReplace[id, "http://" -> "https://"]],
    "Abstract" -> DeepFirstCase[xml, XMLElement["summary", _, {data_}] :> data],
-   "Subjects" -> DeleteDuplicates @ DeepCases[xml, ("term" -> term_String) :> term],
+   "Subjects" -> DeleteDuplicates @ DeepCases[xml, ("term" -> term_Str) :> term],
    "Origin" -> "Arxiv"
   ];
   assoc["PDFURL"] = StringReplace[assoc["URL"], "/abs/" -> "/pdf/"] <> ".pdf";

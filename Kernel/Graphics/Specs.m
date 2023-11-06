@@ -35,7 +35,7 @@ ParseCyclicSpec[spec_, n_] := Scope[
 
 ParseCyclicSpec[n_][spec_] := ParseCyclicSpec[spec, n];
 
-$atomSpecP = _Symbol | _Integer | _Real | _Rational;
+$atomSpecP = _Symbol | _Int | _Real | _Rational;
 
 parseCyclic = Case[
   rules:$RuleListPattern             := VectorReplace[Range @ $n, Append[compNeg /@ rules, _ -> Automatic]];
@@ -49,11 +49,11 @@ parseCyclic = Case[
   _                                  := $Failed;
 ];
 
-compNeg[head_[lhs_, rhs_]] := With[{lhs2 = lhs /. n_Integer ? Negative :> (n + $n + 1)}, head[lhs2, rhs]];
+compNeg[head_[lhs_, rhs_]] := With[{lhs2 = lhs /. n_Int ? Negative :> (n + $n + 1)}, head[lhs2, rhs]];
 
 repSpec[l_, mid_, r_] := Scope[
-  n2 = $n - Length[l] - Length[r];
+  n2 = $n - Len[l] - Len[r];
   If[n2 < 0, Return @ parseCyclic @ Join[l, r]];
-  mid2 = TakeOperator[n2] @ Catenate @ Repeat[mid, Ceiling[n2 / Length[mid]]];
+  mid2 = TakeOperator[n2] @ Catenate @ Repeat[mid, Ceiling[n2 / Len[mid]]];
   Join[l, mid2, r]
 ];

@@ -28,7 +28,7 @@ TaggedAdjacencyMatrices[graph_ ? EdgeTaggedGraphQ, OptionsPattern[]] := Scope[
   n = VertexCount @ graph;
   assoc = EdgePairsToAdjacencyMatrix[#, n]& /@ TaggedEdgePairs[graph];
   If[OptionValue["Antisymmetric"],
-    JoinTo[assoc, Association @ KeyValueMap[Inverted[#1] -> Transpose[#2]&, assoc]];
+    JoinTo[assoc, Assoc @ KeyValueMap[Inverted[#1] -> Transpose[#2]&, assoc]];
   ];
   assoc
 ]
@@ -40,7 +40,7 @@ PublicFunction[TaggedEdgePairs]
 TaggedEdgePairs[graph_ ? EdgeTaggedGraphQ] :=
   GroupBy[
     EdgeList @ ToIndexGraph @ graph,
-    Last -> Function[{Part[#, 1], Part[#, 2]}]
+    PN -> Fn[{Part[#, 1], Part[#, 2]}]
   ]
 
 TaggedEdgePairs[graph_, "Directed"] := TaggedEdgePairs[graph];
@@ -48,8 +48,8 @@ TaggedEdgePairs[graph_, "Directed"] := TaggedEdgePairs[graph];
 TaggedEdgePairs[graph_ ? EdgeTaggedGraphQ, "Undirected"] :=
   GroupBy[
     EdgeList @ ToIndexGraph @ graph,
-    Last -> Function[Splice[{{Part[#, 1], Part[#, 2]}, {Part[#, 2], Part[#, 1]}}]],
-    Identity
+    PN -> Fn[Splice[{{Part[#, 1], Part[#, 2]}, {Part[#, 2], Part[#, 1]}}]],
+    Id
   ]
 
 (**************************************************************************************************)
@@ -57,7 +57,7 @@ TaggedEdgePairs[graph_ ? EdgeTaggedGraphQ, "Undirected"] :=
 PublicFunction[TaggedEdgeLists]
 
 TaggedEdgeLists[graph_ ? EdgeTaggedGraphQ] :=
-  GroupBy[EdgeList @ graph, Last]
+  GroupBy[EdgeList @ graph, PN]
 
 (**************************************************************************************************)
 
@@ -83,7 +83,7 @@ processTagEntry[tag_, {part_}] :=
   KeyAppendTo[$tagAssoc, tag, part];
 
 processTagEntry[CardinalSet[tags_], {part_}] :=
-  Scan[KeyAppendTo[$tagAssoc, If[$isTISigned, Identity, StripInverted] @ #1, part]&, tags];
+  Scan[KeyAppendTo[$tagAssoc, If[$isTISigned, Id, StripInverted] @ #1, part]&, tags];
 
 
 (**************************************************************************************************)
@@ -93,7 +93,7 @@ PublicFunction[EdgeToTagIndex]
 EdgeToTagIndex[graph_ ? EdgeTaggedGraphQ] := EdgeToTagIndex @ EdgeList @ graph;
 
 EdgeToTagIndex[edges_List] := Scope[
-  $index = UAssociation[];
+  $index = UAssoc[];
   Scan[insertETTI, edges];
   $index
 ];
@@ -150,8 +150,8 @@ present on vertex v$i.
 "
 
 VertexTagTable[graph_, splice_:True] := Scope[
-  rules = {#1 -> #3, #2 -> Inverted[#3]}& @@@ If[splice, SpliceCardinalSetEdges, Identity] @ EdgeList[graph];
-  Lookup[Merge[Flatten @ rules, Identity], VertexList @ graph, {}]
+  rules = {#1 -> #3, #2 -> Inverted[#3]}& @@@ If[splice, SpliceCardinalSetEdges, Id] @ EdgeList[graph];
+  Lookup[Merge[Flatten @ rules, Id], VertexList @ graph, {}]
 ]
 
 (**************************************************************************************************)
@@ -164,8 +164,8 @@ present on vertex v$i in the outgoing direction.
 "
 
 VertexOutTagTable[graph_, splice_:True] := Scope[
-  rules = #1 -> #3& @@@ If[splice, SpliceCardinalSetEdges, Identity] @ EdgeList[graph];
-  Lookup[Merge[rules, Identity], VertexList @ graph, {}]
+  rules = #1 -> #3& @@@ If[splice, SpliceCardinalSetEdges, Id] @ EdgeList[graph];
+  Lookup[Merge[rules, Id], VertexList @ graph, {}]
 ]
 
 (**************************************************************************************************)
@@ -179,8 +179,8 @@ of the form {$vertex$j, tag$j} present on vertex v$i in the outgoing direction.
 
 VertexOutVertexTagTable[graph_, splice_:True] := Scope[
   indexGraph = ToIndexGraph @ graph;
-  rules = #1 -> {#2, #3}& @@@ If[splice, SpliceCardinalSetEdges, Identity] @ EdgeList @ indexGraph;
-  Lookup[Merge[rules, Identity], VertexList @ indexGraph, {}]
+  rules = #1 -> {#2, #3}& @@@ If[splice, SpliceCardinalSetEdges, Id] @ EdgeList @ indexGraph;
+  Lookup[Merge[rules, Id], VertexList @ indexGraph, {}]
 ]
 
 (**************************************************************************************************)
@@ -194,8 +194,8 @@ present on vertex v$i in the incoming direction.
 "
 
 VertexInTagTable[graph_, splice_:True] := Scope[
-  rules = #2 -> Inverted[#3]& @@@ If[splice, SpliceCardinalSetEdges, Identity] @ EdgeList[graph];
-  Lookup[Merge[rules, Identity], VertexList @ graph, {}]
+  rules = #2 -> Inverted[#3]& @@@ If[splice, SpliceCardinalSetEdges, Id] @ EdgeList[graph];
+  Lookup[Merge[rules, Id], VertexList @ graph, {}]
 ]
 
 (**************************************************************************************************)
@@ -223,12 +223,12 @@ TagVertexAdjacentEdgeTable[graph_, invalid:Except[_Rule], OptionsPattern[]] :=
 tagVertexAdjacentEdgeTableInternal[graph_, none_, signed_] := Scope[
   cardinals = CardinalList @ graph;
   cardinals = Join[cardinals, Inverted /@ cardinals];
-  cardInd = UAssociation @ AssociationRange @ cardinals;
-  vectors = Repeat[none, {Length @ cardinals, VertexCount @ graph}];
+  cardInd = UAssoc @ AssociationRange @ cardinals;
+  vectors = Repeat[none, {Len @ cardinals, VertexCount @ graph}];
   tags = EdgeTags @ graph;
   tagInds = Lookup[cardInd, tags];
   invTagInds = Lookup[cardInd, Inverted /@ tags];
-  negator = If[signed, Inverted, Identity];
+  negator = If[signed, Inverted, Id];
   ScanThread[
     i = 1;
     {edge, tagInd, invTagInd} |-> (

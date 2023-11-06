@@ -36,7 +36,7 @@ OrderedTreeVertexLayout[OptionsPattern[]][data_] := Scope[
 
   If[rootOrientation === "Sink", indexGraph //= ReverseGraph];
   rootIndex = Switch[rootVertex,
-    IndexedVertex[_Integer],    First @ rootVertex,
+    IndexedVertex[_Int],    P1 @ rootVertex,
     GraphOrigin,                VertexIndex[graph, LookupExtendedOption[graph, GraphOrigin]],
     Automatic|"Source",         First[GraphSources @ SimpleGraph @ indexGraph, None],
     _,                          VertexIndex[graph, rootVertex]
@@ -49,14 +49,14 @@ OrderedTreeVertexLayout[OptionsPattern[]][data_] := Scope[
   edgeCoordinateLists = applyTreeEdgeCoordinateFanoutStyle[edgeCoordinateLists, bendRadius, fanoutStyle];
 
   fn = Switch[orientation,
-    Top,    Identity,
+    Top,    Id,
     Bottom, VectorReflectVertical,
     Left,   VectorReflectVertical /* VectorTranspose,
     Right,  VectorReflectHorizontal /* VectorTranspose,
     _,      ReturnFailed[]
   ];
 
-  If[fn =!= Identity,
+  If[fn =!= Id,
     vertexCoordinates //= fn;
     edgeCoordinateLists //= Map[fn];
   ];
@@ -100,7 +100,7 @@ OrderedTreeLayoutCoordinates[indexGraph_, root_, layerDepths_:Automatic] := Scop
   Label[Done];
   $maxD = Max[$d] + 1;
   If[depths =!= {},
-    numDepths = Length @ depths;
+    numDepths = Len @ depths;
     PrependTo[depths, 0];
     If[$maxD >= numDepths,
       depthDelta = Subtract @@ Part[depths, {-1, -2}];

@@ -36,7 +36,7 @@ LargeLabeled[e_, l_, opts:OptionsPattern[]] :=
 
 PublicTypesettingForm[EllipsisForm]
 
-EllipsisForm[list_, n_] := If[Length[list] > n, Append[Take[list, n], $LargeEllipsis], list];
+EllipsisForm[list_, n_] := If[Len[list] > n, Append[Take[list, n], $LargeEllipsis], list];
 EllipsisForm[n_][list_] := EllipsisForm[list, n];
 
 (**************************************************************************************************)
@@ -186,7 +186,7 @@ SetHoldRest[StyledClickBox];
 StyledClickBox[text_, action_] := StyledClickBox[text, action, Automatic];
 StyledClickBox[text_, action_, color_] := ClickBox[buttonBox[text, color], action];
 
-buttonBox[e_, c_String] := buttonBox[e, $bboxColors @ c];
+buttonBox[e_, c_Str] := buttonBox[e, $bboxColors @ c];
 buttonBox[e_, Automatic] := buttonBox[e, {$LightBlue, $Blue}];
 buttonBox[e_, c_] := buttonBox[e, {OklabLighter @ c, c}];
 buttonBox[e_, {c1_, c2_}] := FrameBox[

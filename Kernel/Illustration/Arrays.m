@@ -43,8 +43,8 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-$lhsP = _Integer | _Span | All;
-$lhsSpecP = {$lhsP..} | {Rule[_Integer, $lhsP]..} | Rule[_Integer, $lhsP];
+$lhsP = _Int | _Span | All;
+$lhsSpecP = {$lhsP..} | {Rule[_Int, $lhsP]..} | Rule[_Int, $lhsP];
 $lhsSpecP2 = $lhsSpecP | {___, _ -> Each, ___} | {___, Each, ___};
 
 procHighlightSpec = Case[
@@ -53,26 +53,26 @@ procHighlightSpec = Case[
 ];
 
 procHighlightRule = Case[
-  lhs:{___, _ -> Each, ___} := MapTuples[procHighlightRule, VectorReplace[lhs, {(i_Integer -> Each) :> Thread[i -> Range[Part[$dims, i]]], other_ :> List[other]}]];
+  lhs:{___, _ -> Each, ___} := MapTuples[procHighlightRule, VectorReplace[lhs, {(i_Int -> Each) :> Thread[i -> Range[Part[$dims, i]]], other_ :> List[other]}]];
   lhs:{___, Each, ___} := MapTuples[procHighlightRule, MapIndex1[If[#1 === Each, Range @ Part[$dims, #2], List @ #1]&, lhs]];
   lhs:$lhsSpecP := % @ Rule[lhs, Automatic];
   Rule[lhs_, col_ /; ColorQ[col] || col === Automatic] := procHighlightLHS[ToList @ lhs] -> ReplaceAutomatic[col, indexedColor[$count++]];
 ];
 
 procHighlightLHS = Case[
-  specList:{$lhsP..} := If[Length[specList] =!= Length @ $dims,
+  specList:{$lhsP..} := If[Len[specList] =!= Len @ $dims,
     ThrowMessage["speccount"],
     Map[procAxisSpec, specList]
   ];
-  specRules:{Rule[_Integer, $lhsP]..} := Scope[
-    spec = Repeat[_, Length @ $dims];
+  specRules:{Rule[_Int, $lhsP]..} := Scope[
+    spec = Repeat[_, Len @ $dims];
     Set[spec[[#1]], procAxisSpec[#2]]& @@@ specRules;
     spec
   ]
 ]
 
 procAxisSpec = Case[
-  i_Integer := i;
+  i_Int := i;
   spec_Span := Alternatives @@ Range @@ spec;
   All := _;
 ];
@@ -111,7 +111,7 @@ applyStyle[e_, s_] := Style[e, Seq @@ ToList[s]];
 resolveFlip[opts___] :=
   resolveFlip1 @@ OptionValue[ColoredCubeArray, {opts}, {FlipAxes, FlipX, FlipY, FlipZ}];
 
-resolveFlip1[spec_String, args__] :=
+resolveFlip1[spec_Str, args__] :=
   resolveFlip1[Characters @ ToUpperCase @ spec, args];
 
 resolveFlip1[spec_List, flipx_, flipy_, flipz_] :=
@@ -130,11 +130,11 @@ multXYZ[xyz_][e_] := ScalePrimitives[e, xyz];
 
 (**************************************************************************************************)
 
-attachLabelAxes[dims_, None|False, _] := Identity;
+attachLabelAxes[dims_, None|False, _] := Id;
 
 attachLabelAxes[dims_, True, opts_] := attachLabelAxes[dims, Automatic, opts];
 
-attachLabelAxes[dims_, Placed[spec_, pos_String], opts_] := attachLabelAxes[dims, spec, Prepend[opts, LabelPosition -> pos]];
+attachLabelAxes[dims_, Placed[spec_, pos_Str], opts_] := attachLabelAxes[dims, spec, Prepend[opts, LabelPosition -> pos]];
 
 attachLabelAxes[dims_, Automatic, opts_] :=
   attachLabelAxes[dims, If[# > 1, Automatic, None]& /@ dims, opts];
@@ -266,7 +266,7 @@ InsetCubeGrid[arr_, opts:OptionsPattern[]] := Scope[
   displacement //= Replace["Screen" -> -viewVector/4];
   CubeArray[
     Dimensions @ arr,
-    ItemFunction -> Function[{
+    ItemFunction -> Fn[{
       $defaultItemFunction[#1],
       Style[PlaneInset[Extract[arr, #2], #1 + displacement, textOrientation, insetOpts], Opacity[1]]
     }],
@@ -289,7 +289,7 @@ ColoredCubeArray[array_List /; ArrayQ[array, 3], opts:OptionsPattern[]] := Scope
   ColoredCubeArray[Extract[array, #]&, Dimensions @ array, opts]
 ];
  
-ColoredCubeArray[cfunc_, dims:{__Integer}, opts:OptionsPattern[]] := Scope[
+ColoredCubeArray[cfunc_, dims:{__Int}, opts:OptionsPattern[]] := Scope[
 
   UnpackOptions[colorRules];
 
@@ -367,8 +367,8 @@ CubeAxes[origin_, size_, {lx_, ly_, lz_}, OptionsPattern[]] := Scope[
   SetAutomatic[baseStyle, $CubeBaseStyle];
   If[FreeQ[baseStyle, FontSize], SetAutomatic[fontSize, 24]];
   If[NumberQ[fontSize], baseStyle //= ReplaceOptions[FontSize -> fontSize]];
-  If[MatchQ[labelPosition, Placed[_String, _]],
-    labelScale = Last[labelPosition]; labelPosition //= First,
+  If[MatchQ[labelPosition, Placed[_Str, _]],
+    labelScale = PN[labelPosition]; labelPosition //= P1,
     labelScale = 0
   ];
   spec = Lookup[$cubeAxesOrient, labelPosition, ReturnFailed["badlabelpos", orient]];
@@ -425,7 +425,7 @@ Options[CubeEdgeText] = {
 
 CubeEdgeText[None, ___] := Nothing;
 
-CubeEdgeText[text_, origin_, dims_, faceName_String, pos_Symbol] :=
+CubeEdgeText[text_, origin_, dims_, faceName_Str, pos_Symbol] :=
   CubeEdgeText[text, origin, dims, Seq @@ faceNameToIndex[{faceName, pos}]];
 
 CubeEdgeText[text_, origin_, dims_, indices_, positions_:{0,0,0}, opts:OptionsPattern[]] := Scope[

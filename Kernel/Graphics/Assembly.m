@@ -1,7 +1,7 @@
 PublicHead[SRow, SCol, SColR, SRowR, SRows, SCols, SGrid, Padded]
 
-SColR[args___, opts___Rule] := SCol[Seq @@ Reverse[{args}], opts];
-SRowR[args___, opts___Rule] := SRow[Seq @@ Reverse[{args}], opts];
+SColR[args___, opts___Rule] := SCol[Seq @@ Rev[{args}], opts];
+SRowR[args___, opts___Rule] := SRow[Seq @@ Rev[{args}], opts];
 
 PublicFunction[AssembleGraphics]
 
@@ -39,8 +39,8 @@ AssembleGraphics[g_, opts:OptionsPattern[]] := Scope[
   prims = assemble @ g;
   If[!MatchQ[prims, _Sized], ReturnFailed[]];
 
-  {xmax, ymax} = Last @ prims;
-  prims //= First;
+  {xmax, ymax} = PN @ prims;
+  prims //= P1;
   prims //= SimplifyTranslate;
   
   graphics = Graphics[prims, BaseStyle -> $baseStyle, PlotRange -> {{0, xmax}, {0, ymax}}, FilterOptions @ opts];
@@ -48,7 +48,7 @@ AssembleGraphics[g_, opts:OptionsPattern[]] := Scope[
   
   If[$requiredScaleFactor,
     {{xmin, xmax}, {ymin, ymax}} = GraphicsPlotRange[graphics];
-    imageWidth = First @ LookupImageSize @ graphics;
+    imageWidth = P1 @ LookupImageSize @ graphics;
     $pointSizeScaleFactor = (xmax - xmin) / imageWidth;
     Goto[Recompute];
   ];
@@ -72,11 +72,11 @@ assemblePrimitives = Case[
 
   s_ ? NumberQ := % @ TextString @ s;
 
-  s_String := % @ Text[s, {0, 0}, BaseStyle -> $labelStyle];
+  s_Str := % @ Text[s, {0, 0}, BaseStyle -> $labelStyle];
 
-  Inset[s_String, pos_] := % @ Text[s, pos, BaseStyle -> $LabelStyle];
+  Inset[s_Str, pos_] := % @ Text[s, pos, BaseStyle -> $LabelStyle];
 
-  Style[e:(_Text | _Inset | _String), style___] := Block[{$baseStyle = ToList[style, $baseStyle]}, %[e]];
+  Style[e:(_Text | _Inset | _Str), style___] := Block[{$baseStyle = ToList[style, $baseStyle]}, %[e]];
 
   Spacer[w_ ? NumericQ] := Sized[{}, {w, 0.0001}];
 
@@ -156,7 +156,7 @@ assemble = Case[
     {g1, s1} = List @@ assemble[g1];
     {g2, s2} = List @@ assemble[g2];
     a = Lookup[{opts}, Alignment, Center];
-    If[a === None, g2 //= First; t = s1/2, t = -alignAgainst[s1, s2, a]];
+    If[a === None, g2 //= P1; t = s1/2, t = -alignAgainst[s1, s2, a]];
     Sized[{g1, Translate[g2, t]}, s1]
   ];
 
@@ -198,7 +198,7 @@ assembleSRow[list_List, {valign_, hspacing_}] := Scope[
 ];
 
 assembleSCol[list_List, {halign_, vspacing_}] := Scope[
-  list //= Reverse;
+  list //= Rev;
   sizes = Part[list, All, 2];
   SetInherited[halign, $horizontalAlignment];
   SetInherited[vspacing, $verticalSpacing];
@@ -232,7 +232,7 @@ toAlignFunc[max_, align_] :=
   Switch[align,
     Bottom|Left,          0&,
     Center,               (max - #) / 2&,
-    Scaled[_ ? NumericQ], (max - #) * N[First @ align]&,
+    Scaled[_ ? NumericQ], (max - #) * N[P1 @ align]&,
     Top|Right,            (max - #)&
   ];
 
@@ -241,7 +241,7 @@ assembleSGrid[array_List, {halign_, valign_, hspacing_, vspacing_}] := Scope[
   SetInherited[valign, $verticalAlignment];
   SetInherited[hspacing, $horizontalSpacing];
   SetInherited[vspacing, $verticalSpacing];
-  array //= Reverse;
+  array //= Rev;
   sizes = Part[array, All, All, 2];
   widths = Part[sizes, All, All, 1];
   heights = Part[sizes, All, All, 2];
@@ -278,10 +278,10 @@ PublicFunction[AssembleGraphics3D]
 
 PublicHead[XStack, XStackR, YStack, YStackR, XYStack, XYStackR, ZStack, ZStackR, CubeStack]
 
-XStackR[args___, opts___Rule] := XStack[Seq @@ Reverse[{args}], opts];
-YStackR[args___, opts___Rule] := YStack[Seq @@ Reverse[{args}], opts];
-ZStackR[args___, opts___Rule] := ZStack[Seq @@ Reverse[{args}], opts];
-XYStackR[args___, opts___Rule] := XYStack[Seq @@ Reverse[{args}], opts];
+XStackR[args___, opts___Rule] := XStack[Seq @@ Rev[{args}], opts];
+YStackR[args___, opts___Rule] := YStack[Seq @@ Rev[{args}], opts];
+ZStackR[args___, opts___Rule] := ZStack[Seq @@ Rev[{args}], opts];
+XYStackR[args___, opts___Rule] := XYStack[Seq @@ Rev[{args}], opts];
 
 
 PublicOption[XSpacing, YSpacing, ZSpacing]
@@ -305,8 +305,8 @@ AssembleGraphics3D[g_, opts:OptionsPattern[]] := Scope[
   prims = assemble3D @ embedSizes3D @ g;
   If[!MatchQ[prims, _Sized], Print[prims]; ReturnFailed[]];
 
-  {xmax, ymax, zmax} = Last @ prims;
-  prims //= First;
+  {xmax, ymax, zmax} = PN @ prims;
+  prims //= P1;
   prims //= SimplifyTranslate;
   
   Graphics3D[prims, BaseStyle -> $baseStyle, PlotRange -> {{0, xmax}, {0, ymax}, {0, zmax}}, FilterOptions @ opts]
@@ -381,7 +381,7 @@ assembleOverlay[g1_, g2_, opts___] := Scope[
   {g1, s1} = List @@ assemble3D[g1];
   {g2, s2} = List @@ assemble3D[g2];
   a = Lookup[{opts}, Alignment, None];
-  If[a === None, g2 //= First; t = s1/2, t = -alignAgainst[s1, s2, a]];
+  If[a === None, g2 //= P1; t = s1/2, t = -alignAgainst[s1, s2, a]];
   Sized[{g1, Translate[g2, t]}, s1]
 ];
 
@@ -438,10 +438,10 @@ assembleCube[Sized[g_, size_], specs_, {align_, xSpacing_, ySpacing_, zSpacing_}
   max = VectorMax[posr, post, poso];
   Sized[Translate[res, -min], max - min]
 ,
-  procSpec[Left,   Sized[h_, s:{dx_, dy_, dz_}]] := Second @ {posl[[1]] -= dx/2 + $xSpacing, Translate[h, -s/2 + posl], posl[[1]] -= dx/2},
-  procSpec[Right,  Sized[h_, s:{dx_, dy_, dz_}]] := Second @ {posr[[1]] += dx/2 + $xSpacing, Translate[h, -s/2 + posr], posr[[1]] += dx/2},
-  procSpec[Bottom, Sized[h_, s:{dx_, dy_, dz_}]] := Second @ {posb[[2]] -= dy/2 + $ySpacing, Translate[h, -s/2 + posb], posb[[2]] -= dy/2},
-  procSpec[Top,    Sized[h_, s:{dx_, dy_, dz_}]] := Second @ {post[[2]] += dy/2 + $ySpacing, Translate[h, -s/2 + post], post[[2]] += dy/2},
-  procSpec[Under,  Sized[h_, s:{dx_, dy_, dz_}]] := Second @ {posu[[3]] -= dz/2 + $zSpacing, Translate[h, -s/2 + posu], posu[[3]] -= dz/2},
-  procSpec[Over,   Sized[h_, s:{dx_, dy_, dz_}]] := Second @ {poso[[3]] += dz/2 + $zSpacing, Translate[h, -s/2 + poso], poso[[3]] += dz/2}
+  procSpec[Left,   Sized[h_, s:{dx_, dy_, dz_}]] := P2 @ {posl[[1]] -= dx/2 + $xSpacing, Translate[h, -s/2 + posl], posl[[1]] -= dx/2},
+  procSpec[Right,  Sized[h_, s:{dx_, dy_, dz_}]] := P2 @ {posr[[1]] += dx/2 + $xSpacing, Translate[h, -s/2 + posr], posr[[1]] += dx/2},
+  procSpec[Bottom, Sized[h_, s:{dx_, dy_, dz_}]] := P2 @ {posb[[2]] -= dy/2 + $ySpacing, Translate[h, -s/2 + posb], posb[[2]] -= dy/2},
+  procSpec[Top,    Sized[h_, s:{dx_, dy_, dz_}]] := P2 @ {post[[2]] += dy/2 + $ySpacing, Translate[h, -s/2 + post], post[[2]] += dy/2},
+  procSpec[Under,  Sized[h_, s:{dx_, dy_, dz_}]] := P2 @ {posu[[3]] -= dz/2 + $zSpacing, Translate[h, -s/2 + posu], posu[[3]] -= dz/2},
+  procSpec[Over,   Sized[h_, s:{dx_, dy_, dz_}]] := P2 @ {poso[[3]] += dz/2 + $zSpacing, Translate[h, -s/2 + poso], poso[[3]] += dz/2}
 ];

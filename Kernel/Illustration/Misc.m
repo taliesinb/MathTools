@@ -84,11 +84,11 @@ LargeSymbolForm[e_, opts___Rule] := inlineSymbol[e, opts];
 
 PublicFunction[ExportNotebookOutputs]
 
-ExportNotebookOutputs[destination_String, prefix_String:"", sz_:3] := Scope[
+ExportNotebookOutputs[destination_Str, prefix_Str:"", sz_:3] := Scope[
   EnsureDirectory[destination];
   If[FileType[destination] =!= Directory, ReturnFailed[]];
   outputCells = NotebookImport[EvaluationNotebook[], "Output" -> "Cell"];
-  Print["# of cells: ", Length @ outputCells];
+  Print["# of cells: ", Len @ outputCells];
   $i = 1;
   Scan[cell |-> (
     path = PathJoin[destination, prefix <> IntegerString[$i++, 10, 3] <> ".png"];

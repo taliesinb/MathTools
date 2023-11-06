@@ -7,7 +7,7 @@ $flavorData = <||>;
 $flavorData["Base"] = <||>;
 $flavorData["Base", "AllowTableHeaderSkip"]       = False;
 $flavorData["Base", "AnchorTemplate"]             = blankString;
-$flavorData["Base", "ClassAttributeTemplate"]     = Function[Identity];
+$flavorData["Base", "ClassAttributeTemplate"]     = Fn[Id];
 $flavorData["Base", "ExternalImportTemplate"]     = blankString;
 $flavorData["Base", "FileAnimatedImageTemplate"]  = Inherited;
 $flavorData["Base", "FileImageTemplate"]          = genericImageLinkTemplate;
@@ -15,8 +15,8 @@ $flavorData["Base", "FileAnimatedImageTemplate"]  = Inherited;
 $flavorData["Base", "InlineLinkTemplate"]         = defaultLinkTemplate;
 $flavorData["Base", "InlineMathTemplate"]         = wrapDollar;
 $flavorData["Base", "KatexFontTemplate"]          = wrapDollar;
-$flavorData["Base", "KatexPostprocessor"]         = Identity;
-$flavorData["Base", "MarkdownPostprocessor"]      = Identity;
+$flavorData["Base", "KatexPostprocessor"]         = Id;
+$flavorData["Base", "MarkdownPostprocessor"]      = Id;
 $flavorData["Base", "MultilineMathTemplate"]      = wrapDoubleDollar;
 $flavorData["Base", "RasterizationFunction"]      = standardRasterizationFunction;
 $flavorData["Base", "RawHTMLTemplate"]            = blankString;
@@ -53,11 +53,11 @@ $flavorData["Hugo", "InlineMathTemplate"]         = StringJoin["{{<k \"", #, "\"
 $flavorData["Hugo", "KatexFontTemplate"]          = hugoKatexFontFunction;
 $flavorData["Hugo", "MultilineMathTemplate"]      = StringJoin["{{<kk \"", #, "\">}}"]&;
 $flavorData["Hugo", "KatexPostprocessor"]         = splitOpenBraces;
-$flavorData["Hugo", "RawHTMLTemplate"]            = Identity;
+$flavorData["Hugo", "RawHTMLTemplate"]            = Id;
 $flavorData["Hugo", "ExternalImportTemplate"]     = StringFunction @ """{{< readfile file="#1" >}}""";
 
 (* TODO: fill in more cases here, like Typewriter, SanSerif, etc. and make them match up with the TypewriteForm etc. *)
-hugoKatexFontFunction[str_String] := $katexFontSpanTemplate[str, If[StringContainsQ[str, DoubleStruckCharacter], "blackboard", "math"]];
+hugoKatexFontFunction[str_Str] := $katexFontSpanTemplate[str, If[StringContainsQ[str, DoubleStruckCharacter], "blackboard", "math"]];
 $katexFontSpanTemplate = StringFunction @ """<span class='#2Font'>#1</span>""";
 
 hugoClassAttr[class_] := str |-> StringJoin[StringTrim @ str, "\n{", StringRiffle[StringJoinLeft[".", class], ", "], "}\n"];
@@ -109,7 +109,7 @@ wrapCurly[a_]             := StringJoin["~~~\n", StringTrim @ a, "\n~~~"];
 splitOpenBraces[e_]       := StringReplaceRepeated[e, "{{" -> "{ {"];
 escapeBackslash[e_]       := StringReplace[e, {"\\\\" -> "\\\\\\\\", "\\," -> "\\\\,"}];
 
-blankString = Function[""];
+blankString = Fn[""];
 
 (**************************************************************************************************)
 

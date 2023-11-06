@@ -16,16 +16,16 @@ GraphContract[g_, contraction_List, opts:OptionsPattern[]] :=
   VertexReplace[
     VertexContract[g, vertices],
     Map[
-      vertices |-> First[vertices] -> ContractedVertex[vertices],
+      vertices |-> P1[vertices] -> ContractedVertex[vertices],
       toListOfLists @ contraction
     ]
   ] // egraph[opts];
 
-GraphContract[g_, contraction_Association, fn:Except[_Rule], opts:OptionsPattern[]] :=
+GraphContract[g_, contraction_Assoc, fn:Except[_Rule], opts:OptionsPattern[]] :=
   VertexReplace[
     VertexContract[g, Values @ contraction],
     KeyValueMap[
-      {key, vertices} |-> First[vertices] -> fn[vertices, key],
+      {key, vertices} |-> P1[vertices] -> fn[vertices, key],
       contraction
     ]
   ] // egraph[opts];
@@ -46,7 +46,7 @@ GraphContractBy[graph_Graph, func_, nameFn_, opts:OptionsPattern[]] := Switch[
   _,              GraphContract[graph,  GroupBy[VertexList @ graph, func], nameFn]
 ] // egraph[opts];
 
-egraph[] := Identity;
+egraph[] := Id;
 egraph[opts__][g_] := ExtendedGraph[g, opts];
 
 (**************************************************************************************************)
@@ -88,14 +88,14 @@ GraphContractionLattice[graph_, contractedGraphOptions_List, userOpts:OptionsPat
 
   edgeList = CanonicalizeEdges @ EdgeList @ graph;
   isDirected = DirectedGraphQ @ graph;
-  sorter = If[isDirected, Identity, Map[Sort]];
+  sorter = If[isDirected, Id, Map[Sort]];
 
   successorFn = If[greedyEdgeContraction, greedyGraphContractionSuccessors, graphContractionSuccessors];
   {vlist, ielist} = MultiwaySystem[successorFn, {edgeList}, {"VertexList", "IndexEdgeList"}];
   
-  irange = Range @ Length @ vlist;
+  irange = Range @ Len @ vlist;
       
-  postFn = If[combineMultiedges, CombineMultiedges, Identity];
+  postFn = If[combineMultiedges, CombineMultiedges, Id];
 
   graphFn = edges |-> ExtendedGraph[
     AllUniqueVertices @ edges,
@@ -105,7 +105,7 @@ GraphContractionLattice[graph_, contractedGraphOptions_List, userOpts:OptionsPat
   contractedGraphs = Map[graphFn /* postFn, vlist];
   
   ExtendedGraph[
-    Range @ Length @ vlist, ielist, FilterOptions @ userOpts,
+    Range @ Len @ vlist, ielist, FilterOptions @ userOpts,
     GraphLayout -> TreeVertexLayout[Balanced -> True],
     VertexAnnotations -> <|"ContractedGraph" -> contractedGraphs|>,
     ArrowheadShape -> None, VertexSize -> innerSize, VertexShapeFunction -> "ContractedGraph"
@@ -149,7 +149,7 @@ gluingResultsList[edgeList_, rulesList_] := Map[
 
 edgeContractionSuccessors[edgeList_] := Scope[
   index = Values @ PositionIndex[Take[edgeList, All, 2]];
-  index = Select[index, Length[#] >= 2&];
+  index = Select[index, Len[#] >= 2&];
   rules = Flatten[toEdgeContractionRuleList[Part[edgeList, #]]& /@ index];
   Sort[CanonicalizeEdges @ DeleteDuplicates[VectorReplace[edgeList, #]]]& /@ rules
 ];
@@ -162,7 +162,7 @@ toEdgeContractionRule[head_[a1_, b1_, c_], head_[a2_, b2_, d_]] :=
 
 greedyContractEdges[edgeList_] := Scope[
   index = Values @ PositionIndex[CanonicalizeEdges @ Take[edgeList, All, 2]];
-  index = Select[index, Length[#] >= 2&];
+  index = Select[index, Len[#] >= 2&];
   If[index === {}, Return @ edgeList];
   rules = Flatten[toEdgeContractionRuleList[Part[edgeList, #]]& /@ index];
   greedyContractEdges @ Sort @ CanonicalizeEdges @ DeleteDuplicates @ VectorReplace[edgeList, rules]
@@ -186,11 +186,11 @@ UnContractedGraph[graph_Graph, opts___Rule] := Scope[
 
 $ContractedVertexExpansionRules = {
   (head_)[a_Splice, b_Splice, tag___] :>
-    Splice @ Flatten @ Outer[head[#1, #2, tag]&, First @ a, First @ b, 1],
+    Splice @ Flatten @ Outer[head[#1, #2, tag]&, P1 @ a, P1 @ b, 1],
   (head_)[a_, b_Splice, tag___] :>
-    Splice @ Map[head[a, #, tag]&, First @ b],
+    Splice @ Map[head[a, #, tag]&, P1 @ b],
   (head_)[a_Splice, b_, tag___] :>
-    Splice @ Map[head[#, b, tag]&, First @ a]
+    Splice @ Map[head[#, b, tag]&, P1 @ a]
 };
 
 $ContractedEdgeExpansionRules = {
@@ -290,7 +290,7 @@ ContractedGraph[graph_Graph, opts___Rule] := Scope[
     SelfLoopRadius -> edgeLengthScale, MultiEdgeDistance -> edgeLengthScale/2,
     Frame -> True,
     EdgeThickness -> 2, EdgeStyle -> GrayLevel[0.8, 1],
-    ArrowheadShape -> {"FlatArrow", BorderStyle -> Function[{Darker[#, .3], AbsoluteThickness[0]}]},
+    ArrowheadShape -> {"FlatArrow", BorderStyle -> Fn[{Darker[#, .3], AbsoluteThickness[0]}]},
     PrologFunction -> ContractedVertexPrologFunction
   ]
 ];
@@ -300,7 +300,7 @@ ContractedGraph[graph_Graph, opts___Rule] := Scope[
 PublicFunction[ContractedCardinalColorFunction]
 
 ContractedCardinalColorFunction[baseColors_][cardinal_] :=
-  If[Head[cardinal] === ContractedEdge,
+  If[H[cardinal] === ContractedEdge,
     HumanBlend @ DeleteMissing @ Lookup[baseColors, List @@ cardinal],
     Lookup[baseColors, cardinal, $DarkGray]
   ];
@@ -310,7 +310,7 @@ ContractedCardinalColorFunction[baseColors_][cardinal_] :=
 PublicFunction[ContractedEdgeColorFunction]
 
 ContractedEdgeColorFunction[baseColors_][_[_, _, tag_]] :=
-  If[Head[tag] === ContractedEdge,
+  If[H[tag] === ContractedEdge,
     HumanBlend @ DeleteMissing @ Lookup[baseColors, List @@ tag],
     Lookup[baseColors, tag, $DarkGray]
   ];
@@ -320,7 +320,7 @@ ContractedEdgeColorFunction[baseColors_][_[_, _, tag_]] :=
 PublicFunction[ContractedVertexColorFunction]
 
 ContractedVertexColorFunction[baseColors_][vertex_] :=
-  If[Head[vertex] === ContractedVertex,
+  If[H[vertex] === ContractedVertex,
     HumanBlend @ DeleteMissing @ Lookup[baseColors, List @@ vertex],
     Lookup[baseColors, vertex, $DarkGray]
   ];
@@ -330,7 +330,7 @@ ContractedVertexColorFunction[baseColors_][vertex_] :=
 PublicFunction[ContractedVertexCoordinateFunction]
 
 ContractedVertexCoordinateFunction[baseCoords_][vertex_] :=
-  If[Head[vertex] === ContractedVertex,
+  If[H[vertex] === ContractedVertex,
     Mean @ DeleteMissing @ Lookup[baseCoords, List @@ vertex],
     Lookup[baseCoords, vertex]
   ];
@@ -341,7 +341,7 @@ PublicFunction[ContractedVertexPrologFunction]
 
 ContractedVertexPrologFunction[graph_] := Scope[
   baseCoordFunc = GraphAnnotationData[VertexCoordinateFunction];
-  imageWidth = First @ LookupImageSize[graph];
+  imageWidth = P1 @ LookupImageSize[graph];
   small = imageWidth < 100;
   Style[
     Map[ContractedVertexPrimitives, VertexList @ graph],

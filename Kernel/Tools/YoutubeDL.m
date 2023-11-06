@@ -47,10 +47,10 @@ $youtubeDLArgData = ExpressionTable[
 
 Options[YoutubeDL] = #1 -> #2& @@@ $youtubeDLArgData;
 
-$optRename = Association[#1 -> #3& @@@ $youtubeDLArgData];
+$optRename = Assoc[#1 -> #3& @@@ $youtubeDLArgData];
 
 YoutubeDL::badopt = "Unknown options ``."
-YoutubeDL[url_String, opts___Rule] := Scope[
+YoutubeDL[url_Str, opts___Rule] := Scope[
   opts = DeleteCases[{opts}, Alternatives @@ Options[YoutubeDL]];
   args = MapApply[
     {key, val} |-> (

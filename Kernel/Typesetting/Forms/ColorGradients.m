@@ -62,13 +62,13 @@ ColorGradient[{c$1, c$2}, dir$] represents an oriented color gradient in the giv
 ColorGradient::badGradientSpec = "`` is not a valid color gradient spec."
 parseColorGradient = Case[
   {c1_, c2_} -> dir:$SidePattern                  := % @ ColorGradient[{c1, c2}, dir];
-  ColorGradient[{c1_, c2_}] | {c1_, c2_}          := {{1,0}, First, Identity, OklabBlendOperator[toRC /@ {c1, c2}]};
-  ColorGradient[{c1_, c2_}, dir:$Coord2P]         := {Normalize @ dir, DotOperator[dir], Identity, OklabBlendOperator[toRC /@ {c1, c2}]};
+  ColorGradient[{c1_, c2_}] | {c1_, c2_}          := {{1,0}, P1, Id, OklabBlendOperator[toRC /@ {c1, c2}]};
+  ColorGradient[{c1_, c2_}, dir:$Coord2P]         := {Normalize @ dir, DotOperator[dir], Id, OklabBlendOperator[toRC /@ {c1, c2}]};
   ColorGradient[spec_, side:$SidePattern]         := % @ ColorGradient[spec, $SideToCoords @ side];
   ColorGradient[spec__, CompressionFactor -> c_]  := ReplacePart[% @ ColorGradient[spec], 3 -> CompressUnit[c]];
   other_ := (
     Message[ColorGradient::badGradientSpec, MsgExpr @ other];
-    {{1,0}, Identity, Identity, Red&}
+    {{1,0}, Id, Id, Red&}
   );
 ]
 
@@ -93,7 +93,7 @@ ToColorGradient = Case[
 
 PublicFunction[CompressUnit]
 
-CompressUnit[0|0.] := Identity;
+CompressUnit[0|0.] := Id;
 CompressUnit[c_][x_] := Clip[(x - 0.5)/(1 - c + $MachineEpsilon) + 0.5, {0, 1}];
 
 (**************************************************************************************************)
@@ -182,7 +182,7 @@ ImageCropVertical[img_Image, bt_:Automatic] := Scope[
   baseline = LookupOption[img, BaselinePosition, Automatic];
   cropped = ImagePad[img, {{0, 0}, -{b, t}}];
   If[!MatchQ[baseline, _Scaled], Return @ cropped];
-  baseline //= First;
+  baseline //= P1;
   baseline = Clip[Rescale[baseline, {b, h - t} / h], {0, 1}];
   Image[cropped, BaselinePosition -> Scaled[baseline], ImageSize -> {w, h - b - t}/2]
 ];
@@ -225,7 +225,7 @@ ColorGradientRasterize[expr_, colors_, OptionsPattern[]] := Scope[
     grid = ToPackedReal @ Table[{x, y}, {y, h}, {x, w}];
     dots = Dot[grid, Normalize @ dir];
     dots = Clip[Rescale[dots, minMax], {0, 1}];
-    oklab = First[toColor] /@ procNumber[dots];
+    oklab = P1[toColor] /@ procNumber[dots];
     rgb = FromOklab /@ oklab;
     gradImage = Image[rgb];
 
@@ -282,7 +282,7 @@ gradientSymbolBoxes[sym_Symbol ? $symbolFormHeadQ, cspec_, opts___] :=
 gradientSymbolBoxes[(_Symbol ? $taggedFormHeadQ)[inner_], args___]  /; FreeQ[{args}, "Raster"] :=
   gradientSymbolBoxes[inner, args];
 
-gradientSymbolBoxes[str_String, cspec_, opts___] :=
+gradientSymbolBoxes[str_Str, cspec_, opts___] :=
   ToBoxes @ TextIcon[str,
     FilterOptions @ opts,
     FontColor -> cspec,

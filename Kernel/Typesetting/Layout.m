@@ -95,8 +95,8 @@ Options[SpacedRow] = {
   LabelStyle -> ($srLabelStyle = $LabelStyle),
   BaseStyle -> ($srBaseStyle = {}),
   ItemStyle -> ($srItemStyle = {}),
-  ItemFunction -> ($srItemFunction = Identity),
-  LabelFunction -> ($srLabelFunction = Identity),
+  ItemFunction -> ($srItemFunction = Id),
+  LabelFunction -> ($srLabelFunction = Id),
   LabelSpacing -> ($srLabelSpacing = 5),
   Transposed -> ($srTransposed = False),
   IndexTooltip -> ($srIndexTooltip = False),
@@ -145,7 +145,7 @@ SpacedRow[elems__] := Scope[
   If[$srSpliceForms, items //= Map[procInlineForms]];
   items = canonicalizeItem /@ Take[items, UpTo @ $srMaxItems];
   If[$srRiffleItem =!= None, items = Riffle[items, $srRiffleItem]];
-  If[$srColumnRow && Length[items] > (maxWidth = Replace[$srMaxWidth, Infinity -> 4]),
+  If[$srColumnRow && Len[items] > (maxWidth = Replace[$srMaxWidth, Infinity -> 4]),
     Return @ SpacedColumn[
       Map[SpacedRow, Partition[items, UpTo[maxWidth]]],
       Spacings -> $srRowSpacings
@@ -153,7 +153,7 @@ SpacedRow[elems__] := Scope[
   ];
   If[$srIndexTooltip, items //= MapIndex1[NiceTooltip]];
   hasLabels = MemberQ[items, _Labeled];
-  tooLong = IntegerQ[$srMaxWidth] && Length[items] > $srMaxWidth;
+  tooLong = IntegerQ[$srMaxWidth] && Len[items] > $srMaxWidth;
   alignment = $srAlignment;
   If[!ListQ[alignment], alignment = {alignment, alignment}];
   rowSpacings = $srRowSpacings / 10;
@@ -162,7 +162,7 @@ SpacedRow[elems__] := Scope[
   SetAutomatic[labelPosition, If[$srTransposed, Before, After]];
   labelIsBefore = labelPosition === Before;
   If[ListQ[$srMaxWidth],
-    items = Insert[items, EndOfLine, List /@ TakeWhile[1 + (Accumulate @ $srMaxWidth), LessEqualThan[Length @ items]]]
+    items = Insert[items, EndOfLine, List /@ TakeWhile[1 + (Accumulate @ $srMaxWidth), LessEqualThan[Len @ items]]]
   ];
   hasEndOfLines = MemberQ[items, EndOfLine];
   If[tooLong || hasLabels || $srForceGrid || hasEndOfLines,
@@ -175,11 +175,11 @@ SpacedRow[elems__] := Scope[
         Null
     ];
     If[hasLabels,
-      items //= Map[toGridRowPair /* If[labelIsBefore, Reverse, Identity]];
+      items //= Map[toGridRowPair /* If[labelIsBefore, Rev, Id]];
       entries = unfoldRow /@ SequenceSplit[items, {$nextRow}];
       vspacings = {labelSpacing, rowSpacings};
       itemStyle = {{$srItemStyle, $srLabelStyle}};
-      If[labelIsBefore, itemStyle //= Map[Reverse]];
+      If[labelIsBefore, itemStyle //= Map[Rev]];
     ,
       vspacings = {rowSpacings};
       entries = SequenceSplit[items, {$nextRow}];
@@ -189,13 +189,13 @@ SpacedRow[elems__] := Scope[
     
     If[$srTransposed,
       (* i don't think this is needed, but just in case. i can enable it.
-      maxLen = Max[Length /@ entries];
+      maxLen = Max[Len /@ entries];
       entries = PadRight[#, maxLen, ""]& /@ entries;
       *)
       entries //= Transpose;
       styles = {itemStyle, {}};
       {hspacings, vspacings} = {vspacings * 1.5, hspacings * 0.5};
-      alignment //= Reverse;
+      alignment //= Rev;
     ,
       styles = {{}, itemStyle};
     ];
@@ -245,7 +245,7 @@ toGridRowPair = Case[
 unfoldRow[pairs_] :=
   Splice @ Transpose @ pairs;
 
-clickFunc[None] := Identity;
+clickFunc[None] := Id;
 clickFunc[f_][e_] := ClickForm[e, f[e]];
 
 (**************************************************************************************************)
@@ -320,9 +320,9 @@ Gallery[elems_, OptionsPattern[]] := Scope[
   UnpackOptions[imageSize, spacings];
   {w, h} = ToNumericImageSize[imageSize, 1];
   elems = Flatten @ List @ elems;
-  n = Length[elems];
+  n = Len[elems];
   elems = Map[graphToGraphics, elems];
-  size = estimateItemSize @ First @ elems;
+  size = estimateItemSize @ P1 @ elems;
   If[n > 16,
     m = Floor[N[w / size]],
     m = SelectFirst[{10, 9, 8, 7, 6, 5, 4, 3, 2, 2}, Divisible[n, #] && (size * #) < w&, Floor[N[w / size]]];
@@ -335,7 +335,7 @@ Gallery[elems_, OptionsPattern[]] := Scope[
 ];
 
 attachEventHandlers[elems_] := MapIndexed[
-  ClickForm[#, Print[First @ #2]]&,
+  ClickForm[#, Print[P1 @ #2]]&,
   elems
 ];
 
@@ -343,7 +343,7 @@ graphToGraphics[Labeled[g_, x_]] := Labeled[graphToGraphics @ g, x];
 graphToGraphics[g_Graph] := ExtendedGraphPlot @ g;
 graphToGraphics[e_] := e;
 
-lookupImageWidth[g_] := First @ LookupImageSize @ g;
+lookupImageWidth[g_] := P1 @ LookupImageSize @ g;
 
 estimateItemSize = Case[
   g_Graphics | g_Graphics3D := lookupImageWidth[g];

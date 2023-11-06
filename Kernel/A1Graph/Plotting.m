@@ -192,7 +192,7 @@ addPRPadding[range_, _] := (Print["Bad PlotRangePadding"]; range)
 
 PublicFunction[ExtendedGraphPlot]
 
-$autoFilledLegendPattern = (Automatic | _String) | Placed[Automatic | _String | Labeled[Automatic | _String, __], _] | Labeled[Automatic | _String, __];
+$autoFilledLegendPattern = (Automatic | _Str) | Placed[Automatic | _Str | Labeled[Automatic | _Str, __], _] | Labeled[Automatic | _Str, __];
 
 ExtendedGraphPlot[___] := $Failed;
 
@@ -230,26 +230,26 @@ ExtendedGraphPlot[graph_Graph] := Block[
 
     If[MatchQ[$GraphPlotGraphics, _Labeled],
       graphLabel = ReplacePart[$GraphPlotGraphics, 1 -> None];
-      $GraphPlotGraphics //= First;
+      $GraphPlotGraphics //= P1;
     ];
 
     If[MatchQ[$GraphPlotGraphics, _Legended],
       If[MatchQ[graphLegend, None | $autoFilledLegendPattern | {$autoFilledLegendPattern..}],
-        graphLegend = Last @ $GraphPlotGraphics];
-      $GraphPlotGraphics //= First;
+        graphLegend = PN @ $GraphPlotGraphics];
+      $GraphPlotGraphics //= P1;
     ];
 
     eventHandler = None;
     If[MatchQ[$GraphPlotGraphics, _EventHandler],
       eventHandler = ReplacePart[$GraphPlotGraphics, 1 -> None];
-      $GraphPlotGraphics //= First;
+      $GraphPlotGraphics //= P1;
     ];
 
     (* recompute these with the results of plottingFunction, for the benefit of GraphRegionHighlight *)
     rawGraphics = Replace[$GraphPlotGraphics, EventHandler[e_, ___] :> e];
     $GraphPlotImageSize := $GraphPlotImageSize = LookupImageSize @ $GraphPlotGraphics;
-    $GraphPlotImageWidth := $GraphPlotImageWidth = First[$GraphPlotImageSize] - Total[First @ LookupOption[$GraphPlotGraphics, ImagePadding]];
-    $GraphPlotEffectiveImageWidth = First[LookupOption[$GraphPlotGraphics, ImageSizeRaw], $GraphPlotImageWidth];
+    $GraphPlotImageWidth := $GraphPlotImageWidth = P1[$GraphPlotImageSize] - Total[P1 @ LookupOption[$GraphPlotGraphics, ImagePadding]];
+    $GraphPlotEffectiveImageWidth = P1[LookupOption[$GraphPlotGraphics, ImageSizeRaw], $GraphPlotImageWidth];
 
     $GraphPlotRange := $GraphPlotRange = GraphicsPlotRange @ $GraphPlotGraphics;
     $GraphPlotSize := $GraphPlotSize = rangeSize[$GraphPlotRange];
@@ -258,7 +258,7 @@ ExtendedGraphPlot[graph_Graph] := Block[
     {highlightGraphics, highlightLegends, requiredPadding} = resolveGraphRegionHighlightGraphics @ graphRegionHighlight;
     If[highlightGraphics =!= {},
       $GraphPlotGraphics = GraphicsImageSizePadTo[$GraphPlotGraphics, requiredPadding];
-      {negative, positive} = SelectDiscard[highlightGraphics, First /* Negative];
+      {negative, positive} = SelectDiscard[highlightGraphics, P1 /* Negative];
       $GraphPlotGraphics //= ApplyProlog @ Part[negative, All, 2];
       $GraphPlotGraphics //= ApplyEpilog @ Part[positive, All, 2];
       If[highlightLegends =!= None, graphLegend = highlightLegends];
@@ -279,16 +279,16 @@ GraphicsImageSizePadTo[graphics_, requiredPadding_] := Scope[
   ReplaceOptions[graphics, ImagePadding -> padding]
 ];
 
-rangeSize[range_] := EuclideanDistance @@@ range;
+rangeSize[range_] := Dist @@@ range;
 
 computeBorderDistance[{cl_, ch_}, {pl_, ph_}] := {cl - pl, ph - ph};
 
-rankedMean[d_] /; Length[d] < 4 := Min @ d;
-rankedMean[d_] := HarmonicMean @ Take[Sort @ d, Ceiling @ (2 * Sqrt @ Length[d])];
+rankedMean[d_] /; Len[d] < 4 := Min @ d;
+rankedMean[d_] := HarmonicMean @ Take[Sort @ d, Ceiling @ (2 * Sqrt @ Len[d])];
 
 getRankedMinDistance[coords_] := Scope[
   coords //= ToPackedReal;
-  distances = If[Length[coords] > 150,
+  distances = If[Len[coords] > 150,
     DistanceMatrix[RandomChoice[coords, 20], coords],
     DistanceMatrix[coords]
   ];
@@ -302,7 +302,7 @@ computeGraphPlotAspectRatio[] := Scope[
     SetAutomatic[viewOptions, $automaticViewOptions];
     vertexCoords = Part[$VertexCoordinates, $VertexParts];
     viewOptions //= DropOptions["ShrinkWrap"];
-    viewOptions = Association[PlotRange -> CoordinateBounds[vertexCoords], viewOptions];
+    viewOptions = Assoc[PlotRange -> CoordinateBounds[vertexCoords], viewOptions];
     viewTransform = ConstructGraphicsViewTransform[viewOptions];
     If[ContainsQ[viewTransform, Indeterminate], Return[1, Block]];
     vertexCoordinates = viewTransform @ vertexCoords;
@@ -327,7 +327,7 @@ computeMaxSafeArrowheadSize[] := Scope[
 lineCenter = Case[
   pair:{_, _}   := Mean @ pair;
   list_List     := Scope[
-    n = Length[list]; n2 = (n + 1) / 2;
+    n = Len[list]; n2 = (n + 1) / 2;
     If[IntegerQ[n2],
       Part[list, n2],
       Mean @ Part[list, {Floor @ n2, Ceiling @ n2}]
@@ -373,7 +373,7 @@ ExtendedGraphPlottingFunction[___] := $Failed;
 
 PrivateFunction[failPlot]
 
-failPlot[msgName_String, args___] := (
+failPlot[msgName_Str, args___] := (
   Message[MessageName[ExtendedGraphPlot, msgName], args];
   Throw[$Failed, ExtendedGraphPlottingFunction]
 );
@@ -434,7 +434,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   GPPrint["Options processing"];
   FunctionSection[
     cardinalColors = LookupCardinalColors[graph];
-    If[!AssociationQ[cardinalColors], failPlot["badcolors", MsgExpr @ cardinalColors]];
+    If[!AssocQ[cardinalColors], failPlot["badcolors", MsgExpr @ cardinalColors]];
 
     SetNone[vertexAnnotations, <||>];
     SetNone[edgeAnnotations, <||>];
@@ -451,7 +451,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     (* choose a size based on vertex seperation *)
     SetAutomatic[imageSize,
-      If[$VertexParts === All && Length[$VertexList] > 1000, Large,
+      If[$VertexParts === All && Len[$VertexList] > 1000, Large,
         graphPlotSizeScalingFunction[If[$GraphIs3D, 30, 15] * ($GraphPlotSizeX / $GraphMaxSafeVertexSize)]]];
 
     If[NumericQ[graphicsScale],
@@ -556,9 +556,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[$EdgeParts === All, $EdgeParts ^= Range @ $EdgeCount];
     vertexDegrees = VertexDegree @ $Graph;
     Switch[peripheralVertices,
-      _Integer | _Real,
+      _Int | _Real,
         $VertexParts ^= Select[$VertexParts, Part[vertexDegrees, #] > peripheralVertices&],
-      {_, _Integer | _Real},
+      {_, _Int | _Real},
         {centerVerts, maxDistance} = peripheralVertices;
         centerVerts = findVertexIndices[centerVerts];
         If[!IntegerVectorQ[centerVerts], failPlot["badopt", PeripheralVertices, peripheralVertices]];
@@ -567,8 +567,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       _,
         failPlot["badopt", PeripheralVertices, peripheralVertices]
     ];
-    isFadedPEdge = Function[{a, b}, Count[{MemberQ[$VertexParts, a], MemberQ[$VertexParts, b]}, True] == 1];
-    isNonPEdge = Function[{a, b}, MemberQ[$VertexParts, a] || MemberQ[$VertexParts, b]];
+    isFadedPEdge = Fn[{a, b}, Count[{MemberQ[$VertexParts, a], MemberQ[$VertexParts, b]}, True] == 1];
+    isNonPEdge = Fn[{a, b}, MemberQ[$VertexParts, a] || MemberQ[$VertexParts, b]];
     edgePairs = EdgePairs @ ToIndexGraph @ $Graph;
     $fadedEdgeParts = Select[$EdgeParts, isFadedPEdge @@ Part[edgePairs, #]&];
     {$fadedToEdgeParts, $fadedFromEdgeParts} = SelectDiscard[$fadedEdgeParts, MemberQ[$VertexParts, Part[edgePairs, #, 1]]&];
@@ -659,8 +659,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         vertexColorFunction =!= None, LightGray,
         True, $Gray
       ]];
-      If[AssociationQ[arrowheadStyle],
-        arrowheadStyle //= MapIndex1[If[#1 =!= Automatic, #1, cardinalColors @ First @ #2]&]];
+      If[AssocQ[arrowheadStyle],
+        arrowheadStyle //= MapIndex1[If[#1 =!= Automatic, #1, cardinalColors @ P1 @ #2]&]];
 
       baseArrowheadSize := baseArrowheadSize = If[$GraphIs3D, 0.45, 0.8] * (Min[$GraphMaxSafeArrowheadSize / $GraphPlotSizeX, maxMertexSize * 2]);
       arrowheadSize //= processArrowheadSize;
@@ -693,8 +693,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[$fadedEdgeParts =!= None,
       edgeItems = {
         {
-          Line[Part[$EdgeCoordinateLists, $fadedFromEdgeParts], VertexColors -> Repeat[{Transparent, Opacity[1]}, Length @ $fadedFromEdgeParts]],
-          Line[Part[$EdgeCoordinateLists, $fadedToEdgeParts],   VertexColors -> Repeat[{Opacity[1], Transparent}, Length @ $fadedFromEdgeParts]]
+          Line[Part[$EdgeCoordinateLists, $fadedFromEdgeParts], VertexColors -> Repeat[{Transparent, Opacity[1]}, Len @ $fadedFromEdgeParts]],
+          Line[Part[$EdgeCoordinateLists, $fadedToEdgeParts],   VertexColors -> Repeat[{Opacity[1], Transparent}, Len @ $fadedFromEdgeParts]]
         },
         edgeItems
       }
@@ -776,7 +776,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       legendCardinals = If[ListQ[visibleCardinals], KeyTake[cardinalColors, visibleCardinals], cardinalColors];
       orient = If[FreeQ[graphLegend, Placed[Automatic | "Cardinals", Above|Below]], Vertical, Horizontal];
       automaticLegends["Cardinals"] := ArrowheadLegend[cardinalColors,
-        ArrowheadShape -> If[ListQ[arrowheadShape], First @ arrowheadShape, arrowheadShape],
+        ArrowheadShape -> If[ListQ[arrowheadShape], P1 @ arrowheadShape, arrowheadShape],
         Orientation -> orient
       ];
     ];
@@ -939,7 +939,7 @@ processFrameLabel = Case[
       makeFrameLabelElement[bLabel, Bottom, 1],
       makeFrameLabelElement[tLabel, Top, -.9]
     ];
-    labelHeights = Last /@ frameLabelSize /@ labels;
+    labelHeights = PN /@ frameLabelSize /@ labels;
     (* at this point padding has already been done, so we have to update all 3 *)
     padSize = {{0, 0}, labelHeights};
     imageSize += Total /@ padSize;
@@ -982,8 +982,8 @@ processBaselinePosition = Case[
   ];
   Scaled[s_ ? NumericQ, "Interior"] := Scope[
     padOffset = Part[imagePadding, 2, 1];
-    interiorImageHeight = Last @ interiorImageSize;
-    imageHeight = Last @ imageSize;
+    interiorImageHeight = PN @ interiorImageSize;
+    imageHeight = PN @ imageSize;
     Scaled[Clip[((s * interiorImageHeight) + padOffset) / imageHeight, {0, 1}]]
   ];
   s:Scaled[_ ? NumericQ] := s;
@@ -1021,7 +1021,7 @@ computeEdgeLengthBasedImageSize[q_, {edgeSize_, maxWidth_}, ignoreLoops_] := Sco
 ];
 
 computeEdgeLengthBasedImageSize[q_, edgeSize_, ignoreLoops_] := Scope[
-  quantile = EdgeLengthScale[If[ignoreLoops, deleteLoops, Identity] @ $EdgeCoordinateLists, q];
+  quantile = EdgeLengthScale[If[ignoreLoops, deleteLoops, Id] @ $EdgeCoordinateLists, q];
   scaling = edgeSize / quantile;
   If[$GraphIs3D, scaling *= 1.5];
   scaleToImageSize[scaling]
@@ -1035,7 +1035,7 @@ computeVertexPairBasedImageSize[pairSize_] := Scope[
 
 scaleToImageSize[scaling_] := Max[#, 10]& /@ N[Take[$GraphPlotSize, 2] * scaling];
 
-deleteLoops[coords_] := Discard[coords, First[#] == Last[#]&];
+deleteLoops[coords_] := Discard[coords, P1[#] == PN[#]&];
 
 imageSizeToImageFraction[sz_] := sz / effectiveImageWidth;
 ImageFractionToImageSize[sz_] := sz * effectiveImageWidth;
@@ -1178,8 +1178,8 @@ findEdgeList = Case[
   spec_ := ToList @ findEdge @ spec
 ];
 
-applyGVFunc[s_String, a_] := Lookup[a, s];
-applyGVFunc[i_Integer, a_] := Part[a, i];
+applyGVFunc[s_Str, a_] := Lookup[a, s];
+applyGVFunc[i_Int, a_] := Part[a, i];
 applyGVFunc[f_, a_] := f[a];
 
 postProcPrims[All][vals_] := vals;
@@ -1318,15 +1318,15 @@ ExtendedGraphPlot::badarrowheadsize = "ArrowheadSize -> `` is not a valid specif
 (* the resulting size is expressed in the coordinate system of the size specification for Arrowheads[...],
 which is a fraction of the image width *)
 processArrowheadSize = Case[
-  s:$SymbolicSizePattern          := imageSizeToImageFraction[4. * Lookup[$SymbolicPointSizes, s]];
-  r_ ? NQ                         := N[imageSizeToImageFraction[r]];
-  PointSize[sz_ ? NQ]             := N[sz];
-  AbsolutePointSize[sz_ ? NQ]     := N[imageSizeToImageFraction[sz]];
-  Scaled[r_ ? NQ]                 := baseArrowheadSize * N[r];
-  Scaled[s:$SymbolicSizePattern]  := baseArrowheadSize * Lookup[$SymbolicSizeFractions, s];
-  assoc_Association               := Map[%, assoc];
-  Automatic                       := baseArrowheadSize;
-  spec_                           := failPlot["badarrowheadsize", spec];
+  s:$SymbolicSizePattern         := imageSizeToImageFraction[4. * Lookup[$SymbolicPointSizes, s]];
+  r_ ? NQ                        := N[imageSizeToImageFraction[r]];
+  PointSize[sz_ ? NQ]            := N[sz];
+  AbsolutePointSize[sz_ ? NQ]    := N[imageSizeToImageFraction[sz]];
+  Scaled[r_ ? NQ]                := baseArrowheadSize * N[r];
+  Scaled[s:$SymbolicSizePattern] := baseArrowheadSize * Lookup[$SymbolicSizeFractions, s];
+  assoc_Assoc                    := Map[%, assoc];
+  Automatic                      := baseArrowheadSize;
+  spec_                          := failPlot["badarrowheadsize", spec];
   {NQ -> NumericQ, sp -> $SymbolicSizePattern}
 ];
 
@@ -1335,7 +1335,7 @@ filterCardinals[cards_][card_] := If[MemberQ[cards, card] || AnyTrue[cards, Matc
 
 drawTagGroupArrowheadEdges[indices_, style_] := Scope[
 
-  filter = If[visibleCardinals === All, Identity, filterCardinals[ToList @ visibleCardinals]];
+  filter = If[visibleCardinals === All, Id, filterCardinals[ToList @ visibleCardinals]];
 
   edgeTagGroups = If[$EdgeTags === None,
     <|All -> indices|>,
@@ -1382,8 +1382,8 @@ drawArrowheadEdges[cs:CardinalSet[cardinals_], indices_] := Scope[
       {l___, c_, m___, Inverted[c_], r___} :> {l, TwoWay[c], m, r}
     ]
   ];
-  cardinals = SortBy[cardinals, {Head[#] === TwoWay, #}&];
-  num = Length @ cardinals;
+  cardinals = SortBy[cardinals, {H[#] === TwoWay, #}&];
+  num = Len @ cardinals;
   positions = Map[
     Replace[
       lookupTagSpec[arrowheadPosition, #, 0.5],
@@ -1525,7 +1525,7 @@ lookupTagSpec[other_, cardinal_, default_] :=
 
 lookupTagSpec[other_, cardinal_] := other;
 
-lookupTagSpec[assoc_Association, cardinal_] :=
+lookupTagSpec[assoc_Assoc, cardinal_] :=
   Lookup[assoc, StripInverted @ cardinal, Lookup[assoc, All, None]];
 
 lookupTagSpec[TwoWay[cardinal_]] :=
@@ -1614,12 +1614,12 @@ ExtendedGraphPlot::badlegendkey = "`` is not a valid named legend. Valid names a
 ExtendedGraphPlot::badlegendspec = "`` is not a valid legend spec."
 
 assembleLegendItem = Case[
-  Automatic                 := First[$auto, $Failed];
-  s_String                  := Lookup[$auto, s, Message[ExtendedGraphPlot::badlegendkey, s, Keys @ $auto]; $Failed];
-  Placed[s_String, p_]      := Placed[%[s], p];
-  Labeled[s_, l_, args___]  := Labeled[%[s], l, args];
-  None                      := None;
-  e_                        := e;
+  Automatic                := First[$auto, $Failed];
+  s_Str                    := Lookup[$auto, s, Message[ExtendedGraphPlot::badlegendkey, s, Keys @ $auto]; $Failed];
+  Placed[s_Str, p_]        := Placed[%[s], p];
+  Labeled[s_, l_, args___] := Labeled[%[s], l, args];
+  None                     := None;
+  e_                       := e;
 ]
 
 (**************************************************************************************************)
@@ -1651,12 +1651,12 @@ processVertexShapeFunction[{__, last_}] :=
 ExtendedGraphPlot::badvshapefunckey = "`` is not a valid verte."
 
 (* because rule isn't supported by Graph *)
-processVertexShapeFunction[key_String /* func_] :=
+processVertexShapeFunction[key_Str /* func_] :=
   processVertexShapeFunction[key -> func];
 
-processVertexShapeFunction[key_String -> func_] := (
+processVertexShapeFunction[key_Str -> func_] := (
   annos = getVertexAnnoValue[vertexAnnotations, key];
-  processVertexShapeFunction @ Association @
+  processVertexShapeFunction @ Assoc @
     MapThread[#1 -> func[#2]&, {$VertexList, annos}]
 )
 
@@ -1694,7 +1694,7 @@ processVertexShapeFunction[spec_] := Scope[
       vertexDrawFunc = drawHexagon[$vertexSize];
       vertexBaseStyle = EdgeForm @ AbsoluteThickness[1];
     ,
-    _Association,
+    _Assoc,
       additionalImagePadding += 2;
       vertexDrawFunc = drawCustomShape[spec, $vertexSize];
       If[$inheritedVertexSize,
@@ -1706,7 +1706,7 @@ processVertexShapeFunction[spec_] := Scope[
     "Name" | "Vertex",
       vertexDrawFunc = drawOriginalVertices[$vertexSize];
     ,
-    _String,
+    _Str,
       failPlot["badvshapefuncstr", spec, commaString @ $validVertexShapes];
     ,
     _,
@@ -1728,7 +1728,7 @@ drawSphere[size_][pos_, color_] :=
 drawDisk[size_][pos_, color_] :=
   edgedStyle[color] @ mapCoordArray[Disk, pos, size];
 
-edgedStyle[{}] := Identity;
+edgedStyle[{}] := Id;
 
 edgedStyle[color_][primitives_] := Style[
   primitives,
@@ -1807,7 +1807,7 @@ drawIndividualCustomShapeFunction[fn_, size_, color_][pos_] := Scope[
     $Failed
   ];
   res = res /. cc_CardinalColor :> RuleCondition @ evalCardinalColor @ cc;
-  If[Head[res] === Form, res = Text[res, pos, {0, 0}, Background -> vertexBackground]];
+  If[H[res] === Form, res = Text[res, pos, {0, 0}, Background -> vertexBackground]];
   If[MatchQ[res, _Graph | _Graphics], res = drawGraphicsWithColor[res, pos, color, size]];
   If[res === None, Return @ {}];
   If[res === $Failed, failPlot["vertexfnmsg", vertex]];
@@ -1898,12 +1898,12 @@ PrivateFunction[setbackCoords]
 
 setbackCoords[0|0.|{0|0.,0|0.}][line_] := line;
 
-setbackCoords[dist_ ? NumericQ][{a_, b_}] /; (EuclideanDistance[a, b] > 2 * dist) := Scope[
+setbackCoords[dist_ ? NumericQ][{a_, b_}] /; (Dist[a, b] > 2 * dist) := Scope[
   dx = Normalize[b - a] * dist;
   {a + dx, b - dx}
 ];
 
-setbackCoords[{da_ ? NumericQ, db_ ? NumericQ}][{a_, b_}] /; (EuclideanDistance[a, b] > (da + db)) := Scope[
+setbackCoords[{da_ ? NumericQ, db_ ? NumericQ}][{a_, b_}] /; (Dist[a, b] > (da + db)) := Scope[
   dx = Normalize[b - a];
   {a + dx * da, b - dx * db}
 ];
@@ -1934,7 +1934,7 @@ drawViaColorFunc[colors_, colorFn_, drawFn_, count_, parts_, fadedParts_, dataPr
   ];
 
   colorGroupFn = If[MatchQ[colorFn, Tooltip[_]],
-    colorFn = First @ colorFn;
+    colorFn = P1 @ colorFn;
     toColorDrawFuncWithTooltip[drawFn],
     toColorDrawFunc[drawFn]
   ];
@@ -1942,7 +1942,7 @@ drawViaColorFunc[colors_, colorFn_, drawFn_, count_, parts_, fadedParts_, dataPr
   If[ListQ[colors], colors = PadRight[colors, count, $Gray]];
 
   {colorList, colorGroups, colorFunctionObject} = obtainColors[colors, colorFn, dataProviderFn, optSymbol];
-  If[!MatchQ[colorFunctionObject, ColorFunctionObject["Discrete", Identity]],
+  If[!MatchQ[colorFunctionObject, ColorFunctionObject["Discrete", Id]],
     automaticLegends["Colors"] ^= colorFunctionObject];
 
   colorGroups //= filterAssocIndices[parts];
@@ -1974,12 +1974,12 @@ ExtendedGraphPlot::badcolvals = "Setting of `` did not produce values that could
 ExtendedGraphPlot::msgcolfn = "Applying color function specified for `` gave messages."
 
 toColorDrawFunc[drawFn_] :=
-  {colorValue, indices} |-> drawFn[indices, First @ colorValue];
+  {colorValue, indices} |-> drawFn[indices, P1 @ colorValue];
 
 toColorDrawFuncWithTooltip[drawFn_] :=
   {colorValue, indices} |-> NiceTooltip[
-    drawFn[indices, First @ colorValue],
-    Last @ colorValue
+    drawFn[indices, P1 @ colorValue],
+    PN @ colorValue
   ];
 
 (**************************************************************************************************)
@@ -1992,9 +1992,9 @@ edgeColorDataProvider = Case[
   
   "Cardinal"                := Map[getCardinalEdgeColor, $EdgeTags];
 
-  list_List /; Length[list] === $EdgeCount := list;
+  list_List /; Len[list] === $EdgeCount := list;
 
-  assoc_Association         := Lookup[assoc, $EdgeList, Lookup[assoc, All, $LightGray]];
+  assoc_Assoc               := Lookup[assoc, $EdgeList, Lookup[assoc, All, $LightGray]];
 
   "Random"                  := RandomChoice[$ColorPalette, $EdgeCount];
 
@@ -2058,29 +2058,29 @@ getVertexAnnoValue[annos_, key_] := Lookup[annos, key, failPlot["badgraphannokey
 
 vertexColorDataProvider = Case[
 
-  "Name"                    := $VertexList;
+  "Name"           := $VertexList;
 
-  "Index"                   := Range @ $VertexCount;
+  "Index"          := Range @ $VertexCount;
 
   (* todo, make the distance work on regions as well *)
-  "Distance"                := %[{"Distance", GraphOrigin}];
-  {"Distance", v_}          := MetricDistance[$MetricGraphCache, getVertexIndex @ v];
+  "Distance"       := %[{"Distance", GraphOrigin}];
+  {"Distance", v_} := MetricDistance[$MetricGraphCache, getVertexIndex @ v];
 
-  key_String                := getVertexAnnoValue[vertexAnnotations, key];
-  (key_String -> f_)        := Map[toFunc @ f, %[key]];
+  key_Str          := getVertexAnnoValue[vertexAnnotations, key];
+  (key_Str -> f_)  := Map[toFunc @ f, %[key]];
 
-  list_List /; Length[list] === $VertexCount := list;
+  list_List /; Len[list] === $VertexCount := list;
 
-  assoc_Association         := Lookup[assoc, $VertexList, Lookup[assoc, All, $LightGray]];
+  assoc_Assoc      := Lookup[assoc, $VertexList, Lookup[assoc, All, $LightGray]];
 
-  "Random"                  := RandomChoice[$ColorPalette, $VertexCount];
+  "Random"         := RandomChoice[$ColorPalette, $VertexCount];
 
   fn_ ? MightEvaluateWhenAppliedQ := Map[fn, $VertexList];
 
-  _                         := $Failed;
+  _                := $Failed;
 ];
 
-toFunc[i_Integer] := Extract[i];
+toFunc[i_Int] := Extract[i];
 toFunc[f_] := f;
 
 (**************************************************************************************************)
@@ -2117,7 +2117,7 @@ applyRegionRule = Case[
 
 ExtendedGraphPlot::badregion = "Specification `` in setting for `` is not a valid region, vertex, or edge."
 
-shortMsgForm[spec_] := If[Length[spec] > 10 || ByteCount[spec] > 1000, Skeleton[Length[spec]], spec];
+shortMsgForm[spec_] := If[Len[spec] > 10 || ByteCount[spec] > 1000, Skeleton[Len[spec]], spec];
 
 (**************************************************************************************************)
 
@@ -2135,9 +2135,9 @@ processVertexSize = Case[
   Scaled[sym:$SymbolicSizePattern]   := % @ Scaled @ $SymbolicSizeFractions @ sym;
   m_Max | m_Min                      := Map[%, m];
   rule:$RulePattern                  := % @ {rule};
-  rules_Association                  := % @ Normal @ rules;
+  rules_Assoc                        := % @ Normal @ rules;
   rules:$RuleListPattern             := (
-    $vertexSizeOverrides = Association[processVertexSizeRule /@ rules];
+    $vertexSizeOverrides = Assoc[processVertexSizeRule /@ rules];
     processVertexSize @ Lookup[rules, Key @ All, Automatic]
   );
   Inherited                          := ($inheritedVertexSize = True; % @ Automatic);
@@ -2159,7 +2159,7 @@ processVertexSizeRule[lhs_ -> rhs_] :=
 (**************************************************************************************************)
 
 findEdge = Case[
-  spec_ ? GraphRegionElementQ := Last @ processRegionVerticesEdges @ spec;
+  spec_ ? GraphRegionElementQ := PN @ processRegionVerticesEdges @ spec;
   edge_                       := (
     IndexOf[$EdgeList, edge /. GraphOrigin :> findVertex[GraphOrigin], failPlot["noedge", edge]]
   );
@@ -2240,9 +2240,9 @@ generateLabelPrimitives[labelSpec_,  labelRules_, labelFn_, tspec_, names_, coor
   If[$labelFontSize =!= None, PrependTo[labelStyle, FontSize -> $labelFontSize]];
   If[$labelFontWeight =!= None, PrependTo[labelStyle, FontWeight -> $labelFontWeight]];
   If[$labelFontFamily =!= None, PrependTo[labelStyle, FontFamily -> $labelFontFamily]];
-  $magnifier = If[$labelSizeScale == 1, Identity, Magnify[#, $labelSizeScale]&];
+  $magnifier = If[$labelSizeScale == 1, Id, Magnify[#, $labelSizeScale]&];
   {payloadFunction, placerFunction} = processLabelSpec[labelSpec, labelRules, labelFn];
-  indices = If[parts === All, Range @ Length @ names, parts];
+  indices = If[parts === All, Range @ Len @ names, parts];
   labelElements = tooltipElements = Nothing;
   If[payloadFunction =!= None,
     payloads = Map[payloadFunction, indices];
@@ -2338,7 +2338,7 @@ setLabelStyleGlobals = Case[
   {NQ -> NumericQ}
 ];
 
-$keyP = _String | _Association | (_List ? (SameLengthQ[$labelNames]));
+$keyP = _Str | _Assoc | (_List ? (SameLengthQ[$labelNames]));
 
 processLabelSpec[spec_, None, None] := processLabelSpec1[spec];
 
@@ -2351,7 +2351,7 @@ processLabelSpec[spec_, {rules___}, fn_] := With[
     fn =!= None, getName /* fn,
     True, Null&
   ]},
-  {payloadFn = Function[ind, Replace[getName[ind], {rules, _ :> fallbackFn[ind]}]]},
+  {payloadFn = Fn[ind, Replace[getName[ind], {rules, _ :> fallbackFn[ind]}]]},
   {payloadFn, placeLabelAt}
 ];
 
@@ -2376,12 +2376,12 @@ toPayloadFunction = Case[
   "Name"                := getName;
   "Index"               := getIndex;
   "Tag" | "Cardinal"    := getCardinal;
-  assoc_Association     := lookupPayloadInAssoc[assoc];
+  assoc_Assoc           := lookupPayloadInAssoc[assoc];
   "Weight"              := getWeight;
   list_List ? (SameLengthQ[$labelNames])
                         := Part[list, #]&;
   key_ -> f_            := %[key] /* postProcF[toFunc @ f];
-  key_ := If[MemberQ[$annotationKeys, key],
+  key_                  := If[MemberQ[$annotationKeys, key],
     getAnnotation[key],
     failPlot["badgraphannokey", key, commaString @ $annotationKeys]
   ]
@@ -2438,7 +2438,7 @@ placeLabelAt[label_, pos_, index_] /; ($labelScaledPos =!= None) := Scope[
   pos12 = {pos1, pos2} = PointAlongLine[edgeCoords, Scaled @ #]& /@ ($labelScaledPos + {-0.01, 0.01});
   If[InvertedQ[label], label //= StripInverted; Swap[pos2, pos1]];
   text = Block[{$labelScaledPos = None, $labeledElemSize = 0}, placeLabelAt[label, Mean @ pos12,  index]];
-  If[Head[text] === Text, Insert[text, dim3to2[pos2 - pos1], 4], text]
+  If[H[text] === Text, Insert[text, dim3to2[pos2 - pos1], 4], text]
 ];
 
 dim3to2 = Case[
@@ -2468,7 +2468,7 @@ placeLabelAt[label_, pos_, index_] /; ($labelY === "Sign") := Scope[
 placeLabelAt[label_, pos_, index_] /; ($labelX === "Radial") := Scope[
   cpos = pos - $meanCoordinates;
   If[$GraphIs3D,
-    {$labelX, $labelY} = {0, Sign[$MachineEpsilon + Last[cpos]] * -1.5};
+    {$labelX, $labelY} = {0, Sign[$MachineEpsilon + PN[cpos]] * -1.5};
     cscale = 1 + imageSizeToImageFraction[30] * {1, 1, 0.1};
     placeLabelAt[label, (cscale * cpos) + $meanCoordinates, index]
   ,
@@ -2517,7 +2517,7 @@ makeTextLabel[label_, pos_, offset_] := Text[
 
 placeLabelAt[None | _Missing, _, _] := Nothing;
 
-makeMagnifier[1|1.0] := Identity;
+makeMagnifier[1|1.0] := Id;
 makeMagnifier[scale_] := Magnify[#, scale]&;
 
 (**************************************************************************************************)
@@ -2676,7 +2676,7 @@ splitPrimitives[other_, _] := (
 
 splitMatchingIds[list_, ids_] := Scope[
   matched = Flatten @ Lookup[PositionIndex @ ids, $targets, {}];
-  remaining = Complement[Range @ Length @ list, matched];
+  remaining = Complement[Range @ Len @ list, matched];
   List[
     Part[list, remaining],
     Part[list, matched]
@@ -2687,7 +2687,7 @@ splitMatchingIds[list_, ids_] := Scope[
 
 PrivateFunction[AttachGraphPlotAnnotation]
 
-AttachGraphPlotAnnotation[name_String] := (
+AttachGraphPlotAnnotation[name_Str] := (
   $GraphPlotGraphics //= MapAt[Annotation[#, name]&, 1]
 );
 

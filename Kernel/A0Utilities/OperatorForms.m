@@ -149,8 +149,8 @@ PublicFunction[ModOperator]
 
 ModOperator[n_][e_] := If[NumericQ[e], Mod[e, n, 0], e];
 ModOperator[n_, m_][e_] := If[NumericQ[e], Mod[e, n, m], e];
-ModOperator[Infinity] = Identity;
-ModOperator[Infinity, _] = Identity;
+ModOperator[Infinity] = Id;
+ModOperator[Infinity, _] = Id;
 
 (**************************************************************************************************)
 
@@ -235,13 +235,13 @@ UnsameOperator[f_][g_] := UnsameQ[f, g];
 
 PublicTypesettingBoxFunction[StyleOperator, StyleBoxOperator]
 
-StyleOperator[] = Identity;
-StyleOperator[None] = Identity;
+StyleOperator[] = Id;
+StyleOperator[None] = Id;
 StyleOperator[spec___][Nothing] := Nothing;
 StyleOperator[spec___][e_] := Style[e, spec];
 
-StyleBoxOperator[] = Identity;
-StyleBoxOperator[None] = Identity;
+StyleBoxOperator[] = Id;
+StyleBoxOperator[None] = Id;
 StyleBoxOperator[spec___][Nothing] := Nothing;
 StyleBoxOperator[spec___][e_] := StyleBox[e, spec];
 
@@ -273,7 +273,7 @@ EmptyStyleBoxOperator[color$, opacity$, thickness$] produces a StyleBoxOperator 
 "
 
 EmptyStyleBoxOperator = Case[
-  Seq[s_SolidEdgeForm, o_, t_] := %[Last @ solidEdgeColors @ s, o,  t];
+  Seq[s_SolidEdgeForm, o_, t_] := %[PN @ solidEdgeColors @ s, o,  t];
   Seq[None, _, _]              := InvisibleOperator;
   Seq[_, 0, _]                 := InvisibleOperator;
   Seq[_, _, 0]                 := InvisibleOperator;
@@ -316,7 +316,7 @@ ShaftStyleBoxOperator[color$, opacity$, thickness$, dashing$] produces a StyleBo
 (* TODO: introduce a formal ColorGradient[c1, c2] head *)
 
 ShaftStyleBoxOperator[s_SolidEdgeForm, args___] :=
-  ShaftStyleBoxOperator[Last @ solidEdgeColors @ s, args];
+  ShaftStyleBoxOperator[PN @ solidEdgeColors @ s, args];
 
 ShaftStyleBoxOperator[{c1_, c2_}, o_, t_, d_] :=
   LineBoxGradientOperator[{c1, c2}] /* ShaftStyleBoxOperator[None, o, t, d];
@@ -334,8 +334,8 @@ ShaftStyleBoxOperator[color_, opacity_, thickness_, dashing_] :=
 PrivateTypesettingBoxFunction[LineBoxGradientOperator]
 
 LineBoxGradientOperator[cols_][LineBox[points_]] := Scope[
-  dists = Prepend[0] @ Accumulate @ MapWindowed[Apply @ EuclideanDistance, N @ RemoveOffsets @ points];
-  colors = OklabBlend[cols, dists / Last[dists]];
+  dists = Prepend[0] @ Accumulate @ MapWindowed[Apply @ Dist, N @ RemoveOffsets @ points];
+  colors = OklabBlend[cols, dists / PN[dists]];
   Construct[LineBox, points, VertexColors -> colors]
 ];
 
@@ -364,7 +364,7 @@ SubscriptOperator[s_][e__] := Subscript[s, e];
 
 PublicFunction[SetOperator]
 
-SetOperator[value_] := Function[var, Set[var, value], {HoldAllComplete}];
+SetOperator[value_] := Fn[var, Set[var, value], {HoldAllComplete}];
 
 (**************************************************************************************************)
 

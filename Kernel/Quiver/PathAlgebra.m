@@ -49,18 +49,18 @@ Options[PathAlgebra] = {
   "DrawSortOrder" -> Inverted["PathLength"]
 };
 
-$graphOrLatticeSpec = _Graph | _String | {_String, __};
+$graphOrLatticeSpec = _Graph | _Str | {_Str, __};
 
 PathAlgebra[quiver:$graphOrLatticeSpec, opts:OptionsPattern[]] ? HoldEntryQ =
   PathAlgebra[quiver, Integers, opts];
 
 PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? HoldEntryQ := Scope[
 
-  If[MatchQ[quiver, _String | {_String, __}],
+  If[MatchQ[quiver, _Str | {_Str, __}],
     quiver = LatticeQuiver[quiver]];
   If[!QuiverQ[quiver], ReturnFailed[]];
 
-  If[!MatchQ[field, _Integer | Integers | Reals | Complexes], ReturnFailed[]];
+  If[!MatchQ[field, _Int | Integers | Reals | Complexes], ReturnFailed[]];
 
   UnpackOptions[plotRange, edgeSetback, imageSize, vertexSize, arrowheadSize,
     edgeThickness, symbolicEdgeThickness, symbolicEdgeStyle,
@@ -90,16 +90,16 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? HoldEntryQ :
   data["DrawSortOrder"] = drawSortOrder;
 
   data["Field"] = field;
-  data["FieldModulus"] = mod = Match[field, n_Integer :> n, Infinity];
+  data["FieldModulus"] = mod = Match[field, n_Int :> n, Infinity];
   data["FieldPlus"] = PlusModOperator[mod];
   data["FieldTimes"] = TimesModOperator[mod];
   data["FieldMinus"] = MinusModOperator[mod];
   data["FieldSubtract"] = SubtractModOperator[mod];
 
-  {pos, neg} = Match[field, n_Integer :> {1, n-1}, {1, -1}];
+  {pos, neg} = Match[field, n_Int :> {1, n-1}, {1, -1}];
   data["Pos"] = pos;
   data["Neg"] = neg;
-  data["RandomFieldElement"] = Match[field, n_Integer :> Function[RandomInteger[n-1]], RandomInteger[{-2, 2}]&];
+  data["RandomFieldElement"] = Match[field, n_Int :> Fn[RandomInteger[n-1]], RandomInteger[{-2, 2}]&];
 
   data["FieldColorFunction"] = If[IntegerQ[mod],
     AssociationThread[Range[0, mod-1], fieldColors @ mod],
@@ -231,12 +231,12 @@ PathVectorElementwise[f_, id_, vecs_] := Scope[
 mergeWeights[rules_, id_, f_] :=
   Merge[KeyUnion[Flatten @ rules, id&], f];
 
-constructPathVector[list_List] := constructPathVector @ Association @ list;
+constructPathVector[list_List] := constructPathVector @ Assoc @ list;
 
 rulesToPathVector[list_List] := constructPathVector @ Merge[Flatten @ list, Apply @ $FieldPlus];
 
-constructPathVector[assoc_Association] :=
-  PathVector @ Association @ KeySort @ KeyDrop[NullElement] @ DeleteCases[assoc, 0|0.];
+constructPathVector[assoc_Assoc] :=
+  PathVector @ Assoc @ KeySort @ KeyDrop[NullElement] @ DeleteCases[assoc, 0|0.];
 
 (**************************************************************************************************)
 
@@ -255,24 +255,24 @@ SetUsage @ "
 PathVectorQ[expr$] gives True if expr$ is a valid PathVector.
 "
 
-PathVectorQ[PathVector[_Association]] := $PathAlgebraQ;
+PathVectorQ[PathVector[_Assoc]] := $PathAlgebraQ;
 PathVectorQ[_] := False;
 
 
-PathVectorVectorQ[{PathVector[_Association]...}] := $PathAlgebraQ;
+PathVectorVectorQ[{PathVector[_Assoc]...}] := $PathAlgebraQ;
 PathVectorVectorQ[_] := False;
 
 (**************************************************************************************************)
 
 SetHoldAllComplete[ValidPathAssociationQ];
 
-ValidPathAssociationQ[assoc_Association] /; AssociationQ[Unevaluated[assoc]] :=
+ValidPathAssociationQ[assoc_Assoc] /; AssocQ[Unevaluated[assoc]] :=
   MatchQ[Keys @ assoc, {___PathElement}];
 
 ValidPathAssociationQ[_] := False;
 
 declareFormatting[
-  pv:PathVector[_Association ? ValidPathAssociationQ] /; $PathAlgebraQ :>
+  pv:PathVector[_Assoc ? ValidPathAssociationQ] /; $PathAlgebraQ :>
     formatPathVector[pv]
 ];
 
@@ -281,7 +281,7 @@ declareFormatting[
 
 PublicFunction[PathVectorPlot]
 
-PathVectorPlot[pv:PathVector[_Association ? ValidPathAssociationQ], opts___Rule] /; $PathAlgebraQ :=
+PathVectorPlot[pv:PathVector[_Assoc ? ValidPathAssociationQ], opts___Rule] /; $PathAlgebraQ :=
   formatPathVector[pv, opts];
 
 (**************************************************************************************************)
@@ -306,7 +306,7 @@ formatPathVector[pv_, opts___] := If[notOverlappingPathsQ[pv] && pathFieldQ[pv],
 formatPathVector[pv_] :=
   iFormatPathVector[pv, False];
 
-iFormatPathVector[PathVector[paths_Association], transparency_, opts___Rule] := Scope[
+iFormatPathVector[PathVector[paths_Assoc], transparency_, opts___Rule] := Scope[
   UnpackPathAlgebra[
     vertexCoordinates, edgeCoordinateLists, plotRange, fieldColorFunction,
     vertexRange, vertexList, vertexSize, edgeSetback, imageSize, edgeToCardinal,
@@ -348,9 +348,9 @@ numericOrVectorQ[_ ? NumericQ | {_ ? NumericQ, _ ? NumericQ}] := True;
 numericOrVectorQ[_] := False;
 
 toDrawSorter = Case[
-  "PathLength"    := First /* PathLength;
-  "SymbolicQ"     := Last /* numericOrVectorQ /* Not;
-  "NumericQ"      := Last /* numericOrVectorQ;
+  "PathLength"    := P1 /* PathLength;
+  "SymbolicQ"     := PN /* numericOrVectorQ /* Not;
+  "NumericQ"      := PN /* numericOrVectorQ;
   Inverted[e_]     := (% @ e) /* Not;
   list_List       := ApplyThrough[% /@ list];
   None            := None;
@@ -399,9 +399,9 @@ drawWeightedElement[p:PathElement[t_, e_, h_], weight_] := Scope[
 
 getEdgeCoords[e_] := Scope[
   coords = Part[edgeCoordinateLists, StripInverted /@ e];
-  segments = MapIndices[Reverse, SelectIndices[e, InvertedQ], coords];
-  If[Length[segments] > 1,
-    $n = Length[segments]; $sb = LineLength[First @ segments] / 3.5;
+  segments = MapIndices[Rev, SelectIndices[e, InvertedQ], coords];
+  If[Len[segments] > 1,
+    $n = Len[segments]; $sb = LineLength[P1 @ segments] / 3.5;
     segments //= MapIndexed[setbackSegment];
   ];
   Flatten[segments, 1] //. {l___, a_List, a_List, r___} :> {l, a, r}
@@ -420,7 +420,7 @@ segmentJoin[a_, b_] := If[Abs[segmentAngle[a] - segmentAngle[b]] > 0.01,
   a
 ];
  *)
-segmentAngle[segment_] := ArcTan @@ (Last[segment] - First[segment]);
+segmentAngle[segment_] := ArcTan @@ (PN[segment] - P1[segment]);
 
 drawStyledPath[vertices_, style_] /; $transparency :=
   Mouseover[
@@ -444,7 +444,7 @@ drawPathPrimitives[vertices_, style_] /; $reverseColor =!= None := Scope[
       Line[
         SetbackCoordinates[vertices, {1,1} * .5 * $sb],
         VertexColors -> SetColorOpacity[
-          lineColorRange[$reverseColor, style, Length @ vertices],
+          lineColorRange[$reverseColor, style, Len @ vertices],
           opacity
         ]
       ],
@@ -565,9 +565,9 @@ extractWeightedPaths = Case[
   GraphPathData[vertices_, edges_, inversions_] :=
     attachPathElementWeight[
       PathElement[
-        First @ vertices,
+        P1 @ vertices,
         MapIndices[Inverted, inversions, edges],
-        Last @ vertices
+        PN @ vertices
       ],
       $w
     ];
@@ -611,7 +611,7 @@ BasisWordVectors[] /; $PathAlgebraQ := Scope[
 
 declareFunctionAutocomplete[BasisWordVectors, {$directionStrings}];
 
-BasisWordVectors[type_String] /; $PathAlgebraQ := Scope[
+BasisWordVectors[type_Str] /; $PathAlgebraQ := Scope[
   f = BasisWordVectors[];
   b = PathReverse /@ f;
   Switch[type,
@@ -644,15 +644,15 @@ WordVector[spec_, All] := WordVector[spec, #]& /@ $directionStrings;
 WordVector[words_List] :=
   PathVectorPlus @@ Map[WordVector, words];
 
-WordVector[spec_, type_String] :=
+WordVector[spec_, type_Str] :=
   makeTypeVector[WordVector, WordVector[spec], type];
 
-WordVector[word_String -> n_] :=
+WordVector[word_Str -> n_] :=
   PathVectorTimes[n, WordVector[word]];
 
 General::badpathword = "`` is not a valid path word, which can contain cardinals ``."
 
-WordVector[word_String] /; $PathAlgebraQ := Scope[
+WordVector[word_Str] /; $PathAlgebraQ := Scope[
 
   UnpackPathAlgebra[vertexRange, tagOutTable, tagOutEdgeTable, nullVertex, nullEdge, cardinals];
 
@@ -669,7 +669,7 @@ WordVector[word_String] /; $PathAlgebraQ := Scope[
   ]];
 
   pathEdges = If[pathEdges === {},
-    Repeat[{}, Length @ vertexRange],
+    Repeat[{}, Len @ vertexRange],
     Transpose @ pathEdges
   ];
 
@@ -707,7 +707,7 @@ PathVectorWeights[PathVector[assoc_]] :=
   Values @ assoc;
 
 PathVectorWeights[PathVector[assoc_], i_] :=
-  If[1 <= Abs[i] <= Length[assoc], Part[assoc, i], 0];
+  If[1 <= Abs[i] <= Len[assoc], Part[assoc, i], 0];
 
 PathVectorWeights[list_List, i_] :=
   PathVectorWeights[#, i]& /@ list;
@@ -840,7 +840,7 @@ ConstantVertexField[n_:1] := PathVectorTimes[n, VertexField[]];
 PublicFunction[PathVectorComponents]
 
 PathVectorComponents[PathVector[assoc_]] :=
-  PathVector @ Association[#]& /@ Normal[assoc]
+  PathVector @ Assoc[#]& /@ Normal[assoc]
 
 (**************************************************************************************************)
 
@@ -905,7 +905,7 @@ along the word 'word$'.
 
 declareFunctionAutocomplete[WordDelta, {0, $directionStrings}];
 
-WordDelta[word_String, type_:"Forward"] /; $PathAlgebraQ := Scope[
+WordDelta[word_Str, type_:"Forward"] /; $PathAlgebraQ := Scope[
   forward = WordVector @ word;
   reverse := PathReverse @ forward;
   unit := VertexField[];
@@ -937,7 +937,7 @@ SetUsage @ "
 PathLength[element$] returns the length of a %PathElement.
 "
 
-PathLength[PathElement[_, e_List, _]] := Length @ e;
+PathLength[PathElement[_, e_List, _]] := Len @ e;
 
 (**************************************************************************************************)
 
@@ -1016,9 +1016,9 @@ VertexField[] /; $PathAlgebraQ :=
     1
   ];
 
-VertexField[ints:{__Integer} | _Integer] /; $PathAlgebraQ := Scope[
+VertexField[ints:{__Int} | _Int] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[pos, neg];
-  PathVector @ Association @ Map[
+  PathVector @ Assoc @ Map[
     i |-> (EmptyPathElement[Abs @ i] -> If[Positive[i], pos, neg]),
     Sort @ ToList @ ints
   ]
@@ -1060,7 +1060,7 @@ declareFunctionAutocomplete[RandomEdgeField, {$directionStrings}];
 
 Options[RandomEdgeField] = {RandomSeeding -> Automatic, "Density" -> 1};
 
-RandomEdgeField[type_String:"Symmetric", OptionsPattern[]] /; $PathAlgebraQ := Scope @ RandomSeeded[
+RandomEdgeField[type_Str:"Symmetric", OptionsPattern[]] /; $PathAlgebraQ := Scope @ RandomSeeded[
   UnpackPathAlgebra[edgeRange, randomFieldElement, edgeToTail, edgeToHead];
   UnpackOptions[density];
   randomEdgeMaker = Switch[type,
@@ -1070,7 +1070,7 @@ RandomEdgeField[type_String:"Symmetric", OptionsPattern[]] /; $PathAlgebraQ := S
     "Antisymmetric",  makeRandomAntisymmetricEdge,
     _,                ReturnFailed["badpvectype", type]
   ];
-  If[density < 1, edgeRange = RandomSample[edgeRange, Ceiling[Length[edgeRange] * density]]];
+  If[density < 1, edgeRange = RandomSample[edgeRange, Ceiling[Len[edgeRange] * density]]];
   constructPathVector @ Map[randomEdgeMaker[#1, randomFieldElement[]]&, edgeRange]
 ,
   OptionValue[RandomSeeding]
@@ -1120,7 +1120,7 @@ Options[RandomPathField] = {RandomSeeding -> Automatic};
 RandomPathField[opts:OptionsPattern[]] :=
   RandomPathVector[1, opts];
 
-RandomPathField[range:{_Integer ? NonNegative, _Integer ? NonNegative} | (_Integer ? NonNegative), opts:OptionsPattern[]] :=
+RandomPathField[range:{_Int ? NonNegative, _Int ? NonNegative} | (_Int ? NonNegative), opts:OptionsPattern[]] :=
   RandomPathVector[1, range, opts];
 
 (**************************************************************************************************)
@@ -1129,7 +1129,7 @@ PublicFunction[SymbolicVertexField]
 
 SymbolicVertexField[symbol_:\[FormalV]] := Scope[
   UnpackPathAlgebra[vertexRange];
-  PathVector @ Association @ Map[EmptyPathElement[#] -> Subscript[symbol, #]&, vertexRange]
+  PathVector @ Assoc @ Map[EmptyPathElement[#] -> Subscript[symbol, #]&, vertexRange]
 ];
 
 (**************************************************************************************************)
@@ -1148,7 +1148,7 @@ SymbolicEdgeField[symbol_:\[FormalE], type_:"Forward"] := Scope[
     _,                ReturnFailed["badpvectype", type]
   ];
   i = 1;
-  PathVector @ Association @ KeySort @ Map[edge |-> singleEdgePathElement[edge] -> Subscript[symbol, i++], edges]
+  PathVector @ Assoc @ KeySort @ Map[edge |-> singleEdgePathElement[edge] -> Subscript[symbol, i++], edges]
 ];
 
 (**************************************************************************************************)
@@ -1205,13 +1205,13 @@ RandomPathVector[m$, {n$min, n$max}] chooses paths to have length n$, where n$mi
 
 Options[RandomPathVector] = {RandomSeeding -> Automatic};
 
-RandomPathVector[m_Integer, opts:OptionsPattern[]] :=
+RandomPathVector[m_Int, opts:OptionsPattern[]] :=
   RandomPathVector[m, {0, 2}, opts];
 
-RandomPathVector[m_Integer, range_Integer, opts:OptionsPattern[]] :=
+RandomPathVector[m_Int, range_Int, opts:OptionsPattern[]] :=
   RandomPathVector[m, {range, range}, opts];
 
-RandomPathVector[m_Integer, range:{_Integer ? NonNegative, _Integer ? NonNegative}, OptionsPattern[]] := Scope @ RandomSeeded[
+RandomPathVector[m_Int, range:{_Int ? NonNegative, _Int ? NonNegative}, OptionsPattern[]] := Scope @ RandomSeeded[
   UnpackPathAlgebra[vertexRange, outEdgeTable, randomFieldElement, edgeToHead];
   constructPathVector @ Map[
     vertex |-> Table[
@@ -1240,7 +1240,7 @@ makeRandomPathElement[tail_, len_] := Scope[
 
 PublicFunction[VertexFieldQ]
 
-VertexFieldQ[PathVector[assoc_Association]] := MatchQ[Keys @ assoc, {PathElement[_, {}, _]...}];
+VertexFieldQ[PathVector[assoc_Assoc]] := MatchQ[Keys @ assoc, {PathElement[_, {}, _]...}];
 VertexFieldQ[_] := False;
 
 (**************************************************************************************************)
@@ -1270,11 +1270,11 @@ EdgeField[All] /; $PathAlgebraQ := Scope[
   ]
 ];
 
-EdgeField[ints:{__Integer} | _Integer] /; $PathAlgebraQ := Scope[
+EdgeField[ints:{__Int} | _Int] /; $PathAlgebraQ := Scope[
   UnpackPathAlgebra[edgeRange, pos, neg, edgeToTail, edgeToHead];
   ints = ToList @ ints;
   edges = Part[edgeRange, Abs @ ints];
-  PathVector @ Association @ MapThread[
+  PathVector @ Assoc @ MapThread[
     {edge, int} |-> edge -> If[Positive[int], pos, neg],
     {singleEdgePathElement /@ edges, ints}
   ]
@@ -1297,9 +1297,9 @@ symmetricEdgeField[All, sym_] := Scope[
   ]
 ];
 
-symmetricEdgeField[i_Integer, sym_] := symmetricEdgeField[{i}, sym];
+symmetricEdgeField[i_Int, sym_] := symmetricEdgeField[{i}, sym];
 
-symmetricEdgeField[ints:{__Integer}, sym_] := Scope[
+symmetricEdgeField[ints:{__Int}, sym_] := Scope[
   UnpackPathAlgebra[pos, neg, edgeTails, edgeRange, edgeHeads];
   {edgeTails, edgeRange, edgeHeads} //= PartOperator[All, Abs @ ints];
   If[sym, neg = pos];
@@ -1323,7 +1323,7 @@ weightedForwardBackwardEdgeElements[tail_, edge_, head_, {fweight_, bweight_}] :
 
 PublicFunction[EdgeFieldQ]
 
-EdgeFieldQ[PathVector[assoc_Association]] := MatchQ[Keys @ assoc, {PathElement[_, {_}, _]...}];
+EdgeFieldQ[PathVector[assoc_Assoc]] := MatchQ[Keys @ assoc, {PathElement[_, {_}, _]...}];
 EdgeFieldQ[_] := False;
 
 (**************************************************************************************************)
@@ -1428,7 +1428,7 @@ DefineLiteralMacro[setupForTranslation,
       edgeToCardinal, (* elementFrameData *)
       vertexTags, cardinalTransitions, tagOutEdgeTable, nullEdge, edgeToHead (* tailFrameWordToElement *)
     ];
-    $frameDataCache = UAssociation[];
+    $frameDataCache = UAssoc[];
   )
 ];
 
@@ -1439,7 +1439,7 @@ DefineLiteralMacro[setupForShortestPaths,
     undirectedIndexQuiver = Graph[VertexList @ indexQuiver, (EdgeList @ indexQuiver) /. DirectedEdge -> UndirectedEdge];
     shortestPath = FindShortestPath[undirectedIndexQuiver, All, All];
     edgeIndex = AssociationRange @ EdgePairs @ indexQuiver;
-    edgeIndex = Join[edgeIndex, Map[Inverted] @ KeyMap[Reverse] @ edgeIndex];
+    edgeIndex = Join[edgeIndex, Map[Inverted] @ KeyMap[Rev] @ edgeIndex];
   )
 ];
 
@@ -1467,7 +1467,7 @@ elementTranslate[t_PathElement, p_PathElement, anti_:False] := Scope[
   If[FailureQ[tFrameData] || FailureQ[pFrameData], Return @ NullElement];
 
   pWord = Part[pFrameData, 2];
-  tTransport = RuleThread[First @ tFrameData, Last @ tFrameData];
+  tTransport = RuleThread[P1 @ tFrameData, PN @ tFrameData];
 
   pWordTransported = Replace[pWord, tTransport, {1, 2}];
 
@@ -1620,8 +1620,8 @@ ShortestPathVector[PathVector[assoc_]] := Scope[
 
 shortestPathElement[p:PathElement[t_, e_, h_]] := Scope[
   shortest = shortestPath[t, h];
-  len = Length @ shortest;
-  If[len < Length[e] + 1,
+  len = Len @ shortest;
+  If[len < Len[e] + 1,
     PathElement[t, edgeIndex /@ Partition[shortest, 2, 1], h],
     p
   ]

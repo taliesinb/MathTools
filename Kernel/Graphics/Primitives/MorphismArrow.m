@@ -44,7 +44,7 @@ MorphismArrow[path$, label$, decoration$] applies one or more arrowhead decorati
 
 Options[MorphismArrow] = $morphismArrowOptions;
 
-DeclareCurvePrimitive[MorphismArrow, First, morphismArrowBoxes];
+DeclareCurvePrimitive[MorphismArrow, P1, morphismArrowBoxes];
 
 SignPrimitive["Curve", MorphismArrow]
 
@@ -84,11 +84,11 @@ morphismArrowBoxes[MorphismArrow[points_, labelData_, arrowData_, opts___Rule]] 
   (* apply setback *)
   Switch[arrowData, "Hook" | "Mono",
     extraSetback = {Offset[$size/3], 0};
-    If[arrowPathReversed, extraSetback //= Reverse];
+    If[arrowPathReversed, extraSetback //= Rev];
     setback //= ExtendSetback[extraSetback];
   ];
   points = SetbackCoordinates[points, setback];
-  If[arrowPathReversed, points //= Reverse];
+  If[arrowPathReversed, points //= Rev];
   $path = points;
 
   SetAutomatic[labelPosition, Above];
@@ -150,7 +150,7 @@ $tripleArrowY := $size * 0.7;
 parseMorphismArrowhead = Case[
   None            := {};
   Automatic       := % @ "Arrow";
-  name_String     := % @ LookupOrMessageKeys[$namedMorphismArrowheadSpecs, name, {}, MorphismArrow::badarrownamespec];
+  name_Str        := % @ LookupOrMessageKeys[$namedMorphismArrowheadSpecs, name, {}, MorphismArrow::badarrownamespec];
   other_          := (Message[MorphismArrow::badarrowspec, MsgExpr @ other]; {});
   rules:{___Rule} := MapApply[morphismArrowheadBoxes, rules];
 ]
@@ -258,8 +258,8 @@ labelPositionToSide[labelPos_, pos_, dir_] := Scope[
     Left | Right,       {dx, dy} = dir; If[dy > 0 || (dy == 0. && dx < 0), 1, -1] * If[labelPosition === Left, 1, -1],
     Above | Below,      {dx, dy} = dir; If[dx > 0 || (dx == 0. && dy < 0), 1, -1] * If[labelPosition === Above, 1, -1],
     $SidePattern,       sideTowards[Lookup[$SideToCoords, labelPos] * 1000, pos, dir],
-    Towards[$Coord2P],  sideTowards[First @ labelPos, pos, dir],
-    AwayFrom[$Coord2P], sideTowards[pos, First @ labelPos, dir],
+    Towards[$Coord2P],  sideTowards[P1 @ labelPos, pos, dir],
+    AwayFrom[$Coord2P], sideTowards[pos, P1 @ labelPos, dir],
     $Coord2P,           0,
     _,                  Message[MorphismArrow::badpos, labelPos]; 0
   ]
@@ -304,8 +304,8 @@ morphismLabelBoxes[label_, {pos_, dir_}, anchor_, side_] := Scope[
   above = side === 1;
   dir2 = If[above, VectorRotate90, VectorRotate90CW] @ dir;
   If[Not[labelPosition === Center && labelOrientation ~~~ Automatic | Horizontal],
-    off2 = If[Head[labelOffset] === AlignedOffset,
-      Total[First[labelOffset] * {dir, dir2}],
+    off2 = If[H[labelOffset] === AlignedOffset,
+      Total[P1[labelOffset] * {dir, dir2}],
       labelOffset
     ];
     pos = SimplifyOffsets @ Offset[dir2 * If[labelPosition === Center, 0, 1] * labelSpacing + off2, pos];
@@ -317,7 +317,7 @@ morphismLabelBoxes[label_, {pos_, dir_}, anchor_, side_] := Scope[
   Switch[labelOrientation,
     Aligned,
       offset = {anchor * 2 - 1, side * -1};
-      If[labelRectification && First[dir] < 0, dir *= -1; offset *= -1];,
+      If[labelRectification && P1[dir] < 0, dir *= -1; offset *= -1];,
     Automatic | Horizontal,
       offset = chooseAngularOffset[side * dir];
       If[labelPosition === Center, offset = {0, 0}];

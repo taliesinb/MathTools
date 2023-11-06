@@ -22,7 +22,7 @@ QuiverContractionLattice[quiver_, contractedGraphOptions_List, userOpts:OptionsP
 
   vertexList = VertexList @ quiver;
   outTable = TagVertexOutTable @ quiver;
-  vertexCount = Length @ vertexList;
+  vertexCount = Len @ vertexList;
 
   UnpackOptions[combineMultiedges, spacelikeOnly, allowCyclic, graphStyle, allowGraphContractions];
 
@@ -40,7 +40,7 @@ QuiverContractionLattice[quiver_, contractedGraphOptions_List, userOpts:OptionsP
   contractedGraphOptions = Sequence @@ contractedGraphOptions;
 
   vertexAnnotations = <||>;
-  postFn = If[combineMultiedges, CombineMultiedges, Identity];
+  postFn = If[combineMultiedges, CombineMultiedges, Id];
   graphFn = If[graphStyle === "ContractedGraph", ContractedGraph, ExtendedGraph];
   baseGraph = graphFn[quiver, contractedGraphOptions];
   
@@ -74,7 +74,7 @@ computeValidPartitions[{vertexList_, outTable_, allowGraphContractions_, permitt
   path = CacheFilePath["QuiverContractions", vertexList, outTable, permittedMatrix];
   Hold @ If[FileExistsQ[path], Return @ ImportMX @ path];
 
-  vertexCount = Length @ vertexList;
+  vertexCount = Len @ vertexList;
   partitionGraph = RangePartitionGraph @ vertexCount;
   partitionGraph //= TransitiveClosureGraph;
   partitions = VertexList @ partitionGraph;
@@ -90,7 +90,7 @@ computeValidPartitions[{vertexList_, outTable_, allowGraphContractions_, permitt
   isQuiverContraction = validQuiverPartitionQ[outTable, #]& /@ partitions;
   If[!allowGraphContractions,
     partitions = Pick[partitions, isQuiverContraction];
-    isQuiverContraction = Repeat[True, Length @ partitions];
+    isQuiverContraction = Repeat[True, Len @ partitions];
   ];
 
   contractionGraph = IndexGraph @ TransitiveReductionGraph @ Subgraph[partitionGraph, partitions];
@@ -106,7 +106,7 @@ permittedTermQ[{a_, b_}] := Part[$permittedMatrix, a, b] == 1;
 permittedTermQ[set_] := AllTrue[Tuples[set, {2}], Extract[$permittedMatrix, #] == 1&];
 
 validQuiverPartitionQ[outTable_, partition_] := Scope[
-  rewrites = RuleThread[Alternatives @@@ partition, -Range[Length @ partition]];
+  rewrites = RuleThread[Alternatives @@@ partition, -Range[Len @ partition]];
   collapsedTable = outTable /. rewrites;
   Scan[
     subTable |-> Scan[checkForConflicts, ExtractIndices[subTable, partition]],
@@ -123,7 +123,7 @@ checkForConflicts[list_] :=
 PublicFunction[SpacelikeVertexRelationMatrix]
 
 SpacelikeVertexRelationMatrix[graph_Graph] := Scope[
-  dist = GraphDistanceMatrix[graph] /. {_Integer -> 0, Infinity -> 1};
+  dist = GraphDistanceMatrix[graph] /. {_Int -> 0, Infinity -> 1};
   dist = MapThread[Min, {dist, Transpose @ dist}, 2];
   ToPacked @ dist
 ];
@@ -231,7 +231,7 @@ contractionSetUnionCayleyFunction[generators_][contractionSet_] := Scope[
     {gen, index} |-> If[SubsetQ[contractionSet, gen],
       Nothing,
       res = ContractionSetUnion[contractionSet, gen];
-      If[res === contractionSet, Nothing, Labeled[ContractionSetUnion[contractionSet, gen], First @ index]]
+      If[res === contractionSet, Nothing, Labeled[ContractionSetUnion[contractionSet, gen], P1 @ index]]
     ],
     generators
   ]
@@ -265,7 +265,7 @@ ContractionSetAppend[contractionSet_, term_] := Scope[
 
 PublicFunction[ToContractionSet]
 
-ToContractionSet[term:{___Integer}] := List @ Sort @ term;
+ToContractionSet[term:{___Int}] := List @ Sort @ term;
 
 ToContractionSet[contractionSet_] :=
   SortContractionSet @ If[DuplicateFreeQ[contractionSet, IntersectingQ],
@@ -320,7 +320,7 @@ MinimalContractionSets[quiver_, OptionsPattern[]] := Scope[
   outTable = TagVertexOutTable @ quiver;
   vertices = VertexRange @ quiver;
   vertexPairs = Subsets[vertices, subsetSize];
-  alreadySeen = UAssociation[];
+  alreadySeen = UAssoc[];
   contractionSets = DeleteDuplicates @ Map[growTerms, vertexPairs];
   If[deleteDominated,
     contractionSets //= Discard[AnyTrue[contractionSets, contractionDominates[#]]&]];
@@ -380,7 +380,7 @@ addTerm = Case[
   );
   elems_List := Block[{f, rest},
     Scan[$ds["Insert", #]&, elems];
-    f = First @ elems;
+    f = P1 @ elems;
     Scan[
       If[!$ds["CommonSubsetQ", f, #],
         $dirty = True;

@@ -68,7 +68,7 @@ $extendedGraphOptionsRules = {
   CollapseMultiedges                  -> False,
   CoordinateRotation                  -> None,
   CoordinateTransformFunction         -> None,
-  CustomGraphAnnotation[_String]      -> None,
+  CustomGraphAnnotation[_Str]      -> None,
   EdgeAnnotations                     -> None,
   EdgeColorFunction                   -> None,
   EdgeColorRules                      -> None,
@@ -185,7 +185,7 @@ $extendedGraphOptionSymbols2 = Append[$extendedGraphOptionSymbols, AnnotationRul
 
 splitUserGraphOptions[options___Rule] := Scope[
   options = {options};
-  extOptions = DeleteDuplicatesBy[TakeOptions[options, $extendedGraphOptionSymbols], First];
+  extOptions = DeleteDuplicatesBy[TakeOptions[options, $extendedGraphOptionSymbols], P1];
   options = Map[optionFixup] @ DropOptions[options, $extendedGraphOptionSymbols2];
   {options, checkGraphAnnotations @ extOptions}
 ];
@@ -228,10 +228,10 @@ makeNewGraph[___] := $Failed;
 optionFixup = Case[
   Rule[GraphLayout, {"Dimension" -> d_}]          := Rule[LayoutDimension, d];
   Rule[GraphHighlight, r_]                        := Rule[GraphRegionHighlight, r];
-  Rule[VertexSize, r:{__Rule}]                    := Rule[VertexSize, Association @ r];
-  Rule[sym:(VertexLabels | EdgeLabels), l_List | l_Rule] := Rule[sym, If[MatchQ[l, {_Hold | _Association}], First @ l, Hold @ l]];
+  Rule[VertexSize, r:{__Rule}]                    := Rule[VertexSize, Assoc @ r];
+  Rule[sym:(VertexLabels | EdgeLabels), l_List | l_Rule] := Rule[sym, If[MatchQ[l, {_Hold | _Assoc}], P1 @ l, Hold @ l]];
   Rule[sym:(EdgeStyle|VertexStyle), val_]         := Rule[sym, toDirective[val]];
-  Rule[VertexShapeFunction, assoc_Association]    := Rule[VertexShapeFunction, toShape /@ assoc];
+  Rule[VertexShapeFunction, assoc_Assoc]          := Rule[VertexShapeFunction, toShape /@ assoc];
   Rule[VertexShapeFunction, rule_Rule]            := Rule[VertexShapeFunction, Hold[rule]];
   Rule[sym:(HighlightStyle|VertexLabelStyle|EdgeLabelStyle), elem_] := Rule[sym, toDirective[elem]];
   other_                                          := other;
@@ -248,7 +248,7 @@ interceptedGraphConstructor[e_] := e;
 PublicFunction[ExtendedGraphQ]
 
 ExtendedGraphQ[g_Graph ? GraphQ] :=
-  Count[AnnotationValue[g, $extendedGraphOptionSymbols], $Failed] =!= Length[$extendedGraphOptionSymbols];
+  Count[AnnotationValue[g, $extendedGraphOptionSymbols], $Failed] =!= Len[$extendedGraphOptionSymbols];
 
 ExtendedGraphQ[_] := False;
 
@@ -268,10 +268,10 @@ $GraphThemeData = <|
 PublicSpecialFunction[DefineGraphTheme]
 
 (* TODO: eventually have graph themes be able to chain other graph themes dynamically *)
-DefineGraphTheme[name_String -> parent_String, opts___Rule] :=
+DefineGraphTheme[name_Str -> parent_Str, opts___Rule] :=
   $GraphThemeData[name] = Join[{opts}, $GraphThemeData[parent]];
 
-DefineGraphTheme[name_String, opts___Rule] :=
+DefineGraphTheme[name_Str, opts___Rule] :=
   $GraphThemeData[name] = List[opts];
 
 _DefineGraphTheme := $Unreachable;

@@ -66,7 +66,7 @@ declareConstantSymbol[UnitVertexFieldSymbol];
 
 PublicTypesettingForm[WordVectorForm]
 
-WordVectorForm[p_String, args___] := WordVectorForm[ToPathWord @ p, args]
+WordVectorForm[p_Str, args___] := WordVectorForm[ToPathWord @ p, args]
 
 declareBoxFormatting[
   WordVectorForm[p_, dir_:"Forward"] :>
@@ -279,7 +279,7 @@ $TemplateKatexFunction["PathCovariantDifferenceForm"] = "covariantDifference";
 
 PublicTypesettingForm[PathForwardDifferenceForm]
 
-PathForwardDifferenceForm[w_String] :=
+PathForwardDifferenceForm[w_Str] :=
   PathForwardDifferenceForm @ toPathWordOrSymbol @ w;
 
 declareBoxFormatting[
@@ -298,7 +298,7 @@ $TemplateKatexFunction["PathForwardDifferenceSymbol"] = "forwardDifference";
 
 PublicTypesettingForm[PathBackwardDifferenceForm]
 
-PathBackwardDifferenceForm[w_String] :=
+PathBackwardDifferenceForm[w_Str] :=
   PathBackwardDifferenceForm @ toPathWordOrSymbol @ w;
 
 declareBoxFormatting[
@@ -317,7 +317,7 @@ $TemplateKatexFunction["PathBackwardDifferenceSymbol"] = "backwardDifference";
 
 PublicTypesettingForm[PathCentralDifferenceForm]
 
-PathCentralDifferenceForm[w_String] :=
+PathCentralDifferenceForm[w_Str] :=
   PathCentralDifferenceForm @ toPathWordOrSymbol @ w;
 
 declareBoxFormatting[

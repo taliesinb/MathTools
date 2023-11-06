@@ -24,7 +24,7 @@ PublicHead[PartitionNode]
 
 PartitionNode::usage = "PartitionNode[partition, support]";
 zFormat[PartitionNode[support_List, partition_]] :=
-	"PartitionNode"[support, Skeleton[Length[partition]]];
+	"PartitionNode"[support, Skeleton[Len[partition]]];
 
 getSupport[PartitionNode[support_, _]] := support;
 getPartition[PartitionNode[_, partition_]] := partition;
@@ -39,8 +39,8 @@ Options[PartitionLattice] = JoinOptions[
 ];
 
 PartitionLattice[minimalPartitions_, userOpts:OptionsPattern[]] := Scope[
-	mpRange = Range @ Length @ minimalPartitions;
-	$dsIndex = $pairIndex = UAssociation[];
+	mpRange = Range @ Len @ minimalPartitions;
+	$dsIndex = $pairIndex = UAssoc[];
 	ScanIndexed[setupPart, minimalPartitions];
 	initSupports = List /@ mpRange;
 	initNodes = MapThread[PartitionNode, {initSupports, minimalPartitions}];
@@ -63,7 +63,7 @@ PartitionLattice[minimalPartitions_, userOpts:OptionsPattern[]] := Scope[
 
 setupPart[part_, support_] := (
 	$dsIndex[support] = DSCreate[part];
-	Scan[addTermToIndex[First @ support], part];
+	Scan[addTermToIndex[P1 @ support], part];
 )
 
 addTermToIndex[support_][term_] := Scan[
@@ -126,7 +126,7 @@ MeetSemilatticeGraph[elements_, userOpts:OptionsPattern[]] := Scope[
 	head = Part[elements, 1, 0];
 	subsets = Sort[Sort /@ (List @@@ elements)];
 	all = Union @ Map[SetsIntersection] @ Subsets[subsets];
-	range = Range @ Length @ all;
+	range = Range @ Len @ all;
 	edges = TransitiveReductionGraph @ RelationGraph[SubsetQ[Part[all, #1], Part[all, #2]]&, range];
 	IndexedExtendedGraph[
 		head @@@ all, EdgeList @ edges,
@@ -153,23 +153,23 @@ VertexOutComponentLists[graph_] := AssociationMap[
 
 EmptyIndex[keys_] := ConstantAssociation[keys, {}];
 
-makePoset[up_Association] := makePoset[up, InvertIndex @ up];
+makePoset[up_Assoc] := makePoset[up, InvertIndex @ up];
 
-makePoset[up_Association, dn_Association] := Scope[
+makePoset[up_Assoc, dn_Assoc] := Scope[
 	set = Union[Keys @ up, Keys @ dn];
 	{up, dn} = KeyUnion[{up, dn}, {}&];
 	upRules = FlattenIndex @ up;
 	dnRules = FlattenIndex @ dn;
 	botSet = Cases[Normal @ dn, Rule[k_, {}] :> k];
 	topSet = Cases[Normal @ up, Rule[k_, {}] :> k];
-	Poset @ Association[
+	Poset @ Assoc[
 		"Set" -> set,
 		"Up" -> up, "Dn" -> dn,
 		"UpSet" -> VertexOutComponentLists[Graph @ upRules],
 		"DnSet" -> VertexOutComponentLists[Graph @ dnRules],
 		"UpRules" -> upRules, "DnRules" -> dnRules,
-		"Bot" -> If[SingletonQ[botSet], First @ botSet, None],
-		"Top" -> If[SingletonQ[topSet], First @ topSet, None],
+		"Bot" -> If[SingletonQ[botSet], P1 @ botSet, None],
+		"Top" -> If[SingletonQ[topSet], P1 @ topSet, None],
 		"BotSet" -> botSet,
 		"TopSet" -> topSet
 	]
@@ -200,7 +200,7 @@ PublicFunction[ReversePoset]
 
 ReversePoset[Poset[assoc_]] := Scope[
 	UnpackAssociation[assoc, set, up, upSet, dn, dnSet, upRules, dnRules, bot, top, botSet, topSet];
-	Poset @ Association[
+	Poset @ Assoc[
 		"Set" -> set,
 		"Up" -> dn, "Dn" -> up,
 		"UpSet" -> dnSet, "DnSet" -> upSet,
@@ -215,7 +215,7 @@ ReversePoset[Poset[assoc_]] := Scope[
 
 PublicFunction[SubsetPoset]
 
-SubsetPoset[gens_String] :=
+SubsetPoset[gens_Str] :=
 	SubsetPoset @ StringSplit[gens];
 
 SubsetPoset[gens_List] :=
@@ -223,7 +223,7 @@ SubsetPoset[gens_List] :=
 
 parseGen = Case[
 	list_List := list;
-	s_String := Characters[s];
+	s_Str := Characters[s];
 ]
 
 (**************************************************************************************************)
@@ -239,7 +239,7 @@ DiscretePoset[list_List] := Scope[
 
 PublicFunction[PosetGraph]
 
-PosetGraph[Poset[assoc_Association]] := Scope[
+PosetGraph[Poset[assoc_Assoc]] := Scope[
 	ExtendedGraph[
 		assoc["Set"],
 		DeleteCases[z_ -> z_] @ assoc["DnRules"],
@@ -252,12 +252,12 @@ PosetGraph[Poset[assoc_Association]] := Scope[
 PublicFunction[PosetQ]
 
 PosetQ = Case[
-	Poset[_Association] := True;
+	Poset[_Assoc] := True;
 	_ := False;
 ]
 
 declareBoxFormatting[
-	p:Poset[_Association] :> formatPoset[p]
+	p:Poset[_Assoc] :> formatPoset[p]
 ];
 
 formatPoset[p_Poset ? PosetQ, opts___Rule] := ToBoxes @ ExtendedGraphPlot[

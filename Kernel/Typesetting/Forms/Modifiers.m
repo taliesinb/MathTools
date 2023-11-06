@@ -3,7 +3,7 @@ PrivateFunction[applyCurrentFormModifiers]
 (* this currently doesn't work on the outside of StringDiagram since it evaluates directly to a graphics which is THEN
 typeset. so StringDiagram takes a set of modifiers directly. *)
 
-applyCurrentFormModifiers[expr_] := If[Length[$formModifierFnStack] > 0,
+applyCurrentFormModifiers[expr_] := If[Len[$formModifierFnStack] > 0,
   RawBoxes @ Apply[Composition, $formModifierFnStack] @ ToBoxes @ expr,
   expr
 ]

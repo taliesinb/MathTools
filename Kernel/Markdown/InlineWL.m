@@ -10,10 +10,10 @@ $inlineWLVarReplacement = s:("$" ~~ WordCharacter ~~ RepeatedNull[WordCharacter 
 TODO: ue this instead: RegularExpression @ "(\\(\\([^\n]+\\)\\))|(\\$[[:alpha:]][[:alpha:][:digit:]$]*\\b)";
 *)
 
-createInlineMath[str_String /; StringLength[str] == 2] :=
+createInlineMath[str_Str /; StringLength[str] == 2] :=
   $katexFontTemplate @ StringDrop[str, 1];
 
-createInlineMath[str_String] := Scope[
+createInlineMath[str_Str] := Scope[
   res = toInlineExpression[str, InputForm];
   If[FailureQ[res], res = badInlinePlaceholder[str]];
   boxes = ToBoxes[res, StandardForm];
@@ -22,7 +22,7 @@ createInlineMath[str_String] := Scope[
   $inlineMathTemplate @ katex
 ];
 
-badInlinePlaceholder[str_String] := RedForm @ PlainTextForm @ str;
+badInlinePlaceholder[str_Str] := RedForm @ PlainTextForm @ str;
 
 ToMarkdownString::inlinewlsyn = "Inline WL \"``\" was not valid syntax.";
 ToMarkdownString::inlinewlmsg = "Inline WL \"``\" generated messages while evaluating.";
@@ -68,7 +68,7 @@ toInlineExpression[str_, form_] := Block[
   ];
   held //= Replace[Hold[Times[a___]] :> Hold[CommaRowForm[a]]];
   held //= ReplaceAll[Set -> EqualForm];
-  eval = Quiet @ Check[First @ held, $Failed];
+  eval = Quiet @ Check[P1 @ held, $Failed];
   If[FailureQ @ eval,
     Message[ToMarkdownString::inlinewlmsg, str];
     Return @ $Failed;

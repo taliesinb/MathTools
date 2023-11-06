@@ -61,7 +61,7 @@ $simplifyPrimitiveAnnotationRules = Dispatch @ {
 };
 
 joinHeadPrimitives[prims_] := Scope[
-  If[Length[prims] <= 1 || !AllSameBy[prims, Length], Return @ prims];
+  If[Len[prims] <= 1 || !AllSameBy[prims, Len], Return @ prims];
   head = Part[prims, 1, 0];
   coords = Part[prims, All, 1];
   normFunc = If[head === Point, toCoordinateMatrix, toCoordinateArray];

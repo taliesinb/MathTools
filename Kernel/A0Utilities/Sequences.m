@@ -11,7 +11,7 @@ SeqLength[]        := 0;
 SeqLength[_]       := 1;
 SeqLength[_, _]    := 2;
 SeqLength[_, _, _] := 3;
-s_SeqLength        := Length[Unevaluated @ s];
+s_SeqLength        := Len[Unevaluated @ s];
 
 (**************************************************************************************************)
 
@@ -23,7 +23,7 @@ HoldSeqLength[]        := 0;
 HoldSeqLength[_]       := 1;
 HoldSeqLength[_, _]    := 2;
 HoldSeqLength[_, _, _] := 3;
-s_HoldSeqLength        := Length[s];
+s_HoldSeqLength        := Len[s];
 
 (**************************************************************************************************)
 
@@ -51,13 +51,13 @@ PublicFunction[TakeSequence]
 
 SetRelatedSymbolGroup[TakeSequence, DropSequence];
 
-TakeSequence[list_, start_:1] := Table[Take[list, i], {i, start, Length @ list}];
+TakeSequence[list_, start_:1] := Table[Take[list, i], {i, start, Len @ list}];
 
 (**************************************************************************************************)
 
 PublicFunction[DropSequence]
 
-DropSequence[list_] := Table[Drop[list, i], {i, 0, Length[list] - 1}];
+DropSequence[list_] := Table[Drop[list, i], {i, 0, Len[list] - 1}];
 
 (**************************************************************************************************)
 
@@ -69,7 +69,7 @@ SetUsage @ "
 FirstRest[list$] gives the pair {%First[list$], %Rest[list$]}.
 "
 
-FirstRest[list_] := {First @ list, Rest @ list};
+FirstRest[list_] := {P1 @ list, Rest @ list};
 
 (**************************************************************************************************)
 
@@ -79,7 +79,7 @@ SetUsage @ "
 FirstLast[list$] gives the pair {%First[list$], %Last[list$]}.
 "
 
-FirstLast[list_] := {First @ list, Last @ list};
+FirstLast[list_] := {P1 @ list, PN @ list};
 
 (**************************************************************************************************)
 
@@ -89,19 +89,19 @@ SetUsage @ "
 MostLast[list$] gives the pair {%Most[list$], %Last[list$]}.
 "
 
-MostLast[list_] := {Most @ list, Last @ list};
+MostLast[list_] := {Most @ list, PN @ list};
 
 (**************************************************************************************************)
 
 PublicFunction[AppendFirst]
 
 AppendFirst[{}] := {};
-AppendFirst[list_] := Append[list, First @ list];
+AppendFirst[list_] := Append[list, P1 @ list];
 
 PublicFunction[PrependLast]
 
 PrependLast[{}] := {};
-PrependLast[list_] := Prepend[list, Last @ list];
+PrependLast[list_] := Prepend[list, PN @ list];
 
 (**************************************************************************************************)
 
@@ -127,12 +127,12 @@ PublicFunction[CommonPrefix, CommonPrefixLength]
 
 CommonPrefix[{}] := None;
 CommonPrefix[{e_}] := e;
-CommonPrefix[e_List] := Take[First @ e, CommonPrefixLength[e]];
+CommonPrefix[e_List] := Take[P1 @ e, CommonPrefixLength[e]];
 
 CommonPrefixLength[{}] := 0;
-CommonPrefixLength[{e_}] := Length @ e;
+CommonPrefixLength[{e_}] := Len @ e;
 CommonPrefixLength[list_] := Scope[
-  n = 1; minLen = Min @ Map[Length, list];
+  n = 1; minLen = Min @ Map[Len, list];
   Do[
     If[NotAllEqualQ[Take[list, All, n]], Return[n-1, Block]],
     {n, minLen}
@@ -146,12 +146,12 @@ PublicFunction[CommonSuffix, CommonSuffixLength]
 
 CommonSuffix[{}] := None;
 CommonSuffix[{e_}] := e;
-CommonSuffix[e_List] := Take[First @ e, -CommonSuffixLength[e]];
+CommonSuffix[e_List] := Take[P1 @ e, -CommonSuffixLength[e]];
 
 CommonSuffixLength[{}] := 0;
-CommonSuffixLength[{e_}] := Length @ e;
+CommonSuffixLength[{e_}] := Len @ e;
 CommonSuffixLength[list_] := Scope[
-  n = 1; minLen = Min @ Map[Length, list];
+  n = 1; minLen = Min @ Map[Len, list];
   Do[
     If[NotAllEqualQ[Take[list, All, -n]], Return[n-1, Block]],
     {n, minLen}
@@ -199,11 +199,11 @@ ReplaceInSequence[rule_][seq___] := Sequence @@ Replace[{seq}, rule, {1}];
 PublicFunction[DeleteDuplicateOptionKeys]
 
 DeleteDuplicateOptionKeys[] := Sequence[];
-DeleteDuplicateOptionKeys[seq___] := Sequence @@ DeleteDuplicatesBy[{seq}, First /* toStringKey];
+DeleteDuplicateOptionKeys[seq___] := Sequence @@ DeleteDuplicatesBy[{seq}, P1 /* toStringKey];
 
 toStringKey = Case[
   s_Symbol := SymbolName[s];
-  str_String := str;
+  str_Str := str;
   e_ := e;
 ]
 

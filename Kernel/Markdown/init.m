@@ -1,5 +1,5 @@
 makeLiteralReplacementRule[assoc_, wrap_] := ModuleScope[
-  If[!wrap, assoc = Association @ Select[Normal @ assoc, Apply[#1 =!= assoc[#2]&]]];
+  If[!wrap, assoc = Assoc @ Select[Normal @ assoc, Apply[#1 =!= assoc[#2]&]]];
   keys = Keys[assoc];
   patt = StringJoin["(", Riffle[keys, "|"], ")"];
   re = RegularExpression @ StringReplace[patt, "$" -> "\\$"];
@@ -22,7 +22,7 @@ $WLSymbolToUnicode := $WLSymbolToUnicode = makeLiteralReplacementRule[MathCharac
 
 PrivateFunction[wlCharactersToUnicode]
 
-wlCharactersToUnicode[s_String] := StringReplace[s, $WLSymbolToUnicode];
+wlCharactersToUnicode[s_Str] := StringReplace[s, $WLSymbolToUnicode];
 
 (**************************************************************************************************)
 

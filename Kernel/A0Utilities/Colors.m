@@ -10,7 +10,7 @@ _toHexColor := BadArguments[];
 
 PublicFunction[FromHexColorString]
 
-FromHexColorString[str_String] /; StringLength[str] == 6 := fromHexColor[str];
+FromHexColorString[str_Str] /; StringLength[str] == 6 := fromHexColor[str];
 _FromHexColorString := BadArguments[];
 
 SetListable[fromHexValue];
@@ -30,7 +30,7 @@ _HTMLColorString := BadArguments[];
 FromHTMLColorString["none"] := None;
 FromHTMLColorString["black"] := Black;
 FromHTMLColorString["white"] := White;
-FromHTMLColorString[str_String] /; StringLength[str] == 7 := FromHexColorString @ StringDrop[str, 1];
+FromHTMLColorString[str_Str] /; StringLength[str] == 7 := FromHexColorString @ StringDrop[str, 1];
 _FromHTMLColorString := BadArguments[];
 
 (**************************************************************************************************)
@@ -42,7 +42,7 @@ $setColorOpacityRules = Dispatch[{
   RGBColor[{r_, g_, b_}] :> RGBColor[r, g, b, $opacity],
   GrayLevel[g_] :> GrayLevel[g, $opacity],
   Hue[h_] :> Hue[h, 1, 1, $opacity],
-  c:(_Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Length[c] === 3 :> Append[c, $opacity]
+  c:(_Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Len[c] === 3 :> Append[c, $opacity]
 }];
 
 SetColorOpacity[expr_, None] :=
@@ -63,7 +63,7 @@ $opaqueRules = Dispatch[{
   RGBColor[{r_, g_, b_, ___}] :> RGBColor[r, g, b, 1],
   GrayLevel[g_, ___] :> GrayLevel[g, 1],
   Hue[h_, s_:1, v_:1, ___] :> Hue[h, s, v, 1],
-  c:(_Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Length[c] === 3 :> Append[c, 1]
+  c:(_Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Len[c] === 3 :> Append[c, 1]
 }];
 
 SetOpaque[expr_] := expr /. $opaqueRules;
@@ -87,7 +87,7 @@ $removeColorOpacityRules = Dispatch[{
   RGBColor[r_, g_, b_, _] :> RGBColor[r, g, b],
   RGBColor[{r_, g_, b_, _}] :> RGBColor[r, g, b],
   GrayLevel[g_, _] :> GrayLevel[g],
-  c:(_Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Length[c] === 4 :> Take[c, 3]
+  c:(_Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Len[c] === 4 :> Take[c, 3]
 }];
 
 RemoveColorOpacity[expr_] :=
@@ -101,7 +101,7 @@ $opacityColorsPattern = Alternatives[
   RGBColor[{_, _, _, _}],
   GrayLevel[_, _],
   _Opacity,
-  c:(_RGBColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Length[c] === 4
+  c:(_RGBColor | _Hue | _XYZColor | _LABColor | _LCHColor | _LUVColor) /; Len[c] === 4
 ];
 
 ContainsOpacityColorsQ[expr_] := !FreeQ[expr, $opacityColorsPattern];
@@ -183,7 +183,7 @@ PublicFunction[OklabLightness]
 
 OklabLightness[color_] := Scope[
   ok = ToOklab[color];
-  If[MatrixQ[ok], ok[[All, 1]], First[ok]]
+  If[MatrixQ[ok], ok[[All, 1]], P1[ok]]
 ];
 
 (**************************************************************************************************)
@@ -355,9 +355,9 @@ ToColorPalette = Case[
   spec_ -> "Light"              := OklabLighter @ % @ spec;
   spec_ -> "Dark"               := OklabDarker @ % @ spec;
   set:$ecnp                     := getNamedColorSet[set, "Medium"];
-  set:$ecnp -> variant_String   := getNamedColorSet[set, variant];
+  set:$ecnp -> variant_Str      := getNamedColorSet[set, variant];
   list_List ? ColorVectorQ      := list /. $colorNormalizationRules;
-  Offset[spec_, n_Integer]      := RotateLeft[% @ spec, n];
+  Offset[spec_, n_Int]          := RotateLeft[% @ spec, n];
   Opacity[o_, spec_]            := SetColorOpacity[% @ spec, N @ o];
   spec_                         := (Message[ToColorPalette::invalid, spec]; $Failed)
 ];
@@ -368,11 +368,11 @@ getNamedColorSet[set_, variant_] := getNamedColorSet[set, variant] = Scope[
   Values @ colors
 ];
 
-ToColorPalette[spec_, n_Integer] := Scope[
+ToColorPalette[spec_, n_Int] := Scope[
   colors = ToColorPalette[spec];
   If[FailureQ[colors], ReturnFailed[]];
   If[n > 40, Return @ Table[RandomColor[], n]];
-  If[Length[colors] < n, colors //= expandColorPalette];
+  If[Len[colors] < n, colors //= expandColorPalette];
   Take[colors, n]
 ];
 
@@ -383,25 +383,25 @@ expandColorPalette[colors_] := Join[colors, OklabBlend /@ (UnorderedPairs @ colo
 PublicFunction[ToRainbowColor]
 
 ToRainbowColor = Case[
-  -2                        := $Black;
-  -1                        := $White;
-  0                         := $LightGray;
-  i_Integer                 := Part[$NormalColorPalette, i];
-  col_ ? ColorQ             := Lookup[$colorAliases, col, col];
-  s:(Automatic | None)      := s;
-  other_                    := $Gray;
-  Null                      := Transparent;
-  Sequence[i_, _]           := % @ i;
-  Sequence[s:Automatic | None, _] := s;
-  Sequence[_, 0]            := $LightGray;
-  Sequence[name_String, n_] := Part[ToColorPalette @ name, n];
+  -2                         := $Black;
+  -1                         := $White;
+  0                          := $LightGray;
+  i_Int                      := Part[$NormalColorPalette, i];
+  col_ ? ColorQ              := Lookup[$colorAliases, col, col];
+  s:(Automatic | None)       := s;
+  other_                     := $Gray;
+  Null                       := Transparent;
+  Seq[i_, _]                 := % @ i;
+  Seq[s:Automatic | None, _] := s;
+  Seq[_, 0]                  := $LightGray;
+  Seq[name_Str, n_]          := Part[ToColorPalette @ name, n];
 ];
 
 (**************************************************************************************************)
 
 PrivateVariable[$colorAliases]
 
-$colorAliases = UAssociation[
+$colorAliases = UAssoc[
   Red    -> $Red,    LightRed    -> $LightRed,
   Blue   -> $Blue,   LightBlue   -> $LightBlue,
   Green  -> $Green,  LightGreen  -> $LightGreen,
@@ -419,9 +419,9 @@ PublicFunction[ToRainbowInteger]
 
 ToRainbowInteger = Case[
 
-  s_String := Lookup[$romanToInteger, ToLowerCase @ ToSpelledGreek @ ToNonDecoratedRoman @ s, None];
+  s_Str := Lookup[$romanToInteger, ToLowerCase @ ToSpelledGreek @ ToNonDecoratedRoman @ s, None];
 
-  head_Symbol /; $taggedFormHeadQ[head] := % @ First @ s;
+  head_Symbol /; $taggedFormHeadQ[head] := % @ P1 @ s;
 
 ];
 
@@ -467,20 +467,20 @@ OklabBlend[colors_List, i_List] := oklabInterpolation[colors, {i}] // FromOklab;
 
 oklabInterpolation[colors_, args___] :=
   Interpolation[
-    Trans[Lerp[0, 1, Into @ Length @ colors], ToOklab @ colors],
+    Trans[Lerp[0, 1, Into @ Len @ colors], ToOklab @ colors],
     args,
     InterpolationOrder -> 1
   ];
 
 OklabBlendOperator[colors_List] :=
   Interpolation[
-    Trans[Lerp[0, 1, Into @ Length @ colors], ToOklab @ colors],
+    Trans[Lerp[0, 1, Into @ Len @ colors], ToOklab @ colors],
     InterpolationOrder -> 1
   ] /* FromOklab;
 
 BlendOperator[colors_List] :=
   Interpolation[
-    Trans[Lerp[0, 1, Into @ Length @ colors], ToRGB @ colors],
+    Trans[Lerp[0, 1, Into @ Len @ colors], ToRGB @ colors],
     InterpolationOrder -> 1
   ] /* FromRGB;
 
@@ -488,7 +488,7 @@ BlendOperator[colors_List] :=
 
 PublicFunction[HumanBlend]
 
-HumanBlend[colors_List] := iHumanBlend @ Sort @ VectorReplace[colors, i_Integer :> ToRainbowColor[i]];
+HumanBlend[colors_List] := iHumanBlend @ Sort @ VectorReplace[colors, i_Int :> ToRainbowColor[i]];
 
 iHumanBlend = Case[
   {}                := w2;
@@ -545,16 +545,16 @@ Options[ContinuousColorFunction] = {
 General::notcolorvec = "Color list contains non-colors.";
 General::badcolorvaluevec = "Value and color lists must be lists of the same length.";
 checkColArgs[head_, values_, colors_] := (
-  If[Length[values] =!= Length[colors], Message[head::badcolorvaluevec]; Return[$Failed, Block]];
+  If[Len[values] =!= Len[colors], Message[head::badcolorvaluevec]; Return[$Failed, Block]];
   If[!ColorVectorQ[colors], Message[head::notcolorvec]; Return[$Failed, Block]];
 )
 
-toColorList[str_String] := RGBColor /@ StringSplit[str];
+toColorList[str_Str] := RGBColor /@ StringSplit[str];
 toColorList[other_] := other;
 
 General::colfuncfirstarg = "First arg should be a rule or list of rules between values and colors."
 setupColorRuleDispatch[head_] := (
-  head[rules:{__Rule} | rules_Association, opts:OptionsPattern[]] := head[Keys @ rules, Values @ rules, opts];
+  head[rules:{__Rule} | rules_Assoc, opts:OptionsPattern[]] := head[Keys @ rules, Values @ rules, opts];
   head[values_List -> colors_, opts:OptionsPattern[]] := head[values, colors, opts];
   head[_, OptionsPattern[]] := (Message[head::colfuncfirstarg]; $Failed);
 );
@@ -576,9 +576,9 @@ ContinuousColorFunction[values_List, Automatic, opts:OptionsPattern[]] := Scope[
 ContinuousColorFunction[values_, colors_, OptionsPattern[]] := Scope[
   colors = toColorList @ colors;
   SetAutomatic[values, Interval[{0, 1}]];
-  values //= Replace[Interval[{a_, b_}] :> Lerp[a, b, Into @ Length @ colors]];
+  values //= Replace[Interval[{a_, b_}] :> Lerp[a, b, Into @ Len @ colors]];
   checkColArgs[ContinuousColorFunction, values, colors];
-  If[Length[values] < 2, ReturnFailed["interpsize"]];
+  If[Len[values] < 2, ReturnFailed["interpsize"]];
   okLabValues = ToOklab[colors];
   values = N @ values;
   interp = Interpolation[Trans[values, okLabValues], InterpolationOrder -> 1];
@@ -612,14 +612,14 @@ PrivateVariable[$BooleanColors]
 $BooleanColors = {GrayLevel[0.9], GrayLevel[0.1]};
 
 DiscreteColorFunction[values_List, Automatic] := Scope[
-  values = Union @ values; count = Length[values];
+  values = Union @ values; count = Len[values];
   If[MatchQ[values, {_ ? BooleanQ}], values = {False, True}];
   Which[
     values === {False, True},
       colors = $BooleanColors,
-    count <= Length[$ColorPalette],
+    count <= Len[$ColorPalette],
       colors = Take[$ColorPalette, count],
-    count <= 2 * Length[$ColorPalette],
+    count <= 2 * Len[$ColorPalette],
       colors = Take[Join[OklabLighter @ $ColorPalette, OklabDarker @ $ColorPalette], count],
     True,
       ReturnFailed["toobig", count]
@@ -687,7 +687,7 @@ makeGradientRaster[values_, func_, size_, transposed_] := Scope[
   spaced = N @ Range[min, max, dx]; offsets = (values - min) / dx;
   row = func /@ spaced; array = {row};
   arrayRange = {{min - dx, 0}, {max, 1}};
-  If[transposed, array //= Transpose; arrayRange = Reverse /@ arrayRange];
+  If[transposed, array //= Transpose; arrayRange = Rev /@ arrayRange];
   Raster[array, arrayRange]
 ];
 
@@ -701,13 +701,13 @@ formatColorFunction[ColorFunctionObject["Linear", {min_, max_}, values_, func_, 
   Row[{graphics, "  ", "(", min, " to ", max, ")"}, BaseStyle -> {FontFamily -> "Avenir"}]
 ]
 
-formatColorFunction[ColorFunctionObject["Discrete", assoc_Association]] :=
+formatColorFunction[ColorFunctionObject["Discrete", assoc_Assoc]] :=
   Apply[AngleBracket,
     KeyValueMap[{val, color} |-> (val -> simpleColorSquare[color]), assoc]
   ];
 
-formatColorFunction[ColorFunctionObject["Discrete", Identity]] :=
-  "ColorFunctionObject"["Discrete", Identity];
+formatColorFunction[ColorFunctionObject["Discrete", Id]] :=
+  "ColorFunctionObject"["Discrete", Id];
 
 declareFormatting[
   LegendForm[cf_ColorFunctionObject ? HoldNoEntryQ] :>
@@ -745,7 +745,7 @@ ContinuousColorLegend[values_, func_, ticks_] := Scope[
       },
       {ticks, niceTicksForm}
     ];
-    paddingAbove += If[ContainsQ[Last @ niceTicksForm, _Subscript], 15, 8];
+    paddingAbove += If[ContainsQ[PN @ niceTicksForm, _Subscript], 15, 8];
     paddingBelow += 3;
     maxTickWidth = Max[estimateTickWidth /@ niceTicksForm];
     If[multiplier =!= None,
@@ -775,7 +775,7 @@ estimateTickWidth = Case[
   Row[list_, ___]       := Total[% /@ list] + .5;
   Superscript["10", b_] := 3;
   Style[s_, ___]        := %[s];
-  s_String              := StringLength[s];
+  s_Str                 := StringLength[s];
   _                     := 1;
 ];
 
@@ -795,19 +795,19 @@ chooseTicks[n_, min_, max_] := Scope[
     Range[min, max, dx / (i - 1)],
     {i, n1, n2}
   ];
-  MinimumBy[ranges, {tickListComplexity[n, scaling][#], -Length[#]}&]
+  MinimumBy[ranges, {tickListComplexity[n, scaling][#], -Len[#]}&]
 ];
 
 tickListComplexity[target_, scaling_][ticks_] := Scope[
-  tickComplexities = tickComplexity /@ First[niceTickListForm[ticks]];
-  targetMismatchPenalty = scaling / (1.0 + Abs[Length[ticks] - target]);
+  tickComplexities = tickComplexity /@ P1[niceTickListForm[ticks]];
+  targetMismatchPenalty = scaling / (1.0 + Abs[Len[ticks] - target]);
   GeometricMean[tickComplexities] - targetMismatchPenalty
 ];
 
 
 tickComplexity = Case[
-  Row[{str_String, ___}] := decimalComplexity[str];
-  str_String := decimalComplexity[str];
+  Row[{str_Str, ___}] := decimalComplexity[str];
+  str_Str := decimalComplexity[str];
   _ := 0
 ];
 
@@ -858,7 +858,7 @@ niceTickListForm[list_List] := Scope[
   {multiplierForm[base] /@ list, None}
 ];
 
-niceTickListForm[list_List] /; Length[list] > 3 := Scope[
+niceTickListForm[list_List] /; Len[list] > 3 := Scope[
   base = Min @ Log10Length @ DeleteCases[Abs @ list, 0|0.];
   If[base < 2, base = 0];
   $addPlusSign = Min[list] < 0 && Max[list] > 0;
@@ -874,16 +874,16 @@ niceDecimalString[n_] := Which[
   Abs[n] < 1000 && Round[n] == n, TextString @ Round[n],
   Abs[n] < 1000, trimPoint @ TextString @ NumberForm[n, 3],
   True, trimPoint @ TextString @ NumberForm[n, 3]
-] // If[$addPlusSign && Positive[n], addPlus, Identity];
+] // If[$addPlusSign && Positive[n], addPlus, Id];
 
 trimPoint[str_] := StringTrim[str, "." ~~ EndOfString];
 addPlus[str_] := "+" <> str;
 
 (**************************************************************************************************)
 
-colorFunctionLegend[ColorFunctionObject["Discrete", Identity]] := "";
+colorFunctionLegend[ColorFunctionObject["Discrete", Id]] := "";
 
-colorFunctionLegend[ColorFunctionObject["Discrete", assoc_Association]] :=
+colorFunctionLegend[ColorFunctionObject["Discrete", assoc_Assoc]] :=
   DiscreteColorLegend[assoc];
 
 PublicFunction[DiscreteColorLegend]
@@ -918,7 +918,7 @@ ChooseContinuousColorFunction[ab:{$NumberP, $NumberP}, OptionsPattern[]] := Scop
 ];
 
 ChooseContinuousColorFunction[list_List, opts:OptionsPattern[]] := Scope[
-  If[!VectorQ[list, RealValuedNumericQ] || Length[list] < 2, ReturnFailed[]];
+  If[!VectorQ[list, RealValuedNumericQ] || Len[list] < 2, ReturnFailed[]];
   ChooseContinuousColorFunction[MinMax @ list, opts]
 ];
 
@@ -946,7 +946,7 @@ pickBiGradient[min_, 0|0.] :=
   {$negativePoints * -pickNice[-min, -min, Ceiling], $negativeColors, 2};
 
 $rainbowColors = {$Red, $Orange, $Green, $Blue, $Pink};
-$rainbowLength = Length @ $rainbowColors;
+$rainbowLength = Len @ $rainbowColors;
 
 pickBiGradient[min_ ? Negative, max_ ? Negative] :=
   MapAt[Minus, pickBiGradient[-min, -max], 1];
@@ -955,7 +955,7 @@ pickBiGradient[min_ ? Positive, max_ ? Positive] /; min <= max / 10. :=
   pickBiGradient[0, max];
 
 pickBiGradient[min_ ? Positive, max_ ? Positive] /; min <= max / 5. :=
-  {Interpolated[pickNice[min, min, Floor], pickNice[max, max, Ceiling], Length @ $positiveColors], $positiveColors, Automatic};
+  {Interpolated[pickNice[min, min, Floor], pickNice[max, max, Ceiling], Len @ $positiveColors], $positiveColors, Automatic};
 
 pickBiGradient[min_ ? Positive, max_ ? Positive] := Scope[
   dx = max - min;
@@ -1028,18 +1028,18 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   If[containsInd, indPos = posIndex[Indeterminate]; KeyDropFrom[posIndex, Indeterminate]];
   If[containsNull, nullPos = posIndex[Null]; KeyDropFrom[posIndex, Null]];
   uniqueValues = Keys @ posIndex;
-  count = Length @ uniqueValues;
+  count = Len @ uniqueValues;
   sortedUniqueValues = Sort @ uniqueValues;
   colorFunction = Which[
     ColorVectorQ[uniqueValues],
-      Identity,
+      Id,
     sortedUniqueValues === {0, 1},
       DiscreteColorFunction[{0, 1}, {$white, $black}],
     sortedUniqueValues === {-1, 1},
       DiscreteColorFunction[{-1, 1}, {$Red, $Blue}],
     sortedUniqueValues === {-1, 0, 1},
       DiscreteColorFunction[{-1, 0, 1}, {$Red, $white, $Blue}],
-    Length[uniqueValues] == 1,
+    Len[uniqueValues] == 1,
       DiscreteColorFunction[uniqueValues, {Gray}],
     (PermutedRangeQ[uniqueValues] || PermutedRangeQ[uniqueValues + 1]) && count <= 12,
       If[palette === Automatic, $ColorPalette = discreteColorPalette @ count];
@@ -1062,7 +1062,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
   If[containsInd, AppendTo[colorsValues, {White, Indeterminate}]; AppendTo[posIndex, Indeterminate -> indPos]];
   If[containsNull, AppendTo[colorsValues, {Transparent, Null}]; AppendTo[posIndex, Null -> nullPos]];
   colorGroups = Merge[RuleThread[colorsValues, Values @ posIndex], Catenate];
-  colorList = Repeat[White, Length @ data];
+  colorList = Repeat[White, Len @ data];
   (* invert the PositionIndex-like association *)
   KeyValueScan[Set[Part[colorList, #2], Part[#1, 1]]&, colorGroups];
   {colorList, colorGroups, colorFunction}
@@ -1071,7 +1071,7 @@ ApplyColoring[data_List, palette_:Automatic] := Scope[
 literalColorFunction[colors_] := Scope[
   colorIndex = PositionIndex @ colors;
   colorFunction = ConstructNoEntry[
-    ColorFunctionObject, "Discrete", Identity
+    ColorFunctionObject, "Discrete", Id
   ];
   {colors, KeyMap[{#, #}&, colorIndex], colorFunction}
 ];

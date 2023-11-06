@@ -16,8 +16,8 @@ LoadKatexArrowPathData[katexDir_:Automatic] := Scope[
   If[!FileExistsQ[svgJSFile], ReturnFailed[]];
   svgDir = EnsureDirectory @ FileNameJoin[{katexDir, "SVG"}];
   svgJS = ImportUTF8 @ svgJSFile;
-  arrows = First @ StringCases[svgJS, $ArrowSVGTop ~~ ___ ~~ $ArrowSVGBot];
-  Association @ StringCases[
+  arrows = P1 @ StringCases[svgJS, $ArrowSVGTop ~~ ___ ~~ $ArrowSVGBot];
+  Assoc @ StringCases[
     arrows,
     StartOfLine ~~ "    " ~~ name:WordCharacter.. ~~ ": `" ~~ path:Except["`"].. ~~ "`," :>
       name -> path
@@ -42,7 +42,7 @@ SaveKatexArrowPathData[data_:Automatic, katexDir_:Automatic] := Scope[
   If[!FileExistsQ[svgJSFile], ReturnFailed[]];
   svgJS = ImportUTF8 @ svgJSFile;
   SetAutomatic[data, LoadSVGArrowPathData[katexDir]];
-  If[!AssociationQ[data], ReturnFailed["noarrowpaths", katexDir]];
+  If[!AssocQ[data], ReturnFailed["noarrowpaths", katexDir]];
   arrowDataPos = StringFindDelimitedPosition[svgJS, $ArrowSVGInsertion];
   If[!ListQ[arrowDataPos], ReturnFailed["noinjpoint", svgJSFile]];
   {start, stop} = arrowDataPos;
@@ -57,7 +57,7 @@ SaveKatexArrowPathData[data_:Automatic, katexDir_:Automatic] := Scope[
 ];
 
 arrowEntrySortPosition[name_] := {
-  First[First[StringPosition[svgArrowJs, WordBoundary ~~ name ~~ WordBoundary, 1], None], Infinity],
+  P1[P1[StringPosition[svgArrowJs, WordBoundary ~~ name ~~ WordBoundary, 1], None], Infinity],
   name
 };
 
@@ -85,7 +85,7 @@ toCommentaryRule[js_][{start_, stop_}] := Scope[
 
 PublicFunction[SaveSVGArrowPathData]
 
-SaveSVGArrowPathData[data_Association, katexDir_:Automatic] := Scope[
+SaveSVGArrowPathData[data_Assoc, katexDir_:Automatic] := Scope[
   SetAutomatic[katexDir, $defaultKatexDir];
   svgDir = EnsureDirectory @ FileNameJoin[{katexDir, "SVG"}];
   KeyValueMap[saveSVGArrow, data]
@@ -100,7 +100,7 @@ LoadSVGArrowPathData[katexDir_:Automatic] := Scope[
   svgDir = FileNameJoin[{katexDir, "SVG"}];
   If[!FileExistsQ[svgDir], ReturnFailed[]];
   svgFiles = Sort @ Select[StringFreeQ["-"]] @ FileNames["*.svg", svgDir];
-  data = Association @ Map[loadSVGArrow, svgFiles];
+  data = Assoc @ Map[loadSVGArrow, svgFiles];
   If[ContainsQ[data, $Failed], ReturnFailed[]];
   data
 ];
@@ -235,6 +235,6 @@ toArrowAlignments = Case[
 ];
 
 quotedTuple = Case[
-  e_String := QuotedString[e];
+  e_Str := QuotedString[e];
   e_List := StringRiffle[Map[%, e], {"[", ",", "]"}];
 ]; *)

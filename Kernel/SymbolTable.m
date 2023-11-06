@@ -11,11 +11,21 @@ the typed Package` declarations that categorize QG's own symbols.
 {
 
 "SymbolAliases" -> {
-  "UAssociation" -> Data`UnorderedAssociation,
+  "Assoc"        -> Association,
+  "AssocQ"       -> AssociationQ,
+  "UAssoc"       -> Data`UnorderedAssociation,
   "Repeat"       -> ConstantArray,
-  "Dist"         -> EuclideanDistance
+  "Dist"         -> EuclideanDistance,
+  "P1"           -> First,
+  "PN"           -> Last,
+  "H"            -> Head,
+  "Len"          -> Length,
+  "Fn"           -> Function,
+  "Id"           -> Identity,
+  "Rev"          -> Reverse,
+  "Str"          -> String,
+  "Int"          -> Integer
 },
-
 
 {"System`", "Package"} -> {
 Package`SystemSymbol,  Package`SystemMacro,   Package`SystemVariable,  Package`SystemFunction,  Package`SystemHead,

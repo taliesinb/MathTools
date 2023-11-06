@@ -1,10 +1,10 @@
 $serverFunctions = <||>;
 
-$hugoNewSite = Function @ If[!FileExistsQ[PathJoin[#BaseExportPath, "config.toml"]], HugoNewSite[#BaseExportPath, FilterOptions @ #]];
-$hugoBuildSite = Function @ HugoBuild[#BaseExportPath, FilterOptions @ #];
-$hugoServeSite = Function @ HugoServe[#BaseExportPath, FilterOptions @ #];
+$hugoNewSite = Fn @ If[!FileExistsQ[PathJoin[#BaseExportPath, "config.toml"]], HugoNewSite[#BaseExportPath, FilterOptions @ #]];
+$hugoBuildSite = Fn @ HugoBuild[#BaseExportPath, FilterOptions @ #];
+$hugoServeSite = Fn @ HugoServe[#BaseExportPath, FilterOptions @ #];
 
-$serverFunctions["Hugo"] = Association[
+$serverFunctions["Hugo"] = Assoc[
   "NewSite"         -> $hugoNewSite,
   "BuildSite"       -> $hugoBuildSite,
   "BuildSitePage"   -> $hugoBuildSite,
@@ -12,10 +12,10 @@ $serverFunctions["Hugo"] = Association[
   "ServeSitePage"   -> $hugoServeSite
 ];
 
-$pandocBuildSite = Function @ PandocExportMDToHTML[#AbsoluteMarkdownPath, #AbsoluteHTMLPath];
-$pandocBuildPage = Function @ PandocExportMDToHTML[#AbsoluteMarkdownPath -> #2, #AbsoluteHTMLPath];
+$pandocBuildSite = Fn @ PandocExportMDToHTML[#AbsoluteMarkdownPath, #AbsoluteHTMLPath];
+$pandocBuildPage = Fn @ PandocExportMDToHTML[#AbsoluteMarkdownPath -> #2, #AbsoluteHTMLPath];
 
-$serverFunctions["Pandoc"] = Association[
+$serverFunctions["Pandoc"] = Assoc[
   "NewSite"         -> None,
   "BuildSite"       -> $pandocBuildSite,
   "BuildSitePage"   -> $pandocBuildPage,
@@ -24,9 +24,9 @@ $serverFunctions["Pandoc"] = Association[
 ];
 
 General::nositegen = "Site `` has no site generator and cannot produce HTML."
-$noserver = Function @ ThrowMessage["nositegen", #SiteName];
+$noserver = Fn @ ThrowMessage["nositegen", #SiteName];
 
-$serverFunctions[None] = Association[
+$serverFunctions[None] = Assoc[
   "NewSite"         -> None,
   "BuildSite"       -> $noserver,
   "BuildSitePage"   -> $noserver,
@@ -65,7 +65,7 @@ DeleteSite['site'] will delete a site.
 
 Options[DeleteSite] = {DeleteContents -> False, DryRun -> False, Verbose -> Automatic};
 
-DeleteSite[siteName_String, OptionsPattern[]] := Scope @ CatchMessage[
+DeleteSite[siteName_Str, OptionsPattern[]] := Scope @ CatchMessage[
   UnpackOptions[deleteContents, $dryRun, $verbose];
   SetAutomatic[$verbose, $dryRun];
   unpackSiteData[siteName, baseExportPath];
@@ -83,7 +83,7 @@ DeleteSite[siteName_String, OptionsPattern[]] := Scope @ CatchMessage[
 
 PublicFunction[SiteData]
 
-SiteData[siteName_String] := CatchMessage @ getSiteData[siteName];
+SiteData[siteName_Str] := CatchMessage @ getSiteData[siteName];
 
 General::badsitename = "No site named ``, existing sites are: ``.";
 General::corruptsite = "Site file `` is corrupt.";
@@ -94,7 +94,7 @@ getSiteData[siteName_] := Scope[
   siteFile = toSiteFile @ siteName;
   If[!FileExistsQ[siteFile], ThrowMessage["badsitename", siteName, ListSites[]]];
   siteData = Get @ siteFile;
-  If[!AssociationQ[siteData], ThrowMessage["corruptsite", siteFile]];
+  If[!AssocQ[siteData], ThrowMessage["corruptsite", siteFile]];
   UnpackAssociation[siteData, markdownPath, htmlPath:"HTMLPath", rasterizationPath, baseExportPath];
   siteData["AbsoluteHTMLPath"] = ToAbsolutePath[htmlPath, baseExportPath];
   siteData["AbsoluteMarkdownPath"] = ToAbsolutePath[markdownPath, baseExportPath];
@@ -121,7 +121,7 @@ findContainingSite[source_] := Scope[
   matchSite = None;
   Scan[siteFile |-> (
       siteData = Get[siteFile];
-      If[!AssociationQ[siteData], ReturnFailed["corruptsite", siteFile]];
+      If[!AssocQ[siteData], ReturnFailed["corruptsite", siteFile]];
       UnpackAssociation[siteData, siteName, notebookPath, baseExportPath];
       If[StringQ[notebookPath] && StringStartsQ[path, notebookPath] && (len = StringLength[notebookPath]) > matchLen,
         matchLen = len; matchSite = siteName];
@@ -199,13 +199,13 @@ CreateSite::pathne = "Setting of `` -> `` does not exist.";
 CreateSite::badsitegen = "Setting SiteGenerator -> `` should be one of \"Hugo\", \"Pandoc\", or None.";
 CreateSite::siteexists = "Site called \"``\" already registered, used OverwriteTarget -> True to replace it.";
 
-CreateSite[siteName_String, nbPath_String, opts:OptionsPattern[]] :=
+CreateSite[siteName_Str, nbPath_Str, opts:OptionsPattern[]] :=
   CreateSite[siteName, NotebookPath -> nbPath, opts];
 
-CreateSite[siteName_String, nbPath_String, ePath_String, opts:OptionsPattern[]] :=
+CreateSite[siteName_Str, nbPath_Str, ePath_Str, opts:OptionsPattern[]] :=
   CreateSite[siteName, NotebookPath -> nbPath, BaseExportPath -> ePath, opts];
 
-CreateSite[siteName_String, opts:OptionsPattern[]] := CatchMessage @ Scope[
+CreateSite[siteName_Str, opts:OptionsPattern[]] := CatchMessage @ Scope[
   If[!StringQ[siteName], ReturnFailed["arg1"]];
   UnpackOptions[notebookPath, markdownFlavor, baseExportPath, baseURL, siteGenerator, overwriteTarget, $dryRun, $verbose];
 
@@ -225,7 +225,7 @@ CreateSite[siteName_String, opts:OptionsPattern[]] := CatchMessage @ Scope[
   If[!MatchQ[siteGenerator, "Hugo" | "Pandoc" | None], ReturnFailed["badsitegen", siteGenerator]];
   defaults = $generatorDefaults[siteGenerator];
 
-  assoc = Map[Identity] @ KeyMap[SymbolName] @ KeySort @ Association[
+  assoc = Map[Id] @ KeyMap[SymbolName] @ KeySort @ Assoc[
     Options[CreateSite],
     ServingPort -> toUniquePort[siteName],
     defaults, opts,
@@ -244,14 +244,14 @@ CreateSite[siteName_String, opts:OptionsPattern[]] := CatchMessage @ Scope[
   whenWet @ PrettyPut[assoc, siteFile];
 ];
 
-(* CreateSite[name_String -> templateName_String, opts:OptionsPattern[]] := CatchMessage @ Scope[
+(* CreateSite[name_Str -> templateName_Str, opts:OptionsPattern[]] := CatchMessage @ Scope[
   assoc = getSiteData @ templateName;
   KeyDropFrom[assoc, "SiteName"];
-  assoc = Association[assoc, opts];
+  assoc = Assoc[assoc, opts];
   CreateSite[name, Sequence @@ Normal[assoc]]
 ];
  *)
-toUniquePort[siteName_String] := 1000 + Mod[Hash @ ToLowerCase @ siteName, 8999];
+toUniquePort[siteName_Str] := 1000 + Mod[Hash @ ToLowerCase @ siteName, 8999];
 
 (**************************************************************************************************)
 
@@ -324,7 +324,7 @@ BuildSitePage[sourceSpec:Except[_Rule], extraOpts:OptionsPattern[]] := CatchMess
 
   $serverFunctions[siteData["SiteGenerator"], "BuildSitePage"][siteData, outputFiles];
 
-  First @ outputFiles
+  P1 @ outputFiles
 ];
 
 (**************************************************************************************************)
@@ -342,9 +342,9 @@ ServeSite[] will serve the site containing the current notebook.
 
 Options[ServeSite] = Options[BuildSite];
 
-ServeSite[opts:OptionsPattern[]] := ServeSite[First @ findContainingSite @ EvaluationNotebook[], opts];
+ServeSite[opts:OptionsPattern[]] := ServeSite[P1 @ findContainingSite @ EvaluationNotebook[], opts];
 
-ServeSite[siteName_String, extraOpts:OptionsPattern[]] := Scope @ CatchMessage[
+ServeSite[siteName_Str, extraOpts:OptionsPattern[]] := Scope @ CatchMessage[
 
   {siteData, outputFiles} = buildSite[siteName, extraOpts];
   UnpackAssociation[siteData, baseURL, siteGenerator];
@@ -443,7 +443,7 @@ Options[ClearSite] = {
   Verbose -> Automatic
 };
 
-ClearSite[siteName_String, OptionsPattern[]] := Scope[
+ClearSite[siteName_Str, OptionsPattern[]] := Scope[
 
   UnpackOptions[deleteRasters, deleteMarkdown, deleteHTML, $verbose, $dryRun];
   SetAutomatic[$verbose, $dryRun];
@@ -472,7 +472,7 @@ ClearSite[siteName_String, OptionsPattern[]] := Scope[
   If[deleteMarkdown && FileExistsQ[absoluteMarkdownPath],
     markdownFiles = FileNames["*.md", absoluteMarkdownPath, Infinity];
     markdownFiles //= Select[ReadString /* StringContainsQ["\"notebookpath\":"]];
-    VPrint["Deleting ", Length @ markdownFiles, " files in ", MsgPath @ absoluteMarkdownPath];
+    VPrint["Deleting ", Len @ markdownFiles, " files in ", MsgPath @ absoluteMarkdownPath];
     whenWet @ Scan[DeleteFile, markdownFiles];
   ,
     markdownFiles = {};
@@ -508,7 +508,7 @@ SitePageData[nb_] := Scope @ CatchMessage[
   If[!StringQ[mdPath], ReturnFailed[]];
 
   frontMatter = MarkdownFrontMatter @ mdPath;
-  If[AssociationQ[frontMatter],
+  If[AssocQ[frontMatter],
     url = Lookup[frontMatter, "url", None],
     url = None
   ];
@@ -517,7 +517,7 @@ SitePageData[nb_] := Scope @ CatchMessage[
   ];
 
   pageURL = If[StringQ[url], StringJoin[baseURL, "/", url, If[StringStartsQ[baseURL, "file://"], ".html", ""]], $Failed];
-  Association[
+  Assoc[
     "Source" -> path,
     "Target" -> mdPath,
     "PageURL" -> pageURL,

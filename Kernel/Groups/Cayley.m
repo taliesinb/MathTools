@@ -64,9 +64,9 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
   UnpackOptions[symmetric, labeled];
   list = Flatten @ KeyValueMap[
     {label, gen} |-> {
-      If[labeled, Labeled[label], Identity] @ gen,
+      If[labeled, Labeled[label], Id] @ gen,
       If[symmetric && (igen = ToInverseFunction[gen]) =!= gen && igen =!= None,
-        If[labeled, Labeled[Inverted @ label], Identity] @ igen,
+        If[labeled, Labeled[Inverted @ label], Id] @ igen,
         Nothing
       ]
     },

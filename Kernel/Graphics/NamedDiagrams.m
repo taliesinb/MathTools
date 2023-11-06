@@ -58,7 +58,7 @@ CompositionTriangleDiagram[{l_, t_, r_, obs___}, {l2t_, t2r_, l2r_, mors___}, si
 commutativeTriangle[{l_, r_, x_, obs___}, {l2r_, l2x_, r2x_, mors___}, top_, side_, opts___] := Scope[
   {xx, rx} = Lookup[$triCoord, side] + 1;
   {xy, lry} = If[top, {1, 2}, {2, 1}];
-  rev = If[top, Identity, Reverse];
+  rev = If[top, Id, Rev];
   CommutativeDiagram[Flatten @ {
     {{xx, xy}  -> x, {1, lry}  -> l, {rx, lry} -> r},
     obs,
@@ -95,8 +95,8 @@ $cdtCoordRules = {
 
 DoubleTriangleDiagram[{l_, m_, r_, x_}, {lm_, rm_, lx_, mx_, rx_, extra___}, side:(Bottom|Top):Bottom, opts___Rule] := Scope[
   pos = {{1, 1}, {2, 1}, {3, 1}, {2, 2}};
-  rev = Identity;
-  If[side === Top, rev = Reverse; pos //= MapAt[If[# == 2, 1, 2]&, {All, 2}]];
+  rev = Id;
+  If[side === Top, rev = Rev; pos //= MapAt[If[# == 2, 1, 2]&, {All, 2}]];
   CommutativeDiagram[{
     Splice @ RuleThread[pos, {l, m, r, x}],
     toComSugarArrow[1 => 2, lm],
@@ -123,7 +123,7 @@ ParallelArrowDiagram[{pos$l -> l$, pos$r -> r$}, $$] specifies positions for l$ 
 "
 
 ParallelArrowDiagram[{lp_ -> l_, rp_ -> r_}, {t_, b_, v_:Null, rest___}, opts___Rule] := Scope[
-  rev = If[Head[v] === Reversed, v //= First; Reverse, Identity];
+  rev = If[H[v] === Reversed, v //= P1; Rev, Id];
   curve = Lookup[{opts}, CurveFunction, TrapezoidCurve];
   bend = Lookup[{opts}, BendRadius, .33];
   CommutativeDiagram[{
@@ -208,7 +208,7 @@ ArrowDiagram[a_, b_, f_, opts___Rule] := Scope[
 ]
 
 sadApos = Case[
-  r_Rule := ($apos = First @ r; r);
+  r_Rule := ($apos = P1 @ r; r);
   obj_   := $apos -> obj;
 ]
 

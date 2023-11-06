@@ -33,15 +33,15 @@ CircularStringLabeledReplaceList[str_, {rule_}] :=
 
 CircularStringLabeledReplaceList[str_, rules_List] :=
   Catenate @ MapIndexed[
-    CircularStringLabeledReplaceList[str, #1, First @ #2]&,
+    CircularStringLabeledReplaceList[str, #1, P1 @ #2]&,
     rules
   ];
 
-CircularStringLabeledReplaceList[str_String, rule_, matchIndex_:None] := Scope[
+CircularStringLabeledReplaceList[str_Str, rule_, matchIndex_:None] := Scope[
   str2 = StringJoin[str, str]; len = StringLength @ str;
-  spans = StringPosition[str2, First @ rule];
+  spans = StringPosition[str2, P1 @ rule];
   spans = {#, Mod[#, len, 1]}& /@ spans;
-  spans = DeleteDuplicatesBy[spans, Last];
+  spans = DeleteDuplicatesBy[spans, PN];
   VectorApply[
     {span, modSpan} |-> Labeled[
       circularStringReplacePart[str, ochunk = StringReplace[ichunk = StringTake[str2, span], rule], modSpan],

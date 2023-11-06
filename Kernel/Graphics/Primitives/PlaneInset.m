@@ -17,12 +17,12 @@ Options[PlaneInset] = {
 
 DeclareGraphicsPrimitive[PlaneInset, "Opaque,Opaque,Pair", planeInsetBoxes, {3}];
 
-planeInsetBoxes[PlaneInset[object_, origin_, vectors:({_List, _List}|_String), offset:_List:{0, 0}, rule___Rule]] :=
+planeInsetBoxes[PlaneInset[object_, origin_, vectors:({_List, _List}|_Str), offset:_List:{0, 0}, rule___Rule]] :=
   rawPlaneInsetBoxes[object, origin, vectors, offset, rule]
 
 (**************************************************************************************************)
 
-rawPlaneInsetBoxes[object_, origin_, orient_String, f_, opts:OptionsPattern[PlaneInset]] := Scope[
+rawPlaneInsetBoxes[object_, origin_, orient_Str, f_, opts:OptionsPattern[PlaneInset]] := Scope[
   UnpackOptions[viewVector];
   viewVector //= Normalize;
   Switch[orient,
@@ -66,7 +66,7 @@ _rawPlaneInsetBoxes := BadArguments[];
 
 (**************************************************************************************************)
 
-$textureCoords = Association[
+$textureCoords = Assoc[
   {False, False} -> ToPacked[{{0,0}, {0,1}, {1,1}, {1,0}}],
   {False, True}  -> ToPacked[{{0,1}, {0,0}, {1,0}, {1,1}}],
   {True, False}  -> ToPacked[{{1,0}, {1,1}, {0,1}, {0,0}}],

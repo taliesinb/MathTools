@@ -4,17 +4,17 @@ $markdownTableReplacement = StartOfLine ~~ " "... ~~ text:Repeated["* " ~~ Excep
 
 (**************************************************************************************************)
 
-createMarkdownTable[ostr_String] := Scope[
+createMarkdownTable[ostr_Str] := Scope[
   str = StringTrim @ ostr;
   lines = StringDrop[StringSplit[str, "\n"..], 2];
   allowCompact = True;
-  If[StringStartsQ[First @ lines, "META: "],
+  If[StringStartsQ[P1 @ lines, "META: "],
     {meta, lines} = FirstRest @ lines;
     allowCompact = StringFreeQ[meta, "WIDE"];
   ];
   If[Min[StringCount[DeleteCases["SPACER"] @ lines, "\t"..]] == 0, Return @ ostr];
   grid = StringTrim /@ StringSplit[lines, "\t"..];
-  ncols = Length @ First @ grid;
+  ncols = Len @ P1 @ grid;
   grid //= MatrixMap[StringReplace["\"" -> "'"]];
   grid //= MatrixReplace["**_**" -> ""];
   grid //= VectorReplace[{"SPACER"} :> Repeat[" ", ncols]];
@@ -27,12 +27,12 @@ toMarkdownTableString[grid_, allowCompact_] := Scope[
   If[!AnyMatrixQ[grid],
     Print["Bad table!"];
     Print["First row is: ", First @ grid];
-    Print["Row lengths are: ", Length /@ grid];
+    Print["Row lengths are: ", Len /@ grid];
     PrintIF[grid];
     Return["BADTABLE"];
   ];
-  ncols = Length @ First @ grid;
-  hasHeader = VectorQ[First @ grid, boldedQ];
+  ncols = Len @ P1 @ grid;
+  hasHeader = VectorQ[P1 @ grid, boldedQ];
   strikeRow = Repeat["---", ncols];
   attrs = {};
   If[!hasHeader && $allowTableHeaderSkip,
@@ -40,7 +40,7 @@ toMarkdownTableString[grid_, allowCompact_] := Scope[
     dummyRow = Repeat["z", ncols];
     grid = Join[{dummyRow, strikeRow}, grid];
   ,
-    postFn = Identity;
+    postFn = Id;
     grid = Insert[grid, strikeRow, If[hasHeader || !$allowTableHeaderSkip, 2, 1]];
   ];
   If[ncols > 3 && allowCompact, AppendTo[attrs, "table-compact"]];
@@ -68,6 +68,6 @@ textGridToMarkdown[GridBox[grid_, opts___]] := Scope[
 gridElementToMarkdown = Case[
   Cell[TextData[Cell[BoxData @ FormBox[boxes_, ___], ___], ___], ___] := inlineCellToMarkdown[boxes, False];
   Cell[text_, "Text"] := textToMarkdown @ text;
-  str_String := textToMarkdown @ str;
+  str_Str := textToMarkdown @ str;
   other_ := Print["UNKNOWN GRID ELEMENT: ", MsgExpr[other, 5, 40]];
 ];

@@ -16,7 +16,7 @@ PublicFunction[PathWordPlot]
 $pwpStyle = GrayLevel[0.25];
 $pwpLabel = Word;
 
-PathWordPlot[graph_Graph, p:Path[_, _String, ___, PathCancellation -> False, ___]] := Block[
+PathWordPlot[graph_Graph, p:Path[_, _Str, ___, PathCancellation -> False, ___]] := Block[
   {$pathCancellation = False},
   PathWordPlot[graph, MapAt[ToPathWord, p, 2]]
 ];
@@ -96,11 +96,11 @@ PathComposePlot[graph_, p1_, p2_, p3_, p4_] :=
 
 PublicFunction[PathBuilder]
 
-PathBuilder[vertex_, path_String, adjustments_:{}] :=
+PathBuilder[vertex_, path_Str, adjustments_:{}] :=
   GraphRegionHighlight -> Style[Arrow[Path[vertex, path, PathAdjustments -> adjustments]], $Purple,
     "Foreground", HighlightRadius->0.3, EdgeSetback -> 2];
 
-PathBuilder[vertex_, {path1_String, path2_String}] :=
+PathBuilder[vertex_, {path1_Str, path2_Str}] :=
   GraphRegionHighlight -> Style[
       {Style[Arrow[Path[vertex, path1]], $Purple],
        Style[Arrow[Path[vertex, path2]], $Teal]},

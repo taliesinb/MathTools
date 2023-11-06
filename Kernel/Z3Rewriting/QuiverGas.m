@@ -36,7 +36,7 @@ GraphGasState[edges_List, graph_Graph] := Scope[
 ];
 
 (* plotting
-GraphGasState[{___Integer}, hash_Integer] :=  *) *)
+GraphGasState[{___Int}, hash_Int] :=  *) *)
 
 (**************************************************************************************************)
 
@@ -66,7 +66,7 @@ QuiverGas[graph_, rules_, OptionsPattern[]] := Scope @ CatchMessage[
 
   rules = processGasRules[CardinalList @ graph, rules, ruleSymmetries, unspecifiedIdentity];
   data = dataFn[graph, rules];
-  If[!AssociationQ[data], ReturnFailed[]];
+  If[!AssocQ[data], ReturnFailed[]];
 
   {vertexCoordinates, edgeCoordinateLists} = ExtractGraphPrimitiveCoordinates @ graph;
 
@@ -74,7 +74,7 @@ QuiverGas[graph_, rules_, OptionsPattern[]] := Scope @ CatchMessage[
     "Graph" -> graph,
     "GraphHash" -> Hash[graph],
     "Rules" -> rules,
-    "SymmetricEdgeCoordinates" -> Join[edgeCoordinateLists, Reverse[edgeCoordinateLists, 2]],
+    "SymmetricEdgeCoordinates" -> Join[edgeCoordinateLists, Rev[edgeCoordinateLists, 2]],
     "VertexCoordinates" -> vertexCoordinates
   |>];
 
@@ -108,19 +108,19 @@ processGasRule[lhs_ -> rhs_] := Rule[processLHS @ lhs, processRHS @ rhs];
 QuiverGas::invspec = "Rule component `` is not valid."
 
 processRHS = Case[
-  Weighted[spec_, 0|0.]             := Nothing;
-  Weighted[spec_, 1|1.]             := % spec;
-  Weighted[spec_, w_ /; 0 < w < 1]  := Weighted[% @ spec, N @ w];
-  Times[w_ /; 0 < w < 1, spec_]     := Weighted[% @ spec, N @ w];
-  str_String                        := toCardinalList @ StringToWord @ str;
-  list_List                         := toCardinalList @ list;
-  inv_                              := ThrowMessage["invspec", inv];
+  Weighted[spec_, 0|0.]            := Nothing;
+  Weighted[spec_, 1|1.]            := % spec;
+  Weighted[spec_, w_ /; 0 < w < 1] := Weighted[% @ spec, N @ w];
+  Times[w_ /; 0 < w < 1, spec_]    := Weighted[% @ spec, N @ w];
+  str_Str                          := toCardinalList @ StringToWord @ str;
+  list_List                        := toCardinalList @ list;
+  inv_                             := ThrowMessage["invspec", inv];
 ];
 
 processLHS = Case[
-  str_String                                := toCardinalList @ StringToWord @ str;
-  list_List                                 := toCardinalList @ list;
-  inv_                                      := ThrowMessage["invspec", inv];
+  str_Str   := toCardinalList @ StringToWord @ str;
+  list_List := toCardinalList @ list;
+  inv_      := ThrowMessage["invspec", inv];
 ];
 
 QuiverGas::invcards = "Spec `` contains invalid cardinals. Allowed cardinals are: ``."
@@ -142,7 +142,7 @@ quiverGasObjectBoxes[object:QuiverGasObject[data_], form_] := Scope[
   ecount = EdgeCount @ graph;
   rules = SortBy[rules, ruleOrderer];
   formattedRules = Grid[
-    Map[fmtRule, SplitBy[rules, First /* Length], {2}],
+    Map[fmtRule, SplitBy[rules, P1 /* Len], {2}],
     Alignment -> Left, BaselinePosition -> 1,
     ColumnSpacings -> 3
   ];
@@ -152,7 +152,7 @@ quiverGasObjectBoxes[object:QuiverGasObject[data_], form_] := Scope[
     {
      {padSummaryItem["Vertices", vcount]},
      {padSummaryItem["Edges", ecount]},
-     {padSummaryItem["Rules", Length @ rules]}
+     {padSummaryItem["Rules", Len @ rules]}
     },
     (* Displayed on request *)
     {BoxForm`SummaryItem[{formattedRules}]},
@@ -164,7 +164,7 @@ quiverGasObjectBoxes[object:QuiverGasObject[data_], form_] := Scope[
 fmtRule[a_List -> b_List] := Pane[Row[a] -> Row[b], BaselinePosition -> Baseline];
 
 ruleOrderer[r:Rule[a_, b_]] :=
-  {Length[a], Length[b], ReplaceAll[r, Inverted[f_] :> f], Position[r, _Inverted]};
+  {Len[a], Len[b], ReplaceAll[r, Inverted[f_] :> f], Position[r, _Inverted]};
 
 (**************************************************************************************************)
 
@@ -175,7 +175,7 @@ Options[QuiverGasEvolve] = {
 };
 
 QuiverGasEvolve::badinit = "Could not resolve initial condition.";
-QuiverGasEvolve[qg:QuiverGasObject[assoc_] ? NoEntryQ, init_, steps_Integer, OptionsPattern[]] := Scope[
+QuiverGasEvolve[qg:QuiverGasObject[assoc_] ? NoEntryQ, init_, steps_Int, OptionsPattern[]] := Scope[
 
   UnpackAssociation[assoc, flowVectorSize, updateFunction, signedEdgeToIndex];
 
@@ -184,7 +184,7 @@ QuiverGasEvolve[qg:QuiverGasObject[assoc_] ? NoEntryQ, init_, steps_Integer, Opt
   RandomSeeded[
     init = Switch[init,
       _List,                                 Normal @ ExtendedSparseArray[Lookup[signedEdgeToIndex, init, ReturnFailed["badinit"]], flowVectorSize],
-      i_Integer /; 1 <= i <= flowVectorSize, RandomSample @ Join[Repeat[1, init], Repeat[0, flowVectorSize - init]],
+      i_Int /; 1 <= i <= flowVectorSize, RandomSample @ Join[Repeat[1, init], Repeat[0, flowVectorSize - init]],
       _Real | _Rational,                     RandomChoice[{init, 1 - init} -> {1, 0}, flowVectorSize],
       _,                                     ReturnFailed[]
     ],
@@ -204,7 +204,7 @@ QuiverGasEvolve[qg:QuiverGasObject[assoc_] ? NoEntryQ, init_, steps_Integer, Opt
 
 (**************************************************************************************************)
 
-pureFunctionToStringRules[fn:HoldPattern[Function[args:{__Symbol}, _]]] := Scope[
+pureFunctionToStringRules[fn:HoldPattern[Fn[args:{__Symbol}, _]]] := Scope[
   names = MapUnevaluated[HoldSymbolName, args];
   names = If[UpperCaseQ[#], Inverted[ToLowerCase[#]]]& /@ names;
   nameP = Alternatives @@ names;
@@ -215,10 +215,10 @@ pureFunctionToStringRules[fn:HoldPattern[Function[args:{__Symbol}, _]]] := Scope
   res
 ];
 
-toSignedChars[Times[r_Rational, s_String]] := Weighted[toSignedChars @ s, N @ r];
-toSignedChars[str_String] := Map[If[UpperCaseQ[#], Inverted @ ToLowerCase @ #, #]&, Characters @ str];
+toSignedChars[Times[r_Rational, s_Str]] := Weighted[toSignedChars @ s, N @ r];
+toSignedChars[str_Str] := Map[If[UpperCaseQ[#], Inverted @ ToLowerCase @ #, #]&, Characters @ str];
 
-stringRulesToCompiledFunction[names_List, rules:{(_String -> (_String | Times[_Rational | _Real, _String]))..}] :=
+stringRulesToCompiledFunction[names_List, rules:{(_Str -> (_Str | Times[_Rational | _Real, _Str]))..}] :=
   stringRulesToCompiledFunction[names, Map[toSignedChars, rules, {2}]];
 
 toWeightedRule[a_ -> Weighted[b_, w_]] := {a -> b, w};
@@ -232,7 +232,7 @@ be done bitwise is the gather and scatter steps
 
 stringRulesToCompiledFunction[names_List, rules:{({__} -> ({__} | Weighted[{__}, _]))...}] := Scope[
   (* all RHS that share a LHS are weighted equally *)
-  rules = Flatten @ KeyValueMap[{k, vs} |-> Map[k -> #&, vs], GroupBy[rules, First -> Last, averageGroup]];
+  rules = Flatten @ KeyValueMap[{k, vs} |-> Map[k -> #&, vs], GroupBy[rules, P1 -> PN, averageGroup]];
   {rules, ruleWeights} = Transpose @ Map[toWeightedRule, rules];
   ruleIndex = PositionIndex[Values @ rules, 2];
   outList = Map[out |-> (
@@ -248,15 +248,15 @@ stringRulesToCompiledFunction[names_List, rules:{({__} -> ({__} | Weighted[{__},
   ];
   outList = simplifySum[names, outList];
   nameToSlot = Slot /@ AssociationRange[names];
-  fn = Construct[Function, outList] /. nameToSlot /. 0 :> 0 * Slot[1];
-  compilePureFunction[fn, Length @ names, Real]
+  fn = Construct[Fn, outList] /. nameToSlot /. 0 :> 0 * Slot[1];
+  compilePureFunction[fn, Len @ names, Real]
 ];
 
 $formals = {\[FormalA], \[FormalB], \[FormalC], \[FormalD], \[FormalE], \[FormalF], \[FormalG], \[FormalH], \[FormalI], \[FormalJ], \[FormalK]};
 
 averageGroup = Case[
   {a_}    := {a};
-  l_List  := With[{n = 1 / Length[l]}, Weighted[#, n]& /@ l]
+  l_List  := With[{n = 1 / Len[l]}, Weighted[#, n]& /@ l]
 ];
 
 compilePureFunction[fn_, nargs_, type_] := With[
@@ -268,7 +268,7 @@ compilePureFunction[fn_, nargs_, type_] := With[
 ];
 
 simplifySum[names_, sum_] := Scope[
-  formals = Take[$formals, Length @ names];
+  formals = Take[$formals, Len @ names];
   Simplify[sum /. RuleThread[names, formals]] /. RuleThread[formals, names]
 ];
 
@@ -283,7 +283,7 @@ quiverGasDataOld[g_, rules_] := Scope[
   noneEdgeIndex = 2 * numEdges + 1;
   
   signedEdgeToIndex = AssociationRange[edgeRange];
-  signedEdgeToIndex = Association[signedEdgeToIndex, KeyMap[Inverted, signedEdgeToIndex + numEdges], None -> noneEdgeIndex];
+  signedEdgeToIndex = Assoc[signedEdgeToIndex, KeyMap[Inverted, signedEdgeToIndex + numEdges], None -> noneEdgeIndex];
   
   tagAdj = KeySort @ TagVertexAdjacentEdgeTable[g, Signed -> True];
   tags = Keys @ tagAdj;
@@ -317,7 +317,7 @@ quiverGasDataNew[g_, rules_] := Scope[
   noneEdgeIndex = 2 * numEdges + 1;
   
   signedEdgeToIndex = AssociationRange[edgeRange];
-  signedEdgeToIndex = Association[signedEdgeToIndex, KeyMap[Inverted, signedEdgeToIndex + numEdges], None -> noneEdgeIndex];
+  signedEdgeToIndex = Assoc[signedEdgeToIndex, KeyMap[Inverted, signedEdgeToIndex + numEdges], None -> noneEdgeIndex];
   
   tagAdj = KeySort @ TagVertexAdjacentEdgeTable[g, Signed -> True];
   tags = Keys @ tagAdj;
@@ -344,12 +344,12 @@ quiverGasDataNew[g_, rules_] := Scope[
 
 (* this is the optimized version that does the gather internally *)
 
-stringRulesToPureFunction[names_List, rules:{(_String -> (_String | Times[_Rational | _Real, _String]))..}] :=
+stringRulesToPureFunction[names_List, rules:{(_Str -> (_Str | Times[_Rational | _Real, _Str]))..}] :=
   stringRulesToPureFunction[names, Map[toSignedChars, rules, {2}]];
 
 stringRulesToPureFunction[names_List, rules:{({__} -> ({__} | Weighted[{__}, _]))...}] := Scope[
   (* all RHS that share a LHS are weighted equally *)
-  rules = Flatten @ KeyValueMap[{k, vs} |-> Map[k -> #&, vs], GroupBy[rules, First -> Last, averageGroup]];
+  rules = Flatten @ KeyValueMap[{k, vs} |-> Map[k -> #&, vs], GroupBy[rules, P1 -> PN, averageGroup]];
   {rules, ruleWeights} = Transpose @ Map[toWeightedRule, rules];
   ruleIndex = PositionIndex[Values @ rules, 2];
   outList = Map[out |-> (
@@ -365,13 +365,13 @@ stringRulesToPureFunction[names_List, rules:{({__} -> ({__} | Weighted[{__}, _])
   ];
   outList = simplifySum[names, outList];
   nameToSlot = Slot /@ AssociationRange[names];
-  Construct[Function, outList] /. nameToSlot /. 0 :> 0 * Slot[1]
+  Construct[Fn, outList] /. nameToSlot /. 0 :> 0 * Slot[1]
 ];
 
 compileScatterGather[fn_, type_, gatherMatrix_ ? PackedArrayQ, scatterVector_ ? PackedArrayQ] := With[
   {flow = \[FormalCapitalF], gatheredFlow = \[FormalCapitalG], newFlow = \[FormalCapitalH],
    scatterVectorSymbol = \[FormalCapitalV]},
-  {gatheredSymbols = Take[$formals, Length @ gatherMatrix]},
+  {gatheredSymbols = Take[$formals, Len @ gatherMatrix]},
   {gatherSet = MapThread[
     {var, gather} |-> Hold[Set[var, Part[flow, gather]]],
     {gatheredSymbols, FromPackedArray[gatherMatrix, 1]}]},
@@ -383,7 +383,7 @@ compileScatterGather[fn_, type_, gatherMatrix_ ? PackedArrayQ, scatterVector_ ? 
       Append[Part[newFlow, scatterVector], 0]
     ]
   ]] /. {Eval[e_] :> RuleCondition[e], HModule -> Module, Hold[e_] :> e}},
-  First @ body
+  P1 @ body
 ];
 
 (**************************************************************************************************)
@@ -403,12 +403,12 @@ getObjAndFlow[QuiverGasEvolutionData[QuiverGasObject[assoc_], flow_List]] := {as
 QuiverGasEvolutionData::badframe = "Only `` frames available.";
 
 getFlow[flow_, Into[n_]] :=
-  getFlow[flow, Span[1, -1, Ceiling[Length[flow] / n]]];
+  getFlow[flow, Span[1, -1, Ceiling[Len[flow] / n]]];
 
 getFlow[flow_, spec_] := Scope[
   res = Quiet @ Check[Part[flow, spec], $Failed];
   If[FailureQ[res],
-    Message[QuiverGasEvolutionData::badframe, Length @ flow];
+    Message[QuiverGasEvolutionData::badframe, Len @ flow];
     Part[flow, 1]
   ,
     res
@@ -418,7 +418,7 @@ getFlow[flow_, spec_] := Scope[
 
 (**************************************************************************************************)
 
-$plotDataCache = UAssociation[];
+$plotDataCache = UAssoc[];
 
 qg_QuiverGasEvolutionData["ParticlePlotImage", part_, userOpts___Rule] := Scope[
   res = qg["ParticlePlot", part, userOpts];
@@ -459,7 +459,7 @@ $gasArrow := $gasArrow = Part[ArrowheadData["EqualLine"], 1, 4];
 drawArrowAlong[list_List] :=
   drawArrowAlong @ Part[list, {1, -1}];
 
-drawArrowAlong[{a_, b_}] /; EuclideanDistance[a, b] >= 2 :=
+drawArrowAlong[{a_, b_}] /; Dist[a, b] >= 2 :=
   drawArrowAlong[{a, a - Normalize[b - a]}];
 
 drawArrowAlong[{a_, b_}] := Scope[
@@ -471,7 +471,7 @@ drawArrowAlong[{a_, b_}] := Scope[
 
 (**************************************************************************************************)
 
-$densityAveragingCache = UAssociation[];
+$densityAveragingCache = UAssoc[];
 
 makeDensityAveragingMatrix[vertexCoordinates_, symmetricEdgeCoordinates_, w_, h_] := Scope[
   {{xmin, ymin}, {xmax, ymax}} = CoordinateBoundingBox[vertexCoordinates];
@@ -483,8 +483,8 @@ makeDensityAveragingMatrix[vertexCoordinates_, symmetricEdgeCoordinates_, w_, h_
   indices = FirstColumn @ Nearest[points -> indices, Mean /@ symmetricEdgeCoordinates];
   (* {xInd, yInd} -> {symEdgeInd...} *)
   index = PositionIndex[indices];
-  avg3 = KeyValueMap[{xy, inds} |-> Map[z |-> (Append[xy, z] -> 1.0 / Length[inds]), inds], index];
-  SparseArray[Flatten @ avg3, {w, h, Length @ symmetricEdgeCoordinates}]
+  avg3 = KeyValueMap[{xy, inds} |-> Map[z |-> (Append[xy, z] -> 1.0 / Len[inds]), inds], index];
+  SparseArray[Flatten @ avg3, {w, h, Len @ symmetricEdgeCoordinates}]
 ];
 
 coordRange[min_, max_, n_] := Scope[
@@ -494,7 +494,7 @@ coordRange[min_, max_, n_] := Scope[
 
 (**************************************************************************************************)
 
-qg_QuiverGasEvolutionData["DensityPlot", part_, {w_Integer, h_Integer}, userOpts___Rule] := Scope[
+qg_QuiverGasEvolutionData["DensityPlot", part_, {w_Int, h_Int}, userOpts___Rule] := Scope[
 
   {obj, flow} = getObjAndFlow @ qg;
   flow = getFlow[flow, part];
@@ -519,6 +519,6 @@ qg_QuiverGasEvolutionData["DensityPlot", part_, {w_Integer, h_Integer}, userOpts
 SetHoldAll[flowTable];
 
 flowTable[body_] := If[MatrixQ[flow],
-  Map[Construct[Function, Unevaluated @ flow, Unevaluated @ body], flow],
+  Map[Construct[Fn, Unevaluated @ flow, Unevaluated @ body], flow],
   body
 ];

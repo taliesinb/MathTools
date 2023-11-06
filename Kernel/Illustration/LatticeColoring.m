@@ -79,7 +79,7 @@ LatticeColoringRow[list_List, args___] :=
 
 PublicFunction[LatticeColoringGrid]
 
-makeColoringGridEntry[label:(_String | _Integer | _Subscript), ___] :=
+makeColoringGridEntry[label:(_Str | _Int | _Subscript), ___] :=
   {Item[LabelForm[label, 15, Bold], ItemSize -> {Full, 2}, Alignment -> Center], SpanFromLeft};
 
 makeColoringGridEntry[None, ___] :=
@@ -89,7 +89,7 @@ makeColoringGridEntry[quiver_List, args___] :=
   Map[makeColoringGridEntry[#, args]&, quiver];
 
 makeColoringGridEntry[quiver_, args___] :=
-  First @ LatticeColoringPlot[quiver, args];
+  P1 @ LatticeColoringPlot[quiver, args];
 
 LatticeColoringGrid[items_, args___] := Scope[
   entries = Map[Flatten[List[makeColoringGridEntry[#, args]]]&, items];

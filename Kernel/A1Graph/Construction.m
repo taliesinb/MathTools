@@ -10,7 +10,7 @@ PublicFunction[FromIndexedEdges]
 Options[FromIndexedEdges] = $ExtendedGraphOptions;
 
 FromIndexedEdges[vertices_List, edges_List, opts___Rule] := With[
-  {vrange = Range @ Length @ vertices},
+  {vrange = Range @ Len @ vertices},
   VertexReplace[
     Graph[vrange, edges],
     RuleThread[vrange, vertices],
@@ -22,7 +22,7 @@ FromIndexedEdges[vertices_List, edges_List, opts___Rule] := With[
 
 Unprotect[PathGraph];
 (* fix a weird oversight in the design of PathGraph *)
-PathGraph[n_Integer, opts___] := PathGraph[Range[n], opts];
+PathGraph[n_Int, opts___] := PathGraph[Range[n], opts];
 
 (**************************************************************************************************)
 

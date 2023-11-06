@@ -10,7 +10,7 @@ General::filenotdir = "Provided path `` should be to a directory, not a file."
 General::deepnotexists = "Provided path `` does not exist and neither does its parent, so won't create."
 
 EnsureDirectoryShallow[_] := $Failed;
-EnsureDirectoryShallow[path_String | File[path_String]] := Scope[
+EnsureDirectoryShallow[path_Str | File[path_Str]] := Scope[
   path //= NormalizePath;
   Which[
     FileExistsQ[path] && DirectoryQ[path],                  path,
@@ -30,12 +30,12 @@ CacheFilePath[name_, args___] :=
 CacheFilePath[name_, args___, FileExtension -> ext_] :=
   PathJoin[$QGCacheDirectory, name, StringJoin[Riffle[toCacheArgString /@ {args}, "_"], ".", ext]];
 
-$simpleArgP = _Integer | _String | None | Infinity | False | True;
+$simpleArgP = _Int | _Str | None | Infinity | False | True;
 
 toCacheArgString = Case[
   tuple:{Repeated[$simpleArgP, {1, 3}]} := StringRiffle[tuple, {"(", "-", ")"}];
   {} := "";
-  data:(_List | _Association | _SparseArray) := Base36Hash @ data;
+  data:(_List | _Assoc | _SparseArray) := Base36Hash @ data;
   graph_Graph := Base36Hash @ VertexEdgeList @ graph;
   other_ := TextString @ other;
 ];
@@ -58,10 +58,10 @@ EnsureExport[filepath_, expr_] := Scope[
 PrivateFunction[ToNotebookPath]
 
 ToNotebookPath = Case[
-  nb_NotebookObject          := Quiet @ Check[NotebookFileName @ nb, $Failed];
-  co_CellObject              := % @ ParentNotebook @ co;
-  File[file_] | file_String  := If[ToLowerCase[FileExtension[file]] == "nb", NormalizePath @ file, $Failed];
-  _                          := $Failed;
+  nb_NotebookObject      := Quiet @ Check[NotebookFileName @ nb, $Failed];
+  co_CellObject          := % @ ParentNotebook @ co;
+  File[file_] | file_Str := If[ToLowerCase[FileExtension[file]] == "nb", NormalizePath @ file, $Failed];
+  _                      := $Failed;
 ];
 
 (**************************************************************************************************)
@@ -79,9 +79,9 @@ CopyUnicodeToClipboard[text_] := Scope[
 
 PublicSpecialFunction[ImportJSONString]
 
-ImportJSONString::badjson = "String `` does not appear to be valid JSON.";
+ImportJSONString::badjson = "Str `` does not appear to be valid JSON.";
 
-ImportJSONString[str_String] := Scope[
+ImportJSONString[str_Str] := Scope[
   json = Quiet @ Check[ReadRawJSONString @ str, $Failed];
   If[FailureQ[json], ReturnFailed["badjson", MsgExpr @ str]];
   json /. Null -> None
@@ -95,7 +95,7 @@ PublicSpecialFunction[ImportJSON]
 
 ImportJSON::badjson = "File `` does not appear to be valid JSON."
 
-ImportJSON[path_String] := Scope[
+ImportJSON[path_Str] := Scope[
   path //= NormalizePath;
   If[!FileExistsQ[path], ReturnFailed[]];
   json = Quiet @ Check[ReadRawJSONFile @ path, $Failed];
@@ -109,7 +109,7 @@ _ImportJSON := BadArguments[];
 
 PublicSpecialFunction[ExportJSON]
 
-ExportJSON[path_String, expr_] := Scope[
+ExportJSON[path_Str, expr_] := Scope[
   path //= NormalizePath;
   outStr = WriteRawJSONString[expr, Compact -> 4];
   outStr = StringReplace[outStr, "\\/" -> "/"];
@@ -125,16 +125,16 @@ PublicSpecialFunction[ImportMX]
 ImportMX::nefile = "File `` does not exist.";
 ImportMX::fail = "File `` is corrupt.";
 
-ImportMX[path_String] := Block[
+ImportMX[path_Str] := Block[
   {System`Private`ConvertersPrivateDumpSymbol, path2 = NormalizePath @ path},
-  If[FailureQ[Quiet @ Check[Get[path2], $Failed]] || Head[System`Private`ConvertersPrivateDumpSymbol] =!= HoldComplete,
+  If[FailureQ[Quiet @ Check[Get[path2], $Failed]] || H[System`Private`ConvertersPrivateDumpSymbol] =!= HoldComplete,
     If[!FileExistsQ[path2],
       Message[ImportMX::nefile, MsgPath @ path2],
       Message[ImportMX::fail, MsgPath @ path2]
     ];
     $Failed
   ,
-    First @ System`Private`ConvertersPrivateDumpSymbol
+    P1 @ System`Private`ConvertersPrivateDumpSymbol
   ]
 ];
 
@@ -143,7 +143,7 @@ ImportMX[path_String] := Block[
 PublicSpecialFunction[ExportMX]
 
 ExportMX::fail = "Could not write expression to ``.";
-ExportMX[path_String, expr_] := Block[
+ExportMX[path_Str, expr_] := Block[
   {System`Private`ConvertersPrivateDumpSymbol = HoldComplete[expr], path2 = NormalizePath @ path},
   If[FailureQ @ Quiet @ Check[DumpSave[path2, System`Private`ConvertersPrivateDumpSymbol], $Failed],
     Message[ExportMX::fail, MsgPath @ path2]; $Failed,
@@ -156,7 +156,7 @@ ExportMX[path_String, expr_] := Block[
 
 PublicSpecialFunction[ExportUTF8]
 
-ExportUTF8[path_String, string_String] :=
+ExportUTF8[path_Str, string_Str] :=
   Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
 
 _ExportUTF8 := BadArguments[];
@@ -167,7 +167,7 @@ PublicSpecialFunction[ExportUTF8Dated]
 
 ExportUTF8Dated::badtime = "Creation and modification times should be DateObjects."
 
-ExportUTF8Dated[path_String, string_String, creation_, modification_:Automatic] := Scope[
+ExportUTF8Dated[path_Str, string_Str, creation_, modification_:Automatic] := Scope[
   path //= NormalizePath;
   Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
   creation //= toDateObject;
@@ -194,7 +194,7 @@ _ExportUTF8Dated := BadArguments[];
 
 PublicSpecialFunction[ImportUTF8]
 
-ImportUTF8[path_String] :=
+ImportUTF8[path_Str] :=
   Import[path, "Text", CharacterEncoding -> "UTF8"];
 
 _ImportUTF8 := BadArguments[];
@@ -203,7 +203,7 @@ _ImportUTF8 := BadArguments[];
 
 PublicSpecialFunction[PrettyPut]
 
-PrettyPut[expr_, path_String] := ExportUTF8[path, ToPrettifiedString @ expr];
+PrettyPut[expr_, path_Str] := ExportUTF8[path, ToPrettifiedString @ expr];
 
 _PrettyPut := BadArguments[];
 
@@ -238,8 +238,8 @@ ExportUTF8WithBackup[path_, contents_, currentContents_:Automatic] := Scope[
 PublicFunction[AbsolutePathQ]
 
 AbsolutePathQ = Case[
-  s_String /; $WindowsQ := StringStartsQ[s, LetterCharacter ~~ ":\\"];
-  s_String := StringStartsQ[s, $PathnameSeparator | "~"];
+  s_Str /; $WindowsQ := StringStartsQ[s, LetterCharacter ~~ ":\\"];
+  s_Str := StringStartsQ[s, $PathnameSeparator | "~"];
   _ := False;
 ];
 
@@ -248,7 +248,7 @@ AbsolutePathQ = Case[
 PublicFunction[RelativePathQ]
 
 RelativePathQ = Case[
-  s_String := !AbsolutePathQ[s];
+  s_Str := !AbsolutePathQ[s];
   _ := False;
 ];
 
@@ -261,8 +261,8 @@ ToAbsolutePath[path$, baseDir$] ensures path$ is an absolute path, resolving it 
 ToAbsolutePath[baseDir$] is an operator form of ToAbsolutePath.
 "
 
-ToAbsolutePath[path_String ? AbsolutePathQ, base_] := NormalizePath @ path;
-ToAbsolutePath[path_String, base_String] := NormalizePath @ PathJoin[base, path];
+ToAbsolutePath[path_Str ? AbsolutePathQ, base_] := NormalizePath @ path;
+ToAbsolutePath[path_Str, base_Str] := NormalizePath @ PathJoin[base, path];
 ToAbsolutePath[None, _] := None;
 ToAbsolutePath[_, _] := $Failed;
 ToAbsolutePath[base_][spec_] := ToAbsolutePath[spec, base];
@@ -272,16 +272,16 @@ ToAbsolutePath[base_][spec_] := ToAbsolutePath[spec, base];
 PublicFunction[RelativePath]
 
 RelativePath[_, path_] := None;
-RelativePath[base_String, path_] := If[StringStartsQ[path, base], StringTrim[StringDrop[path, StringLength @ base], $PathnameSeparator], None];
+RelativePath[base_Str, path_] := If[StringStartsQ[path, base], StringTrim[StringDrop[path, StringLength @ base], $PathnameSeparator], None];
 
 (**************************************************************************************************)
 
 PublicFunction[NormalizePath]
 
 NormalizePath = Case[
-  ""            := "";
-  None          := None;
-  path_String   := StringReplaceRepeated[path, $pathNormalizationRules];
+  ""       := "";
+  None     := None;
+  path_Str := StringReplaceRepeated[path, $pathNormalizationRules];
 ];
 
 $pathNormalizationRules = {

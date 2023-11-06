@@ -32,10 +32,10 @@ ModulusEdgeShapeFunction[offsets_][assoc_] := Scope[
   ]
 ];
 
-ModulusEdgeShapeFunction[basis_Association][assoc_] := Scope[
+ModulusEdgeShapeFunction[basis_Assoc][assoc_] := Scope[
   UnpackAssociation[assoc, cardinal, coordinates, arrowheads, shape, edgeIndex, labelStyle];
   {a, b} = FirstLast @ coordinates;
-  If[EuclideanDistance[a, b] > 1.1,
+  If[Dist[a, b] > 1.1,
     a2 = b - basis[cardinal]/3;
     b2 = a + basis[cardinal]/3;
     counter = assoc["Counter"];
@@ -65,8 +65,8 @@ changeArrowheadPos[g_, _] := g;
 
 findModulusCounterpart[a_, b_, offsets_, d_] := Scope[
   bs = PlusOperator[b] /@ offsets;
-  b2 = MinimumBy[bs, EuclideanDistance[a, #]&];
-  If[EuclideanDistance[a, b2] >= EuclideanDistance[a, b], None,
+  b2 = MinimumBy[bs, Dist[a, #]&];
+  If[Dist[a, b2] >= Dist[a, b], None,
     PointAlongLine[{a, b2}, d]
   ]
 ]

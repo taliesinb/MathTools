@@ -31,7 +31,7 @@ toCheckedAndPacked[e_] := Scope[
 makeRootSystemObject[generators_] := Scope[
   generators = Map[toCheckedAndPacked, generators];
   expandedGenerators = toCheckedAndPacked /@ Join[generators, -generators];
-  dim = Length @ First @ generators;
+  dim = Len @ P1 @ generators;
   allRoots = reachableStates[
     ApplyThrough[VectorReflect /@ expandedGenerators],
     generators
@@ -48,7 +48,7 @@ makeRootSystemObject[generators_] := Scope[
     "SimpleRoots" -> simpleRoots,
     "Roots" -> allRoots,
     "Dimension" -> dim,
-    "Count" -> Length[allRoots]
+    "Count" -> Len[allRoots]
   |>;
   ConstructNoEntry[RootSystemObject, assoc]
 ];
@@ -83,7 +83,7 @@ PrivateFunction[rootsCoordinateFunction]
 
 rootsCoordinateFunction[simpleRoots_] := With[
   {inverseMatrix = Transpose @ PseudoInverse @ simpleRoots},
-  Function[\[FormalV], Dot[inverseMatrix, \[FormalV]]]
+  Fn[\[FormalV], Dot[inverseMatrix, \[FormalV]]]
 ];
 
 rootSystemProperty[data_, "RootVectors"] := Map[RootVector, data["Roots"]]
@@ -97,7 +97,7 @@ rootSystemProperty[data_, "TranslationMatrices"] := Map[TranslationMatrix, data[
 rootSystemProperty[data_, "ReflectionMatrices"] := Map[computeReflectionMatrix, data["PositiveRoots"]];
 
 computeReflectionMatrix[vec_] := Scope[
-  n = Length[vec];
+  n = Len[vec];
   Table[VectorReflect[vec, UnitVector[n, i]], {i, n}]
 ];
 
@@ -133,7 +133,7 @@ RootPlot[roots$] will plot a list of roots in a small 2D or 3D Graphics object.
 "
 
 RootPlot[roots_, opts___] := Scope[
-  i = 1; dim = Length @ First @ roots;
+  i = 1; dim = Len @ P1 @ roots;
   hyperPlane = UnitVector[dim, 1]; hyperPlane[[2]] = 10^-6;
   tuples = Map[root |-> {root, If[Dot[hyperPlane, root] > 0, $Red, Black], i++}, roots];
   If[dim == 2, rootPlot2D, rootPlot3D][tuples, Max[Norm /@ roots], opts]

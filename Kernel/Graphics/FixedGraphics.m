@@ -86,7 +86,7 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
 
   If[decos =!= {}, epilog = If[epilog === {}, decos, {decos, epilog}]];
 
-  wh = EuclideanDistance @@@ bounds;
+  wh = Dist @@@ bounds;
   imageSize = Ceiling[wh * $graphicsScale + Total[imagePadding]];
   Construct[GraphicsBox,
     boxes,
@@ -108,7 +108,7 @@ PrivateFunction[embedInsetBoxWithScale]
 embedInsetBoxWithScale[i_InsetBox, scale_] := Scope[
   $graphicsScale = scale;
   res = embedInset[i];
-  If[Head[res] === InsetBox, $Failed, res]
+  If[H[res] === InsetBox, $Failed, res]
 ];
 
 FixedGraphics::badInsetDir = "Inset direction `` should be a vector or Automatic.";
@@ -132,8 +132,8 @@ embedInset = Case[
     SetAutomatic[plotRange, PrimitiveBoxesBounds[boxes, None]];
     origin //= resolveOrigin;
     plotRange = PlotRangePad[plotRange, plotRangePadding];
-    {plotWidth, plotHeight} = plotSize = EuclideanDistance @@@ plotRange;
-    imageWidth = If[ListQ[insetSize], First @ insetSize, insetSize];
+    {plotWidth, plotHeight} = plotSize = Dist @@@ plotRange;
+    imageWidth = If[ListQ[insetSize], P1 @ insetSize, insetSize];
     If[!NumberQ[imageWidth], Message[FixedGraphics::badInsetSize, insetSize]; Return @ i];
     scaleFactor = imageWidth / plotWidth / $graphicsScale;
     rotMatrix = RotateToMatrix[Normalize[dir] * scaleFactor];

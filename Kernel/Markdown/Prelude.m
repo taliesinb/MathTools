@@ -13,7 +13,7 @@ EmitKatexFunctionDefinitions::badfunc = "Could not evaluate function `` to produ
 
 toKatexMacroDefinition[name_, None] := None;
 toKatexMacroDefinition[name_, func_] := Scope[
-  maxSlot = Max[0, DeepCases[func, Slot[i_Integer] :> i]];
+  maxSlot = Max[0, DeepCases[func, Slot[i_Int] :> i]];
   slotStrs = toSlotStr /@ Range[maxSlot];
   eval = Check[boxesToKatexString[func @@ slotStrs], $Failed];
   If[!StringQ[eval],
@@ -31,17 +31,17 @@ PublicFunction[LookupKatexMacro, LookupKatexDisplayFunction, LookupNotebookDispl
 LookupKatexMacro := Case[
   None        := None;
   sym_Symbol  := Replace["" -> None] @ StringRiffle[DeleteNone @ Map[%, Lookup[$symbolToKatexMacroName, sym, {}]], "\n"];
-  name_String := toKatexMacroDefinition[name, Lookup[$katexMacros, name, None]];
+  name_Str := toKatexMacroDefinition[name, Lookup[$katexMacros, name, None]];
 ];
 
 LookupKatexDisplayFunction := Case[
   None        := None;
   sym_Symbol  := DeleteNone @ AssociationMap[%, Lookup[$symbolToTemplateName, sym, {}]];
-  name_String := Lookup[$katexDisplayFunction, name, None];
+  name_Str := Lookup[$katexDisplayFunction, name, None];
 ];
 
 LookupNotebookDisplayFunction := Case[
   None        := None;
   sym_Symbol  := DeleteNone @ AssociationMap[%, Lookup[$symbolToTemplateName, sym, {}]];
-  name_String := Lookup[$notebookDisplayFunction, name, None];
+  name_Str := Lookup[$notebookDisplayFunction, name, None];
 ];

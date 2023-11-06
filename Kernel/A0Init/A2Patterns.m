@@ -97,7 +97,7 @@ ApplyFlip[side$, flip$] transforms a symbolic side e.g. Top, Bottom, TopRight, C
 "
 
 ApplyFlip[{x_, y_}, {flipX_, flipY_}, transpose_:False] :=
-  If[transpose, Reverse, Identity] @ {If[flipX, -1, 1] * x, If[flipY, -1, 1] * y};
+  If[transpose, Rev, Id] @ {If[flipX, -1, 1] * x, If[flipY, -1, 1] * y};
 
 ApplyFlip[sym_Symbol, args___] := $CoordsToSide @ Sign @ ApplyFlip[$SideToCoords @ sym, args];
 
@@ -127,26 +127,26 @@ $OpacityPattern is a pattern that matches an opacity specification.
 
 PrivateVariable[$NotebookOrPathP, $PathP]
 
-$NotebookOrPathP = _NotebookObject | File[_String] | _String;
-$PathP = File[_String] | _String;
+$NotebookOrPathP = _NotebookObject | File[_Str] | _Str;
+$PathP = File[_Str] | _Str;
 
 (**************************************************************************************************)
 
 PrivateFunction[ListOrAssociationOf]
 
-ListOrAssociationOf[pattern_] := {Repeated[pattern]} | Association[Repeated[_ -> pattern]];
+ListOrAssociationOf[pattern_] := {Repeated[pattern]} | Assoc[Repeated[_ -> pattern]];
 
 (**************************************************************************************************)
 
 PrivateVariable[$ModIntP]
 
-$ModIntP = _Integer ? Positive | Modulo[_Integer ? Positive];
+$ModIntP = _Int ? Positive | Modulo[_Int ? Positive];
 
 (**************************************************************************************************)
 
 PrivateVariable[$PosIntOrInfinityP]
 
-$PosIntOrInfinityP = _Integer ? Positive | Infinity;
+$PosIntOrInfinityP = _Int ? Positive | Infinity;
 
 (**************************************************************************************************)
 

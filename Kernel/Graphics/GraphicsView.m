@@ -2,9 +2,9 @@ PublicFunction[ConstructGraphicsViewTransform]
 
 (* adapted from https://mathematica.stackexchange.com/questions/3528/extract-values-for-viewmatrix-from-a-graphics3d *)
 
-ConstructGraphicsViewTransform[viewAssoc_Association] := Scope[
+ConstructGraphicsViewTransform[viewAssoc_Assoc] := Scope[
 
-  viewAssoc = Association[$defaultViewOpts, viewAssoc];
+  viewAssoc = Assoc[$defaultViewOpts, viewAssoc];
   {plotRange, viewPoint, viewVector, viewRotation, viewMatrix, viewCenter, viewVertical, viewAngle, viewProjection} =
     Lookup[viewAssoc, {PlotRange, ViewPoint, ViewVector, ViewRotation, ViewMatrix, ViewCenter, ViewVertical, ViewAngle, ViewProjection}, Automatic];
 
@@ -12,7 +12,7 @@ ConstructGraphicsViewTransform[viewAssoc_Association] := Scope[
     Return @ GraphicsViewTransform[Dot @@ viewMatrix, viewMatrix]];
 
   SetAutomatic[plotRange, {{-1, 1}, {-1, 1}, {-1, 1}}];
-  plotSize = EuclideanDistance @@@ plotRange;
+  plotSize = Dist @@@ plotRange;
   If[Total[plotSize] == 0, Return[Indeterminate]];
 
   plotRangeLower = Part[plotRange, All, 1];
@@ -22,7 +22,7 @@ ConstructGraphicsViewTransform[viewAssoc_Association] := Scope[
   viewPoint = Clip[viewPoint, {-1*^5, 1*^5}];
 
   SetAutomatic[viewCenter, {0.5, 0.5, 0.5}];
-  If[MatchQ[viewCenter, {{_, _, _}, {_, _}}], viewCenter //= First];
+  If[MatchQ[viewCenter, {{_, _, _}, {_, _}}], viewCenter //= P1];
   (* ^ Don't yet support translation of view *)
 
   viewCenter = plotRangeLower + viewCenter * plotSize;
@@ -110,7 +110,7 @@ $automaticViewOptions := {ViewProjection -> "Orthographic", ViewPoint -> $defaul
 ConstructGraphicsViewTransform[g_Graphics3D] := Scope[
   viewOpts = Options[g, DeleteCases[$viewOptionSymbols, ViewRotation]];
   plotRange = GraphicsPlotRange @ g;
-  viewAssoc = Association[viewOpts, PlotRange -> plotRange];
+  viewAssoc = Assoc[viewOpts, PlotRange -> plotRange];
   ConstructGraphicsViewTransform[viewAssoc]
 ];
 
@@ -140,7 +140,7 @@ maybeThreaded[e_] := e;
 
 PrivateFunction[ToXYFunction]
 
-ToXYFunction[GraphicsViewTransform[tmatrix_, _]] := Function[
+ToXYFunction[GraphicsViewTransform[tmatrix_, _]] := Fn[
   input,
   Which[
     VectorQ[input], xyVector[tmatrix, input],
@@ -153,7 +153,7 @@ ToXYFunction[GraphicsViewTransform[tmatrix_, _]] := Function[
 
 PrivateFunction[ToZFunction]
 
-ToZFunction[GraphicsViewTransform[tmatrix_, _]] := Function[
+ToZFunction[GraphicsViewTransform[tmatrix_, _]] := Fn[
   input,
   Which[
     VectorQ[input], zVector[tmatrix, input],
@@ -172,7 +172,7 @@ imageZ[a_] := ToPacked[Part[a, 3] / maybeThreaded[Part[a, 4]]];
 
 PrivateFunction[ToXYZFunction]
 
-ToXYZFunction[GraphicsViewTransform[tmatrix_, _]] := Function[
+ToXYZFunction[GraphicsViewTransform[tmatrix_, _]] := Fn[
   input,
   Which[
     VectorQ[input], xyzVector[tmatrix, input],

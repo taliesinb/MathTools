@@ -62,7 +62,7 @@ generalPolyBoxes[polyHead_, polyForm_, powerForm_, plusForm_, timesForm_, scalar
   ]
 ];
 
-innerPolyBoxes[a_, n_Integer ? Negative] :=
+innerPolyBoxes[a_, n_Int ? Negative] :=
   TemplateBox[{polyTermForm @ a, IntegerString @ Abs @ n}, "SubtractForm"];
 
 innerPolyBoxes[args___] :=
@@ -89,6 +89,6 @@ makeInnerPolyParamQGBoxes = Case[
   a_                          := $scalarBoxes @ a;
 ];
 
-longPolyQ[e_PolyForm] := Length[Unevaluated @ e] > 1;
-longPolyQ[e_] := Head[Unevaluated @ e] === $polyHead && Length[Unevaluated @ e] > 1;
+longPolyQ[e_PolyForm] := Len[Unevaluated @ e] > 1;
+longPolyQ[e_] := H[Unevaluated @ e] === $polyHead && Len[Unevaluated @ e] > 1;
 

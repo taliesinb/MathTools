@@ -128,7 +128,7 @@ makeMultiMutateGenerator[i_, out_, n_] := Scope[
 (* makeMultiMutateGenerator[i_, out_, n_] :=
   RepresentationElement @ ReplacePart[
     IdentityMatrix @ n,
-    KeyValueMap[mergeRule, Echo @ GroupBy[Flatten @ {{i, i} -> -1, {#, i} -> 1& /@ out}, First -> Last]]
+    KeyValueMap[mergeRule, Echo @ GroupBy[Flatten @ {{i, i} -> -1, {#, i} -> 1& /@ out}, P1 -> PN]]
   ]
 
 mergeRule[p:{i_, i_}, vals_] := p -> (Times @@ vals);

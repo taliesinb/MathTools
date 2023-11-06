@@ -7,9 +7,9 @@ FindCoordinatizationFunction[qr_PathRepresentationObject] :=
 
 FindCoordinatizationFunction[rep_LinearRepresentationObject, opts:OptionsPattern[]] := Scope[
   generators = Values @ rep["Generators"];
-  gen = First @ generators;
-  modulus = If[MatchQ[gen, RepresentationElement[_, _]], Last[gen], None];
-  FindCoordinatizationFunction[First /@ generators, "Group" -> rep["Group"], Modulus -> modulus]
+  gen = P1 @ generators;
+  modulus = If[MatchQ[gen, RepresentationElement[_, _]], PN[gen], None];
+  FindCoordinatizationFunction[P1 /@ generators, "Group" -> rep["Group"], Modulus -> modulus]
 ];
 
 FindCoordinatizationFunction[matrices_List, OptionsPattern[]] := Scope[
@@ -17,9 +17,9 @@ FindCoordinatizationFunction[matrices_List, OptionsPattern[]] := Scope[
   If[TranslationGroupQ[group],
     translationVectors = ExtractTranslationVector /@ matrices;
     rank = MatrixRank[translationVectors];
-    taker = If[rank === Length[translationVectors], Identity, TakeOperator[rank]];
+    taker = If[rank === Len[translationVectors], Id, TakeOperator[rank]];
     types = Table["Infinite", rank];
-    Return @ {types, First /* ExtractTranslationVector /* taker, False};
+    Return @ {types, P1 /* ExtractTranslationVector /* taker, False};
   ];
   positions = FindDiagonalBlockPositions[matrices];
   {types, functions} = Transpose @ Map[
@@ -27,17 +27,17 @@ FindCoordinatizationFunction[matrices_List, OptionsPattern[]] := Scope[
     positions
   ];
   isRedundant = False;
-  If[Length[matrices] >= 3,
+  If[Len[matrices] >= 3,
     matrices = matrices;
     g12 = Dot @@ Take[matrices, 2]; g12i = Quiet @ Check[Inverse[g12], Null];
     isRedundant = AnyTrue[Drop[matrices, 2], SameQ[#, g12] || SameQ[#, g12i]&];
   ];
-  {types, First /* (ApplyThrough @ functions), isRedundant}
+  {types, P1 /* (ApplyThrough @ functions), isRedundant}
 ];
 
 getTranslationCyclicity[n_] := Match[modulus,
   None :> "Infinite",
-  z_Integer :> {"Cyclic", z},
+  z_Int :> {"Cyclic", z},
   matrix_List :> Scope[
     mod = matrix[[n, -1]];
     If[1 < mod < Infinity, {"Cyclic", mod}, "Infinite"]
@@ -45,10 +45,10 @@ getTranslationCyclicity[n_] := Match[modulus,
 ]
 
 findSubCoordinatization[matrices_, {m_, n_}] := Scope[
-  size = n - m + 1; num = Length[matrices];
+  size = n - m + 1; num = Len[matrices];
   Which[
     (size == 1) && Count[matrices, {{-1}}] == 1,
-      {{"Cyclic", 2}, Extract[{m, m}] /* Function[# + 1]},
+      {{"Cyclic", 2}, Extract[{m, m}] /* Fn[# + 1]},
     (size == 1) && ContainsUnitRootsQ[matrices],
       {{"Cyclic", FirstCase[matrices, UnitRoot[k_] :> k, None, Infinity]},
         Extract[{m, m}] /* GetRootPower
@@ -56,7 +56,7 @@ findSubCoordinatization[matrices_, {m_, n_}] := Scope[
     Count[matrices, _ ? BasisInversionMatrixQ] == 1 && Count[matrices, _ ? TranslationMatrixQ] == (num - 1),
       i = 1;
       Splice @ Table[
-        {"Infinite", Extract[{row, n}] /* If[BasisInversionMatrixQ @ Part[matrices, i++], # / 2&, Identity]},
+        {"Infinite", Extract[{row, n}] /* If[BasisInversionMatrixQ @ Part[matrices, i++], # / 2&, Id]},
         {row, m, n}
       ],
     AllTrue[matrices, DihedralTranslationMatrixQ[#] || TranslationMatrixQ[#]&],
@@ -87,10 +87,10 @@ chooseLatticeCoordinatization[{"Infinite"}, _] :=
   {False, Append[0]};
 
 chooseLatticeCoordinatization[{Repeated["Infinite", 2]}, _] :=
-  {False, Identity};
+  {False, Id};
 
 chooseLatticeCoordinatization[{Repeated["Infinite", 3]}, False] :=
-  {True, Identity};
+  {True, Id};
 
 $abc = Transpose @ N @ {{Sqrt[3]/2, -(1/2)}, {0, 1}, {-(Sqrt[3]/2), -(1/2)}};
 dotABC[e_] := Dot[$abc, e];
@@ -105,9 +105,9 @@ chooseLatticeCoordinatization[{Repeated["Infinite", 3]}, True] :=
 composeWith[f_][res_] := MapAt[If[# === None, None, f /* #]&, res, 2];
 
 flipSpec[spec_, redundant_] :=
-  composeWith[Reverse] @ chooseLatticeCoordinatization[Reverse @ spec, redundant];
+  composeWith[Rev] @ chooseLatticeCoordinatization[Rev @ spec, redundant];
 
 (* Todo: 3D redundant *)
 
-chooseLatticeCoordinatization[types_, _] := {Length[types] >= 3, None};
+chooseLatticeCoordinatization[types_, _] := {Len[types] >= 3, None};
 

@@ -23,7 +23,7 @@ toCodeMarkdown[code_, multiline_] := Scope[
   res
 ];
 
-subShortCodes[s_String] := StringReplace[s, $shortcodeRules];
+subShortCodes[s_Str] := StringReplace[s, $shortcodeRules];
 
 $shortcodeRules = {
   (code:$colorShortcodeP ~~ ":" ~~ next_) :> applyShortcode[code, next],

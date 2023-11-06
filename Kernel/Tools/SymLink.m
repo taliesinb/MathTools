@@ -1,7 +1,7 @@
 PublicFunction[SymLink]
 
-SymLink[source_String, target_String] /; $PosixQ :=
+SymLink[source_Str, target_Str] /; $PosixQ :=
   RunTool["ln", "-s", source, target];
 
-SymLink[source_String, target_String] :=
+SymLink[source_Str, target_Str] :=
   If[FileQ[source], CopyFile[source, target], CopyDirectory[source, target]];

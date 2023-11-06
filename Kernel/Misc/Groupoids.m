@@ -87,9 +87,9 @@ groupoidObjectBoxes[object:GroupoidObject[data_], form_] := Scope[
     (* Always displayed *)
     {
      {summaryItem["Type", type], SpanFromLeft},
-     {summaryItem["Generators", If[generators === None, None, Length @ generators]]},
-     {summaryItem["Initial states", Length @ initialStates]},
-     If[states =!= Indeterminate, {summaryItem["States", Length @ states]}, Nothing]
+     {summaryItem["Generators", If[generators === None, None, Len @ generators]]},
+     {summaryItem["Initial states", Len @ initialStates]},
+     If[states =!= Indeterminate, {summaryItem["States", Len @ states]}, Nothing]
      },
     (* Displayed on request *)
     If[generators === None, {}, {{Column[generators], SpanFromLeft}}],
@@ -108,9 +108,9 @@ computeCayleyFunction[data_, OptionsPattern[]] := Scope[
   UnpackOptions[symmetric, labeled];
   list = Flatten @ MapIndexed[
     {gen, index} |-> {
-      If[labeled, Labeled[First @ index], Identity] @ gen,
+      If[labeled, Labeled[P1 @ index], Id] @ gen,
       If[symmetric && (igen = ToInverseFunction[gen]) =!= gen,
-        If[labeled, Labeled[Inverted @ First @ index], Identity] @ igen,
+        If[labeled, Labeled[Inverted @ P1 @ index], Id] @ igen,
         Nothing
       ]
     },
@@ -167,7 +167,7 @@ GroupoidObjectQ[_] := False;
 
 PublicFunction[ColoredTokenGroupoid]
 
-ColoredTokenGroupoid[n_Integer, colors_Integer] := constructGroupoid @ Association[
+ColoredTokenGroupoid[n_Int, colors_Int] := constructGroupoid @ Assoc[
   "Type" -> "ColorToken",
   "Generators" -> makeColoredTokenGenerators[n, colors],
   "MirroredGenerators" -> makeMirroredColoredTokenGenerators[n, colors],
@@ -211,12 +211,12 @@ PublicFunction[PermutationActionGroupoid]
 
 PermutationActionGroupoid[initialStates_List, generators_:Automatic] := Scope[
   If[!MatrixQ[initialStates], initialStates = List @ initialStates];
-  n = Length @ First @ initialStates;
+  n = Len @ P1 @ initialStates;
   generators //= toPermutationGenerators;
   If[FailureQ[generators], ReturnFailed[]];
   generatorsAndLabels = Map[{#, toPermutationForm @ #}&, generators];
   cayleyFunction = PermutationActionCayleyFunction[generatorsAndLabels];
-  constructGroupoid @ Association[
+  constructGroupoid @ Assoc[
     "Type" -> "Permutation",
     "CayleyFunction" -> cayleyFunction,
     "InitialStates" -> initialStates
@@ -239,9 +239,9 @@ simplifyCycles = Case[
 ];
 
 toPermutationForm = Case[
-  {a_Integer, b_Integer} := TranspositionForm[a, b];
-  {a__Integer}           := PermutationCycleForm[a];
-  other_                 := PermutationForm[other];
+  {a_Int, b_Int} := TranspositionForm[a, b];
+  {a__Int}       := PermutationCycleForm[a];
+  other_         := PermutationForm[other];
 ]
 
 (**************************************************************************************************)
@@ -264,7 +264,7 @@ PublicFunction[CardinalRewriteGroupoid]
 CardinalRewriteGroupoid[cardinals_List, initial_, rewriteCount_:1] := Scope[
   Which[
     ListQ[initial],
-      n = Length @ initial;
+      n = Len @ initial;
       initialStates = {initial},
     IntegerQ[initial],
       n = initial;
@@ -281,7 +281,7 @@ CardinalRewriteGroupoid[cardinals_List, initial_, rewriteCount_:1] := Scope[
   SetAll[initialStates, allStates];
   SetAll[rewriteCount, n];
   cayleyFunction = CardinalRewriteCayleyFunction[allStates, toCountFilter  @ rewriteCount];
-  constructGroupoid @ Association[
+  constructGroupoid @ Assoc[
     "Type" -> "CardinalRewrite",
     "CayleyFunction" -> cayleyFunction,
     "InitialStates" -> initialStates,
@@ -290,7 +290,7 @@ CardinalRewriteGroupoid[cardinals_List, initial_, rewriteCount_:1] := Scope[
 ];
 
 toCountFilter = Case[
-  i_Integer | {i_Integer} := EqualTo[i];
+  i_Int | {i_Int} := EqualTo[i];
   {i_, j_} := Between[{i, j}];
   _ := $Failed;
 ];
@@ -299,7 +299,7 @@ canonicalCardinalTransition[rules_] := Scope[
   rules = DeleteCases[rules, z_ -> z_];
   reps = Sort /@ {rules, ReverseRules @ rules, invertRules @ rules, ReverseRules @ invertRules @ rules};
   minIndex = MinimumIndex[reps];
-  If[MatchQ[minIndex, 2 | 4], Inverted, Identity] @ CardinalTransition @ Part[reps, minIndex]
+  If[MatchQ[minIndex, 2 | 4], Inverted, Id] @ CardinalTransition @ Part[reps, minIndex]
 ];
 
 invertRules[rules_] := MatrixMap[Inverted, rules];

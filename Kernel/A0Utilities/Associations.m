@@ -1,7 +1,7 @@
 PublicFunction[MergeAssocations]
 
 MergeAssocations[f_, assocs_] :=
-  KeyValueMap[f, Merge[assocs, Identity]];
+  KeyValueMap[f, Merge[assocs, Id]];
 
 (**************************************************************************************************)
 
@@ -25,7 +25,7 @@ iLookup[dict1_, key_] := Lookup[dict1, key, Automatic];
 
 PublicFunction[AssociationMapThread]
 
-AssociationMapThread[f_, assoc_Association] := With[
+AssociationMapThread[f_, assoc_Assoc] := With[
   {keys = Keys @ assoc},
   Map[f[AssociationThread[keys, #]]&, Transpose @ Values @ assoc]
 ];
@@ -34,7 +34,7 @@ AssociationMapThread[f_, assoc_Association] := With[
 
 PublicFunction[AssociationKeyPattern]
 
-AssociationKeyPattern[assoc_Association] := Apply[Alternatives, Keys @ assoc];
+AssociationKeyPattern[assoc_Assoc] := Apply[Alternatives, Keys @ assoc];
 
 (**************************************************************************************************)
 
@@ -47,10 +47,10 @@ AssociationRange[{key$1, key$2, $$}] gives the association <|$$, key$i -> i$, $$
 "
 
 AssociationRange[list_] :=
-  AssociationThread[list, Range @ Length @ list];
+  AssociationThread[list, Range @ Len @ list];
 
 RangeAssociation[list_] :=
-  AssociationThread[Range @ Length @ list, list];
+  AssociationThread[Range @ Len @ list, list];
 
 (**************************************************************************************************)
 
@@ -62,7 +62,7 @@ SetUsage @ "
 ConstantUAssociation[{key$1, key$2, $$}, c_] gives the unordered constant association <|$$, key$i -> c$, $$|>.
 "
 
-ConstantUAssociation[keys_List, constant_] := UAssociation @ ConstantAssociation[keys, constant];
+ConstantUAssociation[keys_List, constant_] := UAssoc @ ConstantAssociation[keys, constant];
 
 (**************************************************************************************************)
 
@@ -72,7 +72,7 @@ SetUsage @ "
 ConstantAssociation[{key$1, key$2, $$}, c_] gives the constant association <|$$, key$i -> c$, $$|>.
 "
 
-ConstantAssociation[keys_List, constant_] := AssociationThread[keys, Repeat[constant, Length @ keys]];
+ConstantAssociation[keys_List, constant_] := AssociationThread[keys, Repeat[constant, Len @ keys]];
 
 (**************************************************************************************************)
 
@@ -106,4 +106,4 @@ GroupPairs[{{key$1, val$1}, {key$2, val$2}, $$}] yields <|key$1 -> {val$1, $$}, 
 GroupPairs[{expr$1, expr$2, $$}] effectively gives GroupBy[expr$, First -> Last].
 "
 
-GroupPairs[list_] := GroupBy[list, First -> Last];
+GroupPairs[list_] := GroupBy[list, P1 -> PN];

@@ -76,7 +76,7 @@ processEdge[UndirectedEdge[a_, b_, c_], _] :=
 processEdge[de:DirectedEdge[_, _, _], _] :=
   sowAnnos @ de;
 
-processEdge[assoc_Association, _] := KeyValueMap[processEdge[#2, #1]&, assoc];
+processEdge[assoc_Assoc, _] := KeyValueMap[processEdge[#2, #1]&, assoc];
 processEdge[Labeled[e_, label_], _] := processEdge[e, label];
 
 processEdge[list_List, label_] := Map[processEdge[#, label]&, list];
@@ -110,7 +110,7 @@ makeQuiver[vertices_, edges_, newOpts_] := Scope[
   If[$edgeAnnotations =!= <||>,
     index = AssociationRange @ edges;
     $edgeAnnotations = Map[
-      KeyMap[index, Association @ #]&,
+      KeyMap[index, Assoc @ #]&,
       $edgeAnnotations
     ];
   ];
@@ -126,7 +126,7 @@ makeQuiver[vertices_, edges_, newOpts_] := Scope[
 ]
 
 reportDuplicateCardinals[edges_] := (
-  KeyValueScan[checkEdgeGroup, GroupBy[edges, Last]];
+  KeyValueScan[checkEdgeGroup, GroupBy[edges, PN]];
 )
 
 Quiver::dupcardinal = "The cardinal `` is present on the following incident edges: ``."
@@ -151,7 +151,7 @@ ToQuiver[obj$] attempts to convert obj$ to a quiver Graph[$$] object.
 ToQuiver = MatchValues[
   graph_Graph := If[QuiverQ @ graph, graph, Quiet @ Quiver @ graph];
   edges_List  := Quiet @ Quiver @ edges;
-  str_String  := BouquetQuiver @ str;
+  str_Str     := BouquetQuiver @ str;
   _           := $Failed;
 ];
 
@@ -170,7 +170,7 @@ QuiverQ[g_] := EdgeTaggedGraphQ[g] && validCardinalEdgesQ[EdgeList[g]];
 
 validCardinalEdgesQ[edges_] := And[
   MatchQ[edges, {DirectedEdge[_, _, _]..}],
-  AllTrue[GroupBy[edges // SpliceCardinalSetEdges, Last], checkForDuplicateCardinals]
+  AllTrue[GroupBy[edges // SpliceCardinalSetEdges, PN], checkForDuplicateCardinals]
 ];
 
 checkForDuplicateCardinals[edges_] :=

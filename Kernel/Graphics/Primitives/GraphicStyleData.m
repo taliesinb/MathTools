@@ -4,7 +4,7 @@ PrivateVariable[$GraphicsStyleData]
 
 $GraphicsStyleData = <||>;
 
-Typeset`MakeBoxes[GraphicsStyleData[assoc_Association, primitives_], form:StandardForm | TraditionalForm, type:Graphics|Graphics3D] :=
+Typeset`MakeBoxes[GraphicsStyleData[assoc_Assoc, primitives_], form:StandardForm | TraditionalForm, type:Graphics|Graphics3D] :=
   graphicsStyleDataBoxes[assoc, primitives, form, type];
 
 graphicsStyleDataBoxes[assoc_, primitives_, form_, type_] := InheritedBlock[{$GraphicsStyleData},
@@ -17,7 +17,7 @@ mergeGraphicsStyleRules[{styles1_, styles2_}] := Join[ToList @ styles1, ToList @
 
 $customGraphicsHeadQ[GraphicsStyleData] = True;
 
-Typeset`MakeBoxes[namedStyle_String /; KeyExistsQ[$GraphicsStyleData, namedStyle], form:StandardForm | TraditionalForm, type_] := With[
+Typeset`MakeBoxes[namedStyle_Str /; KeyExistsQ[$GraphicsStyleData, namedStyle], form:StandardForm | TraditionalForm, type_] := With[
   {style = $GraphicsStyleData[namedStyle]},
   Typeset`MakeBoxes[
     Directive @ style,

@@ -70,7 +70,7 @@ TorusAngles[{R_, r_}, v_] := Scope[
   phi = ArcTan[Part[v, 1], Part[v, 2]];
   p = R * {Cos @ phi, Sin @ phi, 0};
   v2 = v - p;
-  theta = ArcTan[Dot[v2, Normalize @ p], Last @ v];
+  theta = ArcTan[Dot[v2, Normalize @ p], PN @ v];
   {phi, theta}
 ];
 
@@ -123,7 +123,7 @@ RegionPolygon[other_] := Scope[
   res = Quiet @ BoundaryDiscretizeRegion @ other;
   If[MatchQ[res, _MeshRegion | _BoundaryMeshRegion],
     RegionPolygon @ res,
-    ReturnFailed["notregion", Head @ other]
+    ReturnFailed["notregion", H @ other]
   ]
 ];
 
@@ -135,7 +135,7 @@ RegionPolygon[region_MeshRegion | region_BoundaryMeshRegion] :=
 
 regionComponentPolygon[region_] := Scope[
   polygons = region["BoundaryPolygons"];
-  If[Length[polygons] === 1, Return @ First @ polygons];
+  If[Len[polygons] === 1, Return @ P1 @ polygons];
   outerIndex = MinimumIndexBy[polygons, -Area[#]&];
   outer = Part[polygons, outerIndex];
   holes = Delete[polygons, outerIndex];
@@ -200,7 +200,7 @@ DiscretizeCurve[curve:(BezierCurve|BSplineCurve)[___]] := Scope[
 DiscretizeCurve[BezierCurve[points_List]] :=
   DiscretizeCurve @ BezierCurve[points, SplineDegree -> 3];
 
-DiscretizeCurve[BezierCurve[points_List, SplineDegree -> n_Integer]] := Replace[
+DiscretizeCurve[BezierCurve[points_List, SplineDegree -> n_Int]] := Replace[
   GeometricFunctions`BezierCurve[ToPackedReal @ points, SplineDegree -> n],
   {GraphicsComplex[coords_List, Line[indices_List]] :> ToPackedReal @ Part[coords, indices], _ :> $Failed}
 ];
@@ -215,8 +215,8 @@ PublicFunction[PointDilationGraphics]
 
 PointDilationGraphics[points_, r_] := Scope[
   points = ToPacked[points];
-  If[Length[points] < 1500 && minimumSquaredDistance[points] > (2r)^2,
-    GraphicsComplex[points, Array[Disk[#, r]&, Length @ points]],
+  If[Len[points] < 1500 && minimumSquaredDistance[points] > (2r)^2,
+    GraphicsComplex[points, Array[Disk[#, r]&, Len @ points]],
     RegionPolygon @ pointDilationRegion[points, r]
   ]
 ];
@@ -229,7 +229,7 @@ minimumSquaredDistance[points_] :=
 
 pointDilationRegion[points_, d_] := Scope[
   bounds = CoordinateBounds[points, 2 * d];
-  is3D = (Length @ First @ points) === 3;
+  is3D = (Len @ P1 @ points) === 3;
   Check[
     mesh = MeshRegion @ Point @ points;
     rd = RegionDistance[mesh];
@@ -237,7 +237,7 @@ pointDilationRegion[points_, d_] := Scope[
       ImplicitRegion[rd[{x, y, z}] <= d, {x, y, z}],
       ImplicitRegion[rd[{x, y}] <= d, {x, y}]
     ];
-    quality = Length[points] < 1000;
+    quality = Len[points] < 1000;
     BoundaryDiscretizeRegion[ir, bounds,
       MaxCellMeasure -> If[quality, d/4, d],
       PerformanceGoal -> If[quality, "Quality", "Speed"]
@@ -253,9 +253,9 @@ PublicFunction[BoundingBoxPointIndices]
 
 BoundingBoxPointIndices[points_, dscale_:0.01] := Scope[
   bbox = CoordinateBoundingBox @ points;
-  diagonal = EuclideanDistance @@ bbox;
+  diagonal = Dist @@ bbox;
   coords = Transpose @ points;
-  distances = If[Length[coords] === 2,
+  distances = If[Len[coords] === 2,
     {x, y} = coords;
     {{xl, yl}, {xh, yh}} = bbox;
     MapThread[Min, {Abs[x - xl], Abs[y - yl], Abs[x - xh], Abs[y - yh]}]
@@ -272,8 +272,8 @@ BoundingBoxPointIndices[points_, dscale_:0.01] := Scope[
 PublicFunction[ConvexHullLineIndices]
 
 ConvexHullLineIndices[points_] := Scope[
-  If[Length[points] <= 3,
-    Range @ Length @ points
+  If[Len[points] <= 3,
+    Range @ Len @ points
   ,
     res = Check[WolframCGL`QuickHull @ ToPackedReal @ points, $Failed];
     If[!MatrixQ[res], res = $Failed];
@@ -293,7 +293,7 @@ ConvexHullPointIndices[points_] := Scope[
 PublicFunction[FindRigidTransform]
 
 FindRigidTransform[{a1_, a1_}, {b1_, b1_}] := TranslationTransform[b1 - a1];
-FindRigidTransform[{a1_, a2_}, {a1_, a2_}] := Identity;
+FindRigidTransform[{a1_, a2_}, {a1_, a2_}] := Id;
 
 FindRigidTransform[{a1_, a2_}, {b1_, b2_}] := Scope[
   da = a2 - a1; db = b2 - b1;

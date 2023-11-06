@@ -13,7 +13,7 @@ Graph::badtheme = "`` is not a valid GraphTheme."
 
 LookupGraphThemeOptions[graph_] := Scope[
   theme = LookupAnnotation[graph, GraphTheme, None];
-  If[ListQ @ theme, Flatten, Identity] @
+  If[ListQ @ theme, Flatten, Id] @
     Lookup[$GraphThemeData, theme, Message[Graph::badtheme, theme]; {}]
 ];
 

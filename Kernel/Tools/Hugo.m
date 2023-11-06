@@ -12,7 +12,7 @@ HugoNewSite::exists = "A Hugo site already exists at ``.";
 HugoNewSite::noparent = "Cannot create a Hugo site at `` because parent directory does not exist.";
 HugoNewSite::invalidtheme = "HugoTheme -> `` should be a string of the form \"username/repo\".";
 
-HugoNewSite[dir_String, opts:OptionsPattern[]] := Scope[
+HugoNewSite[dir_Str, opts:OptionsPattern[]] := Scope[
 
   UnpackOptions[siteName, hugoTheme, $verbose, $dryRun];
   SetAutomatic[$verbose, $dryRun];
@@ -69,7 +69,7 @@ Options[HugoBuild] = {
   MarkdownPath -> Automatic
 };
 
-HugoBuild[dir_String, opts:OptionsPattern[]] :=
+HugoBuild[dir_Str, opts:OptionsPattern[]] :=
   falseIsFail @ RunTool["hugo", ReplaceInSequence[$hugoOptionsRules][opts], "--ignoreCache", "--cleanDestinationDir", WorkingDirectory -> dir];
 
 (**************************************************************************************************)
@@ -82,7 +82,7 @@ Options[HugoServe] = {
   ServingPort -> Automatic
 };
 
-HugoServe[dir_String, opts:OptionsPattern[]] :=
+HugoServe[dir_Str, opts:OptionsPattern[]] :=
   falseIsFail @ RunTool["hugo", "server", "--ignoreCache", "--noHTTPCache", ReplaceInSequence[$hugoOptionsRules][opts], WorkingDirectory -> dir, StandaloneTerminal -> True];
 
 $hugoOptionsRules = toolKeyTranslationRules @ {

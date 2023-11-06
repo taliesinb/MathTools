@@ -2,19 +2,19 @@ PrivateFunction[boxesToInputText]
 
 boxesToInputText[BoxData @ boxes_] := boxesToInputText @ boxes;
 
-boxesToInputText[boxes_String] := boxes;
+boxesToInputText[boxes_Str] := boxes;
 
 boxesToInputText[boxes_] := Scope[
 
-  boxes = ReplaceAll[boxes, s_String :> StringReplace[s, $nl -> $sentinel]];
+  boxes = ReplaceAll[boxes, s_Str :> StringReplace[s, $nl -> $sentinel]];
 
   result = CallFrontEnd @ FrontEnd`ExportPacket[
     Cell[BoxData @ boxes, "Output"],
     "InputText",
     "AllowExportAutoReplacements" -> False
   ];
-  If[!MatchQ[result, {_String, _, _}], ReturnFailed[]];
-  StringReplace[$sentinel -> $nl] @ StringReplace[{"\\" <> $nl -> "", $nl ~~ " "... -> "", "\t" -> "    "}] @ First @ result
+  If[!MatchQ[result, {_Str, _, _}], ReturnFailed[]];
+  StringReplace[$sentinel -> $nl] @ StringReplace[{"\\" <> $nl -> "", $nl ~~ " "... -> "", "\t" -> "    "}] @ P1 @ result
 ];
 
 $sentinel = "^^^^!";
@@ -38,7 +38,7 @@ ToMarkdownString::msgs = "Messages issued during markdown conversion of cell pri
 
 textCellToMarkdown[e_] := Scope[
   $lastExternalCodeCell ^= None;
-  If[ContainsQ[e /. _CompressedData :> Null, s_String /; StringContainsQ[s, $forbiddenStrings]],
+  If[ContainsQ[e /. _CompressedData :> Null, s_Str /; StringContainsQ[s, $forbiddenStrings]],
     VPrint["Dropping cell with forbidden content"];
     Return[""]
   ];
@@ -92,7 +92,7 @@ $finalStringFixups2 = {
  *)
 };
 
-WhiteString = _String ? (StringMatchQ[Whitespace]);
+WhiteString = _Str ? (StringMatchQ[Whitespace]);
 
 (**************************************************************************************************)
 
@@ -123,21 +123,21 @@ iTextToMarkdown = Case[
 ];
 
 replaceIndentingNewlines[boxes_] :=
-  VectorReplace[boxes, s_String :> StringReplace[s, "\[IndentingNewLine]"|"\n" -> "\\\\\n"]];
+  VectorReplace[boxes, s_Str :> StringReplace[s, "\[IndentingNewLine]"|"\n" -> "\\\\\n"]];
 
 (**************************************************************************************************)
 
-deblockIndent[str_String] := Scope[
+deblockIndent[str_Str] := Scope[
   blocks = StringSplit[str, "\n" ~~ (" " | "\t")... ~~ "\n"];
   StringRiffle[Map[deblockIndent0, blocks], "\n\n"]
 ];
 
 (* JS: color wrapped around blocks doesn't work *)
-deblockIndent0[str_String] /; StringMatchQ[str, "<span style=" ~~ Except[">"].. ~~ ">" ~~ inner___ ~~ "</span>"] && StringCount[str, "</span>"] == 1 :=
+deblockIndent0[str_Str] /; StringMatchQ[str, "<span style=" ~~ Except[">"].. ~~ ">" ~~ inner___ ~~ "</span>"] && StringCount[str, "</span>"] == 1 :=
   StringReplace[str, StartOfString ~~ style:("<span style=" ~~ Except[">"].. ~~ ">") ~~ inner___ ~~ "</span>" ~~ EndOfString :>
     deblockIndent0[inner]];
 
-deblockIndent0[str_String] := Scope[
+deblockIndent0[str_Str] := Scope[
   tabSizes = StringCases[str, StartOfLine ~~ Repeated[" ", {0, 4}] ~~ t:"\t"... :> StringLength[t]];
   {min, max} = MinMax[tabSizes];
   If[min > 0 && min == max, str = StringDelete[str, StartOfLine ~~ Repeated[" ", {0, 4}] ~~ StringRepeat["\t", min]]];
@@ -163,7 +163,7 @@ procTextualNewlines = Case[
   a_List                      := Map[%, a];
   StyleBox[a_, opts___]       := StyleBox[% @ a, opts];
   TextData[a_]                := TextData @ % @ a;
-  str_String                  := StringReplace[str, "\n" -> $katexNewline];
+  str_Str                     := StringReplace[str, "\n" -> $katexNewline];
   other_                      := other;
 ];
 
@@ -175,7 +175,7 @@ PrivateVariable[$textPostProcessor]
 
 PrivateVariable[$allowMDemph]
 
-$textPostProcessor = Identity;
+$textPostProcessor = Id;
 
 (* TODO: just wrap inline math with a symbolic wrapper, then replace that with inlineMathTemplate later.
 this will allow us to interpret $ as coming soley from user and not a result of inlineMathTemplate *)
@@ -184,7 +184,7 @@ $backtickCount = 0;
 $lastSpace = $allowMDemph = True;
 ClearAll[textBoxesToMarkdown];
 textBoxesToMarkdown = Case[
-  str_String :=
+  str_Str :=
     $textPostProcessor @ StringJoin @ checkLastSpace @ str;
 
   list_List :=
@@ -204,12 +204,12 @@ textBoxesToMarkdown = Case[
 
   Cell[boxes_, "Text"] := % @ boxes;
 
-  StyleBox[str_String /; StringMatchQ[str, Whitespace], style___] /; FreeQ[{style}, Background | "StrikeThrough"] :=
+  StyleBox[str_Str /; StringMatchQ[str, Whitespace], style___] /; FreeQ[{style}, Background | "StrikeThrough"] :=
     ($lastSpace = True; " ");
 
   FormBox[b_ButtonBox, _] := % @ b;
 
-  ButtonBox[title_, BaseStyle -> "Hyperlink"|Hyperlink, ButtonData -> {URL[url_String], _}, ___] := Scope[
+  ButtonBox[title_, BaseStyle -> "Hyperlink"|Hyperlink, ButtonData -> {URL[url_Str], _}, ___] := Scope[
     linkText = StringJoin @ % @ title; If[StringTrim[linkText] === "", Return @ ""];
     numNewlines = StringLength[linkText] - StringLength[linkText = StringTrimRight[linkText, "\n"..]];
     StringJoin["[", linkText, "](", url, ")", StringRepeat["\n", numNewlines]]
@@ -222,7 +222,7 @@ textBoxesToMarkdown = Case[
 ];
 
 checkLastSpace[list_List] := Map[checkLastSpace, list];
-checkLastSpace[s_String] := ($lastSpace = StringEndsQ[s, " "|"\t"]; $backtickCount += StringCount[s, "`"]; s);
+checkLastSpace[s_Str] := ($lastSpace = StringEndsQ[s, " "|"\t"]; $backtickCount += StringCount[s, "`"]; s);
 checkLastSpace[other_] := ($lastSpace = False; other);
 
 Options[styleBoxToMarkdown] = {
@@ -241,11 +241,11 @@ $italicP = Italic | "Italic";
 $plainP = Plain | "Plain";
 
 styleBoxToMarkdown = Case[ 
-  StyleBox[e_String, "PreformattedCode"] := "<code>" <> e <> "</code>";
-  StyleBox[e_String, FontSlant -> $italicP] /; canEmphWrapQ[e]                        := wrapWith[e, "*"];
-  StyleBox[e_String, FontWeight -> $boldP] /; canEmphWrapQ[e]                         := wrapWith[e, "**"];
-  StyleBox[e_String, FontSlant  -> $italicP, FontWeight -> $boldP] /; canEmphWrapQ[e] := wrapWith[e, "***"];
-  StyleBox[e_String, FontVariations -> {"Underline" -> True}] /; canEmphWrapQ[e]      := wrapWith[e, "_"];
+  StyleBox[e_Str, "PreformattedCode"] := "<code>" <> e <> "</code>";
+  StyleBox[e_Str, FontSlant -> $italicP] /; canEmphWrapQ[e]                        := wrapWith[e, "*"];
+  StyleBox[e_Str, FontWeight -> $boldP] /; canEmphWrapQ[e]                         := wrapWith[e, "**"];
+  StyleBox[e_Str, FontSlant  -> $italicP, FontWeight -> $boldP] /; canEmphWrapQ[e] := wrapWith[e, "***"];
+  StyleBox[e_Str, FontVariations -> {"Underline" -> True}] /; canEmphWrapQ[e]      := wrapWith[e, "_"];
   StyleBox[e_, rules___] := htmlStyledString[textBoxesToMarkdown @ e, {rules}];
 ]
 
@@ -255,7 +255,7 @@ PrivateFunction[complainBoxes]
 
 complainBoxes[other_] := Scope[
   Message[ToMarkdownString::badmdbox, MsgExpr @ other];
-  headStr = ToPrettifiedString @ Head @ other;
+  headStr = ToPrettifiedString @ H @ other;
   PrintQGStackSymbols[];
   "**CANNOT CONVERT TEXTUAL BOXES TO MARKDOWN**\n```\n" <> ToPrettifiedString[other, MaxDepth -> 3, MaxLength -> 10, MaxIndent -> 3] <> "\n```\n"
 ];
@@ -266,20 +266,20 @@ ToMarkdownString::badmdbox = "Cannot form markdown for boxes that appeared withi
 
 PrivateFunction[htmlStyledString, toStylePropVal]
 
-htmlStyledString[str_String, {currentStyleSetting[opt:FontColor|Background, name_]}] :=
+htmlStyledString[str_Str, {currentStyleSetting[opt:FontColor|Background, name_]}] :=
   htmlStyledString[str, {opt -> name}];
 
-htmlStyledString[str_String, {l___, FontVariations -> {"StrikeThrough" -> True}, r___}] :=
+htmlStyledString[str_Str, {l___, FontVariations -> {"StrikeThrough" -> True}, r___}] :=
   "<sub>" <> htmlStyledString[str, {l, r}] <> "</sub>";
 
-htmlStyledString[str_String, {}] := str;
+htmlStyledString[str_Str, {}] := str;
 
-htmlStyledString[str_String, {FontColor|Background -> name_String}] :=
+htmlStyledString[str_Str, {FontColor|Background -> name_Str}] :=
   $classSpanTemplate[str, name];
 
 $classSpanTemplate = StringFunction @ "<span class='#2'>#1</span>";
 
-htmlStyledString[str_String, rules_List] := Scope[
+htmlStyledString[str_Str, rules_List] := Scope[
   styleStr = StringRiffle[toStylePropVal /@ rules, ";"];
   If[styleStr === "", str, $styledSpanTemplate[str, styleStr]]
 ];
@@ -316,10 +316,10 @@ wrapWith[e_, wrap_] := Scope[
 $shortcodeP := $shortcodeP = RegularExpression @ ToRegularExpression @ Alternatives[
   "</span>", "\n", "B{", "B:", "F{", "F:", "\\n", "^{", "_{", ("_" | "^") ~~ DigitCharacter,
   DoubleStruckCharacter,
-  First @ $WLSymbolToUnicode
+  P1 @ $WLSymbolToUnicode
 ];
 
-processInlineCodeBlocks[str_String] := StringReplace[str, {
+processInlineCodeBlocks[str_Str] := StringReplace[str, {
   code:("`" ~~ body:Shortest[___] ~~ "`") :> If[StringFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, False]],
   code:("```" ~~ body:Shortest[___] ~~ "```") :> If[StringFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, True]]
 }]

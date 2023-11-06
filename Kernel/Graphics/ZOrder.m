@@ -20,20 +20,20 @@ GraphicsZSort[Graphics3D[prims_, opts___], trans_] :=
 
 GraphicsZSort[prims_, trans_] := Scope[
   trans = Switch[trans,
-    _Integer,               PartOperator[trans],
+    _Int,               PartOperator[trans],
     _GraphicsViewTransform, ToZFunction @ trans,
     _,                      trans
   ];
   res = trans[{0, 0, 0}];
   $zfn = Switch[res,
     _ ? NumberQ,          trans,
-    {_, _, _ ? NumberQ},  trans /* Last,
+    {_, _, _ ? NumberQ},  trans /* PN,
     _,                    ReturnFailed["badtrans", res]
   ];
   $zstyle = {Black, Opacity[1]};
   $zindex = Bag[];
   zsort @ prims;
-  $zindex = Association @ BagPart[$zindex, All];
+  $zindex = Assoc @ BagPart[$zindex, All];
   KeyValueMap[fromZandStyle, KeySort @ $zindex]
 ];
 
@@ -62,7 +62,7 @@ zsort = Case[
   Polygon[mats_ ? CoordinateMatricesQ, arr_]  := Map[%[Polygon[#, arr]]&, mats];
 
   p:Cuboid[l_, h_]                            := zinsert[{l, h}, p];
-  p:$primitiveP                               := zinsert[First @ p, p];
+  p:$primitiveP                               := zinsert[P1 @ p, p];
 
   e_                                          := zstyle[e];
 ];

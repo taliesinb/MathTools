@@ -1,7 +1,7 @@
 PublicFunction[LowerCaseFirst, UpperCaseFirst]
 
-LowerCaseFirst[str_String] := StringJoin[ToLowerCase @ StringTake[str, 1], StringDrop[str, 1]];
-UpperCaseFirst[str_String] := StringJoin[ToUpperCase @ StringTake[str, 1], StringDrop[str, 1]];
+LowerCaseFirst[str_Str] := StringJoin[ToLowerCase @ StringTake[str, 1], StringDrop[str, 1]];
+UpperCaseFirst[str_Str] := StringJoin[ToUpperCase @ StringTake[str, 1], StringDrop[str, 1]];
 
 (**************************************************************************************************)
 
@@ -10,36 +10,36 @@ PublicFunction[UpperCaseFirstQ, LowerCaseFirstQ]
 SetListable[UpperCaseFirstQ, LowerCaseFirstQ]
 
 UpperCaseFirstQ[""] = False;
-UpperCaseFirstQ[str_String] := UpperCaseQ @ StringTake[str, 1];
+UpperCaseFirstQ[str_Str] := UpperCaseQ @ StringTake[str, 1];
 
 LowerCaseFirstQ[""] = False;
-LowerCaseFirstQ[str_String] := LowerCaseQ @ StringTake[str, 1];
+LowerCaseFirstQ[str_Str] := LowerCaseQ @ StringTake[str, 1];
 
 (**************************************************************************************************)
 
 PublicFunction[UpperCaseLast, LowerCaseLast]
 
-UpperCaseLast[str_String] := StringJoin[StringDrop[str, -1], ToUpperCase @ StringTake[str, -1]];
-LowerCaseLast[str_String] := StringJoin[StringDrop[str, -1], ToLowerCase @ StringTake[str, -1]];
+UpperCaseLast[str_Str] := StringJoin[StringDrop[str, -1], ToUpperCase @ StringTake[str, -1]];
+LowerCaseLast[str_Str] := StringJoin[StringDrop[str, -1], ToLowerCase @ StringTake[str, -1]];
 
 (**************************************************************************************************)
 
 PublicFunction[ToTitleString]
 
-ToTitleString[s_String] :=
+ToTitleString[s_Str] :=
   ToLowerCase @ StringReplace[s, RegularExpression["([a-z])([A-Z])"] :> "$1 $2"];
 
 (**************************************************************************************************)
 
 PublicFunction[CamelCaseSplit]
 
-CamelCaseSplit[s_String] := StringSplit[s, RegularExpression["(?<=[a-z])(?=[A-Z])"]];
+CamelCaseSplit[s_Str] := StringSplit[s, RegularExpression["(?<=[a-z])(?=[A-Z])"]];
 
 (**************************************************************************************************)
 
 PrivateFunction[commaString]
 
-qs[s_String] := PrefixSlash[s];
+qs[s_Str] := PrefixSlash[s];
 qs[e_] := e;
 commaString[list_List] := TextString[Row[Map[qs, list], ", "]];
 
@@ -47,7 +47,7 @@ commaString[list_List] := TextString[Row[Map[qs, list], ", "]];
 
 PublicFunction[StringReplaceRepeated]
 
-StringReplaceRepeated[str_String, rules_] := FixedPoint[StringReplace[rules], str];
+StringReplaceRepeated[str_Str, rules_] := FixedPoint[StringReplace[rules], str];
 StringReplaceRepeated[rules_][str_] := StringReplaceRepeated[str, rules];
 
 (**************************************************************************************************)
@@ -57,7 +57,7 @@ PublicFunction[StringFindDelimitedPosition]
 StringFindDelimitedPosition[str_, {start_, mid_, stop_}] := Scope[
   pos = First[StringPosition[str, start ~~ mid ~~ stop, 1], None];
   If[!ListQ[pos], ReturnFailed[]];
-  lens = First @ StringCases[
+  lens = P1 @ StringCases[
     StringTake[str, pos],
     a:start ~~ mid ~~ z:stop :> {+StringLength[a], -StringLength[z]},
     1
@@ -69,7 +69,7 @@ StringFindDelimitedPosition[str_, {start_, mid_, stop_}] := Scope[
 
 PublicFunction[StringDeepCases]
 
-StringDeepCases[expr_, pattern_] := Catenate @ DeepCases[expr, s_String :> StringCases[s, pattern]];
+StringDeepCases[expr_, pattern_] := Catenate @ DeepCases[expr, s_Str :> StringCases[s, pattern]];
 StringDeepCases[pattern_][expr_] := StringDeepCases[expr, pattern];
 
 (**************************************************************************************************)
@@ -79,7 +79,7 @@ PublicFunction[FirstStringCase]
 SetHoldRest[FirstStringCase];
 
 FirstStringCase[string_, pattern_, else_:None] :=
-  First[
+  P1[
     StringCases[string, pattern, 1],
     else
   ]
@@ -90,7 +90,7 @@ PublicFunction[CommonStringPrefix, CommonStringPrefixLength]
 
 CommonStringPrefix[{}] := None;
 CommonStringPrefix[strings_ ? StringVectorQ] :=
-  StringTake[First @ strings, CommonStringPrefixLength @ strings];
+  StringTake[P1 @ strings, CommonStringPrefixLength @ strings];
 
 CommonStringPrefixLength[strings_ ? StringVectorQ] :=
   CommonPrefixLength @ Characters @ strings;
@@ -99,7 +99,7 @@ PublicFunction[CommonStringSuffix, CommonStringSuffixLength]
 
 CommonStringSuffix[{}] := None;
 CommonStringSuffix[strings_ ? StringVectorQ] :=
-  StringTake[First @ strings, Minus @ CommonStringSuffixLength @ strings];
+  StringTake[P1 @ strings, Minus @ CommonStringSuffixLength @ strings];
 
 CommonStringSuffixLength[strings_ ? StringVectorQ] :=
   CommonSuffixLength @ Characters @ strings;
@@ -115,21 +115,21 @@ $Alphabet = Join[$Alphabet, ToUpperCase[$Alphabet]];
 
 PublicFunction[StringJoinLeft, StringJoinRight]
 
-StringJoinLeft[prefix_String, other_String] := StringJoin[prefix, other];
-StringJoinLeft[prefix_String, other_List] := Map[StringJoinLeft[prefix], other];
-StringJoinLeft[prefix_String][other_] := StringJoinLeft[prefix, other];
+StringJoinLeft[prefix_Str, other_Str] := StringJoin[prefix, other];
+StringJoinLeft[prefix_Str, other_List] := Map[StringJoinLeft[prefix], other];
+StringJoinLeft[prefix_Str][other_] := StringJoinLeft[prefix, other];
 
-StringJoinRight[other_String, suffix_String] := StringJoin[other, suffix];
-StringJoinRight[other_List, suffix_String] := Map[StringJoinRight[suffix], other];
-StringJoinRight[suffix_String][other_] := StringJoinRight[other, suffix];
+StringJoinRight[other_Str, suffix_Str] := StringJoin[other, suffix];
+StringJoinRight[other_List, suffix_Str] := Map[StringJoinRight[suffix], other];
+StringJoinRight[suffix_Str][other_] := StringJoinRight[other, suffix];
   
 (**************************************************************************************************)
 
 PublicFunction[StringFunction]
 
-StringFunction[template_String] :=
+StringFunction[template_Str] :=
   Construct[
-    Function,
+    Fn,
     StringReplace[template, $stringFunctionSlotRules]
   ] /. {StringExpression -> StringJoin, s_Slot :> TextString[s]};
 
@@ -161,7 +161,7 @@ QuotedStringQ[s_] := StringMatchQ[s, "\"*\""];
 
 PrivateFunction[StringStartsEndsQ]
 
-StringStartsEndsQ[str_String, a_, b_] := StringStartsQ[str, a] && StringEndsQ[str, b];
+StringStartsEndsQ[str_Str, a_, b_] := StringStartsQ[str, a] && StringEndsQ[str, b];
 StringStartsEndsQ[str_List, a_, b_] := Map[StringStartsEndsQ[#, a, b]&, str];
 StringStartsEndsQ[a_, b_][str_] := StringStartsEndsQ[str, a, b];
 
@@ -169,15 +169,15 @@ StringStartsEndsQ[a_, b_][str_] := StringStartsEndsQ[str, a, b];
 
 PrivateFunction[StringTrimLeft, StringTrimRight, StringTrimLeftRight]
 
-StringTrimLeft[str_String, left_] := StringDelete[str, StartOfString ~~ left];
+StringTrimLeft[str_Str, left_] := StringDelete[str, StartOfString ~~ left];
 StringTrimLeft[list_List, left_] := Map[StringTrimLeft[#, left]&, list];
 StringTrimLeft[left_][str_] := StringTrimLeft[str, left];
 
-StringTrimRight[str_String, right_] := StringDelete[str, right ~~ EndOfString];
+StringTrimRight[str_Str, right_] := StringDelete[str, right ~~ EndOfString];
 StringTrimRight[list_List, right_] := Map[StringTrimRight[#, right]&, list];
 StringTrimRight[right_][str_] := StringTrimRight[str, right];
 
-StringTrimLeftRight[str_String, left_, right_] := StringDelete[StringDelete[str, StartOfString ~~ left], right ~~ EndOfString];
+StringTrimLeftRight[str_Str, left_, right_] := StringDelete[StringDelete[str, StartOfString ~~ left], right ~~ EndOfString];
 StringTrimLeftRight[list_List, left_, right_] := Map[StringTrimLeftRight[#, left, right]&, list];
 StringTrimLeftRight[left_, right_][str_] := StringTrimLeftRight[str, left, right];
 
@@ -253,7 +253,7 @@ $toNonDecoratedRoman := $toNonDecoratedRoman = Join[
   toStringRules[$DoubleStruckCharacters, StringJoin[$RomanLetters, "0123456789"]]
 ]
 
-ToNonDecoratedRoman[str_String] := StringReplace[str, $toNonDecoratedRoman];
+ToNonDecoratedRoman[str_Str] := StringReplace[str, $toNonDecoratedRoman];
 
 (**************************************************************************************************)
 
@@ -270,7 +270,7 @@ PublicFunction[ToSpelledGreek]
 $spelledGreek = "alpha beta gamma delta curlyepsilon epsilon zeta eta theta iota kappa lambda mu nu xi pi rho sigma tau curlyphi phi chi psi omega Gamma Delta Theta Lambda Xi Pi Sigma Phi Psi Omega";
 $toSpelledGreek := $toSpelledGreek = RuleThread[Characters @ $GreekLetters, StringSplit @ $spelledGreek];
 
-ToSpelledGreek[str_String] := StringReplace[str, $toSpelledGreek];
+ToSpelledGreek[str_Str] := StringReplace[str, $toSpelledGreek];
 
 (**************************************************************************************************)
 
@@ -318,15 +318,15 @@ $letterClassExceptRules = {
 };
 
 declareStringPattern[
-  LetterClass[class_String] :> StringJoin["[", StringReplace[class, $letterClassExceptRules], "]"],
-  ExceptLetterClass[class_String] :> StringJoin["[^", StringReplace[class, $letterClassExceptRules], "]"]
+  LetterClass[class_Str] :> StringJoin["[", StringReplace[class, $letterClassExceptRules], "]"],
+  ExceptLetterClass[class_Str] :> StringJoin["[^", StringReplace[class, $letterClassExceptRules], "]"]
 ]
 
 (**************************************************************************************************)
 
 PublicFunction[ExpandPosixCharacterClasses]
 
-ExpandPosixCharacterClasses[expr_] := expr /. str_String :> RuleCondition @ StringReplace[str, $classTranslations];
+ExpandPosixCharacterClasses[expr_] := expr /. str_Str :> RuleCondition @ StringReplace[str, $classTranslations];
 
 $classTranslations = {
   "[:upper:]" -> "A-Z",
@@ -403,7 +403,7 @@ declareStringPattern[
 
 PublicFunction[SingleLetterQ]
 
-SingleLetterQ[s_String] := StringLength[s] == 1;
+SingleLetterQ[s_Str] := StringLength[s] == 1;
 SingleLetterQ[_] := False;
 
 (**************************************************************************************************)
@@ -411,11 +411,11 @@ SingleLetterQ[_] := False;
 PublicFunction[HexIntegerString]
 
 SetListable[HexIntegerString];
-HexIntegerString[e_Integer] := IntegerString[e, 16];
+HexIntegerString[e_Int] := IntegerString[e, 16];
 
 (**************************************************************************************************)
 
 PublicFunction[RandomString]
 
 $base36Chars = Characters @ "abcdefghijklmnopqrstuvwxyz0123456789";
-RandomString[n_Integer] := StringJoin @ Part[$base36Chars, RandomInteger[{1, 36}, n]];
+RandomString[n_Int] := StringJoin @ Part[$base36Chars, RandomInteger[{1, 36}, n]];

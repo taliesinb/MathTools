@@ -13,7 +13,7 @@ ToSVGString[g_Graphics] := Scope[
 
 	background = LookupOption[g, Background];
 
-	prims = First @ g;
+	prims = P1 @ g;
 	$styleNames = <||>;
 	$styles = <||>;
 
@@ -29,7 +29,7 @@ ToSVGString[g_Graphics] := Scope[
     contents = StringRiffle[Flatten @ {"<style>", entries, "</style>", contents}, "\n"];
   ];
 
-	StringTrim @ $svgOuterTemplate @ Association[
+	StringTrim @ $svgOuterTemplate @ Assoc[
 		"width" -> $width + 1, "height" -> $height + 1,
     "xmin" -> -1, "ymin" -> -1, "xmax" -> $width + 2, "ymax" -> $height + 2,
 		"contents" -> StringTrim[contents]
@@ -67,7 +67,7 @@ freshContext[e_] := Block[{$context = $context}, e];
 
 (**************************************************************************************************)
 
-svgFail[msg_String, args___] := Message[MessageName[ToSVGString, msg], args];
+svgFail[msg_Str, args___] := Message[MessageName[ToSVGString, msg], args];
 
 (**************************************************************************************************)
 
@@ -197,7 +197,7 @@ contextSeq[keys___] := Sequence @@ Lookup[$context, {keys}, ""];
 cachedStyle[f_][args___] := Scope[
 	sname = Lookup[$styleNames, Key @ {args}];
 	If[!MissingQ[sname], Return @ sname];
-	sname = "st" <> (IntegerDigits[Length @ $styles] /. $digitRules);
+	sname = "st" <> (IntegerDigits[Len @ $styles] /. $digitRules);
 	$styleNames[{args}] ^= sname;
 	$styles[sname] ^= StringReplace[f[args], Repeated[" ", {2, Infinity}] -> " "];
 	sname
@@ -373,7 +373,7 @@ LegacyToSVGString[g_] := Scope[
 
 PublicFunction[ExportSVG]
 
-ExportSVG[file_String, graphics_] := Scope[
+ExportSVG[file_Str, graphics_] := Scope[
   svg = ToSVGString @ graphics;
   If[!StringQ[svg], ReturnFailed[]];
   ExportUTF8[file, svg]

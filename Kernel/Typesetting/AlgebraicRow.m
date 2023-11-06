@@ -79,7 +79,7 @@ AlgebraicGrid[elements__] := Scope[
   entries = Map[algebraicGridRow, Unevaluated @ {elements}];
   If[$headings =!= None, PrependTo[entries, LabelForm[#, Bold]& /@ $headings]];
   Grid[
-    If[$agTransposed, Transpose, Identity] @ entries,
+    If[$agTransposed, Transpose, Id] @ entries,
     Spacings -> {2, 1.5},
     Alignment -> {Center, Center},
     BaseStyle -> $MathLabelStyle
@@ -94,7 +94,7 @@ algebraicGridRow[row_List] := Map[algebraicForm, Unevaluated @ row]
 algebraicForm[span:SpanFromAbove|SpanFromLeft] := span;
 algebraicForm[s_Spacer] := s;
 algebraicForm[Text[t_]] := t;
-algebraicForm[s_String] := Labeled[LabelForm[s], ""];
+algebraicForm[s_Str] := Labeled[LabelForm[s], ""];
 algebraicForm[e_] := Labeled[e, toSymbolicForm @ e];
 algebraicForm[Labeled[e_, l_]] := Labeled[e, toSymbolicForm @ l];
 algebraicForm[Style[e_, s__]] := Labeled[e, Style[toSymbolicForm @ e, s]];
@@ -130,16 +130,16 @@ toSymbolicForm[e_] :=
   Apply[symbolicForm, HoldComplete[e] //. $preEvaluate] //. $postEvaluate;
 
 $preEvaluate = {
-  (f_Function)[arg_] :> RuleCondition @ evalFuncHold[f, arg],
+  (f_Fn)[arg_] :> RuleCondition @ evalFuncHold[f, arg],
   Hold[h_] :> h
 };
 
 SetHoldAllComplete[evalFuncHold];
-evalFuncHold[Verbatim[Function][x_, body_], arg_] :=
-  Function[x, Hold @ body, {HoldFirst}] @ Unevaluated[arg];
+evalFuncHold[Verbatim[Fn][x_, body_], arg_] :=
+  Fn[x, Hold @ body, {HoldFirst}] @ Unevaluated[arg];
 
-evalFuncHold[Verbatim[Function][body_], arg_] :=
-  Function[Null, Hold @ body, {HoldFirst}] @ Unevaluated[arg];
+evalFuncHold[Verbatim[Fn][body_], arg_] :=
+  Fn[Null, Hold @ body, {HoldFirst}] @ Unevaluated[arg];
 
 $postEvaluate = {
   Superscript[Subscript[z_, sub_], sup_] :> Subsuperscript[z, sub, sup],
@@ -175,7 +175,7 @@ symbolicForm = Case[
   e_Evaluate := Construct[%, e];
 
   f_Form := f;
-  t_Text := First @ t;
+  t_Text := P1 @ t;
 
   Set[a_, b_] := Row[{% @ a, " = ", % @ b}];
 
@@ -196,7 +196,7 @@ symbolicForm = Case[
   Subsuperscript[a_, b_, c_] := Subsuperscript[% @ a, % @ b, % @ c];
   Subscript[a_, b_] := Subscript[% @ a, % @ b];
 
-  WordVector[e_, type_String:"Forward"] :=
+  WordVector[e_, type_Str:"Forward"] :=
     Style[WordVectorForm[e, type], {SingleLetterItalics -> False, AutoItalicWords -> {}}];
 
   PathForwardDifference[t_, p_] := differenceForm[t, "+", p];
@@ -216,7 +216,7 @@ symbolicForm = Case[
   PathTailVector[a_] := Subscript[% @ a, "\[FilledSmallCircle]"];
 
   other_ := (
-    Print["UNMATCHED HEAD ", InputForm @ Head @ other];
+    Print["UNMATCHED HEAD ", InputForm @ H @ other];
     Print[InputForm @ other];
     ""
   ),
@@ -242,10 +242,10 @@ supscript[e_, s_] := Superscript[e, s];
 supscript[Subscript[e_, sub1_], sub2_] := Subsuperscript[e, sub1, sub2];
 
 fmtWord = Case[
-  s_String        := toRow[Map[If[UpperCaseQ[#], Inverted @ ToLowerCase @ #, #]&, Characters @ s]];
-  s_String -> -1  := Row[{"\[Minus]", fmtWord @ s}];
-  list_List       := Row[fmtWord /@ list, "+"];
-  _               := "?"
+  s_Str       := toRow[Map[If[UpperCaseQ[#], Inverted @ ToLowerCase @ #, #]&, Characters @ s]];
+  s_Str -> -1 := Row[{"\[Minus]", fmtWord @ s}];
+  list_List   := Row[fmtWord /@ list, "+"];
+  _           := "?"
 ];
 
 toRow[{e_}] := e;
@@ -271,7 +271,7 @@ heavyQ[_] := True;
 SetHoldAllComplete[subscriptForm];
 subscriptForm = Case[
   a_Symbol := symbolForm[HoldSymbolName @ a];
-  s_String := s;
+  s_Str := s;
   list_List := Row[Map[%, Unevaluated @ list], ","];
   e_ := symbolicForm @ e;
 ];
@@ -293,7 +293,7 @@ Grouped[e_] := e;
 SetHoldAll[sumForm, sumTermForm, HoldNumericQ];
 sumForm[args_] := Scope[
   res = Flatten @ Map[sumTermForm, Unevaluated[args]];
-  If[First[res] === "\[ThinSpace]+\[ThinSpace]", res //= Rest];
+  If[P1[res] === "\[ThinSpace]+\[ThinSpace]", res //= Rest];
   Row[res, "\[ThinSpace]"]\[ThinSpace]
 ];
 
@@ -301,7 +301,7 @@ sumTermForm[Times[-1, a_]] := {"\[ThinSpace]\[Minus]\[ThinSpace]", symbolicForm 
 sumTermForm[Times[n_ ? HoldNumericQ, a_]] := {n, symbolicForm @ a};
 sumTermForm[a_] := {"\[ThinSpace]+\[ThinSpace]", symbolicForm @ a};
 
-symbolForm[name_String] := Which[
+symbolForm[name_Str] := Which[
   StringEndsQ[name, DigitCharacter], Subscript[StringDrop[name, -1], StringTake[name, -1]],
   StringMatchQ[name, __ ~~ "$" ~~ __], Subscript @@ StringSplit[name, "$"],
   True, name

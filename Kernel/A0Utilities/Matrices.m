@@ -1,7 +1,7 @@
 PublicFunction[FormalSymbolArray]
 
 $formalsRoman = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-FormalSymbolArray[dims_, str_String] := FormalSymbolArray[dims, First @ First @ StringPosition[$formalsRoman, str] - 1];
+FormalSymbolArray[dims_, str_Str] := FormalSymbolArray[dims, P11 @ StringPosition[$formalsRoman, str] - 1];
 FormalSymbolArray[dims_, offset_:0] := Block[{n = 0 + offset}, Array[Symbol @ FromCharacterCode[63488 + n++]&, dims]];
 
 (**************************************************************************************************)
@@ -22,7 +22,7 @@ LevelPart[array_, 3 -> part_] := Part[array, All, All, part];
 LevelPart[array_, 4 -> part_] := Part[array, All, All, All, part];
 LevelPart[array_, 5 -> part_] := Part[array, All, All, All, All, part];
 
-LevelPart[array_, depth_Integer -> part_] :=
+LevelPart[array_, depth_Int -> part_] :=
   Part[array, Append[Repeat[All, If[depth < 0, depth + ArrayDepth[array], depth - 1]], part]];
 
 LevelPart[array_, spec_List] := Scope[
@@ -201,21 +201,21 @@ InsertConstantColumn[item_, n_][matrix_] := InsertConstantColumn[matrix, item, n
 
 PublicFunction[AppendConstantRow]
 
-AppendConstantRow[matrix_, item_] := Append[matrix, Repeat[item, Length @ First @ matrix]];
+AppendConstantRow[matrix_, item_] := Append[matrix, Repeat[item, Len @ P1 @ matrix]];
 AppendConstantRow[item_][matrix_] := AppendConstantRow[matrix, item];
 
 (**************************************************************************************************)
 
 PublicFunction[PrependConstantRow]
 
-PrependConstantRow[matrix_, item_] := Prepend[matrix, Repeat[item, Length @ First @ matrix]];
+PrependConstantRow[matrix_, item_] := Prepend[matrix, Repeat[item, Len @ P1 @ matrix]];
 PrependConstantRow[item_][matrix_] := PrependConstantRow[matrix, item];
 
 (**************************************************************************************************)
 
 PublicFunction[InsertConstantRow]
 
-InsertConstantRow[matrix_, item_, n_] := Insert[matrix, Repeat[item, Length @ First @ matrix], n];
+InsertConstantRow[matrix_, item_, n_] := Insert[matrix, Repeat[item, Len @ P1 @ matrix], n];
 InsertConstantRow[item_, n_][matrix_] := InsertConstantRow[matrix, item, n];
 
 (**************************************************************************************************)
@@ -232,19 +232,7 @@ Matrix[elements___] := SequenceSplit[Flatten[Unevaluated[{elements}] /. HoldPatt
 
 PublicFunction[InnerDimension]
 
-InnerDimension[array_] := Last @ Dimensions @ array;
-
-(**************************************************************************************************)
-
-PublicFunction[Second]
-
-Second[a_] := Part[a, 2];
-
-(**************************************************************************************************)
-
-PublicFunction[SecondDimension]
-
-SecondDimension[array_] := Second @ Dimensions @ array;
+InnerDimension[array_] := PN @ Dimensions @ array;
 
 (**************************************************************************************************)
 (** Common matrix predicates                                                                      *)
@@ -295,7 +283,7 @@ CoordinatePair3DQ[___] := False;
 PublicFunction[AnyMatrixQ, NumericMatrixQ, CoordinateMatrixQ, CoordinateMatrix2DQ, CoordinateMatrix3DQ]
 
 AnyMatrixQ[{} | {{}}] := True;
-AnyMatrixQ[list_List] := Length[Dimensions[list, 2]] == 2;
+AnyMatrixQ[list_List] := Len[Dimensions[list, 2]] == 2;
 
 NumericMatrixQ[matrix_List] := MatrixQ[matrix, NumericQ];
 
@@ -433,7 +421,7 @@ ColumnTotals[matrix_] := Total[matrix, {1}];
 PublicFunction[PermutationMatrixQ]
 
 PermutationMatrixQ[matrix_] :=
-  SquareMatrixQ[matrix] && RealMatrixQ[matrix] && MinMax[matrix] == {0, 1} && Count[matrix, 1, 2] == Length[matrix] &&
+  SquareMatrixQ[matrix] && RealMatrixQ[matrix] && MinMax[matrix] == {0, 1} && Count[matrix, 1, 2] == Len[matrix] &&
     OnesQ[Total[matrix, {1}]] && OnesQ[Total[matrix, {2}]];
 
 (**************************************************************************************************)
@@ -441,12 +429,12 @@ PermutationMatrixQ[matrix_] :=
 PublicFunction[SameMatrixUptoPermutationQ]
 
 mkPerms[n_] := mkPerms[n] = Permutations @ Range[n];
-SameMatrixUptoPermutationQ[m1_, m2_] := AnyTrue[mkPerms @ Length @ m1, m1 == Part[m2, #, #]&];
+SameMatrixUptoPermutationQ[m1_, m2_] := AnyTrue[mkPerms @ Len @ m1, m1 == Part[m2, #, #]&];
 
 PublicFunction[SameMatrixUptoPermutationAndInversionQ]
 
-SameMatrixUptoPermutationAndInversionQ[m1_, m2_] := AnyTrue[mkPerms @ Length @ m1, MatchQ[Part[m2, #, #], m1 | Transpose[m1]]&];
-(* SameMatrixUptoPermutationAndInversionQ[m1_, m2_] := AnyTrue[mkPerms @ Length @ m1, MatchQ[Part[m2, #, #], m1 | Transpose[m1]]&];
+SameMatrixUptoPermutationAndInversionQ[m1_, m2_] := AnyTrue[mkPerms @ Len @ m1, MatchQ[Part[m2, #, #], m1 | Transpose[m1]]&];
+(* SameMatrixUptoPermutationAndInversionQ[m1_, m2_] := AnyTrue[mkPerms @ Len @ m1, MatchQ[Part[m2, #, #], m1 | Transpose[m1]]&];
  *)
 
 (**************************************************************************************************)
@@ -456,7 +444,7 @@ SameMatrixUptoPermutationAndInversionQ[m1_, m2_] := AnyTrue[mkPerms @ Length @ m
 PublicFunction[TranslationMatrix]
 
 TranslationMatrix[vector_] := Scope[
-  matrix = IdentityMatrix[Length[vector] + 1];
+  matrix = IdentityMatrix[Len[vector] + 1];
   matrix[[;;-2, -1]] = vector;
   matrix
 ];
@@ -465,7 +453,7 @@ TranslationMatrix[vector_, mod_] :=
   ModForm[TranslationMatrix @ vector, mod];
 
 TranslationMatrix[vector_, mod_List] := Scope[
-  modMatrix = ZeroMatrix[Length[vector] + 1] + Infinity;
+  modMatrix = ZeroMatrix[Len[vector] + 1] + Infinity;
   modMatrix[[;;-2, -1]] = mod;
   ModForm[TranslationMatrix @ vector, modMatrix]
 ];
@@ -585,12 +573,12 @@ AugmentedIdentityMatrix[n_, list_List] := ReplacePart[IdentityMatrix[n], list ->
 PublicFunction[PadRows]
 
 PadRows[ragged_, item_] := Scope[
-  w = Max[Length /@ ragged];
+  w = Max[Len /@ ragged];
   ToPacked @ Map[padToLength[w, item], ragged]
 ]
 
 padToLength[n_, item_][vector_] := Scope[
-  l = Length[vector];
+  l = Len[vector];
   If[l < n, Join[vector, Repeat[item, n - l]], vector]
 ];
 
@@ -600,7 +588,7 @@ PublicFunction[PadColumns]
 
 PadColumns[ragged_, n_, item_] := Scope[
   full = PadRows[ragged, item];
-  w = Length @ First @ full;
+  w = Len @ P1 @ full;
   padToLength[n, Repeat[item, w]] @ full
 ]
 
@@ -611,7 +599,7 @@ PadColumns[ragged_, n_, item_] := Scope[
 PublicFunction[BlockDiagonalMatrix2]
 
 BlockDiagonalMatrix2[blocks_] := Scope[
-  range = Range @ Length @ blocks;
+  range = Range @ Len @ blocks;
   If[!MatchQ[blocks, {Repeated[_ ? MatrixQ]}], ReturnFailed[]];
   superMatrix = DiagonalMatrix[range] /. RuleThread[range, blocks];
   ToPacked @ ArrayFlatten[superMatrix, 2]
@@ -629,7 +617,7 @@ BooleArrayPlot[arr_] := ArrayPlot[arr, Mesh -> True, PixelConstrained -> 10, Col
 FindDiagonalBlockPositions[matrices_] := Scope[
   trans = Transpose[matrices, {3,1,2}];
   isZero = MatrixMap[ZerosQ, trans];
-  n = Length[trans]; n2 = n - 1;
+  n = Len[trans]; n2 = n - 1;
   isZeroD = Table[And @@ isZero[[(i+1);;, j]], {i, n2}, {j, n2}];
   isZeroR = Table[And @@ isZero[[i, (j+1);;]], {i, n2}, {j, n2}];
   If[FreeQ[isZeroR, True] || FreeQ[isZeroD, True], Return[{{1, n}}]];
@@ -699,9 +687,9 @@ PublicFunction[ExtendedSparseArray]
 
 ExtendedSparseArray[{} | <||>, sz_] := SparseArray[{}, sz];
 
-ExtendedSparseArray[assoc_Association, sz_] := SparseArray[Normal @ assoc, sz];
+ExtendedSparseArray[assoc_Assoc, sz_] := SparseArray[Normal @ assoc, sz];
 
-ExtendedSparseArray[list:{___Integer} ? DuplicateFreeQ, sz_] := SparseArray[Thread[list -> 1], sz];
+ExtendedSparseArray[list:{___Int} ? DuplicateFreeQ, sz_] := SparseArray[Thread[list -> 1], sz];
 
 ExtendedSparseArray[list:{___List} ? DuplicateFreeQ, sz_] := SparseArray[Thread[list -> 1], sz];
 
@@ -717,9 +705,9 @@ sumRules[rules_] := Normal @ Merge[rules, Total];
 
 PublicFunction[FromSparseRows]
 
-FromSparseRows[rowSpecs_List, n_Integer] := SparseArray[
+FromSparseRows[rowSpecs_List, n_Int] := SparseArray[
   Flatten @ MapIndex1[rowSpecToFullSpec, rowSpecs],
-  {Length @ rowSpecs, n}
+  {Len @ rowSpecs, n}
 ];
 
 FromSparseRows[rowSpecs_List] := SparseArray[
@@ -733,8 +721,8 @@ rowSpecToFullSpec[cols:{__Rule}, row_] := VectorApply[{row, #1} -> #2&, sumRules
 rowSpecToFullSpec[cols_List -> k_, row_] := sumRules @ Map[{row, #} -> k&, cols];
 rowSpecToFullSpec[cols_List, row_] := sumRules @ Map[{row, #} -> 1&, cols];
 
-rowSpecToFullSpec[col_Integer -> k_, row_] := {{row, col} -> k};
-rowSpecToFullSpec[col_Integer, row_] := {{row, col} -> 1};
+rowSpecToFullSpec[col_Int -> k_, row_] := {{row, col} -> k};
+rowSpecToFullSpec[col_Int, row_] := {{row, col} -> 1};
 
 (**************************************************************************************************)
 
@@ -752,7 +740,7 @@ SparseTotalMatrix[indexSets_, n_] := FromSparseRows[indexSets, n];
 
 PublicFunction[SparseAveragingMatrix]
 
-SparseAveragingMatrix[indexSets_, n_] := FromSparseRows[Map[set |-> set -> 1.0 / Length[set], indexSets], n];
+SparseAveragingMatrix[indexSets_, n_] := FromSparseRows[Map[set |-> set -> 1.0 / Len[set], indexSets], n];
 
 (**************************************************************************************************)
 
@@ -777,10 +765,10 @@ PublicFunction[DistanceMatrix]
 DistanceMatrix[{}] := {};
 
 DistanceMatrix[points_ ? RealVectorQ] :=
-  Outer[EuclideanDistance, points, points];
+  Outer[Dist, points, points];
 
 DistanceMatrix[points1_ ? RealVectorQ, points2_ ? RealVectorQ] :=
-  Outer[EuclideanDistance, points1, points2];
+  Outer[Dist, points1, points2];
 
 DistanceMatrix[points_ ? RealMatrixQ] := (
   $loadDM; $distanceMatrixFunction1[points, $euclideanDistanceCode, False]

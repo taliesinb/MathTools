@@ -4,10 +4,10 @@ GraphProductsRow[{l1_ -> q1_, l2_ -> q2_}, prodSeq:Repeated[{__Rule}]] := Scope[
   q1 = RotateGraph @ q1;
   opts = Sequence[ArrowheadPosition -> 0.65, ImagePadding -> 15, Frame -> True];
   prods = {prodSeq};
-  numProds = Length @ First @ List @ prodSeq;
+  numProds = Len @ P1 @ List @ prodSeq;
   topRow = Prepend[""] @ Repeat[q2, numProds];
   prodRows = Catenate @ Map[
-    Function[prods,
+    Fn[prods,
       {prodLabels, prodFns} = KeysValues @ prods;
       bottomRow = Prepend[""] @ Map[#[l1, l2]&, prodLabels];
       {
@@ -43,7 +43,7 @@ GraphProductTable[prodFn_, aList_, bList_, opts:OptionsPattern[]] := Scope[
   entries = Outer[
     prodFn[#1, #2,
       PackingSpacing -> 1, "UseCardinalSet" -> useCardinalSet,
-      FilterOptions[First @ PatternHead @ prodFn, opts],
+      FilterOptions[P1 @ PatternHead @ prodFn, opts],
       (* If[!useCardinalSet, ArrowheadShape -> None, Sequence @@ {}], *) MultiEdgeDistance -> 0.1,
       ArrowheadPosition -> arrowheadPosition, EdgeSetback -> .1, ImagePadding -> 15,
       Frame -> True
@@ -86,8 +86,8 @@ Options[ConnectedComponentProductDecomposition] = JoinOptions[
 
 ConnectedComponentProductDecomposition[graphs_, terms_, userOpts:OptionsPattern[]] := Scope[
   If[graphs ~~~ l_Labeled,
-    displayForm = toQuiverProductColumn @ Last @ graphs;
-    graphs = First @ graphs;
+    displayForm = toQuiverProductColumn @ PN @ graphs;
+    graphs = P1 @ graphs;
   ,
     displayForm = {Automatic};
   ];
@@ -99,7 +99,7 @@ ConnectedComponentProductDecomposition[graphs_, terms_, userOpts:OptionsPattern[
   ];
   products = GeneralQuiverProduct[graphs, terms, All, opts,
     ImageSize -> 120, VertexSize -> 4, ArrowheadSize -> 12];
-  imgSize = First @ LookupImageSize[base];
+  imgSize = P1 @ LookupImageSize[base];
   dislayForm = VectorReplace[displayForm, {Automatic -> base, g_Graph :> ReplaceOptions[g, ImageSize -> imgSize]}];
   SpacedColumn[
     Sequence @@ dislayForm,

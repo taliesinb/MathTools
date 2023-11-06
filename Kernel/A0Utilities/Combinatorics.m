@@ -7,7 +7,7 @@ UnorderedPairs[list_] := Subsets[list, {2}];
 PublicFunction[SignedSubsets]
 
 SignedSubsets[set_] := Scope[
-  n = Length[set]; $set = set;
+  n = Len[set]; $set = set;
   SortBy[VectorReplace[NegatedForm[z_] :> z]] @ MapTuples[toSignedSubset, {0, 1, -1}, n]
 ];
 
@@ -66,4 +66,4 @@ SignedPermutations[list_List] := Catenate @ Map[SignedLists, Permutations @ list
 
 PublicFunction[SignedLists]
 
-SignedLists[list_] := MapIndices[Inverted, Subsets @ Range @ Length @ list, list];
+SignedLists[list_] := MapIndices[Inverted, Subsets @ Range @ Len @ list, list];

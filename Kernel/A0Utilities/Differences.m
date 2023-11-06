@@ -2,7 +2,7 @@ PublicObject[ExpressionDifference]
 
 PrivateHead[$HeadCrumb, $ArgsCrumb, $KeysCrumb, $ArrayCrumb]
 
-DefineStandardTraditionalForm[le:ExpressionDifference[{___Integer}, _List, _] :> lepBoxes[le]]
+DefineStandardTraditionalForm[le:ExpressionDifference[{___Int}, _List, _] :> lepBoxes[le]]
 
 lepBoxes[ed:ExpressionDifference[pos_List, crumbs_List, diff_]] :=
   GridBox[
@@ -45,18 +45,18 @@ crumbSubBox[head_, sub_] := UnderscriptBox[
 ]
 
 crumbHeadStr = Case[
-  s_String                  := s;
-  HoldComplete[List]        := "{\[CenterEllipsis]}";
-  HoldComplete[Association] := "\[LeftAssociation]\[CenterEllipsis]\[RightAssociation]";
+  s_Str                                 := s;
+  HoldComplete[List]                    := "{\[CenterEllipsis]}";
+  HoldComplete[Assoc]                   := "\[LeftAssociation]\[CenterEllipsis]\[RightAssociation]";
   HoldComplete[head_Symbol ? HoldAtomQ] := codeBox @ HoldSymbolName @ head;
-  HoldComplete[head_[___]]  := RBox[% @ HoldComplete @ head, "[\[CenterEllipsis]]"];
-  HoldComplete[s_String]    := codeBox @ StringJoin["\"", s, "\""];
-  hc_HoldComplete           := codeBox @ hc;
+  HoldComplete[head_[___]]              := RBox[% @ HoldComplete @ head, "[\[CenterEllipsis]]"];
+  HoldComplete[s_Str]                   := codeBox @ StringJoin["\"", s, "\""];
+  hc_HoldComplete                       := codeBox @ hc;
 ];
 
 crumbLabelString = Case[
-  i_Integer      := IntegerString @ i;
-  s_String       := StyleBox[s, $Gray, FontFamily -> "Palantir"];
+  i_Int          := IntegerString @ i;
+  s_Str          := StyleBox[s, $Gray, FontFamily -> "Palantir"];
   h_HoldComplete := codeBox @ h;
 ]
 
@@ -65,18 +65,18 @@ crumbLabelString = Case[
 PrivateHead[$ValueDiff, $WeakValueDiff, $ArrayValueDiff, $LengthDiff, $DepthDiff, $DimsDiff, $KeysAdded, $KeysRemoved, $KeysReordered, $KeysChanged, $ArgsAdded, $ArgsRemoved]
 
 DefineStandardTraditionalForm[{
-  $ValueDiff[e1_, e2_]                 :> diffBox @ notEqualBox[codeBox @ e1, codeBox @ e2],
-  $WeakValueDiff[e1_, e2_]             :> diffBox @ notSameBox[codeBox @ e1, codeBox @ e2],
-  $ArrayValueDiff[e1_, e2_]            :> diffBox @ notSameBox[minMaxBox @ e1, minMaxBox @ e2],
-  $LengthDiff[n1_, n2_]                :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2],
-  $DepthDiff[d1_, d2_]                 :> diffBox @ changeBox["depth", intBox @ d1, intBox @ d2],
-  $DimsDiff[d1_, d2_]                  :> diffBox @ changeBox["dims", dimsBox @ d1, dimsBox @ d2],
-  $KeysAdded[k1_, k2_]                 :> diffBox @ plusBox[keysBox @ Complement[k2, k1]],
-  $KeysRemoved[k1_, k2_]               :> diffBox @ minusBox[keysBox @ Complement[k1, k2]],
-  $KeysReordered[k1_, k2_]             :> diffBox @ notSameBox[keysBox @ k1, keysBox @ k2],
-  $KeysChanged[k1_, k2_]               :> diffBox @ notSameBox[keysBox @ k1, keysBox @ k2],
-  $ArgsAdded[n1_, n2_]                 :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2],
-  $ArgsRemoved[n1_, n2_]               :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2]
+  $ValueDiff[e1_, e2_]       :> diffBox @ notEqualBox[codeBox @ e1, codeBox @ e2],
+  $WeakValueDiff[e1_, e2_]   :> diffBox @ notSameBox[codeBox @ e1, codeBox @ e2],
+  $ArrayValueDiff[e1_, e2_]  :> diffBox @ notSameBox[minMaxBox @ e1, minMaxBox @ e2],
+  $LengthDiff[n1_, n2_]      :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2],
+  $DepthDiff[d1_, d2_]       :> diffBox @ changeBox["depth", intBox @ d1, intBox @ d2],
+  $DimsDiff[d1_, d2_]        :> diffBox @ changeBox["dims", dimsBox @ d1, dimsBox @ d2],
+  $KeysAdded[k1_, k2_]       :> diffBox @ plusBox[keysBox @ Complement[k2, k1]],
+  $KeysRemoved[k1_, k2_]     :> diffBox @ minusBox[keysBox @ Complement[k1, k2]],
+  $KeysReordered[k1_, k2_]   :> diffBox @ notSameBox[keysBox @ k1, keysBox @ k2],
+  $KeysChanged[k1_, k2_]     :> diffBox @ notSameBox[keysBox @ k1, keysBox @ k2],
+  $ArgsAdded[n1_, n2_]       :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2],
+  $ArgsRemoved[n1_, n2_]     :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2]
 }];
 
 diffBox[e_] := e;
@@ -100,7 +100,7 @@ codeBox[HoldComplete[e_]]       := codeBox @ ToPrettifiedString[InternalHoldForm
 keysBox[list_List]              := RowBox @ Riffle[Map[keyBox, list], ","];
 keyBox[HoldComplete[s_Symbol]]  := ItalicBox @ HoldSymbolName @ s;
 keyBox[h_]                      := codeBox[h];
-intBox[i_Integer]               := IntegerString[i];
+intBox[i_Int]                   := IntegerString[i];
 dimsBox[dims_List]              := RowBox @ Riffle[Map[intBox, dims], "\[Times]"];
 
 (**************************************************************************************************)
@@ -155,7 +155,7 @@ withSubCrumb[p_, c_, body_] := Block[{$pos = Append[$pos, p], $crumbs = Insert[$
 
 diffExpr[a_HoldComplete, b_HoldComplete] /; a === b := False;
 
-diffExpr[a:HoldComplete[_Association ? HoldAtomQ], b:HoldComplete[_Association ? HoldAtomQ]] :=
+diffExpr[a:HoldComplete[_Assoc ? HoldAtomQ], b:HoldComplete[_Assoc ? HoldAtomQ]] :=
   diffAssoc[a, b];
 
 diffExpr[a:HoldComplete[_ ? HoldAtomQ], b:HoldComplete[_ ? HoldAtomQ]] :=
@@ -165,8 +165,8 @@ diffExpr[a:HoldComplete[_List ? HoldPackedArrayQ], b:HoldComplete[_List ? HoldPa
   diffArray[a, b];
 
 diffExpr[
-  HoldComplete[(h1_[Shortest[args1___], opts1:((_Symbol|_String) -> _)...]) ? HoldEntryQ],
-  HoldComplete[(h2_[Shortest[args2___], opts2:((_Symbol|_String) -> _)...]) ? HoldEntryQ]] := With[
+  HoldComplete[(h1_[Shortest[args1___], opts1:((_Symbol|_Str) -> _)...]) ? HoldEntryQ],
+  HoldComplete[(h2_[Shortest[args2___], opts2:((_Symbol|_Str) -> _)...]) ? HoldEntryQ]] := With[
     {head = HoldComplete @ h1},
     Or[
       withPosCrumb[0, $HeadCrumb,  diffExpr[HoldComplete @ h1, HoldComplete @ h2]],
@@ -186,8 +186,8 @@ diffArray[a_HoldComplete, b_HoldComplete] /; a === b := False;
 
 (* these are packed and so we don't care about evaluation *)
 diffArray[HoldComplete[a_List], HoldComplete[b_List]] := Scope[
-  dims1 = Dimensions @ a; depth1 = Length @ dims1;
-  dims2 = Dimensions @ b; depth2 = Length @ dims2;
+  dims1 = Dimensions @ a; depth1 = Len @ dims1;
+  dims2 = Dimensions @ b; depth2 = Len @ dims2;
   withCrumb[$ArrayCrumb[],
     Which[
       depth1 =!= depth2,
@@ -219,8 +219,8 @@ diffScalar[{a_, b_}, pos_] := withSubCrumb[
 diffArgs[args1_HoldComplete, args2_HoldComplete] /; args1 === args2 := False;
 
 diffArgs[args1_HoldComplete, args2_HoldComplete] := Scope[
-  len1 = Length @ args1;
-  len2 = Length @ args2;
+  len1 = Len @ args1;
+  len2 = Len @ args2;
   Which[
 
     len1 <= len2 && (args1 === Take[args2, len1]),
@@ -249,13 +249,13 @@ _diffArgs := BadArguments[];
 
 diffAssoc[a_HoldComplete, b_HoldComplete] /; a === b := False;
 
-diffAssoc[HoldComplete[a_Association], HoldComplete[b_Association]] :=
+diffAssoc[HoldComplete[a_Assoc], HoldComplete[b_Assoc]] :=
   withCrumb[
-    $KeysCrumb @ HoldComplete @ Association,
+    $KeysCrumb @ HoldComplete @ Assoc,
     diffKeys[1, assocToEntries @ a, assocToEntries @ b]
   ];
 
-assocToEntries[assoc_Association] := Scope[
+assocToEntries[assoc_Assoc] := Scope[
   pairs = HoldComplete @@ KeyValueMap[HoldComplete, assoc];
   VectorReplace[pairs, HoldComplete[k_, v_] :> (k -> v)]
 ];
@@ -266,8 +266,8 @@ _diffAssoc := BadArguments[];
 
 diffKeys[startIndex_, entries1_HoldComplete, entries2_HoldComplete] := Scope[
 
-  len1 = Length @ entries1; keys1 = holdKeys @ entries1;
-  len2 = Length @ entries2; keys2 = holdKeys @ entries2;
+  len1 = Len @ entries1; keys1 = holdKeys @ entries1;
+  len2 = Len @ entries2; keys2 = holdKeys @ entries2;
 
   Which[
 

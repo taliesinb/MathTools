@@ -9,7 +9,7 @@ declareSymbolFormExplicit[MultiwordSymbol];
 
 PublicTypesettingForm[RouteForm, MultirouteForm]
 
-RouteForm[a_, b_String, c_] := RouteForm[a, ToPathWord @ b, c];
+RouteForm[a_, b_Str, c_] := RouteForm[a, ToPathWord @ b, c];
 
 declareBoxFormatting[
   RouteForm[t_, w_, h_] :>

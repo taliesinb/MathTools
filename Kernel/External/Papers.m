@@ -1,4 +1,4 @@
-$ArxivTaxonomyDictionary := $ArxivTaxonomyDictionary = Association[
+$ArxivTaxonomyDictionary := $ArxivTaxonomyDictionary = Assoc[
   Rule[ToLowerCase[#1], #2]& @@@ StringExtract[ImportUTF8 @ LocalPath["Kernel", "External", "ArxivTaxonomy.txt"], "\n" -> All, "\t" -> All]
 ];
 
@@ -18,12 +18,12 @@ Options[PaperToMarkdown] = {
 PaperToMarkdown[$Failed, ___] := $Failed;
 
 PaperToMarkdown::addtextabs = "AdditionalText seems to contain abstract for article \"``\".";
-PaperToMarkdown[data_Association, OptionsPattern[]] := Scope[
+PaperToMarkdown[data_Assoc, OptionsPattern[]] := Scope[
   UnpackOptions[pDFPath, downloadPDF, $verbose, additionalText];
   UnpackAssociation[data, authors, title, origin, subjects, abstract, url:"URL"];
   title //= sanitizeTitle;
   title = PaperPageTitle[authors, title];
-  If[Length[authors] > 8,
+  If[Len[authors] > 8,
     authors = SortBy[authors, {!MemberQ[$KnownAuthors, If[ListQ[#], StringRiffle[#, " "], #]], Position[authors, #]}&];
     authorLinks = StringRiffle[Append["et al"] @ Take[Map[toAuthorLink2, authors], UpTo @ 12], ", "]
   ,
@@ -61,23 +61,23 @@ PaperToMarkdown[data_Association, OptionsPattern[]] := Scope[
 
 PrivateFunction[sanitizeAbstract, sanitizeTitle]
 
-sanitizeAbstract[str_String] := StringReplace[str, {
+sanitizeAbstract[str_Str] := StringReplace[str, {
   "\n" ~~ Repeated[" "... ~~ "\n"] :> "\n", "`" -> "'",
   "\[OpenCurlyDoubleQuote]" -> "\"", "\[CloseCurlyDoubleQuote]" -> "\"",
   "\[OpenCurlyQuote]" -> "'", "\[CloseCurlyQuote]" -> "'"
 }];
 
-sanitizeTitle[str_String] := StringReplace[str, $TitleNormalizationRules]
+sanitizeTitle[str_Str] := StringReplace[str, $TitleNormalizationRules]
 
 toAuthorLink = Case[
-  str_String /; StringContainsQ[str, "."] := str;
-  str_String      := StringJoin["[[", DeleteMiddleInitials @ str, "]]"];
+  str_Str /; StringContainsQ[str, "."] := str;
+  str_Str         := StringJoin["[[", DeleteMiddleInitials @ str, "]]"];
   {first_, last_} := StringJoin["[[", first, " ", last, "]]"];
   {last_}         := last;
 ];
 
 toAuthorLink2 = Case[
-  str_String      := If[MemberQ[$KnownAuthors, str], StringJoin["[[", str, "]]"], str];
+  str_Str         := If[MemberQ[$KnownAuthors, str], StringJoin["[[", str, "]]"], str];
   {first_, last_} := toAuthorLink2 @ StringJoin[first, " ", last];
   {last_}         := last;
 ]
@@ -92,15 +92,15 @@ PublicVariable[$KnownAuthors]
 $KnownAuthors := $KnownAuthors = BearPeople[];
 
 PaperPageTitle[authors_, title_] := Scope[
-  authors //= VectorReplace[str_String :> SplitFirstLastName[str]];
-  If[Length[authors] > 4,
-    knownAuthorAssoc = ConstantAssociation[VectorReplace[$KnownAuthors, str_String :> SplitFirstLastName[str]], 0];
+  authors //= VectorReplace[str_Str :> SplitFirstLastName[str]];
+  If[Len[authors] > 4,
+    knownAuthorAssoc = ConstantAssociation[VectorReplace[$KnownAuthors, str_Str :> SplitFirstLastName[str]], 0];
     authors2 = SortBy[authors, Lookup[knownAuthorAssoc, Key @ #, 1]&];
     authors2 = Take[authors2, UpTo[4]];
-    lastAuthor = Last @ authors;
+    lastAuthor = PN @ authors;
     If[MemberQ[authors2, lastAuthor], authors2 = Append[lastAuthor] @ DeleteCases[authors2, lastAuthor]];
     authorSurnames = authors2[[All, -1]];
-    If[Length[authors] > Length[authors2], AppendTo[authorSurnames, "et al"]];
+    If[Len[authors] > Len[authors2], AppendTo[authorSurnames, "et al"]];
     VPrint["Chosen authors: ", authorSurnames];
   ,
     authorSurnames = authors[[All, -1]];
@@ -142,7 +142,7 @@ toPDFPath[pdfPath_, title_] := Scope[
 
 $minPaperSize = 5000;
 
-DownloadPaper[assoc_Association, OptionsPattern[]] := Scope[
+DownloadPaper[assoc_Assoc, OptionsPattern[]] := Scope[
   UnpackAssociation[assoc, authors, title, pdfUrl:"PDFURL", url:"URL"];
   UnpackOptions[$verbose, $dryRun, pDFPath, allowRename, overwriteTarget];
   SetAutomatic[$verbose, $dryRun];
@@ -171,8 +171,8 @@ DownloadPaper[assoc_Association, OptionsPattern[]] := Scope[
   If[StringLength[partialTitle] > 8,
     titleGlob = StringJoin["*", StringReplace[partialTitle, "'"|":" -> "*"], "*.pdf"];
     targets = FileNames[titleGlob, pdfDir, IgnoreCase -> True];
-    If[Length[targets] === 1,
-      target = First @ targets;
+    If[Len[targets] === 1,
+      target = P1 @ targets;
       VPrint["Found existing candidate ", MsgPath @ target, ", renaming to ", MsgPath @ localPdfPath, "."];
       If[!TrueQ[allowRename], VPrint["Renames forbidden, skipping"];
         ReturnFailed["norename", MsgPath @ target]];
@@ -224,7 +224,7 @@ SetInitialValue[$SciHubServers, {
 General::nomirror = "Could not query any SciHub servers from `` for mirror of ``."
 General::badmirror = "Could not obtain mirroring URL for `` via ``."
 
-DownloadPDFMirror[url_String, localPdfPath_String] := Scope[
+DownloadPDFMirror[url_Str, localPdfPath_Str] := Scope[
   pdfUrl = FindPDFMirrorURL[url];
   If[!StringQ[pdfUrl], ReturnFailed[]];
   SafeURLDownload[pdfUrl, localPdfPath]
@@ -233,7 +233,7 @@ DownloadPDFMirror[url_String, localPdfPath_String] := Scope[
 $containsRawPDFUrlP = "https://journals.plos.org" | "https://direct.mit.edu/";
 $rawPDFP = ("\"https://" ~~ Except["\""].. ~~ ".pdf\"") | (PositiveLookbehind["href="] ~~ "\"" ~~ Except["\""].. ~~ "type=printable\"")
 
-FindPDFMirrorURL[url_String] := Scope[
+FindPDFMirrorURL[url_Str] := Scope[
   domain = URLParse[url, "AbsoluteDomain"];
   If[StringMatchQ[url, "https://biorxiv.org/" ~~ ___ ~~ ".pdf"], Return @ url];
   If[StringMatchQ[url, $containsRawPDFUrlP ~~ ___],
@@ -248,7 +248,7 @@ FindPDFMirrorURL[url_String] := Scope[
     ];
   ];
   If[StringMatchQ[url, "https://www.tandfonline.com/doi/full/" ~~ ___],
-    pdfUrl = StringReplace[First @ StringSplit[url, "?", 2], "/full/" -> "/pdf/"] <> "?download=true";
+    pdfUrl = StringReplace[P1 @ StringSplit[url, "?", 2], "/full/" -> "/pdf/"] <> "?download=true";
     Goto[Done];
   ];
   Do[

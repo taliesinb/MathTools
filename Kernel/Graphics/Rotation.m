@@ -24,7 +24,7 @@ setVectorListableOperator[RotateVector];
 RotateVector[vec_List ? CoordinateVectorOrMatrix2DQ, t_] :=
   Dot[vec, {{Cos[t], Sin[t]}, {-Sin[t], Cos[t]}}];
 
-RotateVector[vecs_List | vecs_Association, t_] :=
+RotateVector[vecs_List | vecs_Assoc, t_] :=
   Map[RotateVector[#, t]&, vecs];
 
 RotateVector[t_][vec_] := RotateVector[vec, t];
@@ -38,7 +38,7 @@ setVectorListableOperator[RotateVectorTo];
 RotateVectorTo[vec_List ? CoordinateVectorOrMatrix2DQ, to_] :=
   Dot[vec, rotToTrans @ to];
 
-RotateVectorTo[vecs_List | vecs_Association, to_] :=
+RotateVectorTo[vecs_List | vecs_Assoc, to_] :=
   Map[RotateVectorTo[to], vecs];
 
 RotateVectorTo[t_] := DotRightOperator @ rotToTrans @ t;

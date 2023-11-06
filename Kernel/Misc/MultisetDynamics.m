@@ -1,4 +1,4 @@
-rulesToRates[rules_, vars_] := rulesToRates[rules, vars] = MapAt[N, 2] @ Construct[Function, vars, Keys @ rules];
+rulesToRates[rules_, vars_] := rulesToRates[rules, vars] = MapAt[N, 2] @ Construct[Fn, vars, Keys @ rules];
 rulesToEffects[rules_, vars_] := rulesToEffects[rules, vars] = variablePowers[#2, vars] - variablePowers[#1, vars]& @@@ rules
 variablePowers[expr_, vars_] := CoefficientRules[expr, vars][[1, 1]]
 
@@ -10,7 +10,7 @@ MultisetDynamics[rules_, init_, T_] := Scope[
   vars = Keys[init];
   rates = rulesToRates[rules, vars];
   effects = rulesToEffects[rules, vars];
-  state = Values[init]; nrules = Length[rules]; indices = Range[nrules]; steps = 0; tweight = 0;
+  state = Values[init]; nrules = Len[rules]; indices = Range[nrules]; steps = 0; tweight = 0;
   list = {}; t = 0; times = Bag[{0.}]; states = Bag[{state}]; densities = Bag[];
   While[t <= T && steps++ < 10^8,
     weights = rates @@ state;
@@ -28,10 +28,10 @@ MultisetDynamics[rules_, init_, T_] := Scope[
   times = BagPart[times, All];
   densities = BagPart[densities, All];
   If[MatchQ[Dimensions[states], {_, 1}], states = Flatten[states]];
-  metadata = {"EventDensities" -> densities, "InitialEventDensity" -> First[densities], "TimePeriod" -> T};
+  metadata = {"EventDensities" -> densities, "InitialEventDensity" -> P1[densities], "TimePeriod" -> T};
   TimeSeries[states, {times}, MetaInformation -> metadata]
 ]
-✂️🪨📜
+
 (**************************************************************************************************)
 
 PublicFunction[MultisetDynamicsEnsemble]
@@ -39,7 +39,7 @@ PublicFunction[MultisetDynamicsEnsemble]
 MultisetDynamicsEnsemble[rules_, init_, t_, n_] := Scope[
   series = Table[MultisetDynamics[rules, init, t], {n}];
   TemporalData[series, MetaInformation -> {
-    "InitialEventDensity" -> First[series]["InitialEventDensity"],
+    "InitialEventDensity" -> P1[series]["InitialEventDensity"],
     "TimePeriod" -> T
   }
 ]];
@@ -53,7 +53,7 @@ MultisetDynamicsEnsemblePlot[rules_, init_, t_, n_:100, loglog_:None] := Scope[
   logx = MatchQ[loglog, "X" | "XY"];
   quantiles = TemporalDataQuantiles[ensemble, 50, logx];
   plot = TemporalDataQuantilePlot[quantiles, loglog];
-  legend = LineLegend[Take[$NormalColorPalette, Length[init]], Keys[init]];
+  legend = LineLegend[Take[$NormalColorPalette, Len[init]], Keys[init]];
   Legended[plot, legend]
 ]
 
@@ -113,16 +113,16 @@ PublicFunction[TemporalDataQuantilePlot]
 TemporalDataQuantilePlot[tdata_, loglog_:None] := Scope[
   dims = tdata["ValueDimensions"];
   If[!MatchQ[dims, {_, 11} | 11], Return[$Failed]];
-  components = If[Length[dims] == 2, First[dims], None];
+  components = If[Len[dims] == 2, P1[dims], None];
   values = tdata["ValueList"];
-  If[components =!= None, values = Transpose @ First @ values];
-  times = First @ tdata["TimeList"];
+  If[components =!= None, values = Transpose @ P1 @ values];
+  times = P1 @ tdata["TimeList"];
   max = Max[values];
   {xlog, ylog} = xylog = Switch[loglog, None, {False, False}, "X", {True, False}, "Y", {False, True}, "XY", {True, True}];
   plots = MapIndexed[
-    quantileListPlot[times, #, Part[$NormalColorPalette, First[#2]], xylog]&,
+    quantileListPlot[times, #, Part[$NormalColorPalette, P1[#2]], xylog]&,
     values
   ];
-  If[components === None, Return @ First @ plots];
+  If[components === None, Return @ P1 @ plots];
   Show[plots, Frame -> True, PlotRange -> All]
 ];

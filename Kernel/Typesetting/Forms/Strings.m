@@ -16,8 +16,8 @@ declareBoxFormatting[
   QuotedCharacterForm[a_] :>
     TemplateBox[List @ quotedCharBoxes @ a, "QuotedCharacterForm"],
 
-  LiteralStringForm[str_String] :> TemplateBox[List @ StringJoin["\"", str, "\""], "LiteralStringForm"],
-  LiteralCharacterForm[str_String] :> TemplateBox[List @ StringJoin["\"", str, "\""], "LiteralCharacterForm"]
+  LiteralStringForm[str_Str] :> TemplateBox[List @ StringJoin["\"", str, "\""], "LiteralStringForm"],
+  LiteralCharacterForm[str_Str] :> TemplateBox[List @ StringJoin["\"", str, "\""], "LiteralCharacterForm"]
 ];
 
 $TemplateKatexFunction["WildcardStringForm"] = applyRiffled["wstring", " "];
@@ -31,7 +31,7 @@ $TemplateKatexFunction["LiteralCharacterForm"] = katexWrapText["lchar"];
 $TemplateKatexFunction["StringSymbolForm"] = "strsym";
 $TemplateKatexFunction["CharacterSymbolForm"] = "charsym";
 
-katexWrapText[op_][s_String] := op @ "texttt" @ StringTrim[StringReplace[s, "-" -> "\\textendash "]; s, "\""];
+katexWrapText[op_][s_Str] := op @ "texttt" @ StringTrim[StringReplace[s, "-" -> "\\textendash "]; s, "\""];
 
 declareSymbolForm[CharacterSymbolForm]
 declareSymbolForm[StringSymbolForm]
@@ -39,11 +39,11 @@ declareSymbolForm[StringSymbolForm]
 SetHoldAllComplete[stringElementBoxes, stringSymbolBoxes, quotedCharBoxes]
 
 stringElementBoxes = Case[
-  s_String /; StringLength[s] === 1 := If[UpperCaseQ[s],
+  s_Str /; StringLength[s] === 1 := If[UpperCaseQ[s],
     MakeBoxes @ StringSymbolForm @ s,
     MakeBoxes @ LiteralCharacterForm @ s
   ];
-  str_String := MakeBoxes @ LiteralStringForm @ str;
+  str_Str := MakeBoxes @ LiteralStringForm @ str;
   s:lsymsP := MakeBoxes @ s;
   e_ ? unaryWrappedQ := recurseWrapperBoxes[e, stringSymbolBoxes];
   other := MakeBoxes @ other;
@@ -52,7 +52,7 @@ stringElementBoxes = Case[
 ]
 
 stringSymbolBoxes = Case[
-  s_String := If[UpperCaseQ[s],
+  s_Str := If[UpperCaseQ[s],
     MakeBoxes @ StringSymbolForm @ s,
     MakeBoxes @ CharacterSymbolForm @ s
   ];
@@ -61,7 +61,7 @@ stringSymbolBoxes = Case[
 
 (* this should only be a literal or a CharacterSymbol *)
 quotedCharBoxes = Case[
-  s_String /; StringLength[s] === 1 := MakeBoxes @ LiteralCharacterForm @ s;
+  s_Str /; StringLength[s] === 1 := MakeBoxes @ LiteralCharacterForm @ s;
   s_CharacterSymbolForm := MakeBoxes @ s;
   e_ ? unaryWrappedQ := recurseWrapperBoxes[e, %];
 ]

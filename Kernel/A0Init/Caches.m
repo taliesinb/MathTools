@@ -58,7 +58,7 @@ PublicDebuggingFunction[ClearCacheSymbols]
 ClearCacheSymbols[] := Scope[
   cacheNames = CacheSymbolNames[];
   Clear @@ cacheNames;
-  ToExpression[#, InputForm, SetOperator[UAssociation[]]]& /@ cacheNames;
+  ToExpression[#, InputForm, SetOperator[UAssoc[]]]& /@ cacheNames;
   cacheNames
 ];
 
@@ -68,7 +68,7 @@ PublicDebuggingFunction[CacheSymbolCounts]
 
 CacheSymbolCounts[] := Scope[
   names = CacheSymbolNames[];
-  lengths = Length /@ ToExpression[names, InputForm];
+  lengths = Len /@ ToExpression[names, InputForm];
   AssociationThread[names, lengths]
 ];
 

@@ -36,7 +36,7 @@ arrowheadBoxes[Arrowhead[pos:$ExtCoordP, dir:$CoordP, opts___Rule]] := Scope[
   ];
 
   {pos, off} = FromOffsetCoord @ pos;
-  is3d = Length[pos] == 3;
+  is3d = Len[pos] == 3;
 
   tooltip = Lookup[{opts}, ArrowheadTooltip, None];
 

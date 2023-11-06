@@ -16,7 +16,7 @@ FloodFill[g:(_Graphics -> _Graphics), rules:{__Rule}, OptionsPattern[]] := Scope
 
 iFloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules_, sensitivity_] := Scope[
 	baseline = Lookup[List @@ Rest[g2], BaselinePosition, Automatic];
-	len = Length @ rules;
+	len = Len @ rules;
   annos = Style[Annotation[Invisible @ Point[#1], #2, "FillPoint"], Antialiasing->None]& @@@ rules;
   annoGraphics = Graphics[{{AbsolutePointSize[1], annos}, prims}, opts];
   {image, size, bounds, regions} = MakeImageAndMetadata @ annoGraphics;
@@ -29,7 +29,7 @@ iFloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules_, sensitivity_]
   comps = Dilation[comps, 1];
   fillCoords = 2 * Part[fillPoints, All, 1];
   fillColors = ToRGB @ Part[fillPoints, All, 2];
-  compValues = Extract[comps, Reverse[fillCoords, 2]];
+  compValues = Extract[comps, Rev[fillCoords, 2]];
   compRules = ToPackedReal /@ AssociationMap[v |-> (
     i = IndexOf[compValues, v];
     If[MissingQ[i], {0.,0.,0.,0.}, Append[Part[fillColors, i], 1.]]

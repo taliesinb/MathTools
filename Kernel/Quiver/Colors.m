@@ -17,11 +17,11 @@ LookupCardinalColors[graph_Graph] := Scope[
       <||>,
     ColorVectorQ[cardinalColors] && SameLengthQ[cardinalColors, cardinals],
       AssociationThread[cardinals, cardinalColors],
-    AssociationQ[cardinalColors],
+    AssocQ[cardinalColors],
       cardinalColors,
     ColorQ[cardinalColors],
       ConstantAssociation[cardinals, cardinalColors],
-    AssociationQ[cardinalColorFunction],
+    AssocQ[cardinalColorFunction],
       AssociationThread[cardinals, Lookup[cardinalColorFunction, cardinals, $Gray]],
     cardinalColorFunction =!= None,
       AssociationMap[cardinalColorFunction, cardinals],
@@ -83,5 +83,5 @@ ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardin
   set_ /; SubsetQ[Keys @ $rgbwxColors, set],
     KeyTake[$rgbwxColors, cardinals],
   _,
-    AssociationThread[cardinals, ToColorPalette[palette, Length @ cardinals]]
+    AssociationThread[cardinals, ToColorPalette[palette, Len @ cardinals]]
 ];

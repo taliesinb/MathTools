@@ -88,13 +88,13 @@ RegionFilling is an option to %StringDiagram that determines how regions should 
 
 (**************************************************************************************************)
 
-$colorOrInt = $ColorPattern | _Integer;
+$colorOrInt = $ColorPattern | _Int;
 
 StringDiagram[boxes_List, wires_List, opts___Rule] :=
   StringDiagram[boxes, wires, {}, opts];
 
 StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Scope[
-  $boxAliases = $wireAliases = UAssociation[];
+  $boxAliases = $wireAliases = UAssoc[];
   $fillRegions = {};
 
   UnpackOptions[
@@ -114,7 +114,7 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   $colorModifierFn = parseDiagramColorRules[colorRules, gradientSymbolOptions];
   {boxTextModifierFn, wireTextModifierFn, regionTextModifierFn} = Map[
     toModifierFunction,
-    If[AssociationQ[textModifiers],
+    If[AssocQ[textModifiers],
       Lookup[textModifiers, {"Boxes", "Wires", "Regions"}, {}],
       {textModifiers, textModifiers, textModifiers}
     ]
@@ -193,7 +193,7 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
 
   totalPadding = Map[Total, imagePadding];
   If[NumericQ[imageSize], imageSize *= {1, $h/$w}];
-  origHeight = Last @ imageSize;
+  origHeight = PN @ imageSize;
   imageSize += totalPadding;
   {imageWidth, imageHeight} = imageSize;
   bottomPadding = Part[imagePadding, 2, 1];
@@ -246,7 +246,7 @@ parseBox = Case[
   Seq[c_Customized, key_] :=
     customizedBlock[c, $wireCustomizations, %[#, key]&];
 
-  Seq[rule:(opt:(_Symbol | String) -> value_) /; MatchQ[opt, $boxCustomizationKeyP], key_] := (
+  Seq[rule:(opt:(_Symbol | _Str) -> value_) /; MatchQ[opt, $boxCustomizationKeyP], key_] := (
     $keyOff += 1;
     setGlobalsFromRules[rule, $boxCustomizations];
     Nothing
@@ -270,7 +270,7 @@ $boxCustomizations = RuleDelayed[
   {nodeFrameColor,                                  $fontColor,                      $fontWeight, $fontSize, labelSpacing,                   labelOffset,                     labelPosition, labelBackground, nodeEdgeThickness, nodeBackground,              nodeSize}
 ];
 
-$boxCustomizationKeyP = Flatten[Alternatives @@ (First @ $boxCustomizations)];
+$boxCustomizationKeyP = Flatten[Alternatives @@ (P1 @ $boxCustomizations)];
 
 fsToRel[sz_] := sz / graphicsScale;
 
@@ -301,7 +301,7 @@ makeBox = Case[
   c_Customized := customizedBlock[c, $boxCustomizations, %];
 
   ("Point"|Point)[label_]  := Scope[
-    labelPosition = Which[First[$pos] <= $w, Right, First[$pos] >= $w, Left, True, Above];
+    labelPosition = Which[P1[$pos] <= $w, Right, P1[$pos] >= $w, Left, True, Above];
     label //= $colorModifierFn;
     labelColor = extractColorFromLabel @ label;
     List[
@@ -355,7 +355,7 @@ parseWire = Case[
   Seq[c_Customized, key_] :=
     customizedBlock[c, $wireCustomizations, %[#, key]&];
 
-  Seq[r:Rule[_String | _Symbol, _], key_] := (
+  Seq[r:Rule[_Str | _Symbol, _], key_] := (
     $keyOff += 1;
     setGlobalsFromRules[r, $wireCustomizations];
     Nothing
@@ -405,7 +405,7 @@ toPos = Case[
   {Top, i_}                := doFlip @ {i, $h};
   {Right, i_}              := doFlip @ {$w, i};
   {Left, i_}               := doFlip @ {-$w, i};
-  key:(_Integer | _String) := Lookup[$boxAliases, key, Message[StringDiagram::nobox, key, Keys @ $boxAliases]; {0, 0}];
+  key:(_Int | _Str) := Lookup[$boxAliases, key, Message[StringDiagram::nobox, key, Keys @ $boxAliases]; {0, 0}];
   Translate[pos_, off_]    := doFlip[off] + % @ pos;
   other_                   := doFlip @ other;
 ]
@@ -448,7 +448,7 @@ parseReg = Case[
       %[doFlip[{$w, $h} * coords] -> Placed[label, doFlip @ Replace[side, $FlipSideRules]]]
     ];
 
-  i_Integer -> label_ :=
+  i_Int -> label_ :=
     %[doFlip[{i, -$h}] -> Placed[label, doFlip @ Above]];
 
   spec_ :=
@@ -503,10 +503,10 @@ makeLabel[label_, pos_] /; labelPosition === Vertical :=
 makeLabel[None, _] := {};
 
 makeLabel[label_, pos_] /; labelPosition === Bottom :=
-  Scope[labelPosition = Below; makeLabel[label, MinimalBy[pos, Last]]];
+  Scope[labelPosition = Below; makeLabel[label, MinimalBy[pos, PN]]];
 
 makeLabel[label_, pos_] /; labelPosition === Top :=
-  Scope[labelPosition = Above; makeLabel[label, MaximalBy[pos, Last]]];
+  Scope[labelPosition = Above; makeLabel[label, MaximalBy[pos, PN]]];
 
 makeLabel[label_, pos_] /; MatchQ[labelPosition, {__Symbol}] := Block[
   {posList = labelPosition, labelPosition = None},
@@ -519,17 +519,17 @@ makeLabel[label_, pos_] := With[{pos2 = Mean @ pos}, CenterTextVertical @ Text[
   SimplifyOffsets @ Offset[
     Plus[
       labelSpacing * Replace[labelPosition, $SideToCoords],
-      If[MatchQ[labelPosition, _Offset], First @ labelPosition, 0],
+      If[MatchQ[labelPosition, _Offset], P1 @ labelPosition, 0],
       labelOffset
     ],
     pos2
   ],
   With[{labelPos = RemoveOffsets @ labelPosition, pos3 = RemoveOffsets @ pos2},
     Switch[labelPosition,
-      Right /; (First[pos3] >=  $w), hasRightLabels = True,
-      Left  /; (First[pos3] <= -$w), hasLeftLabels = True,
-      Above /; (Last[pos3]  >=  $h), hasTopLabels = True,
-      Below /; (Last[pos3]  <= -$h), hasBottomLabels = True,
+      Right /; (P1[pos3] >=  $w), hasRightLabels = True,
+      Left  /; (P1[pos3] <= -$w), hasLeftLabels = True,
+      Above /; (PN[pos3]  >=  $h), hasTopLabels = True,
+      Below /; (PN[pos3]  <= -$h), hasBottomLabels = True,
       True, Null
     ];
     If[ListQ[labelPos], labelPos, -Lookup[$SideToCoords, labelPosition]]
@@ -549,25 +549,25 @@ FunctorialStringDiagram[boxes_List, wires_List, rhsSpec_List, regions_List, opts
   $boxes = Append[boxes, Splice[{LabelPosition -> Right, FontWeight -> Plain}]];
   $wires = Append[wires, LabelPosition -> Right];
   $nboxes = Count[boxes, Except[$boxCustomizationKeyP -> _]];
-  $rhsLen = Length[rhsSpec];
+  $rhsLen = Len[rhsSpec];
   ScanIndex1[procRhsSpec, rhsSpec];
   StringDiagram[$boxes, $wires, regions, HalfFrame -> True, opts]
 ];
 
 procRhsSpec[arr_, i_] := Block[{a, b, sideArr},
-  $head = Identity;
+  $head = Id;
   a = If[i == 1, BottomRight, $nboxes];
   b = If[i == $rhsLen, TopRight, $nboxes + 1];
   AppendTo[$wires, UndirectedEdge[a, b] -> toArr[arr]];
 ];
 
 toArr = Case[
-  s_String := % @ CategoryArrowSymbol[s];
+  s_Str := % @ CategoryArrowSymbol[s];
   e_       := e;
 ];
 
 procRhsSpec[pos_ -> obj_, i_] := Block[
-  {$head = Identity},
+  {$head = Id},
   AppendTo[$boxes, {Right, pos} -> toObj[obj]];
   $nboxes++;
 ];
@@ -575,7 +575,7 @@ procRhsSpec[pos_ -> obj_, i_] := Block[
 toObj = Case[
   (h_Symbol ? $styleFormHeadQ)[e_] := Block[{$head = h}, % @ e];
   "f"      := % @ Padded[CategoryObjectSymbol["f"], Left -> 0.12];
-  s_String := % @ CategoryObjectSymbol[s];
+  s_Str := % @ CategoryObjectSymbol[s];
   e_       := "Point"[$head[e]];
 ]
 

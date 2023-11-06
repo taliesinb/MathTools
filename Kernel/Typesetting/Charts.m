@@ -3,13 +3,13 @@ PublicFunction[ChartColorForm]
 ChartColorForm[expr_, colors_] := Scope[
   colors = Which[
     GraphQ[colors], LookupCardinalColors @ colors,
-    AssociationQ[colors], colors,
+    AssocQ[colors], colors,
     Automatic, Automatic,
     True, Return @ expr
   ];
   ReplaceAll[
     expr,
-    ChartSymbol[sym_String] :> formatChartSymbol[sym, colors]
+    ChartSymbol[sym_Str] :> formatChartSymbol[sym, colors]
   ]
 ];
 

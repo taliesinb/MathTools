@@ -11,7 +11,7 @@ bandThetas[0, n_] := Repeat[0, n];
 
 bandThetas[twists_, x_List] := Pi * twists * x;
 bandThetas[1, x_List] := Pi/2 * Map[bandEasingFunction, x];
-bandThetas[0, x_List] := Repeat[0, Length @ x];
+bandThetas[0, x_List] := Repeat[0, Len @ x];
 
 
 PublicFunction[BandBoundaryPoints]
@@ -43,7 +43,7 @@ Options[BandGraphicsComplex] = JoinOptions[
 BandGraphicsComplex[opts:OptionsPattern[]] := Scope[
   UnpackOptions[bandTwists];
   {p1, p2} = BandBoundaryPoints[opts];
-  len = Length @ p1;
+  len = Len @ p1;
   p = ToPacked @ N @ Join[p1, p2];
   n1 = Range[len]; n2 = n1 + len;
   lineIndices = If[OddQ[bandTwists], Join[n1, n2], AppendFirst /@ {n1, n2}];
@@ -87,7 +87,7 @@ Options[BandCurveProject] = JoinOptions[
 ];
 
 BandCurveProject[point_ ? CoordinateVectorQ, opts:OptionsPattern[]] :=
-  First @ BandCurveProject[List @ point, opts];
+  P1 @ BandCurveProject[List @ point, opts];
 
 BandCurveProject[points_ ? CoordinateArrayQ, opts:OptionsPattern[]] :=
   BandCurveProject[#, opts]& /@ points;
@@ -203,7 +203,7 @@ BandPlot3D[fn_, opts:OptionsPattern[]] := Scope[
   ];
   endPoints = If[p === {}, {},
     {beg, end} = FirstLast @ p;
-    If[EuclideanDistance[beg, end] < 1*^-4, {}, {
+    If[Dist[beg, end] < 1*^-4, {}, {
       plotStyle, makeClosedPoint3D @ beg, makeOpenPoint3D @ end
     }]
   ];
@@ -231,7 +231,7 @@ PublicFunction[BandMeshRegion]
 
 BandMeshRegion[args___] := Scope[
   {p1, p2} = BandBoundaryPoints[args];
-  n = Length @ p1;
+  n = Len @ p1;
   n1 = Range @ n; n2 = n1 + n;
   p = Join[p1, p2];
   bound1 = MapWindowed[Line, n1];

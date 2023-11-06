@@ -16,7 +16,7 @@ the graphs responsible for them.
 "
 
 ExtendedGraphProduct[graphs:ListOrAssociationOf[_Graph], type_, opts:OptionsPattern[Graph]] := Scope[
-  If[AssociationQ[graphs],
+  If[AssocQ[graphs],
     keys = Keys[graphs];
     graphs = Values[graphs]
   ,
@@ -222,7 +222,7 @@ generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, userOpts:OptionsPatter
   coordsCands = Table[Map[fn, productVertices], {fn, {productVertexCoords1, productVertexCoords2, productVertexCoords3, productVertexCoords4}}];
   bestIndex = MaximumIndexBy[coordsCands, countDistinctRounded];
   coords = Part[coordsCands, bestIndex];
-  sizeCands = {{First @ bSize, Last @ aSize}, {Last @ bSize, First @ aSize}, {First @ bSize, First @ aSize}, {Last @ bSize, Last @ aSize}};
+  sizeCands = {{P1 @ bSize, PN @ aSize}, {PN @ bSize, P1 @ aSize}, {P1 @ bSize, P1 @ aSize}, {PN @ bSize, PN @ aSize}};
   size = Part[sizeCands, bestIndex];
   ExtendedGraph[
     productVertices, productEdges,
@@ -233,10 +233,10 @@ generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, userOpts:OptionsPatter
   ]
 ];
 
-productVertexCoords1[VertexProduct[a_, b_]] := List[First @ bCoords @ b, Last @ aCoords @ a];
-productVertexCoords2[VertexProduct[a_, b_]] := List[Last @ bCoords @ b, First @ aCoords @ a];
-productVertexCoords3[VertexProduct[a_, b_]] := List[First @ bCoords @ b, First @ aCoords @ a];
-productVertexCoords4[VertexProduct[a_, b_]] := List[Last @ bCoords @ b, Last @ aCoords @ a];
+productVertexCoords1[VertexProduct[a_, b_]] := List[P1 @ bCoords @ b, PN @ aCoords @ a];
+productVertexCoords2[VertexProduct[a_, b_]] := List[PN @ bCoords @ b, P1 @ aCoords @ a];
+productVertexCoords3[VertexProduct[a_, b_]] := List[P1 @ bCoords @ b, P1 @ aCoords @ a];
+productVertexCoords4[VertexProduct[a_, b_]] := List[PN @ bCoords @ b, PN @ aCoords @ a];
 
 countDistinctRounded[e_] := CountDistinct[Round[e, 0.001]];
 
@@ -264,7 +264,7 @@ Options[GeneralQuiverProduct] = JoinOptions[
   ExtendedGraph
 ];
 
-$productTermElement = _Integer | Inverted[_Integer];
+$productTermElement = _Int | Inverted[_Int];
 $productTermP = {$productTermElement...};
 
 GeneralQuiverProduct::badprodexpr = "Product expression `` should be a list of list of possibly inverted integers.";
@@ -290,11 +290,11 @@ GeneralQuiverProduct[graphs_List, productTerms_List, components_:Automatic, user
   edgeHead = If[AllTrue[graphs, DirectedGraphQ], DirectedEdge, UndirectedEdge, VertexCoordinateFunction];
   If[!AllTrue[graphs, EdgeTaggedGraphQ], edgeHead = edgeHead /* RemoveEdgeTag];
   tagAssocs = Map[edgeListTaggedTables] @ edgeLists;
-  num = Length[graphs]; signLists = toSignLists[num, #]& /@ productTerms;
+  num = Len[graphs]; signLists = toSignLists[num, #]& /@ productTerms;
   productEdges = DeleteDuplicates @ Flatten @ Outer[makeProductEdges, productVertices, signLists, 1];
   productVerticesOld = productVertices;
   If[flattenProducts, {productVertices, productEdges} //= FlattenProductSymbols];
-  productVertexRenaming = If[productVertices === productVerticesOld, Identity,
+  productVertexRenaming = If[productVertices === productVerticesOld, Id,
     Map[AssociationThread[productVertices, productVerticesOld]]
   ];
 
@@ -304,7 +304,7 @@ GeneralQuiverProduct[graphs_List, productTerms_List, components_:Automatic, user
     coordinateAssocs = LookupVertexCoordinates /@ graphs;
   ];
 
-  If[Head[components] === VertexProduct, components //= VertexPattern];
+  If[H[components] === VertexProduct, components //= VertexPattern];
 
   If[components === Automatic,
     Return @ toGeneralProductFinalGraph[productVertices, productEdges]];
@@ -334,7 +334,7 @@ toGeneralProductFinalGraph[productVertices_, productEdges_] := Scope[
       vertexCoords = vcf;
     ,
       vertexCoords = MapThread[vcf, {originalProductVertices, coordinateTuples}];
-      If[!CoordinateMatrixQ[vertexCoords], ReturnFailed[GeneralQuiverProduct::badcoords, First @ vertexCoords]];
+      If[!CoordinateMatrixQ[vertexCoords], ReturnFailed[GeneralQuiverProduct::badcoords, P1 @ vertexCoords]];
     ];
   ,
     vertexCoords = Automatic
@@ -358,32 +358,32 @@ then when building product vertex we just look up in the appropriate key,
 edgeListTaggedTables[edgeList_] := Scope[
   a = InVertices  @ edgeList;
   b = OutVertices @ edgeList;
-  c = If[Length @ First @ edgeList === 3,
+  c = If[Len @ P1 @ edgeList === 3,
     Part[edgeList, All, 3],
-    Repeat[None, Length @ edgeList]
+    Repeat[None, Len @ edgeList]
   ];
-  oAssoc = Merge[Identity] @ RuleThread[a, Trans[b, c]];
-  iAssoc = Merge[Identity] @ RuleThread[b, Trans[a, Inverted /@ c]];
+  oAssoc = Merge[Id] @ RuleThread[a, Trans[b, c]];
+  iAssoc = Merge[Id] @ RuleThread[b, Trans[a, Inverted /@ c]];
   {oAssoc, iAssoc}
 ]
 
 toSignLists[num_, indices_] := Scope[
   arr = Zeros[num];
-  indices = indices /. i_Integer ? Negative :> Inverted[Abs @ i];
-  Cases[indices, i_Integer :> Part[arr, i]++];
-  Cases[indices, Inverted[i_Integer] :> Part[arr, Abs @ i]--];
+  indices = indices /. i_Int ? Negative :> Inverted[Abs @ i];
+  Cases[indices, i_Int :> Part[arr, i]++];
+  Cases[indices, Inverted[i_Int] :> Part[arr, Abs @ i]--];
   arr
 ];
 
 PrivateFunction[toSimpleQuiver]
 
 toSimpleQuiver = Case[
-  g_Graph                  := g;
-  n_Integer ? Negative     := CycleQuiver[Abs @ n];
-  n_Integer                := LineQuiver[n];
-  {m_Integer, n_Integer}   := SquareQuiver[{m, n}];
-  card_String -> n_Integer := LineQuiver[n, card];
-  other_                   := $Failed;
+  g_Graph           := g;
+  n_Int ? Negative  := CycleQuiver[Abs @ n];
+  n_Int             := LineQuiver[n];
+  {m_Int, n_Int}    := SquareQuiver[{m, n}];
+  card_Str -> n_Int := LineQuiver[n, card];
+  other_            := $Failed;
 ];
 
 makeProductEdges[vertex_, signs_] := Scope[
@@ -407,21 +407,21 @@ toSeqCard[c1_][{v2_, c2_}] := {v2, CardinalSequence[c1, c2]};
 
 
 toProductCoordFunc = Case[
-  funcs_List   := ApplyThrough[toSingleCoordFunc /@ funcs];
+  funcs_List        := ApplyThrough[toSingleCoordFunc /@ funcs];
   "DimensionReduce" := DimensionReduce[coordinateTuples, 2];
-  "ABC"        := abcProductCoords;
-  "Mean"       := meanProductCoords;
-  n_Integer    := Function[Part[#2, n]];
-  func_        := func
+  "ABC"             := abcProductCoords;
+  "Mean"            := meanProductCoords;
+  n_Int             := Fn[Part[#2, n]];
+  func_             := func
 ];
 
 abcProductCoords[_, coords_] := DotABC @ Part[coords, 1;;3, 1];
 meanProductCoords[_, coorsd_] := Mean @ coords;
 
 toSingleCoordFunc = Case[
-  i_Integer -> j_Integer := Part[#2, i, j]&;
-  i_Integer              := Part[#2, i, 1]&;
-  func_                  := func;
+  i_Int -> j_Int := Part[#2, i, j]&;
+  i_Int          := Part[#2, i, 1]&;
+  func_          := func;
 ]
 
 computeProductCoords = Case[
@@ -430,7 +430,7 @@ computeProductCoords = Case[
 ]
 
 computedProductSingleCoord = Case[
-  i_Integer -> j_Integer := Part[vertexCoords, i, All, j];
+  i_Int -> j_Int := Part[vertexCoords, i, All, j];
   _                      := $Failed;
 ]
 
@@ -477,7 +477,7 @@ RestrictedVertexProductGraph[graph_, cond_, opts:OptionsPattern[Graph]] := Scope
   count = VertexCount[graph];
   outTable = VertexOrientedOutTable[graph];
   productVertices = RestrictedVertexIndexProducts[graph, cond];
-  productCount = Length[productSet];
+  productCount = Len[productSet];
   $productIndex = SparseArray[Thread[products -> Range[productCount]], {count, count}];
   productEdges = MapIndexed[createProductEdges, productVertices];
   Graph[productVertices, Flatten @ productEdges, opts]
@@ -506,7 +506,7 @@ RestrictedVertexIndexProducts[graph_, cond_] := Scope[
       EdgePairs[graph],
     _LessThan | _EqualTo | _Between | _GreaterThan,
       dist = Normal @ GraphDistanceMatrix[graph, toMax @ cond, Method -> "Johnson"];
-      Position[dist, _Integer ? cond, {2}],
+      Position[dist, _Int ? cond, {2}],
     _,
       $Failed
   ]

@@ -2,7 +2,7 @@ PublicFunction[PlotGraphModes]
 
 complexSortingValue[c_] := {-Round[Abs[c], 0.01], Mod[Arg[c+ $MachineEpsilon * I], 2Pi]}
 
-PlotGraphModes[graph_Graph, k_:4, columns:_Integer:4, opts:OptionsPattern[Graph]] := Scope[
+PlotGraphModes[graph_Graph, k_:4, columns:_Int:4, opts:OptionsPattern[Graph]] := Scope[
   vertices = VertexList[graph];
   trans = AdjacencyMatrix[graph];
   {values, vectors} = Eigensystem[trans, k];

@@ -41,7 +41,7 @@ toMarkdownStringInner[spec_, returnVec_:False] := Scope[
   result = StringJoin @ Riffle[Append[""] @ lines, "\n\n"];
   If[!StringQ[result], ReturnFailed[]];
   result //= StringReplace[$codeJoining] /* StringReplace[$markdownTableReplacement] /* $markdownPostprocessor /* StringTrim;
-  If[$includeFrontMatter && AssociationQ[frontMatter = NotebookFrontMatter @ spec],
+  If[$includeFrontMatter && AssocQ[frontMatter = NotebookFrontMatter @ spec],
     frontMatter = frontMatter /. None -> Null;
     frontMatter //= WriteRawJSONString /* StringReplace["\\/" -> "/"]; (* weird bug in ToJSON *)
     result = StringJoin[frontMatter, "\n\n", result];
@@ -86,7 +86,7 @@ General::badnbread = "Could not read notebook ``, will be replaced with placehol
 
 CacheSymbol[$NotebookToMarkdownCache]
 
-toMarkdownLines[File[path_String]] /; FileExtension[path] === "nb" := Scope[
+toMarkdownLines[File[path_Str]] /; FileExtension[path] === "nb" := Scope[
   path = NormalizePath @ path;
   fileDate = Quiet @ FileDate @ path;
   cacheKey = <|"Path" -> path, "Hash" -> $markdownGlobalsHash, "DryRun" -> $dryRun|>;
@@ -132,7 +132,7 @@ toMarkdownLines[Notebook[cells_List, opts___]] := Scope[
   If[StringQ[katexDefs = taggingRules["KatexDefinitions"]],
     VPrint["Applying local katex definitions: \n", katexDefs];
     $localKatexDefinitions = katexDefs];
-  If[AssociationQ[katexFns = taggingRules["TemplateToKatexFunctions"]],
+  If[AssocQ[katexFns = taggingRules["TemplateToKatexFunctions"]],
     VPrint["Applying local template to katex functions: \n", katexFns];
     $localTemplateToKatexFunctions = katexFns
   ];
@@ -145,7 +145,7 @@ toMarkdownLines[cell_Cell | cell_CellObject | cell_CellGroup] := Scope[
 ];
 
 toMarkdownLines[e_] := List[
-  "#### toMarkdownLines: unknown expression with head " <> TextString @ Head @ e
+  "#### toMarkdownLines: unknown expression with head " <> TextString @ H @ e
 ];
 
 (**************************************************************************************************)
@@ -161,7 +161,7 @@ cellToMarkdown = Case[
 
   Cell[___, CellDingbat -> "!", ___] := Nothing;
 
-  Cell[e_, style:Except["Input" | "Code"], ___, CellTags -> tag_String, ___] :=
+  Cell[e_, style:Except["Input" | "Code"], ___, CellTags -> tag_Str, ___] :=
     Splice @ {$anchorTemplate @ tag, cellToMarkdownInner0 @ Cell[e, style]};
 
   c:Cell[CellGroupData[{Cell[_, "Input", ___], Cell[_, "Output", ___]}, Open]] /; TrueQ[$rasterizeInputOutputPairs] :=
@@ -247,12 +247,12 @@ cellToMarkdownInner1 = Case[
 
   Cell[code_, "PreformattedCode"]        := toCodeMarkdown[code, True];
 
-  Cell[s_String, "PythonOutput"]         := plaintextCodeToMarkdown @ s;
+  Cell[s_Str, "PythonOutput"]            := plaintextCodeToMarkdown @ s;
   e:Cell[_, "PythonOutput"]              := cellToRasterMarkdown @ e;
 
   e:Cell[BoxData[_GraphicsBox], "Print"] := cellToRasterMarkdown @ e;
   
-  Cell[m_String, "Markdown"|"Program"]   := m; (* verbatim markdown *)
+  Cell[m_Str, "Markdown"|"Program"]      := m; (* verbatim markdown *)
 
   Cell[e_, "Code"]                       := ($lastCaption = First[Cases[e, $outputCaptionPattern], None]; Nothing);
 
@@ -272,7 +272,7 @@ headingDepth[n_] := StringRepeat["#", Max[n + $headingDepthOffset, 1]] <> " ";
 
 (**************************************************************************************************)
 
-insertLinebreaksOutsideKatex[str_String, n_] := Scope[
+insertLinebreaksOutsideKatex[str_Str, n_] := Scope[
   If[$markdownFlavor === "Hugo" || StringLength[str] < n, Return @ str];
   katexSpans = StringPosition[str, Verbatim["$"] ~~ Shortest[___] ~~ Verbatim["$"], Overlaps -> False];
   katexStrings = StringTake[str, katexSpans];

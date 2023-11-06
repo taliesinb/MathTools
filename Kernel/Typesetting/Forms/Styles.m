@@ -22,7 +22,7 @@ $TemplateKatexFunction["StyledOperatorForm"] = styledOperatorKatex;
 
 styledOperatorKatex[dummy_, inner_] := Scope[
   katexStr = boxesToKatexString @ inner;
-  styleOp = First @ StringCases[boxesToKatexString @ dummy, "\\" ~~ LetterCharacter.., 1];
+  styleOp = P1 @ StringCases[boxesToKatexString @ dummy, "\\" ~~ LetterCharacter.., 1];
   StringReplace[katexStr, "\\" ~~ w:LetterCharacter.. :>
     If[StringEndsQ[w, "Symbol"],
       StringJoin[styleOp, "\\", w],

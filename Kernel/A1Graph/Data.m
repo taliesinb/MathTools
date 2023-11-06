@@ -10,7 +10,7 @@ PublicFunction[AdjacentVerticesPredicate]
 
 AdjacentVerticesPredicate[graph_] := Scope[
   edges = {#1, #2}& @@@ ToEdges[graph];
-  ConstantUAssociation[Join[edges, Reverse[edges, 2]], True] /* TrueQ
+  ConstantUAssociation[Join[edges, Rev[edges, 2]], True] /* TrueQ
 ];
 
 (**************************************************************************************************)
@@ -169,7 +169,7 @@ Options[VertexAdjacentEdgeTable] = {Signed -> False};
 VertexAdjacentEdgeTable[graph_, OptionsPattern[]] := Scope[
   pairs = EdgePairs @ graph;
   vertices = VertexRange @ graph;
-  negator = If[OptionValue[Signed], MatrixMap[Inverted, #]&, Identity];
+  negator = If[OptionValue[Signed], MatrixMap[Inverted, #]&, Id];
   MapThread[Union, {
     Lookup[PositionIndex @ FirstColumn @ pairs, vertices, {}],
     Lookup[negator @ PositionIndex @ LastColumn @ pairs, vertices, {}]
@@ -220,7 +220,7 @@ EdgeIndexAssociation[graph_] := AssociationRange @ ToUntaggedEdges @ graph;
 
 EdgeIndexAssociation[graph_, Signed -> False] := EdgeIndexAssociation @ graph;
 
-EdgeIndexAssociation[graph_, Signed -> True] := UAssociation @ MapIndex1[toUEdgeIndex, ToUntaggedEdges @ graph];
+EdgeIndexAssociation[graph_, Signed -> True] := UAssoc @ MapIndex1[toUEdgeIndex, ToUntaggedEdges @ graph];
 
 toUEdgeIndex[head_[a_, b_, ___], index_] := {head[a, b] -> i, head[b, a] -> Inverted[i]};
 
@@ -262,7 +262,7 @@ VertexOrientedOutTable[graph_] := Scope[
   undir = Cases[edges, _UndirectedEdge];
   Trans[
     toOutTable[count, dir],
-    toOutTable[count, Join[undir, Reverse[undir, 2]], 1]
+    toOutTable[count, Join[undir, Rev[undir, 2]], 1]
   ]
 ];
 
@@ -280,8 +280,8 @@ VertexInAssociation[graph$] returns an association of lists <|v$1 -> in$1, v$2 -
 where in$i is a list of the vertices that have a connection to v$i.
 "
 
-tableToAssoc[vertices_, table_] := Association @ MapIndexed[
-  Part[vertices, First @ #2] -> Part[vertices, #1]&,
+tableToAssoc[vertices_, table_] := Assoc @ MapIndexed[
+  Part[vertices, P1 @ #2] -> Part[vertices, #1]&,
   table
 ];
 
@@ -303,8 +303,8 @@ list of indices of vertices that have a connection from vertex i$.
 
 VertexInOutAssociation[graph_] := Scope[
   vertices = VertexList[graph];
-  Association @ MapIndexed[
-    Part[vertices, First @ #2] -> {Part[vertices, First[#1]], Part[vertices, Last[#1]]}&,
+  Assoc @ MapIndexed[
+    Part[vertices, P1 @ #2] -> {Part[vertices, P1[#1]], Part[vertices, PN[#1]]}&,
     VertexInOutTable[graph]
   ]
 ];

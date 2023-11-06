@@ -251,11 +251,11 @@ RainbowKeyPortSkeleton[args___] := PortSkeleton[args, PortColor -> "Medium", Fil
 PublicFunction[KeyWire, KeyWireBundle, ValueWire, BubbleWire, RainbowWire, RainbowWireBundle]
 
 toWirePort = Case[
-  i_Integer        := $in[i];
-  key_String       := %[key -> PortIndex[1]];
-  key_ -> i_       := $out[key, i];
-  vals_$           := Map[%, vals];
-  other_           := other;
+  i_Int      := $in[i];
+  key_Str    := %[key -> PortIndex[1]];
+  key_ -> i_ := $out[key, i];
+  vals_$     := Map[%, vals];
+  other_     := other;
 ];
 
 toWireSrcPort[e_] := toWirePort[e] /. {$in -> NodeInPort,  $out -> NodeOutPort};
@@ -269,15 +269,15 @@ toCircuitCurve[e_] := ReplaceAll[e, {
 
 wireCurve[args___] :=
   wireCurve1 @@ ReplaceAll[{args}, {
-    $[s_String] :> Apply[$, Characters @ s],
-    $[i_Integer] :> Apply[$, Range @ i]
+    $[s_Str] :> Apply[$, Characters @ s],
+    $[i_Int] :> Apply[$, Range @ i]
   }];
 
 wireCurve1[a_, b_, s_:None] := Scope[
   c = curve[toWireSrcPort @ a, toWireDstPort @ b, s];
   If[ContainsQ[c, _$],
     i = 1; args = {};
-    cFn = Construct[Function, c] /. vals_$ :> RuleCondition[
+    cFn = Construct[Fn, c] /. vals_$ :> RuleCondition[
       AppendTo[args, List @@ vals];
       Slot[i++]
     ];
@@ -295,7 +295,7 @@ applyWireFixups[e_] := e /. {
 
 PrivateHead[$portColor]
 
-$portColor[i_Integer] := ToRainbowColor @ i;
+$portColor[i_Int] := ToRainbowColor @ i;
 $portColor[Automatic] := Automatic;
 
 RainbowWire::noAutoColor = "Cannot choose an automatic color for wire with ports `` and ``."
@@ -426,7 +426,7 @@ toWireLegendItem = Case[
 ]
 
 toWireStyle = Case[
-  i_Integer := ToRainbowColor[i];
+  i_Int := ToRainbowColor[i];
 ]
 
 wireIconGraphics[style_] := ScaleGraphics[
@@ -520,7 +520,7 @@ DefineTemplateBox[DerivedArraySignatureForm, "arrayShapeForm", #1, None];
 $notebookDisplayFunctionBases["arrayShapeForm"] = "StringBlockForm";
 
 dimBox[a_ArrayShapeForm] := ToBoxes @ a;
-dimBox[i_Integer] := StyleBox["\[FilledSquare]", ToRainbowColor @ i, FontFamily -> "Fira Code"];
+dimBox[i_Int] := StyleBox["\[FilledSquare]", ToRainbowColor @ i, FontFamily -> "Fira Code"];
 dimBox[s_ -> i_] := StyleBox["\[FilledSquare]", ToRainbowColor @ i, FontFamily -> "Fira Code"];
 dimBox[(All | "\[Ellipsis]") -> i_] := StyleBox["\[FilledSquare]", ToRainbowColor @ i, FontFamily -> "Fira Code"];
 dimBox[All | "\[Ellipsis]"] := StyleBox["\[FilledSquare]", $LightGray, FontFamily -> "Fira Code"];

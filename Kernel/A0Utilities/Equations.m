@@ -33,7 +33,7 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
   varP = Alternatives @@ vars;
   If[expandLinearEquations, eqns = ReplaceAll[NoLinearExpand[t_] :> t] @ Flatten @ Map[toSubEquations, eqns]];
   varI = AssociationRange @ vars;
-  eqns = DeleteDuplicates @ Flatten @ VectorReplace[eqns, rule:(_ -> varP) :> {rule, Reverse @ rule}];
+  eqns = DeleteDuplicates @ Flatten @ VectorReplace[eqns, rule:(_ -> varP) :> {rule, Rev @ rule}];
   (* printEqns[eqns]; *)
   {lhss, rhss} = KeysValues @ eqns;
   varToEqI = Map[var |-> SelectIndices[eqns, ContainsQ[var]], vars];
@@ -58,12 +58,12 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
     ];
   ];
   If[FalseQ @ allowPartialSolutions,
-    If[Length[solutions] < Length[vars],
-      Message[SolveCyclicEquations::partsol, Length[solutions], Length[vars], Complement[vars, Keys @ solutions]];
+    If[Len[solutions] < Len[vars],
+      Message[SolveCyclicEquations::partsol, Len[solutions], Len[vars], Complement[vars, Keys @ solutions]];
     ];
   ];
   VPrint @ Row[{Column[vars, Spacings -> .71], CompactArrayPlot[Transpose @ solvedHistory, PixelConstrained -> 20]}, Alignment -> Bottom];
-  Association @ solutions
+  Assoc @ solutions
 ,
   solveStep[newSolved_] := Block[{relevantEqnIs, newEqnsIs, nextSolved},
     (* find all equations that use a recently solved variable *)
@@ -103,7 +103,7 @@ printBadSolEqs[var_, eqns_List] := (
   Print["Var ", var, " cannot simultaneously satisfy following equations: "];
   Print[Grid[
     ReplaceAll[
-      {Inactive[Equal] @@ #, Construct[HoldForm, Inactive[Equal] @@ #] /. solutions, Last[#] /. solutions}& /@ eqns,
+      {Inactive[Equal] @@ #, Construct[HoldForm, Inactive[Equal] @@ #] /. solutions, PN[#] /. solutions}& /@ eqns,
       var -> Style[var, Bold]
     ],
     Spacings -> {1.5, 2}, Dividers -> All, Alignment -> Left
@@ -119,7 +119,7 @@ PrivateFunction[printEqns]
 printEqns[{}] := Print["---no equations---"];
 printEqns[eqns_] := Print @ Grid[
   Catenate /@ Partition[
-    formatEqn @@@ (Sort @ Normal @ Merge[eqns, Identity]),
+    formatEqn @@@ (Sort @ Normal @ Merge[eqns, Id]),
     UpTo[4]
   ],
   ItemSize -> Full, Spacings -> 2, Alignment -> {{Right, Left}, Center},

@@ -20,7 +20,7 @@ the vertex list.
 
 Options[IndexedExtendedGraph] = $ExtendedGraphOptions;
 IndexedExtendedGraph[vertices_, edges_, opts___] := Scope[
-  range = Range @ Length @ vertices;
+  range = Range @ Len @ vertices;
   ExtendedGraph[
     VertexReplace[
       Graph[range, edges],
@@ -92,7 +92,7 @@ integersToVertices[graph_Graph, expr_] :=
   integersToVertices[VertexList[graph], expr];
 
 integersToVertices[vertices_List, expr_] :=
-  expr /. {i:{__Integer} :> Part[vertices, i], i_Integer :> Part[vertices, i]};
+  expr /. {i:{__Int} :> Part[vertices, i], i_Int :> Part[vertices, i]};
 
 (**************************************************************************************************)
 
@@ -128,7 +128,7 @@ PublicFunction[DropComponents]
 
 DropComponents[graph_Graph, spec_] := Scope[
   components = WeaklyConnectedComponents @ graph;
-  components = Reverse @ Sort @ components;
+  components = Rev @ Sort @ components;
   vertices = Quiet @ Check[
     If[IntegerQ[spec], Part[components, spec], Union @@ Part[components, spec]],
     $Failed
@@ -148,11 +148,11 @@ ComponentGraphs[graph_] := ComponentGraphs[graph, All];
 ComponentGraphs[graph_, u_UpTo] := ComponentGraphs[graph, 1 ;; u];
 
 ComponentGraphs::compob = "Component `` was requested but only `` are available.";
-ComponentGraphs[graph_, spec:(_Integer|All|_Span)] := Scope[
+ComponentGraphs[graph_, spec:(_Int|All|_Span)] := Scope[
   components = WeaklyConnectedGraphComponents @ graph;
-  components = Reverse @ SortBy[components, ApplyThrough[{VertexCount, VertexList}]];
-  If[IntegerQ[spec] && Abs[spec] > Length[components],
-    ReturnFailed["compob", spec, Length[components]]];
+  components = Rev @ SortBy[components, ApplyThrough[{VertexCount, VertexList}]];
+  If[IntegerQ[spec] && Abs[spec] > Len[components],
+    ReturnFailed["compob", spec, Len[components]]];
   Part[components, spec]
 ];
 
@@ -225,10 +225,10 @@ PublicFunction[RotateGraph]
 RotateGraph[graph_, opts___Rule] :=
   RotateGraph[graph, 90, opts];
 
-RotateGraph[graph_, degrees_Integer, opts___Rule] := Scope[
+RotateGraph[graph_, degrees_Int, opts___Rule] := Scope[
   coords = Lookup[LookupVertexCoordinates @ graph, VertexList @ graph];
   coords = RotationTransform[degrees Degree] @ coords;
-  imageSize = Reverse @ LookupImageSize @ graph;
+  imageSize = Rev @ LookupImageSize @ graph;
   ExtendedGraph[
     graph,
     opts,
@@ -250,5 +250,5 @@ rangePartitionSuccessors[part_] := Join @@ Table[
     Delete[part, {{i}, {j}}],
     Sort[Join @@ Part[part, {i, j}]]
   ],
-  {i, Length @ part}, {j, i+1, Length @ part}
+  {i, Len @ part}, {j, i+1, Len @ part}
 ];

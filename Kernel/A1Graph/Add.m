@@ -19,8 +19,8 @@ GraphAdd[graph_, newVertices_, newEdges_] := Scope[
     newVertices = renamedVertices;
     newEdges //= ReplaceAll[renamingRules];
   ];
-  oldVertexCount = Length @ vertices;
-  newVertexCount = Length @ newVertices;
+  oldVertexCount = Len @ vertices;
+  newVertexCount = Len @ newVertices;
   newGraph = Graph[
     Join[vertices, newVertices],
     Join[edges, newEdges],

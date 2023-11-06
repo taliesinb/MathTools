@@ -1,7 +1,7 @@
 PrivateVariable[$graphicsHeadQ, $builtinGraphicsHeadQ, $customGraphicsHeadQ, $graphicsBoxHeadQ]
 PrivateVariable[$graphicsHeadP, $builtinGraphicsHeadP, $customGraphicsHeadP, $graphicsBoxHeadP]
 
-SetInitialValue[$graphicsHeadQ, $builtinGraphicsHeadQ, $customGraphicsHeadQ, $graphicsBoxHeadQ, UAssociation[]];
+SetInitialValue[$graphicsHeadQ, $builtinGraphicsHeadQ, $customGraphicsHeadQ, $graphicsBoxHeadQ, UAssoc[]];
 SetInitialValue[$graphicsHeadP, $builtinGraphicsHeadP, $customGraphicsHeadP, $graphicsBoxHeadP, Alternatives[]];
 
 SetHoldAll[insertQP];
@@ -22,7 +22,7 @@ declareGraphicsHead[head_Symbol] := (
 
 PrivateVariable[$primHeadToPrimBoxHead]
 
-SetInitialValue[$primHeadToPrimBoxHead, UAssociation[]];
+SetInitialValue[$primHeadToPrimBoxHead, UAssoc[]];
 
 (**************************************************************************************************)
 
@@ -63,7 +63,7 @@ SignPrimitive[sig_, head_Symbol] := CatchMessage @ Scope[
 _SignPrimitive := BadArguments[];
 
 toSignatures = Case[
-  s_String := handleOpt /@ StringTrim[StringSplit[s, "|"]];
+  s_Str := handleOpt /@ StringTrim[StringSplit[s, "|"]];
   other_   := ToList @ other;
 ]
 
@@ -71,10 +71,10 @@ handleOpt[s_] /; StringContainsQ[s, "?"] := Splice[{StringDelete[s, "?" ~~ ___],
 handleOpt[s_] /; StringContainsQ[s, "!"] := Except[StringDelete[s, "!" ~~ ___], StringReplace[s, "!"->","]];
 handleOpt[s_] := s;
 
-SetInitialValue[$primToSigs, $sigToPrims, $sigElemToPrims, UAssociation[]];
-SetInitialValue[$primBoxToSigs, $sigToPrimBoxes, $sigElemToPrimBoxes, UAssociation[]];
+SetInitialValue[$primToSigs, $sigToPrims, $sigElemToPrims, UAssoc[]];
+SetInitialValue[$primBoxToSigs, $sigToPrimBoxes, $sigElemToPrimBoxes, UAssoc[]];
 
-procSignature[str_String] := Scope[
+procSignature[str_Str] := Scope[
   sigElems = parseSignatureString @ str;
   KeyUnionTo[$sigToPrims, sigElems, {$head}];
   declareGraphicsHead[$head];
@@ -135,19 +135,19 @@ PrimitiveSignatureLookup[expr_] := CatchMessage @ iPrimitiveSignatureLookup[expr
 
 iPrimitiveSignatureLookup = Case[
 
-  pos_Integer -> sig_String :=
+  pos_Int -> sig_Str :=
     Lookup[$sigElemToPrims, Key @ {pos, parseSigElem[sig]}, {}];
 
   rules:{__Rule} :=
     Intersection @@ Map[%, rules];
 
-  sig_String /; StringContainsQ[sig, "|"|"?"|"!"] :=
+  sig_Str /; StringContainsQ[sig, "|"|"?"|"!"] :=
     Union @@ Map[%, toSignatures @ sig];
 
   Verbatim[Except][a_, b_] :=
     Complement[% @ a, % @ b];
 
-  sig_String :=
+  sig_Str :=
     Lookup[$sigToPrims, Key @ parseSignatureString @ sig, {}];
 
   sym_Symbol :=
@@ -219,8 +219,8 @@ SetUsage @ "
 DeclareCurveAlias[head$, aliasFn$] declares that head$ is a curve that rewrites itself to another curve via aliasFn$.
 "
 
-SetInitialValue[$customCurveAliasFn, $customCurveFn, $customCurveBoxesFn, UAssociation[]];
-SetInitialValue[$customCurveHeadQ, $customCurveIsRecursive, UAssociation[]];
+SetInitialValue[$customCurveAliasFn, $customCurveFn, $customCurveBoxesFn, UAssoc[]];
+SetInitialValue[$customCurveHeadQ, $customCurveIsRecursive, UAssoc[]];
 SetInitialValue[$customCurveHeadP, Alternatives[]];
 
 DeclareCurvePrimitive[head_Symbol, curveFn_, boxesFn_:Automatic] := (
@@ -238,11 +238,11 @@ DeclareAtomicCurvePrimitive[head_, args___] := (
 );
 
 DeclareCurveAlias[head_, fn_] := (
-  head /: Normal[curve_head] := resolveCurveAlias[curve, Identity];
+  head /: Normal[curve_head] := resolveCurveAlias[curve, Id];
   $customCurveAliasFn[head] = fn;
 )
 
-toLineBox[e_] := Construct[LineBox, First @ e];
+toLineBox[e_] := Construct[LineBox, P1 @ e];
 
 (**************************************************************************************************)
 
@@ -279,16 +279,16 @@ General::failcurveboxes = "Curve `` failed to boxify."
 CurveToBoxes[curve_] := Scope[
   points = CurveToPoints @ curve;
   If[FailureQ[points], Return @ {}];
-  fn = Lookup[$customCurveBoxesFn, Head @ curve];
+  fn = Lookup[$customCurveBoxesFn, H @ curve];
   res = Construct[fn, ReplacePart[curve, 1 -> points]];
   Which[
-    Head[res] === fn, gprimMsg[curve, "unrecogcurve"],
+    H[res] === fn, gprimMsg[curve, "unrecogcurve"],
     res === $Failed,  gprimMsg[curve, "failcurveboxes"],
     True,             res
   ]
 ];
 
-CurveToBoxes[curve_] /; KeyExistsQ[$customCurveAliasFn, Head @ curve] :=
+CurveToBoxes[curve_] /; KeyExistsQ[$customCurveAliasFn, H @ curve] :=
   Replace[resolveCurveAlias[curve, CurveToBoxes], $Failed -> curve];
 
 (**************************************************************************************************)
@@ -302,13 +302,13 @@ $ctpMsg = True;
 
 CurveToPoints[curve_] := Scope[
   If[CoordinateMatrixQ @ curve, Return @ curve];
-  curveFn = Lookup[$customCurveFn, Head @ curve];
+  curveFn = Lookup[$customCurveFn, H @ curve];
   If[MissingQ[curveFn],
     If[$ctpMsg, Message[General::notcurve, MsgExpr @ curve]];
     ReturnFailed[];
   ];
-  If[$customCurveIsRecursive @ Head @ curve,
-    innerPath = Block[{$ctpMsg = False}, CurveToPoints @ First @ curve];
+  If[$customCurveIsRecursive @ H @ curve,
+    innerPath = Block[{$ctpMsg = False}, CurveToPoints @ P1 @ curve];
     If[FailureQ[innerPath],
       If[$ctpMsg, gprimMsg[curve, "badinnercurve"]];
       ReturnFailed[];
@@ -318,21 +318,21 @@ CurveToPoints[curve_] := Scope[
     points = curveFn @ curve;
   ];
   If[!CoordinateMatrixQ[points],
-    If[$ctpMsg, gprimMsg[curve, If[Head[points] === curveFn, "unrecogcurve", "failcurve"]]];
+    If[$ctpMsg, gprimMsg[curve, If[H[points] === curveFn, "unrecogcurve", "failcurve"]]];
     ReturnFailed[];
   ];
   points
 ];
 
-CurveToPoints[curve_] /; KeyExistsQ[$customCurveAliasFn, Head @ curve] :=
+CurveToPoints[curve_] /; KeyExistsQ[$customCurveAliasFn, H @ curve] :=
   resolveCurveAlias[curve, CurveToPoints];
 
 (**************************************************************************************************)
 
 resolveCurveAlias[curve_, fn_] := Scope[
-  aliasFn = Lookup[$customCurveAliasFn, Head @ curve];
+  aliasFn = Lookup[$customCurveAliasFn, H @ curve];
   res = aliasFn @ curve;
-  If[Head[res] === aliasFn || res === curve || res === $Failed,
+  If[H[res] === aliasFn || res === curve || res === $Failed,
     If[$ctpMsg || fn == CurveToBoxes, gprimMsg[curve, "unrecogcurve"]];
     If[type === CurveToBoxes, {}, $Failed]
   ,
@@ -352,7 +352,7 @@ DeclareGraphicsPrimitive[$$, dims$] specifies that rules should be created for e
 * if fn$ returns $Failed or fails to evaluate, an appropriate message will be issued.
 "
 
-SetInitialValue[$customPrimitiveFns, UAssociation[]];
+SetInitialValue[$customPrimitiveFns, UAssoc[]];
 
 DeclareGraphicsPrimitive[head_Symbol, signature_, fn_, dims_:{2}] := (
   If[FailureQ @ SignPrimitive[signature, head], ReturnFailed[]];
@@ -374,11 +374,11 @@ General::unrecogprim = "Unrecognized usage ``.";
 General::failprim = "Failed to boxify ``.";
 
 CustomPrimitiveToBoxes[prim_] := With[
-  {fn = $customPrimitiveFns @ Head @ Unevaluated @ prim},
+  {fn = $customPrimitiveFns @ H @ Unevaluated @ prim},
   {res = Block[{UnmatchedCase2 = Throw[$Failed, CustomPrimitiveToBoxes]&},
     Catch[fn @ prim, CustomPrimitiveToBoxes]]},
   Which[
-    Head[res] === fn, gprimMsg[prim, "unrecogprim"],
+    H[res] === fn, gprimMsg[prim, "unrecogprim"],
     res === $Failed,  gprimMsg[prim, "failprim"],
     True,             res
   ]

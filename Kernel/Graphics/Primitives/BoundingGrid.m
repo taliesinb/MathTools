@@ -55,8 +55,8 @@ gridLine[{l_, h_}] := Scope[
 	range = $sel @ Range[l, h, dx];
 	If[dx < $cutoff, range = {l, h}];
 	labels = $lbl @ $sel @ Which[
-		Length[range] > 5, Range[l, h, dx * 2],
-		Length[range] <= 3, Range[l, h, dx / 5],
+		Len[range] > 5, Range[l, h, dx * 2],
+		Len[range] <= 3, Range[l, h, dx / 5],
 		True, range
 	];
 	boxes = {$glf[range, 0], labels}; d = 0;

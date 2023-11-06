@@ -24,7 +24,7 @@ JoinOptions[options$1, options$2, $$] joins together the options$i to form a sin
 
 JoinOptions[opts___] := DeleteDuplicatesBy[
   Flatten @ Replace[Flatten @ {opts}, s_Symbol :> Options[s], {1}],
-  First
+  P1
 ];
 
 (**************************************************************************************************)
@@ -45,7 +45,7 @@ OptionKeys[sym_Symbol] := OptionKeys[sym] = Replace[Keys @ Options @ sym, {} :> 
 
 PrivateSpecialFunction[declareOptionableHead]
 
-SetInitialValue[$optionableHeadQ, UAssociation[Graphics -> True, Graphics3D -> True]];
+SetInitialValue[$optionableHeadQ, UAssoc[Graphics -> True, Graphics3D -> True]];
 
 declareOptionableHead[sym_Symbol] := AssociateTo[$optionableHeadQ, sym -> True];
 
@@ -80,7 +80,7 @@ DropOptions[keySpec$] is an operator form of DropOptions that can be applied to 
 
 DropOptions[obj_, {}] := obj;
 
-DropOptions[rules_List, key:(_Symbol | _String)] := DeleteCases[rules, (Rule|RuleDelayed)[key, _]];
+DropOptions[rules_List, key:(_Symbol | _Str)] := DeleteCases[rules, (Rule|RuleDelayed)[key, _]];
 
 DropOptions[rules_List, opts_List] := FilterRules[rules, Complement[Keys @ rules, opts]];
 

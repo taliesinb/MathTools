@@ -47,7 +47,7 @@ $radiusF = Case[
   e_                        := e;
 ];
 
-radDist[v_] := EuclideanDistance[$vectorF @ v, $vectorF @ {0, 0}];
+radDist[v_] := Dist[$vectorF @ v, $vectorF @ {0, 0}];
 
 
 (* we set up this dispatch so that we know (and test) whether to call
@@ -82,8 +82,8 @@ $mpcDispatch0 := $mpcDispatch0 = Dispatch @ With[{
   (h:$matrix)[m:matP, a___]               :> RuleCondition @ h[$matrixF @ m, a],
   (h:$matrices)[v:matListP, a___]         :> RuleCondition @ h[$matrixF /@ v, a],
   (h:$rules)[r_List, p_, a___]            :> RuleCondition @ h[$rulesF @ r, p /. $mpcDispatch, a],
-  Text[x_, v:vecP, y_, d:vecP, a___]      :> RuleCondition @ With[{p = $vecDelta[v, d]}, Text[x, First @ p, y, Last @ p, a]],
-  Inset[x_, v:vecP, y_, z_, d:vecP, a___] :> RuleCondition @ With[{p = $vecDelta[v, d]}, Inset[x, First @ p, y, z, Last @ p, a]],
+  Text[x_, v:vecP, y_, d:vecP, a___]      :> RuleCondition @ With[{p = $vecDelta[v, d]}, Text[x, P1 @ p, y, PN @ p, a]],
+  Inset[x_, v:vecP, y_, z_, d:vecP, a___] :> RuleCondition @ With[{p = $vecDelta[v, d]}, Inset[x, P1 @ p, y, z, PN @ p, a]],
   (h:$opvec)[f_, v:vecP, a___]            :> RuleCondition @ h[f, $vectorF @ v, a]
 }];
 
@@ -109,7 +109,7 @@ $mpbcDispatch := $mpbcDispatch = createMpbcDispatch[];
 createMpbcDispatch[] := Scope[
   rules = Normal @ $mpcDispatch0;
   nonBoxableHeads = Complement[Keys @ $graphicsHeadQ, Keys @ $primHeadToPrimBoxHead];
-  boxifyingRules = Association[$primHeadToPrimBoxHead, Thread[nonBoxableHeads :> Seq[]]];
+  boxifyingRules = Assoc[$primHeadToPrimBoxHead, Thread[nonBoxableHeads :> Seq[]]];
   rules //= ReplaceAll[boxifyingRules];
   rules //= ReplaceAll[Verbatim[Alternatives][a_] :> a];
   rules //= Select[FreeQ[Verbatim[Alternatives[]]]];

@@ -9,22 +9,22 @@ CommaSequence[args___] := CommaForm @ EllipsisSequence[args];
 PublicFunction[EllipsisSequence]
 
 toSeqF = Case[
-  f_Function                     := f;
-  f_ /; ContainsQ[f, \[FormalI]] := Construct[Function, \[FormalI], f];
+  f_Fn                     := f;
+  f_ /; ContainsQ[f, \[FormalI]] := Construct[Fn, \[FormalI], f];
   f_                             := f
 ];
 
 EllipsisSequence[f_] :=
   EllipsisSequence[f, SymbolForm["n"]];
 
-EllipsisSequence[f_, n_, k_Integer:2] := With[
+EllipsisSequence[f_, n_, k_Int:2] := With[
   {f2 = toSeqF @ f,
-   n2 = Switch[n, None, None, Automatic | Null, SymbolForm["n"], _Symbol | _String, SymbolForm @ n, _, n]},
+   n2 = Switch[n, None, None, Automatic | Null, SymbolForm["n"], _Symbol | _Str, SymbolForm @ n, _, n]},
   Sequence @@ Flatten[{f2 /@ Range[1, k], {EllipsisSymbol, If[n2 === None, Nothing, f2 @ n2]}}]
 ];
 
 EllipsisSequence[f_, n_, k_:1, "Reversed" -> True] :=
-  Apply[Sequence, Reverse @ List @ EllipsisSequence[f, n, k]]
+  Apply[Sequence, Rev @ List @ EllipsisSequence[f, n, k]]
 
 (**************************************************************************************************)
 

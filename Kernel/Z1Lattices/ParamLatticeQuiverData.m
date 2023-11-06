@@ -23,7 +23,7 @@ $ParameterizedLatticeNames = {};
 
 PrivateSpecialFunction[DefineParameterizedLatticeQuiver]
 
-DefineParameterizedLatticeQuiver[name_String, func_, params_] := (
+DefineParameterizedLatticeQuiver[name_Str, func_, params_] := (
   AppendTo[$ParameterizedLatticeNames, name];
   $ParameterizedLatticeData[name] = <|"Factory" -> func, "Parameters" -> params|>;
 );
@@ -63,9 +63,9 @@ torusNormOptions = Case[
 LatticeGraph::badtorusopts = "Height should both be integer, and width should be an integer or infinity."
 
 torusCoordinate3DOptions = Case[
-  {Infinity, h_Integer, d_} := Scope @ {
+  {Infinity, h_Int, d_} := Scope @ {
     SetAutomatic[d, 4];
-    Epilog -> If[AssociationQ @ $solid, {
+    Epilog -> If[AssocQ @ $solid, {
       EdgeForm[None], Opacity @ Lookup[$solid, "Opacity", 0.5],
       offset = Lookup[$solid, "Offset", Automatic];
       SetAutomatic[offset, 1 / Tau];
@@ -75,9 +75,9 @@ torusCoordinate3DOptions = Case[
     CoordinateTransformFunction -> ProjectionOnto[Cylinder[{{-d*2*Sqrt[3], 0, 0}, {d*2*Sqrt[3], 0, 0}}, h / Tau - (0.1/Tau)]],
     ViewOptions -> {ViewPoint -> {0.4, 1.5, 0.2}, ViewProjection -> "Orthographic"}
   };
-  {w_Integer, h_Integer, _} := Scope @ {
+  {w_Int, h_Int, _} := Scope @ {
     VertexCoordinateFunction -> TimesOperator[Tau / {w, h} / {$ws, 1}] /* TorusVector[{w * $ws + h, h} / Tau],
-    Epilog -> If[AssociationQ @ $solid, {
+    Epilog -> If[AssocQ @ $solid, {
       EdgeForm[None], Opacity @ Lookup[$solid, "Opacity", 0.5],
       FaceForm[{Glow @ GrayLevel[1.0], Specularity[1]}],
       offset = Lookup[$solid, "Offset", Automatic];
@@ -109,7 +109,7 @@ chooseTorus2DOptions[spec_] := Scope[
   {
     torusNormOptions @ spec,
     EdgeShapeFunction -> ModulusEdgeShapeFunction[offsets],
-    VertexCoordinateFunction -> Identity,
+    VertexCoordinateFunction -> Id,
     ImagePadding -> If[$doLabels, 35, 20]
   }
 ];
@@ -256,7 +256,7 @@ dihedralFactory[<|"n" -> n_, "MaxDepth" -> d_|>, userOpts_] := Scope[
 ];
 
 dihedralCoords[Infinity][{dir_, z_}] := {z, dir/2};
-dihedralCoords[n_Integer] := dihedralCoords[Reverse @ CirclePoints[n]];
+dihedralCoords[n_Int] := dihedralCoords[Rev @ CirclePoints[n]];
 dihedralCoords[points_List][{dir_, z_}] := Part[points, z + 1] * If[dir == 1, 1, 0.4];
 
 dihedralCayleyFunction[n_, t_, r_][{dir_, z_}] := {
@@ -278,8 +278,8 @@ lamplighterFactory[<|"n" -> n_, "MaxDepth" -> d_|>, userOpts_] := Scope[
 ];
 
 LamplighterCayleyFunction[LatticeVertex[lamps_, pos_]] := {
-  Labeled[LatticeVertex[lamps, Mod[pos + 1, Length[lamps], 1]], "x"],
-  Labeled[LatticeVertex[lamps, Mod[pos - 1, Length[lamps], 1]], Inverted @ "x"],
+  Labeled[LatticeVertex[lamps, Mod[pos + 1, Len[lamps], 1]], "x"],
+  Labeled[LatticeVertex[lamps, Mod[pos - 1, Len[lamps], 1]], Inverted @ "x"],
   Labeled[LatticeVertex[MapAt[1-#&, lamps, pos], pos], "f"]
 };
 

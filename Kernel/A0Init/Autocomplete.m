@@ -23,5 +23,5 @@ declareSyntaxInfo[function_Symbol, argPatterns_List] := Scope @ IfSyntaxInfo[
 ];
 
 toOptionName[sym_Symbol] := SymbolName[sym];
-toOptionName[str_String] := str;
+toOptionName[str_Str] := str;
 toOptionName[_] := Nothing;

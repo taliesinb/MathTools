@@ -31,7 +31,7 @@ FindAutomaticPadding[g_Graphics, scale_] := Scope[
   $scale = scale; $aps = 1;
   $pbag = Bag[];
   $fontSize = $fontFamily = $fontWeight = Inherited;
-  autoPad @ ReplaceAll[NCache[_, n_] :> n] @ First @ ToBoxes @ g;
+  autoPad @ ReplaceAll[NCache[_, n_] :> n] @ P1 @ ToBoxes @ g;
   StuffBag[$pbag, Transpose @ oldBounds, 1];
   points = ResolveOffsets[BagPart[$pbag, All], $scale];
   newBounds = CoordinateBounds @ points;

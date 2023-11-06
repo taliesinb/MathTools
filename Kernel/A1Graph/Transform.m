@@ -103,7 +103,7 @@ VertexSelect[graph_, f_] := Scope @ Catch[
 
   vertices = VertexList @ graph;
   $vertexAnnotations = LookupExtendedOption[graph, VertexAnnotations];
-  $vertexCoordinates := $vertexCoordinates = First @ ExtractGraphPrimitiveCoordinates[graph];
+  $vertexCoordinates := $vertexCoordinates = P1 @ ExtractGraphPrimitiveCoordinates[graph];
 
   GraphScope[graph,
     bools = toVertexResults[f] /. Indeterminate -> True;
@@ -123,21 +123,21 @@ toVertexResults = Case[
 ];
 
 toVertexData = Case[
-  "Name"                    := $VertexList;
-  "Index"                   := Range @ $VertexCount;
+  "Name"           := $VertexList;
+  "Index"          := Range @ $VertexCount;
 
   (* todo, make the distance work on regions as well *)
-  "Coordinates"             := $vertexCoordinates;
-  "Distance"                := %[{"Distance", GraphOrigin}];
-  {"Distance", v_}          := MetricDistance[$MetricGraphCache, getVertexIndex @ v];
-  key_String                := getAnnoValue[$vertexAnnotations, key];
+  "Coordinates"    := $vertexCoordinates;
+  "Distance"       := %[{"Distance", GraphOrigin}];
+  {"Distance", v_} := MetricDistance[$MetricGraphCache, getVertexIndex @ v];
+  key_Str          := getAnnoValue[$vertexAnnotations, key];
 
-  list_List                 := Map[%, list];
+  list_List        := Map[%, list];
 ];
 
 toFunc = Case[
-  p_Integer := PartOperator[p];
-  p_String := PartOperator[p];
+  p_Int := PartOperator[p];
+  p_Str := PartOperator[p];
   f_ := checkIndet @ f;
   f_ -> g_ := RightComposition[toFunc @ f, toFunc @ g]
 ];
@@ -168,7 +168,7 @@ PublicFunction[RemoveSelfLoops]
 
 RemoveSelfLoops[graph_Graph] := Graph[
   VertexList @ graph,
-  Select[EdgeList @ graph, First[#1] =!= Second[#]&],
+  Select[EdgeList @ graph, P1[#1] =!= P2[#]&],
   Options @ graph
 ];
 
@@ -203,7 +203,7 @@ PermuteVertices[graph$, perm$] applies the permutation perm$ to the %VertexList 
 
 PermuteVertices[graph_, indices_List] := Scope[
 
-  If[Length[indices] =!= VertexCount[graph] || !PermutedRangeQ[indices], ReturnFailed[]];
+  If[Len[indices] =!= VertexCount[graph] || !PermutedRangeQ[indices], ReturnFailed[]];
 
   permutor = PartOperator[indices];
 
@@ -213,10 +213,10 @@ PermuteVertices[graph_, indices_List] := Scope[
   If[ListQ[coords], options //= ReplaceOptions[VertexCoordinates -> permutor[coords]]];
 
   vertexAnnos = LookupExtendedOption[graph, VertexAnnotations];
-  If[AssociationQ[vertexAnnos], vertexAnnos //= Map[permutor]];
+  If[AssocQ[vertexAnnos], vertexAnnos //= Map[permutor]];
 
   result = Graph[permutor @ VertexList @ graph, EdgeList @ graph, Sequence @@ options];
-  If[AssociationQ[vertexAnnos], result = Annotate[result, VertexAnnotations -> vertexAnnos]];
+  If[AssocQ[vertexAnnos], result = Annotate[result, VertexAnnotations -> vertexAnnos]];
 
   result
 ];

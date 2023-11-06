@@ -3,17 +3,17 @@ $arrowheadSizePattern = Alternatives[
   $SymbolicSizePattern,
   Scaled[(_ ? NumericQ) | $SymbolicSizePattern],
   PointSize[_ ? NumericQ],
-  _Association,
+  _Assoc,
   Automatic | None
 ];
 
 $vertexAnnotationsPattern = Alternatives[
-  Association[RepeatedNull[_String -> _List]],
+  Assoc[RepeatedNull[_Str -> _List]],
   None
 ];
 
 $edgeAnnotationsPattern = Alternatives[
-  Association[RepeatedNull[_String -> _Association]],
+  Assoc[RepeatedNull[_Str -> _Assoc]],
   None
 ];
 $layoutDimensionPattern = Alternatives[
@@ -21,7 +21,7 @@ $layoutDimensionPattern = Alternatives[
 ];
 
 $graphMetricPattern = Alternatives[
-  Automatic, "Euclidean", "Chessboard", _QuadraticFormObject, _List, _Integer, _ ? MightEvaluateWhenAppliedQ
+  Automatic, "Euclidean", "Chessboard", _QuadraticFormObject, _List, _Int, _ ? MightEvaluateWhenAppliedQ
 ];
 
 $viewOptionKeysPattern = Alternatives[

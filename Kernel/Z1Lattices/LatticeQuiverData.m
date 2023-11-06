@@ -29,8 +29,8 @@ DefineLatticeQuiver::badrep = "Error defining ``: could not build representation
 
 DefineLatticeQuiver[rawFields__] := Scope[
 
-  fields = Association[rawFields];
-  If[!AssociationQ[fields] || Apply[And, KeyExistsQ[fields, $requiredLatticeQuiverFields]],
+  fields = Assoc[rawFields];
+  If[!AssocQ[fields] || Apply[And, KeyExistsQ[fields, $requiredLatticeQuiverFields]],
     ReturnFailed["missingfields", commaString @ $requiredLatticeQuiverFields]];
 
   {canonicalName, aliases} = FirstRest @ Lookup[fields, "Names"];

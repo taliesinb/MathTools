@@ -9,7 +9,7 @@ $styleDefsFileName := $styleDefsFileName = Construct[FileName, {}, $LightStylesh
 
 containsQGTemplates[expr_] := Or[
 	!FreeQ[expr, TemplateBox[_, $qgTemplateBoxP]],
-	!FreeQ[expr, s_String /; StringContainsQ[s, "StyleDefinitions"]] (* not sure what this second thing is for *)
+	!FreeQ[expr, s_Str /; StringContainsQ[s, "StyleDefinitions"]] (* not sure what this second thing is for *)
 ]
 
 (* TODO: just save these names as we populate them, rather than loading them from disk *)
@@ -109,7 +109,7 @@ CacheSymbol[$MakeImageSizeCache]
 
 MakeImageSize::fail = "Failed to obtain raster size for input with head ``.";
 MakeImageSize[expr_, returnBaseline_:False] :=
-	If[returnBaseline, Identity, TakeOperator[2]] @ iMakeImageSize[expr];
+	If[returnBaseline, Id, TakeOperator[2]] @ iMakeImageSize[expr];
 
 iMakeImageSize[expr_] := Scope @ CachedInto[
 	$MakeImageSizeCache, Hash @ expr,
@@ -199,7 +199,7 @@ VideoRasterizeList[frames_, name_:Automatic, frameRate_:30] := Scope[
 
 PrivateFunction[VideoFilePath]
 
-VideoFilePath[HoldPattern @ v_Video] := First @ Information[v, "ResourcePath"]
+VideoFilePath[HoldPattern @ v_Video] := P1 @ Information[v, "ResourcePath"]
 
 (*************************************************************************************************)
 

@@ -20,7 +20,7 @@ patchDownValuesWithInheritedBlock[
 ]
 
 Typeset`MakeBoxes[ x_List, fmt_, head_, Options] :=
-  Map[Function[{y}, Typeset`MakeBoxes[y, fmt, head, Options], HoldFirst], Unevaluated[x]]
+  Map[Fn[{y}, Typeset`MakeBoxes[y, fmt, head, Options], HoldFirst], Unevaluated[x]]
 
 (* patchDownValuesWithInheritedBlock[
   Typeset`MakeBoxes,
@@ -33,7 +33,7 @@ Typeset`MakeBoxes[ x_List, fmt_, head_, Options] :=
 Typeset`MakeBoxes[Style[System`Dump`x_, System`Dump`y___], System`Dump`fmt_, System`Dump`head_] :=
   InheritedBlock[{QuiverGeometry`$MakeBoxesStyleData},
     With[{
-      System`Dump`h = Map[Function[{System`Dump`z}, Typeset`MakeBoxes[System`Dump`z, System`Dump`fmt, System`Dump`head], HoldAllComplete], Unevaluated @ {System`Dump`y}],
+      System`Dump`h = Map[Fn[{System`Dump`z}, Typeset`MakeBoxes[System`Dump`z, System`Dump`fmt, System`Dump`head], HoldAllComplete], Unevaluated @ {System`Dump`y}],
       System`Dump`g = Typeset`MakeBoxes[System`Dump`x, System`Dump`fmt, System`Dump`head]},
         Typeset`Hold[StyleBox[System`Dump`g, System`Dump`h, StripOnInput -> False]]
     ]
@@ -42,7 +42,7 @@ Typeset`MakeBoxes[Style[System`Dump`x_, System`Dump`y___], System`Dump`fmt_, Sys
 (* we do this so nested lists localize ambient styles *)
 Typeset`MakeBoxes[ System`Dump`g_List, System`Dump`fmt_, System`Dump`head_] := InheritedBlock[
   {QuiverGeometry`$MakeBoxesStyleData},
-  Map[ Function[{System`Dump`x}, Typeset`MakeBoxes[System`Dump`x, System`Dump`fmt, System`Dump`head], HoldAllComplete], Unevaluated[System`Dump`g]]
+  Map[ Fn[{System`Dump`x}, Typeset`MakeBoxes[System`Dump`x, System`Dump`fmt, System`Dump`head], HoldAllComplete], Unevaluated[System`Dump`g]]
 ];
 
 (**************************************************************************************************)
@@ -165,7 +165,7 @@ ExpandGraphicsComplex[g_] := ReplaceAll[g,
   GraphicsComplex[c_, g2_] :>
     RuleCondition @ ReplacePrimitiveCoordinates[
       g2,
-      i_Integer :> RuleCondition[Part[c, i]]
+      i_Int :> RuleCondition[Part[c, i]]
     ]
 ];
 

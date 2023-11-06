@@ -1,6 +1,6 @@
 PublicFunction[ShapeFromString]
 
-ShapeFromString[str_String] := Scope[
+ShapeFromString[str_Str] := Scope[
   $f = 1;
   Prepend[{0,0}] @ Accumulate @ Map[
     $f * Lookup[$locs, StringTrim @ #, Print[#]]&,
@@ -10,7 +10,7 @@ ShapeFromString[str_String] := Scope[
 
 $s2 = 1/Sqrt[2];
 $s3 = Sqrt[3]/2;
-$locs = Association[
+$locs = Assoc[
   "" -> {0, 0},
   "+" :> ($f *= 2; {0,0}), "-" :> ($f /= 2; {0,0}),
   "n" -> {0, 1}, "e" -> {1, 0}, "s" -> {0, -1}, "w" -> {-1, 0},

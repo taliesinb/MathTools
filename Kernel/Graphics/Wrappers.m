@@ -11,7 +11,7 @@ LegendForm[lf_LegendForm] := lf;
 
 declareFormatting[
   LegendForm[list_List] :> Row[Map[LegendForm, list], Spacer[5]],
-  LegendForm[assoc_Association] :> Grid[
+  LegendForm[assoc_Assoc] :> Grid[
     Transpose @ KeyValueMap[{LegendForm[#2], LabelForm[#1, Bold]}&, assoc],
     Spacings -> {{0.2, {1.2}}, {{0.5}}}
   ],
@@ -66,7 +66,7 @@ ApplyEpilog[Labeled[graphics_, args__], epilog_] :=
   Labeled[ApplyEpilog[graphics, epilog], args];
 
 ApplyEpilog[graphics_Graphics, epilog_] :=
-  UpdateOptions[graphics, Epilog, Function[If[#1 === {}, epilog, {epilog, #1}]]];
+  UpdateOptions[graphics, Epilog, Fn[If[#1 === {}, epilog, {epilog, #1}]]];
 
 ApplyEpilog[Graphics3D[primitives_, opts___], epilog_] :=
   Graphics3D[{primitives, epilog}, opts];
@@ -83,7 +83,7 @@ ApplyProlog[Labeled[graphics_, args__], prolog_] :=
   Labeled[ApplyProlog[graphics, prolog], args];
 
 ApplyProlog[graphics_Graphics, prolog_] :=
-  UpdateOptions[graphics, Prolog, Function[If[#1 === {}, prolog, {#1, prolog}]]];
+  UpdateOptions[graphics, Prolog, Fn[If[#1 === {}, prolog, {#1, prolog}]]];
 
 ApplyProlog[Graphics3D[primitives_, opts___], prolog_] :=
   Graphics3D[{prolog, primitives}, opts];

@@ -107,14 +107,14 @@ With[{mdn := GeneralUtilities`Debugging`PackagePrivate`makeDefinitionNotebook},
 
 (**************************************************************************************************)
 
-GeneralUtilities`Control`PackagePrivate`upperCaseString[s_String] /; StringStartsQ[s, "$"] :=
+GeneralUtilities`Control`PackagePrivate`upperCaseString[s_Str] /; StringStartsQ[s, "$"] :=
   GeneralUtilities`Control`PackagePrivate`upperCaseString[StringDrop[s, 1]];
 
 (**************************************************************************************************)
 
 Module[{desugaringRules = Normal @ GeneralUtilities`Control`PackagePrivate`$DesugaringRules},
   If[FreeQ[desugaringRules, rewriteDestructuringFunction],
-    AppendTo[desugaringRules, HoldPattern[GeneralUtilities`Control`PackagePrivate`e:Function[{___, _List, ___}, _]] :>
+    AppendTo[desugaringRules, HoldPattern[GeneralUtilities`Control`PackagePrivate`e:Fn[{___, _List, ___}, _]] :>
       RuleCondition[rewriteDestructuringFunction[GeneralUtilities`Control`PackagePrivate`e]]];
     GeneralUtilities`Control`PackagePrivate`$DesugaringRules = Dispatch @ desugaringRules;
   ];
@@ -122,9 +122,9 @@ Module[{desugaringRules = Normal @ GeneralUtilities`Control`PackagePrivate`$Desu
 
 SetHoldAllComplete[rewriteDestructuringFunction, procDestructArg];
 
-rewriteDestructuringFunction[Function[args_, body_]] := Block[
+rewriteDestructuringFunction[Fn[args_, body_]] := Block[
   {$destructAliases = {}, $i = 1},
-  ToQuoted[Function,
+  ToQuoted[Fn,
     Map[procDestructArg, Unevaluated @ args],
     Quoted[body] /. Flatten[$destructAliases]
   ]
@@ -139,10 +139,10 @@ procDestructArg[argSpec_] := With[
   If[symbolPos === {},
     Symbol["QuiverGeometry`Private`$$" <> IntegerString[$i++]]
   ,
-    With[{parentSym = Symbol[Extract[Unevaluated @ argSpec, First @ symbolPos, HoldSymbolName] <> "$$"]},
+    With[{parentSym = Symbol[Extract[Unevaluated @ argSpec, P1 @ symbolPos, HoldSymbolName] <> "$$"]},
       AppendTo[$destructAliases, Map[
-        pos |-> If[Length[pos] === 1,
-          With[{p1 = First @ pos}, Extract[Unevaluated @ argSpec, pos, HoldPattern] :> Part[parentSym, p1]],
+        pos |-> If[Len[pos] === 1,
+          With[{p1 = P1 @ pos}, Extract[Unevaluated @ argSpec, pos, HoldPattern] :> Part[parentSym, p1]],
           Extract[Unevaluated @ argSpec, pos, HoldPattern] :> Extract[parentSym, pos]
         ],
         symbolPos
@@ -272,7 +272,7 @@ lhsEchoStr[lhs_] := Block[{res},
   res = ToPrettifiedString[Unevaluated @ lhs, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3, FullSymbolContext -> False];
   If[StringMatchQ[res, $word ~~ "[" ~~ ___ ~~ "]"],
     {head, rest} = StringSplit[res, "[", 2];
-    If[StringContainsQ[head, "`"], head = Last @ StringSplit[head, "`"]];
+    If[StringContainsQ[head, "`"], head = PN @ StringSplit[head, "`"]];
     RowBox[{StyleBox[head, Bold], "[", StringDrop[rest, -1], "]"}]
   ,
     res
@@ -341,7 +341,7 @@ EchoCellPrint[cells2_] := Module[{cells},
 
 PublicSpecialFunction[CreateDebuggingWindow]
 
-CreateDebuggingWindow[cells_, w:_Integer:1000, opts___Rule] := CreateDocument[cells,
+CreateDebuggingWindow[cells_, w:_Int:1000, opts___Rule] := CreateDocument[cells,
   Saveable -> False, WindowTitle -> "Debugging",
   WindowSize -> {w, Scaled[1]},
   WindowMargins -> {{Automatic, 50}, {Automatic, Automatic}},
@@ -453,14 +453,14 @@ Case[rules$$, {alias$1, alias$2, $$}] applies temporary aliases to the rules$ be
 
 $numNames = <|1 -> "first", 2 -> "second", 3 -> "third", 4 -> "fourth"|>;
 
-defineCheckArgMacro[checkMacro_Symbol, checker_, msgName_String] := DefineMacro[coerceMacro,
+defineCheckArgMacro[checkMacro_Symbol, checker_, msgName_Str] := DefineMacro[coerceMacro,
   coerceMacro[n_] := With[
     {nthArg = Part[$LHSPatternSymbols, n], numStr = $numNames[n]},
     Quoted @ Replace[coercer[nthArg], $Failed :> ReturnFailed[MessageName[$LHSHead, msgName], numStr]]
   ]
 ];
 
-defineCoerceArgMacro[coerceMacro_Symbol, coercer_, msgName_String] := DefineMacro[coerceMacro,
+defineCoerceArgMacro[coerceMacro_Symbol, coercer_, msgName_Str] := DefineMacro[coerceMacro,
   coerceMacro[n_] := With[
     {nthArg = Part[$LHSPatternSymbols, n], numStr = $numNames[n]},
     Quoted @ Replace[coercer[nthArg], $Failed :> ReturnFailed[MessageName[$LHSHead, msgName], numStr]]
@@ -518,7 +518,7 @@ DefineMacro[PackAssociation, PackAssociation[syms__Symbol] := mPackAssociation[s
 
 SetHoldAllComplete[mPackAssociation, packAssocRule];
 
-mPackAssociation[sym__] := ToQuoted[Association, Seq @@ MapUnevaluated[packAssocRule, {sym}]];
+mPackAssociation[sym__] := ToQuoted[Assoc, Seq @@ MapUnevaluated[packAssocRule, {sym}]];
 packAssocRule[s_] := ToTitleCase[HoldSymbolName[s]] -> Quoted[s];
 
 (**************************************************************************************************)
@@ -532,25 +532,25 @@ DefineMacro[UnpackTuple, UnpackTuple[val_, syms__Symbol] := mUnpackTuple[val, sy
 SetHoldAllComplete[mUnpackTuple];
 mUnpackTuple[val_, s1_Symbol, s2_Symbol] :=
   Quoted @ If[ListQ[val],
-    If[Length[val] != 2, ThrowMessage["badtuple", val, 2]]; {s1, s2} = val,
+    If[Len[val] != 2, ThrowMessage["badtuple", val, 2]]; {s1, s2} = val,
     s1 = s2 = val
   ];
 
 mUnpackTuple[val_, s1_Symbol, s2_Symbol, s3_Symbol] :=
   Quoted @ If[ListQ[val],
-    If[Length[val] != 3, ThrowMessage["badtuple", val, 3]]; {s1, s2, s3} = val,
+    If[Len[val] != 3, ThrowMessage["badtuple", val, 3]]; {s1, s2, s3} = val,
     s1 = s2 = s3 = val
   ];
 
 mUnpackTuple[val_, s1_Symbol, s2_Symbol, s3_Symbol, s4_Symbol] :=
   Quoted @ If[ListQ[val],
-    If[Length[val] != 4, ThrowMessage["badtuple", val, 4]]; {s1, s2, s3, s4} = val,
+    If[Len[val] != 4, ThrowMessage["badtuple", val, 4]]; {s1, s2, s3, s4} = val,
     s1 = s2 = s3 = s4 = val
   ];
 
 mUnpackTuple[val_, s1_Symbol, s2_Symbol, s3_Symbol, s4_Symbol, s5_Symbol] :=
   Quoted @ If[ListQ[val],
-    If[Length[val] != 5, ThrowMessage["badtuple", val, 5]]; {s1, s2, s3, s4, s5} = val,
+    If[Len[val] != 5, ThrowMessage["badtuple", val, 5]]; {s1, s2, s3, s4, s5} = val,
     s1 = s2 = s3 = s4 = s5 = val
   ];
 
@@ -590,11 +590,11 @@ mUnpackAssociationSymbols[chain_Rule, syms_] :=
 SetHoldAllComplete[symbolsToCapitalizedStrings];
 
 symbolsToCapitalizedStrings[syms_] := Map[
-  Function[sym, capitalizeFirstLetter @ HoldSymbolName @ sym, HoldAllComplete],
+  Fn[sym, capitalizeFirstLetter @ HoldSymbolName @ sym, HoldAllComplete],
   Unevaluated @ syms
 ];
 
-capitalizeFirstLetter[str_String] := capitalizeFirstLetter[str] =
+capitalizeFirstLetter[str_Str] := capitalizeFirstLetter[str] =
   If[StringStartsQ[str, "$"], capitalizeFirstLetter @ StringDrop[str, 1],
     ToUpperCase[StringTake[str, 1]] <> StringDrop[str, 1]];
 
@@ -732,14 +732,14 @@ CatchMessage[body_] := Quoted[Catch[body, ThrownMessage[_], ThrownMessageHandler
 CatchMessage[head_, body_] := Quoted[Catch[body, ThrownMessage[_], ThrownMessageHandler[head]]]
 ];
 
-ThrownMessageHandler[msgHead_Symbol][{args___}, ThrownMessage[msgName_String]] :=
+ThrownMessageHandler[msgHead_Symbol][{args___}, ThrownMessage[msgName_Str]] :=
   (Message[MessageName[msgHead, msgName], args]; $Failed);
 
 (**************************************************************************************************)
 
 PublicSpecialFunction[ThrowMessage]
 
-ThrowMessage[msgName_String, msgArgs___] :=
+ThrowMessage[msgName_Str, msgArgs___] :=
   Throw[{msgArgs}, ThrownMessage[msgName]];
 
 (**************************************************************************************************)
@@ -772,7 +772,7 @@ SetHoldAll[SetMissing];
 
 PublicMutatingFunction[SetScaledFactor]
 
-DefineLiteralMacro[SetScaledFactor, SetScaledFactor[lhs_, scale_] := If[MatchQ[lhs, Scaled[_ ? NumericQ]], lhs //= First /* N; lhs *= scale]];
+DefineLiteralMacro[SetScaledFactor, SetScaledFactor[lhs_, scale_] := If[MatchQ[lhs, Scaled[_ ? NumericQ]], lhs //= P1 /* N; lhs *= scale]];
 
 (**************************************************************************************************)
 
@@ -824,7 +824,7 @@ OnFailed[e_, _, s_] := s;
 PrivateSpecialFunction[declareStringPattern, declareStringLetterPattern, spRecurse, spBlob]
 
 declareStringLetterPattern = Case[
-  sym_Symbol -> str_String := %[sym -> {"[" <> str <> "]", str}];
+  sym_Symbol -> str_Str := %[sym -> {"[" <> str <> "]", str}];
   sym_Symbol -> {outer_, inner_} := Module[{},
     StringPattern`Dump`SingleCharInGroupRules //= addOrUpdateRule[sym -> inner];
     StringPattern`Dump`SingleCharacterQ[Verbatim[sym]] := True;
@@ -835,7 +835,7 @@ declareStringLetterPattern = Case[
 ];
 
 $spDeclarationRules = {
-  s_String /; StringContainsQ[s, "□"] :> RuleCondition @ StringReplace[s, "□" :> "[^\n]+?"],
+  s_Str /; StringContainsQ[s, "□"] :> RuleCondition @ StringReplace[s, "□" :> "[^\n]+?"],
   spRecurse[s_] :> ReplaceRepeated[s, StringPattern`Dump`rules],
   spBlob -> StringPattern`Dump`SP
 }
@@ -865,7 +865,7 @@ addOrUpdateRule[rule_][list_] := addOrUpdateRule[list, rule];
 
 PublicFunction[PathJoin]
 
-PathJoin[args___String] := FileNameJoin[{args}];
+PathJoin[args___Str] := FileNameJoin[{args}];
 
 _PathJoin := BadArguments[];
 
@@ -879,8 +879,8 @@ $TemporaryQGDirectory := $TemporaryQGDirectory = EnsureDirectory[PathJoin[$Tempo
 
 PublicFunction[TemporaryPath]
 
-TemporaryPath[file_String] := PathJoin[$TemporaryQGDirectory, file];
-TemporaryPath[args__String, file_String] := PathJoin[EnsureDirectory @ PathJoin[$TemporaryQGDirectory, args], file];
+TemporaryPath[file_Str] := PathJoin[$TemporaryQGDirectory, file];
+TemporaryPath[args__Str, file_Str] := PathJoin[EnsureDirectory @ PathJoin[$TemporaryQGDirectory, args], file];
 
 (**************************************************************************************************)
 
@@ -888,7 +888,7 @@ PublicSpecialFunction[MakeTemporaryFile]
 
 SetInitialValue[$tempFileCounter, 0];
 
-MakeTemporaryFile[args___String, name_String] := Scope[
+MakeTemporaryFile[args___Str, name_Str] := Scope[
   fileName = StringReplace[name, "#" :> StringJoin[IntegerString[$ProcessID], "_", IntegerString[$tempFileCounter++, 10, 5]]];
   TemporaryPath[args, fileName]
 ];
@@ -935,7 +935,7 @@ PrivateFunction[LengthEqualOrMessage]
 
 SetHoldFirst[LengthEqualOrMessage];
 LengthEqualOrMessage[msg_MessageName, list1_, list2_] := With[
-  {l1 = Length[list1], l2 = Length[list2]},
+  {l1 = Len[list1], l2 = Len[list2]},
   If[l1 =!= l2, Message[msg, l1, l2]; False, True]
 ];
 
@@ -952,7 +952,7 @@ WithInternet[body_] := Block[{$AllowInternet = True}, body];
 PublicFunction[VectorListableQ]
 
 VectorListableQ[sym_Symbol] := MemberQ[Attributes @ sym, Listable];
-VectorListableQ[HoldPattern[Function[___, Listable | {___, Listable, ___}]]] := True;
+VectorListableQ[HoldPattern[Fn[___, Listable | {___, Listable, ___}]]] := True;
 VectorListableQ[_] := False;
 
 PrivateMutatingFunction[setVectorListableOperator]

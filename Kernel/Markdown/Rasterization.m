@@ -15,7 +15,7 @@ cellToRasterMarkdown[cell_] := Scope[
 
   rasterizationResult = $rasterizationFunction[cell, rasterizationOptions];
 
-  If[!AssociationQ[rasterizationResult],
+  If[!AssocQ[rasterizationResult],
     Message[ToMarkdownString::badrastres];
     Return["#### Invalid rasterization result"];
   ];
@@ -47,7 +47,7 @@ cellToRasterMarkdown[cell_] := Scope[
 
 PrivateFunction[linearSyntaxRasterizationFunction]
 
-linearSyntaxRasterizationFunction[cell_, ___] := Association[
+linearSyntaxRasterizationFunction[cell_, ___] := Assoc[
   "type" -> "String",
   "linearSyntax" -> ToString[RawBoxes @ Part[cell, 1, 1], StandardForm]
 ];
@@ -65,13 +65,13 @@ base64RasterizationFunction[type_, retina_][e_] := Scope[
   CachedInto[$Base64RasterizationCache, Hash[{e, type, retina}],
 
     If[type === "PNG",
-      If[Head[e] === Cell, e = Append[e, Antialiasing -> False], e = Style[e, Antialiasing -> False]];
+      If[H[e] === Cell, e = Append[e, Antialiasing -> False], e = Style[e, Antialiasing -> False]];
     ];
 
     img = Rasterize[e, ImageResolution -> If[retina, 144, 72]];
-    width = Round[First[ImageDimensions @ img] / If[retina, 2, 1]];
+    width = Round[P1[ImageDimensions @ img] / If[retina, 2, 1]];
     encoded = ExportBase64[img, type, CompressionLevel -> If[type === "PNG", 1.0, 0.2]];
-    Association[
+    Assoc[
       "type" -> "String",
       "width" -> width,
       "format" -> ToLowerCase[type],
@@ -84,7 +84,7 @@ base64RasterizationFunction[type_, retina_][e_] := Scope[
 
 PrivateFunction[ImportBase64, ExportBase64]
 
-ImportBase64[str_String, args___] := ImportString[FromCharacterCode @ FromBase64Digits @ str, args];
+ImportBase64[str_Str, args___] := ImportString[FromCharacterCode @ FromBase64Digits @ str, args];
 ExportBase64[img_Image, args___] := Base64String @ ToCharacterCode @ ExportString[img, args, IncludeMetaInformation -> False];
 
 (**************************************************************************************************)
@@ -111,7 +111,7 @@ uncachedMakeImage[obj_] := Block[{$EnableCaching = False}, MakeImage @ obj];
 
 (**************************************************************************************************)
 
-$rasterMetadataCache = UAssociation[];
+$rasterMetadataCache = UAssoc[];
 
 cachedGenericRasterize[obj_, rasterizeFn_, exportOpts_] := Scope[
 
@@ -124,7 +124,7 @@ cachedGenericRasterize[obj_, rasterizeFn_, exportOpts_] := Scope[
   (* did we already export this result in this session? *)
   fileExt //= ToLowerCase;
   objHash = Base36Hash @ obj;
-  exportOpts = Sort @ DeleteDuplicatesBy[exportOpts, First];
+  exportOpts = Sort @ DeleteDuplicatesBy[exportOpts, P1];
   optsHash = If[exportOpts === {}, None, Base36Hash @ exportOpts];
   optsHashStr = If[optsHash =!= None, "_" <> optsHash, ""];
 
@@ -181,12 +181,12 @@ cachedGenericRasterize[obj_, rasterizeFn_, exportOpts_] := Scope[
   (* create and return markdown *)
   Label[skipRasterization];
 
-  width = Ceiling @ First[imageDims * 0.5];
+  width = Ceiling @ P1[imageDims * 0.5];
   url = toEmbedPath[$rasterizationURL, imageFileName, imagePath];
 
   whenWet[$rasterMetadataCache[cacheKey] ^= {imageDims, imageFileName, imagePath}];
 
-  Association[
+  Assoc[
     "type" -> "File",
     "path" -> imagePath,
     "filename" -> imageFileName,

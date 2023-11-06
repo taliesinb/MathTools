@@ -113,7 +113,7 @@ DefineLiteralMacro[setupGraphVertexData,
   )
 ];
 
-getPart[list_List, i_Integer] /; 1 <= i <= Length[list] := Part[list, i];
+getPart[list_List, i_Int] /; 1 <= i <= Len[list] := Part[list, i];
 getPart[_, _] := None;
 
 getVertexElem[All, data_] := data;

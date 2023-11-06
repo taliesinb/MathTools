@@ -47,7 +47,7 @@ DirectedUniHypergraphLabeledReplaceList[hyperedges_List, rules_List] :=
   Catenate @ Map[DirectedUniHypergraphLabeledReplaceList[hyperedges, #]&, rules];
 
 DirectedUniHypergraphLabeledReplaceList[hyperedges_List, rule_ | {rule_}] := Scope[
-  pos = SubsetPosition[hyperedges, First @ rule];
+  pos = SubsetPosition[hyperedges, P1 @ rule];
   removeDupUniH[hyperedges, applyLabeledDUHRewriteChecked[hyperedges, #, rule]& /@ pos]
 ];
 
@@ -70,7 +70,7 @@ DirectedUniHypergraphReplaceList[hyperedges_List, rules_List] :=
   Catenate @ Map[DirectedUniHypergraphReplaceList[hyperedges, #]&, rules];
 
 DirectedUniHypergraphReplaceList[hyperedges_List, rule_ | {rule_}] := Scope[
-  pos = SubsetPosition[hyperedges, First @ rule];
+  pos = SubsetPosition[hyperedges, P1 @ rule];
   removeDupUniH[hyperedges, applyDUHRewrite[hyperedges, #, rule]& /@ pos]
 ];
 
@@ -95,7 +95,7 @@ DirectedHypergraphLabeledReplaceList[hyperedges_List, rules_List] :=
   Catenate @ Map[DirectedHypergraphReplaceList[hyperedges, #]&, rules];
 
 DirectedHypergraphLabeledReplaceList[hyperedges_List, rule_ | {rule_}] := Scope[
-  pos = SubsetPosition[hyperedges, First @ rule];
+  pos = SubsetPosition[hyperedges, P1 @ rule];
   applyLabeledDHRewrite[hyperedges, #, rule]& /@ pos
 ];
 
@@ -118,7 +118,7 @@ DirectedHypergraphReplaceList[hyperedges_List, rules_List] :=
   Catenate @ Map[DirectedHypergraphReplaceList[hyperedges, #]&, rules];
 
 DirectedHypergraphReplaceList[hyperedges_List, rule_ | {rule_}] := Scope[
-  pos = SubsetPosition[hyperedges, First @ rule];
+  pos = SubsetPosition[hyperedges, P1 @ rule];
   applyDHRewrite[hyperedges, #, rule]& /@ pos
 ];
 

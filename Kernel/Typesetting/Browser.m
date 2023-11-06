@@ -7,7 +7,7 @@ Options[ListBrowser] = {
 MakeBoxes[ListBrowser[list_List, opts___Rule], form_] := listBrowserBoxes[list, opts];
 
 listBrowserBoxes[list_List, opts:OptionsPattern[]] := With[
-  {n$$ = Length @ list},
+  {n$$ = Len @ list},
   {blue = $LightBlue, gray = GrayLevel[0.95], purple = $LightPurple},
   {clickFn = OptionValue[ListBrowser, {opts}, ClickFunction]},
   {itemBox = FrameBox[
@@ -45,7 +45,7 @@ labeledFlipViewBoxes[list_List, opts___] := labeledFlipViewBoxes[MapIndex1[#2 ->
 
 LabeledFlipView::badLabelPos = "LabelPosition -> `` should be either Top or Left."
 labeledFlipViewBoxes[items:{___Rule}, opts___] := With[
-  {range = Range @ Length @ items, keys = ToBoxes /@ Keys @ items, vals = ToBoxes /@ Values @ items},
+  {range = Range @ Len @ items, keys = ToBoxes /@ Keys @ items, vals = ToBoxes /@ Values @ items},
   {keys$$ = RuleThread[range, keys], vals$$ = RuleThread[range, vals]},
   {isize = Lookup[{opts}, ImageSize, Automatic], labelPos = Lookup[{opts}, LabelPosition, Top]},
   {togglerBox = StyleBox[TogglerBox[Dynamic[i$$], keys$$, ImageSize -> All], Bold, FontFamily -> "Fira", FontSize -> 10]},
@@ -73,7 +73,7 @@ Options[PickBrowser] = Options[ListBrowser];
 MakeBoxes[PickBrowser[list_List], form_] := pickBrowserBoxes[list];
 
 pickBrowserBoxes[list_List, opts:OptionsPattern[]] := With[
-  {n$$ = Length @ list},
+  {n$$ = Len @ list},
   {blue = $LightBlue, gray = GrayLevel[0.95], purple = $LightPurple},
   {clickFn = OptionValue[PickBrowser, {opts}, ClickFunction]},
   {itemBox = FrameBox[
@@ -98,7 +98,7 @@ pickBrowserBoxes[list_List, opts:OptionsPattern[]] := With[
   pickedButtonRowBox = makeBrowseArrowBoxes[
     {"Green", "Green"},
     i$$ = First[selected$$, i$$], i$$ = Replace[Max @ Select[selected$$, LessThan @ i$$], -Infinity -> i$$],
-    fractionBox[IndexOf[selected$$, i$$, "?"], Length @ selected$$], None,
+    fractionBox[IndexOf[selected$$, i$$, "?"], Len @ selected$$], None,
     i$$ = Replace[Min @ Select[selected$$, GreaterThan @ i$$], Infinity -> i$$], i$$ = Last[selected$$, i$$],
     StyledClickBox[
       "\[DownArrow]",
@@ -128,7 +128,7 @@ MappedBrowser[f$, list$] maps f$ over list$, showing the results in an interacti
 MakeBoxes[MappedBrowser[f_, list_List], form_] := mappedBrowserBoxes[f, list];
 
 mappedBrowserBoxes[f_, list_List] := With[
-  {n$$ = Length @ list},
+  {n$$ = Len @ list},
   {blue = $LightBlue, gray = GrayLevel[0.95], purple = $LightPurple},
   {itemBox = FrameBox[
     DynamicBox[ToBoxes @ Set[r$$, f @ Part[list, i$$]], TrackedSymbols :> {i$$}],

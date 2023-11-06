@@ -113,7 +113,7 @@ PublicFunction[MeshGrid]
 PublicOption[HighlightItems, HighlightOffset, ZDimension, TickSpacing]
 
 Options[MeshGrid] = JoinOptions[
-  ItemFunction -> Identity,
+  ItemFunction -> Id,
   ItemSize -> 1,
   ItemStyle -> None,
   TicksStyle -> Automatic,
@@ -139,10 +139,10 @@ MeshGrid[{xmin2_, ymin2_}, array_ ? MatrixQ, opts:OptionsPattern[]] := Scope[
   {nrows, ncols} = Take[Dimensions @ array, 2];
   UnpackOptions[background, itemSize, itemFunction, itemStyle, highlightItems, highlightOffset, axesLabel, labelStyle];
   meshItems = MeshLines[{xmin, ymin}, {ncols, nrows}, FilterOptions @ opts];
-  If[itemFunction =!= Identity, array = Map[itemFunction, array, {2}]];
+  If[itemFunction =!= Id, array = Map[itemFunction, array, {2}]];
   {cellw, cellh} = {1, 1} * itemSize;
   xcoords = xmin + cellw * (Range[ncols] - 0.5);          xmax = Max[xcoords] + cellw/2;
-  ycoords = ymin + cellh * (Reverse[Range[nrows]] - 0.5); ymax = Max[ycoords] + cellh/2;
+  ycoords = ymin + cellh * (Rev[Range[nrows]] - 0.5); ymax = Max[ycoords] + cellh/2;
   If[MatrixQ[array, ContainsQ[_Rectangle]],
     arrayItems = MapIndexed[
       {a, {i, j}} |-> Translate[a, {Part[xcoords, j], Part[ycoords, i]}],
@@ -201,10 +201,10 @@ toHighlightItem = Case[
   ];
 ];
 
-fromSpan[n_, i_Integer]              := {1,1} * fromInt[n, i];
+fromSpan[n_, i_Int]              := {1,1} * fromInt[n, i];
 fromSpan[n_, All]                    := {1, n};
 fromSpan[n_, i_ ;; All]              := Append[fromSpan[n, i], n];
 fromSpan[n_, All ;; i]               := Prepend[fromSpan[n, i], 1];
-fromSpan[n_, i_Integer ;; j_Integer] := {fromInt[n, i], fromInt[n, j]};
+fromSpan[n_, i_Int ;; j_Int] := {fromInt[n, i], fromInt[n, j]};
 
 fromInt[n_, i_] := Which[i > n, n, i == 0, 1, i < 0, i + n + 1, True, i];

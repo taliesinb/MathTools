@@ -1,7 +1,7 @@
 PublicFunction[EquivalenceClassIndices]
 
 EquivalenceClassIndices[list_, fn_] :=
-  Gather[Range @ Length @ list, fn[Part[list, #1], Part[list, #2]]&];
+  Gather[Range @ Len @ list, fn[Part[list, #1], Part[list, #2]]&];
 
 (**************************************************************************************************)
   
@@ -10,7 +10,7 @@ PublicFunction[EquivalenceClassLabels]
 EquivalenceClassLabels[list_] := Scope[
   n = Max[list];
   arr = Repeat[0, n];
-  ScanIndexed[Set[Part[arr, #1], First[#2]]&, list];
+  ScanIndexed[Set[Part[arr, #1], P1[#2]]&, list];
   arr
 ]
 
@@ -47,7 +47,7 @@ ArrayLabeling[array_, level_:1] := Scope[
   assoc = <||>;
   List[
     Map[
-      e |-> Lookup[assoc, Key @ e, assoc[e] = Length[assoc] + 1],
+      e |-> Lookup[assoc, Key @ e, assoc[e] = Len[assoc] + 1],
       array, {level}
     ],
     assoc
@@ -61,7 +61,7 @@ Unprotect[PositionIndex];
 PositionIndex[list_, 2] := Scope[
   assoc = <||>;
   ScanIndexed[
-    {e, part} |-> KeyAppendTo[assoc, e, First @ part],
+    {e, part} |-> KeyAppendTo[assoc, e, P1 @ part],
     list, {2}
   ];
   assoc
@@ -89,8 +89,8 @@ ExtractIndices[array_, indices_List] := Map[Part[array, #]&, indices, {-1}]
 
 PublicFunction[InvertIndex]
 
-InvertIndex[assoc_Association] :=
-  Merge[ReverseRules @ FlattenIndex @ assoc, Identity];
+InvertIndex[assoc_Assoc] :=
+  Merge[ReverseRules @ FlattenIndex @ assoc, Id];
 
 (**************************************************************************************************)
 
@@ -109,7 +109,7 @@ FirstIndex[{e$1, e$2, $$}, patt$] gives the first i$ for which e$i matches patt$
 
 SetAttributes[FirstIndex, HoldRest];
 FirstIndex[list_, pattern_, default_:None] :=
-  First @ FirstPosition[list, pattern, {default}, 1, Heads -> False]
+  P1 @ FirstPosition[list, pattern, {default}, 1, Heads -> False]
 
 (**************************************************************************************************)
 
@@ -123,6 +123,6 @@ IndexIn[index_][item_] := IndexIn[item, index];
 
 PublicFunction[DuplicateIndices, DuplicateIndicesBy]
 
-DuplicateIndices[list_List | list_Association] := Select[Length[#] > 1&] @ Values @ PositionIndex @ list;
+DuplicateIndices[list_List | list_Assoc] := Select[Len[#] > 1&] @ Values @ PositionIndex @ list;
 
-DuplicateIndicesBy[list_List | list_Association, fn_] := DuplicateIndices @ Map[fn, list];
+DuplicateIndicesBy[list_List | list_Assoc, fn_] := DuplicateIndices @ Map[fn, list];

@@ -240,7 +240,7 @@ barParenBox[b_] := b;
 *)
 divBox[a_, b_] /; !$normalInversion = prodBox[maybeParenBox @ a, barInvBox @ barParenBox @ b];
 divBox[a_, b_] := shortDiv @ rowBox[maybeParenBox @ a, "/", maybeParenBox @ b];
-shortDiv[RowBox[s:{_String, "/", _String}]] := StyleBox[StringJoin[s], AutoSpacing -> False];
+shortDiv[RowBox[s:{_Str, "/", _Str}]] := StyleBox[StringJoin[s], AutoSpacing -> False];
 shortDiv[e_] := e;
 
 (**************************************************************************************************)
@@ -307,7 +307,7 @@ numBox = MatchValues[
 
   0|0. := $zero;
   1|1. := $one;
-  n_Integer := intBox[n];
+  n_Int := intBox[n];
   Times[-1, e_] := negBox @ numBox @ e;
 
   r_Rational := ratBox[r];
@@ -321,7 +321,7 @@ numBox = MatchValues[
 
   (* purpose here is to simplify reduced sqrts *)
   Times[r_Rational, Sqrt[b_]] := maybeNegBox[r, sqrtBox @ numBox[r^2 * b]];
-  Times[i_Integer, Sqrt[b_]] := maybeNegBox[i, sqrtBox @ numBox[i^2 * b]];
+  Times[i_Int, Sqrt[b_]] := maybeNegBox[i, sqrtBox @ numBox[i^2 * b]];
 
   (* purpose here is to put the complex number later *)
   Times[Complex[0, r_Rational], b_] := prodBox[numBox[r * b], $imag];
@@ -353,7 +353,7 @@ $sqrtSupBox = StyleBox[$minus, FontWeight -> "Bold"];
 PrivateFunction[simplifyNumBoxes]
 
 simplifyNumBoxes[boxes_] := ReplaceRepeated[boxes, {
-  RowBox[s:{__String}] :> RuleCondition @ StringJoin[s],
+  RowBox[s:{__Str}] :> RuleCondition @ StringJoin[s],
   overbarBox[leftbarBox[e_]] :> overleftbarBox[e], leftbarBox[overbarBox[e_]] :> overleftbarBox[e],
   underbarBox[leftbarBox[e_]] :> underleftbarBox[e], leftbarBox[underbarBox[e_]] :> underleftbarBox[e],
   overbarBox[b_SuperscriptBox] :> underbarBox[b],

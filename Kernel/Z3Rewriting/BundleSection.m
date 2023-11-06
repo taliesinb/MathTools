@@ -26,7 +26,7 @@ constructBundleSectionSystem[name_, graph_, fiberSymmetries_] := Scope[
   props = <|"BundleGraph" -> graph, "FiberSymmetries" -> fiberSymmetries|>;
   SetAll[fiberSymmetries, GraphAutomorphismGroup @ BundleToFiberGraph @ graph];
   canonicalizationFunction = If[fiberSymmetries === None, None,
-    If[Head[fiberSymmetries] =!= PermutationGroup, ThrowMessage["fibersym", fiberSymmetries]];
+    If[H[fiberSymmetries] =!= PermutationGroup, ThrowMessage["fibersym", fiberSymmetries]];
     canonicalizationFunction = SectionOrbitRepresentative[fiberSymmetries]
   ];
   constructRewritingSystem[name, Null, "CustomProperties" -> props, CanonicalizationFunction -> canonicalizationFunction]
@@ -129,7 +129,7 @@ makeLabeledRewrittenSection[sec_, hash_, v_][v2:BundleVertex[b_, f_]] :=
       ReplacePart[sec, Key[b] -> f],
       hash
     ],
-    SectionRewriteCardinal[b, Last @ cardinalIndex[DirectedEdge[v, v2]]]
+    SectionRewriteCardinal[b, PN @ cardinalIndex[DirectedEdge[v, v2]]]
   ];
 
 makeUnlabeledRewrittenSection[sec_, hash_, v_][v2:BundleVertex[b_, f_]] :=

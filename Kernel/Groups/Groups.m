@@ -7,11 +7,11 @@ makeGenerators[group_] :=
 makeIdentityRepresentation[group_] := None;
 
 addLabels = Case[
-  assoc_Association := assoc;
+  assoc_Assoc := assoc;
   list_List := RangeAssociation @ list;
 ];
 
-$posIntOrInfinity = (_Integer ? Positive) | Infinity;
+$posIntOrInfinity = (_Int ? Positive) | Infinity;
 
 $IntZ = TemplateBox[{}, "Integers"] // RawBoxes;
 
@@ -73,7 +73,7 @@ AbelianGroupQ[group$] returns True if group$ is an Abelian group.
 "
 
 AbelianGroupQ[group_] := MatchQ[group,
-  CyclicGroup[$posIntOrInfinity] | AbelianGroup[{Repeated[$posIntOrInfinity]}] | InfiniteAbelianGroup[_Integer] |
+  CyclicGroup[$posIntOrInfinity] | AbelianGroup[{Repeated[$posIntOrInfinity]}] | InfiniteAbelianGroup[_Int] |
   GroupDirectProduct[list_List /; VectorQ[list, AbelianGroupQ]]
 ];
 
@@ -106,7 +106,7 @@ declareGroup[
   }
 ]
 
-makeAbelianGeneratorBlocks[n_Integer, rest___] :=
+makeAbelianGeneratorBlocks[n_Int, rest___] :=
   Prepend[makeAbelianGeneratorBlocks[rest], makeCylicGenerators[n]];
 
 makeAbelianGeneratorBlocks[infs:Longest[Infinity..], rest___] :=
@@ -126,10 +126,10 @@ declareGroup[
   }
 ];
 
-makeAbelianSymbol[n_Integer] := Subscript[$IntZ, n];
+makeAbelianSymbol[n_Int] := Subscript[$IntZ, n];
 makeAbelianSymbol[Infinity] := $IntZ;
 
-makeCylicGenerators[n_Integer] := <|1 -> {{UnitRoot[n]}}|>;
+makeCylicGenerators[n_Int] := <|1 -> {{UnitRoot[n]}}|>;
 makeCylicGenerators[Infinity] := makeInfiniteAbelianGenerators[1];
 
 
@@ -161,9 +161,9 @@ declareGroup[
 ];
 
 constructDirectProductGenerators[generatorLists_List] := Scope[
-  identities = IdentityMatrix[Length[First[#]]]& /@ generatorLists;
-  labelFn = If[MatchQ[Length /@ generatorLists, {1..}], #2&, Subscript];
-  Association @ MapIndex1[
+  identities = IdentityMatrix[Len[P1[#]]]& /@ generatorLists;
+  labelFn = If[MatchQ[Len /@ generatorLists, {1..}], #2&, Subscript];
+  Assoc @ MapIndex1[
     {genList, i} |-> KeyValueMap[
       {label, gen} |-> (
         labelFn[label, i] -> BlockDiagonalMatrix2[ReplacePart[identities, i -> gen]]
@@ -271,18 +271,18 @@ declareGroup[
   TranslationGroup[vecs_ ? MatrixOrTableQ] :> {
     "Generators" :> addLabels @ Map[TranslationMatrix, vecs],
     "Order" :> Infinity,
-    "Format" :> Subsuperscript["T", Length @ vecs, Length @ First @ vecs]
+    "Format" :> Subsuperscript["T", Len @ vecs, Len @ P1 @ vecs]
   },
   TranslationGroup[vecs_ ? MatrixOrTableQ, mod_ /; VectorQ[mod] || IntegerQ[mod]] :> {
     "Generators" :> addLabels @ Map[TranslationMatrix[#, mod]&, vecs],
     "Order" :> Infinity,
-    "Format" :> Subsuperscript["T%", Length @ vecs, Length @ First @ vecs]
+    "Format" :> Subsuperscript["T%", Len @ vecs, Len @ P1 @ vecs]
   }
 ];
 
 MatrixOrTableQ = Case[
   a_List ? MatrixQ := True;
-  a_Association /; MatrixQ[Values @ a] := True;
+  a_Assoc /; MatrixQ[Values @ a] := True;
   _ := False
 ];
 
@@ -312,7 +312,7 @@ declareGroup[
   ReflectionGroup[vecs_ ? MatrixQ] :> {
     "Generators" :> Map[TranslationMatrix, vecs],
     "Order" :> Infinity,
-    "Format" :> Subsuperscript["R", Length @ vecs, Length @ First @ vecs]
+    "Format" :> Subsuperscript["R", Len @ vecs, Len @ P1 @ vecs]
   },
   ReflectionGroup[rs_ ? RootSystemObjectQ] :> {
     "Generators" :> rs["ReflectionMatrices"],
@@ -341,14 +341,14 @@ SignedSymmetricGroup[n$] represents the signed symmetric group on n$ generators.
 "
 
 declareGroup[
-  SignedSymmetricGroup[n_Integer] :> {
+  SignedSymmetricGroup[n_Int] :> {
     "Generators" :> constructSignedSymmetricGenerators[n],
     "Order" :> Factorial[n] * Power[2, n],
     "Format" :> Subsuperscript[Style["S", Italic], n, "*"]
   }
 ]
 
-constructSignedSymmetricGenerators[n_] := Association @ Join[
+constructSignedSymmetricGenerators[n_] := Assoc @ Join[
   Array[Subscript["r", #] -> Permute[IdentityMatrix[n], Cycles[{{#, Mod[# + 1, n, 1]}}]]&, n - 1],
   Array[Subscript["f", #] -> BasisScalingMatrix[n, # -> -1]&, n]
 ]
@@ -375,7 +375,7 @@ cyclesToPermutationMatrix[Cycles[cycles_], n_] := Scope[
 ];
 
 complexAbelianMatrices[dims_] := Scope[
-  n = Length[dims];
+  n = Len[dims];
   Table[
     DiagonalMatrix @ ReplacePart[Ones[n], i -> RootOfUnity[Part[dims, i]]],
     {i, n}
@@ -383,7 +383,7 @@ complexAbelianMatrices[dims_] := Scope[
 ];
 
 unitRootAbelianMatrices[dims_] := Scope[
-  n = Length[dims];
+  n = Len[dims];
   Table[
     DiagonalMatrix @ ReplacePart[Ones[n], i -> UnitRoot[Part[dims, i]]],
     {i, n}
@@ -394,7 +394,7 @@ unitRootAbelianMatrices[dims_] := Scope[
 
 PublicFunction[StringToWord]
 
-StringToWord[str_String] :=
+StringToWord[str_Str] :=
   Map[If[UpperCaseQ[#], Inverted @ ToLowerCase @ #, #]&, Characters @ str];
 
 (**************************************************************************************************)
@@ -406,10 +406,10 @@ FreeGroup[n$] represents the free group on n$ generators.
 FreeGroup[{g$1, g$2, $$}] represents the free group on specific generators.
 "
 
-FreeGroup[str_String] := FreeGroup[Characters @ str];
+FreeGroup[str_Str] := FreeGroup[Characters @ str];
 
 declareGroup[
-  FreeGroup[n_Integer] :> {
+  FreeGroup[n_Int] :> {
     "Generators" :> makeFreeGenerators[Range @ n],
     "Order" :> Infinity,
     "Format" :> Subscript[Style["F", Italic], n]
@@ -450,8 +450,8 @@ groupWordPower[w_List, 1] := GroupWord[w];
 
 groupWordPower[w_List, -1] := GroupWord[InvertReverse @ w];
 
-groupWordPower[w_List, n_Integer ? Negative] := groupWordPower[InvertReverse @ w, -n];
+groupWordPower[w_List, n_Int ? Negative] := groupWordPower[InvertReverse @ w, -n];
 
-groupWordPower[w_List, n_Integer ? Positive] := wordJoin @@ Repeat[w, n];
+groupWordPower[w_List, n_Int ? Positive] := wordJoin @@ Repeat[w, n];
 
 wordJoin[words__List] := GroupWord[Join[words] //. $backtrackingRules];

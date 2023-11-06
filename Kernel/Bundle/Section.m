@@ -3,17 +3,17 @@ PublicObject[BundleSection]
 BundleSection::usage := "BundleSection[<|b$1 -> f$1, b$2 -> f$2, $$|>, hash$] represents a section of a bundle graph with hash hash$."
 
 declareBoxFormatting[
-  bs:BundleSection[_Association, _Integer] :> Construct[InterpretationBox, bundleSectionBoxes[bs], bs]
+  bs:BundleSection[_Assoc, _Int] :> Construct[InterpretationBox, bundleSectionBoxes[bs], bs]
 ];
 
-bundleSectionBoxes[bs:BundleSection[_, hash_Integer]] := Scope[
+bundleSectionBoxes[bs:BundleSection[_, hash_Int]] := Scope[
   method = bundleHashLookup[hash, "SectionDisplayMethod"];
   If[method === Inherited, method = $BundleSectionDisplayMethod];
   Switch[
     method,
-    "Skeleton",                      RowBox[{"BundleSection", "[", "\[LeftAngleBracket]", TextString @ Length @ First @ bs, "\[RightAngleBracket]", "]"}],
+    "Skeleton",                      RowBox[{"BundleSection", "[", "\[LeftAngleBracket]", TextString @ Len @ P1 @ bs, "\[RightAngleBracket]", "]"}],
     $bundleSectionPlotMethodPattern, ToBoxes @ BundleSectionPlot[bs, Method -> method],
-    None | _,                        RowBox[{"BundleSection", "[", ToBoxes @ First @ bs, "]"}]
+    None | _,                        RowBox[{"BundleSection", "[", ToBoxes @ P1 @ bs, "]"}]
   ]
 ];
 
@@ -31,7 +31,7 @@ $outer = True;
 $BundleSectionDisplayMethod /: Set[$BundleSectionDisplayMethod, value_] /; $outer === True :=
     If[MatchQ[value, $bundleSectionDisplayMethodPattern],
       Block[{$outer}, Set[$BundleSectionDisplayMethod, value]],
-      Message[$BundleSectionDisplayMethod::badval, Cases[$bundleSectionDisplayMethodPattern, _String | _Symbol]]; $Failed
+      Message[$BundleSectionDisplayMethod::badval, Cases[$bundleSectionDisplayMethodPattern, _Str | _Symbol]]; $Failed
     ];
 
 (**************************************************************************************************)
@@ -92,14 +92,14 @@ FindAllBundleSections[bundle_Graph, n:Except[_Rule], opts:OptionsPattern[]] := S
   bundleData = getBundleGraphData[bundle];
   UnpackAssociation[bundleData, hash, fiberGroups, baseVertices];
 
-  b = First @ First @ VertexList @ bundle;
+  b = P11 @ VertexList @ bundle;
   fs = fiberGroups[b];
   init = Map[f |-> BundleSection[<|b -> f|>, hash], fs];
 
   allSections = RewriteStates[BundleSectionExtensionSystem[bundle, opts], init];
 
-  bn = Length @ baseVertices;
-  allSections //= Select[Length[First[#]] === bn&];
+  bn = Len @ baseVertices;
+  allSections //= Select[Len[P1[#]] === bn&];
   allSections //= Sort;
 
   $AllBundleSectionsCache[key] ^= allSections;
@@ -125,7 +125,7 @@ BundleSectionComponents[bundle_Graph, n:Except[_Rule], opts:OptionsPattern[]] :=
   Map[safeRandomSample[n], components]
 ]
 
-safeRandomSample[All] = Identity;
+safeRandomSample[All] = Id;
 safeRandomSample[n_][list_List] := RandomSample[list, UpTo @ n];
 
 (**************************************************************************************************)
@@ -142,14 +142,14 @@ FindConstantBundleSections[bundle_Graph] := Scope[
   BundleSection[vertexListToSection[#], hash]& /@ components
 ];
 
-vertexListToSection[vertexList_List] := Association[Rule @@@ vertexList];
+vertexListToSection[vertexList_List] := Assoc[Rule @@@ vertexList];
 vertexListToSection[subgraph_Graph] := vertexListToSection @ VertexList @ subgraph;
 
 (**************************************************************************************************)
 
 PublicFunction[SectionOrbit]
 
-SectionOrbit[BundleSection[sec_Association, hash_Integer], group_] := Scope[
+SectionOrbit[BundleSection[sec_Assoc, hash_Int], group_] := Scope[
   keys = Keys @ sec;
   sectionLists = toSectionOrbitLists[Values @ sec, hash, group];
   Map[section |-> BundleSection[AssociationThread[keys, section], hash], sectionLists]
@@ -166,7 +166,7 @@ toSectionOrbitLists[sectionValues_, hash_, group_] := Scope[
 
 PublicFunction[SectionOrbitRepresentative]
 
-SectionOrbitRepresentative[BundleSection[sec_Association, hash_Integer], group_] :=
+SectionOrbitRepresentative[BundleSection[sec_Assoc, hash_Int], group_] :=
   BundleSection[AssociationThread[Keys @ sec, Minimum @ toSectionOrbitLists[Values @ sec, hash, group]], hash]
 
 SectionOrbitRepresentative[group_][sec_] := SectionOrbitRepresentative[sec, group];

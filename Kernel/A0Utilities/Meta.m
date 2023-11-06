@@ -1,13 +1,13 @@
 PublicFunction[CreateSymbol]
 
-CreateSymbol[name_String, value_] :=
+CreateSymbol[name_Str, value_] :=
   ToExpression[name, InputForm, SetOperator[value]];
 
 (**************************************************************************************************)
 
 PublicFunction[CreateMultipleSymbols]
 
-CreateMultipleSymbols[context_, names:{___String}, values_List] := Block[
+CreateMultipleSymbols[context_, names:{___Str}, values_List] := Block[
   {$Context = context, $ContextPath = {"System`", "Global`"}},
   If[Length[names] =!= Length[values], Message[CreateMultipleSymbols::badlen, Length @ names, Length @ values, Short @ names]];
   ToExpression[StringJoin["{", Riffle[names, ","], "}"], InputForm, SetOperator[values]]
@@ -79,7 +79,7 @@ groupToSyntaxScope = Case[
   ];
 ];
 
-$groupToSymbol = Association[
+$groupToSymbol = Assoc[
   "Package"                -> "p",
   "Symbol"                 -> "s",
   "Head"                   -> "f",
@@ -158,7 +158,7 @@ makeShortDef[defName_, strings_] :=
 makeLetterSubDef[subDefName_, strings_] :=
   StringJoin[
     "  ", subDefName, ": (?:",
-    StringTake[First @ strings, 1],
+    StringTake[P1 @ strings, 1],
     "(?:", StringRiffle[StringDrop[strings, 1], "|"],
     "))\n"
 ];

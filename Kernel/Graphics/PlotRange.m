@@ -94,7 +94,7 @@ $ghead = Graphics;
 GraphicsPlotRange::failed = "Cannot find plot range for ``, using unit plot range.";
 
 kernelPlotRange[g_Graphics3D | g_Graphics] := Module[
-  {g2, res, coord, $ghead = Head @ g},
+  {g2, res, coord, $ghead = H @ g},
   g2 = InheritedBlock[{$MakeBoxesStyleData}, plotRangeRecurse @ g];
   g2 = plotRangeExpand @ g2;
   res = Quiet @ PlotRange @ g2;
@@ -107,7 +107,7 @@ kernelPlotRange[g_Graphics3D | g_Graphics] := Module[
     Message[GraphicsPlotRange::failed, MsgExpr[g, 6, 30]];
     res = {{-1, 1}, {-1, 1}};
   ];
-  If[First[res] === {-1., 1.} || Last[res] === {-1., 1.},
+  If[P1[res] === {-1., 1.} || PN[res] === {-1., 1.},
     (* this occurs when a plot is completely flat horizontally or vertically *)
     coord = DeepFirstCase[g2, $CoordP] + $MachineEpsilon;
     res = Quiet @ PlotRange @ MapAt[{#, Point[coord]}&, g2, 1];
@@ -116,7 +116,7 @@ kernelPlotRange[g_Graphics3D | g_Graphics] := Module[
 ];
 
 expandMultiArrowInGC[g_] := g /.
-  Arrow[segments:{{__Integer}..}, opts___] :> RuleCondition[Map[Arrow[#, opts]&, segments]];
+  Arrow[segments:{{__Int}..}, opts___] :> RuleCondition[Map[Arrow[#, opts]&, segments]];
 
 $expanderRules := $expanderRules = Dispatch @ {
   RawBoxes[b_]                             :> RuleCondition[b /. $graphicsBoxReplacements],
@@ -126,7 +126,7 @@ $expanderRules := $expanderRules = Dispatch @ {
   CapsuleShape[{a_, b_}, r_]               :> RuleCondition[{Sphere[a, r], Sphere[b, r]}],
   Cube[p:{_, _, _}:{0,0,0}, l_:1]          :> RuleCondition[Sphere[p, l/2]],
   (JoinedCurve|JoinedCurveBox)[e_List]     :> e,
-  a:$AnnotationP                           :> RuleCondition[plotRangeExpand @ First @ a],
+  a:$AnnotationP                           :> RuleCondition[plotRangeExpand @ P1 @ a],
   (StyleBox|Style)[e_, ___]                :> e,
   Inset[_, pos_, ___]                      :> Point[pos],
   Translate[g_, t_]                        :> RuleCondition[GraphicsTransformAffine[g, None, t]],
@@ -142,7 +142,7 @@ plotRangeRecurse = Case[
   (head:Translate|Rotate|GeometricTransformation|Graphics|Graphics3D)[g_, a___] := head[% @ g, a];
   l_List                         := InheritedBlock[{$MakeBoxesStyleData}, Map[%, l]];
   Rule[key_Symbol, val_]         := ($MakeBoxesStyleData[key] = val);
-  other_                         := If[TrueQ @ $customGraphicsHeadQ @ Head @ other,
+  other_                         := If[TrueQ @ $customGraphicsHeadQ @ H @ other,
     With[{h = $ghead}, Typeset`MakeBoxes[other, StandardForm, h]] //. $graphicsBoxReplacements,
     other
   ]
@@ -243,7 +243,7 @@ PlotRangeSize[graphics$] returns the size of a %Graphics or %Graphics3D object.
 "
 
 PlotRangeSize[g_Graphics | g_Graphics3D] := PlotRangeSize @ GraphicsPlotRange @ g;
-PlotRangeSize[range_] := EuclideanDistance @@@ range;
+PlotRangeSize[range_] := Dist @@@ range;
 
 (**************************************************************************************************)
 
@@ -257,5 +257,5 @@ PlotRangeScale[graphics$] returns the scale of a %Graphics or %Graphics3D object
 "
 
 PlotRangeScale[g_Graphics | g_Graphics3D] := PlotRangeScale @ GraphicsPlotRange @ g;
-PlotRangeScale[{{xl_, xh_}, {yl_, yh_}}] := EuclideanDistance[xl, xh];
-PlotRangeScale[{{xl_, xh_}, {yl_, yh_}, {zl_, zh_}}] := EuclideanDistance[{xl, yl, zl}, {xh, yh, zh}];
+PlotRangeScale[{{xl_, xh_}, {yl_, yh_}}] := Dist[xl, xh];
+PlotRangeScale[{{xl_, xh_}, {yl_, yh_}, {zl_, zh_}}] := Dist[{xl, yl, zl}, {xh, yh, zh}];

@@ -28,7 +28,7 @@ LinearLayout[opts:OptionsPattern[]][data_] := Scope[
 ];
 
 orientationTransform = Case[
-  Left        := Identity;
+  Left        := Id;
   Right       := RotationTransform[Pi];
   Top         := RotationTransform[-Pi/2];
   TopLeft     := RotationTransform[-Pi/4];

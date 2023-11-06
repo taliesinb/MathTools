@@ -57,8 +57,8 @@ MakeQGBoxes = Case[
   e:symP                    := symbolBoxes @ e;
   e_Subtract                := algebraBoxes[e, "SubtractForm"];
   Plus[a_, Times[-1, b_]]   := MakeBoxes @ SubtractForm[a, b];
-  Plus[a_, Times[n_Integer ? Negative, b_]] := With[{n2 = Abs @ n}, MakeBoxes @ SubtractForm[a, ImplicitTimesForm[n2, b]]];
-  Times[n_Integer, e_]      := MakeBoxes @ ImplicitTimesForm[n, e];
+  Plus[a_, Times[n_Int ? Negative, b_]] := With[{n2 = Abs @ n}, MakeBoxes @ SubtractForm[a, ImplicitTimesForm[n2, b]]];
+  Times[n_Int, e_]          := MakeBoxes @ ImplicitTimesForm[n, e];
   e_Times                   := algebraBoxes[e, "ImplicitTimesForm"];
   e_Plus                    := algebraBoxes[e, "PlusForm"];
   Equal[a_, b_]             := MakeBoxes @ EqualForm[a, b];
@@ -69,7 +69,7 @@ MakeQGBoxes = Case[
   Minus[e_]                 := makeTemplateBox[e, "MinusForm"];
   Power[e_, -1]             := makeTemplateBox[e, "InverseForm"];
   Times[-1, e_]             := makeTemplateBox[e, "MinusForm"];
-  Inverted[e_]               := makeTemplateBox[e, "InvertedForm"];
+  Inverted[e_]              := makeTemplateBox[e, "InvertedForm"];
   DirectedEdge[args__]      := MakeBoxes @ DirectedEdgeForm[args];
   UndirectedEdge[args__]    := MakeBoxes @ UndirectedEdgeForm[args];
   Labeled[a_, l_]           := MakeBoxes @ ParenthesesLabeledForm[a, l];
@@ -80,7 +80,7 @@ MakeQGBoxes = Case[
   {a_, b__}                 := MakeBoxes @ TupleForm[a, b];
   Composition[a___]         := MakeBoxes @ FunctionCompositionForm[a];
   RightComposition[a___]    := MakeBoxes @ RightFunctionCompositionForm[a];
-  s_String                  := s;
+  s_Str                     := s;
   other_                    := MakeBoxes @ other,
   {lsymsP -> $literalSymbolsP, symP -> Rest[$rawSymbolP], binHeads -> $binaryRelationHeads, domainsP -> $domainsP}
 ];
@@ -99,8 +99,8 @@ rawSymbolBoxes = Case[
   l:lsymsP                    := MakeBoxes @ l;
   (c:colorP)[e_]              := TemplateBox[List @ % @ e, SymbolName @ c];
   s_Symbol                    := toSymbolName[s];
-  str_String                  := str;
-  i_Integer                   := TextString @ i;
+  str_Str                     := str;
+  i_Int                       := TextString @ i;
   s_SymbolForm                := MakeBoxes @ s;
   PrimedForm[x_]              := TemplateBox[List @ % @ x, "PrimedForm"];
   Subscript[a_, b_]           := SubscriptBox[MakeQGBoxes @ a, MakeQGBoxes @ b];
@@ -173,7 +173,7 @@ PrivateFunction[maybeParen]
 
 SetHoldAllComplete[maybeParen, maybeParenBoxes];
 
-maybeParen[h_][b_] := Block[{$eh = h, $ehc = If[Head[h] === Alternatives, First @ h, h]}, maybeParenBoxes @  b];
+maybeParen[h_][b_] := Block[{$eh = h, $ehc = If[H[h] === Alternatives, P1 @ h, h]}, maybeParenBoxes @  b];
 
 maybeParenBoxes = Case[
   NoParenthesesForm[e_]                 := MakeBoxes @ e;

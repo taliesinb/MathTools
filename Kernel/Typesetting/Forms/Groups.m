@@ -1,9 +1,9 @@
 PublicTypesettingForm[NamedLieGroup]
 
 DefineStandardTraditionalForm[{
-  NamedLieGroup[name_String] :> TBox[name, "NamedLieGroup"],
-  NamedLieGroup[name_String, dim_] :> AppliedBox[MakeBoxes @ NamedLieGroup[name], MakeQGBoxes @ dim],
-  NamedLieGroup[name_String, dim_, field_] :> AppliedBox[MakeBoxes @ NamedLieGroup[name], MakeQGBoxes @ dim, fieldOrRingBoxes @ field]
+  NamedLieGroup[name_Str] :> TBox[name, "NamedLieGroup"],
+  NamedLieGroup[name_Str, dim_] :> AppliedBox[MakeBoxes @ NamedLieGroup[name], MakeQGBoxes @ dim],
+  NamedLieGroup[name_Str, dim_, field_] :> AppliedBox[MakeBoxes @ NamedLieGroup[name], MakeQGBoxes @ dim, fieldOrRingBoxes @ field]
 }];
 
 DefineTemplateBox[NamedLieGroup, "NamedLieGroup", SansSerifBox[$1], None];
@@ -13,9 +13,9 @@ DefineTemplateBox[NamedLieGroup, "NamedLieGroup", SansSerifBox[$1], None];
 PublicTypesettingForm[NamedLieAlgebra]
 
 DefineStandardTraditionalForm[{
-  NamedLieAlgebra[name_String] :> TBox[name, "NamedLieAlgebra"],
-  NamedLieAlgebra[name_String, dim_] :> AppliedBox[MakeBoxes @ NamedLieAlgebra[name], MakeQGBoxes @ dim],
-  NamedLieAlgebra[name_String, dim_, field_] :> AppliedBox[MakeBoxes @ NamedLieAlgebra[name], MakeQGBoxes @ dim, fieldOrRingBoxes @ field]
+  NamedLieAlgebra[name_Str] :> TBox[name, "NamedLieAlgebra"],
+  NamedLieAlgebra[name_Str, dim_] :> AppliedBox[MakeBoxes @ NamedLieAlgebra[name], MakeQGBoxes @ dim],
+  NamedLieAlgebra[name_Str, dim_, field_] :> AppliedBox[MakeBoxes @ NamedLieAlgebra[name], MakeQGBoxes @ dim, fieldOrRingBoxes @ field]
 }];
 
 DefineTemplateBox[NamedLieAlgebra, "NamedLieAlgebra", FrakturBox[$1], None];
@@ -26,7 +26,7 @@ fieldOrRingBoxes = Case[
   f:fieldsP      := MakeBoxes @ FieldSymbol @ f;
   r:ringsP       := MakeBoxes @ RingSymbol @ r;
   sr:semiringsP  := MakeBoxes @ SemiringSymbol @ sr;
-  n_Integer      := MakeBoxes @ FiniteFieldSymbol[n];
+  n_Int          := MakeBoxes @ FiniteFieldSymbol[n];
   other_         := MakeQGBoxes @ other,
   {
     fieldsP     -> Alternatives[Reals, Complexes, Rationals, "R", "C", "Q", "K"],
@@ -40,7 +40,7 @@ fieldOrRingBoxes = Case[
 PublicTypesettingForm[GeneralLinearGroupForm, SpecialLinearGroupForm, ProjectiveGeneralLinearGroupForm, ProjectiveSpecialLinearGroupForm, OrthogonalGroupForm, SpecialOrthogonalGroupForm, UnitaryGroupForm, SpecialUnitaryGroupForm, SpinGroupForm, PinGroupForm]
 PublicTypesettingForm[GeneralLinearAlgebraForm, SpecialLinearAlgebraForm, ProjectiveGeneralLinearAlgebraForm, ProjectiveSpecialLinearAlgebraForm, OrthogonalAlgebraForm, SpecialOrthogonalAlgebraForm, UnitaryAlgebraForm, SpecialUnitaryAlgebraForm, SpinAlgebraForm, PinAlgebraForm]
 
-defineLieGroupAlgebra[name_String, groupSym_Symbol, algebraSym_Symbol] := With[
+defineLieGroupAlgebra[name_Str, groupSym_Symbol, algebraSym_Symbol] := With[
   {algebraName = ToLowerCase @ name},
   DefineStandardTraditionalForm[{
     groupSym[args___] :>   MakeBoxes @ NamedLieGroup[name, args],
@@ -124,7 +124,7 @@ groupRelationBoxes = Case[
 
 groupGeneratorBoxes = Case[
   list_List               := TemplateBox[MapUnevaluated[%, list], "CommaRowForm"];
-  s:(symP | _Integer)     := MakeBoxes @ GroupGeneratorSymbol @ s;
+  s:(symP | _Int)     := MakeBoxes @ GroupGeneratorSymbol @ s;
   CardinalSymbol[s_]      := MakeBoxes @ GroupGeneratorSymbol @ s;
   e_ ? unaryWrappedQ      := recurseWrapperBoxes[e, %];
   gr_GroupGeneratorSymbol := MakeBoxes @ gr;

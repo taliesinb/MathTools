@@ -7,7 +7,7 @@ Options[GitClone] = JoinOptions[
   $genericToolOpts
 ];
 
-GitClone[path_String, remote_String, opts:OptionsPattern[]] := Scope[
+GitClone[path_Str, remote_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[shallowCheckout];
   path = EnsureDirectoryShallow @ path;
   parent = ParentDirectory @ path;
@@ -34,7 +34,7 @@ DownloadGithubRepo::baddownload = "Could not download repo from `` to ``.";
 DownloadGithubRepo::badzip = "Downloaded zip `` appears to be corrupt.";
 DownloadGithubRepo::badcontents = "Zip contents was not a single sub-directory as expected."
 
-DownloadGithubRepo[userName_String, repo_String, OptionsPattern[]] := Scope[
+DownloadGithubRepo[userName_Str, repo_Str, OptionsPattern[]] := Scope[
   UnpackOptions[gitBranch];
   url = $githubZipURLTemplate[userName, repo, gitBranch];
   localFile = $githubZipLocalFileTemplate[userName, repo, gitBranch];
@@ -59,6 +59,6 @@ DownloadGithubRepo[userName_String, repo_String, OptionsPattern[]] := Scope[
   subDir
 ]
 
-$githubZipLocalFileTemplate = Function[EnsureDirectory @ LocalPath["Data", "Github"]; LocalPath["Data", "Github", #1 <> "_" <> #2 <> "_" <> #3 <> ".zip"]];
+$githubZipLocalFileTemplate = Fn[EnsureDirectory @ LocalPath["Data", "Github"]; LocalPath["Data", "Github", #1 <> "_" <> #2 <> "_" <> #3 <> ".zip"]];
 $githubZipURLTemplate = StringFunction @ "https://github.com/#1/#2/archive/refs/heads/#3.zip"
 

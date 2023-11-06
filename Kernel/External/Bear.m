@@ -5,9 +5,9 @@ toBearDataPath[name_] := (
   LocalPath["Data", "Bear", name <> ".mx"]
 );
 
-SaveBearData[name_String] := ExportMX[toBearDataPath[name], BearNoteData[All, All]];
+SaveBearData[name_Str] := ExportMX[toBearDataPath[name], BearNoteData[All, All]];
 
-LoadBearData[name_String] := ImportMX @ toBearDataPath[name];
+LoadBearData[name_Str] := ImportMX @ toBearDataPath[name];
 
 (*************************************************************************************************)
 
@@ -22,7 +22,7 @@ CompareBearData[a_, b_] := Scope[
 compareBearRows[{a_, b_}] := If[a === b, None, DeleteNone @ MapThread[combineBearFields, {a, b}]];
 combineBearFields[a_, b_] := If[a === b, None, Flipper[a, b]];
 
-indexByUUID[a_] := Association[#UUID -> #& /@ a];
+indexByUUID[a_] := Assoc[#UUID -> #& /@ a];
 
 (*************************************************************************************************)
 
@@ -36,7 +36,7 @@ Options[CreateBearNote] = {
 
 CreateBearNote::exists = "Will not create note with title \"``\" because one already exists, and DuplicateTarget -> False.";
 
-CreateBearNote[title_String, contents_String, OptionsPattern[]] := Scope[
+CreateBearNote[title_Str, contents_Str, OptionsPattern[]] := Scope[
   UnpackOptions[duplicateTarget];
   title //= sanitizeTitle;
   If[!duplicateTarget && BearNoteExistsQ[title, IgnoreCase -> True],
@@ -47,7 +47,7 @@ CreateBearNote[title_String, contents_String, OptionsPattern[]] := Scope[
 ];
 
 CreateBearNote::badtitle = "Note should start with a H1-style title."
-CreateBearNote[contents_String, opts:OptionsPattern[]] := Scope[
+CreateBearNote[contents_Str, opts:OptionsPattern[]] := Scope[
   If[!StringStartsQ[contents, "# "], ReturnFailed["badtitle"]];
   {title, contents} = StringSplit[contents, "\n", 2];
   title = StringTrim @ StringTrimLeft[title, "# "];
@@ -63,12 +63,12 @@ $CreateBearNoteTemplate = StringFunction @ "bear://x-callback-url/create?title=#
 
 PublicFunction[ReplaceBearNote]
 
-ReplaceBearNote[id_String, title_String, contents_String] :=
+ReplaceBearNote[id_Str, title_Str, contents_Str] :=
   ReplaceBearNote[id, StringJoin["# ", StringTrim @ title, "\n", StringTrim @ contents]];
 
 ReplaceBearNote::badtitle = "Note replacement should start with a H1-style title."
 ReplaceBearNote::noexisting = "Cannot replace Bear note with existing title `` since it does not exist.";
-ReplaceBearNote[id_String, contents_String] := Scope[
+ReplaceBearNote[id_Str, contents_Str] := Scope[
   If[!StringStartsQ[contents, "# "], ReturnFailed["badtitle"]];
   If[!BearNoteUUIDQ[id],
     {oldTitle, id} = {id, FindBearNote @ id};
@@ -83,11 +83,11 @@ $ReplaceBearNoteTemplate = StringFunction @ "bear://x-callback-url/add-text?id=#
 
 (*************************************************************************************************)
 
-contractTextHeader[str_String] := If[StringStartsQ[str, LineFragment ~~ "\n\n"], StringReplace[str, "\n\n" -> "\n", 1], str];
+contractTextHeader[str_Str] := If[StringStartsQ[str, LineFragment ~~ "\n\n"], StringReplace[str, "\n\n" -> "\n", 1], str];
 
 (*************************************************************************************************)
 
-toTitleOrIDQuery[titleOrID_String] := FilteredEntityClass[
+toTitleOrIDQuery[titleOrID_Str] := FilteredEntityClass[
   $BearNote,
   If[BearNoteUUIDQ[titleOrID],
     EntityFunction[z, z["ZUNIQUEIDENTIFIER"] == titleOrID],
@@ -99,7 +99,7 @@ toTitleOrIDQuery[titleOrID_String] := FilteredEntityClass[
 
 PublicFunction[TextReplaceBearNote]
 
-TextReplaceBearNote[titleOrId_String, replacements_] :=
+TextReplaceBearNote[titleOrId_Str, replacements_] :=
   TransformBearNote[titleOrId, StringReplace[replacements]];
 
 (*************************************************************************************************)
@@ -118,13 +118,13 @@ TransformBearNote::notfound = "Cannot find existing note with ID or title \"``\"
 TransformBearNote::badtresult = "Result of transform on \"``\" was not a string or issued messages.";
 TransformBearNote::corrupt = "Apparently corrupt result when transforming \"``\".";
 
-TransformBearNote[titleOrId_String, fn_, OptionsPattern[]] := Scope[
+TransformBearNote[titleOrId_Str, fn_, OptionsPattern[]] := Scope[
   UnpackOptions[$verbose, $dryRun, verifyResult];
   SetAutomatic[$verbose, $dryRun];
   VPrint["Looking up contents of article with title or ID: ", titleOrId];
   res = EntityValue[toTitleOrIDQuery @ titleOrId, {"ZUNIQUEIDENTIFIER", "ZTEXT"}];
-  If[!MatchQ[res, {{_String, _String}}], ReturnFailed["notfound", titleOrId]];
-  {uuid, text} = First @ res;
+  If[!MatchQ[res, {{_Str, _Str}}], ReturnFailed["notfound", titleOrId]];
+  {uuid, text} = P1 @ res;
   text //= trimFirstLine;
   VPrint["Applying fn to string of length ", StringLength @ text];
   newText = Check[fn[text], $Failed];
@@ -152,7 +152,7 @@ TransformBearNote[titleOrId_String, fn_, OptionsPattern[]] := Scope[
   ];
 ];
 
-trimFirstLine[str_String] := Last @ StringSplit[str, "\n", 2];
+trimFirstLine[str_Str] := PN @ StringSplit[str, "\n", 2];
 
 $TextReplaceBearNoteTemplate = StringFunction @ "bear://x-callback-url/add-text?id=#1&mode=replace&exclude_trashed=true&show_window=no&open_note=no&text=#2";
 
@@ -163,12 +163,12 @@ PublicFunction[RenameBearNote]
 RenameBearNote::notfound = "Cannot find existing note with ID or title \"``\".";
 RenameBearNote::badtresult = "Result of transform on \"``\" was not a string or issued messages.";
 
-RenameBearNote[old_String, old_String] := None;
+RenameBearNote[old_Str, old_Str] := None;
 
-RenameBearNote[old_String, newTitle_String, fn_:None] := Scope[
+RenameBearNote[old_Str, newTitle_Str, fn_:None] := Scope[
   res = EntityValue[toTitleOrIDQuery @ old, {"ZUNIQUEIDENTIFIER", "ZTITLE", "ZTEXT"}];
-  If[!MatchQ[res, {{_String, _String, _String}}], ReturnFailed["notfound", old]];
-  {uuid, oldTitle, text} = First @ res;
+  If[!MatchQ[res, {{_Str, _Str, _Str}}], ReturnFailed["notfound", old]];
+  {uuid, oldTitle, text} = P1 @ res;
   newText = StringTrimLeft[text, ("# " <> oldTitle) | oldTitle];
   If[fn =!= None,
     newText //= fn;
@@ -201,16 +201,16 @@ GlobalBearStringReplace[rules_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[$verbose, $dryRun, verifyResult, ignoreCase];
   SetAutomatic[$verbose, $dryRun];
   rules //= ToList;
-  lhsPattern = First /@ rules;
-  lhsPattern = If[Length[lhsPattern] === 1, First @ lhsPattern, Alternatives @@ lhsPattern];
+  lhsPattern = P1 /@ rules;
+  lhsPattern = If[Len[lhsPattern] === 1, P1 @ lhsPattern, Alternatives @@ lhsPattern];
   regex = ToRegularExpression @ lhsPattern;
   If[TrueQ @ ignoreCase, regex = StringInsert[regex, "i", 3]];
   If[!StringQ[regex], ReturnFailed["badpatt", regex]];
   VPrint["Searching against regexp \"", regex, "\""];
   With[{re = regex}, query = EntityFunction[z, StringContainsQ[z["ZTEXT"], RegularExpression @ re]]];
   res = EntityValue[FilteredEntityClass[$BearNote, query], "ZUNIQUEIDENTIFIER"];
-  If[!MatchQ[res, {__String}], ReturnFailed["notfound", regex]];
-  VPrint["Obtained ", Length @ res, " results."];
+  If[!MatchQ[res, {__Str}], ReturnFailed["notfound", regex]];
+  VPrint["Obtained ", Len @ res, " results."];
   Scan[
     TransformBearNote[
       #,
@@ -226,13 +226,13 @@ GlobalBearStringReplace[rules_, opts:OptionsPattern[]] := Scope[
 PublicFunction[AppendToBearNote]
 
 AppendToBearNote::notfound = "Cannot find existing note with title \"``\"."
-AppendToBearNote[titleOrID_String, text_String] := Scope[
+AppendToBearNote[titleOrID_Str, text_Str] := Scope[
   id = If[BearNoteUUIDQ[titleOrID], titleOrID, FindBearNote @ titleOrID];
   If[FailureQ[id], ReturnFailed["notfound", titleOrID]];
   SystemOpen @ $AppendToBearNoteTemplate[id, URLEncode @ StringJoin["\n\n", StringTrim @ text]];
 ]
 
-AppendToBearNote[titleOrID_String, images:_Image | {__Image}] := Scope[
+AppendToBearNote[titleOrID_Str, images:_Image | {__Image}] := Scope[
   id = If[BearNoteUUIDQ[titleOrID], titleOrID, FindBearNote @ titleOrID];
   If[FailureQ[id], ReturnFailed["notfound", titleOrID]];
   Scan[
@@ -288,11 +288,11 @@ $BearNote2 := $BearNote2 = (Quiet @ RegisterBearEntities[]; "ZSFNOTE");
 
 PublicFunction[BearNoteExistsQ]
 
-BearNoteExistsQ[title_String] := FilteredEntityClass[$BearNote, EntityFunction[z, z["ZTITLE"] == title]]["EntityCount"] > 0;
-BearNoteExistsQ[title_String, IgnoreCase -> True] := FilteredEntityClass[$BearNote, EntityFunction[z, StringMatchQ[z["ZTITLE"], title, IgnoreCase -> True]]]["EntityCount"] > 0;
+BearNoteExistsQ[title_Str] := FilteredEntityClass[$BearNote, EntityFunction[z, z["ZTITLE"] == title]]["EntityCount"] > 0;
+BearNoteExistsQ[title_Str, IgnoreCase -> True] := FilteredEntityClass[$BearNote, EntityFunction[z, StringMatchQ[z["ZTITLE"], title, IgnoreCase -> True]]]["EntityCount"] > 0;
 
 BearNoteExistsQ[{}] := {};
-BearNoteExistsQ[titles:{___String}] := Scope[
+BearNoteExistsQ[titles:{___Str}] := Scope[
   class = FilteredEntityClass[$BearNote, EntityFunction[z, MemberQ[titles, z["ZTITLE"]]]];
   foundTitles = EntityValue[class, "ZTITLE"];
   MemberQ[foundTitles, #]& /@ titles
@@ -304,25 +304,25 @@ PublicFunction[FindBearNote]
 
 Options[FindBearNote] = {IgnoreCase -> True};
 
-FindBearNote[title_String, OptionsPattern[]] := Scope[
+FindBearNote[title_Str, OptionsPattern[]] := Scope[
   UnpackOptions[ignoreCase];
   query = If[ignoreCase,
     EntityFunction[z, StringMatchQ[z["ZTITLE"], title, IgnoreCase -> True]],
     EntityFunction[z, z["ZTITLE"] == title]
   ];
   res = EntityValue[FilteredEntityClass[$BearNote, query], "ZUNIQUEIDENTIFIER"];
-  If[MatchQ[res, {_String}], First @ res, $Failed]
+  If[MatchQ[res, {_Str}], P1 @ res, $Failed]
 ];
 
 (*************************************************************************************************)
 
 PublicFunction[GotoBearNote, OpenBearNote]
 
-GotoBearNote[titleOrID_String] :=
+GotoBearNote[titleOrID_Str] :=
   SystemOpen @ If[BearNoteUUIDQ[titleOrID], $OpenBearNoteIDTemplate, $OpenBearNoteTitleTemplate][URLEncode @ titleOrID, "show"];
 
 OpenBearNote[list_List] := Scan[OpenBearNote, list];
-OpenBearNote[titleOrID_String] :=
+OpenBearNote[titleOrID_Str] :=
   SystemOpen @ If[BearNoteUUIDQ[titleOrID], $OpenBearNoteIDTemplate, $OpenBearNoteTitleTemplate][URLEncode @ titleOrID, "new"];
 
 $OpenBearNoteIDTemplate = StringFunction @ "bear://x-callback-url/open-note?id=#1&exclude_trashed=true&#2_window=yes";
@@ -332,9 +332,9 @@ $OpenBearNoteTitleTemplate = StringFunction @ "bear://x-callback-url/open-note?t
 
 PublicFunction[BearNoteText]
 
-BearNoteText[titleOrID_String] := Scope[
+BearNoteText[titleOrID_Str] := Scope[
   res = EntityValue[toTitleOrIDQuery @ titleOrID, "ZTEXT"];
-  If[MatchQ[res, {_String}], First @ res, $Failed]
+  If[MatchQ[res, {_Str}], P1 @ res, $Failed]
 ];
 
 (*************************************************************************************************)
@@ -343,7 +343,7 @@ PublicFunction[BearNoteUUIDQ]
 
 "30A395FF-FF7D-4B9D-97B5-FB29E3C9A8B2"
 $BearNoteUUIDRegEx = RegularExpression["[A-Z0-9]{8}(?:-[A-Z0-9]{4}){3}-[A-Z0-9]{12}(?:-[A-Z0-9]{3,6}-[A-Z0-9]{16})?"];
-BearNoteUUIDQ[s_String] := StringMatchQ[s, $BearNoteUUIDRegEx];
+BearNoteUUIDQ[s_Str] := StringMatchQ[s, $BearNoteUUIDRegEx];
 
 (*************************************************************************************************)
 
@@ -371,7 +371,7 @@ BearNoteData[part_, field_, OptionsPattern[]] := Scope @ CatchMessage[
     result = Part[result, All, If[isList, 2;;, 2]];
   ];
   If[ListQ[field],
-    result = If[Head[class] === Entity,
+    result = If[H[class] === Entity,
       AssociationThread[field, result],
       AssociationThread[field, #]& /@ result
     ]
@@ -385,9 +385,9 @@ BearNoteData[part_, field_, OptionsPattern[]] := Scope @ CatchMessage[
 toBearClass = Case[
   list:{__Rule}                 := combineEntityFunctions @ Part[Map[toBearClass, list], All, 2];
   All                           := $BearNote;
-  part:(_Integer | _Span)       := Part[EntityList[$BearNote], part];
-  "Text" -> (p:(_String | _RegularExpression)) := %["Text" -> StringContainsQ[p]];
-  "Tag" -> tag_String           := With[{re = "\n(?:#meta/master(?: for)? )?#" ~~ StringTrimLeft[tag, "#"]}, %["Text" -> StringContainsQ[RegularExpression[re]]]];
+  part:(_Int | _Span)           := Part[EntityList[$BearNote], part];
+  "Text" -> (p:(_Str | _RegularExpression)) := %["Text" -> StringContainsQ[p]];
+  "Tag" -> tag_Str              := With[{re = "\n(?:#meta/master(?: for)? )?#" ~~ StringTrimLeft[tag, "#"]}, %["Text" -> StringContainsQ[RegularExpression[re]]]];
   field_ -> True                := %[field -> 1];
   field_ -> False               := %[field -> 0];
   field_ -> p_StringExpression  := %[field -> RegularExpression[ToRegularExpression @ p]];
@@ -406,7 +406,7 @@ makeFEC[field_, body_] := With[
 combineEntityFunctions[fns:{HoldPattern[__EntityFunction]}] :=
   FilteredEntityClass[$BearNote, Construct[EntityFunction, z, (Hold @@ fns)[[All, 2]]] /. Hold -> And];
 
-$bearFieldDict = Association[
+$bearFieldDict = Assoc[
   "ID"                  -> "Z_PK",
   "Title"               -> "ZTITLE",
   "CreationDate"        -> "ZCREATIONDATE",
@@ -437,7 +437,7 @@ BearConcepts[] := BearNoteData[{"Tag" -> "concept"}, "Title"];
 
 PublicFunction[DeleteBearNote]
 
-DeleteBearNote[uuid_String] := SystemOpen @ $BearDeleteTemplate @ uuid;
+DeleteBearNote[uuid_Str] := SystemOpen @ $BearDeleteTemplate @ uuid;
 DeleteBearNote[list_List] := Scan[DeleteBearNote, list];
 
 $BearDeleteTemplate = StringFunction @ "bear://x-callback-url/trash?id=#1";
@@ -455,7 +455,7 @@ BearNoteTextCases[pattern_] := Scope[
 
 toLHSPattern = Case[
   l_List                      := Alternatives @@ Map[%, l];
-  r_Rule | r_RuleDelayed      := First @ r;
+  r_Rule | r_RuleDelayed      := P1 @ r;
   other_                      := other;
 ]
 
@@ -468,7 +468,7 @@ Options[CreateBearArxivPages] = {
 };
 
 CreateBearArxivPages::badmd = "Could not create markdown for data ``.";
-CreateBearArxivPages[assocs:{__Association}, opts:OptionsPattern[]] := Scope[
+CreateBearArxivPages[assocs:{__Assoc}, opts:OptionsPattern[]] := Scope[
   assocs = ReverseSortBy[assocs, Key["Date"]];
   list = Map[assoc |-> (
     res = PaperToMarkdown[assoc, opts];

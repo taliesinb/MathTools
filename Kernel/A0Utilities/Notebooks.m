@@ -55,17 +55,17 @@ ReplaceContentInclusions[] := Scope[
 
 replaceInclusionCell[co_CellObject] := Scope[
   cell = NotebookRead[co];
-  If[!MatchQ[cell, Cell[s_String /; StringMatchQ[s, $idInsertionRegexp], "Text"]], Return[None]];
-  str = First @ cell;
-  res = First @ StringReplace[str, $idInsertionRegexp :> foo["$1","$2", "$3"]];
+  If[!MatchQ[cell, Cell[s_Str /; StringMatchQ[s, $idInsertionRegexp], "Text"]], Return[None]];
+  str = P1 @ cell;
+  res = P1 @ StringReplace[str, $idInsertionRegexp :> foo["$1","$2", "$3"]];
   {title, tag, class} = List @@ res;
   findNb = FileNames["*" <> title <> ".nb", $dir];
   If[findNb === {}, Print["NB NOT FOUND: ", title]; Return[]];
-  nbPath = First @ findNb;
+  nbPath = P1 @ findNb;
   nb = Get[nbPath];
   cases = Cases[nb, c:Cell[_, "Output", ___, CellTags -> ({___, tag, ___} | tag), ___] :> c, {0, Infinity}, Heads -> True];
   If[cases === {}, Print["CELL NOT FOUND: ", title, " # ", tag]];
-  cell = First[cases];
+  cell = P1[cases];
   cell //= MapAt[applyClassTag[class], 1];
   NotebookWrite[co, cell];
 ];
@@ -107,12 +107,12 @@ extendedCells[nb_, extend_:False] := Scope[
     nextPrev = False;
   ];
 
-  If[Length[cells] == 1,
-    type = cellType @ First @ cells;
+  If[Len[cells] == 1,
+    type = cellType @ P1 @ cells;
     If[MatchQ[type, "Code" | "Input" | "Output" | "Section" | "Subsection" | "Subsubsection" | "Chapter" | "Title"],
       SelectionMove[nb, All, CellGroup]];
     If[!nextPrev && extend && MatchQ[type, "Text" | "Item" | "SubItem"],
-      cpos = Lookup[CellInformation[First @ cells], "CursorPosition"];
+      cpos = Lookup[CellInformation[P1 @ cells], "CursorPosition"];
       If[cpos === "CellBracket",
         SelectionMove[nb, All, CellGroup],
         SelectionMove[nb, All, Cell]
@@ -148,8 +148,8 @@ PublicFunction[PreviousTextCell]
 
 PreviousTextCell[] := Scope[
   cellExpr = NotebookRead @ PreviousCell[];
-  If[Head[cellExpr] =!= Cell, ThrowFailure["exportmdnocell"]];
-  cellType = Replace[cellExpr, {Cell[_, type_String, ___] :> type, _ :> $Failed}];
+  If[H[cellExpr] =!= Cell, ThrowFailure["exportmdnocell"]];
+  cellType = Replace[cellExpr, {Cell[_, type_Str, ___] :> type, _ :> $Failed}];
   If[!MatchQ[cellType, "Text"], ReturnFailed[]];
   Take[cellExpr, 2]
 ];
@@ -168,7 +168,7 @@ CopyImageToClipboard[expr_] := (
 PublicFunction[CopyRetinaImageToClipboard]
 
 CopyRetinaImageToClipboard[expr_, crop_:False] := (
-  CopyToClipboard @ If[crop, ImageCrop, Identity] @ Rasterize[expr /. (RawImageSize -> _) -> Sequence[], ImageFormattingWidth -> Infinity, ImageResolution -> (144*2), Background -> Transparent];
+  CopyToClipboard @ If[crop, ImageCrop, Id] @ Rasterize[expr /. (RawImageSize -> _) -> Sequence[], ImageFormattingWidth -> Infinity, ImageResolution -> (144*2), Background -> Transparent];
   expr
 );
 
@@ -188,7 +188,7 @@ ImageCropAndPad[img_] := ImagePad[ImageCrop[img], 50, White];
 PublicFunction[FastCopyRetinaImageToClipboard]
 
 FastCopyRetinaImageToClipboard[expr_, crop_:True] := (
-  CopyToClipboard @ If[crop, ImageCrop, Identity] @ Rasterize[expr /. (RawImageSize -> _) -> Sequence[], ImageFormattingWidth -> Infinity, ImageResolution -> (144*2)];
+  CopyToClipboard @ If[crop, ImageCrop, Id] @ Rasterize[expr /. (RawImageSize -> _) -> Sequence[], ImageFormattingWidth -> Infinity, ImageResolution -> (144*2)];
   expr
 );
 
@@ -286,11 +286,11 @@ DefineStandardTraditionalForm[LexicalPattern[e_] :> lexicalPatternBoxes @ e];
 lexicalPatternBoxes[e_] := Block[{BoxForm`UseTextFormattingQ}, MakeBoxes @@ ReplaceAll[
   Hold @ e, {
     Verbatim[Pattern][p_, rhs_] :> RuleCondition @ RawBoxes @ Construct[Pattern, p, lexicalPatternBoxes @ rhs],
-    s:(_String | Verbatim[_] | Verbatim[__] | Verbatim[___]) :> RawBoxes[s]
+    s:(_Str | Verbatim[_] | Verbatim[__] | Verbatim[___]) :> RawBoxes[s]
   }
 ]];
 
-$whitespacePatt = ___String ? WhitespaceQ;
+$whitespacePatt = ___Str ? WhitespaceQ;
 
 addWhitespacePatts = Case[
   RowBox[{head_, "[", args_, "]"}] := RowBox[{head, "[", $whitespacePatt, % @ args, $whitespacePatt, "]"}];
@@ -367,7 +367,7 @@ FindCellObjects[boxPattern_, cellType_:All] := Scope[
   Part[cells, indices]
 ];
 
-cellContainsStringQ[patt_][str_String | BoxData[str_String] | TextData[str_String]] := StringContainsQ[str, patt];
+cellContainsStringQ[patt_][str_Str | BoxData[str_Str] | TextData[str_Str]] := StringContainsQ[str, patt];
 cellContainsStringQ[patt_][expr_] := ContainsQ[expr, patt];
 cellContainsQ[patt_][expr_] := ContainsQ[expr, patt];
 
@@ -390,10 +390,10 @@ PasteFromClipboard[] := ReadString["!pbpaste"];
 PublicFunction[ToNotebookExpression]
 
 ToNotebookExpression = Case[
-  str_String | Path[str_String]     := Import @ str;
-  nb_NotebookObject                 := NotebookGet @ nb;
-  nb_Notebook                       := nb;
-  Automatic                         := % @ EvaluationNotebook[];
+  str_Str | Path[str_Str] := Import @ str;
+  nb_NotebookObject       := NotebookGet @ nb;
+  nb_Notebook             := nb;
+  Automatic               := % @ EvaluationNotebook[];
 ];
 
 (**************************************************************************************************)
@@ -412,7 +412,7 @@ ReplaceBoxesInCurrentNotebook[boxRules_, OptionsPattern[]] := Scope[
   UnpackOptions[cellTypes, replaceExistingNotebook];
   nb = EvaluationNotebook[];
   nbData = NotebookGet[nb];
-  If[Head[nbData] =!= Notebook, ReturnFailed[]];
+  If[H[nbData] =!= Notebook, ReturnFailed[]];
   SetAutomatic[cellTypes, $replacementCellTypes];
   SetAll[cellTypes, _];
   nbData2 = CellReplaceBoxes[nbData, mapVerbatim[boxRules], cellTypes];
@@ -439,7 +439,7 @@ FindBoxesInCurrentNotebook[boxRules_, OptionsPattern[]] := Scope[
   UnpackOptions[cellTypes];
   nb = EvaluationNotebook[];
   nbData = NotebookGet[nb];
-  If[Head[nbData] =!= Notebook, ReturnFailed[]];
+  If[H[nbData] =!= Notebook, ReturnFailed[]];
   SetAutomatic[cellTypes, $replacementCellTypes];
   SetAll[cellTypes, _];
   CellFindBoxes[nbData, boxRules, cellTypes]
@@ -507,12 +507,12 @@ PublicFunction[CellTableAddRow, CellTableAddColumn, CellTableDeleteRow, CellTabl
 
 General::nottexttable = "Previous cell is not a textual table.";
 
-CellTableAddRow[n_Integer:-1] := CatchMessage @ modifyPreviousTextTable[InsertConstantRow[$textPlaceholder, n]];
-CellTableAddColumn[n_Integer:-1] := CatchMessage @ modifyPreviousTextTable[InsertConstantColumn[$textPlaceholder, n]];
-CellTableDeleteRow[n_Integer:-1] := CatchMessage @ modifyPreviousTextTable[Delete[n]];
-CellTableDeleteColumn[n_Integer:-1] := CatchMessage @ modifyPreviousTextTable[DeleteColumn[n]];
-CellTableMoveRow[a_Integer -> b_Integer] := CatchMessage @ modifyPreviousTextTable[moveRow[a -> b]];
-CellTableMoveColumn[a_Integer -> b_Integer] := CatchMessage @ modifyPreviousTextTable[moveCol[a -> b]];
+CellTableAddRow[n_Int:-1] := CatchMessage @ modifyPreviousTextTable[InsertConstantRow[$textPlaceholder, n]];
+CellTableAddColumn[n_Int:-1] := CatchMessage @ modifyPreviousTextTable[InsertConstantColumn[$textPlaceholder, n]];
+CellTableDeleteRow[n_Int:-1] := CatchMessage @ modifyPreviousTextTable[Delete[n]];
+CellTableDeleteColumn[n_Int:-1] := CatchMessage @ modifyPreviousTextTable[DeleteColumn[n]];
+CellTableMoveRow[a_Int -> b_Int] := CatchMessage @ modifyPreviousTextTable[moveRow[a -> b]];
+CellTableMoveColumn[a_Int -> b_Int] := CatchMessage @ modifyPreviousTextTable[moveCol[a -> b]];
 
 modifyPreviousTextTable[fn_] := Scope[
   prevCell = PreviousCell[];
@@ -523,8 +523,8 @@ modifyPreviousTextTable[fn_] := Scope[
   NotebookWrite[prevCell, cell];
 ]
 
-moveRow[a_ -> -1][list_] := moveRow[a -> Length[list]][list];
-moveRow[-1 -> b_][list_] := moveRow[Length[list] -> b][list];
+moveRow[a_ -> -1][list_] := moveRow[a -> Len[list]][list];
+moveRow[-1 -> b_][list_] := moveRow[Len[list] -> b][list];
 moveRow[a_ -> b_][list_] := Insert[Delete[list, a], Part[list, a], b];
 
 moveCol[rule_][list_] := Transpose @ moveRow[rule][Transpose @ list];
@@ -543,7 +543,7 @@ ToggleInlineCells[cell_CellObject] := Scope[
   cellData = NotebookRead[cell];
   (* to make sure we can get manually retrieve cells if they get mangld *)
   $LastConvertedCellBuffer ^= Prepend[$LastConvertedCellBuffer, cellData];
-  If[Length[$LastConvertedCellBuffer] > 4, $LastConvertedCellBuffer ^= Take[$LastConvertedCellBuffer, 4]];
+  If[Len[$LastConvertedCellBuffer] > 4, $LastConvertedCellBuffer ^= Take[$LastConvertedCellBuffer, 4]];
 
   If[MatchQ[cellData, Cell @ BoxData @ $toggledInlineCellP],
     (* we're already inside an inline cell, just change it to text inline *)
@@ -558,7 +558,7 @@ ToggleInlineCells[cell_CellObject] := Scope[
     ContainsQ[cellData, $toggledInlineCellP],
       restorePosition = LookupTaggingRule[cellData, "CursorPosition"];
       toggleToText[cellData],
-    !ContainsQ[cellData, _String ? containsWLQ],
+    !ContainsQ[cellData, _Str ? containsWLQ],
       BadBeep[];
       Return[],
     True,
@@ -592,17 +592,17 @@ $inlineWLExprRegex =  RegularExpression @ "(\\(\\([^\n]+\\)\\))|(\\$[[:alpha:]][
 containsWLQ[e_] := StringContainsQ[e, $inlineWLExprRegex];
 
 toggleToCode = Case[
-  c:Cell[_String ? containsWLQ, __] := MapAt[% /* TextData, c, 1];
+  c:Cell[_Str ? containsWLQ, __] := MapAt[% /* TextData, c, 1];
   c:Cell[_TextData, __] := MapAt[%, c, 1];
   t_TextData := Map[%, t];
   list_List := Map[%, list];
   s_StyleBox := MapAt[%, s, 1];
   c_Cell := c;
-  str_String ? containsWLQ := splitToCode[str];
+  str_Str ? containsWLQ := splitToCode[str];
   e_ := e;
 ];
 
-splitToCode[str_String] :=
+splitToCode[str_Str] :=
   List @@ StringReplace[str, {
     var:("$" ~~ WordCharacter ~~ RepeatedNull[WordCharacter | DigitCharacter | "$"] ~~ WordBoundary) :> makeToggledInlineCell[var],
     span:("((" ~~ Shortest[Repeated[Except["\n"]]] ~~ "))") :> makeToggledInlineCell[span]

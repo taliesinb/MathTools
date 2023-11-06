@@ -41,7 +41,7 @@ $testsOutPath := $testsOutPath = LocalPath["Tests", "Outputs"];
 
 declareFunctionAutocomplete[RunTests, {FileNameTake /@ FileNames["*.wl", $testsInPath]}];
 
-RunTests[filePattern_String:All, OptionsPattern[]] := Scope[
+RunTests[filePattern_Str:All, OptionsPattern[]] := Scope[
 
   UnpackOptions[$verbose, $dryRun, $testContentsPattern, $maxItems, $overwriteTarget];
 
@@ -89,7 +89,7 @@ runFileTest[inputPath_, outDir_] := Scope[
   If[$userAbort === True, ReturnFailed[]];
 
   msgPath = MsgPath @ inputPath;
-  $fileContents = Association[];
+  $fileContents = Assoc[];
 
   inputFileName = FileNameTake @ inputPath;
   VPrint["Reading inputs from ", msgPath];
@@ -109,13 +109,13 @@ runFileTest[inputPath_, outDir_] := Scope[
   ,
     VPrint["Reading expected outputs from ", MsgPath @ outputPath];
     oldOutputs = readExpressionList @ outputPath;
-    oldCount = Length @ oldOutputs;
+    oldCount = Len @ oldOutputs;
     If[FailureQ[oldOutputs], ReturnFailed[]];
   ];
 
   VPrint["Evaluating ", numInputs, " inputs and comparing with ", oldCount, " outputs."];
   newOutputs = evalExpressionsJoint[inputs, oldOutputs];
-  newCount = Length @ newOutputs;
+  newCount = Len @ newOutputs;
   If[$userAbort === True, VMessage[RunTests::userAbort]; ReturnFailed[]];
   If[$numMessages > 0, VMessage[RunTests::someMessages, msgPath, $numMessages]; ReturnFailed[]];
 
@@ -252,7 +252,7 @@ throwMessage[f_Failure] := Throw[f, $throwMessageTag];
 
 (**************************************************************************************************)
 
-DefineStandardTraditionalForm[e:ExpressionAt[_String, _Integer, _Hold] :> makeExpressionAtBoxes[e]]
+DefineStandardTraditionalForm[e:ExpressionAt[_Str, _Int, _Hold] :> makeExpressionAtBoxes[e]]
 
 makeExpressionAtBoxes[ExpressionAt[path_, pos_, h_Hold]] :=
   ClickBox[ToBoxes @ toValueIcon @ h, SystemOpen @ calcFileLine[path, pos]];
@@ -276,7 +276,7 @@ $testHeads = {TestRasterObject, TestBoxesObject, TestDataObject};
 $testObjectP = Alternatives @@ Map[Blank, $testHeads];
 
 TestOutputGallery::lenMismatch = "Cannot match inputs from file(s) `` with expected outputs from (``)."
-TestOutputGallery[string_String] := Scope[
+TestOutputGallery[string_Str] := Scope[
   inputFiles = findTestFiles[string];
   If[inputFiles === {}, ReturnFailed[]];
   outputFiles = StringReplace[inputFiles, $testsInPath -> $testsOutPath];
@@ -284,7 +284,7 @@ TestOutputGallery[string_String] := Scope[
   inputExprs //= DeleteCases[ExpressionAt[_, _, Hold[CompoundExpression[___, Null]]]];
   outputExprs = Flatten[readExpressionList /@ outputFiles];
   If[MemberQ[inputExprs, $Failed] || MemberQ[outputExprs, $Failed], ReturnFailed[]];
-  If[Length[inputExprs] =!= Length[outputExprs],
+  If[Len[inputExprs] =!= Len[outputExprs],
     Message[TestOutputGallery::lenMismatch, MsgPath /@ inputFiles, MsgPath /@ outputFiles];
     ReturnFailed[];
   ];
@@ -348,14 +348,14 @@ readExpressionList[path_] := withTestContext @ Block[
 RunTests::writeFail = "Could not write `` expressions to ``.";
 writeExpressionList[path_, list_] := withTestContext @ Block[
   {str},
-  VPrint["Writing ", Length @ list, " expressions to ", MsgPath @ path];
+  VPrint["Writing ", Len @ list, " expressions to ", MsgPath @ path];
   If[$dryRun, Return[]];
   str = StringRiffle[Map[toOutString, list], "\n\n"];
-  If[FailureQ @ ExportUTF8[path, str], VMessage[RunTests::writeFail, Length @ list, MsgPath @ path]];
+  If[FailureQ @ ExportUTF8[path, str], VMessage[RunTests::writeFail, Len @ list, MsgPath @ path]];
 ];
 
 toOutString = Case[
-  ExpressionAt[_, _, Hold[s_String]] := StringReplace[ToString[s, InputForm], "\\n" -> "\n"];
+  ExpressionAt[_, _, Hold[s_Str]] := StringReplace[ToString[s, InputForm], "\\n" -> "\n"];
   ExpressionAt[_, _, Hold[e_]]       := ToPrettifiedString[e, MaxIndent -> 4, CompactingWidth -> Infinity];
 ];
 
@@ -372,9 +372,9 @@ updateExpression[outPath_, outPos_, n_, newExpr_] := Scope[
 
 (**************************************************************************************************)
 
-calcFileLine[file_String, pos_Integer] := Scope[
+calcFileLine[file_Str, pos_Int] := Scope[
   (* a global cache can get stale, so we only cache if we're in RunTests *)
-  contents = If[AssociationQ[$fileContents],
+  contents = If[AssocQ[$fileContents],
     CacheTo[$fileContents, file, ReadString @ file],
     ReadString @ file
   ];
@@ -541,7 +541,7 @@ testSymbolQ[s_ ? HoldSymbolQ] := Context[s] === $testContext && StringLength[Hol
 
 makeDiffCells[None, None] := Nothing;
 
-makeDiffCells[Hold[TestRasterObject[p_String]], None] := {
+makeDiffCells[Hold[TestRasterObject[p_Str]], None] := {
   Cell["expected", "Subsubsection"],
   Cell[BoxData @ ToBoxes @ importObject @ p, "Output"];
 }
@@ -554,7 +554,7 @@ makeDiffCells[Hold[other_], None] := Scope[
   }
 ];
 
-makeDiffCells[Hold[a:{__TestRasterObject}], Hold[b:{__TestRasterObject}]] /; Length[a] === Length[b] :=
+makeDiffCells[Hold[a:{__TestRasterObject}], Hold[b:{__TestRasterObject}]] /; Len[a] === Len[b] :=
   MapThread[makeDiffCells[Hold[#1], Hold[#2]]&, {a, b}];
 
 makeDiffCells[Hold @ TestRasterObject[img1_, box1_], Hold @ TestRasterObject[img2_, box2_]] := Scope[
@@ -568,8 +568,8 @@ makeDiffCells[Hold @ TestRasterObject[img1_, box1_], Hold @ TestRasterObject[img
     Cell["box values", "Subsubsection"],
     Cell[
       BoxData @ RBox[
-        RBox["$oldBoxes", " ", "=", " ", ToBoxes @ Iconize @ First @ boxes, ";"], "\n",
-        RBox["$newBoxes", " ", "=", " ", ToBoxes @ Iconize @ Last @ boxes, ";"]
+        RBox["$oldBoxes", " ", "=", " ", ToBoxes @ Iconize @ P1 @ boxes, ";"], "\n",
+        RBox["$newBoxes", " ", "=", " ", ToBoxes @ Iconize @ PN @ boxes, ";"]
       ],
       "Code"
     ]
@@ -653,7 +653,7 @@ writeObject[data_, ext_] := Scope[
 readObject[name_] := Quiet @ Check[If[StringEndsQ[name, ".mx"], ImportMX, Import] @ objectPath[name], $Failed];
 
 SetHoldFirst[testObjNameQ];
-testObjNameQ[name_String] := FileExistsQ[objectPath @ name];
+testObjNameQ[name_Str] := FileExistsQ[objectPath @ name];
 testObjNameQ[_] := False;
 
 testObjFrame[col_, b_] := FrameBox[b, FrameStyle -> col, RoundingRadius -> 3, FrameMargins -> 5];
@@ -662,7 +662,7 @@ testObjFrame[col_, b_] := FrameBox[b, FrameStyle -> col, RoundingRadius -> 3, Fr
 
 PrivateFunction[ImportTestObject]
 
-ImportTestObject[_Symbol[name_String, ___]] := readObject @ name;
+ImportTestObject[_Symbol[name_Str, ___]] := readObject @ name;
 
 (**************************************************************************************************)
 
@@ -675,7 +675,7 @@ TestRaster[expr_] := TestRasterObject[
 ];
 
 declareBoxFormatting[
-  TestRasterObject[name_ ? testObjNameQ, mxName_String] :>
+  TestRasterObject[name_ ? testObjNameQ, mxName_Str] :>
     ClickBox[
       testObjFrame[$Orange, ToBoxes @ thumbnailize @ readObject @ name],
       SetSelectedNotebook @ CreateDocument @ TextCell[ImportMX @ objectPath @ mxName, "Input"]

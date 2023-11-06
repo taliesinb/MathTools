@@ -15,7 +15,7 @@ SetGraphicsScale[g_Graphics, scale_:40, padding_:1, adjustFonts_:True] := Scope[
   padding //= StandardizePadding;
   SetAll[padding, 1];
   totalPadding = Map[Total, padding];
-  size = (dims * scale) + totalPadding; imageWidth = First @ size;
+  size = (dims * scale) + totalPadding; imageWidth = P1 @ size;
   pointsToScaled = Scaled[# / imageWidth]&;
   If[adjustFonts,
     g = g /. (FontSize -> p_) :> RuleCondition[FontSize -> pointsToScaled[p]];
@@ -95,8 +95,8 @@ boxSizeSpec = Case[
 PublicFunction[SetScalableGraphicsFontSize]
 
 SetScalableGraphicsFontSize[g_Graphics, imageSize_:Automatic] := Scope[
-  SetAutomatic[imageSize, First @ LookupImageSize @ g];
-  imageWidth = First[imageSize, imageSize];
+  SetAutomatic[imageSize, P1 @ LookupImageSize @ g];
+  imageWidth = P1[imageSize, imageSize];
   pointsToScaled = Scaled[# / imageWidth]&;
   g = g /. (FontSize -> p_) :> RuleCondition[FontSize -> pointsToScaled[p]];
   ReplaceOptions[g, ImageSize -> imageSize]

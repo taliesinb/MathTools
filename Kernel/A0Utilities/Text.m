@@ -26,18 +26,18 @@ LoadFirstNamesBloomFilter[] := Scope[
   ,
     bloomFilter = ImportMX @ namesBloomFile;
   ];
-  If[Head[bloomFilter] =!= DataStructure, ReturnFailed[]];
+  If[H[bloomFilter] =!= DataStructure, ReturnFailed[]];
   bloomFilter
 ];
 
 $FirstNamesBloomFilter := $FirstNamesBloomFilter = LoadFirstNamesBloomFilter[];
 
-PossibleFirstNameQ[str_String] := $FirstNamesBloomFilter["CouldContain", ToLowerCase @ str];
+PossibleFirstNameQ[str_Str] := $FirstNamesBloomFilter["CouldContain", ToLowerCase @ str];
 
-PossibleFullNameQ[str_String] := Or[
+PossibleFullNameQ[str_Str] := Or[
   And[
     StringMatchQ[str, FullNamePhrase],
-    PossibleFirstNameQ[First @ StringSplit[str, " ", 2]]
+    PossibleFirstNameQ[P1 @ StringSplit[str, " ", 2]]
   ],
   MemberQ[$KnownAuthors, str]
 ];
@@ -46,7 +46,7 @@ PossibleFullNameQ[str_String] := Or[
 
 PublicFunction[ExtractTitleAuthor]
 
-ExtractTitleAuthor[title_String] := Scope[
+ExtractTitleAuthor[title_Str] := Scope[
   person = None;
   Scan[FirstStringCase[title, #]&, {
     StartOfString ~~ t___ ~~ "(" ~~ Shortest[p___] ~~ ")" ~~ EndOfString :>
@@ -77,25 +77,25 @@ $chineseNamePattern = RegularExpression[$chineseName <> " " <> $chineseName <> "
 
 $surnamePrefix = LowercaseWord|"Van"|"Der"|"De"|"Von"|"St"|"Del";
 
-SplitFirstLastName[str_String] := Which[
+SplitFirstLastName[str_Str] := Which[
   StringMatchQ[str, TitlecaseWord ~~ (" " ~~ $surnamePrefix).. ~~ " " ~~ TitlecaseWord], StringSplit[str, " ", 2],
-  StringMatchQ[str, $chineseNamePattern],                                                StringReverse @ Reverse @ StringSplit[StringReverse @ str, " ", 2],
-  StringContainsQ[str, ", "],                                                            Reverse @ StringSplit[str, ", ", 2],
-  StringMatchQ[str, TitlecaseWord ~~ (" " ~~ TitlecaseWord)..],                          StringReverse @ Reverse @ StringSplit[StringReverse @ str, " ", 2],
+  StringMatchQ[str, $chineseNamePattern],                                                StringReverse @ Rev @ StringSplit[StringReverse @ str, " ", 2],
+  StringContainsQ[str, ", "],                                                            Rev @ StringSplit[str, ", ", 2],
+  StringMatchQ[str, TitlecaseWord ~~ (" " ~~ TitlecaseWord)..],                          StringReverse @ Rev @ StringSplit[StringReverse @ str, " ", 2],
   StringContainsQ[str, " "],                                                             MapLast[trimInitials] @ StringSplit[str, " ", 2],
   True,                                                                                  {str}
 ];
 
 SplitFirstLastName["Aleph 0"] = {"Aleph 0"};
 
-trimInitials[s_String] := StringTrimLeft[s, (UppercaseLetter ~~ " " | ". ")..];
+trimInitials[s_Str] := StringTrimLeft[s, (UppercaseLetter ~~ " " | ". ")..];
 
 (**************************************************************************************************)
 
 PublicFunction[ExtractFirstName, ExtractLastName]
 
-ExtractFirstName[str_String] := First @ SplitFirstLastName @ str;
-ExtractLastName[str_String] := Last @ SplitFirstLastName @ str;
+ExtractFirstName[str_Str] := P1 @ SplitFirstLastName @ str;
+ExtractLastName[str_Str] := PN @ SplitFirstLastName @ str;
 
 (**************************************************************************************************)
 
@@ -111,10 +111,10 @@ Clear[$englishWordsData, $EnglishWords, $LowercaseEnglishWords, $TitlecaseEnglis
 PublicFunction[EnglishWordQ, LowercaseEnglishWordQ, TitlecaseEnglishWordQ, ProperNameQ]
 PublicVariable[$EnglishWords, $LowercaseEnglishWords, $TitlecaseEnglishWords, $ProperNames]
 
-EnglishWordQ[str:(_String | {___String})]          := Lookup[$assocEnglishWords, str, False];
-LowercaseEnglishWordQ[str:(_String | {___String})] := Lookup[$assocLowercaseEnglishWords, str, False];
-TitlecaseEnglishWordQ[str:(_String | {___String})] := Lookup[$assocTitlecaseEnglishWords, str, False];
-ProperNameQ[str:(_String | {___String})]           := Lookup[$assocProperNames, str, False];
+EnglishWordQ[str:(_Str | {___Str})]          := Lookup[$assocEnglishWords, str, False];
+LowercaseEnglishWordQ[str:(_Str | {___Str})] := Lookup[$assocLowercaseEnglishWords, str, False];
+TitlecaseEnglishWordQ[str:(_Str | {___Str})] := Lookup[$assocTitlecaseEnglishWords, str, False];
+ProperNameQ[str:(_Str | {___Str})]           := Lookup[$assocProperNames, str, False];
 
 $englishWordsPath = LocalPath["Data", "Text", "EnglishWords.mx"];
 $systemWordsFile = "/usr/share/dict/words";

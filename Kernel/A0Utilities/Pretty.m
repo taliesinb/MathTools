@@ -148,13 +148,13 @@ $ellipsisString = "\[Ellipsis]";
 SetHoldAllComplete[prettyLong, fatHeadString];
 
 prettyLong = Case[
-  str_String              := Scope[
+  str_Str               := Scope[
     If[StringLength[str] < $maxLength, Return @ pretty2 @ str];
     prefix = If[$maxLength > 5, StringTake[ToString[StringTake[str, $maxLength - 5], InputForm], {2, -2}], ""];
     StringJoin["\"", prefix, $ellipsisString, "\""]
   ];
   _List                 := StringJoin["{", $ellipsisString, "}"];
-  _Association ? HAQ    := StringJoin["<|", $ellipsisString, "|>"];
+  _Assoc ? HAQ          := StringJoin["<|", $ellipsisString, "|>"];
   (h_Symbol ? HAQ)[___] := StringJoin[symbolString @ h, "[", $ellipsisString, "]"];
   e:$fatHeadP           := fatHeadString[e];
   g_Graph ? HAQ         := StringJoin["Graph[«", IntegerString @ VertexCount @ g, "», «", IntegerString @ EdgeCount @ g, "», ", $ellipsisString, "]"];
@@ -168,7 +168,7 @@ fatHeadString[e_] := StringJoin[prettyHead @ e, "[", $ellipsisString, "]"];
 SetHoldAllComplete[symbolString, prettyHead];
 
 symbolString[s_Symbol ? HoldAtomQ] :=
-  If[$colorSymbolContext, colorByContext[Context[s]], Identity] @
+  If[$colorSymbolContext, colorByContext[Context[s]], Id] @
   If[$fullSymbolContext, ToString[Unevaluated @ s, InputForm], SymbolName[Unevaluated @ s]];
 
 symbolString[_] := "?";
@@ -178,7 +178,7 @@ wrapColor[col_, con_][str_] := StringJoin[
   "\)"
 ];
 
-colorByContext["System`" | "Internal`" | "GeneralUtilities`" | "Developer`" | "QuiverGeometry`"] := Identity;
+colorByContext["System`" | "Internal`" | "GeneralUtilities`" | "Developer`" | "QuiverGeometry`"] := Id;
 colorByContext["Global`"] := wrapColor[$Teal, "Global`"];
 colorByContext["QuiverGeometry`Private`"] := wrapColor[$Orange, "QuiverGeometry`Private`"];
 colorByContext[con_] := wrapColor[$Red, con];
@@ -195,11 +195,11 @@ prettyHead[_] := $ellipsisString;
 SetHoldAllComplete[smallQ, wideQ, longQ];
 
 smallQ = Case[
-  _Symbol ? HAQ   := True;
-  s_String ? HAQ  := StringLength[s] < 12 || StringMatchQ[s, LetterCharacter..];
-  _Integer ? HAQ  := True;
-  _Real ? HAQ     := $compactRealNumbers;
-  _               := False;
+  _Symbol ? HAQ := True;
+  s_Str ? HAQ   := StringLength[s] < 12 || StringMatchQ[s, LetterCharacter..];
+  _Int ? HAQ    := True;
+  _Real ? HAQ   := $compactRealNumbers;
+  _             := False;
 ,
   {HAQ -> HoldAtomQ}
 ];
@@ -207,9 +207,9 @@ smallQ = Case[
 wideQ[_Sequence] := False;
 wideQ[e_] := (2*LeafCount[Unevaluated @ e] > $maxWidth) || (2*ByteCount[Unevaluated @ e]/48) > $maxWidth;
 
-longQ[e_String ? HoldAtomQ] := StringLength[Unevaluated @ e] > $maxLength;
-longQ[(_?HoldAtomQ)[Shortest[a___], ___Rule]] := Length[Unevaluated @ e] > $maxLength;
-longQ[e_] := Length[Unevaluated @ e] > $maxLength;
+longQ[e_Str ? HoldAtomQ] := StringLength[Unevaluated @ e] > $maxLength;
+longQ[(_?HoldAtomQ)[Shortest[a___], ___Rule]] := Len[Unevaluated @ e] > $maxLength;
+longQ[e_] := Len[Unevaluated @ e] > $maxLength;
 
 shortQ[s_] := shortStringQ[s] || shortStringQ[StringDelete[s, "\!\(\*StyleBox[" ~~ Shortest[__] ~~ "Rule[StripOnInput, False]]\)"]];
 
@@ -223,7 +223,7 @@ SetHoldAllComplete[pretty1, pretty1wrap, indentArgs];
 pretty1wrap[e_ ? longQ] := prettyLong[e];
 pretty1wrap[e_ ? HoldAtomQ] := pretty2[e];
 pretty1wrap[e:(_Blank | _BlankSequence | _BlankNullSequence)] := pretty1[e];
-pretty1wrap[e_List | e_Association] := pretty1[e];
+pretty1wrap[e_List | e_Assoc] := pretty1[e];
 pretty1wrap[e_] := "(" <> pretty1[e] <> ")";
 
 pretty1 = Case[
@@ -251,7 +251,7 @@ pretty1 = Case[
   list_List /; TrueQ[$elideLargeArrays] && HoldNumericArrayQ[list] && beefyNumericArrayQ[list] := prettyElidedList[list];
   list_List /; TrueQ[$prettyCompression] && HoldPackedArrayQ[list] && holdLeafCount[list] > 128 := prettyCompressed[list];
   list_List                      := indentedBlock["{", indentArgs @ list, "}"];
-  assoc_Association /; AssociationQ[Unevaluated[assoc]]
+  assoc_Assoc /; AssocQ[Unevaluated[assoc]]
                                  := indentedBlock["<|", KeyValueMap[prettyRule, Unevaluated @ assoc], "|>"];
   e:$fatHeadP                    := If[$elideAtomicHeads, fatHeadString[e], pretty2[e]];
   e:(_Symbol[])                  := pretty2[e];
@@ -284,7 +284,7 @@ $literalPatternVariables = Hold[
 ];
 
 Scan[
-  Function[s, With[{v = s},
+  Fn[s, With[{v = s},
     pretty1wrap[Verbatim[v]] := symbolString[s];
     pretty1[Verbatim[v]] := symbolString[s];
   ], HoldAll],
@@ -312,16 +312,16 @@ dimsString[dims_] := Riffle[IntegerString /@ dims, ","];
 
 indentedBlock[begin_, {}, end_] := begin <> end;
 
-indentedBlock[begin_ ? (StringEndsQ["["]), {line_String} /; StringLength[line] > 8, "]"] :=
+indentedBlock[begin_ ? (StringEndsQ["["]), {line_Str} /; StringLength[line] > 8, "]"] :=
   StringJoin[StringDrop[begin, -1] <> " @ ", deIndent @ line];
 
-(* indentedBlock["{", {line_String} /; StringLength[line] > 8, "}"] :=
+(* indentedBlock["{", {line_Str} /; StringLength[line] > 8, "}"] :=
   StringJoin["List @ ", deIndent @ line];
  *)
-indentedBlock[begin_, {line_String}, end_] :=
+indentedBlock[begin_, {line_Str}, end_] :=
   StringJoin[begin, deIndent @ line, end];
 
-deIndent[line_String] := StringReplace[line, "\n\t" -> "\n"];
+deIndent[line_Str] := StringReplace[line, "\n\t" -> "\n"];
 
 indentedBlock[begin_, list_List, end_] := With[
   {t1 = makeTab[$depth], t2 = makeTab[$depth - 1]},
@@ -329,7 +329,7 @@ indentedBlock[begin_, list_List, end_] := With[
   compact = StringJoin[
     begin,
     Map[{#, ", "}&, Most @ list],
-    {Last @ list},
+    {PN @ list},
     end
   ];
 
@@ -338,7 +338,7 @@ indentedBlock[begin_, list_List, end_] := With[
   StringJoin[
     begin, "\n",
     Map[{t1, #, ",\n"}&, Most @ list],
-    {t1, Last @ list, "\n"},
+    {t1, PN @ list, "\n"},
     t2, end
   ]
 ];
@@ -398,8 +398,8 @@ compactReals[str_] := If[$compactRealNumbers && StringFreeQ[str, "\""],
 (**************************************************************************************************)
 
 prettyCompressed[e_] := Scope[
-  head = Head[Unevaluated @ e];
-  headName = If[Head[head] === Symbol, SymbolName[head] <> ";", ""];
+  head = H[Unevaluated @ e];
+  headName = If[H[head] === Symbol, SymbolName[head] <> ";", ""];
   str = Compress[Unevaluated @ e];
   len = StringLength[str];
   StringJoin @ Which[

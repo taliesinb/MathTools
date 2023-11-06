@@ -14,7 +14,7 @@ Options[SafeURLDownload] = {
   OverwriteTarget -> False
 }
 
-SafeURLDownload[url_String, path_String, OptionsPattern[]] := Scope[
+SafeURLDownload[url_Str, path_Str, OptionsPattern[]] := Scope[
   UnpackOptions[overwriteTarget];
   path //= NormalizePath;
   If[FileExistsQ[path] && !overwriteTarget,

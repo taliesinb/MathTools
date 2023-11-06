@@ -138,7 +138,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   wasAutoCardinalList = False;
-  If[AssociationQ[representation] && Sort[Keys @ representation] === {"CayleyFunction", "InitialStates"},
+  If[AssocQ[representation] && Sort[Keys @ representation] === {"CayleyFunction", "InitialStates"},
 
     UnpackAssociation[representation, cayleyFunction, initialStates];
     repInitialStates = ToList[initialStates];
@@ -182,33 +182,33 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   If[IntegerQ[maxDepth], SetAutomatic[includeFrontier, False]];
   SetAutomatic[maxDepth, Which[
     maxNorm =!= Infinity,
-      If[IntegerQ[maxNorm], maxNorm, Ceiling[maxNorm] + 1] * Length[trueCardinalList],
+      If[IntegerQ[maxNorm], maxNorm, Ceiling[maxNorm] + 1] * Len[trueCardinalList],
     maxVertices =!= Infinity,
       Infinity,
-    AssociationQ[representation],
+    AssocQ[representation],
       Infinity,
     True,
       maxNorm = Replace[latticeName, $defaultLatticeNorms];
       SetAutomatic[imageSize, Replace[latticeName, $defaultLatticeSizes]];
-      If[maxNorm === None, maxNorm = 3, maxNorm * Length[trueCardinalList]]
+      If[maxNorm === None, maxNorm = 3, maxNorm * Len[trueCardinalList]]
   ]];
 
-  If[MatchQ[maxVertices, AtLeast[_Integer]],
-    maxVertices //= First;
+  If[MatchQ[maxVertices, AtLeast[_Int]],
+    maxVertices //= P1;
     SetAutomatic[includeFrontier, False];
     SetAutomatic[depthTermination, "Complete"];
   ];
 
   SetAutomatic[depthTermination, "Immediate"];
 
-  If[!MatchQ[maxDepth, (_Integer ? Positive) | Infinity],
+  If[!MatchQ[maxDepth, (_Int ? Positive) | Infinity],
     ReturnFailed[head::badlatticedepth, maxDepth];
   ];
 
   $stripLV = True;
   layoutDimension = Automatic;
   Switch[abstractCoordinateFunction,
-    Automatic /; !AssociationQ[representation],
+    Automatic /; !AssocQ[representation],
       {coordTypes, abstractCoordinateFunction, isRedundant} =
         FindCoordinatizationFunction[baseRep];
       If[graphLayout === Automatic && FreeQ[coordTypes, None],
@@ -216,10 +216,10 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
         SetAutomatic[vertexCoordinateFunction, proposedVertexCoordinateFunction];
       ];
       layoutDimension = If[is3D, 3, 2],
-    Automatic /; AssociationQ[representation],
-      abstractCoordinateFunction = Identity,
+    Automatic /; AssocQ[representation],
+      abstractCoordinateFunction = Id,
     None,
-      abstractCoordinateFunction = Identity,
+      abstractCoordinateFunction = Id,
     _,
       abstractCoordinateFunction //= toACFunction;
       If[$stripLV, abstractCoordinateFunction = Normal /* abstractCoordinateFunction];
@@ -236,7 +236,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   indexEdgeList = DeleteDuplicates @ indexEdgeList;
-  If[IntegerQ[maxEdges] && Length[indexEdgeList] > maxEdges,
+  If[IntegerQ[maxEdges] && Len[indexEdgeList] > maxEdges,
     indexEdgeList = Take[indexEdgeList, maxEdges];
     vertexPresentQ = ConstantAssociation[Catenate @ Map[Part[vertexList, {Part[#, 1], Part[#, 2]}]&, indexEdgeList], True];
     Scan[Set[vertexPresentQ[#], True]&, initialStates];
@@ -244,7 +244,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   ];
 
   If[randomSeeding =!= None && indexEdgeList =!= {},
-    vertRange = Range @ Length[vertexList];
+    vertRange = Range @ Len[vertexList];
     BlockRandom[reordering = RandomSample[vertRange], RandomSeeding -> randomSeeding];
     vertexList //= PartOperator[reordering];
     reorderMap = AssociationThread[vertRange, reordering];
@@ -259,7 +259,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   (* rewrite the indexed edges to use the explicit vertices *)
   edgeList = DeleteDuplicates[indexEdgeList] /.
     DirectedEdge[i_, j_, c___] :> DirectedEdge[Part[abstractVertexList, i], Part[abstractVertexList, j], c];
-  If[abstractCoordinateFunction =!= Identity,
+  If[abstractCoordinateFunction =!= Id,
     edgeList //= DeleteDuplicates];
 
   If[ContainsQ[graphRegionHighlight, $cardinalBasedRegionPattern] || graphMetric =!= Automatic,
@@ -289,10 +289,10 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
         ReturnFailed[head::normempty, maxNorm, someNorms]];
       norms = Part[norms, vertexIndices];
     ,
-      vertexIndices = Range @ Length @ abstractVertexList;
+      vertexIndices = Range @ Len @ abstractVertexList;
     ];
     If[abstractCoordinateFilter =!= None,
-      vertexIndices = Intersection[vertexIndices, SelectIndices[abstractVertexList, First /* abstractCoordinateFilter]];
+      vertexIndices = Intersection[vertexIndices, SelectIndices[abstractVertexList, P1 /* abstractCoordinateFilter]];
       If[vertexIndices === {},
         ReturnFailed[head::filterempty]];
       If[norms =!= None, norms = Part[norms, vertexIndices]];
@@ -307,17 +307,17 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   (* apply the final layout, if any *)
   SetAutomatic[vertexCoordinateFunction, None];
   If[vertexCoordinateFunction =!= None,
-    If[AssociationQ[vertexCoordinateFunction], vertexCoordinateFunction //= procComplexVCF];
-    If[$stripLV, vertexCoordinateFunction = First /* vertexCoordinateFunction];
+    If[AssocQ[vertexCoordinateFunction], vertexCoordinateFunction //= procComplexVCF];
+    If[$stripLV, vertexCoordinateFunction = P1 /* vertexCoordinateFunction];
     vertexCoordinates = Map[vertexCoordinateFunction, abstractVertexList];
-    If[!MatrixQ[vertexCoordinates], ReturnFailed[head::badvcoords, First @ vertexCoordinates, First @ abstractVertexList]];
-    layoutDimension = Switch[Length @ First @ vertexCoordinates, 2, 2, 3, 3, _, Automatic];
+    If[!MatrixQ[vertexCoordinates], ReturnFailed[head::badvcoords, P1 @ vertexCoordinates, P1 @ abstractVertexList]];
+    layoutDimension = Switch[Len @ P1 @ vertexCoordinates, 2, 2, 3, 3, _, Automatic];
   ,
     vertexCoordinates = Automatic;
   ];
 
   (* apply the final vertex and edge relabeling *)
-  If[AssociationQ[representation] && vertexNameFunction === "SpiralIndex", vertexNameFunction = "Index"];
+  If[AssocQ[representation] && vertexNameFunction === "SpiralIndex", vertexNameFunction = "Index"];
   renamingRule = toRenamingRule[vertexNameFunction, abstractVertexList, vertexList];
   If[FailureQ[renamingRule], ReturnFailed[head::badvertnaming, vertexNameFunction, commaString @ $validRenamingRules]];
   {ivertex, finalVertexList} = {ivertex, abstractVertexList} /. renamingRule;
@@ -344,7 +344,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   SetAutomatic[trueCardinalList, CardinalList @ edgeList];
 
   If[cardinals =!= Automatic,
-    If[Length[cardinals] =!= Length[trueCardinalList],
+    If[Len[cardinals] =!= Len[trueCardinalList],
       ReturnFailed[head::badcardlist, cardinals, trueCardinalList]];
     If[PathRepresentationObjectQ @ representation,
       representation = RenameCardinals[representation, cardinals];
@@ -392,7 +392,7 @@ iGenerateLattice[head_, representation_, directedEdges_, opts:OptionsPattern[]] 
   If[cardinals =!= Automatic,
     graph = RenameCardinals[graph, cardinals]];
 
-  isLV = MatchQ[First @ vertexList, LatticeVertex[_, _]];
+  isLV = MatchQ[P1 @ vertexList, LatticeVertex[_, _]];
   AttachVertexAnnotations[graph, <|
     If[isLV, "GeneratingVertex" -> vertexList[[All, 2]], {}],
     "AbstractCoordinates" -> If[isLV, abstractVertexList[[All, 1]], abstractVertexList],
@@ -431,9 +431,9 @@ makeQLatticeGraphLegend = Case[
 
 $defaultLatticeNorms = {
   "TruncatedTrihexagonal" -> 5,
-  name_String /; $LatticeData[name, "Dimension"] === 3 -> None,
+  name_Str /; $LatticeData[name, "Dimension"] === 3 -> None,
   "Square" -> 2,
-  _String -> 3,
+  _Str -> 3,
   _ -> Infinity
 };
 
@@ -445,7 +445,7 @@ General::badparamlatticename = "The specified name `` is not a known name for a 
 General::badparamlatticeargs = "The provided arguments `` were not valid for parameterized lattice ``."
 General::badparamlattiecount = "The parameterized lattice `` takes up to `` arguments, but `` were provided.";
 
-iGenerateLattice[head_, {latticeName_String, args___}, directedEdges_, opts:OptionsPattern[]] /; !MatchQ[{args}, {__String}] && !MemberQ[$LatticeClassNames, latticeName] := Scope[
+iGenerateLattice[head_, {latticeName_Str, args___}, directedEdges_, opts:OptionsPattern[]] /; !MatchQ[{args}, {__Str}] && !MemberQ[$LatticeClassNames, latticeName] := Scope[
 
   paramLatticedata = $ParameterizedLatticeData[latticeName];
   If[MissingQ[paramLatticedata],
@@ -457,15 +457,15 @@ iGenerateLattice[head_, {latticeName_String, args___}, directedEdges_, opts:Opti
   arguments = {args};
   options = {opts};
 
-  argCount = Length @ arguments;
-  If[argCount > Length[parameters] - 1,
-    ReturnFailed[head::badparamlattiecount, latticeName, Length[parameters] - 1, argCount]];
+  argCount = Len @ arguments;
+  If[argCount > Len[parameters] - 1,
+    ReturnFailed[head::badparamlattiecount, latticeName, Len[parameters] - 1, argCount]];
 
   paramKeys = Keys @ parameters;
   arguments = Join[parameters, AssociationThread[Take[paramKeys, argCount], arguments]];
   If[maxDepth =!= Automatic, arguments["MaxDepth"] = maxDepth];
 
-  result = factory[arguments, Association @ opts];
+  result = factory[arguments, Assoc @ opts];
   If[GraphQ[result],
     If[head === LatticeGraph, result = ExtendedGraph[result, ArrowheadShape -> None]];
     Return @ result;
@@ -491,12 +491,12 @@ quiverStateToLatticeVertex[e_] := e /. PathValue[a_, b_] :> LatticeVertex[b, a];
 (**************************************************************************************************)
 
 procComplexVCF[assoc_] :=
-  Apply @ Construct[Function,
+  Apply @ Construct[Fn,
     $Total @ KeyValueMap[{i, vec} |-> toVCFEntry[Slot[i], vec], assoc]
   ] /. $Total -> Total;
 
-toVCFEntry[s_, vecs_List ? MatrixQ] := toVCFEntry[s, Association @ MapIndex1[#2 -> #1&, vecs]];
-toVCFEntry[s_, vecs_Association] := Construct[Switch, s, Sequence @@ KeyValueMap[Splice[{#1, #2}]&, vecs], True, 0];
+toVCFEntry[s_, vecs_List ? MatrixQ] := toVCFEntry[s, Assoc @ MapIndex1[#2 -> #1&, vecs]];
+toVCFEntry[s_, vecs_Assoc] := Construct[Switch, s, Sequence @@ KeyValueMap[Splice[{#1, #2}]&, vecs], True, 0];
 toVCFEntry[s_, vec_List] := s * vec;
 
 $abc = Transpose @ N @ {{Sqrt[3]/2, -(1/2)}, {0, 1}, {-(Sqrt[3]/2), -(1/2)}};
@@ -504,17 +504,17 @@ $abc = Transpose @ N @ {{Sqrt[3]/2, -(1/2)}, {0, 1}, {-(Sqrt[3]/2), -(1/2)}};
 vecAngle[{0., 0.}] := 0;
 vecAngle[{a_, b_}] := ArcTan[a, b];
 
-vecSorter[v_] /; Length[v] >= 4 := vecSorter @ Take[v, 3];
-vecSorter[v_] /; Length[v] == 3 := {Norm[v], vecAngle @ Dot[$abc, v]};
-vecSorter[v_] /; Length[v] == 2 := {Norm[v], vecAngle @ v};
-vecSorter[v_] /; Length[v] == 1 := {Norm[v], v};
+vecSorter[v_] /; Len[v] >= 4 := vecSorter @ Take[v, 3];
+vecSorter[v_] /; Len[v] == 3 := {Norm[v], vecAngle @ Dot[$abc, v]};
+vecSorter[v_] /; Len[v] == 2 := {Norm[v], vecAngle @ v};
+vecSorter[v_] /; Len[v] == 1 := {Norm[v], v};
 
 $validRenamingRules = {"SpiralIndex", "RasterIndex", "Representation", "RepresentationMatrix", "Coordinates", "Index"};
 
-toRenamingRule[name_String -> n_Integer, vertices_, origVertices_] :=
+toRenamingRule[name_Str -> n_Int, vertices_, origVertices_] :=
   Map[PartOperator[n], toRenamingRule[name, vertices, origVertices]];
 
-toRenamingRule[name_String -> f_, vertices_, origVertices_] :=
+toRenamingRule[name_Str -> f_, vertices_, origVertices_] :=
   Map[f, toRenamingRule[name, vertices, origVertices]];
 
 toRenamingRule["SpiralIndex", vertices_, origVertices_] :=
@@ -529,7 +529,7 @@ toRenamingRule["Representation", vertices_, origVertices_] :=
 toRenamingRule["RepresentationMatrix", vertices_, origVertices_] :=
   AssociationThread[vertices, origVertices[[All, 1, 1]]];
 
-toRenamingRule["Coordinates" -> n_Integer, _, _] :=
+toRenamingRule["Coordinates" -> n_Int, _, _] :=
   LatticeVertex[v_, _] :> Part[v, n];
 
 toRenamingRule["Coordinates" -> f_, _, _] :=
@@ -548,11 +548,11 @@ toRenamingRule[_, _, _] := $Failed;
 (**************************************************************************************************)
 
 toNormFunction = Case[
-  (i:({__Integer}|_Integer) -> f_) := PartOperator[i] /* f;
-  list_List                        := ApplyThrough[% /@ list] /* Max;
-  i_Integer                        := PartOperator[i];
-  "Euclidean"                      := RootMeanSquare;
-  f_                               := f;
+  (i:({__Int}|_Int) -> f_) := PartOperator[i] /* f;
+  list_List                := ApplyThrough[% /@ list] /* Max;
+  i_Int                    := PartOperator[i];
+  "Euclidean"              := RootMeanSquare;
+  f_                       := f;
 ];
 
 (**************************************************************************************************)
@@ -667,12 +667,12 @@ pickNamesWithPropertyEqualTo[prop_, value_] :=
 
 LatticeQuiverData["2D"] := pickNamesWithPropertyEqualTo["Dimension", 2];
 LatticeQuiverData["3D"] := pickNamesWithPropertyEqualTo["Dimension", 3];
-LatticeQuiverData[name_String] := Lookup[$LatticeData, $latticeNameAliases @ name, None];
-LatticeQuiverData[name_String, prop_String] := Part[$LatticeData, Key @ $latticeNameAliases @ name, prop];
+LatticeQuiverData[name_Str] := Lookup[$LatticeData, $latticeNameAliases @ name, None];
+LatticeQuiverData[name_Str, prop_Str] := Part[$LatticeData, Key @ $latticeNameAliases @ name, prop];
 LatticeQuiverData[] := $LatticeNames;
 
-LatticeQuiverData[{name_String, args___}, "Representation"] := Scope[
-  Last @ $ParameterizedLatticeData[name][args]
+LatticeQuiverData[{name_Str, args___}, "Representation"] := Scope[
+  PN @ $ParameterizedLatticeData[name][args]
 ];
 
 (**************************************************************************************************)

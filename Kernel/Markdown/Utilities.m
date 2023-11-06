@@ -20,7 +20,7 @@ SiteGarbageCollectRasters[site_, OptionsPattern[]] := Scope[
   setupRasterizationPath[markdownSearchPath, "OutputImages"];
   If[FileType[markdownSearchPath] =!= Directory || FileType[$rasterizationPath] =!= Directory, ReturnFailed[]];
   
-  markdownPattern = $fileImageTemplate @ Association[
+  markdownPattern = $fileImageTemplate @ Assoc[
     "path" -> "YYY",
     "relativepath" -> "YYY",
     "width" -> "XXX",
@@ -31,20 +31,20 @@ SiteGarbageCollectRasters[site_, OptionsPattern[]] := Scope[
 
   markdownFiles = FileNames["*.md", markdownSearchPath];
   markdownContent = ImportUTF8 /@ markdownFiles;
-  VPrint["* Searching ", Length @ markdownFiles, " markdown files in ", MsgPath @ markdownSearchPath, "."];
+  VPrint["* Searching ", Len @ markdownFiles, " markdown files in ", MsgPath @ markdownSearchPath, "."];
  
   matches = Flatten @ StringCases[markdownContent, markdownPattern];
   matches = Map[PathJoin[$rasterizationPath, FileNameTake[#]]&, matches];
-  VPrint["* Found ", Length @ matches, " referenced images."];
+  VPrint["* Found ", Len @ matches, " referenced images."];
 
-  If[Length[matches] == 0, ReturnFailed[]];
+  If[Len[matches] == 0, ReturnFailed[]];
 
   existingFiles = FileNames["*.png", $rasterizationPath];
-  VPrint["* Checking ", Length @ existingFiles, " existing images in ", MsgPath @ $rasterizationPath,  "."];
+  VPrint["* Checking ", Len @ existingFiles, " existing images in ", MsgPath @ $rasterizationPath,  "."];
 
   garbageFiles = Complement[existingFiles, matches];
 
-  VPrint["* Deleting ", Length @ garbageFiles, " unreferenced image files."];
+  VPrint["* Deleting ", Len @ garbageFiles, " unreferenced image files."];
 
   If[!$dryRun, Scan[DeleteFile, garbageFiles]];
 
@@ -61,9 +61,9 @@ Options[SiteExportNavigationPage] = {
   IndexPagePath -> None
 }
 
-SiteExportNavigationPage[files_, relativePrefix_String, navPath_, OptionsPattern[]] := Scope[
+SiteExportNavigationPage[files_, relativePrefix_Str, navPath_, OptionsPattern[]] := Scope[
   UnpackOptions[indexPagePath];
-  $mdFileCache = UAssociation[]; (* for inserting by id from one page to another *)
+  $mdFileCache = UAssoc[]; (* for inserting by id from one page to another *)
   If[StringQ[files],
     If[FileType[files] =!= Directory, ReturnFailed[]];
     files = FileNames["*.md", files];
@@ -81,8 +81,8 @@ SiteExportNavigationPage[files_, relativePrefix_String, navPath_, OptionsPattern
     StringQ[navPath],
       navOutputPath = StringReplace[navPath, ".template" -> ""],
     RuleQ[navPath],
-      navPath = First @ navPath;
-      navOutputPath = Last @ navPath,
+      navPath = P1 @ navPath;
+      navOutputPath = PN @ navPath,
     True,
       ReturnFailed[]
   ];
@@ -96,7 +96,7 @@ SiteExportNavigationPage[files_, relativePrefix_String, navPath_, OptionsPattern
 
 toUnicode[str_] := FromCharacterCode[ToCharacterCode[str], "UTF8"];
 
-getFileTitle[path_] := StringTrim @ StringDelete[toUnicode @ First @ FileLines[path, 1], "#"];
+getFileTitle[path_] := StringTrim @ StringDelete[toUnicode @ P1 @ FileLines[path, 1], "#"];
 
 toNavTitle[e_] := StringReplace[e, " and " -> " &amp; "];
 

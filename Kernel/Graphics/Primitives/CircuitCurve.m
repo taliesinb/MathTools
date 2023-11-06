@@ -53,10 +53,10 @@ circuitCurveBoxes[CircuitCurve[points:$CoordMat2P, opts:OptionsPattern[CircuitCu
     {{xs, ys}, {xe, ye}} = {first, last} = FirstLast @ points;
     dir = Normalize[last - first] * Abs[lineThickness]/2;
     normal = VectorRotate90[dir];
-    dist = If[MatrixQ[setbackDistance], Last, Identity] @ setbackDistance;
+    dist = If[MatrixQ[setbackDistance], PN, Id] @ setbackDistance;
     points2 = SetbackCoordinates[points, -dist/1.1];
-    pointsL = Select[points2 + Threaded[normal], ys >= Last[#] >= ye&];
-    pointsR = Select[Reverse[points2] - Threaded[normal], ys >= Last[#] >= ye&];
+    pointsL = Select[points2 + Threaded[normal], ys >= PN[#] >= ye&];
+    pointsR = Select[Rev[points2] - Threaded[normal], ys >= PN[#] >= ye&];
     pointsL = Prepend[{Part[pointsL, 1, 1], ys}] @ Append[{Part[pointsL, -1, 1], ye}] @ pointsL;
     pointsR = Append[{Part[pointsR, -1, 1], ys}] @ Prepend[{Part[pointsR, 1, 1], ye}] @ pointsR;
     polygon = Join[{first}, pointsL, {last}, pointsR];
@@ -65,8 +65,8 @@ circuitCurveBoxes[CircuitCurve[points:$CoordMat2P, opts:OptionsPattern[CircuitCu
       StyleBox[Construct[LineBox, {pointsL, pointsR}], GrayLevel[0, .4], AbsoluteThickness[1]]
     };
   ];
-  d = VectorRotate90[Normalize[Last[points] - First[points]]] * lineThickness/2;
-  dist = If[MatrixQ[setbackDistance], Last, Identity] @ setbackDistance;
+  d = VectorRotate90[Normalize[PN[points] - P1[points]]] * lineThickness/2;
+  dist = If[MatrixQ[setbackDistance], PN, Id] @ setbackDistance;
   points2 = SetbackCoordinates[points, -dist/1.1];
   pointsL = Offset[d, #]& /@ points2;
   pointsR = Offset[-d, #]& /@ points2;
@@ -92,5 +92,5 @@ circuitCurvePoints[CircuitCurve[points:$CoordPairP, opts:OptionsPattern[CircuitC
     None,        Line[points],
     _,           Message[CircuitCurve::badBendStyle, bendStyle]; Line[points]
   ];
-  DiscretizeCurve @ SetbackCurve[curve, If[MatrixQ[setbackDistance], First, Identity] @ setbackDistance]
+  DiscretizeCurve @ SetbackCurve[curve, If[MatrixQ[setbackDistance], P1, Id] @ setbackDistance]
 ];

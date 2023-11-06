@@ -7,7 +7,7 @@ tell application "Terminal"
 end tell
 """
 
-RunInTerminalWindow[directory_String, command_String] := Scope[
+RunInTerminalWindow[directory_Str, command_Str] := Scope[
   cmd = $runInTerminalTemplate[NormalizePath @ directory, command];
   RunAppleScript[cmd]
 ]

@@ -6,7 +6,7 @@ SetInitialValue[$ScholarUserID, None];
 
 PublicFunction[ScholarPageToMarkdown]
 
-ScholarPageToMarkdown[url_String, opts___Rule] := PaperToMarkdown[ImportScholarPage[url, FilterOptions @ opts], FilterOptions @ opts];
+ScholarPageToMarkdown[url_Str, opts___Rule] := PaperToMarkdown[ImportScholarPage[url, FilterOptions @ opts], FilterOptions @ opts];
 
 (**************************************************************************************************)
 
@@ -28,7 +28,7 @@ ImportScholarPage::badxml2 = "XML for paper with id `` was missing a field for `
 
 xmlFilePath[id_] := LocalPath["Data", "Scholar", id <> ".mx"];
 
-ImportScholarPage[url_String, opts:OptionsPattern[]] := Scope[
+ImportScholarPage[url_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[downloadPDF, pDFPath, $verbose];
   If[!StringQ[$ScholarUserID], ReturnFailed["userid"]];
   id = If[
@@ -45,7 +45,7 @@ ImportScholarPage[url_String, opts:OptionsPattern[]] := Scope[
     EnsureDirectory @ LocalPath["Data", "Scholar"];
     VPrint["Querying Google Scholar with ", MsgPath @ url];
     xml = WithInternet @ Import[url, "XMLObject"];
-    If[Head[xml] =!= XMLObject["Document"], ReturnFailed["baddl", url]];
+    If[H[xml] =!= XMLObject["Document"], ReturnFailed["baddl", url]];
     If[!ContainsQ[xml, XMLElement["meta", {"property" -> "og:title", "content" -> _}, _]],
       VPrint[xml];
       ReturnFailed["badxml", url]];
@@ -55,7 +55,7 @@ ImportScholarPage[url_String, opts:OptionsPattern[]] := Scope[
   pdfURL = DeepFirstCase[paperXML,
     XMLElement["div",
       {___, "class" -> "gsc_oci_title_ggi", ___},
-      {___, XMLElement["a", {___, "href" -> url_String, ___}, {___, XMLElement["span", {___, "class" -> "gsc_vcd_title_ggt", ___}, {"[PDF]"}], ___}]}
+      {___, XMLElement["a", {___, "href" -> url_Str, ___}, {___, XMLElement["span", {___, "class" -> "gsc_vcd_title_ggt", ___}, {"[PDF]"}], ___}]}
     ] :> url,
     None
   ];
@@ -63,7 +63,7 @@ ImportScholarPage[url_String, opts:OptionsPattern[]] := Scope[
     XMLElement["a", {___, "class"->"gsc_oci_title_link", ___, "href" -> url_, ___}, _] :> url,
     None
   ];
-  metadata = Association @ DeepCases[paperXML, XMLElement["div", {"class" -> "gs_scl"}, {
+  metadata = Assoc @ DeepCases[paperXML, XMLElement["div", {"class" -> "gs_scl"}, {
     XMLElement["div", {___, "class"->"gsc_oci_field", ___}, {field_}],
     XMLElement["div", {___, "class"->"gsc_oci_value", ___}, {value_}]}] :> Rule[field, value]
   ];
@@ -81,7 +81,7 @@ ImportScholarPage[url_String, opts:OptionsPattern[]] := Scope[
   If[StringQ[publicationDate], publicationDate //= DateObject];
   abstract = Lookup[metadata, "Description", ReturnFailed["badxml2", id, "Abstract"]];
   abstract //= XMLToText /* StringTrim /* sanitizeAbstract;
-  assoc = Association[
+  assoc = Assoc[
     "Title" -> title,
     "Authors" -> authors,
     "Date" -> publicationDate,

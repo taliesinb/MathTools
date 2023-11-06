@@ -8,7 +8,7 @@ LatticeVertex[coords$, type$] represents a vertex in a lattice graph with type t
 $thinGap = Style["\[CenterDot]", Gray];
 $thickGap = Style[" \[CenterDot] ", Gray];
 formatInteger[a_] := Style[If[Negative[a], UnderBar[Abs[a]], a], FontFamily -> "Avenir"];
-formatLVertex[args:{__Integer}] := Row[formatInteger /@ args, $thinGap];
+formatLVertex[args:{__Int}] := Row[formatInteger /@ args, $thinGap];
 formatLVertex[args_List] := Row[args, $thickGap];
 formatLVertex[args_] := args;
 formatLVertex[args_, type_] := Overscript[formatLVertex[args], type];
@@ -74,9 +74,9 @@ PublicFunction[ProductVertices]
 ProductVertices[a_, b_] := VertexProduct @@@ Tuples[{toRange[a], toRange[b]}];
 
 toRange[list_List] := list;
-toRange[n_Integer] := Range[-n, n];
-toRange[m_Integer ;; n_Integer] := Range[m, n];
-toRange[m_Integer ;; n_Integer ;; s_Integer] := Range[m, n, s];
+toRange[n_Int] := Range[-n, n];
+toRange[m_Int ;; n_Int] := Range[m, n];
+toRange[m_Int ;; n_Int ;; s_Int] := Range[m, n, s];
 
 (**************************************************************************************************)
 

@@ -12,7 +12,7 @@ makeArrowheadShape[None, _] := None;
 makeArrowheadShape["Sphere", style_] :=
   makeArrowheadGraphic3D[$arrowheads3D @ name, Color3D @ style];
 
-makeArrowheadShape[name_String, style_] /; StringStartsQ[name, {"Line", "DoubleLine", "CrossLine"}] :=
+makeArrowheadShape[name_Str, style_] /; StringStartsQ[name, {"Line", "DoubleLine", "CrossLine"}] :=
   makeArrowheadGraphic2D[
     $arrowheads2D @ name,
     Directive[style, $edgeThickness]
@@ -20,7 +20,7 @@ makeArrowheadShape[name_String, style_] /; StringStartsQ[name, {"Line", "DoubleL
 
 ExtendedGraphPlot::arrow3din2d = "Cannot use shape `` in a 2D graph."
 
-makeArrowheadShape[name_String, style_] := Which[
+makeArrowheadShape[name_Str, style_] := Which[
   KeyExistsQ[$arrowheads2D, name],
     makeArrowheadGraphic2D[$arrowheads2D @ name, style],
   KeyExistsQ[$arrowheads3D, name],
@@ -70,7 +70,7 @@ makeArrowheadGraphic3D[primitives_, style_, opts___] :=
 
 $nudge = 1*^-2;
 
-$arrowheads2D = Association[
+$arrowheads2D = Assoc[
   "Invisible" -> {},
   "Line" ->
     Line @ ToPacked @ {{-0.2, -0.3}, {0.1, 0.}, {-0.2, 0.3}},
@@ -275,7 +275,7 @@ $arrowheads2D = Association[
 
 $coneRadius = 0.15;
 
-$arrowheads3D = Association[
+$arrowheads3D = Assoc[
   "Cone" ->
     Cone[ToPacked @ {{-0.2, 0., 0.}, {0.2, 0., 0.}}, $coneRadius],
   "Tube" ->
@@ -314,11 +314,11 @@ to2DArrowheadShape = Case[
   a_          := a;
 ];
 
-ArrowheadLegend[assoc_Association, OptionsPattern[]] := Scope[
+ArrowheadLegend[assoc_Assoc, OptionsPattern[]] := Scope[
   UnpackOptions[arrowheadShape, orientation, maxItems];
   If[arrowheadShape === "Cardinal", Return[""]];
   isHorizontal = orientation === Horizontal;
-  shapeIndex = If[AssociationQ[arrowheadShape], arrowheadShape, <|All -> arrowheadShape|>];
+  shapeIndex = If[AssocQ[arrowheadShape], arrowheadShape, <|All -> arrowheadShape|>];
   rows = KeyValueMap[
     {name, color} |-> (
       arrowShape = to2DArrowheadShape @ Lookup[shapeIndex, name, Lookup[shapeIndex, All, "Arrow"]];
@@ -328,7 +328,7 @@ ArrowheadLegend[assoc_Association, OptionsPattern[]] := Scope[
       ]),
     assoc
   ];
-  If[Length[rows] > maxItems, rows = Append[Take[rows, maxItems], {"", "\[VerticalEllipsis]"}]];
+  If[Len[rows] > maxItems, rows = Append[Take[rows, maxItems], {"", "\[VerticalEllipsis]"}]];
   If[isHorizontal, horizontalALFrame, verticalALFrame] @ rows
 ]
 
@@ -355,7 +355,7 @@ makeLegendArrowheadGraphic[color_, shape_, isHorizontal_:False] := Scope[
   prims = $arrowheads2D @ shape;
   makeArrowheadGraphic2D[
     {If[isLine, AbsoluteThickness[2.0], Nothing], If[!isHorizontal, Rotate[prims, Pi/2], prims]},
-    If[isLine, Identity, FaceForm] @ color,
+    If[isLine, Id, FaceForm] @ color,
     BaselinePosition -> Scaled[0.1], ImageSize -> {11, 11}, AspectRatio -> Automatic
   ]
 ];
@@ -384,10 +384,10 @@ $arrowheadTransforms = <|
   "Reverse" -> reverseArrowhead,
   "OverBar" -> addInversionBar[True],
   "UnderBar" -> addInversionBar[False],
-  "Identity" -> Identity
+  "Identity" -> Id
 |>;
 
-TransformArrowheads[primitives_, transform_String] := Scope[
+TransformArrowheads[primitives_, transform_Str] := Scope[
   func = Lookup[$arrowheadTransforms, transform];
   ReplaceAll[primitives,
     g:{_, _, (Graphics|Graphics3D)[Except[{}], ___]} :> RuleCondition @ func @ g

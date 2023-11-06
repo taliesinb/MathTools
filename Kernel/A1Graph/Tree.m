@@ -4,9 +4,9 @@ FunctionTreeGraph[e_, rules:OptionsPattern[]] :=
   makeTreeGraph[e, scanFunction, "ExpressionTreeGraph", rules];
 
 scanFunction = Case[
-  HoldPattern[Function[vars_List, body_]] := Scope[$slotSymbols = vars; scanToTree[{}, body]];
-  HoldPattern[Function[var_Symbol, body_]] := % @ Function[{var}, body];
-  HoldPattern[Function[body_]] := scanToTree[{}, body];
+  HoldPattern[Fn[vars_List, body_]] := Scope[$slotSymbols = vars; scanToTree[{}, body]];
+  HoldPattern[Fn[var_Symbol, body_]] := % @ Fn[{var}, body];
+  HoldPattern[Fn[body_]] := scanToTree[{}, body];
   _ := $Failed;
 ];
 
@@ -22,7 +22,7 @@ scanExpression[e_] := scanToTree[{}, e];
 (**************************************************************************************************)
 
 makeTreeGraph[e_, scanFn_, theme_, rules___] := Scope[
-  $type = $degree = $data = $leafData = Association[];
+  $type = $degree = $data = $leafData = Assoc[];
   $edges = Bag[]; $verts = Bag[]; $slotSymbols = {};
   scanFn @ e;
   verts = BagPart[$verts, All];
@@ -45,7 +45,7 @@ SetAttributes[{scanToTree}, HoldRest];
 scanToTree[pos_, HoldForm[e_]] := scanToTree[pos, e];
 
 scanToTree[pos_, e:(head_Symbol[___])] /; !MatchQ[head, Form | RGBColor | GrayLevel] := Scope[
-  n = Length[Unevaluated @ e];
+  n = Len[Unevaluated @ e];
   StuffBag[$verts, pos];
   $degree[pos] ^= n;
   $data[pos] ^= head;
@@ -62,7 +62,7 @@ scanToTree[pos_, e:(head_Symbol[___])] /; !MatchQ[head, Form | RGBColor | GrayLe
   ];
 ];
 
-scanToTree[pos_, Slot[n_Integer | n_String]] := Scope[
+scanToTree[pos_, Slot[n_Int | n_Str]] := Scope[
   StuffBag[$verts, pos];
   $degree[pos] ^= 0;
   $data[pos] ^= n;
@@ -70,7 +70,7 @@ scanToTree[pos_, Slot[n_Integer | n_String]] := Scope[
 ];
 
 scanToTree[pos_, e_] := Scope[
-  If[Head[e] === Form, e //= First];
+  If[H[e] === Form, e //= P1];
   StuffBag[$verts, pos];
   $degree[pos] ^= 0;
   $data[pos] ^= e;
@@ -173,7 +173,7 @@ Options[PolynomialGraph] = {
 PolynomialGraph[expr_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[itemFunction];
   SetAutomatic[itemFunction, polyItemFunction];
-  vars = Association[];
+  vars = Assoc[];
   $varCount = 1; $edges = {}; $vlabels = {};
   toPolyGraph[expr];
   vertexRange = Range[1, $varCount-1];
@@ -195,7 +195,7 @@ addPoly[p:Polynomial[vars_, body_], inputIndices_] := Scope[
 
 toPolyGraph = Case[
   None := ($varCount++);
-  poly:Polynomial[vars_, _] := addPoly[poly, Table[$varCount++, Length @ vars]];
+  poly:Polynomial[vars_, _] := addPoly[poly, Table[$varCount++, Len @ vars]];
   (poly_Polynomial)[inputs___] := addPoly[poly, Map[%, {inputs}]];
   body_ := (AppendTo[$vlabels, $varCount -> Form[body]]; $varCount++);
 ];
@@ -262,11 +262,11 @@ HyperedgeIncidenceGraph[<|name$1 -> expr$1, $$|>] constructs a bipartite graph, 
 HyperedgeIncidenceGraph::notassoc = "First argument should be an association from names to hyperedges."
 
 HyperedgeIncidenceGraph[expr_, rules:OptionsPattern[]] := Scope[
-  If[!AssociationQ[expr], ReturnFailed["notassoc"]];
+  If[!AssocQ[expr], ReturnFailed["notassoc"]];
   keys = Keys[expr];
   $keysP = Apply[Alternatives, Verbatim /@ keys];
   
-  $type = $content = Association[];
+  $type = $content = Assoc[];
   CollectTo[{$hyperedges, $vertices},
     KeyValueScan[scanHyperedge, expr /. p:$keysP :> Hyperedge[p]]
   ];
@@ -306,7 +306,7 @@ scanHyperedge[path_, value_] := Scope[
 toHyperedgePart[path_, ref_Hyperedge] :=
   ref;
 
-toHyperedgePart[path_, value:(_List | _Association)] := (
+toHyperedgePart[path_, value:(_List | _Assoc)] := (
   PartValueMap[addPathEdge[path], value];
   addHyperedgeVertex[path, value]
 );
@@ -316,7 +316,7 @@ toHyperedgePart[path_, atom_] :=
 
 addHyperedgeVertex[path_, value_] := (
   StuffBag[$vertices, path];
-  $type[path] = SymbolName @ Head @ value;
+  $type[path] = SymbolName @ H @ value;
   $content[path] = value;
   path
 )

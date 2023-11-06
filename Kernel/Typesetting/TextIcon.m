@@ -55,7 +55,7 @@ textIconBoxes[TextIcon[str_, opts___Rule]] := Scope[
   Switch[method,
     "Raster",
       SetAutomatic[fontSlant, Plain];
-      SetNone[formatType, Identity];
+      SetNone[formatType, Id];
       textIconRasterBoxes[str, fontSize, fontColor, fontWeight, fontFamily, fontSlant, formatType, contentPadding],
     "Vector",
       textIconVectorBoxes[str, fontSize, fontColor, fontWeight, fontFamily, fontSlant, formatType, contentPadding, background],
@@ -95,7 +95,7 @@ textIconVectorBoxes[str_, fontSize_, fontColor_, fontWeight_, fontFamily_, fontS
   If[MatchQ[fontSlant, "Italic" | Italic], fontColor //= toItalicDir];
   $disableAdjustment = False;
   primBoxes = Which[
-    Head[fontColor] === ColorGradient,
+    H[fontColor] === ColorGradient,
       $disableAdjustment = True;
       ColorGradientBoxes[primBoxes, fontColor, bounds],
     ColorQ[fontColor],     StyleBox[primBoxes, FaceForm @ fontColor],
@@ -105,11 +105,11 @@ textIconVectorBoxes[str_, fontSize_, fontColor_, fontWeight_, fontFamily_, fontS
   If[$disableAdjustment, gboxConstructor = gboxConstructor /. AdjustmentBox[b_, _] :> b];
 
   If[fontSize === Inherited,
-    Function[Null, DynamicBox[
+    Fn[Null, DynamicBox[
       With[{System`\[FormalF] = CurrentValue[FontSize]}, #],
       TrackedSymbols :> {}
     ], HoldFirst] @@ gboxConstructor,
-    First[gboxConstructor /. System`\[FormalF] -> fontSize]
+    P1[gboxConstructor /. System`\[FormalF] -> fontSize]
   ]
 ];
 
@@ -123,7 +123,7 @@ toItalicDir = Case[
 
 CacheSymbol[$TextIconRasterCache]
 
-textIconRasterBoxes[str_, fontSize_Integer, fc_, fw_, ff_, fs_, form_, cp_] := CachedInto[
+textIconRasterBoxes[str_, fontSize_Int, fc_, fw_, ff_, fs_, form_, cp_] := CachedInto[
   $TextIconRasterCache, {str, fontSize, fc, fw, ff, fs},
   ToBoxes @ ColorGradientRasterize[
     Style[

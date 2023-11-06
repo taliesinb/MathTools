@@ -51,7 +51,7 @@ makeSizeBindingRuleBoxes = Case[
 ];
 
 makeCardinalSizeBindingRuleBoxes = Case[
-  s:(_SymbolForm | EllipsisSymbol | _Modulo | _Integer) := MakeBoxes @ s;
+  s:(_SymbolForm | EllipsisSymbol | _Modulo | _Int) := MakeBoxes @ s;
   c_ -> sz_           := makeHintedTemplateBox[c -> CardinalSymbol, sz -> QuiverSizeSymbol @ sz, "CompactBindingRuleForm"];
   g_GroupGeneratorSymbol := MakeBoxes @ g;
   c_                  := cardinalBox @ c;
@@ -242,7 +242,7 @@ PublicTypesettingForm[QuiverSizeSymbol]
 
 declareBoxFormatting[
   QuiverSizeSymbol[Null] :> "",
-  QuiverSizeSymbol[n_Integer] :> MakeBoxes @ n,
+  QuiverSizeSymbol[n_Int] :> MakeBoxes @ n,
   QuiverSizeSymbol[Infinity] :> "\[Infinity]",
   QuiverSizeSymbol[Modulo[n_]] :> MakeBoxes @ ModuloForm @ n,
   QuiverSizeSymbol[other_] :> MakeQGBoxes @ other

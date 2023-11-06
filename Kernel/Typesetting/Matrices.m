@@ -92,7 +92,7 @@ declareFormatting[
 ];
 
 formatLabeledMatrices[expr_] := ReplaceAll[expr,
-  matrix_ /; MatrixQ[Unevaluated @ matrix] /; Length[Unevaluated @ matrix] =!= 1 :> RuleCondition @ formatLabeledMatrix @ matrix
+  matrix_ /; MatrixQ[Unevaluated @ matrix] /; Len[Unevaluated @ matrix] =!= 1 :> RuleCondition @ formatLabeledMatrix @ matrix
 ]
 
 formatLabeledMatrix[matrix_] := Scope[

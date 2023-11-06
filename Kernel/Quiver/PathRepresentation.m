@@ -27,12 +27,12 @@ PathRepresentation[quiver_, representation_, initialVertex_:Automatic] := Scope[
   cardinals = CardinalList[quiver];
   generators = representation["Generators"];
   If[!SameLengthQ[cardinals, generators],
-    ReturnFailed["gencount", Length @ generatorList, Length @ cardinalList]];
+    ReturnFailed["gencount", Len @ generatorList, Len @ cardinalList]];
   If[!SameSetQ[cardinals, Keys @ generators],
     generators = AssociationThread[cardinals, Values @ generators];
   ];
   SetAutomatic[initialVertex, Part[VertexList[quiver], 1]];
-  assoc = Association[
+  assoc = Assoc[
     "Quiver" -> quiver,
     "Cardinals" -> cardinals,
     "Generators" -> generators,
@@ -99,7 +99,7 @@ SetUsage @ "
 PathRepresentationObject[$$] represents a Quiver with an associated representation.
 "
 
-PathRepresentationObject /: MakeBoxes[object:PathRepresentationObject[data_Association] ? HoldNoEntryQ, format_] := ModuleScope[
+PathRepresentationObject /: MakeBoxes[object:PathRepresentationObject[data_Assoc] ? HoldNoEntryQ, format_] := ModuleScope[
   UnpackAssociation[data, quiver, generators, representation];
   dimension = representation["Dimension"];
   group = representation["Group"];
@@ -156,14 +156,14 @@ Options[computeCayleyFunction] = {"Symmetric" -> True, "Labeled" -> True};
 RenameCardinals[qrep_PathRepresentationObject, renaming_List] :=
   RenameCardinals[qrep, RuleThread[qrep["Cardinals"], renaming]];
 
-RenameCardinals[PathRepresentationObject[data_Association], renaming:{__Rule}] := Scope[
+RenameCardinals[PathRepresentationObject[data_Assoc], renaming:{__Rule}] := Scope[
   UnpackAssociation[data, quiver, cardinals, generators, representation];
 
   quiver = RenameCardinals[quiver, renaming];
   cardinals = cardinals /. renaming;
   generators = KeyMap[Replace[renaming], generators];
 
-  assoc = Association[
+  assoc = Assoc[
     "Quiver" -> quiver,
     "Cardinals" -> cardinals,
     "Generators" -> generators,

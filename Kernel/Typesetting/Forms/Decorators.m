@@ -19,7 +19,7 @@ styleDecoratedBoxes[head_, style_, args___] := Scope[
   ]
 ];
 
-$LRSisterPatt = "\[CenterDot]" | AdjustmentBox["\[CenterDot]", ___] | (_String ? (StringContainsQ["\\cdot"]));
+$LRSisterPatt = "\[CenterDot]" | AdjustmentBox["\[CenterDot]", ___] | (_Str ? (StringContainsQ["\\cdot"]));
 
 applyDecoratedStyle = Case[
   StyleBox[b_, opts___] := StyleBox[% @ b, opts];
@@ -37,13 +37,13 @@ applyDecoratedStyle = Case[
 ];
 
 stripLR = Case[
-  s_String := StringTrimLeft[s, {"\\left", "\\right"}];
+  s_Str := StringTrimLeft[s, {"\\left", "\\right"}];
   other_   := other;
 ];
 
 evalKatexRepeated = Case[
-  TemplateBox[args_List, name_String] /; KeyExistsQ[$katexDisplayFunction, name] :=
-    % @ Apply[Replace[$katexDisplayFunction @ name, macro_String :> $katexMacros[macro]], args];
+  TemplateBox[args_List, name_Str] /; KeyExistsQ[$katexDisplayFunction, name] :=
+    % @ Apply[Replace[$katexDisplayFunction @ name, macro_Str :> $katexMacros[macro]], args];
   other_ := other;
 ]
 
@@ -156,13 +156,13 @@ Options[rewriteToVerticalOuter] = Options[VerticalModifierForm] = {
   Alignment -> Automatic
 }
 
-rewriteToVerticalOuter[arg_, n_Integer, opts:OptionsPattern[]] :=
+rewriteToVerticalOuter[arg_, n_Int, opts:OptionsPattern[]] :=
   rewriteToVertical[arg, n, OptionValue[Alignment]]
 
-rewriteToVertical[TemplateBox[args_, "AssociativeArrayForm"] /; Length[args] >= 2, n_, align_] := Scope[
+rewriteToVertical[TemplateBox[args_, "AssociativeArrayForm"] /; Len[args] >= 2, n_, align_] := Scope[
   {l, r} = makeFixedSpanning /@ $verticalFormData["AssociativeArrayForm"];
   args = toSplicedRow /@ args;
-  rows = Partition[args, n]; nrows = Length[rows];
+  rows = Partition[args, n]; nrows = Len[rows];
   rows = PrependColumn[rows, Prepend[l] @ Table["", nrows-1]];
   rows = AppendColumn[rows, Append[r] @ Table["", nrows-1]];
   rows = rows /. splice -> Splice;
@@ -183,10 +183,10 @@ PrivateFunction[addComma]
 addComma[""] := "";
 addComma[a_] := RBox[a, ","];
 
-rewriteToVertical[TemplateBox[args_, form_String] /; KeyExistsQ[$verticalFormData, form], 1, align_] /; Length[args] >= 2 := Scope[
+rewriteToVertical[TemplateBox[args_, form_Str] /; KeyExistsQ[$verticalFormData, form], 1, align_] /; Len[args] >= 2 := Scope[
   {l, r} = makeFixedSpanning /@ $verticalFormData[form]; gap = spacerBox[2];
   l = RBox[l, gap]; r = RBox[gap, r];
-  first = First[args]; last = Last[args]; middle = Part[args, 2 ;; -2];
+  first = P1[args]; last = PN[args]; middle = Part[args, 2 ;; -2];
   spacer = TemplateBox[{l}, "InvisibleForm"];
   rows = Map[List, Flatten @ {
     RBox[l, first, ","],
@@ -210,14 +210,14 @@ styleOpenItem[s_][r_RowBox] := MapAt[styleOpenItem[s], r, {1, 1}];
 styleCloseItem[s_][e_] := TBox[e, s];
 styleCloseItem[s_][r_RowBox] := MapAt[styleCloseItem[s], r, {1, -1}];
 
-rewriteToVertical[TemplateBox[args_, form_String] /; KeyExistsQ[$verticalFormData, form], n_, align_] /; Length[args] >= 2 := Scope[
+rewriteToVertical[TemplateBox[args_, form_Str] /; KeyExistsQ[$verticalFormData, form], n_, align_] /; Len[args] >= 2 := Scope[
   {l, r} = makeFixedSpanning /@ $verticalFormData[form];
   rows = Partition[args, n];
   spacer = TemplateBox[{l}, "InvisibleForm"];
   rows = {
-    middleRow[l] @ First @ rows,
+    middleRow[l] @ P1 @ rows,
     Splice[middleRow[spacer] /@ Part[rows, 2 ;; -2]],
-    lastRow[spacer, r] @ Last @ rows
+    lastRow[spacer, r] @ PN @ rows
   };
   TBoxOp["GridForm"] @ createGridBox[rows, {Right, {ReplaceAutomatic[align, Center]}, Left}, Automatic, 0]
 ];

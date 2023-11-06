@@ -24,10 +24,10 @@ FrontEnd`Private`EvaluationModeEvaluate[str_, TextForm, "ExternalLanguage"] /; T
 
 pythonPostEval["None"] := Null;
 
-pythonPostEval[s_String] :=
+pythonPostEval[s_Str] :=
   CellPrint @ Cell[s, "PythonOutput"];
 
-pythonPostEval[s_String /; StringStartsQ[s, "'file://"]] :=
+pythonPostEval[s_Str /; StringStartsQ[s, "'file://"]] :=
   CellPrint @ Cell[BoxData @ ToBoxes @ Import[StringTrimLeftRight[s, "'file://", "'"]], "PythonOutput"];
 
 PublicFunction[CopyImageToInlineHTML]
@@ -36,7 +36,7 @@ CopyImageToInlineHTML[e_] := Scope[
   img = Rasterize[Style[e, Antialiasing -> False], ImageResolution-> 72];
   str = ExportString[img, "PNG", CompressionLevel -> 1, "ColorMapLength" -> 16, IncludeMetaInformation -> False];
   code = ToCharacterCode[str];
-  result = StringJoin["<center><img width=\"", IntegerString[Round[First[ImageDimensions[img]]*2/3]], "\" src=\"data:image/png;base64,", Base64String[code], "\"></center>"];
+  result = StringJoin["<center><img width=\"", IntegerString[Round[P1[ImageDimensions[img]]*2/3]], "\" src=\"data:image/png;base64,", Base64String[code], "\"></center>"];
   CopyToClipboard[result];
   import = ImportString[str, "PNG"];
   GoodBeep[];
@@ -75,7 +75,7 @@ $JupyterTemplate := $JupyterTemplate = ReadRawJSONFile[LocalPath["Kernel", "Expo
 
 $isJupyterTarget = False;
 
-ExportToJupyter[nb:_NotebookObject:Automatic, target_String, OptionsPattern[]] := Scope[
+ExportToJupyter[nb:_NotebookObject:Automatic, target_Str, OptionsPattern[]] := Scope[
   UnpackOptions[$rasterizationURL, $rasterizationPath, maxItems];
   SetAutomatic[nb, EvaluationNotebook[]];
   paras = ToMarkdownString[nb, True,
@@ -160,7 +160,7 @@ joinLines[s_] := StringRiffle[s, "\n"];
 splitLines[s_] := StringSplit[s, "\n"];
 
 normalizeLines = Case[
-  str_String := If[StringEndsQ[str, "\n"], str, str <> "\n"];
+  str_Str := If[StringEndsQ[str, "\n"], str, str <> "\n"];
   list_List  := MapMost[normalizeLines, list];
   other_     := Print[other];
 ];
@@ -170,13 +170,13 @@ PublicFunction[ImportJupyterNotebook]
 ImportJupyterNotebook::nefile = "File `` doesn't exist.";
 ImportJupyterNotebook::invdata = "Invalid data: got ``, expected ``.";
 
-ImportJupyterNotebook[path_String] := Scope[
+ImportJupyterNotebook[path_Str] := Scope[
   path //= AbsoluteFileName;
   If[!FileExistsQ[path], ReturnFailed["nefile", MsgPath @ path]];
   json = ReadRawJSONFile @ path;
-  If[!Association[json], ReturnFailed["invdata", Head @ json, Association]];
+  If[!Assoc[json], ReturnFailed["invdata", H @ json, Assoc]];
   cellData = json["cells"];
-  If[!ListQ[cellData], ReturnFailed["invdata", Head @ cellData, List]];
+  If[!ListQ[cellData], ReturnFailed["invdata", H @ cellData, List]];
   results = cellImporter[#["cell_type"], #]& /@ cellData;
   CreateDocument @ Flatten @ results
 ];
@@ -186,7 +186,7 @@ cellImporter["code", data_] := {
     StringJoin @ data["source"],
     "ExternalLanguage"
   ],
-  Function[procCodeOutput[#["output_type"], #]] /@ data["outputs"]
+  Fn[procCodeOutput[#["output_type"], #]] /@ data["outputs"]
 };
 
 (* need to use  \<\" to stop RowBox from being applied to the OUtput? *)
@@ -213,9 +213,9 @@ cellImporter["markdown", data_] := Scope[
   Map[procTextCellLine, source]
 ];
 
-tableLineQ[s_String] := StringStartsQ[s, "| "];
+tableLineQ[s_Str] := StringStartsQ[s, "| "];
 
-procTextCellLine[s_String] := Which[
+procTextCellLine[s_Str] := Which[
   StringStartsQ[s, "<center><img "],
     Cell[
       BoxData @ ToBoxes @ importDataUrlAsImage @ s,
@@ -234,15 +234,15 @@ procTextCellLine[s_String] := Which[
 
 procTextCell[s_List] := markdownCell @ StringJoin @ s;
 
-parseMD[str_String] /; StringFreeQ[str, "*"|"_"] := str;
+parseMD[str_Str] /; StringFreeQ[str, "*"|"_"] := str;
 
 Block[{Message, MessageName}, (* prevents the RuleDelayed::rhs message from even loading, which is slow disk access *)
 markdownSpan[left_, symbol_, right_] := left ~~ symbol:((WordCharacter) | (WordCharacter ~~ Shortest[___] ~~ WordCharacter)) ~~ right;
 ];
 
-parseMD[str_String] := toTextData @ parseMD1 @ str;
+parseMD[str_Str] := toTextData @ parseMD1 @ str;
 
-parseMD1[str_String] := StringReplace[str, {
+parseMD1[str_Str] := StringReplace[str, {
   "<font color='" ~~ color:WordCharacter.. ~~ "'>" ~~ span___ ~~ "</font>" :> StyleBox[parseMD1 @ span, fromHTMLColor @ color],
   markdownSpan["**", span, "**"] :> StyleBox[span, FontWeight->"Bold"],
   markdownSpan["*", span, "*"] :> StyleBox[span, FontSlant->"Italic"],
@@ -251,16 +251,16 @@ parseMD1[str_String] := StringReplace[str, {
 
 fromHTMLColor["Gray"] = Gray;
 
-toTextData[str_String] := str;
+toTextData[str_Str] := str;
 toTextData[str_StringExpression] := TextData[List @@ str];
 
-markdownCell[s_String] := If[
+markdownCell[s_Str] := If[
   StringFreeQ[s, "|" | "#" | "<font"] ,
   Cell[parseMD @ StringTrim @ s, "Text"],
   Cell[StringTrim @ s, "Program"]
 ];
 
-importDataUrlAsImage[str_String] :=
+importDataUrlAsImage[str_Str] :=
   FirstStringCase[str, "image/png;base64," ~~ Shortest[base64___] ~~ "\"" :> ImportBase64[base64, "PNG"],
     Print[StringTake[str, 100]]; None];
 

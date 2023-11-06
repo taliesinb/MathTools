@@ -42,7 +42,7 @@ deleteUUIDs[nb_] :=
 writeStylesheetFile[path_, contents_] := Scope[
   If[!FileExistsQ[path], NotebookSave[contents, path]; Return[]];
   nb = NotebookOpen[path, Visible -> True];
-  If[Head[nb] =!= NotebookObject,          ThrowMessage["open", path]];
+  If[H[nb] =!= NotebookObject,          ThrowMessage["open", path]];
   If[FailureQ @ NotebookPut[contents, nb], ThrowMessage["replace", path]];
   If[FailureQ @ NotebookSave[nb],          ThrowMessage["save", path]];
   NotebookClose[nb];
@@ -108,13 +108,13 @@ createLegacyReplacementRules[] := Scope[
   };
   colorRules = {
     colorRules,
-    colorRules /. s_String :> StringJoin["Light", s],
-    colorRules /. s_String :> StringJoin["Dark", s]
+    colorRules /. s_Str :> StringJoin["Light", s],
+    colorRules /. s_Str :> StringJoin["Dark", s]
   };
   Map[toTemplateRule, Flatten @ {symbolRules, colorRules}]
 ];
 
-toTemplateRule[l_String -> r_String] :=
+toTemplateRule[l_Str -> r_Str] :=
   TemplateBox[z_, l] (* /; (Print["Replacing ", l -> r]; True) *) :> TemplateBox[z, r];
 
 $legacyReplacementRules := $legacyReplacementRules = createLegacyReplacementRules[];
@@ -134,7 +134,7 @@ UpdateLegacyNotebook[nb_Notebook] := Scope[
 ];
 
 UpdateLegacyNotebook::fail = "Could not update ``."
-UpdateLegacyNotebook[path_String] /; StringEndsQ[path, ".nb"] := Scope[
+UpdateLegacyNotebook[path_Str] /; StringEndsQ[path, ".nb"] := Scope[
   Quiet @ CopyFile[path, path <> ".backup"];
   nb = NotebookOpen[path, Visible -> False];
   UpdateLegacyNotebook @ nb;
@@ -145,7 +145,7 @@ UpdateLegacyNotebook[path_String] /; StringEndsQ[path, ".nb"] := Scope[
   path
 ];
 
-UpdateLegacyNotebook[dir_String] /; FileType[dir] === Directory :=
+UpdateLegacyNotebook[dir_Str] /; FileType[dir] === Directory :=
   Map[UpdateLegacyNotebook, FileNames["*.nb", dir, Infinity]];
 
 (**************************************************************************************************)
@@ -155,10 +155,10 @@ PublicFunction[NotebookTemplateNames]
 PublicFunction[FindMissingTemplateBoxDefinitions]
 
 NotebookTemplateNames[nb_:Automatic] :=
-  DeepUniqueCases[ToNotebookExpression @ nb, TemplateBox[_, name_String] :> name];
+  DeepUniqueCases[ToNotebookExpression @ nb, TemplateBox[_, name_Str] :> name];
 
 NotebookStyleDataNames[nb_:Automatic] :=
-  DeepUniqueCases[ToNotebookExpression @ nb, Cell[StyleData[style_String, ___], ___] :> style];
+  DeepUniqueCases[ToNotebookExpression @ nb, Cell[StyleData[style_Str, ___], ___] :> style];
 
 $builtinTemplateNames = {"RowWithSeparators", "RowWithSeparator", "Spacer1", "Ceiling", "Floor"};
 

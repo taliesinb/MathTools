@@ -55,14 +55,14 @@ pathInitialVertex[Line[{v1_, ___}, ___]] := v1;
 
 FadePathPlotWithLabels[g_, Line[{v1_, v2_}, dir_], c_List, hideArrowheads_] := Scope[
   mainPath = Line[{v1, v2}, dir];
-  cLast = Last @ c;
-  If[ListQ[cLast], cLast //= First];
-  If[RuleQ[cLast], cLast //= First];
+  cLast = PN @ c;
+  If[ListQ[cLast], cLast //= P1];
+  If[RuleQ[cLast], cLast //= P1];
   transportPath = Line @ {Offset[v2, Inverted @ cLast], Offset[v2, cLast]};
   mainPathVertices = Part[GraphRegion[g, mainPath], 1, 1];
-  If[Length[c] =!= Length[mainPathVertices], ReturnFailed[]];
+  If[Len[c] =!= Len[mainPathVertices], ReturnFailed[]];
   colors = LookupCardinalColors @ g;
-  c = ReplaceAll[c, s_String /; KeyExistsQ[colors, s] :> Style[s, Italic, colors @ s]];
+  c = ReplaceAll[c, s_Str /; KeyExistsQ[colors, s] :> Style[s, Italic, colors @ s]];
   color = colors @ StripInverted @ cLast;
   c = MapAt[Row[{"      ", #}]&, c, -1];
   HighlightGraphRegion[g,
@@ -100,7 +100,7 @@ MobiusStrip[n_, is3D_:False] := Scope[
   vertices = Flatten @ Table[LatticeVertex[{x, y}], {x, 0, n-1}, {y, -1, 1}];
   coords = If[is3D,
     Catenate @ Table[TorusVector[{n, y}, {phi, phi/2}], {phi, 0, Tau - tauN, tauN}, {y, -1, 1}],
-    First /@ vertices
+    P1 /@ vertices
   ];
   Quiver[vertices, edges,
     VertexCoordinates -> coords,
@@ -125,9 +125,9 @@ toCards[n_] := toCardinalSet @ Pick[{"r", "g", If[n < $n/2, Inverted @ "b", "b"]
 drawMobiusEdge[assoc_] := Scope[
   UnpackAssociation[assoc, coordinates, arrowheads, shape, edgeIndex];
   {a, b} = {{ax, ay}, {bx, by}} = FirstLast[coordinates];
-  lines = If[EuclideanDistance[a, b] > 1,
+  lines = If[Dist[a, b] > 1,
     ab = Normalize[b - a];
-    ab *= If[Abs[First[ab]] > Abs[Last[ab]], {1, 0}, {0, 1}] * 0.8;
+    ab *= If[Abs[P1[ab]] > Abs[PN[ab]], {1, 0}, {0, 1}] * 0.8;
     {l, r} = {{b + ab, b}, {a, a - ab}};
     counter = assoc["Counter"];
     {shape /@ {l, r}, {Opacity[1, $DarkGray], Text[counter, Mean @ #, {0, 1.8}]& /@ {l, r}}}

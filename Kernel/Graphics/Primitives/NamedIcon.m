@@ -51,7 +51,7 @@ declareFunctionAutocomplete[NamedIconData, {$knownIconNames}];
 
 (**************************************************************************************************)
 
-$iconNameP = _String | _Sized | _Reversed | _Repeating;
+$iconNameP = _Str | _Sized | _Reversed | _Repeating;
 
 DefineStandardTraditionalForm[
   ni:NamedIcon[$iconNameP, ___Rule] :> namedIconTypesettingBoxes[ni]
@@ -63,7 +63,7 @@ namedIconTypesettingBoxes[NamedIcon[name_, opts___]] := Scope[
   UnpackOptionsAs[NamedIcon, {opts}, iconColor, iconScaling, iconThickness, imageSize, alignmentPoint, $debugBounds];
   inset = rawNamedIconBoxes[pos, dir, name, None, imageSize, iconScaling /. $scalingRules, iconColor, iconThickness, alignmentPoint /. $alignmentRules];
   If[!MatchQ[inset, _InsetBox], Return @ StyleBox["?", Red]];
-  Append[First @ inset, BaselinePosition -> (Scaled[0.5] -> Axis)]
+  Append[P1 @ inset, BaselinePosition -> (Scaled[0.5] -> Axis)]
 ]
 
 (**************************************************************************************************)
@@ -88,9 +88,9 @@ $scalingRules = {Huge -> 1.75, Large -> 1.5, MediumLarge -> 1.25, Medium -> 1, M
 PrivateFunction[rawNamedIconBoxes]
 
 rawNamedIconBoxes[pos_, dir_, name_, graphicsScale_, imageSize_, scaling_, color_, thickness_, align_] := Scope[
-  If[Head[name] === Reversed, name //= First; dir = dir * -1; If[NumberQ @ align, align //= OneMinus]];
-  If[Head[name] === Repeating, {name, reps} = List @@ name, reps = None];
-  If[Head[name] === Sized, {name, scaling} = List @@ name];
+  If[H[name] === Reversed, name //= P1; dir = dir * -1; If[NumberQ @ align, align //= OneMinus]];
+  If[H[name] === Repeating, {name, reps} = List @@ name, reps = None];
+  If[H[name] === Sized, {name, scaling} = List @@ name];
   $imageSize = imageSize * scaling * {1, 1};
   iconData = LookupOrMessageKeys[$namedIconData, name, $Failed, NamedIcon::unknownIcon];
   If[FailureQ[iconData], Return @ {}];
@@ -143,7 +143,7 @@ makeIconInset[pos_, dir_, prims_] := Scope[
       PlotRangeClipping -> False,
       PlotRange -> {{-1, 1}, {-1, 1}} * 1.3,
       PlotRangePadding -> None,
-      AspectRatio -> (Last[$imageSize] / First[$imageSize]),
+      AspectRatio -> (PN[$imageSize] / P1[$imageSize]),
       ImagePadding -> None
     ],
     pos, $origin, Automatic, dir
@@ -195,7 +195,7 @@ makeIconData[prims_, Key[name_], align_] := Scope[
 (**************************************************************************************************)
 
 solidPrimitiveQ = Case[
-  e_List       := % @ First @ e;
+  e_List       := % @ P1 @ e;
   _FilledCurve := True;
   _Polygon     := True;
   _Disk        := True;
@@ -212,10 +212,10 @@ makeArrowHead[name_ -> head_[upperPath_]] := Scope[
   dx = -Avg[x1, x2];
   upperPath = TranslateVector[{dx, 0}, upperPath];
   lowerPath = VectorReflectVertical @ upperPath;
-  symmetricCurve = toJoinedCurve[head @ upperPath, head @ Reverse @ Most @ lowerPath];
+  symmetricCurve = toJoinedCurve[head @ upperPath, head @ Rev @ Most @ lowerPath];
   {x, {y1, y2}} = CoordinateBounds @ upperPath;
-  l = If[Part[upperPath, 1, 2] == 0, Part[upperPath, 1, 1], First @ x];
-  r = If[Part[upperPath, -1, 2] == 0, Part[upperPath, -1, 1], Last @ x];
+  l = If[Part[upperPath, 1, 2] == 0, Part[upperPath, 1, 1], P1 @ x];
+  r = If[Part[upperPath, -1, 2] == 0, Part[upperPath, -1, 1], PN @ x];
   lr = {l, r};
   List[
     name                       -> bounded[symmetricCurve, {x, {-y2, y2}, lr}],
@@ -254,14 +254,14 @@ toClosedCurve[curve_] := Scope[
 
     (* symmetric *)
     {{x_, _?Positive}, {x_, _?Negative}},
-      If[Head[curve] === JoinedCurve,
+      If[H[curve] === JoinedCurve,
         Append[curve, CurveClosed -> True],
         toJoinedCurve[curve, Line @ {p1}]
       ],
 
     (* open *)
     {_,  {_, 0|0.}},
-      toJoinedCurve[curve, Line @ {{First @ p1, 0}, p1}],
+      toJoinedCurve[curve, Line @ {{P1 @ p1, 0}, p1}],
 
     _,
     None
@@ -317,7 +317,7 @@ $arrowIcons := With[
   },
 
   setRightAligned @ makeArrowHead @ {
-  "Hook"               -> BezierCurve @ Reverse @ hookPoints
+  "Hook"               -> BezierCurve @ Rev @ hookPoints
   }
 }];
 
@@ -340,12 +340,12 @@ $leftBar = {{-1, -1/2}, {-1, 1/2}};
 $rightBar = {{1, -1/2}, {1, 1/2}};
 $leftArrowheadPoints = {{-1/2, 1/2}, {-1, 0}, {-1/2, -1/2}};
 $rightArrowheadPoints = {{1/2, 1/2}, {1, 0}, {1/2, -1/2}};
-$leftRightPrim = Line @ {First @ $hline, $leftArrowheadPoints, $rightArrowheadPoints};
+$leftRightPrim = Line @ {P1 @ $hline, $leftArrowheadPoints, $rightArrowheadPoints};
 
 $rbaH = {-0.634471, 0.635029};
 $rotatedIcons := makeRotated @ {
-  "RightArrow"         -> bound[$u, $h, $u, $z] @ Line @ {First @ $hline, $rightArrowheadPoints},
-  "BarRightArrow"      -> bound[$u, $h, $u, $z] @ Line @ {$leftBar, First @ $hline, $rightArrowheadPoints},
+  "RightArrow"         -> bound[$u, $h, $u, $z] @ Line @ {P1 @ $hline, $rightArrowheadPoints},
+  "BarRightArrow"      -> bound[$u, $h, $u, $z] @ Line @ {$leftBar, P1 @ $hline, $rightArrowheadPoints},
   "RightHalfCircle"    -> bound[$r, $u, $r, $u] @ HalfCircle[{0,0}, {1, 0}],
   "RightHalfDisk"      -> bound[$r, $u, $r, $u] @ HalfDisk[{0,0}, {1, 0}],
   "BoldRightArrow"     -> bound[$u, $rbaH, $u, $z] @ Polygon @ $boldRightArrow
@@ -442,7 +442,7 @@ setRightAligned[name_ -> bounded[curve_, {bx_, by_, {_, bb2_}}]] :=
 $namedIconData := $namedIconData = createIconData[];
 
 (* NOTE: make sure to update $knownIconNames with the keys from this lazy table so that autocomplete is correct *)
-createIconData[] := MapIndex1[makeIconData, DeleteCases[None | bounded[None, ___]] @ Association[
+createIconData[] := MapIndex1[makeIconData, DeleteCases[None | bounded[None, ___]] @ Assoc[
 
   $arrowIcons,
 
@@ -482,6 +482,6 @@ NamedIconData[] returns a list of icon names.
 NamedIconData[] := Keys @ $namedIconData;
 NamedIconData[All] := $namedIconData;
 
-NamedIconData[name_String] /; StringContainsQ[name, "*"] := Select[NamedIconData[], StringMatchQ[name]];
-NamedIconData[name_String] := LookupOrMessageKeys[$namedIconData, name, $Failed, NamedIcon::unknownIcon];
+NamedIconData[name_Str] /; StringContainsQ[name, "*"] := Select[NamedIconData[], StringMatchQ[name]];
+NamedIconData[name_Str] := LookupOrMessageKeys[$namedIconData, name, $Failed, NamedIcon::unknownIcon];
 

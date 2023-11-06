@@ -14,8 +14,8 @@ PathHomomorphimsGrid[graphsAndPaths_:{Repeated[_-> _]}, OptionsPattern[]] := Sco
     paths
   ];
   alignment = {{Center}};
-  If[First[graphs] === "Paths", PrependTo[alignment, Right]];
-  If[Last[graphs] === "Paths", PrependTo[alignment, Left]];
+  If[P1[graphs] === "Paths", PrependTo[alignment, Right]];
+  If[PN[graphs] === "Paths", PrependTo[alignment, Left]];
   Grid[
     Prepend[labelRow] @ entries,
     Spacings -> {{0, {2}, 0}, {10., 0.5, {0}}}, Alignment -> {alignment, Baseline}
@@ -25,7 +25,7 @@ PathHomomorphimsGrid[graphsAndPaths_:{Repeated[_-> _]}, OptionsPattern[]] := Sco
 toPHGColumnLabel = Case[
   Labeled[g_Graph, label_]     := {g, Style[label, $LabelStyle, Bold]};
   g_Graph                      := {g, ""};
-  s:(_String | _Form | _Style) := {"Path", s};
+  s:(_Str | _Form | _Style) := {"Path", s};
 ];
 
 pathHomomorphismDiagram["Path", path_] :=

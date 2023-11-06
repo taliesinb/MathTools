@@ -1,18 +1,18 @@
 PublicFunction[PostComposeFunction]
 
-PostComposeFunction[HoldPattern[Function][body_], fn2_] := Function[fn2[body]];
-PostComposeFunction[HoldPattern[Function][var_, body_], fn2_] := Function[var, fn2[body]];
-PostComposeFunction[HoldPattern[Function][var_, body_, attr_], fn2_] := Function[var, fn2[body], attr];
+PostComposeFunction[HoldPattern[Fn][body_], fn2_] := Fn[fn2[body]];
+PostComposeFunction[HoldPattern[Fn][var_, body_], fn2_] := Fn[var, fn2[body]];
+PostComposeFunction[HoldPattern[Fn][var_, body_, attr_], fn2_] := Fn[var, fn2[body], attr];
 PostComposeFunction[fn_, fn2_] := fn /* fn2;
 
 (**************************************************************************************************)
 
 PublicFunction[ConstructHoldComplete]
 
-ConstructHoldComplete[fn_Function, args___] :=
+ConstructHoldComplete[fn_Fn, args___] :=
   PostComposeFunction[fn, HoldComplete][args];
 
-ConstructHoldComplete[Apply[fn_Function], {args___}] :=
+ConstructHoldComplete[Apply[fn_Fn], {args___}] :=
   PostComposeFunction[fn, HoldComplete][args];
 
 ConstructHoldComplete[fn_, args___] :=
@@ -60,7 +60,7 @@ Unthread /: head_Symbol[l___, Unthread[a_], r___] := With[
 
 Unthread[a_, 0] := a;
 
-Unthread /: head_Symbol[l___, Unthread[a_, n_Integer], r___] := With[
+Unthread /: head_Symbol[l___, Unthread[a_, n_Int], r___] := With[
   {u = Unique["\[FormalO]"]},
   Construct[Unthread, Map[u |-> head[l, u, r], a], n-1]
 ];
@@ -140,11 +140,11 @@ SetHoldAllComplete[MapUnevaluated]
 MapUnevaluated[f_, args_] :=
   Map[f, Unevaluated[args]];
 
-MapUnevaluated[Function[body_], args_] :=
-  Map[Function[Null, body, HoldAllComplete], Unevaluated[args]];
+MapUnevaluated[Fn[body_], args_] :=
+  Map[Fn[Null, body, HoldAllComplete], Unevaluated[args]];
 
-MapUnevaluated[Function[args_, body_], args_] :=
-  Map[Function[args, body, HoldAllComplete], Unevaluated[args]];
+MapUnevaluated[Fn[args_, body_], args_] :=
+  Map[Fn[args, body, HoldAllComplete], Unevaluated[args]];
 
 (**************************************************************************************************)
 
@@ -154,7 +154,7 @@ SetUsage @ "
 MapIndex1[f, arg] is equivalent to MapIndexed[f[#1, First[#2]]&, arg]
 "
 
-MapIndex1[f_, list_] := MapIndexed[Function[{argX, partX}, f[argX, First @ partX]], list];
+MapIndex1[f_, list_] := MapIndexed[Fn[{argX, partX}, f[argX, P1 @ partX]], list];
 MapIndex1[f_][list_] := MapIndex1[f, list];
 
 (**************************************************************************************************)
@@ -173,16 +173,16 @@ MapIndexStack[f_, stack_, list_] := MapIndex1[f[#1, Append[stack, #2]]&, list];
 
 PublicFunction[PartValueMap]
 
-PartValueMap[f_, list_List] := MapIndexed[Function[{argX, partX}, f[First @ partX, argX]], list];
-PartValueMap[f_, assoc_Association] := KeyValueMap[f, assoc];
+PartValueMap[f_, list_List] := MapIndexed[Fn[{argX, partX}, f[P1 @ partX, argX]], list];
+PartValueMap[f_, assoc_Assoc] := KeyValueMap[f, assoc];
 PartValueMap[f_][e_] := PartValueMap[f, e];
 
 (**************************************************************************************************)
 
 PublicFunction[PartValueScan]
 
-PartValueScan[f_, list_List] := (MapIndexed[Function[{argX, partX}, f[First @ partX, argX];], list];)
-PartValueScan[f_, assoc_Association] := KeyValueScan[f, assoc];
+PartValueScan[f_, list_List] := (MapIndexed[Fn[{argX, partX}, f[P1 @ partX, argX];], list];)
+PartValueScan[f_, assoc_Assoc] := KeyValueScan[f, assoc];
 PartValueScan[f_][e_] := PartValueScan[f, e];
 
 (**************************************************************************************************)
@@ -195,7 +195,7 @@ ScanIndex1[f$, arg$] is equivalent to ScanIndexed[f$[#1, First[#2]]&, arg$]
 "
 
 (* TODO: fix the hold limitation *)
-ScanIndex1[f_, list_] := (MapIndexed[Function[{argX, partX}, f[argX, First @ partX];], list];)
+ScanIndex1[f_, list_] := (MapIndexed[Fn[{argX, partX}, f[argX, P1 @ partX];], list];)
 ScanIndex1[f_][list_] := ScanIndex1[f, list];
 
 (**************************************************************************************************)

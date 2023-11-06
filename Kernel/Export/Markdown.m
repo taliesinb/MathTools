@@ -54,8 +54,8 @@ ExportToMarkdown[inputSpec_, opts:OptionsPattern[]] := Scope @ CatchMessage[
   {input, inputPath} = Match[inputSpec,
     nb_NotebookObject                                                  :> {nb, NotebookDirectory @ nb},
     co_CellObject                                                      :> {co, NotebookDirectory @ ParentNotebook @ co},
-    (path_String | File[path_String]) ? DirectoryQ                     :> {enumerateFiles["*.nb", path], path},
-    (path_String | File[path_String]) /; FileExtension[path] === "nb"  :> {File @ path, DirectoryName @ path},
+    (path_Str | File[path_Str]) ? DirectoryQ                     :> {enumerateFiles["*.nb", path], path},
+    (path_Str | File[path_Str]) /; FileExtension[path] === "nb"  :> {File @ path, DirectoryName @ path},
     _                                                                  :> ReturnFailed["badinspec"]
   ];
 
@@ -103,7 +103,7 @@ ExportToMarkdown[inputSpec_, opts:OptionsPattern[]] := Scope @ CatchMessage[
 (**************************************************************************************************)
 
 ensureDirectory[list_List] := Scan[ensureDirectory, list];
-ensureDirectory[dir_String] :=
+ensureDirectory[dir_Str] :=
   If[!DirectoryQ[dir],
     VPrint["Directory ", MsgPath @ dir, " does not exist, creating."];
     whenWet @ EnsureDirectory @ dir;
@@ -137,7 +137,7 @@ exportItemTo[File[nbPath_], mdPath_] /; notebookAlreadyExportedQ[nbPath, mdPath]
 General::nbmdfail = "Cannot convert notebook at `` to markdown."
 
 exportItemTo[item_, mdPath_] := Scope[
-  dbgSpec = If[Head[item] === File, MsgPath @ item, item];
+  dbgSpec = If[H[item] === File, MsgPath @ item, item];
   VPrint["* Exporting ", dbgSpec, " to ", MsgPath @ mdPath];
   Check[
     result = toMarkdownStringInner @ item,

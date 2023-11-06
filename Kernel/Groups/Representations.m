@@ -18,11 +18,11 @@ constructLinearGroupRepresentation[data_] := Scope[
   matrices = Normal /@ data["Generators"];
   matrices = ExpandUnitRoots[matrices];
   mod = Match[
-    First @ data["Generators"],
+    P1 @ data["Generators"],
     RepresentationElement[_, m_] :> m,
     None
   ];
-  If[mod =!= None && Length[data["Identity"]] === 1,
+  If[mod =!= None && Len[data["Identity"]] === 1,
     data["Identity"] = Append[data["Identity"], ToPacked @ mod]];
   type = Which[
     TranslationGroupQ[group] || AllTrue[matrices, TranslationMatrixQ], "Translation",
@@ -44,7 +44,7 @@ $representationIcon =
  Framed[Style["R", FontSize -> 20], FrameStyle -> Gray,
   ImageSize -> {35, 35}, Alignment -> Center]
 
-LinearRepresentationObject /: MakeBoxes[object:LinearRepresentationObject[data_Association] ? HoldNoEntryQ, format_] := ModuleScope[
+LinearRepresentationObject /: MakeBoxes[object:LinearRepresentationObject[data_Assoc] ? HoldNoEntryQ, format_] := ModuleScope[
   UnpackAssociation[data, group, groupOrder, generators, dimension, type];
   BoxForm`ArrangeSummaryBox[
     LinearRepresentationObject, object, $representationIcon; None,
@@ -52,7 +52,7 @@ LinearRepresentationObject /: MakeBoxes[object:LinearRepresentationObject[data_A
     {
      {summaryItem["Group", group], SpanFromLeft},
      {summaryItem["Order", groupOrder], summaryItem["Type", type]},
-     {summaryItem["Generators", Length[generators]], summaryItem["Dimension", dimension]}
+     {summaryItem["Generators", Len[generators]], summaryItem["Dimension", dimension]}
      },
     (* Displayed on request *)
     {{Row[KeyValueMap[Labeled[#2, #1]&, generators], "  "], SpanFromLeft}},
@@ -107,7 +107,7 @@ declareFormatting[
     renderRepresentationMatrix[matrix, $isTraditionalForm],
   RepresentationElement[matrix_ ? MatrixQ, mod_ ? MatrixQ] :>
     RepresentationElement @ MapThread[ModForm, {matrix, mod}, 2],
-  RepresentationElement[matrix_ ? MatrixQ, mod_Integer] :>
+  RepresentationElement[matrix_ ? MatrixQ, mod_Int] :>
     ModForm[RepresentationElement[matrix], mod],
   RepresentationElement[matrix_ ? MatrixQ, mod_Symbol] :>
     RepresentationElement[matrix]
@@ -183,7 +183,7 @@ CustomLinearRepresentation::badrepmat = "Matrices have inconsistent dimensions: 
 CustomLinearRepresentation[matrices_, group_:None, mod_:None] := Scope[
   Which[
     VectorQ[matrices, MatrixQ], matrices //= RangeAssociation,
-    AssociationQ[matrices] && AllTrue[matrices, MatrixQ], Null,
+    AssocQ[matrices] && AllTrue[matrices, MatrixQ], Null,
     True, ReturnFailed["notmat"]
   ];
   matrices = ToPacked /@ Normal /@ matrices;
@@ -275,9 +275,9 @@ declareSyntaxInfo[TransformGenerators, {_, _}];
 TransformGenerators[rep_, trans_] := Scope[
   rep = CoerceToRep[1];
   data = getObjectData[rep];
-  gens = First /@ data["Generators"];
+  gens = P1 /@ data["Generators"];
   newGens = trans @ gens;
-  If[!AssociationQ[newGens], ReturnFailed["badtrans", dims]];
+  If[!AssocQ[newGens], ReturnFailed["badtrans", dims]];
   dims = Dimensions @ Values @ newGens;
   If[!MatchQ[dims, {_, z_, z_}], ReturnFailed["badtrans", dims]];
   data["Generators"] = RepresentationElement /@ newGens;

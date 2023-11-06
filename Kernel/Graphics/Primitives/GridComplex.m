@@ -39,7 +39,7 @@ gridComplexPrimitives[GridComplex[grid_List, primitives_, opts:OptionsPattern[]]
 (**************************************************************************************************)
 
 readGrid[rules:{({_, _} -> _)..}] := Scope[
-  $gridCoords = Association @ Reverse[rules, {2}];
+  $gridCoords = Assoc @ Rev[rules, {2}];
   {$gridCoords, Max /@ Transpose @ Values @ $gridCoords}
 ]
 

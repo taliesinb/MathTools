@@ -56,7 +56,7 @@ SetbackCoordinates[{a_, b_}, spec:{Repeated[$sbSpecP, 2]} /; ContainsQ[spec, Off
 ];
 
 SetbackCoordinates[{a_, b_}, {d1_ ? NumberQ, d2_ ? NumberQ}] := Scope[
-  If[EuclideanDistance[a, b] < d1 + d2, Return @ emptyLine[a, b]];
+  If[Dist[a, b] < d1 + d2, Return @ emptyLine[a, b]];
   dx = N @ Normalize[b - a];
   {a + dx * d1, b - dx * d2}
 ];
@@ -110,8 +110,8 @@ Rectangular /: Plus[Rectangular[p1_], Rectangular[p2_]] := Rectangular[p1 + p2];
 setbackHalf[{}, _] := {};
 setbackHalf[p:{_}, _] := p;
 setbackHalf[coords_, 0|0.] := coords;
-setbackHalf[coords_, d_ ? Negative] := Reverse @ setbackHalf[Reverse @ coords, Abs[d]];
-setbackHalf[coords_, -r_Rectangular] := Reverse @ setbackHalf[Reverse @ coords, r];
+setbackHalf[coords_, d_ ? Negative] := Rev @ setbackHalf[Rev @ coords, Abs[d]];
+setbackHalf[coords_, -r_Rectangular] := Rev @ setbackHalf[Rev @ coords, r];
 
 setbackHalf[coords_, d_] := takeLine[coords, d];
 
@@ -123,7 +123,7 @@ takeLine[{a_, b_}, Rectangular[{d1:$NumberP, d2:$NumberP}]] := Scope[
 ];
 
 takeLine[path_, Rectangular[{d1:$NumberP, d2:$NumberP}]] := Scope[
-  a = First[path];
+  a = P1[path];
   sz = {d1,d2}/2; rect = {a-sz, a+sz};
   c = LineRectangleIntersectionPoint[path, rect];
   n = LengthWhile[path, RegionMember[Rectangle @@ rect]];
@@ -131,15 +131,15 @@ takeLine[path_, Rectangular[{d1:$NumberP, d2:$NumberP}]] := Scope[
 ];
 
 takeLine[{a_, b_}, d:$NumberP] := (
-  If[EuclideanDistance[a, b] < d, Return @ emptyLine[a, b]];
+  If[Dist[a, b] < d, Return @ emptyLine[a, b]];
   dx = N @ Normalize[b - a];
   {a + dx * d, b}
 );
 
 takeLine[coords_List, d:$NumberP] := Scope[
-  prev = First @ coords; total = 0;
-  n = LengthWhile[coords, curr |-> (total += EuclideanDistance[curr, prev]; prev = curr; total < d)];
-  If[n == Length[coords], Return @ Last @ coords];
+  prev = P1 @ coords; total = 0;
+  n = LengthWhile[coords, curr |-> (total += Dist[curr, prev]; prev = curr; total < d)];
+  If[n == Len[coords], Return @ PN @ coords];
   rem = total - d;
   newCoords = Drop[coords, n];
   If[rem == 0,
@@ -230,5 +230,5 @@ coordNormDelta[a_, b_] := N @ Normalize[b - a];
 
 coordDistance[Offset[_, a_], b_] := coordDistance[a, b];
 coordDistance[a_, Offset[_, b_]] := coordDistance[a, b];
-coordDistance[a_, b_] := EuclideanDistance[a, b];
+coordDistance[a_, b_] := Dist[a, b];
 

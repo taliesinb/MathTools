@@ -10,7 +10,7 @@ Graphics3DProjection[g:Graphics3D[primitives_, ___], opts:OptionsPattern[]] := S
 
   UnpackOptions[$zFade];
   trans = ConstructGraphicsViewTransform @ g;
-  $gvtAssoc = Last[trans];
+  $gvtAssoc = PN[trans];
   $xyz = ToXYZFunction @ trans;
   $style = {Black, Opacity[1]};
   $index = Bag[];
@@ -19,7 +19,7 @@ Graphics3DProjection[g:Graphics3D[primitives_, ___], opts:OptionsPattern[]] := S
 
   $zfactor = 1; (* If[$gvtAssoc["ViewProjection"] === "Orthographic", -1, 1]; *)
   procPrim @ primitives;
-  $index = KeySort @ Merge[BagPart[$index, All], Identity];
+  $index = KeySort @ Merge[BagPart[$index, All], Id];
   {$zmin, $zmax} = MinMax @ FirstColumn @ Keys @ $index;
 
   primitives2D = KeyValueMap[If[$zFade =!= None, fromZandStyleFaded, fromZandStyle], $index];
@@ -46,7 +46,7 @@ procPrim = Case[
   GraphicsComplex[coords_, prims_] := Scope[$gcXYZ = $xyz @ ($gcCoords = coords); procPrim @ prims];
 
   (* pass through wrappers *)
-  w:$AnnotationP                   := % @ First @ w;
+  w:$AnnotationP                   := % @ P1 @ w;
 
   (* TODO: Handle FilledCurve with custom recurser *)
   p_Point                          := insertScalar @ p;
@@ -120,7 +120,7 @@ screenSpaceRadius[pos_, r_] := Scope[
   perp = Normalize @ Cross[relativePos, relativePos + {1., 3.1415, 9.101}];
   pos2 = pos + perp * r;
   {{x1, y1, z1}, {x2, y2, z2}} = $xyz @ {pos, pos2};
-  EuclideanDistance[{x1, y1}, {x2, y2}]
+  Dist[{x1, y1}, {x2, y2}]
 ];
 
 (**************************************************************************************************)
@@ -147,7 +147,7 @@ procStyle := Case[
 
 (**************************************************************************************************)
 
-insertScalar[obj_] := insertScalar[obj, xyz @ First @ obj];
+insertScalar[obj_] := insertScalar[obj, xyz @ P1 @ obj];
 
 (* insert single *)
 insertScalar[obj_, xyz_] :=
@@ -161,7 +161,7 @@ xyz[coord_] := $xyz @ coord;
 
 (**************************************************************************************************)
 
-insertVector[obj_] := insertVector[obj, xyzMulti @ First @ obj];
+insertVector[obj_] := insertVector[obj, xyzMulti @ P1 @ obj];
 
 (* insert single *)
 insertVector[obj_, xyz_ ? CoordinateMatrixQ] :=

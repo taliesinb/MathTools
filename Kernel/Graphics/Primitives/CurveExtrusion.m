@@ -17,8 +17,8 @@ CacheSymbol[$CurveExtrusionCache]
 
 (* not sure why, but if you don't do this the resulting polygon is closed from the start to end point *)
 doubleUpCurve = Case[
-	BezierCurve[c_] := JoinedCurve[{BezierCurve @ c, BezierCurve @ Reverse @ c}];
-	Line[c_]        := JoinedCurve[{Line @ c, Line @ Reverse @ c}];
+	BezierCurve[c_] := JoinedCurve[{BezierCurve @ c, BezierCurve @ Rev @ c}];
+	Line[c_]        := JoinedCurve[{Line @ c, Line @ Rev @ c}];
 	points_List     := % @ Line @ points;
 	curve_          := % @ DiscretizeCurve @ curve;
 ];

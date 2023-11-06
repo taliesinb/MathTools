@@ -141,7 +141,7 @@ PublicFunction[MetricShortestPathFunction]
 
 declareFormatting[
   MetricShortestPathFunction[spec_, data_] ? HoldNoEntryQ :>
-    MetricShortestPathFunction[spec, Skeleton @ Length @ First @ data]
+    MetricShortestPathFunction[spec, Skeleton @ Len @ P1 @ data]
 ];
 
 fsp_MetricShortestPathFunction[args__] := fspEval1[fsp, args];
@@ -179,7 +179,7 @@ toMetricDistanceOperator = Case[
   qf_QuadraticFormObject            := Values /* ToPacked /* qf;
   list_List ? RealVectorQ           := SignatureMetric[list];
   func_ ? MightEvaluateWhenAppliedQ := func /* checkMetricNumeric;
-  n_Integer                         := PowerMetric[n];
+  n_Int                             := PowerMetric[n];
   expr_                             := Message[General::badgmetricfn, expr];
 ];
 
@@ -208,7 +208,7 @@ SignatureMetric[list_List][array_] := Sqrt @ Dot[list, Power[N @ Values @ array,
 
 PublicFunction[RootSumSquare]
 
-RootSumSquare[assoc_Association] := RootSumSquare @ Values @ assoc;
+RootSumSquare[assoc_Assoc] := RootSumSquare @ Values @ assoc;
 RootSumSquare[array_] := Sqrt @ Total @ Power[N @ array, 2];
 
 PowerMetric[n_][array_] := Surd[Total @ Power[N @ Values @ array, n], n];
@@ -248,7 +248,7 @@ TaggedGraphDistance[graph_, vertex1_, vertex2_., tagSpec_., OptionsPattern[]] :=
     tagList
   ];
 
-  If[$stripList, First @ result, result]
+  If[$stripList, P1 @ result, result]
 ];
 
 (**************************************************************************************************)
@@ -274,7 +274,7 @@ TaggedGraphDistanceMatrix[graph_, tagSpec_., OptionsPattern[]] := Scope[
     tagList
   ];
 
-  If[$stripList, First @ result, result]
+  If[$stripList, P1 @ result, result]
 ];
 
 (**************************************************************************************************)

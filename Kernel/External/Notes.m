@@ -8,7 +8,7 @@ Options[URLToMarkdown] = {
   DownloadPDF -> True
 }
 
-URLToMarkdown[url_String, opts:OptionsPattern[]] := Scope[
+URLToMarkdown[url_Str, opts:OptionsPattern[]] := Scope[
   domain = ToLowerCase @ URLParse[url, "Domain"];
   If[!StringQ[domain], ReturnFailed["noturl", url]];
   Switch[
@@ -28,7 +28,7 @@ PublicFunction[CreateNoteFromURL]
 
 Options[CreateNoteFromURL] = JoinOptions[URLToMarkdown, DuplicateTarget -> False];
 
-CreateNoteFromURL[url_String, opts:OptionsPattern[]] := Scope[
+CreateNoteFromURL[url_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[duplicateTarget];
   res = URLToMarkdown[url, FilterOptions @ opts];
   If[!StringQ[res], ReturnFailed[]];
@@ -41,7 +41,7 @@ PublicFunction[CreateNotesFromURLList]
 
 Options[CreateNotesFromURLList] = Options[CreateNoteFromURL];
 
-CreateNotesFromURLList[urls:{__String}, opts:OptionsPattern[]] := Scope[
+CreateNotesFromURLList[urls:{__Str}, opts:OptionsPattern[]] := Scope[
   results = Map[
     Quiet[CreateNoteFromURL[#, opts], {CreateBearNote::exists}]&,
     urls

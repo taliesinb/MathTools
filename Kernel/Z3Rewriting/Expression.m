@@ -94,7 +94,7 @@ ReplaceAllList[expr_, rules_] := Scope[
   positions = Position[expr, toLHS @ rules];
   Switch[positions,
     {},   {},
-    {_},  replaceListAt[expr, rules, First @ positions],
+    {_},  replaceListAt[expr, rules, P1 @ positions],
     _,    Catenate @ Map[pos |-> replaceListAt[expr, rules, pos], positions]
   ]
 ];

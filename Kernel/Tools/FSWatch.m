@@ -22,7 +22,7 @@ FSWatch[path_] := Scope[
   cmdStr = StringJoin[binPath, " ", Riffle[Flatten @ paths, " "]];
 
   stream = Quiet @ Check[OpenRead["!" <> cmdStr, BinaryFormat -> True], $Failed];
-  If[Head[stream] =!= InputStream, Message[FSWatch::badStream]; Return[$Failed]];
+  If[H[stream] =!= InputStream, Message[FSWatch::badStream]; Return[$Failed]];
 
   stream
 ];

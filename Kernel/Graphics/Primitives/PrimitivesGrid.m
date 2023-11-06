@@ -64,8 +64,8 @@ RawPrimitivesGrid[itemBoxes_, pos_, opts___Rule] := Scope[
     rowsEqual, columnsEqual
   ];
 
-  numRows = Length @ itemBoxes;
-  numCols = Max[Length /@ itemBoxes];
+  numRows = Len @ itemBoxes;
+  numCols = Max[Len /@ itemBoxes];
   itemBoxes //= Map[PadRight[#, numCols, {{}}]&];
 
   itemBounds = MatrixMap[PrimitiveBoxesBounds, itemBoxes];
@@ -167,5 +167,5 @@ parseValign = Case[
   e_ := (Message[PrimitivesGrid::badDirAlign, MsgExpr @ e, RowAlignments]; 0.5)
 ];
 
-repeatMax[n_] := Repeat[Max @ n, Length @ n];
+repeatMax[n_] := Repeat[Max @ n, Len @ n];
 

@@ -184,9 +184,9 @@ isH[{x_, y_}] := Abs[x] >= Abs[y];
 isV[{x_, y_}] := Abs[y] >= Abs[x];
 
 snapCoord[True,   True] = Mean; (* TODO: choose the narrow one to win *)
-snapCoord[True,  False] = Last;
-snapCoord[False,  True] = First;
-snapCoord[False, False] = Identity;
+snapCoord[True,  False] = PN;
+snapCoord[False,  True] = P1;
+snapCoord[False, False] = Id;
 
 (**************************************************************************************************)
 

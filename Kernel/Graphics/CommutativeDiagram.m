@@ -178,11 +178,11 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $objectNames = {};
 
   $objectCoordsList = {}; (* does not contain derived coordinates ($towardsCenter) *)
-  $objects = $objectCoords = $objectSizes = $morphGradColors = UAssociation[];
+  $objects = $objectCoords = $objectSizes = $morphGradColors = UAssoc[];
 
   $itemSize = Automatic;
   $morphismNames = {};
-  $morphismCurves = $cloneChildren = Association[];
+  $morphismCurves = $cloneChildren = Assoc[];
   $inheritedOptions = opts;
 
   $saveMorphGradColors = False;
@@ -192,7 +192,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   extraModifiers = Composition[colorModifierFn, replacementFn];
   {$objectTextModifierFn, $morphismTextModifierFn} = Map[
     Composition[toModifierFunction[#], extraModifiers]&,
-    If[AssociationQ[textModifiers],
+    If[AssocQ[textModifiers],
       Lookup[textModifiers, {"Objects", "Morphisms"}, {}],
       {textModifiers, textModifiers}
     ]
@@ -205,7 +205,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
 
   $cloneAbsoluteSetback = $cloneObjectLinkSetback = $cloneMorphismLinkSetback = $cloneDisplaceFn = $cloneInteriorLinkFn = $cloneObjectLinkFn = $cloneMorphismLinkFn = Null;
   $cloneInteriorLinks = $cloneExteriorLinks = {};
-  $objFn = $arrFn = Identity;
+  $objFn = $arrFn = Id;
   {interiorLinkOptions, exteriorLinkOptions} = processCloneSpecs[cloneOptions, cloningFunction];
 
   items = desugar /@ items;
@@ -213,7 +213,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   objectPrimitives = parseObject /@ items;
 
   $toHigherPath = toHigherPath;
-  $clonesExist = Length[$cloneChildren] > 0;
+  $clonesExist = Len[$cloneChildren] > 0;
   $currentDiagramFontSize = labelFontSize;
   If[$saveMorphGradColors, saveMorphismGradColors @ items];
 
@@ -232,7 +232,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   primitives = resolveCoordinates @ {objectPrimitives, morphismPrimitives};
 
   (* we apply resolveCoordinates again because Cloned produces a coordinate containing ObjectCoordinates[..] *)
-  $coordReplacement = Append[resolveCoordinates @ Normal @ $objectCoords, z_String :> unresolvedCoord[z]];
+  $coordReplacement = Append[resolveCoordinates @ Normal @ $objectCoords, z_Str :> unresolvedCoord[z]];
   primitives = ReplacePrimitiveCoordinates[primitives, $coordReplacement];
 
   arrowOpts = SeqDropOptions[{Setback, LabelFontSize, LabelFontSize, GraphicsScale, TextModifiers}] @ FilterOptions[MorphismArrow, opts];
@@ -259,7 +259,7 @@ _cdToPrimitives := BadArguments[];
 
 (**************************************************************************************************)
 
-$legacyObjP = (_String|Integer);
+$legacyObjP = (_Str|_Int);
 
 desugar = Case[
 
@@ -296,10 +296,10 @@ TextModifiers is an option to %CommutativeDiagram that gives one or a list of mo
 CommutativeDiagram::badModifier = "Element `` of TextModifiers should be None, a function, list of rules, or a list of these."
 
 toModifierFunction = Case[
-  {} | None | Identity            := Identity;
-  rules:$RuleListPattern          := UnburrowModifiers /* ReplaceAll[rules] /* BurrowModifiers;
-  list_List                       := Composition @@ Map[%, Reverse @ list];
-  fn_                             := fn;
+  {} | None | Id         := Id;
+  rules:$RuleListPattern := UnburrowModifiers /* ReplaceAll[rules] /* BurrowModifiers;
+  list_List              := Composition @@ Map[%, Rev @ list];
+  fn_                    := fn;
 ];
 
 (**************************************************************************************************)
@@ -378,16 +378,16 @@ parseDiagramColorRules[e_, o_] := (
 )
 
 parseDiagramColorRules2 = Case[
-  {} | None            := Identity;
-  el:(_Rule | _String) := % @ {el};
+  {} | None            := Id;
+  el:(_Rule | _Str) := % @ {el};
   list_List            := ReplaceAll @ Map[toRecolorRule, list];
-  other_               := (Message[CommutativeDiagram::badrecolor, other]; Identity);
+  other_               := (Message[CommutativeDiagram::badrecolor, other]; Id);
 ];
 
 CommutativeDiagram::cruleNotUnaryForm = "Symbol `` provided as color rule element is not a unary form."
 
 specialRecoloringRule[head_, "Rainbow"] :=
-  RuleDelayed[z_head, RuleCondition @ StyledForm[z, ToRainbowColor @ ToRainbowInteger @ First @ z]];
+  RuleDelayed[z_head, RuleCondition @ StyledForm[z, ToRainbowColor @ ToRainbowInteger @ P1 @ z]];
 
 specialRecoloringRule[head_, "Gradient"] := (
   $saveMorphGradColors = True;
@@ -406,7 +406,7 @@ PrivateFunction[localColorOf]
 we will use it for the 'Framing' / 'Coloring' spec above *)
 localColorOf[z_] := Scope[
   z2 = colorModifierFn[z];
-  If[z2 =!= z, findInteriorColor @ z2, ToRainbowColor @ ToRainbowInteger @ First @ z]
+  If[z2 =!= z, findInteriorColor @ z2, ToRainbowColor @ ToRainbowInteger @ P1 @ z]
 ];
 
 $namedRecoloringElements = <|
@@ -420,7 +420,7 @@ $namedRecoloringElements = <|
   "ColoringFunctors" -> {FunctorSymbol        -> "Coloring"}
 |>;
 
-$colorP = _Integer | (_Symbol ? $styleFormHeadQ) | $ColorPattern;
+$colorP = _Int | (_Symbol ? $styleFormHeadQ) | $ColorPattern;
 
 (*
 we've got to do something a bit tricky here, which is to deal with the fact
@@ -434,7 +434,7 @@ TODO: do the same thing for GradientSymbol!
 
 toRecolorRule = Case[
 
-  str_String := Splice[% /@ LookupOrMessageKeys[$namedRecoloringElements, str, {}]];
+  str_Str := Splice[% /@ LookupOrMessageKeys[$namedRecoloringElements, str, {}]];
 
   head_Symbol -> type:("Rainbow"|"Gradient"|"Framing"|"Coloring") := If[TrueQ @ $unaryFormHeadQ[head],
     specialRecoloringRule[head, type],
@@ -462,7 +462,7 @@ toRecolorRule = Case[
 
 toCol = Case[
   s_Symbol  := StyleFormData @ s;
-  i_Integer := ToRainbowColor @ i;
+  i_Int := ToRainbowColor @ i;
   other_    := other;
 ]
 
@@ -532,9 +532,9 @@ PrivateFunction[parseSymbolReplacements]
 CommutativeDiagram::badrepspec = "SymbolReplacements -> `` is invalid.";
 
 parseSymbolReplacements = Case[
-  None | {}                               := Identity;
+  None | {}                               := Id;
   rules:($RulePattern | $RuleListPattern) := ReplaceAll[rules];
-  other_                                  := (Message[CommutativeDiagram::badrepspec, other]; Identity)
+  other_                                  := (Message[CommutativeDiagram::badrepspec, other]; Id)
 ];
 
 (**************************************************************************************************)
@@ -553,7 +553,7 @@ fixedMorphismBoxes[m_] := With[
   If[m2 === m, $Failed, ToGraphicsBoxes @ m2]
 ];
 
-$toHigherPath = Identity;
+$toHigherPath = Id;
 $defaultMorphism = MorphismArrow;
 
 toMorphism := Case[
@@ -563,7 +563,7 @@ toMorphism := Case[
   MapsToMorphism[path_, lbl:Except[_Rule]:None, args___]   := MorphismArrow[path, lbl, "MapsTo", args];
   ProMorphism[path_, lbl:Except[_Rule]:None, args___]      := MorphismArrow[path, lbl, "Proarrow", args];
   LineMorphism[path_, lbl:Except[_Rule]:None, args___Rule] := MorphismArrow[path, lbl, "Line", LabelPosition -> Center, LabelOrientation -> Aligned, ArrowColor -> $LightGray, args];
-  LineMorphism[path_, lbl_, n:(_Integer | {_Integer, _Integer}), args___Rule] := % @ LineMorphism[path, lbl, LabelOffset -> AlignedOffset[If[IntegerQ[n], {0, n}, n]], args];
+  LineMorphism[path_, lbl_, n:(_Int | {_Int, _Int}), args___Rule] := % @ LineMorphism[path, lbl, LabelOffset -> AlignedOffset[If[IntegerQ[n], {0, n}, n]], args];
   AdjointMorphism[path_, args___]                          := MorphismArrow[$toHigherPath @ path, None, "Adjoint", args, ArrowThickness -> 1.25];
   LongAdjointMorphism[path_, args___]                      := MorphismArrow[$toHigherPath @ path, None, "LongAdjoint", args, ArrowThickness -> 1.25];
   DoubleMorphism[path_, lbl:Except[_Rule]:None, args___]   := MorphismArrow[$toHigherPath @ path, lbl, "DoubleArrow", args];
@@ -577,10 +577,10 @@ toHigherPath = Case[
   other_                         := other;
 ];
 
-$higherCoordP = _DirectedEdge | _UndirectedEdge | Rule[_, _Integer] | _String | _Integer;
+$higherCoordP = _DirectedEdge | _UndirectedEdge | Rule[_, _Int] | _Str | _Int;
 CommutativeDiagram::badhighercoord = "2-morphism endpoint `` is not recognized."
 toHigherPathElem = Case[
-  name_String /; MemberQ[$objectNames, name] := name;
+  name_Str /; MemberQ[$objectNames, name] := name;
   pos:$CoordP                                := pos;
   m_MorphismCoordinates                      := m;
   o_ObjectCoordinates                        := o;
@@ -597,7 +597,7 @@ PrivateFunction[toComSugarArrow]
 toComSugarArrow[edge_, Null] := Nothing;
 toComSugarArrow[edge_, (head:$morphismHeadP)[args___]] := head[edge, args];
 toComSugarArrow[edge_, label_] := Morphism @@ ToList[edge, label];
-toComSugarArrow[edge_, Reversed[label_]] := toComSugarArrow[Reverse @ edge, label];f$morphismHeadP
+toComSugarArrow[edge_, Reversed[label_]] := toComSugarArrow[Rev @ edge, label];f$morphismHeadP
 toComSugarArrow[edge_, Reversed[Reversed[label_]]] := %[edge, label];
 
 (**************************************************************************************************)
@@ -734,9 +734,9 @@ processCloneOptions = Case[
 
   None|Automatic := % @ {};
 
-  s_String := % @ namedCloneOpts[s];
+  s_Str := % @ namedCloneOpts[s];
 
-  {s_String, opts___Rule} := % @ Join[{opts}, namedCloneOpts @ s];
+  {s_Str, opts___Rule} := % @ Join[{opts}, namedCloneOpts @ s];
 
   opts:{___Rule} := Scope[
     UnpackOptionsAs[CloneOptions, opts,
@@ -768,9 +768,9 @@ processCloneOptions = Case[
 toCloneMorphismFn = Case[
   Inherited                       := Inherited;
   None                            := Nothing&;
-  s_String | _Rule                := MorphismArrow[#1, #2, s]&;
+  s_Str | s_Rule                  := MorphismArrow[#1, #2, s]&;
   Sized[e_, s_]                   := ReplaceAll[% @ e, (h:$morphismHeadP|MorphismArrow)[args___] :> h[args, ArrowheadSize -> s]];
-  Reversed[s_]                    := With[{fn = % @ s}, fn[Reverse @ #1, #2]&];
+  Reversed[s_]                    := With[{fn = % @ s}, fn[Rev @ #1, #2]&];
   (h:$morphismHeadP)[opts___Rule] := h[#1, #2, opts]&;
   fn_ ? MightEvaluateWhenAppliedQ := fn;
   spec_                           := (
@@ -829,8 +829,8 @@ resolveObjectCoords = Case[
   ObjectCoordinates["Center"]       := $center;
   ObjectCoordinates["Median"]       := $median;
   ObjectCoordinates["BiasedCenter"] := $biasedCenter;
-  ObjectCoordinates[i_Integer]      := Lookup[$objectCoords, getObjectName @ i, Message[CommutativeDiagram::objcspeclen, i, Length @ $objectNames]; {0, 0}];
-  ObjectCoordinates[lbl_String]     := Lookup[$objectCoords, lbl, Message[CommutativeDiagram::badobjlbl, lbl]; {0, 0}];
+  ObjectCoordinates[i_Int]          := Lookup[$objectCoords, getObjectName @ i, Message[CommutativeDiagram::objcspeclen, i, Len @ $objectNames]; {0, 0}];
+  ObjectCoordinates[lbl_Str]        := Lookup[$objectCoords, lbl, Message[CommutativeDiagram::badobjlbl, lbl]; {0, 0}];
   ObjectCoordinates[list_List]      := Map[% @ ObjectCoordinates[#]&, list];
   ObjectCoordinates[spec_, fn_]     := fn @ % @ ObjectCoordinates[spec];
   spec_      := (Message[CommutativeDiagram::badobjspec, spec]; {0, 0});
@@ -852,17 +852,17 @@ CommutativeDiagram::badmorphind = "No morphism with index ``."
 resolveMorphism = Case[
   spec_DirectedEdge | spec_UndirectedEdge :=
     %[spec -> 1];
-  name_String := Scope[
+  name_Str := Scope[
     ind = IndexOf[$morphismNames, name];
     If[MissingQ[ind], ReturnFailed[CommutativeDiagram::badmorphname, name]];
     Part[$morphismCurves @ name, 1]
   ];
-  i_Integer := Scope[
+  i_Int := Scope[
     morph = SafePart[$morphismCurves @ None, i];
     If[MissingQ[morph], ReturnFailed[CommutativeDiagram::badmorphind, i]];
     morph
   ];
-  spec_ -> i_Integer := Scope[
+  spec_ -> i_Int := Scope[
     morphList = Lookup[$morphismCurves, spec, ReturnFailed[CommutativeDiagram::badmorphconn, spec]];
     morph = SafePart[morphList, i];
     If[MissingQ[morph], ReturnFailed[CommutativeDiagram::badmorphconnind, i, name]];
@@ -963,7 +963,7 @@ saveMorphismCoords = Case[
 CommutativeDiagram::badobjindex = "No object with index ``.";
 
 getObjectName[i_] := If[
-  1 <= Abs[i] <= Length[$objectNames],
+  1 <= Abs[i] <= Len[$objectNames],
   Part[$objectNames, i],
   Message[CommutativeDiagram::badobjindex, i]; {0, 0}
 ];
@@ -975,8 +975,8 @@ $edgeyHead = (List | Rule | DirectedEdge);
 (* resolve alternate heads and lazy specs to become MorphismArrow *)
 processMorphism1 = Case[
   m:($morphismHeadP[__])                              := % @ toMorphism @ m;
-  MorphismArrow[$edgeyHead[i_Integer, j_], args___]   := % @ MorphismArrow[{getObjectName @ i, j}, args];
-  MorphismArrow[$edgeyHead[i_, j_Integer], args___]   := % @ MorphismArrow[{i, getObjectName @ j}, args];
+  MorphismArrow[$edgeyHead[i_Int, j_], args___]       := % @ MorphismArrow[{getObjectName @ i, j}, args];
+  MorphismArrow[$edgeyHead[i_, j_Int], args___]       := % @ MorphismArrow[{i, getObjectName @ j}, args];
   MorphismArrow[(Rule|DirectedEdge)[i_, j_], args___] := % @ MorphismArrow[{i, j}, args];
   other_                                              := processMorphism2 @ flipSymbolicPositions @ other;
 ];
@@ -988,7 +988,7 @@ processMorphism2 = Case[
 
   (* TODO: setback intefereces with cloning *)
   ma_MorphismArrow /; TrueQ[$autoSetback] && FreeQ[ma, Setback] := Scope[
-    st = findSourceTarget @ First @ ma;
+    st = findSourceTarget @ P1 @ ma;
     If[st === None, Return @ ma];
     {src, tgt} = st;
     {sz1, sz2} = lookupObjectSize /@ {src, tgt};
@@ -997,7 +997,7 @@ processMorphism2 = Case[
     % @ Append[ma, Setback -> setback]
   ];
 
-  ma_MorphismArrow /; TrueQ[$morphismTextModifierFn =!= Identity] && FreeQ[ma, TextModifiers] := Scope[
+  ma_MorphismArrow /; TrueQ[$morphismTextModifierFn =!= Id] && FreeQ[ma, TextModifiers] := Scope[
     modifiers = resolveGradColors @ $morphismTextModifierFn;
     % @ Append[ma, TextModifiers -> modifiers]
   ];
@@ -1025,7 +1025,7 @@ saveMorphismGradColors = Case[
     If[ContainsQ[st, Missing], Return[]];
     stColored = $objectTextModifierFn /@ st;
     colors = findInteriorColor /@ stColored;
-    If[Length[colors] == 2,
+    If[Len[colors] == 2,
       (* save by label and by edge *)
       lbl = SafePart[m, 2];
       If[!RuleQ[lbl] && !MissingQ[lbl], AssociateTo[$morphGradColors, Replace[lbl, Cloned[c_, _] :> c] -> colors]];
@@ -1042,7 +1042,7 @@ makeEndpointSetback = Case[
 ];
 
 lookupObjectSize = Case[
-  s_String := Lookup[$objectSizes, s, {15, 15}];
+  s_Str := Lookup[$objectSizes, s, {15, 15}];
   _        := {15, 15};
 ];
 
@@ -1060,7 +1060,7 @@ findInteriorColor[e_] := DeepFirstCase[e,
 (* produce cloned morphisms if any *)
 processMorphism3 = Case[
 
-  ma_MorphismArrow /; TrueQ[$arrFn =!= Identity] :=
+  ma_MorphismArrow /; TrueQ[$arrFn =!= Id] :=
     processMorphismWithCloning @ MapAt[$arrFn, ma, 2];
 
   ma_MorphismArrow /; TrueQ[$clonesExist] :=
@@ -1071,7 +1071,7 @@ processMorphism3 = Case[
 
 processMorphismWithCloning[ma_MorphismArrow] := Scope[
 
-  st = findSourceTarget @ First @ ma;
+  st = findSourceTarget @ P1 @ ma;
   If[!StringVectorQ[clonedSt = Lookup[$cloneChildren, st]], Return @ ma];
   (* if the morphism's endpoints were both cloned, we need to create a cloned morphism *)
 
@@ -1110,7 +1110,7 @@ processClonedObjectLink[e_] := Block[
 ];
 
 processClonedMorphism[e_] := Block[
-  {$arrFn = Identity},
+  {$arrFn = Id},
   processMorphism1 @ e
 ];
 
@@ -1139,7 +1139,7 @@ findSourceTarget = Case[
 findST = Case[
   _                        := None;
   v_ ? CoordinateVector2DQ := v;
-  name_String              := name;
+  name_Str                 := name;
   ObjectCoordinates[spec_] := % @ spec;
-  i_Integer                := getObjectName[i];
+  i_Int                    := getObjectName[i];
 ]

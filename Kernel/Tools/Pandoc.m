@@ -2,7 +2,7 @@ PublicFunction[PandocConvert]
 
 PandocConvert::failed = "Pandoc failed on input `` and output ``.";
 
-PandocConvert[infile_String, outfile_String] := CatchMessage @ Scope[
+PandocConvert[infile_Str, outfile_Str] := CatchMessage @ Scope[
 	res = RunTool["pandoc", "-i", infile, "-o", outfile, "--standalone", "--katex"];
 	If[!TrueQ[res], ReturnFailed["failed", MsgPath[infile], MsgPath[outfile]]];
 	outfile
@@ -12,7 +12,7 @@ PandocConvert[infile_String, outfile_String] := CatchMessage @ Scope[
 
 PublicFunction[PandocConvertToHTML]
 
-PandocConvertToHTML[inpath_String] := PandocConvert[inpath, ReplaceFileExtension[inpath, "html"]];
+PandocConvertToHTML[inpath_Str] := PandocConvert[inpath, ReplaceFileExtension[inpath, "html"]];
 
 (**************************************************************************************************)
 
@@ -24,10 +24,10 @@ PandocExportMDToHTML[indir$ -> {file$1, file$2, $$}, outdir$] converts specific 
 * If outdir$ does not exist it is created.
 "
 
-PandocExportMDToHTML[indir_String, outpath_String] :=
+PandocExportMDToHTML[indir_Str, outpath_Str] :=
 	PandocExportMDToHTML[indir -> FileNames["*.md", NormalizePath @ indir, Infinity], outpath];
 
-PandocExportMDToHTML[inpath_String -> infiles:{___String}, outpath_String] := Scope[
+PandocExportMDToHTML[inpath_Str -> infiles:{___Str}, outpath_Str] := Scope[
 	inpath //= NormalizePath;
 	outpath //= NormalizePath;
 	EnsureDirectory[outpath];

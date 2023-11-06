@@ -5,7 +5,7 @@ ColoredGraph[edges_List, opts___Rule] :=
 
 ColoredGraph[vertices_List, edges_List, opts___Rule] := Scope[
   vertexColors = AssociationMap[ColoredGraphCardinalColorFunction, vertices];
-  cardinalColors = If[Length[First @ edges] =!= 3, None,
+  cardinalColors = If[Len[P1 @ edges] =!= 3, None,
     AssociationMap[ColoredGraphCardinalColorFunction, DeleteDuplicates @ Part[edges, All, 3]]
   ];
   ExtendedGraph[
@@ -29,7 +29,7 @@ DefineGraphTheme["ColoredGraph",
     SelfLoopRadius -> 0.4, MultiEdgeDistance -> 0.4,
     AspectRatioClipping -> False, (* Frame -> True, *)
     EdgeThickness -> 1, EdgeStyle -> Directive[{AbsoluteThickness[0], GrayLevel[0.7, 1]}],
-    ArrowheadShape -> {"FlatArrow", BorderStyle -> Function[{Darker[#, .3], AbsoluteThickness[0]}]}
+    ArrowheadShape -> {"FlatArrow", BorderStyle -> Fn[{Darker[#, .3], AbsoluteThickness[0]}]}
 ];
 
 (**************************************************************************************************)
@@ -45,7 +45,7 @@ $colorRules = <|
   "w" -> White
 |>;
 
-ColoredGraphCardinalColorFunction[str_String] :=
+ColoredGraphCardinalColorFunction[str_Str] :=
   HumanBlend @ Lookup[$colorRules, Characters @ str, Nothing];
 
 (**************************************************************************************************)
@@ -56,7 +56,7 @@ PartialOrderGraph[vertices_, edges_, opts___Rule] := Scope[
   If[MatchQ[vertices, {__Graph} -> _List],
     {graphs, opts} = FirstLast @ vertices;
     plots = ExtendedGraphPlot[#, opts]& /@ graphs;
-    vertices = Range @ Length @ vertices;
+    vertices = Range @ Len @ vertices;
     shapes = AssociationThread[vertices, plots];
     vsize = 100;
   ,
@@ -67,7 +67,7 @@ PartialOrderGraph[vertices_, edges_, opts___Rule] := Scope[
     opts,
     VertexShapeFunction -> shapes,
     VertexLayout -> TreeVertexLayout[Balanced -> True],
-    GraphOrigin -> First @ vertices,
+    GraphOrigin -> P1 @ vertices,
     ArrowheadShape -> None, ArrowheadSize -> Huge,
     ImageSize -> 250, VertexSize -> vsize, EdgeThickness -> 3
   ]
@@ -109,12 +109,12 @@ BasicGraph[spec_, opts___Rule] := BasicGraph[toGraph @ spec, opts];
 BasicGraph[edges_List ? EdgeListQ, opts___Rule] := ExtendedGraph[edges, opts, GraphTheme -> "BasicGraph"];
 
 toGraph = Case[
-  i_Integer                         := LineQuiver[i, GraphOrigin -> Automatic, VertexOrigin -> Automatic];
-  "Line"                            := LineQuiver[6, GraphOrigin -> Automatic, VertexOrigin -> Automatic, PeripheralVertices -> 1];
-  {w_Integer, h_Integer}            := SquareQuiver[{w, h}, GraphOrigin -> Automatic, VertexOrigin -> Automatic];
-  "Square"                          := SquareQuiver[6, GraphOrigin -> Automatic, VertexOrigin -> Automatic, PeripheralVertices -> 3];
-  "Triangle"                        := TriangularQuiver[6, GraphOrigin -> Automatic, VertexOrigin -> Automatic, PeripheralVertices -> 5];
-  {w_Integer, h_Integer, d_Integer} := CubicQuiver[{w, h, d}, GraphOrigin -> Automatic, VertexOrigin -> Automatic];
+  i_Int                 := LineQuiver[i, GraphOrigin -> Automatic, VertexOrigin -> Automatic];
+  "Line"                := LineQuiver[6, GraphOrigin -> Automatic, VertexOrigin -> Automatic, PeripheralVertices -> 1];
+  {w_Int, h_Int}        := SquareQuiver[{w, h}, GraphOrigin -> Automatic, VertexOrigin -> Automatic];
+  "Square"              := SquareQuiver[6, GraphOrigin -> Automatic, VertexOrigin -> Automatic, PeripheralVertices -> 3];
+  "Triangle"            := TriangularQuiver[6, GraphOrigin -> Automatic, VertexOrigin -> Automatic, PeripheralVertices -> 5];
+  {w_Int, h_Int, d_Int} := CubicQuiver[{w, h, d}, GraphOrigin -> Automatic, VertexOrigin -> Automatic];
 ];
 
 DefineGraphTheme["BasicGraph",

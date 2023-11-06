@@ -45,7 +45,7 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
   rootIndex = Switch[rootVertex,
     None,                       None,
     Automatic,                  Automatic,
-    IndexedVertex[_Integer],    First @ rootVertex,
+    IndexedVertex[_Int],    P1 @ rootVertex,
     GraphOrigin,                If[graphOrigin === None, Automatic, VertexIndex[graph, graphOrigin]],
     "Source",                   First[GraphSources @ SimpleGraph @ ExpandCardinalSetEdges @ indexGraph, None],
     _,                          VertexIndex[graph, rootVertex]
@@ -57,12 +57,12 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
   {vertexCoordinates, edgeCoordinateLists} = VertexEdgeCoordinateData[data, vertexLayout];
 
   transposed = orientation === Left;
-  rever = Switch[orientation, Top, Identity, Left, Reverse, _, $NotImplemented];
+  rever = Switch[orientation, Top, Id, Left, Rev, _, $NotImplemented];
 
   {balanceSteps, balanceDelta} = Replace[balanced, {
     True           -> {100, 0.1},
-    _Integer       -> {balanced, 0.1},
-    {_Integer, _}  -> balanced,
+    _Int       -> {balanced, 0.1},
+    {_Int, _}  -> balanced,
     _              -> {0, 0}
   }];
 
@@ -77,7 +77,7 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
   ];
 
   If[obtainNewEdges,
-    edgeCoordinateLists = ExtractIndices[vertexCoordinates, If[rootOrientation === "Sink", ReverseEdges, Identity] @ EdgePairs[indexGraph]];
+    edgeCoordinateLists = ExtractIndices[vertexCoordinates, If[rootOrientation === "Sink", ReverseEdges, Id] @ EdgePairs[indexGraph]];
   ];
 
   If[stretchFactor =!= 1,
@@ -111,7 +111,7 @@ applyTreeEdgeCoordinateFanoutStyle[edgeCoordinateLists_, bendRadius_, fanoutStyl
     "Center" | Center,
       Map[bendCenterFraction[#, 0.5]&, edgeCoordinateLists],
     Center -> _,
-      Map[bendCenterFraction[#, Last @ fanoutStyle]&, edgeCoordinateLists],
+      Map[bendCenterFraction[#, PN @ fanoutStyle]&, edgeCoordinateLists],
     "Bottom" | Bottom,
       Map[bendBottom, edgeCoordinateLists],
     Automatic | None,

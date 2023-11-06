@@ -2,13 +2,13 @@ $shortcutsContext := QuiverGeometryLoader`$ShortcutsContext;
 
 (**************************************************************************************************)
 
-(* QuiverGeometry`Shortcuts`SetSymbol[name_String, value_] :=
+(* QuiverGeometry`Shortcuts`SetSymbol[name_Str, value_] :=
    CreateSymbol[$shortcutsContext <> name, value];
 
-QuiverGeometry`Shortcuts`CopySymbols[from_List, to_String] :=
+QuiverGeometry`Shortcuts`CopySymbols[from_List, to_Str] :=
     Scan[QuiverGeometry`Shortcuts`CopySymbols[#, to]&, from];
 
-QuiverGeometry`Shortcuts`CopySymbols[from_String, to_String] := Scope[
+QuiverGeometry`Shortcuts`CopySymbols[from_Str, to_Str] := Scope[
     names = Names[$shortcutsContext <> from <> "*"];
     newNames = Part[StringSplit[names, "`", 1], All, -1];
     newNames = StringDrop[newNames, StringLength @ from];
@@ -45,8 +45,8 @@ loadShortcutGroup[name_] := Message[LoadShortcuts::unknownGroup, name];
 
 (**************************************************************************************************)
 
-strRules[str__String] := strRules @ Riffle[{str}, " "]
-strRules[str_String] := VectorApply[Rule] @ Partition[StringSplit @ StringTrim @ str, 2];
+strRules[str__Str] := strRules @ Riffle[{str}, " "]
+strRules[str_Str] := VectorApply[Rule] @ Partition[StringSplit @ StringTrim @ str, 2];
 
 $greekToRoman = strRules @ "
     \[Alpha] alpha \[Beta] beta \[Gamma] gamma \[Delta] delta \[CurlyEpsilon] ceps
@@ -67,17 +67,17 @@ $unicodeToName = strRules @ "
 "; *)
 
 $subSlots = {"#1" -> Slot[1], "#2" -> Slot[2], "#3" -> Slot[3], "#4" -> Slot[4], "#" -> Slot[1]}
-toSymbolFunc[baseName_] := Construct[Function, StringReplace[baseName, $subSlots]];
+toSymbolFunc[baseName_] := Construct[Fn, StringReplace[baseName, $subSlots]];
 
 toNameList = Case[
-  str_String := StringReplace[toList @ str, $greekToRoman];
+  str_Str := StringReplace[toList @ str, $greekToRoman];
   list_List := list;
   other := (Print["BAD ITERATOR SPEC: ", other]; {});
 ];
 
 toList = Case[
-  str_String /; StringContainsQ[str, " "] := StringSplit[str];
-  str_String := Characters[str];
+  str_Str /; StringContainsQ[str, " "] := StringSplit[str];
+  str_Str := Characters[str];
   list_List := list;
   other_ := (Print["BAD ITERATOR SPEC: ", other]; {});
 ];
@@ -90,7 +90,7 @@ $valueSimplification = {
   None[e_] :> e
 }
 
-symbolTable[name_String, valueFn_, iterators___] := Scope[
+symbolTable[name_Str, valueFn_, iterators___] := Scope[
   nameFn = toSymbolFunc[name];
   {nameTuples, valueTuples} = Transpose @ Map[parseIterator, {iterators}];
   names = ApplyTuples[nameFn, nameTuples];
@@ -114,12 +114,12 @@ makeSym[name_, value_] := With[{name2 = $shortcutsContext <> name},
 
 SetHoldRest[makeDelayedSym];
 makeDelayedSym[name_, value_] :=
-  ToExpression[$shortcutsContext <> name, InputForm, Function[sym, SetDelayed[sym, value];, HoldAll]];
+  ToExpression[$shortcutsContext <> name, InputForm, Fn[sym, SetDelayed[sym, value];, HoldAll]];
 
 decSymTable[name_, fn_, it_] := decSymTable[name, fn, it, it];
 decSymTable[name_, fn_, it_, All] := decSymTable[name, fn, it, it];
 
-decSymTable[name_String, fn_, it_, subIt_] := Join[
+decSymTable[name_Str, fn_, it_, subIt_] := Join[
     symbolTable[name, fn, it],
     symbolTable[
         StringReplace[name, "#" -> "#1#2"],
@@ -132,21 +132,21 @@ decSymTable[name_String, fn_, it_, subIt_] := Join[
 decSymTable[___] := (Print["INVALID CALL TO decSymTable"];)
 
 parseIterator = Case[
-    spec:{__String}         := {spec, spec};    (* already parsed *)
-    spec:{_List, _List}     := spec;            (* already parsed *)
-    str_String              := %[str -> str];
-    Rule[names_, values_]   := {toNameList @ names, toList @ values};
-    maybe[spec_]            := MapThread[Prepend, {% @ spec, {"", None}}];
-    specs_joinIts           := CatenateVectors @ Map[%, List @@ specs];
-    mapIts[nfn_, vfn_][it_] := Scope[{names, vals} = % @ it; {nfn /@ names, vfn /@ vals}];
-    tuplesIt[spec_, n_]     := joinLetters @ Map[makeTuples[#, n]&, % @ spec];
-    subsetsIt[spec_, n_]    := joinLetters @ Map[Subsets[#, n]&, % @ spec];
-    permsIt[spec_]          := joinLetters @ Map[Permutations, % @ spec];
+  spec:{__Str}            := {spec, spec};    (* already parsed *)
+  spec:{_List, _List}     := spec;            (* already parsed *)
+  str_Str                 := %[str -> str];
+  Rule[names_, values_]   := {toNameList @ names, toList @ values};
+  maybe[spec_]            := MapThread[Prepend, {% @ spec, {"", None}}];
+  specs_joinIts           := CatenateVectors @ Map[%, List @@ specs];
+  mapIts[nfn_, vfn_][it_] := Scope[{names, vals} = % @ it; {nfn /@ names, vfn /@ vals}];
+  tuplesIt[spec_, n_]     := joinLetters @ Map[makeTuples[#, n]&, % @ spec];
+  subsetsIt[spec_, n_]    := joinLetters @ Map[Subsets[#, n]&, % @ spec];
+  permsIt[spec_]          := joinLetters @ Map[Permutations, % @ spec];
 ];
 
 joinLetters[{a_, b_}] := {Map[StringJoin, a], b};
-makeTuples[e_, n_Integer] := Tuples[e, n];
-makeTuples[e_, m_Integer ;; n_Integer] := Catenate @ Table[Tuples[e, i], {i, m, n}];
+makeTuples[e_, n_Int] := Tuples[e, n];
+makeTuples[e_, m_Int ;; n_Int] := Catenate @ Table[Tuples[e, i], {i, m, n}];
 
 (**************************************************************************************************)
 
@@ -168,7 +168,7 @@ toIteratorData[lower_, upper_] := parseIterator /@ {lower, upper, lower <> upper
 (**************************************************************************************************)
 
 SetListable[shortcutSymbol];
-shortcutSymbol[name_String] := Symbol[$shortcutsContext <> name];
+shortcutSymbol[name_Str] := Symbol[$shortcutsContext <> name];
 
 (**************************************************************************************************)
 
@@ -305,7 +305,7 @@ loadShortcutGroup["Core"] := (
   makeSym["EOFSeq", eofSeq];
   eofSeq[a_, b_] := Sequence[a, ElementOfForm[a, b], b];
 
-  decSymTable["$#",               Identity,                                   $Greek, $Greek];
+  decSymTable["$#",               Id,                                   $Greek, $Greek];
 
   decSymTable["$s#",              SymbolForm,                                 $RomanGreek];
   symbolTable["$s#1#2",           #2[SymbolForm[#1]]&,                        $RomGre, $style];
@@ -496,7 +496,7 @@ loadShortcutGroup["Data"] := (
   symbolTable["$sset#1#2",        #2[SignedSetSymbolForm[#1]]&,               $ROM, $style];
   decSymTable["$sset$#",          SignedSetElementSymbolForm,                 $rom, $rom];
 
-  $maybeNegated = {{"", "n"}, {Identity, NegatedForm}};
+  $maybeNegated = {{"", "n"}, {Id, NegatedForm}};
   symbolTable["$sset$#3#1#2",     #2[#3[SignedSetElementSymbolForm[#1]]]&,    $rom, maybe @ $style, $maybeNegated];
 
   $ssset$abc = SignedSubsets[shortcutSymbol[{"$sset$ar", "$sset$bb", "$sset$cg"}]];
@@ -506,7 +506,7 @@ loadShortcutGroup["Data"] := (
       list_List       := StringJoin @ Map[%, list];
       NegatedForm[n_] := ToUpperCase @ %[n];
       _[s_]           := % @ s;
-      s_String        := s;
+      s_Str        := s;
   ];
 
   symbolTable["$lsset$#",         Apply[SignedSetForm],                       {Map[ssetElToName, $ssset$abc], $ssset$abc /. NegatedForm[head_[e_]] :> head[NegatedForm[e]]}];

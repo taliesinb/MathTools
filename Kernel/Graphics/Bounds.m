@@ -16,7 +16,7 @@ PrimitiveBoxesBounds[boxes_, gs_:None] := Scope[
 
 (* used internally to compute the center for Rotate *)
 iBounds[boxes_] := Scope[
-  $p = Bag[]; $t = Identity;
+  $p = Bag[]; $t = Id;
   boxBound @ boxes;
   $p = BagPart[$p, All];
   ToPackedReal @ If[$p === {}, $emptyBounds, fatten /@ CoordinateBounds[$p]]
@@ -138,7 +138,7 @@ matCirc8[m_, r_] := vecCirc8[#, r]& /@ m;
 applyTrans[p_, new_] := Block[{$t = composeTransform[$t, new]}, boxBound @ p];
 
 (* TODO: this won't simplify cases that are already involving Composition *)
-composeTransform[Identity, new_] := new;
+composeTransform[Id, new_] := new;
 composeTransform[old_, new_] := Composition[old, new];
 composeTransform[DotRightOperator[old_], DotRightOperator[new_]] := DotRightOperator[Dot[new, old]];
 composeTransform[ThreadedPlusOperator[old_], ThreadedPlusOperator[new_]] := ThreadedPlusOperator[old + new];

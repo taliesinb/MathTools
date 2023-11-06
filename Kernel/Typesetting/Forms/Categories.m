@@ -152,7 +152,7 @@ DefineStandardTraditionalForm[{
   FunctorAppliedForm[head_, args__] :> MakeBoxes @ TightAppliedForm[head, args]
 }];
 
-$functorLikeQ = UAssociation[];
+$functorLikeQ = UAssoc[];
 
 SetListable[declareFunctorLike];
 declareFunctorLike[sym_Symbol] := (
@@ -265,7 +265,7 @@ DefineStandardTraditionalForm[{MonoidalTreeForm[e_, opts___Rule] :> monoidalTree
 monoidalTreeFormBoxes[cd_CommutativeDiagram, ___] :=
   ToBoxes @ Append[cd, TextModifiers -> <|
     "Objects"   -> MonoidalTreeForm,
-    "Morphisms" -> Function[label, MonoidalTreeForm[label, GraphicsScale -> 10, VertexSize -> 4]]
+    "Morphisms" -> Fn[label, MonoidalTreeForm[label, GraphicsScale -> 10, VertexSize -> 4]]
   |>]
 
 monoidalTreeFormBoxes[e_, opts___Rule] :=
@@ -299,11 +299,11 @@ toMonoidalTreeList = Case[
   Seq[(MonoidalProductForm|TightMonoidalProductForm)[args__], pos_] :=
     MapIndexStack[%, pos, {args}];
 
-  Seq[color:($ColorPattern | _Integer), _] := color;
+  Seq[color:($ColorPattern | _Int), _] := color;
 
   Seq[(OneArrow|IdentityArrow)[e_], pos_] := %[e, pos];
 
-  Seq[(CategoryObjectSymbol|CategoryArrowSymbol|NaturalTransformationSymbol)[sym_String], _] :=
+  Seq[(CategoryObjectSymbol|CategoryArrowSymbol|NaturalTransformationSymbol)[sym_Str], _] :=
     ToRainbowInteger @ sym;
 
   Seq[AssociatorForm[a_, b_, c_], pos_] := (
@@ -367,7 +367,7 @@ symbolToRainbowSymbol[s_] := Style["\[FilledCircle]", ToRainbowColor @ ToRainbow
 
 addUnitorDecoration[pos_, i_] := AppendTo[$epilog,
   Line[
-    GraphicsValue[{"VertexCoordinates", {Append[pos, i]}}, First /* Function[{{-.2, .4} + #, {.2, .4} + #}]]
+    GraphicsValue[{"VertexCoordinates", {Append[pos, i]}}, P1 /* Fn[{{-.2, .4} + #, {.2, .4} + #}]]
   ]
 ];
 
@@ -378,12 +378,12 @@ addAssociatorDecoration[pos_, isRev_] := AppendTo[$epilog, {
 }];
 
 associatorArrowhead[pos_, dir_] := Arrowhead[
-  GraphicsValue[{"VertexCoordinates", {pos}}, First /* PlusOperator[{0, .5}]], dir,
+  GraphicsValue[{"VertexCoordinates", {pos}}, P1 /* PlusOperator[{0, .5}]], dir,
   ArrowheadColor -> $Black, ArrowheadShape -> "Arrow", ArrowheadAnchor -> Center
 ];
 
 addBraidingDecoration[vertex_] := AppendTo[$epilog,
-  Text["\[LeftRightArrow]", GraphicsValue[{"VertexCoordinates", {vertex}}, First], {-0.1, 1}, BaseStyle -> {FontSize -> 9}]
+  Text["\[LeftRightArrow]", GraphicsValue[{"VertexCoordinates", {vertex}}, P1], {-0.1, 1}, BaseStyle -> {FontSize -> 9}]
 ];
 
 (**************************************************************************************************)

@@ -25,12 +25,12 @@ PublicFunction[ListRiffle, ScalarRiffle]
 
 ListRiffle[list_List, {}] := list;
 ListRiffle[list_List, riffleList_List] := Scope[
-  riff = PadRight[riffleList, Length[list], Last @ riffleList];
+  riff = PadRight[riffleList, Len[list], PN @ riffleList];
   Most @ Catenate @ Transpose[{list, riff}]
 ];
 
 ScalarRiffle[list_List, scalar_] :=
-  Most @ Catenate @ Transpose[{list, Repeat[scalar, Length @ list]}];
+  Most @ Catenate @ Transpose[{list, Repeat[scalar, Len @ list]}];
 
 (**************************************************************************************************)
 
@@ -129,7 +129,7 @@ $TriangleVectors = {{0, 1}, {-1/2*Sqrt[3], -1/2}, {Sqrt[3]/2, -1/2}};
 PrivateFunction[LengthNormalize]
 
 LengthNormalize[{}] := {};
-LengthNormalize[e_] := e / Length[e];
+LengthNormalize[e_] := e / Len[e];
 
 (**************************************************************************************************)
 

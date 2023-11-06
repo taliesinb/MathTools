@@ -192,7 +192,7 @@ RemoveEdgeTag = Case[
 
 PublicFunction[RenameCardinals]
 
-RenameCardinals[graph_Graph, renaming:{__String}] :=
+RenameCardinals[graph_Graph, renaming:{__Str}] :=
   RenameCardinals[graph, RuleThread[CardinalList @ graph, renaming]]
 
 RenameCardinals[graph_Graph, {}] := graph;
@@ -204,7 +204,7 @@ RenameCardinals[graph_Graph, renaming:{__Rule}] := Scope[
   {vertices, edges} = VertexEdgeList @ graph;
   replacer = ReplaceAll @ Dispatch @ renaming;
   edges = MapAt[replacer, edges, {All, 3}] /. DirectedEdge[a_, b_, Inverted[c_]] :> DirectedEdge[b, a, c];
-  replacer = ReplaceAll @ Dispatch @ (renaming /. Inverted -> Identity);
+  replacer = ReplaceAll @ Dispatch @ (renaming /. Inverted -> Id);
   opts = DropOptions[AnnotationRules] @ Options @ graph;
   annos = Replace[
     ExtendedGraphAnnotations @ graph,
@@ -244,7 +244,7 @@ TruncateQuiver[quiver_, cardinals:Except[_Rule], userOpts:OptionsPattern[]] := S
   {vertices, edges} = VertexEdgeList @ quiver;
   SetAutomatic[cardinals, t = CardinalList[quiver]; Join[t, Inverted /@ t]];
   If[StringQ[cardinals], cardinals //= ToPathWord];
-  ordering = AssociationRange[cardinals]; $n = Length @ cardinals;
+  ordering = AssociationRange[cardinals]; $n = Len @ cardinals;
   tagTable = Map[SortBy[cardOrder[ordering]], VertexTagTable[quiver, False]];
   tagOutTable = TagVertexOutTable @ quiver;
   vertexCoords = GraphVertexCoordinates @ quiver;
@@ -254,7 +254,7 @@ TruncateQuiver[quiver_, cardinals:Except[_Rule], userOpts:OptionsPattern[]] := S
     cornerEdges = If[allowSkips, cornerEdge, noskipCornerEdge[ordering]] /@ Partition[cornerVerts, 2, 1, 1];
     cornerCoords = Map[
       PointAlongLine[
-        {coord, Part[vertexCoords, Lookup[tagOut, Replace[#, CardinalSet[s_] :> First[s]]]]},
+        {coord, Part[vertexCoords, Lookup[tagOut, Replace[#, CardinalSet[s_] :> P1[s]]]]},
         Scaled[0.25]]&,
       tags
     ];

@@ -7,13 +7,13 @@ If[!$Notebooks,
 
 $slotRegularExpression = RegularExpression["<\\*([^*]+)\\*>"];
 
-substituteUsageSlots[s_String] :=
+substituteUsageSlots[s_Str] :=
   StringReplace[s, "<*" ~~ Shortest[slot___] ~~ "*>" :> Block[
     {$ContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`Private`"}},
     toUsageStr[ToExpression[slot, InputForm]]
   ]];
 
-toUsageStr[list:{__String}] := commaString[list];
+toUsageStr[list:{__Str}] := commaString[list];
 toUsageStr[e_] := TextString[e];
 
 (**************************************************************************************************)
@@ -102,7 +102,7 @@ addHeaderLines[usageString_] := StringReplace[
   }
 ];
 
-addInlinePane[str_String] := StringJoin[
+addInlinePane[str_Str] := StringJoin[
   "\!\(\*PaneBox[",
   StringTake[str, {4, -3}],
   "], FrameMargins -> {{0, 0}, {1, 4}}]\)"
@@ -110,7 +110,7 @@ addInlinePane[str_String] := StringJoin[
 
 (**************************************************************************************************)
 
-replaceEllipsis[str_String] := StringReplace[str, "\[Ellipsis]" -> "..."];
+replaceEllipsis[str_Str] := StringReplace[str, "\[Ellipsis]" -> "..."];
 
 (**************************************************************************************************)
 
@@ -138,14 +138,14 @@ PrivateFunction[ClearUsageCache]
 
 ClearUsageCache[] := (
   Clear[GeneralUtilities`Private`$SetUsageFormatCache];
-  $RawUsageStringTable = Association[];
-  GeneralUtilities`Code`PackagePrivate`$relatedSymbolTable = UAssociation[];
+  $RawUsageStringTable = Assoc[];
+  GeneralUtilities`Code`PackagePrivate`$relatedSymbolTable = UAssoc[];
 );
 
 (* this speeds up the processing of usage string messages, which are otherwise quite expensive *)
-If[!AssociationQ[GeneralUtilities`Private`$SetUsageFormatCache],
-  GeneralUtilities`Private`$SetUsageFormatCache = UAssociation[];
-  GeneralUtilities`Code`PackagePrivate`fmtUsageString[str_String] /; $fmtUsageOuter := Block[
+If[!AssocQ[GeneralUtilities`Private`$SetUsageFormatCache],
+  GeneralUtilities`Private`$SetUsageFormatCache = UAssoc[];
+  GeneralUtilities`Code`PackagePrivate`fmtUsageString[str_Str] /; $fmtUsageOuter := Block[
     {$fmtUsageOuter = False},
     storeRawUsageString[str];
     GeneralUtilities`CacheTo[
@@ -175,7 +175,7 @@ customSetUsageProcessor = Composition[
 
 encodeUppercase[i_] := FromCharacterCode[65 + IntegerDigits[i, 26, 2]];
 decodeUppercase[s_] := FromDigits[ToCharacterCode[s] - 65, 26];
-GeneralUtilities`Code`PackagePrivate`linearLHS[str_String, Optional[escapeq_, False]] /; StringContainsQ[str, "\!\(\*"] := Module[
+GeneralUtilities`Code`PackagePrivate`linearLHS[str_Str, Optional[escapeq_, False]] /; StringContainsQ[str, "\!\(\*"] := Module[
   {blocks = {}, i = 0, str2, res},
   If[StringStartsQ[str, "\!\(\*"] && StringEndsQ[str, "\)"], Return @ str];
   str2 = StringReplace[str, "\!\(\*" ~~ Shortest[content__] ~~ "\)" :> (
@@ -193,9 +193,9 @@ GeneralUtilities`Code`PackagePrivate`linearLHS[str_String, Optional[escapeq_, Fa
 
 PrivateVariable[$RawUsageStringTable]
 
-$RawUsageStringTable = Association[];
+$RawUsageStringTable = Assoc[];
 
-storeRawUsageString[rawUsageString_String] := Block[
+storeRawUsageString[rawUsageString_Str] := Block[
   {usageString = StringTrim @ rawUsageString},
   (* $currentMainSymbol will be picked up later in the customSetUsageProcessor composition chain *)
   $currentMainSymbol = First[StringCases[usageString, $mainSymbolRegex, 1], None];
@@ -245,9 +245,9 @@ preprocessUsageString[usageString_] :=
 
 SetUsage[___] /; TrueQ[QuiverGeometryLoader`$DisableSetUsage] || TrueQ[QuiverGeometryLoader`$FastLoad] := Null;
 
-SetUsage[usageString_String] :=
+SetUsage[usageString_Str] :=
   GeneralUtilities`SetUsage[Evaluate @ preprocessUsageString @ usageString];
 
-SetUsage[symbol_Symbol, usageString_String] :=
+SetUsage[symbol_Symbol, usageString_Str] :=
   GeneralUtilities`SetUsage[symbol, Evaluate @ preprocessUsageString @ usageString];
 

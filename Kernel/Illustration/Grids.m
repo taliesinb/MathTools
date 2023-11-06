@@ -23,7 +23,7 @@ ScalarGrid[n_, opts___] := MeshGrid[{{n}}, FrameStyle -> Append[$arrayFrameStyle
 PublicFunction[SplitSquareBracketList]
 
 SplitSquareBracketList[n_, fs_:16][list_] := Block[
-  {$fs = fs}, toCol[toRows @ Partition[If[n > 1, padStr, Identity] @ list, UpTo[n]]]];
+  {$fs = fs}, toCol[toRows @ Partition[If[n > 1, padStr, Id] @ list, UpTo[n]]]];
 
 $comma = Style[",", $Gray];
 $lbrac = DarkGrayForm @ RaiseForm["[",.09];
@@ -61,7 +61,7 @@ MakeBoxes[SymbolicPlus[a___], form_] :=
 MakeBoxes[SymbolicPlus[a_, b_ ? minusQ], form_] :=
   ToBoxes[Row[{a, abs @ b}, "\[NegativeThinSpace]-\[NegativeThinSpace]"], form];
 
-minusQ[n_Integer ? Negative] := True;
+minusQ[n_Int ? Negative] := True;
 minusQ[Style[_ ? minusQ, ___]] := True;
 minusQ[_] := False;
 

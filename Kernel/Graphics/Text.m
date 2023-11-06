@@ -17,7 +17,7 @@ Options[TextToPolygon] = {
   FontWeight -> Plain,
   FontSlant -> Plain
 }
-TextToPolygon[text_String, OptionsPattern[]] := Scope[
+TextToPolygon[text_Str, OptionsPattern[]] := Scope[
   style = OptionValue[{FontSize, FontFamily, FontWeight, FontSlant}];
   CachedInto[$TextToPolygonCache, {text, style}, iTextToPolygon[text, style]]
 ];
@@ -41,7 +41,7 @@ iTextToPolygon[str_, {fontSize_, fontFamily_, fontWeight_, fontSlant_}] := Scope
   dotIndex = MaximumIndexBy[polygons, DeepFirstCase[#, $NumberP]&];
   dot = Part[polygons, dotIndex];
   polygons = Delete[polygons, dotIndex];
-  {lr, {b, t}} = CoordinateBounds @ First @ dot;
+  {lr, {b, t}} = CoordinateBounds @ P1 @ dot;
 
   $alignTrans = Threaded[{0, -b}];
   polygons //= alignPolygons;
@@ -49,7 +49,7 @@ iTextToPolygon[str_, {fontSize_, fontFamily_, fontWeight_, fontSlant_}] := Scope
   (* hacky but cheap *)
   bounds = PrimitiveBoxesBounds[polygons /. {Polygon -> PolygonBox, Line -> LineBox, Disk -> DiskBox, Circle -> CircleBox}];
 
-  If[Length[polygons] === 1, polygons //= First];
+  If[Len[polygons] === 1, polygons //= P1];
 
   List[polygons, bounds, 2]
 ];
@@ -61,7 +61,7 @@ alignPolygons = Case[
   Polygon[r_Rule, o___] := Polygon[% /@ r, o];
 ]
 
-$unicodeToNamedIcon = Association[
+$unicodeToNamedIcon = Assoc[
   "➡︎" -> {"BoldRightArrow", .75, 1},
   "⬅︎" -> {"BoldLeftArrow",  .75, 1},
   "⬆︎" -> {"BoldUpArrow",    .75, 3},
@@ -131,7 +131,7 @@ ApplyScriptScaling[expr_] := ReplaceAll[
   sub:$formScriptingFormP :> RuleCondition @ rescriptSubExpr[sub]
 ]
 
-rescriptSubExpr[sub_] := MapIndices[rescript, $formScriptingArgumentPositions @ Head @ sub, sub];
+rescriptSubExpr[sub_] := MapIndices[rescript, $formScriptingArgumentPositions @ H @ sub, sub];
 
 $scalingHeadP = (GradientSymbol | TextIcon);
 rescript[e_] := ReplaceAll[e,

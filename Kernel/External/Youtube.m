@@ -17,7 +17,7 @@ Options[YoutubeVideoMetadata] = {
   Verbose -> False
 };
 
-YoutubeVideoMetadata[url_String, OptionsPattern[]] := Scope[
+YoutubeVideoMetadata[url_Str, OptionsPattern[]] := Scope[
   UnpackOptions[$verbose];
   yid = getYTID @ url;
   If[!StringQ[yid], ReturnFailed["noytid", url]];
@@ -40,7 +40,7 @@ YoutubeVideoMetadata[url_String, OptionsPattern[]] := Scope[
   data
 ]
 
-getYTID[url_String] := Which[
+getYTID[url_Str] := Which[
   StringMatchQ[url, YoutubeIDPattern], url,
   StringContainsQ[url, "watch?v="], FirstStringCase[url, "watch?v=" ~~ id:YoutubeIDPattern :> id],
   StringContainsQ[url, ".be/"],     FirstStringCase[url, ".be/" ~~ id:YoutubeIDPattern :> id],
@@ -58,15 +58,15 @@ SetInitialValue[$UploaderToPerson, $UploaderToChannel, <||>];
 
 PublicFunction[YoutubeToMarkdown]
 
-YoutubeToMarkdown[url_String] := Scope[
+YoutubeToMarkdown[url_Str] := Scope[
   yid = getYTID @ url;
   If[!StringQ[yid], ReturnFailed["noytid", url]];
   data = YoutubeVideoMetadata @ yid;
-  If[!AssociationQ[data], ReturnFailed[]];
+  If[!AssocQ[data], ReturnFailed[]];
   YoutubeToMarkdown @ data
 ];
 
-YoutubeToMarkdown[data_Association] := Scope[
+YoutubeToMarkdown[data_Assoc] := Scope[
   If[!KeyExistsQ[data, "channel"], data["channel"] = "anonymous"];
   UnpackAssociation[data, channel:"channel", title:"title", description:"description", url:"webpage_url", date:"upload_date"];
   If[StringMatchQ[date, RegularExpression["20[0-9]{6}"]], date = StringInsert[date, "/", {5, 7}]];

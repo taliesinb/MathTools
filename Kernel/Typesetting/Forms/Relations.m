@@ -83,7 +83,7 @@ DefineInfixForm[#1, OpBox @ #2]& @@@ ExpressionTable[
 PublicTypesettingForm[BinaryRelationForm]
 
 DefineStandardTraditionalForm[{
-  BinaryRelationForm[r_String] :> KBox[KWideOp @ r, KBin @ r],
+  BinaryRelationForm[r_Str] :> KBox[KWideOp @ r, KBin @ r],
   br_BinaryRelationForm[args___] :> AppliedBox[MakeBoxes @ br, MakeQGBoxSequence @ args]
 }];
 

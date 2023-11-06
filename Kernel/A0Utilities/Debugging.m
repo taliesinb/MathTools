@@ -75,7 +75,7 @@ EchoDebugGraphics[e_] := e;
 $graphicsHead = Point | Polygon | Circle | Disk | Rectangle;
 sowDGexpr = Case[
   g_Graphics                := AppendTo[$extraDg, ReplaceOptions[g, {ImageSize -> 200, Frame -> True, FrameTicks -> False}]];
-  Seq[c:($ColorPattern|_Integer), p_] := % @ Style[p, EdgeForm @ ToRainbowColor @ c];
+  Seq[c:($ColorPattern|_Int), p_] := % @ Style[p, EdgeForm @ ToRainbowColor @ c];
   p:$Coord2P                := % @ Point @ p;
   p:$CoordMat2P             := % @ Point @ p;
   p_                        := StuffBag[$dgBag, p];
@@ -124,7 +124,7 @@ SetHoldAllComplete[EchoGraphicsScope];
 EchoGraphicsScope[e_] := Scope[
   $prims = {};
   res = e;
-  n = Length[$prims]; $i = 1;
+  n = Len[$prims]; $i = 1;
   Graphics[
     Map[{Opacity[$i++ / n], #}&, $prims],
     Frame -> True, PlotRangePadding -> Scaled[0.1]
@@ -147,9 +147,9 @@ $gboxSimpRules = {InterpretationBox[b_, _] :> b, Typeset`Hold[h_] :> h};
 PublicDebuggingFunction[DynamicPointGraphics]
 
 circlePoints[2] := {{-1, 0}, {1, 0}};
-circlePoints[n_] := Reverse @ CirclePoints[n];
+circlePoints[n_] := Rev @ CirclePoints[n];
 
-DynamicPointGraphics[n_Integer, fn_] := Replace[
+DynamicPointGraphics[n_Int, fn_] := Replace[
   ConstructHoldComplete[fn, \[FormalX]],
   HoldComplete[body_] :>
     DynamicModule @@ Hold[
@@ -165,9 +165,9 @@ DynamicPointGraphics[n_Integer, fn_] := Replace[
     ]
 ];
 
-DynamicPointGraphics[{n_Integer, specSeq__}, fn_] := With[
+DynamicPointGraphics[{n_Int, specSeq__}, fn_] := With[
   {specList = {specSeq}},
-  {specData = MapThread[toDynSpec, {{specSeq}, Take[$formals, Length @ specList]}]},
+  {specData = MapThread[toDynSpec, {{specSeq}, Take[$formals, Len @ specList]}]},
   {specVars = Prepend[\[FormalX]] @ Part[specData, All, 1],
    initList = Prepend[N @ circlePoints[n]] @ Part[specData, All, 2]},
   {specSets = MapThread[SET, {specVars, initList}],
@@ -199,7 +199,7 @@ $formals = {\[FormalA], \[FormalB], \[FormalC], \[FormalD], \[FormalE], \[Formal
 
 toDynSpec[{min_ ? NumericQ, max_ ? NumericQ}, sym_] := {sym, Avg[min, max], Slider[Dynamic @ sym, {min, max}]};
 toDynSpec[max_ ? NumericQ, sym_] := toDynSpec[{0, max}, sym];
-toDynSpec[list_List, sym_] := {sym, First @ list, RadioButtonBar[Dynamic @ sym, list]};
+toDynSpec[list_List, sym_] := {sym, P1 @ list, RadioButtonBar[Dynamic @ sym, list]};
 
 (* DynamicPointGraphics[3, {Red, Map[Disk[#, .1] &, #]} &] *)
 
@@ -289,7 +289,7 @@ SetHoldAllComplete[FindMatchingDownValue]
 
 FindMatchingDownValue[head_Symbol[args___]] := Block[
   {dvs = DownValues[head], head, res},
-  DownValues[head] = Append[MapIndexed[{rule, ind} |-> replaceRHS[rule, First[ind]], dvs], HoldPattern[_head] -> None];
+  DownValues[head] = Append[MapIndexed[{rule, ind} |-> replaceRHS[rule, P1[ind]], dvs], HoldPattern[_head] -> None];
   res = head[args];
   If[res === None, Return @ None];
   If[!IntegerQ[res], Return[$Failed]];
@@ -334,15 +334,15 @@ MsgPath[l_List] := Map[MsgPath, l];
 
 MsgPath /: SystemOpen[MsgPath[s_, n_:None]] := openMsgPath[s, n];
 
-Format[MsgPath[s_String], OutputForm] := StringJoin["\"", s, "\""];
-Format[MsgPath[s_String, n_Integer], OutputForm] := StringJoin["\"", s, ":", IntegerString @ n, "\""];
-MakeBoxes[MsgPath[s_String], StandardForm] := msgPathBoxes[s];
-MakeBoxes[MsgPath[s_String], TraditionalForm] := msgPathBoxes[s];
+Format[MsgPath[s_Str], OutputForm] := StringJoin["\"", s, "\""];
+Format[MsgPath[s_Str, n_Int], OutputForm] := StringJoin["\"", s, ":", IntegerString @ n, "\""];
+MakeBoxes[MsgPath[s_Str], StandardForm] := msgPathBoxes[s];
+MakeBoxes[MsgPath[s_Str], TraditionalForm] := msgPathBoxes[s];
 
-MakeBoxes[MsgPath[s_String, n_Integer], StandardForm] := msgPathBoxes[s, n];
-MakeBoxes[MsgPath[s_String, n_Integer], TraditionalForm] := msgPathBoxes[s, n];
+MakeBoxes[MsgPath[s_Str, n_Int], StandardForm] := msgPathBoxes[s, n];
+MakeBoxes[MsgPath[s_Str, n_Int], TraditionalForm] := msgPathBoxes[s, n];
 
-msgPathBoxes[path_String, line_:None] := With[
+msgPathBoxes[path_Str, line_:None] := With[
   {type = If[StringStartsQ[path, ("http" | "https" | "git" | "file" | "ssh") ~~ ":"], "URL", Quiet @ FileType @ path]},
   {color = Switch[type, None, $LightRed, Directory, $LightBlue, File, GrayLevel[0.9], "URL", $LightPurple, _, $LightRed]},
   ToBoxes @ ClickForm[
@@ -356,10 +356,10 @@ shortenPath[str_] := Scope[
   If[StringLength[str] <= 36, Return @ str];
 
   n = 0;
-  segs = Reverse @ FileNameSplit @ str;
-  segs2 = Reverse @ TakeWhile[segs, (n += StringLength[#]) < 36&];
+  segs = Rev @ FileNameSplit @ str;
+  segs2 = Rev @ TakeWhile[segs, (n += StringLength[#]) < 36&];
   If[segs2 === {}, segs2 = Take[segs, 1]];
-  If[Length[segs2] < Length[segs], PrependTo[segs2, "\[Ellipsis]"]];
+  If[Len[segs2] < Len[segs], PrependTo[segs2, "\[Ellipsis]"]];
   str2 = FileNameJoin @ segs2;
   If[StringLength[str2] < StringLength[str], str2, str]
 ];
@@ -368,16 +368,16 @@ shortenPath[str_] := Scope[
 
 PrivateFunction[openMsgPath]
 
-openMsgPath[path_String, None] := If[
+openMsgPath[path_Str, None] := If[
   ModifierKeysPressedQ[],
   Beep[]; CopyToClipboard @ ToString[path, InputForm],
   trySystemOpen @ path
 ];
 
-openMsgPath[path_String, line_Integer] :=
+openMsgPath[path_Str, line_Int] :=
   SystemOpen @ FileLine[path, line];
 
-trySystemOpen[s_String] := Scope[
+trySystemOpen[s_Str] := Scope[
   If[StringStartsQ[s, "http://" | "https://"], Return @ SystemOpen @ s];
   If[FileExistsQ[s],                           Return @ sysOpen @ s];
   If[FileExistsQ[s = FileNameDrop @ s],        Return @ sysOpen @ s];
@@ -385,7 +385,7 @@ trySystemOpen[s_String] := Scope[
   If[FileExistsQ[s = FileNameDrop @ s],        Return @ sysOpen @ s];
 ];
 
-sysOpen[s_String] := Switch[
+sysOpen[s_Str] := Switch[
   FileExtension[s],
   "nb" | "m" | "wl", SystemOpen @ FileLine[s, 1],
   "mx",              SetSelectedNotebook @ CreateDocument @ TextCell[ImportMX @ s, "Input"],
@@ -396,7 +396,7 @@ sysOpen[s_String] := Switch[
 
 PrivateFunction[tightColoredBoxes]
 
-tightColoredBoxes[str_String, color_] := Framed[
+tightColoredBoxes[str_Str, color_] := Framed[
   Style[str, FontFamily -> "Source Code Pro", FontSize -> 10, Bold, FontColor -> Black],
   Background -> color, FrameStyle -> Darker[color, .2],
   ContentPadding -> False, RoundingRadius -> 2,
@@ -425,7 +425,7 @@ ModifierKeysPressedQ[] := $Notebooks && (CurrentValue["ModifierKeys"] =!= {});
 PublicDebuggingFunction[PerformSelfLinting]
 
 PerformSelfLinting[] := Scope[
-  DeleteCases[{} | <||>] @ Association[
+  DeleteCases[{} | <||>] @ Assoc[
     "MissingPackageScopes" -> findMissingPackageScopes[],
     "SuspiciousPackageLines" -> QuiverGeometryLoader`$SuspiciousPackageLines
   ]
@@ -433,13 +433,13 @@ PerformSelfLinting[] := Scope[
 
 findMissingPackageScopes[] := Scope[
   privateSymbols = Names["QuiverGeometry`**`*"];
-  privateSymbolNames = Last /@ StringSplit[privateSymbols, "`"];
+  privateSymbolNames = PN /@ StringSplit[privateSymbols, "`"];
   moduleSymbols = Select[DeleteDuplicates @ privateSymbolNames, StringEndsQ["$"]];
   moduleSymbols = Join[moduleSymbols, StringDrop[moduleSymbols, -1]];
   privateSymbolAssoc = AssociationThread[privateSymbols, privateSymbolNames];
   privateSymbolAssoc //= Select[StringLength[#] >= 4&];
   privateSymbolAssoc //= Discard[ElementQ[moduleSymbols]];
-  collisionsAssoc = Select[PositionIndex[privateSymbolAssoc], Length[#] > 1&];
+  collisionsAssoc = Select[PositionIndex[privateSymbolAssoc], Len[#] > 1&];
   collisionsAssoc //= Select[possibleMissingPackageScope];
   collisionsAssoc
 ]
@@ -454,7 +454,7 @@ PublicVariable[$XMLElementFormatting]
 SetInitialValue[$XMLElementFormatting, True];
 
 Unprotect[XMLElement];
-MakeBoxes[el:XMLElement[_String, _List, _List], StandardForm] /; TrueQ[$XMLElementFormatting] := xmlElementBoxes[el];
+MakeBoxes[el:XMLElement[_Str, _List, _List], StandardForm] /; TrueQ[$XMLElementFormatting] := xmlElementBoxes[el];
 Protect[XMLElement];
 
 xmlStyleBox[b_, c1_, c2_, f_:Bold] :=
@@ -465,10 +465,10 @@ xmlLeafCount = Case[
   XMLElement[_, _, list_List] := 1 + Total[% /@ list];
 ];
 
-xmlElementHeadBox[xml:XMLElement[str_String, attrs_List, content_], showCount_:True] := With[
+xmlElementHeadBox[xml:XMLElement[str_Str, attrs_List, content_], showCount_:True] := With[
   {ci = Mod[Hash @ str, 9]},
   {c1 = Part[$LightColorPalette, ci], c2 = Part[$ColorPalette, ci]},
-  {lc = xmlLeafCount[xml], ec = Length @ ToList @ content},
+  {lc = xmlLeafCount[xml], ec = Len @ ToList @ content},
   {ls = Which[!showCount, "", lc <= 1, "", ec == lc, lc, True, {ec, "/", lc}]},
   {b1 = xmlStyleBox[str, c1, c2]},
   {b1 = If[ls === "", b1, RowBox[{b1, " ", StyleBox[TextString[Row @ Flatten @ {"\"(", ls, ")\""}], Plain, Smaller, c2]}]]},
@@ -494,15 +494,15 @@ xmlOpenerBox[xml_, a_, b_List] := With[
 
 ClearAll[xmlElementBoxes];
 
-xmlElementBoxes[xml:XMLElement[str_String, attrs_List, {content_} | content_String]] := With[
+xmlElementBoxes[xml:XMLElement[str_Str, attrs_List, {content_} | content_Str]] := With[
   {b1 = ClickBox[xmlElementHeadBox[xml, False], If[CurrentValue["ShiftKey"], printXML @ xml]]},
   TightRowGridBox[{b1, xmlElementBoxes[content]}]
 ];
 
-xmlElementBoxes[xml:XMLElement[str_String, attrs_List, {}]] :=
+xmlElementBoxes[xml:XMLElement[str_Str, attrs_List, {}]] :=
   ClickBox[xmlElementHeadBox[xml], If[CurrentValue["ShiftKey"], printXML @ xml]];
 
-xmlElementBoxes[xml:XMLElement[str_String, attrs_List, content_List]] := With[
+xmlElementBoxes[xml:XMLElement[str_Str, attrs_List, content_List]] := With[
   {b1 = xmlElementHeadBox[xml]},
   xmlOpenerBox[xml,
     b1,
@@ -510,7 +510,7 @@ xmlElementBoxes[xml:XMLElement[str_String, attrs_List, content_List]] := With[
   ]
 ];
 
-xmlElementBoxes[s2_String] := With[{s = StringTrim @ s2}, ClickBox[
+xmlElementBoxes[s2_Str] := With[{s = StringTrim @ s2}, ClickBox[
   xmlStyleBox[ToBoxes @ If[StringLength[s] > 20, StringTake[s, 20] <> "\[Ellipsis]", s], GrayLevel[0.9], $Gray, Plain],
   If[CurrentValue["ShiftKey"], printXML[s]]
 ]];

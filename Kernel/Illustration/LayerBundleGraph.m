@@ -7,7 +7,7 @@ Options[LayerBundleGraph] = JoinOptions[
 
 LayerBundleGraph[list_List, opts:OptionsPattern[]] := Scope[
   UnpackOptions[layerDistance, layerScales, imageSize];
-  If[!ListQ[layerScales], layerScales = Repeat[layerScales, Length @ list]];
+  If[!ListQ[layerScales], layerScales = Repeat[layerScales, Len @ list]];
   $vertices = $edges = $coords = {};
   $dy = 0;
   ScanIndex1[procBundleLayer, list];
@@ -17,7 +17,7 @@ LayerBundleGraph[list_List, opts:OptionsPattern[]] := Scope[
   ]
 ];
 
-procBundleLayer[g_Graph, i_Integer] := Scope[
+procBundleLayer[g_Graph, i_Int] := Scope[
   g2 = MapVertices[SumVertex[i], g];
   AppendTo[$vertices, VertexList @ g2];
   AppendTo[$edges, EdgeList @ g2];
@@ -26,7 +26,7 @@ procBundleLayer[g_Graph, i_Integer] := Scope[
   w = r - l;
   scale = Part[layerScales, 1];
   SetAutomatic[scale,
-    imageWidth = First @ LookupImageSize @ ExtendedGraphPlot[g];
+    imageWidth = P1 @ LookupImageSize @ ExtendedGraphPlot[g];
     imageWidth / w
   ];
   SetNone[scale, 1];

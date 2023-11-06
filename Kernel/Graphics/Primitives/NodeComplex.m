@@ -78,23 +78,23 @@ NodeComplex::matchingVars = "Vars similar to `` are ``.";
 NodeComplex::meanConnectionEquations = "Mean connection equations printed below, followed by any detected cycles.";
 
 complainUnresolved[result_, var_, nodeCoord_] := Scope[
-  context = Extract[result, SafeDrop[First @ Position[result, var], -3]] /. ($fromNC[_, n_] :> n) /. (var|nodeCoord -> Style["XXX", Black, Bold]);
+  context = Extract[result, SafeDrop[P1 @ Position[result, var], -3]] /. ($fromNC[_, n_] :> n) /. (var|nodeCoord -> Style["XXX", Black, Bold]);
   Message[NodeComplex::unresolvedVar, nodeCoord, context, var];
-  printEqns @ Select[eqs, First[#] === var&];
-  printEqns @ Select[eqs, ContainsQ[Last @ #, Verbatim @ var]&];
+  printEqns @ Select[eqs, P1[#] === var&];
+  printEqns @ Select[eqs, ContainsQ[PN @ #, Verbatim @ var]&];
   If[ListQ[$meanConnectionEqs],
     Message[NodeComplex::meanConnectionEquations];
     printEqns @ $meanConnectionEqs;
     $meanConnectionEqs ^= Null;
   ];
   pattern = var;
-  If[MatchQ[Last @ var, _String[_]], Part[pattern, -1, 1] = _];
+  If[MatchQ[PN @ var, _Str[_]], Part[pattern, -1, 1] = _];
   Do[
     matchingVars = Cases[vars, Append[___] @ pattern];
     If[matchingVars =!= {}, Message[NodeComplex::matchingVars, var, matchingVars]; Break[]];
     pattern //= Most;
   ,
-    {n, Length[var] - 1}
+    {n, Len[var] - 1}
   ];
 ];
 
@@ -136,7 +136,7 @@ filterMeanEqToRemoveCycleVar[var_ -> rhs_] :=
 noExpand[v:(_$var | _List)] := v;
 noExpand[e_] := NoLinearExpand[e];
 
-toMeanVarRule[var_] := var -> meanVarRHS[Last @ var, Most @ var];
+toMeanVarRule[var_] := var -> meanVarRHS[PN @ var, Most @ var];
 meanVarRHS[type_, var_] := noExpand @ Mean @ Lookup[
   If[type === "InMean", iConns, oConns],
   var, List @ Lookup[$portPositionDefaults, var, {0,0}]
@@ -159,7 +159,7 @@ resolveNodeCoordinatesAndAliases[expr_] := Scope[
 applyAliases[e_] := ReplaceAllOperator[$nodeAliases, $varAliases /. $nodeAliases] @ e;
 
 computeNodeAliases[aliasAssoc_] := ReverseSort @ KeyValueMap[toAliasRule, aliasAssoc];
-toAliasRule[name_String, var_$var] := Append[var, l___] :> $var[name, l];
+toAliasRule[name_Str, var_$var] := Append[var, l___] :> $var[name, l];
 
 $nodeCoordinateP = _NodePort | _NodeInPort | _NodeOutPort | _NodeCenter | _NodeCorner | _NodeSide;
 expandNodeCoordinates[e_] := ReplaceAll[e, np:$nodeCoordinateP :> RuleCondition[$fromNC[procNodeCoordinate @ np, np]]];
@@ -241,8 +241,8 @@ addEqns[eqns_] := (AppendTo[$eqs, eqns]; eqns);
 
 createNodeAlias := Case[
   None       := Null;
-  i_Integer  := % @ TextString[i];
-  str_String := AssociateTo[$nodeAliases, str -> $path];
+  i_Int  := % @ TextString[i];
+  str_Str := AssociateTo[$nodeAliases, str -> $path];
 ];
 
 subPath[] := $path;
@@ -258,7 +258,7 @@ SetHoldRest[withNodePalette];
 withNodePalette[None | Automatic | {}, body_] := body;
 withNodePalette[palette_, body_] := InheritedBlock[
   {$nodePalette},
-  AssociateTo[$nodePalette, Map[ToRainbowColor, Association @ palette]];
+  AssociateTo[$nodePalette, Map[ToRainbowColor, Assoc @ palette]];
   body
 ];
 
@@ -341,10 +341,10 @@ hvNodeLayout[head_, nodes_List, opts_, {startSym_, endSym_}, {mainStart_, mainEn
   SetAutomatic[alignment, 0];
   SetAutomatic[frameMargins, 0];
   {lrmargin, btmargin} = StandardizePadding[frameMargins];
-  tbmargin = Reverse @ btmargin;
+  tbmargin = Rev @ btmargin;
   {{smargin, emargin}, {osmargin, oemargin}} = If[head === NodeRow, {lrmargin, tbmargin}, {tbmargin, lrmargin}];
   SetAutomatic[spacings, 1];
-  n = Length @ nodes;
+  n = Len @ nodes;
   nodes = MapIndex1[processNode, nodes];
   range = Range[n];
   multOther = mult * -1;
@@ -532,15 +532,15 @@ totalSpanningHeight[indices_] := Plus[Total @ Part[varsH, indices], Total @ Part
 
 NodeGrid::badspan = "Bad item position ``.";
 parseSpan = Case[
-  i_Integer                  := {i, i};
-  Span[i_Integer, j_Integer] := {i, j};
-  other_                     := ThrowMessage["badspan", other];
+  i_Int              := {i, i};
+  Span[i_Int, j_Int] := {i, j};
+  other_             := ThrowMessage["badspan", other];
 ]
 
 getMax = Case[
-  i_Integer    := i;
-  _;;i_Integer := i;
-  other_       := ThrowMessage["badspan", other];
+  i_Int    := i;
+  _;;i_Int := i;
+  other_   := ThrowMessage["badspan", other];
 ]
 
 
@@ -568,7 +568,7 @@ portSkeletonBox[w_, nodePorts_, opts___Rule] := Scope[
   portPrimitives
 ];
 
-portSkeletonBox[str_String, opts___Rule] :=
+portSkeletonBox[str_Str, opts___Rule] :=
   portSkeletonBox[.5, 1, PortStyleData[str], opts];
 
 (**************************************************************************************************)
@@ -750,10 +750,10 @@ makePortOffsets[n_, portSpacing_] := Scope[
 
 General::badNodePortSpec = "`` is not a valid port specification."
 procPortSpec = Case[
-  n_Integer           := Range @ n;
-  s_String            := {s};
-  l_List              := l;
-  spec_               := ThrowMessage["badNodePortSpec", spec];
+  n_Int  := Range @ n;
+  s_Str  := {s};
+  l_List := l;
+  spec_  := ThrowMessage["badNodePortSpec", spec];
 ];
 
 SetUsage @ "
@@ -818,7 +818,7 @@ processNodeBoxPorts = Case[
   (side:Left|Right|Top|Bottom) -> spec_ := Scope[
     ports = procPortSpec @ spec;
     portPaths = makePortPaths[sideToPortKind @ side, ports];
-    n = Length @ ports;
+    n = Len @ ports;
     $sidePortData = sideSpecializedPortData[side];
     portSpacing = ReplaceAutomatic[$sidePortData["PortSpacing"], $w / (n + .333)];
     offsets = makePortOffsets[n, portSpacing];
@@ -838,7 +838,7 @@ processNodeBoxPorts = Case[
       portPosSpec,
       Automatic | None,       Null,
       "MatchIn" | "MatchOut", toPortPositions @ Repeat[portPosSpec, n],
-      AbsoluteOffset[_],      Part[portCoords, All, portXY] += First[portPosSpec]; Null,
+      AbsoluteOffset[_],      Part[portCoords, All, portXY] += P1[portPosSpec]; Null,
       _List,                  toPortPositions @ portPosSpec,
       _,                      Message[NodeBox::badPortPositions, portPosSpec]; Null
     ];
@@ -901,14 +901,14 @@ processNodeDiskPorts = Case[
   ];
   (side:$SidePattern -> spec_List) := Scope[
     initAng = Lookup[$sideToAngle, side];
-    n = Length[spec];
+    n = Len[spec];
     angles = initAng + Range[0,n-1] * ReplaceAutomatic[$portData["PortSpacing"], 1 / n];
     % @ RuleThread[N @ angles, spec]
   ];
-  n_Integer        := %[Top -> Range[n]];
-  list:{__Integer} := %[Top -> list];
-  None             := {};
-  spec_            := ThrowMessage["badNodePortSpec", spec];
+  n_Int        := %[Top -> Range[n]];
+  list:{__Int} := %[Top -> list];
+  None         := {};
+  spec_        := ThrowMessage["badNodePortSpec", spec];
 ];
 
 makeCirclePorts[ports_, angles_] := Scope[
@@ -930,8 +930,8 @@ procPortListSpec[spec_List, n_, prev_] := PadRight[spec, n, prev];
 procPortListSpec[rules:{__Rule}, n_, prev_] := VectorReplace[Range[n], Append[_ -> prev] @ rules];
 procPortListSpec[{rules__Rule, All -> def_}, n_, _] := procPortListSpec[{rules}, n, def];
 
-makePorts[data_Association] := Scope[
-  n = Length @ data["ports"];
+makePorts[data_Assoc] := Scope[
+  n = Len @ data["ports"];
   AssociationMapThread[
     makeSinglePort[#ports, #]&,
     MapThread[
@@ -941,16 +941,16 @@ makePorts[data_Association] := Scope[
   ]
 ];
 
-$shapeP = _String | _Labeled | _Placed;
+$shapeP = _Str | _Labeled | _Placed;
 makeSinglePort = Case[
   Sequence[_Invisible, _]                        := {};
   Sequence[Style[p_, s:$shapeP, opts___], data_] := %[Style[p, PortShape -> s, opts], data];
-  Sequence[Style[p_, n_Integer], data_]          := %[Style[p, PortColor -> n, opts], data];
-  Sequence[Style[p_, opts___Rule], data_]        := $makeSinglePortFn @ Association[data, portDataRules @ opts];
+  Sequence[Style[p_, n_Int], data_]              := %[Style[p, PortColor -> n, opts], data];
+  Sequence[Style[p_, opts___Rule], data_]        := $makeSinglePortFn @ Assoc[data, portDataRules @ opts];
   Sequence[_, data_]                             := $makeSinglePortFn @ data;
 ];
 
-$makeSinglePortFn = Function[
+$makeSinglePortFn = Fn[
   applyGraphicsOffset[shapeOffset[#PortShape] * #dirs] @ shapeToFn[#PortShape] @
   Append[#, "FET" -> toFET[#ports, #PortColor, #PortEdgeColor, #PortEdgeThickness]]
 ];
@@ -958,14 +958,14 @@ $makeSinglePortFn = Function[
 applyGraphicsOffset[{0|0., 0|0.}][e_] := e;
 applyGraphicsOffset[offset_][e_] := Construct[GeometricTransformationBox, e, AbsoluteThicknessToDimension[#, 40]& /@ offset];
 
-toFET[Style[p_, c:($ColorPattern | _Integer)], f_, e_, t_] := toFET[p, c, e, t];
-toFET[p_, f_, e_, t_] /; KeyExistsQ[$nodePalette, p]       := {toRainbowColor @ $nodePalette @ p, toRainbowColor @ e, t};
-toFET[i_Integer, f_, e_, t_]                               := {toRainbowColor[f, i], toRainbowColor[e, i], t};
-toFET[_, f_, e_, t_]                                       := {toRainbowColor @ f, toRainbowColor @ e, t};
+toFET[Style[p_, c:($ColorPattern | _Int)], f_, e_, t_] := toFET[p, c, e, t];
+toFET[p_, f_, e_, t_] /; KeyExistsQ[$nodePalette, p]   := {toRainbowColor @ $nodePalette @ p, toRainbowColor @ e, t};
+toFET[i_Int, f_, e_, t_]                               := {toRainbowColor[f, i], toRainbowColor[e, i], t};
+toFET[_, f_, e_, t_]                                   := {toRainbowColor @ f, toRainbowColor @ e, t};
 
 shapeOffset = Case[
   _                   := 0;
-  s_String            := Which[
+  s_Str               := Which[
     StringStartsQ[s, "Inner"], 1,
     StringStartsQ[s, "Outer"], -1,
     True, 0
@@ -978,24 +978,24 @@ shapeOffset = Case[
 $needsRounding := $isNodeDisk || TrueQ[roundingRadius >= $w/2];
 
 shapeToFn := Case[
-  str_String /; StringStartsQ[str, "DownHalf"] := Function[shapeToFn[If[Part[#dirs, 2] > 0, "Outer", "Inner"] <> StringDrop[str, 8]][##]];
-  "InnerDisk" /; TrueQ[$needsRounding] := Function[makeHalfDisk[#coords, -#dirs, {#PortSize, $w/2}, #FET]];
-  "OuterDisk" /; TrueQ[$needsRounding] := Function[makeHalfDisk[#coords,  #dirs, {#PortSize, $w/2}, #FET]];
-  shape_                               := Lookup[$shapeToFn, shape, ThrowMessage["badNodePortShape", shape, Keys @ $shapeToFn]];
-  Placed[label_, pos_Symbol]           := Function[makeLabel[label, #coords, pos, 0.2, portLabelStyle]];
-  Labeled[shape_, label_, pos_]        := ApplyThrough[{% @ shape, % @ Placed[label, pos]}]
+  str_Str /; StringStartsQ[str, "DownHalf"] := Fn[shapeToFn[If[Part[#dirs, 2] > 0, "Outer", "Inner"] <> StringDrop[str, 8]][##]];
+  "InnerDisk" /; TrueQ[$needsRounding]      := Fn[makeHalfDisk[#coords, -#dirs, {#PortSize, $w/2}, #FET]];
+  "OuterDisk" /; TrueQ[$needsRounding]      := Fn[makeHalfDisk[#coords,  #dirs, {#PortSize, $w/2}, #FET]];
+  shape_                                    := Lookup[$shapeToFn, shape, ThrowMessage["badNodePortShape", shape, Keys @ $shapeToFn]];
+  Placed[label_, pos_Symbol]                := Fn[makeLabel[label, #coords, pos, 0.2, portLabelStyle]];
+  Labeled[shape_, label_, pos_]             := ApplyThrough[{% @ shape, % @ Placed[label, pos]}]
 ];
 
 $shapeToFn = <|
-  "Point"        -> Function[makePoint[#coords, #PortSize, #FET]],
-  "Disk"         -> Function[makeDisk[#coords, #PortSize, #FET]],
-  "OuterDisk"    -> Function[makeHalfDisk[#coords, -#dirs, #PortSize, #FET]],
-  "InnerDisk"    -> Function[makeHalfDisk[#coords, #dirs, #PortSize, #FET]],
-  "Square"       -> Function[makeSquare[#coords, #PortSize, #FET]],
-  "OuterDiamond" -> Function[makeHalfDiamond[#coords, -#dirs * #PortSize, #FET]],
-  "InnerDiamond" -> Function[makeHalfDiamond[#coords, #dirs * #PortSize, #FET]],
-  "OuterSquare"  -> Function[makeHalfSquare[#coords, -#dirs * #PortSize, #FET]],
-  "InnerSquare"  -> Function[makeHalfSquare[#coords, #dirs * #PortSize, #FET]],
+  "Point"        -> Fn[makePoint[#coords, #PortSize, #FET]],
+  "Disk"         -> Fn[makeDisk[#coords, #PortSize, #FET]],
+  "OuterDisk"    -> Fn[makeHalfDisk[#coords, -#dirs, #PortSize, #FET]],
+  "InnerDisk"    -> Fn[makeHalfDisk[#coords, #dirs, #PortSize, #FET]],
+  "Square"       -> Fn[makeSquare[#coords, #PortSize, #FET]],
+  "OuterDiamond" -> Fn[makeHalfDiamond[#coords, -#dirs * #PortSize, #FET]],
+  "InnerDiamond" -> Fn[makeHalfDiamond[#coords, #dirs * #PortSize, #FET]],
+  "OuterSquare"  -> Fn[makeHalfSquare[#coords, -#dirs * #PortSize, #FET]],
+  "InnerSquare"  -> Fn[makeHalfSquare[#coords, #dirs * #PortSize, #FET]],
   None           -> ({}&)
 |>;
 
@@ -1006,7 +1006,7 @@ applyStyle[PolygonBox[coords_], {None,  edge_, thickness_}] := StyleBox[Construc
 applyStyle[DiskBox[args__],     {None,  edge_, thickness_}] := StyleBox[CircleBox[args], edge, AbsoluteThickness @ thickness];
 applyStyle[other_,              {face_, edge_, thickness_}] := StyleBox[other, FaceEdgeForm[face, edge, thickness]];
 
-closePath[coords_] := If[First[coords] === Last[coords], coords, Append[First @ coords] @ coords];
+closePath[coords_] := If[P1[coords] === PN[coords], coords, Append[P1 @ coords] @ coords];
 
 (**************************************************************************************************)
 
@@ -1036,7 +1036,7 @@ makeHalfDiamond[pos_, {x_, y_}, fet_] := applyStyle[fet] @ makePolygon @ Transla
 makeHalfSquare[pos_, {x_, y_}, fet_]  := applyStyle[fet] @ makePolygon @ TranslateVector[pos] @ {{-y, x}, {x - y, x + y}, {x + y, -x + y}, {y, -x}};
 
 makeDisk[pos_, r_, fet_] := applyStyle[fet] @ DiskBox[pos, r];
-makePoint[pos_, r_, fet_] := StyleBox[PointBox[pos], PointSize[2 * r / $var[$W]], First @ fet];
+makePoint[pos_, r_, fet_] := StyleBox[PointBox[pos], PointSize[2 * r / $var[$W]], P1 @ fet];
 
 (**************************************************************************************************)
 
@@ -1053,13 +1053,13 @@ makeLabel[label_, coords_, side_, spacing_, style_] := Scope[
 
 $defaultNodeSize = {1, 1};
 $boxSizeP = $NumberP | Automatic | Inherited;
-$intOrSpanP = _Integer | _Span;
+$intOrSpanP = _Int | _Span;
 
 toNodeBoxInterior = Case[
   sz:$boxSizeP               := % @ {sz, sz};
   {w:$boxSizeP, h:$boxSizeP} := {
-    {ReplaceAutomatic[w, $isAutomaticSize[subPath[$W]] = True; First @ $defaultNodeSize],
-     ReplaceAutomatic[h, $isAutomaticSize[subPath[$H]] = True; Last @ $defaultNodeSize]},
+    {ReplaceAutomatic[w, $isAutomaticSize[subPath[$W]] = True; P1 @ $defaultNodeSize],
+     ReplaceAutomatic[h, $isAutomaticSize[subPath[$H]] = True; PN @ $defaultNodeSize]},
     None
   };
   rules:{({$intOrSpanP, $intOrSpanP} -> _)..} := {

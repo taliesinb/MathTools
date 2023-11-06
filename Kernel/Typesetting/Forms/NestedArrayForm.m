@@ -32,7 +32,7 @@ SetInitialValue[$NestedArrayFrame, "["];
 
 NestedArrayForm::badaxiscolor = "`` is not a valid axis color."
 toAxisColor = Case[
-  n_Integer       := Part[ReplaceAutomatic[$axisPaletteSpec, Range[9]], n];
+  n_Int           := Part[ReplaceAutomatic[$axisPaletteSpec, Range[9]], n];
   color_ ? ColorQ := color;
   None            := None;
   other_          := ThrowMessage["badaxiscolor", other];
@@ -102,7 +102,7 @@ procNA[(head:$headP)[spec_], rest___][array_] :=
 procNA[(styleHead_Symbol ? $styleFormHeadQ)[(head:$headP)[inner_]], rest___][array_] :=
   StyleDecorated[StyleFormData @ styleHead, head][procNA[inner, rest] @ array];
 
-shouldSpanQ[s_String] := Which[
+shouldSpanQ[s_Str] := Which[
   StringStartsQ[s, "Spanning"], True,
   StringStartsQ[s, "Normal"], False,
   True, $defaultSpanning
@@ -186,7 +186,7 @@ NestedArrayForm::badspec = "Unknown spec ``";
 procNA[spec_, ___][array_] := (Message[NestedArrayForm::badspec, MsgExpr @ spec]; "?");
 
 vectorMapNA[f_, array_, isH_] := InheritedBlock[
-  {$dims = Append[$dims, Length @ array], $pos = Append[$pos, 0], $hor = Append[$hor, isH]},
+  {$dims = Append[$dims, Len @ array], $pos = Append[$pos, 0], $hor = Append[$hor, isH]},
   MapIndex1[{a, i} |-> (Part[$pos, -1] = i; f[a]), array]
 ];
 
@@ -195,7 +195,7 @@ matrixMapNA[f_, array_] := InheritedBlock[
   MapIndexed[{a, i} |-> (Part[$pos, {-2, -1}] = i; f[a]), array, {2}]
 ];
 
-(* unpackSpec[d_][list_List] := PadRight[list, d, Last @ list];
+(* unpackSpec[d_][list_List] := PadRight[list, d, PN @ list];
 unpackSpec[d_][RepeatedSpec[elems__]] := Take[Catenate @ Repeat[{elems}, d], d];
 unpackSpec[d_][e_] := Repeat[e, d];
  *)

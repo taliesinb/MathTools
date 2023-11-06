@@ -24,7 +24,7 @@ PrivateFunction[CreateGraphCache]
 SetHoldRest[CreateGraphCache];
 
 CreateGraphCache[graph_Graph, symbol_Symbol] := (
-  symbol = UAssociation[];
+  symbol = UAssoc[];
   GraphCache[graph, symbol]
 );
 

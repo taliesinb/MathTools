@@ -5,7 +5,7 @@ ChartSymbol[sub$] represents a chart and formats as C$sub.
 "
 
 declareFormatting[
-  ChartSymbol[sym_String] :> formatChartSymbol[sym, Automatic],
+  ChartSymbol[sym_Str] :> formatChartSymbol[sym, Automatic],
   ChartSymbol[list_List]  :> ChartSymbolForm[list],
   ChartSymbol[other__]    :> ChartSymbolForm[Row[{other}]]
 ];
@@ -14,7 +14,7 @@ declareFormatting[
 
 PrivateFunction[formatChartSymbol]
 
-formatChartSymbol[sym_String, colors_] := Scope[
+formatChartSymbol[sym_Str, colors_] := Scope[
   Style[
     ChartSymbolForm[sym]
   ,
@@ -52,12 +52,12 @@ CardinalTransitionMatrices[atlas_Graph] := Scope[
   edgeAnnos = LookupExtendedOption[atlas, EdgeAnnotations];
   cardinals = CardinalList @ atlas;
   transitions = Lookup[Replace[edgeAnnos, None -> <||>], "CardinalTransitions", None];
-  If[!AssociationQ[transitions], ReturnFailed[]];
+  If[!AssocQ[transitions], ReturnFailed[]];
   tagIndices = TagIndices @ atlas;
-  numCardinals = Length @ cardinals;
+  numCardinals = Len @ cardinals;
   cardinalIndex = AssociationRange @ cardinals;
   matrixShape = {numCardinals, numCardinals};
-  KeySortBy[IndexOf[cardinals, #]&] @ Association @ KeyValueMap[buildTagMatrices, tagIndices]
+  KeySortBy[IndexOf[cardinals, #]&] @ Assoc @ KeyValueMap[buildTagMatrices, tagIndices]
 ];
 
 (* TODO: check for compatibility *)
@@ -100,18 +100,18 @@ TransportAtlas[quiver_, charts_, opts___Rule] := Scope @ Catch[
   vertexToCharts = PositionIndex[chartVertices, 2];
   edgeToChart = PositionIndex[chartEdges, 2];
   edgeList = EdgeList @ $quiver;
-  sharedEdges = Select[vertexToCharts, Length[#] > 1&];
-  groupedSharedEges = GroupBy[sharedEdges, Identity, Keys];
+  sharedEdges = Select[vertexToCharts, Len[#] > 1&];
+  groupedSharedEges = GroupBy[sharedEdges, Id, Keys];
   overlapCardinalRelations = findOverlapRelations[];
   transitionEdges = DeleteDuplicates @ Flatten @ Map[toTransitionEdge, edgeList];
-  cardinalTransitionAnnos = Association @ MapIndexed[toCardTransAnnos, transitionEdges];
+  cardinalTransitionAnnos = Assoc @ MapIndexed[toCardTransAnnos, transitionEdges];
   (* the next step is to build CardinalTransitions for these chart transitions.
   we should do this by finding cardinals that are part of the 'from' but not part of the 'to',
   and vice versa, and see how they are identified on the overlap.
   *)
   chartSymbolAnno = Map[toChartSymbol, $charts];
   ExtendedGraph[
-    Range @ Length @ $charts,
+    Range @ Len @ $charts,
     transitionEdges, opts,
     VertexAnnotations -> <|"ChartSymbol" -> chartSymbolAnno|>,
     EdgeAnnotations -> <|"CardinalTransitions" -> cardinalTransitionAnnos|>,
@@ -201,7 +201,7 @@ toTransitionEdge[DirectedEdge[a_, b_, c_]] := Scope[
 
 sharedCardinal[c1_, c2_, cs:CardinalSet[cards_]] := Scope[
   set = Intersection[cards, Part[$fullCharts, c1], Part[$fullCharts, c2]];
-  If[Length[set] === 1, First @ set, CardinalSet @ set]
+  If[Len[set] === 1, P1 @ set, CardinalSet @ set]
 ];
 
 sharedCardinal[_, _, c_] := c;
@@ -214,7 +214,7 @@ getChartRegion[cardinals_] := Match[
   _ :> failCA["notatlas", cardinals];
 ];
 
-failCA[msg_String, args___] := (
+failCA[msg_Str, args___] := (
   Message[MessageName[TransportAtlas, msg], args];
   Throw[$Failed, TransportAtlas]
 );

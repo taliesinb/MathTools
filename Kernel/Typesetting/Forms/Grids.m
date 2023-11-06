@@ -115,7 +115,7 @@ Options[makeSingleGridBoxes] = Options[GridForm];
 
 makeSingleGridBoxes[grid_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[itemForm, alignment, rowSpacings, columnSpacings, spillLength, rowLabels, columnLabels, labelFunction, labelSpacing];
-  If[Length[Unevaluated @ grid] > spillLength,
+  If[Len[Unevaluated @ grid] > spillLength,
     items = Partition[grid, UpTo @ spillLength];
     Return @ makeMultiGridBoxes[items, opts];
   ];
@@ -141,7 +141,7 @@ makeMultiGridBoxes[gridList_, OptionsPattern[]] := Scope[
       gridList
     ];
   
-  gridListHeights = Length /@ gridListBoxes;
+  gridListHeights = Len /@ gridListBoxes;
   maxHeight = Max[gridListHeights];
   
   gridListBoxes //= Map[PadColumns[#, maxHeight, ""]&];
@@ -160,7 +160,7 @@ createGridBox[args___] := GBox @@ createGridBoxData[args];
 
 (**************************************************************************************************)
 
-createGridBoxData[rows_, alignments_, rowSpacings_, colSpacings_, rowLabels_:None, colLabels_:None, labelFn_:Identity, labelSpacing_:{1, 1}] := Scope[
+createGridBoxData[rows_, alignments_, rowSpacings_, colSpacings_, rowLabels_:None, colLabels_:None, labelFn_:Id, labelSpacing_:{1, 1}] := Scope[
 
   entries = padArray @ rows;
   {numRows, numCols} = Dimensions[entries, 2];
@@ -203,7 +203,7 @@ autoAlignmentSpec = Case[
   _ := {Right, {Center}, Left};
 ]
 
-labelBoxes[None, labels_] := labelBoxes[Identity, labels];
+labelBoxes[None, labels_] := labelBoxes[Id, labels];
 labelBoxes[s:Bold|Italic, labels_] := labelBoxes[Style[#, s]&, labels];
 labelBoxes[labelFn_, labels_] := ToBoxes[labelFn[#]]& /@ labels;
 
@@ -211,7 +211,7 @@ PrivateVariable[$infixFormCharacters]
 
 (* TODO: pull this programmatically from DefineInfixForm, SymbolTranslation.txt etc *)
 
-$infixFormCharacters = Association[
+$infixFormCharacters = Assoc[
   EqualForm             -> "=",                 NotEqualForm            -> "≠",
   DefEqualForm          -> "≝",
   ColonEqualForm        -> "≔",
@@ -278,21 +278,21 @@ katexGrid[g_GridBox] :=
 
 katexGridBoxDispatch[entries_, alignments_, rowSpacings_, {0..}] :=
   {"\\begin{nsarray}{",
-    toKatexAlignmentSpec[alignments, Length @ First @ entries], "}\n",
+    toKatexAlignmentSpec[alignments, Len @ P1 @ entries], "}\n",
     createKatexGridBody[entries, rowSpacings],
     "\n\\end{nsarray}\n"
   };
 
 katexGridBoxDispatch[entries_, alignments_, rowSpacings_, Automatic | {0, (1 | Automatic)..}] :=
   {"\\begin{array}{",
-    toKatexAlignmentSpec[alignments, Length @ First @ entries], "}\n",
+    toKatexAlignmentSpec[alignments, Len @ P1 @ entries], "}\n",
     createKatexGridBody[entries, rowSpacings],
     "\n\\end{array}\n"
   };
 
 katexGridBoxDispatch[entries_, alignments_, rowSpacings_, colSpacings_] :=
   {"\\begin{csarray}{",
-    toKatexAlignmentSpec[alignments, Length @ First @ entries], "}{",
+    toKatexAlignmentSpec[alignments, Len @ P1 @ entries], "}{",
     toKatexCSArraySpacingSpec[colSpacings],
     "}\n",
     createKatexGridBody[entries, rowSpacings],
@@ -306,7 +306,7 @@ createKatexGridBody[entries_, rowSpacings_] :=
   ];
 
 stripQuotes = Case[
-  s_String /; StringMatchQ[s, "\"*\""] := StringTake[s, {2, -2}];
+  s_Str /; StringMatchQ[s, "\"*\""] := StringTake[s, {2, -2}];
   StyleBox[e_, other___]               := StyleBox[stripQuotes @ e, other];
   other_                               := other;
 ];
@@ -332,7 +332,7 @@ toKatexAlignmentSpec[Automatic, n_] :=
 
 toKatexAlignmentSpec[aligns_List, n_] :=
   StringJoin[
-    toAlignmentLetter /@ If[Length[aligns] >= n, aligns, PadRight[aligns, n, aligns]]
+    toAlignmentLetter /@ If[Len[aligns] >= n, aligns, PadRight[aligns, n, aligns]]
   ];
 
 toAlignmentLetter = Case[
@@ -378,7 +378,7 @@ makeFlowAlignedGridForm[rawRows_List, OptionsPattern[FlowAlignedGridForm]] := Sc
   JoinTo[patt, "" | TemplateBox[_, "Spacer1"]];
   rows = Map[toRowBox, SequenceSplit[#, e:{patt} :> e]]& /@ rows;
   rows = PadRows[rows, ""];
-  numColumns = Length @ First @ rows;
+  numColumns = Len @ P1 @ rows;
   TBoxOp["GridForm"] @ createGridBox[rows, alignment, rowSpacings, columnSpacings]
 ]
 
@@ -550,7 +550,7 @@ MakeQGBoxesOrNull[Null|None] := "";
 MakeQGBoxesOrNull[other_] := MakeQGBoxes[other]
 
 padArray[rows_] := Scope[
-  maxLen = Max[Length /@ rows];
+  maxLen = Max[Len /@ rows];
   PadRight[#, maxLen, ""]& /@ rows
 ];
 

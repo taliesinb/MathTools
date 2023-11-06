@@ -28,7 +28,7 @@ ElectricalGravitationalBalanceX[x_, y_, graph_, n_, delta_] := Scope[
 	x = ToPackedReal[x];
 	yDist = ToPackedReal[100000.0 * SquaredDistanceMatrix[y] + 0.1];
 	adj = AdjacencyMatrix @ graph;
-	symAdjMatrix = MatrixMax[adj, Transpose @ adj, 0.1 * (IdentityMatrix @ Length @ adj)];
+	symAdjMatrix = MatrixMax[adj, Transpose @ adj, 0.1 * (IdentityMatrix @ Len @ adj)];
 	sqrtNumAdj = Sqrt @ RowTotals[symAdjMatrix];
 	meanAdjMatrix = ToPackedReal @ Map[TotalNormalize, symAdjMatrix];
 	(* TODO: Test SparseArray applied to meanAdjMatrix *)
@@ -41,7 +41,7 @@ ElectricalGravitationalBalanceX[x_, y_, graph_, n_, delta_] := Scope[
 	,
 		{n}
 	];
-	dx = Max[(EuclideanDistance @@ MinMax[x]) / 20, 0.0001];
+	dx = Max[(Dist @@ MinMax[x]) / 20, 0.0001];
 	MeanShift[x, dx]
 ]
 

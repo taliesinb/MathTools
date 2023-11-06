@@ -35,7 +35,7 @@ BundleToFiberGraph[bundle_Graph, baseVertex_:Automatic] := Scope[
   hash = Hash[bundle];
   fiberGraph = bundleHashLookup[hash, "FiberGraph"];
   If[GraphQ[fiberGraph], Return @ fiberGraph];
-  SetAutomatic[baseVertex, First @ VertexList @ bundle];
+  SetAutomatic[baseVertex, P1 @ VertexList @ bundle];
   ExtendedSubgraph[bundle, Cases[VertexList @ bundle, BundleVertex[baseVertex, _]], Automatic]
 ];
 
@@ -52,8 +52,8 @@ BundleToBaseGraph[bundle_Graph] := Scope[
   If[baseEdges === {}, Message[BundleToBaseGraph::noedges]];
   vertexCoords = None;
   vcf = LookupExtendedOption[bundle, VertexCoordinateFunction];
-  baseVCF = If[MatchQ[vcf, BundleVertexCoordinateFunction[_, _, _]], Map[TakeOperator[2], First @ vcf],
-    vertexCoords = GroupBy[Normal @ LookupVertexCoordinates[bundle], PartOperator[1, 1] -> Last, Mean];
+  baseVCF = If[MatchQ[vcf, BundleVertexCoordinateFunction[_, _, _]], Map[TakeOperator[2], P1 @ vcf],
+    vertexCoords = GroupBy[Normal @ LookupVertexCoordinates[bundle], PartOperator[1, 1] -> PN, Mean];
     None
   ];
   ExtendedGraph[baseVertices, baseEdges,
@@ -78,7 +78,7 @@ Options[TrivialBundleGraph] = JoinOptions[
   $ExtendedGraphOptions
 ];
 
-$modIntP = _Integer ? Positive | Modulo[_Integer ? Positive];
+$modIntP = _Int ? Positive | Modulo[_Int ? Positive];
 $modIntListP = $modIntP | {$modIntP..};
 
 colors1D = <|"b" -> {$Blue}, "f" -> {$Red}|>;
@@ -86,17 +86,17 @@ colors2D = <|"b" -> {$Blue, $Teal}, "f" -> {$Red, $Orange}|>
 colors3D = <|"b" -> {$Blue, $Teal, $Green}, "f" -> {$Red, $Orange, $Yellow}|>
 
 toQuiver = Case[
-  {n_Integer}         := LineQuiver[n, $qname, LayoutDimension -> 1, EdgeLabelStyle -> None, CardinalColors -> colors1D[$qname]];
-  {Modulo[n_Integer]} := CycleQuiver[n, $qname, LayoutDimension -> 1, EdgeLabelStyle -> None, CardinalColors -> colors1D[$qname]];
-  {m_, n_}            := SquareQuiver[{m, n}, {$qname <> "x", $qname <> "y"}, LayoutDimension -> 2, EdgeLabelStyle -> None, CardinalColors -> colors2D[$qname]];
-  {m_, n_, p_}        := CubicQuiver[{m, n, p}, {$qname <> "x", $qname <> "y", $qname <> "z"}, LayoutDimension -> 3, EdgeLabelStyle -> None, CardinalColors -> colors3D[$qname]];
+  {n_Int}         := LineQuiver[n, $qname, LayoutDimension -> 1, EdgeLabelStyle -> None, CardinalColors -> colors1D[$qname]];
+  {Modulo[n_Int]} := CycleQuiver[n, $qname, LayoutDimension -> 1, EdgeLabelStyle -> None, CardinalColors -> colors1D[$qname]];
+  {m_, n_}        := SquareQuiver[{m, n}, {$qname <> "x", $qname <> "y"}, LayoutDimension -> 2, EdgeLabelStyle -> None, CardinalColors -> colors2D[$qname]];
+  {m_, n_, p_}    := CubicQuiver[{m, n, p}, {$qname <> "x", $qname <> "y", $qname <> "z"}, LayoutDimension -> 3, EdgeLabelStyle -> None, CardinalColors -> colors3D[$qname]];
 ];
 
 TrivialBundleGraph[base:$modIntListP, fiber:$modIntListP, opts:OptionsPattern[]] := Scope[
   {base, fiber} = ToList /@ {base, fiber};
   $qname = "b"; baseQuiver = toQuiver @ base;
   $qname = "f"; fiberQuiber = toQuiver @ fiber;
-  baseFiber = Join[base, fiber]; baseDim = Length[base]; fiberDim = Length[fiber];
+  baseFiber = Join[base, fiber]; baseDim = Len[base]; fiberDim = Len[fiber];
   If[baseDim + fiberDim >= 4, ReturnFailed[]];
   displayMethod = If[MatchQ[baseFiber, {_, _}], "Total", "Color"];
   esf = MakeModulusEdgeShapeFunction @@ baseFiber;
@@ -105,8 +105,8 @@ TrivialBundleGraph[base:$modIntListP, fiber:$modIntListP, opts:OptionsPattern[]]
     SectionDisplayMethod -> displayMethod,
     EdgeShapeFunction -> esf, EdgeLabelStyle -> None,
     ImagePadding -> If[esf =!= Automatic, 30, Automatic],
-    If[Length[baseFiber] >= 3, Seq[LayoutDimension -> 3, ImageSize -> "ShortestEdge" -> 45], Seq[]],
-    If[Length[fiber] >= 2, FiberCoordinateRotation -> 0, Seq[]]
+    If[Len[baseFiber] >= 3, Seq[LayoutDimension -> 3, ImageSize -> "ShortestEdge" -> 45], Seq[]],
+    If[Len[fiber] >= 2, FiberCoordinateRotation -> 0, Seq[]]
   ]
 ];
 
@@ -115,7 +115,7 @@ TrivialBundleGraph::baddisplay = "SectionDisplayMethod -> `` is invalid, should 
 TrivialBundleGraph[baseGraph_, fiberGraph_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[fiberScale, fiberCoordinateRotation, baseCoordinateRotation, layoutDimension, sectionDisplayMethod];
   If[!MatchQ[sectionDisplayMethod, $bundleSectionDisplayMethodPattern | Inherited],
-    ReturnFailed["baddisplay", sectionDisplayMethod, Append[Inherited] @ Cases[$bundleSectionDisplayMethodPattern, _String | _Symbol]]];
+    ReturnFailed["baddisplay", sectionDisplayMethod, Append[Inherited] @ Cases[$bundleSectionDisplayMethodPattern, _Str | _Symbol]]];
   graphs = {baseGraph, fiberGraph};
   If[!EdgeTaggedGraphQ[baseGraph], ReturnFailed["arg12", "First", "base"]];
   If[!EdgeTaggedGraphQ[fiberGraph], ReturnFailed["arg12", "Second", "fiber"]];
@@ -133,8 +133,8 @@ TrivialBundleGraph[baseGraph_, fiberGraph_, opts:OptionsPattern[]] := Scope[
     MapIndexed[fiberEdge2, Outer[List, baseEdges, fiberEdges], {2}]
   };
   If[layoutDimension === 3,
-    If[Length[First[baseCoords]] == 2, baseCoords //= Map[Append[0]]];
-    If[Length[First[fiberCoords]] == 2, fiberCoords //= Map[Prepend[0]]];
+    If[Len[P1[baseCoords]] == 2, baseCoords //= Map[Append[0]]];
+    If[Len[P1[fiberCoords]] == 2, fiberCoords //= Map[Prepend[0]]];
   ];
   fColors = LookupCardinalColors[fiberGraph];
   bColors = LookupCardinalColors[baseGraph];

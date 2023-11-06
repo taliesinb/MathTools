@@ -11,7 +11,7 @@ declareNamedRewritingSystem[symbol_] := With[
   $TemplateKatexFunction[symbolName] = LowerCaseFirst @ StringTrim[symbolName, "Symbol"];
 ]
 
-$TemplateKatexFunction["RewritingSystemRuleBindingForm"] = Function["rewritingRuleBinding"[#1, riffled[","][##2]]];
+$TemplateKatexFunction["RewritingSystemRuleBindingForm"] = Fn["rewritingRuleBinding"[#1, riffled[","][##2]]];
 
 (**************************************************************************************************)
 

@@ -1,7 +1,7 @@
 PrivateFunction[katexAliasRiffled, katexAlias]
 
 katexAliasRiffled[fn_] := riffled @ toAlias @ fn;
-katexAlias[fn_] := Construct[Function, toAlias @ fn];
+katexAlias[fn_] := Construct[Fn, toAlias @ fn];
 
 toAlias[fn_] /; StringStartsQ[fn, " "] := fn;
 toAlias[fn_] := StringJoin["\\", fn, " "];
@@ -36,7 +36,7 @@ declareSymbolForm[head_, type_:RawSymbolForm] := iDeclareSymbolForm[head, type, 
 declareSymbolFormExplicit[head_, type_:RawSymbolForm] := iDeclareSymbolForm[head, type, True];
 
 iDeclareSymbolForm[head_, type_, fullName_] := Scope[
-  If[Head[head] =!= Symbol, ReturnFailed[declareSymbolForm::notsym, head]];
+  If[H[head] =!= Symbol, ReturnFailed[declareSymbolForm::notsym, head]];
   name = SymbolName @ head;
   Which[
     StringEndsQ[name, "SymbolForm"], Null,
@@ -74,7 +74,7 @@ declareUnaryWrapperForm[head_Symbol, katex_:Automatic] := With[
 
 PrivateVariable[$rawSymbolP, $literalSymbolsP]
 
-$rawSymbolP = _Symbol | _String | _Subscript | _Superscript | _Subsuperscript | EllipsisSymbol;
+$rawSymbolP = _Symbol | _Str | _Subscript | _Superscript | _Subsuperscript | EllipsisSymbol;
 $literalSymbolsP = Alternatives[Aligner, EllipsisSymbol];
 
 (**************************************************************************************************)
@@ -82,7 +82,7 @@ $literalSymbolsP = Alternatives[Aligner, EllipsisSymbol];
 PrivateFunction[usingCustomKatex]
 
 $customKatex = None;
-usingCustomKatex[katex_String] := Function[body, Block[{$customKatex = katex}, body], {HoldAllComplete}];
+usingCustomKatex[katex_Str] := Fn[body, Block[{$customKatex = katex}, body], {HoldAllComplete}];
 
 (**************************************************************************************************)
 
@@ -196,7 +196,7 @@ $symbolFormsP = Alternatives[
 
 PrivateSpecialFunction[declareSumLikeFormatting]
 
-declareSumLikeFormatting[form_Symbol, katexName_String] := With[
+declareSumLikeFormatting[form_Symbol, katexName_Str] := With[
   {formName = SymbolName @ form},
   {symbolName = StringTrim[formName, "Form"] <> "Symbol"},
   declareBoxFormatting[
@@ -336,7 +336,7 @@ declareBoxFormatting[
 PublicTypesettingForm[PreformattedCodeForm]
 
 declareBoxFormatting[
-  PreformattedCodeForm[s_String] :> preformattedCodeBoxes[s]
+  PreformattedCodeForm[s_Str] :> preformattedCodeBoxes[s]
 ];
 
 (*
@@ -347,9 +347,9 @@ declareBoxFormatting[
 
 PrivateFunction[preformattedCodeBoxes, fixExtensibleChars]
 
-preformattedCodeBoxes[str_String] := Scope[
+preformattedCodeBoxes[str_Str] := Scope[
   boxes = fixExtensibleChars @ ToString[str, InputForm];
   TemplateBox[{Construct[InterpretationBox, boxes, str], str}, "StringBlockForm"]
 ];
 
-fixExtensibleChars[str_String] := StringReplace[str, {"\[VerticalLine]" -> "⎥", "\[HorizontalLine]" -> "—"}];
+fixExtensibleChars[str_Str] := StringReplace[str, {"\[VerticalLine]" -> "⎥", "\[HorizontalLine]" -> "—"}];

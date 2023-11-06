@@ -1,6 +1,6 @@
 PublicFunction[ADEAGraph]
 
-pathGraph[n_Integer, opts___] := ExtendedGraph[PathGraph @ Range @ n, opts, VertexLabels -> "Name"];
+pathGraph[n_Int, opts___] := ExtendedGraph[PathGraph @ Range @ n, opts, VertexLabels -> "Name"];
 lineCoords[n_] := Thread[{Range[n], 0}];
 
 ADEAGraph[n_] := ADEAGraph[n] =

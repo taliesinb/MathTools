@@ -29,7 +29,7 @@ declareBoxFormatting[
 Unprotect[Labeled];
 
 Labeled[Nothing, _] := Nothing;
-Labeled[None] := Identity;
+Labeled[None] := Id;
 Labeled[label_][g_] := Labeled[g, label];
 Labeled[f_, label_][input___] := Labeled[f[input], label];
 
@@ -100,7 +100,7 @@ SetUsage @ "
 InvertReverse[list$] applies Inverted to elements of list$, then reverses the list.
 "
 
-InvertReverse[e_List] := Reverse @ Map[Inverted, e];
+InvertReverse[e_List] := Rev @ Map[Inverted, e];
 
 (**************************************************************************************************)
 

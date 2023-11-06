@@ -29,8 +29,8 @@ General::toolnp = "Tool `` is not present in any of the normal binary paths. Ple
 
 SetHoldRest[FindTool];
 
-FindTool[name_String] := FindTool[name, Message[General::toolnp, name]; $Failed];
-FindTool[name_String, else_] := ReplaceNone[iFindTool[name], else];
+FindTool[name_Str] := FindTool[name, Message[General::toolnp, name]; $Failed];
+FindTool[name_Str, else_] := ReplaceNone[iFindTool[name], else];
 
 iFindTool[name_] := iFindTool[name] = SelectFirst[PathJoin[#, name]& /@ $BinaryPaths, FileExistsQ, None];
 
@@ -130,16 +130,16 @@ RunTool[cmd_, args___] := Scope @ Block[{$verbose = ReplaceAutomatic[$tverbose, 
 ]
 
 procArg[_ -> (Automatic|None)] := Nothing;
-procArg[k_String -> v_] := k <> "=" <> procArg[v];
+procArg[k_Str -> v_] := k <> "=" <> procArg[v];
 procArg[e_] := procArg @ TextString[e];
-procArg[e_String] := e;
+procArg[e_Str] := e;
 
 (**************************************************************************************************)
 
 PublicFunction[RunUTF8]
 
-RunUTF8[str_String] /; ASCIIQ[str] := Run[str];
-RunUTF8[str_String] := Scope[
+RunUTF8[str_Str] /; ASCIIQ[str] := Run[str];
+RunUTF8[str_Str] := Scope[
 	tmpFile = MakeTemporaryFile["tool", Base36Hash[str] <> ".sh"];
 	ExportUTF8[tmpFile, str];
 	Run["/bin/bash -e " <> tmpFile]
@@ -172,7 +172,7 @@ RunToolOutput[cmd_, args___] := Scope[
 
 PublicFunction[BashEscape]
 
-BashEscape[s_String] := If[StringMatchQ[s, RegularExpression["[a-zA-Z_-]+"]], s, StringJoin["'", StringReplace[s, {"'" -> "\\'", "\\" -> "\\\\"}], "'"]];
+BashEscape[s_Str] := If[StringMatchQ[s, RegularExpression["[a-zA-Z_-]+"]], s, StringJoin["'", StringReplace[s, {"'" -> "\\'", "\\" -> "\\\\"}], "'"]];
 
 (**************************************************************************************************)
 
@@ -194,10 +194,10 @@ SystemOpenWith[path_, _] := SystemOpen[path];
 PublicFunction[WebpageOpen]
 
 (* works best if you have "Fast Duplicate Tab Closer" extension installed *)
-WebpageOpen[s_String] := SystemOpenWith[s, "Google Chrome"];
+WebpageOpen[s_Str] := SystemOpenWith[s, "Google Chrome"];
 
 (**************************************************************************************************)
 
 PublicFunction[TextFileOpen]
 
-TextFileOpen[s_String] := SystemOpenWith[s, "Sublime Text"];
+TextFileOpen[s_Str] := SystemOpenWith[s, "Sublime Text"];

@@ -2,7 +2,7 @@ PrivateFunction[StandardizeRowColumnSpec]
 
 StandardizeRowColumnSpec[{pre___, cycle_List, post___}, n_] := Scope[
   pre = ToList[pre]; post = ToList[post];
-  {preLen, postLen} = Length /@ {pre, post};
+  {preLen, postLen} = Len /@ {pre, post};
   cycle = PadRight[cycle, n, cycle];
   Which[
     preLen >= n,
@@ -12,7 +12,7 @@ StandardizeRowColumnSpec[{pre___, cycle_List, post___}, n_] := Scope[
     preLen + postLen >= n,
       Take[Join[pre, post], n],
     True,
-      Join[pre, Take[cycle, n - Length[pre] - Length[post]], post]
+      Join[pre, Take[cycle, n - Len[pre] - Len[post]], post]
   ]
 ]
 

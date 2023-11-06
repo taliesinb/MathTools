@@ -9,7 +9,7 @@ Options[MoveFile] = {
   OverwriteTarget -> False
 };
 
-MoveFile[source_String, target_String, OptionsPattern[]] := Scope[
+MoveFile[source_Str, target_Str, OptionsPattern[]] := Scope[
   source //= NormalizePath;
   target //= NormalizePath;
   UnpackOptions[overwriteTarget];
@@ -45,7 +45,7 @@ PublicFunction[TrashFile]
 
 TrashFile::nofile = "File `` does not exist.";
 
-TrashFile[path_String] := Scope[
+TrashFile[path_Str] := Scope[
   If[!FileExistsQ[path], ReturnFailed["nofile", MsgPath @ path]];
   trashName = FileNameTake[path] <> "." <> RandomString[6];
   trashPath = TemporaryPath["Trash", trashName];

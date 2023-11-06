@@ -31,7 +31,7 @@ boxesToKatexString[boxes_] := Scope[
 ];
 
 $katexAppliedRule = {
-  (s_String)[args___] :> {"\\" <> s <> "{", Riffle[{args}, "}{"], "}"}
+  (s_Str)[args___] :> {"\\" <> s <> "{", Riffle[{args}, "}{"], "}"}
 }
 
 PrivateFunction[boxToKatex]
@@ -43,19 +43,19 @@ boxToKatex = Case[
   "->"|"\[Rule]" := " \\to ";
   "<|" := " \\left<\\left| ";
   "|>" := " \\right|\\right> ";
-  e_String := e;
+  e_Str := e;
   
-  KatexFunction[s_String] := PrefixSlash @ s;
-  KatexFunction[s_String][args___] := Map[%, s[args]];
+  KatexFunction[s_Str] := PrefixSlash @ s;
+  KatexFunction[s_Str][args___] := Map[%, s[args]];
 
   (* process results of dispatchTemplateBox: *)
   e_List := Map[%, e];
-  e:(_String[___]) := Map[%, e];
+  e:(_Str[___]) := Map[%, e];
 
-  c_Cell := Block[{$inlineMathTemplate = Identity}, textBoxesToMarkdown @ c];
+  c_Cell := Block[{$inlineMathTemplate = Id}, textBoxesToMarkdown @ c];
 
   TemplateBox[{a_, b_}, "katexSwitch"] := % @ b; (* <- shortcircuit, since it is so common *)
-  tb:TemplateBox[_List, _String] := TemplateBoxToKatex[tb];
+  tb:TemplateBox[_List, _Str] := TemplateBoxToKatex[tb];
 
   StyleBox[e_, "Text"] := {"\\textrm{", boxToInlineText @ e, "}"};
   StyleBox[e_, directives___] := katexStyleOperator[directives] @ % @ e;
@@ -90,7 +90,7 @@ boxToKatex = Case[
   RowBox[{"(", e__, ")"}] := {"\\left(", % /@ {e}, "\\right)"};
   RowBox[e_] := Map[%, e];
 
-  ButtonBox[title_, BaseStyle -> "Hyperlink"|Hyperlink, ButtonData -> {URL[url_String], _}, ___] :=
+  ButtonBox[title_, BaseStyle -> "Hyperlink"|Hyperlink, ButtonData -> {URL[url_Str], _}, ___] :=
     {"\\href{", url, "}{", % @ title, "}"};
 
   TagBox[e_, __] := % @ e;
@@ -100,7 +100,7 @@ boxToKatex = Case[
   RowBox[list_] := Map[%, list];
 
   other_ := Scope[
-    head = ToPrettifiedString @ Head @ other;
+    head = ToPrettifiedString @ H @ other;
     Message[ToKatexString::badbox, MsgExpr @ other];
     Print["OUTER BOXES:"]; Print @ ToPrettifiedString[$inputBoxes, MaxDepth -> 3, MaxLength -> 10];
     Print["RAW BOXES:"]; Print @ ToPrettifiedString[other, MaxDepth -> 3, MaxLength -> 10];
@@ -119,7 +119,7 @@ boxToInlineText[e_] := TextString[e];
 
 (**************************************************************************************************)
 
-katexStyleOperator[args___] := Fold[#1 /* styleToKatexFunction[#2]&, Identity, {args}];
+katexStyleOperator[args___] := Fold[#1 /* styleToKatexFunction[#2]&, Id, {args}];
 
 styleToKatexFunction := Case[
   (FontColor -> c_) | (c_ ? ColorQ)                           := StringJoin["textcolor{#", HexColorString @ c, "}"];
@@ -135,12 +135,12 @@ styleToKatexFunction := Case[
   "ScriptMathFont"                                            := "mathscr"
   "TypewriterMathFont"                                        := "mathtt";
   "PreformattedCode"                                          := "mathtt";
-  _                                                           := Identity;
+  _                                                           := Id;
 ];
 
 
 toBracket = Case[
-  e_String /; StringLength[e] === 1 := e;
+  e_Str /; StringLength[e] === 1 := e;
   other_ := {"{", boxToKatex @ other, "}"};
 ];
 
@@ -173,9 +173,9 @@ PublicFunction[TemplateBoxToKatex]
 
 ToKatexString::badtemplatebox = "TemplateBox `` corresponding to `` has no $TemplateKatexFunction defined.";
 
-TemplateBoxToKatex[TemplateBox[args_List, tag_String]] := Scope[
+TemplateBoxToKatex[TemplateBox[args_List, tag_Str]] := Scope[
   fn = Lookup[$katexDisplayFunction, tag, None];
-  If[fn === None && AssociationQ[$localKatexDisplayFunction],
+  If[fn === None && AssocQ[$localKatexDisplayFunction],
     fn = Lookup[$localKatexDisplayFunction, tag, None]];
   If[fn === None,
     (* this is slower than the others, but will allow ToKatexString to pick up local styles when run interactively *)

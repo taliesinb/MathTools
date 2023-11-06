@@ -7,7 +7,7 @@ DebugPoints[points$] displays as points that are labeled with their indices.
 DeclareGraphicsPrimitive[DebugPoints, "Matrices", debugPointBoxes];
 
 debugPointBoxes[DebugPoints[matrix:$CoordMatP]] := Scope[
-  n = Length @ matrix;
+  n = Len @ matrix;
   colors = Hue[#, 1, 1 - #]& /@ Lerp[0.3, 0, Into[n]];
   points = MapThread[StyleBox[PointBox[#1], #2]&, {matrix, colors}];
   labels = If[n > 8,

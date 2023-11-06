@@ -1,4 +1,4 @@
-tokenizeUsage[str_String] :=
+tokenizeUsage[str_Str] :=
   ToList[
     TOpen[TLineGroup], TOpen[TLine],
     DeleteCases[ ""|"\n"] @ StringSplit[str, Append[$tokenRules, wholeWord[word:$currentMainSymbol] :> TMain[word]]],
@@ -49,7 +49,7 @@ $tokenRules = {
   "\n" -> Splice[{TClose[TLine], TOpen[TLine]}]
 };
 
-parseSubscript[s_String] := StringSplit[s, $subscriptTokenRules];
+parseSubscript[s_Str] := StringSplit[s, $subscriptTokenRules];
 
 $subscriptTokenRules = {
   Splice @ $varTokenRules,
@@ -61,9 +61,9 @@ $subscriptTokenRules = {
 
 groupTokens[tokens_List] := Scope[
   $i = 1; $n = Length[tokens]; $tokens = tokens;
-  firstToken = First @ tokens;
+  firstToken = P1 @ tokens;
   If[!MatchQ[firstToken, _TOpen], ReturnFailed[]];
-  grouped = groupSegment[First @ firstToken] //. $postGroupRules;
+  grouped = groupSegment[P1 @ firstToken] //. $postGroupRules;
   spanned = findMathSpan[grouped];
   spanned
 ];
@@ -73,7 +73,7 @@ $postGroupRules = {
 };
 
 WhitespaceOrComma = (WhitespaceCharacter | ",")..;
-$whitespaceP = _String ? (StringMatchQ[WhitespaceOrComma]);
+$whitespaceP = _Str ? (StringMatchQ[WhitespaceOrComma]);
 $mathTokenP = Alternatives[
   _TParen, _TAssoc, _TBracket, _TBrace,
   _TInfixSyntax, _TQuote,
@@ -130,7 +130,7 @@ PublicFunction[ParseUsageString]
 ParseUsageString[str_] :=
   groupTokens @ tokenizeUsage @ str
 
-ParseUsageString[n_Integer] :=
+ParseUsageString[n_Int] :=
   ParseUsageString @ $RawUsageStringTable[[n]];
 
 (**************************************************************************************************)
@@ -172,7 +172,7 @@ lineInnerMarkdown = Case[
 TSymbolP = (TLiteralSymbol|TMain|TSymbol|TOptionSymbol);
 
 markdownDispatch = Case[
-  s_String := wlCharactersToUnicode[s];
+  s_Str := wlCharactersToUnicode[s];
   l_List := Map[$f, l];
   TAssoc[args___] := {"<|", mapSeq[$f, args], "|>"};
   TBrace[args___] := {"{", mapSeq[$f, args], "}"};
@@ -192,7 +192,7 @@ mathMarkdown[TMathSpan[args___]] := {"$",
    "$"
 };
 
-$infixTranslation := $infixTranslation = Association[
+$infixTranslation := $infixTranslation = Assoc[
   StringJoin["\,{", #, "}\,"]& /@ Take[MathCharacterData[<|"InputForm" -> "Katex"|>], 12],
   "==" -> "\,⩵\,",
   "===" -> "\,⩶\,"
@@ -203,7 +203,7 @@ katexEscape[s_] := StringReplace[s, $WLSymbolToKatexRegex];
 dollarEscape[s_] := StringReplace[s, "$" -> "{\\mathdollar}"];
 makeKatexSymbol[s_, type_] := {"\\", type, "{", dollarEscape @ s, "}"};
 
-varMarkdown[s_String] /; StringLength[s] === 1 := s;
+varMarkdown[s_Str] /; StringLength[s] === 1 := s;
 varMarkdown[s_] := {"\\textit{", s, "}"};
 varMarkdown[s_] := s;
 
@@ -230,14 +230,14 @@ PublicFunction[UsageToMarkdown]
 
 $currentMainSymbol = "FooBar";
 
-UsageToMarkdown[usage_String] :=
+UsageToMarkdown[usage_Str] :=
   UsageToMarkdown @ Rule[
     First[StringCases[usage, $mainSymbolRegex, 1], ""],
     usage
   ];
 
 
-UsageToMarkdown[mainSymbol_String -> usage_String] := Scope[
+UsageToMarkdown[mainSymbol_Str -> usage_Str] := Scope[
   (* $currentMainSymbol will be picked up later by ParseUsageString, it's declared PrivateVariable *)
   $currentMainSymbol = mainSymbol;
   TokensToMarkdown @ ParseUsageString @ usage

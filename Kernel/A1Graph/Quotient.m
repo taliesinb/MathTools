@@ -6,13 +6,13 @@ GraphVertexQuotient[graph_, equivFn_, userOpts___Rule] := Scope[
   opts = ExtractExtendedGraphOptions[graph];
   quotientVertexIndices = EquivalenceClassIndices[vertexList, equivFn];
   quotientVertexLabels = EquivalenceClassLabels[quotientVertexIndices];
-  quotientVertexCounts = Length /@ quotientVertexIndices;
+  quotientVertexCounts = Len /@ quotientVertexIndices;
   edgePairs = EdgePairs @ graph;
-  quotientEdgePairs = edgePairs /. i_Integer :> Part[quotientVertexLabels, i];
+  quotientEdgePairs = edgePairs /. i_Int :> Part[quotientVertexLabels, i];
   quotientEdgesIndex = PositionIndex[quotientEdgePairs];
   {quotientEdges, quotientEdgesIndices} = KeysValues @ quotientEdgesIndex;
-  quotientEdgesCounts = Length /@ quotientEdgesIndices;
-  quotientVertices = Range @ Length @ quotientVertexIndices;
+  quotientEdgesCounts = Len /@ quotientEdgesIndices;
+  quotientVertices = Range @ Len @ quotientVertexIndices;
   vertexAnnos = <|
     "EquivalenceClassIndices" -> quotientVertexIndices,
     "EquivalenceClassSizes" -> quotientVertexCounts

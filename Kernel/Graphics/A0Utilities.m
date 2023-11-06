@@ -69,8 +69,8 @@ SetUsage @ "
 VectorTranspose[v$] switches the role of x$ and y$.
 "
 
-VectorTranspose[v_?MatrixQ] := Reverse[v, 2];
-VectorTranspose[v_List] := Reverse[v];
+VectorTranspose[v_?MatrixQ] := Rev[v, 2];
+VectorTranspose[v_List] := Rev[v];
 
 (**************************************************************************************************)
 
@@ -144,10 +144,10 @@ LineLineIntersectionPoint[l1_, l2_] := Scope[
     Line[_],
       Part[r, 1, 1],
     _,
-      p = First @ l2;
+      p = P1 @ l2;
       Do[p = ClosestPointOnLine[l2, ClosestPointOnLine[l1, p]], 10];
       d = DistanceToLine[l1, p];
-      scale = Min[EuclideanDistance @@ l1, EuclideanDistance @@ l2];
+      scale = Min[Dist @@ l1, Dist @@ l2];
       If[d <= scale / 10,
         Avg[p, ClosestPointOnLine[l1, p]],
         $Failed
@@ -236,9 +236,9 @@ LineRectangleIntersectionPoint[l1_List, {{x1_, y1_}, {x2_, y2_}}] := Scope[
      {{x2, y1}, {x1, y1}}}
   ];
   points = DeepCases[points, $Coord2P];
-  p1 = First @ l1;
+  p1 = P1 @ l1;
   If[points === {}, p1,
-    MinimumBy[points, EuclideanDistance[#, p1]&]]
+    MinimumBy[points, Dist[#, p1]&]]
 ]
 
 (**************************************************************************************************)
@@ -289,7 +289,7 @@ ArcBetween[c$, {p$1, p$2}, towards$] ensures the arc takes the way around the ci
 
 ArcBetween[center_, {p1_ ? CoordinateVector2DQ, p2_ ? CoordinateVector2DQ}, towards_:Automatic] := Scope[
   If[p1 == center || p2 == center || p1 == p2, Return @ Line @ DeleteDuplicates @ {p1, p2}];
-  r = Mean[EuclideanDistance[center, #]& /@ {p1, p2}];
+  r = Mean[Dist[center, #]& /@ {p1, p2}];
   SetAutomatic[towards, Avg[p1, p2]];
   d1 = p1 - center; d2 = p2 - center; d3 = towards - center;
   theta1 = ArcTan @@ d1; theta2 = ArcTan @@ d2; theta3 = ArcTan @@ d3;
@@ -301,7 +301,7 @@ ArcBetween[center_, {p1_ ? CoordinateVector2DQ, p2_ ? CoordinateVector2DQ}, towa
 
 (* TODO: supprot towards by lerping *outside* the line and simulating a point at infinity *)
 ArcBetween[center_, {p1_ ? CoordinateVector3DQ, p2_ ? CoordinateVector3DQ}, towards_:Automatic] := Scope[
-  r = Mean[EuclideanDistance[center, #]& /@ {p1, p2}];
+  r = Mean[Dist[center, #]& /@ {p1, p2}];
   Line[center + Normalize[# - center] * r& /@ Lerp[p1, p2, Into[24]]]
 ]
 
@@ -389,7 +389,7 @@ PointTowards[p$, q$, d$] returns the point at distance d$ from p$ to q$.
 "
 
 PointTowards[p_, q_, d_ ? NumericQ] :=
-  If[EuclideanDistance[p, q] >= d, q, a + Normalize[b - a] * d];
+  If[Dist[p, q] >= d, q, a + Normalize[b - a] * d];
 
 (**************************************************************************************************)
 
@@ -408,7 +408,7 @@ PointAlongLine[coords_, Scaled[d_]] :=
   PointAlongLine[coords, LineLength[coords] * d];
 
 PointAlongLine[coords_List, d_ ? NumericQ] :=
-  First @ vectorAlongLine[coords, d];
+  P1 @ vectorAlongLine[coords, d];
 
 PointAlongLine[d_][coords_] := PointAlongLine[coords, d];
 
@@ -423,7 +423,7 @@ SampleLineEvery[path$, d$] returns a list of points sampled every distance d$.
 
 toEveryD[total_, d_] := Into @ Ceiling[total / d];
 
-SampleLineEvery[{a_, b_}, d_] := Lerp[a, b, toEveryD[EuclideanDistance[a, b], d]];
+SampleLineEvery[{a_, b_}, d_] := Lerp[a, b, toEveryD[Dist[a, b], d]];
 
 (* TODO: speed up this step! *)
 SampleLineEvery[path_List, d_] := PointAlongLine[path, Scaled @ #]& /@ N[Lerp[0, 1, toEveryD[LineLength @ path, d]]];
@@ -441,7 +441,7 @@ VectorAlongLine[path$, Scaled[f$]] takes the fraction f$ along the path.
 
 VectorAlongLine[p:{_, _}, d_ ? NumericQ] := vectorAlongSegment[p, d];
 
-VectorAlongLine[coords_, Scaled[1|1.]] := getPointAndVec[coords, Length @ coords];
+VectorAlongLine[coords_, Scaled[1|1.]] := getPointAndVec[coords, Len @ coords];
 VectorAlongLine[coords_, Scaled[0|0.]|0|0.] := getPointAndVec[coords, 1];
 
 VectorAlongLine[{a:$CoordP, b:$CoordP}, Scaled[d_]] :=
@@ -459,7 +459,7 @@ VectorAlongLine[coords_, Scaled[d_]] := VectorAlongLine[coords, LineLength[coord
 
 (* TODO: this doesn't take the length of the path into account *)
 VectorAlongLine[coords_, Scaled[d_] /; d > 1] := Scope[
-  {pos, dir} = getPointAndVec[coords, Length @ coords];
+  {pos, dir} = getPointAndVec[coords, Len @ coords];
   pos = coordPlus[pos, dir * (d - 1) * LineLength[coords]];
   {pos, dir} // SimplifyOffsets
 ];
@@ -480,9 +480,9 @@ vectorAlongSegment[{a_, b_}, d_] := Scope[
 ];
 
 vectorAlongLine[coords_, d_] := Scope[
-  prev = First @ coords; total = 0;
+  prev = P1 @ coords; total = 0;
   n = LengthWhile[coords, curr |-> (total += coordDistance[curr, prev]; prev = curr; total < d)];
-  If[n == Length[coords], Return @ getPointAndVec[coords, n]];
+  If[n == Len[coords], Return @ getPointAndVec[coords, n]];
   rem = total - d;
   If[rem == 0,
     getPointAndVec[coords, n + 1],
@@ -497,7 +497,7 @@ getPointAndVec[coords_, 1] := Scope[
   {p1, coordNormDelta[p1, p2]}
 ]
 
-getPointAndVec[coords_, n_] /; n == Length[coords] := Scope[
+getPointAndVec[coords_, n_] /; n == Len[coords] := Scope[
   {p0, p1} = Part[coords, {-2, -1}];
   {p1, coordNormDelta[p0, p1]}
 ]
@@ -522,13 +522,13 @@ VectorListAlongLine[{a_, b_}] := Scope[
 
 VectorListAlongLine[coords_] := Scope[
   diffs = Normalize /@ Differences[coords];
-  n = Length[coords];
+  n = Len[coords];
   is = Range[1, n, 1/2]; Part[is, -1] = -1; i1 = i2 = 0;
   Map[toVecListElem, is]
 ,
-  toVecListElem[1] := {First @ coords, First @ diffs},
-  toVecListElem[-1] := {Last @ coords, Last @ diffs},
-  toVecListElem[i_Integer] := {Part[coords, i], Normalize @ Mean @ Part[diffs, {i-1, i}]},
+  toVecListElem[1] := {P1 @ coords, P1 @ diffs},
+  toVecListElem[-1] := {PN @ coords, PN @ diffs},
+  toVecListElem[i_Int] := {Part[coords, i], Normalize @ Mean @ Part[diffs, {i-1, i}]},
   toVecListElem[i_Rational] := ({i1, i2} = FloorCeiling @ i; {Mean @ Part[coords, {i1, i2}], Part[diffs, i1]})
 ];
 
@@ -541,8 +541,8 @@ LineLength[path$] returns the total length of a line.
 "
 
 LineLength[{}] := 0;
-LineLength[{a_, b_}] := EuclideanDistance @@ RemoveOffsets[{a, b}];
-LineLength[list_] := Total @ ApplyWindowed[EuclideanDistance, RemoveOffsets @ list];
+LineLength[{a_, b_}] := Dist @@ RemoveOffsets[{a, b}];
+LineLength[list_] := Total @ ApplyWindowed[Dist, RemoveOffsets @ list];
 
 (**************************************************************************************************)
 
@@ -554,10 +554,10 @@ EdgeLengthScale[points$, q$] returns the characterstic scale length of a list of
 "
 
 boundingBoxSideLength[line_] :=
-  Total[EuclideanDistance @@@ CoordinateBounds @ line];
+  Total[Dist @@@ CoordinateBounds @ line];
 
 adjustedLineLength[line_] :=
-  If[First[line] === Last[line], 0.8, 1] * Min[LineLength @ line, boundingBoxSideLength @ line];
+  If[P1[line] === PN[line], 0.8, 1] * Min[LineLength @ line, boundingBoxSideLength @ line];
 
 EdgeLengthScale[{}, q_] := 1.0;
 
@@ -707,7 +707,7 @@ ImageToGraphics[img_, {xalign_, yalign_}, size_] := Scope[
   x = (xalign - 1)/2;
   y = yrat * (yalign - 1)/2;
   Graphics[
-    {Opacity[1], Raster[Reverse[ImageData @ img, {1}], {{x, y}, {x + 1, y + yrat}} * size]},
+    {Opacity[1], Raster[Rev[ImageData @ img, {1}], {{x, y}, {x + 1, y + yrat}} * size]},
     ImageSize -> size, AspectRatio -> 1, PlotRangePadding -> None
   ]
 ];
@@ -732,8 +732,8 @@ ToAlignmentPair[align_] := Switch[align,
 
 PublicFunction[LineDilation, LineUnionDilation]
 
-LineDilation[line:{_, _}, r_] := Polygon @ ToPackedReal @ Part[First @ RegionDilation[Line @ N @ line, r], Join[Range[1, 37, 4], Range[38, 74, 4]]]
-LineDilation[line_, r_] := Polygon @ ToPackedReal @ Part[First @ RegionDilation[Line @ N @ line, r], 1;;;;4];
+LineDilation[line:{_, _}, r_] := Polygon @ ToPackedReal @ Part[P1 @ RegionDilation[Line @ N @ line, r], Join[Range[1, 37, 4], Range[38, 74, 4]]]
+LineDilation[line_, r_] := Polygon @ ToPackedReal @ Part[P1 @ RegionDilation[Line @ N @ line, r], 1;;;;4];
 LineUnionDilation[lines_, r_] := Replace[MeshPrimitives[RegionUnion @@ Map[LineDilation[#, r]&, lines], "Polygon"], {z_} :> z];
 
 (**************************************************************************************************)

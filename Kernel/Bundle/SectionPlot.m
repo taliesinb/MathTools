@@ -25,11 +25,11 @@ BundleSectionPlot[expr_, OptionsPattern[]] := Scope[
   ];
   ReplaceAll[
     expr,
-    sec:BundleSection[_Association, _Integer] :> RuleCondition @ plotter @ sec
+    sec:BundleSection[_Assoc, _Int] :> RuleCondition @ plotter @ sec
   ]
 ];
 
-BundleSectionPlotColor[BundleSection[sec_Association, hash_]] :=
+BundleSectionPlotColor[BundleSection[sec_Assoc, hash_]] :=
   ExtendedGraphPlot[
     hashBaseGraph[hash],
     VertexColorFunction -> (sec /* hashColorFunc[hash]),
@@ -39,7 +39,7 @@ BundleSectionPlotColor[BundleSection[sec_Association, hash_]] :=
     If[$imageSize === Automatic, Seq[], ImageSize -> $imageSize]
   ];
 
-BundleSectionPlotTotal[BundleSection[sec_Association, hash_]] := Scope[
+BundleSectionPlotTotal[BundleSection[sec_Assoc, hash_]] := Scope[
   bundle = hashBundleGraph[hash];
   ExtendedGraphPlot[
     bundle,
@@ -52,7 +52,7 @@ BundleSectionPlotTotal[BundleSection[sec_Association, hash_]] := Scope[
   ]
 ];
 
-BundleSectionPlotLine[BundleSection[sec_Association, hash_]] := Scope[
+BundleSectionPlotLine[BundleSection[sec_Assoc, hash_]] := Scope[
   bundle = hashBundleGraph[hash];
   ExtendedGraphPlot[
     hashBundleGraph[hash],
@@ -63,7 +63,7 @@ BundleSectionPlotLine[BundleSection[sec_Association, hash_]] := Scope[
   ]
 ];
 
-BundleSectionPlotArray[BundleSection[sec_Association, hash_]] := Scope[
+BundleSectionPlotArray[BundleSection[sec_Assoc, hash_]] := Scope[
   bn = VertexCount @ hashBaseGraph[hash]; fn = (VertexCount @ hashBundleGraph[hash]) / bn;
   vals = Lookup[sec, hashBaseVerts[hash]];
   cols = ToRGB @ hashColorFunc[hash] @ vals;

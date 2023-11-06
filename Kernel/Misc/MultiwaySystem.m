@@ -133,7 +133,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     prologVertices, canonicalizationFunction
   ];
 
-  If[!ListQ[initialVertices] || Length[initialVertices] == 0,
+  If[!ListQ[initialVertices] || Len[initialVertices] == 0,
     ReturnFailed[MultiwaySystem::badinitstates];
   ];
 
@@ -161,7 +161,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
 
   If[ListQ[f], f = makeSuperTransitionFunc[f]];
 
-  If[!MatchQ[canonicalizationFunction, None | Identity | (#&)],
+  If[!MatchQ[canonicalizationFunction, None | Id | (#&)],
     canonFn = VectorReplace[{Labeled[e_, l_] :> Labeled[canonicalizationFunction[e], l], e_ :> canonicalizationFunction[e]}] /* DeleteDuplicates;
     initialVertices //= canonFn;
     If[ListQ[prologVertices], prologVertices = canonFn @ prologVertices];
@@ -170,15 +170,15 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     );
   ];
 
-  numPrologVertices = Length @ prologVertices;
+  numPrologVertices = Len @ prologVertices;
   If[numPrologVertices > 0,
     initialVertices = Join[prologVertices, initialVertices]];
 
   thisGenVertices = CreateDataStructure["Stack"];
   nextGenVertices = CreateDataStructure["Stack"];
   vertexArray = CreateDataStructure["DynamicArray"];
-  vertexIndex = UAssociation[];
-  initialIds = Range @ Length @ initialVertices;
+  vertexIndex = UAssoc[];
+  initialIds = Range @ Len @ initialVertices;
 
   arrayAppendList[vertexArray, initialVertices];
 
@@ -190,7 +190,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     _,
       startTime = SessionTime[];
       $currentTime := (SessionTime[] - startTime);
-      $currentVertexCount := Length[vertexIndex];
+      $currentVertexCount := Len[vertexIndex];
       progress := progressFunction[<|
         "State" -> vertex, "Successors" -> successors,
         "Depth" -> generation, "Time" -> $currentTime,
@@ -217,7 +217,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   ];
   removeStaleSuccessors //= ReplaceAll[$staleTest -> succId > lastCount];
   If[trackBackEdges = ContainsQ[result, Alternatives @ $backEdgeElements],
-    backEdgesAssociation = Association[];
+    backEdgesAssociation = Assoc[];
     removeStaleSuccessors //= Insert[removeStaleSuccessors, $Unreachable]; (* TODO: implement me *)
   ];
 
@@ -244,7 +244,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     )
   ];
 
-  $condition := And[Length[vertexIndex] <= maxVertices, edgeCount <= maxEdges, $timeCondition, evaluations < maxFunctionEvaluations];
+  $condition := And[Len[vertexIndex] <= maxVertices, edgeCount <= maxEdges, $timeCondition, evaluations < maxFunctionEvaluations];
   If[depthTermination === "Immediate",
     $loopCondition := $condition;
     $generationCondition = True;
@@ -275,7 +275,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     successors = f[vertex];
     progress[];
     If[MissingQ[successors], successors = {}];
-    If[!ListQ[successors], Message[MultiwaySystem::notlist, vertex, generation, Head[successors]]; Break[]];
+    If[!ListQ[successors], Message[MultiwaySystem::notlist, vertex, generation, H[successors]]; Break[]];
     $canonicalizationBlock;
     If[successors === {}, Continue[]];
     $removeSelfLoopsBlock;
@@ -285,7 +285,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
 
     (* add the transitions lists to its bag *)
     StuffBag[transitionListsBag, {vertex, successors}];
-    edgeCount += Length[successors];
+    edgeCount += Len[successors];
 
     (* obtain pure labels if necessary *)
     $extractLabelBlock;
@@ -295,11 +295,11 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     successors = Replace[successors, Labeled[z_, _] :> z, {1}];
 
     (* detect new vertices, and obtain all the Ids of successor vertices *)
-    lastCount = Length[vertexIndex];
+    lastCount = Len[vertexIndex];
     successorsIds = Map[
       succ |-> Lookup[vertexIndex, Key[succ],
         vertexArray["Append", succ];
-        vertexIndex[succ] = Length[vertexIndex] + 1
+        vertexIndex[succ] = Len[vertexIndex] + 1
       ], successors];
 
     (* add the corresponding indexed transitions list to its bag *)
@@ -322,7 +322,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   ];
 
   terminationReason = Which[
-    Length[vertexIndex] > maxVertices, "MaxVertices",
+    Len[vertexIndex] > maxVertices, "MaxVertices",
     edgeCount > maxEdges, "MaxEdges",
     maxDepthReached, "MaxDepth",
     $timeCondition === False, "MaxTime",
@@ -339,7 +339,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   vertexCount := vertexArray["Length"];
 
   edgeSymbol = If[directedEdges, toDirectedEdge, toUndirectedEdge];
-  deduper = If[directedEdges, Identity, DeleteDuplicatesBy[Sort]];
+  deduper = If[directedEdges, Id, DeleteDuplicatesBy[Sort]];
 
   edges := edges = deduper @ Flatten @ Apply[
     {from, to} |-> Map[edgeSymbol[from, #]&, to],
@@ -395,7 +395,7 @@ setupMultiwayCache[] := (
 
 CachedMultiwaySystem[args___] := Scope[
   hash = Hash @ {args};
-  If[AssociationQ[$MultiwaySystemCache], setupMultiwayCache[]];
+  If[AssocQ[$MultiwaySystemCache], setupMultiwayCache[]];
   cachedValue = $MultiwaySystemCache["Lookup", hash, Null&];
   If[cachedValue =!= Null, Return @ cachedValue];
   result = MultiwaySystem[args];

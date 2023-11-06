@@ -2,13 +2,13 @@ PublicFunction[ImageMagickConvert]
 
 Options[ImageMagickConvert] = {ImageSize -> Automatic};
 
-ImageMagickConvert[File[src_String] | src_String, OptionsPattern[]] := Scope[
+ImageMagickConvert[File[src_Str] | src_Str, OptionsPattern[]] := Scope[
   UnpackOptions[imageSize];
   src //= NormalizePath;
   imageSizeSpec = Switch[imageSize,
     Automatic,            {},
-    _Integer,             {"-resize", imageSize},
-    {_Integer, _Integer}, {"-resize", StringRiffle[imageSize, "-"]},
+    _Int,             {"-resize", imageSize},
+    {_Int, _Int}, {"-resize", StringRiffle[imageSize, "-"]},
     _,                    ReturnFailed[]
   ];
   tmp = MakeTemporaryFile["image_magick_output.png"];

@@ -14,7 +14,7 @@ charToColor = Replace[{
   _ -> Pink
 }];
 
-StringPlot[s_String, sz_:6] :=
+StringPlot[s_Str, sz_:6] :=
   FadedMeshImage[List @ ToRGB @ Map[charToColor, Characters @ s], sz]
 
 (**************************************************************************************************)
@@ -52,11 +52,11 @@ StringLabeledReplaceList[str_, {rule_}] :=
 
 StringLabeledReplaceList[str_, rules_List] :=
   Catenate @ MapIndexed[
-    StringLabeledReplaceList[str, #1, First @ #2]&,
+    StringLabeledReplaceList[str, #1, P1 @ #2]&,
     rules
   ];
 
-StringLabeledReplaceList[str_String, rule_, matchIndex_:None] := Scope[
+StringLabeledReplaceList[str_Str, rule_, matchIndex_:None] := Scope[
   Map[
     span |-> Labeled[
       StringReplacePart[str, ochunk = StringReplace[ichunk = StringTake[str, span], rule], span],
@@ -66,16 +66,16 @@ StringLabeledReplaceList[str_String, rule_, matchIndex_:None] := Scope[
         matchIndex
       ]
     ],
-    StringPosition[str, First @ rule]
+    StringPosition[str, P1 @ rule]
   ]
 ];
 
 StringLabeledReplaceList[rule_][str_] := StringLabeledReplaceList[str, rule];
   
-stringTokens[str_String, All] :=
+stringTokens[str_Str, All] :=
   stringTokens[str, {1, StringLength @ str}];
 
-stringTokens[str_String, span:{i_, j_}] :=
+stringTokens[str_Str, span:{i_, j_}] :=
   Trans[
     Characters @ StringTake[str, span],
     Range[i, j]

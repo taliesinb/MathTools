@@ -93,7 +93,7 @@ declareBoxFormatting[
 
 PublicTypesettingForm[PathWordForm]
 
-PathWordForm[a_, b_String, c_] := PathWordForm[a, ToPathWord @ b, c];
+PathWordForm[a_, b_Str, c_] := PathWordForm[a, ToPathWord @ b, c];
 
 declareBoxFormatting[
   PathWordForm[t_, w_, h_] :>
@@ -109,7 +109,7 @@ declareBoxFormatting[
 ];
 
 generalizedVertexBoxes = Case[
-  s_Symbol | s_String := MakeBoxes @ VertexSymbol @ s;
+  s_Symbol | s_Str := MakeBoxes @ VertexSymbol @ s;
   e_ := MakeBoxes[e];
 ];
 
