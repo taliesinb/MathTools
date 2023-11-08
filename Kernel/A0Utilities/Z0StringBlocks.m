@@ -401,7 +401,7 @@ processBlock = Case[
   gb_GridBox | TagBox[gb_GridBox, "Grid"]             := processGridBox[gb];
   Grid[rows_List, opts___Rule]                        := processGrid[rows, opts];
 
-  Labeled[a_, l_]                                     := % @ StringColumn[{a, l}, ColumnAlignments -> Center, RowSpacings -> 0];
+  Labeled[a_, l_]                                     := % @ StringColumn[{a, l}, ColumnAlignments -> Center, RowSpacings -> 1];
 
   ParenthesesForm[e_]                                 := delimBlock[{e}, "()", None];
   TupleForm[e___]                                     := delimBlock[{e}, "()", None];

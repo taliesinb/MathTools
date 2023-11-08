@@ -253,6 +253,7 @@ pretty1 = Case[
   list_List                      := indentedBlock["{", indentArgs @ list, "}"];
   assoc_Assoc /; AssocQ[Unevaluated[assoc]]
                                  := indentedBlock["<|", KeyValueMap[prettyRule, Unevaluated @ assoc], "|>"];
+  Assoc[args___]                 := indentedBlock["<|", indentArgs @ {args}, "|>"];
   e:$fatHeadP                    := If[$elideAtomicHeads, fatHeadString[e], pretty2[e]];
   e:(_Symbol[])                  := pretty2[e];
   g_Graph ? HAQ                  := If[$elideAtomicHeads, fatHeadString[g], prettyGraph[g]];

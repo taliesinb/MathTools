@@ -175,8 +175,8 @@ $genericMarkdownOptions = {
 
 (**************************************************************************************************)
 
-PublicScopedOption[NotebookPath]
-SetUsage @ "NotebookPath is a markdown export option that gives the containing directory that is used to choose the relative URL to use for a given input notebook file.
+PublicScopedOption[BaseNotebookPath]
+SetUsage @ "BaseNotebookPath is a markdown export option that gives the containing directory that is used to choose the relative URL to use for a given input notebook file.
 * If None, or if the file is outside this directory, the relative URL is at top-level.
 * If Automatic, the path is taken to be the container of the input file, or the input directory itself."
 
@@ -220,7 +220,7 @@ $genericExportMarkdownOptions = JoinOptions[
   MarkdownFlavor -> "Base",
   IncludeFrontMatter -> True,
   $genericMarkdownOptions,
-  NotebookPath -> Automatic,
+  BaseNotebookPath -> Automatic,
   NotebookCaching -> False,
   BaseExportPath -> Automatic,
   KatexPreludePath -> None,

@@ -6,6 +6,10 @@
 \[DirectedEdge]              _          \mathbin{↣}         _
 \[UndirectedEdge]            _          \mathbin{↢}         _
 
+# Custom
+\[LeftAssociation]           <|         _                   <|
+\[RightAssociation]          |>         _                   |>
+
 # Comparison
 \[LessEqual]                 <=         \le                 ≤
 \[GreaterEqual]              >=         \ge                 ≥

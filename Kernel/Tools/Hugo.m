@@ -8,6 +8,7 @@ Options[HugoNewSite] = JoinOptions[
   $genericToolOpts
 ];
 
+HugoNewSite::notPath = "First arg `` should be a path on disk.";
 HugoNewSite::exists = "A Hugo site already exists at ``.";
 HugoNewSite::noparent = "Cannot create a Hugo site at `` because parent directory does not exist.";
 HugoNewSite::invalidtheme = "HugoTheme -> `` should be a string of the form \"username/repo\".";
@@ -17,8 +18,9 @@ HugoNewSite[dir_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[siteName, hugoTheme, $verbose, $dryRun];
   SetAutomatic[$verbose, $dryRun];
 
+  If[StringFreeQ[dir, $PathnameSeparator], ReturnFailed["notPath", dir]];
   dir //= NormalizePath;
-  configFile = PathJoin[dir, "config.toml"];
+  configFile = PathJoin[dir, "hugo.toml"];
   If[FileExistsQ[dir],
     If[!DirectoryQ[dir], ReturnFailed[]];
     If[DirectoryQ[dir] && FileExistsQ[configFile], ReturnFailed["exists", MsgPath @ dir]];
@@ -46,7 +48,7 @@ HugoNewSite[dir_Str, opts:OptionsPattern[]] := Scope[
   dir
 ];
 
-$hugoConfigTemplate = StringFunction @ """
+$hugoConfigTemplate = StringFunction @ StringTrim @ """
 baseURL = 'http://example.org/'
 languageCode = 'en-us'
 title = '#SiteName'
@@ -55,6 +57,10 @@ theme = "#HugoTheme"
 
 [markup.goldmark.renderer]
   unsafe = true
+
+# this allows {.table-no-header} to work after a table
+[markup.goldmark.parser.attribute]
+  block = true
 
 [params]
   BookSearch = false

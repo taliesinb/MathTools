@@ -1,6 +1,6 @@
 $serverFunctions = <||>;
 
-$hugoNewSite = Fn @ If[!FileExistsQ[PathJoin[#BaseExportPath, "config.toml"]], HugoNewSite[#BaseExportPath, FilterOptions @ #]];
+$hugoNewSite = Fn @ If[!FileExistsQ[PathJoin[#BaseExportPath, "hugo.toml"]], HugoNewSite[#BaseExportPath, FilterOptions @ #]];
 $hugoBuildSite = Fn @ HugoBuild[#BaseExportPath, FilterOptions @ #];
 $hugoServeSite = Fn @ HugoServe[#BaseExportPath, FilterOptions @ #];
 
@@ -122,8 +122,8 @@ findContainingSite[source_] := Scope[
   Scan[siteFile |-> (
       siteData = Get[siteFile];
       If[!AssocQ[siteData], ReturnFailed["corruptsite", siteFile]];
-      UnpackAssociation[siteData, siteName, notebookPath, baseExportPath];
-      If[StringQ[notebookPath] && StringStartsQ[path, notebookPath] && (len = StringLength[notebookPath]) > matchLen,
+      UnpackAssociation[siteData, siteName, baseNotebookPath, baseExportPath];
+      If[StringQ[baseNotebookPath] && StringStartsQ[path, baseNotebookPath] && (len = StringLength[baseNotebookPath]) > matchLen,
         matchLen = len; matchSite = siteName];
     ),
     FileNames @ toSiteFile["*"]
@@ -200,25 +200,25 @@ CreateSite::badsitegen = "Setting SiteGenerator -> `` should be one of \"Hugo\",
 CreateSite::siteexists = "Site called \"``\" already registered, used OverwriteTarget -> True to replace it.";
 
 CreateSite[siteName_Str, nbPath_Str, opts:OptionsPattern[]] :=
-  CreateSite[siteName, NotebookPath -> nbPath, opts];
+  CreateSite[siteName, BaseNotebookPath -> nbPath, opts];
 
 CreateSite[siteName_Str, nbPath_Str, ePath_Str, opts:OptionsPattern[]] :=
-  CreateSite[siteName, NotebookPath -> nbPath, BaseExportPath -> ePath, opts];
+  CreateSite[siteName, BaseNotebookPath -> nbPath, BaseExportPath -> ePath, opts];
 
 CreateSite[siteName_Str, opts:OptionsPattern[]] := CatchMessage @ Scope[
   If[!StringQ[siteName], ReturnFailed["arg1"]];
-  UnpackOptions[notebookPath, markdownFlavor, baseExportPath, baseURL, siteGenerator, overwriteTarget, $dryRun, $verbose];
+  UnpackOptions[baseNotebookPath, markdownFlavor, baseExportPath, baseURL, siteGenerator, overwriteTarget, $dryRun, $verbose];
 
   SetAutomatic[baseExportPath, If[!DirectoryQ[$SitesDirectory], Automatic, PathJoin[$SitesDirectory, siteName]]];
 
-  If[!StringQ[notebookPath], ReturnFailed["pathns", NotebookPath]];
+  If[!StringQ[baseNotebookPath], ReturnFailed["pathns", BaseNotebookPath]];
   If[!StringQ[baseExportPath], ReturnFailed["pathns", BaseExportPath]];
 
   If[FileExistsQ @ toSiteFile[siteName] && !overwriteTarget,
     ReturnFailed["siteexists", siteName]];
 
-  notebookPath //= NormalizePath; baseExportPath //= NormalizePath;
-  If[!EnsureDirectoryShallow[notebookPath], ReturnFailed["pathne", NotebookPath, MsgPath @ notebookPath]];
+  baseNotebookPath //= NormalizePath; baseExportPath //= NormalizePath;
+  If[!EnsureDirectoryShallow[baseNotebookPath], ReturnFailed["pathne", BaseNotebookPath, MsgPath @ baseNotebookPath]];
   If[!EnsureDirectoryShallow[baseExportPath], ReturnFailed["pathne", BaseExportPath, MsgPath @ baseExportPath]];
   siteFile = toSiteFile @ siteName;
 
@@ -229,7 +229,7 @@ CreateSite[siteName_Str, opts:OptionsPattern[]] := CatchMessage @ Scope[
     Options[CreateSite],
     ServingPort -> toUniquePort[siteName],
     defaults, opts,
-    NotebookPath -> notebookPath,
+    BaseNotebookPath -> baseNotebookPath,
     BaseExportPath -> baseExportPath,
     SiteName -> siteName
   ];
@@ -288,7 +288,7 @@ buildSite[siteSpec_, extraOpts___] := Scope[
   ];
 
   siteData = getSiteData[siteName];
-  source = siteData["NotebookPath"];
+  source = siteData["BaseNotebookPath"];
   result = ExportToMarkdown[source, extraOpts, FilterOptions @ siteData];
   If[!StringVectorQ[result], ThrowMessage["exportfailed", siteName]];
 
@@ -312,6 +312,7 @@ BuildSitePage[] will build the site page corresponding to the current notebook.
 BuildSitePage[opts:OptionsPattern[]] := BuildSitePage[EvaluationNotebook[], opts];
 
 General::badsitepage = "Source `` is not a notebook in a site.";
+General::baseExportPathMissing = "Base export path `` does not exist.";
 
 BuildSitePage[sourceSpec:Except[_Rule], extraOpts:OptionsPattern[]] := CatchMessage @ Scope[
 
@@ -319,6 +320,9 @@ BuildSitePage[sourceSpec:Except[_Rule], extraOpts:OptionsPattern[]] := CatchMess
   {siteName, temp} = findContainingSite @ sourceSpec;
 
   siteData = getSiteData[siteName];
+  UnpackAssociation[siteData, baseExportPath];
+  If[!DirectoryQ[baseExportPath], ReturnFailed["baseExportPathMissing", MsgPath @ baseExportPath]];
+
   outputFiles = ExportToMarkdown[sourceSpec, FilterOptions @ extraOpts, NotebookCaching -> False, FilterOptions @ siteData];
   If[!StringVectorQ[outputFiles], ThrowMessage["exportfailed", siteName]];
 
@@ -380,7 +384,9 @@ ServeSitePage[nb:Except[_Rule], extraOpts:OptionsPattern[]] := Scope @ CatchMess
   If[!AsssociationQ[pageData], ReturnFailed["badsitepage", nb]];
 
   UnpackAssociation[pageData, siteData, pageURL, source, target];
-  UnpackAssociation[siteData, siteName, siteGenerator];
+  UnpackAssociation[siteData, baseExportPath, siteName, siteGenerator];
+
+  If[!DirectoryQ[baseExportPath], ReturnFailed["baseExportPathMissing", MsgPath @ baseExportPath]];
 
   outputFiles = ExportToMarkdown[nb, FilterOptions @ extraOpts, NotebookCaching -> False, FilterOptions @ siteData];
   If[!StringVectorQ[outputFiles], ThrowMessage["exportfailed", siteName]];
@@ -500,7 +506,7 @@ SitePageData[] := SitePageData @ EvaluationNotebook[];
 SitePageData[nb_] := Scope @ CatchMessage[
 
   {siteName, path} = findContainingSite @ nb;
-  unpackSiteData[siteName, $exportPathFunction, $notebookPath, $markdownPath, $baseExportPath, baseURL, SiteGenerator];
+  unpackSiteData[siteName, $exportPathFunction, $baseNotebookPath, $markdownPath, $baseExportPath, baseURL, SiteGenerator];
   (* TODO: support additional 'subpath' that goes within markdownpath, used to put things under content/XXX *)
   $markdownPath //= ToAbsolutePath[$baseExportPath];
 

@@ -2,6 +2,27 @@ PublicGraphicsPrimitive[PlaneInset]
 
 PublicOption[FlipX, FlipY, FlipZ, InsetScale]
 
+SetUsage @ "
+PlaneInset[label$, origin$, orientation$] insets a label at origin$ with given orientation and alignment.
+PlaneInset[$$, offset$] applies a fractional offset, like %Inset.
+
+* orientation$ can be one of the following:
+| 'Screen' | orient so that we are in the same plane as the screen |
+| 'XY', 'XZ', 'YZ' | specific axes |
+
+The following options are supported:
+| ViewVector | the view vector to assume to implement 'Screen' orientation |
+| FlipX | whether to flip the label in the X axis |
+| FlipY | whether to flip the label in the Y axis |
+| InsetScale | how to scale the label to achieve a given inset size |
+| BaseStyle | the style to apply before rasterizing the label |
+| TextAlignment | how to align multi-line text |
+| LineSpacing | how to space multi-line text |
+| FontSize | default font size to use |
+| FontFamily | default font family to use |
+| FontColor | defauilt font color to use |
+"
+
 Options[PlaneInset] = {
   ViewVector -> -{-2, -1.5, 2.5},
   FlipX -> Automatic,
@@ -15,13 +36,14 @@ Options[PlaneInset] = {
   FontFamily -> Inherited
 };
 
-DeclareGraphicsPrimitive[PlaneInset, "Opaque,Opaque,Pair", planeInsetBoxes, {3}];
+DeclareGraphicsPrimitive[PlaneInset, "Opaque,Vector,Pair", planeInsetBoxes, {3}];
 
-planeInsetBoxes[PlaneInset[object_, origin_, vectors:({_List, _List}|_Str), offset:_List:{0, 0}, rule___Rule]] :=
+planeInsetBoxes[PlaneInset[object_, origin:$Coord3P, vectors:({$Coord3P, $Coord3P}|_Str), offset:$Coord2P:{0, 0}, rule___Rule]] :=
   rawPlaneInsetBoxes[object, origin, vectors, offset, rule]
 
 (**************************************************************************************************)
 
+PlaneInset::badOrient = "Named orientation `` is not recognized."
 rawPlaneInsetBoxes[object_, origin_, orient_Str, f_, opts:OptionsPattern[PlaneInset]] := Scope[
   UnpackOptions[viewVector];
   viewVector //= Normalize;
@@ -29,12 +51,10 @@ rawPlaneInsetBoxes[object_, origin_, orient_Str, f_, opts:OptionsPattern[PlaneIn
     "Screen",
       vx = Chop @ Cross[viewVector, Normalize @ ReplacePart[viewVector, 3 -> 0]];
       vy = Chop @ Cross[vx, viewVector],
-    "XZ",
-      vx = {1, 0, 0}; vy = {0, 0, 1},
-    "XY",
-      vx = {1, 0, 0}; vy = {0, 1, 0},
-    "YZ",
-      vx = {0, 1, 0}; vy = {0, 0, 1}
+    "XZ", vx = {1, 0, 0}; vy = {0, 0, 1},
+    "XY", vx = {1, 0, 0}; vy = {0, 1, 0},
+    "YZ", vx = {0, 1, 0}; vy = {0, 0, 1},
+    _,    Message[PlaneInset::badOrient, orient]; Return @ {};
   ];
   rawPlaneInsetBoxes[object, origin, {vx, vy}, f, opts]
 ];
@@ -82,7 +102,7 @@ cachedTextureBoxAndSize[object_] :=
 
 textureBoxesAndSize[object_] := Scope[
   img = MakeImage[Style[object, LineSpacing -> 0.1], Transparent];
-  dims = ImageDimensions @ img;
+  dims = ImageDimensions[img];
   texture = Construct[Typeset`MakeBoxes, Texture @ img, StandardForm, Graphics3D];
   {texture, dims}
 ]

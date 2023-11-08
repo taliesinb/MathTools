@@ -41,13 +41,20 @@ MapPrimitiveCoordinates[{x_, y_} ? CoordinateVectorQ, expr_] :=
 
 $rulesF[e_] := VectorReplace[e, Rule[c:$CoordP, o_] :> Rule[$vectorF[c], o]];
 $vecDelta[a_, d_] := With[{a1 = $vectorF[a]}, {a1, $vectorF[a + d] - a1}];
-$radiusF = Case[
-  r:$NumberP                := radDist[{r, 0}] * Sign[r]; (* the sign is for ElbowCurve, which can take a negative value *)
-  {x:$NumberP, y:$NumberP}  := {radDist[{x, 0}] * Sign[x], radDist[{0, y}] * Sign[y]}; (* for {rx, ry} e.g. CenteredRectangle -- but doesn't do the right thing for horizontal stretching on HorizontalCurve *)
+
+$radius2F = Case[
+  r:$NumberP                := radDist2[{r, 0}] * Sign[r]; (* the sign is for ElbowCurve, which can take a negative value *)
+  {x:$NumberP, y:$NumberP}  := {radDist2[{x, 0}] * Sign[x], radDist2[{0, y}] * Sign[y]}; (* for {rx, ry} e.g. CenteredRectangle -- but doesn't do the right thing for horizontal stretching on HorizontalCurve *)
   e_                        := e;
 ];
+radDist2[v_] := Dist[$vectorF @ v, $vectorF @ {0, 0}];
 
-radDist[v_] := Dist[$vectorF @ v, $vectorF @ {0, 0}];
+$radius3F = Case[
+  r:$NumberP                           := radDist3[{r, 0, 0}] * Sign[r];
+  {x:$NumberP, y:$NumberP, z:$NumberP} := {radDist3[{x, 0, 0}] * Sign[x], radDist3[{0, y, 0}] * Sign[y], radDist3[{0, 0, z}] * Sign[z]};
+  e_                                   := e;
+];
+radDist3[v_] := Dist[$vectorF @ v, $vectorF @ {0, 0, 0}];
 
 
 (* we set up this dispatch so that we know (and test) whether to call
@@ -76,9 +83,9 @@ $mpcDispatch0 := $mpcDispatch0 = Dispatch @ With[{
   e:($op)[___]                            :> e,
   (h:$vecvec)[v:vecP, w:vecP, a___]       :> RuleCondition @ h[$vectorF @ v, $vectorF @ w, a],
   (h:$vecdelta)[v:vecP, d:vecP, a___]     :> RuleCondition @ h[Seq @@ $vecDelta[v, d], a],
-  (h:$vecrad)[v:vecP, r_, a___]           :> RuleCondition @ h[$vectorF @ v, $radiusF @ r, a],
+  (h:$vecrad)[v:vecP, r_, a___]           :> RuleCondition @ h[$vectorF @ v, If[Len[v] == 2, $radius2F, $radius3F] @ r, a],
   (h:$vec)[v:vecP, a___]                  :> RuleCondition @ h[$vectorF @ v, a],
-  (h:$matrixrad)[m:matP, r_, a___]        :> RuleCondition @ h[$matrixF @ m, $radiusF @ r, a],
+  (h:$matrixrad)[m:matP, r_, a___]        :> RuleCondition @ h[$matrixF @ m, If[Len[P1 @ m] == 2, $radius2F, $radius3F] @ r, a],
   (h:$matrix)[m:matP, a___]               :> RuleCondition @ h[$matrixF @ m, a],
   (h:$matrices)[v:matListP, a___]         :> RuleCondition @ h[$matrixF /@ v, a],
   (h:$rules)[r_List, p_, a___]            :> RuleCondition @ h[$rulesF @ r, p /. $mpcDispatch, a],

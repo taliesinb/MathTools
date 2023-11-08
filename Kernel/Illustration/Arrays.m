@@ -263,7 +263,7 @@ Options[InsetCubeGrid] = JoinOptions[
 InsetCubeGrid[arr_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[textOrientation, displacement, viewVector];
   insetOpts = Sequence[FlipX -> False, FlipY -> False, FilterOptions[PlaneInset, opts]];
-  displacement //= Replace["Screen" -> -viewVector/4];
+  displacement //= Replace["Screen" -> viewVector/4];
   CubeArray[
     Dimensions @ arr,
     ItemFunction -> Fn[{

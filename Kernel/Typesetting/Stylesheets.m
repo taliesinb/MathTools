@@ -184,6 +184,14 @@ ApplyQuiverGeometryStylesheet[] := (
   SetOptions[EvaluationNotebook[], StyleDefinitions -> $StylesheetPath];
 );
 
+ApplyQuiverGeometryStylesheet["Dark"] := (
+  SetOptions[EvaluationNotebook[], StyleDefinitions -> $DarkStylesheetPath]
+)
+
+ApplyQuiverGeometryStylesheet["Light"] := (
+  SetOptions[EvaluationNotebook[], StyleDefinitions -> $LightStylesheetPath]
+)
+
 (**************************************************************************************************)
 
 PublicFunction[CreateQuiverGeometryNotebook]

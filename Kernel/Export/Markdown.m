@@ -6,7 +6,7 @@ ExportToMarkdown[inputfile$, opts$$] converts input notebook to markdown and wri
 ExportToMarkdown[notebook$, opts$$] converts a notebook object.
 * A list of markdown files written is returned.
 * The following options are supported:
-| %NotebookPath | Automatic | the directory that determines relative paths for input files, defaults to location of input |
+| %BaseNotebookPath | Automatic | the directory that determines relative paths for input files, defaults to location of input |
 | %BaseExportPath | Automatic | the directory that determines how relative output paths are interpreted, defaults to a fresh temporary directory |
 | %MarkdownPath | 'markdown' | the directory to write markdown material to |
 | %ExportPathFunction | None | function that determines the path to write markdown files to |
@@ -40,7 +40,7 @@ $frontMatterFunction = None;
 ExportToMarkdown[inputSpec_, opts:OptionsPattern[]] := Scope @ CatchMessage[
   
   UnpackOptions[
-    $notebookPath, $baseExportPath, $markdownPath, $katexPreludePath,
+    $baseNotebookPath, $baseExportPath, $markdownPath, $katexPreludePath,
     $exportPathFunction, $notebookCaching,
     maxItems, $verbose, $dryRun
   ];
@@ -59,8 +59,8 @@ ExportToMarkdown[inputSpec_, opts:OptionsPattern[]] := Scope @ CatchMessage[
     _                                                                  :> ReturnFailed["badinspec"]
   ];
 
-  SetAutomatic[$notebookPath, inputPath];
-  $notebookPath //= NormalizePath;
+  SetAutomatic[$baseNotebookPath, inputPath];
+  $baseNotebookPath //= NormalizePath;
 
   (* MarkdownFlavor, RastizationPath, RastizerationURL, RasterizationCaching, etc. *)
   setupMarkdownGlobals[];
@@ -159,11 +159,11 @@ itemMarkdownPath[item_] := Scope[
   If[FailureQ[nbPath], ThrowFailure["badnbpath"]];
   mdFileName = StringJoin[titleToURL @ FileBaseName @ nbPath, ".md"];
 
-  (* if there is a NotebookPath set, we will extract the difference between item's path and it,
+  (* if there is a BaseNotebookPath set, we will extract the difference between item's path and it,
   and use this fragment as a prefix for the output path *)
-  If[StringQ[$notebookPath] && $notebookPath =!= "",
-    relPath = RelativePath[$notebookPath, FileNameDrop @ nbPath];
-    relPath //= ReplaceNone[""]; (* paths outside $notebookPath will be put at top level *)
+  If[StringQ[$baseNotebookPath] && $baseNotebookPath =!= "",
+    relPath = RelativePath[$baseNotebookPath, FileNameDrop @ nbPath];
+    relPath //= ReplaceNone[""]; (* paths outside $baseNotebookPath will be put at top level *)
     mdFileName = PathJoin[ToLowerCase @ relPath, mdFileName];
   ];
 

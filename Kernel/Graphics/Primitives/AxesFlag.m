@@ -31,8 +31,8 @@ vectorArrowBoxes[VectorArrow[p:$Coord2P, d:$Coord2P]] := Scope[
 ];
 
 vectorArrowBoxes[VectorArrow[p:$Coord3P, d:$Coord3P]] := With[{m = p + 7/8*d},
-  List[
+  StyleBox[List[
     Construct[TubeBox, {p, m}, Norm[d]/64],
     Construct[ConeBox, {m, p + d}, Norm[d]/14]
-  ]
+  ], EdgeForm @ None]
 ];

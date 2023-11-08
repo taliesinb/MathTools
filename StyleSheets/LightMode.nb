@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[      1740,         53]
-NotebookOptionsPosition[      1001,         34]
-NotebookOutlinePosition[      1393,         50]
-CellTagsIndexPosition[      1350,         47]
+NotebookDataLength[      2004,         58]
+NotebookOptionsPosition[      1131,         38]
+NotebookOutlinePosition[      1523,         54]
+CellTagsIndexPosition[      1480,         51]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -27,6 +27,10 @@ Cell["Light mode", "Section",ExpressionUUID->"b2b2b72e-94af-4327-81c2-bf6cfc33e5
 Cell[StyleData["Notebook"],
  DefaultNewCellStyle->
   "Code",ExpressionUUID->"850bb9c9-23d5-4c06-b85e-f12d9eb7433a"],
+
+Cell[StyleData["PreformattedCodeBase"],
+ Background->GrayLevel[
+  0.98],ExpressionUUID->"96279ddc-ee18-46de-b384-559f91b54190"],
 
 Cell[StyleData["Code"],
  FontSize->15,ExpressionUUID->"dafffd42-e15d-4d54-8fe1-a19cbdddffb7"]
@@ -53,7 +57,8 @@ Cell[558, 20, 104, 0, 24, 49, 0, "StyleData", "StyleDefinitions", "",ExpressionU
 Cell[CellGroupData[{
 Cell[687, 24, 84, 0, 67, "Section",ExpressionUUID->"b2b2b72e-94af-4327-81c2-bf6cfc33e514"],
 Cell[774, 26, 115, 2, 34, 27, 0, "StyleData", "Notebook", "All",ExpressionUUID->"850bb9c9-23d5-4c06-b85e-f12d9eb7433a"],
-Cell[892, 30, 93, 1, 65, 23, 0, "StyleData", "Code", "All",ExpressionUUID->"dafffd42-e15d-4d54-8fe1-a19cbdddffb7"]
+Cell[892, 30, 127, 2, 50, 39, 0, "StyleData", "PreformattedCodeBase", "All",ExpressionUUID->"96279ddc-ee18-46de-b384-559f91b54190"],
+Cell[1022, 34, 93, 1, 65, 23, 0, "StyleData", "Code", "All",ExpressionUUID->"dafffd42-e15d-4d54-8fe1-a19cbdddffb7"]
 }, Open  ]]
 }
 ]

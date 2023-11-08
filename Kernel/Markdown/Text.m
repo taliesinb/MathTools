@@ -5,25 +5,12 @@ boxesToInputText[BoxData @ boxes_] := boxesToInputText @ boxes;
 boxesToInputText[boxes_Str] := boxes;
 
 boxesToInputText[boxes_] := Scope[
-
-  boxes = ReplaceAll[boxes, s_Str :> StringReplace[s, $nl -> $sentinel]];
-
-  result = CallFrontEnd @ FrontEnd`ExportPacket[
-    Cell[BoxData @ boxes, "Output"],
-    "InputText",
-    "AllowExportAutoReplacements" -> False
-  ];
-  If[!MatchQ[result, {_Str, _, _}], ReturnFailed[]];
-  StringReplace[$sentinel -> $nl] @ StringReplace[{"\\" <> $nl -> "", $nl ~~ " "... -> "", "\t" -> "    "}] @ P1 @ result
+  expr = ToExpression[boxes, StandardForm, InternalHoldForm];
+  str = ToPrettifiedString[expr, ElideAtomicHeads -> True, CompactRealNumbers -> 4];
+  str //= StringReplace[$WLSymbolToUnicode];
+  str
 ];
 
-$sentinel = "^^^^!";
-$nl = "\n";
-
-$nlPre = {$nl -> $nl2, $inl -> $inl2};
-$nlPost = {$nl2 -> $nl, $inl2 -> $inl, "\\" <> $nl -> ""};
-
-(* adapted from https://mathematica.stackexchange.com/questions/213907/control-page-width-when-using-exportpacket-inputtext *)
 
 (**************************************************************************************************)
 

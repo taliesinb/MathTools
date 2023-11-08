@@ -8,9 +8,9 @@ outputCellToMarkdown = Case[
 
   BoxData[t:TagBox[_, Manipulate`InterpretManipulate[1]]]     := manipulateBoxesToMarkdown @ t;
 
-  BoxData[b_Str | b_RowBox ? pureTextBoxesQ]               := plaintextCodeToMarkdown @ b;
+  BoxData[b_Str | b_RowBox ? pureTextBoxesQ]                  := plaintextCodeToMarkdown @ b;
 
-  BoxData[TemplateBox[{_, s_Str}, "StringBlockForm"]]      := toCodeMarkdown[s, True];
+  BoxData[TemplateBox[{_, s_Str}, "StringBlockForm"]]         := toCodeMarkdown[s, True];
 
   boxes_                                                      := cellToRasterMarkdown @ Cell[boxes, "Output"];
 
