@@ -1,5 +1,6 @@
 PrivateFunction[outputCellToMarkdown]
 
+(* NOTE: keep in sync with getAppropriateTestHead in Utilities/Testing.m *)
 outputCellToMarkdown = Case[
 
   b:BoxData[TemplateBox[_, _ ? textTagQ] | TagBox[_, "QG"]]   := textCellToMarkdown @ b;

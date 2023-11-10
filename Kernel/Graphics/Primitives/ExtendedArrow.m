@@ -8,7 +8,7 @@ ExtendedArrow[path$] is a more featureful alternative to %Arrow.
 | %ArrowThickness | thickness of the arrow shaft and head |
 | %ArrowColor | color of arrow shaft and head |
 | %ArrowOpacity | opacity of arrow shaft and head |
-| %rrowDashing | dashing of the arrow shaft |
+| %ArrowDashing | dashing of the arrow shaft |
 | %Setback | setback distance of path endpoints |
 | %ArrowPathOffset | offset the path of the arrow shaft |
 * %ArrowPathOffset can be used to duplicate the path to make double, etc. lines, see its usage.
@@ -34,7 +34,7 @@ extendedArrowBoxes[ExtendedArrow[points_, opts___Rule]] := Scope[
     {opts} -> $MakeBoxesStyleData,
     arrowheadPosition, arrowheadLength,
     arrowColor, arrowOpacity, arrowThickness, arrowDashing,
-    arrowPathSetback, arrowPathOffset, setback
+    arrowPathSetback, arrowPathOffset, setback, arrowheadColor
   ];
   UnpackAssociationSymbols[{opts} -> {}, arrowheadAnchor];
 
@@ -74,13 +74,14 @@ extendedArrowBoxes[ExtendedArrow[points_, opts___Rule]] := Scope[
 
   (* generate the arrowhead boxes *)
   SetAutomatic[arrowheadLength, lineLength * 0.05];
+  SetAutomatic[arrowheadColor, Replace[arrowColor, SolidEdgeForm[c_] :> SolidEdgeForm[c, Automatic]]];
   arrowhead = arrowheadBoxes[Arrowhead[pos, dir,
     ArrowheadPlane -> PlaneRightTowards[center],
     ArrowheadLength -> arrowheadLength,
     ArrowheadAnchor -> arrowheadAnchor,
     ArrowheadThickness -> arrowThickness,
     FilterOptions @ opts,
-    ArrowheadColor -> Replace[arrowColor, SolidEdgeForm[c_] :> SolidEdgeForm[c, Automatic]]
+    ArrowheadColor -> arrowheadColor
   ]];
 
   (* final styled boxes *)

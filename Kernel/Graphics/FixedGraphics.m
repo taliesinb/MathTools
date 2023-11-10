@@ -87,7 +87,7 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
   If[decos =!= {}, epilog = If[epilog === {}, decos, {decos, epilog}]];
 
   wh = Dist @@@ bounds;
-  imageSize = Ceiling[wh * $graphicsScale + Total[imagePadding]];
+  imageSize = wh * $graphicsScale + Map[Total, imagePadding];
   Construct[GraphicsBox,
     boxes,
     PlotRange -> bounds,

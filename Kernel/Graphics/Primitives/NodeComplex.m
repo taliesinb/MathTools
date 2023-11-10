@@ -57,6 +57,8 @@ withNodePalette[nodePalette,
     Print @ Row[Sort @ Keys @ solutions, ", "];
  *)
   ];
+  (* this forces the solved coordinates to be evaluated *)
+  result = MapPrimitiveBoxCoordinates[N, result];
   result //= ReplaceAllOperator[
     $fromNC[a_, _]             :> a,
     ListPart                   -> Part,
@@ -176,7 +178,7 @@ procNodeCoordinate = Case[
 makeVar[Null, p_] := $relvar[p];
 makeVar[s_, p_] := $var[s, p];
 
-$sideToCoordsVars = <|
+$sideToCoordVars = <|
   Center      -> {$LR, $TB},
   Top         -> {$LR, $T},
   Bottom      -> {$LR, $B},

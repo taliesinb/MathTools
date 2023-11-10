@@ -50,7 +50,7 @@ RunTests[filePattern_Str:All, OptionsPattern[]] := Scope[
   testFiles = findTestFiles[filePattern];
   If[testFiles === {}, ReturnFailed["notests", $testsInPath, filePattern]];
 
-  EnsureDirectory[LocalPath["Tests", "Objects", #]]& /@ {"MX", "PNG", "WL"};
+  EnsureDirectory[LocalPath["Tests", "Objects", #]]& /@ {"MX", "PNG", "WL", "MD"};
 
   outDir = LocalPath["Tests", "Outputs"];
   EnsureDirectoryShallow[outDir];
@@ -272,7 +272,7 @@ TestOutputGallery['patt$'] finds and prints are objects like %TestRasterObject e
 * these are printed in a gallery, and clicking on any such object will jump to its definition in an input test file.
 "
 
-$testHeads = {TestRasterObject, TestBoxesObject, TestDataObject};
+$testHeads = {TestRasterObject, TestBoxesObject, TestDataObject, TestMarkdownObject};
 $testObjectP = Alternatives @@ Map[Blank, $testHeads];
 
 TestOutputGallery::lenMismatch = "Cannot match inputs from file(s) `` with expected outputs from (``)."
@@ -326,7 +326,7 @@ readExpressionList[path_] := withTestContext @ Block[
   pos = 0;
   While[(expr = Check[Quiet @ Read[stream, Hold[Expression]], $Failed]) =!= EndOfFile,
     (* this is a symptom that we should be executing as we go along ! *)
-    If[MatchQ[expr, Hold[_LoadShortcuts]], ReleaseHold @ expr; expr = Hold[Null]];
+    If[MatchQ[expr, Hold[_LoadShortcuts] | Hold[_LoadShortcuts;]], ReleaseHold @ expr; expr = Hold[Null]];
     If[expr === $Failed,
       VMessage[RunTests::syntaxError, streamPosToFileLine[path, StreamPosition @ stream]];
       Close[stream];
@@ -645,12 +645,18 @@ writeObject[data_, ext_] := Scope[
   path = objectPath @ name;
   If[!FileExistsQ[path] || FileByteCount[path] === 0,
     VPrint["Writing object to ", path];
-    whenWet @ If[ext === "mx", ExportMX, Export][path, data]
+    whenWet @ Switch[ext, "mx", ExportMX, "md", ExportUTF8, _, Export][path, data]
   ];
   name
 ];
 
-readObject[name_] := Quiet @ Check[If[StringEndsQ[name, ".mx"], ImportMX, Import] @ objectPath[name], $Failed];
+readObject[name_] := Quiet @ Check[
+  Switch[
+    ToLowerCase @ FileExtension @ name,
+    "mx", ImportMX,
+    "md", ImportUTF8,
+    _, Import
+  ] @ objectPath[name], $Failed];
 
 SetHoldFirst[testObjNameQ];
 testObjNameQ[name_Str] := FileExistsQ[objectPath @ name];
@@ -669,6 +675,10 @@ ImportTestObject[_Symbol[name_Str, ___]] := readObject @ name;
 PublicSpecialFunction[TestRaster]
 PublicObject[TestRasterObject]
 
+SetUsage @ "
+TestRaster[expr$] boxifies and rasterizes expr$ and returns TestRasterObject[imgPath$, boxPath$] that reference these externally.
+"
+
 TestRaster[expr_] := TestRasterObject[
   writeObject[MakeImage @ expr, "png"],
   writeObject[ToBoxes @ expr, "mx"]
@@ -680,6 +690,152 @@ declareBoxFormatting[
       testObjFrame[$Orange, ToBoxes @ thumbnailize @ readObject @ name],
       SetSelectedNotebook @ CreateDocument @ TextCell[ImportMX @ objectPath @ mxName, "Input"]
     ]
+];
+
+(**************************************************************************************************)
+
+PublicSpecialFunction[TestMarkdown]
+PublicObject[TestMarkdownObject]
+
+SetUsage @ "
+TestMarkdown[expr$] turns expr$ into a markdown string and returns TestMarkdownObject[str$] that references it externally as an '.md' file.
+* if expr$ is a string, it is treated as the contents of a text cell.
+* if expr$ is an expression, it is treated as the contents of an output cell.
+* if expr$ matches %Cell[$$], it is passed directly to %ToMarkdownString.
+* if any rasterization is involved, rasters will be placed alongside the '.md' file.
+
+* the %MarkdownFlavor is set as 'Hugo'.
+
+* for ease of visual interpretation, the displayed form of %TestMarkdown does the following transformations:
+| '<br>' | newlines inserted after |
+| '&nbsp' | replaced with ┄ |
+| <pre>, <code> blocks | newlines inserted within |
+"
+
+TestMarkdown[expr_] := TestMarkdownObject[
+  writeObject[exprToMarkdown @ expr, "md"]
+];
+
+declareBoxFormatting[
+  TestMarkdownObject[name_String] :> ClickBox[
+    testObjFrame[$Green, limitWidth @ localPreformattedCodeBoxes @ StringReplace[$mdReplacements] @ readObject @ name],
+    openMsgPath[objectPath @ name, None]
+  ]
+];
+
+limitWidth[e_] := PaneBox[e, ImageSizeAction -> "Clip", ImageSize -> {{5, 400}, All}];
+
+(* since we might run in .wl notebooks, we can't rely on stylesheets for this formatting *)
+localPreformattedCodeBoxes[e_] := StyleBox[e,
+ LineSpacing              -> {1, 0},
+ TabSpacings              -> 4,
+ AutoSpacing              -> False,
+ ScriptSizeMultipliers    -> 0.75,
+ LineBreakWithin          -> False,
+ ShowStringCharacters     -> False,
+ AutoMultiplicationSymbol -> False,
+ SingleLetterItalics      -> False,
+ ZeroWidthTimes           -> True,
+ FontFamily               -> "Fira Code",
+ PrivateFontOptions       -> {"OperatorSubstitution" -> False}
+];
+
+exprToMarkdown = Case[
+  str_String := toHugoString @ Cell[BoxData @ str, "Text"];
+  c_Cell     := toHugoString @ c;
+  expr_      := toHugoString @ Cell[BoxData @ ToBoxes @ expr, "Output"];
+];
+
+toHugoString[cell_Cell] := ToMarkdownString[cell,
+    MarkdownFlavor -> "Hugo",
+    RasterizationPath -> $mdRasterPath
+  ] // StringDelete[$mdURLRasterPath];
+
+$mdRasterPath = LocalPath["Tests", "Objects", "MD"];
+$mdURLRasterPath = "file://" <> $mdRasterPath <> "/";
+
+$mdReplacements = {
+  "<br>" -> "<br>\n",
+  "&nbsp;" -> "┄",
+  "<pre>" -> "<pre>\n",
+  "</pre>" -> "\n<pre>"
+}
+
+(**************************************************************************************************)
+
+PrivateFunction[ConvertCurrentNotebookToTestNotebook]
+
+ConvertCurrentNotebookToTestNotebook[] := Scope[
+  cells = NotebookImport[EvaluationNotebook[], "Code"|"PreformattedCode"|"Output"|"Text"|$sectionCellTypeP -> "Cell"];
+  If[!MatchQ[cells, {__Cell}], ReturnFailed[]];
+  cells = Take[cells, All, 2];
+  Do[
+    (* look for pair, detect what the appropriate test is for a given output, then modify the previous code cell *)
+    If[Part[cells, i, 2] === "Output" && Part[cells, i-1, 2] === "Code",
+      Part[cells, i-1] //= applyToFinalLine @ getAppropriateTestHead @ Part[cells, i, 1];
+      Part[cells, i] = Null;
+    ],
+    {i, 2, Length[cells]}
+  ];
+  cells //= Map[convertCellToTest];
+  cells //= Discard[ContainsQ["ConvertCurrentNotebookToTestNotebook" | RasterBox]];
+  cells //= ReplaceAll[("GQG" | "RQG") -> "Null"];
+  PrependTo[cells, Cell["LoadShortcuts[\"Categories\"];", "Code"]];
+  CreateDocument[cells, StyleDefinitions -> "Package.nb"]
+];
+
+(**************************************************************************************************)
+
+(* see Markdown/Output.m *)
+getAppropriateTestHead = Case[
+  BoxData[b_]                         := % @ b;
+  TemplateBox[_, _ ? QGTemplateNameQ] := "TestMarkdown";
+  TagBox[_, "QG"]                     := "TestMarkdown";
+  _                                   := "TestRaster";
+]
+
+(**************************************************************************************************)
+
+ConvertCurrentNotebookToTestFile::badcell = "Unrecognized cell structure ``."
+
+$sectionCellTypeP = "Title" | "Section" | "Subsection" | "Subsubsection" | "Subsubsubsection";
+
+convertCellToTest = Case[
+  code:Cell[_, "Code"]            := code;
+  sec:Cell[_, $sectionCellTypeP]  := sec; (* this is a placeholder useful for interpreting the test file *)
+  text:Cell[_, "Text"]            := If[ContainsQ[text, GridBox], Cell[convertCellToMarkdownTest @ text, "Code"], Nothing];
+  pre:Cell[_, "PreformattedCode"] := Cell[convertCellToMarkdownTest @ pre, "Code"];
+  Cell[_, "Output"]               := Nothing;
+  Null                            := Nothing;
+  c_Cell                          := (Message[ConvertCurrentNotebookToTestFile::badcell, MsgExpr @ c]; Nothing)
+];
+
+(**************************************************************************************************)
+
+applyToFinalLine[head_][cell_] := Scope[
+  $head = head;
+  iApplyToFinalLine @ cell
+];
+
+iApplyToFinalLine = Case[
+  Cell[boxes_, rest___] := Cell[% @ boxes, rest];
+  BoxData[data_]        := BoxData[% @ data];
+  RowBox[{___, ";"}]    := row;
+  {most__, "\n", last_} := {most, "\n", % @ last};
+  box_                  := RBox[$head, " ", "@", " ", box];
+];
+
+(**************************************************************************************************)
+
+convertCellToMarkdownTest[cell_] := Scope[
+  cell = Construct[InternalHoldForm, cell] /. {
+    StyleBox[b_, FontColor :> CurrentValue[{StyleDefinitions, cname_String, FontColor}]] :>
+      RuleCondition @ $ColorNBox[b, FromDigits @ StringTake[cname, -1]],
+    StyleBox[b_, Background :> CurrentValue[{StyleDefinitions, cname_String, Background}]] :>
+      RuleCondition @ $BackgroundNBox[b, FromDigits @ StringTake[cname, -1]]
+  } /. {$ColorNBox -> ColorNBox, $BackgroundNBox -> BackgroundNBox};
+  cell = cell //. RowBox[{a___}] :> RBox[a];
+  "TestMarkdown @ " <> ToPrettifiedString[cell, CompactingWidth -> 200, FullSymbolContext -> False]
 ];
 
 (**************************************************************************************************)

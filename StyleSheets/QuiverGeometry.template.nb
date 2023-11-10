@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[      8857,        226]
-NotebookOptionsPosition[      5616,        185]
-NotebookOutlinePosition[      6008,        201]
-CellTagsIndexPosition[      5965,        198]
+NotebookDataLength[      7869,        214]
+NotebookOptionsPosition[      5174,        177]
+NotebookOutlinePosition[      5566,        193]
+CellTagsIndexPosition[      5523,        190]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -71,6 +71,7 @@ Cell[StyleData["MathFont"],
  ShowStringCharacters->False,
  AutoMultiplicationSymbol->False,
  SingleLetterItalics->True,
+ ZeroWidthTimes->True,
  FontFamily->
   "KaTeX_Main",ExpressionUUID->"73a3b0b5-de22-4e3c-b934-e1a1116e1cdf"],
 
@@ -79,6 +80,7 @@ Cell[StyleData["AMSFont"],
  ShowStringCharacters->False,
  AutoMultiplicationSymbol->False,
  SingleLetterItalics->True,
+ ZeroWidthTimes->True,
  FontFamily->
   "KaTeX_AMS",ExpressionUUID->"0e21c67b-f548-4b4d-9607-8b87ba54cb75"],
 
@@ -87,6 +89,7 @@ Cell[StyleData["LiteralStringFont"],
  ShowStringCharacters->False,
  AutoMultiplicationSymbol->False,
  SingleLetterItalics->False,
+ ZeroWidthTimes->True,
  FontFamily->
   "KaTeX_Typewriter",ExpressionUUID->"980e6e4e-c4fc-46d8-bf4c-ca9cf5a1f08c"],
 
@@ -95,6 +98,7 @@ Cell[StyleData["MathTextFont"],
  ShowStringCharacters->False,
  AutoMultiplicationSymbol->False,
  SingleLetterItalics->False,
+ ZeroWidthTimes->True,
  FontFamily->
   "KaTeX_Main",ExpressionUUID->"f81c41e9-e8cf-4a8b-bf3b-cf9396f387d7"],
 
@@ -103,6 +107,7 @@ Cell[StyleData["RomanMathFont"],
  ShowStringCharacters->False,
  AutoMultiplicationSymbol->False,
  SingleLetterItalics->False,
+ ZeroWidthTimes->True,
  FontFamily->
   "KaTeX_Main",ExpressionUUID->"9b1466f1-a0a4-4308-ab27-c308e8e8ea00"],
 
@@ -111,6 +116,7 @@ Cell[StyleData["ScriptMathFont"],
  ShowStringCharacters->False,
  AutoMultiplicationSymbol->False,
  SingleLetterItalics->True,
+ ZeroWidthTimes->True,
  FontFamily->
   "KaTeX_Script",ExpressionUUID->"26623a48-9cd7-4e59-baea-4f2e32479d0f"],
 
@@ -119,6 +125,7 @@ Cell[StyleData["CaligraphicMathFont"],
  ShowStringCharacters->False,
  AutoMultiplicationSymbol->False,
  SingleLetterItalics->True,
+ ZeroWidthTimes->True,
  FontFamily->
   "KaTeX_Caligraphic",ExpressionUUID->"5c25097e-bf97-4f0a-8571-fdb37024378a"],
 
@@ -127,6 +134,7 @@ Cell[StyleData["SansSerifMathFont"],
  ShowStringCharacters->False,
  AutoMultiplicationSymbol->False,
  SingleLetterItalics->True,
+ ZeroWidthTimes->True,
  FontFamily->
   "KaTeX_SansSerif",ExpressionUUID->"e449bd62-01c1-43e9-a1e3-ec68495770c2"],
 
@@ -135,6 +143,7 @@ Cell[StyleData["TypewriterMathFont"],
  ShowStringCharacters->False,
  AutoMultiplicationSymbol->False,
  SingleLetterItalics->True,
+ ZeroWidthTimes->True,
  FontFamily->
   "KaTeX_Typewriter",ExpressionUUID->"a38923bf-0cd5-41a7-be60-749e6cf8abc0"],
 
@@ -152,6 +161,7 @@ Cell[StyleData["CardinalFont"],
  ShowStringCharacters->False,
  AutoMultiplicationSymbol->False,
  SingleLetterItalics->False,
+ ZeroWidthTimes->True,
  FontFamily->
   "KaTeX_Typewriter",ExpressionUUID->"f061dfbd-2361-4c43-8a10-92731b3fd43c"],
 
@@ -160,27 +170,9 @@ Cell[StyleData["MultiSymbolFont"],
  ShowStringCharacters->False,
  AutoMultiplicationSymbol->False,
  SingleLetterItalics->False,
+ ZeroWidthTimes->True,
  FontFamily->"KaTeX_Main",
- FontWeight->"Bold",ExpressionUUID->"a14f87c3-23d2-4229-847e-65b1359670c8"],
-
-Cell[StyleData["QuiverGeometryBase", StyleDefinitions -> 
- StyleData["MathFont"]],
- ZeroWidthTimes->True,ExpressionUUID->"22b8d04a-668a-4703-9491-8f9fc9fa84fc"],
-
-Cell[StyleData["QuiverGeometrySymbol", StyleDefinitions -> 
- StyleData["MathFont"]],ExpressionUUID->"8fa82ead-03d9-48ea-8396-\
-a90f8b31f808"],
-
-Cell[StyleData["QuiverGeometryScriptSymbol", StyleDefinitions -> 
- StyleData["ScriptMathFont"]],
- FontSlant->Plain,ExpressionUUID->"30712e5c-0696-4c9b-821f-47df3547a307"],
-
-Cell[StyleData["QuiverGeometryVariable", StyleDefinitions -> 
- StyleData["MathFont"]],
- FontSlant->Italic,
- TemplateBoxOptions->{
- DisplayFunction->(#& \
-)},ExpressionUUID->"25871f28-7aa1-48c1-92fd-c03ff0af0ce0"]
+ FontWeight->"Bold",ExpressionUUID->"a14f87c3-23d2-4229-847e-65b1359670c8"]
 }, Open  ]]
 },
 WindowSize->{1491, 997},
@@ -211,22 +203,18 @@ Cell[974, 33, 539, 16, 44, 92, 1, "StyleData", "PreformattedCode", "All",Express
  MenuCommandKey:>"0"],
 Cell[1516, 51, 212, 5, 44, 87, 1, "StyleData", "StringBlockForm", "All",ExpressionUUID->"5692aaa3-cd2e-41fe-96ff-07b73f4bd4b9"],
 Cell[1731, 58, 287, 8, 37, 32, 0, "StyleData", "DelimiterFont", "All",ExpressionUUID->"823ae0bd-9605-4134-b87a-21cd0296d047"],
-Cell[2021, 68, 225, 6, 37, 27, 0, "StyleData", "MathFont", "All",ExpressionUUID->"73a3b0b5-de22-4e3c-b934-e1a1116e1cdf"],
-Cell[2249, 76, 223, 6, 40, 26, 0, "StyleData", "AMSFont", "All",ExpressionUUID->"0e21c67b-f548-4b4d-9607-8b87ba54cb75"],
-Cell[2475, 84, 241, 6, 34, 36, 0, "StyleData", "LiteralStringFont", "All",ExpressionUUID->"980e6e4e-c4fc-46d8-bf4c-ca9cf5a1f08c"],
-Cell[2719, 92, 230, 6, 37, 31, 0, "StyleData", "MathTextFont", "All",ExpressionUUID->"f81c41e9-e8cf-4a8b-bf3b-cf9396f387d7"],
-Cell[2952, 100, 231, 6, 37, 32, 0, "StyleData", "RomanMathFont", "All",ExpressionUUID->"9b1466f1-a0a4-4308-ab27-c308e8e8ea00"],
-Cell[3186, 108, 233, 6, 35, 33, 0, "StyleData", "ScriptMathFont", "All",ExpressionUUID->"26623a48-9cd7-4e59-baea-4f2e32479d0f"],
-Cell[3422, 116, 243, 6, 34, 38, 0, "StyleData", "CaligraphicMathFont", "All",ExpressionUUID->"5c25097e-bf97-4f0a-8571-fdb37024378a"],
-Cell[3668, 124, 239, 6, 34, 36, 0, "StyleData", "SansSerifMathFont", "All",ExpressionUUID->"e449bd62-01c1-43e9-a1e3-ec68495770c2"],
-Cell[3910, 132, 241, 6, 34, 37, 0, "StyleData", "TypewriterMathFont", "All",ExpressionUUID->"a38923bf-0cd5-41a7-be60-749e6cf8abc0"],
-Cell[4154, 140, 258, 7, 34, 34, 0, "StyleData", "FrakturMathFont", "All",ExpressionUUID->"ec542fd5-9d9a-4b00-b019-e9ee5d31ad2b"],
-Cell[4415, 149, 236, 6, 34, 31, 0, "StyleData", "CardinalFont", "All",ExpressionUUID->"f061dfbd-2361-4c43-8a10-92731b3fd43c"],
-Cell[4654, 157, 251, 6, 37, 34, 0, "StyleData", "MultiSymbolFont", "All",ExpressionUUID->"a14f87c3-23d2-4229-847e-65b1359670c8"],
-Cell[4908, 165, 160, 2, 37, 82, 1, "StyleData", "QuiverGeometryBase", "All",ExpressionUUID->"22b8d04a-668a-4703-9491-8f9fc9fa84fc"],
-Cell[5071, 169, 141, 2, 37, 84, 1, "StyleData", "QuiverGeometrySymbol", "All",ExpressionUUID->"8fa82ead-03d9-48ea-8396-a90f8b31f808"],
-Cell[5215, 173, 170, 2, 35, 96, 1, "StyleData", "QuiverGeometryScriptSymbol", "All",ExpressionUUID->"30712e5c-0696-4c9b-821f-47df3547a307"],
-Cell[5388, 177, 212, 5, 34, 86, 1, "StyleData", "QuiverGeometryVariable", "All",ExpressionUUID->"25871f28-7aa1-48c1-92fd-c03ff0af0ce0"]
+Cell[2021, 68, 248, 7, 37, 27, 0, "StyleData", "MathFont", "All",ExpressionUUID->"73a3b0b5-de22-4e3c-b934-e1a1116e1cdf"],
+Cell[2272, 77, 246, 7, 40, 26, 0, "StyleData", "AMSFont", "All",ExpressionUUID->"0e21c67b-f548-4b4d-9607-8b87ba54cb75"],
+Cell[2521, 86, 264, 7, 34, 36, 0, "StyleData", "LiteralStringFont", "All",ExpressionUUID->"980e6e4e-c4fc-46d8-bf4c-ca9cf5a1f08c"],
+Cell[2788, 95, 253, 7, 37, 31, 0, "StyleData", "MathTextFont", "All",ExpressionUUID->"f81c41e9-e8cf-4a8b-bf3b-cf9396f387d7"],
+Cell[3044, 104, 254, 7, 37, 32, 0, "StyleData", "RomanMathFont", "All",ExpressionUUID->"9b1466f1-a0a4-4308-ab27-c308e8e8ea00"],
+Cell[3301, 113, 256, 7, 35, 33, 0, "StyleData", "ScriptMathFont", "All",ExpressionUUID->"26623a48-9cd7-4e59-baea-4f2e32479d0f"],
+Cell[3560, 122, 266, 7, 34, 38, 0, "StyleData", "CaligraphicMathFont", "All",ExpressionUUID->"5c25097e-bf97-4f0a-8571-fdb37024378a"],
+Cell[3829, 131, 262, 7, 34, 36, 0, "StyleData", "SansSerifMathFont", "All",ExpressionUUID->"e449bd62-01c1-43e9-a1e3-ec68495770c2"],
+Cell[4094, 140, 264, 7, 34, 37, 0, "StyleData", "TypewriterMathFont", "All",ExpressionUUID->"a38923bf-0cd5-41a7-be60-749e6cf8abc0"],
+Cell[4361, 149, 258, 7, 34, 34, 0, "StyleData", "FrakturMathFont", "All",ExpressionUUID->"ec542fd5-9d9a-4b00-b019-e9ee5d31ad2b"],
+Cell[4622, 158, 259, 7, 34, 31, 0, "StyleData", "CardinalFont", "All",ExpressionUUID->"f061dfbd-2361-4c43-8a10-92731b3fd43c"],
+Cell[4884, 167, 274, 7, 37, 34, 0, "StyleData", "MultiSymbolFont", "All",ExpressionUUID->"a14f87c3-23d2-4229-847e-65b1359670c8"]
 }, Open  ]]
 }
 ]

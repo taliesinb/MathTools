@@ -409,8 +409,7 @@ $colorAliases = UAssoc[
   Purple -> $Purple, LightPurple -> $LightPurple,
   Pink   -> $Pink,   LightPink   -> $LightPink,
   Cyan   -> $Teal,   LightCyan   -> $LightTeal,
-  Gray   -> $Gray,   LightGray   -> $LightGray,
-  White  -> $White,  Black       -> $Black
+  Gray   -> $Gray,   LightGray   -> $LightGray
 ];
 
 (**************************************************************************************************)

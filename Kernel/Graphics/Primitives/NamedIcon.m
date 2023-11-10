@@ -311,6 +311,7 @@ $arrowIcons := With[
   "CurvedArrow"        -> BezierCurve @ {{-1.0, 1.0}, {-0.9, 0.25}, {0, 0}},
   "GentleCurveArrow"   -> BezierCurve @ {{-1.0, 1.0}, {-0.5, 0.25}, {0, 0}},
   "Triangle"           -> Line @ {{-0.724145, 1.}, {1., 0.}},
+  "NarrowTriangle"     -> Line @ {{-0.724145, 0.724145}, {1., 0.}},
   "Arrow"              -> Line @ {{-1, 1}, {0, 0}},
   "Diamond"            -> Line @ {{-1, 0}, {0, 0.6}, {1, 0}},
   "Kite"               -> Line @ {{-0.53, 0}, {-1., 0.89}, {1., 0}}

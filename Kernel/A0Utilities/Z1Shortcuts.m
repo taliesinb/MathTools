@@ -288,7 +288,6 @@ loadShortcutGroup["Core"] := (
   makeSym["PCF",    PreformattedCodeForm]
   makeSym["NAF",    NestedArrayForm]
   makeSym["SBF",    StringBlockForm]
-  makeSym["SBT",    StringBlockTemplate]
 
   makeSym["TGB",    ToGraphicsBoxes]
 

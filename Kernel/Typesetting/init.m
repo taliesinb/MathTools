@@ -358,7 +358,11 @@ ClearTemplateBoxDefinitions[] := (
 
 PrivateSpecialFunction[DefineNotebookDisplayFunction, DefineKatexDisplayFunction, DefineKatexMacro]
 
-SetInitialValue[$qgTemplateBoxNameQ, UAssoc[]];
+(* these are the only core styles that have TemplateBoxOptions *)
+SetInitialValue[$qgTemplateBoxNameQ, UAssoc[
+  "StringBlockForm" -> True,
+  "PreformattedCode" -> True
+]];
 
 DefineNotebookDisplayFunction[templateName_Str, fn_Fn] := (
   $qgTemplateBoxNameQ[templateName] = True;
@@ -1087,11 +1091,15 @@ registerFormScriptingArgPositions[SmallerForm, 1];
 
 (**************************************************************************************************)
 
+PublicTypesettingBoxFunction[ColorNBox, BackgroundNBox]
+
 PublicTypesettingForm[Color1Form, Color2Form, Color3Form, Color4Form, Color5Form, Color6Form, Color7Form, Color8Form, ColorNForm]
 
 PublicTypesettingForm[Background1Form, Background2Form, Background3Form, Background4Form, Background5Form, Background6Form, Background7Form, Background8Form, BackgroundNForm]
 
 ColorNForm[n_Int] := Part[{Color1Form, Color2Form, Color3Form, Color4Form, Color5Form, Color6Form, Color7Form, Color8Form}, n];
+
+ColorNBox[box_, n_Int] := StyleBox[box, currentStyleSetting[FontColor, "Color" <> IntegerString[n]]];
 
 DefineStyleForm[#1, currentStyleSetting[FontColor, #2]]& @@@ ExpressionTable[
   Color1Form  "Color1"
@@ -1105,6 +1113,8 @@ DefineStyleForm[#1, currentStyleSetting[FontColor, #2]]& @@@ ExpressionTable[
 ]
 
 BackgroundNForm[n_Int] := Part[{Background1Form, Background2Form, Background3Form, Background4Form, Background5Form, Background6Form, Background7Form, Background8Form}, n];
+
+BackgroundNBox[box_, n_Int] := StyleBox[box, currentStyleSetting[Background, "Background" <> IntegerString[n]]];
 
 DefineStyleForm[#1, currentStyleSetting[Background, #2]]& @@@ ExpressionTable[
   Background1Form  "Background1"

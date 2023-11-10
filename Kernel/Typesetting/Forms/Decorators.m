@@ -14,7 +14,7 @@ styleDecoratedBoxes[head_, style_, args___] := Scope[
   kboxes //= evalKatexRepeated;
   $style = StyleBoxOperator @@ ToList[style];
   KBox[
-    StyleBox[applyDecoratedStyle @ boxes, "QuiverGeometryBase"],
+    StyleBox[applyDecoratedStyle @ boxes, "MathFont"],
     $style = stripLR /* $style; applyDecoratedStyle @ kboxes
   ]
 ];

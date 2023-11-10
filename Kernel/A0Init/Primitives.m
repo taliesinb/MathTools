@@ -372,18 +372,20 @@ SetHoldFirst[CustomPrimitiveToBoxes];
 
 General::unrecogprim = "Unrecognized usage ``.";
 General::failprim = "Failed to boxify ``.";
+General::internalPrimEror = "Internal error while boxifying `` involving call ``.";
 
 CustomPrimitiveToBoxes[prim_] := With[
   {fn = $customPrimitiveFns @ H @ Unevaluated @ prim},
-  {res = Block[{UnmatchedCase2 = Throw[$Failed, CustomPrimitiveToBoxes]&},
+  {res = Block[{UnmatchedCase2 = Throw[InternalHoldForm[#1[##2]], CustomPrimitiveToBoxes]&},
     Catch[fn @ prim, CustomPrimitiveToBoxes]]},
   Which[
-    H[res] === fn, gprimMsg[prim, "unrecogprim"],
-    res === $Failed,  gprimMsg[prim, "failprim"],
-    True,             res
+    H[res] === fn,                  gprimMsg[prim, "unrecogprim"],
+    res === $Failed,                gprimMsg[prim, "failprim"],
+    MatchQ[res, _InternalHoldForm], gprimMsg[prim, "internalPrimEror", MsgExpr @ res],
+    True,                           res
   ]
 ];
 
-gprimMsg[prim:(h_[___]), msg_] := (Message[MessageName[h, msg], MsgExpr @ prim]; {})
+gprimMsg[prim:(h_[___]), msg_, args___] := (Message[MessageName[h, msg], MsgExpr @ prim, args]; {})
 _gprimMsg := BadArguments[];
 

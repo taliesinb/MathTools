@@ -55,7 +55,7 @@ $arrowheadOptions = {
   ArrowheadPlane -> None,
   ArrowheadLength -> Automatic,
   ArrowheadShape -> "FilledKite",
-  ArrowheadColor -> GrayLevel[0],
+  ArrowheadColor -> Automatic,
   ArrowheadAnchor -> 0.5,
   ArrowheadOpacity -> None,
   ArrowheadThickness -> 1

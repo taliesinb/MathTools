@@ -1,8 +1,8 @@
 PublicGraphicsPrimitive[PrimitivesGrid, PrimitivesRow, PrimitivesColumn]
 
-DeclareGraphicsPrimitive[PrimitivesGrid,   "Primitives,Vector", primitivesGRCBoxes]
-DeclareGraphicsPrimitive[PrimitivesRow,    "Primitives,Vector", primitivesGRCBoxes];
-DeclareGraphicsPrimitive[PrimitivesColumn, "Primitives,Vector", primitivesGRCBoxes];
+DeclareGraphicsPrimitive[PrimitivesGrid,   "Primitives,Vector?", primitivesGRCBoxes]
+DeclareGraphicsPrimitive[PrimitivesRow,    "Primitives,Vector?", primitivesGRCBoxes];
+DeclareGraphicsPrimitive[PrimitivesColumn, "Primitives,Vector?", primitivesGRCBoxes];
 
 Options[PrimitivesGrid] = {
   Alignment -> Center,
@@ -24,9 +24,9 @@ Options[PrimitivesRow] = DropOptions[{ColumnAlignments, RowsEqual, RowSpacings}]
 Options[PrimitivesColumn] = DropOptions[{RowAlignments, ColumnsEqual, ColumnSpacings}] @ Options[PrimitivesGrid];
 
 primitivesGRCBoxes = Case[
-  PrimitivesRow[items_List, pos:$CoordP, opts___Rule]    := RawPrimitivesRow[List @ Map[toPGitem, items], pos, opts];
-  PrimitivesColumn[items_List, pos:$CoordP, opts___Rule] := RawPrimitivesColumn[List /@ Map[toPGitem, items], pos, opts];
-  PrimitivesGrid[items_List, pos:$CoordP, opts___Rule]   := RawPrimitivesGrid[toPGrow /@ items, pos, opts];
+  PrimitivesRow[items_List, pos:$CoordP:{0,0}, opts___Rule]    := RawPrimitivesRow[List @ Map[toPGitem, items], pos, opts];
+  PrimitivesColumn[items_List, pos:$CoordP:{0,0}, opts___Rule] := RawPrimitivesColumn[List /@ Map[toPGitem, items], pos, opts];
+  PrimitivesGrid[items_List, pos:$CoordP:{0,0}, opts___Rule]   := RawPrimitivesGrid[toPGrow /@ items, pos, opts];
 ];
 
 PrimitivesGrid::badRow = "Row element `` should be a list."

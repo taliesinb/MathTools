@@ -158,7 +158,7 @@ RainbowTensorNode[name_, n_, r_, opts___Rule] :=
 
 $derivedStyle = Sequence[
   FrameColor -> $DarkGray,
-  FrameThickness -> 2,
+  FrameThickness -> 3,
   PortPositions -> "MatchInterior",
   PortSpacing -> .8,
   FrameLabelStyle -> {FontSize  -> 15, BaseStyle -> "PreformattedCode", SingleLetterItalics -> True},
@@ -235,6 +235,7 @@ RainbowBubbleTensorNode[name_, n_, r_, opts___Rule] :=
 PublicFunction[KeyPortSkeleton]
 
 $keyPortSkeletonStyle = Sequence[
+  PortShape -> "Disk",
   PortStyleData["Key"],
   PortPositions -> {Out -> "MatchOut"},
   $defaultNodeStyle
@@ -378,7 +379,7 @@ PublicFunction[ArrayCircuitGraphics]
 ArrayCircuitGraphics[nodes_, opts___Rule] := Scope[
   padding = Lookup[{opts}, ImagePadding, Automatic];
   frameLabel = LookupOption[nodes, FrameLabel, None];
-  SetAutomatic[padding, 1];
+  SetAutomatic[padding, 2];
   padding //= StandardizePadding;
   Part[padding, 2, 1] //= Max[#, 6]&;
   If[frameLabel =!= None,
@@ -392,10 +393,10 @@ ArrayCircuitGraphics[nodes_, opts___Rule] := Scope[
     PrologStyle -> {AbsoluteThickness[3]}, EpilogStyle -> {AbsoluteThickness[3]},
     NodePalette -> Lookup[{opts}, NodePalette, None]
   ];
-  ScaleGraphics[
-    complex,
+  FixedGraphics[
+    {FontFamily -> "Fira Code", complex},
     ImagePadding -> padding,
-    GraphicsScale -> 40, BaseStyle -> {FontFamily -> "Fira Code"}
+    GraphicsScale -> 40
   ]
 ];
 

@@ -48,7 +48,7 @@ SetHoldAllComplete[matrixBoxes, matrixRowBoxes, makeMatrixGrid]
 matrixRowBoxes[row_List] := MapUnevaluated[MakeQGBoxes, row];
 
 makeMatrixGrid[array_, templateName_, style___] := TBox[GridBox[
-  MapUnevaluated[matrixRowBoxes, array], BaseStyle -> {style, "QuiverGeometryBase"},
+  MapUnevaluated[matrixRowBoxes, array], BaseStyle -> {style, "MathFont"},
   ColumnsEqual -> True, RowsEqual -> True,
   GridBoxSpacings -> {"Columns" -> {{0.3}}, "Rows" -> {{0.3}}}
 ], templateName];

@@ -385,9 +385,11 @@ trySystemOpen[s_Str] := Scope[
   If[FileExistsQ[s = FileNameDrop @ s],        Return @ sysOpen @ s];
 ];
 
+$textFileP = "m" | "wl" | "md" | "txt";
+
 sysOpen[s_Str] := Switch[
   FileExtension[s],
-  "nb" | "m" | "wl", SystemOpen @ FileLine[s, 1],
+  "nb" | $textFileP, SystemOpen @ FileLine[s, 1],
   "mx",              SetSelectedNotebook @ CreateDocument @ TextCell[ImportMX @ s, "Input"],
   _,                 SystemOpen @ NormalizePath @ s
 ];

@@ -1,1 +1,1 @@
-TestRasterObject["1t1ctfgd2772r.png", "0c899q7dxsfkp.mx"]
+TestRasterObject["11k06o15hvzzq.png", "08qakez5zt5t3.mx"]
