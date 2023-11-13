@@ -282,7 +282,7 @@ CurveToBoxes[curve_] := Scope[
   fn = Lookup[$customCurveBoxesFn, H @ curve];
   res = Construct[fn, ReplacePart[curve, 1 -> points]];
   Which[
-    H[res] === fn, gprimMsg[curve, "unrecogcurve"],
+    H[res] === fn,    gprimMsg[curve, "unrecogcurve"],
     res === $Failed,  gprimMsg[curve, "failcurveboxes"],
     True,             res
   ]

@@ -57,8 +57,9 @@ RunTests[filePattern_Str:All, OptionsPattern[]] := Scope[
 
   $userAbort = False;
   fileResults = Map[runFileTest[#, outDir]&, testFiles];
-  shortFiles = StringTrimLeft[testFiles, $testsInPath <> $PathnameSeparator];
+  clearTestContext[];
 
+  shortFiles = StringTrimLeft[testFiles, $testsInPath <> $PathnameSeparator];
   If[!$Notebooks, Print[]; Print["Results:"]; MapThread[printFileInfo, {StringPadRight[shortFiles, 25], fileResults}]];
   AssociationThread[shortFiles, fileResults]
 ];
@@ -91,6 +92,7 @@ runFileTest[inputPath_, outDir_] := Scope[
   msgPath = MsgPath @ inputPath;
   $fileContents = Assoc[];
 
+  clearTestContext[];
   inputFileName = FileNameTake @ inputPath;
   VPrint["Reading inputs from ", msgPath];
   inputs = readExpressionList @ inputPath;
@@ -300,11 +302,18 @@ TestOutputGallery[data_] := Scope[
 
 (**************************************************************************************************)
 
-SetHoldFirst[withTestContext];
+SetHoldFirst[withTestContext, withOutputTestContext];
 withTestContext[body_] := Block[{$Context = $testContext, $ContextPath = $testContextPath}, body];
+withOutputTestContext[body_] := Block[{$Context = $outputTestContext, $ContextPath = $testContextPath}, body];
 
 $testContext = "QuiverGeometry`TestHarness`";
+$outputTestContext = "QuiverGeometry`TestHarnessDummy`";
+(* ^ this is to ensure that if we write any harness symbols, they get fully qualified and detected as a leak *)
+
+$testContextWildcard = $testContext <> "*";
 $testContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`Private`"};
+
+clearTestContext[] := ClearAll[$testContextWildcard];
 
 (**************************************************************************************************)
 
@@ -346,12 +355,14 @@ readExpressionList[path_] := withTestContext @ Block[
 (**************************************************************************************************)
 
 RunTests::writeFail = "Could not write `` expressions to ``.";
-writeExpressionList[path_, list_] := withTestContext @ Block[
-  {str},
-  VPrint["Writing ", Len @ list, " expressions to ", MsgPath @ path];
+RunTests::symbolLeak = "Local symbols have leaked into the outputs in ``, failing."
+writeExpressionList[path_, list_] := withOutputTestContext @ Block[
+  {str, msgPath = MsgPath @ path},
+  VPrint["Writing ", Len @ list, " expressions to ", msgPath];
   If[$dryRun, Return[]];
   str = StringRiffle[Map[toOutString, list], "\n\n"];
-  If[FailureQ @ ExportUTF8[path, str], VMessage[RunTests::writeFail, Len @ list, MsgPath @ path]];
+  If[StringContainsQ[str, "TestHarness"], VMessage[RunTests::symbolLeak, msgPath]; Return @ $Failed];
+  If[FailureQ @ ExportUTF8[path, str], VMessage[RunTests::writeFail, Len @ list, msgPath]];
 ];
 
 toOutString = Case[
@@ -746,10 +757,16 @@ exprToMarkdown = Case[
   expr_      := toHugoString @ Cell[BoxData @ ToBoxes @ expr, "Output"];
 ];
 
-toHugoString[cell_Cell] := ToMarkdownString[cell,
+toHugoString[cell_Cell] := Scope[
+  res = ToMarkdownString[cell,
     MarkdownFlavor -> "Hugo",
     RasterizationPath -> $mdRasterPath
-  ] // StringDelete[$mdURLRasterPath];
+  ];
+  res //= StringDelete[$mdURLRasterPath];
+  If[StringContainsQ[res, "TestHarness"],
+    VMessage[RunTests::symbolLeak, msgPath]; Return @ "LEAKAGE"];
+  res
+];
 
 $mdRasterPath = LocalPath["Tests", "Objects", "MD"];
 $mdURLRasterPath = "file://" <> $mdRasterPath <> "/";
