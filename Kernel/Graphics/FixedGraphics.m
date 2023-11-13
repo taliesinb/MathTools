@@ -1,12 +1,36 @@
-PublicFunction[DebugGraphics]
-
-DebugGraphics[g_, opts___] :=
-  FixedGraphics[g, Ticks -> True, opts];
-
-
 PublicTypesettingForm[FixedGraphics]
 
-PublicOption[ResolveInsetGraphics]
+PublicOption[ResolveInsetGraphics, PropogateGraphicsScale]
+
+SetUsage @ "
+FixedGraphics[prims$, opts$$] is like %Graphics but applies a fixed scaling from plot range coordinates to pixels.
+
+* to achieve this, bounding boxes of boxified primitives are calculated using %PrimitiveBoxesBounds.
+
+* the following existing %Graphics options are supported:
+| %Background |
+| %BaselinePosition |
+| %Epilog |
+| %Prolog |
+| %ImagePadding |
+| %PlotLabel |
+| %Frame |
+| %FrameMargins |
+| %Ticks |
+
+* frames and %ImagePadding will produce increases in %ImageSize to maintain the scale.
+
+* the %Ticks option can be True, which will produce automatic labeled ticks.
+
+* any expression Style[$$, %ZOrder -> n$] will extract $$ and place it above or below the main primitives.
+* currently, ambient styles are not preserved when this is done.
+* nested %ZOrder directives will apply further sorting within $$.
+
+* the following novel options are supported:
+| %DebugBounds | whether to put a bounding frame around graphics contents |
+| %PropogateGraphicsScale | whether to set a global %GraphicsScale option during boxification |
+| %ResolveInsetGraphics | whether to convert graphical %Inset primitives to non-inset equivalents |
+"
 
 Options[FixedGraphics] = {
   Background -> None,
@@ -21,13 +45,8 @@ Options[FixedGraphics] = {
   FrameMargins -> 5,
   DebugBounds -> False,
   ResolveInsetGraphics -> True,
-  "UseGraphicsScale" -> True
+  PropogateGraphicsScale -> True
 };
-
-SetUsage @ "
-FixedGraphics[prims$] is like %Graphics but naturally incorporates a scale factor.
-* the plot range is computed automically.
-"
 
 DefineStandardTraditionalForm[e_FixedGraphics :> FixedGraphicsBoxes[e]]
 
@@ -35,12 +54,12 @@ FixedGraphicsBoxes[_] := "?";
 FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
   UnpackOptionsAs[FixedGraphics, {opts},
     background, baselinePosition, $graphicsScale, epilog, prolog, imagePadding,
-    ticks, debugBounds, resolveInsetGraphics, useGraphicsScale,
+    ticks, debugBounds, resolveInsetGraphics, propogateGraphicsScale,
     frame, frameMargins, plotLabel
   ];
   (* FontSize, FontFamily ? *)
   InheritedBlock[{$MakeBoxesStyleData},
-    If[TrueQ @ useGraphicsScale, $MakeBoxesStyleData[GraphicsScale] = $graphicsScale];
+    If[TrueQ @ propogateGraphicsScale, $MakeBoxesStyleData[GraphicsScale] = $graphicsScale];
     boxes = ToGraphicsBoxes @ prims;
     epilog //= ToGraphicsBoxes;
     prolog //= ToGraphicsBoxes;
@@ -55,6 +74,8 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
     tickBoxes = boundingGridBoxes @ BoundingGrid[bounds, $graphicsScale];
     boxes = If[tickPosition === Above, {boxes, tickBoxes}, {tickBoxes, boxes}];
   ];
+
+  boxes //= ZSortBoxes;
 
   decos = {};
   If[TrueQ @ debugBounds,
@@ -100,6 +121,23 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
     If[baselinePosition === Automatic, Seq[], BaselinePosition -> baselinePosition]
   ]
 ];
+
+(**************************************************************************************************)
+
+(* this is recursive, Z-orders within another Z-order will sort within it *)
+ZSortBoxes[boxes_] /; FreeQ[boxes, ZOrder] := boxes
+ZSortBoxes[boxes_] := Module[
+  {zassoc = Assoc[]},
+  zassoc[0] = ReplaceAll[boxes,
+    StyleBox[b_, l___, ZOrder -> z_, r___] :> (
+      KeyAppendTo[zassoc, z, toStyleBox[b, l, r]]; {}
+    )
+  ];
+  Map[ZSortBoxes, Values @ KeySort @ zassoc]
+];
+
+toStyleBox[args__] := StyleBox[args];
+toStyleBox[b_] := b;
 
 (**************************************************************************************************)
 
@@ -174,4 +212,11 @@ resolveOrigin = Case[
 
   other_ := (Message[FixedGraphics::badOrigin, MsgExpr @ other]; {0, 0})
 ]
+
+(**************************************************************************************************)
+
+PublicFunction[DebugGraphics]
+
+DebugGraphics[g_, opts___] :=
+  FixedGraphics[g, Ticks -> True, opts];
 

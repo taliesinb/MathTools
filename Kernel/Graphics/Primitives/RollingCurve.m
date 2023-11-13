@@ -86,9 +86,8 @@ populateSegments[shape_, {p1_, pn_}, triples_, radii_] := Scope[
   rscale = 1;
   Label[retry];
   tuples = ZipMap[
-    {{a, b, c}, r} |-> (
+    {{a, b, c}, r} |-> If[(b - a) == (c - b), Nothing,
       l1 = {b, a}; l2 = {b, c};
-      If[(b - a) == (c - b), Return[Nothing]];
       center = InfiniteLineLineIntersectionPoint[
         DisplaceLineTowards[l1, c, r],
         DisplaceLineTowards[l2, a, r]
@@ -100,7 +99,7 @@ populateSegments[shape_, {p1_, pn_}, triples_, radii_] := Scope[
          ClosestPointOnInfiniteLine[l2, center]},
         b
       ]]
-    ),
+    ],
     triples, radii * rscale
   ];
 
