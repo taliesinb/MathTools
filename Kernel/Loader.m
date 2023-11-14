@@ -34,7 +34,6 @@ $SymbolTable
 $Verbose
 
 (* these can be customized in user_init.m *)
-$SystemOpenEnabled
 $DisableSyntaxInformation
 $DisableMenuItems
 $DisableSetUsage
@@ -277,9 +276,6 @@ bracketRHS[s_] := bracketRHS[s] = Block[{$Context = "QuiverGeometryLoader`Scratc
   "(" <> StringInsert[s, ")", len+1]
 ];
 
-If[!ValueQ[$SystemOpenEnabled], $SystemOpenEnabled = True];
-DoSystemOpen[s_] := If[$SystemOpenEnabled, SystemOpen[s]];
-
 handleSyntaxError[path_, str_] := Block[
   {tmpPath, errors},
   If[$silent, failRead[]];
@@ -292,7 +288,7 @@ handleSyntaxError[path_, str_] := Block[
   If[errors =!= {},
     EPrint["Aborting; syntax errors:"];
     Scan[EPrint, Take[errors, UpTo[5]]];
-    DoSystemOpen @ Part[errors, 1, 1];
+    SystemOpen @ Part[errors, 1, 1];
   ];
   failRead[];
 ];
@@ -389,7 +385,7 @@ fileSortingTuple[path_] := {
 
 (*************************************************************************************************)
 
-ReadSource[cachingEnabled_:True, fullReload_:True] := Block[
+ReadSource[cachingEnabled_:True, fullReload_:True, clear_:True] := Block[
   {sourceFiles, userFiles, textFiles,
    packageExpressions,
    systemSymbols, publicSymbols, privateSymbols, cacheSymbols,
@@ -473,36 +469,38 @@ ReadSource[cachingEnabled_:True, fullReload_:True] := Block[
     Return[{}];
   ];
 
-  LVPrint["Updating preserved values."];
-  preservedValues = Replace[
-    Keys @ $PreservedVariables,
-    Hold[sym_] :> If[System`Private`HasImmediateValueQ[sym],
-      With[{val = sym}, Hold[sym = val]],
-      With[{ov = OwnValues[sym]}, Hold[OwnValues[sym] = ov]]
-    ],
-    {1}
-  ];
+  If[clear,
+    LVPrint["Updating preserved values."];
+    preservedValues = Replace[
+      Keys @ $PreservedVariables,
+      Hold[sym_] :> If[System`Private`HasImmediateValueQ[sym],
+        With[{val = sym}, Hold[sym = val]],
+        With[{ov = OwnValues[sym]}, Hold[OwnValues[sym] = ov]]
+      ],
+      {1}
+    ];
 
-  LVPrint["Updating preserved functions."];
-  (* for things like RedBox that would otherwise be wiped out due to form definition caching mechanism *)
-  preservedDownValues = Replace[
-    Keys @ $PreservedFunctions,
-    Hold[sym_] :> With[{dv = DownValues[sym]}, Hold[DownValues[sym] = dv]],
-    {1}
-  ];
+    LVPrint["Updating preserved functions."];
+    (* for things like RedBox that would otherwise be wiped out due to form definition caching mechanism *)
+    preservedDownValues = Replace[
+      Keys @ $PreservedFunctions,
+      Hold[sym_] :> With[{dv = DownValues[sym]}, Hold[DownValues[sym] = dv]],
+      {1}
+    ];
 
-  If[requiresFullReload,
-    LVPrint["Clearing all symbols."];
-    Construct[ClearAll, $PublicContext <> "*", $PublicContext <> "**`*"];
-  ,
-    dirtyContexts = Part[packageExpressions, All, 2];
-    LVPrint["Clearing dirty contexts: ", dirtyContexts];
-    Apply[ClearAll, Map[# <> "*"&, dirtyContexts]];
-  ];
+    If[requiresFullReload,
+      LVPrint["Clearing all symbols."];
+      Construct[ClearAll, $PublicContext <> "*", $PublicContext <> "**`*"];
+    ,
+      dirtyContexts = Part[packageExpressions, All, 2];
+      LVPrint["Clearing dirty contexts: ", dirtyContexts];
+      Apply[ClearAll, Map[# <> "*"&, dirtyContexts]];
+    ];
 
-  LVPrint["Copying preserved values."];
-  ReleaseHold[preservedValues];
-  ReleaseHold[preservedDownValues];
+    LVPrint["Copying preserved values."];
+    ReleaseHold[preservedValues];
+    ReleaseHold[preservedDownValues];
+  ];
 
   systemSymbols = DeleteDuplicates @ Internal`BagPart[systemSymbols, All];
   publicSymbols = DeleteDuplicates @ Internal`BagPart[publicSymbols, All];
@@ -552,7 +550,7 @@ MakeBoxes[pd_Package`PackageData, StandardForm] :=
 Attributes[FindCodebaseLines] = {HoldFirst};
 
 FindCodebaseLines[pattern_] := Block[
-  {$packageExpressions = ReadSource[False, True]},
+  {$packageExpressions = ReadSource[False, True, False]},
   positionToFileLine /@ Position[$packageExpressions, HoldPattern @ pattern]
 ];
 
@@ -718,8 +716,7 @@ handleMessage[f_Failure] := Block[{fileLine},
   EPrint["Aborting; message ", HoldForm @@ f["HeldMessageTemplate"], " occurred at ", fileLine];
   EPrint[FailureString @ f];
   Throw[$Failed, $evaluateExpressionTag];
-  DoSystemOpen[fileLine];
-
+  SystemOpen[fileLine];
 ];
 
 (*************************************************************************************************)
@@ -728,7 +725,7 @@ LoadSource[fullReload_:True, fullRead_:False, silent_:False] := Block[
   {$AllowInternet = False, URLSubmit = Print["URLSubmit[", Row[{##}, " "], "]"]&, $silent = silent, $CurrentlyLoading = True},
   FinishDynamic[];
   $lastLoadSuccessful = False;
-  Block[{packages = ReadSource[!fullRead, fullReload]},
+  Block[{packages = ReadSource[!fullRead, fullReload, True]},
     If[FailureQ[packages], Return[False]];
     $LoadCount++;
     If[!FailureQ[evaluatePackageData @ packages], $lastLoadSuccessful = True];

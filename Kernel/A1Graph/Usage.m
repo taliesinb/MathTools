@@ -1,5 +1,6 @@
 SetUsage @ "
-ExtendedGraph[args$$] acts like Graph but accepts additional options and overrides how graphs are displayed.
+ExtendedGraph[$$] acts like %Graph but accepts additional options and overrides how graphs are displayed.
+
 * The following options and additional options are supported:
 | %VertexLayout | None | the overall layout method to use for vertices |
 | %LayoutDimension | Automatic | number of dimensions of the graph layout |

@@ -1463,16 +1463,18 @@ createEdgePrimitives[indices_, drawFn_, arrowheads_, cardinal_] /; StringQ[edgeS
 
 createEdgePrimitives[indices_, drawFn_, arrowheads_, cardinal_] := Scope[
   edgeWeights = GraphEdgeData[All, EdgeWeight];
-  maxEdgeWeight = Max @ edgeWeights;
+  maxEdgeWeight = If[ListQ[edgeWeights], Max @ edgeWeights, None];
+  scale = plotSizeToImageSize[1];
   primitives = Map[
     index |-> applyDrawFn[edgeShapeFunction, <|
       "Coordinates" -> Part[$EdgeCoordinateLists, index],
       "Setback" -> edgeSetback,
       "Source" -> Part[$EdgeList, index, 1],
       "Target" -> Part[$EdgeList, index, 2],
+      "GraphicsScale" -> scale,
       "EdgeIndex" -> index,
-      "Weight" -> Part[edgeWeights, index],
-      "WeightFraction" -> Part[edgeWeights, index] / maxEdgeWeight,
+      "Weight" -> If[ListQ[edgeWeights], Part[edgeWeights, index], None],
+      "WeightFraction" -> If[ListQ[edgeWeights], Part[edgeWeights, index] / maxEdgeWeight, None],
       "Counter" :> $esfCounter++,
       "Style" -> edgeStyle,
       "LabelStyle" -> simpleEdgeLabelStyle,

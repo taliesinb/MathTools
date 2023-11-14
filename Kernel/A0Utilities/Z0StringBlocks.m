@@ -535,7 +535,7 @@ StringBlock::badfs = "Setting of FrameStyle -> `` should be a color or None.";
 
 normFrameStyle = Case[
   color_ ? ColorQ      := FontColor -> color;
-  i_Int            := currentStyleSetting[FontColor, "Color" <> IntegerString[i]];
+  i_Int                := currentStyleSetting[FontColor, "Color" <> IntegerString[i]];
   r:Rule[FontColor|Background, _] := r;
   other_               := (Message[StringBlock::badfs, other]; None);
   None                 := None;

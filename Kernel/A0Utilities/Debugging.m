@@ -62,7 +62,7 @@ TraceFrontendCalls[body_] := Flatten @ Trace[body, _MathLink`CallFrontEnd, Trace
 
 (**************************************************************************************************)
 
-PublicFunction[SowGraphics, EchoDebugGraphics]
+PublicDebuggingFunction[SowGraphics, EchoDebugGraphics]
 
 SetHoldAll[SowGraphics];
 
@@ -112,13 +112,13 @@ Verbosely[e_] := Block[{$verbose = True}, e];
 
 (**************************************************************************************************)
 
-PublicFunction[EchoEdgeList]
+PublicDebuggingFunction[EchoEdgeList]
 
 EchoEdgeList = EchoFunction[EdgeList]
 
 (**************************************************************************************************)
 
-PublicFunction[EchoGraphicsScope, EchoGraphics]
+PublicDebuggingFunction[EchoGraphicsScope, EchoGraphics]
 
 SetHoldAllComplete[EchoGraphicsScope];
 EchoGraphicsScope[e_] := Scope[
@@ -531,4 +531,117 @@ makeImage = Case[
   i_Image := ImageApply[Min, i];
   o_      := ImageApply[Min, MakeImage[o]];
 ];
+
+(**************************************************************************************************)
+
+PublicVariable[SymbolDependancyGraph]
+
+$lastLoadCount = -1;
+$currentDependencyGraph = None;
+
+hasEvalQ[HoldComplete[s_]] := HasAnyEvaluationsQ[s];
+
+SymbolDependancyGraph[] := Scope[
+  If[$lastLoadCount === QuiverGeometryLoader`$LoadCount,
+    Return @ $currentDependencyGraph];
+  $packages = QuiverGeometryLoader`ReadSource[False, True, False];
+  $packages = $packages /. _MessageName -> Null;
+  definingHeads = _Set | _SetDelayed | _DeclareGraphicsPrimitive;
+  positions = Position[$packages, definingHeads];
+  symbolNames = Union[Names["QuiverGeometry`*"], Names["QuiverGeometry`Private`*"], Names["QuiverGeometry`**`*"]];
+  symbolNames = Complement[symbolNames, {"Case"}, QuiverGeometryLoader`$SymbolGroups["DebuggingFunction"]];
+  symbols = ToExpression[symbolNames, InputForm, HoldComplete];
+  symbols = Select[symbols, hasEvalQ];
+  symbolsAssoc = UAssoc[# -> True& /@ symbols];
+  $symbolExtractR = sym_Symbol /; KeyExistsQ[symbolsAssoc, HoldComplete[sym]] :> HoldForm[sym];
+  edges = Flatten @ Map[processPosition, positions];
+  $lastLoadCount ^= QuiverGeometryLoader`$LoadCount;
+  $currentDependencyGraph ^= Graph[edges,
+    GraphLayout -> None, VertexLabels -> Placed[Automatic, Tooltip],
+    EdgeShapeFunction -> symbolDependancyEdge
+  ]
+];
+
+processPosition[pos:{i_, 3, j_, ___}] := Scope[
+  file = Part[$packages, i, 1];
+  line = Part[$packages, i, 3, j, 1];
+  expr = Extract[$packages, pos, HoldComplete];
+  fileLine = FileLine[file, line];
+  lhs = Extract[expr, {1, 1}, HoldComplete];
+  rhs = Extract[expr, {1, 2;;}, HoldComplete];
+  defining = DeepCases[lhs, $symbolExtractR];
+  If[defining === {}, Return @ Nothing];
+  definedBy = DeepCases[rhs, $symbolExtractR];
+  If[definedBy === {}, Return @ Nothing];
+  DirectedEdge @@@ Tuples[{defining, definedBy, {fileLine}}]
+];
+
+symbolDependancyEdge[path_, DirectedEdge[a_, b_, fileLine_]] :=
+  drawDependencyEdge[path, a, b, fileLine, 20];
+
+drawDependencyEdge[path_, a_, b_, fileLine_, scale_] :=
+  ClickForm[
+    Tooltip[
+      ExtendedArrow[path,
+        Setback -> (8 / scale),
+        ArrowheadShape -> "FilledTriangle",
+        ArrowheadLength -> (9 / scale),
+        ArrowheadPosition -> 0.5,
+        ArrowColor -> $Gray,
+        ArrowheadOpacity -> 1],
+      a -> b
+    ],
+    SystemOpen @ fileLine
+  ];
+
+(**************************************************************************************************)
+
+$intOrInfP = (_Integer | Infinity | -Infinity);
+
+PublicVariable[SymbolDependancies]
+
+SymbolDependancies[sym_Symbol | HoldComplete[sym_Symbol], n:$intOrInfP] := Scope[
+  graph = SymbolDependancyGraph[];
+  fn = If[n < 0, VertexInComponent, VertexOutComponent];
+  fn[graph, HoldForm[sym], Abs[n]]
+]
+
+SymbolDependancyGraph[sym_Symbol | HoldComplete[sym_Symbol] | HoldForm[sym_Symbol], n:$intOrInfP] := Scope[
+  vertices = SymbolDependancies[sym, n];
+  subgraph = Subgraph[
+    RemoveSelfLoops @ $currentDependencyGraph, vertices,
+    VertexLabels -> "Name" -> shortSymbolName,
+    VertexLabelStyle -> {FontSize -> 8},
+    EdgeShapeFunction -> Function[drawDependencyEdge[#Coordinates, #Source, #Target, #Cardinal, #GraphicsScale]]
+  ];
+  ExtendedGraph[
+    subgraph,
+    GraphicsScale -> 100, VertexSize -> 10,
+    VertexTooltips -> "Name" -> longSymbolName,
+    VertexColorFunction -> vertexColor
+  ]
+];
+
+vertexColor[HoldForm[sym_]] := Switch[Context[sym],
+  "QuiverGeometry`", $Green,
+  "QuiverGeometry`Private`", $Orange,
+  _, $Red
+];
+
+longSymbolName[HoldForm[sym_]] := SymbolName[Unevaluated[sym]];
+shortSymbolName[HoldForm[sym_]] := shortCamelName @ SymbolName[Unevaluated[sym]];
+
+shortCamelName[str_] := shortCamelName[str] =
+  StringJoin @ StringCases[str, $shortCamelPatterns]
+
+$shortCamelPatterns = {
+  StartOfString ~~ LetterCharacter,
+  LowercaseLetter ~~ u:UppercaseLetter :> u,
+  DigitCharacter, "$" ~~ LetterCharacter
+};
+
+(**************************************************************************************************)
+
+
+
 
