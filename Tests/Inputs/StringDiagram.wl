@@ -3,6 +3,7 @@
 (* ::Section:: *)
 (*Basic*)
 
+
 LoadShortcuts["Categories"]
 
 
@@ -66,19 +67,19 @@ TestRaster /@ First @ MonadPanelDiagram[$CC, $CD, $FunL, $FunR, $NTeta, $NTeps]
 
 
 TestRaster @ StringDiagram[{
-  {-3,5} -> $NTeps, {3,-5} -> $NTeta},
-  {1 \[UndirectedEdge] {Bottom,-8} -> $FunL, Customized[1 \[UndirectedEdge] 2 -> $FunR, CurveFunction -> Line, LabelPosition -> Left], 2 \[UndirectedEdge] {Top,8} -> $FunL},
+  {-4,5} -> $NTeps, {4,-5} -> $NTeta},
+  {1 \[UndirectedEdge] {Bottom,-8} -> $FunL, Customized[1 \[UndirectedEdge] 2 -> $FunR, LabelPosition -> Left], 2 \[UndirectedEdge] {Top,8} -> $FunL},
   {{-11,-11} -> Red, {11,11} -> Blue}, $adjOpts]
 TestRaster @ StringDiagram[{}, {Bottom \[UndirectedEdge] Top -> $FunL}, {{-6,0} -> $CC, {6,0} -> $CD}, $adjOpts]
 
 TestRaster @ StringDiagram[
-  {{2,5} -> $NTeps, {-2,-5} -> $NTeta},
-  {1 \[UndirectedEdge] {Bottom,8} -> $FunR, Customized[1 \[UndirectedEdge] 2 -> $FunL, CurveFunction -> Line, SplitPosition -> "Middle", "SplitOrientation" -> Vertical], 2 \[UndirectedEdge] {Top,-8} -> $FunR},
+  {{4,5} -> $NTeps, {-4,-5} -> $NTeta},
+  {1 \[UndirectedEdge] {Bottom,8} -> $FunR, Customized[1 \[UndirectedEdge] 2 -> $FunL,  SplitPosition -> "Middle", "SplitOrientation" -> Vertical], 2 \[UndirectedEdge] {Top,-8} -> $FunR},
   {{11,-11} -> Red, {-11,11} -> Blue}, $adjOpts]
 TestRaster @ StringDiagram[{}, {Bottom \[UndirectedEdge] Top -> $FunR}, {{6,0} -> $CC, {-6, 0} -> $CD}, $adjOpts]
 
 
-TestRaster @ FunctorialStringDiagram[
+RQG;TestRaster @ FunctorialStringDiagram[
   {},
   {Customized[{Bottom,0} \[UndirectedEdge] 1 -> $FunL, SplitPosition -> "End"]},
   {$Oc, 0.5 -> $ff, $Od},
@@ -89,7 +90,7 @@ TestRaster @ FunctorialStringDiagram[
 TestRaster @ FunctorialStringDiagram[
   {{0, 7} -> $NTeps},
   {Customized[Bottom \[UndirectedEdge] 1 -> $FunL, SplitPosition -> "End"],
-   Customized[1 \[UndirectedEdge] "g" -> Customized[$FunR, LabelPosition -> Center, LabelOffset -> {8,-18}], SplitPosition -> "End"]
+   Customized[1 \[UndirectedEdge] "g" -> Customized[$FunR, LabelPosition -> Left], SplitPosition -> "End"]
    },
   {$Oc, 0.5 -> $fg, $Od},
   {BottomRight -> $CD, BottomLeft -> $CC},
@@ -107,7 +108,7 @@ TestRaster @ FunctorialStringDiagram[
 TestRaster @ FunctorialStringDiagram[
   {{0, -7} -> $NTeps},
   {Customized[{Top,0} \[UndirectedEdge] 1 -> $FunR, SplitPosition -> "End"],
-   Customized[1 \[UndirectedEdge] 2 -> $FunL, SplitPosition -> "End", LabelPosition -> Center, LabelOffset -> {8,-5}]
+   Customized[1 \[UndirectedEdge] 2 -> $FunL, SplitPosition -> "End", LabelPosition -> Right]
    },
   {$Oc, 0.5 -> $ff, $Od},
   {TopLeft -> $CD, TopRight -> $CC},
@@ -119,7 +120,7 @@ TripleFunctorDiagram[c_, d_, e_, l1_, l2_] :=
   StringDiagram[{}, {{Bottom,3} \[UndirectedEdge] Top -> l2, {Bottom,-3} \[UndirectedEdge] Top -> l1}, {Left -> c, Center -> d, Right -> e}, DiagramSize -> {9, 12}, $adjOpts];
 
 NestedMuDiagram[c_, d_, e_, l1_, l2_, r1_, r2_, eta1_, eta2_, opts___] :=
-  StringDiagram[{{0,4.5} -> eta1, {0, -4.5} -> eta2}, {2 \[UndirectedEdge] {Top,-7} -> r2, 1 \[UndirectedEdge] {Top,-3} -> r1, 1 \[UndirectedEdge] {Top,3} -> l1, 2 \[UndirectedEdge] {Top,7} -> l2}, {{0, -9} -> e, Center -> d, {0, 9} -> c}, $adjOpts, opts];
+  StringDiagram[{{0,4.5} -> eta1, {0, -4.5} -> eta2}, {2 \[UndirectedEdge] {Top,-8} -> r2, 1 \[UndirectedEdge] {Top,-4} -> r1, 1 \[UndirectedEdge] {Top,4} -> l1, 2 \[UndirectedEdge] {Top,8} -> l2}, {{0, -9} -> e, Center -> d, {0, 9} -> c}, $adjOpts, opts];
 
 ComposedMonadPanelDiagram[c_, d_, e_, l1_, l2_, r1_, r2_, eta1_, eta2_, eps1_, eps2_] := SpacedRow[
   TripleFunctorDiagram[c, d, e, l1, l2],
@@ -169,14 +170,15 @@ TestRaster @ MonadEpsDiagram[$CC, $FunT1, $NTeps]
 $FunRL = CompositionForm[$FunR, $FunL];
 AdjMonadMuDiagram[c_, d_, l_, r_, eps_, opts___] := StringDiagram[
   {{0,-3} -> eps},
-  {1 \[UndirectedEdge] {Bottom, -4} -> l, 1 \[UndirectedEdge] {Bottom, 4} -> r, Customized[{Bottom, 8} \[UndirectedEdge] {Top, 2} -> l, SplitPosition -> "Middle"],
-   Customized[{Bottom, -8} \[UndirectedEdge] {Top, -2} -> r, SplitPosition -> "Middle"]},
+  {1 \[UndirectedEdge] {Bottom, -4} -> l, 1 \[UndirectedEdge] {Bottom, 4} -> r, 
+  Customized[{Bottom, 8} \[UndirectedEdge] {Top, 2} -> l, SegmentPosition -> 0.55],
+   Customized[{Bottom, -8} \[UndirectedEdge] {Top, -2} -> r, SegmentPosition -> 0.55]},
   {Bottom -> d, Center -> c, Right -> d, Left -> d},
   opts, $monAdjOpts
 ];
 AdjMonadEtaDiagram[c_, d_, l_, r_, eta_, opts___] := StringDiagram[
   {{0,0} -> eta},
-  {1 \[UndirectedEdge] {Top, -2.5} -> r, 1 \[UndirectedEdge] {Top, 2.5} -> l},
+  {1 \[UndirectedEdge] {Top, -4} -> r, 1 \[UndirectedEdge] {Top, 4} -> l},
   {Bottom -> d, Top -> c},
   opts, $monAdjOpts
 ];

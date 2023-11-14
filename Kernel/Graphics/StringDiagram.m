@@ -37,6 +37,7 @@ Options[StringDiagram] = {
   TextModifiers         -> {},
   CurveFunction         -> Automatic,
   SplitPosition         -> "Start",
+  SegmentPosition       -> 0.5,
   "SplitOrientation"    -> Horizontal,
 
   NodeSize              -> 25,
@@ -94,12 +95,13 @@ StringDiagram[boxes_List, wires_List, opts___Rule] :=
   StringDiagram[boxes, wires, {}, opts];
 
 StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Scope[
-  $boxAliases = $wireAliases = UAssoc[];
+  $boxSizes = $boxAliases = $wireAliases = UAssoc[];
   $fillRegions = {};
 
   UnpackOptions[
     flipX, flipY, wireThickness, nodeEdgeThickness, nodeBackground, frameThickness, frameColor, curveFunction,
-    splitPosition, splitOrientation, background, baseThickness, halfFrame, imagePadding, epilog, fontSize, fontWeight, fontFamily,
+    segmentPosition, splitPosition, splitOrientation,
+    background, baseThickness, halfFrame, imagePadding, epilog, fontSize, fontWeight, fontFamily,
     diagramSize, imageSize, graphicsScale, textModifiers, frameTicks, colorRules, regionFilling, gradientSymbolOptions
   ];
 
@@ -142,7 +144,8 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   $fontWeight = ReplaceAutomatic[wireLabelFontWeight, fontWeight];
   $fontFamily = ReplaceAutomatic[wireLabelFontFamily, fontFamily];
   labelPosition = wireLabelPosition; labelSpacing = wireLabelSpacing; labelOffset = wireLabelOffset; labelBackground = wireLabelBackground;
-  SetAutomatic[curveFunction, CircuitCurve[#, SetbackDistance -> None, SplitPosition -> splitPosition, Orientation -> splitOrientation]&];
+  (* SetAutomatic[curveFunction, CircuitCurve[#, SetbackDistance -> None, SplitPosition -> splitPosition, Orientation -> splitOrientation]&]; *)
+  SetAutomatic[curveFunction, stringDiagramCurve];
   $textModifierFn = wireTextModifierFn;
   wirePrims = MapIndex1[$keyOff = 0; parseWire, wires];
 
@@ -224,6 +227,20 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
 
 (**************************************************************************************************)
 
+stringDiagramCurve[pos_, setback_] :=
+  NeatCurve[pos,
+    JoinStyle -> Map[toJS, pos], Setback -> setback, BendRadius -> 2,
+    SegmentPosition -> segmentPosition
+  ];
+
+toJS[{x_, y_}] := Which[
+  Abs[x] >= $w, Horizontal,
+  Abs[y] >= $h, Vertical,
+  True, Horizontal
+];
+
+(**************************************************************************************************)
+
 doFlip[pos_] := ApplyFlip[pos, {flipX, flipY}];
 
 (**************************************************************************************************)
@@ -254,11 +271,14 @@ parseBox = Case[
 
   Seq[pos_ -> label_, key_] := Scope[
     $pos = ReplaceAll[maybe[p_] :> p] @ toPos @ pos;
-    AssociateTo[$boxAliases, (key - $keyOff) -> $pos];
+    ind = key - $keyOff;
+    AssociateTo[$boxAliases, ind -> $pos];
     $lastInnerLabel = None;
-    res = makeBox @ label;
+    {res, size} = makeBox @ label;
+    AssociateTo[$boxSizes, ind -> size];
     If[Quiet @ StringQ[label = FormToPlainString[$lastInnerLabel]],
       AssociateTo[$boxAliases, label -> $pos]];
+      AssociateTo[$boxSizes, label -> size];
     res
   ];
 ];
@@ -274,10 +294,15 @@ $boxCustomizationKeyP = Flatten[Alternatives @@ (P1 @ $boxCustomizations)];
 
 fsToRel[sz_] := sz / graphicsScale;
 
+makeDiskBox[style_] := {
+  Style[Disk[$pos, 0.5], style, EdgeForm[AbsoluteThickness[nodeEdgeThickness]]],
+  0.5
+};
+
 makeBox = Case[
 
-  "WhiteDisk" := Style[Disk[$pos, 1/2], FaceEdgeForm[White, Black], EdgeForm[AbsoluteThickness[nodeEdgeThickness]]];
-  "BlackDisk" := Style[Disk[$pos, 1/2], FaceEdgeForm[Black], EdgeForm[AbsoluteThickness[nodeEdgeThickness]]];
+  "WhiteDisk" := makeDiskBox @ FaceEdgeForm[White, Black];
+  "BlackDisk" := makeDiskBox @ FaceEdgeForm[Black];
 
   (h:"Disk"|NodeDisk|"Box"|NodeBox)[label_, r_:Automatic, opts___Rule] := Scope[
     SetAutomatic[r, nodeSize];
@@ -286,16 +311,19 @@ makeBox = Case[
     fc = Lookup[{opts}, FrameColor, If[ColorQ @ labelColor, OklabDarker[labelColor], ReplaceNone[boxColor, ReplaceNone[nodeFrameColor, defaultWireColor]]]];
     ef = {AbsoluteThickness[nodeEdgeThickness], fc};
     ff = Lookup[{opts}, Background, If[ColorQ @ labelColor, Lighter[labelColor, 0.9], nodeBackground]];
-    List[
+    isDisk = h ~~~ "Disk" | NodeDisk;
+    res = List[
       Style[
-        If[h ~~~ "Disk" | NodeDisk,
+        If[isDisk,
           Disk[$pos, fsToRel[r]/2],
           CenteredRectangle[$pos, fsToRel @ r, FilterOptions @ opts, RoundingRadius -> fsToRel[5]]
         ],
         FaceForm[ff], EdgeForm[ef]
       ],
       makeLabel[label, List @ $pos]
-    ]
+    ];
+    size = If[isDisk, fsToRel[r]/2, Rectangular[fsToRel[r]*{1, 1}/2]];
+    {res, size}
   ];
 
   c_Customized := customizedBlock[c, $boxCustomizations, %];
@@ -304,13 +332,14 @@ makeBox = Case[
     labelPosition = Which[P1[$pos] <= $w, Right, P1[$pos] >= $w, Left, True, Above];
     label //= $colorModifierFn;
     labelColor = extractColorFromLabel @ label;
-    List[
+    res = List[
       Style[Point[$pos], If[ColorQ @ labelColor, OklabDarker @ labelColor, boxColor]],
       makeLabel[label, List @ $pos]
-    ]
+    ];
+    {res, 0}
   ];
 
-  None := Point[$pos];
+  None := {Point[$pos], 0};
 
   label_ := %[$nodeShape[label]];
 ];
@@ -321,8 +350,8 @@ makeBox = Case[
 StringDiagram::badwire = "Wire specification `` is invalid."
 
 $wireCustomizations = RuleDelayed[
-  {CurveFunction, WireColor, SplitPosition, "SplitOrientation", LabelPosition, LabelSpacing, LabelOffset, LabelBackground, FontColor,   FontWeight,  FontSize},
-  {curveFunction, wireColor, splitPosition,  splitOrientation,  labelPosition, labelSpacing, labelOffset, labelBackground, $fontColor, $fontWeight, $fontSize}
+  {CurveFunction, WireColor, SegmentPosition, SplitPosition, "SplitOrientation", LabelPosition, LabelSpacing, LabelOffset, LabelBackground, FontColor,   FontWeight,  FontSize},
+  {curveFunction, wireColor, segmentPosition, splitPosition,  splitOrientation,  labelPosition, labelSpacing, labelOffset, labelBackground, $fontColor, $fontWeight, $fontSize}
 ];
 
 parseWire = Case[
@@ -368,7 +397,8 @@ parseWire = Case[
     pos = toPos /@ {a, b};
     x = First[DeleteCases[_maybe] @ pos[[All, 1]], None];
     pos = pos /. maybe[0] :> ReplaceNone[x, 0];
-    curve = curveFunction[pos];
+    size = toSize /@ {a, b};
+    curve = Replace[curveFunction, Line -> (SeqFirst /* Line)][pos, size];
     points = DiscretizeCurve @ curve;
     AssociateTo[$wireAliases, (key - $keyOff) -> points];
     StyleOperator[sc] @ {curve, makeLabel[label, points]}
@@ -405,9 +435,14 @@ toPos = Case[
   {Top, i_}                := doFlip @ {i, $h};
   {Right, i_}              := doFlip @ {$w, i};
   {Left, i_}               := doFlip @ {-$w, i};
-  key:(_Int | _Str) := Lookup[$boxAliases, key, Message[StringDiagram::nobox, key, Keys @ $boxAliases]; {0, 0}];
+  key:(_Int | _Str)        := Lookup[$boxAliases, key, Message[StringDiagram::nobox, key, Keys @ $boxAliases]; {0, 0}];
   Translate[pos_, off_]    := doFlip[off] + % @ pos;
   other_                   := doFlip @ other;
+]
+
+toSize = Case[
+  key:(_Int | _Str)        := Lookup[$boxSizes, key];
+  _                        := 0;
 ]
 
 (**************************************************************************************************)
