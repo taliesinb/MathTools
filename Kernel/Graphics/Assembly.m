@@ -5,7 +5,7 @@ SRowR[args___, opts___Rule] := SRow[Seq @@ Rev[{args}], opts];
 
 PublicFunction[AssembleGraphics]
 
-PublicOption[HorizontalAlignment, VerticalAlignment, HorizontalSpacing, VerticalSpacing, Spacing, ImageScale]
+PublicOption[HorizontalAlignment, VerticalAlignment, HorizontalSpacing, VerticalSpacing, Spacing]
 
 Options[AssembleGraphics] = JoinOptions[
   HorizontalAlignment -> Center,
@@ -14,13 +14,12 @@ Options[AssembleGraphics] = JoinOptions[
   VerticalSpacing -> 1,
   Alignment -> None,
   Spacing -> None,
-  ImageScale -> None,
   BaseStyle -> {FontSize -> 22, FontFamily -> "Source Code Pro"},
   Graphics
 ];
 
 AssembleGraphics[g_, opts:OptionsPattern[]] := Scope[
-  UnpackOptions[$horizontalAlignment, $verticalAlignment, $horizontalSpacing, $verticalSpacing, alignment, spacing, $imageScale, $baseStyle, imagePadding];
+  UnpackOptions[$horizontalAlignment, $verticalAlignment, $horizontalSpacing, $verticalSpacing, alignment, spacing, $baseStyle, imagePadding];
   If[alignment =!= None, Switch[alignment,
     Left | Right, $horizontalAlignment = alignment,
     Top | Bottom, $verticalAlignment = alignment,
@@ -44,7 +43,6 @@ AssembleGraphics[g_, opts:OptionsPattern[]] := Scope[
   prims //= SimplifyTranslate;
   
   graphics = Graphics[prims, BaseStyle -> $baseStyle, PlotRange -> {{0, xmax}, {0, ymax}}, FilterOptions @ opts];
-  If[$imageScale =!= None, graphics = SetGraphicsScale[graphics, $imageScale, imagePadding]];
   
   If[$requiredScaleFactor,
     {{xmin, xmax}, {ymin, ymax}} = GraphicsPlotRange[graphics];

@@ -65,6 +65,7 @@ setupPrimBoxesBoundDefs[] := With[{
 
   boxBound[PointBox[p_]] /; $gs =!= None       := boxBound @ Construct[DiskBox, p, $aps / $gs];
   boxBound[Point3DBox[p_]] /; $gs =!= None     := boxBound @ Construct[SphereBox, p, $aps / $gs];
+  boxBound[TagBox[_, "PlaneInset"]]            := Null; (* PlaneInset is meant to appear as a billboard *)
   boxBound[ib:$insetP]                         := insetBounds @ ib;
   boxBound[$prims[p_, ___]]                    := boxBound @ p;
   boxBound[$vec[v:vecP]]                       := StuffBag[$p, $t @ v];

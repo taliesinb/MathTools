@@ -36,23 +36,30 @@ NormalizePlotRange[graphics_, OptionsPattern[]] := Scope[
 
 PublicFunction[GraphicsPlotRange]
 
-(* TODO: it makes more sense to have a single function that determines a good plot range AND
-extra image padding at the same time. you can't avoid doing toboxes to do this in any case since
-that's what FindAutomaticPadding does. the below code is such a shitshow and the kernel ignores all
-kinds of corner cases like apply geometric transformations that you're building a half-baked full solution
-in any case. *)
-
 SetUsage @ "
-GraphicsPlotRange[graphics$] yields the %PlotRange that will be used when graphics$ is rendered.
-* graphics$ can be a %Graphics[$$], %Graphics3D[$$], their box equivalents, or a list of graphics primitives.
+GraphicsPlotRange[graphics$] yields the plot range that will be used when graphics$ is rendered.
+
+* the range is given as {{x$min, x$max}, {y$min, y$max}}.
+
+* graphics$ can be a %Graphics[$$], %Graphics3D[$$], %FixedGraphics[$$], or %Graph[$$] which will be boxified.
+
+* graphics$ can also %GraphicsBox[$$], %Graphics3DBox[$$].
+
+* graphics$ can also be a list of graphics primitives.
+
 * %Legended, %Labeled, etc will be skipped.
-* The option %PlotRangePadding specifies whether padding should be included in the resulting range, \
+
+* %Epilog and %Prolog are not included.
+
+* the option %PlotRangePadding specifies whether padding should be included in the resulting range, \
 and has the following settings:
 | None | do not include any padding (default) |
 | Inherited | apply the padding specified in the graphics object |
 | custom$ | apply the custom padding |
-* Padding is applied used %PlotRangePad.
-* If an existing PlotRange is already set, it is returned.
+
+* padding is applied used %PlotRangePad.
+
+* if an existing PlotRange is already set, it is returned, with padding applied.
 "
 
 Options[GraphicsPlotRange] = {
@@ -67,7 +74,21 @@ GraphicsPlotRange[expr_, OptionsPattern[]] := Scope[
 iGraphicsPlotRange = Case[
   g:(_Graphics | _Graphics3D) := Scope[
     plotRange = LookupOption[g, PlotRange];
-    padRange[g, If[CoordinateMatrixQ[plotRange], plotRange, kernelPlotRange @ g]]
+    If[!CoordinateMatrixQ[plotRange],
+      plotRange = PrimitiveBoxesBounds @ First @ ToBoxes @ g];
+    padRange[g, plotRange]
+  ];
+  g_FixedGraphics := Scope[
+    plotRange = LookupOption[g, PlotRange];
+    If[CoordinateMatrixQ[plotRange],
+      Return @ padRange[g, plotRange]];
+    LookupOption[ToBoxes @ g, PlotRange]
+  ];
+  g:(_GraphicsBox | _Graphics3DBox) := Scope[
+    plotRange = LookupOption[g, PlotRange];
+    If[!CoordinateMatrixQ[plotRange],
+      plotRange = PrimitiveBoxesBounds @ First @ g];
+    padRange[g, plotRange]
   ];
   g_Graph := padRange[g,
     Replace[
@@ -77,113 +98,12 @@ iGraphicsPlotRange = Case[
       )
     ]
   ];
-  g:(_GraphicsBox | _Graphics3DBox) := %[g /. $graphicsBoxReplacements];
-  (Labeled|Legended)[e_, ___] := %[g];
+  (Labeled|Legended)[e_, ___] := %[e];
   elems_ := %[Graphics @ elems];
 ];
 
 padRange[g_, plotRange_] :=
   PlotRangePad[plotRange, Replace[plotRangePadding, Inherited :> LookupOption[g, PlotRangePadding]]];
-
-(**************************************************************************************************)
-
-$centerOSpecP = Center | Automatic | {Center, Center} | Scaled[{.5, .5}] | {Scaled[.5], Scaled[.5]};
-
-$ghead = Graphics;
-
-GraphicsPlotRange::failed = "Cannot find plot range for ``, using unit plot range.";
-
-kernelPlotRange[g_Graphics3D | g_Graphics] := Module[
-  {g2, res, coord, $ghead = H @ g},
-  g2 = InheritedBlock[{$MakeBoxesStyleData}, plotRangeRecurse @ g];
-  g2 = plotRangeExpand @ g2;
-  res = Quiet @ PlotRange @ g2;
-  If[!MatrixQ[res],
-    g2 //= DeleteCases[(s_Symbol -> _) /; Context[s] =!= "System`"];
-  (* ^ deal with weird option 'ViewSize' that appears on reinterpreting Graphics3D *)
-    res = Quiet @ PlotRange @ g2;
-  ];
-  If[!MatrixQ[res],
-    Message[GraphicsPlotRange::failed, MsgExpr[g, 6, 30]];
-    res = {{-1, 1}, {-1, 1}};
-  ];
-  If[P1[res] === {-1., 1.} || PN[res] === {-1., 1.},
-    (* this occurs when a plot is completely flat horizontally or vertically *)
-    coord = DeepFirstCase[g2, $CoordP] + $MachineEpsilon;
-    res = Quiet @ PlotRange @ MapAt[{#, Point[coord]}&, g2, 1];
-  ];
-  res
-];
-
-expandMultiArrowInGC[g_] := g /.
-  Arrow[segments:{{__Int}..}, opts___] :> RuleCondition[Map[Arrow[#, opts]&, segments]];
-
-$expanderRules := $expanderRules = Dispatch @ {
-  RawBoxes[b_]                             :> RuleCondition[b /. $graphicsBoxReplacements],
-  Invisible[e_]                            :> e,
-  Text[_, pos_, ___]                       :> RuleCondition[Point[pos]],
-  StadiumShape[{a_, b_}, r_]               :> RuleCondition[{Disk[a, r], Disk[b, r]}],
-  CapsuleShape[{a_, b_}, r_]               :> RuleCondition[{Sphere[a, r], Sphere[b, r]}],
-  Cube[p:{_, _, _}:{0,0,0}, l_:1]          :> RuleCondition[Sphere[p, l/2]],
-  (JoinedCurve|JoinedCurveBox)[e_List]     :> e,
-  a:$AnnotationP                           :> RuleCondition[plotRangeExpand @ P1 @ a],
-  (StyleBox|Style)[e_, ___]                :> e,
-  Inset[_, pos_, ___]                      :> Point[pos],
-  Translate[g_, t_]                        :> RuleCondition[GraphicsTransformAffine[g, None, t]],
-  Rotate[g_, t_]                           :> RuleCondition[GraphicsTransformAffine[g, RotationMatrix @ t, None]],
-  GeometricTransformation[g_, m_ ? MatrixQ]       :> RuleCondition[GraphicsTransformAffine[g, m, None]],
-  GeometricTransformation[g_, {m_ ? MatrixQ, t_}] :> RuleCondition[GraphicsTransformAffine[g, m, t]],
-  Inset[_, pos_, $centerOSpecP, {w_, h_}]  :> RuleCondition[Rectangle[pos - {w,h}/2, pos + {w,h}/2]]
-};
-
-(* this tracks $MakeBoxesStyleData changes in the primitive tree, so that when we use render custom
-graphics primitives we will pick up the right options for them *)
-plotRangeRecurse = Case[
-  (head:Translate|Rotate|GeometricTransformation|Graphics|Graphics3D)[g_, a___] := head[% @ g, a];
-  l_List                         := InheritedBlock[{$MakeBoxesStyleData}, Map[%, l]];
-  Rule[key_Symbol, val_]         := ($MakeBoxesStyleData[key] = val);
-  other_                         := If[TrueQ @ $customGraphicsHeadQ @ H @ other,
-    With[{h = $ghead}, Typeset`MakeBoxes[other, StandardForm, h]] //. $graphicsBoxReplacements,
-    other
-  ]
-];
-
-
-plotRangeExpand[g_] := g /.
-  gc_GraphicsComplex :> RuleCondition[Normal @ expandMultiArrowInGC @ gc] //. $expanderRules /. t_Translate :> RuleCondition @ BakeGraphicsTransformations[t];
-
-$graphicsBoxSymbols = {
-  PointBox, Point3DBox,
-  CircleBox, DiskBox, RectangleBox, PolygonBox, Polygon3DBox, PolyhedronBox,
-  LineBox, Line3DBox, ArrowBox, Arrow3DBox,
-  TextBox, Text3DBox,
-  TooltipBox, StyleBox,
-  InsetBox, Inset3DBox,
-  GeometricTransformationBox, GeometricTransformation3DBox,
-  GraphicsBox, Graphics3DBox,
-  GraphicsGroupBox, GraphicsGroup3DBox, GraphicsComplexBox, GraphicsComplex3DBox,
-  RasterBox, Raster3DBox,
-  BSplineCurveBox, BSplineCurve3DBox, BezierCurveBox, BezierCurve3DBox, FilledCurveBox, JoinedCurveBox,
-  SphereBox, CylinderBox, TubeBox, ConeBox, CuboidBox, HexahedronBox, TetrahedronBox,
-  ConicHullRegionBox, ConicHullRegion3DBox
-};
-
-$boxSymbolToOrdinarySymbol := $boxSymbolToOrdinarySymbol =
-  AssociationMap[SymbolName /* boxNameToOrdinaryName /* Symbol, $graphicsBoxSymbols];
-
-boxNameToOrdinaryName[name_] := StringDelete[name, {"3D", "Box"}];
-
-PrivateVariable[$graphicsBoxReplacements]
-
-$graphicsBoxReplacements := $graphicsBoxReplacements =
-  Dispatch @ Join[Normal @ $boxSymbolToOrdinarySymbol, {InterpretationBox[a_, _] :> a, Typeset`Hold[h_] :> h}];
-
-(**************************************************************************************************)
-
-PrivateVariable[$primitiveToBoxReplacements]
-
-$primitiveToBoxReplacements := $primitiveToBoxReplacements =
-  Dispatch @ Cases[$graphicsBoxReplacements, Rule[box_Symbol, prim_Symbol] :> Rule[prim, box]];
 
 (**************************************************************************************************)
 

@@ -73,10 +73,10 @@ rawPlaneInsetBoxes[object_, origin_, {vx_, vy_}, {fx_, fy_}, OptionsPattern[Plan
   {my, py} = Outer[Times, fracPair[-fy], Normalize[vy] * h];
   coords = Threaded[origin] + {mx + my, mx + py, px + py, px + my};
   SetAutomatic[flipX, Dot[Cross[vx, vy], viewVector] > 0];
-  StyleBox[
+  TagBox[StyleBox[
     Construct[Polygon3DBox, coords, VertexTextureCoordinates -> $textureCoords[{flipX, flipY}]],
     texture, EdgeForm[None]
-  ]
+  ], "PlaneInset"]
 ];
 
 addStyle[Text[t_, rest___], style___] := Text[Style[t, style], rest];

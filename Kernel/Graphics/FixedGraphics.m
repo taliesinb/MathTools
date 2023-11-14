@@ -1,6 +1,6 @@
 PublicTypesettingForm[FixedGraphics]
 
-PublicOption[ResolveInsetGraphics, PropogateGraphicsScale]
+PublicOption[GraphicsScale, ResolveInsetGraphics, PropogateGraphicsScale]
 
 SetUsage @ "
 FixedGraphics[prims$, opts$$] is like %Graphics but applies a fixed scaling from plot range coordinates to pixels.

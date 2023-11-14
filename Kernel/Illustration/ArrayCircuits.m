@@ -430,9 +430,9 @@ toWireStyle = Case[
   i_Int := ToRainbowColor[i];
 ]
 
-wireIconGraphics[style_] := ScaleGraphics[
+wireIconGraphics[style_] := FixedGraphics[
   {AbsoluteThickness[3], style, CircuitCurve[{{0,0}, {0, .5}}]},
-  Axes -> None, ImagePadding -> {Horizontal -> 2},
+  ImagePadding -> {Horizontal -> 2},
   GraphicsScale -> 40,
   BaselinePosition -> Scaled[0.15]
 ];
