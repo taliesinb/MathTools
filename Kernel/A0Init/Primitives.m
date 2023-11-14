@@ -55,8 +55,10 @@ SignPrimitive[sig_, heads_List | heads_Alternatives] :=
 $head = None;
 SignPrimitive[sig_, head_Symbol] := CatchMessage @ Scope[
   $head = head;
-  boxHeadName = "System`" <> SymbolName[head] <> "Box";
-  $boxHead = If[NameQ[boxHeadName], Symbol @ boxHeadName, None];
+  name = SymbolName[head];
+  boxHeadName   = StringJoin["System`", name, "Box"];
+  box3DHeadName = StringJoin["System`", name, "3DBox"];
+  $boxHeads = Symbol /@ Select[{boxHeadName, box3DHeadName}, NameQ];
   Scan[procSignature, toSignatures @ sig];
 ];
 
@@ -78,23 +80,27 @@ procSignature[str_Str] := Scope[
   sigElems = parseSignatureString @ str;
   KeyUnionTo[$sigToPrims, sigElems, {$head}];
   declareGraphicsHead[$head];
-  If[$boxHead =!= None,
-    registerBoxHeadSigs[sigElems];
-    AssociateTo[$primHeadToPrimBoxHead, $head -> $boxHead];
-  ];
+  registerBoxHeadSigs[$head, $boxHeads, sigElems];
   KeyUnionTo[$primToSigs, $head, {sigElems}];
   ScanIndex1[KeyUnionTo[$sigElemToPrims, {#2, #1}, {$head}]&, sigElems];
 ];
 
-registerBoxHeadSigs[sigElems_] := (
-  KeyUnionTo[$sigToPrimBoxes, sigElems, {$boxHead}];
-  KeyUnionTo[$primBoxToSigs, $boxHead, {sigElems}];
-  ScanIndex1[KeyUnionTo[$sigElemToPrimBoxes, {#2, #1}, {$boxHead}]&, sigElems];
-  insertQP[$graphicsBoxHeadQ, $graphicsBoxHeadP, $boxHead];
+registerBoxHeadSigs[_, {}, _] := Null;
+registerBoxHeadSigs[primHead_, boxHeads_, sigElems_] := (
+  (* we only take the 2D if both are present, so Point -> PointBox *)
+  AssociateTo[$primHeadToPrimBoxHead, primHead -> P1[boxHeads]];
+  KeyUnionTo[$sigToPrimBoxes, sigElems, boxHeads];
+  ScanIndex1[KeyUnionTo[$sigElemToPrimBoxes, {#2, #1}, boxHeads]&, sigElems];
+  Scan[boxHead |-> (
+      KeyUnionTo[$primBoxToSigs, boxHead, {sigElems}];
+      insertQP[$graphicsBoxHeadQ, $graphicsBoxHeadP, boxHead];
+    ),
+    boxHeads
+  ];
 );
 
 (* TagBox has no corresponding form, so we register it manually *)
-Block[{$boxHead = TagBox}, registerBoxHeadSigs[{$PrimitivesArg}]];
+registerBoxHeadSigs[$dummy, {TagBox}, {$PrimitivesArg}];
 
 General::badprimsig = "Bad signature `` for graphics primitive ``."
 procSignature[shape_] := ThrowMessage["badprimsig", shape, $head];
@@ -172,7 +178,7 @@ PrimitiveBoxSignatureLookup[arg_] := Block[
 SignPrimitive["Vector,Vector", Cuboid | Rectangle]; (* EmptyRectangle *)
 
 SignPrimitive["Vector | Matrix", Point];
-SignPrimitive["Matrix | Matrices", Polygon | Polyhedron | Line | Triangle];
+SignPrimitive["Matrix | Matrices", Polygon | Polyhedron | Line | Arrow | Triangle];
 
 SignPrimitive["Vector?Radius | Matrix?Radius", Circle | Disk | Sphere | Ball];
 SignPrimitive["Vector?Radius", Annulus | Cube];
@@ -182,8 +188,6 @@ SignPrimitive["Matrix", GraphicsComplex | BSplineCurve | BezierCurve | Simplex];
 SignPrimitive["Matrix?Radius | Matrices?Radius | Curve?Radius", Tube];
 
 SignPrimitive["Pair", InfiniteLine | HalfLine];
-
-SignPrimitive["Curve", Arrow];
 
 SignPrimitive["Pair?Radius", Cylinder | Cone | CapsuleShape | StadiumShape];
 

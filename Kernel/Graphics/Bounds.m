@@ -56,6 +56,7 @@ setupPrimBoxesBoundDefs[] := With[{
   $matsrad   = toBoxHeadPatt["Matrices,Radius"],
   $dirP      = _Directive | _AbsolutePointSize | Rule[FontSize | FontWeight | FontFamily | FontSlant | FontTracking, _],
   $curvesP   = JoinedCurveBox|FilledCurveBox,
+  $insetP    = _TextBox | _Text3DBox | _InsetBox | _Inset3DBox,
   vecP       = $CoordP,
   matP       = {__List} ? CoordinateMatrixQ,
   matListP   = {__List} ? CoordinateMatricesQ},
@@ -63,16 +64,17 @@ setupPrimBoxesBoundDefs[] := With[{
   Clear[boxBound];
 
   boxBound[PointBox[p_]] /; $gs =!= None       := boxBound @ Construct[DiskBox, p, $aps / $gs];
-  boxBound[ib:(_TextBox | _InsetBox)]          := insetBounds @ ib;
+  boxBound[Point3DBox[p_]] /; $gs =!= None     := boxBound @ Construct[SphereBox, p, $aps / $gs];
+  boxBound[ib:$insetP]                         := insetBounds @ ib;
   boxBound[$prims[p_, ___]]                    := boxBound @ p;
   boxBound[$vec[v:vecP]]                       := StuffBag[$p, $t @ v];
   boxBound[$vecvec[v:vecP, w:vecP, ___]]       := (StuffBag[$p, $t @ v]; StuffBag[$p, $t @ w]);
-  boxBound[$vecrad[v:vecP, r_:1, ___]]         := StuffBag[$p, $t @ vecCirc8[v, r]];
+  boxBound[$vecrad[v:vecP, r_:1, ___]]         := StuffBag[$p, $t @ vecBall[v, r]];
   boxBound[PolygonBox[Rule[m:matP, _], ___]]   := StuffBag[$p, $t @ m, 1];
   boxBound[$mat[m:matP, ___]]                  := StuffBag[$p, $t @ m, 1];
-  boxBound[$matrad[m:matP, r_:1, ___]]         := StuffBag[$p, $t @ matCirc8[m, r], 1];
+  boxBound[$matrad[m:matP, r_:1, ___]]         := StuffBag[$p, $t @ matBall[m, r], 1];
   boxBound[$mats[ms:matListP, ___]]            := StuffBag[$p, $t /@ ms, 2];
-  boxBound[$matsrad[ms:matListP, r_:1, ___]]   := StuffBag[$p, $t[matCirc8[#, r]& /@ ms], 2];
+  boxBound[$matsrad[ms:matListP, r_:1, ___]]   := StuffBag[$p, $t[matBall[#, r]& /@ ms], 2];
   boxBound[list_List]                          := styleBlock @ Scan[boxBound, list];
   boxBound[d:$dirP]                            := applyDir[d];
   boxBound[StyleBox[p_, opts___]]              := styleBlock[Scan[applyDir, {opts}]; boxBound @ p];
@@ -130,8 +132,11 @@ SetHoldFirst[styleBlock];
 styleBlock[e_] := InheritedBlock[{$aps, $fs, $ff, $fw, $fsl, $ft}, e];
 
 $circ8 := $circ8 = ToPackedReal @ N @ ClockwiseCirclePoints[8];
-vecCirc8[v_, r_] := Threaded[v] + r * $circ8;
-matCirc8[m_, r_] := vecCirc8[#, r]& /@ m;
+$sphere26 := $sphere26 = Normalize /@ DeleteCases[{0.,0.,0.}] @ Tuples[N @ {-1, 0, 1}, 3];
+
+vecBall[v:{_, _, _}, r_] := Threaded[v] + r * $sphere26;
+vecBall[v:{_, _}, r_] := Threaded[v] + r * $circ8;
+matBall[m_, r_] := vecBall[#, r]& /@ m;
 
 (**************************************************************************************************)
 
@@ -149,13 +154,16 @@ $baseStyle := {FontSize -> $fs, FontFamily -> $ff, FontWeight -> $fw, FontSlant 
 
 PrimitiveBoxesBounds::unsuppInset = "Unsupported InsetBox ``."
 
-insetBounds[e_] := If[$gs === Null, pointInsetBounds, properInsetBounds][e];
+insetBounds[e_] := If[NumberQ[$gs], properInsetBounds, pointInsetBounds][e];
 
 pointInsetBounds = Case[
-  TextBox[_, v:$CoordP, ___]   := StuffBag[$p, $t @ v];
-  InsetBox[_, v:$CoordP, ___]  := StuffBag[$p, $t @ v];
-  TextBox[_] | InsetBox[_]     := StuffBag[$p, {0, 0}];
-  _                            := Null
+  (TextBox|Text3DBox)[_, v:$CoordP, ___]    := StuffBag[$p, $t @ v];
+  (InsetBox|Inset3DBox)[_, v:$CoordP, ___]  := StuffBag[$p, $t @ v];
+  TextBox[_] | InsetBox[_]                  := StuffBag[$p, {0, 0}];
+  Text3DBox[_] | Inset3DBox[_]              := StuffBag[$p, {0, 0, 0}];
+  o_                                        := Null;
+,
+  {$CoordP}
 ];
 
 properInsetBounds = Case[
