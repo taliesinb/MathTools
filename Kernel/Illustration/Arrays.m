@@ -96,7 +96,7 @@ $defaultItemFunction = Cube[#, 1-$cubeGap]&;
 makeCube[dims_, pos_] := Scope[
   coords = PadRight[pos-.5, 3, 0] - dims/2;
   style = If[MatchQ[$itemStyleFunction, None|Automatic], Automatic, $itemStyleFunction @ pos];
-  Annotation[applyStyle[$itemFunction[coords, pos], style], AnnotatedCoordinate[coords, pos]]
+  Annotation[applyStyle[$itemFunction[coords, pos], style], AnnotatedCoordinates[coords, pos]]
 ];
 
 applyStyle[e_, Automatic] := e;
@@ -331,11 +331,11 @@ attachSpanHighlights[dims_, spans_, hide_][array_] := Scope[
   rules = highlightSpecToRules[dims, spans];
   spans = makeSpanningCuboid @@@ rules;
   pattern = Alternatives @@ Keys[rules];
-  If[hide, array = array /. Annotation[_, AnnotatedCoordinate[_, pattern]] -> {}];
+  If[hide, array = array /. Annotation[_, AnnotatedCoordinates[_, pattern]] -> {}];
   {array, spans}
 ,
   makeSpanningCuboid[pattern_, color_] := Scope[
-    matches = DeepCases[array, AnnotatedCoordinate[coord_, pattern] :> coord];
+    matches = DeepCases[array, AnnotatedCoordinates[coord_, pattern] :> coord];
     If[matches === {}, Print["No matches for ", pattern]; Return[{}]];
     bounds = CoordinateBoundingBox[matches, 0.5 - spanGap/2];
     Style[Cuboid @@ bounds, FaceEdgeForm @ color, Seq @@ ToList[highlightStyle]]
