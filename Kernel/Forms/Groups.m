@@ -2,8 +2,8 @@ PublicTypesettingForm[NamedLieGroup]
 
 DefineStandardTraditionalForm[{
   NamedLieGroup[name_Str] :> TBox[name, "NamedLieGroup"],
-  NamedLieGroup[name_Str, dim_] :> AppliedBox[MakeBoxes @ NamedLieGroup[name], MakeQGBoxes @ dim],
-  NamedLieGroup[name_Str, dim_, field_] :> AppliedBox[MakeBoxes @ NamedLieGroup[name], MakeQGBoxes @ dim, fieldOrRingBoxes @ field]
+  NamedLieGroup[name_Str, dim_] :> AppliedBox[MakeBoxes @ NamedLieGroup[name], MakeMathBoxes @ dim],
+  NamedLieGroup[name_Str, dim_, field_] :> AppliedBox[MakeBoxes @ NamedLieGroup[name], MakeMathBoxes @ dim, fieldOrRingBoxes @ field]
 }];
 
 DefineTemplateBox[NamedLieGroup, "NamedLieGroup", SansSerifBox[$1], None];
@@ -14,8 +14,8 @@ PublicTypesettingForm[NamedLieAlgebra]
 
 DefineStandardTraditionalForm[{
   NamedLieAlgebra[name_Str] :> TBox[name, "NamedLieAlgebra"],
-  NamedLieAlgebra[name_Str, dim_] :> AppliedBox[MakeBoxes @ NamedLieAlgebra[name], MakeQGBoxes @ dim],
-  NamedLieAlgebra[name_Str, dim_, field_] :> AppliedBox[MakeBoxes @ NamedLieAlgebra[name], MakeQGBoxes @ dim, fieldOrRingBoxes @ field]
+  NamedLieAlgebra[name_Str, dim_] :> AppliedBox[MakeBoxes @ NamedLieAlgebra[name], MakeMathBoxes @ dim],
+  NamedLieAlgebra[name_Str, dim_, field_] :> AppliedBox[MakeBoxes @ NamedLieAlgebra[name], MakeMathBoxes @ dim, fieldOrRingBoxes @ field]
 }];
 
 DefineTemplateBox[NamedLieAlgebra, "NamedLieAlgebra", FrakturBox[$1], None];
@@ -27,7 +27,7 @@ fieldOrRingBoxes = Case[
   r:ringsP       := MakeBoxes @ RingSymbol @ r;
   sr:semiringsP  := MakeBoxes @ SemiringSymbol @ sr;
   n_Int          := MakeBoxes @ FiniteFieldSymbol[n];
-  other_         := MakeQGBoxes @ other,
+  other_         := MakeMathBoxes @ other,
   {
     fieldsP     -> Alternatives[Reals, Complexes, Rationals, "R", "C", "Q", "K"],
     ringsP      -> Alternatives[Integers, "Z"],
@@ -143,7 +143,7 @@ SetHoldAllComplete[groupRelationTermBoxes];
 
 groupRelationTermBoxes = Case[
   list_List                                := TemplateBox[MapUnevaluated[%, list], "ImplicitGroupMultiplicationForm"];
-  (Power|PowerForm|GroupPowerForm)[g_, e_] := TemplateBox[{% @ g, MakeQGBoxes @ e}, "GroupPowerForm"];
+  (Power|PowerForm|GroupPowerForm)[g_, e_] := TemplateBox[{% @ g, MakeMathBoxes @ e}, "GroupPowerForm"];
   1                                        := MakeBoxes @ GroupElementSymbol["e"];
   s:symP                                   := MakeBoxes @ GroupElementSymbol @ s;
   GroupInverseForm[e_]                     := TemplateBox[List @ % @ e, "GroupInverseForm"];
@@ -260,7 +260,7 @@ DefineCommaForm[GroupWordRewritingForm, AngleBracketBox[$1], Boxification -> gro
 SetHoldAllComplete[groupWordRewritingRuleBox];
 groupWordRewritingRuleBox = Case[
   a_ -> b_ := MakeBoxes @ MapsToForm[a, b];
-  other_   := MakeQGBoxes @ other;
+  other_   := MakeMathBoxes @ other;
 ];
 
 (**************************************************************************************************)

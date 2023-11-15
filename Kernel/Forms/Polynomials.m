@@ -1,18 +1,12 @@
 PublicTypesettingForm[VariableForm]
 
-declareBoxFormatting[
-  VariableForm[p_] :>
-    TemplateBox[List @ symbolBoxes @ p, "VariableForm"]
-];
-
-$TemplateKatexFunction["VariableForm"] = "variable";
-
+DefineTaggedForm[VariableForm];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[PolynomialSymbol]
 
-declareSymbolForm[PolynomialSymbol];
+DefineTaggedForm[PolynomialSymbol];
 
 (**************************************************************************************************)
 
@@ -21,7 +15,7 @@ PublicTypesettingForm[PolyForm]
 declareBoxFormatting[
   PolyForm[args__] :>
     generalPolyBoxes[
-      PolyForm, "PolynomialForm", "PowerForm", "PlusForm", "ImplicitTimesForm", MakeQGBoxes,
+      PolyForm, "PolynomialForm", "PowerForm", "PlusForm", "ImplicitTimesForm", MakeMathBoxes,
       args
     ]
 ];
@@ -73,7 +67,7 @@ polyTermForm = Case[
   Style[e_, s_]               := StyleBox[% @ e, s];
   p_Plus | p_PlusForm         := Apply[innerPolyBoxes, Unevaluated @ p];
   a_Times | a_TimesForm       := Construct[%, Apply[List, Unevaluated @ a]];
-  Power[a_, b_]               := TemplateBox[{% @ a, MakeQGBoxes @ b}, $polyPowerForm];
+  Power[a_, b_]               := TemplateBox[{% @ a, MakeMathBoxes @ b}, $polyPowerForm];
   (Inverted|InvertedForm)[n_]   := TemplateBox[List @ % @ n, "InvertedForm"];
   a_ ? longPolyQ              := TemplateBox[List @ Apply[innerPolyBoxes, Unevaluated @ a], "SpacedParenthesesForm"];
   a_List                      := TemplateBox[MapUnevaluated[makeInnerPolyParamQGBoxes, a], $polyTimesForm];
@@ -83,7 +77,7 @@ polyTermForm = Case[
 makeInnerPolyParamQGBoxes = Case[
   Style[e_, s_]               := StyleBox[% @ e, s];
   a_List | a_Times | a_TimesForm | ParenthesesForm[a_] := TemplateBox[{polyTermForm @ a}, "SpacedParenthesesForm"];
-  Power[a_, b_]               := TemplateBox[{% @ a, MakeQGBoxes @ b}, $polyPowerForm];
+  Power[a_, b_]               := TemplateBox[{% @ a, MakeMathBoxes @ b}, $polyPowerForm];
   a_ ? longPolyQ              := TemplateBox[List @ Apply[innerPolyBoxes, Unevaluated @ a], "SpacedParenthesesForm"];
   (Inverted|InvertedForm)[n_]   := TemplateBox[List @ % @ n, "InvertedForm"];
   a_                          := $scalarBoxes @ a;

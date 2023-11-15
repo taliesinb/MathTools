@@ -1,9 +1,9 @@
 PublicTypesettingForm[WordGroupSymbol, WordRingSymbol]
 
 (* TODO: factor this into declare01SymbolForm *)
-declareSymbolForm[WordGroupSymbol, QuiverSymbol]
-declareSymbolForm[WordRingSymbol, QuiverSymbol]
-declareSymbolForm[PlanRingSymbol, QuiverSymbol]
+DefineTaggedForm[WordGroupSymbol]
+DefineTaggedForm[WordRingSymbol]
+DefineTaggedForm[PlanRingSymbol]
 
 declareBoxFormatting[
   WordGroupSymbol[] :> SBox["WordGroupSymbol"],
@@ -21,19 +21,19 @@ PublicTypesettingForm[WordRingElementSymbol]
 
 WordRingElementSymbol[] := WordRingElementSymbol["\[Omega]"];
 
-declareSymbolForm[WordRingElementSymbol];
+DefineTaggedForm[WordRingElementSymbol];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[WordRingBasisElementForm]
 
-declareUnaryForm[WordRingBasisElementForm];
+DefineUnaryForm[WordRingBasisElementForm, "?"];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[RepeatedPowerForm]
 
-declareBinaryForm[RepeatedPowerForm];
+DefineBinaryForm[RepeatedPowerForm, "?"];
 
 (**************************************************************************************************)
 
@@ -70,13 +70,13 @@ wordBoxes = Case[
   word_Str                          := Construct[%, ToPathWord @ word];
   Style[word_Str, assoc_Assoc]      := applyCardColoring[Construct[%, ToPathWord @ word], assoc];
   (Times|ConcatenationForm)[args__] := TemplateBox[MapUnevaluated[%, {args}], "ConcatenationForm"];
-  RepeatedPowerForm[a_, b_]         := TemplateBox[{% @ a, MakeQGBoxes @ b}, "RepeatedPowerForm"];
+  RepeatedPowerForm[a_, b_]         := TemplateBox[{% @ a, MakeMathBoxes @ b}, "RepeatedPowerForm"];
   c:cardP                           := TemplateBox[List @ MakeBoxes @ c, "WordForm"];
   list:{cardP..}                    := TemplateBox[MapUnevaluated[MakeBoxes, list], "WordForm"];
   list_List                         := TemplateBox[tryColorCardinals @ cardinalBoxes @ list, "WordForm"];
   (Inverted|InvertedForm)[e_]       := TemplateBox[List @ wordBoxes @ e, "InvertedForm"];
   MirrorForm[e_]                    := TemplateBox[List @ wordBoxes @ e, "MirrorForm"];
-  Form[f_]                          := MakeQGBoxes @ f;
+  Form[f_]                          := MakeMathBoxes @ f;
   cs_CardinalSequenceForm           := MakeBoxes @ cs;
   sc_SerialCardinal                 := MakeBoxes @ sc;
   pc_ParallelCardinal               := MakeBoxes @ pc;

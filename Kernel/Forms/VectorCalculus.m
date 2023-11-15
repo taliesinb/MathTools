@@ -1,53 +1,27 @@
 PublicTypesettingForm[GradientForm]
 
-declareBoxFormatting[
-  GradientForm[q_] :> makeHintedTemplateBox[q -> VertexFieldSymbol, "GradientForm"],
-  GradientForm[] :> SBox["GradientSymbol"]
-];
-
-$TemplateKatexFunction["GradientForm"] = "gradOf";
-$TemplateKatexFunction["GradientSymbol"] = katexAlias["grad"];
+DefineUnaryForm[GradientForm, "?"]
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[DivergenceForm]
 
-declareBoxFormatting[
-  DivergenceForm[q_] :> makeHintedTemplateBox[q -> EdgeFieldSymbol, "DivergenceForm"],
-  DivergenceForm[] :> SBox["DivergenceSymbol"]
-];
-
-$TemplateKatexFunction["DivergenceForm"] = "divOf";
-$TemplateKatexFunction["DivergenceSymbol"] = katexAlias["div"];
+DefineUnaryForm[DivergenceForm, "?"]
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[LaplacianForm]
 
-declareBoxFormatting[
-  LaplacianForm[q_] :> makeHintedTemplateBox[q -> EdgeFieldSymbol, "LaplacianForm"],
-  LaplacianForm[] :> SBox["LaplacianSymbol"]
-];
-
-$TemplateKatexFunction["LaplacianForm"] = "laplacianOf";
-$TemplateKatexFunction["LaplacianSymbol"] = katexAlias["laplacian"];
+DefineUnaryForm[LaplacianForm, "?"]
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[PartialDifferentialOfForm]
 
-declareBoxFormatting[
-  PartialDifferentialOfForm[x_] :>
-    makeTemplateBox[x, "PartialDifferentialOfForm"],
-  PartialDifferentialOfForm[] :>
-    SBox["PartialDifferentialSymbol"]
-];
-
-$TemplateKatexFunction["PartialDifferentialOfForm"] = "partialdof";
-$TemplateKatexFunction["PartialDifferentialSymbol"] = katexAlias["partial"];
+DefineUnaryForm[PartialDifferentialOfForm, "?"]
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[LieBracketForm]
 
-declareBinaryForm[LieBracketForm];
+DefineBinaryForm[LieBracketForm, "?"];

@@ -1,8 +1,8 @@
 PublicTypesettingForm[TopologicalSpaceSymbolForm, BundleSectionSymbolForm, BundleProjectionSymbolForm]
 
-declareSymbolForm[TopologicalSpaceSymbolForm]
-declareSymbolForm[BundleSectionSymbolForm]
-declareSymbolForm[BundleProjectionSymbolForm]
+DefineTaggedForm[TopologicalSpaceSymbolForm]
+DefineTaggedForm[BundleSectionSymbolForm]
+DefineTaggedForm[BundleProjectionSymbolForm]
 
 (**************************************************************************************************)
 
@@ -13,34 +13,34 @@ f_BundleGraphStyleForm[arg__] := AppliedForm[f, arg];
 f_BundleProjectionStyleForm[arg__] := AppliedForm[f, arg];
 f_BundleSectionStyleForm[arg__] := AppliedForm[f, arg];
 
-declareUnaryForm[BundleFunctionStyleForm]
-declareUnaryForm[BundleGraphStyleForm]
-declareUnaryForm[BundleProjectionStyleForm]
-declareUnaryForm[BundleSectionStyleForm]
+DefineUnaryForm[BundleFunctionStyleForm, "?"]
+DefineUnaryForm[BundleGraphStyleForm, "?"]
+DefineUnaryForm[BundleProjectionStyleForm, "?"]
+DefineUnaryForm[BundleSectionStyleForm, "?"]
 
 PublicTypesettingForm[TotalSpaceStyleForm, BaseSpaceStyleForm, FiberSpaceStyleForm]
 
-declareUnaryForm[TotalSpaceStyleForm]
-declareUnaryForm[BaseSpaceStyleForm]
-declareUnaryForm[FiberSpaceStyleForm]
+DefineUnaryForm[TotalSpaceStyleForm, "?"]
+DefineUnaryForm[BaseSpaceStyleForm, "?"]
+DefineUnaryForm[FiberSpaceStyleForm, "?"]
 
 PublicTypesettingForm[BaseSpaceElementStyleForm, FiberSpaceElementStyleForm, TotalSpaceElementStyleForm]
 
-declareUnaryForm[BaseSpaceElementStyleForm]
-declareUnaryForm[FiberSpaceElementStyleForm]
-declareUnaryForm[TotalSpaceElementStyleForm]
+DefineUnaryForm[BaseSpaceElementStyleForm, "?"]
+DefineUnaryForm[FiberSpaceElementStyleForm, "?"]
+DefineUnaryForm[TotalSpaceElementStyleForm, "?"]
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[TopologicalQuotientSpaceForm]
 
-declareBinaryForm[TopologicalQuotientSpaceForm]
+DefineBinaryForm[TopologicalQuotientSpaceForm, "?"]
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[CircleSpaceForm]
 
-declareUnaryForm[CircleSpaceForm];
+DefineUnaryForm[CircleSpaceForm, "?"];
 
 declareBoxFormatting[
   CircleSpaceForm[] :> SBox["CircleSpaceSymbol"]

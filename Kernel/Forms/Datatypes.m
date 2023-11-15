@@ -163,10 +163,10 @@ SetHoldAllComplete[makeConstructorBoxes, toColGrid];
 makeConstructorBoxes[lhs_, rhs_, name_] := TBox[toColGrid @ lhs, toColGrid @ rhs, name];
 
 toColGrid = Case[
-  {a_}   := MakeQGBoxesOrNull @ a;
+  {a_}   := MakeMathBoxesOrNull @ a;
   {a__}  := MakeBoxes @ CommaRowForm[a];
-  s_SingleColumnForm := MakeQGBoxes @ s;
-  a_     := MakeQGBoxesOrNull @ a
+  s_SingleColumnForm := MakeMathBoxes @ s;
+  a_     := MakeMathBoxesOrNull @ a
 ];
 
 DefineStandardTraditionalForm[{

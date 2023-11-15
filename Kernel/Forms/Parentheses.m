@@ -13,8 +13,8 @@ PublicTypesettingForm[NoParenthesesForm]
 DefineTaggedForm[NoParenthesesForm]
 
 DefineStandardTraditionalForm[{
-  ParenthesesForm[NoParenthesesForm[e_]] :> MakeQGBoxes @ e,
-  NoParenthesesForm[ParenthesesForm[e_]] :> MakeQGBoxes @ e
+  ParenthesesForm[NoParenthesesForm[e_]] :> MakeMathBoxes @ e,
+  NoParenthesesForm[ParenthesesForm[e_]] :> MakeMathBoxes @ e
 }];
 
 (**************************************************************************************************)

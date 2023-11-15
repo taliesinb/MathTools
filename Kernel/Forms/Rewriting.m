@@ -19,7 +19,7 @@ SetHoldAllComplete[rewritingRuleBoxes];
 
 rewritingRuleBoxes = Case[
   a_ -> b_ := MakeBoxes @ RewritingRuleForm[a, b];
-  other_   := MakeQGBoxes @ other;
+  other_   := MakeMathBoxes @ other;
 ];
 
 PublicTypesettingForm[GenericRewritingSystemSymbol, StringRewritingSystemSymbol, CircularStringRewritingSystemSymbol, TuringMachineRewritingSystemSymbol, GraphRewritingSystemSymbol, HypergraphRewritingSystemSymbol, CellularAutomatonRewritingSystemSymbol, PetriNetRewritingSystemSymbol]
@@ -50,7 +50,7 @@ PublicTypesettingForm[RewritingSystemSymbol]
 
 RewritingSystemSymbol[] := RewritingSystemSymbol["R"];
 
-declareSymbolForm[RewritingSystemSymbol];
+DefineTaggedForm[RewritingSystemSymbol];
 
 (**************************************************************************************************)
 
@@ -78,7 +78,7 @@ declareBoxFormatting[
 
 PublicTypesettingForm[RewriteForm]
 
-declareBinaryForm[RewriteForm]
+DefineBinaryForm[RewriteForm, "?"]
 
 declareBoxFormatting[
   RewriteForm[a_, b_, i_] :> MakeBoxes[RewriteForm[a, b]]

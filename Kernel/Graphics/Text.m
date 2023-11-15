@@ -135,5 +135,5 @@ rescriptSubExpr[sub_] := MapIndices[rescript, $formScriptingArgumentPositions @ 
 
 $scalingHeadP = (GradientSymbol | TextIcon);
 rescript[e_] := ReplaceAll[e,
-  (h:$scalingHeadP)[l___, FontSize -> fs_, r___] :> h[l, FontSize -> Round[fs * 0.71], r]
+  (h:$scalingHeadP)[l___, FontSize -> fs_, r___] :> h[l, FontSize -> Round[fs * 0.66], r]
 ];

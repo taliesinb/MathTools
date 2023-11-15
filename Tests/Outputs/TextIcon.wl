@@ -10,4 +10,4 @@ TestRasterObject["16gzb3oz9awug.png", "1nbx4couep36b.mx"]
 
 TestRasterObject["14an3el2nh1f5.png", "1uikb7fvs7xwb.mx"]
 
-TestRasterObject["1gsovhyd3aj1k.png", "1cpz88uo7izuo.mx"]
+TestRasterObject["1qm4zhwdf6y3h.png", "1855562w80oio.mx"]

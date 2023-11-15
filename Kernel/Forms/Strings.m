@@ -1,5 +1,3 @@
-(**************************************************************************************************)
-
 PublicTypesettingForm[DoubleQuotedStringForm, QuotedCharacterForm, WildcardStringForm]
 
 PublicTypesettingForm[LiteralStringForm, StringSymbolForm]
@@ -33,8 +31,8 @@ $TemplateKatexFunction["CharacterSymbolForm"] = "charsym";
 
 katexWrapText[op_][s_Str] := op @ "texttt" @ StringTrim[StringReplace[s, "-" -> "\\textendash "]; s, "\""];
 
-declareSymbolForm[CharacterSymbolForm]
-declareSymbolForm[StringSymbolForm]
+DefineTaggedForm[CharacterSymbolForm]
+DefineTaggedForm[StringSymbolForm]
 
 SetHoldAllComplete[stringElementBoxes, stringSymbolBoxes, quotedCharBoxes]
 

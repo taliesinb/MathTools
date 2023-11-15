@@ -84,7 +84,7 @@ PublicTypesettingForm[BinaryRelationForm]
 
 DefineStandardTraditionalForm[{
   BinaryRelationForm[r_Str] :> KBox[KWideOp @ r, KBin @ r],
-  br_BinaryRelationForm[args___] :> AppliedBox[MakeBoxes @ br, MakeQGBoxSequence @ args]
+  br_BinaryRelationForm[args___] :> AppliedBox[MakeBoxes @ br, MakeMathBoxSequence @ args]
 }];
 
 (**************************************************************************************************)

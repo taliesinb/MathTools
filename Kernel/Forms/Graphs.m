@@ -91,10 +91,10 @@ DefineInfixBinaryForm[DirectedEdgeForm, OpBox @ ToBoxes @ DirectedEdgeSymbol];
 DefineInfixBinaryForm[UndirectedEdgeForm, OpBox @ ToBoxes @ UndirectedEdgeSymbol];
 
 DefineStandardTraditionalForm[{
-  DirectedEdgeForm[a_, b_, c_]       :> TBox[MakeQGBoxes @ a, MakeQGBoxes @ b, MakeQGBoxes @ c, "TaggedDirectedEdgeForm"],
-  UndirectedEdgeForm[a_, b_, c_]     :> TBox[MakeQGBoxes @ a, MakeQGBoxes @ b, MakeQGBoxes @ c, "TaggedUndirectedEdgeForm"],
-  DirectedEdgeForm[a_, b_, c_, d_]   :> TBox[MakeQGBoxes @ a, MakeQGBoxes @ b, MakeQGBoxes @ c, MakeQGBoxes @ d, "MultiTaggedDirectedEdgeForm"],
-  UndirectedEdgeForm[a_, b_, c_, d_] :> TBox[MakeQGBoxes @ a, MakeQGBoxes @ b, MakeQGBoxes @ c, MakeQGBoxes @ d, "MultiTaggedUndirectedEdgeForm"],
+  DirectedEdgeForm[a_, b_, c_]       :> TBox[MakeMathBoxes @ a, MakeMathBoxes @ b, MakeMathBoxes @ c, "TaggedDirectedEdgeForm"],
+  UndirectedEdgeForm[a_, b_, c_]     :> TBox[MakeMathBoxes @ a, MakeMathBoxes @ b, MakeMathBoxes @ c, "TaggedUndirectedEdgeForm"],
+  DirectedEdgeForm[a_, b_, c_, d_]   :> TBox[MakeMathBoxes @ a, MakeMathBoxes @ b, MakeMathBoxes @ c, MakeMathBoxes @ d, "MultiTaggedDirectedEdgeForm"],
+  UndirectedEdgeForm[a_, b_, c_, d_] :> TBox[MakeMathBoxes @ a, MakeMathBoxes @ b, MakeMathBoxes @ c, MakeMathBoxes @ d, "MultiTaggedUndirectedEdgeForm"],
   DirectedEdgeForm[a_, b_, CardinalProductForm[c_, d_]] :> MakeBoxes @ DirectedEdgeForm[a, b, c, d]
 }];
 

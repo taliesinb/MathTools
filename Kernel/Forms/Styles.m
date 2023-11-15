@@ -15,7 +15,7 @@ PublicTypesettingForm[StyledOperatorForm]
 
 declareBoxFormatting[
   StyledOperatorForm[f_][e_] :>
-    TemplateBox[{MakeQGBoxes @ f @ "|", MakeQGBoxes @ e}, "StyledOperatorForm"]
+    TemplateBox[{MakeMathBoxes @ f @ "|", MakeMathBoxes @ e}, "StyledOperatorForm"]
 ];
 
 $TemplateKatexFunction["StyledOperatorForm"] = styledOperatorKatex;

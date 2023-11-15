@@ -60,7 +60,7 @@ DefineUnaryModifierForm[Undersegment, KBox[
 
 PublicTypesettingFormBox[PrimedForm, DoublePrimedForm]
 
-DefineUnaryModifierForm[PrimedForm, SuperscriptBox[$1, "\[Prime]"], BoxFunction -> PrimedBox]
+DefineUnaryModifierForm[PrimedForm, StyleBox[SuperscriptBox[$1, "\[Prime]"], ScriptBaselineShifts->{0.35, 0.8}, ScriptSizeMultipliers -> 0.71], BoxFunction -> PrimedBox]
 DefineUnaryModifierForm[DoublePrimedForm, SuperscriptBox[$1, "\[DoublePrime]"], BoxFunction -> DoublePrimedBox]
 
 PublicTypesettingForm[InvisiblePrimedForm]
@@ -128,7 +128,7 @@ DefineUnaryModifierForm[InvertedForm, KBox[UnderscriptBox[$1, "_"], "underbar"[$
 PublicTypesettingForm[VerticalModifierForm]
 
 DefineStandardTraditionalForm[
-  VerticalModifierForm[inner_, args___] :> rewriteToVerticalOuter[MakeQGBoxes[inner], args]
+  VerticalModifierForm[inner_, args___] :> rewriteToVerticalOuter[MakeMathBoxes[inner], args]
 ];
 
 $verticalFormData = <|

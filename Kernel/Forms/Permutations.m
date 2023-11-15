@@ -10,7 +10,7 @@ DefineInfixForm[PermutationCycleForm, OpBox @ "\[Rule]"]
 
 DefineStandardTraditionalForm[{
   PermutationCycleForm[l_, r_]      :> ToBoxes @ TranspositionForm[l, r],
-  PermutationCycleForm[l_, m__, r_] :> TBox[MakeQGBoxSequence[l, m , r], MakeQGBoxes @ l, "PermutationCycleForm"]
+  PermutationCycleForm[l_, m__, r_] :> TBox[MakeMathBoxSequence[l, m , r], MakeMathBoxes @ l, "PermutationCycleForm"]
 }];
 
 (**************************************************************************************************)
@@ -32,7 +32,7 @@ DefineStandardTraditionalForm[
   StandardPermutationCycleForm[list_List] :> standardCycleBoxes @ list
 ];
 
-standardCycleBoxes[list_List] := TemplateBox[MakeQGBoxes /@ list, "StandardPermutationCycleForm"]
+standardCycleBoxes[list_List] := TemplateBox[MakeMathBoxes /@ list, "StandardPermutationCycleForm"]
 
 DefineTemplateBox[StandardPermutationCycleForm, "StandardPermutationCycleForm", ParenthesesBox[$$1], None];
 

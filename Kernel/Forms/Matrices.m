@@ -45,7 +45,7 @@ DefineStandardTraditionalForm[{
 }];
 
 SetHoldAllComplete[matrixBoxes, matrixRowBoxes, makeMatrixGrid]
-matrixRowBoxes[row_List] := MapUnevaluated[MakeQGBoxes, row];
+matrixRowBoxes[row_List] := MapUnevaluated[MakeMathBoxes, row];
 
 makeMatrixGrid[array_, templateName_, style___] := TBox[GridBox[
   MapUnevaluated[matrixRowBoxes, array], BaseStyle -> {style, "MathFont"},

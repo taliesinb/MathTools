@@ -6,11 +6,11 @@ forAllBox[a_] := RBox["\[ForAll]", "\[ThinSpace]", a];
 (* TODO: replace part of this with DefineRestCommaForm *)
 
 DefineStandardTraditionalForm[{
-  ExistsForm[a_, rest__] :> TBox[MakeQGBoxes @ a, CommaRowBox @ MakeQGBoxSequence[rest], "ExistsForm"],
-  ExistsForm[a_] :> TBox[MakeQGBoxes @ a, "UnconditionalExistsForm"],
+  ExistsForm[a_, rest__] :> TBox[MakeMathBoxes @ a, CommaRowBox @ MakeMathBoxSequence[rest], "ExistsForm"],
+  ExistsForm[a_] :> TBox[MakeMathBoxes @ a, "UnconditionalExistsForm"],
   ExistsForm :> "\[Exists]",
-  ForAllForm[a_, rest__] :> TBox[MakeQGBoxes @ a, CommaRowBox @ MakeQGBoxSequence[rest], "ForAllForm"],
-  ForAllForm[a_] :> TBox[MakeQGBoxes @ a, "UnconditionalForAllForm"],
+  ForAllForm[a_, rest__] :> TBox[MakeMathBoxes @ a, CommaRowBox @ MakeMathBoxSequence[rest], "ForAllForm"],
+  ForAllForm[a_] :> TBox[MakeMathBoxes @ a, "UnconditionalForAllForm"],
   ForAllForm :> "\[ForAll]"
 }];
 

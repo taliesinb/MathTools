@@ -6,6 +6,8 @@ PlusSequence[args___] := PlusForm @ EllipsisSequence[args];
 TupleSequence[args___] := TupleForm @ EllipsisSequence[args];
 CommaSequence[args___] := CommaForm @ EllipsisSequence[args];
 
+(**************************************************************************************************)
+
 PublicFunction[EllipsisSequence]
 
 toSeqF = Case[

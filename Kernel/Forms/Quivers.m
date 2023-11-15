@@ -1,5 +1,3 @@
-(**************************************************************************************************)
-
 PublicTypesettingForm[LatticeQuiverForm]
 
 declareBoxFormatting[
@@ -15,7 +13,7 @@ PublicTypesettingForm[QuiverSymbol]
 
 QuiverSymbol[] := QuiverSymbol["Q"];
 
-declareSymbolForm[QuiverSymbol];
+DefineTaggedForm[QuiverSymbol];
 
 declareBoxFormatting[
   QuiverSymbol[a_TransportAtlasSymbolForm] :> MakeBoxes @ a
@@ -32,7 +30,7 @@ declareBindingForm[form_, katexName_, argBoxFn_] := With[
           MapUnevaluated[argBoxFn, {args}],
           ToBoxes @ first
         ],
-        MakeQGBoxes @ formName
+        MakeMathBoxes @ formName
       ]
   ];
   $TemplateKatexFunction[formName] = katexName[#1, Riffle[{##2}, ","]]&;
@@ -42,7 +40,7 @@ declareBindingForm[form_, katexName_, argBoxFn_] := With[
 
 PublicTypesettingForm[BindingRuleForm]
 
-declareInfixSymbol[BindingRuleForm];
+DefineInfixForm[BindingRuleForm, "?"];
 
 makeSizeBindingRuleBoxes = Case[
   s:(_SymbolForm | EllipsisSymbol | _Modulo) := MakeBoxes @ s;
@@ -55,7 +53,7 @@ makeCardinalSizeBindingRuleBoxes = Case[
   c_ -> sz_           := makeHintedTemplateBox[c -> CardinalSymbol, sz -> QuiverSizeSymbol @ sz, "CompactBindingRuleForm"];
   g_GroupGeneratorSymbol := MakeBoxes @ g;
   c_                  := cardinalBox @ c;
-  Form[f_]            := MakeQGBoxes @ f;
+  Form[f_]            := MakeMathBoxes @ f;
 ];
 
 
@@ -63,7 +61,7 @@ makeCardinalSizeBindingRuleBoxes = Case[
 
 PublicTypesettingForm[CompactBindingRuleForm]
 
-declareInfixSymbol[CompactBindingRuleForm];
+DefineInfixForm[CompactBindingRuleForm, "?"];
 
 makeCardinalBindingRuleBoxes = Case[
   s:(_SymbolForm | EllipsisSymbol | _Modulo) := MakeBoxes @ s;
@@ -74,7 +72,8 @@ makeCardinalBindingRuleBoxes = Case[
 
 PublicTypesettingForm[CayleyQuiverSymbolForm]
 
-declareUnaryForm[CayleyQuiverSymbolForm, GroupPresentationSymbol];
+DefineTaggedForm[CayleyQuiverSymbolForm];
+DefineTaggedForm[GroupPresentationSymbol];
 
 declareBoxFormatting[
   c_CayleyQuiverSymbolForm[args__] :> MakeBoxes @ CardinalSizeBindingForm[c, args]
@@ -124,45 +123,20 @@ declareBindingForm[CardinalSizeBindingForm, "bindCardSize", makeCardinalSizeBind
 
 PublicTypesettingForm[SerialCardinal, ParallelCardinal]
 
-declareBoxFormatting[
-  SerialCardinal[args__] :>
-    naryCardinalForm[{args}, "SerialCardinalForm"],
-  ParallelCardinal[args__] :>
-    naryCardinalForm[{args}, "ParallelCardinalForm"]
-]
-
-SetHoldAllComplete[naryCardinalForm];
-
-naryCardinalForm[args_, form_] :=
-  TemplateBox[MapUnevaluated[maybeParen[CardinalSymbol|InvertedForm|Inverted], args], form];
-
-$TemplateKatexFunction["SerialCardinalForm"] = katexAliasRiffled["serialCardSymbol"];
-$TemplateKatexFunction["ParallelCardinalForm"] = katexAliasRiffled["parallelCardSymbol"];
+DefineNAryForm[SerialCardinal, "?"]
+DefineNAryForm[ParallelCardinal, "?"]
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[CardinalSymbol]
 
-declareSymbolForm[CardinalSymbol];
-
-$TemplateKatexFunction["CardinalSymbolForm"] = "card";
-$TemplateKatexFunction["InvertedCardinalSymbolForm"] = "ncard";
-$TemplateKatexFunction["MirrorCardinalSymbolForm"] = "mcard";
-$TemplateKatexFunction["InvertedMirrorCardinalSymbolForm"] = "nmcard";
-
-(* for legacy notebooks: *)
-$TemplateKatexFunction["NegatedMirrorCardinalSymbolForm"] = "nmcard";
-$TemplateKatexFunction["NegatedCardinalSymbolForm"] = "ncard";
+DefineTaggedForm[CardinalSymbol];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[MirrorForm]
 
-declareUnaryWrapperForm[MirrorForm]
-
-declareBoxFormatting[
-  m:MirrorForm[_CardinalSymbol | _InvertedForm] :> cardinalBox @ m
-]
+DefineUnaryForm[MirrorForm, "?"]
 
 (**************************************************************************************************)
 
@@ -218,7 +192,7 @@ declareNamedQuiverSymbol[CubicQuiverSymbol];
 
 PublicTypesettingForm[ToroidalModifierForm]
 
-declareUnaryWrapperForm[ToroidalModifierForm];
+DefineUnaryForm[ToroidalModifierForm];
 
 declareBoxFormatting[
   t_ToroidalModifierForm[args___] :> MakeBoxes @ CardinalSizeBindingForm[t, args]
@@ -228,13 +202,13 @@ declareBoxFormatting[
 
 PublicTypesettingForm[AffineModifierForm]
 
-declareUnaryWrapperForm[AffineModifierForm];
+DefineUnaryForm[AffineModifierForm];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[ModuloForm]
 
-declareUnaryWrapperForm[ModuloForm]
+DefineUnaryForm[ModuloForm]
 
 (**************************************************************************************************)
 
@@ -245,14 +219,14 @@ declareBoxFormatting[
   QuiverSizeSymbol[n_Int] :> MakeBoxes @ n,
   QuiverSizeSymbol[Infinity] :> "\[Infinity]",
   QuiverSizeSymbol[Modulo[n_]] :> MakeBoxes @ ModuloForm @ n,
-  QuiverSizeSymbol[other_] :> MakeQGBoxes @ other
+  QuiverSizeSymbol[other_] :> MakeMathBoxes @ other
 ]
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[StarModifierForm]
 
-declareUnaryWrapperForm[StarModifierForm];
+DefineUnaryForm[StarModifierForm];
 
 (**************************************************************************************************)
 
@@ -291,4 +265,4 @@ declareNamedBindingSymbol[StarTranslationPresentationSymbol];
 
 PublicTypesettingForm[CardinalSequenceForm]
 
-declareInfixSymbol[CardinalSequenceForm, CardinalSymbol];
+DefineInfixForm[CardinalSequenceForm, "?"];

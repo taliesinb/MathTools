@@ -1,7 +1,7 @@
 PublicTypesettingForm[SemiringProductForm, SemiringSumForm]
 
-declareInfixSymbol[SemiringProductForm] // usingCustomKatex["srdot"];
-declareInfixSymbol[SemiringSumForm] // usingCustomKatex["srplus"];
+DefineInfixForm[SemiringProductForm, "?"];
+DefineInfixForm[SemiringSumForm, "?"];
 
 PublicTypesettingForm[StyledSemiringProductForm, StyledSemiringSumForm]
 
@@ -9,13 +9,13 @@ PublicTypesettingForm[StyledSemiringProductForm, StyledSemiringSumForm]
 
 PublicTypesettingForm[RingSymbol]
 
-DefineTaggedForm[RingSymbol, Aliases -> <|"Z" -> Integers|>];
+DefineTaggedForm[RingSymbol];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[SemiringSymbol]
 
-DefineTaggedForm[SemiringSymbol, Aliases -> <|"N" -> Naturals|>];
+DefineTaggedForm[SemiringSymbol];
 
 (**************************************************************************************************)
 
@@ -29,19 +29,19 @@ PublicTypesettingForm[RingUnitElementForm]
 
 RingUnitElementForm[e_] := RingUnitElementForm["1", e];
 
-declareBinaryForm[RingUnitElementForm];
+DefineBinaryForm[RingUnitElementForm, "?"];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[RingZeroElementSymbol]
 
-declareConstantSymbol[RingZeroElementSymbol];
+DefineSymbolForm[RingZeroElementSymbol, "0"];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[RingBasisElementForm]
 
-declareUnaryForm[RingBasisElementForm];
+DefineTaggedForm[RingBasisElementForm];
 
 (**************************************************************************************************)
 
@@ -76,23 +76,23 @@ declareDerivedRingForm[MatrixRingForm];
 PublicTypesettingForm[MultisetSemiringForm, SignedMultisetRingForm]
 
 (* why not declareDerivedRingForm ? *)
-declareBinaryForm[MultisetSemiringForm];
-declareBinaryForm[SignedMultisetRingForm];
+DefineBinaryForm[MultisetSemiringForm, "?"];
+DefineBinaryForm[SignedMultisetRingForm, "?"];
 
 PublicTypesettingForm[MultisetSemiringSymbolForm, SignedMultisetRingSymbolForm]
 
-declareSymbolFormExplicit[MultisetSemiringSymbolForm];
-declareSymbolFormExplicit[SignedMultisetRingSymbolForm];
+DefineTaggedForm[MultisetSemiringSymbolForm];
+DefineTaggedForm[SignedMultisetRingSymbolForm];
 
 PublicTypesettingForm[MultisetSemiringProductForm, MultisetSemiringSumForm]
 
-declareInfixSymbol[MultisetSemiringProductForm] // usingCustomKatex["msrdot"];
-declareInfixSymbol[MultisetSemiringSumForm] // usingCustomKatex["msrplus"];
+DefineInfixForm[MultisetSemiringProductForm, "?"];
+DefineInfixForm[MultisetSemiringSumForm, "?"];
 
 PublicTypesettingForm[SignedMultisetRingProductForm, SignedMultisetRingSumForm]
 
-declareInfixSymbol[SignedMultisetRingProductForm] // usingCustomKatex["smrdot"];
-declareInfixSymbol[SignedMultisetRingSumForm] // usingCustomKatex["smrplus"];
+DefineInfixForm[SignedMultisetRingProductForm, "?"];
+DefineInfixForm[SignedMultisetRingSumForm, "?"];
 
 (**************************************************************************************************)
 

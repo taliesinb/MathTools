@@ -28,5 +28,5 @@ DefineTaggedForm[LinearCombinationCoefficientSymbol];
 
 PublicTypesettingForm[RealVectorSpaceForm, ComplexVectorSpaceForm]
 
-declareUnaryForm[RealVectorSpaceForm]
-declareUnaryForm[ComplexVectorSpaceForm]
+DefineTaggedForm[RealVectorSpaceForm]
+DefineTaggedForm[ComplexVectorSpaceForm]

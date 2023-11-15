@@ -47,8 +47,8 @@ DefineInfixForm[FunctionCompositionForm,      OpBox @ "\[SmallCircle]"];
 DefineInfixForm[RightFunctionCompositionForm, OpBox @ "\[FilledSmallCircle]"];
 
 DefineStandardTraditionalForm[{
-  f_FunctionCompositionForm[args___] :> MakeQGBoxes[AppliedForm[ParenthesesForm[f], args]],
-  f_RightFunctionCompositionForm[args___] :> MakeQGBoxes[AppliedForm[ParenthesesForm[f], args]]
+  f_FunctionCompositionForm[args___] :> MakeMathBoxes[AppliedForm[ParenthesesForm[f], args]],
+  f_RightFunctionCompositionForm[args___] :> MakeMathBoxes[AppliedForm[ParenthesesForm[f], args]]
 }]
 
 (**************************************************************************************************)

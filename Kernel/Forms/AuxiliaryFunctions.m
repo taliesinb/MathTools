@@ -26,9 +26,7 @@ DefineNamedFunctionSymbolForm[{
   SupportFunction -> "supp",
   GradeFunction,
   ModFunction,
-  CoefficientFunction -> "coeff",
-  TorusFunction,
-  MobiusFunction
+  CoefficientFunction -> "coeff"
 }]
 
 (**************************************************************************************************)

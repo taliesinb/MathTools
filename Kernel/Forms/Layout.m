@@ -118,10 +118,10 @@ makePiecewiseBoxes[rules_List] := Scope[
 ];
 
 makePiecewiseRow[All -> value_] :=
-  {MakeQGBoxes @ value, MakeBoxes @ OtherwiseSymbol}
+  {MakeMathBoxes @ value, MakeBoxes @ OtherwiseSymbol}
 
 makePiecewiseRow[case_ -> value_] :=
-  {MakeQGBoxes @ value, MakeQGBoxes @ case};
+  {MakeMathBoxes @ value, MakeMathBoxes @ case};
 
 DefineNotebookDisplayFunction["PiecewiseForm", GridBox[
   {{"\[Piecewise]", #1}},
@@ -159,7 +159,7 @@ SetHoldAllComplete[makeSubstackRow]
 
 makeSubstackRow = Case[
   {elems__} := List @ MakeBoxes @ RiffledForm[","][elems];
-  other_    := List @ MakeQGBoxes @ other
+  other_    := List @ MakeMathBoxes @ other
 ];
 
 DefineNotebookDisplayFunction["SubstackForm", #1&];

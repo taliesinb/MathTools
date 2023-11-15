@@ -5,43 +5,47 @@ should be factorized
 
 PublicTypesettingForm[GlobalStateSymbol, RegionalStateSymbol, LocalStateSymbol]
 
-declareSymbolFormExplicit[LocalStateSymbol];
-declareSymbolFormExplicit[RegionalStateSymbol];
-declareSymbolFormExplicit[GlobalStateSymbol];
+DefineTaggedForm[LocalStateSymbol];
+DefineTaggedForm[RegionalStateSymbol];
+DefineTaggedForm[GlobalStateSymbol];
+
+(**************************************************************************************************)
 
 PublicTypesettingForm[KeySubStateSymbol, ValueSubStateSymbol]
-declareSymbolFormExplicit[KeySubStateSymbol];
-declareSymbolFormExplicit[ValueSubStateSymbol];
+
+DefineTaggedForm[KeySubStateSymbol];
+DefineTaggedForm[ValueSubStateSymbol];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[RegionalSubstateForm, RegionalSuperstateForm, IncomparableRegionalStatesForm, ComparableRegionalStatesForm]
 
-declareInfixSymbol[RegionalSubstateForm];
-declareInfixSymbol[RegionalSuperstateForm];
-declareInfixSymbol[IncomparableRegionalStatesForm];
-declareInfixSymbol[ComparableRegionalStatesForm];
+DefineInfixForm[RegionalSubstateForm, "?"];
+DefineInfixForm[RegionalSuperstateForm, "?"];
+DefineInfixForm[IncomparableRegionalStatesForm, "?"];
+DefineInfixForm[ComparableRegionalStatesForm, "?"];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[LHSStateForm, RHSStateForm]
 
-declareUnaryForm[LHSStateForm] // usingCustomKatex["lhsState"];
-declareUnaryForm[RHSStateForm] // usingCustomKatex["rhsState"];
+DefineUnaryForm[LHSStateForm, "?"];
+DefineUnaryForm[RHSStateForm, "?"];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[RewriteLHSRegionalStateForm, RewriteRHSRegionalStateForm]
 
-declareUnaryForm[RewriteLHSRegionalStateForm]
-declareUnaryForm[RewriteRHSRegionalStateForm]
+DefineUnaryForm[RewriteLHSRegionalStateForm, "?"]
+DefineUnaryForm[RewriteRHSRegionalStateForm, "?"]
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[LocalStateForm, RegionalStateForm]
 
-declareBinaryForm[LocalStateForm]
-declareNAryForm[RegionalStateForm, EmptyRegionalState];
+DefineBinaryForm[LocalStateForm, "?"]
+DefineNAryForm[RegionalStateForm, "?"]
+DefineNAryForm[EmptyRegionalState, "?"];
 
 PublicTypesettingForm[StringRegionalStateForm]
 
@@ -58,27 +62,27 @@ makeRegState[states_, keys_] := RegionalStateForm @@ MapThread[LocalStateForm, {
 
 PublicSymbol[InvalidRegionalState, EmptyRegionalState]
 
-declareConstantSymbol[{InvalidRegionalState, EmptyRegionalState}];
+DefineSymbolForm[{InvalidRegionalState -> "?", EmptyRegionalState -> "?"}];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[LocalStatesForm, GlobalStatesForm, RegionalStatesForm]
 
-declareUnaryForm[LocalStatesForm, RewritingSystemSymbol];
-declareUnaryForm[GlobalStatesForm, RewritingSystemSymbol];
-declareUnaryForm[RegionalStatesForm, RewritingSystemSymbol];
+DefineUnaryForm[LocalStatesForm, "?"];
+DefineUnaryForm[GlobalStatesForm, "?"];
+DefineUnaryForm[RegionalStatesForm, "?"];
 
 PublicTypesettingForm[KeySubStatesForm, ValueSubStatesForm]
 
-declareUnaryForm[KeySubStatesForm, RewritingSystemSymbol];
-declareUnaryForm[ValueSubStatesForm, RewritingSystemSymbol];
+DefineUnaryForm[KeySubStatesForm, "?"];
+DefineUnaryForm[ValueSubStatesForm, "?"];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[InfixStateComposeForm, InfixStateMeetForm, InfixStateJoinForm]
 
-declareInfixSymbol[InfixStateComposeForm];
-declareInfixSymbol[InfixStateMeetForm];
-declareInfixSymbol[InfixStateJoinForm];
+DefineInfixForm[InfixStateComposeForm, "?"];
+DefineInfixForm[InfixStateMeetForm, "?"];
+DefineInfixForm[InfixStateJoinForm, "?"];
 
 (**************************************************************************************************)

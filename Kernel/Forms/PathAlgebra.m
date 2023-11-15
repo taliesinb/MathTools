@@ -17,8 +17,8 @@ pathOrWordBoxes = Case[
 
 PublicTypesettingForm[VertexFieldSymbol, EdgeFieldSymbol]
 
-declareSymbolForm[VertexFieldSymbol];
-declareSymbolForm[EdgeFieldSymbol];
+DefineTaggedForm[VertexFieldSymbol];
+DefineTaggedForm[EdgeFieldSymbol];
 
 (**************************************************************************************************)
 
@@ -26,9 +26,9 @@ PublicTypesettingForm[PathVectorSpaceSymbol, PathVectorSymbol, PathWeightSymbol]
 
 PathVectorSpaceSymbol[] := PathVectorSpaceSymbol["P"];
 
-declareSymbolForm[PathVectorSpaceSymbol];
-declareSymbolForm[PathVectorSymbol];
-declareSymbolForm[PathWeightSymbol];
+DefineTaggedForm[PathVectorSpaceSymbol];
+DefineTaggedForm[PathVectorSymbol];
+DefineTaggedForm[PathWeightSymbol];
 
 (**************************************************************************************************)
 
@@ -60,7 +60,7 @@ declareBoxFormatting[
 
 PublicSymbol[UnitVertexFieldSymbol]
 
-declareConstantSymbol[UnitVertexFieldSymbol];
+DefineSymbolForm[UnitVertexFieldSymbol -> "1"];
 
 (**************************************************************************************************)
 
@@ -223,10 +223,10 @@ $TemplateKatexFunction["PathTailVectorForm"] = "pathTailVector";
 
 PublicTypesettingForm[PathTailVertexForm, PathHeadVertexForm, PathTailForm, PathHeadForm]
 
-declareUnaryForm[PathTailVertexForm, PathSymbol];
-declareUnaryForm[PathHeadVertexForm, PathSymbol];
-declareUnaryForm[PathTailForm, PathSymbol];
-declareUnaryForm[PathHeadForm, PathSymbol];
+DefineUnaryForm[PathTailVertexForm, "?"];
+DefineUnaryForm[PathHeadVertexForm, "?"];
+DefineUnaryForm[PathTailForm, "?"];
+DefineUnaryForm[PathHeadForm, "?"];
 
 (**************************************************************************************************)
 
@@ -255,14 +255,14 @@ $TemplateKatexFunction["PathReverseSymbol"] = "pathReverse";
 
 PublicTypesettingForm[CompactBasisSymbolForm]
 
-declareSymbolForm[CompactBasisSymbolForm, PathVectorSpaceSymbol];
+DefineTaggedForm[CompactBasisSymbolForm];
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[CompactPathCovariantDifferenceForm, PathCovariantDifferenceForm]
 
-declareBinaryForm[CompactPathCovariantDifferenceForm, PathVectorSymbol];
-declareBinaryForm[PathCovariantDifferenceForm, PathVectorSymbol];
+DefineBinaryForm[CompactPathCovariantDifferenceForm, "?"];
+DefineBinaryForm[PathCovariantDifferenceForm, "?"];
 (*
 declareBoxFormatting[
   CompactPathCovariantDifferenceForm[a_, b_] :>
