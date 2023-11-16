@@ -1,5 +1,7 @@
 PublicFunction[RunTests]
 
+PublicOption[ReplaceExisting]
+
 SetUsage @ "
 RunTests[] runs all tests in the \"Tests/Inputs/\" directory.
 RunTests['patt$'] runs tests that match the string pattern patt$.
@@ -20,7 +22,7 @@ RunTests['patt$'] runs tests that match the string pattern patt$.
 | %Verbose | print every action performed |
 | %DryRun | do not actually write any changes to disk |
 | %TestContentsPattern | skip files whose inputs do not contain a set of patterns |
-| %OverwriteTarget | assume all tests are correct and overwrite existing outputs |
+| %ReplaceExisting | assume all tests are correct and overwrite existing outputs |
 "
 
 PublicOption[TestContentsPattern]
@@ -30,7 +32,7 @@ Options[RunTests] = {
   DryRun -> False,
   MaxItems -> Infinity,
   TestContentsPattern -> None,
-  OverwriteTarget -> False
+  ReplaceExisting -> False
 };
 
 RunTests::noindir = "Input directory not found at ``.";
@@ -43,7 +45,7 @@ declareFunctionAutocomplete[RunTests, {FileNameTake /@ FileNames["*.wl", $testsI
 
 RunTests[filePattern_Str:All, OptionsPattern[]] := Scope[
 
-  UnpackOptions[$verbose, $dryRun, $testContentsPattern, $maxItems, $overwriteTarget];
+  UnpackOptions[$verbose, $dryRun, $testContentsPattern, $maxItems, $replaceExisting];
 
   ClearCacheSymbols[];
 
@@ -105,8 +107,8 @@ runFileTest[inputPath_, outDir_] := Scope[
 
   $outputPath = outputPath = PathJoin[outDir, inputFileName];
 
-  If[$overwriteTarget,
-    VPrint["OverwriteTarget -> True, skipping existing outputs."];
+  If[$replaceExisting,
+    VPrint["ReplaceExisting -> True, skipping existing outputs."];
     oldOutputs = {}; oldCount = 0;
   ,
     VPrint["Reading expected outputs from ", MsgPath @ outputPath];

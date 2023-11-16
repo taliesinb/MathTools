@@ -108,7 +108,7 @@ pretty0[e_] /; TrueQ[$depth > $maxDepth] := $ellipsisString;
 
 pretty0[e_] /; TrueQ[$depth == $maxDepth] := prettyDeep[e];
 
-pretty0[e:((s_Symbol)[___])] /; MemberQ[$inlineHeads, SymbolName @ s] := pretty2[e];
+pretty0[e:((s_Symbol)[___])] /; MemberQ[$inlineHeads, HoldSymbolName @ s] := pretty2[e];
 
 pretty0[r_Real ? HoldAtomQ]  := realString[r];
 
@@ -169,7 +169,7 @@ SetHoldAllComplete[symbolString, prettyHead];
 
 symbolString[s_Symbol ? HoldAtomQ] :=
   If[$colorSymbolContext, colorByContext[Context[s]], Id] @
-  If[$fullSymbolContext, ToString[Unevaluated @ s, InputForm], SymbolName[Unevaluated @ s]];
+  If[$fullSymbolContext, ToString[Unevaluated @ s, InputForm], HoldSymbolName @ s];
 
 symbolString[_] := "?";
 

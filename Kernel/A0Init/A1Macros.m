@@ -395,6 +395,8 @@ PublicScopingFunction[Case]
 PublicDebuggingFunction[EchoCase]
 PublicSymbol[$]
 
+$::usage = "$ stands for the function currently being defined."
+
 SetHoldAll[Case, EchoCase, setupCases, setupPrefixCases];
 
 (* TODO: fix this not working:

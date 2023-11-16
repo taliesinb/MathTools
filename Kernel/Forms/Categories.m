@@ -205,8 +205,8 @@ DefineBinaryForm[CompactFunctorCategoryForm, SuperscriptBox[$2, $1]]
 PublicTypesettingForm[HorizontalCompositionForm, VerticalCompositionForm, DiskCompositionForm, SpacedDiskCompositionForm, SpacedCompositionForm, TightCompositionForm, CompositionForm]
 
 (* we can use Application *)
-DefineInfixForm[HorizontalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\[VeryThinSpace]\[EmptySmallCircle]\[VeryThinSpace]", 3], 0.5]];
-DefineInfixForm[VerticalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\[VeryThinSpace]\[FilledSmallCircle]\[VeryThinSpace]", 3], 0.5]];
+DefineInfixForm[HorizontalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\[MediumSpace]\[EmptySmallCircle]\[MediumSpace]", 3], 0.5]];
+DefineInfixForm[VerticalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\[MediumSpace]\[FilledSmallCircle]\[MediumSpace]", 3], 0.5]];
 
 DefineInfixForm[SpacedCompositionForm, "\[VeryThinSpace]"]
 DefineInfixForm[SpacedDiskCompositionForm, "\[ThinSpace]\[SmallCircle]\[ThinSpace]"];

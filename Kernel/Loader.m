@@ -44,6 +44,7 @@ SourceFiles
 ReadSource
 LoadSource
 NeedsSelfLoad
+LoadSingleFile
 
 (* these are for optimizing load time and other debugging *)
 FileTimings
@@ -215,7 +216,7 @@ fileStringUTF8[path_] := Block[{bytes},
   If[bytes === EndOfFile, "", ByteArrayToString @ bytes]
 ];
 
-failRead[] := Throw[$Failed, failRead];
+failRead[] := Throw[$Failed, $readPackageTag];
 
 $fileContentCache = Data`UnorderedAssociation[];
 
@@ -246,6 +247,7 @@ readPackageFile[path_, context_] := Module[{cacheEntry, fileModTime, contents},
 
 (**************************************************************************************************)
 
+$loadedFileCount = 0;
 loadFileContents[path_, context_] := Module[{str, contents}, Block[{$currentContext = context},
   $loadedFileCount++; $CurrentFile = path;
   str = StringReplace[fileStringUTF8 @ path, $stringProcessingRules];
@@ -436,7 +438,7 @@ ReadSource[cachingEnabled_:True, fullReload_:True, clear_:True] := Block[
       sourceFiles
     ];
   ,
-    failRead
+    $readPackageTag
   ];
 
   Quiet @ Remove["QuiverGeometryLoader`Scratch`*"]; (* <- dumping ground for SyntaxLength *)
@@ -533,6 +535,28 @@ ReadSource[cachingEnabled_:True, fullReload_:True, clear_:True] := Block[
   LVPrint["Read ", Length[packageExpressions], " packages."];
 
   packageExpressions
+];
+
+(*************************************************************************************************)
+
+(* this will load path, but only execute it if it is dirty since the last load, or
+if any reloads of QG have happened since last load (which would invalid it) *)
+
+LoadSingleFile[path_, context_, contextPath_] := Block[
+  {dispatch, contents},
+  Block[{$fileTimings, $fileLineTimings, $currentPath, $currentLineNumber, $formsChanged, $failEval},
+    $fileTimings = $fileLineTimings = Association[];
+    contents = Catch[readPackageFile[path, context], $readPackageTag];
+  ];
+  If[FailureQ[contents], ReturnFailed[]];
+  {contents, isDirty} = contents;
+  Block[
+    {$globalImports = Join[{"System`", "GeneralUtilities`", $PublicContext, $PrivateContext}, contextPath]},
+    packageData = resolveRemainingSymbols[{path, context, contents, True}];
+  ];
+  Block[{$currentPath = "", $currentLineNumber = 0, $formsChanged = False, $failEval = False},
+    evaluatePackage @ packageData
+  ]
 ];
 
 (*************************************************************************************************)
@@ -673,7 +697,7 @@ evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
   $currentPath = path; $currentFileLineTimings = <||>; $failCount = 0;
   If[$failEval, Return[$Failed, Catch]];
   LVPrint["Evaluating \"", path, "\""];
-  $formsChanged = Or[$formsChanged, StringContainsQ[context, "`Typesetting`Forms`"]]; (* to avoid expensive symbol enum *)
+  $formsChanged = Or[$formsChanged, StringContainsQ[context, "`Forms`"]]; (* to avoid expensive symbol enum *)
   $fileTimings[path] = msTiming[
     Block[{$Context = context, $ContextPath = $packageFileContextPath, GeneralUtilities`$CurrentFileName = path},
       Catch[Scan[evaluateExpression, packageData], $evaluateExpressionTag]
