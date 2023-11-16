@@ -82,3 +82,141 @@ NamedDiagram["Adjunction/Composition"] := CommutativeDiagram[{
   AdjunctionDiagram[{$CC, $CD}, {$FunL, $FunR}],
   AdjunctionDiagram[{Invisible @ $CD, $CE}, {$FunLpr, $FunRpr}, Origin -> {1, 0}]
 }]
+
+(**************************************************************************************************)
+
+$funL12 = DRGF @ CompositionForm[$FunL1, $FunL2];
+$funR21 = DRGF @ CompositionForm[$FunR2, $FunR1];
+
+$colorRules = {
+  $Oc -> $DarkBlue, $Od -> $DarkRed, $ff -> $DarkRed, $fg -> $DarkBlue,
+  $CC -> 1, $CD -> 2, $CE -> 3,
+  $FunL -> {1, 2}, $FunR -> {2, 1},   $NTeta -> $Pink,  $NTeps -> $Pink,
+  $FunL1 -> {1, 2}, $FunR1 -> {2, 1}, $NTeps1 -> $Pink, $NTeta1 -> $Pink,
+  $FunL2 -> {2, 3}, $FunR2 -> {3, 2}, $NTeps2 -> $Teal, $NTeta2 -> $Teal,
+  $FunL3 -> {1, 3}, $FunR3 -> {3, 1}, $NTeps3 -> $Orange, $NTeta3 -> $Orange
+};
+
+$adjOpts := Sequence[
+  RegionFilling -> "Labeled", ColorRules -> $colorRules,
+  WireThickness -> 2, NodeEdgeThickness -> 2, NodeLabelFontSize -> 18, NodeSize -> 21, NodeShape -> "Box",
+  TextModifiers -> {Subscript[z_, _] :> z}
+];
+
+stringWire[c_, d_, l_, opts___] := StringDiagram[{}, {Bottom <=> Top -> l}, {Left -> c, Right -> d}, DiagramSize -> {9, 12}, opts, $adjOpts];
+stringEta[c_, d_, l_, r_, eta_, opts___] := StringDiagram[{{0,0} -> eta}, {1 <=> {Top,-6} -> r, 1 <=> {Top,6} -> l}, {Bottom -> d, Top -> c}, opts, $adjOpts];
+stringEps[c_, d_, l_, r_, eps_, opts___] := StringDiagram[{{0,0} -> eps}, {1 <=> {Bottom,-6} -> l, 1 <=> {Bottom,6} -> r}, {Bottom -> d, Top -> c}, opts, $adjOpts];
+
+stringMonadPanel[c_, d_, l_, r_, eta_, eps_, opts___] := List[
+  stringWire[c, d, l, opts],
+  stringWire[d, c, r, opts],
+  stringEta[c, d, l, r, eta, opts],
+  stringEps[c, d, l, r, eps, opts]
+];
+
+(**************************************************************************************************)
+
+NamedDiagram["Adjunction/StringMonadPanel"] :=
+  stringMonadPanel[$CC, $CD, $FunL, $FunR, $NTeta, $NTeps];
+
+(**************************************************************************************************)
+
+NamedDiagram["Adjunction/StringL"] := stringWire[$CC, $CD, $FunL];
+NamedDiagram["Adjunction/StringR"] := stringWire[$CD, $CC, $FunR];
+
+NamedDiagram["Adjunction/StringLRL"] := StringDiagram[{
+  {-4,5} -> $NTeps, {4,-5} -> $NTeta},
+  {1 <=> {Bottom,-8} -> $FunL,
+   Customized[1 <=> 2 -> $FunR, LabelPosition -> Left],
+   2 <=> {Top,8} -> $FunL},
+  {{-11,-11} -> Red, {11,11} -> Blue}, $adjOpts
+];
+
+NamedDiagram["Adjunction/StringRLR"] := StringDiagram[
+  {{4,5} -> $NTeps, {-4,-5} -> $NTeta},
+  {1 <=> {Bottom,8} -> $FunR,
+   Customized[1 <=> 2 -> $FunL, LabelPosition -> Right],
+   2 <=> {Top,-8} -> $FunR
+  },
+  {{11,-11} -> Red, {-11,11} -> Blue}, $adjOpts
+];
+
+(**************************************************************************************************)
+
+NamedDiagram["Adjunction/StringLImage"] := FunctorialStringDiagram[
+  {},
+  {{Bottom,0} <=> 1 -> $FunL},
+   {$Oc, 0.5 -> $ff, $Od},
+  {BottomRight -> $CD, BottomLeft -> $CC},
+  $adjOpts
+]
+
+(**************************************************************************************************)
+
+NamedDiagram["Adjunction/StringLRImage"] := FunctorialStringDiagram[
+  {{0, 7} -> $NTeps},
+  {Bottom <=> 1 -> $FunL,
+   1 <=> "g" -> Customized[$FunR, LabelPosition -> Left]},
+  {$Oc, 0.5 -> $fg, $Od},
+  {BottomRight -> $CD, BottomLeft -> $CC},
+  $adjOpts
+]
+
+(**************************************************************************************************)
+
+NamedDiagram["Adjunction/StringRImage"] := FunctorialStringDiagram[
+  {},
+  {{Top, 0} <=> "g" -> $FunR},
+   {$Oc, 0.5 -> $fg, $Od},
+  {TopLeft -> $CD, TopRight -> $CC},
+  $adjOpts
+];
+
+(**************************************************************************************************)
+
+NamedDiagram["Adjunction/StringRLImage"] := FunctorialStringDiagram[
+  {{0, -7} -> $NTeps},
+  {{Top,0} <=> 1 -> $FunR,
+   Customized[1 <=> 2 -> $FunL, LabelPosition -> Right]},
+  {$Oc, 0.5 -> $ff, $Od},
+  {TopLeft -> $CD, TopRight -> $CC},
+  $adjOpts
+];
+
+(**************************************************************************************************)
+
+stringTwoWires[c_, d_, e_, l1_, l2_, opts___] :=
+  StringDiagram[{},
+    {{Bottom,3} <=> Top -> l2, {Bottom,-3} <=> Top -> l1},
+    {Left -> c, Center -> d, Right -> e}, DiagramSize -> {9, 12},
+    opts, $adjOpts];
+
+stringNestedMu[c_, d_, e_, l1_, l2_, r1_, r2_, eta1_, eta2_, opts___] :=
+  StringDiagram[
+    {{0,4.5} -> eta1, {0, -4.5} -> eta2},
+    {2 <=> {Top,-8} -> r2,
+     1 <=> {Top,-4} -> r1,
+     1 <=> {Top,4} -> l1,
+     2 <=> {Top,8} -> l2},
+    {{0, -9} -> e, Center -> d, {0, 9} -> c},
+    opts, $adjOpts];
+
+stringComposedMonadPanel[c_, d_, e_, l1_, l2_, r1_, r2_, eta1_, eta2_, eps1_, eps2_, opts___] := {
+  stringTwoWires[c, d, e, l1, l2, opts],
+  stringTwoWires[e, d, c, r2, r1, opts],
+  stringNestedMu[c, d, e, l1, l2, r1, r2, eta1, eta2, opts],
+  stringNestedMu[c, d, e, r2, r1, l2, l1, eps2, eps1, FlipY -> True, opts]
+};
+
+NamedDiagram["Adjunction/StringMonadPanel1"] :=
+  stringMonadPanel[$CC, $CD, $FunL1, $FunR1, $NTeta1, $NTeps1];
+
+NamedDiagram["Adjunction/StringMonadPanel2"] :=
+  stringMonadPanel[$CD, $CE, $FunL2, $FunR2, $NTeta2, $NTeps2];
+
+NamedDiagram["Adjunction/StringMonadPanel12"] :=
+  stringComposedMonadPanel[$CC, $CD, $CE, $FunL1, $FunL2, $FunR1, $FunR2, $NTeta1, $NTeta2, $NTeps1, $NTeps2];
+
+NamedDiagram["Adjunction/StringMonadPanel12Result"] :=
+  stringMonadPanel[$CC, $CE, $funL12, $funR21, $NTeta3, $NTeps3];
+

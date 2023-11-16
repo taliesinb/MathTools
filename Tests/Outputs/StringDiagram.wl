@@ -6,11 +6,11 @@ TestRasterObject["1nec38tdc363p.png", "11muof1pg7q1s.mx"]
 
 TestRasterObject["0zatbjlibnzkl.png", "0671ckodcyiig.mx"]
 
-TestRasterObject["1gsvcorgb6ls8.png", "0q9n1hhd07us6.mx"]
+TestRasterObject["0oak7a1vs2vc4.png", "0jq7rdjpf8bbh.mx"]
 
 TestRasterObject["0ovatfkkbqkjc.png", "1s53ze5bwaygo.mx"]
 
-TestRasterObject["1txkut5vnvpb6.png", "0fa2kzn28i270.mx"]
+TestRasterObject["1ciiw0k3ejfk5.png", "0eqyv24bcsnc3.mx"]
 
 TestRasterObject["0caa4getu6w0r.png", "0l1u93t96hy8w.mx"]
 
@@ -26,7 +26,7 @@ TestRasterObject["1osfptab2jsrq.png", "16jn34487o4l4.mx"]
 
 {TestRasterObject["1s2gp3csay7s5.png", "1pkqf454vfgwz.mx"], TestRasterObject["02r0n47r3989o.png", "1xq92znrv4rul.mx"], TestRasterObject["0uce9l8ndml6r.png", "0djsh64s76hr9.mx"], TestRasterObject["0a17f1ejqq3mm.png", "0t1hv5jw0newi.mx"]}
 
-{TestRasterObject["0x57bx825et6s.png", "12pmymlh009d7.mx"], TestRasterObject["0485oqk03zlim.png", "0kxpiju2tapbd.mx"], TestRasterObject["0aq3h3svmxc7q.png", "1rvuwdol18mk9.mx"], TestRasterObject["01nfq4i197fdr.png", "1qc5wkvksuwxs.mx"]}
+{TestRasterObject["1r7yiwudm7lml.png", "0s9hp3sqvwps5.mx"], TestRasterObject["0hv1nmfwdrjug.png", "0pxgkft0kodrr.mx"], TestRasterObject["1uxe5i00wwt15.png", "1m7xnnecqo895.mx"], TestRasterObject["1ppnp6o38u24n.png", "0i922j617fzb8.mx"]}
 
 TestRasterObject["08l5ijph39zq8.png", "05i19xwy833rz.mx"]
 

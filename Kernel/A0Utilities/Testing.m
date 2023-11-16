@@ -47,6 +47,9 @@ RunTests[filePattern_Str:All, OptionsPattern[]] := Scope[
 
   UnpackOptions[$verbose, $dryRun, $testContentsPattern, $maxItems, $replaceExisting];
 
+  (* we don't want to keep checking diagram file modification times during test runs, since they won't change mid-run. *)
+  $EnableDiagramReloading = False;
+  ClearNamedDiagramRegistry[];
   ClearCacheSymbols[];
 
   testFiles = findTestFiles[filePattern];

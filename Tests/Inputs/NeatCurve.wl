@@ -1,6 +1,5 @@
 (* ::Package:: *)
 
-RQG;
 Clear[makeShape, neatLine];
 makeShape[pos_, col_, Rectangular[sz_]] := {FaceEdgeForm[None, col], CenteredRectangle[pos, sz * 2]};
 makeShape[pos_, col_, r_] := {col, Circle[pos, r]};
@@ -11,7 +10,6 @@ neatLine[{pos1_, pos2_}, {sz1_, sz2_}, opts___] := List[
 ];
 
 
-RQG;
 Clear[neatLinePlot];
 neatPlot[prims_, opts___] := FixedGraphics[prims, GraphicsScale -> Lookup[{opts}, GraphicsScale, 50], Frame -> True];
 

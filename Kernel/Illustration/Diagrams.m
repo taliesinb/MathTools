@@ -1,4 +1,7 @@
 PublicFunction[NamedDiagram]
+PrivateVariable[$EnableDiagramReloading]
+
+SetInitialValue[$EnableDiagramReloading, True];
 
 SetUsage @ "
 NamedDiagram['file$/name$'] looks up a diagram located in 'Diagrams/file$.m'.
@@ -10,13 +13,14 @@ NamedDiagram[$$, opts$$] forwards option definitions.
 
 * Option forwarding is automatically inserted into definitions, into the outermost head.
 * Use $Opts to put them elsewhere.
+
+* NamedDiagram['file$/patt$'] will return all diagrams that match a string pattern.
 "
 
 
 $diagramsPath = LocalPath["Diagrams"];
 
 declareFunctionAutocomplete[NamedDiagram, {FileBaseName /@ FileNames["*.m", $diagramsPath]}];
-
 
 (**************************************************************************************************)
 
@@ -29,7 +33,6 @@ NamedDiagram[name_String, opts__Rule] := Scope[
 
 (**************************************************************************************************)
 
-$lastModTimes = UAssoc[];
 $currentBase = None;
 
 NamedDiagram::badName = "No diagram named ``.";
@@ -42,26 +45,44 @@ NamedDiagram[name_String] := Scope[
   If[!FileExistsQ[path], ReturnFailed["badName", name]];
   context = "QuiverGeometry`Diagrams`" <> baseName <> "`";
 
-  fileModTime = UnixTime @ FileDate[path, "Modification"];
-  If[$lastLoadCount =!= QuiverGeometryLoader`$LoadCount || fileModTime =!= $lastModTimes[path],
-    $lastModTimes[path] ^= fileModTime;
+  (* reloading invalidates all diagrams *)
+  If[$lastLoadCount =!= QuiverGeometryLoader`$LoadCount,
     $lastLoadCount ^= QuiverGeometryLoader`$LoadCount;
-    VPrint["Loading diagram file ", MsgPath @ path];
-    result = Check[
-      $currentBase = baseName <> "/";
-      QuiverGeometryLoader`LoadSingleFile[path, context, {QuiverGeometryLoader`$ShortcutsContext}],
-      $Failed
-    ];
-    If[FailureQ @ result, ReturnFailed["fileError", MsgPath @ path]];
+    VPrint["Reload happened, clearing diagram registry."];
+    ClearNamedDiagramRegistry[];
   ];
 
-  VPrint["Finding diagram ", name];
-  result = Lookup[$NamedDiagramRegistry, name];
-  If[!MissingQ[result], Return @ result];
+  diagram = Lookup[$NamedDiagramRegistry, name];
+  diagramFound = !MissingQ[diagram];
 
-  subkeys = Select[Keys @ $NamedDiagramRegistry, StringStartsQ[name <> "/"]];
-  If[subkeys === {}, ReturnFailed["unknown", name, MsgPath @ path]];
-  Column @ Lookup[$NamedDiagramRegistry, subkeys]
+  (* if we found the diagram, it might still be stale, so check this *)
+  If[diagramFound && $EnableDiagramReloading,
+    VPrint["Checking freshness of stored diagram."];
+    diagramFound = FileDate[path, "Modification"] === $diagramFileModificationTimes[path];
+    If[!diagramFound, VPrint["Diagram stale."]];
+  ];
+
+  (* if the freshness checks passed, return now *)
+  If[diagramFound, Return @ diagram];
+
+  (* freshness failed, or the diagram was never loaded *)
+  VPrint["Loading diagram file ", MsgPath @ path];
+  result = Check[
+    $currentBase = baseName <> "/";
+    QuiverGeometryLoader`LoadSingleFile[path, context, {QuiverGeometryLoader`$ShortcutsContext}],
+    $Failed
+  ];
+  If[FailureQ @ result, ReturnFailed["fileError", MsgPath @ path]];
+  $diagramFileModificationTimes[path] ^= FileDate[path, "Modification"];
+
+  VPrint["Finding diagram ", name];
+  diagram = Lookup[$NamedDiagramRegistry, name];
+  If[!MissingQ[diagram], Return @ diagram];
+
+  VPrint["Finding diagrams matching ", name];
+  keys = Select[Keys @ $NamedDiagramRegistry, StringMatchQ[name]];
+  If[keys === {}, ReturnFailed["unknown", name, MsgPath @ path]];
+  Lookup[$NamedDiagramRegistry, keys]
 ];
 
 (**************************************************************************************************)
@@ -86,10 +107,6 @@ NamedDiagram /: SetDelayed[NamedDiagram[name_String], rhs_] := With[
 
 PublicSymbol[$Opts]
 
-PrivateVariable[$NamedDiagramRegistry]
-
-$NamedDiagramRegistry = Assoc[];
-
 SetHoldRest[addDiagramDef];
 
 addDiagramDef[name_, head_Symbol[Shortest[args__], opts___Rule]] /; FreeQ[Hold[args], HoldPattern @ $Opts] :=
@@ -97,3 +114,14 @@ addDiagramDef[name_, head_Symbol[Shortest[args__], opts___Rule]] /; FreeQ[Hold[a
 
 addDiagramDef[name_, rhs_] :=
   $NamedDiagramRegistry[name] := rhs;
+
+(**************************************************************************************************)
+
+PrivateFunction[ClearNamedDiagramRegistry]
+
+ClearNamedDiagramRegistry[] := (
+  $diagramFileModificationTimes = UAssoc[];
+  $NamedDiagramRegistry = Assoc[];
+);
+
+ClearNamedDiagramRegistry[];
