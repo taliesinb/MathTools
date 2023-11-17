@@ -183,11 +183,13 @@ StringTrimLeftRight[left_, right_][str_] := StringTrimLeftRight[str, left, right
 
 (**************************************************************************************************)
 
-PublicVariable[$LowercaseRomanLetters, $UppercaseRomanLetters, $RomanLetters]
+PublicVariable[$LowercaseRomanLetters, $UppercaseRomanLetters, $RomanLetters, $RomanDigits, $RomanCharacters]
 
 $LowercaseRomanLetters = "abcdefghijklmnopqrstuvwxyz";
 $UppercaseRomanLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 $RomanLetters = StringJoin[$LowercaseRomanLetters, $UppercaseRomanLetters];
+$RomanDigits = "0123456789";
+$RomanCharacters = StringJoin[$RomanLetters, $RomanDigits];
 
 (**************************************************************************************************)
 
@@ -250,8 +252,8 @@ $toNonDecoratedRoman := $toNonDecoratedRoman = Join[
   toStringRules[$ScriptLetters, $RomanLetters],
   toStringRules[$MonospaceLetters, $RomanLetters],
   toStringRules[$FrakturLetters, $RomanLetters],
-  toStringRules[$DoubleStruckCharacters, StringJoin[$RomanLetters, "0123456789"]]
-]
+  toStringRules[$DoubleStruckCharacters, $RomanCharacters]
+];
 
 ToNonDecoratedRoman[str_Str] := StringReplace[str, $toNonDecoratedRoman];
 
@@ -275,7 +277,7 @@ ToSpelledGreek[str_Str] := StringReplace[str, $toSpelledGreek];
 (**************************************************************************************************)
 
 PublicSymbol[ASCIILetter, LowercaseLetter, UppercaseLetter, AlphanumericCharacter]
-PublicSymbol[LowercaseRomanLetter, UppercaseRomanLetter, RomanLetter]
+PublicSymbol[LowercaseRomanLetter, UppercaseRomanLetter, RomanLetter, RomanCharacter]
 PublicSymbol[LowercaseGreekLetter, UppercaseGreekLetter, GreekLetter]
 PublicSymbol[DoubleQuote]
 PublicSymbol[LowercaseDoubleStruckLetter, UppercaseDoubleStruckLetter, DoubleStruckLetter, DoubleStruckDigit, DoubleStruckCharacter]
@@ -293,6 +295,7 @@ declareStringLetterPattern[
   LowercaseRomanLetter -> $LowercaseRomanLetters,
   UppercaseRomanLetter -> $UppercaseRomanLetters,
   RomanLetter -> $RomanLetters,
+  RomanCharacter -> $RomanCharacters,
   LowercaseGreekLetter -> $LowercaseGreekLetters,
   UppercaseGreekLetter -> $UppercaseGreekLetters,
   GreekLetter -> $GreekLetters,

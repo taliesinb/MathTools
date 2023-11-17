@@ -124,7 +124,7 @@ toItalicDir = Case[
 CacheSymbol[$TextIconRasterCache]
 
 textIconRasterBoxes[str_, fontSize_Int, fc_, fw_, ff_, fs_, form_, cp_] := CachedInto[
-  $TextIconRasterCache, {str, fontSize, fc, fw, ff, fs},
+  $TextIconRasterCache, {str, fontSize, fc, fw, ff, fs, form, cp},
   ToBoxes @ ColorGradientRasterize[
     Style[
       form @ str,

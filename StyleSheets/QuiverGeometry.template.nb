@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[      7936,        216]
-NotebookOptionsPosition[      5240,        179]
-NotebookOutlinePosition[      5633,        195]
-CellTagsIndexPosition[      5590,        192]
+NotebookDataLength[      8345,        226]
+NotebookOptionsPosition[      5520,        188]
+NotebookOutlinePosition[      5913,        204]
+CellTagsIndexPosition[      5870,        201]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -135,10 +135,19 @@ Cell[StyleData["SansSerifMathFont"],
  AutoSpacing->False,
  ShowStringCharacters->False,
  AutoMultiplicationSymbol->False,
- SingleLetterItalics->True,
+ SingleLetterItalics->False,
  ZeroWidthTimes->True,
  FontFamily->
   "KaTeX_SansSerif",ExpressionUUID->"e449bd62-01c1-43e9-a1e3-ec68495770c2"],
+
+Cell[StyleData["ModernMathFont"],
+ AutoSpacing->False,
+ ShowStringCharacters->False,
+ AutoMultiplicationSymbol->False,
+ SingleLetterItalics->False,
+ ZeroWidthTimes->True,
+ FontFamily->"KaTeX_SansSerif",
+ FontWeight->Bold,ExpressionUUID->"f6bea297-8e77-4b04-a8b7-7f5778440812"],
 
 Cell[StyleData["TypewriterMathFont"],
  AutoSpacing->False,
@@ -212,11 +221,12 @@ Cell[2854, 97, 253, 7, 37, 31, 0, "StyleData", "MathTextFont", "All",ExpressionU
 Cell[3110, 106, 254, 7, 37, 32, 0, "StyleData", "RomanMathFont", "All",ExpressionUUID->"9b1466f1-a0a4-4308-ab27-c308e8e8ea00"],
 Cell[3367, 115, 256, 7, 35, 33, 0, "StyleData", "ScriptMathFont", "All",ExpressionUUID->"26623a48-9cd7-4e59-baea-4f2e32479d0f"],
 Cell[3626, 124, 266, 7, 34, 38, 0, "StyleData", "CaligraphicMathFont", "All",ExpressionUUID->"5c25097e-bf97-4f0a-8571-fdb37024378a"],
-Cell[3895, 133, 262, 7, 34, 36, 0, "StyleData", "SansSerifMathFont", "All",ExpressionUUID->"e449bd62-01c1-43e9-a1e3-ec68495770c2"],
-Cell[4160, 142, 264, 7, 34, 37, 0, "StyleData", "TypewriterMathFont", "All",ExpressionUUID->"a38923bf-0cd5-41a7-be60-749e6cf8abc0"],
-Cell[4427, 151, 258, 7, 34, 34, 0, "StyleData", "FrakturMathFont", "All",ExpressionUUID->"ec542fd5-9d9a-4b00-b019-e9ee5d31ad2b"],
-Cell[4688, 160, 259, 7, 34, 31, 0, "StyleData", "CardinalFont", "All",ExpressionUUID->"f061dfbd-2361-4c43-8a10-92731b3fd43c"],
-Cell[4950, 169, 274, 7, 37, 34, 0, "StyleData", "MultiSymbolFont", "All",ExpressionUUID->"a14f87c3-23d2-4229-847e-65b1359670c8"]
+Cell[3895, 133, 263, 7, 34, 36, 0, "StyleData", "SansSerifMathFont", "All",ExpressionUUID->"e449bd62-01c1-43e9-a1e3-ec68495770c2"],
+Cell[4161, 142, 276, 7, 34, 33, 0, "StyleData", "ModernMathFont", "All",ExpressionUUID->"f6bea297-8e77-4b04-a8b7-7f5778440812"],
+Cell[4440, 151, 264, 7, 34, 37, 0, "StyleData", "TypewriterMathFont", "All",ExpressionUUID->"a38923bf-0cd5-41a7-be60-749e6cf8abc0"],
+Cell[4707, 160, 258, 7, 34, 34, 0, "StyleData", "FrakturMathFont", "All",ExpressionUUID->"ec542fd5-9d9a-4b00-b019-e9ee5d31ad2b"],
+Cell[4968, 169, 259, 7, 34, 31, 0, "StyleData", "CardinalFont", "All",ExpressionUUID->"f061dfbd-2361-4c43-8a10-92731b3fd43c"],
+Cell[5230, 178, 274, 7, 37, 34, 0, "StyleData", "MultiSymbolFont", "All",ExpressionUUID->"a14f87c3-23d2-4229-847e-65b1359670c8"]
 }, Open  ]]
 }
 ]

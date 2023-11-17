@@ -125,6 +125,21 @@ VectorProject[u_ ? MatrixQ, v_ ? MatrixQ] := MapThread[VectorProject, {u, v}];
 VectorProject[u_ ? MatrixQ, v_ ? VectorQ] := Map[VectorProject[u, #]&, v];
 VectorProject[u_, v_] := Projection[u, v];
 
+
+(**************************************************************************************************)
+
+PublicFunction[LineSegmentTotalLengths]
+
+SetUsage @ "
+LineSegmentTotalLengths[{p$1, p$2, $$}] gives the list of accumulated lengths along a line.
+* the first entry is 0.
+"
+
+LineSegmentTotalLengths[{}] := {};
+
+LineSegmentTotalLengths[points_] :=
+  ToPackedReal @ Prepend[0.] @ Accumulate @ MapWindowed[Apply @ Dist, N @ points]
+
 (**************************************************************************************************)
 
 PublicFunction[LineLineIntersectionPoint]

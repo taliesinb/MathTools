@@ -333,9 +333,17 @@ ShaftStyleBoxOperator[color_, opacity_, thickness_, dashing_] :=
 
 PrivateTypesettingBoxFunction[LineBoxGradientOperator]
 
+lineVectorQ[list_] := CoordinateMatricesQ[list] || VectorQ[list, lineQ];
+lineQ[list_] := CoordinateMatrixQ[list] || MatchQ[list, {($CoordP | _Offset)..}];
+
 LineBoxGradientOperator[cols_][LineBox[points_]] := Scope[
-  dists = Prepend[0] @ Accumulate @ MapWindowed[Apply @ Dist, N @ RemoveOffsets @ points];
-  colors = OklabBlend[cols, dists / PN[dists]];
+  If[MatchQ[cols, {c_, c_}],
+    Return @ StyleBox[LineBox[points], First @ cols]];
+  If[lineVectorQ[points], Return @ Map[LineBox /* LineBoxGradientOperator[cols], points]];
+  dists = LineSegmentTotalLengths @ RemoveOffsets @ points;
+  total = PN @ dists;
+  If[total == 0, Return @ LineBox[points]];
+  colors = OklabBlend[cols, dists / total];
   Construct[LineBox, points, VertexColors -> colors]
 ];
 

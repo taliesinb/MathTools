@@ -72,7 +72,7 @@ parseColorGradient = Case[
   );
 ]
 
-toRC[e_] := If[ColorQ[e], e, ToRainbowColor[e]];
+toRC[e_] := If[ColorQ[e], e, ToRainbowColor[e] /. None -> Black];
 
 (**************************************************************************************************)
 
@@ -279,7 +279,8 @@ gradientSymbolBoxes[ReversedChainForm[f_], cspec_, opts___] :=
 gradientSymbolBoxes[sym_Symbol ? $symbolFormHeadQ, cspec_, opts___] :=
   gradientSymbolBoxes[$literalSymbolFormTable @ sym, cspec, opts]
 
-gradientSymbolBoxes[(_Symbol ? $taggedFormHeadQ)[inner_], args___]  /; FreeQ[{args}, "Raster"] :=
+(* trim off things like CategorySymbol for vector method, because we use the right font family *)
+gradientSymbolBoxes[(_Symbol ? $taggedFormHeadQ)[inner_], args___] /; FreeQ[{args}, "Raster"] :=
   gradientSymbolBoxes[inner, args];
 
 gradientSymbolBoxes[str_Str, cspec_, opts___] :=
@@ -293,8 +294,18 @@ gradientSymbolBoxes[str_Str, cspec_, opts___] :=
 gradientSymbolBoxes[expr_, cspec_, lopts___, Method -> "Raster", ropts___] :=
   ToBoxes @ TextIcon[expr, FontColor -> cspec, lopts, Method -> "Raster", ropts];
 
-GradientSymbol::firstArg = "First argument `` should be a string or literal symbol."
-gradientSymbolBoxes[other_, ___] := (Message[GradientSymbol::firstArg, MsgExpr @ other]; "?");
+(* TODO: have these foundation styles defined in code, and then automatically set up these
+rules. perhaps we can even move them downstream into TextIcon, via FormatType *)
+
+gradientSymbolBoxes[SansSerifForm[inner_], args___] :=
+  gradientSymbolBoxes[inner, args, FontFamily -> "KaTeX_SansSerif", FontSlant -> Plain];
+
+gradientSymbolBoxes[ModernForm[inner_], args___] :=
+  gradientSymbolBoxes[inner, args, FontFamily -> "KaTeX_SansSerif", FontSlant -> Plain, FontWeight -> Bold];
+
+GradientSymbol::firstArg = "First argument in `` should be a string or literal symbol."
+gradientSymbolBoxes[args___] :=
+  (Message[GradientSymbol::firstArg, MsgExpr @ GradientSymbol[args]]; "?");
 
 (* have to disable this because otherwise GradientSymbol burrows through tagged forms and they get
 rasterized incorrectly *)

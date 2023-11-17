@@ -210,7 +210,7 @@ DefineInfixForm[VerticalCompositionForm, RaiseBox[Nest[StyleBox[#, Smaller]&, "\
 
 DefineInfixForm[SpacedCompositionForm, "\[VeryThinSpace]"]
 DefineInfixForm[SpacedDiskCompositionForm, "\[ThinSpace]\[SmallCircle]\[ThinSpace]"];
-DefineInfixForm[DiskCompositionForm, "\[SmallCircle]"];
+DefineInfixForm[DiskCompositionForm, "\[VeryThinSpace]\[SmallCircle]\[VeryThinSpace]"];
 DefineInfixForm[TightCompositionForm, "\[NegativeThinSpace]"];
 DefineInfixForm[CompositionForm, ""];
 

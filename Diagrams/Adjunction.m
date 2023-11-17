@@ -31,13 +31,14 @@ NamedDiagram["Adjunction/RightUnitCounitFunctorTriangle"] := InTriangleDiagram[
 
 (**************************************************************************************************)
 
-gluedTriangles[a_, b_, f_, g_, x_, y_, revDbl_] := With[
-  {rev = If[revDbl, Reverse, Identity], lpos = If[revDbl, 0.4, 0.5]}, CommutativeDiagram[{
+gluedTriangles[a_, b_, f_, g_, x_, y_, revDbl_, opts___Rule] := With[
+  {rev = If[revDbl, Reverse, Identity], lpos = If[revDbl, 0.1, 0.5]}, CommutativeDiagram[{
   {1,1} -> "C1" -> a, {2,1} -> "D1" -> b, {2,2} -> "C2" -> a, {3, 2} -> "D2" -> b,
   EqualityMorphism[{1, 3}], EqualityMorphism[{2, 4}],
   Morphism[{1, 2}, f], LabelPosition -> BottomRight,  Morphism[{2, 3}, g], Morphism[{3, 4}, f], LabelSpacing -> 0,
-  DoubleMorphism[rev @ {MorphismCoordinates[1], ObjectCoordinates[2]}, {lpos -> x}, Setback -> rev[{8, 16}]],
-  DoubleMorphism[rev @ {ObjectCoordinates[3], MorphismCoordinates[2]}, {lpos -> y}, Setback -> rev[{16, 8}]]}
+  DoubleMorphism[rev @ {MorphismCoordinates[1], ObjectCoordinates[2]}, {lpos -> x}, Setback -> rev[{8, 40}]],
+  DoubleMorphism[rev @ {ObjectCoordinates[3], MorphismCoordinates[2]}, {lpos -> y}, Setback -> rev[{40, 8}]]},
+  opts
 ]];
 
 filledSquare[a_, b_, f_, isRev_, opts___Rule] := CommutativeDiagram[{
@@ -49,11 +50,11 @@ filledSquare[a_, b_, f_, isRev_, opts___Rule] := CommutativeDiagram[{
   LabelPosition -> Outwards, opts
 ];
 
-NamedDiagram["Adjunction/LeftGluedTriangles"]  := gluedTriangles[$OC, $OD, $FunL, $FunR, $NTeta, $NTeps, False];
-NamedDiagram["Adjunction/RightGluedTriangles"] := gluedTriangles[$OD, $OC, $FunR, $FunL, $NTeps, $NTeta, True];
+NamedDiagram["Adjunction/LeftGluedTriangles"]  := gluedTriangles[$OC, $OD, $FunL, $FunR, $NTeta, $NTeps, False, $Opts];
+NamedDiagram["Adjunction/RightGluedTriangles"] := gluedTriangles[$OD, $OC, $FunR, $FunL, $NTeps, $NTeta, True, $Opts];
 
-NamedDiagram["Adjunction/LeftFilledSquare"]  := filledSquare[$OC, $OD, $FunL, False, Origin -> {3, 0}];
-NamedDiagram["Adjunction/RightFilledSquare"] := filledSquare[$OD, $OC, $FunR, True, Origin -> {3, 0}];
+NamedDiagram["Adjunction/LeftFilledSquare"]  := filledSquare[$OC, $OD, $FunL, False, Origin -> {3, 0}, $Opts];
+NamedDiagram["Adjunction/RightFilledSquare"] := filledSquare[$OD, $OC, $FunR, True, Origin -> {3, 0}, $Opts];
 
 (**************************************************************************************************)
 
@@ -89,7 +90,7 @@ $funL12 = DRGF @ CompositionForm[$FunL1, $FunL2];
 $funR21 = DRGF @ CompositionForm[$FunR2, $FunR1];
 
 $colorRules = {
-  $Oc -> $DarkBlue, $Od -> $DarkRed, $ff -> $DarkRed, $fg -> $DarkBlue,
+  $Oc -> $DarkBlue, $Od -> $DarkRed, $Af -> $DarkRed, $Ag -> $DarkBlue,
   $CC -> 1, $CD -> 2, $CE -> 3,
   $FunL -> {1, 2}, $FunR -> {2, 1},   $NTeta -> $Pink,  $NTeps -> $Pink,
   $FunL1 -> {1, 2}, $FunR1 -> {2, 1}, $NTeps1 -> $Pink, $NTeta1 -> $Pink,
@@ -103,7 +104,7 @@ $adjOpts := Sequence[
   TextModifiers -> {Subscript[z_, _] :> z}
 ];
 
-stringWire[c_, d_, l_, opts___] := StringDiagram[{}, {Bottom <=> Top -> l}, {Left -> c, Right -> d}, DiagramSize -> {9, 12}, opts, $adjOpts];
+stringWire[c_, d_, l_, opts___] := StringDiagram[{}, {Bottom <=> Top -> l}, {{-4.5, 0} -> c, {4.5, 0} -> d}, DiagramSize -> {9, 12}, opts, $adjOpts];
 stringEta[c_, d_, l_, r_, eta_, opts___] := StringDiagram[{{0,0} -> eta}, {1 <=> {Top,-6} -> r, 1 <=> {Top,6} -> l}, {Bottom -> d, Top -> c}, opts, $adjOpts];
 stringEps[c_, d_, l_, r_, eps_, opts___] := StringDiagram[{{0,0} -> eps}, {1 <=> {Bottom,-6} -> l, 1 <=> {Bottom,6} -> r}, {Bottom -> d, Top -> c}, opts, $adjOpts];
 
@@ -129,7 +130,7 @@ NamedDiagram["Adjunction/StringLRL"] := StringDiagram[{
   {1 <=> {Bottom,-8} -> $FunL,
    Customized[1 <=> 2 -> $FunR, LabelPosition -> Left],
    2 <=> {Top,8} -> $FunL},
-  {{-11,-11} -> Red, {11,11} -> Blue}, $adjOpts
+  {{-11,-11} -> Red, {11,11} -> Blue}, $Opts, $adjOpts
 ];
 
 NamedDiagram["Adjunction/StringRLR"] := StringDiagram[
@@ -138,7 +139,7 @@ NamedDiagram["Adjunction/StringRLR"] := StringDiagram[
    Customized[1 <=> 2 -> $FunL, LabelPosition -> Right],
    2 <=> {Top,-8} -> $FunR
   },
-  {{11,-11} -> Red, {-11,11} -> Blue}, $adjOpts
+  {{11,-11} -> Red, {-11,11} -> Blue}, $Opts, $adjOpts
 ];
 
 (**************************************************************************************************)
@@ -146,8 +147,9 @@ NamedDiagram["Adjunction/StringRLR"] := StringDiagram[
 NamedDiagram["Adjunction/StringLImage"] := FunctorialStringDiagram[
   {},
   {{Bottom,0} <=> 1 -> $FunL},
-   {$Oc, 0.5 -> $ff, $Od},
+   {$Oc, 0.5 -> $Af, $Od},
   {BottomRight -> $CD, BottomLeft -> $CC},
+  $Opts,
   $adjOpts
 ]
 
@@ -157,9 +159,9 @@ NamedDiagram["Adjunction/StringLRImage"] := FunctorialStringDiagram[
   {{0, 7} -> $NTeps},
   {Bottom <=> 1 -> $FunL,
    1 <=> "g" -> Customized[$FunR, LabelPosition -> Left]},
-  {$Oc, 0.5 -> $fg, $Od},
+  {$Oc, 0.5 -> $Ag, $Od},
   {BottomRight -> $CD, BottomLeft -> $CC},
-  $adjOpts
+  $Opts, $adjOpts
 ]
 
 (**************************************************************************************************)
@@ -167,9 +169,9 @@ NamedDiagram["Adjunction/StringLRImage"] := FunctorialStringDiagram[
 NamedDiagram["Adjunction/StringRImage"] := FunctorialStringDiagram[
   {},
   {{Top, 0} <=> "g" -> $FunR},
-   {$Oc, 0.5 -> $fg, $Od},
+   {$Oc, 0.5 -> $Ag, $Od},
   {TopLeft -> $CD, TopRight -> $CC},
-  $adjOpts
+  $Opts, $adjOpts
 ];
 
 (**************************************************************************************************)
@@ -178,9 +180,9 @@ NamedDiagram["Adjunction/StringRLImage"] := FunctorialStringDiagram[
   {{0, -7} -> $NTeps},
   {{Top,0} <=> 1 -> $FunR,
    Customized[1 <=> 2 -> $FunL, LabelPosition -> Right]},
-  {$Oc, 0.5 -> $ff, $Od},
+  {$Oc, 0.5 -> $Af, $Od},
   {TopLeft -> $CD, TopRight -> $CC},
-  $adjOpts
+  $Opts, $adjOpts
 ];
 
 (**************************************************************************************************)
@@ -220,3 +222,9 @@ NamedDiagram["Adjunction/StringMonadPanel12"] :=
 NamedDiagram["Adjunction/StringMonadPanel12Result"] :=
   stringMonadPanel[$CC, $CE, $funL12, $funR21, $NTeta3, $NTeps3];
 
+(**************************************************************************************************)
+
+NamedDiagram["Adjunction/ComposedPairs"] := CommutativeDiagram[{
+  AdjunctionDiagram[{$CC, $CD}, {$FunL, $FunR}],
+  AdjunctionDiagram[{Invisible @ $CD, $CE}, {$FunLpr, $FunRpr}, Origin -> {1, 0}]
+}]

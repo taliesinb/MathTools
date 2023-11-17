@@ -1032,7 +1032,7 @@ PublicTypesettingFormBox[RedForm, GreenForm, BlueForm, OrangeForm, PinkForm, Tea
 PublicTypesettingFormBox[LightRedForm, LightGreenForm, LightBlueForm, LightOrangeForm, LightPinkForm, LightTealForm, LightGrayForm, LightPurpleForm]
 PublicTypesettingFormBox[DarkRedForm, DarkGreenForm, DarkBlueForm, DarkOrangeForm, DarkPinkForm, DarkTealForm, DarkGrayForm, DarkPurpleForm, MultisetColorForm]
 
-PublicTypesettingFormBox[BoldForm, ItalicForm, UnderlinedForm, StruckthroughForm, LargerForm, SmallerForm, PlainTextForm, MathTextForm, RomanForm, FrakturForm, CaligraphicForm, SansSerifForm, TypewriterForm]
+PublicTypesettingFormBox[BoldForm, ItalicForm, UnderlinedForm, StruckthroughForm, LargerForm, SmallerForm, PlainTextForm, MathTextForm, RomanForm, FrakturForm, CaligraphicForm, ModernForm, SansSerifForm, TypewriterForm]
 
 SystemSymbol[ScriptForm]
 PrivateTypesettingBoxFunction[ScriptBox]
@@ -1084,6 +1084,7 @@ makeInlineStyleForm @@@ ExpressionTable[
   FrakturForm         FrakturBox         "FrakturMathFont"
   CaligraphicForm     CaligraphicBox     "CaligraphicMathFont"
   SansSerifForm       SansSerifBox       "SansSerifMathFont"
+  ModernForm          ModernBox          "ModernMathFont"
   TypewriterForm      TypewriterBox      "TypewriterMathFont"
 ];
 

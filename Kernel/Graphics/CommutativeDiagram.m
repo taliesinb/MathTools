@@ -217,6 +217,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $currentDiagramFontSize = labelFontSize;
   If[$saveMorphGradColors, saveMorphismGradColors @ items];
 
+  $morphIndex = 0;
   morphismPrimitives = parseMorphism /@ items;
   If[$clonesExist, morphismPrimitives = {
       {morphismPrimitives, Flatten @ {interiorLinkOptions, $cloneInteriorLinks}},
@@ -497,6 +498,8 @@ MorphismColors is an option to %CommuativeDiagram which can be:
 | None | no colors |
 | Inherited | inherit colors from the colors of their labels |
 | 'Gradient' | color arrows as gradient between colors of their endpoints |
+| {rule$1, rule$2, $$} | specify colors for individual morphisms |
+* each rule$ can be a mapping 'label$' -> color$ or ind$ -> color$.
 ";
 
 CommutativeDiagram::badMorphismColors = "MorphismColors -> `` is not recognized."
@@ -510,8 +513,14 @@ processMorphismColors = Case[
     morphismGradColors
   );
 
+  {rule__Rule, type_String} := orColor[% @ {rule}, % @ type];
+
+  rules:{__Rule} := morphismColorRuleLookup[Append[_ -> None] @ rules];
+
   other_ := (Message[CommutativeDiagram::badMorphismColors, MsgExpr[other]]; None)
 ];
+
+orColor[f_, g_][ma_] := Replace[f[ma], None :> g[ma]];
 
 morphismLabelColor[_] := None;
 morphismLabelColor[ma:MorphismArrow[_, lbl:Except[_Rule], ___]] :=
@@ -523,6 +532,13 @@ morphismGradColors[ma:MorphismArrow[path_, ___]] := Scope[
   cols = Lookup[$morphGradColors, DirectedEdge @@ st];
   If[!ColorVectorQ[cols], Return @ None];
   cols
+];
+
+morphismColorRuleLookup[rules_][ma_MorphismArrow] := Scope[
+  label = SafePart[ma, 2];
+  res = Replace[label, rules];
+  If[res =!= None, Return @ res];
+  Replace[$morphIndex, rules]
 ];
 
 (**************************************************************************************************)
@@ -803,7 +819,7 @@ parseMorphism = Case[
 
   cd_CommutativeDiagram                              := flipSymbolicPositions @ Append[cd, Unevaluated @ $inheritedOptions];
 
-  other_                                             := processMorphism1 @ other;
+  other_                                             := ($morphIndex++; processMorphism1 @ other);
 ]
 
 (**************************************************************************************************)
@@ -1051,8 +1067,11 @@ lookupObjectSize = Case[
 PrivateFunction[findInteriorColor]
 
 findInteriorColor[e_] := DeepFirstCase[e,
-  StyledForm[__, c:$ColorPattern, ___] :> c,
-  DeepFirstCase[e, (Style[___, c:$ColorPattern, ___] | _FramedForm[_, c:$ColorPattern]) :> c]
+  GradientSymbol[_, {c1_, c2_} | ColorGradient[{c1_, c2_}, ___], ___] :> ToRainbowColor[c1],
+  DeepFirstCase[e,
+    StyledForm[__, c:$ColorPattern, ___] :> c,
+    DeepFirstCase[e, (Style[___, c:$ColorPattern, ___] | _FramedForm[_, c:$ColorPattern]) :> c]
+  ]
 ];
 
 (**************************************************************************************************)

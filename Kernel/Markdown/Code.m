@@ -43,7 +43,7 @@ balancedQ[a_] := StringCount[a, "{"] == StringCount[a, "}"];
 (**************************************************************************************************)
 
 $doubleStruckCharacterList = Characters @ $DoubleStruckCharacters;
-$romanCharacterList = Characters @ StringJoin[$RomanLetters, "0123456789"];
+$romanCharacterList = Characters @ $RomanCharacters;
 
 doubleStruckToBoldRoman[char:("ℂ" | "ℕ" | "ℚ" | "ℝ" | "ℤ")] := char;
 doubleStruckToBoldRoman[char_] := $boldFontTemplate @ Part[$romanCharacterList, IndexOf[$doubleStruckCharacterList, char]];

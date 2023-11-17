@@ -14,7 +14,7 @@ NamedDiagram[$$, opts$$] forwards option definitions.
 * Option forwarding is automatically inserted into definitions, into the outermost head.
 * Use $Opts to put them elsewhere.
 
-* NamedDiagram['file$/patt$'] will return all diagrams that match a string pattern.
+* NamedDiagram['file$/patt$'] will return all diagrams that match a string pattern, labeled by their name.
 "
 
 
@@ -82,7 +82,10 @@ NamedDiagram[name_String] := Scope[
   VPrint["Finding diagrams matching ", name];
   keys = Select[Keys @ $NamedDiagramRegistry, StringMatchQ[name]];
   If[keys === {}, ReturnFailed["unknown", name, MsgPath @ path]];
-  Lookup[$NamedDiagramRegistry, keys]
+  diagrams = Lookup[$NamedDiagramRegistry, keys];
+
+  baseNameLen = StringLength[baseName] + 1;
+  ZipMap[LabeledForm[#1, StringDrop[#2, baseNameLen]]&, diagrams, keys]
 ];
 
 (**************************************************************************************************)

@@ -168,3 +168,11 @@ DefineKatexDisplayFunction["SubstackForm", substackKatex[#]&]
 
 substackKatex[GridBox[entries_, ___]] :=
   "substack" @ Riffle[Catenate @ entries, "\\\\"];
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[LabeledForm]
+
+DefineStandardTraditionalForm[
+  LabeledForm[thing_, label_] :> ToBoxes @ Labeled[thing, MathTextForm @ label]
+]

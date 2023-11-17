@@ -183,7 +183,7 @@ AdjointTripleDiagram[{a_, b_}, {abl_, abr_, ba_, extra___}, opts___Rule] := Scop
     toComSugarArrow[curve[{OC @ 1, OC @ 2}, -bend], abl],
     toComSugarArrow[curve[{OC @ 1, OC @ 2}, bend], abr],
     toComSugarArrow[ObjectCoordinates @ {2,1}, ba],
-    AdjointMorphism[3 => 1, Setback -> {0, setback}], AdjointMorphism[2 => 3, Setback -> {setback, 0}],
+    AdjointMorphism[MorphismCoordinates @ {3,1}, Setback -> {0, setback}], AdjointMorphism[MorphismCoordinates @ {2,3}, Setback -> {setback, 0}],
     extra},
     FilterOptions @ opts,
     LabelPosition -> Center, LabelOrientation -> Horizontal

@@ -10,6 +10,14 @@ NamedDiagram["Monoidal/Associator"] := CommutativeDiagram[{
 
 (**************************************************************************************************)
 
+NamedDiagram["Monoidal/AssociatorTimesId"] := CommutativeDiagram[{
+  {0, 0} -> "((AB)C)D" -> MPF[MPF[MPF[$OA, $OB], $OC], $OD], {2,0} -> "(A(BC))D" -> MPF[MPF[$OA, MPF[$OB, $OC]], $OD],
+  Morphism[{"((AB)C)D", "(A(BC))D"}, MPF[AssociatorForm[$OA, $OB, $OC], OneArrow[$OD]]]},
+  FontSize -> 14
+];
+
+(**************************************************************************************************)
+
 NamedDiagram["Monoidal/Pentagon"] := CommutativePentagon[{
   TMPF[TMPF[$OA, $OB], TMPF[$OC, $OD]],
   TMPF[$OA, TMPF[$OB, TMPF[$OC, $OD]]],

@@ -8,7 +8,7 @@ PublicOption[WireLabelFontSize, WireLabelFontWeight, WireLabelFontFamily, WireLa
 
 PublicOption[RegionLabelFontSize, RegionLabelFontWeight, RegionLabelFontFamily]
 
-PublicOption[TickLabelFontSize, TickLabelFontWeight, TickLabelFontFamily, TickLabelSpacing, TickLabelFontColor, TickLength, RegionFilling]
+PublicOption[TickPosition, TickLabelFontSize, TickLabelFontWeight, TickLabelFontFamily, TickLabelSpacing, TickLabelFontColor, TickLength, RegionFilling]
 
 
 Options[StringDiagram] = {
@@ -68,12 +68,14 @@ Options[StringDiagram] = {
   RegionLabelFontFamily -> Automatic,
 
   FrameTicks            -> {},
+  TickPosition          -> Automatic,
   TickLength            -> 5,
   TickLabelFontSize     -> Automatic,
   TickLabelFontWeight   -> Plain,
   TickLabelFontFamily   -> Automatic,
   TickLabelSpacing      -> 3,
   TickLabelFontColor    -> Black,
+  Convention            -> RightToLeft,
 
   RegionFilling         -> "Explicit",
   ColorRules            -> None,
@@ -102,8 +104,11 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
     flipX, flipY, wireThickness, nodeEdgeThickness, nodeBackground, frameThickness, frameColor, curveFunction,
     segmentPosition, splitPosition, splitOrientation,
     background, baseThickness, halfFrame, imagePadding, epilog, fontSize, fontWeight, fontFamily,
-    diagramSize, imageSize, graphicsScale, textModifiers, frameTicks, colorRules, regionFilling, gradientSymbolOptions
+    diagramSize, imageSize, graphicsScale, textModifiers, colorRules, regionFilling, gradientSymbolOptions,
+    frameTicks, convention
   ];
+
+  If[convention === LeftToRight, flipX = !flipX];
 
   $lastInnerLabel = None;
   {$w, $h} = diagramSize;
@@ -133,7 +138,7 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   $fontWeight = ReplaceAutomatic[nodeLabelFontWeight, fontWeight];
   $fontFamily = ReplaceAutomatic[nodeLabelFontFamily, fontFamily];
   labelSpacing = nodeLabelSpacing; labelPosition = nodeLabelPosition; labelOffset = nodeLabelOffset; labelBackground = nodeLabelBackground;
-  boxColor = None; hasBottomLabels = hasTopLabels = hasLeftLabels = hasRightLabels = False;
+  boxColor = None; bLabelH = tLabelH = lLabelW = rLabelW = 0;
   $textModifierFn = boxTextModifierFn;
   boxPrims = MapIndex1[$keyOff = 0; parseBox, boxes];
 
@@ -149,12 +154,17 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   $textModifierFn = wireTextModifierFn;
   wirePrims = MapIndex1[$keyOff = 0; parseWire, wires];
 
-  UnpackOptions[tickLabelFontColor, tickLabelSpacing, tickLabelFontSize, tickLabelFontWeight, tickLabelFontFamily, tickLength];
+  UnpackOptions[tickPosition, tickLabelFontColor, tickLabelSpacing, tickLabelFontSize, tickLabelFontWeight, tickLabelFontFamily, tickLength];
   $fontColor = tickLabelFontColor;
   $currentDiagramFontSize = $fontSize = ReplaceAutomatic[tickLabelFontSize, fontSize];
   $fontWeight = ReplaceAutomatic[tickLabelFontWeight, fontWeight];
   $fontFamily = ReplaceAutomatic[tickLabelFontFamily, fontFamily];
-  labelPosition = Left; labelSpacing = tickLabelSpacing;
+
+  SetAutomatic[tickPosition, If[convention === RightToLeft, Left, Right]];
+  If[!MatchQ[tickPosition, Left | Right],
+    BadOptionSetting[StringDiagram, TickPosition, tickPosition];
+    ReturnFailed[]];
+  labelPosition = tickPosition; labelSpacing = tickLabelSpacing;
   tickPrims = Map[parseFrameTick, frameTicks];
 
   UnpackOptions[regionLabelFontSize, regionLabelFontWeight, regionLabelFontFamily];
@@ -172,9 +182,11 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   rect = Rectangle[Offset[{0, -1}, {-$w, -$h}], Offset[{0, 0}, {$w, $h}]];
 
   framePrims = If[halfFrame,
-    nw =                 {-$w,  $h};  ne =                 {$w,  $h};
-    sw = Offset[{0, -1}, {-$w, -$h}]; se = Offset[{0, -1}, {$w, -$h}];
-    Style[Line[{ne, nw, sw, se}], frameColor, AbsoluteThickness @ frameThickness]
+    nw = {-$w,  $h};  ne = {$w,  $h};
+    sw = {-$w, -$h}; se = {$w, -$h};
+    {sw, se} //= Map[Offset[{0, -1}, #]&];
+    halfFrameLine = Line @ If[convention === RightToLeft, {ne, nw, sw, se}, {nw, ne, se, sw}];
+    Style[halfFrameLine, frameColor, AbsoluteThickness @ frameThickness]
   ,
     Style[rect, FaceForm @ None, EdgeForm @ {frameColor, AbsoluteThickness @ frameThickness}]
   ];
@@ -184,14 +196,16 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
     Style[rect, FaceForm @ toRegionColor @ backgroundColor, EdgeForm @ None]
   ];
 
-  hasVerticalLabels = hasBottomLabels || hasTopLabels;
   SetAutomatic[imagePadding, 2];
 
   imagePadding //= StandardizePadding;
   {{padl, padr}, {padb, padt}} = imagePadding;
-  If[hasVerticalLabels, padb = Max[padb, 22]; padt = Max[padt, 22]];
-  If[hasLeftLabels, padl = Max[padl, 25]];
-  If[hasRightLabels, padr = Max[padr, 25]];
+  If[Max[tLabelH, bLabelH] > 0,
+    padb = Max[padb, bLabelH + 2, 22];
+    padt = Max[padt, tLabelH + 2, 22];
+  ];
+  If[lLabelW > 0, padl = Max[padl, lLabelW + 2, 25]];
+  If[rLabelW > 0, padr = Max[padr, rLabelW + 2, 25]];
   imagePadding = {{padl, padr}, {padb, padt}};
 
   totalPadding = Map[Total, imagePadding];
@@ -207,7 +221,7 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
     {AbsolutePointSize[5 + nodeEdgeThickness],
      inlineOptions, background,
      {AbsoluteThickness[wireThickness], wirePrims}, regPrims,
-     framePrims, boxPrims, tickPrims},
+     framePrims, Annotation[tickPrims, "TransparentToFill"], boxPrims},
     If[epilog =!= {}, Epilog -> epilog, Seq[]],
     ImageSize -> imageSize,
     PlotRange -> {{-$w, $w}, {-$h, $h}},
@@ -218,12 +232,17 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   ];
 
   If[$fillRegions =!= {},
-    graphics = FloodFill[(graphics /. t_Text :> {}) -> graphics, $fillRegions];
+    graphics = FloodFill[(graphics /. $fillPreprocessingRules) -> graphics, $fillRegions];
     graphics = Image[graphics, ImageSize -> ImageDimensions[graphics]/2];
   ];
 
   graphics
 ];
+
+$fillPreprocessingRules = {
+  _Text :> {},
+  Annotation[_, "TransparentToFill"] :> {}
+}
 
 (**************************************************************************************************)
 
@@ -247,12 +266,16 @@ doFlip[pos_] := ApplyFlip[pos, {flipX, flipY}];
 
 parseFrameTick = Case[
   pos:$NumberP -> label_ := Scope[
-    p1 = {-$w, pos}; p0 = Offset[{-tickLength, 0}, p1];
-    {makeLabel[label, {p0}], Line[{p0, p1}]}
+    xs = If[tickPosition === Left, 1, -1];
+    p1 = {-$w * xs, pos};
+    p0 = Offset[{-tickLength * xs, 0}, p1];
+    p2 = {$w * xs, pos};
+    {makeLabel[$colorModifierFn @ label, {p0}], Line[{p0, p1}], Opacity[0.1], Line[{p1, p2}]}
   ];
   Interval[{pos1_, pos2_}] -> label_ := Scope[
-    foo;
-  ]
+    foo; (* TODO: figure out what this was supposed to be *)
+  ];
+  other_ := (BadOptionSetting[StringDiagram, FrameTicks, other]; Nothing)
 ]
 
 (**************************************************************************************************)
@@ -329,7 +352,7 @@ makeBox = Case[
   c_Customized := customizedBlock[c, $boxCustomizations, %];
 
   ("Point"|Point)[label_]  := Scope[
-    labelPosition = Which[P1[$pos] <= $w, Right, P1[$pos] >= $w, Left, True, Above];
+    labelPosition = doFlip @ Which[P1[$pos] <= $w, Right, P1[$pos] >= $w, Left, True, Above];
     label //= $colorModifierFn;
     labelColor = extractColorFromLabel @ label;
     res = List[
@@ -395,7 +418,7 @@ parseWire = Case[
     sc = extractColorFromLabel @ label;
     SetNone[sc, wireColor];
     pos = toPos /@ {a, b};
-    x = First[DeleteCases[_maybe] @ pos[[All, 1]], None];
+    x = First[DeleteCases[_maybe | -_maybe] @ pos[[All, 1]], None];
     pos = pos /. maybe[0] :> ReplaceNone[x, 0];
     size = toSize /@ {a, b};
     curve = Replace[curveFunction, Line -> (SeqFirst /* Line)][pos, size];
@@ -449,6 +472,7 @@ toSize = Case[
 
 StringDiagram::badregion = "Region specification `` is invalid."
 
+(* confusing where flip is applied here! *)
 parseReg = Case[
 
   UndirectedEdge[a_, b_] -> label_ := Scope[
@@ -476,7 +500,7 @@ parseReg = Case[
   ];
 
   pos_List -> label_ :=
-    %[pos -> Placed[label, Center]];
+    %[doFlip[pos] -> Placed[label, Center]];
 
   side:$sideP -> label_ :=
     With[{coords = $SideToCoords[side]},
@@ -548,41 +572,63 @@ makeLabel[label_, pos_] /; MatchQ[labelPosition, {__Symbol}] := Block[
   makeLabel[labelPosition = #; label, pos]& /@ posList
 ];
 
-makeLabel[label_, pos_] := With[{pos2 = Mean @ pos}, CenterTextVertical @ Text[
-  $lastInnerLabel = label;
-  $textModifierFn @ label,
-  SimplifyOffsets @ Offset[
-    Plus[
-      labelSpacing * Replace[labelPosition, $SideToCoords],
-      If[MatchQ[labelPosition, _Offset], P1 @ labelPosition, 0],
-      labelOffset
-    ],
-    pos2
-  ],
-  With[{labelPos = RemoveOffsets @ labelPosition, pos3 = RemoveOffsets @ pos2},
-    Switch[labelPosition,
-      Right /; (P1[pos3] >=  $w), hasRightLabels = True,
-      Left  /; (P1[pos3] <= -$w), hasLeftLabels = True,
-      Above /; (PN[pos3]  >=  $h), hasTopLabels = True,
-      Below /; (PN[pos3]  <= -$h), hasBottomLabels = True,
-      True, Null
-    ];
+makeLabel[label_, pos_] := With[
+  {pos2 = Mean @ pos, labelPos = RemoveOffsets @ labelPosition},
+  addLabelPadding @ CenterTextVertical @ Text[
+    $lastInnerLabel = label;
+    $textModifierFn @ label
+  ,
+    SimplifyOffsets @ Offset[
+      Plus[
+        labelSpacing * Replace[labelPosition, $SideToCoords],
+        If[MatchQ[labelPosition, _Offset], P1 @ labelPosition, 0],
+        labelOffset
+      ],
+      pos2
+    ]
+  ,
     If[ListQ[labelPos], labelPos, -Lookup[$SideToCoords, labelPosition]]
-  ],
-  Background -> labelBackground,
-  BaseStyle -> {FontWeight -> $fontWeight, FontSize -> $fontSize, FontColor -> $fontColor, FontFamily -> $fontFamily}
-]];
+  ,
+    Background -> labelBackground,
+    BaseStyle -> {
+      FontWeight -> $fontWeight,
+      FontSize -> $fontSize,
+      FontColor -> $fontColor,
+      FontFamily -> $fontFamily
+    }
+  ]
+];
+
+addLabelPadding[text:Text[_, pos_, off_, ___]] := Module[{x, y},
+  {{x, y}, {ox, oy}} = FromOffsetCoord @ pos;
+  Switch[labelPosition,
+    Right /; (x >=  $w), rLabelW = Max[rLabelW, ox + P1 @ MakeTextImageSize @ text],
+    Left  /; (x <= -$w), lLabelW = Max[lLabelW, -ox + P1 @ MakeTextImageSize @ text],
+    Above /; (y >=  $h), tLabelH = Max[tLabelH, oy + P2 @ MakeTextImageSize @ text],
+    Below /; (y <= -$h), bLabelH = Max[bLabelH, -oy + P2 @ MakeTextImageSize @ text],
+    True, Null
+  ];
+  text
+];
+
+_addlabelPadding := BadArguments[];
 
 (**************************************************************************************************)
 
 PublicFunction[FunctorialStringDiagram]
 
+PublicOption[Convention]
+PublicSymbol[RightToLeft, LeftToRight, TopToBottom, BottomToTop]
+
+Options[FunctorialStringDiagram] = Options[StringDiagram];
+
 FunctorialStringDiagram[boxes_List, wires_List, rhsSpec_List, opts___Rule] :=
   FunctorialStringDiagram[boxes, wires, rhsSpec, {}, opts];
 
 FunctorialStringDiagram[boxes_List, wires_List, rhsSpec_List, regions_List, opts___Rule] := Scope[
-  $boxes = Append[boxes, Splice[{LabelPosition -> Right, FontWeight -> Plain}]];
-  $wires = Append[wires, LabelPosition -> Right];
+  r2l = LookupOption[{opts}, Convention, RightToLeft] === RightToLeft;
+  $boxes = Append[boxes, FontWeight -> Plain];
+  $wires = Append[wires, LabelPosition -> If[r2l, Right, Left]];
   $nboxes = Count[boxes, Except[$boxCustomizationKeyP -> _]];
   $rhsLen = Len[rhsSpec];
   ScanIndex1[procRhsSpec, rhsSpec];
@@ -609,7 +655,7 @@ procRhsSpec[pos_ -> obj_, i_] := Block[
 
 toObj = Case[
   (h_Symbol ? $styleFormHeadQ)[e_] := Block[{$head = h}, % @ e];
-  "f"      := % @ Padded[CategoryObjectSymbol["f"], Left -> 0.12];
+  "f"      := % @ Padded[CategoryObjectSymbol["f"], {0.12, 0.12}];
   s_Str := % @ CategoryObjectSymbol[s];
   e_       := "Point"[$head[e]];
 ]
