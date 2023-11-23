@@ -106,14 +106,21 @@ meanConnectionEquations[eqns_, boxes_] := Scope[
   meanVars = DeepUniqueCases[{eqns, boxes}, $var[___, "InMean" | "OutMean"]];
   If[meanVars === {}, Return[{}]];
   iConns = oConns = <||>;
-  cEdges = DeepCases[
-    boxes /. $fromNC[v_, _] :> v,
+  boxes2 = boxes /. $fromNC[v_, _] :> v;
+  cEdges = Flatten @ List[DeepCases[
+    boxes2,
     CircuitCurve[{a_$var, b_$var}, ___] :> (
       KeyAppendTo[oConns, a, b];
       KeyAppendTo[iConns, b, a];
       DirectedEdge[a, b]
     )
-  ];
+  ], DeepCases[
+    boxes2,
+    CircuitCurve[{a_$var, b:{__$var}}, ___] :> (
+      KeyAppendTo[oConns, a, b];
+      DirectedEdge[a, #] & /@ b;
+    )
+  ]];
   meanEqs = Map[toMeanVarRule, meanVars];
   varP = Alternatives @@ vars;
   meanEqDepGraph = Graph @ Flatten @ Cases[meanEqs, Rule[a_, b_] :> Thread[Most[a] -> DeepCases[b, _$var]]];
@@ -896,6 +903,16 @@ $sideToAngle = <|
 
 processNodeDiskPorts = Case[
   _ -> {} := None;
+  (* left, top, right input ports, bottom output port
+  used by arithmetic nodes but NodeSide is better in practice.
+  still, might be useful later. *)
+  "Compass" := Scope[
+    dirs = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
+    portCoords = Threaded[currentCenter[]] + dirs * subPath["Radius"];
+    portPaths = Join[makePortPaths[$PortIn, {1,2,3}], makePortPaths[$PortOut, {1}]];
+    addEqns @ RuleThread[portPaths, portCoords];
+    makePorts @ <|"coords" -> portCoords, "dirs" -> -dirs, "ports" -> {1,2,3,1}, $portData|>
+  ];
   spec:{(($SidePattern | $NumberP) -> _)..} := Scope[
     {angles, ports} = KeysValues @ spec;
     angles = angles /. $sideToAngle;

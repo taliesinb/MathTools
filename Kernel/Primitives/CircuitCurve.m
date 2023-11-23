@@ -30,13 +30,15 @@ snakeCurvePoints[SnakeCurve[{a_, b_}, opts:OptionsPattern[SnakeCurve]]] := Scope
 
 PublicGraphicsPrimitive[CircuitCurve]
 
-PublicOption[BendStyle, SetbackDistance, LineThickness]
+PublicOption[BendStyle, SetbackDistance, LineThickness, WireTypeSlug, WireTypeSlugStyle]
 
 Options[CircuitCurve] = JoinOptions[
   SnakeCurve,
   BendStyle -> "Smooth",
   SetbackDistance -> {0.075, -0.075},
-  LineThickness -> None
+  LineThickness -> None,
+  WireTypeSlug -> None,
+  WireTypeSlugStyle -> Automatic
 ];
 
 DeclareCurvePrimitive[CircuitCurve, circuitCurvePoints, circuitCurveBoxes];
@@ -46,10 +48,11 @@ SignPrimitive["Curve | Pair", CircuitCurve];
 (**************************************************************************************************)
 
 circuitCurveBoxes[CircuitCurve[points:$CoordMat2P, opts:OptionsPattern[CircuitCurve]]] := Scope[
-  UnpackOptionsAs[CircuitCurve, {opts}, lineThickness, setbackDistance];
-  If[lineThickness === None, Return @ Construct[LineBox, points]];
+  UnpackOptionsAs[CircuitCurve, {opts}, lineThickness, setbackDistance,
+   wireTypeSlug, wireTypeSlugStyle];
+  slugPrims = makeSlugPrims[wireTypeSlug, points];
+  If[lineThickness === None, Return @ {Construct[LineBox, points], slugPrims}];
   If[lineThickness < 0,
-    points = ToPackedReal @ circuitCurvePoints @ curve;
     {{xs, ys}, {xe, ye}} = {first, last} = FirstLast @ points;
     dir = Normalize[last - first] * Abs[lineThickness]/2;
     normal = VectorRotate90[dir];
@@ -62,7 +65,8 @@ circuitCurveBoxes[CircuitCurve[points:$CoordMat2P, opts:OptionsPattern[CircuitCu
     polygon = Join[{first}, pointsL, {last}, pointsR];
     Return @ {
       StyleBox[Construct[PolygonBox, polygon], EdgeForm[None]],
-      StyleBox[Construct[LineBox, {pointsL, pointsR}], GrayLevel[0, .4], AbsoluteThickness[1]]
+      StyleBox[Construct[LineBox, {pointsL, pointsR}], GrayLevel[0, .4], AbsoluteThickness[1]],
+      slugPrims
     };
   ];
   d = VectorRotate90[Normalize[PN[points] - P1[points]]] * lineThickness/2;
@@ -76,8 +80,71 @@ circuitCurveBoxes[CircuitCurve[points:$CoordMat2P, opts:OptionsPattern[CircuitCu
       Construct[LineBox, pointsL],
       Construct[LineBox, pointsR]},
       GrayLevel[0, .4], AbsoluteThickness[1]
-    ]
+    ],
+    slugPrims
   }
+];
+
+(**************************************************************************************************)
+
+makeSlugPrims := Case[
+  Seq[None, _]        := Nothing;
+  Seq[list_, points_] := Scope[
+    {pos, dir} = VectorAlongLine[points, .35];
+    cols = ToRainbowColor /@ list;
+    sz = .1;
+    Switch[
+      ReplaceAutomatic[wireTypeSlugStyle, "Pie"],
+      "Beads",
+        ColoredBeads[pos, dir, sz, cols],
+      "Squares",
+        ColoredSquares[pos, dir, sz, cols],
+      "Pie",
+        ColoriedPie[pos, sz*1.25, cols],
+      None,
+        Nothing,
+      _,
+        BadOptionSetting[CircuitCurve, WireTypeSlugStyle, wireTypeSlugStyle];
+        Nothing
+    ]
+  ]
+];
+
+ColoredBeads[pos_, dir_, r_, cols_] := Scope[
+  n = Length @ cols;
+  prims = MapIndex1[
+    StyleBox[
+      p2 = pos + 2r * dir * (#2-1.5);
+      Construct[DiskBox, p2, r],
+      FaceEdgeForm @ ToRainbowColor @ #1
+    ]&,
+    cols
+  ];
+  {AbsolutePointSize[2], prims}
+];
+
+ColoredSquares[pos_, dir_, r_, cols_] := Scope[
+  n = Length @ cols;
+  pos = pos + VectorRotate90[dir] * r * 1.5;
+  MapIndex1[
+    StyleBox[
+      p2 = pos + 2r * dir * (#2-1.5);
+      Construct[RectangleBox, p2 - r, p2 + r],
+      FaceEdgeForm @ ToRainbowColor @ #1
+    ]&,
+    cols
+  ]
+];
+
+ColoriedPie[pos_, r_, cols_] := Scope[
+  n = Length @ cols;
+  angs = Range[0, 2Pi, 2Pi / n] + Pi/2;
+  disks = ZipMap[
+    {Style[Disk[pos, r, #1], FaceForm[#2]], Style[Circle[pos, r, #1], Darker[#2]]}&,
+    Partition[angs, 2, 1],
+    cols
+  ];
+  ToGraphicsBoxes @ Style[disks, AbsoluteThickness[1.5]]
 ];
 
 (**************************************************************************************************)

@@ -67,14 +67,15 @@ PortStyleData["Value"] = Sequence[
 ]
 
 $arrayNodeStyle = Sequence[
-  PortShape -> {In -> "InnerDisk", Out -> "OuterDiamond"},
+  FrameThickness -> 3,
+  PortShape -> {All -> "InnerDisk", Out -> "OuterDiamond"},
   $defaultNodeStyle
 ];
 
 PublicFunction[ClassicalArrayNode]
 
 $classicalArrayNodeStyle = Sequence[
-  PortColor -> {In -> $KeyWireStyle, Out -> $ValueWireStyle},
+  PortColor -> {All -> $KeyWireStyle, Out -> $ValueWireStyle},
   $arrayNodeStyle
 ]
 
@@ -120,17 +121,17 @@ PortStyleData["Rainbow"] = Sequence[
 ]
 
 AggregationNode[name_, n_ -> agg_, rest___] := MultisetNode[
-  name, n, rest, PortShape -> {In -> "Disk", Out -> Labeled["OuterDiamond", Style[agg, FontSize -> 14], TopRight]}
+  name, n, rest, PortShape -> {All -> "Disk", Out -> Labeled["OuterDiamond", Style[agg, FontSize -> 14], TopRight]}
 ];
 
-RainbowAggregationNode[args___] := AggregationNode[args, PortColor -> {In -> "Medium", Out -> $ValueWireStyle}];
+RainbowAggregationNode[args___] := AggregationNode[args, PortColor -> {All -> "Medium", Out -> $ValueWireStyle}];
 
 (**************************************************************************************************)
 
 PublicFunction[RainbowArrayNode]
 
 $rainbowArrayNodeStyle = Sequence[
-  PortColor -> {In -> "Medium", Out -> $ValueWireStyle},
+  PortColor -> {All -> "Medium", Out -> $ValueWireStyle},
   $arrayNodeStyle
 ];
 
@@ -185,11 +186,11 @@ DerivedRainbowTensorNode[args___] := DerivedRainbowArrayNode[args, RoundingRadiu
 
 PublicFunction[DerivedBubbleFunctionNode]
 
-DerivedBubbleFunctionNode[args___] := DerivedArrayNode[args, PortColor -> $BubbleWireStyle, PortShape -> {In -> "InnerDiamond", Out -> "OuterDiamond"}];
+DerivedBubbleFunctionNode[args___] := DerivedArrayNode[args, PortColor -> $BubbleWireStyle, PortShape -> {All -> "InnerDiamond", Out -> "OuterDiamond"}];
 
 PublicFunction[DerivedRainbowBubbleFunctionNode]
 
-DerivedRainbowBubbleFunctionNode[args___] := DerivedRainbowArrayNode[args, PortShape -> {In -> "InnerDiamond", Out -> "OuterDiamond"}];
+DerivedRainbowBubbleFunctionNode[args___] := DerivedRainbowArrayNode[args, PortShape -> {All -> "InnerDiamond", Out -> "OuterDiamond"}];
 
 (**************************************************************************************************)
 
@@ -290,8 +291,9 @@ wireCurve1[a_, b_, s_:None] := Scope[
 applyWireFixups[e_] := e /. {
   (* this ensures connections between non-input and output curves reach the inward-facing ports *)
   CircuitCurve[p:{NodePort[_, _], NodePort[_, _]}, opts___] :> CircuitCurve[p, SetbackDistance -> 0, opts],
-  CircuitCurve[p:{_, NodeSide[_, _]}, opts___] :> CircuitCurve[p, SetbackDistance -> 0, opts],
-  CircuitCurve[p:{NodeSide[_, _], _}, opts___] :> CircuitCurve[p, SetbackDistance -> 0, opts]
+  CircuitCurve[p:{_NodeSide, _NodeSide}, opts___] :> CircuitCurve[p, SetbackDistance -> {0.02, 0.02}, opts],
+  CircuitCurve[p:{_, _NodeSide}, opts___] :> CircuitCurve[p, SetbackDistance -> {0.08, 0.02}, opts],
+  CircuitCurve[p:{_NodeSide, _}, opts___] :> CircuitCurve[p, SetbackDistance -> {0.02, 0.08}, opts]
 }
 
 PrivateHead[$portColor]
@@ -315,7 +317,9 @@ RainbowWireBundle[port1_, port2_, color_] := wireCurve[port1, port2, $portColor 
 
 KeyWire[port1_, port2_]           := Style[wireCurve[port1, port2], $KeyWireStyle];
 ValueWire[port1_, port2_]         := Style[wireCurve[port1, port2], $ValueWireStyle];
-BubbleWire[port1_, port2_]        := Style[wireCurve[port1, port2], $BubbleWireStyle] // ApplyWireOptions[SplitPosition -> 1, BendStyle -> "Arc"];
+BubbleWire[port1_, port2_]        := Style[wireCurve[port1, port2], $BubbleWireStyle] // ApplyWireOptions[SplitPosition -> 1, BendStyle -> "Arc", SetbackDistance -> {0.08, 0}];
+BubbleWire[port1_, port2_, cols_] := Style[wireCurve[port1, port2], $BubbleWireStyle] // ApplyWireOptions[SplitPosition -> 1, BendStyle -> "Arc", WireTypeSlug -> cols];
+
 (* KeyWireBundle[port1_, port2_, off_:{1, 0}] := Style[Translate[wireCurve[port1, port2], Outer[Times, {-1, 0, 1}*0.1, off]], $KeyWireStyle, AbsoluteThickness[2]]; *)
 
 KeyWireBundle[port1_, port2_] := Style[wireCurve[port1, port2], $BundleWireStyle] // withWireBundleStyle;
@@ -323,6 +327,7 @@ KeyWireBundle[port1_, port2_] := Style[wireCurve[port1, port2], $BundleWireStyle
 (**************************************************************************************************)
 
 $functionNodeStyle = Sequence[
+  FrameThickness -> 3,
   PortPositions -> {In -> "MatchIn"},
   $defaultNodeStyle
 ];
@@ -330,7 +335,7 @@ $functionNodeStyle = Sequence[
 PublicFunction[KeyFunctionNode]
 
 $keyFunctionNodeStyle = Sequence[
-  PortShape -> {In -> "InnerDisk", Out -> "OuterDisk"},
+  PortShape -> {All -> "InnerDisk", Out -> "OuterDisk"},
   PortColor -> $KeyWireStyle,
   $functionNodeStyle
 ]
@@ -342,7 +347,7 @@ KeyFunctionNode[name_, n_, interior:Except[_Rule]:Automatic, opts___Rule] :=
 PublicFunction[ScalarFunctionNode]
 
 $scalarFunctionNodeStyle = Sequence[
-  PortShape -> {In -> "InnerDiamond", Out -> "OuterDiamond"},
+  PortShape -> {All -> "InnerDiamond", Out -> "OuterDiamond", Left -> "InnerDiamond", Right -> "InnerDiamond"},
   PortColor -> $ValueWireStyle,
   $functionNodeStyle
 ]
@@ -353,8 +358,8 @@ ScalarFunctionNode[name_, n_, interior:Except[_Rule]:Automatic, opts___Rule] :=
 PublicFunction[RainbowScalarFunctionNode]
 
 $rainbowFunctionNodeStyle = Sequence[
-  PortShape -> {In -> "InnerDiamond", Out -> "OuterDiamond"},
-  PortColor -> {In -> "Medium", Out -> $ValueWireStyle},
+  PortShape -> {All -> "InnerDiamond", Out -> "OuterDiamond"},
+  PortColor -> {All -> "Medium", Out -> $ValueWireStyle},
   $functionNodeStyle
 ]
 
@@ -371,6 +376,30 @@ BubbleFunctionNode[args__] :=
 PublicFunction[SumNode]
 
 SumNode[] := ScalarFunctionNode["sum", 1, {1.5, 1}]
+
+(**************************************************************************************************)
+
+arithmeticNode[label_, n_] := NodeDisk[
+  .6,
+  NodeLabel -> Padded[label, {.08, 0}],
+  NodeAlias -> label,
+  NodePorts -> "Compass", PortShape -> None,
+  Background -> White,
+  FrameThickness -> 2,
+  FrameColor -> $LightGray
+];
+
+PublicFunction[ScalarTimesNode]
+
+ScalarTimesNode[] := arithmeticNode["*", n];
+
+PublicFunction[ScalarPlusNode]
+
+ScalarPlusNode[] := arithmeticNode["+", n];
+
+PublicFunction[ScalarDivideNode]
+
+ScalarDivideNode[] := arithmeticNode["/", n];
 
 (**************************************************************************************************)
 
@@ -466,7 +495,7 @@ DefineTemplateBox[DerivedArraySignatureForm, "shapeFieldForm", RBox[BoldBox[#1],
 
 PublicFunction[DerivedArraySignatureForm]
 
-$colon = StyleBox[" : ", FontWeight -> "Regular"];
+$colon = StyleBox["\[ThinSpace]:\[ThinSpace]", FontWeight -> "Regular"];
 
 shapeLabelBox[a_, b_] := SuperscriptBox[a, b];
 shapeLabelBox[a_, b_, s_] := RowBox[{SubscriptBox["", s], SuperscriptBox[a, b]}];
@@ -475,9 +504,11 @@ shapeLabelBox[a_, b_, s_] := SubsuperscriptBox[a, s, b];
 a_DerivedArraySignatureForm[graphics_] :=
   ArrayCiruitLabeled[graphics, a];
 
+largeBox[b_] := LargerBox @ LargerBox @ b;
+
 DefineStandardTraditionalForm[
   DerivedArraySignatureForm[name_, ins_, out_] :> TBox[
-    StyleBox[name, FontWeight -> "Regular"],
+    largeBox @ BoldBox @ MakeMathBoxes @ name,
     derivedArrayInBox[ins],
     shapeBox[out],
     "derivedArraySignatureForm"
@@ -489,7 +520,7 @@ $notebookDisplayFunctionBases["derivedArraySignatureForm"] = "StringBlockForm";
 
 DefineStandardTraditionalForm[
   DerivedArraySignatureForm[name_, ins_, out_, scalar_] :> TBox[
-    StyleBox[name, FontWeight -> "Regular"],
+    largeBox @ BoldBox @ MakeMathBoxes @ name,
     derivedArrayInBox[ins],
     shapeBox[out],
     ToBoxes @ scalar,
@@ -502,7 +533,7 @@ $notebookDisplayFunctionBases["derivedArraySignatureWithScalarForm"] = "StringBl
 
 DefineStandardTraditionalForm[
   DerivedArraySignatureForm[name_, {}, out_, scalar_] :> TBox[
-    StyleBox[name, FontWeight -> "Regular"],
+    largeBox @ BoldBox @ MakeMathBoxes @ name,
     shapeBox[out],
     ToBoxes @ scalar,
     "derivedArraySignatureWithScalarFormNoParams"
@@ -527,9 +558,10 @@ dimBox[(All | "\[Ellipsis]") -> i_] := StyleBox["\[FilledSquare]", ToRainbowColo
 dimBox[All | "\[Ellipsis]"] := StyleBox["\[FilledSquare]", $LightGray, FontFamily -> "Fira Code"];
 dimBox[s_] := s;
 
+shapeFieldBox[str_String] := MakeMathBoxes @ str;
 shapeFieldBox[shape_] := shapeBox @ shape;
-shapeFieldBox[name_ -> None] := TBox[name, "shapeFieldNameForm"];
-shapeFieldBox[name_ -> shape_] := TBox[TBox[name, "shapeFieldNameForm"], shapeBox @ shape, "shapeFieldForm"];
+shapeFieldBox[name_ -> None] := TBox[MakeMathBoxes @ name, "shapeFieldNameForm"];
+shapeFieldBox[name_ -> shape_] := TBox[TBox[MakeMathBoxes @ name, "shapeFieldNameForm"], shapeBox @ shape, "shapeFieldForm"];
 DefineTemplateBox[DerivedArraySignatureForm, "shapeFieldForm", shapeLabelBox[#1, #2], None];
 DefineTemplateBox[DerivedArraySignatureForm, "shapeFieldNameForm", StyleBox[#, Bold, FontFamily -> "Fira Code", SingleLetterItalics -> False], None];
 $notebookDisplayFunctionBases["shapeFieldForm"] = "StringBlockForm";
@@ -545,6 +577,7 @@ DefineStandardTraditionalForm[
 
 PublicFunction[ArrayCiruitLabeled]
 
+ArrayCiruitLabeled[label_][graphics_] := ArrayCiruitLabeled[graphics, label];
 ArrayCiruitLabeled[graphics_, label_] :=
   Grid[{
     List @ label,

@@ -617,7 +617,7 @@ delimBlock[e_List, frame_, style_] := hframeBlock[processHoriz @ e, frame, style
 
 processHoriz[{}] := spacerBlock[1, 1];
 processHoriz[{a_}] := processBlock @ a;
-processHoriz[{a__}] := processBlock @ Row[{a}, ",", Alignment -> Center];
+processHoriz[{a__}] := processBlock @ Row[{a}, ", ", Alignment -> Center];
 
 processVert[{}] := spacerBlock[1, 1];
 processVert[{a_}] := processBlock @ a;

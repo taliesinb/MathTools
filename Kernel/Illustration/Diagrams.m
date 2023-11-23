@@ -80,6 +80,9 @@ NamedDiagram[name_String] := Scope[
   If[!MissingQ[diagram], Return @ diagram];
 
   VPrint["Finding diagrams matching ", name];
+  keys = Keys @ $NamedDiagramRegistry;
+  If[StringFreeQ[name, "/"], Return @ Select[keys, StringStartsQ[name <> "/"]]];
+
   keys = Select[Keys @ $NamedDiagramRegistry, StringMatchQ[name]];
   If[keys === {}, ReturnFailed["unknown", name, MsgPath @ path]];
   diagrams = Lookup[$NamedDiagramRegistry, keys];
