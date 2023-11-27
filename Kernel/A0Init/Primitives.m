@@ -26,7 +26,7 @@ SetInitialValue[$primHeadToPrimBoxHead, UAssoc[]];
 
 (**************************************************************************************************)
 
-PrivateHead[$VectorArg, $VectorPairArg, $DeltaArg, $MatrixArg, $MatricesArg, $RadiusArg, $OpaqueArg, $PrimitivesArg, $CurveArg, $ColorArg, $PosRulesArg]
+PrivateHead[$VectorArg, $VectorPairArg, $DeltaArg, $MatrixArg, $MatricesArg, $RadiusArg, $OpaqueArg, $PrimitivesArg, $CurveArg, $ColorArg, $PosRulesArg, $FanOutArg]
 
 PublicFunction[SignPrimitive]
 
@@ -46,6 +46,7 @@ SignPrimitive[sig$, s$1 | s$2 | $$] attaches a signature to multiple symbols.
 | 'Primitives' | a list of graphics primitives |
 | 'Curve' | a symbolic curve |
 | 'Rules' | rules from coordinate vectors to opaque objects |
+| 'FanOut' | an expression %FanOut[$src, {dst$1, dst$2, $$}] |
 * lookups against the database of signatures can be achieved via %PrimitiveSignatureLookup.
 "
 
@@ -121,6 +122,7 @@ parseSigElem = Case[
   "Curve"      := $CurveArg;
   "Color"      := $ColorArg;
   "Rules"      := $PosRulesArg;
+  "FanOut"     := $FanOutArg;
   sym_Symbol   := sym;
   e_           := ThrowMessage["badprimsigelem", e, $head];
 ];
@@ -204,6 +206,9 @@ SignPrimitive["Primitives", Rotate | GeometricTransformation | Scale | Interpret
 (**************************************************************************************************)
 
 PrivateSpecialFunction[DeclareCurvePrimitive, DeclareAtomicCurvePrimitive, DeclareCurveAlias]
+
+PublicHead[FanOut]
+(* TODO: FanIn *)
 
 PrivateVariable[$customCurveHeadQ]
 
@@ -311,7 +316,8 @@ CurveToPoints[curve_] := Scope[
     If[$ctpMsg, Message[General::notcurve, MsgExpr @ curve]];
     ReturnFailed[];
   ];
-  If[$customCurveIsRecursive @ H @ curve,
+  isFan = H[P1 @ curve] === FanOut;
+  If[$customCurveIsRecursive[H @ curve] && !isFan,
     innerPath = Block[{$ctpMsg = False}, CurveToPoints @ P1 @ curve];
     If[FailureQ[innerPath],
       If[$ctpMsg, gprimMsg[curve, "badinnercurve"]];
@@ -321,7 +327,7 @@ CurveToPoints[curve_] := Scope[
   ,
     points = curveFn @ curve;
   ];
-  If[!CoordinateMatrixQ[points],
+  If[Not @ If[isFan, CoordinateMatricesQ, CoordinateMatrixQ] @ points,
     If[$ctpMsg, gprimMsg[curve, If[H[points] === curveFn, "unrecogcurve", "failcurve"]]];
     ReturnFailed[];
   ];

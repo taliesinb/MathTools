@@ -87,6 +87,18 @@ AssociateTo[$MakeBoxesStyleData, $extendedArrowOptions];
 
 (**************************************************************************************************)
 
+PrivateVariable[$neatCurveOptions]
+
+$neatCurveOptions = {
+  JoinStyle -> Axis,
+  SegmentPosition -> 0.5,
+  ShortcutRadius -> 0,
+  BendRadius -> 0.5,
+  Setback -> 0.
+};
+
+(**************************************************************************************************)
+
 PublicOption[ArrowheadSize, DebugLabels]
 
 PrivateVariable[$morphismArrowOptions]

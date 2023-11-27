@@ -1479,7 +1479,7 @@ MakeMathBoxes = Case[
   UndirectedEdge[args__]    := MakeBoxes @ UndirectedEdgeForm[args];
   Labeled[a_, l_]           := MakeBoxes @ ParenthesesLabeledForm[a, l];
   Text[t_]                  := MakeBoxes @ MathTextForm[t];
-  Row[{r__}]                := MakeBoxes @ RowForm[r];
+  Row[r:{___}]              := RowBox[% /@ r];
   Modulo[n_]                := MakeBoxes @ ModuloForm[n];
   Invisible[n_]             := TemplateBox[List @ MakeBoxes @ n, "InvisibleForm"];
   {a_, b__}                 := MakeBoxes @ TupleForm[a, b];
@@ -1488,6 +1488,8 @@ MakeMathBoxes = Case[
   Subscript[args__]         := makeSubSup[SubscriptBox, args];
   Superscript[args__]       := makeSubSup[SuperscriptBox, args];
   Subsuperscript[args__]    := makeSubSup[SubsuperscriptBox, args];
+  (* below is used by DerivedArraySignatureForm, which applies PreformattedCode style and so doesn't want TemplateBoxes to intervene and override that style *)
+  (head:(_String | _Subscript | _Superscript | _Subsuperscript))[args___] := RBox[% @ head, "(", RowBox[Riffle[Map[%, {args}], ","]], ")"];
   other_                    := MakeBoxes @ other,
   {binHeads -> $binaryRelationHeads,
    domainsP -> Alternatives[Integers, Reals, Rationals, Complexes, Naturals, PositiveNaturals, PositiveReals, UnitInterval, Primes]}

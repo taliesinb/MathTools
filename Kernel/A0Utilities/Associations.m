@@ -23,6 +23,12 @@ iLookup[dict1_, key_] := Lookup[dict1, key, Automatic];
 
 (**************************************************************************************************)
 
+PublicFunction[Associate]
+
+Associate[assoc_, key_ -> value_] := Prepend[assoc, key -> value];
+
+(**************************************************************************************************)
+
 PublicFunction[AssociationMapThread]
 
 AssociationMapThread[f_, assoc_Assoc] := With[

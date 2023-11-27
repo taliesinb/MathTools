@@ -544,7 +544,7 @@ if any reloads of QG have happened since last load (which would invalid it) *)
 
 LoadSingleFile[path_, context_, contextPath_] := Block[
   {dispatch, contents},
-  Block[{$fileTimings, $fileLineTimings, $currentPath, $currentLineNumber, $formsChanged, $failEval},
+  Block[{$fileTimings, $fileLineTimings, $currentPath = path, $currentLineNumber = 1, $formsChanged, $failEval},
     $fileTimings = $fileLineTimings = Association[];
     contents = Catch[readPackageFile[path, context], $readPackageTag];
   ];
@@ -554,7 +554,7 @@ LoadSingleFile[path_, context_, contextPath_] := Block[
     {$globalImports = Join[{"System`", "GeneralUtilities`", $PublicContext, $PrivateContext}, contextPath]},
     packageData = resolveRemainingSymbols[{path, context, contents, True}];
   ];
-  Block[{$currentPath = "", $currentLineNumber = 0, $formsChanged = False, $failEval = False},
+  Block[{$currentPath = path, $currentLineNumber = 1, $formsChanged = False, $failEval = False},
     evaluatePackage @ packageData
   ]
 ];

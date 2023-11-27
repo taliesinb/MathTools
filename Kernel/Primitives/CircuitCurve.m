@@ -30,15 +30,25 @@ snakeCurvePoints[SnakeCurve[{a_, b_}, opts:OptionsPattern[SnakeCurve]]] := Scope
 
 PublicGraphicsPrimitive[CircuitCurve]
 
-PublicOption[BendStyle, SetbackDistance, LineThickness, WireTypeSlug, WireTypeSlugStyle]
+PublicOption[BendStyle, SetbackDistance, LineThickness, WireTypeSlug, WireTypeSlugPosition, WireTypeSlugStyle, LineEdging, LineDashing]
+
+$customNeatCurveOpts = Sequence[
+  JoinStyle -> Vertical,
+  BendRadius -> 0.2,
+  Setback -> 0
+];
 
 Options[CircuitCurve] = JoinOptions[
-  SnakeCurve,
-  BendStyle -> "Smooth",
-  SetbackDistance -> {0.075, -0.075},
+  $customNeatCurveOpts,
+  $neatCurveOptions,
+  GraphicsScale -> 40,
   LineThickness -> None,
+  LineColor -> Inherited,
   WireTypeSlug -> None,
-  WireTypeSlugStyle -> Automatic
+  WireTypeSlugStyle -> Automatic,
+  WireTypeSlugPosition -> Automatic,
+  LineEdging -> False,
+  LineDashing -> None
 ];
 
 DeclareCurvePrimitive[CircuitCurve, circuitCurvePoints, circuitCurveBoxes];
@@ -47,52 +57,50 @@ SignPrimitive["Curve | Pair", CircuitCurve];
 
 (**************************************************************************************************)
 
+PublicHead[FanOut]
+
+circuitCurveBoxes[CircuitCurve[lines:$CoordMatsP, opts:OptionsPattern[CircuitCurve]]] :=
+  Map[circuitCurveBoxes[CircuitCurve[#, opts]]&, lines];
+
 circuitCurveBoxes[CircuitCurve[points:$CoordMat2P, opts:OptionsPattern[CircuitCurve]]] := Scope[
-  UnpackOptionsAs[CircuitCurve, {opts}, lineThickness, setbackDistance,
-   wireTypeSlug, wireTypeSlugStyle];
-  slugPrims = makeSlugPrims[wireTypeSlug, points];
-  If[lineThickness === None, Return @ {Construct[LineBox, points], slugPrims}];
-  If[lineThickness < 0,
-    {{xs, ys}, {xe, ye}} = {first, last} = FirstLast @ points;
-    dir = Normalize[last - first] * Abs[lineThickness]/2;
-    normal = VectorRotate90[dir];
-    dist = If[MatrixQ[setbackDistance], PN, Id] @ setbackDistance;
-    points2 = SetbackCoordinates[points, -dist/1.1];
-    pointsL = Select[points2 + Threaded[normal], ys >= PN[#] >= ye&];
-    pointsR = Select[Rev[points2] - Threaded[normal], ys >= PN[#] >= ye&];
-    pointsL = Prepend[{Part[pointsL, 1, 1], ys}] @ Append[{Part[pointsL, -1, 1], ye}] @ pointsL;
-    pointsR = Append[{Part[pointsR, -1, 1], ys}] @ Prepend[{Part[pointsR, 1, 1], ye}] @ pointsR;
-    polygon = Join[{first}, pointsL, {last}, pointsR];
-    Return @ {
-      StyleBox[Construct[PolygonBox, polygon], EdgeForm[None]],
-      StyleBox[Construct[LineBox, {pointsL, pointsR}], GrayLevel[0, .4], AbsoluteThickness[1]],
-      slugPrims
-    };
+  UnpackOptionsAs[CircuitCurve, {opts}, lineThickness, setback,
+   wireTypeSlug, wireTypeSlugStyle, wireTypeSlugPosition, graphicsScale, lineColor, lineEdging, lineDashing];
+
+  slugPrims = StyleBox[makeSlugPrims[wireTypeSlug, wireTypeSlugPosition, points], ZOrder -> 3];
+  line = Construct[LineBox, points];
+  color = If[!ColorQ[lineColor], Seq[], lineColor];
+  If[lineDashing === True, lineDashing = Dashed];
+  dashing = If[lineDashing === None, Seq[], lineDashing];
+  If[lineThickness === None,
+    Return @ {StyleBox[line, color, dashing, CapForm[None]], slugPrims}];
+  If[lineEdging === False,
+    Return @ {StyleBox[line, color, dashing, AbsoluteThickness[lineThickness], CapForm[None], ZOrder -> 2], slugPrims};
   ];
-  d = VectorRotate90[Normalize[PN[points] - P1[points]]] * lineThickness/2;
-  dist = If[MatrixQ[setbackDistance], PN, Id] @ setbackDistance;
-  points2 = SetbackCoordinates[points, -dist/1.1];
-  pointsL = Offset[d, #]& /@ points2;
-  pointsR = Offset[-d, #]& /@ points2;
-  {
-    StyleBox[Construct[LineBox, points], AbsoluteThickness @ lineThickness],
-    StyleBox[{
-      Construct[LineBox, pointsL],
-      Construct[LineBox, pointsR]},
-      GrayLevel[0, .4], AbsoluteThickness[1]
+  boxes = ToGraphicsBoxes @ {
+    StyleBox[
+      Construct[LineBox, SetbackCoordinates[points, 0 / graphicsScale]], color,
+      AbsoluteThickness @ lineThickness,
+      CapForm[None],
+      Haloing[If[lineColor === Inherited, $Gray, Darker[lineColor, .2]], 1, .2]
     ],
-    slugPrims
-  }
+    If[lineColor =!= Inherited, StyleBox[
+      line, color,
+      AbsoluteThickness[lineThickness],
+      CapForm[None],
+      ZOrder -> 2
+    ]]
+  };
+  boxes
 ];
 
 (**************************************************************************************************)
 
 makeSlugPrims := Case[
-  Seq[None, _]        := Nothing;
-  Seq[list_, points_] := Scope[
-    {pos, dir} = VectorAlongLine[points, .35];
+  Seq[None, _, _]        := Nothing;
+  Seq[list_, pos_, points_] := Scope[
+    {pos, dir} = VectorAlongLine[points, ReplaceAutomatic[pos, .35]];
     cols = ToRainbowColor /@ list;
-    sz = .1;
+    sz = .12;
     Switch[
       ReplaceAutomatic[wireTypeSlugStyle, "Pie"],
       "Beads",
@@ -120,20 +128,21 @@ ColoredBeads[pos_, dir_, r_, cols_] := Scope[
     ]&,
     cols
   ];
-  {AbsolutePointSize[2], prims}
+  {AbsolutePointSize[2], AbsoluteThickness[1], prims}
 ];
 
 ColoredSquares[pos_, dir_, r_, cols_] := Scope[
   n = Length @ cols;
   pos = pos + VectorRotate90[dir] * r * 1.5;
-  MapIndex1[
+  prims = MapIndex1[
     StyleBox[
       p2 = pos + 2r * dir * (#2-1.5);
       Construct[RectangleBox, p2 - r, p2 + r],
       FaceEdgeForm @ ToRainbowColor @ #1
     ]&,
     cols
-  ]
+  ];
+  {AbsoluteThickness[1], prims}
 ];
 
 ColoriedPie[pos_, r_, cols_] := Scope[
@@ -144,20 +153,24 @@ ColoriedPie[pos_, r_, cols_] := Scope[
     Partition[angs, 2, 1],
     cols
   ];
-  ToGraphicsBoxes @ Style[disks, AbsoluteThickness[1.5]]
+  ToGraphicsBoxes @ Style[disks, AbsoluteThickness[1]]
 ];
 
 (**************************************************************************************************)
 
 CircuitCurve::badBendStyle = "BendStyle -> `` should be one of 'Arc', 'Smooth', or 'None'."
+
+circuitCurvePoints[CircuitCurve[curve_, ___]] := DiscretizeCurve @ curve;
+
 circuitCurvePoints[CircuitCurve[points:$CoordPairP, opts:OptionsPattern[CircuitCurve]]] := Scope[
-  points = snakeCurvePoints @ SnakeCurve[points, FilterOptions @ opts];
-  UnpackOptionsAs[CircuitCurve, {opts}, bendStyle, setbackDistance];
-  curve = Switch[bendStyle,
-    "Arc",       RollingCurve[points, BendRadius -> .3],
-    "Smooth",    SmoothedCurve[points],
-    None,        Line[points],
-    _,           Message[CircuitCurve::badBendStyle, bendStyle]; Line[points]
-  ];
-  DiscretizeCurve @ SetbackCurve[curve, If[MatrixQ[setbackDistance], P1, Id] @ setbackDistance]
+  neatCurvePoints @ NeatCurve[points, FilterOptions @ opts, $customNeatCurveOpts]
+];
+
+circuitCurvePoints[CircuitCurve[FanOut[src_, dsts_], opts:OptionsPattern[CircuitCurve]]] := Scope[
+  UnpackOptionsAs[CircuitCurve, {opts}, bendRadius];
+  opts = Sequence[BendRadius -> {0, bendRadius}, FilterOptions[NeatCurve, opts], $customNeatCurveOpts];
+  Map[
+    neatCurvePoints @ NeatCurve[{src, #}, opts]&,
+    dsts
+  ]
 ];

@@ -20,7 +20,9 @@ NamedDiagram[$$, opts$$] forwards option definitions.
 
 $diagramsPath = LocalPath["Diagrams"];
 
-declareFunctionAutocomplete[NamedDiagram, {FileBaseName /@ FileNames["*.m", $diagramsPath]}];
+$allDiagramFiles := FileBaseName /@ FileNames["*.m", $diagramsPath];
+
+declareFunctionAutocomplete[NamedDiagram, {$allDiagramFiles}];
 
 (**************************************************************************************************)
 
@@ -38,6 +40,10 @@ $currentBase = None;
 NamedDiagram::badName = "No diagram named ``.";
 NamedDiagram::fileError = "Message while loading ``.";
 NamedDiagram::unknown = "Unknown diagram ``, not found when loading ``.";
+
+NamedDiagram[] := $allDiagramFiles;
+
+NamedDiagram["*/*"] := Join[NamedDiagram /@ NamedDiagram[]];
 
 NamedDiagram[name_String] := Scope[
   baseName = First @ StringSplit[name, "/"];
@@ -115,7 +121,7 @@ PublicSymbol[$Opts]
 
 SetHoldRest[addDiagramDef];
 
-addDiagramDef[name_, head_Symbol[Shortest[args__], opts___Rule]] /; FreeQ[Hold[args], HoldPattern @ $Opts] :=
+addDiagramDef[name_, head_Symbol[Shortest[args__], opts___Rule]] /; FreeQ[Hold[args], HoldPattern @ $Opts] && !MatchQ[Unevaluated @ head, With | Block | Module | Scope] :=
   addDiagramDef[name, head[args, $Opts, opts]];
 
 addDiagramDef[name_, rhs_] :=
@@ -131,3 +137,22 @@ ClearNamedDiagramRegistry[] := (
 );
 
 ClearNamedDiagramRegistry[];
+
+(**************************************************************************************************)
+
+PrivateFunction[WriteDiagramTests]
+
+WriteDiagramTests[] := Scope[
+  ClearNamedDiagramRegistry[];
+  baseNames = NamedDiagram[];
+  createDiagramTestFile /@ baseNames
+];
+
+$diagramLine := StringFunction["TestRaster @ NamedDiagram[\"#1\"]"];
+
+createDiagramTestFile[baseName_] := Scope[
+  diagrams = NamedDiagram @ baseName;
+  contents = StringRiffle[$diagramLine /@ diagrams, "\n\n"];
+  ExportUTF8[LocalPath["Tests", "Inputs", "Diagrams", baseName <> ".wl"], contents]
+];
+

@@ -40,8 +40,9 @@ RunTests::notests = "No test files present in `` match ``.";
 
 $testsInPath := $testsInPath = LocalPath["Tests", "Inputs"];
 $testsOutPath := $testsOutPath = LocalPath["Tests", "Outputs"];
+testRelPath[s_] := StringDrop[s, StringLength[$testsInPath] + 1];
 
-declareFunctionAutocomplete[RunTests, {FileNameTake /@ FileNames["*.wl", $testsInPath]}];
+declareFunctionAutocomplete[RunTests, {testRelPath @ FileNames["*.wl", $testsInPath, Infinity]}];
 
 RunTests[filePattern_Str:All, OptionsPattern[]] := Scope[
 
@@ -78,7 +79,7 @@ printFileInfo[file_, None] := Print[file, "skipped"];
 
 findTestFiles[pattern_] := Scope[
   If[!DirectoryQ[$testsInPath], ReturnFailed["noindir", $testsInPath]];
-  FileNames[If[pattern === All, "*.wl", pattern], $testsInPath]
+  FileNames[If[pattern === All, "*.wl", pattern], $testsInPath, Infinity]
 ];
 
 (**************************************************************************************************)
@@ -98,7 +99,7 @@ runFileTest[inputPath_, outDir_] := Scope[
   $fileContents = Assoc[];
 
   clearTestContext[];
-  inputFileName = FileNameTake @ inputPath;
+  inputFileName = testRelPath @ inputPath;
   VPrint["Reading inputs from ", msgPath];
   inputs = readExpressionList @ inputPath;
   If[FailureQ[inputs], ReturnFailed[]];

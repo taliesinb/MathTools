@@ -125,15 +125,20 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
 (**************************************************************************************************)
 
 (* this is recursive, Z-orders within another Z-order will sort within it *)
-ZSortBoxes[boxes_] /; FreeQ[boxes, ZOrder] := boxes
+ZSortBoxes[boxes_] /; FreeQ[boxes, ZOrder -> _] := boxes
 ZSortBoxes[boxes_] := Module[
   {zassoc = Assoc[]},
-  zassoc[0] = ReplaceAll[boxes,
+  zassoc[0] = ReplaceAll[boxes, {
     StyleBox[b_, l___, ZOrder -> z_, r___] :> (
       KeyAppendTo[zassoc, z, toStyleBox[b, l, r]]; {}
+    ),
+    (* Style[foo, ZOrder -> 1] gets an extra list when boxified for some reason *)
+    StyleBox[b_, l___, {l2___, ZOrder -> z_, r2___}, r___] :> (
+      KeyAppendTo[zassoc, z, toStyleBox[b, l, {l2, r2}, r]]; {}
     )
-  ];
-  Map[ZSortBoxes, Values @ KeySort @ zassoc]
+  }];
+  layers = Values @ KeySort @ zassoc;
+  Map[ZSortBoxes, layers]
 ];
 
 toStyleBox[args__] := StyleBox[args];

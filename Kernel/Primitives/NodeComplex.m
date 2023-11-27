@@ -25,7 +25,8 @@ Options[NodeComplex] = {
   EpilogStyle -> None,
   PrologStyle -> None,
   Background -> None,
-  NodePalette -> None
+  NodePalette -> None,
+  GraphicsScale -> 40
 };
 
 DeclareGraphicsPrimitive[NodeComplex, "Opaque", nodeComplexBoxes];
@@ -35,7 +36,7 @@ DeclareGraphicsPrimitive[NodeComplex, "Opaque", nodeComplexBoxes];
 nodeComplexBoxes[NodeComplex[nodes_, opts___Rule]] := Scope @ CatchMessage[NodeComplex,
   $path = $var["Root"]; $eqs = {}; $nodeAliases = <||>; $varAliases = {}; $isAutomaticSize = <||>;
   $uniqueMeanInd = 0; $portPositionDefaults = {}; $meanConnectionEqs = {}; $meanEqCycles = Null;
-  UnpackOptionsAs[NodeComplex, {opts}, epilog, prolog, background, epilogStyle, prologStyle, nodePalette];
+  UnpackOptionsAs[NodeComplex, {opts}, epilog, prolog, background, epilogStyle, prologStyle, nodePalette, graphicsScale];
 withNodePalette[nodePalette,
   $epilogFn = StyleBoxOperator @ epilogStyle;
   $prologFn = StyleBoxOperator @ prologStyle;
@@ -60,11 +61,12 @@ withNodePalette[nodePalette,
   (* this forces the solved coordinates to be evaluated *)
   result = MapPrimitiveBoxCoordinates[N, result];
   result //= ReplaceAllOperator[
-    $fromNC[a_, _]             :> a,
-    ListPart                   -> Part,
-    AbsoluteOffset[off_][pos_] :> RuleCondition[Threaded[off] + pos],
-    $delayedBoxes[e_]          :> RuleCondition[ToGraphicsBoxes @ e]
+    $fromNC[a_, _]                 :> a,
+    AbsoluteOffset[off_][pos_List] :> RuleCondition[Threaded[off] + pos],
+    ListPart                       -> Part,
+    $delayedBoxes[e_]              :> RuleCondition[ToGraphicsBoxes @ e]
   ];
+  result //= ReplaceAllOperator[AbsoluteOffset[off_][pos_] :> RuleCondition[pos]];
   result
 ]];
 
@@ -107,20 +109,24 @@ meanConnectionEquations[eqns_, boxes_] := Scope[
   If[meanVars === {}, Return[{}]];
   iConns = oConns = <||>;
   boxes2 = boxes /. $fromNC[v_, _] :> v;
-  cEdges = Flatten @ List[DeepCases[
-    boxes2,
-    CircuitCurve[{a_$var, b_$var}, ___] :> (
-      KeyAppendTo[oConns, a, b];
-      KeyAppendTo[iConns, b, a];
-      DirectedEdge[a, b]
-    )
-  ], DeepCases[
-    boxes2,
-    CircuitCurve[{a_$var, b:{__$var}}, ___] :> (
-      KeyAppendTo[oConns, a, b];
-      DirectedEdge[a, #] & /@ b;
-    )
-  ]];
+  boxes2 = boxes2 /. CircuitCurve[FanOut[a_, b_], ___] :> RuleCondition @ Map[CircuitCurve[{a, #}]&, b];
+  cEdges = Flatten @ Map[
+    patt |-> DeepCases[boxes2, patt],
+    {
+      CircuitCurve[{a_$var, b_$var}, ___] :> (
+        KeyAppendTo[oConns, a, b];
+        KeyAppendTo[iConns, b, a];
+        DirectedEdge[a, b]
+      ),
+      CircuitCurve[{a_$var, b_ /; ContainsQ[b, $var]}, ___] :> (
+        KeyAppendTo[oConns, a, b];
+        DirectedEdge[a, #] & /@ DeepCases[b, _$var]
+      ),
+      CircuitCurve[{a_ /; ContainsQ[a, $var], b_$var}, ___] :> (
+        KeyAppendTo[iConns, b, a];
+        DirectedEdge[#, b] & /@ DeepCases[a, _$var]
+      )
+  }];
   meanEqs = Map[toMeanVarRule, meanVars];
   varP = Alternatives @@ vars;
   meanEqDepGraph = Graph @ Flatten @ Cases[meanEqs, Rule[a_, b_] :> Thread[Most[a] -> DeepCases[b, _$var]]];
@@ -345,7 +351,8 @@ Options[NodeRow] = Options[NodeColumn] = {
 NodeComplex::badalign = "Alignment -> `` not valid for ``."
 
 hvNodeLayout[head_, nodes_List, opts_, {startSym_, endSym_}, {mainStart_, mainEnd_, mainDim_, otherStart_, otherEnd_, otherDim_}, mult_] := Scope[
-  UnpackOptionsAs[head, opts, alignment, frameMargins, spacings, epilog, prolog, nodeAlias];
+  UnpackOptionsAs[head, opts, alignment, frameMargins, spacings, epilog, prolog, nodeAlias, nodePalette];
+withNodePalette[nodePalette,
   createNodeAlias[nodeAlias];
   SetAutomatic[alignment, 0];
   SetAutomatic[frameMargins, 0];
@@ -377,7 +384,7 @@ hvNodeLayout[head_, nodes_List, opts_, {startSym_, endSym_}, {mainStart_, mainEn
   otherSize = Max @ subPath[range, otherDim] + (osmargin + oemargin);
   If[head === NodeRow, addFrameEqns[mainSize, otherSize], addFrameEqns[otherSize, mainSize]];
   attachProEpi[prolog, epilog] @ nodes
-];
+]];
 
 (**************************************************************************************************)
 
@@ -415,8 +422,8 @@ processManualNode[{x_, y_} -> node_, i_] := (
 NodeGrid::badNodeGridSpec = "Spec `` should be a dense matrix of items or a list of rules mapping position to item.";
 
 Options[NodeGrid] = {
-  RowAlignments -> Top,
-  ColumnAlignments -> Left,
+  RowAlignments -> Center,
+  ColumnAlignments -> Center,
   RowSpacings -> .5,
   ColumnSpacings -> .5,
   FrameMargins -> 0,
@@ -592,11 +599,12 @@ addFrameEqns[w_, h_] := addEqns @ {
 }
 
 PublicOption[NodePorts, NodeLabelStyle, NodeLabelColor, FrameColor, FrameThickness, FrameLabelSpacing, FrameLabelStyle]
-PublicOption[PortSpacing, PortPositions, PortSize, PortShape, PortEdgeColor, PortColor, PortEdgeThickness, HiddenPorts, PortPositions, PortLabelStyle]
+PublicOption[PortSpacing, PortPositions, PortSize, PortShape, PortEdgeColor, PortColor, PortEdgeThickness, HiddenPorts, PortPositions, PortLabelStyle, NodeLabelOffset]
 PublicVariable[$NodeComplexLabelStyle, $PortLabelStyle]
 
-SetInitialValue[$NodeComplexLabelStyle, {FontSize  -> 16, FontWeight -> "Bold", BaseStyle -> "PreformattedCode"}];
-SetInitialValue[$PortLabelStyle, {FontSize -> 11, BaseStyle -> "PreformattedCode"}];
+(* TODO: split the styles up into separate options *)
+SetInitialValue[$NodeComplexLabelStyle, {FontSize  -> 16, FontWeight -> "Bold", FontFamily -> "Fira Code", PrivateFontOptions -> {"OperatorSubstitution" -> False}, BaseStyle -> "PreformattedCode"}];
+SetInitialValue[$PortLabelStyle, {FontSize -> 11, FontFamily -> "Fira Code", PrivateFontOptions -> {"OperatorSubstitution" -> False}, BaseStyle -> "PreformattedCode"}];
 
 Options[NodeDisk] = Options[NodeBox] = {
   Background        -> None,
@@ -607,10 +615,12 @@ Options[NodeDisk] = Options[NodeBox] = {
   FrameLabelStyle   :> $NodeComplexLabelStyle,
   FrameMargins      -> 0.1,
   FrameThickness    -> 1,
+  FrameDashing      -> None,
   NodeAlias         -> None,
   NodeLabel         -> None,
   NodeLabelColor    -> None,
   NodeLabelStyle    :> $NodeComplexLabelStyle,
+  NodeLabelOffset   -> 0,
   NodePalette       -> None,
   NodePorts         -> None,
   PortLabelStyle    :> $PortLabelStyle,
@@ -680,8 +690,8 @@ DefineLiteralMacro[OptionValueAssociations,
 nodeBox[l___, NodePalette -> p_, r___] := withNodePalette[p, nodeBox[l, r]];
 nodeBox[head_, spec_, opts___Rule] := Scope @ CatchMessage[head,
   UnpackOptionsAs[head, {opts},
-    background, nodePorts, nodeLabel, nodeLabelStyle, nodeLabelColor,
-    frameMargins, epilog, prolog, nodeAlias,
+    background, nodePorts, nodeLabel, nodeLabelStyle, nodeLabelColor, nodeLabelOffset,
+    frameMargins, frameDashing, epilog, prolog, nodeAlias,
     portLabelStyle,
     (* portSpacing, portSize, portShape, portEdgeColor, portColor, portEdgeThickness, portPositions, *)
     frameColor, background, frameThickness, roundingRadius,
@@ -709,10 +719,13 @@ nodeBox[head_, spec_, opts___Rule] := Scope @ CatchMessage[head,
     makeRoundedRect[subPath /@ {$L, $B}, subPath /@ {$R, $T}, roundingRadius, fet]
   ];
 
+  If[frameDashing === True,
+    boxPrimitives = boxPrimitives /. EdgeForm[e_] :> EdgeForm[ToList[e, Dashed]]];
+
   labelPrimitives = If[nodeLabel === None, Nothing,
     ToGraphicsBoxes @ Text[
       StyleOperator[toRainbowColor @ nodeLabelColor] @ StyleOperator[nodeLabelStyle] @ nodeLabel,
-      currentCenter[]
+      If[nodeLabelOffset =!= 0, AbsoluteOffset[nodeLabelOffset / graphicsScale], Id] @ currentCenter[]
     ]];
 
   frameLabelPrimitives = makeFrameLabel[frameLabel];
@@ -722,7 +735,7 @@ nodeBox[head_, spec_, opts___Rule] := Scope @ CatchMessage[head,
   List[
     boxPrimitives,
     $prologFn @ makeDelayed @ prolog,
-    portPrimitives,
+    StyleBox[portPrimitives, ZOrder -> 1],
     interiorPrimitives,
     labelPrimitives,
     frameLabelPrimitives,
@@ -856,9 +869,8 @@ processNodeBoxPorts = Case[
       $portPositionDefaults ^= {$portPositionDefaults, RuleThread[portPaths, portCoords]};
       Part[portCoords, All, If[isVert, 1, 2]] = portCoordOverrides;
     ];
-    addEqns @ RuleThread[portPaths, portCoords];
     centerVec = Switch[side, Center, {0, 0}, Left, {1, 0}, Right, {-1, 0}, Top, {0, -1}, Bottom, {0, 1}];
-    makePorts @ <|"coords" -> portCoords, "dirs" -> Repeat[centerVec, n], "ports" -> ports, $sidePortData|>
+    makePorts @ <|"paths" -> portPaths, "coords" -> portCoords, "dirs" -> Repeat[centerVec, n], "ports" -> ports, $sidePortData|>
   ];
 ];
 
@@ -910,8 +922,7 @@ processNodeDiskPorts = Case[
     dirs = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
     portCoords = Threaded[currentCenter[]] + dirs * subPath["Radius"];
     portPaths = Join[makePortPaths[$PortIn, {1,2,3}], makePortPaths[$PortOut, {1}]];
-    addEqns @ RuleThread[portPaths, portCoords];
-    makePorts @ <|"coords" -> portCoords, "dirs" -> -dirs, "ports" -> {1,2,3,1}, $portData|>
+    makePorts @ <|"paths" -> portPaths, "coords" -> portCoords, "dirs" -> -dirs, "ports" -> {1,2,3,1}, $portData|>
   ];
   spec:{(($SidePattern | $NumberP) -> _)..} := Scope[
     {angles, ports} = KeysValues @ spec;
@@ -934,8 +945,7 @@ makeCirclePorts[ports_, angles_] := Scope[
   dirs = AnglePair[-(angles - 0.25)];
   portCoords = Threaded[currentCenter[]] + dirs * subPath["Radius"];
   portPaths = makePortPaths[$Port, ports];
-  addEqns @ RuleThread[portPaths, portCoords];
-  makePorts @ <|"coords" -> portCoords, "dirs" -> -dirs, "ports" -> ports, $portData|>
+  makePorts @ <|"paths" -> portPaths, "coords" -> portCoords, "dirs" -> -dirs, "ports" -> ports, $portData|>
 ]
 
 currentCenter[] := subPath /@ {$LR, $TB};
@@ -952,13 +962,26 @@ procPortListSpec[{rules__Rule, All -> def_}, n_, _] := procPortListSpec[{rules},
 makePorts[data_Assoc] := Scope[
   n = Len @ data["ports"];
   AssociationMapThread[
-    makeSinglePort[#ports, #]&,
+    Function[
+      Associate[#, "PortShape" -> fixShape[#PortShape, #dirs]]
+    ] /*
+    Function[
+      Associate[#, "frameOffset" -> (frameThickness/2 * shapeOffset[#PortShape] * #dirs / graphicsScale)]
+    ] /*
+    Function[
+      addEqns[#paths, #coords + 2 * #frameOffset];
+      makeSinglePort[#ports, #]
+    ],
     MapThread[
       procPortListSpec[#1, n, #2]&,
       KeyDrop[KeyUnion[{data, $defaultPortData}], {"PortPositions", "PortSpacing"}]
     ]
   ]
 ];
+
+fixShape[shape_Str, dirs_] /; StringStartsQ[shape, "DownHalf"] :=
+  If[P2[dirs] > 0, "Outer", "Inner"] <> StringDrop[shape, 8];
+fixShape[shape_, _] := shape;
 
 $shapeP = _Str | _Labeled | _Placed;
 makeSinglePort = Case[
@@ -970,12 +993,12 @@ makeSinglePort = Case[
 ];
 
 $makeSinglePortFn = Fn[
-  applyGraphicsOffset[shapeOffset[#PortShape] * #dirs] @ shapeToFn[#PortShape] @
-  Append[#, "FET" -> toFET[#ports, #PortColor, #PortEdgeColor, #PortEdgeThickness]]
+  shapeToFn[#PortShape] @
+  Append[#, {
+    "FET" -> toFET[#ports, #PortColor, #PortEdgeColor, #PortEdgeThickness],
+    "coords" -> #coords + #frameOffset
+  }]
 ];
-
-applyGraphicsOffset[{0|0., 0|0.}][e_] := e;
-applyGraphicsOffset[offset_][e_] := Construct[GeometricTransformationBox, e, AbsoluteThicknessToDimension[#, 40]& /@ offset];
 
 toFET[Style[p_, c:($ColorPattern | _Int)], f_, e_, t_] := toFET[p, c, e, t];
 toFET[p_, f_, e_, t_] /; KeyExistsQ[$nodePalette, p]   := {toRainbowColor @ $nodePalette @ p, toRainbowColor @ e, t};
@@ -990,18 +1013,17 @@ shapeOffset = Case[
     True, 0
   ];
   Labeled[_, _, pos_] := % @ Placed[Null, pos];
-  Placed[_, Below|BottomLeft|Bottom|BottomRight]    := 1;
-  Placed[_, Above|TopLeft|Top|TopRight]             := -1;
+  Placed[_, Below|BottomLeft|Bottom|BottomRight] := 1;
+  Placed[_, Above|TopLeft|Top|TopRight]          := -1;
 ]
 
 $needsRounding := $isNodeDisk || TrueQ[roundingRadius >= $w/2];
 
 shapeToFn := Case[
-  str_Str /; StringStartsQ[str, "DownHalf"] := Fn[shapeToFn[If[Part[#dirs, 2] > 0, "Outer", "Inner"] <> StringDrop[str, 8]][##]];
   "InnerDisk" /; TrueQ[$needsRounding]      := Fn[makeHalfDisk[#coords, -#dirs, {#PortSize, $w/2}, #FET]];
   "OuterDisk" /; TrueQ[$needsRounding]      := Fn[makeHalfDisk[#coords,  #dirs, {#PortSize, $w/2}, #FET]];
   shape_                                    := Lookup[$shapeToFn, shape, ThrowMessage["badNodePortShape", shape, Keys @ $shapeToFn]];
-  Placed[label_, pos_Symbol]                := Fn[makeLabel[label, #coords, pos, 0.2, portLabelStyle]];
+  Placed[label_, pos_Symbol]                := Fn[makeLabel[label, #coords - #frameOffset/2, pos, 0.2, portLabelStyle]];
   Labeled[shape_, label_, pos_]             := ApplyThrough[{% @ shape, % @ Placed[label, pos]}]
 ];
 
@@ -1015,20 +1037,35 @@ $shapeToFn = <|
   "InnerDiamond" -> Fn[makeHalfDiamond[#coords, #dirs * #PortSize, #FET]],
   "OuterSquare"  -> Fn[makeHalfSquare[#coords, -#dirs * #PortSize, #FET]],
   "InnerSquare"  -> Fn[makeHalfSquare[#coords, #dirs * #PortSize, #FET]],
+  "OuterTrapezoid" -> Fn[makeHalfTrap[#coords, -#dirs * #PortSize, #FET]],
+  "InnerTrapezoid" -> Fn[makeHalfTrap[#coords, #dirs * #PortSize, #FET]],
   None           -> ({}&)
 |>;
 
 (**************************************************************************************************)
 
+edgeForm[prim_, e_, t_] := StyleBox[prim, e, AbsoluteThickness @ t, CapForm[None]];
+
+toEdgeCol[face_][Automatic] := Darker[face, .2];
+toEdgeCol[face_][edge_] := edge;
+
 applyStyle[fet_][obj_] := applyStyle[obj, fet];
-applyStyle[PolygonBox[coords_], {None,  edge_, thickness_}] := StyleBox[Construct[LineBox, closePath @ coords], edge, AbsoluteThickness @ thickness];
-applyStyle[DiskBox[args__],     {None,  edge_, thickness_}] := StyleBox[CircleBox[args], edge, AbsoluteThickness @ thickness];
+applyStyle[PolygonBox[coords_], {None,  edge_, thickness_}] := edgeForm[Construct[LineBox, closePath @ coords], edge, thickness];
+applyStyle[DiskBox[args__],     {None,  edge_, thickness_}] := edgeForm[CircleBox[args], edge, thickness];
+applyStyle[halfThing[f_, e_], fet_] := applyStyle[f, fet];
+(*
+(* this does avoids edging on the inner side of ports *)
+applyStyle[halfThing[f_, e_],   {face_, None,  thickness_}] := applyStyle[f, {face, None, thickness}];
+applyStyle[halfThing[f_, e_],   {None,  edge_, thickness_}] := edgeForm[e, edge, thickness];
+applyStyle[halfThing[f_, e_],   {face_, edge_, thickness_}] := {StyleBox[f, FaceEdgeForm[face, None]], edgeForm[e, toEdgeCol[face] @ edge, thickness]};
+*)
 applyStyle[other_,              {face_, edge_, thickness_}] := StyleBox[other, FaceEdgeForm[face, edge, thickness]];
 
 closePath[coords_] := If[P1[coords] === PN[coords], coords, Append[P1 @ coords] @ coords];
 
 (**************************************************************************************************)
 
+makeHalfPolygon[points_] := halfThing[makePolygon @ points, Construct[LineBox, points]];
 makePolygon[points_] := Construct[PolygonBox, points];
 
 makeRoundedRect[c1_, c2_, r_, fet_] := makeRect[c1, c2, fet, RoundingRadius -> r];
@@ -1040,19 +1077,23 @@ makeSquare[p_, r_, fet_] := makeRect[p - r, p + r, fet];
 arcPoints[ang_] := arcPoints[ang] = DiscretizeCurve[Circle[{0,0}, 1, {-ang, ang}]];
 $halfCirclePoints = arcPoints[Pi/2];
 
-makeHalfDisk[pos_, dir_, r_, fet_] := applyStyle[fet] @ makePolygon @ ScaleRotateTranslateVector[r, PairAngle @ dir, pos, $halfCirclePoints];
+makeHalfDisk[pos_, dir_, r_, fet_] := applyStyle[fet] @
+  makeHalfPolygon @ ScaleRotateTranslateVector[r, PairAngle @ dir, pos, $halfCirclePoints];
 
-makeHalfDisk[pos_, dir_, {r1_, r2_}, fet_] := With[
-  {dtheta1 = r1 / r2},
-  {dtheta2 = Pi/2 * (1 - dtheta1/2.5)},
-  applyStyle[fet] @ makePolygon @ Join[
-    ScaleRotateTranslateVector[r2, dir, pos - dir * r2, arcPoints[dtheta1]],
-    ScaleRotateTranslateVector[r1, -dir, pos, arcPoints[dtheta2]]
+makeHalfDisk[pos_, dir_, {r1_, r2_}, fet_] := Scope[
+  dtheta1 = r1 / r2;
+  dtheta2 = Pi/2 * (1 - dtheta1/2.5);
+  outerArc = ScaleRotateTranslateVector[r2, dir, pos - dir * r2, arcPoints[dtheta1]];
+  innerArc = ScaleRotateTranslateVector[r1, -dir, pos, arcPoints[dtheta2]];
+  applyStyle[fet] @ halfThing[
+    makePolygon @ Join[outerArc, innerArc],
+    Construct[LineBox, innerArc]
   ]
 ];
 
-makeHalfDiamond[pos_, {x_, y_}, fet_] := applyStyle[fet] @ makePolygon @ TranslateVector[pos] @ {{-y, x}, {x, y}, {y, -x}};
-makeHalfSquare[pos_, {x_, y_}, fet_]  := applyStyle[fet] @ makePolygon @ TranslateVector[pos] @ {{-y, x}, {x - y, x + y}, {x + y, -x + y}, {y, -x}};
+makeHalfDiamond[pos_, {x_, y_}, fet_] := applyStyle[fet] @ makeHalfPolygon @ TranslateVector[pos] @ {{-y, x}, {x, y}, {y, -x}};
+makeHalfSquare[pos_, {x_, y_}, fet_] := applyStyle[fet] @ makeHalfPolygon @ TranslateVector[pos] @ {{-y, x}, {x - y, x + y}, {x + y, -x + y}, {y, -x}};
+makeHalfTrap[pos_, {x_, y_}, fet_]  := applyStyle[fet] @ makeHalfPolygon @ TranslateVector[pos] @ {(*NE*){-y, x}, (*SE*){x - y*0.6, x + y}, (*SW*){x + y*0.6, -x + y}, (*NW*){y, -x}};
 
 makeDisk[pos_, r_, fet_] := applyStyle[fet] @ DiskBox[pos, r];
 makePoint[pos_, r_, fet_] := StyleBox[PointBox[pos], PointSize[2 * r / $var[$W]], P1 @ fet];

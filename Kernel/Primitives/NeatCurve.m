@@ -34,20 +34,16 @@ will be travelled from the endpoints before a shortcut is taken.
 (*
 * %SetbackSegmentPosition -> True will place the segment in a position that occurs after the setback.
 *)
-Options[NeatCurve] = {
-  JoinStyle -> Axis,
-  SegmentPosition -> 0.5,
-  ShortcutRadius -> 0,
-  BendRadius -> 0.5,
-  Setback -> 0.1
-  (* SetbackSegmentPosition -> False *)
-};
+
+Options[NeatCurve] = $neatCurveOptions;
 
 DeclareCurvePrimitive[NeatCurve, neatCurvePoints];
 
 SignPrimitive["Curve | Pair", NeatCurve];
 
 (**************************************************************************************************)
+
+PrivateFunction[neatCurvePoints]
 
 $dirP = $SidePattern | Horizontal | Vertical | $Coord2P | Axis;
 
@@ -105,9 +101,12 @@ neatCurvePoints[NeatCurve[{a_, b_}, opts:OptionsPattern[NeatCurve]]] := Scope[
   ];
 
   numBends = Switch[segment, $hor | $ver, 2, _, 1];
-  If[bendRadius > 0 && segmentPosition != 0.5,
+  origBendRadius = bendRadius;
+  maxBendRadius = Max @ bendRadius;
+
+  If[maxBendRadius > 0 && segmentPosition != 0.5,
     (* we must leave buffer for the bend to happen *)
-    dbend = Sign[delta] * bendRadius / numBends;
+    dbend = Sign[delta] * maxBendRadius / numBends;
     m = Lerp[a + dbend, b - dbend, segmentPosition];
   ,
     m = Lerp[a, b, segmentPosition];
@@ -117,13 +116,17 @@ neatCurvePoints[NeatCurve[{a_, b_}, opts:OptionsPattern[NeatCurve]]] := Scope[
   If[shortcutRadius > 0,
     as = PointAlongLine[{a, P1 @ mids}, shortcutRadius];
     bs = PointAlongLine[{b, PN @ mids}, shortcutRadius];
-    bendRadius = Min[bendRadius, shortcutRadius];
+    bendRadius = ThreadMin[bendRadius, shortcutRadius];
     points = {a, as, bs, b};
   ,
-    bendRadius = Min[bendRadius, (Norm /@ delta)/numBends];
+    bendRadius = ThreadMin[bendRadius, Min[(Norm /@ delta)/numBends]];
     points = Join[{a}, mids, {b}];
   ];
-  If[bendRadius > 0,
+
+  If[origBendRadius === Infinity,
+    Return @ DiscretizeCurve @ SmoothedCurve[points]];
+
+  If[Max[bendRadius] > 0,
     (* points //= fixTooClose; *)
     points = DiscretizeCurve @ RollingCurve[points, BendRadius -> bendRadius]
   ];

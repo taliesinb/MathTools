@@ -77,6 +77,7 @@ $mpcDispatch0 := $mpcDispatch0 = Dispatch @ With[{
   $opvec     = Alternatives @@ PrimitiveSignatureLookup["Opaque,Vector|Primitives,Vector"],
   $op        = Alternatives @@ PrimitiveSignatureLookup["Opaque"],
   $rules     = Alternatives @@ PrimitiveSignatureLookup["Rules,Primitives"],
+  $fano      = Alternatives @@ PrimitiveSignatureLookup["FanOut"],
   vecP       = $CoordP,
   matP       = {__List} ? CoordinateMatrixQ,
   matListP   = {__List} ? CoordinateMatricesQ}, {
@@ -89,6 +90,7 @@ $mpcDispatch0 := $mpcDispatch0 = Dispatch @ With[{
   (h:$matrix)[m:matP, a___]               :> RuleCondition @ h[$matrixF @ m, a],
   (h:$matrices)[v:matListP, a___]         :> RuleCondition @ h[$matrixF /@ v, a],
   (h:$rules)[r_List, p_, a___]            :> RuleCondition @ h[$rulesF @ r, p /. $mpcDispatch, a],
+  (h:$fano)[FanOut[s:vecP, t:matP], a___] :> RuleCondition @ h[FanOut[$vectorF, $matrixF @ t], a],
   Text[x_, v:vecP, y_, d:vecP, a___]      :> RuleCondition @ With[{p = $vecDelta[v, d]}, Text[x, P1 @ p, y, PN @ p, a]],
   Inset[x_, v:vecP, y_, z_, d:vecP, a___] :> RuleCondition @ With[{p = $vecDelta[v, d]}, Inset[x, P1 @ p, y, z, PN @ p, a]],
   (h:$opvec)[f_, v:vecP, a___]            :> RuleCondition @ h[f, $vectorF @ v, a]

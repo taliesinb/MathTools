@@ -215,19 +215,6 @@ TestMarkdown @ Cell["A[\[Ellipsis]] \[Congruent] A( (\[Ellipsis]) )", "Preformat
 (*Array circuits*)
 
 
-TestRaster @ ArrayCircuitGraphics @ NodeRow[{
-	ClassicalArrayNode["S", {}, {1.25, 1.25}],
-	ClassicalArrayNode["V", 1, {1.5,1.25}],
-	ClassicalArrayNode["M", 2, {2,1.25}]
-}]
-
-
-TestRaster @ ArrayCircuitGraphics @ 
-	DerivedArrayNode[2,
-		NodeColumn[{ClassicalArrayNode["M", 2, {2,1.25}], ScalarFunctionNode["f", 1, {2, 1}]}],
-		{KeyWire[1,"M"->1], KeyWire[2,"M"->2],
-		 ValueWire["M", "f"], ValueWire["f", 1]}
-	]
 
 
 (* ::Subsection:: *)
@@ -1050,24 +1037,6 @@ TestMarkdown @ Cell[
 (*Array circuit*)
 
 
-TestRaster @ DerivedArraySignatureForm["\!\(\*SuperscriptBox[\(f\), \(\[UpArrow]\)]\)", {"A" -> None, "B" -> None, "C" -> None}, {}] @ ArrayCircuitGraphics @ DerivedArrayNode[1, 
-	NodeColumn[
-	{NodeRow[{ClassicalArrayNode["A", 1, 1], ClassicalArrayNode["B", 1, 1], ClassicalArrayNode["C", 1, 1]}, Spacings -> 0.25],
-	 ScalarFunctionNode["f", 3, {3.5, 1}, PortSpacing->1.25]}, 
-	Spacings -> 0.75, Epilog -> {
-		ValueWire["A", "f" -> 1],
-		ValueWire["B", "f" -> 2],
-		ValueWire["C", "f" -> 3]}],
-	{
-		KeyWire[1, "A"],
-		KeyWire[1, "B"],
-		KeyWire[1, "C"],
-		ValueWire["f", 1]
-	},
-	FrameMargins -> {All -> .75, Top -> 1.25}
-]
-
-
 (* ::Subsubsection:: *)
 (*Examples*)
 
@@ -1448,57 +1417,6 @@ TestMarkdown @ Cell[TextData[{"_{ }   agg : \[DoubleStruckCapitalV]^{*} -> \[Dou
 (*Array circuit*)
 
 
-TestRaster @ ArrayCircuitGraphics[
-  DerivedArrayNode[1, 
-    NodeColumn[{
-		KeyPortSkeleton[1, 1, NodeAlias -> "S"],
-		MultisetNode["MS", 1,
-			ClassicalArrayNode["M", 2, 2],
-			{KeyWire[1, "M" -> 2], ValueWire["M", 1]}
-		],
-		SumNode[]
-    }, Spacings -> .8], 
-    {KeyWire[1, "M" -> 1],
-     {Dashed, KeyWire["S" -> 1, "MS" -> 1], ValueWire["MS", "sum"]},
-     ValueWire["sum", 1]
-    }
-  ]
-]
-
-
-TestRaster @ ACG[NodeGrid[{{1, 1} -> KeyPortSkeleton[1, 1, NodeAlias -> "S"],
-      {2, 1} -> NodeBox[{0,0.5},FrameColor->White]},
-    Epilog -> {Dashed,KeyWire[{0.5, 0}, {0.5, -.75}]}]]
-
-
-TestRaster @ ACG @ NodeColumn[{
-		KeyPortSkeleton[1, 1, NodeAlias -> "S", PortSize -> 0, PortColor -> White],
-		MultisetNode["MS", 1,
-			ClassicalArrayNode["", 1, 1, NodeAlias -> "V"],
-			{KeyWire[1, "V" -> 1], ValueWire["V", 1]}
-		],
-		KeyPortSkeleton[1, 1, NodeAlias -> "T", PortSize -> 0, PortColor -> White]
-    }, Spacings -> .8, Epilog -> {Dashed, KeyWire["S", "MS"], ValueWire["MS", NodeOutPort["T",1]]}]
-
-
-TestRaster @ ArrayCircuitGraphics[
-  DerivedArrayNode[1, 
-    NodeColumn[{
-		KeyPortSkeleton[1, 1, NodeAlias -> "S"],
-		MultisetNode["MS", 1,
-			ClassicalArrayNode["M", 2, 2],
-			{KeyWire[1, "M" -> 2], ValueWire["M", 1]}
-		],
-		SumNode[]
-    }, Spacings -> .8], 
-    {KeyWire[1, "M" -> 1],
-     {Dashed, KeyWire["S" -> 1, "MS" -> 1], ValueWire["MS", "sum"]},
-     ValueWire["sum", 1]
-    }
-  ]
-]
-
-
 TestMarkdown @ Cell["x : \[DoubleStruckCapitalX]\nY : \[DoubleStruckCapitalY]^{*}\nY = mset{ y | y \[Element] \[DoubleStruckCapitalY] }", "PreformattedCode"]
 
 
@@ -1511,36 +1429,6 @@ TestMarkdown @ Cell["v : \[DoubleStruckCapitalV]\nv = sum( z ) \n  = sum( mset{ 
 (* ::Subsection:: *)
 (*Multiset sugar*)
 
-
-TestRaster @ SpacedArrow[
-	ACG @ DerivedArrayNode[1, 
-	    NodeColumn[{
-			KeyPortSkeleton[1, 1, NodeAlias -> "S"],
-			MultisetNode["MS", 1,
-				ClassicalArrayNode["A", 2, 2],
-				{KeyWire[1, "A" -> 2], ValueWire["A", 1]}
-			],
-			ScalarFunctionNode["sum", 1, {1.5, 1}]
-	    }, Spacings -> .8], 
-	    {KeyWire[1, "A" -> 1],
-	     {Dashed, KeyWire["S" -> 1, "MS" -> 1], ValueWire["MS", "sum"]},
-	     ValueWire["sum", 1]
-	    }
-	  ],
-	ACG @ DerivedArrayNode[1, 
-		AggregationNode["agg", 1 -> "sum",
-			ClassicalArrayNode["A", 2, 1.5],
-			{KeyWire[1, "A" -> 2], ValueWire["A", 1]}
-		],
-		{KeyWire[1, "A" -> 1], ValueWire["agg", 1]}
-	],
-	ACG @ DerivedArrayNode[1, 
-		ClassicalArrayNode["A", {1, Style[2, "Disk"]} -> {Style[1, Labeled["OuterDiamond", "sum", Above]]}, 1.5],
-		{KeyWire[1, "A" -> 1], ValueWire["A", 1]}
-	],
-	"ArrowThickness" -> 4,
-	Spacings -> 0
-]
 
 
 (* ::Subsection:: *)
@@ -1673,22 +1561,6 @@ TestRaster @ Histogram[
 (*Array circuit*)
 
 
-TestRaster @ ArrayCircuitGraphics @ DerivedArrayNode[1,
-	NodeColumn[{
-		ClassicalRelationNode["R", 2, {1.5, 1.25}],
-		MultisetNode["MS", 1,
-			ClassicalArrayNode["V", 1, {1.5, 1.25}],
-			{KeyWire[1, "V"], ValueWire["V", 1]}
-		],
-		SumNode[]
-	}, Spacings -> .75],
-	{
-		KeyWire[1, NodePort["R", 1]],
-		{Dashed, KeyWire[NodePort["R", 2], "MS"], ValueWire["MS", "sum"]}, 
-		ValueWire["sum", 1]
-	}
-]
-
 
 TestMarkdown @ Cell["x : \[DoubleStruckCapitalX]\nY : \[DoubleStruckCapitalY]^{*}\n\nY = mset{ y | R(x,y), y \[Element] \[DoubleStruckCapitalY] }", "PreformattedCode"]
 
@@ -1814,30 +1686,6 @@ StyleBox[\"2\",\nFontColor:>CurrentValue[{StyleDefinitions, \"Color1\", FontColo
 (*Array circuit*)
 
 
-TestRaster @ SpacedRow[
-	ArrayCircuitGraphics @ DerivedArrayNode[2, 
-		NodeColumn[{
-			Spacer[{0,0}],
-			ClassicalArrayNode["V", 1, {1.25, 1.25}]
-		}, Spacings -> .3],
-		{KeyWire[#, "V"], ValueWire["V", 1]},
-		PortPositions -> Automatic
-	]& /@ {1, 2}
-]
-
-
-TestRaster @ ArrayCircuitGraphics @ DerivedArrayNode[3,
-	NodeColumn[{
-		Spacer[{0,0}],
-		ClassicalArrayNode["M", 2, {2, 1.5}]
-	}, Spacings -> .3],
-	{
-		KeyWire[1, "M" -> 1],
-		KeyWire[3, "M" -> 2],
-		ValueWire["M", 1]
-	},
-	PortPositions -> Automatic
-]
 
 
 (* ::Subsection:: *)
@@ -2100,44 +1948,6 @@ TestMarkdown @ Cell[
 ]
 
 
-TestRaster @ ACG @ DerivedArrayNode[
-	{1, 3},
-	AggregationNode["agg", 1 -> "sum",
-		NodeGrid[{
-			{1,1} -> ClassicalArrayNode["M", 2, 1.5],
-			{1,2} -> ClassicalArrayNode["N", 2, 1.5],
-			{2,1;;2} -> ScalarFunctionNode["*", 2]
-		}],
-		{KeyWire[1, "M" -> 2], KeyWire[1, "N" -> 1], ValueWire["M", "*" -> 1], ValueWire["N", "*" -> 2], ValueWire["*", 1]}
-	],
-	{KeyWire[1, "M"->1], KeyWire[3, "N" -> 2], ValueWire["agg", 1]},
-	FrameMargins -> {Bottom -> .85, All -> 0.75}
-]
-
-
-TestRaster @ ArrayCircuitGraphics[
-  DerivedArrayNode[2, 
-    NodeColumn[{
-		KeyPortSkeleton[1, 1, NodeAlias -> "S"],
-		MultisetNode["MS", 1,
-			NodeGrid[{
-				{1,1} -> ClassicalArrayNode["M", 2, 1.5],
-				{1,2} -> ClassicalArrayNode["N", 2, 1.5],
-				{2,1;;2} -> ScalarFunctionNode["*", 2]
-			}],
-			{
-				KeyWire[1, $["MN"] -> $[2, 1]],
-				ValueWire[$["MN"] -> 1, "*" -> $[2]], 
-				ValueWire["*", 1]
-			}
-		],
-		SumNode[]
-    }, Spacings -> .8], 
-    {KeyWire[NodeInPort @ 1, "M" -> 1], KeyWire[NodeInPort @ 2, "N" -> 2],
-    {Dashed, KeyWire["S", "MS"], ValueWire["MS", "sum"]},
-     ValueWire["sum", 1]}
-  ]
-]
 
 
 (* ::Subsection:: *)
@@ -2187,45 +1997,6 @@ TestMarkdown @ Cell[TextData[{"M\:1d40 = M^{(", ColorNBox["1", 1], ",", ColorNBo
 (*Array circuit*)
 
 
-TestRaster @ ArrayCircuitGraphics @ DerivedArrayNode[2,
-	NodeColumn[{
-		Spacer[{0,0}],
-		ClassicalArrayNode["M", 2, {2, 1.5}]
-	}, Spacings -> .3],
-	{
-		KeyWire[1, "M" -> 2],
-		KeyWire[2, "M" -> 1],
-		ValueWire["M", 1]
-	}, PortPositions -> Automatic, PortSpacing -> .8
-]
-
-
-TestRaster @ ArrayCircuitGraphics @ DerivedArrayNode[3,
-	NodeColumn[{
-		Spacer[{0,0}],
-		ClassicalArrayNode["I", 3, {2.5, 1.5}]
-	}, Spacings -> .3],
-	{
-		KeyWire[1, "I" -> 2],
-		KeyWire[2, "I" -> 3],
-		KeyWire[3, "I" -> 1],
-		ValueWire["I", 1]
-	},
-	PortPositions -> Automatic, PortSpacing -> .8
-]
-
-
-TestRaster @ ArrayCircuitGraphics @ DerivedArrayNode[1,
-	NodeColumn[{
-		KeyFunctionNode["\[Sigma]", 1, {1.5, 1.25}],
-		ClassicalArrayNode["A", 1, {1.5, 1.25}]
-	}, Spacings -> .75],
-	{
-		KeyWireBundle[1, "\[Sigma]"],
-		KeyWireBundle["\[Sigma]", "A"],
-		ValueWire["A", 1]
-	}
-]
 
 
 (* ::Subsection:: *)
@@ -2508,18 +2279,6 @@ TestMarkdown @ Cell[
 (*Array circuit*)
 
 
-TestRaster @ ArrayCircuitGraphics @ DerivedArrayNode[1 -> {Style[1, $BubbleWireStyle]}, 
-	NodeColumn[{
-		BubbleValueNode["B", 1, ClassicalArrayNode["M", 2, {2, 1.5}], Epilog -> {
-			KeyWire[1, "M" -> 2],
-			ValueWire["M", 1]
-		}, PortPositions -> "MatchInterior"],
-		Spacer[{0,0}]
-	}, Spacings -> .3],
-	{KeyWire[1, "M" -> 1], $BubbleWireStyle, CircuitCurve[{AbsoluteOffset[{-0.5, -0.01}] @ NodeSide["B", Bottom], NodeOutPort[1]}, SetbackDistance -> 0]}	
-]
-
-
 (* ::Subsection:: *)
 (*Unnest op*)
 
@@ -2562,70 +2321,6 @@ TestMarkdown @ Cell[TextData[{"(A^{", ColorNBox["n", 6], "\[Succeeds]})^{", Colo
 (*Array circuit*)
 
 
-TestRaster @ ArrayCircuitGraphics @ DerivedArrayNode[2,
-	NodeColumn[{
-		NodeColumn[{
-			NodeRow[{ClassicalArrayNode["V", 1, {1.5, 1.5}, NodePorts -> {In -> 1, Out -> Style[1, PortColor -> $BubbleWireStyle]}], Spacer[{1,0}]}],
-			NodeRow[{Spacer[{1,0}], BubbleValueNode["B", 1, {1.5, 1.5}, RoundingRadius -> .5]}]
-		}, Spacings -> .5],
-		Spacer[{0,.1}]
-	}, Spacings -> .3],
-	{
-		$KeyWireStyle,
-		KeyWire[1, "V"],
-		KeyWire[2, "B"],
-		BubbleWire["V", NodeSide["B", Left]] // ApplyWireOptions[SetbackDistance->{0.1,0}],
-		ValueWire["B", 1]
-	},
-	PortSpacing -> 1.5
-]
-
-
-$innerBubble = BubbleValueNode[
-	"B", 1 -> {1, Style["P", $BubbleWireStyle]},
-	ClassicalArrayNode["M", 2, {2, 1.5}],
-	PortPositions -> {In -> "MatchInterior", Out -> {0, .8}},
-	Epilog -> {KeyWire[1, "M" -> 2], ValueWire["M", 1]}
-];
-TestRaster @ ArrayCircuitGraphics @ DerivedArrayNode[2,
-	NodeColumn[{
-		NodeColumn[{
-			NodeRow[{$innerBubble, Spacer[{1,0}]}],
-			NodeRow[{Spacer[{2.5,0}], BubbleValueNode["B2", 1, {1.5, 1.5}, RoundingRadius -> .5]}]
-		}, Spacings -> .5, Epilog -> BubbleWire[NodeOutPort["B", "P"], NodeSide["B2", Left]], FrameMargins -> 0],
-		Spacer[{0,.3}]
-	}, Spacings -> .3],
-	{
-		KeyWire[NodeInPort["B", 2], "M" -> 2],
-		ValueWire["M", NodeOutPort["B"]],
-		KeyWire[1, "M"],
-		KeyWire[2, NodeInPort["B2"]],
-		ValueWire[NodeOutPort["B2"], 1]
-	}; {KeyWire[1, "M" -> 1], KeyWire[2, "B2" -> 1], ValueWire["B2", 1]},
-	FrameMargins -> {Horizontal -> 0.5, Vertical -> 0.75}
-]
-
-
-TestRaster @ ArrayCircuitGraphics @ DerivedArrayNode[2,
-	BubbleValueNode[
-		"B", 1, ClassicalArrayNode["M", 2, {2, 1.5}],
-		Epilog -> {KeyWire[1,"M" -> 2], ValueWire["M", 1]},
-		PortPositions -> "MatchInterior"
-	],
-	{KeyWire[1, "M" -> 1], KeyWire[2, "B" -> 1], ValueWire["B", 1]},
-	FrameMargins -> {Horizontal -> 0.5, Vertical -> 0.75}
-]
-
-
-TestRaster @ ArrayCircuitGraphics @ DerivedArrayNode[2,
-	ClassicalArrayNode["M", 2, {2, 1.5}],
-	{
-		KeyWire[1, "M" -> 1],
-		KeyWire[2, "M" -> 2],
-		ValueWire["M", 1]
-	},
-	FrameMargins -> {Horizontal -> 0.75, Vertical -> 0.75}
-]
 
 
 (* ::Subsection:: *)
@@ -2663,16 +2358,6 @@ TestMarkdown @ Cell[
   "PreformattedCode"
 ]
 
-
-TestRaster @ ArrayCircuitGraphics @ DerivedArrayNode[1,
-	ClassicalArrayNode["M", 2, {2, 1.5}],
-	{
-		KeyWire[1, "M" -> 1],
-		KeyWire[1, "M" -> 2],
-		ValueWire["M", 1]
-	},
-	FrameMargins -> {All -> 0.65, Top -> .8}
-]
 
 
 TestMarkdown @ StringBlockTemplate["M = #1", NAF[{{1,2, 3}, {4, 5, 6}, {7, 8, 9}}]]
@@ -2716,39 +2401,6 @@ TestMarkdown @ Cell[
 TestMarkdown @ NAF[MapAt[Background3Form, {{1,1},{2,2},{3,3}}] @ {{1,2, 3}, {4, 5, 6}, {7, 8, 9}}]
 
 
-Clear[plotCube]; SetHoldFirst[plotCube];
-$imgArrayOpts = Sequence[QuiverGeometry`CubeGap -> 0.15, FrameStyle -> Directive[AbsoluteThickness[3], GrayLevel[0.2, 0.5]], QuiverGeometry`CubeStyle -> EdgeForm[AbsoluteThickness[1.5]], ColorRules -> {1 -> QuiverGeometry`$Red, 2 -> QuiverGeometry`$Green, 3 -> QuiverGeometry`$Blue, 4 -> QuiverGeometry`$Red}, QuiverGeometry`FlipAxes -> {1, 2, 3}, Ticks -> {Style[Right, QuiverGeometry`$DarkPink], Style[TopRight, QuiverGeometry`$DarkTeal], Style[TopLeft, QuiverGeometry`$DarkPurple]}, QuiverGeometry`TickSpacing -> 0.3, QuiverGeometry`FlipTicks -> {1, 2, 3}, TicksStyle -> 25];
-plotCube[body_, n_, col_, opts___Rule] := NeutralGraphics3D[
-	ColoredCubeGrid[Boole @ Table[body,{r,n},{b,n},{g,n}], ColorRules -> {1 -> col},
-	Ticks -> {Style[Right, $Green], Style[TopRight, $Blue], Style[TopLeft, $Red]},
-	FrameStyle -> Directive[AbsoluteThickness[2], GrayLevel[0.2,.5]],
-	MeshStyle -> Directive[AbsoluteThickness[2], GrayLevel[0.5,0.1]], $imgArrayOpts], opts, ImageSize -> 200];
-paddedACG[e_] := ArrayCircuitGraphics[e, ImagePadding -> {All -> 5, Top -> 20}];
-TestRaster @ SpacedColumn[
-	SpacedRow[paddedACG[#1], #2]& @@@ {
-		DerivedRainbowArrayNode[{7},
-			RainbowArrayNode["A", {1, 2, 3}, {2.5, 1.5}, PortSpacing -> 0.75],
-			{RainbowWire[7, "A" -> 1], RainbowWire[7, "A" -> 2], RainbowWire[7, "A" -> 3], ValueWire["A", 1]},
-			PortPositions -> Automatic, FrameMargins -> {All -> 0.65, Top -> .8}, FrameLabel -> Superscript["A", "\!\(\*StyleBox[\"1\",FontColor:>CurrentValue[{StyleDefinitions, \"Color7\", FontColor}]]\):(\!\(\*StyleBox[\"1\",FontColor:>CurrentValue[{StyleDefinitions, \"Color1\", FontColor}]]\),\!\(\*StyleBox[\"2\",FontColor:>CurrentValue[{StyleDefinitions, \"Color2\", FontColor}]]\),\!\(\*StyleBox[\"3\",FontColor:>CurrentValue[{StyleDefinitions, \"Color3\", FontColor}]]\))"]
-		] -> plotCube[r == g == b, 3, $Gray],
-		DerivedRainbowArrayNode[{1, 6},
-			RainbowArrayNode["A", {1, 2, 3}, {2.5, 1.5}, PortSpacing -> 0.75],
-			{RainbowWire[1, "A" -> 1], RainbowWire[6, "A" -> 2], RainbowWire[6, "A" -> 3], ValueWire["A", 1]},
-			PortPositions -> Automatic, FrameMargins -> {All -> 0.65, Top -> .8}, FrameLabel -> Superscript["A", "\!\(\*StyleBox[\"2\",FontColor:>CurrentValue[{StyleDefinitions, \"Color6\", FontColor}]]\):(\!\(\*StyleBox[\"2\",FontColor:>CurrentValue[{StyleDefinitions, \"Color2\", FontColor}]]\),\!\(\*StyleBox[\"3\",FontColor:>CurrentValue[{StyleDefinitions, \"Color3\", FontColor}]]\))"]
-		] -> plotCube[g == b, 3, $Teal],
-		DerivedRainbowArrayNode[{2, 4},
-			RainbowArrayNode["A", {1, 2, 3}, {2.5, 1.5}, PortSpacing -> 0.75],
-			{RainbowWire[4, "A" -> 1], RainbowWire[2, "A" -> 2], RainbowWire[4, "A" -> 3, 4], ValueWire["A", 1]},
-			PortPositions -> Automatic, FrameMargins -> {All -> 0.65, Top -> .8}, FrameLabel -> Superscript["A", "\!\(\*StyleBox[\"2\",FontColor:>CurrentValue[{StyleDefinitions, \"Color4\", FontColor}]]\):(\!\(\*StyleBox[\"1\",FontColor:>CurrentValue[{StyleDefinitions, \"Color1\", FontColor}]]\),\!\(\*StyleBox[\"3\",FontColor:>CurrentValue[{StyleDefinitions, \"Color3\", FontColor}]]\))"]
-		] -> plotCube[r == g, 3, $Orange],
-		DerivedRainbowArrayNode[{5, 3},
-			RainbowArrayNode["A", {1, 2, 3}, {2.5, 1.5}, PortSpacing -> 0.75],
-			{RainbowWire[5, "A" -> 1], RainbowWire[5, "A" -> 2], RainbowWire[3, "A" -> 3], ValueWire["A", 1]},
-			PortPositions -> Automatic, FrameMargins -> {All -> 0.65, Top -> .8}, FrameLabel -> Superscript["A", "\!\(\*StyleBox[\"1\",FontColor:>CurrentValue[{StyleDefinitions, \"Color5\", FontColor}]]\):(\!\(\*StyleBox[\"1\",FontColor:>CurrentValue[{StyleDefinitions, \"Color1\", FontColor}]]\),\!\(\*StyleBox[\"2\",FontColor:>CurrentValue[{StyleDefinitions, \"Color2\", FontColor}]]\))"]
-		] -> plotCube[r == b, 3, $Purple]
-	}, 
-	Spacings -> 25
-]
 
 
 (* ::Subsection:: *)
@@ -2914,18 +2566,6 @@ TestMarkdown @ Cell[
 (*Array circuit*)
 
 
-TestRaster @ ArrayCircuitGraphics @ DerivedArrayNode[1, 
-	NodeColumn[{
-		KeyFunctionNode["P", 1, {1.5, 1.25}],
-		ClassicalArrayNode["A", 1, {1.5, 1.25}]
-	}, Spacings -> .75],
-	{
-		KeyWireBundle[1, "P"],
-		KeyWireBundle["P", "A"],
-		ValueWire["A", 1]
-	},
-	FrameMargins -> .75
-]
 
 
 (* ::Section:: *)
