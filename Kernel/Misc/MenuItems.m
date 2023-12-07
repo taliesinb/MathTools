@@ -5,7 +5,7 @@ If[$Notebooks && !TrueQ[QuiverGeometryLoader`$DisableMenuItems] && !TrueQ[Quiver
     Delimiter,
     MenuItem[
       "Open as markdown",
-      KernelExecute[SystemOpen @ QuiverGeometry`BuildSitePage[]],
+      KernelExecute[SystemOpen @ QuiverGeometry`WriteSitePage[]],
       FrontEnd`MenuKey["'", FrontEnd`Modifiers -> {"Command", "Shift"}],
       MenuEvaluator -> Automatic
     ],

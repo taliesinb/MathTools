@@ -611,7 +611,7 @@ splitToCode[str_Str] :=
 makeToggledInlineCell[str_] := Scope[
   expr = toInlineExpression[str, InputForm];
   If[FailureQ[expr], BadBeep[]; Return @ str];
-  boxes = ToBoxes[expr, StandardForm];
+  boxes = ToBoxes[expr, TraditionalForm];
   boxes = TagBox[boxes, "ToggledInlineCell" -> str];
   Cell[BoxData @ FormBox[boxes, TraditionalForm]]
 ];

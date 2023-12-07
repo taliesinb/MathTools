@@ -470,6 +470,13 @@ DefineStandardTraditionalForm[
     equationCascadeFormBoxes[first, second, rest]
 ]
 
+equationCascadeFormBoxes[None, second_, rest__] :=
+  TBoxOp["EquationGridForm"] @ createGridBox[
+    Prepend[equationGridRow[{None, None, second}]] @
+          MapUnevaluated[equationGridRow[{None, "=", #}]&, {rest}],
+    {Right, Center, Left}, Automatic, Automatic
+  ];
+
 equationCascadeFormBoxes[first_, second_, rest__] :=
   TBoxOp["EquationGridForm"] @ createGridBox[
     Prepend[equationGridRow[EqualForm[first, second]]] @
@@ -519,6 +526,7 @@ equationGridRow = Case[
   e_DotEqualForm         := riffledEqGridRow["≐", e];
   e_ColonEqualForm       := riffledEqGridRow["≔", e];
   e_SyntaxEqualForm      := riffledEqGridRow["≑", e];
+  e_TripleEqualForm      := riffledEqGridRow["\[Congruent]", e];
   e_IdenticallyEqualForm := riffledEqGridRow["\[Congruent]", e];
   e_Less                 := riffledEqGridRow["<", e];
   e_Greater              := riffledEqGridRow[">", e];

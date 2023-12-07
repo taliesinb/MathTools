@@ -9,8 +9,8 @@ comonadDiagram[name_, opts___] :=
 (**************************************************************************************************)
 
 NamedDiagram["Monad/MultiplicationSquare"] := CommutativeSquare[
-	{HCF[$FunT,$FunT,$FunT], HCF[$FunT,$FunT], HCF[$FunT,$FunT], $FunT},
-	{HCF[$FunT,$NTmu], $NTmu, HCF[$NTmu, $FunT], $NTmu}
+	{HC[$FunT,$FunT,$FunT], HC[$FunT,$FunT], HC[$FunT,$FunT], $FunT},
+	{HC[$FunT,$NTmu], $NTmu, HC[$NTmu, $FunT], $NTmu}
 ];
 
 NamedDiagram["Monad/ComultiplicationSquare"] :=
@@ -19,8 +19,8 @@ NamedDiagram["Monad/ComultiplicationSquare"] :=
 (**************************************************************************************************)
 
 NamedDiagram["Monad/UnitTriangles"] := DoubleTriangleDiagram[
-	{$FunT, HCF[$FunT,$FunT], $FunT, $FunT},
-	{HCF[$NTeta,$FunT], HCF[$FunT, $NTeta], {None, "Equality"}, Customized[$NTmu, LabelPosition -> Right], {None, "Equality"}}
+	{$FunT, HC[$FunT,$FunT], $FunT, $FunT},
+	{HC[$NTeta,$FunT], HC[$FunT, $NTeta], {None, "Equality"}, Customized[$NTmu, LabelPosition -> Right], {None, "Equality"}}
 ]
 
 NamedDiagram["Monad/CounitTriangles"] :=

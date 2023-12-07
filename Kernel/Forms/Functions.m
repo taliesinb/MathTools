@@ -76,6 +76,14 @@ DefineStandardTraditionalForm[nfs_NamedFunctionForm[args___] :> MakeBoxes[Applie
 
 (**************************************************************************************************)
 
+PublicTypesettingForm[NamedSansSerifFunctionForm]
+
+DefineUnaryForm[NamedSansSerifFunctionForm, SansSerifFunctionBox @ $1]
+
+DefineStandardTraditionalForm[nfs_NamedSansSerifFunctionForm[args___] :> MakeBoxes[AppliedForm[nfs, args]]];
+
+(**************************************************************************************************)
+
 PublicTypesettingForm[AndFunction, OrFunction, NotFunction, XorFunction, NandFunction, ParityFunction]
 
 DefineNamedFunctionSymbolForm[{

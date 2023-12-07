@@ -219,24 +219,24 @@ loadShortcutGroup["Core"] := (
   makeSym["Div6",   InlineDivideForm[#, 6]&];
   makeSym["Div8",   InlineDivideForm[#, 8]&];
 
-  nakeSym["Sub0",   Subscript[#, 0]&];
-  nakeSym["Sub1",   Subscript[#, 1]&];
-  nakeSym["Sub2",   Subscript[#, 2]&];
-  nakeSym["Sub3",   Subscript[#, 3]&];
-  nakeSym["Sub4",   Subscript[#, 4]&];
-  nakeSym["Sub5",   Subscript[#, 5]&];
-  nakeSym["Sub6",   Subscript[#, 6]&];
-  nakeSym["Sub7",   Subscript[#, 7]&];
-  nakeSym["Sub8",   Subscript[#, 8]&];
-  nakeSym["Sub9",   Subscript[#, 9]&];
-  nakeSym["SubI",   Subscript[#, $si]&];
-  nakeSym["SubIm1", Subscript[#, SubtractForm[$si, 1]]&];
-  nakeSym["SubIp1", Subscript[#, PlusForm[$si, 1]]&];
-  nakeSym["SubJ",   Subscript[#, $sj]&];
-  nakeSym["SubK",   Subscript[#, $sk]&];
-  nakeSym["SubN",   Subscript[#, $sn]&];
-  nakeSym["SubNm1", Subscript[#, SubtractForm[$sn, 1]]&];
-  nakeSym["SubNp1", Subscript[#, PlusForm[$sn, 1]]&];
+  makeSym["Sub0",   Subscript[#, 0]&];
+  makeSym["Sub1",   Subscript[#, 1]&];
+  makeSym["Sub2",   Subscript[#, 2]&];
+  makeSym["Sub3",   Subscript[#, 3]&];
+  makeSym["Sub4",   Subscript[#, 4]&];
+  makeSym["Sub5",   Subscript[#, 5]&];
+  makeSym["Sub6",   Subscript[#, 6]&];
+  makeSym["Sub7",   Subscript[#, 7]&];
+  makeSym["Sub8",   Subscript[#, 8]&];
+  makeSym["Sub9",   Subscript[#, 9]&];
+  makeSym["SubI",   Subscript[#, $si]&];
+  makeSym["SubIm1", Subscript[#, SubtractForm[$si, 1]]&];
+  makeSym["SubIp1", Subscript[#, PlusForm[$si, 1]]&];
+  makeSym["SubJ",   Subscript[#, $sj]&];
+  makeSym["SubK",   Subscript[#, $sk]&];
+  makeSym["SubN",   Subscript[#, $sn]&];
+  makeSym["SubNm1", Subscript[#, SubtractForm[$sn, 1]]&];
+  makeSym["SubNp1", Subscript[#, PlusForm[$sn, 1]]&];
 
   makeSym["RF",     RedForm];
   makeSym["GF",     GreenForm];
@@ -258,6 +258,7 @@ loadShortcutGroup["Core"] := (
   makeSym["SetF",   SetForm];
   makeSym["AAF",    AssociativeArrayForm];
   makeSym["EOF",    ElementOfForm];
+  makeSym["in",     ElementOfForm];
   makeSym["SF",     SymbolForm];
 
   makeSym["DDD",    EllipsisSymbol];
@@ -344,21 +345,30 @@ loadShortcutGroup["Categories"] := (
   $scriptCapitals = Characters /@ {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", "𝒜ℬ𝒞𝒟ℰℱ𝒢ℋℐ𝒥𝒦ℒℳ𝒩𝒪𝒫𝒬ℛ𝒮𝒯𝒰𝒱𝒲𝒳𝒴𝒵"};
 
   decSymTable["$C#",              CategorySymbol,                             $scriptCapitals];
+  decSymTable["$C#",              CategorySymbol[BoldForm[#]]&,               "012345"];
   decSymTable["$Fun#",            FunctorSymbol,                              "ABCDEFGHUVPLRST"];
-  decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzstABCDEIUVWMNLPRSTXYZ"];
-  symbolTable["$IdA#",            IdArrow[CategoryObjectSymbol[#]]&,          "01abcdeuvwxyzstABCDEIUVWMNPXYZST"];
-  decSymTable["$NT#",             NaturalTransformationSymbol,                "\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]\[Gamma]\[Delta]\[Epsilon]\[Sigma]"];
-  decSymTable["$A#",              CategoryArrowSymbol,                        "01efghjklmnpqrstuvwILMNR\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]"];
+  decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzstABCDEIJUVWMNLPRSTXYZ"];
+  symbolTable["$IdA#",            IdArrow[CategoryObjectSymbol[#]]&,          "01abcdeuvwxyzstABCDEIJUVWMNPXYZST"];
+  decSymTable["$NT#",             NaturalTransformationSymbol,                "\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]\[Gamma]\[Delta]\[Epsilon]\[Sigma]\[Phi]"];
+  decSymTable["$A#",              CategoryArrowSymbol,                        "01efghjklmnpqrstuvwILMNR\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]\[Sigma]\[Phi]"];
   symbolTable["$1A#",             OneArrow[CategoryObjectSymbol[#]]&,         "abcdeuvwxyzstABCDEIUVWMNPXYZST"];
 
-  makeSym["HCF",                  HorizontalCompositionForm];
-  makeSym["VCF",                  VerticalCompositionForm];
-
+  makeSym["Iso",                  IsomorphicForm];
+  makeSym["FPS",                  FunctorPlaceholderSymbol];
+  makeSym["Obs",                  CategoryObjectsForm];
+  makeSym["Arrs",                 CategoryArrowsForm];
+  makeSym["Ang",                  AngleForm];
+  makeSym["Disc",                 DiscreteCategoryForm];
+  makeSym["HC",                   HorizontalCompositionForm];
+  makeSym["VC",                   VerticalCompositionForm];
+  makeSym["Skel",                 SkeletonCategoryForm];
   makeSym["$Ostar",               CategoryObjectSymbol["*"]];
 
-  makeSym["MPF",                  MonoidalProductForm];
-  makeSym["TMPF",                 TightMonoidalProductForm];
-  makeSym["CPF",                  CartesianProductForm];
+  makeSym["MP",                   MonoidalProductForm];
+  makeSym["TMP",                  TightMonoidalProductForm];
+  makeSym["CP",                   CartesianProductForm];
+
+  symbolTable["$ord#",            OrdinalForm,                                "012345ijklmnop"];
 
   makeSym["Hom", hom];
   hom[x_, y_] :=     HomForm[x, y];
@@ -693,3 +703,8 @@ loadShortcutGroup["Rewriting"] := (
   makeSym["RRF",                  RewritingRuleForm];
 
 );
+
+(* reload shortcut groups that might have been changed *)
+If[$loadedShortcutGroups =!= {},
+  Scan[loadShortcutGroup, $loadedShortcutGroups]
+];

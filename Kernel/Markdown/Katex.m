@@ -12,7 +12,8 @@ toProcessedKatexString[box_] := $katexPostprocessor @ boxesToKatexString @ box;
 
 PublicFunction[ToKatexString]
 
-ToKatexString[e_] := boxesToKatexString @ ToBoxes[e, StandardForm];
+(* TraditionalForm ensures that application uses parentheses *)
+ToKatexString[e_] := boxesToKatexString @ ToBoxes[e, TraditionalForm];
 
 (**************************************************************************************************)
 
@@ -27,8 +28,13 @@ boxesToKatexString[boxes_] := Scope[
   flatTerms = Flatten @ List @ ReplaceRepeated[$katexAppliedRule] @ interm;
   If[!StringVectorQ[flatTerms], ReturnFailed["partial"]];
   katexString = StringJoin @ flatTerms;
-  StringTrim @ StringReplace[$WLSymbolToKatexRegex] @ katexString
+  StringTrim @ StringDelete[$spuriousKatexSubstrings] @ StringReplace[$scriptToCaligraphic] @ StringReplace[$WLSymbolToKatexRegex] @ katexString
 ];
+
+(* InvisibleApplication is from TraditionalForm of f[1,2,3], newline is from grids *)
+$spuriousKatexSubstrings = "\[InvisibleApplication]" | "\n"
+
+$scriptToCaligraphic = z:RegularExpression["[" <> $UnicodeScriptLetters <> "]+"] :> "\\mathcal{" <> ScriptToRoman[z] <> "}";
 
 $katexAppliedRule = {
   (s_Str)[args___] :> {"\\" <> s <> "{", Riffle[{args}, "}{"], "}"}
@@ -62,7 +68,7 @@ boxToKatex = Case[
   DynamicBox[e_, ___] := % @ e;
 
   AdjustmentBox[e_, BoxBaselineShift -> n_] := {"\\raisebox{" <> TextString[-n] <> "em}{", % @ e, "}"};
-  AdjustmentBox[e_, ___] := % @ e;
+  AdjustmentBox[e_, BoxMargins -> {{l_, r_}, {0, 0}}] := katexPadded[% @ e, {l, r}];
   
   OverscriptBox[e_, "^"] := {"\\hat{", % @ e, "}"};
   OverscriptBox[e_, "\[RightVector]"] := {"\\vector{", % @ e, "}"};
@@ -129,10 +135,9 @@ styleToKatexFunction := Case[
   Struckthrough                                               := "struckthrough";
   "MathText" | "MathTextFont"                                 := "textrm";
   "RomanMathFont"                                             := "mathrm";
-  "CaligraphicMathFont"                                       := "mathcal";
   "FrakturMathFont"                                           := "mathfrak";
   "SansSerifMathFont"                                         := "mathsf";
-  "ScriptMathFont"                                            := "mathscr"
+  "ScriptMathFont"                                            := "mathcal";
   "TypewriterMathFont"                                        := "mathtt";
   "PreformattedCode"                                          := "mathtt";
   _                                                           := Id;

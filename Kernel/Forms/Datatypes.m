@@ -6,6 +6,12 @@ StyledTupleForm[style_] := StyleDecorated[style, TupleForm];
 
 (**************************************************************************************************)
 
+PublicTypesettingForm[AngleForm]
+
+DefineCommaForm[AngleForm, AngleBracketBox[$1], KatexMacroName -> "ang"]
+
+(**************************************************************************************************)
+
 PublicTypesettingForm[SetForm, StyledSetForm]
 
 DefineCommaForm[SetForm, BracesBox[$1]]

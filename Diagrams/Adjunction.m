@@ -19,13 +19,13 @@ NamedDiagram["Adjunction/PairUnitCounit"] := AdjunctionDiagram[
 
 NamedDiagram["Adjunction/LeftUnitCounitFunctorTriangle"] := InTriangleDiagram[
   {$FunL, CompositionForm[$FunL, $FunR, $FunL], $FunL},
-  {HCF[OneArrow[$FunL], $NTeta], EqualityMorphism[], HCF[$NTeps, OneArrow @ $FunL]},
+  {HC[OneArrow[$FunL], $NTeta], EqualityMorphism[], HC[$NTeps, OneArrow @ $FunL]},
   Right
 ]
 
 NamedDiagram["Adjunction/RightUnitCounitFunctorTriangle"] := InTriangleDiagram[
   {CompositionForm[$FunR, $FunL, $FunR], $FunR, $FunR},
-  {Reversed @ HCF[$NTeta, OneArrow[$FunR]], HCF[OneArrow @ $FunR, $NTeps], EqualityMorphism[]},
+  {Reversed @ HC[$NTeta, OneArrow[$FunR]], HC[OneArrow @ $FunR, $NTeps], EqualityMorphism[]},
   Left, Origin -> {2, 0}
 ]
 

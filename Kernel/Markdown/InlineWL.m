@@ -16,7 +16,7 @@ createInlineMath[str_Str /; StringLength[str] == 2] :=
 createInlineMath[str_Str] := Scope[
   res = toInlineExpression[str, InputForm];
   If[FailureQ[res], res = badInlinePlaceholder[str]];
-  boxes = ToBoxes[res, StandardForm];
+  boxes = ToBoxes[res, TraditionalForm];
   katex = $katexPostprocessor @ boxesToKatexString @ boxes;
   If[!StringQ[katex], Message[ToMarkdownString::inlinewlbox, str]; Return["BAD KATEX"]];
   $inlineMathTemplate @ katex

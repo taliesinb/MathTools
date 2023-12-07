@@ -67,7 +67,7 @@ DefineInfixForm[SpacedCommaRowForm, KBox[",  ", ",\\;"]]
 
 (**************************************************************************************************)
 
-PrivateTypesettingBoxFunction[spacerBox]
+PrivateTypesettingBoxFunction[spacerBox, katexPadded]
 
 $TemplateKatexFunction["Spacer1"] = katexPtSpacer;
 
@@ -78,6 +78,8 @@ katexPtSpacer[0] := "";
 katexPtSpacer[spacing_] := katexPtSpacer[spacing] = StringJoin["\\kern{", TextString @ spacing, "pt}"];
 
 spacerBox[n_] := TemplateBox[{n}, "Spacer1"];
+
+katexPadded[b_, {l_, r_}] := {katexEmSpacer[l], b, katexEmSpacer[r]};
 
 (**************************************************************************************************)
 

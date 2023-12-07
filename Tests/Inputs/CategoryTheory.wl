@@ -1,10 +1,10 @@
 LoadShortcuts["Categories"]
 
-TestBoxes @ MPF[$OA, $OB, $OC]
+TestBoxes @ MP[$OA, $OB, $OC]
 
-TestBoxes @ MPF[$OA, MPF[$OB, $OC]]
+TestBoxes @ MP[$OA, MP[$OB, $OC]]
 
-TestBoxes @ MPF[MPF[$OA, $OB], $OC]
+TestBoxes @ MP[MP[$OA, $OB], $OC]
 
 TestBoxes @ HomForm[$OA, $OC]
 

@@ -307,14 +307,40 @@ SetUsage @ "
 BuildSitePage['path$'] will build the site page corresponding to the given path.
 BuildSitePage[nb$] will build the site page corresponding to the given notebook.
 BuildSitePage[] will build the site page corresponding to the current notebook.
+* the path of the resulting markdown file is returned.
 ";
 
 BuildSitePage[opts:OptionsPattern[]] := BuildSitePage[EvaluationNotebook[], opts];
 
+BuildSitePage[sourceSpec:Except[_Rule], extraOpts:OptionsPattern[]] :=
+  CatchMessage @ buildOrWriteSitePage[sourceSpec, {extraOpts}, True];
+
+(**************************************************************************************************)
+
+PublicFunction[WriteSitePage]
+
+Options[WriteSitePage] = Options[CreateSite];
+
+declareFunctionAutocomplete[WriteSitePage, {File}];
+
+SetUsage @ "
+WriteSitePage['path$'] will write the site page corresponding to the given path.
+WriteSitePage[nb$] will write the site page corresponding to the given notebook.
+WriteSitePage[] will write the site page corresponding to the current notebook.
+* the path of the resulting markdown file is returned.
+";
+
+WriteSitePage[opts:OptionsPattern[]] := WriteSitePage[EvaluationNotebook[], opts];
+
+WriteSitePage[sourceSpec:Except[_Rule], extraOpts:OptionsPattern[]] :=
+  CatchMessage @ buildOrWriteSitePage[sourceSpec, {extraOpts}, False];
+
+(**************************************************************************************************)
+
 General::badsitepage = "Source `` is not a notebook in a site.";
 General::baseExportPathMissing = "Base export path `` does not exist.";
 
-BuildSitePage[sourceSpec:Except[_Rule], extraOpts:OptionsPattern[]] := CatchMessage @ Scope[
+buildOrWriteSitePage[sourceSpec_, extraOpts_List, shouldBuild_] := Scope[
 
   If[!MatchQ[sourceSpec, $NotebookOrPathP], ThrowMessage["badsitepage", sourceSpec]];
   {siteName, temp} = findContainingSite @ sourceSpec;
@@ -326,10 +352,11 @@ BuildSitePage[sourceSpec:Except[_Rule], extraOpts:OptionsPattern[]] := CatchMess
   outputFiles = ExportToMarkdown[sourceSpec, FilterOptions @ extraOpts, NotebookCaching -> False, FilterOptions @ siteData];
   If[!StringVectorQ[outputFiles], ThrowMessage["exportfailed", siteName]];
 
-  $serverFunctions[siteData["SiteGenerator"], "BuildSitePage"][siteData, outputFiles];
+  If[shouldBuild, $serverFunctions[siteData["SiteGenerator"], "BuildSitePage"][siteData, outputFiles]];
 
   P1 @ outputFiles
-];
+
+]
 
 (**************************************************************************************************)
 

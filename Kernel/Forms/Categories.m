@@ -32,6 +32,13 @@ DefineInfixForm[TightMonoidalProductForm, "\[CircleTimes]"]
 
 (**************************************************************************************************)
 
+PublicTypesettingForm[FilledCircleMonoidalProductForm, EmptyCircleMonoidalProductForm]
+
+DefineInfixForm[FilledCircleMonoidalProductForm, OpBox @ "\[FilledCircle]"]
+DefineInfixForm[EmptyCircleMonoidalProductForm, OpBox @ "\[EmptyCircle]"]
+
+(**************************************************************************************************)
+
 PublicTypesettingForm[NaryMonoidalFunctionForm]
 
 DefineUnaryForm[NaryMonoidalFunctionForm, SuperscriptBox["\[CircleTimes]", $1]];
@@ -101,12 +108,17 @@ DefineInfixForm[ThenForm, KBox[StyleBox[" ﹔ ", FontFamily -> "KaTeX_AMS"], "�
 
 (**************************************************************************************************)
 
-PublicTypesettingForm[CatCat, CatSet, CatFinSet, CatGrp, CatMat, CatKVect, CatMon, CatPoly, CatRel, CatRing, CatRMod, CatTop, CatFunct, CatAlg]
+PublicTypesettingForm[CatCat, CatSet, CatFinSet, CatFinOrd, CatOrd, CatGrp, CatMat, CatKVect, CatMon, CatPoly, CatRel, CatRing, CatRMod, CatTop, CatFunct, CatAlg, CatHask, CatArray, CatRainbowArray]
 
+(*
+$LowercaseSanSerifLetters = "𝖺𝖻𝖼𝖽𝖾𝖿𝗀𝗁𝗂𝗃𝗄𝗅𝗆𝗇𝗈𝗉𝗊𝗋𝗌𝗍𝗎𝗏𝗐𝗑𝗒𝗓";
+$UppercaseSanSerifLetters = "𝖠𝖡𝖢𝖣𝖤𝖥𝖦𝖧𝖨𝖩𝖪𝖫𝖬𝖭𝖮𝖯𝖰𝖱𝖲𝖳𝖴𝖵𝖶𝖷𝖸𝖹";
+*)
 DefineSymbolForm @ {
   CatCat      -> "𝖢𝖺𝗍",
   CatSet      -> "𝖲𝖾𝗍",
   CatFinSet   -> "𝖥𝗂𝗇𝖲𝖾𝗍",
+  CatFinOrd   -> "𝖥𝗂𝗇𝖮𝗋𝖽",
   CatGrp      -> "𝖦𝗋𝗉",
   CatMat      -> "𝖬𝖺𝗍",
   CatKVect    -> "𝖪𝖵𝖾𝖼𝗍",
@@ -117,8 +129,18 @@ DefineSymbolForm @ {
   CatRMod     -> "𝖱𝖬𝗈𝖽",
   CatTop      -> "𝖳𝗈𝗉",
   CatFunct    -> "𝖥𝗎𝗇𝖼𝗍",
-  CatAlg      -> "𝖠𝗅𝗀"
+  CatAlg      -> "𝖠𝗅𝗀",
+  CatHask     -> "𝖧𝖺𝗌𝗄",
+  CatArray    -> "𝖠𝗋𝗋",
+  CatRainbowArray -> "𝖱𝖠𝗋𝗋"
 };
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[CategoryObjectsForm, CategoryArrowsForm]
+
+DefineUnaryForm[CategoryObjectsForm, SubscriptBox[$1, "0"]];
+DefineUnaryForm[CategoryArrowsForm, SubscriptBox[$1, "1"]];
 
 (**************************************************************************************************)
 
@@ -138,7 +160,13 @@ FunctorSignatureForm[f_, a_List, b_] :=
 FunctionSignatureForm[f_, a_, b_List] :=
   FunctorSignatureForm[f, a, CartesianProductForm @@ b];
 
-DefineTernaryForm[FunctorSignatureForm, RBox[$1, OpBox @ ":", $2, OpBox @ "\[Rule]", $3], KatexMacroName -> "fs"];
+DefineTernaryForm[FunctorSignatureForm, RBox[$1, OpBox @ ":", $2, OpBox @ "\[Rule]", $3]];
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[ArrowSignatureForm]
+
+DefineTernaryForm[ArrowSignatureForm, RBox[$1, OpBox @ ":", $2, OpBox @ "\[Rule]", $3]];
 
 (**************************************************************************************************)
 
@@ -199,6 +227,22 @@ PublicTypesettingForm[FunctorCategoryForm, CompactFunctorCategoryForm]
 
 DefineBinaryForm[FunctorCategoryForm, RBox["[", $1, ",", $2, "]"]]
 DefineBinaryForm[CompactFunctorCategoryForm, SuperscriptBox[$2, $1]]
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[DiscreteCategoryForm, SkeletonCategoryForm]
+
+DefineNamedSansSerifFunctionSymbolForm[{
+  DiscreteCategoryForm -> "Disc",
+  SkeletonCategoryForm -> "Skel"
+}];
+
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[OrdinalForm]
+
+DefineUnaryForm[OrdinalForm, UnderlinedBox @ $1]
 
 (**************************************************************************************************)
 

@@ -42,7 +42,7 @@ Cell[StyleData["PathRelationSymbol", StyleDefinitions -> StyleData[
 (**************************************************************************************************)
 
 PublicTypesettingForm[TailEqualForm, HeadEqualForm]
-PublicTypesettingForm[BijectiveForm, ApproxEqualForm, IsomorphicForm, HomeomorphicForm, CongruentForm, IdenticallyEqualForm, HomotopicForm, DefEqualForm, SyntaxEqualForm, UnderdotEqualForm, DotEqualForm, ColonEqualForm]
+PublicTypesettingForm[BijectiveForm, ApproxEqualForm, IsomorphicForm, HomeomorphicForm, CongruentForm, IdenticallyEqualForm, HomotopicForm, DefEqualForm, TripleEqualForm, SyntaxEqualForm, UnderdotEqualForm, DotEqualForm, ColonEqualForm]
 PublicTypesettingForm[EqualForm, NotEqualForm, LessForm, LessEqualForm, GreaterForm, GreaterEqualForm]
 PublicTypesettingForm[SubsetForm, SubsetEqualForm, SupersetForm, SupersetEqualForm]
 PublicTypesettingForm[SubmultisetForm, SubmultisetEqualForm, SupermultisetForm, SupermultisetEqualForm]
@@ -52,10 +52,11 @@ DefineInfixForm[#1, OpBox @ #2]& @@@ ExpressionTable[
   HeadEqualForm                OverdotBox["="]
   BijectiveForm                "≈"
   ApproxEqualForm              "≈"
-  IsomorphicForm               "≃"
+  IsomorphicForm               "≅"
   HomeomorphicForm             "≅"
   HomotopicForm                "≃"
   DefEqualForm                 "≝"
+  TripleEqualForm              "≡"
   SyntaxEqualForm              GrayBox["≡"]
   UnderdotEqualForm            UnderdotBox["="]
   DotEqualForm                 OverdotBox["="]
@@ -83,8 +84,8 @@ DefineInfixForm[#1, OpBox @ #2]& @@@ ExpressionTable[
 PublicTypesettingForm[BinaryRelationForm]
 
 DefineStandardTraditionalForm[{
-  BinaryRelationForm[r_Str] :> KBox[KWideOp @ r, KBin @ r],
-  br_BinaryRelationForm[args___] :> AppliedBox[MakeBoxes @ br, MakeMathBoxSequence @ args]
+  BinaryRelationForm[r_Str] :> OpBox[r],
+  br_BinaryRelationForm[args___] :> RiffledBox[MakeBoxes @ br][MakeMathBoxSequence @ args]
 }];
 
 (**************************************************************************************************)

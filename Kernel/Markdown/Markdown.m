@@ -6,6 +6,24 @@ PreviewLastCell[] := ToMarkdownString[PreviousCell[], MarkdownFlavor -> "Hugo"];
 
 PublicFunction[ToMarkdownString]
 
+SetUsage @ "
+ToMarkdownString[%Cell[$$]] converts a cell object to markdown.
+
+## Syntax
+
+The following inline syntax is supported for text cells:
+
+* Pipes (|) surrounding cells indicate a table.
+
+* Native bold, italic, etc.
+
+* $variable is substituted.
+
+* $[...]$ has the contents evaluated.
+
+* ((...)) has the contents evaluated.
+"
+
 Options[ToMarkdownString] = $genericMarkdownOptions;
 
 ToMarkdownString[spec_, returnVec:True|False:False, opts:OptionsPattern[]] := Scope[
@@ -189,10 +207,10 @@ PrivateFunction[PrintBadCell]
 $LastFailedMarkdownInput = $LastFailedMarkdownOutput = None;
 
 PrintBadCell[c_Cell] :=
-  CellPrint @ ReplaceOptions[c, {Background -> RGBColor[1,0.95,0.95], CellDingbat -> "!"}];
+  EchoCellPrint @ ReplaceOptions[c, {Background -> RGBColor[1,0.95,0.95], CellDingbat -> "!"}];
 
 PrintBadCell[e_] :=
-  CellPrint @ Cell[e, "Text", Background -> RGBColor[1,0.95,0.95], CellDingbat -> "!"];
+  EchoCellPrint @ Cell[e, "Text", Background -> RGBColor[1,0.95,0.95], CellDingbat -> "!"];
 
 (**************************************************************************************************)
 

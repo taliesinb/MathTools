@@ -1,3 +1,12 @@
+PublicSpecialFunction[MakeTradBoxes]
+
+SetHoldAllComplete[MakeTradBoxes];
+
+MakeTradBoxes[e_] := MakeBoxes[e, TraditionalForm];
+
+(**************************************************************************************************)
+
+
 PrivateTypesettingBoxFunction[TBox, TBoxOp, SBox, RBox, GBox, KBox]
 
 TBox[args___, form_] := TemplateBox[{args}, form];
@@ -116,8 +125,8 @@ HatBox[box_] := KBox[OverscriptBox[box, "^"], "hat" @ box];
 PublicTypesettingFormBox[NoSpanForm, UnlimitedSpanForm]
 
 DefineStandardTraditionalForm[{
-  NoSpanForm[e_]        :> NoSpanBox @ MakeBoxes @ e,
-  UnlimitedSpanForm[e_] :> UnlimitedSpanBox @ MakeBoxes @ e
+  NoSpanForm[e_]        :> NoSpanBox @ MakeTradBoxes @ e,
+  UnlimitedSpanForm[e_] :> UnlimitedSpanBox @ MakeTradBoxes @ e
 }]
 
 PrivateTypesettingBoxFunction[ForceKatexCharBox]
@@ -132,8 +141,8 @@ ForceKatexCharBox[e_] := StyleBox[e, FontFamily -> "KaTeX_Main", PrivateFontOpti
 
 PublicTypesettingFormBox[RaiseForm, LowerForm]
 
-DefineStandardTraditionalForm[RaiseForm[e_, n_ ? NumericQ] :> RaiseBox[MakeBoxes @ e, n]];
-DefineStandardTraditionalForm[LowerForm[e_, n_ ? NumericQ] :> LowerBox[MakeBoxes @ e, n]];
+DefineStandardTraditionalForm[RaiseForm[e_, n_ ? NumericQ] :> RaiseBox[MakeTradBoxes @ e, n]];
+DefineStandardTraditionalForm[LowerForm[e_, n_ ? NumericQ] :> LowerBox[MakeTradBoxes @ e, n]];
 
 RaiseBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> -n];
 LowerBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> n];
@@ -143,7 +152,7 @@ LowerBox[e_, n_] := AdjustmentBox[e, BoxBaselineShift -> n];
 PublicTypesettingForm[AdjustmentForm]
 
 DefineStandardTraditionalForm[
-  AdjustmentForm[e_, b_] :> AdjustmentBox[MakeBoxes @ e, BoxMargins -> b]
+  AdjustmentForm[e_, b_] :> AdjustmentBox[MakeTradBoxes @ e, BoxMargins -> b]
 ];
 
 (**************************************************************************************************)
@@ -164,6 +173,12 @@ $PipeBox = KBox["|", "\\middle|"];
 PrivateTypesettingBoxFunction[FunctionBox]
 
 FunctionBox[e_] := KBox[e, "op"[e]];
+
+(**************************************************************************************************)
+
+PrivateTypesettingBoxFunction[SansSerifFunctionBox]
+
+SansSerifFunctionBox[e_] := FunctionBox @ SansSerifBox @ e;
 
 (**************************************************************************************************)
 
@@ -852,7 +867,7 @@ PublicSpecialFunction[DefineRuleAsMapsTo]
 setupFormDefinitionCaching[DefineRuleAsMapsTo];
 
 DefineRuleAsMapsTo[head_] := DefineStandardTraditionalForm[
-  head[l___, Rule[lhs_, rhs_], r___] :> MakeBoxes[head[l, MapsToForm[lhs, rhs], r]]
+  head[l___, Rule[lhs_, rhs_], r___] :> MakeTradBoxes[head[l, MapsToForm[lhs, rhs], r]]
 ]
 
 (**************************************************************************************************)
@@ -927,6 +942,25 @@ _DefineNamedFunctionSymbolForm := BadArguments[];
 
 (**************************************************************************************************)
 
+PublicSpecialFunction[DefineNamedSansSerifFunctionSymbolForm]
+
+setupFormDefinitionCaching[DefineNamedSansSerifFunctionSymbolForm];
+
+DefineNamedSansSerifFunctionSymbolForm[e_] := iDefineNamedSansSerifFunctionSymbolForm[e];
+
+iDefineNamedSansSerifFunctionSymbolForm = Case[
+  list_List                 := Map[%, list];
+  sym_Symbol                := %[sym -> ToLowerCase @ StringTrimRight[SymbolName @ sym, "Function"]];
+  sym_Symbol -> name_       := DefineStandardTraditionalForm[{
+    sym          :> SansSerifFunctionBox @ name,
+    sym[args___] :> ToBoxes @ AppliedForm[sym, args]
+  }];
+];
+
+_DefineNamedSansSerifFunctionSymbolForm := BadArguments[];
+
+(**************************************************************************************************)
+
 PrivateFunction[KConstruct]
 
 KConstruct[str_Str] := StringJoin["\\", str, " "];
@@ -970,11 +1004,11 @@ DefineStandardTraditionalForm[{
   IndexedForm[head_]                  :> MakeMathBoxes @ head,
   IndexedForm[head_, Null|None]       :> MakeMathBoxes @ IndexedForm[head],
   IndexedForm[head_, sub_]            :> SubscriptBox[MakeMathBoxes @ head, makeSubSupBoxes @ sub],
-  IndexedForm[head_, sub_, Null|None] :> MakeBoxes @ IndexedForm[head, sub],
+  IndexedForm[head_, sub_, Null|None] :> MakeTradBoxes @ IndexedForm[head, sub],
   IndexedForm[head_, sub_, sup_]      :> SubsuperscriptBox[MakeMathBoxes @ head, makeSubSupBoxes @ sub, makeSubSupBoxes @ sup],
   IndexedForm[head_, Null|None, sup_] :> SuperscriptBox[MakeMathBoxes @ head, makeSubSupBoxes @ sup],
-  (i_IndexedForm)[arg_]               :> RBox[MakeBoxes @ i, " ", MakeMathBoxes @ arg],
-  (i_IndexedForm)[arg_, cond_]        :> RBox[MakeBoxes @ i, " ", MakeMathBoxes @ SuchThatForm[arg, cond]]
+  (i_IndexedForm)[arg_]               :> RBox[MakeTradBoxes @ i, " ", MakeMathBoxes @ arg],
+  (i_IndexedForm)[arg_, cond_]        :> RBox[MakeTradBoxes @ i, " ", MakeMathBoxes @ SuchThatForm[arg, cond]]
 }]
 
 (**************************************************************************************************)
@@ -985,15 +1019,15 @@ setupFormDefinitionCaching[DefineLegacyIndexedForm];
 
 DefineLegacyIndexedForm[head_Symbol, boxes_] := DefineStandardTraditionalForm[{
   head                          :> boxes,
-  head[arg_, rest___]           :> MakeBoxes @ IndexedForm[RawBoxes @ boxes, rest][arg],
-  head[arg_, a_, b_, cond_] :> MakeBoxes @ IndexedForm[RawBoxes @ boxes, a, b][arg, cond]
+  head[arg_, rest___]           :> MakeTradBoxes @ IndexedForm[RawBoxes @ boxes, rest][arg],
+  head[arg_, a_, b_, cond_]     :> MakeTradBoxes @ IndexedForm[RawBoxes @ boxes, a, b][arg, cond]
 }]
 
 (**************************************************************************************************)
 
 SetHoldAllComplete[makeSubSupBoxes]
 makeSubSupBoxes = Case[
-  list_List := MakeBoxes @ SubstackForm @ list;
+  list_List := MakeTradBoxes @ SubstackForm @ list;
   e_        := MakeMathBoxes @ e;
 ];
 
@@ -1304,10 +1338,10 @@ toAlias[fn_] := StringJoin["\\", fn, " "];
 PrivateTypesettingBoxFunction[symbolBoxes]
 
 symbolBoxes = Case[
-  s:($symbolFormsP)   := MakeBoxes @ s;
+  s:($symbolFormsP)   := MakeTradBoxes @ s;
   InvertedForm[n_]    := % @ Inverted @ n;
   (* Inverted[n_]        := InvertedBoxForm @  % @ n; *)
-  f_PlainTextForm     := MakeBoxes @ f;
+  f_PlainTextForm     := MakeTradBoxes @ f;
   other_              := rawSymbolBoxes @ other;
 ];
 
@@ -1481,7 +1515,7 @@ MakeMathBoxes = Case[
   Text[t_]                  := MakeBoxes @ MathTextForm[t];
   Row[r:{___}]              := RowBox[% /@ r];
   Modulo[n_]                := MakeBoxes @ ModuloForm[n];
-  Invisible[n_]             := TemplateBox[List @ MakeBoxes @ n, "InvisibleForm"];
+  Invisible[n_]             := TemplateBox[List @ % @ n, "InvisibleForm"];
   {a_, b__}                 := MakeBoxes @ TupleForm[a, b];
   Composition[a___]         := MakeBoxes @ FunctionCompositionForm[a];
   RightComposition[a___]    := MakeBoxes @ RightFunctionCompositionForm[a];
@@ -1490,7 +1524,7 @@ MakeMathBoxes = Case[
   Subsuperscript[args__]    := makeSubSup[SubsuperscriptBox, args];
   (* below is used by DerivedArraySignatureForm, which applies PreformattedCode style and so doesn't want TemplateBoxes to intervene and override that style *)
   (head:(_String | _Subscript | _Superscript | _Subsuperscript))[args___] := RBox[% @ head, "(", RowBox[Riffle[Map[%, {args}], ","]], ")"];
-  other_                    := MakeBoxes @ other,
+  other_                    := MakeTradBoxes @ other,
   {binHeads -> $binaryRelationHeads,
    domainsP -> Alternatives[Integers, Reals, Rationals, Complexes, Naturals, PositiveNaturals, PositiveReals, UnitInterval, Primes]}
 ];

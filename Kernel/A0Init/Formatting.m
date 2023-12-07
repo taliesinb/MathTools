@@ -43,6 +43,13 @@ _DefineStandardTraditionalForm := BadArguments[];
 
 (**************************************************************************************************)
 
+PublicDebuggingFunction[PrintFormatDefinitions]
+
+PrintFormatDefinitions[sym_Symbol] :=
+  PrintDefinitions @ Select[FormatValues[MakeBoxes], ContainsQ[sym]];
+
+(**************************************************************************************************)
+
 PrivateSpecialFunction[declareBoxFormatting]
 
 PrivateVariable[$BoxFormattingHeadQ]

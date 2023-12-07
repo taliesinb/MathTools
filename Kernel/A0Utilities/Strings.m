@@ -259,6 +259,14 @@ ToNonDecoratedRoman[str_Str] := StringReplace[str, $toNonDecoratedRoman];
 
 (**************************************************************************************************)
 
+PublicFunction[ScriptToRoman]
+
+$scriptToRoman := $scrToRoman = toStringRules[$UnicodeScriptLetters, $RomanLetters];
+
+ScriptToRoman[str_Str] := StringReplace[str, $scriptToRoman];
+
+(**************************************************************************************************)
+
 PublicVariable[$LowercaseGreekLetters, $UppercaseGreekLetters, $GreekLetters]
 
 $LowercaseGreekLetters = "\[Alpha]\[Beta]\[Gamma]\[Delta]\[CurlyEpsilon]\[Epsilon]\[Zeta]\[Eta]\[Theta]\[Iota]\[Kappa]\[Lambda]\[Mu]\[Nu]\[Xi]\[Pi]\[Rho]\[Sigma]\[Tau]\[CurlyPhi]\[Phi]\[Chi]\[Psi]\[Omega]";

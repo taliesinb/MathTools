@@ -64,9 +64,7 @@ DefineStandardTraditionalForm[
 Rule exception tries to deal with that *)
 usingModernBoxes[sub_] := ToBoxes @ ReplaceAll[sub, {r_Rule :> r, s_String :> RuleCondition @ toModernStr @ s}];
 
-toModernStr[str_] := ModernForm @ StringReplace[str, $scrToRoman];
-
-$scrToRoman = ZipMap[Rule, Characters @ $UnicodeScriptLetters, Characters @ $RomanLetters];
+toModernStr[str_] := ModernForm @ ScriptToRoman @ str;
 
 (**************************************************************************************************)
 

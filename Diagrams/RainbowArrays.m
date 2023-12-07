@@ -407,7 +407,7 @@ NamedDiagram["RainbowArrays/MLPFunction"] :=
 DerivedArraySignatureForm["mlp", {Subscript["\:03f4", "1"] -> None, Subscript["\:03f4",2] -> None, "\[Ellipsis]"}, {ArrayShapeForm["I" -> {"N" -> 1}]}, ArrayShapeForm["O" -> {"M" -> 4}]] @
 ArrayCircuitGraphics @
 DerivedBubbleFunctionNode[{"t"} -> {"t"},
-  NodeColumn[sz = {4, 1.25}; sz2 = {4, 1};
+  NodeColumn[sz = {4, 1.25}; sz2 = {2, 1};
     {BubbleFunctionNode["SLP"[Subscript["\:03f4", 1]], "t" -> "t", sz, NodeAlias -> "a1"],
      BubbleFunctionNode["ReLU", "t" -> "t", sz2, NodeAlias -> "r1"],
      BubbleFunctionNode["SLP"[Subscript["\:03f4", 2]], "t" -> "t", sz, NodeAlias -> "a2"],

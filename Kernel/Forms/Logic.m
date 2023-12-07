@@ -1,7 +1,7 @@
 PublicTypesettingForm[ExistsForm, ForAllForm]
 
-existsBox[a_] := RBox["\[Exists]", "\[ThinSpace]", a];
-forAllBox[a_] := RBox["\[ForAll]", "\[ThinSpace]", a];
+existsBox[a_] := RBox["\[Exists]", "\[MediumSpace]", a];
+forAllBox[a_] := RBox["\[ForAll]", "\[MediumSpace]", a];
 
 (* TODO: replace part of this with DefineRestCommaForm *)
 
@@ -9,6 +9,7 @@ DefineStandardTraditionalForm[{
   ExistsForm[a_, rest__] :> TBox[MakeMathBoxes @ a, CommaRowBox @ MakeMathBoxSequence[rest], "ExistsForm"],
   ExistsForm[a_] :> TBox[MakeMathBoxes @ a, "UnconditionalExistsForm"],
   ExistsForm :> "\[Exists]",
+  ForAllForm[{a__}, rest__] :> TBox[CommaRowBox @ MakeMathBoxSequence[a], CommaRowBox @ MakeMathBoxSequence[rest], "WideForAllForm"],
   ForAllForm[a_, rest__] :> TBox[MakeMathBoxes @ a, CommaRowBox @ MakeMathBoxSequence[rest], "ForAllForm"],
   ForAllForm[a_] :> TBox[MakeMathBoxes @ a, "UnconditionalForAllForm"],
   ForAllForm :> "\[ForAll]"
@@ -16,8 +17,9 @@ DefineStandardTraditionalForm[{
 
 DefineTemplateBox[ExistsForm, "UnconditionalExistsForm", existsBox[$1], None];
 DefineTemplateBox[ForAllForm, "UnconditionalForAllForm", forAllBox[$1], None];
-DefineTemplateBox[ExistsForm, "ExistsForm", RBox[existsBox @ $1, OpBox @ ":", $2], None]
-DefineTemplateBox[ForAllForm, "ForAllForm", RBox[forAllBox @ $1, OpBox @ ":", $2], None]
+DefineTemplateBox[ExistsForm, "ExistsForm", RBox[existsBox @ $1, WideOpBox @ ":", $2], None]
+DefineTemplateBox[ForAllForm, "ForAllForm", RBox[forAllBox @ $1, WideOpBox @ ":", $2], None]
+DefineTemplateBox[ForAllForm, "WideForAllForm", RBox[forAllBox @ $1, VeryWideOpBox @ ":", $2], None]
 
 (**************************************************************************************************)
 
