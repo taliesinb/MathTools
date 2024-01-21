@@ -277,7 +277,7 @@ Protect[SystemOpen];
   metadata = obj["ResolvedMetadata", opts];
   UnpackAssociation[metadata, frameRate, frameCount, expressionHash];
   frameCount //= Round;
-  If[frameRate == Round[frameRate], frameRate //= Round];
+  frameRate //= RoundNear;
   path = File @ CacheVideoFilePath["ao", expressionHash, frameCount, frameRate];
   If[FileExistsQ[path], Video @ path,
     frames = obj["FrameList", opts];

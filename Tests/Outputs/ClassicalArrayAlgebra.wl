@@ -170,15 +170,15 @@ TestMarkdownObject["11yykikbtj7or.md"]
 
 TestMarkdownObject["1kgvc7r0gfqrw.md"]
 
-TestRasterObject["1ay5wcuryz6o1.png", "181gyuisbigeh.mx"]
+TestRasterObject["1rwxzzh6zu0dz.png", "0pyqbwe3xo3g7.mx"]
 
 TestMarkdownObject["16nrlhwhpafdz.md"]
 
-TestRasterObject["0tfk8vw49mq4v.png", "11w7n1h7kbvr7.mx"]
+TestRasterObject["1sdeab6c0lyma.png", "1xg4hpv2jlbq8.mx"]
 
 TestMarkdownObject["1i274ne1g814i.md"]
 
-TestRasterObject["0mvss2npb6hkb.png", "191cog1xcvfi0.mx"]
+TestRasterObject["1jwx0z0vo7xjf.png", "17zkgo4k2c81f.mx"]
 
 TestMarkdownObject["1l6vrp3yxonq3.md"]
 

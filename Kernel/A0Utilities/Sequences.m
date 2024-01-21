@@ -23,7 +23,7 @@ HoldSeqLength[]        := 0;
 HoldSeqLength[_]       := 1;
 HoldSeqLength[_, _]    := 2;
 HoldSeqLength[_, _, _] := 3;
-s_HoldSeqLength        := Len[s];
+s_HoldSeqLength        := Len[Unevaluated @ s];
 
 (**************************************************************************************************)
 

@@ -79,7 +79,7 @@ TestRaster @ NamedDiagram["Naturality/SquareGradient"]
 (*Moniodal categories*)
 
 
-plainRainbowTreeRasters[e_] := {TestRaster @ e, TestRaster @ RainbowCategoryForm @ e, TestRaster @ MonoidalTreeForm @ e};
+plainRainbowTreeRasters[e_] := {TestRaster @ e, TestRaster @ RainbowCategoryForm @ e, TestRaster @ MonoidalTreeForm[e, LabelFontSize -> 10]};
 
 
 plainRainbowTreeRasters @ NamedDiagram["Monoidal/Associator"]
@@ -233,3 +233,18 @@ TestRaster @ NamedDiagram["Whiskering/LeftImage"]
 
 
 TestRaster @ NamedDiagram["Whiskering/LeftResult"]
+
+
+(* ::Section:: *)
+(*Monoidal Functor*)
+
+
+mfMtf[e_] := TestRaster /@ {e, MonoidalTreeForm[e, LabelFontSize -> 10, FontSize -> 15]};
+
+mfMtf @ NamedDiagram["MonoidalFunctor/AssociatorSquare"]
+
+mfMtf @ NamedDiagram["MonoidalFunctor/RightUnitorSquare"]
+
+mfMtf @ NamedDiagram["MonoidalFunctor/LeftUnitorSquare"]
+
+mfMtf @ NamedDiagram["MonoidalFunctor/BraidingSquare"]

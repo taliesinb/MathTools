@@ -431,7 +431,7 @@ setupCases[sym_Symbol, echo_, pre_, CompoundExpression[args__SetDelayed, Null...
   ]
 ];
 
-Case::baddef = "Bad case definition for ``."
+Case::baddef = "Bad Case definition for ``."
 
 setupCases[sym_, ___] := Message[Case::baddef, sym];
 
@@ -450,6 +450,66 @@ Case[rules$$, {alias$1, alias$2, $$}] applies temporary aliases to the rules$ be
 * Use \[Rule] in an alias to have the RHS of the alias evaluate, and \[RuleDelayed] to perform a literal replacement.
 * Aliases can be thought of as 'local macros' that make a particular function definition cleaner or more concise.
 "
+
+(**************************************************************************************************)
+
+PublicScopingFunction[StringCase]
+
+SetUsage @ "
+StringCase[rules$$] is a macro similar to %Case but for strings."
+
+SetHoldAll[StringCase, setupStringCases]
+
+StringCase /: (Set|SetDelayed)[sym_Symbol[pre___], StringCase[args___]] := setupStringCases[sym, False, Hold[pre], args];
+StringCase /: (Set|SetDelayed)[sym_Symbol,         StringCase[args___]] := setupStringCases[sym, False, Hold[], args];
+
+(**************************************************************************************************)
+
+setupStringCases[a1_, a2_, a3_, arg_SetDelayed]                := setupStringCases[a1, a2, a3, CompoundExpression[arg], {}];
+setupStringCases[a1_, a2_, a3_, arg_SetDelayed, rewrites_List] := setupStringCases[a1, a2, a3, CompoundExpression[arg], rewrites];
+
+setupStringCases[a1_, a2_, a3_, CompoundExpression[args__SetDelayed, rewrites_List]] :=
+  setupStringCases[a1, a2, a3, CompoundExpression[args], rewrites];
+
+setupStringCases[sym_Symbol, echo_, pre:Hold[preseq___], CompoundExpression[args__SetDelayed, Null...], rewrites_:{}] := Module[
+  {holds, counter = 0, lhs}, With[{strVar = Symbol[QualifiedSymbolName[sym] <> "$str"]}, {strVarPatt = strVar_Str},
+  holds = Hold @@@ Hold[args];
+  lhs = If[pre === Hold[], Hold[sym[strVarPatt]], Hold[sym[preseq][strVarPatt]]];
+  holds = ReplaceAll[holds, procRewrites @ rewrites];
+  holds = ReplaceAll[holds, HoldPattern[Out[] | $]  :> sym];
+  If[echo, Print["StringCase Echo not supported yet."]];
+  toStringCasesReplaceExpr[lhs, strVar, Map[toStringCasesRule, List @@ holds] /. $globalSCVar -> strVar]
+]];
+
+StringCase::baddef = "Bad StringCase definition for ``."
+
+setupStringCases[sym_, ___] := Message[StringCase::baddef, sym];
+
+(**************************************************************************************************)
+
+toStringCasesReplaceExpr[lhs_, var_, {rule_}] :=
+  toStringCasesReplaceExpr[lhs, var, rule];
+
+toStringCasesReplaceExpr[Hold[lhs_], var_, rules_] :=
+  SetDelayed[lhs, Block[{}, StringReplace[var, rules]; None]];
+
+(**************************************************************************************************)
+
+toStringCasesRule[Hold[Verbatim[Pattern][globalVar_Symbol, lhs_], rhs_]] :=
+  toStringCasesRule[Hold[lhs, rhs]] /. globalVar :> $globalSCVar;
+
+toStringCasesRule[Hold[List[pattElems___], rhs_]] :=
+  StringExpression[StartOfString, pattElems, EndOfString] :> Return[rhs, Block];
+
+toStringCasesRule[Hold[StringExpression[pattElems___], rhs_]] :=
+  StringExpression[StartOfString, pattElems, EndOfString] :> Return[rhs, Block];
+
+toStringCasesRule[Hold[patt_, rhs_]] :=
+  StartOfString ~~ patt ~~ EndOfString :> Return[rhs, Block];
+
+StringCase::badrule = "Bad StringCase rule ``."
+
+toStringCasesRule[h_Hold] := (Message[StringCase::badrule, MsgExpr[RuleDelayed @@ h]]; Nothing);
 
 (**************************************************************************************************)
 

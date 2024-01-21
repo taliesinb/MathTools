@@ -411,6 +411,8 @@ processBlock = Case[
   StyleDecorated[s_, ListForm][e___]                  := delimBlock[{e}, "[]", s];
   StyleDecorated[s_, SetForm][e___]                   := delimBlock[{e}, "{}", s];
 
+  SubscriptForm[a_, b_]                               := % @ Subscript[a, b];
+  SubscriptForm[a_, b_, c__]                          := % @ Subscript[a, Row[{b, c}, ","]];
   (Subscript|SubscriptBox)[a_, b_]                    := % @ Row[{a, Style[b, "Subscript"]}, Alignment -> Bottom];
   (Superscript|SuperscriptBox)[a_, b_]                := % @ Row[{a, Style[b, "Superscript"]}, Alignment -> Top];
 

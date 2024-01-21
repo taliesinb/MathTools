@@ -10,6 +10,22 @@ NamedDiagram["Monoidal/Associator"] := CommutativeDiagram[{
 
 (**************************************************************************************************)
 
+NamedDiagram["Monoidal/Unitor"] := CommutativeDiagram[
+  {{1,1} -> MP[$OA, $OI], {2, 1} -> $OA, {3,1} -> MP[$OI, $OA]},
+  {1 \[DirectedEdge] 2 -> RightUnitorForm[$OA], 3 \[DirectedEdge] 2 -> LeftUnitorForm[$OA]},
+  FontSize -> 14
+];
+
+(**************************************************************************************************)
+
+NamedDiagram["Monoidal/Braiding"] := CommutativeDiagram[
+  {{1,1} -> MP[$OA, $OB], {2, 1} -> MP[$OB, $OA]},
+  {1 \[DirectedEdge] 2 -> BraidingForm[$OA, $OB]},
+  FontSize -> 14
+];
+
+(**************************************************************************************************)
+
 NamedDiagram["Monoidal/AssociatorTimesId"] := CommutativeDiagram[{
   {0, 0} -> "((AB)C)D" -> MP[MP[MP[$OA, $OB], $OC], $OD], {2,0} -> "(A(BC))D" -> MP[MP[$OA, MP[$OB, $OC]], $OD],
   Morphism[{"((AB)C)D", "(A(BC))D"}, MP[AssociatorForm[$OA, $OB, $OC], OneArrow[$OD]]]},
@@ -74,15 +90,17 @@ NamedDiagram["Monoidal/AssociatorIdentity"] := InTriangleDiagram[
 (**************************************************************************************************)
 
 NamedDiagram["Monoidal/BraidingIdentity"] := InTriangleDiagram[
-  {MP[$OA, $OI], MP[$OI, $OA], $OA},
-  {BraidingForm[$OA, $OI], LeftUnitorForm[$OA], RightUnitorForm[$OA]}
+  {MP[$OI, $OA], MP[$OA, $OI], $OA},
+  {BraidingForm[$OI, $OA], LeftUnitorForm[$OA], RightUnitorForm[$OA]},
+  FontSize -> 18
 ];
 
 (**************************************************************************************************)
 
 NamedDiagram["Monoidal/BraidingSelfInverse"] := InTriangleDiagram[
   {MP[$OA, $OB], MP[$OA, $OB], MP[$OB, $OA]},
-  {EqualityMorphism[], BraidingForm[$OA, $OB], Reversed @ BraidingForm[$OB, $OA]}
+  {EqualityMorphism[], BraidingForm[$OA, $OB], Reversed @ BraidingForm[$OB, $OA]},
+  FontSize -> 18
 ];
 
 

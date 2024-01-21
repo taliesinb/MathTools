@@ -37,36 +37,10 @@ PossibleFirstNameQ[str_Str] := $FirstNamesBloomFilter["CouldContain", ToLowerCas
 PossibleFullNameQ[str_Str] := Or[
   And[
     StringMatchQ[str, FullNamePhrase],
-    PossibleFirstNameQ[P1 @ StringSplit[str, " ", 2]]
+    PossibleFirstNameQ @ P1 @ StringSplit[str, " ", 2]
   ],
   MemberQ[$KnownAuthors, str]
 ];
-
-(**************************************************************************************************)
-
-PublicFunction[ExtractTitleAuthor]
-
-ExtractTitleAuthor[title_Str] := Scope[
-  person = None;
-  Scan[FirstStringCase[title, #]&, {
-    StartOfString ~~ t___ ~~ "(" ~~ Shortest[p___] ~~ ")" ~~ EndOfString :>
-      If[PossibleFullNameQ[p], person = p; title = t; Goto[Done]],
-    StartOfString ~~ Shortest[p___] ~~ (": " | " - " | " -- " | " --- " | " | ") ~~ t___ ~~ "" ~~ EndOfString :>
-      If[PossibleFullNameQ[p], person = p; title = t; Goto[Done]],
-    StartOfString ~~ t___ ~~ " - " ~~ p___ ~~ "" ~~ EndOfString :>
-      If[PossibleFullNameQ[p], person = p; title = t; Goto[Done]],
-    StartOfString ~~ p___ ~~ " \"" ~~ t___ ~~ "\"" ~~ EndOfString :>
-      If[PossibleFullNameQ[p], person = p; title = t; Goto[Done]],
-    StartOfString ~~ t___ ~~ p:(TitlecaseWord ~~ " " ~~ TitlecaseWord) ~~ " (" ~~ u___ ~~ ")" ~~ EndOfString :>
-      If[StringContainsQ[u, "university", IgnoreCase -> True] && PossibleFullNameQ[p], person = p; title = t; Goto[Done]],
-    StartOfString ~~ t1___ ~~ " - " ~~ p:FullNamePhrase ~~ " - " ~~ t2___ ~~ EndOfString :>
-      If[PossibleFullNameQ[p], person = p; title = StringJoin[t1, " - ", t2]; Goto[Done]]
-  }];
-  Return @ {None, None};
-  Label[Done];
-  title = StringTrim @ StringTrim[StringTrim @ title, "\"" | "\[OpenCurlyDoubleQuote]" | "\[CloseCurlyDoubleQuote]"];
-  {person, title}
-]
 
 (**************************************************************************************************)
 

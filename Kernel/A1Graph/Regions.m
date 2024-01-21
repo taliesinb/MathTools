@@ -576,7 +576,7 @@ findVertexIndices[e_] := Block[{failAuto = Fn[$Failed]}, iFindVertexIndices @ e]
 
 iFindVertexIndices = Case[
   IndexedVertex[i:{__Int} ? validVertexIndexQ] := i;
-  p:VertexPattern[v_]                              := MatchIndices[$VertexList, v, failAuto["invv", p]];
+  p:VertexPattern[v_]                              := MatchIndices[$VertexList, v];
   other_                                           := Replace[findVertex[other], i_Int :> {i}];
   list_List                                        := Scope[
     Which[

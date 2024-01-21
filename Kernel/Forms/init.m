@@ -1295,7 +1295,7 @@ FormToPlainString = Case[
 
 $plainStrNormalizationRules = {
   "\[RightArrow]"                       -> "->",
-  (head_Symbol ? $styleFormHeadQ)[arg_] :> arg;
+  (head_Symbol ? $styleFormHeadQ)[arg_] :> arg,
   GradientSymbol[sym_, ___]             :> sym,
   ColorGradientForm[sym_, ___]          :> sym,
   CompactHomForm[a_,b_]                 :> HomForm[a, b]
@@ -1310,6 +1310,7 @@ boxToString = Case[
   SuperscriptBox[e_, "\[Prime]"] := StringJoin[% @ e, "'"];
   SubscriptBox[e_, s_]           := StringJoin[% @ e, "_", % @ s];
   SuperscriptBox[e_, s_]         := StringJoin[% @ e, "^", % @ s];
+  OverscriptBox[e_, "^"]         := StringJoin[% @ e, "hat"];
   e_Str                          := If[StringMatchQ[e, "\"*\""], StringTake[e, {2, -2}], e];
   other_                         := $Failed;
 ];
@@ -1421,6 +1422,15 @@ declareBoxFormatting[
   RawSymbolForm[p_] :>
     rawSymbolBoxes @ p
 ];
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[SubscriptForm]
+
+DefineStandardTraditionalForm[{
+  SubscriptForm[a_, b_] :> ToBoxes @ Subscript[a, Padded[b, {0.15, 0}]],
+  SubscriptForm[a_, b_, c__] :> ToBoxes @ SubscriptForm[a, TightCommaRowForm[b, c]]
+}];
 
 (**************************************************************************************************)
 

@@ -8,6 +8,12 @@ Tau = 2 * Pi;
 
 (**************************************************************************************************)
 
+PublicFunction[RoundNear]
+
+RoundNear[n_] := If[n == Round[n], Round @ n, n];
+
+(**************************************************************************************************)
+
 PublicFunction[RescaleTo]
 
 RescaleTo[array_, range_] := Rescale[array, MinMax @ array, range]

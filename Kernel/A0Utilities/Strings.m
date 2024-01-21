@@ -134,6 +134,7 @@ StringFunction[template_Str] :=
   ] /. {StringExpression -> StringJoin, s_Slot :> TextString[s]};
 
 $stringFunctionSlotRules = {
+  "##" -> "#",
   "#" ~~ i:DigitCharacter :> Slot[FromDigits[i]],
   "#" ~~ w:LetterCharacter.. :> Slot[w]
 };
@@ -353,16 +354,25 @@ $classTranslations = {
 
 (**************************************************************************************************)
 
-PublicSymbol[ASCIIWord, LowercaseWord, TitlecaseWord, TitlecasePhrase, FullNamePhrase]
+PublicSymbol[ASCIIWord, Base64Pattern, LowercaseWord, TitlecaseWord, TitlecasePhrase, FullNamePhrase]
 
 declareStringPattern[
   Word            :> """\b(?:[[:alpha:]]+?)(?:'s|n't)?\b""",
+  Base64Pattern   :> """[A-Za-z0-9+/]+={0,2}""",
   ASCIIWord       :> """\b(?:[a-zA-Z0-9]+?)\b""",
   LowercaseWord   :> "\\b[[:lower:]]+\\b",
   TitlecaseWord   :> "\\b[[:upper:]][[:lower:]]+\\b",
   TitlecasePhrase :> """\b[[:upper:]][[:lower:]]+(?: (?:of |or |and |in |on |the |by |a |the )?[[:upper:]][[:lower:]]+)*\b""",
   FullNamePhrase  :> """\b[[:upper:]][[:lower:]]+(?: [[:upper:]]\.?)*(?: van| der| de| von| st| del)*(?: [[:upper:]][[:lower:]]+\b)+"""
 ];
+
+(**************************************************************************************************)
+
+PublicHead[CaseInsensitive]
+
+declareStringPattern[
+  CaseInsensitive[lhs_] :> spBlob["(?i)", spRecurse @ lhs, "(?-i)"]
+]
 
 (**************************************************************************************************)
 
@@ -392,7 +402,7 @@ declareStringPattern[
   ParentheticalPhrase      :> spBlob["""(?<!\S)\(□\)"""],
   SingleQuotedPhrase       :> spBlob["""(?<!\S)(?:'□')|(?:‘□’)"""],
   DoubleQuotedPhrase       :> spBlob["""(?<!\S)(?:"□")|(?:“□”)"""],
-  HyperlinkPattern         :> spBlob["""(?<!\S)https?://[[:alnum:]-]+(?:\.[[:alnum:]-]+)*(?:/[[:alnum:]-_.]*)*(?:\?[[:alnum:]=&+%-.]+)?"""]
+  HyperlinkPattern         :> spBlob["""\bhttps?://[[:alnum:]-]+(?:\.[[:alnum:]-]+)*(?:/[[:alnum:]~\-_.]*)*(?:\?[[:alnum:]=&+%-._]+)?"""]
 ];
 
 (**************************************************************************************************)
@@ -408,6 +418,60 @@ declareStringPattern[
   MarkdownInlineCodePattern :> "`□`",
   MarkdownBlockCodePattern  :> "^```[^`]+\n```",
   MarkdownEmphasisPattern   :> $emphasisFragment
+];
+
+(**************************************************************************************************)
+
+PublicHead[RecentYearPattern]
+
+$recentYearRE = """(?:20[012]\d)""";
+
+declareStringPattern[
+  RecentYearPattern :> $recentYearRE
+];
+
+(**************************************************************************************************)
+
+PublicHead[NumericDatePattern]
+
+$longYearRE  = """(?:(?:19|20)\d\d)""";
+$shortYearRE = """(?:[012789]\d)""";
+$yearRE      = "(?:" <> $longYearRE <> "|" <> $shortYearRE <>")";
+$monthRE     = """(?:0?[1-9]|1[012])""";
+$dayRE       = """(?:0?[1-9]|[12]\d|3[01])""";
+
+dateSep[args__] := Splice[StringJoin[Riffle[{args}, #]]& /@ {"/", "-"}];
+
+(* YMD, MDY, DMY according to https://en.wikipedia.org/wiki/Date_format_by_country *)
+
+$numericDatePatternRE = """(?<![-/0-9])(?:""" <> Riffle[{
+  dateSep[$longYearRE, $monthRE, $dayRE],
+  dateSep[$longYearRE, $monthRE],
+  dateSep[$monthRE, $longYearRE],
+  dateSep[$dayRE, $dayRE, $yearRE]
+}, "|"] <> """)(?![-/0-9])""";
+
+declareStringPattern[
+  NumericDatePattern :> $numericDatePatternRE
+];
+
+(**************************************************************************************************)
+
+PublicHead[SpelledDatePattern]
+
+$spelledMonthRE = "(?:Jan|January|Feb|February|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)";
+
+dateSep2[args__] := Splice[StringJoin[Riffle[{args}, #]]& /@ {"/", "-", ",", ", ", " "}];
+
+$spelledDatePatternRE = """(?<![-/0-9])(?:""" <> Riffle[{
+  StringJoin[$spelledMonthRE, " ", $dayRE, ",? ", $yearRE],
+  StringJoin[$dayRE, " ", $spelledMonthRE, ",? ", $yearRE],
+  StringJoin[$spelledMonthRE, "[ -]", $longYearRE],
+  StringJoin[$longYearRE, "[ -]", $spelledMonthRE]
+}, "|"] <> """)(?![-/0-9])""";
+
+declareStringPattern[
+  SpelledDatePattern :> $spelledDatePatternRE
 ];
 
 (**************************************************************************************************)

@@ -1209,7 +1209,7 @@ arr = {{{1, 1, 0, 2}, {0, 0, 0, 0}}, {{2, 1, 1, 0}, {0, 0, 2, 2}}};
 arr2 = Total[arr, {2}];
 StringBlockForm[Row[{Subscript["sum", Color2Form @ 2], NAF[highlight1[2, All, 3] @ highlight2[1, All, 1] @ arr, "Column" -> 1, "Grid" -> {2, 3}], " = ",
 	NAF[highlight1[2, 3] @ highlight2[1, 1] @ arr2, "Grid" -> {1, 3}]}, Alignment -> Top], StylingFunction -> "Input"];
-TestMarkdown @ StringBlockForm @ StringForm["`` `` = ``", Subscript["sum", Color2Form @ 2], NAF[arr, "Column" -> 1, "Grid" -> {2, 3}], 
+TestMarkdown @ StringBlockForm @ StringForm["`` `` = ``", Subscript["sum", Color2Form @ 2], NAF[arr, "Column" -> 1, "Grid" -> {2, 3}],
 	NAF[arr2, "Column" -> {1, 1, 0}, "Row" -> 3]]
 
 
@@ -1234,19 +1234,19 @@ plotCube[body_, {m_, n_, p_}, col_, sz_, opts___Rule] := NeutralGraphics3D[
 TestRaster @ SpacedColumn[
 	SpacedRow[
 		plotCube[g == b == 1, {2, 2, 4}, $Red, 150],
-		Pane @ Labeled[MakeArrow[50, 10, 2, $Gray], Subscript["sum", Color1Form @ 1]],
+		Pane @ Labeled[MakeArrow[50, 10, 2, $Gray], SubscriptForm["sum", Color1Form @ 1]],
 		plotCube[g == b == 1, {1, 2, 4}, $Red, 115, Ticks -> {Style[Right, $Green], Style[TopRight, $Blue], None}],
 		Spacings -> 30
 	],
 	SpacedRow[
 		plotCube[r == g == 1, {2, 2, 4}, $Blue, 150],
-		Pane @ Labeled[MakeArrow[50, 10, 2, $Gray], Subscript["sum", Color2Form @ 2]],
+		Pane @ Labeled[MakeArrow[50, 10, 2, $Gray], SubscriptForm["sum", Color2Form @ 2]],
 		plotCube[r == g == 1, {2, 1, 4}, $Blue, 115, Ticks -> {Style[Right, $Green], None, Style[TopLeft, $Red]}],
 		Spacings -> 30
 	],
 	SpacedRow[
 		plotCube[r == b == 1, {2, 2, 4}, $Green, 150],
-		Pane @ Labeled[MakeArrow[50, 10, 2, $Gray], Subscript["sum", Color3Form @ 3]],
+		Pane @ Labeled[MakeArrow[50, 10, 2, $Gray], SubscriptForm["sum", Color3Form @ 3]],
 		plotCube[r == b == 1, {2, 2, 1}, $Green, 140, Ticks -> {None, Style[TopRight, $Blue], Style[TopLeft, $Red]}],
 		Spacings -> 30
 	],
@@ -1259,7 +1259,7 @@ TestRaster @ SpacedColumn[
 
 
 arr = {{{1, 1, 0, 2}, {0, 0, 0, 0}}, {{2, 1, 1, 0}, {0, 0, 2, 2}}};
-sum23 = Subscript["sum", Row[{Color2Form @ 2, ",", Color3Form @ 3}]];
+sum23 = SubscriptForm["sum", TightCommaRowForm[Color2Form @ 2, Color3Form @ 3]];
 TestMarkdown @ StringBlockForm @ StringForm["`` `` = ``", sum23, 
 	NAF[HighlightBackgroundAt[6, 1, All, All] @ arr, "Column" -> 1, "Grid" -> {2, 3}],
 	NAF[HighlightBackgroundAt[6, 1] @ Total[arr, {2, 3}], "Column" -> {1,1,2}]]
@@ -1273,7 +1273,7 @@ TestRaster @ SpacedRow[
 	]
 
 
-sum123 = Subscript["sum", Row[{Color1Form @ 1, ",", Color2Form @ 2, ",", Color3Form @ 3}]];
+sum123 = SubscriptForm["sum", TightCommaRowForm[Color1Form @ 1, Color2Form @ 2, Color3Form @ 3]];
 TestMarkdown @ StringBlockForm @ StringForm["`` `` = ``", sum123, 
 	NAF[HighlightBackgroundAt[7, All, All, All] @ arr, "Column" -> 1, "Grid" -> {2, 3}],
 	HighlightBackgroundAt[7] @ Total[Flatten @ arr]]
@@ -1321,7 +1321,7 @@ TestMarkdown @ Cell[
 
 arr = {{2, 1, 1, 0}, {0, 0, 2, 3}};
 TestMarkdown @ StringBlockForm @ StringForm["`` `` = ``",
-	Subscript["max", Color1Form @ 1],
+	SubscriptForm["max", Color1Form @ 1],
 	NAF[HighlightBackgroundAt[1, All, 4] @ arr, "Grid" -> {1, 2}],
 	NAF[HighlightBackgroundAt[1, 4] @ ArrayReduce[Max, arr, {1}], "Row" -> 2]
 ]
@@ -1365,7 +1365,7 @@ TestMarkdown @ Cell[
 
 arr = {{2, 1, 1, 0}, {0, 0, 2, 3}};
 TestMarkdown @ StringBlockForm @ StringForm["`` `` = ``",
-	Subscript["max", Color2Form @ 2],
+	SubscriptForm["max", Color2Form @ 2],
 	NAF[HighlightBackgroundAt[2, 2, All] @ arr, "Grid" -> {1, 2}],
 	NAF[HighlightBackgroundAt[2, 2] @ ArrayReduce[Max, arr, {2}], "Column" -> 1]
 ]

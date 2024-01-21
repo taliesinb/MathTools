@@ -117,6 +117,8 @@ ExpressionTreeGraphVertexShape[assoc_] := Scope[
 
 PublicFunction[NestedListGraph]
 
+Options[NestedListGraph] = Options[ExtendedGraph];
+
 NestedListGraph[e_, rules:OptionsPattern[]] := Scope[
   makeTreeGraph[e, scanExpression, "NestedListGraph", rules]
 ];
@@ -138,6 +140,8 @@ DefineGraphTheme["NestedListGraph",
 (**************************************************************************************************)
 
 PublicFunction[RainbowTree]
+
+Options[RainbowTree] = Options[ExtendedGraph];
 
 RainbowTree[e_, rules:OptionsPattern[]] := Scope[
   makeTreeGraph[e, scanExpression, "RainbowTree", rules]

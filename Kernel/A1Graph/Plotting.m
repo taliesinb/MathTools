@@ -1167,15 +1167,16 @@ lookupPrimitiveAnnotationData[type_, field_, default_] :=
 $emptySizeInfo = <|"PlotRange" -> 0, "ImageSize" -> 0, "Fraction" -> 0|>;
 
 findVertexList = Case[
-  All := Range @ $VertexCount;
-  spec_List := Map[findVertex, spec];
-  spec_ := ToList @ findVertex @ spec;
+  All             := Range @ $VertexCount;
+  p_VertexPattern := findVertexIndices @ p;
+  spec_List       := Map[findVertex, spec];
+  spec_           := ToList @ findVertex @ spec;
 ];
 
 findEdgeList = Case[
-  All := Range @ $EdgeCount;
+  All       := Range @ $EdgeCount;
   spec_List := Catenate @ Map[findEdge, spec];
-  spec_ := ToList @ findEdge @ spec
+  spec_     := ToList @ findEdge @ spec
 ];
 
 applyGVFunc[s_Str, a_] := Lookup[a, s];

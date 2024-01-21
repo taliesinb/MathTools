@@ -1,5 +1,9 @@
 TestRaster @ NamedDiagram["Monoidal/Associator"]
 
+TestRaster @ NamedDiagram["Monoidal/Unitor"]
+
+TestRaster @ NamedDiagram["Monoidal/Braiding"]
+
 TestRaster @ NamedDiagram["Monoidal/AssociatorTimesId"]
 
 TestRaster @ NamedDiagram["Monoidal/Pentagon"]

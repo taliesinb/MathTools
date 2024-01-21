@@ -350,7 +350,7 @@ loadShortcutGroup["Categories"] := (
   decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzstABCDEIJUVWMNLPRSTXYZ"];
   symbolTable["$IdA#",            IdArrow[CategoryObjectSymbol[#]]&,          "01abcdeuvwxyzstABCDEIJUVWMNPXYZST"];
   decSymTable["$NT#",             NaturalTransformationSymbol,                "\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]\[Gamma]\[Delta]\[Epsilon]\[Sigma]\[Phi]"];
-  decSymTable["$A#",              CategoryArrowSymbol,                        "01efghjklmnpqrstuvwILMNR\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]\[Sigma]\[Phi]"];
+  decSymTable["$A#",              CategoryArrowSymbol,                        "01abcdefghjklmnpqrstuvwILMNR\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]\[Sigma]\[Phi]"];
   symbolTable["$1A#",             OneArrow[CategoryObjectSymbol[#]]&,         "abcdeuvwxyzstABCDEIUVWMNPXYZST"];
 
   makeSym["Iso",                  IsomorphicForm];

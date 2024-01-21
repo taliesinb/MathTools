@@ -37,6 +37,28 @@ PublicTypesettingForm[FilledCircleMonoidalProductForm, EmptyCircleMonoidalProduc
 DefineInfixForm[FilledCircleMonoidalProductForm, OpBox @ "\[FilledCircle]"]
 DefineInfixForm[EmptyCircleMonoidalProductForm, OpBox @ "\[EmptyCircle]"]
 
+PublicTypesettingForm[ColoredCircleMonoidalProductForm]
+
+DefineStandardTraditionalForm[{
+  ColoredCircleMonoidalProductForm[color_] :> StyleBox[OpBox @ "\[FilledCircle]", color],
+  cmp_ColoredCircleMonoidalProductForm[args___] :> RiffledBox[ToBoxes @ cmp][MakeMathBoxSequence[args]]
+}];
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[ColoredCircleMonoidalProductModifierForm]
+
+DefineStandardTraditionalForm[{
+  ColoredCircleMonoidalProductModifierForm[e_, White] :>
+    ToBoxes @ rewriteMonoidalProductTo[EmptyCircleMonoidalProductForm] @ e,
+  ColoredCircleMonoidalProductModifierForm[e_, Black] :>
+    ToBoxes @ rewriteMonoidalProductTo[FilledCircleMonoidalProductForm] @ e,
+  ColoredCircleMonoidalProductModifierForm[e_, color_] :>
+   ToBoxes @ rewriteMonoidalProductTo[ColoredCircleMonoidalProductForm[color]] @ e
+}];
+
+rewriteMonoidalProductTo[new_] := ReplaceAll[{e_ColoredCircleMonoidalProductModifierForm -> e, MonoidalProductForm -> new}];
+
 (**************************************************************************************************)
 
 PublicTypesettingForm[NaryMonoidalFunctionForm]
@@ -237,6 +259,17 @@ DefineNamedSansSerifFunctionSymbolForm[{
   SkeletonCategoryForm -> "Skel"
 }];
 
+(**************************************************************************************************)
+
+PublicTypesettingForm[MonoidalUnitSymbol]
+
+DefineSymbolForm[MonoidalUnitSymbol -> "I"]
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[RelativeToCategoryForm]
+
+DefineBinaryForm[RelativeToCategoryForm, SubscriptBox[$1, $2]]
 
 (**************************************************************************************************)
 
@@ -302,25 +335,45 @@ DefineBinaryForm[ImplicitAppliedForm, RBox[$1, $2]]
 
 (**************************************************************************************************)
 
+PublicTypesettingForm[MonoidalFunctorUnitSymbol, MonoidalFunctorMultiplicationForm]
+
+DefineSymbolForm[MonoidalFunctorUnitSymbol -> "\[Phi]"]
+
+DefineStandardTraditionalForm[{
+  MonoidalFunctorMultiplicationForm :> MakeMathBoxes[NaturalTransformationSymbol["\[Phi]"]],
+  MonoidalFunctorMultiplicationForm[a_, b_] :> MakeMathBoxes[NaturalTransformationSymbol["\[Phi]"][a,b]]
+}];
+
+(**************************************************************************************************)
+
 PublicTypesettingForm[MonoidalTreeForm]
 
 DefineStandardTraditionalForm[{MonoidalTreeForm[e_, opts___Rule] :> monoidalTreeFormBoxes[e, opts]}];
 
-monoidalTreeFormBoxes[cd_CommutativeDiagram, ___] :=
+monoidalTreeFormBoxes[cd_CommutativeDiagram, opts___Rule] := ModuleScope[
+  labelFontSize = Lookup[{opts}, LabelFontSize, LookupOption[cd, LabelFontSize]];
+  fontSize = Lookup[{opts}, FontSize, LookupOption[cd, FontSize]];
+  SetAutomatic[fontSize, LookupOption[CommutativeDiagram, FontSize]];
+  SetAutomatic[labelFontSize, LookupOption[CommutativeDiagram, LabelFontSize]];
+  SetScaledFactor[labelFontSize, fontSize];
   ToBoxes @ Append[cd, TextModifiers -> <|
-    "Objects"   -> MonoidalTreeForm,
-    "Morphisms" -> Fn[label, MonoidalTreeForm[label, GraphicsScale -> 10, VertexSize -> 4]]
+    "Objects"   -> Fn[label, MonoidalTreeForm[label, FontSize -> fontSize]],
+    "Morphisms" -> Fn[label, MonoidalTreeForm[label, FontSize -> labelFontSize]]
   |>]
+];
 
-monoidalTreeFormBoxes[e_, opts___Rule] :=
-  ToBoxes @ MonoidalTree[e, opts];
+monoidalTreeFormBoxes[e_, opts___Rule] := Scope[
+  fontSize = Lookup[{opts}, FontSize, Automatic];
+  If[NumberQ[fontSize], opts = Sequence[opts, GraphicsScale -> fontSize, VertexSize -> Ceiling[fontSize / 3 + 0.5]]];
+  ToBoxes @ MonoidalTree[e, opts]
+];
 
 (**************************************************************************************************)
 
 PublicFunction[MonoidalTree]
 
 MonoidalTree[e_, opts___Rule] := Scope[
-  $epilog = {};
+  $epilog = {}; $monoidalProductColor = None;
   treeList = toMonoidalTreeList[e, {}];
   RainbowTree[
     treeList,
@@ -331,8 +384,9 @@ MonoidalTree[e_, opts___Rule] := Scope[
       FilterOptions[TreeVertexLayout, opts]
     },
     Epilog -> $epilog,
-    opts,
-    GraphicsScale -> 15
+    FilterOptions[opts],
+    GraphicsScale -> 15,
+    PlotRangePadding -> If[ContainsQ[$epilog, BoundingRectangle], .3, 0]
   ]
 ];
 
@@ -340,8 +394,41 @@ MonoidalTree[e_, opts___Rule] := Scope[
 
 toMonoidalTreeList = Case[
 
-  Seq[(MonoidalProductForm|TightMonoidalProductForm)[args__], pos_] :=
-    MapIndexStack[%, pos, {args}];
+  Seq[(MonoidalProductForm|TightMonoidalProductForm)[args__], pos_] := (
+    addMonoidalProductDecoration[pos, $monoidalProductColor];
+    MapIndexStack[%, pos, {args}]
+  );
+
+  Seq[FunctorSymbol[sym_][arg_], pos_] := (
+    addFunctorDecoration[pos, sym];
+    %[arg, pos]
+  );
+
+  Seq[ParenthesesForm[a_], pos_] := %[a, pos];
+
+  Seq[(h:FilledCircleMonoidalProductForm|EmptyCircleMonoidalProductForm)[args__], pos_] := (
+    addMonoidalProductDecoration[pos, If[h === FilledCircleMonoidalProductForm, $Black, $White]];
+    MapIndexStack[%, pos, {args}]
+  );
+
+  Seq[ColoredCircleMonoidalProductModifierForm[arg_, color_], pos_] := (
+    $monoidalProductColor = color;
+    %[arg, pos]
+  );
+
+  Seq[MonoidalFunctorUnitSymbol, pos_] := (
+    addPhiDecoration1[pos];
+    -1
+  );
+
+  Seq[MonoidalFunctorMultiplicationForm[a_, b_], pos_] := (
+    addPhiDecoration2[pos];
+    MapIndexStack[%, pos, {a, b}]
+  );
+
+  Seq[RelativeToCategoryForm[e_, _], pos_] := %[e, pos];
+
+  Seq[MonoidalUnitSymbol, pos_] := -1;
 
   Seq[color:($ColorPattern | _Int), _] := color;
 
@@ -351,26 +438,31 @@ toMonoidalTreeList = Case[
     ToRainbowInteger @ sym;
 
   Seq[AssociatorForm[a_, b_, c_], pos_] := (
+    addMonoidalProductDecoration[pos, $monoidalProductColor];
     addAssociatorDecoration[pos, False];
     MapIndexStack[%, pos, {a, b, c}]
   );
 
  Seq[InverseForm[AssociatorForm[a_, b_, c_]], pos_] := (
+    addMonoidalProductDecoration[pos, $monoidalProductColor];
     addAssociatorDecoration[pos, True];
     MapIndexStack[%, pos, {a, b, c}]
   );
 
  Seq[BraidingForm[a_, b_], pos_] := (
+    addMonoidalProductDecoration[pos, $monoidalProductColor];
     addBraidingDecoration[pos];
     MapIndexStack[%, pos, {a, b}]
   );
 
  Seq[LeftUnitorForm[a_], pos_] := (
+    addMonoidalProductDecoration[pos, $monoidalProductColor];
     addUnitorDecoration[pos, 1];
     MapIndexStack[%, pos, {-1, a}]
   );
 
  Seq[RightUnitorForm[a_], pos_] := (
+    addMonoidalProductDecoration[pos, $monoidalProductColor];
     addUnitorDecoration[pos, 2];
     MapIndexStack[%, pos, {a, -1}]
   );
@@ -409,26 +501,77 @@ symbolToRainbowSymbol[s_] := Style["\[FilledCircle]", ToRainbowColor @ ToRainbow
 
 (**************************************************************************************************)
 
-addUnitorDecoration[pos_, i_] := AppendTo[$epilog,
+addDecoration[e_] := AppendTo[$epilog, e];
+
+$rrOpt = 0.25;
+
+addPhiDecoration1[pos_] := addDecoration @
   Line[
-    GraphicsValue[{"VertexCoordinates", {Append[pos, i]}}, P1 /* Fn[{{-.2, .4} + #, {.2, .4} + #}]]
-  ]
+    GraphicsValue[{"VertexCoordinates", {pos}}, P1 /* Fn[{{-.2, -.2} + #, {.2, .2} + #}]]
+  ];
+
+addPhiDecoration1[pos_] :=
+  addFunctorDecoration[pos, "F", EdgeForm[{$Gray, AbsoluteThickness[.5], AbsoluteDashing[{2, 2}]}]];
+
+addPhiDecoration2[pos_] := (
+  addDiskDecoration[pos, $LightGray];
+  addDecoration @ GraphicsValue[{"VertexCoordinates", VertexPattern @ Append[pos, Repeated[_, {0, 1}]]}, CoordinateBounds[#, .35]& /* phiDec2];
+);
+
+addPhiDecoration2[pos_] := (
+  addDiskDecoration[pos, $LightGray];
+  addFunctorDecoration[Append[pos, 1], "F"];
+  addFunctorDecoration[Append[pos, 2], "F"];
+  addFunctorDecoration[pos, "F", EdgeForm[{$Gray, AbsoluteThickness[.5], AbsoluteDashing[{2, 2}]}]];
+  (* addDecoration @ GraphicsValue[{"VertexCoordinates", VertexPattern @ Append[pos, Repeated[_, {0, 1}]]}, CoordinateBounds[#, .35]& /* phiDec2]; *)
+);
+
+phiDec2[{{x1_, x2_}, {y1_, y2_}}] := {
+  Style[Rectangle[{x1, y1}, {x2, y2 - .8}, RoundingRadius -> $rrOpt], FaceEdgeForm[None, $Gray]],
+  Style[Rectangle[{x1, y1}, {x2, y2 + .2}, RoundingRadius -> $rrOpt], FaceEdgeForm[None, $Gray]],
+  Style[Rectangle[{x1, y1}, {x2, y2 - 1}, RoundingRadius -> $rrOpt], FaceForm @ None, EdgeForm[{White, AbsoluteThickness[2]}]]
+};
+
+phiDec2[{{x1_, x2_}, {y1_, y2_}}] := {
+  Style[RollingCurve[{{x1, y2 - .8}, {x1, y2 + .1}, {x2, y2 + .1}, {x2, y2 - .8}}, BendRadius -> $rrOpt], $Gray, Dashing[{.05, .05}]],
+  Style[Line[{{x1, y2 - .8}, {x2, y2 - .8}}], $Gray]
+};
+
+addMonoidalProductDecoration[pos_, None] := Null;
+addMonoidalProductDecoration[pos_, color_] := addDiskDecoration[pos, color];
+
+addDiskDecoration[pos_, fc_] := addDecoration @
+  Style[
+    Disk[GraphicsValue[{"VertexCoordinates", {pos}}, P1], .2],
+    FaceEdgeForm[fc, Darker[fc, .5]]
+  ];
+
+addFunctorDecoration[pos_, sym_, opts___] := addDecoration @ Style[
+  BoundingRectangle[
+    GraphicsValue[{"VertexCoordinates", VertexPattern @ Append[pos, ___]}, CoordinateBounds[#, .33]&],
+    RoundingRadius -> $rrOpt
+  ],
+  FaceForm[None], EdgeForm[{AbsoluteThickness[1], $Gray}], opts
 ];
 
+addUnitorDecoration[pos_, i_] := addDecoration @
+  Line[
+    GraphicsValue[{"VertexCoordinates", {Append[pos, i]}}, P1 /* Fn[{{-.2, .4} + #, {.2, .4} + #}]]
+  ];
+
 (* TODO: use NamedIcon instead here *)
-addAssociatorDecoration[pos_, isRev_] := AppendTo[$epilog, {
+addAssociatorDecoration[pos_, isRev_] := addDecoration @ {
   associatorArrowhead[Append[pos, If[isRev, 3, 1]],  {0, 1}/4],
   associatorArrowhead[Append[pos, If[isRev, 1, 3]], -{0, 1}/4]
-}];
+};
 
 associatorArrowhead[pos_, dir_] := Arrowhead[
   GraphicsValue[{"VertexCoordinates", {pos}}, P1 /* PlusOperator[{0, .5}]], dir,
   ArrowheadColor -> $Black, ArrowheadShape -> "Arrow", ArrowheadAnchor -> Center
 ];
 
-addBraidingDecoration[vertex_] := AppendTo[$epilog,
-  Text["\[LeftRightArrow]", GraphicsValue[{"VertexCoordinates", {vertex}}, P1], {-0.1, 1}, BaseStyle -> {FontSize -> 9}]
-];
+addBraidingDecoration[vertex_] := addDecoration @
+  Text["\[LeftRightArrow]", GraphicsValue[{"VertexCoordinates", {vertex}}, P1], {-0.1, .9}, BaseStyle -> {FontSize -> 9}];
 
 (**************************************************************************************************)
 

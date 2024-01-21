@@ -114,7 +114,7 @@ Options[CommutativeDiagram] = JoinOptions[
   Setback                -> Automatic,
   AutoSetback            -> True,
   DebugBounds            -> False,
-  LabelFontSize          -> 18,
+  LabelFontSize          -> Scaled[9/10],
   FontFamily             :> $MathFont,
   FontSize               -> 20,
   TextModifiers          -> {},
@@ -214,6 +214,9 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
 
   $toHigherPath = toHigherPath;
   $clonesExist = Len[$cloneChildren] > 0;
+  SetScaledFactor[labelFontSize, fontSize];
+  labelFontSize //= RoundNear;
+  fontSize //= RoundNear;
   $currentDiagramFontSize = labelFontSize;
   If[$saveMorphGradColors, saveMorphismGradColors @ items];
 

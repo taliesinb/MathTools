@@ -185,7 +185,8 @@ _diffExpr := BadArguments[];
 diffArray[a_HoldComplete, b_HoldComplete] /; a === b := False;
 
 (* these are packed and so we don't care about evaluation *)
-diffArray[HoldComplete[a_List], HoldComplete[b_List]] := Scope[
+diffArray[HoldComplete[a_List], HoldComplete[b_List]] := Module[
+  {dims1, dims2, depth1, depth2, counts},
   dims1 = Dimensions @ a; depth1 = Len @ dims1;
   dims2 = Dimensions @ b; depth2 = Len @ dims2;
   withCrumb[$ArrayCrumb[],
@@ -218,7 +219,8 @@ diffScalar[{a_, b_}, pos_] := withSubCrumb[
 
 diffArgs[args1_HoldComplete, args2_HoldComplete] /; args1 === args2 := False;
 
-diffArgs[args1_HoldComplete, args2_HoldComplete] := Scope[
+diffArgs[args1_HoldComplete, args2_HoldComplete] := Module[
+  {len1, len2},
   len1 = Len @ args1;
   len2 = Len @ args2;
   Which[
@@ -255,7 +257,8 @@ diffAssoc[HoldComplete[a_Assoc], HoldComplete[b_Assoc]] :=
     diffKeys[1, assocToEntries @ a, assocToEntries @ b]
   ];
 
-assocToEntries[assoc_Assoc] := Scope[
+assocToEntries[assoc_Assoc] := Module[
+  {pairs},
   pairs = HoldComplete @@ KeyValueMap[HoldComplete, assoc];
   VectorReplace[pairs, HoldComplete[k_, v_] :> (k -> v)]
 ];
@@ -264,7 +267,8 @@ _diffAssoc := BadArguments[];
 
 (**************************************************************************************************)
 
-diffKeys[startIndex_, entries1_HoldComplete, entries2_HoldComplete] := Scope[
+diffKeys[startIndex_, entries1_HoldComplete, entries2_HoldComplete] := Module[
+  {len1, len2, keys1, keys2},
 
   len1 = Len @ entries1; keys1 = holdKeys @ entries1;
   len2 = Len @ entries2; keys2 = holdKeys @ entries2;
@@ -299,3 +303,38 @@ diffKeys[startIndex_, entries1_HoldComplete, entries2_HoldComplete] := Scope[
   True
 ];
 
+(**************************************************************************************************)
+
+PublicFunction[ShowSequenceAlignment]
+
+lineSplit[e_] := StringSplit[e, "\n"];
+lineJoin[e_] := StringRiffle[e, "\n"];
+
+ShowSequenceAlignment[a_Str, b_Str] := Scope[
+  a = lineSplit @ a;
+  b = lineSplit @ b;
+  Grid[
+    toSARow /@ SequenceAlignment[a, b],
+    BaseStyle -> {FontFamily -> "Fira Code", FontSize -> 12},
+    Alignment -> Left
+  ]
+];
+
+toSARow = Case[
+  a:{__Str} := {lineJoin @ a, SpanFromLeft};
+  {{a_Str}, {b_Str}} :=
+    If[EditDistance[a, b] > Max[StringLength[{a, b}] / 4],
+      redGreen[a, b],
+      {Row[toSAInline /@ SequenceAlignment[a, b]], SpanFromLeft}
+    ];
+  {a:{___Str}, b:{___Str}} := redGreen[lineJoin @ a, lineJoin @ b];
+];
+
+toSAInline := Case[
+  a_Str := a;
+  {a_Str, b_Str} := Row @ redGreen2[a, b];
+];
+
+redGreen[a_, b_] := {Style[a, FontColor -> $Red], Style[b, FontColor -> $Green]};
+
+redGreen2[a_, b_] := {Style[a, Background -> $LightRed], Style[b, Background -> $LightGreen]};
