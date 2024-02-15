@@ -105,12 +105,12 @@ toAuthorLink2 = Case[
 
 PrivateFunction[sanitizeAuthors]
 
-sanitizeAuthors[authors_] := ReplaceAll[authors, $authorFixups];
+sanitizeAuthors[authors_] := ReplaceAll[authors, s_String :> StringReplace[s, $authorFixups]];
 
 $authorFixups = {
-  "Von Glehn" -> "von Glehn",
-  "Tamara Von Glehn" -> "Tamara von Glehn",
-  "Ingrid Von Glehn" -> "Ingrid von Glehn"
+  "Antoran" -> "Antorán",
+  "Urquhart Allingham" -> "Allingham",
+  "Von Glehn" -> "von Glehn"
 };
 
 (**************************************************************************************************)

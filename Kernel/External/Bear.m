@@ -713,13 +713,7 @@ BearNoteAttachmentData[id_Int] := Scope[
 
 PublicFunction[BearPeople]
 
-BearPeople[] := BearNoteData[{"Tag" -> "person"}, "Title"];
-
-(*************************************************************************************************)
-
-PublicFunction[BearConcepts]
-
-BearConcepts[] := BearNoteData[{"Tag" -> "concept"}, "Title"];
+BearPeople[] := BearNoteTaggedTitles["#person"];
 
 (*************************************************************************************************)
 

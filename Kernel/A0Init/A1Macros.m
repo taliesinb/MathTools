@@ -36,6 +36,14 @@ DefinitionHead[(Rule|RuleDelayed|SetDelayed)[lhs_, _]] := PatternHead[lhs];
 
 (**************************************************************************************************)
 
+PublicFunction[HoldHead]
+
+SetHoldAllComplete[HoldHead]
+
+HoldHead[e_] := Head[Unevaluated @ e];
+
+(**************************************************************************************************)
+
 (* add ability for Scope to take additional arguments, which are local function definitions. if these
 use arguments of original function they will still work, via a suitable Block and alias *)
 
@@ -462,7 +470,9 @@ Case[rules$$, {alias$1, alias$2, $$}] applies temporary aliases to the rules$ be
 PublicScopingFunction[StringCase]
 
 SetUsage @ "
-StringCase[rules$$] is a macro similar to %Case but for strings."
+StringCase[rules$$] is a macro similar to %Case but for strings.
+* the special symbol $LHS is available for the entire string.
+"
 
 SetHoldAll[StringCase, setupStringCases]
 
@@ -470,6 +480,8 @@ StringCase /: (Set|SetDelayed)[sym_Symbol[pre___], StringCase[args___]] := setup
 StringCase /: (Set|SetDelayed)[sym_Symbol,         StringCase[args___]] := setupStringCases[sym, False, Hold[], args];
 
 (**************************************************************************************************)
+
+PublicVariable[$LHS]
 
 setupStringCases[a1_, a2_, a3_, arg_SetDelayed]                := setupStringCases[a1, a2, a3, CompoundExpression[arg], {}];
 setupStringCases[a1_, a2_, a3_, arg_SetDelayed, rewrites_List] := setupStringCases[a1, a2, a3, CompoundExpression[arg], rewrites];
@@ -482,14 +494,14 @@ setupStringCases[sym_Symbol, echo_, pre:Hold[preseq___], CompoundExpression[args
   holds = Hold @@@ Hold[args];
   lhs = If[pre === Hold[], Hold[sym[strVarPatt]], Hold[sym[preseq][strVarPatt]]];
   holds = ReplaceAll[holds, procRewrites @ rewrites];
-  holds = ReplaceAll[holds, HoldPattern[Out[] | $]  :> sym];
+  holds = ReplaceAll[holds, {HoldPattern[Out[] | $]  :> sym, HoldPattern[$LHS] -> strVar}];
   If[echo, Print["StringCase Echo not supported yet."]];
   toStringCasesReplaceExpr[lhs, strVar, Map[toStringCasesRule, List @@ holds] /. $globalSCVar -> strVar]
 ]];
 
 StringCase::baddef = "Bad StringCase definition for ``."
 
-setupStringCases[sym_, ___] := Message[StringCase::baddef, sym];
+setupStringCases[sym_, args___] := (PrintIF @ MapUnevaluated[HoldHead, {args}]; Message[StringCase::baddef, sym]);
 
 (**************************************************************************************************)
 
