@@ -1,5 +1,32 @@
-$ArxivTaxonomyDictionary := $ArxivTaxonomyDictionary = Assoc[
-  Rule[ToLowerCase[#1], #2]& @@@ StringExtract[ImportUTF8 @ LocalPath["Kernel", "External", "ArxivTaxonomy.txt"], "\n" -> All, "\t" -> All]
+PrivateFunction[paperKeyOrder]
+
+paperKeyOrder = Case[
+
+  "Title"             := {1, 0};
+  "Date"              := {2, 0};
+  "Authors"           := {3, 0};
+  "URL"               := {4, 0};
+  "PDFURL"            := {5, 0};
+  "PrimarySubjects"   := {8, 0};    (* Arxiv *)
+  "SecondarySubjects" := {9, 0};    (* Arxiv *)
+  "Subjects"          := {10, 0};   (* Arxiv, OpenReview *)
+  "Origin"            := {11, 0};
+  "Event"             := {12, 0};
+  "Abstract"          := {100, 0};
+  "CustomMetadata"    := {200, 0};  (* OpenReview *)
+
+  other_              := {1000, other};
+];
+
+(**************************************************************************************************)
+
+PrivateFunction[postProcessPaperPageData]
+
+postProcessPaperPageData[data_, downloadPDF_, pdfPath_] := Scope[
+
+  If[downloadPDF, data["PDFFilePath"] = DownloadPaper[data, PDFPath -> pdfPath, Verbose -> $verbose]];
+
+  KeySortBy[data, paperKeyOrder]
 ];
 
 (**************************************************************************************************)
@@ -20,8 +47,9 @@ PaperToMarkdown[$Failed, ___] := $Failed;
 PaperToMarkdown::addtextabs = "AdditionalText seems to contain abstract for article \"``\".";
 PaperToMarkdown[data_Assoc, OptionsPattern[]] := Scope[
   UnpackOptions[pDFPath, downloadPDF, $verbose, additionalText];
-  UnpackAssociation[data, authors, title, origin, subjects, abstract, url:"URL"];
+  UnpackAssociation[data, authors, title, origin, fieldTags, abstract, url:"URL"];
   title //= sanitizeTitle;
+  authors //= sanitizeAuthors;
   title = PaperPageTitle[authors, title];
   If[Len[authors] > 8,
     authors = SortBy[authors, {!MemberQ[$KnownAuthors, If[ListQ[#], StringRiffle[#, " "], #]], Position[authors, #]}&];
@@ -30,17 +58,16 @@ PaperToMarkdown[data_Assoc, OptionsPattern[]] := Scope[
     authorLinks = StringRiffle[toAuthorLink /@ authors, ", "]
   ];
   abstract //= sanitizeAbstract;
-  subjectString = If[
-    subjects =!= None && origin === "Arxiv",
-    StringRiffle[removeDupPrefix @ Lookup[$ArxivTaxonomyDictionary, ToLowerCase @ StripLabel @ subjects, Nothing], ", "],
-    None
-  ];
-  localPDFPath = toPDFPath[pDFPath, title];
 
-  If[!FileExistsQ[localPDFPath] && downloadPDF && origin === "Arxiv",
+  fieldString = If[fieldTags === None, "", {" in ", StringRiffle[fieldTags, ", "]}];
+
+  localPDFPath = Lookup[data, "PDFFilePath", Automatic];
+  SetAutomatic[localPDFPath, toPaperPDFPath[pDFPath, title]];
+  If[!FileExistsQ[localPDFPath] && downloadPDF && MatchQ[origin, "Arxiv" | "OpenReview"],
     DownloadPaper[data, PDFPath -> pDFPath, Verbose -> $verbose]
   ];
   downloadTag = If[FileExistsQ[localPDFPath], "#meta/downloaded", "#todo/download"];
+
   If[StringQ[additionalText] && StringTrim[additionalText] =!= "",
     additionalText //= StringTrim /* StringDelete[("> " <> abstract) | abstract] /* StringTrim;
     If[EditDistance[additionalText, abstract] < StringLength[abstract] * 0.05,
@@ -49,7 +76,7 @@ PaperToMarkdown[data_Assoc, OptionsPattern[]] := Scope[
   StringJoin[
     "# ", title, "\n",
     "\n",
-    "#doc/paper", If[StringQ[subjectString], {" in ", subjectString}, ""], " by ", authorLinks, "\n",
+    "#doc/paper", fieldString, " by ", authorLinks, "\n",
     "\n",
     downloadTag, "\n",
     url,
@@ -59,15 +86,7 @@ PaperToMarkdown[data_Assoc, OptionsPattern[]] := Scope[
   ]
 ];
 
-PrivateFunction[sanitizeAbstract, sanitizeTitle]
-
-sanitizeAbstract[str_Str] := StringReplace[str, {
-  "\n" ~~ Repeated[" "... ~~ "\n"] :> "\n", "`" -> "'",
-  "\[OpenCurlyDoubleQuote]" -> "\"", "\[CloseCurlyDoubleQuote]" -> "\"",
-  "\[OpenCurlyQuote]" -> "'", "\[CloseCurlyQuote]" -> "'"
-}];
-
-sanitizeTitle[str_Str] := StringReplace[str, $TitleNormalizationRules]
+(**************************************************************************************************)
 
 toAuthorLink = Case[
   str_Str /; StringContainsQ[str, "."] := str;
@@ -82,7 +101,24 @@ toAuthorLink2 = Case[
   {last_}         := last;
 ]
 
-removeDupPrefix[list_] := Select[DeleteDuplicates @ list, elem |-> NoneTrue[DeleteCases[elem] @ list, other |-> StringStartsQ[other, elem]]];
+(**************************************************************************************************)
+
+PrivateFunction[sanitizeAuthors]
+
+sanitizeAuthors[authors_] := ReplaceAll[authors, $authorFixups];
+
+$authorFixups = {
+  "Von Glehn" -> "von Glehn",
+  "Tamara Von Glehn" -> "Tamara von Glehn",
+  "Ingrid Von Glehn" -> "Ingrid von Glehn"
+};
+
+(**************************************************************************************************)
+
+PrivateFunction[sanitizeAbstract, sanitizeTitle]
+
+sanitizeAbstract[str_Str] := StringTrim @ StringReplace[str, $AbstractNormalizationRules];
+sanitizeTitle[str_Str] := StringTrim @ StringReplace[str, $TitleNormalizationRules]
 
 (**************************************************************************************************)
 
@@ -119,10 +155,10 @@ PublicVariable[$PDFPath]
 
 PublicOption[PDFPath, AllowRename]
 
-SetInitialValue[$PDFPath, With[{path = NormalizePath @ "~/Dropbox/doc/paper"}, If[FileExistsQ[path], path, Automatic]]];
+SetInitialValue[$PDFPath, With[{path = NormalizePath @ "~/Dropbox/doc/paper"}, If[FileExistsQ[path], path, EnsureDirectory @ LocalPath["Data", "Papers"]]]];
 
 Options[DownloadPaper] = {
-  PDFPath :> $PDFPath,
+  PDFPath -> Automatic,
   Verbose -> Automatic,
   DryRun -> False,
   AllowRename -> True,
@@ -133,36 +169,30 @@ DownloadPaper::norename = "Existing candidate `` found, but renames are forbidde
 DownloadPaper::badrename = "Could not rename `` to ``."
 DownloadPaper::nopdfurl = "No PDF URL could be found for paper with title \"``\"."
 
-toPDFPath[Automatic, title_] := toPDFPath[LocalPath["Data", "Papers"], title];
-
-toPDFPath[pdfPath_, title_] := Scope[
-  fileName = StringReplace[StringReplace[title, ":" -> " - "], Repeated[" ", {2, Infinity}] -> " "];
-  PathJoin[pdfPath, fileName <> ".pdf"]
-]
-
 $minPaperSize = 5000;
 
 DownloadPaper[assoc_Assoc, OptionsPattern[]] := Scope[
   UnpackAssociation[assoc, authors, title, pdfUrl:"PDFURL", url:"URL"];
   UnpackOptions[$verbose, $dryRun, pDFPath, allowRename, overwriteTarget];
   SetAutomatic[$verbose, $dryRun];
-  title = PaperPageTitle[authors, title];
-  VPrint[title];
 
-  localPdfPath = toPDFPath[pDFPath, title];
+  title = PaperPageTitle[authors, title];
+  VPrint["Paper prefixed title: ", title];
+
+  localPdfPath = toPaperPDFPath[pDFPath, title];
   pdfFileName = FileNameTake @ localPdfPath;
   pdfDir = FileNameDrop @ localPdfPath;
 
   If[FileExistsQ[localPdfPath],
     If[!overwriteTarget,
       If[FileByteCount[localPdfPath] < $minPaperSize,
-        VPrint["File ", MsgPath @ localPdfPath, " already exists, but is too small. Downloading again."]
+        VPrint["Paper with file name ", MsgPath @ localPdfPath, " already exists, but is too small. Downloading again."]
       ,
-        VPrint["File ", MsgPath @ localPdfPath, " already exists, skipping download."];
+        VPrint["Paper with file name ", MsgPath @ localPdfPath, " already exists, skipping download."];
         Return[localPdfPath]
       ];
     ,
-      VPrint["File ", MsgPath @ localPdfPath, " already exists, overwriting."];
+      VPrint["Paper with file name ", MsgPath @ localPdfPath, " already exists, overwriting."];
     ];
     Goto[SkipRename];
   ];
@@ -194,7 +224,7 @@ DownloadPaper[assoc_Assoc, OptionsPattern[]] := Scope[
   If[!StringQ[res] || !FileExistsQ[res], ReturnFailed[]];
 
   If[FileByteCount[res] < $minPaperSize,
-    VPrint["Downloaded file ", MsgPath @ res, " is too small, deleting."];
+    VPrint["Downloaded paper ", MsgPath @ res, " is too small, deleting."];
     TrashFile[res];
     ReturnFailed[];
   ];
@@ -202,6 +232,16 @@ DownloadPaper[assoc_Assoc, OptionsPattern[]] := Scope[
   res
 ]
 
+(**************************************************************************************************)
+
+PrivateFunction[toPaperPDFPath]
+
+toPaperPDFPath[Automatic, authorsAndTitle_] := toPaperPDFPath[$PDFPath, authorsAndTitle];
+
+toPaperPDFPath[pdfPath_, authorsAndTitle_] := Scope[
+  fileName = StringReplace[StringReplace[authorsAndTitle, ":" -> " - "], Repeated[" ", {2, Infinity}] -> " "];
+  PathJoin[pdfPath, fileName <> ".pdf"]
+];
 
 (**************************************************************************************************)
 
@@ -242,7 +282,7 @@ FindPDFMirrorURL[url_Str] := Scope[
       pdfUrl = StringCases[res, z:$rawPDFP :> StringTrim[z, "\""]];
       pdfUrl = First[pdfUrl, None];
       If[StringQ[pdfUrl],
-        If[StringStartsQ[pdfUrl, "/"], pdfUrl '= StringJoin[domain, StringTrimLeft[pdfUrl, "/"]]];
+        If[StringStartsQ[pdfUrl, "/"], pdfUrl = StringJoin[domain, StringTrimLeft[pdfUrl, "/"]]];
         Goto[Done]
       ];
     ];

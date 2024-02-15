@@ -422,6 +422,14 @@ $shapeIcons := {
   makeClosed @ makeArrowHead @ {
   "Square"             -> Line @ {{-1, 0}, {-1, 1}, {1, 1}, {1, 0}}
   },
+  "TopLeftSquare"      -> Line @ {{-1, -1}, {-1,  1}, { 1, 1}},
+  "TopRightSquare"     -> Line @ {{ 1, -1}, { 1,  1}, {-1, 1}},
+  "BottomLeftSquare"   -> Line @ {{ 1, -1}, {-1, -1}, {-1, 1}},
+  "BottomRightSquare"  -> Line @ {{-1, -1}, { 1, -1}, { 1, 1}},
+  "BottomCup"          -> Line @ {{-1,  1}, {-1, -1}, { 1, -1}, { 1, 1}},
+  "TopCup"             -> Line @ {{-1, -1}, {-1,  1}, { 1,  1}, { 1, -1}},
+  "LeftCup"            -> Line @ {{ 1,  1}, {-1,  1}, {-1, -1}, { 1, -1}},
+  "RightCup"           -> Line @ {{-1,  1}, { 1,  1}, { 1, -1}, {-1, -1}},
   "FilledSquare"       -> Rectangle[{-1, -1}, {1, 1}],
   "FilledUpperSquare"  -> Rectangle[{-1, 0}, {1, 1}],
   "FilledLowerSquare"  -> Rectangle[{-1, -1}, {1, 0}],

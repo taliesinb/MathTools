@@ -83,12 +83,16 @@ sowDGexpr = Case[
 
 (**************************************************************************************************)
 
-PrivateSpecialFunction[VPrint]
+PrivateSpecialFunction[VPrint, VBlock]
+
+$vprintDepth = 0;
 
 SetHoldAllComplete[VPrint];
 VPrint[args___] :=
-  If[TrueQ[$verbose], Print[If[TrueQ[$dryRun], Style["> ", LightGray], ""], args]];
+  If[TrueQ[$verbose], Print[StringRepeat["\t", $vprintDepth], If[TrueQ[$dryRun], Style["> ", LightGray], ""], args]];
 
+SetHoldAllComplete[VBlock];
+VBlock[body_] := Block[{$vprintDepth = $vprintDepth + 1}, body];
 
 (**************************************************************************************************)
 
@@ -521,7 +525,7 @@ xmlElementBoxes[o_] := "?";
 
 (**************************************************************************************************)
 
-PublicVariable[CompareGraphics]
+PublicDebuggingFunction[CompareGraphics]
 
 CompareGraphics[a_, b_] := Image[ImageApply[toDiffColor, {makeImage[a], makeImage[b]}], Magnification -> 3];
 
@@ -534,7 +538,7 @@ makeImage = Case[
 
 (**************************************************************************************************)
 
-PublicVariable[SymbolDependancyGraph]
+PublicDebuggingFunction[SymbolDependancyGraph]
 
 $lastLoadCount = -1;
 $currentDependencyGraph = None;
@@ -598,7 +602,7 @@ drawDependencyEdge[path_, a_, b_, fileLine_, scale_] :=
 
 $intOrInfP = (_Integer | Infinity | -Infinity);
 
-PublicVariable[SymbolDependancies]
+PublicDebuggingFunction[SymbolDependancies]
 
 SymbolDependancies[sym_Symbol | HoldComplete[sym_Symbol], n:$intOrInfP] := Scope[
   graph = SymbolDependancyGraph[];
@@ -642,6 +646,63 @@ $shortCamelPatterns = {
 
 (**************************************************************************************************)
 
+PublicDebuggingFunction[ToLinearSyntax]
 
+ToLinearSyntax[e_] := StringJoin["\!\(\*", ToString[ToBoxes @ e, InputForm], "\)"];
+
+(**************************************************************************************************)
+
+PublicDebuggingFunction[HighlightStringCases]
+
+HighlightStringCases::overlaps = "Cannot display cases that overlap. Some will not be shown.";
+
+HighlightStringCases[str_String, patt:(_Rule | _RuleDelayed)] :=
+  HighlightStringCases[str, {patt}];
+
+HighlightStringCases[str_String, patts_List] := Scope[
+  {spans, payloads} = KeysValues @ Flatten[i = 1; getPosAndPayload[i++, str, #]& /@ patts];
+  parts = clarifyMatch /@ StringTake[str, spans];
+  highlights = ZipMap[highlightStrMatch, parts, payloads];
+  StringReplacePart[str, highlights, spans]
+];
+
+getPosAndPayload[i_, str_, patt_] := Scope[
+  pos = StringPosition[str, patt];
+  Thread[pos -> Part[$ColorPalette, i]]
+];
+
+getPosAndPayload[i_, str_, patt:(_Rule | _RuleDelayed)] := Scope[
+  pos = StringPosition[str, P1 @ patt];
+  pay = VectorReplace[
+    StringCases[str, patt],
+    m:Except[_Style | $ColorPattern] :> Style[m, Part[$ColorPalette, i]]
+  ];
+  RuleThread[pos, pay]
+];
+
+HighlightStringCases[str_String, patt_] := Scope[
+  pos = StringPosition[str, patt, Overlaps -> False];
+  parts = clarifyMatch /@ StringTake[str, pos];
+  colors = PadRight[$ColorPalette, Len @ pos, $Red];
+  highlights = ZipMap[highlightStrMatch, parts, colors];
+  StringReplacePart[str, highlights, pos]
+];
+
+(**************************************************************************************************)
+
+clarifyMatch[""] := "▮";
+clarifyMatch[""] := "\[NegativeMediumSpace]\[VerticalSeparator]\[NegativeMediumSpace]";
+
+$clarificationRules = {"\n" -> "\[ReturnIndicator]\n", " " -> "\[SpaceIndicator]", "\t" -> "\[TabKey]"};
+clarifyMatch[str_Str] := StringReplace[str, $clarificationRules];
+
+highlightStrMatch[match_Str, color:$ColorPattern] :=
+  ToLinearSyntax @ Style[match, color, Bold];
+
+highlightStrMatch[match_Str, Style[payload_, col:$ColorPattern]] :=
+  ToLinearSyntax @ Tooltip[Style[match, col], payload];
+
+highlightStrMatch[match_Str, payload_] :=
+  ToLinearSyntax @ Tooltip[match, payload];
 
 

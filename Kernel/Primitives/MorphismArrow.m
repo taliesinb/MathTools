@@ -34,7 +34,7 @@ MorphismArrow[path$, label$, decoration$] applies one or more arrowhead decorati
 * %ArrowColor -> {c$s, c$t} uses a gradient between colors c$s, c$t.
 * %LabelOrientation can be one of the following:
 | Horizontal | appear horizontally (automatic) with offset to avoid clipping shaft |
-| 'Aligned' | aligned to the shaft |
+| Aligned | aligned to the shaft |
 * The option %LabelPosition can be one of the following:
 | side$ | a symbolic side like Top, Left, TopLeft, Center, etc. |
 | {dx$, dy$} | fix a particular offset from the arrow's path |

@@ -29,13 +29,15 @@ ImportScholarPage::badxml2 = "XML for paper with id `` was missing a field for `
 xmlFilePath[id_] := LocalPath["Data", "Scholar", id <> ".mx"];
 
 ImportScholarPage[url_Str, opts:OptionsPattern[]] := Scope[
-  UnpackOptions[downloadPDF, pDFPath, $verbose];
+  UnpackOptions[$verbose];
+
   If[!StringQ[$ScholarUserID], ReturnFailed["userid"]];
   id = If[
     StringMatchQ[url, Repeated[AlphanumericCharacter | "_" | "-", 12]], url,
     FirstStringCase[url, ":" ~~ num:Repeated[AlphanumericCharacter | "_" | "-", 12] :> num]
   ];
   If[!StringQ[id], ReturnFailed["badurl", url]];
+
   xmlPath = xmlFilePath[id];
   If[FileExistsQ[xmlPath],
     VPrint["Found cached Google Scholar result at ", MsgPath @ xmlPath];
@@ -51,6 +53,15 @@ ImportScholarPage[url_Str, opts:OptionsPattern[]] := Scope[
       ReturnFailed["badxml", url]];
     ExportMX[xmlPath, xml];
   ];
+
+  arxivURL = DeepFirstCase[xml,
+    XMLElement["a", {___, "class" -> "gsc_oci_title_link", ___, "href" -> href_Str /; StringStartsQ[href, "https://arxiv.org"], ___}, _] :> href
+  ];
+  If[StringQ[arxivURL] && StringContainsQ[arxivURL, ArxivPaperIDPattern],
+    VPrint["Delegating to ImportArxivPage[\"", arxivURL, "\"]"];
+    Return @ ImportArxivPage[arxivURL, FilterOptions @ opts];
+  ];
+
   paperXML = DeepFirstCase[xml, XMLElement["div", {___, "id" -> "gsc_vcpb", ___}, _], ReturnFailed["badxml2", id, "Document"]];
   pdfURL = DeepFirstCase[paperXML,
     XMLElement["div",
@@ -59,41 +70,50 @@ ImportScholarPage[url_Str, opts:OptionsPattern[]] := Scope[
     ] :> url,
     None
   ];
+  If[StringQ[pdfURL] && StringContainsQ[pdfURL, "%"], pdfURL = First @ StringSplit[pdfURL, "%", 2]];
+
   articleURL = DeepFirstCase[paperXML,
     XMLElement["a", {___, "class"->"gsc_oci_title_link", ___, "href" -> url_, ___}, _] :> url,
     None
   ];
+
   metadata = Assoc @ DeepCases[paperXML, XMLElement["div", {"class" -> "gs_scl"}, {
     XMLElement["div", {___, "class"->"gsc_oci_field", ___}, {field_}],
     XMLElement["div", {___, "class"->"gsc_oci_value", ___}, {value_}]}] :> Rule[field, value]
   ];
+
   authors = Lookup[metadata, "Authors", ReturnFailed["badxml2", id, "Authors"]];
   authors = Map[DeleteMiddleInitials, StringTrim @ StringSplit[authors, ","]];
   authors = DeleteCases[authors, ""];
   authors = Map[If[UpperCaseQ[StringDelete[#, " " | "."]], ToTitleCase @ ToLowerCase @ #, #]&, authors];
+  authors //= sanitizeAuthors;
   VPrint["Authors: ", authors];
+
   title = DeepFirstCase[xml,
     XMLElement["meta", {"property" -> "og:title", "content" -> t_}, _] :> t,
     ReturnFailed["badxml2", id, "Title"]
   ];
   title //= sanitizeTitle;
+
   publicationDate = Lookup[metadata, "Publication date", None];
   If[StringQ[publicationDate], publicationDate //= DateObject];
+
   abstract = Lookup[metadata, "Description", ReturnFailed["badxml2", id, "Abstract"]];
-  abstract //= XMLToText /* StringTrim /* sanitizeAbstract;
-  assoc = Assoc[
+  abstract //= XMLToText /* sanitizeAbstract;
+
+  data = Assoc[
     "Title" -> title,
     "Authors" -> authors,
     "Date" -> publicationDate,
     "URL" -> articleURL,
     "PDFURL" -> pdfURL,
+    "FieldTags" -> None,
     "Abstract" -> abstract,
-    "Subjects" -> None,
     "Origin" -> "GoogleScholar"
   ];
-  assoc //= KeySortBy[$paperKeyOrder];
-  If[downloadPDF, DownloadPaper[assoc, FilterOptions @ opts]];
-  assoc
+
+  UnpackOptions[downloadPDF, pDFPath];
+  postProcessPaperPageData[data, downloadPDF, pDFPath]
 ];
 
 $paperPageTemplate = StringFunction["https://scholar.google.com/citations?view_op=view_citation&hl=en&user=#1&sortby=pubdate&citation_for_view=#1:#2"];

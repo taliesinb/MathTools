@@ -2,21 +2,39 @@ PublicFunction[CommutativeSquare]
 
 SetUsage @ "
 CommutativeSquare[{nw$, ne$, sw$, se$}, {n$, s$, w$, e$}] constructs a %CommutativeDiagram with 4 objects and 4 morphisms.
-* additional morphisms can be specified after the four.
+* additional morphisms and/or objects can be specified after the four.
 * the morphisms n$, s$, w$, e$ can be given as label$ or {label$, type$, opts$$}.
 "
 
-CommutativeSquare[{nw_, ne_, sw_, se_}, {n_, s_, w_, e_, extra___}, opts___Rule] :=
+CommutativeSquare[{nw_, ne_, sw_, se_, extraObj___}, {n_, s_, w_, e_, extraArr___}, opts___Rule] :=
   CommutativeDiagram[
-    {{1, 1} -> nw, {2, 1} -> ne, {1, 2} -> sw, {2, 2} -> se},
+    {{1, 1} -> nw, {2, 1} -> ne, {1, 2} -> sw, {2, 2} -> se, extraObj},
     {toComSugarArrow[1 => 2, n],
      toComSugarArrow[2 => 4, e],
      toComSugarArrow[1 => 3, w],
      toComSugarArrow[3 => 4, s],
-     extra},
+     extraArr},
     LabelPosition -> Outwards,
     opts
   ];
+
+(**************************************************************************************************)
+
+PublicFunction[PullbackSquare]
+
+SetUsage @ "
+PullbackSquare[{nw$, ne$, sw$, se$}, {n$, s$, w$, e$}] constructs a %CommutativeDiagram with 4 objects and 4 morphisms.
+* PullbackSquare is like CommutativeSquare but includes a pullback right angle in the top left.
+* If the option 'ArrowPathReversed' -> True is given, a pushout square will be produced instead.
+"
+
+PullbackSquare[objs_List, arrows_List, opts___Rule] := With[
+  {iconType = If[MemberQ[{opts}, ArrowPathReversed -> True], "BottomRightSquare", "TopLeftSquare"]},
+  CommutativeSquare[
+    Append[objs, NamedIcon[ObjectCoordinates[1, PlusOperator[{.2,-.2}]],{1,0}, iconType]],
+    arrows, opts
+  ]
+];
 
 (**************************************************************************************************)
 

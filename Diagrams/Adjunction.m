@@ -228,3 +228,10 @@ NamedDiagram["Adjunction/ComposedPairs"] := CommutativeDiagram[{
   AdjunctionDiagram[{$CC, $CD}, {$FunL, $FunR}],
   AdjunctionDiagram[{Invisible @ $CD, $CE}, {$FunLpr, $FunRpr}, Origin -> {1, 0}]
 }]
+
+(**************************************************************************************************)
+
+NamedDiagram["Adjunction/Correspondence"] := Style[DoubleFractionForm[
+  ArrowSignatureForm[$Af,$FunF[$OX], $OY],
+  ArrowSignatureForm[$Ag,$OX, $FunG[$OY]]
+], 20];

@@ -178,3 +178,34 @@ PublicTypesettingForm[LabeledForm]
 DefineStandardTraditionalForm[
   LabeledForm[thing_, label_] :> ToBoxes @ Labeled[thing, MathTextForm @ label]
 ]
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[DoubleFractionForm]
+
+DefineBinaryForm[DoubleFractionForm,
+  GridBox[
+    {{$1}, {""}, {""}, {$2}},
+    RowSpacings -> {.2, 0, 1},
+    RowLines -> {False, True, True, False},
+    RowMinHeight -> 0
+  ]
+]
+
+(**************************************************************************************************)
+
+PublicTypesettingForm[DoubleFractionGrid]
+
+DefineStandardTraditionalForm[
+  DoubleFractionGrid[row1_, row2_] :> With[
+    {n = Max[Len @ row1, Len @ row2]},
+    {s = Repeat["", n]},
+    TBox[GridBox[
+      {MakeMathBoxes /@ PadRight[row1, n, ""], s, s, MakeMathBoxes /@ PadRight[row2, n, ""]},
+      RowSpacings -> {.2, 0, 1},
+      RowLines -> {False, True, True, False},
+      RowMinHeight -> 0
+    ], "MathForm"]
+  ]
+];
+

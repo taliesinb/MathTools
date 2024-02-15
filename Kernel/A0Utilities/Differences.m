@@ -307,10 +307,17 @@ diffKeys[startIndex_, entries1_HoldComplete, entries2_HoldComplete] := Module[
 
 PublicFunction[ShowSequenceAlignment]
 
+PublicOption[ElideUnchanged]
+
+Options[ShowSequenceAlignment] = {
+  ElideUnchanged -> False
+}
+
 lineSplit[e_] := StringSplit[e, "\n"];
 lineJoin[e_] := StringRiffle[e, "\n"];
 
-ShowSequenceAlignment[a_Str, b_Str] := Scope[
+ShowSequenceAlignment[a_Str, b_Str, OptionsPattern[]] := Scope[
+  UnpackOptions[$elideUnchanged];
   a = lineSplit @ a;
   b = lineSplit @ b;
   Grid[
@@ -321,7 +328,7 @@ ShowSequenceAlignment[a_Str, b_Str] := Scope[
 ];
 
 toSARow = Case[
-  a:{__Str} := {lineJoin @ a, SpanFromLeft};
+  a:{__Str} := If[$elideUnchanged, Nothing, {lineJoin @ a, SpanFromLeft}];
   {{a_Str}, {b_Str}} :=
     If[EditDistance[a, b] > Max[StringLength[{a, b}] / 4],
       redGreen[a, b],

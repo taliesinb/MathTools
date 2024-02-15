@@ -132,12 +132,70 @@ $MathWords := $MathWords = StringSplit[ImportUTF8 @ LocalPath["Data", "Text", "M
 
 (*************************************************************************************************)
 
-PublicVariable[$TitleNormalizationRules]
+PublicVariable[$TitleNormalizationRules, $AbstractNormalizationRules]
 
 SetInitialValue[$TitleNormalizationRules, {
+  "\[InvisibleSpace]" -> "",
+  "``" -> "\"", "''" -> "\"",
   "\[OpenCurlyDoubleQuote]" -> "\"",
   "\[CloseCurlyDoubleQuote]" -> "\"",
   "\[OpenCurlyQuote]" -> "'",
   "\[CloseCurlyQuote]" -> "'",
   "\[Dash]" -> "-"
 }];
+
+
+SetInitialValue[$AbstractNormalizationRules, {
+  "\[InvisibleSpace]" -> "",
+  "``" -> "\"", "''" -> "\"",
+  "\n" ~~ Repeated[" "... ~~ "\n"] :> "\n",
+  "\[OpenCurlyDoubleQuote]" -> "\"",
+  "\[CloseCurlyDoubleQuote]" -> "\"",
+  "\[OpenCurlyQuote]" -> "'",
+  "\[CloseCurlyQuote]" -> "'",
+  "`" -> "'"
+}];
+
+(**************************************************************************************************)
+
+PublicFunction[Depluralize]
+
+SetListable[Depluralize];
+
+Depluralize = Case[
+  word_Str ? UpperCaseQ := word;
+  word_Str              := tryDepluralRules[word];
+];
+
+tryDepluralRules[str_Str] := Scope[
+  Scan[{{lhs, rhs}} |-> If[
+    StringEndsQ[str, lhs] &&
+    $validDepluralQ[cand = StringDrop[str, -StrLen[lhs]] <> rhs],
+      Return[cand, Block]],
+    $depluralTuples
+  ];
+  str
+];
+
+loadTextTable[filename_] := Scope[
+  fileStr = StringTrim @ ImportUTF8 @ LocalPath["Data", "Text", filename];
+  table = StringTrim /@ StringExtract[fileStr, "\n" -> All, " ".. -> All];
+  ReplaceAll[table, "_" -> ""]
+]
+
+$depluralTuples := $depluralTuples = loadTextTable["DepluralRules.txt"];
+
+$depluralBlacklist := $depluralBlacklist = StringSplit @ ImportUTF8 @ LocalPath["Data", "Text", "DepluralBlacklist.txt"];
+
+$validDepluralQ := $validDepluralQ = ConstantUAssociation[Complement[$EnglishWords, $depluralBlacklist], True];
+
+(**************************************************************************************************)
+
+PublicFunction[WordFrequencySort]
+
+WordFrequencySort[words_] := Scope[
+  freq = WordFrequencyData[words];
+  freq = ReplaceAll[freq, _Missing -> 0];
+  ReverseSortBy[words, freq]
+];
+

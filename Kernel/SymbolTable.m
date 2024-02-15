@@ -24,7 +24,11 @@ the typed Package` declarations that categorize QG's own symbols.
   "Id"           -> Identity,
   "Rev"          -> Reverse,
   "Str"          -> String,
-  "Int"          -> Integer
+  "Int"          -> Integer,
+  "IntStr"       -> IntegerString,
+  "StrLen"       -> StringLength,
+  "StrJoin"      -> StringJoin,
+  "Alt"          -> Alternatives
 },
 
 {"System`", "Package"} -> {
@@ -91,7 +95,7 @@ Position, FirstPosition,
 Length, Dimensions, Prepend, Append, Take, Drop, Join, Catenate, Flatten, Union, Intersection, Complement, Range, Insert, Delete,
 ArrayDepth, Accumulate,
 Replace, ReplacePart, ReplaceAll, ReplaceList, ReplaceRepeated,
-StringJoin, StringTake, StringDrop, StringCases, StringLength, TextString, StringTrim, StringReplace, StringRiffle, Characters, StringSplit, StringInsert, StringDelete, StringPadLeft, StringPadRight,
+StringJoin, StringTake, StringDrop, StringCases, StringLength, TextString, StringTrim, StringReplace, StringRiffle, Characters, StringSplit, StringInsert, StringDelete, StringPadLeft, StringPadRight, IntegerString,
 FromCharacterCode, ToCharacterCode, StringCount, StringExtract, StringPartition, StringPosition, StringRepeat, StringReplacePart, StringReverse,
 Keys, KeyTake, KeyDrop, KeySort, Values, Key, AssociationMap, AssociationThread, Lookup, KeyMap, KeyValueMap, Thread,
 PositionIndex, Merge,

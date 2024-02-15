@@ -41,7 +41,7 @@ UpdateSublimeSyntaxFiles[] := Scope[
   (* add each alias to the group of its target *)
   MapApply[
     {alias, target} |-> (
-      group = Part[SelectFirstIndex[QuiverGeometryLoader`$SymbolTable, MemberQ[#, target]&], 1, 2];
+      group = Part[SelectFirstIndex[QuiverGeometryLoader`$SymbolTable, MemberQ[#, target]&, Print["ALIAS NOT FOUND: ", target]], 1, 2];
       addToGroup[group, {alias}]
     ),
     QuiverGeometryLoader`$SymbolAliases

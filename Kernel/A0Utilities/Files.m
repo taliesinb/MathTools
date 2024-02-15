@@ -156,8 +156,17 @@ ExportMX[path_Str, expr_] := Block[
 
 PublicSpecialFunction[ExportUTF8]
 
-ExportUTF8[path_Str, string_Str] :=
+ExportUTF8[path_Str ? ASCIIQ, string_Str] :=
   Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
+
+$tempExportFile := $tempExportFile = TemporaryPath["utf_export"];
+
+(* works around failure on e.g. ExportUTF8["~/𝖢𝖺𝗍.txt", "Hello world this is 𝖢𝖺𝗍."] *)
+ExportUTF8[path_Str, string_Str] := Scope[
+  ExportUTF8[$tempExportFile, string];
+  RunTool["mv", $tempExportFile, NormalizePath @ path];
+  path
+];
 
 _ExportUTF8 := BadArguments[];
 
@@ -172,13 +181,12 @@ ExportUTF8Dated[path_Str, string_Str, creation_, modification_:Automatic] := Sco
   Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
   creation //= toDateObject;
   modification //= toDateObject;
-  If[!DateDateObjectQ[creation], BadArguments[]];
+  If[!DateObjectQ[creation], BadArguments[]];
   If[modification === Automatic,
-    SetFileDate[path, creation]
+    SetFileTime[path, {creation, creation}]
   ,
-    If[!DateDateObjectQ[modification], BadArguments[]];
-    SetFileDate[path, creation];
-    SetFileDate[path, modification, "Modification"];
+    If[!DateObjectQ[modification], BadArguments[]];
+    SetFileTime[path, {creation, modification}];
   ];
   path
 ];
@@ -189,6 +197,50 @@ toDateObject = Case[
 ];
 
 _ExportUTF8Dated := BadArguments[];
+
+(**************************************************************************************************)
+
+PublicSpecialFunction[SetFileTime]
+
+(* TODO: make the creation part work on Windows / Linux *)
+
+SetFileTime[path_, c:(_Int | _Real | _DateObject)] := SetFileTime[path, {c, None, None}];
+SetFileTime[path_, {c_, m_}] := SetFileTime[path, {c, m, None}];
+SetFileTime[path_Str, {None, None, None}] := Null;
+SetFileTime[path_Str, cma:{_, _, _}] :=
+  setFileTime[path, toCmaDate /@ cma];
+
+setFileTime[path_] := Case[
+  {None, None, None} := Null;
+  {None, m_, None}   := SetFileDate[path, m, "Modification"];
+  {None, None, a_}   := SetFileDate[path, m, "Access"];
+  {c_, m_, None}     := setCreateModify[path, c, m];
+  {c_, m_, a_}       := (setCreateModify[path, c, m]; SetFileDate[path, a, "Access"]);
+];
+
+setCreateModify[path_, c_, m_] := (
+  RunUTF8 @ StringRiffle[{"SetFile", toFTarg["-d", c], toFTarg["-m", m], BashEscape @ NormalizePath @ path}, " "];
+  Null
+);
+
+toFTarg[flag_, None] := Nothing;
+toFTarg[flag_, date_] := StringJoin[flag, " '", sftStr[date], "'"];
+
+sftStr = Case[
+  DateObject[{y_, m_, d_}, ___] :=
+    StringJoin[intStr2 @ m, "/", intStr2 @ d, "/", IntegerString @ y];
+  DateObject[{y_, m_, d_, h_, m2_, s_, ___}, ___] :=
+    StringJoin[intStr2 @ m, "/", intStr2 @ d, "/", IntegerString @ y, " ", intStr2 @ h, ":", intStr2 @ m2, ":", intStr2 @ Floor @ s];
+  u:(_Integer | _Real) := % @ FromUnixTime @ u;
+]
+
+toCmaDate = Case[
+  d_DateObject         := d;
+  u:(_Integer | _Real) := FromUnixTime @ u;
+  None                 := None;
+]
+
+intStr2[e_] :=  IntegerString[e, 10, 2];
 
 (**************************************************************************************************)
 

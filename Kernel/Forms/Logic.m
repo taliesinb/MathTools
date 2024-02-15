@@ -1,7 +1,10 @@
-PublicTypesettingForm[ExistsForm, ForAllForm]
+PublicTypesettingForm[ExistsForm, ForAllForm, ExistsUniqueSymbol]
 
-existsBox[a_] := RBox["\[Exists]", "\[MediumSpace]", a];
-forAllBox[a_] := RBox["\[ForAll]", "\[MediumSpace]", a];
+(* TODO: move to using a bypass font to avoid Mathematica substituting its own font for these chars *)
+quantifierStyle[e_] := StyleBox[e, FontFamily -> "Wolfram Modern", Larger];
+
+existsBox[a_] := RBox[quantifierStyle @ "\[Exists]", "\[MediumSpace]", a];
+forAllBox[a_] := RBox[quantifierStyle @ "\[ForAll]", "\[MediumSpace]", a];
 
 (* TODO: replace part of this with DefineRestCommaForm *)
 
@@ -20,6 +23,8 @@ DefineTemplateBox[ForAllForm, "UnconditionalForAllForm", forAllBox[$1], None];
 DefineTemplateBox[ExistsForm, "ExistsForm", RBox[existsBox @ $1, WideOpBox @ ":", $2], None]
 DefineTemplateBox[ForAllForm, "ForAllForm", RBox[forAllBox @ $1, WideOpBox @ ":", $2], None]
 DefineTemplateBox[ForAllForm, "WideForAllForm", RBox[forAllBox @ $1, VeryWideOpBox @ ":", $2], None]
+
+DefineSymbolForm[ExistsUniqueSymbol -> RBox[quantifierStyle["∃"], StyleBox["!", Larger]]];
 
 (**************************************************************************************************)
 

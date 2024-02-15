@@ -347,7 +347,7 @@ loadShortcutGroup["Categories"] := (
   decSymTable["$C#",              CategorySymbol,                             $scriptCapitals];
   decSymTable["$C#",              CategorySymbol[BoldForm[#]]&,               "012345"];
   decSymTable["$Fun#",            FunctorSymbol,                              "ABCDEFGHUVPLRST"];
-  decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzstABCDEIJUVWMNLPRSTXYZ"];
+  decSymTable["$O#",              CategoryObjectSymbol,                       "01abcdeuvwxyzstABCDEIJUVWMNLPQRSTXYZ"];
   symbolTable["$IdA#",            IdArrow[CategoryObjectSymbol[#]]&,          "01abcdeuvwxyzstABCDEIJUVWMNPXYZST"];
   decSymTable["$NT#",             NaturalTransformationSymbol,                "\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]\[Gamma]\[Delta]\[Epsilon]\[Sigma]\[Phi]"];
   decSymTable["$A#",              CategoryArrowSymbol,                        "01abcdefghjklmnpqrstuvwILMNR\[Mu]\[Eta]\[Lambda]\[Rho]\[Alpha]\[Beta]\[Sigma]\[Phi]"];
@@ -701,6 +701,16 @@ loadShortcutGroup["Rewriting"] := (
   makeSym["RSF",                  RegionalStateForm];
 
   makeSym["RRF",                  RewritingRuleForm];
+
+);
+
+(**************************************************************************************************)
+
+loadShortcutGroup["Bear"] := (
+
+  makeSym["OBN",                  OpenBearNote];
+  makeSym["BND",                  BearNoteData];
+  makeSym["BNL",                  BearNoteLookup];
 
 );
 

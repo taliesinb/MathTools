@@ -4,7 +4,7 @@ jsonFilePath[id_] := LocalPath["Data", "Youtube", id <> ".json"];
 
 PublicSymbol[YoutubeVideoIDPattern]
 
-declareStringPattern[YoutubeVideoIDPattern :> "[a-zA-Z0-9_-]{9,12}"]
+DefineStringPattern[YoutubeVideoIDPattern :> "[a-zA-Z0-9_-]{9,12}"]
 
 (**************************************************************************************************)
 
@@ -52,7 +52,7 @@ getVideoID[url_Str] := Which[
 
 PublicSymbol[YoutubePlaylistIDPattern]
 
-declareStringPattern[YoutubePlaylistIDPattern :> "[a-zA-Z0-9_-]{34}"]
+DefineStringPattern[YoutubePlaylistIDPattern :> "[a-zA-Z0-9_-]{34}"]
 
 (**************************************************************************************************)
 
@@ -586,17 +586,12 @@ resolveAuthorBlurb[matches_, title_, description_] := Scope[
   ];
 
   links = StringCases[authorBlurb, "[[" ~~ text:Shortest[___] ~~ "]]" :> text];
-  fields = deleteFieldDuplicates @ Flatten[bearNoteFields /@ links];
+  fields = DeleteRedundantTags @ Flatten[bearNoteFields /@ links];
   If[fields =!= {}, authorBlurb = authorBlurb <> " in " <> StringRiffle[fields, ", "]];
 
   authorBlurb = StringTrim @ StringReplaceRepeated[authorBlurb, "  " -> " "];
   {authorBlurb, title, type}
 ]
-
-deleteFieldDuplicates[tags_] := Map[
-  StringRiffle[#, "/"]&,
-  DeleteDuplicates[ReverseSortBy[Length] @ StringSplit[tags, "/"], PrefixQ]
-];
 
 (**************************************************************************************************)
 

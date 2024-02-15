@@ -53,10 +53,8 @@ The following options are supported:
 | %DiagramScaling | scale factors to apply to x$ and y$ |
 | %GraphicsScale | size of one coordinate unit in pixels |
 | %Alignment | alignment of text labels of objects |
-| %Setback | additional setback distances of arrows, in pixels |
 | %AutoSetback | whether to automatically calculate per-object setbacks |
 | %DebugBounds | whether to show red rectangles around object bounds |
-| %LabelFontSize | font size to use for morphisms |
 | %FontSize | font size to use for objects |
 | %TextModifiers | list of modifiers to apply to object and morphism labels |
 | %Origin | position at which the origin of the diagram should go |
@@ -68,6 +66,15 @@ The following options are supported:
 | %MorphismColors | how to color morphisms |
 | %GradientSymbolOptions | additional options to customize %GradientSymbol |
 * for more information about %ColorRules, see the usage of %DiagramColorRules, which is an alias.
+
+## Additional options
+
+All options from %MorphismArrow are also supported and will apply to all arrows, including:
+| %ArrowPathReversed | reverse all arrows |
+| %LabelFontSize | font size to use for morphisms |
+| %Setback | additional setback distances of arrows, in pixels |
+| %LabelOrientation | orientation of arrow labels |
+| %ArrowThickness | thickness of arrow shafts |
 "
 
 SetUsage @ "

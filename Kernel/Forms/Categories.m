@@ -130,30 +130,31 @@ DefineInfixForm[ThenForm, KBox[StyleBox[" ﹔ ", FontFamily -> "KaTeX_AMS"], "�
 
 (**************************************************************************************************)
 
-PublicTypesettingForm[CatCat, CatSet, CatFinSet, CatFinOrd, CatOrd, CatGrp, CatMat, CatKVect, CatMon, CatPoly, CatRel, CatRing, CatRMod, CatTop, CatFunct, CatAlg, CatHask, CatArray, CatRainbowArray]
+PublicTypesettingForm[CatCat, CatPred, CatSet, CatFinSet, CatFinOrd, CatOrd, CatGrp, CatMat, CatKVect, CatMon, CatPoly, CatRel, CatRing, CatRMod, CatTop, CatFunct, CatAlg, CatHask, CatArray, CatRainbowArray]
 
 (*
 $LowercaseSanSerifLetters = "𝖺𝖻𝖼𝖽𝖾𝖿𝗀𝗁𝗂𝗃𝗄𝗅𝗆𝗇𝗈𝗉𝗊𝗋𝗌𝗍𝗎𝗏𝗐𝗑𝗒𝗓";
 $UppercaseSanSerifLetters = "𝖠𝖡𝖢𝖣𝖤𝖥𝖦𝖧𝖨𝖩𝖪𝖫𝖬𝖭𝖮𝖯𝖰𝖱𝖲𝖳𝖴𝖵𝖶𝖷𝖸𝖹";
 *)
 DefineSymbolForm @ {
-  CatCat      -> "𝖢𝖺𝗍",
-  CatSet      -> "𝖲𝖾𝗍",
-  CatFinSet   -> "𝖥𝗂𝗇𝖲𝖾𝗍",
-  CatFinOrd   -> "𝖥𝗂𝗇𝖮𝗋𝖽",
-  CatGrp      -> "𝖦𝗋𝗉",
-  CatMat      -> "𝖬𝖺𝗍",
-  CatKVect    -> "𝖪𝖵𝖾𝖼𝗍",
-  CatMon      -> "𝖬𝗈𝗇",
-  CatPoly     -> "𝖯𝗈𝗅𝗒",
-  CatRel      -> "𝖱𝖾𝗅",
-  CatRing     -> "𝖱𝗂𝗇𝗀",
-  CatRMod     -> "𝖱𝖬𝗈𝖽",
-  CatTop      -> "𝖳𝗈𝗉",
-  CatFunct    -> "𝖥𝗎𝗇𝖼𝗍",
-  CatAlg      -> "𝖠𝗅𝗀",
-  CatHask     -> "𝖧𝖺𝗌𝗄",
-  CatArray    -> "𝖠𝗋𝗋",
+  CatCat          -> "𝖢𝖺𝗍",
+  CatPred         -> "𝖯𝗋𝖾𝖽",
+  CatSet          -> "𝖲𝖾𝗍",
+  CatFinSet       -> "𝖥𝗂𝗇𝖲𝖾𝗍",
+  CatFinOrd       -> "𝖥𝗂𝗇𝖮𝗋𝖽",
+  CatGrp          -> "𝖦𝗋𝗉",
+  CatMat          -> "𝖬𝖺𝗍",
+  CatKVect        -> "𝖪𝖵𝖾𝖼𝗍",
+  CatMon          -> "𝖬𝗈𝗇",
+  CatPoly         -> "𝖯𝗈𝗅𝗒",
+  CatRel          -> "𝖱𝖾𝗅",
+  CatRing         -> "𝖱𝗂𝗇𝗀",
+  CatRMod         -> "𝖱𝖬𝗈𝖽",
+  CatTop          -> "𝖳𝗈𝗉",
+  CatFunct        -> "𝖥𝗎𝗇𝖼𝗍",
+  CatAlg          -> "𝖠𝗅𝗀",
+  CatHask         -> "𝖧𝖺𝗌𝗄",
+  CatArray        -> "𝖠𝗋𝗋",
   CatRainbowArray -> "𝖱𝖠𝗋𝗋"
 };
 
@@ -606,3 +607,9 @@ replaceFormContents[(mod_Symbol ? $styleFormHeadQ)[sub_, s___], new_] := mod[rep
 replaceFormContents[(mod_Symbol ? $modifierFormHeadQ)[sub_, s___], new_] := replaceFormContents[sub, new];
 replaceFormContents[_, new_] := new;
 
+(**************************************************************************************************)
+
+PublicTypesettingFormBox[OverArrowForm, UnderArrowForm]
+
+DefineUnaryForm[OverArrowForm, LowerBox[OverscriptBox["\[LongRightArrow]", LowerBox[$1, 5]], .15]];
+DefineUnaryForm[UnderArrowForm, RaiseBox[UnderscriptBox["\[LongRightArrow]", RaiseBox[$1, 5]], .15]];

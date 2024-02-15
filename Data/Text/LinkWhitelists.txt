@@ -1,0 +1,13 @@
+category category enriched enrichment skeleton optic completeness fibre span sketch lens diagram carrier ring arrow equipment end epic
+algebra algebra neutrality stack carrier ring field group action continuous join meet ideal module indeterminate
+type type
+group group orbit order
+math quantification homogeneity sieve schema norm bundle wedge stalk unfolding onto section unit grade scheme loop simulation compact generator partition neighborhood equality trace representation character
+geometry,physics fibre reflection translation chart sphere connection
+topology coarser finer completeness compact contraction covers cover filter connected
+logic,proof substitution comprehension judgement derivation alphabet weakening antecedent contraction induction term fragment logic sentence cut
+cs,graph graph forest graph tree
+cs schema Rust Java event machine
+physics elasticity rapidity boost atom exchange
+ml score
+math,cs,physics,ml manifold divergence distribution curvature determinant metric immersion orthogonal gradient finite differential differentiation integral integration basis map limit continuous algorithm matrix

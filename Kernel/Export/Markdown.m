@@ -1,3 +1,19 @@
+PublicFunction[CreateMarkdownTable]
+
+CreateMarkdownTable[grid_List, headings_List] := Scope[
+  columns = Transpose @ Prepend[grid, headings];
+  widths = Max[StringLength[#]]& /@ columns;
+  columns = MapThread[StringPadRight, {columns, widths}];
+  columns = MatrixMap[StringJoin[" ", #, " "]&, columns];
+  columns = MapThread[Insert[#, StringRepeat["-", #2 + 2], 2]&, {columns, widths}];
+  rows = Transpose @ columns;
+  rows = Map[row |-> StringJoin[Append["|"] @ Map[{"|", #}&, row]], rows];
+  StringRiffle[rows, "\n"]
+];
+
+(**************************************************************************************************)
+
+
 PublicFunction[ExportToMarkdown]
 
 SetUsage @ "

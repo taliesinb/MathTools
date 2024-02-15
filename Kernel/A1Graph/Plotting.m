@@ -2213,7 +2213,7 @@ LabelOrientation is an option that determines how labels are oriented, and can a
 | Vertical | align labels vertically |
 | Horizontal | align labels horizontally |
 | n$ | align labels at n$ degrees |
-| 'Aligned' | align labels with the underlying object |
+| Aligned | align labels with the underlying object |
 | 'Upright' | align labels with underlying object, but make sure they are never upside down (not implemented) |
 "
 

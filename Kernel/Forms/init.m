@@ -6,7 +6,6 @@ MakeTradBoxes[e_] := MakeBoxes[e, TraditionalForm];
 
 (**************************************************************************************************)
 
-
 PrivateTypesettingBoxFunction[TBox, TBoxOp, SBox, RBox, GBox, KBox]
 
 TBox[args___, form_] := TemplateBox[{args}, form];
@@ -27,6 +26,18 @@ prepend0[list_List] := Prepend[list, 0];
 prepend0[e_] := e;
 
 KBox[wl_, kb_] := TemplateBox[{wl, kb}, "katexSwitch"];
+
+(**************************************************************************************************)
+
+PrivateTypesettingBoxFunction[KatexFontStrBox, KatexAMSFontStrBox]
+
+(* TODO: does this work? finish this up *)
+KatexFontStrBox[str_Str] := StyleBox[toPrivateUseUnicode @ str, FontFamily -> "KaTeX_Main_Offset"];
+KatexAMSFontStrBox[str_Str] := StyleBox[toPrivateUseUnicode @ str, FontFamily -> "KaTeX_AMS_Offset"];
+
+toPrivateUseUnicode[str_Str] := toUnicode @ ToCharacterCode[str, "Unicode"];
+
+
 
 (**************************************************************************************************)
 
@@ -1066,7 +1077,7 @@ PublicTypesettingFormBox[RedForm, GreenForm, BlueForm, OrangeForm, PinkForm, Tea
 PublicTypesettingFormBox[LightRedForm, LightGreenForm, LightBlueForm, LightOrangeForm, LightPinkForm, LightTealForm, LightGrayForm, LightPurpleForm]
 PublicTypesettingFormBox[DarkRedForm, DarkGreenForm, DarkBlueForm, DarkOrangeForm, DarkPinkForm, DarkTealForm, DarkGrayForm, DarkPurpleForm, MultisetColorForm]
 
-PublicTypesettingFormBox[BoldForm, ItalicForm, UnderlinedForm, StruckthroughForm, LargerForm, SmallerForm, PlainTextForm, MathTextForm, RomanForm, FrakturForm, CaligraphicForm, ModernForm, SansSerifForm, TypewriterForm]
+PublicTypesettingFormBox[BoldForm, ItalicForm, UnderlinedForm, StruckthroughForm, LargerForm, LargeForm, SmallerForm, SmallForm, PlainTextForm, MathTextForm, RomanForm, FrakturForm, CaligraphicForm, ModernForm, SansSerifForm, TypewriterForm]
 
 SystemSymbol[ScriptForm]
 PrivateTypesettingBoxFunction[ScriptBox]
@@ -1111,6 +1122,8 @@ makeInlineStyleForm @@@ ExpressionTable[
   StruckthroughForm   StruckthroughBox   Struckthrough
   LargerForm          LargerBox          Larger
   SmallerForm         SmallerBox         Smaller
+  LargeForm           LargeBox           20
+  SmallForm           SmallBox           9
   PlainTextForm       PlainTextBox       "MathText"
   MathTextForm        MathTextBox        "MathTextFont"
   RomanForm           RomanBox           "RomanMathFont"
@@ -1324,7 +1337,6 @@ PublicTypesettingForm[MathForm]
 DefineTaggedForm[MathForm]
 
 (**************************************************************************************************)
-
 
 PrivateFunction[katexAliasRiffled, katexAlias]
 
@@ -1545,3 +1557,9 @@ makeSubSup[head_, args___] := Construct[head, MakeMathBoxSequence[args]];
 $TemplateKatexFunction["InvisibleForm"] := "phantom";
 
 algebraBoxes[_[args__], tag_] := makeTemplateBox[args, tag];
+
+(**************************************************************************************************)
+
+PublicTypesetting[MathForm]
+
+DefineTaggedForm[MathForm]

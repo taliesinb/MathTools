@@ -1,10 +1,10 @@
-xmlFilePath[id_] := LocalPath["Data", "Arxiv", id <> ".m"]
+xmlFilePath[id_] := LocalPath["Data", "Arxiv", StringReplace[id, "/"|"." -> "_"] <> ".m"]
 
 (**************************************************************************************************)
 
 PublicSymbol[ArxivPaperIDPattern]
 
-declareStringPattern[ArxivPaperIDPattern :> "(?ms)(?:\\d{1,4}\\.|hep-th[/.]|gr-qc[/.]|q-alg[/.])\\d{4,7}(?:v\\d)?"]
+DefineStringPattern[ArxivPaperIDPattern :> RawRegex["(?:\\d{1,4}\\.|hep-th[/.]|gr-qc[/.]|q-alg[/.])\\d{4,7}(?:v\\d)?"]]
 
 (**************************************************************************************************)
 
@@ -20,7 +20,8 @@ PublicOption[DownloadPDF, PDFPath]
 
 Options[ImportArxivPage] = {
   DownloadPDF -> True,
-  PDFPath -> Automatic
+  PDFPath -> Automatic,
+  Verbose -> False
 }
 
 ImportArxivPage::badurl = "URL `` does not contain a valid id."
@@ -28,49 +29,75 @@ ImportArxivPage::baddl = "URL `` could not be imported as XML."
 ImportArxivPage::badxml = "URL `` was downloaded as XML that did not contain a title."
 
 ImportArxivPage[str_Str, opts:OptionsPattern[]] := Scope[
+  UnpackOptions[$verbose];
+
 	id = FirstStringCase[str, num:ArxivPaperIDPattern :> num];
+  VPrint["Arxiv paper ID: ", id];
 	If[!StringQ[id], ReturnFailed["badurl", str]];
-	xmlPath = xmlFilePath[id];
+
+  xmlPath = xmlFilePath[id];
 	If[FileExistsQ[xmlPath],
+    VPrint["XML file exists at ", MsgPath @ xmlPath];
 		xml = Get[xmlPath]
 	,
     url = $pageTemplate[id];
+    VPrint["Downloading XML to ", MsgPath @ xmlPath, " from ", MsgPath @ url];
 		xml = WithInternet @ Import[url, "XMLObject"];
     If[H[xml] =!= XMLObject["Document"], ReturnFailed["baddl", url]];
-    If[!ContainsQ[xml, XMLMetaPattern["citation_title", _]], ReturnFailed["badxml", url]];
+    If[!ContainsQ[xml, xmlMetaPattern["citation_title", _]], ReturnFailed["badxml", url]];
     Export[xmlPath, xml];
   ];
+
   subjectSpan = DeepFirstCase[xml, XMLElement["td", {___, "class" -> "tablecell subjects"}, content___] :> content];
   primarySubjects = DeepCases[subjectSpan, XMLElement["span", {"class" -> "primary-subject"}, content___] :> content];
   secondarySubjects = subjectSpan /. XMLElement["span", {"class" -> "primary-subject"}, ___] :> None;
   primarySubjects //= extractSubjects;
   secondarySubjects //= extractSubjects;
-	data = Assoc[
-    VectorApply[
-      #1 -> DeepFirstCase[xml, XMLMetaPattern[#2, content_] :> StringTrim[content]]&,
-      {"Title" -> "citation_title", "Abstract" -> "citation_abstract", "URL" -> "og:url", "PDFURL" -> "citation_pdf_url", "Date" -> "citation_date"}
-    ],
-    "Authors" -> DeepCases[xml, XMLMetaPattern["citation_author", content_] :> fromLastFirstName[StringReplace[content, $authorNormalizationRules]]],
-    "URL" -> DeepFirstCase[xml, XMLElement["meta", {"property" -> "og:url", "content" -> content_}, _] :> content],
-    "PrimarySubjects" -> primarySubjects,
-    "SecondarySubjects" -> secondarySubjects,
-    "Subjects" -> Join[primarySubjects, secondarySubjects],
-    "Origin" -> "Arxiv"
+
+  (* since we want to preserve the original order of primary / secondary, use removeDupPrefix instead of DeleteRedundantTags *)
+  allSubjects = Join[primarySubjects, secondarySubjects];
+  fieldTags = Lookup[$ArxivTaxonomyDictionary, ToLowerCase @ StripLabel @ allSubjects, Nothing];
+
+  customMetadata = Assoc[
+    "PrimaryArxivSubjects" -> primarySubjects,
+    "SecondaryArxivSubjects" -> secondarySubjects
   ];
-  data //= KeySortBy[$paperKeyOrder];
+
+  metadata = VectorApply[
+    #1 -> DeepFirstCase[xml, xmlMetaPattern[#2, content_] :> StringTrim[content]]&,
+    {"Title" -> "citation_title", "Abstract" -> "citation_abstract", "URL" -> "og:url", "PDFURL" -> "citation_pdf_url", "Date" -> "citation_date"}
+  ];
+
+  authors = DeepCases[xml, xmlMetaPattern["citation_author", content_] :> fromLastFirstName[StringReplace[content, $authorNormalizationRules]]];
+  authors //= sanitizeAuthors;
+  url = DeepFirstCase[xml, XMLElement["meta", {"property" -> "og:url", "content" -> content_}, _] :> content];
+
+  data = Assoc[
+    metadata,
+    "Authors" -> authors,
+    "URL" -> url,
+    "FieldTags" -> fieldTags,
+    "Origin" -> "Arxiv",
+    "CustomMetadata" -> customMetadata
+  ];
+
   UnpackOptions[downloadPDF, pDFPath];
-  localPdfPath = toPDFPath[pDFPath, data["Title"]];
-  data["PDFFilePath"] = Which[
-    FileExistsQ[localPdfPath], localPdfPath,
-    downloadPDF,               DownloadPaper[data, FilterOptions @ opts],
-    True,                      None
-  ];
-  data
+  postProcessPaperPageData[data, downloadPDF, pDFPath]
 ];
+
+removeDupPrefix[list_] := Select[DeleteDuplicates @ list, elem |-> NoneTrue[DeleteCases[elem] @ list, other |-> StringStartsQ[other, elem]]];
+
+(**************************************************************************************************)
+
+$ArxivTaxonomyDictionary := $ArxivTaxonomyDictionary = Assoc[
+  Rule[ToLowerCase[#1], #2]& @@@ StringExtract[ImportUTF8 @ LocalPath["Kernel", "External", "ArxivTaxonomy.txt"], "\n" -> All, "\t" -> All]
+];
+
+(**************************************************************************************************)
 
 $pageTemplate = StringFunction @ "https://arxiv.org/abs/#1"
 
-XMLMetaPattern[name_, patt_] := XMLElement["meta", {"name" -> name, "content" -> patt}, _];
+xmlMetaPattern[name_, patt_] := XMLElement["meta", {"name" -> name, "content" -> patt}, _];
 
 fromLastFirstName["Hooft, Gerard 't"] := {"Gerard", "'t Hooft"};
 
@@ -195,11 +222,8 @@ extractAPIEntryData[xml_] := Scope[
    "Origin" -> "Arxiv"
   ];
   assoc["PDFURL"] = StringReplace[assoc["URL"], "/abs/" -> "/pdf/"] <> ".pdf";
-  assoc //= KeySortBy[$paperKeyOrder];
+  assoc //= KeySortBy[paperKeyOrder];
   assoc
 ];
-
-PrivateVariable[$paperKeyOrder]
-$paperKeyOrder = <|"Title" -> 1, "Date" -> 2, "Authors" -> 3, "URL" -> 4, "PDFURL" -> 5, "PrimarySubjects" -> 8, "SecondarySubjects" -> 9, "Subjects" -> 10, "Origin" -> "Arxiv", "Abstract" -> 100|>;
 
 $authorNormalizationRules = {" St. " -> " St ", "T. St " -> "Toby St ", "Toby B. St " -> "Toby St "};

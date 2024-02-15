@@ -21,6 +21,7 @@ $PreservedFunctions = Data`UnorderedAssociation[];
 $CurrentlyLoading = False;
 $CurrentFile = None;
 $CurrentFileName = None;
+$RegexCacheDirty = False;
 
 $LoadCount = 0;
 $SourceFiles;
@@ -598,7 +599,7 @@ positionToFileLine[_, _] := Nothing;
 evaluatePackageData[packagesList_List] := Block[
   {$currentPath, $currentLineNumber, $formsChanged, $failEval,
     result, initialFile, finalFile, extraContexts,
-   GeneralUtilities`$CurrentFileName = $LoaderFileName, $Line = 0},
+   GeneralUtilities`$CurrentFileName = $LoaderFileName, $Line = 0, $ClearRegexCache = False},
   $currentPath = ""; $currentLineNumber = 0;
   $formsChanged = $failEval = False;
   $fileTimings = $fileLineTimings = Association[];
@@ -608,6 +609,10 @@ evaluatePackageData[packagesList_List] := Block[
     Scan[evaluatePackage, packagesList],
     handleMessage
   ];
+  If[$RegexCacheDirty,
+    Print["Clearing RegularExpression cache."];
+    ClearSystemCache["RegularExpression"];
+    $RegexCacheDirty = False];
   If[!MemberQ[$ContextPath, $PublicContext], AppendTo[$ContextPath, $PublicContext]];
   If[$failEval, Return[$Failed, Block]];
   If[userFileChangedQ["user_final.m"],
