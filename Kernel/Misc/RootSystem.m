@@ -74,7 +74,7 @@ RootSystemObjectQ[_] := False;
 
 (**************************************************************************************************)
 
-declareObjectPropertyDispatch[RootSystemObject, rootSystemProperty];
+DefineObjectPropertyDispatch[RootSystemObject, rootSystemProperty];
 
 rootSystemProperty[data_, "CoordinateFunction"] :=
   rootsCoordinateFunction @ data["SimpleRoots"];

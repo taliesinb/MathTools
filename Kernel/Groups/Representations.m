@@ -61,7 +61,7 @@ LinearRepresentationObject /: MakeBoxes[object:LinearRepresentationObject[data_A
   ]
 ];
 
-declareObjectPropertyDispatch[LinearRepresentationObject, representationProperty];
+DefineObjectPropertyDispatch[LinearRepresentationObject, representationProperty];
 
 PrivateFunction[representationProperty]
 

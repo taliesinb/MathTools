@@ -170,7 +170,7 @@ reverseTransition[a_ -> b_] := b -> a;
 
 PublicFunction[PathAlgebra]
 
-declareObjectPropertyDispatch[PathAlgebra, pathAlgebraProperty];
+DefineObjectPropertyDispatch[PathAlgebra, pathAlgebraProperty];
 
 MakeBoxes[pa_PathAlgebra ? HoldNoEntryQ, form_] :=
   PathAlgebraBoxes[pa, form];

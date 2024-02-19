@@ -1,10 +1,10 @@
-PrivateSpecialFunction[declareObjectPropertyDispatch, getObjectData]
+PrivateSpecialFunction[DefineObjectPropertyDispatch, getObjectData]
 
 PrivateVariable[$SelfObject]
 
 getObjectData[_] := $Failed;
 
-declareObjectPropertyDispatch[head_Symbol, dispatch_Symbol] := (
+DefineObjectPropertyDispatch[head_Symbol, dispatch_Symbol] := (
   getObjectData[head[data_Assoc] ? NoEntryQ] := data;
   (obj:Blank[head] ? NoEntryQ)[key_Str, opts___Rule] := Block[{$SelfObject = obj},
     dispatch[getObjectData @ obj, key, opts]

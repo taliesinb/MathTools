@@ -3,7 +3,7 @@ PublicFunction[WrapDQuotes, StripDQuotes, DQuotedStringQ]
 SetListable[WrapDQuotes, StripDQuotes, DQuotedStringQ]
 
 WrapDQuotes[s_Str] := StringJoin["\"", s, "\""];
-StripQuotes[s_Str] := If[StringStartsQ[s, "\""] && StringEndsQ[s, "\""], StringTake[s, {2, -2}], s];
+StripDQuotes[s_Str] := If[StringStartsQ[s, "\""] && StringEndsQ[s, "\""], StringTake[s, {2, -2}], s];
 DQuotedStringQ[s_Str] := StringStartsQ[s, "\""] && StringEndsQ[s, "\""];
 
 (**************************************************************************************************)

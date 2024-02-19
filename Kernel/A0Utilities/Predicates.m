@@ -210,3 +210,10 @@ PublicFunction[NotMatchQ]
 
 NotMatchQ[a_, b_] := !MatchQ[a, b];
 NotMatchQ[b_][a_] := !MatchQ[a, b];
+
+(**************************************************************************************************)
+
+PublicFunction[NoneQ]
+
+NoneQ[None] := True;
+NoneQ[_] := False;

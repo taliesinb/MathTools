@@ -14,6 +14,7 @@ A 4-tuple is returned consisting of:
 * list of conditions and pattern tests, and list of capture group indices involved in each
 * unknown, something to do with to do with post conditions of a RuleDelayed maybe?
 
+
 ## Processing
 
 %PatternConvert applies the sequence of replacements ():

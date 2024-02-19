@@ -36,6 +36,21 @@ DefinitionHead[(Rule|RuleDelayed|SetDelayed)[lhs_, _]] := PatternHead[lhs];
 
 (**************************************************************************************************)
 
+PublicFunction[MapUnevaluated]
+
+SetHoldAllComplete[MapUnevaluated]
+
+MapUnevaluated[f_, args_] :=
+  Map[f, Unevaluated[args]];
+
+MapUnevaluated[Fn[body_], args_] :=
+  Map[Fn[Null, body, HoldAllComplete], Unevaluated[args]];
+
+MapUnevaluated[Fn[args_, body_], args_] :=
+  Map[Fn[args, body, HoldAllComplete], Unevaluated[args]];
+
+(**************************************************************************************************)
+
 PublicFunction[HoldHead]
 
 SetHoldAllComplete[HoldHead]
@@ -435,7 +450,7 @@ setupCases[sym_Symbol, echo_, pre_, CompoundExpression[args__SetDelayed, Null...
   {holds, counter = 0},
   holds = Hold @@@ Hold[args];
   If[pre =!= Hold[], holds //= Map[Join[pre, #]&]];
-  holds = ReplaceAll[holds, procRewrites @ rewrites];
+  holds = ReplaceRepeated[holds, procRewrites @ rewrites];
   PrependTo[holds, Hold[case___, UnmatchedCase2[sym, case]]];
   holds = ReplaceAll[holds, HoldPattern[Out[] | $]  :> sym];
   If[echo,
@@ -599,7 +614,8 @@ DefineMacro[PackAssociation, PackAssociation[syms__Symbol] := mPackAssociation[s
 SetHoldAllComplete[mPackAssociation, packAssocRule];
 
 mPackAssociation[sym__] := ToQuoted[Assoc, Seq @@ MapUnevaluated[packAssocRule, {sym}]];
-packAssocRule[s_] := ToTitleCase[HoldSymbolName[s]] -> Quoted[s];
+
+packAssocRule[s_Symbol] := ToTitleCase[HoldSymbolName[s]] -> Quoted[s];
 
 (**************************************************************************************************)
 
@@ -770,6 +786,8 @@ mUnpackExtendedOptions[graph_, syms_] :=
     ]
   ];
 
+(*************************************************************************************************)
+
 SetHoldAllComplete[findMatchingSymbols];
 $lowerCaseSymbolRegExp = RegularExpression["\\b([a-z])(\\w+)\\b"];
 findMatchingSymbols[syms_List] := findMatchingSymbols[syms] = Block[
@@ -777,7 +795,167 @@ findMatchingSymbols[syms_List] := findMatchingSymbols[syms] = Block[
   str = ToString[Unevaluated @ syms, InputForm];
   str = StringReplace[str, $lowerCaseSymbolRegExp :> StringJoin[ToUpperCase["$1"], "$2"]];
   ToExpression[str, InputForm, Quoted]
+
+(**************************************************************************************************)
+
+PublicMutatingFunction[BinaryReadToSymbols]
+
+PublicSymbol[uint8, uint16, uint32, uint64, uint128]
+PublicSymbol[int8, int16, int32, int64, int128]
+PublicSymbol[char8, nzstr]
+
+SetUsage @ "BinaryReadToSymbols[stream$, var$1:type$1, $$] unpacks a binary stream into vars$.
+* each type$ must be one of:
+  * %int8, %int16, %int32, %int64, %int64, %int128
+  * %uint8, %uint16, %uint32, %uint64, %uint64, %uint128
+  * %zstr
+  * (possibly nested) tuples of these
+* var$1:var$2:$$:type$ specifies multiple fields with the same type
+* additionally specs include:
+  * %Goto[n$]: move to a given offset from start of position
+  * %Skip[n$]: skip n$ bytes
+"
+
+SetHoldAllComplete[mBinaryReadToSymbols, binaryUnpacker, unpackBinaryTypeSpec];
+
+DefineMacro[BinaryReadToSymbols, BinaryReadToSymbols[stream_, specs__] := mBinaryReadToSymbols[stream, {specs}]];
+
+General::binaryUnpackFailed = "Could not unpack fields.";
+mBinaryReadToSymbols[stream_, specs_] := Block[
+  {syms, types, names, $bytePos},
+  $bytePos = 0;
+  {syms, names, types} = Transpose @ HoldMap[binaryUnpacker, specs];
+  With[{syms = syms, types = types, names = names},
+    Quoted[syms = Replace[
+      BinaryRead[stream, types],
+      Except[_List] :> ReturnFailed[General::binaryUnpackFailed]
+    ]]
+  ]
 ];
+
+(**************************************************************************************************)
+
+PublicMutatingFunction[BinaryReadToAssociation]
+
+SetHoldAllComplete[mBinaryReadToAssociation]
+
+DefineMacro[BinaryReadToAssociation,
+  BinaryReadToAssociation[stream_, specs__] := mBinaryReadToAssociation[stream, {specs}]];
+
+mBinaryReadToAssociation[stream_, specs_] := Block[
+  {syms, names, types, $bytePos, indices, transformer = Identity, reader},
+  $bytePos = 0;
+  {syms, names, types} = Transpose @ HoldMap[binaryUnpacker, specs];
+
+  indices = List /@ MatchIndices[types, "TerminatedString"];
+  If[indices =!= {}, transformer = MapAt[fromTerminatedString, indices]];
+
+  indices = List /@ MatchIndices[names, None];
+  names = Select[names, StringQ];
+  If[indices =!= {}, transformer = transformer /* Delete[indices]];
+
+  reader = If[AllSameQ[types],
+    ToQuoted[BinaryReadList, Quoted @ stream, First @ types, Len @ types],
+    ToQuoted[BinaryRead, Quoted @ stream, types]
+  ];
+  With[{names = names, transformer = transformer, reader = reader},
+    Quoted @ AssociationThread[names, Replace[
+      transformer @ reader,
+      Except[_List] :> ReturnFailed[General::binaryUnpackFailed]
+    ]]
+  ]
+];
+
+(**************************************************************************************************)
+
+fromTerminatedString[s_] := FromCharacterCode[ToCharacterCode @ s, "UTF8"];
+
+(**************************************************************************************************)
+
+(* foo:bar:baz:bam:int16 is actually a weird mix of optionals and patterns *)
+binaryUnpacker[e:(_Pattern | _Optional)] := Module[
+  {type, vars},
+  type = DeepFirstCase[Hold @ e, $atomTypeP];
+  vars = Cases[Hold @ e,
+    s:Except[$atomTypeP, _Symbol] :> Hold[s],
+    Infinity, Heads -> False
+  ];
+  Splice @ Map[binaryUnpacker[# -> type]&, vars]
+];
+
+binaryUnpacker[Verbatim[Pattern][sym_Symbol, spec_]] :=
+  binaryUnpacker[sym -> spec];
+
+binaryUnpacker[(sym_Symbol | Hold[sym_]) -> spec_] :=
+  {Quoted @ sym, SymbolName @ Unevaluated @ sym, unpackBinaryTypeSpec @ spec};
+
+binaryUnpacker[spec_] :=
+  {Quoted @ QuiverGeometry`Private`$unused, None, unpackBinaryTypeSpec @ spec};
+
+(**************************************************************************************************)
+
+unpackBinaryTypeSpec = Case[
+  type_Symbol := (
+    $bytePos += Lookup[$binTypeSize, type];
+    Lookup[$binTypeStr, type, badBinSpec[type]]
+  );
+
+  list_List  :=
+    Map[%, list];
+
+  HoldPattern @ Skip[n_Integer ? NonNegative] := grabNBytes[n];
+  HoldPattern @ Goto[n_Integer]               := grabNBytes[n - $bytePos];
+
+  spec_ := badBinSpec[HoldForm @ spec];
+];
+
+$binTypeSize = Association[
+   int8 -> 1,  int16 -> 2,  int32 -> 4,  int64 -> 8,  int128 -> 16,
+  uint8 -> 1, uint16 -> 2, uint32 -> 4, uint64 -> 8, uint128 -> 16,
+  char8 -> 1,
+  nzstr -> 0
+];
+
+PrivateVariable[$binTypeStr]
+
+$binTypeStr = Assoc[
+   int8 -> "Integer8",          int16 -> "Integer16",          int32 -> "Integer32",          int64 -> "Integer64",          int128 -> "Integer128",
+  uint8 -> "UnsignedInteger8", uint16 -> "UnsignedInteger16", uint32 -> "UnsignedInteger32", uint64 -> "UnsignedInteger64", uint128 -> "UnsignedInteger128",
+  char8 -> "Character8",
+  nzstr -> "TerminatedString"
+];
+
+$atomTypeP = Alternatives @@ Keys[$binTypeSize];
+
+(**************************************************************************************************)
+
+grabNBytes[n_Int] := Module[{res},
+  res = Flatten @ ToList @ makeSkipType[n];
+  $bytePos += n;
+  res
+];
+
+makeSkipType = Case[
+  0                := {};
+  1                := "UnsignedInteger8";
+  2                := "UnsignedInteger16";
+  3                := {% @ 2, % @ 1};
+  4                := "UnsignedInteger32";
+  8                := "UnsignedInteger64";
+  16               := "UnsignedInteger128";
+  n_ /; 4 < n < 8  := {%[4],  %[n - 4]};
+  n_ /; 8 < n < 16 := {%[8],  %[n - 8]};
+  n_ /;     n > 16 := {%[16], %[n - 16]};
+];
+
+(**************************************************************************************************)
+
+BinaryReadToSymbols::badUnpackingSpec = "`` is not a recognized binary unpacking spec.";
+
+badBinSpec[spec_] := (
+  Message[BinaryReadToSymbols::badUnpackingSpec, MsgExpr @ spec];
+  MacroPanic["BadBinaryUnpackSpec"]
+);
 
 (**************************************************************************************************)
 

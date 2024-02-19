@@ -61,7 +61,7 @@ constructGroupoid[assoc_] := Scope[
   ConstructNoEntry[GroupoidObject, assoc]
 ];
 
-declareObjectPropertyDispatch[GroupoidObject, groupoidProperty];
+DefineObjectPropertyDispatch[GroupoidObject, groupoidProperty];
 
 groupoidProperty[data_, "CayleyFunction", opts___Rule] :=
   computeCayleyFunction[data, opts];

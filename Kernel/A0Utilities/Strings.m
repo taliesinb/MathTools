@@ -17,6 +17,34 @@ LowerCaseFirstQ[str_Str] := LowerCaseQ @ StringTake[str, 1];
 
 (**************************************************************************************************)
 
+PublicFunction[LinearSyntaxQ, ContainsLinearSyntaxQ]
+
+LinearSyntaxQ[s_Str] := StringStartsEndsQ[s, "\!\(\*", "\)"] && StringBalancedQ[s, "\(", "\)"];
+ContainsLinearSyntaxQ[s_Str] := StringContainsQ[s, "\!\(\*"] && StringContainsQ[s, "\)"];
+
+(**************************************************************************************************)
+
+PublicFunction[StringBalancedQ]
+
+StringBalancedQ[str_Str, l_, r_] := balancedQ @ Accumulate @ StringCases[str, {l -> 1, r -> -1}];
+StringBalancedQ[l_, r_][str_] := StringBalancedQ[str, l, r];
+balancedQ[{}] := True;
+balancedQ[ints_] := Min[ints] >= 0 && PN[ints] == 0;
+
+(**************************************************************************************************)
+
+PublicFunction[ToLinearSyntax, FromLinearSyntax]
+
+ToLinearSyntax[e_] := StringJoin["\!\(\*", ToString[ToBoxes @ e, InputForm], "\)"];
+
+FromLinearSyntax[str_Str] := If[StringStartsEndsQ[str, "\!\(\*", "\)"], tryEvalStr @ StringTake[str, {4, -2}], $Failed];
+FromLinearSyntax[_] := $Failed;
+
+tryEvalStr[""] := $Failed;
+tryEvalStr[str_] := Quiet @ Check[ToExpression[str, InputForm, Hold], $Failed];
+
+(**************************************************************************************************)
+
 PublicFunction[UpperCaseLast, LowerCaseLast]
 
 UpperCaseLast[str_Str] := StringJoin[StringDrop[str, -1], ToUpperCase @ StringTake[str, -1]];

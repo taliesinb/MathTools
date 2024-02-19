@@ -322,7 +322,7 @@ EchoDimensions[e_] := (Echo[Row[Dimensions @ e, "\[Times]", BaseStyle -> $DarkBl
 
 PublicTypesettingForm[MsgExpr]
 
-$msgExprOpts = Sequence[FullSymbolContext -> False, CompressLargeSubexpressions -> False, ElideAtomicHeads -> True, InlineColors -> True, CompactRealNumbers -> True];
+$msgExprOpts = Sequence[FullSymbolContext -> False, MaxStringLength -> 32, CompressLargeSubexpressions -> False, ElideAtomicHeads -> True, InlineColors -> True, CompactRealNumbers -> True];
 MsgExpr[p_MsgPath] := p;
 MsgExpr[e_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0, $msgExprOpts];
 MsgExpr[e_, n_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> n, MaxLength -> 4, MaxIndent -> 0, $msgExprOpts];
@@ -350,7 +350,7 @@ msgPathBoxes[path_Str, line_:None] := With[
   {type = If[StringStartsQ[path, ("http" | "https" | "git" | "file" | "ssh") ~~ ":"], "URL", Quiet @ FileType @ path]},
   {color = Switch[type, None, $LightRed, Directory, $LightBlue, File, GrayLevel[0.9], "URL", $LightPurple, _, $LightRed]},
   ToBoxes @ ClickForm[
-    tightColoredBoxes[If[IntegerQ[line], StringJoin[shortenPath @ path, ":", IntegerString @ line], shortenPath @ path], color],
+    RawBoxes @ tightColoredBoxes[If[IntegerQ[line], StringJoin[shortenPath @ path, ":", IntegerString @ line], shortenPath @ path], color],
     openMsgPath[path, line]
   ]
 ];
@@ -402,8 +402,8 @@ sysOpen[s_Str] := Switch[
 
 PrivateFunction[tightColoredBoxes]
 
-tightColoredBoxes[str_Str, color_] := Framed[
-  Style[str, FontFamily -> "Source Code Pro", FontSize -> 10, Bold, FontColor -> Black],
+tightColoredBoxes[str_Str, color_, sz_:10] := ToBoxes @ Framed[
+  Style[str, FontFamily -> "Source Code Pro", FontSize -> sz, Bold, FontColor -> Black],
   Background -> color, FrameStyle -> Darker[color, .2],
   ContentPadding -> False, RoundingRadius -> 2,
   ImageSize -> {Automatic, 13}, FrameMargins -> {{5, 5}, {0, 0}},
@@ -643,12 +643,6 @@ $shortCamelPatterns = {
   LowercaseLetter ~~ u:UppercaseLetter :> u,
   DigitCharacter, "$" ~~ LetterCharacter
 };
-
-(**************************************************************************************************)
-
-PublicDebuggingFunction[ToLinearSyntax]
-
-ToLinearSyntax[e_] := StringJoin["\!\(\*", ToString[ToBoxes @ e, InputForm], "\)"];
 
 (**************************************************************************************************)
 

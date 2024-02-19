@@ -13,3 +13,6 @@ Scratch/*
 *.sublime-workspace
 *.glyphs
 Fonts/*
+*.dylib
+*.dylib.dSYM
+BuildOutput.txt

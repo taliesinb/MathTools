@@ -1,15 +1,19 @@
+$prettyFormOpts = Sequence[
+  MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None, FullSymbolContext -> False
+];
+
 (* this overrides GU`PrettyForm *)
 PrettyForm /: MakeBoxes[PrettyForm[expr_], StandardForm] :=
-  ToPrettifiedString[InternalHoldForm @ expr, MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None];
+  ToPrettifiedString[InternalHoldForm @ expr, $prettyFormOpts];
 
 PrettyForm /: MakeBoxes[PrettyForm[expr_, opts__], StandardForm] :=
-  ToPrettifiedString[InternalHoldForm @ expr, opts, MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None];
+  ToPrettifiedString[InternalHoldForm @ expr, opts, $prettyFormOpts];
 
 HoldPrettyForm /: MakeBoxes[HoldPrettyForm[expr_, opts__], StandardForm] :=
-  ToPrettifiedString[InternalHoldForm @ expr, opts, MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None];
+  ToPrettifiedString[InternalHoldForm @ expr, opts, $prettyFormOpts];
 
 HoldPrettyForm /: MakeBoxes[HoldPrettyForm[expr_], StandardForm] :=
-  ToPrettifiedString[InternalHoldForm @ expr, MaxIndent -> 10, CompactingWidth -> 150, TabSize -> None];
+  ToPrettifiedString[InternalHoldForm @ expr, $prettyFormOpts];
 
 (**************************************************************************************************)
 
@@ -42,7 +46,7 @@ CompactPrettyFullForm /: MakeBoxes[CompactPrettyFullForm[expr_, opts___Rule], St
 
 PublicFunction[ToPrettifiedString]
 
-PublicOption[MaxIndent, MaxDepth, MaxLength, TabSize, CompactingWidth, InlineHeads, FullSymbolContext, CompressLargeSubexpressions, ElideLargeArrays, ElideAtomicHeads, InlineColors, CompactRealNumbers]
+PublicOption[MaxIndent, MaxDepth, MaxLength, MaxStringLength, TabSize, CompactingWidth, InlineHeads, FullSymbolContext, CompressLargeSubexpressions, ElideLargeArrays, ElideAtomicHeads, InlineColors, CompactRealNumbers]
 
 (* not the same as GeneralUtilities`ToPrettyString *)
 
@@ -50,6 +54,7 @@ Options[ToPrettifiedString] = {
   MaxIndent -> 5,
   MaxDepth -> Infinity,
   MaxLength -> Infinity,
+  MaxStringLength -> 32,
   CompactingWidth -> 48,
   InlineHeads -> {"Quantity", "Entity", "Interval"},
   TabSize -> 2,
@@ -69,6 +74,7 @@ $prettyCompression = True;
 $maxIndent = 8;
 $maxDepth = 8;
 $maxLength = 128;
+$maxStringLength = 64;
 $inlineHeads = {};
 $fullSymbolContext = True;
 $elideLargeArrays = False;
@@ -80,8 +86,8 @@ $tabSize = 2;
 $compactRealLength = 2;
 
 ToPrettifiedString[e_, OptionsPattern[]] := Scope[
-  {$maxIndent, $maxWidth, $maxDepth, $maxLength, $tabSize, $inlineHeads, $fullSymbolContext, $colorSymbolContext, $prettyCompression,        $elideLargeArrays, $elideAtomicHeads, $inlineColors, $compactRealNumbers} = OptionValue[
-  {MaxIndent, CompactingWidth, MaxDepth, MaxLength, TabSize, InlineHeads, FullSymbolContext, ColorSymbolContext, CompressLargeSubexpressions, ElideLargeArrays,  ElideAtomicHeads, InlineColors, CompactRealNumbers}];
+  {$maxIndent, $maxWidth, $maxDepth, $maxLength, $maxStringLength, $tabSize, $inlineHeads, $fullSymbolContext, $colorSymbolContext, $prettyCompression,        $elideLargeArrays, $elideAtomicHeads, $inlineColors, $compactRealNumbers} = OptionValue[
+  {MaxIndent, CompactingWidth, MaxDepth, MaxLength, MaxStringLength, TabSize, InlineHeads, FullSymbolContext, ColorSymbolContext, CompressLargeSubexpressions, ElideLargeArrays,  ElideAtomicHeads, InlineColors, CompactRealNumbers}];
   $ContextPath = {"System`", "QuiverGeometry`", "GeneralUtilities`"};
   $compactRealLength = If[IntegerQ[$compactRealNumbers], $compactRealNumbers, 2];
   $compactRealNumbers = !FalseQ[$compactRealNumbers];
@@ -149,8 +155,8 @@ SetHoldAllComplete[prettyLong, fatHeadString];
 
 prettyLong = Case[
   str_Str               := Scope[
-    If[StringLength[str] < $maxLength, Return @ pretty2 @ str];
-    prefix = If[$maxLength > 5, StringTake[ToString[StringTake[str, $maxLength - 5], InputForm], {2, -2}], ""];
+    If[StringLength[str] < $maxStringLength, Return @ pretty2 @ str];
+    prefix = If[$maxStringLength > 5, StringTake[ToString[StringTake[str, $maxStringLength - 5], InputForm], {2, -2}], ""];
     StringJoin["\"", prefix, $ellipsisString, "\""]
   ];
   _List                 := StringJoin["{", $ellipsisString, "}"];
@@ -207,8 +213,9 @@ smallQ = Case[
 wideQ[_Sequence] := False;
 wideQ[e_] := (2*LeafCount[Unevaluated @ e] > $maxWidth) || (2*ByteCount[Unevaluated @ e]/48) > $maxWidth;
 
-longQ[e_Str ? HoldAtomQ] := StringLength[Unevaluated @ e] > $maxLength;
-longQ[(_?HoldAtomQ)[Shortest[a___], ___Rule]] := Len[Unevaluated @ e] > $maxLength;
+longQ[e_Str ? HoldAtomQ] := StringLength[Unevaluated @ e] > $maxStringLength;
+longQ[a_Assoc ? HoldAtomQ] := Len[Unevaluated @ a] > $maxLength;
+longQ[(_?HoldAtomQ)[Shortest[a___], ___Rule]] := Len[Unevaluated @ {a}] > $maxLength;
 longQ[e_] := Len[Unevaluated @ e] > $maxLength;
 
 shortQ[s_] := shortStringQ[s] || shortStringQ[StringDelete[s, "\!\(\*StyleBox[" ~~ Shortest[__] ~~ "Rule[StripOnInput, False]]\)"]];
@@ -248,6 +255,7 @@ pretty1 = Case[
   Verbatim[DirectedEdge][a1_, a2_]    := prettyInfix[" => ", a1, a2];
   Verbatim[UndirectedEdge][a1_, a2_]  := prettyInfix[" <=> ", a1, a2];
   col:(_RGBColor | _GrayLevel) /; TrueQ[$inlineColors] && ColorQ[Unevaluated @ col] := prettyInlineColor[col];
+
   list_List /; TrueQ[$elideLargeArrays] && HoldNumericArrayQ[list] && beefyNumericArrayQ[list] := prettyElidedList[list];
   list_List /; TrueQ[$prettyCompression] && HoldPackedArrayQ[list] && holdLeafCount[list] > 128 := prettyCompressed[list];
   list_List                      := indentedBlock["{", indentArgs @ list, "}"];
@@ -374,6 +382,7 @@ pretty2 = Case[
   e:$fatHeadP /; TrueQ[$prettyCompression] := prettyCompressed[e];
   e_Symbol ? HAQ := symbolString[e];
   e_Real ? HAQ   := realString[e];
+  _DataFrame     := "DataFrame[\[Ellipsis]]";
   e_             := chunkToString[e];
 ,
   {$fatHeadP}

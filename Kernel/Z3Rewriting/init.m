@@ -1,6 +1,6 @@
 PublicObject[RewritingSystemObject]
 
-declareObjectPropertyDispatch[RewritingSystemObject, rewritingSystemProperty];
+DefineObjectPropertyDispatch[RewritingSystemObject, rewritingSystemProperty];
 
 Options[RewritingSystemObject] = {
   CanonicalizationFunction -> None,

@@ -71,7 +71,7 @@ splitName = StringCase[
   Shortest[first__] ~~ " " ~~ last__                            := {first, trimInitials @ last};
   str__                                                         := {str};
 ,
-  {NameWord -> TitlecaseWord, SurnamePrefix -> " " ~~ LowercaseWord|"Van"|"Der"|"De"|"Von"|"St"|"Del"}
+  {NameWord -> TitleCaseWord, SurnamePrefix -> " " ~~ LowercaseWord|"Van"|"Der"|"De"|"Von"|"St"|"Del"}
 ];
 
 trimInitials[s_Str] := StringTrimLeft[s, (UppercaseLetter ~~ " " | ". ")..];
@@ -100,14 +100,14 @@ DeleteMiddleInitials[str_] := StringReplaceRepeated[str, (" " ~~ UppercaseLetter
 (**************************************************************************************************)
 
 (* not sure why this is necessary, message happens in PublicVariable on reload *)
-Clear[$englishWordsData, $EnglishWords, $LowercaseEnglishWords, $TitlecaseEnglishWords, $ProperNames];
+Clear[$englishWordsData, $EnglishWords, $LowercaseEnglishWords, $TitleCaseEnglishWords, $ProperNames];
 
-PublicFunction[EnglishWordQ, LowercaseEnglishWordQ, TitlecaseEnglishWordQ, ProperNameQ]
-PublicVariable[$EnglishWords, $LowercaseEnglishWords, $TitlecaseEnglishWords, $ProperNames]
+PublicFunction[EnglishWordQ, LowercaseEnglishWordQ, TitleCaseEnglishWordQ, ProperNameQ]
+PublicVariable[$EnglishWords, $LowercaseEnglishWords, $TitleCaseEnglishWords, $ProperNames]
 
 EnglishWordQ[str:(_Str | {___Str})]          := Lookup[$assocEnglishWords, str, False];
 LowercaseEnglishWordQ[str:(_Str | {___Str})] := Lookup[$assocLowercaseEnglishWords, str, False];
-TitlecaseEnglishWordQ[str:(_Str | {___Str})] := Lookup[$assocTitlecaseEnglishWords, str, False];
+TitleCaseEnglishWordQ[str:(_Str | {___Str})] := Lookup[$assocTitleCaseEnglishWords, str, False];
 ProperNameQ[str:(_Str | {___Str})]           := Lookup[$assocProperNames, str, False];
 
 $englishWordsPath = LocalPath["Data", "Text", "EnglishWords.mx"];
@@ -136,12 +136,12 @@ $englishWordsData := $englishWordsData = loadEnglishWordsData[];
 
 $EnglishWords := $EnglishWords                   = Keys @ Part[$englishWordsData, 1];
 $LowercaseEnglishWords := $LowercaseEnglishWords = Keys @ Part[$englishWordsData, 2];
-$TitlecaseEnglishWords := $TitlecaseEnglishWords = Keys @ Part[$englishWordsData, 3];
+$TitleCaseEnglishWords := $TitleCaseEnglishWords = Keys @ Part[$englishWordsData, 3];
 $ProperNames := $ProperNames                     = Keys @ Part[$englishWordsData, 4];
 
 $assocEnglishWords := $assocEnglishWords                   = Part[$englishWordsData, 1];
 $assocLowercaseEnglishWords := $assocLowercaseEnglishWords = Part[$englishWordsData, 2];
-$assocTitlecaseEnglishWords := $assocTitlecaseEnglishWords = Part[$englishWordsData, 3];
+$assocTitleCaseEnglishWords := $assocTitleCaseEnglishWords = Part[$englishWordsData, 3];
 $assocProperNames := $assocProperNames                     = Part[$englishWordsData, 4];
 
 (**************************************************************************************************)

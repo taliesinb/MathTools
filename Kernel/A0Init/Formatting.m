@@ -79,7 +79,7 @@ padSummaryItem[a_, b_] := BoxForm`SummaryItem[{Pane[a <> ": ", 60], b}];
 (**************************************************************************************************)
 
 Unprotect[Grid]
-Grid[a_Assoc] := Grid[KeyValueMap[List, a], Alignment -> Left, Dividers -> All, ItemSize -> {{Automatic, 30}}];
+Grid[a_Assoc] := Grid[KeyValueMap[List, a], Alignment -> Left, Dividers -> All, ItemSize -> {{Automatic, UpTo @ 150}}];
 Protect[Grid]
 
 (**************************************************************************************************)

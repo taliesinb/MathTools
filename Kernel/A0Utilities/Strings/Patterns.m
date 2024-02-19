@@ -1,16 +1,43 @@
-PublicSymbol[ShortBlank, ASCIIWord, CamelCaseWord, Base64Pattern, LowercaseWord, TitlecaseWord, TitlecasePhrase, FullNamePhrase]
+PublicSymbol[ShortBlank, ASCIIWord, Base64Pattern, LinearSyntaxPattern]
 
 DefineStringPattern[
-  ShortBlank      :> """.+?""",
-  Word            :> """\b(?:[[:alpha:]]+?)(?:'s|n't)?\b""",
-  Base64Pattern   :> """[[:alnum:]+/]+={0,2}""",
-  ASCIIWord       :> """\b[[:alnum:]]+\b""",
-  CamelCaseWord   :> """\b[[:lower:]][[:alnum:]]*\b""",
-  LowercaseWord   :> """\b[[:lower:]]+\b""",
-  TitlecaseWord   :> """\b[[:upper:]][[:lower:]]+\b""",
-  TitlecasePhrase :> """\b[[:upper:]][[:lower:]]+(?: (?:of |or |and |in |on |the |by |a |the )?[[:upper:]][[:lower:]]+)*\b""",
-  FullNamePhrase  :> """\b[[:upper:]][[:lower:]]+(?: [[:upper:]]\.?)*(?: van| der| de| von| st| del)*(?: [[:upper:]][[:lower:]]+\b)+"""
+  ShortBlank           :> """.+?""",
+  Number               :> """(?!<\d)\d+(?!\d)""",
+  Base64Pattern        :> """[[:alnum:]+/]+={0,2}""",
+  ASCIIWord            :> """\b[[:alnum:]]+\b"""
 ];
+
+zDefineStringPatternMacro[
+  LinearSyntaxPattern  :> ("\!\(\*" ~~ $lsf:Shortest[___] /; StringBalancedQ[$lsf, "\(", "\)"]) ~~ "\)"
+]
+
+DefineStringPattern[
+  LinearSyntaxPattern  :> "\!\(\*" ~~ Shortest[___] ~~ "\)"
+]
+
+PublicSymbol[EnglishlikeWord, LowercaseWord, UppercaseWord]
+
+DefineStringPattern[
+  EnglishlikeWord      :> """\b(?:[[:alpha:]][:lower:]*?)(?:'s|n't)?\b""",
+  LowercaseWord        :> """\b[[:lower:]]+\b""",
+  UppercaseWord        :> """\b[[:upper:]]+\b"""
+]
+
+PublicSymbol[CamelCaseWord, LowerCamelCaseWord, UpperCamelCaseWord]
+
+DefineStringPattern[
+  CamelCaseWord        :> """\b[[:alpha:]][[:alnum:]]*\b""",
+  LowerCamelCaseWord   :> """\b[[:lower:]][[:alnum:]]*\b""",
+  UpperCamelCaseWord   :> """\b[[:upper:]][[:alnum:]]*\b"""
+]
+
+PublicSymbol[TitleCaseWord, TitleCasePhrase, FullNamePhrase]
+
+DefineStringPattern[
+  TitleCaseWord        :> """\b[[:upper:]][[:lower:]]+\b""",
+  TitleCasePhrase      :> """\b[[:upper:]][[:lower:]]+(?: (?:of |or |and |in |on |the |by |a |the )?[[:upper:]][[:lower:]]+)*\b""",
+  FullNamePhrase       :> """\b[[:upper:]][[:lower:]]+(?: [[:upper:]]\.?)*(?: van| der| de| von| st| del)*(?: [[:upper:]][[:lower:]]+\b)+"""
+]
 
 (**************************************************************************************************)
 

@@ -28,7 +28,9 @@ the typed Package` declarations that categorize QG's own symbols.
   "IntStr"       -> IntegerString,
   "StrLen"       -> StringLength,
   "StrJoin"      -> StringJoin,
-  "Alt"          -> Alternatives
+  "Alt"          -> Alternatives,
+  "AssocMap"     -> AssociationMap,
+  "AssocThread"  -> AssociationThread
 },
 
 {"System`", "Package"} -> {

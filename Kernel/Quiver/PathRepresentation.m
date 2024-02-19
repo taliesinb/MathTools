@@ -128,7 +128,7 @@ PathRepresentationObject /: MakeBoxes[object:PathRepresentationObject[data_Assoc
 ];
 
 
-declareObjectPropertyDispatch[PathRepresentationObject, pathRepresentationProperty];
+DefineObjectPropertyDispatch[PathRepresentationObject, pathRepresentationProperty];
 
 pathRepresentationProperty[data_, "Identity"] := PathValue[
   data["InitialVertex"],

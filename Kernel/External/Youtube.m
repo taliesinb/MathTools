@@ -512,7 +512,7 @@ findPersonSpeculative[str_] := Block[
   ];
 
   (* find last names that aren't part of a longer full name that we didn't recognize above *)
-  trimmedStr = StringDelete[str, TitlecaseWord ~~ " " ~~ TitlecaseWord ~~ Maybe["-" ~~ TitlecaseWord]];
+  trimmedStr = StringDelete[str, TitleCaseWord ~~ " " ~~ TitleCaseWord ~~ Maybe["-" ~~ TitleCaseWord]];
   ScanThread[{fullName, lastName} |->
     If[StringContainsQ[trimmedStr, WordBoundary ~~ lastName ~~ WordBoundary, IgnoreCase -> True],
       Return[fullName, Block]],
@@ -785,7 +785,7 @@ ExtractTitleAuthor[title_Str, desc_:None] := Scope[
       If[PossibleFullNameQ[p], person = p; title = t; Goto[Done]],
 
     (* Group Theory Pierre Cagne (Foo University) *)
-    StartOfString ~~ t___ ~~ p:(TitlecaseWord ~~ " " ~~ TitlecaseWord) ~~ " (" ~~ u___ ~~ ")" ~~ EndOfString :>
+    StartOfString ~~ t___ ~~ p:(TitleCaseWord ~~ " " ~~ TitleCaseWord) ~~ " (" ~~ u___ ~~ ")" ~~ EndOfString :>
       If[StringContainsQ[u, "university" | "institute", IgnoreCase -> True] && PossibleFullNameQ[p], person = p; title = t; Goto[Done]],
 
     (* Group Theory - Pierre Cagne - Applications *)

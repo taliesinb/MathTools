@@ -20,6 +20,23 @@ ConstructHoldComplete[fn_, args___] :=
 
 (**************************************************************************************************)
 
+PublicFunction[CollectWhile]
+
+SetUsage @ "
+CollectWhile[body$, test$, item$] runs body$, then test$, and collects item$ into the running list if True.
+"
+
+SetHoldAll[CollectWhile];
+
+CollectWhile[body_, test_, collector_] := Module[{bag = Bag[]},
+  While[True, body; If[test, StuffBag[bag, collector], Break[]]];
+  BagPart[bag, All]
+];
+
+_CollectWhile := BadArguments[];
+
+(**************************************************************************************************)
+
 PublicFunction[ZipMap, ZipScan]
 
 ZipMap[f_, args___] := MapThread[f, {args}];
@@ -130,21 +147,6 @@ ThreadEqual[lists___]        := MapThread[Equal, {lists}];
 ThreadUnequal[lists___]      := MapThread[Unequal, {lists}];
 ThreadSame[lists___]         := MapThread[SameQ, {lists}];
 ThreadUnsame[lists___]       := MapThread[UnsameQ, {lists}];
-
-(**************************************************************************************************)
-
-PublicFunction[MapUnevaluated]
-
-SetHoldAllComplete[MapUnevaluated]
-
-MapUnevaluated[f_, args_] :=
-  Map[f, Unevaluated[args]];
-
-MapUnevaluated[Fn[body_], args_] :=
-  Map[Fn[Null, body, HoldAllComplete], Unevaluated[args]];
-
-MapUnevaluated[Fn[args_, body_], args_] :=
-  Map[Fn[args, body, HoldAllComplete], Unevaluated[args]];
 
 (**************************************************************************************************)
 

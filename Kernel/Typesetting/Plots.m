@@ -51,6 +51,7 @@ MeshImage[array_, blockSize_, OptionsPattern[]] := Scope[
   frameStyle //= getFrameMeshColor;
   meshStyle //= getFrameMeshColor;
   dims = Dimensions @ array;
+  array //= N;
   If[!ArrayQ[array, _, MachineRealQ] || !MatchQ[dims, {_, _, 3} | {_, _}],
     ReturnFailed["baddata"]];
   {h, w} = Take[dims, 2];
