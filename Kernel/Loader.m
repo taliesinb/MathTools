@@ -55,6 +55,7 @@ ExpensiveFileLineTimings
 DirectoryTimings
 FindSuspiciousCodebaseLines
 FindCodebaseLines
+ComputeSourceExpressionHashes
 
 ExpressionTable
 
@@ -271,7 +272,7 @@ $stringProcessingRules = {
   RegularExpression["(?s)\"\"\"(.*?)\"\"\""] :>
     StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""],
   RegularExpression["(?s)ExpressionTable\\[\n(.*?)\n\\]"] :>
-    StringJoin["QuiverGeometryLoader`ExpressionTable[\"", $currentContext, "\", \"", StringTrim @ StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\"]"],
+    StringJoin["QuiverGeometryLoader`ExpressionTable[\"", $currentContext, "\", \"\n", StringTrim @ StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\"\n]"],
 (*   RegularExpression["(?s)(?<=\\s)`(.*?)`(?=\\s)"] :>
     StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""],
  *)
@@ -542,6 +543,23 @@ ReadSource[cachingEnabled_:True, fullReload_:True, clear_:True] := Block[
 
   packageExpressions
 ];
+
+(*************************************************************************************************)
+
+ComputeSourceExpressionHashes[] := Module[{exprs},
+  source = ReadSource[False, True, False];
+  If[!ListQ[source], Return[$Failed]];
+  Association @ Map[computeFileHash, source]
+];
+
+computeFileHash[_] := Nothing;
+
+computeFileHash[{path_, context_, Package`PackageData[lines___List]}] :=
+  StringDrop[path, $mainPathLength] -> Association[Map[computeLineHash, Unevaluated @ {lines}]];
+
+SetAttributes[computeLineHash, HoldAllComplete];
+
+computeLineHash[{line_, expr_}] := line -> Hash[HoldComplete @ expr];
 
 (*************************************************************************************************)
 
