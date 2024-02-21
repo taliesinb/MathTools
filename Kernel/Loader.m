@@ -23,7 +23,7 @@ $CurrentFile = None;
 $CurrentFileName = None;
 $RegexCacheDirty = False;
 
-$LoadCount = 0;
+$LoadCount;
 $SourceFiles;
 
 (* these are populated by loading and used for syntax generation later *)
@@ -114,13 +114,13 @@ If[$OperatingSystem === "MacOSX",
   GeneralUtilities`Packages`PackagePrivate`$sublimePath = "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl";
 ];
 
-LVPrint["Reading core symbols from SymbolTable.m."];
+LVPrint["Reading core symbols from Data/Wolfram/SymbolTable.m."];
 
 (* we will immediately resolve these system symbols, which will take care of the vast majority of Package`PackageSymbol cases *)
-$SymbolTable = Check[Get @ FileNameJoin[{$SourceDirectory, "SymbolTable.m"}], $Failed];
+$SymbolTable = Check[Get @ FileNameJoin[{$PackageDirectory, "Data", "Wolfram", "SymbolTable.m"}], $Failed];
 If[!MatchQ[$SymbolTable, {Rule[_, _List]..}],
   Print["Error in SymbolTable, aborting."];
-  Abort[];
+  End[]; EndPackage[]; Abort[];
 ];
 
 $SymbolAliases = Lookup[$SymbolTable, "SymbolAliases"];
@@ -365,7 +365,7 @@ resolveRemainingSymbols[{path_, context_, packageData_Package`PackageData, _}] :
 
 (*************************************************************************************************)
 
-$skippedFilesPattern = {"Loader.m", "Watcher.m", "init.m", "*.old.m", "SymbolTable.m", "user_*.m"};
+$skippedFilesPattern = {"Loader.m", "Watcher.m", "init.m", "*.old.m", "user_*.m"};
 
 SourceFiles[] := Block[
   {skippedFiles, userIgnoreFile, ignoredFiles, sourceFiles},
@@ -761,7 +761,7 @@ LoadSource[fullReload_:True, fullRead_:False, silent_:False] := Block[
   $lastLoadSuccessful = False;
   Block[{packages = ReadSource[!fullRead, fullReload, True]},
     If[FailureQ[packages], Return[False]];
-    $LoadCount++;
+    If[!IntegerQ[$LoadCount], $LoadCount = 0]; $LoadCount++;
     If[!FailureQ[evaluatePackageData @ packages], $lastLoadSuccessful = True];
   ];
   $lastLoadSuccessful

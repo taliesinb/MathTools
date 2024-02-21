@@ -264,7 +264,7 @@ groupSortIndex["Function"] = 2;
 UpdateSublimeSyntaxFiles::messageOccurred = "Message occurred during computation, aborting.";
 UpdateSublimeSyntaxFiles::invalidResult = "Did not produce valid results, aborting.";
 UpdateSublimeSyntaxFiles::badAlias = "Cannot resolve `` to known symbol.";
-UpdateSublimeSyntaxFiles::noSystemSymbols = "Cannot load system symbol groups from ``.";
+UpdateSublimeSyntaxFiles::noSystemSymbols = "Cannot load system symbol groups from ``. Have you run generate_syntax_table.wls?";
 
 UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
 
@@ -278,12 +278,12 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
     loaderTable = QuiverGeometryLoader`$SymbolTable;
 
     (* system groups *)
-    systemSymbolPath = LocalPath["Data", "Syntax", "SystemSymbols.mx"];
+    systemSymbolPath = LocalPath["Data", "Wolfram", "SystemSymbolTable.mx"];
     groups = ImportMX @ systemSymbolPath;
     If[!AssociationQ[groups], ThrowMessage["noSystemSymbols", MsgPath @ systemSymbolPath]];
 
     groups = Union /@ groups;
-    (* allow changes to SymbolTable.m to override the system symbol group assignments,
+    (* allow changes to Data/Wolfram/SymbolTable.m to override the system symbol group assignments,
        since its expensive to run the generate_syntax_table.wls script *)
     loaderSystemSymbolGroups = systemSymToName /@ KeyMap[Last, KeySelect[loaderTable, MatchQ[{"System`", _}]]];
     loaderSystemSymbols = Union @@ Values[loaderSystemSymbolGroups];

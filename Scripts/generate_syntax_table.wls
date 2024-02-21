@@ -193,7 +193,7 @@ Print["Group names: ", Keys[$finalGroups]];
 
 Print["Exporting symbols to disk."];
 
-$mxDir = FileNameJoin[{$packageDirectory, "Data", "Syntax", "SystemSymbols.mx"}];
+$mxDir = FileNameJoin[{$packageDirectory, "Data", "Wolfram", "SystemSymbolTable.mx"}];
 ExportMX[$mxDir, KeySort @ $finalGroups]
 
 Print["Size on disk: ", FileByteCount[$mxDir]];

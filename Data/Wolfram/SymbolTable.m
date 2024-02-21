@@ -3,7 +3,7 @@ without resorting to Symbol, and it also helps the SublimeText script get primed
 of all system symbols for the purposes of syntax highlighting. so these lists aren't exhaustive, except
 in one or two cases where there is no good programmatic way of gathering a particular symbol group (e.g. GraphicsDirective).
 
-when generating syntax definitions, we supplement this table using the separate KernelSymbolTable.m, which the script
+when generating syntax definitions, we supplement this table using the separate Data/Wolfram/SystemSymbolTable.mx, which the script
 generates one per Mathematica release (and which consults this table for help), and also by scanning QG for all
 the typed Package` declarations that categorize QG's own symbols.
 *)
