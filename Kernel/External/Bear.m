@@ -1,9 +1,6 @@
 PublicIOFunction[SaveBearData, LoadBearData]
 
-toBearDataPath[name_] := (
-  EnsureDirectory[LocalPath["Data", "Bear"]];
-  LocalPath["Data", "Bear", name <> ".mx"]
-);
+toBearDataPath[name_] := DataPath["Bear", name <> ".mx"];
 
 SaveBearData[name_Str] := ExportMX[toBearDataPath[name], BearNoteData[All, All]];
 

@@ -27,7 +27,7 @@ ImportScholarPage::baddl = "URL `` could not be imported as XML."
 ImportScholarPage::badxml = "URL `` was downloaded as XML that did not contain a title."
 ImportScholarPage::badxml2 = "XML for paper with id `` was missing a field for ``."
 
-xmlFilePath[id_] := LocalPath["Data", "Scholar", id <> ".mx"];
+xmlFilePath[id_] := DataPath["Scholar", id <> ".mx"];
 
 ImportScholarPage[url_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[$verbose];
@@ -45,7 +45,7 @@ ImportScholarPage[url_Str, opts:OptionsPattern[]] := Scope[
     xml = ImportMX[xmlPath]
   ,
     url = $paperPageTemplate[$ScholarUserID, id];
-    EnsureDirectory @ LocalPath["Data", "Scholar"];
+
     VPrint["Querying Google Scholar with ", MsgPath @ url];
     xml = WithInternet @ Import[url, "XMLObject"];
     If[H[xml] =!= XMLObject["Document"], ReturnFailed["baddl", url]];

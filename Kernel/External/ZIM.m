@@ -46,7 +46,7 @@ PublicFunction[ClearZimCache]
 
 ClearZimCache[] := (
   $ZimDataCache = UAssoc[];
-  Scan[DeleteFile, FileNames["*.mx", LocalPath["Data", "Zim"], Infinity]];
+  Scan[DeleteFile, FileNames["*.mx", DataPath["Zim"], Infinity]];
 );
 
 (**************************************************************************************************)

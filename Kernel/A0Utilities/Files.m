@@ -1,9 +1,3 @@
-PrivateVariable[$QGCacheDirectory]
-
-$QGCacheDirectory = LocalPath["Data"];
-
-(**************************************************************************************************)
-
 PublicIOFunction[EnsureDirectoryShallow]
 
 General::filenotdir = "Provided path `` should be to a directory, not a file."
@@ -28,7 +22,7 @@ CacheFilePath[name_, args___] :=
   CacheFilePath[name, args, FileExtension -> "mx"]
 
 CacheFilePath[name_, args___, FileExtension -> ext_] :=
-  PathJoin[$QGCacheDirectory, name, StringJoin[Riffle[toCacheArgString /@ {args}, "_"], ".", ext]];
+  DataPath[name, StringJoin[Riffle[toCacheArgString /@ {args}, "_"], ".", ext]];
 
 $simpleArgP = _Int | _Str | None | Infinity | False | True;
 
@@ -261,12 +255,6 @@ PublicIOFunction[PrettyPut]
 PrettyPut[expr_, path_Str] := ExportUTF8[path, ToPrettifiedString @ expr];
 
 _PrettyPut := BadArguments[];
-
-(**************************************************************************************************)
-
-PrivateFunction[LocalPath]
-
-LocalPath[args___] := PathJoin[$PackageDirectory, args];
 
 (**************************************************************************************************)
 

@@ -59,6 +59,6 @@ DownloadGithubRepo[userName_Str, repo_Str, OptionsPattern[]] := Scope[
   subDir
 ]
 
-$githubZipLocalFileTemplate = Fn[EnsureDirectory @ LocalPath["Data", "Github"]; LocalPath["Data", "Github", #1 <> "_" <> #2 <> "_" <> #3 <> ".zip"]];
+$githubZipLocalFileTemplate = Fn[DataPath["Github", #1 <> "_" <> #2 <> "_" <> #3 <> ".zip"]];
 $githubZipURLTemplate = StringFunction @ "https://github.com/#1/#2/archive/refs/heads/#3.zip"
 

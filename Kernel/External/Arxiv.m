@@ -1,4 +1,4 @@
-xmlFilePath[id_] := LocalPath["Data", "Arxiv", StringReplace[id, "/"|"." -> "_"] <> ".m"]
+xmlFilePath[id_] := DataPath["Arxiv", StringReplace[id, "/"|"." -> "_"] <> ".m"]
 
 (**************************************************************************************************)
 
@@ -91,7 +91,7 @@ removeDupPrefix[list_] := Select[DeleteDuplicates @ list, elem |-> NoneTrue[Dele
 (**************************************************************************************************)
 
 $ArxivTaxonomyDictionary := $ArxivTaxonomyDictionary = Assoc[
-  Rule[ToLowerCase[#1], #2]& @@@ StringExtract[ImportUTF8 @ LocalPath["Kernel", "External", "ArxivTaxonomy.txt"], "\n" -> All, "\t" -> All]
+  Rule[ToLowerCase[#1], #2]& @@@ StringExtract[ImportUTF8 @ DataPath["Text", "ArxivTaxonomy.txt"], "\n" -> All, "\t" -> All]
 ];
 
 (**************************************************************************************************)

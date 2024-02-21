@@ -1,4 +1,4 @@
-xmlFilePath[id_] := LocalPath["Data", "OpenReview", id <> ".m"]
+xmlFilePath[id_] := DataPath["OpenReview", id <> ".m"]
 
 (**************************************************************************************************)
 

@@ -215,7 +215,7 @@ $prefixMap      := $prefixMap        = loadSyntaxMap["Prefix.txt"];
 $postfixMap     := $postfixMap       = loadSyntaxMap["Postfix.txt"];
 
 loadSyntaxMap[name_] := Scope[
-  path = LocalPath["Data", "Wolfram", name];
+  path = DataPath["Wolfram", name];
   table = ImportUTF8 @ path;
   entries = StringTrim /@ StringSplit[StringSplit[table, "\n"], Whitespace];
   rules = charHeadRule @@@ entries;
@@ -278,7 +278,7 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
     loaderTable = QuiverGeometryLoader`$SymbolTable;
 
     (* system groups *)
-    systemSymbolPath = LocalPath["Data", "Wolfram", "SystemSymbolTable.mx"];
+    systemSymbolPath = DataPath["Wolfram", "SystemSymbolTable.mx"];
     groups = ImportMX @ systemSymbolPath;
     If[!AssociationQ[groups], ThrowMessage["noSystemSymbols", MsgPath @ systemSymbolPath]];
 

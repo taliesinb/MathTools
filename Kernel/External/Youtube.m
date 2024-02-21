@@ -1,4 +1,4 @@
-jsonFilePath[id_] := LocalPath["Data", "Youtube", id <> ".json"];
+jsonFilePath[id_] := DataPath["Youtube", id <> ".json"];
 
 (**************************************************************************************************)
 

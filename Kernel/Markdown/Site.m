@@ -88,7 +88,7 @@ SiteData[siteName_Str] := CatchMessage @ getSiteData[siteName];
 General::badsitename = "No site named ``, existing sites are: ``.";
 General::corruptsite = "Site file `` is corrupt.";
 
-toSiteFile[name_] := LocalPath["Data", "Sites", name <> ".wl"];
+toSiteFile[name_] := DataPath["Sites", name <> ".wl"];
 
 getSiteData[siteName_] := Scope[
   siteFile = toSiteFile @ siteName;

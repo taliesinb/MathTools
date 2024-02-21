@@ -5,17 +5,17 @@ $firstNamesURL = "https://www.usna.edu/Users/cs/roche/courses/s15si335/proj1/fil
 CacheVariable[$BloomFilters]
 
 LoadFirstNamesBloomFilter[] := Scope[
-  namesBloomFile = LocalPath["Data", "Text", "FirstNames.mx"];
+  namesBloomFile = DataPath["Text", "FirstNames.mx"];
   If[!FileExistsQ[namesBloomFile],
     PrintTemporary["Populating Bloom filter for first names."];
 
-    standardFirstNamesPath = LocalPath["Data", "Text", "StandardFirstNames.txt"];
+    standardFirstNamesPath = DataPath["Text", "StandardFirstNames.txt"];
     If[!FileExistsQ[standardFirstNamesPath] && FailureQ[
       PrintTemporary["Downloading names.txt"];
       SafeURLDownload[$firstNamesURL, standardFirstNamesPath]], ReturnFailed[]];
     standardFirstNames = StringSplit[ImportUTF8 @ standardFirstNamesPath, "\n"];
 
-    localFirstNamesPath = LocalPath["Data", "Text", "LocalFirstNames.txt"];
+    localFirstNamesPath = DataPath["Text", "LocalFirstNames.txt"];
     If[!FileExistsQ[localFirstNamesPath],
       localFirstNames = Part[StringSplit[BearPeople[], " ", 2], All, 1];
       localFirstNames = Union @ Select[localFirstNames, StringLength[#] > 1 && UpperCaseFirstQ[#]&];
@@ -110,7 +110,7 @@ LowercaseEnglishWordQ[str:(_Str | {___Str})] := Lookup[$assocLowercaseEnglishWor
 TitleCaseEnglishWordQ[str:(_Str | {___Str})] := Lookup[$assocTitleCaseEnglishWords, str, False];
 ProperNameQ[str:(_Str | {___Str})]           := Lookup[$assocProperNames, str, False];
 
-$englishWordsPath = LocalPath["Data", "Text", "EnglishWords.mx"];
+$englishWordsPath = DataPath["Text", "EnglishWords.mx"];
 $systemWordsFile = "/usr/share/dict/words";
 $systemProperNamesFile = "/usr/share/dict/propernames";
 
@@ -148,7 +148,7 @@ $assocProperNames := $assocProperNames                     = Part[$englishWordsD
 
 PublicVariable[$MathWords]
 
-$MathWords := $MathWords = StringSplit[ImportUTF8 @ LocalPath["Data", "Text", "MathWords.txt"], "\n"];
+$MathWords := $MathWords = StringSplit[ImportUTF8 @ DataPath["Text", "MathWords.txt"], "\n"];
 
 (*************************************************************************************************)
 
@@ -198,14 +198,14 @@ tryDepluralRules[str_Str] := Scope[
 ];
 
 loadTextTable[filename_] := Scope[
-  fileStr = StringTrim @ ImportUTF8 @ LocalPath["Data", "Text", filename];
+  fileStr = StringTrim @ ImportUTF8 @ DataPath["Text", filename];
   table = StringTrim /@ StringExtract[fileStr, "\n" -> All, " ".. -> All];
   ReplaceAll[table, "_" -> ""]
 ]
 
 $depluralTuples := $depluralTuples = loadTextTable["DepluralRules.txt"];
 
-$depluralBlacklist := $depluralBlacklist = StringSplit @ ImportUTF8 @ LocalPath["Data", "Text", "DepluralBlacklist.txt"];
+$depluralBlacklist := $depluralBlacklist = StringSplit @ ImportUTF8 @ DataPath["Text", "DepluralBlacklist.txt"];
 
 $validDepluralQ := $validDepluralQ = ConstantUAssociation[Complement[$EnglishWords, $depluralBlacklist], True];
 

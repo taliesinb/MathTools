@@ -6,6 +6,24 @@ $WindowsQ =  $OperatingSystem === "Windows";
 
 (**************************************************************************************************)
 
+PrivateFunction[LocalPath, DataPath]
+
+LocalPath[args___Str] := FileNameJoin @ List[$PackageDirectory, args];
+e_LocalPath := (Message[LocalPath::badarguments, MsgExpr @ Unevaluated @ e]; $Failed)
+
+DataPath[dir_Str, args___Str] := FileNameJoin[{ensureDataDir @ dir, args}];
+e_DataPath := (Message[DataPath::badarguments, MsgExpr @ Unevaluated @ e]; $Failed)
+
+$dataDir = FileNameJoin[{$PackageDirectory, "Data"}];
+
+ensureDataDir[dir_] := Module[
+  {fullDir = FileNameJoin[{$dataDir, dir}]},
+  If[!FileExistsQ[fullDir], CreateDirectory[fullDir]];
+  ensureDataDir[dir] = fullDir
+];
+
+(**************************************************************************************************)
+
 If[!$Notebooks,
   (* this is so that e.g. Text inside graphics will still have FormBox[..., TraditionalForm] wrapped around it! *)
   System`Dump`$textFormatType = TraditionalForm;

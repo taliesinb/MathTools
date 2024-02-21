@@ -95,7 +95,7 @@ CachedIntoMX[_, _, _, resultExpr_] := resultExpr;
 the cost of EnsureDirectory, etc.  *)
 toMXPath[dir_, key_] := toMXPath[dir, key] = Module[{path},
   path = If[ListQ[key], FileNameJoin[TextString /@ key], TextString @ key];
-  path = LocalPath["Data", dir, path <> ".mx"];
+  path = DataPath[dir, path <> ".mx"];
   EnsureDirectory @ FileNameDrop @ path;
   path
 ];

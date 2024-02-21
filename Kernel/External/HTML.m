@@ -1,4 +1,4 @@
-htmlFilePath[hash_] := LocalPath["Data", "HTML", hash <> ".html"];
+htmlFilePath[hash_] := DataPath["HTML", hash <> ".html"];
 
 (**************************************************************************************************)
 
@@ -25,7 +25,6 @@ ImportHTMLToMarkdown[url_Str] := Scope[
 getXMLfromURL[url_Str] := Scope[
   hash = Base36Hash @ url;
   htmlPath = htmlFilePath[hash];
-  EnsureDirectory[LocalPath["Data", "HTML"]];
   If[!FileExistsQ[htmlPath],
     If[FailureQ[SafeURLDownload[url, htmlPath]],
       ReturnFailed[]

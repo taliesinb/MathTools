@@ -2,7 +2,7 @@ $mathCharacterTable := $mathCharacterTable = computeSymbolTranslationTable[];
 
 (* format: WL string, WL input form, katex, unicode *)
 computeSymbolTranslationTable[] := Block[{str},
-  rawString = ImportUTF8 @ LocalPath["Data", "Wolfram", "Characters.txt"];
+  rawString = ImportUTF8 @ DataPath["Wolfram", "Characters.txt"];
   $groups = {};
   rawString //= StringReplace[{StartOfLine ~~ " "... ~~ "\n" -> "", " \\" -> " \\\\", "\"" -> "\\\""}];
   rawString //= StringReplace[{StartOfLine ~~ l:("\\[" ~~ w:LetterCharacter.. ~~ "]") :> StringJoin[l, " ", w], StartOfLine ~~ "_" -> "_ _"}];

@@ -1,4 +1,4 @@
-PublicFunction[StartStringPythonSession]
+PublicIOFunction[StartStringPythonSession]
 
 StartStringPythonSession[] := Scope[
   DeleteObject /@ ExternalSessions["Python"];
@@ -30,7 +30,7 @@ pythonPostEval[s_Str] :=
 pythonPostEval[s_Str /; StringStartsQ[s, "'file://"]] :=
   CellPrint @ Cell[BoxData @ ToBoxes @ Import[StringTrimLeftRight[s, "'file://", "'"]], "PythonOutput"];
 
-PublicFunction[CopyImageToInlineHTML]
+PublicIOFunction[CopyImageToInlineHTML]
 
 CopyImageToInlineHTML[e_] := Scope[
   img = Rasterize[Style[e, Antialiasing -> False], ImageResolution-> 72];
@@ -63,7 +63,7 @@ $JupyterFileImageTemplate = StringFunction @ """<center><img width="#width" src=
 
 $pngPrefix = StringTake[$JupyterStringImageTemplate[<|"format" -> "png", "width" -> "", "encoded" -> ""|>], 36];
 
-PublicFunction[ExportToJupyter]
+PublicIOFunction[ExportToJupyter]
 
 Options[ExportToJupyter] = {
   RasterizationPath -> None,
@@ -71,7 +71,7 @@ Options[ExportToJupyter] = {
   MaxItems -> Infinity
 };
 
-$JupyterTemplate := $JupyterTemplate = ReadRawJSONFile[LocalPath["Kernel", "Export", "Template.ipynb"]];
+$JupyterTemplate := $JupyterTemplate = ReadRawJSONFile @ DataPath["Jupyter", "Template.ipynb"];
 
 $isJupyterTarget = False;
 
