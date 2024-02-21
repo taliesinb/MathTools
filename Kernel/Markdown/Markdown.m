@@ -102,7 +102,7 @@ initPNGExport[] := (Clear[initPNGExport]; Quiet @ ExportString[ConstantImage[1, 
 
 General::badnbread = "Could not read notebook ``, will be replaced with placeholder.";
 
-CacheSymbol[$NotebookToMarkdownCache]
+CacheVariable[$NotebookToMarkdownCache]
 
 toMarkdownLines[File[path_Str]] /; FileExtension[path] === "nb" := Scope[
   path = NormalizePath @ path;

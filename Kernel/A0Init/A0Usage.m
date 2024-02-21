@@ -1,3 +1,11 @@
+PublicSpecialVariable[$PosixQ, $WindowsQ, $MacOSQ]
+
+$MacOSQ =    $OperatingSystem === "MacOSX";
+$PosixQ =    $OperatingSystem =!= "Windows";
+$WindowsQ =  $OperatingSystem === "Windows";
+
+(**************************************************************************************************)
+
 If[!$Notebooks,
   (* this is so that e.g. Text inside graphics will still have FormBox[..., TraditionalForm] wrapped around it! *)
   System`Dump`$textFormatType = TraditionalForm;

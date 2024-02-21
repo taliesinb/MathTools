@@ -156,7 +156,7 @@ PreviousTextCell[] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[CopyImageToClipboard]
+PublicIOFunction[CopyImageToClipboard]
 
 CopyImageToClipboard[expr_] := (
   CopyToClipboard @ Rasterize[expr, ImageFormattingWidth -> Infinity, ImageResolution -> 144];
@@ -165,7 +165,7 @@ CopyImageToClipboard[expr_] := (
 
 (**************************************************************************************************)
 
-PublicFunction[CopyRetinaImageToClipboard]
+PublicIOFunction[CopyRetinaImageToClipboard]
 
 CopyRetinaImageToClipboard[expr_, crop_:False] := (
   CopyToClipboard @ If[crop, ImageCrop, Id] @ Rasterize[expr /. (RawImageSize -> _) -> Sequence[], ImageFormattingWidth -> Infinity, ImageResolution -> (144*2), Background -> Transparent];
@@ -174,7 +174,7 @@ CopyRetinaImageToClipboard[expr_, crop_:False] := (
 
 (**************************************************************************************************)
 
-PublicFunction[CopyBearImageToClipboard]
+PublicIOFunction[CopyBearImageToClipboard]
 
 CopyBearImageToClipboard[expr_] := (
   CopyToClipboard @ ImageCropAndPad @ Rasterize[expr /. (RawImageSize -> _) -> Sequence[], ImageFormattingWidth -> Infinity, ImageResolution -> (144*2), Background -> White];
@@ -185,7 +185,7 @@ ImageCropAndPad[img_] := ImagePad[ImageCrop[img], 50, White];
 
 (**************************************************************************************************)
 
-PublicFunction[FastCopyRetinaImageToClipboard]
+PublicIOFunction[FastCopyRetinaImageToClipboard]
 
 FastCopyRetinaImageToClipboard[expr_, crop_:True] := (
   CopyToClipboard @ If[crop, ImageCrop, Id] @ Rasterize[expr /. (RawImageSize -> _) -> Sequence[], ImageFormattingWidth -> Infinity, ImageResolution -> (144*2)];
@@ -194,13 +194,13 @@ FastCopyRetinaImageToClipboard[expr_, crop_:True] := (
 
 (**************************************************************************************************)
 
-PublicFunction[InteractiveCopyRetinaImageToClipboard]
+PublicIOFunction[InteractiveCopyRetinaImageToClipboard]
 
 InteractiveCopyRetinaImageToClipboard[expr_] := ClickForm[expr, CopyRetinaImageToClipboard[expr]];
 
 (**************************************************************************************************)
 
-PublicFunction[CopyImageGalleryToClipboard]
+PublicIOFunction[CopyImageGalleryToClipboard]
 
 $galleryCount = 0;
 newImageGalleryTempDir[] := Scope[
@@ -381,7 +381,7 @@ CopyFileToClipboard[path_] := If[
 
 (**************************************************************************************************)
 
-PublicFunction[PasteFromClipboard]
+PublicIOFunction[PasteFromClipboard]
 
 PasteFromClipboard[] := ReadString["!pbpaste"];
 

@@ -1,11 +1,25 @@
-PublicVariable[$PosixQ, $WindowsQ]
+PrivateIOFunction[WithLocalDirectory]
 
-$PosixQ :=   $OperatingSystem =!= "Windows";
-$WindowsQ := $OperatingSystem === "Windows"
+SetHoldRest[WithLocalDirectory];
+
+WithLocalDirectory[None|Automatic|Inherited, body_] :=
+	body;
+
+WithLocalDirectory[dir_Str, body_] :=
+	WithLocalSettings[
+		VPrint["Setting working directory: ", MsgPath @ dir];
+		SetDirectory[dir];
+	,
+		body
+	,
+		ResetDirectory[];
+	];
+
+_WithLocalDirectory := BadArguments[];
 
 (**************************************************************************************************)
 
-PrivateFunction[ToolAvailableQ]
+PrivateIOFunction[ToolAvailableQ]
 
 ToolAvailableQ[name_] := StringQ @ iFindTool[name];
 
@@ -23,26 +37,49 @@ SetInitialValue[$BinaryPaths, {"/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"
 
 (**************************************************************************************************)
 
-PublicFunction[FindTool]
+PublicIOFunction[FindTool]
 
-General::toolnp = "Tool `` is not present in any of the normal binary paths. Please install it.";
+General::toolNotFound = "Tool `` is not present in any of the normal binary paths. Please install it.";
 
 SetHoldRest[FindTool];
 
-FindTool[name_Str] := FindTool[name, Message[General::toolnp, name]; $Failed];
+FindTool[name_Str] := FindTool[name, Message[General::toolNotFound, name]; $Failed];
 FindTool[name_Str, else_] := ReplaceNone[iFindTool[name], else];
 
 iFindTool[name_] := iFindTool[name] = SelectFirst[PathJoin[#, name]& /@ $BinaryPaths, FileExistsQ, None];
 
 (**************************************************************************************************)
 
+PrivateIOFunction[RunUTF8]
+
+RunUTF8[str_Str, args__Str] := RunUTF8 @ StrJoin[str, args];
+
+RunUTF8[str_Str] := Module[{code},
+	VPrint["Running \"", str, "\""];
+	code = iRunUTF8[str];
+	VPrint["Exit code = ", code];
+	code
+];
+
+iRunUTF8[str_Str ? ASCIIQ] := Run[str];
+
+iRunUTF8[str_Str] := Module[{tmpFile},
+	tmpFile = MakeTemporaryFile["tool", Base36Hash[str] <> ".sh"];
+	ExportUTF8[tmpFile, str];
+	Run["/bin/bash -e " <> tmpFile]
+];
+
+_RunUTF8 := BadArguments[];
+
+(**************************************************************************************************)
+
 PrivateFunction[toolCommandString]
 
 toolCommandString[tool_, args___] := Scope[
-	cmdPath = FindTool[tool];
-	If[FailureQ @ cmdPath, ReturnFailed[]];
-	args = BashEscape /@ procArg /@ {args};
-	StringRiffle[Flatten[{cmdPath, args}], " "]
+	toolPath = FindTool[tool, None];
+	If[!StringQ[toolPath], ThrowMessage["toolNotFound", tool]];
+	args = procToolArg /@ {args};
+	StringRiffle[Flatten[{toolPath, args}], " "]
 ];
 
 (**************************************************************************************************)
@@ -55,118 +92,159 @@ falseIsFail[e_] := e;
 
 (**************************************************************************************************)
 
-PublicFunction[RunTool]
+(* inherited by things like GitClone and passed on to their calls to RunTool *)
+PrivateVariable[$genericToolOpts]
+
+$genericToolOpts = {
+	Verbose            -> Automatic,
+	DryRun             -> False,
+	StandaloneTerminal -> False
+}
+
+PublicIOFunction[RunTool]
 
 PublicOption[WorkingDirectory, StandaloneTerminal, OpenToolOutput]
 
 Options[RunTool] = {
+	WorkingDirectory   -> Automatic,
 	StandaloneTerminal -> False,
-	WorkingDirectory -> Automatic,
-	OpenToolOutput -> Automatic,
-	Verbose -> False,
-	DryRun -> False
+	OpenToolOutput     -> Automatic,
+	Verbose            -> False,
+	DryRun             -> False
 };
 
-PrivateVariable[$genericToolOpts]
+SetUsage @ "
+RunTool['tool$', args$$] run a command line tool, returning $Failed if it gave a non-zero exit code.
 
-$genericToolOpts = {
-	Verbose -> Automatic,
-	DryRun -> False,
-	StandaloneTerminal -> False
-}
+* the tool will be found via %FindTool, since Mathematica has no access to common interactive shell path setup.
 
-$dryRun = True;
-RunTool[args1___, DryRun -> bool_, args2___] := Block[{$dryRun = bool}, RunTool[args1, args2]];
+# Argument processing
 
-$tverbose = Automatic;
-RunTool[args1___, Verbose -> bool_, args2___] := Block[{$tverbose = bool}, RunTool[args1, args2]];
+* arguments are processed individually as follows:
+| 'str$'         | emit unchanged |
+| File[$$]       | emit normalized path |
+| True, False    | emit 'true' or 'false' |
+| int$, real$    | emit stringified form |
+| 'key$' -> val$ | emit as 'key$=val$' |
 
-$inTerm = False;
-RunTool[args1___, StandaloneTerminal -> bool_, args2___] := Block[{$inTerm = TrueQ[bool]}, RunTool[args1, args2]];
+* values of Automatic and None are not emitted
+* all arguments are escaped via %BashEscape, so no shell substitution will occur.
 
-General::tooldir = "WorkingDirectory -> `` does not exist."
-$wdir = None;
-RunTool[args1___, WorkingDirectory -> dir_, args2___] := Block[{$wdir = NormalizePath @ dir},
-	If[!DirectoryQ[$wdir], ThrowMessage["tooldir", $wdir]];
-	RunTool[args1, args2]
-];
+# Options
 
-$oto = Automatic;
-RunTool[args1___, OpenToolOutput -> oto_, args2___] := Block[{$oto = oto}, RunTool[args1, args2]];
+| %Verbose | whether to print all steps involved |
+| %DryRun | whether to pretend to run the tool, and print all steps |
+| %StandaloneTerminal | whether to spawn a user-visible terminal to show the tool output |
+| %WorkingDirectory | working directory of the run |
+| %OpenToolOutput | whether to show the output of the tool via %TextFileOpen |
 
-$oto = Automatic;
-RunTool[args1___, OpenToolOutput -> oto_, args2___] := Block[{$oto = oto}, RunTool[args1, args2]];
+* the default value of %OpenToolOutput -> Automatic will show the output only if the run fails.
+"
 
-RunTool::badrp = "Run failed to return an association, returned: ``"
+General::toolWorkingDirectory = "WorkingDirectory -> `` does not exist.";
+General::toolNoOutput = "Tool `` succeeded but did not produce expected output.";
+General::toolBadArgument = "Argument `` could not be stringified.";
 
-RunTool[cmd_, args___] := Scope @ Block[{$verbose = ReplaceAutomatic[$tverbose, $dryRun]},
+$openOutput = $tverbose = $runInTerminal = False; $workingDir = None;
+DefineOptionToVariableBlocking[RunTool, {DryRun :> $dryRun, Verbose :> $tverbose, StandaloneTerminal :> $runInTerminal, WorkingDirectory :> $workingDir, OpenToolOutput :> $openOutput}];
+
+RunTool[cmd_Str, args___] := Scope @ TrueQ @ CatchMessage[
+
+	$verbose = ReplaceAutomatic[$tverbose, $dryRun];
+
 	cmdStr = toolCommandString[cmd, args];
-	If[FailureQ[cmdStr], Return @ False];
-	If[$inTerm,
-		RunInTerminalWindow[If[StringQ[$wdir], $wdir, "~"], cmdStr];
+
+	If[StringQ[$workingDir] && !DirectoryQ[$workingDir], ThrowMessage["toolWorkingDirectory", $workingDir]];
+	If[$runInTerminal,
+		RunInTerminalWindow[If[StringQ[$workingDir], $workingDir, "~"], cmdStr];
 		Return @ True
 	];
-	tmpOut = MakeTemporaryFile["tool", cmd <> ".#.out"];
-	cmdStr2 = cmdStr <> " &>" <> tmpOut;
-	If[$wdir =!= None,
-		VPrint["Running \"", cmdStr, "\" in ", MsgPath @ $wdir];
-		If[$dryRun, exitCode = 0, WithLocalSettings[SetDirectory[$wdir], exitCode = RunUTF8 @ cmdStr2, ResetDirectory[]]];
-	,
-		VPrint["Running \"", cmdStr, "\""];
-		exitCode = If[$dryRun, 0, RunUTF8 @ cmdStr2];
-	];
+	outputPath = MakeTemporaryFile["tool", cmd <> ".#.out"];
+	cmdStrRedir = cmdStr <> " &>" <> outputPath;
+
+	exitCode = If[$dryRun, 0, WithLocalDirectory[$workingDir, RunUTF8 @ cmdStrRedir]];
 	success = exitCode === 0;
-	showOut = $oto;
-	SetAutomatic[showOut, !success];
-	If[TrueQ[showOut],
-		stream = OpenAppend[tmpOut, CharacterEncoding -> "UTF8"];
-		WriteLine[stream, "#### tool input follows ####"];
-		If[$wdir =!= None, WriteLine[stream, "cd \"" <> $wdir <> "\""]];
+
+	openOutput = $openOutput;
+	SetAutomatic[openOutput, !success];
+	If[TrueQ[openOutput],
+		VPrint["Opening tool output."];
+		If[!FileExistsQ[outputPath], Message[RunTool::toolNoOutput, cmd]];
+		stream = OpenAppend[outputPath, CharacterEncoding -> "UTF8"];
+		WriteLine[stream, "\n\n#### tool input follows ####"];
+		If[$workingDir =!= None, WriteLine[stream, "cd \"" <> $workingDir <> "\""]];
 		WriteLine[stream, cmdStr];
 		Close[stream];
-		TextFileOpen[tmpOut];
+		TextFileOpen[outputPath];
 	];
+
 	success
-]
+];
 
-procArg[_ -> (Automatic|None)] := Nothing;
-procArg[k_Str -> v_] := k <> "=" <> procArg[v];
-procArg[e_] := procArg @ TextString[e];
-procArg[e_Str] := e;
+_RunTool := BadArguments[];
 
-(**************************************************************************************************)
-
-PublicFunction[RunUTF8]
-
-RunUTF8[str_Str] /; ASCIIQ[str] := Run[str];
-RunUTF8[str_Str] := Scope[
-	tmpFile = MakeTemporaryFile["tool", Base36Hash[str] <> ".sh"];
-	ExportUTF8[tmpFile, str];
-	Run["/bin/bash -e " <> tmpFile]
+procToolArg = Case[
+	ignored               := Nothing;
+	_ -> ignored          := Nothing;
+	k_Str -> v_           := k <> "=" <> %[v];
+	v_Str                 := BashEscape @ v;
+	v_Int                 := IntStr[v];
+	r_Real                := TextString @ r;
+	r_Rational            := % @ N @ r;
+	False                 := "false";
+	True                  := "true";
+	File[f_]              := % @ f;
+	v_					          := ThrowMessage["toolBadArgument", MsgExpr @ v];
+,
+	{ignored -> Automatic | None}
 ];
 
 (**************************************************************************************************)
 
-PublicFunction[RunToolOutput]
+PublicIOFunction[RunToolOutput]
 
-RunToolOutput[args__, Verbose -> t_] := Block[{$tverbose = t}, RunToolOutput[args]];
+SetUsage @ "
+RunToolTooloutput['tool$', args$$] run a command line tool, returning the output of the run as a string.
+* the option %Verbose -> True prints all steps.
+* the option %WorkingDirectory -> 'dir$' specifies a working directory.
+"
 
-RunToolOutput[cmd_, args___] := Scope[
-	cmdPath = FindTool[cmd];
-	If[FailureQ[cmdPath], ReturnFailed[]];
-	args = procArg /@ {args};
-	args2 = BashEscape /@ args;
-	inFile = MakeTemporaryFile["tool", cmd <> ".#.sh"];
-	outFile = inFile <> ".out"; errFile = inFile <> ".err";
-	argStr = StringRiffle[Flatten[{cmdPath, args2, "1>" <> outFile, " 2>" <> errFile}], " "];
-	VPrint["Running \"", cmdPath, " ", StringRiffle[args2, " "]	, "\"."];
-	ExportUTF8[inFile, argStr];
-	If[Run["/bin/bash -e " <> inFile] =!= 0,
-		VPrint["Tool failed, returned error:", ImportUTF8 @ errFile];
+Options[RunToolOutput] = {
+	Verbose -> True,
+	WorkingDirectory -> Automatic
+}
+
+DefineOptionToVariableBlocking[RunToolOutput, {WorkingDirectory :> $workingDir, Verbose :> $tverbose}];
+
+RunToolOutput[cmd_String, args___] := Scope @ CatchMessage[
+
+	$verbose = ReplaceAutomatic[$tverbose, $dryRun];
+
+	cmdStr = toolCommandString[cmd, args];
+
+	cmdFile = MakeTemporaryFile["tool", cmd <> ".#.sh"];
+	outFile = cmdFile <> ".out.txt";
+	errFile = cmdFile <> ".err.txt";
+	argStr = StrJoin[cmdStr, " 1>", outFile, " 2>", errFile];
+	ExportUTF8[cmdFile, argStr];
+
+	If[StringQ[$workingDir] && !DirectoryQ[$workingDir], ReturnFailed["toolWorkingDirectory", $workingDir]];
+	VPrint["Running base command \"", cmdStr, "\" via a script at ", MsgPath @ cmdFile];
+	exitCode = WithLocalDirectory[$workingDir, RunUTF8["/bin/bash -e ", cmdFile]];
+
+	If[exitCode != 0,
+		If[FileExistsQ @ outFile, VPrint["Tool failed with output:\n", ImportUTF8 @ outFile]];
+		If[FileExistsQ @ errFile, VPrint["Tool failed with error:\n", ImportUTF8 @ errFile]];
 		ReturnFailed[]
 	];
-	ImportUTF8[outFile]
-]
+
+	If[!FileExistsQ[outFile],
+		ReturnFailed["toolNoOutput", cmd],
+		ImportUTF8[outFile]
+	]
+];
+
+_RunToolOutput := BadArguments[];
 
 (**************************************************************************************************)
 
@@ -176,11 +254,11 @@ BashEscape[s_Str] := If[StringMatchQ[s, RegularExpression["[a-zA-Z_-]+"]], s, St
 
 (**************************************************************************************************)
 
-PublicFunction[SystemOpenWith]
+PublicIOFunction[SystemOpenWith]
 
 SystemOpenWith::failopen = "Failed to open path `` with tool \"``\"."
-SystemOpenWith[path_, tool_] /; $OperatingSystem === "MacOSX" := Scope[
-	res = Run["open -a \"" <> tool <> "\" \"" <> procArg[NormalizePath @ path] <> "\""];
+SystemOpenWith[path_, tool_] /; $MacOSQ := Scope[
+	res = RunUTF8["open -a \"", tool, "\" ", procToolArg @ NormalizePath @ path];
 	If[res === 0, path,
 		Message[SystemOpenWith::failopen, MsgPath @ path, tool];
 		$Failed
@@ -191,13 +269,13 @@ SystemOpenWith[path_, _] := SystemOpen[path];
 
 (**************************************************************************************************)
 
-PublicFunction[WebpageOpen]
+PublicIOFunction[WebpageOpen]
 
 (* works best if you have "Fast Duplicate Tab Closer" extension installed *)
 WebpageOpen[s_Str] := SystemOpenWith[s, "Google Chrome"];
 
 (**************************************************************************************************)
 
-PublicFunction[TextFileOpen]
+PublicIOFunction[TextFileOpen]
 
 TextFileOpen[s_Str] := SystemOpenWith[s, "Sublime Text"];

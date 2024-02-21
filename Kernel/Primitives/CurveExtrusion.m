@@ -13,7 +13,7 @@ curveExtrusionBoxes[CurveExtrusion[curve_, r:$NumberP]] :=
 
 PublicFunction[ExtrudeCurveToPolygon]
 
-CacheSymbol[$CurveExtrusionCache]
+CacheVariable[$CurveExtrusionCache]
 
 (* not sure why, but if you don't do this the resulting polygon is closed from the start to end point *)
 doubleUpCurve = Case[

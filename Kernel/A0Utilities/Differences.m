@@ -62,7 +62,7 @@ crumbLabelString = Case[
 
 (**************************************************************************************************)
 
-PrivateHead[$ValueDiff, $WeakValueDiff, $ArrayValueDiff, $LengthDiff, $DepthDiff, $DimsDiff, $KeysAdded, $KeysRemoved, $KeysReordered, $KeysChanged, $ArgsAdded, $ArgsRemoved]
+PrivateHead[$ValueDiff, $WeakValueDiff, $ArrayValueDiff, $LengthDiff, $DepthDiff, $DimsDiff, $KeysAdded, $KeysRemoved, $KeysReordered, $KeysChanged, $ArgsAdded, $ArgsRemoved, $SetLarger, $SetSmaller, $SetDiff]
 
 DefineStandardTraditionalForm[{
   $ValueDiff[e1_, e2_]       :> diffBox @ notEqualBox[codeBox @ e1, codeBox @ e2],
@@ -76,7 +76,10 @@ DefineStandardTraditionalForm[{
   $KeysReordered[k1_, k2_]   :> diffBox @ notSameBox[keysBox @ k1, keysBox @ k2],
   $KeysChanged[k1_, k2_]     :> diffBox @ notSameBox[keysBox @ k1, keysBox @ k2],
   $ArgsAdded[n1_, n2_]       :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2],
-  $ArgsRemoved[n1_, n2_]     :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2]
+  $ArgsRemoved[n1_, n2_]     :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2],
+  $SetLarger[vals_]          :> diffBox @ plusBox[codeBox @ vals],
+  $SetSmaller[vals_]         :> diffBox @ minusBox[codeBox @ vals],
+  $SetDiff[p_, m_]           :> diffBox @ plusMinusBox[codeBox @ p, codeBox @ m]
 }];
 
 diffBox[e_] := e;
@@ -93,6 +96,7 @@ compBox[cmp_, a_, b_]           := RBox[a, changeStyle @ cmp, b];
 changeBox[prop_, a_, b_]        := RBox[propBox @ prop, ":", notSameBox[a, b]];
 plusBox[a_]                     := RBox[GreenBox @ BoldBox @ "+", " ", a];
 minusBox[a_]                    := RBox[RedBox @ BoldBox @ "-", " ", a];
+plusMinusBox[a_, b_]            := GridBox[{{GreenBox @ BoldBox @ "+", " ", a}, {RedBox @ BoldBox @ "-", " ", b}}];
 
 codeBox[a_]                     := StyleBox[a, "Code", Background -> None, FontColor -> Black];
 codeBox[HoldComplete[e_]]       := codeBox @ ToPrettifiedString[InternalHoldForm[e], MaxLength -> 20, MaxDepth -> 2, CompactRealNumbers -> 4];
@@ -161,6 +165,9 @@ diffExpr[a:HoldComplete[_Assoc ? HoldAtomQ], b:HoldComplete[_Assoc ? HoldAtomQ]]
 diffExpr[a:HoldComplete[_ ? HoldAtomQ], b:HoldComplete[_ ? HoldAtomQ]] :=
   emitAtomDiff[a, b];
 
+diffExpr[a:HoldComplete[_List ? setLikeListQ], b:HoldComplete[_List ? setLikeListQ]] :=
+  diffSet[a, b];
+
 diffExpr[a:HoldComplete[_List ? HoldPackedArrayQ], b:HoldComplete[_List ? HoldPackedArrayQ]] :=
   diffArray[a, b];
 
@@ -179,6 +186,29 @@ diffExpr[a_HoldComplete, b_HoldComplete] :=
   emitAtomDiff[a, b];
 
 _diffExpr := BadArguments[];
+
+(**************************************************************************************************)
+
+SetHoldFirst[setLikeListQ]
+
+setLikeListQ[{}] := False;
+setLikeListQ[e_List] := VectorQ[Unevaluated @ e, HoldAtomQ] && OrderedQ[Unevaluated @ e];
+
+diffSet[HoldComplete[{a__}], HoldComplete[{b__}]] :=
+  diffSet2[HoldComplete[a], HoldComplete[b]];
+
+diffSet2[a_, b_] := Which[
+  SubsetQ[a, b],
+    emitDiff @ $SetSmaller @ toListHC @ Complement[a, b],
+  SubsetQ[b, a],
+    emitDiff @ $SetLarger @ toListHC @ Complement[b, a],
+  IntersectingQ[a, b],
+    emitDiff @ $SetDiff[toListHC @ Complement[b, a], toListHC @ Complement[a, b]],
+  True,
+    withCrumb[$ArgsCrumb @ HoldComplete[List], diffArgs[a, b]]
+];
+
+toListHC[HoldComplete[a___]] := HoldComplete @ List[a];
 
 (**************************************************************************************************)
 

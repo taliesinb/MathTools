@@ -99,7 +99,7 @@ assemblePrimitives = Case[
 ];
 
 (* TODO: use Rasterization utilities for this instead! *)
-CacheSymbol[$BoundingBoxCache]
+CacheVariable[$BoundingBoxCache]
 
 cachedBoundingBox[Text[t_, ___, BaseStyle -> baseStyle_, ___]] :=
   cachedBoundingBox[Style[t, BaseStyle -> baseStyle]];

@@ -149,7 +149,7 @@ PaperPageTitle[authors_, title_] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[DownloadPaper]
+PublicIOFunction[DownloadPaper]
 
 PublicVariable[$PDFPath]
 
@@ -245,7 +245,7 @@ toPaperPDFPath[pdfPath_, authorsAndTitle_] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[DownloadPDFMirror, FindPDFMirrorURL]
+PublicIOFunction[DownloadPDFMirror, FindPDFMirrorURL]
 
 PublicVariable[$SciHubServers]
 

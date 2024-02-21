@@ -67,7 +67,7 @@ textIconBoxes[TextIcon[str_, opts___Rule]] := Scope[
 
 (**************************************************************************************************)
 
-CacheSymbol[$TextIconVectorCache]
+CacheVariable[$TextIconVectorCache]
 
 textIconVectorBoxes[str_, fontSize_, fontColor_, fontWeight_, fontFamily_, fontSlant_, formatType_, contentPadding_, background_] := Scope @ CachedInto[
   $TextIconVectorCache, Hash @ {str, fontSize, fontColor, fontWeight, fontFamily, fontSlant, formatType, contentPadding, background},
@@ -121,7 +121,7 @@ toItalicDir = Case[
 
 (**************************************************************************************************)
 
-CacheSymbol[$TextIconRasterCache]
+CacheVariable[$TextIconRasterCache]
 
 textIconRasterBoxes[str_, fontSize_Int, fc_, fw_, ff_, fs_, form_, cp_] := CachedInto[
   $TextIconRasterCache, {str, fontSize, fc, fw, ff, fs, form, cp},

@@ -117,7 +117,12 @@ If[$OperatingSystem === "MacOSX",
 LVPrint["Reading core symbols from SymbolTable.m."];
 
 (* we will immediately resolve these system symbols, which will take care of the vast majority of Package`PackageSymbol cases *)
-$SymbolTable = Get @ FileNameJoin[{$SourceDirectory, "SymbolTable.m"}];
+$SymbolTable = Check[Get @ FileNameJoin[{$SourceDirectory, "SymbolTable.m"}], $Failed];
+If[!MatchQ[$SymbolTable, {Rule[_, _List]..}],
+  Print["Error in SymbolTable, aborting."];
+  Abort[];
+];
+
 $SymbolAliases = Lookup[$SymbolTable, "SymbolAliases"];
 $SymbolTable = DeleteCases[$SymbolTable, "SymbolAliases" -> _];
 

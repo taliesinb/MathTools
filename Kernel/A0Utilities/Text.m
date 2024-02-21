@@ -2,7 +2,7 @@ PublicFunction[PossibleFirstNameQ, PossibleFullNameQ]
 
 $firstNamesURL = "https://www.usna.edu/Users/cs/roche/courses/s15si335/proj1/files.php%3Ff=names.txt&downloadcode=yes";
 
-CacheSymbol[$BloomFilters]
+CacheVariable[$BloomFilters]
 
 LoadFirstNamesBloomFilter[] := Scope[
   namesBloomFile = LocalPath["Data", "Text", "FirstNames.mx"];
@@ -34,7 +34,7 @@ LoadFirstNamesBloomFilter[] := Scope[
     bloomFilter = ImportMX @ namesBloomFile;
     If[H[bloomFilter] =!= DataStructure,
       Print["Bloom filter file is corrupt."];
-      DeleteFile[namesBloomFile];
+      TrashFile[namesBloomFile];
       Return @ LoadFirstNamesBloomFilter[];
     ];
   ];

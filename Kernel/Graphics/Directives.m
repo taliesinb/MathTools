@@ -24,7 +24,7 @@ $colorNormalizationRules = {
 
 (**************************************************************************************************)
 
-SystemGraphicsDirective[VeryTransparent, HalfTransparent, PartlyTransparent, Opaque]
+PublicGraphicsDirective[VeryTransparent, HalfTransparent, PartlyTransparent, Opaque]
 
 VeryTransparent::usage = HalfTransparent::usage = PartlyTransparent::usage = Opaque::usage = "";
 
@@ -49,7 +49,7 @@ $opacityNormalizationRules = {
 
 (**************************************************************************************************)
 
-SystemGraphicsDirective[VeryThick, MediumThick, SlightlyThick, SlightlyThin, MediumThin, VeryThin]
+PublicGraphicsDirective[VeryThick, MediumThick, SlightlyThick, SlightlyThin, MediumThin, VeryThin]
 
 (* how AbsoluteThickness works:
   Thin/AT[Tiny] = AT[0.25],
@@ -106,7 +106,7 @@ normalizeStyles[e_] := ReplaceAll[e, $styleNormalizationRules];
 
 (**************************************************************************************************)
 
-SystemGraphicsDirective[FaceEdgeForm]
+PublicGraphicsDirective[FaceEdgeForm]
 
 (* TODO: retire this in favor of SolidEdgeForm *)
 toFECol[color_ -> op_] := Opacity[op, color];

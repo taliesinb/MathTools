@@ -193,7 +193,7 @@ PublicFunction[ColorGradientRasterize]
 
 PublicOption[DilationFactor]
 
-CacheSymbol[$GradientRasterizationCache]
+CacheVariable[$GradientRasterizationCache]
 
 Options[ColorGradientRasterize] = {
   DilationFactor -> 1,

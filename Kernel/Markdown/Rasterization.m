@@ -56,7 +56,7 @@ linearSyntaxRasterizationFunction[cell_, ___] := Assoc[
 
 PrivateFunction[base64RasterizationFunction]
 
-CacheSymbol[$Base64RasterizationCache]
+CacheVariable[$Base64RasterizationCache]
 
 base64RasterizationFunction[type_, retina_][e_] := Scope[
   

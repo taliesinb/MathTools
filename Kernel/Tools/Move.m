@@ -1,4 +1,9 @@
-PublicFunction[MoveFile]
+PublicIOFunction[MoveFile]
+
+SetUsage @ "
+MoveFile['src$', 'tgt$'] combines %RenameFile and %RenameDirectory.
+* The option OverwriteTarget can be given.
+"
 
 MoveFile::badmove = "Could not move `` to ``."
 MoveFile::badsource = "Source `` does not exist."
@@ -29,7 +34,9 @@ MoveFile[source_Str, target_Str, OptionsPattern[]] := Scope[
     success = True
   ,
     success = If[ASCIIQ[source] && ASCIIQ[target],
-      Quiet @ Check[If[isDir, RenameDirectory, RenameFile][source, target]; True, False]
+      fn = If[isDir, RenameDirectory, RenameFile];
+      VPrint["Calling ", fn];
+      Quiet @ Check[fn[source, target]; True, False]
     ,
       RunTool["mv", source, target]
     ]
@@ -41,14 +48,29 @@ MoveFile[_, _] := $Failed;
 
 (**************************************************************************************************)
 
-PublicFunction[TrashFile]
+PublicIOFunction[TrashFile]
+
+SetUsage @ "
+TrashFile[path$] deletes a file or directory by moving it into the system's trash directory.
+* a random suffix is added to esnure existing trash is not overwritten.
+"
 
 TrashFile::nofile = "File `` does not exist.";
 
+$trashPath := $trashPath = If[$MacOSQ, ExpandFileName["~/.Trash"], EnsureDirectory @ FileTemporaryPath["Trash"]];
+
 TrashFile[path_Str] := Scope[
+  path //= NormalizePath;
   If[!FileExistsQ[path], ReturnFailed["nofile", MsgPath @ path]];
   trashName = FileNameTake[path] <> "." <> RandomString[6];
-  trashPath = TemporaryPath["Trash", trashName];
-  MoveFile[path, trashPath];
+  trashPath = PathJoin[$trashPath, trashName];
+  VPrint["Trashing ", MsgPath @ path, " to ", MsgPath @ trashPath];
+
+  (* try avoid recursing, because MoveFile and TrashFile have a mutual recursion situation *)
+  If[ASCIIQ[path] && ASCIIQ[trashPath],
+    If[DirectoryQ[path], RenameDirectory, RenameFile][path, trashPath],
+    MoveFile[path, trashPath, OverwriteTarget -> True];
+  ];
+
   trashPath
 ];

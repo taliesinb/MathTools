@@ -95,7 +95,7 @@ $textureCoords = Assoc[
 
 (**************************************************************************************************)
 
-CacheSymbol[$TextureBoxCache]
+CacheVariable[$TextureBoxCache]
 
 cachedTextureBoxAndSize[object_] :=
   CachedInto[$TextureBoxCache, Hash @ object, textureBoxesAndSize @ object];

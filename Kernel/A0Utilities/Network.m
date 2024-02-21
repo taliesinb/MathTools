@@ -1,12 +1,12 @@
-PublicFunction[CachedURLFetch]
+PublicIOFunction[CachedURLFetch]
 
-CacheSymbol[$URLFetchCache]
+CacheVariable[$URLFetchCache]
 
 CachedURLFetch[url_] := CachedInto[$URLFetchCache, url, WithInternet @ URLFetch[url, $urlFetchOptions]];
 
 (**************************************************************************************************)
 
-PublicFunction[SafeURLDownload]
+PublicIOFunction[SafeURLDownload]
 
 General::baddl = "Failed to download `` to ``."
 

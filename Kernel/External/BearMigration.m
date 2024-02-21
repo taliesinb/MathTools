@@ -1,5 +1,4 @@
-
-PublicFunction[ExportBearNoteToObsidian]
+PublicIOFunction[ExportBearNoteToObsidian]
 
 PublicOption[CompressImages]
 
@@ -318,7 +317,7 @@ toLocalPath[path_] := "file://" <> StringReplace[path, " " -> "%20"];
 
 (*************************************************************************************************)
 
-CacheSymbol[$PDFDateCache]
+CacheVariable[$PDFDateCache]
 
 guessPDFdate[path_] := Scope[
   CachedInto[$PDFDateCache, path,

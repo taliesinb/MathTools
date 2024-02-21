@@ -1,4 +1,4 @@
-PublicHead[RecentYearPattern]
+PublicStringPattern[RecentYearPattern]
 
 $recentYearRE = """(?:20[012]\d)""";
 
@@ -8,7 +8,7 @@ DefineStringPattern[
 
 (**************************************************************************************************)
 
-PublicHead[NumericDatePattern]
+PublicStringPattern[NumericDatePattern]
 
 $longYearRE  = """(?:(?:19|20)\d\d)""";
 $shortYearRE = """(?:[012789]\d)""";
@@ -33,7 +33,7 @@ DefineStringPattern[
 
 (**************************************************************************************************)
 
-PublicHead[SlashDatePattern]
+PublicStringPattern[SlashDatePattern]
 
 $strictMonthRE     = """(?:0[1-9]|1[012])""";
 $strictDayRE       = """(?:0[1-9]|[12]\d|3[01])""";
@@ -46,7 +46,7 @@ DefineStringPattern[
 
 (**************************************************************************************************)
 
-PublicHead[NoteDatePattern]
+PublicStringPattern[NoteDatePattern]
 
 $noteDateRE = "Y" <> $longYearRE <> "M" <> $strictMonthRE <> "D" <> $strictDayRE;
 
@@ -56,7 +56,7 @@ DefineStringPattern[
 
 (**************************************************************************************************)
 
-PublicHead[YAMLDatePattern, YAMLDateTimePattern]
+PublicStringPattern[YAMLDatePattern, YAMLDateTimePattern]
 
 $yamlDateRE = """(?:19|20)\d\d-[01]\d-[0123]\d"""
 $yamlTimeRE = """[012]\d:[0-5]\d:[0-5]\d""";
@@ -69,7 +69,7 @@ DefineStringPattern[
 
 (**************************************************************************************************)
 
-PublicHead[SpelledDatePattern]
+PublicStringPattern[SpelledDatePattern]
 
 $spelledMonthRE = "(?:Jan|January|Feb|February|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)";
 

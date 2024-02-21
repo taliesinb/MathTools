@@ -1,4 +1,4 @@
-PublicFunction[ImageMagickConvert]
+PublicIOFunction[ImageMagickConvert]
 
 Options[ImageMagickConvert] = {ImageSize -> Automatic};
 

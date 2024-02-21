@@ -1,4 +1,4 @@
-PublicFunction[SaveBearData, LoadBearData]
+PublicIOFunction[SaveBearData, LoadBearData]
 
 toBearDataPath[name_] := (
   EnsureDirectory[LocalPath["Data", "Bear"]];
@@ -26,7 +26,7 @@ indexByUUID[a_] := Assoc[#UUID -> #& /@ a];
 
 (*************************************************************************************************)
 
-PublicFunction[CreateBearNote]
+PublicIOFunction[CreateBearNote]
 
 PublicOption[DuplicateTarget]
 
@@ -63,7 +63,7 @@ $CreateBearNoteTemplate = StringFunction @ "bear://x-callback-url/create?title=#
 
 (*************************************************************************************************)
 
-PublicFunction[ReplaceBearNote]
+PublicIOFunction[ReplaceBearNote]
 
 ReplaceBearNote[id_Str, title_Str, contents_Str] :=
   ReplaceBearNote[id, StringJoin["# ", StringTrim @ title, "\n", StringTrim @ contents]];
@@ -107,7 +107,7 @@ toTitleOrIDQuery[titlesOrIDs:{__Str}] := FilteredEntityClass[
 
 (*************************************************************************************************)
 
-PublicFunction[TextReplaceBearNote]
+PublicIOFunction[TextReplaceBearNote]
 
 Options[TextReplaceBearNote] = {
   Verbose -> Automatic,
@@ -120,7 +120,7 @@ TextReplaceBearNote[titleOrID_Str, replacements_, opts:OptionsPattern[]] :=
 
 (*************************************************************************************************)
 
-PublicFunction[TransformBearNote]
+PublicIOFunction[TransformBearNote]
 
 PublicOption[VerifyResult, TransformTitle]
 
@@ -208,7 +208,7 @@ $TextReplaceBearNoteTemplate = StringFunction @ "bear://x-callback-url/add-text?
 
 (*************************************************************************************************)
 
-PublicFunction[FindDuplicateBearNotes]
+PublicIOFunction[FindDuplicateBearNotes]
 
 FindDuplicateBearNotes[] := Scope[
   data = BearNoteData[All, {"Title", "UUID"}];
@@ -218,7 +218,7 @@ FindDuplicateBearNotes[] := Scope[
 
 (*************************************************************************************************)
 
-PublicFunction[RenameBearNote]
+PublicIOFunction[RenameBearNote]
 
 RenameBearNote::notfound = "Cannot find existing note with ID or title \"``\".";
 RenameBearNote::badtresult = "Result of transform on \"``\" was not a string or issued messages.";
@@ -249,7 +249,7 @@ _RenameBearNote := BadArguments[];
 
 (*************************************************************************************************)
 
-PublicFunction[GlobalBearStringReplace]
+PublicIOFunction[GlobalBearStringReplace]
 
 PublicOption[MaxFailures]
 
@@ -304,7 +304,7 @@ GlobalBearStringReplace[rules_, opts:OptionsPattern[]] := Scope[
 
 (*************************************************************************************************)
 
-PublicFunction[BearUUIDToTitle]
+PublicIOFunction[BearUUIDToTitle]
 
 BearUUIDToTitle[{}] := {};
 
@@ -325,7 +325,7 @@ BearUUIDToTitle[ids_List] := Scope[
 
 (*************************************************************************************************)
 
-PublicFunction[AppendToBearNote]
+PublicIOFunction[AppendToBearNote]
 
 AppendToBearNote::notfound = "Cannot find existing note with title \"``\"."
 AppendToBearNote[titleOrID_Str, text_Str] := Scope[
@@ -397,7 +397,7 @@ $BearTagEntity := $BearTagEntity = (Quiet @ RegisterBearEntities[]; "ZSFNOTETAG"
 
 (*************************************************************************************************)
 
-PublicFunction[BearNoteExistsQ]
+PublicIOFunction[BearNoteExistsQ]
 
 entitiesExist[entity_, entityFn_] := FilteredEntityClass[entity, entityFn]["EntityCount"] > 0;
 
@@ -416,7 +416,7 @@ BearNoteExistsQ[titles:{___Str}] := Scope[
 
 (*************************************************************************************************)
 
-PublicFunction[FindBearNote]
+PublicIOFunction[FindBearNote]
 
 Options[FindBearNote] = {IgnoreCase -> True};
 
@@ -432,7 +432,7 @@ FindBearNote[title_Str, OptionsPattern[]] := Scope[
 
 (*************************************************************************************************)
 
-PublicFunction[BearNoteTitles]
+PublicIOFunction[BearNoteTitles]
 
 Options[BearNoteTitles] = {
   IgnoreCase -> True
@@ -456,7 +456,7 @@ BearNoteTitles[title:$strOrListP, subtitle:$strOrListP, OptionsPattern[]] :=
 
 (*************************************************************************************************)
 
-PublicFunction[GotoBearNote, OpenBearNote]
+PublicIOFunction[GotoBearNote, OpenBearNote]
 
 GotoBearNote[titleOrID_Str] :=
   SystemOpen @ If[BearNoteUUIDQ[titleOrID], $OpenBearNoteIDTemplate, $OpenBearNoteTitleTemplate][URLEncode @ titleOrID, "show"];
@@ -470,7 +470,7 @@ $OpenBearNoteTitleTemplate = StringFunction @ "bear://x-callback-url/open-note?t
 
 (*************************************************************************************************)
 
-PublicFunction[BearNoteText]
+PublicIOFunction[BearNoteText]
 
 BearNoteText[titleOrID_Str] := Scope[
   res = EntityValue[toTitleOrIDQuery @ titleOrID, "ZTEXT"];
@@ -480,7 +480,7 @@ BearNoteText[titleOrID_Str] := Scope[
 
 (*************************************************************************************************)
 
-PublicFunction[BearNoteUUIDQ]
+PublicIOFunction[BearNoteUUIDQ]
 
 "30A395FF-FF7D-4B9D-97B5-FB29E3C9A8B2"
 $BearNoteUUIDRegEx = RegularExpression["[A-Z0-9]{8}(?:-[A-Z0-9]{4}){3}-[A-Z0-9]{12}(?:-[A-Z0-9]{3,6}-[A-Z0-9]{16})?"];
@@ -489,7 +489,7 @@ BearNoteUUIDQ[_] := False;
 
 (*************************************************************************************************)
 
-PublicFunction[BearNoteData]
+PublicIOFunction[BearNoteData]
 
 SetUsage @ "
 BearNoteData[query$, 'field$'] returns a list of the fields for notes matching query$.
@@ -638,7 +638,7 @@ lookupBearField = Case[
 
 (*************************************************************************************************)
 
-PublicFunction[BearNoteLookup]
+PublicIOFunction[BearNoteLookup]
 
 SetUsage @ "
 BearNoteLookup['id$', 'field$'] gives the value of field$ for the note with given UUID or title.
@@ -697,7 +697,7 @@ BearNoteLookup[other_, _] := (Message[BearNoteLookup::firstArg, MsgExpr @ other]
 
 (*************************************************************************************************)
 
-PublicFunction[BearNoteAttachmentData]
+PublicIOFunction[BearNoteAttachmentData]
 
 BearNoteAttachmentData[id_Int] := Scope[
   class = FilteredEntityClass[$BearFileEntity, EntityFunction[z, z["ZNOTE"] == id]];
@@ -711,13 +711,13 @@ BearNoteAttachmentData[id_Int] := Scope[
 
 (*************************************************************************************************)
 
-PublicFunction[BearPeople]
+PublicIOFunction[BearPeople]
 
 BearPeople[] := BearNoteTaggedTitles["#person"];
 
 (*************************************************************************************************)
 
-PublicFunction[DeleteBearNote]
+PublicIOFunction[DeleteBearNote]
 
 DeleteBearNote[uuid_Str] := SystemOpen @ $BearDeleteTemplate @ uuid;
 DeleteBearNote[list_List] := Scan[DeleteBearNote, list];
@@ -726,7 +726,7 @@ $BearDeleteTemplate = StringFunction @ "bear://x-callback-url/trash?id=#1";
 
 (*************************************************************************************************)
 
-PublicFunction[BearNoteTextCases]
+PublicIOFunction[BearNoteTextCases]
 
 PublicOption[SurroundingContextLines]
 
@@ -765,7 +765,7 @@ toLHSPattern = Case[
 
 (*************************************************************************************************)
 
-PublicFunction[CreateBlankBearNote]
+PublicIOFunction[CreateBlankBearNote]
 
 CreateBlankBearNote[list_List, tagLine_String] :=
   Map[CreateBlankBearNote[#, tagLine]&, list];
@@ -785,7 +785,7 @@ CreateBlankBearNote[title_String, tagLine_Str] := Scope[
 
 (*************************************************************************************************)
 
-PublicFunction[BearFindMasterNote]
+PublicIOFunction[BearFindMasterNote]
 
 BearFindMasterNote::multipleMasters = "Multiple master pages exist for tag ``: ``."
 BearFindMasterNote[tag_Str] := Scope[
@@ -805,7 +805,7 @@ BearFindMasterNote[tag_Str] := Scope[
 
 (*************************************************************************************************)
 
-PublicFunction[BearTags]
+PublicIOFunction[BearTags]
 
 BearTags[] := EntityValue[$BearTagEntity, "ZTITLE"];
 BearTags[pattern_] := Select[BearTags[], StringMatchQ[pattern]];
@@ -825,7 +825,7 @@ removeDupPrefix[list_] := Select[DeleteDuplicates @ list, elem |-> NoneTrue[Dele
 
 (*************************************************************************************************)
 
-PublicFunction[BearSubstituteMasterPages]
+PublicIOFunction[BearSubstituteMasterPages]
 
 Options[BearSubstituteMasterPages] = {
   Verbose -> Automatic,
@@ -874,7 +874,7 @@ updateMasterPage[tag_, master_] := (
 
 (**************************************************************************************************)
 
-PublicFunction[ReplaceBareBareLinks]
+PublicIOFunction[ReplaceBareBareLinks]
 
 ReplaceBareBareLinks[domain_Str] := Scope[
   data = BearNoteData["Text" -> StringStartsQ["[" ~~ ___ ~~ "](https://" <> domain], {"UUID", "Text"}];
@@ -885,7 +885,7 @@ updateBareNote[uuid_, text_] := Scope[
   url = FirstStringCase[text, "(https://" ~~ ShortBlank ~~ ")"];
   If[!StringQ[url], ReturnFailed[]];
   url = StringTake[url, {2, -2}];
-  md = HTMLToMarkdown @ url;
+  md = ImportHTMLToMarkdown @ url;
   If[!StringQ[md], ReturnFailed[]];
   ReplaceBearNote[uuid, md]
 ];
@@ -901,7 +901,7 @@ DefineStandardTraditionalForm[{
 
 (**************************************************************************************************)
 
-PublicFunction[BearNoteAliasRules]
+PublicIOFunction[BearNoteAliasRules]
 
 (* note: this only creates rules for actually existing alias pages. make this an option? *)
 BearNoteAliasRules[] := Scope[
@@ -914,9 +914,9 @@ BearNoteAliasRules[] := Scope[
 
 (*************************************************************************************************)
 
-PublicFunction[BearNoteTaggedTitles, CachedBearNoteTaggedTitles]
+PublicIOFunction[BearNoteTaggedTitles, CachedBearNoteTaggedTitles]
 
-CacheSymbol[$BearNoteTaggedTitlesCache]
+CacheVariable[$BearNoteTaggedTitlesCache]
 
 BearNoteTaggedTitles[tag_Str] := Scope[
   data = BearNoteData["PrimaryTag" -> tag, {"Title", "Text"}];
@@ -936,7 +936,7 @@ CachedBearNoteTaggedTitles[tag_Str] :=
 
 (*************************************************************************************************)
 
-PublicFunction[FilterBearNotesByTag]
+PublicIOFunction[FilterBearNotesByTag]
 
 $BearNoteTagCache = UAssoc[];
 
@@ -959,7 +959,7 @@ FilterBearNotesByTag[titles_List, tag_Str] := Scope[
 
 (*************************************************************************************************)
 
-PublicFunction[TaggedTextCases]
+PublicIOFunction[TaggedTextCases]
 
 (* this preserves the order that entities occur in text *)
 TaggedTextCases[text_Str, tag_Str] := Scope[

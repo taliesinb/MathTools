@@ -1,4 +1,4 @@
-CacheSymbol[$ZimLinkFunctions]
+CacheVariable[$ZimLinkFunctions]
 
 General::libraryLinkFunctionCall = "Library link function call `` failed.";
 
@@ -65,7 +65,7 @@ UnloadZimLink[] := If[Len[$ZimLinkFunctions] > 0,
 
 (*************************************************************************************************)
 
-PrivateFunction[BuildZimLink]
+PrivateIOFunction[BuildZimLink]
 
 General::libraryLinkBuildError = "Could not load build library ``.";
 BuildZimLink[] := CatchMessage @ iBuildZimLink[];
@@ -88,7 +88,7 @@ $zimLinkPath = LocalPath["LibraryLink", "ZimLink", "ZimLink.dylib"];
 
 SystemHead[ZimArchive]
 
-CacheSymbol[$ZimArchiveIDToName]
+CacheVariable[$ZimArchiveIDToName]
 
 DefineStandardTraditionalForm[
   (ZimArchive[id_Int] ? MEQ) /; KeyExistsQ[$ZimArchiveIDToName, id] :> RowBox[{
@@ -100,7 +100,7 @@ MEQ = ManagedLibraryExpressionQ;
 
 (*************************************************************************************************)
 
-PublicFunction[OpenZimArchive]
+PublicIOFunction[OpenZimArchive]
 
 OpenZimArchive::zimLinkVersion = "Wrong version `` of ZimLink!";
 OpenZimArchive[path_String] := Scope @ CatchMessage[

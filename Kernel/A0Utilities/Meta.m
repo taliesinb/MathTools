@@ -240,7 +240,20 @@ CreateMultipleSymbols[___] := $Failed;
 
 (**************************************************************************************************)
 
+PublicFunction[RevertSublimeSyntaxFiles]
+
+RevertSublimeSyntaxFiles[] :=
+  RunTool["git", "checkout", "--", "WolframLanguage.sublime-syntax", "WolframLanguage.sublime-completions", WorkingDirectory -> $sublimeSyntaxPath];
+
+(**************************************************************************************************)
+
 PublicFunction[UpdateSublimeSyntaxFiles]
+
+PublicVariable[$LastSublimeSyntaxGroups]
+
+$LastSublimeSyntaxGroups = None;
+
+Options[UpdateSublimeSyntaxFiles] = {Verbose -> True};
 
 $sublimeSyntaxPath = "~/git/Sublime-WolframLanguage";
 
@@ -248,40 +261,99 @@ groupSortIndex[_] := 0;
 groupSortIndex["Option"] = 1;
 groupSortIndex["Function"] = 2;
 
-UpdateSublimeSyntaxFiles[] := Scope[
-  inFile = PathJoin[$sublimeSyntaxPath, "WolframLanguage.sublime-syntax.template"];
-  outSyntaxFile = PathJoin[$sublimeSyntaxPath, "WolframLanguage.sublime-syntax"];
+UpdateSublimeSyntaxFiles::messageOccurred = "Message occurred during computation, aborting.";
+UpdateSublimeSyntaxFiles::invalidResult = "Did not produce valid results, aborting.";
+UpdateSublimeSyntaxFiles::badAlias = "Cannot resolve `` to known symbol.";
+UpdateSublimeSyntaxFiles::noSystemSymbols = "Cannot load system symbol groups from ``.";
+
+UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
+
+  UnpackOptions[$verbose];
+  inFile             = PathJoin[$sublimeSyntaxPath, "WolframLanguage.sublime-syntax.template"];
+  outSyntaxFile      = PathJoin[$sublimeSyntaxPath, "WolframLanguage.sublime-syntax"];
   outCompletionsFile = PathJoin[$sublimeSyntaxPath, "WolframLanguage.sublime-completions"];
-  template = ImportUTF8 @ inFile;
-  groups = ImportMX @ LocalPath["Data", "Syntax", "SystemSymbols.mx"];
-  groups //= KeySortBy[groupSortIndex];
-  localGroups = QuiverGeometryLoader`$SymbolGroups;
-  KeyValueMap[addToGroup, localGroups];
-  guSymbols = Names["GeneralUtilities`*"];
-  guSymbols //= Select[StringLength[#] > 2 && StringStartsQ[#, UppercaseLetter] &];
-  addToGroup["Function", guSymbols];
-  (* add each alias to the group of its target *)
-  MapApply[
-    {alias, target} |-> (
-      group = Part[SelectFirstIndex[QuiverGeometryLoader`$SymbolTable, MemberQ[#, target]&, Print["ALIAS NOT FOUND: ", target]], 1, 2];
-      addToGroup[group, {alias}]
-    ),
-    QuiverGeometryLoader`$SymbolAliases
+
+  res = Check[
+    template = ImportUTF8 @ inFile;
+    loaderTable = QuiverGeometryLoader`$SymbolTable;
+
+    (* system groups *)
+    systemSymbolPath = LocalPath["Data", "Syntax", "SystemSymbols.mx"];
+    groups = ImportMX @ systemSymbolPath;
+    If[!AssociationQ[groups], ThrowMessage["noSystemSymbols", MsgPath @ systemSymbolPath]];
+
+    groups = Union /@ groups;
+    (* allow changes to SymbolTable.m to override the system symbol group assignments,
+       since its expensive to run the generate_syntax_table.wls script *)
+    loaderSystemSymbolGroups = systemSymToName /@ KeyMap[Last, KeySelect[loaderTable, MatchQ[{"System`", _}]]];
+    loaderSystemSymbols = Union @@ Values[loaderSystemSymbolGroups];
+    groups = AssociationMap[
+      Union[Lookup[loaderSystemSymbolGroups, #, {}], Complement[Lookup[groups, #, {}], loaderSystemSymbols]]&,
+      Union[Keys @ groups, Keys @ loaderSystemSymbolGroups]
+    ];
+    If[!AssociationQ[groups], ReturnFailed[]];
+
+    groups //= KeySortBy[groupSortIndex];
+    localGroups = QuiverGeometryLoader`$SymbolGroups;
+
+    KeyValueMap[addToGroup, localGroups];
+    addToGroup["SpecialFunction", {"ExpressionTable"}];
+
+    VPrint["Extracting GU symbols."];
+    guSymbols = Names["GeneralUtilities`*"];
+    guSymbols //= Select[StringLength[#] > 2 && StringStartsQ[#, UppercaseLetter] &];
+    addToGroup["Function", guSymbols];
+
+    (* add each alias to the group of its target *)
+    aliasGroups = MapApply[
+      {alias, target} |-> (
+        aliasGroup = SelectFirstIndex[
+          loaderTable, MemberQ[#, target]&,
+          ThrowMessage["badAlias", target]];
+        group = Part[aliasGroup, 1, 2];
+        addToGroup[group, {alias}];
+        alias -> group
+      ),
+      QuiverGeometryLoader`$SymbolAliases
+    ];
+    VPrint["Resolved aliases groups: ", aliasGroups];
+
+    VPrint["Processing symbol groups. Groups available at $LastSublimeSyntaxGroups."];
+    (* groups //= KeySort; *)
+    $LastSublimeSyntaxGroups ^= groups;
+    {regexpSections, symbolSections} = VBlock @ Transpose @ KeyValueMap[makeSplitDefs, groups];
+
+    VPrint["Processing completions."];
+    completionLists = KeyValueMap[makeCompletionDefs, groups];
+    regexpDefs = StringRiffle[regexpSections, "\n"];
+    symbolDefs = StringRiffle[symbolSections, "\n"];
+    completionDefs = $completionListTemplate @ StringTrimRight[",\n"] @ StringRiffle[Catenate @ completionLists, ",\n"];
+    filledTemplate = StringReplace[template, {"$REGEXPS$" -> regexpDefs, "$SYMBOLS$" -> symbolDefs}];
+  ,
+    $Failed
   ];
-  addToGroup["SpecialFunction", {"ExpressionTable"}];
-  {regexpSections, symbolSections} = Transpose @ KeyValueMap[makeSplitDefs, groups];
-  completionLists = KeyValueMap[makeCompletionDefs, groups];
-  regexpDefs = StringRiffle[regexpSections, "\n"];
-  symbolDefs = StringRiffle[symbolSections, "\n"];
-  completionDefs = $completionListTemplate @ StringTrimRight[",\n"] @ StringRiffle[Catenate @ completionLists, ",\n"];
-  filledTemplate = StringReplace[template, {"$REGEXPS$" -> regexpDefs, "$SYMBOLS$" -> symbolDefs}];
+  If[res === $Failed, ReturnFailed["messageOccurred"]];
+  If[!StringQ[completionDefs] || !StringQ[filledTemplate], ReturnFailed["invalidResult"]];
+  VPrint["Writing files."];
   {
     ExportUTF8[outCompletionsFile, completionDefs],
     ExportUTF8[outSyntaxFile, filledTemplate]
   }
 ]
 
-addToGroup[group_, syms_] := KeyUnionTo[groups, group, Complement[syms, Catenate @ groups]];
+systemSymToName = Case[
+  l_List      := Map[systemSymToName, l];
+  Hold[a___]  := Splice @ MapUnevaluated[HoldSymbolName, {a}];
+  s_Symbol    := SymbolName[s];
+];
+
+addToGroup[group_, {}] := Null;
+addToGroup[group_, syms_] := KeyUnionTo[groups, group,
+  unassigned = Complement[syms, Catenate @ KeyDrop[groups, group]];
+  If[Len[unassigned] < Len[syms],
+    VPrint[group, ": following syms already assigned: ", Complement[syms, unassigned]]];
+  unassigned
+];
 
 $completionListTemplate = StringFunction @
 """{
@@ -292,14 +364,17 @@ $completionListTemplate = StringFunction @
 }""";
 
 groupToSyntaxScope = Case[
-  "Symbol" := "constant.language.symbol.wolfram";
+  "Symbol"   := "constant.language.symbol.wolfram";
   "Function" := % @ "builtin";
-  "Option" := "constant.language.option.wolfram";
-  other_ := StringJoin["support.function.",
-    ToLowerCase @ StringRiffle[CamelCaseSplit @ StringDelete[other, "Function"], "."],
+  "Option"   := "constant.language.option.wolfram";
+  other_     := igroupToSyntaxScope @ other;
+];
+
+igroupToSyntaxScope[group_] := igroupToSyntaxScope[str] =
+  StrJoin["support.function.",
+    ToLowerCase @ StringRiffle[CamelCaseSplit @ StringReplace[group, {"Function" -> "", "IO" -> "Io"}], "."],
     ".wolfram"
   ];
-];
 
 $groupToSymbol = Assoc[
   "Package"                -> "p",
@@ -309,6 +384,7 @@ $groupToSymbol = Assoc[
   "Function"               -> "f",
   "MutatingFunction"       -> "f",
   "SpecialFunction"        -> "f",
+  "StringPattern"          -> "f",
   "DebuggingFunction"      -> "f",
   "Option"                 -> "\[RightArrow]",
   "TypesettingForm"        -> "■",
@@ -317,7 +393,9 @@ $groupToSymbol = Assoc[
   "GraphicsPrimitive"      -> "△",
   "GraphicsBoxFunction"    -> "▲",
   "ScopingFunction"        -> "f",
-  "Variable"               -> "$"
+  "Variable"               -> "$",
+  "SpecialVariable"        -> "$",
+  "CacheVariable"          -> "$"
 ];
 
 groupToKindColorProxy = Case[
@@ -325,16 +403,20 @@ groupToKindColorProxy = Case[
   "Object"                                                          := "function";
   "Function" | "MutationFunction" | "ScopingFunction"               := "function";
   "Package" | "DebuggingFunction" | "SpecialFunction"               := "function";
-  "Variable"                                                        := "variable";
+  "Variable" | "SpecialVariable" | "CacheVariable"                  := "variable";
   "GraphicsBoxFunction" | "GraphicsPrimitive" | "GraphicsDirective" := "navigation";
   "TypesettingBoxFunction" | "TypesettingForm"                      := "snippet";
   _                                                                 := "symbol";
 ];
 
-makeSplitDefs["Variable", names_] :=
+UpdateSublimeSyntaxFiles::badVariableSymbolNames = "Some symbols in group `` did not start with $: ``.";
+
+makeSplitDefs[group:"Variable" | "SpecialVariable" | "CacheVariable", names_] :=
   MapLast[
     StringReplace["- match: '{{" -> "- match: '\\${{"],
-    makeSplitDefs2["Variable", StringDrop[names, 1]]
+    If[!AllTrue[names, StringStartsQ["$"]],
+      Message[UpdateSublimeSyntaxFiles::badVariableSymbolNames, group, Discard[names, StringStartsQ["$"]]]];
+    makeSplitDefs2[group, StringDrop[names, 1]]
   ];
 
 makeSplitDefs[group_, names_] :=
@@ -343,6 +425,10 @@ makeSplitDefs[group_, names_] :=
 makeSplitDefs2[group_, names_] := Scope[
   scope = groupToSyntaxScope[group];
   names //= DeleteDuplicates;
+  VPrint[
+    StringPadRight[group, 30], " -> ", StringPadRight[scope, 50],
+    If[Len[names] < 200, Tooltip[#, Multicolumn[names, 3]]&, Id] @ StrJoin[" (", IntStr @ Len @ names, " symbols)"]
+  ];
   If[Length[names] >= 16,
     grouped = KeySort @ GroupBy[names, StringJoin[group, "_", StringTake[#, 1]]&];
     grouped //= KeyMap[StringReplace["$" -> "DOLLAR"]];

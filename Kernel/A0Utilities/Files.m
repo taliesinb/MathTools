@@ -4,7 +4,7 @@ $QGCacheDirectory = LocalPath["Data"];
 
 (**************************************************************************************************)
 
-PublicFunction[EnsureDirectoryShallow]
+PublicIOFunction[EnsureDirectoryShallow]
 
 General::filenotdir = "Provided path `` should be to a directory, not a file."
 General::deepnotexists = "Provided path `` does not exist and neither does its parent, so won't create."
@@ -22,7 +22,7 @@ EnsureDirectoryShallow[path_Str | File[path_Str]] := Scope[
 
 (**************************************************************************************************)
 
-PrivateFunction[CacheFilePath]
+PrivateCacheFunction[CacheFilePath]
 
 CacheFilePath[name_, args___] :=
   CacheFilePath[name, args, FileExtension -> "mx"]
@@ -42,7 +42,7 @@ toCacheArgString = Case[
 
 (**************************************************************************************************)
 
-PrivateFunction[EnsureExport]
+PublicIOFunction[EnsureExport]
 
 EnsureExport[filepath_, expr_] := Scope[
   If[!FileExistsQ[filepath],
@@ -55,7 +55,7 @@ EnsureExport[filepath_, expr_] := Scope[
 
 (**************************************************************************************************)
 
-PrivateFunction[ToNotebookPath]
+PrivateSpecialFunction[ToNotebookPath]
 
 ToNotebookPath = Case[
   nb_NotebookObject      := Quiet @ Check[NotebookFileName @ nb, $Failed];
@@ -66,8 +66,9 @@ ToNotebookPath = Case[
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[CopyUnicodeToClipboard]
+PublicIOFunction[CopyUnicodeToClipboard]
 
+(* TODO: undertake replacements of $ScriptLetters codepoints which mathematica substitutes for private use ones *)
 CopyUnicodeToClipboard[text_] := Scope[
   out = TemporaryPath["clipboard.txt"];
   Export[out, text, CharacterEncoding -> "UTF-8"];
@@ -77,7 +78,7 @@ CopyUnicodeToClipboard[text_] := Scope[
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[ImportJSONString]
+PublicIOFunction[ImportJSONString]
 
 ImportJSONString::badjson = "Str `` does not appear to be valid JSON.";
 
@@ -91,7 +92,7 @@ _ImportJSONString := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[ImportJSON]
+PublicIOFunction[ImportJSON]
 
 ImportJSON::badjson = "File `` does not appear to be valid JSON."
 
@@ -107,7 +108,7 @@ _ImportJSON := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[ExportJSON]
+PublicIOFunction[ExportJSON]
 
 ExportJSON[path_Str, expr_] := Scope[
   path //= NormalizePath;
@@ -120,7 +121,7 @@ _ExportJSON := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[ImportMX]
+PublicIOFunction[ImportMX]
 
 ImportMX::nefile = "File `` does not exist.";
 ImportMX::fail = "File `` is corrupt.";
@@ -140,7 +141,7 @@ ImportMX[path_Str] := Block[
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[ExportMX]
+PublicIOFunction[ExportMX]
 
 ExportMX::fail = "Could not write expression to ``.";
 ExportMX[path_Str, expr_] := Block[
@@ -154,7 +155,7 @@ ExportMX[path_Str, expr_] := Block[
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[ExportUTF8]
+PublicIOFunction[ExportUTF8]
 
 ExportUTF8[path_Str ? ASCIIQ, string_Str] :=
   Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
@@ -172,7 +173,7 @@ _ExportUTF8 := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[ExportUTF8Dated]
+PublicIOFunction[ExportUTF8Dated]
 
 ExportUTF8Dated::badtime = "Creation and modification times should be DateObjects."
 
@@ -200,9 +201,11 @@ _ExportUTF8Dated := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[SetFileTime]
+PublicIOFunction[SetFileTime]
 
 (* TODO: make the creation part work on Windows / Linux *)
+
+SetFileTime::modificationFailed = "Modification of path `` failed.";
 
 SetFileTime[path_, c:(_Int | _Real | _DateObject)] := SetFileTime[path, {c, None, None}];
 SetFileTime[path_, {c_, m_}] := SetFileTime[path, {c, m, None}];
@@ -218,10 +221,10 @@ setFileTime[path_] := Case[
   {c_, m_, a_}       := (setCreateModify[path, c, m]; SetFileDate[path, a, "Access"]);
 ];
 
-setCreateModify[path_, c_, m_] := (
-  RunUTF8 @ StringRiffle[{"SetFile", toFTarg["-d", c], toFTarg["-m", m], BashEscape @ NormalizePath @ path}, " "];
-  Null
-);
+setCreateModify[path_, c_, m_] := Module[{code},
+  code = RunUTF8["SetFile ", toFTarg["-d", c], " ", toFTarg["-m", m], " ", BashEscape @ NormalizePath @ path];
+  If[code =!= 0, Message[SetFileTime::modificationFailed, MsgPath @ path]];
+];
 
 toFTarg[flag_, None] := Nothing;
 toFTarg[flag_, date_] := StringJoin[flag, " '", sftStr[date], "'"];
@@ -244,7 +247,7 @@ intStr2[e_] :=  IntegerString[e, 10, 2];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[ImportUTF8]
+PublicIOFunction[ImportUTF8]
 
 ImportUTF8[path_Str] :=
   Import[path, "Text", CharacterEncoding -> "UTF8"];
@@ -253,7 +256,7 @@ _ImportUTF8 := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[PrettyPut]
+PublicIOFunction[PrettyPut]
 
 PrettyPut[expr_, path_Str] := ExportUTF8[path, ToPrettifiedString @ expr];
 
@@ -261,13 +264,13 @@ _PrettyPut := BadArguments[];
 
 (**************************************************************************************************)
 
-PrivateSpecialFunction[LocalPath]
+PrivateFunction[LocalPath]
 
 LocalPath[args___] := PathJoin[$PackageDirectory, args];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[ExportUTF8WithBackup]
+PublicIOFunction[ExportUTF8WithBackup]
 
 ExportUTF8WithBackup[path_, contents_, currentContents_:Automatic] := Scope[
   If[!StringQ[contents], ReturnFailed[]];

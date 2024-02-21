@@ -74,7 +74,7 @@ when we undecimate. so we don't compress in terms of the number of sections.
 
 PublicFunction[FindAllBundleSections]
 
-CacheSymbol[$AllBundleSectionsCache]
+CacheVariable[$AllBundleSectionsCache]
 
 Options[BundleSectionComponents] = {
   FiberSymmetries -> None

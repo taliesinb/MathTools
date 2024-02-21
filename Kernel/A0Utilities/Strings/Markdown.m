@@ -1,4 +1,4 @@
-PublicHead[MarkdownHeadingPattern, MarkdownNoteLinkPattern, MarkdownHyperlinkPattern, MarkdownInlineCodePattern, MarkdownBlockCodePattern, MarkdownEmphasisPattern]
+PublicStringPattern[MarkdownHeadingPattern, MarkdownNoteLinkPattern, MarkdownHyperlinkPattern, MarkdownInlineCodePattern, MarkdownBlockCodePattern, MarkdownEmphasisPattern]
 
 $emphasisFragment = StringReplace["""(?:(?:\*Z\*)|(?:/Z/)|(?:(?<!\S)_Z_(?!\S)))""", "Z" -> """(?:(?:\S[^\n]*?\S)|\S)"""];
 
@@ -16,7 +16,7 @@ DefineStringPattern[
 
 (**************************************************************************************************)
 
-PublicHead[MarkdownTagPattern, MarkdownSubtagPattern, MarkdownDelimitedTagPattern]
+PublicStringPattern[MarkdownTagPattern, MarkdownSubtagPattern, MarkdownDelimitedTagPattern]
 
 DefineStringPattern[
   MarkdownTagPattern          :> """(?<![[:alnum:]/])#\w+(?:\/\w+)*(?![[:alnum:]\]])""",

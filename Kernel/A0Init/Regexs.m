@@ -209,11 +209,13 @@ character and span literals include these and their Except equivalents:
 
 *)
 
-PublicSpecialFunction[EvalStrExp, RawStrExp, RawRegex, RawMaybe, RawCharGroup]
+PublicSpecialFunction[EvalStrExp]
 
-RawRegex = StringPattern`Dump`RE;
-RawStrExp = StringPattern`Dump`SP;
-RawMaybe = StringPattern`Dump`QuestionMark;
+PrivateStringPattern[RawStrExp, RawRegex, RawMaybe, RawCharGroup]
+
+RawRegex     = StringPattern`Dump`RE;
+RawStrExp    = StringPattern`Dump`SP;
+RawMaybe     = StringPattern`Dump`QuestionMark;
 RawCharGroup = StringPattern`Dump`CharacterGroup;
 
 (**************************************************************************************************)
@@ -333,7 +335,7 @@ spccApplyRule[e_, rule_] := Scope[
 
 (**************************************************************************************************)
 
-CacheSymbol[$FromRegexCache]
+CacheVariable[$FromRegexCache]
 
 spccRegex[re_Str] := Scope[
   se = CachedInto[$FromRegexCache, re, FromRegex @ re];
@@ -505,7 +507,7 @@ RegexEscape[re_] := StringReplace[re, StringPattern`Dump`$RegExpSpecialCharacter
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineStringLetterClass]
+PrivateSpecialFunction[DefineStringLetterClass]
 
 DefineStringLetterClass = Case[
   sym_Symbol -> str_Str := %[sym -> {If[StrLen[str] == 1, str, "[" <> str <> "]"], str}];
@@ -520,7 +522,7 @@ DefineStringLetterClass = Case[
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineStringPattern]
+PrivateSpecialFunction[DefineStringPattern]
 
 DefineStringPattern = Case[
   rule_RuleDelayed := Module[
@@ -541,7 +543,7 @@ $spDeclarationRules = {
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineStringPatternMacro]
+PrivateSpecialFunction[DefineStringPatternMacro]
 
 DefineStringPatternMacro = Case[
   rule_RuleDelayed := With[

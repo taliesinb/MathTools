@@ -70,14 +70,23 @@ PublicFunction[ToNonDecoratedRoman]
 toStringRules[str1_, str2_] := RuleThread[Characters @ str1, Characters @ str2];
 
 $toNonDecoratedRoman := $toNonDecoratedRoman = Join[
-  toStringRules[$UnicodeScriptLetters, $RomanLetters],
-  toStringRules[$ScriptLetters, $RomanLetters],
-  toStringRules[$MonospaceLetters, $RomanLetters],
-  toStringRules[$FrakturLetters, $RomanLetters],
+  toStringRules[$SanSerifLetters,        $RomanLetters],
+  toStringRules[$UnicodeScriptLetters,   $RomanLetters],
+  toStringRules[$ScriptLetters,          $RomanLetters],
+  toStringRules[$MonospaceLetters,       $RomanLetters],
+  toStringRules[$FrakturLetters,         $RomanLetters],
   toStringRules[$DoubleStruckCharacters, $RomanCharacters]
 ];
 
 ToNonDecoratedRoman[str_Str] := StringReplace[str, $toNonDecoratedRoman];
+
+(**************************************************************************************************)
+
+PublicFunction[RomanToSanSerif]
+
+$toSanSerif := $toSanSerif = toStringRules[$RomanLetters, $SanSerifLetters];
+
+RomanToSanSerif[str_Str] := StringReplace[str, $toSanSerif];
 
 (**************************************************************************************************)
 
@@ -106,9 +115,9 @@ ToSpelledGreek[str_Str] := StringReplace[str, $toSpelledGreek];
 
 (**************************************************************************************************)
 
-PublicSymbol[DQuote, SQuote, Newline]
-PublicSymbol[Letter, LowercaseLetter, UppercaseLetter, AlphanumericCharacter, Digit]
-PublicSymbol[RomanLetter, LowercaseRomanLetter, UppercaseRomanLetter, RomanCharacter, RomanDigit]
+PublicStringPattern[DQuote, SQuote, Newline]
+PublicStringPattern[Letter, LowercaseLetter, UppercaseLetter, AlphanumericCharacter, Digit]
+PublicStringPattern[RomanLetter, LowercaseRomanLetter, UppercaseRomanLetter, RomanCharacter, RomanDigit]
 
 DefineStringLetterClass[
   DQuote      -> "\"",
@@ -122,13 +131,13 @@ DefineStringLetterClass[
 (**************************************************************************************************)
 
 (* TODO: recognize spans of characters and use them instead for speed *)
-PublicSymbol[LowercaseGreekLetter, UppercaseGreekLetter, GreekLetter]
-PublicSymbol[LowercaseDoubleStruckLetter, UppercaseDoubleStruckLetter, DoubleStruckLetter, DoubleStruckDigit, DoubleStruckCharacter]
-PublicSymbol[LowercaseUnicodeScriptLetter, UppercaseUnicodeScriptLetter, UnicodeScriptLetter]
-PublicSymbol[LowercaseScriptLetter, UppercaseScriptLetter, ScriptLetter]
-PublicSymbol[LowercaseSanSerifLetter, UppercaseSanSerifLetter, SanSerifLetter]
-PublicSymbol[LowercaseMonospaceLetter, UppercaseMonospaceLetter, MonospaceLetter]
-PublicSymbol[LowercaseFrakturLetter, UppercaseFrakturLetter, FrakturLetter]
+PublicStringPattern[LowercaseGreekLetter, UppercaseGreekLetter, GreekLetter]
+PublicStringPattern[LowercaseDoubleStruckLetter, UppercaseDoubleStruckLetter, DoubleStruckLetter, DoubleStruckDigit, DoubleStruckCharacter]
+PublicStringPattern[LowercaseUnicodeScriptLetter, UppercaseUnicodeScriptLetter, UnicodeScriptLetter]
+PublicStringPattern[LowercaseScriptLetter, UppercaseScriptLetter, ScriptLetter]
+PublicStringPattern[LowercaseSanSerifLetter, UppercaseSanSerifLetter, SanSerifLetter]
+PublicStringPattern[LowercaseMonospaceLetter, UppercaseMonospaceLetter, MonospaceLetter]
+PublicStringPattern[LowercaseFrakturLetter, UppercaseFrakturLetter, FrakturLetter]
 
 DefineStringLetterClass[
   LowercaseGreekLetter         -> $LowercaseGreekLetters         , UppercaseGreekLetter         -> $UppercaseGreekLetters         , GreekLetter         -> $GreekLetters,
@@ -142,7 +151,7 @@ DefineStringLetterClass[
 
 (**************************************************************************************************)
 
-PublicHead[LetterClass, ExceptLetterClass]
+PublicStringPattern[LetterClass, ExceptLetterClass]
 
 DefineStringPattern[
   LetterClass[args___]       :> StringPattern`Dump`CharacterGroup[args],

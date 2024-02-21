@@ -4,13 +4,14 @@ SetInitialValue[$ScholarUserID, None];
 
 (**************************************************************************************************)
 
-PublicFunction[ScholarPageToMarkdown]
+PublicIOFunction[ImportScholarPageToMarkdown]
 
-ScholarPageToMarkdown[url_Str, opts___Rule] := PaperToMarkdown[ImportScholarPage[url, FilterOptions @ opts], FilterOptions @ opts];
+ImportScholarPageToMarkdown[url_Str, opts___Rule] :=
+  PaperToMarkdown[ImportScholarPage[url, FilterOptions @ opts], FilterOptions @ opts];
 
 (**************************************************************************************************)
 
-PublicFunction[ImportScholarPage]
+PublicIOFunction[ImportScholarPage]
 
 PublicOption[DownloadPDF, PDFPath]
 

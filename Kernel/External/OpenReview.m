@@ -2,20 +2,20 @@ xmlFilePath[id_] := LocalPath["Data", "OpenReview", id <> ".m"]
 
 (**************************************************************************************************)
 
-PublicSymbol[OpenReviewPaperIDPattern]
+PublicStringPattern[OpenReviewPaperIDPattern]
 
 DefineStringPattern[OpenReviewPaperIDPattern :> "(?<!\\w)(?:[[:alnum:]-_]{9,11})(?!\\w)"]
 
 (**************************************************************************************************)
 
-PublicFunction[OpenReviewPageToMarkdown]
+PublicIOFunction[ImportOpenReviewPageToMarkdown]
 
-OpenReviewPageToMarkdown[url_Str, opts___Rule] :=
+ImportOpenReviewPageToMarkdown[url_Str, opts___Rule] :=
   PaperToMarkdown[ImportOpenReviewPage[url, FilterOptions @ opts], FilterOptions @ opts];
 
 (**************************************************************************************************)
 
-PublicFunction[ImportOpenReviewPage]
+PublicIOFunction[ImportOpenReviewPage]
 
 PublicOption[DownloadPDF, PDFPath]
 

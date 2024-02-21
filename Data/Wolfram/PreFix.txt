@@ -1,0 +1,4 @@
+!   Not
+-   Minus
+++	PreIncrement
+--	PreDecrement

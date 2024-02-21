@@ -1,6 +1,6 @@
 PrivateSpecialFunction[declareFunctionAutocomplete, declareSyntaxInfo]
 
-CacheSymbol[$AutocompleteCache, $SyntaxInformationCache]
+CacheVariable[$AutocompleteCache, $SyntaxInformationCache]
 
 (* in case the autocomplete possibilities are expensive *)
 SetHoldRest[declareFunctionAutocomplete];

@@ -34,19 +34,32 @@ the typed Package` declarations that categorize QG's own symbols.
 },
 
 {"System`", "Package"} -> {
-Package`SystemSymbol,  Package`SystemMacro,   Package`SystemVariable,  Package`SystemFunction,  Package`SystemHead,
-Package`PublicSymbol,  Package`PublicMacro,   Package`PublicVariable , Package`PublicFunction,  Package`PublicHead,
+
+ Package`SystemSymbol,  Package`SystemMacro,   Package`SystemVariable,  Package`SystemFunction,  Package`SystemHead,
+ Package`PublicSymbol,  Package`PublicMacro,   Package`PublicVariable , Package`PublicFunction,  Package`PublicHead,
 Package`PrivateSymbol, Package`PrivateMacro,  Package`PrivateVariable, Package`PrivateFunction, Package`PrivateHead,
 
-Package`PublicOption,  Package`PublicObject, Package`PublicScopedOption,
-Package`PrivateMutatingFunction, Package`PublicMutatingFunction, Package`PublicDebuggingFunction,
-Package`PublicTypesettingForm, Package`PublicTypesettingFormBox,
-Package`PublicTypesettingBoxFunction, Package`PrivateTypesettingBoxFunction,
-Package`SystemGraphicsDirective, Package`PublicGraphicsPrimitive, Package`PublicGraphicsDirective,
-Package`PrivateSpecialFunction, Package`PublicSpecialFunction,
+ Package`PublicSpecialFunction,  Package`PublicSpecialVariable,  Package`PublicStringPattern,  Package`PublicMutatingFunction,  Package`PublicDebuggingFunction,
+Package`PrivateSpecialFunction, Package`PrivateSpecialVariable, Package`PrivateStringPattern, Package`PrivateMutatingFunction, Package`PrivateDebuggingFunction,
+
+ Package`PublicIOFunction,
+Package`PrivateIOFunction,
+
+ Package`PublicTypesettingBoxFunction,
+Package`PrivateTypesettingBoxFunction,
+
+Package`PublicGraphicsDirective,
+Package`PublicGraphicsPrimitive,
+Package`PublicObject,
+Package`PublicOption,
+Package`PublicScopedOption,
+Package`PublicTypesettingForm,
+Package`PublicTypesettingFormBox,
 Package`PublicScopingFunction,
 
-Package`CacheSymbol
+ Package`PublicCacheFunction,
+Package`PrivateCacheFunction,
+Package`CacheVariable
 },
 
 {"System`", "Symbol"} -> {
@@ -54,17 +67,24 @@ True, False, None, Automatic, Inherited, All, Full, Indeterminate, Null,
 Flat, OneIdentity, HoldFirst, HoldRest, HoldAll, HoldAllComplete,
 Left, Right, Above, Below, Before, After, Center, Top, Bottom, Tiny, Small, Medium, Large,
 SpanFromLeft, SpanFromAbove, SpanFromBoth, Baseline,
-E, Pi, StartOfString, EndOfString, StartOfLine, EndOfLine, DigitCharacter, LetterCharacter, NumberString,
+E, Pi,
 Hold[Infinity],
 Expression, EndOfFile, Overflow, Underflow,
 Horizontal, Vertical, Into, Next, Previous,
 Smaller, Larger
 },
 
+{"System`", "StringPattern"} -> {
+WordBoundary, Whitespace, NumberString,
+WhitespaceCharacter, DigitCharacter, LetterCharacter, WordCharacter, PunctuationCharacter, HexadecimalCharacter,
+StartOfLine, EndOfLine, StartOfString, EndOfString,
+StringExpression, RegularExpression
+},
+
 {"System`", "Head"} -> {
 Symbol, Integer, String, Complex, Real, Rational, List, Association,
 Rule, RuleDelayed, TwoWayRule, DirectedEdge, UndirectedEdge, Missing,
-RegularExpression, StringExpression, Interval,
+Interval,
 Span, UpTo,
 Threaded,
 File, URL, C,
@@ -149,16 +169,19 @@ Failure, $Failed, $Aborted, $TimedOut, Hold[$Context, $ContextPath],
 MakeBoxes, ToBoxes, ToExpression, MakeExpression,
 Break, Continue, Goto, Label,
 DynamicModule,
-ImportString, ImportByteArray, Import, Get, Read,  Hold @ ReadString,  Hold @ ReadLine, ReadList, BinaryRead, BinaryReadList, ReadByteArray,
-ExportString, ExportByteArray, Export, Put, Write, WriteString,        Hold @ WriteLine, BinaryWrite, BinarySerialize, BinaryDeserialize,
-Skip, Find, StreamPosition, SetStreamPosition, Streams,
-OpenRead, OpenWrite, OpenAppend, Open, Close, CreateFile,
 NotebookGet, NotebookRead, Hold @ NotebookImport, NotebookSave, NotebookFind, NotebookOpen, NotebookClose,
 CreateNotebook, NotebookPut, NotebookWrite, NotebookDelete,
 EvaluationNotebook, FrontEndExecute,
 PreviousCell, NextCell, ParentCell, Cells, SelectedCells, EvaluationCell, SelectionMove, NotebookSelection,
 CurrentValue, Message,
-SyntaxInformation, Attributes, DownValues, OwnValues, UpValues, SubValues, FormatValues, DefaultValues,
+SyntaxInformation, Attributes, DownValues, OwnValues, UpValues, SubValues, FormatValues, DefaultValues
+},
+
+{"System`", "IOFunction"} -> {
+ImportString, ImportByteArray, Import, Get, Read,  Hold @ ReadString,  Hold @ ReadLine, ReadList, BinaryRead, BinaryReadList, ReadByteArray,
+ExportString, ExportByteArray, Export, Put, Write, WriteString,        Hold @ WriteLine, BinaryWrite, BinarySerialize, BinaryDeserialize,
+Skip, Find, StreamPosition, SetStreamPosition, Streams,
+OpenRead, OpenWrite, OpenAppend, Open, Close, CreateFile,
 CopyToClipboard,
 SetDirectory, ResetDirectory
 },

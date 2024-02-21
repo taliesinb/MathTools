@@ -71,7 +71,7 @@ registerFormScriptingArgPositions[Subsuperscript, {2, 3}]
 
 PrivateSpecialFunction[setupFormDefinitionCaching, clearFormDefinitionCache]
 
-CacheSymbol[$FormDefinitionCache]
+CacheVariable[$FormDefinitionCache]
 
 setupFormDefinitionCaching[fn_Symbol] := (
   expr_fn /; TrueQ[$fdCacheEnabled] := Block[
@@ -429,7 +429,7 @@ _AssociateSymbolToKatexMacro = BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineTemplateBox]
+PrivateSpecialFunction[DefineTemplateBox]
 
 (* kmacro: If Automatic, base name on template box name, if None, don't set up a macro *)
 DefineTemplateBox[symbol_Symbol, templateName_Str, boxes_, katexMacroName_] := Scope[
@@ -561,7 +561,7 @@ SetRelatedSymbolGroup[DefineUnaryForm, DefineStyleForm]
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineTaggedForm]
+PrivateSpecialFunction[DefineTaggedForm]
 
 PublicOption[Aliases]
 
@@ -592,7 +592,7 @@ _DefineTaggedForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineUnaryForm]
+PrivateSpecialFunction[DefineUnaryForm]
 
 SetUsage @ "
 DefineUnaryForm[symbol$, boxes$] defines symbol$[arg$1] to boxify to %TemplateBox[{arg$1}, 'symbol$'], \
@@ -620,7 +620,7 @@ _DefineUnaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineUnaryModifierForm]
+PrivateSpecialFunction[DefineUnaryModifierForm]
 
 SetUsage @ "
 DefineUnaryModifierForm[$$] is like DefineUnaryForm[$$] but registers the form as a modifier.
@@ -636,7 +636,7 @@ _DefineUnaryModifierForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineBinaryForm]
+PrivateSpecialFunction[DefineBinaryForm]
 
 SetUsage @ "
 DefineBinaryForm[symbol$, boxes$] defines symbol$[arg$1, arg$2] to boxify to %TemplateBox[{arg$1, arg$2}, 'symbol$'], \
@@ -664,7 +664,7 @@ _DefineBinaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineTernaryForm]
+PrivateSpecialFunction[DefineTernaryForm]
 
 Options[DefineTernaryForm] = $defineOpts;
 
@@ -691,7 +691,7 @@ _DefineTernaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineNAryForm]
+PrivateSpecialFunction[DefineNAryForm]
 
 Options[DefineNAryForm] = $defineOpts;
 
@@ -723,7 +723,7 @@ _DefineNAryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineInfixForm]
+PrivateSpecialFunction[DefineInfixForm]
 
 Options[DefineInfixForm] = JoinOptions[$defineOpts, HeadBoxes -> Automatic];
 
@@ -773,7 +773,7 @@ DefineTemplateBox[AppliedForm, "emptyAppliedForm", RBox[$1, KBox["(", "\\lparen 
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineInfixBinaryForm]
+PrivateSpecialFunction[DefineInfixBinaryForm]
 
 Options[DefineInfixBinaryForm] = Options @ DefineInfixForm;
 
@@ -794,7 +794,7 @@ _DefineInfixBinaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineIndexedInfixBinaryForm]
+PrivateSpecialFunction[DefineIndexedInfixBinaryForm]
 
 SetUsage @ "
 DefineIndexedInfixBinaryForm[symbol$, boxes$] defines symbol$[arg$1, arg$2] to boxify to %TemplateBox[{arg$1, arg$2}, 'symbol$'], \
@@ -815,7 +815,7 @@ _DefineIndexedInfixBinaryForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineCommaForm]
+PrivateSpecialFunction[DefineCommaForm]
 
 PublicOption[HeadBoxes]
 
@@ -845,7 +845,7 @@ _DefineCommaForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineRestCommaForm]
+PrivateSpecialFunction[DefineRestCommaForm]
 
 Options[DefineRestCommaForm] = $defineOpts;
 
@@ -873,7 +873,7 @@ _DefineRestCommaForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineRuleAsMapsTo]
+PrivateSpecialFunction[DefineRuleAsMapsTo]
 
 setupFormDefinitionCaching[DefineRuleAsMapsTo];
 
@@ -889,7 +889,7 @@ SetInitialValue[$literalSymbolFormTable, UAssoc[]];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineSymbolForm]
+PrivateSpecialFunction[DefineSymbolForm]
 
 Options[DefineSymbolForm] = $defineOpts
 
@@ -914,7 +914,7 @@ _DefineSymbolForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineIconSymbolForm]
+PrivateSpecialFunction[DefineIconSymbolForm]
 
 SetUsage @ "
 DefineIconSymbolForm[symbol$ -> 'str$'] defines symbol$ to format as TextIcon['str$'].
@@ -934,7 +934,7 @@ _DefineIconSymbolForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineNamedFunctionSymbolForm]
+PrivateSpecialFunction[DefineNamedFunctionSymbolForm]
 
 setupFormDefinitionCaching[DefineNamedFunctionSymbolForm];
 
@@ -953,7 +953,7 @@ _DefineNamedFunctionSymbolForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineNamedSansSerifFunctionSymbolForm]
+PrivateSpecialFunction[DefineNamedSansSerifFunctionSymbolForm]
 
 setupFormDefinitionCaching[DefineNamedSansSerifFunctionSymbolForm];
 
@@ -979,7 +979,7 @@ KConstruct[str_Str, args__] := str[args];
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineStyleForm]
+PrivateSpecialFunction[DefineStyleForm]
 
 Options[DefineStyleForm] = $defineOpts;
 
@@ -1044,7 +1044,7 @@ makeSubSupBoxes = Case[
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[DefineLocalTemplates]
+PrivateSpecialFunction[DefineLocalTemplates]
 
 DefineLocalTemplates::taggingrules = "Could not update tagging rules.";
 

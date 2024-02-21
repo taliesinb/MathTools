@@ -13,8 +13,7 @@ CreateMarkdownTable[grid_List, headings_List] := Scope[
 
 (**************************************************************************************************)
 
-
-PublicFunction[ExportToMarkdown]
+PublicIOFunction[ExportToMarkdown]
 
 SetUsage @ "
 ExportToMarkdown[inputdir$, opts$$] converts all notebooks in inputdir$ to markdown files that are written to disk.

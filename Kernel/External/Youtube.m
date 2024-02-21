@@ -2,22 +2,22 @@ jsonFilePath[id_] := LocalPath["Data", "Youtube", id <> ".json"];
 
 (**************************************************************************************************)
 
-PublicSymbol[YoutubeVideoIDPattern]
+PublicStringPattern[YoutubeVideoIDPattern]
 
 DefineStringPattern[YoutubeVideoIDPattern :> "[a-zA-Z0-9_-]{9,12}"]
 
 (**************************************************************************************************)
 
-PublicFunction[YoutubeVideoMetadata]
+PublicIOFunction[ImportYoutubeVideoMetadata]
 
 General::noVideoID = "No video ID found in ``.";
-YoutubeVideoMetadata::badinfo = "Could not obtain JSON info for video with ID ``."
+ImportYoutubeVideoMetadata::badinfo = "Could not obtain JSON info for video with ID ``."
 
-Options[YoutubeVideoMetadata] = {
+Options[ImportYoutubeVideoMetadata] = {
   Verbose -> False
 };
 
-YoutubeVideoMetadata[url_Str, OptionsPattern[]] := Scope[
+ImportYoutubeVideoMetadata[url_Str, OptionsPattern[]] := Scope[
   UnpackOptions[$verbose];
   vid = getVideoID @ url;
   If[!StringQ[vid], ReturnFailed["noVideoID", url]];
@@ -50,22 +50,22 @@ getVideoID[url_Str] := Which[
 
 (**************************************************************************************************)
 
-PublicSymbol[YoutubePlaylistIDPattern]
+PublicStringPattern[YoutubePlaylistIDPattern]
 
 DefineStringPattern[YoutubePlaylistIDPattern :> "[a-zA-Z0-9_-]{34}"]
 
 (**************************************************************************************************)
 
-PublicFunction[YoutubePlaylistMetadata]
+PublicIOFunction[ImportYoutubePlaylistMetadata]
 
 General::noPlaylistID = "No playlist ID found in ``.";
-YoutubePlaylistMetadata::badinfo = "Could not obtain JSON info for playlist with ID ``."
+ImportYoutubePlaylistMetadata::badinfo = "Could not obtain JSON info for playlist with ID ``.";x
 
-Options[YoutubePlaylistMetadata] = {
+Options[ImportYoutubePlaylistMetadata] = {
   Verbose -> False
 };
 
-YoutubePlaylistMetadata[url_Str, OptionsPattern[]] := Scope[
+ImportYoutubePlaylistMetadata[url_Str, OptionsPattern[]] := Scope[
   UnpackOptions[$verbose];
   pid = getPlaylistID @ url;
   If[!StringQ[pid], ReturnFailed["noPlaylistID", url]];
@@ -101,21 +101,21 @@ getPlaylistID[url_Str] := Which[
 
 (**************************************************************************************************)
 
-PublicFunction[YoutubeVideoToMarkdown]
+PublicIOFunction[ImportYoutubeVideoToMarkdown]
 
-Options[YoutubeVideoToMarkdown] = {
+Options[ImportYoutubeVideoToMarkdown] = {
   Verbose -> False
 };
 
-YoutubeVideoToMarkdown[url_Str, opts:OptionsPattern[]] := Scope[
+ImportYoutubeVideoToMarkdown[url_Str, opts:OptionsPattern[]] := Scope[
   vid = getVideoID @ url;
   If[!StringQ[vid], ReturnFailed["noVideoID", url]];
-  data = YoutubeVideoMetadata[vid, opts];
+  data = ImportYoutubeVideoMetadata[vid, opts];
   If[!AssocQ[data], ReturnFailed[]];
-  YoutubeVideoToMarkdown[data, opts]
+  ImportYoutubeVideoToMarkdown[data, opts]
 ];
 
-YoutubeVideoToMarkdown[data_Assoc, OptionsPattern[]] := Scope[
+ImportYoutubeVideoToMarkdown[data_Assoc, OptionsPattern[]] := Scope[
   UnpackOptions[$verbose];
   If[!KeyExistsQ[data, "channel"], data["channel"] = data["uploader"]];
   UnpackAssociation[data, uploader:"channel", title:"title", description:"description", url:"webpage_url", date:"upload_date"];
@@ -160,18 +160,18 @@ $youtubeVideoTemplate = StringFunction @ StringTrim @ """
 
 (**************************************************************************************************)
 
-PublicFunction[YoutubeVideoToStructuredData]
+PublicIOFunction[YoutubeVideoToStructuredData]
 
-Options[YoutubeVideoToStructuredData] = Options[YoutubeVideoToMarkdown];
+Options[YoutubeVideoToStructuredData] = Options[ImportYoutubeVideoToMarkdown];
 
 YoutubeVideoToStructuredData[url_Str, opts:OptionsPattern[]] := Scope[
   $youtubeVideoTemplate = Identity;
-  YoutubeVideoToMarkdown[url, opts]
+  ImportYoutubeVideoToMarkdown[url, opts]
 ]
 
 (**************************************************************************************************)
 
-PublicFunction[YoutubeBearNoteToStructuredData]
+PublicIOFunction[YoutubeBearNoteToStructuredData]
 
 YoutubeBearNoteToStructuredData[title_Str] := Scope[
   text = BearNoteText[title];
@@ -257,7 +257,7 @@ canonicalizeText[text_] := StringReplace[text,
 
 (**************************************************************************************************)
 
-PublicFunction[$UploaderToPerson, $UploaderToChannel, $UploaderToInstitute, $UploaderToPodcast]
+PublicVariable[$UploaderToPerson, $UploaderToChannel, $UploaderToInstitute, $UploaderToPodcast]
 
 $knownLiveAuthors := $knownLiveAuthors =
   Complement[$KnownAuthors, $DeadPeople, {"Peter M Neumann", "St John", "3Blue1Brown"}];
@@ -685,30 +685,30 @@ $DeadPeople = StringTrim @ StringSplit[StringReplace[$DeadPeople, "\n" -> " "], 
 
 (**************************************************************************************************)
 
-PrivateFunction[YoutubePlaylistToMarkdown]
+PrivateIOFunction[ImportYoutubePlaylistToMarkdown]
 
-Options[YoutubePlaylistToMarkdown] = {
+Options[ImportYoutubePlaylistToMarkdown] = {
   DryRun -> False,
   DuplicateTarget -> False,
   Verbose -> False
 };
 
-YoutubePlaylistToMarkdown::nometadata = "Failed to obtain metadata for playlist ``.";
-YoutubePlaylistToMarkdown::noEntryMetadata = "Failed to obtain metadata for all entries in playlist ``.";
+ImportYoutubePlaylistToMarkdown::nometadata = "Failed to obtain metadata for playlist ``.";
+ImportYoutubePlaylistToMarkdown::noEntryMetadata = "Failed to obtain metadata for all entries in playlist ``.";
 
-YoutubePlaylistToMarkdown[url_Str, opts:OptionsPattern[]] := Scope[
+ImportYoutubePlaylistToMarkdown[url_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[$verbose, $dryRun, duplicateTarget];
   SetAutomatic[$verbose, $dryRun];
 
   VPrint["Generating markdown for Youtube playlist ", MsgExpr @ url];
 
-  metadata = YoutubePlaylistMetadata[url, Verbose -> $verbose];
+  metadata = ImportYoutubePlaylistMetadata[url, Verbose -> $verbose];
   If[!AssociationQ[metadata], ReturnFailed["nometadata", MsgExpr @ url]];
   UnpackAssociation[metadata, uploader:"uploader", title:"title", url:"webpage_url", entries:"entries"];
 
   VPrint["Playlist title ", MsgExpr @ title, " has ", Length @ entries, " videos"];
   VPrint["Obtaining individual video metadata"];
-  videoMarkdowns = Map[YoutubeVideoToMarkdown[#id, Verbose -> $verbose]&, entries];
+  videoMarkdowns = Map[ImportYoutubeVideoToMarkdown[#id, Verbose -> $verbose]&, entries];
   If[!StringVectorQ[videoMarkdowns],
     ReturnFailed["nometadata", MsgExpr @ url];
   ];

@@ -414,12 +414,12 @@ tightColoredBoxes[str_Str, color_, sz_:10] := ToBoxes @ Framed[
 
 PublicFunction[GoodBeep, BadBeep]
 
-If[$OperatingSystem === "MacOSX",
-GoodBeep[] := Beep[];
-BadBeep[] := Run["afplay /System/Library/Sounds/Sosumi.aiff&"];
+If[$MacOSQ,
+  GoodBeep[] := Beep[];
+  BadBeep[]  := Run["afplay /System/Library/Sounds/Sosumi.aiff&"];
 ,
-GoodBeep[] := Beep[];
-BadBeep[] := (Beep[]; Pause[0.1]; Beep[]);
+  GoodBeep[] := Beep[];
+  BadBeep[]  := (Beep[]; Pause[0.1]; Beep[]);
 ];
 
 (**************************************************************************************************)

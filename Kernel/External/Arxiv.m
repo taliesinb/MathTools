@@ -2,19 +2,20 @@ xmlFilePath[id_] := LocalPath["Data", "Arxiv", StringReplace[id, "/"|"." -> "_"]
 
 (**************************************************************************************************)
 
-PublicSymbol[ArxivPaperIDPattern]
+PublicStringPattern[ArxivPaperIDPattern]
 
 DefineStringPattern[ArxivPaperIDPattern :> RawRegex["(?:\\d{1,4}\\.|hep-th[/.]|gr-qc[/.]|q-alg[/.])\\d{4,7}(?:v\\d)?"]]
 
 (**************************************************************************************************)
 
-PublicFunction[ArxivPageToMarkdown]
+PublicIOFunction[ImportArxivPageToMarkdown]
 
-ArxivPageToMarkdown[url_Str, opts___Rule] := PaperToMarkdown[ImportArxivPage[url, FilterOptions @ opts], FilterOptions @ opts];
+ImportArxivPageToMarkdown[url_Str, opts___Rule] :=
+  PaperToMarkdown[ImportArxivPage[url, FilterOptions @ opts], FilterOptions @ opts];
 
 (**************************************************************************************************)
 
-PublicFunction[ImportArxivPage]
+PublicIOFunction[ImportArxivPage]
 
 PublicOption[DownloadPDF, PDFPath]
 

@@ -1,0 +1,4 @@
+{*}		List
+<|*|>	Association
+[[*]]   Part
+(*)     Identity

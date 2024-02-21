@@ -1,4 +1,4 @@
-PublicFunction[GitClone]
+PublicIOFunction[GitClone]
 
 PublicOption[ShallowCheckout]
 
@@ -21,7 +21,7 @@ GitClone[path_Str, remote_Str, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[DownloadGithubRepo]
+PublicIOFunction[DownloadGithubRepo]
 
 PublicOption[GitBranch]
 

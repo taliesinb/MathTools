@@ -2,11 +2,11 @@ htmlFilePath[hash_] := LocalPath["Data", "HTML", hash <> ".html"];
 
 (**************************************************************************************************)
 
-PublicFunction[HTMLToMarkdown]
+PublicIOFunction[ImportHTMLToMarkdown]
 
-CacheSymbol[$XMLFromURLCache]
+CacheVariable[$XMLFromURLCache]
 
-HTMLToMarkdown[url_Str] := Scope[
+ImportHTMLToMarkdown[url_Str] := Scope[
   xml = CachedInto[$XMLFromURLCache, url, getXMLfromURL @ url];
   If[H[xml] =!= XMLObject["Document"], ReturnFailed[]];
   host = URLParse[url, "Domain"];

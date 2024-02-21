@@ -1,6 +1,6 @@
 PublicFunction[TextToPolygon]
 
-CacheSymbol[$TextToPolygonCache]
+CacheVariable[$TextToPolygonCache]
 
 SetUsage @ "
 TextToPolygon['text$'] turns text into a polygon, returning a tuple of {primitives$, bounds$, shift$}.
@@ -91,7 +91,7 @@ CenterTextVertical[text_] := text;
 
 (**************************************************************************************************)
 
-CacheSymbol[$TextCentroidCache]
+CacheVariable[$TextCentroidCache]
 
 PublicFunction[TextCentroid]
 

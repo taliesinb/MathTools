@@ -1,4 +1,4 @@
-PublicFunction[FSWatch]
+PublicIOFunction[FSWatch]
 
 FSWatch::usage = "
 FSWatch[path$] runs 'fswatch', which watches for changes to a file or directory.
@@ -12,7 +12,7 @@ FSWatch::badStream = "Could not open input stream.";
 
 FSWatch[path_] := Scope[
 
-  binPath = FindTool["fswatch"];
+  binPath = FindTool["fswatch", None];
   If[binPath === None, Message[FSWatch::binMissing]; Return[$Failed]];
   cmdArgs = {binPath};
 

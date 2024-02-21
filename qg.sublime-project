@@ -3,7 +3,8 @@
 	[
 		{
 			"path": ".",
-			"folder_exclude_patterns": ["Fonts", "Scrach", "Data/Github", "Zig", "Zig2", "Scratch", "Data/Arxiv", "Data/Scholar", "Data/Video", "Data/Youtube"]
+			"folder_exclude_patterns": ["Fonts", "Scrach", "Data/Github", "Zig", "Zig2", "Scratch", "Data/Arxiv", "Data/Scholar", "Data/Video", "Data/Youtube", "**/*.dSYM", ".git"],
+			"binary_file_patterns": ["*.dylib", "*.xml", "*.html", "*.mx"]
 		}
 	],
 	"build_systems": [

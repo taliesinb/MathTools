@@ -1,6 +1,6 @@
 PrivateFunction[bundleHashLookup]
 
-CacheSymbol[$BundleGraphCache]
+CacheVariable[$BundleGraphCache]
 
 bundleHashLookup[hash_, prop___] := $BundleGraphCache[hash, prop];
 

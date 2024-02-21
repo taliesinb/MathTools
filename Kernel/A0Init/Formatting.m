@@ -22,7 +22,7 @@ PrivateSpecialFunction[DefineStandardTraditionalForm]
 
 PublicFunction[HasBoxFormQ]
 
-CacheSymbol[$StandardTraditionalFormCache]
+CacheVariable[$StandardTraditionalFormCache]
 
 $boxFormHeadAssoc = UAssoc[];
 

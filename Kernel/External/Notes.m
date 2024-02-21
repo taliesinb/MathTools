@@ -1,27 +1,27 @@
-PublicFunction[URLToMarkdown]
+PublicIOFunction[ImportURLToMarkdown]
 
-URLToMarkdown::badurl = "Not url:``."
-URLToMarkdown::baddomain = "Unrecognized domain ``."
+ImportURLToMarkdown::badurl = "Not url:``."
+ImportURLToMarkdown::baddomain = "Unrecognized domain ``."
 
-Options[URLToMarkdown] = {
+Options[ImportURLToMarkdown] = {
   Verbose -> False,
   DownloadPDF -> True
 }
 
-URLToMarkdown[url_Str, opts:OptionsPattern[]] := Scope[
+ImportURLToMarkdown[url_Str, opts:OptionsPattern[]] := Scope[
   domain = ToLowerCase @ URLParse[url, "Domain"];
   If[!StringQ[domain], ReturnFailed["badurl", MsgExpr @ url]];
   Switch[
     StringTrimLeft[domain, "www."],
-    "scholar.google.com",       ScholarPageToMarkdown[url, opts],
-    "arxiv.org",                ArxivPageToMarkdown[url, opts],
-    "youtube.com" | "youtu.be", YoutubeVideoToMarkdown[url, FilterOptions @ opts],
-    "openreview.net",           OpenReviewPageToMarkdown[url],
+    "scholar.google.com",       ImportScholarPageToMarkdown[url, opts],
+    "arxiv.org",                ImportArxivPageToMarkdown[url, opts],
+    "youtube.com" | "youtu.be", ImportYoutubeVideoToMarkdown[url, FilterOptions @ opts],
+    "openreview.net",           ImportOpenReviewPageToMarkdown[url],
     _,                          ReturnFailed["baddomain", domain]
   ]
 ]
 
-_URLToMarkdown := BadArguments[];
+_ImportURLToMarkdown := BadArguments[];
 
 (**************************************************************************************************)
 
@@ -31,7 +31,7 @@ $KnownNoteURLPatterns = "scholar.google.com" | "arxiv.org" | "youtube.com" | "yo
 
 (**************************************************************************************************)
 
-PublicFunction[CreateBearArxivPages]
+PublicIOFunction[CreateBearArxivPages]
 
 Options[CreateBearArxivPages] = {
   Verbose -> False
@@ -52,7 +52,7 @@ CreateBearArxivPages[assocs:{__Assoc}, opts:OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[PopulateOrphanBearLinkNotes]
+PublicIOFunction[PopulateOrphanBearLinkNotes]
 
 SetUsage @ "
 PopulateOrphanBearLinkNotes[] finds all pages that correspond to bare links to known sites and populates the corresponding notes.
@@ -75,7 +75,7 @@ processOrphanLinkNote[uuid_, title_, extraText_] := Scope[
   Print[$i++, ": Processing note with title \"", title, "\""];
   link = FirstStringCase[title, HyperlinkPattern];
   If[!StringQ[link], Print["Could not find link in title \"", title, "\""]; ReturnFailed[]];
-  markdown = URLToMarkdown[link, AdditionalText -> extraText];
+  markdown = ImportURLToMarkdown[link, AdditionalText -> extraText];
   If[!StringQ[markdown], Print["Failed to create markdown."]; ReturnFailed[]];
   If[$dryRun, Return @ markdown];
   res = ReplaceBearNote[uuid, markdown];
@@ -97,20 +97,20 @@ gatherLinkNoteData[pattern_] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[CreateNoteFromURL]
+PublicIOFunction[CreateNoteFromURL]
 
-Options[CreateNoteFromURL] = JoinOptions[URLToMarkdown, DuplicateTarget -> False];
+Options[CreateNoteFromURL] = JoinOptions[ImportURLToMarkdown, DuplicateTarget -> False];
 
 CreateNoteFromURL[url_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[duplicateTarget];
-  res = URLToMarkdown[url, FilterOptions @ opts];
+  res = ImportURLToMarkdown[url, FilterOptions @ opts];
   If[!StringQ[res], ReturnFailed[]];
   CreateBearNote[res, DuplicateTarget -> duplicateTarget]
 ];
 
 (**************************************************************************************************)
 
-PublicFunction[CreateNotesFromURLList]
+PublicIOFunction[CreateNotesFromURLList]
 
 Options[CreateNotesFromURLList] = Options[CreateNoteFromURL];
 
@@ -123,7 +123,7 @@ CreateNotesFromURLList[urls:{__Str}, opts:OptionsPattern[]] := Scope[
   StringRiffle[results, "\n"]
 ]
 
-PublicFunction[CreateNotesFromClipboardList]
+PublicIOFunction[CreateNotesFromClipboardList]
 
 CreateNotesFromClipboardList::skippedURLs = "Skipping unknown URLs: ``.";
 CreateNotesFromClipboardList[] := Scope[
@@ -199,7 +199,7 @@ NoteFullNameToShortName[name_List] :=
 
 (**************************************************************************************************)
 
-PublicFunction[CreateMeatingNote]
+PublicFunction[CreateMeetingNote]
 
 (* TODO: make this production-grade *)
 

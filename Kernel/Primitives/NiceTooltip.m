@@ -19,6 +19,7 @@ tooltipPrettyBoxes[e_] :=
 
 (**************************************************************************************************)
 
+MakeBoxes[NiceTooltip[a_, b_, sz_], form_] := NiceTooltipBoxes[MakeBoxes[a, form], MakeBoxes @ CompactPrettyForm @ b, sz];
 MakeBoxes[NiceTooltip[a_, b_], form_] := NiceTooltipBoxes[MakeBoxes[a, form], MakeBoxes @ CompactPrettyForm @ b];
 MakeBoxes[NiceTooltip[a_, None], form_] := MakeBoxes[a, Form];
 

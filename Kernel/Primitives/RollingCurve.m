@@ -47,7 +47,7 @@ rollingCurvePoints[RollingCurve[curve_, opts___Rule]] := Scope[
   toRollingCurvePoints[curve, bendRadius, bendShape]
 ];
 
-CacheSymbol[$RollingCurveCache]
+CacheVariable[$RollingCurveCache]
 
 toRollingCurvePoints[points_, 0, _] := points;
 toRollingCurvePoints[points_, _, None] := points;

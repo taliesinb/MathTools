@@ -1,4 +1,4 @@
-PublicFunction[YoutubeDL]
+PublicIOFunction[YoutubeDL]
 
 $youtubeDLArgData = ExpressionTable[
   "Output"           None          "output"

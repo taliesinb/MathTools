@@ -4,7 +4,7 @@ SetInitialValue[$DefaultObsidianVault, NormalizePath["~/Obsidian"]];
 
 (*************************************************************************************************)
 
-PublicFunction[CreateObsidianNote]
+PublicIOFunction[CreateObsidianNote]
 
 PublicOption[ObsidianVault, NoteFolder, FrontMatter, CreationTime, ModificationTime]
 

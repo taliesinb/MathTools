@@ -165,7 +165,7 @@ normalizeLines = Case[
   other_     := Print[other];
 ];
 
-PublicFunction[ImportJupyterNotebook]
+PublicIOFunction[ImportJupyterNotebook]
 
 ImportJupyterNotebook::nefile = "File `` doesn't exist.";
 ImportJupyterNotebook::invdata = "Invalid data: got ``, expected ``.";

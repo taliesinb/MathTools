@@ -7,6 +7,7 @@ tell application "Terminal"
 end tell
 """
 
+(* TODO: do we have to escape single quotes here? *)
 RunInTerminalWindow[directory_Str, command_Str] := Scope[
   cmd = $runInTerminalTemplate[NormalizePath @ directory, command];
   RunAppleScript[cmd]

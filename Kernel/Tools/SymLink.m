@@ -1,4 +1,4 @@
-PublicFunction[SymLink]
+PublicIOFunction[SymLink]
 
 SymLink[source_Str, target_Str] /; $PosixQ :=
   RunTool["ln", "-s", source, target];

@@ -750,6 +750,21 @@ mUnpackAnonymousThemedOptions[object_, default_, syms_] :=
       Quoted[default]
     ]
   ];
+
+(**************************************************************************************************)
+
+PrivateMutatingFunction[DefineOptionToVariableBlocking]
+
+SetUsage @ "
+DefineOptionToVariableBlocking[fn$, {opt$1 :> var$1, opt$1 :> var$2, $$}] sets downvalues for fn$ to block the values of variables to corresponding option settings.
+"
+
+DefineOptionToVariableBlocking[head_Symbol, rules_List] := Scan[defOptVarBlock[head], rules];
+defOptVarBlock[head_][opt_ :> var_Symbol] := SetDelayed[head[largs__, opt -> val_, rargs___], Block[{var = val}, head[largs, rargs]]];
+defOptVarBlock[head_][e_] := Print[e];
+
+_DefineOptionToVariableBlocking := BadArguments[];
+
 (**************************************************************************************************)
 
 PrivateMutatingFunction[UnpackExtendedThemedOptions]
@@ -795,10 +810,11 @@ findMatchingSymbols[syms_List] := findMatchingSymbols[syms] = Block[
   str = ToString[Unevaluated @ syms, InputForm];
   str = StringReplace[str, $lowerCaseSymbolRegExp :> StringJoin[ToUpperCase["$1"], "$2"]];
   ToExpression[str, InputForm, Quoted]
+];
 
 (**************************************************************************************************)
 
-PublicMutatingFunction[BinaryReadToSymbols]
+PublicIOFunction[BinaryReadToSymbols]
 
 PublicSymbol[uint8, uint16, uint32, uint64, uint128]
 PublicSymbol[int8, int16, int32, int64, int128]
@@ -835,7 +851,7 @@ mBinaryReadToSymbols[stream_, specs_] := Block[
 
 (**************************************************************************************************)
 
-PublicMutatingFunction[BinaryReadToAssociation]
+PublicIOFunction[BinaryReadToAssociation]
 
 SetHoldAllComplete[mBinaryReadToAssociation]
 
@@ -1157,7 +1173,7 @@ LengthEqualOrMessage[msg_MessageName, list1_, list2_] := With[
 
 (**************************************************************************************************)
 
-PublicSpecialFunction[WithInternet]
+PublicIOFunction[WithInternet]
 
 SetAttributes[WithInternet, HoldAll];
 

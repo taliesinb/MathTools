@@ -1,4 +1,4 @@
-PublicFunction[PandocConvert]
+PublicIOFunction[PandocConvert]
 
 PandocConvert::failed = "Pandoc failed on input `` and output ``.";
 
@@ -10,13 +10,13 @@ PandocConvert[infile_Str, outfile_Str] := CatchMessage @ Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[PandocConvertToHTML]
+PublicIOFunction[PandocConvertToHTML]
 
 PandocConvertToHTML[inpath_Str] := PandocConvert[inpath, ReplaceFileExtension[inpath, "html"]];
 
 (**************************************************************************************************)
 
-PublicFunction[PandocExportMDToHTML]
+PublicIOFunction[PandocExportMDToHTML]
 
 SetUsage @ "
 PandocExportMDToHTML[indir$, outdir$] converts all markdown files in indir$ to matching HTML files in outdir$.

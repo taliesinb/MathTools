@@ -1,6 +1,6 @@
 PublicFunction[FloodFill]
 
-CacheSymbol[$FloodFillCache]
+CacheVariable[$FloodFillCache]
 
 Options[FloodFill] = {
 	"Sensitivity" -> 0.001

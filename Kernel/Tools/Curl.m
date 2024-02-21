@@ -1,4 +1,4 @@
-PublicFunction[URLAvailableQ]
+PublicIOFunction[URLAvailableQ]
 
 URLAvailableQ[path_Str] /; StringStartsQ[path, "file://"] := FileExistsQ @ StringDrop[path, 7];
 

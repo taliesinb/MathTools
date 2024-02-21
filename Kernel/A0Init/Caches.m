@@ -4,7 +4,7 @@ SetInitialValue[$EnableCaching, True];
 
 (**************************************************************************************************)
 
-PrivateSpecialFunction[CachedInto]
+PrivateCacheFunction[CachedInto]
 
 SetUsage @ "
 CachedInto[sym$, key$, body$] is similar to %CacheTo.
@@ -38,7 +38,7 @@ CachedInto[_, _, resultExpr_] := resultExpr;
 
 (**************************************************************************************************)
 
-PrivateSpecialFunction[CachedIntoMX]
+PrivateCacheFunction[CachedIntoMX]
 
 SetUsage @ "
 CachedIntoMX[sym$, 'dir$', key$, body$] is similar to %CachedIntoTo.

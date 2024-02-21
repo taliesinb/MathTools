@@ -371,7 +371,7 @@ LegacyToSVGString[g_] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[ExportSVG]
+PublicIOFunction[ExportSVG]
 
 ExportSVG[file_Str, graphics_] := Scope[
   svg = ToSVGString @ graphics;

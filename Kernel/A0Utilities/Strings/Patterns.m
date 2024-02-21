@@ -1,4 +1,4 @@
-PublicSymbol[ShortBlank, ASCIIWord, Base64Pattern, LinearSyntaxPattern]
+PublicStringPattern[ShortBlank, ASCIIWord, Base64Pattern, LinearSyntaxPattern]
 
 DefineStringPattern[
   ShortBlank           :> """.+?""",
@@ -7,15 +7,11 @@ DefineStringPattern[
   ASCIIWord            :> """\b[[:alnum:]]+\b"""
 ];
 
-zDefineStringPatternMacro[
-  LinearSyntaxPattern  :> ("\!\(\*" ~~ $lsf:Shortest[___] /; StringBalancedQ[$lsf, "\(", "\)"]) ~~ "\)"
-]
-
 DefineStringPattern[
   LinearSyntaxPattern  :> "\!\(\*" ~~ Shortest[___] ~~ "\)"
 ]
 
-PublicSymbol[EnglishlikeWord, LowercaseWord, UppercaseWord]
+PublicStringPattern[EnglishlikeWord, LowercaseWord, UppercaseWord]
 
 DefineStringPattern[
   EnglishlikeWord      :> """\b(?:[[:alpha:]][:lower:]*?)(?:'s|n't)?\b""",
@@ -23,7 +19,7 @@ DefineStringPattern[
   UppercaseWord        :> """\b[[:upper:]]+\b"""
 ]
 
-PublicSymbol[CamelCaseWord, LowerCamelCaseWord, UpperCamelCaseWord]
+PublicStringPattern[CamelCaseWord, LowerCamelCaseWord, UpperCamelCaseWord]
 
 DefineStringPattern[
   CamelCaseWord        :> """\b[[:alpha:]][[:alnum:]]*\b""",
@@ -31,7 +27,7 @@ DefineStringPattern[
   UpperCamelCaseWord   :> """\b[[:upper:]][[:alnum:]]*\b"""
 ]
 
-PublicSymbol[TitleCaseWord, TitleCasePhrase, FullNamePhrase]
+PublicStringPattern[TitleCaseWord, TitleCasePhrase, FullNamePhrase]
 
 DefineStringPattern[
   TitleCaseWord        :> """\b[[:upper:]][[:lower:]]+\b""",
@@ -41,7 +37,7 @@ DefineStringPattern[
 
 (**************************************************************************************************)
 
-PublicHead[Regex]
+PublicStringPattern[Regex]
 
 DefineStringPatternMacro[
   Regex[s_Str] :> RegularExpression[s]
@@ -49,7 +45,7 @@ DefineStringPatternMacro[
 
 (**************************************************************************************************)
 
-PublicHead[Avoiding]
+PublicStringPattern[Avoiding]
 
 SetUsage @ "
 Avoiding[patt$, 'chars$'] matches patt$, as long as the match does not contain any of the chars$.
@@ -92,7 +88,7 @@ expandAvoiding = Case[
 
 (**************************************************************************************************)
 
-PublicHead[StartOfParagraph, EndOfParagraph]
+PublicStringPattern[StartOfParagraph, EndOfParagraph]
 
 $ParagraphSRE = """(?:\A|(?<=\A\n)|(?<=\n\n))(?!$)""";
 $ParagraphERE = """(?<!\n)(?:\z|(?=\n\z)|(?=\n\n))""";
@@ -109,7 +105,7 @@ DefineStringPattern[
 
 (**************************************************************************************************)
 
-PublicHead[SQuoteSpan, DQuoteSpan, ParenSpan, BraceSpan, BracketSpan, DoubleBracketSpan]
+PublicStringPattern[SQuoteSpan, DQuoteSpan, ParenSpan, BraceSpan, BracketSpan, DoubleBracketSpan]
 
 defineSpanStringPattern[head_, str_] := Scope[
   pair = StringPart[str, {1, -1}];
@@ -139,7 +135,20 @@ KeyValueScan[defineSpanStringPattern, UAssoc[
 
 (**************************************************************************************************)
 
-PublicHead[LineSpan, ParagraphSpan]
+PublicStringPattern[XMLSpan]
+
+DefineStringPatternMacro[
+  XMLSpan[tag_Str]        :> xmlSpan[tag],
+  XMLSpan[tag_Str, patt_] :> xmlSpan[tag, patt]
+];
+
+xmlSpan[tag_] := First @ Module[{z}, List[StrJoin["<", tag, ">"] ~~ z:Shortest[___] ~~ StrJoin["</", tag, ">"] /; StringBalancedQ[z, "<", ">"]]];
+xmlSpan[tag_, lit_Str] := StrJoin["<", tag, ">", lit, "</", tag, ">"];
+xmlSpan[tag_, patt_] := StrJoin["<", tag, ">"] ~~ patt ~~ StrJoin["</", tag, ">"];
+
+(**************************************************************************************************)
+
+PublicStringPattern[LineSpan, ParagraphSpan]
 
 SetUsage @ "LineSpan matches an entire line.\nLineSpan[p$] matches p$ if it constitutes an entire line."
 SetUsage @ "ParagraphSpan matches an entire paragraph, separated from others by two newlines.\nParagraphSpan[p$] matches p$ if it constitutes an entire paragraph."
@@ -153,7 +162,7 @@ DefineStringPatternMacro[
 
 (**************************************************************************************************)
 
-PublicHead[LineFragment, ParentheticalPhrase, SingleQuotedPhrase, DoubleQuotedPhrase, HyperlinkPattern]
+PublicStringPattern[LineFragment, ParentheticalPhrase, SingleQuotedPhrase, DoubleQuotedPhrase, HyperlinkPattern]
 
 (* tested on https://regex101.com, modified to include : *)
 (* $hyperlinkRegexp = """(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))"""; *)
@@ -175,7 +184,7 @@ DefineStringPattern[
 
 (**************************************************************************************************)
 
-PublicHead[WholeWord, WithinLine]
+PublicStringPattern[WholeWord, WithinLine]
 
 SetUsage @ "WholeWord[p$] matches p$ if it has a %WordBoundary on either side."
 SetUsage @ "WithinLine[p$] matches p$ if occurs within a single line."
@@ -189,7 +198,7 @@ parseWithinLine[p_] := RawStrExp["(?-s)", EvalStrExp @ p, "(?s)"]
 
 (**************************************************************************************************)
 
-PublicHead[CaseInsensitive, Maybe, NegativeLookbehind, NegativeLookahead, PositiveLookbehind, PositiveLookahead]
+PublicStringPattern[CaseInsensitive, Maybe, NegativeLookbehind, NegativeLookahead, PositiveLookbehind, PositiveLookahead]
 
 SetUsage @ "CaseInsensitive[p$] matches p$ without case sensitivity.";
 SetUsage @ "Maybe[p$] matches 0 or 1 copies of p$.";

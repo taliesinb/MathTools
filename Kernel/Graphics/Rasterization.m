@@ -60,7 +60,7 @@ MakeImage[expr$, background$] specifies a background color.
 * the QG stylesheet will be used if QG template boxes are present.
 "
 
-CacheSymbol[$MakeImageCache]
+CacheVariable[$MakeImageCache]
 
 MakeImage::fail = "Failed to rasterize expression ``.";
 MakeImage[expr_, bg_:None] := Scope @ CachedInto[
@@ -83,7 +83,7 @@ MakeImageAndMetadata[expr$, background$] specifies a background color.
 "
 
 
-CacheSymbol[$MakeImageAndMetadataCache]
+CacheVariable[$MakeImageAndMetadataCache]
 
 MakeImageAndMetadata[expr_, bg_:None] := Scope @ CachedInto[
 	$MakeImageAndMetadataCache, Hash @ {expr, bg},
@@ -105,7 +105,7 @@ toImageReg[{anno_, {{a_, b_}, {c_, d_}}}] := anno -> {{a, d}, {b, c}};
 
 PublicFunction[MakeImageSize]
 
-CacheSymbol[$MakeImageSizeCache]
+CacheVariable[$MakeImageSizeCache]
 
 MakeImageSize::fail = "Failed to obtain raster size for input with head ``.";
 MakeImageSize[expr_, returnBaseline_:False] :=

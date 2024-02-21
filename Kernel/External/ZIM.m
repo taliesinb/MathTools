@@ -19,7 +19,7 @@ either look under Zim/filename/prop.mx, or compute it and save it. it will also 
 in the associated cache symbol.
 *)
 
-CacheSymbol[$ZimDataCache]
+CacheVariable[$ZimDataCache]
 
 (* these should be macros so that $stream will be localized *)
 SetHoldAll[zimCached, zimUncached]
@@ -51,7 +51,7 @@ ClearZimCache[] := (
 
 (**************************************************************************************************)
 
-CacheSymbol[$ZimStreamCache]
+CacheVariable[$ZimStreamCache]
 
 General::ZimFilePathNotFound = "`` does not exist."
 

@@ -387,7 +387,7 @@ toUndirectedEdge[from_, to_] := UndirectedEdge[from, to];
 
 PrivateFunction[CachedMultiwaySystem]
 
-CacheSymbol[$MultiwaySystemCache]
+CacheVariable[$MultiwaySystemCache]
 
 setupMultiwayCache[] := (
   $MultiwaySystemCache = CreateDataStructure["LeastRecentlyUsedCache", 8]

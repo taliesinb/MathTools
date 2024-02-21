@@ -1,4 +1,4 @@
-PublicFunction[HugoNewSite]
+PublicIOFunction[HugoNewSite]
 
 PublicOption[HugoTheme]
 
@@ -68,7 +68,7 @@ theme = "#HugoTheme"
 
 (**************************************************************************************************)
 
-PublicFunction[HugoBuild]
+PublicIOFunction[HugoBuild]
 
 Options[HugoBuild] = {
   HTMLPath -> Automatic,
@@ -80,7 +80,7 @@ HugoBuild[dir_Str, opts:OptionsPattern[]] :=
 
 (**************************************************************************************************)
 
-PublicFunction[HugoServe]
+PublicIOFunction[HugoServe]
 
 Options[HugoServe] = {
   HTMLPath -> Automatic,
