@@ -58,6 +58,7 @@ FindSuspiciousCodebaseLines
 FindCodebaseLines
 ComputeSourceExpressionHashes
 ApplySourceSymbolRewrites
+ReadAliasRules
 
 ExpressionTable
 
@@ -95,6 +96,14 @@ EPrint[args___] := If[!$silent, Print[args]];
 
 $silent = False;
 
+ReadAliasRules[path_] := Module[{symbolAliasStr},
+  symbolAliasStr = ByteArrayToString @ ReadByteArray @ path;
+  Cases[
+    StringSplit[Discard[StringStartsQ["#"]] @ StringSplit[symbolAliasStr, "\n"], Whitespace],
+    {k_String, v_String} :> Rule[k, v]
+  ]
+];
+
 (*************************************************************************************************)
 
 Attributes[DeclarePreservedVariable] = {HoldAll};
@@ -128,8 +137,7 @@ If[!MatchQ[$SymbolTable, {Rule[_, _List]..}],
 ];
 
 symbolAliasPath = FileNameJoin[{$PackageDirectory, "Data", "Wolfram", "SymbolAliases.txt"}];
-symbolAliasStr = ByteArrayToString @ ReadByteArray @ symbolAliasPath;
-aliasRules = Cases[StringSplit[StringSplit[symbolAliasStr, "\n"], Whitespace], {k_String, v_String} :> Rule[k, v]];
+aliasRules = ReadAliasRules[symbolAliasPath];
 $FromSymbolAlias = Association @ aliasRules;
 $ToSymbolAlias = Association @ Reverse[aliasRules, 2];
 
@@ -863,8 +871,7 @@ WatchCellPrint[cell_, pos_] := Block[
 (*************************************************************************************************)
 
 ApplySourceSymbolRewrites::notCoreSymbol = "`` is not a core symbol.";
-
-ApplySourceSymbolRewrites[rewrites:{(_String -> _String)..}] := Block[
+ApplySourceSymbolRewrites[rewrites:{(_String -> _String)..}, n_:Infinity] := Block[
   {$rewrites, $strPatt, $exprPatt, lhs, lhsSyms, packages},
   (* make sure we look for both the full name and the name under any existing aliases *)
   $rewrites = MapApply[
@@ -872,15 +879,16 @@ ApplySourceSymbolRewrites[rewrites:{(_String -> _String)..}] := Block[
     rewrites
   ];
   lhs = Keys @ $rewrites;
-  $strPatt = WordBoundary ~~ (Alternatives @@ lhs) ~~ WordBoundary;
+  $strPatt = WordBoundary ~~ (Alternatives @@ Part[lhs, All, 2]) ~~ WordBoundary;
   lhsSyms = Map[lookupAliasTargetSymbolLookup, lhs];
   If[MemberQ[lhsSyms, $Failed], Return @ $Failed];
   $exprPatt = Alternatives @@ lhsSyms;
   packages = ReadSource[False, True, False];
-  DeleteCases[Map[rewritePackage, Take[packages, 20]], {}]
+  DeleteCases[Map[rewritePackage, Take[packages, UpTo[n]]], {}]
 ];
 
 lookupAliasTargetSymbolLookup[StringExpression[WordBoundary, s_, WordBoundary]] := lookupAliasTargetSymbolLookup @ s;
+lookupAliasTargetSymbolLookup["Inf"|"Infinity"] := HoldPattern @ Infinity;
 lookupAliasTargetSymbolLookup[sym_String] := Lookup[$coreSymbolAssociation, sym, Message[ApplySourceSymbolRewrites::notCoreSymbol, sym]; $Failed];
 lookupAliasTargetSymbolLookup[alts_Alternatives] := FirstCase[Lookup[$coreSymbolAssociation, List @@ alts], _Symbol, Message[ApplySourceSymbolRewrites::notCoreSymbol, alts]; $Failed];
 lookupAliasTargetSymbolLookup[e_] := (Message[ApplySourceSymbolRewrites::notCoreSymbol, e]; $Failed);
@@ -923,30 +931,45 @@ deepCount[h_, p_] := Count[h, p, {0, Infinity}, Heads -> True];
 rewriteExpr[line_, span_, h_] /; FreeQ[h, $exprPatt] := Nothing;
 rewriteExpr[line_, span_, h_] := Module[{sold, snew, scount, ecount},
   sorig = StringTake[$fileStr, span];
-  sold = escapeComment @ sorig;
+  sold = escapeThings @ sorig;
   scount = StringCount[sold, $strPatt];
   ecount = deepCount[h, $exprPatt];
   If[scount > ecount,
-    Print["Mismatched count in ", FileLine[$filePath, line], ": ", scount, " strings versus ", ecount, " expressions."];
-    Print[DeleteCases[0] @ AssociationMap[StringCount[sold, #]&, Keys[$rewrites]]];
-    Print[DeleteCases[0] @ AssociationMap[deepCount[h, #]&, lhsSyms]];
-    Print[sold];
-    Return[Nothing]];
-  snew = unescapeComment @ StringReplace[sold, $rewrites];
+    Print["Mismatched count in: ", FileLine[$filePath, line], " (", scount, " strings versus ", ecount, " expressions)"];
+    Print["String matches:      ", KeyMap[Part[#,2]&] @ DeleteCases[0] @ AssociationMap[StringCount[sold, #]&, Keys[$rewrites]]];
+    Print["Expression matches:  ", DeleteCases[0] @ AssociationMap[deepCount[h, #]&, lhsSyms]];
+    printMatches[sold];
+    Return[Nothing]
+  ];
+  snew = unescapeThings @ StringReplace[sold, $rewrites];
   If[snew === sorig, Nothing, span -> snew]
 ];
 
+printMatches[sold_] := Module[{spans, results, shighlight, snew},
+  spans = StringPosition[sold, $strPatt];
+  results = highlightStr[StringReplace[StringTake[sold, #], $rewrites]]& /@ spans;
+  shighlight = StringReplacePart[sold, results, spans];
+  snew = unescapeThings @ shighlight;
+  Print @ Framed[snew, Background -> GrayLevel[0.96]];
+];
+
+highlightStr[s_] := StringJoin["\!\(\*", ToString[ToBoxes @ Style[s, RGBColor[1, .2, .2]], InputForm], "\)"];
+
 commentBalancedQ[s_String] := StringCount[s, "(*"] === StringCount[s, "*)"];
 
-escapeComment[s_String] := StringReplace[s,
-  "(*" ~~ z:Shortest[___] ~~ "*)" /; commentBalancedQ[z] :>
-    "<***" <> Compress[z] <> "***>"
-];
+escapeThings[s_String] := StringReplace[s, {
+      "(*" ~~ z:Shortest[___] ~~ "*)" /; commentBalancedQ[z] :> "<***" <> Compress[z] <> "***>",
+  "\"\"\"" ~~ z:Shortest[___] ~~ "\"\"\""                    :> "<'''" <> Compress[z] <> "'''>",
+      "\"" ~~ z:Shortest[___] ~~ "\"" /; notPartialStrQ[z]   :> "!'''" <> Compress[z] <> "'''!"
+}];
 
-unescapeComment[s_String] := StringReplace[s,
-  "<***" ~~ z:Shortest[___] ~~ "***>" :>
-    "(*" <> Uncompress[z] <> "*)"
-];
+notPartialStrQ[s_] := EvenQ @ StringLength @ First[StringCases[s, "\\".. ~~ EndOfString], ""];
+
+unescapeThings[s_String] := StringReplace[s, {
+  "<***" ~~ z:Shortest[___] ~~ "***>"                        :> "(*" <> Uncompress[z] <> "*)",
+  "<'''" ~~ z:Shortest[___] ~~ "'''>"                        :> "\"\"\"" <> Uncompress[z] <> "\"\"\"",
+  "!'''" ~~ z:Shortest[___] ~~ "'''!"                        :> "\"" <> Uncompress[z] <> "\""
+}];
 
 (*************************************************************************************************)
 
