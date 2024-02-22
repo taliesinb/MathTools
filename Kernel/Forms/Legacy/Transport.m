@@ -19,7 +19,7 @@ DefineUnaryForm[TransportMapSymbol, "?"]
 (* how is this different from wordgroup? *)
 PublicTypesettingForm[CardinalGroupSymbolForm]
 
-DefineTaggedForm[CardinalGroupSymbolForm, SymbolForm];
+DefineTaggedForm[CardinalGroupSymbolForm];
 
 (**************************************************************************************************)
 

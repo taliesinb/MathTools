@@ -263,7 +263,7 @@ groupSortIndex["Function"] = 2;
 
 UpdateSublimeSyntaxFiles::messageOccurred = "Message occurred during computation, aborting.";
 UpdateSublimeSyntaxFiles::invalidResult = "Did not produce valid results, aborting.";
-UpdateSublimeSyntaxFiles::badAlias = "Cannot resolve `` to known symbol.";
+UpdateSublimeSyntaxFiles::badAlias = "Cannot resolve alias `` to a core symbol.";
 UpdateSublimeSyntaxFiles::noSystemSymbols = "Cannot load system symbol groups from ``. Have you run generate_syntax_table.wls?";
 
 UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
@@ -275,7 +275,7 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
 
   res = Check[
     template = ImportUTF8 @ inFile;
-    loaderTable = QuiverGeometryLoader`$SymbolTable;
+    symbolTable = QuiverGeometryLoader`$SymbolTable;
 
     (* system groups *)
     systemSymbolPath = DataPath["Wolfram", "SystemSymbolTable.mx"];
@@ -285,7 +285,7 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
     groups = Union /@ groups;
     (* allow changes to Data/Wolfram/SymbolTable.m to override the system symbol group assignments,
        since its expensive to run the generate_syntax_table.wls script *)
-    loaderSystemSymbolGroups = systemSymToName /@ KeyMap[Last, KeySelect[loaderTable, MatchQ[{"System`", _}]]];
+    loaderSystemSymbolGroups = systemSymToName /@ KeyMap[Last, KeySelect[symbolTable, MatchQ[{"System`", _}]]];
     loaderSystemSymbols = Union @@ Values[loaderSystemSymbolGroups];
     groups = AssociationMap[
       Union[Lookup[loaderSystemSymbolGroups, #, {}], Complement[Lookup[groups, #, {}], loaderSystemSymbols]]&,
@@ -305,16 +305,14 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
     addToGroup["Function", guSymbols];
 
     (* add each alias to the group of its target *)
+    coreNameToGroup = Assoc @ KeyValueMap[Thread @ Rule[systemSymToName @ #2, Last @ #1]&, symbolTable];
     aliasGroups = KeyValueMap[
       {alias, target} |-> (
-        aliasGroup = SelectFirstIndex[
-          loaderTable, MemberQ[#, target]&,
-          ThrowMessage["badAlias", target]];
-        group = Part[aliasGroup, 1, 2];
+        group = Lookup[coreNameToGroup, target, ThrowMessage["badAlias", alias -> target]];
         addToGroup[group, {alias}];
         alias -> group
       ),
-      QuiverGeometryLoader`$FromSymbolAliases
+      QuiverGeometryLoader`$FromSymbolAlias
     ];
     VPrint["Resolved aliases groups: ", aliasGroups];
 

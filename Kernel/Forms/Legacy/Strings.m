@@ -42,11 +42,8 @@ stringElementBoxes = Case[
     MakeBoxes @ LiteralCharacterForm @ s
   ];
   str_Str := MakeBoxes @ LiteralStringForm @ str;
-  s:lsymsP := MakeBoxes @ s;
   e_ ? unaryWrappedQ := recurseWrapperBoxes[e, stringSymbolBoxes];
   other := MakeBoxes @ other;
-,
-  {lsymsP -> $literalSymbolsP}
 ]
 
 stringSymbolBoxes = Case[

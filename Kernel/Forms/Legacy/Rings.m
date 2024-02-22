@@ -35,7 +35,7 @@ DefineBinaryForm[RingUnitElementForm, "?"];
 
 PublicTypesettingForm[RingZeroElementSymbol]
 
-DefineSymbolForm[RingZeroElementSymbol, "0"];
+DefineSymbolForm[RingZeroElementSymbol -> "0"];
 
 (**************************************************************************************************)
 

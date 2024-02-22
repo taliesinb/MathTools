@@ -31,6 +31,7 @@ $FromSymbolAlias
 $ToSymbolAlias
 $SymbolGroups
 $SymbolTable
+$CoreNameToSymbol
 
 (* this needs to be set before calling the loader *)
 $Verbose
@@ -185,6 +186,8 @@ $coreSymbolAssociation = AssociationThread[$coreSymbolNames, $coreSymbols];
 $shadowedSymbolNames = {"DistanceMatrix", "Torus"};
 KeyDropFrom[$coreSymbolAssociation, $shadowedSymbolNames];
 $coreSymbolNames = Keys @ $coreSymbolAssociation;
+
+$CoreNameToSymbol = $coreSymbolAssociation;
 
 GeneralUtilities`$CurrentFileName =.;
 

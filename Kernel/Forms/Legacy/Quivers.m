@@ -143,7 +143,6 @@ DefineUnaryForm[MirrorForm, "?"]
 declareNamedQuiverSymbol[symbol_] := With[
   {symbolName = SymbolName[symbol]},
   {katexName = LowerCaseFirst @ StringTrim[symbolName, "Symbol"]},
-  AppendTo[$literalSymbolsP, symbol];
   declareBoxFormatting[
     symbol :> SBox[symbolName],
     symbol[] :> MakeBoxes @ symbol @ Infinity,
@@ -192,7 +191,7 @@ declareNamedQuiverSymbol[CubicQuiverSymbol];
 
 PublicTypesettingForm[ToroidalModifierForm]
 
-DefineUnaryForm[ToroidalModifierForm];
+(* DefineUnaryForm[ToroidalModifierForm]; *)
 
 declareBoxFormatting[
   t_ToroidalModifierForm[args___] :> MakeBoxes @ CardinalSizeBindingForm[t, args]
@@ -202,13 +201,13 @@ declareBoxFormatting[
 
 PublicTypesettingForm[AffineModifierForm]
 
-DefineUnaryForm[AffineModifierForm];
+(* DefineUnaryForm[AffineModifierForm]; *)
 
 (**************************************************************************************************)
 
 PublicTypesettingForm[ModuloForm]
 
-DefineUnaryForm[ModuloForm]
+(* DefineUnaryForm[ModuloForm] *)
 
 (**************************************************************************************************)
 
@@ -226,7 +225,7 @@ declareBoxFormatting[
 
 PublicTypesettingForm[StarModifierForm]
 
-DefineUnaryForm[StarModifierForm];
+(* DefineUnaryForm[StarModifierForm]; *)
 
 (**************************************************************************************************)
 
