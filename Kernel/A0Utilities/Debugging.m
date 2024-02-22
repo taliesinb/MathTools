@@ -655,6 +655,7 @@ HighlightStringCases[str_String, patt:(_Rule | _RuleDelayed)] :=
 
 HighlightStringCases[str_String, patts_List] := Scope[
   {spans, payloads} = KeysValues @ Flatten[i = 1; getPosAndPayload[i++, str, #]& /@ patts];
+  If[spans === {}, Return @ str];
   parts = clarifyMatch /@ STake[str, spans];
   highlights = ZipMap[highlightStrMatch, parts, payloads];
   SRepPart[str, highlights, spans]
@@ -676,6 +677,7 @@ getPosAndPayload[i_, str_, patt:(_Rule | _RuleDelayed)] := Scope[
 
 HighlightStringCases[str_String, patt_] := Scope[
   pos = SFind[str, patt, Overlaps -> False];
+  If[pos === {}, Return @ str];
   parts = clarifyMatch /@ STake[str, pos];
   colors = PadRight[$ColorPalette, Len @ pos, $Red];
   highlights = ZipMap[highlightStrMatch, parts, colors];

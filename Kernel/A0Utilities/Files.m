@@ -349,3 +349,99 @@ ReplaceFileExtension[path_, ext_] :=
 PublicFunction[FileAge]
 
 FileAge[path_] := UnixTime[] - UnixTime[FileDate[path]];
+
+(**************************************************************************************************)
+
+PublicFunction[FileLineFind]
+
+General::fileNotFound = "File `` does not exist.";
+
+FileLineFind[files:(_Str | {__Str}), patt_] := Scope[
+  patt = ToRegex @ patt;
+  If[FailureQ[patt], ReturnFailed[]];
+  Flatten @ Map[searchFileLines[#, patt]&, ToList @ files]
+];
+
+searchFileLines[path_, patt_] := Scope[
+  If[!FileExistsQ[path], Message[FileLineFind::fileNotFound, MsgPath @ path]; Return @ Nothing];
+  str = ImportUTF8 @ path;
+  FileLine[path, #]& /@ StringLineFind[str, patt]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[FileStringCases]
+
+FileStringCases[files_, patt_] := If[!ListQ[StringCases["", patt]], $Failed,
+  iFileStringCases[files, patt]
+];
+
+iFileStringCases[files:{__Str}, patt_] :=
+  Decases[{}] @ AssocMap[iFileStringCases[#, patt]&, files]
+
+iFileStringCases[path_Str, patt_] := Scope[
+  If[!FileExistsQ[path], Message[FileCases::fileNotFound, MsgPath @ path]; Return @ {}];
+  str = ImportUTF8 @ path;
+  StringCases[str, patt]
+];
+
+(**************************************************************************************************)
+
+PublicFunction[FileStringReplace]
+
+Options[FileStringReplace] = {
+  Verbose -> Automatic,
+  DryRun -> False,
+  IgnoreCase -> False
+};
+
+toStrPattLHS = Case[
+  Rule[a_, b_]        := a;
+  RuleDelayed[a_, b_] := a;
+  list_List           := Alt @@ Map[%, list];
+];
+
+FileStringReplace[files_, rewrite:($RulePattern | $RuleListPattern), OptionsPattern[]] := Scope[
+  If[!ListQ[StringCases["", rewrite]], ReturnFailed[]];
+  $lhs = ToRegex @ toStrPattLHS @ rewrite;
+  $rewrite = rewrite;
+  UnpackOptions[$verbose, $dryRun, $ignoreCase];
+  SetAutomatic[$verbose, $dryRun];
+  Flatten @ Map[iFileStringReplace, ToList @ files]
+];
+
+FileStringReplace::fileReplaceMatchFailed = "Replacement failed on match ``.";
+FileStringReplace::fileReplaceFailed = "Replacement failed on entire file ``.";
+
+iFileStringReplace[file_] := Scope[
+  If[!FileExistsQ[file], Message[FileStringReplace::fileNotFound, MsgPath @ file]; Return @ Nothing];
+  text = ImportUTF8 @ file;
+  spans = SFind[text, $lhs, IgnoreCase -> $ignoreCase];
+  If[spans === {}, Return @ Nothing];
+  lines = ToStringLinePositions[text, spans];
+  {fileLines, spans, newChunks} = Transpose @ ZipMap[
+    {span, line} |-> (
+      fileLine = FileLine[file, line];
+      chunk = STake[text, span];
+      newChunk = StringReplace[chunk, $rewrite];
+      Which[
+        !StrQ[newChunk],
+          Message[FileStringReplace::fileReplaceMatchFailed, MsgExpr @ chunk];
+          Nothing,
+        newChunk =!= chunk,
+          VPrint[Pane[fileLine, {250, Automatic}], ShowSequenceAlignment[chunk, newChunk]];
+          {fileLine, span, newChunk},
+        True,
+          Nothing
+      ]),
+    spans, lines];
+  newText = StringReplacePart[text, newChunks, spans];
+  If[!StrQ[newText],
+    Message[FileStringReplace::fileReplaceMatchFailed, MsgPath @ file];
+    Return[Nothing];
+  ];
+  whenWet[
+    ExportUTF8[file, newText];
+  ];
+  fileLines
+];

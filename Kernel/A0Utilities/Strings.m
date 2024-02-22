@@ -214,18 +214,46 @@ iStringLineCases[texts_List, patt_, n_, ic_] :=
   iStringLineCases[#, patt, n, ic]& /@ texts;
 
 iStringLineCases[text_Str, pattern_, n_, ic_] := Scope[
-  linePos = Pre[0] @ PA1 @ SFind[text, EndOfLine];
-  charSpans = SFind[text, pattern, IgnoreCase -> ic];
-  If[charSpans === {}, Return @ {}];
-  lineSpans = toLineSpan[#, n]& /@ charSpans;
+  spans = SFind[text, pattern, IgnoreCase -> ic];
+  If[!ListQ[spans], ReturnFailed[]];
+  If[spans === {}, Return @ {}];
+  linePos = getStringLinePositions @ text;
+  lineSpans = toContextLineSpan[#, n]& /@ spans;
   STake[text, lineSpans]
 ];
 
 iStringLineCases[___] := $Failed;
 
-toLineSpan[{a_, b_}, n_] := {
-  limitedPart[n+1] @ Rev @ Select[linePos, LessEqualThan[a]],
-  limitedPart[n+1] @ Select[linePos, GreaterEqualThan[b]]
+toContextLineSpan[{a_, b_}, n_] := {
+  contextLimitedPart[n+1] @ Rev @ Select[linePos, LessEqualThan[a]],
+  contextLimitedPart[n+1] @ Select[linePos, GreaterEqualThan[b]]
 } + {1, -1};
 
-limitedPart[n_][list_] := Part[list, Min[n, Len @ list]];
+contextLimitedPart[n_][list_] := Part[list, Min[n, Len @ list]];
+
+(**************************************************************************************************)
+
+getStringLinePositions[text_] := Pre[0] @ Part[SFind[text, EndOfLine], All, 1];
+
+(**************************************************************************************************)
+
+PublicFunction[ToStringLinePositions]
+
+ToStringLinePositions[text_, spans_] :=
+  stringPosToLinePos[getStringLinePositions @ text, Part[spans, All, 1]];
+
+stringPosToLinePos[linePos_, pos_List] := Map[stringPosToLinePos[linePos, #]&, pos];
+stringPosToLinePos[linePos_, p_Int] := Count[linePos, _Int ? (LessThan[p])];
+
+(**************************************************************************************************)
+
+PublicFunction[StringLineFind]
+
+Options[StringLineFind] = {IgnoreCase -> False};
+
+StringLineFind[text_Str, pattern_, opts:OptionsPattern[]] := Scope[
+  spans = SFind[text, pattern, opts];
+  If[spans === {}, Return @ {}];
+  ToStringLinePositions[text, spans]
+];
+

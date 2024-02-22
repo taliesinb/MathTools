@@ -240,14 +240,24 @@ CreateMultipleSymbols[___] := $Failed;
 
 (**************************************************************************************************)
 
-PublicFunction[RevertSublimeSyntaxFiles]
+PublicIOFunction[SourceLineFind, SourceStringCases, SourceStringReplace]
+
+$kernelPathLen = SLen[LocalPath["Kernel"]] + 1;
+
+SourceLineFind[patt_, opts___Rule]     := FileLineFind[QuiverGeometryLoader`$SourceFiles, patt, opts];
+SourceStringCases[patt_, opts___Rule]   := FileStringCases[QuiverGeometryLoader`$SourceFiles, patt, opts] // Rep[a_Assoc :> KMap[SDrop[#, $kernelPathLen]&, a]];
+SourceStringReplace[patt_, opts___Rule] := FileStringReplace[QuiverGeometryLoader`$SourceFiles, patt, opts];
+
+(**************************************************************************************************)
+
+PublicIOFunction[RevertSublimeSyntaxFiles]
 
 RevertSublimeSyntaxFiles[] :=
   RunTool["git", "checkout", "--", "WolframLanguage.sublime-syntax", "WolframLanguage.sublime-completions", WorkingDirectory -> $sublimeSyntaxPath];
 
 (**************************************************************************************************)
 
-PublicFunction[UpdateSublimeSyntaxFiles]
+PublicIOFunction[UpdateSublimeSyntaxFiles]
 
 PublicVariable[$LastSublimeSyntaxGroups]
 

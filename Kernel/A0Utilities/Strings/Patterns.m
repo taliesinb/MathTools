@@ -1,6 +1,7 @@
-PublicStringPattern[ShortBlank, ASCIIWord, Base64Pattern, LinearSyntaxPattern]
+PublicStringPattern[Nullspace, ShortBlank, ASCIIWord, Base64Pattern, LinearSyntaxPattern]
 
 DefineStringPattern[
+  Nullspace            :> """\s*""",
   ShortBlank           :> """.+?""",
   Number               :> """(?!<\d)\d+(?!\d)""",
   Base64Pattern        :> """[[:alnum:]+/]+={0,2}""",
@@ -37,11 +38,78 @@ DefineStringPattern[
 
 (**************************************************************************************************)
 
+PublicStringPattern[Riffled]
+
+DefineStringPatternMacro[
+  Riffled[a_, sep_] :> a ~~ RepeatedNull[sep ~~ a]
+];
+
+(**************************************************************************************************)
+
+PublicStringPattern[WLSpan, WLSymbolSpan, WLStrSpan]
+
+(* TODO: Handle comments! *)
+
+DefineStringPattern[
+  WLSymbolSpan :> "(?:[$a-zA-Z][`a-zA-Z0-9]+)"
+];
+
+DefineStringPatternMacro[
+  WLStrSpan :> makeUniqueWLStrSpan[],
+  WLSpan :> makeUniqueWLSpan[]
+];
+
+makeUniqueWLStrSpan[] := Module[{z}, Construct[Condition, z:("\"" ~~ Shortest[___] ~~ "\""), Uneval @ notPartialStrQ[z]]];
+
+notPartialStrQ[s_] := EvenQ @ StringLength @ First[StringCases[s, "\\".. ~~ "\"" ~~ EndOfString], ""];
+
+(* this matches up anything up to a top-level comma *)
+makeUniqueWLSpan[] := Module[{z, q, rep, repIn},
+  rep = Riffled[PatternRecurse @ z, ","];
+  repIn = Function[#1 ~~ rep ~~ #2];
+  Nullspace ~~ z:SExpr[
+    Alt[
+      "{}", "<||>", "[]", WLSymbolSpan,
+      "(" ~~ PatternRecurse[z] ~~ ")",
+      Construct[Condition, q:("\"" ~~ ShortBlank ~~ "\""), Uneval @ notPartialStrQ @ q],
+      repIn["[", "]"], repIn["{", "}"], repIn["<|", "|>"], repIn["\[LeftAssociation]", "\[RightAssociation]"],
+      ExceptLetterClass[",()[]{}\"\[LeftAssociation]\[RightAssociation]"]..
+    ],
+    Maybe @ PatternRecurse[z]
+  ] ~~ Nullspace
+];
+
+(* TODO: make a delimiter class *)
+
+assocStrFreeQ[q_] := StringFreeQ[q, {"<|", "|>", "\[LeftAssociation]", "\[RightAssociation]"}]
+
+(**************************************************************************************************)
+
 PublicStringPattern[Regex]
 
 DefineStringPatternMacro[
   Regex[s_Str] :> RegularExpression[s]
 ]
+
+(**************************************************************************************************)
+
+PublicStringPattern[PatternRecurse]
+
+SetUsage @ "
+PatternRecurse[sym$] recurses into the group which contains sym$.
+"
+
+SetHoldFirst[PatternRecurse, parseRecursing];
+
+DefineStringPattern[PatternRecurse[sym_Symbol] :> parseRecursing[sym]];
+
+PatternRecurse::symbolNotBound = "`` is not bound at this point in the string expression.";
+
+parseRecursing[var_] := Scope[
+  pos = IndexOf[StringPattern`Dump`vars, Hold @ var];
+  If[!IntQ[pos], ReturnFailed[PatternRecurse::symbolNotBound, HoldForm @ var]];
+  "(?" <> IntStr[pos] <> ")"
+];
 
 (**************************************************************************************************)
 
