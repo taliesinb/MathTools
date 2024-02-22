@@ -10,29 +10,6 @@ the typed Package` declarations that categorize QG's own symbols.
 
 {
 
-"SymbolAliases" -> {
-  "Assoc"        -> Association,
-  "AssocQ"       -> AssociationQ,
-  "UAssoc"       -> Data`UnorderedAssociation,
-  "Repeat"       -> ConstantArray,
-  "Dist"         -> EuclideanDistance,
-  "P1"           -> First,
-  "PN"           -> Last,
-  "H"            -> Head,
-  "Len"          -> Length,
-  "Fn"           -> Function,
-  "Id"           -> Identity,
-  "Rev"          -> Reverse,
-  "Str"          -> String,
-  "Int"          -> Integer,
-  "IntStr"       -> IntegerString,
-  "StrLen"       -> StringLength,
-  "StrJoin"      -> StringJoin,
-  "Alt"          -> Alternatives,
-  "AssocMap"     -> AssociationMap,
-  "AssocThread"  -> AssociationThread
-},
-
 {"System`", "Package"} -> {
 
  Package`SystemSymbol,  Package`SystemMacro,   Package`SystemVariable,  Package`SystemFunction,  Package`SystemHead,
@@ -143,7 +120,8 @@ FileNames, ExpandFileName, AbsoluteFileName, FileNameJoin, FileNameSplit, FileBa
 SubsetQ, EvenQ, OddQ, OrderedQ,
 ByteCount, Compress, Uncompress, Hash,
 Rasterize, ImageData, ImageResize, Hold @ ImageCrop, ImageTake,
-MaximalBy, MinimalBy
+MaximalBy, MinimalBy,
+IntegerDigits
 },
 
 {"System`", "MutatingFunction"} -> {

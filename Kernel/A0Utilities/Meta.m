@@ -305,7 +305,7 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
     addToGroup["Function", guSymbols];
 
     (* add each alias to the group of its target *)
-    aliasGroups = MapApply[
+    aliasGroups = KeyValueMap[
       {alias, target} |-> (
         aliasGroup = SelectFirstIndex[
           loaderTable, MemberQ[#, target]&,
@@ -314,7 +314,7 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
         addToGroup[group, {alias}];
         alias -> group
       ),
-      QuiverGeometryLoader`$SymbolAliases
+      QuiverGeometryLoader`$FromSymbolAliases
     ];
     VPrint["Resolved aliases groups: ", aliasGroups];
 

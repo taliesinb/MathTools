@@ -27,7 +27,8 @@ $LoadCount;
 $SourceFiles;
 
 (* these are populated by loading and used for syntax generation later *)
-$SymbolAliases
+$FromSymbolAlias
+$ToSymbolAlias
 $SymbolGroups
 $SymbolTable
 
@@ -56,6 +57,7 @@ DirectoryTimings
 FindSuspiciousCodebaseLines
 FindCodebaseLines
 ComputeSourceExpressionHashes
+ApplySourceSymbolRewrites
 
 ExpressionTable
 
@@ -118,14 +120,18 @@ If[$OperatingSystem === "MacOSX",
 LVPrint["Reading core symbols from Data/Wolfram/SymbolTable.m."];
 
 (* we will immediately resolve these system symbols, which will take care of the vast majority of Package`PackageSymbol cases *)
-$SymbolTable = Check[Get @ FileNameJoin[{$PackageDirectory, "Data", "Wolfram", "SymbolTable.m"}], $Failed];
+symbolTablePath = FileNameJoin[{$PackageDirectory, "Data", "Wolfram", "SymbolTable.m"}];
+$SymbolTable = Check[Get @ symbolTablePath, $Failed];
 If[!MatchQ[$SymbolTable, {Rule[_, _List]..}],
   Print["Error in SymbolTable, aborting."];
   End[]; EndPackage[]; Abort[];
 ];
 
-$SymbolAliases = Lookup[$SymbolTable, "SymbolAliases"];
-$SymbolTable = DeleteCases[$SymbolTable, "SymbolAliases" -> _];
+symbolAliasPath = FileNameJoin[{$PackageDirectory, "Data", "Wolfram", "SymbolAliases.txt"}];
+symbolAliasStr = ByteArrayToString @ ReadByteArray @ symbolAliasPath;
+aliasRules = Cases[StringSplit[StringSplit[symbolAliasStr, "\n"], Whitespace], {k_String, v_String} :> Rule[k, v]];
+$FromSymbolAlias = Association @ aliasRules;
+$ToSymbolAlias = Association @ Reverse[aliasRules, 2];
 
 $coreSymbols = DeleteCases[_Hold] @ Catenate @ Values @ $SymbolTable;
 
@@ -179,11 +185,15 @@ GeneralUtilities`$CurrentFileName =.;
 $initialSymbolResolutionDispatch1 = (q_Package`PackageSymbol :> RuleCondition[resolvePackageSymbol @@ q]);
 
 Clear[resolvePackageSymbol];
+
 resolvePackageSymbol["$PackageFileName"] := $CurrentFile;
 resolvePackageSymbol["$PackageDirectory"] := $PackageDirectory;
-MapApply[Set[resolvePackageSymbol[#1], #2]&, $SymbolAliases];
+
 KeyValueMap[Set[resolvePackageSymbol[#1], #2]&, $coreSymbolAssociation];
+
 resolvePackageSymbol[o_] := Package`PackageSymbol[o];
+
+KeyValueMap[Set[resolvePackageSymbol[#1], resolvePackageSymbol[#2]]&, $FromSymbolAlias];
 
 $initialSymbolResolutionDispatch2 = Dispatch @ {
   Package`PackageSymbol["SetUsage"][usageString_String]  :> RuleCondition[rewriteSetUsage[usageString]],
@@ -278,7 +288,7 @@ $stringProcessingRules = {
  *)
   RegularExpression[" ~!~ ([^\n;&]+)"] :> " ~NotMatchQ~ " <> bracketRHS["$1"],
   RegularExpression[" ~~~ ([^\n;&]+)"] :> " ~MatchQ~ " <> bracketRHS["$1"]
-}
+};
 
 bracketRHS[s_] := bracketRHS[s] = Block[{$Context = "QuiverGeometryLoader`Scratch`", len},
   len = SyntaxLength @ StringDelete[s, "||" ~~ ___ ~~ EndOfString];
@@ -848,6 +858,94 @@ WatchCellPrint[cell_, pos_] := Block[
   SelectionMove[nb, pos, Notebook, AutoScroll -> False];
   NotebookWrite[nb, cell, All];
   FrontEndExecute[FrontEndToken[nb, "Evaluate"]]
+];
+
+(*************************************************************************************************)
+
+ApplySourceSymbolRewrites::notCoreSymbol = "`` is not a core symbol.";
+
+ApplySourceSymbolRewrites[rewrites:{(_String -> _String)..}] := Block[
+  {$rewrites, $strPatt, $exprPatt, lhs, lhsSyms, packages},
+  (* make sure we look for both the full name and the name under any existing aliases *)
+  $rewrites = MapApply[
+    (WordBoundary ~~ If[!MissingQ[alias = $ToSymbolAlias[#1]] && alias =!= #1, Alternatives[#1, alias], #1] ~~ WordBoundary) -> #2&,
+    rewrites
+  ];
+  lhs = Keys @ $rewrites;
+  $strPatt = WordBoundary ~~ (Alternatives @@ lhs) ~~ WordBoundary;
+  lhsSyms = Map[lookupAliasTargetSymbolLookup, lhs];
+  If[MemberQ[lhsSyms, $Failed], Return @ $Failed];
+  $exprPatt = Alternatives @@ lhsSyms;
+  packages = ReadSource[False, True, False];
+  DeleteCases[Map[rewritePackage, Take[packages, 20]], {}]
+];
+
+lookupAliasTargetSymbolLookup[StringExpression[WordBoundary, s_, WordBoundary]] := lookupAliasTargetSymbolLookup @ s;
+lookupAliasTargetSymbolLookup[sym_String] := Lookup[$coreSymbolAssociation, sym, Message[ApplySourceSymbolRewrites::notCoreSymbol, sym]; $Failed];
+lookupAliasTargetSymbolLookup[alts_Alternatives] := FirstCase[Lookup[$coreSymbolAssociation, List @@ alts], _Symbol, Message[ApplySourceSymbolRewrites::notCoreSymbol, alts]; $Failed];
+lookupAliasTargetSymbolLookup[e_] := (Message[ApplySourceSymbolRewrites::notCoreSymbol, e]; $Failed);
+
+(* to prevent false positives searching for HoldComplete *)
+SetAttributes[myHoldComplete, HoldAllComplete];
+
+rewritePackage[{path_, context_, packageExpr_}] := Block[
+  {$fileStr, $filePath = path, $currentContext = context, linePos, exprPairs, exprLines, exprs, exprSpansL, exprSpansR, exprSpans, spanReplacements, relPath, filestr2},
+
+  $fileStr = fileStringUTF8 @ path;
+  If[StringFreeQ[$fileStr, $strPatt], Return[{}]];
+
+  (* we assume that $stringProcessingRules does not introduce any additional newlines, so that we
+  can convert the PackageData line numbers into spans in the unexpanded string *)
+  linePos = First /@ StringPosition[$fileStr, StartOfLine ~~ Shortest[___] ~~ EndOfLine];
+  If[$fileStr === "", Return[{}]];
+
+  exprPairs = List @@ (myHoldComplete @@@ packageExpr);
+  exprLines = Part[exprPairs, All, 1];
+  exprs = Part[exprPairs, All, 2;;];
+
+  exprSpansL = Part[linePos, exprLines];
+  exprSpansR = Append[Rest[exprSpansL] - 1, StringLength @ $fileStr];
+  exprSpans = Transpose[{exprSpansL, exprSpansR}];
+
+  spanReplacements = MapThread[rewriteExpr, {exprLines, exprSpans, exprs}];
+  If[spanReplacements === {},
+    Nothing
+  ,
+    filestr2 = StringReplacePart[$fileStr, Values @ spanReplacements, Keys @ spanReplacements];
+    If[StringQ[filestr2], Export[path, filestr2, "Text", CharacterEncoding -> "UTF-8"]];
+    relPath = StringDrop[path, $mainPathLength];
+    relPath -> spanReplacements
+  ]
+];
+
+deepCount[h_, p_] := Count[h, p, {0, Infinity}, Heads -> True];
+
+rewriteExpr[line_, span_, h_] /; FreeQ[h, $exprPatt] := Nothing;
+rewriteExpr[line_, span_, h_] := Module[{sold, snew, scount, ecount},
+  sorig = StringTake[$fileStr, span];
+  sold = escapeComment @ sorig;
+  scount = StringCount[sold, $strPatt];
+  ecount = deepCount[h, $exprPatt];
+  If[scount > ecount,
+    Print["Mismatched count in ", FileLine[$filePath, line], ": ", scount, " strings versus ", ecount, " expressions."];
+    Print[DeleteCases[0] @ AssociationMap[StringCount[sold, #]&, Keys[$rewrites]]];
+    Print[DeleteCases[0] @ AssociationMap[deepCount[h, #]&, lhsSyms]];
+    Print[sold];
+    Return[Nothing]];
+  snew = unescapeComment @ StringReplace[sold, $rewrites];
+  If[snew === sorig, Nothing, span -> snew]
+];
+
+commentBalancedQ[s_String] := StringCount[s, "(*"] === StringCount[s, "*)"];
+
+escapeComment[s_String] := StringReplace[s,
+  "(*" ~~ z:Shortest[___] ~~ "*)" /; commentBalancedQ[z] :>
+    "<***" <> Compress[z] <> "***>"
+];
+
+unescapeComment[s_String] := StringReplace[s,
+  "<***" ~~ z:Shortest[___] ~~ "***>" :>
+    "(*" <> Uncompress[z] <> "*)"
 ];
 
 (*************************************************************************************************)

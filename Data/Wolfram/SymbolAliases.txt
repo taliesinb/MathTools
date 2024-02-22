@@ -1,0 +1,29 @@
+Assoc          Association
+AssocQ         AssociationQ
+UAssoc         UnorderedAssociation
+
+AssocMap       AssociationMap
+AssocThread    AssociationThread
+AssocQ         AssociationQ
+
+Repeat         ConstantArray
+Dist           EuclideanDistance
+P1             First
+PN             Last
+H              Head
+Len            Length
+Fn             Function
+Id             Identity
+Rev            Reverse
+Str            String
+Int            Integer
+
+StrJoin        StringJoin
+StrLen         StringLength
+
+IntStr         IntegerString
+
+Alt            Alternatives
+HoldP          HoldPattern
+
+HoldC          HoldComplete
