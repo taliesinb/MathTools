@@ -17,7 +17,8 @@ connectedSubquiver[g_, cpatt_, v_, isStrong_] := Scope[
     Subgraph[filtered, VertexOutComponent[filtered, v]],
     F[WeaklyConnectedGraphComponents[filtered, {v}], Graph[{}, {}]]
   ];
-  ExtendedSubgraph[g, VertexList @ subGraph, LastColumn @ EdgeList @ subGraph]
+  (* TODO: this looks like a bug, shouldn't be a ColL in there? *)
+  ExtendedSubgraph[g, VertexList @ subGraph, ColL @ EdgeList @ subGraph]
 ];
 
 strongEdgeTrans[cp_][e:DirectedEdge[a_, b_, c_]] :=

@@ -67,7 +67,7 @@ tMatrix[v_] := v;
 PublicFunction[TorusAngles]
 
 TorusAngles[{R_, r_}, v_] := Scope[
-  phi = ArcTan[Part[v, 1], Part[v, 2]];
+  phi = ArcTan[P1[v], P2[v]];
   p = R * {Cos @ phi, Sin @ phi, 0};
   v2 = v - p;
   theta = ArcTan[Dot[v2, Normalize @ p], L @ v];
@@ -139,7 +139,7 @@ regionComponentPolygon[region_] := Scope[
   outerIndex = MinimumIndexBy[polygons, -Area[#]&];
   outer = Part[polygons, outerIndex];
   holes = Delete[polygons, outerIndex];
-  Polygon[Part[outer, 1] -> Part[holes, All, 1]]
+  Polygon[F[outer] -> Col1[holes]]
 ];
 
 (**************************************************************************************************)

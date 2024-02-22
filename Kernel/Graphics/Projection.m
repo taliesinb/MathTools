@@ -20,7 +20,7 @@ Graphics3DProjection[g:Graphics3D[primitives_, ___], opts:OptionsPattern[]] := S
   $zfactor = 1; (* If[$gvtAssoc["ViewProjection"] === "Orthographic", -1, 1]; *)
   procPrim @ primitives;
   $index = KSort @ Merge[BagPart[$index, All], Id];
-  {$zmin, $zmax} = MinMax @ FirstColumn @ Keys @ $index;
+  {$zmin, $zmax} = MinMax @ Col1 @ Keys @ $index;
 
   primitives2D = KVMap[If[$zFade =!= None, fromZandStyleFaded, fromZandStyle], $index];
 
@@ -151,7 +151,7 @@ insertScalar[obj_] := insertScalar[obj, xyz @ F @ obj];
 
 (* insert single *)
 insertScalar[obj_, xyz_] :=
-  insert[Part[xyz, 3], RepPart[obj, 1 -> Take[xyz, 2]]];
+  insert[P3[xyz], RepPart[obj, 1 -> Take[xyz, 2]]];
 
 (* insert multi *)
 insertScalar[obj_, xyz_ ? CoordinateMatrixQ] := Scan[insertScalar[obj, #]&, xyz];
@@ -165,7 +165,7 @@ insertVector[obj_] := insertVector[obj, xyzMulti @ F @ obj];
 
 (* insert single *)
 insertVector[obj_, xyz_ ? CoordinateMatrixQ] :=
-  insert[Mean @ Part[xyz, All, 3], RepPart[obj, 1 -> Take[xyz, All, 2]]];
+  insert[Mean @ Col3[xyz], RepPart[obj, 1 -> Take[xyz, All, 2]]];
 
 (* insert multi *)
 insertVector[obj_, xyz_] := Scan[insertVector[obj, #]&, xyz];
@@ -178,4 +178,3 @@ xyzMulti[coord_] := $xyz /@ coord;
 
 insert[z_, obj_] /; $zFade === None := StuffBag[$index, {$zfactor * z, Decases[$style, Black | Opacity[1]]} -> obj];
 insert[z_, obj_] := StuffBag[$index, {$zfactor * z, $style} -> obj];
-

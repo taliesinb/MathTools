@@ -29,7 +29,7 @@ StandardizeRowColumnSpec[Auto|None, _] :=
 
 PrivateFunction[StripLabel]
 
-StripLabel[items:{___Labeled}] := Part[items, All, 1];
+StripLabel[items:{___Labeled}] := Col1[items];
 StripLabel[Labeled[e_, _]] := e;
 StripLabel[e_] := e;
 

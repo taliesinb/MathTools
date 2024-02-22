@@ -82,27 +82,7 @@ PlusVector[v_][matrix_] := Threaded[v] + matrix;
 (** Column / row accessors                                                                        *)
 (**************************************************************************************************)
 
-PublicFunction[FirstColumn]
-
-SetRelatedSymbolGroup[FirstColumn, LastColumn, MostColumns, RestColumns];
-
-SetUsage @ "
-FirstColumn[matrix$] gives a list consisting of the first column of a matrix.
-"
-
-FirstColumn[matrix_] := Part[matrix, All, 1];
-FirstColumn[None] := None;
-
-(**************************************************************************************************)
-
-PublicFunction[LastColumn]
-
-SetUsage @ "
-LastColumn[matrix$] gives a list consisting of the last column of a matrix.
-"
-
-LastColumn[matrix_] := Part[matrix, All, -1];
-LastColumn[None] := None;
+SetRelatedSymbolGroup[Col1, Col2, Col3, ColL, MostColumns, RestColumns];
 
 (**************************************************************************************************)
 
@@ -524,9 +504,9 @@ typedOne = Case[
 
 AppendOnes = Case[
   array_ ? VecQ :=
-    App[array, typedOne @ Part[array, 1]];
+    App[array, typedOne @ F @ array];
   array_ ? MatrixQ :=
-    ToPacked @ ArrayFlatten @ {{array, typedOne @ Part[array, 1, 1]}};
+    ToPacked @ ArrayFlatten @ {{array, typedOne @ FF @ array}};
   _ := $Failed;
 ];
 

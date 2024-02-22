@@ -1063,7 +1063,7 @@ ApplyColoring[data_List, palette_:Auto] := Scope[
   colorGroups = Merge[RuleThread[colorsValues, Values @ posIndex], Catenate];
   colorList = Repeat[White, Len @ data];
   (* invert the PositionIndex-like association *)
-  KVScan[Set[Part[colorList, #2], Part[#1, 1]]&, colorGroups];
+  KVScan[Set[Part[colorList, #2], F[#1]]&, colorGroups];
   {colorList, colorGroups, colorFunction}
 ];
 

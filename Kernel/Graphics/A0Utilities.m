@@ -153,11 +153,11 @@ LineLineIntersectionPoint[l1_, l2_] := Scope[
   r = BooleanRegion[And, Line /@ {l1, l2}];
   Switch[r,
     Point[$CoordP],
-      Part[r, 1],
+      F[r],
     Point[{$CoordP, ___}],
-      Part[r, 1, 1],
+      FF[r],
     Line[_],
-      Part[r, 1, 1],
+      FF[r],
     _,
       p = F @ l2;
       Do[p = ClosestPointOnLine[l2, ClosestPointOnLine[l1, p]], 10];
@@ -200,11 +200,11 @@ LineCircleIntersectionPoint[l1_, {p_, r_}] := Scope[
   r = BooleanRegion[And, {Line @ l1, Circle[p, r]}];
   Switch[r,
     Point[$CoordP],
-      Part[r, 1],
+      F[r],
     Point[{$CoordP, ___}],
-      Part[r, 1, 1],
+      FF[r],
     Line[_],
-      Part[r, 1, 1],
+      FF[r],
     _,
       $Failed
   ]
@@ -223,11 +223,11 @@ InfiniteLineCircleIntersectionPoint[l1_, {p_, r_}] := Scope[
   r = BooleanRegion[And, {InfiniteLine @ l1, Circle[p, r]}];
   Switch[r,
     Point[$CoordP],
-      Part[r, 1],
+      F[r],
     Point[{$CoordP, ___}],
-      Part[r, 1, 1],
+      FF[r],
     Line[_],
-      Part[r, 1, 1],
+      FF[r],
     _,
       $Failed
   ]

@@ -183,14 +183,14 @@ SquareQuiver[spec:{$ModIntP, $ModIntP}, {cx_, cy_}, opts:OptionsPattern[]] := Sc
 
 selectValidEdges1[vertices_][edges_] := Scope[
   vassoc = ConstantAssociation[vertices, True];
-  Pick[edges, Lookup[vassoc, Part[edges, All, 2], False]]
+  Pick[edges, Lookup[vassoc, Col2[edges], False]]
 ];
 
 selectValidEdges2[vertices_][edges_] := Scope[
   vassoc = ConstantAssociation[vertices, True];
   Pick[edges, ThreadAnd[
-    Lookup[vassoc, Part[edges, All, 1], False],
-    Lookup[vassoc, Part[edges, All, 2], False]
+    Lookup[vassoc, Col1[edges], False],
+    Lookup[vassoc, Col2[edges], False]
   ]]
 ];
 

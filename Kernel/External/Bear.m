@@ -533,7 +533,7 @@ BearNoteData[part_, field_, OptionsPattern[]] := Scope @ CatchMessage[
   ];
   If[result === {}, Return @ {}];
   If[isKeyed,
-    keys = Part[result, All, 1];
+    keys = Col1[result];
     field = Part[field, If[isList, 2;;, 2]];
     result = Part[result, All, If[isList, 2;;, 2]];
   ];
@@ -552,7 +552,7 @@ BearNoteData[part_, field_, OptionsPattern[]] := Scope @ CatchMessage[
 $masterTagPrefix = Maybe["#meta/master" ~~ Maybe[" for"] ~~ WhitespaceCharacter..];
 
 toBearClass = Case[
-  list:{__Rule}                 := combineEntityFunctions @ Part[Map[toBearClass, list], All, 2];
+  list:{__Rule}                 := combineEntityFunctions @ Col2[Map[toBearClass, list]];
   All                           := $BearNoteEntity;
   part:(_Int | _Span)           := Part[EntityList[$BearNoteEntity], part];
   "Text" -> (p:(_Str | _RegularExpression)) := %["Text" -> SContainsQ[p]];

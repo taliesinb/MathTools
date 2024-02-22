@@ -40,7 +40,7 @@ PublicFunction[TaggedEdgePairs]
 TaggedEdgePairs[graph_ ? EdgeTaggedGraphQ] :=
   GroupBy[
     EdgeList @ ToIndexGraph @ graph,
-    L -> Fn[{Part[#, 1], Part[#, 2]}]
+    L -> Fn[{P1[#], P2[#]}]
   ]
 
 TaggedEdgePairs[graph_, "Directed"] := TaggedEdgePairs[graph];
@@ -48,7 +48,7 @@ TaggedEdgePairs[graph_, "Directed"] := TaggedEdgePairs[graph];
 TaggedEdgePairs[graph_ ? EdgeTaggedGraphQ, "Undirected"] :=
   GroupBy[
     EdgeList @ ToIndexGraph @ graph,
-    L -> Fn[Splice[{{Part[#, 1], Part[#, 2]}, {Part[#, 2], Part[#, 1]}}]],
+    L -> Fn[Splice[{{P1[#], P2[#]}, {P2[#], P1[#]}}]],
     Id
   ]
 
@@ -232,8 +232,8 @@ tagVertexAdjacentEdgeTableInternal[graph_, none_, signed_] := Scope[
   ScanThread[
     i = 1;
     {edge, tagInd, invTagInd} |-> (
-      Part[vectors, tagInd, Part[edge, 1]] = i;
-      Part[vectors, invTagInd, Part[edge, 2]] = negator[i++]
+      Part[vectors, tagInd,    P1[edge]] = i;
+      Part[vectors, invTagInd, P2[edge]] = negator[i++]
     ),
     {EdgePairs @ graph, tagInds, invTagInds}
   ];

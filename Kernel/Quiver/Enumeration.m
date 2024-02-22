@@ -320,7 +320,7 @@ IsomorphicTaggedGraphsQ[g1_, g2_] := Scope[
   Do[
     If[equalModuloNaming[
       Part[edges1, RepAll[Range @ Len @ edges1, iso], 3],
-      Part[edges2, All, 3]], Return[True, Block]],
+      Col3[edges2]], Return[True, Block]],
     {iso, isoList}
   ];
   False

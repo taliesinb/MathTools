@@ -359,7 +359,7 @@ edgeListTaggedTables[edgeList_] := Scope[
   a = InVertices  @ edgeList;
   b = OutVertices @ edgeList;
   c = If[Len @ F @ edgeList === 3,
-    Part[edgeList, All, 3],
+    Col3[edgeList],
     Repeat[None, Len @ edgeList]
   ];
   oAssoc = Merge[Id] @ RuleThread[a, Trans[b, c]];
@@ -389,7 +389,7 @@ toSimpleQuiver = Case[
 makeProductEdges[vertex_, signs_] := Scope[
   outVerticesAndTags = MapThread[makeEdgeItems, {signs, List @@ vertex, tagAssocs}];
   Map[
-    edgeHead[vertex, VertexProduct @@ Part[#, All, 1], CardinalProduct @@ Part[#, All, 2]]&,
+    edgeHead[vertex, VertexProduct @@ Col1[#], CardinalProduct @@ Col2[#]]&,
     Tuples @ outVerticesAndTags
   ]
 ]

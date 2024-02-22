@@ -28,7 +28,7 @@ ExtendedSubgraph[oldGraph_, newVertices_, newEdges_] := Scope[
     annotations //= ReplaceOptions[VertexAnnotations -> vertexAnnotations];
   ];
   If[newEdges === Auto,
-    newEdges = Select[EdgeList @ oldGraph, isNewVertex[Part[#, 1]] && isNewVertex[Part[#, 2]]&]
+    newEdges = Select[EdgeList @ oldGraph, isNewVertex[P1[#]] && isNewVertex[P2[#]]&]
   ];
   graph = Graph[newVertices, newEdges, options];
   Annotate[graph, annotations]

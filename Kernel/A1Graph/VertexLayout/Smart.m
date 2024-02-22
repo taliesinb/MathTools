@@ -14,7 +14,7 @@ SmartLayout[][data_] := Scope[
       getIsomorphicCoordinates[ugraph, $tetraGraph],
     vertexCount == (edgeCount + 1) && PathGraphQ[ugraph],
       coords = getIsomorphicCoordinates[ugraph, PathGraph[vertexCount]];
-      If[Part[coords, 1, 1] < Part[coords, -1, 1], coords, Threaded[{-1, 1}] * coords], (* ensure first vertex in list order is on the left *)
+      If[FF[coords] < LF[coords], coords, Threaded[{-1, 1}] * coords], (* ensure first vertex in list order is on the left *)
     vertexCount == edgeCount && CycleGraphQ[ugraph],
       getIsomorphicCoordinates[ugraph, CycleGraph[vertexCount]],
     TreeGraphQ[ugraph],

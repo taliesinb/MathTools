@@ -88,9 +88,9 @@ paintFrame[cspec___] := (
 paintBlockSafe[v_, {r_, c_}] := Module[
   {r1 = (r * b2) - d, c1 = (c * b2) - d, p1, p2},
   p1 = (r1 - b1) ;; r1; p2 = (c1 - b1) ;; c1;
-  Part[pixels, p1, p2, 1] = Part[v, 1];
-  Part[pixels, p1, p2, 2] = Part[v, 2];
-  Part[pixels, p1, p2, 3] = Part[v, 3];
+  Part[pixels, p1, p2, 1] = P1[v];
+  Part[pixels, p1, p2, 2] = P2[v];
+  Part[pixels, p1, p2, 3] = P3[v];
 ];
 
 paintBlock[v_, {r_, c_}] := Module[

@@ -114,7 +114,7 @@ $idInsertionRegexp = RegularExpression["""(?m)^\[\[\[([^]]+)#([^]@]+)(@\w+)?\]\]
 insertNextPageFooter[file_, footer_] := Scope[
   newContent = content = ImportUTF8 @ file; $currentFile = file;
   If[SContainsQ[content, $nextLinkPrefix],
-    cutoff = Part[SFind[content, $nextLinkPrefix, 1], 1, 1] - 1;
+    cutoff = FF[SFind[content, $nextLinkPrefix, 1]] - 1;
     newContent = STake[content, cutoff];
   ];
   If[SContainsQ[content, $idInsertionRegexp],

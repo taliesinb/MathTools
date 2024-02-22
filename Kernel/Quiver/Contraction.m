@@ -153,8 +153,8 @@ QuiverContractionLatticeFast[quiver_, opts:OptionsPattern[]] := Scope[
   partitionLattice = PartitionLattice[contractionSets];
 
   latticeVertices = VertexList @ partitionLattice;
-  supports = Part[latticeVertices, All, 1];
-  partitions = Part[latticeVertices, All, 2];
+  supports = Col1[latticeVertices];
+  partitions = Col2[latticeVertices];
   completePartitions = CompleteContractionSet[quiverVertices] /@ partitions;
   
   annos = <||>;
@@ -224,7 +224,7 @@ ContractionSetUnionLattice[contractionSets:{__List}, opts:OptionsPattern[]] := S
 ];
 
 combineTags[{edge_}] := edge;
-combineTags[edges_] := App[Part[edges, 1, 1;;2], CardinalSet[Part[edges, All, 3]]];
+combineTags[edges_] := App[Part[edges, 1, 1;;2], CardinalSet[Col3[edges]]];
 
 contractionSetUnionCayleyFunction[generators_][contractionSet_] := Scope[
   MapIndexed[

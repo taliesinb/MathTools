@@ -28,8 +28,8 @@ LookupImageSize[obj_, OptionsPattern[]] := Scope[
   {imageSize, aspectRatio} = LookupOption[obj, {ImageSize, AspectRatio}];
   SetAutomatic[aspectRatio, OptionValue @ AspectRatio];
   imageSize = resolveRawImageSize @ imageSize;
-  If[NumberQ[aspectRatio] && MatchQ[Part[imageSize, 2], Auto],
-    Part[imageSize, 2] = Part[imageSize, 1] * aspectRatio];
+  If[NumberQ[aspectRatio] && MatchQ[P2[imageSize], Auto],
+    Part[imageSize, 2] = P1[imageSize] * aspectRatio];
   imageSize
 ];
 

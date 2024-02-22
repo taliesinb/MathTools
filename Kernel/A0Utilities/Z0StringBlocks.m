@@ -232,12 +232,12 @@ toLabelValues = Case[
 applyFrameLabel[block_, side:(Left|Right) -> spec_] := Scope[
   items = Map[toLabelItems, ToList @ spec];
   isLeft = side === Left;
-  rows = Repeat[$block[{""}, 0, 1], Part[block, 3]];
+  rows = Repeat[$block[{""}, 0, 1], P3[block]];
   rules = (#1 + $voffset) -> clipOneLine[processBlock @ $labelStyleFn @ #2]& @@@ Sort[items];
   rows = RepPart[rows, rules];
   labelBlock = vstackBlocks[rows, If[isLeft, Right, Left]];
   labelBlock = padBlock[labelBlock, If[isLeft, Right, Left] -> hlabelSpacing];
-  If[isLeft, $hoffset ^= $hoffset + Part[labelBlock, 2]];
+  If[isLeft, $hoffset ^= $hoffset + P2[labelBlock]];
   hstackBlocks[If[isLeft, {labelBlock, block}, {block, labelBlock}], Top]
 ];
 
@@ -249,14 +249,14 @@ applyFrameLabel[block_, side:(Top|Bottom) -> spec_] := Scope[
   {positions, items} = KeysValues @ Sort @ spec;
   positions += $hoffset;
   itemBlocks = Map[processBlock @ $labelStyleFn @ #&, items];
-  itemWidths = Part[itemBlocks, All, 2];
+  itemWidths = Col2[itemBlocks];
   gaps = Differences @ Pre[1] @ positions;
   gaps -= Pre[0] @ Most @ itemWidths;
   If[Min[gaps] < 0, ThrowMessage["overlapfl", side -> spec]];
   spacerBlocks = Map[spacerBlock[#, 1]&, gaps];
   blocks = Catenate @ Transpose[{spacerBlocks, itemBlocks}];
   labelBlock = hstackBlocks[blocks, If[isTop, Bottom, Top]];
-  If[isTop, $voffset ^= $voffset + Part[labelBlock, 3]];
+  If[isTop, $voffset ^= $voffset + P3[labelBlock]];
   vstackBlocks[If[isTop, {labelBlock, block}, {block, labelBlock}], Left]
 ];
 
@@ -705,11 +705,11 @@ padLeftRight[spec_][rows_] := Map[padAtomLeftRight[spec], rows];
 vstackBlocks[{b_$block}, _] := b;
 
 vstackBlocks[rows_List, halign_] := Scope[
-  widths = Part[rows, All, 2];
-  heights = Part[rows, All, 3];
+  widths = Col2[rows];
+  heights = Col3[rows];
   maxWidth = Max @ widths;
   paddedRows = Map[hpadBlock[maxWidth, halign], rows];
-  $block[Catenate @ Part[paddedRows, All, 1], maxWidth, Total[heights]]
+  $block[Catenate @ Col1[paddedRows], maxWidth, Total[heights]]
 ];
 
 hpadBlock[tw_, halign_][$block[rows_, w_, h_]] :=
@@ -720,11 +720,11 @@ hpadBlock[tw_, halign_][$block[rows_, w_, h_]] :=
 hstackBlocks[{b_$block}, _] := b;
 
 hstackBlocks[cols_List, valign_] := Scope[
-  widths = Part[cols, All, 2];
-  heights = Part[cols, All, 3];
+  widths = Col2[cols];
+  heights = Col3[cols];
   maxHeight = Max @ heights;
   paddedCols = Map[vpadBlock[maxHeight, valign], cols];
-  $block[MapThread[List, Part[paddedCols, All, 1]], Total @ widths, maxHeight]
+  $block[MapThread[List, Col1[paddedCols]], Total @ widths, maxHeight]
 ];
 
 vpadBlock[th_, valign_][$block[rows_, w_, h_]] := Scope[
@@ -806,7 +806,7 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
     totalWidth += Len[maxWidths] - 1;
     totalHeight += Len[maxHeights] - 1;
   ];
-  grid = Catenate @ Map[Flatten /@ Transpose[Part[#, All, 1]]&, items];
+  grid = Catenate @ Map[Flatten /@ Transpose[Col1[#]]&, items];
   block = $block[grid, totalWidth, totalHeight];
   framePadding //= StandardizePadding;
   block = blockPadding[block, framePadding];
@@ -815,7 +815,7 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
     Part[maxWidths,  -1] += Part[framePadding, 1, 2];
     Part[maxHeights, -1] += Part[framePadding, 2, 1];
     Part[maxHeights, -1] += Part[framePadding, 2, 2];
-    totalWidth = Part[block, 2]; totalHeight = Part[block, 3];
+    totalWidth = P2[block]; totalHeight = P3[block];
     True | "Round" | "Square",
       sfn = applyStyle @ frameStyle;
       If[dividers === Center,
@@ -1016,4 +1016,3 @@ extendSpanning = Case[
     Flatten @ {l, Repeat[a, Floor @ n2], m, Repeat[a, Ceiling @ n2], r}
   ]
 ];
-

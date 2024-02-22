@@ -233,14 +233,14 @@ contextLimitedPart[n_][list_] := Part[list, Min[n, Len @ list]];
 
 (**************************************************************************************************)
 
-getStringLinePositions[text_] := Pre[0] @ Part[SFind[text, EndOfLine], All, 1];
+getStringLinePositions[text_] := Pre[0] @ Col1 @ SFind[text, EndOfLine];
 
 (**************************************************************************************************)
 
 PublicFunction[ToStringLinePositions]
 
 ToStringLinePositions[text_, spans_] :=
-  stringPosToLinePos[getStringLinePositions @ text, Part[spans, All, 1]];
+  stringPosToLinePos[getStringLinePositions @ text, Col1[spans]];
 
 stringPosToLinePos[linePos_, pos_List] := Map[stringPosToLinePos[linePos, #]&, pos];
 stringPosToLinePos[linePos_, p_Int] := Count[linePos, _Int ? (LessThan[p])];
@@ -256,4 +256,3 @@ StringLineFind[text_Str, pattern_, opts:OptionsPattern[]] := Scope[
   If[spans === {}, Return @ {}];
   ToStringLinePositions[text, spans]
 ];
-

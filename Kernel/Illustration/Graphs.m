@@ -6,7 +6,7 @@ ColoredGraph[edges_List, opts___Rule] :=
 ColoredGraph[vertices_List, edges_List, opts___Rule] := Scope[
   vertexColors = AssocMap[ColoredGraphCardinalColorFunction, vertices];
   cardinalColors = If[Len[F @ edges] =!= 3, None,
-    AssocMap[ColoredGraphCardinalColorFunction, Dedup @ Part[edges, All, 3]]
+    AssocMap[ColoredGraphCardinalColorFunction, Dedup @ Col3[edges]]
   ];
   ExtendedGraph[
     vertices, edges, opts,

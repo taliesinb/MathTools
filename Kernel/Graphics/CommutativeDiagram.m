@@ -881,7 +881,7 @@ resolveMorphism = Case[
   name_Str := Scope[
     ind = IndexOf[$morphismNames, name];
     If[MissingQ[ind], ReturnFailed[CommutativeDiagram::badmorphname, name]];
-    Part[$morphismCurves @ name, 1]
+    F @ $morphismCurves @ name
   ];
   i_Int := Scope[
     morph = SafePart[$morphismCurves @ None, i];

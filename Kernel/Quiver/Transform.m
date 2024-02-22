@@ -156,7 +156,7 @@ CombineForwardMultiedges[edges_List] :=
   toCombinedForwardMultiedge /@ GatherBy[edges, TakeOperator[2]]
 
 toCombinedForwardMultiedge[{e_}] := e;
-toCombinedForwardMultiedge[list_List] := RepPart[Part[list, 1], 3 -> CardinalSet[Sort @ Part[list, All, 3]]];
+toCombinedForwardMultiedge[list_List] := RepPart[F[list], 3 -> CardinalSet[Sort @ Col3[list]]];
 
 (**************************************************************************************************)
 

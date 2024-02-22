@@ -716,7 +716,7 @@ DefineNAryForm[formSym_Symbol, boxes_, OptionsPattern[]] := With[
 ];
 
 (* this is used so that GradientSymbol["\[RightArrow]", ...] appears reversed in composition order! *)
-applyReverseChain[TemplateBox[targs:{TagBox[_, "ReverseChain"]..}, tname_]] := TemplateBox[Rev @ Part[targs, All, 1], tname];
+applyReverseChain[TemplateBox[targs:{TagBox[_, "ReverseChain"]..}, tname_]] := TemplateBox[Rev @ Col1[targs], tname];
 applyReverseChain[e_] := e;
 
 _DefineNAryForm := BadArguments[];

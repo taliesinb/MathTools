@@ -63,7 +63,7 @@ $simplifyPrimitiveAnnotationRules = Dispatch @ {
 joinHeadPrimitives[prims_] := Scope[
   If[Len[prims] <= 1 || !AllSameBy[prims, Len], Return @ prims];
   head = Part[prims, 1, 0];
-  coords = Part[prims, All, 1];
+  coords = Col1[prims];
   normFunc = If[head === Point, toCoordinateMatrix, toCoordinateArray];
   coordsArray = ToPackedRealArrays @ Apply[Join] @ Map[normFunc] @ coords;
   head[coordsArray]
@@ -73,8 +73,8 @@ joinAnnotationPrimitives[Annotation[prims_, args__]] :=
   Annotation[joinHeadPrimitives @ prims, args];
 
 joinHeadAnnotations[annos_, type_] := Scope[
-  primitives = joinHeadPrimitives @ Part[annos, All, 1];
-  indices = Join @@ Part[annos, All, 2];
+  primitives = joinHeadPrimitives @ Col1[annos];
+  indices = Join @@ Col2[annos];
   Annotation[primitives, indices, type]
 ];
 
@@ -82,10 +82,10 @@ toCoordinateArray[e_] := If[CoordinateArrayQ[e] || VecQ[e, CoordinateMatrixQ], e
 toCoordinateMatrix[e_] := If[CoordinateMatrixQ[e], e, List @ e];
 
 joinListAnnotations[annos_, type_] :=
-  Annotation[Join @@ Part[annos, All, 1], Join @@ Part[annos, All, 2], type];
+  Annotation[Join @@ Col1[annos], Join @@ Col2[annos], type];
 
 joinSingletonAnnotations[annos_, type_] :=
-  Annotation[Part[annos, All, 1], Part[annos, All, 2, 1], type];
+  Annotation[Col1[annos], Part[annos, All, 2, 1], type];
 
 (* a list of singleton-index annotations can be replaced with a single such primitive annotation *)
 simplifyPrimitiveAnnotations[primitives_] :=

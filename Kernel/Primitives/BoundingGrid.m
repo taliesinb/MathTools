@@ -64,6 +64,6 @@ gridLine[{l_, h_}] := Scope[
 		range = Comp[$sel @ Range[l, h, dx], range];
 		AppTo[boxes, $glf[range, d]];
 	];
-	If[d == 0, boxes //= RepAll[_GrayLevel :> Part[$colors, 2]]];
+	If[d == 0, boxes //= RepAll[_GrayLevel :> P2[$colors]]];
 	boxes
 ];

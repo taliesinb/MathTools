@@ -172,10 +172,10 @@ DynamicPointGraphics[n_Int, fn_] := Rep[
 DynamicPointGraphics[{n_Int, specSeq__}, fn_] := With[
   {specList = {specSeq}},
   {specData = MapThread[toDynSpec, {{specSeq}, Take[$formals, Len @ specList]}]},
-  {specVars = Pre[\[FormalX]] @ Part[specData, All, 1],
-   initList = Pre[N @ circlePoints[n]] @ Part[specData, All, 2]},
+  {specVars = Pre[\[FormalX]] @ Col1[specData],
+   initList = Pre[N @ circlePoints[n]] @ Col2[specData]},
   {specSets = MapThread[SET, {specVars, initList}],
-   controls = Part[specData, All, 3],
+   controls = Col3[specData],
    heldFn = PostComposeFunction[fn, InternalHoldForm]},
   Rep[
     ConstructHoldComplete[fn, Sequence @@ specVars],
@@ -700,5 +700,3 @@ highlightStrMatch[match_Str, Style[payload_, col:$ColorPattern]] :=
 
 highlightStrMatch[match_Str, payload_] :=
   ToLinearSyntax @ Tooltip[match, payload];
-
-

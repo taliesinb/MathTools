@@ -31,7 +31,7 @@ PathRepresentation[quiver_, representation_, initialVertex_:Auto] := Scope[
   If[!SameSetQ[cardinals, Keys @ generators],
     generators = AssocThread[cardinals, Values @ generators];
   ];
-  SetAutomatic[initialVertex, Part[VertexList[quiver], 1]];
+  SetAutomatic[initialVertex, F[VertexList[quiver]]];
   assoc = Assoc[
     "Quiver" -> quiver,
     "Cardinals" -> cardinals,
@@ -212,6 +212,5 @@ PathRepresentationObjectQ[obj$] returns True if obj$ is a valid PathRepresentati
 
 PathRepresentationObjectQ[_PathRepresentationObject ? HoldNoEntryQ] := True;
 PathRepresentationObjectQ[_] := False;
-
 
 

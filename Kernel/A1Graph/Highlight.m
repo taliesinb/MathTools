@@ -44,7 +44,7 @@ GraphRegionGraphics[graph_, regionSpec_] := Scope[
 
   GraphPlotScope[graph,
     {graphics, padding} = resolveGraphRegionHighlightGraphics @ regionSpec;
-    graphics = Part[graphics, All, 2];
+    graphics = Col2[graphics];
     plotRange = $GraphPlotRange
   ];
 
@@ -665,7 +665,7 @@ applyMod = Case[
     {delta, segment} = truncateSegment[segment, Abs @ L @ mod];
     If[doArrow && isLast,
       (* this makes sure the arrowhead points at the original target *)
-      AppTo[segment, PointAlongLine[{L[segment], Part[$segments, -1, -1]}, 1*^-3]]
+      AppTo[segment, PointAlongLine[{L[segment], LL[$segments]}, 1*^-3]]
     ];
     $offsetVector += delta
   );

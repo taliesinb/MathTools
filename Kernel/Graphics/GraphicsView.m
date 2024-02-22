@@ -15,7 +15,7 @@ ConstructGraphicsViewTransform[viewAssoc_Assoc] := Scope[
   plotSize = Dist @@@ plotRange;
   If[Total[plotSize] == 0, Return[Indeterminate]];
 
-  plotRangeLower = Part[plotRange, All, 1];
+  plotRangeLower = Col1[plotRange];
   SetAutomatic[viewPoint, {1.3, -2.4, 2}];
   SetAutomatic[viewProjection, If[FreeQ[viewPoint, Inf], "Perspective", "Orthographic"]];
   viewPoint //= Rep[$symbolicViewpointRules];
@@ -131,7 +131,7 @@ xyVector[tmatrix_, input_] := imageXY @ Dot[tmatrix, App[input, 1]];
 
 xyMatrix[tmatrix_, input_] := Transpose @ imageXY @ Dot[tmatrix, AppendConstantRow[1] @ Transpose @ input];
 
-imageXY[a_] := ToPacked[Take[a, 2] / maybeThreaded[Part[a, 4]]];
+imageXY[a_] := ToPacked[Take[a, 2] / maybeThreaded[P4[a]]];
 
 maybeThreaded[e_List] := Threaded[e];
 maybeThreaded[e_] := e;
@@ -166,7 +166,7 @@ zVector[tmatrix_, input_] := imageZ @ Dot[tmatrix, App[input, 1]];
 
 zMatrix[tmatrix_, input_] := Transpose @ imageZ @ Dot[tmatrix, AppendConstantRow[1] @ Transpose @ input];
 
-imageZ[a_] := ToPacked[Part[a, 3] / maybeThreaded[Part[a, 4]]];
+imageZ[a_] := ToPacked[P3[a] / maybeThreaded[P4[a]]];
 
 (**************************************************************************************************)
 
@@ -185,4 +185,4 @@ xyzVector[tmatrix_, input_] := imageXYZ @ Dot[tmatrix, App[input, 1]];
 
 xyzMatrix[tmatrix_, input_] := Transpose @ imageXYZ @ Dot[tmatrix, AppendConstantRow[1] @ Transpose @ input]
 
-imageXYZ[e_] := Transpose[Take[e, 3] / maybeThreaded[Part[e, 4]]];
+imageXYZ[e_] := Transpose[Take[e, 3] / maybeThreaded[P4[e]]];

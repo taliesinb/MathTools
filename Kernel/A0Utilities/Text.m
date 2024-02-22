@@ -134,15 +134,15 @@ loadEnglishWordsData[] := Scope[
 
 $englishWordsData := $englishWordsData = loadEnglishWordsData[];
 
-$EnglishWords := $EnglishWords                   = Keys @ Part[$englishWordsData, 1];
-$LowercaseEnglishWords := $LowercaseEnglishWords = Keys @ Part[$englishWordsData, 2];
-$TitleCaseEnglishWords := $TitleCaseEnglishWords = Keys @ Part[$englishWordsData, 3];
-$ProperNames := $ProperNames                     = Keys @ Part[$englishWordsData, 4];
+$EnglishWords := $EnglishWords                   = Keys @ P1[$englishWordsData];
+$LowercaseEnglishWords := $LowercaseEnglishWords = Keys @ P2[$englishWordsData];
+$TitleCaseEnglishWords := $TitleCaseEnglishWords = Keys @ P3[$englishWordsData];
+$ProperNames := $ProperNames                     = Keys @ P4[$englishWordsData];
 
-$assocEnglishWords := $assocEnglishWords                   = Part[$englishWordsData, 1];
-$assocLowercaseEnglishWords := $assocLowercaseEnglishWords = Part[$englishWordsData, 2];
-$assocTitleCaseEnglishWords := $assocTitleCaseEnglishWords = Part[$englishWordsData, 3];
-$assocProperNames := $assocProperNames                     = Part[$englishWordsData, 4];
+$assocEnglishWords := $assocEnglishWords                   = P1[$englishWordsData];
+$assocLowercaseEnglishWords := $assocLowercaseEnglishWords = P2[$englishWordsData];
+$assocTitleCaseEnglishWords := $assocTitleCaseEnglishWords = P3[$englishWordsData];
+$assocProperNames := $assocProperNames                     = P4[$englishWordsData];
 
 (**************************************************************************************************)
 
@@ -218,4 +218,3 @@ WordFrequencySort[words_] := Scope[
   freq = RepAll[freq, _Missing -> 0];
   ReverseSortBy[words, freq]
 ];
-

@@ -59,7 +59,7 @@ FadePathPlotWithLabels[g_, Line[{v1_, v2_}, dir_], c_List, hideArrowheads_] := S
   If[ListQ[cLast], cLast //= F];
   If[RuleQ[cLast], cLast //= F];
   transportPath = Line @ {Offset[v2, Inverted @ cLast], Offset[v2, cLast]};
-  mainPathVertices = Part[GraphRegion[g, mainPath], 1, 1];
+  mainPathVertices = FF[GraphRegion[g, mainPath]];
   If[Len[c] =!= Len[mainPathVertices], ReturnFailed[]];
   colors = LookupCardinalColors @ g;
   c = RepAll[c, s_Str /; KeyQ[colors, s] :> Style[s, Italic, colors @ s]];

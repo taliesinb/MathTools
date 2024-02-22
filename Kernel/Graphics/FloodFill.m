@@ -27,8 +27,8 @@ iFloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules_, sensitivity_]
   bin = ColorNegate @ Binarize[ColorNegate @ image, sensitivity];
   comps = MorphologicalComponents[bin, 0.001];
   comps = Dilation[comps, 1];
-  fillCoords = 2 * Part[fillPoints, All, 1];
-  fillColors = ToRGB @ Part[fillPoints, All, 2];
+  fillCoords = 2 * Col1[fillPoints];
+  fillColors = ToRGB @ Col2[fillPoints];
   compValues = Extract[comps, Rev[fillCoords, 2]];
   compRules = ToPackedReal /@ AssocMap[v |-> (
     i = IndexOf[compValues, v];
@@ -41,4 +41,3 @@ iFloodFill[lhs:(Graphics[prims_, opts___] -> g2_Graphics), rules_, sensitivity_]
   result = Image[result, BaselinePosition -> baseline];
   If[ImageQ[result], result, $Failed]
 ];
-

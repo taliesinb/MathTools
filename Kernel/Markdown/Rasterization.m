@@ -49,7 +49,7 @@ PrivateFunction[linearSyntaxRasterizationFunction]
 
 linearSyntaxRasterizationFunction[cell_, ___] := Assoc[
   "type" -> "String",
-  "linearSyntax" -> ToString[RawBoxes @ Part[cell, 1, 1], StandardForm]
+  "linearSyntax" -> ToString[RawBoxes @ FF[cell], StandardForm]
 ];
 
 (**************************************************************************************************)
@@ -201,4 +201,3 @@ toEmbedPath[None, imageFileName_, imagePath_] := "file://" <> imagePath;
 toEmbedPath[rasterizationURL_, imageFileName_, _] := NormalizePath @ PathJoin[rasterizationURL, imageFileName];
 
 toDimsString[{w_, h_}] := SJoin[IntStr[w, 10, 4], "_", IntStr[h, 10, 4]];
-

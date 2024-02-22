@@ -157,7 +157,7 @@ meanVarRHS[type_, var_] := noExpand @ Mean @ Lookup[
   var, List @ Lookup[$portPositionDefaults, var, {0,0}]
 ];
 
-chooseCycleVarToBreak[cycle_List] := MaximumBy[Part[cycle, All, 1], varTopOrderSort];
+chooseCycleVarToBreak[cycle_List] := MaximumBy[Col1[cycle], varTopOrderSort];
 
 (**************************************************************************************************)
 

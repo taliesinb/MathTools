@@ -144,8 +144,8 @@ GraphPlotScope[graph_, body_] := Scope[
     $GraphIs3D := $GraphIs3D = CoordinateMatrix3DQ[$VertexCoordinates];
     $GraphPlotRange := $GraphPlotRange = computeCoordinateBounds[];
     $GraphPlotSize := $GraphPlotSize = rangeSize[$GraphPlotRange];
-    $GraphPlotSizeX := Part[$GraphPlotSize, 1];
-    $GraphPlotSizeY := Part[$GraphPlotSize, 2];
+    $GraphPlotSizeX := P1 @ $GraphPlotSize;
+    $GraphPlotSizeY := P2 @ $GraphPlotSize;
     $GraphPlotScale := $GraphPlotScale = If[$GraphIs3D, Norm @ $GraphPlotSize, $GraphPlotSizeX];
     $GraphPlotAspectRatio := $GraphPlotAspectRatio = computeGraphPlotAspectRatio[];
 
@@ -259,8 +259,8 @@ ExtendedGraphPlot[graph_Graph] := Block[
     If[highlightGraphics =!= {},
       $GraphPlotGraphics = GraphicsImageSizePadTo[$GraphPlotGraphics, requiredPadding];
       {negative, positive} = SelectDiscard[highlightGraphics, F /* Negative];
-      $GraphPlotGraphics //= ApplyProlog @ Part[negative, All, 2];
-      $GraphPlotGraphics //= ApplyEpilog @ Part[positive, All, 2];
+      $GraphPlotGraphics //= ApplyProlog @ Col2[negative];
+      $GraphPlotGraphics //= ApplyEpilog @ Col2[positive];
       If[highlightLegends =!= None, graphLegend = highlightLegends];
     ];
 
@@ -2184,7 +2184,7 @@ applyLabelPadding[graphics_, vertexLabelStyle_] := Scope[
   graphics = graphics /. Text[opts___] :> outerText[opts];
   texts = Cases[graphics, outerText[t_, ___], Inf];
   If[texts === {}, Return[Null]];
-  bboxIndices = BoundingBoxPointIndices @ RepAll[Part[texts, All, 2], Offset[_, p_] :> p];
+  bboxIndices = BoundingBoxPointIndices @ RepAll[Col2[texts], Offset[_, p_] :> p];
   texts = Part[texts, bboxIndices];
   allCorners = Map[textCorners, texts];
   cornerBounds = CoordinateBounds @ allCorners;
@@ -2459,12 +2459,12 @@ placeLabelAt[label_, pos_, index_] /; ($labelX === Auto) := Scope[
 ];
 
 placeLabelAt[label_, pos_, index_] /; ($labelX === "Sign") := Scope[
-  $labelX = -Sign @ Part[pos - $meanCoordinates, 1];
+  $labelX = -Sign @ P1[pos - $meanCoordinates];
   placeLabelAt[label, pos, index]
 ];
 
 placeLabelAt[label_, pos_, index_] /; ($labelY === "Sign") := Scope[
-  $labelY = -Sign @ Part[pos - $meanCoordinates, 2];
+  $labelY = -Sign @ P2[pos - $meanCoordinates];
   placeLabelAt[label, pos, index]
 ];
 
@@ -2764,4 +2764,3 @@ annoWithTooltips[Arrow[prims_, opts__], ids_] :=
 
 annoWithTooltips[(head:Point|Line|Arrow)[prims_], ids_] :=
   MapThread[Tooltip[head[#1], #2]&, {prims, ids}];
-

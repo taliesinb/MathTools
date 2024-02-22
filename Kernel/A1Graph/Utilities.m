@@ -209,7 +209,7 @@ ToUndirectedEdgeIndexGraph[graph_] := Scope[
 ];
 
 findSpanningEdgeTags[vertices_, edgeList_] :=
-  Part[EdgeList[FindSpanningTree[Graph[vertices, edgeList]]], All, 3];
+  Col3[EdgeList[FindSpanningTree[Graph[vertices, edgeList]]]];
 
 (**************************************************************************************************)
 

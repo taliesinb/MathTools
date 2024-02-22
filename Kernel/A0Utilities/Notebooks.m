@@ -361,7 +361,7 @@ PublicFunction[FindCellObjects]
 
 FindCellObjects[boxPattern_, cellType_:All] := Scope[
   cells = If[cellType === All, Cells[], Cells[CellStyle -> cellType]];
-  cellData = Part[NotebookRead[cells], All, 1];
+  cellData = Col1[NotebookRead[cells]];
   test = If[StringPatternQ[boxPattern], cellContainsStringQ, cellContainsQ][boxPattern];
   indices = SelectIndices[cellData, test];
   Part[cells, indices]

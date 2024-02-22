@@ -553,7 +553,7 @@ makeLabel[Placed[label_, side_], pos_] :=
 
 makeLabel[label_, pos_] /; labelPosition === Vertical :=
   Scope[
-    {miny, maxy} = MinMax @ Part[pos, All, 2];
+    {miny, maxy} = MinMax @ Col2[pos];
     labelPosition = {If[miny < -$h+0.5, Bottom, Nothing], If[maxy > $h-0.5, Top, Nothing]};
     If[labelPosition === {}, labelPosition = Right];
     makeLabel[label, pos]
@@ -659,6 +659,5 @@ toObj = Case[
   s_Str := % @ CategoryObjectSymbol[s];
   e_       := "Point"[$head[e]];
 ]
-
 
 

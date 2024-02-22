@@ -62,8 +62,8 @@ addAffineVertex[graph_, offset_] := Scope[
   vcoords = GraphVertexCoordinates[graph];
   newVertex = VertexCount[graph] + 1;
   graph = EdgeAdd[graph, newVertex <-> #& /@ VertexList[graph]];
-  meanX = Mean @ FirstColumn @ vcoords;
-  maxY = Min @ LastColumn @ vcoords;
+  meanX = Mean @ Col1 @ vcoords;
+  maxY = Min @ Col2 @ vcoords;
   AppTo[vcoords, {meanX, maxY - 0.8}];
   ExtendedGraph[graph, VertexCoordinates -> vcoords]
 ];

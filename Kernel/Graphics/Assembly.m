@@ -182,11 +182,11 @@ assemble = Case[
 ];
 
 assembleSRow[list_List, {valign_, hspacing_}] := Scope[
-  sizes = Part[list, All, 2];
+  sizes = Col2[list];
   SetInherited[valign, $verticalAlignment];
   SetInherited[hspacing, $horizontalSpacing];
-  SetScaledFactor[hspacing, Mean @ FirstColumn @ sizes];
-  maxHeight = Max @ LastColumn @ sizes;
+  SetScaledFactor[hspacing, Mean @ Col1 @ sizes];
+  maxHeight = Max @ Col2 @ sizes;
   yfunc = toAlignFunc[maxHeight, valign];
   list2 = VectorApply[
     x = 0; {g, {w, h}} |-> SeqFirst[Translate[g, {x, yfunc[h]}], x += w + hspacing],
@@ -197,12 +197,12 @@ assembleSRow[list_List, {valign_, hspacing_}] := Scope[
 
 assembleSCol[list_List, {halign_, vspacing_}] := Scope[
   list //= Rev;
-  sizes = Part[list, All, 2];
+  sizes = Col2[list];
   SetInherited[halign, $horizontalAlignment];
   SetInherited[vspacing, $verticalSpacing];
-  SetScaledFactor[vspacing, Mean @ LastColumn @ sizes];
-  maxWidth = Max @ FirstColumn @ sizes;
-  maxHeight = Max @ LastColumn @ sizes;
+  SetScaledFactor[vspacing, Mean @ Col2 @ sizes];
+  maxWidth = Max @ Col1 @ sizes;
+  maxHeight = Max @ Col2 @ sizes;
   xfunc = toAlignFunc[maxWidth, halign];
   list2 = VectorApply[
     y = 0; {g, {w, h}} |-> SeqFirst[Translate[g, {xfunc[w], y}], y += h + vspacing],
@@ -384,7 +384,7 @@ assembleOverlay[g1_, g2_, opts___] := Scope[
 ];
 
 assembleXY[list_List, is3D_, {align_, spacing_}] := Scope[
-  sizes = Part[list, All, 2];
+  sizes = Col2[list];
   dxy = Normalize @ If[is3D, {-1.5, 2, 0}, {1, 1}];
   SetInherited[spacing, Mean @ $spacing];
   list2 = VectorApply[
@@ -401,7 +401,7 @@ assembleXY[list_List, is3D_, {align_, spacing_}] := Scope[
 ];
 
 assembleI[list_List, i_, {align_, spacing_}] := Scope[
-  sizes = Part[list, All, 2];
+  sizes = Col2[list];
   SetInherited[align, Part[$alignment, i]];
   SetInherited[spacing, Part[$spacing, i]];
   SetScaledFactor[spacing, Mean @ Part[sizes, All, i]];

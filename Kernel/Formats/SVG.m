@@ -342,7 +342,7 @@ bezierToPath[{a_, b_, c_, d_}] := SJoin[
 *)
 (* bezierToPath[pnts_] := Scope[
   {first, last} = FirstLast @ pnts;
-  next = Part[pnts, 2];
+  next = P2[pnts];
   pairs = {" S", pairList[{#1, (#1 + #2)/2}]}& @@@ Partition[pnts, 2, 2];
   StringJoin[{"M", pair @ first}, pairs]
 ]

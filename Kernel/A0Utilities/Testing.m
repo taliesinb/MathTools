@@ -296,7 +296,7 @@ TestOutputGallery[string_Str] := Scope[
     Message[TestOutputGallery::lenMismatch, MsgPath /@ inputFiles, MsgPath /@ outputFiles];
     ReturnFailed[];
   ];
-  exprs = MapThread[RepPart[#1, 3 -> Part[#2, 3]]&, {inputExprs, outputExprs}];
+  exprs = MapThread[RepPart[#1, 3 -> P3[#2]]&, {inputExprs, outputExprs}];
   TestOutputGallery @ exprs
 ];
 
@@ -886,4 +886,3 @@ declareBoxFormatting[
   TestDataObject[name_ ? testObjNameQ] :>
     testObjFrame[$Red, ToBoxes @ PrettyCodeForm[readObject @ name, ElideLargeArrays -> True]]
 ];
-

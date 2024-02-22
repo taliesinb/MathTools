@@ -129,10 +129,10 @@ indices of edges whose destination is the vertex v$i.
 "
 
 VertexOutEdgeTable[graph_] :=
-  Lookup[PositionIndex @ FirstColumn @ EdgePairs @ graph, VertexRange @ graph, {}];
+  Lookup[PositionIndex @ Col1 @ EdgePairs @ graph, VertexRange @ graph, {}];
 
 VertexInEdgeTable[graph_] :=
-  Lookup[PositionIndex @ LastColumn @ EdgePairs @ graph, VertexRange @ graph, {}];
+  Lookup[PositionIndex @ Col2 @ EdgePairs @ graph, VertexRange @ graph, {}];
 
 (**************************************************************************************************)
 
@@ -148,8 +148,8 @@ VertexInOutEdgeTable[graph_] := Scope[
   pairs = EdgePairs @ graph;
   vertices = VertexRange @ graph;
   Trans[
-    Lookup[PositionIndex @ LastColumn @ pairs, vertices, {}],
-    Lookup[PositionIndex @ FirstColumn @ pairs, vertices, {}]
+    Lookup[PositionIndex @ Col2 @ pairs, vertices, {}],
+    Lookup[PositionIndex @ Col1 @ pairs, vertices, {}]
   ]
 ];
 
@@ -171,8 +171,8 @@ VertexAdjacentEdgeTable[graph_, OptionsPattern[]] := Scope[
   vertices = VertexRange @ graph;
   negator = If[OptionValue[Signed], MatrixMap[Inverted, #]&, Id];
   MapThread[Union, {
-    Lookup[PositionIndex @ FirstColumn @ pairs, vertices, {}],
-    Lookup[negator @ PositionIndex @ LastColumn @ pairs, vertices, {}]
+    Lookup[PositionIndex @ Col1 @ pairs, vertices, {}],
+    Lookup[negator @ PositionIndex @ Col2 @ pairs, vertices, {}]
   }]
 ];
 
@@ -199,8 +199,8 @@ VertexAdjacentVertexEdgeAssociation[graph_] := vertexAdjacentEdgeVertex[graph, T
 vertexAdjacentEdgeVertex[graph_, returnAssoc_] := Scope[
   pairs = EdgePairs @ graph;
   vertices = VertexRange @ graph;
-  edgeIndices = PositionIndex @ FirstColumn @ pairs;
-  outVertices = LastColumn @ pairs;
+  edgeIndices = PositionIndex @ Col1 @ pairs;
+  outVertices = Col2 @ pairs;
   outEdges = Lookup[edgeIndices, vertices, {}];
   res = Map[edgeIndices |-> Trans[edgeIndices, Part[outVertices, edgeIndices]], outEdges];
   If[returnAssoc, AssocThread[vertices, res], res]

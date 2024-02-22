@@ -208,14 +208,14 @@ solidPrimitiveQ = Case[
 SetListable[makeArrowHead];
 makeArrowHead[name_ -> head_[upperPath_]] := Scope[
   (* center the primitive *)
-  {x1, x2} = MinMax @ Part[upperPath, All, 1];
+  {x1, x2} = MinMax @ Col1[upperPath];
   dx = -Avg[x1, x2];
   upperPath = TranslateVector[{dx, 0}, upperPath];
   lowerPath = VectorReflectVertical @ upperPath;
   symmetricCurve = toJoinedCurve[head @ upperPath, head @ Rev @ Most @ lowerPath];
   {x, {y1, y2}} = CoordinateBounds @ upperPath;
-  l = If[Part[upperPath, 1, 2] == 0, Part[upperPath, 1, 1], F @ x];
-  r = If[Part[upperPath, -1, 2] == 0, Part[upperPath, -1, 1], L @ x];
+  l = If[Part[upperPath, 1, 2] == 0, FF[upperPath], F @ x];
+  r = If[Part[upperPath, -1, 2] == 0, LF[upperPath], L @ x];
   lr = {l, r};
   List[
     name                       -> bounded[symmetricCurve, {x, {-y2, y2}, lr}],
@@ -493,4 +493,3 @@ NamedIconData[All] := $namedIconData;
 
 NamedIconData[name_Str] /; SContainsQ[name, "*"] := Select[NamedIconData[], SMatchQ[name]];
 NamedIconData[name_Str] := LookupOrMessageKeys[$namedIconData, name, $Failed, NamedIcon::unknownIcon];
-

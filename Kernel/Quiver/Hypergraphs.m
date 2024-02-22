@@ -29,8 +29,8 @@ DefineGraphTheme["ColoredGraphUnion",
 PublicFunction[DirectedHypergraphToGraphs]
 
 DirectedHypergraphToGraphs[hyperedges_] := Scope[
-	maxIndex = Max[Part[hyperedges, All, 3]];
-	vertices = Union[Part[hyperedges, All, 1], Part[hyperedges, All, 2]];
+	maxIndex = Max[Col3[hyperedges]];
+	vertices = Union[Col1[hyperedges], Col2[hyperedges]];
 	Table[
 		ExtendedGraph[vertices, Cases[hyperedges, {i_, j_, n} :> DirectedEdge[i, j]]],
 		{n, 1, maxIndex}

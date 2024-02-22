@@ -132,8 +132,8 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? HoldEntryQ :
   data["CardinalTransitions"] = Join[ct, KeyMap[Inverted] @ MatrixMap[reverseTransition, ct]];
 
   pairs = EdgePairs @ quiver;
-  tailVertices = Part[pairs, All, 1];
-  headVertices = Part[pairs, All, 2];
+  tailVertices = Col1[pairs];
+  headVertices = Col2[pairs];
   tailAssoc = AssociationThread[edgeRange, tailVertices];
   headAssoc = AssociationThread[edgeRange, headVertices];
 
@@ -224,7 +224,7 @@ PathVectorMap[f_, PathVector[assoc_]] :=
 PathVectorElementwise[_, _, {vec_}] := vec;
 
 PathVectorElementwise[f_, id_, vecs_] := Scope[
-  assocs = Part[vecs, All, 1];
+  assocs = Col1[vecs];
   constructPathVector @ Merge[KeyUnion[assocs, id&], f]
 ];
 
@@ -287,7 +287,7 @@ PathVectorPlot[pv:PathVector[_Assoc ? ValidPathAssociationQ], opts___Rule] /; $P
 (**************************************************************************************************)
 
 notOverlappingPathsQ[PathVector[assoc_]] := Scope[
-  edges = Part[Keys @ assoc, All, 2];
+  edges = Col2[Keys @ assoc];
   DuplicateFreeQ @ Catenate @ Ma[edges /. Inverted[e_] :> e, 1]
 ]
 
@@ -463,7 +463,7 @@ lineColorRange[a_, b_, n_] :=
 
 drawPathPrimitives[vertices_, style_] :=
   Style[
-    {Point @ Part[vertices, 1],
+    {Point @ F[vertices],
      Arrow @ SetbackCoordinates[vertices, {0, $sb}]}, style,
     Arrowheads[{{$arrowheadSize, 1, ArrowheadData["Line", style]}}]
   ]
@@ -480,11 +480,11 @@ fieldColors = MatchValues[
 
 PublicFunction[PathHeadVertex, PathTailVertex]
 
-PathTailVertex[p_PathElement] := Part[p, 1];
-PathTailVertex[list_List] := Part[list, All, 1];
+PathTailVertex[p_PathElement] := P1[p];
+PathTailVertex[list_List] := Col1[list];
 
-PathHeadVertex[p_PathElement] := Part[p, 3];
-PathHeadVertex[list_List] := Part[list, All, 3];
+PathHeadVertex[p_PathElement] := P3[p];
+PathHeadVertex[list_List] := Col3[list];
 
 (**************************************************************************************************)
 
@@ -1343,7 +1343,7 @@ PathElementToWord[PathElement[_, edges_, _]] := Scope[
 
 PathElementToWord[list:{___PathElement}] := Scope[
   UnpackPathAlgebra[edgeToCardinal];
-  Lookup[edgeToCardinal, #]& /@ Part[list, All, 2]
+  Lookup[edgeToCardinal, #]& /@ Col2[list]
 ]
 
 (**************************************************************************************************)
@@ -1363,7 +1363,7 @@ PathElementToTailFrameWord[p_PathElement | p:{___PathElement}] := Scope[
 ];
 
 tailFrameWord[p_PathElement] :=
-  Part[elementFrameData @ p, 2];
+  P2[elementFrameData @ p];
 
 (**************************************************************************************************)
 
@@ -1466,7 +1466,7 @@ elementTranslate[t_PathElement, p_PathElement, anti_:False] := Scope[
 
   If[FailureQ[tFrameData] || FailureQ[pFrameData], Return @ NullElement];
 
-  pWord = Part[pFrameData, 2];
+  pWord = P2[pFrameData];
   tTransport = RuleThread[P1 @ tFrameData, PN @ tFrameData];
 
   pWordTransported = Replace[pWord, tTransport, {1, 2}];
@@ -1776,7 +1776,7 @@ PathLaplacian[pv_PathVector] /; $PathAlgebraQ :=
 PublicFunction[PathDot]
 
 PathDot[a_PathVector, b_PathVector] /; $PathAlgebraQ := Scope[
-  assocs = Part[{a, b}, All, 1];
+  assocs = Col1[{a, b}];
   {a1, a2} = KeyIntersection[assocs];
   Total[a1 * a2]
 ];

@@ -35,8 +35,8 @@ RegionDelete[graph_, region_] := Scope[
 iRegionSubgraph[graph_, region_, comp_] := Scope[
   regionData = GraphScope[graph, RegionDataUnion @ processRegionSpec @ region];
   If[FailureQ[result], ReturnFailed[]];
-  vertices =  Part[regionData, 1];
-  edges = Part[regionData, 2];
+  vertices =  P1[regionData];
+  edges = P2[regionData];
   If[vertices === edges === {}, ReturnFailed[RegionSubgraph::empty]];
   If[comp,
     vertices = Comp[Range @ VertexCount @ graph, vertices];
@@ -280,7 +280,7 @@ GraphRegionVertexEdgeList[graph_, region_] :=
 GraphRegionVertexEdgeList[graph_, region_List] :=
   Match[
     GraphRegion[graph, region],
-    r:{___GraphRegionData} :> {Part[r, All, 1], Part[r, All, 2]},
+    r:{___GraphRegionData} :> {Col1[r], Col2[r]},
     _ :> Repeat[$Failed, {2, Len @ region}]
   ]
 
@@ -291,7 +291,7 @@ PrivateFunction[processRegionVerticesEdges]
 processRegionVerticesEdges[spec_] := Scope[
   region = RegionDataUnion @ processRegionSpec[spec];
   If[!MatchQ[region, _GraphPathData | _GraphRegionData], Return @ {$Failed, $Failed}];
-  {Part[region, 1], Part[region, 2]}
+  {P1[region], P2[region]}
 ];
 
 (**************************************************************************************************)
