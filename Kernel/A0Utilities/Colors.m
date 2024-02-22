@@ -183,7 +183,7 @@ PublicFunction[OklabLightness]
 
 OklabLightness[color_] := Scope[
   ok = ToOklab[color];
-  If[MatrixQ[ok], ok[[All, 1]], F[ok]]
+  If[MatrixQ[ok], Col1 @ ok, F[ok]]
 ];
 
 (**************************************************************************************************)

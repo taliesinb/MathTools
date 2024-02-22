@@ -418,7 +418,7 @@ parseWire = Case[
     sc = extractColorFromLabel @ label;
     SetNone[sc, wireColor];
     pos = toPos /@ {a, b};
-    x = F[Decases[_maybe | -_maybe] @ pos[[All, 1]], None];
+    x = F[Decases[_maybe | -_maybe] @ Col1 @ pos, None];
     pos = pos /. maybe[0] :> ReplaceNone[x, 0];
     size = toSize /@ {a, b};
     curve = Rep[curveFunction, Line -> (SeqFirst /* Line)][pos, size];

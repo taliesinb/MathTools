@@ -313,8 +313,8 @@ VertexInOutAssociation[graph_] := Scope[
 
 PublicFunction[InVertices, OutVertices, AllVertices, AllUniqueVertices]
 
-InVertices[edges_] := edges[[All, 1]];
-OutVertices[edges_] := edges[[All, 2]];
+InVertices[edges_] := Col1 @ edges;
+OutVertices[edges_] := Col2 @ edges;
 AllVertices[edges_] := Join[InVertices @ edges, OutVertices @ edges];
 AllUniqueVertices[edges_] := Dedup @ AllVertices[edges];
 

@@ -120,7 +120,7 @@ populateSegments[shape_, {p1_, pn_}, triples_, radii_] := Scope[
   ];
 
   (* detect if we had a reversal *)
-  skeleton = PrependAppend[p1, pn] @ Catenate @ PA2 @ tuples;
+  skeleton = PrependAppend[p1, pn] @ Catenate @ Col2 @ tuples;
   deltas = ApplyWindowed[Subtract, skeleton];
   dots = ApplyWindowed[Dot, deltas];
   If[Min[dots] < 0,

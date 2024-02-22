@@ -190,10 +190,10 @@ skeletonBox[head_, color_, args_] :=
 skeletonString[e_] := SJoin["\[LeftAngleBracket]", TextString @ e, "\[RightAngleBracket]"];
 
 regionDataListVertices[regionDataElements_] :=
-  regionDataElements[[All, 1]];
+  Col1 @ regionDataElements;
 
 regionDataListEdges[regionDataElements_] :=
-  regionDataElements[[All, 2]];
+  Col2 @ regionDataElements;
 
 pathToRegion[GraphPathData[a_, b_, c_]] :=
   GraphRegionData[a, b];

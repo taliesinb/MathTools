@@ -1,7 +1,7 @@
 PublicFunction[FormalSymbolArray]
 
 $formalsRoman = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-FormalSymbolArray[dims_, str_Str] := FormalSymbolArray[dims, P11 @ SFind[$formalsRoman, str] - 1];
+FormalSymbolArray[dims_, str_Str] := FormalSymbolArray[dims, FF @ SFind[$formalsRoman, str] - 1];
 FormalSymbolArray[dims_, offset_:0] := Block[{n = 0 + offset}, Array[Symbol @ FromCharCode[63488 + n++]&, dims]];
 
 (**************************************************************************************************)

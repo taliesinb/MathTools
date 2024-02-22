@@ -140,7 +140,7 @@ RootPlot[roots_, opts___] := Scope[
 ];
 
 rootGraphics[tuples_, origin_] := {
-  {LightGray, Line[{origin, #}& /@ tuples[[All, 1]]]},
+  {LightGray, Line[{origin, #}& /@ Col1[tuples]]},
   {AbsolutePointSize[4],
     Apply[
       {#2, Point @ #1, Black, If[#3 =!= None, Text[#3, #1, {0, 1.5}], {}]}&,

@@ -604,7 +604,7 @@ makeFEC[field_, body_] := With[
 ];
 
 combineEntityFunctions[fns:{HoldP[__EntityFunction]}] :=
-  FilteredEntityClass[$BearNoteEntity, Construct[EntityFunction, z, (Hold @@ fns)[[All, 2]]] /. Hold -> And];
+  FilteredEntityClass[$BearNoteEntity, Construct[EntityFunction, z, Col2[Hold @@ fns]] /. Hold -> And];
 
 (*************************************************************************************************)
 
@@ -687,7 +687,7 @@ BearNoteLookup[idList:{__Str}, fieldSpec_] := Scope @ CatchMessage[
   If[Len[resAssoc] > Len[idList], Message[BearNoteLookup::multipleResults, idList]];
   res = Lookup[resAssoc, idList, Repeat[$Failed, Len @ fieldTuple]];
 
-  If[StrQ[fieldSpec], PA1 @ res, res]
+  If[StrQ[fieldSpec], Col1 @ res, res]
 ];
 
 BearNoteLookup[other_, _] := (Message[BearNoteLookup::firstArg, MsgExpr @ other]; $Failed)

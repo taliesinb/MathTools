@@ -92,7 +92,7 @@ FindAllBundleSections[bundle_Graph, n:Except[_Rule], opts:OptionsPattern[]] := S
   bundleData = getBundleGraphData[bundle];
   UnpackAssociation[bundleData, hash, fiberGroups, baseVertices];
 
-  b = P11 @ VertexList @ bundle;
+  b = FF @ VertexList @ bundle;
   fs = fiberGroups[b];
   init = Map[f |-> BundleSection[<|b -> f|>, hash], fs];
 
