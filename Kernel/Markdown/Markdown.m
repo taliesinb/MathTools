@@ -38,15 +38,15 @@ PrivateFunction[toMarkdownStringInner]
 
 toMarkdownStringInner[spec_, returnVec_:False] := Scope[
   initPNGExport[];
-  $textPostProcessor = StringReplace @ {
+  $textPostProcessor = SRep @ {
     If[$inlineLinkTemplate === None, Nothing, $markdownLinkReplacement],
     $inlineWLExprReplacement, $inlineWLExprReplacement2,
     $inlineWLVarReplacement
   };
   lines = toMarkdownLines @ spec;
-  If[!StringVectorQ[lines], ReturnFailed[]];
+  If[!StrVecQ[lines], ReturnFailed[]];
   If[returnVec, Return @ lines];
-  If[StringQ[$katexPreludePath] && $embedKatexPrelude === "Link",
+  If[StrQ[$katexPreludePath] && $embedKatexPrelude === "Link",
       lines = insertAtFirstNonheader[lines, {$externalImportTemplate @ $katexPreludePath}]];
   If[$embedKatexPrelude === True,
     katexMarkdown = $markdownPostprocessor @ $multilineMathTemplate @ $katexPostprocessor @ $KatexPrelude;
@@ -56,15 +56,15 @@ toMarkdownStringInner[spec_, returnVec_:False] := Scope[
     customStyles = generateCustomStyles[];
     lines = insertAtFirstNonheader[lines, {customStyles}];
   ];
-  result = StringJoin @ Riffle[Append[""] @ lines, "\n\n"];
-  If[!StringQ[result], ReturnFailed[]];
-  result //= StringReplace[$codeJoining] /* StringReplace[$markdownTableReplacement] /* $markdownPostprocessor /* StringTrim;
+  result = SJoin @ Riffle[App[""] @ lines, "\n\n"];
+  If[!StrQ[result], ReturnFailed[]];
+  result //= SRep[$codeJoining] /* SRep[$markdownTableReplacement] /* $markdownPostprocessor /* STrim;
   If[$includeFrontMatter && AssocQ[frontMatter = NotebookFrontMatter @ spec],
     frontMatter = frontMatter /. None -> Null;
-    frontMatter //= WriteRawJSONString /* StringReplace["\\/" -> "/"]; (* weird bug in ToJSON *)
-    result = StringJoin[frontMatter, "\n\n", result];
+    frontMatter //= WriteRawJSONString /* SRep["\\/" -> "/"]; (* weird bug in ToJSON *)
+    result = SJoin[frontMatter, "\n\n", result];
   ];
-  If[!StringQ[result], ReturnFailed[]];
+  If[!StrQ[result], ReturnFailed[]];
   result
 ];
 
@@ -76,7 +76,7 @@ generateCustomStyles[] := Scope[
     "Color1", "Color2", "Color3", "Color4", "Color5", "Color6", "Color7", "Color8",
     "Background1", "Background2", "Background3", "Background4", "Background5", "Background6", "Background7", "Background8", "Background9"
   };
-  StringJoin[
+  SJoin[
     "<style>",
     Map[
       styleName |-> {".", styleName, "{", Riffle[Map[
@@ -147,7 +147,7 @@ $rasterizationOptions = {};
 toMarkdownLines[Notebook[cells_List, opts___]] := Scope[
   taggingRules = Lookup[{opts}, TaggingRules, <||>];
   $rasterizationOptions = Lookup[taggingRules, "RasterizationOptions", {}];
-  If[StringQ[katexDefs = taggingRules["KatexDefinitions"]],
+  If[StrQ[katexDefs = taggingRules["KatexDefinitions"]],
     VPrint["Applying local katex definitions: \n", katexDefs];
     $localKatexDefinitions = katexDefs];
   If[AssocQ[katexFns = taggingRules["TemplateToKatexFunctions"]],
@@ -218,7 +218,7 @@ ToMarkdownString::badcell = "Error occurred while converting cell. cellToMarkdow
 
 cellToMarkdownInner0[cell_] := Scope[
   result = cellToMarkdownInner1[cell];
-  If[StringQ[result] || result === Nothing,
+  If[StrQ[result] || result === Nothing,
     result
   ,
     $LastFailedMarkdownInput ^= cell; $LastFailedMarkdownOutput ^= result;
@@ -238,28 +238,28 @@ cellToMarkdownInner1 = Case[
 
   c:Cell[BoxData[GraphicsBox[TagBox[_, _BoxForm`ImageTag, ___], ___]], _] := cellToRasterMarkdown @ c;
 
-  Cell[e_, "Title"]                      := StringJoin[headingDepth @ -1, textCellToMarkdown @ e];
-  Cell[e_, "Chapter"]                    := StringJoin[headingDepth @ 0,  textCellToMarkdown @ e];
-  Cell[e_, "Section"]                    := StringJoin[headingDepth @ 1,  textCellToMarkdown @ e];
-  Cell[e_, "Subsection"]                 := StringJoin[headingDepth @ 2,  textCellToMarkdown @ e];
-  Cell[e_, "Subsubsection"]              := StringJoin[headingDepth @ 3,  textCellToMarkdown @ e];
+  Cell[e_, "Title"]                      := SJoin[headingDepth @ -1, textCellToMarkdown @ e];
+  Cell[e_, "Chapter"]                    := SJoin[headingDepth @ 0,  textCellToMarkdown @ e];
+  Cell[e_, "Section"]                    := SJoin[headingDepth @ 1,  textCellToMarkdown @ e];
+  Cell[e_, "Subsection"]                 := SJoin[headingDepth @ 2,  textCellToMarkdown @ e];
+  Cell[e_, "Subsubsection"]              := SJoin[headingDepth @ 3,  textCellToMarkdown @ e];
        
-  Cell[e_, "Author" | "Affiliation" | "Institution"] := StringJoin["## ", textCellToMarkdown @ e];
+  Cell[e_, "Author" | "Affiliation" | "Institution"] := SJoin["## ", textCellToMarkdown @ e];
 
   Cell[e_, "Equation"]                   := mathCellToMarkdown @ e;
-  Cell[e_, "Exercise"]                   := StringJoin["**Task**: ", textCellToMarkdown @ e];
+  Cell[e_, "Exercise"]                   := SJoin["**Task**: ", textCellToMarkdown @ e];
 
   Cell[BoxData[grid:GridBox[___, BaseStyle -> "Text", ___]], "Text"] := textGridToMarkdown @ grid;
   Cell[e_, "Text"]                       := insertLinebreaksOutsideKatex[textCellToMarkdown @ e, 120];
-  Cell[e_, "Item" | "Item1"]             := StringJoin["* ",     textCellToMarkdown @ e];
-  Cell[e_, "Subitem"]                    := StringJoin["\t* ",   textCellToMarkdown @ e];
-  Cell[e_, "SubsubItem"]                 := StringJoin["\t\t* ", textCellToMarkdown @ e];
+  Cell[e_, "Item" | "Item1"]             := SJoin["* ",     textCellToMarkdown @ e];
+  Cell[e_, "Subitem"]                    := SJoin["\t* ",   textCellToMarkdown @ e];
+  Cell[e_, "SubsubItem"]                 := SJoin["\t\t* ", textCellToMarkdown @ e];
        
-  Cell[e_, "ItemNumbered"]               := StringJoin["1. ",        textCellToMarkdown @ e];
-  Cell[e_, "SubitemNumbered"]            := StringJoin["\t1.1 ",     textCellToMarkdown @ e];
-  Cell[e_, "SubsubItemNumbered"]         := StringJoin["\t\t1.1.1 ", textCellToMarkdown @ e];
+  Cell[e_, "ItemNumbered"]               := SJoin["1. ",        textCellToMarkdown @ e];
+  Cell[e_, "SubitemNumbered"]            := SJoin["\t1.1 ",     textCellToMarkdown @ e];
+  Cell[e_, "SubsubItemNumbered"]         := SJoin["\t\t1.1.1 ", textCellToMarkdown @ e];
        
-  Cell[code_, "ExternalLanguage"]        := ($lastExternalCodeCell = code; StringJoin["```python\n", code, "\n```"]);
+  Cell[code_, "ExternalLanguage"]        := ($lastExternalCodeCell = code; SJoin["```python\n", code, "\n```"]);
 
   Cell[b_, "Output"]                     := outputCellToMarkdown @ b;
 
@@ -272,7 +272,7 @@ cellToMarkdownInner1 = Case[
   
   Cell[m_Str, "Markdown"|"Program"]      := m; (* verbatim markdown *)
 
-  Cell[e_, "Code"]                       := ($lastCaption = First[Cases[e, $outputCaptionPattern], None]; Nothing);
+  Cell[e_, "Code"]                       := ($lastCaption = F[Cases[e, $outputCaptionPattern], None]; Nothing);
 
   c_                                     := (Nothing);
 ];
@@ -286,18 +286,18 @@ $lastCaption = $lastExternalCodeCell = None;
 $outputCaptionPattern = RowBox[{"(*", RowBox[{"CAPTION", ":", caption___}], "*)"}] :>
   textToMarkdown @ RowBox[{caption}];
 
-headingDepth[n_] := StringRepeat["#", Max[n + $headingDepthOffset, 1]] <> " ";
+headingDepth[n_] := SRepeat["#", Max[n + $headingDepthOffset, 1]] <> " ";
 
 (**************************************************************************************************)
 
 insertLinebreaksOutsideKatex[str_Str, n_] := Scope[
-  If[$markdownFlavor === "Hugo" || StringLength[str] < n, Return @ str];
-  katexSpans = StringPosition[str, Verbatim["$"] ~~ Shortest[___] ~~ Verbatim["$"], Overlaps -> False];
-  katexStrings = StringTake[str, katexSpans];
+  If[$markdownFlavor === "Hugo" || SLen[str] < n, Return @ str];
+  katexSpans = SFind[str, Verbatim["$"] ~~ Shortest[___] ~~ Verbatim["$"], Overlaps -> False];
+  katexStrings = STake[str, katexSpans];
   If[katexSpans === {}, Return @ InsertLinebreaks[str, n]];
-  str = InsertLinebreaks[StringReplacePart[str, "€", katexSpans], n];
+  str = InsertLinebreaks[SRepPart[str, "€", katexSpans], n];
   i = 1;
-  StringReplace[str, "€" :> Part[katexStrings, i++]]
+  SRep[str, "€" :> Part[katexStrings, i++]]
 ];
 
 insertLinebreaksOutsideKatex[other_, _] := (Print[other]; $Failed)

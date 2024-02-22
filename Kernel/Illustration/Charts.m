@@ -1,7 +1,7 @@
 PublicFunction[HighlightChartRegion]
 
 Options[HighlightChartRegion] = {
-  "Color" -> Automatic,
+  "Color" -> Auto,
   "Arrowheads" -> "Cardinals",
   "PreserveColors" -> True,
   "Lighter" -> 0,
@@ -11,7 +11,7 @@ Options[HighlightChartRegion] = {
 HighlightChartRegion[graph_, chart_, OptionsPattern[]] := Scope[
   UnpackOptions[color, arrowheads, preserveColors, lighter, label];
   cardinals = ChartSymbolCardinals @ chart;
-  SetAutomatic[color, HumanBlend @ DeleteCases[$DarkGray] @ LookupCardinalColors[graph, cardinals]];
+  SetAutomatic[color, HumanBlend @ Decases[$DarkGray] @ LookupCardinalColors[graph, cardinals]];
   If[lighter != 0, color = ColorConvert[MapAt[# - lighter&, ColorConvert[color, Hue], 2], RGBColor]];
   result = HighlightGraphRegion[
     graph,
@@ -55,21 +55,21 @@ pathInitialVertex[Line[{v1_, ___}, ___]] := v1;
 
 FadePathPlotWithLabels[g_, Line[{v1_, v2_}, dir_], c_List, hideArrowheads_] := Scope[
   mainPath = Line[{v1, v2}, dir];
-  cLast = PN @ c;
-  If[ListQ[cLast], cLast //= P1];
-  If[RuleQ[cLast], cLast //= P1];
+  cLast = L @ c;
+  If[ListQ[cLast], cLast //= F];
+  If[RuleQ[cLast], cLast //= F];
   transportPath = Line @ {Offset[v2, Inverted @ cLast], Offset[v2, cLast]};
   mainPathVertices = Part[GraphRegion[g, mainPath], 1, 1];
   If[Len[c] =!= Len[mainPathVertices], ReturnFailed[]];
   colors = LookupCardinalColors @ g;
-  c = ReplaceAll[c, s_Str /; KeyExistsQ[colors, s] :> Style[s, Italic, colors @ s]];
+  c = RepAll[c, s_Str /; KeyQ[colors, s] :> Style[s, Italic, colors @ s]];
   color = colors @ StripInverted @ cLast;
   c = MapAt[Row[{"      ", #}]&, c, -1];
   HighlightGraphRegion[g,
     {Style[transportPath, color, PathStyle -> "DiskArrow", EdgeSetback -> 0, ArrowheadSize -> 3], mainPath},
     {"Replace", "FadeGraph", $Teal, PathRadius -> 2, If[hideArrowheads, "HideArrowheads", Nothing]},
     GraphLegend -> None, VertexSize -> {v1 -> 8},
-    VertexLabels -> AssociationThread[IndexedVertex /@ mainPathVertices, c],
+    VertexLabels -> AssocThread[IndexedVertex /@ mainPathVertices, c],
     VertexLabelStyle -> {LabelPosition -> Offset[{0, 3}], BaseStyle -> {FontColor -> $Gray, FontWeight -> Bold}}
   ]
 ];
@@ -100,11 +100,11 @@ MobiusStrip[n_, is3D_:False] := Scope[
   vertices = Flatten @ Table[LatticeVertex[{x, y}], {x, 0, n-1}, {y, -1, 1}];
   coords = If[is3D,
     Catenate @ Table[TorusVector[{n, y}, {phi, phi/2}], {phi, 0, Tau - tauN, tauN}, {y, -1, 1}],
-    P1 /@ vertices
+    F /@ vertices
   ];
   Quiver[vertices, edges,
     VertexCoordinates -> coords,
-    EdgeShapeFunction -> If[is3D, Automatic, drawMobiusEdge],
+    EdgeShapeFunction -> If[is3D, Auto, drawMobiusEdge],
     ImagePadding -> {{20, 20}, {20, 0}}, Cardinals -> {"x", "r", "g", "b"},
     ArrowheadPosition -> <|"r" -> 0.33, "g" -> 0.66, "b" -> {0.4, .6}, "x" -> 0.5|>,
     GraphOrigin -> LatticeVertex[{Floor[n/2], 0}], ArrowheadShape -> {"Line", EdgeThickness -> 2},
@@ -127,7 +127,7 @@ drawMobiusEdge[assoc_] := Scope[
   {a, b} = {{ax, ay}, {bx, by}} = FirstLast[coordinates];
   lines = If[Dist[a, b] > 1,
     ab = Normalize[b - a];
-    ab *= If[Abs[P1[ab]] > Abs[PN[ab]], {1, 0}, {0, 1}] * 0.8;
+    ab *= If[Abs[F[ab]] > Abs[L[ab]], {1, 0}, {0, 1}] * 0.8;
     {l, r} = {{b + ab, b}, {a, a - ab}};
     counter = assoc["Counter"];
     {shape /@ {l, r}, {Opacity[1, $DarkGray], Text[counter, Mean @ #, {0, 1.8}]& /@ {l, r}}}

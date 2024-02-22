@@ -63,7 +63,7 @@ GetModulus[e$, else$] returns else$ instead of Infinity.
 
 SetListable[GetModulus];
 
-GetModulus[e_] := GetModulus[e, Infinity];
+GetModulus[e_] := GetModulus[e, Inf];
 GetModulus[Modulo[n_], _] := n;
 GetModulus[list_List, else_] := Map[GetModulus[#, else]&, list];
 GetModulus[_, else_] := else;
@@ -90,7 +90,7 @@ Inverted[None] := None;
 PublicHead[InvertAwareSort]
 
 InvertAwareSort[e_] :=
-  SortBy[e, z |-> {ReplaceAll[z, Inverted[f_] :> f], Position[z, _Inverted]}];
+  SortBy[e, z |-> {RepAll[z, Inverted[f_] :> f], Position[z, _Inverted]}];
 
 (**************************************************************************************************)
 

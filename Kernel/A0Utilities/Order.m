@@ -28,12 +28,12 @@ MaximumIndexBy[{e$1, e$2, $$}, f$] gives the first index i$ for which f$[e$i] is
 "
 
 MinimumIndexBy[list_, f_] :=
-  P1 @ Ordering[f /@ list, 1];
+  F @ Ordering[f /@ list, 1];
 
 MinimumIndexBy[{}, _] := None;
 
 MaximumIndexBy[list_, f_] :=
-  P1 @ Ordering[f /@ list, -1];
+  F @ Ordering[f /@ list, -1];
 
 MaximumIndexBy[{}, _] := None;
 
@@ -64,12 +64,12 @@ MaximumIndex[{e$1, e$2, $$}] gives the first index i$ for which e$i is maximal a
 "
 
 MinimumIndex[list_] :=
-  P1 @ Ordering[list, 1];
+  F @ Ordering[list, 1];
 
 MinimumIndex[{}] := None;
 
 MaximumIndex[list_] :=
-  P1 @ Ordering[list, -1];
+  F @ Ordering[list, -1];
 
 MaximumIndex[{}] := None;
 
@@ -84,12 +84,12 @@ MaximumBy[{e$1, e$2, $$}, f$] gives the first e$i for which f$[e$i] is maximal a
 "
 
 MinimumBy[list_, f_] :=
-  Part[list, P1 @ Ordering[f /@ list, 1]];
+  Part[list, F @ Ordering[f /@ list, 1]];
 
 MinimumBy[{}, _] := None;
 
 MaximumBy[list_, f_] :=
-  Part[list, P1 @ Ordering[f /@ list, -1]];
+  Part[list, F @ Ordering[f /@ list, -1]];
 
 MaximumBy[{}, _] := None;
 
@@ -104,12 +104,12 @@ Maximum[{e$1, e$2, $$}] gives the maximal e$i as computed by Ordering.
 "
 
 Minimum[list_] :=
-  Part[list, P1 @ Ordering[list, 1]];
+  Part[list, F @ Ordering[list, 1]];
 
 Minimum[{}] := None;
 
 Maximum[list_] :=
-  Part[list, P1 @ Ordering[list, -1]];
+  Part[list, F @ Ordering[list, -1]];
 
 Maximum[{}] := None;
 
@@ -131,5 +131,5 @@ OrderSort[order_][list_] := OrderSort[list, order];
 
 PublicFunction[MostCommon]
 
-MostCommon[{}, _:P1] := None;
-MostCommon[list_, f_:P1] := f @ MaximumIndices @ Counts @ list;
+MostCommon[{}, _:F] := None;
+MostCommon[list_, f_:F] := f @ MaximumIndices @ Counts @ list;

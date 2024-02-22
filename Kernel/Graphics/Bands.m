@@ -87,7 +87,7 @@ Options[BandCurveProject] = JoinOptions[
 ];
 
 BandCurveProject[point_ ? CoordinateVectorQ, opts:OptionsPattern[]] :=
-  P1 @ BandCurveProject[List @ point, opts];
+  F @ BandCurveProject[List @ point, opts];
 
 BandCurveProject[points_ ? CoordinateArrayQ, opts:OptionsPattern[]] :=
   BandCurveProject[#, opts]& /@ points;
@@ -140,7 +140,7 @@ BandPlot2D[fn_, opts:OptionsPattern[]] := Scope[
   {hStyle, vStyle} = axisStyle;
   SetAutomatic[hStyle, $Blue]; SetAutomatic[vStyle, $Red];
   Plot[
-    Evaluate @ fn[x],
+    Eval @ fn[x],
     {x, -1, 1},
     PlotStyle -> plotStyle, Axes -> False,
     FrameStyle -> None, Frame -> False, Ticks -> None,

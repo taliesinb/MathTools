@@ -1,10 +1,10 @@
 declareTypeForm::badsym = "Name of symbol `` should end in Form."
-declareTypeForm[head_Symbol, katex_:Automatic] := With[
+declareTypeForm[head_Symbol, katex_:Auto] := With[
   {name = SymbolName @ head},
-  If[!StringEndsQ[name, "Form"], ReturnFailed["badsym", head]];
+  If[!SEndsQ[name, "Form"], ReturnFailed["badsym", head]];
   declareBoxFormatting[head[s_] :> TemplateBox[List @ MakeMathBoxes @ s, name]];
   $unaryWrapperFormName[head] = name;
-  $TemplateKatexFunction[name] = If[katex === Automatic, LowerCaseFirst @ StringDrop[name, -4], katex];
+  $TemplateKatexFunction[name] = If[katex === Auto, LowerCaseFirst @ SDrop[name, -4], katex];
 ];
 
 (**************************************************************************************************)

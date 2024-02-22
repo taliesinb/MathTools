@@ -33,8 +33,8 @@ InvertCardinals[graph$, {card$i}] negates specific cardinals.
 
 InvertCardinals[graph_ ? EdgeTaggedGraphQ, cards_List] := Scope[
   cardinals = CardinalList @ graph;
-  cardP = Alternatives @@ cards;
-  MapEdgeTags[AssociationMap[If[MatchQ[#, cardP], Inverted[#], #]&, cardinals], graph]
+  cardP = Alt @@ cards;
+  MapEdgeTags[AssocMap[If[MatchQ[#, cardP], Inverted[#], #]&, cardinals], graph]
 ];
 
 InvertCardinals[graph_ ? EdgeTaggedGraphQ] :=
@@ -71,14 +71,14 @@ DeleteCardinal[graph_, card_] := Scope[
   edges //= Map[deleteCard[card | Inverted[card]]];
   cardinals = AnnotationValue[graph, Cardinals];
   res = Graph[vertices, edges, opts];
-  If[ListQ[cardinals], res = Annotate[res, Cardinals -> DeleteCases[cardinals, card]]];
+  If[ListQ[cardinals], res = Annotate[res, Cardinals -> Decases[cardinals, card]]];
   res
 ];
 
 deleteCard[c_][head_[a_, b_, t_]] /; MatchQ[t, c] := Nothing;
 
 deleteCard[c_][head_[a_, b_, CardinalSet[l_List /; MemberQ[l, c]]]] :=
-  head[a, b, SimplifyCardinalSet @ CardinalSet @ DeleteCases[l, c]];
+  head[a, b, SimplifyCardinalSet @ CardinalSet @ Decases[l, c]];
 
 deleteCard[c_][other_] := other;
 
@@ -126,7 +126,7 @@ combineMultiedgesInternal[edges_] := Scope[
   {plainEdges, tags} = Transpose @ Map[separateTag, edges];
   edgeGroups = PositionIndex[plainEdges];
   If[SameLengthQ[edgeGroups, plainEdges], Return @ edges];
-  edges = KeyValueMap[
+  edges = KVMap[
     {edge, indices} |-> reattachTag[edge, DeleteNone @ Part[tags, indices]],
     edgeGroups
   ]
@@ -140,8 +140,8 @@ separateTag = Case[
 ];
 
 reattachTag[edge_, {}] := edge;
-reattachTag[edge_, {tag_}] := Append[edge, tag];
-reattachTag[edge_, tags_List] := reorientCS @ Append[edge, SimplifyCardinalSet @ CardinalSet @ tags];
+reattachTag[edge_, {tag_}] := App[edge, tag];
+reattachTag[edge_, tags_List] := reorientCS @ App[edge, SimplifyCardinalSet @ CardinalSet @ tags];
 
 reorientCS = Case[
   head_[a_, b_, CardinalSet[cs:{__Inverted}]] := head[b, a, CardinalSet[StripInverted /@ cs]];
@@ -156,7 +156,7 @@ CombineForwardMultiedges[edges_List] :=
   toCombinedForwardMultiedge /@ GatherBy[edges, TakeOperator[2]]
 
 toCombinedForwardMultiedge[{e_}] := e;
-toCombinedForwardMultiedge[list_List] := ReplacePart[Part[list, 1], 3 -> CardinalSet[Sort @ Part[list, All, 3]]];
+toCombinedForwardMultiedge[list_List] := RepPart[Part[list, 1], 3 -> CardinalSet[Sort @ Part[list, All, 3]]];
 
 (**************************************************************************************************)
 
@@ -202,11 +202,11 @@ RenameCardinals[graph_Graph, renaming_List] :=
 
 RenameCardinals[graph_Graph, renaming:{__Rule}] := Scope[
   {vertices, edges} = VertexEdgeList @ graph;
-  replacer = ReplaceAll @ Dispatch @ renaming;
+  replacer = RepAll @ Dispatch @ renaming;
   edges = MapAt[replacer, edges, {All, 3}] /. DirectedEdge[a_, b_, Inverted[c_]] :> DirectedEdge[b, a, c];
-  replacer = ReplaceAll @ Dispatch @ (renaming /. Inverted -> Id);
+  replacer = RepAll @ Dispatch @ (renaming /. Inverted -> Id);
   opts = DropOptions[AnnotationRules] @ Options @ graph;
-  annos = Replace[
+  annos = Rep[
     ExtendedGraphAnnotations @ graph,
     opt:Rule[(VisibleCardinals | Cardinals | CardinalColors), _] :> replacer[opt],
     {1}
@@ -234,16 +234,16 @@ SetUsage @ "
 TruncatedVertex[vertex$, card$] represents a vertex that has been truncated in the direction card$.
 ";
 
-Options[TruncateQuiver] = Prepend["AllowSkips" -> True] @ $ExtendedGraphOptions;
+Options[TruncateQuiver] = Pre["AllowSkips" -> True] @ $ExtendedGraphOptions;
 
 TruncateQuiver[quiver_, opts:OptionsPattern[]] :=
-  TruncateQuiver[quiver, Automatic, opts];
+  TruncateQuiver[quiver, Auto, opts];
 
 TruncateQuiver[quiver_, cardinals:Except[_Rule], userOpts:OptionsPattern[]] := Scope[
   UnpackOptions[allowSkips];
   {vertices, edges} = VertexEdgeList @ quiver;
   SetAutomatic[cardinals, t = CardinalList[quiver]; Join[t, Inverted /@ t]];
-  If[StringQ[cardinals], cardinals //= ToPathWord];
+  If[StrQ[cardinals], cardinals //= ToPathWord];
   ordering = AssociationRange[cardinals]; $n = Len @ cardinals;
   tagTable = Map[SortBy[cardOrder[ordering]], VertexTagTable[quiver, False]];
   tagOutTable = TagVertexOutTable @ quiver;
@@ -254,7 +254,7 @@ TruncateQuiver[quiver_, cardinals:Except[_Rule], userOpts:OptionsPattern[]] := S
     cornerEdges = If[allowSkips, cornerEdge, noskipCornerEdge[ordering]] /@ Partition[cornerVerts, 2, 1, 1];
     cornerCoords = Map[
       PointAlongLine[
-        {coord, Part[vertexCoords, Lookup[tagOut, Replace[#, CardinalSet[s_] :> P1[s]]]]},
+        {coord, Part[vertexCoords, Lookup[tagOut, Rep[#, CardinalSet[s_] :> F[s]]]]},
         Scaled[0.25]]&,
       tags
     ];
@@ -268,7 +268,7 @@ TruncateQuiver[quiver_, cardinals:Except[_Rule], userOpts:OptionsPattern[]] := S
     truncEdges, truncatedEdge /@ edges
   };
   opts = Options @ quiver;
-  opts = Replace[opts, (AnnotationRules -> annos_) :>
+  opts = Rep[opts, (AnnotationRules -> annos_) :>
     AnnotationRules -> DropOptions[annos, VertexAnnotations]];
   Graph[
     truncVertices,

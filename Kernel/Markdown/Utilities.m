@@ -2,7 +2,7 @@ PublicFunction[SiteGarbageCollectRasters]
 
 Options[SiteGarbageCollectRasters] = {
   DryRun -> False,
-  Verbose -> Automatic
+  Verbose -> Auto
 }
 
 SiteGarbageCollectRasters[site_, OptionsPattern[]] := Scope[
@@ -26,14 +26,14 @@ SiteGarbageCollectRasters[site_, OptionsPattern[]] := Scope[
     "width" -> "XXX",
     "caption" -> "XXX"
   ];
-  markdownPattern = StringReplace[markdownPattern, {"YYY" -> Shortest[path___], "XXX" -> Shortest[___]}];
+  markdownPattern = SRep[markdownPattern, {"YYY" -> Shortest[path___], "XXX" -> Shortest[___]}];
   markdownPattern = Construct[Rule, markdownPattern, path];
 
   markdownFiles = FileNames["*.md", markdownSearchPath];
   markdownContent = ImportUTF8 /@ markdownFiles;
   VPrint["* Searching ", Len @ markdownFiles, " markdown files in ", MsgPath @ markdownSearchPath, "."];
  
-  matches = Flatten @ StringCases[markdownContent, markdownPattern];
+  matches = Flatten @ SCases[markdownContent, markdownPattern];
   matches = Map[PathJoin[$rasterizationPath, FileNameTake[#]]&, matches];
   VPrint["* Found ", Len @ matches, " referenced images."];
 
@@ -42,7 +42,7 @@ SiteGarbageCollectRasters[site_, OptionsPattern[]] := Scope[
   existingFiles = FileNames["*.png", $rasterizationPath];
   VPrint["* Checking ", Len @ existingFiles, " existing images in ", MsgPath @ $rasterizationPath,  "."];
 
-  garbageFiles = Complement[existingFiles, matches];
+  garbageFiles = Comp[existingFiles, matches];
 
   VPrint["* Deleting ", Len @ garbageFiles, " unreferenced image files."];
 
@@ -64,25 +64,25 @@ Options[SiteExportNavigationPage] = {
 SiteExportNavigationPage[files_, relativePrefix_Str, navPath_, OptionsPattern[]] := Scope[
   UnpackOptions[indexPagePath];
   $mdFileCache = UAssoc[]; (* for inserting by id from one page to another *)
-  If[StringQ[files],
+  If[StrQ[files],
     If[FileType[files] =!= Directory, ReturnFailed[]];
     files = FileNames["*.md", files];
   ];
   titles = getFileTitle /@ files;
-  If[!StringVectorQ[titles], ReturnFailed[]];
-  fileNames = StringJoin[relativePrefix, FileBaseName[#]]& /@ files;
+  If[!StrVecQ[titles], ReturnFailed[]];
+  fileNames = SJoin[relativePrefix, FileBaseName[#]]& /@ files;
   navData = MapThread[
     <|"path" -> #1, "title" -> toNavTitle[#2]|>&,
     {fileNames, titles}
   ];
-  $titleToRelPath = AssociationThread[titles, fileNames];
-  $titleToAbsPath = AssociationThread[titles, files];
+  $titleToRelPath = AssocThread[titles, fileNames];
+  $titleToAbsPath = AssocThread[titles, files];
   Which[
-    StringQ[navPath],
-      navOutputPath = StringReplace[navPath, ".template" -> ""],
+    StrQ[navPath],
+      navOutputPath = SRep[navPath, ".template" -> ""],
     RuleQ[navPath],
-      navPath = P1 @ navPath;
-      navOutputPath = PN @ navPath,
+      navPath = F @ navPath;
+      navOutputPath = L @ navPath,
     True,
       ReturnFailed[]
   ];
@@ -90,15 +90,15 @@ SiteExportNavigationPage[files_, relativePrefix_Str, navPath_, OptionsPattern[]]
   navTemplate = FileTemplate @ navPath;
   If[navOutputPath === navPath, ReturnFailed[]];
   nextPageFooters = Map[$nextPageTemplate, Rest @ navData];
-  ScanThread[insertNextPageFooter, {files, Append[None] @ nextPageFooters}];
+  ScanThread[insertNextPageFooter, {files, App[None] @ nextPageFooters}];
   FileTemplateApply[navTemplate, {navData}, navOutputPath]
 ];
 
-toUnicode[str_] := FromCharacterCode[ToCharacterCode[str], "UTF8"];
+toUnicode[str_] := FromCharCode[ToCharCode[str], "UTF8"];
 
-getFileTitle[path_] := StringTrim @ StringDelete[toUnicode @ P1 @ FileLines[path, 1], "#"];
+getFileTitle[path_] := STrim @ SDelete[toUnicode @ F @ FileLines[path, 1], "#"];
 
-toNavTitle[e_] := StringReplace[e, " and " -> " &amp; "];
+toNavTitle[e_] := SRep[e, " and " -> " &amp; "];
 
 $nextPageTemplate = StringFunction @ "
 
@@ -113,32 +113,32 @@ $idInsertionRegexp = RegularExpression["""(?m)^\[\[\[([^]]+)#([^]@]+)(@\w+)?\]\]
 
 insertNextPageFooter[file_, footer_] := Scope[
   newContent = content = ImportUTF8 @ file; $currentFile = file;
-  If[StringContainsQ[content, $nextLinkPrefix],
-    cutoff = Part[StringPosition[content, $nextLinkPrefix, 1], 1, 1] - 1;
-    newContent = StringTake[content, cutoff];
+  If[SContainsQ[content, $nextLinkPrefix],
+    cutoff = Part[SFind[content, $nextLinkPrefix, 1], 1, 1] - 1;
+    newContent = STake[content, cutoff];
   ];
-  If[StringContainsQ[content, $idInsertionRegexp],
-    newContent = StringReplace[newContent, $idInsertionRegexp :> toInsertedContent[StringReplace["$1", "\n" -> " "], "$2", "$3"]]
+  If[SContainsQ[content, $idInsertionRegexp],
+    newContent = SRep[newContent, $idInsertionRegexp :> toInsertedContent[SRep["$1", "\n" -> " "], "$2", "$3"]]
   ];
-  If[StringContainsQ[content, $markdownLinkRegexp],
-    newContent = StringReplace[newContent, $markdownLinkRegexp :> toInlineLink[StringReplace["$1", "\n" -> " "]]];
+  If[SContainsQ[content, $markdownLinkRegexp],
+    newContent = SRep[newContent, $markdownLinkRegexp :> toInlineLink[SRep["$1", "\n" -> " "]]];
   ];
   If[footer =!= None,
-    newContent = StringTrim[newContent] <> footer];
+    newContent = STrim[newContent] <> footer];
   If[content =!= newContent, ExportUTF8[file, newContent]];
 ];
 
 PrivateFunction[toAnchorString]
 
-toAnchorString[str_] := StringReplace[ToLowerCase[str], {":" -> "", " " -> "_"}];
+toAnchorString[str_] := SRep[ToLowerCase[str], {":" -> "", " " -> "_"}];
 
 toInlineLink[title_] := Scope[
-  If[StringContainsQ[title, "#"],
-    {title, anchor} = StringSplit[title, "#", 2],
+  If[SContainsQ[title, "#"],
+    {title, anchor} = SSplit[title, "#", 2],
     anchor = None;
   ];
-  If[StringContainsQ[title, ":"],
-    {label, title} = StringSplit[title, ":", 2],
+  If[SContainsQ[title, ":"],
+    {label, title} = SSplit[title, ":", 2],
     label = title
   ];
   If[label == "", label = title];
@@ -147,10 +147,10 @@ toInlineLink[title_] := Scope[
   If[relPath === None,
     Print["Could not resolve inline link to \"", title, "\" in file ", $currentFile];
     Print["Available: ", Keys @ $titleToRelPath];
-    Return @ StringJoin["\"", title, "\""]
+    Return @ SJoin["\"", title, "\""]
   ];
-  If[anchor =!= None, relPath = StringJoin[relPath, "#", toAnchorString @ anchor]];
-  StringJoin["[", label, "](", relPath, ")"]
+  If[anchor =!= None, relPath = SJoin[relPath, "#", toAnchorString @ anchor]];
+  SJoin["[", label, "](", relPath, ")"]
 ];
 
 toInsertedContent[title_, id_, div_] := Scope[
@@ -160,13 +160,13 @@ toInsertedContent[title_, id_, div_] := Scope[
     Return @ "";
   ];
   markdown = CacheTo[$mdFileCache, absPath, ImportUTF8 @ absPath];
-  foundContent = StringCases[markdown, "\\label{" <> id <> "}\n\n" ~~ Shortest[zzz__] ~~ "\n\n" :> zzz, 1];
-  foundContent = First[foundContent, None];
-  If[!StringQ[foundContent],
+  foundContent = SCases[markdown, "\\label{" <> id <> "}\n\n" ~~ Shortest[zzz__] ~~ "\n\n" :> zzz, 1];
+  foundContent = F[foundContent, None];
+  If[!StrQ[foundContent],
     Print["Could not find ID \"", id, "\" in \"", absPath, "\" referenced from file ", $currentFile];
     Return @ "";
   ];
-  foundContent //= StringTrim;
-  If[div =!= "", foundContent = StringJoin["@@", StringTrim[div, "@"], "\n", foundContent, "\n", "@@"]];
+  foundContent //= STrim;
+  If[div =!= "", foundContent = SJoin["@@", STrim[div, "@"], "\n", foundContent, "\n", "@@"]];
   foundContent
 ]

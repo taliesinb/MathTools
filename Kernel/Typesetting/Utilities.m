@@ -22,8 +22,8 @@ StandardizeRowColumnSpec[spec_List, n_] :=
 StandardizeRowColumnSpec[item_, n_] :=
   Repeat[item, n];
 
-StandardizeRowColumnSpec[Automatic|None, _] :=
-  Automatic;
+StandardizeRowColumnSpec[Auto|None, _] :=
+  Auto;
 
 (**************************************************************************************************)
 

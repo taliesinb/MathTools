@@ -74,7 +74,7 @@ arrowheadBoxes[Arrowhead[pos:$ExtCoordP, dir:$CoordP, opts___Rule]] := Scope[
     boxes23D = If[is3d, boxes3D, boxes2D];
     If[Norm[off] != 0,
       off = Dot[off, rotMatrix];
-      boxes23D = boxes23D /. c:$CoordP :> RuleCondition @ Offset[off, c]];
+      boxes23D = boxes23D /. c:$CoordP :> RuleEval @ Offset[off, c]];
     boxes = If[is3d,
       Construct[GeometricTransformation3DBox, $styler @ boxes23D, {rotMatrix, pos2}],
       Construct[GeometricTransformationBox, $styler @ boxes23D, {rotMatrix, pos2}]

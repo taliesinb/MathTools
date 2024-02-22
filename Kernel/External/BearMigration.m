@@ -12,11 +12,11 @@ General::unknownAttachment = "Could not find attachment data for file ``.";
 
 Options[ExportBearNoteToObsidian] = {
   ReplaceExisting -> False,
-  ObsidianVault -> Automatic,
+  ObsidianVault -> Auto,
   CompressImages -> True,
-  PDFPath -> Automatic,
+  PDFPath -> Auto,
   DryRun -> False,
-  Verbose -> Automatic
+  Verbose -> Auto
 }
 
 (* TODO: avoid creating alias pages *)
@@ -29,8 +29,8 @@ ExportBearNoteToObsidian[title_Str, OptionsPattern[]] := Scope @ CatchMessage[
 
   results = BearNoteData["Title" -> title, {"ID", "HasFilesQ", "HasImagesQ", "Title", "CreationDate", "ModificationDate", "Text", "UUID"}];
 
-  If[Length[results] =!= 1, ReturnFailed["noBearNote", MsgExpr @ title]];
-  data = First @ results;
+  If[Len[results] =!= 1, ReturnFailed["noBearNote", MsgExpr @ title]];
+  data = F @ results;
 
   UnpackAssociation[data, ID, hasFilesQ, hasImagesQ, title, creationDate, modificationDate, text, UUID];
   VPrint["Obtained data for note with ID ", ID, ", UUID ", UUID, " title \"", title, "\""];
@@ -39,44 +39,44 @@ ExportBearNoteToObsidian[title_Str, OptionsPattern[]] := Scope @ CatchMessage[
   If[hasAttachments,
     $attachments = BearNoteAttachmentData[ID];
     If[FailureQ[$attachments], ReturnFailed["missingAttachments", MsgExpr @ title]];
-    VPrint["Found ", Length @ $attachments, " attachments in database."];
+    VPrint["Found ", Len @ $attachments, " attachments in database."];
   ,
     $attachments = Assoc[];
   ];
 
-  text //= StringTrim;
-  text = StringTrim @ StringTrimLeft[text, "# " ~~ " "... ~~ title <> "\n"];
+  text //= STrim;
+  text = STrim @ StringTrimLeft[text, "# " ~~ " "... ~~ title <> "\n"];
 
   frontMatter = Assoc[];
   akas = getTextAkas @ text;
-  If[StringVectorQ[akas] && akas =!= {},
-    frontMatter["aliases"] = DeleteCases[akas, title];
-    text = StringTrim @ StringDelete[text, "#meta/aka " ~~ Shortest[__] ~~ EndOfLine];
+  If[StrVecQ[akas] && akas =!= {},
+    frontMatter["aliases"] = Decases[akas, title];
+    text = STrim @ SDelete[text, "#meta/aka " ~~ Shortest[__] ~~ EndOfLine];
   ];
 
   tags = {}; noteFolder = None; mainTag = None;
-  If[StringStartsQ[text, "#" ~~ LetterCharacter],
+  If[SStartsQ[text, "#" ~~ LetterCharacter],
 
-    {tagLine, text} = StringSplit[text, EndOfLine, 2];
-    text // StringTrim;
+    {tagLine, text} = SSplit[text, EndOfLine, 2];
+    text // STrim;
     VPrint["Found tag line: ", tagLine];
 
     extraMetaTag = Nothing;
-    If[StringStartsQ[tagLine, "#meta/master for "],
+    If[SStartsQ[tagLine, "#meta/master for "],
       tagLine //= StringTrimLeft["#meta/master for "];
       extraMetaTag = "#meta/master";
     ];
-    mainTag = First @ StringSplit[tagLine, " ", 2];
+    mainTag = F @ SSplit[tagLine, " ", 2];
     VPrint["Main tag: ", mainTag];
-    fieldTags = StringTrim @ StringCases[tagLine, field:(" #field/" ~~ (LetterCharacter | "/")..)];
+    fieldTags = STrim @ SCases[tagLine, field:(" #field/" ~~ (LetterCharacter | "/")..)];
 
     tags = Flatten @ {mainTag, extraMetaTag, fieldTags};
-    tagPath = StringSplit[StringTrimLeft[mainTag, "#"], "/"];
-    noteFolder = First[tagPath, None];
+    tagPath = SSplit[StringTrimLeft[mainTag, "#"], "/"];
+    noteFolder = F[tagPath, None];
 
     Label[retry];
-    proc = Lookup[$tagProcessors, tagStr = StringRiffle[tagPath, "/"], None];
-    If[proc === None && Length[tagPath] > 1,
+    proc = Lookup[$tagProcessors, tagStr = SRiffle[tagPath, "/"], None];
+    If[proc === None && Len[tagPath] > 1,
       tagPath //= Most; Goto[retry]];
 
     If[proc =!= None,
@@ -91,23 +91,23 @@ ExportBearNoteToObsidian[title_Str, OptionsPattern[]] := Scope @ CatchMessage[
       ];
     ];
   ,
-    VPrint["No tagline present: ", StringTake[text, UpTo[20]]];
+    VPrint["No tagline present: ", STake[text, UpTo[20]]];
   ];
-  text = StringReplace[text, "![](" ~~ imageName:ShortBlank ~~ ")" :> copyImageToObsidian[imageName]];
+  text = SRep[text, "![](" ~~ imageName:ShortBlank ~~ ")" :> copyImageToObsidian[imageName]];
 
-  metaTags = StringCases[text, "#meta/" ~~ Except[WhitespaceCharacter]..];
+  metaTags = SCases[text, "#meta/" ~~ Except[WhitespaceCharacter]..];
   If[metaTags =!= {},
     JoinTo[tags, metaTags];
-    text //= StringDelete[StartOfLine ~~ "#meta/" ~~ LineFragment ~~ "\n"];
+    text //= SDelete[StartOfLine ~~ "#meta/" ~~ LineFragment ~~ "\n"];
   ];
-  text //= StringReplace[Repeated["\n", {3, Infinity}] -> "\n\n"] /* StringTrim;
+  text //= SRep[Repeated["\n", {3, Inf}] -> "\n\n"] /* STrim;
 
   isMaster = ContainsQ[tags, "#meta/master"];
   mainTag //= StringTrimLeft["#"];
-  If[isMaster, mainTag = StringRiffle[Most @ StringSplit[mainTag, "/"], "/"]];
+  If[isMaster, mainTag = SRiffle[Most @ SSplit[mainTag, "/"], "/"]];
 
-  PrependTo[frontMatter, "type" -> mainTag];
-  frontMatter["tags"] = DeleteDuplicates @ Join[tags, Lookup[frontMatter, "tags", {}]];
+  PreTo[frontMatter, "type" -> mainTag];
+  frontMatter["tags"] = Dedup @ Join[tags, Lookup[frontMatter, "tags", {}]];
   frontMatter["bear"] = $OpenBearNoteIDTemplateSimple @ UUID;
 
   VPrint["Frontmatter: "];
@@ -126,17 +126,17 @@ ExportBearNoteToObsidian[title_Str, OptionsPattern[]] := Scope @ CatchMessage[
 
 (* TODO: replace this wiith Bear's aka mechanism *)
 getTextAkas[text_] := Scope[
-  If[StringFreeQ[text, StartOfLine ~~ "#meta/aka "], Return[{}]];
+  If[SFreeQ[text, StartOfLine ~~ "#meta/aka "], Return[{}]];
   akaStr = FirstStringCase[text, "#meta/aka " ~~ akas:Shortest[__] ~~ EndOfLine :> akas];
-  akaStr = StringDelete[akaStr, ParentheticalPhrase];
+  akaStr = SDelete[akaStr, ParentheticalPhrase];
   If[akaStr === None, Return[{}]];
-  akaStr = StringReplace[akaStr, inner:("\"" ~~ ShortBlank ~~ "\"") /; StringContainsQ[inner, ","] :> StringReplace[inner, "," -> "COMMA"]];
-  akas = StringTrim @ StringSplit[akaStr, ","];
+  akaStr = SRep[akaStr, inner:("\"" ~~ ShortBlank ~~ "\"") /; SContainsQ[inner, ","] :> SRep[inner, "," -> "COMMA"]];
+  akas = STrim @ SSplit[akaStr, ","];
   akas = StringTrimLeft[akas, "or "];
   akas = StringTrimRight[akas, " in " ~~ ___];
   akas = StringTrimLeftRight[akas, "\"", "\""];
   akas = StringTrimLeftRight[akas, "[[", "]]"];
-  akas = StringReplace[akas, "COMMA" -> ","];
+  akas = SRep[akas, "COMMA" -> ","];
   akas
 ];
 
@@ -157,15 +157,15 @@ $tagProcessors = <|
 (*************************************************************************************************)
 
 findTypedLinksAfter[contents_Str, pattern_, type_] := Scope[
-  Flatten @ StringCases[contents, pattern ~~ lf:LineFragment :>
-    StringCases[lf, link:MarkdownHyperlinkPattern /; linkHasTypeQ[link, type]],
+  Flatten @ SCases[contents, pattern ~~ lf:LineFragment :>
+    SCases[lf, link:MarkdownHyperlinkPattern /; linkHasTypeQ[link, type]],
     IgnoreCase -> True
   ]
 ];
 
 linkHasTypeQ[link_Str, type_] := Scope[
-  text = Quiet @ BearNoteText @ StringTake[link, {3, -3}];
-  StringQ[text] && StringContainsQ[text, type]
+  text = Quiet @ BearNoteText @ STake[link, {3, -3}];
+  StrQ[text] && SContainsQ[text, type]
 ];
 
 (*************************************************************************************************)
@@ -199,32 +199,32 @@ personMetadata[title_Str, tagLine_Str, contents_Str] := Scope[
 
 (*************************************************************************************************)
 
-$pdfPath = Automatic;
+$pdfPath = Auto;
 
 General::badBearDocTitle = "Bad title `` for a document.";
 docMetadata[title_Str, tagLine_Str, contents_Str] := Scope[
 
   {by, venue, in, about} = stringSectionSplit[tagLine, {" by ", " in " ~~ PositiveLookahead["#journal"], " in ", " about " | " defining " | " connecting "}];
-  authors = StringCases[by, {link:MarkdownNoteLinkPattern :> link, name:FullNamePhrase :> simplyFullName @ name}];
-  tags = StringCases[in, MarkdownTagPattern];
+  authors = SCases[by, {link:MarkdownNoteLinkPattern :> link, name:FullNamePhrase :> simplyFullName @ name}];
+  tags = SCases[in, MarkdownTagPattern];
   journal = FirstStringCase[venue, MarkdownTagPattern];
 
-  {min, max} = MinMax @ StringPosition[title, "\""];
+  {min, max} = MinMax @ SFind[title, "\""];
   If[max <= min, ThrowMessage["badBearDocTitle", MsgExpr @ title]];
-  trimmedTitle = StringTake[title, {min + 1, max - 1}];
+  trimmedTitle = STake[title, {min + 1, max - 1}];
   path = toPaperPDFPath[$pdfPath, title];
   url = FirstStringCase[contents, HyperlinkPattern];
-  newContents = StringDelete[contents, url];
+  newContents = SDelete[contents, url];
 
   If[!FileExistsQ[path],
     glob = "*" <> ToLowerCase[trimmedTitle] <> "*.pdf";
     candidates = FileNames[glob, ReplaceAutomatic[$pdfPath, $PDFPath], IgnoreCase -> True];
-    If[Length[candidates] === 1,
-      candidate = First @ candidates;
+    If[Len[candidates] === 1,
+      candidate = F @ candidates;
       VPrint["Found candidate ", MsgPath @ candidate, " for missing path ", MsgPath @ path];
       path = candidate;
     ,
-      If[StringContainsQ[contents, "#meta/downloaded"], ThrowMessage["missingLocalPath", MsgExpr @ title]];
+      If[SContainsQ[contents, "#meta/downloaded"], ThrowMessage["missingLocalPath", MsgExpr @ title]];
     ];
   ];
   localPath = If[FileExistsQ[path], toLocalPath @ path, None];
@@ -233,41 +233,41 @@ docMetadata[title_Str, tagLine_Str, contents_Str] := Scope[
     StartOfLine ~~ "> " ~~ abstract:LineFragment :> abstract
   ];
 
-  tagsStr = StringRiffle[tags, " "];
+  tagsStr = SRiffle[tags, " "];
 
   conceptExtractor = createLocalConceptExtractor[tagsStr];
   abstractStr = ReplaceNone[abstract, ""];
-  concepts = DeleteDuplicates @ Join[
-    StringCases[about, MarkdownNoteLinkPattern ? conceptLinkQ],
-    StringCases[abstractStr, MarkdownNoteLinkPattern ? conceptLinkQ],
-    StringCases[abstractStr, conceptExtractor]
+  concepts = Dedup @ Join[
+    SCases[about, MarkdownNoteLinkPattern ? conceptLinkQ],
+    SCases[abstractStr, MarkdownNoteLinkPattern ? conceptLinkQ],
+    SCases[abstractStr, conceptExtractor]
   ];
 
   date = None;
-  If[StringContainsQ[url, "arxiv"],
+  If[SContainsQ[url, "arxiv"],
     arxivData = ImportArxivPage[url];
-    If[AssociationQ[arxivData],
+    If[AssocQ[arxivData],
       date = arxivData["Date"];
-      If[StringQ[date],
+      If[StrQ[date],
         date = FromDateString[date, {"Year", "/", "Month", "/", "Day"}];
       ];
     ];
   ,
-    If[StringQ @ localPath, date = guessPDFdate @ path];
+    If[StrQ @ localPath, date = guessPDFdate @ path];
   ];
 
-  abstract //= StringReplace[link:MarkdownNoteLinkPattern :> StringTake[link, {3, -3}]];
+  abstract //= SRep[link:MarkdownNoteLinkPattern :> STake[link, {3, -3}]];
 
   conceptPattern = DeepFirstCase[conceptExtractor, _Alternatives];
-  $isLinked = UAssoc[]; linkedQ = Function[Lookup[$isLinked, #, $isLinked[#] = True; False]];
+  $isLinked = UAssoc[]; linkedQ = Fn[Lookup[$isLinked, #, $isLinked[#] = True; False]];
   enrichmentRule = {
     link:MarkdownNoteLinkPattern :> link,
     WordBoundary ~~ lhs:conceptPattern ~~ plural:Maybe["s" | "es"] ~~ WordBoundary :>
       If[linkedQ[lhs], lhs <> plural, "[[" <> lhs <> "]]" <> plural]
   };
-  newContents = StringReplace[
+  newContents = SRep[
     newContents,
-    StartOfLine ~~ abstractLHS:("> " ~~ LineFragment) :> StringReplace[abstractLHS, enrichmentRule]
+    StartOfLine ~~ abstractLHS:("> " ~~ LineFragment) :> SRep[abstractLHS, enrichmentRule]
   ];
 
   Assoc[
@@ -294,26 +294,26 @@ enrichWithConceptExtractorLinks[extractor_][text_] := Scope[
       "[[" <> lhs <> "]]" <> plural
   };
 
-  StringReplace[text, StartOfLine ~~ "> " ~~ abstract:LineFragment :> StringReplace[abstract, rule], 1]
+  SRep[text, StartOfLine ~~ "> " ~~ abstract:LineFragment :> SRep[abstract, rule], 1]
 
 ];
 
-simplyFullName[str_String] := StringJoin["[[",
-  StringReplace[str, (" " ~~ LetterCharacter ~~ Maybe["."] ~~ " ") -> " "],
+simplyFullName[str_String] := SJoin["[[",
+  SRep[str, (" " ~~ LetterCharacter ~~ Maybe["."] ~~ " ") -> " "],
   "]]"
 ];
 
 (*************************************************************************************************)
 
 stringSectionSplit[s_, rules_] := Scope[
-  sections = StringSplit[s, RuleRange @ rules];
+  sections = SSplit[s, RuleRange @ rules];
   Map[
-    Replace[sections, {{___, #, sec_Str, ___} :> sec, _ -> ""}]&,
-    Range @ Length @ rules
+    Rep[sections, {{___, #, sec_Str, ___} :> sec, _ -> ""}]&,
+    Range @ Len @ rules
   ]
 ];
 
-toLocalPath[path_] := "file://" <> StringReplace[path, " " -> "%20"];
+toLocalPath[path_] := "file://" <> SRep[path, " " -> "%20"];
 
 (*************************************************************************************************)
 
@@ -323,8 +323,8 @@ guessPDFdate[path_] := Scope[
   CachedInto[$PDFDateCache, path,
     firstPage = Quiet @ Import[path, {"PagePlaintext", 1}];
     dateStr = FirstStringCase[firstPage, SpelledDatePattern];
-    If[!StringQ[dateStr], dateStr = FirstStringCase[firstPage, NumericDatePattern]];
-    date = If[StringQ[dateStr], FromDateString @ dateStr, None];
+    If[!StrQ[dateStr], dateStr = FirstStringCase[firstPage, NumericDatePattern]];
+    date = If[StrQ[dateStr], FromDateString @ dateStr, None];
     date
   ]
 ];
@@ -333,8 +333,8 @@ guessPDFdate[path_] := Scope[
 
 computeBearAkaRules[type_] := computeBearAkaRules[type] = Scope[
   data = BearNoteData[{"Tag" -> type}, {"Title", "Text"}];
-  data = Select[data, StringFreeQ[#Title, {":", "\""}] && StringCount[#Title, " "] <= 4&];
-  akaGraph = Graph @ Flatten @ Map[Thread[Append[getTextAkas[#Text], #Title] -> #Title]&, data];
+  data = Select[data, SFreeQ[#Title, {":", "\""}] && StringCount[#Title, " "] <= 4&];
+  akaGraph = Graph @ Flatten @ Map[Thread[App[getTextAkas[#Text], #Title] -> #Title]&, data];
   titleToText = Assoc[#Title -> #Text& /@ data];
   akaComps = WeaklyConnectedComponents[akaGraph];
   primaries = componentToPrimary /@ akaComps;
@@ -342,18 +342,18 @@ computeBearAkaRules[type_] := computeBearAkaRules[type] = Scope[
 ];
 
 componentToPrimary[{a_}] := a;
-componentToPrimary[list_] := Last @ SortBy[list, StringLength @ Lookup[titleToText, #, ""]&];
+componentToPrimary[list_] := L @ SortBy[list, SLen @ Lookup[titleToText, #, ""]&];
 
 (*************************************************************************************************)
 
 $bearConceptTitles := $bearConceptTitles =
   ConstantUAssociation[Flatten[List @@@ computeBearAkaRules["concept"]], True];
 
-conceptLinkQ[link_] := Lookup[StringDrop[link, {3, -3}], $bearConceptTitles, False];
+conceptLinkQ[link_] := Lookup[SDrop[link, {3, -3}], $bearConceptTitles, False];
 
 (*************************************************************************************************)
 
-$linkBlacklist := $linkBlacklist = StringSplit[ImportUTF8 @ DataPath["Text", "LinkBlacklist.txt"], "\n"];
+$linkBlacklist := $linkBlacklist = SSplit[ImportUTF8 @ DataPath["Text", "LinkBlacklist.txt"], "\n"];
 
 (* computed with:
 $concepts = BearNoteData[{"Tag" -> "concept"}, {"Title", "Text"}];
@@ -370,28 +370,28 @@ createLocalConceptExtractor[noteTagsStr_Str] := Scope[
   baseRules = computeBearAkaRules["concept"];
 
   blacklist = $linkBlacklist;
-  whitelist = Catenate @ KeySelect[$linkWhitelists, StringContainsQ[noteTagsStr, #]&];
-  blacklist = Complement[blacklist, whitelist];
-  blacklistPattern = Alternatives @@ blacklist;
-  filteredRules = Select[baseRules, FreeQ[First[#], blacklistPattern]&];
+  whitelist = Catenate @ KSelect[$linkWhitelists, SContainsQ[noteTagsStr, #]&];
+  blacklist = Comp[blacklist, whitelist];
+  blacklistPattern = Alt @@ blacklist;
+  filteredRules = Select[baseRules, FreeQ[F[#], blacklistPattern]&];
 
   titles = Union @ Flatten @ (List @@@ filteredRules);
-  titles //= Select[StringLength[#] > 2&];
-  titles //= ReverseSortBy[StringLength];
+  titles //= Select[SLen[#] > 2&];
+  titles //= ReverseSortBy[SLen];
 
-  (WordBoundary ~~ lhs:(Alternatives @@ titles) ~~ Maybe["s"] ~~ WordBoundary) :> "[[" <> lhs <> "]]"
+  (WordBoundary ~~ lhs:(Alt @@ titles) ~~ Maybe["s"] ~~ WordBoundary) :> "[[" <> lhs <> "]]"
 ];
 
 $linkWhitelists := $linkWhitelists = createLinkWhitelists[];
 
 createLinkWhitelists[] := Scope[
   text = ImportUTF8 @ DataPath["Text", "LinkWhitelists.txt"];
-  table = StringSplit[StringSplit[text, "\n"], " "];
+  table = SSplit[SSplit[text, "\n"], " "];
   Assoc @ MapApply[toWLentry, table]
 ];
 
-toWLentry[key_, vals__] := If[StringContainsQ[key, ","],
-  # -> {vals}& /@ StringSplit[key, ","],
+toWLentry[key_, vals__] := If[SContainsQ[key, ","],
+  # -> {vals}& /@ SSplit[key, ","],
   key -> {vals}
 ];
 

@@ -17,9 +17,9 @@ FSWatch[path_] := Scope[
   cmdArgs = {binPath};
 
   paths = path /. All -> QuiverGeometryLoader`$SourceDirectory;
-  paths = Map[StringJoin["'", ExpandFileName[#], "'"]&, Developer`ToList @ paths];
+  paths = Map[SJoin["'", ExpandFileName[#], "'"]&, Developer`ToList @ paths];
 
-  cmdStr = StringJoin[binPath, " ", Riffle[Flatten @ paths, " "]];
+  cmdStr = SJoin[binPath, " ", Riffle[Flatten @ paths, " "]];
 
   stream = Quiet @ Check[OpenRead["!" <> cmdStr, BinaryFormat -> True], $Failed];
   If[H[stream] =!= InputStream, Message[FSWatch::badStream]; Return[$Failed]];

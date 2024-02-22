@@ -31,7 +31,7 @@ PullbackSquare[{nw$, ne$, sw$, se$}, {n$, s$, w$, e$}] constructs a %Commutative
 PullbackSquare[objs_List, arrows_List, opts___Rule] := With[
   {iconType = If[MemberQ[{opts}, ArrowPathReversed -> True], "BottomRightSquare", "TopLeftSquare"]},
   CommutativeSquare[
-    Append[objs, NamedIcon[ObjectCoordinates[1, PlusOperator[{.2,-.2}]],{1,0}, iconType]],
+    App[objs, NamedIcon[ObjectCoordinates[1, PlusOperator[{.2,-.2}]],{1,0}, iconType]],
     arrows, opts
   ]
 ];
@@ -141,7 +141,7 @@ ParallelArrowDiagram[{pos$l -> l$, pos$r -> r$}, $$] specifies positions for l$ 
 "
 
 ParallelArrowDiagram[{lp_ -> l_, rp_ -> r_}, {t_, b_, v_:Null, rest___}, opts___Rule] := Scope[
-  rev = If[H[v] === Reversed, v //= P1; Rev, Id];
+  rev = If[H[v] === Reversed, v //= F; Rev, Id];
   curve = Lookup[{opts}, CurveFunction, TrapezoidCurve];
   bend = Lookup[{opts}, BendRadius, .33];
   CommutativeDiagram[{
@@ -226,7 +226,7 @@ ArrowDiagram[a_, b_, f_, opts___Rule] := Scope[
 ]
 
 sadApos = Case[
-  r_Rule := ($apos = P1 @ r; r);
+  r_Rule := ($apos = F @ r; r);
   obj_   := $apos -> obj;
 ]
 

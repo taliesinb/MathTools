@@ -1,7 +1,7 @@
 PublicFunction[LookupStyleColor]
 
 LookupStyleColor[styleName_] :=
-  FirstCase[CurrentValue[{StyleDefinitions, styleName}], rgb_RGBColor :> rgb, None, {0, Infinity}];
+  FirstCase[CurrentValue[{StyleDefinitions, styleName}], rgb_RGBColor :> rgb, None, {0, Inf}];
 
 (**************************************************************************************************)
 
@@ -22,11 +22,11 @@ $TemplateKatexFunction["StyledOperatorForm"] = styledOperatorKatex;
 
 styledOperatorKatex[dummy_, inner_] := Scope[
   katexStr = boxesToKatexString @ inner;
-  styleOp = P1 @ StringCases[boxesToKatexString @ dummy, "\\" ~~ LetterCharacter.., 1];
-  StringReplace[katexStr, "\\" ~~ w:LetterCharacter.. :>
-    If[StringEndsQ[w, "Symbol"],
-      StringJoin[styleOp, "\\", w],
-      StringJoin["\\styled", UpperCaseFirst @ w, "{", styleOp, "}"]
+  styleOp = F @ SCases[boxesToKatexString @ dummy, "\\" ~~ LetterCharacter.., 1];
+  SRep[katexStr, "\\" ~~ w:LetterCharacter.. :>
+    If[SEndsQ[w, "Symbol"],
+      SJoin[styleOp, "\\", w],
+      SJoin["\\styled", UpperCaseFirst @ w, "{", styleOp, "}"]
     ],
     1
   ]

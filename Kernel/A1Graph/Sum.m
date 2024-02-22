@@ -12,7 +12,7 @@ indexToLabel[{k_} | {Key[k_]}] := k;
 relabelSumComponent[graph_, label_] := GraphRelabel[graph, SumVertex[label]];
 
 relabelSumComponent[graph_ -> joinVertex_, index_] := (
-    AppendTo[$contractions, SumVertex[joinVertex, label]];
+    AppTo[$contractions, SumVertex[joinVertex, label]];
     relabelSumComponent[graph, index]
 );
 

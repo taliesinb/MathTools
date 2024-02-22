@@ -17,7 +17,7 @@ PublicOption[DownloadPDF, PDFPath]
 
 Options[ImportScholarPage] = {
   DownloadPDF -> True,
-  PDFPath -> Automatic,
+  PDFPath -> Auto,
   Verbose -> False
 }
 
@@ -32,12 +32,12 @@ xmlFilePath[id_] := DataPath["Scholar", id <> ".mx"];
 ImportScholarPage[url_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[$verbose];
 
-  If[!StringQ[$ScholarUserID], ReturnFailed["userid"]];
+  If[!StrQ[$ScholarUserID], ReturnFailed["userid"]];
   id = If[
-    StringMatchQ[url, Repeated[AlphanumericCharacter | "_" | "-", 12]], url,
+    SMatchQ[url, Repeated[AlphanumericCharacter | "_" | "-", 12]], url,
     FirstStringCase[url, ":" ~~ num:Repeated[AlphanumericCharacter | "_" | "-", 12] :> num]
   ];
-  If[!StringQ[id], ReturnFailed["badurl", url]];
+  If[!StrQ[id], ReturnFailed["badurl", url]];
 
   xmlPath = xmlFilePath[id];
   If[FileExistsQ[xmlPath],
@@ -56,9 +56,9 @@ ImportScholarPage[url_Str, opts:OptionsPattern[]] := Scope[
   ];
 
   arxivURL = DeepFirstCase[xml,
-    XMLElement["a", {___, "class" -> "gsc_oci_title_link", ___, "href" -> href_Str /; StringStartsQ[href, "https://arxiv.org"], ___}, _] :> href
+    XMLElement["a", {___, "class" -> "gsc_oci_title_link", ___, "href" -> href_Str /; SStartsQ[href, "https://arxiv.org"], ___}, _] :> href
   ];
-  If[StringQ[arxivURL] && StringContainsQ[arxivURL, ArxivPaperIDPattern],
+  If[StrQ[arxivURL] && SContainsQ[arxivURL, ArxivPaperIDPattern],
     VPrint["Delegating to ImportArxivPage[\"", arxivURL, "\"]"];
     Return @ ImportArxivPage[arxivURL, FilterOptions @ opts];
   ];
@@ -71,7 +71,7 @@ ImportScholarPage[url_Str, opts:OptionsPattern[]] := Scope[
     ] :> url,
     None
   ];
-  If[StringQ[pdfURL] && StringContainsQ[pdfURL, "%"], pdfURL = First @ StringSplit[pdfURL, "%", 2]];
+  If[StrQ[pdfURL] && SContainsQ[pdfURL, "%"], pdfURL = F @ SSplit[pdfURL, "%", 2]];
 
   articleURL = DeepFirstCase[paperXML,
     XMLElement["a", {___, "class"->"gsc_oci_title_link", ___, "href" -> url_, ___}, _] :> url,
@@ -84,9 +84,9 @@ ImportScholarPage[url_Str, opts:OptionsPattern[]] := Scope[
   ];
 
   authors = Lookup[metadata, "Authors", ReturnFailed["badxml2", id, "Authors"]];
-  authors = Map[DeleteMiddleInitials, StringTrim @ StringSplit[authors, ","]];
-  authors = DeleteCases[authors, ""];
-  authors = Map[If[UpperCaseQ[StringDelete[#, " " | "."]], ToTitleCase @ ToLowerCase @ #, #]&, authors];
+  authors = Map[DeleteMiddleInitials, STrim @ SSplit[authors, ","]];
+  authors = Decases[authors, ""];
+  authors = Map[If[UpperCaseQ[SDelete[#, " " | "."]], ToTitleCase @ ToLowerCase @ #, #]&, authors];
   authors //= sanitizeAuthors;
   VPrint["Authors: ", authors];
 
@@ -97,7 +97,7 @@ ImportScholarPage[url_Str, opts:OptionsPattern[]] := Scope[
   title //= sanitizeTitle;
 
   publicationDate = Lookup[metadata, "Publication date", None];
-  If[StringQ[publicationDate], publicationDate //= DateObject];
+  If[StrQ[publicationDate], publicationDate //= DateObject];
 
   abstract = Lookup[metadata, "Description", ReturnFailed["badxml2", id, "Abstract"]];
   abstract //= XMLToText /* sanitizeAbstract;

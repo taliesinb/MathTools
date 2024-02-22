@@ -16,7 +16,7 @@ GraphContract[g_, contraction_List, opts:OptionsPattern[]] :=
   VertexReplace[
     VertexContract[g, vertices],
     Map[
-      vertices |-> P1[vertices] -> ContractedVertex[vertices],
+      vertices |-> F[vertices] -> ContractedVertex[vertices],
       toListOfLists @ contraction
     ]
   ] // egraph[opts];
@@ -24,8 +24,8 @@ GraphContract[g_, contraction_List, opts:OptionsPattern[]] :=
 GraphContract[g_, contraction_Assoc, fn:Except[_Rule], opts:OptionsPattern[]] :=
   VertexReplace[
     VertexContract[g, Values @ contraction],
-    KeyValueMap[
-      {key, vertices} |-> P1[vertices] -> fn[vertices, key],
+    KVMap[
+      {key, vertices} |-> F[vertices] -> fn[vertices, key],
       contraction
     ]
   ] // egraph[opts];
@@ -69,7 +69,7 @@ Options[GraphContractionLattice] = JoinOptions[
   "AllowCyclic" -> True,
   "GraphStyle" -> "ContractedGraph",
   "AllowGraphContractions" -> False,
-  "EdgeColoring" -> Automatic,
+  "EdgeColoring" -> Auto,
   ExtendedGraph
 ]
 
@@ -126,12 +126,12 @@ vertexContractionSuccessors[edgeList_] := Scope[
   gluingResultsList[edgeList, rules]
 ];
 
-$flattenGlue = e_ContractedEdge | e_ContractedVertex :> DeleteDuplicates[e];
+$flattenGlue = e_ContractedEdge | e_ContractedVertex :> Dedup[e];
 
 toVertexContractionRule[{v_}] := Nothing;
 
 toVertexContractionRule[verts_List] := With[
-  {alts = Alternatives @@ verts, glued = ContractedVertex @@ verts},
+  {alts = Alt @@ verts, glued = ContractedVertex @@ verts},
   {
     head_[alts, alts, c___] :> head[glued, glued, c],
     head_[alts, b_, c___] :> head[glued, b, c],
@@ -140,7 +140,7 @@ toVertexContractionRule[verts_List] := With[
 ];
 
 gluingResult[edgeList_, rules_] :=
-  Sort @ CanonicalizeEdges @ DeleteDuplicates[VectorReplace[edgeList, rules] /. $flattenGlue];
+  Sort @ CanonicalizeEdges @ Dedup[VectorReplace[edgeList, rules] /. $flattenGlue];
 
 gluingResultsList[edgeList_, rulesList_] := Map[
   gluingResult[edgeList, #]&,
@@ -151,21 +151,21 @@ edgeContractionSuccessors[edgeList_] := Scope[
   index = Values @ PositionIndex[Take[edgeList, All, 2]];
   index = Select[index, Len[#] >= 2&];
   rules = Flatten[toEdgeContractionRuleList[Part[edgeList, #]]& /@ index];
-  Sort[CanonicalizeEdges @ DeleteDuplicates[VectorReplace[edgeList, #]]]& /@ rules
+  Sort[CanonicalizeEdges @ Dedup[VectorReplace[edgeList, #]]]& /@ rules
 ];
 
 toEdgeContractionRuleList[edges_List] := toEdgeContractionRule @@@ UnorderedPairs[edges];
 
 SetAttributes[{ContractedEdge, ContractedVertex}, {Flat, Orderless}];
 toEdgeContractionRule[head_[a1_, b1_, c_], head_[a2_, b2_, d_]] :=
-  e:(head[a1, b1, c] | head[a2, b2, d]) :> ReplacePart[e, 3 -> DeleteDuplicates[ContractedEdge[c, d]]];
+  e:(head[a1, b1, c] | head[a2, b2, d]) :> RepPart[e, 3 -> Dedup[ContractedEdge[c, d]]];
 
 greedyContractEdges[edgeList_] := Scope[
   index = Values @ PositionIndex[CanonicalizeEdges @ Take[edgeList, All, 2]];
   index = Select[index, Len[#] >= 2&];
   If[index === {}, Return @ edgeList];
   rules = Flatten[toEdgeContractionRuleList[Part[edgeList, #]]& /@ index];
-  greedyContractEdges @ Sort @ CanonicalizeEdges @ DeleteDuplicates @ VectorReplace[edgeList, rules]
+  greedyContractEdges @ Sort @ CanonicalizeEdges @ Dedup @ VectorReplace[edgeList, rules]
 ];
 
 (**************************************************************************************************)
@@ -177,20 +177,20 @@ UnContractedGraph[graph_Graph, opts___Rule] := Scope[
   If[!MemberQ[vertexList, _ContractedVertex] && !MemberQ[edgeList, _[_, _, _ContractedEdge]],
     Return @ ExtendedGraph[graph, opts]];
   ungluingRules = Cases[vertexList, g_ContractedVertex :> (g -> Splice @ Apply[List, g])];
-  vertexList = DeleteDuplicates @ VectorReplace[vertexList, ungluingRules];
-  edgeList = DeleteDuplicates @ MatrixReplace[edgeList, ungluingRules];
-  edgeList = DeleteDuplicates @ VectorReplace[edgeList, $ContractedVertexExpansionRules];
-  edgeList = DeleteDuplicates @ VectorReplace[edgeList, $ContractedEdgeExpansionRules];
+  vertexList = Dedup @ VectorReplace[vertexList, ungluingRules];
+  edgeList = Dedup @ MatrixReplace[edgeList, ungluingRules];
+  edgeList = Dedup @ VectorReplace[edgeList, $ContractedVertexExpansionRules];
+  edgeList = Dedup @ VectorReplace[edgeList, $ContractedEdgeExpansionRules];
   ExtendedGraph[vertexList, edgeList, opts, Sequence @@ Options @ graph]
 ]
 
 $ContractedVertexExpansionRules = {
   (head_)[a_Splice, b_Splice, tag___] :>
-    Splice @ Flatten @ Outer[head[#1, #2, tag]&, P1 @ a, P1 @ b, 1],
+    Splice @ Flatten @ Outer[head[#1, #2, tag]&, F @ a, F @ b, 1],
   (head_)[a_, b_Splice, tag___] :>
-    Splice @ Map[head[a, #, tag]&, P1 @ b],
+    Splice @ Map[head[a, #, tag]&, F @ b],
   (head_)[a_Splice, b_, tag___] :>
-    Splice @ Map[head[#, b, tag]&, P1 @ a]
+    Splice @ Map[head[#, b, tag]&, F @ a]
 };
 
 $ContractedEdgeExpansionRules = {
@@ -202,7 +202,7 @@ $ContractedEdgeExpansionRules = {
 PublicFunction[ContractVertices]
 
 Options[ContractVertices] = JoinOptions[
-  VertexCoordinates -> Automatic,
+  VertexCoordinates -> Auto,
   ExtendedGraph
 ];
 
@@ -211,7 +211,7 @@ ContractVertices[graph_Graph, glueList_List, userOpts:OptionsPattern[]] := Scope
   edgeList = EdgeList @ graph;
   glueList //= ToContractionSet;
   glueRules = Flatten[toVertexContractionRule /@ glueList];
-  vertexCoordinates = LookupOption[{userOpts}, VertexCoordinates, Automatic];
+  vertexCoordinates = LookupOption[{userOpts}, VertexCoordinates, Auto];
   If[glueRules === {} && vertexCoordinates =!= "Mean",
     Return @ If[{userOpts} === {}, graph, ExtendedGraph[graph, userOpts]]];
   contractedEdgeList = Fold[gluingResult, edgeList, glueRules];
@@ -253,12 +253,12 @@ ContractedGraph[graph_Graph, opts___Rule] := Scope[
   baseCardinals = CardinalList @ unContractedGraph;
   baseCardinalColors = LookupCardinalColors @ unContractedGraph;
 
-  vertexCoordinateFunction = ContractedVertexCoordinateFunction[AssociationThread[baseVertexList, baseVertexCoordinates]];
+  vertexCoordinateFunction = ContractedVertexCoordinateFunction[AssocThread[baseVertexList, baseVertexCoordinates]];
   
-  edgeColorFunction = LookupOption[opts, EdgeColorFunction, Automatic];
+  edgeColorFunction = LookupOption[opts, EdgeColorFunction, Auto];
   edgeColorFunction = Which[
-    edgeColorFunction === Automatic && baseEdgeColors =!= None,
-      ContractedEdgeColorFunction[KeyMap[PartOperator[3], baseEdgeColors]],
+    edgeColorFunction === Auto && baseEdgeColors =!= None,
+      ContractedEdgeColorFunction[KMap[PartOperator[3], baseEdgeColors]],
     edgeColorFunction === Inherited && baseCardinalColors =!= None,
       (* ^ if we want to just inherit colors from cardinals -- which is not the default behavior *)
       ContractedEdgeColorFunction[baseCardinalColors],
@@ -276,7 +276,7 @@ ContractedGraph[graph_Graph, opts___Rule] := Scope[
 
   ExtendedGraph[graph,
     VertexColorRules -> None, CoordinateTransformFunction -> None,
-    VertexCoordinates -> Automatic, VertexCoordinateRules -> None,
+    VertexCoordinates -> Auto, VertexCoordinateRules -> None,
     VertexLayout -> None,
     CardinalColorRules -> None,
     EdgeColorRules -> None,
@@ -341,7 +341,7 @@ PublicFunction[ContractedVertexPrologFunction]
 
 ContractedVertexPrologFunction[graph_] := Scope[
   baseCoordFunc = GraphAnnotationData[VertexCoordinateFunction];
-  imageWidth = P1 @ LookupImageSize[graph];
+  imageWidth = F @ LookupImageSize[graph];
   small = imageWidth < 100;
   Style[
     Map[ContractedVertexPrimitives, VertexList @ graph],

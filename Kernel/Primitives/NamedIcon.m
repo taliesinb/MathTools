@@ -21,13 +21,13 @@ Options[NamedIcon] = {
   AlignmentPoint -> None,
   GraphicsScale  -> None,
   IconThickness  -> 1,
-  IconColor      -> Automatic,
+  IconColor      -> Auto,
   IconScaling    -> 1,
   ImageSize      -> 20,
   DebugBounds    -> False
 };
 
-AssociateTo[$MakeBoxesStyleData, KeyTake[Options @ NamedIcon, {IconThickness, IconScaling}]];
+AssociateTo[$MakeBoxesStyleData, KTake[Options @ NamedIcon, {IconThickness, IconScaling}]];
 
 DeclareGraphicsPrimitive[NamedIcon, "Vector,Delta", namedIconBoxes];
 
@@ -63,7 +63,7 @@ namedIconTypesettingBoxes[NamedIcon[name_, opts___]] := Scope[
   UnpackOptionsAs[NamedIcon, {opts}, iconColor, iconScaling, iconThickness, imageSize, alignmentPoint, $debugBounds];
   inset = rawNamedIconBoxes[pos, dir, name, None, imageSize, iconScaling /. $scalingRules, iconColor, iconThickness, alignmentPoint /. $alignmentRules];
   If[!MatchQ[inset, _InsetBox], Return @ StyleBox["?", Red]];
-  Append[P1 @ inset, BaselinePosition -> (Scaled[0.5] -> Axis)]
+  App[F @ inset, BaselinePosition -> (Scaled[0.5] -> Axis)]
 ]
 
 (**************************************************************************************************)
@@ -88,7 +88,7 @@ $scalingRules = {Huge -> 1.75, Large -> 1.5, MediumLarge -> 1.25, Medium -> 1, M
 PrivateFunction[rawNamedIconBoxes]
 
 rawNamedIconBoxes[pos_, dir_, name_, graphicsScale_, imageSize_, scaling_, color_, thickness_, align_] := Scope[
-  If[H[name] === Reversed, name //= P1; dir = dir * -1; If[NumberQ @ align, align //= OneMinus]];
+  If[H[name] === Reversed, name //= F; dir = dir * -1; If[NumberQ @ align, align //= OneMinus]];
   If[H[name] === Repeating, {name, reps} = List @@ name, reps = None];
   If[H[name] === Sized, {name, scaling} = List @@ name];
   $imageSize = imageSize * scaling * {1, 1};
@@ -143,10 +143,10 @@ makeIconInset[pos_, dir_, prims_] := Scope[
       PlotRangeClipping -> False,
       PlotRange -> {{-1, 1}, {-1, 1}} * 1.3,
       PlotRangePadding -> None,
-      AspectRatio -> (PN[$imageSize] / P1[$imageSize]),
+      AspectRatio -> (L[$imageSize] / F[$imageSize]),
       ImagePadding -> None
     ],
-    pos, $origin, Automatic, dir
+    pos, $origin, Auto, dir
   ]
 ];
 
@@ -195,7 +195,7 @@ makeIconData[prims_, Key[name_], align_] := Scope[
 (**************************************************************************************************)
 
 solidPrimitiveQ = Case[
-  e_List       := % @ P1 @ e;
+  e_List       := % @ F @ e;
   _FilledCurve := True;
   _Polygon     := True;
   _Disk        := True;
@@ -214,13 +214,13 @@ makeArrowHead[name_ -> head_[upperPath_]] := Scope[
   lowerPath = VectorReflectVertical @ upperPath;
   symmetricCurve = toJoinedCurve[head @ upperPath, head @ Rev @ Most @ lowerPath];
   {x, {y1, y2}} = CoordinateBounds @ upperPath;
-  l = If[Part[upperPath, 1, 2] == 0, Part[upperPath, 1, 1], P1 @ x];
-  r = If[Part[upperPath, -1, 2] == 0, Part[upperPath, -1, 1], PN @ x];
+  l = If[Part[upperPath, 1, 2] == 0, Part[upperPath, 1, 1], F @ x];
+  r = If[Part[upperPath, -1, 2] == 0, Part[upperPath, -1, 1], L @ x];
   lr = {l, r};
   List[
     name                       -> bounded[symmetricCurve, {x, {-y2, y2}, lr}],
-    StringJoin["Upper", name]  -> bounded[head[upperPath], {x, {0, y2}, lr}],
-    StringJoin["Lower", name]  -> bounded[head[lowerPath], {x, {-y2, 0}, lr}]
+    SJoin["Upper", name]  -> bounded[head[upperPath], {x, {0, y2}, lr}],
+    SJoin["Lower", name]  -> bounded[head[lowerPath], {x, {-y2, 0}, lr}]
   ]
 ];
 
@@ -233,7 +233,7 @@ simplifyLine = Case[
 
 toJoinedCurve[Line[c1_], Line[c2_]] := simplifyLine @ Line @ Join[c1, c2];
 toJoinedCurve[JoinedCurve[list_], JoinedCurve[list2_]] := JoinedCurve[Join[list1, list2]];
-toJoinedCurve[JoinedCurve[list_], elem_] := JoinedCurve[Append[list, elem]];
+toJoinedCurve[JoinedCurve[list_], elem_] := JoinedCurve[App[list, elem]];
 toJoinedCurve[c1_, c2_] := JoinedCurve @ {c1, c2};
 
 (**************************************************************************************************)
@@ -243,8 +243,8 @@ SetListable[makeClosed];
 makeClosed[name_ -> (curve_ ? isClosedQ)] := name -> curve;
 
 makeClosed[name_ -> bounded[curve_, b_]] := List[
-  name                       -> bounded[curve, ReplacePart[b, {3, 1} -> Part[b, 3, 2]]],
-  StringJoin["Closed", name] -> bounded[toClosedCurve[curve], b]
+  name                       -> bounded[curve, RepPart[b, {3, 1} -> Part[b, 3, 2]]],
+  SJoin["Closed", name] -> bounded[toClosedCurve[curve], b]
 ];
 
 toClosedCurve[curve_] := Scope[
@@ -255,13 +255,13 @@ toClosedCurve[curve_] := Scope[
     (* symmetric *)
     {{x_, _?Positive}, {x_, _?Negative}},
       If[H[curve] === JoinedCurve,
-        Append[curve, CurveClosed -> True],
+        App[curve, CurveClosed -> True],
         toJoinedCurve[curve, Line @ {p1}]
       ],
 
     (* open *)
     {_,  {_, 0|0.}},
-      toJoinedCurve[curve, Line @ {{P1 @ p1, 0}, p1}],
+      toJoinedCurve[curve, Line @ {{F @ p1, 0}, p1}],
 
     _,
     None
@@ -275,7 +275,7 @@ makeFilled[rule_] := rule;
 
 makeFilled[name_ -> curve_ ? isClosedQ] := List[
   name                       -> curve,
-  StringJoin["Filled", StringTrimLeft[name, "Closed"]] -> toFilledCurve[curve]
+  SJoin["Filled", StringTrimLeft[name, "Closed"]] -> toFilledCurve[curve]
 ];
 
 toFilledCurve = Case[
@@ -327,9 +327,9 @@ $arrowIcons := With[
 SetListable[makeRotated]
 makeRotated[name_ -> bounded[curve_, b_, bt_]] := List[
   name -> bounded[curve, b],
-  StringReplace[name, "Right" -> "Left"] -> bounded[ScalePrimitives[curve, {-1, 1}], boundsFlipX @ b],
-  StringReplace[name, "Right" -> "Up"]   -> bounded[RotatePrimitives[curve, Pi/2], boundsRot[b, bt]],
-  StringReplace[name, "Right" -> "Down"] -> bounded[RotatePrimitives[curve, -Pi/2], boundsRot[boundsFlipX @ b, bt]]
+  SRep[name, "Right" -> "Left"] -> bounded[ScalePrimitives[curve, {-1, 1}], boundsFlipX @ b],
+  SRep[name, "Right" -> "Up"]   -> bounded[RotatePrimitives[curve, Pi/2], boundsRot[b, bt]],
+  SRep[name, "Right" -> "Down"] -> bounded[RotatePrimitives[curve, -Pi/2], boundsRot[boundsFlipX @ b, bt]]
 ];
 
 flip[{x_, y_}] := -{y, x};
@@ -341,12 +341,12 @@ $leftBar = {{-1, -1/2}, {-1, 1/2}};
 $rightBar = {{1, -1/2}, {1, 1/2}};
 $leftArrowheadPoints = {{-1/2, 1/2}, {-1, 0}, {-1/2, -1/2}};
 $rightArrowheadPoints = {{1/2, 1/2}, {1, 0}, {1/2, -1/2}};
-$leftRightPrim = Line @ {P1 @ $hline, $leftArrowheadPoints, $rightArrowheadPoints};
+$leftRightPrim = Line @ {F @ $hline, $leftArrowheadPoints, $rightArrowheadPoints};
 
 $rbaH = {-0.634471, 0.635029};
 $rotatedIcons := makeRotated @ {
-  "RightArrow"         -> bound[$u, $h, $u, $z] @ Line @ {P1 @ $hline, $rightArrowheadPoints},
-  "BarRightArrow"      -> bound[$u, $h, $u, $z] @ Line @ {$leftBar, P1 @ $hline, $rightArrowheadPoints},
+  "RightArrow"         -> bound[$u, $h, $u, $z] @ Line @ {F @ $hline, $rightArrowheadPoints},
+  "BarRightArrow"      -> bound[$u, $h, $u, $z] @ Line @ {$leftBar, F @ $hline, $rightArrowheadPoints},
   "RightHalfCircle"    -> bound[$r, $u, $r, $u] @ HalfCircle[{0,0}, {1, 0}],
   "RightHalfDisk"      -> bound[$r, $u, $r, $u] @ HalfDisk[{0,0}, {1, 0}],
   "BoldRightArrow"     -> bound[$u, $rbaH, $u, $z] @ Polygon @ $boldRightArrow
@@ -451,7 +451,7 @@ setRightAligned[name_ -> bounded[curve_, {bx_, by_, {_, bb2_}}]] :=
 $namedIconData := $namedIconData = createIconData[];
 
 (* NOTE: make sure to update $knownIconNames with the keys from this lazy table so that autocomplete is correct *)
-createIconData[] := MapIndex1[makeIconData, DeleteCases[None | bounded[None, ___]] @ Assoc[
+createIconData[] := MapIndex1[makeIconData, Decases[None | bounded[None, ___]] @ Assoc[
 
   $arrowIcons,
 
@@ -491,6 +491,6 @@ NamedIconData[] returns a list of icon names.
 NamedIconData[] := Keys @ $namedIconData;
 NamedIconData[All] := $namedIconData;
 
-NamedIconData[name_Str] /; StringContainsQ[name, "*"] := Select[NamedIconData[], StringMatchQ[name]];
+NamedIconData[name_Str] /; SContainsQ[name, "*"] := Select[NamedIconData[], SMatchQ[name]];
 NamedIconData[name_Str] := LookupOrMessageKeys[$namedIconData, name, $Failed, NamedIcon::unknownIcon];
 

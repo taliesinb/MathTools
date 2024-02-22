@@ -12,20 +12,20 @@ LegendForm[lf_LegendForm] := lf;
 declareFormatting[
   LegendForm[list_List] :> Row[Map[LegendForm, list], Spacer[5]],
   LegendForm[assoc_Assoc] :> Grid[
-    Transpose @ KeyValueMap[{LegendForm[#2], LabelForm[#1, Bold]}&, assoc],
+    Transpose @ KVMap[{LegendForm[#2], LabelForm[#1, Bold]}&, assoc],
     Spacings -> {{0.2, {1.2}}, {{0.5}}}
   ],
   LegendForm[e_] :> e
 ];
 
 (* fix a bug in mathematica *)
-DownValues[WrappersDump`makeLabeledCore] = ReplaceAll[DownValues[WrappersDump`makeLabeledCore], "SkipImageSizeLevel" -> "ZSkipImageSizeLevel"];
+DownValues[WrappersDump`makeLabeledCore] = RepAll[DownValues[WrappersDump`makeLabeledCore], "SkipImageSizeLevel" -> "ZSkipImageSizeLevel"];
 
 (**************************************************************************************************)
 
 PrivateFunction[ApplyLegend]
 
-ApplyLegend[expr_, None | Automatic | {}] :=
+ApplyLegend[expr_, None | Auto | {}] :=
   expr;
 
 ApplyLegend[expr_, item_] :=

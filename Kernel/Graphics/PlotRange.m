@@ -75,7 +75,7 @@ iGraphicsPlotRange = Case[
   g:(_Graphics | _Graphics3D) := Scope[
     plotRange = LookupOption[g, PlotRange];
     If[!CoordinateMatrixQ[plotRange],
-      plotRange = PrimitiveBoxesBounds @ First @ ToBoxes @ g];
+      plotRange = PrimitiveBoxesBounds @ F @ ToBoxes @ g];
     padRange[g, plotRange]
   ];
   g_FixedGraphics := Scope[
@@ -87,13 +87,13 @@ iGraphicsPlotRange = Case[
   g:(_GraphicsBox | _Graphics3DBox) := Scope[
     plotRange = LookupOption[g, PlotRange];
     If[!CoordinateMatrixQ[plotRange],
-      plotRange = PrimitiveBoxesBounds @ First @ g];
+      plotRange = PrimitiveBoxesBounds @ F @ g];
     padRange[g, plotRange]
   ];
   g_Graph := padRange[g,
-    Replace[
+    Rep[
       LookupOption[g, PlotRange],
-      Automatic | None | All :> (
+      Auto | None | All :> (
         CoordinateBounds @ Values @ LookupVertexCoordinates @ g
       )
     ]
@@ -103,7 +103,7 @@ iGraphicsPlotRange = Case[
 ];
 
 padRange[g_, plotRange_] :=
-  PlotRangePad[plotRange, Replace[plotRangePadding, Inherited :> LookupOption[g, PlotRangePadding]]];
+  PlotRangePad[plotRange, Rep[plotRangePadding, Inherited :> LookupOption[g, PlotRangePadding]]];
 
 (**************************************************************************************************)
 
@@ -117,7 +117,7 @@ PlotRangePad[range$, padding$] expands the plot range range$ by the amount paddi
 PlotRangePad[range_, None | 0 | 0.] :=
   range;
 
-PlotRangePad[range_, Automatic] :=
+PlotRangePad[range_, Auto] :=
   PlotRangePad[range, Scaled[0.02]];
 
 PlotRangePad[range_, Scaled[s_]] :=
@@ -133,7 +133,7 @@ PlotRangePad[range_, padding_List] :=
 expandRange[ab_, None|0|0.] :=
   ab;
 
-expandRange[ab_, Automatic] :=
+expandRange[ab_, Auto] :=
   expandRange[ab, Scaled[0.02]];
 
 expandRange[{a_, b_}, dx_] :=

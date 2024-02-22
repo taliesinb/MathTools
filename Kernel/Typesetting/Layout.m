@@ -46,7 +46,7 @@ DefineStandardTraditionalForm[{
 PublicTypesettingForm[FramedForm]
 
 DefineStandardTraditionalForm[{
-  FramedForm[e_] :> framedBoxes[e, Automatic],
+  FramedForm[e_] :> framedBoxes[e, Auto],
   FramedForm[e_, col_] :> framedBoxes[e, col]
 }]
 
@@ -90,8 +90,8 @@ $srColumnRow = False;
 Options[SpacedRow] = {
   Spacings -> ($srSpacings = 20),
   RowSpacings -> ($srRowSpacings = 5),
-  MaxItems -> ($srMaxItems = Infinity),
-  MaxWidth -> ($srMaxWidth = Infinity),
+  MaxItems -> ($srMaxItems = Inf),
+  MaxWidth -> ($srMaxWidth = Inf),
   LabelStyle -> ($srLabelStyle = $LabelStyle),
   BaseStyle -> ($srBaseStyle = {}),
   ItemStyle -> ($srItemStyle = {}),
@@ -101,13 +101,13 @@ Options[SpacedRow] = {
   Transposed -> ($srTransposed = False),
   IndexTooltip -> ($srIndexTooltip = False),
   Alignment -> ($srAlignment = Center),
-  LabelPosition -> ($srLabelPosition = Automatic),
+  LabelPosition -> ($srLabelPosition = Auto),
   ForceGrid -> ($srForceGrid = False),
   RiffleItem -> ($srRiffleItem = None),
   FontSize -> ($srLabelFontSize = 15),
   SpliceForms -> ($srSpliceForms = True),
   ClickFunction -> ($srClickFunction = None),
-  Background -> ($srBackground = Automatic)
+  Background -> ($srBackground = Auto)
 };
 
 (* this is because i don't trust OptionsPattern to not capture rules used as label specs.
@@ -141,11 +141,11 @@ SpacedRow[labels_List -> items_List] /; SameLengthQ[labels, items] :=
   SpacedRow[RuleThread[labels, items]];
 
 SpacedRow[elems__] := Scope[
-  items = DeleteCases[Null] @ Flatten @ {elems};
+  items = Decases[Null] @ Flatten @ {elems};
   If[$srSpliceForms, items //= Map[procInlineForms]];
   items = canonicalizeItem /@ Take[items, UpTo @ $srMaxItems];
   If[$srRiffleItem =!= None, items = Riffle[items, $srRiffleItem]];
-  If[$srColumnRow && Len[items] > (maxWidth = Replace[$srMaxWidth, Infinity -> 4]),
+  If[$srColumnRow && Len[items] > (maxWidth = Rep[$srMaxWidth, Inf -> 4]),
     Return @ SpacedColumn[
       Map[SpacedRow, Partition[items, UpTo[maxWidth]]],
       Spacings -> $srRowSpacings
@@ -153,7 +153,7 @@ SpacedRow[elems__] := Scope[
   ];
   If[$srIndexTooltip, items //= MapIndex1[NiceTooltip]];
   hasLabels = MemberQ[items, _Labeled];
-  tooLong = IntegerQ[$srMaxWidth] && Len[items] > $srMaxWidth;
+  tooLong = IntQ[$srMaxWidth] && Len[items] > $srMaxWidth;
   alignment = $srAlignment;
   If[!ListQ[alignment], alignment = {alignment, alignment}];
   rowSpacings = $srRowSpacings / 10;
@@ -224,7 +224,7 @@ SpacedRow[elems__] := Scope[
 ];
 
 procInlineForms = Case[
-  (head_Symbol)[args___] /; KeyExistsQ[$infixFormCharacters, head] :=
+  (head_Symbol)[args___] /; KeyQ[$infixFormCharacters, head] :=
     Splice @ Riffle[{args}, LargeSymbolForm @ $infixFormCharacters @ head];
 
   other_ := other;
@@ -313,7 +313,7 @@ PublicFunction[Gallery]
 
 Options[Gallery] = {
   ImageSize -> 1000,
-  Spacings -> Automatic
+  Spacings -> Auto
 };
 
 Gallery[elems_, OptionsPattern[]] := Scope[
@@ -322,7 +322,7 @@ Gallery[elems_, OptionsPattern[]] := Scope[
   elems = Flatten @ List @ elems;
   n = Len[elems];
   elems = Map[graphToGraphics, elems];
-  size = estimateItemSize @ P1 @ elems;
+  size = estimateItemSize @ F @ elems;
   If[n > 16,
     m = Floor[N[w / size]],
     m = SelectFirst[{10, 9, 8, 7, 6, 5, 4, 3, 2, 2}, Divisible[n, #] && (size * #) < w&, Floor[N[w / size]]];
@@ -335,7 +335,7 @@ Gallery[elems_, OptionsPattern[]] := Scope[
 ];
 
 attachEventHandlers[elems_] := MapIndexed[
-  ClickForm[#, Print[P1 @ #2]]&,
+  ClickForm[#, Print[F @ #2]]&,
   elems
 ];
 
@@ -343,11 +343,11 @@ graphToGraphics[Labeled[g_, x_]] := Labeled[graphToGraphics @ g, x];
 graphToGraphics[g_Graph] := ExtendedGraphPlot @ g;
 graphToGraphics[e_] := e;
 
-lookupImageWidth[g_] := P1 @ LookupImageSize @ g;
+lookupImageWidth[g_] := F @ LookupImageSize @ g;
 
 estimateItemSize = Case[
   g_Graphics | g_Graphics3D := lookupImageWidth[g];
   Labeled[g_, _]            := %[g];
   Legended[g_, _]           := %[g] + 50;
-  other_                    := First[Rasterize[other, "RasterSize"]] * 2;
+  other_                    := F[Rasterize[other, "RasterSize"]] * 2;
 ];

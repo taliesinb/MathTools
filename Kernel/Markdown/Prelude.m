@@ -3,8 +3,8 @@ PublicVariable[$KatexPrelude]
 $KatexPrelude := computeKatexPrelude[];
 
 computeKatexPrelude[] := Scope[
-  defs = KeyValueMap[toKatexMacroDefinition, $katexMacros];
-  StringRiffle[defs, "  "]
+  defs = KVMap[toKatexMacroDefinition, $katexMacros];
+  SRiffle[defs, "  "]
 ];
 
 toSlotStr = <|1 -> "#1", 2 -> "#2", 3 -> "#3", 4 -> "#4", 5 -> "#5"|>
@@ -16,9 +16,9 @@ toKatexMacroDefinition[name_, func_] := Scope[
   maxSlot = Max[0, DeepCases[func, Slot[i_Int] :> i]];
   slotStrs = toSlotStr /@ Range[maxSlot];
   eval = Check[boxesToKatexString[func @@ slotStrs], $Failed];
-  If[!StringQ[eval],
+  If[!StrQ[eval],
     Message[EmitKatexFunctionDefinitions::badfunc, func, name],
-    $katexMacroDefinitionTemplate[name, StringJoin @ slotStrs, eval]
+    $katexMacroDefinitionTemplate[name, SJoin @ slotStrs, eval]
   ]
 ]
   
@@ -30,18 +30,18 @@ PublicFunction[LookupKatexMacro, LookupKatexDisplayFunction, LookupNotebookDispl
 
 LookupKatexMacro := Case[
   None        := None;
-  sym_Symbol  := Replace["" -> None] @ StringRiffle[DeleteNone @ Map[%, Lookup[$symbolToKatexMacroName, sym, {}]], "\n"];
+  sym_Symbol  := Rep["" -> None] @ SRiffle[DeleteNone @ Map[%, Lookup[$symbolToKatexMacroName, sym, {}]], "\n"];
   name_Str := toKatexMacroDefinition[name, Lookup[$katexMacros, name, None]];
 ];
 
 LookupKatexDisplayFunction := Case[
   None        := None;
-  sym_Symbol  := DeleteNone @ AssociationMap[%, Lookup[$symbolToTemplateName, sym, {}]];
+  sym_Symbol  := DeleteNone @ AssocMap[%, Lookup[$symbolToTemplateName, sym, {}]];
   name_Str := Lookup[$katexDisplayFunction, name, None];
 ];
 
 LookupNotebookDisplayFunction := Case[
   None        := None;
-  sym_Symbol  := DeleteNone @ AssociationMap[%, Lookup[$symbolToTemplateName, sym, {}]];
+  sym_Symbol  := DeleteNone @ AssocMap[%, Lookup[$symbolToTemplateName, sym, {}]];
   name_Str := Lookup[$notebookDisplayFunction, name, None];
 ];

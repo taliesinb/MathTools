@@ -16,7 +16,7 @@ ImageSizePad[imageSize_, paddingSpec_] := Scope[
 
 processPadding[head_, paddingSpec_] := Scope[
   padding = Ceiling @ StandardizePadding @ paddingSpec;
-  If[RealMatrixQ[padding] && Dimensions[padding] === {2, 2},
+  If[RealMatrixQ[padding] && Dims[padding] === {2, 2},
     padding,
     ReturnFailed[MessageName[head, "badpadding"], paddingSpec]
   ]

@@ -27,8 +27,8 @@ MultisetDynamics[rules_, init_, T_] := Scope[
   states = BagPart[states, All];
   times = BagPart[times, All];
   densities = BagPart[densities, All];
-  If[MatchQ[Dimensions[states], {_, 1}], states = Flatten[states]];
-  metadata = {"EventDensities" -> densities, "InitialEventDensity" -> P1[densities], "TimePeriod" -> T};
+  If[MatchQ[Dims[states], {_, 1}], states = Flatten[states]];
+  metadata = {"EventDensities" -> densities, "InitialEventDensity" -> F[densities], "TimePeriod" -> T};
   TimeSeries[states, {times}, MetaInformation -> metadata]
 ]
 
@@ -39,7 +39,7 @@ PublicFunction[MultisetDynamicsEnsemble]
 MultisetDynamicsEnsemble[rules_, init_, t_, n_] := Scope[
   series = Table[MultisetDynamics[rules, init, t], {n}];
   TemporalData[series, MetaInformation -> {
-    "InitialEventDensity" -> P1[series]["InitialEventDensity"],
+    "InitialEventDensity" -> F[series]["InitialEventDensity"],
     "TimePeriod" -> T
   }
 ]];
@@ -113,16 +113,16 @@ PublicFunction[TemporalDataQuantilePlot]
 TemporalDataQuantilePlot[tdata_, loglog_:None] := Scope[
   dims = tdata["ValueDimensions"];
   If[!MatchQ[dims, {_, 11} | 11], Return[$Failed]];
-  components = If[Len[dims] == 2, P1[dims], None];
+  components = If[Len[dims] == 2, F[dims], None];
   values = tdata["ValueList"];
-  If[components =!= None, values = Transpose @ P1 @ values];
-  times = P1 @ tdata["TimeList"];
+  If[components =!= None, values = Transpose @ F @ values];
+  times = F @ tdata["TimeList"];
   max = Max[values];
   {xlog, ylog} = xylog = Switch[loglog, None, {False, False}, "X", {True, False}, "Y", {False, True}, "XY", {True, True}];
   plots = MapIndexed[
-    quantileListPlot[times, #, Part[$NormalColorPalette, P1[#2]], xylog]&,
+    quantileListPlot[times, #, Part[$NormalColorPalette, F[#2]], xylog]&,
     values
   ];
-  If[components === None, Return @ P1 @ plots];
+  If[components === None, Return @ F @ plots];
   Show[plots, Frame -> True, PlotRange -> All]
 ];

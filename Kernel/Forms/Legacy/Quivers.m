@@ -26,7 +26,7 @@ declareBindingForm[form_, katexName_, argBoxFn_] := With[
   declareBoxFormatting[
     form[first_, args__] :>
       TemplateBox[
-        Prepend[
+        Pre[
           MapUnevaluated[argBoxFn, {args}],
           ToBoxes @ first
         ],
@@ -142,10 +142,10 @@ DefineUnaryForm[MirrorForm, "?"]
 
 declareNamedQuiverSymbol[symbol_] := With[
   {symbolName = SymbolName[symbol]},
-  {katexName = LowerCaseFirst @ StringTrim[symbolName, "Symbol"]},
+  {katexName = LowerCaseFirst @ STrim[symbolName, "Symbol"]},
   declareBoxFormatting[
     symbol :> SBox[symbolName],
-    symbol[] :> MakeBoxes @ symbol @ Infinity,
+    symbol[] :> MakeBoxes @ symbol @ Inf,
     symbol[size_] :> MakeBoxes @ SubSizeBindingForm[symbol, size],
     symbol[size_Rule] :> MakeBoxes @ CardinalSizeBindingForm[symbol, size],
     symbol[size__] | symbol[TupleForm[size__]] :> MakeBoxes @ CardinalSizeBindingForm[symbol, size],
@@ -158,7 +158,7 @@ declareTwoParameterNamedQuiverSymbol[symbol_] := With[
   {symbolName = SymbolName[symbol]},
   {formName = symbolName <> "Form"},
   {compactFormName = "Compact" <> symbolName <> "Form"},
-  {katexName = LowerCaseFirst @ StringTrim[symbolName, "Symbol"]},
+  {katexName = LowerCaseFirst @ STrim[symbolName, "Symbol"]},
   declareBoxFormatting[
     symbol[k_] :> makeTemplateBox[k, formName],
     symbol[k_, size_] :> makeHintedTemplateBox[k, size -> QuiverSizeSymbol, compactFormName],
@@ -216,7 +216,7 @@ PublicTypesettingForm[QuiverSizeSymbol]
 declareBoxFormatting[
   QuiverSizeSymbol[Null] :> "",
   QuiverSizeSymbol[n_Int] :> MakeBoxes @ n,
-  QuiverSizeSymbol[Infinity] :> "\[Infinity]",
+  QuiverSizeSymbol[Inf] :> "\[Infinity]",
   QuiverSizeSymbol[Modulo[n_]] :> MakeBoxes @ ModuloForm @ n,
   QuiverSizeSymbol[other_] :> MakeMathBoxes @ other
 ]
@@ -236,7 +236,7 @@ declareNamedBindingSymbol[symbol_] := With[
     symbol[dim_] :> makeHintedTemplateBox[dim -> rawSymbolBoxes, formName],
     q_symbol[cards__] :> MakeBoxes @ CardinalSizeBindingForm[q, cards]
   ];
-  $TemplateKatexFunction[formName] = LowerCaseFirst @ StringTrim[symbolName, "Symbol"];
+  $TemplateKatexFunction[formName] = LowerCaseFirst @ STrim[symbolName, "Symbol"];
 ]
 
 (**************************************************************************************************)

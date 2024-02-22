@@ -36,7 +36,7 @@ lblString[0.|0] := "0";
 lblString[e_] := Scope[
 	col = If[Negative[e], $Red, $Blue];
 	str = TextString @ Abs @ e;
-	str //= StringReplace[StartOfString ~~ "0." -> "."];
+	str //= SRep[StartOfString ~~ "0." -> "."];
 	str //= StringTrimRight["0"];
 	str //= StringTrimRight["."];
 	StyleBox[str, col]
@@ -61,9 +61,9 @@ gridLine[{l_, h_}] := Scope[
 	];
 	boxes = {$glf[range, 0], labels}; d = 0;
 	While[(dx /= If[d >= 2, 5, 10]) >= $cutoff && (d++ < 2),
-		range = Complement[$sel @ Range[l, h, dx], range];
-		AppendTo[boxes, $glf[range, d]];
+		range = Comp[$sel @ Range[l, h, dx], range];
+		AppTo[boxes, $glf[range, d]];
 	];
-	If[d == 0, boxes //= ReplaceAll[_GrayLevel :> Part[$colors, 2]]];
+	If[d == 0, boxes //= RepAll[_GrayLevel :> Part[$colors, 2]]];
 	boxes
 ];

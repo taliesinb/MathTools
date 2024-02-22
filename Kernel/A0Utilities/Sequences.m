@@ -11,7 +11,7 @@ SeqLength[]        := 0;
 SeqLength[_]       := 1;
 SeqLength[_, _]    := 2;
 SeqLength[_, _, _] := 3;
-s_SeqLength        := Len[Unevaluated @ s];
+s_SeqLength        := Len[Uneval @ s];
 
 (**************************************************************************************************)
 
@@ -23,7 +23,7 @@ HoldSeqLength[]        := 0;
 HoldSeqLength[_]       := 1;
 HoldSeqLength[_, _]    := 2;
 HoldSeqLength[_, _, _] := 3;
-s_HoldSeqLength        := Len[Unevaluated @ s];
+s_HoldSeqLength        := Len[Uneval @ s];
 
 (**************************************************************************************************)
 
@@ -69,7 +69,7 @@ SetUsage @ "
 FirstRest[list$] gives the pair {%First[list$], %Rest[list$]}.
 "
 
-FirstRest[list_] := {P1 @ list, Rest @ list};
+FirstRest[list_] := {F @ list, Rest @ list};
 
 (**************************************************************************************************)
 
@@ -79,7 +79,7 @@ SetUsage @ "
 FirstLast[list$] gives the pair {%First[list$], %Last[list$]}.
 "
 
-FirstLast[list_] := {P1 @ list, PN @ list};
+FirstLast[list_] := {F @ list, L @ list};
 
 (**************************************************************************************************)
 
@@ -89,26 +89,26 @@ SetUsage @ "
 MostLast[list$] gives the pair {%Most[list$], %Last[list$]}.
 "
 
-MostLast[list_] := {Most @ list, PN @ list};
+MostLast[list_] := {Most @ list, L @ list};
 
 (**************************************************************************************************)
 
 PublicFunction[AppendFirst]
 
 AppendFirst[{}] := {};
-AppendFirst[list_] := Append[list, P1 @ list];
+AppendFirst[list_] := App[list, F @ list];
 
 PublicFunction[PrependLast]
 
 PrependLast[{}] := {};
-PrependLast[list_] := Prepend[list, PN @ list];
+PrependLast[list_] := Pre[list, L @ list];
 
 (**************************************************************************************************)
 
 PublicFunction[PrependAppend]
 
 PrependAppend[{}, a_, b_] := {a, b};
-PrependAppend[list_, a_, b_] := Append[Prepend[list, a], b];
+PrependAppend[list_, a_, b_] := App[Pre[list, a], b];
 PrependAppend[a_, b_][list_] := PrependAppend[list, a, b];
 
 (**************************************************************************************************)
@@ -127,7 +127,7 @@ PublicFunction[CommonPrefix, CommonPrefixLength]
 
 CommonPrefix[{}] := None;
 CommonPrefix[{e_}] := e;
-CommonPrefix[e_List] := Take[P1 @ e, CommonPrefixLength[e]];
+CommonPrefix[e_List] := Take[F @ e, CommonPrefixLength[e]];
 
 CommonPrefixLength[{}] := 0;
 CommonPrefixLength[{e_}] := Len @ e;
@@ -146,7 +146,7 @@ PublicFunction[CommonSuffix, CommonSuffixLength]
 
 CommonSuffix[{}] := None;
 CommonSuffix[{e_}] := e;
-CommonSuffix[e_List] := Take[P1 @ e, -CommonSuffixLength[e]];
+CommonSuffix[e_List] := Take[F @ e, -CommonSuffixLength[e]];
 
 CommonSuffixLength[{}] := 0;
 CommonSuffixLength[{e_}] := Len @ e;
@@ -167,7 +167,7 @@ SetUsage @ "
 DeleteNull[list$] removes any elements that are Null from list$.
 "
 
-DeleteNull[e_] := DeleteCases[e, Null];
+DeleteNull[e_] := Decases[e, Null];
 
 (**************************************************************************************************)
 
@@ -192,14 +192,14 @@ SequenceDrop[r_][seq___] := Sequence @@ Drop[{seq}, r];
 PublicFunction[ReplaceInSequence]
 
 ReplaceInSequence[_][] := Sequence[];
-ReplaceInSequence[rule_][seq___] := Sequence @@ Replace[{seq}, rule, {1}];
+ReplaceInSequence[rule_][seq___] := Sequence @@ Rep[{seq}, rule, {1}];
 
 (**************************************************************************************************)
 
 PublicFunction[DeleteDuplicateOptionKeys]
 
 DeleteDuplicateOptionKeys[] := Sequence[];
-DeleteDuplicateOptionKeys[seq___] := Sequence @@ DeleteDuplicatesBy[{seq}, P1 /* toStringKey];
+DeleteDuplicateOptionKeys[seq___] := Sequence @@ DedupBy[{seq}, F /* toStringKey];
 
 toStringKey = Case[
   s_Symbol := SymbolName[s];

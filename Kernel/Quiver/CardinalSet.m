@@ -25,11 +25,11 @@ SimplifyCardinalSet = Case[
 
 PrivateFunction[SpliceCardinalSets]
 
-SpliceCardinalSets[e_] := Map[StripInverted, ReplaceAll[e, CardinalSet -> Splice]];
+SpliceCardinalSets[e_] := Map[StripInverted, RepAll[e, CardinalSet -> Splice]];
 
 (**************************************************************************************************)
 
 PrivateFunction[SpliceCardinalSetEdges]
 
-SpliceCardinalSetEdges[e_] := ReplaceAll[e, DirectedEdge[a_, b_, CardinalSet[s_]] :> Splice[DirectedEdge[a, b, #]& /@ s]];
+SpliceCardinalSetEdges[e_] := RepAll[e, DirectedEdge[a_, b_, CardinalSet[s_]] :> Splice[DirectedEdge[a, b, #]& /@ s]];
 

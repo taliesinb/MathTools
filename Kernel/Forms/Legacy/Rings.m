@@ -52,12 +52,12 @@ declareRingForm[list_List] :=
 
 restCommaRiffled[name_][first_, rest__] := name[first, riffled[","][rest]]
 
-declareDerivedRingForm[symbol_Symbol, type_:Automatic] := With[
+declareDerivedRingForm[symbol_Symbol, type_:Auto] := With[
   {name = SymbolName @ symbol},
-  {katex = LowerCaseFirst @ StringTrim[name, "Form"]},
+  {katex = LowerCaseFirst @ STrim[name, "Form"]},
   declareBoxFormatting[
     symbol[ring_, args___] :> TemplateBox[
-      Prepend[toHintedSymbol[ring -> RingSymbol]] @
+      Pre[toHintedSymbol[ring -> RingSymbol]] @
         MapUnevaluated[toHintedSymbol[# -> type]&, {args}],
       name
     ]

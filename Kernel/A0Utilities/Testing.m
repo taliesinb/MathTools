@@ -30,7 +30,7 @@ PublicOption[TestContentsPattern]
 Options[RunTests] = {
   Verbose -> False,
   DryRun -> False,
-  MaxItems -> Infinity,
+  MaxItems -> Inf,
   TestContentsPattern -> None,
   ReplaceExisting -> False
 };
@@ -40,9 +40,9 @@ RunTests::notests = "No test files present in `` match ``.";
 
 $testsInPath := $testsInPath = LocalPath["Tests", "Inputs"];
 $testsOutPath := $testsOutPath = LocalPath["Tests", "Outputs"];
-testRelPath[s_] := StringDrop[s, StringLength[$testsInPath] + 1];
+testRelPath[s_] := SDrop[s, SLen[$testsInPath] + 1];
 
-declareFunctionAutocomplete[RunTests, {testRelPath @ FileNames["*.wl", $testsInPath, Infinity]}];
+declareFunctionAutocomplete[RunTests, {testRelPath @ FileNames["*.wl", $testsInPath, Inf]}];
 
 RunTests[filePattern_Str:All, OptionsPattern[]] := Scope[
 
@@ -66,12 +66,12 @@ RunTests[filePattern_Str:All, OptionsPattern[]] := Scope[
   clearTestContext[];
 
   shortFiles = StringTrimLeft[testFiles, $testsInPath <> $PathnameSeparator];
-  If[!$Notebooks, Print[]; Print["Results:"]; MapThread[printFileInfo, {StringPadRight[shortFiles, 25], fileResults}]];
-  AssociationThread[shortFiles, fileResults]
+  If[!$Notebooks, Print[]; Print["Results:"]; MapThread[printFileInfo, {SPadRight[shortFiles, 25], fileResults}]];
+  AssocThread[shortFiles, fileResults]
 ];
 
-printFileInfo[file_, {i_, n_}] := Print[file, IntegerString[i, 10, 3], " passed\t", IntegerString[n, 10, 3], " failed"];
-printFileInfo[file_, {i_, 0}] := Print[file, IntegerString[i, 10, 3], " passed"];
+printFileInfo[file_, {i_, n_}] := Print[file, IntStr[i, 10, 3], " passed\t", IntStr[n, 10, 3], " failed"];
+printFileInfo[file_, {i_, 0}] := Print[file, IntStr[i, 10, 3], " passed"];
 printFileInfo[file_, $Failed] := Print[file, "encountered errors"];
 printFileInfo[file_, None] := Print[file, "skipped"];
 
@@ -79,7 +79,7 @@ printFileInfo[file_, None] := Print[file, "skipped"];
 
 findTestFiles[pattern_] := Scope[
   If[!DirectoryQ[$testsInPath], ReturnFailed["noindir", $testsInPath]];
-  FileNames[If[pattern === All, "*.wl", pattern], $testsInPath, Infinity]
+  FileNames[If[pattern === All, "*.wl", pattern], $testsInPath, Inf]
 ];
 
 (**************************************************************************************************)
@@ -127,7 +127,7 @@ runFileTest[inputPath_, outDir_] := Scope[
   If[$userAbort === True, VMessage[RunTests::userAbort]; ReturnFailed[]];
   If[$numMessages > 0, VMessage[RunTests::someMessages, msgPath, $numMessages]; ReturnFailed[]];
 
-  If[newCount =!= oldCount && !IntegerQ[$maxItems] && $numSkipped == 0,
+  If[newCount =!= oldCount && !IntQ[$maxItems] && $numSkipped == 0,
     minCount = Min[newCount, oldCount];
     If[Part[newOutputs, 1;;minCount, 3] === Part[oldOutputs, 1;;minCount, 3],
       VPrint["Expected outputs ", newCount, " =!= actual outputs ", oldCount, ", but overlap matches; updating outputs."];
@@ -192,10 +192,10 @@ evalExpressionsJoint[inputs_, outputs_] := Block[
       updateProg[count, ilen];
       If[compareOutputs[count, iExpr, oExpr],
         If[$verbose, VPrint["Test passed."]]]];
-    AppendTo[newOutputs, iExpr];
+    AppTo[newOutputs, iExpr];
   ];
   unprintTemp[];
-  DeleteCases[newOutputs, EndOfFile]
+  Decases[newOutputs, EndOfFile]
 ];
 
 (**************************************************************************************************)
@@ -281,22 +281,22 @@ TestOutputGallery['patt$'] finds and prints are objects like %TestRasterObject e
 "
 
 $testHeads = {TestRasterObject, TestBoxesObject, TestDataObject, TestMarkdownObject};
-$testObjectP = Alternatives @@ Map[Blank, $testHeads];
+$testObjectP = Alt @@ Map[Blank, $testHeads];
 
 TestOutputGallery::lenMismatch = "Cannot match inputs from file(s) `` with expected outputs from (``)."
 TestOutputGallery[string_Str] := Scope[
   inputFiles = findTestFiles[string];
   If[inputFiles === {}, ReturnFailed[]];
-  outputFiles = StringReplace[inputFiles, $testsInPath -> $testsOutPath];
+  outputFiles = SRep[inputFiles, $testsInPath -> $testsOutPath];
   inputExprs = Flatten[readExpressionList /@ inputFiles];
-  inputExprs //= DeleteCases[ExpressionAt[_, _, Hold[CompoundExpression[___, Null]]]];
+  inputExprs //= Decases[ExpressionAt[_, _, Hold[CompoundExpression[___, Null]]]];
   outputExprs = Flatten[readExpressionList /@ outputFiles];
   If[MemberQ[inputExprs, $Failed] || MemberQ[outputExprs, $Failed], ReturnFailed[]];
   If[Len[inputExprs] =!= Len[outputExprs],
     Message[TestOutputGallery::lenMismatch, MsgPath /@ inputFiles, MsgPath /@ outputFiles];
     ReturnFailed[];
   ];
-  exprs = MapThread[ReplacePart[#1, 3 -> Part[#2, 3]]&, {inputExprs, outputExprs}];
+  exprs = MapThread[RepPart[#1, 3 -> Part[#2, 3]]&, {inputExprs, outputExprs}];
   TestOutputGallery @ exprs
 ];
 
@@ -366,21 +366,21 @@ writeExpressionList[path_, list_] := withOutputTestContext @ Block[
   {str, msgPath = MsgPath @ path},
   VPrint["Writing ", Len @ list, " expressions to ", msgPath];
   If[$dryRun, Return[]];
-  str = StringRiffle[Map[toOutString, list], "\n\n"];
-  If[StringContainsQ[str, "TestHarness"], VMessage[RunTests::symbolLeak, msgPath]; Return @ $Failed];
+  str = SRiffle[Map[toOutString, list], "\n\n"];
+  If[SContainsQ[str, "TestHarness"], VMessage[RunTests::symbolLeak, msgPath]; Return @ $Failed];
   If[FailureQ @ ExportUTF8[path, str], VMessage[RunTests::writeFail, Len @ list, msgPath]];
 ];
 
 toOutString = Case[
-  ExpressionAt[_, _, Hold[s_Str]] := StringReplace[ToString[s, InputForm], "\\n" -> "\n"];
-  ExpressionAt[_, _, Hold[e_]]       := ToPrettifiedString[e, MaxIndent -> 4, CompactingWidth -> Infinity];
+  ExpressionAt[_, _, Hold[s_Str]] := SRep[ToString[s, InputForm], "\\n" -> "\n"];
+  ExpressionAt[_, _, Hold[e_]]       := ToPrettifiedString[e, MaxIndent -> 4, CompactingWidth -> Inf];
 ];
 
 (**************************************************************************************************)
 
 updateExpression[outPath_, outPos_, n_, newExpr_] := Scope[
   oldOutputs = withTestContext @ ReadList[outPath, Hold[Expression]];
-  newOutputs = ReplacePart[oldOutputs, n -> newExpr];
+  newOutputs = RepPart[oldOutputs, n -> newExpr];
   fileLine = calcFileLine[outPath, outPos];
   Print["Updating expression #", n, " at ", fileLine];
   newExprs = ExpressionAt[0, 0, #]& /@ newOutputs;
@@ -395,7 +395,7 @@ calcFileLine[file_Str, pos_Int] := Scope[
     CacheTo[$fileContents, file, ReadString @ file],
     ReadString @ file
   ];
-  line = StringCount[StringTake[contents, UpTo[pos + 1]], "\n"] + 1;
+  line = StringCount[STake[contents, UpTo[pos + 1]], "\n"] + 1;
   MsgPath[file, line]
 ]
 
@@ -453,7 +453,7 @@ compareOutputs[part_, ExpressionAt[inFile_, inPos_, newOutput_Hold], ExpressionA
   False
 )
 
-printRepStr[char_] := Print @ StringRepeat[char, 60];
+printRepStr[char_] := Print @ SRepeat[char, 60];
 
 printDiff[Hold[a_], Hold[b_]] :=
   Scan[printDiffItem[a, b], FindExpressionDifferences[a, b, MaxItems -> 5]];
@@ -509,15 +509,15 @@ makeInputCodeCell[file_, pos_] := Scope[
   chunk = contentChunk @ {pos + 1, pos2};
   If[depSpans =!= {},
     depChunks = contentChunk /@ depSpans;
-    chunk = StringJoin @ Riffle[Append[depChunks, chunk], "\n\n"];
+    chunk = SJoin @ Riffle[App[depChunks, chunk], "\n\n"];
   ];
-  chunk //= StringReplace[WordBoundary ~~ ("TestRaster"|"TestBoxes") ~~ WordBoundary -> "Identity"];
+  chunk //= SRep[WordBoundary ~~ ("TestRaster"|"TestBoxes") ~~ WordBoundary -> "Identity"];
   Cell[BoxData @ chunk, "Code"]
 ];
 
-contentChunk[span_] := StringTrim @ StringTake[$contents, span];
+contentChunk[span_] := STrim @ STake[$contents, span];
 
-findLocalSymbols[expr_] := Union @ DeepCases[expr, s_Symbol ? testSymbolQ :> HoldPattern[s]];
+findLocalSymbols[expr_] := Union @ DeepCases[expr, s_Symbol ? testSymbolQ :> HoldP[s]];
 
 findDependencySpans[stream_, expr_, stopPos_] := Scope[
 
@@ -525,7 +525,7 @@ findDependencySpans[stream_, expr_, stopPos_] := Scope[
   If[locals === {}, Return @ {}];
 
   Label[retry];
-  localSymP = Alternatives @@ locals;
+  localSymP = Alt @@ locals;
   newLocals = {}; spans = {};
   pos1 = pos2 = 0;
   SetStreamPosition[stream, 0];
@@ -534,9 +534,9 @@ findDependencySpans[stream_, expr_, stopPos_] := Scope[
     If[expr === EndOfFile, Break[]];
     pos1 = pos2; pos2 = StreamPosition @ stream;
     expr = expr /. _Pattern :> Null; (* don't want to pick up pattern symbols as locals *)
-    If[ContainsQ[expr, (Set|SetDelayed)[lhs_, rhs_] /; !FreeQ[Unevaluated @ lhs, localSymP]],
-      UnionTo[newLocals, Complement[findLocalSymbols @ expr, locals]];
-      AppendTo[spans, {pos1, pos2}]];
+    If[ContainsQ[expr, (Set|SetDelayed)[lhs_, rhs_] /; !FreeQ[Uneval @ lhs, localSymP]],
+      UnionTo[newLocals, Comp[findLocalSymbols @ expr, locals]];
+      AppTo[spans, {pos1, pos2}]];
   ];
   (* because we go from top to bottom, we might find a definition that depends on an earlier definition,
   so we expand the locals we depend on and try again *)
@@ -550,7 +550,7 @@ findDependencySpans[stream_, expr_, stopPos_] := Scope[
 
 (* we don't end execute LoadShortcuts so we'll get some spurious local symbols, but that's ok. *)
 SetHoldAllComplete[testSymbolQ];
-testSymbolQ[s_ ? HoldSymbolQ] := Context[s] === $testContext && StringLength[HoldSymbolName[s]] > 1;
+testSymbolQ[s_ ? HoldSymbolQ] := Context[s] === $testContext && SLen[HoldSymbolName[s]] > 1;
 
 (**************************************************************************************************)
 
@@ -585,8 +585,8 @@ makeDiffCells[Hold @ TestRasterObject[img1_, box1_], Hold @ TestRasterObject[img
     Cell["box values", "Subsubsection"],
     Cell[
       BoxData @ RBox[
-        RBox["$oldBoxes", " ", "=", " ", ToBoxes @ Iconize @ P1 @ boxes, ";"], "\n",
-        RBox["$newBoxes", " ", "=", " ", ToBoxes @ Iconize @ PN @ boxes, ";"]
+        RBox["$oldBoxes", " ", "=", " ", ToBoxes @ Iconize @ F @ boxes, ";"], "\n",
+        RBox["$newBoxes", " ", "=", " ", ToBoxes @ Iconize @ L @ boxes, ";"]
       ],
       "Code"
     ]
@@ -646,7 +646,7 @@ toValueIcon = Case[
   {objP -> $testObjectP}
 ];
 
-thumbnailize[e_] := ReplaceAll[e, i_Image ? HoldAtomQ :> RuleCondition @ toThumbnail[i]];
+thumbnailize[e_] := RepAll[e, i_Image ? HoldAtomQ :> RuleEval @ toThumbnail[i]];
 
 toThumbnail[i_] := Scope[
   {w, h} = ImageDimensions[i];
@@ -735,7 +735,7 @@ TestMarkdown[expr_] := TestMarkdownObject[
 
 declareBoxFormatting[
   TestMarkdownObject[name_String] :> ClickBox[
-    testObjFrame[$Green, limitWidth @ localPreformattedCodeBoxes @ StringReplace[$mdReplacements] @ readObject @ name],
+    testObjFrame[$Green, limitWidth @ localPreformattedCodeBoxes @ SRep[$mdReplacements] @ readObject @ name],
     openMsgPath[objectPath @ name, None]
   ]
 ];
@@ -768,8 +768,8 @@ toHugoString[cell_Cell] := Scope[
     MarkdownFlavor -> "Hugo",
     RasterizationPath -> $mdRasterPath
   ];
-  res //= StringDelete[$mdURLRasterPath];
-  If[StringContainsQ[res, "TestHarness"],
+  res //= SDelete[$mdURLRasterPath];
+  If[SContainsQ[res, "TestHarness"],
     VMessage[RunTests::symbolLeak, msgPath]; Return @ "LEAKAGE"];
   res
 ];
@@ -798,12 +798,12 @@ ConvertCurrentNotebookToTestNotebook[] := Scope[
       Part[cells, i-1] //= applyToFinalLine @ getAppropriateTestHead @ Part[cells, i, 1];
       Part[cells, i] = Null;
     ],
-    {i, 2, Length[cells]}
+    {i, 2, Len[cells]}
   ];
   cells //= Map[convertCellToTest];
   cells //= Discard[ContainsQ["ConvertCurrentNotebookToTestNotebook" | RasterBox]];
-  cells //= ReplaceAll[("GQG" | "RQG") -> "Null"];
-  PrependTo[cells, Cell["LoadShortcuts[\"Categories\"];", "Code"]];
+  cells //= RepAll[("GQG" | "RQG") -> "Null"];
+  PreTo[cells, Cell["LoadShortcuts[\"Categories\"];", "Code"]];
   CreateDocument[cells, StyleDefinitions -> "Package.nb"]
 ];
 
@@ -853,9 +853,9 @@ iApplyToFinalLine = Case[
 convertCellToMarkdownTest[cell_] := Scope[
   cell = Construct[InternalHoldForm, cell] /. {
     StyleBox[b_, FontColor :> CurrentValue[{StyleDefinitions, cname_String, FontColor}]] :>
-      RuleCondition @ $ColorNBox[b, FromDigits @ StringTake[cname, -1]],
+      RuleEval @ $ColorNBox[b, FromDigits @ STake[cname, -1]],
     StyleBox[b_, Background :> CurrentValue[{StyleDefinitions, cname_String, Background}]] :>
-      RuleCondition @ $BackgroundNBox[b, FromDigits @ StringTake[cname, -1]]
+      RuleEval @ $BackgroundNBox[b, FromDigits @ STake[cname, -1]]
   } /. {$ColorNBox -> ColorNBox, $BackgroundNBox -> BackgroundNBox};
   cell = cell //. RowBox[{a___}] :> RBox[a];
   "TestMarkdown @ " <> ToPrettifiedString[cell, CompactingWidth -> 200, FullSymbolContext -> False]

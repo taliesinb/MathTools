@@ -57,7 +57,7 @@ neatCurvePoints[NeatCurve[{a_, b_}, opts:OptionsPattern[NeatCurve]]] := Scope[
   SetNone[setback, 0];
   {setback1, setback2} = setback * {1, 1};
 
-  segment = Automatic;
+  segment = Auto;
 
   b //= N; a //= N;
   delta = b - a;
@@ -93,11 +93,11 @@ neatCurvePoints[NeatCurve[{a_, b_}, opts:OptionsPattern[NeatCurve]]] := Scope[
   snapped = applySnap[{a, b}, dir1, dir2, snap1, snap2];
   If[snapped =!= None, Return @ snapped];
 
-  If[segment === Automatic,
+  If[segment === Auto,
     ab = {a, a + dir1 * dist};
     ba = {b, b + dir2 * dist};
     m = InfiniteLineLineIntersectionPoint[ab, ba];
-    segment = If[m === None, If[P1[abs] < P2[abs], $hor, $ver], {m}];
+    segment = If[m === None, If[F[abs] < P2[abs], $hor, $ver], {m}];
   ];
 
   numBends = Switch[segment, $hor | $ver, 2, _, 1];
@@ -114,8 +114,8 @@ neatCurvePoints[NeatCurve[{a_, b_}, opts:OptionsPattern[NeatCurve]]] := Scope[
   mids = chooseMids[a, b, m, segment];
 
   If[shortcutRadius > 0,
-    as = PointAlongLine[{a, P1 @ mids}, shortcutRadius];
-    bs = PointAlongLine[{b, PN @ mids}, shortcutRadius];
+    as = PointAlongLine[{a, F @ mids}, shortcutRadius];
+    bs = PointAlongLine[{b, L @ mids}, shortcutRadius];
     bendRadius = ThreadMin[bendRadius, shortcutRadius];
     points = {a, as, bs, b};
   ,
@@ -123,7 +123,7 @@ neatCurvePoints[NeatCurve[{a_, b_}, opts:OptionsPattern[NeatCurve]]] := Scope[
     points = Join[{a}, mids, {b}];
   ];
 
-  If[origBendRadius === Infinity,
+  If[origBendRadius === Inf,
     Return @ DiscretizeCurve @ SmoothedCurve[points]];
 
   If[Max[bendRadius] > 0,
@@ -187,8 +187,8 @@ isH[{x_, y_}] := Abs[x] >= Abs[y];
 isV[{x_, y_}] := Abs[y] >= Abs[x];
 
 snapCoord[True,   True] = Mean; (* TODO: choose the narrow one to win *)
-snapCoord[True,  False] = PN;
-snapCoord[False,  True] = P1;
+snapCoord[True,  False] = L;
+snapCoord[False,  True] = F;
 snapCoord[False, False] = Id;
 
 (**************************************************************************************************)

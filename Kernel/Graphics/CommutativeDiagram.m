@@ -118,7 +118,7 @@ Options[CommutativeDiagram] = JoinOptions[
   DiagramScaling         -> {1, 1},
   GraphicsScale          -> 120,
   Alignment              -> Center,
-  Setback                -> Automatic,
+  Setback                -> Auto,
   AutoSetback            -> True,
   DebugBounds            -> False,
   LabelFontSize          -> Scaled[9/10],
@@ -132,7 +132,7 @@ Options[CommutativeDiagram] = JoinOptions[
   CloningFunction        -> None,
   DefaultMorphism        -> MorphismArrow,
   MorphismColors         -> None,
-  DiagramColorRules      -> Automatic,
+  DiagramColorRules      -> Auto,
   GradientSymbolOptions  -> {},
   $morphismArrowOptions
 ];
@@ -164,7 +164,7 @@ Scan[(CommutativeDiagram /: Normal[cd:#] := cdToPrimitives[cd])&, $cdPatterns];
 (**************************************************************************************************)
 
 cdToPrimitives[CommutativeDiagram[r:Rule[_List, _List], morphisms_List, opts___Rule]] :=
-  cdToPrimitives @ CommutativeDiagram[Prepend[morphisms, r], opts];
+  cdToPrimitives @ CommutativeDiagram[Pre[morphisms, r], opts];
 
 cdToPrimitives[CommutativeDiagram[objects_List, morphisms_List, opts___Rule]] :=
   cdToPrimitives @ CommutativeDiagram[Join[objects, morphisms], opts];
@@ -187,7 +187,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $objectCoordsList = {}; (* does not contain derived coordinates ($towardsCenter) *)
   $objects = $objectCoords = $objectSizes = $morphGradColors = UAssoc[];
 
-  $itemSize = Automatic;
+  $itemSize = Auto;
   $morphismNames = {};
   $morphismCurves = $cloneChildren = Assoc[];
   $inheritedOptions = opts;
@@ -243,7 +243,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   primitives = resolveCoordinates @ {objectPrimitives, morphismPrimitives};
 
   (* we apply resolveCoordinates again because Cloned produces a coordinate containing ObjectCoordinates[..] *)
-  $coordReplacement = Append[resolveCoordinates @ Normal @ $objectCoords, z_Str :> unresolvedCoord[z]];
+  $coordReplacement = App[resolveCoordinates @ Normal @ $objectCoords, z_Str :> unresolvedCoord[z]];
   primitives = ReplacePrimitiveCoordinates[primitives, $coordReplacement];
 
   arrowOpts = SeqDropOptions[{Setback, LabelFontSize, LabelFontSize, GraphicsScale, TextModifiers}] @ FilterOptions[MorphismArrow, opts];
@@ -308,7 +308,7 @@ CommutativeDiagram::badModifier = "Element `` of TextModifiers should be None, a
 
 toModifierFunction = Case[
   {} | None | Id         := Id;
-  rules:$RuleListPattern := UnburrowModifiers /* ReplaceAll[rules] /* BurrowModifiers;
+  rules:$RuleListPattern := UnburrowModifiers /* RepAll[rules] /* BurrowModifiers;
   list_List              := Composition @@ Map[%, Rev @ list];
   fn_                    := fn;
 ];
@@ -318,7 +318,7 @@ toModifierFunction = Case[
 $primitiveCanonicalizationRules = {
   cd_CommutativeDiagram :> cd,
   Rule[Setback, sb_] :>
-    RuleCondition @ Rule[Setback, toScaled[sb]],
+    RuleEval @ Rule[Setback, toScaled[sb]],
   Outwards :> AwayFrom[$biasedCenter],
   Inwards  :> Towards[$biasedCenter]
 };
@@ -332,7 +332,7 @@ toScaled = Case[
 
 CommutativeDiagram::unresolvedcoord = "Could not resolve symbolic coordinate ``, available are: ``.";
 unresolvedCoord[z_] := (
-  Message[CommutativeDiagram::unresolvedcoord, z, StringRiffle[$objectNames, ","]];
+  Message[CommutativeDiagram::unresolvedcoord, z, SRiffle[$objectNames, ","]];
   {2, -1.5}
 )
 
@@ -391,25 +391,25 @@ parseDiagramColorRules[e_, o_] := (
 parseDiagramColorRules2 = Case[
   {} | None            := Id;
   el:(_Rule | _Str) := % @ {el};
-  list_List            := ReplaceAll @ Map[toRecolorRule, list];
+  list_List            := RepAll @ Map[toRecolorRule, list];
   other_               := (Message[CommutativeDiagram::badrecolor, other]; Id);
 ];
 
 CommutativeDiagram::cruleNotUnaryForm = "Symbol `` provided as color rule element is not a unary form."
 
 specialRecoloringRule[head_, "Rainbow"] :=
-  RuleDelayed[z_head, RuleCondition @ StyledForm[z, ToRainbowColor @ ToRainbowInteger @ P1 @ z]];
+  RuleDelayed[z_head, RuleEval @ StyledForm[z, ToRainbowColor @ ToRainbowInteger @ F @ z]];
 
 specialRecoloringRule[head_, "Gradient"] := (
   $saveMorphGradColors = True;
-  RuleDelayed[z_head, RuleCondition @ GradientSymbol[z, ColorGradient[{$gradColor[z, 1], $gradColor[z, 2]}], FontSize -> $currentDiagramFontSize]]
+  RuleDelayed[z_head, RuleEval @ GradientSymbol[z, ColorGradient[{$gradColor[z, 1], $gradColor[z, 2]}], FontSize -> $currentDiagramFontSize]]
 );
 
 specialRecoloringRule[head_, "Framing"] :=
-  RuleDelayed[z_head[e_], RuleCondition @ FramedForm[e, localColorOf[z]]];
+  RuleDelayed[z_head[e_], RuleEval @ FramedForm[e, localColorOf[z]]];
 
 specialRecoloringRule[head_, "Coloring"] :=
-  RuleDelayed[z_head[e_], RuleCondition @ StyledForm[e, localColorOf[z]]];
+  RuleDelayed[z_head[e_], RuleEval @ StyledForm[e, localColorOf[z]]];
 
 PrivateFunction[localColorOf]
 
@@ -417,7 +417,7 @@ PrivateFunction[localColorOf]
 we will use it for the 'Framing' / 'Coloring' spec above *)
 localColorOf[z_] := Scope[
   z2 = colorModifierFn[z];
-  If[z2 =!= z, findInteriorColor @ z2, ToRainbowColor @ ToRainbowInteger @ P1 @ z]
+  If[z2 =!= z, findInteriorColor @ z2, ToRainbowColor @ ToRainbowInteger @ F @ z]
 ];
 
 $namedRecoloringElements = <|
@@ -453,7 +453,7 @@ toRecolorRule = Case[
   ];
 
   f_ -> {a:$colorP, b:$colorP} := With[{c1 = toCol @ a, c2 = toCol @ b},
-    RuleDelayed[f, RuleCondition @ GradientSymbol[f, ColorGradient[{c1, c2}], FontSize -> $currentDiagramFontSize]]
+    RuleDelayed[f, RuleEval @ GradientSymbol[f, ColorGradient[{c1, c2}], FontSize -> $currentDiagramFontSize]]
   ];
 
   a_ -> c:$colorP := With[{c1 = toCol @ c},
@@ -479,7 +479,7 @@ toCol = Case[
 
 (**************************************************************************************************)
 
-applyMorphismTextModifiers[primitives_] := ReplaceAll[
+applyMorphismTextModifiers[primitives_] := RepAll[
   primitives,
   MorphismArrow[path_, lbl:Except[_Rule], lopts___, TextModifiers -> fn_, ropts___] :>
     MorphismArrow[path, ApplyScriptScaling @ applyToLabel[toModifierFunction[fn], lbl], lopts, ropts]
@@ -525,12 +525,12 @@ processMorphismColors = Case[
 
   {rule__Rule, type_String} := orColor[% @ {rule}, % @ type];
 
-  rules:{__Rule} := morphismColorRuleLookup[Append[_ -> None] @ rules];
+  rules:{__Rule} := morphismColorRuleLookup[App[_ -> None] @ rules];
 
   other_ := (Message[CommutativeDiagram::badMorphismColors, MsgExpr[other]]; None)
 ];
 
-orColor[f_, g_][ma_] := Replace[f[ma], None :> g[ma]];
+orColor[f_, g_][ma_] := Rep[f[ma], None :> g[ma]];
 
 morphismLabelColor[_] := None;
 morphismLabelColor[ma:MorphismArrow[_, lbl:Except[_Rule], ___]] :=
@@ -538,7 +538,7 @@ morphismLabelColor[ma:MorphismArrow[_, lbl:Except[_Rule], ___]] :=
 
 morphismGradColors[ma:MorphismArrow[path_, ___]] := Scope[
   st = findSourceTarget @ path;
-  If[!StringVectorQ[st], Return @ None];
+  If[!StrVecQ[st], Return @ None];
   cols = Lookup[$morphGradColors, DirectedEdge @@ st];
   If[!ColorVectorQ[cols], Return @ None];
   cols
@@ -546,9 +546,9 @@ morphismGradColors[ma:MorphismArrow[path_, ___]] := Scope[
 
 morphismColorRuleLookup[rules_][ma_MorphismArrow] := Scope[
   label = SafePart[ma, 2];
-  res = Replace[label, rules];
+  res = Rep[label, rules];
   If[res =!= None, Return @ res];
-  Replace[$morphIndex, rules]
+  Rep[$morphIndex, rules]
 ];
 
 (**************************************************************************************************)
@@ -559,7 +559,7 @@ CommutativeDiagram::badrepspec = "SymbolReplacements -> `` is invalid.";
 
 parseSymbolReplacements = Case[
   None | {}                               := Id;
-  rules:($RulePattern | $RuleListPattern) := ReplaceAll[rules];
+  rules:($RulePattern | $RuleListPattern) := RepAll[rules];
   other_                                  := (Message[CommutativeDiagram::badrepspec, other]; Id)
 ];
 
@@ -589,7 +589,7 @@ toMorphism := Case[
   MapsToMorphism[path_, lbl:Except[_Rule]:None, args___]   := MorphismArrow[path, lbl, "MapsTo", args];
   ProMorphism[path_, lbl:Except[_Rule]:None, args___]      := MorphismArrow[path, lbl, "Proarrow", args];
   LineMorphism[path_, lbl:Except[_Rule]:None, args___Rule] := MorphismArrow[path, lbl, "Line", LabelPosition -> Center, LabelOrientation -> Aligned, ArrowColor -> $LightGray, args];
-  LineMorphism[path_, lbl_, n:(_Int | {_Int, _Int}), args___Rule] := % @ LineMorphism[path, lbl, LabelOffset -> AlignedOffset[If[IntegerQ[n], {0, n}, n]], args];
+  LineMorphism[path_, lbl_, n:(_Int | {_Int, _Int}), args___Rule] := % @ LineMorphism[path, lbl, LabelOffset -> AlignedOffset[If[IntQ[n], {0, n}, n]], args];
   AdjointMorphism[path_, args___]                          := MorphismArrow[$toHigherPath @ path, None, "Adjoint", args, ArrowThickness -> 1.25];
   LongAdjointMorphism[path_, args___]                      := MorphismArrow[$toHigherPath @ path, None, "LongAdjoint", args, ArrowThickness -> 1.25];
   DoubleMorphism[path_, lbl:Except[_Rule]:None, args___]   := MorphismArrow[$toHigherPath @ path, lbl, "DoubleArrow", args];
@@ -670,8 +670,8 @@ placeLabeledObj[pos_, lbl_, obj_] := Scope[
   pos //= toCoord;
   AssociateTo[$objectCoords, lbl -> pos];
   AssociateTo[$objects, lbl -> obj];
-  AppendTo[$objectCoordsList, pos];
-  AppendTo[$objectNames, lbl];
+  AppTo[$objectCoordsList, pos];
+  AppTo[$objectNames, lbl];
   fmtLabel[lbl, obj]
 ];
 
@@ -688,7 +688,7 @@ placeLabeledObj[pos_, lbl_, Cloned[a_, b_, c_:None]] := Scope[
   AssociateTo[$objectCoords, cloneLbl -> $cloneDisplaceFn[lbl]];
   res = {placeLabeledObj[pos, lbl, a], fmtLabel[cloneLbl, b]};
   objLink = processClonedObjectLink @ $cloneObjectLinkFn[{lbl, cloneLbl}, c];
-  AppendTo[$cloneExteriorLinks, objLink];
+  AppTo[$cloneExteriorLinks, objLink];
   Splice @ res
 ];
 
@@ -724,13 +724,13 @@ It should be set to a list of rules with the following keys:
 "
 
 Options[CloneOptions] = {
-  "Displacement" -> Automatic,
+  "Displacement" -> Auto,
   "InteriorLink" -> Inherited,
   "ExteriorLink" -> None,
   "ObjectLink" -> None,
   "MorphismLink" -> None,
-  "ObjectLinkSetback" -> Automatic,
-  "MorphismLinkSetback" -> Automatic,
+  "ObjectLinkSetback" -> Auto,
+  "MorphismLinkSetback" -> Auto,
   "AbsoluteSetback" -> None,
   "InteriorLinkOptions" -> {},
   "ExteriorLinkOptions" -> {}
@@ -758,7 +758,7 @@ cloneFnWrapper[fn_][e_] := With[{r = fn[e]}, If[r === None, e, Cloned[e, r]]];
 
 processCloneOptions = Case[
 
-  None|Automatic := % @ {};
+  None|Auto := % @ {};
 
   s_Str := % @ namedCloneOpts[s];
 
@@ -795,7 +795,7 @@ toCloneMorphismFn = Case[
   Inherited                       := Inherited;
   None                            := Nothing&;
   s_Str | s_Rule                  := MorphismArrow[#1, #2, s]&;
-  Sized[e_, s_]                   := ReplaceAll[% @ e, (h:$morphismHeadP|MorphismArrow)[args___] :> h[args, ArrowheadSize -> s]];
+  Sized[e_, s_]                   := RepAll[% @ e, (h:$morphismHeadP|MorphismArrow)[args___] :> h[args, ArrowheadSize -> s]];
   Reversed[s_]                    := With[{fn = % @ s}, fn[Rev @ #1, #2]&];
   (h:$morphismHeadP)[opts___Rule] := h[#1, #2, opts]&;
   fn_ ? MightEvaluateWhenAppliedQ := fn;
@@ -806,7 +806,7 @@ toCloneMorphismFn = Case[
 ];
 
 toCloneDisplaceFn = Case[
-  Automatic                    := % @ {Inwards, 0.4};
+  Auto                    := % @ {Inwards, 0.4};
   {Inwards, d:$NumberP}        := ObjectCoordinates[{#, "Median"}, PointAlongLine[d]]&;
   {Outwards, d:$NumberP}       := %[{Inwards, -d}];
   {s:$SidePattern, d:$NumberP} := ObjectCoordinates[#, PlusVector[d * Lookup[$SideToCoords, s]]]&;
@@ -827,7 +827,7 @@ parseMorphism = Case[
   Setback -> sb_                                     := ($setback = sb; Nothing);
   opt:(_Symbol -> _)                                 := flipSymbolicPositions @ opt;
 
-  cd_CommutativeDiagram                              := flipSymbolicPositions @ Append[cd, Unevaluated @ $inheritedOptions];
+  cd_CommutativeDiagram                              := flipSymbolicPositions @ App[cd, Uneval @ $inheritedOptions];
 
   other_                                             := ($morphIndex++; processMorphism1 @ other);
 ]
@@ -836,11 +836,11 @@ parseMorphism = Case[
 
 $coordinateCanonicalizationRules = {
   cd_CommutativeDiagram :> cd,
-  c_ObjectCoordinates :> RuleCondition @ resolveObjectCoords[c],
-  c_MorphismCoordinates :> RuleCondition @ resolveMorphismCoords[c]
+  c_ObjectCoordinates :> RuleEval @ resolveObjectCoords[c],
+  c_MorphismCoordinates :> RuleEval @ resolveMorphismCoords[c]
 };
 
-resolveCoordinates[e_] := ReplaceRepeated[e, $coordinateCanonicalizationRules];
+resolveCoordinates[e_] := RepRep[e, $coordinateCanonicalizationRules];
 
 (**************************************************************************************************)
 
@@ -919,11 +919,11 @@ resolveCurvePos[curve_, pos_] := Scope[
 
 doFlip[pos_] := ApplyFlip[pos, {flipX, flipY}, transposed];
 
-flipSymbolicPositions[expr_] := expr /. side:($SidePattern|Above|Below) :> RuleCondition[doFlip[side]];
+flipSymbolicPositions[expr_] := expr /. side:($SidePattern|Above|Below) :> RuleEval[doFlip[side]];
 
 (**************************************************************************************************)
 
-$itemSize = Automatic;
+$itemSize = Auto;
 
 fmtLabel[lbl_, Sized[obj_, size_]] := Scope[
   $itemSize = If[NumberQ[size], size/2, size];
@@ -939,10 +939,10 @@ fmtLabel[lbl_, obj_] := Scope[
   text = ApplyScriptScaling @ Text[$objectTextModifierFn @ obj, lbl, Lookup[$SideToCoords, alignment]];
   If[$calculateLabelSizes,
     size = $itemSize;
-    If[ContainsQ[size, Automatic],
-      text2 = Append[text, BaseStyle -> {FontSize -> fontSize, FontFamily -> fontFamily}];
+    If[ContainsQ[size, Auto],
+      text2 = App[text, BaseStyle -> {FontSize -> fontSize, FontFamily -> fontFamily}];
       isize = N[MakeTextImageSize @ text2] + 1;
-      If[size === Automatic, size = {Automatic, Automatic}];
+      If[size === Auto, size = {Auto, Auto}];
       size = MapThread[ReplaceAutomatic, {size, isize}];
     ];
     $objectSizes[lbl] ^= size;
@@ -968,19 +968,19 @@ saveMorphismCoords = Case[
   e_List := Scan[%, e];
 
   m:(MorphismArrow|$morphismHeadP)[path_, rest___] := Scope[
-    KeyAppendTo[$morphismCurves, None, path];
+    KAppTo[$morphismCurves, None, path];
     st = findSourceTarget @ path;
     If[st === None, Return[]];
     {src, tgt} = st;
     lbl = SafePart[{rest}, 1];
     If[!MissingQ[lbl] && !RuleQ[lbl],
       autoName = makeAutoName[lbl, $morphismNames];
-      AppendTo[$morphismNames, autoName];
-      KeyAppendTo[$morphismCurves, autoName, path];
+      AppTo[$morphismNames, autoName];
+      KAppTo[$morphismCurves, autoName, path];
     ];
-    KeyAppendTo[$morphismCurves, DirectedEdge[src, tgt],   path];
-    KeyAppendTo[$morphismCurves, UndirectedEdge[src, tgt], path];
-    KeyAppendTo[$morphismCurves, UndirectedEdge[tgt, src], path];
+    KAppTo[$morphismCurves, DirectedEdge[src, tgt],   path];
+    KAppTo[$morphismCurves, UndirectedEdge[src, tgt], path];
+    KAppTo[$morphismCurves, UndirectedEdge[tgt, src], path];
   ];
 
   _ := Null;
@@ -1014,23 +1014,23 @@ processMorphism2 = Case[
 
   (* TODO: setback intefereces with cloning *)
   ma_MorphismArrow /; TrueQ[$autoSetback] && FreeQ[ma, Setback] := Scope[
-    st = findSourceTarget @ P1 @ ma;
+    st = findSourceTarget @ F @ ma;
     If[st === None, Return @ ma];
     {src, tgt} = st;
     {sz1, sz2} = lookupObjectSize /@ {src, tgt};
     setback = Map[makeEndpointSetback, {sz1, sz2}];
     setback = ExtendSetback[setback, $setback];
-    % @ Append[ma, Setback -> setback]
+    % @ App[ma, Setback -> setback]
   ];
 
   ma_MorphismArrow /; TrueQ[$morphismTextModifierFn =!= Id] && FreeQ[ma, TextModifiers] := Scope[
     modifiers = resolveGradColors @ $morphismTextModifierFn;
-    % @ Append[ma, TextModifiers -> modifiers]
+    % @ App[ma, TextModifiers -> modifiers]
   ];
 
   ma_MorphismArrow /; TrueQ[$morphismColorFunction =!= None] && FreeQ[ma, ArrowColor] := Scope[
     col = $morphismColorFunction @ ma;
-    If[col === None, ma, % @ Append[ma, ArrowColor -> col]]
+    If[col === None, ma, % @ App[ma, ArrowColor -> col]]
   ];
 
   other_ := processMorphism3 @ other;
@@ -1054,7 +1054,7 @@ saveMorphismGradColors = Case[
     If[Len[colors] == 2,
       (* save by label and by edge *)
       lbl = SafePart[m, 2];
-      If[!RuleQ[lbl] && !MissingQ[lbl], AssociateTo[$morphGradColors, Replace[lbl, Cloned[c_, _] :> c] -> colors]];
+      If[!RuleQ[lbl] && !MissingQ[lbl], AssociateTo[$morphGradColors, Rep[lbl, Cloned[c_, _] :> c] -> colors]];
       AssociateTo[$morphGradColors, Apply[DirectedEdge, stRaw] -> colors];
     ];
   ];
@@ -1100,8 +1100,8 @@ processMorphism3 = Case[
 
 processMorphismWithCloning[ma_MorphismArrow] := Scope[
 
-  st = findSourceTarget @ P1 @ ma;
-  If[!StringVectorQ[clonedSt = Lookup[$cloneChildren, st]], Return @ ma];
+  st = findSourceTarget @ F @ ma;
+  If[!StrVecQ[clonedSt = Lookup[$cloneChildren, st]], Return @ ma];
   (* if the morphism's endpoints were both cloned, we need to create a cloned morphism *)
 
   ma2 = ma;
@@ -1115,17 +1115,17 @@ processMorphismWithCloning[ma_MorphismArrow] := Scope[
 
   (* generate the clone morphism that links the clone objects *)
   cloneLink = processClonedMorphism @ If[$cloneInteriorLinkFn === Inherited,
-    DeleteCases[ReplacePart[ma, {1 -> clonedSt, 2 -> clonedLabel}], Setback -> {__Rectangular}],
+    Decases[RepPart[ma, {1 -> clonedSt, 2 -> clonedLabel}], Setback -> {__Rectangular}],
     $cloneInteriorLinkFn[clonedSt, clonedLabel]
   ];
   If[cloneLink === Nothing, Return @ ma2];
-  AppendTo[$cloneInteriorLinks, cloneLink];
+  AppTo[$cloneInteriorLinks, cloneLink];
 
   (* link the cloned morphism to the original morphism, if desired *)
   cloneLinkPath = MorphismCoordinates[DirectedEdge @@@ {st, clonedSt}];
   morphismLink = processClonedMorphismLink @ $cloneMorphismLinkFn[cloneLinkPath, None];
   If[morphismLink === Nothing, Return @ ma2];
-  AppendTo[$cloneExteriorLinks, morphismLink];
+  AppTo[$cloneExteriorLinks, morphismLink];
 
   ma2
 ];

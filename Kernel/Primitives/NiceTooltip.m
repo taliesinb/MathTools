@@ -32,7 +32,7 @@ NiceTooltipBoxes[a_, b_, wh_:{300, 300}] := TooltipBox[a,
     b,
     BaseStyle -> {FontSize -> 12, FontFamily -> "Fira Code"},
     ImageMargins -> {{5, 5}, {5, 5}},
-    ImageSize -> {{30, First[wh, wh]}, {30, Last[wh, wh]}}, Alignment -> Center
+    ImageSize -> {{30, F[wh, wh]}, {30, L[wh, wh]}}, Alignment -> Center
   ],
   TooltipStyle -> {Background -> GrayLevel[1], CellFrameColor -> None, CellFrame -> 0},
   TooltipDelay -> 0

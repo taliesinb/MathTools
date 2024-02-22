@@ -62,10 +62,10 @@ ColorGradient[{c$1, c$2}, dir$] represents an oriented color gradient in the giv
 ColorGradient::badGradientSpec = "`` is not a valid color gradient spec."
 parseColorGradient = Case[
   {c1_, c2_} -> dir:$SidePattern                  := % @ ColorGradient[{c1, c2}, dir];
-  ColorGradient[{c1_, c2_}] | {c1_, c2_}          := {{1,0}, P1, Id, OklabBlendOperator[toRC /@ {c1, c2}]};
+  ColorGradient[{c1_, c2_}] | {c1_, c2_}          := {{1,0}, F, Id, OklabBlendOperator[toRC /@ {c1, c2}]};
   ColorGradient[{c1_, c2_}, dir:$Coord2P]         := {Normalize @ dir, DotOperator[dir], Id, OklabBlendOperator[toRC /@ {c1, c2}]};
   ColorGradient[spec_, side:$SidePattern]         := % @ ColorGradient[spec, $SideToCoords @ side];
-  ColorGradient[spec__, CompressionFactor -> c_]  := ReplacePart[% @ ColorGradient[spec], 3 -> CompressUnit[c]];
+  ColorGradient[spec__, CompressionFactor -> c_]  := RepPart[% @ ColorGradient[spec], 3 -> CompressUnit[c]];
   other_ := (
     Message[ColorGradient::badGradientSpec, MsgExpr @ other];
     {{1,0}, Id, Id, Red&}
@@ -108,7 +108,7 @@ ColorGradientStyle[prims$, cspec$, bounds$] calculates the gradient over the coo
 
 DeclareGraphicsPrimitive[ColorGradientStyle, "Primitives", colorGradiantFormBoxes];
 
-colorGradiantFormBoxes[ColorGradientStyle[prims_, cspec_, bounds_:Automatic]] :=
+colorGradiantFormBoxes[ColorGradientStyle[prims_, cspec_, bounds_:Auto]] :=
   ColorGradientBoxes[ToGraphicsBoxes @ prims, cspec, bounds];
 
 (**************************************************************************************************)
@@ -121,7 +121,7 @@ ColorGradientBoxes[primitives$, bounds$, cspec$] applies a color gradient given 
 * the gradient is applied by attaching %VertexColors options to lines and %LinearGradientFilling to polygons and disks.
 "
 
-ColorGradientBoxes[primitives_, cspec_, Automatic] :=
+ColorGradientBoxes[primitives_, cspec_, Auto] :=
   ColorGradientBoxes[primitives, cspec, PrimitiveBoxesBounds @ primitives];
 
 ColorGradientBoxes[primitives_, cspec_, {{x1_, x2_}, {y1_, y2_}}] := Scope[
@@ -173,16 +173,16 @@ rectRad[w_,h_,ang_] := Norm[{Clip[Tan[Pi/2. - ang]] * w, Clip[Tan[ang]] * h}];
 
 PublicFunction[ImageCropVertical]
 
-ImageCropVertical[img_Image, bt_:Automatic] := Scope[
+ImageCropVertical[img_Image, bt_:Auto] := Scope[
   {w, h} = ImageDimensions @ img;
-  If[bt === Automatic,
+  If[bt === Auto,
     {{l, r}, {b, t}} = BorderDimensions[img],
     {b, t} = bt
   ];
-  baseline = LookupOption[img, BaselinePosition, Automatic];
+  baseline = LookupOption[img, BaselinePosition, Auto];
   cropped = ImagePad[img, {{0, 0}, -{b, t}}];
   If[!MatchQ[baseline, _Scaled], Return @ cropped];
-  baseline //= P1;
+  baseline //= F;
   baseline = Clip[Rescale[baseline, {b, h - t} / h], {0, 1}];
   Image[cropped, BaselinePosition -> Scaled[baseline], ImageSize -> {w, h - b - t}/2]
 ];
@@ -208,7 +208,7 @@ ColorGradientRasterize[expr_, colors_, OptionsPattern[]] := Scope[
   {w, h, dh} = rasterSize;
   baselinePos = Scaled[(h - dh-0.5) / h];
 
-  If[MatchQ[colors, None | Automatic | Black],
+  If[MatchQ[colors, None | Auto | Black],
     result = Image[raster, BaselinePosition -> baselinePos, ImageSize -> {w, h}/2];
   ,
     {dir, toNumber, procNumber, toColor} = parseColorGradient @ colors;
@@ -225,7 +225,7 @@ ColorGradientRasterize[expr_, colors_, OptionsPattern[]] := Scope[
     grid = ToPackedReal @ Table[{x, y}, {y, h}, {x, w}];
     dots = Dot[grid, Normalize @ dir];
     dots = Clip[Rescale[dots, minMax], {0, 1}];
-    oklab = P1[toColor] /@ procNumber[dots];
+    oklab = F[toColor] /@ procNumber[dots];
     rgb = FromOklab /@ oklab;
     gradImage = Image[rgb];
 

@@ -1,34 +1,34 @@
-$arrowheadSizePattern = Alternatives[
+$arrowheadSizePattern = Alt[
   _ ? NumericQ,
   $SymbolicSizePattern,
   Scaled[(_ ? NumericQ) | $SymbolicSizePattern],
   PointSize[_ ? NumericQ],
   _Assoc,
-  Automatic | None
+  Auto | None
 ];
 
-$vertexAnnotationsPattern = Alternatives[
+$vertexAnnotationsPattern = Alt[
   Assoc[RepeatedNull[_Str -> _List]],
   None
 ];
 
-$edgeAnnotationsPattern = Alternatives[
+$edgeAnnotationsPattern = Alt[
   Assoc[RepeatedNull[_Str -> _Assoc]],
   None
 ];
-$layoutDimensionPattern = Alternatives[
-  Automatic, None, 1, 2, 3
+$layoutDimensionPattern = Alt[
+  Auto, None, 1, 2, 3
 ];
 
-$graphMetricPattern = Alternatives[
-  Automatic, "Euclidean", "Chessboard", _QuadraticFormObject, _List, _Int, _ ? MightEvaluateWhenAppliedQ
+$graphMetricPattern = Alt[
+  Auto, "Euclidean", "Chessboard", _QuadraticFormObject, _List, _Int, _ ? MightEvaluateWhenAppliedQ
 ];
 
-$viewOptionKeysPattern = Alternatives[
+$viewOptionKeysPattern = Alt[
   ViewPoint, ViewCenter, ViewVertical, ViewVector, ViewRotation, ViewMatrix, ViewProjection, ViewAngle, "ShrinkWrap", SphericalRegion
 ];
 
-$viewOptionsRulePattern = Automatic | {RepeatedNull[$viewOptionKeysPattern -> _]};
+$viewOptionsRulePattern = Auto | {RepeatedNull[$viewOptionKeysPattern -> _]};
 
 $extendedGraphOptionPatterns = <|
   ArrowheadSize -> $arrowheadSizePattern,
@@ -48,7 +48,7 @@ checkGraphAnnotations[rules_List] := Map[checkGraphAnnotationRule, rules];
 General::badextopt = "The extended option `` -> `` is invalid and will be ignored."
 
 checkGraphAnnotationRule[key_ -> value_] /; And[
-  KeyExistsQ[$extendedGraphOptionPatterns, key],
+  KeyQ[$extendedGraphOptionPatterns, key],
   !MatchQ[value, $extendedGraphOptionPatterns @ key]] := (
     Message[Graph::badextopt, key, value];
     Nothing
@@ -85,7 +85,7 @@ LookupExtendedOption[key_][graph_] := LookupExtendedOption[graph, key];
 PrivateFunction[ExtendedGraphAnnotations]
 
 ExtendedGraphAnnotations[graph_] :=
-  Normal @ DeleteCases[$Failed] @ AssociationThread[
+  Normal @ Decases[$Failed] @ AssocThread[
     $extendedGraphOptionSymbols,
     AnnotationValue[graph, $extendedGraphOptionSymbols]
   ];

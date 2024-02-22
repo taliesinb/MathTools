@@ -9,7 +9,7 @@ PublicIOFunction[CreateObsidianNote]
 PublicOption[ObsidianVault, NoteFolder, FrontMatter, CreationTime, ModificationTime]
 
 Options[CreateObsidianNote] = {
-  ObsidianVault -> Automatic,
+  ObsidianVault -> Auto,
   ReplaceExisting -> False,
   DuplicateTarget -> False,
   DryRun -> False,
@@ -30,21 +30,21 @@ CreateObsidianNote[title_Str, contents_Str, OptionsPattern[]] := Scope[
     frontMatter, creationTime, modificationTime, $dryRun];
   SetAutomatic[obsidianVault, $DefaultObsidianVault];
   title //= sanitizeTitle;
-  If[StringContainsQ[title, $obsidianTitleCharacters], ReturnFailed["invalidNoteTitleChars", title]];
+  If[SContainsQ[title, $obsidianTitleCharacters], ReturnFailed["invalidNoteTitleChars", title]];
   notePath = toNotePath[title, noteFolder, obsidianVault];
   If[FileExistsQ[notePath],
     If[duplicateTarget,
-      notePath = StringInsert[notePath, " (copy)", -4];
+      notePath = SInsert[notePath, " (copy)", -4];
       If[FileExistsQ[notePath] && !replaceExisting, ReturnFailed["duplicateNoteExists", title]]
     ,
       If[!replaceExisting, ReturnFailed["noteExists", title]];
     ];
   ];
   If[frontMatter =!= None && frontMatter =!= Assoc[],
-    If[StringVectorQ[frontMatter["tags"]], frontMatter["tags"] //= StringRiffle[#, " "]&];
+    If[StrVecQ[frontMatter["tags"]], frontMatter["tags"] //= SRiffle[#, " "]&];
     frontMatterString = ExportYAMLDict @ frontMatter;
-    If[!StringQ[frontMatterString], ReturnFailed["badNoteFrontMatter", MsgExpr @ title, MsgExpr @ frontMatter]];
-    contents = StringJoin["---\n", frontMatterString, "\n---\n", contents];
+    If[!StrQ[frontMatterString], ReturnFailed["badNoteFrontMatter", MsgExpr @ title, MsgExpr @ frontMatter]];
+    contents = SJoin["---\n", frontMatterString, "\n---\n", contents];
   ];
   whenWet[
     If[!FileExistsQ[noteParentDir = FileNameDrop[notePath]], CreateDirectory[noteParentDir]];

@@ -11,15 +11,15 @@ PlotGraphModes[graph_Graph, k_:4, columns:_Int:4, opts:OptionsPattern[Graph]] :=
   vectors = Part[vectors, ordering];
   vectors = Map[Normalize[#, Max[Abs[#]]&]&, vectors];
   opts2 = Options[graph];
-  If[OptionValue[VertexLabels] === Automatic,
-    opts = DeleteCases[opts, VertexLabels -> _],
-    opts2 = DeleteCases[opts2, VertexLabels -> _]
+  If[OptionValue[VertexLabels] === Auto,
+    opts = Decases[opts, VertexLabels -> _],
+    opts2 = Decases[opts2, VertexLabels -> _]
   ];
   opts2 = Sequence @@ opts2; i = 1;
   plots = MapThread[
     Column[{
       PlotGraphVector[graph, #1, opts, opts2, ImagePadding -> {{5,  5}, {10, 5}}],
-      Style[TextString[NumberForm[Chop @ #2, 3]] // StringReplace[" " -> ""], If[Abs[#2] == 1.0, Bold, {}]],
+      Style[TextString[NumberForm[Chop @ #2, 3]] // SRep[" " -> ""], If[Abs[#2] == 1.0, Bold, {}]],
       #2,
       Row[{"#", i++}, BaseStyle -> Gray]
     }, Alignment->Center, Spacings -> 0]&,

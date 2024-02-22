@@ -23,9 +23,9 @@ failDispatch[head_, dispatch_][data_, key_Str, __Rule] :=
   Message[MessageName[head, "noobjoptprop"], key, commaString @ getValidOptProps @ dispatch];
 
 getValidProps[symbol_, data_] := Union[
-  Cases[DownValues[symbol], HoldPattern[Verbatim[HoldPattern][symbol[_, key_Str]] :> _] :> key],
+  Cases[DownValues[symbol], HoldP[Verbatim[HoldP][symbol[_, key_Str]] :> _] :> key],
   Keys @ data
 ];
 
 getValidOptProps[symbol_] := getValidOptProps[symbol] =
-  Union @ Cases[DownValues[symbol], HoldPattern[Verbatim[HoldPattern][symbol[_, key_Str, __]] :> _] :> key];
+  Union @ Cases[DownValues[symbol], HoldP[Verbatim[HoldP][symbol[_, key_Str, __]] :> _] :> key];

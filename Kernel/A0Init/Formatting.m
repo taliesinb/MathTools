@@ -3,7 +3,7 @@ PrivateSpecialFunction[declareFormatting]
 PrivateVariable[$isTraditionalForm]
 
 getPatternHead[sym_Symbol] := sym;
-getPatternHead[expr_] := P1 @ PatternHead @ expr;
+getPatternHead[expr_] := F @ PatternHead @ expr;
 
 declareFormatting[rules__RuleDelayed] := Scan[declareFormatting, {rules}];
 declareFormatting[lhs_ :> rhs_] :=
@@ -79,7 +79,7 @@ padSummaryItem[a_, b_] := BoxForm`SummaryItem[{Pane[a <> ": ", 60], b}];
 (**************************************************************************************************)
 
 Unprotect[Grid]
-Grid[a_Assoc] := Grid[KeyValueMap[List, a], Alignment -> Left, Dividers -> All, ItemSize -> {{Automatic, UpTo @ 150}}];
+Grid[a_Assoc] := Grid[KVMap[List, a], Alignment -> Left, Dividers -> All, ItemSize -> {{Auto, UpTo @ 150}}];
 Protect[Grid]
 
 (**************************************************************************************************)

@@ -17,7 +17,7 @@ LookupImageSize[object$] returns the setting of %ImageSize that a given object w
 
 DeclareArgumentCount[LookupImageSize, 1];
 
-Options[LookupImageSize] = {AspectRatio -> Automatic};
+Options[LookupImageSize] = {AspectRatio -> Auto};
 
 (* use shortcut for Graphs, otherwise we'd have to call ExtendedGraphPlot to calculate this properly.
 this isn't 100% accurate, however, since it can't know how much label padding etc. will be involved *)
@@ -28,16 +28,16 @@ LookupImageSize[obj_, OptionsPattern[]] := Scope[
   {imageSize, aspectRatio} = LookupOption[obj, {ImageSize, AspectRatio}];
   SetAutomatic[aspectRatio, OptionValue @ AspectRatio];
   imageSize = resolveRawImageSize @ imageSize;
-  If[NumberQ[aspectRatio] && MatchQ[Part[imageSize, 2], Automatic],
+  If[NumberQ[aspectRatio] && MatchQ[Part[imageSize, 2], Auto],
     Part[imageSize, 2] = Part[imageSize, 1] * aspectRatio];
   imageSize
 ];
 
 resolveRawImageSize = Case[
-  sz:{_ ? NQ, Automatic | (_ ? NQ)} := sz;
-  w_ ? NQ                           := {w, Automatic};
-  s_Symbol                          := {Lookup[$ImageWidthTable, s], Automatic};
-  _                                 := {720, Automatic};
+  sz:{_ ? NQ, Auto | (_ ? NQ)} := sz;
+  w_ ? NQ                           := {w, Auto};
+  s_Symbol                          := {Lookup[$ImageWidthTable, s], Auto};
+  _                                 := {720, Auto};
   {NQ -> NumberQ}
 ];
 
@@ -84,7 +84,7 @@ $ImageWidthTable = <|
   Tiny -> 100,
   Small -> 180,
   MediumSmall -> 270,
-  Medium -> 360, Automatic -> 360,
+  Medium -> 360, Auto -> 360,
   MediumLarge -> 468,
   Large -> 576,
   Huge -> 720
@@ -100,7 +100,7 @@ toStandardImageSize[other_] := other;
 
 PrivateFunction[toNumericSizeScale]
 
-$sizeScaleAssoc = KeyDrop[$ImageWidthTable / $ImageWidthTable[Medium], Automatic];
+$sizeScaleAssoc = KDrop[$ImageWidthTable / $ImageWidthTable[Medium], Auto];
 
 toNumericSizeScale = Case[
   sym_Symbol := Lookup[$sizeScaleAssoc, sym, 1];

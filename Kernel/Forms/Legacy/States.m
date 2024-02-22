@@ -50,12 +50,12 @@ DefineNAryForm[EmptyRegionalState, "?"];
 PublicTypesettingForm[StringRegionalStateForm]
 
 StringRegionalStateForm[str_, {i_, j_}] /; j < i :=
-  makeStrRegState[str, Join[Range[i, i + StringLength[str] - j - 1], Range[1, j]]];
+  makeStrRegState[str, Join[Range[i, i + SLen[str] - j - 1], Range[1, j]]];
 
 StringRegionalStateForm[str_, {i_, j_}] :=
   makeStrRegState[str, Range[i, j]];
 
-makeStrRegState[chars_, indices_] := makeRegState[LiteralCharacterForm /@ Characters @ chars, indices];
+makeStrRegState[chars_, indices_] := makeRegState[LiteralCharacterForm /@ Chars @ chars, indices];
 makeRegState[states_, keys_] := RegionalStateForm @@ MapThread[LocalStateForm, {keys, states}];
 
 (**************************************************************************************************)

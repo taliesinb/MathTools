@@ -203,7 +203,7 @@ vertexAdjacentEdgeVertex[graph_, returnAssoc_] := Scope[
   outVertices = LastColumn @ pairs;
   outEdges = Lookup[edgeIndices, vertices, {}];
   res = Map[edgeIndices |-> Trans[edgeIndices, Part[outVertices, edgeIndices]], outEdges];
-  If[returnAssoc, AssociationThread[vertices, res], res]
+  If[returnAssoc, AssocThread[vertices, res], res]
 ];
 
 (**************************************************************************************************)
@@ -281,7 +281,7 @@ where in$i is a list of the vertices that have a connection to v$i.
 "
 
 tableToAssoc[vertices_, table_] := Assoc @ MapIndexed[
-  Part[vertices, P1 @ #2] -> Part[vertices, #1]&,
+  Part[vertices, F @ #2] -> Part[vertices, #1]&,
   table
 ];
 
@@ -304,7 +304,7 @@ list of indices of vertices that have a connection from vertex i$.
 VertexInOutAssociation[graph_] := Scope[
   vertices = VertexList[graph];
   Assoc @ MapIndexed[
-    Part[vertices, P1 @ #2] -> {Part[vertices, P1[#1]], Part[vertices, PN[#1]]}&,
+    Part[vertices, F @ #2] -> {Part[vertices, F[#1]], Part[vertices, L[#1]]}&,
     VertexInOutTable[graph]
   ]
 ];
@@ -316,7 +316,7 @@ PublicFunction[InVertices, OutVertices, AllVertices, AllUniqueVertices]
 InVertices[edges_] := edges[[All, 1]];
 OutVertices[edges_] := edges[[All, 2]];
 AllVertices[edges_] := Join[InVertices @ edges, OutVertices @ edges];
-AllUniqueVertices[edges_] := DeleteDuplicates @ AllVertices[edges];
+AllUniqueVertices[edges_] := Dedup @ AllVertices[edges];
 
 (**************************************************************************************************)
 

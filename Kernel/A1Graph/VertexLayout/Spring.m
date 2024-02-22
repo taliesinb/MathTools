@@ -2,10 +2,10 @@ PublicObject[SpringLayout]
 PublicOption[Orientation]
 
 Options[SpringLayout] = {
-  "EnergyControl" -> Automatic,
-  "StepControl" -> Automatic,
-  "StepLength" -> Automatic,
-  "Tolerance" -> Automatic
+  "EnergyControl" -> Auto,
+  "StepControl" -> Auto,
+  "StepLength" -> Auto,
+  "Tolerance" -> Auto
 };
 
 SpringLayout[opts:OptionsPattern[]][data_] :=

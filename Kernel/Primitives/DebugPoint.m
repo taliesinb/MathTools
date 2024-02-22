@@ -17,5 +17,5 @@ debugPointBoxes[DebugPoints[matrix:$CoordMatP]] := Scope[
   {Red, FontSize -> 8, AbsolutePointSize[5], points, labels}
 ]
 
-makeLabeledPoint[p_, i_] := Construct[InsetBox, IntegerString @ i, Offset[{0, 7}, p]];
-makeStatusPoint[p_, i_] := TagBox[PointBox @ p, #!&, TagBoxNote -> IntegerString[i]];
+makeLabeledPoint[p_, i_] := Construct[InsetBox, IntStr @ i, Offset[{0, 7}, p]];
+makeStatusPoint[p_, i_] := TagBox[PointBox @ p, #!&, TagBoxNote -> IntStr[i]];

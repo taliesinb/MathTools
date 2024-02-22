@@ -18,7 +18,7 @@ DefineFormModifier[head_, boxfn_] := (
 
 applyFormModifier[boxes_, fn_] := InheritedBlock[
   {$formModifierFnStack},
-  AppendTo[$formModifierFnStack, fn];
+  AppTo[$formModifierFnStack, fn];
   fn @ boxes
 ];
 
@@ -28,7 +28,7 @@ PublicTypesettingForm[UsingImplicitAppliedForm]
 
 DefineFormModifier[UsingImplicitAppliedForm, toImplicitAppliedForm];
 
-toImplicitAppliedForm[boxes_] := ReplaceRepeated[boxes,
+toImplicitAppliedForm[boxes_] := RepRep[boxes,
   TemplateBox[list_, "appliedForm"] :> TemplateBox[list, "ImplicitAppliedForm"]
 ];
 
@@ -38,7 +38,7 @@ PublicTypesettingForm[UsingExplicitAppliedForm]
 
 DefineFormModifier[UsingExplicitAppliedForm, toExplicitAppliedForm];
 
-toExplicitAppliedForm[boxes_] := ReplaceRepeated[boxes,
+toExplicitAppliedForm[boxes_] := RepRep[boxes,
   TemplateBox[list_, "ImplicitAppliedForm"] :> TemplateBox[list, "appliedForm"]
 ];
 
@@ -48,7 +48,7 @@ PublicTypesettingForm[UsingTightForm]
 
 DefineFormModifier[UsingTightForm, toTightForm];
 
-toTightForm[boxes_] := TBox[ReplaceAll[EvaluateTemplateBoxFull @ boxes, ", " -> ","], "MathForm"];
+toTightForm[boxes_] := TBox[RepAll[EvaluateTemplateBoxFull @ boxes, ", " -> ","], "MathForm"];
 
 (**************************************************************************************************)
 
@@ -62,7 +62,7 @@ DefineStandardTraditionalForm[
 
 (* this is kinda hacky: we don't really know which strings are content and which are options etc, but the
 Rule exception tries to deal with that *)
-usingModernBoxes[sub_] := ToBoxes @ ReplaceAll[sub, {r_Rule :> r, s_String :> RuleCondition @ toModernStr @ s}];
+usingModernBoxes[sub_] := ToBoxes @ RepAll[sub, {r_Rule :> r, s_String :> RuleEval @ toModernStr @ s}];
 
 toModernStr[str_] := ModernForm @ ScriptToRoman @ str;
 
@@ -71,5 +71,5 @@ toModernStr[str_] := ModernForm @ ScriptToRoman @ str;
 PublicTypesettingForm[RemoveDecoratorsForm]
 
 DefineStandardTraditionalForm[
-  RemoveDecoratorsForm[a_] :> ToBoxes @ ReplaceAll[a, {Subscript[e_, _] :> e, PrimedForm[e_] :> e}]
+  RemoveDecoratorsForm[a_] :> ToBoxes @ RepAll[a, {Subscript[e_, _] :> e, PrimedForm[e_] :> e}]
 ];

@@ -5,10 +5,10 @@ PublicOption[ItemForm, GridSpacings, SpillLength]
 PublicTypesettingForm[MultiGridForm]
 
 Options[MultiGridForm] = {
-  Alignment -> Automatic,
+  Alignment -> Auto,
   ItemForm -> None,
   ColumnSpacings -> 1,
-  RowSpacings -> Automatic,
+  RowSpacings -> Auto,
   GridSpacings -> 2,
   RowLabels -> None,
   ColumnLabels -> None
@@ -26,8 +26,8 @@ Options[GridForm] = {
   Alignment -> None,
   ItemForm -> None,
   ColumnSpacings -> 1,
-  RowSpacings -> Automatic,
-  SpillLength -> Infinity,
+  RowSpacings -> Auto,
+  SpillLength -> Inf,
   GridSpacings -> 2,
   LabelSpacing -> {2, 1},
   LabelFunction -> Bold,
@@ -56,7 +56,7 @@ PublicTypesettingForm[GridColumnsForm]
 Options[GridColumnsForm] = Options[multiColumnBoxes] = {
   ItemForm -> None,
   ColumnSpacings -> 3,
-  RowSpacings -> Automatic,
+  RowSpacings -> Auto,
   Alignment -> Center
 }
 
@@ -87,8 +87,8 @@ DefineStandardTraditionalForm[
 Options[SingleColumnForm] = Options[singleColumnBoxes] = {
   ItemForm -> None,
   ColumnSpacings -> 3,
-  RowSpacings -> Automatic,
-  SpillLength -> Infinity,
+  RowSpacings -> Auto,
+  SpillLength -> Inf,
   Alignment -> Center
 }
 
@@ -115,7 +115,7 @@ Options[makeSingleGridBoxes] = Options[GridForm];
 
 makeSingleGridBoxes[grid_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[itemForm, alignment, rowSpacings, columnSpacings, spillLength, rowLabels, columnLabels, labelFunction, labelSpacing];
-  If[Len[Unevaluated @ grid] > spillLength,
+  If[Len[Uneval @ grid] > spillLength,
     items = Partition[grid, UpTo @ spillLength];
     Return @ makeMultiGridBoxes[items, opts];
   ];
@@ -127,7 +127,7 @@ makeSingleGridBoxes[grid_, opts:OptionsPattern[]] := Scope[
 
 Options[makeMultiGridBoxes] = JoinOptions[
   MultiGridForm,
-  SpillLength -> Infinity (* to prevent messages, doesn't do anything *)
+  SpillLength -> Inf (* to prevent messages, doesn't do anything *)
 ];
 
 makeMultiGridBoxes[gridList_, OptionsPattern[]] := Scope[
@@ -163,7 +163,7 @@ createGridBox[args___] := GBox @@ createGridBoxData[args];
 createGridBoxData[rows_, alignments_, rowSpacings_, colSpacings_, rowLabels_:None, colLabels_:None, labelFn_:Id, labelSpacing_:{1, 1}] := Scope[
 
   entries = padArray @ rows;
-  {numRows, numCols} = Dimensions[entries, 2];
+  {numRows, numCols} = Dims[entries, 2];
   
   SetAutomatic[alignments, autoAlignmentSpec @ numCols];
   alignments = StandardizeRowColumnSpec[alignments, numCols];
@@ -173,14 +173,14 @@ createGridBoxData[rows_, alignments_, rowSpacings_, colSpacings_, rowLabels_:Non
 
   hasColLabels = MatchQ[colLabels, _List | Placed[_List, _]];
 
-  rowLabelSpacing = First[labelSpacing, labelSpacing];
-  colLabelSpacing = Last[labelSpacing, labelSpacing];
+  rowLabelSpacing = F[labelSpacing, labelSpacing];
+  colLabelSpacing = L[labelSpacing, labelSpacing];
   If[hasColLabels,
     If[!ListQ[rowSpacings], rowSpacings = Ones[numRows - 1] / 2];
     isBelow = MatchQ[colLabels, Placed[_, Below]];
     rowSpacings = Insert[rowSpacings, colLabelSpacing, If[isBelow, -1, 1]];
-    colLabelBoxes = labelBoxes[labelFn, Replace[colLabels, Placed[l_, _] :> l]];
-    If[isBelow, AppendTo, PrependTo][entries, PadRight[colLabelBoxes, numCols, ""]];
+    colLabelBoxes = labelBoxes[labelFn, Rep[colLabels, Placed[l_, _] :> l]];
+    If[isBelow, AppTo, PreTo][entries, PadRight[colLabelBoxes, numCols, ""]];
   ];
 
   If[ListQ[rowLabels],
@@ -188,7 +188,7 @@ createGridBoxData[rows_, alignments_, rowSpacings_, colSpacings_, rowLabels_:Non
     colSpacings = Insert[colSpacings, rowLabelSpacing, 1];
     rowLabelBoxes = labelBoxes[labelFn, rowLabels];
     rowLabelBoxes = If[hasColLabels,
-      PadRight[If[isBelow, Append, Prepend][rowLabelBoxes, ""], numRows + 1, ""],
+      PadRight[If[isBelow, App, Pre][rowLabelBoxes, ""], numRows + 1, ""],
       PadRight[rowLabelBoxes, numRows, ""]
     ];
     entries = PrependColumn[entries, rowLabelBoxes];
@@ -249,7 +249,7 @@ makeGridRowBoxes = Case[
 
   a_ -> b_             := % @ {a, b};
 
-  e:((head_Symbol)[___]) /; KeyExistsQ[$infixFormCharacters, head] := riffledGridRowBox[$infixFormCharacters @ head, e];
+  e:((head_Symbol)[___]) /; KeyQ[$infixFormCharacters, head] := riffledGridRowBox[$infixFormCharacters @ head, e];
 
   e_SyntaxEqualForm    := riffledGridRowBox["≑", e];
 
@@ -278,21 +278,21 @@ katexGrid[g_GridBox] :=
 
 katexGridBoxDispatch[entries_, alignments_, rowSpacings_, {0..}] :=
   {"\\begin{nsarray}{",
-    toKatexAlignmentSpec[alignments, Len @ P1 @ entries], "}\n",
+    toKatexAlignmentSpec[alignments, Len @ F @ entries], "}\n",
     createKatexGridBody[entries, rowSpacings],
     "\n\\end{nsarray}\n"
   };
 
-katexGridBoxDispatch[entries_, alignments_, rowSpacings_, Automatic | {0, (1 | Automatic)..}] :=
+katexGridBoxDispatch[entries_, alignments_, rowSpacings_, Auto | {0, (1 | Auto)..}] :=
   {"\\begin{array}{",
-    toKatexAlignmentSpec[alignments, Len @ P1 @ entries], "}\n",
+    toKatexAlignmentSpec[alignments, Len @ F @ entries], "}\n",
     createKatexGridBody[entries, rowSpacings],
     "\n\\end{array}\n"
   };
 
 katexGridBoxDispatch[entries_, alignments_, rowSpacings_, colSpacings_] :=
   {"\\begin{csarray}{",
-    toKatexAlignmentSpec[alignments, Len @ P1 @ entries], "}{",
+    toKatexAlignmentSpec[alignments, Len @ F @ entries], "}{",
     toKatexCSArraySpacingSpec[colSpacings],
     "}\n",
     createKatexGridBody[entries, rowSpacings],
@@ -306,32 +306,32 @@ createKatexGridBody[entries_, rowSpacings_] :=
   ];
 
 stripQuotes = Case[
-  s_Str /; StringMatchQ[s, "\"*\""] := StringTake[s, {2, -2}];
+  s_Str /; SMatchQ[s, "\"*\""] := STake[s, {2, -2}];
   StyleBox[e_, other___]               := StyleBox[stripQuotes @ e, other];
   other_                               := other;
 ];
 
-assembleKatexGridRows[lines_, Automatic | {Automatic..}] :=
+assembleKatexGridRows[lines_, Auto | {Auto..}] :=
   Riffle[lines, "\\\\\n"];
 
 assembleKatexGridRows[lines_, rowSpacings_] :=
   Riffle[lines,
     Map[
-      If[# === Automatic, "\\\\\n", "\\\\[" <> TextString[#] <> "em]\n"]&,
+      If[# === Auto, "\\\\\n", "\\\\[" <> TextString[#] <> "em]\n"]&,
       Rest @ rowSpacings
     ]
   ];
 
-$spacingAlphabet = Characters["abcdefghijklmnopqrstuvwxyz"];
+$spacingAlphabet = Chars["abcdefghijklmnopqrstuvwxyz"];
 
 toKatexCSArraySpacingSpec[spacings_] :=
-  StringJoin @ Part[$spacingAlphabet, Round[spacings * 4] + 1]
+  SJoin @ Part[$spacingAlphabet, Round[spacings * 4] + 1]
 
-toKatexAlignmentSpec[Automatic, n_] :=
+toKatexAlignmentSpec[Auto, n_] :=
   toKatexAlignmentSpec[Table[Center, n], n];
 
 toKatexAlignmentSpec[aligns_List, n_] :=
-  StringJoin[
+  SJoin[
     toAlignmentLetter /@ If[Len[aligns] >= n, aligns, PadRight[aligns, n, aligns]]
   ];
 
@@ -360,7 +360,7 @@ PublicOption[AlignmentSet]
 Options[FlowAlignedGridForm] = {
   AlignmentSet -> {EqualForm, NotEqualForm},
   ColumnSpacings -> 1/2,
-  RowSpacings -> Automatic,
+  RowSpacings -> Auto,
   Alignment -> Center
 }
 
@@ -374,16 +374,16 @@ makeFlowAlignedGridForm[rawRows_List, OptionsPattern[FlowAlignedGridForm]] := Sc
   UnpackOptions[alignmentSet, columnSpacings, rowSpacings, alignment];
   rows = MapUnevaluated[flowAlignedRow, rawRows];
   rows = Flatten[{#}]& /@ rows;
-  patt = Alternatives @@ Flatten[toFlowAlignmentSplits /@ alignmentSet];
+  patt = Alt @@ Flatten[toFlowAlignmentSplits /@ alignmentSet];
   JoinTo[patt, "" | TemplateBox[_, "Spacer1"]];
   rows = Map[toRowBox, SequenceSplit[#, e:{patt} :> e]]& /@ rows;
   rows = PadRows[rows, ""];
-  numColumns = Len @ P1 @ rows;
+  numColumns = Len @ F @ rows;
   TBoxOp["GridForm"] @ createGridBox[rows, alignment, rowSpacings, columnSpacings]
 ]
 
 toFlowAlignmentSplits[s_] := Scope[
-  If[KeyExistsQ[$flowAlignmentTable, s],
+  If[KeyQ[$flowAlignmentTable, s],
     Return @ $flowAlignmentTable @ s];
   {left, boxFn, right} = Lookup[$flowAlignmentContainerTable, s,
     Print["BAD ALIGNSET: ", alignmentSet]; Return @ Nothing];
@@ -426,7 +426,7 @@ flowAlignedRow = Case[
   FunctionSignatureForm[f_, d_, c_] :=
     {MakeMathBoxes @ f, ":", MakeMathBoxes @ d, "\[RightArrow]", MakeMathBoxes @ c};
 
-  AppliedForm[f_, h_Symbol[a_, b_]] /; KeyExistsQ[$flowAlignmentTable, h] :=
+  AppliedForm[f_, h_Symbol[a_, b_]] /; KeyQ[$flowAlignmentTable, h] :=
     {RBox[MakeMathBoxes @ f, "(", MakeMathBoxes @ a], $flowAlignmentTable @ h, RBox[MakeMathBoxes @ b, ")"]};
 
   ForAllForm[v_, b_] := {"\[ForAll]", MakeMathBoxes @ v, ":", MakeMathBoxes @ b};
@@ -434,10 +434,10 @@ flowAlignedRow = Case[
 
   Form[e_] := MakeMathBoxes @ e;
 
-  e:((h_Symbol)[_, __]) /; KeyExistsQ[$flowAlignmentTable, h] :=
+  e:((h_Symbol)[_, __]) /; KeyQ[$flowAlignmentTable, h] :=
     riffledFlowAlignedGridRow[$flowAlignmentTable @ h, e];
 
-  (h_Symbol)[args___] /; KeyExistsQ[$flowAlignmentContainerTable, h] :=
+  (h_Symbol)[args___] /; KeyQ[$flowAlignmentContainerTable, h] :=
     makeContainerFlow[h, args];
 
   e_ := MakeMathBoxes @ e;
@@ -472,16 +472,16 @@ DefineStandardTraditionalForm[
 
 equationCascadeFormBoxes[None, second_, rest__] :=
   TBoxOp["EquationGridForm"] @ createGridBox[
-    Prepend[equationGridRow[{None, None, second}]] @
+    Pre[equationGridRow[{None, None, second}]] @
           MapUnevaluated[equationGridRow[{None, "=", #}]&, {rest}],
-    {Right, Center, Left}, Automatic, Automatic
+    {Right, Center, Left}, Auto, Auto
   ];
 
 equationCascadeFormBoxes[first_, second_, rest__] :=
   TBoxOp["EquationGridForm"] @ createGridBox[
-    Prepend[equationGridRow[EqualForm[first, second]]] @
+    Pre[equationGridRow[EqualForm[first, second]]] @
           MapUnevaluated[equationGridRow[{None, "=", #}]&, {rest}],
-    {Right, Center, Left}, Automatic, Automatic
+    {Right, Center, Left}, Auto, Auto
   ];
 
 (**************************************************************************************************)
@@ -498,8 +498,8 @@ SetHoldAllComplete[MakeMathBoxesOrNull, equationGridRow, riffledEqGridRow];
 SetHoldFirst[equationGridFormBoxes];
 
 Options[EquationGridForm] = {
-  RowSpacings -> Automatic,
-  ColumnSpacings -> Automatic,
+  RowSpacings -> Auto,
+  ColumnSpacings -> Auto,
   Alignment -> {Right, Center, Left}
 }
 
@@ -598,7 +598,7 @@ $equationSymbolRules = {
   "\t"                                            -> "&\\quad "
 }
 
-$equationSplitP = Alternatives @@ Values[$equationSymbolRules];
+$equationSplitP = Alt @@ Values[$equationSymbolRules];
 
 katexEquationGrid[g_GridBox] := Scope[
   {entries, alignments, rowSpacings, columnSpacings} = getGridData[g];
@@ -611,7 +611,7 @@ katexEquationGrid[g_GridBox] := Scope[
 getGridData[GridBox[entries_, opts:OptionsPattern[GridBox]]] := Scope[
   {gridBoxAlignment, gridBoxSpacings} = OptionValue[GridBox, {opts}, {GridBoxAlignment, GridBoxSpacings}];
   Join[
-    {entries, Lookup[gridBoxAlignment, "Columns", Automatic]},
-    Lookup[gridBoxSpacings, {"Rows", "Columns"}, Automatic]
+    {entries, Lookup[gridBoxAlignment, "Columns", Auto]},
+    Lookup[gridBoxSpacings, {"Rows", "Columns"}, Auto]
   ]
 ]

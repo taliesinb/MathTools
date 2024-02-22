@@ -16,7 +16,7 @@ declareFunctionAutocomplete[function_Symbol, spec_] := Scope @ IfSynaxInfo[
 declareSyntaxInfo[function_Symbol, argPatterns_List] := Scope @ IfSyntaxInfo[
   info = {"ArgumentsPattern" -> argPatterns};
   If[ContainsQ[argPatterns, Verbatim[OptionsPattern[]]],
-    AppendTo[info, "OptionNames" -> Map[toOptionName, OptionKeys @ function]]];
+    AppTo[info, "OptionNames" -> Map[toOptionName, OptionKeys @ function]]];
   CacheTo[$SyntaxInformationCache, {function, info},
     SyntaxInformation[function] = info;
   ];

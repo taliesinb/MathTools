@@ -4,12 +4,12 @@ PublicOption[LayerDepths, ParentCentering]
 
 Options[OrderedTreeVertexLayout] = {
   Orientation             -> Top,
-  RootVertex              -> Automatic,
+  RootVertex              -> Auto,
   RootOrientation         -> "Source",
   GlobalCentering         -> False,
-  FanoutStyle             -> Automatic,
-  BendRadius              -> Automatic,
-  LayerDepths             -> Automatic
+  FanoutStyle             -> Auto,
+  BendRadius              -> Auto,
+  LayerDepths             -> Auto
 };
 
 SetUsage @ "
@@ -36,12 +36,12 @@ OrderedTreeVertexLayout[OptionsPattern[]][data_] := Scope[
 
   If[rootOrientation === "Sink", indexGraph //= ReverseGraph];
   rootIndex = Switch[rootVertex,
-    IndexedVertex[_Int],    P1 @ rootVertex,
+    IndexedVertex[_Int],    F @ rootVertex,
     GraphOrigin,                VertexIndex[graph, LookupExtendedOption[graph, GraphOrigin]],
-    Automatic|"Source",         First[GraphSources @ SimpleGraph @ indexGraph, None],
+    Auto|"Source",         F[GraphSources @ SimpleGraph @ indexGraph, None],
     _,                          VertexIndex[graph, rootVertex]
   ];
-  If[!IntegerQ[rootIndex], ReturnFailed[]];
+  If[!IntQ[rootIndex], ReturnFailed[]];
 
   vertexCoordinates = OrderedTreeLayoutCoordinates[indexGraph, rootIndex, layerDepths];
 
@@ -68,7 +68,7 @@ OrderedTreeVertexLayout[OptionsPattern[]][data_] := Scope[
 
 PublicFunction[OrderedTreeLayoutCoordinates]
 
-OrderedTreeLayoutCoordinates[indexGraph_, root_, layerDepths_:Automatic] := Scope[
+OrderedTreeLayoutCoordinates[indexGraph_, root_, layerDepths_:Auto] := Scope[
 
   vertexCount = VertexCount @ indexGraph;
 
@@ -101,10 +101,10 @@ OrderedTreeLayoutCoordinates[indexGraph_, root_, layerDepths_:Automatic] := Scop
   $maxD = Max[$d] + 1;
   If[depths =!= {},
     numDepths = Len @ depths;
-    PrependTo[depths, 0];
+    PreTo[depths, 0];
     If[$maxD >= numDepths,
       depthDelta = Subtract @@ Part[depths, {-1, -2}];
-      newDepths = Last[depths, 1] + Range[$maxD - numDepths] * depthDelta;
+      newDepths = L[depths, 1] + Range[$maxD - numDepths] * depthDelta;
       JoinTo[depths, newDepths]
     ];
     $ys = N @ Part[depths, $ys + 1];

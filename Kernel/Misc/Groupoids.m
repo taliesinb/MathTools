@@ -51,9 +51,9 @@ PrivateFunction[constructGroupoid]
 
 constructGroupoid[assoc_] := Scope[
   assoc = assoc;
-  If[!KeyExistsQ[assoc, "States"], assoc["States"] = Indeterminate];
-  If[!KeyExistsQ[assoc, "Generators"],
-    assoc["Generators"] = If[KeyExistsQ[assoc, "MirroredGenerators"],
+  If[!KeyQ[assoc, "States"], assoc["States"] = Indeterminate];
+  If[!KeyQ[assoc, "Generators"],
+    assoc["Generators"] = If[KeyQ[assoc, "MirroredGenerators"],
       Part[assoc["MirroredGenerators"], All, 1],
       None
     ];
@@ -94,7 +94,7 @@ groupoidObjectBoxes[object:GroupoidObject[data_], form_] := Scope[
     (* Displayed on request *)
     If[generators === None, {}, {{Column[generators], SpanFromLeft}}],
     form,
-    "Interpretable" -> Automatic
+    "Interpretable" -> Auto
   ]
 ];
 
@@ -104,13 +104,13 @@ Options[computeCayleyFunction] = {"Symmetric" -> True, "Labeled" -> True};
 
 computeCayleyFunction[data_, OptionsPattern[]] := Scope[
   UnpackAssociation[data, generators, cayleyFunction];
-  If[cayleyFunction =!= Automatic, Return @ cayleyFunction];
+  If[cayleyFunction =!= Auto, Return @ cayleyFunction];
   UnpackOptions[symmetric, labeled];
   list = Flatten @ MapIndexed[
     {gen, index} |-> {
-      If[labeled, Labeled[P1 @ index], Id] @ gen,
+      If[labeled, Labeled[F @ index], Id] @ gen,
       If[symmetric && (igen = ToInverseFunction[gen]) =!= gen,
-        If[labeled, Labeled[Inverted @ P1 @ index], Id] @ igen,
+        If[labeled, Labeled[Inverted @ F @ index], Id] @ igen,
         Nothing
       ]
     },
@@ -152,7 +152,7 @@ GroupoidPermutationTable[groupoid_] := Scope[
   statesBasis = Join[states, Inverted /@ states];
   TableForm[
     # @ statesBasis& /@ generators,
-    TableHeadings -> {Automatic, statesBasis}
+    TableHeadings -> {Auto, statesBasis}
   ]
 ];
 
@@ -190,7 +190,7 @@ makeMirroredColoredTokenGenerators[n_, colors_] :=
 
 PublicFunction[ColoredTokens]
 
-$TokenColorPalette = Prepend[$ColorPalette, GrayLevel[0.98]];
+$TokenColorPalette = Pre[$ColorPalette, GrayLevel[0.98]];
 
 declareFormatting[
   ColoredTokens[list_List] :> Pane[Row[Part[$TokenColorPalette, list], " "], ContentPadding -> False, FrameMargins -> {{0, 0}, {2, 2}}]
@@ -200,18 +200,18 @@ declareFormatting[
 PublicFunction[SetTokenColor]
 
 SetTokenColor[n_, c_][ColoredTokens[list_]] :=
-  If[list[[n]] === c, Nothing, ColoredTokens @ ReplacePart[list, n -> c]];
+  If[list[[n]] === c, Nothing, ColoredTokens @ RepPart[list, n -> c]];
 
 SetTokenColor[n_, c1_, c2_][ColoredTokens[list_]] :=
-  If[list[[n]] != c1, Nothing, ColoredTokens @ ReplacePart[list, n -> c2]];
+  If[list[[n]] != c1, Nothing, ColoredTokens @ RepPart[list, n -> c2]];
 
 (**************************************************************************************************)
 
 PublicFunction[PermutationActionGroupoid]
 
-PermutationActionGroupoid[initialStates_List, generators_:Automatic] := Scope[
+PermutationActionGroupoid[initialStates_List, generators_:Auto] := Scope[
   If[!MatrixQ[initialStates], initialStates = List @ initialStates];
-  n = Len @ P1 @ initialStates;
+  n = Len @ F @ initialStates;
   generators //= toPermutationGenerators;
   If[FailureQ[generators], ReturnFailed[]];
   generatorsAndLabels = Map[{#, toPermutationForm @ #}&, generators];
@@ -224,12 +224,12 @@ PermutationActionGroupoid[initialStates_List, generators_:Automatic] := Scope[
 ]
 
 toPermutationGenerators = Case[
-  Automatic       := Partition[Range @ n, 2, 1];
+  Auto       := Partition[Range @ n, 2, 1];
   "Cyclic"        := {Cycles @ {Range @ n}};
   list:{__List}   := Cycles /@ list;
   c:{__Cycles}    := simplifyCycles /@ c;
   g_ ? GroupQ     := % @ GroupGenerators @ g;
-  g_Graph         := DeleteDuplicates[Sort /@ AdjacentPairs[g]];
+  g_Graph         := Dedup[Sort /@ AdjacentPairs[g]];
   _               := $Failed;
 ]
 
@@ -252,7 +252,7 @@ PermutationActionCayleyFunction[gens_][state_] :=
   Labeled[applyPermutation[state, #], #2]& @@@ gens;
 
 applyPermutation[vec_, {i_, j_}] :=
-  ReplacePart[vec, {i -> Part[vec, j], j -> Part[vec, i]}];
+  RepPart[vec, {i -> Part[vec, j], j -> Part[vec, i]}];
 
 applyPermutation[vec_, c_Cycles] :=
   Permute[vec, c];
@@ -266,7 +266,7 @@ CardinalRewriteGroupoid[cardinals_List, initial_, rewriteCount_:1] := Scope[
     ListQ[initial],
       n = Len @ initial;
       initialStates = {initial},
-    IntegerQ[initial],
+    IntQ[initial],
       n = initial;
       initialStates = All,
     True,
@@ -296,7 +296,7 @@ toCountFilter = Case[
 ];
 
 canonicalCardinalTransition[rules_] := Scope[
-  rules = DeleteCases[rules, z_ -> z_];
+  rules = Decases[rules, z_ -> z_];
   reps = Sort /@ {rules, ReverseRules @ rules, invertRules @ rules, ReverseRules @ invertRules @ rules};
   minIndex = MinimumIndex[reps];
   If[MatchQ[minIndex, 2 | 4], Inverted, Id] @ CardinalTransition @ Part[reps, minIndex]

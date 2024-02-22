@@ -6,9 +6,9 @@ ConstructGraphicsViewTransform[viewAssoc_Assoc] := Scope[
 
   viewAssoc = Assoc[$defaultViewOpts, viewAssoc];
   {plotRange, viewPoint, viewVector, viewRotation, viewMatrix, viewCenter, viewVertical, viewAngle, viewProjection} =
-    Lookup[viewAssoc, {PlotRange, ViewPoint, ViewVector, ViewRotation, ViewMatrix, ViewCenter, ViewVertical, ViewAngle, ViewProjection}, Automatic];
+    Lookup[viewAssoc, {PlotRange, ViewPoint, ViewVector, ViewRotation, ViewMatrix, ViewCenter, ViewVertical, ViewAngle, ViewProjection}, Auto];
 
-  If[Dimensions[viewMatrix] === {2, 4, 4},
+  If[Dims[viewMatrix] === {2, 4, 4},
     Return @ GraphicsViewTransform[Dot @@ viewMatrix, viewMatrix]];
 
   SetAutomatic[plotRange, {{-1, 1}, {-1, 1}, {-1, 1}}];
@@ -17,12 +17,12 @@ ConstructGraphicsViewTransform[viewAssoc_Assoc] := Scope[
 
   plotRangeLower = Part[plotRange, All, 1];
   SetAutomatic[viewPoint, {1.3, -2.4, 2}];
-  SetAutomatic[viewProjection, If[FreeQ[viewPoint, Infinity], "Perspective", "Orthographic"]];
-  viewPoint //= Replace[$symbolicViewpointRules];
+  SetAutomatic[viewProjection, If[FreeQ[viewPoint, Inf], "Perspective", "Orthographic"]];
+  viewPoint //= Rep[$symbolicViewpointRules];
   viewPoint = Clip[viewPoint, {-1*^5, 1*^5}];
 
   SetAutomatic[viewCenter, {0.5, 0.5, 0.5}];
-  If[MatchQ[viewCenter, {{_, _, _}, {_, _}}], viewCenter //= P1];
+  If[MatchQ[viewCenter, {{_, _, _}, {_, _}}], viewCenter //= F];
   (* ^ Don't yet support translation of view *)
 
   viewCenter = plotRangeLower + viewCenter * plotSize;
@@ -100,7 +100,7 @@ $symbolicViewpointRules = {
 $defaultViewAngle = 35. * Degree;
 
 $viewOptionSymbols = {ViewPoint, ViewVector, ViewRotation, ViewMatrix, ViewCenter, ViewVertical, ViewAngle, ViewProjection};
-$defaultViewOpts = Thread[$viewOptionSymbols -> Automatic] // ReplaceOptions[ViewRotation -> 0];
+$defaultViewOpts = Thread[$viewOptionSymbols -> Auto] // ReplaceOptions[ViewRotation -> 0];
 
 PrivateVariable[$automaticViewOptions, $defaultViewPoint]
 
@@ -108,7 +108,7 @@ $defaultViewPoint = {-0.2, -2, 0.5};
 $automaticViewOptions := {ViewProjection -> "Orthographic", ViewPoint -> $defaultViewPoint};
 
 ConstructGraphicsViewTransform[g_Graphics3D] := Scope[
-  viewOpts = Options[g, DeleteCases[$viewOptionSymbols, ViewRotation]];
+  viewOpts = Options[g, Decases[$viewOptionSymbols, ViewRotation]];
   plotRange = GraphicsPlotRange @ g;
   viewAssoc = Assoc[viewOpts, PlotRange -> plotRange];
   ConstructGraphicsViewTransform[viewAssoc]
@@ -122,12 +122,12 @@ GraphicsViewTransform::badinput = "Received input of dimensions ``: ``."
 
 GraphicsViewTransform[tmatrix_, _][input_] :=
   Which[
-    VectorQ[input], xyVector[tmatrix, input],
+    VecQ[input], xyVector[tmatrix, input],
     MatrixQ[input], xyMatrix[tmatrix, input],
-    True, Message[GraphicsViewTransform::badinput, Dimensions @ input, input]; input
+    True, Message[GraphicsViewTransform::badinput, Dims @ input, input]; input
   ];
 
-xyVector[tmatrix_, input_] := imageXY @ Dot[tmatrix, Append[input, 1]];
+xyVector[tmatrix_, input_] := imageXY @ Dot[tmatrix, App[input, 1]];
 
 xyMatrix[tmatrix_, input_] := Transpose @ imageXY @ Dot[tmatrix, AppendConstantRow[1] @ Transpose @ input];
 
@@ -143,7 +143,7 @@ PrivateFunction[ToXYFunction]
 ToXYFunction[GraphicsViewTransform[tmatrix_, _]] := Fn[
   input,
   Which[
-    VectorQ[input], xyVector[tmatrix, input],
+    VecQ[input], xyVector[tmatrix, input],
     MatrixQ[input], xyMatrix[tmatrix, input],
     True, $Failed
   ]
@@ -156,13 +156,13 @@ PrivateFunction[ToZFunction]
 ToZFunction[GraphicsViewTransform[tmatrix_, _]] := Fn[
   input,
   Which[
-    VectorQ[input], zVector[tmatrix, input],
+    VecQ[input], zVector[tmatrix, input],
     MatrixQ[input], zMatrix[tmatrix, input],
     True, $Failed
   ]
 ];
 
-zVector[tmatrix_, input_] := imageZ @ Dot[tmatrix, Append[input, 1]];
+zVector[tmatrix_, input_] := imageZ @ Dot[tmatrix, App[input, 1]];
 
 zMatrix[tmatrix_, input_] := Transpose @ imageZ @ Dot[tmatrix, AppendConstantRow[1] @ Transpose @ input];
 
@@ -175,13 +175,13 @@ PrivateFunction[ToXYZFunction]
 ToXYZFunction[GraphicsViewTransform[tmatrix_, _]] := Fn[
   input,
   Which[
-    VectorQ[input], xyzVector[tmatrix, input],
+    VecQ[input], xyzVector[tmatrix, input],
     MatrixQ[input], xyzMatrix[tmatrix, input],
     True, $Failed
   ]
 ];
 
-xyzVector[tmatrix_, input_] := imageXYZ @ Dot[tmatrix, Append[input, 1]];
+xyzVector[tmatrix_, input_] := imageXYZ @ Dot[tmatrix, App[input, 1]];
 
 xyzMatrix[tmatrix_, input_] := Transpose @ imageXYZ @ Dot[tmatrix, AppendConstantRow[1] @ Transpose @ input]
 

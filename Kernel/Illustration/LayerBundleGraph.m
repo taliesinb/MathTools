@@ -2,7 +2,7 @@ PublicFunction[LayerBundleGraph]
 
 Options[LayerBundleGraph] = JoinOptions[
   $ExtendedGraphOptions,
-  LayerDistance -> 0.1, LayerScales -> Automatic, ImageSize -> 400
+  LayerDistance -> 0.1, LayerScales -> Auto, ImageSize -> 400
 ];
 
 LayerBundleGraph[list_List, opts:OptionsPattern[]] := Scope[
@@ -19,17 +19,17 @@ LayerBundleGraph[list_List, opts:OptionsPattern[]] := Scope[
 
 procBundleLayer[g_Graph, i_Int] := Scope[
   g2 = MapVertices[SumVertex[i], g];
-  AppendTo[$vertices, VertexList @ g2];
-  AppendTo[$edges, EdgeList @ g2];
+  AppTo[$vertices, VertexList @ g2];
+  AppTo[$edges, EdgeList @ g2];
   coords = Values @ LookupVertexCoordinates @ g;
   {{l, b}, {r, t}} = CoordinateBoundingBox @ coords;
   w = r - l;
   scale = Part[layerScales, 1];
   SetAutomatic[scale,
-    imageWidth = P1 @ LookupImageSize @ ExtendedGraphPlot[g];
+    imageWidth = F @ LookupImageSize @ ExtendedGraphPlot[g];
     imageWidth / w
   ];
   SetNone[scale, 1];
-  AppendTo[$coords, scale * (Threaded[{-w/2 - l, -b + $dy}] + coords)];
+  AppTo[$coords, scale * (Threaded[{-w/2 - l, -b + $dy}] + coords)];
   $dy += (t - b) + layerDistance;
 ]

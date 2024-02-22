@@ -3,12 +3,12 @@ PublicOption[Orientation, RootVertex, RootOrientation, Balanced, FanoutStyle, Be
 
 Options[TreeVertexLayout] = {
   Orientation             -> Top,
-  RootVertex              -> Automatic,
+  RootVertex              -> Auto,
   Balanced                -> False,
   RootOrientation         -> "Source",
-  FanoutStyle             -> Automatic,
+  FanoutStyle             -> Auto,
   PreserveBranchOrder     -> False,
-  BendRadius              -> Automatic,
+  BendRadius              -> Auto,
   LayerDepthInterpolation -> None,
   StretchFactor           -> 1
 };
@@ -44,10 +44,10 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
   graphOrigin = LookupExtendedOption[graph, GraphOrigin];
   rootIndex = Switch[rootVertex,
     None,                       None,
-    Automatic,                  Automatic,
-    IndexedVertex[_Int],    P1 @ rootVertex,
-    GraphOrigin,                If[graphOrigin === None, Automatic, VertexIndex[graph, graphOrigin]],
-    "Source",                   First[GraphSources @ SimpleGraph @ ExpandCardinalSetEdges @ indexGraph, None],
+    Auto,                  Auto,
+    IndexedVertex[_Int],    F @ rootVertex,
+    GraphOrigin,                If[graphOrigin === None, Auto, VertexIndex[graph, graphOrigin]],
+    "Source",                   F[GraphSources @ SimpleGraph @ ExpandCardinalSetEdges @ indexGraph, None],
     _,                          VertexIndex[graph, rootVertex]
   ];
   baseMethod = If[preserveBranchOrder, "LayeredEmbedding", "LayeredDigraphEmbedding"];
@@ -59,7 +59,7 @@ TreeVertexLayout[OptionsPattern[]][data_] := Scope[
   transposed = orientation === Left;
   rever = Switch[orientation, Top, Id, Left, Rev, _, $NotImplemented];
 
-  {balanceSteps, balanceDelta} = Replace[balanced, {
+  {balanceSteps, balanceDelta} = Rep[balanced, {
     True           -> {100, 0.1},
     _Int       -> {balanced, 0.1},
     {_Int, _}  -> balanced,
@@ -111,10 +111,10 @@ applyTreeEdgeCoordinateFanoutStyle[edgeCoordinateLists_, bendRadius_, fanoutStyl
     "Center" | Center,
       Map[bendCenterFraction[#, 0.5]&, edgeCoordinateLists],
     Center -> _,
-      Map[bendCenterFraction[#, PN @ fanoutStyle]&, edgeCoordinateLists],
+      Map[bendCenterFraction[#, L @ fanoutStyle]&, edgeCoordinateLists],
     "Bottom" | Bottom,
       Map[bendBottom, edgeCoordinateLists],
-    Automatic | None,
+    Auto | None,
       edgeCoordinateLists,
     _,
       Message[TreeVertexLayout::badopt, fanoutStyle -> fanoutStyle];

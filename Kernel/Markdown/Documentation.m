@@ -1,7 +1,7 @@
 tokenizeUsage[str_Str] :=
   ToList[
     TOpen[TLineGroup], TOpen[TLine],
-    DeleteCases[ ""|"\n"] @ StringSplit[str, Append[$tokenRules, wholeWord[word:$currentMainSymbol] :> TMain[word]]],
+    Decases[ ""|"\n"] @ SSplit[str, App[$tokenRules, wholeWord[word:$currentMainSymbol] :> TMain[word]]],
     TClose[TLine], TClose[TLineGroup]
   ];
 
@@ -9,7 +9,7 @@ wholeWord[e_] := (StartOfLine|WordBoundary) ~~ e ~~ WordBoundary;
 $literalSymbols = $literalSymbolRegex;
 
 wholeInfixSyntax[e_] := Whitespace ~~ Except[StartOfLine] ~~ e ~~ Except[EndOfLine] ~~ Whitespace;
-$infixSyntaxStrings = Alternatives @@ StringSplit["-> :> === =!= > < >= == <= != = /@ @@@ @@ @ && || + - / * |"];
+$infixSyntaxStrings = Alt @@ SSplit["-> :> === =!= > < >= == <= != = /@ @@@ @@ @ && || + - / * |"];
 
 $varTokenRules = {
   "$$" -> TSeq[],
@@ -49,7 +49,7 @@ $tokenRules = {
   "\n" -> Splice[{TClose[TLine], TOpen[TLine]}]
 };
 
-parseSubscript[s_Str] := StringSplit[s, $subscriptTokenRules];
+parseSubscript[s_Str] := SSplit[s, $subscriptTokenRules];
 
 $subscriptTokenRules = {
   Splice @ $varTokenRules,
@@ -60,10 +60,10 @@ $subscriptTokenRules = {
 (**************************************************************************************************)
 
 groupTokens[tokens_List] := Scope[
-  $i = 1; $n = Length[tokens]; $tokens = tokens;
-  firstToken = P1 @ tokens;
+  $i = 1; $n = Len[tokens]; $tokens = tokens;
+  firstToken = F @ tokens;
   If[!MatchQ[firstToken, _TOpen], ReturnFailed[]];
-  grouped = groupSegment[P1 @ firstToken] //. $postGroupRules;
+  grouped = groupSegment[F @ firstToken] //. $postGroupRules;
   spanned = findMathSpan[grouped];
   spanned
 ];
@@ -73,8 +73,8 @@ $postGroupRules = {
 };
 
 WhitespaceOrComma = (WhitespaceCharacter | ",")..;
-$whitespaceP = _Str ? (StringMatchQ[WhitespaceOrComma]);
-$mathTokenP = Alternatives[
+$whitespaceP = _Str ? (SMatchQ[WhitespaceOrComma]);
+$mathTokenP = Alt[
   _TParen, _TAssoc, _TBracket, _TBrace,
   _TInfixSyntax, _TQuote,
   _TSeq, _TVar, _TVarSeq, _TVarIndexed, _TInteger,
@@ -113,7 +113,7 @@ groupSegment[nodeType_] := Block[
       ],
       other_ :> other
     ];
-    AppendTo[result, item];
+    AppTo[result, item];
   ];
   result
 ];
@@ -138,7 +138,7 @@ ParseUsageString[n_Int] :=
 PublicFunction[TokensToMarkdown]
 
 TokensToMarkdown[tokens_] :=
-  StringJoin @ outerMarkdown @ tokens;
+  SJoin @ outerMarkdown @ tokens;
 
 mapSeq[f_, args___] := Map[f, {args}];
 
@@ -188,22 +188,22 @@ markdownDispatch = Case[
 markdownDispatch[f_, s_] := Block[{$f = f}, markdownDispatch[s]];
 
 mathMarkdown[TMathSpan[args___]] := {"$",
-   StringTrim @ StringJoin @ markdownDispatch[innerMathMarkdown, {args}],
+   STrim @ SJoin @ markdownDispatch[innerMathMarkdown, {args}],
    "$"
 };
 
 $infixTranslation := $infixTranslation = Assoc[
-  StringJoin["\,{", #, "}\,"]& /@ Take[MathCharacterData[<|"InputForm" -> "Katex"|>], 12],
+  SJoin["\,{", #, "}\,"]& /@ Take[MathCharacterData[<|"InputForm" -> "Katex"|>], 12],
   "==" -> "\,⩵\,",
   "===" -> "\,⩶\,"
 ];
 
-katexEscape[s_] := StringReplace[s, $WLSymbolToKatexRegex];
+katexEscape[s_] := SRep[s, $WLSymbolToKatexRegex];
 
-dollarEscape[s_] := StringReplace[s, "$" -> "{\\mathdollar}"];
+dollarEscape[s_] := SRep[s, "$" -> "{\\mathdollar}"];
 makeKatexSymbol[s_, type_] := {"\\", type, "{", dollarEscape @ s, "}"};
 
-varMarkdown[s_Str] /; StringLength[s] === 1 := s;
+varMarkdown[s_Str] /; SLen[s] === 1 := s;
 varMarkdown[s_] := {"\\textit{", s, "}"};
 varMarkdown[s_] := s;
 
@@ -232,7 +232,7 @@ $currentMainSymbol = "FooBar";
 
 UsageToMarkdown[usage_Str] :=
   UsageToMarkdown @ Rule[
-    First[StringCases[usage, $mainSymbolRegex, 1], ""],
+    F[SCases[usage, $mainSymbolRegex, 1], ""],
     usage
   ];
 
@@ -249,7 +249,7 @@ PublicFunction[DumpUsagesToString]
 
 DumpUsagesToString[n_] := Scope[
   rules = Normal @ Take[$RawUsageStringTable, n];
-  StringRiffle[UsageToMarkdown /@ rules, "\n\n"]
+  SRiffle[UsageToMarkdown /@ rules, "\n\n"]
 ];
 
 (**************************************************************************************************)
@@ -266,7 +266,7 @@ PublicFunction[ExportUsages]
 ExportUsages[n_] := Scope[
   usageString = DumpUsagesToString[n];
   (* fullString = StringJoin["\\\\[", $KatexPrelude, "\n\\\\]\n\n", usageString]; *)
-  fullString = processForFranklin @ StringJoin["$$\n", $KatexPrelude, "\n$$\n\n", usageString];
+  fullString = processForFranklin @ SJoin["$$\n", $KatexPrelude, "\n$$\n\n", usageString];
   exportPath = PathJoin[$MarkdownExportDirectory, "Usages.md"];
   Export[exportPath, fullString, "Text", CharacterEncoding -> "UTF-8"]
 ];

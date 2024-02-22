@@ -21,7 +21,7 @@ DataFrame[keys_List -> cols_List] := Scope[
 DataFrame[assoc_Association] := Scope @ CatchMessage[
   {primaryKeys, data} = KeysValues @ assoc;
   {keys, cols} = toKeysCols @ data;
-  makeDataFrame[Prepend["Key", keys], Prepend[primaryKeys, cols]]
+  makeDataFrame[Pre["Key", keys], Pre[primaryKeys, cols]]
 ];
 
 DataFrame[data_] := Scope @ CatchMessage[
@@ -34,17 +34,17 @@ makeDataFrame[{}, _] := ThrowMessage["noColumns"];
 
 makeDataFrame[keys_, cols_] := Scope[
   If[!LengthEqualOrMessage["keysColsLength", keys, cols], ReturnFailed[]];
-  lens = Length /@ cols;
+  lens = Len /@ cols;
   If[!AllEqualQ[lens], ThrowMessage["ragged", RuleThread[keys, lens]]];
   cols = ToPacked /@ cols;
-  ConstructNoEntry[DataFrame, keys, cols, P1 @ lens]
+  ConstructNoEntry[DataFrame, keys, cols, F @ lens]
 ];
 
 (**************************************************************************************************)
 
 PublicFunction[DataFrameQ]
 
-DataFrameQ[HoldPattern[DataFrame[_List, _List, _Int] ? HoldNoEntryQ]] := True;
+DataFrameQ[HoldP[DataFrame[_List, _List, _Int] ? HoldNoEntryQ]] := True;
 DataFrameQ[_] := False;
 
 (**************************************************************************************************)
@@ -52,27 +52,27 @@ DataFrameQ[_] := False;
 SetHoldAll[defineDataFrameUpValues, defineDFUV];
 
 defineDataFrameUpValues[CompoundExpression[rules__SetDelayed, Null...]]  :=
-  Scan[defineDFUV, Unevaluated @ {rules}]
+  Scan[defineDFUV, Uneval @ {rules}]
 
 defineDFUV[head_Symbol[largs___,  $, rargs___] := rhs_] :=
   TagSetDelayed @@ Hold[
     DataFrame,
-    head[largs, HoldPattern[DataFrame[$K_List, $V_List, $N_Int] ? HoldNoEntryQ], rargs],
+    head[largs, HoldP[DataFrame[$K_List, $V_List, $N_Int] ? HoldNoEntryQ], rargs],
     rhs
   ];
 
 defineDFUV[arg_] := PrintIF[Hold[arg]];
 
 defineDataFrameUpValues[
-  Normal[$]              := MapThread[AssociationThread[$K, #]&, $V];
+  Normal[$]              := MapThread[AssocThread[$K, #]&, $V];
   Keys[$]                := $K;
   Values[$]              := $V;
   KeysValues[$]          := {$K, $V};
-  Dimensions[$]          := {$N, Len @ $K};
+  Dims[$]          := {$N, Len @ $K};
   Len[$]                 := $N;
   RandomChoice[$]        := Scope[
     i = RandomInteger[{1, $N}];
-    AssociationThread[$K, Part[$V, All, i]]
+    AssocThread[$K, Part[$V, All, i]]
   ];
   Part[$, spec__]        := dsPart[$K, $V, $N, spec];
   RandomSample[$, n_Int] := Scope[
@@ -112,7 +112,7 @@ also abort on messages! *)
 
 df_DataFrame[query_, result_:All] := dfQuery[df, query, result];
 
-dfQuery[df:HoldPattern[DataFrame[$K_List, $V_List, $N_Int] ? HoldNoEntryQ], query_, result_] :=
+dfQuery[df:HoldP[DataFrame[$K_List, $V_List, $N_Int] ? HoldNoEntryQ], query_, result_] :=
   Block[{$lhs = df}, dsDispatch[$K, $V, $N, DataFrame, doQueryResult, query, result]];
 
 doQueryResult[query_, result_] := Scope[
@@ -129,13 +129,13 @@ doQuery = Case[
   key_Str -> val_ :=
     pickCol[key, val];
 
-  fn_Function     := If[Count[fn, Slot[_Str], Infinity] == 1,
+  fn_Function     := If[Count[fn, Slot[_Str], Inf] == 1,
     pickCol[DeepFirstCase[fn, Slot[s_Str] :> s], simplifyFn[fn /. _Slot -> Slot[]]],
     pickIndices @ normalMap @ fn
   ];
 
   list_List :=
-    Intersection @@ Map[%, list];
+    Inter @@ Map[%, list];
 ];
 
 
@@ -144,7 +144,7 @@ pickCol[key_, fn_ ? MightEvaluateWhenAppliedQ] := pickIndices @ Map[fn, columnDa
 pickCol[key_, patt_] := pickIndices[columnData @ key, patt];
 
 simplifyFn = Case[
-  Function[(h:$lp)[_Slot, s_]] := h[s];
+  Fn[(h:$lp)[_Slot, s_]] := h[s];
   other_            := other;
 ,
   $lp -> $listableP
@@ -170,7 +170,7 @@ doResult = Case[
 
   part:(_Span | {__Integer})       := If[$indices === All, fromIndices @ part, fromIndices @ SafePart[$indices, part]];
 
-  ReplacePart[key_Str -> new_]     := Part[columnData @ key, $indices];
+  RepPart[key_Str -> new_]     := Part[columnData @ key, $indices];
 
 
 
@@ -184,8 +184,8 @@ doResult = Case[
 
   i_Integer                        := getPartI @ Which[
     $indices === All,             i,
-    i > Len[$indices],            PN @ $indices,
-    i < -Len[$indices] || i == 0, P1 @ $indices,
+    i > Len[$indices],            L @ $indices,
+    i < -Len[$indices] || i == 0, F @ $indices,
     True,                         Part[$indices, i]
   ];
 
@@ -199,7 +199,7 @@ range[n_] := range[n] = Range @ $N;
 
 rawMap[fn_] := MapThread[transformSlots @ fn, $V];
 normalMap[fn_] := Map[normify @ fn, $V];
-normify[fn_] := fn[AssociationThread[$K, #]]&;
+normify[fn_] := fn[AssocThread[$K, #]]&;
 
 (**************************************************************************************************)
 
@@ -210,18 +210,18 @@ dsDispatch[k_, v_, n_, fn_, impl_, args___] := Scope @ CatchMessage[fn,
 
 (**************************************************************************************************)
 
-transformSlots[f_] := ReplaceAll[f, Slot[k_Str] :> RuleCondition[Slot @ getColIndex @ k]];
-decondition[f_] := ReplaceAll[f, Verbatim[Condition][body_, test_] :> If[TrueQ[test], body, Nothing]]
+transformSlots[f_] := RepAll[f, Slot[k_Str] :> RuleEval[Slot @ getColIndex @ k]];
+decondition[f_] := RepAll[f, Verbatim[Condition][body_, test_] :> If[TrueQ[test], body, Nothing]]
 
-dsMap[fn:Function[_]] := rawMap @ decondition @ fn;
+dsMap[fn:Fn[_]] := rawMap @ decondition @ fn;
 dsMap[fn_] := normalMap @ fn;
 
-dsScan[fn:Function[_]] := rawMap @ nullify @ fn;
+dsScan[fn:Fn[_]] := rawMap @ nullify @ fn;
 dsScan[fn_] := Scan[normify @ fn, $V];
-nullify[Function[c_]] := Function[c;];
+nullify[Fn[c_]] := Fn[c;];
 nullify[f_] := f;
 
-dsSelect[fn:Function[_]] := fromIndices @ pickIndices @ rawMap @ fn;
+dsSelect[fn:Fn[_]] := fromIndices @ pickIndices @ rawMap @ fn;
 dsSelect[fn_] := newDataFrame[$K, Transpose @ Values @ Select[$V, normify @ fn]];
 
 fromIndices[indices_] := newDataFrame[$K, Part[$V, All, indices]];
@@ -236,7 +236,7 @@ $multiPart = All | _Span | {__Int};
 
 part[i_Int] := getPartI[i];
 part[i_Int, All] := getPartI[i];
-getPartI[i_] := If[i == 0 || Abs[i] > $N, $Failed, AssociationThread[$K, Part[$V, All, i]]];
+getPartI[i_] := If[i == 0 || Abs[i] > $N, $Failed, AssocThread[$K, Part[$V, All, i]]];
 
 part[multi:$multiPart] := newDataFrame[$K, Part[$V, multi]];
 
@@ -261,9 +261,9 @@ General::badPartSpec = "Unsupported part spec: ``."
 part[spec__] := ThrowMessage["badPartSpec", {spec}];
 
 newDataFrame[_, {}] := ThrowMessage[noColumns];
-newDataFrame[k_, c_] := ConstructNoEntry[DataFrame, k, ToPacked /@ c, Len @ P1 @ c];
+newDataFrame[k_, c_] := ConstructNoEntry[DataFrame, k, ToPacked /@ c, Len @ F @ c];
 
-getPartI[i_] := If[i == 0 || Abs[i] > $N, $Failed, AssociationThread[$K, Part[$V, All, i]]];
+getPartI[i_] := If[i == 0 || Abs[i] > $N, $Failed, AssocThread[$K, Part[$V, All, i]]];
 
 
 (**************************************************************************************************)
@@ -284,27 +284,27 @@ DataFrame[k_List, v_List]] := {k, v};
 toKeysCols := Case[
   data_List ? AssociationVectorQ := Scope[
     keys = Union @@ (Keys /@ data);
-    If[!StringVectorQ[keys], ThrowMessage["stringKeys", MsgExpr @ keys]];
+    If[!StrVecQ[keys], ThrowMessage["stringKeys", MsgExpr @ keys]];
     cols = Lookup[data, Key[#], None]& /@ keys;
     {keys, cols}
   ];
   data_List ? ListVectorQ := Scope[
-    dims = Dimensions @ array;
+    dims = Dims @ array;
     If[Len[dims] == 1, ThrowMessage["notLists"]];
-    keys = IntegerString @ Range @ P2 @ dims;
+    keys = IntStr @ Range @ P2 @ dims;
     {keys, Transpose @ data}
   ];
-  other_ := ThrowMessage["badData", MsgExpr @ Head @ data];
+  other_ := ThrowMessage["badData", MsgExpr @ H @ data];
 ];
 
 (**************************************************************************************************)
 
 DefineStandardTraditionalForm[
-  HoldPattern[DataFrame[k_List, v_List, n_Integer]] ? HoldNoEntryQ :> dataFrameBoxes[k, v, n]
+  HoldP[DataFrame[k_List, v_List, n_Integer]] ? HoldNoEntryQ :> dataFrameBoxes[k, v, n]
 ];
 
 dataFrameBoxes[k_, v_, n_] := Scope[
-  $n = n; $countPadding = StrLen @ IntStr @ n;
+  $n = n; $countPadding = SLen @ IntStr @ n;
   gridEntries = ZipMap[colSummary, k, v];
   grid = niceGrid @ gridEntries;
   ToBoxes @ Labeled[grid, Row[{n, " rows"}, BaseStyle -> {FontSize -> 12, FontFamily -> "Fira Code"}]]
@@ -332,14 +332,14 @@ colSummary[key_, {}] := {Style[key, Bold], "empty"};
 
 colSummary[key_, col_] := Scope[
   $values = col;
-  $heads = VectorReplace[Head /@ VectorReplace[col, $specialHeads], $toHeadName];
+  $heads = VectorReplace[H /@ VectorReplace[col, $specialHeads], $toHeadName];
   counts = Counts[$heads];
-  If[ContainsExactly[DeleteCases["null"] @ Keys @ counts, {"int", "real"}],
+  If[ContainsExactly[Decases["null"] @ Keys @ counts, {"int", "real"}],
     $heads = VectorReplace[$heads, "int" -> "real"];
     counts = Counts[$heads];
   ];
-  counts = Reverse @ KeySort @ counts;
-  entries = KeyValueMap[formatHeadCount, counts];
+  counts = Rev @ KSort @ counts;
+  entries = KVMap[formatHeadCount, counts];
   {Style[key, Bold], RawBoxes @ RowBox[entries]}
 ];
 
@@ -349,12 +349,12 @@ formatHeadCount[head_, count_] := Scope[
   If[summary =!= None,
     summary = summary @ If[count == $n, $values, Pick[$values, $heads, head]];
   ];
-  countStr = StringPadLeft[If[count == $n, "", IntStr @ count], $countPadding];
-  headStr = StringPadRight[head, 4];
+  countStr = SPadLeft[If[count == $n, "", IntStr @ count], $countPadding];
+  headStr = SPadRight[head, 4];
   color = Lookup[$headToColor, head, Black];
-  boxes = StringJoin[colorStr[headStr, color], " ", colorStr[countStr, $LightGray]];
+  boxes = SJoin[colorStr[headStr, color], " ", colorStr[countStr, $LightGray]];
   If[summary =!= None,
-    summaryBoxes = ToBoxes @ niceGrid @ KeyValueMap[{Style[#, Bold], #2}&, summary];
+    summaryBoxes = ToBoxes @ niceGrid @ KVMap[{Style[#, Bold], #2}&, summary];
     boxes = NiceTooltipBoxes[boxes, summaryBoxes, {500, 500}]
   ];
   boxes
@@ -383,7 +383,7 @@ intSummary[v_] := Scope[
   counts = Counts @ v;
   distinct = Len @ counts;
   If[distinct > 1024, Return @ PackAssociation[min, max, distinct]];
-  values = KeyValueMap[
+  values = KVMap[
     Underscript,
     Take[Select[# > 1&] @ ReverseSort[counts], UpTo[5]]
   ];
@@ -397,7 +397,7 @@ realSummary[v_] := Scope[
 ];
 
 strSummary[v_] := Scope[
-  lens = StrLen @ v;
+  lens = SLen @ v;
   {minLen, maxLen} = MinMax @ lens;
   shortest = trimStr @ Part[v, IndexOf[lens, minLen]];
   longest = trimStr @ Part[v, IndexOf[lens, maxLen]];
@@ -406,7 +406,7 @@ strSummary[v_] := Scope[
 
 trimStr[str_] := Scope[
   str = ToString[str, InputForm];
-  If[StrLen[str] > 40, str = InsertLinebreaks[StringTake[str, UpTo[40 * 6]], 40]];
+  If[SLen[str] > 40, str = InsertLinebreaks[STake[str, UpTo[40 * 6]], 40]];
   str
 ];
 
@@ -418,7 +418,7 @@ boolSummary[v_] := Scope[
 ]
 
 listSummary[v_] := Scope[
-  lens = Length /@ v;
+  lens = Len /@ v;
   {minLen, maxLen} = MinMax @ lens;
   shortest = Part[v, IndexOf[v, minLen]];
   longest = Part[v, IndexOf[v, maxLen]];

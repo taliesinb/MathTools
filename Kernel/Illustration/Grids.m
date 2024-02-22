@@ -16,7 +16,7 @@ MatrixGrid[array_, opts___] := arrayGrid[array, opts, AxesLabel -> {$rowsText, $
 RowVectorGrid[vector_, opts___] := arrayGrid[List @ vector, opts, AxesLabel -> {None, $colsText}, LabelStyle -> $axisStyle];
 ColumnVectorGrid[vector_, opts___] := arrayGrid[List /@ vector, opts, AxesLabel -> {$rowsText, None}, LabelStyle -> $axisStyle];
 
-ScalarGrid[n_, opts___] := MeshGrid[{{n}}, FrameStyle -> Append[$arrayFrameStyle, Dotted], opts, ItemSize -> {2, 2}];
+ScalarGrid[n_, opts___] := MeshGrid[{{n}}, FrameStyle -> App[$arrayFrameStyle, Dotted], opts, ItemSize -> {2, 2}];
 
 (**************************************************************************************************)
 
@@ -31,7 +31,7 @@ $rbrac = DarkGrayForm @ RaiseForm["]",.09];
 $lbrac = Style["[", $DarkGray, Bold];
 $rbrac = Style["]", $DarkGray, Bold];
 
-padStr[a_List] := StringPadLeft[TextString /@ a];
+padStr[a_List] := SPadLeft[TextString /@ a];
 toCol[{e_}] := Style[e, {FontSize -> $fs, FontFamily -> "Source Code Pro"}];
 toCol[list_] := Column[list,
   Spacings -> 0.15, Alignment -> Left, BaselinePosition -> Scaled[0.5],
@@ -74,7 +74,7 @@ MakeBoxes[SymbolicTimes[a___], form_] :=
 PublicTypesettingForm[SymbolicVerticalPlus, SymbolVerticalTimes]
 
 gridOp[elems_, op_] :=
-  Grid[ReplacePart[{op, #} & /@ elems, {1, 1} -> ""],
+  Grid[RepPart[{op, #} & /@ elems, {1, 1} -> ""],
    RowSpacings -> 0.4, ColumnSpacings -> {0.1},
    ColumnAlignments -> Right];
 MakeBoxes[SymbolicVerticalPlus[a___], form_] :=

@@ -9,7 +9,7 @@ LookupOption[object$, option$, default$] returns default$ if no value is associa
 * By default, Automatic is returned if there is no value for option$.
 "
 
-LookupOption[obj_, opt_, default_:Automatic] :=
+LookupOption[obj_, opt_, default_:Auto] :=
   Quiet @ Lookup[Options[obj, opt], opt, default];
 
 (**************************************************************************************************)
@@ -22,9 +22,9 @@ JoinOptions[options$1, options$2, $$] joins together the options$i to form a sin
 * If multiple values are given for a given option symbol, the first is taken.
 "
 
-JoinOptions[opts___] := DeleteDuplicatesBy[
-  Flatten @ Replace[Flatten @ {opts}, s_Symbol :> Options[s], {1}],
-  P1
+JoinOptions[opts___] := DedupBy[
+  Flatten @ Rep[Flatten @ {opts}, s_Symbol :> Options[s], {1}],
+  F
 ];
 
 (**************************************************************************************************)
@@ -39,7 +39,7 @@ OptionKeys[sym$] gives the keys for %Options[sym$].
 OptionKeys::headNoOpts = "Symbol `` does not appear to have any options.";
 
 OptionKeys[rules_List] := Keys @ rules;
-OptionKeys[sym_Symbol] := OptionKeys[sym] = Replace[Keys @ Options @ sym, {} :> (Message[OptionKeys::headNoOpts, sym]; {})];
+OptionKeys[sym_Symbol] := OptionKeys[sym] = Rep[Keys @ Options @ sym, {} :> (Message[OptionKeys::headNoOpts, sym]; {})];
 
 (**************************************************************************************************)
 
@@ -80,9 +80,9 @@ DropOptions[keySpec$] is an operator form of DropOptions that can be applied to 
 
 DropOptions[obj_, {}] := obj;
 
-DropOptions[rules_List, key:(_Symbol | _Str)] := DeleteCases[rules, (Rule|RuleDelayed)[key, _]];
+DropOptions[rules_List, key:(_Symbol | _Str)] := Decases[rules, (Rule|RuleDelayed)[key, _]];
 
-DropOptions[rules_List, opts_List] := FilterRules[rules, Complement[Keys @ rules, opts]];
+DropOptions[rules_List, opts_List] := FilterRules[rules, Comp[Keys @ rules, opts]];
 
 DropOptions[obj_, spec_] := applyToObjectRules[obj, DropOptions, spec];
 
@@ -116,7 +116,7 @@ RenameOptions[renameSpec$] is an operator form of RenameOptions that can be appl
 "
 
 RenameOptions[rules_List, rename:(_Rule | {___Rule})] :=
-  MapColumn[Replace[rename], 1, rules];
+  MapColumn[Rep[rename], 1, rules];
 
 RenameOptions[spec_][rules_] := RenameOptions[rules, spec];
 
@@ -144,7 +144,7 @@ ReplaceOptions[obj_ ? AtomQ, _] := (Message[ReplaceOptions::atomNoOpts, obj]; ob
 ReplaceOptions[obj_, kv:((Rule|RuleDelayed)[key_, _])] :=
   If[MemberQ[obj, (Rule|RuleDelayed)[key, _]],
     VectorReplace[obj, (Rule|RuleDelayed)[key, _] :> kv],
-    Append[obj, kv]
+    App[obj, kv]
   ];
 
 ReplaceOptions[obj_, rules_List] :=

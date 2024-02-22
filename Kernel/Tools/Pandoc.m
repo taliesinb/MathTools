@@ -25,16 +25,16 @@ PandocExportMDToHTML[indir$ -> {file$1, file$2, $$}, outdir$] converts specific 
 "
 
 PandocExportMDToHTML[indir_Str, outpath_Str] :=
-	PandocExportMDToHTML[indir -> FileNames["*.md", NormalizePath @ indir, Infinity], outpath];
+	PandocExportMDToHTML[indir -> FileNames["*.md", NormalizePath @ indir, Inf], outpath];
 
 PandocExportMDToHTML[inpath_Str -> infiles:{___Str}, outpath_Str] := Scope[
 	inpath //= NormalizePath;
 	outpath //= NormalizePath;
 	EnsureDirectory[outpath];
-	inlen = StringLength @ inpath;
+	inlen = SLen @ inpath;
 	Map[
 		infile |-> (
-			outfile = PathJoin[outpath, ReplaceFileExtension[StringDrop[infile, inlen], "html"]];
+			outfile = PathJoin[outpath, ReplaceFileExtension[SDrop[infile, inlen], "html"]];
 			PandocConvert[infile, outfile]
 		),
 		NormalizePath /@ infiles

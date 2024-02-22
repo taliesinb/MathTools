@@ -3,12 +3,12 @@ declareNamedRewritingSystem[symbol_] := With[
   declareBoxFormatting[
     symbol[] :> SBox[symbolName],
     symbol[args__] :> TemplateBox[
-      Prepend[SBox[symbolName]] @
+      Pre[SBox[symbolName]] @
       MapUnevaluated[rewritingRuleBoxes, {args}],
       "RewritingSystemRuleBindingForm"
     ]
   ];
-  $TemplateKatexFunction[symbolName] = LowerCaseFirst @ StringTrim[symbolName, "Symbol"];
+  $TemplateKatexFunction[symbolName] = LowerCaseFirst @ STrim[symbolName, "Symbol"];
 ]
 
 $TemplateKatexFunction["RewritingSystemRuleBindingForm"] = Fn["rewritingRuleBinding"[#1, riffled[","][##2]]];

@@ -19,7 +19,7 @@ UnitRoot[2] := -1;
 UnitRoot /: Power[UnitRoot[n_], k_Int] /; (k >= n) || Negative[k] := Power[UnitRoot[n], Mod[k, n]];
 
 declareBoxFormatting[
-  UnitRoot[n_] /; NumericQ[Unevaluated @ n] :> SubscriptBox["\[Xi]", ToBoxes @ n]
+  UnitRoot[n_] /; NumericQ[Uneval @ n] :> SubscriptBox["\[Xi]", ToBoxes @ n]
 ];
 
 (**************************************************************************************************)

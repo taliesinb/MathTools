@@ -7,17 +7,17 @@ DeclareGraphicsPrimitive[PrimitivesColumn, "Primitives,Vector?", primitivesGRCBo
 Options[PrimitivesGrid] = {
   Alignment -> Center,
   RowsEqual -> False,
-  RowAlignments -> Automatic,
+  RowAlignments -> Auto,
   ColumnsEqual -> False,
-  ColumnAlignments -> Automatic,
+  ColumnAlignments -> Auto,
   AlignmentPoint -> Center,
   Spacings -> 0,
-  RowSpacings -> Automatic,
-  ColumnSpacings -> Automatic,
+  RowSpacings -> Auto,
+  ColumnSpacings -> Auto,
   Dividers -> None,
   Frame -> False,
   FrameStyle -> GrayLevel[0.5],
-  FrameMargins -> Automatic
+  FrameMargins -> Auto
 };
 
 Options[PrimitivesRow] = DropOptions[{ColumnAlignments, RowsEqual, RowSpacings}] @ Options[PrimitivesGrid];
@@ -71,12 +71,12 @@ RawPrimitivesGrid[itemBoxes_, pos_, opts___Rule] := Scope[
   itemBounds = MatrixMap[PrimitiveBoxesBounds, itemBoxes];
 
   {halign, valign} = ParseAlignment[alignment, PrimitivesRow, Alignment];
-  colAlign = Map[parseHalign, ParseCyclicSpec[columnAlignments, numCols] /. Automatic -> halign];
-  rowAlign = Map[parseValign, ParseCyclicSpec[rowAlignments, numRows] /. Automatic -> valign];
+  colAlign = Map[parseHalign, ParseCyclicSpec[columnAlignments, numCols] /. Auto -> halign];
+  rowAlign = Map[parseValign, ParseCyclicSpec[rowAlignments, numRows] /. Auto -> valign];
 
   origSpacings = spacings; spacings *= {1, 1}; {hspacing, vspacing} = spacings;
-  colSpace = Append[0] @ ParseCyclicSpec[columnSpacings, numCols-1] /. Automatic -> hspacing;
-  rowSpace = Append[0] @ ParseCyclicSpec[rowSpacings, numRows-1] /. Automatic -> vspacing;
+  colSpace = App[0] @ ParseCyclicSpec[columnSpacings, numCols-1] /. Auto -> hspacing;
+  rowSpace = App[0] @ ParseCyclicSpec[rowSpacings, numRows-1] /. Auto -> vspacing;
 
   itemSizes = MatrixMap[BoundsToSize, itemBounds];
   itemWides = Part[itemSizes, All, All, 1];
@@ -139,8 +139,8 @@ RawPrimitivesGrid[itemBoxes_, pos_, opts___Rule] := Scope[
 
   SetNone[dividers, False];
   If[dividers =!= False,
-    xs = Prepend[Accumulate[colWides + colSpace] - colSpace/2, 0] + gx + fm;
-    ys = -Prepend[Accumulate[rowHighs + rowSpace] - rowSpace/2, 0] + gy + totalHigh - fm;
+    xs = Pre[Accumulate[colWides + colSpace] - colSpace/2, 0] + gx + fm;
+    ys = -Pre[Accumulate[rowHighs + rowSpace] - rowSpace/2, 0] + gy + totalHigh - fm;
     lr = {0, totalWide} + gx;
     bt = {0, totalHigh} + gy;
     {xs, ys} = Map[Take[#, {2, -2}]&, {xs, ys}];

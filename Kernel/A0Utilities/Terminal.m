@@ -1,6 +1,6 @@
 PublicFunction[RunInTerminalWindow]
 
-$runInTerminalTemplate = StringFunction @ StringTrim @ """
+$runInTerminalTemplate = StringFunction @ STrim @ """
 tell application "Terminal"
   do script "cd '#1'; #2"
   activate

@@ -13,26 +13,26 @@ ToSVGString[g_Graphics] := Scope[
 
 	background = LookupOption[g, Background];
 
-	prims = P1 @ g;
+	prims = F @ g;
 	$styleNames = <||>;
 	$styles = <||>;
 
   Block[{$context = $context},
     parseContext[AbsoluteThickness[1]];
     parseContext[AbsolutePointSize[3]];
-  	contents = StringJoin @ toSvg[prims];
-  	If[ColorQ @ background, contents = StringJoin[makeBackgroundRect @ HTMLColorString @ background, contents]];
+  	contents = SJoin @ toSvg[prims];
+  	If[ColorQ @ background, contents = SJoin[makeBackgroundRect @ HTMLColorString @ background, contents]];
   ];
 
   If[$styles =!= <||>,
-    entries = KeyValueMap[$styleEntryTemplate, $styles];
-    contents = StringRiffle[Flatten @ {"<style>", entries, "</style>", contents}, "\n"];
+    entries = KVMap[$styleEntryTemplate, $styles];
+    contents = SRiffle[Flatten @ {"<style>", entries, "</style>", contents}, "\n"];
   ];
 
-	StringTrim @ $svgOuterTemplate @ Assoc[
+	STrim @ $svgOuterTemplate @ Assoc[
 		"width" -> $width + 1, "height" -> $height + 1,
     "xmin" -> -1, "ymin" -> -1, "xmax" -> $width + 2, "ymax" -> $height + 2,
-		"contents" -> StringTrim[contents]
+		"contents" -> STrim[contents]
 	]
 ];
 
@@ -88,7 +88,7 @@ parseContext = Case[
   other_                                  := $Failed;
 ];
 
-$thicknessRules = <|Tiny -> 0.2, Small -> 0.5, Medium -> 1, Automatic -> 1, Large -> 2|>;
+$thicknessRules = <|Tiny -> 0.2, Small -> 0.5, Medium -> 1, Auto -> 1, Large -> 2|>;
 
 parseEdgeForm = Case[
   Opacity[o_, c_ ? ColorQ]                := % @ SetColorOpacity[c, o];
@@ -120,7 +120,7 @@ Scan[parseContext, {
 
 (**************************************************************************************************)
 
-toSvg[list_List] := freshContext @ StringRiffle[Map[parseListElem, list] /. Null -> "", "\n"]
+toSvg[list_List] := freshContext @ SRiffle[Map[parseListElem, list] /. Null -> "", "\n"]
 
 parseListElem[e_] := OnFailed[parseContext @ e, toSvg @ e, Nothing];
 
@@ -197,13 +197,13 @@ contextSeq[keys___] := Sequence @@ Lookup[$context, {keys}, ""];
 cachedStyle[f_][args___] := Scope[
 	sname = Lookup[$styleNames, Key @ {args}];
 	If[!MissingQ[sname], Return @ sname];
-	sname = "st" <> (IntegerDigits[Len @ $styles] /. $digitRules);
+	sname = "st" <> (IntDigits[Len @ $styles] /. $digitRules);
 	$styleNames[{args}] ^= sname;
-	$styles[sname] ^= StringReplace[f[args], Repeated[" ", {2, Infinity}] -> " "];
+	$styles[sname] ^= SRep[f[args], Repeated[" ", {2, Inf}] -> " "];
 	sname
 ];
 
-$digitRules = RuleThread[Range[0,9], Characters @ "abcdefghij"];
+$digitRules = RuleThread[Range[0,9], Chars @ "abcdefghij"];
 
 (**************************************************************************************************)
 
@@ -241,7 +241,7 @@ $transformTemplate = StringFunction @ """<g transform="matrix(#2 #3 #4 #5 #6 #7)
 
 (**************************************************************************************************)
 
-svgMap[f_, coords_] := StringRiffle[Map[toSvg[f[#]]&, coords], "\n"];
+svgMap[f_, coords_] := SRiffle[Map[toSvg[f[#]]&, coords], "\n"];
 
 (**************************************************************************************************)
 
@@ -329,7 +329,7 @@ $pathTemplate = StringFunction @ """<path d="#1" fill="none" stroke="#2" stroke-
 
 toSvg[BezierCurve[pnts_ ? cmq]] := $pathTemplate[bezierToPath @ pnts,  $context["pathcolor"], $context["paththickness"]];
 
-bezierToPath[{a_, b_, c_, d_}] := StringJoin[
+bezierToPath[{a_, b_, c_, d_}] := SJoin[
   "M", toPair @ a, " Q", toPairList @ {b, Avg[b, c]}, " T", toPair @ d
 ];
 
@@ -355,8 +355,8 @@ toSvg[other_] := (svgFail["unkprim", other]; "");
 
 (**************************************************************************************************)
 
-toPair[{x_, y_}] := StringJoin[IntegerString @ toX @ x, " ", IntegerString @ toY @ y];
-toPairList[points_] := StringJoin @ Riffle[toPair /@ points, ","];
+toPair[{x_, y_}] := SJoin[IntStr @ toX @ x, " ", IntStr @ toY @ y];
+toPairList[points_] := SJoin @ Riffle[toPair /@ points, ","];
 
 (**************************************************************************************************)
 
@@ -375,6 +375,6 @@ PublicIOFunction[ExportSVG]
 
 ExportSVG[file_Str, graphics_] := Scope[
   svg = ToSVGString @ graphics;
-  If[!StringQ[svg], ReturnFailed[]];
+  If[!StrQ[svg], ReturnFailed[]];
   ExportUTF8[file, svg]
 ];

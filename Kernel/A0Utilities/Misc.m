@@ -31,7 +31,7 @@ PublicFunction[ListRiffle, ScalarRiffle]
 
 ListRiffle[list_List, {}] := list;
 ListRiffle[list_List, riffleList_List] := Scope[
-  riff = PadRight[riffleList, Len[list], PN @ riffleList];
+  riff = PadRight[riffleList, Len[list], L @ riffleList];
   Most @ Catenate @ Transpose[{list, riff}]
 ];
 
@@ -44,7 +44,7 @@ PublicFunction[DeepFirstCase]
 
 SetHoldRest[DeepFirstCase];
 DeepFirstCase[expr_, patt_, except_:None] :=
-  FirstCase[expr, patt, except, {0, Infinity}, Heads -> True];
+  FirstCase[expr, patt, except, {0, Inf}, Heads -> True];
 
 (**************************************************************************************************)
 
@@ -83,7 +83,7 @@ RandomSeeded[body$, seeding$] evaluates body$ with %%RandomSeeding -> seeding$.
 
 SetHoldFirst[RandomSeeded];
 
-RandomSeeded[body_, Automatic] := body;
+RandomSeeded[body_, Auto] := body;
 RandomSeeded[body_, other_] := BlockRandom[body, RandomSeeding -> other];
 
 (**************************************************************************************************)
@@ -118,10 +118,10 @@ LookupAnnotation[object$, spec$, default$] evaluates and returns default$ if the
 
 SetHoldRest[LookupAnnotation];
 
-LookupAnnotation[obj_, key_, default_:Automatic] :=
+LookupAnnotation[obj_, key_, default_:Auto] :=
   OnFailed[AnnotationValue[obj, key], default];
 
-LookupAnnotation[obj_, key_List, default_:Automatic] :=
+LookupAnnotation[obj_, key_List, default_:Auto] :=
   VectorReplace[AnnotationValue[obj, key], $Failed :> default];
 
 (**************************************************************************************************)
@@ -150,7 +150,7 @@ PrivateFunction[notInternalSymbolQ]
 
 SetHoldFirst @ notInternalSymbolQ;
 
-notInternalSymbolQ[sym_Symbol] := !StringEndsQ[SymbolName @ Unevaluated @ sym, "$"];
+notInternalSymbolQ[sym_Symbol] := !SEndsQ[SymbolName @ Uneval @ sym, "$"];
 notInternalSymbolQ[_] := True;
 
 (**************************************************************************************************)

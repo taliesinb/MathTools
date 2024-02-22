@@ -1,6 +1,6 @@
 PublicStringPattern[MarkdownHeadingPattern, MarkdownNoteLinkPattern, MarkdownHyperlinkPattern, MarkdownInlineCodePattern, MarkdownBlockCodePattern, MarkdownEmphasisPattern]
 
-$emphasisFragment = StringReplace["""(?:(?:\*Z\*)|(?:/Z/)|(?:(?<!\S)_Z_(?!\S)))""", "Z" -> """(?:(?:\S[^\n]*?\S)|\S)"""];
+$emphasisFragment = SRep["""(?:(?:\*Z\*)|(?:/Z/)|(?:(?<!\S)_Z_(?!\S)))""", "Z" -> """(?:(?:\S[^\n]*?\S)|\S)"""];
 
 ("/" ~~ LetterCharacter..)... ~~ WordBoundary
 

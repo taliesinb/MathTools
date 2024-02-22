@@ -18,7 +18,7 @@ HugoNewSite[dir_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[siteName, hugoTheme, $verbose, $dryRun];
   SetAutomatic[$verbose, $dryRun];
 
-  If[StringFreeQ[dir, $PathnameSeparator], ReturnFailed["notPath", dir]];
+  If[SFreeQ[dir, $PathnameSeparator], ReturnFailed["notPath", dir]];
   dir //= NormalizePath;
   configFile = PathJoin[dir, "hugo.toml"];
   If[FileExistsQ[dir],
@@ -28,8 +28,8 @@ HugoNewSite[dir_Str, opts:OptionsPattern[]] := Scope[
   parent = FileNameDrop[dir];
   If[!DirectoryQ[parent], ReturnFailed["noparent", MsgPath @ dir]];
 
-  If[!StringQ[hugoTheme] || StringFreeQ[hugoTheme, "/"], ReturnFailed["invalidtheme", hugoTheme]];
-  {themeProvider, hugoTheme, themeBranch} = PadRight[StringSplit[hugoTheme, "/", 3], 3, None];
+  If[!StrQ[hugoTheme] || SFreeQ[hugoTheme, "/"], ReturnFailed["invalidtheme", hugoTheme]];
+  {themeProvider, hugoTheme, themeBranch} = PadRight[SSplit[hugoTheme, "/", 3], 3, None];
   SetNone[themeBranch, "master"];
   themeDir = DownloadGithubRepo[themeProvider, hugoTheme, GitBranch -> themeBranch, Verbose -> $verbose, DryRun -> $dryRun];
   If[FailureQ[themeDir], ReturnFailed[]];
@@ -48,7 +48,7 @@ HugoNewSite[dir_Str, opts:OptionsPattern[]] := Scope[
   dir
 ];
 
-$hugoConfigTemplate = StringFunction @ StringTrim @ """
+$hugoConfigTemplate = StringFunction @ STrim @ """
 baseURL = 'http://example.org/'
 languageCode = 'en-us'
 title = '#SiteName'
@@ -71,8 +71,8 @@ theme = "#HugoTheme"
 PublicIOFunction[HugoBuild]
 
 Options[HugoBuild] = {
-  HTMLPath -> Automatic,
-  MarkdownPath -> Automatic
+  HTMLPath -> Auto,
+  MarkdownPath -> Auto
 };
 
 HugoBuild[dir_Str, opts:OptionsPattern[]] :=
@@ -83,9 +83,9 @@ HugoBuild[dir_Str, opts:OptionsPattern[]] :=
 PublicIOFunction[HugoServe]
 
 Options[HugoServe] = {
-  HTMLPath -> Automatic,
-  MarkdownPath -> Automatic,
-  ServingPort -> Automatic
+  HTMLPath -> Auto,
+  MarkdownPath -> Auto,
+  ServingPort -> Auto
 };
 
 HugoServe[dir_Str, opts:OptionsPattern[]] :=

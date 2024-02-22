@@ -51,7 +51,7 @@ DownloadGithubRepo[userName_Str, repo_Str, OptionsPattern[]] := Scope[
     ReturnFailed["badzip", MsgPath @ localFile];
   ];
   Label["SkipDownload"];
-  subDir = First[
+  subDir = F[
     FileNames["*", localDir],
     Quiet @ DeleteDirector[localDir];
     ReturnFailed["badcontents"]

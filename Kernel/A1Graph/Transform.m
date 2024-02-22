@@ -103,15 +103,15 @@ VertexSelect[graph_, f_] := Scope @ Catch[
 
   vertices = VertexList @ graph;
   $vertexAnnotations = LookupExtendedOption[graph, VertexAnnotations];
-  $vertexCoordinates := $vertexCoordinates = P1 @ ExtractGraphPrimitiveCoordinates[graph];
+  $vertexCoordinates := $vertexCoordinates = F @ ExtractGraphPrimitiveCoordinates[graph];
 
   GraphScope[graph,
     bools = toVertexResults[f] /. Indeterminate -> True;
-    If[!VectorQ[bools, BooleanQ], ReturnFailed[]];
+    If[!VecQ[bools, BooleanQ], ReturnFailed[]];
     newVertices = Pick[$VertexList, bools];
   ];
 
-  ExtendedSubgraph[graph, newVertices, Automatic]
+  ExtendedSubgraph[graph, newVertices, Auto]
 ,
   VertexSelect
 ];
@@ -148,7 +148,7 @@ failSelect[msg_, args___] := (
 );
 
 checkBool[f_][args___] := Catch[
-  Replace[
+  Rep[
     Check[f[args], $Failed],
     Except[True|False|Indeterminate] :> failSelect["notboolres", SequenceForm[args]]
   ],
@@ -156,7 +156,7 @@ checkBool[f_][args___] := Catch[
 ];
 
 checkIndet[f_][args___] :=
-  Replace[f[args], Indeterminate :> Throw[Indeterminate, indet]];
+  Rep[f[args], Indeterminate :> Throw[Indeterminate, indet]];
 
 getVertexIndex[GraphOrigin] := getVertexIndex @ $GraphOrigin;
 getVertexIndex[v_] := Lookup[$VertexIndex, v, failSelect["notvertex", v]];
@@ -168,7 +168,7 @@ PublicFunction[RemoveSelfLoops]
 
 RemoveSelfLoops[graph_Graph] := Graph[
   VertexList @ graph,
-  Select[EdgeList @ graph, P1[#1] =!= P2[#]&],
+  Select[EdgeList @ graph, F[#1] =!= P2[#]&],
   Options @ graph
 ];
 
@@ -181,7 +181,7 @@ RandomlyPermuteVertices[graph$] randomly permutes the %VertexList order of verti
 * The option %RandomSeeding controls the pseudorandom permutation.
 "
 
-Options[RandomlyPermuteVertices] = {RandomSeeding -> Automatic};
+Options[RandomlyPermuteVertices] = {RandomSeeding -> Auto};
 
 RandomlyPermuteVertices[graph_, OptionsPattern[]] := Scope[
 

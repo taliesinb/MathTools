@@ -34,7 +34,7 @@ FixedGraphics[prims$, opts$$] is like %Graphics but applies a fixed scaling from
 
 Options[FixedGraphics] = {
   Background -> None,
-  BaselinePosition -> Automatic,
+  BaselinePosition -> Auto,
   GraphicsScale -> 100,
   Epilog -> {},
   Prolog -> {},
@@ -64,8 +64,8 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
     epilog //= ToGraphicsBoxes;
     prolog //= ToGraphicsBoxes;
   ];
-  boxes //= ReplaceAll[{i_InsetBox :> i, Offset[o_, p_] :> RuleCondition[p + o / $graphicsScale]}];
-  If[resolveInsetGraphics, boxes //= ReplaceAll[i_InsetBox :> RuleCondition @ embedInset @ i]];
+  boxes //= RepAll[{i_InsetBox :> i, Offset[o_, p_] :> RuleEval[p + o / $graphicsScale]}];
+  If[resolveInsetGraphics, boxes //= RepAll[i_InsetBox :> RuleEval @ embedInset @ i]];
   bounds = PrimitiveBoxesBounds[boxes, $graphicsScale];
   imagePadding //= StandardizePadding;
   tickPosition = Switch[ticks, True | Above, Above, Below, Below, _, None];
@@ -79,7 +79,7 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
 
   decos = {};
   If[TrueQ @ debugBounds,
-    AppendTo[decos, StyleBox[
+    AppTo[decos, StyleBox[
       RectangleBox @@ Transpose[bounds],
       FaceForm @ None, EdgeForm @ RGBColor[1, 0, 0, .5]
     ]];
@@ -90,7 +90,7 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
     padding = StandardizePadding @ frameMargins;
     If[FailureQ @ padding, BadOptionSetting[FixedGraphics, FrameMargins, frameMargins]];
     bounds = EnlargeBounds[bounds, padding / $graphicsScale];
-    AppendTo[decos, StyleBox[
+    AppTo[decos, StyleBox[
       RectangleBox @@ Transpose[bounds],
       FaceForm @ None, EdgeForm @ $Gray]];
     bounds = EnlargeBounds[bounds, 1 / $graphicsScale];
@@ -98,11 +98,11 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
 
   If[plotLabel =!= None,
     spacing = 5;
-    labelPos = {Mean @ P1 @ bounds, P22[bounds] + spacing / $graphicsScale};
+    labelPos = {Mean @ F @ bounds, P22[bounds] + spacing / $graphicsScale};
     text = Text[plotLabel, labelPos, {0, -1}, BaseStyle -> {FontFamily -> "Arial", FontSize -> 12}];
     {w, h} = MakeTextImageSize[text] + 1;
     Part[bounds, 2, 2] += (h + spacing) / $graphicsScale;
-    AppendTo[decos, ToGraphicsBoxes @ text];
+    AppTo[decos, ToGraphicsBoxes @ text];
   ];
 
   If[decos =!= {}, epilog = If[epilog === {}, decos, {decos, epilog}]];
@@ -118,7 +118,7 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
     If[epilog === {}, Seq[], Epilog -> epilog],
     If[prolog === {}, Seq[], Prolog -> prolog],
     If[background === None, Seq[], Background -> background],
-    If[baselinePosition === Automatic, Seq[], BaselinePosition -> baselinePosition]
+    If[baselinePosition === Auto, Seq[], BaselinePosition -> baselinePosition]
   ]
 ];
 
@@ -128,16 +128,16 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
 ZSortBoxes[boxes_] /; FreeQ[boxes, ZOrder -> _] := boxes
 ZSortBoxes[boxes_] := Module[
   {zassoc = Assoc[]},
-  zassoc[0] = ReplaceAll[boxes, {
+  zassoc[0] = RepAll[boxes, {
     StyleBox[b_, l___, ZOrder -> z_, r___] :> (
-      KeyAppendTo[zassoc, z, toStyleBox[b, l, r]]; {}
+      KAppTo[zassoc, z, toStyleBox[b, l, r]]; {}
     ),
     (* Style[foo, ZOrder -> 1] gets an extra list when boxified for some reason *)
     StyleBox[b_, l___, {l2___, ZOrder -> z_, r2___}, r___] :> (
-      KeyAppendTo[zassoc, z, toStyleBox[b, l, {l2, r2}, r]]; {}
+      KAppTo[zassoc, z, toStyleBox[b, l, {l2, r2}, r]]; {}
     )
   }];
-  layers = Values @ KeySort @ zassoc;
+  layers = Values @ KSort @ zassoc;
   Map[ZSortBoxes, layers]
 ];
 
@@ -160,23 +160,23 @@ FixedGraphics::badInset = "Unrecognized inset ``."
 
 embedInset = Case[
 
-  i:InsetBox[GraphicsBox[boxes_, opts___Rule], pos_:{0,0}, origin_:Automatic, insetSize_:Automatic, dir_:Automatic] := Scope[
+  i:InsetBox[GraphicsBox[boxes_, opts___Rule], pos_:{0,0}, origin_:Auto, insetSize_:Auto, dir_:Auto] := Scope[
     SetAutomatic[dir, {1, 0}];
     pos //= ResolveOffsets[$graphicsScale];
     If[!MatchQ[dir, $CoordP], Message[FixedGraphics::badInsetDir, dir]; Return @ i];
-    UnpackAnonymousOptions[{opts}, Automatic, imageSize, plotRange, plotRangePadding, alignmentPos];
+    UnpackAnonymousOptions[{opts}, Auto, imageSize, plotRange, plotRangePadding, alignmentPos];
     (* TODO: there are more specs like Offset which would be easy to support *)
-    insetSize = If[insetSize =!= Automatic,
-      First[insetSize, insetSize] * $graphicsScale,
+    insetSize = If[insetSize =!= Auto,
+      F[insetSize, insetSize] * $graphicsScale,
       imageSize
     ];
-    SetAll[plotRange, Automatic];
+    SetAll[plotRange, Auto];
     SetAutomatic[origin, alignmentPos];
     SetAutomatic[plotRange, PrimitiveBoxesBounds[boxes, None]];
     origin //= resolveOrigin;
     plotRange = PlotRangePad[plotRange, plotRangePadding];
     {plotWidth, plotHeight} = plotSize = Dist @@@ plotRange;
-    imageWidth = If[ListQ[insetSize], P1 @ insetSize, insetSize];
+    imageWidth = If[ListQ[insetSize], F @ insetSize, insetSize];
     If[!NumberQ[imageWidth], Message[FixedGraphics::badInsetSize, insetSize]; Return @ i];
     scaleFactor = imageWidth / plotWidth / $graphicsScale;
     rotMatrix = RotateToMatrix[Normalize[dir] * scaleFactor];
@@ -200,7 +200,7 @@ embedInset = Case[
 FixedGraphics::badOrigin = "Inset origin `` should be a coordinate, or a symbolic position.";
 
 resolveOrigin = Case[
-  Center | Automatic | Axis :=
+  Center | Auto | Axis :=
     Mean /@ plotRange;
 
   (* TODO: support a pair e.g. {Left, Top} *)

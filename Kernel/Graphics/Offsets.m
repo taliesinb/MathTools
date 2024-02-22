@@ -123,11 +123,11 @@ takeLine[{a_, b_}, Rectangular[{d1:$NumberP, d2:$NumberP}]] := Scope[
 ];
 
 takeLine[path_, Rectangular[{d1:$NumberP, d2:$NumberP}]] := Scope[
-  a = P1[path];
+  a = F[path];
   sz = {d1,d2}/2; rect = {a-sz, a+sz};
   c = LineRectangleIntersectionPoint[path, rect];
   n = LengthWhile[path, RegionMember[Rectangle @@ rect]];
-  DeleteDuplicates @ Prepend[Drop[path, n], c]
+  Dedup @ Pre[Drop[path, n], c]
 ];
 
 takeLine[{a_, b_}, d:$NumberP] := (
@@ -137,14 +137,14 @@ takeLine[{a_, b_}, d:$NumberP] := (
 );
 
 takeLine[coords_List, d:$NumberP] := Scope[
-  prev = P1 @ coords; total = 0;
+  prev = F @ coords; total = 0;
   n = LengthWhile[coords, curr |-> (total += Dist[curr, prev]; prev = curr; total < d)];
-  If[n == Len[coords], Return @ PN @ coords];
+  If[n == Len[coords], Return @ L @ coords];
   rem = total - d;
   newCoords = Drop[coords, n];
   If[rem == 0,
     newCoords,
-    Prepend[newCoords, PointAlongLine[Part[coords, {n + 1, n}], rem]]
+    Pre[newCoords, PointAlongLine[Part[coords, {n + 1, n}], rem]]
   ]
 ];
 
@@ -205,9 +205,9 @@ SimplifyOffsets[points_] := points //. {
 PublicFunction[ResolveOffsets]
 
 ResolveOffsets[e_, scale_ ? NumberQ] :=
-  ReplaceAll[e, {
-    Offset[o_, p_] :> RuleCondition[p + o / scale],
-    Offset[o_] :> RuleCondition[o / scale]
+  RepAll[e, {
+    Offset[o_, p_] :> RuleEval[p + o / scale],
+    Offset[o_] :> RuleEval[o / scale]
   }];
 
 ResolveOffsets[e_, _] := e;

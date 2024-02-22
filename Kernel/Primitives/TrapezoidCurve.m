@@ -20,8 +20,8 @@ $lerpPoints = {$d1, $d2, 0.5, 1 - $d2, 1 - $d1};
 trapezoidCurvePoints[TrapezoidCurve[{a:$Coord2P, b:$Coord2P}, amount_]] := Scope[
   delta = Normalize @ VectorRotate90[b - a];
   If[MatchQ[amount, $SidePattern|Above|Below -> _],
-    dir = Replace[P1[amount], $SideToCoords];
-    amount = PN[amount] * Sign[Dot[delta, dir]];
+    dir = Rep[F[amount], $SideToCoords];
+    amount = L[amount] * Sign[Dot[delta, dir]];
   ];
   SetAutomatic[amount, Scaled[0.333]];
   SetScaledFactor[amount, Dist[a, b]];

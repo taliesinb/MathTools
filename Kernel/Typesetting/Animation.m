@@ -37,16 +37,16 @@ PublicFunction[DiscreteAnimation]
 PublicFunction[ContinuousAnimation]
 
 Options[DiscreteAnimation] = {
-  FrameDuration -> Automatic,
-  FrameRate -> Automatic,
-  AnimationDuration -> Automatic,
+  FrameDuration -> Auto,
+  FrameRate -> Auto,
+  AnimationDuration -> Auto,
   AnimationLooping -> True,
   AnimationOrigin -> None
 };
 
 Options[ContinuousAnimation] = {
-  FrameDuration -> Automatic,
-  FrameRate -> Automatic,
+  FrameDuration -> Auto,
+  FrameRate -> Auto,
   AnimationDuration -> 4,
   AnimationLooping -> True,
   AnimationOrigin -> None
@@ -75,22 +75,22 @@ ContinuousAnimation[Animate[$$]] turns an ^Animate[$$] object into the equivalen
 "
 
 (* user construction *)
-DiscreteAnimation[obj_, nmax:Except[_Rule]:Automatic, opts___Rule] :=
-  CatchMessage @ makeDiscreteAnimation[Unevaluated @ obj, nmax, opts];
+DiscreteAnimation[obj_, nmax:Except[_Rule]:Auto, opts___Rule] :=
+  CatchMessage @ makeDiscreteAnimation[Uneval @ obj, nmax, opts];
 
 ContinuousAnimation[obj_, opts___Rule] :=
-  CatchMessage @ makeContinuousAnimation[Unevaluated @ obj, opts];
+  CatchMessage @ makeContinuousAnimation[Uneval @ obj, opts];
 
 (**************************************************************************************************)
 
 $optsSpec = (_Rule | _RuleDelayed)...;
 
 (* this is what ListAnimate evaluates to *)
-DiscreteAnimation[HoldPattern @ Manipulate[PaneSelector[rules:{___Rule}, _Dynamic, ___], {_, __Int, AnimationRate -> fps_, ___}, ___]] := CatchMessage @ Scope[
+DiscreteAnimation[HoldP @ Manipulate[PaneSelector[rules:{___Rule}, _Dynamic, ___], {_, __Int, AnimationRate -> fps_, ___}, ___]] := CatchMessage @ Scope[
   vals = Values[rules];
   makeDiscreteAnimation[
     AnimationPart[vals],
-    Automatic,
+    Auto,
     FrameRate -> fps, AnimationOrigin -> "ListAnimate"
   ]
 ]
@@ -98,31 +98,31 @@ DiscreteAnimation[HoldPattern @ Manipulate[PaneSelector[rules:{___Rule}, _Dynami
 (**************************************************************************************************)
 
 (* this is what Animate evaluates to *)
-ContinuousAnimation[HoldPattern[Manipulate][expr_, {{var_Symbol, __} | var_Symbol, min_, max_, ___}, $optsSpec]] := With[
+ContinuousAnimation[HoldP[Manipulate][expr_, {{var_Symbol, __} | var_Symbol, min_, max_, ___}, $optsSpec]] := With[
   {scale = max - min},
   makeContinuousAnimation[
-    Hold[expr] /. HoldPattern[var] :> (\[FormalT] * scale) + min
+    Hold[expr] /. HoldP[var] :> (\[FormalT] * scale) + min
   ]
 ];
 
 (**************************************************************************************************)
 
 (* list manipulate *)
-DiscreteAnimation[HoldPattern[Manipulate][expr_, {{var_Symbol, __} | var_Symbol, l_List}, $optsSpec]] :=
+DiscreteAnimation[HoldP[Manipulate][expr_, {{var_Symbol, __} | var_Symbol, l_List}, $optsSpec]] :=
   makeDiscreteAnimation[
-    Hold[expr] /. HoldPattern[var] :> AnimationPart[l],
-    Automatic,
+    Hold[expr] /. HoldP[var] :> AnimationPart[l],
+    Auto,
     AnimationOrigin -> "Manipulate"
   ];
 
 (**************************************************************************************************)
 
 (* stepped manipulate *)
-DiscreteAnimation[HoldPattern[Manipulate][expr_, {{var_Symbol, __} | var_Symbol, min_, max_, step_ ? NumericQ, ___}, $optsSpec]] := CatchMessage @ With[
+DiscreteAnimation[HoldP[Manipulate][expr_, {{var_Symbol, __} | var_Symbol, min_, max_, step_ ? NumericQ, ___}, $optsSpec]] := CatchMessage @ With[
   {scale = max - min, min2 = min, max2 = max, step2 = step},
   makeDiscreteAnimation[
-    Hold[expr] /. HoldPattern[var] :> AnimationRange[min2, max2, step2],
-    Automatic,
+    Hold[expr] /. HoldP[var] :> AnimationRange[min2, max2, step2],
+    Auto,
     AnimationOrigin -> "Manipulate"
   ]
 ];
@@ -140,21 +140,21 @@ makeDiscreteAnimation[Hold[obj_] | obj_, nmax_, opts___Rule] := Scope[
   hobj = Hold[obj] /. $discreteAnimationRules;
   n = DeepCases[hobj, AnimationPart[l_List, _] :> Len[l]];
   If[n === {}, n = {1}];
-  SetAutomatic[nmax, Infinity];
+  SetAutomatic[nmax, Inf];
   n = Min[Max @ n, nmax];
-  hobj //= ReplaceAll[\[FormalN] -> n];
+  hobj //= RepAll[\[FormalN] -> n];
   animationMetadata = optsToAssoc[DiscreteAnimation, opts];
   animationMetadata["FrameCount"] = n;
   animationMetadata["AnimationType"] = "Discrete";
   animationMetadata["ExpressionHash"] = Base36Hash @ hobj;
   solveFrameStuff[animationMetadata];
-  Replace[hobj, Hold[e_] :> AnimationObject[e, animationMetadata]]
+  Rep[hobj, Hold[e_] :> AnimationObject[e, animationMetadata]]
 ];
 
 $discreteAnimationRules = {
-  AnimationPart[p_] :> RuleCondition @ AnimationPart[p, \[FormalT]],
-  AnimationRange[args___] :> RuleCondition @ AnimationPart[Range[args], \[FormalT]],
-  AnimationBetween[a_, b_] :> RuleCondition @ NumericLerp[a, b, \[FormalT] / \[FormalN]]
+  AnimationPart[p_] :> RuleEval @ AnimationPart[p, \[FormalT]],
+  AnimationRange[args___] :> RuleEval @ AnimationPart[Range[args], \[FormalT]],
+  AnimationBetween[a_, b_] :> RuleEval @ NumericLerp[a, b, \[FormalT] / \[FormalN]]
 };
 
 (**************************************************************************************************)
@@ -162,24 +162,24 @@ $discreteAnimationRules = {
 makeContinuousAnimation[Hold[obj_] | obj_, opts___Rule] := Scope[
   hobj = Hold[obj] /. $continuousAnimationRules;
   animationMetadata = optsToAssoc[ContinuousAnimation, opts];
-  animationMetadata["FrameCount"] = Automatic;
+  animationMetadata["FrameCount"] = Auto;
   solveFrameStuff[animationMetadata];
   animationMetadata["AnimationType"] = "Continuous";
   animationMetadata["ExpressionHash"] = Base36Hash @ hobj;
-  Replace[hobj, Hold[e_] :> AnimationObject[e, animationMetadata]]
+  Rep[hobj, Hold[e_] :> AnimationObject[e, animationMetadata]]
 ];
 
 $continuousAnimationRules = {
-  AnimationPart[p_] :> RuleCondition @ AnimationPart[p, \[FormalT] * Len[p]],
-  AnimationRange[args___] :> RuleCondition @ AnimationPart[Range[args], \[FormalT]],
-  AnimationBetween[a_, b_] :> RuleCondition @ NumericLerp[a, b, \[FormalT]]
+  AnimationPart[p_] :> RuleEval @ AnimationPart[p, \[FormalT] * Len[p]],
+  AnimationRange[args___] :> RuleEval @ AnimationPart[Range[args], \[FormalT]],
+  AnimationBetween[a_, b_] :> RuleEval @ NumericLerp[a, b, \[FormalT]]
 };
 
 
 (**************************************************************************************************)
 
-optsToAssoc[head_Symbol, opts___] := KeyMap[SymbolName, Assoc[Options[head], opts]];
-optsToAssoc[None, opts___] := KeyMap[SymbolName, Assoc[opts]];
+optsToAssoc[head_Symbol, opts___] := KMap[SymbolName, Assoc[Options[head], opts]];
+optsToAssoc[None, opts___] := KMap[SymbolName, Assoc[opts]];
 
 (**************************************************************************************************)
 
@@ -187,14 +187,14 @@ PublicFunction[ManipulateAnimation]
 
 ManipulateAnimation = Case[
 
-  m:HoldPattern[Manipulate[expr_, Repeated[_List, {2, Infinity}], opts:$optSpec]] :=
+  m:HoldP[Manipulate[expr_, Repeated[_List, {2, Inf}], opts:$optSpec]] :=
     % @ reduceManipulate @ m;
 
-  m:HoldPattern[Manipulate[_, $discSpec, $optSpec]] := DiscreteAnimation[m];
+  m:HoldP[Manipulate[_, $discSpec, $optSpec]] := DiscreteAnimation[m];
 
-  m:HoldPattern[Manipulate[_PaneSelector, ___]] := DiscreteAnimation[m];
+  m:HoldP[Manipulate[_PaneSelector, ___]] := DiscreteAnimation[m];
 
-  m:HoldPattern[Manipulate[_, $contSpec, $optSpec]] := ContinuousAnimation[m];
+  m:HoldP[Manipulate[_, $contSpec, $optSpec]] := ContinuousAnimation[m];
 
   m_Manipulate := (Message[ManipulateAnimation::manipanim]; $Failed);
 
@@ -211,13 +211,13 @@ ManipulateAnimation = Case[
 
 reduceManipulate = Case[
 
-  HoldPattern @ Manipulate[expr_, {{sym_Symbol, init_, ___}, ___}, rest__List, opts___] :=
+  HoldP @ Manipulate[expr_, {{sym_Symbol, init_, ___}, ___}, rest__List, opts___] :=
     %[Manipulate[expr, rest, opts] /. sym -> init];
 
-  HoldPattern @ Manipulate[expr_, {sym_Symbol, list_List, ___}, rest__List, opts___] :=
-    %[Manipulate[expr, rest, opts] /. sym -> P1[list]];
+  HoldP @ Manipulate[expr_, {sym_Symbol, list_List, ___}, rest__List, opts___] :=
+    %[Manipulate[expr, rest, opts] /. sym -> F[list]];
 
-  HoldPattern @ Manipulate[expr_, {sym_Symbol, min_, ___}, rest__List, opts___] :=
+  HoldP @ Manipulate[expr_, {sym_Symbol, min_, ___}, rest__List, opts___] :=
     %[Manipulate[expr, rest, opts] /. sym -> min];
 
   other_ := other;
@@ -253,7 +253,7 @@ makeAnimatedThumbnail[frames_, frameRate_, maxSize_, color_] :=
     If[Max[dims] > maxSize, imgs = ImageResize[#, {maxSize}]& /@ imgs];
     AnimatedImage[
       imgs,
-      AnimationRepetitions -> Infinity,
+      AnimationRepetitions -> Inf,
       FrameRate -> frameRate
     ],
     FrameStyle -> color
@@ -268,7 +268,7 @@ obj_AnimationObject["VideoToClipboard", args___] := CopyFileToClipboard @ VideoF
 CopyFileToClipboard[g_AnimationObject] := g["VideoToClipboard"];
 
 Unprotect[SystemOpen];
-SystemOpen[HoldPattern @ Video[File[path_Str], ___]] := SystemOpen @ path;
+SystemOpen[HoldP @ Video[File[path_Str], ___]] := SystemOpen @ path;
 Protect[SystemOpen];
 
 (**************************************************************************************************)
@@ -310,7 +310,7 @@ AnimationObject[_, meta_]["RangeSpec"] :=
 
 AnimationObject[g_, meta_]["Manipulate"] :=
   Construct[
-    Animate, Unevaluated @ g,
+    Animate, Uneval @ g,
     toRangeSpec @ meta
   ];
 
@@ -335,14 +335,14 @@ obj_AnimationObject["FrameList", opts___Rule] := CatchMessage @
 (**************************************************************************************************)
 
 AnimationObject[g_, _]["GraphicsFunction"] := CatchMessage @
-  Construct[Fn, \[FormalT], Unevaluated @ g];
+  Construct[Fn, \[FormalT], Uneval @ g];
 
 (**************************************************************************************************)
 
 obj_AnimationObject["GraphicsList", opts___Rule] := CatchMessage[
   meta = obj["ResolvedMetadata", opts];
   fn = obj["GraphicsFunction"];
-  times = getFrameTimes[meta, Lookup[{opts}, MaxFrames, Infinity]];
+  times = getFrameTimes[meta, Lookup[{opts}, MaxFrames, Inf]];
   Map[fn, times]
 ];
 
@@ -351,7 +351,7 @@ obj_AnimationObject["GraphicsList", opts___Rule] := CatchMessage[
 getFrameTimes[meta_, max_] := Scope[
   num = meta["FrameCount"];
   frameTimes = If[contQ[meta], Lerp[0, 1, Into[num]], Range[1, num]];
-  If[IntegerQ[max] && num > max, frameTimes = Part[frameTimes, Round @ Lerp[1, num, Into @ max]]];
+  If[IntQ[max] && num > max, frameTimes = Part[frameTimes, Round @ Lerp[1, num, Into @ max]]];
   frameTimes
 ];
 
@@ -360,7 +360,7 @@ getFrameTimes[meta_, max_] := Scope[
 PrivateFunction[solveFrameStuff]
 
 solveFrameStuff[assoc_Assoc, hints:_Assoc:<||>] := Scope[
-  UnpackAssociation[assoc, frameRate, frameDuration, frameCount, animationDuration, "Default" -> Automatic];
+  UnpackAssociation[assoc, frameRate, frameDuration, frameCount, animationDuration, "Default" -> Auto];
   checkDone = Fn[
     setInv[frameRate, frameDuration];
     setTimes[animationDuration, frameCount, frameDuration];
@@ -369,7 +369,7 @@ solveFrameStuff[assoc_Assoc, hints:_Assoc:<||>] := Scope[
     If[AllTrue[res, numQ], Return[Join[assoc, res], Block]]
   ];
   checkDone[];
-  KeyValueScan[
+  KVScan[
     {key, val} |-> Switch[key,
       FrameRate,         frameRate = val;         checkDone[],
       FrameCount,        frameCount = val;        checkDone[],
@@ -381,7 +381,7 @@ solveFrameStuff[assoc_Assoc, hints:_Assoc:<||>] := Scope[
   $Failed
 ];
 
-autQ = MatchQ[Automatic];
+autQ = MatchQ[Auto];
 numQ = NumericQ;
 
 General::inconstf = "Inconsistency between FrameDuration, FrameCount, AnimationDuration, and the number of frames."
@@ -403,8 +403,8 @@ DeclareGraphicsPrimitive[AnimationPart, "Primitives", animationBoxes];
 DeclareGraphicsPrimitive[AnimationRange, "Opaque", animationBoxes];
 DeclareGraphicsPrimitive[AnimationBetween, "Primitives,Primitives", animationBoxes];
 
-animationBoxes[AnimationPart[p_List, ___]] := ToGraphicsBoxes @ P1 @ p;
-animationBoxes[AnimationRange[args___]] := ToGraphicsBoxes @ P1 @ Range[args];
+animationBoxes[AnimationPart[p_List, ___]] := ToGraphicsBoxes @ F @ p;
+animationBoxes[AnimationRange[args___]] := ToGraphicsBoxes @ F @ Range[args];
 animationBoxes[AnimationBetween[a_, b_]] := ToGraphicsBoxes @ a;
 
 (**************************************************************************************************)
@@ -432,8 +432,8 @@ PublicFunction[FindAnimationLerp]
 PublicOption[EasingFunction]
 
 Options[FindAnimationLerp] = {
-  ImageSize -> Automatic,
-  PlotRange -> Automatic,
+  ImageSize -> Auto,
+  PlotRange -> Auto,
   EasingFunction -> "Linear"
 }
 
@@ -477,7 +477,7 @@ customOptLerp[ImageSize, Max, {aw_, ah_}, {bw_, bh_}] := {Max[aw, bw], Max[ah, b
 customOptLerp[PlotRange, Max, a_, b_] := MapThread[List /* MinMax, {a, b}];
 
 customOptLerp[_, type_Str, a_, b_] := Block[{$lerpVariable = toLerpVariable @ type}, findLerp[a, b]];
-customOptLerp[_, Automatic, a_, b_] := findLerp[a, b];
+customOptLerp[_, Auto, a_, b_] := findLerp[a, b];
 customOptLerp[_, other_, _, _] := other;
 
 unifyOpts[o1_, o2_] := MergeAssocations[lerpOpt, Assoc /@ {o1, o2}];
@@ -504,7 +504,7 @@ findLerp[a_Assoc, b_Assoc] :=
   ];
 
 findLerp[a_ ? EntryQ, b_ ? EntryQ] /; And[!AtomQ[a], !AtomQ[b], SameHeadQ[a, b], SameLengthQ[a, b]] := Block[
-  {$headStack = Append[$headStack, H @ a]},
+  {$headStack = App[$headStack, H @ a]},
   Apply[H @ a, MapThread[findLerp, {List @@ a, List @@ b}]]
 ];
 
@@ -546,7 +546,7 @@ linearLerp[a_, b_, t_] := a * (1 - t) + (b * t);
 PublicFunction[Graphics3DSpinAnimation]
 
 Graphics3DSpinAnimation[g_Graphics3D, angleDelta_:1] := Scope[
-  viewPoint = LookupOption[g, ViewPoint, Automatic];
+  viewPoint = LookupOption[g, ViewPoint, Auto];
   angles0 = ToSpherical @ viewPoint;
   angles1 = applyAngleDelta[angles0, angleDelta];
   viewPoint01 = ComposedNumericLerp[FromSpherical, angles0, angles1, \[FormalT]];
@@ -565,8 +565,8 @@ PublicFunction[VertexLayoutAnimationLerp]
 Options[VertexLayoutAnimationLerp] = {
   "InitialRotation" -> 0,
   EasingFunction -> "Quadratic",
-  PlotRange -> Automatic,
-  ImageSize -> Automatic
+  PlotRange -> Auto,
+  ImageSize -> Auto
 }
 
 VertexLayoutAnimationLerp[graph_Graph, layout_, OptionsPattern[]] := Scope[

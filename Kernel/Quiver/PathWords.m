@@ -6,9 +6,9 @@ ValidPathWordQ[word$, cards$] returns True if the cardinals in word are a subset
 * Inverted cardinal can be present in the form Inverted[cardinal$].
 "
 
-ValidPathWordQ[word_] := ValidPathWordQ[word, Automatic];
+ValidPathWordQ[word_] := ValidPathWordQ[word, Auto];
 
-ValidPathWordQ[word_List, Automatic] := True;
+ValidPathWordQ[word_List, Auto] := True;
 ValidPathWordQ[word_List, cards_] := SubsetQ[cards, StripInverted /@ word];
 ValidPathWordQ[_, _] := False;
 
@@ -38,7 +38,7 @@ ToPathWord[word_, validCardinals_, else_] :=
     else
   ];
 
-ToPathWord[word_, validCardinals_:Automatic] := Scope[
+ToPathWord[word_, validCardinals_:Auto] := Scope[
   $validCardinals = validCardinals;
   cardinals = toCardinalList @ word;
   Which[
@@ -61,7 +61,7 @@ $backtrackingRules = Dispatch @ {
 toCardinalList = Case[
   list_List        := list;
   n:Inverted[_Str] := {n};
-  str_Str          := Map[toCardinal, Characters @ str];
+  str_Str          := Map[toCardinal, Chars @ str];
   _                := $Failed;
 ];
 

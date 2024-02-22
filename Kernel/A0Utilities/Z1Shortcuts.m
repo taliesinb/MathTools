@@ -27,7 +27,7 @@ LoadShortcuts::unknownGroup = "Shortcut group `` is not defined."
 (* TODO: make shortcuts live in top level on a per-table basis, e.g. O`x, f`f, s`x, etc *)
 
 LoadShortcuts[names_] := (
-  Scan[loadShortcutGroup0, DeleteDuplicates @ Prepend["Core"] @ ToList[names]];
+  Scan[loadShortcutGroup0, Dedup @ Pre["Core"] @ ToList[names]];
   AppendUniqueTo[$ContextPath, $shortcutsContext];
   $shortcutsContext
 )
@@ -37,7 +37,7 @@ LoadShortcuts[names_] := (
 SetInitialValue[$loadedShortcutGroups, {}];
 
 loadShortcutGroup0[name_] := If[MemberQ[$loadedShortcutGroups, name], Null,
-  AppendTo[$loadedShortcutGroups, name];
+  AppTo[$loadedShortcutGroups, name];
   loadShortcutGroup[name];
 ];
 
@@ -46,7 +46,7 @@ loadShortcutGroup[name_] := Message[LoadShortcuts::unknownGroup, name];
 (**************************************************************************************************)
 
 strRules[str__Str] := strRules @ Riffle[{str}, " "]
-strRules[str_Str] := VectorApply[Rule] @ Partition[StringSplit @ StringTrim @ str, 2];
+strRules[str_Str] := VectorApply[Rule] @ Partition[SSplit @ STrim @ str, 2];
 
 $greekToRoman = strRules @ "
     \[Alpha] alpha \[Beta] beta \[Gamma] gamma \[Delta] delta \[CurlyEpsilon] ceps
@@ -67,17 +67,17 @@ $unicodeToName = strRules @ "
 "; *)
 
 $subSlots = {"#1" -> Slot[1], "#2" -> Slot[2], "#3" -> Slot[3], "#4" -> Slot[4], "#" -> Slot[1]}
-toSymbolFunc[baseName_] := Construct[Fn, StringReplace[baseName, $subSlots]];
+toSymbolFunc[baseName_] := Construct[Fn, SRep[baseName, $subSlots]];
 
 toNameList = Case[
-  str_Str := StringReplace[toList @ str, $greekToRoman];
+  str_Str := SRep[toList @ str, $greekToRoman];
   list_List := list;
   other := (Print["BAD ITERATOR SPEC: ", other]; {});
 ];
 
 toList = Case[
-  str_Str /; StringContainsQ[str, " "] := StringSplit[str];
-  str_Str := Characters[str];
+  str_Str /; SContainsQ[str, " "] := SSplit[str];
+  str_Str := Chars[str];
   list_List := list;
   other_ := (Print["BAD ITERATOR SPEC: ", other]; {});
 ];
@@ -97,11 +97,11 @@ symbolTable[name_Str, valueFn_, iterators___] := Scope[
   values = ApplyTuples[valueFn, valueTuples] //. $valueSimplification;
   result = RuleThread[names, CreateMultipleSymbols[$shortcutsContext, names, values]];
   If[SeqLength[iterators] === 1,
-    name2 = StringReplace[name, "#" -> ""];
-    If[!StringEndsQ[name2, "$"], name2 = name2 <> "$"];
+    name2 = SRep[name, "#" -> ""];
+    If[!SEndsQ[name2, "$"], name2 = name2 <> "$"];
     (* TODO: if we introduce subcontexts will this collision check fail?? *)
     If[!NameQ[$shortcutsContext <> name2],
-      PrependTo[result, makeSym[StringReplace[name2, "#" -> ""], valueFn]]]
+      PreTo[result, makeSym[SRep[name2, "#" -> ""], valueFn]]]
   ];
   result
 ];
@@ -122,7 +122,7 @@ decSymTable[name_, fn_, it_, All] := decSymTable[name, fn, it, it];
 decSymTable[name_Str, fn_, it_, subIt_] := Join[
     symbolTable[name, fn, it],
     symbolTable[
-        StringReplace[name, "#" -> "#1#2"],
+        SRep[name, "#" -> "#1#2"],
         fn @ #2 @ #1&,
         subIt,
         maybe @ $primedOrSub
@@ -136,7 +136,7 @@ parseIterator = Case[
   spec:{_List, _List}     := spec;            (* already parsed *)
   str_Str                 := %[str -> str];
   Rule[names_, values_]   := {toNameList @ names, toList @ values};
-  maybe[spec_]            := MapThread[Prepend, {% @ spec, {"", None}}];
+  maybe[spec_]            := MapThread[Pre, {% @ spec, {"", None}}];
   specs_joinIts           := CatenateVectors @ Map[%, List @@ specs];
   mapIts[nfn_, vfn_][it_] := Scope[{names, vals} = % @ it; {nfn /@ names, vfn /@ vals}];
   tuplesIt[spec_, n_]     := joinLetters @ Map[makeTuples[#, n]&, % @ spec];
@@ -144,7 +144,7 @@ parseIterator = Case[
   permsIt[spec_]          := joinLetters @ Map[Permutations, % @ spec];
 ];
 
-joinLetters[{a_, b_}] := {Map[StringJoin, a], b};
+joinLetters[{a_, b_}] := {Map[SJoin, a], b};
 makeTuples[e_, n_Int] := Tuples[e, n];
 makeTuples[e_, m_Int ;; n_Int] := Catenate @ Table[Tuples[e, i], {i, m, n}];
 
@@ -342,7 +342,7 @@ loadShortcutGroup["Core"] := (
 
 loadShortcutGroup["Categories"] := (
 
-  $scriptCapitals = Characters /@ {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", "𝒜ℬ𝒞𝒟ℰℱ𝒢ℋℐ𝒥𝒦ℒℳ𝒩𝒪𝒫𝒬ℛ𝒮𝒯𝒰𝒱𝒲𝒳𝒴𝒵"};
+  $scriptCapitals = Chars /@ {"ABCDEFGHIJKLMNOPQRSTUVWXYZ", "𝒜ℬ𝒞𝒟ℰℱ𝒢ℋℐ𝒥𝒦ℒℳ𝒩𝒪𝒫𝒬ℛ𝒮𝒯𝒰𝒱𝒲𝒳𝒴𝒵"};
 
   decSymTable["$C#",              CategorySymbol,                             $scriptCapitals];
   decSymTable["$C#",              CategorySymbol[BoldForm[#]]&,               "012345"];
@@ -429,7 +429,7 @@ loadShortcutGroup["Graphs"] := (
 loadShortcutGroup["Quivers"] := (
 
   $quiverLetters = "FPQRGBS";
-  $quiverDims := $quiverDims = parseIterator["01234imnpk" -> {0, 1, 2, 3, 4,Infinity, $sm, $sn, $sp, $sk}];
+  $quiverDims := $quiverDims = parseIterator["01234imnpk" -> {0, 1, 2, 3, 4,Inf, $sm, $sn, $sp, $sk}];
   $modQuiverDims := $modQuiverDims = parseIterator @ joinIts[$quiverDims, mapIts[StringJoinLeft["mod"], ModuloForm] @ $quiverDims];
 
   decSymTable["$Q#",              QuiverSymbol,                               $ROMAN, "QGHMRPF"];
@@ -512,7 +512,7 @@ loadShortcutGroup["Data"] := (
 
   ssetElToName = Case[
       {}              := "";
-      list_List       := StringJoin @ Map[%, list];
+      list_List       := SJoin @ Map[%, list];
       NegatedForm[n_] := ToUpperCase @ %[n];
       _[s_]           := % @ s;
       s_Str        := s;
@@ -558,12 +558,12 @@ loadShortcutGroup["Data"] := (
   $normAbBwIt = joinIts[tuplesIt[$normAb, 1 ;; 4], tuplesIt[$normBw, 1 ;; 4]];
   $wildAbBwIt = joinIts[tuplesIt[$wildAb, 1 ;; 4], tuplesIt[$wildBw, 1 ;; 4]];
 
-  symbolTable["$ls$#",            LiteralStringForm[StringJoin @ #]&,         $normAbBwIt];
-  symbolTable["$qs$#",            DoubleQuotedStringForm[StringJoin @ #]&,    $normAbBwIt];
-  symbolTable["$ws$#",            WildcardStringForm[StringJoin @ #]&,        $wildAbBwIt];
+  symbolTable["$ls$#",            LiteralStringForm[SJoin @ #]&,         $normAbBwIt];
+  symbolTable["$qs$#",            DoubleQuotedStringForm[SJoin @ #]&,    $normAbBwIt];
+  symbolTable["$ws$#",            WildcardStringForm[SJoin @ #]&,        $wildAbBwIt];
 
   $normBw6 = permsIt["000111" -> {$wl, $wl, $wl, $bl, $bl, $bl}];
-  symbolTable["$qs$#",            DoubleQuotedStringForm[StringJoin @ #]&,    $normBw6];
+  symbolTable["$qs$#",            DoubleQuotedStringForm[SJoin @ #]&,    $normBw6];
 
   makeSym["DQSF",                 DoubleQuotedStringForm];
   makeSym["DQSSet",               SetForm /* Map[DoubleQuotedStringForm]];

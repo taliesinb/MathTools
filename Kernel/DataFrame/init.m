@@ -4,4 +4,4 @@ PublicHead[DataSelection]
 
 PublicHead[Sampled]
 
-$listableFunctionsP = StringStartsQ | StringEndsQ | StringContainsQ | StringMatchQ | StringFreeQ;
+$listableFunctionsP = SStartsQ | SEndsQ | SContainsQ | SMatchQ | SFreeQ;

@@ -15,7 +15,7 @@ ImportHTMLToMarkdown[url_Str] := Scope[
       title = DeepFirstCase[xml, XMLElement["meta", {"property" -> "og:title", "content" -> str_Str}, _] :> str];
       title = StringTrimRight[title, " | Quanta Magazine"];
       abstract = DeepFirstCase[xml, XMLElement["meta", {"property" -> "og:description", "content" -> str_Str}, _] :> str];
-      content = StringJoin["# Quanta: \"", title, "\"\n\n", "#doc/article in #pub/Quanta\n\n", url, "\n\n> ", abstract],
+      content = SJoin["# Quanta: \"", title, "\"\n\n", "#doc/article in #pub/Quanta\n\n", url, "\n\n> ", abstract],
     _,
       ReturnFailed[];
   ];

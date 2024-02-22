@@ -33,7 +33,7 @@ ImportOpenReviewPage::badfield = "Could not extract field `` for article at ``."
 ImportOpenReviewPage[str_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[$verbose];
 
-  id = If[StringMatchQ[str, ArxivPaperIDPattern], str,
+  id = If[SMatchQ[str, ArxivPaperIDPattern], str,
     FirstStringCase[str, "id=" ~~ num:OpenReviewPaperIDPattern :> num, ReturnFailed["badurl", str]]
   ];
   VPrint["OpenReview paper ID: ", id];
@@ -50,56 +50,56 @@ ImportOpenReviewPage[str_Str, opts:OptionsPattern[]] := Scope[
   ];
 
   title = DeepFirstCase[xml, XMLElement["title", {}, {title_Str}] :> StringTrimRight[sanitizeTitle @ postProcessXMLValue[title], " | OpenReview"]];
-  If[!StringQ[title], ReturnFailed["badfield", "Title", url]];
+  If[!StrQ[title], ReturnFailed["badfield", "Title", url]];
   VPrint["Extracted title: ", title];
 
   pdfURL = DeepFirstCase[xml, XMLElement["meta", {"name" -> "citation_pdf_url", "content" -> url_}, _] :> url];
-  If[!StringQ[pdfURL], pdfURL = DeepFirstCase[xml, XMLElement["a", { ___, "href" -> url_, ___, "title" -> "Download PDF", ___}, _] :> url]];
-  If[!StringQ[pdfURL], ReturnFailed["badfield", "PDFURL", url]];
+  If[!StrQ[pdfURL], pdfURL = DeepFirstCase[xml, XMLElement["a", { ___, "href" -> url_, ___, "title" -> "Download PDF", ___}, _] :> url]];
+  If[!StrQ[pdfURL], ReturnFailed["badfield", "PDFURL", url]];
 
   date = DeepFirstCase[xml, XMLElement["span", {"class" -> "date item"}, inner_] :> canonDateItem[inner]];
-  If[!StringQ[date], ReturnFailed["badfield", "Date", url]];
+  If[!StrQ[date], ReturnFailed["badfield", "Date", url]];
 
   authors = DeepCases[xml, XMLElement["meta", {"name" -> "citation_author", "content" -> author_}, _] :> author];
   VPrint["Extracted authors: ", authors];
-  If[Not @ StringVectorQ @ authors, ReturnFailed["badfield", "Authors", url]];
+  If[Not @ StrVecQ @ authors, ReturnFailed["badfield", "Authors", url]];
   authors //= sanitizeAuthors;
 
-  xmlFreeFormFields = Association @ DeepCases[xml,
-    {XMLElement["strong", {___, "class" -> _String ? (StringContainsQ["note-content-field"]), ___}, {field_}], ___,
-     XMLElement["span", {___, "class" -> _String ? (StringContainsQ["note-content-value"]), ___}, {value_}]} :>
-    (StringTrim[field, (WhitespaceCharacter | ":")..] -> postProcessXMLValue[value])
+  xmlFreeFormFields = Assoc @ DeepCases[xml,
+    {XMLElement["strong", {___, "class" -> _String ? (SContainsQ["note-content-field"]), ___}, {field_}], ___,
+     XMLElement["span", {___, "class" -> _String ? (SContainsQ["note-content-value"]), ___}, {value_}]} :>
+    (STrim[field, (WhitespaceCharacter | ":")..] -> postProcessXMLValue[value])
   ];
   VPrint["Read free-form fields: ", Keys @ xmlFreeFormFields];
 
   jsonMetadata = DeepFirstCase[xml, XMLElement["script", {"id" -> "__NEXT_DATA__", "type" -> "application/json"}, {data_String}] :> data];
   event = None;
-  If[StringQ[jsonMetadata],
+  If[StrQ[jsonMetadata],
     json = ImportJSONString[jsonMetadata];
-    venue = DeepFirstCase[json, a_Association /; KeyExistsQ[a, "venue"] :> a["venue"]];
+    venue = DeepFirstCase[json, a_Association /; KeyQ[a, "venue"] :> a["venue"]];
     event = extractEvent @ venue;
-    If[!StringQ[event],
-      invitation = DeepFirstCase[json, a_Association /; KeyExistsQ[a, "invitation"] :> a["invitation"]];
+    If[!StrQ[event],
+      invitation = DeepFirstCase[json, a_Association /; KeyQ[a, "invitation"] :> a["invitation"]];
       event = extractEvent @ invitation
     ];
-    If[StringQ[event], VPrint["Extracted event: ", event],
+    If[StrQ[event], VPrint["Extracted event: ", event],
       VPrint[json]];
   ];
 
   {abstract, keywords, tldr} = Lookup[xmlFreeFormFields, {"Abstract", "Keywords", "TL;DR"}, None];
-  If[StringQ[tldr], abstract = StringJoin["TLDR: ", sanitizeAbstract @ tldr, "\n", abstract]];
-  If[!StringQ[abstract], ReturnFailed["badfield", "Abstract", url]];
-  If[StringQ[keywords],
-    keywords = StringTrim @ StringSplit[keywords, ","];
+  If[StrQ[tldr], abstract = SJoin["TLDR: ", sanitizeAbstract @ tldr, "\n", abstract]];
+  If[!StrQ[abstract], ReturnFailed["badfield", "Abstract", url]];
+  If[StrQ[keywords],
+    keywords = STrim @ SSplit[keywords, ","];
     fieldTags = extractFieldTags @ ToLowerCase @ keywords;
   ,
     fieldTags = None
   ];
 
-  customMetadata = KeyDrop[xmlFreeFormFields, {"Title", "Abstract"}];
+  customMetadata = KDrop[xmlFreeFormFields, {"Title", "Abstract"}];
   customMetadata["Keywords"] = keywords;
 
-  data = Association[
+  data = Assoc[
     "Title" -> title,
     "Date" -> date,
     "Authors" -> authors,
@@ -120,11 +120,11 @@ ImportOpenReviewPage[str_Str, opts:OptionsPattern[]] := Scope[
 
 extractFieldTags[keywords_List] := Scope[
   text = Join[
-    BearNoteData[{"Title" -> StringMatchQ[keywords, IgnoreCase -> True]}, "Text"],
-    BearNoteData[{"Text" -> StringContainsQ["#meta/aka " ~~ Alternatives[keywords], IgnoreCase -> True]}, "Text"]
+    BearNoteData[{"Title" -> SMatchQ[keywords, IgnoreCase -> True]}, "Text"],
+    BearNoteData[{"Text" -> SContainsQ["#meta/aka " ~~ Alt[keywords], IgnoreCase -> True]}, "Text"]
   ];
-  fieldTags = Flatten @ StringCases[text, "#field/" ~~ LetterCharacter.. ~~ Repeated[LetterCharacter.. ~~ "/"]..];
-  DeleteRedundantTags @ DeleteDuplicates @ fieldTags
+  fieldTags = Flatten @ SCases[text, "#field/" ~~ LetterCharacter.. ~~ Repeated[LetterCharacter.. ~~ "/"]..];
+  DeleteRedundantTags @ Dedup @ fieldTags
 ];
 
 (**************************************************************************************************)
@@ -132,7 +132,7 @@ extractFieldTags[keywords_List] := Scope[
 extractEvent = Case[
   <|"value" -> v_|> := % @ v;
   str_String        := FirstStringCase[str,
-    StartOfString ~~ event:RomanLetter.. ~~ (" " | ".cc/") ~~ year:RecentYearPattern :> StringJoin[event, " ", year]
+    StartOfString ~~ event:RomanLetter.. ~~ (" " | ".cc/") ~~ year:RecentYearPattern :> SJoin[event, " ", year]
   ];
   _                 := None;
 ]
@@ -150,10 +150,10 @@ $standardFieldRules = {
 (**************************************************************************************************)
 
 postProcessXMLValue[val_] :=
-  applyLatexMarkup @ ReplaceAll[val, XMLElement["a", {___, "href" -> urlFragment_, ___}, ___] :> urlFragment];
+  applyLatexMarkup @ RepAll[val, XMLElement["a", {___, "href" -> urlFragment_, ___}, ___] :> urlFragment];
 
 applyLatexMarkup = Case[
-  s_String := StringReplace[s, $latexMarkupRules];
+  s_String := SRep[s, $latexMarkupRules];
   e_ := e
 ];
 
@@ -166,10 +166,10 @@ $latexMarkupRules = {
 (**************************************************************************************************)
 
 canonDateItem := Case[
-  other_ := % @ StringRiffle[DeepCases[other, _Str]];
+  other_ := % @ SRiffle[DeepCases[other, _Str]];
   str_Str := FirstStringCase[str,
     (day:Repeated[DigitCharacter, {1,2}] ~~ " " ~~ month:Repeated[RomanLetter, {3, 10}] ~~ " " ~~ year:("20" ~~ Repeated[DigitCharacter, 2])) :>
-      year <> "/" <> $monthNameToNumber[StringTake[ToLowerCase @ month, 3]] <> "/" <> StringPadLeft[day, 2, "0"]
+      year <> "/" <> $monthNameToNumber[STake[ToLowerCase @ month, 3]] <> "/" <> SPadLeft[day, 2, "0"]
   ];
 ];
 

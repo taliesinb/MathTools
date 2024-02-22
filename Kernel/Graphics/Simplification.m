@@ -10,7 +10,7 @@ $expandPrimitivesDispatch = Dispatch[{
   p:Arrow[_ ? CoordinateMatricesQ, ___] :> Thread[p],
   p:(Polygon|Polyhedron)[_ ? CoordinateMatricesQ] :> Thread[p],
   (head:Polygon|Polyhedron)[l_ ? PositiveIntegerVectorsQ, arr_] :> Map[head[#, arr]&, l],
-  Style[p_, s__] :> expandStyle @ Replace[p, $expandPrimitivesDispatch]
+  Style[p_, s__] :> expandStyle @ Rep[p, $expandPrimitivesDispatch]
 }];
 
 expandStyle = Case[
@@ -18,7 +18,7 @@ expandStyle = Case[
   other_             := other
 ];
 
-ExpandPrimitives[primitives_, level_:{0,1}] := Replace[
+ExpandPrimitives[primitives_, level_:{0,1}] := Rep[
   primitives,
   $expandPrimitivesDispatch,
   level
@@ -41,23 +41,23 @@ $simplifyPrimitiveStyleRules = Dispatch @ {
 };
 
 simplifyPrimitiveStyles[primitives_] :=
-  ReplaceRepeated[primitives, $simplifyPrimitiveStyleRules];
+  RepRep[primitives, $simplifyPrimitiveStyleRules];
 
 (**************************************************************************************************)
 
 $simplifyPrimitiveAnnotationRules = Dispatch @ {
 
   (* a single annotation with uniform primitives can use a single larger primitive *)
-  anno:Annotation[{__Point} | {__Line} | {__Arrow}, __] :> RuleCondition @ joinAnnotationPrimitives[anno],
+  anno:Annotation[{__Point} | {__Line} | {__Arrow}, __] :> RuleEval @ joinAnnotationPrimitives[anno],
 
   (* fragmented uniform primitives can be combined into a single larger primitive *)
-  annos:{Annotation[(head:(Point | Line | Arrow))[_], _List, type_]..} :> RuleCondition @ joinHeadAnnotations[annos, type],
+  annos:{Annotation[(head:(Point | Line | Arrow))[_], _List, type_]..} :> RuleEval @ joinHeadAnnotations[annos, type],
 
   (* fragmented list primitives can be joined  *)
-  annos:{Annotation[_List, _List, type_]..} :> RuleCondition @ joinListAnnotations[annos, type],
+  annos:{Annotation[_List, _List, type_]..} :> RuleEval @ joinListAnnotations[annos, type],
 
   (* singleton annos can be joined, even if they are non-uniform / wrapped in style *)
-  annos:{Annotation[_, {_}, type_]..} :> RuleCondition @ joinSingletonAnnotations[annos, type]
+  annos:{Annotation[_, {_}, type_]..} :> RuleEval @ joinSingletonAnnotations[annos, type]
 };
 
 joinHeadPrimitives[prims_] := Scope[
@@ -78,7 +78,7 @@ joinHeadAnnotations[annos_, type_] := Scope[
   Annotation[primitives, indices, type]
 ];
 
-toCoordinateArray[e_] := If[CoordinateArrayQ[e] || VectorQ[e, CoordinateMatrixQ], e, List @ e];
+toCoordinateArray[e_] := If[CoordinateArrayQ[e] || VecQ[e, CoordinateMatrixQ], e, List @ e];
 toCoordinateMatrix[e_] := If[CoordinateMatrixQ[e], e, List @ e];
 
 joinListAnnotations[annos_, type_] :=
@@ -91,22 +91,22 @@ joinSingletonAnnotations[annos_, type_] :=
 simplifyPrimitiveAnnotations[primitives_] :=
   If[FreeQ[primitives, Annotation],
     primitives,
-    ReplaceRepeated[primitives, $simplifyPrimitiveAnnotationRules]
+    RepRep[primitives, $simplifyPrimitiveAnnotationRules]
   ];
 
 (**************************************************************************************************)
 
 simplifyPrimitiveLists[primitives_] :=
-  ReplaceRepeated[primitives, $simplifyPrimitiveListsRules];
+  RepRep[primitives, $simplifyPrimitiveListsRules];
 
 $simplifyPrimitiveListsRules = Dispatch @ {
 
   (* a single annotation with uniform primitives can use a single larger primitive. *)
   list:({__Point} | {__Line} | {__Arrow}) :>
-    RuleCondition @ joinHeadPrimitives[list],
+    RuleEval @ joinHeadPrimitives[list],
 
-  {l___, seq:(Repeated[_Point, {2, Infinity}] | Repeated[_Line, {2, Infinity}] | Repeated[_Arrow, {2, Infinity}]), r___} :>
-    RuleCondition @ {l, joinHeadPrimitives[{seq}], r},
+  {l___, seq:(Repeated[_Point, {2, Inf}] | Repeated[_Line, {2, Inf}] | Repeated[_Arrow, {2, Inf}]), r___} :>
+    RuleEval @ {l, joinHeadPrimitives[{seq}], r},
 
   {single_Point | single_Line | single_Arrow} :>
     single
@@ -118,8 +118,8 @@ $simplifyPrimitiveListsRules = Dispatch @ {
 PublicFunction[SimplifyTranslate]
 
 SimplifyTranslate[e_] := e //. {
-  Translate[Translate[g_, pos1_], pos2_] :> RuleCondition @ Translate[g, pos1 + pos2],
-  Translate[{t__Translate}, pos_] :> RuleCondition @ SimplifyTranslate[Map[Translate[#, pos]&, {t}]]
+  Translate[Translate[g_, pos1_], pos2_] :> RuleEval @ Translate[g, pos1 + pos2],
+  Translate[{t__Translate}, pos_] :> RuleEval @ SimplifyTranslate[Map[Translate[#, pos]&, {t}]]
 }
 
 (**************************************************************************************************)
@@ -127,6 +127,6 @@ SimplifyTranslate[e_] := e //. {
 PublicFunction[BakeGraphicsTransformations]
 
 (* TODO: Will this handle nested translates? also, what about other transformations ? *)
-BakeGraphicsTransformations[e_] := ReplaceRepeated[e, {
-  Translate[prims_, dx_ ? CoordinateVectorQ] :> RuleCondition @ TranslatePrimitives[prims, dx]
+BakeGraphicsTransformations[e_] := RepRep[e, {
+  Translate[prims_, dx_ ? CoordinateVectorQ] :> RuleEval @ TranslatePrimitives[prims, dx]
 }];

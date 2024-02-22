@@ -49,7 +49,7 @@ PublicFunction[ToRegex]
 
 ToRegex[e_] := Scope[
   re = ParseStringExpression @ e;
-  If[ListQ[re], Regex @ P1 @ re, $Failed]
+  If[ListQ[re], Regex @ F @ re, $Failed]
 ];
 
 (**************************************************************************************************)
@@ -61,7 +61,7 @@ DebugStringExpression[patt_] := (
   DebugStringExpression @ patt
 );
 
-$debugRuleNames = HoldPattern[
+$debugRuleNames = HoldP[
   StringPattern`Dump`ruleHoldPattern | StringPattern`Dump`rule0 | StringPattern`Dump`expandDatePattern | StringPattern`Dump`rule1 |
   StringPattern`Dump`rule2 | StringPattern`Dump`rule2b | StringPattern`Dump`rule3 | StringPattern`Dump`rules
 ];
@@ -74,19 +74,19 @@ setupDebugStringExpressionDownValue[] := Module[{dv},
   dv = dv /. StringPattern`PatternConvert -> DebugStringExpression;
 
   (* instrument all replacements with a known rule list *)
-  dv = ReplaceRepeated[dv, HoldPattern[fn:ReplaceAll|ReplaceRepeated][in_, rule:$debugRuleNames] :>
+  dv = RepRep[dv, HoldP[fn:RepAll|RepRep][in_, rule:$debugRuleNames] :>
     debugReplace[fn, in, rule]];
 
   (* dv = ReplaceAll[dv, HoldPattern[Set[l_, r_]] :> Set[l, debugSet[l, r]]]; *)
 
-  dv = ReplaceAll[dv, StringPattern`Dump`explosionDetector -> dummyExplosionDetector];
+  dv = RepAll[dv, StringPattern`Dump`explosionDetector -> dummyExplosionDetector];
 
-  dv = ReplaceAll[dv, HoldPattern @ If[StringQ[StringPattern`Dump`res], t_, f_] :>
-    If[StringQ[StringPattern`Dump`res], t, indentPrint[Style["res was not a string!", Red]]; f]
+  dv = RepAll[dv, HoldP @ If[StrQ[StringPattern`Dump`res], t_, f_] :>
+    If[StrQ[StringPattern`Dump`res], t, indentPrint[Style["res was not a string!", Red]]; f]
   ];
 
   (* instrument the entire body *)
-  dv = Replace[dv, $outerDebugRewrite, {1}];
+  dv = Rep[dv, $outerDebugRewrite, {1}];
 
   DownValues[DebugStringExpression] = dv;
 ];
@@ -95,7 +95,7 @@ SetHoldAll[dummyExplosionDetector];
 _dummyExplosionDetector := False;
 
 $outerDebugRewrite =
-  HoldPattern[RuleDelayed[lhs_, rhs_]] :>
+  HoldP[RuleDelayed[lhs_, rhs_]] :>
   RuleDelayed[lhs, Module[{result},
     indentBody[
       indentPrint["PatternConvert[", MsgExpr[StringPattern`Dump`patt, 5, 10], "]"],
@@ -108,10 +108,10 @@ SetInitialValue[$pcPatched, False];
 If[!$pcPatched,
   (* ensure macro definitions recurse *)
   Unprotect[StringPattern`PatternConvert];
-  DownValues[StringPattern`PatternConvert] = ReplaceAll[
+  DownValues[StringPattern`PatternConvert] = RepAll[
     DownValues[StringPattern`PatternConvert],
-    HoldPattern[ReplaceAll[s_, StringPattern`Dump`expandDatePattern]] :>
-      ReplaceRepeated[s, StringPattern`Dump`expandDatePattern]
+    HoldP[RepAll[s_, StringPattern`Dump`expandDatePattern]] :>
+      RepRep[s, StringPattern`Dump`expandDatePattern]
   ];
   Protect[StringPattern`PatternConvert];
   $pcPatched = True;
@@ -129,7 +129,7 @@ debugReplace[fn_, input_, rule_Symbol] := Module[{evalInput, res},
   evalInput = input;
   res = fn[evalInput, rule];
   indentPrint[
-    MsgExpr[evalInput, 5, 10], If[fn === ReplaceAll, " /.  ", " //. "], StringPadRight[HoldSymbolName @ rule, 17],
+    MsgExpr[evalInput, 5, 10], If[fn === RepAll, " /.  ", " //. "], SPadRight[HoldSymbolName @ rule, 17],
     " = ", MsgExpr[res, 5, 10]
   ];
   res
@@ -147,7 +147,7 @@ indentBody[pre_, body_, post_] :=
   ];
 
 $depth = 0;
-indentPrint[args___] := Print[StringRepeat["\t", $depth], args];
+indentPrint[args___] := Print[SRepeat["\t", $depth], args];
 
 (**************************************************************************************************)
 
@@ -256,7 +256,7 @@ StringPatternCanContainCharsQ[patt$, 'chars$'] checks if patt$ could match a str
 StringPatternCanContainCharsQ[_, ""] := False;
 
 StringPatternCanContainCharsQ[patt_, needle_Str] := Scope[
-  $needle = needle; $needleChars = Characters @ needle;
+  $needle = needle; $needleChars = Chars @ needle;
   Catch[spcc @ patt; False, spcc]
 ];
 
@@ -265,7 +265,7 @@ spccYes[] := Throw[True, spcc];
 spcc = Case[
   s_Str              := spccLiteral @ s;
   e:recurseAll       := Scan[%, e];
-  e:recurse1         := % @ P1 @ e;
+  e:recurse1         := % @ F @ e;
   e:recurse2         := % @ P2 @ e;
   ignore             := Null;
   blanks             := spccYes[];
@@ -275,7 +275,7 @@ spcc = Case[
   ExceptLetterClass[p_] := antipatternRulesOutNeedleQ[LetterClass @ p];
   Avoiding[_, p_]    := spccAvoiding @ p;
 
-  e:regex            := spccRegex @ P1 @ e; (* decompile the regex back to patterns *)
+  e:regex            := spccRegex @ F @ e; (* decompile the regex back to patterns *)
 
   e_                 := spccExpr @ e;
 ,
@@ -288,13 +288,13 @@ spcc = Case[
 
 (**************************************************************************************************)
 
-spccLiteral[s_] := If[StringContainsQ[s, $needleChars], spccYes[]];
+spccLiteral[s_] := If[SContainsQ[s, $needleChars], spccYes[]];
 
 (**************************************************************************************************)
 
 (* does the Avoiding rule out the needle? if so, we're safe *)
 spccAvoiding = Case[
-  a_Str    := If[!SubsetQ[Characters @ a, $needleChars], spccYes[]];
+  a_Str    := If[!SubsetQ[Chars @ a, $needleChars], spccYes[]];
   a_Symbol := If[LetterClassSymbolQ[a] && antipatternRulesOutNeedleQ[a], Null, spccYes[]];
   _        := spccYes[];
 ];
@@ -314,7 +314,7 @@ spccExcept = Case[
 spccExpr[e_] := Which[
 
   (* are any of the forbidden chars matched by the char class? *)
-  LetterClassSymbolQ @ e,      If[StringContainsQ[$needle, e], spccYes[]],
+  LetterClassSymbolQ @ e,      If[SContainsQ[$needle, e], spccYes[]],
 
   (* macros don't need full expansion to raw elements, which is to be avoided because parsing REs is slow *)
   cspMacroQ @ e,                  Print["EXPANDING MACRO ", e]; spcc @ Echo @ spccApplyRule[e, $StrExprMacroRules],
@@ -328,7 +328,7 @@ spccExpr[e_] := Which[
 
 (* if it failed to evaluate, bail out *)
 spccApplyRule[e_, rule_] := Scope[
-  res = Replace[e, rule];
+  res = Rep[e, rule];
   If[res === e, spccYes[]];
   res
 ];
@@ -344,15 +344,15 @@ spccRegex[re_Str] := Scope[
 
 (**************************************************************************************************)
 
-antipatternRulesOutNeedleQ[p_] := If[And @@ StringMatchQ[$needleChars, p], Null, spccYes[]];
+antipatternRulesOutNeedleQ[p_] := If[And @@ SMatchQ[$needleChars, p], Null, spccYes[]];
 
 spccRaw = Case[
   Verbatim[Except][e_RawCharGroup] := antipatternRulesOutNeedleQ[e];
-  e_RawCharGroup            := If[StringContainsQ[$needle, e], spccYes[]];
+  e_RawCharGroup            := If[SContainsQ[$needle, e], spccYes[]];
   e_RawStrExp               := Scan[%, e];
   e_Str                     := spccRegex @ e; (* this can be a regex *)
-  e_RawMaybe                := % @ P1 @ e;
-  e_RawRegex                := spccRegex @ P1 @ e;
+  e_RawMaybe                := % @ F @ e;
+  e_RawRegex                := spccRegex @ F @ e;
   raw_                      := (Print["UNKOWN RAW: ", raw]; spccYes[]);
 ];
 
@@ -375,27 +375,27 @@ FromRegex[re_Str | Regex[re_Str] | RegularExpression[re_String], OptionsPattern[
   remaining = re;
   While[remaining =!= "",
     rules = $parsingRules[$state];
-    case = First[
-      StringCases[remaining, rules, 1]
+    case = F[
+      SCases[remaining, rules, 1]
     ,
       ReturnFailed["nomatch", SymbolName @ $state, MsgExpr @ remaining];
     ];
     {match, action} = case;
-    VPrint[Style[Row[{"state = ", StringPadRight[SymbolName @ $state, 15], "cursor = ", Pane[$cursor, 80], "matched = ", Pane[MsgExpr @ match, 120], "action = ", Pane[MsgExpr @ action, 300], "result = ", Pane[MsgExpr @ $result, 500]}], LineBreakWithin -> False]];
-    remaining = StringDrop[remaining, StrLen @ match];
+    VPrint[Style[Row[{"state = ", SPadRight[SymbolName @ $state, 15], "cursor = ", Pane[$cursor, 80], "matched = ", Pane[MsgExpr @ match, 120], "action = ", Pane[MsgExpr @ action, 300], "result = ", Pane[MsgExpr @ $result, 500]}], LineBreakWithin -> False]];
+    remaining = SDrop[remaining, SLen @ match];
     runAction @ action
   ];
-  $result /. ($seq -> StringExpression) //. $simplificationRules /. flatAlt -> Alternatives /. {
+  $result /. ($seq -> SExpr) //. $simplificationRules /. flatAlt -> Alt /. {
     LetterClass[s_ ? SingleLetterQ] :> s,
     ExceptLetterClass[s_ ? SingleLetterQ] :> Except[s]
-  } /. Verbatim[StringExpression][a_] :> a
+  } /. Verbatim[SExpr][a_] :> a
 ];
 
 SetAttributes[flatAlt, {Flat, OneIdentity}];
 
 $simplificationRules = {
-  (h:LetterClass|ExceptLetterClass)[StringExpression[a___]]:> h[a],
-  StringExpression[l___, $infixAlt, r___] -> flatAlt[StringExpression[l], StringExpression[r]]
+  (h:LetterClass|ExceptLetterClass)[SExpr[a___]]:> h[a],
+  SExpr[l___, $infixAlt, r___] -> flatAlt[SExpr[l], SExpr[r]]
 }
 
 runAction = Case[
@@ -421,7 +421,7 @@ $escapedChars = {"(", ")", "[", "]", "{", "}", "\\", ".", "?"};
 
 defineParsingRules[$normalState,
 
-  "(?" ~~ f:{"i","m","s"}.. ~~ ")" :> If[StringContainsQ[f,"i"], enterState[$normalState, CaseInsensitive], Null],
+  "(?" ~~ f:{"i","m","s"}.. ~~ ")" :> If[SContainsQ[f,"i"], enterState[$normalState, CaseInsensitive], Null],
   "(?-i)"                          :> leaveState[],
 
   "(?:"          :> enterState[$normalState, $seq],
@@ -503,14 +503,14 @@ defineParsingRules[$classState,
 
 PublicFunction[RegexEscape]
 
-RegexEscape[re_] := StringReplace[re, StringPattern`Dump`$RegExpSpecialCharacters];
+RegexEscape[re_] := SRep[re, StringPattern`Dump`$RegExpSpecialCharacters];
 
 (**************************************************************************************************)
 
 PrivateSpecialFunction[DefineStringLetterClass]
 
 DefineStringLetterClass = Case[
-  sym_Symbol -> str_Str := %[sym -> {If[StrLen[str] == 1, str, "[" <> str <> "]"], str}];
+  sym_Symbol -> str_Str := %[sym -> {If[SLen[str] == 1, str, "[" <> str <> "]"], str}];
   sym_Symbol -> {outer_, inner_} := Module[{},
     StringPattern`Dump`SingleCharInGroupRules //= addOrUpdateRule[sym -> inner];
     StringPattern`Dump`SingleCharacterQ[Verbatim[sym]] := True;
@@ -526,7 +526,7 @@ PrivateSpecialFunction[DefineStringPattern]
 
 DefineStringPattern = Case[
   rule_RuleDelayed := Module[
-    {rule2 = MapAt[HoldPattern, rule /. $spDeclarationRules, 1], head = First @ DefinitionHead @ rule},
+    {rule2 = MapAt[HoldP, rule /. $spDeclarationRules, 1], head = F @ DefinitionHead @ rule},
     $cspRawHeadQ[head] = True;
     $StrExprRawRules         //= addOrUpdateRule[rule2];
     StringPattern`Dump`rules //= addOrUpdateRule[rule2];
@@ -535,8 +535,8 @@ DefineStringPattern = Case[
 ];
 
 $spDeclarationRules = {
-  s_Str /; StringContainsQ[s, "□"] :> RuleCondition @ StringReplace[s, "□" :> "[^\n]+?"],
-  EvalStrExp[s_]                   :> ReplaceRepeated[s, StringPattern`Dump`rules],
+  s_Str /; SContainsQ[s, "□"] :> RuleEval @ SRep[s, "□" :> "[^\n]+?"],
+  EvalStrExp[s_]                   :> RepRep[s, StringPattern`Dump`rules],
   RawStrExp                        -> StringPattern`Dump`SP,
   RawRegex                         -> StringPattern`Dump`RE
 }
@@ -547,7 +547,7 @@ PrivateSpecialFunction[DefineStringPatternMacro]
 
 DefineStringPatternMacro = Case[
   rule_RuleDelayed := With[
-    {rule2 = MapAt[HoldPattern, rule, 1], head = First @ DefinitionHead @ rule},
+    {rule2 = MapAt[HoldP, rule, 1], head = F @ DefinitionHead @ rule},
     If[!ListQ[StringPattern`Dump`expandDatePattern], StringPattern`Dump`expandDatePattern //= List];
     $cspMacroHeadQ[head] = True;
     $StrExprMacroRules                   //= addOrUpdateRule[rule2];
@@ -565,14 +565,14 @@ ClearRegexCache[] := ClearSystemCache["RegularExpression"];
 (**************************************************************************************************)
 
 appendIfAbsent[item_][list_] :=
-  If[MemberQ[list, Verbatim @ item], list, Append[list, item]];
+  If[MemberQ[list, Verbatim @ item], list, App[list, item]];
 
 addOrUpdateRule[list_List, rule:(_[lhs_, rhs_])] := Module[{pos, newList},
   pos = Position[list, (Rule|RuleDelayed)[Verbatim[lhs], _], {1}];
   If[pos === {},
-    Append[list, rule]
+    App[list, rule]
   ,
-    newList = ReplacePart[list, pos -> rule];
+    newList = RepPart[list, pos -> rule];
     If[newList =!= list, QuiverGeometryLoader`$RegexCacheDirty = True];
     newList
   ]
@@ -585,7 +585,7 @@ addOrUpdateRule[rule_][list_] := addOrUpdateRule[list, rule];
 PublicFunction[ExpandPosixLetterClasses]
 
 ExpandPosixLetterClasses[expr_] :=
-  expr /. str_Str :> RuleCondition @ StringReplace[str, $classTranslations];
+  expr /. str_Str :> RuleEval @ SRep[str, $classTranslations];
 
 $classTranslations = {
   "[:upper:]" -> "A-Z",

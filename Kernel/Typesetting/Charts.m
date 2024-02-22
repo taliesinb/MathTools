@@ -4,10 +4,10 @@ ChartColorForm[expr_, colors_] := Scope[
   colors = Which[
     GraphQ[colors], LookupCardinalColors @ colors,
     AssocQ[colors], colors,
-    Automatic, Automatic,
+    Auto, Auto,
     True, Return @ expr
   ];
-  ReplaceAll[
+  RepAll[
     expr,
     ChartSymbol[sym_Str] :> formatChartSymbol[sym, colors]
   ]

@@ -21,7 +21,7 @@ LatticeColoringPlot[quiver_, args___, SelfLoopRadius -> r_] := Block[
   LatticeColoringPlot[quiver, args]
 ];
 
-$vCount = Automatic;
+$vCount = Auto;
 LatticeColoringPlot[quiver_, args___, "VertexCount" -> c_] := Block[
   {$vCount = c},
   LatticeColoringPlot[quiver, args]
@@ -89,11 +89,11 @@ makeColoringGridEntry[quiver_List, args___] :=
   Map[makeColoringGridEntry[#, args]&, quiver];
 
 makeColoringGridEntry[quiver_, args___] :=
-  P1 @ LatticeColoringPlot[quiver, args];
+  F @ LatticeColoringPlot[quiver, args];
 
 LatticeColoringGrid[items_, args___] := Scope[
   entries = Map[Flatten[List[makeColoringGridEntry[#, args]]]&, items];
-  entries = PadRight[entries, Automatic, ""];
+  entries = PadRight[entries, Auto, ""];
   entries = VectorReplace[entries, row:{_, SpanFromLeft, Repeated[""]} :> VectorReplace[row, "" -> SpanFromLeft]];
   Grid[
     entries,

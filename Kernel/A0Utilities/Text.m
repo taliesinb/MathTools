@@ -13,16 +13,16 @@ LoadFirstNamesBloomFilter[] := Scope[
     If[!FileExistsQ[standardFirstNamesPath] && FailureQ[
       PrintTemporary["Downloading names.txt"];
       SafeURLDownload[$firstNamesURL, standardFirstNamesPath]], ReturnFailed[]];
-    standardFirstNames = StringSplit[ImportUTF8 @ standardFirstNamesPath, "\n"];
+    standardFirstNames = SSplit[ImportUTF8 @ standardFirstNamesPath, "\n"];
 
     localFirstNamesPath = DataPath["Text", "LocalFirstNames.txt"];
     If[!FileExistsQ[localFirstNamesPath],
-      localFirstNames = Part[StringSplit[BearPeople[], " ", 2], All, 1];
-      localFirstNames = Union @ Select[localFirstNames, StringLength[#] > 1 && UpperCaseFirstQ[#]&];
-      localFirstNames = DeleteCases[localFirstNames, "Diff" | "St"];
-      ExportUTF8[localFirstNamesPath, StringRiffle[localFirstNames, "\n"]];
+      localFirstNames = Part[SSplit[BearPeople[], " ", 2], All, 1];
+      localFirstNames = Union @ Select[localFirstNames, SLen[#] > 1 && UpperCaseFirstQ[#]&];
+      localFirstNames = Decases[localFirstNames, "Diff" | "St"];
+      ExportUTF8[localFirstNamesPath, SRiffle[localFirstNames, "\n"]];
     ,
-      localFirstNames = StringSplit[ImportUTF8 @ localFirstNamesPath, "\n"]
+      localFirstNames = SSplit[ImportUTF8 @ localFirstNamesPath, "\n"]
     ];
 
     firstNames = Union[ToLowerCase @ standardFirstNames, ToLowerCase @ localFirstNames];
@@ -50,8 +50,8 @@ PossibleFirstNameQ[str_Str] := $FirstNamesBloomFilter["CouldContain", ToLowerCas
 
 PossibleFullNameQ[str_Str] := Or[
   And[
-    StringMatchQ[str, FullNamePhrase],
-    PossibleFirstNameQ @ P1 @ StringSplit[str, " ", 2]
+    SMatchQ[str, FullNamePhrase],
+    PossibleFirstNameQ @ F @ SSplit[str, " ", 2]
   ],
   MemberQ[$KnownAuthors, str]
 ];
@@ -60,7 +60,7 @@ PossibleFullNameQ[str_Str] := Or[
 
 PublicFunction[SplitFirstLastName]
 
-SplitFirstLastName[str_String] := StringTrim @ splitName @ str;
+SplitFirstLastName[str_String] := STrim @ splitName @ str;
 SplitFirstLastName["Aleph 0"] = {"Aleph 0"};
 
 splitName = StringCase[
@@ -78,9 +78,9 @@ trimInitials[s_Str] := StringTrimLeft[s, (UppercaseLetter ~~ " " | ". ")..];
 
 SplitFirstLastName::multiple = "Multiple candidates match ``: ``.";
 resolveInitial[init_, last_] := Scope[
-  cands = Pick[$KnownAuthors, StringMatchQ[$KnownAuthors, init ~~ LetterCharacter.. ~~ " " ~~ last]];
-  If[Length[cands] == 1, Return @ splitName @ First @ cands];
-  If[Length[cands] > 1, Message[SplitFirstLastName::multiple, init <> " " <> last, cands]];
+  cands = Pick[$KnownAuthors, SMatchQ[$KnownAuthors, init ~~ LetterCharacter.. ~~ " " ~~ last]];
+  If[Len[cands] == 1, Return @ splitName @ F @ cands];
+  If[Len[cands] > 1, Message[SplitFirstLastName::multiple, init <> " " <> last, cands]];
   {init, last}
 ];
 
@@ -88,8 +88,8 @@ resolveInitial[init_, last_] := Scope[
 
 PublicFunction[ExtractFirstName, ExtractLastName]
 
-ExtractFirstName[str_Str] := P1 @ SplitFirstLastName @ str;
-ExtractLastName[str_Str] := PN @ SplitFirstLastName @ str;
+ExtractFirstName[str_Str] := F @ SplitFirstLastName @ str;
+ExtractLastName[str_Str] := L @ SplitFirstLastName @ str;
 
 (**************************************************************************************************)
 
@@ -118,11 +118,11 @@ loadEnglishWordsData[] := Scope[
   If[FileExistsQ[$englishWordsPath], Return @ ImportMX[$englishWordsPath]];
   words = DictionaryLookup[];
   If[FileExistsQ[$systemWordsFile],
-    systemWords = StringTrim @ StringSplit[ImportUTF8 @ $systemWordsFile, "\n"];
-    words = DeleteCases[""] @ Union[words, systemWords];
+    systemWords = STrim @ SSplit[ImportUTF8 @ $systemWordsFile, "\n"];
+    words = Decases[""] @ Union[words, systemWords];
   ];
   properNames = If[FileExistsQ[$systemProperNamesFile],
-    StringTrim @ StringSplit[ImportUTF8 @ $systemProperNamesFile, "\n"],
+    STrim @ SSplit[ImportUTF8 @ $systemProperNamesFile, "\n"],
     {}
   ];
   lowerWords = Select[words, LowerCaseFirstQ];
@@ -148,7 +148,7 @@ $assocProperNames := $assocProperNames                     = Part[$englishWordsD
 
 PublicVariable[$MathWords]
 
-$MathWords := $MathWords = StringSplit[ImportUTF8 @ DataPath["Text", "MathWords.txt"], "\n"];
+$MathWords := $MathWords = SSplit[ImportUTF8 @ DataPath["Text", "MathWords.txt"], "\n"];
 
 (*************************************************************************************************)
 
@@ -189,8 +189,8 @@ Depluralize = Case[
 
 tryDepluralRules[str_Str] := Scope[
   Scan[{{lhs, rhs}} |-> If[
-    StringEndsQ[str, lhs] &&
-    $validDepluralQ[cand = StringDrop[str, -StrLen[lhs]] <> rhs],
+    SEndsQ[str, lhs] &&
+    $validDepluralQ[cand = SDrop[str, -SLen[lhs]] <> rhs],
       Return[cand, Block]],
     $depluralTuples
   ];
@@ -198,16 +198,16 @@ tryDepluralRules[str_Str] := Scope[
 ];
 
 loadTextTable[filename_] := Scope[
-  fileStr = StringTrim @ ImportUTF8 @ DataPath["Text", filename];
-  table = StringTrim /@ StringExtract[fileStr, "\n" -> All, " ".. -> All];
-  ReplaceAll[table, "_" -> ""]
+  fileStr = STrim @ ImportUTF8 @ DataPath["Text", filename];
+  table = STrim /@ SExtract[fileStr, "\n" -> All, " ".. -> All];
+  RepAll[table, "_" -> ""]
 ]
 
 $depluralTuples := $depluralTuples = loadTextTable["DepluralRules.txt"];
 
-$depluralBlacklist := $depluralBlacklist = StringSplit @ ImportUTF8 @ DataPath["Text", "DepluralBlacklist.txt"];
+$depluralBlacklist := $depluralBlacklist = SSplit @ ImportUTF8 @ DataPath["Text", "DepluralBlacklist.txt"];
 
-$validDepluralQ := $validDepluralQ = ConstantUAssociation[Complement[$EnglishWords, $depluralBlacklist], True];
+$validDepluralQ := $validDepluralQ = ConstantUAssociation[Comp[$EnglishWords, $depluralBlacklist], True];
 
 (**************************************************************************************************)
 
@@ -215,7 +215,7 @@ PublicFunction[WordFrequencySort]
 
 WordFrequencySort[words_] := Scope[
   freq = WordFrequencyData[words];
-  freq = ReplaceAll[freq, _Missing -> 0];
+  freq = RepAll[freq, _Missing -> 0];
   ReverseSortBy[words, freq]
 ];
 

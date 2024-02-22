@@ -39,7 +39,7 @@ GraphScope[graph_, body_] := Block[
     $GraphOrigin := $GraphOrigin = LookupExtendedOption[$Graph, GraphOrigin],
     $VertexList := $VertexList = VertexList @ $Graph,
     $EdgeList := $EdgeList = EdgeList @ $Graph,
-    $EdgeTags := $EdgeTags = Replace[EdgeTags @ $Graph, {} -> None],
+    $EdgeTags := $EdgeTags = Rep[EdgeTags @ $Graph, {} -> None],
     $VertexIndex := $VertexIndex = VertexIndexAssociation @ $Graph,
 
     $IndexGraph := $IndexGraph = ToIndexGraph @ $Graph,
@@ -53,6 +53,6 @@ GraphScope[graph_, body_] := Block[
 ];
 
 createMetricGraphCache[] := CreateGraphCache[
-  Annotate[ToSymmetricGraph @ $IndexGraph, GraphMetric -> LookupAnnotation[$Graph, GraphMetric, Automatic]],
+  Annotate[ToSymmetricGraph @ $IndexGraph, GraphMetric -> LookupAnnotation[$Graph, GraphMetric, Auto]],
   $metricGraphCacheSymbol
 ];

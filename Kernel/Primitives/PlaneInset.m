@@ -25,7 +25,7 @@ The following options are supported:
 
 Options[PlaneInset] = {
   ViewVector -> -{-2, -1.5, 2.5},
-  FlipX -> Automatic,
+  FlipX -> Auto,
   FlipY -> False,
   InsetScale -> 1/144,
   BaseStyle -> {},
@@ -49,7 +49,7 @@ rawPlaneInsetBoxes[object_, origin_, orient_Str, f_, opts:OptionsPattern[PlaneIn
   viewVector //= Normalize;
   Switch[orient,
     "Screen",
-      vx = Chop @ Cross[viewVector, Normalize @ ReplacePart[viewVector, 3 -> 0]];
+      vx = Chop @ Cross[viewVector, Normalize @ RepPart[viewVector, 3 -> 0]];
       vy = Chop @ Cross[vx, viewVector],
     "XZ", vx = {1, 0, 0}; vy = {0, 0, 1},
     "XY", vx = {1, 0, 0}; vy = {0, 1, 0},
@@ -63,7 +63,7 @@ fracPair[f_] := f/2 + {-0.5, 0.5};
 rawPlaneInsetBoxes[object_, origin_, {vx_, vy_}, {fx_, fy_}, OptionsPattern[PlaneInset]] := Scope[
   UnpackOptions[viewVector, flipX, flipY, insetScale, baseStyle, textAlignment, lineSpacing, fontSize, fontColor, fontFamily];
   baseStyle = ToList[baseStyle, FontSize -> fontSize, FontFamily -> fontFamily, FontColor -> fontColor, LineSpacing -> lineSpacing, TextAlignment -> textAlignment];
-  baseStyle //= DeleteCases[_ -> Inherited];
+  baseStyle //= Decases[_ -> Inherited];
   If[textAlignment =!= Left,
     object = Framed[object, FrameStyle -> None, ContentPadding -> False]];
   styledObject = addStyle[object, Seq @@ baseStyle];

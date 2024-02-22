@@ -66,7 +66,7 @@ expandAvoiding = Case[
 
   (* bind a pattern var *)
   Avoiding[Verbatim[Pattern][s_Symbol, p_], a_] :=
-    Construct[Pattern, Unevaluated @ s, Avoiding[p, a]];
+    Construct[Pattern, Uneval @ s, Avoiding[p, a]];
 
   Avoiding[Verbatim[_]|Verbatim[__], a:(_Str | _Symbol)] := ExceptLetterClass[a]..;
   Avoiding[Verbatim[___], a:(_Str | _Symbol)]            := ExceptLetterClass[a]...;
@@ -75,10 +75,10 @@ expandAvoiding = Case[
 
   (* avoid a character class. if we know the interior pattern cannot match the forbidden characters,
   we can avoid introducing a callback to check that fact *)
-  Avoiding[p_, a_Str]     := If[StringPatternCanContainCharsQ[p, a], p ? (StringFreeQ[a, #]&), p];
+  Avoiding[p_, a_Str]     := If[StringPatternCanContainCharsQ[p, a], p ? (SFreeQ[a, #]&), p];
 
   (* avoid specific strings *)
-  Avoiding[p_, a:{__Str}] := p ? (StringFreeQ[#, a]&);
+  Avoiding[p_, a:{__Str}] := p ? (SFreeQ[#, a]&);
 
   a_ := (
     Message[Avoiding::invalidStringPatternUsage, MsgExpr @ a];
@@ -109,8 +109,8 @@ PublicStringPattern[SQuoteSpan, DQuoteSpan, ParenSpan, BraceSpan, BracketSpan, D
 
 defineSpanStringPattern[head_, str_] := Scope[
   pair = StringPart[str, {1, -1}];
-  {rl, rr} = StringSplit @ RegexEscape @ str;
-  regex = Regex @ StrJoin[rl, "[^", rr, "]+", rr];
+  {rl, rr} = SSplit @ RegexEscape @ str;
+  regex = Regex @ SJoin[rl, "[^", rr, "]+", rr];
   defineSpanStringPattern[head, regex, pair];
 ];
 
@@ -124,7 +124,7 @@ SetUsage @ "SQuoteSpan matches a span delimited by '.";
 SetUsage @ "DQuoteSpan matches a double quote.";
 SetUsage @ "DQuoteSpan matches a double quote.";
 
-KeyValueScan[defineSpanStringPattern, UAssoc[
+KVScan[defineSpanStringPattern, UAssoc[
   SQuoteSpan         -> "' '",
   DQuoteSpan         -> "\" \"",
   ParenSpan          -> "( )",
@@ -142,9 +142,9 @@ DefineStringPatternMacro[
   XMLSpan[tag_Str, patt_] :> xmlSpan[tag, patt]
 ];
 
-xmlSpan[tag_] := First @ Module[{z}, List[StrJoin["<", tag, ">"] ~~ z:Shortest[___] ~~ StrJoin["</", tag, ">"] /; StringBalancedQ[z, "<", ">"]]];
-xmlSpan[tag_, lit_Str] := StrJoin["<", tag, ">", lit, "</", tag, ">"];
-xmlSpan[tag_, patt_] := StrJoin["<", tag, ">"] ~~ patt ~~ StrJoin["</", tag, ">"];
+xmlSpan[tag_] := F @ Module[{z}, List[SJoin["<", tag, ">"] ~~ z:Shortest[___] ~~ SJoin["</", tag, ">"] /; StringBalancedQ[z, "<", ">"]]];
+xmlSpan[tag_, lit_Str] := SJoin["<", tag, ">", lit, "</", tag, ">"];
+xmlSpan[tag_, patt_] := SJoin["<", tag, ">"] ~~ patt ~~ SJoin["</", tag, ">"];
 
 (**************************************************************************************************)
 

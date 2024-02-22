@@ -17,13 +17,13 @@ snakeCurvePoints[SnakeCurve[c:{{x_, _}, {x_, _}}, ___Rule]] := c;
 snakeCurvePoints[SnakeCurve[c:{{_, y_}, {_, y_}}, ___Rule]] := c;
 snakeCurvePoints[SnakeCurve[{a_, b_}, opts:OptionsPattern[SnakeCurve]]] := Scope[
   UnpackOptionsAs[SnakeCurve, {opts}, orientation, splitPosition];
-  splitPosition //= Replace[{"Start" -> 0, "Middle" -> 0.5, "End" -> 1}];
+  splitPosition //= Rep[{"Start" -> 0, "Middle" -> 0.5, "End" -> 1}];
   jmpIndex = Switch[orientation, Horizontal, 1, Vertical, 2];
   avgIndex = 3 - jmpIndex;
   avg = Lerp[a, b, splitPosition];
-  mid1 = ReplacePart[avg, jmpIndex -> Part[a, jmpIndex]];
-  mid2 = ReplacePart[avg, jmpIndex -> Part[b, jmpIndex]];
-  DeleteDuplicates @ N @ {a, mid1, mid2, b}
+  mid1 = RepPart[avg, jmpIndex -> Part[a, jmpIndex]];
+  mid2 = RepPart[avg, jmpIndex -> Part[b, jmpIndex]];
+  Dedup @ N @ {a, mid1, mid2, b}
 ];
 
 (**************************************************************************************************)
@@ -45,8 +45,8 @@ Options[CircuitCurve] = JoinOptions[
   LineThickness -> None,
   LineColor -> Inherited,
   WireTypeSlug -> None,
-  WireTypeSlugStyle -> Automatic,
-  WireTypeSlugPosition -> Automatic,
+  WireTypeSlugStyle -> Auto,
+  WireTypeSlugPosition -> Auto,
   LineEdging -> False,
   LineDashing -> None
 ];
@@ -119,7 +119,7 @@ makeSlugPrims := Case[
 ];
 
 ColoredBeads[pos_, dir_, r_, cols_] := Scope[
-  n = Length @ cols;
+  n = Len @ cols;
   prims = MapIndex1[
     StyleBox[
       p2 = pos + 2r * dir * (#2-1.5);
@@ -132,7 +132,7 @@ ColoredBeads[pos_, dir_, r_, cols_] := Scope[
 ];
 
 ColoredSquares[pos_, dir_, r_, cols_] := Scope[
-  n = Length @ cols;
+  n = Len @ cols;
   pos = pos + VectorRotate90[dir] * r * 1.5;
   prims = MapIndex1[
     StyleBox[
@@ -146,7 +146,7 @@ ColoredSquares[pos_, dir_, r_, cols_] := Scope[
 ];
 
 ColoriedPie[pos_, r_, cols_] := Scope[
-  n = Length @ cols;
+  n = Len @ cols;
   angs = Range[0, 2Pi, 2Pi / n] + Pi/2;
   disks = ZipMap[
     {Style[Disk[pos, r, #1], FaceForm[#2]], Style[Circle[pos, r, #1], Darker[#2]]}&,

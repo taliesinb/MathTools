@@ -38,15 +38,15 @@ AssembleGraphics[g_, opts:OptionsPattern[]] := Scope[
   prims = assemble @ g;
   If[!MatchQ[prims, _Sized], ReturnFailed[]];
 
-  {xmax, ymax} = PN @ prims;
-  prims //= P1;
+  {xmax, ymax} = L @ prims;
+  prims //= F;
   prims //= SimplifyTranslate;
   
   graphics = Graphics[prims, BaseStyle -> $baseStyle, PlotRange -> {{0, xmax}, {0, ymax}}, FilterOptions @ opts];
   
   If[$requiredScaleFactor,
     {{xmin, xmax}, {ymin, ymax}} = GraphicsPlotRange[graphics];
-    imageWidth = P1 @ LookupImageSize @ graphics;
+    imageWidth = F @ LookupImageSize @ graphics;
     $pointSizeScaleFactor = (xmax - xmin) / imageWidth;
     Goto[Recompute];
   ];
@@ -58,7 +58,7 @@ AssembleGraphics[g_, opts:OptionsPattern[]] := Scope[
 
 (* TODO: collapse embedSizes /* assemble into just one step. its purely recursive anyway *)
 
-$centerOSpecP = Center | Automatic | {Center, Center} | Scaled[{.5, .5}] | {Scaled[.5], Scaled[.5]};
+$centerOSpecP = Center | Auto | {Center, Center} | Scaled[{.5, .5}] | {Scaled[.5], Scaled[.5]};
 
 $labelStyle = {FontFamily -> "Avenir", FontSize -> 20};
 
@@ -154,7 +154,7 @@ assemble = Case[
     {g1, s1} = List @@ assemble[g1];
     {g2, s2} = List @@ assemble[g2];
     a = Lookup[{opts}, Alignment, Center];
-    If[a === None, g2 //= P1; t = s1/2, t = -alignAgainst[s1, s2, a]];
+    If[a === None, g2 //= F; t = s1/2, t = -alignAgainst[s1, s2, a]];
     Sized[{g1, Translate[g2, t]}, s1]
   ];
 
@@ -230,7 +230,7 @@ toAlignFunc[max_, align_] :=
   Switch[align,
     Bottom|Left,          0&,
     Center,               (max - #) / 2&,
-    Scaled[_ ? NumericQ], (max - #) * N[P1 @ align]&,
+    Scaled[_ ? NumericQ], (max - #) * N[F @ align]&,
     Top|Right,            (max - #)&
   ];
 
@@ -303,8 +303,8 @@ AssembleGraphics3D[g_, opts:OptionsPattern[]] := Scope[
   prims = assemble3D @ embedSizes3D @ g;
   If[!MatchQ[prims, _Sized], Print[prims]; ReturnFailed[]];
 
-  {xmax, ymax, zmax} = PN @ prims;
-  prims //= P1;
+  {xmax, ymax, zmax} = L @ prims;
+  prims //= F;
   prims //= SimplifyTranslate;
   
   Graphics3D[prims, BaseStyle -> $baseStyle, PlotRange -> {{0, xmax}, {0, ymax}, {0, zmax}}, FilterOptions @ opts]
@@ -379,7 +379,7 @@ assembleOverlay[g1_, g2_, opts___] := Scope[
   {g1, s1} = List @@ assemble3D[g1];
   {g2, s2} = List @@ assemble3D[g2];
   a = Lookup[{opts}, Alignment, None];
-  If[a === None, g2 //= P1; t = s1/2, t = -alignAgainst[s1, s2, a]];
+  If[a === None, g2 //= F; t = s1/2, t = -alignAgainst[s1, s2, a]];
   Sized[{g1, Translate[g2, t]}, s1]
 ];
 
@@ -410,12 +410,12 @@ assembleI[list_List, i_, {align_, spacing_}] := Scope[
   offset = 0;
   list2 = VectorApply[
     offset = 0; {g, size} |-> SeqFirst[
-      Translate[g, ReplacePart[MapThread[Construct, {afuncs, size}], i -> offset]],
+      Translate[g, RepPart[MapThread[Construct, {afuncs, size}], i -> offset]],
       offset += Part[size, i] + spacing
     ],
     list
   ];
-  size = ReplacePart[maxCoords, i -> (offset - spacing)];
+  size = RepPart[maxCoords, i -> (offset - spacing)];
   Sized[list2, size]
 ];
 

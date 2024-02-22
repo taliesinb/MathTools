@@ -1,8 +1,8 @@
 PublicObject[LinearLayout]
 
 Options[LinearLayout] = {
-  Method -> Automatic,
-  Orientation -> Automatic
+  Method -> Auto,
+  Orientation -> Auto
 };
 
 $threePoints := $threePoints = CirclePoints[3];
@@ -24,7 +24,7 @@ LinearLayout[opts:OptionsPattern[]][data_] := Scope[
     True,
       ReturnFailed[]
   ];
-  VertexEdgeCoordinateData[data, Automatic]
+  VertexEdgeCoordinateData[data, Auto]
 ];
 
 orientationTransform = Case[

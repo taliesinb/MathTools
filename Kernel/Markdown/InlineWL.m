@@ -10,15 +10,15 @@ $inlineWLVarReplacement = s:("$" ~~ WordCharacter ~~ RepeatedNull[WordCharacter 
 TODO: ue this instead: RegularExpression @ "(\\(\\([^\n]+\\)\\))|(\\$[[:alpha:]][[:alpha:][:digit:]$]*\\b)";
 *)
 
-createInlineMath[str_Str /; StringLength[str] == 2] :=
-  $katexFontTemplate @ StringDrop[str, 1];
+createInlineMath[str_Str /; SLen[str] == 2] :=
+  $katexFontTemplate @ SDrop[str, 1];
 
 createInlineMath[str_Str] := Scope[
   res = toInlineExpression[str, InputForm];
   If[FailureQ[res], res = badInlinePlaceholder[str]];
   boxes = ToBoxes[res, TraditionalForm];
   katex = $katexPostprocessor @ boxesToKatexString @ boxes;
-  If[!StringQ[katex], Message[ToMarkdownString::inlinewlbox, str]; Return["BAD KATEX"]];
+  If[!StrQ[katex], Message[ToMarkdownString::inlinewlbox, str]; Return["BAD KATEX"]];
   $inlineMathTemplate @ katex
 ];
 
@@ -36,7 +36,7 @@ checkedToExpression[str_, form_] :=
 
 (* tuples, very common *)
 checkedToExpression[RowBox[{"(", RowBox[list:{Repeated[PatternSequence[_, ","]], _}], ")"}], StandardForm] :=
-  Replace[
+  Rep[
     Construct[
       Hold,
       TupleForm @@ Map[checkedToExpression[#, StandardForm]&, Part[list, 1;;-1;;2]]
@@ -47,7 +47,7 @@ checkedToExpression[RowBox[{"(", RowBox[list:{Repeated[PatternSequence[_, ","]],
 
 SetHoldComplete[singleScratchSymbolQ]
 
-singleScratchSymbolQ[s_Symbol] := Context[Unevaluated @ s] === "QuiverGeometryLoader`Scratch`" && StringLength[SymbolName[Unevaluated @ s]] === 1;
+singleScratchSymbolQ[s_Symbol] := Context[Uneval @ s] === "QuiverGeometryLoader`Scratch`" && SLen[SymbolName[Uneval @ s]] === 1;
 singleScratchSymbolQ[_] := False;
 
 toInlineExpression[str_, form_] := Block[
@@ -60,15 +60,15 @@ toInlineExpression[str_, form_] := Block[
     Return @ $Failed;
   ];
   (* single-letter symbols are allowed, and evaluate to SymbolForm[...] *)
-  scratchNames = Select[Names["QuiverGeometryLoader`Scratch`*"], StringLength[#] > 37&];
+  scratchNames = Select[Names["QuiverGeometryLoader`Scratch`*"], SLen[#] > 37&];
   If[scratchNames =!= {},
     Message[ToMarkdownString::inlinewlsym, str, scratchNames];
     Quiet @ Remove[scratchNames];
     Return @ $Failed;
   ];
-  held //= Replace[Hold[Times[a___]] :> Hold[CommaRowForm[a]]];
-  held //= ReplaceAll[Set -> EqualForm];
-  eval = Quiet @ Check[P1 @ held, $Failed];
+  held //= Rep[Hold[Times[a___]] :> Hold[CommaRowForm[a]]];
+  held //= RepAll[Set -> EqualForm];
+  eval = Quiet @ Check[F @ held, $Failed];
   If[FailureQ @ eval,
     Message[ToMarkdownString::inlinewlmsg, str];
     Return @ $Failed;

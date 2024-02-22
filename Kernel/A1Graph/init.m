@@ -55,16 +55,16 @@ PrivateVariable[$extendedGraphOptionsRules]
 
 $extendedGraphOptionsRules = {
   AdditionalImagePadding              -> None,
-  ArrowheadPosition                   -> Automatic,
-  ArrowheadShape                      -> Automatic,
+  ArrowheadPosition                   -> Auto,
+  ArrowheadShape                      -> Auto,
   ArrowheadSize                       -> 15,
-  ArrowheadStyle                      -> Automatic,
+  ArrowheadStyle                      -> Auto,
   ArrowheadOpacity                    -> None,
   AspectRatioClipping                 -> True,
   CardinalColorFunction               -> None,
   CardinalColorRules                  -> None,
-  CardinalColors                      -> Automatic,
-  Cardinals                           -> Automatic,
+  CardinalColors                      -> Auto,
+  Cardinals                           -> Auto,
   CollapseMultiedges                  -> False,
   CoordinateRotation                  -> None,
   CoordinateTransformFunction         -> None,
@@ -74,39 +74,39 @@ $extendedGraphOptionsRules = {
   EdgeColorRules                      -> None,
   EdgeLabelBaseStyle                  -> None,
   EdgeLabelFunction                   -> None,
-  EdgeLabelOrientation                -> Automatic,
-  EdgeLabelPosition                   -> Automatic,
+  EdgeLabelOrientation                -> Auto,
+  EdgeLabelPosition                   -> Auto,
   EdgeLabelRules                      -> None,
   EdgeLabelSpacing                    -> 0,
-  EdgeSetback                         -> Automatic,
-  EdgeThickness                       -> Automatic,
+  EdgeSetback                         -> Auto,
+  EdgeThickness                       -> Auto,
   EdgeTooltips                        -> None,
   EdgeLength                          -> None,
-  EdgeLayout                          -> Automatic,
+  EdgeLayout                          -> Auto,
   EdgeOpacity                         -> 0.18,
   EpilogFunction                      -> None,
   ExtendImagePadding                  -> True,
   FrameFade                           -> None,
   GraphLegend                         -> None,
-  GraphMetric                         -> Automatic,
+  GraphMetric                         -> Auto,
   GraphOrigin                         -> None,
   GraphPlottingFunction               -> None,
   GraphRegionHighlight                -> None,
   GraphicsScale                       -> None,
   GraphTheme                          -> None,
-  HighlightColor                      -> Automatic,
-  HighlightOpacity                    -> Automatic,
-  HighlightStyle                      -> Automatic,
+  HighlightColor                      -> Auto,
+  HighlightOpacity                    -> Auto,
+  HighlightStyle                      -> Auto,
   LabelCardinals                      -> False,
-  LayoutDimension                     -> Automatic,
-  MultiEdgeDistance                   -> Automatic,
-  PackingSpacing                      -> Automatic,
+  LayoutDimension                     -> Auto,
+  MultiEdgeDistance                   -> Auto,
+  PackingSpacing                      -> Auto,
   PeripheralVertices                  -> None,
   PrologFunction                      -> None,
   RegionColorRules                    -> None,
-  SelfLoopRadius                      -> Automatic,
-  TwoWayStyle                         -> Automatic,
-  UseAbsoluteSizes                    -> Automatic,
+  SelfLoopRadius                      -> Auto,
+  TwoWayStyle                         -> Auto,
+  UseAbsoluteSizes                    -> Auto,
   VertexAnnotations                   -> None,
   VertexBackground                    -> White,
   VertexClickFunction                 -> None,
@@ -118,16 +118,16 @@ $extendedGraphOptionsRules = {
   VertexFontSize                      -> None,
   VertexLabelBaseStyle                -> None,
   VertexLabelFunction                 -> None,
-  VertexLabelOrientation              -> Automatic,
-  VertexLabelPosition                 -> Automatic,
+  VertexLabelOrientation              -> Auto,
+  VertexLabelPosition                 -> Auto,
   VertexLabelRules                    -> None,
   VertexLabelSpacing                  -> 0,
-  VertexLayout                        -> Automatic,
+  VertexLayout                        -> Auto,
   AdditionalVertexLayoutOptions       -> {},
   VertexOpacity                       -> 1,
   VertexOverlapResolution             -> None,
   VertexTooltips                      -> None,
-  ViewOptions                         -> Automatic,
+  ViewOptions                         -> Auto,
   ViewRegion                          -> All,
   VisibleCardinals                    -> All
 };
@@ -136,7 +136,7 @@ PrivateVariable[$extendedGraphOptionSymbols]
 
 $extendedGraphOptionSymbols = Keys @ $extendedGraphOptionsRules;
 
-$extendedGraphOptionSymbolPattern = Alternatives @@ $extendedGraphOptionSymbols;
+$extendedGraphOptionSymbolPattern = Alt @@ $extendedGraphOptionSymbols;
 
 $extendedGraphOptionRulePattern = Rule[$extendedGraphOptionSymbolPattern, _];
 
@@ -147,7 +147,7 @@ $notIntercepted = True;
 IfSyntaxInfo[SyntaxInformation[Graph]];
 Graph; Options[Graph];
 
-$ignoredGraphOptionsSymbols = Alternatives[
+$ignoredGraphOptionsSymbols = Alt[
   AlignmentPoint, AnnotationRules, AspectRatio, Axes, AxesLabel,
   AxesOrigin, AxesStyle, Background, BaseStyle, ContentSelectable,
   DirectedEdges, EdgeCapacity, EdgeCost, EdgeWeight, Editable,
@@ -158,13 +158,13 @@ $ignoredGraphOptionsSymbols = Alternatives[
   VertexShape, VertexWeight
 ];
 
-$fullGraphOptions = DeleteCases[Sort @ JoinOptions[Graph, $extendedGraphOptionsRules], $ignoredGraphOptionsSymbols -> _];
+$fullGraphOptions = Decases[Sort @ JoinOptions[Graph, $extendedGraphOptionsRules], $ignoredGraphOptionsSymbols -> _];
 
 (**************************************************************************************************)
 
 PublicVariable[$ExtendedGraphOptions, $ExtendedGraphOptionSymbols]
 
-$ExtendedGraphOptions = Cases[$fullGraphOptions, HoldPattern[_Symbol -> _]];
+$ExtendedGraphOptions = Cases[$fullGraphOptions, HoldP[_Symbol -> _]];
 $ExtendedGraphOptionSymbols = Keys @ $ExtendedGraphOptions;
 $extendedGraphSymbolNames = Map[SymbolName, $ExtendedGraphOptionSymbols];
 
@@ -177,15 +177,15 @@ IfSyntaxInfo[
   SyntaxInformation[Graph] = ReplaceOptions[SyntaxInformation[Graph], "OptionNames" -> $extendedGraphSymbolNames];
 ];
 
-HoldPattern[g:Graph[___]] /; MemberQ[Unevaluated @ g, $extendedGraphOptionRulePattern] && $notIntercepted :=
+HoldP[g:Graph[___]] /; MemberQ[Uneval @ g, $extendedGraphOptionRulePattern] && $notIntercepted :=
   Block[{$notIntercepted = False}, interceptedGraphConstructor[g]];
 Protect[Graph];
 
-$extendedGraphOptionSymbols2 = Append[$extendedGraphOptionSymbols, AnnotationRules];
+$extendedGraphOptionSymbols2 = App[$extendedGraphOptionSymbols, AnnotationRules];
 
 splitUserGraphOptions[options___Rule] := Scope[
   options = {options};
-  extOptions = DeleteDuplicatesBy[TakeOptions[options, $extendedGraphOptionSymbols], P1];
+  extOptions = DedupBy[TakeOptions[options, $extendedGraphOptionSymbols], F];
   options = Map[optionFixup] @ DropOptions[options, $extendedGraphOptionSymbols2];
   {options, checkGraphAnnotations @ extOptions}
 ];
@@ -211,8 +211,8 @@ toPlainGraphConstructorOptions[] :=
 
 toPlainGraphConstructorOptions[options__Rule] := Scope[
   {plainOptions, extOptions} = splitUserGraphOptions[options];
-  AppendTo[extOptions, GraphPlottingFunction -> ExtendedGraphPlottingFunction];
-  Append[plainOptions, AnnotationRules -> {"GraphProperties" -> extOptions}]
+  AppTo[extOptions, GraphPlottingFunction -> ExtendedGraphPlottingFunction];
+  App[plainOptions, AnnotationRules -> {"GraphProperties" -> extOptions}]
 ];
 
 (**************************************************************************************************)
@@ -229,7 +229,7 @@ optionFixup = Case[
   Rule[GraphLayout, {"Dimension" -> d_}]          := Rule[LayoutDimension, d];
   Rule[GraphHighlight, r_]                        := Rule[GraphRegionHighlight, r];
   Rule[VertexSize, r:{__Rule}]                    := Rule[VertexSize, Assoc @ r];
-  Rule[sym:(VertexLabels | EdgeLabels), l_List | l_Rule] := Rule[sym, If[MatchQ[l, {_Hold | _Assoc}], P1 @ l, Hold @ l]];
+  Rule[sym:(VertexLabels | EdgeLabels), l_List | l_Rule] := Rule[sym, If[MatchQ[l, {_Hold | _Assoc}], F @ l, Hold @ l]];
   Rule[sym:(EdgeStyle|VertexStyle), val_]         := Rule[sym, toDirective[val]];
   Rule[VertexShapeFunction, assoc_Assoc]          := Rule[VertexShapeFunction, toShape /@ assoc];
   Rule[VertexShapeFunction, rule_Rule]            := Rule[VertexShapeFunction, Hold[rule]];

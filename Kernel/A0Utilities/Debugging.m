@@ -9,7 +9,7 @@ ReapGraphics[body_, opts___Rule] := Scope[
   $dbEnabled = True;
   result = body;
   debugPrims = BagPart[$dgBag, All];
-  Print @ Row @ Prepend[$extraDg, Graphics[
+  Print @ Row @ Pre[$extraDg, Graphics[
     {FaceForm[None], EdgeForm[Opacity[0.5]], debugPrims},
     opts,
     PlotRangePadding -> Scaled[0.15],
@@ -74,7 +74,7 @@ EchoDebugGraphics[e_] := e;
 
 $graphicsHead = Point | Polygon | Circle | Disk | Rectangle;
 sowDGexpr = Case[
-  g_Graphics                := AppendTo[$extraDg, ReplaceOptions[g, {ImageSize -> 200, Frame -> True, FrameTicks -> False}]];
+  g_Graphics                := AppTo[$extraDg, ReplaceOptions[g, {ImageSize -> 200, Frame -> True, FrameTicks -> False}]];
   Seq[c:($ColorPattern|_Int), p_] := % @ Style[p, EdgeForm @ ToRainbowColor @ c];
   p:$Coord2P                := % @ Point @ p;
   p:$CoordMat2P             := % @ Point @ p;
@@ -89,7 +89,7 @@ $vprintDepth = 0;
 
 SetHoldAllComplete[VPrint];
 VPrint[args___] :=
-  If[TrueQ[$verbose], Print[StringRepeat["\t", $vprintDepth], If[TrueQ[$dryRun], Style["> ", LightGray], ""], args]];
+  If[TrueQ[$verbose], Print[SRepeat["\t", $vprintDepth], If[TrueQ[$dryRun], Style["> ", LightGray], ""], args]];
 
 SetHoldAllComplete[VBlock];
 VBlock[body_] := Block[{$vprintDepth = $vprintDepth + 1}, body];
@@ -153,9 +153,9 @@ PublicDebuggingFunction[DynamicPointGraphics]
 circlePoints[2] := {{-1, 0}, {1, 0}};
 circlePoints[n_] := Rev @ CirclePoints[n];
 
-DynamicPointGraphics[n_Int, fn_] := Replace[
+DynamicPointGraphics[n_Int, fn_] := Rep[
   ConstructHoldComplete[fn, \[FormalX]],
-  HoldComplete[body_] :>
+  HoldC[body_] :>
     DynamicModule @@ Hold[
       {\[FormalX] = circlePoints[n]},
       If[QuiverGeometryLoader`$CurrentlyLoading, "LOADING",
@@ -172,14 +172,14 @@ DynamicPointGraphics[n_Int, fn_] := Replace[
 DynamicPointGraphics[{n_Int, specSeq__}, fn_] := With[
   {specList = {specSeq}},
   {specData = MapThread[toDynSpec, {{specSeq}, Take[$formals, Len @ specList]}]},
-  {specVars = Prepend[\[FormalX]] @ Part[specData, All, 1],
-   initList = Prepend[N @ circlePoints[n]] @ Part[specData, All, 2]},
+  {specVars = Pre[\[FormalX]] @ Part[specData, All, 1],
+   initList = Pre[N @ circlePoints[n]] @ Part[specData, All, 2]},
   {specSets = MapThread[SET, {specVars, initList}],
    controls = Part[specData, All, 3],
    heldFn = PostComposeFunction[fn, InternalHoldForm]},
-  Replace[
+  Rep[
     ConstructHoldComplete[fn, Sequence @@ specVars],
-    HoldComplete[body_] :>
+    HoldC[body_] :>
       Apply[DynamicModule, Hold[
         specSets,
         Labeled[
@@ -203,7 +203,7 @@ $formals = {\[FormalA], \[FormalB], \[FormalC], \[FormalD], \[FormalE], \[Formal
 
 toDynSpec[{min_ ? NumericQ, max_ ? NumericQ}, sym_] := {sym, Avg[min, max], Slider[Dynamic @ sym, {min, max}]};
 toDynSpec[max_ ? NumericQ, sym_] := toDynSpec[{0, max}, sym];
-toDynSpec[list_List, sym_] := {sym, P1 @ list, RadioButtonBar[Dynamic @ sym, list]};
+toDynSpec[list_List, sym_] := {sym, F @ list, RadioButtonBar[Dynamic @ sym, list]};
 
 (* DynamicPointGraphics[3, {Red, Map[Disk[#, .1] &, #]} &] *)
 
@@ -246,7 +246,7 @@ SetHoldAllComplete[toStackCell];
 toStackCell[HoldForm[e_]] := toStackCell @ e;
 
 toStackCell[tssRhs:(head_Symbol[___])] /; QGSymbolQ[head] := Module[{boxes},
-  boxes = clickCopyBox[lhsEchoStr @ tssRhs, Unevaluated @ tssRhs];
+  boxes = clickCopyBox[lhsEchoStr @ tssRhs, Uneval @ tssRhs];
   Cell[
     BoxData @ boxes, "Output",
     ShowCellLabel -> False, ShowStringCharacters -> True,
@@ -267,14 +267,14 @@ extractHead[head_Symbol[___]] := If[QGSymbolQ[head], HoldForm[head], Nothing];
 extractHead[head_[___]] := extractHead[head];
 extractHead[_] := Nothing;
 
-QGSymbolQ[s_Symbol ? HoldAtomQ] := StringStartsQ[Context @ Unevaluated @ s, "QuiverGeometry`"] && HasAnyEvaluationsQ[s];
+QGSymbolQ[s_Symbol ? HoldAtomQ] := SStartsQ[Context @ Uneval @ s, "QuiverGeometry`"] && HasAnyEvaluationsQ[s];
 QGSymbolQ[_] := False;
 
 (**************************************************************************************************)
 
 SetHoldAllComplete[debugStr];
 
-debugStr[lhs_] := ToPrettifiedString[Unevaluated @ lhs, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3]
+debugStr[lhs_] := ToPrettifiedString[Uneval @ lhs, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3]
 
 (**************************************************************************************************)
 
@@ -293,10 +293,10 @@ SetHoldAllComplete[FindMatchingDownValue]
 
 FindMatchingDownValue[head_Symbol[args___]] := Block[
   {dvs = DownValues[head], head, res},
-  DownValues[head] = Append[MapIndexed[{rule, ind} |-> replaceRHS[rule, P1[ind]], dvs], HoldPattern[_head] -> None];
+  DownValues[head] = App[MapIndexed[{rule, ind} |-> replaceRHS[rule, F[ind]], dvs], HoldP[_head] -> None];
   res = head[args];
   If[res === None, Return @ None];
-  If[!IntegerQ[res], Return[$Failed]];
+  If[!IntQ[res], Return[$Failed]];
   Part[dvs, res]
 ];
 
@@ -308,15 +308,15 @@ replaceRHS[_] := Nothing;
 
 PublicDebuggingFunction[EchoGraphics]
 
-EchoGraphics[e_] := (AppendTo[$prims, e]; e);
+EchoGraphics[e_] := (AppTo[$prims, e]; e);
 EchoGraphics[{x_ ? RealVectorQ, y_ ? RealVectorQ}] := (EchoGraphics @ Trans[x, y]; {x, y});
-EchoGraphics[points_ ? RealMatrixQ] := (AppendTo[$prims, Point @ points]; points);
+EchoGraphics[points_ ? RealMatrixQ] := (AppTo[$prims, Point @ points]; points);
 
 (**************************************************************************************************)
 
 PublicDebuggingFunction[EchoDimensions]
 
-EchoDimensions[e_] := (Echo[Row[Dimensions @ e, "\[Times]", BaseStyle -> $DarkBlue]]; e);
+EchoDimensions[e_] := (Echo[Row[Dims @ e, "\[Times]", BaseStyle -> $DarkBlue]]; e);
 
 (**************************************************************************************************)
 
@@ -338,8 +338,8 @@ MsgPath[l_List] := Map[MsgPath, l];
 
 MsgPath /: SystemOpen[MsgPath[s_, n_:None]] := openMsgPath[s, n];
 
-Format[MsgPath[s_Str], OutputForm] := StringJoin["\"", s, "\""];
-Format[MsgPath[s_Str, n_Int], OutputForm] := StringJoin["\"", s, ":", IntegerString @ n, "\""];
+Format[MsgPath[s_Str], OutputForm] := SJoin["\"", s, "\""];
+Format[MsgPath[s_Str, n_Int], OutputForm] := SJoin["\"", s, ":", IntStr @ n, "\""];
 MakeBoxes[MsgPath[s_Str], StandardForm] := msgPathBoxes[s];
 MakeBoxes[MsgPath[s_Str], TraditionalForm] := msgPathBoxes[s];
 
@@ -347,25 +347,25 @@ MakeBoxes[MsgPath[s_Str, n_Int], StandardForm] := msgPathBoxes[s, n];
 MakeBoxes[MsgPath[s_Str, n_Int], TraditionalForm] := msgPathBoxes[s, n];
 
 msgPathBoxes[path_Str, line_:None] := With[
-  {type = If[StringStartsQ[path, ("http" | "https" | "git" | "file" | "ssh") ~~ ":"], "URL", Quiet @ FileType @ path]},
+  {type = If[SStartsQ[path, ("http" | "https" | "git" | "file" | "ssh") ~~ ":"], "URL", Quiet @ FileType @ path]},
   {color = Switch[type, None, $LightRed, Directory, $LightBlue, File, GrayLevel[0.9], "URL", $LightPurple, _, $LightRed]},
   ToBoxes @ ClickForm[
-    RawBoxes @ tightColoredBoxes[If[IntegerQ[line], StringJoin[shortenPath @ path, ":", IntegerString @ line], shortenPath @ path], color],
+    RawBoxes @ tightColoredBoxes[If[IntQ[line], SJoin[shortenPath @ path, ":", IntStr @ line], shortenPath @ path], color],
     openMsgPath[path, line]
   ]
 ];
 
 shortenPath[str_] := Scope[
-  str = StringReplace[str, $HomeDirectory <> $PathnameSeparator -> "~/"];
-  If[StringLength[str] <= 36, Return @ str];
+  str = SRep[str, $HomeDirectory <> $PathnameSeparator -> "~/"];
+  If[SLen[str] <= 36, Return @ str];
 
   n = 0;
   segs = Rev @ FileNameSplit @ str;
-  segs2 = Rev @ TakeWhile[segs, (n += StringLength[#]) < 36&];
+  segs2 = Rev @ TakeWhile[segs, (n += SLen[#]) < 36&];
   If[segs2 === {}, segs2 = Take[segs, 1]];
-  If[Len[segs2] < Len[segs], PrependTo[segs2, "\[Ellipsis]"]];
+  If[Len[segs2] < Len[segs], PreTo[segs2, "\[Ellipsis]"]];
   str2 = FileNameJoin @ segs2;
-  If[StringLength[str2] < StringLength[str], str2, str]
+  If[SLen[str2] < SLen[str], str2, str]
 ];
 
 (**************************************************************************************************)
@@ -382,7 +382,7 @@ openMsgPath[path_Str, line_Int] :=
   SystemOpen @ FileLine[path, line];
 
 trySystemOpen[s_Str] := Scope[
-  If[StringStartsQ[s, "http://" | "https://"], Return @ SystemOpen @ s];
+  If[SStartsQ[s, "http://" | "https://"], Return @ SystemOpen @ s];
   If[FileExistsQ[s],                           Return @ sysOpen @ s];
   If[FileExistsQ[s = FileNameDrop @ s],        Return @ sysOpen @ s];
   If[FileExistsQ[s = FileNameDrop @ s],        Return @ sysOpen @ s];
@@ -406,7 +406,7 @@ tightColoredBoxes[str_Str, color_, sz_:10] := ToBoxes @ Framed[
   Style[str, FontFamily -> "Source Code Pro", FontSize -> sz, Bold, FontColor -> Black],
   Background -> color, FrameStyle -> Darker[color, .2],
   ContentPadding -> False, RoundingRadius -> 2,
-  ImageSize -> {Automatic, 13}, FrameMargins -> {{5, 5}, {0, 0}},
+  ImageSize -> {Auto, 13}, FrameMargins -> {{5, 5}, {0, 0}},
   BaselinePosition -> Baseline
 ];
 
@@ -431,7 +431,7 @@ ModifierKeysPressedQ[] := $Notebooks && (CurrentValue["ModifierKeys"] =!= {});
 PublicDebuggingFunction[PerformSelfLinting]
 
 PerformSelfLinting[] := Scope[
-  DeleteCases[{} | <||>] @ Assoc[
+  Decases[{} | <||>] @ Assoc[
     "MissingPackageScopes" -> findMissingPackageScopes[],
     "SuspiciousPackageLines" -> QuiverGeometryLoader`$SuspiciousPackageLines
   ]
@@ -439,11 +439,11 @@ PerformSelfLinting[] := Scope[
 
 findMissingPackageScopes[] := Scope[
   privateSymbols = Names["QuiverGeometry`**`*"];
-  privateSymbolNames = PN /@ StringSplit[privateSymbols, "`"];
-  moduleSymbols = Select[DeleteDuplicates @ privateSymbolNames, StringEndsQ["$"]];
-  moduleSymbols = Join[moduleSymbols, StringDrop[moduleSymbols, -1]];
-  privateSymbolAssoc = AssociationThread[privateSymbols, privateSymbolNames];
-  privateSymbolAssoc //= Select[StringLength[#] >= 4&];
+  privateSymbolNames = L /@ SSplit[privateSymbols, "`"];
+  moduleSymbols = Select[Dedup @ privateSymbolNames, SEndsQ["$"]];
+  moduleSymbols = Join[moduleSymbols, SDrop[moduleSymbols, -1]];
+  privateSymbolAssoc = AssocThread[privateSymbols, privateSymbolNames];
+  privateSymbolAssoc //= Select[SLen[#] >= 4&];
   privateSymbolAssoc //= Discard[ElementQ[moduleSymbols]];
   collisionsAssoc = Select[PositionIndex[privateSymbolAssoc], Len[#] > 1&];
   collisionsAssoc //= Select[possibleMissingPackageScope];
@@ -487,7 +487,7 @@ printXML[xml_] := Block[{$XMLElementFormatting = False}, CellPrint @ TextCell[xm
 
 xmlOpenerBox[xml_, a_, b_List] := With[
   {a1 = ClickBox[a, If[CurrentValue["ShiftKey"], printXML[xml], open$$ = !TrueQ[open$$]]]},
-  {a1b = TightColumnGridBox[Prepend[b, a1]]},
+  {a1b = TightColumnGridBox[Pre[b, a1]]},
   DynamicModuleBox[
     {open$$ = 1},
     DynamicBox[
@@ -516,8 +516,8 @@ xmlElementBoxes[xml:XMLElement[str_Str, attrs_List, content_List]] := With[
   ]
 ];
 
-xmlElementBoxes[s2_Str] := With[{s = StringTrim @ s2}, ClickBox[
-  xmlStyleBox[ToBoxes @ If[StringLength[s] > 20, StringTake[s, 20] <> "\[Ellipsis]", s], GrayLevel[0.9], $Gray, Plain],
+xmlElementBoxes[s2_Str] := With[{s = STrim @ s2}, ClickBox[
+  xmlStyleBox[ToBoxes @ If[SLen[s] > 20, STake[s, 20] <> "\[Ellipsis]", s], GrayLevel[0.9], $Gray, Plain],
   If[CurrentValue["ShiftKey"], printXML[s]]
 ]];
 
@@ -543,7 +543,7 @@ PublicDebuggingFunction[SymbolDependancyGraph]
 $lastLoadCount = -1;
 $currentDependencyGraph = None;
 
-hasEvalQ[HoldComplete[s_]] := HasAnyEvaluationsQ[s];
+hasEvalQ[HoldC[s_]] := HasAnyEvaluationsQ[s];
 
 SymbolDependancyGraph[] := Scope[
   If[$lastLoadCount === QuiverGeometryLoader`$LoadCount,
@@ -553,15 +553,15 @@ SymbolDependancyGraph[] := Scope[
   definingHeads = _Set | _SetDelayed | _DeclareGraphicsPrimitive;
   positions = Position[$packages, definingHeads];
   symbolNames = Union[Names["QuiverGeometry`*"], Names["QuiverGeometry`Private`*"], Names["QuiverGeometry`**`*"]];
-  symbolNames = Complement[symbolNames, {"Case"}, QuiverGeometryLoader`$SymbolGroups["DebuggingFunction"]];
-  symbols = ToExpression[symbolNames, InputForm, HoldComplete];
+  symbolNames = Comp[symbolNames, {"Case"}, QuiverGeometryLoader`$SymbolGroups["DebuggingFunction"]];
+  symbols = ToExpression[symbolNames, InputForm, HoldC];
   symbols = Select[symbols, hasEvalQ];
   symbolsAssoc = UAssoc[# -> True& /@ symbols];
-  $symbolExtractR = sym_Symbol /; KeyExistsQ[symbolsAssoc, HoldComplete[sym]] :> HoldForm[sym];
+  $symbolExtractR = sym_Symbol /; KeyQ[symbolsAssoc, HoldC[sym]] :> HoldForm[sym];
   edges = Flatten @ Map[processPosition, positions];
   $lastLoadCount ^= QuiverGeometryLoader`$LoadCount;
   $currentDependencyGraph ^= Graph[edges,
-    GraphLayout -> None, VertexLabels -> Placed[Automatic, Tooltip],
+    GraphLayout -> None, VertexLabels -> Placed[Auto, Tooltip],
     EdgeShapeFunction -> symbolDependancyEdge
   ]
 ];
@@ -569,10 +569,10 @@ SymbolDependancyGraph[] := Scope[
 processPosition[pos:{i_, 3, j_, ___}] := Scope[
   file = Part[$packages, i, 1];
   line = Part[$packages, i, 3, j, 1];
-  expr = Extract[$packages, pos, HoldComplete];
+  expr = Extract[$packages, pos, HoldC];
   fileLine = FileLine[file, line];
-  lhs = Extract[expr, {1, 1}, HoldComplete];
-  rhs = Extract[expr, {1, 2;;}, HoldComplete];
+  lhs = Extract[expr, {1, 1}, HoldC];
+  rhs = Extract[expr, {1, 2;;}, HoldC];
   defining = DeepCases[lhs, $symbolExtractR];
   If[defining === {}, Return @ Nothing];
   definedBy = DeepCases[rhs, $symbolExtractR];
@@ -600,23 +600,23 @@ drawDependencyEdge[path_, a_, b_, fileLine_, scale_] :=
 
 (**************************************************************************************************)
 
-$intOrInfP = (_Integer | Infinity | -Infinity);
+$intOrInfP = (_Integer | Inf | -Inf);
 
 PublicDebuggingFunction[SymbolDependancies]
 
-SymbolDependancies[sym_Symbol | HoldComplete[sym_Symbol], n:$intOrInfP] := Scope[
+SymbolDependancies[sym_Symbol | HoldC[sym_Symbol], n:$intOrInfP] := Scope[
   graph = SymbolDependancyGraph[];
   fn = If[n < 0, VertexInComponent, VertexOutComponent];
   fn[graph, HoldForm[sym], Abs[n]]
 ]
 
-SymbolDependancyGraph[sym_Symbol | HoldComplete[sym_Symbol] | HoldForm[sym_Symbol], n:$intOrInfP] := Scope[
+SymbolDependancyGraph[sym_Symbol | HoldC[sym_Symbol] | HoldForm[sym_Symbol], n:$intOrInfP] := Scope[
   vertices = SymbolDependancies[sym, n];
   subgraph = Subgraph[
     RemoveSelfLoops @ $currentDependencyGraph, vertices,
     VertexLabels -> "Name" -> shortSymbolName,
     VertexLabelStyle -> {FontSize -> 8},
-    EdgeShapeFunction -> Function[drawDependencyEdge[#Coordinates, #Source, #Target, #Cardinal, #GraphicsScale]]
+    EdgeShapeFunction -> Fn[drawDependencyEdge[#Coordinates, #Source, #Target, #Cardinal, #GraphicsScale]]
   ];
   ExtendedGraph[
     subgraph,
@@ -632,11 +632,11 @@ vertexColor[HoldForm[sym_]] := Switch[Context[sym],
   _, $Red
 ];
 
-longSymbolName[HoldForm[sym_]] := SymbolName[Unevaluated[sym]];
-shortSymbolName[HoldForm[sym_]] := shortCamelName @ SymbolName[Unevaluated[sym]];
+longSymbolName[HoldForm[sym_]] := SymbolName[Uneval[sym]];
+shortSymbolName[HoldForm[sym_]] := shortCamelName @ SymbolName[Uneval[sym]];
 
 shortCamelName[str_] := shortCamelName[str] =
-  StringJoin @ StringCases[str, $shortCamelPatterns]
+  SJoin @ SCases[str, $shortCamelPatterns]
 
 $shortCamelPatterns = {
   StartOfString ~~ LetterCharacter,
@@ -655,31 +655,31 @@ HighlightStringCases[str_String, patt:(_Rule | _RuleDelayed)] :=
 
 HighlightStringCases[str_String, patts_List] := Scope[
   {spans, payloads} = KeysValues @ Flatten[i = 1; getPosAndPayload[i++, str, #]& /@ patts];
-  parts = clarifyMatch /@ StringTake[str, spans];
+  parts = clarifyMatch /@ STake[str, spans];
   highlights = ZipMap[highlightStrMatch, parts, payloads];
-  StringReplacePart[str, highlights, spans]
+  SRepPart[str, highlights, spans]
 ];
 
 getPosAndPayload[i_, str_, patt_] := Scope[
-  pos = StringPosition[str, patt];
+  pos = SFind[str, patt];
   Thread[pos -> Part[$ColorPalette, i]]
 ];
 
 getPosAndPayload[i_, str_, patt:(_Rule | _RuleDelayed)] := Scope[
-  pos = StringPosition[str, P1 @ patt];
+  pos = SFind[str, F @ patt];
   pay = VectorReplace[
-    StringCases[str, patt],
+    SCases[str, patt],
     m:Except[_Style | $ColorPattern] :> Style[m, Part[$ColorPalette, i]]
   ];
   RuleThread[pos, pay]
 ];
 
 HighlightStringCases[str_String, patt_] := Scope[
-  pos = StringPosition[str, patt, Overlaps -> False];
-  parts = clarifyMatch /@ StringTake[str, pos];
+  pos = SFind[str, patt, Overlaps -> False];
+  parts = clarifyMatch /@ STake[str, pos];
   colors = PadRight[$ColorPalette, Len @ pos, $Red];
   highlights = ZipMap[highlightStrMatch, parts, colors];
-  StringReplacePart[str, highlights, pos]
+  SRepPart[str, highlights, pos]
 ];
 
 (**************************************************************************************************)
@@ -688,7 +688,7 @@ clarifyMatch[""] := "▮";
 clarifyMatch[""] := "\[NegativeMediumSpace]\[VerticalSeparator]\[NegativeMediumSpace]";
 
 $clarificationRules = {"\n" -> "\[ReturnIndicator]\n", " " -> "\[SpaceIndicator]", "\t" -> "\[TabKey]"};
-clarifyMatch[str_Str] := StringReplace[str, $clarificationRules];
+clarifyMatch[str_Str] := SRep[str, $clarificationRules];
 
 highlightStrMatch[match_Str, color:$ColorPattern] :=
   ToLinearSyntax @ Style[match, color, Bold];

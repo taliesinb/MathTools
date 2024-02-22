@@ -60,7 +60,7 @@ setCustomizedVar[globals_, opts_][opt_ -> value_] := With[
   {ind = SelectFirstIndex[opts, MatchQ[opt, #]&]},
   If[MissingQ[ind],
     Message[Customized::badopt2, opt, opts],
-    Apply[Set, Append[Extract[Unevaluated @ globals, ind, Hold], value]]
+    Apply[Set, App[Extract[Uneval @ globals, ind, Hold], value]]
   ]
 ];
 

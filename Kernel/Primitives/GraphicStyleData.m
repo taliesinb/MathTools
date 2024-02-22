@@ -17,7 +17,7 @@ mergeGraphicsStyleRules[{styles1_, styles2_}] := Join[ToList @ styles1, ToList @
 
 $customGraphicsHeadQ[GraphicsStyleData] = True;
 
-Typeset`MakeBoxes[namedStyle_Str /; KeyExistsQ[$GraphicsStyleData, namedStyle], form:StandardForm | TraditionalForm, type_] := With[
+Typeset`MakeBoxes[namedStyle_Str /; KeyQ[$GraphicsStyleData, namedStyle], form:StandardForm | TraditionalForm, type_] := With[
   {style = $GraphicsStyleData[namedStyle]},
   Typeset`MakeBoxes[
     Directive @ style,

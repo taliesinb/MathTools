@@ -54,7 +54,7 @@ extendedArrowBoxes[ExtendedArrow[points_, opts___Rule]] := Scope[
   (* calculate the arrowhead position and corrsponding anchor *)
   SetAutomatic[arrowheadPosition, 1.0];
   If[MatchQ[arrowheadPosition, Offset[_ ? NumericQ, _ ? NumericQ]],
-    arrowheadPosition = PN[arrowheadPosition] + (P1[arrowheadPosition] / lineLength)];
+    arrowheadPosition = L[arrowheadPosition] + (F[arrowheadPosition] / lineLength)];
   SetAutomatic[arrowheadAnchor, arrowheadPosition];
 
   (* ArrowPathOffset -> PerpendicularOffset[{..}] will generate multiple curves, we must
@@ -74,7 +74,7 @@ extendedArrowBoxes[ExtendedArrow[points_, opts___Rule]] := Scope[
 
   (* generate the arrowhead boxes *)
   SetAutomatic[arrowheadLength, lineLength * 0.05];
-  SetAutomatic[arrowheadColor, Replace[arrowColor, SolidEdgeForm[c_] :> SolidEdgeForm[c, Automatic]]];
+  SetAutomatic[arrowheadColor, Rep[arrowColor, SolidEdgeForm[c_] :> SolidEdgeForm[c, Auto]]];
   arrowhead = arrowheadBoxes[Arrowhead[pos, dir,
     ArrowheadPlane -> PlaneRightTowards[center],
     ArrowheadLength -> arrowheadLength,
@@ -135,6 +135,6 @@ iApplyPathOffset = Case[
 ExtendedArrow::badoffset = "Bad specification ArrowPathOffset -> ``.";
 
 pathOrthogonalVector[points_ ? ContainsOffsetsQ] := pathOrthogonalVector[RemoveOffsets @ points];
-pathOrthogonalVector[points_] := VectorRotate90CW @ N @ Normalize[(PN[points] - P1[points])];
+pathOrthogonalVector[points_] := VectorRotate90CW @ N @ Normalize[(L[points] - F[points])];
 
 

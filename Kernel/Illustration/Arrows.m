@@ -1,6 +1,6 @@
 
 $arrow = Graphics[{Opacity[1], EdgeForm[None], RGBColor[0.77444039253824, 0.7744403678635464, 0.7744403010737108], FilledCurve[{{{0, 2, 0}, {0, 1, 0}, {0, 1, 0}}}, 2 * {{{-0.3166, -0.3333}, {-0.1833, 0.}, {-0.3166, 0.3333},
-   {0.25, 0.}}}]}, AspectRatio -> Automatic, PlotRangeClipping -> False];
+   {0.25, 0.}}}]}, AspectRatio -> Auto, PlotRangeClipping -> False];
 
 makeTextArrow[dir_, text_, offset1_, _] := {
    makeArrow[dir],
@@ -33,7 +33,7 @@ PublicFunction[LabeledArrow3D]
 $xyVector = Normalize @ Cross[{2, 1.5, 0}, {0,0,1}];
 $viewVector = Normalize @ {2, 1.5, 0};
 
-LabeledArrow3D[pos_, d_, label_, size:Except[_Rule]:Automatic, color:Except[_Rule]:$Gray, opts___Rule] := Scope[
+LabeledArrow3D[pos_, d_, label_, size:Except[_Rule]:Auto, color:Except[_Rule]:$Gray, opts___Rule] := Scope[
    d = d /. {"XY" -> $xyVector};
    nd = szo * Normalize[d]; sz = size; label1 = label;
    SetAutomatic[sz, Norm[d] / 6];

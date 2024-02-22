@@ -7,31 +7,31 @@ If[$Notebooks && !TrueQ[QuiverGeometryLoader`$DisableMenuItems] && !TrueQ[Quiver
       "Open as markdown",
       KernelExecute[SystemOpen @ QuiverGeometry`WriteSitePage[]],
       FrontEnd`MenuKey["'", FrontEnd`Modifiers -> {"Command", "Shift"}],
-      MenuEvaluator -> Automatic
+      MenuEvaluator -> Auto
     ],
     MenuItem[
       "Serve to browser",
       KernelExecute[QuiverGeometry`ServeSitePage[]],
       FrontEnd`MenuKey["h", FrontEnd`Modifiers -> {"Command", "Shift"}],
-      MenuEvaluator -> Automatic
+      MenuEvaluator -> Auto
     ],
     MenuItem[
       "Build page",
       KernelExecute[QuiverGeometry`BuildSitePage[]],
       FrontEnd`MenuKey["j", FrontEnd`Modifiers -> {"Command", "Shift"}],
-      MenuEvaluator -> Automatic
+      MenuEvaluator -> Auto
     ],
     MenuItem[
       "Reload Quiver&Geometry",
       KernelExecute[QuiverGeometryLoader`Load[False]],
       FrontEnd`MenuKey["g", FrontEnd`Modifiers -> {"Command", "Option"}],
-      MenuEvaluator -> Automatic, Method -> "Queued"
+      MenuEvaluator -> Auto, Method -> "Queued"
     ],
     With[{qgPath = QuiverGeometryLoader`$InitFile}, MenuItem[
       "Load Quiver&Geometry",
       KernelExecute[Get[qgPath]],
       FrontEnd`MenuKey["g", FrontEnd`Modifiers -> {"Command", "Option", "Shift"}],
-      MenuEvaluator -> Automatic, Method -> "Queued"
+      MenuEvaluator -> Auto, Method -> "Queued"
     ]]
   }]];
 
@@ -41,13 +41,13 @@ If[$Notebooks && !TrueQ[QuiverGeometryLoader`$DisableMenuItems] && !TrueQ[Quiver
       "Watch Cell",
       KernelExecute[QuiverGeometryLoader`WatchCurrentCell[]],
       FrontEnd`MenuKey["Return", FrontEnd`Modifiers->{"Option", "Command"}],
-      MenuEvaluator -> Automatic
+      MenuEvaluator -> Auto
     ],
     MenuItem[
       "Add Watch Cell",
       KernelExecute[QuiverGeometryLoader`WatchCurrentCellAdd[]],
       FrontEnd`MenuKey["Return", FrontEnd`Modifiers->{"Option", "Command", "Shift"}],
-      MenuEvaluator -> Automatic
+      MenuEvaluator -> Auto
     ]
   }]];
 
@@ -97,11 +97,11 @@ If[$Notebooks && !TrueQ[QuiverGeometryLoader`$DisableMenuItems] && !TrueQ[Quiver
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["InsertSplitBreak", {
     Delimiter,
       Menu["Table cell", {
-          MenuItem["1-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 1]], MenuEvaluator -> Automatic],
-          MenuItem["2-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 2]], MenuEvaluator -> Automatic],
-          MenuItem["3-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 3]], MenuEvaluator -> Automatic],
-          MenuItem["4-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 4]], MenuEvaluator -> Automatic],
-          MenuItem["5-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 5]], MenuEvaluator -> Automatic]
+          MenuItem["1-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 1]], MenuEvaluator -> Auto],
+          MenuItem["2-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 2]], MenuEvaluator -> Auto],
+          MenuItem["3-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 3]], MenuEvaluator -> Auto],
+          MenuItem["4-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 4]], MenuEvaluator -> Auto],
+          MenuItem["5-column table cell", KernelExecute[QuiverGeometry`InsertCellTable[6, 5]], MenuEvaluator -> Auto]
       }]
   }]];
   LinkWrite[$ParentLink, FrontEnd`AddMenuCommands["Balance", {
@@ -110,7 +110,7 @@ If[$Notebooks && !TrueQ[QuiverGeometryLoader`$DisableMenuItems] && !TrueQ[Quiver
       "&Toggle inline cells",
       KernelExecute[QuiverGeometry`ToggleInlineCells[]],
       FrontEnd`MenuKey["t", FrontEnd`Modifiers -> {"Command", "Option"}],
-      MenuEvaluator -> Automatic
+      MenuEvaluator -> Auto
     ]
   }]];
   QuiverGeometryLoader`Private`$menuItemsAdded = True;

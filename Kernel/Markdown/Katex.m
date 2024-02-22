@@ -1,9 +1,9 @@
 PrivateFunction[toProcessedKatexString]
 
-toProcessedKatexString[boxes_] /; StringQ[$localKatexDefinitions] := Block[
+toProcessedKatexString[boxes_] /; StrQ[$localKatexDefinitions] := Block[
   {localDefs = $localKatexDefinitions, res},
   Clear[$localKatexDefinitions];
-  StringJoin[localDefs, "\n", toProcessedKatexString @ boxes]
+  SJoin[localDefs, "\n", toProcessedKatexString @ boxes]
 ];
 
 toProcessedKatexString[box_] := $katexPostprocessor @ boxesToKatexString @ box;
@@ -25,10 +25,10 @@ boxesToKatexString[boxes_] := Scope[
   $inputBoxes = boxes;
   evalBoxes = cleanupInlineBoxes @ boxes;
   interm = boxToKatex @ evalBoxes;
-  flatTerms = Flatten @ List @ ReplaceRepeated[$katexAppliedRule] @ interm;
-  If[!StringVectorQ[flatTerms], ReturnFailed["partial"]];
-  katexString = StringJoin @ flatTerms;
-  StringTrim @ StringDelete[$spuriousKatexSubstrings] @ StringReplace[$scriptToCaligraphic] @ StringReplace[$WLSymbolToKatexRegex] @ katexString
+  flatTerms = Flatten @ List @ RepRep[$katexAppliedRule] @ interm;
+  If[!StrVecQ[flatTerms], ReturnFailed["partial"]];
+  katexString = SJoin @ flatTerms;
+  STrim @ SDelete[$spuriousKatexSubstrings] @ SRep[$scriptToCaligraphic] @ SRep[$WLSymbolToKatexRegex] @ katexString
 ];
 
 (* InvisibleApplication is from TraditionalForm of f[1,2,3], newline is from grids *)
@@ -100,7 +100,7 @@ boxToKatex = Case[
     {"\\href{", url, "}{", % @ title, "}"};
 
   TagBox[e_, __] := % @ e;
-  RowBox[{"(", "\[NoBreak]", GridBox[grid_, ___], "\[NoBreak]", ")"}] := {"\\begin{pmatrix}", StringRiffle[MatrixMap[%, grid], "\\\\", "&"], "\\end{pmatrix}"};
+  RowBox[{"(", "\[NoBreak]", GridBox[grid_, ___], "\[NoBreak]", ")"}] := {"\\begin{pmatrix}", SRiffle[MatrixMap[%, grid], "\\\\", "&"], "\\end{pmatrix}"};
   UnderoverscriptBox[e_, b_, c_] := % @ SuperscriptBox[SubscriptBox[e, b], c];
   FractionBox[a_, b_] := {"\\frac{", % @ a, "}{", % @ b, "}"};
   RowBox[list_] := Map[%, list];
@@ -110,8 +110,8 @@ boxToKatex = Case[
     Message[ToKatexString::badbox, MsgExpr @ other];
     Print["OUTER BOXES:"]; Print @ ToPrettifiedString[$inputBoxes, MaxDepth -> 3, MaxLength -> 10];
     Print["RAW BOXES:"]; Print @ ToPrettifiedString[other, MaxDepth -> 3, MaxLength -> 10];
-    Print["FORMATTED BOXES:"]; Print @ RawBoxes @ Replace[other, BoxData[bd_] :> bd];
-    errorKatex @ StringReplace[head, $katexEscape]
+    Print["FORMATTED BOXES:"]; Print @ RawBoxes @ Rep[other, BoxData[bd_] :> bd];
+    errorKatex @ SRep[head, $katexEscape]
   ];
 ];
 
@@ -128,7 +128,7 @@ boxToInlineText[e_] := TextString[e];
 katexStyleOperator[args___] := Fold[#1 /* styleToKatexFunction[#2]&, Id, {args}];
 
 styleToKatexFunction := Case[
-  (FontColor -> c_) | (c_ ? ColorQ)                           := StringJoin["textcolor{#", HexColorString @ c, "}"];
+  (FontColor -> c_) | (c_ ? ColorQ)                           := SJoin["textcolor{#", HexColorString @ c, "}"];
   (FontWeight -> "Bold"|Bold) | "Bold"|Bold                   := "mathbf";
   (FontWeight -> "Italic"|Italic) | "Italic"|Italic           := "mathit";
   Underlined                                                  := "underline";
@@ -145,7 +145,7 @@ styleToKatexFunction := Case[
 
 
 toBracket = Case[
-  e_Str /; StringLength[e] === 1 := e;
+  e_Str /; SLen[e] === 1 := e;
   other_ := {"{", boxToKatex @ other, "}"};
 ];
 
@@ -154,7 +154,7 @@ toBracket = Case[
 PrivateFunction[cleanupInlineBoxes]
 
 cleanupInlineBoxes = RightComposition[
-  ReplaceRepeated @ {
+  RepRep @ {
     FormBox[e_, TraditionalForm] :> e,
     TemplateBox[a_, b_, __] :> TemplateBox[a, b],
     InterpretationBox[e_, ___] :> e,
@@ -170,7 +170,7 @@ cleanupInlineBoxes = RightComposition[
 
 PrivateFunction[errorKatex]
 
-errorKatex[tag_] := StringJoin["""\textbf{\textcolor{e1432d}{bad template box: """, tag, "}}"];
+errorKatex[tag_] := SJoin["""\textbf{\textcolor{e1432d}{bad template box: """, tag, "}}"];
 
 (**************************************************************************************************)
 

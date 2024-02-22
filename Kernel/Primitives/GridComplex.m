@@ -46,7 +46,7 @@ readGrid[rules:{({_, _} -> _)..}] := Scope[
 readGrid[rows_List] := Scope[
   $gridCoords = <||>;
   MapIndex1[readGridRow, rows];
-  KeyDropFrom[$gridCoords, {None, Null}];
+  KDropFrom[$gridCoords, {None, Null}];
   {$gridCoords, Max /@ Transpose @ Values @ $gridCoords}
 ];
 

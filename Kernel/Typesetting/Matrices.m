@@ -2,12 +2,12 @@ PublicFunction[CompactMatrixBox]
 
 $compactMatrixOptions = JoinOptions[
   $compactNumberOptions,
-  ItemSize -> Automatic, FrameStyle -> GrayLevel[0.85], "Factor" -> True, "HideZeros" -> True
+  ItemSize -> Auto, FrameStyle -> GrayLevel[0.85], "Factor" -> True, "HideZeros" -> True
 ];
 
 Options[CompactMatrixBox] = $compactMatrixOptions;
 
-expandItemSize[Automatic, matrix_] := {0.65, 0.2};
+expandItemSize[Auto, matrix_] := {0.65, 0.2};
 
 expandItemSize[num_ ? NumericQ, _] := {N @ num, 0.3};
 expandItemSize[num:{_ ? NumericQ, _ ? NumericQ}, _] := {num, num};
@@ -25,7 +25,7 @@ CompactMatrixBox[matrix_, OptionsPattern[]] := Scope[
 ];
 
 iCompactMatrixBox[matrix_, itemSize_, frameStyle_, shouldFactor_] := Scope[
-  {matrix, factor} = If[shouldFactor && Dimensions[matrix] =!= {1, 1} &&
+  {matrix, factor} = If[shouldFactor && Dims[matrix] =!= {1, 1} &&
     Min[Abs[ExpandUnitRoots[matrix] /. ModForm[m_, _] :> m]] > 0,
     MatrixSimplify[matrix], {matrix, 1}];
   entries = MatrixMap[numBox, matrix] // simplifyNumBoxes;
@@ -65,11 +65,11 @@ makeCompactMatrixFormBoxes[e_, opts:OptionsPattern[]] := Scope[
 
   blockNumberFormatting[CompactMatrixForm, {negationStyle, inversionStyle},
     $zero = If[hideZeros, $grayDot, "0"];
-    If[MatrixQ[Unevaluated[e]],
+    If[MatrixQ[Uneval[e]],
       held = List @ RawBoxes @ iCompactMatrixBox[e, itemSize, frameStyle, factor];
     ,
-      held = Hold[e] /. m_List /; MatrixQ[Unevaluated[m]] :>
-        RuleCondition[RawBoxes @ iCompactMatrixBox[m, itemSize, frameStyle, factor]];
+      held = Hold[e] /. m_List /; MatrixQ[Uneval[m]] :>
+        RuleEval[RawBoxes @ iCompactMatrixBox[m, itemSize, frameStyle, factor]];
     ]
   ];
 
@@ -91,11 +91,11 @@ declareFormatting[
   LabeledMatrixForm[expr_] :> formatLabeledMatrices[expr]
 ];
 
-formatLabeledMatrices[expr_] := ReplaceAll[expr,
-  matrix_ /; MatrixQ[Unevaluated @ matrix] /; Len[Unevaluated @ matrix] =!= 1 :> RuleCondition @ formatLabeledMatrix @ matrix
+formatLabeledMatrices[expr_] := RepAll[expr,
+  matrix_ /; MatrixQ[Uneval @ matrix] /; Len[Uneval @ matrix] =!= 1 :> RuleEval @ formatLabeledMatrix @ matrix
 ]
 
 formatLabeledMatrix[matrix_] := Scope[
   tooltips = MapIndexed[Tooltip, matrix, {2}];
-  MatrixForm[tooltips, TableHeadings -> Automatic]
+  MatrixForm[tooltips, TableHeadings -> Auto]
 ];

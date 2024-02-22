@@ -38,21 +38,21 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
   $v0 = v0;
   $scaling = 1.0;
   cardinals = CardinalList @ fq;
-  paths = parsePath /@ DeleteDuplicates[paths];
+  paths = parsePath /@ Dedup[paths];
   If[ContainsQ[paths, $Failed], ReturnFailed[]];
   pathWords = extractWord /@ paths;
-  UnpackStringOptions[{opts}, Automatic, additionalEdges, direction];
+  UnpackStringOptions[{opts}, Auto, additionalEdges, direction];
   {doForward, doReverse} = Switch[direction,
-    "Forward" | Automatic, {True, False},
+    "Forward" | Auto, {True, False},
     "Backward", {False, True},
     "Both", {True, True},
     _, ReturnFailed[]
   ];
   Which[
     cardinalDirs === Inherited,
-      coords = AssociationThread[
+      coords = AssocThread[
         Map[LatticeVertex @ ToPathWord @ #&, VertexList @ fq],
-        P1 @ ExtractGraphPrimitiveCoordinates @ fq
+        F @ ExtractGraphPrimitiveCoordinates @ fq
       ];
     ,
     cardinalDirs =!= None,
@@ -61,27 +61,27 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
         $scaling = 0.0
       ];
       If[Len[cardinalDirs] =!= Len[cardinals], ReturnFailed[]];
-      $cardinalDirs = AssociationThread[cardinals, cardinalDirs];
-      $cardinalDirs = Join[$cardinalDirs, Map[Minus, KeyMap[Inverted, $cardinalDirs]]];
+      $cardinalDirs = AssocThread[cardinals, cardinalDirs];
+      $cardinalDirs = Join[$cardinalDirs, Map[Minus, KMap[Inverted, $cardinalDirs]]];
       coords = Map[wordToCoords, pathWords];
     ,
     cardinalDirs === None,
-      coords = Automatic
+      coords = Auto
   ];
   vertices = Map[LatticeVertex, pathWords];
   pathWords2 = DeepCases[#, Path[_, word_, ___] :> word]& /@ paths;
   pathWordIndex = PositionIndex[pathWords2, 2];
-  pathKeys = DeleteCases[{}] @ Keys @ pathWordIndex;
-  edges = DeleteDuplicates @ Flatten @ {
+  pathKeys = Decases[{}] @ Keys @ pathWordIndex;
+  edges = Dedup @ Flatten @ {
     If[doForward, Map[makeExtensionEdges[Most, Id], pathKeys], Nothing],
     If[doReverse, Map[makeExtensionEdges[Rest, MirrorForm], pathKeys], Nothing]
   };
-  If[additionalEdges =!= Automatic,
+  If[additionalEdges =!= Auto,
     edges = Join[edges, Map[parseAdditionalEdge, additionalEdges]];
   ];
   $setback = 3;
-  pathOpts = DeleteCases[pathOpts, EdgeSetback -> v_ /; ($setback = v; True)];
-  labels = AssociationThread[vertices, FQPVertexIcon[pathOpts] /@ paths];
+  pathOpts = Decases[pathOpts, EdgeSetback -> v_ /; ($setback = v; True)];
+  labels = AssocThread[vertices, FQPVertexIcon[pathOpts] /@ paths];
   plot = Quiver[
     vertices, edges, FilterOptions @ opts,
     VertexCoordinates -> coords,
@@ -95,7 +95,7 @@ PathQuiverPlot[fq_, paths_, v0_, v0Label_, cardinalDirs_, pathOpts_List, opts___
 makeExtensionEdges[wordFn_, mirrFn_][word_] := DirectedEdge[
   Part[vertices, removeSingleton @ pathWordIndex @ wordFn @ word],
   Part[vertices, removeSingleton @ pathWordIndex @ word],
-  mirrFn @ PN @ word
+  mirrFn @ L @ word
 ]
 
 parseAdditionalEdge[DirectedEdge[a_, b_, c_]] :=
@@ -136,7 +136,7 @@ wordToCoords = Case[
 
 extractWord = Case[
   Path[_, word_, ___] := word;
-  list_List           := % @ P1 @ list;
+  list_List           := % @ F @ list;
   Labeled[spec_, _]   := % @ spec;
 ];
 

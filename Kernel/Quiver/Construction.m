@@ -19,7 +19,7 @@ Quiver[vertices_List, {}, opts:OptionsPattern[]] :=
   ExtendedGraph[Graph[vertices, {}], opts];
 
 Quiver[edges_, opts:OptionsPattern[]] :=
-  Quiver[Automatic, edges, opts];
+  Quiver[Auto, edges, opts];
 
 Quiver[graph_Graph, opts:OptionsPattern[]] :=
   ExtendedGraph[graph, opts]
@@ -34,7 +34,7 @@ processEdge[edge_, _] :=
 
 Quiver::nakededge = "The edge `` is not labeled with a cardinal.";
 
-processEdge[Annotation[e_, rule_Rule], tag_] := Block[{$ea = Append[$ea, rule]},
+processEdge[Annotation[e_, rule_Rule], tag_] := Block[{$ea = App[$ea, rule]},
   processEdge[e, tag]
 ];
 
@@ -50,7 +50,7 @@ processEdge[Labeled[edges:{__Rule}, labels_List], _] /; SameLengthQ[edges, label
 processEdge[Labeled[edges_, label_], _] :=
   processEdge[edges, label];
 
-processEdge[e_, Verbatim[Alternatives][args__]] :=
+processEdge[e_, Verbatim[Alt][args__]] :=
   Map[processEdge[e, #]&, {args}];
 
 processEdge[l_ <-> r_, label_] := sowAnnos @ {
@@ -61,7 +61,7 @@ processEdge[l_ <-> r_, label_] := sowAnnos @ {
 processEdge[l_ -> r_, label_] :=
   sowAnnos @ DirectedEdge[l, r, label];
 
-processEdge[DirectedEdge[l_, r_, Verbatim[Alternatives][args__]], z_] :=
+processEdge[DirectedEdge[l_, r_, Verbatim[Alt][args__]], z_] :=
   processEdge[DirectedEdge[l, r, #], z]& /@ {args};
 
 processEdge[DirectedEdge[l_, r_], c_] :=
@@ -76,7 +76,7 @@ processEdge[UndirectedEdge[a_, b_, c_], _] :=
 processEdge[de:DirectedEdge[_, _, _], _] :=
   sowAnnos @ de;
 
-processEdge[assoc_Assoc, _] := KeyValueMap[processEdge[#2, #1]&, assoc];
+processEdge[assoc_Assoc, _] := KVMap[processEdge[#2, #1]&, assoc];
 processEdge[Labeled[e_, label_], _] := processEdge[e, label];
 
 processEdge[list_List, label_] := Map[processEdge[#, label]&, list];
@@ -87,7 +87,7 @@ sowAnnos[e_List] := Map[sowAnno, e];
 sowAnnos[e_] := (Scan[attachAnno[e], $ea]; e);
 
 attachAnno[e_][key_ -> value_] :=
-  KeyAppendTo[$edgeAnnotations, key, e -> value]
+  KAppTo[$edgeAnnotations, key, e -> value]
 
 Quiver::containfailed = "Edges contain $Failed."
 
@@ -110,12 +110,12 @@ makeQuiver[vertices_, edges_, newOpts_] := Scope[
   If[$edgeAnnotations =!= <||>,
     index = AssociationRange @ edges;
     $edgeAnnotations = Map[
-      KeyMap[index, Assoc @ #]&,
+      KMap[index, Assoc @ #]&,
       $edgeAnnotations
     ];
   ];
 
-  If[vertices === Automatic, vertices = Union[InVertices @ edges, OutVertices @ edges]];
+  If[vertices === Auto, vertices = Union[InVertices @ edges, OutVertices @ edges]];
 
   ExtendedGraph[
     vertices, edges,
@@ -126,12 +126,12 @@ makeQuiver[vertices_, edges_, newOpts_] := Scope[
 ]
 
 reportDuplicateCardinals[edges_] := (
-  KeyValueScan[checkEdgeGroup, GroupBy[edges, PN]];
+  KVScan[checkEdgeGroup, GroupBy[edges, L]];
 )
 
 Quiver::dupcardinal = "The cardinal `` is present on the following incident edges: ``."
 checkEdgeGroup[tag_, edges_] /; !checkForDuplicateCardinals[edges] := Scope[
-  {srcDup, dstDup} = Apply[Alternatives, FindDuplicates[#]]& /@ {InVertices[edges], OutVertices[edges]};
+  {srcDup, dstDup} = Apply[Alt, FindDuplicates[#]]& /@ {InVertices[edges], OutVertices[edges]};
   dupEdges = Cases[edges, DirectedEdge[srcDup, _, _]];
   If[dupEdges === {}, dupEdges = Cases[edges, DirectedEdge[_, dstDup, _]]];
   Message[Quiver::dupcardinal, tag, Take[dupEdges, All, 2]];
@@ -170,7 +170,7 @@ QuiverQ[g_] := EdgeTaggedGraphQ[g] && validCardinalEdgesQ[EdgeList[g]];
 
 validCardinalEdgesQ[edges_] := And[
   MatchQ[edges, {DirectedEdge[_, _, _]..}],
-  AllTrue[GroupBy[edges // SpliceCardinalSetEdges, PN], checkForDuplicateCardinals]
+  AllTrue[GroupBy[edges // SpliceCardinalSetEdges, L], checkForDuplicateCardinals]
 ];
 
 checkForDuplicateCardinals[edges_] :=

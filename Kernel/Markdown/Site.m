@@ -63,7 +63,7 @@ DeleteSite['site'] will delete a site.
 * The option %DeleteContents -> True will delete the corresponding directory on disk.
 ";
 
-Options[DeleteSite] = {DeleteContents -> False, DryRun -> False, Verbose -> Automatic};
+Options[DeleteSite] = {DeleteContents -> False, DryRun -> False, Verbose -> Auto};
 
 DeleteSite[siteName_Str, OptionsPattern[]] := Scope @ CatchMessage[
   UnpackOptions[deleteContents, $dryRun, $verbose];
@@ -103,7 +103,7 @@ getSiteData[siteName_] := Scope[
   siteData
 ];
 
-resolveStringFunction[data_][str_] := If[!StringQ[str] || StringFreeQ[str, "#"], str, StringFunction[str] @ data];
+resolveStringFunction[data_][str_] := If[!StrQ[str] || SFreeQ[str, "#"], str, StringFunction[str] @ data];
 
 DefineLiteralMacro[unpackSiteData, unpackSiteData[siteName_, args___] := UnpackAssociation[$siteData = getSiteData[siteName], args]];
 
@@ -115,7 +115,7 @@ General::badsiteobj = "`` is not a directory, file, or notebook object with a pa
 findContainingSite[source_] := Scope[
 
   path = ToNotebookPath @ source;
-  If[!StringQ[path], ThrowMessage["badsiteobj", source]];
+  If[!StrQ[path], ThrowMessage["badsiteobj", source]];
 
   matchLen = 0;
   matchSite = None;
@@ -123,7 +123,7 @@ findContainingSite[source_] := Scope[
       siteData = Get[siteFile];
       If[!AssocQ[siteData], ReturnFailed["corruptsite", siteFile]];
       UnpackAssociation[siteData, siteName, baseNotebookPath, baseExportPath];
-      If[StringQ[baseNotebookPath] && StringStartsQ[path, baseNotebookPath] && (len = StringLength[baseNotebookPath]) > matchLen,
+      If[StrQ[baseNotebookPath] && SStartsQ[path, baseNotebookPath] && (len = SLen[baseNotebookPath]) > matchLen,
         matchLen = len; matchSite = siteName];
     ),
     FileNames @ toSiteFile["*"]
@@ -172,10 +172,10 @@ CreateSite['name$', 'notebookPath$', 'exportPath$'] will create a new markdown-b
 ";
 
 Options[CreateSite] = JoinOptions[
-  BaseURL -> Automatic,
-  ServingPort -> Automatic,
+  BaseURL -> Auto,
+  ServingPort -> Auto,
   SiteGenerator -> "Hugo",
-  MarkdownFlavor -> Automatic,
+  MarkdownFlavor -> Auto,
   MarkdownPath -> "content",
   RasterizationPath -> "static/raster",
   HTMLPath -> "public",
@@ -206,13 +206,13 @@ CreateSite[siteName_Str, nbPath_Str, ePath_Str, opts:OptionsPattern[]] :=
   CreateSite[siteName, BaseNotebookPath -> nbPath, BaseExportPath -> ePath, opts];
 
 CreateSite[siteName_Str, opts:OptionsPattern[]] := CatchMessage @ Scope[
-  If[!StringQ[siteName], ReturnFailed["arg1"]];
+  If[!StrQ[siteName], ReturnFailed["arg1"]];
   UnpackOptions[baseNotebookPath, markdownFlavor, baseExportPath, baseURL, siteGenerator, overwriteTarget, $dryRun, $verbose];
 
-  SetAutomatic[baseExportPath, If[!DirectoryQ[$SitesDirectory], Automatic, PathJoin[$SitesDirectory, siteName]]];
+  SetAutomatic[baseExportPath, If[!DirectoryQ[$SitesDirectory], Auto, PathJoin[$SitesDirectory, siteName]]];
 
-  If[!StringQ[baseNotebookPath], ReturnFailed["pathns", BaseNotebookPath]];
-  If[!StringQ[baseExportPath], ReturnFailed["pathns", BaseExportPath]];
+  If[!StrQ[baseNotebookPath], ReturnFailed["pathns", BaseNotebookPath]];
+  If[!StrQ[baseExportPath], ReturnFailed["pathns", BaseExportPath]];
 
   If[FileExistsQ @ toSiteFile[siteName] && !overwriteTarget,
     ReturnFailed["siteexists", siteName]];
@@ -225,7 +225,7 @@ CreateSite[siteName_Str, opts:OptionsPattern[]] := CatchMessage @ Scope[
   If[!MatchQ[siteGenerator, "Hugo" | "Pandoc" | None], ReturnFailed["badsitegen", siteGenerator]];
   defaults = $generatorDefaults[siteGenerator];
 
-  assoc = Map[Id] @ KeyMap[SymbolName] @ KeySort @ Assoc[
+  assoc = Map[Id] @ KMap[SymbolName] @ KSort @ Assoc[
     Options[CreateSite],
     ServingPort -> toUniquePort[siteName],
     defaults, opts,
@@ -233,7 +233,7 @@ CreateSite[siteName_Str, opts:OptionsPattern[]] := CatchMessage @ Scope[
     BaseExportPath -> baseExportPath,
     SiteName -> siteName
   ];
-  KeyDropFrom[assoc, {"OverwriteTarget", "DryRun"}];
+  KDropFrom[assoc, {"OverwriteTarget", "DryRun"}];
 
   If[FailureQ[$serverFunctions[siteGenerator]["NewSite"][assoc]], ReturnFailed[]];
 
@@ -279,7 +279,7 @@ General::exportfailed = "Failed to export notebooks in site ``."
 buildSite[siteSpec_, extraOpts___] := Scope[
 
   Which[
-    StringQ[siteSpec] && StringFreeQ[siteSpec, $PathnameSeparator],
+    StrQ[siteSpec] && SFreeQ[siteSpec, $PathnameSeparator],
       siteName = siteSpec,
     MatchQ[siteSpec, $NotebookOrPathP],
       {siteName, temp} = findContainingSite @ siteSpec,
@@ -290,7 +290,7 @@ buildSite[siteSpec_, extraOpts___] := Scope[
   siteData = getSiteData[siteName];
   source = siteData["BaseNotebookPath"];
   result = ExportToMarkdown[source, extraOpts, FilterOptions @ siteData];
-  If[!StringVectorQ[result], ThrowMessage["exportfailed", siteName]];
+  If[!StrVecQ[result], ThrowMessage["exportfailed", siteName]];
 
   {siteData, result}
 ];
@@ -350,11 +350,11 @@ buildOrWriteSitePage[sourceSpec_, extraOpts_List, shouldBuild_] := Scope[
   If[!DirectoryQ[baseExportPath], ReturnFailed["baseExportPathMissing", MsgPath @ baseExportPath]];
 
   outputFiles = ExportToMarkdown[sourceSpec, FilterOptions @ extraOpts, NotebookCaching -> False, FilterOptions @ siteData];
-  If[!StringVectorQ[outputFiles], ThrowMessage["exportfailed", siteName]];
+  If[!StrVecQ[outputFiles], ThrowMessage["exportfailed", siteName]];
 
   If[shouldBuild, $serverFunctions[siteData["SiteGenerator"], "BuildSitePage"][siteData, outputFiles]];
 
-  P1 @ outputFiles
+  F @ outputFiles
 
 ]
 
@@ -373,7 +373,7 @@ ServeSite[] will serve the site containing the current notebook.
 
 Options[ServeSite] = Options[BuildSite];
 
-ServeSite[opts:OptionsPattern[]] := ServeSite[P1 @ findContainingSite @ EvaluationNotebook[], opts];
+ServeSite[opts:OptionsPattern[]] := ServeSite[F @ findContainingSite @ EvaluationNotebook[], opts];
 
 ServeSite[siteName_Str, extraOpts:OptionsPattern[]] := Scope @ CatchMessage[
 
@@ -416,7 +416,7 @@ ServeSitePage[nb:Except[_Rule], extraOpts:OptionsPattern[]] := Scope @ CatchMess
   If[!DirectoryQ[baseExportPath], ReturnFailed["baseExportPathMissing", MsgPath @ baseExportPath]];
 
   outputFiles = ExportToMarkdown[nb, FilterOptions @ extraOpts, NotebookCaching -> False, FilterOptions @ siteData];
-  If[!StringVectorQ[outputFiles], ThrowMessage["exportfailed", siteName]];
+  If[!StrVecQ[outputFiles], ThrowMessage["exportfailed", siteName]];
 
   If[URLAvailableQ[pageURL],
   $serverFunctions[siteGenerator, "BuildSitePage"][siteData, outputFiles];
@@ -442,7 +442,7 @@ $hugoPathReplacements = {
 PublicFunction[HugoFrontMatterFunction]
 
 HugoFrontMatterFunction[assoc_] := Scope[
-  assoc["type"] = type = Replace[ToLowerCase @ assoc["relativepath"], $hugoPathReplacements];
+  assoc["type"] = type = Rep[ToLowerCase @ assoc["relativepath"], $hugoPathReplacements];
   If[type === "docs", assoc["url"] = titleToURL @ assoc["title"]];
   assoc["katex"] = True;
   assoc["katexPrelude"] = True;
@@ -452,7 +452,7 @@ HugoFrontMatterFunction[assoc_] := Scope[
 PublicFunction[HugoExportPathFunction]
 
 HugoExportPathFunction[relPath_] :=
-  FileNameJoin @ Map[StringReplace[$hugoPathReplacements], FileNameSplit @ relPath];
+  FileNameJoin @ Map[SRep[$hugoPathReplacements], FileNameSplit @ relPath];
 
 (**************************************************************************************************)
 
@@ -473,7 +473,7 @@ Options[ClearSite] = {
   DeleteMarkdown -> True,
   DeleteHTML -> False,
   DryRun -> False,
-  Verbose -> Automatic
+  Verbose -> Auto
 };
 
 ClearSite[siteName_Str, OptionsPattern[]] := Scope[
@@ -503,8 +503,8 @@ ClearSite[siteName_Str, OptionsPattern[]] := Scope[
   ];
 
   If[deleteMarkdown && FileExistsQ[absoluteMarkdownPath],
-    markdownFiles = FileNames["*.md", absoluteMarkdownPath, Infinity];
-    markdownFiles //= Select[ReadString /* StringContainsQ["\"notebookpath\":"]];
+    markdownFiles = FileNames["*.md", absoluteMarkdownPath, Inf];
+    markdownFiles //= Select[ReadString /* SContainsQ["\"notebookpath\":"]];
     VPrint["Deleting ", Len @ markdownFiles, " files in ", MsgPath @ absoluteMarkdownPath];
     whenWet @ Scan[DeleteFile, markdownFiles];
   ,
@@ -538,18 +538,18 @@ SitePageData[nb_] := Scope @ CatchMessage[
   $markdownPath //= ToAbsolutePath[$baseExportPath];
 
   mdPath = itemMarkdownPath[path];
-  If[!StringQ[mdPath], ReturnFailed[]];
+  If[!StrQ[mdPath], ReturnFailed[]];
 
   frontMatter = MarkdownFrontMatter @ mdPath;
   If[AssocQ[frontMatter],
     url = Lookup[frontMatter, "url", None],
     url = None
   ];
-  If[!StringQ[url],
-    url = RelativePath[$markdownPath, StringTrim[mdPath, ".md"]];
+  If[!StrQ[url],
+    url = RelativePath[$markdownPath, STrim[mdPath, ".md"]];
   ];
 
-  pageURL = If[StringQ[url], StringJoin[baseURL, "/", url, If[StringStartsQ[baseURL, "file://"], ".html", ""]], $Failed];
+  pageURL = If[StrQ[url], SJoin[baseURL, "/", url, If[SStartsQ[baseURL, "file://"], ".html", ""]], $Failed];
   Assoc[
     "Source" -> path,
     "Target" -> mdPath,

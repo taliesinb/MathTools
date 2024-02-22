@@ -149,8 +149,8 @@ PublicFunction[ModOperator]
 
 ModOperator[n_][e_] := If[NumericQ[e], Mod[e, n, 0], e];
 ModOperator[n_, m_][e_] := If[NumericQ[e], Mod[e, n, m], e];
-ModOperator[Infinity] = Id;
-ModOperator[Infinity, _] = Id;
+ModOperator[Inf] = Id;
+ModOperator[Inf, _] = Id;
 
 (**************************************************************************************************)
 
@@ -163,8 +163,8 @@ MaxOperator[n_][e_] := Max[n, e];
 
 PublicFunction[PlusOneMod]
 
-PlusOneMod[Infinity] := PlusOne;
-PlusOneMod[Infinity, _] := PlusOne;
+PlusOneMod[Inf] := PlusOne;
+PlusOneMod[Inf, _] := PlusOne;
 PlusOneMod[n_][x_] := Mod[x + 1, n];
 PlusOneMod[n_, m_][x_] := Mod[x + 1, n, m];
 
@@ -172,8 +172,8 @@ PlusOneMod[n_, m_][x_] := Mod[x + 1, n, m];
 
 PublicFunction[MinusOneMod]
 
-MinusOneMod[Infinity] := MinusOne;
-MinusOneMod[Infinity, _] := MinusOne;
+MinusOneMod[Inf] := MinusOne;
+MinusOneMod[Inf, _] := MinusOne;
 MinusOneMod[n_][x_] := Mod[x - 1, n];
 MinusOneMod[n_, m_][x_] := Mod[x - 1, n, m];
 
@@ -273,7 +273,7 @@ EmptyStyleBoxOperator[color$, opacity$, thickness$] produces a StyleBoxOperator 
 "
 
 EmptyStyleBoxOperator = Case[
-  Seq[s_SolidEdgeForm, o_, t_] := %[PN @ solidEdgeColors @ s, o,  t];
+  Seq[s_SolidEdgeForm, o_, t_] := %[L @ solidEdgeColors @ s, o,  t];
   Seq[None, _, _]              := InvisibleOperator;
   Seq[_, 0, _]                 := InvisibleOperator;
   Seq[_, _, 0]                 := InvisibleOperator;
@@ -316,7 +316,7 @@ ShaftStyleBoxOperator[color$, opacity$, thickness$, dashing$] produces a StyleBo
 (* TODO: introduce a formal ColorGradient[c1, c2] head *)
 
 ShaftStyleBoxOperator[s_SolidEdgeForm, args___] :=
-  ShaftStyleBoxOperator[PN @ solidEdgeColors @ s, args];
+  ShaftStyleBoxOperator[L @ solidEdgeColors @ s, args];
 
 ShaftStyleBoxOperator[{c1_, c2_}, o_, t_, d_] :=
   LineBoxGradientOperator[{c1, c2}] /* ShaftStyleBoxOperator[None, o, t, d];
@@ -333,15 +333,15 @@ ShaftStyleBoxOperator[color_, opacity_, thickness_, dashing_] :=
 
 PrivateTypesettingBoxFunction[LineBoxGradientOperator]
 
-lineVectorQ[list_] := CoordinateMatricesQ[list] || VectorQ[list, lineQ];
+lineVectorQ[list_] := CoordinateMatricesQ[list] || VecQ[list, lineQ];
 lineQ[list_] := CoordinateMatrixQ[list] || MatchQ[list, {($CoordP | _Offset)..}];
 
 LineBoxGradientOperator[cols_][LineBox[points_]] := Scope[
   If[MatchQ[cols, {c_, c_}],
-    Return @ StyleBox[LineBox[points], First @ cols]];
+    Return @ StyleBox[LineBox[points], F @ cols]];
   If[lineVectorQ[points], Return @ Map[LineBox /* LineBoxGradientOperator[cols], points]];
   dists = LineSegmentTotalLengths @ RemoveOffsets @ points;
-  total = PN @ dists;
+  total = L @ dists;
   If[total == 0, Return @ LineBox[points]];
   colors = OklabBlend[cols, dists / total];
   Construct[LineBox, points, VertexColors -> colors]
@@ -352,14 +352,14 @@ _LineBoxGradientOperator[other_] := EchoPF @ other;
 
 (**************************************************************************************************)
 
-toThick[Automatic | None] := Seq[];
+toThick[Auto | None] := Seq[];
 toThick[n_] := AbsoluteThickness[n];
 
-toColor[Automatic] := Seq[];
+toColor[Auto] := Seq[];
 toColor[None] := Opacity[0];
 toColor[col_] := col;
 
-toOpacity[Automatic | None] := Seq[];
+toOpacity[Auto | None] := Seq[];
 toOpacity[o_] := Opacity[o];
 
 (**************************************************************************************************)

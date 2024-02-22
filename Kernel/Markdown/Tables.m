@@ -1,21 +1,21 @@
 PrivateVariable[$markdownTableReplacement]
 
-$markdownTableReplacement = StartOfLine ~~ " "... ~~ text:Repeated["* " ~~ Except["\n"].. ~~ "\n\n", {2, Infinity}] :> createMarkdownTable[text];
+$markdownTableReplacement = StartOfLine ~~ " "... ~~ text:Repeated["* " ~~ Except["\n"].. ~~ "\n\n", {2, Inf}] :> createMarkdownTable[text];
 
 (**************************************************************************************************)
 
 createMarkdownTable[ostr_Str] := Scope[
-  str = StringTrim @ ostr;
-  lines = StringDrop[StringSplit[str, "\n"..], 2];
+  str = STrim @ ostr;
+  lines = SDrop[SSplit[str, "\n"..], 2];
   allowCompact = True;
-  If[StringStartsQ[P1 @ lines, "META: "],
+  If[SStartsQ[F @ lines, "META: "],
     {meta, lines} = FirstRest @ lines;
-    allowCompact = StringFreeQ[meta, "WIDE"];
+    allowCompact = SFreeQ[meta, "WIDE"];
   ];
-  If[Min[StringCount[DeleteCases["SPACER"] @ lines, "\t"..]] == 0, Return @ ostr];
-  grid = StringTrim /@ StringSplit[lines, "\t"..];
-  ncols = Len @ P1 @ grid;
-  grid //= MatrixMap[StringReplace["\"" -> "'"]];
+  If[Min[StringCount[Decases["SPACER"] @ lines, "\t"..]] == 0, Return @ ostr];
+  grid = STrim /@ SSplit[lines, "\t"..];
+  ncols = Len @ F @ grid;
+  grid //= MatrixMap[SRep["\"" -> "'"]];
   grid //= MatrixReplace["**_**" -> ""];
   grid //= VectorReplace[{"SPACER"} :> Repeat[" ", ncols]];
   toMarkdownTableString[grid, allowCompact]
@@ -26,42 +26,42 @@ createMarkdownTable[ostr_Str] := Scope[
 toMarkdownTableString[grid_, allowCompact_] := Scope[
   If[!AnyMatrixQ[grid],
     Print["Bad table!"];
-    Print["First row is: ", First @ grid];
+    Print["First row is: ", F @ grid];
     Print["Row lengths are: ", Len /@ grid];
     PrintIF[grid];
     Return["BADTABLE"];
   ];
-  ncols = Len @ P1 @ grid;
-  hasHeader = VectorQ[P1 @ grid, boldedQ];
+  ncols = Len @ F @ grid;
+  hasHeader = VecQ[F @ grid, boldedQ];
   strikeRow = Repeat["---", ncols];
   attrs = {};
   If[!hasHeader && $allowTableHeaderSkip,
-    AppendTo[attrs, "table-no-header"];
+    AppTo[attrs, "table-no-header"];
     dummyRow = Repeat["z", ncols];
     grid = Join[{dummyRow, strikeRow}, grid];
   ,
     postFn = Id;
     grid = Insert[grid, strikeRow, If[hasHeader || !$allowTableHeaderSkip, 2, 1]];
   ];
-  If[ncols > 3 && allowCompact, AppendTo[attrs, "table-compact"]];
-  tableStr = StringJoin @ Map[toMarkdownTableRowString, grid];
+  If[ncols > 3 && allowCompact, AppTo[attrs, "table-compact"]];
+  tableStr = SJoin @ Map[toMarkdownTableRowString, grid];
   If[attrs =!= {}, tableStr //= $classAttributeTemplate[attrs]];
-  StringJoin[StringTrim @ tableStr, "\n\n"]
+  SJoin[STrim @ tableStr, "\n\n"]
 ];
 
-toMarkdownTableRowString[cols_] := StringJoin["| ", Riffle[StringReplace[cols, $tableEscape], " | "], " |\n"];
+toMarkdownTableRowString[cols_] := SJoin["| ", Riffle[SRep[cols, $tableEscape], " | "], " |\n"];
 
 $tableEscape = "|" -> "&#x007C;"
 
-boldedQ[str_] := StringMatchQ[str, Verbatim["*"] ~~ __ ~~ Verbatim["*"]] || StringMatchQ[str, "<span style='font-weight:bold'>" ~~ __ ~~ "</span>"];
+boldedQ[str_] := SMatchQ[str, Verbatim["*"] ~~ __ ~~ Verbatim["*"]] || SMatchQ[str, "<span style='font-weight:bold'>" ~~ __ ~~ "</span>"];
 
 (**************************************************************************************************)
 
 PrivateFunction[textGridToMarkdown]
 
 textGridToMarkdown[GridBox[grid_, opts___]] := Scope[
-  elems = MatrixMap[gridElementToMarkdown /* StringReplace["\n" -> "<br>"], grid];
-  elems //= DeleteCases[{"\[Placeholder]"..}];
+  elems = MatrixMap[gridElementToMarkdown /* SRep["\n" -> "<br>"], grid];
+  elems //= Decases[{"\[Placeholder]"..}];
   toMarkdownTableString[elems, False]
 ];
 

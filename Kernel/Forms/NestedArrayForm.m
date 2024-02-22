@@ -43,7 +43,7 @@ toAxisColor = Case[
 PrivateFunction[nestedArrayRender]
 
 $defaultSpanning = True;
-$axisPaletteSpec = Automatic;
+$axisPaletteSpec = Auto;
 $itemFunction = defaultItemFunction;
 
 defaultItemFunction = Case[
@@ -103,8 +103,8 @@ procNA[(styleHead_Symbol ? $styleFormHeadQ)[(head:$headP)[inner_]], rest___][arr
   StyleDecorated[StyleFormData @ styleHead, head][procNA[inner, rest] @ array];
 
 shouldSpanQ[s_Str] := Which[
-  StringStartsQ[s, "Spanning"], True,
-  StringStartsQ[s, "Normal"], False,
+  SStartsQ[s, "Spanning"], True,
+  SStartsQ[s, "Normal"], False,
   True, $defaultSpanning
 ];
 
@@ -186,12 +186,12 @@ NestedArrayForm::badspec = "Unknown spec ``";
 procNA[spec_, ___][array_] := (Message[NestedArrayForm::badspec, MsgExpr @ spec]; "?");
 
 vectorMapNA[f_, array_, isH_] := InheritedBlock[
-  {$dims = Append[$dims, Len @ array], $pos = Append[$pos, 0], $hor = Append[$hor, isH]},
+  {$dims = App[$dims, Len @ array], $pos = App[$pos, 0], $hor = App[$hor, isH]},
   MapIndex1[{a, i} |-> (Part[$pos, -1] = i; f[a]), array]
 ];
 
 matrixMapNA[f_, array_] := InheritedBlock[
-  {$dims = Join[$dims, Dimensions[array, 2]], $pos = Join[$pos, {0, 0}], $hor = Join[$hor, {False, True}]},
+  {$dims = Join[$dims, Dims[array, 2]], $pos = Join[$pos, {0, 0}], $hor = Join[$hor, {False, True}]},
   MapIndexed[{a, i} |-> (Part[$pos, {-2, -1}] = i; f[a]), array, {2}]
 ];
 

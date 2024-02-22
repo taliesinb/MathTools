@@ -4,9 +4,9 @@ FunctionTreeGraph[e_, rules:OptionsPattern[]] :=
   makeTreeGraph[e, scanFunction, "ExpressionTreeGraph", rules];
 
 scanFunction = Case[
-  HoldPattern[Fn[vars_List, body_]] := Scope[$slotSymbols = vars; scanToTree[{}, body]];
-  HoldPattern[Fn[var_Symbol, body_]] := % @ Fn[{var}, body];
-  HoldPattern[Fn[body_]] := scanToTree[{}, body];
+  HoldP[Fn[vars_List, body_]] := Scope[$slotSymbols = vars; scanToTree[{}, body]];
+  HoldP[Fn[var_Symbol, body_]] := % @ Fn[{var}, body];
+  HoldP[Fn[body_]] := scanToTree[{}, body];
   _ := $Failed;
 ];
 
@@ -45,7 +45,7 @@ SetAttributes[{scanToTree}, HoldRest];
 scanToTree[pos_, HoldForm[e_]] := scanToTree[pos, e];
 
 scanToTree[pos_, e:(head_Symbol[___])] /; !MatchQ[head, Form | RGBColor | GrayLevel] := Scope[
-  n = Len[Unevaluated @ e];
+  n = Len[Uneval @ e];
   StuffBag[$verts, pos];
   $degree[pos] ^= n;
   $data[pos] ^= head;
@@ -53,8 +53,8 @@ scanToTree[pos_, e:(head_Symbol[___])] /; !MatchQ[head, Form | RGBColor | GrayLe
   $type[pos] ^= "Node";
   Do[
     scanToTree[
-      subPos = Append[pos, i],
-      Evaluate @ Extract[Unevaluated @ e, i, HoldForm]
+      subPos = App[pos, i],
+      Eval @ Extract[Uneval @ e, i, HoldForm]
     ];
     StuffBag[$edges, subPos -> pos];
   ,
@@ -70,7 +70,7 @@ scanToTree[pos_, Slot[n_Int | n_Str]] := Scope[
 ];
 
 scanToTree[pos_, e_] := Scope[
-  If[H[e] === Form, e //= P1];
+  If[H[e] === Form, e //= F];
   StuffBag[$verts, pos];
   $degree[pos] ^= 0;
   $data[pos] ^= e;
@@ -171,7 +171,7 @@ makePolynomialBoxes[Polynomial[vars_List, body_]] := Scope[
 PublicFunction[PolynomialGraph]
 
 Options[PolynomialGraph] = {
-  ItemFunction -> Automatic
+  ItemFunction -> Auto
 };
 
 PolynomialGraph[expr_, opts:OptionsPattern[]] := Scope[
@@ -192,8 +192,8 @@ PolynomialGraph[expr_, opts:OptionsPattern[]] := Scope[
 
 addPoly[p:Polynomial[vars_, body_], inputIndices_] := Scope[
   bodyIndex = $varCount++;
-  AppendTo[$vlabels, bodyIndex -> itemFunction[p]];
-  AppendTo[$edges, MapThread[DirectedEdge[bodyIndex, #1, #2]&, {inputIndices, vars}]];
+  AppTo[$vlabels, bodyIndex -> itemFunction[p]];
+  AppTo[$edges, MapThread[DirectedEdge[bodyIndex, #1, #2]&, {inputIndices, vars}]];
   bodyIndex
 ];
 
@@ -201,11 +201,11 @@ toPolyGraph = Case[
   None := ($varCount++);
   poly:Polynomial[vars_, _] := addPoly[poly, Table[$varCount++, Len @ vars]];
   (poly_Polynomial)[inputs___] := addPoly[poly, Map[%, {inputs}]];
-  body_ := (AppendTo[$vlabels, $varCount -> Form[body]]; $varCount++);
+  body_ := (AppTo[$vlabels, $varCount -> Form[body]]; $varCount++);
 ];
 
 polyItemFunction[Polynomial[vars_, body_]] :=
-  QuiverProductPolyForm @ ReplaceAll[HoldForm[body], Flatten[toVarRules /@ vars]];
+  QuiverProductPolyForm @ RepAll[HoldForm[body], Flatten[toVarRules /@ vars]];
 
 toVarRules[var_] := var -> Style[var, CardinalColor[var]];
 
@@ -238,12 +238,12 @@ ArrowPolynomialGraph[expr_, opts:OptionsPattern[]] :=
   PolynomialGraph[expr, opts, ItemFunction -> arrowPolyItemFunction];
 
 arrowPolyItemFunction[Polynomial[vars_, body_]] :=
-  QuiverProductPolyForm @ ReplaceAll[HoldForm[body], Flatten[toArrowVarRules /@ vars]];
+  QuiverProductPolyForm @ RepAll[HoldForm[body], Flatten[toArrowVarRules /@ vars]];
 
 toArrowVarRules[var_] := {
-  HoldPattern[Power[var, 1]] -> Style[ForwardFactorSymbol, CardinalColor[var]],
-  HoldPattern[Power[var, 0]] -> Style[NeutralFactorSymbol, CardinalColor[var]],
-  HoldPattern[Power[var, -1]] -> Style[BackwardFactorSymbol, CardinalColor[var]],
+  HoldP[Power[var, 1]] -> Style[ForwardFactorSymbol, CardinalColor[var]],
+  HoldP[Power[var, 0]] -> Style[NeutralFactorSymbol, CardinalColor[var]],
+  HoldP[Power[var, -1]] -> Style[BackwardFactorSymbol, CardinalColor[var]],
   var -> Style[ForwardFactorSymbol, CardinalColor[var]]
 };
 
@@ -268,14 +268,14 @@ HyperedgeIncidenceGraph::notassoc = "First argument should be an association fro
 HyperedgeIncidenceGraph[expr_, rules:OptionsPattern[]] := Scope[
   If[!AssocQ[expr], ReturnFailed["notassoc"]];
   keys = Keys[expr];
-  $keysP = Apply[Alternatives, Verbatim /@ keys];
+  $keysP = Apply[Alt, Verbatim /@ keys];
   
   $type = $content = Assoc[];
   CollectTo[{$hyperedges, $vertices},
-    KeyValueScan[scanHyperedge, expr /. p:$keysP :> Hyperedge[p]]
+    KVScan[scanHyperedge, expr /. p:$keysP :> Hyperedge[p]]
   ];
   
-  $vertices //= DeleteDuplicates;
+  $vertices //= Dedup;
 
   ExtendedGraph[
     $vertices,
@@ -335,7 +335,7 @@ addAtomVertex[atom_] := (
 addPathEdge[path_][subPart_, subValue_] :=
   StuffBag[
     $hyperedges,
-    DirectedEdge[path, toHyperedgePart[Append[path, subPart], subValue], subPart]
+    DirectedEdge[path, toHyperedgePart[App[path, subPart], subValue], subPart]
   ];
 
 

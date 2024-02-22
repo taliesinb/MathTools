@@ -1,7 +1,7 @@
 PublicFunction[MergeAssocations]
 
 MergeAssocations[f_, assocs_] :=
-  KeyValueMap[f, Merge[assocs, Id]];
+  KVMap[f, Merge[assocs, Id]];
 
 (**************************************************************************************************)
 
@@ -14,18 +14,18 @@ LookupChain[spec$, {key$1, key$2, $$}] returns a list of results.
 * Any dict$ can be an association or list of rules.
 "
 
-LookupChain[dict_, keys_] := Lookup[dict, keys, Automatic];
+LookupChain[dict_, keys_] := Lookup[dict, keys, Auto];
 LookupChain[dict1_ -> dict2_, keys_] := Lookup[dict1, keys, Return[iLookup[dict1 -> dict2, keys], Lookup]];
 
 iLookup[dict1_ -> dict2_, key_] := Lookup[dict1, key, iLookup[dict2, key]];
 iLookup[dict1_ -> dict2_, keys_List] := Map[key |-> Lookup[dict1, key, iLookup[dict2, key]], keys];
-iLookup[dict1_, key_] := Lookup[dict1, key, Automatic];
+iLookup[dict1_, key_] := Lookup[dict1, key, Auto];
 
 (**************************************************************************************************)
 
 PublicFunction[Associate]
 
-Associate[assoc_, key_ -> value_] := Prepend[assoc, key -> value];
+Associate[assoc_, key_ -> value_] := Pre[assoc, key -> value];
 
 (**************************************************************************************************)
 
@@ -33,14 +33,14 @@ PublicFunction[AssociationMapThread]
 
 AssociationMapThread[f_, assoc_Assoc] := With[
   {keys = Keys @ assoc},
-  Map[f[AssociationThread[keys, #]]&, Transpose @ Values @ assoc]
+  Map[f[AssocThread[keys, #]]&, Transpose @ Values @ assoc]
 ];
 
 (**************************************************************************************************)
 
 PublicFunction[AssociationKeyPattern]
 
-AssociationKeyPattern[assoc_Assoc] := Apply[Alternatives, Keys @ assoc];
+AssociationKeyPattern[assoc_Assoc] := Apply[Alt, Keys @ assoc];
 
 (**************************************************************************************************)
 
@@ -53,10 +53,10 @@ AssociationRange[{key$1, key$2, $$}] gives the association <|$$, key$i -> i$, $$
 "
 
 AssociationRange[list_] :=
-  AssociationThread[list, Range @ Len @ list];
+  AssocThread[list, Range @ Len @ list];
 
 RangeAssociation[list_] :=
-  AssociationThread[Range @ Len @ list, list];
+  AssocThread[Range @ Len @ list, list];
 
 (**************************************************************************************************)
 
@@ -78,7 +78,7 @@ SetUsage @ "
 ConstantAssociation[{key$1, key$2, $$}, c_] gives the constant association <|$$, key$i -> c$, $$|>.
 "
 
-ConstantAssociation[keys_List, constant_] := AssociationThread[keys, Repeat[constant, Len @ keys]];
+ConstantAssociation[keys_List, constant_] := AssocThread[keys, Repeat[constant, Len @ keys]];
 
 (**************************************************************************************************)
 
@@ -112,4 +112,4 @@ GroupPairs[{{key$1, val$1}, {key$2, val$2}, $$}] yields <|key$1 -> {val$1, $$}, 
 GroupPairs[{expr$1, expr$2, $$}] effectively gives GroupBy[expr$, First -> Last].
 "
 
-GroupPairs[list_] := GroupBy[list, P1 -> PN];
+GroupPairs[list_] := GroupBy[list, F -> L];

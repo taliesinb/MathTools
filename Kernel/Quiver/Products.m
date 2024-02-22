@@ -201,7 +201,7 @@ generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, userOpts:OptionsPatter
   {aColors, bColors} = LookupVertexColors /@ {a, b};
   {aCoords, bCoords} = LookupVertexCoordinates /@ {a, b};
   productVertices = Flatten @ Outer[VertexProduct, Sequence @@ vertexLists, 1];
-  productEdges = DeleteDuplicates @ Flatten @ Outer[edgeProdFn, Sequence @@ edgeLists, 1];
+  productEdges = Dedup @ Flatten @ Outer[edgeProdFn, Sequence @@ edgeLists, 1];
   If[!EdgeListQ[productEdges], Print[productEdges]; ReturnFailed["interr", "invalid edges produced"]];
   opts //= DropOptions[{VertexAnnotations, EdgeAnnotations, "UseCardinalSet", Cardinals, VertexColorFunction}];
   vertexColorFunction = If[aColors === None || bColors === None, None,
@@ -210,19 +210,19 @@ generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, userOpts:OptionsPatter
   If[flattenProducts, {productVertices, productEdges} //= FlattenProductSymbols];
   {aCardColors, bCardColors} = LookupCardinalColors /@ {a, b};
   If[useCardinalSet,
-    productEdges //= ReplaceAll[CardinalProduct[z__] :> CardinalSet[{z}]];
+    productEdges //= RepAll[CardinalProduct[z__] :> CardinalSet[{z}]];
     If[aCardColors =!= <||> && bCardColors =!= <||>,
-      opts //= ReplaceOptions[{CardinalColors -> Join[aCardColors, bCardColors], ArrowheadStyle -> Automatic}];
+      opts //= ReplaceOptions[{CardinalColors -> Join[aCardColors, bCardColors], ArrowheadStyle -> Auto}];
     ];
   ,
-    opts //= ReplaceOptions[{CardinalColorFunction -> CardinalProductColorFunction[aCardColors, bCardColors], ArrowheadStyle -> Automatic}];
+    opts //= ReplaceOptions[{CardinalColorFunction -> CardinalProductColorFunction[aCardColors, bCardColors], ArrowheadStyle -> Auto}];
   ];
   If[!AllTrue[{a, b}, EdgeTaggedGraphQ], productEdges //= RemoveEdgeTags];
   {aSize, bSize} = LookupImageSize /@ {a, b};
   coordsCands = Table[Map[fn, productVertices], {fn, {productVertexCoords1, productVertexCoords2, productVertexCoords3, productVertexCoords4}}];
   bestIndex = MaximumIndexBy[coordsCands, countDistinctRounded];
   coords = Part[coordsCands, bestIndex];
-  sizeCands = {{P1 @ bSize, PN @ aSize}, {PN @ bSize, P1 @ aSize}, {P1 @ bSize, P1 @ aSize}, {PN @ bSize, PN @ aSize}};
+  sizeCands = {{F @ bSize, L @ aSize}, {L @ bSize, F @ aSize}, {F @ bSize, F @ aSize}, {L @ bSize, L @ aSize}};
   size = Part[sizeCands, bestIndex];
   ExtendedGraph[
     productVertices, productEdges,
@@ -233,10 +233,10 @@ generalBinaryQuiverProduct[a_Graph, b_Graph, edgeProdFn_, userOpts:OptionsPatter
   ]
 ];
 
-productVertexCoords1[VertexProduct[a_, b_]] := List[P1 @ bCoords @ b, PN @ aCoords @ a];
-productVertexCoords2[VertexProduct[a_, b_]] := List[PN @ bCoords @ b, P1 @ aCoords @ a];
-productVertexCoords3[VertexProduct[a_, b_]] := List[P1 @ bCoords @ b, P1 @ aCoords @ a];
-productVertexCoords4[VertexProduct[a_, b_]] := List[PN @ bCoords @ b, PN @ aCoords @ a];
+productVertexCoords1[VertexProduct[a_, b_]] := List[F @ bCoords @ b, L @ aCoords @ a];
+productVertexCoords2[VertexProduct[a_, b_]] := List[L @ bCoords @ b, F @ aCoords @ a];
+productVertexCoords3[VertexProduct[a_, b_]] := List[F @ bCoords @ b, F @ aCoords @ a];
+productVertexCoords4[VertexProduct[a_, b_]] := List[L @ bCoords @ b, L @ aCoords @ a];
 
 countDistinctRounded[e_] := CountDistinct[Round[e, 0.001]];
 
@@ -271,7 +271,7 @@ GeneralQuiverProduct::badprodexpr = "Product expression `` should be a list of l
 GeneralQuiverProduct::badgraphs = "First argument is not a list of graphs.";
 GeneralQuiverProduct::badcoords = "VertexCoordinateFunction did not produce valid coordinates. First coordinate was: ``.";
 
-GeneralQuiverProduct[graphs_List, productTerms_List, components_:Automatic, userOpts:OptionsPattern[]] := Scope[
+GeneralQuiverProduct[graphs_List, productTerms_List, components_:Auto, userOpts:OptionsPattern[]] := Scope[
   If[productTerms ~!~ {$productTermP...}, ReturnFailed["badprodexpr", productTerms]];
   UnpackOptions[useCardinalSet, vertexCoordinateFunction, flattenProducts];
   graphs = toSimpleQuiver /@ graphs;
@@ -291,22 +291,22 @@ GeneralQuiverProduct[graphs_List, productTerms_List, components_:Automatic, user
   If[!AllTrue[graphs, EdgeTaggedGraphQ], edgeHead = edgeHead /* RemoveEdgeTag];
   tagAssocs = Map[edgeListTaggedTables] @ edgeLists;
   num = Len[graphs]; signLists = toSignLists[num, #]& /@ productTerms;
-  productEdges = DeleteDuplicates @ Flatten @ Outer[makeProductEdges, productVertices, signLists, 1];
+  productEdges = Dedup @ Flatten @ Outer[makeProductEdges, productVertices, signLists, 1];
   productVerticesOld = productVertices;
   If[flattenProducts, {productVertices, productEdges} //= FlattenProductSymbols];
   productVertexRenaming = If[productVertices === productVerticesOld, Id,
-    Map[AssociationThread[productVertices, productVerticesOld]]
+    Map[AssocThread[productVertices, productVerticesOld]]
   ];
 
   If[!EdgeListQ[productEdges], Print[productEdges]; ReturnFailed["interr", "invalid edges produced"]];
 
-  If[vertexCoordinateFunction ~!~ Automatic | None,
+  If[vertexCoordinateFunction ~!~ Auto | None,
     coordinateAssocs = LookupVertexCoordinates /@ graphs;
   ];
 
   If[H[components] === VertexProduct, components //= VertexPattern];
 
-  If[components === Automatic,
+  If[components === Auto,
     Return @ toGeneralProductFinalGraph[productVertices, productEdges]];
   
   mainGraph = Graph[productVertices, productEdges];
@@ -323,7 +323,7 @@ toGeneralProductFinalGraph[graph_Graph] :=
   toGeneralProductFinalGraph @@ VertexEdgeList @ graph;
 
 toGeneralProductFinalGraph[productVertices_, productEdges_] := Scope[
-  If[vertexCoordinateFunction ~!~ Automatic | None,
+  If[vertexCoordinateFunction ~!~ Auto | None,
     originalProductVertices = productVertexRenaming @ productVertices;
     coordinateTuples = Map[
       vertex |-> MapThread[Lookup, {coordinateAssocs, List @@ vertex}],
@@ -334,14 +334,14 @@ toGeneralProductFinalGraph[productVertices_, productEdges_] := Scope[
       vertexCoords = vcf;
     ,
       vertexCoords = MapThread[vcf, {originalProductVertices, coordinateTuples}];
-      If[!CoordinateMatrixQ[vertexCoords], ReturnFailed[GeneralQuiverProduct::badcoords, P1 @ vertexCoords]];
+      If[!CoordinateMatrixQ[vertexCoords], ReturnFailed[GeneralQuiverProduct::badcoords, F @ vertexCoords]];
     ];
   ,
-    vertexCoords = Automatic
+    vertexCoords = Auto
   ];
 
   If[useCardinalSet,
-    productEdges //= ReplaceAll[CardinalProduct[z__] :> CardinalSet[{z}]];
+    productEdges //= RepAll[CardinalProduct[z__] :> CardinalSet[{z}]];
   ];
   ExtendedGraph[
     productVertices, productEdges,
@@ -358,7 +358,7 @@ then when building product vertex we just look up in the appropriate key,
 edgeListTaggedTables[edgeList_] := Scope[
   a = InVertices  @ edgeList;
   b = OutVertices @ edgeList;
-  c = If[Len @ P1 @ edgeList === 3,
+  c = If[Len @ F @ edgeList === 3,
     Part[edgeList, All, 3],
     Repeat[None, Len @ edgeList]
   ];
@@ -460,7 +460,7 @@ connected the differing vertices in the original graph.
 "
 
 expandBiEdge[head_, index_, pair_] :=
-  head[index, #]& /@ DeleteCases[Extract[$productIndex, Thread @ pair], 0];
+  head[index, #]& /@ Decases[Extract[$productIndex, Thread @ pair], 0];
 
 createProductEdges[pos:{i_, j_}, {index_}] := Scope[
   {out1d, out1u} = outTable[[i]];
@@ -516,5 +516,5 @@ toMax = Case[
   LessThan[d_]            := d;
   EqualTo[d_]             := d;
   Between[{dmin_, dmax_}] := dmax;
-  GreaterThan[d_]         := Infinity;
+  GreaterThan[d_]         := Inf;
 ];

@@ -1,8 +1,8 @@
 makeLiteralReplacementRule[assoc_, wrap_] := ModuleScope[
   If[!wrap, assoc = Assoc @ Select[Normal @ assoc, Apply[#1 =!= assoc[#2]&]]];
   keys = Keys[assoc];
-  patt = StringJoin["(", Riffle[keys, "|"], ")"];
-  re = RegularExpression @ StringReplace[patt, "$" -> "\\$"];
+  patt = SJoin["(", Riffle[keys, "|"], ")"];
+  re = RegularExpression @ SRep[patt, "$" -> "\\$"];
   $table = assoc;
   If[wrap,
     re :> " " <> $table["$1"] <> " ",
@@ -22,7 +22,7 @@ $WLSymbolToUnicode := $WLSymbolToUnicode = makeLiteralReplacementRule[MathCharac
 
 PrivateFunction[wlCharactersToUnicode]
 
-wlCharactersToUnicode[s_Str] := StringReplace[s, $WLSymbolToUnicode];
+wlCharactersToUnicode[s_Str] := SRep[s, $WLSymbolToUnicode];
 
 (**************************************************************************************************)
 
@@ -34,16 +34,16 @@ $TemplateKatexFunction = <||>;
 
 PrivateFunction[titleToURL, trimNumberPrefix]
 
-trimNumberPrefix[title_] := StringTrim @ StringDelete[title, StartOfString ~~ DigitCharacter.. ~~ Repeated[" - ", {0, 1}]];
+trimNumberPrefix[title_] := STrim @ SDelete[title, StartOfString ~~ DigitCharacter.. ~~ Repeated[" - ", {0, 1}]];
 
-titleToURL[title_] := StringReplace[trimNumberPrefix @ ToLowerCase @ title, (Whitespace | "-").. -> "-"];
+titleToURL[title_] := SRep[trimNumberPrefix @ ToLowerCase @ title, (Whitespace | "-").. -> "-"];
 
 (**************************************************************************************************)
 
 PrivateFunction[insertAtFirstNonheader]
 
 insertAtFirstNonheader[lines_List, template_] := Scope[
-  index = SelectFirstIndex[lines, !StringStartsQ[#, "#"] && !StringMatchQ[#, Whitespace]&, 1];
+  index = SelectFirstIndex[lines, !SStartsQ[#, "#"] && !SMatchQ[#, Whitespace]&, 1];
   Insert[lines, template, index]
 ];
 
@@ -109,7 +109,7 @@ setupMarkdownGlobals[] := Quoted[
     $stringImageTemplate
   ];
   rfunc = OptionValue[RasterizationFunction];
-  If[rfunc =!= Automatic, $rasterizationFunction = rfunc];
+  If[rfunc =!= Auto, $rasterizationFunction = rfunc];
   SetInherited[$fileAnimatedImageTemplate, $fileImageTemplate];
   (* this lets us cache against this hash: *)
   $markdownGlobalsHash = Hash[{$embedKatexPrelude, $embedCustomStyles, $headingDepthOffset, $markdownFlavor, $rasterizationURL, $markdownFlavor, $rasterizationFunction}];
@@ -167,9 +167,9 @@ $genericMarkdownOptions = {
   IncludeFrontMatter -> False,
   MarkdownFlavor -> "Preview",
   RasterizationCaching -> True,
-  RasterizationPath -> Automatic,
+  RasterizationPath -> Auto,
   RasterizationURL -> None,
-  RasterizationFunction -> Automatic,
+  RasterizationFunction -> Auto,
   RasterizeInputOutputPairs -> False
 }
 
@@ -220,14 +220,14 @@ $genericExportMarkdownOptions = JoinOptions[
   MarkdownFlavor -> "Base",
   IncludeFrontMatter -> True,
   $genericMarkdownOptions,
-  BaseNotebookPath -> Automatic,
+  BaseNotebookPath -> Auto,
   NotebookCaching -> False,
-  BaseExportPath -> Automatic,
+  BaseExportPath -> Auto,
   KatexPreludePath -> None,
-  MarkdownPath -> Automatic,
+  MarkdownPath -> Auto,
   ExportPathFunction -> None,
-  MaxItems -> Infinity,
-  Verbose -> Automatic,
+  MaxItems -> Inf,
+  Verbose -> Auto,
   DryRun -> False
 ];
 

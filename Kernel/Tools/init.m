@@ -2,7 +2,7 @@ PrivateIOFunction[WithLocalDirectory]
 
 SetHoldRest[WithLocalDirectory];
 
-WithLocalDirectory[None|Automatic|Inherited, body_] :=
+WithLocalDirectory[None|Auto|Inherited, body_] :=
 	body;
 
 WithLocalDirectory[dir_Str, body_] :=
@@ -21,13 +21,13 @@ _WithLocalDirectory := BadArguments[];
 
 PrivateIOFunction[ToolAvailableQ]
 
-ToolAvailableQ[name_] := StringQ @ iFindTool[name];
+ToolAvailableQ[name_] := StrQ @ iFindTool[name];
 
 (**************************************************************************************************)
 
 PrivateFunction[toolKeyTranslationRules, toolKeyTranslationRules2]
 
-toolKeyTranslationRules[rules_] := Append[_ -> Nothing][(#1 -> v_) :> (#2 -> v)& @@@ rules];
+toolKeyTranslationRules[rules_] := App[_ -> Nothing][(#1 -> v_) :> (#2 -> v)& @@@ rules];
 
 (**************************************************************************************************)
 
@@ -52,7 +52,7 @@ iFindTool[name_] := iFindTool[name] = SelectFirst[PathJoin[#, name]& /@ $BinaryP
 
 PrivateIOFunction[RunUTF8]
 
-RunUTF8[str_Str, args__Str] := RunUTF8 @ StrJoin[str, args];
+RunUTF8[str_Str, args__Str] := RunUTF8 @ SJoin[str, args];
 
 RunUTF8[str_Str] := Module[{code},
 	VPrint["Running \"", str, "\""];
@@ -77,9 +77,9 @@ PrivateFunction[toolCommandString]
 
 toolCommandString[tool_, args___] := Scope[
 	toolPath = FindTool[tool, None];
-	If[!StringQ[toolPath], ThrowMessage["toolNotFound", tool]];
+	If[!StrQ[toolPath], ThrowMessage["toolNotFound", tool]];
 	args = procToolArg /@ {args};
-	StringRiffle[Flatten[{toolPath, args}], " "]
+	SRiffle[Flatten[{toolPath, args}], " "]
 ];
 
 (**************************************************************************************************)
@@ -96,7 +96,7 @@ falseIsFail[e_] := e;
 PrivateVariable[$genericToolOpts]
 
 $genericToolOpts = {
-	Verbose            -> Automatic,
+	Verbose            -> Auto,
 	DryRun             -> False,
 	StandaloneTerminal -> False
 }
@@ -106,9 +106,9 @@ PublicIOFunction[RunTool]
 PublicOption[WorkingDirectory, StandaloneTerminal, OpenToolOutput]
 
 Options[RunTool] = {
-	WorkingDirectory   -> Automatic,
+	WorkingDirectory   -> Auto,
 	StandaloneTerminal -> False,
-	OpenToolOutput     -> Automatic,
+	OpenToolOutput     -> Auto,
 	Verbose            -> False,
 	DryRun             -> False
 };
@@ -154,9 +154,9 @@ RunTool[cmd_Str, args___] := Scope @ TrueQ @ CatchMessage[
 
 	cmdStr = toolCommandString[cmd, args];
 
-	If[StringQ[$workingDir] && !DirectoryQ[$workingDir], ThrowMessage["toolWorkingDirectory", $workingDir]];
+	If[StrQ[$workingDir] && !DirectoryQ[$workingDir], ThrowMessage["toolWorkingDirectory", $workingDir]];
 	If[$runInTerminal,
-		RunInTerminalWindow[If[StringQ[$workingDir], $workingDir, "~"], cmdStr];
+		RunInTerminalWindow[If[StrQ[$workingDir], $workingDir, "~"], cmdStr];
 		Return @ True
 	];
 	outputPath = MakeTemporaryFile["tool", cmd <> ".#.out"];
@@ -196,7 +196,7 @@ procToolArg = Case[
 	File[f_]              := % @ f;
 	v_					          := ThrowMessage["toolBadArgument", MsgExpr @ v];
 ,
-	{ignored -> Automatic | None}
+	{ignored -> Auto | None}
 ];
 
 (**************************************************************************************************)
@@ -211,7 +211,7 @@ RunToolTooloutput['tool$', args$$] run a command line tool, returning the output
 
 Options[RunToolOutput] = {
 	Verbose -> True,
-	WorkingDirectory -> Automatic
+	WorkingDirectory -> Auto
 }
 
 DefineOptionToVariableBlocking[RunToolOutput, {WorkingDirectory :> $workingDir, Verbose :> $tverbose}];
@@ -225,10 +225,10 @@ RunToolOutput[cmd_String, args___] := Scope @ CatchMessage[
 	cmdFile = MakeTemporaryFile["tool", cmd <> ".#.sh"];
 	outFile = cmdFile <> ".out.txt";
 	errFile = cmdFile <> ".err.txt";
-	argStr = StrJoin[cmdStr, " 1>", outFile, " 2>", errFile];
+	argStr = SJoin[cmdStr, " 1>", outFile, " 2>", errFile];
 	ExportUTF8[cmdFile, argStr];
 
-	If[StringQ[$workingDir] && !DirectoryQ[$workingDir], ReturnFailed["toolWorkingDirectory", $workingDir]];
+	If[StrQ[$workingDir] && !DirectoryQ[$workingDir], ReturnFailed["toolWorkingDirectory", $workingDir]];
 	VPrint["Running base command \"", cmdStr, "\" via a script at ", MsgPath @ cmdFile];
 	exitCode = WithLocalDirectory[$workingDir, RunUTF8["/bin/bash -e ", cmdFile]];
 
@@ -250,7 +250,7 @@ _RunToolOutput := BadArguments[];
 
 PublicFunction[BashEscape]
 
-BashEscape[s_Str] := If[StringMatchQ[s, RegularExpression["[a-zA-Z_-]+"]], s, StringJoin["'", StringReplace[s, {"'" -> "\\'", "\\" -> "\\\\"}], "'"]];
+BashEscape[s_Str] := If[SMatchQ[s, RegularExpression["[a-zA-Z_-]+"]], s, SJoin["'", SRep[s, {"'" -> "\\'", "\\" -> "\\\\"}], "'"]];
 
 (**************************************************************************************************)
 

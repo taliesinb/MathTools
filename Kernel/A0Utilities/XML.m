@@ -11,7 +11,7 @@ XMLToText = Case[
   XMLElement["tr", _, e_]            := %[e] <> "\n";
   XMLElement[$textDecorators, _, e_] := %[e];
   XMLElement[$nullElements, _, _]    := "";
-  list_List                          := StringRiffle[% /@ list, " "];
+  list_List                          := SRiffle[% /@ list, " "];
   s_Str                              := s;
   {}                                 := " ";
 ];

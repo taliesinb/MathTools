@@ -10,7 +10,7 @@ Graphics3DProjection[g:Graphics3D[primitives_, ___], opts:OptionsPattern[]] := S
 
   UnpackOptions[$zFade];
   trans = ConstructGraphicsViewTransform @ g;
-  $gvtAssoc = PN[trans];
+  $gvtAssoc = L[trans];
   $xyz = ToXYZFunction @ trans;
   $style = {Black, Opacity[1]};
   $index = Bag[];
@@ -19,10 +19,10 @@ Graphics3DProjection[g:Graphics3D[primitives_, ___], opts:OptionsPattern[]] := S
 
   $zfactor = 1; (* If[$gvtAssoc["ViewProjection"] === "Orthographic", -1, 1]; *)
   procPrim @ primitives;
-  $index = KeySort @ Merge[BagPart[$index, All], Id];
+  $index = KSort @ Merge[BagPart[$index, All], Id];
   {$zmin, $zmax} = MinMax @ FirstColumn @ Keys @ $index;
 
-  primitives2D = KeyValueMap[If[$zFade =!= None, fromZandStyleFaded, fromZandStyle], $index];
+  primitives2D = KVMap[If[$zFade =!= None, fromZandStyleFaded, fromZandStyle], $index];
 
   Graphics[primitives2D, FilterOptions @ opts]
 ];
@@ -46,7 +46,7 @@ procPrim = Case[
   GraphicsComplex[coords_, prims_] := Scope[$gcXYZ = $xyz @ ($gcCoords = coords); procPrim @ prims];
 
   (* pass through wrappers *)
-  w:$AnnotationP                   := % @ P1 @ w;
+  w:$AnnotationP                   := % @ F @ w;
 
   (* TODO: Handle FilledCurve with custom recurser *)
   p_Point                          := insertScalar @ p;
@@ -142,16 +142,16 @@ procStyle := Case[
   Opacity[o_, c_]         := % @ SetColorOpacity[c, o];
   Directive[{d___}]       := Scan[%, d];
   Directive[d___]         := Scan[%, d];
-  s_ ? GraphicsDirectiveQ := AppendTo[$style, s];
+  s_ ? GraphicsDirectiveQ := AppTo[$style, s];
 ];
 
 (**************************************************************************************************)
 
-insertScalar[obj_] := insertScalar[obj, xyz @ P1 @ obj];
+insertScalar[obj_] := insertScalar[obj, xyz @ F @ obj];
 
 (* insert single *)
 insertScalar[obj_, xyz_] :=
-  insert[Part[xyz, 3], ReplacePart[obj, 1 -> Take[xyz, 2]]];
+  insert[Part[xyz, 3], RepPart[obj, 1 -> Take[xyz, 2]]];
 
 (* insert multi *)
 insertScalar[obj_, xyz_ ? CoordinateMatrixQ] := Scan[insertScalar[obj, #]&, xyz];
@@ -161,11 +161,11 @@ xyz[coord_] := $xyz @ coord;
 
 (**************************************************************************************************)
 
-insertVector[obj_] := insertVector[obj, xyzMulti @ P1 @ obj];
+insertVector[obj_] := insertVector[obj, xyzMulti @ F @ obj];
 
 (* insert single *)
 insertVector[obj_, xyz_ ? CoordinateMatrixQ] :=
-  insert[Mean @ Part[xyz, All, 3], ReplacePart[obj, 1 -> Take[xyz, All, 2]]];
+  insert[Mean @ Part[xyz, All, 3], RepPart[obj, 1 -> Take[xyz, All, 2]]];
 
 (* insert multi *)
 insertVector[obj_, xyz_] := Scan[insertVector[obj, #]&, xyz];
@@ -176,6 +176,6 @@ xyzMulti[coord_] := $xyz /@ coord;
 
 (**************************************************************************************************)
 
-insert[z_, obj_] /; $zFade === None := StuffBag[$index, {$zfactor * z, DeleteCases[$style, Black | Opacity[1]]} -> obj];
+insert[z_, obj_] /; $zFade === None := StuffBag[$index, {$zfactor * z, Decases[$style, Black | Opacity[1]]} -> obj];
 insert[z_, obj_] := StuffBag[$index, {$zfactor * z, $style} -> obj];
 

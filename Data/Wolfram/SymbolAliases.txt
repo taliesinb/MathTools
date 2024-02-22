@@ -1,15 +1,59 @@
+F              First
+L              Last
+
+Rep            Replace
+RepAll         ReplaceAll
+RepRep         ReplaceRepeated
+RepPart        ReplacePart
+Pre            Prepend
+PreTo          PrependTo
+App            Append
+AppTo          AppendTo
+
 Assoc          Association
 AssocQ         AssociationQ
 UAssoc         UnorderedAssociation
 
 AssocMap       AssociationMap
 AssocThread    AssociationThread
-AssocQ         AssociationQ
+AssocPairs     AssociationPairs
+AssocInvert    AssociationInvert
+
+VecQ           VectorQ
+
+KVMap		   KeyValueMap
+KVScan		   KeyValueScan
+KMap           KeyMap
+KTake          KeyTake
+KDrop		   KeyDrop
+KDropFrom      KeyDropFrom
+KSort     	   KeySort
+KSortBy        KeySortBy
+KSelect        KeySelect
+KUnion         KeyUnion
+KInter         KeyIntersection
+KComp          KeyComplement
+KAddTo         KeyAddTo
+KAppTo 	   	   KeyAppendTo
+KIncrement     KeyIncrement
+KJoinTo        KeyJoinTo
+KPreTo         KeyPrependTo
+KUnionTo       KeyUnionTo
+KeyQ    	   KeyExistsQ
+
+Inter          Intersection
+Comp           Complement
+
+Auto           Automatic
+Inf            Infinity
+
+Decases        DeleteCases
+Dedup		   DeleteDuplicates
+DedupBy		   DeleteDuplicatesBy
+Dims           Dimensions
 
 Repeat         ConstantArray
 Dist           EuclideanDistance
-P1             First
-PN             Last
 H              Head
 Len            Length
 Fn             Function
@@ -17,13 +61,46 @@ Id             Identity
 Rev            Reverse
 Str            String
 Int            Integer
-
-StrJoin        StringJoin
-StrLen         StringLength
-
+IntQ           IntegerQ
+IntDigits      IntegerDigits
 IntStr         IntegerString
+
+SCases         StringCases
+SContainsQ     StringContainsQ
+SDelete        StringDelete
+SDrop          StringDrop
+SEndsQ         StringEndsQ
+SExpr          StringExpression
+SExtract       StringExtract
+SFreeQ         StringFreeQ
+SInsert        StringInsert
+SJoin          StringJoin
+SLen           StringLength
+SMatchQ        StringMatchQ
+SPadLeft       StringPadLeft
+SPadRight      StringPadRight
+SPartition     StringPartition
+SFind          StringPosition
+SRepeat        StringRepeat
+SRep           StringReplace
+SRepPart       StringReplacePart
+SRev           StringReverse
+SRiffle        StringRiffle
+SSplit         StringSplit
+SStartsQ       StringStartsQ
+STake          StringTake
+STrim          StringTrim
+StrQ           StringQ
+StrVecQ        StringVectorQ
+
+Chars          Characters
+FromCharCode   FromCharacterCode
+ToCharCode     ToCharacterCode
+
+RuleEval	   RuleCondition
+Eval           Evaluate
+Uneval         Unevaluated
 
 Alt            Alternatives
 HoldP          HoldPattern
-
 HoldC          HoldComplete

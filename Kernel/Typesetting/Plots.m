@@ -1,7 +1,7 @@
 PublicFunction[FadedMeshImage]
 
 FadedMeshImage[array_, blockSize_, fadeFactor_:0.8, frame_:None] := Scope[
-  dims = Dimensions @ array;
+  dims = Dims @ array;
   If[!ArrayQ[array, _, MachineRealQ] || !MatchQ[dims, {_, _, 3} | {_, _}],
     ReturnFailed["baddata"]];
   {h, w} = Take[dims, 2];
@@ -47,10 +47,10 @@ Options[MeshImage] = {
 MeshImage[array_, blockSize_, OptionsPattern[]] := Scope[
   UnpackOptions[frame, mesh, frameStyle, meshStyle];
   If[MatchQ[meshStyle, Opacity[_]] && TrueQ[mesh],
-    Return @ FadedMeshImage[array, blockSize, 1 - P1[meshStyle], If[TrueQ @ frame, frameStyle, None]]];
+    Return @ FadedMeshImage[array, blockSize, 1 - F[meshStyle], If[TrueQ @ frame, frameStyle, None]]];
   frameStyle //= getFrameMeshColor;
   meshStyle //= getFrameMeshColor;
-  dims = Dimensions @ array;
+  dims = Dims @ array;
   array //= N;
   If[!ArrayQ[array, _, MachineRealQ] || !MatchQ[dims, {_, _, 3} | {_, _}],
     ReturnFailed["baddata"]];
@@ -104,7 +104,7 @@ PublicFunction[CompactArrayPlot, ColorLegend]
 
 Options[CompactArrayPlot] = {
   PixelConstrained -> 4,
-  ColorFunction -> Automatic,
+  ColorFunction -> Auto,
   ColorLegend -> None,
   Frame -> True,
   Mesh -> True,
@@ -120,12 +120,12 @@ CompactArrayPlot::badcvals = "ColorFunction produced non-RGB values, first was: 
 CompactArrayPlot[array_, OptionsPattern[]] := Scope[
   UnpackOptions[pixelConstrained, colorFunction, colorLegend, frame, mesh, meshStyle];
   array //= ToPacked;
-  dims = Dimensions @ array; ndims = Len @ dims;
+  dims = Dims @ array; ndims = Len @ dims;
   If[array === {} || MemberQ[dims, 0], Return[Spacer[1]]];
   If[ndims < 2 || ndims > 3, ReturnFailed["badrank", ndims]];
   isRGB = ndims === 3;
   If[isRGB,
-    If[PN[dims] =!= 3, ReturnFailed["badchans"]];
+    If[L[dims] =!= 3, ReturnFailed["badchans"]];
     If[!PackedArrayQ[array] || !UnitIntervalArrayQ[array], ReturnFailed["rank3vals"]];
   ];
   SetAutomatic[colorFunction, Which[
@@ -141,7 +141,7 @@ CompactArrayPlot[array_, OptionsPattern[]] := Scope[
       RGBColor,
     True,
       $BooleanColors = {White, Black};
-      PN @ ApplyColoring @ Catenate @ array
+      L @ ApplyColoring @ Catenate @ array
   ]];
   If[colorFunction =!= None,
     cfunc = colorFunction;
@@ -171,18 +171,18 @@ Options[BinaryArrayPlot] = {
 }
 
 BinaryArrayPlot[array_, opts:OptionsPattern[]] :=
-  BinaryArrayPlot[array, Automatic, opts];
+  BinaryArrayPlot[array, Auto, opts];
 
-BinaryArrayPlot[array_, digits:(_Int|Automatic), OptionsPattern[]] := Scope[
+BinaryArrayPlot[array_, digits:(_Int|Auto), OptionsPattern[]] := Scope[
   UnpackOptions[pixelConstrained];
   {min, max} = MinMax @ array;
   Which[
-    VectorQ[array, NonNegativeIntegerQ],
+    VecQ[array, NonNegativeIntegerQ],
       SetAutomatic[digits, If[max == 0, 0, Floor[1 + Log2 @ max]]];
       array = BinaryDigits[array, digits];
     ,
     MatrixQ[array, NonNegativeIntegerQ],
-      If[IntegerQ[digits] && InnerDimension[array] > digits,
+      If[IntQ[digits] && InnerDimension[array] > digits,
         array = Take[array, All, digits]];
       If[max > 1, ReturnFailed[]];
     ,

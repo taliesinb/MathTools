@@ -32,7 +32,7 @@ SameLengthQ[a_][b_] := SameLengthQ[a, b];
 
 PublicFunction[ListVectorQ]
 
-ListVectorQ[e_] := VectorQ[e, ListQ];
+ListVectorQ[e_] := VecQ[e, ListQ];
 
 (**************************************************************************************************)
 
@@ -43,7 +43,7 @@ RealVectorQ[list$] gives True if list$ is a vector of real-valued numbers.
 * Integers, rationals, etc. are considered real-valued numbers.
 "
 
-RealVectorQ[list_] := VectorQ[list, RealValuedNumberQ];
+RealVectorQ[list_] := VecQ[list, RealValuedNumberQ];
 
 (**************************************************************************************************)
 
@@ -53,7 +53,7 @@ SetUsage @ "
 IntegerVectorQ[list$] gives True if list$ is a vector of integers.
 "
 
-IntegerVectorQ[list_] := VectorQ[list, IntegerQ];
+IntegerVectorQ[list_] := VecQ[list, IntQ];
 
 (**************************************************************************************************)
 
@@ -63,7 +63,7 @@ SetUsage @ "
 IntegerVectorQ[list$] gives True if list$ is a vector of integers.
 "
 
-PositiveIntegerVectorQ[list_] := VectorQ[list, PositiveIntegerQ];
+PositiveIntegerVectorQ[list_] := VecQ[list, PositiveIntegerQ];
 
 (**************************************************************************************************)
 
@@ -73,7 +73,7 @@ SetUsage @ "
 PositiveIntegerVectorsQ[list$] gives True if list$ is a list of vectors of positive integers.
 "
 
-PositiveIntegerVectorsQ[list_] := VectorQ[list, PositiveIntegerVectorQ];
+PositiveIntegerVectorsQ[list_] := VecQ[list, PositiveIntegerVectorQ];
 
 (**************************************************************************************************)
 
@@ -109,7 +109,7 @@ ComplexVectorQ[list$] gives True if list$ is a vector of complex-valued numbers.
 * See %ContainsComplexQ.
 "
 
-ComplexVectorQ[list_] := VectorQ[list, NumericQ] && ContainsComplexQ[list];
+ComplexVectorQ[list_] := VecQ[list, NumericQ] && ContainsComplexQ[list];
 
 (**************************************************************************************************)
 
@@ -121,7 +121,7 @@ HoldNumericQ[n$] returns True if n$ is numeric.
 
 SetHoldAllComplete[HoldNumericQ];
 
-HoldNumericQ[e_] := NumericQ[Unevaluated @ e];
+HoldNumericQ[e_] := NumericQ[Uneval @ e];
 
 (**************************************************************************************************)
 
@@ -133,7 +133,7 @@ SetUsage @ "
 HoldPackedArrayQ[arr$] returns True if arr$ is a packed array.
 "
 
-HoldPackedArrayQ[e_] := PackedArrayQ[Unevaluated @ e];
+HoldPackedArrayQ[e_] := PackedArrayQ[Uneval @ e];
 
 (**************************************************************************************************)
 
@@ -145,7 +145,7 @@ SetUsage @ "
 HoldNumericArrayQ[arr$] returns True if arr$ is rectangular array containing numeric values.
 "
 
-HoldNumericArrayQ[e_] := PackedArrayQ[Unevaluated @ e] || ArrayQ[Unevaluated @ e, _, HoldNumericQ];
+HoldNumericArrayQ[e_] := PackedArrayQ[Uneval @ e] || ArrayQ[Uneval @ e, _, HoldNumericQ];
 
 (**************************************************************************************************)
 
@@ -188,7 +188,7 @@ SetUsage @ "
 PermutedRangeQ[list$] gives True if list$ is a permutation of {1, 2, $$, n$}.
 "
 
-PermutedRangeQ[list_] := VectorQ[list, IntegerQ] && MinMax[list] == {1, Len @ list};
+PermutedRangeQ[list_] := VecQ[list, IntQ] && MinMax[list] == {1, Len @ list};
 
 (**************************************************************************************************)
 

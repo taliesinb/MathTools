@@ -16,7 +16,7 @@ $metricDistanceOptions = {
 
 PrivateVariable[$metricUsage]
 
-$metricUsage = StringTrim @ "
+$metricUsage = STrim @ "
 * The setting of GraphMetric determines how the metric is computed:
 | Inherited | use the GraphMetric present in graph$ (default) |
 | Automatic | length of the shortest path in graph$ |
@@ -46,15 +46,15 @@ Default[MetricDistance, 3] = All;
 MetricDistance[graph_, vertex1_, Optional[vertex2:Except[_Rule]], OptionsPattern[]] := Scope[
 
   metric = chooseMetric[graph, OptionValue @ GraphMetric];
-  If[metric === Automatic,
-    Return @ GraphDistance[graph, vertex1, Replace[vertex2, All -> Sequence[]]]];
+  If[metric === Auto,
+    Return @ GraphDistance[graph, vertex1, Rep[vertex2, All -> Sequence[]]]];
 
   If[!EdgeTaggedGraphQ[graph], ReturnFailed["nottaggraph"]];
 
   toMetricDistanceOperator[metric] @ TaggedGraphDistance[graph, vertex1, vertex2]
 ]
 
-chooseMetric[graph_, Inherited] := LookupAnnotation[graph, GraphMetric, Automatic];
+chooseMetric[graph_, Inherited] := LookupAnnotation[graph, GraphMetric, Auto];
 chooseMetric[graph_, value_] := value;
 
 (**************************************************************************************************)
@@ -74,7 +74,7 @@ Options[MetricDistanceMatrix] = $metricDistanceOptions;
 MetricDistanceMatrix[graph_, OptionsPattern[]] := Scope[
 
   metric = chooseMetric[graph, OptionValue @ GraphMetric];
-  If[metric === Automatic, Return @ GraphDistanceMatrix @ graph];
+  If[metric === Auto, Return @ GraphDistanceMatrix @ graph];
 
   If[!EdgeTaggedGraphQ[graph], ReturnFailed["nottaggraph"]];
 
@@ -98,7 +98,7 @@ declareGraphCacheFriendly[MetricFindShortestPath]
 MetricFindShortestPath[graph_, start_, end_, OptionsPattern[]] := Scope[
 
   metric = chooseMetric[graph, OptionValue @ GraphMetric];
-  If[metric === Automatic, Return @ FindShortestPath[graph, start, end]];
+  If[metric === Auto, Return @ FindShortestPath[graph, start, end]];
 
   If[!EdgeTaggedGraphQ[graph], ReturnFailed["nottaggraph"]];
 
@@ -119,10 +119,10 @@ computeShortestPathFunctionData[graph_, metric_] := Scope[
   adjacentVertexTable = adjacentEdgeTags = Repeat[{}, VertexCount @ graph];
   Scan[
     Apply[{a, b, t} |-> (
-        AppendTo[Part[adjacentVertexTable, a], b];
-        AppendTo[Part[adjacentVertexTable, b], a];
-        AppendTo[Part[adjacentEdgeTags, a], t];
-        AppendTo[Part[adjacentEdgeTags, b], t];
+        AppTo[Part[adjacentVertexTable, a], b];
+        AppTo[Part[adjacentVertexTable, b], a];
+        AppTo[Part[adjacentEdgeTags, a], t];
+        AppTo[Part[adjacentEdgeTags, b], t];
     )],
     EdgeList @ graph
   ];
@@ -141,7 +141,7 @@ PublicFunction[MetricShortestPathFunction]
 
 declareFormatting[
   MetricShortestPathFunction[spec_, data_] ? HoldNoEntryQ :>
-    MetricShortestPathFunction[spec, Skeleton @ Len @ P1 @ data]
+    MetricShortestPathFunction[spec, Skeleton @ Len @ F @ data]
 ];
 
 fsp_MetricShortestPathFunction[args__] := fspEval1[fsp, args];
@@ -218,13 +218,13 @@ PowerMetric[n_][array_] := Surd[Total @ Power[N @ Values @ array, n], n];
 PublicFunction[QuadraticFormMetric]
 
 QuadraticFormMetric[matrix_][vectors_ ? MatrixQ] := Sqrt @ Dot[Transpose @ vectors, matrix, vectors];
-QuadraticFormMetric[matrix_][vector_ ? VectorQ] := Sqrt @ Dot[vector, matrix, vector];
+QuadraticFormMetric[matrix_][vector_ ? VecQ] := Sqrt @ Dot[vector, matrix, vector];
 
 (**************************************************************************************************)
 
 $taggedDistanceOptions = {
   DirectedEdges -> False,
-  MaxDepth -> Infinity
+  MaxDepth -> Inf
 };
 
 PublicFunction[TaggedGraphDistance]
@@ -243,12 +243,12 @@ TaggedGraphDistance[graph_, vertex1_, vertex2_., tagSpec_., OptionsPattern[]] :=
   If[!directedEdges, graph = ToSymmetricGraph @ graph];
   dfunc = If[vertex2 === All, GraphDistance[#, vertex1]&, GraphDistance[#, vertex1, vertex2]&];
 
-  result = AssociationMap[
+  result = AssocMap[
     tag |-> dfunc[toMaskWeightedGraph[graph, edgeTags, tag]],
     tagList
   ];
 
-  If[$stripList, P1 @ result, result]
+  If[$stripList, F @ result, result]
 ];
 
 (**************************************************************************************************)
@@ -269,12 +269,12 @@ TaggedGraphDistanceMatrix[graph_, tagSpec_., OptionsPattern[]] := Scope[
 
   If[!directedEdges, graph = ToSymmetricGraph @ graph];
 
-  result = AssociationMap[
+  result = AssocMap[
     tag |-> GraphDistanceMatrix[toMaskWeightedGraph[graph, edgeTags, tag], maxDepth],
     tagList
   ];
 
-  If[$stripList, P1 @ result, result]
+  If[$stripList, F @ result, result]
 ];
 
 (**************************************************************************************************)

@@ -20,7 +20,7 @@ toSignedSubset[vals_] := MapThread[
 
 PublicFunction[BinaryDigits]
 
-BinaryDigits[n_, len_] := IntegerDigits[n, 2, len];
+BinaryDigits[n_, len_] := IntDigits[n, 2, len];
 BinaryDigits[len_][n_] := BinaryDigits[n, len];
 
 (**************************************************************************************************)
@@ -46,14 +46,14 @@ RangePartitionIndices[n_] := Scope[
 ];
 
 rangPartRecurse[parts_, {}] := StuffBag[$partBag, parts];
-rangPartRecurse[parts_, rem:{_}] := StuffBag[$partBag, Append[parts, rem]];
+rangPartRecurse[parts_, rem:{_}] := StuffBag[$partBag, App[parts, rem]];
 rangPartRecurse[parts_, rem_] := Scope @ Scan[
   {first, rest} = TakeDrop[rem, 1];
   rangPartRecurse[
-    Append[parts, Join[first, #]],
-    Complement[rest, #]
+    App[parts, Join[first, #]],
+    Comp[rest, #]
   ]&,
-  Subsets[rest, {1, Infinity}]
+  Subsets[rest, {1, Inf}]
 ];
 
 (**************************************************************************************************)

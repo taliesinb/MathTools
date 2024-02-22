@@ -23,7 +23,7 @@ PublicFunction[VertexField1DPlot]
 
 VertexField1DPlot[vals_] := ListLinePlot[vals,
   Joined -> False, Filling -> {1 -> Axis},
-  FillingStyle -> Directive[Opacity[.5],CapForm[None], AbsoluteThickness[2]], PlotMarkers->{Automatic, 0.12},
+  FillingStyle -> Directive[Opacity[.5],CapForm[None], AbsoluteThickness[2]], PlotMarkers->{Auto, 0.12},
   Frame -> True, FrameStyle -> $LightGray, FrameTicks -> None, Axes -> None, GridLines -> {{}, {-0.025}},
   PlotStyle -> $DarkGray,
   PlotRange -> {{1, All}, {-1, 1}}, PlotRangePadding -> 0.4, ImageSize -> 125, AspectRatio -> 1/2.2
@@ -91,8 +91,8 @@ ExportNotebookOutputs[destination_Str, prefix_Str:"", sz_:3] := Scope[
   Print["# of cells: ", Len @ outputCells];
   $i = 1;
   Scan[cell |-> (
-    path = PathJoin[destination, prefix <> IntegerString[$i++, 10, 3] <> ".png"];
-    image = Rasterize[cell, ImageFormattingWidth -> Infinity, ImageResolution -> Ceiling[144 * sz]];
+    path = PathJoin[destination, prefix <> IntStr[$i++, 10, 3] <> ".png"];
+    image = Rasterize[cell, ImageFormattingWidth -> Inf, ImageResolution -> Ceiling[144 * sz]];
     Print["Rasterizing ", ImageDimensions[image], " to ", path];
     Export[path, image])
   ,

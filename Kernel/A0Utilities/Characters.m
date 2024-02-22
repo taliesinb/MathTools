@@ -4,16 +4,16 @@ $mathCharacterTable := $mathCharacterTable = computeSymbolTranslationTable[];
 computeSymbolTranslationTable[] := Block[{str},
   rawString = ImportUTF8 @ DataPath["Wolfram", "Characters.txt"];
   $groups = {};
-  rawString //= StringReplace[{StartOfLine ~~ " "... ~~ "\n" -> "", " \\" -> " \\\\", "\"" -> "\\\""}];
-  rawString //= StringReplace[{StartOfLine ~~ l:("\\[" ~~ w:LetterCharacter.. ~~ "]") :> StringJoin[l, " ", w], StartOfLine ~~ "_" -> "_ _"}];
-  parsedString = StringTrim[ToExpression["\"" <> rawString <> "\"", InputForm], " " | "\n"];
-  table = StringExtract[parsedString, "\n" -> All, " ".. -> All] /. "_" -> None;
+  rawString //= SRep[{StartOfLine ~~ " "... ~~ "\n" -> "", " \\" -> " \\\\", "\"" -> "\\\""}];
+  rawString //= SRep[{StartOfLine ~~ l:("\\[" ~~ w:LetterCharacter.. ~~ "]") :> SJoin[l, " ", w], StartOfLine ~~ "_" -> "_ _"}];
+  parsedString = STrim[ToExpression["\"" <> rawString <> "\"", InputForm], " " | "\n"];
+  table = SExtract[parsedString, "\n" -> All, " ".. -> All] /. "_" -> None;
   Map[parseLine, table]
 ];
 
 parseLine = Case[
   {"#", groups__} := (Set[$groups, {groups}]; Nothing);
-  e:{_, _, _, _, _}  := Append[e, $groups];
+  e:{_, _, _, _, _}  := App[e, $groups];
   o_              := Print["Unrecognized: ", o]
 ];
 
@@ -56,8 +56,8 @@ MathCharacterData[schema_, groups:Except[_Rule]:{}, OptionsPattern[]] := Scope[
   UnpackOptions[allowNone];
   func = Construct[Fn, schema] /. {
     "Symbol" -> #1, "Name" -> #2, "InputForm" -> #3, "Katex" -> #4, "Unicode" -> #5, "Groups" -> #6,
-    "Code" :> If[#5 === None, None, P1 @ ToCharacterCode[#5]],
-    "HexCode" :> If[#5 === None, None, IntegerString[P1 @ ToCharacterCode[#5],16, 4]]
+    "Code" :> If[#5 === None, None, F @ ToCharCode[#5]],
+    "HexCode" :> If[#5 === None, None, IntStr[F @ ToCharCode[#5],16, 4]]
   };
   table = $mathCharacterTable;
   If[groups =!= {}, groups //= ToList; table //= Select[SubsetQ[Part[#, 6], groups]&]];

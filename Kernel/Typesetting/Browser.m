@@ -47,7 +47,7 @@ LabeledFlipView::badLabelPos = "LabelPosition -> `` should be either Top or Left
 labeledFlipViewBoxes[items:{___Rule}, opts___] := With[
   {range = Range @ Len @ items, keys = ToBoxes /@ Keys @ items, vals = ToBoxes /@ Values @ items},
   {keys$$ = RuleThread[range, keys], vals$$ = RuleThread[range, vals]},
-  {isize = Lookup[{opts}, ImageSize, Automatic], labelPos = Lookup[{opts}, LabelPosition, Top]},
+  {isize = Lookup[{opts}, ImageSize, Auto], labelPos = Lookup[{opts}, LabelPosition, Top]},
   {togglerBox = StyleBox[TogglerBox[Dynamic[i$$], keys$$, ImageSize -> All], Bold, FontFamily -> "Fira", FontSize -> 10]},
   {paneSelectorBox = PaneSelectorBox[vals$$, Dynamic[i$$], ImageSize -> isize, Alignment -> {Left, Top}]},
   Switch[labelPos,
@@ -80,7 +80,7 @@ pickBrowserBoxes[list_List, opts:OptionsPattern[]] := With[
     DynamicBox[
       ClickBox[
         ToBoxes @ Set[r$$, Part[list, i$$]],
-        selected$$ //= If[MemberQ[selected$$, i$$], DeleteCases[i$$], Append[i$$] /* Sort]
+        selected$$ //= If[MemberQ[selected$$, i$$], Decases[i$$], App[i$$] /* Sort]
       ],
       TrackedSymbols :> {i$$}
     ],
@@ -97,9 +97,9 @@ pickBrowserBoxes[list_List, opts:OptionsPattern[]] := With[
   progressBox =   DynamicProgressBarBox[{i$$, n$$}, {200, 10}],
   pickedButtonRowBox = makeBrowseArrowBoxes[
     {"Green", "Green"},
-    i$$ = First[selected$$, i$$], i$$ = Replace[Max @ Select[selected$$, LessThan @ i$$], -Infinity -> i$$],
+    i$$ = F[selected$$, i$$], i$$ = Rep[Max @ Select[selected$$, LessThan @ i$$], -Inf -> i$$],
     fractionBox[IndexOf[selected$$, i$$, "?"], Len @ selected$$], None,
-    i$$ = Replace[Min @ Select[selected$$, GreaterThan @ i$$], Infinity -> i$$], i$$ = Last[selected$$, i$$],
+    i$$ = Rep[Min @ Select[selected$$, GreaterThan @ i$$], Inf -> i$$], i$$ = L[selected$$, i$$],
     StyledClickBox[
       "\[DownArrow]",
       CellPrint @ ExpressionCell[selected$$, "Input"],
@@ -157,7 +157,7 @@ deferSub[f_, i_] := Apply[Defer, ConstructHoldComplete[f, i]];
 SetHoldAll[makeBrowseArrowBoxes, makeStandardBrowseArrowBoxes]
 
 makeStandardBrowseArrowBoxes[i_, n_, rest___] := makeBrowseArrowBoxes[
-  {Automatic, "Gray"},
+  {Auto, "Gray"},
   i = 1, ModDecrement[i, n],
   fractionBox[i, n], If[CurrentValue["ShiftKey"], ModDecrement[i, n], ModIncrement[i, n]],
   ModIncrement[i, n], i = n,

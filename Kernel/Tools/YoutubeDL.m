@@ -51,7 +51,7 @@ $optRename = Assoc[#1 -> #3& @@@ $youtubeDLArgData];
 
 YoutubeDL::badopt = "Unknown options ``."
 YoutubeDL[url_Str, opts___Rule] := Scope[
-  opts = DeleteCases[{opts}, Alternatives @@ Options[YoutubeDL]];
+  opts = Decases[{opts}, Alt @@ Options[YoutubeDL]];
   args = MapApply[
     {key, val} |-> (
       arg = "--" <> Lookup[$optRename, #1, ReturnFailed["badopt", #1]];

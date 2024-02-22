@@ -38,5 +38,5 @@ videoPathToMarkdown[srcPath_Str | File[srcPath_Str]] := Scope[
 
 $rasterSizeCache = <||>;
 
-getVideoRasterSize[path_] := CachedInto[$rasterSizeCache, path, P1 @ Information[Video[path], "OriginalRasterSize"]];
+getVideoRasterSize[path_] := CachedInto[$rasterSizeCache, path, F @ Information[Video[path], "OriginalRasterSize"]];
 

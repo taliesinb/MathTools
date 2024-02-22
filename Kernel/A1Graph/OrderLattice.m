@@ -63,11 +63,11 @@ PartitionLattice[minimalPartitions_, userOpts:OptionsPattern[]] := Scope[
 
 setupPart[part_, support_] := (
 	$dsIndex[support] = DSCreate[part];
-	Scan[addTermToIndex[P1 @ support], part];
+	Scan[addTermToIndex[F @ support], part];
 )
 
 addTermToIndex[support_][term_] := Scan[
-	pair |-> KeyAppendTo[$pairIndex, pair, support],
+	pair |-> KAppTo[$pairIndex, pair, support],
 	UnorderedPairs @ term
 ];
 
@@ -81,7 +81,7 @@ DefineGraphTheme["PartitionLattice",
 nodeSucessors[node_PartitionNode] := Scope[
 	support = getSupport @ node;
 	$proto = $dsIndex[support]; $node = node;
-	remainingMps = Complement[mpRange, support];
+	remainingMps = Comp[mpRange, support];
 	computeSucessor /@ remainingMps
 ];
 
@@ -102,13 +102,13 @@ expandStep[PartitionNode[oldSupport_, oldPartition_], mpsToAdd_] := Scope[
 	newPairs = findNewPairs[newPartition, oldPartition];
 	zPrint["\tnewPairs = ", newPairs];
 	newSupport = Union[oldSupport, mpsToAdd];
-	impliedMps = Complement[Union @@ Lookup[$pairIndex, newPairs, Nothing], newSupport];
+	impliedMps = Comp[Union @@ Lookup[$pairIndex, newPairs, Nothing], newSupport];
 	expandStep[PartitionNode[newSupport, newPartition], impliedMps]
 ];
 
-findNewPairs[newPartition_, oldPartition_] := Complement[
-	JoinMap[UnorderedPairs, Complement[newPartition, oldPartition]],
-	JoinMap[UnorderedPairs, Complement[oldPartition, newPartition]]
+findNewPairs[newPartition_, oldPartition_] := Comp[
+	JoinMap[UnorderedPairs, Comp[newPartition, oldPartition]],
+	JoinMap[UnorderedPairs, Comp[oldPartition, newPartition]]
 ];
 
 (**************************************************************************************************)
@@ -120,7 +120,7 @@ Options[MeetSemilatticeGraph] = JoinOptions[
 ];
 
 SetsIntersection[{}] := {};
-SetsIntersection[list_List] := Intersection @@ list;
+SetsIntersection[list_List] := Inter @@ list;
 
 MeetSemilatticeGraph[elements_, userOpts:OptionsPattern[]] := Scope[
 	head = Part[elements, 1, 0];
@@ -146,7 +146,7 @@ DefineGraphTheme["Poset",
 
 PublicObject[Poset]
 
-VertexOutComponentLists[graph_] := AssociationMap[
+VertexOutComponentLists[graph_] := AssocMap[
 	VertexOutComponent[graph, {#}]&,
 	VertexList @ graph
 ];
@@ -157,7 +157,7 @@ makePoset[up_Assoc] := makePoset[up, InvertIndex @ up];
 
 makePoset[up_Assoc, dn_Assoc] := Scope[
 	set = Union[Keys @ up, Keys @ dn];
-	{up, dn} = KeyUnion[{up, dn}, {}&];
+	{up, dn} = KUnion[{up, dn}, {}&];
 	upRules = FlattenIndex @ up;
 	dnRules = FlattenIndex @ dn;
 	botSet = Cases[Normal @ dn, Rule[k_, {}] :> k];
@@ -168,8 +168,8 @@ makePoset[up_Assoc, dn_Assoc] := Scope[
 		"UpSet" -> VertexOutComponentLists[Graph @ upRules],
 		"DnSet" -> VertexOutComponentLists[Graph @ dnRules],
 		"UpRules" -> upRules, "DnRules" -> dnRules,
-		"Bot" -> If[SingletonQ[botSet], P1 @ botSet, None],
-		"Top" -> If[SingletonQ[topSet], P1 @ topSet, None],
+		"Bot" -> If[SingletonQ[botSet], F @ botSet, None],
+		"Top" -> If[SingletonQ[topSet], F @ topSet, None],
 		"BotSet" -> botSet,
 		"TopSet" -> topSet
 	]
@@ -216,14 +216,14 @@ ReversePoset[Poset[assoc_]] := Scope[
 PublicFunction[SubsetPoset]
 
 SubsetPoset[gens_Str] :=
-	SubsetPoset @ StringSplit[gens];
+	SubsetPoset @ SSplit[gens];
 
 SubsetPoset[gens_List] :=
 	GraphPoset @ MeetSemilatticeGraph @ Map[parseGen, gens];
 
 parseGen = Case[
 	list_List := list;
-	s_Str := Characters[s];
+	s_Str := Chars[s];
 ]
 
 (**************************************************************************************************)
@@ -242,7 +242,7 @@ PublicFunction[PosetGraph]
 PosetGraph[Poset[assoc_Assoc]] := Scope[
 	ExtendedGraph[
 		assoc["Set"],
-		DeleteCases[z_ -> z_] @ assoc["DnRules"],
+		Decases[z_ -> z_] @ assoc["DnRules"],
 		GraphTheme -> "Poset"
 	]
 ];
@@ -285,5 +285,5 @@ formatPosetField[PosetField[p_Poset, v_List]] :=
 	formatPoset[p, VertexShapeFunction -> "Index" -> fieldPart[v],
 		VertexStyle -> Black, VertexLabels -> None]
 
-fieldPart[field_][i_] := Replace[Part[field, i], 0|0. -> ""];
+fieldPart[field_][i_] := Rep[Part[field, i], 0|0. -> ""];
 

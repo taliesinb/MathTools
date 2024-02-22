@@ -38,12 +38,12 @@ ParseCyclicSpec[n_][spec_] := ParseCyclicSpec[spec, n];
 $atomSpecP = _Symbol | _Int | _Real | _Rational;
 
 parseCyclic = Case[
-  rules:$RuleListPattern             := VectorReplace[Range @ $n, Append[compNeg /@ rules, _ -> Automatic]];
-  spec:{$atomSpecP..}                := PadRight[spec, $n, Automatic];
+  rules:$RuleListPattern             := VectorReplace[Range @ $n, App[compNeg /@ rules, _ -> Auto]];
+  spec:{$atomSpecP..}                := PadRight[spec, $n, Auto];
   Repeating[mid__]                   := repSpec[{}, {mid}, {}];
   spec:$atomSpecP                    := Repeat[spec, $n];
   {{spec:$atomSpecP}}                := Repeat[spec, $n];
-  {l___, {}, r___}                   := repSpec[{l}, {Automatic}, {r}];
+  {l___, {}, r___}                   := repSpec[{l}, {Auto}, {r}];
   {l___, Repeating[mid__], r___}     := repSpec[{l}, {mid}, {r}];
   {l___, mid:{$atomSpecP..}, r___}   := repSpec[{l}, mid, {r}];
   _                                  := $Failed;

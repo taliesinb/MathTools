@@ -3,7 +3,7 @@ PublicFunction[ExtendedSubgraph]
 ExtendedSubgraph[oldGraph_, newVertices_, newEdges_] := Scope[
   options = Options[oldGraph];
   annotations = ExtendedGraphAnnotations[oldGraph];
-  vertexCoords = Lookup[options, VertexCoordinates, Automatic];
+  vertexCoords = Lookup[options, VertexCoordinates, Auto];
   oldVertices = VertexList[oldGraph];
   If[newVertices === All,
     newVertexIndices = Range @ Len @ oldVertices;
@@ -27,7 +27,7 @@ ExtendedSubgraph[oldGraph_, newVertices_, newEdges_] := Scope[
     vertexAnnotations //= Map[Part[#, sortedNewVertexIndices]&];
     annotations //= ReplaceOptions[VertexAnnotations -> vertexAnnotations];
   ];
-  If[newEdges === Automatic,
+  If[newEdges === Auto,
     newEdges = Select[EdgeList @ oldGraph, isNewVertex[Part[#, 1]] && isNewVertex[Part[#, 2]]&]
   ];
   graph = Graph[newVertices, newEdges, options];

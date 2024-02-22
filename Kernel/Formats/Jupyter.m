@@ -27,7 +27,7 @@ pythonPostEval["None"] := Null;
 pythonPostEval[s_Str] :=
   CellPrint @ Cell[s, "PythonOutput"];
 
-pythonPostEval[s_Str /; StringStartsQ[s, "'file://"]] :=
+pythonPostEval[s_Str /; SStartsQ[s, "'file://"]] :=
   CellPrint @ Cell[BoxData @ ToBoxes @ Import[StringTrimLeftRight[s, "'file://", "'"]], "PythonOutput"];
 
 PublicIOFunction[CopyImageToInlineHTML]
@@ -35,8 +35,8 @@ PublicIOFunction[CopyImageToInlineHTML]
 CopyImageToInlineHTML[e_] := Scope[
   img = Rasterize[Style[e, Antialiasing -> False], ImageResolution-> 72];
   str = ExportString[img, "PNG", CompressionLevel -> 1, "ColorMapLength" -> 16, IncludeMetaInformation -> False];
-  code = ToCharacterCode[str];
-  result = StringJoin["<center><img width=\"", IntegerString[Round[P1[ImageDimensions[img]]*2/3]], "\" src=\"data:image/png;base64,", Base64String[code], "\"></center>"];
+  code = ToCharCode[str];
+  result = SJoin["<center><img width=\"", IntStr[Round[F[ImageDimensions[img]]*2/3]], "\" src=\"data:image/png;base64,", Base64String[code], "\"></center>"];
   CopyToClipboard[result];
   import = ImportString[str, "PNG"];
   GoodBeep[];
@@ -51,7 +51,7 @@ JupyterRasterizationFunction[e_] := Scope[
   True,
     jpeg = base64RasterizationFunction["JPEG", True] @ e;
     png = base64RasterizationFunction["PNG", True] @ e;
-    If[StringLength[jpeg["encoded"]] < StringLength[png["encoded"]], jpeg, png]
+    If[SLen[jpeg["encoded"]] < SLen[png["encoded"]], jpeg, png]
   ]
 ];
 
@@ -61,21 +61,21 @@ PrivateVariable[$JupyterFileImageTemplate]
 $JupyterStringImageTemplate = StringFunction @ """<center><img src="data:image/#format;base64,#encoded" width="#width"></center>"""
 $JupyterFileImageTemplate = StringFunction @ """<center><img width="#width" src="#url"></center>"""
 
-$pngPrefix = StringTake[$JupyterStringImageTemplate[<|"format" -> "png", "width" -> "", "encoded" -> ""|>], 36];
+$pngPrefix = STake[$JupyterStringImageTemplate[<|"format" -> "png", "width" -> "", "encoded" -> ""|>], 36];
 
 PublicIOFunction[ExportToJupyter]
 
 Options[ExportToJupyter] = {
   RasterizationPath -> None,
   RasterizationURL -> None,
-  MaxItems -> Infinity
+  MaxItems -> Inf
 };
 
 $JupyterTemplate := $JupyterTemplate = ReadRawJSONFile @ DataPath["Jupyter", "Template.ipynb"];
 
 $isJupyterTarget = False;
 
-ExportToJupyter[nb:_NotebookObject:Automatic, target_Str, OptionsPattern[]] := Scope[
+ExportToJupyter[nb:_NotebookObject:Auto, target_Str, OptionsPattern[]] := Scope[
   UnpackOptions[$rasterizationURL, $rasterizationPath, maxItems];
   SetAutomatic[nb, EvaluationNotebook[]];
   paras = ToMarkdownString[nb, True,
@@ -90,25 +90,25 @@ ExportToJupyter[nb:_NotebookObject:Automatic, target_Str, OptionsPattern[]] := S
   }];
   paras = Take[paras, UpTo[maxItems]];
   cellsData = Map[ipyPara, paras];
-  ipyNb = ReplacePart[$JupyterTemplate, "cells" -> cellsData];
+  ipyNb = RepPart[$JupyterTemplate, "cells" -> cellsData];
   outStr = WriteRawJSONString[ipyNb, Compact -> 4];
-  outStr = StringReplace[outStr, "\\/" -> "/"];
+  outStr = SRep[outStr, "\\/" -> "/"];
   target = NormalizePath @ target;
   dir = FileNameDrop[target];
   If[!FileExistsQ[dir] || FileType[dir] =!= Directory, ReturnFailed[]];
   If[FileExtension[target] =!= "ipynb", ReturnFailed[]];
-  Print["Writing ", StringLength @ outStr, " to ", target];
+  Print["Writing ", SLen @ outStr, " to ", target];
   ExportUTF8[target, outStr];
 ];
 
-pyInputQ[s_] := StringStartsQ[s, "```python"];
-pyOutputQ[s_] := StringStartsQ[s, "```" |  $pngPrefix];
-bulletLineQ[s_] := StringStartsQ[s, "* "];
+pyInputQ[s_] := SStartsQ[s, "```python"];
+pyOutputQ[s_] := SStartsQ[s, "```" |  $pngPrefix];
+bulletLineQ[s_] := SStartsQ[s, "* "];
 
 ipyPara[inOutPair[in_, out___]] := ipyCode[in, {out}];
 
 ipyPara[str_] := Which[
-  StringStartsQ[str, "<center><img>"],      ipyImage @ str,
+  SStartsQ[str, "<center><img>"],      ipyImage @ str,
   StringStartsEndsQ[str, "```", "```"],     ipyCode @ trimBackticks @ str,
   True,                                     ipyMD @ str
 ];
@@ -129,14 +129,14 @@ ipyMD[str_] := <|
 
 ipyCode[in_, out_:{}] := makeCodeCell[normalizeLines @ splitLines @ trimBackticks @ in, toCodeOutput /@ out];
 
-toCodeOutput[out_] /; StringStartsQ[out, "```"] := <|
+toCodeOutput[out_] /; SStartsQ[out, "```"] := <|
   "output_type" -> "execute_result",
   "data" -> <|"text/plain" -> trimBackticks[out]|>,
   "metadata" -> <||>,
   "execution_count" -> 1
 |>;
 
-toCodeOutput[out_] /; StringStartsQ[out, $pngPrefix] := <|
+toCodeOutput[out_] /; SStartsQ[out, $pngPrefix] := <|
   "output_type" -> "display_data",
   "data" -> <|"image/png" -> FirstStringCase[out, "image/png;base64," ~~ Shortest[base64___] ~~ "\"" :> base64]|>,
   "metadata" -> <|"needs_background" ->"light"|>
@@ -155,12 +155,12 @@ ipyImage[str_] := <|
   "source" -> {str}
 |>;
 
-joinLines[s_] := StringRiffle[s, "\n"];
+joinLines[s_] := SRiffle[s, "\n"];
 
-splitLines[s_] := StringSplit[s, "\n"];
+splitLines[s_] := SSplit[s, "\n"];
 
 normalizeLines = Case[
-  str_Str := If[StringEndsQ[str, "\n"], str, str <> "\n"];
+  str_Str := If[SEndsQ[str, "\n"], str, str <> "\n"];
   list_List  := MapMost[normalizeLines, list];
   other_     := Print[other];
 ];
@@ -183,7 +183,7 @@ ImportJupyterNotebook[path_Str] := Scope[
 
 cellImporter["code", data_] := {
   Cell[
-    StringJoin @ data["source"],
+    SJoin @ data["source"],
     "ExternalLanguage"
   ],
   Fn[procCodeOutput[#["output_type"], #]] /@ data["outputs"]
@@ -191,50 +191,50 @@ cellImporter["code", data_] := {
 
 (* need to use  \<\" to stop RowBox from being applied to the OUtput? *)
 procCodeOutput["execute_result", data_] :=
-  Cell[StringTrim @ data["data", "text/plain"], "PythonOutput"]
+  Cell[STrim @ data["data", "text/plain"], "PythonOutput"]
 
 procCodeOutput["display_data", data_] := Scope[
   {imgData, textData} = Lookup[data["data"], {"image/png", "text/plain"}];
-  If[StringQ[imgData],
+  If[StrQ[imgData],
     img = ImportBase64[imgData, "PNG"];
     Cell[BoxData @ ToBoxes[img], "PythonOutput"]
   ,
-    Cell[BoxData @ StringTrim @ textData, "PythonOutput"]
+    Cell[BoxData @ STrim @ textData, "PythonOutput"]
   ]
 ];
 
 procCodeOutput["stream", data_] :=
-  Cell[BoxData @ StringTrim @ data["text"], "PythonOutput"]
+  Cell[BoxData @ STrim @ data["text"], "PythonOutput"]
 
 cellImporter["markdown", data_] := Scope[
   source = SequenceReplace[data["source"], {
-    {tab__ ? tableLineQ} :> StringJoin[tab]
+    {tab__ ? tableLineQ} :> SJoin[tab]
   }];
   Map[procTextCellLine, source]
 ];
 
-tableLineQ[s_Str] := StringStartsQ[s, "| "];
+tableLineQ[s_Str] := SStartsQ[s, "| "];
 
 procTextCellLine[s_Str] := Which[
-  StringStartsQ[s, "<center><img "],
+  SStartsQ[s, "<center><img "],
     Cell[
       BoxData @ ToBoxes @ importDataUrlAsImage @ s,
       "Output"
     ],
-  StringStartsQ[s, "* "], Cell[parseMD @ StringTrim @ StringTrim[s, "* "], "Item"],
-  StringStartsQ[s, "\t* "], Cell[parseMD @ StringTrim @ StringTrim[s, "* "], "Subitem"],
-  StringStartsQ[s, "\t\t* "], Cell[parseMD @ StringTrim @ StringTrim[s, "* "], "Subsubitem"],
-  StringStartsQ[s, "# "], Cell[parseMD @ StringTrim @ StringTrim[s, "# "], "Section"],
-  StringStartsQ[s, "## "], Cell[parseMD @ StringTrim @ StringTrim[s, "## "], "Subsection"],
-  StringStartsQ[s, "### "], Cell[parseMD @ StringTrim @ StringTrim[s, "### "], "Subsubsection"],
-  StringStartsQ[s, "#### "], Cell[parseMD @ StringTrim @ StringTrim[s, "#### "], "Subsubsubsection"],
-  StringMatchQ[s, Whitespace], Nothing,
+  SStartsQ[s, "* "], Cell[parseMD @ STrim @ STrim[s, "* "], "Item"],
+  SStartsQ[s, "\t* "], Cell[parseMD @ STrim @ STrim[s, "* "], "Subitem"],
+  SStartsQ[s, "\t\t* "], Cell[parseMD @ STrim @ STrim[s, "* "], "Subsubitem"],
+  SStartsQ[s, "# "], Cell[parseMD @ STrim @ STrim[s, "# "], "Section"],
+  SStartsQ[s, "## "], Cell[parseMD @ STrim @ STrim[s, "## "], "Subsection"],
+  SStartsQ[s, "### "], Cell[parseMD @ STrim @ STrim[s, "### "], "Subsubsection"],
+  SStartsQ[s, "#### "], Cell[parseMD @ STrim @ STrim[s, "#### "], "Subsubsubsection"],
+  SMatchQ[s, Whitespace], Nothing,
   True, markdownCell @ s
 ];
 
-procTextCell[s_List] := markdownCell @ StringJoin @ s;
+procTextCell[s_List] := markdownCell @ SJoin @ s;
 
-parseMD[str_Str] /; StringFreeQ[str, "*"|"_"] := str;
+parseMD[str_Str] /; SFreeQ[str, "*"|"_"] := str;
 
 Block[{Message, MessageName}, (* prevents the RuleDelayed::rhs message from even loading, which is slow disk access *)
 markdownSpan[left_, symbol_, right_] := left ~~ symbol:((WordCharacter) | (WordCharacter ~~ Shortest[___] ~~ WordCharacter)) ~~ right;
@@ -242,7 +242,7 @@ markdownSpan[left_, symbol_, right_] := left ~~ symbol:((WordCharacter) | (WordC
 
 parseMD[str_Str] := toTextData @ parseMD1 @ str;
 
-parseMD1[str_Str] := StringReplace[str, {
+parseMD1[str_Str] := SRep[str, {
   "<font color='" ~~ color:WordCharacter.. ~~ "'>" ~~ span___ ~~ "</font>" :> StyleBox[parseMD1 @ span, fromHTMLColor @ color],
   markdownSpan["**", span, "**"] :> StyleBox[span, FontWeight->"Bold"],
   markdownSpan["*", span, "*"] :> StyleBox[span, FontSlant->"Italic"],
@@ -255,13 +255,13 @@ toTextData[str_Str] := str;
 toTextData[str_StringExpression] := TextData[List @@ str];
 
 markdownCell[s_Str] := If[
-  StringFreeQ[s, "|" | "#" | "<font"] ,
-  Cell[parseMD @ StringTrim @ s, "Text"],
-  Cell[StringTrim @ s, "Program"]
+  SFreeQ[s, "|" | "#" | "<font"] ,
+  Cell[parseMD @ STrim @ s, "Text"],
+  Cell[STrim @ s, "Program"]
 ];
 
 importDataUrlAsImage[str_Str] :=
   FirstStringCase[str, "image/png;base64," ~~ Shortest[base64___] ~~ "\"" :> ImportBase64[base64, "PNG"],
-    Print[StringTake[str, 100]]; None];
+    Print[STake[str, 100]]; None];
 
 cellImporter[name_] := Cell["UNKNOWN TYPE: " <> name, "Text"]&;

@@ -15,7 +15,7 @@ SolveCyclicEquations[rules$] solves a set of equations that are expressed as rul
 Options[SolveCyclicEquations] = {
   VerifySolutions -> True,
   AllowPartialSolutions -> False,
-  EquationVariables -> Automatic,
+  EquationVariables -> Auto,
   ExpandLinearEquations -> True,
   Verbose -> False
 };
@@ -26,14 +26,14 @@ SolveCyclicEquations::partsol = "Solution is partial. Have `` solved variables o
 SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
   UnpackOptions[verifySolutions, allowPartialSolutions, equationVariables, expandLinearEquations, $verbose];
   lhss = Keys @ eqns;
-  If[equationVariables === Automatic,
+  If[equationVariables === Auto,
     vars = Union @ lhss,
     vars = Union[lhss, equationVariables]
   ];
-  varP = Alternatives @@ vars;
-  If[expandLinearEquations, eqns = ReplaceAll[NoLinearExpand[t_] :> t] @ Flatten @ Map[toSubEquations, eqns]];
+  varP = Alt @@ vars;
+  If[expandLinearEquations, eqns = RepAll[NoLinearExpand[t_] :> t] @ Flatten @ Map[toSubEquations, eqns]];
   varI = AssociationRange @ vars;
-  eqns = DeleteDuplicates @ Flatten @ VectorReplace[eqns, rule:(_ -> varP) :> {rule, Rev @ rule}];
+  eqns = Dedup @ Flatten @ VectorReplace[eqns, rule:(_ -> varP) :> {rule, Rev @ rule}];
   (* printEqns[eqns]; *)
   {lhss, rhss} = KeysValues @ eqns;
   varToEqI = Map[var |-> SelectIndices[eqns, ContainsQ[var]], vars];
@@ -41,11 +41,11 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
   eqnIToLhsVarI = Lookup[varI, lhss];
   rhsVarIsToEqnIs = PositionIndex[eqnIToRhsVarIs];
   rhsVarIToEqnIs = PositionIndex[eqnIToRhsVarIs, 2];
-  solutions = Data`UnorderedAssociation @ MapThread[
+  solutions = UAssoc @ MapThread[
     If[#2 === {}, #1, Nothing]&,
     {eqns, eqnIToRhsVarIs}
   ];
-  solved = KeyExistsQ[solutions, #]& /@ vars;
+  solved = KeyQ[solutions, #]& /@ vars;
   solvedHistory = {solved};
   solveStep[SelectIndices[solved, TrueQ]];
   If[TrueQ @ verifySolutions,
@@ -54,12 +54,12 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
       badVars = Union @ Keys @ badEqns;
       Message[SolveCyclicEquations::badsol, Row[badVars, ", "]];
       (* TODO: print equation dependency graph, highlight bad nodes, label equations, etc *)
-      KeyValueScan[printBadSolEqs, TakeOperator[UpTo[2]] @ AssociationMap[Select[eqns, ContainsQ[#]]&, badVars]];
+      KVScan[printBadSolEqs, TakeOperator[UpTo[2]] @ AssocMap[Select[eqns, ContainsQ[#]]&, badVars]];
     ];
   ];
   If[FalseQ @ allowPartialSolutions,
     If[Len[solutions] < Len[vars],
-      Message[SolveCyclicEquations::partsol, Len[solutions], Len[vars], Complement[vars, Keys @ solutions]];
+      Message[SolveCyclicEquations::partsol, Len[solutions], Len[vars], Comp[vars, Keys @ solutions]];
     ];
   ];
   VPrint @ Row[{Column[vars, Spacings -> .71], CompactArrayPlot[Transpose @ solvedHistory, PixelConstrained -> 20]}, Alignment -> Bottom];
@@ -76,7 +76,7 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
     newEqnsIs = Select[relevantEqnIs, Apply[And, Part[solved, Part[eqnIToRhsVarIs, #]]]&];
     (* run those equations and get set of newly solved variables *)
     nextSolved = Union @ Map[runEqn, Part[eqns, newEqnsIs]];
-    If[$verbose, AppendTo[solvedHistory, solved]];
+    If[$verbose, AppTo[solvedHistory, solved]];
     (* recurse *)
     solveStep[nextSolved];
   ]
@@ -94,7 +94,7 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
       zero = lhs - rhs;
       vars = DeepUniqueCases[rhs, varP];
       eqns = # -> SolveLinearTermFor[#, zero, 0]& /@ vars;
-      {eq, DeleteCases[eqns, _ -> None]}
+      {eq, Decases[eqns, _ -> None]}
     ]
   ]
 ];
@@ -102,8 +102,8 @@ SolveCyclicEquations[eqns:{___Rule}, OptionsPattern[]] := CatchMessage @ Scope[
 printBadSolEqs[var_, eqns_List] := (
   Print["Var ", var, " cannot simultaneously satisfy following equations: "];
   Print[Grid[
-    ReplaceAll[
-      {Inactive[Equal] @@ #, Construct[HoldForm, Inactive[Equal] @@ #] /. solutions, PN[#] /. solutions}& /@ eqns,
+    RepAll[
+      {Inactive[Equal] @@ #, Construct[HoldForm, Inactive[Equal] @@ #] /. solutions, L[#] /. solutions}& /@ eqns,
       var -> Style[var, Bold]
     ],
     Spacings -> {1.5, 2}, Dividers -> All, Alignment -> Left

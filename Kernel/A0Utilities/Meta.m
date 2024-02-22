@@ -35,7 +35,7 @@ toOperatorFormSymbol[s_Symbol]   := Which[
   True, Nothing
 ];
 
-hasSubUsageQ[s_] := !StringQ[MessageName[s, "usage"]] || StringContainsQ[MessageName[s, "usage"], " operator "];
+hasSubUsageQ[s_] := !StrQ[MessageName[s, "usage"]] || SContainsQ[MessageName[s, "usage"], " operator "];
 
 (**************************************************************************************************)
 
@@ -43,7 +43,7 @@ PublicFunction[UsageString]
 
 SetHoldAll[UsageString]
 
-UsageString[s_Symbol | Hold[s_Symbol]] := Replace[MessageName[s, "usage"], _MessageName :> ""]
+UsageString[s_Symbol | Hold[s_Symbol]] := Rep[MessageName[s, "usage"], _MessageName :> ""]
 UsageString[_] := "";
 
 (**************************************************************************************************)
@@ -52,7 +52,7 @@ PublicFunction[ExtractUsageLHS, ParseUsageLHS, ParseUsageBoxes]
 
 PrivateHead[$UsagePatt, $UsageStr, $UsageEtc, $UsageRuleD]
 
-ExtractUsageLHS[usage_Str] := Flatten @ StringCases[StringSplit[usage, "\n"], {
+ExtractUsageLHS[usage_Str] := Flatten @ SCases[SSplit[usage, "\n"], {
   StartOfLine ~~ (LinearSyntaxPattern ~~ " or ").. ~~ s:LinearSyntaxPattern :> FromLinearSyntax[s],
   StartOfLine ~~ s:LinearSyntaxPattern :> FromLinearSyntax[s]
 }];
@@ -106,8 +106,8 @@ $UsageList[$UsageRule] -> "opts rules"
 "s String StringCount"
 *)
 
-pattNameToType[e_] := (KeyAppendTo[$unknown, e, Apply[RawBoxes, $boxes]]; $UsageAny);
-KeyValueScan[{type, str} |-> With[{patt = Alternatives @@ StringSplit[str, " "]}, pattNameToType[patt] = type], $usageTypeHints];
+pattNameToType[e_] := (KAppTo[$unknown, e, Apply[RawBoxes, $boxes]]; $UsageAny);
+KVScan[{type, str} |-> With[{patt = Alt @@ SSplit[str, " "]}, pattNameToType[patt] = type], $usageTypeHints];
 
 $usageTransforms = {
   {Subscript[p_, _].., $UsageEtc}                                      :> $UsageList[p],
@@ -202,11 +202,11 @@ $WolframCharacterContractions := $WolframCharacterContractions = UAssoc @ MathCh
 
 (**************************************************************************************************)
 
-infixOpQ[s_]       := KeyExistsQ[$infixMap, s];
-naryInfixOpQ[s_]   := KeyExistsQ[$naryInfixMap, s];
-binaryInfixOpQ[s_] := KeyExistsQ[$binaryInfixMap, s];
-prefixOpQ[s_]      := KeyExistsQ[$prefixMap, s];
-postfixOpQ[s_]     := KeyExistsQ[$postfixMap, s];
+infixOpQ[s_]       := KeyQ[$infixMap, s];
+naryInfixOpQ[s_]   := KeyQ[$naryInfixMap, s];
+binaryInfixOpQ[s_] := KeyQ[$binaryInfixMap, s];
+prefixOpQ[s_]      := KeyQ[$prefixMap, s];
+postfixOpQ[s_]     := KeyQ[$postfixMap, s];
 
 $infixMap       := $infixMap         = Join[$binaryInfixMap, $naryInfixMap];
 $naryInfixMap   := $naryInfixMap     = loadSyntaxMap["NAryInfix.txt"];
@@ -217,12 +217,12 @@ $postfixMap     := $postfixMap       = loadSyntaxMap["Postfix.txt"];
 loadSyntaxMap[name_] := Scope[
   path = DataPath["Wolfram", name];
   table = ImportUTF8 @ path;
-  entries = StringTrim /@ StringSplit[StringSplit[table, "\n"], Whitespace];
+  entries = STrim /@ SSplit[SSplit[table, "\n"], Whitespace];
   rules = charHeadRule @@@ entries;
-  Association @ rules
+  Assoc @ rules
 ];
 
-charHeadRule[k_, v_] /; KeyExistsQ[$WolframCharacterContractions, k] := {k -> v, $WolframCharacterContractions[k] -> v};
+charHeadRule[k_, v_] /; KeyQ[$WolframCharacterContractions, k] := {k -> v, $WolframCharacterContractions[k] -> v};
 charHeadRule[k_, v_] := k -> v;
 
 (**************************************************************************************************)
@@ -231,8 +231,8 @@ PublicFunction[CreateMultipleSymbols]
 
 CreateMultipleSymbols[context_, names:{___Str}, values_List] := Block[
   {$Context = context, $ContextPath = {"System`", "Global`"}},
-  If[Length[names] =!= Length[values], Message[CreateMultipleSymbols::badlen, Length @ names, Length @ values, Short @ names]];
-  ToExpression[StringJoin["{", Riffle[names, ","], "}"], InputForm, SetOperator[values]]
+  If[Len[names] =!= Len[values], Message[CreateMultipleSymbols::badlen, Len @ names, Len @ values, Short @ names]];
+  ToExpression[SJoin["{", Riffle[names, ","], "}"], InputForm, SetOperator[values]]
 ]
 
 CreateMultipleSymbols::badlen = "Was provided `` names and `` values: ``."
@@ -280,33 +280,33 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
     (* system groups *)
     systemSymbolPath = DataPath["Wolfram", "SystemSymbolTable.mx"];
     groups = ImportMX @ systemSymbolPath;
-    If[!AssociationQ[groups], ThrowMessage["noSystemSymbols", MsgPath @ systemSymbolPath]];
+    If[!AssocQ[groups], ThrowMessage["noSystemSymbols", MsgPath @ systemSymbolPath]];
 
     groups = Union /@ groups;
     (* allow changes to Data/Wolfram/SymbolTable.m to override the system symbol group assignments,
        since its expensive to run the generate_syntax_table.wls script *)
-    loaderSystemSymbolGroups = systemSymToName /@ KeyMap[Last, KeySelect[symbolTable, MatchQ[{"System`", _}]]];
+    loaderSystemSymbolGroups = systemSymToName /@ KMap[L, KSelect[symbolTable, MatchQ[{"System`", _}]]];
     loaderSystemSymbols = Union @@ Values[loaderSystemSymbolGroups];
-    groups = AssociationMap[
-      Union[Lookup[loaderSystemSymbolGroups, #, {}], Complement[Lookup[groups, #, {}], loaderSystemSymbols]]&,
+    groups = AssocMap[
+      Union[Lookup[loaderSystemSymbolGroups, #, {}], Comp[Lookup[groups, #, {}], loaderSystemSymbols]]&,
       Union[Keys @ groups, Keys @ loaderSystemSymbolGroups]
     ];
-    If[!AssociationQ[groups], ReturnFailed[]];
+    If[!AssocQ[groups], ReturnFailed[]];
 
-    groups //= KeySortBy[groupSortIndex];
+    groups //= KSortBy[groupSortIndex];
     localGroups = QuiverGeometryLoader`$SymbolGroups;
 
-    KeyValueMap[addToGroup, localGroups];
+    KVMap[addToGroup, localGroups];
     addToGroup["SpecialFunction", {"ExpressionTable"}];
 
     VPrint["Extracting GU symbols."];
     guSymbols = Names["GeneralUtilities`*"];
-    guSymbols //= Select[StringLength[#] > 2 && StringStartsQ[#, UppercaseLetter] &];
+    guSymbols //= Select[SLen[#] > 2 && SStartsQ[#, UppercaseLetter] &];
     addToGroup["Function", guSymbols];
 
     (* add each alias to the group of its target *)
-    coreNameToGroup = Assoc @ KeyValueMap[Thread @ Rule[systemSymToName @ #2, Last @ #1]&, symbolTable];
-    aliasGroups = KeyValueMap[
+    coreNameToGroup = Assoc @ KVMap[Thread @ Rule[systemSymToName @ #2, L @ #1]&, symbolTable];
+    aliasGroups = KVMap[
       {alias, target} |-> (
         group = Lookup[coreNameToGroup, target, ThrowMessage["badAlias", alias -> target]];
         addToGroup[group, {alias}];
@@ -319,19 +319,19 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
     VPrint["Processing symbol groups. Groups available at $LastSublimeSyntaxGroups."];
     (* groups //= KeySort; *)
     $LastSublimeSyntaxGroups ^= groups;
-    {regexpSections, symbolSections} = VBlock @ Transpose @ KeyValueMap[makeSplitDefs, groups];
+    {regexpSections, symbolSections} = VBlock @ Transpose @ KVMap[makeSplitDefs, groups];
 
     VPrint["Processing completions."];
-    completionLists = KeyValueMap[makeCompletionDefs, groups];
-    regexpDefs = StringRiffle[regexpSections, "\n"];
-    symbolDefs = StringRiffle[symbolSections, "\n"];
-    completionDefs = $completionListTemplate @ StringTrimRight[",\n"] @ StringRiffle[Catenate @ completionLists, ",\n"];
-    filledTemplate = StringReplace[template, {"$REGEXPS$" -> regexpDefs, "$SYMBOLS$" -> symbolDefs}];
+    completionLists = KVMap[makeCompletionDefs, groups];
+    regexpDefs = SRiffle[regexpSections, "\n"];
+    symbolDefs = SRiffle[symbolSections, "\n"];
+    completionDefs = $completionListTemplate @ StringTrimRight[",\n"] @ SRiffle[Catenate @ completionLists, ",\n"];
+    filledTemplate = SRep[template, {"$REGEXPS$" -> regexpDefs, "$SYMBOLS$" -> symbolDefs}];
   ,
     $Failed
   ];
   If[res === $Failed, ReturnFailed["messageOccurred"]];
-  If[!StringQ[completionDefs] || !StringQ[filledTemplate], ReturnFailed["invalidResult"]];
+  If[!StrQ[completionDefs] || !StrQ[filledTemplate], ReturnFailed["invalidResult"]];
   VPrint["Writing files."];
   {
     ExportUTF8[outCompletionsFile, completionDefs],
@@ -346,10 +346,10 @@ systemSymToName = Case[
 ];
 
 addToGroup[group_, {}] := Null;
-addToGroup[group_, syms_] := KeyUnionTo[groups, group,
-  unassigned = Complement[syms, Catenate @ KeyDrop[groups, group]];
+addToGroup[group_, syms_] := KUnionTo[groups, group,
+  unassigned = Comp[syms, Catenate @ KDrop[groups, group]];
   If[Len[unassigned] < Len[syms],
-    VPrint[group, ": following syms already assigned: ", Complement[syms, unassigned]]];
+    VPrint[group, ": following syms already assigned: ", Comp[syms, unassigned]]];
   unassigned
 ];
 
@@ -369,8 +369,8 @@ groupToSyntaxScope = Case[
 ];
 
 igroupToSyntaxScope[group_] := igroupToSyntaxScope[str] =
-  StrJoin["support.function.",
-    ToLowerCase @ StringRiffle[CamelCaseSplit @ StringReplace[group, {"Function" -> "", "IO" -> "Io"}], "."],
+  SJoin["support.function.",
+    ToLowerCase @ SRiffle[CamelCaseSplit @ SRep[group, {"Function" -> "", "IO" -> "Io"}], "."],
     ".wolfram"
   ];
 
@@ -411,10 +411,10 @@ UpdateSublimeSyntaxFiles::badVariableSymbolNames = "Some symbols in group `` did
 
 makeSplitDefs[group:"Variable" | "SpecialVariable" | "CacheVariable", names_] :=
   MapLast[
-    StringReplace["- match: '{{" -> "- match: '\\${{"],
-    If[!AllTrue[names, StringStartsQ["$"]],
-      Message[UpdateSublimeSyntaxFiles::badVariableSymbolNames, group, Discard[names, StringStartsQ["$"]]]];
-    makeSplitDefs2[group, StringDrop[names, 1]]
+    SRep["- match: '{{" -> "- match: '\\${{"],
+    If[!AllTrue[names, SStartsQ["$"]],
+      Message[UpdateSublimeSyntaxFiles::badVariableSymbolNames, group, Discard[names, SStartsQ["$"]]]];
+    makeSplitDefs2[group, SDrop[names, 1]]
   ];
 
 makeSplitDefs[group_, names_] :=
@@ -422,18 +422,18 @@ makeSplitDefs[group_, names_] :=
 
 makeSplitDefs2[group_, names_] := Scope[
   scope = groupToSyntaxScope[group];
-  names //= DeleteDuplicates;
+  names //= Dedup;
   VPrint[
-    StringPadRight[group, 30], " -> ", StringPadRight[scope, 50],
-    If[Len[names] < 200, Tooltip[#, Multicolumn[names, 3]]&, Id] @ StrJoin[" (", IntStr @ Len @ names, " symbols)"]
+    SPadRight[group, 30], " -> ", SPadRight[scope, 50],
+    If[Len[names] < 200, Tooltip[#, Multicolumn[names, 3]]&, Id] @ SJoin[" (", IntStr @ Len @ names, " symbols)"]
   ];
-  If[Length[names] >= 16,
-    grouped = KeySort @ GroupBy[names, StringJoin[group, "_", StringTake[#, 1]]&];
-    grouped //= KeyMap[StringReplace["$" -> "DOLLAR"]];
-    defItems = StringJoin @ KeyValueMap[makeLetterSubDef, grouped] // escapeDollars;
-    parseItems = StringJoin @ Map[makeParseItem[scope]] @ Keys[grouped];
+  If[Len[names] >= 16,
+    grouped = KSort @ GroupBy[names, SJoin[group, "_", STake[#, 1]]&];
+    grouped //= KMap[SRep["$" -> "DOLLAR"]];
+    defItems = SJoin @ KVMap[makeLetterSubDef, grouped] // escapeDollars;
+    parseItems = SJoin @ Map[makeParseItem[scope]] @ Keys[grouped];
   ,
-    defItems = StringJoin["  ", group, ": (?:", StringRiffle[names, "|"], ")\n"];
+    defItems = SJoin["  ", group, ": (?:", SRiffle[names, "|"], ")\n"];
     parseItems = makeParseItem[scope][group];
   ];
   {defItems, parseItems}
@@ -445,26 +445,26 @@ makeCompletionDefs[group_, names_] := Scope[
   completions
 ];
 
-escapeDollars[e_] := StringReplace[e, "$" -> "\\$"];
-doubleEscapeDollars[e_] := StringReplace[e, "$" -> "\\\\$"];
+escapeDollars[e_] := SRep[e, "$" -> "\\$"];
+doubleEscapeDollars[e_] := SRep[e, "$" -> "\\\\$"];
 
 $kindTemplate = StringFunction @ """["#1", "#2", "#3"]""";
 $completionTemplate = StringFunction @ """    {"trigger": "#1", "contents": "#2", "kind": #3}"""
 
-makeCompletion[kindString_][name_] := If[StringLength[name] <= 3, Nothing,
+makeCompletion[kindString_][name_] := If[SLen[name] <= 3, Nothing,
   $completionTemplate[name, doubleEscapeDollars @ name, kindString]
 ];
 
 makeParseItem[scope_][defName_] :=
-  StringJoin["    - match: '{{", defName, "}}{{symbolEndBoundary}}'\n      scope: ", scope, "\n"];
+  SJoin["    - match: '{{", defName, "}}{{symbolEndBoundary}}'\n      scope: ", scope, "\n"];
 
 makeShortDef[defName_, strings_] :=
-  StringJoin["  ", defName, ": (?:", StringRiffle[strings, "|"], ")\n"];
+  SJoin["  ", defName, ": (?:", SRiffle[strings, "|"], ")\n"];
 
 makeLetterSubDef[subDefName_, strings_] :=
-  StringJoin[
+  SJoin[
     "  ", subDefName, ": (?:",
-    StringTake[P1 @ strings, 1],
-    "(?:", StringRiffle[StringDrop[strings, 1], "|"],
+    STake[F @ strings, 1],
+    "(?:", SRiffle[SDrop[strings, 1], "|"],
     "))\n"
 ];

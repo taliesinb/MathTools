@@ -21,7 +21,7 @@ EllipsisSequence[f_] :=
 
 EllipsisSequence[f_, n_, k_Int:2] := With[
   {f2 = toSeqF @ f,
-   n2 = Switch[n, None, None, Automatic | Null, SymbolForm["n"], _Symbol | _Str, SymbolForm @ n, _, n]},
+   n2 = Switch[n, None, None, Auto | Null, SymbolForm["n"], _Symbol | _Str, SymbolForm @ n, _, n]},
   Sequence @@ Flatten[{f2 /@ Range[1, k], {EllipsisSymbol, If[n2 === None, Nothing, f2 @ n2]}}]
 ];
 
@@ -42,9 +42,9 @@ MakeSequence[f_, n_] := With[
 PublicFunction[CreateSequenceVars]
 
 CreateSequenceVars[baseVar_, f_, n_] := With[
-  {f2 = toSeqF @ f, symName = If[StringQ[baseVar], baseVar, SymbolName[baseVar]]},
+  {f2 = toSeqF @ f, symName = If[StrQ[baseVar], baseVar, SymbolName[baseVar]]},
   Sequence @@ Map[
-    With[{s = Symbol[symName <> IntegerString[#]]}, Set[s, f2[#]]]&,
+    With[{s = Symbol[symName <> IntStr[#]]}, Set[s, f2[#]]]&,
     Range[1, n]
   ]
 ];

@@ -19,10 +19,10 @@ TextIcon['text$'] produces an inline %Graphics that contains graphics primitives
 
 Options[TextIcon] = {
   FontSize -> Inherited,
-  FontColor -> Automatic,
-  FontWeight -> Automatic,
-  FontFamily -> Automatic,
-  FontSlant -> Automatic,
+  FontColor -> Auto,
+  FontWeight -> Auto,
+  FontFamily -> Auto,
+  FontSlant -> Auto,
   Method -> "Vector",
   ContentPadding -> False,
   Background -> None,
@@ -49,7 +49,7 @@ textIconBoxes[TextIcon[str_, opts___Rule]] := Scope[
   If[!ColorQ[fontColor],
     fontColor = ToColorGradient[fontColor];
     If[FreeQ[fontColor, CompressionFactor],
-      AppendTo[fontColor, CompressionFactor -> compressionFactor]];
+      AppTo[fontColor, CompressionFactor -> compressionFactor]];
   ];
 
   Switch[method,
@@ -73,9 +73,9 @@ textIconVectorBoxes[str_, fontSize_, fontColor_, fontWeight_, fontFamily_, fontS
   $TextIconVectorCache, Hash @ {str, fontSize, fontColor, fontWeight, fontFamily, fontSlant, formatType, contentPadding, background},
 
   (* MathForm implies SingleLetterItalics, which we simulate here *)
-  SetAutomatic[fontSlant, If[formatType === MathForm && StringQ[str] && StringMatchQ[str, RomanLetter], Italic, Plain]];
+  SetAutomatic[fontSlant, If[formatType === MathForm && StrQ[str] && SMatchQ[str, RomanLetter], Italic, Plain]];
 
-  If[!StringQ[str],
+  If[!StrQ[str],
     Message[TextIcon::vectorOnlyStr, MsgExpr @ str];
     Return @ {};
   ];
@@ -109,7 +109,7 @@ textIconVectorBoxes[str_, fontSize_, fontColor_, fontWeight_, fontFamily_, fontS
       With[{System`\[FormalF] = CurrentValue[FontSize]}, #],
       TrackedSymbols :> {}
     ], HoldFirst] @@ gboxConstructor,
-    P1[gboxConstructor /. System`\[FormalF] -> fontSize]
+    F[gboxConstructor /. System`\[FormalF] -> fontSize]
   ]
 ];
 

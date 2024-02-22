@@ -16,7 +16,7 @@ $yearRE      = "(?:" <> $longYearRE <> "|" <> $shortYearRE <>")";
 $monthRE     = """(?:0?[1-9]|1[012])""";
 $dayRE       = """(?:0?[1-9]|[12]\d|3[01])""";
 
-dateSep[args__] := Splice[StringJoin[Riffle[{args}, #]]& /@ {"/", "-"}];
+dateSep[args__] := Splice[SJoin[Riffle[{args}, #]]& /@ {"/", "-"}];
 
 (* YMD, MDY, DMY according to https://en.wikipedia.org/wiki/Date_format_by_country *)
 
@@ -38,7 +38,7 @@ PublicStringPattern[SlashDatePattern]
 $strictMonthRE     = """(?:0[1-9]|1[012])""";
 $strictDayRE       = """(?:0[1-9]|[12]\d|3[01])""";
 
-$slashDateRE = StringJoin[$longYearRE, "/", $strictMonthRE, "/", $strictDayRE];
+$slashDateRE = SJoin[$longYearRE, "/", $strictMonthRE, "/", $strictDayRE];
 
 DefineStringPattern[
   SlashDatePattern :> $slashDateRE
@@ -73,13 +73,13 @@ PublicStringPattern[SpelledDatePattern]
 
 $spelledMonthRE = "(?:Jan|January|Feb|February|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)";
 
-dateSep2[args__] := Splice[StringJoin[Riffle[{args}, #]]& /@ {"/", "-", ",", ", ", " "}];
+dateSep2[args__] := Splice[SJoin[Riffle[{args}, #]]& /@ {"/", "-", ",", ", ", " "}];
 
 $spelledDatePatternRE = """(?<![-/0-9])(?:""" <> Riffle[{
-  StringJoin[$spelledMonthRE, " ", $dayRE, ",? ", $yearRE],
-  StringJoin[$dayRE, " ", $spelledMonthRE, ",? ", $yearRE],
-  StringJoin[$spelledMonthRE, "[ -]", $longYearRE],
-  StringJoin[$longYearRE, "[ -]", $spelledMonthRE]
+  SJoin[$spelledMonthRE, " ", $dayRE, ",? ", $yearRE],
+  SJoin[$dayRE, " ", $spelledMonthRE, ",? ", $yearRE],
+  SJoin[$spelledMonthRE, "[ -]", $longYearRE],
+  SJoin[$longYearRE, "[ -]", $spelledMonthRE]
 }, "|"] <> """)(?![-/0-9])""";
 
 DefineStringPattern[

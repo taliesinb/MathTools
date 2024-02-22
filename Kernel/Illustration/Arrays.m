@@ -34,7 +34,7 @@ DefineStandardTraditionalForm[{
   FadedRationalForm[0]   :> StyleBox["0", FontColor -> makeFade[0]],
   FadedRationalForm[1/2] :> StyleBox["½", FontColor -> makeFade[1/2]],
   FadedRationalForm[1]   :> StyleBox["1", FontColor -> makeFade[1]],
-  FadedRationalForm[n_]  :> IntegerString[n],
+  FadedRationalForm[n_]  :> IntStr[n],
   FadedRationalForm[3/4] :> StyleBox["¾", FontColor -> makeFade[3/4]],
   FadedRationalForm[1/4] :> StyleBox["¼", FontColor -> makeFade[1/4]],
   FadedRationalForm[1/3] :> StyleBox["⅓", FontColor -> makeFade[1/3]],
@@ -55,8 +55,8 @@ procHighlightSpec = Case[
 procHighlightRule = Case[
   lhs:{___, _ -> Each, ___} := MapTuples[procHighlightRule, VectorReplace[lhs, {(i_Int -> Each) :> Thread[i -> Range[Part[$dims, i]]], other_ :> List[other]}]];
   lhs:{___, Each, ___} := MapTuples[procHighlightRule, MapIndex1[If[#1 === Each, Range @ Part[$dims, #2], List @ #1]&, lhs]];
-  lhs:$lhsSpecP := % @ Rule[lhs, Automatic];
-  Rule[lhs_, col_ /; ColorQ[col] || col === Automatic] := procHighlightLHS[ToList @ lhs] -> ReplaceAutomatic[col, indexedColor[$count++]];
+  lhs:$lhsSpecP := % @ Rule[lhs, Auto];
+  Rule[lhs_, col_ /; ColorQ[col] || col === Auto] := procHighlightLHS[ToList @ lhs] -> ReplaceAutomatic[col, indexedColor[$count++]];
 ];
 
 procHighlightLHS = Case[
@@ -73,7 +73,7 @@ procHighlightLHS = Case[
 
 procAxisSpec = Case[
   i_Int := i;
-  spec_Span := Alternatives @@ Range @@ spec;
+  spec_Span := Alt @@ Range @@ spec;
   All := _;
 ];
 
@@ -95,11 +95,11 @@ $defaultItemFunction = Cube[#, 1-$cubeGap]&;
 
 makeCube[dims_, pos_] := Scope[
   coords = PadRight[pos-.5, 3, 0] - dims/2;
-  style = If[MatchQ[$itemStyleFunction, None|Automatic], Automatic, $itemStyleFunction @ pos];
+  style = If[MatchQ[$itemStyleFunction, None|Auto], Auto, $itemStyleFunction @ pos];
   Annotation[applyStyle[$itemFunction[coords, pos], style], AnnotatedCoordinates[coords, pos]]
 ];
 
-applyStyle[e_, Automatic] := e;
+applyStyle[e_, Auto] := e;
 applyStyle[e_, None] := {};
 applyStyle[e_, Transparent] := Style[e, FaceEdgeForm[Transparent]];
 applyStyle[e_, o:Opacity[_, _]] := Style[e, FaceEdgeForm[o]];
@@ -112,7 +112,7 @@ resolveFlip[opts___] :=
   resolveFlip1 @@ OptionValue[ColoredCubeArray, {opts}, {FlipAxes, FlipX, FlipY, FlipZ}];
 
 resolveFlip1[spec_Str, args__] :=
-  resolveFlip1[Characters @ ToUpperCase @ spec, args];
+  resolveFlip1[Chars @ ToUpperCase @ spec, args];
 
 resolveFlip1[spec_List, flipx_, flipy_, flipz_] :=
   If[#, -1, 1]& /@ MapThread[
@@ -132,12 +132,12 @@ multXYZ[xyz_][e_] := ScalePrimitives[e, xyz];
 
 attachLabelAxes[dims_, None|False, _] := Id;
 
-attachLabelAxes[dims_, True, opts_] := attachLabelAxes[dims, Automatic, opts];
+attachLabelAxes[dims_, True, opts_] := attachLabelAxes[dims, Auto, opts];
 
-attachLabelAxes[dims_, Placed[spec_, pos_Str], opts_] := attachLabelAxes[dims, spec, Prepend[opts, LabelPosition -> pos]];
+attachLabelAxes[dims_, Placed[spec_, pos_Str], opts_] := attachLabelAxes[dims, spec, Pre[opts, LabelPosition -> pos]];
 
-attachLabelAxes[dims_, Automatic, opts_] :=
-  attachLabelAxes[dims, If[# > 1, Automatic, None]& /@ dims, opts];
+attachLabelAxes[dims_, Auto, opts_] :=
+  attachLabelAxes[dims, If[# > 1, Auto, None]& /@ dims, opts];
 
 attachLabelAxes[dims_, {lx_, ly_, lz_}, opts_][e_] := Scope[
   SetAutomatic[lx, 1]; SetAutomatic[ly, 2]; SetAutomatic[lz, 3];
@@ -152,14 +152,14 @@ PublicFunction[CubeArray, CubeGrid]
 PublicOption[CubeGap, CubeStyle, FlipAxes, LabelAxes, AxesOptions, CubeOpacity, SpanHighlights, ItemStyleFunction, FlipTicks]
 
 Options[CubeGrid] = Options[CubeArray] = {
-  CubeGap -> 0.2, CubeStyle -> Automatic, FlipAxes -> None, FlipX -> False, FlipY -> False, FlipZ -> False,
+  CubeGap -> 0.2, CubeStyle -> Auto, FlipAxes -> None, FlipX -> False, FlipY -> False, FlipZ -> False,
   LabelAxes -> False, AxesOptions -> {}, CubeOpacity -> .3, SpanGap -> 0.2, SpanHighlights -> {},
-  HighlightStyle -> {}, MeshStyle -> None, ItemFunction -> Automatic, ItemStyleFunction -> None,
-  TicksStyle -> Automatic, TickSpacing -> 0.1, Ticks -> None, FlipTicks -> {}, FrameStyle -> None,
+  HighlightStyle -> {}, MeshStyle -> None, ItemFunction -> Auto, ItemStyleFunction -> None,
+  TicksStyle -> Auto, TickSpacing -> 0.1, Ticks -> None, FlipTicks -> {}, FrameStyle -> None,
   PlotLabel -> None
 };
 
-CubeGrid[args___] := CubeArray[args, CubeGap -> 0, CubeStyle -> None, MeshStyle -> Automatic];
+CubeGrid[args___] := CubeArray[args, CubeGap -> 0, CubeStyle -> None, MeshStyle -> Auto];
 
 $defaultCubeStyle := Directive[FaceForm[GrayLevel[0.9]], EdgeForm[{AbsoluteThickness[1], GrayLevel[0.5]}]];
 
@@ -184,7 +184,7 @@ CubeArray[dims_List, opts:OptionsPattern[]] := Scope[
   SetAutomatic[meshStyle, $defaultMeshStyle];
 
   attachPlotLabel[dims, plotLabel] @ 
-  ReplaceAll[Annotation[a_, _] :> a] @
+  RepAll[Annotation[a_, _] :> a] @
   attachLabelAxes[dims, labelAxes, axesOptions] @
   attachSpanHighlights[dims, spanHighlights, False] @
   attachTicks[dims, opts] @
@@ -255,7 +255,7 @@ PublicOption[Displacement, TextOrientation]
 
 Options[InsetCubeGrid] = JoinOptions[
   TextOrientation -> "Screen",
-  FontSize -> Automatic, FontFamily -> Automatic, FontColor -> Automatic, FontWeight -> Automatic,
+  FontSize -> Auto, FontFamily -> Auto, FontColor -> Auto, FontWeight -> Auto,
   Displacement -> {0, 0, 0}, ViewVector -> {-2, -1.5, 2.5},
   CubeGrid
 ];
@@ -263,9 +263,9 @@ Options[InsetCubeGrid] = JoinOptions[
 InsetCubeGrid[arr_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[textOrientation, displacement, viewVector];
   insetOpts = Sequence[FlipX -> False, FlipY -> False, FilterOptions[PlaneInset, opts]];
-  displacement //= Replace["Screen" -> viewVector/4];
+  displacement //= Rep["Screen" -> viewVector/4];
   CubeArray[
-    Dimensions @ arr,
+    Dims @ arr,
     ItemFunction -> Fn[{
       $defaultItemFunction[#1],
       Style[PlaneInset[Extract[arr, #2], #1 + displacement, textOrientation, insetOpts], Opacity[1]]
@@ -283,17 +283,17 @@ Options[ColoredCubeGrid] = Options[ColoredCubeArray] = JoinOptions[
   CubeArray
 ];
 
-ColoredCubeGrid[args___] := ColoredCubeArray[args, CubeGap -> 0, CubeStyle -> None, CubeOpacity -> 1, MeshStyle -> Automatic];
+ColoredCubeGrid[args___] := ColoredCubeArray[args, CubeGap -> 0, CubeStyle -> None, CubeOpacity -> 1, MeshStyle -> Auto];
 
 ColoredCubeArray[array_List /; ArrayQ[array, 3], opts:OptionsPattern[]] := Scope[
-  ColoredCubeArray[Extract[array, #]&, Dimensions @ array, opts]
+  ColoredCubeArray[Extract[array, #]&, Dims @ array, opts]
 ];
  
 ColoredCubeArray[cfunc_, dims:{__Int}, opts:OptionsPattern[]] := Scope[
 
   UnpackOptions[colorRules];
 
-  If[ListQ[colorRules], cfunc = cfunc /* Replace[Append[colorRules, _ -> None]]];
+  If[ListQ[colorRules], cfunc = cfunc /* Rep[App[colorRules, _ -> None]]];
 
   CubeArray[dims, ItemStyleFunction -> cfunc, FilterOptions @ opts]
 
@@ -304,7 +304,7 @@ PublicFunction[ColoredCubeArray]
 
 ColoredCubeArray[spec:(_List | _Rule), dims_List, opts:OptionsPattern[]] :=
   ColoredCubeArray[
-    Replace[Append[_ -> None] @ highlightSpecToRules[dims, spec]],
+    Rep[App[_ -> None] @ highlightSpecToRules[dims, spec]],
     dims,
     opts
   ];
@@ -330,7 +330,7 @@ attachSpanHighlights[dims_, {} | None, _][e_] := e;
 attachSpanHighlights[dims_, spans_, hide_][array_] := Scope[
   rules = highlightSpecToRules[dims, spans];
   spans = makeSpanningCuboid @@@ rules;
-  pattern = Alternatives @@ Keys[rules];
+  pattern = Alt @@ Keys[rules];
   If[hide, array = array /. Annotation[_, AnnotatedCoordinates[_, pattern]] -> {}];
   {array, spans}
 ,
@@ -356,8 +356,8 @@ CubeAxes::badlabelpos = "Unrecognized LabelPosition ``.";
 
 Options[CubeAxes] = {
   LabelPosition -> "Near",
-  InsetScale -> 1/144, BaseStyle -> Automatic,
-  FontSize -> Automatic, IncludeArrow -> False,
+  InsetScale -> 1/144, BaseStyle -> Auto,
+  FontSize -> Auto, IncludeArrow -> False,
   CubeOffset -> 0.1, HideTrivialAxes -> True,
   Spacing -> 0
 };
@@ -368,7 +368,7 @@ CubeAxes[origin_, size_, {lx_, ly_, lz_}, OptionsPattern[]] := Scope[
   If[FreeQ[baseStyle, FontSize], SetAutomatic[fontSize, 24]];
   If[NumberQ[fontSize], baseStyle //= ReplaceOptions[FontSize -> fontSize]];
   If[MatchQ[labelPosition, Placed[_Str, _]],
-    labelScale = PN[labelPosition]; labelPosition //= P1,
+    labelScale = L[labelPosition]; labelPosition //= F,
     labelScale = 0
   ];
   spec = Lookup[$cubeAxesOrient, labelPosition, ReturnFailed["badlabelpos", orient]];
@@ -419,7 +419,7 @@ faceNameToIndex = Case[
 ];
 
 Options[CubeEdgeText] = {
-  FlipX -> Automatic, FlipY -> False, InsetScale -> 1/144, BaseStyle -> {}, IncludeArrow -> False, CubeOffset -> 1/10,
+  FlipX -> Auto, FlipY -> False, InsetScale -> 1/144, BaseStyle -> {}, IncludeArrow -> False, CubeOffset -> 1/10,
   Spacing -> 0
 };
 
@@ -442,7 +442,7 @@ cubeText1[text_, origin_, {dx_, dy_}, {fx_, fy_}, opts___] := Scope[
   arrow = Lookup[{opts}, IncludeArrow, False];
   arrow = Switch[arrow,
     False, 0,
-    True | Automatic, Sign[fx],
+    True | Auto, Sign[fx],
     All, All,
     _, Sign @ arrow
   ];

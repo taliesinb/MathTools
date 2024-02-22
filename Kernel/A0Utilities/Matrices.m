@@ -1,8 +1,8 @@
 PublicFunction[FormalSymbolArray]
 
 $formalsRoman = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-FormalSymbolArray[dims_, str_Str] := FormalSymbolArray[dims, P11 @ StringPosition[$formalsRoman, str] - 1];
-FormalSymbolArray[dims_, offset_:0] := Block[{n = 0 + offset}, Array[Symbol @ FromCharacterCode[63488 + n++]&, dims]];
+FormalSymbolArray[dims_, str_Str] := FormalSymbolArray[dims, P11 @ SFind[$formalsRoman, str] - 1];
+FormalSymbolArray[dims_, offset_:0] := Block[{n = 0 + offset}, Array[Symbol @ FromCharCode[63488 + n++]&, dims]];
 
 (**************************************************************************************************)
 
@@ -23,11 +23,11 @@ LevelPart[array_, 4 -> part_] := Part[array, All, All, All, part];
 LevelPart[array_, 5 -> part_] := Part[array, All, All, All, All, part];
 
 LevelPart[array_, depth_Int -> part_] :=
-  Part[array, Append[Repeat[All, If[depth < 0, depth + ArrayDepth[array], depth - 1]], part]];
+  Part[array, App[Repeat[All, If[depth < 0, depth + ArrayDepth[array], depth - 1]], part]];
 
 LevelPart[array_, spec_List] := Scope[
   part = Repeat[All, ArrayDepth @ array];
-  Part[array, Sequence @@ ReplacePart[part, spec]]
+  Part[array, Sequence @@ RepPart[part, spec]]
 ]
 
 LevelPart[spec_][array_] := LevelPart[array, spec];
@@ -137,7 +137,7 @@ PrependColumn[matrix$, column$] gives a matrix in which the list column$ has bee
 PrependColumn[column$] is the operator form of PrependColumn.
 "
 
-PrependColumn[matrix_, column_] := Transpose @ Prepend[Transpose @ matrix, column];
+PrependColumn[matrix_, column_] := Transpose @ Pre[Transpose @ matrix, column];
 PrependColumn[column_][matrix_] := PrependColumn[matrix, column];
 
 (**************************************************************************************************)
@@ -149,7 +149,7 @@ AppendColumn[matrix$, column$] gives a matrix in which the list column$ has been
 AppendColumn[column$] is the operator form of AppendColumn.
 "
 
-AppendColumn[matrix_, column_] := Transpose @ Append[Transpose @ matrix, column];
+AppendColumn[matrix_, column_] := Transpose @ App[Transpose @ matrix, column];
 AppendColumn[column_][matrix_] := AppendColumn[matrix, column];
 
 (**************************************************************************************************)
@@ -180,14 +180,14 @@ DeleteColumn[n_][matrix_] := DeleteColumn[matrix, n];
 
 PublicFunction[AppendConstantColumn]
 
-AppendConstantColumn[matrix_, item_] := Map[Append[item], matrix];
+AppendConstantColumn[matrix_, item_] := Map[App[item], matrix];
 AppendConstantColumn[item_][matrix_] := AppendConstantColumn[matrix, item];
 
 (**************************************************************************************************)
 
 PublicFunction[PrependConstantColumn]
 
-PrependConstantColumn[matrix_, item_] := Map[Prepend[item], matrix];
+PrependConstantColumn[matrix_, item_] := Map[Pre[item], matrix];
 PrependConstantColumn[item_][matrix_] := PrependConstantColumn[matrix, item];
 
 (**************************************************************************************************)
@@ -201,21 +201,21 @@ InsertConstantColumn[item_, n_][matrix_] := InsertConstantColumn[matrix, item, n
 
 PublicFunction[AppendConstantRow]
 
-AppendConstantRow[matrix_, item_] := Append[matrix, Repeat[item, Len @ P1 @ matrix]];
+AppendConstantRow[matrix_, item_] := App[matrix, Repeat[item, Len @ F @ matrix]];
 AppendConstantRow[item_][matrix_] := AppendConstantRow[matrix, item];
 
 (**************************************************************************************************)
 
 PublicFunction[PrependConstantRow]
 
-PrependConstantRow[matrix_, item_] := Prepend[matrix, Repeat[item, Len @ P1 @ matrix]];
+PrependConstantRow[matrix_, item_] := Pre[matrix, Repeat[item, Len @ F @ matrix]];
 PrependConstantRow[item_][matrix_] := PrependConstantRow[matrix, item];
 
 (**************************************************************************************************)
 
 PublicFunction[InsertConstantRow]
 
-InsertConstantRow[matrix_, item_, n_] := Insert[matrix, Repeat[item, Len @ P1 @ matrix], n];
+InsertConstantRow[matrix_, item_, n_] := Insert[matrix, Repeat[item, Len @ F @ matrix], n];
 InsertConstantRow[item_, n_][matrix_] := InsertConstantRow[matrix, item, n];
 
 (**************************************************************************************************)
@@ -226,13 +226,13 @@ PublicFunction[Matrix]
 
 SetHoldAll[Matrix];
 Matrix[CompoundExpression[a___]] := Map[List, List[a]];
-Matrix[elements___] := SequenceSplit[Flatten[Unevaluated[{elements}] /. HoldPattern[CompoundExpression[a__]] :> Riffle[{a}, EndOfRow]], {EndOfRow}];
+Matrix[elements___] := SequenceSplit[Flatten[Uneval[{elements}] /. HoldP[CompoundExpression[a__]] :> Riffle[{a}, EndOfRow]], {EndOfRow}];
 
 (**************************************************************************************************)
 
 PublicFunction[InnerDimension]
 
-InnerDimension[array_] := PN @ Dimensions @ array;
+InnerDimension[array_] := L @ Dims @ array;
 
 (**************************************************************************************************)
 (** Common matrix predicates                                                                      *)
@@ -252,7 +252,7 @@ ZerosQ[m_] := FreeQ[m, Complex] && MinMax[m] === {0, 0};
 
 PublicFunction[NumericVectorQ, CoordinateVectorQ, CoordinateVector2DQ, CoordinateVector3DQ]
 
-NumericVectorQ[e_List] := VectorQ[e, NumericQ];
+NumericVectorQ[e_List] := VecQ[e, NumericQ];
 
 CoordinateVectorQ[{Repeated[_ ? NumericQ, {2, 3}]}] := True;
 CoordinateVectorQ[{_ ? NumericQ, _ ? NumericQ}, 2] := True;
@@ -283,7 +283,7 @@ CoordinatePair3DQ[___] := False;
 PublicFunction[AnyMatrixQ, NumericMatrixQ, CoordinateMatrixQ, CoordinateMatrix2DQ, CoordinateMatrix3DQ]
 
 AnyMatrixQ[{} | {{}}] := True;
-AnyMatrixQ[list_List] := Len[Dimensions[list, 2]] == 2;
+AnyMatrixQ[list_List] := Len[Dims[list, 2]] == 2;
 
 NumericMatrixQ[matrix_List] := MatrixQ[matrix, NumericQ];
 
@@ -302,17 +302,17 @@ CoordinateMatrix3DQ[___] := False;
 
 PublicFunction[AnyMatricesQ, NumericMatricesQ, CoordinateMatricesQ, CoordinateMatrices2DQ, CoordinateMatrices3DQ]
 
-AnyMatricesQ[list_List] := VectorQ[list, AnyMatrixQ];
+AnyMatricesQ[list_List] := VecQ[list, AnyMatrixQ];
 
-NumericMatricesQ[list_List] := VectorQ[list, NumericMatrixQ];
+NumericMatricesQ[list_List] := VecQ[list, NumericMatrixQ];
 
-CoordinateMatricesQ[list_List] := VectorQ[list, CoordinateMatrixQ];
-CoordinateMatricesQ[list_List, 2] := VectorQ[list, CoordinateMatrix2DQ];
-CoordinateMatricesQ[list_List, 3] := VectorQ[list, CoordinateMatrix3DQ];
-CoordinateMatricesQ[list_List, n_] := VectorQ[list, CoordinateMatrixQ[#, n]&];
+CoordinateMatricesQ[list_List] := VecQ[list, CoordinateMatrixQ];
+CoordinateMatricesQ[list_List, 2] := VecQ[list, CoordinateMatrix2DQ];
+CoordinateMatricesQ[list_List, 3] := VecQ[list, CoordinateMatrix3DQ];
+CoordinateMatricesQ[list_List, n_] := VecQ[list, CoordinateMatrixQ[#, n]&];
 
-CoordinateMatrices2DQ[list_List] := VectorQ[list, CoordinateMatrix2DQ];
-CoordinateMatrices3DQ[list_List] := VectorQ[list, CoordinateMatrix3DQ];
+CoordinateMatrices2DQ[list_List] := VecQ[list, CoordinateMatrix2DQ];
+CoordinateMatrices3DQ[list_List] := VecQ[list, CoordinateMatrix3DQ];
 
 AnyMatricesQ[___] := False;
 NumericMatricesQ[___] := False;
@@ -453,7 +453,7 @@ TranslationMatrix[vector_, mod_] :=
   ModForm[TranslationMatrix @ vector, mod];
 
 TranslationMatrix[vector_, mod_List] := Scope[
-  modMatrix = ZeroMatrix[Len[vector] + 1] + Infinity;
+  modMatrix = ZeroMatrix[Len[vector] + 1] + Inf;
   modMatrix[[;;-2, -1]] = mod;
   ModForm[TranslationMatrix @ vector, modMatrix]
 ];
@@ -470,7 +470,7 @@ UnitTranslationMatrix[n_, k_] :=
 PublicFunction[RedundantUnitTranslationMatrix]
 
 RedundantUnitTranslationMatrix[n_, k_] :=
-  ReplacePart[IdentityMatrix[n + 1], {{k, n + 1} -> 1, {Mod[k + 1, n, 1], n + 1} -> -1}];
+  RepPart[IdentityMatrix[n + 1], {{k, n + 1} -> 1, {Mod[k + 1, n, 1], n + 1} -> -1}];
 
 (**************************************************************************************************)
 
@@ -523,8 +523,8 @@ typedOne = Case[
 ];
 
 AppendOnes = Case[
-  array_ ? VectorQ :=
-    Append[array, typedOne @ Part[array, 1]];
+  array_ ? VecQ :=
+    App[array, typedOne @ Part[array, 1]];
   array_ ? MatrixQ :=
     ToPacked @ ArrayFlatten @ {{array, typedOne @ Part[array, 1, 1]}};
   _ := $Failed;
@@ -535,7 +535,7 @@ AppendOnes = Case[
 PublicFunction[Zeros, ZerosLike]
 
 Zeros[i_] := Repeat[0, i];
-ZerosLike[arr_] := Repeat[0, Dimensions @ arr];
+ZerosLike[arr_] := Repeat[0, Dims @ arr];
 
 (**************************************************************************************************)
 
@@ -549,10 +549,10 @@ BasisScalingMatrix[n_, rules_] :=
 PublicFunction[ReplaceDiagonalPart]
 
 ReplaceDiagonalPart[matrix_, rules_List] :=
-  ReplacePart[matrix, {#1, #1} -> #2& @@@ rules];
+  RepPart[matrix, {#1, #1} -> #2& @@@ rules];
 
 ReplaceDiagonalPart[matrix_, i_ -> v_] :=
-  ReplacePart[matrix, {i, i} -> v];
+  RepPart[matrix, {i, i} -> v];
 
 (**************************************************************************************************)
 
@@ -563,8 +563,8 @@ AugmentedIdentityMatrix[n$, {i$, j$}] represents the identity n$ \[Times] n$ mat
 AugmentedIdentityMatrix[n$, {{i$1, j$1}, {i$2, j$2}, $$}}] puts additional ones at several positions.
 "
 
-AugmentedIdentityMatrix[n_, {i_, j_}] := ReplacePart[IdentityMatrix[n], {i, j} -> 1];
-AugmentedIdentityMatrix[n_, list_List] := ReplacePart[IdentityMatrix[n], list -> 1];
+AugmentedIdentityMatrix[n_, {i_, j_}] := RepPart[IdentityMatrix[n], {i, j} -> 1];
+AugmentedIdentityMatrix[n_, list_List] := RepPart[IdentityMatrix[n], list -> 1];
 
 (**************************************************************************************************)
 (** Padding                                                                                       *)
@@ -588,7 +588,7 @@ PublicFunction[PadColumns]
 
 PadColumns[ragged_, n_, item_] := Scope[
   full = PadRows[ragged, item];
-  w = Len @ P1 @ full;
+  w = Len @ F @ full;
   padToLength[n, Repeat[item, w]] @ full
 ]
 
@@ -623,7 +623,7 @@ FindDiagonalBlockPositions[matrices_] := Scope[
   If[FreeQ[isZeroR, True] || FreeQ[isZeroD, True], Return[{{1, n}}]];
   pos = 1;
   blockPositions = {};
-  While[IntegerQ[pos] && pos <= n,
+  While[IntQ[pos] && pos <= n,
     lastPos = pos;
     pos = firstTrueInRange[
       next |-> And[
@@ -632,7 +632,7 @@ FindDiagonalBlockPositions[matrices_] := Scope[
       ],
       pos, n2
     ];
-    AppendTo[blockPositions, {lastPos, pos}];
+    AppTo[blockPositions, {lastPos, pos}];
     pos += 1;
   ];
   blockPositions
@@ -652,7 +652,7 @@ FindDiagonalBlocks[matrices_] := Scope[
 PublicFunction[DiagonalBlock]
 
 DiagonalBlock[matrix_ ? MatrixQ, {i_, j_}] := Part[matrix, i;;j, i;;j];
-DiagonalBlock[matrixList_ /; VectorQ[matrixList, MatrixQ], {i_, j_}] := Part[matrixList, All, i;;j, i;;j];
+DiagonalBlock[matrixList_ /; VecQ[matrixList, MatrixQ], {i_, j_}] := Part[matrixList, All, i;;j, i;;j];
 
 DiagonalBlock[obj_, list:{__List}] := Map[DiagonalBlock[obj, #]&, list];
 
@@ -788,7 +788,7 @@ PublicFunction[MinimumDistance]
 MinimumDistance[{}] := 0;
 MinimumDistance[coords_] := Scope[
   dists = DistanceMatrix[N @ coords];
-  Min @ DeleteCases[Flatten @ dists, 0|0.]
+  Min @ Decases[Flatten @ dists, 0|0.]
 ];
 
 (**************************************************************************************************)

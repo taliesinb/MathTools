@@ -8,15 +8,15 @@ CardinalList[quiver$] returns the list of cardinals in a quiver.
 
 CardinalList[graph_Graph] := None;
 
-CardinalList[graph_Graph ? EdgeTaggedGraphQ] := Replace[
+CardinalList[graph_Graph ? EdgeTaggedGraphQ] := Rep[
   AnnotationValue[graph, Cardinals],
-  ($Failed | Automatic) :> extractCardinals[graph]
+  ($Failed | Auto) :> extractCardinals[graph]
 ];
 
 CardinalList[edges_List] :=
-  DeleteDuplicates @ SpliceCardinalSets @ UniqueCases[edges, DirectedEdge[_, _, c_] :> c];
+  Dedup @ SpliceCardinalSets @ UniqueCases[edges, DirectedEdge[_, _, c_] :> c];
 
-extractCardinals[graph_] := DeleteCases[Union @ SpliceCardinalSets @ EdgeTags @ graph, Null];
+extractCardinals[graph_] := Decases[Union @ SpliceCardinalSets @ EdgeTags @ graph, Null];
 
 (**************************************************************************************************)
 
@@ -28,7 +28,7 @@ TaggedAdjacencyMatrices[graph_ ? EdgeTaggedGraphQ, OptionsPattern[]] := Scope[
   n = VertexCount @ graph;
   assoc = EdgePairsToAdjacencyMatrix[#, n]& /@ TaggedEdgePairs[graph];
   If[OptionValue["Antisymmetric"],
-    JoinTo[assoc, Assoc @ KeyValueMap[Inverted[#1] -> Transpose[#2]&, assoc]];
+    JoinTo[assoc, Assoc @ KVMap[Inverted[#1] -> Transpose[#2]&, assoc]];
   ];
   assoc
 ]
@@ -40,7 +40,7 @@ PublicFunction[TaggedEdgePairs]
 TaggedEdgePairs[graph_ ? EdgeTaggedGraphQ] :=
   GroupBy[
     EdgeList @ ToIndexGraph @ graph,
-    PN -> Fn[{Part[#, 1], Part[#, 2]}]
+    L -> Fn[{Part[#, 1], Part[#, 2]}]
   ]
 
 TaggedEdgePairs[graph_, "Directed"] := TaggedEdgePairs[graph];
@@ -48,7 +48,7 @@ TaggedEdgePairs[graph_, "Directed"] := TaggedEdgePairs[graph];
 TaggedEdgePairs[graph_ ? EdgeTaggedGraphQ, "Undirected"] :=
   GroupBy[
     EdgeList @ ToIndexGraph @ graph,
-    PN -> Fn[Splice[{{Part[#, 1], Part[#, 2]}, {Part[#, 2], Part[#, 1]}}]],
+    L -> Fn[Splice[{{Part[#, 1], Part[#, 2]}, {Part[#, 2], Part[#, 1]}}]],
     Id
   ]
 
@@ -57,7 +57,7 @@ TaggedEdgePairs[graph_ ? EdgeTaggedGraphQ, "Undirected"] :=
 PublicFunction[TaggedEdgeLists]
 
 TaggedEdgeLists[graph_ ? EdgeTaggedGraphQ] :=
-  GroupBy[EdgeList @ graph, PN]
+  GroupBy[EdgeList @ graph, L]
 
 (**************************************************************************************************)
 
@@ -80,10 +80,10 @@ TagIndices[graph_, Signed -> isSigned_] := Scope[
 $isTISigned = False;
 
 processTagEntry[tag_, {part_}] :=
-  KeyAppendTo[$tagAssoc, tag, part];
+  KAppTo[$tagAssoc, tag, part];
 
 processTagEntry[CardinalSet[tags_], {part_}] :=
-  Scan[KeyAppendTo[$tagAssoc, If[$isTISigned, Id, StripInverted] @ #1, part]&, tags];
+  Scan[KAppTo[$tagAssoc, If[$isTISigned, Id, StripInverted] @ #1, part]&, tags];
 
 
 (**************************************************************************************************)
@@ -237,11 +237,11 @@ tagVertexAdjacentEdgeTableInternal[graph_, none_, signed_] := Scope[
     ),
     {EdgePairs @ graph, tagInds, invTagInds}
   ];
-  AssociationThread[cardinals, ToPacked /@ vectors]
+  AssocThread[cardinals, ToPacked /@ vectors]
 ];
 
 (**************************************************************************************************)
 
 PublicFunction[EdgeTagAssociation]
 
-EdgeTagAssociation[graph_] := AssociationThread[{#1, #2}& @@@ EdgeList[graph], EdgeTags @ graph];
+EdgeTagAssociation[graph_] := AssocThread[{#1, #2}& @@@ EdgeList[graph], EdgeTags @ graph];

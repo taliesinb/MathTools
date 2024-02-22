@@ -1,14 +1,14 @@
 PublicFunction[CreateMarkdownTable]
 
 CreateMarkdownTable[grid_List, headings_List] := Scope[
-  columns = Transpose @ Prepend[grid, headings];
-  widths = Max[StringLength[#]]& /@ columns;
-  columns = MapThread[StringPadRight, {columns, widths}];
-  columns = MatrixMap[StringJoin[" ", #, " "]&, columns];
-  columns = MapThread[Insert[#, StringRepeat["-", #2 + 2], 2]&, {columns, widths}];
+  columns = Transpose @ Pre[grid, headings];
+  widths = Max[SLen[#]]& /@ columns;
+  columns = MapThread[SPadRight, {columns, widths}];
+  columns = MatrixMap[SJoin[" ", #, " "]&, columns];
+  columns = MapThread[Insert[#, SRepeat["-", #2 + 2], 2]&, {columns, widths}];
   rows = Transpose @ columns;
-  rows = Map[row |-> StringJoin[Append["|"] @ Map[{"|", #}&, row]], rows];
-  StringRiffle[rows, "\n"]
+  rows = Map[row |-> SJoin[App["|"] @ Map[{"|", #}&, row]], rows];
+  SRiffle[rows, "\n"]
 ];
 
 (**************************************************************************************************)
@@ -62,7 +62,7 @@ ExportToMarkdown[inputSpec_, opts:OptionsPattern[]] := Scope @ CatchMessage[
 
   $dryRun = $dryRun =!= False;
   SetAutomatic[$verbose, $dryRun];
-  VPrint["ExportToMarkdown[\n", "  ", ToPrettifiedString @ inputSpec, ", ", StringTake[ToPrettifiedString @ {DeleteDuplicateOptionKeys @ opts}, 2;;-2], "]"];
+  VPrint["ExportToMarkdown[\n", "  ", ToPrettifiedString @ inputSpec, ", ", STake[ToPrettifiedString @ {DeleteDuplicateOptionKeys @ opts}, 2;;-2], "]"];
   If[$verbose === "KeyModifiers", $verbose = ModifierKeysPressedQ[]];
   
   (* input will be a NotebookObject or list of File objects *)
@@ -89,21 +89,21 @@ ExportToMarkdown[inputSpec_, opts:OptionsPattern[]] := Scope @ CatchMessage[
   $markdownPath      //= ToAbsolutePath[$baseExportPath];
   $katexPreludePath  //= ToAbsolutePath[$baseExportPath];
 
-  If[ListQ[input] && maxItems =!= Infinity,
-    input = If[IntegerQ[maxItems], Take[input, UpTo @ maxItems], Take[input, maxItems]]];
+  If[ListQ[input] && maxItems =!= Inf,
+    input = If[IntQ[maxItems], Take[input, UpTo @ maxItems], Take[input, maxItems]]];
   If[input === {}, ReturnFailed["emptyinp"]];
 
   VPrint["Rasterizing to ", MsgPath @ $rasterizationPath, " embedded as \"", $rasterizationURL, "\""];
-  ensureDirectory[{$rasterizationPath, $markdownPath, If[StringQ[$katexPreludePath], FileNameDrop @ $katexPreludePath, None]}];
+  ensureDirectory[{$rasterizationPath, $markdownPath, If[StrQ[$katexPreludePath], FileNameDrop @ $katexPreludePath, None]}];
 
-  If[StringQ[$katexPreludePath],
+  If[StrQ[$katexPreludePath],
     VPrint["Writing prelude to ", MsgPath @ $katexPreludePath, "."];
     prelude = $KatexPrelude;
-    If[StringEndsQ[$katexPreludePath, ".md"],
+    If[SEndsQ[$katexPreludePath, ".md"],
       prelude = $markdownPostprocessor @ $multilineMathTemplate @ $katexPostprocessor @ prelude];
     whenWet[
       EnsureDirectory @ FileNameDrop @ $katexPreludePath;
-      ExportUTF8[$katexPreludePath, StringReplace[prelude, "\n" -> " "]];
+      ExportUTF8[$katexPreludePath, SRep[prelude, "\n" -> " "]];
     ];
   ];
 
@@ -125,7 +125,7 @@ ensureDirectory[dir_Str] :=
   ];
 
 enumerateFiles[spec___, path_] := Scope[
-  files = FileNames[spec, path, Infinity] // Select[StringFreeQ["XXX"]];
+  files = FileNames[spec, path, Inf] // Select[SFreeQ["XXX"]];
   files = File /@ files;
   If[files === {}, ThrowMessage["emptynbdir", MsgPath @ path]];
   files
@@ -158,7 +158,7 @@ exportItemTo[item_, mdPath_] := Scope[
     result = toMarkdownStringInner @ item,
     Message[ExportToMarkdown::msgs, dbgSpec];
   ];
-  If[!StringQ[result], ThrowMessage["nbmdfail", dbgSpec]];
+  If[!StrQ[result], ThrowMessage["nbmdfail", dbgSpec]];
   If[$dryRun, mdPath, ExportUTF8[mdPath, result]]
 ];
 
@@ -172,11 +172,11 @@ General::badnbpath = "There is no path associated with the given notebook."
 itemMarkdownPath[item_] := Scope[
   nbPath = ToNotebookPath @ item;
   If[FailureQ[nbPath], ThrowFailure["badnbpath"]];
-  mdFileName = StringJoin[titleToURL @ FileBaseName @ nbPath, ".md"];
+  mdFileName = SJoin[titleToURL @ FileBaseName @ nbPath, ".md"];
 
   (* if there is a BaseNotebookPath set, we will extract the difference between item's path and it,
   and use this fragment as a prefix for the output path *)
-  If[StringQ[$baseNotebookPath] && $baseNotebookPath =!= "",
+  If[StrQ[$baseNotebookPath] && $baseNotebookPath =!= "",
     relPath = RelativePath[$baseNotebookPath, FileNameDrop @ nbPath];
     relPath //= ReplaceNone[""]; (* paths outside $baseNotebookPath will be put at top level *)
     mdFileName = PathJoin[ToLowerCase @ relPath, mdFileName];
@@ -184,7 +184,7 @@ itemMarkdownPath[item_] := Scope[
 
   If[$exportPathFunction =!= None,
     mdFileName //= $exportPathFunction;
-    If[!StringQ[mdFileName], ThrowMessage["badexppf"]];
+    If[!StrQ[mdFileName], ThrowMessage["badexppf"]];
   ];
 
   PathJoin[$markdownPath, mdFileName]

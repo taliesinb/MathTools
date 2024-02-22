@@ -4,7 +4,7 @@ PublicOption[ZVector]
 
 Options[MeshLines] = {
   MeshStyle -> $Gray,
-  FrameStyle -> Automatic,
+  FrameStyle -> Auto,
   Background -> None,
   ItemSize -> 1,
   Dividers -> True,
@@ -16,7 +16,7 @@ MeshLines[{xmin_, ymin_}, {ncols_, nrows_}, OptionsPattern[]] := CatchMessage @ 
   UnpackTuple[itemSize, cellw, cellh];
   UnpackTuple[dividers, framew, frameh];
   {xmax, ymax} = {xmin, ymin} + {ncols, nrows} * {cellw, cellh};
-  SetAutomatic[frameStyle, FirstCase[meshStyle, c_ ? ColorQ :> Darker[c, .2], $DarkGray, {0, Infinity}]];
+  SetAutomatic[frameStyle, FirstCase[meshStyle, c_ ? ColorQ :> Darker[c, .2], $DarkGray, {0, Inf}]];
   {
     If[frameStyle === None, Nothing,
       Style[Rectangle[{xmin, ymin}, {xmax, ymax}], EdgeForm[frameStyle], FaceForm[background]]
@@ -47,7 +47,7 @@ PublicFunction[MeshLines3D]
 
 Options[MeshLines3D] = {
   MeshStyle -> $Gray,
-  FrameStyle -> Automatic,
+  FrameStyle -> Auto,
   Background -> None,
   ItemSize -> 1
 };
@@ -105,7 +105,7 @@ styleMesh[None, a_] := Nothing;
 styleMesh[{s___}, a_] := Style[a, s];
 styleMesh[s_, a_] := Style[a, s];
 
-meshToFrameStyle[meshStyle_] := FirstCase[meshStyle, c_ ? ColorQ :> Darker[c, .2], $DarkGray, {0, Infinity}];
+meshToFrameStyle[meshStyle_] := FirstCase[meshStyle, c_ ? ColorQ :> Darker[c, .2], $DarkGray, {0, Inf}];
 
 (**************************************************************************************************)
 
@@ -116,13 +116,13 @@ Options[MeshGrid] = JoinOptions[
   ItemFunction -> Id,
   ItemSize -> 1,
   ItemStyle -> None,
-  TicksStyle -> Automatic,
+  TicksStyle -> Auto,
   TickSpacing -> 0.1,
   Ticks -> None,
   HighlightItems -> None,
   HighlightOffset -> 0,
   AxesLabel -> None,
-  LabelStyle -> Automatic,
+  LabelStyle -> Auto,
   ZDimension -> None,
   Background -> None,
   MeshLines
@@ -136,7 +136,7 @@ $defaultTickStyle = {FontSize -> 20, FontColor -> $Gray, FontFamily -> "Avenir"}
 
 MeshGrid[{xmin2_, ymin2_}, array_ ? MatrixQ, opts:OptionsPattern[]] := Scope[
   {xmin, ymin} = {xmin2, ymin2};
-  {nrows, ncols} = Take[Dimensions @ array, 2];
+  {nrows, ncols} = Take[Dims @ array, 2];
   UnpackOptions[background, itemSize, itemFunction, itemStyle, highlightItems, highlightOffset, axesLabel, labelStyle];
   meshItems = MeshLines[{xmin, ymin}, {ncols, nrows}, FilterOptions @ opts];
   If[itemFunction =!= Id, array = Map[itemFunction, array, {2}]];
@@ -172,7 +172,7 @@ MeshGrid[{xmin2_, ymin2_}, array_ ? MatrixQ, opts:OptionsPattern[]] := Scope[
   If[highlightItems === None,
     highlightItems = Nothing;
   ,
-    hsize = 0.5 + highlightOffset; hsizex = First[hsize, hsize]; hsizey = Last[hsize, hsize];
+    hsize = 0.5 + highlightOffset; hsizex = F[hsize, hsize]; hsizey = L[hsize, hsize];
     xfunc = Part[xcoords, #] + {-1, 1}*hsizex*cellw&;
     yfunc = Part[ycoords, #] + {-1, 1}*hsizey*cellh&;
     highlightItems = Style[Map[toHighlightItem, ToList @ highlightItems], Opacity[0.3, $Red]];
@@ -203,8 +203,8 @@ toHighlightItem = Case[
 
 fromSpan[n_, i_Int]              := {1,1} * fromInt[n, i];
 fromSpan[n_, All]                    := {1, n};
-fromSpan[n_, i_ ;; All]              := Append[fromSpan[n, i], n];
-fromSpan[n_, All ;; i]               := Prepend[fromSpan[n, i], 1];
+fromSpan[n_, i_ ;; All]              := App[fromSpan[n, i], n];
+fromSpan[n_, All ;; i]               := Pre[fromSpan[n, i], 1];
 fromSpan[n_, i_Int ;; j_Int] := {fromInt[n, i], fromInt[n, j]};
 
 fromInt[n_, i_] := Which[i > n, n, i == 0, 1, i < 0, i + n + 1, True, i];

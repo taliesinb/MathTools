@@ -1,8 +1,8 @@
 PublicFunction[PostComposeFunction]
 
-PostComposeFunction[HoldPattern[Fn][body_], fn2_] := Fn[fn2[body]];
-PostComposeFunction[HoldPattern[Fn][var_, body_], fn2_] := Fn[var, fn2[body]];
-PostComposeFunction[HoldPattern[Fn][var_, body_, attr_], fn2_] := Fn[var, fn2[body], attr];
+PostComposeFunction[HoldP[Fn][body_], fn2_] := Fn[fn2[body]];
+PostComposeFunction[HoldP[Fn][var_, body_], fn2_] := Fn[var, fn2[body]];
+PostComposeFunction[HoldP[Fn][var_, body_, attr_], fn2_] := Fn[var, fn2[body], attr];
 PostComposeFunction[fn_, fn2_] := fn /* fn2;
 
 (**************************************************************************************************)
@@ -10,13 +10,13 @@ PostComposeFunction[fn_, fn2_] := fn /* fn2;
 PublicFunction[ConstructHoldComplete]
 
 ConstructHoldComplete[fn_Fn, args___] :=
-  PostComposeFunction[fn, HoldComplete][args];
+  PostComposeFunction[fn, HoldC][args];
 
 ConstructHoldComplete[Apply[fn_Fn], {args___}] :=
-  PostComposeFunction[fn, HoldComplete][args];
+  PostComposeFunction[fn, HoldC][args];
 
 ConstructHoldComplete[fn_, args___] :=
-  HoldComplete[fn[args]];
+  HoldC[fn[args]];
 
 (**************************************************************************************************)
 
@@ -93,15 +93,15 @@ MatrixMap[f_][matrix_] := Map[f, matrix, {2}];
 
 PublicFunction[VectorReplace]
 
-VectorReplace[vector_, rule_] := Replace[vector, rule, {1}];
-VectorReplace[rule_][vector_] := Replace[vector, rule, {1}];
+VectorReplace[vector_, rule_] := Rep[vector, rule, {1}];
+VectorReplace[rule_][vector_] := Rep[vector, rule, {1}];
 
 (**************************************************************************************************)
 
 PublicFunction[MatrixReplace]
 
-MatrixReplace[matrix_, rule_] := Replace[matrix, rule, {2}];
-MatrixReplace[rule_][matrix_] := Replace[matrix, rule, {2}];
+MatrixReplace[matrix_, rule_] := Rep[matrix, rule, {2}];
+MatrixReplace[rule_][matrix_] := Rep[matrix, rule, {2}];
 
 (**************************************************************************************************)
 
@@ -156,7 +156,7 @@ SetUsage @ "
 MapIndex1[f, arg] is equivalent to MapIndexed[f[#1, First[#2]]&, arg]
 "
 
-MapIndex1[f_, list_] := MapIndexed[Fn[{argX, partX}, f[argX, P1 @ partX]], list];
+MapIndex1[f_, list_] := MapIndexed[Fn[{argX, partX}, f[argX, F @ partX]], list];
 MapIndex1[f_][list_] := MapIndex1[f, list];
 
 (**************************************************************************************************)
@@ -169,22 +169,22 @@ MapIndexStack[f$, stack$] is the operator form of MapIndexStack.
 * This is useful to recurse over subexpressions while recording where you are.
 "
 
-MapIndexStack[f_, stack_, list_] := MapIndex1[f[#1, Append[stack, #2]]&, list];
+MapIndexStack[f_, stack_, list_] := MapIndex1[f[#1, App[stack, #2]]&, list];
 
 (**************************************************************************************************)
 
 PublicFunction[PartValueMap]
 
-PartValueMap[f_, list_List] := MapIndexed[Fn[{argX, partX}, f[P1 @ partX, argX]], list];
-PartValueMap[f_, assoc_Assoc] := KeyValueMap[f, assoc];
+PartValueMap[f_, list_List] := MapIndexed[Fn[{argX, partX}, f[F @ partX, argX]], list];
+PartValueMap[f_, assoc_Assoc] := KVMap[f, assoc];
 PartValueMap[f_][e_] := PartValueMap[f, e];
 
 (**************************************************************************************************)
 
 PublicFunction[PartValueScan]
 
-PartValueScan[f_, list_List] := (MapIndexed[Fn[{argX, partX}, f[P1 @ partX, argX];], list];)
-PartValueScan[f_, assoc_Assoc] := KeyValueScan[f, assoc];
+PartValueScan[f_, list_List] := (MapIndexed[Fn[{argX, partX}, f[F @ partX, argX];], list];)
+PartValueScan[f_, assoc_Assoc] := KVScan[f, assoc];
 PartValueScan[f_][e_] := PartValueScan[f, e];
 
 (**************************************************************************************************)
@@ -197,7 +197,7 @@ ScanIndex1[f$, arg$] is equivalent to ScanIndexed[f$[#1, First[#2]]&, arg$]
 "
 
 (* TODO: fix the hold limitation *)
-ScanIndex1[f_, list_] := (MapIndexed[Fn[{argX, partX}, f[argX, P1 @ partX];], list];)
+ScanIndex1[f_, list_] := (MapIndexed[Fn[{argX, partX}, f[argX, F @ partX];], list];)
 ScanIndex1[f_][list_] := ScanIndex1[f, list];
 
 (**************************************************************************************************)

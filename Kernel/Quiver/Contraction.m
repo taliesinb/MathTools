@@ -34,7 +34,7 @@ QuiverContractionLattice[quiver_, contractedGraphOptions_List, userOpts:OptionsP
 
   plotRangePadding = Lookup[contractedGraphOptions, PlotRangePadding, Inherited];
   plotRange = Lookup[contractedGraphOptions, PlotRange, GraphicsPlotRange[quiver, PlotRangePadding -> plotRangePadding]];
-  PrependTo[contractedGraphOptions, PlotRange -> plotRange];
+  PreTo[contractedGraphOptions, PlotRange -> plotRange];
 
   innerSize = LookupOption[contractedGraphOptions, ImageSize, 50];
   contractedGraphOptions = Sequence @@ contractedGraphOptions;
@@ -106,7 +106,7 @@ permittedTermQ[{a_, b_}] := Part[$permittedMatrix, a, b] == 1;
 permittedTermQ[set_] := AllTrue[Tuples[set, {2}], Extract[$permittedMatrix, #] == 1&];
 
 validQuiverPartitionQ[outTable_, partition_] := Scope[
-  rewrites = RuleThread[Alternatives @@@ partition, -Range[Len @ partition]];
+  rewrites = RuleThread[Alt @@@ partition, -Range[Len @ partition]];
   collapsedTable = outTable /. rewrites;
   Scan[
     subTable |-> Scan[checkForConflicts, ExtractIndices[subTable, partition]],
@@ -116,14 +116,14 @@ validQuiverPartitionQ[outTable_, partition_] := Scope[
 ];
 
 checkForConflicts[list_] :=
-  If[CountDistinct[DeleteDuplicates @ DeleteNone @ list] > 1, Return[False, Block]];
+  If[CountDistinct[Dedup @ DeleteNone @ list] > 1, Return[False, Block]];
 
 (**************************************************************************************************)
 
 PublicFunction[SpacelikeVertexRelationMatrix]
 
 SpacelikeVertexRelationMatrix[graph_Graph] := Scope[
-  dist = GraphDistanceMatrix[graph] /. {_Int -> 0, Infinity -> 1};
+  dist = GraphDistanceMatrix[graph] /. {_Int -> 0, Inf -> 1};
   dist = MapThread[Min, {dist, Transpose @ dist}, 2];
   ToPacked @ dist
 ];
@@ -172,7 +172,7 @@ QuiverContractionLatticeFast[quiver_, opts:OptionsPattern[]] := Scope[
     }];
   ];
   
-  If[StringQ[iconStyle] && computeIcons,
+  If[StrQ[iconStyle] && computeIcons,
     extraOpts = Sequence[
       VertexShapeFunction -> (iconStyle <> "Icon"),
       VertexSize -> iconSize, ImagePadding -> iconSize,
@@ -224,14 +224,14 @@ ContractionSetUnionLattice[contractionSets:{__List}, opts:OptionsPattern[]] := S
 ];
 
 combineTags[{edge_}] := edge;
-combineTags[edges_] := Append[Part[edges, 1, 1;;2], CardinalSet[Part[edges, All, 3]]];
+combineTags[edges_] := App[Part[edges, 1, 1;;2], CardinalSet[Part[edges, All, 3]]];
 
 contractionSetUnionCayleyFunction[generators_][contractionSet_] := Scope[
   MapIndexed[
     {gen, index} |-> If[SubsetQ[contractionSet, gen],
       Nothing,
       res = ContractionSetUnion[contractionSet, gen];
-      If[res === contractionSet, Nothing, Labeled[ContractionSetUnion[contractionSet, gen], P1 @ index]]
+      If[res === contractionSet, Nothing, Labeled[ContractionSetUnion[contractionSet, gen], F @ index]]
     ],
     generators
   ]
@@ -252,10 +252,10 @@ PublicFunction[ContractionSetAppend]
 ContractionSetAppend[contractionSet_, term_] := Scope[
   jointIndices = SelectIndices[contractionSet, IntersectingQ[term]];
   Sort @ If[jointIndices === {},
-    Append[contractionSet, term],
-    Append[
+    App[contractionSet, term],
+    App[
       Delete[contractionSet, List /@ jointIndices],
-      Union @@ Append[Part[contractionSet, jointIndices], term]
+      Union @@ App[Part[contractionSet, jointIndices], term]
     ]
   ]
 ];
@@ -288,7 +288,7 @@ SortContractionSet[contractionSet_, index_] :=
 PublicFunction[CompleteContractionSet]
 
 CompleteContractionSet[vertices_][contractionSet_] := Scope[
-  remaining = Complement[vertices, Union @@ contractionSet];
+  remaining = Comp[vertices, Union @@ contractionSet];
   SortContractionSet @ Join[contractionSet, List /@ remaining]
 ];
 
@@ -321,7 +321,7 @@ MinimalContractionSets[quiver_, OptionsPattern[]] := Scope[
   vertices = VertexRange @ quiver;
   vertexPairs = Subsets[vertices, subsetSize];
   alreadySeen = UAssoc[];
-  contractionSets = DeleteDuplicates @ Map[growTerms, vertexPairs];
+  contractionSets = Dedup @ Map[growTerms, vertexPairs];
   If[deleteDominated,
     contractionSets //= Discard[AnyTrue[contractionSets, contractionDominates[#]]&]];
   If[complete, contractionSets //= Map[CompleteContractionSet[vertices]]];
@@ -364,7 +364,7 @@ growTerms[init_] := Scope[
 checkSubset[subset_] := Scope[
   (* If[!$hs["Insert", Sort @ subset], Return[False]]; *)
   $dirty = False;
-  KeyValueMap[
+  KVMap[
     {card, table} |-> addTerm @ DeleteNone @ Part[table, subset],
     outTable
   ];
@@ -380,7 +380,7 @@ addTerm = Case[
   );
   elems_List := Block[{f, rest},
     Scan[$ds["Insert", #]&, elems];
-    f = P1 @ elems;
+    f = F @ elems;
     Scan[
       If[!$ds["CommonSubsetQ", f, #],
         $dirty = True;
@@ -411,7 +411,7 @@ VertexPartitionGraphics[graph_, partition_List, opts:OptionsPattern[]] := Scope[
     "Edges", makeEdgeCliqueGraphics,
     _, ReturnFailed[]
   ];
-  If[VectorQ[partition, IntegerVectorQ], termGraphicsFn, Map @ termGraphicsFn] @ partition
+  If[VecQ[partition, IntegerVectorQ], termGraphicsFn, Map @ termGraphicsFn] @ partition
 ]
 
 $partitionGraphicsOpts = Sequence[];

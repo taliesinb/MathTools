@@ -10,7 +10,7 @@ Options[ImportURLToMarkdown] = {
 
 ImportURLToMarkdown[url_Str, opts:OptionsPattern[]] := Scope[
   domain = ToLowerCase @ URLParse[url, "Domain"];
-  If[!StringQ[domain], ReturnFailed["badurl", MsgExpr @ url]];
+  If[!StrQ[domain], ReturnFailed["badurl", MsgExpr @ url]];
   Switch[
     StringTrimLeft[domain, "www."],
     "scholar.google.com",       ImportScholarPageToMarkdown[url, opts],
@@ -42,12 +42,12 @@ CreateBearArxivPages[assocs:{__Assoc}, opts:OptionsPattern[]] := Scope[
   assocs = ReverseSortBy[assocs, Key["Date"]];
   list = Map[assoc |-> (
     res = PaperToMarkdown[assoc, opts];
-    If[!StringQ[res], ReturnFailed["badmd", MsgExpr @ assoc]];
+    If[!StrQ[res], ReturnFailed["badmd", MsgExpr @ assoc]];
     CreateBearNote[res]
   ),
     assocs
   ];
-  StringRiffle[list, "\n"]
+  SRiffle[list, "\n"]
 ];
 
 (**************************************************************************************************)
@@ -67,29 +67,29 @@ Options[PopulateOrphanBearLinkNotes] = {
 PopulateOrphanBearLinkNotes[OptionsPattern[]] := Scope[
   UnpackOptions[$dryRun];
   {uuids, titles, extraText} = gatherLinkNoteData[$KnownNoteURLPatterns];
-  Print["Found ", Length @ uuids, " links."];
+  Print["Found ", Len @ uuids, " links."];
   MapThread[$i = 1; processOrphanLinkNote, {uuids, titles, extraText}]
 ];
 
 processOrphanLinkNote[uuid_, title_, extraText_] := Scope[
   Print[$i++, ": Processing note with title \"", title, "\""];
   link = FirstStringCase[title, HyperlinkPattern];
-  If[!StringQ[link], Print["Could not find link in title \"", title, "\""]; ReturnFailed[]];
+  If[!StrQ[link], Print["Could not find link in title \"", title, "\""]; ReturnFailed[]];
   markdown = ImportURLToMarkdown[link, AdditionalText -> extraText];
-  If[!StringQ[markdown], Print["Failed to create markdown."]; ReturnFailed[]];
+  If[!StrQ[markdown], Print["Failed to create markdown."]; ReturnFailed[]];
   If[$dryRun, Return @ markdown];
   res = ReplaceBearNote[uuid, markdown];
   If[FailureQ[res], Print["Failed to replace note."]; ReturnFailed[]];
-  noteTitle = StringTrimLeft[StringExtract[markdown, "\n" -> 1], "# "];
+  noteTitle = StringTrimLeft[SExtract[markdown, "\n" -> 1], "# "];
   noteTitle
 ];
 
 gatherLinkNoteData[pattern_] := Scope[
-  noteData = Reverse @ BearNoteData["Title" -> StringContainsQ[pattern], {"UUID", "Title", "Text", "CreationDate"}];
+  noteData = Rev @ BearNoteData["Title" -> SContainsQ[pattern], {"UUID", "Title", "Text", "CreationDate"}];
   noteUUIDs = Part[noteData, All, "UUID"];
   noteTitles = Part[noteData, All, "Title"];
   extraText = Map[
-    If[StringContainsQ[#Text, "\n"], StringDrop[#Text, First @ First @ StringPosition[#Text, "\n"]], ""]&,
+    If[SContainsQ[#Text, "\n"], SDrop[#Text, F @ F @ SFind[#Text, "\n"]], ""]&,
     noteData
   ];
   {noteUUIDs, noteTitles, extraText}
@@ -104,7 +104,7 @@ Options[CreateNoteFromURL] = JoinOptions[ImportURLToMarkdown, DuplicateTarget ->
 CreateNoteFromURL[url_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[duplicateTarget];
   res = ImportURLToMarkdown[url, FilterOptions @ opts];
-  If[!StringQ[res], ReturnFailed[]];
+  If[!StrQ[res], ReturnFailed[]];
   CreateBearNote[res, DuplicateTarget -> duplicateTarget]
 ];
 
@@ -119,8 +119,8 @@ CreateNotesFromURLList[urls:{__Str}, opts:OptionsPattern[]] := Scope[
     Quiet[CreateNoteFromURL[#, opts], {CreateBearNote::exists}]&,
     urls
   ];
-  If[!StringVectorQ[results], ReturnFailed[]];
-  StringRiffle[results, "\n"]
+  If[!StrVecQ[results], ReturnFailed[]];
+  SRiffle[results, "\n"]
 ]
 
 PublicIOFunction[CreateNotesFromClipboardList]
@@ -128,11 +128,11 @@ PublicIOFunction[CreateNotesFromClipboardList]
 CreateNotesFromClipboardList::skippedURLs = "Skipping unknown URLs: ``.";
 CreateNotesFromClipboardList[] := Scope[
   clipboard = PasteFromClipboard[];
-  urls = StringCases[clipboard, HyperlinkPattern];
-  If[!StringVectorQ[urls], ReturnFailed[]];
-  {urls, unknownURLs} = SelectDiscard[urls, StringContainsQ[$KnownNoteURLPatterns]];
+  urls = SCases[clipboard, HyperlinkPattern];
+  If[!StrVecQ[urls], ReturnFailed[]];
+  {urls, unknownURLs} = SelectDiscard[urls, SContainsQ[$KnownNoteURLPatterns]];
   If[unknownURLs =!= {}, Message[CreateNotesFromClipboardList::skippedURLs, MsgExpr @ unknownURLs]];
-  urls = DeleteDuplicates @ urls;
+  urls = Dedup @ urls;
   If[urls === {}, Return @ ""];
   CreateNotesFromURLList[urls]
 ];
@@ -141,28 +141,28 @@ CreateNotesFromClipboardList[] := Scope[
 
 PrivateFunction[IntStr2]
 
-IntStr2[n_] := IntegerString[n, 10, 2];
+IntStr2[n_] := IntStr[n, 10, 2];
 
 (**************************************************************************************************)
 
 PublicFunction[ToNoteDateString]
 
 ToNoteDateString = Case[
-  s_Str /; StringStartsQ[s, "#"]                                              := % @ StringTrimLeft[s, "#"];
-  s_Str /; StringMatchQ[s, DigitCharacter.. ~~ ("/" ~~ DigitCharacter...)...] := StrJoin["Y", intListToDateString @ StringSplit[s, "/"]];
-  DateObject[{y_}, "Year", ___]                          := StrJoin["Y", IntStr @ y];
-  DateObject[{y_, m_}, "Month", ___]                     := StrJoin["Y", IntStr @ y, "M", IntStr2 @ m];
-  DateObject[{y_, m_, d_}, "Day", ___]                   := StrJoin["Y", IntStr @ y, "M", IntStr2 @ m, "D", IntStr2 @ d];
-  DateObject[{y_, m_, d_, h_, min_, s_}, "Instant", ___] := StrJoin["Y", IntStr @ y, "M", IntStr2 @ m, "D", IntStr2 @ d, "H", IntStr2 @ h, "M", IntStr2 @ min, "S", IntStr2 @ Floor @ s];
+  s_Str /; SStartsQ[s, "#"]                                              := % @ StringTrimLeft[s, "#"];
+  s_Str /; SMatchQ[s, DigitCharacter.. ~~ ("/" ~~ DigitCharacter...)...] := SJoin["Y", intListToDateString @ SSplit[s, "/"]];
+  DateObject[{y_}, "Year", ___]                          := SJoin["Y", IntStr @ y];
+  DateObject[{y_, m_}, "Month", ___]                     := SJoin["Y", IntStr @ y, "M", IntStr2 @ m];
+  DateObject[{y_, m_, d_}, "Day", ___]                   := SJoin["Y", IntStr @ y, "M", IntStr2 @ m, "D", IntStr2 @ d];
+  DateObject[{y_, m_, d_, h_, min_, s_}, "Instant", ___] := SJoin["Y", IntStr @ y, "M", IntStr2 @ m, "D", IntStr2 @ d, "H", IntStr2 @ h, "M", IntStr2 @ min, "S", IntStr2 @ Floor @ s];
 ];
 
-numberListToDateString[tag_] := StringJoin["Y", tagListToDate @  StringSplit[StringTrimLeft[tag, "#"], "/"]];
+numberListToDateString[tag_] := SJoin["Y", tagListToDate @  SSplit[StringTrimLeft[tag, "#"], "/"]];
 
 $cenP = ("18" | "19" | "20");
-fullYearStrQ[s_] := StringMatchQ[s, $cenP ~~ DigitCharacter ~~ DigitCharacter];
-monthStrQ[s_] := StringMatchQ[s, DigitCharacter | ("0" ~~ DigitCharacter) | "10" | "11" | "12"];
-dayStrQ[s_] := StringMatchQ[s, DigitCharacter | ("0"|"1"|"2" ~~ DigitCharacter) | "30" | "31"];
-pad2[s_] := StringPadLeft[s, 2, "0"];
+fullYearStrQ[s_] := SMatchQ[s, $cenP ~~ DigitCharacter ~~ DigitCharacter];
+monthStrQ[s_] := SMatchQ[s, DigitCharacter | ("0" ~~ DigitCharacter) | "10" | "11" | "12"];
+dayStrQ[s_] := SMatchQ[s, DigitCharacter | ("0"|"1"|"2" ~~ DigitCharacter) | "30" | "31"];
+pad2[s_] := SPadLeft[s, 2, "0"];
 
 intListToDateString = Case[
   {y_ ? fullYearStrQ}                               := y;
@@ -177,13 +177,13 @@ PublicFunction[ParseNoteAliases]
 $allowedParenPattern = "(" ~~ (DigitCharacter | " " | ",").. ~~ ")";
 
 encodeHunk[s_] :=  "@" <> URLEncode[s] <> "@";
-decodeHunks[s_] := StringReplace[s, "@" ~~ encoded:ShortBlank ~~ "@" :> URLDecode[encoded]];
+decodeHunks[s_] := SRep[s, "@" ~~ encoded:ShortBlank ~~ "@" :> URLDecode[encoded]];
 
 ParseNoteAliases[str_Str] := Scope[
-  escaped = StringReplace[str, dq:DoubleQuotedPhrase :> encodeHunk[StringTake[dq, {2, -2}]]];
-  noComments = StringReplace[escaped, pp:ParentheticalPhrase :> If[StringMatchQ[pp, $allowedParenPattern], encodeHunk @ pp, ""]];
-  split = StringTrim @ StringSplit[noComments, ","];
-  split = StringReplace[split, "@" ~~ encoded:ShortBlank ~~ "@" :> URLDecode[encoded]];
+  escaped = SRep[str, dq:DoubleQuotedPhrase :> encodeHunk[STake[dq, {2, -2}]]];
+  noComments = SRep[escaped, pp:ParentheticalPhrase :> If[SMatchQ[pp, $allowedParenPattern], encodeHunk @ pp, ""]];
+  split = STrim @ SSplit[noComments, ","];
+  split = SRep[split, "@" ~~ encoded:ShortBlank ~~ "@" :> URLDecode[encoded]];
   split
 ];
 
@@ -192,10 +192,10 @@ ParseNoteAliases[str_Str] := Scope[
 PublicFunction[NoteFullNameToShortName]
 
 NoteFullNameToShortName[name_String] :=
-  Scope[items = StringSplit[name, " "]; StringJoin[First @ items, StringTake[Last @ items, 1]]];
+  Scope[items = SSplit[name, " "]; SJoin[F @ items, STake[L @ items, 1]]];
 
 NoteFullNameToShortName[name_List] :=
-  StringRiffle[NoteFullNameToShortName /@ name, ", "];
+  SRiffle[NoteFullNameToShortName /@ name, ", "];
 
 (**************************************************************************************************)
 

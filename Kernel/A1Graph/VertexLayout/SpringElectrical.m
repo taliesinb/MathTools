@@ -2,7 +2,7 @@ PublicObject[SpringElectricalLayout]
 
 Options[SpringElectricalLayout] = JoinOptions[
   "SpringConstant" -> 1,
-  "RepulsiveForcePower" -> Automatic,
+  "RepulsiveForcePower" -> Auto,
   SpringLayout
 ];
 

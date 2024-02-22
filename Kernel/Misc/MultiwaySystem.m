@@ -18,14 +18,14 @@ PublicFunction[MultiwaySystem]
 DeclareArgumentCount[MultiwaySystem, 2];
 
 Options[MultiwaySystem] = JoinOptions[
-  MaxVertices -> Infinity,
-  MaxEdges -> Infinity,
-  MaxDepth -> Infinity,
-  MaxFunctionEvaluations -> Infinity,
-  MaxTime -> Infinity,
+  MaxVertices -> Inf,
+  MaxEdges -> Inf,
+  MaxDepth -> Inf,
+  MaxFunctionEvaluations -> Inf,
+  MaxTime -> Inf,
   DirectedEdges -> True,
   ProgressFunction -> None,
-  NormFunction -> Automatic,
+  NormFunction -> Auto,
   MaxNorm -> None,
   IncludeFrontier -> True,
   DepthTermination -> "Immediate",
@@ -101,7 +101,7 @@ $stgElements = {
   "Elements"
 };
 
-$stgElementsPattern = Alternatives @@ $stgElements;
+$stgElementsPattern = Alt @@ $stgElements;
 
 MultiwaySystem::badlimit = "The setting for `` should be a positive integer or infinity.";
 MultiwaySystem::badinitstates = "The initial states spec should be a non-empty list of states."
@@ -137,7 +137,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     ReturnFailed[MultiwaySystem::badinitstates];
   ];
 
-  initialVertices = DeleteDuplicates[initialVertices];
+  initialVertices = Dedup[initialVertices];
 
   If[!MatchQ[result, $stgElementsPattern | {Repeated[$stgElementsPattern]}],
     ReturnFailed[MultiwaySystem::badelement, result, TextString[Row[$stgElements, ", "]]];
@@ -162,7 +162,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   If[ListQ[f], f = makeSuperTransitionFunc[f]];
 
   If[!MatchQ[canonicalizationFunction, None | Id | (#&)],
-    canonFn = VectorReplace[{Labeled[e_, l_] :> Labeled[canonicalizationFunction[e], l], e_ :> canonicalizationFunction[e]}] /* DeleteDuplicates;
+    canonFn = VectorReplace[{Labeled[e_, l_] :> Labeled[canonicalizationFunction[e], l], e_ :> canonicalizationFunction[e]}] /* Dedup;
     initialVertices //= canonFn;
     If[ListQ[prologVertices], prologVertices = canonFn @ prologVertices];
     $canonicalizationBlock := (
@@ -213,10 +213,10 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   (* build the function that decides which vertices to visit next *)
   removeStaleSuccessors = {succId, succ} |-> If[$staleTest, {succId, succ}, Nothing];
   If[normTest =!= None,
-    removeStaleSuccessors //= ReplaceAll[$staleTest :> And[$staleTest, normTest[succ]]]
+    removeStaleSuccessors //= RepAll[$staleTest :> And[$staleTest, normTest[succ]]]
   ];
-  removeStaleSuccessors //= ReplaceAll[$staleTest -> succId > lastCount];
-  If[trackBackEdges = ContainsQ[result, Alternatives @ $backEdgeElements],
+  removeStaleSuccessors //= RepAll[$staleTest -> succId > lastCount];
+  If[trackBackEdges = ContainsQ[result, Alt @ $backEdgeElements],
     backEdgesAssociation = Assoc[];
     removeStaleSuccessors //= Insert[removeStaleSuccessors, $Unreachable]; (* TODO: implement me *)
   ];
@@ -225,15 +225,15 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     If[directedEdges === False, ReturnFailed[MultiwaySystem::undedgelabels]];
     edgeLabelsBag = Bag[];
     $extractLabelBlock := (
-      labels = Replace[successors, {Labeled[_, l_] :> l, _ -> None}, {1}];
+      labels = Rep[successors, {Labeled[_, l_] :> l, _ -> None}, {1}];
       StuffBag[edgeLabelsBag, labels, 1];
-      labels = Replace[labels, Inverted[c_] :> c, {1}];
+      labels = Rep[labels, Inverted[c_] :> c, {1}];
     );
   ];
 
   If[!selfLoops,
     $removeSelfLoopsBlock := (
-      successors //= DeleteCases[vertex | Labeled[vertex, _]];
+      successors //= Decases[vertex | Labeled[vertex, _]];
     );
   ];
 
@@ -292,7 +292,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
 
     (* strip labels *)
     labeledSuccessors = successors;
-    successors = Replace[successors, Labeled[z_, _] :> z, {1}];
+    successors = Rep[successors, Labeled[z_, _] :> z, {1}];
 
     (* detect new vertices, and obtain all the Ids of successor vertices *)
     lastCount = Len[vertexIndex];
@@ -306,7 +306,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     relabeledSuccessorsIds = If[FreeQ[labeledSuccessors, _Labeled, {1}],
       successorsIds,
       MapThread[
-        Replace[#2, {Labeled[_, l_] :> Labeled[#1, l], _ -> #1}]&,
+        Rep[#2, {Labeled[_, l_] :> Labeled[#1, l], _ -> #1}]&,
         {successorsIds, labeledSuccessors}
       ]
     ];
@@ -315,7 +315,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
     (* add all new vertices to the next generation *)
     stackPushList[nextGenVertices,
       If[!DuplicateFreeQ[successorsIds],
-        KeyValueMap[removeStaleSuccessors, AssociationThread[successorsIds, successors]],
+        KVMap[removeStaleSuccessors, AssocThread[successorsIds, successors]],
         MapThread[removeStaleSuccessors, {successorsIds, successors}]
       ]
     ]
@@ -339,7 +339,7 @@ iMultiwaySystem[f_, initialVertices_, result:Except[_Rule], opts:OptionsPattern[
   vertexCount := vertexArray["Length"];
 
   edgeSymbol = If[directedEdges, toDirectedEdge, toUndirectedEdge];
-  deduper = If[directedEdges, Id, DeleteDuplicatesBy[Sort]];
+  deduper = If[directedEdges, Id, DedupBy[Sort]];
 
   edges := edges = deduper @ Flatten @ Apply[
     {from, to} |-> Map[edgeSymbol[from, #]&, to],

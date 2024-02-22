@@ -15,7 +15,7 @@ connectedSubquiver[g_, cpatt_, v_, isStrong_] := Scope[
   filtered = Graph[vertices, DeleteNone @ edges1];
   subGraph = If[isStrong,
     Subgraph[filtered, VertexOutComponent[filtered, v]],
-    First[WeaklyConnectedGraphComponents[filtered, {v}], Graph[{}, {}]]
+    F[WeaklyConnectedGraphComponents[filtered, {v}], Graph[{}, {}]]
   ];
   ExtendedSubgraph[g, VertexList @ subGraph, LastColumn @ EdgeList @ subGraph]
 ];
@@ -27,7 +27,7 @@ weakEdgeTrans[cp_][e:DirectedEdge[a_, b_, c_]] :=
   If[MatchQ[c, cp] || MatchQ[c, cp], UndirectedEdge[a, b, e], None];
 
 toTagPatt = Case[
-  list_List := Alternatives @@ list;
+  list_List := Alt @@ list;
   other_ := other;
 ];
 

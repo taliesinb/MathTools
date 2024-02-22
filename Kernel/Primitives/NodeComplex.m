@@ -53,7 +53,7 @@ withNodePalette[nodePalette,
   solutions = SolveCyclicEquations[eqs, EquationVariables -> vars, ExpandLinearEquations -> True];
   result = boxes /. solutions;
   If[ContainsQ[result, _$var],
-    result //= ReplaceAll[$fromNC[v_$var, nc_] :> RuleCondition[complainUnresolved[result, v, nc]; {0, 0}]];
+    result //= RepAll[$fromNC[v_$var, nc_] :> RuleEval[complainUnresolved[result, v, nc]; {0, 0}]];
 (*     Message[NodeComplex::available];
     Print @ Row[Sort @ Keys @ solutions, ", "];
  *)
@@ -62,11 +62,11 @@ withNodePalette[nodePalette,
   result = MapPrimitiveBoxCoordinates[N, result];
   result //= ReplaceAllOperator[
     $fromNC[a_, _]                 :> a,
-    AbsoluteOffset[off_][pos_List] :> RuleCondition[Threaded[off] + pos],
+    AbsoluteOffset[off_][pos_List] :> RuleEval[Threaded[off] + pos],
     ListPart                       -> Part,
-    $delayedBoxes[e_]              :> RuleCondition[ToGraphicsBoxes @ e]
+    $delayedBoxes[e_]              :> RuleEval[ToGraphicsBoxes @ e]
   ];
-  result //= ReplaceAllOperator[AbsoluteOffset[off_][pos_] :> RuleCondition[pos]];
+  result //= ReplaceAllOperator[AbsoluteOffset[off_][pos_] :> RuleEval[pos]];
   result
 ]];
 
@@ -82,19 +82,19 @@ NodeComplex::matchingVars = "Vars similar to `` are ``.";
 NodeComplex::meanConnectionEquations = "Mean connection equations printed below, followed by any detected cycles.";
 
 complainUnresolved[result_, var_, nodeCoord_] := Scope[
-  context = Extract[result, SafeDrop[P1 @ Position[result, var], -3]] /. ($fromNC[_, n_] :> n) /. (var|nodeCoord -> Style["XXX", Black, Bold]);
+  context = Extract[result, SafeDrop[F @ Position[result, var], -3]] /. ($fromNC[_, n_] :> n) /. (var|nodeCoord -> Style["XXX", Black, Bold]);
   Message[NodeComplex::unresolvedVar, nodeCoord, context, var];
-  printEqns @ Select[eqs, P1[#] === var&];
-  printEqns @ Select[eqs, ContainsQ[PN @ #, Verbatim @ var]&];
+  printEqns @ Select[eqs, F[#] === var&];
+  printEqns @ Select[eqs, ContainsQ[L @ #, Verbatim @ var]&];
   If[ListQ[$meanConnectionEqs],
     Message[NodeComplex::meanConnectionEquations];
     printEqns @ $meanConnectionEqs;
     $meanConnectionEqs ^= Null;
   ];
   pattern = var;
-  If[MatchQ[PN @ var, _Str[_]], Part[pattern, -1, 1] = _];
+  If[MatchQ[L @ var, _Str[_]], Part[pattern, -1, 1] = _];
   Do[
-    matchingVars = Cases[vars, Append[___] @ pattern];
+    matchingVars = Cases[vars, App[___] @ pattern];
     If[matchingVars =!= {}, Message[NodeComplex::matchingVars, var, matchingVars]; Break[]];
     pattern //= Most;
   ,
@@ -109,26 +109,26 @@ meanConnectionEquations[eqns_, boxes_] := Scope[
   If[meanVars === {}, Return[{}]];
   iConns = oConns = <||>;
   boxes2 = boxes /. $fromNC[v_, _] :> v;
-  boxes2 = boxes2 /. CircuitCurve[FanOut[a_, b_], ___] :> RuleCondition @ Map[CircuitCurve[{a, #}]&, b];
+  boxes2 = boxes2 /. CircuitCurve[FanOut[a_, b_], ___] :> RuleEval @ Map[CircuitCurve[{a, #}]&, b];
   cEdges = Flatten @ Map[
     patt |-> DeepCases[boxes2, patt],
     {
       CircuitCurve[{a_$var, b_$var}, ___] :> (
-        KeyAppendTo[oConns, a, b];
-        KeyAppendTo[iConns, b, a];
+        KAppTo[oConns, a, b];
+        KAppTo[iConns, b, a];
         DirectedEdge[a, b]
       ),
       CircuitCurve[{a_$var, b_ /; ContainsQ[b, $var]}, ___] :> (
-        KeyAppendTo[oConns, a, b];
+        KAppTo[oConns, a, b];
         DirectedEdge[a, #] & /@ DeepCases[b, _$var]
       ),
       CircuitCurve[{a_ /; ContainsQ[a, $var], b_$var}, ___] :> (
-        KeyAppendTo[iConns, b, a];
+        KAppTo[iConns, b, a];
         DirectedEdge[#, b] & /@ DeepCases[a, _$var]
       )
   }];
   meanEqs = Map[toMeanVarRule, meanVars];
-  varP = Alternatives @@ vars;
+  varP = Alt @@ vars;
   meanEqDepGraph = Graph @ Flatten @ Cases[meanEqs, Rule[a_, b_] :> Thread[Most[a] -> DeepCases[b, _$var]]];
   $meanEqCycles ^= meanEqCycles = FindCycle[meanEqDepGraph, 2, All];
   If[meanEqCycles =!= {},
@@ -151,7 +151,7 @@ filterMeanEqToRemoveCycleVar[var_ -> rhs_] :=
 noExpand[v:(_$var | _List)] := v;
 noExpand[e_] := NoLinearExpand[e];
 
-toMeanVarRule[var_] := var -> meanVarRHS[PN @ var, Most @ var];
+toMeanVarRule[var_] := var -> meanVarRHS[L @ var, Most @ var];
 meanVarRHS[type_, var_] := noExpand @ Mean @ Lookup[
   If[type === "InMean", iConns, oConns],
   var, List @ Lookup[$portPositionDefaults, var, {0,0}]
@@ -173,11 +173,11 @@ resolveNodeCoordinatesAndAliases[expr_] := Scope[
 
 applyAliases[e_] := ReplaceAllOperator[$nodeAliases, $varAliases /. $nodeAliases] @ e;
 
-computeNodeAliases[aliasAssoc_] := ReverseSort @ KeyValueMap[toAliasRule, aliasAssoc];
-toAliasRule[name_Str, var_$var] := Append[var, l___] :> $var[name, l];
+computeNodeAliases[aliasAssoc_] := ReverseSort @ KVMap[toAliasRule, aliasAssoc];
+toAliasRule[name_Str, var_$var] := App[var, l___] :> $var[name, l];
 
 $nodeCoordinateP = _NodePort | _NodeInPort | _NodeOutPort | _NodeCenter | _NodeCorner | _NodeSide;
-expandNodeCoordinates[e_] := ReplaceAll[e, np:$nodeCoordinateP :> RuleCondition[$fromNC[procNodeCoordinate @ np, np]]];
+expandNodeCoordinates[e_] := RepAll[e, np:$nodeCoordinateP :> RuleEval[$fromNC[procNodeCoordinate @ np, np]]];
 
 procNodeCoordinate = Case[
   NodeInPort[p_:Null, port_]      := makeVar[p, $PortIn[port]];
@@ -205,11 +205,11 @@ $sideToCoordVars = <|
 
 (**************************************************************************************************)
 
-evaluateScopes[expr_] := ReplaceAll[expr, d_$scoped :> RuleCondition @ evaluateScope[d]];
+evaluateScopes[expr_] := RepAll[expr, d_$scoped :> RuleEval @ evaluateScope[d]];
 
 evaluateScope[$scoped[path_$var, expr_]] := expandVars[path, evaluateScopes @ expr];
 
-expandVars[path_, e_] := ReplaceAll[e, v_$relvar :> RuleCondition @ toAbsVar[v, path]];
+expandVars[path_, e_] := RepAll[e, v_$relvar :> RuleEval @ toAbsVar[v, path]];
 
 toAbsVar[v_$relvar, b_$var] := Join[b, $var @@ v];
 
@@ -245,14 +245,14 @@ processNode = Case[
   node_                               := ThrowMessage["badNodeSpec", MsgExpr @ node];
 
   Sequence[node_, part_] := Block[
-    {$path = Append[$path, part]},
+    {$path = App[$path, part]},
     processNode @ node
   ];
 ];
 
 addEqns[eqns_List, rhs_] := addEqns @ Map[# -> rhs&, eqns];
 addEqns[lhs_, rhs_] := addEqns[lhs -> rhs];
-addEqns[eqns_] := (AppendTo[$eqs, eqns]; eqns);
+addEqns[eqns_] := (AppTo[$eqs, eqns]; eqns);
 
 createNodeAlias := Case[
   None       := Null;
@@ -263,14 +263,14 @@ createNodeAlias := Case[
 subPath[] := $path;
 subPath[e_, f_List] := Map[subPath[e, #]&, f];
 subPath[e_List, f_] := Map[subPath[#, f]&, e];
-subPath[e_, f_] := Append[Append[$path, e], f];
-subPath[e_, f_, g_] := Append[Append[Append[$path, e], f], g];
-subPath[e_] := Append[$path, e];
+subPath[e_, f_] := App[App[$path, e], f];
+subPath[e_, f_, g_] := App[App[App[$path, e], f], g];
+subPath[e_] := App[$path, e];
 
 (**************************************************************************************************)
 
 SetHoldRest[withNodePalette];
-withNodePalette[None | Automatic | {}, body_] := body;
+withNodePalette[None | Auto | {}, body_] := body;
 withNodePalette[palette_, body_] := InheritedBlock[
   {$nodePalette},
   AssociateTo[$nodePalette, Map[ToRainbowColor, Assoc @ palette]];
@@ -281,7 +281,7 @@ $nodePalette = <||>;
 toRainbowColor[i_] := Lookup[$nodePalette, i, ToRainbowColor @ i];
 toRainbowColor[p_, i_] := Lookup[$nodePalette, p, Lookup[$nodePalette, i, ToRainbowColor[p, i]]];
 
-applyNodePalette[e_] := e /. $portColor[p_] :> RuleCondition[Lookup[$nodePalette, p]];
+applyNodePalette[e_] := e /. $portColor[p_] :> RuleEval[Lookup[$nodePalette, p]];
 
 (**************************************************************************************************)
 
@@ -506,7 +506,7 @@ parseGridItems = Case[
   other_         := ThrowMessage["badNodeGridSpec", MsgExpr @ other];
 ];
 
-maxRCSize[list_] := Max @ Replace[Discard[list, Lookup[$isAutomaticSize, #, False]&], {} -> {1}];
+maxRCSize[list_] := Max @ Rep[Discard[list, Lookup[$isAutomaticSize, #, False]&], {} -> {1}];
 
 NodeGrid::baditemalign = "Item Alignment -> `` is invalid."
 
@@ -566,10 +566,10 @@ Options[PortSkeleton] = {
   PortSpacing       -> 0.2,
   PortSize          -> 0.05,
   PortShape         -> "Disk",
-  PortEdgeColor     -> Automatic,
+  PortEdgeColor     -> Auto,
   PortColor         -> Black,
   PortEdgeThickness -> 1,
-  PortPositions     -> Automatic,
+  PortPositions     -> Auto,
   NodeAlias         -> None
 }
 
@@ -624,13 +624,13 @@ Options[NodeDisk] = Options[NodeBox] = {
   NodePalette       -> None,
   NodePorts         -> None,
   PortLabelStyle    :> $PortLabelStyle,
-  PortEdgeColor     -> Automatic,
+  PortEdgeColor     -> Auto,
   PortEdgeThickness -> 1,
   PortColor         -> Black,
-  PortPositions     -> Automatic,
+  PortPositions     -> Auto,
   PortShape         -> "Disk",
   PortSize          -> 0.05,
-  PortSpacing       -> Automatic,
+  PortSpacing       -> Auto,
   Prolog            -> None,
   RoundingRadius    -> None
 }
@@ -678,12 +678,12 @@ moreover, if they are a list of values, they will be matched up with the relevan
 
 $portOptionKeys = {"PortSpacing", "PortSize", "PortShape", "PortEdgeColor", "PortColor", "PortEdgeThickness", "PortPositions"};
 
-replaceIO = ReplaceAll[{In -> Top, Out -> Bottom}];
+replaceIO = RepAll[{In -> Top, Out -> Bottom}];
 
 DefineLiteralMacro[OptionValueAssociations,
   OptionValueAssociations[head_, opts_, keys_] := {
-    AssociationThread[keys, OptionValue[head, opts, keys]],
-    AssociationThread[keys, OptionValue[head, keys]]
+    AssocThread[keys, OptionValue[head, opts, keys]],
+    AssocThread[keys, OptionValue[head, keys]]
   }
 ];
 
@@ -852,15 +852,15 @@ processNodeBoxPorts = Case[
       Top,    Threaded[{center = subPath[$LR], subPath[$T]}] + Thread[{offsets, 0}]
     ];
     isVert = MatchQ[side, Top|Bottom]; portXY = If[isVert, 1, 2];
-    portPosSpec = Replace[$sidePortData @ "PortPositions", {
+    portPosSpec = Rep[$sidePortData @ "PortPositions", {
       "MatchInterior" :> If[side === Top, "MatchOut", "MatchIn"],
       "MatchExterior" :> If[side === Top, "MatchIn", "MatchOut"]
     }];
     portCoordOverrides = Switch[
       portPosSpec,
-      Automatic | None,       Null,
+      Auto | None,       Null,
       "MatchIn" | "MatchOut", toPortPositions @ Repeat[portPosSpec, n],
-      AbsoluteOffset[_],      Part[portCoords, All, portXY] += P1[portPosSpec]; Null,
+      AbsoluteOffset[_],      Part[portCoords, All, portXY] += F[portPosSpec]; Null,
       _List,                  toPortPositions @ portPosSpec,
       _,                      Message[NodeBox::badPortPositions, portPosSpec]; Null
     ];
@@ -896,9 +896,9 @@ toPortPositions[spec_List] := Scope[
 ];
 
 toSinglePortPosition = Case[
-  Automatic              := $last + portSpacing;
-  "MatchIn"              := ListPart[Append["InMean"] @  Part[portPaths, $i], portXY];
-  "MatchOut"             := ListPart[Append["OutMean"] @ Part[portPaths, $i], portXY];
+  Auto              := $last + portSpacing;
+  "MatchIn"              := ListPart[App["InMean"] @  Part[portPaths, $i], portXY];
+  "MatchOut"             := ListPart[App["OutMean"] @ Part[portPaths, $i], portXY];
   spec:{__ListPart}      := Mean[spec];
   a_AbsoluteOffset       := % @ a[Inherited];
   AbsoluteOffset[p_][e_] := %[e] + p;
@@ -956,31 +956,31 @@ General::badNodePortShape = "PortShape -> `` is not one of ``."
 
 procPortListSpec[spec_, n_, prev_] := Repeat[spec, n];
 procPortListSpec[spec_List, n_, prev_] := PadRight[spec, n, prev];
-procPortListSpec[rules:{__Rule}, n_, prev_] := VectorReplace[Range[n], Append[_ -> prev] @ rules];
+procPortListSpec[rules:{__Rule}, n_, prev_] := VectorReplace[Range[n], App[_ -> prev] @ rules];
 procPortListSpec[{rules__Rule, All -> def_}, n_, _] := procPortListSpec[{rules}, n, def];
 
 makePorts[data_Assoc] := Scope[
   n = Len @ data["ports"];
   AssociationMapThread[
-    Function[
+    Fn[
       Associate[#, "PortShape" -> fixShape[#PortShape, #dirs]]
     ] /*
-    Function[
+    Fn[
       Associate[#, "frameOffset" -> (frameThickness/2 * shapeOffset[#PortShape] * #dirs / graphicsScale)]
     ] /*
-    Function[
+    Fn[
       addEqns[#paths, #coords + 2 * #frameOffset];
       makeSinglePort[#ports, #]
     ],
     MapThread[
       procPortListSpec[#1, n, #2]&,
-      KeyDrop[KeyUnion[{data, $defaultPortData}], {"PortPositions", "PortSpacing"}]
+      KDrop[KUnion[{data, $defaultPortData}], {"PortPositions", "PortSpacing"}]
     ]
   ]
 ];
 
-fixShape[shape_Str, dirs_] /; StringStartsQ[shape, "DownHalf"] :=
-  If[P2[dirs] > 0, "Outer", "Inner"] <> StringDrop[shape, 8];
+fixShape[shape_Str, dirs_] /; SStartsQ[shape, "DownHalf"] :=
+  If[P2[dirs] > 0, "Outer", "Inner"] <> SDrop[shape, 8];
 fixShape[shape_, _] := shape;
 
 $shapeP = _Str | _Labeled | _Placed;
@@ -994,22 +994,22 @@ makeSinglePort = Case[
 
 $makeSinglePortFn = Fn[
   shapeToFn[#PortShape] @
-  Append[#, {
+  App[#, {
     "FET" -> toFET[#ports, #PortColor, #PortEdgeColor, #PortEdgeThickness],
     "coords" -> #coords + #frameOffset
   }]
 ];
 
 toFET[Style[p_, c:($ColorPattern | _Int)], f_, e_, t_] := toFET[p, c, e, t];
-toFET[p_, f_, e_, t_] /; KeyExistsQ[$nodePalette, p]   := {toRainbowColor @ $nodePalette @ p, toRainbowColor @ e, t};
+toFET[p_, f_, e_, t_] /; KeyQ[$nodePalette, p]   := {toRainbowColor @ $nodePalette @ p, toRainbowColor @ e, t};
 toFET[i_Int, f_, e_, t_]                               := {toRainbowColor[f, i], toRainbowColor[e, i], t};
 toFET[_, f_, e_, t_]                                   := {toRainbowColor @ f, toRainbowColor @ e, t};
 
 shapeOffset = Case[
   _                   := 0;
   s_Str               := Which[
-    StringStartsQ[s, "Inner"], 1,
-    StringStartsQ[s, "Outer"], -1,
+    SStartsQ[s, "Inner"], 1,
+    SStartsQ[s, "Outer"], -1,
     True, 0
   ];
   Labeled[_, _, pos_] := % @ Placed[Null, pos];
@@ -1046,7 +1046,7 @@ $shapeToFn = <|
 
 edgeForm[prim_, e_, t_] := StyleBox[prim, e, AbsoluteThickness @ t, CapForm[None]];
 
-toEdgeCol[face_][Automatic] := Darker[face, .2];
+toEdgeCol[face_][Auto] := Darker[face, .2];
 toEdgeCol[face_][edge_] := edge;
 
 applyStyle[fet_][obj_] := applyStyle[obj, fet];
@@ -1061,7 +1061,7 @@ applyStyle[halfThing[f_, e_],   {face_, edge_, thickness_}] := {StyleBox[f, Face
 *)
 applyStyle[other_,              {face_, edge_, thickness_}] := StyleBox[other, FaceEdgeForm[face, edge, thickness]];
 
-closePath[coords_] := If[P1[coords] === PN[coords], coords, Append[P1 @ coords] @ coords];
+closePath[coords_] := If[F[coords] === L[coords], coords, App[F @ coords] @ coords];
 
 (**************************************************************************************************)
 
@@ -1096,7 +1096,7 @@ makeHalfSquare[pos_, {x_, y_}, fet_] := applyStyle[fet] @ makeHalfPolygon @ Tran
 makeHalfTrap[pos_, {x_, y_}, fet_]  := applyStyle[fet] @ makeHalfPolygon @ TranslateVector[pos] @ {(*NE*){-y, x}, (*SE*){x - y*0.6, x + y}, (*SW*){x + y*0.6, -x + y}, (*NW*){y, -x}};
 
 makeDisk[pos_, r_, fet_] := applyStyle[fet] @ DiskBox[pos, r];
-makePoint[pos_, r_, fet_] := StyleBox[PointBox[pos], PointSize[2 * r / $var[$W]], P1 @ fet];
+makePoint[pos_, r_, fet_] := StyleBox[PointBox[pos], PointSize[2 * r / $var[$W]], F @ fet];
 
 (**************************************************************************************************)
 
@@ -1112,14 +1112,14 @@ makeLabel[label_, coords_, side_, spacing_, style_] := Scope[
 (**************************************************************************************************)
 
 $defaultNodeSize = {1, 1};
-$boxSizeP = $NumberP | Automatic | Inherited;
+$boxSizeP = $NumberP | Auto | Inherited;
 $intOrSpanP = _Int | _Span;
 
 toNodeBoxInterior = Case[
   sz:$boxSizeP               := % @ {sz, sz};
   {w:$boxSizeP, h:$boxSizeP} := {
-    {ReplaceAutomatic[w, $isAutomaticSize[subPath[$W]] = True; P1 @ $defaultNodeSize],
-     ReplaceAutomatic[h, $isAutomaticSize[subPath[$H]] = True; PN @ $defaultNodeSize]},
+    {ReplaceAutomatic[w, $isAutomaticSize[subPath[$W]] = True; F @ $defaultNodeSize],
+     ReplaceAutomatic[h, $isAutomaticSize[subPath[$H]] = True; L @ $defaultNodeSize]},
     None
   };
   rules:{({$intOrSpanP, $intOrSpanP} -> _)..} := {

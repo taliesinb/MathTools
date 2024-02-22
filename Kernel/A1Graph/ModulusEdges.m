@@ -15,7 +15,7 @@ ModulusEdgeShapeFunction[offsets_][assoc_] := Scope[
   {a, b} = FirstLast @ coordinates; d = If[$GraphIs3D, .6, .4] + Max[setback]/2;
   b2 = findModulusCounterpart[a, b, offsets, d];
   a2 = findModulusCounterpart[b, a, offsets, d];
-  setback1 = First[setback, setback]; setback2 = Last[setback, setback];
+  setback1 = F[setback, setback]; setback2 = L[setback, setback];
   If[a2 =!= None && b2 =!= None,
     counter = assoc["Counter"];
     labelPoints = {1.35*(a2 - b) + b, (b2-a)*1.35 + a};

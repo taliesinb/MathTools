@@ -31,7 +31,7 @@ ADEEGraph[All] := EGraph /@ {6, 7, 8};
 
 makeEGraph[n_] := EdgeAdd[
   pathGraph[n], (n+1) <-> 3,
-  VertexCoordinates -> Append[lineCoords[n], {3, 1}],
+  VertexCoordinates -> App[lineCoords[n], {3, 1}],
   ImageSize -> chooseWidth[n - 1]
 ]
 
@@ -64,6 +64,6 @@ addAffineVertex[graph_, offset_] := Scope[
   graph = EdgeAdd[graph, newVertex <-> #& /@ VertexList[graph]];
   meanX = Mean @ FirstColumn @ vcoords;
   maxY = Min @ LastColumn @ vcoords;
-  AppendTo[vcoords, {meanX, maxY - 0.8}];
+  AppTo[vcoords, {meanX, maxY - 0.8}];
   ExtendedGraph[graph, VertexCoordinates -> vcoords]
 ];

@@ -54,7 +54,7 @@ $SideToCoords = <|
   Center      -> { 0,  0}
 |>
 
-$CoordsToSide = InvertAssociation @ KeyDrop[$SideToCoords, {Below, Above}];
+$CoordsToSide = InvertAssociation @ KDrop[$SideToCoords, {Below, Above}];
 
 PrivateVariable[$SideToUnitCoords]
 
@@ -146,7 +146,7 @@ $ModIntP = _Int ? Positive | Modulo[_Int ? Positive];
 
 PrivateVariable[$PosIntOrInfinityP]
 
-$PosIntOrInfinityP = _Int ? Positive | Infinity;
+$PosIntOrInfinityP = _Int ? Positive | Inf;
 
 (**************************************************************************************************)
 
@@ -183,7 +183,7 @@ $CoordMaybeMatsP = _List ? CoordinateMatrixOrMatricesQ;
 
 PrivateVariable[$ArcP, $RegionP, $AnnotationP]
 
-headToPattern[e_] := Apply[Alternatives, Blank /@ e];
+headToPattern[e_] := Apply[Alt, Blank /@ e];
 
 $ArcP = headToPattern @ {
   Line, InfiniteLine, HalfLine, Arrow, FilledCurve, BezierCurve, BSplineCurve

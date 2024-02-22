@@ -8,9 +8,9 @@ MarkdownFrontMatter[path_Str | File[path_Str]] := Scope[
 
   str = ReadString[path];
 
-  If[StringStartsQ[str, "{"],
+  If[SStartsQ[str, "{"],
     jsonStr = FirstStringCase[str, json:(StartOfString ~~ "{\n" ~~ Shortest[___] ~~ "\n}\n") :> json];
-    If[StringQ[jsonStr],
+    If[StrQ[jsonStr],
       res = ReadRawJSONString @ jsonStr;
       res = res /. Null -> None;
       If[AssocQ[res], Return @ res]
@@ -27,13 +27,13 @@ PrivateFunction[getMarkdownUnixTime]
 getMarkdownUnixTime[path_Str] := Scope[
   Quiet[
     stream = OpenRead[path];
-    line = PN @ ReadList[stream, "String", 2];
+    line = L @ ReadList[stream, "String", 2];
     Close[stream];
   ];
-  If[!StringQ[line], Return[None]];
-  matches = StringCases[line, "unixtime\":" ~~ d:DigitCharacter.. :> d, 1];
+  If[!StrQ[line], Return[None]];
+  matches = SCases[line, "unixtime\":" ~~ d:DigitCharacter.. :> d, 1];
   If[matches === {}, Return[None]];
-  FromDigits @ P1 @ matches
+  FromDigits @ F @ matches
 ];
 
 (**************************************************************************************************)
@@ -61,7 +61,7 @@ NotebookFrontMatter[path_Str | File[path_Str]] := Scope[
 
   filebase = FileBaseName @ path;
 
-  numbering = StringTrim @ FirstStringCase[filebase, DigitCharacter.. ~~ " ", ""];
+  numbering = STrim @ FirstStringCase[filebase, DigitCharacter.. ~~ " ", ""];
   weight = If[numbering === "", 999, FromDigits @ numbering];
 
   {title, subTitle, taggingRules} = getNotebookData[path];
@@ -76,7 +76,7 @@ NotebookFrontMatter[path_Str | File[path_Str]] := Scope[
     "title" -> title,
     "summary" -> subTitle,
     "notebookpath" -> path,
-    KeySelect[taggingRules, StringQ[#] && LowerCaseQ[StringTake[#, 1]]&]
+    KSelect[taggingRules, StrQ[#] && LowerCaseQ[STake[#, 1]]&]
   ];
 
   $frontMatterMetadataCache[path] ^= result;
@@ -94,26 +94,26 @@ NotebookFrontMatter[path_Str | File[path_Str]] := Scope[
 
 getNotebookData[path_Str] := Scope[
   nb = Get @ path;
-  title = FirstCase[nb, Cell[title_Str, "Title"|"Chapter"|"Section", ___] :> title, None, Infinity];
-  subTitle = FirstCase[nb, Cell[subtitle_Str, "Subtitle", ___] :> subtitle, None, Infinity];
+  title = FirstCase[nb, Cell[title_Str, "Title"|"Chapter"|"Section", ___] :> title, None, Inf];
+  subTitle = FirstCase[nb, Cell[subtitle_Str, "Subtitle", ___] :> subtitle, None, Inf];
   SetNone[subTitle, notebookFirstLine @ nb];
   taggingRules = LookupOption[nb, TaggingRules];
   If[RuleListQ[taggingRules], taggingRules //= Assoc];
   SetAutomatic[taggingRules, <||>];
-  KeyDropFrom[taggingRules, "TryRealOnly"];
+  KDropFrom[taggingRules, "TryRealOnly"];
   {title, subTitle, taggingRules}
 ];
 
 notebookFirstLine[nb_] :=
   FirstCase[nb,
     Cell[b_ /; FreeQ[b, _GraphicsBox], "Text", ___] :>
-      With[{res = boxesFirstLine @ b}, res /; StringLength[res] > 5],
-    None, Infinity
+      With[{res = boxesFirstLine @ b}, res /; SLen[res] > 5],
+    None, Inf
   ];
 
 boxesFirstLine[b_] := Scope[
   str = Quiet @ CatchMessage @ textCellToMarkdown @ b;
-  If[!StringQ[str], Return[None]];
-  split = StringSplit[str, w:("." | "?" | "!" | "...") ~~ (EndOfString | EndOfLine | WhitespaceCharacter) :> w, 2];
-  StringTrim @ StringJoin @ Take[split, UpTo[2]]
+  If[!StrQ[str], Return[None]];
+  split = SSplit[str, w:("." | "?" | "!" | "...") ~~ (EndOfString | EndOfLine | WhitespaceCharacter) :> w, 2];
+  STrim @ SJoin @ Take[split, UpTo[2]]
 ];

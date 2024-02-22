@@ -2,7 +2,7 @@ With[{fmv := GeneralUtilities`Control`PackagePrivate`findMutatedVariables},
   If[FreeQ[DownValues[fmv], ApplyTo],
     DownValues[fmv] = Insert[
       DownValues[fmv],
-      Unevaluated @ ApplyTo[GeneralUtilities`Control`PackagePrivate`lhs_Symbol, _],
+      Uneval @ ApplyTo[GeneralUtilities`Control`PackagePrivate`lhs_Symbol, _],
       {1, 2, 1, 1, 2, 1, 1, 2}
     ]
   ];
@@ -24,7 +24,7 @@ EchoScope[body_, defs__] := mEchoScope[body, {defs}]
 SetHoldAllComplete[mEchoScope];
 
 mEchoScope[body_, defs_] := Module[{},
-  hold = HoldComplete[iLabeledEchoSet[Null, $LHS, body], defs, Block] /. Set -> EchoSet;
+  hold = HoldC[iLabeledEchoSet[Null, $LHS, body], defs, Block] /. Set -> EchoSet;
   mScopeWithDefs @@ hold
 ];
 
@@ -41,13 +41,13 @@ PublicFunction[MapUnevaluated]
 SetHoldAllComplete[MapUnevaluated]
 
 MapUnevaluated[f_, args_] :=
-  Map[f, Unevaluated[args]];
+  Map[f, Uneval[args]];
 
 MapUnevaluated[Fn[body_], args_] :=
-  Map[Fn[Null, body, HoldAllComplete], Unevaluated[args]];
+  Map[Fn[Null, body, HoldAllComplete], Uneval[args]];
 
 MapUnevaluated[Fn[args_, body_], args_] :=
-  Map[Fn[args, body, HoldAllComplete], Unevaluated[args]];
+  Map[Fn[args, body, HoldAllComplete], Uneval[args]];
 
 (**************************************************************************************************)
 
@@ -55,7 +55,7 @@ PublicFunction[HoldHead]
 
 SetHoldAllComplete[HoldHead]
 
-HoldHead[e_] := Head[Unevaluated @ e];
+HoldHead[e_] := H[Uneval @ e];
 
 (**************************************************************************************************)
 
@@ -78,10 +78,10 @@ mScopeWithDefs[body_, {}, type_] :=
 
 mScopeWithDefs[body2_, defs2_, type_] := Module[
   {lhsHeadPrefix, lhsSymbolP, aliasSymbols, held, aliasRules, body, defs},
-  lhsHeadPrefix = StringJoin[$privScope, Replace[$LHSHead, Quoted[s_] :> SymbolName[Unevaluated @ s]], "$"];
+  lhsHeadPrefix = SJoin[$privScope, Rep[$LHSHead, Quoted[s_] :> SymbolName[Uneval @ s]], "$"];
   body = Quoted[body2]; defs = Hold[defs2];
-  lhsSymbolP = Compose[HoldPattern, Alternatives @@ $LHSPatternSymbols] /. Quoted[q_] :> q;
-  aliasRules = DeleteDuplicates @ DeepCases[defs, s:lhsSymbolP :> HoldPattern[s]];
+  lhsSymbolP = Compose[HoldP, Alt @@ $LHSPatternSymbols] /. Quoted[q_] :> q;
+  aliasRules = Dedup @ DeepCases[defs, s:lhsSymbolP :> HoldP[s]];
   aliasRules = # -> Apply[GeneralUtilities`Control`PackagePrivate`toAliasedSymbol, #]& /@ aliasRules;
   body = body /. aliasRules;
   defs = defs /. aliasRules;
@@ -91,27 +91,27 @@ mScopeWithDefs[body2_, defs2_, type_] := Module[
     evalSecondaryDefs @ defs;
   ];
   If[aliasRules =!= {}, body = ToQuoted[Block, toAliasSet /@ aliasRules, body]];
-  GeneralUtilities`Control`PackagePrivate`mScope @@ Append[body, type]
+  GeneralUtilities`Control`PackagePrivate`mScope @@ App[body, type]
 ];
 
 toAliasSet[_[s_]-> a_] := Quoted @ Set[a, s];
 
-procScopeDef[list_List] := Map[procScopeDef, Unevaluated @ list];
+procScopeDef[list_List] := Map[procScopeDef, Uneval @ list];
 
-procScopeDef[r_RuleDelayed | r_Rule] := AppendTo[$bodyRules, r];
+procScopeDef[r_RuleDelayed | r_Rule] := AppTo[$bodyRules, r];
 
 procScopeDef[SetDelayed[lhs:(head_Symbol | (head_Symbol[___]) | ((head_Symbol)[___][___])), rhs_]] := With[
-  {head2 = Symbol @ StringJoin[$lhsHeadPrefix, SymbolName @ Unevaluated @ head]},
-  {rule = HoldPattern[head] -> head2},
-  AppendTo[$bodyRules, rule];
-  ReplaceAll[Hold[lhs, rhs], rule]
+  {head2 = Symbol @ SJoin[$lhsHeadPrefix, SymbolName @ Uneval @ head]},
+  {rule = HoldP[head] -> head2},
+  AppTo[$bodyRules, rule];
+  RepAll[Hold[lhs, rhs], rule]
 ];
 
 procScopeDef[e_] := Print["Invalid secondary definition: ", Hold[e]];
 
 evalSecondaryDefs[Null] := Null;
 evalSecondaryDefs[e_List] := Map[evalSecondaryDefs, e];
-evalSecondaryDefs[h_Hold] := SetDelayed @@ ReplaceAll[h, $bodyRules];
+evalSecondaryDefs[h_Hold] := SetDelayed @@ RepAll[h, $bodyRules];
 
 (**************************************************************************************************)
 
@@ -119,9 +119,9 @@ evalSecondaryDefs[h_Hold] := SetDelayed @@ ReplaceAll[h, $bodyRules];
 With[{io := GeneralUtilities`IndexOf},
   Unprotect[io];
   If[FreeQ[DownValues[io], {1}],
-    DownValues[io] = ReplaceAll[
+    DownValues[io] = RepAll[
       DownValues[io],
-      HoldPattern[FirstPosition][a_, b_, c_, Heads -> False] :>
+      HoldP[FirstPosition][a_, b_, c_, Heads -> False] :>
         FirstPosition[a, b, c, {1}, Heads -> False]
     ];
   ];
@@ -129,22 +129,22 @@ With[{io := GeneralUtilities`IndexOf},
 ];
 
 With[{mdn := GeneralUtilities`Debugging`PackagePrivate`makeDefinitionNotebook},
-  DownValues[mdn] = ReplaceAll[DownValues[mdn], {
-    Rule[WindowSize, {600, Automatic}] -> Rule[WindowSize, {1200, Automatic}]
+  DownValues[mdn] = RepAll[DownValues[mdn], {
+    Rule[WindowSize, {600, Auto}] -> Rule[WindowSize, {1200, Auto}]
   }];
 ];
 
 (**************************************************************************************************)
 
-GeneralUtilities`Control`PackagePrivate`upperCaseString[s_Str] /; StringStartsQ[s, "$"] :=
-  GeneralUtilities`Control`PackagePrivate`upperCaseString[StringDrop[s, 1]];
+GeneralUtilities`Control`PackagePrivate`upperCaseString[s_Str] /; SStartsQ[s, "$"] :=
+  GeneralUtilities`Control`PackagePrivate`upperCaseString[SDrop[s, 1]];
 
 (**************************************************************************************************)
 
 Module[{desugaringRules = Normal @ GeneralUtilities`Control`PackagePrivate`$DesugaringRules},
   If[FreeQ[desugaringRules, rewriteDestructuringFunction],
-    AppendTo[desugaringRules, HoldPattern[GeneralUtilities`Control`PackagePrivate`e:Fn[{___, _List, ___}, _]] :>
-      RuleCondition[rewriteDestructuringFunction[GeneralUtilities`Control`PackagePrivate`e]]];
+    AppTo[desugaringRules, HoldP[GeneralUtilities`Control`PackagePrivate`e:Fn[{___, _List, ___}, _]] :>
+      RuleEval[rewriteDestructuringFunction[GeneralUtilities`Control`PackagePrivate`e]]];
     GeneralUtilities`Control`PackagePrivate`$DesugaringRules = Dispatch @ desugaringRules;
   ];
 ];
@@ -154,7 +154,7 @@ SetHoldAllComplete[rewriteDestructuringFunction, procDestructArg];
 rewriteDestructuringFunction[Fn[args_, body_]] := Block[
   {$destructAliases = {}, $i = 1},
   ToQuoted[Fn,
-    Map[procDestructArg, Unevaluated @ args],
+    Map[procDestructArg, Uneval @ args],
     Quoted[body] /. Flatten[$destructAliases]
   ]
 ];
@@ -164,15 +164,15 @@ rewriteDestructuringFunction[e_] := Quoted[e];
 procDestructArg[e_Symbol] := Quoted[e];
 
 procDestructArg[argSpec_] := With[
-  {symbolPos = Position[Unevaluated @ argSpec, _Symbol, {0, Infinity}, Heads -> False]},
+  {symbolPos = Position[Uneval @ argSpec, _Symbol, {0, Inf}, Heads -> False]},
   If[symbolPos === {},
-    Symbol["QuiverGeometry`Private`$$" <> IntegerString[$i++]]
+    Symbol["QuiverGeometry`Private`$$" <> IntStr[$i++]]
   ,
-    With[{parentSym = Symbol[Extract[Unevaluated @ argSpec, P1 @ symbolPos, HoldSymbolName] <> "$$"]},
-      AppendTo[$destructAliases, Map[
+    With[{parentSym = Symbol[Extract[Uneval @ argSpec, F @ symbolPos, HoldSymbolName] <> "$$"]},
+      AppTo[$destructAliases, Map[
         pos |-> If[Len[pos] === 1,
-          With[{p1 = P1 @ pos}, Extract[Unevaluated @ argSpec, pos, HoldPattern] :> Part[parentSym, p1]],
-          Extract[Unevaluated @ argSpec, pos, HoldPattern] :> Extract[parentSym, pos]
+          With[{p1 = F @ pos}, Extract[Uneval @ argSpec, pos, HoldP] :> Part[parentSym, p1]],
+          Extract[Uneval @ argSpec, pos, HoldP] :> Extract[parentSym, pos]
         ],
         symbolPos
       ]];
@@ -228,13 +228,13 @@ iLabeledEchoSet[label_, esdLhsVar_, esdRhs_] := Module[
   {esdLhsStr, esdLhsBoxes, esdResult = $UNSET, esdRhsStr, esdRhsBoxes, arrowStr},
   WithLocalSettings[
     esdLhsStr = lhsEchoStr @ esdLhsVar;
-    arrowStr = If[MatchQ[Unevaluated @ esdLhsVar, _$multiES], " = ", "\[Function]"];
+    arrowStr = If[MatchQ[Uneval @ esdLhsVar, _$multiES], " = ", "\[Function]"];
     If[$pendingEchoPrint =!= None,
       Apply[printEchoCell, $pendingEchoPrint];
       $pendingEchoPrint = None;
     ];
-    Part[$callStack, Max[$esdTab + 1, 1]] = Replace[Apply[HoldForm, PatternHead @ esdLhsVar], HoldForm[$multiES] -> Set];
-    esdLhsBoxes = clickCopyBox[esdLhsStr, Unevaluated @ esdLhsVar];
+    Part[$callStack, Max[$esdTab + 1, 1]] = Rep[Apply[HoldForm, PatternHead @ esdLhsVar], HoldForm[$multiES] -> Set];
+    esdLhsBoxes = clickCopyBox[esdLhsStr, Uneval @ esdLhsVar];
     (* If[label =!= Null, esdLhsStr = TextString[label] <> ": " <> esdLhsStr]; *)
     $pendingEchoPrint = {RowBox[{esdLhsBoxes, arrowStr}], $openColor, $esdTab, label};
     $esdTab++;
@@ -269,12 +269,12 @@ tooManyEchos[] := (
 );
 
 callStackString[] := TextString @ Row[
-  Replace[
+  Rep[
     If[$esdTab < 10,
       Take[$callStack, $esdTab],
       Join[Take[$callStack, 6], {"\[Ellipsis]"}, Part[$callStack, {$esdTab-2, $esdTab}]]
     ],
-    HoldForm[sym_] :> SymbolName[Unevaluated @ sym],
+    HoldForm[sym_] :> SymbolName[Uneval @ sym],
     {1}
   ],
   ", "
@@ -284,7 +284,7 @@ callStackString[] := TextString @ Row[
 
 PrivateFunction[lhsEchoStr, clickCopyBox]
 
-clickCopyBox[str_, expr_] := ClickBox[str, CopyToClipboard[Unevaluated @ ExpressionCell[expr, "Input"]]];
+clickCopyBox[str_, expr_] := ClickBox[str, CopyToClipboard[Uneval @ ExpressionCell[expr, "Input"]]];
 
 $word = RegularExpression["[a-zA-Z`$0-9]+"];
 
@@ -292,17 +292,17 @@ Attributes[lhsEchoStr] = {HoldAllComplete};
 Attributes[symbolStr] = {HoldAllComplete};
 
 symbolStr[a_Symbol] := HoldSymbolName[a];
-symbolStr[other_] := ToPrettifiedString[Unevaluated @ other, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3, FullSymbolContext -> False];
+symbolStr[other_] := ToPrettifiedString[Uneval @ other, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3, FullSymbolContext -> False];
 
 lhsEchoStr[$multiES[a_]] := symbolStr[a];
-lhsEchoStr[$multiES[a_, b__]] := StringJoin[symbolStr[a], " = ", lhsEchoStr[$multiES[b]]];
+lhsEchoStr[$multiES[a_, b__]] := SJoin[symbolStr[a], " = ", lhsEchoStr[$multiES[b]]];
 
 lhsEchoStr[lhs_] := Block[{res},
-  res = ToPrettifiedString[Unevaluated @ lhs, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3, FullSymbolContext -> False];
-  If[StringMatchQ[res, $word ~~ "[" ~~ ___ ~~ "]"],
-    {head, rest} = StringSplit[res, "[", 2];
-    If[StringContainsQ[head, "`"], head = PN @ StringSplit[head, "`"]];
-    RowBox[{StyleBox[head, Bold], "[", StringDrop[rest, -1], "]"}]
+  res = ToPrettifiedString[Uneval @ lhs, MaxDepth -> 4, MaxLength -> 24, MaxIndent -> 3, FullSymbolContext -> False];
+  If[SMatchQ[res, $word ~~ "[" ~~ ___ ~~ "]"],
+    {head, rest} = SSplit[res, "[", 2];
+    If[SContainsQ[head, "`"], head = L @ SSplit[head, "`"]];
+    RowBox[{StyleBox[head, Bold], "[", SDrop[rest, -1], "]"}]
   ,
     res
   ]
@@ -316,7 +316,7 @@ $openCloseColor := $openCloseColor = Lighter[$Purple, 0.95];
 
 rhsEchoStr[$UNSET] := "?";
 rhsEchoStr[$DEPTHEXCEEDED] = "!";
-rhsEchoStr[rhs_] := ToPrettifiedString[Unevaluated @ rhs, MaxDepth -> 4, MaxLength -> 64, MaxIndent -> 3, FullSymbolContext -> False];
+rhsEchoStr[rhs_] := ToPrettifiedString[Uneval @ rhs, MaxDepth -> 4, MaxLength -> 64, MaxIndent -> 3, FullSymbolContext -> False];
 
 (**************************************************************************************************)
 
@@ -373,7 +373,7 @@ PublicSpecialFunction[CreateDebuggingWindow]
 CreateDebuggingWindow[cells_, w:_Int:1000, opts___Rule] := CreateDocument[cells,
   Saveable -> False, WindowTitle -> "Debugging",
   WindowSize -> {w, Scaled[1]},
-  WindowMargins -> {{Automatic, 50}, {Automatic, Automatic}},
+  WindowMargins -> {{Auto, 50}, {Auto, Auto}},
   StyleDefinitions -> $LightStylesheetPath,
   opts
 ]
@@ -388,10 +388,10 @@ Clear[BadArguments];
 General::badarguments = "Bad arguments: ``.";
 
 BadArguments /: (Set|SetDelayed)[lhsHead_Symbol[lhs___], BadArguments[]] :=
-  SetDelayed[$LHS:lhsHead[lhs], Message[MessageName[lhsHead, "badarguments"], MsgExpr @ Unevaluated @ $LHS]; $Failed];
+  SetDelayed[$LHS:lhsHead[lhs], Message[MessageName[lhsHead, "badarguments"], MsgExpr @ Uneval @ $LHS]; $Failed];
 
 BadArguments /: (Set|SetDelayed)[Verbatim[Blank][lhsHead_Symbol], BadArguments[]] :=
-  SetDelayed[$LHS_lhsHead, Message[MessageName[lhsHead, "badarguments"], MsgExpr @ Unevaluated @ $LHS]; $Failed];
+  SetDelayed[$LHS_lhsHead, Message[MessageName[lhsHead, "badarguments"], MsgExpr @ Uneval @ $LHS]; $Failed];
 
 DefineMacro[BadArguments, BadArguments[] := Quoted[Message[MessageName[$LHSHead, "badarguments"]]; Return[$Failed]]];
 
@@ -401,13 +401,13 @@ DefineMacro[BadArguments, BadArguments[] := Quoted[Message[MessageName[$LHSHead,
 Unprotect[UnmatchedCase];
 Clear[UnmatchedCase];
 UnmatchedCase[] := Panic["UnmatchedCase"];
-UnmatchedCase[head_, case_] := Panic["UnmatchedCase[" <> SymbolName[head] <> "]", "``", MsgExpr @ Unevaluated @ case];
+UnmatchedCase[head_, case_] := Panic["UnmatchedCase[" <> SymbolName[head] <> "]", "``", MsgExpr @ Uneval @ case];
 
 PrivateFunction[UnmatchedCase2]
 
 General::unmatchedcase = "Case unmatched: ``";
 UnmatchedCase2[head_Symbol, case_] := (
-  Message[MessageName[head, "unmatchedcase"], MsgExpr @ Unevaluated @ case];
+  Message[MessageName[head, "unmatchedcase"], MsgExpr @ Uneval @ case];
   UnmatchedCase[head, case];
 );
 
@@ -450,13 +450,13 @@ setupCases[sym_Symbol, echo_, pre_, CompoundExpression[args__SetDelayed, Null...
   {holds, counter = 0},
   holds = Hold @@@ Hold[args];
   If[pre =!= Hold[], holds //= Map[Join[pre, #]&]];
-  holds = ReplaceRepeated[holds, procRewrites @ rewrites];
-  PrependTo[holds, Hold[case___, UnmatchedCase2[sym, case]]];
-  holds = ReplaceAll[holds, HoldPattern[Out[] | $]  :> sym];
+  holds = RepRep[holds, procRewrites @ rewrites];
+  PreTo[holds, Hold[case___, UnmatchedCase2[sym, case]]];
+  holds = RepAll[holds, HoldP[Out[] | $]  :> sym];
   If[echo,
-    Replace[List @@ holds, Hold[a___, b_] :> LabeledEchoSetDelayed[counter++, sym[a], b], {1}];
+    Rep[List @@ holds, Hold[a___, b_] :> LabeledEchoSetDelayed[counter++, sym[a], b], {1}];
   ,
-    Replace[List @@ holds, Hold[a___, b_] :> SetDelayed[sym[a], b], {1}];
+    Rep[List @@ holds, Hold[a___, b_] :> SetDelayed[sym[a], b], {1}];
   ]
 ];
 
@@ -465,10 +465,10 @@ Case::baddef = "Bad Case definition for ``."
 setupCases[sym_, ___] := Message[Case::baddef, sym];
 
 SetHoldAllComplete[procRewrites];
-procRewrites[s_Symbol ? HasImmediateValueQ] := HoldPattern[s] -> s;
-procRewrites[l_List] := Map[procRewrites, Unevaluated @ l];
-procRewrites[a_ -> b_] := HoldPattern[a] -> b;
-procRewrites[a_ :> b_] := HoldPattern[a] :> b;
+procRewrites[s_Symbol ? HasImmediateValueQ] := HoldP[s] -> s;
+procRewrites[l_List] := Map[procRewrites, Uneval @ l];
+procRewrites[a_ -> b_] := HoldP[a] -> b;
+procRewrites[a_ :> b_] := HoldP[a] :> b;
 
 SetUsage @ "
 Case[rules$$] is a macro for defining functions of one variable, specifying LHS and RHS rules for the argument.
@@ -508,8 +508,8 @@ setupStringCases[sym_Symbol, echo_, pre:Hold[preseq___], CompoundExpression[args
   {holds, counter = 0, lhs}, With[{strVar = Symbol[QualifiedSymbolName[sym] <> "$str"]}, {strVarPatt = strVar_Str},
   holds = Hold @@@ Hold[args];
   lhs = If[pre === Hold[], Hold[sym[strVarPatt]], Hold[sym[preseq][strVarPatt]]];
-  holds = ReplaceAll[holds, procRewrites @ rewrites];
-  holds = ReplaceAll[holds, {HoldPattern[Out[] | $]  :> sym, HoldPattern[$LHS] -> strVar}];
+  holds = RepAll[holds, procRewrites @ rewrites];
+  holds = RepAll[holds, {HoldP[Out[] | $]  :> sym, HoldP[$LHS] -> strVar}];
   If[echo, Print["StringCase Echo not supported yet."]];
   toStringCasesReplaceExpr[lhs, strVar, Map[toStringCasesRule, List @@ holds] /. $globalSCVar -> strVar]
 ]];
@@ -524,7 +524,7 @@ toStringCasesReplaceExpr[lhs_, var_, {rule_}] :=
   toStringCasesReplaceExpr[lhs, var, rule];
 
 toStringCasesReplaceExpr[Hold[lhs_], var_, rules_] :=
-  SetDelayed[lhs, Block[{}, StringReplace[var, rules]; None]];
+  SetDelayed[lhs, Block[{}, SRep[var, rules]; None]];
 
 (**************************************************************************************************)
 
@@ -532,10 +532,10 @@ toStringCasesRule[Hold[Verbatim[Pattern][globalVar_Symbol, lhs_], rhs_]] :=
   toStringCasesRule[Hold[lhs, rhs]] /. globalVar :> $globalSCVar;
 
 toStringCasesRule[Hold[List[pattElems___], rhs_]] :=
-  StringExpression[StartOfString, pattElems, EndOfString] :> Return[rhs, Block];
+  SExpr[StartOfString, pattElems, EndOfString] :> Return[rhs, Block];
 
-toStringCasesRule[Hold[StringExpression[pattElems___], rhs_]] :=
-  StringExpression[StartOfString, pattElems, EndOfString] :> Return[rhs, Block];
+toStringCasesRule[Hold[SExpr[pattElems___], rhs_]] :=
+  SExpr[StartOfString, pattElems, EndOfString] :> Return[rhs, Block];
 
 toStringCasesRule[Hold[patt_, rhs_]] :=
   StartOfString ~~ patt ~~ EndOfString :> Return[rhs, Block];
@@ -551,14 +551,14 @@ $numNames = <|1 -> "first", 2 -> "second", 3 -> "third", 4 -> "fourth"|>;
 defineCheckArgMacro[checkMacro_Symbol, checker_, msgName_Str] := DefineMacro[coerceMacro,
   coerceMacro[n_] := With[
     {nthArg = Part[$LHSPatternSymbols, n], numStr = $numNames[n]},
-    Quoted @ Replace[coercer[nthArg], $Failed :> ReturnFailed[MessageName[$LHSHead, msgName], numStr]]
+    Quoted @ Rep[coercer[nthArg], $Failed :> ReturnFailed[MessageName[$LHSHead, msgName], numStr]]
   ]
 ];
 
 defineCoerceArgMacro[coerceMacro_Symbol, coercer_, msgName_Str] := DefineMacro[coerceMacro,
   coerceMacro[n_] := With[
     {nthArg = Part[$LHSPatternSymbols, n], numStr = $numNames[n]},
-    Quoted @ Replace[coercer[nthArg], $Failed :> ReturnFailed[MessageName[$LHSHead, msgName], numStr]]
+    Quoted @ Rep[coercer[nthArg], $Failed :> ReturnFailed[MessageName[$LHSHead, msgName], numStr]]
   ]
 ];
 
@@ -687,12 +687,12 @@ SetHoldAllComplete[symbolsToCapitalizedStrings];
 
 symbolsToCapitalizedStrings[syms_] := Map[
   Fn[sym, capitalizeFirstLetter @ HoldSymbolName @ sym, HoldAllComplete],
-  Unevaluated @ syms
+  Uneval @ syms
 ];
 
 capitalizeFirstLetter[str_Str] := capitalizeFirstLetter[str] =
-  If[StringStartsQ[str, "$"], capitalizeFirstLetter @ StringDrop[str, 1],
-    ToUpperCase[StringTake[str, 1]] <> StringDrop[str, 1]];
+  If[SStartsQ[str, "$"], capitalizeFirstLetter @ SDrop[str, 1],
+    ToUpperCase[STake[str, 1]] <> SDrop[str, 1]];
 
 (**************************************************************************************************)
 
@@ -807,8 +807,8 @@ SetHoldAllComplete[findMatchingSymbols];
 $lowerCaseSymbolRegExp = RegularExpression["\\b([a-z])(\\w+)\\b"];
 findMatchingSymbols[syms_List] := findMatchingSymbols[syms] = Block[
   {$Context = "QuiverGeometry`Private`Dummy`", $ContextPath = {"System`", "QuiverGeometry`", $Context}, str},
-  str = ToString[Unevaluated @ syms, InputForm];
-  str = StringReplace[str, $lowerCaseSymbolRegExp :> StringJoin[ToUpperCase["$1"], "$2"]];
+  str = ToString[Uneval @ syms, InputForm];
+  str = SRep[str, $lowerCaseSymbolRegExp :> SJoin[ToUpperCase["$1"], "$2"]];
   ToExpression[str, InputForm, Quoted]
 ];
 
@@ -842,7 +842,7 @@ mBinaryReadToSymbols[stream_, specs_] := Block[
   $bytePos = 0;
   {syms, names, types} = Transpose @ HoldMap[binaryUnpacker, specs];
   With[{syms = syms, types = types, names = names},
-    Quoted[syms = Replace[
+    Quoted[syms = Rep[
       BinaryRead[stream, types],
       Except[_List] :> ReturnFailed[General::binaryUnpackFailed]
     ]]
@@ -859,7 +859,7 @@ DefineMacro[BinaryReadToAssociation,
   BinaryReadToAssociation[stream_, specs__] := mBinaryReadToAssociation[stream, {specs}]];
 
 mBinaryReadToAssociation[stream_, specs_] := Block[
-  {syms, names, types, $bytePos, indices, transformer = Identity, reader},
+  {syms, names, types, $bytePos, indices, transformer = Id, reader},
   $bytePos = 0;
   {syms, names, types} = Transpose @ HoldMap[binaryUnpacker, specs];
 
@@ -867,15 +867,15 @@ mBinaryReadToAssociation[stream_, specs_] := Block[
   If[indices =!= {}, transformer = MapAt[fromTerminatedString, indices]];
 
   indices = List /@ MatchIndices[names, None];
-  names = Select[names, StringQ];
+  names = Select[names, StrQ];
   If[indices =!= {}, transformer = transformer /* Delete[indices]];
 
   reader = If[AllSameQ[types],
-    ToQuoted[BinaryReadList, Quoted @ stream, First @ types, Len @ types],
+    ToQuoted[BinaryReadList, Quoted @ stream, F @ types, Len @ types],
     ToQuoted[BinaryRead, Quoted @ stream, types]
   ];
   With[{names = names, transformer = transformer, reader = reader},
-    Quoted @ AssociationThread[names, Replace[
+    Quoted @ AssocThread[names, Rep[
       transformer @ reader,
       Except[_List] :> ReturnFailed[General::binaryUnpackFailed]
     ]]
@@ -884,7 +884,7 @@ mBinaryReadToAssociation[stream_, specs_] := Block[
 
 (**************************************************************************************************)
 
-fromTerminatedString[s_] := FromCharacterCode[ToCharacterCode @ s, "UTF8"];
+fromTerminatedString[s_] := FromCharCode[ToCharCode @ s, "UTF8"];
 
 (**************************************************************************************************)
 
@@ -894,7 +894,7 @@ binaryUnpacker[e:(_Pattern | _Optional)] := Module[
   type = DeepFirstCase[Hold @ e, $atomTypeP];
   vars = Cases[Hold @ e,
     s:Except[$atomTypeP, _Symbol] :> Hold[s],
-    Infinity, Heads -> False
+    Inf, Heads -> False
   ];
   Splice @ Map[binaryUnpacker[# -> type]&, vars]
 ];
@@ -903,7 +903,7 @@ binaryUnpacker[Verbatim[Pattern][sym_Symbol, spec_]] :=
   binaryUnpacker[sym -> spec];
 
 binaryUnpacker[(sym_Symbol | Hold[sym_]) -> spec_] :=
-  {Quoted @ sym, SymbolName @ Unevaluated @ sym, unpackBinaryTypeSpec @ spec};
+  {Quoted @ sym, SymbolName @ Uneval @ sym, unpackBinaryTypeSpec @ spec};
 
 binaryUnpacker[spec_] :=
   {Quoted @ QuiverGeometry`Private`$unused, None, unpackBinaryTypeSpec @ spec};
@@ -919,13 +919,13 @@ unpackBinaryTypeSpec = Case[
   list_List  :=
     Map[%, list];
 
-  HoldPattern @ Skip[n_Integer ? NonNegative] := grabNBytes[n];
-  HoldPattern @ Goto[n_Integer]               := grabNBytes[n - $bytePos];
+  HoldP @ Skip[n_Integer ? NonNegative] := grabNBytes[n];
+  HoldP @ Goto[n_Integer]               := grabNBytes[n - $bytePos];
 
   spec_ := badBinSpec[HoldForm @ spec];
 ];
 
-$binTypeSize = Association[
+$binTypeSize = Assoc[
    int8 -> 1,  int16 -> 2,  int32 -> 4,  int64 -> 8,  int128 -> 16,
   uint8 -> 1, uint16 -> 2, uint32 -> 4, uint64 -> 8, uint128 -> 16,
   char8 -> 1,
@@ -941,7 +941,7 @@ $binTypeStr = Assoc[
   nzstr -> "TerminatedString"
 ];
 
-$atomTypeP = Alternatives @@ Keys[$binTypeSize];
+$atomTypeP = Alt @@ Keys[$binTypeSize];
 
 (**************************************************************************************************)
 
@@ -1034,7 +1034,7 @@ defineSetter[symbol_, value_] := (
   SetHoldAll @ symbol;
 );
 
-defineSetter[SetAutomatic, Automatic];
+defineSetter[SetAutomatic, Auto];
 defineSetter[SetNone, None];
 defineSetter[SetAll, All];
 defineSetter[SetInherited, Inherited];
@@ -1046,7 +1046,7 @@ SetHoldAll[SetMissing];
 
 PublicMutatingFunction[SetScaledFactor]
 
-DefineLiteralMacro[SetScaledFactor, SetScaledFactor[lhs_, scale_] := If[MatchQ[lhs, Scaled[_ ? NumericQ]], lhs //= P1 /* N; lhs *= scale]];
+DefineLiteralMacro[SetScaledFactor, SetScaledFactor[lhs_, scale_] := If[MatchQ[lhs, Scaled[_ ? NumericQ]], lhs //= F /* N; lhs *= scale]];
 
 (**************************************************************************************************)
 
@@ -1060,15 +1060,15 @@ PrivateFunction[ReplaceNone, ReplaceMissing, ReplaceAutomatic, ReplaceInherited]
 
 defineReplacer[symbol_, pattern_] := (
   DefineLiteralMacro[symbol,
-    symbol[lhs_, rhs_] := Replace[lhs, pattern :> rhs],
-    symbol[rhs_]       := Replace[pattern :> rhs]
+    symbol[lhs_, rhs_] := Rep[lhs, pattern :> rhs],
+    symbol[rhs_]       := Rep[pattern :> rhs]
   ];
   SetHoldAll @ symbol;
 );
 
 defineReplacer[ReplaceNone, None];
 defineReplacer[ReplaceMissing, _Missing];
-defineReplacer[ReplaceAutomatic, Automatic];
+defineReplacer[ReplaceAutomatic, Auto];
 defineReplacer[ReplaceInherited, Inherited];
 
 (**************************************************************************************************)
@@ -1121,7 +1121,7 @@ PublicSpecialFunction[MakeTemporaryFile]
 SetInitialValue[$tempFileCounter, 0];
 
 MakeTemporaryFile[args___Str, name_Str] := Scope[
-  fileName = StringReplace[name, "#" :> StringJoin[IntegerString[$ProcessID], "_", IntegerString[$tempFileCounter++, 10, 5]]];
+  fileName = SRep[name, "#" :> SJoin[IntStr[$ProcessID], "_", IntStr[$tempFileCounter++, 10, 5]]];
   TemporaryPath[args, fileName]
 ];
 
@@ -1184,7 +1184,7 @@ WithInternet[body_] := Block[{$AllowInternet = True}, body];
 PublicFunction[VectorListableQ]
 
 VectorListableQ[sym_Symbol] := MemberQ[Attributes @ sym, Listable];
-VectorListableQ[HoldPattern[Fn[___, Listable | {___, Listable, ___}]]] := True;
+VectorListableQ[HoldP[Fn[___, Listable | {___, Listable, ___}]]] := True;
 VectorListableQ[_] := False;
 
 PrivateMutatingFunction[setVectorListableOperator]

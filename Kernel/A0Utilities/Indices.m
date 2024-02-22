@@ -10,7 +10,7 @@ PublicFunction[EquivalenceClassLabels]
 EquivalenceClassLabels[list_] := Scope[
   n = Max[list];
   arr = Repeat[0, n];
-  ScanIndexed[Set[Part[arr, #1], P1[#2]]&, list];
+  ScanIndexed[Set[Part[arr, #1], F[#2]]&, list];
   arr
 ]
 
@@ -29,7 +29,7 @@ ArrayLabelIndices[array_, labels_] :=
   VectorReplace[array, RuleRange @ labels];
 
 ArrayLabelIndices[array_, labels_, level_] :=
-  Replace[array, RuleRange @ labels, List[level]];
+  Rep[array, RuleRange @ labels, List[level]];
 
 (**************************************************************************************************)
 
@@ -61,7 +61,7 @@ Unprotect[PositionIndex];
 PositionIndex[list_, 2] := Scope[
   assoc = <||>;
   ScanIndexed[
-    {e, part} |-> KeyAppendTo[assoc, e, P1 @ part],
+    {e, part} |-> KAppTo[assoc, e, F @ part],
     list, {2}
   ];
   assoc
@@ -77,7 +77,7 @@ ExtractIndices[array$, indices$] gives a list of the parts of array$ given by in
 * indices$ can be an array of any depth, whose values are positive integer parts.
 "
 
-ExtractIndices[array_, indices_List /; VectorQ[indices, NonNegativeMachineIntegerQ]] :=
+ExtractIndices[array_, indices_List /; VecQ[indices, NonNegativeMachineIntegerQ]] :=
   Part[array, indices];
 
 ExtractIndices[array_, indices_List /; MatrixQ[indices, NonNegativeMachineIntegerQ]] :=
@@ -97,7 +97,7 @@ InvertIndex[assoc_Assoc] :=
 PublicFunction[FlattenIndex]
 
 FlattenIndex[assoc_] :=
-  Flatten @ KeyValueMap[{k, v} |-> Map[k -> #&, v], assoc];
+  Flatten @ KVMap[{k, v} |-> Map[k -> #&, v], assoc];
 
 (**************************************************************************************************)
 
@@ -109,7 +109,7 @@ FirstIndex[{e$1, e$2, $$}, patt$] gives the first i$ for which e$i matches patt$
 
 SetAttributes[FirstIndex, HoldRest];
 FirstIndex[list_, pattern_, default_:None] :=
-  P1 @ FirstPosition[list, pattern, {default}, 1, Heads -> False]
+  F @ FirstPosition[list, pattern, {default}, 1, Heads -> False]
 
 (**************************************************************************************************)
 

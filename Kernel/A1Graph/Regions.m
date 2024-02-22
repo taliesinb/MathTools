@@ -39,12 +39,12 @@ iRegionSubgraph[graph_, region_, comp_] := Scope[
   edges = Part[regionData, 2];
   If[vertices === edges === {}, ReturnFailed[RegionSubgraph::empty]];
   If[comp,
-    vertices = Complement[Range @ VertexCount @ graph, vertices];
-    edges = Complement[Range @ EdgeCount @ graph, edges];
+    vertices = Comp[Range @ VertexCount @ graph, vertices];
+    edges = Comp[Range @ EdgeCount @ graph, edges];
   ];
   vertices = Part[VertexList @ graph, vertices];
   edges = Part[EdgeList @ graph, edges];
-  vertices = DeleteDuplicates @ Join[vertices, AllVertices @ edges];
+  vertices = Dedup @ Join[vertices, AllVertices @ edges];
   ExtendedSubgraph[graph, vertices, edges]
 ];
 
@@ -187,7 +187,7 @@ PrivateFunction[skeletonBox, skeletonString]
 skeletonBox[head_, color_, args_] :=
   RowBox @ Flatten @ {head, "[", Riffle[colorBox[skeletonString @ #, color]& /@ args, ","], "]"};
 
-skeletonString[e_] := StringJoin["\[LeftAngleBracket]", TextString @ e, "\[RightAngleBracket]"];
+skeletonString[e_] := SJoin["\[LeftAngleBracket]", TextString @ e, "\[RightAngleBracket]"];
 
 regionDataListVertices[regionDataElements_] :=
   regionDataElements[[All, 1]];
@@ -200,7 +200,7 @@ pathToRegion[GraphPathData[a_, b_, c_]] :=
 
 InvertPath[GraphPathData[a_, b_, c_]] := Scope[
   cn = Range @ Len @ b;
-  GraphPathData[Rev @ a, Rev @ b, Complement[cn, c]]
+  GraphPathData[Rev @ a, Rev @ b, Comp[cn, c]]
 ];
 
 (**************************************************************************************************)
@@ -363,8 +363,8 @@ sowEdgeList[i_List] := StuffBag[$edgeBag, i, 1];
 
 
 SetHoldRest[findStrictEdge];
-findStrictEdge[v1_, v2_, else_:None] := First[
-  Intersection[
+findStrictEdge[v1_, v2_, else_:None] := F[
+  Inter[
     Part[$VertexInEdgeTable, v2],
     Part[$VertexOutEdgeTable, v1]
   ],
@@ -390,7 +390,7 @@ GraphRegion::malformedrspec = "The region specification `` was malformed.";
 
 (** literal vertices and edges             **)
 
-$regionHeads = Alternatives[
+$regionHeads = Alt[
   Disk, Circle, Annulus, Line, HalfLine, InfiniteLine, Path, Polygon,
   EdgePattern, VertexPattern,
   GraphRegionBoundary, GraphRegionComplement, GraphRegionUnion, GraphRegionIntersection
@@ -422,7 +422,7 @@ GraphRegionElementQ[_Rule | _TwoWayRule | _DirectedEdge | _UndirectedEdge] := Tr
 
 processRegion[spec:((Rule|TwoWayRule|DirectedEdge|UndirectedEdge)[l_, r_])] := Scope[
   e = findEdge[findVertex @ l, findVertex @ r];
-  If[!IntegerQ[e], fail["nfedge", spec]];
+  If[!IntQ[e], fail["nfedge", spec]];
   edgeIndicesToPathData @ {e}
 ];
 
@@ -493,7 +493,7 @@ allEdgeVertices[edgeIndices_] :=
 GraphRegionElementQ[_ChartSymbol] := True;
 
 processRegion[ChartSymbol[s_, comp_:All]] :=
-  processRegion @ ChartRegion[ParseRegionWord @ StringDelete[s, "+"|"-"], comp];
+  processRegion @ ChartRegion[ParseRegionWord @ SDelete[s, "+"|"-"], comp];
 
 (**************************************************************************************************)
 
@@ -509,12 +509,12 @@ GraphRegionElementQ[ChartRegion[_List, ___]] := True;
 
 processRegion[ChartRegion[cards_List, i_:All]] := Scope[
   edgeLists = Map[$TagIndices, cards];
-  overlappingEdges = Union @@ Intersection @@@ Subsets[edgeLists, {2, Infinity}];
-  edgeLists = Complement[#, overlappingEdges]& /@ edgeLists;
-  vertices = Intersection @@ Map[allEdgeVertices, edgeLists];
+  overlappingEdges = Union @@ Inter @@@ Subsets[edgeLists, {2, Inf}];
+  edgeLists = Comp[#, overlappingEdges]& /@ edgeLists;
+  vertices = Inter @@ Map[allEdgeVertices, edgeLists];
   edges = Union @@ edgeLists;
   {vertices, subgraphEdges} = FirstLast @ subgraphRegionData @ vertices;
-  edges = Intersection[subgraphEdges, edges];
+  edges = Inter[subgraphEdges, edges];
   If[i =!= All,
     vertices = Part[WeaklyConnectedComponents[Subgraph[$IndexGraph, vertices]], i];
     edgePairs = EdgePairs @ $IndexGraph;
@@ -540,7 +540,7 @@ processRegion[Point[v_]] :=
 
 GraphRegionElementQ[VertexPattern[_]] := True;
 
-vertexPatternQ[v_] := ContainsQ[v, Pattern | Alternatives | Blank];
+vertexPatternQ[v_] := ContainsQ[v, Pattern | Alt | Blank];
 
 processRegion[lv_LatticeVertex ? vertexPatternQ] :=
   processRegion @ VertexPattern @ lv;
@@ -565,7 +565,7 @@ processRegion[spec_IndexedVertex] := Scope[
 (**************************************************************************************************)
 
 
-processRegion[list_List /; VectorQ[list, GraphRegionElementQ]] :=
+processRegion[list_List /; VecQ[list, GraphRegionElementQ]] :=
   RegionDataUnion @ Map[processRegion, list];
 
 (**************************************************************************************************)
@@ -577,16 +577,16 @@ findVertexIndices[e_] := Block[{failAuto = Fn[$Failed]}, iFindVertexIndices @ e]
 iFindVertexIndices = Case[
   IndexedVertex[i:{__Int} ? validVertexIndexQ] := i;
   p:VertexPattern[v_]                              := MatchIndices[$VertexList, v];
-  other_                                           := Replace[findVertex[other], i_Int :> {i}];
+  other_                                           := Rep[findVertex[other], i_Int :> {i}];
   list_List                                        := Scope[
     Which[
       res = Map[iFindVertexIndices, list];
-      VectorQ[res, IntegerVectorQ],
+      VecQ[res, IntegerVectorQ],
         Union @@ res,
-      KeyExistsQ[$VertexIndex, list],
+      KeyQ[$VertexIndex, list],
         List @ $VertexIndex[list],
       IntegerVectorQ[list] && validVertexIndexQ[list],
-        DeleteDuplicates @ list,
+        Dedup @ list,
       True,
         $Failed
     ]
@@ -660,7 +660,7 @@ processRegion[g_GraphPathData] := g;
 (**************************************************************************************************)
 
 
-$metricRegionHeads = Alternatives[
+$metricRegionHeads = Alt[
   Line, Disk, Annulus, Circle, HalfLine, InfiniteLine, Polygon, StarPolygon, Path
 ];
 
@@ -724,7 +724,7 @@ doWalk[startId_, stopId_, pathWord_, shouldRepeat_, func_] := Scope[
     cardinal = Part[pathWord, Mod[i, wordLen, 1]];
     invertedQ = InvertedQ[cardinal];
     edgeId = Part[$TagVertexAdjacentEdgeTable, Key @ cardinal, vertexId];
-    If[InvertedQ[edgeId], edgeId //= P1; invertedQ = True];
+    If[InvertedQ[edgeId], edgeId //= F; invertedQ = True];
     If[edgeId === None,
       If[shouldRepeat, Break[]];
       failWalk[cardinal, vertexId]];
@@ -764,19 +764,19 @@ GraphRegionElementQ[Cycles[_List] | Cycles[_Str]] := True;
 processRegion[Cycles[word_]] := Scope[
   word //= ParseRegionWord;
   If[word === {}, Return @ Splice @ Array[GraphPathData[{#}, {}, {}]&, $VertexCount]];
-  init = P1 @ word;
+  init = F @ word;
   edges = Lookup[$TagIndices, init];
   startVertices = Sort @ Part[$EdgePairs, edges, 1];
   cycles = {};
   While[startVertices =!= {},
-    startVertex = P1 @ startVertices;
+    startVertex = F @ startVertices;
     cycle = processRegion @ Line[IndexedVertex /@ {startVertex, startVertex}, word];
-    pathVertices = P1 @ cycle;
+    pathVertices = F @ cycle;
     {vertexFirst, vertexLast} = FirstLast @ pathVertices;
     If[vertexFirst === vertexLast,
-      AppendTo[cycles, cycle];
+      AppTo[cycles, cycle];
     ];
-    startVertices = Complement[startVertices, pathVertices];
+    startVertices = Comp[startVertices, pathVertices];
   ];
   Splice @ cycles
 ];
@@ -810,7 +810,7 @@ processRegion[Line[{vertex_}]] :=
 processRegion[Line[vertices_]] := Scope[
   vertices //= findVertices;
   collectPathData[
-    sowVertex @ P1 @ vertices;
+    sowVertex @ F @ vertices;
     ApplyWindowed[findAndSowGeodesic, vertices];
   ]
 ];
@@ -869,14 +869,14 @@ GraphRegionElementQ[InfiniteLine[{_, _}] | InfiniteLine[_, _]] := True;
 processRegion[InfiniteLine[v_, dir_]] := Scope[
   cardinalWord = ParseRegionWord @ dir;
   {posVerts, posEdges, posInversions} = List @@ processRegion @ HalfLine[v, cardinalWord];
-  If[Len[posVerts] > 0 && PN[posVerts] === P1[posVerts],
+  If[Len[posVerts] > 0 && L[posVerts] === F[posVerts],
     Return @ GraphPathData[posVerts, posEdges, {}]];
   {negVerts, negEdges, negInversions} = List @@ processRegion @ HalfLine[v, Inverted /@ Rev @ cardinalWord];
   negEdgeLen = Len[negEdges];
   GraphPathData[
     Join[Rev @ Rest @ negVerts, posVerts],
     Join[Rev @ negEdges, posEdges],
-    Join[Complement[Range @ negEdgeLen, negEdgeLen + 1 - negInversions], negEdgeLen + posInversions]
+    Join[Comp[Range @ negEdgeLen, negEdgeLen + 1 - negInversions], negEdgeLen + posInversions]
   ]
 ];
 
@@ -888,7 +888,7 @@ GraphRegionElementQ[Polygon[_List]] := True;
 
 processRegion[Polygon[vertices_]] := Scope[
   vertices = findVertices @ vertices;
-  sowVertex @ P1 @ vertices;
+  sowVertex @ F @ vertices;
   collectPathData[
     findAndSowGeodesic @@@ Partition[vertices, 2, 1, 1]
   ]
@@ -914,8 +914,8 @@ processRegion[Locus[r1_, r2_, "Polar"]] :=
   processRegion[Locus[r1, r2, -1]];
 
 processRegion[l:Locus[r1_, r2_, d_:0 ? NumericQ]] := Scope[
-  r1 = P1 @ processRegion @ r1;
-  r2 = P1 @ processRegion @ r2;
+  r1 = F @ processRegion @ r1;
+  r2 = F @ processRegion @ r2;
   If[r1 === {} || r2 === {}, fail["emptyarea", l]];
   d1 = extractDistanceToRegion @ r1;
   d2 = extractDistanceToRegion @ r2;
@@ -1016,7 +1016,7 @@ circularRegionData[spec_, center_, condition_] := Scope[
 subgraphRegionData[vertices_] := Scope[
   forward = Flatten @ Part[$VertexOutEdgeTable, vertices];
   backward = Flatten @ Part[$VertexInEdgeTable, vertices];
-  candidates = Intersection[forward, backward];
+  candidates = Inter[forward, backward];
   vertexAssoc = ConstantAssociation[vertices, True];
   edges = Select[candidates, Apply[And, Lookup[vertexAssoc, Part[$EdgePairs, #]]]&];
   GraphRegionData[
@@ -1038,8 +1038,8 @@ GraphRegionBoundary[region$] represents the boundary of region$.
 GraphRegionElementQ[GraphRegionBoundary[_]] := True;
 
 processRegion[GraphRegionBoundary[region_]] := Scope[
-  vertices = P1 @ processRegion @ region;
-  complement = Complement[Range @ $VertexCount, vertices];
+  vertices = F @ processRegion @ region;
+  complement = Comp[Range @ $VertexCount, vertices];
   edgeVertices = Select[vertices, IntersectingQ[Part[$VertexAdjacencyTable, #], complement]&];
   subgraphRegionData @ edgeVertices
 ];
@@ -1059,7 +1059,7 @@ GraphRegionElementQ[ConnectedSubgraph[r_]] := AllTrue[ToList @ r, GraphRegionEle
 
 processRegion[ConnectedSubgraph[region_]] := Scope[
   region = RegionDataUnion @ Map[processRegion, ToList @ region];
-  vertices = P1 @ region;
+  vertices = F @ region;
   RegionDataUnion[{region, subgraphRegionData @ vertices}]
 ];
 
@@ -1091,8 +1091,8 @@ RegionDataComplement[e:{_, _}] := Scope[
   {ea, eb} = regionDataListEdges /@ e;
   danglingEdges = Pick[ea, MemberQ[vb, #1 | #2]& @@@ Part[$IndexGraphEdgeList, ea]];
   GraphRegionData[
-    Complement[va, vb],
-    Complement[ea, eb, danglingEdges]
+    Comp[va, vb],
+    Comp[ea, eb, danglingEdges]
   ]
 ]
 
@@ -1123,8 +1123,8 @@ RegionDataIntersection[{a_}] := a;
 
 RegionDataIntersection[list_List] :=
   GraphRegionData[
-    Intersection @@ regionDataListVertices @ list,
-    Intersection @@ regionDataListEdges @ list
+    Inter @@ regionDataListVertices @ list,
+    Inter @@ regionDataListEdges @ list
   ]
 
 

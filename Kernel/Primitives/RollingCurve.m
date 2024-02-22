@@ -58,10 +58,10 @@ toRollingCurvePoints[points_, radius_:1, shape_:"Arc"] := Scope @ CachedInto[
   radius //= N;
   points //= N;
 
-  numBends = Length[points] - 2;
+  numBends = Len[points] - 2;
   dists = ApplyWindowed[Dist, points];
 
-  radii = ParseCyclicSpec[radius, numBends] /. Automatic -> 0.1;
+  radii = ParseCyclicSpec[radius, numBends] /. Auto -> 0.1;
   radii = ZipMap[Min, ApplyWindowed[Min, dists], radii];
   triples = Partition[points, 3, 1];
 

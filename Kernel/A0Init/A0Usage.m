@@ -9,10 +9,10 @@ $WindowsQ =  $OperatingSystem === "Windows";
 PrivateFunction[LocalPath, DataPath]
 
 LocalPath[args___Str] := FileNameJoin @ List[$PackageDirectory, args];
-e_LocalPath := (Message[LocalPath::badarguments, MsgExpr @ Unevaluated @ e]; $Failed)
+e_LocalPath := (Message[LocalPath::badarguments, MsgExpr @ Uneval @ e]; $Failed)
 
 DataPath[dir_Str, args___Str] := FileNameJoin[{ensureDataDir @ dir, args}];
-e_DataPath := (Message[DataPath::badarguments, MsgExpr @ Unevaluated @ e]; $Failed)
+e_DataPath := (Message[DataPath::badarguments, MsgExpr @ Uneval @ e]; $Failed)
 
 $dataDir = FileNameJoin[{$PackageDirectory, "Data"}];
 
@@ -34,7 +34,7 @@ If[!$Notebooks,
 $slotRegularExpression = RegularExpression["<\\*([^*]+)\\*>"];
 
 substituteUsageSlots[s_Str] :=
-  StringReplace[s, "<*" ~~ Shortest[slot___] ~~ "*>" :> Block[
+  SRep[s, "<*" ~~ Shortest[slot___] ~~ "*>" :> Block[
     {$ContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`Private`"}},
     toUsageStr[ToExpression[slot, InputForm]]
   ]];
@@ -62,7 +62,7 @@ PrivateVariable[$literalSymbolRegex]
 $literalSymbolStr = "\\$Failed Automatic True False None Inherited Left Right Above Below Center \
 Top Bottom Infinity Tiny Small Medium Large Inverted Into";
 
-$literalSymbolRegex = RegularExpression["(" <> StringReplace[$literalSymbolStr, " " -> "|"] <> ")"];
+$literalSymbolRegex = RegularExpression["(" <> SRep[$literalSymbolStr, " " -> "|"] <> ")"];
 $literalSymbolColor = RGBColor[{0.15, 0.15, 0.15}];
 
 PrivateVariable[$mainSymbolRegex, $currentMainSymbol]
@@ -71,11 +71,11 @@ $mainSymbolRegex = RegularExpression["^\\$?[A-Za-z][A-Za-z0-9]*"];
 $mainSymbolColor = RGBColor[{0.71, 0.03, 0.}];
 
 colorLiterals[usageString_] := Scope[
-  usageString = StringTrim[usageString];
-  StringReplace[
+  usageString = STrim[usageString];
+  SRep[
     usageString, {
       string:$literalStringRegex :> makeStyleBox[
-        "\\\"" <> StringTake[string, {2, -2}] <> "\\\"",
+        "\\\"" <> STake[string, {2, -2}] <> "\\\"",
         FontColor -> $literalStringColor, ShowStringCharacters -> True,
         FontWeight -> "Medium"],
       WordBoundary ~~ literal:$literalSymbolRegex ~~ WordBoundary :> makeLiteralSymbolBox[literal]
@@ -83,9 +83,9 @@ colorLiterals[usageString_] := Scope[
   ]
 ];
 
-colorMainSymbol[usageString_] := If[$currentMainSymbol === None, usageString, StringReplace[
+colorMainSymbol[usageString_] := If[$currentMainSymbol === None, usageString, SRep[
   usageString, {
-  ("\"" ~~ $currentMainSymbol ~~ "\"") :> StringTake[makeMainSymbolInlineSyntax[], {4, -2}],
+  ("\"" ~~ $currentMainSymbol ~~ "\"") :> STake[makeMainSymbolInlineSyntax[], {4, -2}],
   WordBoundary ~~ $currentMainSymbol ~~ WordBoundary :> makeMainSymbolInlineSyntax[],
   "<|" -> "\[LeftAssociation]",
   "|>" -> "\[RightAssociation]",
@@ -101,7 +101,7 @@ makeMainSymbolInlineSyntax[] := makeStyleBox[$currentMainSymbol,
 
 $otherSymbolColor = RGBColor[{0.086, 0.367, 0.615}];
 
-colorOtherSymbols[usageString_] := StringReplace[
+colorOtherSymbols[usageString_] := SRep[
   usageString, {
     "%%" ~~ w:WordCharacter.. :> makeLiteralSymbolBox[w],
     "%" ~~ w:WordCharacter.. :> makeOtherSymbolBox[w]
@@ -111,15 +111,15 @@ colorOtherSymbols[usageString_] := StringReplace[
 makeLiteralSymbolBox[w_] := makeStyleBox[w, FontColor -> $literalSymbolColor, FontWeight -> "Medium"];
 makeOtherSymbolBox[w_] := makeStyleBox[w, FontColor -> $otherSymbolColor, FontWeight -> "Medium"];
 
-makeStyleBox[str_, opts___] := StringJoin[
-  "\!\(\*StyleBox[\"", str, "\", ", StringTake[ToString[{opts}, InputForm], {2, -2}], "]\)"
+makeStyleBox[str_, opts___] := SJoin[
+  "\!\(\*StyleBox[\"", str, "\", ", STake[ToString[{opts}, InputForm], {2, -2}], "]\)"
 ];
 
 (**************************************************************************************************)
 
 $headerLineRegex = RegularExpression["(?m)^## ([^\n]*)$"];
 
-addHeaderLines[usageString_] := StringReplace[
+addHeaderLines[usageString_] := SRep[
   usageString, {
     $headerLineRegex :>
       addInlinePane @ makeStyleBox["$1", FontWeight -> "Bold"],
@@ -128,15 +128,15 @@ addHeaderLines[usageString_] := StringReplace[
   }
 ];
 
-addInlinePane[str_Str] := StringJoin[
+addInlinePane[str_Str] := SJoin[
   "\!\(\*PaneBox[",
-  StringTake[str, {4, -3}],
+  STake[str, {4, -3}],
   "], FrameMargins -> {{0, 0}, {1, 4}}]\)"
 ];
 
 (**************************************************************************************************)
 
-replaceEllipsis[str_Str] := StringReplace[str, "\[Ellipsis]" -> "..."];
+replaceEllipsis[str_Str] := SRep[str, "\[Ellipsis]" -> "..."];
 
 (**************************************************************************************************)
 
@@ -146,13 +146,13 @@ $shorterGridBoxL = "\(\*PaneBox[GridBox[";
 $shorterGridBoxR = ", Rule[ImageMargins, List[List[0,0], List[-5,-5]]], Rule[FrameMargins, List[List[0,0], List[-3,-6]]]]\)";
 $shorterGridBoxR = ", Rule[ImageMargins, List[List[0,0], List[$BOT, $TOP]]]]\)";
 
-shortenGridBoxes[usageString_] := StringReplace[
+shortenGridBoxes[usageString_] := SRep[
   usageString,
   $gridBoxL ~~ Shortest[content__] ~~ $gridBoxR :> Block[{offset, bot, top},
     offset = StringCount[content, "{\""];
     bot = TextString @ Round[ - 0.5*offset];
     top = TextString @ Round[ - 0.5*offset];
-    $shorterGridBoxL <> content <> StringReplace[$shorterGridBoxR, {"$BOT" -> bot, "$TOP" -> top}]
+    $shorterGridBoxL <> content <> SRep[$shorterGridBoxR, {"$BOT" -> bot, "$TOP" -> top}]
   ]
 ];
 
@@ -181,8 +181,8 @@ If[!AssocQ[GeneralUtilities`Private`$SetUsageFormatCache],
   ];
   With[{arn := GeneralUtilities`Code`PackagePrivate`appendRelatedNote},
     If[FreeQ[DownValues[arn], makeOtherSymbolBox],
-      DownValues[arn] = ReplaceAll[
-        DownValues[arn], HoldPattern[Riffle[z_, ", "]] :> Riffle[makeOtherSymbolBox /@ z, ", "]
+      DownValues[arn] = RepAll[
+        DownValues[arn], HoldP[Riffle[z_, ", "]] :> Riffle[makeOtherSymbolBox /@ z, ", "]
       ]
     ];
   ];
@@ -199,17 +199,17 @@ customSetUsageProcessor = Composition[
 
 (* this allows % to be used in LHS of SetUsage lines *)
 
-encodeUppercase[i_] := FromCharacterCode[65 + IntegerDigits[i, 26, 2]];
-decodeUppercase[s_] := FromDigits[ToCharacterCode[s] - 65, 26];
-GeneralUtilities`Code`PackagePrivate`linearLHS[str_Str, Optional[escapeq_, False]] /; StringContainsQ[str, "\!\(\*"] := Module[
+encodeUppercase[i_] := FromCharCode[65 + IntDigits[i, 26, 2]];
+decodeUppercase[s_] := FromDigits[ToCharCode[s] - 65, 26];
+GeneralUtilities`Code`PackagePrivate`linearLHS[str_Str, Optional[escapeq_, False]] /; SContainsQ[str, "\!\(\*"] := Module[
   {blocks = {}, i = 0, str2, res},
-  If[StringStartsQ[str, "\!\(\*"] && StringEndsQ[str, "\)"], Return @ str];
-  str2 = StringReplace[str, "\!\(\*" ~~ Shortest[content__] ~~ "\)" :> (
-    AppendTo[blocks, content];
+  If[SStartsQ[str, "\!\(\*"] && SEndsQ[str, "\)"], Return @ str];
+  str2 = SRep[str, "\!\(\*" ~~ Shortest[content__] ~~ "\)" :> (
+    AppTo[blocks, content];
     "AZA" <> encodeUppercase[++i]
   )];
   res = GeneralUtilities`Code`PackagePrivate`linearLHS[str2, escapeq];
-  StringReplace[res, {
+  SRep[res, {
     "\"AZA" ~~ d:(LetterCharacter ~~ LetterCharacter) ~~ "\"" :> Part[blocks, decodeUppercase[d]],
     "AZA" ~~ d:(LetterCharacter ~~ LetterCharacter) :> Part[blocks, decodeUppercase[d]]
   }]
@@ -222,9 +222,9 @@ PrivateVariable[$RawUsageStringTable]
 $RawUsageStringTable = Assoc[];
 
 storeRawUsageString[rawUsageString_Str] := Block[
-  {usageString = StringTrim @ rawUsageString},
+  {usageString = STrim @ rawUsageString},
   (* $currentMainSymbol will be picked up later in the customSetUsageProcessor composition chain *)
-  $currentMainSymbol = First[StringCases[usageString, $mainSymbolRegex, 1], None];
+  $currentMainSymbol = F[SCases[usageString, $mainSymbolRegex, 1], None];
   $RawUsageStringTable[$currentMainSymbol] = usageString;
 ];
 
@@ -233,7 +233,7 @@ storeRawUsageString[rawUsageString_Str] := Block[
 PrivateMutatingFunction[AppendUniqueTo]
 
 SetHoldFirst[AppendUniqueTo];
-AppendUniqueTo[var_, value_] := If[!MemberQ[var, value], AppendTo[var, value]];
+AppendUniqueTo[var_, value_] := If[!MemberQ[var, value], AppTo[var, value]];
 
 (**************************************************************************************************)
 
@@ -272,8 +272,8 @@ preprocessUsageString[usageString_] :=
 SetUsage[___] /; TrueQ[QuiverGeometryLoader`$DisableSetUsage] || TrueQ[QuiverGeometryLoader`$FastLoad] := Null;
 
 SetUsage[usageString_Str] :=
-  GeneralUtilities`SetUsage[Evaluate @ preprocessUsageString @ usageString];
+  GeneralUtilities`SetUsage[Eval @ preprocessUsageString @ usageString];
 
 SetUsage[symbol_Symbol, usageString_Str] :=
-  GeneralUtilities`SetUsage[symbol, Evaluate @ preprocessUsageString @ usageString];
+  GeneralUtilities`SetUsage[symbol, Eval @ preprocessUsageString @ usageString];
 

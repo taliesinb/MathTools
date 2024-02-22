@@ -41,7 +41,7 @@ iTextToPolygon[str_, {fontSize_, fontFamily_, fontWeight_, fontSlant_}] := Scope
   dotIndex = MaximumIndexBy[polygons, DeepFirstCase[#, $NumberP]&];
   dot = Part[polygons, dotIndex];
   polygons = Delete[polygons, dotIndex];
-  {lr, {b, t}} = CoordinateBounds @ P1 @ dot;
+  {lr, {b, t}} = CoordinateBounds @ F @ dot;
 
   $alignTrans = Threaded[{0, -b}];
   polygons //= alignPolygons;
@@ -49,7 +49,7 @@ iTextToPolygon[str_, {fontSize_, fontFamily_, fontWeight_, fontSlant_}] := Scope
   (* hacky but cheap *)
   bounds = PrimitiveBoxesBounds[polygons /. {Polygon -> PolygonBox, Line -> LineBox, Disk -> DiskBox, Circle -> CircleBox}];
 
-  If[Len[polygons] === 1, polygons //= P1];
+  If[Len[polygons] === 1, polygons //= F];
 
   List[polygons, bounds, 2]
 ];
@@ -68,7 +68,7 @@ $unicodeToNamedIcon = Assoc[
   "⬇︎" -> {"BoldDownArrow",  .75, 3}
 ];
 
-iTextToPolygon[letter:(Alternatives @@ Keys[$unicodeToNamedIcon]), {fontSize_, _, _, _}] := Scope[
+iTextToPolygon[letter:(Alt @@ Keys[$unicodeToNamedIcon]), {fontSize_, _, _, _}] := Scope[
   {letter, scale, bshift} = $unicodeToNamedIcon @ letter;
   {prims, boxes, boxes3D, bounds, solid} = NamedIconData[letter];
   h = scale * fontSize/4 + (bshift * fontSize/20); s = scale * fontSize/2;
@@ -124,16 +124,16 @@ ApplyScriptScaling[form$] attempts to adjust fixed-font-size forms when they occ
 "
 
 $formScriptingFormP := $formScriptingFormP =
-  Apply[Alternatives, Blank /@ Keys[$formScriptingArgumentPositions]];
+  Apply[Alt, Blank /@ Keys[$formScriptingArgumentPositions]];
 
-ApplyScriptScaling[expr_] := ReplaceAll[
+ApplyScriptScaling[expr_] := RepAll[
   expr,
-  sub:$formScriptingFormP :> RuleCondition @ rescriptSubExpr[sub]
+  sub:$formScriptingFormP :> RuleEval @ rescriptSubExpr[sub]
 ]
 
 rescriptSubExpr[sub_] := MapIndices[rescript, $formScriptingArgumentPositions @ H @ sub, sub];
 
 $scalingHeadP = (GradientSymbol | TextIcon);
-rescript[e_] := ReplaceAll[e,
+rescript[e_] := RepAll[e,
   (h:$scalingHeadP)[l___, FontSize -> fs_, r___] :> h[l, FontSize -> Round[fs * 0.66], r]
 ];

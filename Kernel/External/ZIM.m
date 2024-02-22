@@ -46,7 +46,7 @@ PublicFunction[ClearZimCache]
 
 ClearZimCache[] := (
   $ZimDataCache = UAssoc[];
-  Scan[DeleteFile, FileNames["*.mx", DataPath["Zim"], Infinity]];
+  Scan[DeleteFile, FileNames["*.mx", DataPath["Zim"], Inf]];
 );
 
 (**************************************************************************************************)
@@ -89,7 +89,7 @@ ZimHeaderData[path_Str] := Scope @ CatchMessage @ zimCached[path, "Header",
   i = 0;
   assoc["MIMEList"] = CollectWhile[
     str = zimBinaryRead[nzstr];
-    If[!StringQ[str] || StrLen[str] > 256 || i++ > 64, ReturnFailed["ZimFileBadMimes"]],
+    If[!StrQ[str] || SLen[str] > 256 || i++ > 64, ReturnFailed["ZimFileBadMimes"]],
     str =!= "", str
   ];
 
@@ -144,7 +144,7 @@ ZimClusterData[path_Str] := Scope @ CatchMessage @ zimUncached[path, "ClusterDat
 
   zimSeek[clusterPtrPos];
   pointers = zimBinaryReadList[uint64, clusterCount];
-  sizes = Append[1024 * 1024 * 4] @ Differences @ pointers;
+  sizes = App[1024 * 1024 * 4] @ Differences @ pointers;
   pairs = Trans[pointers, sizes];
   MonitoredMap[readClusterEntry, Take[pointers, 2]]
 ];
@@ -170,7 +170,7 @@ readClusterEntry[ptr_] := Scope[
   firstOffset = zimBinaryRead[ptrType];
   numBlobs = firstOffset / If[extended == 1, 8, 4];
   Return[];
-  blobOffsets = Prepend[firstOffset] @ zimBinaryReadList[ptrType, numBlobs];
+  blobOffsets = Pre[firstOffset] @ zimBinaryReadList[ptrType, numBlobs];
   blobPtrs = blobOffsets + ptr;
 
   PackAssociation[

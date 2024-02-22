@@ -80,10 +80,10 @@ makeEdgeMutateGenerator[UndirectedEdge[i_, j_]] := Splice[{
 PublicFunction[EdgeMutateForward, EdgeMutateBackward]
 
 EdgeMutateForward[i_, j_][RootPopulation[pop_]] :=
-  RootPopulation @ ReplacePart[pop, j -> (Part[pop, i] - Part[pop, j])];
+  RootPopulation @ RepPart[pop, j -> (Part[pop, i] - Part[pop, j])];
 
 EdgeMutateBackward[i_, j_][RootPopulation[pop_]] :=
-  RootPopulation @ ReplacePart[pop, j -> -(Part[pop, j] - Part[pop, i])];
+  RootPopulation @ RepPart[pop, j -> -(Part[pop, j] - Part[pop, i])];
 
 ToInverseFunction[m_EdgeMutateForward] := EdgeMutateBackward @@ m;
 ToInverseFunction[m_EdgeMutateBackward] := EdgeMutateForward @@ m;
@@ -113,7 +113,7 @@ MultiMutationGame[graph_Graph] := Scope[
 ];
 
 makeMultiMutateGenerator[i_, out_, n_] :=
-  RepresentationElement @ ReplacePart[
+  RepresentationElement @ RepPart[
     IdentityMatrix @ n,
     Normal @ Merge[Flatten @ {{i, i} -> -1, {#, i} -> 1& /@ out}, Total]
   ]

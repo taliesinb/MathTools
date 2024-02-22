@@ -18,7 +18,7 @@ LookupVertexAnnotations[graph_, key_, part_] :=
   Part[LookupVertexAnnotations[graph, key], part];
 
 LookupVertexAnnotations[graph_, key_] :=
-  Lookup[Replace[LookupAnnotation[graph, VertexAnnotations, None], None -> <||>], key, None];
+  Lookup[Rep[LookupAnnotation[graph, VertexAnnotations, None], None -> <||>], key, None];
 
 LookupVertexAnnotations[graph_, VertexWeight|"Weight"] := Scope[
   weights = AnnotationValue[graph, VertexWeight];
@@ -26,7 +26,7 @@ LookupVertexAnnotations[graph_, VertexWeight|"Weight"] := Scope[
 ];
 
 LookupVertexAnnotations[graph_, All] := Scope[
-  results = Replace[LookupAnnotation[graph, VertexAnnotations, None], None -> <||>];
+  results = Rep[LookupAnnotation[graph, VertexAnnotations, None], None -> <||>];
   results["Weight"] = LookupVertexAnnotations[graph, "Weight"];
   results
 ];
@@ -45,7 +45,7 @@ AttachVertexAnnotations[graph_, annotations_] := Scope[
 PublicFunction[VertexAnnotationPresentQ]
 
 VertexAnnotationPresentQ[graph_, key_] :=
-  KeyExistsQ[Replace[LookupAnnotation[graph, VertexAnnotations, None], None -> <||>], key]
+  KeyQ[Rep[LookupAnnotation[graph, VertexAnnotations, None], None -> <||>], key]
 
 (**************************************************************************************************)
 
@@ -61,7 +61,7 @@ DeleteEdgeAnnotations[other_] := other;
 PublicFunction[LookupEdgeAnnotations]
 
 LookupEdgeAnnotations[graph_, key_] :=
-  Lookup[Replace[LookupAnnotation[graph, EdgeAnnotations, None], None -> <||>], key, None];
+  Lookup[Rep[LookupAnnotation[graph, EdgeAnnotations, None], None -> <||>], key, None];
 
 LookupEdgeAnnotations[graph_, EdgeWeight|"Weight"] := Scope[
   weights = AnnotationValue[graph, EdgeWeight];
@@ -69,7 +69,7 @@ LookupEdgeAnnotations[graph_, EdgeWeight|"Weight"] := Scope[
 ];
 
 LookupEdgeAnnotations[graph_, All] := Scope[
-  results = Replace[LookupAnnotation[graph, EdgeAnnotations, None], None -> <||>];
+  results = Rep[LookupAnnotation[graph, EdgeAnnotations, None], None -> <||>];
   results["Weight"] = LookupEdgeAnnotations[graph, "Weight"];
   results
 ];
@@ -88,7 +88,7 @@ AttachEdgeAnnotations[graph_, annotations_] := Scope[
 PublicFunction[EdgeAnnotationPresentQ]
 
 EdgeAnnotationPresentQ[graph_, key_] :=
-  KeyExistsQ[Replace[LookupAnnotation[graph, EdgeAnnotations, None], None -> <||>], key]
+  KeyQ[Rep[LookupAnnotation[graph, EdgeAnnotations, None], None -> <||>], key]
 
 (**************************************************************************************************)
 

@@ -1,7 +1,7 @@
 PublicObject[LatticeLayout]
 PublicOption[BasisVectors, ScaleFactor]
 
-Options[LatticeLayout] = {BasisVectors -> Automatic, ScaleFactor -> 1};
+Options[LatticeLayout] = {BasisVectors -> Auto, ScaleFactor -> 1};
 
 LatticeLayout[opts:OptionsPattern[]][data_] := Scope[
   

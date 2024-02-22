@@ -40,7 +40,7 @@ AlgebraicRow[elements__,  MultiplicationForm -> t:("Dot"|"Times"|None)] := Block
 
 AlgebraicRow[elements__] :=
   If[$arColumn, SpacedColumn, SpacedRow][
-    Map[algebraicForm, Unevaluated @ {elements}],
+    Map[algebraicForm, Uneval @ {elements}],
     LabelStyle -> $MathLabelStyle,
     LabelPosition -> After,
     Alignment -> If[$arColumn, Left, Center]
@@ -76,8 +76,8 @@ AlgebraicGrid[elements__, MultiplicationForm -> t:("Dot"|"Times"|None)] := Block
 ];
 
 AlgebraicGrid[elements__] := Scope[
-  entries = Map[algebraicGridRow, Unevaluated @ {elements}];
-  If[$headings =!= None, PrependTo[entries, LabelForm[#, Bold]& /@ $headings]];
+  entries = Map[algebraicGridRow, Uneval @ {elements}];
+  If[$headings =!= None, PreTo[entries, LabelForm[#, Bold]& /@ $headings]];
   Grid[
     If[$agTransposed, Transpose, Id] @ entries,
     Spacings -> {2, 1.5},
@@ -87,7 +87,7 @@ AlgebraicGrid[elements__] := Scope[
 ];
 
 algebraicGridRow[e_] := algebraicGridRow @ {e};
-algebraicGridRow[row_List] := Map[algebraicForm, Unevaluated @ row]
+algebraicGridRow[row_List] := Map[algebraicForm, Uneval @ row]
 
 (**************************************************************************************************)
 
@@ -119,7 +119,7 @@ $symbolicHeadToSymbol = {
   Minus -> "\[Minus]"
 };
 
-$symbolicHeadsP = Apply[Alternatives, Cases[Keys[$symbolicHeadToSymbol], _Symbol, {1,2}]];
+$symbolicHeadsP = Apply[Alt, Cases[Keys[$symbolicHeadToSymbol], _Symbol, {1,2}]];
 
 (**************************************************************************************************)
 
@@ -127,19 +127,19 @@ SetHoldAllComplete[Parentheses, Grouped];
 
 SetHoldAllComplete[toSymbolicForm];
 toSymbolicForm[e_] :=
-  Apply[symbolicForm, HoldComplete[e] //. $preEvaluate] //. $postEvaluate;
+  Apply[symbolicForm, HoldC[e] //. $preEvaluate] //. $postEvaluate;
 
 $preEvaluate = {
-  (f_Fn)[arg_] :> RuleCondition @ evalFuncHold[f, arg],
+  (f_Fn)[arg_] :> RuleEval @ evalFuncHold[f, arg],
   Hold[h_] :> h
 };
 
 SetHoldAllComplete[evalFuncHold];
 evalFuncHold[Verbatim[Fn][x_, body_], arg_] :=
-  Fn[x, Hold @ body, {HoldFirst}] @ Unevaluated[arg];
+  Fn[x, Hold @ body, {HoldFirst}] @ Uneval[arg];
 
 evalFuncHold[Verbatim[Fn][body_], arg_] :=
-  Fn[Null, Hold @ body, {HoldFirst}] @ Unevaluated[arg];
+  Fn[Null, Hold @ body, {HoldFirst}] @ Uneval[arg];
 
 $postEvaluate = {
   Superscript[Subscript[z_, sub_], sup_] :> Subsuperscript[z, sub, sup],
@@ -153,8 +153,8 @@ $parenR = Style[")", $Gray];
 SetHoldAllComplete[headForm]
 headForm[head_, args_] :=
   Row[
-    Map[possiblyParenSymbolicForm, Unevaluated @ args],
-    Replace[head, $symbolicHeadToSymbol]
+    Map[possiblyParenSymbolicForm, Uneval @ args],
+    Rep[head, $symbolicHeadToSymbol]
   ];
 
 $heavyHeadP = PathForwardDifference | PathBackwardDifference | PathCentralDifference;
@@ -175,7 +175,7 @@ symbolicForm = Case[
   e_Evaluate := Construct[%, e];
 
   f_Form := f;
-  t_Text := P1 @ t;
+  t_Text := F @ t;
 
   Set[a_, b_] := Row[{% @ a, " = ", % @ b}];
 
@@ -209,7 +209,7 @@ symbolicForm = Case[
   PathSplit[p_Symbol] := PathSplitForm[symbolForm[HoldSymbolName @ p]];
 
   (head:symbolicHeads)[t_ ? isSuppressed, a_] :=
-    Row[{Replace[head, $symbolicHeadToSymbol], possiblyParenSymbolicForm @ a}];
+    Row[{Rep[head, $symbolicHeadToSymbol], possiblyParenSymbolicForm @ a}];
 
   (head:symbolicHeads)[args___] := headForm[head, {args}];
   PathHeadVector[a_] := Superscript[% @ a, "\[FilledSmallCircle]"];
@@ -242,7 +242,7 @@ supscript[e_, s_] := Superscript[e, s];
 supscript[Subscript[e_, sub1_], sub2_] := Subsuperscript[e, sub1, sub2];
 
 fmtWord = Case[
-  s_Str       := toRow[Map[If[UpperCaseQ[#], Inverted @ ToLowerCase @ #, #]&, Characters @ s]];
+  s_Str       := toRow[Map[If[UpperCaseQ[#], Inverted @ ToLowerCase @ #, #]&, Chars @ s]];
   s_Str -> -1 := Row[{"\[Minus]", fmtWord @ s}];
   list_List   := Row[fmtWord /@ list, "+"];
   _           := "?"
@@ -261,7 +261,7 @@ fmtType = Case[
 $Delta = Style["\[DifferenceDelta]", FontFamily -> "Times"];
 
 SetHoldAllComplete[isSuppressed];
-isSuppressed[e_Symbol] := StringEndsQ[HoldSymbolName @ e, "$"];
+isSuppressed[e_Symbol] := SEndsQ[HoldSymbolName @ e, "$"];
 isSuppressed[_] := False;
 
 SetHoldAllComplete[heavyQ];
@@ -272,7 +272,7 @@ SetHoldAllComplete[subscriptForm];
 subscriptForm = Case[
   a_Symbol := symbolForm[HoldSymbolName @ a];
   s_Str := s;
-  list_List := Row[Map[%, Unevaluated @ list], ","];
+  list_List := Row[Map[%, Uneval @ list], ","];
   e_ := symbolicForm @ e;
 ];
 
@@ -292,8 +292,8 @@ Grouped[e_] := e;
 
 SetHoldAll[sumForm, sumTermForm, HoldNumericQ];
 sumForm[args_] := Scope[
-  res = Flatten @ Map[sumTermForm, Unevaluated[args]];
-  If[P1[res] === "\[ThinSpace]+\[ThinSpace]", res //= Rest];
+  res = Flatten @ Map[sumTermForm, Uneval[args]];
+  If[F[res] === "\[ThinSpace]+\[ThinSpace]", res //= Rest];
   Row[res, "\[ThinSpace]"]\[ThinSpace]
 ];
 
@@ -302,7 +302,7 @@ sumTermForm[Times[n_ ? HoldNumericQ, a_]] := {n, symbolicForm @ a};
 sumTermForm[a_] := {"\[ThinSpace]+\[ThinSpace]", symbolicForm @ a};
 
 symbolForm[name_Str] := Which[
-  StringEndsQ[name, DigitCharacter], Subscript[StringDrop[name, -1], StringTake[name, -1]],
-  StringMatchQ[name, __ ~~ "$" ~~ __], Subscript @@ StringSplit[name, "$"],
+  SEndsQ[name, DigitCharacter], Subscript[SDrop[name, -1], STake[name, -1]],
+  SMatchQ[name, __ ~~ "$" ~~ __], Subscript @@ SSplit[name, "$"],
   True, name
 ];

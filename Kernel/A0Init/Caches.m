@@ -140,7 +140,7 @@ PublicDebuggingFunction[CacheSymbolCounts]
 CacheSymbolCounts[] := Scope[
   names = CacheSymbolNames[];
   lengths = Len /@ ToExpression[names, InputForm];
-  AssociationThread[names, lengths]
+  AssocThread[names, lengths]
 ];
 
 

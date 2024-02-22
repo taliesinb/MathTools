@@ -15,7 +15,7 @@ ManualVertexLayout[][data_] := Scope[
     ];
     {vertexCoordinates, edgeCoordinateLists}
   ,
-    VertexEdgeCoordinateData[data, Automatic]
+    VertexEdgeCoordinateData[data, Auto]
   ]
   
 ];

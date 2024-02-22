@@ -31,7 +31,7 @@ toCheckedAndPacked[e_] := Scope[
 makeRootSystemObject[generators_] := Scope[
   generators = Map[toCheckedAndPacked, generators];
   expandedGenerators = toCheckedAndPacked /@ Join[generators, -generators];
-  dim = Len @ P1 @ generators;
+  dim = Len @ F @ generators;
   allRoots = reachableStates[
     ApplyThrough[VectorReflect /@ expandedGenerators],
     generators
@@ -133,7 +133,7 @@ RootPlot[roots$] will plot a list of roots in a small 2D or 3D Graphics object.
 "
 
 RootPlot[roots_, opts___] := Scope[
-  i = 1; dim = Len @ P1 @ roots;
+  i = 1; dim = Len @ F @ roots;
   hyperPlane = UnitVector[dim, 1]; hyperPlane[[2]] = 10^-6;
   tuples = Map[root |-> {root, If[Dot[hyperPlane, root] > 0, $Red, Black], i++}, roots];
   If[dim == 2, rootPlot2D, rootPlot3D][tuples, Max[Norm /@ roots], opts]
@@ -175,7 +175,7 @@ DeclareArgumentCount[RootSystem, 1];
 
 PublicVariable[$NamedRootSystems]
 
-$NamedRootSystems = StringSplit["A1 D2 A2 B2 G2 C2 B3"];
+$NamedRootSystems = SSplit["A1 D2 A2 B2 G2 C2 B3"];
 
 RootSystem["A1"] := Memoized @ makeRootSystemObject @ rangle[{0}];
 RootSystem["D2"] := Memoized @ makeRootSystemObject @ rangle[{0, 1/4}];

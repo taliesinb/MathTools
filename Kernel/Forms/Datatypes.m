@@ -186,14 +186,14 @@ DefineStandardTraditionalForm[{
 SetAttributes[makeConstructorDisplayFunction, SequenceHold];
 
 makeConstructorDisplayFunction[lbrac_, rbrac_, lmod_:Nothing, rmod_:Nothing] := StyleBox[GridBox[
-  {{lbrac, StyleBox[#1, SpanAdjustments -> Automatic], "|", StyleBox[#2, SpanAdjustments -> Automatic], rbrac}},
+  {{lbrac, StyleBox[#1, SpanAdjustments -> Auto], "|", StyleBox[#2, SpanAdjustments -> Auto], rbrac}},
     GridBoxSpacings -> {"Columns" -> {0, lmod, .2, .3, .4, .2, rmod, 0}},
-    GridBoxItemSize -> {"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+    GridBoxItemSize -> {"Columns" -> {{Auto}}, "Rows" -> {{Auto}}},
     GridBoxFrame -> {"ColumnsIndexed" -> {{{1, -1}, {1, -1}} -> GrayLevel[0, 0]}},
     GridBoxSpacings -> {"Columns"->{{0}}, "Rows"->{{0}}}
     (* GridBoxDividers -> {"Columns" -> cspec} *)
     (* GridBoxAlignment -> {"Rows" ->  {{Center}}} *)
-  ], SpanAdjustments -> {{0, 0}, {0, 0}}, SpanMaxSize->Infinity]&;
+  ], SpanAdjustments -> {{0, 0}, {0, 0}}, SpanMaxSize->Inf]&;
 
 (*
 TODO: i used to put DelimiterBox @ "{" etc below, but this breaks the spanning-ness of the font.

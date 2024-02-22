@@ -72,10 +72,10 @@ PrivateTypesettingBoxFunction[spacerBox, katexPadded]
 $TemplateKatexFunction["Spacer1"] = katexPtSpacer;
 
 katexEmSpacer[0] := "";
-katexEmSpacer[spacing_] := katexEmSpacer[spacing] = StringJoin["\\kern{", TextString @ spacing, "em}"];
+katexEmSpacer[spacing_] := katexEmSpacer[spacing] = SJoin["\\kern{", TextString @ spacing, "em}"];
 
 katexPtSpacer[0] := "";
-katexPtSpacer[spacing_] := katexPtSpacer[spacing] = StringJoin["\\kern{", TextString @ spacing, "pt}"];
+katexPtSpacer[spacing_] := katexPtSpacer[spacing] = SJoin["\\kern{", TextString @ spacing, "pt}"];
 
 spacerBox[n_] := TemplateBox[{n}, "Spacer1"];
 
@@ -115,7 +115,7 @@ SetHoldAllComplete[makePiecewiseBoxes, makePiecewiseRow]
 
 makePiecewiseBoxes[rules_List] := Scope[
   entries = MapUnevaluated[makePiecewiseRow, rules];
-  casesGrid = GridBox[entries, ColumnAlignments -> {Left}, ColumnSpacings -> 1.2, ColumnWidths -> Automatic];
+  casesGrid = GridBox[entries, ColumnAlignments -> {Left}, ColumnSpacings -> 1.2, ColumnWidths -> Auto];
   TBox[casesGrid, "PiecewiseForm"]
 ];
 
@@ -127,7 +127,7 @@ makePiecewiseRow[case_ -> value_] :=
 
 DefineNotebookDisplayFunction["PiecewiseForm", GridBox[
   {{"\[Piecewise]", #1}},
-  ColumnAlignments -> {Left}, ColumnSpacings -> 0.5, ColumnWidths -> Automatic
+  ColumnAlignments -> {Left}, ColumnSpacings -> 0.5, ColumnWidths -> Auto
 ]&];
 
 (**************************************************************************************************)

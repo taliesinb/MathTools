@@ -22,12 +22,12 @@ CacheFilePath[name_, args___] :=
   CacheFilePath[name, args, FileExtension -> "mx"]
 
 CacheFilePath[name_, args___, FileExtension -> ext_] :=
-  DataPath[name, StringJoin[Riffle[toCacheArgString /@ {args}, "_"], ".", ext]];
+  DataPath[name, SJoin[Riffle[toCacheArgString /@ {args}, "_"], ".", ext]];
 
-$simpleArgP = _Int | _Str | None | Infinity | False | True;
+$simpleArgP = _Int | _Str | None | Inf | False | True;
 
 toCacheArgString = Case[
-  tuple:{Repeated[$simpleArgP, {1, 3}]} := StringRiffle[tuple, {"(", "-", ")"}];
+  tuple:{Repeated[$simpleArgP, {1, 3}]} := SRiffle[tuple, {"(", "-", ")"}];
   {} := "";
   data:(_List | _Assoc | _SparseArray) := Base36Hash @ data;
   graph_Graph := Base36Hash @ VertexEdgeList @ graph;
@@ -107,7 +107,7 @@ PublicIOFunction[ExportJSON]
 ExportJSON[path_Str, expr_] := Scope[
   path //= NormalizePath;
   outStr = WriteRawJSONString[expr, Compact -> 4];
-  outStr = StringReplace[outStr, "\\/" -> "/"];
+  outStr = SRep[outStr, "\\/" -> "/"];
   ExportUTF8[path, outStr]
 ];
 
@@ -122,14 +122,14 @@ ImportMX::fail = "File `` is corrupt.";
 
 ImportMX[path_Str] := Block[
   {System`Private`ConvertersPrivateDumpSymbol, path2 = NormalizePath @ path},
-  If[FailureQ[Quiet @ Check[Get[path2], $Failed]] || H[System`Private`ConvertersPrivateDumpSymbol] =!= HoldComplete,
+  If[FailureQ[Quiet @ Check[Get[path2], $Failed]] || H[System`Private`ConvertersPrivateDumpSymbol] =!= HoldC,
     If[!FileExistsQ[path2],
       Message[ImportMX::nefile, MsgPath @ path2],
       Message[ImportMX::fail, MsgPath @ path2]
     ];
     $Failed
   ,
-    P1 @ System`Private`ConvertersPrivateDumpSymbol
+    F @ System`Private`ConvertersPrivateDumpSymbol
   ]
 ];
 
@@ -139,7 +139,7 @@ PublicIOFunction[ExportMX]
 
 ExportMX::fail = "Could not write expression to ``.";
 ExportMX[path_Str, expr_] := Block[
-  {System`Private`ConvertersPrivateDumpSymbol = HoldComplete[expr], path2 = NormalizePath @ path},
+  {System`Private`ConvertersPrivateDumpSymbol = HoldC[expr], path2 = NormalizePath @ path},
   If[FailureQ @ Quiet @ Check[DumpSave[path2, System`Private`ConvertersPrivateDumpSymbol], $Failed],
     Message[ExportMX::fail, MsgPath @ path2]; $Failed,
     path2
@@ -171,13 +171,13 @@ PublicIOFunction[ExportUTF8Dated]
 
 ExportUTF8Dated::badtime = "Creation and modification times should be DateObjects."
 
-ExportUTF8Dated[path_Str, string_Str, creation_, modification_:Automatic] := Scope[
+ExportUTF8Dated[path_Str, string_Str, creation_, modification_:Auto] := Scope[
   path //= NormalizePath;
   Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
   creation //= toDateObject;
   modification //= toDateObject;
   If[!DateObjectQ[creation], BadArguments[]];
-  If[modification === Automatic,
+  If[modification === Auto,
     SetFileTime[path, {creation, creation}]
   ,
     If[!DateObjectQ[modification], BadArguments[]];
@@ -221,13 +221,13 @@ setCreateModify[path_, c_, m_] := Module[{code},
 ];
 
 toFTarg[flag_, None] := Nothing;
-toFTarg[flag_, date_] := StringJoin[flag, " '", sftStr[date], "'"];
+toFTarg[flag_, date_] := SJoin[flag, " '", sftStr[date], "'"];
 
 sftStr = Case[
   DateObject[{y_, m_, d_}, ___] :=
-    StringJoin[intStr2 @ m, "/", intStr2 @ d, "/", IntegerString @ y];
+    SJoin[intStr2 @ m, "/", intStr2 @ d, "/", IntStr @ y];
   DateObject[{y_, m_, d_, h_, m2_, s_, ___}, ___] :=
-    StringJoin[intStr2 @ m, "/", intStr2 @ d, "/", IntegerString @ y, " ", intStr2 @ h, ":", intStr2 @ m2, ":", intStr2 @ Floor @ s];
+    SJoin[intStr2 @ m, "/", intStr2 @ d, "/", IntStr @ y, " ", intStr2 @ h, ":", intStr2 @ m2, ":", intStr2 @ Floor @ s];
   u:(_Integer | _Real) := % @ FromUnixTime @ u;
 ]
 
@@ -237,7 +237,7 @@ toCmaDate = Case[
   None                 := None;
 ]
 
-intStr2[e_] :=  IntegerString[e, 10, 2];
+intStr2[e_] :=  IntStr[e, 10, 2];
 
 (**************************************************************************************************)
 
@@ -260,15 +260,15 @@ _PrettyPut := BadArguments[];
 
 PublicIOFunction[ExportUTF8WithBackup]
 
-ExportUTF8WithBackup[path_, contents_, currentContents_:Automatic] := Scope[
-  If[!StringQ[contents], ReturnFailed[]];
+ExportUTF8WithBackup[path_, contents_, currentContents_:Auto] := Scope[
+  If[!StrQ[contents], ReturnFailed[]];
   If[!FileExistsQ[path],
     ExportUTF8[path, contents];
   ,
     SetAutomatic[currentContents, ImportUTF8 @ path];
     If[contents =!= currentContents,
       hash = Base36Hash @ currentContents;
-      cachePath = StringJoin[path, ".", hash, ".backup"];
+      cachePath = SJoin[path, ".", hash, ".backup"];
       If[!FileExistsQ[cachePath], CopyFile[path, cachePath]];
       ExportUTF8[path, contents];
     ];
@@ -281,8 +281,8 @@ ExportUTF8WithBackup[path_, contents_, currentContents_:Automatic] := Scope[
 PublicFunction[AbsolutePathQ]
 
 AbsolutePathQ = Case[
-  s_Str /; $WindowsQ := StringStartsQ[s, LetterCharacter ~~ ":\\"];
-  s_Str := StringStartsQ[s, $PathnameSeparator | "~"];
+  s_Str /; $WindowsQ := SStartsQ[s, LetterCharacter ~~ ":\\"];
+  s_Str := SStartsQ[s, $PathnameSeparator | "~"];
   _ := False;
 ];
 
@@ -315,7 +315,7 @@ ToAbsolutePath[base_][spec_] := ToAbsolutePath[spec, base];
 PublicFunction[RelativePath]
 
 RelativePath[_, path_] := None;
-RelativePath[base_Str, path_] := If[StringStartsQ[path, base], StringTrim[StringDrop[path, StringLength @ base], $PathnameSeparator], None];
+RelativePath[base_Str, path_] := If[SStartsQ[path, base], STrim[SDrop[path, SLen @ base], $PathnameSeparator], None];
 
 (**************************************************************************************************)
 

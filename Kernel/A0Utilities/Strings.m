@@ -1,7 +1,7 @@
 PublicFunction[LowerCaseFirst, UpperCaseFirst]
 
-LowerCaseFirst[str_Str] := StringJoin[ToLowerCase @ StringTake[str, 1], StringDrop[str, 1]];
-UpperCaseFirst[str_Str] := StringJoin[ToUpperCase @ StringTake[str, 1], StringDrop[str, 1]];
+LowerCaseFirst[str_Str] := SJoin[ToLowerCase @ STake[str, 1], SDrop[str, 1]];
+UpperCaseFirst[str_Str] := SJoin[ToUpperCase @ STake[str, 1], SDrop[str, 1]];
 
 (**************************************************************************************************)
 
@@ -10,34 +10,34 @@ PublicFunction[UpperCaseFirstQ, LowerCaseFirstQ]
 SetListable[UpperCaseFirstQ, LowerCaseFirstQ]
 
 UpperCaseFirstQ[""] = False;
-UpperCaseFirstQ[str_Str] := UpperCaseQ @ StringTake[str, 1];
+UpperCaseFirstQ[str_Str] := UpperCaseQ @ STake[str, 1];
 
 LowerCaseFirstQ[""] = False;
-LowerCaseFirstQ[str_Str] := LowerCaseQ @ StringTake[str, 1];
+LowerCaseFirstQ[str_Str] := LowerCaseQ @ STake[str, 1];
 
 (**************************************************************************************************)
 
 PublicFunction[LinearSyntaxQ, ContainsLinearSyntaxQ]
 
 LinearSyntaxQ[s_Str] := StringStartsEndsQ[s, "\!\(\*", "\)"] && StringBalancedQ[s, "\(", "\)"];
-ContainsLinearSyntaxQ[s_Str] := StringContainsQ[s, "\!\(\*"] && StringContainsQ[s, "\)"];
+ContainsLinearSyntaxQ[s_Str] := SContainsQ[s, "\!\(\*"] && SContainsQ[s, "\)"];
 
 (**************************************************************************************************)
 
 PublicFunction[StringBalancedQ]
 
-StringBalancedQ[str_Str, l_, r_] := balancedQ @ Accumulate @ StringCases[str, {l -> 1, r -> -1}];
+StringBalancedQ[str_Str, l_, r_] := balancedQ @ Accumulate @ SCases[str, {l -> 1, r -> -1}];
 StringBalancedQ[l_, r_][str_] := StringBalancedQ[str, l, r];
 balancedQ[{}] := True;
-balancedQ[ints_] := Min[ints] >= 0 && PN[ints] == 0;
+balancedQ[ints_] := Min[ints] >= 0 && L[ints] == 0;
 
 (**************************************************************************************************)
 
 PublicFunction[ToLinearSyntax, FromLinearSyntax]
 
-ToLinearSyntax[e_] := StringJoin["\!\(\*", ToString[ToBoxes @ e, InputForm], "\)"];
+ToLinearSyntax[e_] := SJoin["\!\(\*", ToString[ToBoxes @ e, InputForm], "\)"];
 
-FromLinearSyntax[str_Str] := If[StringStartsEndsQ[str, "\!\(\*", "\)"], tryEvalStr @ StringTake[str, {4, -2}], $Failed];
+FromLinearSyntax[str_Str] := If[StringStartsEndsQ[str, "\!\(\*", "\)"], tryEvalStr @ STake[str, {4, -2}], $Failed];
 FromLinearSyntax[_] := $Failed;
 
 tryEvalStr[""] := $Failed;
@@ -47,21 +47,21 @@ tryEvalStr[str_] := Quiet @ Check[ToExpression[str, InputForm, Hold], $Failed];
 
 PublicFunction[UpperCaseLast, LowerCaseLast]
 
-UpperCaseLast[str_Str] := StringJoin[StringDrop[str, -1], ToUpperCase @ StringTake[str, -1]];
-LowerCaseLast[str_Str] := StringJoin[StringDrop[str, -1], ToLowerCase @ StringTake[str, -1]];
+UpperCaseLast[str_Str] := SJoin[SDrop[str, -1], ToUpperCase @ STake[str, -1]];
+LowerCaseLast[str_Str] := SJoin[SDrop[str, -1], ToLowerCase @ STake[str, -1]];
 
 (**************************************************************************************************)
 
 PublicFunction[ToTitleString]
 
 ToTitleString[s_Str] :=
-  ToLowerCase @ StringReplace[s, RegularExpression["([a-z])([A-Z])"] :> "$1 $2"];
+  ToLowerCase @ SRep[s, RegularExpression["([a-z])([A-Z])"] :> "$1 $2"];
 
 (**************************************************************************************************)
 
 PublicFunction[CamelCaseSplit]
 
-CamelCaseSplit[s_Str] := StringSplit[s, RegularExpression["(?<=[a-z])(?=[A-Z])"]];
+CamelCaseSplit[s_Str] := SSplit[s, RegularExpression["(?<=[a-z])(?=[A-Z])"]];
 
 (**************************************************************************************************)
 
@@ -75,7 +75,7 @@ commaString[list_List] := TextString[Row[Map[qs, list], ", "]];
 
 PublicFunction[StringReplaceRepeated]
 
-StringReplaceRepeated[str_Str, rules_] := FixedPoint[StringReplace[rules], str];
+StringReplaceRepeated[str_Str, rules_] := FixedPoint[SRep[rules], str];
 StringReplaceRepeated[rules_][str_] := StringReplaceRepeated[str, rules];
 
 (**************************************************************************************************)
@@ -83,11 +83,11 @@ StringReplaceRepeated[rules_][str_] := StringReplaceRepeated[str, rules];
 PublicFunction[StringFindDelimitedPosition]
 
 StringFindDelimitedPosition[str_, {start_, mid_, stop_}] := Scope[
-  pos = First[StringPosition[str, start ~~ mid ~~ stop, 1], None];
+  pos = F[SFind[str, start ~~ mid ~~ stop, 1], None];
   If[!ListQ[pos], ReturnFailed[]];
-  lens = P1 @ StringCases[
-    StringTake[str, pos],
-    a:start ~~ mid ~~ z:stop :> {+StringLength[a], -StringLength[z]},
+  lens = F @ SCases[
+    STake[str, pos],
+    a:start ~~ mid ~~ z:stop :> {+SLen[a], -SLen[z]},
     1
   ];
   pos + lens
@@ -97,7 +97,7 @@ StringFindDelimitedPosition[str_, {start_, mid_, stop_}] := Scope[
 
 PublicFunction[StringDeepCases]
 
-StringDeepCases[expr_, pattern_] := Catenate @ DeepCases[expr, s_Str :> StringCases[s, pattern]];
+StringDeepCases[expr_, pattern_] := Catenate @ DeepCases[expr, s_Str :> SCases[s, pattern]];
 StringDeepCases[pattern_][expr_] := StringDeepCases[expr, pattern];
 
 (**************************************************************************************************)
@@ -107,8 +107,8 @@ PublicFunction[FirstStringCase]
 SetHoldRest[FirstStringCase];
 
 FirstStringCase[string_, pattern_, else_:None] :=
-  P1[
-    StringCases[string, pattern, 1],
+  F[
+    SCases[string, pattern, 1],
     else
   ]
 
@@ -117,30 +117,30 @@ FirstStringCase[string_, pattern_, else_:None] :=
 PublicFunction[CommonStringPrefix, CommonStringPrefixLength]
 
 CommonStringPrefix[{}] := None;
-CommonStringPrefix[strings_ ? StringVectorQ] :=
-  StringTake[P1 @ strings, CommonStringPrefixLength @ strings];
+CommonStringPrefix[strings_ ? StrVecQ] :=
+  STake[F @ strings, CommonStringPrefixLength @ strings];
 
-CommonStringPrefixLength[strings_ ? StringVectorQ] :=
-  CommonPrefixLength @ Characters @ strings;
+CommonStringPrefixLength[strings_ ? StrVecQ] :=
+  CommonPrefixLength @ Chars @ strings;
 
 PublicFunction[CommonStringSuffix, CommonStringSuffixLength]
 
 CommonStringSuffix[{}] := None;
-CommonStringSuffix[strings_ ? StringVectorQ] :=
-  StringTake[P1 @ strings, Minus @ CommonStringSuffixLength @ strings];
+CommonStringSuffix[strings_ ? StrVecQ] :=
+  STake[F @ strings, Minus @ CommonStringSuffixLength @ strings];
 
-CommonStringSuffixLength[strings_ ? StringVectorQ] :=
-  CommonSuffixLength @ Characters @ strings;
+CommonStringSuffixLength[strings_ ? StrVecQ] :=
+  CommonSuffixLength @ Chars @ strings;
 
 (**************************************************************************************************)
 
 PublicFunction[StringJoinLeft, StringJoinRight]
 
-StringJoinLeft[prefix_Str, other_Str] := StringJoin[prefix, other];
+StringJoinLeft[prefix_Str, other_Str] := SJoin[prefix, other];
 StringJoinLeft[prefix_Str, other_List] := Map[StringJoinLeft[prefix], other];
 StringJoinLeft[prefix_Str][other_] := StringJoinLeft[prefix, other];
 
-StringJoinRight[other_Str, suffix_Str] := StringJoin[other, suffix];
+StringJoinRight[other_Str, suffix_Str] := SJoin[other, suffix];
 StringJoinRight[other_List, suffix_Str] := Map[StringJoinRight[suffix], other];
 StringJoinRight[suffix_Str][other_] := StringJoinRight[other, suffix];
   
@@ -151,8 +151,8 @@ PublicFunction[StringFunction]
 StringFunction[template_Str] :=
   Construct[
     Fn,
-    StringReplace[template, $stringFunctionSlotRules]
-  ] /. {StringExpression -> StringJoin, s_Slot :> TextString[s]};
+    SRep[template, $stringFunctionSlotRules]
+  ] /. {SExpr -> SJoin, s_Slot :> TextString[s]};
 
 $stringFunctionSlotRules = {
   "##" -> "#",
@@ -164,13 +164,13 @@ $stringFunctionSlotRules = {
 
 PrivateFunction[PrefixSlash]
 
-PrefixSlash[s_] := StringJoin["\\", s];
+PrefixSlash[s_] := SJoin["\\", s];
 
 (**************************************************************************************************)
 
 PrivateFunction[StringStartsEndsQ]
 
-StringStartsEndsQ[str_Str, a_, b_] := StringStartsQ[str, a] && StringEndsQ[str, b];
+StringStartsEndsQ[str_Str, a_, b_] := SStartsQ[str, a] && SEndsQ[str, b];
 StringStartsEndsQ[str_List, a_, b_] := Map[StringStartsEndsQ[#, a, b]&, str];
 StringStartsEndsQ[a_, b_][str_] := StringStartsEndsQ[str, a, b];
 
@@ -178,7 +178,7 @@ StringStartsEndsQ[a_, b_][str_] := StringStartsEndsQ[str, a, b];
 
 PublicFunction[SingleLetterQ]
 
-SingleLetterQ[s_Str] := StringLength[s] == 1;
+SingleLetterQ[s_Str] := SLen[s] == 1;
 SingleLetterQ[_] := False;
 
 (**************************************************************************************************)
@@ -186,14 +186,14 @@ SingleLetterQ[_] := False;
 PublicFunction[HexIntegerString]
 
 SetListable[HexIntegerString];
-HexIntegerString[e_Int] := IntegerString[e, 16];
+HexIntegerString[e_Int] := IntStr[e, 16];
 
 (**************************************************************************************************)
 
 PublicFunction[RandomString]
 
-$base36Chars = Characters @ "abcdefghijklmnopqrstuvwxyz0123456789";
-RandomString[n_Int] := StringJoin @ Part[$base36Chars, RandomInteger[{1, 36}, n]];
+$base36Chars = Chars @ "abcdefghijklmnopqrstuvwxyz0123456789";
+RandomString[n_Int] := SJoin @ Part[$base36Chars, RandomInteger[{1, 36}, n]];
 
 (**************************************************************************************************)
 
@@ -202,7 +202,7 @@ PublicFunction[StringLineCases]
 Options[StringLineCases] = {IgnoreCase -> False};
 
 StringLineCases[text_, patt_, None, OptionsPattern[]] :=
-  StringCases[text, patt, IgnoreCase -> OptionValue[IgnoreCase]];
+  SCases[text, patt, IgnoreCase -> OptionValue[IgnoreCase]];
 
 StringLineCases[text_, patt_, o:OptionsPattern[]] :=
   iStringLineCases[text, patt, 0, OptionValue[IgnoreCase]];
@@ -214,17 +214,17 @@ iStringLineCases[texts_List, patt_, n_, ic_] :=
   iStringLineCases[#, patt, n, ic]& /@ texts;
 
 iStringLineCases[text_Str, pattern_, n_, ic_] := Scope[
-  linePos = Prepend[0] @ PA1 @ StringPosition[text, EndOfLine];
-  charSpans = StringPosition[text, pattern, IgnoreCase -> ic];
+  linePos = Pre[0] @ PA1 @ SFind[text, EndOfLine];
+  charSpans = SFind[text, pattern, IgnoreCase -> ic];
   If[charSpans === {}, Return @ {}];
   lineSpans = toLineSpan[#, n]& /@ charSpans;
-  StringTake[text, lineSpans]
+  STake[text, lineSpans]
 ];
 
 iStringLineCases[___] := $Failed;
 
 toLineSpan[{a_, b_}, n_] := {
-  limitedPart[n+1] @ Reverse @ Select[linePos, LessEqualThan[a]],
+  limitedPart[n+1] @ Rev @ Select[linePos, LessEqualThan[a]],
   limitedPart[n+1] @ Select[linePos, GreaterEqualThan[b]]
 } + {1, -1};
 

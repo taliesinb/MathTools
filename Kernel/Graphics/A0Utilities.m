@@ -108,7 +108,7 @@ VectorReject[{u$1, u$2, $$}, {v$1, v$2, $$}] gives the list of rejections u$i on
 "
 
 VectorReject[u_ ? MatrixQ, v_ ? MatrixQ] := MapThread[VectorReject, {u, v}];
-VectorReject[u_ ? MatrixQ, v_ ? VectorQ] := Map[VectorReject[u, #]&, v];
+VectorReject[u_ ? MatrixQ, v_ ? VecQ] := Map[VectorReject[u, #]&, v];
 VectorReject[u_, v_] := u - Projection[u, v];
 
 (**************************************************************************************************)
@@ -122,7 +122,7 @@ VectorProject[{u$1, u$2, $$}, {v$1, v$2, $$}] gives the list of projection u$i o
 "
 
 VectorProject[u_ ? MatrixQ, v_ ? MatrixQ] := MapThread[VectorProject, {u, v}];
-VectorProject[u_ ? MatrixQ, v_ ? VectorQ] := Map[VectorProject[u, #]&, v];
+VectorProject[u_ ? MatrixQ, v_ ? VecQ] := Map[VectorProject[u, #]&, v];
 VectorProject[u_, v_] := Projection[u, v];
 
 
@@ -138,7 +138,7 @@ LineSegmentTotalLengths[{p$1, p$2, $$}] gives the list of accumulated lengths al
 LineSegmentTotalLengths[{}] := {};
 
 LineSegmentTotalLengths[points_] :=
-  ToPackedReal @ Prepend[0.] @ Accumulate @ MapWindowed[Apply @ Dist, N @ points]
+  ToPackedReal @ Pre[0.] @ Accumulate @ MapWindowed[Apply @ Dist, N @ points]
 
 (**************************************************************************************************)
 
@@ -159,7 +159,7 @@ LineLineIntersectionPoint[l1_, l2_] := Scope[
     Line[_],
       Part[r, 1, 1],
     _,
-      p = P1 @ l2;
+      p = F @ l2;
       Do[p = ClosestPointOnLine[l2, ClosestPointOnLine[l1, p]], 10];
       d = DistanceToLine[l1, p];
       scale = Min[Dist @@ l1, Dist @@ l2];
@@ -251,7 +251,7 @@ LineRectangleIntersectionPoint[l1_List, {{x1_, y1_}, {x2_, y2_}}] := Scope[
      {{x2, y1}, {x1, y1}}}
   ];
   points = DeepCases[points, $Coord2P];
-  p1 = P1 @ l1;
+  p1 = F @ l1;
   If[points === {}, p1,
     MinimumBy[points, Dist[#, p1]&]]
 ]
@@ -302,8 +302,8 @@ ArcBetween[c$, {p$1, p$2}, towards$] ensures the arc takes the way around the ci
 * In 2D, a %Circle is returned, in 3D, a Line is returned by discretizing the circle.
 "
 
-ArcBetween[center_, {p1_ ? CoordinateVector2DQ, p2_ ? CoordinateVector2DQ}, towards_:Automatic] := Scope[
-  If[p1 == center || p2 == center || p1 == p2, Return @ Line @ DeleteDuplicates @ {p1, p2}];
+ArcBetween[center_, {p1_ ? CoordinateVector2DQ, p2_ ? CoordinateVector2DQ}, towards_:Auto] := Scope[
+  If[p1 == center || p2 == center || p1 == p2, Return @ Line @ Dedup @ {p1, p2}];
   r = Mean[Dist[center, #]& /@ {p1, p2}];
   SetAutomatic[towards, Avg[p1, p2]];
   d1 = p1 - center; d2 = p2 - center; d3 = towards - center;
@@ -315,7 +315,7 @@ ArcBetween[center_, {p1_ ? CoordinateVector2DQ, p2_ ? CoordinateVector2DQ}, towa
 ];
 
 (* TODO: supprot towards by lerping *outside* the line and simulating a point at infinity *)
-ArcBetween[center_, {p1_ ? CoordinateVector3DQ, p2_ ? CoordinateVector3DQ}, towards_:Automatic] := Scope[
+ArcBetween[center_, {p1_ ? CoordinateVector3DQ, p2_ ? CoordinateVector3DQ}, towards_:Auto] := Scope[
   r = Mean[Dist[center, #]& /@ {p1, p2}];
   Line[center + Normalize[# - center] * r& /@ Lerp[p1, p2, Into[24]]]
 ]
@@ -423,7 +423,7 @@ PointAlongLine[coords_, Scaled[d_]] :=
   PointAlongLine[coords, LineLength[coords] * d];
 
 PointAlongLine[coords_List, d_ ? NumericQ] :=
-  P1 @ vectorAlongLine[coords, d];
+  F @ vectorAlongLine[coords, d];
 
 PointAlongLine[d_][coords_] := PointAlongLine[coords, d];
 
@@ -495,7 +495,7 @@ vectorAlongSegment[{a_, b_}, d_] := Scope[
 ];
 
 vectorAlongLine[coords_, d_] := Scope[
-  prev = P1 @ coords; total = 0;
+  prev = F @ coords; total = 0;
   n = LengthWhile[coords, curr |-> (total += coordDistance[curr, prev]; prev = curr; total < d)];
   If[n == Len[coords], Return @ getPointAndVec[coords, n]];
   rem = total - d;
@@ -541,8 +541,8 @@ VectorListAlongLine[coords_] := Scope[
   is = Range[1, n, 1/2]; Part[is, -1] = -1; i1 = i2 = 0;
   Map[toVecListElem, is]
 ,
-  toVecListElem[1] := {P1 @ coords, P1 @ diffs},
-  toVecListElem[-1] := {PN @ coords, PN @ diffs},
+  toVecListElem[1] := {F @ coords, F @ diffs},
+  toVecListElem[-1] := {L @ coords, L @ diffs},
   toVecListElem[i_Int] := {Part[coords, i], Normalize @ Mean @ Part[diffs, {i-1, i}]},
   toVecListElem[i_Rational] := ({i1, i2} = FloorCeiling @ i; {Mean @ Part[coords, {i1, i2}], Part[diffs, i1]})
 ];
@@ -572,13 +572,13 @@ boundingBoxSideLength[line_] :=
   Total[Dist @@@ CoordinateBounds @ line];
 
 adjustedLineLength[line_] :=
-  If[P1[line] === PN[line], 0.8, 1] * Min[LineLength @ line, boundingBoxSideLength @ line];
+  If[F[line] === L[line], 0.8, 1] * Min[LineLength @ line, boundingBoxSideLength @ line];
 
 EdgeLengthScale[{}, q_] := 1.0;
 
 EdgeLengthScale[edgeCoordinateLists_, q_] := Scope[
   edgeLengths = Chop @ Map[adjustedLineLength, edgeCoordinateLists];
-  edgeLengths = DeleteCases[edgeLengths, 0|0.];
+  edgeLengths = Decases[edgeLengths, 0|0.];
   If[edgeLengths === {},
     edgeLengths = Map[boundingBoxSideLength, edgeCoordinateLists]];
   If[q === "Average", Mean @ edgeLengths, Quantile[edgeLengths, q]]
@@ -747,16 +747,16 @@ ToAlignmentPair[align_] := Switch[align,
 
 PublicFunction[LineDilation, LineUnionDilation]
 
-LineDilation[line:{_, _}, r_] := Polygon @ ToPackedReal @ Part[P1 @ RegionDilation[Line @ N @ line, r], Join[Range[1, 37, 4], Range[38, 74, 4]]]
-LineDilation[line_, r_] := Polygon @ ToPackedReal @ Part[P1 @ RegionDilation[Line @ N @ line, r], 1;;;;4];
-LineUnionDilation[lines_, r_] := Replace[MeshPrimitives[RegionUnion @@ Map[LineDilation[#, r]&, lines], "Polygon"], {z_} :> z];
+LineDilation[line:{_, _}, r_] := Polygon @ ToPackedReal @ Part[F @ RegionDilation[Line @ N @ line, r], Join[Range[1, 37, 4], Range[38, 74, 4]]]
+LineDilation[line_, r_] := Polygon @ ToPackedReal @ Part[F @ RegionDilation[Line @ N @ line, r], 1;;;;4];
+LineUnionDilation[lines_, r_] := Rep[MeshPrimitives[RegionUnion @@ Map[LineDilation[#, r]&, lines], "Polygon"], {z_} :> z];
 
 (**************************************************************************************************)
 
 PrivateFunction[fixLinearGradientFilling]
 
 fixLinearGradientFilling[dir_][boxes_] :=
-  boxes /. SurfaceAppearance["GradientFilling", l___, "GradientAngle" -> ang_, r___] :> RuleCondition[
+  boxes /. SurfaceAppearance["GradientFilling", l___, "GradientAngle" -> ang_, r___] :> RuleEval[
     With[{ang2 = ang + N[Apply[ArcTan2, dir]]},
       SurfaceAppearance["GradientFilling", l, "GradientAngle" -> ang2, r]
     ]
@@ -768,9 +768,9 @@ PublicFunction[ShapeFromString]
 
 ShapeFromString[str_Str] := Scope[
   $f = 1;
-  Prepend[{0,0}] @ Accumulate @ Map[
-    $f * Lookup[$locs, StringTrim @ #, Print[#]]&,
-    StringSplit[str]
+  Pre[{0,0}] @ Accumulate @ Map[
+    $f * Lookup[$locs, STrim @ #, Print[#]]&,
+    SSplit[str]
   ]
 ];
 
@@ -799,7 +799,7 @@ PublicHead[CoordinateSegment]
 CoordinateComplex[{___, {}, ___}] := {};
 
 CoordinateComplex[coords_, patt_:All] :=
-  KeyValueMap[ccMake, KeySelect[orderMatchQ[patt]] @ KeySort @ GroupPairs @ ApplyTuples[ccElement, ToList /@ coords]];
+  KVMap[ccMake, KSelect[orderMatchQ[patt]] @ KSort @ GroupPairs @ ApplyTuples[ccElement, ToList /@ coords]];
 
 orderMatchQ[All] = True&;
 orderMatchQ[list_List][i_] := MemberQ[list, Round @ i];

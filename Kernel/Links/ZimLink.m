@@ -2,7 +2,7 @@ CacheVariable[$ZimLinkFunctions]
 
 General::libraryLinkFunctionCall = "Library link function call `` failed.";
 
-zimCall[name_String, args___] := Replace[
+zimCall[name_String, args___] := Rep[
   VPrint["Calling ", name[args]];
   CacheTo[$ZimLinkFunctions, name, loadFunc[name]][args],
   _LibraryFunction[___] | _LibraryFunctionError :> ThrowMessage["libraryLinkFunctionCall", MsgExpr[name[args]]]
@@ -39,11 +39,11 @@ $zimLinkFunctionSignatures = Assoc[
 $zeroSep = "\:0000";
 
 General::zimInternalError = "Internal error."
-ByteArrayToStringList[ba_ByteArray] := StringSplit[ByteArrayToString @ ba, $zeroSep];
+ByteArrayToStringList[ba_ByteArray] := SSplit[ByteArrayToString @ ba, $zeroSep];
 ByteArrayToStringList[_] := ThrowMessage["zimInternalError"];
 
 (* the final "" is to ensure we have a null-terminated string at the end, so C++ can parse it easily *)
-StringListToByteArray[strs_List] := StringToByteArray @ StringRiffle[Append[strs, ""], $zeroSep];
+StringListToByteArray[strs_List] := StringToByteArray @ SRiffle[App[strs, ""], $zeroSep];
 StringListToByteArray[_] := ThrowMessage["zimInternalError"];
 
 (*************************************************************************************************)
@@ -58,7 +58,7 @@ PrivateFunction[UnloadZimLink]
 
 UnloadZimLink[] := If[Len[$ZimLinkFunctions] > 0,
   VPrint["Unloading ZimLink."];
-  KeyValueScan[LibraryFunctionUnload[Print["Unloading ", #1]; #2]&, $ZimLinkFunctions];
+  KVScan[LibraryFunctionUnload[Print["Unloading ", #1]; #2]&, $ZimLinkFunctions];
   LibraryUnload @ $zimLinkPath;
   $ZimLinkFunctions = UAssoc[];
 ];
@@ -91,7 +91,7 @@ SystemHead[ZimArchive]
 CacheVariable[$ZimArchiveIDToName]
 
 DefineStandardTraditionalForm[
-  (ZimArchive[id_Int] ? MEQ) /; KeyExistsQ[$ZimArchiveIDToName, id] :> RowBox[{
+  (ZimArchive[id_Int] ? MEQ) /; KeyQ[$ZimArchiveIDToName, id] :> RowBox[{
     "\"ZimArchive\"", RowBox[{"[", tightColoredBoxes[$ZimArchiveIDToName @ id, $Yellow, 12], "]"}]
   }]
 ];
@@ -109,7 +109,7 @@ OpenZimArchive[path_String] := Scope @ CatchMessage[
   If[!FileExistsQ[path], ReturnFailed[]];
   ZimLoadedArchiveCount[]; (* force ZimLink to load so we can call CreateManagedLibraryExpression *)
   obj = CreateManagedLibraryExpression["ZimArchive", ZimArchive];
-  id = First @ obj;
+  id = F @ obj;
   zimCall["zimOpenArchive", id, path];
   $ZimArchiveIDToName[id] ^= baseName;
   obj
@@ -119,7 +119,7 @@ OpenZimArchive[path_String] := Scope @ CatchMessage[
 
 PublicFunction[ZimEntryRedirects]
 
-ZimEntryRedirects[ZimArchive[id_Int] ? MEQ, n_Integer:Infinity] := Scope @ CatchMessage[
+ZimEntryRedirects[ZimArchive[id_Int] ? MEQ, n_Integer:Inf] := Scope @ CatchMessage[
   bytes = zimCall["zimArchiveEntryRedirects", id];
   strs = ByteArrayToStringList @ bytes;
   If[!Divisible[Len[strs], 2], ReturnFailed[]];
@@ -130,8 +130,8 @@ ZimEntryRedirects[ZimArchive[id_Int] ? MEQ, n_Integer:Infinity] := Scope @ Catch
 
 PublicFunction[ZimEntryData]
 
-ZimEntryData[ZimArchive[id_Int] ? MEQ, allowRedirs_:False, n_Integer:Infinity] := Scope @ CatchMessage[
-  bytes = zimCall["zimArchiveEntryData", id, If[n === Infinity, 0, n], If[allowRedirs, 0, 1]];
+ZimEntryData[ZimArchive[id_Int] ? MEQ, allowRedirs_:False, n_Integer:Inf] := Scope @ CatchMessage[
+  bytes = zimCall["zimArchiveEntryData", id, If[n === Inf, 0, n], If[allowRedirs, 0, 1]];
   strs = ByteArrayToStringList @ bytes;
   If[!Divisible[Len[strs], 2], ReturnFailed[]];
   columns = Transpose @ Partition[strs, 2];

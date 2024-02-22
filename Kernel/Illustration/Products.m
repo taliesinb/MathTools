@@ -4,20 +4,20 @@ GraphProductsRow[{l1_ -> q1_, l2_ -> q2_}, prodSeq:Repeated[{__Rule}]] := Scope[
   q1 = RotateGraph @ q1;
   opts = Sequence[ArrowheadPosition -> 0.65, ImagePadding -> 15, Frame -> True];
   prods = {prodSeq};
-  numProds = Len @ P1 @ List @ prodSeq;
-  topRow = Prepend[""] @ Repeat[q2, numProds];
+  numProds = Len @ F @ List @ prodSeq;
+  topRow = Pre[""] @ Repeat[q2, numProds];
   prodRows = Catenate @ Map[
     Fn[prods,
       {prodLabels, prodFns} = KeysValues @ prods;
-      bottomRow = Prepend[""] @ Map[#[l1, l2]&, prodLabels];
+      bottomRow = Pre[""] @ Map[#[l1, l2]&, prodLabels];
       {
-        Prepend[q1] @ Map[#[q1, q2, opts]&, prodFns],
+        Pre[q1] @ Map[#[q1, q2, opts]&, prodFns],
         bottomRow
       }
     ],
     {prodSeq}
   ];
-  rows = Prepend[prodRows, topRow];
+  rows = Pre[prodRows, topRow];
   Grid[
     rows,
     Spacings -> {{0,0, {1, 1.5}}, {0,0, {1, 1.5}}}
@@ -43,7 +43,7 @@ GraphProductTable[prodFn_, aList_, bList_, opts:OptionsPattern[]] := Scope[
   entries = Outer[
     prodFn[#1, #2,
       PackingSpacing -> 1, "UseCardinalSet" -> useCardinalSet,
-      FilterOptions[P1 @ PatternHead @ prodFn, opts],
+      FilterOptions[F @ PatternHead @ prodFn, opts],
       (* If[!useCardinalSet, ArrowheadShape -> None, Sequence @@ {}], *) MultiEdgeDistance -> 0.1,
       ArrowheadPosition -> arrowheadPosition, EdgeSetback -> .1, ImagePadding -> 15,
       Frame -> True
@@ -59,8 +59,8 @@ GraphProductTable[prodFn_, aList_, bList_, opts:OptionsPattern[]] := Scope[
     table = PrependColumn[table, aLabels];
   ,
     blank = ""];
-  PrependTo[table, Prepend[blank] @ bList];
-  If[bLabels =!= None, PrependTo[table, Prepend[blank] @ bLabels]];
+  PreTo[table, Pre[blank] @ bList];
+  If[bLabels =!= None, PreTo[table, Pre[blank] @ bLabels]];
   Grid[table, FilterOptions @ opts, Spacings -> {{0,0,0.25,{1}, 0},{0,0,0.25,{1}, 0}}]
 ];
 
@@ -86,21 +86,21 @@ Options[ConnectedComponentProductDecomposition] = JoinOptions[
 
 ConnectedComponentProductDecomposition[graphs_, terms_, userOpts:OptionsPattern[]] := Scope[
   If[graphs ~~~ l_Labeled,
-    displayForm = toQuiverProductColumn @ PN @ graphs;
-    graphs = P1 @ graphs;
+    displayForm = toQuiverProductColumn @ L @ graphs;
+    graphs = F @ graphs;
   ,
-    displayForm = {Automatic};
+    displayForm = {Auto};
   ];
   UnpackOptions[maxWidth, spacings, transposed];
   opts = SeqDropOptions[{MaxWidth, Spacings, Transposed}][userOpts];
-  base = GeneralQuiverProduct[graphs, terms, Automatic, opts,
+  base = GeneralQuiverProduct[graphs, terms, Auto, opts,
     ImageSize -> 120, VertexSize -> 4, ArrowheadShape -> None,
     VertexOverlapResolution -> 0
   ];
   products = GeneralQuiverProduct[graphs, terms, All, opts,
     ImageSize -> 120, VertexSize -> 4, ArrowheadSize -> 12];
-  imgSize = P1 @ LookupImageSize[base];
-  dislayForm = VectorReplace[displayForm, {Automatic -> base, g_Graph :> ReplaceOptions[g, ImageSize -> imgSize]}];
+  imgSize = F @ LookupImageSize[base];
+  dislayForm = VectorReplace[displayForm, {Auto -> base, g_Graph :> ReplaceOptions[g, ImageSize -> imgSize]}];
   SpacedColumn[
     Sequence @@ dislayForm,
     LargeSymbolForm["="],

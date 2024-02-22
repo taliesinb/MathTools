@@ -19,18 +19,18 @@ the function applied to each matrix.
 
 MapPrimitiveCoordinates[{fn_, matrixFn_}, expr_] := Scope[
   $vectorF = fn; $matrixF = matrixFn;
-  ReplaceAll[expr, $mpcDispatch]
+  RepAll[expr, $mpcDispatch]
 ]
 
 MapPrimitiveCoordinates[Threaded[fn_] | (fn_ ? VectorListableQ), expr_] := Scope[
   $vectorF = $matrixF = fn;
-  ReplaceAll[expr, $mpcDispatch]
+  RepAll[expr, $mpcDispatch]
 ]
 
 MapPrimitiveCoordinates[fn_, expr_] := Scope[
   $vectorF = fn;
   $matrixF = Map[fn];
-  ReplaceAll[expr, $mpcDispatch]
+  RepAll[expr, $mpcDispatch]
 ];
 
 MapPrimitiveCoordinates[{x_, y_} ? CoordinateVectorQ, expr_] :=
@@ -67,33 +67,33 @@ the more specific cases first
 (**************************************************************************************************)
 
 $mpcDispatch0 := $mpcDispatch0 = Dispatch @ With[{
-  $vecvec    = Alternatives @@ PrimitiveSignatureLookup["Vector,Vector"],
-  $vecdelta  = Alternatives @@ PrimitiveSignatureLookup["Vector,Delta"],
-  $vecrad    = Alternatives @@ PrimitiveSignatureLookup["Vector,Radius"],
-  $vec       = Alternatives @@ PrimitiveSignatureLookup["Vector!Radius"],
-  $matrixrad = Alternatives @@ PrimitiveSignatureLookup["Matrix,Radius | Pair,Radius | Curve,Radius"],
-  $matrix    = Alternatives @@ PrimitiveSignatureLookup["Matrix!Radius | Pair!Radius | Curve!Radius"],
-  $matrices  = Alternatives @@ PrimitiveSignatureLookup["Matrices?Radius"],
-  $opvec     = Alternatives @@ PrimitiveSignatureLookup["Opaque,Vector|Primitives,Vector"],
-  $op        = Alternatives @@ PrimitiveSignatureLookup["Opaque"],
-  $rules     = Alternatives @@ PrimitiveSignatureLookup["Rules,Primitives"],
-  $fano      = Alternatives @@ PrimitiveSignatureLookup["FanOut"],
+  $vecvec    = Alt @@ PrimitiveSignatureLookup["Vector,Vector"],
+  $vecdelta  = Alt @@ PrimitiveSignatureLookup["Vector,Delta"],
+  $vecrad    = Alt @@ PrimitiveSignatureLookup["Vector,Radius"],
+  $vec       = Alt @@ PrimitiveSignatureLookup["Vector!Radius"],
+  $matrixrad = Alt @@ PrimitiveSignatureLookup["Matrix,Radius | Pair,Radius | Curve,Radius"],
+  $matrix    = Alt @@ PrimitiveSignatureLookup["Matrix!Radius | Pair!Radius | Curve!Radius"],
+  $matrices  = Alt @@ PrimitiveSignatureLookup["Matrices?Radius"],
+  $opvec     = Alt @@ PrimitiveSignatureLookup["Opaque,Vector|Primitives,Vector"],
+  $op        = Alt @@ PrimitiveSignatureLookup["Opaque"],
+  $rules     = Alt @@ PrimitiveSignatureLookup["Rules,Primitives"],
+  $fano      = Alt @@ PrimitiveSignatureLookup["FanOut"],
   vecP       = $CoordP,
   matP       = {__List} ? CoordinateMatrixQ,
   matListP   = {__List} ? CoordinateMatricesQ}, {
   e:($op)[___]                            :> e,
-  (h:$vecvec)[v:vecP, w:vecP, a___]       :> RuleCondition @ h[$vectorF @ v, $vectorF @ w, a],
-  (h:$vecdelta)[v:vecP, d:vecP, a___]     :> RuleCondition @ h[Seq @@ $vecDelta[v, d], a],
-  (h:$vecrad)[v:vecP, r_, a___]           :> RuleCondition @ h[$vectorF @ v, If[Len[v] == 2, $radius2F, $radius3F] @ r, a],
-  (h:$vec)[v:vecP, a___]                  :> RuleCondition @ h[$vectorF @ v, a],
-  (h:$matrixrad)[m:matP, r_, a___]        :> RuleCondition @ h[$matrixF @ m, If[Len[P1 @ m] == 2, $radius2F, $radius3F] @ r, a],
-  (h:$matrix)[m:matP, a___]               :> RuleCondition @ h[$matrixF @ m, a],
-  (h:$matrices)[v:matListP, a___]         :> RuleCondition @ h[$matrixF /@ v, a],
-  (h:$rules)[r_List, p_, a___]            :> RuleCondition @ h[$rulesF @ r, p /. $mpcDispatch, a],
-  (h:$fano)[FanOut[s:vecP, t:matP], a___] :> RuleCondition @ h[FanOut[$vectorF, $matrixF @ t], a],
-  Text[x_, v:vecP, y_, d:vecP, a___]      :> RuleCondition @ With[{p = $vecDelta[v, d]}, Text[x, P1 @ p, y, PN @ p, a]],
-  Inset[x_, v:vecP, y_, z_, d:vecP, a___] :> RuleCondition @ With[{p = $vecDelta[v, d]}, Inset[x, P1 @ p, y, z, PN @ p, a]],
-  (h:$opvec)[f_, v:vecP, a___]            :> RuleCondition @ h[f, $vectorF @ v, a]
+  (h:$vecvec)[v:vecP, w:vecP, a___]       :> RuleEval @ h[$vectorF @ v, $vectorF @ w, a],
+  (h:$vecdelta)[v:vecP, d:vecP, a___]     :> RuleEval @ h[Seq @@ $vecDelta[v, d], a],
+  (h:$vecrad)[v:vecP, r_, a___]           :> RuleEval @ h[$vectorF @ v, If[Len[v] == 2, $radius2F, $radius3F] @ r, a],
+  (h:$vec)[v:vecP, a___]                  :> RuleEval @ h[$vectorF @ v, a],
+  (h:$matrixrad)[m:matP, r_, a___]        :> RuleEval @ h[$matrixF @ m, If[Len[F @ m] == 2, $radius2F, $radius3F] @ r, a],
+  (h:$matrix)[m:matP, a___]               :> RuleEval @ h[$matrixF @ m, a],
+  (h:$matrices)[v:matListP, a___]         :> RuleEval @ h[$matrixF /@ v, a],
+  (h:$rules)[r_List, p_, a___]            :> RuleEval @ h[$rulesF @ r, p /. $mpcDispatch, a],
+  (h:$fano)[FanOut[s:vecP, t:matP], a___] :> RuleEval @ h[FanOut[$vectorF, $matrixF @ t], a],
+  Text[x_, v:vecP, y_, d:vecP, a___]      :> RuleEval @ With[{p = $vecDelta[v, d]}, Text[x, F @ p, y, L @ p, a]],
+  Inset[x_, v:vecP, y_, z_, d:vecP, a___] :> RuleEval @ With[{p = $vecDelta[v, d]}, Inset[x, F @ p, y, z, L @ p, a]],
+  (h:$opvec)[f_, v:vecP, a___]            :> RuleEval @ h[f, $vectorF @ v, a]
 }];
 
 $mpcDispatch := $mpcDispatch0;
@@ -117,18 +117,18 @@ $mpbcDispatch := $mpbcDispatch = createMpbcDispatch[];
 
 createMpbcDispatch[] := Scope[
   rules = Normal @ $mpcDispatch0;
-  nonBoxableHeads = Complement[Keys @ $graphicsHeadQ, Keys @ $primHeadToPrimBoxHead];
+  nonBoxableHeads = Comp[Keys @ $graphicsHeadQ, Keys @ $primHeadToPrimBoxHead];
   boxifyingRules = Assoc[$primHeadToPrimBoxHead, Thread[nonBoxableHeads :> Seq[]]];
-  rules //= ReplaceAll[boxifyingRules];
-  rules //= ReplaceAll[Verbatim[Alternatives][a_] :> a];
-  rules //= Select[FreeQ[Verbatim[Alternatives[]]]];
+  rules //= RepAll[boxifyingRules];
+  rules //= RepAll[Verbatim[Alt][a_] :> a];
+  rules //= Select[FreeQ[Verbatim[Alt[]]]];
   rules //= Map[addBoxConstruct];
   rules
 ];
 
 addBoxConstruct[other_] := other;
-addBoxConstruct[RuleDelayed[lhs_, RuleCondition[h[args___]]]] :=
-  RuleDelayed[lhs, RuleCondition @ Construct[h, args]];
+addBoxConstruct[RuleDelayed[lhs_, RuleEval[h[args___]]]] :=
+  RuleDelayed[lhs, RuleEval @ Construct[h, args]];
 
 (**************************************************************************************************)
 

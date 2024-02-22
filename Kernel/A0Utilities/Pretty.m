@@ -52,8 +52,8 @@ PublicOption[MaxIndent, MaxDepth, MaxLength, MaxStringLength, TabSize, Compactin
 
 Options[ToPrettifiedString] = {
   MaxIndent -> 5,
-  MaxDepth -> Infinity,
-  MaxLength -> Infinity,
+  MaxDepth -> Inf,
+  MaxLength -> Inf,
   MaxStringLength -> 32,
   CompactingWidth -> 48,
   InlineHeads -> {"Quantity", "Entity", "Interval"},
@@ -89,16 +89,16 @@ ToPrettifiedString[e_, OptionsPattern[]] := Scope[
   {$maxIndent, $maxWidth, $maxDepth, $maxLength, $maxStringLength, $tabSize, $inlineHeads, $fullSymbolContext, $colorSymbolContext, $prettyCompression,        $elideLargeArrays, $elideAtomicHeads, $inlineColors, $compactRealNumbers} = OptionValue[
   {MaxIndent, CompactingWidth, MaxDepth, MaxLength, MaxStringLength, TabSize, InlineHeads, FullSymbolContext, ColorSymbolContext, CompressLargeSubexpressions, ElideLargeArrays,  ElideAtomicHeads, InlineColors, CompactRealNumbers}];
   $ContextPath = {"System`", "QuiverGeometry`", "GeneralUtilities`"};
-  $compactRealLength = If[IntegerQ[$compactRealNumbers], $compactRealNumbers, 2];
+  $compactRealLength = If[IntQ[$compactRealNumbers], $compactRealNumbers, 2];
   $compactRealNumbers = !FalseQ[$compactRealNumbers];
-  If[!$fullSymbolContext, $ContextPath = Join[$ContextPath, getAllSymbolContexts @ HoldComplete @ e]];
+  If[!$fullSymbolContext, $ContextPath = Join[$ContextPath, getAllSymbolContexts @ HoldC @ e]];
   $depth = $shortenDepth = 0;
   Block[{FilterOptions}, pretty0[e]]
 ]
 
-$fatHeadP = HoldPattern[_ByteArray | _NumericArray | _SparseArray | _Image | _Video | _AnimatedImage] ? HoldAtomQ;
+$fatHeadP = HoldP[_ByteArray | _NumericArray | _SparseArray | _Image | _Video | _AnimatedImage] ? HoldAtomQ;
 
-getAllSymbolContexts[e_] := DeepUniqueCases[e, s_Symbol ? HoldAtomQ :> Context[Unevaluated @ s]];
+getAllSymbolContexts[e_] := DeepUniqueCases[e, s_Symbol ? HoldAtomQ :> Context[Uneval @ s]];
 
 (**************************************************************************************************)
 
@@ -121,7 +121,7 @@ pretty0[r_Real ? HoldAtomQ]  := realString[r];
 pretty0[e_] := Block[{$depth = $depth + 1},
 
   (* TODO: I think this was done out of laziness but doens't handle certain things that we want custom formatting for *)
-  If[!wideQ[e] && !$elideLargeArrays && FreeQ[Unevaluated @ e, _DirectedEdge|_UndirectedEdge|_Graph|_Image|_NumericArray] && shortQ[str = pretty2[e]],
+  If[!wideQ[e] && !$elideLargeArrays && FreeQ[Uneval @ e, _DirectedEdge|_UndirectedEdge|_Graph|_Image|_NumericArray] && shortQ[str = pretty2[e]],
     Return @ str];
 
   If[longQ[e], Return @ prettyLong[e]];
@@ -138,7 +138,7 @@ realString[r_] := If[TrueQ[$compactRealNumbers], RealDigitsString[r, $compactRea
 SetHoldAllComplete[prettyDeep];
 
 prettyDeep = Case[
-  (h_Symbol ? HAQ)[]                      := StringJoin[symbolString @ h, "[]"];
+  (h_Symbol ? HAQ)[]                      := SJoin[symbolString @ h, "[]"];
   r:Rule[_ ? smallQ, _ ? smallQ]          := pretty2[r];
   r:RuleDelayed[_ ? smallQ, _ ? smallQ]   := pretty2[r];
   a_ ? smallQ                             := pretty2[a];
@@ -155,31 +155,31 @@ SetHoldAllComplete[prettyLong, fatHeadString];
 
 prettyLong = Case[
   str_Str               := Scope[
-    If[StringLength[str] < $maxStringLength, Return @ pretty2 @ str];
-    prefix = If[$maxStringLength > 5, StringTake[ToString[StringTake[str, $maxStringLength - 5], InputForm], {2, -2}], ""];
-    StringJoin["\"", prefix, $ellipsisString, "\""]
+    If[SLen[str] < $maxStringLength, Return @ pretty2 @ str];
+    prefix = If[$maxStringLength > 5, STake[ToString[STake[str, $maxStringLength - 5], InputForm], {2, -2}], ""];
+    SJoin["\"", prefix, $ellipsisString, "\""]
   ];
-  _List                 := StringJoin["{", $ellipsisString, "}"];
-  _Assoc ? HAQ          := StringJoin["<|", $ellipsisString, "|>"];
-  (h_Symbol ? HAQ)[___] := StringJoin[symbolString @ h, "[", $ellipsisString, "]"];
+  _List                 := SJoin["{", $ellipsisString, "}"];
+  _Assoc ? HAQ          := SJoin["<|", $ellipsisString, "|>"];
+  (h_Symbol ? HAQ)[___] := SJoin[symbolString @ h, "[", $ellipsisString, "]"];
   e:$fatHeadP           := fatHeadString[e];
-  g_Graph ? HAQ         := StringJoin["Graph[«", IntegerString @ VertexCount @ g, "», «", IntegerString @ EdgeCount @ g, "», ", $ellipsisString, "]"];
+  g_Graph ? HAQ         := SJoin["Graph[«", IntStr @ VertexCount @ g, "», «", IntStr @ EdgeCount @ g, "», ", $ellipsisString, "]"];
   _                     := $ellipsisString;
 ,
   {HAQ -> HoldAtomQ, $fatHeadP}
 ]
 
-fatHeadString[e_] := StringJoin[prettyHead @ e, "[", $ellipsisString, "]"];
+fatHeadString[e_] := SJoin[prettyHead @ e, "[", $ellipsisString, "]"];
 
 SetHoldAllComplete[symbolString, prettyHead];
 
 symbolString[s_Symbol ? HoldAtomQ] :=
   If[$colorSymbolContext, colorByContext[Context[s]], Id] @
-  If[$fullSymbolContext, ToString[Unevaluated @ s, InputForm], HoldSymbolName @ s];
+  If[$fullSymbolContext, ToString[Uneval @ s, InputForm], HoldSymbolName @ s];
 
 symbolString[_] := "?";
 
-wrapColor[col_, con_][str_] := StringJoin[
+wrapColor[col_, con_][str_] := SJoin[
   "\!\(\*TooltipBox[StyleBox[", str, ",", ToString @ col, "],\"", con, "\"]",
   "\)"
 ];
@@ -202,7 +202,7 @@ SetHoldAllComplete[smallQ, wideQ, longQ];
 
 smallQ = Case[
   _Symbol ? HAQ := True;
-  s_Str ? HAQ   := StringLength[s] < 12 || StringMatchQ[s, LetterCharacter..];
+  s_Str ? HAQ   := SLen[s] < 12 || SMatchQ[s, LetterCharacter..];
   _Int ? HAQ    := True;
   _Real ? HAQ   := $compactRealNumbers;
   _             := False;
@@ -211,17 +211,17 @@ smallQ = Case[
 ];
 
 wideQ[_Sequence] := False;
-wideQ[e_] := (2*LeafCount[Unevaluated @ e] > $maxWidth) || (2*ByteCount[Unevaluated @ e]/48) > $maxWidth;
+wideQ[e_] := (2*LeafCount[Uneval @ e] > $maxWidth) || (2*ByteCount[Uneval @ e]/48) > $maxWidth;
 
-longQ[e_Str ? HoldAtomQ] := StringLength[Unevaluated @ e] > $maxStringLength;
-longQ[a_Assoc ? HoldAtomQ] := Len[Unevaluated @ a] > $maxLength;
-longQ[(_?HoldAtomQ)[Shortest[a___], ___Rule]] := Len[Unevaluated @ {a}] > $maxLength;
-longQ[e_] := Len[Unevaluated @ e] > $maxLength;
+longQ[e_Str ? HoldAtomQ] := SLen[Uneval @ e] > $maxStringLength;
+longQ[a_Assoc ? HoldAtomQ] := Len[Uneval @ a] > $maxLength;
+longQ[(_?HoldAtomQ)[Shortest[a___], ___Rule]] := Len[Uneval @ {a}] > $maxLength;
+longQ[e_] := Len[Uneval @ e] > $maxLength;
 
-shortQ[s_] := shortStringQ[s] || shortStringQ[StringDelete[s, "\!\(\*StyleBox[" ~~ Shortest[__] ~~ "Rule[StripOnInput, False]]\)"]];
+shortQ[s_] := shortStringQ[s] || shortStringQ[SDelete[s, "\!\(\*StyleBox[" ~~ Shortest[__] ~~ "Rule[StripOnInput, False]]\)"]];
 
-shortStringQ[s_] := tabStringLength[s] <= ($maxWidth - ($depth + $shortenDepth) * Replace[$tabSize, None -> 4]);
-tabStringLength[s_] := StringLength[StringReplace[s, "\t" -> "    "]];
+shortStringQ[s_] := tabStringLength[s] <= ($maxWidth - ($depth + $shortenDepth) * Rep[$tabSize, None -> 4]);
+tabStringLength[s_] := SLen[SRep[s, "\t" -> "    "]];
 
 (**************************************************************************************************)
 
@@ -249,18 +249,18 @@ pretty1 = Case[
   Verbatim[BlankNullSequence][]         := "___";
   Verbatim[BlankNullSequence][s_ ? HSQ] := "___" <> symbolString[s];
   Verbatim[Pattern][s_ ? HSQ, p:(_Blank | _BlankSequence | _BlankNullSequence)] := symbolString[s] <> pretty1[p];
-  Verbatim[Alternatives][a__]         := prettyInfix[" | ", a];
+  Verbatim[Alt][a__]         := prettyInfix[" | ", a];
   Verbatim[Minus][arg_]               := "-" <> pretty1wrap[arg];
   Verbatim[Times][-1, arg_]           := "-" <> pretty1wrap[arg];
   Verbatim[DirectedEdge][a1_, a2_]    := prettyInfix[" => ", a1, a2];
   Verbatim[UndirectedEdge][a1_, a2_]  := prettyInfix[" <=> ", a1, a2];
-  col:(_RGBColor | _GrayLevel) /; TrueQ[$inlineColors] && ColorQ[Unevaluated @ col] := prettyInlineColor[col];
+  col:(_RGBColor | _GrayLevel) /; TrueQ[$inlineColors] && ColorQ[Uneval @ col] := prettyInlineColor[col];
 
   list_List /; TrueQ[$elideLargeArrays] && HoldNumericArrayQ[list] && beefyNumericArrayQ[list] := prettyElidedList[list];
   list_List /; TrueQ[$prettyCompression] && HoldPackedArrayQ[list] && holdLeafCount[list] > 128 := prettyCompressed[list];
   list_List                      := indentedBlock["{", indentArgs @ list, "}"];
-  assoc_Assoc /; AssocQ[Unevaluated[assoc]]
-                                 := indentedBlock["<|", KeyValueMap[prettyRule, Unevaluated @ assoc], "|>"];
+  assoc_Assoc /; AssocQ[Uneval[assoc]]
+                                 := indentedBlock["<|", KVMap[prettyRule, Uneval @ assoc], "|>"];
   Assoc[args___]                 := indentedBlock["<|", indentArgs @ {args}, "|>"];
   e:$fatHeadP                    := If[$elideAtomicHeads, fatHeadString[e], pretty2[e]];
   e:(_Symbol[])                  := pretty2[e];
@@ -274,10 +274,10 @@ pretty1 = Case[
 
 indentArgs[list_] := Block[{$shortenDepth = $shortenDepth + 1}, MapUnevaluated[pretty0, list]];
 
-makeTab[n_] := If[IntegerQ[$tabSize], makeSpaceTab[n * $tabSize], makeTabTab[n]];
+makeTab[n_] := If[IntQ[$tabSize], makeSpaceTab[n * $tabSize], makeTabTab[n]];
 
-makeTabTab[n_] := makeTabTab[n] = StringRepeat["\t", n];
-makeSpaceTab[n_] := makeSpaceTab[n] = StringRepeat[" ", n];
+makeTabTab[n_] := makeTabTab[n] = SRepeat["\t", n];
+makeSpaceTab[n_] := makeSpaceTab[n] = SRepeat[" ", n];
 
 (**************************************************************************************************)
 
@@ -308,46 +308,46 @@ prettyInlineColor[color_] := ToString[Style["\[FilledSquare]", color], StandardF
 
 SetHoldAllComplete[holdLeafCount, beefyNumericArrayQ];
 
-holdLeafCount[e_] := LeafCount[Unevaluated @ e];
-beefyNumericArrayQ[list_] := holdLeafCount[list] >= If[ArrayQ[Unevaluated @ list, _, IntegerQ], 8, 4];
+holdLeafCount[e_] := LeafCount[Uneval @ e];
+beefyNumericArrayQ[list_] := holdLeafCount[list] >= If[ArrayQ[Uneval @ list, _, IntQ], 8, 4];
 prettyElidedList[list_] := With[
-  {dims = Dimensions @ Unevaluated @ list},
-  StringJoin @ {"\[LeftAngleBracket]", dimsString @ dims, "\[RightAngleBracket]"}
+  {dims = Dims @ Uneval @ list},
+  SJoin @ {"\[LeftAngleBracket]", dimsString @ dims, "\[RightAngleBracket]"}
 ];
 
-dimsString[dims_] := Riffle[IntegerString /@ dims, ","];
+dimsString[dims_] := Riffle[IntStr /@ dims, ","];
 
 (**************************************************************************************************)
 
 indentedBlock[begin_, {}, end_] := begin <> end;
 
-indentedBlock[begin_ ? (StringEndsQ["["]), {line_Str} /; StringLength[line] > 8, "]"] :=
-  StringJoin[StringDrop[begin, -1] <> " @ ", deIndent @ line];
+indentedBlock[begin_ ? (SEndsQ["["]), {line_Str} /; SLen[line] > 8, "]"] :=
+  SJoin[SDrop[begin, -1] <> " @ ", deIndent @ line];
 
 (* indentedBlock["{", {line_Str} /; StringLength[line] > 8, "}"] :=
   StringJoin["List @ ", deIndent @ line];
  *)
 indentedBlock[begin_, {line_Str}, end_] :=
-  StringJoin[begin, deIndent @ line, end];
+  SJoin[begin, deIndent @ line, end];
 
-deIndent[line_Str] := StringReplace[line, "\n\t" -> "\n"];
+deIndent[line_Str] := SRep[line, "\n\t" -> "\n"];
 
 indentedBlock[begin_, list_List, end_] := With[
   {t1 = makeTab[$depth], t2 = makeTab[$depth - 1]},
 
-  compact = StringJoin[
+  compact = SJoin[
     begin,
     Map[{#, ", "}&, Most @ list],
-    {PN @ list},
+    {L @ list},
     end
   ];
 
   If[shortQ[compact] || $depth > $maxIndent, Return @ compact];
 
-  StringJoin[
+  SJoin[
     begin, "\n",
     Map[{t1, #, ",\n"}&, Most @ list],
-    {t1, PN @ list, "\n"},
+    {t1, L @ list, "\n"},
     t2, end
   ]
 ];
@@ -389,18 +389,18 @@ pretty2 = Case[
 ];
 
 SetHoldAllComplete[chunkToString];
-chunkToString[e_] := With[{h = HoldComplete[e]},
-  Replace[
+chunkToString[e_] := With[{h = HoldC[e]},
+  Rep[
     h /. $literalPatternVariableReplacements,
-    HoldComplete[z_] :> compactReals @ ToString[Unevaluated @ z, InputForm]
+    HoldC[z_] :> compactReals @ ToString[Uneval @ z, InputForm]
   ]
 ];
 
 (* this is super hacky but not sure how else to easily clip numbers once ToString is done *)
-compactReals[str_] := If[$compactRealNumbers && StringFreeQ[str, "\""],
-  StringReplace[str, {
-      l:"0".. ~~ "." ~~ Longest[m:"0"..] ~~ r:DigitCharacter.. :> StringJoin[l, ".", m, StringTake[r, UpTo @ $compactRealLength]],
-      l:DigitCharacter.. ~~ "." ~~ r:Repeated[DigitCharacter, {$compactRealLength + 1, Infinity}] :> StringJoin[l, ".", StringTake[r, $compactRealLength]]
+compactReals[str_] := If[$compactRealNumbers && SFreeQ[str, "\""],
+  SRep[str, {
+      l:"0".. ~~ "." ~~ Longest[m:"0"..] ~~ r:DigitCharacter.. :> SJoin[l, ".", m, STake[r, UpTo @ $compactRealLength]],
+      l:DigitCharacter.. ~~ "." ~~ r:Repeated[DigitCharacter, {$compactRealLength + 1, Inf}] :> SJoin[l, ".", STake[r, $compactRealLength]]
   }],
   str
 ]
@@ -408,17 +408,17 @@ compactReals[str_] := If[$compactRealNumbers && StringFreeQ[str, "\""],
 (**************************************************************************************************)
 
 prettyCompressed[e_] := Scope[
-  head = H[Unevaluated @ e];
+  head = H[Uneval @ e];
   headName = If[H[head] === Symbol, SymbolName[head] <> ";", ""];
-  str = Compress[Unevaluated @ e];
-  len = StringLength[str];
-  StringJoin @ Which[
+  str = Compress[Uneval @ e];
+  len = SLen[str];
+  SJoin @ Which[
     len <= 2 * $maxWidth,
       {"CompressedData[", headName, "\"", str, "\"]"},
     len <= 180,
       {"CompressedData[", headName, "\"\n", makeTab[$depth], str, "\n", makeTab[$depth-1], "\"]"},
     True,
-      chunks =  StringPartition[str, UpTo[120]];
+      chunks =  SPartition[str, UpTo[120]];
       t1 = makeTab[Min[$depth, 4]]; t2 = makeTab[$depth - 1];
       {"CompressedData[", headName, "\"\n", Map[{t1, #, "\n"}&, chunks], t2, "\"]"}
   ]

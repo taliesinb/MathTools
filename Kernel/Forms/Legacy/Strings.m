@@ -14,8 +14,8 @@ declareBoxFormatting[
   QuotedCharacterForm[a_] :>
     TemplateBox[List @ quotedCharBoxes @ a, "QuotedCharacterForm"],
 
-  LiteralStringForm[str_Str] :> TemplateBox[List @ StringJoin["\"", str, "\""], "LiteralStringForm"],
-  LiteralCharacterForm[str_Str] :> TemplateBox[List @ StringJoin["\"", str, "\""], "LiteralCharacterForm"]
+  LiteralStringForm[str_Str] :> TemplateBox[List @ SJoin["\"", str, "\""], "LiteralStringForm"],
+  LiteralCharacterForm[str_Str] :> TemplateBox[List @ SJoin["\"", str, "\""], "LiteralCharacterForm"]
 ];
 
 $TemplateKatexFunction["WildcardStringForm"] = applyRiffled["wstring", " "];
@@ -29,7 +29,7 @@ $TemplateKatexFunction["LiteralCharacterForm"] = katexWrapText["lchar"];
 $TemplateKatexFunction["StringSymbolForm"] = "strsym";
 $TemplateKatexFunction["CharacterSymbolForm"] = "charsym";
 
-katexWrapText[op_][s_Str] := op @ "texttt" @ StringTrim[StringReplace[s, "-" -> "\\textendash "]; s, "\""];
+katexWrapText[op_][s_Str] := op @ "texttt" @ STrim[SRep[s, "-" -> "\\textendash "]; s, "\""];
 
 DefineTaggedForm[CharacterSymbolForm]
 DefineTaggedForm[StringSymbolForm]
@@ -37,7 +37,7 @@ DefineTaggedForm[StringSymbolForm]
 SetHoldAllComplete[stringElementBoxes, stringSymbolBoxes, quotedCharBoxes]
 
 stringElementBoxes = Case[
-  s_Str /; StringLength[s] === 1 := If[UpperCaseQ[s],
+  s_Str /; SLen[s] === 1 := If[UpperCaseQ[s],
     MakeBoxes @ StringSymbolForm @ s,
     MakeBoxes @ LiteralCharacterForm @ s
   ];
@@ -56,7 +56,7 @@ stringSymbolBoxes = Case[
 
 (* this should only be a literal or a CharacterSymbol *)
 quotedCharBoxes = Case[
-  s_Str /; StringLength[s] === 1 := MakeBoxes @ LiteralCharacterForm @ s;
+  s_Str /; SLen[s] === 1 := MakeBoxes @ LiteralCharacterForm @ s;
   s_CharacterSymbolForm := MakeBoxes @ s;
   e_ ? unaryWrappedQ := recurseWrapperBoxes[e, %];
 ]

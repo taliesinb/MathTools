@@ -41,7 +41,7 @@ EnlargeBounds[bounds_, n:$NumberP] := bounds + {{-1, 1}, {-1, 1}} * n;
 (* boxBound is set up lazily so that the primitive box registery will have been populated *)
 
 toAlt[a_] := a;
-toAlt[a__] := Alternatives[a];
+toAlt[a__] := Alt[a];
 toBoxHeadPatt[str_] := toAlt @@ PrimitiveBoxSignatureLookup[str];
 
 (* TODO: make this work in 3D, handle radii that are specified as Offset *)
@@ -133,7 +133,7 @@ SetHoldFirst[styleBlock];
 styleBlock[e_] := InheritedBlock[{$aps, $fs, $ff, $fw, $fsl, $ft}, e];
 
 $circ8 := $circ8 = ToPackedReal @ N @ ClockwiseCirclePoints[8];
-$sphere26 := $sphere26 = Normalize /@ DeleteCases[{0.,0.,0.}] @ Tuples[N @ {-1, 0, 1}, 3];
+$sphere26 := $sphere26 = Normalize /@ Decases[{0.,0.,0.}] @ Tuples[N @ {-1, 0, 1}, 3];
 
 vecBall[v:{_, _, _}, r_] := Threaded[v] + r * $sphere26;
 vecBall[v:{_, _}, r_] := Threaded[v] + r * $circ8;
@@ -172,9 +172,9 @@ properInsetBounds = Case[
   i:InsetBox[_GraphicsBox, ___] :=
     boxBound @ embedInsetBoxWithScale[i, $gs];
 
-  InsetBox[FormBox[txt_, _] | txt_, pos_, offset:Except[_Rule]:ImageScaled[{0.5,0.5}], size_:Automatic, dirx:Except[_Rule]:{1,0}, opts___Rule] := Scope[
+  InsetBox[FormBox[txt_, _] | txt_, pos_, offset:Except[_Rule]:ImageScaled[{0.5,0.5}], size_:Auto, dirx:Except[_Rule]:{1,0}, opts___Rule] := Scope[
     pos = ResolveOffsets[pos, $gs];
-    offset //= Replace[ImageScaled[s_] :> (s - 0.5) * 2];
+    offset //= Rep[ImageScaled[s_] :> (s - 0.5) * 2];
     (* TODO: Maybe use DefaultBaseStyle here? *)
     If[FreeQ[{opts}, BaseStyle], opts = Sequence[opts, BaseStyle -> $baseStyle]];
     {w, h} = MakeTextImageSize @ Text[RawBoxes @ txt, pos, opts] + 1;

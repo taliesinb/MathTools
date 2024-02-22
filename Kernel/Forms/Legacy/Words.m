@@ -87,8 +87,8 @@ wordBoxes = Case[
   {symsP -> $rawSymbolP, cardP -> $maybeColoredCardP}
 ];
 
-applyCardColoring[list_, colors_] := ReplaceAll[list,
-  TemplateBox[{c_Str}, form_] /; KeyExistsQ[colors, c] :>
+applyCardColoring[list_, colors_] := RepAll[list,
+  TemplateBox[{c_Str}, form_] /; KeyQ[colors, c] :>
     TemplateBox[{TemplateBox[{c}, form]}, SymbolName @ colors @ c]];
 
 cardinalBoxes[list_List] := Map[cardinalBox, list];

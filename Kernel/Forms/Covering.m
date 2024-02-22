@@ -33,10 +33,10 @@ PublicTypesettingForm[ContractionSetForm, OrderedContractionSetForm]
 ContractionSetForm[{RepeatedNull[{_}]}] := "";
 
 ContractionSetForm[e_List] :=
-  ContractionSumForm @@ (ContractionProductForm @@@ DeleteCases[e, {_}])
+  ContractionSumForm @@ (ContractionProductForm @@@ Decases[e, {_}])
 
 OrderedContractionSetForm[index_][set_] :=
-  ContractionSetForm @ SortContractionSet[DeleteCases[set, {_}], index]
+  ContractionSetForm @ SortContractionSet[Decases[set, {_}], index]
 
 (**************************************************************************************************)
 

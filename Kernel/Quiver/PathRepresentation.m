@@ -21,7 +21,7 @@ PathRepresentation::gencount =
 
 $namedRep = "Abelian" | "Dihedral" | "Redundant" | "RedundantDihedral";
 
-PathRepresentation[quiver_, representation_, initialVertex_:Automatic] := Scope[
+PathRepresentation[quiver_, representation_, initialVertex_:Auto] := Scope[
   quiver = CoerceToQuiver[1];
   representation = CoerceToRep[2];
   cardinals = CardinalList[quiver];
@@ -29,7 +29,7 @@ PathRepresentation[quiver_, representation_, initialVertex_:Automatic] := Scope[
   If[!SameLengthQ[cardinals, generators],
     ReturnFailed["gencount", Len @ generatorList, Len @ cardinalList]];
   If[!SameSetQ[cardinals, Keys @ generators],
-    generators = AssociationThread[cardinals, Values @ generators];
+    generators = AssocThread[cardinals, Values @ generators];
   ];
   SetAutomatic[initialVertex, Part[VertexList[quiver], 1]];
   assoc = Assoc[
@@ -62,7 +62,7 @@ Options[PathRepresentationPlot] = JoinOptions[
 PathRepresentationPlot[qrep_, opts:OptionsPattern[]] := Scope[
 
   UnpackOptions[plotLabel, transposed];
-  If[StringQ[qrep],
+  If[StrQ[qrep],
     SetAutomatic[plotLabel, ToTitleString[qrep]];
     qrep = LatticeQuiverData[qrep, "Representation"]];
 
@@ -84,7 +84,7 @@ PrivateFunction[makeColoredGenerators]
 
 makeColoredGenerators[generators_, cardinalColors_] :=
   Row[
-    KeyValueMap[
+    KVMap[
       Labeled[#2, Row[{makeLegendArrowheadGraphic[cardinalColors @ #1, "Arrow"], "\[ThinSpace]", #1}]]&,
       generators
     ],
@@ -105,7 +105,7 @@ PathRepresentationObject /: MakeBoxes[object:PathRepresentationObject[data_Assoc
   group = representation["Group"];
   icon = ExtendedGraphPlot @ ExtendedGraph[quiver, ImageSize -> {60, 50}, GraphLegend -> None];
   cardinalColors = LookupCardinalColors @ quiver;
-  coloredCardinals = KeyValueMap[Style[#1, Bold, #2]&, cardinalColors];
+  coloredCardinals = KVMap[Style[#1, Bold, #2]&, cardinalColors];
   vertices = VertexCount[quiver];
   edges = EdgeCount[quiver];
   order = representation["GroupOrder"];
@@ -123,7 +123,7 @@ PathRepresentationObject /: MakeBoxes[object:PathRepresentationObject[data_Assoc
       {coloredGenerators, SpanFromLeft}
     },
     format,
-    "Interpretable" -> Automatic
+    "Interpretable" -> Auto
   ]
 ];
 
@@ -161,7 +161,7 @@ RenameCardinals[PathRepresentationObject[data_Assoc], renaming:{__Rule}] := Scop
 
   quiver = RenameCardinals[quiver, renaming];
   cardinals = cardinals /. renaming;
-  generators = KeyMap[Replace[renaming], generators];
+  generators = KMap[Rep[renaming], generators];
 
   assoc = Assoc[
     "Quiver" -> quiver,

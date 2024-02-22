@@ -14,10 +14,10 @@ LookupVertexCoordinates[graph_Graph, vertexList_:All] := Scope[
     coordinateTransformFunction === None && MatrixQ[vertexCoordinates] && vertexCoordinateFunction === None,
       vertexCoordinates,
     coordinateTransformFunction =!= None || (vertexCoordinateRules === None && vertexCoordinateFunction === None),
-      P1 @ ExtractGraphPrimitiveCoordinates @ graph
+      F @ ExtractGraphPrimitiveCoordinates @ graph
     ,
     RuleListQ @ vertexCoordinateRules,
-      AppendTo[vertexCoordinateRules, _ -> None];
+      AppTo[vertexCoordinateRules, _ -> None];
       VectorReplace[vertexList, vertexCoordinateRules]
     ,
     vertexCoordinateFunction =!= None,
@@ -27,7 +27,7 @@ LookupVertexCoordinates[graph_Graph, vertexList_:All] := Scope[
       ReturnFailed[];
   ];
 
-  AssociationThread[vertexList, coords]
+  AssocThread[vertexList, coords]
 ]
 
 (**************************************************************************************************)
@@ -77,7 +77,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     edgeList //= CanonicalizeEdges];
 
   (* unpack options and extended options *)
-  UnpackAnonymousThemedOptions[graph, Automatic,
+  UnpackAnonymousThemedOptions[graph, Auto,
     vertexCoordinates, plotRange, graphLayout
   ];
 
@@ -90,38 +90,38 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
   (* process VertexCoordinateFunction, VertexCoordinateRules, and VertexCoordinates to produce a single
   VertexCoordinates element, which is either a list or Automatic. *)
   Which[
-    vertexCoordinates =!= Automatic,
+    vertexCoordinates =!= Auto,
       If[ListQ[vertexCoordinates] && Len[vertexCoordinates] =!= vertexCount,
         Message[ExtractGraphPrimitiveCoordinates::badvcoordlen, Len[vertexCoordinates], vertexCount];
-        vertexCoordinates = Automatic;
+        vertexCoordinates = Auto;
       ];
     ,
     vertexCoordinateFunction =!= None,
       vertexCoordinates = Map[vertexCoordinateFunction, vertexList];
       If[!CoordinateMatrixQ[vertexCoordinates, _],
         Message[ExtractGraphPrimitiveCoordinates::badvcoordfunc, MsgExpr @ vertexCoordinateFunction];
-        vertexCoordinates = Automatic;
+        vertexCoordinates = Auto;
       ];
     ,
     vertexCoordinateRules === None,
-      vertexCoordinates = Automatic;
+      vertexCoordinates = Auto;
     ,
     RuleListQ @ vertexCoordinateRules,
-      AppendTo[vertexCoordinateRules, _ -> None];
+      AppTo[vertexCoordinateRules, _ -> None];
       vertexCoordinates = VectorReplace[vertexList, vertexCoordinateRules];
     ,
     True,
       Message[ExtractGraphPrimitiveCoordinates::badvcoordrules];
-      vertexCoordinates = Automatic;
+      vertexCoordinates = Auto;
   ];
 
-  If[vertexCoordinates =!= Automatic,
+  If[vertexCoordinates =!= Auto,
     If[!CoordinateMatrixQ[vertexCoordinates, _],
       Message[ExtractGraphPrimitiveCoordinates::badvcoords];
-      vertexCoordinates = Automatic;
+      vertexCoordinates = Auto;
     ,
       Switch[
-        PN @ Dimensions @ vertexCoordinates,
+        L @ Dims @ vertexCoordinates,
         1,     vertexCoordinates = AppendConstantColumn[vertexCoordinates, 0],
         2|3,   Null,
         _,     vertexCoordinates = DimensionReduce[vertexCoordinates, ReplaceAutomatic[layoutDimension, 3], Method -> "LatentSemanticAnalysis"]
@@ -130,7 +130,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
   ];
 
   SetAutomatic[vertexLayout,
-    If[vertexCoordinates =!= Automatic,
+    If[vertexCoordinates =!= Auto,
       ManualVertexLayout[],
       $defaultVertexLayout
     ]
@@ -158,14 +158,14 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     _Str,
       Return @ VertexEdgeCoordinateData[data, graphLayout],
     {_Str, ___},
-      Return @ VertexEdgeCoordinateData[data, P1 @ graphLayout],
+      Return @ VertexEdgeCoordinateData[data, F @ graphLayout],
     _,
       Null
   ];
 
   If[additionalVertexLayoutOptions =!= {},
     With[{seq = Sequence @@ additionalVertexLayoutOptions},
-      vertexLayout = Insert[vertexLayout, Unevaluated @ seq, FirstIndex[vertexLayout, _Rule, -1]]
+      vertexLayout = Insert[vertexLayout, Uneval @ seq, FirstIndex[vertexLayout, _Rule, -1]]
     ];
   ];
 
@@ -179,7 +179,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     $edgeCoordinateLists = Part[$vertexCoordinates, {#1, #2}]& @@@ edgeList;
   ];
 
-  If[!MatchQ[edgeLayout, None | Automatic],
+  If[!MatchQ[edgeLayout, None | Auto],
     data["VertexCoordinates"] = $vertexCoordinates;
     data["EdgeCoordinateLists"] = $edgeCoordinateLists;
     result = edgeLayout @ data;
@@ -245,7 +245,7 @@ VertexEdgeCoordinateData[data_Assoc, vertexLayout_] := Scope[
     "VertexLayout" -> vertexLayout,
     "SelfLoopRadius" -> selfLoopRadius,
     "MultiEdgeDistance" -> multiEdgeDistance,
-    If[IntegerQ[layoutDimension], "Dimension" -> layoutDimension, Nothing]
+    If[IntQ[layoutDimension], "Dimension" -> layoutDimension, Nothing]
   };
 
   newGraph = Graph[
@@ -267,7 +267,7 @@ VertexEdgeCoordinateData[data_Assoc, vertexLayout_] := Scope[
   $vertexCoordinates //= ToPackedReal;
   correctSelfLoops[selfLoopRadius];
 
-  If[vertexCoordinates =!= Automatic && MatchQ[Dimensions @ $edgeCoordinateLists, {_, 2, 2}],
+  If[vertexCoordinates =!= Auto && MatchQ[Dims @ $edgeCoordinateLists, {_, 2, 2}],
     (* find simplistic edges that are likely to overlap vertices *)
     $edgeCoordinateLists = fixEdgeVertexIntersections[$vertexCoordinates, $edgeCoordinateLists]];
 
@@ -286,12 +286,12 @@ captureVertexCoordinates[coords_, vertex_, _] :=
   Part[$vertexCoordinates, vertex] = coords;
 
 captureEdgeCoordinates[coords_, edge_] :=
-  Part[$edgeCoordinateLists, PN @ edge] = coords;
+  Part[$edgeCoordinateLists, L @ edge] = coords;
 
 orientEdgeCoords[coords_, _DirectedEdge] := coords;
 orientEdgeCoords[coords_, UndirectedEdge[a_, b_, tag_]] := If[
   Dist[
-    P1 @ coords,
+    F @ coords,
     Part[$vertexCoordinates, Part[edgeList, tag, 1]]
   ] < 0.001,
   coords, Rev @ coords
@@ -304,11 +304,11 @@ correctSelfLoops[selfLoopRadius_] := Scope[
   $edgeCoordinateLists ^= MapIndices[fixSelfLoop[selfLoopRadius], selfLoopIndices, $edgeCoordinateLists];
 ];
 
-selfLoopQ[coords_] := P1[coords] == PN[coords];
+selfLoopQ[coords_] := F[coords] == L[coords];
 
 fixSelfLoop[selfLoopRadius_][coords_] := Scope[
   If[Len[coords] === 2, Return @ coords];
-  terminus = P1 @ coords;
+  terminus = F @ coords;
   radialVector = selfLoopRadius * Normalize[Mean[coords] - terminus];
   centeredCoords = PlusVector[coords, -terminus];
   scale = Norm @ Part[centeredCoords, Ceiling[Len[centeredCoords] / 2]];
@@ -323,8 +323,8 @@ PrivateFunction[fixEdgeVertexIntersections]
 fixEdgeVertexIntersections[_, {}] := {};
 
 fixEdgeVertexIntersections[vertexCoordinates_, edgeCoordinateLists_] := Scope[
-  edgeLengths = Map[If[P1[#] === PN[#], 0, LineLength[#]]&, edgeCoordinateLists];
-  scale = Quantile[DeleteCases[edgeLengths, 0], .15];
+  edgeLengths = Map[If[F[#] === L[#], 0, LineLength[#]]&, edgeCoordinateLists];
+  scale = Quantile[Decases[edgeLengths, 0], .15];
   longIndices = SelectIndices[edgeLengths, GreaterEqualThan[scale * 2]];
   If[longIndices === {}, Return @ edgeCoordinateLists];
   vertexNearest = Nearest[vertexCoordinates];
@@ -332,10 +332,10 @@ fixEdgeVertexIntersections[vertexCoordinates_, edgeCoordinateLists_] := Scope[
 ];
 
 displaceVertexIntersectingEdges[{a_, b_}] := Scope[
-  If[Min[Dist[P1 @ a, P1 @ b], Dist[PN @ a, PN @ b]] > scale/5, Return @ {a, b}];
+  If[Min[Dist[F @ a, F @ b], Dist[L @ a, L @ b]] > scale/5, Return @ {a, b}];
   points = Take[Lerp[a, b, Into[30]], {2, 19}];
   nearest = Union @@ vertexNearest[points, {All, scale / 15}];
-  nearest = DeleteCases[nearest, a | b];
+  nearest = Decases[nearest, a | b];
   If[nearest === {}, Return @ {a, b}];
   dy = Normalize[b - a] / 4;
   dx = VectorRotate90[dy];
@@ -352,7 +352,7 @@ halfBend[p_, x_, y_] := Threaded[p] + Dot[$bendMatrix, ToPacked @ {x, y}];
 nudgeOverlappingVertices[coords_, nudgeDistance_, plotRange_] := Scope[
   nudgedCoords = coords; num = Len[coords];
   nudgeScale = nudgeDistance;
-  If[nudgeScale === Automatic,
+  If[nudgeScale === Auto,
     nudgeScale = ChessboardDistance @@ If[
       CoordinateMatrixQ @ plotRange,
       Transpose @ plotRange,
@@ -388,7 +388,7 @@ ExtendedGraphPlot::badwrappedshape = "CoordinateTransformFunction -> ProjectionO
 ExtendedGraphPlot::badcoordtrans = "CoordinateTransformFunction -> `` issued messages on application.";
 ExtendedGraphPlot::badcoordtransname = "CoordinateTransformFunction -> `` is not one of ``."
 
-applyCoordinateTransform[Automatic|None] :=
+applyCoordinateTransform[Auto|None] :=
   Null
 
 applyCoordinateTransform[list_List] :=
@@ -469,7 +469,7 @@ applyCoordinateTransform[{"Snap", m_, nudge_:0.1}] := Scope[
 
 applyNearest[points_] := Scope[
   nearest = Nearest @ grid;
-  applyRigidCoordinateTransform @ Fn[p, P1 @ nearest[p, 1]];
+  applyRigidCoordinateTransform @ Fn[p, F @ nearest[p, 1]];
 ];
 
 nudgeDuplicate[z_][p_] := p + Normalize[Cross[z - p]] * Im[$nudge2] + Normalize[z - p] * Re[$nudge2];
@@ -479,9 +479,9 @@ applyCoordinateTransform["RaiseVerticalTreeNodes"] := raiseTreeNodes[False];
 
 (* tree does not put first layer of vertices in first row for some reason, this horrible piece of code corrects that! *)
 raiseTreeNodes[horizontal_] := Scope[
-  {fn1, fn2} = If[horizontal, {PN, P1}, {P1, PN}];
+  {fn1, fn2} = If[horizontal, {L, F}, {F, L}];
 
-  rootIndex = If[horizontal, MaximumIndexBy[$vertexCoordinates, PN], MinimumIndexBy[$vertexCoordinates, P1]];
+  rootIndex = If[horizontal, MaximumIndexBy[$vertexCoordinates, L], MinimumIndexBy[$vertexCoordinates, F]];
   pointEdgeIntersect = If[horizontal, findPointEdgeIntersectionH, findPointEdgeIntersectionV];
 
   rootCoords = Part[$vertexCoordinates, rootIndex];
@@ -494,11 +494,11 @@ raiseTreeNodes[horizontal_] := Scope[
     If[fn1[coord] != layer1Pos,
       edgeIndex = edgePairRange[{rootIndex, vertIndex}];
       edgeSegment = Part[$edgeCoordinateLists, edgeIndex];
-      newCoord = P1[pointEdgeIntersect[layer1Pos, #]& /@ SortBy[fn1] /@ Partition[edgeSegment, 2, 1]];
+      newCoord = F[pointEdgeIntersect[layer1Pos, #]& /@ SortBy[fn1] /@ Partition[edgeSegment, 2, 1]];
       Part[$edgeCoordinateLists, edgeIndex] = {rootCoords, newCoord};
       Part[$vertexCoordinates, vertIndex] = newCoord;
       outgoingIndices = Flatten @ Position[edgePairs, {vertIndex, _}, {1}];
-      Part[$edgeCoordinateLists, outgoingIndices] //= Map[{newCoord, PN @ #}&];
+      Part[$edgeCoordinateLists, outgoingIndices] //= Map[{newCoord, L @ #}&];
     ],
     {gen1Indices, gen1Coords}
   ];
@@ -508,7 +508,7 @@ applyCoordinateTransform["CenterHorizontal"|"CenterTree"] := centerTree[True];
 applyCoordinateTransform["CenterVertical"] := centerTree[False];
 
 centerTree[horizontal_] := Scope[
-  {fn1, fn2} = If[horizontal, {PN, P1}, {P1, PN}];
+  {fn1, fn2} = If[horizontal, {L, F}, {F, L}];
   pointEdgeIntersect = If[horizontal, findPointEdgeIntersectionH, findPointEdgeIntersectionV];
   
   groups = GroupBy[$vertexCoordinates, Round[fn1 @ #,.01]& -> fn2];
@@ -521,7 +521,7 @@ centerTree[horizontal_] := Scope[
   Graphics[{Red, Point @ pseudoEdgeCoordinates, Blue, Point @ $vertexCoordinates}];
   groups = GroupBy[Join[$vertexCoordinates, pseudoEdgeCoordinates], Round[fn1 @ #,.01]& -> fn2];
   min = Min @ groups;
-  offsets = KeyValueMap[{#1, Mean[MinMax[#2]] - min}&, groups];
+  offsets = KVMap[{#1, Mean[MinMax[#2]] - min}&, groups];
   offsetFn = Interpolation[offsets, InterpolationOrder -> 1];
   applyCoordinateTransform[{If[horizontal, "HorizontalWarp", "VerticalWarp"], offsetFn}];
 ]
@@ -606,7 +606,7 @@ bendVertical[line_] := line;
 applyCoordinateTransform["SquareSelfLoops"] :=
   $edgeCoordinateLists //= Map[squareSelfLoop];
 
-squareSelfLoop[list:{a_, Repeated[_, {3, Infinity}], b_}] /; Dist[a, b] < 0.01 := Scope[
+squareSelfLoop[list:{a_, Repeated[_, {3, Inf}], b_}] /; Dist[a, b] < 0.01 := Scope[
   c = Mean @ list;
   {p1, p3} = {{xl, yl}, {xh, yh}} = CoordinateBoundingBox @ list;
   p2 = {xh, yl}; p4 = {xl, yh};

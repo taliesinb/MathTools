@@ -29,9 +29,9 @@ fieldOrRingBoxes = Case[
   n_Int          := MakeBoxes @ FiniteFieldSymbol[n];
   other_         := MakeMathBoxes @ other,
   {
-    fieldsP     -> Alternatives[Reals, Complexes, Rationals, "R", "C", "Q", "K"],
-    ringsP      -> Alternatives[Integers, "Z"],
-    semiringsP  -> Alternatives[Naturals, "N"]
+    fieldsP     -> Alt[Reals, Complexes, Rationals, "R", "C", "Q", "K"],
+    ringsP      -> Alt[Integers, "Z"],
+    semiringsP  -> Alt[Naturals, "N"]
   }
 ]
 

@@ -1,6 +1,6 @@
 PrivateFunction[GraphicsDirectiveQ]
 
-$directiveHeadsP = Alternatives[
+$directiveHeadsP = Alt[
   _Thickness, _AbsoluteThickness, _PointSize, _AbsolutePointSize, _Dashing,
   _EdgeForm, _FaceForm, _Directive, _CapForm, _JoinForm, _Arrowheads
 ];
@@ -25,7 +25,7 @@ $wrapperP = Annotation | EventHandler;
 GraphicsPrimitivesQ = Case[
   list_List                                         := AllTrue[list, GraphicsPrimitivesQ];
   Style[s_, ___ ? styleElementQ]                    := % @ s;
-  anno:$AnnotationP                                 := % @ P1 @ anno;
+  anno:$AnnotationP                                 := % @ F @ anno;
   Rectangle[$Coord2P]                               := True;
   Rectangle[$Coord2P, $Coord2P, ___Rule]            := True;
   Cube[$Coord3P, ___]                               := True;

@@ -4,15 +4,15 @@ CacheVariable[$MacOSCache]
 
 MacOSTextSubstitutions[] := Scope @ CachedInto[$MacOSCache, "MacOSTextSubstitutions",
   globalDefulats = MacOSGlobalDefaults[];
-  Assoc @ StringCases[globalDefulats, $keyReplacePattern]
+  Assoc @ SCases[globalDefulats, $keyReplacePattern]
 ];
 
-parsePlistUTF16[s_Str] := StringReplace[s,
+parsePlistUTF16[s_Str] := SRep[s,
   ("\\U" ~~ hex1:Repeated[HexadecimalCharacter, 4] ~~ "\\U" ~~ hex2:Repeated[HexadecimalCharacter, 4]) :>
     Join[hex1, hex2]
 ];
 
-$keyReplacePattern = StringExpression[
+$keyReplacePattern = SExpr[
   XMLSpan["key", "replace"], Whitespace, XMLSpan["string", from:LineFragment], Whitespace,
   XMLSpan["key", "with"],    Whitespace, XMLSpan["string", to:LineFragment]
 ] :> Rule[from, to];

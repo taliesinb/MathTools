@@ -130,11 +130,11 @@ DropComponents[graph_Graph, spec_] := Scope[
   components = WeaklyConnectedComponents @ graph;
   components = Rev @ Sort @ components;
   vertices = Quiet @ Check[
-    If[IntegerQ[spec], Part[components, spec], Union @@ Part[components, spec]],
+    If[IntQ[spec], Part[components, spec], Union @@ Part[components, spec]],
     $Failed
   ];
-  If[!VectorQ[vertices], ReturnFailed[]];
-  ExtendedSubgraph[graph, Complement[VertexList @ graph, vertices], Automatic]
+  If[!VecQ[vertices], ReturnFailed[]];
+  ExtendedSubgraph[graph, Comp[VertexList @ graph, vertices], Auto]
 ];
 
 DropComponents[n_][graph_] := DropComponents[graph, n];
@@ -151,14 +151,14 @@ ComponentGraphs::compob = "Component `` was requested but only `` are available.
 ComponentGraphs[graph_, spec:(_Int|All|_Span)] := Scope[
   components = WeaklyConnectedGraphComponents @ graph;
   components = Rev @ SortBy[components, ApplyThrough[{VertexCount, VertexList}]];
-  If[IntegerQ[spec] && Abs[spec] > Len[components],
+  If[IntQ[spec] && Abs[spec] > Len[components],
     ReturnFailed["compob", spec, Len[components]]];
   Part[components, spec]
 ];
 
 ComponentGraphs::badvertex = "Graph does not contain a vertex matching ``."
 ComponentGraphs[graph_, VertexPattern[p_]] :=
-  First[WeaklyConnectedGraphComponents[graph, p], Message["badvertex", p]; $Failed];
+  F[WeaklyConnectedGraphComponents[graph, p], Message["badvertex", p]; $Failed];
 
 ComponentGraphs::badcomp = "`` is not a valid component specification."
 ComponentGraphs[_, spec_] := (Message[ComponentGraphs::badcomp, spec]; $Failed);
@@ -193,7 +193,7 @@ FindAllUndirectedSpanningEdgeSets[graph_] := Scope[
   igraph = ToUndirectedEdgeIndexGraph @ graph;
   {ivertices, iedges} = VertexEdgeList @ igraph;
   perms = Permutations @ ivertices;
-  spanningEdgeSets = DeleteDuplicates @ Map[
+  spanningEdgeSets = Dedup @ Map[
     Sort[findSpanningEdgeTags[#, iedges]]&,
     perms
   ]
@@ -246,7 +246,7 @@ RangePartitionGraph[n_] := Scope[
 ];
   
 rangePartitionSuccessors[part_] := Join @@ Table[
-  Sort @ Append[
+  Sort @ App[
     Delete[part, {{i}, {j}}],
     Sort[Join @@ Part[part, {i, j}]]
   ],

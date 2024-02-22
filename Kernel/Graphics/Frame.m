@@ -3,7 +3,7 @@ PublicFunction[SetFrameColor]
 SetFrameColor[g_Graphics, color_] :=
   If[LookupOption[g, Frame] === True,
     ReplaceOptions[g, FrameStyle -> color],
-    ReplaceAll[g, a:Annotation[_, "Frame"] :> ReplaceAll[a, EdgeForm[_] :> EdgeForm[color]]]
+    RepAll[g, a:Annotation[_, "Frame"] :> RepAll[a, EdgeForm[_] :> EdgeForm[color]]]
   ];
 
 SetFrameColor[expr_, _] := expr;

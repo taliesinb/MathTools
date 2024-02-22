@@ -1,7 +1,7 @@
 (**************************************************************************************************)
 
 DefineStandardTraditionalForm[
-  HoldPattern[DataSelection[inds_Integer]] ? HoldNoEntryQ :> dataIndicesBoxes[k, v, n]
+  HoldP[DataSelection[inds_Integer]] ? HoldNoEntryQ :> dataIndicesBoxes[k, v, n]
 ];
 
 dataIndicesBoxes[inds_] := RowBox[{

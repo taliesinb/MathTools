@@ -34,12 +34,12 @@ $flavorData["Franklin", "FileAnimatedImageTemplate"] = genericAnimatedImageTagTe
 $flavorData["Franklin", "KatexPostprocessor"]        = splitOpenBraces;
 $flavorData["Franklin", "RawHTMLTemplate"]           = wrapCurly;
 
-franklinClassAttr[class_] := str |-> StringJoin[StringTrim @ "@@", StringRiffle[class, " "], "\n", str, "\n@@\n"];
+franklinClassAttr[class_] := str |-> SJoin[STrim @ "@@", SRiffle[class, " "], "\n", str, "\n@@\n"];
 
 (**************************************************************************************************)
 
 $flavorData["Pandoc"] = $flavorData["Base"];
-$flavorData["Pandoc", "KatexPostprocessor"]         = StringReplace["\n\n" -> " "];
+$flavorData["Pandoc", "KatexPostprocessor"]         = SRep["\n\n" -> " "];
 
 (**************************************************************************************************)
 
@@ -49,18 +49,18 @@ $flavorData["Hugo", "AnchorTemplate"]             = StringFunction @ """<span id
 $flavorData["Hugo", "ClassAttributeTemplate"]     = hugoClassAttr;
 $flavorData["Hugo", "FileImageTemplate"]          = genericImageTagTemplate;
 $flavorData["Hugo", "FileAnimatedImageTemplate"]  = genericAnimatedImageTagTemplate;
-$flavorData["Hugo", "InlineMathTemplate"]         = StringJoin["{{<k \"", #, "\">}}"]&;
+$flavorData["Hugo", "InlineMathTemplate"]         = SJoin["{{<k \"", #, "\">}}"]&;
 $flavorData["Hugo", "KatexFontTemplate"]          = hugoKatexFontFunction;
-$flavorData["Hugo", "MultilineMathTemplate"]      = StringJoin["{{<kk \"", #, "\">}}"]&;
+$flavorData["Hugo", "MultilineMathTemplate"]      = SJoin["{{<kk \"", #, "\">}}"]&;
 $flavorData["Hugo", "KatexPostprocessor"]         = splitOpenBraces;
 $flavorData["Hugo", "RawHTMLTemplate"]            = Id;
 $flavorData["Hugo", "ExternalImportTemplate"]     = StringFunction @ """{{< readfile file="#1" >}}""";
 
 (* TODO: fill in more cases here, like Typewriter, SanSerif, etc. and make them match up with the TypewriteForm etc. *)
-hugoKatexFontFunction[str_Str] := $katexFontSpanTemplate[str, If[StringContainsQ[str, DoubleStruckCharacter], "blackboard", "math"]];
+hugoKatexFontFunction[str_Str] := $katexFontSpanTemplate[str, If[SContainsQ[str, DoubleStruckCharacter], "blackboard", "math"]];
 $katexFontSpanTemplate = StringFunction @ """<span class='#2Font'>#1</span>""";
 
-hugoClassAttr[class_] := str |-> StringJoin[StringTrim @ str, "\n{", StringRiffle[StringJoinLeft[".", class], ", "], "}\n"];
+hugoClassAttr[class_] := str |-> SJoin[STrim @ str, "\n{", SRiffle[StringJoinLeft[".", class], ", "], "}\n"];
 
 (**************************************************************************************************)
 
@@ -101,23 +101,23 @@ MacroEvaluate @ UnpackAssociation[
 
 (**************************************************************************************************)
 
-wrapDollar[e_]            := StringJoin["$", e, "$"];
-wrapDoubleDollar[e_]      := StringJoin["$$\n", e, "\n$$"];
-wrapDoubleBrace[e_]       := StringJoin["\\\\[\n", e, "\n\\\\]"];
-breakUnderline[e_]        := StringReplace[e, {"\\_" -> "\\_ ", "_" -> " _ "}];
-wrapCurly[a_]             := StringJoin["~~~\n", StringTrim @ a, "\n~~~"];
+wrapDollar[e_]            := SJoin["$", e, "$"];
+wrapDoubleDollar[e_]      := SJoin["$$\n", e, "\n$$"];
+wrapDoubleBrace[e_]       := SJoin["\\\\[\n", e, "\n\\\\]"];
+breakUnderline[e_]        := SRep[e, {"\\_" -> "\\_ ", "_" -> " _ "}];
+wrapCurly[a_]             := SJoin["~~~\n", STrim @ a, "\n~~~"];
 splitOpenBraces[e_]       := StringReplaceRepeated[e, "{{" -> "{ {"];
-escapeBackslash[e_]       := StringReplace[e, {"\\\\" -> "\\\\\\\\", "\\," -> "\\\\,"}];
+escapeBackslash[e_]       := SRep[e, {"\\\\" -> "\\\\\\\\", "\\," -> "\\\\,"}];
 
 blankString = Fn[""];
 
 (**************************************************************************************************)
 
-genericImageTagTemplate = StringFunction @ StringTrim @  """
+genericImageTagTemplate = StringFunction @ STrim @  """
 <img class="#classlist" src="#url" width="#width" alt="#caption">
 """;
 
-genericAnimatedImageTagTemplate = StringFunction @ StringTrim @  """
+genericAnimatedImageTagTemplate = StringFunction @ STrim @  """
 <video width="#width" height="#height" autoplay loop muted playsinline>
   <source src="#url" type="video/mp4">
 </video>

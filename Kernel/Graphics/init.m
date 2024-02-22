@@ -27,7 +27,7 @@ $ExtendedColorsGrouped = <|
 $ExtendedColorsGrouped = Map[RGBColor, $ExtendedColorsGrouped, {3}];
 
 toGlobalColorName[color_, {Key @ palette_, Key @ variant_, Key @ suffix_}] :=
-  $ExtendedColors[StringJoin[palette, variant, suffix]] = color;
+  $ExtendedColors[SJoin[palette, variant, suffix]] = color;
 
 $ExtendedColors = <||>;
 ScanIndexed[toGlobalColorName, $ExtendedColorsGrouped, {3}];

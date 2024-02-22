@@ -16,19 +16,19 @@ LookupCardinalColors[graph_Graph] := Scope[
     cardinals === None,
       <||>,
     ColorVectorQ[cardinalColors] && SameLengthQ[cardinalColors, cardinals],
-      AssociationThread[cardinals, cardinalColors],
+      AssocThread[cardinals, cardinalColors],
     AssocQ[cardinalColors],
       cardinalColors,
     ColorQ[cardinalColors],
       ConstantAssociation[cardinals, cardinalColors],
     AssocQ[cardinalColorFunction],
-      AssociationThread[cardinals, Lookup[cardinalColorFunction, cardinals, $Gray]],
+      AssocThread[cardinals, Lookup[cardinalColorFunction, cardinals, $Gray]],
     cardinalColorFunction =!= None,
-      AssociationMap[cardinalColorFunction, cardinals],
+      AssocMap[cardinalColorFunction, cardinals],
     RuleListQ @ cardinalColorRules,
-      AssociationThread[
+      AssocThread[
         cardinals,
-        VectorReplace[cardinals, Append[cardinalColorRules, _ -> $Gray]]
+        VectorReplace[cardinals, App[cardinalColorRules, _ -> $Gray]]
       ],
     True,
       ChooseCardinalColors @ cardinals
@@ -40,7 +40,7 @@ we can still make it work properly: used for glued graphs *)
 LookupCardinalColors[graph_Graph, card_] /; LookupExtendedOption[graph, CardinalColorFunction] =!= None := Scope[
   UnpackExtendedThemedOptions[graph, cardinalColorFunction];
   If[ListQ[card],
-    AssociationMap[cardinalColorFunction, card],
+    AssocMap[cardinalColorFunction, card],
     cardinalColorFunction @ card
   ]
 ];
@@ -69,9 +69,9 @@ $rgbwxColors = <|
 
 $colorFormed := $colorFormed = Map[Blank, $colorFormP];
 
-ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardinals,
+ChooseCardinalColors[cardinals_List, palette_:Auto] := Switch[Sort @ cardinals,
   {___, "f", ___},
-    Append[ChooseCardinalColors[DeleteCases[cardinals, "f"]], "f" -> $Orange],
+    App[ChooseCardinalColors[Decases[cardinals, "f"]], "f" -> $Orange],
   {"x"},
     <|"x" -> $Red|>,
   {"x", "y"},
@@ -79,9 +79,9 @@ ChooseCardinalColors[cardinals_List, palette_:Automatic] := Switch[Sort @ cardin
   {"x", "y", "z"},
     $xyzColors,
   {Repeated[$colorFormed]},
-    AssociationThread[cardinals, StyleFormData /@ Part[cardinals, All, 0]],
+    AssocThread[cardinals, StyleFormData /@ Part[cardinals, All, 0]],
   set_ /; SubsetQ[Keys @ $rgbwxColors, set],
-    KeyTake[$rgbwxColors, cardinals],
+    KTake[$rgbwxColors, cardinals],
   _,
-    AssociationThread[cardinals, ToColorPalette[palette, Len @ cardinals]]
+    AssocThread[cardinals, ToColorPalette[palette, Len @ cardinals]]
 ];

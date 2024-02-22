@@ -4,9 +4,9 @@ ColoredGraph[edges_List, opts___Rule] :=
   ColoredGraph[AllUniqueVertices @ edges, edges, opts];
 
 ColoredGraph[vertices_List, edges_List, opts___Rule] := Scope[
-  vertexColors = AssociationMap[ColoredGraphCardinalColorFunction, vertices];
-  cardinalColors = If[Len[P1 @ edges] =!= 3, None,
-    AssociationMap[ColoredGraphCardinalColorFunction, DeleteDuplicates @ Part[edges, All, 3]]
+  vertexColors = AssocMap[ColoredGraphCardinalColorFunction, vertices];
+  cardinalColors = If[Len[F @ edges] =!= 3, None,
+    AssocMap[ColoredGraphCardinalColorFunction, Dedup @ Part[edges, All, 3]]
   ];
   ExtendedGraph[
     vertices, edges, opts,
@@ -46,7 +46,7 @@ $colorRules = <|
 |>;
 
 ColoredGraphCardinalColorFunction[str_Str] :=
-  HumanBlend @ Lookup[$colorRules, Characters @ str, Nothing];
+  HumanBlend @ Lookup[$colorRules, Chars @ str, Nothing];
 
 (**************************************************************************************************)
 
@@ -57,17 +57,17 @@ PartialOrderGraph[vertices_, edges_, opts___Rule] := Scope[
     {graphs, opts} = FirstLast @ vertices;
     plots = ExtendedGraphPlot[#, opts]& /@ graphs;
     vertices = Range @ Len @ vertices;
-    shapes = AssociationThread[vertices, plots];
+    shapes = AssocThread[vertices, plots];
     vsize = 100;
   ,
-    shapes = Automatic;
+    shapes = Auto;
     vsize = 6;
   ];
   ExtendedGraph[vertices, edges,
     opts,
     VertexShapeFunction -> shapes,
     VertexLayout -> TreeVertexLayout[Balanced -> True],
-    GraphOrigin -> P1 @ vertices,
+    GraphOrigin -> F @ vertices,
     ArrowheadShape -> None, ArrowheadSize -> Huge,
     ImageSize -> 250, VertexSize -> vsize, EdgeThickness -> 3
   ]
@@ -84,7 +84,7 @@ SimpleLabeledGraph[args___] := ExtendedGraph[args, GraphTheme -> "SimpleLabeledG
 DefineGraphTheme["SimpleLabeledGraph",
   CardinalColors -> None,
   VertexLabels -> "Name",
-  VertexLabelPosition -> Automatic,
+  VertexLabelPosition -> Auto,
   VertexLabelBaseStyle -> $MathLabelStyle,
   EdgeLabels -> "Cardinal",
   EdgeLabelBaseStyle -> $CardinalLabelStyle,
@@ -109,12 +109,12 @@ BasicGraph[spec_, opts___Rule] := BasicGraph[toGraph @ spec, opts];
 BasicGraph[edges_List ? EdgeListQ, opts___Rule] := ExtendedGraph[edges, opts, GraphTheme -> "BasicGraph"];
 
 toGraph = Case[
-  i_Int                 := LineQuiver[i, GraphOrigin -> Automatic, VertexOrigin -> Automatic];
-  "Line"                := LineQuiver[6, GraphOrigin -> Automatic, VertexOrigin -> Automatic, PeripheralVertices -> 1];
-  {w_Int, h_Int}        := SquareQuiver[{w, h}, GraphOrigin -> Automatic, VertexOrigin -> Automatic];
-  "Square"              := SquareQuiver[6, GraphOrigin -> Automatic, VertexOrigin -> Automatic, PeripheralVertices -> 3];
-  "Triangle"            := TriangularQuiver[6, GraphOrigin -> Automatic, VertexOrigin -> Automatic, PeripheralVertices -> 5];
-  {w_Int, h_Int, d_Int} := CubicQuiver[{w, h, d}, GraphOrigin -> Automatic, VertexOrigin -> Automatic];
+  i_Int                 := LineQuiver[i, GraphOrigin -> Auto, VertexOrigin -> Auto];
+  "Line"                := LineQuiver[6, GraphOrigin -> Auto, VertexOrigin -> Auto, PeripheralVertices -> 1];
+  {w_Int, h_Int}        := SquareQuiver[{w, h}, GraphOrigin -> Auto, VertexOrigin -> Auto];
+  "Square"              := SquareQuiver[6, GraphOrigin -> Auto, VertexOrigin -> Auto, PeripheralVertices -> 3];
+  "Triangle"            := TriangularQuiver[6, GraphOrigin -> Auto, VertexOrigin -> Auto, PeripheralVertices -> 5];
+  {w_Int, h_Int, d_Int} := CubicQuiver[{w, h, d}, GraphOrigin -> Auto, VertexOrigin -> Auto];
 ];
 
 DefineGraphTheme["BasicGraph",
@@ -149,7 +149,7 @@ $abcList = {"a", "b", "c"};
 
 SimpleLabeledQuiver[args___] := Scope[
   res = Quiver[args];
-  cards = DeleteDuplicates @ EdgeTags[res];
+  cards = Dedup @ EdgeTags[res];
   Which[
     SubsetQ[$rgbList, cards], cards = Select[$rgbList, MemberQ[cards, #]&],
     SubsetQ[$abcList, cards], cards = Select[$abcList, MemberQ[cards, #]&],
@@ -162,7 +162,7 @@ SimpleLabeledQuiver[args___] := Scope[
 
 DefineGraphTheme["SimpleLabeledQuiver",
   VertexLabels -> "Name",
-  VertexLabelPosition -> Automatic,
+  VertexLabelPosition -> Auto,
   VertexLabelBaseStyle -> $MathLabelStyle,
   VertexLayout -> LinearLayout[],
   MultiEdgeDistance -> 0.1,

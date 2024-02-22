@@ -5,7 +5,7 @@ triProdInputQ[a_, b_, c_] := And[ArrayQ[a], ArrayQ[b], ArrayQ[c]];
 PublicFunction[Tricone]
 
 Tricone[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
-  dims = Dimensions /@ {a, b, c};
+  dims = Dims /@ {a, b, c};
   If[!MatchQ[dims, {{_, nab_, nac_}, {nab_, _, nbc_}, {nac_, nbc_, _}}], ReturnFailed[]];
   {{na, nab, nac}, {nab, nb, nbc}, {nac, nbc, nc}} = dims;
   Table[
@@ -22,7 +22,7 @@ Tricone[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
 PublicFunction[Triblade]
 
 Triblade[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
-  dims = Dimensions /@ {a, b, c};
+  dims = Dims /@ {a, b, c};
   If[!MatchQ[dims, {{_, ab_, ac_}, {ab_, _, bc_}, {ab_, bc_, _}}], ReturnFailed[]];
   {{na, np, nq}, {np, nb, nq}, {nq, np, nc}} = dims;
   Table[
@@ -39,7 +39,7 @@ Triblade[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
 PublicFunction[Triforce]
 
 Triforce[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
-  dims = Dimensions /@ {a, b, c};
+  dims = Dims /@ {a, b, c};
   If[!MatchQ[dims, {{_, ab_, ac_}, {ab_, _, bc_}, {ab_, bc_, _}}], ReturnFailed[]];
   {{na, nab, nac}, {nab, nb, nbc}, {nac, nbc, nc}} = dims;
   Table[
@@ -56,7 +56,7 @@ Triforce[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
 PublicFunction[Fish]
 
 Fish[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
-  dims = Dimensions /@ {a, b, c};
+  dims = Dims /@ {a, b, c};
   If[!MatchQ[dims, {{_, _, np_}, {nq_, nr_, np_}, {nq_, nr_, _}}], ReturnFailed[]];
   {{n1, n2, np}, {nq, nr, np}, {nq, nr, n3}} = dims;
   Table[
@@ -73,7 +73,7 @@ Fish[a_, b_, c_] /; triProdInputQ[a, b, c] := Scope[
 PublicFunction[ThreeArrayQ, CubixQ]
 
 ThreeArrayQ[arr_] := ArrayQ[arr, 3];
-CubixQ[arr_, n_] := ArrayQ[arr, 3] && AllSameQ[Dimensions[arr]];
+CubixQ[arr_, n_] := ArrayQ[arr, 3] && AllSameQ[Dims[arr]];
 
 (**************************************************************************************************)
 

@@ -14,10 +14,10 @@ PathHomomorphimsGrid[graphsAndPaths_:{Repeated[_-> _]}, OptionsPattern[]] := Sco
     paths
   ];
   alignment = {{Center}};
-  If[P1[graphs] === "Paths", PrependTo[alignment, Right]];
-  If[PN[graphs] === "Paths", PrependTo[alignment, Left]];
+  If[F[graphs] === "Paths", PreTo[alignment, Right]];
+  If[L[graphs] === "Paths", PreTo[alignment, Left]];
   Grid[
-    Prepend[labelRow] @ entries,
+    Pre[labelRow] @ entries,
     Spacings -> {{0, {2}, 0}, {10., 0.5, {0}}}, Alignment -> {alignment, Baseline}
   ]
 ]
@@ -47,7 +47,7 @@ PublicFunction[IllustrateIsomorphism]
 
 IllustrateIsomorphism[source_, target_] := Scope[
   iso = FindGraphIsomorphism[source, target];
-  iso = First[iso, ReturnFailed[]];
+  iso = F[iso, ReturnFailed[]];
   SpacedRow[
     ExtendedGraph[source, VertexLabels -> "Name" -> iso],
     VertexLabelForm @ target

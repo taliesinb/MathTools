@@ -1,7 +1,7 @@
 toExportNotebook[expr_, background_] := Scope[
 	nbOrCell = toExportCell[expr, Background -> background];
 	(* fast path: custom stylesheet makes rasterization substantially slower. *)
-	If[containsQGTemplates[nbOrCell], AppendTo[nbOrCell, StyleDefinitions -> $styleDefsFileName]];
+	If[containsQGTemplates[nbOrCell], AppTo[nbOrCell, StyleDefinitions -> $styleDefsFileName]];
 	nbOrCell
 ];
 
@@ -9,11 +9,11 @@ $styleDefsFileName := $styleDefsFileName = Construct[FileName, {}, $LightStylesh
 
 containsQGTemplates[expr_] := Or[
 	!FreeQ[expr, TemplateBox[_, $qgTemplateBoxP]],
-	!FreeQ[expr, s_Str /; StringContainsQ[s, "StyleDefinitions"]] (* not sure what this second thing is for *)
+	!FreeQ[expr, s_Str /; SContainsQ[s, "StyleDefinitions"]] (* not sure what this second thing is for *)
 ]
 
 (* TODO: just save these names as we populate them, rather than loading them from disk *)
-$qgTemplateBoxP := $qgTemplateBoxP = Apply[Alternatives, QuiverGeometryStyleNames[]];
+$qgTemplateBoxP := $qgTemplateBoxP = Apply[Alt, QuiverGeometryStyleNames[]];
 
 (*************************************************************************************************)
 
@@ -187,7 +187,7 @@ PrivateFunction[CacheVideoFilePath]
 CacheVideoFilePath[args___] := CacheFilePath["Video", args, FileExtension -> $DefaultVideoExtension];
 
 $tempID = 0;
-VideoRasterizeList[frames_, name_:Automatic, frameRate_:30] := Scope[
+VideoRasterizeList[frames_, name_:Auto, frameRate_:30] := Scope[
     SetAutomatic[name, {"temp", $ProcessID, $tempID++}];
     path = toCachedVideoFileName[name];
     If[FileExistsQ[path], Return @ Video[path]];
@@ -199,7 +199,7 @@ VideoRasterizeList[frames_, name_:Automatic, frameRate_:30] := Scope[
 
 PrivateFunction[VideoFilePath]
 
-VideoFilePath[HoldPattern @ v_Video] := P1 @ Information[v, "ResourcePath"]
+VideoFilePath[HoldP @ v_Video] := F @ Information[v, "ResourcePath"]
 
 (*************************************************************************************************)
 
@@ -213,6 +213,6 @@ $DefaultVideoEncoding = "H264-AVF";
 PublicFunction[CenterPadImages]
 
 CenterPadImages[images_List] := Scope[
-  If[!VectorQ[images, ImageQ], ReturnFailed[]];
+  If[!VecQ[images, ImageQ], ReturnFailed[]];
   ConformImages[images, {Max, Max}, "Pad", Padding -> White]
 ];

@@ -27,14 +27,14 @@ GraphicsZSort[prims_, trans_] := Scope[
   res = trans[{0, 0, 0}];
   $zfn = Switch[res,
     _ ? NumberQ,          trans,
-    {_, _, _ ? NumberQ},  trans /* PN,
+    {_, _, _ ? NumberQ},  trans /* L,
     _,                    ReturnFailed["badtrans", res]
   ];
   $zstyle = {Black, Opacity[1]};
   $zindex = Bag[];
   zsort @ prims;
   $zindex = Assoc @ BagPart[$zindex, All];
-  KeyValueMap[fromZandStyle, KeySort @ $zindex]
+  KVMap[fromZandStyle, KSort @ $zindex]
 ];
 
 fromZandStyle[{z_, {}}, prim_] := prim;
@@ -62,14 +62,14 @@ zsort = Case[
   Polygon[mats_ ? CoordinateMatricesQ, arr_]  := Map[%[Polygon[#, arr]]&, mats];
 
   p:Cuboid[l_, h_]                            := zinsert[{l, h}, p];
-  p:$primitiveP                               := zinsert[P1 @ p, p];
+  p:$primitiveP                               := zinsert[F @ p, p];
 
   e_                                          := zstyle[e];
 ];
 
 zinsert[coords_, prim_] := Scope[
   z = If[CoordinateVectorQ[coords], $zfn @ coords, Mean[$zfn /@ coords]];
-  StuffBag[$zindex, {-z, DeleteCases[$zstyle, Black | Opacity[1]]} -> prim]
+  StuffBag[$zindex, {-z, Decases[$zstyle, Black | Opacity[1]]} -> prim]
 ];
 
 zstyle := Case[
@@ -78,5 +78,5 @@ zstyle := Case[
   Opacity[o_, c_] := % @ SetColorOpacity[c, o];
   Directive[{d___}] := Scan[%, d];
   Directive[d___] := Scan[%, d];
-  s_ ? GraphicsDirectiveQ := AppendTo[$zstyle, s];
+  s_ ? GraphicsDirectiveQ := AppTo[$zstyle, s];
 ];

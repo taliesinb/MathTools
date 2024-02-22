@@ -7,7 +7,7 @@ boxesToInputText[boxes_Str] := boxes;
 boxesToInputText[boxes_] := Scope[
   expr = ToExpression[boxes, StandardForm, InternalHoldForm];
   str = ToPrettifiedString[expr, ElideAtomicHeads -> True, CompactRealNumbers -> 4];
-  str //= StringReplace[$WLSymbolToUnicode];
+  str //= SRep[$WLSymbolToUnicode];
   str
 ];
 
@@ -25,23 +25,23 @@ ToMarkdownString::msgs = "Messages issued during markdown conversion of cell pri
 
 textCellToMarkdown[e_] := Scope[
   $lastExternalCodeCell ^= None;
-  If[ContainsQ[e /. _CompressedData :> Null, s_Str /; StringContainsQ[s, $forbiddenStrings]],
+  If[ContainsQ[e /. _CompressedData :> Null, s_Str /; SContainsQ[s, $forbiddenStrings]],
     VPrint["Dropping cell with forbidden content"];
     Return[""]
   ];
   Check[
-    text = StringTrim @ textToMarkdown @ e;
+    text = STrim @ textToMarkdown @ e;
   ,
     Message[ToMarkdownString::msgs];
     Print[MsgExpr[text, 6, 50]];
     PrintBadCell[e];
   ];
-  If[!StringQ[text], Return["### Markdown generation failed"]];
-  If[StringContainsQ[text, $forbiddenStrings], Return[""]];
+  If[!StrQ[text], Return["### Markdown generation failed"]];
+  If[SContainsQ[text, $forbiddenStrings], Return[""]];
   (* these are disabled for now because they involve the assumption that $ is the katex delimiter, and they
   have other QG-specific things in them *)
 (*text //= StringReplace[$finalStringFixups1];*)
-  text //= StringReplace[$finalStringFixups2];
+  text //= SRep[$finalStringFixups2];
   text //= deblockIndent; (* JS *)
   text
 ]
@@ -79,7 +79,7 @@ $finalStringFixups2 = {
  *)
 };
 
-WhiteString = _Str ? (StringMatchQ[Whitespace]);
+WhiteString = _Str ? (SMatchQ[Whitespace]);
 
 (**************************************************************************************************)
 
@@ -89,7 +89,7 @@ PrivateFunction[textToMarkdown]
 like a cell of a textual table, or the boxes of a Text cell *)
 textToMarkdown[e_] := Scope[
   str = iTextToMarkdown @ e;
-  str //= StringJoin;
+  str //= SJoin;
   str //= processInlineCodeBlocks;
   str //= wlCharactersToUnicode;
   str
@@ -110,25 +110,25 @@ iTextToMarkdown = Case[
 ];
 
 replaceIndentingNewlines[boxes_] :=
-  VectorReplace[boxes, s_Str :> StringReplace[s, "\[IndentingNewLine]"|"\n" -> "\\\\\n"]];
+  VectorReplace[boxes, s_Str :> SRep[s, "\[IndentingNewLine]"|"\n" -> "\\\\\n"]];
 
 (**************************************************************************************************)
 
 deblockIndent[str_Str] := Scope[
-  blocks = StringSplit[str, "\n" ~~ (" " | "\t")... ~~ "\n"];
-  StringRiffle[Map[deblockIndent0, blocks], "\n\n"]
+  blocks = SSplit[str, "\n" ~~ (" " | "\t")... ~~ "\n"];
+  SRiffle[Map[deblockIndent0, blocks], "\n\n"]
 ];
 
 (* JS: color wrapped around blocks doesn't work *)
-deblockIndent0[str_Str] /; StringMatchQ[str, "<span style=" ~~ Except[">"].. ~~ ">" ~~ inner___ ~~ "</span>"] && StringCount[str, "</span>"] == 1 :=
-  StringReplace[str, StartOfString ~~ style:("<span style=" ~~ Except[">"].. ~~ ">") ~~ inner___ ~~ "</span>" ~~ EndOfString :>
+deblockIndent0[str_Str] /; SMatchQ[str, "<span style=" ~~ Except[">"].. ~~ ">" ~~ inner___ ~~ "</span>"] && StringCount[str, "</span>"] == 1 :=
+  SRep[str, StartOfString ~~ style:("<span style=" ~~ Except[">"].. ~~ ">") ~~ inner___ ~~ "</span>" ~~ EndOfString :>
     deblockIndent0[inner]];
 
 deblockIndent0[str_Str] := Scope[
-  tabSizes = StringCases[str, StartOfLine ~~ Repeated[" ", {0, 4}] ~~ t:"\t"... :> StringLength[t]];
+  tabSizes = SCases[str, StartOfLine ~~ Repeated[" ", {0, 4}] ~~ t:"\t"... :> SLen[t]];
   {min, max} = MinMax[tabSizes];
-  If[min > 0 && min == max, str = StringDelete[str, StartOfLine ~~ Repeated[" ", {0, 4}] ~~ StringRepeat["\t", min]]];
-  StringReplace[str, StartOfLine ~~ "\[SmallCircle] " ~~ line:Except["\n"].. ~~ EndOfLine :> "  * " <> line]
+  If[min > 0 && min == max, str = SDelete[str, StartOfLine ~~ Repeated[" ", {0, 4}] ~~ SRepeat["\t", min]]];
+  SRep[str, StartOfLine ~~ "\[SmallCircle] " ~~ line:Except["\n"].. ~~ EndOfLine :> "  * " <> line]
 ];
 
 (**************************************************************************************************)
@@ -150,7 +150,7 @@ procTextualNewlines = Case[
   a_List                      := Map[%, a];
   StyleBox[a_, opts___]       := StyleBox[% @ a, opts];
   TextData[a_]                := TextData @ % @ a;
-  str_Str                     := StringReplace[str, "\n" -> $katexNewline];
+  str_Str                     := SRep[str, "\n" -> $katexNewline];
   other_                      := other;
 ];
 
@@ -172,7 +172,7 @@ $lastSpace = $allowMDemph = True;
 ClearAll[textBoxesToMarkdown];
 textBoxesToMarkdown = Case[
   str_Str :=
-    $textPostProcessor @ StringJoin @ checkLastSpace @ str;
+    $textPostProcessor @ SJoin @ checkLastSpace @ str;
 
   list_List :=
     Map[%, list];
@@ -191,25 +191,25 @@ textBoxesToMarkdown = Case[
 
   Cell[boxes_, "Text"] := % @ boxes;
 
-  StyleBox[str_Str /; StringMatchQ[str, Whitespace], style___] /; FreeQ[{style}, Background | "StrikeThrough"] :=
+  StyleBox[str_Str /; SMatchQ[str, Whitespace], style___] /; FreeQ[{style}, Background | "StrikeThrough"] :=
     ($lastSpace = True; " ");
 
   FormBox[b_ButtonBox, _] := % @ b;
 
   ButtonBox[title_, BaseStyle -> "Hyperlink"|Hyperlink, ButtonData -> {URL[url_Str], _}, ___] := Scope[
-    linkText = StringJoin @ % @ title; If[StringTrim[linkText] === "", Return @ ""];
-    numNewlines = StringLength[linkText] - StringLength[linkText = StringTrimRight[linkText, "\n"..]];
-    StringJoin["[", linkText, "](", url, ")", StringRepeat["\n", numNewlines]]
+    linkText = SJoin @ % @ title; If[STrim[linkText] === "", Return @ ""];
+    numNewlines = SLen[linkText] - SLen[linkText = StringTrimRight[linkText, "\n"..]];
+    SJoin["[", linkText, "](", url, ")", SRepeat["\n", numNewlines]]
   ];
 
   StyleBox[boxes_, opts___] :=
-    $textPostProcessor @ StringJoin @ styleBoxToMarkdown @ StyleBox[boxes, Apply[Sequence] @ Sort @ List @ FilterOptions[styleBoxToMarkdown, opts]];
+    $textPostProcessor @ SJoin @ styleBoxToMarkdown @ StyleBox[boxes, Apply[Sequence] @ Sort @ List @ FilterOptions[styleBoxToMarkdown, opts]];
 
   other_ := complainBoxes[other];
 ];
 
 checkLastSpace[list_List] := Map[checkLastSpace, list];
-checkLastSpace[s_Str] := ($lastSpace = StringEndsQ[s, " "|"\t"]; $backtickCount += StringCount[s, "`"]; s);
+checkLastSpace[s_Str] := ($lastSpace = SEndsQ[s, " "|"\t"]; $backtickCount += StringCount[s, "`"]; s);
 checkLastSpace[other_] := ($lastSpace = False; other);
 
 Options[styleBoxToMarkdown] = {
@@ -220,7 +220,7 @@ Options[styleBoxToMarkdown] = {
   FontVariations -> {}
 };
 
-wordQ[e_] := StringQ[e] && StringMatchQ[e, WordCharacter..];
+wordQ[e_] := StrQ[e] && SMatchQ[e, WordCharacter..];
 canEmphWrapQ[e_] := TrueQ[$lastSpace] && TrueQ[$allowMDemph] && TrueQ[EvenQ @ $backtickCount] && wordQ[e];
 
 $boldP = Bold | "Bold";
@@ -267,7 +267,7 @@ htmlStyledString[str_Str, {FontColor|Background -> name_Str}] :=
 $classSpanTemplate = StringFunction @ "<span class='#2'>#1</span>";
 
 htmlStyledString[str_Str, rules_List] := Scope[
-  styleStr = StringRiffle[toStylePropVal /@ rules, ";"];
+  styleStr = SRiffle[toStylePropVal /@ rules, ";"];
   If[styleStr === "", str, $styledSpanTemplate[str, styleStr]]
 ];
 
@@ -292,21 +292,21 @@ $styledSpanTemplate = StringFunction @ "<span style='#2'>#1</span>"
 styledMD[e___] := Print["Can't handle: ", e];
 
 wrapWith[e_, wrap_] := Scope[
-  e = StringJoin @ e;
-  p1 = StringStartsQ[e, Whitespace];
-  p2 = StringEndsQ[e, Whitespace];
-  {If[p1, " ", {}], wrap, StringTrim @ e, wrap, If[p2, " ", {}]}
+  e = SJoin @ e;
+  p1 = SStartsQ[e, Whitespace];
+  p2 = SEndsQ[e, Whitespace];
+  {If[p1, " ", {}], wrap, STrim @ e, wrap, If[p2, " ", {}]}
 ];
 
 (**************************************************************************************************)
 
-$shortcodeP := $shortcodeP = RegularExpression @ ToRegularExpression @ Alternatives[
+$shortcodeP := $shortcodeP = RegularExpression @ ToRegularExpression @ Alt[
   "</span>", "\n", "B{", "B:", "F{", "F:", "\\n", "^{", "_{", ("_" | "^") ~~ DigitCharacter,
   DoubleStruckCharacter,
-  P1 @ $WLSymbolToUnicode
+  F @ $WLSymbolToUnicode
 ];
 
-processInlineCodeBlocks[str_Str] := StringReplace[str, {
-  code:("`" ~~ body:Shortest[___] ~~ "`") :> If[StringFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, False]],
-  code:("```" ~~ body:Shortest[___] ~~ "```") :> If[StringFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, True]]
+processInlineCodeBlocks[str_Str] := SRep[str, {
+  code:("`" ~~ body:Shortest[___] ~~ "`") :> If[SFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, False]],
+  code:("```" ~~ body:Shortest[___] ~~ "```") :> If[SFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, True]]
 }]

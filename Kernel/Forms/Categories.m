@@ -57,7 +57,7 @@ DefineStandardTraditionalForm[{
    ToBoxes @ rewriteMonoidalProductTo[ColoredCircleMonoidalProductForm[color]] @ e
 }];
 
-rewriteMonoidalProductTo[new_] := ReplaceAll[{e_ColoredCircleMonoidalProductModifierForm -> e, MonoidalProductForm -> new}];
+rewriteMonoidalProductTo[new_] := RepAll[{e_ColoredCircleMonoidalProductModifierForm -> e, MonoidalProductForm -> new}];
 
 (**************************************************************************************************)
 
@@ -100,7 +100,7 @@ DefineNamedFunctionSymbolForm[{
 PublicTypesettingForm[AssociatorForm, LeftUnitorForm, RightUnitorForm, BraidingForm]
 
 $ntFormToSym = <|AssociatorForm -> "\[Alpha]", LeftUnitorForm -> "\[Lambda]", RightUnitorForm -> "\[Rho]", BraidingForm -> "\[Beta]"|>;
-$ntP = Alternatives @@ Keys[$ntFormToSym];
+$ntP = Alt @@ Keys[$ntFormToSym];
 
 DefineStandardTraditionalForm[{
   InverseForm[(h:$ntP)[a__]]  :> MakeBoxes[InverseForm[h][a]],
@@ -357,14 +357,14 @@ monoidalTreeFormBoxes[cd_CommutativeDiagram, opts___Rule] := ModuleScope[
   SetAutomatic[fontSize, LookupOption[CommutativeDiagram, FontSize]];
   SetAutomatic[labelFontSize, LookupOption[CommutativeDiagram, LabelFontSize]];
   SetScaledFactor[labelFontSize, fontSize];
-  ToBoxes @ Append[cd, TextModifiers -> <|
+  ToBoxes @ App[cd, TextModifiers -> <|
     "Objects"   -> Fn[label, MonoidalTreeForm[label, FontSize -> fontSize]],
     "Morphisms" -> Fn[label, MonoidalTreeForm[label, FontSize -> labelFontSize]]
   |>]
 ];
 
 monoidalTreeFormBoxes[e_, opts___Rule] := Scope[
-  fontSize = Lookup[{opts}, FontSize, Automatic];
+  fontSize = Lookup[{opts}, FontSize, Auto];
   If[NumberQ[fontSize], opts = Sequence[opts, GraphicsScale -> fontSize, VertexSize -> Ceiling[fontSize / 3 + 0.5]]];
   ToBoxes @ MonoidalTree[e, opts]
 ];
@@ -485,7 +485,7 @@ DefineStandardTraditionalForm[
 
 $rainbowCDOptions = {ColorRules -> "GradientArrows", TextModifiers -> ObjectArrowIconForm};
 rainbowCategoryFormBoxes[form_] := ToBoxes[form /. {
-  cd_CommutativeDiagram                :> RuleCondition @ ReplaceOptions[cd, $rainbowCDOptions],
+  cd_CommutativeDiagram                :> RuleEval @ ReplaceOptions[cd, $rainbowCDOptions],
   (* TODO: remove these, they are outdated *)
   CategoryObjectSymbol[s_]             :> symbolToRainbowSymbol[s],
   CategoryArrowSymbol[s_]              :> symbolToRainbowSymbol[s]
@@ -502,13 +502,13 @@ symbolToRainbowSymbol[s_] := Style["\[FilledCircle]", ToRainbowColor @ ToRainbow
 
 (**************************************************************************************************)
 
-addDecoration[e_] := AppendTo[$epilog, e];
+addDecoration[e_] := AppTo[$epilog, e];
 
 $rrOpt = 0.25;
 
 addPhiDecoration1[pos_] := addDecoration @
   Line[
-    GraphicsValue[{"VertexCoordinates", {pos}}, P1 /* Fn[{{-.2, -.2} + #, {.2, .2} + #}]]
+    GraphicsValue[{"VertexCoordinates", {pos}}, F /* Fn[{{-.2, -.2} + #, {.2, .2} + #}]]
   ];
 
 addPhiDecoration1[pos_] :=
@@ -516,13 +516,13 @@ addPhiDecoration1[pos_] :=
 
 addPhiDecoration2[pos_] := (
   addDiskDecoration[pos, $LightGray];
-  addDecoration @ GraphicsValue[{"VertexCoordinates", VertexPattern @ Append[pos, Repeated[_, {0, 1}]]}, CoordinateBounds[#, .35]& /* phiDec2];
+  addDecoration @ GraphicsValue[{"VertexCoordinates", VertexPattern @ App[pos, Repeated[_, {0, 1}]]}, CoordinateBounds[#, .35]& /* phiDec2];
 );
 
 addPhiDecoration2[pos_] := (
   addDiskDecoration[pos, $LightGray];
-  addFunctorDecoration[Append[pos, 1], "F"];
-  addFunctorDecoration[Append[pos, 2], "F"];
+  addFunctorDecoration[App[pos, 1], "F"];
+  addFunctorDecoration[App[pos, 2], "F"];
   addFunctorDecoration[pos, "F", EdgeForm[{$Gray, AbsoluteThickness[.5], AbsoluteDashing[{2, 2}]}]];
   (* addDecoration @ GraphicsValue[{"VertexCoordinates", VertexPattern @ Append[pos, Repeated[_, {0, 1}]]}, CoordinateBounds[#, .35]& /* phiDec2]; *)
 );
@@ -543,13 +543,13 @@ addMonoidalProductDecoration[pos_, color_] := addDiskDecoration[pos, color];
 
 addDiskDecoration[pos_, fc_] := addDecoration @
   Style[
-    Disk[GraphicsValue[{"VertexCoordinates", {pos}}, P1], .2],
+    Disk[GraphicsValue[{"VertexCoordinates", {pos}}, F], .2],
     FaceEdgeForm[fc, Darker[fc, .5]]
   ];
 
 addFunctorDecoration[pos_, sym_, opts___] := addDecoration @ Style[
   BoundingRectangle[
-    GraphicsValue[{"VertexCoordinates", VertexPattern @ Append[pos, ___]}, CoordinateBounds[#, .33]&],
+    GraphicsValue[{"VertexCoordinates", VertexPattern @ App[pos, ___]}, CoordinateBounds[#, .33]&],
     RoundingRadius -> $rrOpt
   ],
   FaceForm[None], EdgeForm[{AbsoluteThickness[1], $Gray}], opts
@@ -557,22 +557,22 @@ addFunctorDecoration[pos_, sym_, opts___] := addDecoration @ Style[
 
 addUnitorDecoration[pos_, i_] := addDecoration @
   Line[
-    GraphicsValue[{"VertexCoordinates", {Append[pos, i]}}, P1 /* Fn[{{-.2, .4} + #, {.2, .4} + #}]]
+    GraphicsValue[{"VertexCoordinates", {App[pos, i]}}, F /* Fn[{{-.2, .4} + #, {.2, .4} + #}]]
   ];
 
 (* TODO: use NamedIcon instead here *)
 addAssociatorDecoration[pos_, isRev_] := addDecoration @ {
-  associatorArrowhead[Append[pos, If[isRev, 3, 1]],  {0, 1}/4],
-  associatorArrowhead[Append[pos, If[isRev, 1, 3]], -{0, 1}/4]
+  associatorArrowhead[App[pos, If[isRev, 3, 1]],  {0, 1}/4],
+  associatorArrowhead[App[pos, If[isRev, 1, 3]], -{0, 1}/4]
 };
 
 associatorArrowhead[pos_, dir_] := Arrowhead[
-  GraphicsValue[{"VertexCoordinates", {pos}}, P1 /* PlusOperator[{0, .5}]], dir,
+  GraphicsValue[{"VertexCoordinates", {pos}}, F /* PlusOperator[{0, .5}]], dir,
   ArrowheadColor -> $Black, ArrowheadShape -> "Arrow", ArrowheadAnchor -> Center
 ];
 
 addBraidingDecoration[vertex_] := addDecoration @
-  Text["\[LeftRightArrow]", GraphicsValue[{"VertexCoordinates", {vertex}}, P1], {-0.1, .9}, BaseStyle -> {FontSize -> 9}];
+  Text["\[LeftRightArrow]", GraphicsValue[{"VertexCoordinates", {vertex}}, F], {-0.1, .9}, BaseStyle -> {FontSize -> 9}];
 
 (**************************************************************************************************)
 
@@ -590,12 +590,12 @@ SetUsage @ "ObjectArrowIconForm[expr$] depicts all %CategoryObjectSymbols as dis
 SetUsage @ "CategoryFunctorIconForm[expr$] depicts all %CategorySymbols as disks and %CategoryFunctorSymbols as arrows, preserving colors."
 
 DefineStandardTraditionalForm[{
-  ObjectArrowIconForm[expr_] :> ToBoxes @ ReplaceAll[expr, {
+  ObjectArrowIconForm[expr_] :> ToBoxes @ RepAll[expr, {
     c_CommutativeDiagram :> ReplaceOptions[c, TextModifiers -> ObjectArrowIconForm],
     c_CategoryObjectSymbol :> replaceFormContents[c, "\[FilledCircle]"],
     c_CategoryArrowSymbol :> replaceFormContents[c, ReversedChainForm @ BoldRightArrowSymbol]
   }],
-  CategoryFunctorIconForm[expr_] :> ToBoxes @ ReplaceAll[expr, {
+  CategoryFunctorIconForm[expr_] :> ToBoxes @ RepAll[expr, {
     c_CommutativeDiagram :> ReplaceOptions[c, TextModifiers -> CategoryFunctorIconForm],
     c_CategorySymbol :> replaceFormContents[c, "\[FilledCircle]"],
     c_FunctorSymbol :> replaceFormContents[c, ReversedChainForm @ BoldRightArrowSymbol]

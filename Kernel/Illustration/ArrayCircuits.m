@@ -21,7 +21,7 @@ PortStyleData["Default"] = Sequence[
 
 $defaultNodeStyle = Sequence[
   PortStyleData["Default"],
-  PortSpacing -> Automatic,
+  PortSpacing -> Auto,
   Background -> White,
   FrameThickness -> 2,
   FrameMargins -> 0.75,
@@ -83,7 +83,7 @@ $classicalArrayNodeStyle = Sequence[
   $arrayNodeStyle
 ]
 
-ClassicalArrayNode[name_, n_, interior:Except[_Rule]:Automatic, opts___Rule] :=
+ClassicalArrayNode[name_, n_, interior:Except[_Rule]:Auto, opts___Rule] :=
   NodeBox[interior, opts, NodeLabel -> name, NodeAlias -> name, NodePorts -> toTopBottom[n], $classicalArrayNodeStyle];
 
 (**************************************************************************************************)
@@ -142,7 +142,7 @@ $rainbowArrayNodeStyle = Sequence[
   $arrayNodeStyle
 ];
 
-RainbowArrayNode[name_, cols_, interior:Except[_Rule]:Automatic, opts___Rule] :=
+RainbowArrayNode[name_, cols_, interior:Except[_Rule]:Auto, opts___Rule] :=
   NodeBox[interior, opts, NodeLabel -> name, NodeAlias -> name, NodePorts -> toTopBottom[cols], $rainbowArrayNodeStyle];
 
 PublicFunction[RainbowTensorNode]
@@ -240,10 +240,10 @@ $bubbleValueNodeStyle = Sequence[
   $classicalArrayNodeStyle
 ]
 
-BubbleValueNode[name_, n_, interior:Except[_Rule]:Automatic, opts___Rule] :=
+BubbleValueNode[name_, n_, interior:Except[_Rule]:Auto, opts___Rule] :=
   NodeBox[interior, opts, NodeAlias -> name, NodePorts -> toTopBottom[n], $bubbleValueNodeStyle];
 
-BubbleValueNode[name_, n_, interior:Except[_Rule]:Automatic, epilog:Except[_Rule], opts___Rule] :=
+BubbleValueNode[name_, n_, interior:Except[_Rule]:Auto, epilog:Except[_Rule], opts___Rule] :=
   BubbleValueNode[name, n, interior, Epilog -> epilog, opts];
 
 (**************************************************************************************************)
@@ -255,10 +255,10 @@ $rainbowBubbleValueNodeStyle = Sequence[
   $rainbowArrayNodeStyle
 ]
 
-RainbowBubbleValueNode[name_, n_, interior:Except[_Rule]:Automatic, opts___Rule] :=
+RainbowBubbleValueNode[name_, n_, interior:Except[_Rule]:Auto, opts___Rule] :=
   NodeBox[interior, opts, NodeAlias -> name, NodePorts -> toTopBottom[n], $rainbowBubbleValueNodeStyle];
 
-RainbowBubbleValueNode[name_, n_, interior:Except[_Rule]:Automatic, epilog:Except[_Rule], opts___Rule] :=
+RainbowBubbleValueNode[name_, n_, interior:Except[_Rule]:Auto, epilog:Except[_Rule], opts___Rule] :=
   RainbowBubbleValueNode[name, n, interior, Epilog -> epilog, opts];
 
 (**************************************************************************************************)
@@ -306,16 +306,16 @@ toWirePort = Case[
 toWireSrcPort[e_] := toWirePort[e] /. {$in -> NodeInPort,  $out -> NodeOutPort};
 toWireDstPort[e_] := toWirePort[e] /. {$in -> NodeOutPort, $out -> NodeInPort};
 
-toCircuitCurve[e_] := Fold[ReplaceAll, e, {
-  curve[a_, b_, l___, LineColor -> Automatic, r___] :> curve[a, b, l, LineColor -> getPortColors[a, b], r],
+toCircuitCurve[e_] := Fold[RepAll, e, {
+  curve[a_, b_, l___, LineColor -> Auto, r___] :> curve[a, b, l, LineColor -> getPortColors[a, b], r],
   curve[a_, b:Except[$Coord2P, _List], opts___Rule] :> CircuitCurve[FanOut[a, b], opts],
   curve[a_, b:Except[_Rule], opts___Rule]           :> CircuitCurve[{a, b}, opts],
   c_curve :> Print[c]
 }];
 
 wireCurve[args___] :=
-  wireCurve1 @@ ReplaceAll[{args}, {
-    $[s_Str] :> Apply[$, Characters @ s],
+  wireCurve1 @@ RepAll[{args}, {
+    $[s_Str] :> Apply[$, Chars @ s],
     $[i_Int] :> Apply[$, Range @ i]
   }];
 
@@ -325,8 +325,8 @@ wireCurve1[a_, b_, opts___] := Scope[
   c = curve[toWireSrcPort @ a, toWireDstPort @ b, opts];
   If[ContainsQ[c, _$],
     i = 1; args = {};
-    cFn = Construct[Fn, c] /. vals_$ :> RuleCondition[
-      AppendTo[args, List @@ vals];
+    cFn = Construct[Fn, c] /. vals_$ :> RuleEval[
+      AppTo[args, List @@ vals];
       Slot[i++]
     ];
     c = MapThread[cFn, args]
@@ -339,7 +339,7 @@ wireCurve1[a_, b_, opts___] := Scope[
 PrivateHead[$portColor]
 
 $portColor[i_Int] := ToRainbowColor @ i;
-$portColor[Automatic] := Automatic;
+$portColor[Auto] := Auto;
 
 getPortColors[(NodeInPort|NodeOutPort|NodePort)[___, p_], _] := $portColor[p];
 getPortColors[_, (NodeInPort|NodeOutPort|NodePort)[___, p_]] := $portColor[p];
@@ -357,8 +357,8 @@ PublicFunction[RainbowWire]
 
 $rainbowWireOpts = Sequence[LineThickness -> 2, LineEdging -> True];
 RainbowWire[c:$curveP, opts___Rule] := CircuitCurve[c, opts, $rainbowWireOpts];
-RainbowWire[port1_, port2_, opts___Rule] := RainbowWire[port1, port2, Automatic, opts];
-RainbowWire[port1_, port2_, color:($ColorPattern|Automatic|_Int|_String), opts___Rule]  := wireCurve[port1, port2, LineColor -> $portColor[color], opts, $rainbowWireOpts];
+RainbowWire[port1_, port2_, opts___Rule] := RainbowWire[port1, port2, Auto, opts];
+RainbowWire[port1_, port2_, color:($ColorPattern|Auto|_Int|_String), opts___Rule]  := wireCurve[port1, port2, LineColor -> $portColor[color], opts, $rainbowWireOpts];
 
 PublicFunction[RainbowWireBundle]
 
@@ -412,7 +412,7 @@ $keyFunctionNodeStyle = Sequence[
   $functionNodeStyle
 ]
 
-KeyFunctionNode[name_, n_, interior:Except[_Rule]:Automatic, opts___Rule] :=
+KeyFunctionNode[name_, n_, interior:Except[_Rule]:Auto, opts___Rule] :=
   NodeBox[interior, opts, NodeLabel -> name, NodeAlias -> name, NodePorts -> toTopBottom[n], $keyFunctionNodeStyle];
 
 (**************************************************************************************************)
@@ -425,7 +425,7 @@ $scalarFunctionNodeStyle = Sequence[
   $functionNodeStyle
 ]
 
-ScalarFunctionNode[name_, n_, interior:Except[_Rule]:Automatic, opts___Rule] :=
+ScalarFunctionNode[name_, n_, interior:Except[_Rule]:Auto, opts___Rule] :=
   NodeBox[interior, opts, NodeLabel -> name, NodeAlias -> name, NodePorts -> toTopBottom[n], $scalarFunctionNodeStyle];
 
 (**************************************************************************************************)
@@ -438,7 +438,7 @@ $rainbowFunctionNodeStyle = Sequence[
   $functionNodeStyle
 ]
 
-RainbowScalarFunctionNode[name_, n_, interior:Except[_Rule]:Automatic, opts___Rule] :=
+RainbowScalarFunctionNode[name_, n_, interior:Except[_Rule]:Auto, opts___Rule] :=
   NodeBox[interior, opts, NodeLabel -> name, NodeAlias -> name, NodePorts -> toTopBottom[n], $rainbowFunctionNodeStyle];
 
 (**************************************************************************************************)
@@ -489,14 +489,14 @@ ArrayDivideNode[] := arithmeticNode["/", $BubbleWireColor];
 PublicFunction[ArrayCircuitGraphics]
 
 ArrayCircuitGraphics[nodes_, opts___Rule] := Scope[
-  padding = Lookup[{opts}, ImagePadding, Automatic];
+  padding = Lookup[{opts}, ImagePadding, Auto];
   frameLabel = LookupOption[nodes, FrameLabel, None];
   SetAutomatic[padding, 2];
   padding //= StandardizePadding;
   Part[padding, 2, 1] //= Max[#, 6]&;
   If[frameLabel =!= None,
     Part[padding, 2, 2] //= Max[#, 18]&;
-    If[StringQ[frameLabel] && StringLength[frameLabel] > 10,
+    If[StrQ[frameLabel] && SLen[frameLabel] > 10,
       Part[padding, 1, 1] //= Max[#, 10]&;
       Part[padding, 1, 2] //= Max[#, 10]&;
     ];

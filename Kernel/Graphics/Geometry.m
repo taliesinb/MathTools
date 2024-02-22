@@ -70,7 +70,7 @@ TorusAngles[{R_, r_}, v_] := Scope[
   phi = ArcTan[Part[v, 1], Part[v, 2]];
   p = R * {Cos @ phi, Sin @ phi, 0};
   v2 = v - p;
-  theta = ArcTan[Dot[v2, Normalize @ p], PN @ v];
+  theta = ArcTan[Dot[v2, Normalize @ p], L @ v];
   {phi, theta}
 ];
 
@@ -128,14 +128,14 @@ RegionPolygon[other_] := Scope[
 ];
 
 RegionPolygon[region_MeshRegion | region_BoundaryMeshRegion] :=
-  Replace[
+  Rep[
     regionComponentPolygon /@ ConnectedMeshComponents[region],
     {a_} :> a
   ];
 
 regionComponentPolygon[region_] := Scope[
   polygons = region["BoundaryPolygons"];
-  If[Len[polygons] === 1, Return @ P1 @ polygons];
+  If[Len[polygons] === 1, Return @ F @ polygons];
   outerIndex = MinimumIndexBy[polygons, -Area[#]&];
   outer = Part[polygons, outerIndex];
   holes = Delete[polygons, outerIndex];
@@ -182,9 +182,9 @@ DiscretizeCurve[Circle[center:$Coord2P, radius_ ? NumericQ, {t1_ ? NumericQ, t2_
   ToPackedReal @ CircleVector[center, radius, angRange[t1, t2]];
 
 angRange[t_, t_] := {t};
-angRange[t1_, t2_] := DeleteDuplicates @ Append[t2] @ Range[t1, t2, (t2 - t1) / Ceiling[32 - Min[24, 16/Abs[t2-t1]]]];
+angRange[t1_, t2_] := Dedup @ App[t2] @ Range[t1, t2, (t2 - t1) / Ceiling[32 - Min[24, 16/Abs[t2-t1]]]];
 
-$tau32 = N @ Append[0] @ Range[0, Tau - 0.01, Tau / 48];
+$tau32 = N @ App[0] @ Range[0, Tau - 0.01, Tau / 48];
 DiscretizeCurve[Circle[center:$Coord2P, radius_ ? NumericQ]] :=
   ToPackedReal @ CircleVector[center, radius, $tau32];
 
@@ -200,7 +200,7 @@ DiscretizeCurve[curve:(BezierCurve|BSplineCurve)[___]] := Scope[
 DiscretizeCurve[BezierCurve[points_List]] :=
   DiscretizeCurve @ BezierCurve[points, SplineDegree -> 3];
 
-DiscretizeCurve[BezierCurve[points_List, SplineDegree -> n_Int]] := Replace[
+DiscretizeCurve[BezierCurve[points_List, SplineDegree -> n_Int]] := Rep[
   GeometricFunctions`BezierCurve[ToPackedReal @ points, SplineDegree -> n],
   {GraphicsComplex[coords_List, Line[indices_List]] :> ToPackedReal @ Part[coords, indices], _ :> $Failed}
 ];
@@ -229,7 +229,7 @@ minimumSquaredDistance[points_] :=
 
 pointDilationRegion[points_, d_] := Scope[
   bounds = CoordinateBounds[points, 2 * d];
-  is3D = (Len @ P1 @ points) === 3;
+  is3D = (Len @ F @ points) === 3;
   Check[
     mesh = MeshRegion @ Point @ points;
     rd = RegionDistance[mesh];

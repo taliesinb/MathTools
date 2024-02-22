@@ -40,7 +40,7 @@ LookupExtendedThemedOption[graph_, key_] :=
 
 PublicFunction[LookupThemedOption]
 
-LookupThemedOption[graph_, opt_, default_:Automatic] :=
+LookupThemedOption[graph_, opt_, default_:Auto] :=
   Quiet @ Lookup[
     Join[
       Options @ graph,

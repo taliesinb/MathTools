@@ -73,7 +73,7 @@ $thicknessNormalizationRules = {
 PrivateFunction[NormalizeThickness]
 
 NormalizeThickness = Case[
-  Automatic             := AbsoluteThickness[1.2];
+  Auto             := AbsoluteThickness[1.2];
   t:Thickness[s_Symbol] := t;
   s_Symbol              := Lookup[$thicknessNormalizationRules, s, $Failed];
   n_ ? NumericQ         := AbsoluteThickness @ N @ n;
@@ -85,10 +85,10 @@ NormalizeThickness = Case[
 PrivateFunction[toDirective]
 
 toDirective = Case[
-  Automatic           := Automatic;
+  Auto           := Auto;
   {d_Directive}       := % @ d;
   e_List              := normalizeStyles[
-    Directive @@ DeleteNone @ Flatten @ ReplaceAll[e, Directive[d_] :> d]
+    Directive @@ DeleteNone @ Flatten @ RepAll[e, Directive[d_] :> d]
   ];
   Directive[e_List]   := %[e];
   e_                  := normalizeStyles @ e
@@ -102,7 +102,7 @@ $styleNormalizationRules = Dispatch @ Flatten @ {
 
 PrivateFunction[normalizeStyles]
 
-normalizeStyles[e_] := ReplaceAll[e, $styleNormalizationRules];
+normalizeStyles[e_] := RepAll[e, $styleNormalizationRules];
 
 (**************************************************************************************************)
 
@@ -112,16 +112,16 @@ PublicGraphicsDirective[FaceEdgeForm]
 toFECol[color_ -> op_] := Opacity[op, color];
 toFECol[e_] := e;
 
-FaceEdgeForm[color_, Automatic, thickness_] := Directive[FaceForm[color], EdgeForm[{Darker[color, .2], AbsoluteThickness @ thickness}]];
+FaceEdgeForm[color_, Auto, thickness_] := Directive[FaceForm[color], EdgeForm[{Darker[color, .2], AbsoluteThickness @ thickness}]];
 FaceEdgeForm[face_, edge_, thickness_] := Directive[FaceForm[toFECol @ face], EdgeForm[{toFECol @ edge, AbsoluteThickness @ thickness}]];
 FaceEdgeForm[face_, None, thickness_] := Directive[FaceForm[toFECol @ face], EdgeForm[None]];
 
-FaceEdgeForm[face_, Automatic] := FaceEdgeForm[face, Darker[color, .2]];
+FaceEdgeForm[face_, Auto] := FaceEdgeForm[face, Darker[color, .2]];
 FaceEdgeForm[face_, edge_] := Directive[FaceForm[toFECol @ face], EdgeForm[toFECol @ edge]];
 
 FaceEdgeForm[color_ ? ColorQ] := Directive[FaceForm[color], EdgeForm[Darker[color, .2]]];
 FaceEdgeForm[Opacity[o_, color_ ? ColorQ]] := FaceEdgeForm @ SetColorOpacity[color, o];
 FaceEdgeForm[d_Directive] := d;
 FaceEdgeForm[e_] := e;
-FaceEdgeForm[Automatic] = {};
+FaceEdgeForm[Auto] = {};
 FaceEdgeForm[None] := Transparent;

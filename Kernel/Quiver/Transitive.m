@@ -31,7 +31,7 @@ BouquetQuiver[n_Int, opts:OptionsPattern[]] := BouquetQuiver[
   opts
 ];
 
-BouquetQuiver[str_Str, opts:OptionsPattern[]] := BouquetQuiver[Characters[str], opts];
+BouquetQuiver[str_Str, opts:OptionsPattern[]] := BouquetQuiver[Chars[str], opts];
 
 BouquetQuiver[cardinals_List, opts:OptionsPattern[]] :=
   Quiver[
@@ -61,7 +61,7 @@ TriangularQuiver[n_Int, cards:{x_, y_, z_}, opts:OptionsPattern[]] := Scope[
   UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
   center = Ceiling[{(n + 2) / 3, (2*n + 1) / 3}];
   SetAutomatic[vertexOrigin, center];
-  If[IntegerQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
+  If[IntQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
   SetAutomatic[graphOrigin, Apply[vertexHead, center]];
   
   vertices = Catenate @ Table[If[i <= j, vertexHead[i, j], Nothing], {i, n}, {j, n}];
@@ -114,8 +114,8 @@ hexNorm[v_List] := Max[Abs @ Dot[$hexNormVecs, v]];
 
 makeHexSkeleton[{{a1_, a2_}, {b1_, b2_}, {c1_, c2_}}, norm_, {x_, y_, z_}] := Scope[
   ab = Tuples[{Range[a1, a2], Range[b1, b2]}];
-  abc = Append[#, -Total[#]]& /@ ab;
-  abc //= Select[c1 <= PN[#] <= c2&];
+  abc = App[#, -Total[#]]& /@ ab;
+  abc //= Select[c1 <= L[#] <= c2&];
   vertices = VertexProduct @@@ abc;
   edges = Flatten @ {
     hexEdgeList[x, abc, {2, 1, 0}, {1, -1, 0}, 1],
@@ -157,7 +157,7 @@ SquareQuiver[spec:{$ModIntP, $ModIntP}, {cx_, cy_}, opts:OptionsPattern[]] := Sc
   UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
   center = Ceiling[{m, n} / 2];
   SetAutomatic[vertexOrigin, center];
-  If[IntegerQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
+  If[IntQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
   SetAutomatic[graphOrigin, Apply[vertexHead, center]];
   
   vertices = Catenate @ Array[vertexHead, StripModulo @ {m, n}];
@@ -210,7 +210,7 @@ SquareModulusEdgeShapeFunction[x_, y_] :=
 PrivateFunction[MakeModulusEdgeShapeFunction]
 
 MakeModulusEdgeShapeFunction[specs__Int] :=
-  Automatic;
+  Auto;
 
 MakeModulusEdgeShapeFunction[spec_] :=
   makeModulusEdgeShapeFunctionInner[{spec}, {{1, 0}}];
@@ -219,14 +219,14 @@ MakeModulusEdgeShapeFunction[specs:Repeated[_, {2, 3}]] :=
   makeModulusEdgeShapeFunctionInner[{specs}, IdentityMatrix @ SeqLength[specs]];
 
 MakeModulusEdgeShapeFunction[specs__] :=
-  Automatic;
+  Auto;
 
 (**************************************************************************************************)
 
 makeModulusEdgeShapeFunctionInner[spec_List, basis_List] := Scope[
   dim = InnerDimension @ basis;
   tuples = Tuples @ MapThread[makeModOffset, {spec, basis}];
-  offsets = DeleteCases[{0..}] @ Map[Total] @ tuples;
+  offsets = Decases[{0..}] @ Map[Total] @ tuples;
   ModulusEdgeShapeFunction[offsets]
 ];
 
@@ -250,7 +250,7 @@ CubicQuiver[spec:{$ModIntP, $ModIntP, $ModIntP}, {cx_, cy_, cz_}, opts:OptionsPa
   UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
   center = Ceiling[{m, n, p} / 2];
   SetAutomatic[vertexOrigin, center];
-  If[IntegerQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
+  If[IntQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
   SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
 
   vertices = Flatten[Array[vertexHead, {m, n, p}], 2];
@@ -335,7 +335,7 @@ LineQuiver[spec_, card_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
   center = Ceiling[n / 2];
   SetAutomatic[vertexOrigin, center];
-  If[IntegerQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
+  If[IntQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
   SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
   vertices //= Map[vertexHead];
 
@@ -414,7 +414,7 @@ GridQuiver[k_Int, n:$ModIntP, opts:OptionsPattern[]] := Scope[
   UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
   center = Ceiling[n / 2];
   SetAutomatic[vertexOrigin, center];
-  If[IntegerQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
+  If[IntQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
   SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
 
   vertices = Flatten[Array[List, Repeat[StripModulo @ n, k]], k-1];
@@ -446,7 +446,7 @@ generalGridEdge[n_, i_][vertex_] :=
 
 PublicFunction[TreeQuiver, TreeVertex]
 
-Options[TreeQuiver] = Prepend[$ExtendedGraphOptions, "AngleOffset" -> 0];
+Options[TreeQuiver] = Pre[$ExtendedGraphOptions, "AngleOffset" -> 0];
 
 TreeQuiver[k_Int, n_Int, opts:OptionsPattern[]] := Scope[
   If[!OddQ[n], ReturnFailed[]];
@@ -458,7 +458,7 @@ TreeQuiver[k_Int, n_Int, opts:OptionsPattern[]] := Scope[
   $cards = If[ListQ[cardinals], cardinals, Range @ k];
   edges = makeTreeEdge /@ vertices;
   SetAutomatic[angleOffset, If[k == 2, Pi / 4, 0]];
-  vectorAssoc = AssociationThread[cards, CirclePoints[{1, angleOffset}, 2 * k]];
+  vectorAssoc = AssocThread[cards, CirclePoints[{1, angleOffset}, 2 * k]];
   coords = Map[treeVertexCoord, vertices];
   scaling = 1 / k;
   ExtendedGraph[
@@ -480,14 +480,14 @@ treeVertexCoord = Case[
 
 makeTreeEdge = Case[
   TreeVertex[] := Nothing;
-  t_TreeVertex := DirectedEdge[Most @ t, t, PN[t] /. i_Int :> Part[$cards, i]];
+  t_TreeVertex := DirectedEdge[Most @ t, t, L[t] /. i_Int :> Part[$cards, i]];
 ]
 
 (**************************************************************************************************)
 
 PublicFunction[LatticeQuiverCoordinates]
 
-LatticeQuiverCoordinates[quiver_Graph, Automatic] :=
+LatticeQuiverCoordinates[quiver_Graph, Auto] :=
   LatticeQuiverCoordinates[quiver, chooseLatticeBasisVectors @ Sort @ CardinalList @ quiver];
 
 LatticeQuiverCoordinates[quiver_Graph, "Triangular"] :=
@@ -524,23 +524,23 @@ LatticeQuiverCoordinates[quiver_Graph, latticeBasis_] := Scope[
   Which[
     RuleListQ[latticeBasis],
       latticeBasis = Assoc @ Map[
-        # -> Replace[Total[ReplaceList[#, latticeBasis]], 0 :> ReturnFailed["badrules", #]]&,
+        # -> Rep[Total[ReplaceList[#, latticeBasis]], 0 :> ReturnFailed["badrules", #]]&,
         cardinalList
       ],
     ListQ[latticeBasis],
       If[!SameLengthQ[cardinalList, latticeBasis], ReturnFailed["badlen", Len @ cardinalList, Len @ latticeBasis]];
-      latticeBasis = AssociationThread[cardinalList, latticeBasis],
+      latticeBasis = AssocThread[cardinalList, latticeBasis],
     !AssocQ[latticeBasis],
       ReturnFailed["badbasis", latticeBasis]
   ];
   indexGraph = ToIndexGraph @ quiver;
   outTable = VertexOutVertexTagTable @ indexGraph;
-  dims = Rest @ Dimensions @ Values @ latticeBasis;
-  coords = Repeat[0, Prepend[dims, VertexCount @ indexGraph]];
+  dims = Rest @ Dims @ Values @ latticeBasis;
+  coords = Repeat[0, Pre[dims, VertexCount @ indexGraph]];
   edgeBasis = Map[latticeBasis, EdgeTagAssociation @ indexGraph];
-  edgeBasis = Join[edgeBasis, Map[Minus, KeyMap[Rev, edgeBasis]]];
+  edgeBasis = Join[edgeBasis, Map[Minus, KMap[Rev, edgeBasis]]];
   edgeIndex = EdgePairIndexAssociation @ indexGraph;
-  edgeIndex = Join[edgeIndex, KeyMap[Rev, edgeIndex]];
+  edgeIndex = Join[edgeIndex, KMap[Rev, edgeIndex]];
   visitedEdges = CreateDataStructure["HashSet"];
   initial = MinimumIndex @ VertexInDegree @ indexGraph;
   BreadthFirstScan[UndirectedGraph @ indexGraph, initial, {"DiscoverVertex" -> discoverVertex}];

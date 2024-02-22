@@ -1,6 +1,6 @@
 PublicTypesettingForm[ModForm]
 
-ModForm[x_, Infinity|0] := x;
+ModForm[x_, Inf|0] := x;
 
 DefineStandardTraditionalForm[{
   ModForm[a_, b_] :> modBox[MakeBoxes @ a, b],
@@ -28,7 +28,7 @@ LargeLabeled[e_, l_, opts:OptionsPattern[]] :=
   Labeled[
     e, l, opts,
     FrameMargins -> {{0, 0}, {OptionValue[Spacings], 0}},
-    LabelStyle -> Prepend[$LabelStyle, FontSize -> 16]
+    LabelStyle -> Pre[$LabelStyle, FontSize -> 16]
   ];
 
 
@@ -36,7 +36,7 @@ LargeLabeled[e_, l_, opts:OptionsPattern[]] :=
 
 PublicTypesettingForm[EllipsisForm]
 
-EllipsisForm[list_, n_] := If[Len[list] > n, Append[Take[list, n], $LargeEllipsis], list];
+EllipsisForm[list_, n_] := If[Len[list] > n, App[Take[list, n], $LargeEllipsis], list];
 EllipsisForm[n_][list_] := EllipsisForm[list, n];
 
 (**************************************************************************************************)
@@ -58,14 +58,14 @@ $customGraphicsHeadQ[RightClickBox] = True;
 ClickBox[box_, None] := box;
 
 ClickBox[box_, body_] := TagBox[
-  TagBox[box, EventHandlerTag[{{"MouseClicked", 1} :> body, Method -> "Preemptive", PassEventsDown -> Automatic, PassEventsUp -> True}]],
+  TagBox[box, EventHandlerTag[{{"MouseClicked", 1} :> body, Method -> "Preemptive", PassEventsDown -> Auto, PassEventsUp -> True}]],
   MouseAppearanceTag["LinkHand"]
 ];
 
 RightClickBox[box_, None] := box;
 
 RightClickBox[box_, body_] := TagBox[
-  TagBox[box, EventHandlerTag[{{"MouseClicked", 2} :> body, Method -> "Preemptive", PassEventsDown -> Automatic, PassEventsUp -> True}]],
+  TagBox[box, EventHandlerTag[{{"MouseClicked", 2} :> body, Method -> "Preemptive", PassEventsDown -> Auto, PassEventsUp -> True}]],
   MouseAppearanceTag["LinkHand"]
 ];
 
@@ -91,7 +91,7 @@ FlipperBoxes[a_, b_] :=
   DynamicModuleBox[
     {flippervar$$ = 1},
     TagBox[TagBox[
-      FrameBox @ PaneSelectorBox[{1 -> a,  2 -> b}, Dynamic @ flippervar$$, ImageSize -> Automatic, ImageMargins -> 5],
+      FrameBox @ PaneSelectorBox[{1 -> a,  2 -> b}, Dynamic @ flippervar$$, ImageSize -> Auto, ImageMargins -> 5],
       EventHandlerTag[{
         "MouseClicked" :> Set[flippervar$$, Mod[flippervar$$ + 1, 2, 1]],
         "MouseDragged" :> Set[flippervar$$, Mod[flippervar$$ + 1, 2, 1]]
@@ -127,7 +127,7 @@ OpenerColumnBox[a_] := a;
 OpenerColumnBox[a_, b__] := With[
   {a1 = ClickBox[a, open$$ = False],
    a2 = ClickBox[a, open$$ = True]},
-  {a1b = TightColumnGridBox[Prepend[{b}, a1]]},
+  {a1b = TightColumnGridBox[Pre[{b}, a1]]},
   DynamicModuleBox[
     {open$$ = 1},
     DynamicBox[
@@ -141,7 +141,7 @@ OpenerColumnBox[a_, b__] := With[
 OpenerColumnBox[a_, b_] := With[
   {a1 = ClickBox[a, open$$ = False],
    a2 = ClickBox[a, open$$ = True]},
-  {a1b = TightColumnGridBox[Prepend[{b}, a1]]},
+  {a1b = TightColumnGridBox[Pre[{b}, a1]]},
   DynamicModuleBox[
     {open$$ = 1},
     DynamicBox[
@@ -164,7 +164,7 @@ DynamicProgressBarBox[{i_, n_}, {w_, h_}, color_:$LightPurple] := mouseMoveBox[
     ImageSize -> {w, h}, PlotRange -> {{0, n}, {0, 1}}, PlotRangePadding -> 0,
     ImagePadding -> 0, AspectRatio -> Full
   ],
-  Replace[
+  Rep[
     MousePosition["Graphics"],
     {x_, y_} :> With[{z = Clip[Round @ x, {1, n}]}, If[z =!= i, Set[i, z]]]
   ]
@@ -173,7 +173,7 @@ DynamicProgressBarBox[{i_, n_}, {w_, h_}, color_:$LightPurple] := mouseMoveBox[
 SetHoldRest[mouseMoveBox]
 
 mouseMoveBox[box_, body_] := TagBox[
-  TagBox[box, EventHandlerTag[{"MouseClicked" :> body, "MouseDragged" :> body, Method -> "Preemptive", PassEventsDown -> Automatic, PassEventsUp -> True}]],
+  TagBox[box, EventHandlerTag[{"MouseClicked" :> body, "MouseDragged" :> body, Method -> "Preemptive", PassEventsDown -> Auto, PassEventsUp -> True}]],
   MouseAppearanceTag["FrameLRResize"]
 ];
 
@@ -183,11 +183,11 @@ PrivateTypesettingBoxFunction[StyledClickBox]
 
 SetHoldRest[StyledClickBox];
 
-StyledClickBox[text_, action_] := StyledClickBox[text, action, Automatic];
+StyledClickBox[text_, action_] := StyledClickBox[text, action, Auto];
 StyledClickBox[text_, action_, color_] := ClickBox[buttonBox[text, color], action];
 
 buttonBox[e_, c_Str] := buttonBox[e, $bboxColors @ c];
-buttonBox[e_, Automatic] := buttonBox[e, {$LightBlue, $Blue}];
+buttonBox[e_, Auto] := buttonBox[e, {$LightBlue, $Blue}];
 buttonBox[e_, c_] := buttonBox[e, {OklabLighter @ c, c}];
 buttonBox[e_, {c1_, c2_}] := FrameBox[
   StyleBox[DeployBox @ e, Bold, 15],

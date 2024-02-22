@@ -19,7 +19,7 @@ UpdateQuiverGeometryStylesheet[] := Scope @ CatchMessage[
   lightMode = loadStylesheet["LightMode.nb"];
 
   cells = Join[
-    KeyValueMap[makeTemplateBoxStyleCell, $notebookDisplayFunction],
+    KVMap[makeTemplateBoxStyleCell, $notebookDisplayFunction],
     generateNotebookColorPaletteStyles[$ColorPalette, Map[OklabLighter[#, 0.1]&] @ $LightColorPalette]
   ];
 
@@ -31,13 +31,13 @@ UpdateQuiverGeometryStylesheet[] := Scope @ CatchMessage[
 ];
 
 fillTemplate[template_, cells1_, cells2_] :=
-  ReplaceAll[template, Cell[StyleData["Dummy"], ___] :> Splice[Join[cells1, cells2]]];
+  RepAll[template, Cell[StyleData["Dummy"], ___] :> Splice[Join[cells1, cells2]]];
 
 loadStylesheet[name_] :=
   deleteUUIDs @ Get @ LocalPath["StyleSheets", name];
 
 deleteUUIDs[nb_] :=
-  DeleteCases[nb, ExpressionUUID -> _, {0, Infinity}];
+  Decases[nb, ExpressionUUID -> _, {0, Inf}];
 
 writeStylesheetFile[path_, contents_] := Scope[
   If[!FileExistsQ[path], NotebookSave[contents, path]; Return[]];
@@ -60,8 +60,8 @@ GeneratePrivateQuiverGeometryStylesheet[] := Scope[
     FrontEndVersion -> "13.1 for Mac OS X x86 (64-bit) (June 16, 2022)",
     StyleDefinitions -> "PrivateStylesheetFormatting.nb"
   ];
-  cells = KeyValueMap[makeTemplateBoxStyleCell, $notebookDisplayFunction];
-  template //= ReplaceAll[Cell[StyleData["Dummy"], ___] :> Splice[cells]];
+  cells = KVMap[makeTemplateBoxStyleCell, $notebookDisplayFunction];
+  template //= RepAll[Cell[StyleData["Dummy"], ___] :> Splice[cells]];
   template
 ];
 
@@ -89,8 +89,8 @@ ApplyPrivateQuiverGeometryNotebookStyles[] := (
 (**************************************************************************************************)
 
 generateNotebookColorPaletteStyles[palette_List, lightPalette_List] := Join[
-  MapIndex1[Cell[StyleData["Color" <> IntegerString[#2]], FontColor -> #1]&, palette],
-  MapIndex1[Cell[StyleData["Background" <> IntegerString[#2]], Background -> #1]&, lightPalette]
+  MapIndex1[Cell[StyleData["Color" <> IntStr[#2]], FontColor -> #1]&, palette],
+  MapIndex1[Cell[StyleData["Background" <> IntStr[#2]], Background -> #1]&, lightPalette]
 ];
 
 (**************************************************************************************************)
@@ -98,18 +98,18 @@ generateNotebookColorPaletteStyles[palette_List, lightPalette_List] := Join[
 PublicFunction[UpdateLegacyNotebook]
 
 createLegacyReplacementRules[] := Scope[
-  keys = Select[Keys @ $notebookDisplayFunction, LowerCaseQ[StringTake[#, 1]]&];
+  keys = Select[Keys @ $notebookDisplayFunction, LowerCaseQ[STake[#, 1]]&];
   symbolRules = Map[
     UpperCaseFirst[#] -> #&,
-    Select[Keys @ $notebookDisplayFunction, LowerCaseQ[StringTake[#, 1]]&]
+    Select[Keys @ $notebookDisplayFunction, LowerCaseQ[STake[#, 1]]&]
   ];
   colorRules = {
     "RedGreenForm" -> "TealForm", "RedBlueForm" -> "PinkForm", "GreenBlueForm" -> "OrangeForm"
   };
   colorRules = {
     colorRules,
-    colorRules /. s_Str :> StringJoin["Light", s],
-    colorRules /. s_Str :> StringJoin["Dark", s]
+    colorRules /. s_Str :> SJoin["Light", s],
+    colorRules /. s_Str :> SJoin["Dark", s]
   };
   Map[toTemplateRule, Flatten @ {symbolRules, colorRules}]
 ];
@@ -128,13 +128,13 @@ UpdateLegacyNotebook[nb_NotebookObject] := Scope[
 ];
 
 UpdateLegacyNotebook[nb_Notebook] := Scope[
-  nb = DeleteCases[nb, StyleDefinitions -> _];
-  AppendTo[nb, StyleDefinitions -> $StylesheetPath];
-  ReplaceRepeated[nb, $legacyReplacementRules]
+  nb = Decases[nb, StyleDefinitions -> _];
+  AppTo[nb, StyleDefinitions -> $StylesheetPath];
+  RepRep[nb, $legacyReplacementRules]
 ];
 
 UpdateLegacyNotebook::fail = "Could not update ``."
-UpdateLegacyNotebook[path_Str] /; StringEndsQ[path, ".nb"] := Scope[
+UpdateLegacyNotebook[path_Str] /; SEndsQ[path, ".nb"] := Scope[
   Quiet @ CopyFile[path, path <> ".backup"];
   nb = NotebookOpen[path, Visible -> False];
   UpdateLegacyNotebook @ nb;
@@ -146,7 +146,7 @@ UpdateLegacyNotebook[path_Str] /; StringEndsQ[path, ".nb"] := Scope[
 ];
 
 UpdateLegacyNotebook[dir_Str] /; FileType[dir] === Directory :=
-  Map[UpdateLegacyNotebook, FileNames["*.nb", dir, Infinity]];
+  Map[UpdateLegacyNotebook, FileNames["*.nb", dir, Inf]];
 
 (**************************************************************************************************)
 
@@ -154,20 +154,20 @@ PublicFunction[NotebookStyleDataNames]
 PublicFunction[NotebookTemplateNames]
 PublicFunction[FindMissingTemplateBoxDefinitions]
 
-NotebookTemplateNames[nb_:Automatic] :=
+NotebookTemplateNames[nb_:Auto] :=
   DeepUniqueCases[ToNotebookExpression @ nb, TemplateBox[_, name_Str] :> name];
 
-NotebookStyleDataNames[nb_:Automatic] :=
+NotebookStyleDataNames[nb_:Auto] :=
   DeepUniqueCases[ToNotebookExpression @ nb, Cell[StyleData[style_Str, ___], ___] :> style];
 
 $builtinTemplateNames = {"RowWithSeparators", "RowWithSeparator", "Spacer1", "Ceiling", "Floor"};
 
-FindMissingTemplateBoxDefinitions[] := FindMissingTemplateBoxDefinitions @ Automatic;
-FindMissingTemplateBoxDefinitions[nb_, ref_:Automatic] := Scope[
+FindMissingTemplateBoxDefinitions[] := FindMissingTemplateBoxDefinitions @ Auto;
+FindMissingTemplateBoxDefinitions[nb_, ref_:Auto] := Scope[
   SetAutomatic[ref, $StylesheetPath];
   availableNames = Join[NotebookStyleDataNames @ ref, $builtinTemplateNames];
   notebookNames = NotebookTemplateNames @ nb;
-  Complement[notebookNames, availableNames]
+  Comp[notebookNames, availableNames]
 ];
 
 (**************************************************************************************************)

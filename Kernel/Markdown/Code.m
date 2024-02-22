@@ -7,10 +7,10 @@ $subSuperRules = {
 
 toCodeMarkdown[code_, multiline_] := Scope[
   $allowMDemph = False;
-  If[!StringQ[code],
+  If[!StrQ[code],
     (* this path is taken if we have been called because of a standalone "PreformattedCode" Cell with
     complex internal formatting like StyleBox etc. *)
-    code //= ReplaceAll[$subSuperRules];
+    code //= RepAll[$subSuperRules];
     code //= textToMarkdown; (* this will call wlCharactersToUnicode *)
   ,
     (* this path is taken if we have an Output cell with a "StringBlockForm" TemplateBox, or if we have
@@ -18,32 +18,32 @@ toCodeMarkdown[code_, multiline_] := Scope[
     code //= wlCharactersToUnicode
   ];
   code //= subShortCodes;
-  If[StringContainsQ[code, $forbiddenStrings], Return @ ""];
-  res = StringJoin @ If[multiline, {"<pre>", code, "</pre>"}, {"<code>", code, "</code>"}];
+  If[SContainsQ[code, $forbiddenStrings], Return @ ""];
+  res = SJoin @ If[multiline, {"<pre>", code, "</pre>"}, {"<code>", code, "</code>"}];
   res
 ];
 
-subShortCodes[s_Str] := StringReplace[s, $shortcodeRules];
+subShortCodes[s_Str] := SRep[s, $shortcodeRules];
 
 $shortcodeRules = {
   (code:$colorShortcodeP ~~ ":" ~~ next_) :> applyShortcode[code, next],
   (code:$colorShortcodeP ~~ "{" ~~ body:Except["\n"|"}"].. ~~ "}") :> applyShortcode[code, balancedQ @ body],
   (* Fira Code doesn't have well-sized DS letters outside R,C,N,Z etc *)
   l:DoubleStruckCharacter :> doubleStruckToBoldRoman[l],
-  "\\n" | "\n" ~~ s:" ".. :> StringJoin["<br>", Repeat["&nbsp;", StringLength @ s]],
+  "\\n" | "\n" ~~ s:" ".. :> SJoin["<br>", Repeat["&nbsp;", SLen @ s]],
   "\\n" | "\n" -> "<br>",
-  "^{" ~~ sup:Shortest[___] ~~ "}" /; balancedQ[sup] :> StringJoin["<sup>", subShortCodes @ sup, "</sup>"],
-  "_{" ~~ sub:Shortest[___] ~~ "}" /; balancedQ[sub] :> StringJoin["<sub>", subShortCodes @ sub, "</sub>"],
-  "_" ~~ sub:DigitCharacter :> StringJoin["<sub>", sub, "</sub>"],
-  "^" ~~ sup:DigitCharacter :> StringJoin["<sup>", sup, "</sup>"]
+  "^{" ~~ sup:Shortest[___] ~~ "}" /; balancedQ[sup] :> SJoin["<sup>", subShortCodes @ sup, "</sup>"],
+  "_{" ~~ sub:Shortest[___] ~~ "}" /; balancedQ[sub] :> SJoin["<sub>", subShortCodes @ sub, "</sub>"],
+  "_" ~~ sub:DigitCharacter :> SJoin["<sub>", sub, "</sub>"],
+  "^" ~~ sup:DigitCharacter :> SJoin["<sup>", sup, "</sup>"]
 };
 
 balancedQ[a_] := StringCount[a, "{"] == StringCount[a, "}"];
 
 (**************************************************************************************************)
 
-$doubleStruckCharacterList = Characters @ $DoubleStruckCharacters;
-$romanCharacterList = Characters @ $RomanCharacters;
+$doubleStruckCharacterList = Chars @ $DoubleStruckCharacters;
+$romanCharacterList = Chars @ $RomanCharacters;
 
 doubleStruckToBoldRoman[char:("ℂ" | "ℕ" | "ℚ" | "ℝ" | "ℤ")] := char;
 doubleStruckToBoldRoman[char_] := $boldFontTemplate @ Part[$romanCharacterList, IndexOf[$doubleStruckCharacterList, char]];
@@ -82,7 +82,7 @@ $colorShortcodeP = Join[AssociationKeyPattern @ $textColorShortcodes, Associatio
 applyShortcode["UF", text_] :=
   htmlStyledString[text, {Underlined}];
 
-applyShortcode[code_ /; StringMatchQ[code, _ ~~ "B"], text_] :=
+applyShortcode[code_ /; SMatchQ[code, _ ~~ "B"], text_] :=
   htmlStyledString[text, {Background -> Lookup[$backgroundShortcodes, code]}];
 
 applyShortcode[code_, text_] :=
@@ -92,6 +92,6 @@ applyShortcode[code_, text_] :=
 
 PrivateVariable[$colorShortcodeMappingInverse]
 
-$colorShortcodeMappingInverse := AssociationInvert[$textColorShortcodes];
+$colorShortcodeMappingInverse := AssocInvert[$textColorShortcodes];
 
 

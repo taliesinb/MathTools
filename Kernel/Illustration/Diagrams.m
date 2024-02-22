@@ -46,7 +46,7 @@ NamedDiagram[] := $allDiagramFiles;
 NamedDiagram["*/*"] := Join[NamedDiagram /@ NamedDiagram[]];
 
 NamedDiagram[name_String] := Scope[
-  baseName = First @ StringSplit[name, "/"];
+  baseName = F @ SSplit[name, "/"];
   path = LocalPath["Diagrams", baseName <> ".m"];
   If[!FileExistsQ[path], ReturnFailed["badName", name]];
   context = "QuiverGeometry`Diagrams`" <> baseName <> "`";
@@ -87,23 +87,23 @@ NamedDiagram[name_String] := Scope[
 
   VPrint["Finding diagrams matching ", name];
   keys = Keys @ $NamedDiagramRegistry;
-  If[StringFreeQ[name, "/"], Return @ Select[keys, StringStartsQ[name <> "/"]]];
+  If[SFreeQ[name, "/"], Return @ Select[keys, SStartsQ[name <> "/"]]];
 
-  keys = Select[Keys @ $NamedDiagramRegistry, StringMatchQ[name]];
+  keys = Select[Keys @ $NamedDiagramRegistry, SMatchQ[name]];
   If[keys === {}, ReturnFailed["unknown", name, MsgPath @ path]];
   diagrams = Lookup[$NamedDiagramRegistry, keys];
 
-  baseNameLen = StringLength[baseName] + 1;
-  ZipMap[LabeledForm[#1, StringDrop[#2, baseNameLen]]&, diagrams, keys]
+  baseNameLen = SLen[baseName] + 1;
+  ZipMap[LabeledForm[#1, SDrop[#2, baseNameLen]]&, diagrams, keys]
 ];
 
 (**************************************************************************************************)
 
-qualifyName[base_, name_] /; StringFreeQ[name, "/"] := base <> name;
+qualifyName[base_, name_] /; SFreeQ[name, "/"] := base <> name;
 
 NamedDiagram::wrongBase = "Name `` doesn't have base ``."
 qualifyName[base_, name_] := (
-  If[!StringStartsQ[name, base], Message[NamedDiagram::wrongBase, name, base]];
+  If[!SStartsQ[name, base], Message[NamedDiagram::wrongBase, name, base]];
   name
 );
 
@@ -121,7 +121,7 @@ PublicSymbol[$Opts]
 
 SetHoldRest[addDiagramDef];
 
-addDiagramDef[name_, head_Symbol[Shortest[args__], opts___Rule]] /; FreeQ[Hold[args], HoldPattern @ $Opts] && !MatchQ[Unevaluated @ head, With | Block | Module | Scope] :=
+addDiagramDef[name_, head_Symbol[Shortest[args__], opts___Rule]] /; FreeQ[Hold[args], HoldP @ $Opts] && !MatchQ[Uneval @ head, With | Block | Module | Scope] :=
   addDiagramDef[name, head[args, $Opts, opts]];
 
 addDiagramDef[name_, rhs_] :=
@@ -152,7 +152,7 @@ $diagramLine := StringFunction["TestRaster @ NamedDiagram[\"#1\"]"];
 
 createDiagramTestFile[baseName_] := Scope[
   diagrams = NamedDiagram @ baseName;
-  contents = StringRiffle[$diagramLine /@ diagrams, "\n\n"];
+  contents = SRiffle[$diagramLine /@ diagrams, "\n\n"];
   ExportUTF8[LocalPath["Tests", "Inputs", "Diagrams", baseName <> ".wl"], contents]
 ];
 
