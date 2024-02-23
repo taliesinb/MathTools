@@ -128,7 +128,7 @@ CompactArrayPlot[array_, OptionsPattern[]] := Scope[
     If[L[dims] =!= 3, ReturnFailed["badchans"]];
     If[!PackedArrayQ[array] || !UnitIntervalArrayQ[array], ReturnFailed["rank3vals"]];
   ];
-  SetAutomatic[colorFunction, Which[
+  SetAuto[colorFunction, Which[
     isRGB,
       None,
     PackedArrayQ[array, Real] && UnitIntervalArrayQ[array],
@@ -154,7 +154,7 @@ CompactArrayPlot[array_, OptionsPattern[]] := Scope[
   ];
   If[!PackedArrayQ[array], ReturnFailed["interr"]];
   graphics = MeshImage[array, pixelConstrained, Frame -> frame, Mesh -> mesh, MeshStyle -> meshStyle];
-  SetAutomatic[colorLegend, colorFunction];
+  SetAuto[colorLegend, colorFunction];
   If[colorLegend =!= None, graphics //= ApplyLegend[colorLegend]];
   graphics
 ];
@@ -178,7 +178,7 @@ BinaryArrayPlot[array_, digits:(_Int|Auto), OptionsPattern[]] := Scope[
   {min, max} = MinMax @ array;
   Which[
     VecQ[array, NonNegativeIntegerQ],
-      SetAutomatic[digits, If[max == 0, 0, Floor[1 + Log2 @ max]]];
+      SetAuto[digits, If[max == 0, 0, Floor[1 + Log2 @ max]]];
       array = BinaryDigits[array, digits];
     ,
     MatrixQ[array, NonNegativeIntegerQ],

@@ -242,7 +242,7 @@ TruncateQuiver[quiver_, opts:OptionsPattern[]] :=
 TruncateQuiver[quiver_, cardinals:Except[_Rule], userOpts:OptionsPattern[]] := Scope[
   UnpackOptions[allowSkips];
   {vertices, edges} = VertexEdgeList @ quiver;
-  SetAutomatic[cardinals, t = CardinalList[quiver]; Join[t, Inverted /@ t]];
+  SetAuto[cardinals, t = CardinalList[quiver]; Join[t, Inverted /@ t]];
   If[StrQ[cardinals], cardinals //= ToPathWord];
   ordering = AssociationRange[cardinals]; $n = Len @ cardinals;
   tagTable = Map[SortBy[cardOrder[ordering]], VertexTagTable[quiver, False]];

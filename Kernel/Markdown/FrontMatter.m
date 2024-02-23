@@ -83,7 +83,7 @@ NotebookFrontMatter[path_Str | File[path_Str]] := Scope[
 
   Label[Done];
 
-  result["relativepath"] = ReplaceNone[RelativePath[$notebookPath, FileNameDrop @ path], ""];
+  result["relativepath"] = SubNone[RelativePath[$notebookPath, FileNameDrop @ path], ""];
 
   If[$frontMatterFunction =!= None,
     result //= $frontMatterFunction;
@@ -99,7 +99,7 @@ getNotebookData[path_Str] := Scope[
   SetNone[subTitle, notebookFirstLine @ nb];
   taggingRules = LookupOption[nb, TaggingRules];
   If[RuleListQ[taggingRules], taggingRules //= Assoc];
-  SetAutomatic[taggingRules, <||>];
+  SetAuto[taggingRules, <||>];
   KDropFrom[taggingRules, "TryRealOnly"];
   {title, subTitle, taggingRules}
 ];

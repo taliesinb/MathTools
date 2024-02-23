@@ -135,7 +135,7 @@ TransformBearNote::multiple = "Multiple notes with ID or title \"``\".";
 
 TransformBearNote[titleOrID_Str, fn_, OptionsPattern[]] := Scope[
   UnpackOptions[$verbose, $dryRun, verifyResult, transformTitle];
-  SetAutomatic[$verbose, $dryRun];
+  SetAuto[$verbose, $dryRun];
   If[$verbose,
     {title, uuid} = F[EntityValue[toTitleOrIDQuery @ titleOrID, {"ZTITLE", "ZUNIQUEIDENTIFIER"}], {None, None}];
     If[BearNoteUUIDQ @ titleOrID, SetNone[uuid, titleOrID], SetNone[title, titleOrID]];
@@ -265,7 +265,7 @@ GlobalBearStringReplace::failures = "The following `` notes failed the transform
 
 GlobalBearStringReplace[rules_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[$verbose, $dryRun, verifyResult, ignoreCase, transformTitle, maxFailures];
-  SetAutomatic[$verbose, $dryRun];
+  SetAuto[$verbose, $dryRun];
 
   rules //= ToList;
   lhsPattern = F /@ rules;
@@ -835,7 +835,7 @@ BearSubstituteMasterPages::orphaned = "The following tags are orphaned: ``.";
 
 BearSubstituteMasterPages[tag_Str, OptionsPattern[]] := Scope[
   UnpackOptions[$verbose, $dryRun, maxItems, ignoreOrphanTags];
-  SetAutomatic[$verbose, $dryRun];
+  SetAuto[$verbose, $dryRun];
   tag = StringTrimLeft[tag, "#"];
   tags = BearTags[tag];
   tags = Take[tags, UpTo[maxItems]];

@@ -47,6 +47,10 @@ ParseStringExpression[patt_] := StringPattern`PatternConvert[patt];
 
 PublicFunction[ToRegex]
 
+SetUsage @ "
+ToRegex[patt$] converts a string pattern into a regular expression, returning a %Regex['re$'] expression.
+"
+
 ToRegex[e_] := Scope[
   re = ParseStringExpression @ e;
   If[ListQ[re], Regex @ F @ re, $Failed]
@@ -55,6 +59,13 @@ ToRegex[e_] := Scope[
 (**************************************************************************************************)
 
 PublicFunction[DebugStringExpression]
+
+SetUsage @ "
+DebugStringExpression[patt$] attempts to use StringPattern`PatternConvert to convert patt$ into a regular expression.
+
+* all steps of the conversion process are printed.
+* this is otherwise the same as %ParseStringExpression.
+"
 
 DebugStringExpression[patt_] := (
   setupDebugStringExpressionDownValue[];
@@ -362,6 +373,12 @@ PublicFunction[FromRegex]
 
 PublicHead[CaptureGroup]
 
+SetUsage @ "
+FromRegex['re$'] parses a regular expression back into a StringExpression.
+
+* capture groups are emitted as %CaptureGroup[$$], which otherwise has no meaning.
+"
+
 Options[FromRegex] = {Verbose -> False};
 
 FromRegex::fail = "Parse failed: ``."
@@ -421,48 +438,48 @@ $escapedChars = {"(", ")", "[", "]", "{", "}", "\\", ".", "?"};
 
 defineParsingRules[$normalState,
 
-  "(?" ~~ f:{"i","m","s"}.. ~~ ")" :> If[SContainsQ[f,"i"], enterState[$normalState, CaseInsensitive], Null],
-  "(?-i)"                          :> leaveState[],
+  "(?" ~~ f:{"i","m","s"}.. ~~ ")"       :> If[SContainsQ[f,"i"], enterState[$normalState, CaseInsensitive], Null],
+  "(?-i)"                                :> leaveState[],
 
-  "(?:"          :> enterState[$normalState, $seq],
-  "(?<!"         :> enterState[$normalState, NegativeLookbehind],
-  "(?<="         :> enterState[$normalState, PositiveLookbehind],
-  "(?!"          :> enterState[$normalState, NegativeLookahead],
-  "(?="          :> enterState[$normalState, PositiveLookahead],
+  "(?:"                                  :> enterState[$normalState, $seq],
+  "(?<!"                                 :> enterState[$normalState, NegativeLookbehind],
+  "(?<="                                 :> enterState[$normalState, PositiveLookbehind],
+  "(?!"                                  :> enterState[$normalState, NegativeLookahead],
+  "(?="                                  :> enterState[$normalState, PositiveLookahead],
 
-  "\\" ~~ c:$specialChars :> emitToken[$specialCharToExpr[c]],
-  "\\" ~~ c:$escapedChars :> emitToken[c],
+  "\\" ~~ c:$specialChars                :> emitToken[$specialCharToExpr[c]],
+  "\\" ~~ c:$escapedChars                :> emitToken[c],
 
-  "("            :> enterState[$normalState, CaptureGroup],
+  "("                                    :> enterState[$normalState, CaptureGroup],
 
   "[[:" ~~ c:LowercaseLetter.. ~~ ":]]"  :> emitToken[parseCharClass[c]],
   "[^[:" ~~ c:LowercaseLetter.. ~~ ":]]" :> emitToken[Except @ parseCharClass[c]],
 
-  "[^"           :> enterState[$classState, ExceptLetterClass],
-  "["            :> enterState[$classState, LetterClass],
+  "[^"                                   :> enterState[$classState, ExceptLetterClass],
+  "["                                    :> enterState[$classState, LetterClass],
 
   "{" ~~ m:DigitCharacter.. ~~ "}"                              :> applyToToken[Repeated[#, FromDigits @ m]&],
   "{" ~~ m:DigitCharacter.. ~~ "," ~~ n:DigitCharacter.. ~~ "}" :> applyToToken[Repeated[#, FromDigits /@ {m, n}]&],
-  "{"            :> failParse["unexpected {"],
+  "{"                                    :> failParse["unexpected {"],
 
-  "|"            :> emitToken[$infixAlt],
+  "|"                                    :> emitToken[$infixAlt],
 
-  "??"           :> applyToToken[Maybe /* Shortest],
-  "*?"           :> applyToToken[RepeatedNull /* Shortest],
-  "+?"           :> applyToToken[Repeated /* Shortest],
-  ".*"           :> emitToken[___],
-  ".+"           :> emitToken[__],
-  "."            :> emitToken[_],
-  "?"            :> applyToToken[Maybe],
-  "*"            :> applyToToken[RepeatedNull],
-  "+"            :> applyToToken[Repeated],
-  ")"            :> leaveState[],
+  "??"                                   :> applyToToken[Maybe /* Shortest],
+  "*?"                                   :> applyToToken[RepeatedNull /* Shortest],
+  "+?"                                   :> applyToToken[Repeated /* Shortest],
+  ".*"                                   :> emitToken[___],
+  ".+"                                   :> emitToken[__],
+  "."                                    :> emitToken[_],
+  "?"                                    :> applyToToken[Maybe],
+  "*"                                    :> applyToToken[RepeatedNull],
+  "+"                                    :> applyToToken[Repeated],
+  ")"                                    :> leaveState[],
 
-  "^"            :> emitToken[StartOfLine],
-  "$"            :> emitToken[EndOfLine],
+  "^"                                    :> emitToken[StartOfLine],
+  "$"                                    :> emitToken[EndOfLine],
 
-  "\n"           :> emitToken[Newline],
-  t_             :> emitToken[t]
+  "\n"                                   :> emitToken[Newline],
+  t_                                     :> emitToken[t]
 ];
 
 $specialCharToExpr = <|
@@ -503,11 +520,23 @@ defineParsingRules[$classState,
 
 PublicFunction[RegexEscape]
 
+SetUsage @ "
+RegexEscape['str$'] escapes characters in str$ that have special meaning in regular expressions.
+"
+
 RegexEscape[re_] := SRep[re, StringPattern`Dump`$RegExpSpecialCharacters];
 
 (**************************************************************************************************)
 
 PrivateSpecialFunction[DefineStringLetterClass]
+
+SetUsage @ "
+DefineStringLetterClass[sym$ -> group$] defines a string letter, effectively as %Regex['[group$]'].
+DefineStringLetterClass[rule$1, rule$2, $$] defines multiple classes at once.
+* the special characters `-]^` should be manually escaped if they should appear as literals.
+"
+
+(* TODO: why do i have the outer inner distinction it doens't seem to be used anywhere? *)
 
 DefineStringLetterClass = Case[
   sym_Symbol -> str_Str := %[sym -> {If[SLen[str] == 1, str, "[" <> str <> "]"], str}];
@@ -523,6 +552,18 @@ DefineStringLetterClass = Case[
 (**************************************************************************************************)
 
 PrivateSpecialFunction[DefineStringPattern]
+
+SetUsage @ "
+DefineStringPattern[lhs$ :> rhs$] defines a string pattern that applies at the end of pattern-to-regex processing.
+DefineStringPattern[rule$1, rule$2, $$] defines several patterns.
+
+* if the rhs$ contains a string that contains the character '□' it is treated as a span of characters except newline.
+* the rule is applied at the final stage of StringPattern`PatternConvert, and can emit raw expressions:
+| %EvalStrExp[$$]          | rewrite $$ immediately via the same final rules |
+| %RawStrExp[e$1, e$2, $$] | a linear chain of sub-results |
+| %RawRegex[$$]            | a regex without further interpretation |
+| '$$'                     | a string placed into the final regex without further processing |
+"
 
 DefineStringPattern = Case[
   rule_RuleDelayed := Module[
@@ -545,6 +586,14 @@ $spDeclarationRules = {
 
 PrivateSpecialFunction[DefineStringPatternMacro]
 
+SetUsage @ "
+DefineStringPatternMacro[lhs$ :> rhs$] defines a string pattern that applies at the start of pattern-to-regex processing.
+DefineStringPattern[rule$1, rule$2, $$] defines several patterns.
+
+* the rule is applied before symbol captures, conditions, etc. are evaluated.
+* it is appropriate for meta-patterns that wish to introducing new bindings, or repeat other patterns.
+"
+
 DefineStringPatternMacro = Case[
   rule_RuleDelayed := With[
     {rule2 = MapAt[HoldP, rule, 1], head = F @ DefinitionHead @ rule},
@@ -559,6 +608,10 @@ DefineStringPatternMacro = Case[
 (**************************************************************************************************)
 
 PublicSpecialFunction[ClearRegexCache]
+
+SetUsage @ "
+ClearRegexCache[] clears the kernel's internal regular expression cache, which would otherwise cause the pattern-to-regex pipeline to skip recomputations.
+"
 
 ClearRegexCache[] := ClearSystemCache["RegularExpression"];
 
@@ -598,3 +651,13 @@ $classTranslations = {
   "[:space:]" -> "\n\t\r ",
   "[:xdigit:]" -> "0-9A-Fa-f"
 }
+
+(**************************************************************************************************)
+
+PublicStringPattern[Regex]
+
+DefineStringPatternMacro[
+  Regex[s_Str] :> RegularExpression[s]
+]
+
+

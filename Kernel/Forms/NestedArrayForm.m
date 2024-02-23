@@ -32,7 +32,7 @@ SetInitialValue[$NestedArrayFrame, "["];
 
 NestedArrayForm::badaxiscolor = "`` is not a valid axis color."
 toAxisColor = Case[
-  n_Int           := Part[ReplaceAutomatic[$axisPaletteSpec, Range[9]], n];
+  n_Int           := Part[SubAuto[$axisPaletteSpec, Range[9]], n];
   color_ ? ColorQ := color;
   None            := None;
   other_          := ThrowMessage["badaxiscolor", other];

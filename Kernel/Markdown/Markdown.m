@@ -28,7 +28,7 @@ Options[ToMarkdownString] = $genericMarkdownOptions;
 
 ToMarkdownString[spec_, returnVec:True|False:False, opts:OptionsPattern[]] := Scope[
   setupMarkdownGlobals[];
-  SetAutomatic[$rasterizationPath, TemporaryPath["raster"]];
+  SetAuto[$rasterizationPath, TemporaryPath["raster"]];
   toMarkdownStringInner[spec, returnVec]
 ];
 
@@ -301,4 +301,3 @@ insertLinebreaksOutsideKatex[str_Str, n_] := Scope[
 ];
 
 insertLinebreaksOutsideKatex[other_, _] := (Print[other]; $Failed)
-

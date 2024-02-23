@@ -354,8 +354,8 @@ DefineStandardTraditionalForm[{MonoidalTreeForm[e_, opts___Rule] :> monoidalTree
 monoidalTreeFormBoxes[cd_CommutativeDiagram, opts___Rule] := ModuleScope[
   labelFontSize = Lookup[{opts}, LabelFontSize, LookupOption[cd, LabelFontSize]];
   fontSize = Lookup[{opts}, FontSize, LookupOption[cd, FontSize]];
-  SetAutomatic[fontSize, LookupOption[CommutativeDiagram, FontSize]];
-  SetAutomatic[labelFontSize, LookupOption[CommutativeDiagram, LabelFontSize]];
+  SetAuto[fontSize, LookupOption[CommutativeDiagram, FontSize]];
+  SetAuto[labelFontSize, LookupOption[CommutativeDiagram, LabelFontSize]];
   SetScaledFactor[labelFontSize, fontSize];
   ToBoxes @ App[cd, TextModifiers -> <|
     "Objects"   -> Fn[label, MonoidalTreeForm[label, FontSize -> fontSize]],

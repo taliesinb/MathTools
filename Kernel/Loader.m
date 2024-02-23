@@ -22,6 +22,7 @@ $CurrentlyLoading = False;
 $CurrentFile = None;
 $CurrentFileName = None;
 $RegexCacheDirty = False;
+$LastFailure = None;
 
 $LoadCount;
 $SourceFiles;
@@ -69,6 +70,13 @@ WatchCurrentCellAdd
 
 (*************************************************************************************************)
 
+$SimpleMacroRules
+DefineSimpleMacro
+DefinePatternMacro
+DefineVariableMacro
+
+(*************************************************************************************************)
+
 Begin["`Private`"];
 
 $mainPathLength = StringLength @ $SourceDirectory;
@@ -78,24 +86,33 @@ LVPrint[args___] := If[$Verbose, Print[args]];
 
 LVPrint["Prelude."];
 
+(*************************************************************************************************)
+
 (* the first few symbols cause expensive packages to load, and appear as options to Style. RowLabels is put in System by GraphicsGrid. *)
 Unprotect[System`TemplateSlot, System`EdgeThickness, System`EpilogFunction, System`LLMEvaluator, System`LLMEvaluatorNames, System`RowLabels, System`ColumnLabels, System`EdgeOpacity];
 ClearAll[System`TemplateSlot, System`EdgeThickness, System`EpilogFunction, System`LLMEvaluator, System`LLMEvaluatorNames, System`RowLabels, System`ColumnLabels, System`EdgeOpacity];
 Quiet[Style; Options[Style]];
 
+(*************************************************************************************************)
+
 (* moved from A0Usage.m because this runs slowly:
 the default behavior of System`InformationDump` will introduce LineSpacing that messes up
 my SetUsage inline tables, so remove it. *)
-
 dummy::usage = "Dummy";
 ToBoxes[Information[dummy]];
 System`InformationDump`subtitleStyled[sub_] := Style[sub, "InformationUsageText"];
 
+(*************************************************************************************************)
+
 $baseContextPath = {"System`", "GeneralUtilities`", $PublicContext, $PrivateContext};
+
+(*************************************************************************************************)
 
 EPrint[args___] := If[!$silent, Print[args]];
 
 $silent = False;
+
+(*************************************************************************************************)
 
 ReadAliasRules[path_] := Module[{symbolAliasStr},
   symbolAliasStr = ByteArrayToString @ ReadByteArray @ path;
@@ -105,6 +122,71 @@ ReadAliasRules[path_] := Module[{symbolAliasStr},
   ]
 ];
 
+(*************************************************************************************************)
+(*************************************************************************************************)
+(*************************************************************************************************)
+
+(* this ensures we have only one set of rules for each head *)
+$SimpleMacroRules = Data`UnorderedAssociation[];
+
+(* these will be continually recomputed when a new macro is introduced *)
+$macroRules = {};
+updateMacroRules[] := Set[$macroRules, Catenate @ $SimpleMacroRules];
+
+(*************************************************************************************************)
+
+SetAttributes[{DefinePatternMacro, DefineVariableMacro, DefineSimpleMacro, iDefineSimpleMacro}, HoldAll];
+SetAttributes[evaluateSimpleMacros, HoldAllComplete];
+
+evaluateSimpleMacros[e_] := ReplaceAll[Unevaluated @ {e}, $macroRules];
+
+(* we do this so that macros don't expand before they are defined, e.g. if they are defined in terms of other
+macros, or if they have already been defined in a previous load session *)
+With[{macroDefineHeads = _DefinePatternMacro | _DefineVariableMacro | _DefineSimpleMacro},
+  evaluateSimpleMacros[e:macroDefineHeads] := {e};
+  evaluateSimpleMacros[CompoundExpression[e:macroDefineHeads, Null]] := {e};
+];
+
+(*************************************************************************************************)
+
+DefinePatternMacro[sym_Symbol, value_] := (
+  $PatternMacros[HoldPattern @ sym] = value;
+  DefineVariableMacro[sym, value];
+);
+
+e_DefinePatternMacro := (Print["Invalid macro call: ", HoldForm @ e]);
+
+(*************************************************************************************************)
+
+DefineVariableMacro[sym_Symbol, value_] := (
+  sym = value;
+  $SimpleMacroRules[Hold[sym]] = {HoldPattern[sym] :> value};
+  updateMacroRules[];
+);
+
+e_DefineVariableMacro := (Print["Invalid macro call: ", HoldForm @ e]);
+
+(*************************************************************************************************)
+
+DefineSimpleMacro[sym_Symbol, lhs_ :> rhs_] :=
+  iDefineSimpleMacro[sym, {HoldPattern[lhs] :> rhs}];
+
+(* since we may have previously set up downvalues for sym, we can't allow the rule LHS to evaluate *)
+DefineSimpleMacro[sym_Symbol, rules:{__RuleDelayed}] := With[
+  {heldRules = MapAt[HoldPattern, Unevaluated @ rules, {All, 1}]},
+  iDefineSimpleMacro[sym, heldRules]
+];
+
+iDefineSimpleMacro[sym_Symbol, rules:{__RuleDelayed}] := (
+               DownValues[sym] = rules;
+  $SimpleMacroRules[Hold[sym]] = rules;
+  updateMacroRules[];
+);
+
+e_DefineSimpleMacro := (Print["Invalid macro call: ", HoldForm @ e]);
+
+(*************************************************************************************************)
+(*************************************************************************************************)
 (*************************************************************************************************)
 
 Attributes[DeclarePreservedVariable] = {HoldAll};
@@ -407,8 +489,15 @@ SourceFiles[] := Block[
   SortBy[sourceFiles, fileSortingTuple]
 ];
 
+(* TODO: have a FilePriority.m file that lists patterns, the position of the first match in this list
+determines when the thing executes, or maybe it's a table from pattern to priority *)
+
+$macroPath = $PathnameSeparator <> "Macros" <> $PathnameSeparator;
+$initUtilsPath = $PathnameSeparator ~~ ("A0Init" | "A0Utilities") ~~ $PathnameSeparator;
+
 fileSortingTuple[path_] := {
-  StringFreeQ[path, "A0Init" | "A0Utilities"],
+  StringFreeQ[path, $macroPath],
+  StringFreeQ[path, $initUtilsPath],
   Which[StringEndsQ[path, "init.m"], -1, StringEndsQ[path, "final.m"], 1, True, 0],
   path
 };
@@ -644,6 +733,7 @@ evaluatePackageData[packagesList_List] := Block[
   {$currentPath, $currentLineNumber, $formsChanged, $failEval,
     result, initialFile, finalFile, extraContexts,
    GeneralUtilities`$CurrentFileName = $LoaderFileName, $Line = 0, $ClearRegexCache = False},
+  $LastFailure = None;
   $currentPath = ""; $currentLineNumber = 0;
   $formsChanged = $failEval = False;
   $fileTimings = $fileLineTimings = Association[];
@@ -774,23 +864,28 @@ SetAttributes[evaluateExpression, HoldAllComplete];
 
 evaluateExpression[{lineNumber_, expr_}] := If[$failEval, $Failed,
   $Line = $currentLineNumber = lineNumber;
-  $currentFileLineTimings[lineNumber] = msTiming[{expr}];
+  $currentFileLineTimings[lineNumber] = msTiming @ evaluateSimpleMacros @ expr;
 ];
 
 (*************************************************************************************************)
 
 handleMessage[f_Failure] := Block[{fileLine},
   $failEval = True;
+  $LastFailure = f;
   If[$failCount++ > 5, EPrint["Emergency abort!"]; Abort[]];
   (* ^ this is an emergency measure: it shouldn't happen but when we do get a long list of errors the
   OS can lock up for a while *)
   If[!$silent, Beep[]];
   fileLine = FileLine[$currentPath, $currentLineNumber];
-  EPrint["Aborting; message ", HoldForm @@ f["HeldMessageTemplate"], " occurred at ", fileLine];
+  EPrint["Aborting; message ", getHeldTemplate @ f, " occurred at ", fileLine];
+  EPrint["Failure available at MTLoader`$LastFailure."];
   EPrint[FailureString @ f];
   Throw[$Failed, $evaluateExpressionTag];
   SystemOpen[fileLine];
 ];
+
+getHeldTemplate[Failure[_, <|___, "MessageTemplate" :> f_, ___|>]] := HoldForm[f];
+getHeldTemplate[_] := "???";
 
 (*************************************************************************************************)
 

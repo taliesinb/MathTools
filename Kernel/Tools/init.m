@@ -44,7 +44,7 @@ General::toolNotFound = "Tool `` is not present in any of the normal binary path
 SetHoldRest[FindTool];
 
 FindTool[name_Str] := FindTool[name, Message[General::toolNotFound, name]; $Failed];
-FindTool[name_Str, else_] := ReplaceNone[iFindTool[name], else];
+FindTool[name_Str, else_] := SubNone[iFindTool[name], else];
 
 iFindTool[name_] := iFindTool[name] = SelectFirst[PathJoin[#, name]& /@ $BinaryPaths, FileExistsQ, None];
 
@@ -150,7 +150,7 @@ DefineOptionToVariableBlocking[RunTool, {DryRun :> $dryRun, Verbose :> $tverbose
 
 RunTool[cmd_Str, args___] := Scope @ TrueQ @ CatchMessage[
 
-	$verbose = ReplaceAutomatic[$tverbose, $dryRun];
+	$verbose = SubAuto[$tverbose, $dryRun];
 
 	cmdStr = toolCommandString[cmd, args];
 
@@ -166,7 +166,7 @@ RunTool[cmd_Str, args___] := Scope @ TrueQ @ CatchMessage[
 	success = exitCode === 0;
 
 	openOutput = $openOutput;
-	SetAutomatic[openOutput, !success];
+	SetAuto[openOutput, !success];
 	If[TrueQ[openOutput],
 		VPrint["Opening tool output."];
 		If[!FileExistsQ[outputPath], Message[RunTool::toolNoOutput, cmd]];
@@ -218,7 +218,7 @@ DefineOptionToVariableBlocking[RunToolOutput, {WorkingDirectory :> $workingDir, 
 
 RunToolOutput[cmd_String, args___] := Scope @ CatchMessage[
 
-	$verbose = ReplaceAutomatic[$tverbose, $dryRun];
+	$verbose = SubAuto[$tverbose, $dryRun];
 
 	cmdStr = toolCommandString[cmd, args];
 

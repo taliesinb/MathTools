@@ -70,8 +70,8 @@ PrivateVariable[$mainSymbolRegex, $currentMainSymbol]
 $mainSymbolRegex = RegularExpression["^\\$?[A-Za-z][A-Za-z0-9]*"];
 $mainSymbolColor = RGBColor[{0.71, 0.03, 0.}];
 
-colorLiterals[usageString_] := Scope[
-  usageString = STrim[usageString];
+colorLiterals[rawUsageString_] := Block[
+  {usageString = STrim @ rawUsageString},
   SRep[
     usageString, {
       string:$literalStringRegex :> makeStyleBox[
@@ -234,33 +234,6 @@ PrivateMutatingFunction[AppendUniqueTo]
 
 SetHoldFirst[AppendUniqueTo];
 AppendUniqueTo[var_, value_] := If[!MemberQ[var, value], AppTo[var, value]];
-
-(**************************************************************************************************)
-
-PrivateMutatingFunction[SetInitialValue]
-
-SetHoldAllComplete[SetInitialValue, SetDelayedInitialValue];
-
-SetInitialValue[sym_Symbol, other__Symbol, body_] := (SetInitialValue[sym, body]; SetInitialValue[other, body]);
-
-SetInitialValue[sym_Symbol, body_] := If[
-  !HasImmediateValueQ[sym],
-  MTLoader`DeclarePreservedVariable[sym];
-  Set[sym, body]
-];
-
-(**************************************************************************************************)
-
-PrivateMutatingFunction[SetDelayedInitialValue]
-
-SetDelayedInitialValue[sym_Symbol, other__Symbol, body_] := (SetDelayedInitialValue[sym, body]; SetDelayedInitialValue[other, body]);
-
-SetDelayedInitialValue[sym_Symbol, body_] := If[!HasOwnEvaluationsQ[sym],
-  MTLoader`DeclarePreservedVariable[sym];
-  SetDelayed[sym, body]
-];
-
-_SetDelayedInitialValue := Print["Bad SetDelayedInitialValue"];
 
 (**************************************************************************************************)
 

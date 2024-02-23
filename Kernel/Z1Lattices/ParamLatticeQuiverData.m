@@ -1,12 +1,12 @@
-DefineLiteralMacro[getRGBCardinals,
-  getRGBCardinals[] := (
+DefineSimpleMacro[getRGBCardinals,
+  getRGBCardinals[] :> (
     {r, g, b} = cardinals = Lookup[userOpts, Cardinals, {"r", "g", "b"}];
     {R, G, B} = Inverted /@ {r, g, b};
   )
 ];
 
-DefineLiteralMacro[getRGBWCardinals,
-  getRGBWCardinals[] := (
+DefineSimpleMacro[getRGBWCardinals,
+  getRGBWCardinals[] :> (
     {r, g, b, w} = cardinals = Lookup[userOpts, Cardinals, {"r", "g", "b", "w"}];
     {R, G, B, W} = Inverted /@ {r, g, b, w};
   )

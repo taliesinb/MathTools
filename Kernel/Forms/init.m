@@ -433,7 +433,7 @@ PrivateSpecialFunction[DefineTemplateBox]
 
 (* kmacro: If Automatic, base name on template box name, if None, don't set up a macro *)
 DefineTemplateBox[symbol_Symbol, templateName_Str, boxes_, katexMacroName_] := Scope[
-  SetAutomatic[katexMacroName, templateNameToMacroName @ templateName];
+  SetAuto[katexMacroName, templateNameToMacroName @ templateName];
   AssociateSymbolToTemplateName[symbol, templateName];
   AssociateSymbolToKatexMacro[symbol, katexMacroName];
   fn = toSlotFn @ boxes;

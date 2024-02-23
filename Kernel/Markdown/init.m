@@ -88,7 +88,7 @@ setupMarkdownGlobals[] := Quoted[
     $frontMatterFunction,
     $rasterizeInputOutputPairs
   ];
-  SetAutomatic[$rasterizationURL, "/raster"];
+  SetAuto[$rasterizationURL, "/raster"];
   flavorFields = Lookup[$flavorData, $markdownFlavor, Message[General::badmdflav, $markdownFlavor]; ReturnFailed[]];
   UnpackAssociation[flavorFields,
     $allowTableHeaderSkip,
@@ -230,5 +230,4 @@ $genericExportMarkdownOptions = JoinOptions[
   Verbose -> Auto,
   DryRun -> False
 ];
-
 

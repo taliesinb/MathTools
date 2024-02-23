@@ -179,7 +179,7 @@ ArxivAPISearch[opts___Rule] := Scope[
   searchQuery = SRiffle[Map[toAPISearchString, Sort @ {opts}], "+AND+"];
   url //= addQueryElem["search_query", searchQuery];
 
-  idList = ToList @ ReplaceNone[{}] @ Lookup[{opts}, PaperID, {}];
+  idList = ToList @ SubNone[{}] @ Lookup[{opts}, PaperID, {}];
   idQuery = encodeAPIQuery @ SRiffle[idList, ","];
   url //= addQueryElem["id_list", idQuery];
 

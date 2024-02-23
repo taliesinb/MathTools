@@ -164,7 +164,7 @@ $builtinTemplateNames = {"RowWithSeparators", "RowWithSeparator", "Spacer1", "Ce
 
 FindMissingTemplateBoxDefinitions[] := FindMissingTemplateBoxDefinitions @ Auto;
 FindMissingTemplateBoxDefinitions[nb_, ref_:Auto] := Scope[
-  SetAutomatic[ref, $StylesheetPath];
+  SetAuto[ref, $StylesheetPath];
   availableNames = Join[NotebookStyleDataNames @ ref, $builtinTemplateNames];
   notebookNames = NotebookTemplateNames @ nb;
   Comp[notebookNames, availableNames]
@@ -208,4 +208,3 @@ CreateMathToolsNotebook[] :=
      Cell["Item 2", "Item"]},
     StyleDefinitions -> $StylesheetPath
   ];
-

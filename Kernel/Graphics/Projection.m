@@ -57,6 +57,8 @@ procPrim = Case[
   (* convert complex regions to Polygons *)
   t_Tube                           := procTube @ t;
   p:$RegionP                       := procPolygon @ RegionPolygon @ p;
+  (* todo: use the graphics primitive registry for this! *)
+
   p_Polyhedron                     := procPolygon @ (Polygon @@ p);
   p_Polygon                        := procPolygon @ p;
 

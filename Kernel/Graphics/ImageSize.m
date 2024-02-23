@@ -26,7 +26,7 @@ LookupImageSize[g_Graph, ___] :=
 
 LookupImageSize[obj_, OptionsPattern[]] := Scope[
   {imageSize, aspectRatio} = LookupOption[obj, {ImageSize, AspectRatio}];
-  SetAutomatic[aspectRatio, OptionValue @ AspectRatio];
+  SetAuto[aspectRatio, OptionValue @ AspectRatio];
   imageSize = resolveRawImageSize @ imageSize;
   If[NumberQ[aspectRatio] && MatchQ[P2[imageSize], Auto],
     Part[imageSize, 2] = P1[imageSize] * aspectRatio];
@@ -52,7 +52,7 @@ returning {w$, h$}.
 
 ToNumericImageSize[imageSize_, aspectRatio_] := Scope[
   {width, height} = resolveRawImageSize[imageSize];
-  SetAutomatic[height, width * aspectRatio];
+  SetAuto[height, width * aspectRatio];
   {width, height}
 ];
 

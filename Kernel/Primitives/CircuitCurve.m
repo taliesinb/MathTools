@@ -98,11 +98,11 @@ circuitCurveBoxes[CircuitCurve[points:$CoordMat2P, opts:OptionsPattern[CircuitCu
 makeSlugPrims := Case[
   Seq[None, _, _]        := Nothing;
   Seq[list_, pos_, points_] := Scope[
-    {pos, dir} = VectorAlongLine[points, ReplaceAutomatic[pos, .35]];
+    {pos, dir} = VectorAlongLine[points, SubAuto[pos, .35]];
     cols = ToRainbowColor /@ list;
     sz = .12;
     Switch[
-      ReplaceAutomatic[wireTypeSlugStyle, "Pie"],
+      SubAuto[wireTypeSlugStyle, "Pie"],
       "Beads",
         ColoredBeads[pos, dir, sz, cols],
       "Squares",

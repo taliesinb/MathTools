@@ -165,7 +165,7 @@ createGridBoxData[rows_, alignments_, rowSpacings_, colSpacings_, rowLabels_:Non
   entries = padArray @ rows;
   {numRows, numCols} = Dims[entries, 2];
   
-  SetAutomatic[alignments, autoAlignmentSpec @ numCols];
+  SetAuto[alignments, autoAlignmentSpec @ numCols];
   alignments = StandardizeRowColumnSpec[alignments, numCols];
 
   colSpacings = StandardizeRowColumnSpec[colSpacings, numCols - 1];

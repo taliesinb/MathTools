@@ -413,7 +413,7 @@ ReplaceBoxesInCurrentNotebook[boxRules_, OptionsPattern[]] := Scope[
   nb = EvaluationNotebook[];
   nbData = NotebookGet[nb];
   If[H[nbData] =!= Notebook, ReturnFailed[]];
-  SetAutomatic[cellTypes, $replacementCellTypes];
+  SetAuto[cellTypes, $replacementCellTypes];
   SetAll[cellTypes, _];
   nbData2 = CellReplaceBoxes[nbData, mapVerbatim[boxRules], cellTypes];
   If[nbData === nbData2, Beep[],
@@ -440,7 +440,7 @@ FindBoxesInCurrentNotebook[boxRules_, OptionsPattern[]] := Scope[
   nb = EvaluationNotebook[];
   nbData = NotebookGet[nb];
   If[H[nbData] =!= Notebook, ReturnFailed[]];
-  SetAutomatic[cellTypes, $replacementCellTypes];
+  SetAuto[cellTypes, $replacementCellTypes];
   SetAll[cellTypes, _];
   CellFindBoxes[nbData, boxRules, cellTypes]
 ];

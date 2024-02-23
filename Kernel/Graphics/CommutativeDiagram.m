@@ -193,7 +193,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $inheritedOptions = opts;
 
   $saveMorphGradColors = False;
-  SetAutomatic[diagramColorRules, colorRules];
+  SetAuto[diagramColorRules, colorRules];
   colorModifierFn = parseDiagramColorRules[diagramColorRules, gradientSymbolOptions];
   replacementFn = parseSymbolReplacements[symbolReplacements];
   extraModifiers = Composition[colorModifierFn, replacementFn];
@@ -207,7 +207,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $morphismColorFunction = processMorphismColors[morphismColors];
 
   $calculateLabelSizes = $autoSetback || $debugBounds;
-  SetAutomatic[$setback, Rectangular[{15, 5}]];
+  SetAuto[$setback, Rectangular[{15, 5}]];
   initialSetback = $setback;
 
   $cloneAbsoluteSetback = $cloneObjectLinkSetback = $cloneMorphismLinkSetback = $cloneDisplaceFn = $cloneInteriorLinkFn = $cloneObjectLinkFn = $cloneMorphismLinkFn = Null;
@@ -771,8 +771,8 @@ processCloneOptions = Case[
       interiorLinkOptions, exteriorLinkOptions
     ];
     (* absoluteSetback overides morphismLinkSetback if it is provided *)
-    SetAutomatic[morphismLinkSetback, ReplaceNone[absoluteSetback, 15]];
-    SetAutomatic[objectLinkSetback, initialSetback];
+    SetAuto[morphismLinkSetback, SubNone[absoluteSetback, 15]];
+    SetAuto[objectLinkSetback, initialSetback];
     SetNone[objectLink, exteriorLink];
     SetNone[morphismLink, exteriorLink];
     $cloneAbsoluteSetback     ^= absoluteSetback;
@@ -931,7 +931,7 @@ fmtLabel[lbl_, Sized[obj_, size_]] := Scope[
 ];
 
 fmtLabel[lbl_, None] := (
-  If[$calculateLabelSizes, $objectSizes[lbl] = ReplaceAutomatic[$itemSize, {1, 1}]];
+  If[$calculateLabelSizes, $objectSizes[lbl] = SubAuto[$itemSize, {1, 1}]];
   Nothing
 );
 
@@ -943,7 +943,7 @@ fmtLabel[lbl_, obj_] := Scope[
       text2 = App[text, BaseStyle -> {FontSize -> fontSize, FontFamily -> fontFamily}];
       isize = N[MakeTextImageSize @ text2] + 1;
       If[size === Auto, size = {Auto, Auto}];
-      size = MapThread[ReplaceAutomatic, {size, isize}];
+      size = MapThread[SubAuto, {size, isize}];
     ];
     $objectSizes[lbl] ^= size;
     If[$debugBounds,

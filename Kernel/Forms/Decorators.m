@@ -170,7 +170,7 @@ rewriteToVertical[TemplateBox[args_, "AssociativeArrayForm"] /; Len[args] >= 2, 
   rows = MapAt[addComma, rows, {;;-2, -2}];
   colSpacings = Flatten[{1, Table[{1, 1, 2}, n], 0} / 4];
   colSpacings[[-2]] = 0;
-  TBoxOp["GridForm"] @ createGridBox[rows, {Right, {Right, ReplaceAutomatic[align, Center], Left}, Left}, Auto, colSpacings]
+  TBoxOp["GridForm"] @ createGridBox[rows, {Right, {Right, SubAuto[align, Center], Left}, Left}, Auto, colSpacings]
 ];
 
 toSplicedRow = Case[
@@ -193,7 +193,7 @@ rewriteToVertical[TemplateBox[args_, form_Str] /; KeyQ[$verticalFormData, form],
     RBox[spacer, #, ","]& /@ middle,
     RBox[spacer, last, r]
   }];
-  TBoxOp["GridForm"] @ createGridBox[rows, {ReplaceAutomatic[align, Left]}, Auto, 0]
+  TBoxOp["GridForm"] @ createGridBox[rows, {SubAuto[align, Left]}, Auto, 0]
 ];
 
 rewriteToVertical[TemplateBox[{style_, rest___}, form_ /; SStartsQ[form, "Styled"]], args___] := Scope[
@@ -219,7 +219,7 @@ rewriteToVertical[TemplateBox[args_, form_Str] /; KeyQ[$verticalFormData, form],
     Splice[middleRow[spacer] /@ Part[rows, 2 ;; -2]],
     lastRow[spacer, r] @ L @ rows
   };
-  TBoxOp["GridForm"] @ createGridBox[rows, {Right, {ReplaceAutomatic[align, Center]}, Left}, Auto, 0]
+  TBoxOp["GridForm"] @ createGridBox[rows, {Right, {SubAuto[align, Center]}, Left}, Auto, 0]
 ];
 
 rewriteToVertical[other_, _, _] := other;
@@ -229,4 +229,3 @@ lastRow[l_, r_][{most__, last_}] := Join[{l}, commaRowBox /@ {most}, {last, r}];
 
 commaRowBox[""] := "";
 commaRowBox[e_] := RBox[TemplateBox[List @ ",", "InvisibleForm"], e, ","];
-

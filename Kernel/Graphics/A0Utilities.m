@@ -305,7 +305,7 @@ ArcBetween[c$, {p$1, p$2}, towards$] ensures the arc takes the way around the ci
 ArcBetween[center_, {p1_ ? CoordinateVector2DQ, p2_ ? CoordinateVector2DQ}, towards_:Auto] := Scope[
   If[p1 == center || p2 == center || p1 == p2, Return @ Line @ Dedup @ {p1, p2}];
   r = Mean[Dist[center, #]& /@ {p1, p2}];
-  SetAutomatic[towards, Avg[p1, p2]];
+  SetAuto[towards, Avg[p1, p2]];
   d1 = p1 - center; d2 = p2 - center; d3 = towards - center;
   theta1 = ArcTan @@ d1; theta2 = ArcTan @@ d2; theta3 = ArcTan @@ d3;
   If[theta2 < theta1, theta2 += Tau];

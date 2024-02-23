@@ -176,7 +176,7 @@ Options[PolynomialGraph] = {
 
 PolynomialGraph[expr_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[itemFunction];
-  SetAutomatic[itemFunction, polyItemFunction];
+  SetAuto[itemFunction, polyItemFunction];
   vars = Assoc[];
   $varCount = 1; $edges = {}; $vlabels = {};
   toPolyGraph[expr];

@@ -216,7 +216,7 @@ ExtendedGraphPlot[graph_Graph] := Block[
   SetNone[plottingFunction,
     If[vertexColorFunction === None, GraphComputation`GraphDrawing, ExtendedGraphPlottingFunction]];
 
-  SetAutomatic[plottingFunction, ExtendedGraphPlottingFunction];
+  SetAuto[plottingFunction, ExtendedGraphPlottingFunction];
 
   GraphPlotScope[graph,
 
@@ -299,7 +299,7 @@ getRankedMinDistance[coords_] := Scope[
 computeGraphPlotAspectRatio[] := Scope[
   If[CoordinateMatrix3DQ[$VertexCoordinates],
     viewOptions = LookupExtendedOption[$Graph, ViewOptions];
-    SetAutomatic[viewOptions, $automaticViewOptions];
+    SetAuto[viewOptions, $automaticViewOptions];
     vertexCoords = Part[$VertexCoordinates, $VertexParts];
     viewOptions //= DropOptions["ShrinkWrap"];
     viewOptions = Assoc[PlotRange -> CoordinateBounds[vertexCoords], viewOptions];
@@ -450,7 +450,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     If[edgeLength =!= None, imageSize = "Edge" -> edgeLength];
 
     (* choose a size based on vertex seperation *)
-    SetAutomatic[imageSize,
+    SetAuto[imageSize,
       If[$VertexParts === All && Len[$VertexList] > 1000, Large,
         graphPlotSizeScalingFunction[If[$GraphIs3D, 30, 15] * ($GraphPlotSizeX / $GraphMaxSafeVertexSize)]]];
 
@@ -487,7 +487,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     imageSize = {imageWidth, imageHeight};
     {effectiveImageWidth, effectiveImageHeight} = EffectiveImageSize[imageSize, $GraphPlotAspectRatio];
 
-    SetAutomatic[imagePadding, If[MatrixQ[plotRange], None, All]];
+    SetAuto[imagePadding, If[MatrixQ[plotRange], None, All]];
     SetNone[imagePadding, extendImagePadding = False; 1];
     SetAll[imagePadding, 1];
     imagePadding = Rep[
@@ -523,8 +523,8 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     (* TODO: Strip out custom things that ordinary Style wouldn't understand *)
     simpleVertexLabelStyle = vertexLabelStyle;
     simpleEdgeLabelStyle = edgeLabelStyle;
-    SetAutomatic[simpleVertexLabelStyle, $DarkGray];
-    SetAutomatic[simpleEdgeLabelStyle, $DarkGray];
+    SetAuto[simpleVertexLabelStyle, $DarkGray];
+    SetAuto[simpleEdgeLabelStyle, $DarkGray];
 
     processRegionColorRules[regionColorRules];
     processVertexColorRules[vertexColorRules];
@@ -549,7 +549,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
   $fadedEdgeParts = None;
 
-  SetAutomatic[peripheralVertices, guessPeripheralVertexCutoff @ VertexDegree @ $Graph];
+  SetAuto[peripheralVertices, guessPeripheralVertexCutoff @ VertexDegree @ $Graph];
 
   If[peripheralVertices =!= None,
     If[$VertexParts === All, $VertexParts ^= Range @ $VertexCount];
@@ -592,20 +592,20 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
     vertexSize = processVertexSize @ removeSingleton @ vertexSize;
     vertexSizeImage = plotSizeToImageSize @ vertexSize;
 
-    SetAutomatic[vertexShapeFunction, If[hasVertexColors, "Disk", "Point"]];
+    SetAuto[vertexShapeFunction, If[hasVertexColors, "Disk", "Point"]];
 
     lighting = None;
 
     vertexShapeFunction //= removeSingleton;
     If[vertexShapeFunction === None,
       vertexGraphics = Nothing;
-      SetAutomatic[edgeSetback, 0];
+      SetAuto[edgeSetback, 0];
       Goto[skipVertices];
     ];
 
     {defaultVertexColor, vertexBaseStyle, setbackDistance, rawVertexDrawFunc, vertexPadding} =
       processVertexShapeFunction[vertexShapeFunction];
-    SetAutomatic[edgeSetback, setbackDistance];
+    SetAuto[edgeSetback, setbackDistance];
     If[MatchQ[edgeSetback, PointSize[_]], edgeSetback = imageSizeToPlotSize @@ edgeSetback];
     extendPaddingBy[vertexPadding+1];
 
@@ -614,7 +614,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       vertexDrawFuncSizeRemapper[rawVertexDrawFunc, $vertexSizeOverrides, vertexSize]
     ];
 
-    SetAutomatic[vertexStyle, defaultVertexColor];
+    SetAuto[vertexStyle, defaultVertexColor];
 
     GPPrint["Drawing vertices"];
     vertexItems = drawViaColorFunc[
@@ -644,9 +644,9 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       Goto[skipEdges];
     ];
 
-    SetAutomatic[edgeStyle, If[edgeColorFunction =!= None, {}, GrayLevel[0]]];
+    SetAuto[edgeStyle, If[edgeColorFunction =!= None, {}, GrayLevel[0]]];
 
-    SetAutomatic[edgeShapeFunction, "Arrow"];
+    SetAuto[edgeShapeFunction, "Arrow"];
     If[Or[
       arrowheadShape === None, zeroQ[arrowheadSize], UndirectedGraphQ[$Graph], MatchQ[visibleCardinals, {} | None],
       And[StrQ[edgeShapeFunction], SEndsQ[edgeShapeFunction, "Line"]]],
@@ -654,7 +654,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       arrowheadDrawFn = drawUndirectedEdges;
       arrowheadSize = maxArrowheadSize = 0;
     ,
-      SetAutomatic[arrowheadStyle, Which[
+      SetAuto[arrowheadStyle, Which[
         cardinalColors =!= None, cardinalColors,
         vertexColorFunction =!= None, LightGray,
         True, $Gray
@@ -665,7 +665,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       baseArrowheadSize := baseArrowheadSize = If[$GraphIs3D, 0.45, 0.8] * (Min[$GraphMaxSafeArrowheadSize / $GraphPlotSizeX, maxMertexSize * 2]);
       arrowheadSize //= processArrowheadSize;
       maxArrowheadSize = Max[arrowheadSize * $GraphPlotSizeX] / 2;
-      SetAutomatic[arrowheadShape, If[$GraphIs3D, "Cone", "Line"]];
+      SetAuto[arrowheadShape, If[$GraphIs3D, "Cone", "Line"]];
       If[!$GraphIs3D, arrowheadShape //= to2DArrowheadShape];
       $twoWayStyle = twoWayStyle; $inversionStyle = "Reverse"; $arrowBorderStyle = None;
       $edgeThickness = If[$GraphIs3D, Thickness @ 0.2,
@@ -674,7 +674,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
         {arrowheadShape, arrowheadShapeOpts} = FirstRest @ arrowheadShape;
         Scan[scanArrowheadShapeOpts, arrowheadShapeOpts]];
 
-      SetAutomatic[arrowheadPosition, If[$GraphIs3D && arrowheadShape =!= "Cone", 0.65, 0.502]];
+      SetAuto[arrowheadPosition, If[$GraphIs3D && arrowheadShape =!= "Cone", 0.65, 0.502]];
 
       arrowheadBounds = CoordinateBounds[
         Part[edgeCenters, $EdgeParts],
@@ -700,7 +700,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       }
     ];
 
-    SetAutomatic[edgeThickness, If[edgeColorFunction =!= None, Thick, If[$GraphIs3D, MediumThick, SlightlyThick]]];
+    SetAuto[edgeThickness, If[edgeColorFunction =!= None, Thick, If[$GraphIs3D, MediumThick, SlightlyThick]]];
     edgeThickness = OnFailed[
       NormalizeThickness @ edgeThickness,
       failPlot["badthickness", edgeThickness]
@@ -745,7 +745,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
 
     edgeLabels //= removeSingleton;
     If[edgeLabels =!= None || edgeTooltips =!= None || edgeLabelRules =!= None || edgeLabelFunction =!= None,
-      SetAutomatic[arrowheadSize, 0];
+      SetAuto[arrowheadSize, 0];
       {edgeLabelItems, zorder} = generateLabelPrimitives[
         edgeLabels, edgeLabelRules, edgeLabelFunction, edgeTooltips,
         $EdgeList, edgeCenters, $EdgeParts,
@@ -827,7 +827,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
       graphicsElements //= processUniqueLabels];
 
     extraOptions = If[!$GraphIs3D, {},
-      SetAutomatic[viewOptions, $automaticViewOptions];
+      SetAuto[viewOptions, $automaticViewOptions];
       viewOptions
     ];
 
@@ -1282,7 +1282,7 @@ processRegionColorRules[rules:$RuleListPattern] := (
   {vertexColorFunction, edgeColorFunction} = resolveRegionRules[rules, RegionColorRules];
   If[!ColorVectorQ[vertexColorFunction] || !ColorVectorQ[edgeColorFunction],
     failPlot["badcolorruleres", RegionColorRules]];
-  SetAutomatic[arrowheadStyle, Inherited];
+  SetAuto[arrowheadStyle, Inherited];
 );
 processRegionColorRules[r_] := failPlot["badcolorrules", RegionColorRules, r];
 
@@ -1293,7 +1293,7 @@ processVertexColorRules[rules_] :=
 processEdgeColorRules[None] := Null;
 processEdgeColorRules[rules_] := (
   edgeColorFunction = resolveColorRules[EdgeColorRules, $EdgeList, rules, $Gray];
-  SetAutomatic[arrowheadStyle, Inherited];
+  SetAuto[arrowheadStyle, Inherited];
 );
 
 resolveColorRules[head_, _, r_, _] := failPlot["badcolorrules", head, r];

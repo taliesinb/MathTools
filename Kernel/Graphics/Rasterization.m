@@ -188,7 +188,7 @@ CacheVideoFilePath[args___] := CacheFilePath["Video", args, FileExtension -> $De
 
 $tempID = 0;
 VideoRasterizeList[frames_, name_:Auto, frameRate_:30] := Scope[
-    SetAutomatic[name, {"temp", $ProcessID, $tempID++}];
+    SetAuto[name, {"temp", $ProcessID, $tempID++}];
     path = toCachedVideoFileName[name];
     If[FileExistsQ[path], Return @ Video[path]];
 	Export[path, frames, FrameRate -> frameRate, VideoEncoding -> $DefaultVideoEncoding];

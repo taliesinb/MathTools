@@ -72,7 +72,7 @@ rawPlaneInsetBoxes[object_, origin_, {vx_, vy_}, {fx_, fy_}, OptionsPattern[Plan
   {mx, px} = Outer[Times, fracPair[-fx], Normalize[vx] * w];
   {my, py} = Outer[Times, fracPair[-fy], Normalize[vy] * h];
   coords = Threaded[origin] + {mx + my, mx + py, px + py, px + my};
-  SetAutomatic[flipX, Dot[Cross[vx, vy], viewVector] > 0];
+  SetAuto[flipX, Dot[Cross[vx, vy], viewVector] > 0];
   TagBox[StyleBox[
     Construct[Polygon3DBox, coords, VertexTextureCoordinates -> $textureCoords[{flipX, flipY}]],
     texture, EdgeForm[None]

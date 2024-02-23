@@ -24,8 +24,8 @@ ExportBearNoteToObsidian[title_Str, OptionsPattern[]] := Scope @ CatchMessage[
 
   UnpackOptions[obsidianVault, compressImages, replaceExisting, $verbose, $dryRun];
   $pdfPath = OptionValue[PDFPath];
-  SetAutomatic[$verbose, $dryRun];
-  SetAutomatic[obsidianVault, $DefaultObsidianVault];
+  SetAuto[$verbose, $dryRun];
+  SetAuto[obsidianVault, $DefaultObsidianVault];
 
   results = BearNoteData["Title" -> title, {"ID", "HasFilesQ", "HasImagesQ", "Title", "CreationDate", "ModificationDate", "Text", "UUID"}];
 
@@ -218,7 +218,7 @@ docMetadata[title_Str, tagLine_Str, contents_Str] := Scope[
 
   If[!FileExistsQ[path],
     glob = "*" <> ToLowerCase[trimmedTitle] <> "*.pdf";
-    candidates = FileNames[glob, ReplaceAutomatic[$pdfPath, $PDFPath], IgnoreCase -> True];
+    candidates = FileNames[glob, SubAuto[$pdfPath, $PDFPath], IgnoreCase -> True];
     If[Len[candidates] === 1,
       candidate = F @ candidates;
       VPrint["Found candidate ", MsgPath @ candidate, " for missing path ", MsgPath @ path];
@@ -236,7 +236,7 @@ docMetadata[title_Str, tagLine_Str, contents_Str] := Scope[
   tagsStr = SRiffle[tags, " "];
 
   conceptExtractor = createLocalConceptExtractor[tagsStr];
-  abstractStr = ReplaceNone[abstract, ""];
+  abstractStr = SubNone[abstract, ""];
   concepts = Dedup @ Join[
     SCases[about, MarkdownNoteLinkPattern ? conceptLinkQ],
     SCases[abstractStr, MarkdownNoteLinkPattern ? conceptLinkQ],

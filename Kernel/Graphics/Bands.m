@@ -138,7 +138,7 @@ BandPlot2D[fn_, opts:OptionsPattern[]] := Scope[
   dy = -0.01;
   UnpackOptions[endpoints, imageSize, epilog, plotStyle, axisStyle];
   {hStyle, vStyle} = axisStyle;
-  SetAutomatic[hStyle, $Blue]; SetAutomatic[vStyle, $Red];
+  SetAuto[hStyle, $Blue]; SetAuto[vStyle, $Red];
   Plot[
     Eval @ fn[x],
     {x, -1, 1},
@@ -189,7 +189,7 @@ Options[BandPlot3D] = JoinOptions[
 BandPlot3D[fn_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[edgeThickness, bandRadii, bandTwists, imageSize, plotStyle, axisStyle, epilog];
   {hStyle, vStyle} = axisStyle;
-  SetAutomatic[hStyle, $Blue]; SetAutomatic[vStyle, $Red];
+  SetAuto[hStyle, $Blue]; SetAuto[vStyle, $Red];
   {R, r} = bandRadii;
   p = BandCurvePoints[fn, FilterOptions @ opts];
   tube = Style[Line[p], AbsoluteThickness[edgeThickness], plotStyle];
@@ -247,4 +247,3 @@ $bandMeshOptions = Sequence[
     {0,All}->None
   }
 ];
-

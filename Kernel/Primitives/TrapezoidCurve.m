@@ -23,7 +23,7 @@ trapezoidCurvePoints[TrapezoidCurve[{a:$Coord2P, b:$Coord2P}, amount_]] := Scope
     dir = Rep[F[amount], $SideToCoords];
     amount = L[amount] * Sign[Dot[delta, dir]];
   ];
-  SetAutomatic[amount, Scaled[0.333]];
+  SetAuto[amount, Scaled[0.333]];
   SetScaledFactor[amount, Dist[a, b]];
   If[!NumericQ[amount],
     Message[TrapezoidCurve::baddist, amount];
@@ -33,4 +33,3 @@ trapezoidCurvePoints[TrapezoidCurve[{a:$Coord2P, b:$Coord2P}, amount_]] := Scope
   points = Join[{a}, lerp, {b}];
   DiscretizeCurve @ BSplineCurve @ points
 ];
-

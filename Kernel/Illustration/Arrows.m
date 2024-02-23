@@ -36,7 +36,7 @@ $viewVector = Normalize @ {2, 1.5, 0};
 LabeledArrow3D[pos_, d_, label_, size:Except[_Rule]:Auto, color:Except[_Rule]:$Gray, opts___Rule] := Scope[
    d = d /. {"XY" -> $xyVector};
    nd = szo * Normalize[d]; sz = size; label1 = label;
-   SetAutomatic[sz, Norm[d] / 6];
+   SetAuto[sz, Norm[d] / 6];
    If[ListQ[sz], {szi, szo} = sz, szo = sz; szi = sz/4];
    other = If[Abs[Dot[Normalize[d], {0, 0, 1}]] > 0.9, $viewVector, Normalize @ {2, 1.5, -1}];
    l = Cross[nd, other]; o = pos;

@@ -138,7 +138,7 @@ ImportYoutubeVideoToMarkdown[data_Assoc, OptionsPattern[]] := Scope[
   title = trimAuthorFromTitle[title, matches["Person"], matches["Author"]];
 
   description = StringTrimLeft[description, Maybe["\""] ~~ title ~~ Maybe["\""] ~~ Maybe["." | "\n"]..];
-  tag = "#video" <> ReplaceNone[ReplaceNone[type1, type2], ""];
+  tag = "#video" <> SubNone[SubNone[type1, type2], ""];
 
   UnpackAssociation[matches, author];
   $youtubeVideoTemplate @ PackAssociation[
@@ -698,7 +698,7 @@ ImportYoutubePlaylistToMarkdown::noEntryMetadata = "Failed to obtain metadata fo
 
 ImportYoutubePlaylistToMarkdown[url_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[$verbose, $dryRun, duplicateTarget];
-  SetAutomatic[$verbose, $dryRun];
+  SetAuto[$verbose, $dryRun];
 
   VPrint["Generating markdown for Youtube playlist ", MsgExpr @ url];
 

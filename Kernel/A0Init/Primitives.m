@@ -237,7 +237,7 @@ DeclareCurvePrimitive[head_Symbol, curveFn_, boxesFn_:Auto] := (
   insertQP[$customCurveHeadQ, $customCurveHeadP, head];
   $customCurveIsRecursive[head] = True;
   $customCurveFn[head] = curveFn;
-  $customCurveBoxesFn[head] = ReplaceAutomatic[boxesFn, toLineBox];
+  $customCurveBoxesFn[head] = SubAuto[boxesFn, toLineBox];
   Typeset`MakeBoxes[e_head, StandardForm | TraditionalForm, Graphics] := CurveToBoxes[e];
 );
 
@@ -398,4 +398,3 @@ CustomPrimitiveToBoxes[prim_] := With[
 
 gprimMsg[prim:(h_[___]), msg_, args___] := (Message[MessageName[h, msg], MsgExpr @ prim, args]; {})
 _gprimMsg := BadArguments[];
-

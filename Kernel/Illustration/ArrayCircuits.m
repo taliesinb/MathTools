@@ -491,7 +491,7 @@ PublicFunction[ArrayCircuitGraphics]
 ArrayCircuitGraphics[nodes_, opts___Rule] := Scope[
   padding = Lookup[{opts}, ImagePadding, Auto];
   frameLabel = LookupOption[nodes, FrameLabel, None];
-  SetAutomatic[padding, 2];
+  SetAuto[padding, 2];
   padding //= StandardizePadding;
   Part[padding, 2, 1] //= Max[#, 6]&;
   If[frameLabel =!= None,
@@ -653,4 +653,3 @@ DefineStandardTraditionalForm[
     List @ graphics
   }, BaselinePosition -> {2, 1}, Alignment -> {Center, Baseline}]
 ];
-

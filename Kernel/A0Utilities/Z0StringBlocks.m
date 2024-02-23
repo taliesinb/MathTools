@@ -41,7 +41,7 @@ ToStringBlock[StringTable[rows_List, OptionsPattern[]]] := Scope[
   items = MatrixMap[ToStringBlock, rows];
   UnpackOptions[tableHeadings, tableHeadingStyle];
   {rowStyle, colStyle} = tableHeadingStyle * {1, 1};
-  SetAutomatic[tableHeadings, {Auto, Auto}];
+  SetAuto[tableHeadings, {Auto, Auto}];
   SetNone[tableHeadings, {None, None}];
   If[!MatchQ[tableHeadings, {_, _}], ReturnFailed[]];
   {rowHeadings, colHeadings} = tableHeadings;

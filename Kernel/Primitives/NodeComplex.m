@@ -354,12 +354,12 @@ hvNodeLayout[head_, nodes_List, opts_, {startSym_, endSym_}, {mainStart_, mainEn
   UnpackOptionsAs[head, opts, alignment, frameMargins, spacings, epilog, prolog, nodeAlias, nodePalette];
 withNodePalette[nodePalette,
   createNodeAlias[nodeAlias];
-  SetAutomatic[alignment, 0];
-  SetAutomatic[frameMargins, 0];
+  SetAuto[alignment, 0];
+  SetAuto[frameMargins, 0];
   {lrmargin, btmargin} = StandardizePadding[frameMargins];
   tbmargin = Rev @ btmargin;
   {{smargin, emargin}, {osmargin, oemargin}} = If[head === NodeRow, {lrmargin, tbmargin}, {tbmargin, lrmargin}];
-  SetAutomatic[spacings, 1];
+  SetAuto[spacings, 1];
   n = Len @ nodes;
   nodes = MapIndex1[processNode, nodes];
   range = Range[n];
@@ -680,8 +680,8 @@ $portOptionKeys = {"PortSpacing", "PortSize", "PortShape", "PortEdgeColor", "Por
 
 replaceIO = RepAll[{In -> Top, Out -> Bottom}];
 
-DefineLiteralMacro[OptionValueAssociations,
-  OptionValueAssociations[head_, opts_, keys_] := {
+DefineSimpleMacro[OptionValueAssociations,
+  OptionValueAssociations[head_, opts_, keys_] :> {
     AssocThread[keys, OptionValue[head, opts, keys]],
     AssocThread[keys, OptionValue[head, keys]]
   }
@@ -842,7 +842,7 @@ processNodeBoxPorts = Case[
     portPaths = makePortPaths[sideToPortKind @ side, ports];
     n = Len @ ports;
     $sidePortData = sideSpecializedPortData[side];
-    portSpacing = ReplaceAutomatic[$sidePortData["PortSpacing"], $w / (n + .333)];
+    portSpacing = SubAuto[$sidePortData["PortSpacing"], $w / (n + .333)];
     offsets = makePortOffsets[n, portSpacing];
     portCoords = Switch[side,
       Center, Repeat[{subPath[$L], subPath[$TB]}, n],
@@ -932,7 +932,7 @@ processNodeDiskPorts = Case[
   (side:$SidePattern -> spec_List) := Scope[
     initAng = Lookup[$sideToAngle, side];
     n = Len[spec];
-    angles = initAng + Range[0,n-1] * ReplaceAutomatic[$portData["PortSpacing"], 1 / n];
+    angles = initAng + Range[0,n-1] * SubAuto[$portData["PortSpacing"], 1 / n];
     % @ RuleThread[N @ angles, spec]
   ];
   n_Int        := %[Top -> Range[n]];
@@ -1075,7 +1075,7 @@ makeRect[c1_, c2_, fet_, opts___Rule] := applyStyle[fet] @ RectangleBox[c1, c2, 
 makeSquare[p_, r_, fet_] := makeRect[p - r, p + r, fet];
 
 arcPoints[ang_] := arcPoints[ang] = DiscretizeCurve[Circle[{0,0}, 1, {-ang, ang}]];
-$halfCirclePoints = arcPoints[Pi/2];
+$halfCirclePoints := $halfCirclePoints = arcPoints[Pi/2];
 
 makeHalfDisk[pos_, dir_, r_, fet_] := applyStyle[fet] @
   makeHalfPolygon @ ScaleRotateTranslateVector[r, PairAngle @ dir, pos, $halfCirclePoints];
@@ -1118,8 +1118,8 @@ $intOrSpanP = _Int | _Span;
 toNodeBoxInterior = Case[
   sz:$boxSizeP               := % @ {sz, sz};
   {w:$boxSizeP, h:$boxSizeP} := {
-    {ReplaceAutomatic[w, $isAutomaticSize[subPath[$W]] = True; F @ $defaultNodeSize],
-     ReplaceAutomatic[h, $isAutomaticSize[subPath[$H]] = True; L @ $defaultNodeSize]},
+    {SubAuto[w, $isAutomaticSize[subPath[$W]] = True; F @ $defaultNodeSize],
+     SubAuto[h, $isAutomaticSize[subPath[$H]] = True; L @ $defaultNodeSize]},
     None
   };
   rules:{({$intOrSpanP, $intOrSpanP} -> _)..} := {

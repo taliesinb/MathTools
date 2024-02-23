@@ -19,6 +19,9 @@ Package`PrivateSymbol, Package`PrivateMacro,  Package`PrivateVariable, Package`P
  Package`PublicSpecialFunction,  Package`PublicSpecialVariable,  Package`PublicStringPattern,  Package`PublicMutatingFunction,  Package`PublicDebuggingFunction,
 Package`PrivateSpecialFunction, Package`PrivateSpecialVariable, Package`PrivateStringPattern, Package`PrivateMutatingFunction, Package`PrivateDebuggingFunction,
 
+Package`PublicExprPattern,
+Package`PrivateExprPattern,
+
  Package`PublicIOFunction,
 Package`PrivateIOFunction,
 
@@ -37,6 +40,13 @@ Package`PublicScopingFunction,
  Package`PublicCacheFunction,
 Package`PrivateCacheFunction,
 Package`CacheVariable
+},
+
+{"MTLoader`", "Package"} -> {
+MTLoader`DefinePatternMacro,
+MTLoader`DefineVariableMacro,
+MTLoader`DefineSimpleMacro,
+MTLoader`DefineComplexMacro
 },
 
 {"System`", "Symbol"} -> {

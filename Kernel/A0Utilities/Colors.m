@@ -574,7 +574,7 @@ ContinuousColorFunction[values_List, Auto, opts:OptionsPattern[]] := Scope[
 
 ContinuousColorFunction[values_, colors_, OptionsPattern[]] := Scope[
   colors = toColorList @ colors;
-  SetAutomatic[values, Interval[{0, 1}]];
+  SetAuto[values, Interval[{0, 1}]];
   values //= Rep[Interval[{a_, b_}] :> Lerp[a, b, Into @ Len @ colors]];
   checkColArgs[ContinuousColorFunction, values, colors];
   If[Len[values] < 2, ReturnFailed["interpsize"]];
@@ -912,7 +912,7 @@ Options[ChooseContinuousColorFunction] = {
 ChooseContinuousColorFunction[ab:{$NumberP, $NumberP}, OptionsPattern[]] := Scope[
   UnpackOptions[ticks];
   {values, colors, newTicks} = pickBiGradient @@ Sort[ab];
-  SetAutomatic[ticks, newTicks];
+  SetAuto[ticks, newTicks];
   ContinuousColorFunction[values, colors, Ticks -> ticks]
 ];
 

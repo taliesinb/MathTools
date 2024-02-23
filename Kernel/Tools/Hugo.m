@@ -16,7 +16,7 @@ HugoNewSite::invalidtheme = "HugoTheme -> `` should be a string of the form \"us
 HugoNewSite[dir_Str, opts:OptionsPattern[]] := Scope[
 
   UnpackOptions[siteName, hugoTheme, $verbose, $dryRun];
-  SetAutomatic[$verbose, $dryRun];
+  SetAuto[$verbose, $dryRun];
 
   If[SFreeQ[dir, $PathnameSeparator], ReturnFailed["notPath", dir]];
   dir //= NormalizePath;
@@ -100,5 +100,4 @@ $hugoOptionsRules = toolKeyTranslationRules @ {
 (**************************************************************************************************)
 
 PublicFunction[HugoMathTheme]
-
 

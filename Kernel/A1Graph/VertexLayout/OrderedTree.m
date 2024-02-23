@@ -72,7 +72,7 @@ OrderedTreeLayoutCoordinates[indexGraph_, root_, layerDepths_:Auto] := Scope[
 
   vertexCount = VertexCount @ indexGraph;
 
-  depths = ReplaceAutomatic[layerDepths, {}];
+  depths = SubAuto[layerDepths, {}];
   If[NumericQ[depths], depths //= ToList];
 
   $x = 1.;
@@ -141,4 +141,3 @@ postvisitVertex[v_] := (
 PrivateVariable[$firstLastDelta]
 
 $firstLastDelta = 0.00125;
-

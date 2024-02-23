@@ -11,7 +11,7 @@ SiteGarbageCollectRasters[site_, OptionsPattern[]] := Scope[
   UnpackAssociation[siteData, $markdownFlavor];
 
   $dryRun = $dryRun =!= False;
-  SetAutomatic[$verbose, $dryRun];
+  SetAuto[$verbose, $dryRun];
   
   flavorFields = Lookup[$flavorData, $markdownFlavor, ReturnFailed[]];
   UnpackAssociation[flavorFields, $fileImageTemplate, $fileAnimatedImageTemplate];

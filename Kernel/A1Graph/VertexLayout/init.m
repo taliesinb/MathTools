@@ -124,19 +124,19 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
         L @ Dims @ vertexCoordinates,
         1,     vertexCoordinates = AppendConstantColumn[vertexCoordinates, 0],
         2|3,   Null,
-        _,     vertexCoordinates = DimensionReduce[vertexCoordinates, ReplaceAutomatic[layoutDimension, 3], Method -> "LatentSemanticAnalysis"]
+        _,     vertexCoordinates = DimensionReduce[vertexCoordinates, SubAuto[layoutDimension, 3], Method -> "LatentSemanticAnalysis"]
       ];
     ];
   ];
 
-  SetAutomatic[vertexLayout,
+  SetAuto[vertexLayout,
     If[vertexCoordinates =!= Auto,
       ManualVertexLayout[],
       $defaultVertexLayout
     ]
   ];
-  SetAutomatic[multiEdgeDistance, 0.3];
-  SetAutomatic[selfLoopRadius, 0.5];
+  SetAuto[multiEdgeDistance, 0.3];
+  SetAuto[selfLoopRadius, 0.5];
 
   data = Assoc[
     "Graph" -> $Graph,
@@ -204,7 +204,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
   ];
 
   If[CoordinateMatrix3DQ[vertexCoordinates] && layoutDimension == 2,
-    SetAutomatic[viewOptions, $automaticViewOptions];
+    SetAuto[viewOptions, $automaticViewOptions];
     viewOptions = Assoc[PlotRange -> CoordinateBounds[vertexCoordinates], viewOptions];
     viewTransform = ConstructGraphicsViewTransform[viewOptions];
     $vertexCoordinates //= viewTransform;
@@ -300,7 +300,7 @@ orientEdgeCoords[coords_, UndirectedEdge[a_, b_, tag_]] := If[
 correctSelfLoops[selfLoopRadius_] := Scope[
   selfLoopIndices = SelectIndices[$edgeCoordinateLists, selfLoopQ];
   If[selfLoopIndices === {}, Return[]];
-  SetAutomatic[selfLoopRadius, EdgeLengthScale[$edgeCoordinateLists, .5] / 4.0];
+  SetAuto[selfLoopRadius, EdgeLengthScale[$edgeCoordinateLists, .5] / 4.0];
   $edgeCoordinateLists ^= MapIndices[fixSelfLoop[selfLoopRadius], selfLoopIndices, $edgeCoordinateLists];
 ];
 

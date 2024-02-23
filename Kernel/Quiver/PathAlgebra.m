@@ -4,8 +4,8 @@
   symbol /: Times[object1_symbol ? test, object2_symbol ? test] := dispatch[Times][object1, object2];
 )
 
-DefineMacro[UnpackPathAlgebra,
-UnpackPathAlgebra[args___] := Quoted @ UnpackAssociation[getObjectData @ $PathAlgebra, args]
+DefineSimpleMacro[UnpackPathAlgebra,
+UnpackPathAlgebra[args___] :> UnpackAssociation[getObjectData @ $PathAlgebra, args]
 ];
 
 $directionStrings = {"Forward", "Backward", "Symmetric", "Antisymmetric"};
@@ -77,7 +77,7 @@ PathAlgebra[quiver:$graphOrLatticeSpec, field_, OptionsPattern[]] ? HoldEntryQ :
   data["VertexCoordinates"] = vertexCoords;
   data["EdgeCoordinateLists"] = edgeCoords;
   data["EdgeCoordinates"] = edgeCoords;
-  data["PlotRange"] = ReplaceAutomatic[plotRange, CoordinateBounds[vertexCoords]];
+  data["PlotRange"] = SubAuto[plotRange, CoordinateBounds[vertexCoords]];
   data["EdgeSetback"] = edgeSetback;
   data["ImageSize"] = imageSize;
   data["VertexSize"] = vertexSize;
@@ -315,8 +315,8 @@ iFormatPathVector[PathVector[paths_Assoc], transparency_, opts___Rule] := Scope[
     vertexNudge, edgeNudge, drawSortOrder
   ];
   $sb = edgeSetback; $transparency = transparency; $arrowheadSize = arrowheadSize;
-  SetAutomatic[symbolicEdgeThickness, edgeThickness];
-  SetAutomatic[symbolicEdgeStyle, {}];
+  SetAuto[symbolicEdgeThickness, edgeThickness];
+  SetAuto[symbolicEdgeStyle, {}];
   pathRules = Normal @ paths;
   pathRules = Values @ GroupBy[pathRules, canonPathElement, combineReversed];
   drawSorter = toDrawSorter @ drawSortOrder;
@@ -1421,9 +1421,8 @@ tailFrameWordToElement[tail_, word_] := Scope[
   PathElement[tail, edges, head]
 ];
 
-DefineLiteralMacro[setupForTranslation,
-
-  setupForTranslation[] := (
+DefineSimpleMacro[setupForTranslation,
+  setupForTranslation[] :> (
     UnpackPathAlgebra[
       edgeToCardinal, (* elementFrameData *)
       vertexTags, cardinalTransitions, tagOutEdgeTable, nullEdge, edgeToHead (* tailFrameWordToElement *)
@@ -1432,9 +1431,8 @@ DefineLiteralMacro[setupForTranslation,
   )
 ];
 
-DefineLiteralMacro[setupForShortestPaths,
-
-  setupForShortestPaths[] := (
+DefineSimpleMacro[setupForShortestPaths,
+  setupForShortestPaths[] :> (
     UnpackPathAlgebra[indexQuiver];
     undirectedIndexQuiver = Graph[VertexList @ indexQuiver, (EdgeList @ indexQuiver) /. DirectedEdge -> UndirectedEdge];
     shortestPath = FindShortestPath[undirectedIndexQuiver, All, All];

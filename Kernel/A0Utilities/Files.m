@@ -265,7 +265,7 @@ ExportUTF8WithBackup[path_, contents_, currentContents_:Auto] := Scope[
   If[!FileExistsQ[path],
     ExportUTF8[path, contents];
   ,
-    SetAutomatic[currentContents, ImportUTF8 @ path];
+    SetAuto[currentContents, ImportUTF8 @ path];
     If[contents =!= currentContents,
       hash = Base36Hash @ currentContents;
       cachePath = SJoin[path, ".", hash, ".backup"];
@@ -352,11 +352,24 @@ FileAge[path_] := UnixTime[] - UnixTime[FileDate[path]];
 
 (**************************************************************************************************)
 
+notInWLSymbol[p_] := NegativeLookbehind[WLSymbolLetter] ~~ p ~~ NegativeLookahead[WLSymbolLetter];
+
+(**************************************************************************************************)
+
 PublicFunction[FileLineFind]
+
+PublicOption[WholeWords]
 
 General::fileNotFound = "File `` does not exist.";
 
-FileLineFind[files:(_Str | {__Str}), patt_] := Scope[
+Options[FileLineFind] = {
+  IgnoreCase -> False,
+  WholeWords -> True
+};
+
+FileLineFind[files:(_Str | {__Str}), patt_, OptionsPattern[]] := Scope[
+  UnpackOptions[$ignoreCase, wholeWords];
+  If[TrueQ[wholeWords], patt //= notInWLSymbol];
   patt = ToRegex @ patt;
   If[FailureQ[patt], ReturnFailed[]];
   Flatten @ Map[searchFileLines[#, patt]&, ToList @ files]
@@ -365,14 +378,22 @@ FileLineFind[files:(_Str | {__Str}), patt_] := Scope[
 searchFileLines[path_, patt_] := Scope[
   If[!FileExistsQ[path], Message[FileLineFind::fileNotFound, MsgPath @ path]; Return @ Nothing];
   str = ImportUTF8 @ path;
-  FileLine[path, #]& /@ StringLineFind[str, patt]
+  FileLine[path, #]& /@ StringLineFind[str, patt, IgnoreCase -> $ignoreCase]
 ];
 
 (**************************************************************************************************)
 
 PublicFunction[FileStringCases]
 
-FileStringCases[files_, patt_] := If[!ListQ[StringCases["", patt]], $Failed,
+Options[FileStringCases] = JoinOptions[
+  FileLineFind,
+  SurroundingContextLines -> None
+];
+
+FileStringCases[files_, patt_, OptionsPattern[]] := Scope[
+  UnpackOptions[$ignoreCase, $surroundingContextLines, wholeWords];
+  If[TrueQ[wholeWords], patt //= notInWLSymbol];
+  If[!ListQ[StringCases["", patt]], ReturnFailed[]];
   iFileStringCases[files, patt]
 ];
 
@@ -382,7 +403,7 @@ iFileStringCases[files:{__Str}, patt_] :=
 iFileStringCases[path_Str, patt_] := Scope[
   If[!FileExistsQ[path], Message[FileCases::fileNotFound, MsgPath @ path]; Return @ {}];
   str = ImportUTF8 @ path;
-  StringCases[str, patt]
+  StringLineCases[str, patt, $surroundingContextLines, IgnoreCase -> $ignoreCase]
 ];
 
 (**************************************************************************************************)
@@ -392,7 +413,8 @@ PublicFunction[FileStringReplace]
 Options[FileStringReplace] = {
   Verbose -> Automatic,
   DryRun -> False,
-  IgnoreCase -> False
+  IgnoreCase -> False,
+  WholeWords -> True
 };
 
 toStrPattLHS = Case[
@@ -402,11 +424,12 @@ toStrPattLHS = Case[
 ];
 
 FileStringReplace[files_, rewrite:($RulePattern | $RuleListPattern), OptionsPattern[]] := Scope[
+  UnpackOptions[$verbose, $dryRun, $ignoreCase, wholeWords];
+  SetAuto[$verbose, $dryRun];
+  If[TrueQ[wholeWords], rewrite //= MapColumn[notInWLSymbol, 1]];
   If[!ListQ[StringCases["", rewrite]], ReturnFailed[]];
   $lhs = ToRegex @ toStrPattLHS @ rewrite;
   $rewrite = rewrite;
-  UnpackOptions[$verbose, $dryRun, $ignoreCase];
-  SetAutomatic[$verbose, $dryRun];
   Flatten @ Map[iFileStringReplace, ToList @ files]
 ];
 
@@ -417,7 +440,8 @@ iFileStringReplace[file_] := Scope[
   If[!FileExistsQ[file], Message[FileStringReplace::fileNotFound, MsgPath @ file]; Return @ Nothing];
   text = ImportUTF8 @ file;
   spans = SFind[text, $lhs, IgnoreCase -> $ignoreCase];
-  If[spans === {}, Return @ Nothing];
+  If[spans === {},
+    Return @ Nothing];
   lines = ToStringLinePositions[text, spans];
   {fileLines, spans, newChunks} = Transpose @ ZipMap[
     {span, line} |-> (
@@ -432,6 +456,7 @@ iFileStringReplace[file_] := Scope[
           VPrint[Pane[fileLine, {250, Automatic}], ShowSequenceAlignment[chunk, newChunk]];
           {fileLine, span, newChunk},
         True,
+          VPrint["No change: ", newChunk === chunk];
           Nothing
       ]),
     spans, lines];

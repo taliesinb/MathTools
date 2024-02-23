@@ -16,7 +16,7 @@ MeshLines[{xmin_, ymin_}, {ncols_, nrows_}, OptionsPattern[]] := CatchMessage @ 
   UnpackTuple[itemSize, cellw, cellh];
   UnpackTuple[dividers, framew, frameh];
   {xmax, ymax} = {xmin, ymin} + {ncols, nrows} * {cellw, cellh};
-  SetAutomatic[frameStyle, FirstCase[meshStyle, c_ ? ColorQ :> Darker[c, .2], $DarkGray, {0, Inf}]];
+  SetAuto[frameStyle, FirstCase[meshStyle, c_ ? ColorQ :> Darker[c, .2], $DarkGray, {0, Inf}]];
   {
     If[frameStyle === None, Nothing,
       Style[Rectangle[{xmin, ymin}, {xmax, ymax}], EdgeForm[frameStyle], FaceForm[background]]
@@ -67,11 +67,11 @@ makeMesh3D[{minX_, minY_, minZ_}, {numX_, numY_, numZ_}, OptionsPattern[MeshLine
   UnpackTuple[meshStyle, meshX, meshY, meshZ];
   UnpackTuple[frameStyle, frameX, frameY, frameZ];
 
-  SetAutomatic[frameX, meshToFrameStyle @ meshX];
-  SetAutomatic[frameY, meshToFrameStyle @ meshY];
-  SetAutomatic[frameZ, meshToFrameStyle @ meshZ];
-  SetAutomatic[background, GrayLevel[1, 0.9]];
-  SetAutomatic[dividers, If[frameStyle === None, All, Center]];
+  SetAuto[frameX, meshToFrameStyle @ meshX];
+  SetAuto[frameY, meshToFrameStyle @ meshY];
+  SetAuto[frameZ, meshToFrameStyle @ meshZ];
+  SetAuto[background, GrayLevel[1, 0.9]];
+  SetAuto[dividers, If[frameStyle === None, All, Center]];
 
   {maxX, maxY, maxZ} = {minX, minY, minZ} + {numX, numY, numZ} * {sizeX, sizeY, sizeZ};
 
@@ -155,13 +155,13 @@ MeshGrid[{xmin2_, ymin2_}, array_ ? MatrixQ, opts:OptionsPattern[]] := Scope[
   ];
   UnpackOptions[ticks, ticksStyle, tickSpacing];
   tickItems = If[ticks === None, Nothing,
-    SetAutomatic[ticksStyle, $defaultTickStyle];
+    SetAuto[ticksStyle, $defaultTickStyle];
     tickItems = Style[makeTickItems @ ticks, ticksStyle]
   ];
   If[itemStyle =!= None, arrayItems = Style[arrayItems, Seq @@ ToList[itemStyle]]];
   axesItems = If[axesLabel === None, Nothing,
     If[!MatchQ[axesLabel, {_, _}], ReturnFailed[]];
-    SetAutomatic[labelStyle, $defaultAxesLabelStyle];
+    SetAuto[labelStyle, $defaultAxesLabelStyle];
     {rowLabel, colLabel} = axesLabel;
     origin = {0, nrows} * 2;
     {

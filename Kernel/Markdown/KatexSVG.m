@@ -11,7 +11,7 @@ PublicFunction[LoadKatexArrowPathData]
 $defaultKatexDir = "~/git/tools/KaTeX";
 
 LoadKatexArrowPathData[katexDir_:Automatic] := Scope[
-  SetAutomatic[katexDir, $defaultKatexDir];
+  SetAuto[katexDir, $defaultKatexDir];
   svgJSFile = FileNameJoin[{katexDir, "src", "svgGeometry.js"}];
   If[!FileExistsQ[svgJSFile], ReturnFailed[]];
   svgDir = EnsureDirectory @ FileNameJoin[{katexDir, "SVG"}];
@@ -37,11 +37,11 @@ SaveKatexArrowPathData::noarrowpaths = "Could not load arrow data from SVG files
 SaveKatexArrowPathData::badresult = "Could not produce a string.";
 
 SaveKatexArrowPathData[data_:Automatic, katexDir_:Automatic] := Scope[
-  SetAutomatic[katexDir, $defaultKatexDir];
+  SetAuto[katexDir, $defaultKatexDir];
   svgJSFile = FileNameJoin[{katexDir, "src", "svgGeometry.js"}];
   If[!FileExistsQ[svgJSFile], ReturnFailed[]];
   svgJS = ImportUTF8 @ svgJSFile;
-  SetAutomatic[data, LoadSVGArrowPathData[katexDir]];
+  SetAuto[data, LoadSVGArrowPathData[katexDir]];
   If[!AssocQ[data], ReturnFailed["noarrowpaths", katexDir]];
   arrowDataPos = StringFindDelimitedPosition[svgJS, $ArrowSVGInsertion];
   If[!ListQ[arrowDataPos], ReturnFailed["noinjpoint", svgJSFile]];
@@ -86,7 +86,7 @@ toCommentaryRule[js_][{start_, stop_}] := Scope[
 PublicFunction[SaveSVGArrowPathData]
 
 SaveSVGArrowPathData[data_Assoc, katexDir_:Automatic] := Scope[
-  SetAutomatic[katexDir, $defaultKatexDir];
+  SetAuto[katexDir, $defaultKatexDir];
   svgDir = EnsureDirectory @ FileNameJoin[{katexDir, "SVG"}];
   KeyValueMap[saveSVGArrow, data]
 ];
@@ -96,7 +96,7 @@ saveSVGArrow[name_, path_] := ExportUTF8[FileNameJoin[{svgDir, name <> ".svg"}],
 PublicFunction[LoadSVGArrowPathData]
 
 LoadSVGArrowPathData[katexDir_:Automatic] := Scope[
-  SetAutomatic[katexDir, $defaultKatexDir];
+  SetAuto[katexDir, $defaultKatexDir];
   svgDir = FileNameJoin[{katexDir, "SVG"}];
   If[!FileExistsQ[svgDir], ReturnFailed[]];
   svgFiles = Sort @ Select[StringFreeQ["-"]] @ FileNames["*.svg", svgDir];
@@ -157,7 +157,7 @@ $existingTuples = Alternatives[
 ];
 
 InjectCustomArrows[katexDir_:Automatic] := Scope[
-  SetAutomatic[katexDir, $defaultKatexDir];
+  SetAuto[katexDir, $defaultKatexDir];
   stretchyFile = FileNameJoin[{katexDir, "src", "stretchy.js"}];
   arrowFile = FileNameJoin[{katexDir, "src", "functions", "arrow.js"}];
   If[!FileExistsQ[stretchyFile] || !FileExistsQ[arrowFile], ReturnFailed[]];

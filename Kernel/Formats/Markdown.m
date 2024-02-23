@@ -61,7 +61,7 @@ ExportToMarkdown[inputSpec_, opts:OptionsPattern[]] := Scope @ CatchMessage[
   ];
 
   $dryRun = $dryRun =!= False;
-  SetAutomatic[$verbose, $dryRun];
+  SetAuto[$verbose, $dryRun];
   VPrint["ExportToMarkdown[\n", "  ", ToPrettifiedString @ inputSpec, ", ", STake[ToPrettifiedString @ {DeleteDuplicateOptionKeys @ opts}, 2;;-2], "]"];
   If[$verbose === "KeyModifiers", $verbose = ModifierKeysPressedQ[]];
   
@@ -74,17 +74,17 @@ ExportToMarkdown[inputSpec_, opts:OptionsPattern[]] := Scope @ CatchMessage[
     _                                                                  :> ReturnFailed["badinspec"]
   ];
 
-  SetAutomatic[$baseNotebookPath, inputPath];
+  SetAuto[$baseNotebookPath, inputPath];
   $baseNotebookPath //= NormalizePath;
 
   (* MarkdownFlavor, RastizationPath, RastizerationURL, RasterizationCaching, etc. *)
   setupMarkdownGlobals[];
-  SetAutomatic[$rasterizationPath, "raster"];
-  SetAutomatic[$markdownPath, "markdown"];
-  SetAutomatic[$katexPreludePath, "katex.tex"];
+  SetAuto[$rasterizationPath, "raster"];
+  SetAuto[$markdownPath, "markdown"];
+  SetAuto[$katexPreludePath, "katex.tex"];
 
   (* when BaseExportPath unspecified, only bother to create the temporary directory if one of the output paths is specified as relative, because otherwise BEP has no utilitiy *)
-  SetAutomatic[$baseExportPath, If[AnyTrue[{$rasterizationPath, $markdownPath, $katexPreludePath}, RelativePathQ], CreateDirectory[], None]];
+  SetAuto[$baseExportPath, If[AnyTrue[{$rasterizationPath, $markdownPath, $katexPreludePath}, RelativePathQ], CreateDirectory[], None]];
   $rasterizationPath //= ToAbsolutePath[$baseExportPath];
   $markdownPath      //= ToAbsolutePath[$baseExportPath];
   $katexPreludePath  //= ToAbsolutePath[$baseExportPath];
@@ -178,7 +178,7 @@ itemMarkdownPath[item_] := Scope[
   and use this fragment as a prefix for the output path *)
   If[StrQ[$baseNotebookPath] && $baseNotebookPath =!= "",
     relPath = RelativePath[$baseNotebookPath, FileNameDrop @ nbPath];
-    relPath //= ReplaceNone[""]; (* paths outside $baseNotebookPath will be put at top level *)
+    relPath //= SubNone[""]; (* paths outside $baseNotebookPath will be put at top level *)
     mdFileName = PathJoin[ToLowerCase @ relPath, mdFileName];
   ];
 
@@ -189,4 +189,3 @@ itemMarkdownPath[item_] := Scope[
 
   PathJoin[$markdownPath, mdFileName]
 ];
-

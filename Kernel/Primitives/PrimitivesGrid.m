@@ -93,7 +93,7 @@ RawPrimitivesGrid[itemBoxes_, pos_, opts___Rule] := Scope[
   totalSize = {totalWide, totalHigh};
 
   hasFrame = frame =!= False || dividers === All;
-  SetAutomatic[frameMargins, If[!hasFrame, 0, SelectFirst[{origSpacings, rowSpacings, columnSpacings}, Positive, 0]/2]];
+  SetAuto[frameMargins, If[!hasFrame, 0, SelectFirst[{origSpacings, rowSpacings, columnSpacings}, Positive, 0]/2]];
   fm = frameMargins;
   If[hasFrame, {totalSize, totalWide, totalHigh} += 2 * fm];
 
@@ -168,4 +168,3 @@ parseValign = Case[
 ];
 
 repeatMax[n_] := Repeat[Max @ n, Len @ n];
-

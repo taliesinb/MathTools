@@ -69,13 +69,13 @@ morphismArrowBoxes[MorphismArrow[points_, labelData_, arrowData_, opts___Rule]] 
     textModifiers, graphicsScale, $debugLabels
   ];
 
-  SetAutomatic[labelOffset, 0];
+  SetAuto[labelOffset, 0];
   $size = arrowheadSize;
   arrowPathReversed //= TrueQ;
   If[labelOrientation === "Aligned", labelOrientation = Aligned];
 
-  SetAutomatic[setback, arrowPathSetback];
-  SetAutomatic[setback, 0.1];
+  SetAuto[setback, arrowPathSetback];
+  SetAuto[setback, 0.1];
   shaftExtraThickness = 0;
 
   multiOffset = toMultiOffset @ arrowData;
@@ -91,7 +91,7 @@ morphismArrowBoxes[MorphismArrow[points_, labelData_, arrowData_, opts___Rule]] 
   If[arrowPathReversed, points //= Rev];
   $path = points;
 
-  SetAutomatic[labelPosition, Above];
+  SetAuto[labelPosition, Above];
   labelPositionOnShaft = 0.5;
 
   If[arrowData === "Empty", labelPosition = Center; labelOrientation = Aligned];
@@ -103,7 +103,7 @@ morphismArrowBoxes[MorphismArrow[points_, labelData_, arrowData_, opts___Rule]] 
     shaftExtraThickness += maxOffsetY + 2;
   ];
 
-  SetAutomatic[labelSpacing, If[labelOrientation === Aligned, arrowThickness, {0.3, 0.1} * labelFontSize] + shaftExtraThickness];
+  SetAuto[labelSpacing, If[labelOrientation === Aligned, arrowThickness, {0.3, 0.1} * labelFontSize] + shaftExtraThickness];
   arrowhead = parseMorphismArrowhead @ arrowData;
   $textModifierFn = toModifierFunction @ textModifiers;
 
@@ -115,7 +115,7 @@ morphismArrowBoxes[MorphismArrow[points_, labelData_, arrowData_, opts___Rule]] 
 
   {points, isMulti} = applyPathOffset[points, arrowPathOffset];
   line = Construct[LineBox, points];
-  SetAutomatic[arrowMasking, arrowThickness + 20];
+  SetAuto[arrowMasking, arrowThickness + 20];
   mask = If[!NumberQ[arrowMasking], Nothing,
     ShaftStyleBoxOperator[White, None, arrowMasking, None] @ line
   ];
@@ -334,7 +334,7 @@ morphismLabelBoxes[label_, {pos_, dir_}, anchor_, side_] := Scope[
     text = Inset[label, pos, {iw/4, -3}, Offset[iw / 2], dir];
   ,
     baseStyle = {FontSize -> labelFontSize, FontFamily -> "KaTeX_Main"};
-    background = ReplaceAutomatic[labelBackground, If[labelPosition === Center, White, None]];
+    background = SubAuto[labelBackground, If[labelPosition === Center, White, None]];
     If[$debugLabels, background = RGBColor[1,.9,.9]];
     text = Text[label, pos, offset, dir, BaseStyle -> baseStyle, Background -> background];
   ];
@@ -363,4 +363,3 @@ pathedTextBoxes[curve_, labelData_, opts___Rule] := Scope[
 
   label
 ];
-

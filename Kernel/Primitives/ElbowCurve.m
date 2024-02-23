@@ -21,7 +21,7 @@ elbowCurvePoints[ElbowCurve[{a:$Coord2P, b:$Coord2P}, amount_]] := Scope[
     dir = Rep[F[amount], $SideToCoords];
     amount = L[amount] * Sign[Dot[delta, dir]];
   ];
-  SetAutomatic[amount, Scaled[0.333]];
+  SetAuto[amount, Scaled[0.333]];
   SetScaledFactor[amount, Dist[a, b]];
   If[!NumericQ[amount],
     Message[ElbowCurve::baddist, amount];
@@ -30,4 +30,3 @@ elbowCurvePoints[ElbowCurve[{a:$Coord2P, b:$Coord2P}, amount_]] := Scope[
   delta *= amount * 2;
   DiscretizeCurve @ BezierCurve @ {a, mid + delta, b}
 ];
-

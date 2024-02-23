@@ -31,7 +31,7 @@ PathRepresentation[quiver_, representation_, initialVertex_:Auto] := Scope[
   If[!SameSetQ[cardinals, Keys @ generators],
     generators = AssocThread[cardinals, Values @ generators];
   ];
-  SetAutomatic[initialVertex, F[VertexList[quiver]]];
+  SetAuto[initialVertex, F[VertexList[quiver]]];
   assoc = Assoc[
     "Quiver" -> quiver,
     "Cardinals" -> cardinals,
@@ -63,7 +63,7 @@ PathRepresentationPlot[qrep_, opts:OptionsPattern[]] := Scope[
 
   UnpackOptions[plotLabel, transposed];
   If[StrQ[qrep],
-    SetAutomatic[plotLabel, ToTitleString[qrep]];
+    SetAuto[plotLabel, ToTitleString[qrep]];
     qrep = LatticeQuiverData[qrep, "Representation"]];
 
   If[!PathRepresentationObjectQ[qrep], ReturnFailed[]];
@@ -212,5 +212,4 @@ PathRepresentationObjectQ[obj$] returns True if obj$ is a valid PathRepresentati
 
 PathRepresentationObjectQ[_PathRepresentationObject ? HoldNoEntryQ] := True;
 PathRepresentationObjectQ[_] := False;
-
 

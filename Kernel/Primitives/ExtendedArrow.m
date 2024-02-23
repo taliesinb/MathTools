@@ -42,8 +42,8 @@ extendedArrowBoxes[ExtendedArrow[points_, opts___Rule]] := Scope[
   points //= CurveToPoints;
   If[points === {}, Return @ {}];
   is3d = CoordinateMatrix3DQ @ points;
-  SetAutomatic[setback, arrowPathSetback]; (* legacy *)
-  SetAutomatic[setback, 0];
+  SetAuto[setback, arrowPathSetback]; (* legacy *)
+  SetAuto[setback, 0];
   points = SetbackCoordinates[points, setback];
   center = Mean @ points;
   lineLength = LineLength[points];
@@ -52,10 +52,10 @@ extendedArrowBoxes[ExtendedArrow[points_, opts___Rule]] := Scope[
   {curvePoints, isMulti} = applyPathOffset[points, arrowPathOffset];
 
   (* calculate the arrowhead position and corrsponding anchor *)
-  SetAutomatic[arrowheadPosition, 1.0];
+  SetAuto[arrowheadPosition, 1.0];
   If[MatchQ[arrowheadPosition, Offset[_ ? NumericQ, _ ? NumericQ]],
     arrowheadPosition = L[arrowheadPosition] + (F[arrowheadPosition] / lineLength)];
-  SetAutomatic[arrowheadAnchor, arrowheadPosition];
+  SetAuto[arrowheadAnchor, arrowheadPosition];
 
   (* ArrowPathOffset -> PerpendicularOffset[{..}] will generate multiple curves, we must
   put the arrowhead on the original pre-offset curve *)
@@ -73,8 +73,8 @@ extendedArrowBoxes[ExtendedArrow[points_, opts___Rule]] := Scope[
   ];
 
   (* generate the arrowhead boxes *)
-  SetAutomatic[arrowheadLength, lineLength * 0.05];
-  SetAutomatic[arrowheadColor, Rep[arrowColor, SolidEdgeForm[c_] :> SolidEdgeForm[c, Auto]]];
+  SetAuto[arrowheadLength, lineLength * 0.05];
+  SetAuto[arrowheadColor, Rep[arrowColor, SolidEdgeForm[c_] :> SolidEdgeForm[c, Auto]]];
   arrowhead = arrowheadBoxes[Arrowhead[pos, dir,
     ArrowheadPlane -> PlaneRightTowards[center],
     ArrowheadLength -> arrowheadLength,
@@ -136,5 +136,4 @@ ExtendedArrow::badoffset = "Bad specification ArrowPathOffset -> ``.";
 
 pathOrthogonalVector[points_ ? ContainsOffsetsQ] := pathOrthogonalVector[RemoveOffsets @ points];
 pathOrthogonalVector[points_] := VectorRotate90CW @ N @ Normalize[(L[points] - F[points])];
-
 

@@ -140,7 +140,7 @@ makeDiscreteAnimation[Hold[obj_] | obj_, nmax_, opts___Rule] := Scope[
   hobj = Hold[obj] /. $discreteAnimationRules;
   n = DeepCases[hobj, AnimationPart[l_List, _] :> Len[l]];
   If[n === {}, n = {1}];
-  SetAutomatic[nmax, Inf];
+  SetAuto[nmax, Inf];
   n = Min[Max @ n, nmax];
   hobj //= RepAll[\[FormalN] -> n];
   animationMetadata = optsToAssoc[DiscreteAnimation, opts];

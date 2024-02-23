@@ -54,7 +54,7 @@ toRollingCurvePoints[points_, _, None] := points;
 toRollingCurvePoints[points_, radius_:1, shape_:"Arc"] := Scope @ CachedInto[
   $RollingCurveCache, Hash @ {points, radius, shape},
 
-  SetAutomatic[shape, "Arc"];
+  SetAuto[shape, "Arc"];
   radius //= N;
   points //= N;
 
@@ -141,5 +141,4 @@ populateSegments[shape_, {p1_, pn_}, triples_, radii_] := Scope[
 
 hardBendHandler[fn_][{b_, b_, b_}] := {b};
 hardBendHandler[fn_][args_List]    := Apply[fn, args];
-
 

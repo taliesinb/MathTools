@@ -99,7 +99,7 @@ PrivateFunction[applyTreeEdgeCoordinateFanoutStyle]
 
 applyTreeEdgeCoordinateFanoutStyle[edgeCoordinateLists_, bendRadius_, fanoutStyle_] := Scope[
   $r = bendRadius;
-  SetAutomatic[$r, 0.333 * MinimumDistance[Join[Col1 @ edgeCoordinateLists, ColL @ edgeCoordinateLists]]];
+  SetAuto[$r, 0.333 * MinimumDistance[Join[Col1 @ edgeCoordinateLists, ColL @ edgeCoordinateLists]]];
   Switch[fanoutStyle,
     "Top" | Top,
       Map[bendTop, edgeCoordinateLists],

@@ -67,7 +67,7 @@ Options[DeleteSite] = {DeleteContents -> False, DryRun -> False, Verbose -> Auto
 
 DeleteSite[siteName_Str, OptionsPattern[]] := Scope @ CatchMessage[
   UnpackOptions[deleteContents, $dryRun, $verbose];
-  SetAutomatic[$verbose, $dryRun];
+  SetAuto[$verbose, $dryRun];
   unpackSiteData[siteName, baseExportPath];
   siteFile = toSiteFile @ siteName;
   VPrint["Deleting file ", MsgPath @ siteFile];
@@ -105,7 +105,7 @@ getSiteData[siteName_] := Scope[
 
 resolveStringFunction[data_][str_] := If[!StrQ[str] || SFreeQ[str, "#"], str, StringFunction[str] @ data];
 
-DefineLiteralMacro[unpackSiteData, unpackSiteData[siteName_, args___] := UnpackAssociation[$siteData = getSiteData[siteName], args]];
+DefineSimpleMacro[unpackSiteData, unpackSiteData[siteName_, args___] :> UnpackAssociation[$siteData = getSiteData[siteName], args]];
 
 (**************************************************************************************************)
 
@@ -209,7 +209,7 @@ CreateSite[siteName_Str, opts:OptionsPattern[]] := CatchMessage @ Scope[
   If[!StrQ[siteName], ReturnFailed["arg1"]];
   UnpackOptions[baseNotebookPath, markdownFlavor, baseExportPath, baseURL, siteGenerator, overwriteTarget, $dryRun, $verbose];
 
-  SetAutomatic[baseExportPath, If[!DirectoryQ[$SitesDirectory], Auto, PathJoin[$SitesDirectory, siteName]]];
+  SetAuto[baseExportPath, If[!DirectoryQ[$SitesDirectory], Auto, PathJoin[$SitesDirectory, siteName]]];
 
   If[!StrQ[baseNotebookPath], ReturnFailed["pathns", BaseNotebookPath]];
   If[!StrQ[baseExportPath], ReturnFailed["pathns", BaseExportPath]];
@@ -479,7 +479,7 @@ Options[ClearSite] = {
 ClearSite[siteName_Str, OptionsPattern[]] := Scope[
 
   UnpackOptions[deleteRasters, deleteMarkdown, deleteHTML, $verbose, $dryRun];
-  SetAutomatic[$verbose, $dryRun];
+  SetAuto[$verbose, $dryRun];
 
   unpackSiteData[siteName, baseExportPath, absoluteRasterizationPath, absoluteMarkdownPath, absoluteHTMLPath];
 

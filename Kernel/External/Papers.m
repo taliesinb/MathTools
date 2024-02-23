@@ -62,7 +62,7 @@ PaperToMarkdown[data_Assoc, OptionsPattern[]] := Scope[
   fieldString = If[fieldTags === None, "", {" in ", SRiffle[fieldTags, ", "]}];
 
   localPDFPath = Lookup[data, "PDFFilePath", Auto];
-  SetAutomatic[localPDFPath, toPaperPDFPath[pDFPath, title]];
+  SetAuto[localPDFPath, toPaperPDFPath[pDFPath, title]];
   If[!FileExistsQ[localPDFPath] && downloadPDF && MatchQ[origin, "Arxiv" | "OpenReview"],
     DownloadPaper[data, PDFPath -> pDFPath, Verbose -> $verbose]
   ];
@@ -174,7 +174,7 @@ $minPaperSize = 5000;
 DownloadPaper[assoc_Assoc, OptionsPattern[]] := Scope[
   UnpackAssociation[assoc, authors, title, pdfUrl:"PDFURL", url:"URL"];
   UnpackOptions[$verbose, $dryRun, pDFPath, allowRename, overwriteTarget];
-  SetAutomatic[$verbose, $dryRun];
+  SetAuto[$verbose, $dryRun];
 
   title = PaperPageTitle[authors, title];
   VPrint["Paper prefixed title: ", title];
@@ -314,4 +314,3 @@ FindPDFMirrorURL[url_Str] := Scope[
   VPrint["Found PDF at ", MsgPath @ pdfUrl];
   pdfUrl
 ];
-

@@ -42,9 +42,9 @@ textIconBoxes[TextIcon[str_, opts___Rule]] := Scope[
     method, contentPadding, background, formatType, compressionFactor
   ];
 
-  SetAutomatic[fontColor, Black];
-  SetAutomatic[fontWeight, "Regular"];
-  SetAutomatic[fontFamily, $MathFont];
+  SetAuto[fontColor, Black];
+  SetAuto[fontWeight, "Regular"];
+  SetAuto[fontFamily, $MathFont];
 
   If[!ColorQ[fontColor],
     fontColor = ToColorGradient[fontColor];
@@ -54,7 +54,7 @@ textIconBoxes[TextIcon[str_, opts___Rule]] := Scope[
 
   Switch[method,
     "Raster",
-      SetAutomatic[fontSlant, Plain];
+      SetAuto[fontSlant, Plain];
       SetNone[formatType, Id];
       textIconRasterBoxes[str, fontSize, fontColor, fontWeight, fontFamily, fontSlant, formatType, contentPadding],
     "Vector",
@@ -73,7 +73,7 @@ textIconVectorBoxes[str_, fontSize_, fontColor_, fontWeight_, fontFamily_, fontS
   $TextIconVectorCache, Hash @ {str, fontSize, fontColor, fontWeight, fontFamily, fontSlant, formatType, contentPadding, background},
 
   (* MathForm implies SingleLetterItalics, which we simulate here *)
-  SetAutomatic[fontSlant, If[formatType === MathForm && StrQ[str] && SMatchQ[str, RomanLetter], Italic, Plain]];
+  SetAuto[fontSlant, If[formatType === MathForm && StrQ[str] && SMatchQ[str, RomanLetter], Italic, Plain]];
 
   If[!StrQ[str],
     Message[TextIcon::vectorOnlyStr, MsgExpr @ str];
@@ -157,4 +157,3 @@ makeTextIconGraphicsBox[boxes_, bounds_, baseImageSize_, background_, bshift_] :
     ],
     BoxBaselineShift -> (-bshift / System`\[FormalF])
   ];
-

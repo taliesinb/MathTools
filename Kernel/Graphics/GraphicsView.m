@@ -11,23 +11,23 @@ ConstructGraphicsViewTransform[viewAssoc_Assoc] := Scope[
   If[Dims[viewMatrix] === {2, 4, 4},
     Return @ GraphicsViewTransform[Dot @@ viewMatrix, viewMatrix]];
 
-  SetAutomatic[plotRange, {{-1, 1}, {-1, 1}, {-1, 1}}];
+  SetAuto[plotRange, {{-1, 1}, {-1, 1}, {-1, 1}}];
   plotSize = Dist @@@ plotRange;
   If[Total[plotSize] == 0, Return[Indeterminate]];
 
   plotRangeLower = Col1[plotRange];
-  SetAutomatic[viewPoint, {1.3, -2.4, 2}];
-  SetAutomatic[viewProjection, If[FreeQ[viewPoint, Inf], "Perspective", "Orthographic"]];
+  SetAuto[viewPoint, {1.3, -2.4, 2}];
+  SetAuto[viewProjection, If[FreeQ[viewPoint, Inf], "Perspective", "Orthographic"]];
   viewPoint //= Rep[$symbolicViewpointRules];
   viewPoint = Clip[viewPoint, {-1*^5, 1*^5}];
 
-  SetAutomatic[viewCenter, {0.5, 0.5, 0.5}];
+  SetAuto[viewCenter, {0.5, 0.5, 0.5}];
   If[MatchQ[viewCenter, {{_, _, _}, {_, _}}], viewCenter //= F];
   (* ^ Don't yet support translation of view *)
 
   viewCenter = plotRangeLower + viewCenter * plotSize;
 
-  SetAutomatic[viewVector, viewPoint * Max[plotSize] + viewCenter];
+  SetAuto[viewVector, viewPoint * Max[plotSize] + viewCenter];
   If[MatrixQ[viewVector],
     {cameraPoint, lookAtPoint} = viewVector
   ,
@@ -40,8 +40,8 @@ ConstructGraphicsViewTransform[viewAssoc_Assoc] := Scope[
     transVec //= SphericalRotateVector[viewRotation * Pi];
   ];
 
-  SetAutomatic[viewVertical, {0, 0, 1}];
-  SetAutomatic[viewAngle, $defaultViewAngle];
+  SetAuto[viewVertical, {0, 0, 1}];
+  SetAuto[viewAngle, $defaultViewAngle];
 
   viewAngle /= 2;
   isOrtho = viewProjection === "Orthographic";

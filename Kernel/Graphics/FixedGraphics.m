@@ -161,7 +161,7 @@ FixedGraphics::badInset = "Unrecognized inset ``."
 embedInset = Case[
 
   i:InsetBox[GraphicsBox[boxes_, opts___Rule], pos_:{0,0}, origin_:Auto, insetSize_:Auto, dir_:Auto] := Scope[
-    SetAutomatic[dir, {1, 0}];
+    SetAuto[dir, {1, 0}];
     pos //= ResolveOffsets[$graphicsScale];
     If[!MatchQ[dir, $CoordP], Message[FixedGraphics::badInsetDir, dir]; Return @ i];
     UnpackAnonymousOptions[{opts}, Auto, imageSize, plotRange, plotRangePadding, alignmentPos];
@@ -171,8 +171,8 @@ embedInset = Case[
       imageSize
     ];
     SetAll[plotRange, Auto];
-    SetAutomatic[origin, alignmentPos];
-    SetAutomatic[plotRange, PrimitiveBoxesBounds[boxes, None]];
+    SetAuto[origin, alignmentPos];
+    SetAuto[plotRange, PrimitiveBoxesBounds[boxes, None]];
     origin //= resolveOrigin;
     plotRange = PlotRangePad[plotRange, plotRangePadding];
     {plotWidth, plotHeight} = plotSize = Dist @@@ plotRange;
@@ -224,4 +224,3 @@ PublicFunction[DebugGraphics]
 
 DebugGraphics[g_, opts___] :=
   FixedGraphics[g, Ticks -> True, opts];
-

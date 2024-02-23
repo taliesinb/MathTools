@@ -364,8 +364,6 @@ EchoCellPrint[cells2_] := Module[{cells},
   ];
 ];
 
-
-
 (**************************************************************************************************)
 
 PublicSpecialFunction[CreateDebuggingWindow]
@@ -806,10 +804,10 @@ mUnpackExtendedOptions[graph_, syms_] :=
 SetHoldAllComplete[findMatchingSymbols];
 $lowerCaseSymbolRegExp = RegularExpression["\\b([a-z])(\\w+)\\b"];
 findMatchingSymbols[syms_List] := findMatchingSymbols[syms] = Block[
-  {$Context = "MathTools`Private`Dummy`", $ContextPath = {"System`", "MathTools`", $Context}, str},
-  str = ToString[Uneval @ syms, InputForm];
-  str = SRep[str, $lowerCaseSymbolRegExp :> SJoin[ToUpperCase["$1"], "$2"]];
-  ToExpression[str, InputForm, Quoted]
+  {$Context = "MathTools`Private`Dummy`", $ContextPath = {"System`", "MathTools`", $Context}, catStr},
+  catStr = ToString[Uneval @ syms, InputForm];
+  catStr = SRep[catStr, $lowerCaseSymbolRegExp :> SJoin[ToUpperCase["$1"], "$2"]];
+  ToExpression[catStr, InputForm, Quoted]
 ];
 
 (**************************************************************************************************)
@@ -1026,50 +1024,9 @@ FunctionSection[expr_] := Quoted[expr]
 
 (**************************************************************************************************)
 
-(* some of these are already defined in GU, but aren't macros, so have our own versions here *)
-PrivateMutatingFunction[SetAutomatic, SetMissing, SetNone, SetAll, SetInherited]
-
-defineSetter[symbol_, value_] := (
-  DefineLiteralMacro[symbol, symbol[lhs_, rhs_] := If[lhs === value, lhs = rhs, lhs]];
-  SetHoldAll @ symbol;
-);
-
-defineSetter[SetAutomatic, Auto];
-defineSetter[SetNone, None];
-defineSetter[SetAll, All];
-defineSetter[SetInherited, Inherited];
-
-DefineLiteralMacro[SetMissing, SetMissing[lhs_, rhs_] := If[MissingQ[lhs], lhs = rhs, lhs]];
-SetHoldAll[SetMissing];
-
-(**************************************************************************************************)
-
-PublicMutatingFunction[SetScaledFactor]
-
-DefineLiteralMacro[SetScaledFactor, SetScaledFactor[lhs_, scale_] := If[MatchQ[lhs, Scaled[_ ? NumericQ]], lhs //= F /* N; lhs *= scale]];
-
-(**************************************************************************************************)
-
 PrivateFunction[currentStyleSetting]
 
 currentStyleSetting[option_, stylename_] := option :> CurrentValue[{StyleDefinitions, stylename, option}];
-
-(**************************************************************************************************)
-
-PrivateFunction[ReplaceNone, ReplaceMissing, ReplaceAutomatic, ReplaceInherited]
-
-defineReplacer[symbol_, pattern_] := (
-  DefineLiteralMacro[symbol,
-    symbol[lhs_, rhs_] := Rep[lhs, pattern :> rhs],
-    symbol[rhs_]       := Rep[pattern :> rhs]
-  ];
-  SetHoldAll @ symbol;
-);
-
-defineReplacer[ReplaceNone, None];
-defineReplacer[ReplaceMissing, _Missing];
-defineReplacer[ReplaceAutomatic, Auto];
-defineReplacer[ReplaceInherited, Inherited];
 
 (**************************************************************************************************)
 

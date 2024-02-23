@@ -163,8 +163,6 @@ pointInsetBounds = Case[
   TextBox[_] | InsetBox[_]                  := StuffBag[$p, {0, 0}];
   Text3DBox[_] | Inset3DBox[_]              := StuffBag[$p, {0, 0, 0}];
   o_                                        := Null;
-,
-  {$CoordP}
 ];
 
 properInsetBounds = Case[

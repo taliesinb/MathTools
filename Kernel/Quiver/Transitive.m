@@ -60,9 +60,9 @@ TriangularQuiver[n_Int, cards:{x_, y_, z_}, opts:OptionsPattern[]] := Scope[
   
   UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
   center = Ceiling[{(n + 2) / 3, (2*n + 1) / 3}];
-  SetAutomatic[vertexOrigin, center];
+  SetAuto[vertexOrigin, center];
   If[IntQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
-  SetAutomatic[graphOrigin, Apply[vertexHead, center]];
+  SetAuto[graphOrigin, Apply[vertexHead, center]];
   
   vertices = Catenate @ Table[If[i <= j, vertexHead[i, j], Nothing], {i, n}, {j, n}];
   edges = Flatten @ {
@@ -156,9 +156,9 @@ SquareQuiver[spec:{$ModIntP, $ModIntP}, {cx_, cy_}, opts:OptionsPattern[]] := Sc
 
   UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
   center = Ceiling[{m, n} / 2];
-  SetAutomatic[vertexOrigin, center];
+  SetAuto[vertexOrigin, center];
   If[IntQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
-  SetAutomatic[graphOrigin, Apply[vertexHead, center]];
+  SetAuto[graphOrigin, Apply[vertexHead, center]];
   
   vertices = Catenate @ Array[vertexHead, StripModulo @ {m, n}];
   edges = Flatten @ {
@@ -249,9 +249,9 @@ CubicQuiver[spec:{$ModIntP, $ModIntP, $ModIntP}, {cx_, cy_, cz_}, opts:OptionsPa
 
   UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
   center = Ceiling[{m, n, p} / 2];
-  SetAutomatic[vertexOrigin, center];
+  SetAuto[vertexOrigin, center];
   If[IntQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
-  SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
+  SetAuto[graphOrigin, Apply[vertexHead, vertexOrigin]];
 
   vertices = Flatten[Array[vertexHead, {m, n, p}], 2];
   edges = Flatten @ {
@@ -334,9 +334,9 @@ LineQuiver[spec_, card_, opts:OptionsPattern[]] := Scope[
 
   UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
   center = Ceiling[n / 2];
-  SetAutomatic[vertexOrigin, center];
+  SetAuto[vertexOrigin, center];
   If[IntQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
-  SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
+  SetAuto[graphOrigin, Apply[vertexHead, vertexOrigin]];
   vertices //= Map[vertexHead];
 
   edges = ApplyWindowed[enrichedEdge[#1, #2, card, #1]&, vertices];
@@ -413,9 +413,9 @@ GridQuiver[k_Int, n:$ModIntP, opts:OptionsPattern[]] := Scope[
 
   UnpackOptions[vertexHead, vertexOrigin, graphOrigin];
   center = Ceiling[n / 2];
-  SetAutomatic[vertexOrigin, center];
+  SetAuto[vertexOrigin, center];
   If[IntQ[vertexOrigin] || IntegerVectorQ[vertexOrigin], vertexHead = List /* PlusOperator[-vertexOrigin] /* Apply[vertexHead]];
-  SetAutomatic[graphOrigin, Apply[vertexHead, vertexOrigin]];
+  SetAuto[graphOrigin, Apply[vertexHead, vertexOrigin]];
 
   vertices = Flatten[Array[List, Repeat[StripModulo @ n, k]], k-1];
   edges = Flatten @ Table[Map[generalGridEdge[n, i], vertices], {i, 1, k}];
@@ -457,7 +457,7 @@ TreeQuiver[k_Int, n_Int, opts:OptionsPattern[]] := Scope[
   UnpackOptions[angleOffset, cardinals];
   $cards = If[ListQ[cardinals], cardinals, Range @ k];
   edges = makeTreeEdge /@ vertices;
-  SetAutomatic[angleOffset, If[k == 2, Pi / 4, 0]];
+  SetAuto[angleOffset, If[k == 2, Pi / 4, 0]];
   vectorAssoc = AssocThread[cards, CirclePoints[{1, angleOffset}, 2 * k]];
   coords = Map[treeVertexCoord, vertices];
   scaling = 1 / k;

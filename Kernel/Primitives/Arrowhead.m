@@ -49,14 +49,14 @@ arrowheadBoxes[Arrowhead[pos:$ExtCoordP, dir:$CoordP, opts___Rule]] := Scope[
 
   tooltip = Lookup[{opts}, ArrowheadTooltip, None];
 
-  SetAutomatic[arrowheadLength, Norm @ dir];
+  SetAuto[arrowheadLength, Norm @ dir];
   arrowheadLength /= 2;
 
   iconData = LookupOrMessageKeys[$namedIconData, arrowheadShape, $Failed, Arrowhead::unknownArrowhead];
   If[FailureQ[iconData], Return @ {}];
   {prims, boxes2D, boxes3D, {boundX, boundY, {l, r}}, solid} = iconData;
 
-  SetAutomatic[arrowheadColor, Black];
+  SetAuto[arrowheadColor, Black];
   $styler = SolidEmptyStyleBoxOperator[solid, arrowheadColor, arrowheadOpacity, arrowheadThickness];
   rotMatrix = resolvePlane[pos, dir, arrowheadPlane, arrowheadLength];
 

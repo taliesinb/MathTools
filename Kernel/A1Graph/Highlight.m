@@ -79,12 +79,12 @@ resolveGraphRegionHighlightGraphics[spec_] := Scope[
   $highlightColor //= normalizeStyles;
   $highlightStyle //= normalizeStyles;
 
-  SetAutomatic[$highlightStyle, {}];
-  SetAutomatic[$highlightOpacity, 0.5];
+  SetAuto[$highlightStyle, {}];
+  SetAuto[$highlightOpacity, 0.5];
   If[!NumberQ[$highlightOpacity], $highlightOpacity //= ColorOpacity];
 
   defaultPalette = If[FreeQ[spec, "Foreground" | "Background" | Opaque | "Replace" | "ReplaceEdges"], "Dark", "Medium"];
-  SetAutomatic[$highlightColor, Offset[defaultPalette, 2]];
+  SetAuto[$highlightColor, Offset[defaultPalette, 2]];
 
   If[MatchQ[$highlightColor, _Str | Offset[_Str, _]], $highlightColor //= ToColorPalette];
   If[!ColorQ[$highlightColor] && !ColorVectorQ[$highlightColor],
@@ -343,7 +343,7 @@ highlightRegion[GraphRegionData[vertices_, {}]] /; $regionStyle === "Highlight" 
 
 sowVertexPoints[vertices_] := Scope[
   diskRadius = $diskRadius;
-  SetAutomatic[diskRadius, 10];
+  SetAuto[diskRadius, 10];
   requirePadding @ diskRadius;
   coords = Part[$VertexCoordinates, Dedup @ vertices];
   highlights = If[$GraphIs3D,
@@ -379,7 +379,7 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
   numSegments = Len @ segments;
 
   pathRadius = $pathRadius;
-  SetAutomatic[pathRadius, Switch[$pathStyle,
+  SetAuto[pathRadius, Switch[$pathStyle,
     "Replace" | "ReplaceEdges",           F @ evalGraphicsValue @ GraphicsValue["EdgeThickness"],
     s_ /; SContainsQ[s, "Arrow"],    4.0,
     "Line",                               6.0,
@@ -419,7 +419,7 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
 
         If[NumericQ[arrowheadSize],
           arrowheadSize = N[arrowheadSize] / $GraphPlotEffectiveImageWidth];
-        SetAutomatic[arrowheadSize, pathThickness];
+        SetAuto[arrowheadSize, pathThickness];
 
         (* note: arrowhead size is not a fraction of the full image width, but rather a fraction of the *displayed* image width, which
         excludes ImagePadding and is also modified when the aspect ratio of PlotRange does not match that of ImageSize. so this can be much
@@ -433,7 +433,7 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
           List @ RepAll[baseArrowheads, $apos -> $arrowheadPosition]
         ];
         diskRadius = $diskRadius;
-        SetAutomatic[diskRadius, pathRadius * 1.5];
+        SetAuto[diskRadius, pathRadius * 1.5];
         diskPrimitives = makeEndDiskPrimitives[vertices, $pathStyle, diskRadius];
         arrow = setbackArrow[segments, setbackDistance];
         extraArrowheads = If[$extraArrowheads === {}, Nothing,
@@ -444,7 +444,7 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
       "DiskLine" | "DiskLineDisk" | "LineDisk",
 
         diskRadius = $diskRadius;
-        SetAutomatic[diskRadius, pathRadius * 1.5];
+        SetAuto[diskRadius, pathRadius * 1.5];
 
         diskPrimitives = makeEndDiskPrimitives[vertices, $pathStyle, diskRadius];
         linePrimitives = setbackLine[segments, setbackDistance];
@@ -489,7 +489,7 @@ highlightRegion[GraphPathData[vertices_, edges_, inversions_]] := Scope[
 
   If[$GraphIs3D && $pathStyle =!= "Replace",
     diskRadius = $diskRadius;
-    SetAutomatic[diskRadius, pathRadius * 1.5];
+    SetAuto[diskRadius, pathRadius * 1.5];
     diskRadius = diskRadius / $GraphPlotEffectiveImageWidth * $graphPlotWidth;
     pathPrimitives = pathPrimitives /. {
       Disk[p_, r_] :> Sphere[p, r],

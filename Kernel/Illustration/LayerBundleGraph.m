@@ -25,7 +25,7 @@ procBundleLayer[g_Graph, i_Int] := Scope[
   {{l, b}, {r, t}} = CoordinateBoundingBox @ coords;
   w = r - l;
   scale = F[layerScales];
-  SetAutomatic[scale,
+  SetAuto[scale,
     imageWidth = F @ LookupImageSize @ ExtendedGraphPlot[g];
     imageWidth / w
   ];

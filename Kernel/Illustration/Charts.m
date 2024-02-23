@@ -11,7 +11,7 @@ Options[HighlightChartRegion] = {
 HighlightChartRegion[graph_, chart_, OptionsPattern[]] := Scope[
   UnpackOptions[color, arrowheads, preserveColors, lighter, label];
   cardinals = ChartSymbolCardinals @ chart;
-  SetAutomatic[color, HumanBlend @ Decases[$DarkGray] @ LookupCardinalColors[graph, cardinals]];
+  SetAuto[color, HumanBlend @ Decases[$DarkGray] @ LookupCardinalColors[graph, cardinals]];
   If[lighter != 0, color = ColorConvert[MapAt[# - lighter&, ColorConvert[color, Hue], 2], RGBColor]];
   result = HighlightGraphRegion[
     graph,

@@ -56,7 +56,7 @@ procHighlightRule = Case[
   lhs:{___, _ -> Each, ___} := MapTuples[procHighlightRule, VectorReplace[lhs, {(i_Int -> Each) :> Thread[i -> Range[Part[$dims, i]]], other_ :> List[other]}]];
   lhs:{___, Each, ___} := MapTuples[procHighlightRule, MapIndex1[If[#1 === Each, Range @ Part[$dims, #2], List @ #1]&, lhs]];
   lhs:$lhsSpecP := % @ Rule[lhs, Auto];
-  Rule[lhs_, col_ /; ColorQ[col] || col === Auto] := procHighlightLHS[ToList @ lhs] -> ReplaceAutomatic[col, indexedColor[$count++]];
+  Rule[lhs_, col_ /; ColorQ[col] || col === Auto] := procHighlightLHS[ToList @ lhs] -> SubAuto[col, indexedColor[$count++]];
 ];
 
 procHighlightLHS = Case[
@@ -140,7 +140,7 @@ attachLabelAxes[dims_, Auto, opts_] :=
   attachLabelAxes[dims, If[# > 1, Auto, None]& /@ dims, opts];
 
 attachLabelAxes[dims_, {lx_, ly_, lz_}, opts_][e_] := Scope[
-  SetAutomatic[lx, 1]; SetAutomatic[ly, 2]; SetAutomatic[lz, 3];
+  SetAuto[lx, 1]; SetAuto[ly, 2]; SetAuto[lz, 3];
   axes = CubeAxes[-dims/2, dims, {lx, ly, lz}, Seq @@ opts];
   {e, axes}
 ]
@@ -179,9 +179,9 @@ CubeArray[dims_List, opts:OptionsPattern[]] := Scope[
     plotLabel
   ];
   
-  SetAutomatic[$itemFunction, $defaultItemFunction];
-  SetAutomatic[cubeStyle, $defaultCubeStyle];
-  SetAutomatic[meshStyle, $defaultMeshStyle];
+  SetAuto[$itemFunction, $defaultItemFunction];
+  SetAuto[cubeStyle, $defaultCubeStyle];
+  SetAuto[meshStyle, $defaultMeshStyle];
 
   attachPlotLabel[dims, plotLabel] @ 
   RepAll[Annotation[a_, _] :> a] @
@@ -211,7 +211,7 @@ attachMesh[dims_, style_, fstyle_][e_] := {Style[MeshLines3D[-dims/2, dims, Fram
 
 attachTicks[dims_, opts:OptionsPattern[CubeArray]][e_] := Scope[
   UnpackOptions[ticksStyle, tickSpacing, ticks, flipTicks];
-  SetAutomatic[ticksStyle, $defaultTicksStyle];
+  SetAuto[ticksStyle, $defaultTicksStyle];
   If[ticks === None, Return @ e];
   center = -dims/2;
   isFlipped = resolveFlip[opts];
@@ -364,8 +364,8 @@ Options[CubeAxes] = {
 
 CubeAxes[origin_, size_, {lx_, ly_, lz_}, OptionsPattern[]] := Scope[
   UnpackOptions[labelPosition, insetScale, baseStyle, fontSize, includeArrow, cubeOffset, hideTrivialAxes, spacing];
-  SetAutomatic[baseStyle, $CubeBaseStyle];
-  If[FreeQ[baseStyle, FontSize], SetAutomatic[fontSize, 24]];
+  SetAuto[baseStyle, $CubeBaseStyle];
+  If[FreeQ[baseStyle, FontSize], SetAuto[fontSize, 24]];
   If[NumberQ[fontSize], baseStyle //= ReplaceOptions[FontSize -> fontSize]];
   If[MatchQ[labelPosition, Placed[_Str, _]],
     labelScale = L[labelPosition]; labelPosition //= F,
@@ -459,4 +459,3 @@ toRat[x_] := x;
 unit2biunit[{Above, _}] := 1;
 unit2biunit[{Below, _}] := -1;
 unit2biunit[x_] := 2x - 1;
-

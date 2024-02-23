@@ -52,7 +52,7 @@ DefineStandardTraditionalForm[{
 
 framedBoxes[e_, color_] := FrameBox[
   ToBoxes @ e,
-  ContentPadding -> False, FrameStyle -> ReplaceAutomatic[color, $LightGray],
+  ContentPadding -> False, FrameStyle -> SubAuto[color, $LightGray],
   FrameMargins -> {{3, 2}, {3, 4}}, RoundingRadius -> 4
 ]
 
@@ -159,7 +159,7 @@ SpacedRow[elems__] := Scope[
   rowSpacings = $srRowSpacings / 10;
   labelSpacing = $srLabelSpacing / 10;
   labelPosition = $srLabelPosition;
-  SetAutomatic[labelPosition, If[$srTransposed, Before, After]];
+  SetAuto[labelPosition, If[$srTransposed, Before, After]];
   labelIsBefore = labelPosition === Before;
   If[ListQ[$srMaxWidth],
     items = Insert[items, EndOfLine, List /@ TakeWhile[1 + (Accumulate @ $srMaxWidth), LessEqualThan[Len @ items]]]

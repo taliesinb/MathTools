@@ -28,7 +28,7 @@ CreateObsidianNote[title_Str, contents_Str, OptionsPattern[]] := Scope[
   UnpackOptions[duplicateTarget, replaceExisting,
     obsidianVault, noteFolder,
     frontMatter, creationTime, modificationTime, $dryRun];
-  SetAutomatic[obsidianVault, $DefaultObsidianVault];
+  SetAuto[obsidianVault, $DefaultObsidianVault];
   title //= sanitizeTitle;
   If[SContainsQ[title, $obsidianTitleCharacters], ReturnFailed["invalidNoteTitleChars", title]];
   notePath = toNotePath[title, noteFolder, obsidianVault];
@@ -56,6 +56,6 @@ CreateObsidianNote[title_Str, contents_Str, OptionsPattern[]] := Scope[
 
 _CreateObsidianNote := BadArguments[];
 
-toNotePath[title_, folder_, vault_] := FileNameJoin[{obsidianVault, ReplaceNone[folder, Nothing], title <> ".md"}];
+toNotePath[title_, folder_, vault_] := FileNameJoin[{obsidianVault, SubNone[folder, Nothing], title <> ".md"}];
 
 $obsidianTitleCharacters = {"\\", "/"};

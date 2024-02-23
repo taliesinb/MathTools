@@ -112,11 +112,11 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
 
   $lastInnerLabel = None;
   {$w, $h} = diagramSize;
-  SetAutomatic[imageSize, 2 * graphicsScale * diagramSize];
+  SetAuto[imageSize, 2 * graphicsScale * diagramSize];
 
-  SetAutomatic[baseThickness, 2];
-  SetAutomatic[wireThickness, baseThickness];
-  SetAutomatic[nodeEdgeThickness, baseThickness];
+  SetAuto[baseThickness, 2];
+  SetAuto[wireThickness, baseThickness];
+  SetAuto[nodeEdgeThickness, baseThickness];
 
   $colorModifierFn = parseDiagramColorRules[colorRules, gradientSymbolOptions];
   {boxTextModifierFn, wireTextModifierFn, regionTextModifierFn} = Map[
@@ -134,33 +134,33 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
 
   UnpackOptions[nodeFrameColor, nodeSize, $nodeShape, nodeLabelFontColor, nodeLabelPosition, nodeLabelSpacing, nodeLabelOffset, nodeLabelBackground, nodeLabelFontSize, nodeLabelFontWeight, nodeLabelFontFamily];
   $fontColor = nodeLabelFontColor;
-  $currentDiagramFontSize = $fontSize = ReplaceAutomatic[nodeLabelFontSize, fontSize];
-  $fontWeight = ReplaceAutomatic[nodeLabelFontWeight, fontWeight];
-  $fontFamily = ReplaceAutomatic[nodeLabelFontFamily, fontFamily];
+  $currentDiagramFontSize = $fontSize = SubAuto[nodeLabelFontSize, fontSize];
+  $fontWeight = SubAuto[nodeLabelFontWeight, fontWeight];
+  $fontFamily = SubAuto[nodeLabelFontFamily, fontFamily];
   labelSpacing = nodeLabelSpacing; labelPosition = nodeLabelPosition; labelOffset = nodeLabelOffset; labelBackground = nodeLabelBackground;
   boxColor = None; bLabelH = tLabelH = lLabelW = rLabelW = 0;
   $textModifierFn = boxTextModifierFn;
   boxPrims = MapIndex1[$keyOff = 0; parseBox, boxes];
 
   UnpackOptions[wireColor, wireLabelPosition, wireLabelFontColor, wireLabelSpacing, wireLabelOffset, wireLabelBackground, wireLabelFontSize, wireLabelFontWeight, wireLabelFontFamily];
-  SetAutomatic[wireColor, defaultWireColor];
+  SetAuto[wireColor, defaultWireColor];
   $fontColor = wireLabelFontColor;
-  $currentDiagramFontSize = $fontSize = ReplaceAutomatic[wireLabelFontSize, fontSize];
-  $fontWeight = ReplaceAutomatic[wireLabelFontWeight, fontWeight];
-  $fontFamily = ReplaceAutomatic[wireLabelFontFamily, fontFamily];
+  $currentDiagramFontSize = $fontSize = SubAuto[wireLabelFontSize, fontSize];
+  $fontWeight = SubAuto[wireLabelFontWeight, fontWeight];
+  $fontFamily = SubAuto[wireLabelFontFamily, fontFamily];
   labelPosition = wireLabelPosition; labelSpacing = wireLabelSpacing; labelOffset = wireLabelOffset; labelBackground = wireLabelBackground;
-  (* SetAutomatic[curveFunction, CircuitCurve[#, SetbackDistance -> None, SplitPosition -> splitPosition, Orientation -> splitOrientation]&]; *)
-  SetAutomatic[curveFunction, stringDiagramCurve];
+  (* SetAuto[curveFunction, CircuitCurve[#, SetbackDistance -> None, SplitPosition -> splitPosition, Orientation -> splitOrientation]&]; *)
+  SetAuto[curveFunction, stringDiagramCurve];
   $textModifierFn = wireTextModifierFn;
   wirePrims = MapIndex1[$keyOff = 0; parseWire, wires];
 
   UnpackOptions[tickPosition, tickLabelFontColor, tickLabelSpacing, tickLabelFontSize, tickLabelFontWeight, tickLabelFontFamily, tickLength];
   $fontColor = tickLabelFontColor;
-  $currentDiagramFontSize = $fontSize = ReplaceAutomatic[tickLabelFontSize, fontSize];
-  $fontWeight = ReplaceAutomatic[tickLabelFontWeight, fontWeight];
-  $fontFamily = ReplaceAutomatic[tickLabelFontFamily, fontFamily];
+  $currentDiagramFontSize = $fontSize = SubAuto[tickLabelFontSize, fontSize];
+  $fontWeight = SubAuto[tickLabelFontWeight, fontWeight];
+  $fontFamily = SubAuto[tickLabelFontFamily, fontFamily];
 
-  SetAutomatic[tickPosition, If[convention === RightToLeft, Left, Right]];
+  SetAuto[tickPosition, If[convention === RightToLeft, Left, Right]];
   If[!MatchQ[tickPosition, Left | Right],
     BadOptionSetting[StringDiagram, TickPosition, tickPosition];
     ReturnFailed[]];
@@ -168,16 +168,16 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   tickPrims = Map[parseFrameTick, frameTicks];
 
   UnpackOptions[regionLabelFontSize, regionLabelFontWeight, regionLabelFontFamily];
-  $currentDiagramFontSize = $fontSize = ReplaceAutomatic[regionLabelFontSize, fontSize];
-  $fontWeight = ReplaceAutomatic[regionLabelFontWeight, fontWeight];
-  $fontFamily = ReplaceAutomatic[regionLabelFontFamily, fontFamily];
+  $currentDiagramFontSize = $fontSize = SubAuto[regionLabelFontSize, fontSize];
+  $fontWeight = SubAuto[regionLabelFontWeight, fontWeight];
+  $fontFamily = SubAuto[regionLabelFontFamily, fontFamily];
   labelPosition = Center; labelSpacing = 10;
   $textModifierFn = regionTextModifierFn;
   regPrims = Map[parseReg, regions];
 
   noneFrame = If[$fillRegions =!= {}, GrayLevel[0.99], None];
-  SetAutomatic[frameColor, noneFrame];
-  SetAutomatic[frameThickness, baseThickness];
+  SetAuto[frameColor, noneFrame];
+  SetAuto[frameThickness, baseThickness];
 
   rect = Rectangle[Offset[{0, -1}, {-$w, -$h}], Offset[{0, 0}, {$w, $h}]];
 
@@ -196,7 +196,7 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
     Style[rect, FaceForm @ toRegionColor @ backgroundColor, EdgeForm @ None]
   ];
 
-  SetAutomatic[imagePadding, 2];
+  SetAuto[imagePadding, 2];
 
   imagePadding //= StandardizePadding;
   {{padl, padr}, {padb, padt}} = imagePadding;
@@ -328,10 +328,10 @@ makeBox = Case[
   "BlackDisk" := makeDiskBox @ FaceEdgeForm[Black];
 
   (h:"Disk"|NodeDisk|"Box"|NodeBox)[label_, r_:Auto, opts___Rule] := Scope[
-    SetAutomatic[r, nodeSize];
+    SetAuto[r, nodeSize];
     label //= $colorModifierFn;
     labelColor = extractColorFromLabel @ label;
-    fc = Lookup[{opts}, FrameColor, If[ColorQ @ labelColor, OklabDarker[labelColor], ReplaceNone[boxColor, ReplaceNone[nodeFrameColor, defaultWireColor]]]];
+    fc = Lookup[{opts}, FrameColor, If[ColorQ @ labelColor, OklabDarker[labelColor], SubNone[boxColor, SubNone[nodeFrameColor, defaultWireColor]]]];
     ef = {AbsoluteThickness[nodeEdgeThickness], fc};
     ff = Lookup[{opts}, Background, If[ColorQ @ labelColor, Lighter[labelColor, 0.9], nodeBackground]];
     isDisk = h ~~~ "Disk" | NodeDisk;
@@ -419,7 +419,7 @@ parseWire = Case[
     SetNone[sc, wireColor];
     pos = toPos /@ {a, b};
     x = F[Decases[_maybe | -_maybe] @ Col1 @ pos, None];
-    pos = pos /. maybe[0] :> ReplaceNone[x, 0];
+    pos = pos /. maybe[0] :> SubNone[x, 0];
     size = toSize /@ {a, b};
     curve = Rep[curveFunction, Line -> (SeqFirst /* Line)][pos, size];
     points = DiscretizeCurve @ curve;
@@ -659,5 +659,4 @@ toObj = Case[
   s_Str := % @ CategoryObjectSymbol[s];
   e_       := "Point"[$head[e]];
 ]
-
 

@@ -36,7 +36,7 @@ LatticeColoringPlot[quiver_, args___] := Scope[
     quiver,
     GraphTheme -> "FundamentalColoringQuiver",
     SelfLoopRadius -> $plcSLR, ImageSize -> $plcIconSize,
-    VertexCoordinates -> If[notb, Take[CirclePoints @ ReplaceAutomatic[$vCount, vCount], vCount], {{0, 0}}]
+    VertexCoordinates -> If[notb, Take[CirclePoints @ SubAuto[$vCount, vCount], vCount], {{0, 0}}]
   ];
   If[notb, icon //= CombineMultiedges];
   graph = LatticeGraph[quiver, FilterOptions @ args,

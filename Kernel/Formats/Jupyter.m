@@ -77,7 +77,7 @@ $isJupyterTarget = False;
 
 ExportToJupyter[nb:_NotebookObject:Auto, target_Str, OptionsPattern[]] := Scope[
   UnpackOptions[$rasterizationURL, $rasterizationPath, maxItems];
-  SetAutomatic[nb, EvaluationNotebook[]];
+  SetAuto[nb, EvaluationNotebook[]];
   paras = ToMarkdownString[nb, True,
     MarkdownFlavor -> "Jupyter",
     RasterizationPath -> $rasterizationPath,

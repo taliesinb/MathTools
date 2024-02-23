@@ -27,7 +27,7 @@ gridComplexPrimitives[GridComplex[grid_List, primitives_, opts:OptionsPattern[]]
   UnpackOptionsAs[GridComplex, {opts}, gridScale];
   {coords, size} = readGrid @ grid;
   {r, c} = size;
-  SetAutomatic[gridScale, 1];
+  SetAuto[gridScale, 1];
   rules = Normal @ VectorApply[{#2 - 1, r - #1} * gridScale&, coords];
   border = Invisible @ Point @ {{0, 0}-gridScale/5, ({c, r} - 1 + 1/5) * gridScale};
   {
