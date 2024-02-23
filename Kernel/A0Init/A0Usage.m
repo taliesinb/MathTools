@@ -35,7 +35,7 @@ $slotRegularExpression = RegularExpression["<\\*([^*]+)\\*>"];
 
 substituteUsageSlots[s_Str] :=
   SRep[s, "<*" ~~ Shortest[slot___] ~~ "*>" :> Block[
-    {$ContextPath = {"System`", "QuiverGeometry`", "QuiverGeometry`Private`"}},
+    {$ContextPath = {"System`", "MathTools`", "MathTools`Private`"}},
     toUsageStr[ToExpression[slot, InputForm]]
   ]];
 
@@ -48,7 +48,7 @@ PrivateSpecialFunction[IfSynaxInfo]
 
 SetHoldFirst[IfSynaxInfo];
 IfSynaxInfo[body_] := If[
-  $Notebooks && !TrueQ[QuiverGeometryLoader`$DisableSyntaxInformation] && !TrueQ[QuiverGeometryLoader`$FastLoad],
+  $Notebooks && !TrueQ[MTLoader`$DisableSyntaxInformation] && !TrueQ[MTLoader`$FastLoad],
   body
 ];
 
@@ -245,7 +245,7 @@ SetInitialValue[sym_Symbol, other__Symbol, body_] := (SetInitialValue[sym, body]
 
 SetInitialValue[sym_Symbol, body_] := If[
   !HasImmediateValueQ[sym],
-  QuiverGeometryLoader`DeclarePreservedVariable[sym];
+  MTLoader`DeclarePreservedVariable[sym];
   Set[sym, body]
 ];
 
@@ -256,7 +256,7 @@ PrivateMutatingFunction[SetDelayedInitialValue]
 SetDelayedInitialValue[sym_Symbol, other__Symbol, body_] := (SetDelayedInitialValue[sym, body]; SetDelayedInitialValue[other, body]);
 
 SetDelayedInitialValue[sym_Symbol, body_] := If[!HasOwnEvaluationsQ[sym],
-  QuiverGeometryLoader`DeclarePreservedVariable[sym];
+  MTLoader`DeclarePreservedVariable[sym];
   SetDelayed[sym, body]
 ];
 
@@ -269,7 +269,7 @@ PrivateMutatingFunction[SetUsage]
 preprocessUsageString[usageString_] :=
   FixedPoint[substituteUsageSlots, usageString]
 
-SetUsage[___] /; TrueQ[QuiverGeometryLoader`$DisableSetUsage] || TrueQ[QuiverGeometryLoader`$FastLoad] := Null;
+SetUsage[___] /; TrueQ[MTLoader`$DisableSetUsage] || TrueQ[MTLoader`$FastLoad] := Null;
 
 SetUsage[usageString_Str] :=
   GeneralUtilities`SetUsage[Eval @ preprocessUsageString @ usageString];

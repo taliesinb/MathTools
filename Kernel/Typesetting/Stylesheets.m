@@ -1,20 +1,20 @@
 PublicVariable[$DarkStylesheetPath, $LightStylesheetPath, $StylesheetPath]
 
-$DarkStylesheetPath = LocalPath["StyleSheets", "QuiverGeometryDark.nb"];
-$LightStylesheetPath = LocalPath["StyleSheets", "QuiverGeometryLight.nb"];
+$DarkStylesheetPath = LocalPath["StyleSheets", "MathToolsDark.nb"];
+$LightStylesheetPath = LocalPath["StyleSheets", "MathToolsLight.nb"];
 $StylesheetPath = $DarkStylesheetPath;
 
 (**************************************************************************************************)
 
-PublicFunction[UpdateQuiverGeometryStylesheet]
+PublicFunction[UpdateMathToolsStylesheet]
 
-UpdateQuiverGeometryStylesheet::open = "Could not open existing stylesheet at ``.";
-UpdateQuiverGeometryStylesheet::replace = "Could not replace existing stylesheet at ``.";
-UpdateQuiverGeometryStylesheet::save = "Could not save existing stylesheet at ``.";
+UpdateMathToolsStylesheet::open = "Could not open existing stylesheet at ``.";
+UpdateMathToolsStylesheet::replace = "Could not replace existing stylesheet at ``.";
+UpdateMathToolsStylesheet::save = "Could not save existing stylesheet at ``.";
 
-UpdateQuiverGeometryStylesheet[] := Scope @ CatchMessage[
+UpdateMathToolsStylesheet[] := Scope @ CatchMessage[
 
-  template  = loadStylesheet["QuiverGeometry.template.nb"];
+  template  = loadStylesheet["MathTools.template.nb"];
   darkMode  = loadStylesheet["DarkMode.nb"];
   lightMode = loadStylesheet["LightMode.nb"];
 
@@ -50,9 +50,9 @@ writeStylesheetFile[path_, contents_] := Scope[
 
 (**************************************************************************************************)
 
-PrivateFunction[GeneratePrivateQuiverGeometryStylesheet]
+PrivateFunction[GeneratePrivateMathToolsStylesheet]
 
-GeneratePrivateQuiverGeometryStylesheet[] := Scope[
+GeneratePrivateMathToolsStylesheet[] := Scope[
  template = Notebook[{
       Cell[StyleData[StyleDefinitions -> $StylesheetPath]],
       Cell[StyleData["Dummy"]]
@@ -77,11 +77,11 @@ makeTemplateBoxStyleCell[name_, fn_] := With[
 
 (**************************************************************************************************)
 
-PublicFunction[ApplyPrivateQuiverGeometryNotebookStyles]
+PublicFunction[ApplyPrivateMathToolsNotebookStyles]
 
-ApplyPrivateQuiverGeometryNotebookStyles[] := (
+ApplyPrivateMathToolsNotebookStyles[] := (
   SetOptions[EvaluationNotebook[],
-    StyleDefinitions -> GeneratePrivateQuiverGeometryStylesheet[],
+    StyleDefinitions -> GeneratePrivateMathToolsStylesheet[],
     DockedCells -> None
   ];
 );
@@ -138,7 +138,7 @@ UpdateLegacyNotebook[path_Str] /; SEndsQ[path, ".nb"] := Scope[
   Quiet @ CopyFile[path, path <> ".backup"];
   nb = NotebookOpen[path, Visible -> False];
   UpdateLegacyNotebook @ nb;
-  ApplyQuiverGeometryNotebookStyles @ nb;
+  ApplyMathToolsNotebookStyles @ nb;
   SetOptions[nb, Visible -> True];
   NotebookSave @ nb;
   NotebookClose @ nb;
@@ -172,31 +172,31 @@ FindMissingTemplateBoxDefinitions[nb_, ref_:Auto] := Scope[
 
 (**************************************************************************************************)
 
-PublicFunction[QuiverGeometryStyleNames]
+PublicFunction[MathToolsStyleNames]
 
-QuiverGeometryStyleNames[] := NotebookStyleDataNames[$StylesheetPath];
+MathToolsStyleNames[] := NotebookStyleDataNames[$StylesheetPath];
 
 (**************************************************************************************************)
 
-PublicFunction[ApplyQuiverGeometryStylesheet]
+PublicFunction[ApplyMathToolsStylesheet]
 
-ApplyQuiverGeometryStylesheet[] := (
+ApplyMathToolsStylesheet[] := (
   SetOptions[EvaluationNotebook[], StyleDefinitions -> $StylesheetPath];
 );
 
-ApplyQuiverGeometryStylesheet["Dark"] := (
+ApplyMathToolsStylesheet["Dark"] := (
   SetOptions[EvaluationNotebook[], StyleDefinitions -> $DarkStylesheetPath]
 )
 
-ApplyQuiverGeometryStylesheet["Light"] := (
+ApplyMathToolsStylesheet["Light"] := (
   SetOptions[EvaluationNotebook[], StyleDefinitions -> $LightStylesheetPath]
 )
 
 (**************************************************************************************************)
 
-PublicFunction[CreateQuiverGeometryNotebook]
+PublicFunction[CreateMathToolsNotebook]
 
-CreateQuiverGeometryNotebook[] :=
+CreateMathToolsNotebook[] :=
   CreateDocument[
     {Cell["Title", "Title"],
      Cell["Chapter", "Chapter"],

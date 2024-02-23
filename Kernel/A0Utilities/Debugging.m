@@ -158,7 +158,7 @@ DynamicPointGraphics[n_Int, fn_] := Rep[
   HoldC[body_] :>
     DynamicModule @@ Hold[
       {\[FormalX] = circlePoints[n]},
-      If[QuiverGeometryLoader`$CurrentlyLoading, "LOADING",
+      If[MTLoader`$CurrentlyLoading, "LOADING",
         LocatorPane[Dynamic[\[FormalX]], Graphics[
           Dynamic[safeDynamicEval @ body, TrackedSymbols :> {\[FormalX]}],
           PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None
@@ -183,7 +183,7 @@ DynamicPointGraphics[{n_Int, specSeq__}, fn_] := With[
       Apply[DynamicModule, Hold[
         specSets,
         Labeled[
-          If[QuiverGeometryLoader`$CurrentlyLoading, "LOADING", LocatorPane[Dynamic[\[FormalX]], Graphics[
+          If[MTLoader`$CurrentlyLoading, "LOADING", LocatorPane[Dynamic[\[FormalX]], Graphics[
             Dynamic[body, TrackedSymbols :> specVars],
             PlotRange -> 1.1, Frame -> True, FrameTicks -> None, Axes -> None
           ]]],
@@ -226,11 +226,11 @@ throwMessageTag[_] := Throw[$Failed, $throwMessageTag];
 
 (**************************************************************************************************)
 
-PublicDebuggingFunction[PrintQGStack]
+PublicDebuggingFunction[PrintMTStack]
 
 $stackFile := $stackFile = TemporaryPath["stack.m"];
 
-PrintQGStack[label_:None] := StackInhibit @ Block[
+PrintMTStack[label_:None] := StackInhibit @ Block[
   {stack, cells},
   stack = Stack[_];
   Beep[];
@@ -245,7 +245,7 @@ SetHoldAllComplete[toStackCell];
 
 toStackCell[HoldForm[e_]] := toStackCell @ e;
 
-toStackCell[tssRhs:(head_Symbol[___])] /; QGSymbolQ[head] := Module[{boxes},
+toStackCell[tssRhs:(head_Symbol[___])] /; MTSymbolQ[head] := Module[{boxes},
   boxes = clickCopyBox[lhsEchoStr @ tssRhs, Uneval @ tssRhs];
   Cell[
     BoxData @ boxes, "Output",
@@ -261,14 +261,14 @@ toStackCell[_] := Nothing;
 SetHoldAllComplete[extractHead];
 
 extractHead[HoldForm[e_]] := extractHead @ e;
-extractHead[Catch[_, _, QuiverGeometry`Init`Macros`ThrownMessageHandler[func_Symbol]]] := HoldForm[func];
+extractHead[Catch[_, _, MathTools`Init`Macros`ThrownMessageHandler[func_Symbol]]] := HoldForm[func];
 extractHead[CompoundExpression[first_, Null]] := extractHead @ first;
-extractHead[head_Symbol[___]] := If[QGSymbolQ[head], HoldForm[head], Nothing];
+extractHead[head_Symbol[___]] := If[MTSymbolQ[head], HoldForm[head], Nothing];
 extractHead[head_[___]] := extractHead[head];
 extractHead[_] := Nothing;
 
-QGSymbolQ[s_Symbol ? HoldAtomQ] := SStartsQ[Context @ Uneval @ s, "QuiverGeometry`"] && HasAnyEvaluationsQ[s];
-QGSymbolQ[_] := False;
+MTSymbolQ[s_Symbol ? HoldAtomQ] := SStartsQ[Context @ Uneval @ s, "MathTools`"] && HasAnyEvaluationsQ[s];
+MTSymbolQ[_] := False;
 
 (**************************************************************************************************)
 
@@ -433,12 +433,12 @@ PublicDebuggingFunction[PerformSelfLinting]
 PerformSelfLinting[] := Scope[
   Decases[{} | <||>] @ Assoc[
     "MissingPackageScopes" -> findMissingPackageScopes[],
-    "SuspiciousPackageLines" -> QuiverGeometryLoader`$SuspiciousPackageLines
+    "SuspiciousPackageLines" -> MTLoader`$SuspiciousPackageLines
   ]
 ];
 
 findMissingPackageScopes[] := Scope[
-  privateSymbols = Names["QuiverGeometry`**`*"];
+  privateSymbols = Names["MathTools`**`*"];
   privateSymbolNames = L /@ SSplit[privateSymbols, "`"];
   moduleSymbols = Select[Dedup @ privateSymbolNames, SEndsQ["$"]];
   moduleSymbols = Join[moduleSymbols, SDrop[moduleSymbols, -1]];
@@ -546,20 +546,20 @@ $currentDependencyGraph = None;
 hasEvalQ[HoldC[s_]] := HasAnyEvaluationsQ[s];
 
 SymbolDependancyGraph[] := Scope[
-  If[$lastLoadCount === QuiverGeometryLoader`$LoadCount,
+  If[$lastLoadCount === MTLoader`$LoadCount,
     Return @ $currentDependencyGraph];
-  $packages = QuiverGeometryLoader`ReadSource[False, True, False];
+  $packages = MTLoader`ReadSource[False, True, False];
   $packages = $packages /. _MessageName -> Null;
   definingHeads = _Set | _SetDelayed | _DeclareGraphicsPrimitive;
   positions = Position[$packages, definingHeads];
-  symbolNames = Union[Names["QuiverGeometry`*"], Names["QuiverGeometry`Private`*"], Names["QuiverGeometry`**`*"]];
-  symbolNames = Comp[symbolNames, {"Case"}, QuiverGeometryLoader`$SymbolGroups["DebuggingFunction"]];
+  symbolNames = Union[Names["MathTools`*"], Names["MathTools`Private`*"], Names["MathTools`**`*"]];
+  symbolNames = Comp[symbolNames, {"Case"}, MTLoader`$SymbolGroups["DebuggingFunction"]];
   symbols = ToExpression[symbolNames, InputForm, HoldC];
   symbols = Select[symbols, hasEvalQ];
   symbolsAssoc = UAssoc[# -> True& /@ symbols];
   $symbolExtractR = sym_Symbol /; KeyQ[symbolsAssoc, HoldC[sym]] :> HoldForm[sym];
   edges = Flatten @ Map[processPosition, positions];
-  $lastLoadCount ^= QuiverGeometryLoader`$LoadCount;
+  $lastLoadCount ^= MTLoader`$LoadCount;
   $currentDependencyGraph ^= Graph[edges,
     GraphLayout -> None, VertexLabels -> Placed[Auto, Tooltip],
     EdgeShapeFunction -> symbolDependancyEdge
@@ -627,8 +627,8 @@ SymbolDependancyGraph[sym_Symbol | HoldC[sym_Symbol] | HoldForm[sym_Symbol], n:$
 ];
 
 vertexColor[HoldForm[sym_]] := Switch[Context[sym],
-  "QuiverGeometry`", $Green,
-  "QuiverGeometry`Private`", $Orange,
+  "MathTools`", $Green,
+  "MathTools`Private`", $Orange,
   _, $Red
 ];
 

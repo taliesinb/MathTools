@@ -3,7 +3,7 @@
 
 $packageDirectory = ParentDirectory @ DirectoryName @ $InputFileName;
 
-Print["Loading QuiverGeometry."];
+Print["Loading MathTools."];
 Get @ FileNameJoin[{$packageDirectory, "Kernel", "init.m"}];
 
 Print["Running tests."];

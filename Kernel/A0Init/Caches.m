@@ -120,7 +120,7 @@ printFileInsert[path_Str, key_, res_] /; TrueQ[$verbose] :=
 
 PublicDebuggingFunction[CacheSymbolNames]
 
-CacheSymbolNames[] := Names[QuiverGeometryLoader`$CacheContext <> "*"];
+CacheSymbolNames[] := Names[MTLoader`$CacheContext <> "*"];
 
 (**************************************************************************************************)
 

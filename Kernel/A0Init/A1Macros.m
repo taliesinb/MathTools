@@ -71,7 +71,7 @@ Protect[Scope];
 
 SetHoldAllComplete[mScopeWithDefs, procScopeDef, quotedSetDelayed, nocontextName];
 
-$privScope = "QuiverGeometry`Private`";
+$privScope = "MathTools`Private`";
 
 mScopeWithDefs[body_, {}, type_] :=
   GeneralUtilities`Control`PackagePrivate`mScope[body, type];
@@ -166,7 +166,7 @@ procDestructArg[e_Symbol] := Quoted[e];
 procDestructArg[argSpec_] := With[
   {symbolPos = Position[Uneval @ argSpec, _Symbol, {0, Inf}, Heads -> False]},
   If[symbolPos === {},
-    Symbol["QuiverGeometry`Private`$$" <> IntStr[$i++]]
+    Symbol["MathTools`Private`$$" <> IntStr[$i++]]
   ,
     With[{parentSym = Symbol[Extract[Uneval @ argSpec, F @ symbolPos, HoldSymbolName] <> "$$"]},
       AppTo[$destructAliases, Map[
@@ -806,7 +806,7 @@ mUnpackExtendedOptions[graph_, syms_] :=
 SetHoldAllComplete[findMatchingSymbols];
 $lowerCaseSymbolRegExp = RegularExpression["\\b([a-z])(\\w+)\\b"];
 findMatchingSymbols[syms_List] := findMatchingSymbols[syms] = Block[
-  {$Context = "QuiverGeometry`Private`Dummy`", $ContextPath = {"System`", "QuiverGeometry`", $Context}, str},
+  {$Context = "MathTools`Private`Dummy`", $ContextPath = {"System`", "MathTools`", $Context}, str},
   str = ToString[Uneval @ syms, InputForm];
   str = SRep[str, $lowerCaseSymbolRegExp :> SJoin[ToUpperCase["$1"], "$2"]];
   ToExpression[str, InputForm, Quoted]
@@ -906,7 +906,7 @@ binaryUnpacker[(sym_Symbol | Hold[sym_]) -> spec_] :=
   {Quoted @ sym, SymbolName @ Uneval @ sym, unpackBinaryTypeSpec @ spec};
 
 binaryUnpacker[spec_] :=
-  {Quoted @ QuiverGeometry`Private`$unused, None, unpackBinaryTypeSpec @ spec};
+  {Quoted @ MathTools`Private`$unused, None, unpackBinaryTypeSpec @ spec};
 
 (**************************************************************************************************)
 
@@ -1103,16 +1103,16 @@ _PathJoin := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicVariable[$TemporaryQGDirectory]
+PublicVariable[$TemporaryMTDirectory]
 
-$TemporaryQGDirectory := $TemporaryQGDirectory = EnsureDirectory[PathJoin[$TemporaryDirectory, "qg"]];
+$TemporaryMTDirectory := $TemporaryMTDirectory = EnsureDirectory[PathJoin[$TemporaryDirectory, "mt"]];
 
 (**************************************************************************************************)
 
 PublicFunction[TemporaryPath]
 
-TemporaryPath[file_Str] := PathJoin[$TemporaryQGDirectory, file];
-TemporaryPath[args__Str, file_Str] := PathJoin[EnsureDirectory @ PathJoin[$TemporaryQGDirectory, args], file];
+TemporaryPath[file_Str] := PathJoin[$TemporaryMTDirectory, file];
+TemporaryPath[args__Str, file_Str] := PathJoin[EnsureDirectory @ PathJoin[$TemporaryMTDirectory, args], file];
 
 (**************************************************************************************************)
 

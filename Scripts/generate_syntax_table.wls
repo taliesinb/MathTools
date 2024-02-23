@@ -6,7 +6,7 @@
 
 $packageDirectory = ParentDirectory @ DirectoryName @ $InputFileName;
 
-Print["Loading QG."];
+Print["Loading MT."];
 Get @ FileNameJoin[{$packageDirectory, "Kernel", "init.m"}];
 
 Print["Populating symbols."];
@@ -34,7 +34,7 @@ vectorSelect[syms_, fn_] := Pick[syms, fn @ syms, True];
 vectorDiscard[syms_, fn_] := Pick[syms, fn @ syms, False];
 
 
-$symbolTable = Normal @ QuiverGeometryLoader`$SymbolTable;
+$symbolTable = Normal @ MTLoader`$SymbolTable;
 toSymName[e_Symbol] := SymbolName[e];
 toSymName[Hold[e___]] := Splice @ MapUnevaluated[Function[s, SymbolName[Unevaluated[s]], HoldFirst], {e}];
 $systemGroups = Association @ Merge[Cases[$symbolTable, Rule[{"System`", group_}, list_] :> Rule[group, toSymName /@ list]], Catenate];
@@ -166,8 +166,8 @@ $finalFunctions = Select[$finalFunctions, StringLength[#]>1&];
 $finalFunctions = Discard[$finalFunctions, StringEndsQ["$"]];
 
 
-$allQGsymbols = Catenate @ QuiverGeometryLoader`$SymbolGroups;
-$finalFunctions = Complement[$finalFunctions,$allQGsymbols];
+$allMTsymbols = Catenate @ MTLoader`$SymbolGroups;
+$finalFunctions = Complement[$finalFunctions,$allMTsymbols];
 $finalFunctions // Length
 
 

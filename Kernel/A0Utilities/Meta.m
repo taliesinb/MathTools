@@ -244,9 +244,9 @@ PublicIOFunction[SourceLineFind, SourceStringCases, SourceStringReplace]
 
 $kernelPathLen = SLen[LocalPath["Kernel"]] + 1;
 
-SourceLineFind[patt_, opts___Rule]     := FileLineFind[QuiverGeometryLoader`$SourceFiles, patt, opts];
-SourceStringCases[patt_, opts___Rule]   := FileStringCases[QuiverGeometryLoader`$SourceFiles, patt, opts] // Rep[a_Assoc :> KMap[SDrop[#, $kernelPathLen]&, a]];
-SourceStringReplace[patt_, opts___Rule] := FileStringReplace[QuiverGeometryLoader`$SourceFiles, patt, opts];
+SourceLineFind[patt_, opts___Rule]     := FileLineFind[MTLoader`$SourceFiles, patt, opts];
+SourceStringCases[patt_, opts___Rule]   := FileStringCases[MTLoader`$SourceFiles, patt, opts] // Rep[a_Assoc :> KMap[SDrop[#, $kernelPathLen]&, a]];
+SourceStringReplace[patt_, opts___Rule] := FileStringReplace[MTLoader`$SourceFiles, patt, opts];
 
 (**************************************************************************************************)
 
@@ -285,7 +285,7 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
 
   res = Check[
     template = ImportUTF8 @ inFile;
-    symbolTable = QuiverGeometryLoader`$SymbolTable;
+    symbolTable = MTLoader`$SymbolTable;
 
     (* system groups *)
     systemSymbolPath = DataPath["Wolfram", "SystemSymbolTable.mx"];
@@ -304,7 +304,7 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
     If[!AssocQ[groups], ReturnFailed[]];
 
     groups //= KSortBy[groupSortIndex];
-    localGroups = QuiverGeometryLoader`$SymbolGroups;
+    localGroups = MTLoader`$SymbolGroups;
 
     KVMap[addToGroup, localGroups];
     addToGroup["SpecialFunction", {"ExpressionTable"}];
@@ -322,7 +322,7 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
         addToGroup[group, {alias}];
         alias -> group
       ),
-      QuiverGeometryLoader`$FromSymbolAlias
+      MTLoader`$FromSymbolAlias
     ];
     VPrint["Resolved aliases groups: ", aliasGroups];
 

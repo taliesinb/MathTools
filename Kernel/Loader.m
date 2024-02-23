@@ -1,11 +1,11 @@
-BeginPackage["QuiverGeometryLoader`", {"GeneralUtilities`"}];
+BeginPackage["MTLoader`", {"GeneralUtilities`"}];
 
 (* contexts *)
-$PublicContext = "QuiverGeometry`";
-$PrivateContext = "QuiverGeometry`Private`";
-$CacheContext = "QuiverGeometryCaches`";
-$LoaderContext = "QuiverGeometryLoader`";
-$ShortcutsContext = "QuiverGeometryShortcuts`";
+$PublicContext = "MathTools`";
+$PrivateContext = "MathTools`Private`";
+$CacheContext = "MathToolsCaches`";
+$LoaderContext = "MTLoader`";
+$ShortcutsContext = "MathToolsShortcuts`";
 
 (* file paths *)
 $LoaderFileName = AbsoluteFileName @ ExpandFileName @ $InputFileName;
@@ -208,7 +208,7 @@ KeyValueMap[Set[resolvePackageSymbol[#1], resolvePackageSymbol[#2]]&, $FromSymbo
 
 $initialSymbolResolutionDispatch2 = Dispatch @ {
   Package`PackageSymbol["SetUsage"][usageString_String]  :> RuleCondition[rewriteSetUsage[usageString]],
-  Package`PackageSymbol["$PackageInitializer"]           :> If[DownValues[QuiverGeometryLoader`LoadSource] === {}, Get @ kernelInit],
+  Package`PackageSymbol["$PackageInitializer"]           :> If[DownValues[MTLoader`LoadSource] === {}, Get @ kernelInit],
   p:Package`PublicScopedOption[___]                      :> RuleCondition @ processScopedOption[p],
   p:Package`PublicTypesettingFormBox[___]                :> RuleCondition @ processTypesettingFormBox[p]
 };
@@ -293,7 +293,7 @@ $stringProcessingRules = {
   RegularExpression["(?s)\"\"\"(.*?)\"\"\""] :>
     StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""],
   RegularExpression["(?s)ExpressionTable\\[\n(.*?)\n\\]"] :>
-    StringJoin["QuiverGeometryLoader`ExpressionTable[\"", $currentContext, "\", \"\n", StringTrim @ StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\"\n]"],
+    StringJoin["MTLoader`ExpressionTable[\"", $currentContext, "\", \"\n", StringTrim @ StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\"\n]"],
 (*   RegularExpression["(?s)(?<=\\s)`(.*?)`(?=\\s)"] :>
     StringJoin["\"", StringReplace["$1", {"\\" -> "\\\\", "\"" -> "\\\""}], "\""],
  *)
@@ -301,7 +301,7 @@ $stringProcessingRules = {
   RegularExpression[" ~~~ ([^\n;&]+)"] :> " ~MatchQ~ " <> bracketRHS["$1"]
 };
 
-bracketRHS[s_] := bracketRHS[s] = Block[{$Context = "QuiverGeometryLoader`Scratch`", len},
+bracketRHS[s_] := bracketRHS[s] = Block[{$Context = "MTLoader`Scratch`", len},
   len = SyntaxLength @ StringDelete[s, "||" ~~ ___ ~~ EndOfString];
   "(" <> StringInsert[s, ")", len+1]
 ];
@@ -355,7 +355,7 @@ filePathToContext[path_] := Block[{str, subContext, contextList},
 (* because $ContextPath is not allowed to be empty -- this results in weird internal messages.
 also, we need System` in there because otherwise General` shows up in other contexts, must
 be some quited message that gets generated *)
-$dummyContextPath = {"QuiverGeometryLoader`DummyContext`"};
+$dummyContextPath = {"MTLoader`DummyContext`"};
 
 createSymbolsInContextAndRules[names_, context_, contextPath_] := Block[
   {$Context = context, $ContextPath = contextPath, $NewSymbol, rules, resolvedSyms},
@@ -428,7 +428,7 @@ ReadSource[cachingEnabled_:True, fullReload_:True, clear_:True] := Block[
    $CurrentlyLoading = True
   },
 
-  Off[General::shdw]; (* because things like SetUsage, SetAutomatic, etc have QG local definitions *)
+  Off[General::shdw]; (* because things like SetUsage, SetAutomatic, etc have MT local definitions *)
 
   symbolGroups = If[fullReload, $initSymGroups, $SymbolGroups];
 
@@ -469,7 +469,7 @@ ReadSource[cachingEnabled_:True, fullReload_:True, clear_:True] := Block[
     $readPackageTag
   ];
 
-  Quiet @ Remove["QuiverGeometryLoader`Scratch`*"]; (* <- dumping ground for SyntaxLength *)
+  Quiet @ Remove["MTLoader`Scratch`*"]; (* <- dumping ground for SyntaxLength *)
   If[result === $Failed,
     LVPrint["Reading failed."];
     Return[$Failed]];
@@ -585,7 +585,7 @@ computeLineHash[{line_, expr_}] := line -> Hash[HoldComplete @ expr];
 (*************************************************************************************************)
 
 (* this will load path, but only execute it if it is dirty since the last load, or
-if any reloads of QG have happened since last load (which would invalid it) *)
+if any reloads of MT have happened since last load (which would invalid it) *)
 
 LoadSingleFile[path_, context_, contextPath_] := Block[
   {dispatch, contents},
@@ -721,7 +721,7 @@ userFileChangedQ[name_] := Block[
 
 toUserFilePath[name_] := FileNameJoin[{$SourceDirectory, name}];
 
-$userFileContext = "QuiverGeometryLoader`Private`User`";
+$userFileContext = "MTLoader`Private`User`";
 $userFileContextPath = Append[$baseContextPath, $LoaderContext];
 
 loadUserFile[name_] := Block[{path, result},
@@ -828,14 +828,14 @@ With[{watcherInitFile = FileNameJoin[{$SourceDirectory, "Watcher.m"}]},
     WindowSize -> {1000, Scaled[0.8]},
     WindowToolbars -> {}, Background -> White,
     ShowGroupOpener -> False,
-    StyleDefinitions -> QuiverGeometry`$LightStylesheetPath,
+    StyleDefinitions -> MathTools`$LightStylesheetPath,
     WholeCellGroupOpener -> False, CellMargins -> 0,
     PrivateCellOptions -> {"EvaluationUnmatchedStyle" -> {}},
     CellOpen -> True, ShowCellLabel -> False, ShowCellTags -> False,
     Initialization :> (
       Get[watcherInitFile];
       $ContextPath = $currentContextPath;
-      QuiverGeometryWatcher`InitWatcher[]
+      MathToolsWatcher`InitWatcher[]
     )
   ];
 ];
@@ -858,8 +858,8 @@ WatchCurrentCellAdd[] := WatchCellPrint[selectedCellsAsCode[], After];
 
 Attributes[WatchPrint] = {HoldFirst};
 WatchPrint[expr_] := Module[{code,
-  tpf = Symbol["QuiverGeometry`ToPrettifiedString"],
-  ihf = Symbol["QuiverGeometry`InternalHoldForm"]},
+  tpf = Symbol["MathTools`ToPrettifiedString"],
+  ihf = Symbol["MathTools`InternalHoldForm"]},
   code = tpf @ ihf @ expr;
   WatchCellPrint[Cell[BoxData @ code, "Code"], After];
 ];

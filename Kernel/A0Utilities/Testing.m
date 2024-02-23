@@ -312,12 +312,12 @@ SetHoldFirst[withTestContext, withOutputTestContext];
 withTestContext[body_] := Block[{$Context = $testContext, $ContextPath = $testContextPath}, body];
 withOutputTestContext[body_] := Block[{$Context = $outputTestContext, $ContextPath = $testContextPath}, body];
 
-$testContext = "QuiverGeometry`TestHarness`";
-$outputTestContext = "QuiverGeometry`TestHarnessDummy`";
+$testContext = "MathTools`TestHarness`";
+$outputTestContext = "MathTools`TestHarnessDummy`";
 (* ^ this is to ensure that if we write any harness symbols, they get fully qualified and detected as a leak *)
 
 $testContextWildcard = $testContext <> "*";
-$testContextPath = {"System`", "GeneralUtilities`", "QuiverGeometry`", "QuiverGeometry`Private`"};
+$testContextPath = {"System`", "GeneralUtilities`", "MathTools`", "MathTools`Private`"};
 
 clearTestContext[] := ClearAll[$testContextWildcard];
 
@@ -802,7 +802,7 @@ ConvertCurrentNotebookToTestNotebook[] := Scope[
   ];
   cells //= Map[convertCellToTest];
   cells //= Discard[ContainsQ["ConvertCurrentNotebookToTestNotebook" | RasterBox]];
-  cells //= RepAll[("GQG" | "RQG") -> "Null"];
+  cells //= RepAll[("GMT" | "RMT") -> "Null"];
   PreTo[cells, Cell["LoadShortcuts[\"Categories\"];", "Code"]];
   CreateDocument[cells, StyleDefinitions -> "Package.nb"]
 ];
@@ -812,8 +812,8 @@ ConvertCurrentNotebookToTestNotebook[] := Scope[
 (* see Markdown/Output.m *)
 getAppropriateTestHead = Case[
   BoxData[b_]                         := % @ b;
-  TemplateBox[_, _ ? QGTemplateNameQ] := "TestMarkdown";
-  TagBox[_, "QG"]                     := "TestMarkdown";
+  TemplateBox[_, _ ? MTTemplateNameQ] := "TestMarkdown";
+  TagBox[_, "MT"]                     := "TestMarkdown";
   _                                   := "TestRaster";
 ]
 

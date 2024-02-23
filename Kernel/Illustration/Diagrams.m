@@ -49,11 +49,11 @@ NamedDiagram[name_String] := Scope[
   baseName = F @ SSplit[name, "/"];
   path = LocalPath["Diagrams", baseName <> ".m"];
   If[!FileExistsQ[path], ReturnFailed["badName", name]];
-  context = "QuiverGeometry`Diagrams`" <> baseName <> "`";
+  context = "MathTools`Diagrams`" <> baseName <> "`";
 
   (* reloading invalidates all diagrams *)
-  If[$lastLoadCount =!= QuiverGeometryLoader`$LoadCount,
-    $lastLoadCount ^= QuiverGeometryLoader`$LoadCount;
+  If[$lastLoadCount =!= MTLoader`$LoadCount,
+    $lastLoadCount ^= MTLoader`$LoadCount;
     VPrint["Reload happened, clearing diagram registry."];
     ClearNamedDiagramRegistry[];
   ];
@@ -75,7 +75,7 @@ NamedDiagram[name_String] := Scope[
   VPrint["Loading diagram file ", MsgPath @ path];
   result = Check[
     $currentBase = baseName <> "/";
-    QuiverGeometryLoader`LoadSingleFile[path, context, {QuiverGeometryLoader`$ShortcutsContext}],
+    MTLoader`LoadSingleFile[path, context, {MTLoader`$ShortcutsContext}],
     $Failed
   ];
   If[FailureQ @ result, ReturnFailed["fileError", MsgPath @ path]];

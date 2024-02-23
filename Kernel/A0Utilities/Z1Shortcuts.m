@@ -1,14 +1,14 @@
-$shortcutsContext := QuiverGeometryLoader`$ShortcutsContext;
+$shortcutsContext := MTLoader`$ShortcutsContext;
 
 (**************************************************************************************************)
 
-(* QuiverGeometry`Shortcuts`SetSymbol[name_Str, value_] :=
+(* MathTools`Shortcuts`SetSymbol[name_Str, value_] :=
    CreateSymbol[$shortcutsContext <> name, value];
 
-QuiverGeometry`Shortcuts`CopySymbols[from_List, to_Str] :=
-    Scan[QuiverGeometry`Shortcuts`CopySymbols[#, to]&, from];
+MathTools`Shortcuts`CopySymbols[from_List, to_Str] :=
+    Scan[MathTools`Shortcuts`CopySymbols[#, to]&, from];
 
-QuiverGeometry`Shortcuts`CopySymbols[from_Str, to_Str] := Scope[
+MathTools`Shortcuts`CopySymbols[from_Str, to_Str] := Scope[
     names = Names[$shortcutsContext <> from <> "*"];
     newNames = Part[StringSplit[names, "`", 1], All, -1];
     newNames = StringDrop[newNames, StringLength @ from];
@@ -334,7 +334,7 @@ loadShortcutGroup["Core"] := (
   symbolTable["$VsR#",            RealVectorSpaceForm,                        $fieldLetters, $dimensions];
   symbolTable["$VsC#",            ComplexVectorSpaceForm,                     $fieldLetters, $dimensions];
 
-  makeDelayedSym["PLC", QuiverGeometry`PreviewLastCell[]];
+  makeDelayedSym["PLC", MathTools`PreviewLastCell[]];
 
 );
 
@@ -432,7 +432,7 @@ loadShortcutGroup["Quivers"] := (
   $quiverDims := $quiverDims = parseIterator["01234imnpk" -> {0, 1, 2, 3, 4,Inf, $sm, $sn, $sp, $sk}];
   $modQuiverDims := $modQuiverDims = parseIterator @ joinIts[$quiverDims, mapIts[StringJoinLeft["mod"], ModuloForm] @ $quiverDims];
 
-  decSymTable["$Q#",              QuiverSymbol,                               $ROMAN, "QGHMRPF"];
+  decSymTable["$Q#",              QuiverSymbol,                               $ROMAN, "MTHMRPF"];
   symbolTable["$Q#1#2",           QuiverSymbol[#2[#1]]&,                      $quiverLetters, $style];
 
   symbolTable["$Q#1#2",           QuiverSymbol[#2[#1]]&,                      "QMRPF", $cyclic];

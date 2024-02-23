@@ -358,7 +358,7 @@ $linkBlacklist := $linkBlacklist = SSplit[ImportUTF8 @ DataPath["Text", "LinkBla
 (* computed with:
 $concepts = BearNoteData[{"Tag" -> "concept"}, {"Title", "Text"}];
 $concepts = Select[$concepts, StringFreeQ[#Title, {":", "\""}]&];
-$allConceptPhrases = DeleteNone @ Flatten[{#Title, QuiverGeometry`External`Bear`getTextAkas[#Text]}& /@ $concepts];
+$allConceptPhrases = DeleteNone @ Flatten[{#Title, MathTools`External`Bear`getTextAkas[#Text]}& /@ $concepts];
 $singleWordConceptPhrases = Select[$allConceptPhrases, StringFreeQ[#, " "] && ASCIIQ[#]&];
 $frequencies = WordFrequencyData[$singleWordConceptPhrases];
 $frequencies2 = Log @ Select[$frequencies,NumberQ];

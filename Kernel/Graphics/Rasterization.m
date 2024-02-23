@@ -1,19 +1,19 @@
 toExportNotebook[expr_, background_] := Scope[
 	nbOrCell = toExportCell[expr, Background -> background];
 	(* fast path: custom stylesheet makes rasterization substantially slower. *)
-	If[containsQGTemplates[nbOrCell], AppTo[nbOrCell, StyleDefinitions -> $styleDefsFileName]];
+	If[containsMTTemplates[nbOrCell], AppTo[nbOrCell, StyleDefinitions -> $styleDefsFileName]];
 	nbOrCell
 ];
 
 $styleDefsFileName := $styleDefsFileName = Construct[FileName, {}, $LightStylesheetPath, CharacterEncoding -> "UTF-8"];
 
-containsQGTemplates[expr_] := Or[
+containsMTTemplates[expr_] := Or[
 	!FreeQ[expr, TemplateBox[_, $qgTemplateBoxP]],
 	!FreeQ[expr, s_Str /; SContainsQ[s, "StyleDefinitions"]] (* not sure what this second thing is for *)
 ]
 
 (* TODO: just save these names as we populate them, rather than loading them from disk *)
-$qgTemplateBoxP := $qgTemplateBoxP = Apply[Alt, QuiverGeometryStyleNames[]];
+$qgTemplateBoxP := $qgTemplateBoxP = Apply[Alt, MathToolsStyleNames[]];
 
 (*************************************************************************************************)
 
@@ -57,7 +57,7 @@ PublicFunction[MakeImage]
 SetUsage @ "
 MakeImage[expr$] is like %Rasterize, but faster.
 MakeImage[expr$, background$] specifies a background color.
-* the QG stylesheet will be used if QG template boxes are present.
+* the MT stylesheet will be used if MT template boxes are present.
 "
 
 CacheVariable[$MakeImageCache]

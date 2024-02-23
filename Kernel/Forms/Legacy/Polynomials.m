@@ -42,7 +42,7 @@ $TemplateKatexFunction["QuiverProductTimesForm"] = riffled["\,"];
 
 (**************************************************************************************************)
 
-SetHoldAllComplete[generalPolyBoxes, polyTermForm, makeInnerPolyParamQGBoxes, innerPolyBoxes, longQ]
+SetHoldAllComplete[generalPolyBoxes, polyTermForm, makeInnerPolyParamMTBoxes, innerPolyBoxes, longQ]
 
 generalPolyBoxes[polyHead_, polyForm_, powerForm_, plusForm_, timesForm_, scalarForm_, args___] := Scope[
   $polyHead = polyHead;
@@ -70,11 +70,11 @@ polyTermForm = Case[
   Power[a_, b_]               := TemplateBox[{% @ a, MakeMathBoxes @ b}, $polyPowerForm];
   (Inverted|InvertedForm)[n_]   := TemplateBox[List @ % @ n, "InvertedForm"];
   a_ ? longPolyQ              := TemplateBox[List @ Apply[innerPolyBoxes, Uneval @ a], "SpacedParenthesesForm"];
-  a_List                      := TemplateBox[MapUnevaluated[makeInnerPolyParamQGBoxes, a], $polyTimesForm];
+  a_List                      := TemplateBox[MapUnevaluated[makeInnerPolyParamMTBoxes, a], $polyTimesForm];
   a_                          := $scalarBoxes @ a;
 ];
 
-makeInnerPolyParamQGBoxes = Case[
+makeInnerPolyParamMTBoxes = Case[
   Style[e_, s_]               := StyleBox[% @ e, s];
   a_List | a_Times | a_TimesForm | ParenthesesForm[a_] := TemplateBox[{polyTermForm @ a}, "SpacedParenthesesForm"];
   Power[a_, b_]               := TemplateBox[{% @ a, MakeMathBoxes @ b}, $polyPowerForm];

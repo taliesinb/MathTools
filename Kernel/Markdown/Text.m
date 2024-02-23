@@ -39,7 +39,7 @@ textCellToMarkdown[e_] := Scope[
   If[!StrQ[text], Return["### Markdown generation failed"]];
   If[SContainsQ[text, $forbiddenStrings], Return[""]];
   (* these are disabled for now because they involve the assumption that $ is the katex delimiter, and they
-  have other QG-specific things in them *)
+  have other MT-specific things in them *)
 (*text //= StringReplace[$finalStringFixups1];*)
   text //= SRep[$finalStringFixups2];
   text //= deblockIndent; (* JS *)
@@ -243,7 +243,7 @@ PrivateFunction[complainBoxes]
 complainBoxes[other_] := Scope[
   Message[ToMarkdownString::badmdbox, MsgExpr @ other];
   headStr = ToPrettifiedString @ H @ other;
-  PrintQGStackSymbols[];
+  PrintMTStackSymbols[];
   "**CANNOT CONVERT TEXTUAL BOXES TO MARKDOWN**\n```\n" <> ToPrettifiedString[other, MaxDepth -> 3, MaxLength -> 10, MaxIndent -> 3] <> "\n```\n"
 ];
 

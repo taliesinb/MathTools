@@ -16,7 +16,7 @@ FSWatch[path_] := Scope[
   If[binPath === None, Message[FSWatch::binMissing]; Return[$Failed]];
   cmdArgs = {binPath};
 
-  paths = path /. All -> QuiverGeometryLoader`$SourceDirectory;
+  paths = path /. All -> MTLoader`$SourceDirectory;
   paths = Map[SJoin["'", ExpandFileName[#], "'"]&, Developer`ToList @ paths];
 
   cmdStr = SJoin[binPath, " ", Riffle[Flatten @ paths, " "]];

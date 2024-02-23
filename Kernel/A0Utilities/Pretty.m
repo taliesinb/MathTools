@@ -88,7 +88,7 @@ $compactRealLength = 2;
 ToPrettifiedString[e_, OptionsPattern[]] := Scope[
   {$maxIndent, $maxWidth, $maxDepth, $maxLength, $maxStringLength, $tabSize, $inlineHeads, $fullSymbolContext, $colorSymbolContext, $prettyCompression,        $elideLargeArrays, $elideAtomicHeads, $inlineColors, $compactRealNumbers} = OptionValue[
   {MaxIndent, CompactingWidth, MaxDepth, MaxLength, MaxStringLength, TabSize, InlineHeads, FullSymbolContext, ColorSymbolContext, CompressLargeSubexpressions, ElideLargeArrays,  ElideAtomicHeads, InlineColors, CompactRealNumbers}];
-  $ContextPath = {"System`", "QuiverGeometry`", "GeneralUtilities`"};
+  $ContextPath = {"System`", "MathTools`", "GeneralUtilities`"};
   $compactRealLength = If[IntQ[$compactRealNumbers], $compactRealNumbers, 2];
   $compactRealNumbers = !FalseQ[$compactRealNumbers];
   If[!$fullSymbolContext, $ContextPath = Join[$ContextPath, getAllSymbolContexts @ HoldC @ e]];
@@ -184,9 +184,9 @@ wrapColor[col_, con_][str_] := SJoin[
   "\)"
 ];
 
-colorByContext["System`" | "Internal`" | "GeneralUtilities`" | "Developer`" | "QuiverGeometry`"] := Id;
+colorByContext["System`" | "Internal`" | "GeneralUtilities`" | "Developer`" | "MathTools`"] := Id;
 colorByContext["Global`"] := wrapColor[$Teal, "Global`"];
-colorByContext["QuiverGeometry`Private`"] := wrapColor[$Orange, "QuiverGeometry`Private`"];
+colorByContext["MathTools`Private`"] := wrapColor[$Orange, "MathTools`Private`"];
 colorByContext[con_] := wrapColor[$Red, con];
 
 

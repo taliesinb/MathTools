@@ -271,7 +271,7 @@ $toKBoxes = Dispatch @ {
   HoldP[RBox[args___]] :> RowBox[{args}],
   KBox[_, kb_] :> kb, HoldP[KBox[_, kb_]] :> kb,
   $wlThinSpace -> Sequence[], $kSpace -> " ",
-  TagBox[b_, "QG"] :> b
+  TagBox[b_, "MT"] :> b
 };
 
 PrivateSymbol[$wlThinSpace, $kSpace]
@@ -286,7 +286,7 @@ BoxFunction is an option to various DefineXXX functions that specifies a symbol 
 
 attachBoxFunctionDefs[None, _] := Null;
 attachBoxFunctionDefs[sym_Symbol, fn_] := (
-  QuiverGeometryLoader`DeclarePreservedFunction[sym]; (* <- this ensures that after caching and reloading, box function definitions aren't wiped *)
+  MTLoader`DeclarePreservedFunction[sym]; (* <- this ensures that after caching and reloading, box function definitions aren't wiped *)
   SetDelayed[sym[args___], fn[args]]
 );
 
@@ -360,7 +360,7 @@ $defineOpts = {
 
 PrivateFunction[tagAsMath]
 
-tagAsMath[t_] := TagBox[t /. TagBox[e_, "QG"] :> e, "QG"];
+tagAsMath[t_] := TagBox[t /. TagBox[e_, "MT"] :> e, "MT"];
 
 (**************************************************************************************************)
 
@@ -474,9 +474,9 @@ DefineTemplateBox[KatexSwitch, "katexSwitch", KBox[$1, $2], None]
 
 (**************************************************************************************************)
 
-PublicFunction[QGTemplateNameQ]
+PublicFunction[MTTemplateNameQ]
 
-QGTemplateNameQ[name_] := Or[
+MTTemplateNameQ[name_] := Or[
   $qgTemplateBoxNameQ @ name,
   AssocQ[$localKatexDisplayFunction] && KeyQ[$localKatexDisplayFunction, name]
 ];
@@ -1054,7 +1054,7 @@ DefineLocalTemplates[e___] := Scope @ InheritedBlock[{$katexMacros, $katexDispla
   $katexMacros0 = $katexMacros;
   $katexDisplayFunction0 = $katexDisplayFunction;
   (e);
-  privateStylesheet = GeneratePrivateQuiverGeometryStylesheet[];
+  privateStylesheet = GeneratePrivateMathToolsStylesheet[];
   SetOptions[EvaluationNotebook[], StyleDefinitions -> privateStylesheet];
   currentRules = Lookup[Options[EvaluationNotebook[], TaggingRules], TaggingRules, <||>];
   If[!AssocQ[currentRules], ReturnFailed["taggingrules"]];
@@ -1212,20 +1212,20 @@ PrivateFunction[ExpandTemplateBox]
 
 ExpandTemplateBox = Case[
   TemplateBox[{a_, b_}, "katexSwitch"]      := a;
-  tb:TemplateBox[_, _Str ? QGTemplateNameQ] := ExpandQGTemplateBox @ tb;
+  tb:TemplateBox[_, _Str ? MTTemplateNameQ] := ExpandMTTemplateBox @ tb;
   tb:TemplateBox[_List, _Str]               := ExpandNotebookTemplateBox @ tb;
 ];
 
 (**************************************************************************************************)
 
-PrivateFunction[ExpandQGTemplateBox, QGTemplateBoxQ]
+PrivateFunction[ExpandMTTemplateBox, MTTemplateBoxQ]
 
-ExpandQGTemplateBox = Case[
+ExpandMTTemplateBox = Case[
   TemplateBox[args_List, name_Str] := Apply[replaceTemplateSlots @ $notebookDisplayFunction @ name, args];
 ]
 
-QGTemplateBoxQ[TemplateBox[_List, _Str ? QGTemplateNameQ]] := True;
-QGTemplateBoxQ[_] := False;
+MTTemplateBoxQ[TemplateBox[_List, _Str ? MTTemplateNameQ]] := True;
+MTTemplateBoxQ[_] := False;
 
 replaceTemplateSlots[e_] := RepRep[e, {
   TemplateSlot[n_Int] :> Slot[n],
@@ -1250,7 +1250,7 @@ EvaluateTemplateBoxFull[expr_] := RepRep[expr, tb:TemplateBox[_List, _Str] :> Ru
 
 evalTB := Case[
   TemplateBox[{a_, b_}, "katexSwitch"] := a;
-  tb:TemplateBox[_, name_Str] /; KeyQ[$notebookDisplayFunction, name] := ExpandQGTemplateBox @ tb;
+  tb:TemplateBox[_, name_Str] /; KeyQ[$notebookDisplayFunction, name] := ExpandMTTemplateBox @ tb;
   tb:TemplateBox[_List, _Str]                                               := ExpandNotebookTemplateBox @ tb;
 ];
 
@@ -1474,7 +1474,7 @@ DefineTaggedForm[SymbolForm]
 PublicTypesettingForm[Form]
 
 DefineStandardTraditionalForm[
-  Form[e_] :> TagBox[MakeMathBoxes @ e, "QG"]
+  Form[e_] :> TagBox[MakeMathBoxes @ e, "MT"]
 ]
 
 (* TODO: Put these in SymbolTranslation.m *)

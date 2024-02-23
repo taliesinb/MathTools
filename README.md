@@ -1,2 +1,3 @@
-# QuiverGeometry
-QuiverGeometry is a Wolfram Language package that provides a flexible platform for doing experiments in discrete geometry using the notion of cardinal quivers, their representations, and associated mathematical constructs.
+# MathTools
+
+MathTools is a Wolfram Language package that provides the software infrastructure I use for creating typeset mathematical diagrams and equations, publishing to markdown, and working with various other tools.

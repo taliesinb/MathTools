@@ -573,7 +573,7 @@ addOrUpdateRule[list_List, rule:(_[lhs_, rhs_])] := Module[{pos, newList},
     App[list, rule]
   ,
     newList = RepPart[list, pos -> rule];
-    If[newList =!= list, QuiverGeometryLoader`$RegexCacheDirty = True];
+    If[newList =!= list, MTLoader`$RegexCacheDirty = True];
     newList
   ]
 ]

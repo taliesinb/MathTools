@@ -31,7 +31,7 @@ Typeset`MakeBoxes[ x_List, fmt_, head_, Options] :=
 
 (* we do this so styles get made before the styled object, so that changes to $MakeBoxesStyleData will get picked up *)
 Typeset`MakeBoxes[Style[System`Dump`x_, System`Dump`y___], System`Dump`fmt_, System`Dump`head_] :=
-  InheritedBlock[{QuiverGeometry`$MakeBoxesStyleData},
+  InheritedBlock[{MathTools`$MakeBoxesStyleData},
     With[{
       System`Dump`h = Map[Fn[{System`Dump`z}, Typeset`MakeBoxes[System`Dump`z, System`Dump`fmt, System`Dump`head], HoldAllComplete], Uneval @ {System`Dump`y}],
       System`Dump`g = Typeset`MakeBoxes[System`Dump`x, System`Dump`fmt, System`Dump`head]},
@@ -41,7 +41,7 @@ Typeset`MakeBoxes[Style[System`Dump`x_, System`Dump`y___], System`Dump`fmt_, Sys
 
 (* we do this so nested lists localize ambient styles *)
 Typeset`MakeBoxes[ System`Dump`g_List, System`Dump`fmt_, System`Dump`head_] := InheritedBlock[
-  {QuiverGeometry`$MakeBoxesStyleData},
+  {MathTools`$MakeBoxesStyleData},
   Map[ Fn[{System`Dump`x}, Typeset`MakeBoxes[System`Dump`x, System`Dump`fmt, System`Dump`head], HoldAllComplete], Uneval[System`Dump`g]]
 ];
 

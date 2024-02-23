@@ -100,7 +100,7 @@ PublicFunction[ToInverseFunction]
 
 SetUsage @ "
 ToInverseFunction[f$] returns %InverseFunction[f$].
-* ToInverseFunction exists to enable a fast-path for QuiverGeometry-specific functions.
+* ToInverseFunction exists to enable a fast-path for MathTools-specific functions.
 "
 
 ToInverseFunction[e_] := InverseFunction[e];
