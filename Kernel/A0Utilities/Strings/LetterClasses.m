@@ -84,7 +84,7 @@ ToNonDecoratedRoman[str_Str] := SRep[str, $toNonDecoratedRoman];
 
 PublicFunction[RomanToSanSerif]
 
-$toSanSerif := $toSanSerif = toStringRules[$RomanLetters, $SanSerifLetters];
+SetCached[$toSanSerif, toStringRules[$RomanLetters, $SanSerifLetters]];
 
 RomanToSanSerif[str_Str] := SRep[str, $toSanSerif];
 
@@ -109,7 +109,7 @@ $GreekLetters = SJoin[$LowercaseGreekLetters, $UppercaseGreekLetters];
 PublicFunction[ToSpelledGreek]
 
 $spelledGreek = "alpha beta gamma delta curlyepsilon epsilon zeta eta theta iota kappa lambda mu nu xi pi rho sigma tau curlyphi phi chi psi omega Gamma Delta Theta Lambda Xi Pi Sigma Phi Psi Omega";
-$toSpelledGreek := $toSpelledGreek = RuleThread[Chars @ $GreekLetters, SSplit @ $spelledGreek];
+SetCached[$toSpelledGreek, RuleThread[Chars @ $GreekLetters, SSplit @ $spelledGreek]];
 
 ToSpelledGreek[str_Str] := SRep[str, $toSpelledGreek];
 
@@ -157,4 +157,3 @@ DefineStringPattern[
   LetterClass[args___]       :> StringPattern`Dump`CharacterGroup[args],
   ExceptLetterClass[args___] :> Except[StringPattern`Dump`CharacterGroup[args]]
 ];
-

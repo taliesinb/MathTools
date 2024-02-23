@@ -197,8 +197,8 @@ commaListQ = Case[
 
 PublicFunction[$WolframCharacterExpansions, $WolframCharacterContractions]
 
-$WolframCharacterExpansions := $WolframCharacterExpansions = UAssoc @ MathCharacterData["Symbol" -> "InputForm"];
-$WolframCharacterContractions := $WolframCharacterContractions = UAssoc @ MathCharacterData["InputForm" -> "Symbol"];
+SetCached[$WolframCharacterExpansions,   UAssoc @ MathCharacterData["Symbol" -> "InputForm"]];
+SetCached[$WolframCharacterContractions, UAssoc @ MathCharacterData["InputForm" -> "Symbol"]];
 
 (**************************************************************************************************)
 
@@ -208,11 +208,11 @@ binaryInfixOpQ[s_] := KeyQ[$binaryInfixMap, s];
 prefixOpQ[s_]      := KeyQ[$prefixMap, s];
 postfixOpQ[s_]     := KeyQ[$postfixMap, s];
 
-$infixMap       := $infixMap         = Join[$binaryInfixMap, $naryInfixMap];
-$naryInfixMap   := $naryInfixMap     = loadSyntaxMap["NAryInfix.txt"];
-$binaryInfixMap := $binaryInfixMap   = loadSyntaxMap["BinaryInfix.txt"];
-$prefixMap      := $prefixMap        = loadSyntaxMap["Prefix.txt"];
-$postfixMap     := $postfixMap       = loadSyntaxMap["Postfix.txt"];
+SetCached[$infixMap,       Join[$binaryInfixMap, $naryInfixMap]];
+SetCached[$naryInfixMap,   loadSyntaxMap["NAryInfix.txt"]];
+SetCached[$binaryInfixMap, loadSyntaxMap["BinaryInfix.txt"]];
+SetCached[$prefixMap,      loadSyntaxMap["Prefix.txt"]];
+SetCached[$postfixMap,     loadSyntaxMap["Postfix.txt"]];
 
 loadSyntaxMap[name_] := Scope[
   path = DataPath["Wolfram", name];

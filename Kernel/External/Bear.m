@@ -356,8 +356,8 @@ $bearImagePath = NormalizePath @ "~/Library/Group Containers/9K33E3U3T4.net.shin
 (*************************************************************************************************)
 
 $BearDBFile = NormalizePath @ "~/Library/Group Containers/9K33E3U3T4.net.shinyfrog.bear/Application Data/database.sqlite";
-$BearDBRef := $BearDBRef = DatabaseReference[File[$BearDBFile]];
-$BearDB := $BearDB = RelationalDatabase[$BearDBRef];
+SetCached[$BearDBRef, DatabaseReference[File[$BearDBFile]]];
+SetCached[$BearDB, RelationalDatabase[$BearDBRef]];
 
 PublicFunction[RegisterBearEntities]
 
@@ -388,9 +388,9 @@ RegisterBearEntities[] := Module[{es, res},
 
 (*************************************************************************************************)
 
-$BearNoteEntity := $BearNoteEntity = (Quiet @ RegisterBearEntities[]; "ZSFNOTE");
-$BearFileEntity := $BearFileEntity = (Quiet @ RegisterBearEntities[]; "ZSFNOTEFILE");
-$BearTagEntity := $BearTagEntity = (Quiet @ RegisterBearEntities[]; "ZSFNOTETAG");
+SetCached[$BearNoteEntity, (Quiet @ RegisterBearEntities[]; "ZSFNOTE")];
+SetCached[$BearFileEntity, (Quiet @ RegisterBearEntities[]; "ZSFNOTEFILE")];
+SetCached[$BearTagEntity,  (Quiet @ RegisterBearEntities[]; "ZSFNOTETAG")];
 
 (*************************************************************************************************)
 

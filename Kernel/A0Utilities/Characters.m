@@ -1,4 +1,4 @@
-$mathCharacterTable := $mathCharacterTable = computeSymbolTranslationTable[];
+SetCached[$mathCharacterTable, computeSymbolTranslationTable[]];
 
 (* format: WL string, WL input form, katex, unicode *)
 computeSymbolTranslationTable[] := Block[{str},

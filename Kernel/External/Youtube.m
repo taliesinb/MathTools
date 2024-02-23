@@ -257,7 +257,7 @@ canonicalizeText[text_] := SRep[text,
 
 (**************************************************************************************************)
 
-PublicVariable[$UploaderToPerson, $UploaderToChannel, $UploaderToInstitute, $UploaderToPodcast]
+PublicVariable[$UploaderToPerson, $UploaderToChannel, $UploaderToInstitute, $UploaderToPodcast, $UploaderToEvent]
 
 $knownLiveAuthors := $knownLiveAuthors =
   Comp[$KnownAuthors, $DeadPeople, {"Peter M Neumann", "St John", "3Blue1Brown"}];
@@ -265,12 +265,12 @@ $knownLiveAuthors := $knownLiveAuthors =
 lowerAssoc[list_] := UAssoc @ Map[ToLowerCase[#] -> #&, list];
 
 $reuploaders = "Samuel Mimram";
-$UploaderToPerson    := $UploaderToPerson    = computeUploaderToPerson[];
-$UploaderToChannel   := $UploaderToChannel   = handleToTitle["#channel/video"];
-$UploaderToPodcast   := $UploaderToPodcast   = handleToTitle["#channel/podcast"];
-$UploaderToInstitute := $UploaderToInstitute = Join[handleToTitle["#org/institute"], handleToTitle["#org/lab"]];
-$UploaderToEvent     := $UploaderToEvent     = handleToTitle["#event"];
-$eventNamesToTitle   := $eventNamesToTitle   = akaToTitle["#event"];
+SetCached[$UploaderToPerson,     computeUploaderToPerson[]];
+SetCached[$UploaderToChannel,    handleToTitle["#channel/video"]];
+SetCached[$UploaderToPodcast,    handleToTitle["#channel/podcast"]];
+SetCached[$UploaderToInstitute,  Join[handleToTitle["#org/institute"], handleToTitle["#org/lab"]]];
+SetCached[$UploaderToEvent,      handleToTitle["#event"]];
+SetCached[$eventNamesToTitle,    akaToTitle["#event"]];
 
 computeUploaderToPerson[] := Decases[$reuploaders] @ Join[lowerAssoc @ $knownLiveAuthors, handleToTitle["#person"]];
 
@@ -528,7 +528,7 @@ findPersonSpeculative[str_] := Block[
   None
 ];
 
-$knownSafeLiveAuthors := $knownSafeLiveAuthors = uniqueProperNamesAndLastNames[$knownLiveAuthors];
+SetCached[$knownSafeLiveAuthors, uniqueProperNamesAndLastNames[$knownLiveAuthors]];
 
 (* this is a 3-tuple, first is the list of full names, second is a list of authors that are matched
 to the third which is a list of last names. the latter two are filtered so that last names are not
@@ -595,9 +595,9 @@ resolveAuthorBlurb[matches_, title_, description_] := Scope[
 
 (**************************************************************************************************)
 
-$eventNameP := $eventNameP = Alt @@ Keys @ $eventNamesToTitle;
+SetCached[$eventNameP, Alt @@ Keys @ $eventNamesToTitle];
 
-$eventNameDateP := $eventNameDateP = conf:$eventNameP ~~ Maybe[" " | " '" | "'"] ~~ year:DigitCharacter..;
+SetCached[$eventNameDateP, conf:$eventNameP ~~ Maybe[" " | " '" | "'"] ~~ year:DigitCharacter..];
 
 (**************************************************************************************************)
 
@@ -624,7 +624,7 @@ computeIntroducedEventPattern[] := RegularExpression @ ToRegularExpression @ SEx
   $eventSuffix
 ];
 
-$introducedEventPattern := $introducedEventPattern = computeIntroducedEventPattern[];
+SetCached[$introducedEventPattern, computeIntroducedEventPattern[]];
 
 (**************************************************************************************************)
 

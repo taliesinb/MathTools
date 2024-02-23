@@ -214,7 +214,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
   {ToPackedReal @ $vertexCoordinates, ToPackedRealArrays @ $edgeCoordinateLists}
 ]
 
-$defaultVertexLayout := $defaultVertexLayout = SpringElectricalLayout[];
+SetCached[$defaultVertexLayout, SpringElectricalLayout[]];
 
 (* TODO: moveVertex, which will update the vertex, find all edges that start or end there,
 and shear them to match *)

@@ -113,7 +113,7 @@ MapPrimitiveBoxCoordinates[args___] := Block[
 
 (**************************************************************************************************)
 
-$mpbcDispatch := $mpbcDispatch = createMpbcDispatch[];
+SetCached[$mpbcDispatch, createMpbcDispatch[]];
 
 createMpbcDispatch[] := Scope[
   rules = Normal @ $mpcDispatch0;
@@ -145,4 +145,3 @@ iExtractCoords[prims_, fn_] := Scope[
   fn[{StuffBag[points, #]&, StuffBag[points, #, 1]&}, prims];
   BagPart[points, All]
 ];
-

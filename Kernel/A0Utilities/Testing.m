@@ -38,8 +38,8 @@ Options[RunTests] = {
 RunTests::noindir = "Input directory not found at ``.";
 RunTests::notests = "No test files present in `` match ``.";
 
-$testsInPath := $testsInPath = LocalPath["Tests", "Inputs"];
-$testsOutPath := $testsOutPath = LocalPath["Tests", "Outputs"];
+SetCached[$testsInPath,  LocalPath["Tests", "Inputs"]];
+SetCached[$testsOutPath, LocalPath["Tests", "Outputs"]];
 testRelPath[s_] := SDrop[s, SLen[$testsInPath] + 1];
 
 declareFunctionAutocomplete[RunTests, {testRelPath @ FileNames["*.wl", $testsInPath, Inf]}];

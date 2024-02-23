@@ -117,7 +117,7 @@ createLegacyReplacementRules[] := Scope[
 toTemplateRule[l_Str -> r_Str] :=
   TemplateBox[z_, l] (* /; (Print["Replacing ", l -> r]; True) *) :> TemplateBox[z, r];
 
-$legacyReplacementRules := $legacyReplacementRules = createLegacyReplacementRules[];
+SetCached[$legacyReplacementRules, createLegacyReplacementRules[]];
 
 UpdateLegacyNotebook[] := UpdateLegacyNotebook @ EvaluationNotebook[];
 

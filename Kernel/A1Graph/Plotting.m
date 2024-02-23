@@ -1749,7 +1749,7 @@ drawSquare[size_][pos_, color_] :=
   edgedStyle[color] @ mapCoordArray[Rectangle[# - size / 2, # + size / 2]&, pos];
 
 (* todo: replace this with a single polygon *)
-$hexagonPoints := $hexagonPoints = CirclePoints[{1, Tau/12}, 6] / Sqrt[2];
+SetCached[$hexagonPoints, CirclePoints[{1, Tau/12}, 6] / Sqrt[2]];
 drawHexagon[size_][pos_, color_] :=
   edgedStyle[color] @ mapCoordArray[Polygon[PlusVector[$hexagonPoints * size, #]]&, pos];
 
@@ -2449,7 +2449,7 @@ dim3to2 = Case[
   p:{_, _}    := p
 ];
 
-$labelOffsets := $labelOffsets = N @ CirclePoints[{1, 0}, 8];
+SetCached[$labelOffsets, N @ CirclePoints[{1, 0}, 8]];
 placeLabelAt[label_, pos_, index_] /; ($labelX === Auto) := Scope[
   adjacentEdges = Part[$adjacencyIndex, index];
   edgeCoords = Mean /@ Part[$EdgeCoordinateLists, adjacentEdges];

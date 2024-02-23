@@ -71,7 +71,7 @@ Options[ExportToJupyter] = {
   MaxItems -> Inf
 };
 
-$JupyterTemplate := $JupyterTemplate = ReadRawJSONFile @ DataPath["Jupyter", "Template.ipynb"];
+SetCached[$JupyterTemplate, ReadRawJSONFile @ DataPath["Jupyter", "Template.ipynb"]];
 
 $isJupyterTarget = False;
 

@@ -154,7 +154,7 @@ PublicIOFunction[ExportUTF8]
 ExportUTF8[path_Str ? ASCIIQ, string_Str] :=
   Export[path, string, "Text", CharacterEncoding -> "UTF-8"];
 
-$tempExportFile := $tempExportFile = TemporaryPath["utf_export"];
+SetCached[$tempExportFile, TemporaryPath["utf_export"]];
 
 (* works around failure on e.g. ExportUTF8["~/𝖢𝖺𝗍.txt", "Hello world this is 𝖢𝖺𝗍."] *)
 ExportUTF8[path_Str, string_Str] := Scope[

@@ -385,13 +385,13 @@ ClearTemplateBoxDefinitions[] := (
 PrivateSpecialFunction[DefineNotebookDisplayFunction, DefineKatexDisplayFunction, DefineKatexMacro]
 
 (* these are the only core styles that have TemplateBoxOptions *)
-SetInitialValue[$qgTemplateBoxNameQ, UAssoc[
+SetInitialValue[$mtTemplateBoxNameQ, UAssoc[
   "StringBlockForm" -> True,
   "PreformattedCode" -> True
 ]];
 
 DefineNotebookDisplayFunction[templateName_Str, fn_Fn] := (
-  $qgTemplateBoxNameQ[templateName] = True;
+  $mtTemplateBoxNameQ[templateName] = True;
   $notebookDisplayFunction[templateName] = SpecializeToNotebookBoxes[fn];
 );
 
@@ -477,7 +477,7 @@ DefineTemplateBox[KatexSwitch, "katexSwitch", KBox[$1, $2], None]
 PublicFunction[MTTemplateNameQ]
 
 MTTemplateNameQ[name_] := Or[
-  $qgTemplateBoxNameQ @ name,
+  $mtTemplateBoxNameQ @ name,
   AssocQ[$localKatexDisplayFunction] && KeyQ[$localKatexDisplayFunction, name]
 ];
 
@@ -1201,7 +1201,7 @@ PrivateFunction[BurrowModifiers, UnburrowModifiers]
 SetUsage @ "BurrowModifiers[expr$] pushes all modifier-like heads (%Style, %PrimedForm%, %RedForm, $$) through tagged forms (%FunctionSymbol, %CategoryObjectSymbol, $$), making them innermost."
 SetUsage @ "UnburrowModifiers[expr$] pulls all modifier-like heads (%Style, %PrimedForm%, %RedForm, $$) through tagged forms (%FunctionSymbol, %CategoryObjectSymbol, $$), making them outermost."
 
-$modifierOrStyleFormHeadQ := $modifierOrStyleFormHeadQ = Join[$modifierFormHeadQ, $styleFormHeadQ];
+SetCached[$modifierOrStyleFormHeadQ, Join[$modifierFormHeadQ, $styleFormHeadQ]];
 
 BurrowModifiers[e_]   := RepRep[e, (mod_Symbol ? $modifierOrStyleFormHeadQ)[(tag_Symbol ? $taggedFormHeadQ)[sub_], s___] :> tag[mod[sub, s]]];
 UnburrowModifiers[e_] := RepRep[e, (tag_Symbol ? $taggedFormHeadQ)[(mod_Symbol ? $modifierOrStyleFormHeadQ)[sub_, s___]] :> mod[tag[sub], s]];

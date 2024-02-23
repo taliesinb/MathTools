@@ -44,7 +44,7 @@ LoadFirstNamesBloomFilter[] := Scope[
 
 primeBloom[] := (CreateDataStructure["BloomFilter", 20]; Clear[primeBloom]);
 
-$FirstNamesBloomFilter := $FirstNamesBloomFilter = CachedInto[$BloomFilters, "FirstNames", LoadFirstNamesBloomFilter[]];
+SetCached[$FirstNamesBloomFilter, CachedInto[$BloomFilters, "FirstNames", LoadFirstNamesBloomFilter[]]];
 
 PossibleFirstNameQ[str_Str] := $FirstNamesBloomFilter["CouldContain", ToLowerCase @ str];
 
@@ -132,23 +132,23 @@ loadEnglishWordsData[] := Scope[
   assocs
 ];
 
-$englishWordsData := $englishWordsData = loadEnglishWordsData[];
+SetCached[$englishWordsData, loadEnglishWordsData[]];
 
-$EnglishWords := $EnglishWords                   = Keys @ P1[$englishWordsData];
-$LowercaseEnglishWords := $LowercaseEnglishWords = Keys @ P2[$englishWordsData];
-$TitleCaseEnglishWords := $TitleCaseEnglishWords = Keys @ P3[$englishWordsData];
-$ProperNames := $ProperNames                     = Keys @ P4[$englishWordsData];
+SetCached[$EnglishWords,          Keys @ P1[$englishWordsData]];
+SetCached[$LowercaseEnglishWords, Keys @ P2[$englishWordsData]];
+SetCached[$TitleCaseEnglishWords, Keys @ P3[$englishWordsData]];
+SetCached[$ProperNames,           Keys @ P4[$englishWordsData]];
 
-$assocEnglishWords := $assocEnglishWords                   = P1[$englishWordsData];
-$assocLowercaseEnglishWords := $assocLowercaseEnglishWords = P2[$englishWordsData];
-$assocTitleCaseEnglishWords := $assocTitleCaseEnglishWords = P3[$englishWordsData];
-$assocProperNames := $assocProperNames                     = P4[$englishWordsData];
+SetCached[$assocEnglishWords,          P1[$englishWordsData]];
+SetCached[$assocLowercaseEnglishWords, P2[$englishWordsData]];
+SetCached[$assocTitleCaseEnglishWords, P3[$englishWordsData]];
+SetCached[$assocProperNames,           P4[$englishWordsData]];
 
 (**************************************************************************************************)
 
 PublicVariable[$MathWords]
 
-$MathWords := $MathWords = SSplit[ImportUTF8 @ DataPath["Text", "MathWords.txt"], "\n"];
+SetCached[$MathWords, SSplit[ImportUTF8 @ DataPath["Text", "MathWords.txt"], "\n"]];
 
 (*************************************************************************************************)
 
@@ -203,11 +203,11 @@ loadTextTable[filename_] := Scope[
   RepAll[table, "_" -> ""]
 ]
 
-$depluralTuples := $depluralTuples = loadTextTable["DepluralRules.txt"];
+SetCached[$depluralTuples, loadTextTable["DepluralRules.txt"]];
 
-$depluralBlacklist := $depluralBlacklist = SSplit @ ImportUTF8 @ DataPath["Text", "DepluralBlacklist.txt"];
+SetCached[$depluralBlacklist, SSplit @ ImportUTF8 @ DataPath["Text", "DepluralBlacklist.txt"]];
 
-$validDepluralQ := $validDepluralQ = ConstantUAssociation[Comp[$EnglishWords, $depluralBlacklist], True];
+SetCached[$validDepluralQ, ConstantUAssociation[Comp[$EnglishWords, $depluralBlacklist], True]];
 
 (**************************************************************************************************)
 

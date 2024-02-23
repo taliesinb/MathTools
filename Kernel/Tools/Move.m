@@ -57,7 +57,7 @@ TrashFile[path$] deletes a file or directory by moving it into the system's tras
 
 TrashFile::nofile = "File `` does not exist.";
 
-$trashPath := $trashPath = If[$MacOSQ, ExpandFileName["~/.Trash"], EnsureDirectory @ FileTemporaryPath["Trash"]];
+SetCached[$trashPath, If[$MacOSQ, ExpandFileName["~/.Trash"], EnsureDirectory @ FileTemporaryPath["Trash"]]];
 
 TrashFile[path_Str] := Scope[
   path //= NormalizePath;

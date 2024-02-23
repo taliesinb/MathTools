@@ -5,15 +5,15 @@ toExportNotebook[expr_, background_] := Scope[
 	nbOrCell
 ];
 
-$styleDefsFileName := $styleDefsFileName = Construct[FileName, {}, $LightStylesheetPath, CharacterEncoding -> "UTF-8"];
+SetCached[$styleDefsFileName, Construct[FileName, {}, $LightStylesheetPath, CharacterEncoding -> "UTF-8"]];
 
 containsMTTemplates[expr_] := Or[
-	!FreeQ[expr, TemplateBox[_, $qgTemplateBoxP]],
+	!FreeQ[expr, TemplateBox[_, $mtTemplateBoxP]],
 	!FreeQ[expr, s_Str /; SContainsQ[s, "StyleDefinitions"]] (* not sure what this second thing is for *)
 ]
 
 (* TODO: just save these names as we populate them, rather than loading them from disk *)
-$qgTemplateBoxP := $qgTemplateBoxP = Apply[Alt, MathToolsStyleNames[]];
+SetCached[$mtTemplateBoxP, Apply[Alt, MathToolsStyleNames[]]];
 
 (*************************************************************************************************)
 

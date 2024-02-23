@@ -23,7 +23,7 @@ CallFrontEnd[e_] := If[$Notebooks, MathLink`CallFrontEnd[e], System`ConvertersDu
 
 PublicFunction[WithExternalMessageCapture]
 
-$tmpMessageFilePath := $tmpMessageFilePath = TemporaryPath["messages.txt"];
+SetCached[$tmpMessageFilePath, TemporaryPath["messages.txt"]];
 
 SetHoldFirst[WithExternalMessageCapture];
 

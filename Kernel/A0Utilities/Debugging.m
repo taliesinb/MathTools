@@ -228,7 +228,7 @@ throwMessageTag[_] := Throw[$Failed, $throwMessageTag];
 
 PublicDebuggingFunction[PrintMTStack]
 
-$stackFile := $stackFile = TemporaryPath["stack.m"];
+SetCached[$stackFile, TemporaryPath["stack.m"]];
 
 PrintMTStack[label_:None] := StackInhibit @ Block[
   {stack, cells},

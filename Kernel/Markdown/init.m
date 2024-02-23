@@ -136,7 +136,7 @@ PublicScopedOption[RasterizationPath]
 SetUsage @ "RasterizationPath is a markdown export option that determines the directory to which rasterized images and video are written.
 * If a relative path is provided it is resolved under the setting of %BaseExportPath.
 * If Automatic is provided a temporary directory will be used."
-$rasterizationPath := $rasterizationPath = TemporaryPath["rasters"];
+SetCached[$rasterizationPath, TemporaryPath["rasters"]];
 
 PublicScopedOption[RasterizationURL]
 SetUsage @ "RasterizationURL is a markdown export option that determines the URL prefix to use for raster URLs."
@@ -230,4 +230,3 @@ $genericExportMarkdownOptions = JoinOptions[
   Verbose -> Auto,
   DryRun -> False
 ];
-

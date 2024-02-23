@@ -1075,7 +1075,7 @@ makeRect[c1_, c2_, fet_, opts___Rule] := applyStyle[fet] @ RectangleBox[c1, c2, 
 makeSquare[p_, r_, fet_] := makeRect[p - r, p + r, fet];
 
 arcPoints[ang_] := arcPoints[ang] = DiscretizeCurve[Circle[{0,0}, 1, {-ang, ang}]];
-$halfCirclePoints := $halfCirclePoints = arcPoints[Pi/2];
+SetCached[$halfCirclePoints, arcPoints[Pi/2]];
 
 makeHalfDisk[pos_, dir_, r_, fet_] := applyStyle[fet] @
   makeHalfPolygon @ ScaleRotateTranslateVector[r, PairAngle @ dir, pos, $halfCirclePoints];

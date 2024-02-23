@@ -175,28 +175,28 @@ shortcutSymbol[name_Str] := Symbol[$shortcutsContext <> name];
 subOp[i_][e_] := Subscript[e, i];
 supOp[i_][e_] := Superscript[e, i];
 
-$style := $style = parseIterator["r g b rg gb rb p" -> {RedForm, GreenForm, BlueForm, OrangeForm, TealForm, PinkForm, PurpleForm}];
+SetCached[$style, parseIterator["r g b rg gb rb p" -> {RedForm, GreenForm, BlueForm, OrangeForm, TealForm, PinkForm, PurpleForm}]];
 $extendedStyle := $extendedStyle = parseIterator[
     "r dr lr g dg lg b db lb rg drg lrg gb dgb lgb rb drb lrb p dp lp w0 w1 w2 dk k lk" -> 
     {RedForm, DarkRedForm, LightRedForm, GreenForm, DarkGreenForm, LightGreenForm, BlueForm, DarkBlueForm, LightBlueForm, OrangeForm, DarkOrangeForm, LightOrangeForm, TealForm, DarkTealForm, LightTealForm, PinkForm, DarkPinkForm, LightPinkForm, PurpleForm, DarkPurpleForm, LightPurpleForm, DarkGrayForm, GrayForm, LightGrayForm, DarkGrayForm, GrayForm, LightGrayForm}
 ];
 
 (* these are delayed because $si hasn't been resolved via shortcutSymbol until we load Core *)
-$intScripts := $intScripts = {-4, -3, -2, -1, 0, 1, 2, 3, 4, $si, $sj, $sk, $sm, $sn, $sM, $sN, \[FormalI]};
-$natScripts := $natScripts = {0, 1, 2, 3, 4, $si, $sj, $sk, $sm, $sn, $sM, $sN, \[FormalI]};
-$posScripts := $posScripts = {1, 2, 3, 4, $si, $sj, $sk, $sm, $sn, $sM, $sN, \[FormalI]};
+SetCached[$intScripts, {-4, -3, -2, -1, 0, 1, 2, 3, 4, $si, $sj, $sk, $sm, $sn, $sM, $sN, \[FormalI]}];
+SetCached[$natScripts, {0, 1, 2, 3, 4, $si, $sj, $sk, $sm, $sn, $sM, $sN, \[FormalI]}];
+SetCached[$posScripts, {1, 2, 3, 4, $si, $sj, $sk, $sm, $sn, $sM, $sN, \[FormalI]}];
 intOps[op_] := "m4 m3 m2 m1 0 1 2 3 4 i j k m n M N $" -> Map[supOp, $intScripts];
 natOps[op_] := "01234ijkmnMN$" -> Map[op, $natScripts];
 posOps[op_] := "1234ijkmnMN$" -> Map[op, $posScripts];
-$subscript := $subscript = natOps[subOp];
-$superscript := $superscript = natOps[supOp];
-$dimensions := $dimensions = parseIterator["1234mndMND" -> {1, 2, 3, 4, $sm, $sn, $sd, $sM, $sN, $sD}];
+SetCached[$subscript,   natOps[subOp]];
+SetCached[$superscript, natOps[supOp]];
+SetCached[$dimensions,  parseIterator["1234mndMND" -> {1, 2, 3, 4, $sm, $sn, $sd, $sM, $sN, $sD}]];
 
 $plusMinus = {{"p", "m", "pm", "mp"}, supOp /@ {"+", "-", "\[PlusMinus]", "\[MinusPlus]"}};
 $primed = {{"pr"}, {PrimedForm}};
 $inverse = {{"inv"}, {InverseForm}};
 $inverted = {{"i"}, {InvertedForm}};
-$primedOrSub := $primedOrSub = joinIts[$subscript, $primed];
+SetCached[$primedOrSub, joinIts[$subscript, $primed]];
 $cyclic = "c" -> {supOp["\[SmallCircle]"]};
 
 (**************************************************************************************************)

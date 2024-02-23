@@ -930,7 +930,7 @@ $positiveColors := $positiveColors =
   toColorList @ "#ffffff #efef7b #ff7b4a #d63822 #b50700 #722a40";
 
 $negativePositivePoints = Join[$negativePoints, Rest @ $positivePoints];
-$negativePositiveColors := $negativePositiveColors = Join[$negativeColors, Rest @ $positiveColors];
+SetCached[$negativePositiveColors, Join[$negativeColors, Rest @ $positiveColors]];
 
 pickBiGradient[min_ ? Negative, max_ ? Positive] := Scope[
   max = Max[Abs[min], Abs[max]];

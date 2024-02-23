@@ -125,7 +125,7 @@ sanitizeTitle[str_Str] := STrim @ SRep[str, $TitleNormalizationRules]
 PublicFunction[PaperPageTitle]
 PublicVariable[$KnownAuthors]
 
-$KnownAuthors := $KnownAuthors = BearPeople[];
+SetCached[$KnownAuthors, BearPeople[]];
 
 PaperPageTitle[authors_, title_] := Scope[
   authors //= VectorReplace[str_Str :> SplitFirstLastName[str]];

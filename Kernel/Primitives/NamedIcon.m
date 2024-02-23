@@ -448,7 +448,7 @@ SetListable[setRightAligned];
 setRightAligned[name_ -> bounded[curve_, {bx_, by_, {_, bb2_}}]] :=
   name -> bounded[curve, {bx, by, {bb2, bb2}}];
 
-$namedIconData := $namedIconData = createIconData[];
+SetCached[$namedIconData, createIconData[]];
 
 (* NOTE: make sure to update $knownIconNames with the keys from this lazy table so that autocomplete is correct *)
 createIconData[] := MapIndex1[makeIconData, Decases[None | bounded[None, ___]] @ Assoc[

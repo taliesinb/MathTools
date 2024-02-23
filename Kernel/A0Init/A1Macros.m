@@ -308,9 +308,9 @@ lhsEchoStr[lhs_] := Block[{res},
   ]
 ];
 
-$openColor := $openColor = Lighter[$Green, 0.95];
-$closeColor := $closeColor = Lighter[$Orange, 0.95];
-$openCloseColor := $openCloseColor = Lighter[$Purple, 0.95];
+SetCached[$openColor,      Lighter[$Green, 0.95]];
+SetCached[$closeColor,     Lighter[$Orange, 0.95]];
+SetCached[$openCloseColor, Lighter[$Purple, 0.95]];
 
 (**************************************************************************************************)
 
@@ -1062,7 +1062,7 @@ _PathJoin := BadArguments[];
 
 PublicVariable[$TemporaryMTDirectory]
 
-$TemporaryMTDirectory := $TemporaryMTDirectory = EnsureDirectory[PathJoin[$TemporaryDirectory, "mt"]];
+SetCached[$TemporaryMTDirectory, EnsureDirectory[PathJoin[$TemporaryDirectory, "mt"]]];
 
 (**************************************************************************************************)
 

@@ -353,7 +353,7 @@ conceptLinkQ[link_] := Lookup[SDrop[link, {3, -3}], $bearConceptTitles, False];
 
 (*************************************************************************************************)
 
-$linkBlacklist := $linkBlacklist = SSplit[ImportUTF8 @ DataPath["Text", "LinkBlacklist.txt"], "\n"];
+SetCached[$linkBlacklist, SSplit[ImportUTF8 @ DataPath["Text", "LinkBlacklist.txt"], "\n"]];
 
 (* computed with:
 $concepts = BearNoteData[{"Tag" -> "concept"}, {"Title", "Text"}];
@@ -382,7 +382,7 @@ createLocalConceptExtractor[noteTagsStr_Str] := Scope[
   (WordBoundary ~~ lhs:(Alt @@ titles) ~~ Maybe["s"] ~~ WordBoundary) :> "[[" <> lhs <> "]]"
 ];
 
-$linkWhitelists := $linkWhitelists = createLinkWhitelists[];
+SetCached[$linkWhitelists, createLinkWhitelists[]];
 
 createLinkWhitelists[] := Scope[
   text = ImportUTF8 @ DataPath["Text", "LinkWhitelists.txt"];

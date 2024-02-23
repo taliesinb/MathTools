@@ -67,7 +67,7 @@ $rgbwxColors = <|
   "w" -> $Gray, "x" -> $DarkGray
 |>;
 
-$colorFormed := $colorFormed = Map[Blank, $colorFormP];
+SetCached[$colorFormed, Map[Blank, $colorFormP]];
 
 ChooseCardinalColors[cardinals_List, palette_:Auto] := Switch[Sort @ cardinals,
   {___, "f", ___},

@@ -240,7 +240,7 @@ sadBpos = Case[
 
 PublicFunction[CommutativePentagon, CommutativeHexagon]
 
-$pentagonPoints := $pentagonPoints = VectorReflectVertical @ ClockwiseCirclePoints[5];
+SetCached[$pentagonPoints, VectorReflectVertical @ ClockwiseCirclePoints[5]];
 
 CommutativePentagon[objs:{_, _, _, _, _}, arrows:{_, _, _, _, _}, opts___Rule] :=
   commutativeNgon[5, objs, arrows, opts];
@@ -258,4 +258,3 @@ commutativeNgon[n_, objects_, arrows_, opts___Rule] := CommutativeDiagram[
   FontSize -> 14, LabelFontSize -> 15, GraphicsScale -> 150,
   LabelPosition -> Outwards, Setback -> 10, opts
 ]
-

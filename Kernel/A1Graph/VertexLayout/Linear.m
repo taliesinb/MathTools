@@ -5,7 +5,7 @@ Options[LinearLayout] = {
   Orientation -> Auto
 };
 
-$threePoints := $threePoints = CirclePoints[3];
+SetCached[$threePoints, CirclePoints[3]];
 
 LinearLayout[opts:OptionsPattern[]][data_] := Scope[
   UnpackOptions[method, orientation];

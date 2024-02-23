@@ -362,7 +362,7 @@ toPairList[points_] := SJoin @ Riffle[toPair /@ points, ","];
 
 PublicFunction[LegacyToSVGString]
 
-$vectorTemporaryFile := $vectorTemporaryFile = TemporaryPath["vector.svg"];
+SetCached[$vectorTemporaryFile, TemporaryPath["vector.svg"]];
 
 LegacyToSVGString[g_] := Scope[
   res = System`ConvertersDump`ExportVectorFormat[$vectorTemporaryFile, g, "SVG"];

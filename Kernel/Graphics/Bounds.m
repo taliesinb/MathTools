@@ -132,8 +132,8 @@ PrimitiveBoxesBounds::unrecogTrans = "Unrecognized geometric transform spec ``."
 SetHoldFirst[styleBlock];
 styleBlock[e_] := InheritedBlock[{$aps, $fs, $ff, $fw, $fsl, $ft}, e];
 
-$circ8 := $circ8 = ToPackedReal @ N @ ClockwiseCirclePoints[8];
-$sphere26 := $sphere26 = Normalize /@ Decases[{0.,0.,0.}] @ Tuples[N @ {-1, 0, 1}, 3];
+SetCached[$circ8, ToPackedReal @ N @ ClockwiseCirclePoints[8]];
+SetCached[$sphere26, Normalize /@ Decases[{0.,0.,0.}] @ Tuples[N @ {-1, 0, 1}, 3]];
 
 vecBall[v:{_, _, _}, r_] := Threaded[v] + r * $sphere26;
 vecBall[v:{_, _}, r_] := Threaded[v] + r * $circ8;

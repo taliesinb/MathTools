@@ -506,7 +506,7 @@ LatticeQuiverCoordinates[quiver_Graph, name_Str] := Scope[
 PublicVariable[$TriangularVectors2D]
 
 $s32 = Sqrt[3]/2;
-$TriangularVectors2D := $TriangularVectors2D = Simplify /@ {{1, 0}, {1/2, $s32}, {-1/2, $s32}};
+SetCached[$TriangularVectors2D, Simplify /@ {{1, 0}, {1/2, $s32}, {-1/2, $s32}}];
 
 chooseLatticeBasisVectors = Case[
   {"x", "y"} | {"b", "r"}             := {{1,0}, {0, 1}};
