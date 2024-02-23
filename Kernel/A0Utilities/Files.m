@@ -352,10 +352,6 @@ FileAge[path_] := UnixTime[] - UnixTime[FileDate[path]];
 
 (**************************************************************************************************)
 
-notInWLSymbol[p_] := NegativeLookbehind[WLSymbolLetter] ~~ p ~~ NegativeLookahead[WLSymbolLetter];
-
-(**************************************************************************************************)
-
 PublicFunction[FileLineFind]
 
 PublicOption[WholeWords]
@@ -369,7 +365,7 @@ Options[FileLineFind] = {
 
 FileLineFind[files:(_Str | {__Str}), patt_, OptionsPattern[]] := Scope[
   UnpackOptions[$ignoreCase, wholeWords];
-  If[TrueQ[wholeWords], patt //= notInWLSymbol];
+  If[TrueQ[wholeWords], patt //= WLWholeWord];
   patt = ToRegex @ patt;
   If[FailureQ[patt], ReturnFailed[]];
   Flatten @ Map[searchFileLines[#, patt]&, ToList @ files]
@@ -392,7 +388,7 @@ Options[FileStringCases] = JoinOptions[
 
 FileStringCases[files_, patt_, OptionsPattern[]] := Scope[
   UnpackOptions[$ignoreCase, $surroundingContextLines, wholeWords];
-  If[TrueQ[wholeWords], patt //= notInWLSymbol];
+  If[TrueQ[wholeWords], patt //= WLWholeWord];
   If[!ListQ[StringCases["", patt]], ReturnFailed[]];
   iFileStringCases[files, patt]
 ];
@@ -420,15 +416,16 @@ Options[FileStringReplace] = {
 toStrPattLHS = Case[
   Rule[a_, b_]        := a;
   RuleDelayed[a_, b_] := a;
+  {r_}                := % @ r;
   list_List           := Alt @@ Map[%, list];
 ];
 
 FileStringReplace[files_, rewrite:($RulePattern | $RuleListPattern), OptionsPattern[]] := Scope[
   UnpackOptions[$verbose, $dryRun, $ignoreCase, wholeWords];
   SetAuto[$verbose, $dryRun];
-  If[TrueQ[wholeWords], rewrite //= MapColumn[notInWLSymbol, 1]];
+  If[TrueQ[wholeWords], rewrite //= MapColumn[WLWholeWord, 1]];
   If[!ListQ[StringCases["", rewrite]], ReturnFailed[]];
-  $lhs = ToRegex @ toStrPattLHS @ rewrite;
+  $lhs = ToRegex @ toStrPattLHS @ ReplaceAll[(Condition|PatternTest)[p_, _] :> p] @ rewrite;
   $rewrite = rewrite;
   Flatten @ Map[iFileStringReplace, ToList @ files]
 ];
@@ -443,7 +440,7 @@ iFileStringReplace[file_] := Scope[
   If[spans === {},
     Return @ Nothing];
   lines = ToStringLinePositions[text, spans];
-  {fileLines, spans, newChunks} = Transpose @ ZipMap[
+  res = ZipMap[
     {span, line} |-> (
       fileLine = FileLine[file, line];
       chunk = STake[text, span];
@@ -460,6 +457,8 @@ iFileStringReplace[file_] := Scope[
           Nothing
       ]),
     spans, lines];
+  If[res === {}, Return @ Nothing];
+  {fileLines, spans, newChunks} = Transpose @ res;
   newText = StringReplacePart[text, newChunks, spans];
   If[!StrQ[newText],
     Message[FileStringReplace::fileReplaceMatchFailed, MsgPath @ file];

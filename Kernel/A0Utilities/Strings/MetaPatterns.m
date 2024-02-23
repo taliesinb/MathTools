@@ -31,7 +31,7 @@ PublicStringPattern[Avoiding]
 SetUsage @ "
 Avoiding[patt$, 'chars$'] matches patt$, as long as the match does not contain any of the chars$.
 Avoiding[patt$, class$] specifies a character class such as LetterCharacter.
-Avoiding[patt$, {'str$1', 'str$2', $$} avoids the literal strings 'str$i.'.
+Avoiding[patt$, {'str$1', 'str$2', $$}] avoids the literal strings 'str$i'.
 * Avoiding compiles to a simple regular expression where possible.
 * Avoiding must validate matches with a callback to when patt$ is complex, or a list of strings to avoid is given.
 * Avoiding[_, $$] matches a non-empty string.
@@ -46,25 +46,39 @@ DefineStringPatternMacro[
 expandAvoiding = Case[
 
   (* bind a pattern var *)
-  Avoiding[Verbatim[Pattern][s_Symbol, p_], a_] :=
+  Avoiding[V`Pattern[s_Symbol, p_], a_] :=
     Construct[Pattern, Uneval @ s, Avoiding[p, a]];
 
-  Avoiding[Verbatim[_]|Verbatim[__], a:(_Str | _Symbol)] := ExceptLetterClass[a]..;
-  Avoiding[Verbatim[___], a:(_Str | _Symbol)]            := ExceptLetterClass[a]...;
+  (* no binding *)
+  Avoiding[Verbatim[_]|Verbatim[__], a_] := toExceptClass[a]..;
+  Avoiding[Verbatim[___], a_]            := toExceptClass[a]...;
 
-  (* complex cases: *)
+  (* avoid a set of characters. if we know the interior pattern cannot match the forbidden characters,
+  we can avoid introducing a callback to check that fact. note: the ? causes chars to be checked one
+  at a time against the avoid string. *)
+  Avoiding[p_, a_Str]               := If[StringPatternCanContainQ[p, a], p ? (SFreeQ[a, #]&),   p];
+  Avoiding[p_, a_ ? singleLetterQ]  := If[StringPatternCanContainQ[p, a], p ? (StringMatchQ[a]), p];
 
-  (* avoid a character class. if we know the interior pattern cannot match the forbidden characters,
-  we can avoid introducing a callback to check that fact *)
-  Avoiding[p_, a_Str]     := If[StringPatternCanContainCharsQ[p, a], p ? (SFreeQ[a, #]&), p];
-
-  (* avoid specific strings *)
-  Avoiding[p_, a:{__Str}] := p ? (SFreeQ[#, a]&);
+  (* avoid a list of literals *)
+  Avoiding[p_, a:{__Str}]   := Module[{z}, z:p /; SFreeQ[z, a]];
 
   a_ := (
     Message[Avoiding::invalidStringPatternUsage, MsgExpr @ a];
     $Failed
   )
+];
+
+singleLetterQ = Case[
+  _LetterClass | _RawLetterClass := True;
+  _Symbol ? LetterClassSymbolQ := True;
+  _                            := False;
+];
+
+toExceptClass = Case[
+  s_Str                         := ExceptLetterClass[s];
+  LetterClass[s_Str]            := ExceptLetterClass[s];
+  s_Symbol ? LetterClassSymbolQ := Except[s];
+  _                             := $Failed;
 ];
 
 (**************************************************************************************************)

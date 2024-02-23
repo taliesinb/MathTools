@@ -282,6 +282,13 @@ Clear[resolvePackageSymbol];
 resolvePackageSymbol["$PackageFileName"] := $CurrentFile;
 resolvePackageSymbol["$PackageDirectory"] := $PackageDirectory;
 
+Scan[
+  Set[resolvePackageSymbol["V`" <> SymbolName[#]], Verbatim[#]]&,
+  {Blank, BlankSequence, BlankNullSequence, Alternatives, Repeated, RepeatedNull,
+   Pattern, Except, Longest, Shortest, Verbatim, HoldPattern, KeyValuePattern,
+   Condition, PatternTest, Optional}
+];
+
 KeyValueMap[Set[resolvePackageSymbol[#1], #2]&, $coreSymbolAssociation];
 
 resolvePackageSymbol[o_] := Package`PackageSymbol[o];

@@ -222,12 +222,20 @@ character and span literals include these and their Except equivalents:
 
 PublicSpecialFunction[EvalStrExp]
 
-PrivateStringPattern[RawStrExp, RawRegex, RawMaybe, RawCharGroup]
+PrivateStringPattern[RawStrExp, RawRegex, RawMaybe, RawLetterClass, RawRECall, RawREGroup, RawREAnonGroup, RawREBackRef]
 
-RawRegex     = StringPattern`Dump`RE;
-RawStrExp    = StringPattern`Dump`SP;
-RawMaybe     = StringPattern`Dump`QuestionMark;
-RawCharGroup = StringPattern`Dump`CharacterGroup;
+RawRegex       = StringPattern`Dump`RE;
+RawStrExp      = StringPattern`Dump`SP;
+RawMaybe       = StringPattern`Dump`QuestionMark;
+RawLetterClass = StringPattern`Dump`CharacterGroup;
+RawRECall      = StringPattern`Dump`CallOut;
+RawREGroup     = StringPattern`Dump`CapGr;
+RawREAnonGroup = StringPattern`Dump`UnnamedCapGr;
+RawREBackRef   = StringPattern`Dump`BackRef;
+
+PrivateVariable[$RawREHeads]
+
+$RawREHeads = {RawRegex, RawStrExp, RawMaybe, RawLetterClass, RawRECall, RawREGroup, RawREAnonGroup, RawREBackRef}
 
 (**************************************************************************************************)
 
@@ -257,115 +265,199 @@ LetterClassSymbolQ = StringPattern`Dump`SingleCharacterQ;
 
 (**************************************************************************************************)
 
-PublicFunction[StringPatternCanContainCharsQ]
+PublicFunction[StringPatternCanContainQ]
 
 SetUsage @ "
-StringPatternCanContainCharsQ[patt$, 'chars$'] checks if patt$ could match a string that contains one of 'chars$'.
+StringPatternCanContainQ[patt$, 'chars$'] checks if patt$ could match a string that contains one of 'chars$'.
 * it will never produce false negatives, only false positives.
+* it decompiles regular expressions via %FromRegex to be more accurate. This is cached.
 "
 
-StringPatternCanContainCharsQ[_, ""] := False;
+(* TODO: i don't think this handles CaseInsensitive properly! *)
 
-StringPatternCanContainCharsQ[patt_, needle_Str] := Scope[
-  $needle = needle; $needleChars = Chars @ needle;
-  Catch[spcc @ patt; False, spcc]
+StringPatternCanContainQ[_, ""] := False;
+
+StringPatternCanContainQ[patt_, needle_Str] :=
+  doRecursivePatternTest[patt, needle, SContainsQ, Scan];
+
+(**************************************************************************************************)
+
+PublicFunction[StringPatternCanStartQ, StringPatternCanEndQ]
+
+SetUsage @ "StringPatternCanStartQ[patt$, 'chars$'] checks if patt$ could match a string starting with any of 'chars$'."
+SetUsage @   "StringPatternCanEndQ[patt$, 'chars$'] checks if patt$ could match a string ending with any of 'chars$'."
+
+StringPatternCanStartQ[p_, n_] := doRecursivePatternTest[p, n, SStartsQ, seqCanStartEnd[Id]];
+StringPatternCanEndQ[p_, n_]   := doRecursivePatternTest[p, n, SEndsQ,   seqCanStartEnd[Rev]];
+
+seqCanStartEnd[pre_][fn_, seq_] := seqRec[fn, Sequence @@ pre[seq]];
+
+(* check for a nullable patern, which requires us to look further *)
+seqRec[fn_, p_ ? NullableStringPatternQ, rest___] := (
+  fn @ p;              (* if the nullable thing can match, we have a hit *)
+  seqRec[fn, rest]     (* if it doesn't, we might have a match later *)
+);
+
+seqRec[f_, p_, ___] := f @ p;
+
+seqRec[_] := Null;
+
+(**************************************************************************************************)
+
+General::notNeedleStr = "Needle `` should be a string.";
+
+(* this is the driver for StringPatternCanContainQ, StringPatternCanStartQ, StringPatternCanEndQ *)
+doRecursivePatternTest[patt_, needle_, strFn_, seqFn_] := Scope[
+  If[!StrQ[needle], Message[General::notNeedleStr, MsgExpr @ needle]; ReturnFailed[]];
+  StringPattern`Dump`$Quantifier = ""; (* so that when we expand via internal rules we don't get errors *)
+  $verbose = False;
+  $needle = needle;
+  $needleChars = Chars @ needle;
+  $strFn = strFn;
+  $seqFn = seqFn;
+  Catch[pattDispatch @ patt; False, catchYes]
 ];
 
-spccYes[] := Throw[True, spcc];
+throwYes[] := Throw[True, catchYes];
 
-spcc = Case[
-  s_Str              := spccLiteral @ s;
-  e:recurseAll       := Scan[%, e];
-  e:recurse1         := % @ F @ e;
-  e:recurse2         := % @ P2 @ e;
-  ignore             := Null;
-  blanks             := spccYes[];
+$pattRecurse1 = _Repeated | _RepeatedNull | _Maybe | _Longest | _Shortest | _Condition | _PatternTest;
+$pattRecurse2 = _Pattern;
+$pattNullable = _Maybe | _RawMaybe | _RepeatedNull | V`Repeated[_, {0, _}];
 
-  Verbatim[Except][p_] := spccExcept[p];
-  Verbatim[Except][p_, c_] := % @ p;
-  ExceptLetterClass[p_] := antipatternRulesOutNeedleQ[LetterClass @ p];
-  Avoiding[_, p_]    := spccAvoiding @ p;
+pattDispatch = Case[
 
-  e:regex            := spccRegex @ F @ e; (* decompile the regex back to patterns *)
+  l:letter                 := If[classRulesInQ[l], throwYes[]];
+  ExceptLetterClass[c_]    := % @ Except @ LetterClass @ c;
 
-  e_                 := spccExpr @ e;
+  V`Except[e_]             := If[!exceptRulesOutQ[e], throwYes[]];
+  V`Except[e_, p_]         := If[!exceptRulesOutQ[e], % @ p];
+
+  Avoiding[p_, a_]         := If[!avoidingRulesOutQ[a], % @ p];
+
+  r:regex                  := % @ CachedFromRegex @ r;
+
+  s_Str                    := If[$strFn[s, $needleChars], throwYes[]];
+  s_SExpr                  := $seqFn[pattDispatch, s];
+
+  e:recurseAll             := Scan[%, e];
+  e:recurse1               := % @ P1 @ e;
+  e:recurse2               := % @ P2 @ e;
+  ignore                   := Null;
+  blanks                   := throwYes[];
+
+  e_                       := pattDispatch2 @ e;
 ,
-  {recurseAll -> _Alternatives | _StringExpression | _List,
-   recurse1   -> _Repeated | _RepeatedNull | _Maybe | _Longest | _Shortest,
+  {letter     -> _LetterClass | _Symbol ? LetterClassSymbolQ,
+   recurseAll -> _Alternatives | _List,
+   recurse1   -> $pattRecurse1,
+   recurse2   -> $pattRecurse2,
+   ignore     -> _PatternRecurse | StartOfLine | EndOfLine | StartOfString | EndOfString,
    blanks     -> Verbatim[_] | Verbatim[__] | Verbatim[___],
-   regex      -> _RegularExpression | _Regex,
-   ignore     -> _NegativeLookahead | _NegativeLookbehind | _PositiveLookahead | _PositiveLookbehind}
+   regex      -> _RegularExpression | _Regex | _RawRegex
+}];
+
+(* does the Avoiding second arg rule out the needle? if so, we're safe *)
+avoidingRulesOutQ = Case[
+  a_Str    := SubsetQ[Chars @ a, $needleChars];
+  a_Symbol := LetterClassSymbolQ[a] && anticlassRulesOutQ[a];
+  _        := False;
+];
+
+(* does the Except first arg rule out the needle? it can only do so if its
+a single char-like pattern. *)
+exceptRulesOutQ = Case[
+  c_Str                              := {c} === $needleChars;
+  cs:{__Str}                         := SubsetQ[cs, $needleChars];
+  l_Symbol ? LetterClassSymbolQ      := anticlassRulesOutQ @ l;
+  c:(_LetterClass | _RawLetterClass) := anticlassRulesOutQ @ c;
+  e_                                 := avoidingRulesOutQ @ e;
+];
+
+anticlassRulesOutQ[p_] := And @@ SMatchQ[$needleChars, p];
+classRulesInQ[p_] := SContainsQ[$needle, p];
+
+(**************************************************************************************************)
+
+PrivateFunction[NullableStringPatternQ, AnchorStringPatternQ, UnitLengStringPatternQ]
+
+AnchorStringPatternQ = Case[
+  _NegativeLookahead | _NegativeLookbehind | _PositiveLookahead | _PositiveLookbehind     := True;
+  WLSymbolBoundary | WordBoundary | StartOfLine | EndOfLine | StartOfString | EndOfString := True;
+  _ := False
+];
+
+NullableStringPatternQ = Case[
+  p:nullable     := True;
+  s_SExpr        := AllTrue[s, %];
+  a_Alt | a_List := AnyTrue[a, %];
+  p:recurse1     := % @ P1 @ p;
+  p:recurse2     := % @ P2 @ p;
+  p_             := AnchorStringPatternQ @ p;
+,
+  {nullable -> $pattNullable, recurse1 -> $pattRecurse1, recurse2 -> $pattRecurse2}
+];
+
+UnitLengStringPatternQ = Case[
+  s_Str                                  := SLen[s] == 1;
+  Verbatim[_]                            := True;
+  l_Symbol ? LetterClassSymbolQ          := True;
+  _ExceptLetterClass                     := True;
+  _LetterClass | _RawLetterClass         := True;
+  Except[_LetterClass | _RawLetterClass] := True;
+  _                                      := False;
 ];
 
 (**************************************************************************************************)
 
-spccLiteral[s_] := If[SContainsQ[s, $needleChars], spccYes[]];
+(* anchors do not contribute to the answer *)
+pattDispatch2[e_ ? AnchorStringPatternQ] := Null;
 
-(**************************************************************************************************)
+(* macros don't need full expansion to raw elements, which is to be avoided because parsing REs is slow *)
+pattDispatch2[e_ ? cspMacroQ] := pattDispatch @ pattApplyRule[e, $StrExprMacroRules];
 
-(* does the Avoiding rule out the needle? if so, we're safe *)
-spccAvoiding = Case[
-  a_Str    := If[!SubsetQ[Chars @ a, $needleChars], spccYes[]];
-  a_Symbol := If[LetterClassSymbolQ[a] && antipatternRulesOutNeedleQ[a], Null, spccYes[]];
-  _        := spccYes[];
+(* expand the expression one step and recurse, which involves treating strings as containing REs *)
+pattDispatch2[e_ ? cspRawQ] := pattDispatchRaw @ pattApplyRule[e, $StrExprRawRules];
+
+(* deal with raw string elements directly *)
+With[{rawP = Alt @@ Map[Blank, $RawREHeads]}, pattDispatch2[e:rawP] := pattDispatchRaw @ e];
+
+(* things like Whitespace will make it down to here *)
+pattDispatch2[e_Symbol] := pattDispatchRaw @ pattApplyRule[e, $StrExpInternalRules];
+
+(* failure to expand in the above two cases means we must bail out *)
+pattApplyRule[e_, rule_] := Module[{res = Rep[e, rule]}, If[res === e, throwYes[], res]];
+
+General::unknownRawStringPatternElement = "Cannot process unknown raw pattern element: ``.";
+(* TODO: handle CallOut etc, CpGr, etc. *)
+pattDispatchRaw := Case[
+  V`Except[e_RawLetterClass]  := If[!anticlassRulesOutQ[e], throwYes[]];
+  e_RawLetterClass            := If[classRulesInQ[e], throwYes[]];
+  e_RawStrExp                 := $seqFn[pattDispatchRaw, e];
+  e_RawMaybe                  := % @ F @ e;
+  e_Str | e_RawRegex          := pattDispatch @ CachedFromRegex @ e;
+  _RawRECall                  := Null;
+  _RawREBackRef               := Null;
+  re_RawREGroup               := % @ P2 @ e;
+  re_RawREAnonGroup           := % @ P2 @ e;
+  raw_                        := (
+    Message[General::unknownRawStringPatternElement, MsgExpr @ raw];
+    throwYes[]
+  );
 ];
 
 (**************************************************************************************************)
 
-(* similar to Avoiding *)
-spccExcept = Case[
-  c_Str (* single letter *)      := If[{c} =!= $needleChars, spccYes[]];
-  cs:{__Str}                     := If[!SubsetQ[cs, $needleChars], spccYes[]];
-  e_LetterClass | e_RawCharGroup := antipatternRulesOutNeedleQ[e];
-  e_                             := spccAvoiding @ e;
-];
-
-(**************************************************************************************************)
-
-spccExpr[e_] := Which[
-
-  (* are any of the forbidden chars matched by the char class? *)
-  LetterClassSymbolQ @ e,      If[SContainsQ[$needle, e], spccYes[]],
-
-  (* macros don't need full expansion to raw elements, which is to be avoided because parsing REs is slow *)
-  cspMacroQ @ e,                  Print["EXPANDING MACRO ", e]; spcc @ Echo @ spccApplyRule[e, $StrExprMacroRules],
-
-  (* expand the expression one step and recurse *)
-  cspRawQ @ e,                    Print["EXPANDING RAW ", e]; spccRaw @ Echo @ spccApplyRule[e, $StrExprRawRules],
-
-  (* maybe its a RawCharGroup or similar *)
-  True,                          spccRaw[e]
-];
-
-(* if it failed to evaluate, bail out *)
-spccApplyRule[e_, rule_] := Scope[
-  res = Rep[e, rule];
-  If[res === e, spccYes[]];
-  res
-];
-
-(**************************************************************************************************)
+PublicFunction[CachedFromRegex]
 
 CacheVariable[$FromRegexCache]
 
-spccRegex[re_Str] := Scope[
-  se = CachedInto[$FromRegexCache, re, FromRegex @ re];
-  spcc @ se
-];
+CachedFromRegex[re_] := CachedInto[$FromRegexCache, re, FromRegex @ re];
 
 (**************************************************************************************************)
 
-antipatternRulesOutNeedleQ[p_] := If[And @@ SMatchQ[$needleChars, p], Null, spccYes[]];
+PublicVariable[$RegexMetaCharacters]
 
-spccRaw = Case[
-  Verbatim[Except][e_RawCharGroup] := antipatternRulesOutNeedleQ[e];
-  e_RawCharGroup            := If[SContainsQ[$needle, e], spccYes[]];
-  e_RawStrExp               := Scan[%, e];
-  e_Str                     := spccRegex @ e; (* this can be a regex *)
-  e_RawMaybe                := % @ F @ e;
-  e_RawRegex                := spccRegex @ F @ e;
-  raw_                      := (Print["UNKOWN RAW: ", raw]; spccYes[]);
-];
+$RegexMetaCharacters = Chars["\\.*+?{}()[]|+^$"];
 
 (**************************************************************************************************)
 
@@ -384,8 +476,11 @@ Options[FromRegex] = {Verbose -> False};
 FromRegex::fail = "Parse failed: ``."
 FromRegex::nomatch = "Cannot proceed because no rules matched in state ``. Remaining string: ``."
 
+(* TODO: do a cheap test, scanning for the lack of regex characters, in which case we know it's a literal
+string *)
 FromRegex[re_Str | Regex[re_Str] | RegularExpression[re_String], OptionsPattern[]] := Scope @ CatchMessage[
   UnpackOptions[$verbose];
+  If[StringFreeQ[re, $RegexMetaCharacters], Return @ re];
   $result = $seq[];
   $cursor = {1};
   $state = $normalState;

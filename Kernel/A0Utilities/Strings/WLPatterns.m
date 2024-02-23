@@ -104,3 +104,75 @@ makeUniqueWLSpan[] := Module[{z, q, rep, repIn},
 
 (* TODO: make a delimiter class *)
 assocStrFreeQ[q_] := StringFreeQ[q, {"<|", "|>", "\[LeftAssociation]", "\[RightAssociation]"}]
+
+(**************************************************************************************************)
+
+PublicStringPattern[WLWholeWord]
+
+SetUsage @ "
+WLWholeWord[p$] matches p$, but prevents matches that are part of a larger symbol name on the left or right.
+* the left and right side of p$ are examined to determine which parts need negative look ahead/behind conditions.
+";
+
+DefineStringPatternMacro[
+  WLWholeWord[p_] :> toWLWholeWordPattern[p]
+];
+
+toWLWholeWordPattern[p_] := Scope[
+  $isL = True;  p //= applyBound; p //= RepRep[$bubbleLBoundRules];
+  $isL = False; p //= applyBound; p //= RepRep[$bubbleRBoundRules];
+  p //= RepRep[$subLRBoundRules];
+  p
+];
+
+(* TODO: handle Maybe / Repeated *)
+applyBound = Case[
+  l_$lbound       := Map[%, l]; (* happens after we've applied l and we are doing r *)
+  a_Alt           := Map[%, a];
+  l_List          := Map[%, l];
+  r:
+  s_SExpr         := Apply[SExpr] @ If[$isL, boundSeqL, boundSeqR] @ Apply[List] @ s;
+  l_LetterClass   := If[Or @@ StringMatchQ[$boundTestChars, l], l, If[$isL, $lbound, $rbound] @ l];
+  p:recurse1      := MapAt[%, p, 1];
+  p:recurse2      := MapAt[%, p, 2];
+  p_              := Which[
+    StringPatternCanStartQ[p, $boundTestStr];
+     $isL && !StringPatternCanStartQ[p, $boundTestStr], $lbound @ p,
+    !$isL && !StringPatternCanEndQ  [p, $boundTestStr], $rbound @ p,
+    True, p
+  ];
+  s_Str           := Which[
+     $isL && SStartsQ[s, WLSymbolLetter], $lbound @ s,
+    !$isL &&   SEndsQ[s, WLSymbolLetter], $rbound @ s,
+    True, s
+  ];
+,
+  {recurse1 -> _Longest | _Shortest | _Condition | _PatternTest, recurse2 -> _Pattern}
+];
+
+(* newlines ensure that its a whole word *)
+boundSeqL[s:List[StartOfLine | StartOfString | WLSymbolBoundary, ___]] := s;
+boundSeqL[List[l_, r___]] := List[applyBound @ l, r];
+
+boundSeqR[s:List[___, EndOfLine | EndOfString | WLSymbolBoundary]] := s;
+boundSeqR[List[l___, r_]] := List[l, applyBound @ r];
+
+(* if a mystery string pattern can match these characters on the given side, it is ineligible for
+being wrapped on that side. *)
+$boundTestStr = " \t\n+-*/()[]{}!@#%^&";
+$boundTestChars = Chars @ $boundTestStr;
+
+$bubbleLBoundRules = {
+  a:(Alt|List)[__$lbound] :> $lbound[Col1 @ a]
+};
+
+$bubbleRBoundRules = {
+  a:(Alt|List)[__$rbound] :> $rbound[Col1 @ a],
+  SExpr[$lbound[f_], r___]   :> $lbound[SExpr[f, r]]
+};
+
+$subLRBoundRules = {
+  $lbound[$rbound[e_]] :> NegativeLookbehind[WLSymbolLetter] ~~ e ~~ NegativeLookahead[WLSymbolLetter],
+  $lbound[e_]          :> NegativeLookbehind[WLSymbolLetter] ~~ e,
+  $rbound[e_]          :> e ~~ NegativeLookahead[WLSymbolLetter]
+};
