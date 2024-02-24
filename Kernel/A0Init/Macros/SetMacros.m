@@ -12,7 +12,7 @@ DefineSimpleMacro[SetMissing,   SetMissing  [lhs_, rhs_] :> If[MissingQ[lhs],   
 DefineSimpleMacro[SetInherited, SetInherited[lhs_, rhs_] :> If[lhs === Inherited, lhs = rhs, lhs]];
 
 DefineSimpleMacro[SetCached,             SetCached[lhs_, rhs_] :> SetDelayed[lhs, Set[lhs, rhs]]];
-DefineSimpleMacro[SetScaledFactor, SetScaledFactor[lhs_, rhs_] :> If[MatchQ[lhs, Scaled[_ ? NumericQ]], lhs //= F /* N; lhs *= scale]];
+DefineSimpleMacro[SetScaledFactor, SetScaledFactor[lhs_, rhs_] :> If[MatchQ[lhs, Scaled[_ ? NumericQ]], lhs //= F /* N; lhs *= rhs]];
 
 (**************************************************************************************************)
 
