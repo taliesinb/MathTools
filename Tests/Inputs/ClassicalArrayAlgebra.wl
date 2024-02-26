@@ -400,7 +400,7 @@ TestMarkdown @ Cell[TextData[{"P : \[LeftAngleBracket]", ColorNBox["A", 1], "\[R
 
 TestMarkdown @ SBF @ StringForm["P = ", FrameLabeled[
 	NAF[StringDrop[TextString[#], 1]& /@ ReplacePart[N @ Zeros[26], {1 -> .6, 5 -> .2, 6 -> .2}]],
-	{Top -> RuleThread[Range[26]*3, Characters@$LowercaseRomanLetters]}
+	{Top -> RuleThread[Range[26]*3, CharRange["a", "z"]]}
 ], Alignment -> Bottom]
 
 

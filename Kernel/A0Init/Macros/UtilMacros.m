@@ -6,5 +6,24 @@ DefineSimpleMacro[MapCol3, {MapCol3[f_] :> MapCol[f, 2], MapCol3[f_, e_] :> MapC
 
 (* TODO: finish this by defining replacing MapColumn with MapCol *)
 
+(**************************************************************************************************)
 
+PublicMutatingFunction[SPrependTo, SAppendTo]
 
+DefineSimpleMacro[SPrependTo, SPrependTo[lhs_, rhs_] :> ApplyTo[lhs, StringJoinLeft[rhs]]];
+DefineSimpleMacro[SAppendTo,   SAppendTo[lhs_, rhs_] :> ApplyTo[lhs, StringJoinRight[rhs]]];
+
+(**************************************************************************************************)
+
+PrivateFunction[SingleQ, FromSingle]
+
+SingleQ[{_}] := True;
+SingleQ[_]   := False;
+
+SetHoldRest[FromSingle];
+
+FromSingle[{a_}]        := a;
+FromSingle[_]           := None;
+
+FromSingle[{a_},     _] := a;
+FromSingle[{a_}, else_] := else;

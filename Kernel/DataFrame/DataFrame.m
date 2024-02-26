@@ -289,7 +289,7 @@ toKeysCols := Case[
     {keys, cols}
   ];
   data_List ? ListVectorQ := Scope[
-    dims = Dims @ array;
+    dims = Dims @ data;
     If[Len[dims] == 1, ThrowMessage["notLists"]];
     keys = IntStr @ Range @ P2 @ dims;
     {keys, Transpose @ data}

@@ -12,11 +12,15 @@ makeLiteralReplacementRule[assoc_, wrap_] := ModuleScope[
 
 PublicVariable[$WLSymbolToKatexRegex]
 
-$WLSymbolToKatexRegex := $WLSymbolToKatexRegex = makeLiteralReplacementRule[MathCharacterData[<|"Symbol" -> "Katex"|>], True]
+SetCached[$WLSymbolToKatexRegex, makeLiteralReplacementRule[MathCharacterData[<|"Symbol" -> "Katex"|>], True]];
 
 PublicVariable[$WLSymbolToUnicode]
 
-$WLSymbolToUnicode := $WLSymbolToUnicode = makeLiteralReplacementRule[MathCharacterData[<|"Symbol" -> "Unicode"|>], False]
+SetCached[$WLSymbolToUnicode, makeLiteralReplacementRule[MathCharacterData[<|"Symbol" -> "Unicode"|>], False]];
+
+PublicVariable[$WLSymbolsWithUnicodeEquivalents]
+
+SetCached[$WLSymbolsWithUnicodeEquivalents, Keys @ MathCharacterData[<|"Symbol" -> "Unicode"|>]]
 
 (**************************************************************************************************)
 

@@ -96,6 +96,7 @@ StrVecQ        StringVectorQ
 Chars          Characters
 FromCharCode   FromCharacterCode
 ToCharCode     ToCharacterCode
+CharRange      CharacterRange
 
 RuleEval	   RuleCondition
 Eval           Evaluate
@@ -104,3 +105,5 @@ Uneval         Unevaluated
 Alt            Alternatives
 HoldP          HoldPattern
 HoldC          HoldComplete
+
+Ret            Return

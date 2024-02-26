@@ -57,7 +57,7 @@ MathCharacterData[schema_, groups:Except[_Rule]:{}, OptionsPattern[]] := Scope[
   func = Construct[Fn, schema] /. {
     "Symbol" -> #1, "Name" -> #2, "InputForm" -> #3, "Katex" -> #4, "Unicode" -> #5, "Groups" -> #6,
     "Code" :> If[#5 === None, None, F @ ToCharCode[#5]],
-    "HexCode" :> If[#5 === None, None, IntStr[F @ ToCharCode[#5],16, 4]]
+    "HexCode" :> If[#5 === None, None, ToHexStr[F @ ToCharCode[#5], 4]]
   };
   table = $mathCharacterTable;
   If[groups =!= {}, groups //= ToList; table //= Select[SubsetQ[Part[#, 6], groups]&]];

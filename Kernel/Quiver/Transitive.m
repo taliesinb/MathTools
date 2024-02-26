@@ -27,7 +27,7 @@ declareSyntaxInfo[BouquetQuiver, {_, OptionsPattern[]}];
 
 
 BouquetQuiver[n_Int, opts:OptionsPattern[]] := BouquetQuiver[
-  Switch[n, 1, "r", 2, "rb", 3, "rgb", 4, "rgbw", _, Take[$Alphabet, n]],
+  Switch[n, 1, "r", 2, "rb", 3, "rgb", 4, "rgbw", _, Take[$RomanGreekAlphabet, n]],
   opts
 ];
 

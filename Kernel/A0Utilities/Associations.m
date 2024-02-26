@@ -29,6 +29,16 @@ Associate[assoc_, key_ -> value_] := Pre[assoc, key -> value];
 
 (**************************************************************************************************)
 
+PublicFunction[UAssocThread]
+
+UAssocThread::keysValuesLength = "Key length (``) does not equal value length (``).";
+UAssocThread[keys_List, vals_List] /; LengthEqualOrMessage[UAssocThread::keysValuesLength, keys, vals] :=
+  UAssoc @ Thread[keys -> vals];
+
+UAssocThread[keys_][vals_] := UAssocThread[keys, vals];
+
+(**************************************************************************************************)
+
 PublicFunction[AssociationMapThread]
 
 AssociationMapThread[f_, assoc_Assoc] := With[

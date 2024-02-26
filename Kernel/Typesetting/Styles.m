@@ -31,5 +31,5 @@ PublicVariable[$MathLabelStyle]
 $MathLabelStyle = {
   FontFamily -> $MathFont, FontSize -> 14,
   SingleLetterItalics -> True, ShowStringCharacters -> False,
-  AutoItalicWords -> $Alphabet
+  AutoItalicWords -> $RomanGreekAlphabet
 };

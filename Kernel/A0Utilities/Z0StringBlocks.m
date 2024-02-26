@@ -332,7 +332,7 @@ cellStyling[e_, {l___, "Superscript", r___}] := Cell[BoxData @ SuperscriptBox[""
 cellStyling[e_, {s__}] := StyleBox[e, s];
 cellStyling[e_, {}] := e;
 
-wrapCode[code_, str_] := If[SingleLetterQ[str], {name, ":", str}, {name, "{", str, "}"}];
+wrapCode[code_, str_] := If[SingleCharQ[str], {name, ":", str}, {name, "{", str, "}"}];
 
 inputStyling[e_, {l___, "Subscript", r___}] := {"_{", inputStyling[e, {l, r}], "}"};
 inputStyling[e_, {l___, "Midscript", r___}] := {"_{", inputStyling[e, {l, r}], "}"};

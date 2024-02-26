@@ -1,79 +1,74 @@
 PublicStringPattern[Nullspace, ShortBlank, ASCIIWord, Base64Pattern, LinearSyntaxPattern]
 
-DefineStringPattern[
-  Nullspace            :> """\s*""",
-  ShortBlank           :> """.+?""",
-  Number               :> """(?!<\d)\d+(?!\d)""",
-  Base64Pattern        :> """[[:alnum:]+/]+={0,2}""",
-  ASCIIWord            :> """\b[[:alnum:]]+\b"""
+DefineStringPatternMacro[
+  Nullspace            :> RepeatedNull[WhitespaceCharacter],
+  ShortBlank           :> Shortest[__]
 ];
 
 DefineStringPattern[
-  LinearSyntaxPattern  :> "\!\(\*" ~~ Shortest[___] ~~ "\)"
+  Number               :> RawRegex["""(?!<\d)\d+(?!\d)"""],
+  Base64Pattern        :> RawRegex["""[[:alnum:]+/]+={0,2}"""],
+  ASCIIWord            :> RawRegex["""\b[[:alnum:]]+\b"""]
+];
+
+DefineStringPattern[
+  LinearSyntaxPattern  :> RawRegex["\!\(\*" ~~ Shortest[___] ~~ "\)"]
 ]
 
 PublicStringPattern[EnglishlikeWord, LowercaseWord, UppercaseWord]
 
 DefineStringPattern[
-  EnglishlikeWord      :> """\b(?:[[:alpha:]][:lower:]*?)(?:'s|n't)?\b""",
-  LowercaseWord        :> """\b[[:lower:]]+\b""",
-  UppercaseWord        :> """\b[[:upper:]]+\b"""
+  EnglishlikeWord      :> RawRegex["""\b(?:[[:alpha:]][[:lower:]]*?)(?:'s|n't)?\b"""],
+  LowercaseWord        :> RawRegex["""\b[[:lower:]]+\b"""],
+  UppercaseWord        :> RawRegex["""\b[[:upper:]]+\b"""]
 ]
 
 PublicStringPattern[CamelCaseWord, LowerCamelCaseWord, UpperCamelCaseWord]
 
 DefineStringPattern[
-  CamelCaseWord        :> """\b[[:alpha:]][[:alnum:]]*\b""",
-  LowerCamelCaseWord   :> """\b[[:lower:]][[:alnum:]]*\b""",
-  UpperCamelCaseWord   :> """\b[[:upper:]][[:alnum:]]*\b"""
+  CamelCaseWord        :> RawRegex["""\b[[:alpha:]][[:alnum:]]*\b"""],
+  LowerCamelCaseWord   :> RawRegex["""\b[[:lower:]][[:alnum:]]*\b"""],
+  UpperCamelCaseWord   :> RawRegex["""\b[[:upper:]][[:alnum:]]*\b"""]
 ]
 
 PublicStringPattern[TitleCaseWord, TitleCasePhrase, FullNamePhrase]
 
 DefineStringPattern[
-  TitleCaseWord        :> """\b[[:upper:]][[:lower:]]+\b""",
-  TitleCasePhrase      :> """\b[[:upper:]][[:lower:]]+(?: (?:of |or |and |in |on |the |by |a |the )?[[:upper:]][[:lower:]]+)*\b""",
-  FullNamePhrase       :> """\b[[:upper:]][[:lower:]]+(?: [[:upper:]]\.?)*(?: van| der| de| von| st| del)*(?: [[:upper:]][[:lower:]]+\b)+"""
+  TitleCaseWord        :> RawRegex["""\b[[:upper:]][[:lower:]]+\b"""],
+  TitleCasePhrase      :> RawRegex["""\b[[:upper:]][[:lower:]]+(?: (?:of |or |and |in |on |the |by |a |the )?[[:upper:]][[:lower:]]+)*\b"""],
+  FullNamePhrase       :> RawRegex["""\b[[:upper:]][[:lower:]]+(?: [[:upper:]]\.?)*(?: van| der| de| von| st| del)*(?: [[:upper:]][[:lower:]]+\b)+"""]
 ]
 (**************************************************************************************************)
 
 PublicStringPattern[StartOfParagraph, EndOfParagraph]
 
-$ParagraphSRE = """(?:\A|(?<=\A\n)|(?<=\n\n))(?!$)""";
-$ParagraphERE = """(?<!\n)(?:\z|(?=\n\z)|(?=\n\n))""";
-
+(* TODO: replace all these patterns with their high-level equivalents, easier to debug and other macros can introspect them without
+decompilation *)
 (*
 StartOfParagraph = (StartOfString | PositiveLookbehind[StartOfString ~~ "\n"] | PositiveLookbehind["\n\n"]) ~~ NegativeLookahead[EndOfLine];
 EndOfParagraph = NegativeLookbehind["\n"] ~~ (EndOfString | PositiveLookahead["\n" ~~ EndOfString] | PositiveLookahead["\n\n"]);
 *)
 
 DefineStringPattern[
-  StartOfParagraph :> RawRegex[$ParagraphSRE],
-  EndOfParagraph   :> RawRegex[$ParagraphERE]
+  StartOfParagraph :> RawRegex["""(?:\A|(?<=\A\n)|(?<=\n\n))(?!$)"""],
+  EndOfParagraph   :> RawRegex["""(?<!\n)(?:\z|(?=\n\z)|(?=\n\n))"""]
 ];
 
 (**************************************************************************************************)
 
 PublicStringPattern[SQuoteSpan, DQuoteSpan, ParenSpan, BraceSpan, BracketSpan, DoubleBracketSpan]
 
-defineSpanStringPattern[head_, str_] := Scope[
-  pair = StringPart[str, {1, -1}];
-  {rl, rr} = SSplit @ RegexEscape @ str;
-  regex = Regex @ SJoin[rl, "[^", rr, "]+", rr];
-  defineSpanStringPattern[head, regex, pair];
-];
-
-defineSpanStringPattern[head_, regex_, {lchar_, rchar_}] :=
+defineSpanStringPattern[head_, {lchar_, rchar_}] :=
   DefineStringPatternMacro[
-    head | head[] :> regex,
-    head[p_]      :> lchar ~~ Avoiding[p, rchar] ~~ rchar
+    head | head[] :> lchar ~~ Avoiding[___, rchar] ~~ rchar,
+    head[p_]      :> lchar ~~ Avoiding[p,   rchar] ~~ rchar
   ];
 
 SetUsage @ "SQuoteSpan matches a span delimited by '.";
 SetUsage @ "DQuoteSpan matches a double quote.";
 SetUsage @ "DQuoteSpan matches a double quote.";
 
-KVScan[defineSpanStringPattern, UAssoc[
+KVScan[defineSpanStringPattern[#1, StringSplit[#2]]&, UAssoc[
   SQuoteSpan         -> "' '",
   DQuoteSpan         -> "\" \"",
   ParenSpan          -> "( )",
@@ -86,9 +81,11 @@ KVScan[defineSpanStringPattern, UAssoc[
 
 PublicStringPattern[XMLSpan]
 
+(* TODO: introduce some other mechanism of doing backrefs so we don't end up with temp vars *)
 DefineStringPatternMacro[
-  XMLSpan[tag_Str]        :> xmlSpan[tag],
-  XMLSpan[tag_Str, patt_] :> xmlSpan[tag, patt]
+  XMLSpan | XMLSpan[]  :> Module[{tag}, SExpr["<", tag:ASCIIWord, ">", ShortBlank, "</", tag_, ">"]],
+  XMLSpan[tag_]        :> xmlSpan[tag],
+  XMLSpan[tag_, patt_] :> xmlSpan[tag, patt]
 ];
 
 xmlSpan[tag_] := F @ Module[{z}, List[SJoin["<", tag, ">"] ~~ z:Shortest[___] ~~ SJoin["</", tag, ">"] /; StringBalancedQ[z, "<", ">"]]];
@@ -103,9 +100,9 @@ SetUsage @ "LineSpan matches an entire line.\nLineSpan[p$] matches p$ if it cons
 SetUsage @ "ParagraphSpan matches an entire paragraph, separated from others by two newlines.\nParagraphSpan[p$] matches p$ if it constitutes an entire paragraph."
 
 DefineStringPatternMacro[
-  LineSpan | LineSpan[]             :> Regex["^[^\n]+$"],
-  LineSpan[p_]                      :> StartOfLine ~~ Avoiding[p, "\n"] ~~ EndOfLine,
-  ParagraphSpan | ParagraphSpan[]   :> RawRegex[$ParagraphSRE <> ".*?" <> $ParagraphERE],
+  LineSpan | LineSpan[]             :> StartOfLine ~~ Avoiding[__, "\n"] ~~ EndOfLine,
+  LineSpan[p_]                      :> StartOfLine ~~ Avoiding[p,  "\n"] ~~ EndOfLine,
+  ParagraphSpan | ParagraphSpan[]   :> StartOfParagraph ~~ Avoiding[__, {"\n\n"}] ~~ EndOfParagraph,
   ParagraphSpan[p_]                 :> StartOfParagraph ~~ Avoiding[p, {"\n\n"}] ~~ EndOfParagraph
 ];
 
@@ -133,14 +130,21 @@ DefineStringPattern[
 
 (**************************************************************************************************)
 
-PublicStringPattern[WholeWord, WithinLine]
+PublicStringPattern[WholeWord]
 
 SetUsage @ "WholeWord[p$] matches p$ if it has a %WordBoundary on either side."
-SetUsage @ "WithinLine[p$] matches p$ if occurs within a single line."
 
 DefineStringPattern[
-  WholeWord[p_]   :> RawStrExp["\\b", EvalStrExp @ p, "\\b"],
-  WithinLine[p_]  :> parseWithinLine[p]
+  WholeWord[p_]   :> RawStrExp["\\b", EvalStrExp @ p, "\\b"]
 ];
 
-parseWithinLine[p_] := RawStrExp["(?-s)", EvalStrExp @ p, "(?s)"]
+(**************************************************************************************************)
+
+PublicStringPattern[WithinLine]
+
+SetUsage @ "WithinLine[p$] matches p$ if occurs within a single line."
+
+(* TODO: maybe WithinWord, WithinParagraph? *)
+DefineStringPatternMacro[
+  WithinLine[p_]  :> Avoiding[p, "\n"]
+];

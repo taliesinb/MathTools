@@ -104,7 +104,7 @@ Position, FirstPosition,
 Length, Dimensions, Prepend, Append, Take, Drop, Join, Catenate, Flatten, Union, Intersection, Complement, Range, Insert, Delete,
 ArrayDepth, Accumulate,
 Replace, ReplacePart, ReplaceAll, ReplaceList, ReplaceRepeated,
-StringJoin, StringTake, StringDrop, StringCases, StringLength, TextString, StringTrim, StringReplace, StringRiffle, Characters, StringSplit, StringInsert, StringDelete, StringPadLeft, StringPadRight, IntegerString,
+StringJoin, StringTake, StringDrop, StringCases, StringLength, TextString, StringTrim, StringReplace, StringRiffle, Characters, CharacterRange, StringSplit, StringInsert, StringDelete, StringPadLeft, StringPadRight, IntegerString,
 FromCharacterCode, ToCharacterCode, StringCount, StringExtract, StringPartition, StringPosition, StringRepeat, StringReplacePart, StringReverse,
 Keys, KeyTake, KeyDrop, KeySort, KeySortBy, KeyUnion, KeyIntersection, KeyComplement, KeyExistsQ, Values, Key, AssociationMap, AssociationThread, Lookup, KeyMap, KeySelect, KeyValueMap, Thread,
 PositionIndex, Merge,
@@ -136,7 +136,9 @@ IntegerDigits
 
 {"System`", "MutatingFunction"} -> {
 AppendTo, PrependTo, AssociateTo, ApplyTo,
-SetAttributes, Protect, Unprotect, Clear, ClearAll, Set, SetDelayed, SetOptions,
+SetAttributes, Protect, Unprotect, Clear, ClearAll,
+Set, SetDelayed, TagSet, TagSetDelayed, TagUnset, UpSet, UpSetDelayed,
+SetOptions,
 AddTo, SubtractFrom, TimesBy, DivideBy, KeyDropFrom, Increment, Decrement, PreIncrement, PreDecrement
 },
 

@@ -648,12 +648,12 @@ $shortCamelPatterns = {
 
 PublicDebuggingFunction[HighlightStringCases]
 
-HighlightStringCases::overlaps = "Cannot display cases that overlap. Some will not be shown.";
-
 HighlightStringCases[str_String, patt:(_Rule | _RuleDelayed)] :=
   HighlightStringCases[str, {patt}];
 
-HighlightStringCases[str_String, patts_List] := Scope[
+HighlightStringCases::badPattern = "Invalid pattern ``.";
+
+HighlightStringCases[str_String, patts_List] := Scope @ CatchMessage[
   {spans, payloads} = KeysValues @ Flatten[i = 1; getPosAndPayload[i++, str, #]& /@ patts];
   If[spans === {}, Return @ str];
   parts = clarifyMatch /@ STake[str, spans];
@@ -663,11 +663,13 @@ HighlightStringCases[str_String, patts_List] := Scope[
 
 getPosAndPayload[i_, str_, patt_] := Scope[
   pos = SFind[str, patt];
+  If[!ListQ[pos], ThrowMessage["badPattern", MsgExpr @ patt]];
   Thread[pos -> Part[$ColorPalette, i]]
 ];
 
 getPosAndPayload[i_, str_, patt:(_Rule | _RuleDelayed)] := Scope[
   pos = SFind[str, F @ patt];
+  If[!ListQ[pos], ThrowMessage["badPattern", MsgExpr @ patt]];
   pay = VectorReplace[
     SCases[str, patt],
     m:Except[_Style | $ColorPattern] :> Style[m, Part[$ColorPalette, i]]
@@ -678,6 +680,7 @@ getPosAndPayload[i_, str_, patt:(_Rule | _RuleDelayed)] := Scope[
 HighlightStringCases[str_String, patt_] := Scope[
   pos = SFind[str, patt, Overlaps -> False];
   If[pos === {}, Return @ str];
+  If[!ListQ[pos], ReturnFailed["badPattern", MsgExpr @ patt]];
   parts = clarifyMatch /@ STake[str, pos];
   colors = PadRight[$ColorPalette, Len @ pos, $Red];
   highlights = ZipMap[highlightStrMatch, parts, colors];

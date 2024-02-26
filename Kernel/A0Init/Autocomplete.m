@@ -13,6 +13,17 @@ declareFunctionAutocomplete[function_Symbol, spec_] := Scope @ IfSynaxInfo[
   ];
 ];
 
+(* declare multiple identical specs at once, presumably cheaper *)
+declareFunctionAutocomplete[functions:{__Symbol}, spec_] := Scope @ IfSynaxInfo[
+  functionNames = SymbolName /@ functions;
+  spec = spec /. {None -> 0, File -> 2, Directory -> 8};
+  CacheTo[$AutocompleteCache, {functionNames, spec},
+    Construct[FE`Evaluate, FEPrivate`AddSpecialArgCompletion[# -> spec]& /@ functionNames];
+  ];
+];
+
+_declareFunctionAutocomplete := BadArguments[];
+
 declareSyntaxInfo[function_Symbol, argPatterns_List] := Scope @ IfSyntaxInfo[
   info = {"ArgumentsPattern" -> argPatterns};
   If[ContainsQ[argPatterns, Verbatim[OptionsPattern[]]],

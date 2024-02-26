@@ -132,10 +132,6 @@ DefineInfixForm[ThenForm, KBox[StyleBox[" ﹔ ", FontFamily -> "KaTeX_AMS"], "�
 
 PublicTypesettingForm[CatCat, CatPred, CatSet, CatFinSet, CatFinOrd, CatOrd, CatGrp, CatMat, CatKVect, CatMon, CatPoly, CatRel, CatRing, CatRMod, CatTop, CatFunct, CatAlg, CatHask, CatArray, CatRainbowArray]
 
-(*
-$LowercaseSanSerifLetters = "𝖺𝖻𝖼𝖽𝖾𝖿𝗀𝗁𝗂𝗃𝗄𝗅𝗆𝗇𝗈𝗉𝗊𝗋𝗌𝗍𝗎𝗏𝗐𝗑𝗒𝗓";
-$UppercaseSanSerifLetters = "𝖠𝖡𝖢𝖣𝖤𝖥𝖦𝖧𝖨𝖩𝖪𝖫𝖬𝖭𝖮𝖯𝖰𝖱𝖲𝖳𝖴𝖵𝖶𝖷𝖸𝖹";
-*)
 DefineSymbolForm @ {
   CatCat          -> "𝖢𝖺𝗍",
   CatPred         -> "𝖯𝗋𝖾𝖽",

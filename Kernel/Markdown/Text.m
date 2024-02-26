@@ -300,11 +300,10 @@ wrapWith[e_, wrap_] := Scope[
 
 (**************************************************************************************************)
 
-$shortcodeP := $shortcodeP = RegularExpression @ ToRegularExpression @ Alt[
+SetCached[$shortcodeP, ToRegex @ Alt[
   "</span>", "\n", "B{", "B:", "F{", "F:", "\\n", "^{", "_{", ("_" | "^") ~~ DigitCharacter,
-  DoubleStruckCharacter,
-  F @ $WLSymbolToUnicode
-];
+  LetterClass[AlphabetCharacter["DoubleStruck"], Seq @@ $WLSymbolsWithUnicodeEquivalents]
+]];
 
 processInlineCodeBlocks[str_Str] := SRep[str, {
   code:("`" ~~ body:Shortest[___] ~~ "`") :> If[SFreeQ[body, $shortcodeP], code, toCodeMarkdown[body, False]],

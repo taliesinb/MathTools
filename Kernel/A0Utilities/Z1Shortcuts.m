@@ -158,12 +158,15 @@ $greekUS = "\[CapitalGamma]\[CapitalPi]\[CapitalSigma]\[CapitalOmega]\[CapitalPh
 
 toIteratorData[lower_, upper_] := parseIterator /@ {lower, upper, lower <> upper};
 
-{$roman,        $ROMAN,         $Roman}         = toIteratorData[$LowercaseRomanLetters, $UppercaseRomanLetters];
+$lowerRoman = SJoin @ CharRange["a", "z"];
+$upperRoman = SJoin @ CharRange["A", "Z"]
+
+{$roman,        $ROMAN,         $Roman}         = toIteratorData[SJoin @ $lowerRoman, $upperRoman];
 {$greek,        $GREEK,         $Greek}         = toIteratorData[$greekL, $greekU];
-{$romangreek,   $ROMANGREEK,    $RomanGreek}    = toIteratorData[$LowercaseRomanLetters <> $greekL, $UppercaseRomanLetters <> $greekU]
-{$rom,          $ROM,           $Rom}           = toIteratorData[$LowercaseRomanLetters, $UppercaseRomanLetters];
+{$romangreek,   $ROMANGREEK,    $RomanGreek}    = toIteratorData[$lowerRoman <> $greekL, $upperRoman <> $greekU]
+{$rom,          $ROM,           $Rom}           = toIteratorData[$lowerRoman, $upperRoman];
 {$gre,          $GRE,           $Gre}           = toIteratorData[$greekLS, $greekUS];
-{$romgre,       $ROMGRE,        $RomGre}        = toIteratorData[$LowercaseRomanLetters <> $greekLS, $UppercaseRomanLetters <> $greekUS];
+{$romgre,       $ROMGRE,        $RomGre}        = toIteratorData[$lowerRoman <> $greekLS, $upperRoman <> $greekUS];
 
 (**************************************************************************************************)
 
@@ -176,10 +179,10 @@ subOp[i_][e_] := Subscript[e, i];
 supOp[i_][e_] := Superscript[e, i];
 
 SetCached[$style, parseIterator["r g b rg gb rb p" -> {RedForm, GreenForm, BlueForm, OrangeForm, TealForm, PinkForm, PurpleForm}]];
-$extendedStyle := $extendedStyle = parseIterator[
+SetCached[$extendedStyle, parseIterator[
     "r dr lr g dg lg b db lb rg drg lrg gb dgb lgb rb drb lrb p dp lp w0 w1 w2 dk k lk" -> 
     {RedForm, DarkRedForm, LightRedForm, GreenForm, DarkGreenForm, LightGreenForm, BlueForm, DarkBlueForm, LightBlueForm, OrangeForm, DarkOrangeForm, LightOrangeForm, TealForm, DarkTealForm, LightTealForm, PinkForm, DarkPinkForm, LightPinkForm, PurpleForm, DarkPurpleForm, LightPurpleForm, DarkGrayForm, GrayForm, LightGrayForm, DarkGrayForm, GrayForm, LightGrayForm}
-];
+]];
 
 (* these are delayed because $si hasn't been resolved via shortcutSymbol until we load Core *)
 SetCached[$intScripts, {-4, -3, -2, -1, 0, 1, 2, 3, 4, $si, $sj, $sk, $sm, $sn, $sM, $sN, \[FormalI]}];

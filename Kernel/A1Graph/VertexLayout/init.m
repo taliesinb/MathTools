@@ -571,7 +571,7 @@ applyCoordinateTransform[{"PolarProjection", h_}] := Scope[
   applyCoordinateTransform[Apply[{x, y, z} |-> {x / (h-z), y/(h-z)}]];
 ];
 
-$namedTransforms := $namedTransforms = <|
+SetCached[$namedTransforms, Assoc[
   "Rotate0" -> Id,
   "Rotate45" -> RotationTransform[45 * Degree],
   "Rotate60" -> RotationTransform[60 * Degree],
@@ -588,7 +588,7 @@ $namedTransforms := $namedTransforms = <|
   "ShrinkVertical" -> ScalingTransform[{1, 0.75}],
   "ExpandHorizontal" -> ScalingTransform[{1.25, 1}],
   "ExpandVertical" -> ScalingTransform[{1, 1.25}]
-|>;
+]];
 
 applyCoordinateTransform["BendVertical"] :=
   $edgeCoordinateLists //= Map[bendVertical];

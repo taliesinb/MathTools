@@ -29,7 +29,7 @@ $shortcodeRules = {
   (code:$colorShortcodeP ~~ ":" ~~ next_) :> applyShortcode[code, next],
   (code:$colorShortcodeP ~~ "{" ~~ body:Except["\n"|"}"].. ~~ "}") :> applyShortcode[code, balancedQ @ body],
   (* Fira Code doesn't have well-sized DS letters outside R,C,N,Z etc *)
-  l:DoubleStruckCharacter :> doubleStruckToBoldRoman[l],
+  l:AlphabetCharacter["DoubleStruck"] :> doubleStruckToBoldRoman[l],
   "\\n" | "\n" ~~ s:" ".. :> SJoin["<br>", Repeat["&nbsp;", SLen @ s]],
   "\\n" | "\n" -> "<br>",
   "^{" ~~ sup:Shortest[___] ~~ "}" /; balancedQ[sup] :> SJoin["<sup>", subShortCodes @ sup, "</sup>"],
@@ -42,11 +42,8 @@ balancedQ[a_] := StringCount[a, "{"] == StringCount[a, "}"];
 
 (**************************************************************************************************)
 
-$doubleStruckCharacterList = Chars @ $DoubleStruckCharacters;
-$romanCharacterList = Chars @ $RomanCharacters;
-
 doubleStruckToBoldRoman[char:("ℂ" | "ℕ" | "ℚ" | "ℝ" | "ℤ")] := char;
-doubleStruckToBoldRoman[char_] := $boldFontTemplate @ Part[$romanCharacterList, IndexOf[$doubleStruckCharacterList, char]];
+doubleStruckToBoldRoman[char_] := $boldFontTemplate @ AlphabetConvert[char, "DoubleStruck" -> "Roman"];
 
 $boldFontTemplate = StringFunction @ "<span style='font-weight:bold'>#1</span>";
 

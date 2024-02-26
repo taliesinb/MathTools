@@ -279,7 +279,7 @@ $initialSymbolResolutionDispatch1 = (q_Package`PackageSymbol :> RuleCondition[re
 
 Clear[resolvePackageSymbol];
 
-resolvePackageSymbol["$PackageFileName"] := $CurrentFile;
+resolvePackageSymbol["$PackageFileName"]  := $CurrentFile;
 resolvePackageSymbol["$PackageDirectory"] := $PackageDirectory;
 
 Scan[
@@ -290,6 +290,8 @@ Scan[
 ];
 
 KeyValueMap[Set[resolvePackageSymbol[#1], #2]&, $coreSymbolAssociation];
+
+resolvePackageSymbol["UpSetDelayed"]      := resolvePackageSymbol["SetCached"];
 
 resolvePackageSymbol[o_] := Package`PackageSymbol[o];
 
@@ -751,7 +753,7 @@ evaluatePackageData[packagesList_List] := Block[
     handleMessage
   ];
   If[$RegexCacheDirty,
-    Print["Clearing RegularExpression cache."];
+    VPrint["Clearing RegularExpression cache."];
     ClearSystemCache["RegularExpression"];
     $RegexCacheDirty = False];
   If[!MemberQ[$ContextPath, $PublicContext], AppendTo[$ContextPath, $PublicContext]];

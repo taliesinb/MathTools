@@ -186,10 +186,8 @@ to each edge in the graph$.
 * Undirected edges are transformed into pairs of opposite directed edges.
 "
 
-$formalSymbols = Map[letter |-> Symbol["\\" <> "[Formal" <> letter <> "]"], CharacterRange["A", "Z"]];
-
 toFreeQuiverEdge[head_[a_, b_]] :=
-  head[a, b, $formalSymbols[[$count++]]];
+  head[a, b, Part[AlphabetData["RomanFormal", "Lowercase"], $count++]];
 
 DeclareArgumentCount[FreeQuiver, 1];
 

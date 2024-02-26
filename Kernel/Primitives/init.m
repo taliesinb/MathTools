@@ -142,7 +142,7 @@ ReplacePrimitiveCoordinates[prims_, rules_] := Scope[
   RepAll[prims, $rpcDispatch]
 ]
 
-$rpcDispatch := $rpcDispatch = Dispatch @ With[{
+SetCached[$rpcDispatch, Dispatch @ With[{
   $vecvec    = Alt @@ PrimitiveSignatureLookup["Vector,Vector"],
   $vec       = Alt @@ PrimitiveSignatureLookup["Vector?Radius | Vector,Delta"],
   $matrixy   = Alt @@ PrimitiveSignatureLookup["Pair?Radius | Matrix?Radius | Matrices?Radius | Curve?Radius"],
@@ -165,7 +165,7 @@ $rpcDispatch := $rpcDispatch = Dispatch @ With[{
   (h:$primvec)[f_, v_, a___]          :> RuleEval @ h[f /. $rpcDispatch, $vectorF @ v, a],
   (h:$rulesprim)[r_, p_, a___]        :> RuleEval @ h[$ruleF @ r, p /. $rpcDispatch, a],
   (h:$rules)[r_, a___]                :> RuleEval @ h[$ruleF @ r, a]
-}];
+}]];
 
 $ruleF[e_] := VectorReplace[e, Rule[c_, o_] :> Rule[$vectorF[c], o]];
 

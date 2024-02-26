@@ -453,7 +453,7 @@ iFileStringReplace[file_] := Scope[
           VPrint[Pane[fileLine, {250, Automatic}], ShowSequenceAlignment[chunk, newChunk]];
           {fileLine, span, newChunk},
         True,
-          VPrint["No change: ", newChunk === chunk];
+          VPrint[Pane[fileLine, {250, Automatic}], Style[chunk, $DarkPurple]];
           Nothing
       ]),
     spans, lines];

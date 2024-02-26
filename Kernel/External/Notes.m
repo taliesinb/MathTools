@@ -139,12 +139,6 @@ CreateNotesFromClipboardList[] := Scope[
 
 (**************************************************************************************************)
 
-PrivateFunction[IntStr2]
-
-IntStr2[n_] := IntStr[n, 10, 2];
-
-(**************************************************************************************************)
-
 PublicFunction[ToNoteDateString]
 
 ToNoteDateString = Case[

@@ -75,6 +75,16 @@ DefinePatternMacro[$PathP, File[_Str] | _Str];
 
 (**************************************************************************************************)
 
+PrivateExprPattern[SMatchP, SFreeP, SContainsP, SStartsP, SEndsP]
+
+DefineSimpleMacro[   SMatchP,    SMatchP[p_] :> _Str ? (SMatchQ[p])];
+DefineSimpleMacro[    SFreeP,     SFreeP[p_] :> _Str ? (SFreeQ[p])];
+DefineSimpleMacro[SContainsP, SContainsP[p_] :> _Str ? (SContainsQ[p])];
+DefineSimpleMacro[  SStartsP,   SStartsP[p_] :> _Str ? (SStartsQ[p])];
+DefineSimpleMacro[    SEndsP,     SEndsP[p_] :> _Str ? (SEndsQ[p])];
+
+(**************************************************************************************************)
+
 PrivateFunction[ListOrAssociationOf]
 
 ListOrAssociationOf[pattern_] := {Repeated[pattern]} | Assoc[Repeated[_ -> pattern]];

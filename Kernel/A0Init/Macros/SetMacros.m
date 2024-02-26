@@ -1,4 +1,4 @@
-PrivateMutatingFunction[SetAll, SetNone, SetAuto, SetFailed, SetMissing, SetInherited, SetCached, SetScaledFactor]
+PrivateMutatingFunction[SetAll, SetNone, SetAuto, SetFailed, SetMissing, SetInherited, SetScaledFactor, SetCached]
 
 (* some of these are already defined in GU, but aren't macros, so have our own versions here *)
 
@@ -11,8 +11,10 @@ DefineSimpleMacro[SetFailed,    SetFailed   [lhs_, rhs_] :> If[FailureQ[lhs],   
 DefineSimpleMacro[SetMissing,   SetMissing  [lhs_, rhs_] :> If[MissingQ[lhs],     lhs = rhs, lhs]];
 DefineSimpleMacro[SetInherited, SetInherited[lhs_, rhs_] :> If[lhs === Inherited, lhs = rhs, lhs]];
 
-DefineSimpleMacro[SetCached,             SetCached[lhs_, rhs_] :> SetDelayed[lhs, Set[lhs, rhs]]];
 DefineSimpleMacro[SetScaledFactor, SetScaledFactor[lhs_, rhs_] :> If[MatchQ[lhs, Scaled[_ ? NumericQ]], lhs //= F /* N; lhs *= rhs]];
+
+(* the loader introduces a manual alias from UpSetDelayed to SetCached *)
+DefineSimpleMacro[SetCached,             SetCached[lhs_, rhs_] :> SetDelayed[lhs, Set[lhs, rhs]]];
 
 (**************************************************************************************************)
 

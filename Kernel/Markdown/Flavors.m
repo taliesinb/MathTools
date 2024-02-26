@@ -57,7 +57,7 @@ $flavorData["Hugo", "RawHTMLTemplate"]            = Id;
 $flavorData["Hugo", "ExternalImportTemplate"]     = StringFunction @ """{{< readfile file="#1" >}}""";
 
 (* TODO: fill in more cases here, like Typewriter, SanSerif, etc. and make them match up with the TypewriteForm etc. *)
-hugoKatexFontFunction[str_Str] := $katexFontSpanTemplate[str, If[SContainsQ[str, DoubleStruckCharacter], "blackboard", "math"]];
+hugoKatexFontFunction[str_Str] := $katexFontSpanTemplate[str, If[SContainsQ[str, AlphabetCharacter["DoubleStruck"]], "blackboard", "math"]];
 $katexFontSpanTemplate = StringFunction @ """<span class='#2Font'>#1</span>""";
 
 hugoClassAttr[class_] := str |-> SJoin[STrim @ str, "\n{", SRiffle[StringJoinLeft[".", class], ", "], "}\n"];

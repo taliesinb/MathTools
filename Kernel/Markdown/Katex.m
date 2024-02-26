@@ -34,7 +34,7 @@ boxesToKatexString[boxes_] := Scope[
 (* InvisibleApplication is from TraditionalForm of f[1,2,3], newline is from grids *)
 $spuriousKatexSubstrings = "\[InvisibleApplication]" | "\n"
 
-$scriptToCaligraphic = z:RegularExpression["[" <> $UnicodeScriptLetters <> "]+"] :> "\\mathcal{" <> ScriptToRoman[z] <> "}";
+SetCached[$scriptToCaligraphic, z:AlphabetCharacter["Script"].. :> "\\mathcal{" <> ScriptToRoman[z] <> "}"];
 
 $katexAppliedRule = {
   (s_Str)[args___] :> {"\\" <> s <> "{", Riffle[{args}, "}{"], "}"}
