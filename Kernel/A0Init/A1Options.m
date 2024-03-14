@@ -61,10 +61,10 @@ applyToObjectRules[(head_Symbol ? $optionableHeadQ)[Shortest[args___], opts:Repe
 
 (* we would get to this point if no valid spec argument matched before dispatching here *)
 General::invalidOptSpec = "Invalid spec ``.";
-applyToObjectRules[expr_List, fn_, spec_] := (Message[MessageName[fn, "invalidOptSpec"], MsgExpr @ spec]; expr)
+applyToObjectRules[expr_List, fn_, spec_] := (Message[MessageName[fn, "invalidOptSpec"], spec]; expr)
 
 General::exprNoOpts = "Expression `` is not a valid target for option manipulation.";
-applyToObjectRules[expr_, fn_, _] := (Message[MessageName[fn, "exprNoOpts"], MsgExpr @ expr]; expr)
+applyToObjectRules[expr_, fn_, _] := (Message[MessageName[fn, "exprNoOpts"], expr]; expr)
 
 (**************************************************************************************************)
 

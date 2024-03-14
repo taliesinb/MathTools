@@ -49,13 +49,13 @@ $dirP = $SidePattern | Horizontal | Vertical | $Coord2P | Axis;
 
 $hor = Horizontal; $ver = Vertical;
 
-neatCurvePoints[NeatCurve[{a_, b_}, opts:OptionsPattern[NeatCurve]]] := Scope[
+neatCurvePoints[NeatCurve[{a_, b_}, opts:OptionsPattern[NeatCurve]]] := Scope @ CatchMessage[NeatCurve,
 
   UnpackOptionsAs[NeatCurve, {opts},
     joinStyle, segmentPosition, shortcutRadius, bendRadius, setback];
 
   SetNone[setback, 0];
-  {setback1, setback2} = setback * {1, 1};
+  {setback1, setback2} = ToPair[setback];
 
   segment = Auto;
 
@@ -69,7 +69,7 @@ neatCurvePoints[NeatCurve[{a_, b_}, opts:OptionsPattern[NeatCurve]]] := Scope[
     Above,          {dir1, dir2} = If[P2[a] < P2[b], {$ver, $hor}, {$hor, $ver}],
     Below,          {dir1, dir2} = If[P2[a] > P2[b], {$ver, $hor}, {$hor, $ver}],
     {$dirP, $dirP}, {dir1, dir2} = joinStyle,
-    _,              BadOptionSetting[NeatCurve, JoinStyle, joinStyle]; Return @ {}
+    _,              OptionMsg[JoinStyle, joinStyle]
   ];
 
   (* can a and b snap on the X and Y axes? *)

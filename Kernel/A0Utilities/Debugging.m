@@ -89,10 +89,10 @@ $vprintDepth = 0;
 
 SetHoldAllComplete[VPrint];
 VPrint[args___] :=
-  If[TrueQ[$verbose], Print[SRepeat["\t", $vprintDepth], If[TrueQ[$dryRun], Style["> ", LightGray], ""], args]];
+  If[TrueQ[$verbose], Print[SRepeat["\t", $vprintDepth], Style["> ", If[$dryRun, LightOrange, LightGray]], args]];
 
-SetHoldAllComplete[VBlock];
-VBlock[body_] := Block[{$vprintDepth = $vprintDepth + 1}, body];
+SetHoldAllComplete[VBlock]; (* we don't use Block so that Return[..., Block] still works *)
+VBlock[body_] := Internal`WithLocalSettings[$vprintDepth++, body, $vprintDepth--];
 
 (**************************************************************************************************)
 
@@ -216,13 +216,13 @@ safeDynamicEval[body_] := Block[{eval, boxes, Print, Echo, EchoSet},
       eval = TimeConstrained[body, .2];
       boxes = ToBoxes @ eval
     ,
-      throwMessageTag
+      ThrowMsgTag
     ],
-    $throwMessageTag
+    MTLoader`Standalone`$StandaloneErrorTag
   ]
 ];
 
-throwMessageTag[_] := Throw[$Failed, $throwMessageTag];
+ThrowMsgTag[_] := Throw[$Failed, MTLoader`Standalone`$StandaloneErrorTag];
 
 (**************************************************************************************************)
 
@@ -261,7 +261,7 @@ toStackCell[_] := Nothing;
 SetHoldAllComplete[extractHead];
 
 extractHead[HoldForm[e_]] := extractHead @ e;
-extractHead[Catch[_, _, MathTools`Init`Macros`ThrownMessageHandler[func_Symbol]]] := HoldForm[func];
+extractHead[Catch[_, _, StandaloneErrorHandler[func_Symbol]]] := HoldForm[func];
 extractHead[CompoundExpression[first_, Null]] := extractHead @ first;
 extractHead[head_Symbol[___]] := If[MTSymbolQ[head], HoldForm[head], Nothing];
 extractHead[head_[___]] := extractHead[head];
@@ -278,12 +278,17 @@ debugStr[lhs_] := ToPrettifiedString[Uneval @ lhs, MaxDepth -> 4, MaxLength -> 2
 
 (**************************************************************************************************)
 
-PublicDebuggingFunction[FindDefinitionsContaining]
+PublicDebuggingFunction[FindDefinitionsContaining, PrintDefinitionsContaining]
 
 FindDefinitionsContaining[context_, pattern_] := Scope[
   symbols = Names[{context <> "*", context <> "**`*"}];
   Select[ContainsQ[pattern]] @ Catenate @ Map[Definitions, symbols]
 ]
+
+PrintDefinitionsContaining[context_, pattern_] := Module[
+  {defs = FindDefinitionsContaining[sym]},
+  If[defs === {}, None, PrintDefinitions @ defs]
+];
 
 (**************************************************************************************************)
 
@@ -320,19 +325,8 @@ EchoDimensions[e_] := (Echo[Row[Dims @ e, "\[Times]", BaseStyle -> $DarkBlue]]; 
 
 (**************************************************************************************************)
 
-PublicTypesettingForm[MsgExpr]
-
-$msgExprOpts = Sequence[FullSymbolContext -> False, MaxStringLength -> 32, CompressLargeSubexpressions -> False, ElideAtomicHeads -> True, InlineColors -> True, CompactRealNumbers -> True];
-MsgExpr[p_MsgPath] := p;
-MsgExpr[e_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> 3, MaxLength -> 4, MaxIndent -> 0, $msgExprOpts];
-MsgExpr[e_, n_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> n, MaxLength -> 4, MaxIndent -> 0, $msgExprOpts];
-MsgExpr[e_, n_, m_] := ToPrettifiedString[InternalHoldForm @ e, MaxDepth -> n, MaxLength -> m, MaxIndent -> 0, $msgExprOpts];
-
-(**************************************************************************************************)
-
 PublicTypesettingForm[MsgPath]
 
-MsgPath[p_MsgFile] := p;
 MsgPath[File[p_]] := MsgPath[p];
 MsgPath[l_List] := Map[MsgPath, l];
 
@@ -348,41 +342,78 @@ MakeBoxes[MsgPath[s_Str, n_Int], TraditionalForm] := msgPathBoxes[s, n];
 
 msgPathBoxes[path_Str, line_:None] := With[
   {type = If[SStartsQ[path, ("http" | "https" | "git" | "file" | "ssh") ~~ ":"], "URL", Quiet @ FileType @ path]},
-  {color = Switch[type, None, $LightRed, Directory, $LightBlue, File, GrayLevel[0.9], "URL", $LightPurple, _, $LightRed]},
-  ToBoxes @ ClickForm[
-    RawBoxes @ tightColoredBoxes[If[IntQ[line], SJoin[shortenPath @ path, ":", IntStr @ line], shortenPath @ path], color],
+  {color = Switch[type, None, $LightRed, Directory, $LightBlue, File, GrayLevel[0.9], "URL", $LightPurple, _, $LightRed],
+   pathElems = FileNameSplit @ path},
+  {pathRow = ToBoxes @ Column[{
+    Row[fmtPathElem[GrayLevel[0.93]] /@ Most[pathElems], Style["/", GrayLevel[0.7]]],
+    fmtPathElem[RGBColor[.93,.93,1]] @ Last @ pathElems
+  }]},
+  ClickBox[
+    NiceTooltipBoxes[
+      tightColoredBoxes[If[IntQ[line], SJoin[shortenPath @ path, ":", IntStr @ line], shortenPath @ path], color],
+      StyleBox[pathRow, LineBreakWithin -> Automatic, ShowStringCharacters -> False, FontWeight -> "DemiBold", FontSize -> 13, FontFamily -> "Source Code Pro"],
+      {700, 200}
+    ],
     openMsgPath[path, line]
   ]
 ];
 
+fmtPathElem[col_][str_] := Style[
+  If[str === "", "", Pane @ insertBreaks @ str],
+  LineBreakWithin -> False,
+  Background -> col
+]
+
+insertBreaks[str_] := InsertLinebreaks[str, 80];
+
 shortenPath[str_] := Scope[
   str = SRep[str, $HomeDirectory <> $PathnameSeparator -> "~/"];
-  If[SLen[str] <= 36, Return @ str];
-
+  If[SLen[str] <= 45, Return @ str];
   n = 0;
   segs = Rev @ FileNameSplit @ str;
-  segs2 = Rev @ TakeWhile[segs, (n += SLen[#]) < 36&];
+  segs2 = Rev @ TakeWhile[segs, (n += SLen[#]) < 45&];
   If[segs2 === {}, segs2 = Take[segs, 1]];
   If[Len[segs2] < Len[segs], PreTo[segs2, "\[Ellipsis]"]];
   str2 = FileNameJoin @ segs2;
+  If[SLen[str2] > 45, str2 = truncateFileElemTo[str2, 45]];
   If[SLen[str2] < SLen[str], str2, str]
+];
+
+truncateFileElemTo[str_, n_] :=
+  FileNameJoin @ MapLast[trimStrOut[#, SLen[str] - n]&, FileNameSplit @ str];
+
+trimStrOut[str_, n_] := Which[
+  n < 3,          str,
+  n >= SLen[str]-1,  "\[Ellipsis]",
+  True, Block[{l, m, r},
+    m = Floor[SLen[str] / 2];
+    l = Ceiling[m - n/2]; r = Floor[m + n/2];
+    StringReplacePart[str, "\[Ellipsis]", {l, r-1}]
+  ]
 ];
 
 (**************************************************************************************************)
 
 PrivateFunction[openMsgPath]
 
-openMsgPath[path_Str, None] := If[
-  ModifierKeysPressedQ[],
-  Beep[]; CopyToClipboard @ ToString[path, InputForm],
-  trySystemOpen @ path
+openMsgPath[path_Str, None] := With[{keys = If[$Notebooks, CurrentValue["ModifierKeys"], {}]},
+  Which[
+    MemberQ[keys, "Shift"],
+      Beep[]; CopyToClipboard @ ToString[path, InputForm],
+    MemberQ[keys, "Command"],
+      RevealInFinder @ path,
+    keys === {},
+      trySystemOpen @ path,
+    True,
+      Print["Unknown key combo for MsgPath.\nSHIFT for clipboard, CMD for Finder, none for open."];
+  ]
 ];
 
 openMsgPath[path_Str, line_Int] :=
   SystemOpen @ FileLine[path, line];
 
 trySystemOpen[s_Str] := Scope[
-  If[SStartsQ[s, "http://" | "https://"], Return @ SystemOpen @ s];
+  If[SStartsQ[s, "http://" | "https://"],      Return @ SystemOpen @ s];
   If[FileExistsQ[s],                           Return @ sysOpen @ s];
   If[FileExistsQ[s = FileNameDrop @ s],        Return @ sysOpen @ s];
   If[FileExistsQ[s = FileNameDrop @ s],        Return @ sysOpen @ s];
@@ -402,13 +433,13 @@ sysOpen[s_Str] := Switch[
 
 PrivateFunction[tightColoredBoxes]
 
-tightColoredBoxes[str_Str, color_, sz_:10] := ToBoxes @ Framed[
-  Style[str, FontFamily -> "Source Code Pro", FontSize -> sz, Bold, FontColor -> Black],
+tightColoredBoxes[str_Str, color_, sz_:10] := ToBoxes @ Style[Framed[
+  Style[str, FontFamily -> "Source Code Pro", FontSize -> sz, Bold, FontColor -> Black, ShowStringCharacters -> False],
   Background -> color, FrameStyle -> Darker[color, .2],
   ContentPadding -> False, RoundingRadius -> 2,
   ImageSize -> {Auto, 13}, FrameMargins -> {{5, 5}, {0, 0}},
   BaselinePosition -> Baseline
-];
+], LineBreakWithin -> False];
 
 (**************************************************************************************************)
 
@@ -662,14 +693,14 @@ HighlightStringCases[str_String, patts_List] := Scope @ CatchMessage[
 ];
 
 getPosAndPayload[i_, str_, patt_] := Scope[
-  pos = SFind[str, patt];
-  If[!ListQ[pos], ThrowMessage["badPattern", MsgExpr @ patt]];
+  pos = Quiet @ SFind[str, patt];
+  If[!ListQ[pos], Msg::badPattern @ patt];
   Thread[pos -> Part[$ColorPalette, i]]
 ];
 
 getPosAndPayload[i_, str_, patt:(_Rule | _RuleDelayed)] := Scope[
-  pos = SFind[str, F @ patt];
-  If[!ListQ[pos], ThrowMessage["badPattern", MsgExpr @ patt]];
+  pos = Quiet @ SFind[str, F @ patt];
+  If[!ListQ[pos], Msg::badPattern @ patt];
   pay = VectorReplace[
     SCases[str, patt],
     m:Except[_Style | $ColorPattern] :> Style[m, Part[$ColorPalette, i]]
@@ -678,9 +709,9 @@ getPosAndPayload[i_, str_, patt:(_Rule | _RuleDelayed)] := Scope[
 ];
 
 HighlightStringCases[str_String, patt_] := Scope[
-  pos = SFind[str, patt, Overlaps -> False];
+  pos = Quiet @ SFind[str, patt, Overlaps -> False];
   If[pos === {}, Return @ str];
-  If[!ListQ[pos], ReturnFailed["badPattern", MsgExpr @ patt]];
+  If[!ListQ[pos], Msg::badPattern @ patt];
   parts = clarifyMatch /@ STake[str, pos];
   colors = PadRight[$ColorPalette, Len @ pos, $Red];
   highlights = ZipMap[highlightStrMatch, parts, colors];

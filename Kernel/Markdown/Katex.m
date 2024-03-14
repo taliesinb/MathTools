@@ -107,7 +107,7 @@ boxToKatex = Case[
 
   other_ := Scope[
     head = ToPrettifiedString @ H @ other;
-    Message[ToKatexString::badbox, MsgExpr @ other];
+    Message[ToKatexString::badbox, other];
     Print["OUTER BOXES:"]; Print @ ToPrettifiedString[$inputBoxes, MaxDepth -> 3, MaxLength -> 10];
     Print["RAW BOXES:"]; Print @ ToPrettifiedString[other, MaxDepth -> 3, MaxLength -> 10];
     Print["FORMATTED BOXES:"]; Print @ RawBoxes @ Rep[other, BoxData[bd_] :> bd];

@@ -59,7 +59,7 @@ morphismArrowBoxes[MorphismArrow[curve_, opts___Rule]] :=
 morphismArrowBoxes[MorphismArrow[curve_, labelData_, opts___Rule]] :=
   morphismArrowBoxes[MorphismArrow[curve, labelData, "Arrow", opts]];
 
-morphismArrowBoxes[MorphismArrow[points_, labelData_, arrowData_, opts___Rule]] := Scope[
+morphismArrowBoxes[MorphismArrow[points_, labelData_, arrowData_, opts___Rule]] := Scope @ CatchMessage[MorphismArrow,
 
   UnpackAssociationSymbols[
     {opts} -> $MakeBoxesStyleData,
@@ -150,13 +150,13 @@ $tripleArrowY := $size * 0.7;
 parseMorphismArrowhead = Case[
   None            := {};
   Auto       := % @ "Arrow";
-  name_Str        := % @ LookupOrMessageKeys[$namedMorphismArrowheadSpecs, name, {}, MorphismArrow::badarrownamespec];
-  other_          := (Message[MorphismArrow::badarrowspec, MsgExpr @ other]; {});
+  name_Str        := % @ LookupMsg::badArrownameSpec[$namedMorphismArrowheadSpecs, name];
+  other_          := Msg::badArrowSpec[other];
   rules:{___Rule} := MapApply[morphismArrowheadBoxes, rules];
 ]
 
-MorphismArrow::badarrowspec = "Bad arrowhead spec ``.."
-MorphismArrow::badarrownamespec = "`` is not a valid name. Names include: ``."
+MorphismArrow::badArrowSpec = "Bad arrowhead spec ``.."
+MorphismArrow::badArrownameSpec = "`` is not a valid name. Names include: ``."
 
 morphismArrowheadBoxes[curvePos:$NumberP, shape_] := Scope[
   {pos, dir} = VectorAlongLine[$path, Scaled @ curvePos];
@@ -258,10 +258,10 @@ labelPositionToSide[labelPos_, pos_, dir_] := Scope[
     Left | Right,       {dx, dy} = dir; If[dy > 0 || (dy == 0. && dx < 0), 1, -1] * If[labelPosition === Left, 1, -1],
     Above | Below,      {dx, dy} = dir; If[dx > 0 || (dx == 0. && dy < 0), 1, -1] * If[labelPosition === Above, 1, -1],
     $SidePattern,       sideTowards[Lookup[$SideToCoords, labelPos] * 1000, pos, dir],
-    Towards[$Coord2P],  sideTowards[F @ labelPos, pos, dir],
+    Towards[$Coord2P],  sideToswards[F @ labelPos, pos, dir],
     AwayFrom[$Coord2P], sideTowards[pos, F @ labelPos, dir],
     $Coord2P,           0,
-    _,                  Message[MorphismArrow::badpos, labelPos]; 0
+    _,                  OptionMsg[LabelPosition, labelPos]
   ]
 ];
 
@@ -294,8 +294,6 @@ chooseAngularOffset[vec_] := Scope[
 
 (**************************************************************************************************)
 
-MorphismArrow::badalign = "Setting LabelOrientation -> `` is not valid."
-
 morphismLabelBoxes[label_, {pos_, dir_}, anchor_, side_] := Scope[
   If[side === 0 && labelOrientation === "Aligned",
     offset = {0, 0};
@@ -325,8 +323,7 @@ morphismLabelBoxes[label_, {pos_, dir_}, anchor_, side_] := Scope[
     "Manual",
       offset = labelPosition,
     _,
-      Message[MorphismArrow::badalign, labelOrientation];
-      offset = {0, 0}
+      OptionMsg[LabelOrientation, labelOrientation];
   ]];
   Label[Done];
   If[MatchQ[label, _Image],

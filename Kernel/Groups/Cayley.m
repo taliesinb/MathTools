@@ -88,7 +88,7 @@ computeCayleyQuiver[data_, opts:OptionsPattern[CayleyQuiver]] := Scope[
 
   UnpackAssociation[data, generators];
   If[cardinals =!= Automatic,
-    If[!SameLengthQ[cardinals, generators], ReturnFailed[CayleyQuiver::cardlen]];
+    If[!SameLenQ[cardinals, generators], ReturnFailed[CayleyQuiver::cardlen]];
     generators = AssociationThread[cardinals, Values @ generators]
   ];
   cfunc = computeCayleyFunction[<|"Generators" -> generators|>, "Labeled" -> True, "Symmetric" -> True];

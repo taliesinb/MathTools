@@ -3,11 +3,22 @@ PublicTypesettingForm[FixedGraphics]
 PublicOption[GraphicsScale, ResolveInsetGraphics, PropogateGraphicsScale]
 
 SetUsage @ "
-FixedGraphics[prims$, opts$$] is like %Graphics but applies a fixed scaling from plot range coordinates to pixels.
+FixedGraphics[prims$] is like %Graphics but applies a fixed scaling from plot range coordinates to screen space.
+
+* %GraphicsScale -> pixels$ specifices that a plot range of 1 corresponds to pixels$. The default is 100.
 
 * to achieve this, bounding boxes of boxified primitives are calculated using %PrimitiveBoxesBounds.
 
+## Options
+
+* the following novel options are supported:
+
+| %DebugBounds | whether to put a bounding frame around graphics contents |
+| %PropogateGraphicsScale | whether to set a global %GraphicsScale option during boxification |
+| %ResolveInsetGraphics | whether to convert graphical %Inset primitives to non-inset equivalents |
+
 * the following existing %Graphics options are supported:
+
 | %Background |
 | %BaselinePosition |
 | %Epilog |
@@ -22,14 +33,14 @@ FixedGraphics[prims$, opts$$] is like %Graphics but applies a fixed scaling from
 
 * the %Ticks option can be True, which will produce automatic labeled ticks.
 
+## ZOrder
+
 * any expression Style[$$, %ZOrder -> n$] will extract $$ and place it above or below the main primitives.
+
 * currently, ambient styles are not preserved when this is done.
+
 * nested %ZOrder directives will apply further sorting within $$.
 
-* the following novel options are supported:
-| %DebugBounds | whether to put a bounding frame around graphics contents |
-| %PropogateGraphicsScale | whether to set a global %GraphicsScale option during boxification |
-| %ResolveInsetGraphics | whether to convert graphical %Inset primitives to non-inset equivalents |
 "
 
 Options[FixedGraphics] = {
@@ -51,7 +62,7 @@ Options[FixedGraphics] = {
 DefineStandardTraditionalForm[e_FixedGraphics :> FixedGraphicsBoxes[e]]
 
 FixedGraphicsBoxes[_] := "?";
-FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
+FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope @ CatchMessage[FixedGraphicsBoxes,
   UnpackOptionsAs[FixedGraphics, {opts},
     background, baselinePosition, $graphicsScale, epilog, prolog, imagePadding,
     ticks, debugBounds, resolveInsetGraphics, propogateGraphicsScale,
@@ -68,10 +79,19 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
   If[resolveInsetGraphics, boxes //= RepAll[i_InsetBox :> RuleEval @ embedInset @ i]];
   bounds = PrimitiveBoxesBounds[boxes, $graphicsScale];
   imagePadding //= StandardizePadding;
-  tickPosition = Switch[ticks, True | Above, Above, Below, Below, _, None];
+
+  tickPosition = Switch[ticks,
+    {False, False},       None,
+    True | Above | _List, Above,
+    Below,                Below,
+    _,                    None
+  ];
+
   If[tickPosition =!= None,
-    imagePadding += {{15, 30}, {30, 15}};
-    tickBoxes = boundingGridBoxes @ BoundingGrid[bounds, $graphicsScale];
+    {tickX, tickY} = If[PairQ[ticks], ticks, {True, True}];
+    tickPadding = {{15, If[tickY, 30, 15]}, {If[tickX, 30, 15], 15}};
+    imagePadding += tickPadding;
+    tickBoxes = GridLineBoxes[bounds, Ticks -> {tickX, tickY}, GraphicsScale -> $graphicsScale];
     boxes = If[tickPosition === Above, {boxes, tickBoxes}, {tickBoxes, boxes}];
   ];
 
@@ -88,7 +108,7 @@ FixedGraphicsBoxes[FixedGraphics[prims_, opts___]] := Scope[
   If[TrueQ @ frame,
     (* TODO: support FrameMargins *)
     padding = StandardizePadding @ frameMargins;
-    If[FailureQ @ padding, BadOptionSetting[FixedGraphics, FrameMargins, frameMargins]];
+    If[FailureQ @ padding, OptionMsg[FrameMargins, frameMargins]];
     bounds = EnlargeBounds[bounds, padding / $graphicsScale];
     AppTo[decos, StyleBox[
       RectangleBox @@ Transpose[bounds],
@@ -194,7 +214,7 @@ embedInset = Case[
   i have since fixed that by using an internal variable in A0Usage.m *)
   i:InsetBox[_, _, _ImageScaled] := i;
 
-  expr_ := (Message[FixedGraphics::badInset, MsgExpr @ expr]; expr)
+  expr_ := (Message[FixedGraphics::badInset, expr]; expr)
 ];
 
 FixedGraphics::badOrigin = "Inset origin `` should be a coordinate, or a symbolic position.";
@@ -215,7 +235,7 @@ resolveOrigin = Case[
 
   pos:$CoordP := pos;
 
-  other_ := (Message[FixedGraphics::badOrigin, MsgExpr @ other]; {0, 0})
+  other_ := (Message[FixedGraphics::badOrigin, other]; {0, 0})
 ]
 
 (**************************************************************************************************)

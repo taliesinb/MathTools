@@ -1,7 +1,5 @@
-PublicOption[MaxWidth, ItemFunction, LabelFunction, LabelSpacing]
+PublicOption[LabelFunction, LabelSpacing]
 
-SetUsage @ "MaxWidth is an option to SpacedRow."
-SetUsage @ "ItemFunction is an option to SpacedRow."
 SetUsage @ "LabelFunction is an option to SpacedRow."
 SetUsage @ "LabelSpacing is an option to SpacedRow."
 
@@ -137,7 +135,7 @@ SpacedRow[elems__, Background -> b_] := Block[{$srBackground = b}, SpacedRow[ele
 wrappedItemFunc[f_][EndOfLine] := EndOfLine;
 wrappedItemFunc[f_][e_] := f @ e;
 
-SpacedRow[labels_List -> items_List] /; SameLengthQ[labels, items] :=
+SpacedRow[labels_List -> items_List] /; SameLenQ[labels, items] :=
   SpacedRow[RuleThread[labels, items]];
 
 SpacedRow[elems__] := Scope[

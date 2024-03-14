@@ -434,7 +434,7 @@ ExtendedGraphPlottingFunction[graph_Graph] := Scope @ Catch[
   GPPrint["Options processing"];
   FunctionSection[
     cardinalColors = LookupCardinalColors[graph];
-    If[!AssocQ[cardinalColors], failPlot["badcolors", MsgExpr @ cardinalColors]];
+    If[!AssocQ[cardinalColors], failPlot["badcolors", cardinalColors]];
 
     SetNone[vertexAnnotations, <||>];
     SetNone[edgeAnnotations, <||>];
@@ -2341,7 +2341,7 @@ setLabelStyleGlobals = Case[
   {NQ -> NumericQ}
 ];
 
-$keyP = _Str | _Assoc | (_List ? (SameLengthQ[$labelNames]));
+$keyP = _Str | _Assoc | (_List ? (SameLenQ[$labelNames]));
 
 processLabelSpec[spec_, None, None] := processLabelSpec1[spec];
 
@@ -2381,7 +2381,7 @@ toPayloadFunction = Case[
   "Tag" | "Cardinal"    := getCardinal;
   assoc_Assoc           := lookupPayloadInAssoc[assoc];
   "Weight"              := getWeight;
-  list_List ? (SameLengthQ[$labelNames])
+  list_List ? (SameLenQ[$labelNames])
                         := Part[list, #]&;
   key_ -> f_            := %[key] /* postProcF[toFunc @ f];
   key_                  := If[MemberQ[$annotationKeys, key],

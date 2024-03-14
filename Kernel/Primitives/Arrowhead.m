@@ -33,10 +33,8 @@ DeclareGraphicsPrimitive[Arrowhead, "Vector,Delta", arrowheadBoxes, {2, 3}];
 
 PrivateFunction[arrowheadBoxes]
 
-Arrowhead::unknownArrowhead = "ArrowheadShape -> `` is not one of ``."
-
 (* shouldn't this just be rawIconBoxes? seems like we are duplicating here *)
-arrowheadBoxes[Arrowhead[pos:$ExtCoordP, dir:$CoordP, opts___Rule]] := Scope[
+arrowheadBoxes[Arrowhead[pos:$ExtCoordP, dir:$CoordP, opts___Rule]] := Scope @ CatchMessage[Arrowhead,
 
   UnpackAssociationSymbols[
     {opts} -> $MakeBoxesStyleData,
@@ -52,7 +50,7 @@ arrowheadBoxes[Arrowhead[pos:$ExtCoordP, dir:$CoordP, opts___Rule]] := Scope[
   SetAuto[arrowheadLength, Norm @ dir];
   arrowheadLength /= 2;
 
-  iconData = LookupOrMessageKeys[$namedIconData, arrowheadShape, $Failed, Arrowhead::unknownArrowhead];
+  iconData = LookupMsg::unknownArrowhead[$namedIconData, arrowheadShape];
   If[FailureQ[iconData], Return @ {}];
   {prims, boxes2D, boxes3D, {boundX, boundY, {l, r}}, solid} = iconData;
 
@@ -84,6 +82,8 @@ arrowheadBoxes[Arrowhead[pos:$ExtCoordP, dir:$CoordP, opts___Rule]] := Scope[
   If[tooltip =!= None, boxes = NiceTooltipBoxes[boxes, ToBoxes @ tooltip]];
   boxes
 ];
+
+Arrowhead::unknownArrowhead = "ArrowheadShape -> `` is not one of ``.";
 
 (**************************************************************************************************)
 

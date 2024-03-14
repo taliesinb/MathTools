@@ -24,7 +24,7 @@ $serverFunctions["Pandoc"] = Assoc[
 ];
 
 General::nositegen = "Site `` has no site generator and cannot produce HTML."
-$noserver = Fn @ ThrowMessage["nositegen", #SiteName];
+$noserver = Fn @ Msg::nositegen[#SiteName];
 
 $serverFunctions[None] = Assoc[
   "NewSite"         -> None,
@@ -48,10 +48,10 @@ ListSites[] := FileBaseName /@ FileNames[toSiteFile["*"]];
 
 doSiteAutocomplete[] := Scope[
   currentSites = ListSites[];
-  declareFunctionAutocomplete[BuildSite, {currentSites}];
-  declareFunctionAutocomplete[ServeSite, {currentSites}];
-  declareFunctionAutocomplete[ClearSite, {currentSites}];
-  declareFunctionAutocomplete[DeleteSite, {currentSites}];
+  DefineFunctionAutocomplete[BuildSite, {currentSites}];
+  DefineFunctionAutocomplete[ServeSite, {currentSites}];
+  DefineFunctionAutocomplete[ClearSite, {currentSites}];
+  DefineFunctionAutocomplete[DeleteSite, {currentSites}];
 ];
 
 (**************************************************************************************************)
@@ -92,9 +92,9 @@ toSiteFile[name_] := DataPath["Sites", name <> ".wl"];
 
 getSiteData[siteName_] := Scope[
   siteFile = toSiteFile @ siteName;
-  If[!FileExistsQ[siteFile], ThrowMessage["badsitename", siteName, ListSites[]]];
+  If[!FileExistsQ[siteFile], Msg::badsitename[siteName, ListSites[]]];
   siteData = Get @ siteFile;
-  If[!AssocQ[siteData], ThrowMessage["corruptsite", siteFile]];
+  If[!AssocQ[siteData], Msg::corruptsite[siteFile]];
   UnpackAssociation[siteData, markdownPath, htmlPath:"HTMLPath", rasterizationPath, baseExportPath];
   siteData["AbsoluteHTMLPath"] = ToAbsolutePath[htmlPath, baseExportPath];
   siteData["AbsoluteMarkdownPath"] = ToAbsolutePath[markdownPath, baseExportPath];
@@ -115,7 +115,7 @@ General::badsiteobj = "`` is not a directory, file, or notebook object with a pa
 findContainingSite[source_] := Scope[
 
   path = ToNotebookPath @ source;
-  If[!StrQ[path], ThrowMessage["badsiteobj", source]];
+  If[!StrQ[path], Msg::badsiteobj[source]];
 
   matchLen = 0;
   matchSite = None;
@@ -128,7 +128,7 @@ findContainingSite[source_] := Scope[
     ),
     FileNames @ toSiteFile["*"]
   ];
-  If[matchSite === None, ThrowMessage["sitenotfound", path]];
+  If[matchSite === None, Msg::sitenotfound[path]];
 
   {matchSite, path}
 ];
@@ -141,7 +141,7 @@ PublicVariable[$SitesDirectory]
 
 $SitesDirectory = "~/sites";
 
-declareFunctionAutocomplete[CreateSite, {None, File}]
+DefineFunctionAutocomplete[CreateSite, {None, File}]
 
 PublicOption[SiteGenerator, BaseURL, HTMLPath, SiteName, ServingPort]
 
@@ -284,13 +284,13 @@ buildSite[siteSpec_, extraOpts___] := Scope[
     MatchQ[siteSpec, $NotebookOrPathP],
       {siteName, temp} = findContainingSite @ siteSpec,
     True,
-      ThrowMessage["badsite", siteSpec]
+      Msg::badsite[siteSpec]
   ];
 
   siteData = getSiteData[siteName];
   source = siteData["BaseNotebookPath"];
   result = ExportToMarkdown[source, extraOpts, FilterOptions @ siteData];
-  If[!StrVecQ[result], ThrowMessage["exportfailed", siteName]];
+  If[!StrVecQ[result], Msg::exportfailed[siteName]];
 
   {siteData, result}
 ];
@@ -301,7 +301,7 @@ PublicFunction[BuildSitePage]
 
 Options[BuildSitePage] = Options[CreateSite];
 
-declareFunctionAutocomplete[BuildSitePage, {File}];
+DefineFunctionAutocomplete[BuildSitePage, {File}];
 
 SetUsage @ "
 BuildSitePage['path$'] will build the site page corresponding to the given path.
@@ -321,7 +321,7 @@ PublicFunction[WriteSitePage]
 
 Options[WriteSitePage] = Options[CreateSite];
 
-declareFunctionAutocomplete[WriteSitePage, {File}];
+DefineFunctionAutocomplete[WriteSitePage, {File}];
 
 SetUsage @ "
 WriteSitePage['path$'] will write the site page corresponding to the given path.
@@ -342,7 +342,7 @@ General::baseExportPathMissing = "Base export path `` does not exist.";
 
 buildOrWriteSitePage[sourceSpec_, extraOpts_List, shouldBuild_] := Scope[
 
-  If[!MatchQ[sourceSpec, $NotebookOrPathP], ThrowMessage["badsitepage", sourceSpec]];
+  If[!MatchQ[sourceSpec, $NotebookOrPathP], Msg::badsitepage[sourceSpec]];
   {siteName, temp} = findContainingSite @ sourceSpec;
 
   siteData = getSiteData[siteName];
@@ -350,7 +350,7 @@ buildOrWriteSitePage[sourceSpec_, extraOpts_List, shouldBuild_] := Scope[
   If[!DirectoryQ[baseExportPath], ReturnFailed["baseExportPathMissing", MsgPath @ baseExportPath]];
 
   outputFiles = ExportToMarkdown[sourceSpec, FilterOptions @ extraOpts, NotebookCaching -> False, FilterOptions @ siteData];
-  If[!StrVecQ[outputFiles], ThrowMessage["exportfailed", siteName]];
+  If[!StrVecQ[outputFiles], Msg::exportfailed[siteName]];
 
   If[shouldBuild, $serverFunctions[siteData["SiteGenerator"], "BuildSitePage"][siteData, outputFiles]];
 
@@ -393,7 +393,7 @@ ServeSite[siteName_Str, extraOpts:OptionsPattern[]] := Scope @ CatchMessage[
 
 PublicFunction[ServeSitePage]
 
-declareFunctionAutocomplete[ServeSitePage, {File}];
+DefineFunctionAutocomplete[ServeSitePage, {File}];
 
 SetUsage @ "
 ServeSitePage['site'] will rebuild the page and open it in a web browser.
@@ -416,7 +416,7 @@ ServeSitePage[nb:Except[_Rule], extraOpts:OptionsPattern[]] := Scope @ CatchMess
   If[!DirectoryQ[baseExportPath], ReturnFailed["baseExportPathMissing", MsgPath @ baseExportPath]];
 
   outputFiles = ExportToMarkdown[nb, FilterOptions @ extraOpts, NotebookCaching -> False, FilterOptions @ siteData];
-  If[!StrVecQ[outputFiles], ThrowMessage["exportfailed", siteName]];
+  If[!StrVecQ[outputFiles], Msg::exportfailed[siteName]];
 
   If[URLAvailableQ[pageURL],
   $serverFunctions[siteGenerator, "BuildSitePage"][siteData, outputFiles];

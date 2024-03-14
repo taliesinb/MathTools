@@ -127,7 +127,7 @@ ensureDirectory[dir_Str] :=
 enumerateFiles[spec___, path_] := Scope[
   files = FileNames[spec, path, Inf] // Select[SFreeQ["XXX"]];
   files = File /@ files;
-  If[files === {}, ThrowMessage["emptynbdir", MsgPath @ path]];
+  If[files === {}, Msg::emptynbdir[MsgPath @ path]];
   files
 ];
 
@@ -158,7 +158,7 @@ exportItemTo[item_, mdPath_] := Scope[
     result = toMarkdownStringInner @ item,
     Message[ExportToMarkdown::msgs, dbgSpec];
   ];
-  If[!StrQ[result], ThrowMessage["nbmdfail", dbgSpec]];
+  If[!StrQ[result], Msg::nbmdfail[dbgSpec]];
   If[$dryRun, mdPath, ExportUTF8[mdPath, result]]
 ];
 

@@ -5,6 +5,13 @@ LookupStyleColor[styleName_] :=
 
 (**************************************************************************************************)
 
+PublicFunction[LookupStyleDefinitions]
+
+LookupStyleDefinitions[styleName_] :=
+  Decases[ContextMenu -> _] @ CurrentValue[{StyleDefinitions, styleName}];
+
+(**************************************************************************************************)
+
 PublicFunction[StripColorForms]
 
 StripColorForms[expr_] := expr //. $colorFormP[z_] :> z;

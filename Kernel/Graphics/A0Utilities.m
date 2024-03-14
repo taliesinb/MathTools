@@ -333,7 +333,7 @@ SetLengthTo[d$] is the operator form of SetLengthTo.
 SetLengthTo::notnumeric = "First arg `` was not a numeric vector or matrix."
 SetLengthTo[x_ ? NumericVectorQ, r_] := Normalize[N @ x] * r;
 SetLengthTo[x_ ? NumericMatrixQ, r_] := ToPackedReal[Normalize[#] * r& /@ N[x]];
-SetLengthTo[x_, r_] := (Message[SetLengthTo::notnumeric, MsgExpr @ x]; $Failed);
+SetLengthTo[x_, r_] := (Message[SetLengthTo::notnumeric, x]; $Failed);
 SetLengthTo[r_][x_] := SetLengthTo[x, r];
 
 (**************************************************************************************************)

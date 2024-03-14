@@ -57,8 +57,6 @@ MultisetDynamicsEnsemblePlot[rules_, init_, t_, n_:100, loglog_:None] := Scope[
   Legended[plot, legend]
 ]
 
-Power10[e_] := Power[10, e];
-
 (**************************************************************************************************)
 
 PublicFunction[TimeSeriesTransformTimes]

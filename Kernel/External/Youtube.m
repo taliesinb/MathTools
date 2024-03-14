@@ -121,7 +121,7 @@ ImportYoutubeVideoToMarkdown[data_Assoc, OptionsPattern[]] := Scope[
   UnpackAssociation[data, uploader:"channel", title:"title", description:"description", url:"webpage_url", date:"upload_date"];
   If[SMatchQ[date, RegularExpression["20[0-9]{6}"]], date = SInsert[date, "/", {5, 7}]];
 
-  VPrint["Creating markdown for ", MsgExpr @ title, " uploaded by ", MsgExpr @ uploader];
+  VPrint["Creating markdown for ", MsgForm @ title, " uploaded by ", MsgForm @ uploader];
 
   title //= canonicalizeText;
   description //= canonicalizeText;
@@ -380,13 +380,13 @@ resolvePerson[matches_, title_, description_] := Scope[
     StrQ[rawEvent = FirstStringCase[title, $eventNameDateP]],
       title = trimTitle @ SDelete[title, Maybe["@ " | "at " | "at the "] ~~ rawEvent ~~ Repeated[".", {0, 3}]];
       event = canonicalizeEvent @ rawEvent;
-      VPrint["Recognized event in title: ", MsgExpr @ event];
+      VPrint["Recognized event in title: ", MsgForm @ event];
     ,
     (* we have a higher bar for finding events in the description, since they have more opportunity for false positives *)
     StrQ[eventChunk = FirstStringCase[description, $introducedEventPattern]] &&
     StrQ[rawEvent = FirstStringCase[eventChunk, $eventNameDateP]],
       event = canonicalizeEvent @ rawEvent;
-      VPrint["Recognized event in description: ", MsgExpr @ event],
+      VPrint["Recognized event in description: ", MsgForm @ event],
     True,
       Null
   ];
@@ -395,7 +395,7 @@ resolvePerson[matches_, title_, description_] := Scope[
     VPrint["Attempting extracting of person from title."];
     {person2, title2} = ExtractTitleAuthor[title, description];
     If[StrQ[person2],
-      VPrint["Found person in title: ", MsgExpr @ person2];
+      VPrint["Found person in title: ", MsgForm @ person2];
       person = person2; title = title2];
   ];
 
@@ -403,7 +403,7 @@ resolvePerson[matches_, title_, description_] := Scope[
   If[!StrQ[person],
     VPrint["Attempting extracting of person from description."];
     person = findIntroducedPerson @ blob;
-    If[StrQ[person], VPrint["Found person in description: ", MsgExpr @ person]];
+    If[StrQ[person], VPrint["Found person in description: ", MsgForm @ person]];
   ];
 
   If[!StrQ[person] && !StrQ[channel] && PossibleFullNameQ[uploader],
@@ -414,7 +414,7 @@ resolvePerson[matches_, title_, description_] := Scope[
   If[!StrQ[person],
     VPrint["Attempting fallback extraction of person from description."];
     person = findPersonSpeculative @ blob;
-    If[StrQ[person], VPrint["Found person in description: ", MsgExpr @ person]];
+    If[StrQ[person], VPrint["Found person in description: ", MsgForm @ person]];
   ];
 
   (* author will form the prefix of the title, so shouldn't be an institute.
@@ -424,7 +424,7 @@ resolvePerson[matches_, title_, description_] := Scope[
     StrQ[channel],                             channel,
     True,                                         uploader
   ];
-  VPrint["Using author name: ", MsgExpr @ author];
+  VPrint["Using author name: ", MsgForm @ author];
 
   (* remove redundancy from the title *)
   title = trimAuthorFromTitle[title, person, author];
@@ -451,12 +451,12 @@ trimAuthorFromTitle[title_, person_, author_] := Scope[
     If[SStartsQ[title, paPatt],
       title = STrim @ StringTrimLeft[title, paPatt ~~ WhitespaceCharacter... ~~ Maybe["," | "-" | "--" | ":"]];
       title //= trimTitle;
-      VPrint["Trimming person/author from start of title: ", MsgExpr @ title];
+      VPrint["Trimming person/author from start of title: ", MsgForm @ title];
     ];
     If[SEndsQ[title, paPatt],
       title = STrim @ StringTrimRight[title, "," | "-" | "--" | ":" ~~ WhitespaceCharacter... ~~ paPatt];
       title //= trimTitle;
-      VPrint["Trimming person/author from start of title: ", MsgExpr @ title];
+      VPrint["Trimming person/author from start of title: ", MsgForm @ title];
     ];
   ];
   title
@@ -562,14 +562,14 @@ resolveAuthorBlurb[matches_, title_, description_] := Scope[
     True,
       ""
   ];
-  VPrint["Final author blurb: ", MsgExpr @ authorBlurb];
+  VPrint["Final author blurb: ", MsgForm @ authorBlurb];
 
   type = None;
   If[StrQ[event],
     title = STrim @ SDelete["[]"|"()"] @ SDelete[title, event ~~ Repeated[".", {0, 3}]];
     eventType = eventToType @ event;
     authorBlurb = SJoin[authorBlurb, " from ", eventType, " [[", event, "]]"];
-    VPrint["Recognized matched event in title: ", MsgExpr @ event];
+    VPrint["Recognized matched event in title: ", MsgForm @ event];
     type = "/talk";
   ];
 
@@ -700,17 +700,17 @@ ImportYoutubePlaylistToMarkdown[url_Str, opts:OptionsPattern[]] := Scope[
   UnpackOptions[$verbose, $dryRun, duplicateTarget];
   SetAuto[$verbose, $dryRun];
 
-  VPrint["Generating markdown for Youtube playlist ", MsgExpr @ url];
+  VPrint["Generating markdown for Youtube playlist ", MsgForm @ url];
 
   metadata = ImportYoutubePlaylistMetadata[url, Verbose -> $verbose];
-  If[!AssocQ[metadata], ReturnFailed["nometadata", MsgExpr @ url]];
+  If[!AssocQ[metadata], ReturnFailed["nometadata", MsgForm @ url]];
   UnpackAssociation[metadata, uploader:"uploader", title:"title", url:"webpage_url", entries:"entries"];
 
-  VPrint["Playlist title ", MsgExpr @ title, " has ", Len @ entries, " videos"];
+  VPrint["Playlist title ", MsgForm @ title, " has ", Len @ entries, " videos"];
   VPrint["Obtaining individual video metadata"];
   videoMarkdowns = Map[ImportYoutubeVideoToMarkdown[#id, Verbose -> $verbose]&, entries];
   If[!StrVecQ[videoMarkdowns],
-    ReturnFailed["nometadata", MsgExpr @ url];
+    ReturnFailed["nometadata", MsgForm @ url];
   ];
 
   VPrint["Creating individual video pages"];

@@ -175,7 +175,7 @@ CustomLinearRepresentation[matrices$, group$, mod$] constructs representations m
 
 DeclareArgumentCount[CustomLinearRepresentation, {1, 2}];
 
-declareSyntaxInfo[CustomLinearRepresentation, {_, _., _.}];
+DefineArgumentsPattern[CustomLinearRepresentation, {_, _., _.}];
 
 CustomLinearRepresentation::notmat = "First argument should be a list or association of matrices."
 CustomLinearRepresentation::badrepmat = "Matrices have inconsistent dimensions: ``."
@@ -234,7 +234,7 @@ DeclareArgumentCount[LinearGroupRepresentation, 1];
 
 General::badintcode = "Internal code returned inconsistent matrix dimensions: ``."
 
-declareSyntaxInfo[LinearGroupRepresentation, {_}];
+DefineArgumentsPattern[LinearGroupRepresentation, {_}];
 
 LinearGroupRepresentation[group_] := Scope[
   If[!GroupQ[group], ReturnFailed["notgroup", group]];
@@ -270,7 +270,7 @@ DeclareArgumentCount[TransformGenerators, 2];
 
 TransformGenerators::badtrans = "The transformation returned an object of dimensions ``, instead of a list of square matrices.";
 
-declareSyntaxInfo[TransformGenerators, {_, _}];
+DefineArgumentsPattern[TransformGenerators, {_, _}];
 
 TransformGenerators[rep_, trans_] := Scope[
   rep = CoerceToRep[1];

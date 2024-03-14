@@ -609,7 +609,7 @@ BasisWordVectors[] /; $PathAlgebraQ := Scope[
   WordVector /@ cardinals
 ];
 
-declareFunctionAutocomplete[BasisWordVectors, {$directionStrings}];
+DefineFunctionAutocomplete[BasisWordVectors, {$directionStrings}];
 
 BasisWordVectors[type_Str] /; $PathAlgebraQ := Scope[
   f = BasisWordVectors[];
@@ -637,7 +637,7 @@ WordVector[spec$, type$] constructs a vector of a specific type.
 * type$ can be one of 'Forward', 'Backward', 'Symmetric', and 'Antisymmetric' |
 "
 
-declareFunctionAutocomplete[WordVector, {0, $directionStrings}];
+DefineFunctionAutocomplete[WordVector, {0, $directionStrings}];
 
 WordVector[spec_, All] := WordVector[spec, #]& /@ $directionStrings;
 
@@ -903,7 +903,7 @@ along the word 'word$'.
 | 'Antisymmetric' | X - X\[Conjugate] |
 "
 
-declareFunctionAutocomplete[WordDelta, {0, $directionStrings}];
+DefineFunctionAutocomplete[WordDelta, {0, $directionStrings}];
 
 WordDelta[word_Str, type_:"Forward"] /; $PathAlgebraQ := Scope[
   forward = WordVector @ word;
@@ -1056,7 +1056,7 @@ RandomEdgeField['type$'] chooses only specific orientations of length-1 paths.
 * The available orientations are 'Forward', 'Backward', and 'Symmetric' (default).
 "
 
-declareFunctionAutocomplete[RandomEdgeField, {$directionStrings}];
+DefineFunctionAutocomplete[RandomEdgeField, {$directionStrings}];
 
 Options[RandomEdgeField] = {RandomSeeding -> Automatic, "Density" -> 1};
 
@@ -1258,7 +1258,7 @@ EdgeField[spec$,'type$'] constructs one of the following:
 | 'Antisymmetric' | uses weight 1 for forward  and -1 for reverses |
 "
 
-declareFunctionAutocomplete[EdgeField, {0, $directionStrings}];
+DefineFunctionAutocomplete[EdgeField, {0, $directionStrings}];
 
 EdgeField[] := EdgeField[All];
 

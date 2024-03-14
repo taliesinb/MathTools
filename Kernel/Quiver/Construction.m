@@ -13,7 +13,7 @@ DeclareArgumentCount[Quiver, {1, 2}];
 
 Options[Quiver] = $ExtendedGraphOptions;
 
-declareSyntaxInfo[Quiver, {_, _., OptionsPattern[]}];
+DefineArgumentsPattern[Quiver, {_, _., OptionsPattern[]}];
 
 Quiver[vertices_List, {}, opts:OptionsPattern[]] :=
   ExtendedGraph[Graph[vertices, {}], opts];
@@ -41,7 +41,7 @@ processEdge[Annotation[e_, rule_Rule], tag_] := Block[{$ea = App[$ea, rule]},
 processEdge[edge:(_Rule | _TwoWayRule | DirectedEdge[_, _] | UndirectedEdge[_, _]), None] :=
   (Message[Quiver::nakededge, edge]; $Failed);
 
-processEdge[Labeled[edges:{__Rule}, labels_List], _] /; SameLengthQ[edges, labels] :=
+processEdge[Labeled[edges:{__Rule}, labels_List], _] /; SameLenQ[edges, labels] :=
   sowAnnos @ MapThread[
     DirectedEdge,
     {Keys @ edges, Values @ edges, SimplifyCardinalSet /@ labels}
@@ -191,7 +191,7 @@ toFreeQuiverEdge[head_[a_, b_]] :=
 
 DeclareArgumentCount[FreeQuiver, 1];
 
-declareSyntaxInfo[FreeQuiver, {_}];
+DefineArgumentsPattern[FreeQuiver, {_}];
 
 Options[FreeQuiver] = $ExtendedGraphOptions;
 

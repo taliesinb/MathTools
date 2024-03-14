@@ -192,4 +192,4 @@ $sq3 = Sqrt[3];
 SetListable[rangle];
 rangle[angle_] := AngleVector[angle * 2 * Pi];
 
-declareFunctionAutocomplete[RootSystem, {$NamedRootSystems}];
+DefineFunctionAutocomplete[RootSystem, {$NamedRootSystems}];

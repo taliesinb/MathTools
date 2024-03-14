@@ -123,40 +123,37 @@ DropWhile[list_, f_] := Drop[list, LengthWhile[list, f]];
 
 (**************************************************************************************************)
 
-PublicFunction[CommonPrefix, CommonPrefixLength]
+PublicFunction[CommonPrefix, CommonSuffix]
 
-CommonPrefix[{}] := None;
-CommonPrefix[{e_}] := e;
-CommonPrefix[e_List] := Take[F @ e, CommonPrefixLength[e]];
+SetUsage @ "CommonPrefix[{e$1, e$2, $$}] gives the expression that is the longest common prefix of all the e$i."
+SetUsage @ "CommonSuffix[{e$1, e$2, $$}] gives the expression that is the longest common suffix of all the list$i."
 
-CommonPrefixLength[{}] := 0;
-CommonPrefixLength[{e_}] := Len @ e;
-CommonPrefixLength[list_] := Scope[
-  n = 1; minLen = Min @ Map[Len, list];
-  Do[
-    If[NotAllEqualQ[Take[list, All, n]], Return[n-1, Block]],
-    {n, minLen}
-  ];
-  minLen
-];
+CommonPrefix[list_List] := commonPrefixSuffix[list, 1];
+CommonSuffix[list_List] := commonPrefixSuffix[list, -1];
+
+commonPrefixSuffix[{}, _] := {};
+commonPrefixSuffix[{e_}, _] := e;
+commonPrefixSuffix[list_, mult_] := Take[F @ list, mult * commonPrefixSuffixLen[list, mult]];
 
 (**************************************************************************************************)
 
-PublicFunction[CommonSuffix, CommonSuffixLength]
+PublicFunction[CommonPrefixLength, CommonSuffixLength]
 
-CommonSuffix[{}] := None;
-CommonSuffix[{e_}] := e;
-CommonSuffix[e_List] := Take[F @ e, -CommonSuffixLength[e]];
+SetUsage @ "CommonPrefixLength[{e$1, e$2, $$}] gives the length of the expression that is the longest common prefix of all the e$i."
+SetUsage @ "CommonSuffixLength[{e$1, e$2, $$}] gives the length of the expression that is the longest common suffix of all the e$i."
 
-CommonSuffixLength[{}] := 0;
-CommonSuffixLength[{e_}] := Len @ e;
-CommonSuffixLength[list_] := Scope[
-  n = 1; minLen = Min @ Map[Len, list];
+CommonPrefixLength[list_List] := commonPrefixSuffixLen[list, 1];
+CommonSuffixLength[list_List] := commonPrefixSuffixLen[list, -1];
+
+commonPrefixSuffixLen[{}, _] := 0;
+commonPrefixSuffixLen[{list_}, _] := Len @ list;
+commonPrefixSuffixLen[list_, mult_] := Module[
+  {min = Min @ Map[Len, list]},
   Do[
-    If[NotAllEqualQ[Take[list, All, -n]], Return[n-1, Block]],
-    {n, minLen}
+    If[NotAllEqualQ[Part[list, All, mult * n]], Return[n-1, Module]],
+    {n, min}
   ];
-  minLen
+  min
 ];
 
 (**************************************************************************************************)

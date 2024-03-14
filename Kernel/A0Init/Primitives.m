@@ -104,7 +104,7 @@ registerBoxHeadSigs[primHead_, boxHeads_, sigElems_] := (
 registerBoxHeadSigs[$dummy, {TagBox}, {$PrimitivesArg}];
 
 General::badprimsig = "Bad signature `` for graphics primitive ``."
-procSignature[shape_] := ThrowMessage["badprimsig", shape, $head];
+procSignature[shape_] := Msg::badprimsig[shape, $head];
 
 Clear[parseSignatureString];
 parseSignatureString[str_] := parseSignatureString[str] = Map[parseSigElem, SSplit[str, ","]];
@@ -124,7 +124,7 @@ parseSigElem = Case[
   "Rules"      := $PosRulesArg;
   "FanOut"     := $FanOutArg;
   sym_Symbol   := sym;
-  e_           := ThrowMessage["badprimsigelem", e, $head];
+  e_           := Msg::badprimsigelem[e, $head];
 ];
 
 (**************************************************************************************************)
@@ -313,7 +313,7 @@ CurveToPoints[curve_] := Scope[
   If[CoordinateMatrixQ @ curve, Return @ curve];
   curveFn = Lookup[$customCurveFn, H @ curve];
   If[MissingQ[curveFn],
-    If[$ctpMsg, Message[General::notcurve, MsgExpr @ curve]];
+    If[$ctpMsg, Message[General::notcurve, curve]];
     ReturnFailed[];
   ];
   isFan = H[F @ curve] === FanOut;
@@ -391,10 +391,10 @@ CustomPrimitiveToBoxes[prim_] := With[
   Which[
     H[res] === fn,                  gprimMsg[prim, "unrecogprim"],
     res === $Failed,                gprimMsg[prim, "failprim"],
-    MatchQ[res, _InternalHoldForm], gprimMsg[prim, "internalPrimEror", MsgExpr @ res],
+    MatchQ[res, _InternalHoldForm], gprimMsg[prim, "internalPrimEror", res],
     True,                           res
   ]
 ];
 
-gprimMsg[prim:(h_[___]), msg_, args___] := (Message[MessageName[h, msg], MsgExpr @ prim, args]; {})
+gprimMsg[prim:(h_[___]), msg_, args___] := (Message[MessageName[h, msg], prim, args]; {})
 _gprimMsg := BadArguments[];

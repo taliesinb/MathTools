@@ -151,11 +151,7 @@ PaperPageTitle[authors_, title_] := Scope[
 
 PublicIOFunction[DownloadPaper]
 
-PublicVariable[$PDFPath]
-
 PublicOption[PDFPath, AllowRename]
-
-SetInitialValue[$PDFPath, With[{path = NormalizePath @ "~/Dropbox/doc/paper"}, If[FileExistsQ[path], path, DataPath["Papers"]]]];
 
 Options[DownloadPaper] = {
   PDFPath -> Auto,

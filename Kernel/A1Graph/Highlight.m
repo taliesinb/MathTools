@@ -19,7 +19,7 @@ DeclareArgumentCount[HighlightGraphRegion, {2, 3}];
 
 Options[HighlightGraphRegion] = $ExtendedGraphOptions;
 
-declareSyntaxInfo[HighlightGraphRegion, {_, _, OptionsPattern[]}];
+DefineArgumentsPattern[HighlightGraphRegion, {_, _, OptionsPattern[]}];
 
 HighlightGraphRegion[graph_, highlights_, style:(_List | _Str | $ColorPattern), opts:OptionsPattern[]] :=
   HighlightGraphRegion[graph, highlights, HighlightStyle -> style, opts];

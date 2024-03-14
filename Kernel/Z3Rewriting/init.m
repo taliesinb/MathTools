@@ -100,8 +100,8 @@ Options[RewriteQuiver] = Options[RewriteGraph] = JoinOptions[
   $ExtendedGraphOptions
 ];
 
-declareSyntaxInfo[LatticeGraph, {_, _, OptionsPattern[]}];
-declareSyntaxInfo[LatticeQuiver, {_, _, OptionsPattern[]}];
+DefineArgumentsPattern[LatticeGraph, {_, _, OptionsPattern[]}];
+DefineArgumentsPattern[LatticeQuiver, {_, _, OptionsPattern[]}];
 
 
 RewriteQuiver[system_RewritingSystemObject, initialState_, opts:OptionsPattern[RewriteQuiver]] :=

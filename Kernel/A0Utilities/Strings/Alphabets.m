@@ -23,8 +23,8 @@ setupAlphabetData[] := Module[{data, romanic, greek},
   data = loadAlphabetData[];
   $alphabets = names = Keys @ data;
   $AlphabetDataTable = data;
-  declareFunctionAutocomplete[AlphabetData, Sort /@ {names, $alphabetPropsExt}];
-  declareFunctionAutocomplete[$alphabetLetterHeads, {Sort @ names}];
+  DefineFunctionAutocomplete[AlphabetData, Sort /@ {names, $alphabetPropsExt}];
+  DefineFunctionAutocomplete[$alphabetLetterHeads, {Sort @ names}];
   AlphabetData::unknownAlphabet = "`` is not a known alphabet, one of ``.";
   AlphabetData::unknownAlphabetProperty = "`` is not a known property, one of ``.";
   AlphabetData[] = names;
@@ -104,7 +104,7 @@ iAlphabetConversionRules = Case[
   All      -> tgt_Str := %[Decases[AlphabetNames @ AlphabetData[tgt, "Class"], tgt] -> tgt];
   src_Str  -> tgt_Str := RuleThread[AlphabetData[src, "Letters"], AlphabetData[tgt, "Letters"]];
   src_List -> tgt_Str := Catenate @ Map[%[# -> tgt]&, src];
-  other_              := Message[AlphabetConvert::invalidRule, MsgExpr @ other];
+  other_              := Message[AlphabetConvert::invalidRule, other];
 ];
 
 (**************************************************************************************************)

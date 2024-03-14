@@ -127,7 +127,7 @@ $outerDebugRewrite =
   HoldP[RuleDelayed[lhs_, rhs_]] :>
   RuleDelayed[lhs, Module[{result},
     indentBody[
-      indentPrint["PatternConvert[", MsgExpr[StringPattern`Dump`patt, 5, 10], "]"],
+      indentPrint["PatternConvert[", MsgForm[StringPattern`Dump`patt, 5, 10], "]"],
       result = rhs,
       indentPrint["PatternConvert[...] = ", result]
     ]]
@@ -158,8 +158,8 @@ debugReplace[fn_, input_, rule_Symbol] := Module[{evalInput, res},
   evalInput = input;
   res = fn[evalInput, rule];
   indentPrint[
-    MsgExpr[evalInput, 5, 10], If[fn === RepAll, " /.  ", " //. "], SPadRight[HoldSymbolName @ rule, 17],
-    " = ", MsgExpr[res, 5, 10]
+    MsgForm[evalInput, 5, 10], If[fn === RepAll, " /.  ", " //. "], SPadRight[HoldSymbolName @ rule, 17],
+    " = ", MsgForm[res, 5, 10]
   ];
   res
 ];
@@ -379,7 +379,7 @@ General::notNeedleStr = "Needle `` should be a string.";
 
 (* this is the driver for StringPatternCanContainQ, StringPatternCanStartQ, StringPatternCanEndQ *)
 doRecursivePatternTest[patt_, needle_, strFn_, seqFn_] := Scope[
-  If[!StrQ[needle], Message[General::notNeedleStr, MsgExpr @ needle]; ReturnFailed[]];
+  If[!StrQ[needle], Message[General::notNeedleStr, needle]; ReturnFailed[]];
   StringPattern`Dump`$Quantifier = ""; (* so that when we expand via internal rules we don't get errors *)
   $verbose = False;
   $needle = needle;
@@ -501,7 +501,7 @@ pattDispatchRaw := Case[
   re_RawREGroup               := % @ P2 @ e;
   re_RawREAnonGroup           := % @ P2 @ e;
   raw_                        := (
-    Message[General::unknownRawStringPatternElement, MsgExpr @ raw];
+    Message[General::unknownRawStringPatternElement, raw];
     throwYes[]
   );
 ];
@@ -551,11 +551,9 @@ FromRegex['re$'] parses a regular expression back into a StringExpression.
 
 Options[FromRegex] = {Verbose -> False};
 
-FromRegex::fail = "Parse failed: ``."
+FromRegex::parseRegexFail = "Parse failed: ``."
 FromRegex::nomatch = "Cannot proceed because no rules matched in state ``. Remaining string: ``."
 
-(* TODO: do a cheap test, scanning for the lack of regex characters, in which case we know it's a literal
-string *)
 FromRegex[re_Str | Regex[re_Str] | RegularExpression[re_String], OptionsPattern[]] := Scope @ CatchMessage[
   UnpackOptions[$verbose];
   If[StringStartsQ[re, "(?ms)"], re = StringDrop[re, 5]];
@@ -568,13 +566,14 @@ FromRegex[re_Str | Regex[re_Str] | RegularExpression[re_String], OptionsPattern[
   remaining = re;
   While[remaining =!= "",
     rules = $parsingRules[$state];
-    case = F[
-      SCases[remaining, rules, 1]
-    ,
-      ReturnFailed["nomatch", SymbolName @ $state, MsgExpr @ remaining];
-    ];
+    case = F[SCases[remaining, rules, 1], Msg::nomatch[SymbolName @ $state, remaining]];
     {match, action} = case;
-    VPrint[Style[Row[{"state = ", SPadRight[SymbolName @ $state, 15], "cursor = ", Pane[$cursor, 80], "matched = ", Pane[MsgExpr @ match, 120], "action = ", Pane[MsgExpr @ action, 300], "result = ", Pane[MsgExpr @ $result, 500]}], LineBreakWithin -> False]];
+    VPrint @ Style[Row[{
+      "state = ", SPadRight[SymbolName @ $state, 15],
+      "cursor = ", Pane[$cursor, 80],
+      "matched = ", Pane[MsgForm @ match, 120],
+      "action = ", Pane[MsgForm @ action, 300],
+      "result = ", Pane[MsgForm @ $result, 500]}], LineBreakWithin -> False];
     remaining = SDrop[remaining, SLen @ match];
     runAction @ action
   ];
@@ -598,7 +597,7 @@ runAction = Case[
   switchState[state_]       := ($state = state);
   emitToken[token_]         := ($result //= Insert[token, $cursor]; $cursor[[-1]]++);
   applyToToken[fn_]         := ($result //= MapAt[fn, MapAt[# - 1&, $cursor, -1]]);
-  failParse[msg_]           := ThrowMessage["fail", msg]
+  failParse[msg_]           := Msg::parseRegexFail[RawMsgForm @ msg]
 ];
 
 toLHSPrefixedRule[lhs_ :> rhs_] := $prefix:(StartOfString ~~ lhs) :> {$prefix, rhs};
@@ -709,7 +708,7 @@ $charClassNames = UAssoc[
 ];
 
 FromRegex::badcharclass = "\"``\" is not a known char class.";
-parseCharClass[name_] := Lookup[$charClassNames, name, ThrowMessage["badCharClass", name]];
+parseCharClass[name_] := LookupMsg[$charClassNames, name];
 
 defineParsingRules[$classState,
   "[:" ~~ c:LowercaseLetter.. ~~ ":]" :> emitToken[parseCharClass @ c],
@@ -870,7 +869,7 @@ ExpandLetterClass::expandFailed = "Failed to expand ``.";
 
 ExpandLetterClass[e_] := Scope[
   res = Rep[e, StringPattern`Dump`SingleCharInGroupRules];
-  If[!StringQ[res], ReturnFailed["expandFailed", MsgExpr @ e]];
+  If[!StringQ[res], ReturnFailed["expandFailed", e]];
   ExpandLetterClass @ res
 ];
 

@@ -75,7 +75,7 @@ SetHTMLColorOpacity[o_][col_] := HTMLColorString @ SetColorOpacity[o] @ FromHTML
 
 parseContext = Case[
   color_ ? ColorQ                         := $context["fill"] = $context["pathcolor"] = HTMLColorString @ color;
-  Opacity[a_]                             := ($context["fill"] //= SetHTMLColorOpacity[o]; $context["pathcolor"] //= SetHTMLColorOpacity[o];)
+  Opacity[a_]                             := ($context["fill"] //= SetHTMLColorOpacity[o]; $context["pathcolor"] //= SetHTMLColorOpacity[o];);
   PointSize[ps_ ? nq]                     := $context["pointsize"] = psToPixels @ ps;
   AbsolutePointSize[ps_ ? nq]             := $context["pointsize"] = apsToPixels @ ps;
   EdgeForm[e_]                            := parseEdgeForm[e];

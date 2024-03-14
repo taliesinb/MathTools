@@ -10,7 +10,7 @@ Options[ImportURLToMarkdown] = {
 
 ImportURLToMarkdown[url_Str, opts:OptionsPattern[]] := Scope[
   domain = ToLowerCase @ URLParse[url, "Domain"];
-  If[!StrQ[domain], ReturnFailed["badurl", MsgExpr @ url]];
+  If[!StrQ[domain], ReturnFailed["badurl", url]];
   Switch[
     StringTrimLeft[domain, "www."],
     "scholar.google.com",       ImportScholarPageToMarkdown[url, opts],
@@ -42,7 +42,7 @@ CreateBearArxivPages[assocs:{__Assoc}, opts:OptionsPattern[]] := Scope[
   assocs = ReverseSortBy[assocs, Key["Date"]];
   list = Map[assoc |-> (
     res = PaperToMarkdown[assoc, opts];
-    If[!StrQ[res], ReturnFailed["badmd", MsgExpr @ assoc]];
+    If[!StrQ[res], ReturnFailed["badmd", assoc]];
     CreateBearNote[res]
   ),
     assocs
@@ -131,7 +131,7 @@ CreateNotesFromClipboardList[] := Scope[
   urls = SCases[clipboard, HyperlinkPattern];
   If[!StrVecQ[urls], ReturnFailed[]];
   {urls, unknownURLs} = SelectDiscard[urls, SContainsQ[$KnownNoteURLPatterns]];
-  If[unknownURLs =!= {}, Message[CreateNotesFromClipboardList::skippedURLs, MsgExpr @ unknownURLs]];
+  If[unknownURLs =!= {}, Message[CreateNotesFromClipboardList::skippedURLs, unknownURLs]];
   urls = Dedup @ urls;
   If[urls === {}, Return @ ""];
   CreateNotesFromURLList[urls]

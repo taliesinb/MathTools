@@ -28,7 +28,7 @@ RuleThread[keys_List, values_List] /; Len[keys] === Len[values] :=
 
 RuleThread::badlen = "Key length `` doesn't match value length ``. First key is ``."
 RuleThread[keys_List, values_List] := (
-  Message[RuleThread::badlen, Len @ keys, Len @ values, MsgExpr @ F @ keys];
+  Message[RuleThread::badlen, Len @ keys, Len @ values, F @ keys];
   $Failed;
 );
 

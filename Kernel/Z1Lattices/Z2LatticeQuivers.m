@@ -590,9 +590,9 @@ Options[LatticeGraph] = JoinOptions[
   $baseGenerateLatticeOptions
 ];
 
-declareFunctionAutocomplete[LatticeGraph, {$LatticeQuiverAutocomplete, 0}];
+DefineFunctionAutocomplete[LatticeGraph, {$LatticeQuiverAutocomplete, 0}];
 
-declareSyntaxInfo[LatticeGraph, {_, _., OptionsPattern[]}];
+DefineArgumentsPattern[LatticeGraph, {_, _., OptionsPattern[]}];
 
 LatticeGraph[spec_, opts:OptionsPattern[]] :=
   iGenerateLattice[LatticeGraph, spec, OptionValue @ DirectedEdges, FilterOptions @ opts];
@@ -624,9 +624,9 @@ DeclareArgumentCount[LatticeQuiver, {1, 2}];
 
 Options[LatticeQuiver] = $baseGenerateLatticeOptions;
 
-declareFunctionAutocomplete[LatticeQuiver, {$LatticeQuiverAutocomplete, 0}];
+DefineFunctionAutocomplete[LatticeQuiver, {$LatticeQuiverAutocomplete, 0}];
 
-declareSyntaxInfo[LatticeQuiver, {_, _., OptionsPattern[]}];
+DefineArgumentsPattern[LatticeQuiver, {_, _., OptionsPattern[]}];
 
 LatticeQuiver[spec_, opts:OptionsPattern[]] :=
   iGenerateLattice[LatticeQuiver, spec, True, FilterOptions @ opts];
@@ -660,7 +660,7 @@ $latticeQuiverProperties = {
   "Names", "Representation", "Dimension"
 };
 
-declareFunctionAutocomplete[LatticeQuiverData, {$LatticeQuiverAutocomplete, $latticeQuiverProperties}];
+DefineFunctionAutocomplete[LatticeQuiverData, {$LatticeQuiverAutocomplete, $latticeQuiverProperties}];
 
 pickNamesWithPropertyEqualTo[prop_, value_] :=
   KeyValueMap[If[Lookup[#2, prop] === value, #1, Nothing]&, $LatticeData];

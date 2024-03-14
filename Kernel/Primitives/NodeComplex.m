@@ -162,7 +162,6 @@ chooseCycleVarToBreak[cycle_List] := MaximumBy[Col1[cycle], varTopOrderSort];
 (**************************************************************************************************)
 
 PublicHead[NodeCenter, NodeSide, NodePort, NodeInPort, NodeOutPort, NodeCorner, PortIndex]
-PublicHead[LeftRight, TopBottom]
 
 resolveNodeCoordinatesAndAliases[expr_] := Scope[
   expr //= expandNodeCoordinates;
@@ -242,7 +241,7 @@ processNode = Case[
   Pane[text_, size_, opts___Rule]     := paneNode[text, size, opts];
   p_Point                             := (emptyBox[0, 0]; makeDelayed @ Translate[p, currentCenter[]]);
 
-  node_                               := ThrowMessage["badNodeSpec", MsgExpr @ node];
+  node_                               := Msg::badNodeSpec[node];
 
   Sequence[node_, part_] := Block[
     {$path = App[$path, part]},
@@ -373,7 +372,7 @@ withNodePalette[nodePalette,
       otherMiddle = If[otherStart === $L, $LR, $TB];
       addEqns[subPath[range, otherMiddle], subPath[otherMiddle]],
     _,
-      ThrowMessage["badalign", alignment, head];
+      Msg::badalign[alignment, head];
   ];
   addEqns @ {
     subPath[1, mainStart] -> subPath[mainStart] + mult * smargin,
@@ -465,8 +464,8 @@ parseGridItems = Case[
     items = Map[$i = 1; parseGridRuleItem, rules];
 
     (* obtain RHS for row heights, column widths, removing widths and heights that are inherited from the row/column itself *)
-    allSizesC = Lookup[$singletonsC, rangeC, ThrowMessage["unspecsize", "width", "column"]];
-    allSizesR = Lookup[$singletonsR, rangeR, ThrowMessage["unspecsize", "height", "row"]];
+    allSizesC = Lookup[$singletonsC, rangeC, Msg::unspecsize["width", "column"]];
+    allSizesR = Lookup[$singletonsR, rangeR, Msg::unspecsize["height", "row"]];
     sizesC = maxRCSize /@ allSizesC;
     sizesR = maxRCSize /@ allSizesR;
 
@@ -503,7 +502,7 @@ parseGridItems = Case[
     items
   ];
   grid:{__List}  := % @ Catenate @ MapIndexed[#2 -> #1&, grid, {2}];
-  other_         := ThrowMessage["badNodeGridSpec", MsgExpr @ other];
+  other_         := Msg::badNodeGridSpec[other];
 ];
 
 maxRCSize[list_] := Max @ Rep[Discard[list, Lookup[$isAutomaticSize, #, False]&], {} -> {1}];
@@ -513,7 +512,7 @@ NodeGrid::baditemalign = "Item Alignment -> `` is invalid."
 parseGridRuleItem = Case[
   Rule[rc:{_, _}, Item[item_, Alignment -> align_]] := Scope[
     pair = ToAlignmentPair[align];
-    If[FailureQ[pair], ThrowMessage["baditemalign", align]];
+    If[FailureQ[pair], Msg::baditemalign[align]];
     {$halign, $valign} = pair;
     % @ Rule[rc, item]
   ];
@@ -550,13 +549,13 @@ NodeGrid::badspan = "Bad item position ``.";
 parseSpan = Case[
   i_Int              := {i, i};
   Span[i_Int, j_Int] := {i, j};
-  other_             := ThrowMessage["badspan", other];
+  other_             := Msg::badspan[other];
 ]
 
 getMax = Case[
   i_Int    := i;
   _;;i_Int := i;
-  other_   := ThrowMessage["badspan", other];
+  other_   := Msg::badspan[other];
 ]
 
 
@@ -775,7 +774,7 @@ procPortSpec = Case[
   n_Int  := Range @ n;
   s_Str  := {s};
   l_List := l;
-  spec_  := ThrowMessage["badNodePortSpec", spec];
+  spec_  := Msg::badNodePortSpec[spec];
 ];
 
 SetUsage @ "
@@ -832,7 +831,7 @@ processNodeBoxPorts = Case[
   None                                  := {};
   _ -> {}                               := {};
   list_List                             := Map[%, list];
-  spec_                                 := ThrowMessage["badNodePortSpec", spec];
+  spec_                                 := Msg::badNodePortSpec[spec];
   side_ -> Style[spec_, rules___Rule]   := InheritedBlock[{$portData},
     AssociateTo[$portData, portDataRules[rules]];
     %[side -> spec]
@@ -864,7 +863,8 @@ processNodeBoxPorts = Case[
       _List,                  toPortPositions @ portPosSpec,
       _,                      Message[NodeBox::badPortPositions, portPosSpec]; Null
     ];
-    If[ListQ[portCoordOverrides] && LengthEqualOrMessage[NodeBox::badPortPositionLen, portCoordOverrides, portCoords],
+    If[ListQ[portCoordOverrides],
+      SameLenMsg::badPortPositionLen[portCoordOverrides, portCoords];
       (* fill in the relevant ordinate of ports from provided port positions *)
       $portPositionDefaults ^= {$portPositionDefaults, RuleThread[portPaths, portCoords]};
       Part[portCoords, All, If[isVert, 1, 2]] = portCoordOverrides;
@@ -938,7 +938,7 @@ processNodeDiskPorts = Case[
   n_Int        := %[Top -> Range[n]];
   list:{__Int} := %[Top -> list];
   None         := {};
-  spec_        := ThrowMessage["badNodePortSpec", spec];
+  spec_        := Msg::badNodePortSpec[spec];
 ];
 
 makeCirclePorts[ports_, angles_] := Scope[
@@ -1022,7 +1022,7 @@ $needsRounding := $isNodeDisk || TrueQ[roundingRadius >= $w/2];
 shapeToFn := Case[
   "InnerDisk" /; TrueQ[$needsRounding]      := Fn[makeHalfDisk[#coords, -#dirs, {#PortSize, $w/2}, #FET]];
   "OuterDisk" /; TrueQ[$needsRounding]      := Fn[makeHalfDisk[#coords,  #dirs, {#PortSize, $w/2}, #FET]];
-  shape_                                    := Lookup[$shapeToFn, shape, ThrowMessage["badNodePortShape", shape, Keys @ $shapeToFn]];
+  shape_                                    := Lookup[$shapeToFn, shape, Msg::badNodePortShape[shape, Keys @ $shapeToFn]];
   Placed[label_, pos_Symbol]                := Fn[makeLabel[label, #coords - #frameOffset/2, pos, 0.2, portLabelStyle]];
   Labeled[shape_, label_, pos_]             := ApplyThrough[{% @ shape, % @ Placed[label, pos]}]
 ];
@@ -1105,7 +1105,7 @@ makePoint[pos_, r_, fet_] := StyleBox[PointBox[pos], PointSize[2 * r / $var[$W]]
 
 General::badLabelPosition = "Bad label position ``."
 makeLabel[label_, coords_, side_, spacing_, style_] := Scope[
-  offset = -Lookup[$SideToCoords, side, ThrowMessage["badLabelPosition", side]] * (1 + spacing);
+  offset = -Lookup[$SideToCoords, side, Msg::badLabelPosition[side]] * (1 + spacing);
   makeDelayed @ Text[label, coords, offset, BaseStyle -> style]
 ]
 

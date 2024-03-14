@@ -39,7 +39,7 @@ TODO: fix arcs that interact with eachother badly and cause 'jumps'. *)
 
 RollingCurve::interr = "Internal error."
 
-rollingCurvePoints[RollingCurve[curve_, opts___Rule]] := Scope[
+rollingCurvePoints[RollingCurve[curve_, opts___Rule]] := Scope @ CatchMessage[RollingCurve,
   UnpackAssociationSymbols[
     {opts} -> $MakeBoxesStyleData,
     bendRadius, bendShape
@@ -69,10 +69,7 @@ toRollingCurvePoints[points_, radius_:1, shape_:"Arc"] := Scope @ CachedInto[
     splinePoints = ZipMap[makeSplineBend, triples, radii];
     result = DiscretizeCurve @ BSplineCurve @ splinePoints;
   ,
-    If[!MatchQ[shape, "Arc" | "Bevel" | "Line" | "Bezier"],
-      BadOptionSetting[RollingCurve, BendShape, shape];
-      Return @ points;
-    ];
+    OptionMatchMsg[BendShape, shape, "Arc" | "Bevel" | "Line" | "Bezier"];
     result = populateSegments[shape, FirstLast @ points, triples, radii];
   ];
 

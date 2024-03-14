@@ -8,8 +8,8 @@ EnsureDirectoryShallow[path_Str | File[path_Str]] := Scope[
   path //= NormalizePath;
   Which[
     FileExistsQ[path] && DirectoryQ[path],                  path,
-    FileQ[path],                                            ThrowMessage["filenotdir", MsgPath @ path],
-    !FileExistsQ[path] && !DirectoryQ[FileNameDrop[path]],  ThrowMessage["deepnotexists", MsgPath @ path],
+    FileQ[path],                                            Msg::filenotdir[MsgPath @ path],
+    !FileExistsQ[path] && !DirectoryQ[FileNameDrop[path]],  Msg::deepnotexists[MsgPath @ path],
     True,                                                   VPrint["Creating directory ", MsgPath @ path]; If[!$dryRun, CreateDirectory[path]]
   ]
 ];
@@ -78,7 +78,7 @@ ImportJSONString::badjson = "Str `` does not appear to be valid JSON.";
 
 ImportJSONString[str_Str] := Scope[
   json = Quiet @ Check[ReadRawJSONString @ str, $Failed];
-  If[FailureQ[json], ReturnFailed["badjson", MsgExpr @ str]];
+  If[FailureQ[json], ReturnFailed["badjson", str]];
   json /. Null -> None
 ];
 
@@ -379,6 +379,36 @@ searchFileLines[path_, patt_] := Scope[
 
 (**************************************************************************************************)
 
+PublicIOFunction[AllFileNames]
+
+AllFileNames::notDirectory = "Provided path `` is not an existing directory or list of such.";
+AllFileNames::badExtPattern = "Extensions pattern `` is not All, a string, or a list of strings.";
+
+AllFileNames[path:(_Str | {__Str}), exts_:All] := Scope[
+  If[!VectorQ[ToList @ path, DirectoryQ], ReturnFailed["notDirectory", MsgPath @ path]];
+  glob = Switch[exts,
+    All,     "*.*",
+    _Str,    "*." <> exts,
+    {__Str}, "*." <> #& /@ exts,
+    _,        ReturnFailed["badExtPattern", exts]
+  ];
+  files = FileNames[glob, path, Infinity];
+  Discard[StringEndsQ[".DS_Store"]] @ Discard[DirectoryQ] @ files
+];
+
+(**************************************************************************************************)
+
+PrivateCacheFunction[FindDuplicateFiles]
+
+FindDuplicateFiles[path_Str, exts_:All] := Scope[
+  files = AllFileNames[path, exts];
+  If[FailureQ[files], ReturnFailed[]];
+  files = Flatten @ DuplicatesBy[files, FileByteCount];
+  DuplicatesBy[files, FileHash]
+];
+
+(**************************************************************************************************)
+
 PublicFunction[FileStringCases]
 
 Options[FileStringCases] = JoinOptions[
@@ -447,7 +477,7 @@ iFileStringReplace[file_] := Scope[
       newChunk = StringReplace[chunk, $rewrite];
       Which[
         !StrQ[newChunk],
-          Message[FileStringReplace::fileReplaceMatchFailed, MsgExpr @ chunk];
+          Message[FileStringReplace::fileReplaceMatchFailed, chunk];
           Nothing,
         newChunk =!= chunk,
           VPrint[Pane[fileLine, {250, Automatic}], ShowSequenceAlignment[chunk, newChunk]];

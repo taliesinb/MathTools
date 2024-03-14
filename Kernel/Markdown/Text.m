@@ -33,7 +33,7 @@ textCellToMarkdown[e_] := Scope[
     text = STrim @ textToMarkdown @ e;
   ,
     Message[ToMarkdownString::msgs];
-    Print[MsgExpr[text, 6, 50]];
+    Print[MsgForm[text, 6, 50]];
     PrintBadCell[e];
   ];
   If[!StrQ[text], Return["### Markdown generation failed"]];
@@ -241,7 +241,7 @@ styleBoxToMarkdown = Case[
 PrivateFunction[complainBoxes]
 
 complainBoxes[other_] := Scope[
-  Message[ToMarkdownString::badmdbox, MsgExpr @ other];
+  Message[ToMarkdownString::badmdbox, other];
   headStr = ToPrettifiedString @ H @ other;
   PrintMTStackSymbols[];
   "**CANNOT CONVERT TEXTUAL BOXES TO MARKDOWN**\n```\n" <> ToPrettifiedString[other, MaxDepth -> 3, MaxLength -> 10, MaxIndent -> 3] <> "\n```\n"

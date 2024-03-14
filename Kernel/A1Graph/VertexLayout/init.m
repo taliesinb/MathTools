@@ -99,7 +99,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     vertexCoordinateFunction =!= None,
       vertexCoordinates = Map[vertexCoordinateFunction, vertexList];
       If[!CoordinateMatrixQ[vertexCoordinates, _],
-        Message[ExtractGraphPrimitiveCoordinates::badvcoordfunc, MsgExpr @ vertexCoordinateFunction];
+        Message[ExtractGraphPrimitiveCoordinates::badvcoordfunc, vertexCoordinateFunction];
         vertexCoordinates = Auto;
       ];
     ,
@@ -173,7 +173,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
   If[MatchQ[result, {_ ? CoordinateMatrixQ, _ ? CoordinateMatricesQ}],
     {$vertexCoordinates, $edgeCoordinateLists} = result;
   ,
-    Message[ExtractGraphPrimitiveCoordinates::badvertexlayout, MsgExpr @ vertexLayout];
+    Message[ExtractGraphPrimitiveCoordinates::badvertexlayout, vertexLayout];
     If[ListQ[result], PrintPF /@ result, PrintPF[result]];
     $vertexCoordinates = CirclePoints @ vertexCount;
     $edgeCoordinateLists = Part[$vertexCoordinates, {#1, #2}]& @@@ edgeList;
@@ -184,7 +184,7 @@ ExtractGraphPrimitiveCoordinates[graph_] := Scope[
     data["EdgeCoordinateLists"] = $edgeCoordinateLists;
     result = edgeLayout @ data;
     If[!CoordinateMatricesQ[result],
-      Message[ExtractGraphPrimitiveCoordinates::badedgelayout, MsgExpr @ edgeLayout],
+      Message[ExtractGraphPrimitiveCoordinates::badedgelayout, edgeLayout],
       $edgeCoordinateLists = ToPackedReal @ result;
     ];
   ];
@@ -636,8 +636,7 @@ ptAlong[a_, b_, d_] := Which[d <= 0, a, d >= Dist[a, b], b, True, PointAlongLine
 squareSelfLoop[line_] := line;
 
 applyCoordinateTransform[name_Str] := Scope[
-  trans = LookupOrMessageKeys[$namedTransforms, name, $Failed];
-  If[FailureQ[trans], ReturnFailed[]];
+  trans = LookupMsg[$namedTransforms, name];
   applyCoordinateTransform @ trans
 ];
 

@@ -67,7 +67,7 @@ parseColorGradient = Case[
   ColorGradient[spec_, side:$SidePattern]         := % @ ColorGradient[spec, $SideToCoords @ side];
   ColorGradient[spec__, CompressionFactor -> c_]  := RepPart[% @ ColorGradient[spec], 3 -> CompressUnit[c]];
   other_ := (
-    Message[ColorGradient::badGradientSpec, MsgExpr @ other];
+    Message[ColorGradient::badGradientSpec, other];
     {{1,0}, Id, Id, Red&}
   );
 ]
@@ -84,7 +84,7 @@ ToColorGradient = Case[
   {c1_, c2_} -> side_ := ColorGradient[{c1, c2}, side];
   cg_ColorGradient    := cg;
   other_              := (
-    Message[ColorGradient::badSpec, MsgExpr @ other];
+    Message[ColorGradient::badSpec, other];
     ColorGradient[{Black, Black}];
   )
 ];
@@ -259,6 +259,7 @@ GradientSymbol[symbol$, ColorGradient[$$]] specifies gradient direction and comp
 | %FontSlant | as usual |
 "
 
+(* TODO: protect these from running on their own FormatValues *)
 DefineStandardTraditionalForm[{
 
   (* TODO: turn text into a shape via ToGraphicsBox, then use LinearGradientFilling on it *)
@@ -305,7 +306,7 @@ gradientSymbolBoxes[ModernForm[inner_], args___] :=
 
 GradientSymbol::firstArg = "First argument in `` should be a string or literal symbol."
 gradientSymbolBoxes[args___] :=
-  (Message[GradientSymbol::firstArg, MsgExpr @ GradientSymbol[args]]; "?");
+  (Message[GradientSymbol::firstArg, GradientSymbol[args]]; "?");
 
 (* have to disable this because otherwise GradientSymbol burrows through tagged forms and they get
 rasterized incorrectly *)

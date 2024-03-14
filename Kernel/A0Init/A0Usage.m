@@ -9,10 +9,10 @@ $WindowsQ =  $OperatingSystem === "Windows";
 PrivateFunction[LocalPath, DataPath]
 
 LocalPath[args___Str] := FileNameJoin @ List[$PackageDirectory, args];
-e_LocalPath := (Message[LocalPath::badarguments, MsgExpr @ Uneval @ e]; $Failed)
+e_LocalPath := (Message[LocalPath::badarguments, MsgHold @ e]; $Failed)
 
 DataPath[dir_Str, args___Str] := FileNameJoin[{ensureDataDir @ dir, args}];
-e_DataPath := (Message[DataPath::badarguments, MsgExpr @ Uneval @ e]; $Failed)
+e_DataPath := (Message[DataPath::badarguments, MsgHold @ e]; $Failed)
 
 $dataDir = FileNameJoin[{$PackageDirectory, "Data"}];
 
@@ -158,6 +158,12 @@ shortenGridBoxes[usageString_] := SRep[
 
 (**************************************************************************************************)
 
+PublicVariable[$ScopingHeadsP]
+
+$ScopingHeadsP = Alternatives[Block,Module,With,SWith,Function,Do,Table];
+
+(**************************************************************************************************)
+
 $fmtUsageOuter = True;
 
 PrivateFunction[ClearUsageCache]
@@ -186,6 +192,16 @@ If[!AssocQ[GeneralUtilities`Private`$SetUsageFormatCache],
       ]
     ];
   ];
+
+  DownValues[GeneralUtilities`Debugging`PackagePrivate`makeDefinitionNotebook] = (
+    DownValues[GeneralUtilities`Debugging`PackagePrivate`makeDefinitionNotebook] /. Rule[
+      WindowSize -> {900, Automatic},
+      WindowSize -> {600, Automatic}
+    ]
+  );
+
+  DownValues[GeneralUtilities`Control`PackagePrivate`removeBoundVariables] = DownValues[GeneralUtilities`Control`PackagePrivate`removeBoundVariables] /.
+    a_Alternatives :> $ScopingHeadsP;
 ];
 
 customSetUsageProcessor = Composition[

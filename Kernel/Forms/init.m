@@ -35,9 +35,7 @@ PrivateTypesettingBoxFunction[KatexFontStrBox, KatexAMSFontStrBox]
 KatexFontStrBox[str_Str] := StyleBox[toPrivateUseUnicode @ str, FontFamily -> "KaTeX_Main_Offset"];
 KatexAMSFontStrBox[str_Str] := StyleBox[toPrivateUseUnicode @ str, FontFamily -> "KaTeX_AMS_Offset"];
 
-toPrivateUseUnicode[str_Str] := toUnicode @ ToCharCode[str, "Unicode"];
-
-
+toPrivateUseUnicode[str_Str] := toOffsetUnicode @ ToCharCode[str, "Unicode"];
 
 (**************************************************************************************************)
 
@@ -264,7 +262,12 @@ SpecializeToKatexBoxes[e_] := e //. $toKBoxes;
 $toWLBoxes = Dispatch @ {
   HoldP[RBox[args___]] :> RowBox[{args}],
   KBox[wl_, _] :> wl, HoldP[KBox[wl_, _]] :> wl,
-  $wlThinSpace -> "\[ThinSpace]", $kSpace :> Sequence[]
+  $wlThinSpace -> "\[ThinSpace]", $kSpace :> Sequence[],
+  s:StyleBox[_, _Str] :> s,
+  str_Str :> RuleCondition @ If[
+    ASCIIQ @ StringDelete[str, {Whitespace, "[", "]"}], str,
+    StyleBox[str, "MathSymbolFont"]
+  ]
 };
 
 $toKBoxes = Dispatch @ {
@@ -1301,7 +1304,7 @@ FormToPlainString = Case[
   form_                 := Scope[
     boxes = EvaluateTemplateBoxFull @ ToBoxes @ RepRep[form, $plainStrNormalizationRules];
     str = boxToString @ boxes;
-    If[!StrQ[str], ReturnFailed["noformstr", MsgExpr @ form, InputForm @ boxes]];
+    If[!StrQ[str], ReturnFailed["noformstr", form, boxes]];
     SRep[ToSpelledGreek @ ToNonDecoratedRoman @ str, $plainStringReplacements]
   ];
 ]

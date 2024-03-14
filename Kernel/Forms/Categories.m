@@ -464,7 +464,7 @@ toMonoidalTreeList = Case[
     MapIndexStack[%, pos, {a, -1}]
   );
 
-  Seq[other_, pos_] := (Message[MonoidalTree::badleaf, MsgExpr @ other, pos]; Null)
+  Seq[other_, pos_] := (Message[MonoidalTree::badleaf, other, pos]; Null)
 ];
 
 MonoidalTree::badleaf = "Unrecognized leaf expression `` at position ``.";

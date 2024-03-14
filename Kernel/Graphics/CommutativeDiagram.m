@@ -172,7 +172,8 @@ cdToPrimitives[CommutativeDiagram[objects_List, morphisms_List, opts___Rule]] :=
 $objectNames = {};
 $inheritedOptions = Sequence[];
 
-cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
+cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope @ CatchMessage[CommutativeDiagram,
+
   UnpackOptionsAs[CommutativeDiagram,
     {FilterOptions[CommutativeDiagram, opts]},
     alignment, $setback, labelFontSize, fontSize, fontFamily,
@@ -187,7 +188,7 @@ cdToPrimitives[CommutativeDiagram[items_List, opts___Rule]] := Scope[
   $objectCoordsList = {}; (* does not contain derived coordinates ($towardsCenter) *)
   $objects = $objectCoords = $objectSizes = $morphGradColors = UAssoc[];
 
-  $itemSize = Auto;
+  $paneSize = Auto;
   $morphismNames = {};
   $morphismCurves = $cloneChildren = Assoc[];
   $inheritedOptions = opts;
@@ -304,8 +305,6 @@ TextModifiers is an option to %CommutativeDiagram that gives one or a list of mo
 * a list of rules can be given to, these will behave like SymbolReplacements, but will automatically replace through styles via (un)burrowing.
 "
 
-CommutativeDiagram::badModifier = "Element `` of TextModifiers should be None, a function, list of rules, or a list of these."
-
 toModifierFunction = Case[
   {} | None | Id         := Id;
   rules:$RuleListPattern := UnburrowModifiers /* RepAll[rules] /* BurrowModifiers;
@@ -331,16 +330,10 @@ toScaled = Case[
 ];
 
 CommutativeDiagram::unresolvedcoord = "Could not resolve symbolic coordinate ``, available are: ``.";
-unresolvedCoord[z_] := (
-  Message[CommutativeDiagram::unresolvedcoord, z, SRiffle[$objectNames, ","]];
-  {2, -1.5}
-)
+unresolvedCoord[z_] := Msg::unresolvedcoord[z, SRiffle[$objectNames, ","]];
 
 CommutativeDiagram::badargs = "`` was not a valid specification."
-cdToPrimitives[other_] := (
-  Message[CommutativeDiagram::badargs, MsgExpr @ other];
-  {}
-);
+cdToPrimitives[other_] := Msg::badargs[other];
 
 (**************************************************************************************************)
 
@@ -370,7 +363,6 @@ DiagramColorRules is an option to %CommutativeDiagram and %StringDiagram that co
 | 'GradientFunctors' | equivalent to {'Categories', %CategoryFunctorSymbol -> 'Gradient'} |
 | 'FramingFunctors' | depict functor application as a colored frame |
 "
-CommutativeDiagram::badrecolor = "Bad recoloring rule element ``."
 
 PrivateFunction[parseDiagramColorRules]
 PrivateVariable[$currentDiagramFontSize]
@@ -383,19 +375,17 @@ parseDiagramColorRules[e_, {opts__Rule}] := Scope[
 parseDiagramColorRules[e_, {}] :=
   parseDiagramColorRules2[e];
 
-parseDiagramColorRules[e_, o_] := (
-  BadOptionSetting[StringDiagram, GradientSymbolOptions, MsgExpr @ o];
-  parseDiagramColorRules2[e];
-)
+parseDiagramColorRules[e_, o_] :=
+  OptionMsg[GradientSymbolOptions, o];
 
 parseDiagramColorRules2 = Case[
   {} | None            := Id;
   el:(_Rule | _Str) := % @ {el};
   list_List            := RepAll @ Map[toRecolorRule, list];
-  other_               := (Message[CommutativeDiagram::badrecolor, other]; Id);
+  other_               := Msg::badRecoloringElement[other];
 ];
 
-CommutativeDiagram::cruleNotUnaryForm = "Symbol `` provided as color rule element is not a unary form."
+CommutativeDiagram::badRecoloringElement = "Bad recoloring rule element ``."
 
 specialRecoloringRule[head_, "Rainbow"] :=
   RuleDelayed[z_head, RuleEval @ StyledForm[z, ToRainbowColor @ ToRainbowInteger @ F @ z]];
@@ -445,11 +435,11 @@ TODO: do the same thing for GradientSymbol!
 
 toRecolorRule = Case[
 
-  str_Str := Splice[% /@ LookupOrMessageKeys[$namedRecoloringElements, str, {}]];
+  str_Str := Splice[% /@ LookupMsg[$namedRecoloringElements, str]];
 
   head_Symbol -> type:("Rainbow"|"Gradient"|"Framing"|"Coloring") := If[TrueQ @ $unaryFormHeadQ[head],
     specialRecoloringRule[head, type],
-    Message[CommutativeDiagram::cruleNotUnaryForm, head]; Nothing
+    Msg::cruleNotUnaryForm[head]
   ];
 
   f_ -> {a:$colorP, b:$colorP} := With[{c1 = toCol @ a, c2 = toCol @ b},
@@ -460,16 +450,10 @@ toRecolorRule = Case[
     RuleDelayed[(z:a), StyledForm[z, c1]]
   ];
 
-  other_Rule := (
-    Message[CommutativeDiagram::badrecolor, other];
-    Nothing
-  );
-
-  other_ := (
-    Message[CommutativeDiagram::badrecolor, other];
-    Nothing
-  );
+  other_ := Msg::badRecoloringElement[other];
 ];
+
+CommutativeDiagram::cruleNotUnaryForm = "Symbol `` provided as color rule element is not a unary form.";
 
 toCol = Case[
   s_Symbol  := StyleFormData @ s;
@@ -512,7 +496,6 @@ MorphismColors is an option to %CommuativeDiagram which can be:
 * each rule$ can be a mapping 'label$' -> color$ or ind$ -> color$.
 ";
 
-CommutativeDiagram::badMorphismColors = "MorphismColors -> `` is not recognized."
 processMorphismColors = Case[
   None := None;
 
@@ -527,7 +510,7 @@ processMorphismColors = Case[
 
   rules:{__Rule} := morphismColorRuleLookup[App[_ -> None] @ rules];
 
-  other_ := (Message[CommutativeDiagram::badMorphismColors, MsgExpr[other]]; None)
+  other_ := OptionMsg[MorphismColors, other];
 ];
 
 orColor[f_, g_][ma_] := Rep[f[ma], None :> g[ma]];
@@ -555,12 +538,10 @@ morphismColorRuleLookup[rules_][ma_MorphismArrow] := Scope[
 
 PrivateFunction[parseSymbolReplacements]
 
-CommutativeDiagram::badrepspec = "SymbolReplacements -> `` is invalid.";
-
 parseSymbolReplacements = Case[
   None | {}                               := Id;
   rules:($RulePattern | $RuleListPattern) := RepAll[rules];
-  other_                                  := (Message[CommutativeDiagram::badrepspec, other]; Id)
+  other_                                  := OptionMsg[SymbolReplacements, other];
 ];
 
 (**************************************************************************************************)
@@ -612,7 +593,7 @@ toHigherPathElem = Case[
   o_ObjectCoordinates                        := o;
   Placed[spec:$higherCoordP, pos:$NumberP]   := MorphismCoordinates[spec, pos];
   spec:$higherCoordP                         := MorphismCoordinates[spec];
-  spec_                                      := (Message[CommutativeDiagram::badhighercoord, MsgExpr @ spec]; {0, 0})
+  spec_                                      := Msg::badhighercoord[spec];
 ];
 
 (**************************************************************************************************)
@@ -648,7 +629,7 @@ parseObject = Case[
 ];
 
 threadedObjectsQ = Case[
-  pos:{__List} -> lbls_List := CoordinateMatrix2DQ[pos] && SameLengthQ[pos, lbls];
+  pos:{__List} -> lbls_List := CoordinateMatrix2DQ[pos] && SameLenQ[pos, lbls];
   _                         := False;
 ]
 
@@ -742,7 +723,7 @@ $namedCloneOpts = <|
   "FullFunctor" -> {"ExteriorLink" -> "MapsTo"}
 |>;
 
-namedCloneOpts[s_] := LookupOrMessageKeys[$namedCloneOpts, s, {}];
+namedCloneOpts[s_] := LookupMsg[$namedCloneOpts, s];
 
 processCloneSpecs[opts_, cloneFn_] := (
   Switch[cloneFn,
@@ -785,10 +766,7 @@ processCloneOptions = Case[
     Flatten @ ToList @ #& /@ {interiorLinkOptions, exteriorLinkOptions}
   ];
 
-  other_ := (
-    Message[CommutativeDiagram::badclonespec, MsgExpr @ other];
-    % @ {}
-  )
+  other_ := OptionMsg[CloneOptions, other];
 ];
 
 toCloneMorphismFn = Case[
@@ -799,11 +777,10 @@ toCloneMorphismFn = Case[
   Reversed[s_]                    := With[{fn = % @ s}, fn[Rev @ #1, #2]&];
   (h:$morphismHeadP)[opts___Rule] := h[#1, #2, opts]&;
   fn_ ? MightEvaluateWhenAppliedQ := fn;
-  spec_                           := (
-    Message[CommutativeDiagram::badclonemorphfn, spec];
-    Nothing&
-  )
+  spec_                           := Msg::badclonemorphfn[spec];
 ];
+
+CommutativeDiagram::badclonemorphfn = "`` is not a valid setting for a morphism function in CloneOptions.";
 
 toCloneDisplaceFn = Case[
   Auto                    := % @ {Inwards, 0.4};
@@ -811,12 +788,10 @@ toCloneDisplaceFn = Case[
   {Outwards, d:$NumberP}       := %[{Inwards, -d}];
   {s:$SidePattern, d:$NumberP} := ObjectCoordinates[#, PlusVector[d * Lookup[$SideToCoords, s]]]&;
   d:$CoordP                    := ObjectCoordinates[#, PlusVector[toCoord @ d]]&;
-  spec_                        := (Message[CommutativeDiagram::badcloneopt, "Displacement" -> spec]; % @ {0, 1})
+  spec_                        := Msg::badcloneopt["Displacement" -> spec];
 ];
 
 CommutativeDiagram::badcloneopt = "Bad setting `` in CloneOptions."
-CommutativeDiagram::badclonemorphfn = "`` is not a valid setting for a morphism function in CloneOptions.";
-CommutativeDiagram::badclonespec = "CloneOptions -> `` is invalid."
 
 (**************************************************************************************************)
 
@@ -846,29 +821,28 @@ resolveCoordinates[e_] := RepRep[e, $coordinateCanonicalizationRules];
 
 PublicHead[ObjectCoordinates, MorphismCoordinates]
 
-CommutativeDiagram::badobjlbl = "No object named `` in ObjectCoordinates."
-CommutativeDiagram::badobjspec = "`` is not a valid specification for ObjectCoordinates."
-CommutativeDiagram::objcspeclen = "Object number `` doesn't exist (`` available)."
-
 resolveObjectCoords = Case[
   ObjectCoordinates[All]            := $objectCoordsList;
   ObjectCoordinates["Center"]       := $center;
   ObjectCoordinates["Median"]       := $median;
   ObjectCoordinates["BiasedCenter"] := $biasedCenter;
-  ObjectCoordinates[i_Int]          := Lookup[$objectCoords, getObjectName @ i, Message[CommutativeDiagram::objcspeclen, i, Len @ $objectNames]; {0, 0}];
-  ObjectCoordinates[lbl_Str]        := Lookup[$objectCoords, lbl, Message[CommutativeDiagram::badobjlbl, lbl]; {0, 0}];
+  ObjectCoordinates[i_Int]          := Lookup[$objectCoords, getObjectName @ i, Msg::objcspeclen[i, Len @ $objectNames]];
+  ObjectCoordinates[lbl_Str]        := LookupMsg::badobjlbl[$objectCoords, lbl];
   ObjectCoordinates[list_List]      := Map[% @ ObjectCoordinates[#]&, list];
   ObjectCoordinates[spec_, fn_]     := fn @ % @ ObjectCoordinates[spec];
-  spec_      := (Message[CommutativeDiagram::badobjspec, spec]; {0, 0});
-]
+  spec_                             := Msg::badobjspec[spec];
+];
+CommutativeDiagram::badobjlbl = "No object named `` in ObjectCoordinates. Available names are: ``."
+CommutativeDiagram::badobjspec = "`` is not a valid specification for ObjectCoordinates."
+CommutativeDiagram::objcspeclen = "Object number `` doesn't exist (`` available)."
 
-CommutativeDiagram::badmorphspec = "Cannot resolve morphism coordinates for ``."
 resolveMorphismCoords = Case[
   MorphismCoordinates[spec_]                 := % @ MorphismCoordinates[spec, .5];
   MorphismCoordinates[list_List, pos_]       := Map[% @ MorphismCoordinates[#, pos]&, list];
   MorphismCoordinates[curve_, pos_?NumberQ]  := resolveCurvePos[resolveMorphism @ curve, pos];
-  other_                                     := (Message[CommutativeDiagram::badmorphspec, MsgExpr @ other]; {0, 0});
+  other_                                     := Msg::badmorphspec[other];
 ];
+CommutativeDiagram::badmorphspec = "Cannot resolve morphism coordinates for ``."
 
 CommutativeDiagram::badmorphname = "No morphism with name ``."
 CommutativeDiagram::badmorphconn = "No morphism with connection ``."
@@ -880,21 +854,17 @@ resolveMorphism = Case[
     %[spec -> 1];
   name_Str := Scope[
     ind = IndexOf[$morphismNames, name];
-    If[MissingQ[ind], ReturnFailed[CommutativeDiagram::badmorphname, name]];
+    If[MissingQ[ind], Msg::badmorphname[name]];
     F @ $morphismCurves @ name
   ];
-  i_Int := Scope[
-    morph = SafePart[$morphismCurves @ None, i];
-    If[MissingQ[morph], ReturnFailed[CommutativeDiagram::badmorphind, i]];
-    morph
-  ];
+  i_Int := PartMsg::badmorphind[$morphismCurves @ None, i];
   spec_ -> i_Int := Scope[
-    morphList = Lookup[$morphismCurves, spec, ReturnFailed[CommutativeDiagram::badmorphconn, spec]];
+    morphList = Lookup[$morphismCurves, spec, Msg::badmorphconn[spec]];
     morph = SafePart[morphList, i];
-    If[MissingQ[morph], ReturnFailed[CommutativeDiagram::badmorphconnind, i, name]];
+    If[MissingQ[morph], Msg::badmorphconnind[i, name]];
     morph
   ];
-  other_ := Message[CommutativeDiagram::badmorphspec, other];
+  other_ := Msg::badmorphspec[other];
 ];
 
 (**************************************************************************************************)
@@ -911,7 +881,7 @@ resolveCurvePos[curve_, pos_] := Scope[
   curve = ReplacePrimitiveCoordinates[curve, Normal @ $objectCoords];
   curve //= resolveCoordinates;
   points = DiscretizeCurve @ curve;
-  If[!CoordinateMatrix2DQ[points], Message[CommutativeDiagram::morphcoordsfail, curve]; Return @ {0, 0}];
+  If[!CoordinateMatrix2DQ[points], Msg::morphcoordsfail[curve]];
   PointAlongLine[points, Scaled[pos]]
 ];
 
@@ -923,22 +893,22 @@ flipSymbolicPositions[expr_] := expr /. side:($SidePattern|Above|Below) :> RuleE
 
 (**************************************************************************************************)
 
-$itemSize = Auto;
+$paneSize = Auto;
 
 fmtLabel[lbl_, Sized[obj_, size_]] := Scope[
-  $itemSize = If[NumberQ[size], size/2, size];
+  $paneSize = If[NumberQ[size], size/2, size];
   %[lbl, obj]
 ];
 
 fmtLabel[lbl_, None] := (
-  If[$calculateLabelSizes, $objectSizes[lbl] = SubAuto[$itemSize, {1, 1}]];
+  If[$calculateLabelSizes, $objectSizes[lbl] = SubAuto[$paneSize, {1, 1}]];
   Nothing
 );
 
 fmtLabel[lbl_, obj_] := Scope[
   text = ApplyScriptScaling @ Text[$objectTextModifierFn @ obj, lbl, Lookup[$SideToCoords, alignment]];
   If[$calculateLabelSizes,
-    size = $itemSize;
+    size = $paneSize;
     If[ContainsQ[size, Auto],
       text2 = App[text, BaseStyle -> {FontSize -> fontSize, FontFamily -> fontFamily}];
       isize = N[MakeTextImageSize @ text2] + 1;
@@ -986,13 +956,9 @@ saveMorphismCoords = Case[
   _ := Null;
 ];
 
-CommutativeDiagram::badobjindex = "No object with index ``.";
+getObjectName[i_] := PartMsg::badobjindex[$objectNames, i];
 
-getObjectName[i_] := If[
-  1 <= Abs[i] <= Len[$objectNames],
-  Part[$objectNames, i],
-  Message[CommutativeDiagram::badobjindex, i]; {0, 0}
-];
+CommutativeDiagram::badobjindex = "No object with index ``.";
 
 (**************************************************************************************************)
 
@@ -1149,21 +1115,18 @@ replaceSetback[ma_, sb_] := ReplaceOptions[ma, Setback -> sb];
 
 (**************************************************************************************************)
 
-CommutativeDiagram::resolvesrctgt = "Cannot resolve source and target of MorphismArrow with path ``."
 findSourceTarget = Case[
   {a_, b_} | (a_ => b_)               := findST /@ {a, b};
   HorizontalCurve[a_, ___]            := % @ {a, None};
   VerticalCurve[a_, ___]              := % @ {a, None};
   MorphismCoordinates[list_List, ___] := None;
   _AnchoredCurve                      := None;
-  other_                              := Scope[
-    st = CurveToEndpoints[other];
-    If[FailureQ[st],
-      Message[CommutativeDiagram::resolvesrctgt, other]; None,
-      findST /@ st
-    ]
+  other_                              := Map[findST,
+    FailureMsg::resolvesrctgt[CurveToEndpoints @ other, other]
   ];
 ];
+
+CommutativeDiagram::resolvesrctgt = "Cannot resolve source and target of MorphismArrow with path ``."
 
 findST = Case[
   _                        := None;

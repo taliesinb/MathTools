@@ -222,8 +222,8 @@ cellToMarkdownInner0[cell_] := Scope[
     result
   ,
     $LastFailedMarkdownInput ^= cell; $LastFailedMarkdownOutput ^= result;
-    Message[ToMarkdownString::badcell, MsgExpr @ result];
-    PrintBadCell[MsgExpr[result, 6, 20]]; Beep[];
+    Message[ToMarkdownString::badcell, result];
+    PrintBadCell[MsgForm[result, 6, 20]]; Beep[];
     PrintBadCell[cell];
     "### BAD CELL"
   ]

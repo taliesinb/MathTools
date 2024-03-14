@@ -97,7 +97,7 @@ General::bearUUIDTitleMix = "Cannot lookup a mix of UUIDs and titles: ``.";
 toTitleOrIDQuery[titlesOrIDs:{__Str}] := FilteredEntityClass[
   $BearNoteEntity,
   With[{field = If[VecQ[titlesOrIDs, BearNoteUUIDQ], "ZUNIQUEIDENTIFIER",
-    If[AnyTrue[titlesOrIDs, BearNoteUUIDQ], ThrowMessage["bearUUIDTitleMix", titlesOrIDs]]; "ZTITLE"]},
+    If[AnyTrue[titlesOrIDs, BearNoteUUIDQ], Msg::bearUUIDTitleMix[titlesOrIDs]]; "ZTITLE"]},
     EntityFunction[z, MemberQ[titlesOrIDs, z[field]] && (z["ZTRASHED"] == 0)]
   ]
 ];
@@ -489,11 +489,13 @@ BearNoteUUIDQ[_] := False;
 PublicIOFunction[BearNoteData]
 
 SetUsage @ "
-BearNoteData[query$, 'field$'] returns a list of the fields for notes matching query$.
+BearNoteData[query$] returns a list of titles matching query$.
+BearNoteData[query$, 'field$'] returns a list of the given field$ for notes matching query$.
 BearNoteData[query$, {'field$1', 'field$2', $$}] returns a list of associations.
 BearNoteData[query$, All] returns an association of all fields.
 
 ## Queries
+* a query can consist of a sole string or string pattern patt$, in which case it means 'Text' -> StringContainsQ[patt$].
 * a query can consist of a rule 'field$' -> spec$, or a list of these, or %%All, or a %%Span.
 * each spec$ can be a literal value or a predicate like %StringMatchQ, %StringStartsQ, %ContainsQ.
 
@@ -510,6 +512,8 @@ Options[BearNoteData] = {
   MaxItems -> Inf,
   IncludeTrashed -> False
 };
+
+BearNoteData[part_, opts:OptionsPattern[]] := BearNoteData[part, "Title", opts];
 
 BearNoteData[part_, field_, OptionsPattern[]] := Scope @ CatchMessage[
   UnpackOptions[maxItems, includeTrashed];
@@ -552,19 +556,22 @@ BearNoteData[part_, field_, OptionsPattern[]] := Scope @ CatchMessage[
 $masterTagPrefix = Maybe["#meta/master" ~~ Maybe[" for"] ~~ WhitespaceCharacter..];
 
 toBearClass = Case[
+  sp:(_Str | _SExpr | regexp)   := %["Text" -> StringContainsQ[sp]];
   list:{__Rule}                 := combineEntityFunctions @ Col2[Map[toBearClass, list]];
   All                           := $BearNoteEntity;
   part:(_Int | _Span)           := Part[EntityList[$BearNoteEntity], part];
   "Text" -> (p:(_Str | _RegularExpression)) := %["Text" -> SContainsQ[p]];
-  "Tag" -> tag_                 := %["Subtitle" -> SContainsQ[toRegexp @ toStrPatt @ tag]];
-  "PrimaryTag" -> tag_          := %["Subtitle" -> SStartsQ[toRegexp[$masterTagPrefix ~~ toStrPatt[tag]]]];
+  "Tag" -> tag_                 := %["Subtitle" -> SContainsQ[toRegexp @ toTagPatt @ tag]];
+  "PrimaryTag" -> tag_          := %["Subtitle" -> SStartsQ[toRegexp[$masterTagPrefix ~~ toTagPatt[tag]]]];
   field_ -> True                := %[field -> 1];
   field_ -> False               := %[field -> 0];
-  field_ -> p_StringExpression  := %[field -> checkLineRE @ RegularExpression[ToRegularExpression @ p]];
-  field_ -> r_RegularExpression := %[field -> SMatchQ[checkLineRE @ r]];
+  field_ -> p_SExpr             := %[field -> checkLineRE @ ToRegex @ p];
+  field_ -> r:regexp            := %[field -> SMatchQ[checkLineRE @ r]];
   field_ -> fn_Symbol           := makeFEC[field, fn[$Z]];
   field_ -> (fn_Symbol[args__]) := checkLineExp @ makeFEC[field, fn[args][$Z]];
   field_ -> value_              := makeFEC[field, $Z == value];
+,
+  {regexp -> _RegularExpression | _Regex}
 ];
 
 toRegexp = Case[
@@ -573,11 +580,13 @@ toRegexp = Case[
   exp_                 := RegularExpression @ ToRegularExpression @ exp;
 ];
 
-toStrPatt = Case[
-  strs:{__Str} := Apply[Alt, strs];
-  str_Str      := str;
+toTagPatt = Case[
+  strs:{__Str} := Apply[Alt, prefixTag /@ strs];
+  str_Str      := prefixTag @ str;
   other_       := other;
 ];
+
+prefixTag[s_Str] := If[StringStartsQ[s, "#"], s, "#" <> s, s];
 
 badReQ[re_Str] := SContainsQ[SRep[re, "[^" -> "["], "^"|"$"];
 
@@ -626,11 +635,13 @@ $bearFieldDict = Assoc[
 
 $knownBearFields = Keys @ $bearFieldDict;
 
-General::unknownBearField = "Unrecognized field ``, should be one of ``."
+General::unknownBearField = "Field `` is not one of ``."
 
 lookupBearField = Case[
-  field_Str   := Lookup[$bearFieldDict, field, ThrowMessage["unknownBearField", field, MsgExpr @ $knownBearFields]];
-  fields_List := Lookup[$bearFieldDict, fields, ThrowMessage["unknownBearField", F @ Comp[fields, $knownBearFields], MsgExpr @ $knownBearFields]];
+  field_Str   := LookupMsg::unknownBearField[$bearFieldDict, field];
+  fields_List := Lookup[$bearFieldDict, fields,
+    Msg::unknownBearField[F @ Comp[fields, $knownBearFields], MsgCommaForm @ $knownBearFields]
+  ];
 ];
 
 (*************************************************************************************************)
@@ -690,7 +701,7 @@ BearNoteLookup[idList:{__Str}, fieldSpec_] := Scope @ CatchMessage[
   If[StrQ[fieldSpec], Col1 @ res, res]
 ];
 
-BearNoteLookup[other_, _] := (Message[BearNoteLookup::firstArg, MsgExpr @ other]; $Failed)
+BearNoteLookup[other_, _] := (Message[BearNoteLookup::firstArg, other]; $Failed)
 
 (*************************************************************************************************)
 

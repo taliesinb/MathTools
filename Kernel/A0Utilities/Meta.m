@@ -285,21 +285,21 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
 
   res = Check[
     template = ImportUTF8 @ inFile;
-    symbolTable = MTLoader`$SymbolTable;
+    loaderSymbolTable = Map[symsToNames, MTLoader`$SymbolTable];
 
     (* system groups *)
     systemSymbolPath = DataPath["Wolfram", "SystemSymbolTable.mx"];
     groups = ImportMX @ systemSymbolPath;
-    If[!AssocQ[groups], ThrowMessage["noSystemSymbols", MsgPath @ systemSymbolPath]];
+    If[!AssocQ[groups], Msg::noSystemSymbols[MsgPath @ systemSymbolPath]];
 
     groups = Union /@ groups;
-    (* allow changes to Data/Wolfram/SymbolTable.m to override the system symbol group assignments,
+    (* allow changes to Data/Wolfram/SymbolTable.m to override the symbol group assignments,
        since its expensive to run the generate_syntax_table.wls script *)
-    loaderSystemSymbolGroups = systemSymToName /@ KMap[L, KSelect[symbolTable, MatchQ[{"System`", _}]]];
-    loaderSystemSymbols = Union @@ Values[loaderSystemSymbolGroups];
+    loaderSymbolGroups = Merge[KVMap[L[#1] -> #2&, loaderSymbolTable], Catenate];
+    loaderSymbols = Union @ Catenate @ loaderSymbolTable;
     groups = AssocMap[
-      Union[Lookup[loaderSystemSymbolGroups, #, {}], Comp[Lookup[groups, #, {}], loaderSystemSymbols]]&,
-      Union[Keys @ groups, Keys @ loaderSystemSymbolGroups]
+      Union[Lookup[loaderSymbolGroups, #, {}], Comp[Lookup[groups, #, {}], loaderSymbols]]&,
+      Union[Keys @ groups, Keys @ loaderSymbolGroups]
     ];
     If[!AssocQ[groups], ReturnFailed[]];
 
@@ -310,21 +310,21 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
     addToGroup["SpecialFunction", {"ExpressionTable"}];
 
     VPrint["Extracting GU symbols."];
-    guSymbols = Names["GeneralUtilities`*"];
+    guSymbols = Complement[Names["GeneralUtilities`*"], loaderSymbols];
     guSymbols //= Select[SLen[#] > 2 && SStartsQ[#, UppercaseLetter] &];
     addToGroup["Function", guSymbols];
 
     (* add each alias to the group of its target *)
-    coreNameToGroup = Assoc @ KVMap[Thread @ Rule[systemSymToName @ #2, L @ #1]&, symbolTable];
+    coreNameToGroup = Assoc @ KVMap[Thread @ Rule[#2, #1]&, loaderSymbolGroups];
     aliasGroups = KVMap[
       {alias, target} |-> (
-        group = Lookup[coreNameToGroup, target, ThrowMessage["badAlias", alias -> target]];
+        group = Lookup[coreNameToGroup, target, Msg::badAlias[alias -> target]];
         addToGroup[group, {alias}];
         alias -> group
       ),
       MTLoader`$FromSymbolAlias
     ];
-    VPrint["Resolved aliases groups: ", aliasGroups];
+    VPrint["Resolved aliases groups."];
 
     VPrint["Processing symbol groups. Groups available at $LastSublimeSyntaxGroups."];
     (* groups //= KeySort; *)
@@ -349,8 +349,8 @@ UpdateSublimeSyntaxFiles[OptionsPattern[]] := Scope @ CatchMessage[
   }
 ]
 
-systemSymToName = Case[
-  l_List      := Map[systemSymToName, l];
+symsToNames = Case[
+  l_List      := Map[symsToNames, l];
   Hold[a___]  := Splice @ MapUnevaluated[HoldSymbolName, {a}];
   s_Symbol    := SymbolName[s];
 ];

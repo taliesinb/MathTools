@@ -105,13 +105,13 @@ toMXPath[dir_, key_] := toMXPath[dir, key] = Module[{path},
 SetHoldFirst[printCacheHit, printCacheInsert];
 
 printCacheHit[sym_Symbol, key_] /; TrueQ[$verbose] :=
-  VPrint["Cache hit in ", HoldSymbolName @ sym, " for ", MsgExpr @ key];
+  VPrint["Cache hit in ", MsgHold @ sym, " for ", key];
 
 printCacheInsert[sym_Symbol, key_, res_] /; TrueQ[$verbose] :=
-  VPrint["Inserting into ", HoldSymbolName @ sym, " value ", MsgExpr @ res];
+  VPrint["Inserting into ", MsgHold @ sym, " value ", res];
 
 printFileHit[path_Str, key_] /; TrueQ[$verbose] :=
-  VPrint["Cache hit at ", MsgPath @ path, " for ", MsgExpr @ key, ", filesize ", FileByteCount @ path];
+  VPrint["Cache hit at ", MsgPath @ path, " for ", key, ", filesize ", FileByteCount @ path];
 
 printFileInsert[path_Str, key_, res_] /; TrueQ[$verbose] :=
   VPrint["Writing to ", MsgPath @ path, " value of size ", ByteCount @ res];

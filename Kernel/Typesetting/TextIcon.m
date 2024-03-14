@@ -32,10 +32,7 @@ Options[TextIcon] = {
 
 DefineStandardTraditionalForm[ti:TextIcon[_, ___Rule] :> textIconBoxes[ti]];
 
-TextIcon::vectorOnlyStr = "Method -> \"Vector\" only supports strings, not ``.";
-TextIcon::nostrpoly = "Could not form a Polygon for `` using options ``.";
-
-textIconBoxes[TextIcon[str_, opts___Rule]] := Scope[
+textIconBoxes[TextIcon[str_, opts___Rule]] := Scope @ CatchMessage[TextIcon,
 
   UnpackOptionsAs[TextIcon, opts,
     fontSize, fontColor, fontWeight, fontFamily, fontSlant,
@@ -60,8 +57,7 @@ textIconBoxes[TextIcon[str_, opts___Rule]] := Scope[
     "Vector",
       textIconVectorBoxes[str, fontSize, fontColor, fontWeight, fontFamily, fontSlant, formatType, contentPadding, background],
     _,
-      BadOptionSetting[TextIcon, Method, method];
-      "?"
+      OptionMsg[Method, method]
   ]
 ];
 
@@ -69,23 +65,20 @@ textIconBoxes[TextIcon[str_, opts___Rule]] := Scope[
 
 CacheVariable[$TextIconVectorCache]
 
+TextIcon::vectorOnlyStr = "Method -> \"Vector\" only supports strings, not ``.";
+TextIcon::polygonFailure = "Could not form a Polygon for `` using options ``.";
+
 textIconVectorBoxes[str_, fontSize_, fontColor_, fontWeight_, fontFamily_, fontSlant_, formatType_, contentPadding_, background_] := Scope @ CachedInto[
   $TextIconVectorCache, Hash @ {str, fontSize, fontColor, fontWeight, fontFamily, fontSlant, formatType, contentPadding, background},
 
   (* MathForm implies SingleLetterItalics, which we simulate here *)
   SetAuto[fontSlant, If[formatType === MathForm && StrQ[str] && SMatchQ[str, RomanLetter], Italic, Plain]];
 
-  If[!StrQ[str],
-    Message[TextIcon::vectorOnlyStr, MsgExpr @ str];
-    Return @ {};
-  ];
+  If[!StrQ[str], Msg::vectorOnlyStr[str]];
 
   opts = Sequence[FontSize -> 20, FontFamily -> fontFamily, FontWeight -> fontWeight, FontSlant -> fontSlant];
   result = TextToPolygon[str, opts];
-  If[FailureQ[result],
-    Message[TextIcon::nostrpoly, MsgExpr @ s, MsgExpr @ {opts}];
-    Return @ {};
-  ];
+  If[FailureQ[result], Msg::polygonFailure[s, {opts}]];
 
   {polygons, bounds, bshift} = result;
   If[contentPadding, bounds[[2]] = {-8, 21}, bounds[[2]] += {-1, 1}];

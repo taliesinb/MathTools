@@ -25,10 +25,10 @@ cellToRasterMarkdown[cell_] := Scope[
 
   Switch[rasterizationResult["type"],
     "String",
-      If[$stringImageTemplate === None, Print[MsgExpr[cell], rasterizationResult]];
+      If[$stringImageTemplate === None, Print[MsgForm[cell], rasterizationResult]];
       markdown = $stringImageTemplate @ rasterizationResult,
     "File",
-      If[$fileImageTemplate === None, Print[MsgExpr[cell], rasterizationResult]];
+      If[$fileImageTemplate === None, Print[MsgForm[cell], rasterizationResult]];
       markdown = $fileImageTemplate @ rasterizationResult,
     _,
       Message[ToMarkdownString::badrastres];
@@ -36,7 +36,7 @@ cellToRasterMarkdown[cell_] := Scope[
   ];
 
   If[!StrQ[markdown],
-    Message[ToMarkdownString::badimgtemp, MsgExpr @ markdown];
+    Message[ToMarkdownString::badimgtemp, markdown];
     markdown = "#### Invalid image template result";
   ];
 

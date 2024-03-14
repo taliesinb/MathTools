@@ -16,6 +16,9 @@ the typed Package` declarations that categorize QG's own symbols.
  Package`PublicSymbol,  Package`PublicMacro,   Package`PublicVariable , Package`PublicFunction,  Package`PublicHead,
 Package`PrivateSymbol, Package`PrivateMacro,  Package`PrivateVariable, Package`PrivateFunction, Package`PrivateHead,
 
+Package`PublicMessageFunction,
+Package`PrivateMessageFunction,
+
  Package`PublicSpecialFunction,  Package`PublicSpecialVariable,  Package`PublicStringPattern,  Package`PublicMutatingFunction,  Package`PublicDebuggingFunction,
 Package`PrivateSpecialFunction, Package`PrivateSpecialVariable, Package`PrivateStringPattern, Package`PrivateMutatingFunction, Package`PrivateDebuggingFunction,
 
@@ -40,13 +43,6 @@ Package`PublicScopingFunction,
  Package`PublicCacheFunction,
 Package`PrivateCacheFunction,
 Package`CacheVariable
-},
-
-{"MTLoader`", "Package"} -> {
-MTLoader`DefinePatternMacro,
-MTLoader`DefineVariableMacro,
-MTLoader`DefineSimpleMacro,
-MTLoader`DefineComplexMacro
 },
 
 {"System`", "Symbol"} -> {
@@ -116,7 +112,6 @@ StringMatchQ, StringFreeQ, StringContainsQ, StringStartsQ, StringEndsQ, Duplicat
 And, Or, Not, Greater, Less, LessEqual, GreaterEqual, Between, Positive, Negative, NonNegative,
 If, While, Which, Do, Switch, Table, ConstantArray,
 UnitVector, ArrayFlatten, ArrayReshape, Inverse, Hold @ RotationMatrix, Hold @ IdentityMatrix,
-MessageName, Quiet, General, Assert,
 Sqrt, Power, Abs, Dot, Cross, Times, Plus, Minus, Subtract, Divide, Min, Max, Mod, MinMax, Floor, Ceiling, Round,
 N, Sin, Cos, Tan, Tanh, ArcTan, Re, Im, Exp, Log, Log10, Boole, Sign,
 Total, Mean, Median, Norm, Normalize, Clip, EuclideanDistance, Rescale, Standardize,
@@ -131,7 +126,10 @@ SubsetQ, EvenQ, OddQ, OrderedQ,
 ByteCount, Compress, Uncompress, Hash,
 Rasterize, ImageData, ImageResize, Hold @ ImageCrop, ImageTake,
 MaximalBy, MinimalBy,
-IntegerDigits
+IntegerDigits,
+
+(* standalone: *)
+PatternHeadSymbol
 },
 
 {"System`", "MutatingFunction"} -> {
@@ -152,7 +150,7 @@ GeneralUtilities`UnpackOptions
 },
 
 {"System`", "SpecialFunction"} -> {
-Return, Throw, Catch, RuleCondition, Evaluate,
+Return, Throw, Catch, RuleCondition, Evaluate, Fail,
 Splice, Sequence,
 ReleaseHold, Hold, HoldComplete, Unevaluated, Hold @ Nothing, CheckAbort, Check,
 Failure, $Failed, $Aborted, $TimedOut, Hold[$Context, $ContextPath],
@@ -163,8 +161,29 @@ NotebookGet, NotebookRead, Hold @ NotebookImport, NotebookSave, NotebookFind, No
 CreateNotebook, NotebookPut, NotebookWrite, NotebookDelete,
 EvaluationNotebook, FrontEndExecute,
 PreviousCell, NextCell, ParentCell, Cells, SelectedCells, EvaluationCell, SelectionMove, NotebookSelection,
-CurrentValue, Message,
-SyntaxInformation, Attributes, DownValues, OwnValues, UpValues, SubValues, FormatValues, DefaultValues
+CurrentValue,
+SyntaxInformation, Attributes, DownValues, OwnValues, UpValues, SubValues, FormatValues, DefaultValues,
+
+(* standalone: *)
+MTLoader`Standalone`StandaloneHold,
+MTLoader`Standalone`StandaloneSequence,
+MTLoader`Standalone`StandaloneErrorMessage,
+MTLoader`Standalone`StandaloneErrorHandler,
+MTLoader`Standalone`$StandaloneErrorTag,
+
+System`MacroHold, System`ExpandMacros, System`ContainsMacrosQ, Hold @ System`$MacroRules, Hold @ System`$MacroParentSymbol,
+System`DefinePatternMacro,
+System`DefineVariableMacro,
+System`DefineSimpleMacro,
+System`DefineMessageMacro
+},
+
+{"System`", "MessageFunction"} -> {
+Message, MessageName, Quiet, General, Assert,
+
+(* standalone: *)
+System`CatchError, System`CatchErrorAsFailure, System`ThrowError, System`ThrowErrorMessage,
+System`TopLevelEvaluationFunction
 },
 
 {"System`", "IOFunction"} -> {
@@ -173,16 +192,25 @@ ExportString, ExportByteArray, Export, Put, Write, WriteString,        Hold @ Wr
 Skip, Find, StreamPosition, SetStreamPosition, Streams,
 OpenRead, OpenWrite, OpenAppend, Open, Close, CreateFile,
 CopyToClipboard,
-SetDirectory, ResetDirectory
+SetDirectory, ResetDirectory,
+SublimeOpen, SublimeOpenProject (* Standalone *)
 },
 
 {"System`", "DebuggingFunction"} -> {
-Print, CellPrint, System`PrintIF, System`PrintPF, System`PrintFF, System`Capture,
+Print, CellPrint,
 In, InString, Out,
-EchoTiming, EchoFunction, EchoLabel, Echo, System`EchoIF, System`EchoPF, System`EchoFF, System`EchoGPF,
+EchoTiming, EchoFunction, EchoLabel, Echo,
 Hold @ URLFetch, Hold @ URLRead,
 Abort, AbortProtect,
-Hold[Z1,Z2,Z3,Z4,Z5,Z6,Z7,Z8,Z9]
+Hold[Z1,Z2,Z3,Z4,Z5,Z6,Z7,Z8,Z9],
+
+(* Init.m: *)
+System`EchoIF, System`EchoPF, System`EchoFF, System`EchoGPF, System`PrintIF, System`PrintPF, System`PrintFF, System`Capture,
+
+(* Standalone: *)
+System`EchoDims, System`EchoKeys, System`EchoLen, System`EchoSet,
+System`EchoH, System`EchoH0, System`EchoH1,
+System`EchoF, System`EchoFL, System`EchoFH, System`EchoFLH
 },
 
 {"GeneralUtilities`", "DebuggingFunction"} -> {
@@ -199,9 +227,14 @@ InterpolationOrder,
 EdgeStyle, VertexStyle, EdgeShapeFunction, VertexShapeFunction, GraphLayout, DirectedEdges,
 Lighting, ColorRules, PlotStyle, FillingStyle, MeshStyle, Epilog, Prolog, Verbose,
 System`EdgeOpacity, Heads, CharacterEncoding, CompressionLevel, Background, IgnoreCase,
-ItemSize, ItemStyle,
+MaxItems, ItemSize, ItemStyle,
 RowAlignments, RowMinHeight, RowsEqual, RowSpacings,
-ColumnAlignments, ColumnsEqual, ColumnSpacings, ColumnWidths
+ColumnAlignments, ColumnsEqual, ColumnSpacings, ColumnWidths,
+
+(* Standalone: *)
+System`MaxRows, System`MaxColumns,
+System`ItemLabels, System`ItemFunction, System`TooltipFunction,
+System`MaxWidth, System`MaxHeight
 },
 
 {"System`", "TypesettingForm"} -> {
@@ -214,7 +247,11 @@ Invisible, Magnify, Overlay,
 MouseAppearance, Mouseover, StatusArea, PopupWindow,
 Button, ButtonBar, Checkbox, CheckboxBar, Slider, Slider2D, ProgressIndicator, RadioButton, RadioButtonBar, FlipView,
 Subscript, Subsuperscript, Superscript, Underscript, Overscript, OverDot, UnderBar, OverBar, Element,
-TraditionalForm, StandardForm, InputForm, StringForm, OutputForm, NumberForm, HoldForm
+TraditionalForm, StandardForm, InputForm, StringForm, OutputForm, NumberForm, HoldForm,
+
+(* Standalone: *)
+System`NiceTooltip, System`NicePane, System`NicePaster,
+System`SymbolGrid, System`PlainGrid, System`NiceGrid, System`NiceMulticolumn
 },
 
 {"System`", "TypesettingBoxFunction"} -> {
@@ -222,7 +259,11 @@ GraphicsBox, Graphics3DBox, DynamicBox, DynamicModuleBox,
 RowBox, GridBox, ItemBox, ButtonBox, PaneBox, PaneSelectorBox,
 SubscriptBox, SuperscriptBox, SubsuperscriptBox, FractionBox, OverscriptBox, UnderscriptBox, UnderoverscriptBox,
 StyleBox, TooltipBox, FrameBox, RawBoxes, AdjustmentBox, ErrorBox,
-TemplateBox, TagBox, InterpretationBox
+TemplateBox, TagBox, InterpretationBox,
+
+(* Standalone: *)
+System`ConstrainedMakeBoxes, System`InputFormLength,
+System`NiceTooltipBoxes, system`NiceErrorBox
 },
 
 {"System`", "GraphicsDirective"} -> {
@@ -265,21 +306,29 @@ TubeBezierCurveBox, TubeBSplineCurveBox, TetrahedronBox
 },
 
 {"System`", "ScopingFunction"} -> {
-With, Block, Module
+With, Block, Module,
+
+(* Standalone: *)
+System`SWith
 },
 
 {"GeneralUtilities`", "ScopingFunction"} -> {
-GeneralUtilities`Scope
+GeneralUtilities`Scope,
+GeneralUtilities`ModuleScope
 },
 
 {"Internal`", "ScopingFunction"} -> {
-Internal`InheritedBlock
+Internal`InheritedBlock,
+Internal`WithLocalSettings
 },
 
 {"GeneralUtilites`", "SpecialFunction"} -> {
-GeneralUtilities`ReturnFailed, GeneralUtilities`ThrowFailure, GeneralUtilities`CatchFailure,
 GeneralUtilities`DefineMacro, GeneralUtilities`DefineLiteralMacro, GeneralUtilities`Seq,
 GeneralUtilities`DeclareArgumentCount
+},
+
+{"GeneralUtilites`", "MessageFunction"} -> {
+GeneralUtilities`ReturnFailed, GeneralUtilities`ThrowFailure, GeneralUtilities`CatchFailure
 },
 
 {"GeneralUtilities`", "Function"} -> {
@@ -297,10 +346,6 @@ GeneralUtilities`KeysValues, GeneralUtilities`DeleteNone, GeneralUtilities`Selec
 
 {"GeneralUtilities`", "TypesettingForm"} -> {
 GeneralUtilities`PrettyForm, GeneralUtilities`HoldPrettyForm
-},
-
-{"Internal`", "ScopingFunction"} -> {
-Internal`WithLocalSettings
 },
 
 {"Internal`", "MutatingFunction"} -> {

@@ -43,10 +43,22 @@ _DefineStandardTraditionalForm := BadArguments[];
 
 (**************************************************************************************************)
 
-PublicDebuggingFunction[PrintFormatDefinitions]
+PublicDebuggingFunction[PrintFormatDefinitions, FindFormatDefinitions]
 
-PrintFormatDefinitions[sym_Symbol] :=
-  PrintDefinitions @ Select[FormatValues[MakeBoxes], ContainsQ[sym]];
+FindFormatDefinitions[sym_Symbol] :=
+  DeleteDuplicates @ Select[
+    Join[
+      FormatValues @ sym, FormatValues @ MakeBoxes,
+      DownValues @ Typeset`MakeBoxes,
+      DownValues @ Typeset`MakeExpression
+    ],
+    ContainsQ[sym]
+  ];
+
+PrintFormatDefinitions[sym_Symbol] := Module[
+  {defs = FindFormatDefinitions[sym]},
+  If[defs === {}, None, PrintDefinitions @ defs]
+];
 
 (**************************************************************************************************)
 

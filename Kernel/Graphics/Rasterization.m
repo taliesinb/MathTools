@@ -67,7 +67,7 @@ MakeImage[expr_, bg_:None] := Scope @ CachedInto[
 	$MakeImageCache, Hash @ {expr, bg},
 	res = CallFrontEnd @ toExportPacket[expr, bg];
 	If[ImageQ[res], res,
-		Message[MakeImage::fail, MsgExpr @ expr];
+		Message[MakeImage::fail, expr];
 		Return @ ConstantImage[Pink, {10, 10}]
 	]
 ];
@@ -89,7 +89,7 @@ MakeImageAndMetadata[expr_, bg_:None] := Scope @ CachedInto[
 	$MakeImageAndMetadataCache, Hash @ {expr, bg},
 	res = CallFrontEnd @ toExportPacket[expr, bg, True];
 	If[!MatchQ[res, {_Image, {__Rule}}],
-		Message[MakeImage::fail, MsgExpr @ expr];
+		Message[MakeImage::fail, expr];
 		Return @ {ConstantImage[Pink, {10, 10}], {10, 10, 1}, {}};
 	];
 	{image, metadata} = res;
@@ -116,7 +116,7 @@ iMakeImageSize[expr_] := Scope @ CachedInto[
 	res = CallFrontEnd @ Insert[toExportPacket[expr, None], "BoundingBox", 2];
 	bbox = bboxToRasterSize @ res;
 	If[FailureQ[bbox],
-		Message[MakeImageSize::fail, MsgExpr @ expr];
+		Message[MakeImageSize::fail, expr];
 		Return @ {10, 10, 0}
 	];
 	bbox

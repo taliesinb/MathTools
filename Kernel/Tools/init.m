@@ -77,7 +77,7 @@ PrivateFunction[toolCommandString]
 
 toolCommandString[tool_, args___] := Scope[
 	toolPath = FindTool[tool, None];
-	If[!StrQ[toolPath], ThrowMessage["toolNotFound", tool]];
+	If[!StrQ[toolPath], Msg::toolNotFound[tool]];
 	args = procToolArg /@ {args};
 	SRiffle[Flatten[{toolPath, args}], " "]
 ];
@@ -154,7 +154,7 @@ RunTool[cmd_Str, args___] := Scope @ TrueQ @ CatchMessage[
 
 	cmdStr = toolCommandString[cmd, args];
 
-	If[StrQ[$workingDir] && !DirectoryQ[$workingDir], ThrowMessage["toolWorkingDirectory", $workingDir]];
+	If[StrQ[$workingDir] && !DirectoryQ[$workingDir], Msg::toolWorkingDirectory[$workingDir]];
 	If[$runInTerminal,
 		RunInTerminalWindow[If[StrQ[$workingDir], $workingDir, "~"], cmdStr];
 		Return @ True
@@ -194,7 +194,7 @@ procToolArg = Case[
 	False                 := "false";
 	True                  := "true";
 	File[f_]              := % @ f;
-	v_					          := ThrowMessage["toolBadArgument", MsgExpr @ v];
+	v_					          := Msg::toolBadArgument[v];
 ,
 	{ignored -> Auto | None}
 ];

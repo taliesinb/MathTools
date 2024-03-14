@@ -10,9 +10,25 @@ General::badAligOrCoords = "Setting `` -> `` is not a symbolic side or coordinat
 
 ParseAlignment = Case[
   Seq[{x:$NumberP, y:$NumberP}, _, _] := {x, y};
-  Seq[side_Symbol, h_, o_]            := Lookup[$SideToUnitCoords, side, Message[MessageName[h, "badAligOrCoords"], o, MsgExpr @ side]; {0, 0}];
-  Seq[spec_, h_, o_]                  := (Message[MessageName[h, "badAligOrCoords"], o, MsgExpr @ spec]; {0, 0})
+  Seq[side_Symbol, h_, o_]            := Lookup[$SideToUnitCoords, side, Message[MessageName[h, "badAligOrCoords"], o, side]; {0, 0}];
+  Seq[spec_, h_, o_]                  := (Message[MessageName[h, "badAligOrCoords"], o, spec]; {0, 0})
 ]
+
+(**************************************************************************************************)
+
+PrivateFunction[ParseListSpec]
+
+SetUsage @ "
+ParseListSpec[spec$, n$] fills out a vector of n$ specs from a simple list specification spec$.
+ParseListSpec[n$] is the operator form of ParseListSpec.
+* if spec$ is a non-list, it is simply repeated.
+* if spec$ is a list, the last element is repeated as necessary.
+"
+
+General::noSpecItemToRepeat = "Empty specification.";
+ParseListSpec[item_, n_Int] := Repeat[item, n];
+ParseListSpec[{}, n_] := ThrowMessage["noSpecItemToRepeat"];
+ParseListSpec[list_List, n_Int] := PadRight[list, n, Last @ list];
 
 (**************************************************************************************************)
 

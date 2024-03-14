@@ -34,7 +34,7 @@ Options[MultiwaySystem] = JoinOptions[
   PrologVertices -> {}
 ];
 
-declareSyntaxInfo[MultiwaySystem, {_, _, OptionsPattern[]}];
+DefineArgumentsPattern[MultiwaySystem, {_, _, OptionsPattern[]}];
 
 stackPushList[stack_, list_] := Scan[item |-> stack["Push", item], list];
 arrayAppendList[array_, list_] := Scan[item |-> array["Append", item], list];
@@ -114,7 +114,7 @@ MultiwaySystem::undedgelabels = "Cannot obtain element \"EdgeLabels\" when Direc
 MultiwaySystem[f_, initialVertices_, opts:OptionsPattern[]] :=
   MultiwaySystem[f, initialVertices, "Graph", opts];
 
-declareFunctionAutocomplete[MultiwaySystem, {0, 0, $stgElements}];
+DefineFunctionAutocomplete[MultiwaySystem, {0, 0, $stgElements}];
 
 checkNorm[r_ ? NonNegative] := r;
 checkNorm[_] := (Message[MultiwaySystem::badnorm]; Return[$Failed, Module]);

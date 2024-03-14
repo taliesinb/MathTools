@@ -8,7 +8,7 @@ ExportYAMLDict[e_Assoc] := Scope @ CatchMessage[
 
 General::badYamlDict = "Value `` is not an association.";
 
-ExportYAMLDict[e_] := (Message[ExportYAMLDict::badYamlDict, MsgExpr @ e]; $Failed);
+ExportYAMLDict[e_] := (Message[ExportYAMLDict::badYamlDict, e]; $Failed);
 
 (*************************************************************************************************)
 
@@ -20,7 +20,7 @@ toYamlDict[assoc_Assoc] := KVMap[
 General::badYamlDictKey = "Association key `` is not a string.";
 toYamlDictKey = Case[
   s_Str := s;
-  k_    := ThrowMessage["badYamlDictKey", MsgExpr @ k];
+  k_    := Msg::badYamlDictKey[k];
 ]
 
 toYamlDictValue := Case[
@@ -39,7 +39,7 @@ toYamlAtom = Case[
   n_ ? NumberQ  := TextString[n];
   s_Str         := toYamlString @ s;
   d_DateObject  := toYamlDate @ d;
-  o_            := ThrowMessage["badYamlAtom", MsgExpr @ o];
+  o_            := Msg::badYamlAtom[o];
 ];
 
 (*************************************************************************************************)
@@ -55,7 +55,7 @@ toYamlString[s_Str] := Which[
 toYamlDate = Case[
   DateObject[{y_, m_, d_}, "Day"]                            := ymdStr[y, m, d];
   DateObject[{y_, m_, d_, h_, m2_, s_, ___}, "Instant", ___] := ymdStr[y, m, d] <> "T" <> hmsStr[h, m2, s];
-  d_                                                         := ThrowMessage["badYamlAtom", MsgExpr @ d];
+  d_                                                         := Msg::badYamlAtom[d];
 ]
 
 ymdStr[y_, m_, d_] := SJoin[IntStr @ y, "-", IntStr2 @ m, "-", IntStr2 @ d];

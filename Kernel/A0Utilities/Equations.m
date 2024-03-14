@@ -136,6 +136,6 @@ SolveLinearTermFor[v_, l_] := SolveLinearTermFor[v, l, 0];
 SolveLinearTermFor[v_, l_Plus, r_] := SolveLinearTermFor[v, Select[l, ContainsQ[v]], r - Discard[l, ContainsQ[v]]];
 SolveLinearTermFor[v_, l_Times, r_] := SolveLinearTermFor[v, Select[l, ContainsQ[v]], r / Discard[l, ContainsQ[v]]];
 SolveLinearTermFor[v_, v_, r_] := r;
-SolveLinearTermFor[v_, lhs_, rhs_] := ThrowMessage["nsolvelinearterm", lhs, rhs, v];
+SolveLinearTermFor[v_, lhs_, rhs_] := Msg::nsolvelinearterm[lhs, rhs, v];
 
 General::nsolvelinearterm = "Cannot expand linear equation `` == `` to solve for ``.";

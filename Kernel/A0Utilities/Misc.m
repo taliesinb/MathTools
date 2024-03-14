@@ -21,9 +21,34 @@ RescaleTo[range_][array_] := RescaleTo[array, range];
 
 (**************************************************************************************************)
 
+PublicFunction[ClipUnit]
+
+ClipUnit[e_] := Clip[e, {0, 1}];
+
+(**************************************************************************************************)
+
+PublicFunction[Clip2]
+
+Clip2[{x_, y_}, {xSpec_, ySpec_}] := {Clip[x, xSpec], Clip[y, ySpec]};
+Clip2[spec_][e_] := Clip2[e, spec];
+
+(**************************************************************************************************)
+
 PublicFunction[ListPart]
 
 ListPart[l_List, p_] := Part[l, p];
+
+(**************************************************************************************************)
+
+PublicFunction[ToPair]
+
+General::notPair = "Expected a single item or a pair, not ``.";
+
+ToPair = Case[
+  a:Except[_List] := {a, a};
+  {a_, b_}        := {a, b};
+  a_              := Msg::notPair[a]
+];
 
 (**************************************************************************************************)
 
@@ -63,6 +88,45 @@ Avg[a_] := a;
 Avg[a_, b_] := (a + b)/2;
 Avg[a_, b_, c_] := (a + b + c)/3;
 Avg[args__] := Mean[{args}];
+
+(**************************************************************************************************)
+
+PublicFunction[Power10, Log10Ceiling, Log10Floor]
+
+Power10[r_] := Power[10, r];
+
+SetUsage @ "
+Log10Floor[r$] computes the greatest power of 10 smaller than r$.
+Log10Floor[r$, n$] allows for splitting the decimal range into n$ subdivisions.
+"
+
+SetUsage @ "
+Log10Ceiling is like Log10Floor.
+"
+
+Log10Ceiling[r_, n_:1] := log10CF[N @ r, n, Ceiling];
+Log10Floor[r_, n_:1]   := log10CF[N @ r, n, Floor];
+
+log10CF = Case[
+  Seq[0., n_, _]             := 0;
+  Seq[r_List, n_, f_]        := Map[%[#, n, f]&, r];
+  Seq[r_ ? Negative, n_, f_] := -%[Abs @ r, n, flipFC @ f];
+  Seq[r_Real, n_, f_]        := logt10CFSplit[n, r, f] @ %[r, 1, f];
+  Seq[r_Real, 1, f_]         := Power10 @ N @ f[Log10[r]];
+  _                          := $Failed
+];
+
+logt10CFSplit[n_, r_, Ceiling][p_] := Min @ Select[p/10 * into10[n], GreaterEqualThan[r]];
+logt10CFSplit[n_, r_, Floor][p_]   := Max @ Select[p * into10[n], LessEqualThan[r]];
+
+into10[2]   := {1, 5, 10};
+into10[4]   := {1, 2.5, 5, 7.5, 10};
+into10[All] := {1, 2, 2.5, 3, 4, 5, 6, 7, 7.5, 8, 9, 10};
+into10[5]   := {1, 2, 4, 6, 8, 10};
+into10[_]   := {1, 10};
+
+flipFC[Floor]   = Ceiling;
+flipFC[Ceiling] = Floor;
 
 (**************************************************************************************************)
 

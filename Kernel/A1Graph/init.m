@@ -144,7 +144,7 @@ $extendedGraphOptionRulePattern = Rule[$extendedGraphOptionSymbolPattern, _];
 
 $notIntercepted = True;
 
-IfSyntaxInfo[SyntaxInformation[Graph]];
+(* IfSyntaxInfo[SyntaxInformation[Graph]]; *)
 Graph; Options[Graph];
 
 $ignoredGraphOptionsSymbols = Alt[
@@ -173,10 +173,10 @@ Options[ExtendedGraph] = $ExtendedGraphOptions;
 (**************************************************************************************************)
 
 Unprotect[Graph];
-IfSyntaxInfo[
+(* IfSyntaxInfo[
   SyntaxInformation[Graph] = ReplaceOptions[SyntaxInformation[Graph], "OptionNames" -> $extendedGraphSymbolNames];
 ];
-
+ *)
 HoldP[g:Graph[___]] /; MemberQ[Uneval @ g, $extendedGraphOptionRulePattern] && $notIntercepted :=
   Block[{$notIntercepted = False}, interceptedGraphConstructor[g]];
 Protect[Graph];

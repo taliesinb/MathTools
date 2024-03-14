@@ -22,7 +22,7 @@ $diagramsPath = LocalPath["Diagrams"];
 
 $allDiagramFiles := FileBaseName /@ FileNames["*.m", $diagramsPath];
 
-declareFunctionAutocomplete[NamedDiagram, {$allDiagramFiles}];
+DefineFunctionAutocomplete[NamedDiagram, {$allDiagramFiles}];
 
 (**************************************************************************************************)
 

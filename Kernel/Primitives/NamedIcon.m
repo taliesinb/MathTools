@@ -46,8 +46,8 @@ Xmmu4Wa/MVXzj1x4aBte+OdXjRcdTowt63DtX6uQmcltidEYvxHpHCEJzQMErr/JB4ljt/NDLpbNpz
 9qticIH1erxqoQNKZScJwjIgRg4GV83okAsKpTKQoy0bhBYaRhQ9xMriIMdQAfnK3NbzLe9827Zvg/
 Fpd4YG5Oshs+Ca/0C1HJWNE=";
 
-declareFunctionAutocomplete[NamedIcon, {$knownIconNames}];
-declareFunctionAutocomplete[NamedIconData, {$knownIconNames}];
+DefineFunctionAutocomplete[NamedIcon, {$knownIconNames}];
+DefineFunctionAutocomplete[NamedIconData, {$knownIconNames}];
 
 (**************************************************************************************************)
 
@@ -59,7 +59,7 @@ DefineStandardTraditionalForm[
 
 PrivateFunction[namedIconTypesettingBoxes]
 
-namedIconTypesettingBoxes[NamedIcon[name_, opts___]] := Scope[
+namedIconTypesettingBoxes[NamedIcon[name_, opts___]] := Scope @ CatchMessage[NamedIcon,
   UnpackOptionsAs[NamedIcon, {opts}, iconColor, iconScaling, iconThickness, imageSize, alignmentPoint, $debugBounds];
   inset = rawNamedIconBoxes[pos, dir, name, None, imageSize, iconScaling /. $scalingRules, iconColor, iconThickness, alignmentPoint /. $alignmentRules];
   If[!MatchQ[inset, _InsetBox], Return @ StyleBox["?", Red]];
@@ -68,12 +68,12 @@ namedIconTypesettingBoxes[NamedIcon[name_, opts___]] := Scope[
 
 (**************************************************************************************************)
 
-NamedIcon::unknownIcon = "`` is not a known icon. Known icons include ``.";
+General::unknownIcon = "`` is not a known icon. Known icons include ``.";
 
 PublicHead[Reversed, Repeating]
 
 $debugBounds = False;
-namedIconBoxes[NamedIcon[pos:$Coord2P|_Offset, dir:$Coord2P, name:$iconNameP, opts:OptionsPattern[]]] := Scope[
+namedIconBoxes[NamedIcon[pos:$Coord2P|_Offset, dir:$Coord2P, name:$iconNameP, opts:OptionsPattern[]]] := CatchMessage[NamedIcon,
   UnpackAssociationSymbols[{opts} -> $MakeBoxesStyleData,
     graphicsScale, iconColor, iconScaling, iconThickness];
   UnpackOptionsAs[NamedIcon, {opts}, imageSize, alignmentPoint, $debugBounds];
@@ -91,9 +91,8 @@ rawNamedIconBoxes[pos_, dir_, name_, graphicsScale_, imageSize_, scaling_, color
   If[H[name] === Reversed, name //= F; dir = dir * -1; If[NumberQ @ align, align //= OneMinus]];
   If[H[name] === Repeating, {name, reps} = List @@ name, reps = None];
   If[H[name] === Sized, {name, scaling} = List @@ name];
-  $imageSize = imageSize * scaling * {1, 1};
-  iconData = LookupOrMessageKeys[$namedIconData, name, $Failed, NamedIcon::unknownIcon];
-  If[FailureQ[iconData], Return @ {}];
+  $imageSize = ToPair[imageSize * scaling];
+  iconData = LookupMsg::unknownIcon[$namedIconData, name];
   {prims, boxes, boxes3D, {{x1, x2}, {y1, y2}, {b1, b2}}, solid} = iconData;
   $styler = SolidEmptyStyleBoxOperator[solid, color, None, thickness];
   $originx = If[NumberQ @ align, Lerp[b1, b2, align], 0];
@@ -492,4 +491,4 @@ NamedIconData[] := Keys @ $namedIconData;
 NamedIconData[All] := $namedIconData;
 
 NamedIconData[name_Str] /; SContainsQ[name, "*"] := Select[NamedIconData[], SMatchQ[name]];
-NamedIconData[name_Str] := LookupOrMessageKeys[$namedIconData, name, $Failed, NamedIcon::unknownIcon];
+NamedIconData[name_Str] := CatchMessage @ LookupMsg::unknownIcon[$namedIconData, name];

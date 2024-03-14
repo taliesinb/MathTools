@@ -59,7 +59,7 @@ getZimStream[path_Str] := CachedInto[$ZimStreamCache, path, openZimStream @ path
 
 openZimStream[path_Str] := Scope[
   path == NormalizePath;
-  If[!FileExistsQ[path], ThrowMessage["ZimFilePathNotFound", MsgPath @ path]];
+  If[!FileExistsQ[path], Msg::ZimFilePathNotFound[MsgPath @ path]];
   OpenRead[path, BinaryFormat -> True]
 ];
 
@@ -162,7 +162,7 @@ readClusterEntry[ptr_] := Scope[
     1, "none",
     4, "lzma",
     5, "zstd",
-    _, ThrowMessage["zimBadClusterCompression", info]
+    _, Msg::zimBadClusterCompression[info]
   ];
 
   zimDecodeCompressed[compression];

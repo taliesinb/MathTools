@@ -22,6 +22,14 @@ ClipOperator[spec_][e_] := Clip[e, spec];
 
 (**************************************************************************************************)
 
+PublicFunction[DistOperator]
+
+SetUsage @ "DistOperator[d$] is the operator form of %Dist."
+
+DistOperator[a_][b_] := Dist[a, b];
+
+(**************************************************************************************************)
+
 PublicFunction[PartOperator]
 
 SetUsage @ "PartOperator[parts$$] is the operator form of %Part."
@@ -304,6 +312,17 @@ SolidStyleBoxOperator = Case[
   Seq[s_SolidEdgeForm, o_, t_] := %[t, o, solidEdgeColors @ s];
   Seq[c_, o_, t_]              := StyleBoxOperator[toFaceForm[o, c], toEdgeForm[t, c]];
 ];
+
+(**************************************************************************************************)
+
+PrivateTypesettingBoxFunction[LineStyleBoxOperator]
+
+SetUsage @ "
+LineStyleBoxOperator[color$, opacity$, thickness$, dashing$] produces a StyleBoxOperator that will style %LineBox appropriately.
+"
+
+LineStyleBoxOperator[color_, opacity_, thickness_] :=
+  ShaftStyleBoxOperator[color, opacity, thickness, None];
 
 (**************************************************************************************************)
 

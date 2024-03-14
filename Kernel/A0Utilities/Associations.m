@@ -31,9 +31,9 @@ Associate[assoc_, key_ -> value_] := Pre[assoc, key -> value];
 
 PublicFunction[UAssocThread]
 
-UAssocThread::keysValuesLength = "Key length (``) does not equal value length (``).";
-UAssocThread[keys_List, vals_List] /; LengthEqualOrMessage[UAssocThread::keysValuesLength, keys, vals] :=
-  UAssoc @ Thread[keys -> vals];
+General::keysValuesLength = "Key length (``) does not equal value length (``).";
+UAssocThread[keys_List, vals_List]  :=
+  UAssoc @ Thread[SameLenMsg::keysValuesLength[keys, vals]; keys -> vals];
 
 UAssocThread[keys_][vals_] := UAssocThread[keys, vals];
 
@@ -89,29 +89,6 @@ ConstantAssociation[{key$1, key$2, $$}, c_] gives the constant association <|$$,
 "
 
 ConstantAssociation[keys_List, constant_] := AssocThread[keys, Repeat[constant, Len @ keys]];
-
-(**************************************************************************************************)
-
-PublicFunction[LookupOrMessageKeys]
-
-General::unrecognizedName = "`` is not a recognized name, which include: ``.";
-
-SetUsage @ "
-LookupOrMessageKeys[assoc$, key$, default$] returns the value associated with key$, or issues a message if there is none.
-LookupOrMessageKeys[$$, msg$] uses a custom message.
-* msg$ should be of the form symbol::msgname, whose first slot will be given key$ and second will be given available keys.
-"
-SetHoldRest[LookupOrMessageKeys];
-
-LookupOrMessageKeys[assoc_, key_, default_] :=
-  LookupOrMessageKeys[assoc, key, default, General::unrecognizedName];
-
-LookupOrMessageKeys[assoc_, key_, default_, msg_] := With[{key2 = key},
-  Lookup[assoc, Key @ key2,
-    Message[msg, MsgExpr @ key, TextString[Row[MsgExpr /@ Keys @ assoc, ", "]]];
-    default
-  ]
-];
 
 (**************************************************************************************************)
 

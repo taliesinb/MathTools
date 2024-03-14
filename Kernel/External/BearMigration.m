@@ -29,7 +29,7 @@ ExportBearNoteToObsidian[title_Str, OptionsPattern[]] := Scope @ CatchMessage[
 
   results = BearNoteData["Title" -> title, {"ID", "HasFilesQ", "HasImagesQ", "Title", "CreationDate", "ModificationDate", "Text", "UUID"}];
 
-  If[Len[results] =!= 1, ReturnFailed["noBearNote", MsgExpr @ title]];
+  If[Len[results] =!= 1, ReturnFailed["noBearNote", title]];
   data = F @ results;
 
   UnpackAssociation[data, ID, hasFilesQ, hasImagesQ, title, creationDate, modificationDate, text, UUID];
@@ -38,7 +38,7 @@ ExportBearNoteToObsidian[title_Str, OptionsPattern[]] := Scope @ CatchMessage[
   hasAttachments = Max[hasFilesQ, hasImagesQ] == 1;
   If[hasAttachments,
     $attachments = BearNoteAttachmentData[ID];
-    If[FailureQ[$attachments], ReturnFailed["missingAttachments", MsgExpr @ title]];
+    If[FailureQ[$attachments], ReturnFailed["missingAttachments", title]];
     VPrint["Found ", Len @ $attachments, " attachments in database."];
   ,
     $attachments = Assoc[];
@@ -210,7 +210,7 @@ docMetadata[title_Str, tagLine_Str, contents_Str] := Scope[
   journal = FirstStringCase[venue, MarkdownTagPattern];
 
   {min, max} = MinMax @ SFind[title, "\""];
-  If[max <= min, ThrowMessage["badBearDocTitle", MsgExpr @ title]];
+  If[max <= min, Msg::badBearDocTitle[title]];
   trimmedTitle = STake[title, {min + 1, max - 1}];
   path = toPaperPDFPath[$pdfPath, title];
   url = FirstStringCase[contents, HyperlinkPattern];
@@ -224,7 +224,7 @@ docMetadata[title_Str, tagLine_Str, contents_Str] := Scope[
       VPrint["Found candidate ", MsgPath @ candidate, " for missing path ", MsgPath @ path];
       path = candidate;
     ,
-      If[SContainsQ[contents, "#meta/downloaded"], ThrowMessage["missingLocalPath", MsgExpr @ title]];
+      If[SContainsQ[contents, "#meta/downloaded"], Msg::missingLocalPath[title]];
     ];
   ];
   localPath = If[FileExistsQ[path], toLocalPath @ path, None];
@@ -400,11 +400,11 @@ toWLentry[key_, vals__] := If[SContainsQ[key, ","],
 copyImageToObsidian[imageName_] := Scope[
 
   imageName //= URLDecode;
-  attachment = Lookup[$attachments, imageName, ThrowMessage["unknownAttachment", MsgPath @ imageName]];
+  attachment = Lookup[$attachments, imageName, Msg::unknownAttachment[MsgPath @ imageName]];
   UnpackAssociation[attachment, fileName, creationDate, insertionDate, uploadDate, extension, UUID];
 
   filePath = PathJoin[$bearImagePath, UUID, fileName];
-  If[!FileExistsQ[filePath], ThrowMessage["missingBearImage", MsgPath @ filePath]];
+  If[!FileExistsQ[filePath], Msg::missingBearImage[MsgPath @ filePath]];
 
   shouldCompress = compressImages && extension == "png";
   If[shouldCompress, extension = "jpg"];
@@ -417,7 +417,7 @@ copyImageToObsidian[imageName_] := Scope[
 
   If[shouldCompress,
     img = Import[filePath];
-    If[!ImageQ[img], ThrowMessage["badBearImage", MsgPath @ filePath]];
+    If[!ImageQ[img], Msg::badBearImage[MsgPath @ filePath]];
     whenWhet @ Export[outputPath, img, CompressionLevel -> 0.1];
   ,
     whenWhet @ CopyFile[filePath, outputPath, OverwriteTarget -> True];

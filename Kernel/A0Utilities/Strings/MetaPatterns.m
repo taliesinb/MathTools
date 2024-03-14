@@ -62,7 +62,7 @@ expandAvoiding = Case[
   Avoiding[p_, a_]                       := expandAvoiding2[p, a];
 
   a_ := (
-    Message[Avoiding::invalidStringPatternUsage, MsgExpr @ a];
+    Message[Avoiding::invalidStringPatternUsage, a];
     $Failed
   )
 ];
@@ -78,7 +78,7 @@ expandAvoiding2[patt_, a_] := Scope[
 
   $n = ToExceptLetterClass @ a;
   $p = ToLetterClass @ a;
-  If[FailureQ[$n], Message[Avoiding::invalidStringPatternUsage, MsgExpr @ Avoiding[patt, a]]; ReturnFailed[]];
+  If[FailureQ[$n], Message[Avoiding::invalidStringPatternUsage, Avoiding[patt, a]]; ReturnFailed[]];
 
   (* expand the interior pattern so we can try rewrite character groups to avoid the given a *)
 

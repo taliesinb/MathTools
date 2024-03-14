@@ -123,6 +123,23 @@ IndexIn[index_][item_] := IndexIn[item, index];
 
 PublicFunction[DuplicateIndices, DuplicateIndicesBy]
 
-DuplicateIndices[list_List | list_Assoc] := Select[Len[#] > 1&] @ Values @ PositionIndex @ list;
+DuplicateIndices[list_List | list_Assoc] := DeleteCases[{_}] @ Values @ PositionIndex @ list;
 
 DuplicateIndicesBy[list_List | list_Assoc, fn_] := DuplicateIndices @ Map[fn, list];
+
+(**************************************************************************************************)
+
+PublicFunction[Duplicates, DuplicatesBy]
+
+Duplicates[list_List] := DeleteCases[{_}] @ Gather[list];
+
+DuplicatesBy[list_List, fn_] := DeleteCases[{_}] @ GatherBy[list, fn];
+
+(**************************************************************************************************)
+
+PublicFunction[GatherAgainst]
+
+GatherAgainst[list_List, against_List] :=
+  KeyValueMap[SameLenMsg[list, against], Part[list, #2]&, PositionIndex @ against];
+
+

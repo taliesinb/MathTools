@@ -42,7 +42,7 @@ SetCached[$testsInPath,  LocalPath["Tests", "Inputs"]];
 SetCached[$testsOutPath, LocalPath["Tests", "Outputs"]];
 testRelPath[s_] := SDrop[s, SLen[$testsInPath] + 1];
 
-declareFunctionAutocomplete[RunTests, {testRelPath @ FileNames["*.wl", $testsInPath, Inf]}];
+DefineFunctionAutocomplete[RunTests, {testRelPath @ FileNames["*.wl", $testsInPath, Inf]}];
 
 RunTests[filePattern_Str:All, OptionsPattern[]] := Scope[
 
@@ -104,7 +104,7 @@ runFileTest[inputPath_, outDir_] := Scope[
   inputs = readExpressionList @ inputPath;
   If[FailureQ[inputs], ReturnFailed[]];
   If[!contentsMatchContentsPattern[inputs],
-    VPrint["Skipping, ", MsgExpr @ $testContentsPattern, " not found."];
+    VPrint["Skipping, ", MsgForm @ $testContentsPattern, " not found."];
     Return @ None;
   ];
   numInputs = countRealTests[inputs];
@@ -230,8 +230,8 @@ evalExpr = Case[
   ExpressionAt[f_, p_, Hold[expr_]] := With[
     {res = CheckAbort[
       Catch[
-        WithMessageHandler[Construct[Hold, expr], throwMessage],
-        $throwMessageTag
+        WithMessageHandler[Construct[Hold, expr], testThrowMessage],
+        $testMsgTag
       ],
       $Aborted
     ]},
@@ -240,7 +240,7 @@ evalExpr = Case[
     ExpressionAt[f, p, res]
   ];
 
-  other_ := (VMessage[ExpressionAt::exprBad, MsgExpr @ other]; Nothing)
+  other_ := (VMessage[ExpressionAt::exprBad, other]; Nothing)
 ];
 
 handleExceptionalEvals[f_, p_, res_Failure] := (
@@ -256,7 +256,7 @@ handleExceptionalEvals[f_, p_, $Aborted] := (
   VMessage[ExpressionAt::exprAbort, calcFileLine[f, p]]
 );
 
-throwMessage[f_Failure] := Throw[f, $throwMessageTag];
+testThrowMessage[f_Failure] := Throw[f, $testMsgTag];
 
 (**************************************************************************************************)
 
@@ -830,7 +830,7 @@ convertCellToTest = Case[
   pre:Cell[_, "PreformattedCode"] := Cell[convertCellToMarkdownTest @ pre, "Code"];
   Cell[_, "Output"]               := Nothing;
   Null                            := Nothing;
-  c_Cell                          := (Message[ConvertCurrentNotebookToTestFile::badcell, MsgExpr @ c]; Nothing)
+  c_Cell                          := (Message[ConvertCurrentNotebookToTestFile::badcell, c]; Nothing)
 ];
 
 (**************************************************************************************************)

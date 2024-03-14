@@ -90,10 +90,10 @@ processGasRules[cardinals_, rules_, symmetries_, unspecifiedIdentity_] := Scope[
   rules = Map[processGasRule, rules];
   If[symmetries =!= None && rules =!= {},
     sub = SubstitutionRewritingSystem[symmetries];
-    If[FailureQ[sub], ThrowMessage["invsym", symmetries]];
+    If[FailureQ[sub], Msg::invsym[symmetries]];
     rules = RewriteStates[sub, rules];
     rules = DeleteDuplicates @ Map[InvertAwareSort, rules, {2}];
-    If[!RuleVectorQ[rules], ThrowMessage["invsym", symmetries]];
+    If[!RuleVectorQ[rules], Msg::invsym[symmetries]];
   ];
   If[unspecifiedIdentity,
     allLHS = InvertAwareSort /@ Rest[Subsets @ $cardinals];
@@ -114,18 +114,18 @@ processRHS = Case[
   Times[w_ /; 0 < w < 1, spec_]    := Weighted[% @ spec, N @ w];
   str_Str                          := toCardinalList @ StringToWord @ str;
   list_List                        := toCardinalList @ list;
-  inv_                             := ThrowMessage["invspec", inv];
+  inv_                             := Msg::invspec[inv];
 ];
 
 processLHS = Case[
   str_Str   := toCardinalList @ StringToWord @ str;
   list_List := toCardinalList @ list;
-  inv_      := ThrowMessage["invspec", inv];
+  inv_      := Msg::invspec[inv];
 ];
 
 QuiverGas::invcards = "Spec `` contains invalid cardinals. Allowed cardinals are: ``."
 toCardinalList[list_] := If[!SubsetQ[$cardinals, list],
-  ThrowMessage["invcard", list, $cardinals],
+  Msg::invcard[list, $cardinals],
   DeleteDuplicates @ list
 ];
 

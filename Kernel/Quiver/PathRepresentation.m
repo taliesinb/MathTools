@@ -11,7 +11,7 @@ fundamental quiver, returning a PathRepresentationObject.
 
 DeclareArgumentCount[PathRepresentation, {1, 3}];
 
-declareSyntaxInfo[PathRepresentation, {_, _., _.}];
+DefineArgumentsPattern[PathRepresentation, {_, _., _.}];
 
 PathRepresentation::noautorep =
   "No automatic representation is defined for the cardinal set ``.";
@@ -26,7 +26,7 @@ PathRepresentation[quiver_, representation_, initialVertex_:Auto] := Scope[
   representation = CoerceToRep[2];
   cardinals = CardinalList[quiver];
   generators = representation["Generators"];
-  If[!SameLengthQ[cardinals, generators],
+  If[!SameLenQ[cardinals, generators],
     ReturnFailed["gencount", Len @ generatorList, Len @ cardinalList]];
   If[!SameSetQ[cardinals, Keys @ generators],
     generators = AssocThread[cardinals, Values @ generators];

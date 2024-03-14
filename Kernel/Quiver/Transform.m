@@ -125,7 +125,7 @@ combineMultiedgesInternal[{}] := {};
 combineMultiedgesInternal[edges_] := Scope[
   {plainEdges, tags} = Transpose @ Map[separateTag, edges];
   edgeGroups = PositionIndex[plainEdges];
-  If[SameLengthQ[edgeGroups, plainEdges], Return @ edges];
+  If[SameLenQ[edgeGroups, plainEdges], Return @ edges];
   edges = KVMap[
     {edge, indices} |-> reattachTag[edge, DeleteNone @ Part[tags, indices]],
     edgeGroups

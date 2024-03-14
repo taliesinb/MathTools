@@ -32,3 +32,16 @@ nsgGlobalDomainPListContents[] := Scope @ CachedInto[$MacOSCache, "NSGlobalDomai
   ImportUTF8 @ outFile
 ];
 
+(**************************************************************************************************)
+
+PublicIOFunction[RevealInFinder]
+
+RevealInFinder[path_] :=
+  RunAppleScript @ $revealInFinderTemplate @ StringReplace[path, "\"" -> "\\\""];
+
+$revealInFinderTemplate = StringFunction @
+"""set thePath to POSIX file "#1"
+tell application "Finder" to reveal thePath
+activate application "Finder"
+"""
+

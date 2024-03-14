@@ -1,69 +1,71 @@
 PublicGraphicsPrimitive[BoundingGrid]
 
-DeclareGraphicsPrimitive[BoundingGrid, "Pair", boundingGridBoxes]
+DeclareGraphicsPrimitive[BoundingGrid, "Pair", toBoundingGridBoxes]
 
-PrivateFunction[boundingGridBoxes]
+(**************************************************************************************************)
 
-boundingGridBoxes[BoundingGrid[{x:{xl_, xh_}, y:{yl_, yh_}}, scale_:100]] := Scope[
-	$cutoff = 10 / scale; margin = 10 / scale;
-	dx = base[xh - xl]; dy = base[yh - yl];
-	{xl2, xh2} = {xl, xh} + {-1,1} * margin;
-	{yl2, yh2} = {yl, yh} + {-1,1} * margin;
-	dxs = Select[Between[{xl2, xh2}]];
-	dys = Select[Between[{yl2, yh2}]];
-	xl = Floor[xl, dx]; xh = Ceiling[xh, dx];
-	yl = Floor[yl, dy]; yh = Ceiling[yh, dy];
-	$xb = {xl2, xh2}; $yb = {yl2, yh2};
-	doLabelH = (xh - xl) > $cutoff * 5;
-	doLabelV = (yh - yl) > $cutoff * 5;
-	List[
-		AbsoluteThickness[0.5], Antialiasing -> False,
-		$glf = vlineBox; $lbl = If[doLabelH, hlabel, Nothing&]; $sel = dxs; gridLine[{xl, xh}],
-		$glf = hlineBox; $lbl = If[doLabelV, vlabel, Nothing&]; $sel = dys; gridLine[{yl, yh}],
-		If[xl <= 0 <= xh, StyleBox[Construct[LineBox, {{0, yl2}, {0, yh2}}], GrayLevel[0.2]], Nothing],
-		If[yl <= 0 <= yh, StyleBox[Construct[LineBox, {{xl2, 0}, {xh2, 0}}], GrayLevel[0.2]], Nothing],
-		If[!doLabelH, hlabel[{Avg[xl, xh]}], Nothing],
-		If[!doLabelV, vlabel[{Avg[yl, yh]}], Nothing]
-	]
-];
+PublicOption[GridLineColor, GridLineOpacity, GridLineThickness, MinGridLineSpacing, MaxGridLines, TickOptions]
 
-$colors = {GrayLevel[0.2, .8], GrayLevel[0.7, .5], GrayLevel[0.8, .3]};
-gridLineBox[coords_, d_] := StyleBox[Construct[LineBox, ToPacked @ coords], Part[$colors, d+1]];
+$baseGridLineBoxesOpts = {
+	MinGridLineSpacing -> 5,
+	MaxGridLines -> 50,
+	GraphicsScale -> Automatic,
+	GridLines -> True,
+	Ticks -> True,
+	TickOptions -> {},
+	GridLineColor -> {GrayLevel[0.2], GrayLevel[0.5], GrayLevel[0.8]},
+	GridLineOpacity -> 0.5,
+	GridLineThickness -> {1.25, .75, .25}
+};
 
-$labelStyle = {FontSize -> 8, FontFamily -> "Fira Code"};
+Options[BoundingGrid] = $baseGridLineBoxesOpts;
 
-lblString[0.|0] := "0";
-lblString[e_] := Scope[
-	col = If[Negative[e], $Red, $Blue];
-	str = TextString @ Abs @ e;
-	str //= SRep[StartOfString ~~ "0." -> "."];
-	str //= StringTrimRight["0"];
-	str //= StringTrimRight["."];
-	StyleBox[str, col]
-];
+toBoundingGridBoxes[BoundingGrid[range_List, opts___Rule]] :=
+	GridLineBoxes[range, opts];
 
-hlabel[xb_] := Construct[InsetBox, lblString[#], Offset[{0, -2}, {#, yl2}], ImageScaled[{.5, 1}], BaseStyle -> $labelStyle]& /@ xb;
-vlabel[yb_] := Construct[InsetBox, lblString[#], Offset[{2, 0}, {xh2, #}], ImageScaled[{0, 0.5}], BaseStyle -> $labelStyle]& /@ yb;
+(**************************************************************************************************)
 
-hlineBox[yb_, d_] := gridLineBox[Thread[{$xb, #}]& /@ yb, d];
-vlineBox[xb_, d_] := gridLineBox[Thread[{#, $yb}]& /@ xb, d];
+PublicFunction[GridLineBoxes]
 
-base[n_] := Power[10, Ceiling[Log10[n/10]]];
+Options[GridLineBoxes] = $baseGridLineBoxesOpts;
 
-gridLine[{l_, h_}] := Scope[
-	dx = base[h - l];
-	range = $sel @ Range[l, h, dx];
-	If[dx < $cutoff, range = {l, h}];
-	labels = $lbl @ $sel @ Which[
-		Len[range] > 5, Range[l, h, dx * 2],
-		Len[range] <= 3, Range[l, h, dx / 5],
-		True, range
+GridLineBoxes[plotRange_ ? NumericMatrixQ, OptionsPattern[]] := Scope[
+
+	UnpackOptions[gridLines, ticks, gridLineThickness, gridLineColor, gridLineOpacity, graphicsScale, minGridLineSpacing, maxGridLines, ticks, tickOptions];
+
+	SetAutomatic[graphicsScale, $MakeBoxesStyleData[GraphicsScale]];
+	SetNone[graphicsScale, 1];
+	minGap = minGridLineSpacing / graphicsScale;
+
+	doLines = ToPair @ gridLines;
+	divs = ZipMap[
+		If[#1, Values @ NiceTickDivisions[#2, #3, #4], {}]&,
+		doLines, plotRange, ToPair @ minGap, ToPair @ maxGridLines
 	];
-	boxes = {$glf[range, 0], labels}; d = 0;
-	While[(dx /= If[d >= 2, 5, 10]) >= $cutoff && (d++ < 2),
-		range = Comp[$sel @ Range[l, h, dx], range];
-		AppTo[boxes, $glf[range, d]];
+	specLen = Max @ Map[Len, divs];
+
+	$depthStyles = MapThread[
+		LineStyleBoxOperator,
+		ParseListSpec[#, specLen]& /@ {gridLineColor, gridLineOpacity, gridLineThickness}
 	];
-	If[d == 0, boxes //= RepAll[_GrayLevel :> P2[$colors]]];
-	boxes
+
+	{$xBounds, $yBounds} = plotRange;
+	lineBoxes = ZipMap[MapIndex1, {xLineBox, yLineBox}, divs];
+	lineBoxes = StyleBox[lineBoxes, Antialiasing -> False];
+
+	doTicks = ThreadAnd[ToPair @ ticks, doLines];
+	tickBoxes = FrameTickLabelBoxes[plotRange, getDivsToTick /@ divs, Ticks -> doTicks, Seq @@ tickOptions];
+
+	If[tickBoxes =!= {}, {lineBoxes, tickBoxes}, lineBoxs]
 ];
+
+getDivsToTick[{}] := {};
+getDivsToTick[{a_}] := a;
+getDivsToTick[{a_, b_, ___}] := SelectFirst[{a, Union[a, b]}, 2 < Length[#] <= 15&, a];
+
+_GridLineBoxes := BadArguments[];
+
+xLineBox[divs_, d_] := makeLineBox[d, Thread[{#, $yBounds}]& /@ divs];
+yLineBox[divs_, d_] := makeLineBox[d, Thread[{$xBounds, #}]& /@ divs];
+makeLineBox[d_, coords_] := Part[$depthStyles, d] @ Cons[LineBox, ToPacked @ coords];
+

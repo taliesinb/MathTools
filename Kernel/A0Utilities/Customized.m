@@ -25,10 +25,10 @@ applyCustomizeHandler[handler_][item_, rule_Rule] := Module[
   {result = handler[item, rule]},
   Switch[result,
     _handler,
-      Message[Customized::badopt, MsgExpr @ rule];
+      Message[Customized::badopt, rule];
       item,
     $Failed,
-      Message[Customized::invalid, MsgExpr @ rule];
+      Message[Customized::invalid, rule];
       item,
     _,
       result

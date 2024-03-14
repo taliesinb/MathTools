@@ -32,7 +32,7 @@ primitivesGRCBoxes = Case[
 PrimitivesGrid::badRow = "Row element `` should be a list."
 toPGrow = Case[
   e_List := Map[toPGitem, e];
-  other_ := (Message[PrimitivesGrid::badRow, MsgExpr @ other]; Nothing);
+  other_ := (Message[PrimitivesGrid::badRow, other]; Nothing);
 ]
 
 toPGitem = Case[
@@ -159,12 +159,12 @@ PrimitivesGrid::badDirAlign = "Invalid specification `` given as part of ``."
 parseHalign = Case[
   Left := 0; Center := 0.5; Right := 1;
   r:$NumberP := r;
-  e_ := (Message[PrimitivesGrid::badDirAlign, MsgExpr @ e, ColumnAlignments]; 0.5)
+  e_ := (Message[PrimitivesGrid::badDirAlign, e, ColumnAlignments]; 0.5)
 ];
 parseValign = Case[
   Bottom  := 1; Center := 0.5; Top := 0;
   r:$NumberP := r;
-  e_ := (Message[PrimitivesGrid::badDirAlign, MsgExpr @ e, RowAlignments]; 0.5)
+  e_ := (Message[PrimitivesGrid::badDirAlign, e, RowAlignments]; 0.5)
 ];
 
 repeatMax[n_] := Repeat[Max @ n, Len @ n];

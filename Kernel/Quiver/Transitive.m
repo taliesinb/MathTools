@@ -23,7 +23,7 @@ DeclareArgumentCount[BouquetQuiver, 1];
 
 Options[BouquetQuiver] = $ExtendedGraphOptions;
 
-declareSyntaxInfo[BouquetQuiver, {_, OptionsPattern[]}];
+DefineArgumentsPattern[BouquetQuiver, {_, OptionsPattern[]}];
 
 
 BouquetQuiver[n_Int, opts:OptionsPattern[]] := BouquetQuiver[
@@ -528,7 +528,7 @@ LatticeQuiverCoordinates[quiver_Graph, latticeBasis_] := Scope[
         cardinalList
       ],
     ListQ[latticeBasis],
-      If[!SameLengthQ[cardinalList, latticeBasis], ReturnFailed["badlen", Len @ cardinalList, Len @ latticeBasis]];
+      If[!SameLenQ[cardinalList, latticeBasis], ReturnFailed["badlen", Len @ cardinalList, Len @ latticeBasis]];
       latticeBasis = AssocThread[cardinalList, latticeBasis],
     !AssocQ[latticeBasis],
       ReturnFailed["badbasis", latticeBasis]

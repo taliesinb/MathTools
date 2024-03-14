@@ -32,6 +32,10 @@ $emptyBounds = {{-$eps, $eps}, {-$eps, $eps}};
 
 PublicFunction[EnlargeBounds]
 
+(* This would be better called EnlargeRange, becuase it expects a PlotRange spec.
+the scaled variant matches what CoordinateBounds[..., Scaled[...]] would do
+*)
+EnlargeBounds[bounds_, Scaled[p_]] := EnlargeBounds[bounds, p * (Dist @@@ bounds)];
 EnlargeBounds[bounds_, pad_ ? NumericMatrixQ] := bounds + {{-1, 1}, {-1, 1}} * pad;
 EnlargeBounds[bounds_, {h:$NumberP, v:$NumberP}] := bounds + {{-1, 1} * h, {-1, 1} * v};
 EnlargeBounds[bounds_, n:$NumberP] := bounds + {{-1, 1}, {-1, 1}} * n;
@@ -81,7 +85,7 @@ setupPrimBoxesBoundDefs[] := With[{
   boxBound[StyleBox[p_, opts___]]              := styleBlock[Scan[applyDir, {opts}]; boxBound @ p];
   boxBound[$curvesP[curves_List, ___]]         := multiCurveBound[curves];
   boxBound[GeometricTransformationBox[p_, t_]] := transBoxBound[p, t];
-  (* boxBound[e_]                              := Message[PrimitiveBoxesBounds::unrecogBox, MsgExpr @ e]; *)
+  (* boxBound[e_]                              := Message[PrimitiveBoxesBounds::unrecogBox, e]; *)
   boxBound[_]                                  := Null;
 
   Clear[setupPrimBoxesBoundDefs];
@@ -121,7 +125,7 @@ transBoxBound = Case[
     {v = N[Mean /@ iBounds[p]]},
     applyTrans[p, ThreadedPlusOperator[-v] /* AffineOperator[m] /* ThreadedPlusOperator[v]]
   ];
-  Seq[_, t_] := Message[PrimitiveBoxesBounds::unrecogTrans, MsgExpr @ t],
+  Seq[_, t_] := Message[PrimitiveBoxesBounds::unrecogTrans, t],
   {vecP -> $CoordP, matP -> {__List} ? CoordinateMatrixQ}
 ];
 
@@ -186,5 +190,5 @@ properInsetBounds = Case[
     StuffBag[$p, points, 1]
   ];
 
-  other_ := Message[PrimitiveBoxesBounds::unsuppInset, MsgExpr @ other];
+  other_ := Message[PrimitiveBoxesBounds::unsuppInset, other];
 ];

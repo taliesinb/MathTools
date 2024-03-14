@@ -65,8 +65,8 @@ PublicFunction[FirstStringCase]
 
 SetHoldRest[FirstStringCase];
 
-FirstStringCase[string_, pattern_, else_:None] :=
-  F[SCases[string, pattern, 1], else];
+FirstStringCase[string_, pattern_, else_:None] := F[SCases[string, pattern, 1], else];
+FirstStringCase[pattern_][string_] := FirstStringCase[string, pattern];
 
 (**************************************************************************************************)
 

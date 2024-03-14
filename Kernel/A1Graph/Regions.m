@@ -9,7 +9,7 @@ RegionSubgraph::empty = "The specified region is empty."
 
 DeclareArgumentCount[RegionSubgraph, 2];
 
-declareSyntaxInfo[RegionSubgraph, {_, _}];
+DefineArgumentsPattern[RegionSubgraph, {_, _}];
 
 RegionSubgraph[graph_, region_] := Scope[
   graph = CoerceToGraph[1];

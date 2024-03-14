@@ -37,10 +37,10 @@ Options[StringTable] = {
 }
 
 ToStringBlock[StringTable[rows_List, OptionsPattern[]]] := Scope[
-  If[!AnyMatrixQ[rows], ThrowMessage["notmatrix", MsgExpr @ rows]];
+  If[!AnyMatrixQ[rows], Msg::notmatrix[rows]];
   items = MatrixMap[ToStringBlock, rows];
   UnpackOptions[tableHeadings, tableHeadingStyle];
-  {rowStyle, colStyle} = tableHeadingStyle * {1, 1};
+  {rowStyle, colStyle} = ToPair @ tableHeadingStyle;
   SetAuto[tableHeadings, {Auto, Auto}];
   SetNone[tableHeadings, {None, None}];
   If[!MatchQ[tableHeadings, {_, _}], ReturnFailed[]];
@@ -66,7 +66,7 @@ StringBlock::badtableheading = "`` is not a recognized setting for TableHeadings
 procTableHeadings[Auto, n_] := procTableHeadings[Range @ n, n];
 procTableHeadings[str_Str, n_] := procTableHeadings[Chars @ str, n]
 procTableHeadings[list_List, n_] := processBlock[$headingStyleFn[#]]& /@ PadRight[list, n, ""];
-procTableHeadings[other_, _] := ThrowMessage["badtableheading", other];
+procTableHeadings[other_, _] := Msg::badtableheading[other];
 
 (**************************************************************************************************)
 
@@ -93,7 +93,7 @@ Options[StringMatrix] = {
 StringBlock::notmatrix = "Expected a matrix, found ``."
 
 ToStringBlock[StringMatrix[rows_List, opts___Rule]] := Scope[
-  If[!AnyMatrixQ[rows], ThrowMessage["notmatrix", MsgExpr @ rows]];
+  If[!AnyMatrixQ[rows], Msg::notmatrix[rows]];
   gstackBlocks[MatrixMap[ToStringBlock, rows], opts]
 ];
 
@@ -103,11 +103,11 @@ PublicTypesettingForm[StringBlockTemplate]
 
 StringBlock::badtemplate = "Template `` should be a string or list of strings."
 StringBlock::badtemplatearg = "`` reqeuested, but only `` available."
-ToStringBlock[StringBlockTemplate[template_, args___]] := Scope[
+ToStringBlock[StringBlockTemplate[template:(_Str | {___String}), args___]] := Scope[
   lines = Switch[template,
     _Str,     SSplit[template, "\n"],
     {___Str}, template,
-    _,           ThrowMessage["badtemplate", template];
+    _,           Msg::badtemplate[template];
   ];
   items = {args};
   $sbtAlign = Center;
@@ -116,7 +116,7 @@ ToStringBlock[StringBlockTemplate[template_, args___]] := Scope[
   lines = SRep[lines, {
     "#" ~~ i:DigitCharacter :> $rawBlock @ SafePart[items, FromDigits @ i],
     "%" ~~ i:DigitCharacter :> $rawBlock @ blockToHSpace @ SafePart[items, FromDigits @ i]
-  }] /. Missing["PartAbsent", j_] :> ThrowMessage["badtemplatearg", j, Len @ items];
+  }] /. Missing["PartAbsent", j_] :> Msg::badtemplatearg[j, Len @ items];
   verticalBlocks = Map[blockLine, lines];
   vstackBlocks[verticalBlocks, Left]
 ];
@@ -205,7 +205,7 @@ Options[FrameLabeled] = {
 ToStringBlock[FrameLabeled[item_, specs_, OptionsPattern[]]] := Scope[
   item //= ToStringBlock;
   UnpackOptions[labelSpacing, frameTicks, labelStyle];
-  {hlabelSpacing, vlabelSpacing} = {1, 1} * labelSpacing;
+  {hlabelSpacing, vlabelSpacing} = ToPair @ labelSpacing;
   $hoffset = 0; $voffset = 0; $labelStyleFn = StyleOperator @ labelStyle;
   Fold[applyFrameLabel, item, ToList @ specs]
 ];
@@ -252,7 +252,7 @@ applyFrameLabel[block_, side:(Top|Bottom) -> spec_] := Scope[
   itemWidths = Col2[itemBlocks];
   gaps = Differences @ Pre[1] @ positions;
   gaps -= Pre[0] @ Most @ itemWidths;
-  If[Min[gaps] < 0, ThrowMessage["overlapfl", side -> spec]];
+  If[Min[gaps] < 0, Msg::overlapfl[side -> spec]];
   spacerBlocks = Map[spacerBlock[#, 1]&, gaps];
   blocks = Catenate @ Transpose[{spacerBlocks, itemBlocks}];
   labelBlock = hstackBlocks[blocks, If[isTop, Bottom, Top]];
@@ -260,7 +260,7 @@ applyFrameLabel[block_, side:(Top|Bottom) -> spec_] := Scope[
   vstackBlocks[If[isTop, {labelBlock, block}, {block, labelBlock}], Left]
 ];
 
-applyFrameLabel[_, spec_] := ThrowMessage["badflspec", spec];
+applyFrameLabel[_, spec_] := Msg::badflspec[spec];
 
 clipOneLine = Case[
   block:$block[_, _, 1] := block;
@@ -365,7 +365,7 @@ repChar[s_, w_Int] := Repeat[s, w];
 repChar[s_, w_] := Scope[
   w2 = w; c = 0;
   While[Abs[w2 - Round[w2]] > 0.0001, w2 -= 3/4; c++];
-  If[w2 < 0, ThrowMessage["spacefail", w]];
+  If[w2 < 0, Msg::spacefail[w]];
   Flatten[{
     repChar[s, Round[w2]],
     Style[SJoin @ repChar[s, c], "Midscript"]
@@ -632,8 +632,8 @@ Options[processGrid] = JoinOptions[StringMatrix,
 
 processGrid[rows_, opts:OptionsPattern[]] := Scope[
   UnpackOptions[alignment, spacings];
-  {calign, ralign} = alignment * {1, 1};
-  {cspace, rspace} = spacings * {1, 1};
+  {calign, ralign} = ToPair @ alignment;
+  {cspace, rspace} = ToPair @ spacings;
   gstackBlocks[
     MatrixMap[processBlock, rows],
     ColumnAlignments -> calign, RowAlignments -> ralign,
@@ -668,7 +668,7 @@ hpadAtom[tw_, halign_][atom_, w_] := Scope[
     Left,   padAtomLeftRight[{0, d}] @ atom,
     Right,  padAtomLeftRight[{d, 0}] @ atom,
     Center, padAtomLeftRight[FloorCeiling[d/2]] @ atom,
-    _,      ThrowMessage["badalign", halign, {Left, Center, Right}]
+    _,      Msg::badalign[halign, {Left, Center, Right}]
   ]]
 ];
 
@@ -734,7 +734,7 @@ vpadBlock[th_, valign_][$block[rows_, w_, h_]] := Scope[
     Bottom,     padBottomTop[{0, d}, w] @ rows,
     Center,     padBottomTop[FloorCeiling[d/2], w] @ rows,
     _Int,   o = Clip[valign - 1, {0, d}]; padBottomTop[{d - o, o}, w] @ rows,
-    _,      ThrowMessage["badalign", valign, {Top, Center, Bottom}]
+    _,      Msg::badalign[valign, {Top, Center, Bottom}]
   ]];
   $block[extendedRows, w, th]
 ];
@@ -834,7 +834,7 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
     False | None,
       block,
     _,
-      ThrowMessage["badgridframe", frame];
+      Msg::badgridframe[frame];
   ]
 ,
   gpadBlock[elem_, {r_, c_}] := vpadBlock[Part[maxHeights, r], Part[rowAlignments, r]] @ hpadBlock[Part[maxWidths, c], Part[columnAlignments, c]] @ elem
@@ -842,7 +842,7 @@ gstackBlocks[rows_List, OptionsPattern[]] := Scope[
 
 StringBlock::fracwid = "Fractional width `` occurred in unsupported context."
 makeNotchedSides[char_, {notch1_, notch2_}, n_, sizes_] := Scope[
-  If[!IntQ[n], ThrowMessage["fracwid", n]];
+  If[!IntQ[n], Msg::fracwid[n]];
   notches = Accumulate[Most[sizes] + 1];
   side = Repeat[char, n];
   List[
@@ -945,7 +945,7 @@ $hextTableNames = Assoc[
 StringBlock::badframe = "`` is not a valid spec for Frame, which should be one of ``."
 
 hframeBlock[block_, name_Str, rest___] :=
-  hframeBlock[block, Lookup[$hextTableNames, name, ThrowMessage["badframe", name, Keys @ $hextTableNames]], rest];
+  hframeBlock[block, Lookup[$hextTableNames, name, Msg::badframe[name, Keys @ $hextTableNames]], rest];
 
 hframeBlock[block_, None | {None, None}, ___] := block;
 
@@ -988,7 +988,7 @@ $vextTableNames = Assoc[
 vframeBlock[arg1_, arg2_] := vframeBlock[arg1, arg2, None, True];
 
 vframeBlock[block_, name_Str, style_, spanning_] :=
-  vframeBlock[block, Lookup[$vextTableNames, name, ThrowMessage["badframe", name, Keys @ $vextTableNames]], style, spanning];
+  vframeBlock[block, Lookup[$vextTableNames, name, Msg::badframe[name, Keys @ $vextTableNames]], style, spanning];
 
 vframeBlock[block_, None | {None, None}, _, _] := block;
 

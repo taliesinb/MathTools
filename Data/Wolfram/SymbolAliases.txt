@@ -10,6 +10,7 @@ PreTo          PrependTo
 App            Append
 AppTo          AppendTo
 
+RuleD          RuleDelayed
 Assoc          Association
 AssocQ         AssociationQ
 UAssoc         UnorderedAssociation
@@ -52,6 +53,7 @@ Dedup		   DeleteDuplicates
 DedupBy		   DeleteDuplicatesBy
 Dims           Dimensions
 
+Cons           Construct
 Repeat         ConstantArray
 Dist           EuclideanDistance
 H              Head
@@ -98,6 +100,7 @@ FromCharCode   FromCharacterCode
 ToCharCode     ToCharacterCode
 CharRange      CharacterRange
 
+RuleFail       Fail
 RuleEval	   RuleCondition
 Eval           Evaluate
 Uneval         Unevaluated

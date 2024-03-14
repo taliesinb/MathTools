@@ -15,7 +15,7 @@ LookupCardinalColors[graph_Graph] := Scope[
   Which[
     cardinals === None,
       <||>,
-    ColorVectorQ[cardinalColors] && SameLengthQ[cardinalColors, cardinals],
+    ColorVectorQ[cardinalColors] && SameLenQ[cardinalColors, cardinals],
       AssocThread[cardinals, cardinalColors],
     AssocQ[cardinalColors],
       cardinalColors,

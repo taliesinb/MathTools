@@ -43,7 +43,7 @@ CreateObsidianNote[title_Str, contents_Str, OptionsPattern[]] := Scope[
   If[frontMatter =!= None && frontMatter =!= Assoc[],
     If[StrVecQ[frontMatter["tags"]], frontMatter["tags"] //= SRiffle[#, " "]&];
     frontMatterString = ExportYAMLDict @ frontMatter;
-    If[!StrQ[frontMatterString], ReturnFailed["badNoteFrontMatter", MsgExpr @ title, MsgExpr @ frontMatter]];
+    If[!StrQ[frontMatterString], ReturnFailed["badNoteFrontMatter", title, frontMatter]];
     contents = SJoin["---\n", frontMatterString, "\n---\n", contents];
   ];
   whenWet[

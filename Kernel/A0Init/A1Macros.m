@@ -386,10 +386,10 @@ Clear[BadArguments];
 General::badarguments = "Bad arguments: ``.";
 
 BadArguments /: (Set|SetDelayed)[lhsHead_Symbol[lhs___], BadArguments[]] :=
-  SetDelayed[$LHS:lhsHead[lhs], Message[MessageName[lhsHead, "badarguments"], MsgExpr @ Uneval @ $LHS]; $Failed];
+  SetDelayed[$LHS:lhsHead[lhs], Message[MessageName[lhsHead, "badarguments"], MsgHold @ $LHS]; $Failed];
 
 BadArguments /: (Set|SetDelayed)[Verbatim[Blank][lhsHead_Symbol], BadArguments[]] :=
-  SetDelayed[$LHS_lhsHead, Message[MessageName[lhsHead, "badarguments"], MsgExpr @ Uneval @ $LHS]; $Failed];
+  SetDelayed[$LHS_lhsHead, Message[MessageName[lhsHead, "badarguments"], MsgHold @ $LHS]; $Failed];
 
 DefineMacro[BadArguments, BadArguments[] := Quoted[Message[MessageName[$LHSHead, "badarguments"]]; Return[$Failed]]];
 
@@ -399,18 +399,18 @@ DefineMacro[BadArguments, BadArguments[] := Quoted[Message[MessageName[$LHSHead,
 Unprotect[UnmatchedCase];
 Clear[UnmatchedCase];
 UnmatchedCase[] := Panic["UnmatchedCase"];
-UnmatchedCase[head_, case_] := Panic["UnmatchedCase[" <> SymbolName[head] <> "]", "``", MsgExpr @ Uneval @ case];
+UnmatchedCase[head_, case_] := Panic["UnmatchedCase[" <> SymbolName[head] <> "]", "``", MsgHold @ case];
 
 PrivateFunction[UnmatchedCase2]
 
 General::unmatchedcase = "Case unmatched: ``";
 UnmatchedCase2[head_Symbol, case_] := (
-  Message[MessageName[head, "unmatchedcase"], MsgExpr @ Uneval @ case];
+  Message[MessageName[head, "unmatchedcase"], MsgHold @ case];
   UnmatchedCase[head, case];
 );
 
 UnmatchedCase2[head_Symbol, case___] := (
-  Message[MessageName[head, "unmatchedcase"], MsgExpr @ InternalHoldForm[case]];
+  Message[MessageName[head, "unmatchedcase"], MsgHold @ case];
   UnmatchedCase[head, HoldForm[case]];
 );
 
@@ -540,7 +540,7 @@ toStringCasesRule[Hold[patt_, rhs_]] :=
 
 StringCase::badrule = "Bad StringCase rule ``."
 
-toStringCasesRule[h_Hold] := (Message[StringCase::badrule, MsgExpr[RuleDelayed @@ h]]; Nothing);
+toStringCasesRule[h_Hold] := (Message[StringCase::badrule, RuleDelayed @@ h]; Nothing);
 
 (**************************************************************************************************)
 
@@ -967,7 +967,7 @@ makeSkipType = Case[
 BinaryReadToSymbols::badUnpackingSpec = "`` is not a recognized binary unpacking spec.";
 
 badBinSpec[spec_] := (
-  Message[BinaryReadToSymbols::badUnpackingSpec, MsgExpr @ spec];
+  Message[BinaryReadToSymbols::badUnpackingSpec, spec];
   MacroPanic["BadBinaryUnpackSpec"]
 );
 
@@ -994,25 +994,6 @@ mGraphCachedScope[graph_, key_, body_] := With[{body2 = MacroExpand @ Scope @ bo
     $cacheTemp$
   ]
 ];
-
-(**************************************************************************************************)
-
-PublicSpecialFunction[CatchMessage]
-
-DefineMacro[CatchMessage,
-CatchMessage[body_] := Quoted[Catch[body, ThrownMessage[_], ThrownMessageHandler[$LHSHead]]],
-CatchMessage[head_, body_] := Quoted[Catch[body, ThrownMessage[_], ThrownMessageHandler[head]]]
-];
-
-ThrownMessageHandler[msgHead_Symbol][{args___}, ThrownMessage[msgName_Str]] :=
-  (Message[MessageName[msgHead, msgName], args]; $Failed);
-
-(**************************************************************************************************)
-
-PublicSpecialFunction[ThrowMessage]
-
-ThrowMessage[msgName_Str, msgArgs___] :=
-  Throw[{msgArgs}, ThrownMessage[msgName]];
 
 (**************************************************************************************************)
 
@@ -1089,7 +1070,7 @@ PublicFunction[PatchDatasetCodebase]
 PatchDatasetCodebase[] := (
   Dataset;
   TypeSystem`$TypeStandardFormsEnabled = True;
-  GeneralUtilities`Formatting`PackagePrivate`fullbox[DirectedInfinity[1]] := "\[Infinity]"
+  GeneralUtilities`Formatting`PackagePrivate`fullbox[DirectedInfinity[1]] := "\[Infinity]";
   Dataset`DisplayWithType[data_] := Column[{data,  Dataset`GetType[data]}, Alignment -> Center];
   Dataset`DisplayShapeFunction[ds_, size_:{8,8}] := Block[{type},
     type = Dataset`GetType[ds];
@@ -1117,16 +1098,6 @@ PatchDatasetCodebase[] := (
     End[];
   """
 );
-
-(**************************************************************************************************)
-
-PrivateFunction[LengthEqualOrMessage]
-
-SetHoldFirst[LengthEqualOrMessage];
-LengthEqualOrMessage[msg_MessageName, list1_, list2_] := With[
-  {l1 = Len[list1], l2 = Len[list2]},
-  If[l1 =!= l2, Message[msg, l1, l2]; False, True]
-];
 
 (**************************************************************************************************)
 

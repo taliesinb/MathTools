@@ -12,6 +12,8 @@ $LoaderFileName = AbsoluteFileName @ ExpandFileName @ $InputFileName;
 $SourceDirectory = DirectoryName @ $InputFileName;
 $PackageDirectory = ParentDirectory @ $SourceDirectory;
 
+If[!TrueQ[MTLoader`Standalone`$StandaloneLoaded], Get @ FileNameJoin[{$PackageDirectory, "Standalone", "init.m"}]];
+
 DeclarePreservedVariable
 DeclarePreservedFunction
 $PreservedVariables = Data`UnorderedAssociation[];
@@ -35,7 +37,7 @@ $SymbolTable
 $CoreNameToSymbol
 
 (* this needs to be set before calling the loader *)
-$Verbose
+$LoadVerbose
 
 (* these can be customized in user_init.m *)
 $DisableSyntaxInformation
@@ -70,30 +72,23 @@ WatchCurrentCellAdd
 
 (*************************************************************************************************)
 
-$SimpleMacroRules
-DefineSimpleMacro
-DefinePatternMacro
-DefineVariableMacro
-
-(*************************************************************************************************)
-
 Begin["`Private`"];
 
 $mainPathLength = StringLength @ $SourceDirectory;
 $trimmedMainContext = StringTrim[$PublicContext, "`"];
 
-LVPrint[args___] := If[$Verbose, Print[args]];
+LVPrint[args___] := If[$LoadVerbose, Print[args]];
 
 LVPrint["Prelude."];
 
 (*************************************************************************************************)
 
+If[$firstTime =!= True,
+
 (* the first few symbols cause expensive packages to load, and appear as options to Style. RowLabels is put in System by GraphicsGrid. *)
 Unprotect[System`TemplateSlot, System`EdgeThickness, System`EpilogFunction, System`LLMEvaluator, System`LLMEvaluatorNames, System`RowLabels, System`ColumnLabels, System`EdgeOpacity];
 ClearAll[System`TemplateSlot, System`EdgeThickness, System`EpilogFunction, System`LLMEvaluator, System`LLMEvaluatorNames, System`RowLabels, System`ColumnLabels, System`EdgeOpacity];
 Quiet[Style; Options[Style]];
-
-(*************************************************************************************************)
 
 (* moved from A0Usage.m because this runs slowly:
 the default behavior of System`InformationDump` will introduce LineSpacing that messes up
@@ -101,6 +96,9 @@ my SetUsage inline tables, so remove it. *)
 dummy::usage = "Dummy";
 ToBoxes[Information[dummy]];
 System`InformationDump`subtitleStyled[sub_] := Style[sub, "InformationUsageText"];
+
+];
+$firstTime = True;
 
 (*************************************************************************************************)
 
@@ -121,69 +119,6 @@ ReadAliasRules[path_] := Module[{symbolAliasStr},
     {k_String, v_String} :> Rule[k, v]
   ]
 ];
-
-(*************************************************************************************************)
-(*************************************************************************************************)
-(*************************************************************************************************)
-
-(* this ensures we have only one set of rules for each head *)
-$SimpleMacroRules = Data`UnorderedAssociation[];
-
-(* these will be continually recomputed when a new macro is introduced *)
-$macroRules = {};
-updateMacroRules[] := Set[$macroRules, Catenate @ $SimpleMacroRules];
-
-(*************************************************************************************************)
-
-SetAttributes[{DefinePatternMacro, DefineVariableMacro, DefineSimpleMacro, iDefineSimpleMacro}, HoldAll];
-SetAttributes[evaluateSimpleMacros, HoldAllComplete];
-
-evaluateSimpleMacros[e_] := ReplaceAll[Unevaluated @ {e}, $macroRules];
-
-(* we do this so that macros don't expand before they are defined, e.g. if they are defined in terms of other
-macros, or if they have already been defined in a previous load session *)
-With[{macroDefineHeads = _DefinePatternMacro | _DefineVariableMacro | _DefineSimpleMacro},
-  evaluateSimpleMacros[e:macroDefineHeads] := {e};
-  evaluateSimpleMacros[CompoundExpression[e:macroDefineHeads, Null]] := {e};
-];
-
-(*************************************************************************************************)
-
-DefinePatternMacro[sym_Symbol, value_] := (
-  $PatternMacros[HoldPattern @ sym] = value;
-  DefineVariableMacro[sym, value];
-);
-
-e_DefinePatternMacro := (Print["Invalid macro call: ", HoldForm @ e]);
-
-(*************************************************************************************************)
-
-DefineVariableMacro[sym_Symbol, value_] := (
-  sym = value;
-  $SimpleMacroRules[Hold[sym]] = {HoldPattern[sym] :> value};
-  updateMacroRules[];
-);
-
-e_DefineVariableMacro := (Print["Invalid macro call: ", HoldForm @ e]);
-
-(*************************************************************************************************)
-
-DefineSimpleMacro[sym_Symbol, lhs_ :> rhs_] :=
-  iDefineSimpleMacro[sym, {HoldPattern[lhs] :> rhs}];
-
-(* since we may have previously set up downvalues for sym, we can't allow the rule LHS to evaluate *)
-DefineSimpleMacro[sym_Symbol, rules:{__RuleDelayed}] := With[
-  {heldRules = MapAt[HoldPattern, Unevaluated @ rules, {All, 1}]},
-  iDefineSimpleMacro[sym, heldRules]
-];
-
-iDefineSimpleMacro[sym_Symbol, rules:{__RuleDelayed}] := (
-               DownValues[sym] = rules;
-  $SimpleMacroRules[Hold[sym]] = rules;
-  updateMacroRules[];
-);
-
-e_DefineSimpleMacro := (Print["Invalid macro call: ", HoldForm @ e]);
 
 (*************************************************************************************************)
 (*************************************************************************************************)
@@ -233,21 +168,24 @@ $coreSymbols = Sort @ DeleteDuplicates @ $coreSymbols;
 $coreSymbolNames = SymbolName /@ $coreSymbols;
 $coreSymbolContexts = Context /@ $coreSymbols;
 
+(*************************************************************************************************)
+
 $corePackageSymbols = Pick[$coreSymbols, $coreSymbolContexts, "Package`"];
 $corePackageSymbolNames = SymbolName /@ $corePackageSymbols;
 $corePackageSymbolGroups = StringTrim[$corePackageSymbolNames, {"System", "Public", "Private"}];
 $legacyPackageDirs = {"Package", "PackageExport", "PackageImport", "PackageScope"};
 
-(* rule that will scan all packages and add symbols to their groups,  headPattern_[sym_] -> (group -> sym) *)
-toAlt[{a_}] := a;
-toAlt[a_List] := Alternatives @@ a;
-$symbolGroupRules = KeyValueMap[
-  #2[z___] :> (#1 -> extractStrings[z])&,
-  KeyDrop[$legacyPackageDirs] @
-    Merge[Thread[$corePackageSymbolGroups -> $corePackageSymbols], toAlt]
+$cpsPatt = Alternatives @@ $corePackageSymbols;
+collectSymbolGroups[packageExpr_] := Module[{positions},
+  positions = Position[packageExpressions, $cpsPatt];
+  Merge[Flatten @ Extract[packageExpressions, Most /@ positions, toSymbolGroupRules], Identity]
 ];
 
-extractStrings[z___] := DeepCases[{z}, _String];
+SetAttributes[toSymbolGroupRules, HoldAllComplete];
+$packageSymbolToGroup = AssociationThread[$corePackageSymbols, $corePackageSymbolGroups];
+toSymbolGroupRules[head_[args__]] := Thread[$packageSymbolToGroup[head] -> DeepCases[Hold[args], _String]]
+
+(*************************************************************************************************)
 
 (* association from symbol group, like Symbol, TypesettingForm, etc to list of these symbols.
 we don't care about System/Private/Public at all *)
@@ -373,6 +311,7 @@ loadFileContents[path_, context_] := Module[{str, contents}, Block[{$currentCont
   If[MatchQ[str, Whitespace] || str === "", Return @ Package`PackageData[]];
   contents = TimeConstrained[Check[Package`ToPackageExpression @ str, $Failed], 1];
   If[Head[contents] =!= Package`PackageData, contents === $Failed];
+  If[ContainsQ[contents, $missingCommaP], handleMissingComma[path, contents]];
   If[FailureQ[contents], handleSyntaxError[path, str]];
   Block[{$Context = context}, contents = contents /. $initialSymbolResolutionDispatch1 /. $initialSymbolResolutionDispatch2];
   contents
@@ -397,8 +336,25 @@ bracketRHS[s_] := bracketRHS[s] = Block[{$Context = "MTLoader`Scratch`", len},
   "(" <> StringInsert[s, ")", len+1]
 ];
 
+$missingCommaP = HoldPattern[Rule[_Times, _] | RuleDelayed[_Times, _] | SetDelayed[_Times, _] | Set[_Times, _]];
+
+handleMissingComma[path_, expr_] := Block[
+  {pos, expr2},
+  $fileContentCache[path] =.;
+  expr2 = expr2 /. HoldPattern[Times[-1, z_]] :> z;
+  pos = Position[expr2, $missingCommaP];
+  If[pos === {}, Return[]];
+  pos = Part[pos, 1, 1];
+  line = Extract[expr, {pos, 1}];
+  error = FileLine[path, line];
+  EPrint["Missing comma near ", error];
+  SystemOpen @ error;
+  failRead[];
+];
+
 handleSyntaxError[path_, str_] := Block[
   {tmpPath, errors},
+  $fileContentCache[path] =.;
   If[$silent, failRead[]];
   EPrint["Syntax error in ", path];
   badBeep[];
@@ -513,8 +469,14 @@ fileSortingTuple[path_] := {
 
 (*************************************************************************************************)
 
-ReadSource[cachingEnabled_:True, fullReload_:True, clear_:True] := Block[
-  {sourceFiles, userFiles, textFiles,
+(*
+fullReload=False means drop packages from the returned list that were unchanged since their last read.
+even if set to true, it is overridden if any init files were changed, since they cause many previous
+evaluation results to be incorrect.
+*)
+
+ReadSource[fullReload_:True, clear_:True] := Block[
+  {sourceFiles, userFiles,
    packageExpressions,
    systemSymbols, publicSymbols, privateSymbols, cacheSymbols,
    cacheSymbolRules, symbolDispatch,
@@ -532,7 +494,6 @@ ReadSource[cachingEnabled_:True, fullReload_:True, clear_:True] := Block[
 
   $SourceFiles = sourceFiles = SourceFiles[];
   userFiles = FileNames["user_*.m", $SourceDirectory];
-  textFiles = FileNames[{"*.txt", "*.tex"}, $SourceDirectory, Infinity];
 
   If[!VectorQ[sourceFiles, StringQ],
     LVPrint["Could not obtain source files."];
@@ -555,10 +516,10 @@ ReadSource[cachingEnabled_:True, fullReload_:True, clear_:True] := Block[
         addPackageSymbolsToBag[publicSymbols,  expr, $publicPackageDeclarationHeadP];
         addPackageSymbolsToBag[privateSymbols, expr, $privatePackageDeclarationHeadP];
         addPackageSymbolsToBag[cacheSymbols,   expr, $cachePackageDeclarationHeadP];
-        If[!requiresFullReload && isDirty && initPathQ[path],
+        (* If[!requiresFullReload && isDirty && initPathQ[path],
           LVPrint["Dirty package \"", path, "\" is forcing a full reload."];
           requiresFullReload = True;
-        ];
+        ]; *)
         {path, context, expr, isDirty}
       ],
       sourceFiles
@@ -572,27 +533,21 @@ ReadSource[cachingEnabled_:True, fullReload_:True, clear_:True] := Block[
     LVPrint["Reading failed."];
     Return[$Failed]];
 
-  If[dirtyCount > 0,
-    LVPrint["Populating symbol group table."];
-    symbolGroups = Union /@ Merge[{
-      symbolGroups,
-      DeleteDuplicates @ Merge[
-        Map[rule |-> DeepCases[packageExpressions, rule], $symbolGroupRules],
-        Apply[Union]
-      ]},
-      Apply[Union]
-    ];
-    $SymbolGroups = symbolGroups;
-  ];
-
-  Scan[observeTextFile, textFiles];
   Scan[observeTextFile, userFiles];
 
   If[!requiresFullReload,
     packageExpressions = DeleteCases[packageExpressions, {_, _, _, False}];
   ];
 
-  If[cachingEnabled && ($loadedFileCount == 0 || packageExpressions === {}) && $changedTextFileCount == 0,
+  If[requiresFullReload, Block[{newSymbolGroups},
+    LVPrint["Populating symbol group table."];
+    pos = Position[packageExpressions, Package`PrivateExprPattern];
+    newSymbolGroups = collectSymbolGroups @ packageExpressions;
+    symbolGroups = Union /@ Merge[{symbolGroups, newSymbolGroups}, Apply[Union]];
+    $SymbolGroups = symbolGroups;
+  ]];
+
+  If[packageExpressions === {} && $changedTextFileCount == 0,
     LVPrint["No contents changed, skipping evaluation."];
     Return[{}];
   ];
@@ -666,7 +621,7 @@ ReadSource[cachingEnabled_:True, fullReload_:True, clear_:True] := Block[
 (*************************************************************************************************)
 
 ComputeSourceExpressionHashes[] := Module[{exprs},
-  source = ReadSource[False, True, False];
+  source = ReadSource[True, False];
   If[!ListQ[source], Return[$Failed]];
   Association @ Map[computeFileHash, source]
 ];
@@ -717,7 +672,7 @@ MakeBoxes[pd_Package`PackageData, StandardForm] :=
 Attributes[FindCodebaseLines] = {HoldFirst};
 
 FindCodebaseLines[pattern_] := Block[
-  {$packageExpressions = ReadSource[False, True, False]},
+  {$packageExpressions = ReadSource[True, False]},
   positionToFileLine /@ Position[$packageExpressions, HoldPattern @ pattern]
 ];
 
@@ -743,21 +698,20 @@ evaluatePackageData[packagesList_List] := Block[
     result, initialFile, finalFile, extraContexts,
    GeneralUtilities`$CurrentFileName = $LoaderFileName, $Line = 0, $ClearRegexCache = False},
   $LastFailure = None;
+  $MessagePrePrint = Automatic;
   $currentPath = ""; $currentLineNumber = 0;
   $formsChanged = $failEval = False;
   $fileTimings = $fileLineTimings = Association[];
   LVPrint["Evaluating packages."];
   loadUserFile["user_init.m"];
-  result = WithMessageHandler[
-    Scan[evaluatePackage, packagesList],
-    handleMessage
-  ];
+  result = Catch[catchAllErrors @ Scan[evaluatePackage, packagesList], $evaluationTerminator];
   If[$RegexCacheDirty,
     VPrint["Clearing RegularExpression cache."];
     ClearSystemCache["RegularExpression"];
     $RegexCacheDirty = False];
   If[!MemberQ[$ContextPath, $PublicContext], AppendTo[$ContextPath, $PublicContext]];
   If[$failEval, Return[$Failed, Block]];
+  ToExpression["$MessagePrePrint = MathTools`MsgPrePrint"];
   If[userFileChangedQ["user_final.m"],
     extraContexts = loadUserFile["user_final.m"];
     If[VectorQ[extraContexts, StringQ],
@@ -769,6 +723,87 @@ evaluatePackageData[packagesList_List] := Block[
 ];
 
 (*************************************************************************************************)
+
+(* this mostly has no effect, but can change dynamic symbol resolution of ToExpression, Symbol, etc.
+this doesn't include GU because we shadow some GU symbols *)
+$packageFileContextPath = {"System`", $PublicContext, $PrivateContext};
+
+evaluatePackage[{path_, context_, packageData_Package`PackageData}] := If[$failEval, $Failed,
+  $currentPath = path; $currentFileLineTimings = <||>; $failCount = 0;
+  LVPrint["Evaluating \"", path, "\""];
+  $formsChanged = Or[$formsChanged, StringContainsQ[context, "`Forms`"]]; (* to avoid expensive symbol enum *)
+  TimeConstrained[
+  $fileTimings[path] = msTiming @ Block[
+    {$Context = context, $ContextPath = $packageFileContextPath, GeneralUtilities`$CurrentFileName = path},
+    Scan[evaluateExpression, packageData]
+  ], 2, Message[LoadSource::timeout]];
+  $fileLineTimings[path] = $currentFileLineTimings;
+];
+
+LoadSource::timeout = "Evaluation timed out.";
+
+evaluatePackage[spec_] := (
+  EPrint["Invalid package data."];
+  Print @ InputForm @ spec;
+  Abort[];
+);
+
+SetAttributes[evaluateExpression, HoldAllComplete];
+
+evaluateExpression[{lineNumber_, expr_}] := If[$failEval, $Failed,
+  $Line = $currentLineNumber = lineNumber;
+  $currentFileLineTimings[lineNumber] = msTiming[
+    List @@ ExpandMacros @ HoldComplete @ expr
+  ];
+];
+
+(*************************************************************************************************)
+
+SetHoldAllComplete[catchAllErrors];
+catchAllErrors[body_] :=
+  Catch[
+    CatchErrorAsFailure[
+      "UncaughtError",
+      WithMessageHandler[body, handleMessage],
+      handleMessage
+    ],
+    MacroEvaluate,
+    catchMacroFailure
+  ];
+
+(*************************************************************************************************)
+
+MacroEvaluate::macrofail = "Macro failed.";
+
+catchMacroFailure[$Failed, _] := handleMessage @
+  Failure["MacroEvaluate", <|"MessageTemplate" :> MacroEvaluate::macrofail, "MessageParameters" -> {}|>];
+
+catchMacroFailure[f_Failure, _] := handleMessage @ f;
+
+(*************************************************************************************************)
+
+handleMessage[f_Failure] := Block[{fileLine},
+  $failEval = True;
+  $LastFailure = f;
+  If[$failCount++ > 5, EPrint["Emergency abort!"]; Abort[]];
+  (* ^ this is an emergency measure: it shouldn't happen but when we do get a long list of errors the
+  OS can lock up for a while *)
+  If[!$silent, Beep[]];
+  fileLine = FileLine[$currentPath, $currentLineNumber];
+  EPrint["Aborting; message ", getHeldTemplate @ f, " occurred at ", fileLine];
+  EPrint["Failure available at MTLoader`$LastFailure."];
+  EPrint[FailureString @ f];
+  Throw[$Failed, $evaluationTerminator];
+  SystemOpen[fileLine];
+];
+
+getHeldTemplate[Failure[_, <|___, "MessageTemplate" :> f_, ___|>]] := HoldForm[f];
+getHeldTemplate[_] := "???";
+
+(*************************************************************************************************)
+
+Attributes[msTiming] = {HoldAllComplete};
+msTiming[e_] := 1000 * First[AbsoluteTiming @ e];
 
 FileTimings[] :=
   trimFiles @ ReverseSort @ $fileTimings;
@@ -834,78 +869,16 @@ loadUserFile[name_] := Block[{path, result},
 
 (*************************************************************************************************)
 
-Attributes[msTiming] = {HoldAllComplete};
-msTiming[e_] := 1000 * First[AbsoluteTiming @ e];
-
-(* this mostly has no effect, but can change dynamic symbol resolution of ToExpression, Symbol, etc.
-this doesn't include GU because we shadow some GU symbols *)
-$packageFileContextPath = {"System`", $PublicContext, $PrivateContext};
-
-evaluatePackage[{path_, context_, packageData_Package`PackageData}] := Catch[
-  $currentPath = path; $currentFileLineTimings = <||>; $failCount = 0;
-  If[$failEval, Return[$Failed, Catch]];
-  LVPrint["Evaluating \"", path, "\""];
-  $formsChanged = Or[$formsChanged, StringContainsQ[context, "`Forms`"]]; (* to avoid expensive symbol enum *)
-  $fileTimings[path] = msTiming[
-    Block[{$Context = context, $ContextPath = $packageFileContextPath, GeneralUtilities`$CurrentFileName = path},
-      Catch[Scan[evaluateExpression, packageData], $evaluateExpressionTag]
-    ];
-  ];
-  $fileLineTimings[path] = $currentFileLineTimings;
-,
-  MacroEvaluate, catchMacroFailure
-];
-
-evaluatePackage[spec_] := (
-  EPrint["Invalid package data."];
-  Print @ InputForm @ spec;
-  Abort[];
-);
-
-MacroEvaluate::macrofail = "Macro failed.";
-
-catchMacroFailure[$Failed, _] := handleMessage @
-  Failure["MacroEvaluate", <|"MessageTemplate" :> MacroEvaluate::macrofail, "MessageParameters" -> {}|>];
-
-catchMacroFailure[f_Failure, _] := handleMessage @ f;
-
-SetAttributes[evaluateExpression, HoldAllComplete];
-
-evaluateExpression[{lineNumber_, expr_}] := If[$failEval, $Failed,
-  $Line = $currentLineNumber = lineNumber;
-  $currentFileLineTimings[lineNumber] = msTiming @ evaluateSimpleMacros @ expr;
-];
-
-(*************************************************************************************************)
-
-handleMessage[f_Failure] := Block[{fileLine},
-  $failEval = True;
-  $LastFailure = f;
-  If[$failCount++ > 5, EPrint["Emergency abort!"]; Abort[]];
-  (* ^ this is an emergency measure: it shouldn't happen but when we do get a long list of errors the
-  OS can lock up for a while *)
-  If[!$silent, Beep[]];
-  fileLine = FileLine[$currentPath, $currentLineNumber];
-  EPrint["Aborting; message ", getHeldTemplate @ f, " occurred at ", fileLine];
-  EPrint["Failure available at MTLoader`$LastFailure."];
-  EPrint[FailureString @ f];
-  Throw[$Failed, $evaluateExpressionTag];
-  SystemOpen[fileLine];
-];
-
-getHeldTemplate[Failure[_, <|___, "MessageTemplate" :> f_, ___|>]] := HoldForm[f];
-getHeldTemplate[_] := "???";
-
-(*************************************************************************************************)
-
-LoadSource[fullReload_:True, fullRead_:False, silent_:False] := Block[
+LoadSource[fullReload_:True, silent_:False] := Block[
   {$AllowInternet = False, URLSubmit = Print["URLSubmit[", Row[{##}, " "], "]"]&, $silent = silent, $CurrentlyLoading = True},
   FinishDynamic[];
   $lastLoadSuccessful = False;
-  Block[{packages = ReadSource[!fullRead, fullReload, True]},
+  Block[{packages = ReadSource[fullReload, True]},
     If[FailureQ[packages], Return[False]];
     If[!IntegerQ[$LoadCount], $LoadCount = 0]; $LoadCount++;
-    If[!FailureQ[evaluatePackageData @ packages], $lastLoadSuccessful = True];
+    If[!FailureQ[evaluatePackageData @ packages],
+      $lastLoadSuccessful = True
+    ];
   ];
   $lastLoadSuccessful
 ];
@@ -990,7 +963,7 @@ ApplySourceSymbolRewrites[rewrites:{(_String -> _String)..}, n_:Infinity] := Blo
   lhsSyms = Map[lookupAliasTargetSymbolLookup, lhs];
   If[MemberQ[lhsSyms, $Failed], Return @ $Failed];
   $exprPatt = Alternatives @@ lhsSyms;
-  packages = ReadSource[False, True, False];
+  packages = ReadSource[True, False];
   DeleteCases[Map[rewritePackage, Take[packages, UpTo[n]]], {}]
 ];
 

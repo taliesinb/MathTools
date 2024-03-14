@@ -503,7 +503,7 @@ findLerp[a_Assoc, b_Assoc] :=
     MapThread[findLerp, {a, b}]
   ];
 
-findLerp[a_ ? EntryQ, b_ ? EntryQ] /; And[!AtomQ[a], !AtomQ[b], SameHeadQ[a, b], SameLengthQ[a, b]] := Block[
+findLerp[a_ ? EntryQ, b_ ? EntryQ] /; And[!AtomQ[a], !AtomQ[b], SameHeadQ[a, b], SameLenQ[a, b]] := Block[
   {$headStack = App[$headStack, H @ a]},
   Apply[H @ a, MapThread[findLerp, {List @@ a, List @@ b}]]
 ];
@@ -512,13 +512,13 @@ $fancyCurveP = BezierCurve | BSplineCurve;
 findLerp[Line[a_], (h:$fancyCurveP)[b_]] := findLerp[h[a], h[b]];
 findLerp[(h:$fancyCurveP)[a_], Line[b_]] := findLerp[h[a], h[b]]
 
-findLerp[a_List ? CoordinateArrayQ, b_List ? CoordinateArrayQ] /; SameLengthQ[a, b] :=
+findLerp[a_List ? CoordinateArrayQ, b_List ? CoordinateArrayQ] /; SameLenQ[a, b] :=
   MapThread[findLerp, {a, b}];
 
-findLerp[a_List ? CoordinateMatrixQ, b_List ? CoordinateMatrixQ] /; SameLengthQ[a, b] :=
+findLerp[a_List ? CoordinateMatrixQ, b_List ? CoordinateMatrixQ] /; SameLenQ[a, b] :=
   NumericLerp[a, b, $lerpVariable];
 
-findLerp[a_List ? CoordinateVectorQ, b_List ? CoordinateVectorQ] /; SameLengthQ[a, b] :=
+findLerp[a_List ? CoordinateVectorQ, b_List ? CoordinateVectorQ] /; SameLenQ[a, b] :=
   NumericLerp[a, b, $lerpVariable];
 
 findLerp[a_ ? NumericQ, b_ ? NumericQ] :=
@@ -527,7 +527,7 @@ findLerp[a_ ? NumericQ, b_ ? NumericQ] :=
 findLerp[a_, b_] :=
   binLerp[a, b, \[FormalT]];
 
-findLerp[a_List, b_List] /; !SameLengthQ[a, b] := Scope[
+findLerp[a_List, b_List] /; !SameLenQ[a, b] := Scope[
   n = Max[Len @ a, Len @ b];
   NumericLerp[resample[a, n], resample[b, n], $lerpVariable]
 ]

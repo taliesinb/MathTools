@@ -150,7 +150,7 @@ CompactArrayPlot[array_, OptionsPattern[]] := Scope[
     array = ToPackedReal @ MatrixMap[cfunc, array];
     If[ArrayQ[array, 2, ColorQ],
       array = ToPackedReal @ ToRGB @ array];
-    If[!PackedArrayQ[array], ReturnFailed["badcvals", MsgExpr[SelectFirst[array, !MatchQ[#, $Coord3P]&], 20, 200]]];
+    If[!PackedArrayQ[array], ReturnFailed["badcvals", MsgForm[SelectFirst[array, !MatchQ[#, $Coord3P]&], 20, 200]]];
   ];
   If[!PackedArrayQ[array], ReturnFailed["interr"]];
   graphics = MeshImage[array, pixelConstrained, Frame -> frame, Mesh -> mesh, MeshStyle -> meshStyle];

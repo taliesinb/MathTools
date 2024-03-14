@@ -71,14 +71,6 @@ RightClickBox[box_, body_] := TagBox[
 
 (**************************************************************************************************)
 
-PublicFunction[NiceTooltip]
-
-MakeBoxes[NiceTooltip[a_, b_], form_] := NiceTooltipBoxes[MakeBoxes[a, form], MakeBoxes[b, form]];
-MakeBoxes[NiceTooltip[a_, None], form_] := MakeBoxes[a, Form];
-
-Typeset`MakeBoxes[NiceTooltip[a_, b_], form_, graphics_] := NiceTooltipBoxes[Typeset`MakeBoxes[a, form, graphics], MakeBoxes[b, form]];
-Typeset`MakeBoxes[NiceTooltip[a_, None], form_, graphics_] := MakeBoxes[a, form, graphics];
-
 $customGraphicsHeadQ[NiceTooltip] = True;
 
 (**************************************************************************************************)

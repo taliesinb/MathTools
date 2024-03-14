@@ -19,7 +19,7 @@ processSubRule = Case[
   r:Rule[_, _]             := r;
   r:TwoWayRule[lhs_, rhs_] := {lhs -> rhs, rhs -> lhs};
   Cycles[cycles:{__}]      := Map[processCycle, cycles];
-  inv_                     := ThrowMessage["invrule", inv];
+  inv_                     := Msg::invrule[inv];
 ];
 
 SubstitutionRewritingSystem::invcyc = "Invalid Cycles[...] element ``."
@@ -28,7 +28,7 @@ processCycle = Case[
   {_} | {}  := Nothing;
   {a_, b_}  := processSubRule[TwoWayRule[a, b]];
   list_List := ApplyWindowedCyclic[Rule /* processSubRule, list];
-  inv_      := ThrowMessage["invcyc", inv];
+  inv_      := Msg::invcyc[inv];
 ];
 
 collapseInvSymmetry[list_] := DeleteDuplicates @ Map[normalizeInvRule, list];

@@ -19,14 +19,14 @@ SameHeadQ[a_][b_] := SameHeadQ[a, b];
 
 (**************************************************************************************************)
 
-PublicFunction[SameLengthQ]
+PublicFunction[SameLenQ]
 
 SetUsage @ "
-SameLengthQ[a$, b$] gives True if %Len[a$] === %Len[b$].
+SameLenQ[a$, b$] gives True if %Len[a$] === %Len[b$].
 "
 
-SameLengthQ[a_, b_] := Len[a] === Len[b];
-SameLengthQ[a_][b_] := SameLengthQ[a, b];
+SameLenQ[a_, b_] := Len[a] === Len[b];
+SameLenQ[a_][b_] := SameLenQ[a, b];
 
 (**************************************************************************************************)
 

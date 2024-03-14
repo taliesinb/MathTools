@@ -5,17 +5,17 @@ General::libraryLinkFunctionCall = "Library link function call `` failed.";
 zimCall[name_String, args___] := Rep[
   VPrint["Calling ", name[args]];
   CacheTo[$ZimLinkFunctions, name, loadFunc[name]][args],
-  _LibraryFunction[___] | _LibraryFunctionError :> ThrowMessage["libraryLinkFunctionCall", MsgExpr[name[args]]]
+  _LibraryFunction[___] | _LibraryFunctionError :> Msg::libraryLinkFunctionCall[name[args]]
 ];
 
 General::libraryLinkFunctionLoad = "Could not load function `` from ``.";
 loadFunc[name_String] := OnFailed[
   If[!FileExistsQ[$zimLinkPath], iBuildZimLink[]];
   VPrint["Loading ", name -> Lookup[$zimLinkFunctionSignatures, name]];
-  LibraryFunctionLoad[$zimLinkPath, name, tospec @ LookupOrMessageKeys[$zimLinkFunctionSignatures, name, {{}, "Void"}]]
+  LibraryFunctionLoad[$zimLinkPath, name, tospec @ LookupMsg[$zimLinkFunctionSignatures, name]]
 ,
   Import["!nm -gU " <> $zimLinkPath, "Text"];
-  ThrowMessage["libraryLinkFunctionLoad", name, MsgPath @ $zimLinkPath]
+  Msg::libraryLinkFunctionLoad[name, MsgPath @ $zimLinkPath]
 ];
 
 $argRules = {ByteArray -> {LibraryDataType[ByteArray], "Constant"}, Str -> "UTF8String"};
@@ -77,7 +77,7 @@ iBuildZimLink[] := Scope[
   res = Run["/usr/local/bin/wolframscript " <> $zimLinkBuilderPath];
   If[res =!= 0 || !FileExistsQ[$zimLinkPath],
     If[FileExistsQ[$zimLinkBuilderOutput], FilePrint @ $zimLinkBuilderOutput];
-    ThrowMessage["libraryLinkBuildError", $zimLinkPath]];
+    Msg::libraryLinkBuildError[$zimLinkPath]];
 ];
 
 $zimLinkBuilderOutput = LocalPath["LibraryLink", "ZimLink", "BuildOutput.txt"];

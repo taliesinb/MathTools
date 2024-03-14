@@ -62,7 +62,7 @@ PublicHead[FanOut]
 circuitCurveBoxes[CircuitCurve[lines:$CoordMatsP, opts:OptionsPattern[CircuitCurve]]] :=
   Map[circuitCurveBoxes[CircuitCurve[#, opts]]&, lines];
 
-circuitCurveBoxes[CircuitCurve[points:$CoordMat2P, opts:OptionsPattern[CircuitCurve]]] := Scope[
+circuitCurveBoxes[CircuitCurve[points:$CoordMat2P, opts:OptionsPattern[CircuitCurve]]] := Scope @ CatchMessage[CircuitCurve,
   UnpackOptionsAs[CircuitCurve, {opts}, lineThickness, setback,
    wireTypeSlug, wireTypeSlugStyle, wireTypeSlugPosition, graphicsScale, lineColor, lineEdging, lineDashing];
 
@@ -103,17 +103,11 @@ makeSlugPrims := Case[
     sz = .12;
     Switch[
       SubAuto[wireTypeSlugStyle, "Pie"],
-      "Beads",
-        ColoredBeads[pos, dir, sz, cols],
-      "Squares",
-        ColoredSquares[pos, dir, sz, cols],
-      "Pie",
-        ColoriedPie[pos, sz*1.25, cols],
-      None,
-        Nothing,
-      _,
-        BadOptionSetting[CircuitCurve, WireTypeSlugStyle, wireTypeSlugStyle];
-        Nothing
+      "Beads",   ColoredBeads[pos, dir, sz, cols],
+      "Squares", ColoredSquares[pos, dir, sz, cols],
+      "Pie",     ColoriedPie[pos, sz*1.25, cols],
+      None,      Nothing,
+      _,         OptionMsg[WireTypeSlugStyle, wireTypeSlugStyle]
     ]
   ]
 ];

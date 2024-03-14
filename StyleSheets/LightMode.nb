@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[      2004,         58]
-NotebookOptionsPosition[      1131,         38]
-NotebookOutlinePosition[      1523,         54]
-CellTagsIndexPosition[      1480,         51]
+NotebookDataLength[      2634,         70]
+NotebookOptionsPosition[      1638,         49]
+NotebookOutlinePosition[      2033,         65]
+CellTagsIndexPosition[      1990,         62]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -33,11 +33,22 @@ Cell[StyleData["PreformattedCodeBase"],
   0.98],ExpressionUUID->"96279ddc-ee18-46de-b384-559f91b54190"],
 
 Cell[StyleData["Code"],
- FontSize->15,ExpressionUUID->"dafffd42-e15d-4d54-8fe1-a19cbdddffb7"]
+ CellEvaluationFunction->Function[boxes, 
+   If[DownValues[System`TopLevelEvaluationFunction] === {}, 
+    ToExpression[boxes], 
+    ToExpression[boxes, StandardForm, System`TopLevelEvaluationFunction]]],
+ FontSize->13,ExpressionUUID->"dafffd42-e15d-4d54-8fe1-a19cbdddffb7"],
+
+Cell[StyleData["Input"],
+ CellEvaluationFunction->Function[boxes, 
+   If[DownValues[System`TopLevelEvaluationFunction] === {}, 
+    ToExpression[boxes], 
+    ToExpression[boxes, StandardForm, System`TopLevelEvaluationFunction]]],
+ FontSize->13,ExpressionUUID->"f83cb383-6944-4868-bb00-8d36dd0dbbd3"]
 }, Open  ]]
 },
-WindowSize->{1491, 997},
-WindowMargins->{{Automatic, 1}, {Automatic, 70}},
+WindowSize->{1244, 891},
+WindowMargins->{{Automatic, -82}, {Automatic, 227}},
 FrontEndVersion->"13.3 for Mac OS X ARM (64-bit) (June 3, 2023)",
 StyleDefinitions->"Default.nb",
 ExpressionUUID->"8ee7fece-5aa3-42ab-baaf-ef6ee047cbc1"
@@ -58,7 +69,8 @@ Cell[CellGroupData[{
 Cell[687, 24, 84, 0, 67, "Section",ExpressionUUID->"b2b2b72e-94af-4327-81c2-bf6cfc33e514"],
 Cell[774, 26, 115, 2, 34, 27, 0, "StyleData", "Notebook", "All",ExpressionUUID->"850bb9c9-23d5-4c06-b85e-f12d9eb7433a"],
 Cell[892, 30, 127, 2, 50, 39, 0, "StyleData", "PreformattedCodeBase", "All",ExpressionUUID->"96279ddc-ee18-46de-b384-559f91b54190"],
-Cell[1022, 34, 93, 1, 65, 23, 0, "StyleData", "Code", "All",ExpressionUUID->"dafffd42-e15d-4d54-8fe1-a19cbdddffb7"]
+Cell[1022, 34, 298, 5, 63, 23, 0, "StyleData", "Code", "All",ExpressionUUID->"dafffd42-e15d-4d54-8fe1-a19cbdddffb7"],
+Cell[1323, 41, 299, 5, 40, 24, 0, "StyleData", "Input", "All",ExpressionUUID->"f83cb383-6944-4868-bb00-8d36dd0dbbd3"]
 }, Open  ]]
 }
 ]

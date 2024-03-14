@@ -1,12 +1,52 @@
-PublicVariable[$DarkStylesheetPath, $LightStylesheetPath, $StylesheetPath]
+PublicVariable[$DarkStylesheetPath, $LightStylesheetPath, $MathToolsStylesheetPath, $UserStylesheetsDirectory]
 
 $DarkStylesheetPath = LocalPath["StyleSheets", "MathToolsDark.nb"];
 $LightStylesheetPath = LocalPath["StyleSheets", "MathToolsLight.nb"];
-$StylesheetPath = $DarkStylesheetPath;
+$MathToolsStylesheetPath = $DarkStylesheetPath;
+
+$UserStylesheetsDirectory = PathJoin[$UserBaseDirectory, "SystemFiles", "FrontEnd", "StyleSheets"];
 
 (**************************************************************************************************)
 
-PublicFunction[UpdateMathToolsStylesheet]
+PublicIOFunction[SetUserDefaultStylesheet]
+
+SetUsage @ "
+SetUserDefaultStylesheet[None] sets the default stylesheet to the normal system stylesheet.
+SetUserDefaultStylesheet['Dark' | 'Light'] sets the nice custom stylesheet to be the default.
+SetUserDefaultStylesheet['path$'] sets a given existing stylesheet to be the default.
+
+* the frontend must be restarted for this to have an affect.
+"
+
+SetUserDefaultStylesheet::notValidStylesheet = "`` is not a valid file path.";
+
+SetUserDefaultStylesheet[None] :=
+  If[FileExistsQ[$UserDefaultStylesheetPath], DeleteFile[$UserDefaultStylesheetPath]];
+
+SetUserDefaultStylesheet[name:"Dark"|"Light"] :=
+  SetUserDefaultStylesheet @ LocalPath["StyleSheets", name <> "Mode.nb"];
+
+SetUserDefaultStylesheet[path_] := Scope[
+  path //= NormalizePath;
+  If[!SEndsQ[path, ".nb"] || !FileExistsQ[path], ReturnFailed["notValidStylesheet", MsgPath @ path]];
+  EnsureDirectory[$UserStylesheetsDirectory];
+  fileName = FileNameTake @ path;
+  target = PathJoin[$UserStylesheetsDirectory, fileName];
+  If[!FileExistsQ[target], SymLink[path, target]];
+  CurrentValue[$FrontEnd, DefaultStyleDefinitions] = fileName;
+  Print["Restart the frontend for this to have an affect."];
+  target
+];
+
+(**************************************************************************************************)
+
+PublicIOFunction[OpenMathToolsStylesheet]
+
+OpenMathToolsStylesheet[] := NotebookOpen[$DarkStylesheetPath];
+
+(**************************************************************************************************)
+
+PublicIOFunction[UpdateMathToolsStylesheet]
 
 UpdateMathToolsStylesheet::open = "Could not open existing stylesheet at ``.";
 UpdateMathToolsStylesheet::replace = "Could not replace existing stylesheet at ``.";
@@ -42,9 +82,9 @@ deleteUUIDs[nb_] :=
 writeStylesheetFile[path_, contents_] := Scope[
   If[!FileExistsQ[path], NotebookSave[contents, path]; Return[]];
   nb = NotebookOpen[path, Visible -> True];
-  If[H[nb] =!= NotebookObject,          ThrowMessage["open", path]];
-  If[FailureQ @ NotebookPut[contents, nb], ThrowMessage["replace", path]];
-  If[FailureQ @ NotebookSave[nb],          ThrowMessage["save", path]];
+  If[H[nb] =!= NotebookObject,          Msg::open[path]];
+  If[FailureQ @ NotebookPut[contents, nb], Msg::replace[path]];
+  If[FailureQ @ NotebookSave[nb],          Msg::save[path]];
   NotebookClose[nb];
 ];
 
@@ -54,7 +94,7 @@ PrivateFunction[GeneratePrivateMathToolsStylesheet]
 
 GeneratePrivateMathToolsStylesheet[] := Scope[
  template = Notebook[{
-      Cell[StyleData[StyleDefinitions -> $StylesheetPath]],
+      Cell[StyleData[StyleDefinitions -> $MathToolsStylesheetPath]],
       Cell[StyleData["Dummy"]]
     },
     FrontEndVersion -> "13.1 for Mac OS X x86 (64-bit) (June 16, 2022)",
@@ -77,7 +117,7 @@ makeTemplateBoxStyleCell[name_, fn_] := With[
 
 (**************************************************************************************************)
 
-PublicFunction[ApplyPrivateMathToolsNotebookStyles]
+PublicIOFunction[ApplyPrivateMathToolsNotebookStyles]
 
 ApplyPrivateMathToolsNotebookStyles[] := (
   SetOptions[EvaluationNotebook[],
@@ -95,7 +135,7 @@ generateNotebookColorPaletteStyles[palette_List, lightPalette_List] := Join[
 
 (**************************************************************************************************)
 
-PublicFunction[UpdateLegacyNotebook]
+PublicIOFunction[UpdateLegacyNotebook]
 
 createLegacyReplacementRules[] := Scope[
   keys = Select[Keys @ $notebookDisplayFunction, LowerCaseQ[STake[#, 1]]&];
@@ -129,7 +169,7 @@ UpdateLegacyNotebook[nb_NotebookObject] := Scope[
 
 UpdateLegacyNotebook[nb_Notebook] := Scope[
   nb = Decases[nb, StyleDefinitions -> _];
-  AppTo[nb, StyleDefinitions -> $StylesheetPath];
+  AppTo[nb, StyleDefinitions -> $MathToolsStylesheetPath];
   RepRep[nb, $legacyReplacementRules]
 ];
 
@@ -164,7 +204,7 @@ $builtinTemplateNames = {"RowWithSeparators", "RowWithSeparator", "Spacer1", "Ce
 
 FindMissingTemplateBoxDefinitions[] := FindMissingTemplateBoxDefinitions @ Auto;
 FindMissingTemplateBoxDefinitions[nb_, ref_:Auto] := Scope[
-  SetAuto[ref, $StylesheetPath];
+  SetAuto[ref, $MathToolsStylesheetPath];
   availableNames = Join[NotebookStyleDataNames @ ref, $builtinTemplateNames];
   notebookNames = NotebookTemplateNames @ nb;
   Comp[notebookNames, availableNames]
@@ -174,14 +214,14 @@ FindMissingTemplateBoxDefinitions[nb_, ref_:Auto] := Scope[
 
 PublicFunction[MathToolsStyleNames]
 
-MathToolsStyleNames[] := NotebookStyleDataNames[$StylesheetPath];
+MathToolsStyleNames[] := NotebookStyleDataNames[$MathToolsStylesheetPath];
 
 (**************************************************************************************************)
 
 PublicFunction[ApplyMathToolsStylesheet]
 
 ApplyMathToolsStylesheet[] := (
-  SetOptions[EvaluationNotebook[], StyleDefinitions -> $StylesheetPath];
+  SetOptions[EvaluationNotebook[], StyleDefinitions -> $MathToolsStylesheetPath];
 );
 
 ApplyMathToolsStylesheet["Dark"] := (
@@ -206,5 +246,5 @@ CreateMathToolsNotebook[] :=
      Cell["Subsection", "Subsection"],
      Cell["Item 1", "Item"],
      Cell["Item 2", "Item"]},
-    StyleDefinitions -> $StylesheetPath
+    StyleDefinitions -> $MathToolsStylesheetPath
   ];

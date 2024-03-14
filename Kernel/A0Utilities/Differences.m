@@ -19,23 +19,24 @@ Format[ExpressionDifference[pos_List, crumbs_List, diff_], OutputForm] := expres
 expressionDifferenceOutputForm[pos_, crumbs_, diff_] :=
   Row[Join[Riffle[crumbs, " | "], {" --> ", diff}]] /. HoldC[h_] :> HoldForm[h];
 
+With[{hp = _Str | _HoldC},
 DefineStandardTraditionalForm[{
-  $HeadCrumb          :> crumbSubBox["?", "head"],
-  $ArgsCrumb[h_]      :> crumbSubBox[h, "args"],
-  $ArgsCrumb[h_, n_]  :> crumbSubBox[h, n],
-  $ArrayCrumb[]       :> StyleBox["\[DottedSquare]", Bold],
-  $ArrayCrumb[n_]     :> crumbSubBox["\[DottedSquare]", n],
-  $KeysCrumb[h_]      :> crumbSubBox[h, "keys"],
-  $KeysCrumb[h_, k_]  :> crumbSubBox[h, k]
+  $HeadCrumb              :> crumbSubBox["?", "head"],
+  $ArgsCrumb[h:hp]        :> crumbSubBox[h, "args"],
+  $ArgsCrumb[h:hp, n_Int] :> crumbSubBox[h, n],
+  $ArrayCrumb[]           :> StyleBox["\[DottedSquare]", Bold],
+  $ArrayCrumb[n_Int]      :> crumbSubBox["\[DottedSquare]", n],
+  $KeysCrumb[h:hp]        :> crumbSubBox[h, "keys"],
+  $KeysCrumb[h:hp, k_]    :> crumbSubBox[h, k]
 }];
-
-Format[$HeadCrumb, OutputForm] := Underscript["?", "head"];
-Format[$ArgsCrumb[h_], OutputForm] := Underscript[h, "args"];
-Format[$ArgsCrumb[h_, n_], OutputForm] := Underscript[h, n]
-Format[$ArrayCrumb[], OutputForm] := "-array-"
-Format[$ArrayCrumb[n_], OutputForm] := Underscript["-array-", n];
-Format[$KeysCrumb[h_], OutputForm] := Underscript[head, "keys"];
-Format[$KeysCrumb[h_, k_], OutputForm] := Underscript[h, k];
+Format[$HeadCrumb,              OutputForm] := Underscript["?", "head"];
+Format[$ArgsCrumb[h:hp],        OutputForm] := Underscript[h, "args"];
+Format[$ArgsCrumb[h:hp, n_Int], OutputForm] := Underscript[h, n];
+Format[$ArrayCrumb[],           OutputForm] := "-array-";
+Format[$ArrayCrumb[n_Int],      OutputForm] := Underscript["-array-", n];
+Format[$KeysCrumb[h:hp],        OutputForm] := Underscript[h, "keys"];
+Format[$KeysCrumb[h:hp, k_],    OutputForm] := Underscript[h, k];
+];
 
 partRow[h_, n_] := Row[{h, "[[", n, "]]"}];
 
@@ -45,19 +46,19 @@ crumbSubBox[head_, sub_] := UnderscriptBox[
 ]
 
 crumbHeadStr = Case[
-  s_Str                                 := s;
+  s_Str                          := s;
   HoldC[List]                    := "{\[CenterEllipsis]}";
   HoldC[Assoc]                   := "\[LeftAssociation]\[CenterEllipsis]\[RightAssociation]";
   HoldC[head_Symbol ? HoldAtomQ] := codeBox @ HoldSymbolName @ head;
   HoldC[head_[___]]              := RBox[% @ HoldC @ head, "[\[CenterEllipsis]]"];
   HoldC[s_Str]                   := codeBox @ SJoin["\"", s, "\""];
-  hc_HoldComplete                       := codeBox @ hc;
+  hc_HoldC                       := codeBox @ hc;
 ];
 
 crumbLabelString = Case[
   i_Int          := IntStr @ i;
   s_Str          := StyleBox[s, $Gray, FontFamily -> "Palantir"];
-  h_HoldComplete := codeBox @ h;
+  h_HoldC        := codeBox @ h;
 ]
 
 (**************************************************************************************************)
@@ -65,47 +66,47 @@ crumbLabelString = Case[
 PrivateHead[$ValueDiff, $WeakValueDiff, $ArrayValueDiff, $LengthDiff, $DepthDiff, $DimsDiff, $KeysAdded, $KeysRemoved, $KeysReordered, $KeysChanged, $ArgsAdded, $ArgsRemoved, $SetLarger, $SetSmaller, $SetDiff]
 
 DefineStandardTraditionalForm[{
-  $ValueDiff[e1_, e2_]       :> diffBox @ notEqualBox[codeBox @ e1, codeBox @ e2],
-  $WeakValueDiff[e1_, e2_]   :> diffBox @ notSameBox[codeBox @ e1, codeBox @ e2],
-  $ArrayValueDiff[e1_, e2_]  :> diffBox @ notSameBox[minMaxBox @ e1, minMaxBox @ e2],
-  $LengthDiff[n1_, n2_]      :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2],
-  $DepthDiff[d1_, d2_]       :> diffBox @ changeBox["depth", intBox @ d1, intBox @ d2],
-  $DimsDiff[d1_, d2_]        :> diffBox @ changeBox["dims", dimsBox @ d1, dimsBox @ d2],
-  $KeysAdded[k1_, k2_]       :> diffBox @ plusBox[keysBox @ Comp[k2, k1]],
-  $KeysRemoved[k1_, k2_]     :> diffBox @ minusBox[keysBox @ Comp[k1, k2]],
-  $KeysReordered[k1_, k2_]   :> diffBox @ notSameBox[keysBox @ k1, keysBox @ k2],
-  $KeysChanged[k1_, k2_]     :> diffBox @ notSameBox[keysBox @ k1, keysBox @ k2],
-  $ArgsAdded[n1_, n2_]       :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2],
-  $ArgsRemoved[n1_, n2_]     :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2],
-  $SetLarger[vals_]          :> diffBox @ plusBox[codeBox @ vals],
-  $SetSmaller[vals_]         :> diffBox @ minusBox[codeBox @ vals],
-  $SetDiff[p_, m_]           :> diffBox @ plusMinusBox[codeBox @ p, codeBox @ m]
+  $ValueDiff[e1_HoldC, e2_HoldC]      :> diffBox @ notEqualBox[codeBox @ e1, codeBox @ e2],
+  $WeakValueDiff[e1_HoldC, e2_HoldC]  :> diffBox @ notSameBox[codeBox @ e1, codeBox @ e2],
+  $ArrayValueDiff[e1_HoldC, e2_HoldC] :> diffBox @ notSameBox[minMaxBox @ e1, minMaxBox @ e2],
+  $LengthDiff[n1_Int, n2_Int]         :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2],
+  $DepthDiff[d1_Int, d2_Int]          :> diffBox @ changeBox["depth", intBox @ d1, intBox @ d2],
+  $DimsDiff[d1_Int, d2_Int]           :> diffBox @ changeBox["dims", dimsBox @ d1, dimsBox @ d2],
+  $KeysAdded[k1_HoldC, k2_HoldC]      :> diffBox @ plusBox[keysBox @ Comp[k2, k1]],
+  $KeysRemoved[k1_HoldC, k2_HoldC]    :> diffBox @ minusBox[keysBox @ Comp[k1, k2]],
+  $KeysReordered[k1_HoldC, k2_HoldC]  :> diffBox @ notSameBox[keysBox @ k1, keysBox @ k2],
+  $KeysChanged[k1_HoldC, k2_HoldC]    :> diffBox @ notSameBox[keysBox @ k1, keysBox @ k2],
+  $ArgsAdded[n1_Int, n2_Int]          :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2],
+  $ArgsRemoved[n1_Int, n2_Int]        :> diffBox @ changeBox["len", intBox @ n1, intBox @ n2],
+  $SetLarger[vals_HoldC]              :> diffBox @ plusBox[codeBox @ vals],
+  $SetSmaller[vals_HoldC]             :> diffBox @ minusBox[codeBox @ vals],
+  $SetDiff[p_HoldC, m_HoldC]          :> diffBox @ plusMinusBox[codeBox @ p, codeBox @ m]
 }];
 
 diffBox[e_] := e;
 
 $changeArrow = changeStyle @ "\[RightArrow]";
 
-notEqualBox[a_, b_]             := compBox["\[NotEqual]", a, b];
-notSameBox[a_, b_]              := compBox["\[NotCongruent]", a, b];
-changeStyle[e_]                 := OrangeBox @ BoldBox @ e;
-propBox[e_]                     := TypewriterBox @ StyleBox[e, $Gray];
-minMaxBox[arr_]                 := GridBox[{{PinkBox @ RealDigitsString[Max @ arr, 2]}, {TealBox @ RealDigitsString[Min @ arr, 2]}}, RowSpacings -> 0];
+notEqualBox[a_, b_]       := compBox["\[NotEqual]", a, b];
+notSameBox[a_, b_]        := compBox["\[NotCongruent]", a, b];
+changeStyle[e_]           := OrangeBox @ BoldBox @ e;
+propBox[e_]               := TypewriterBox @ StyleBox[e, $Gray];
+minMaxBox[arr_]           := GridBox[{{PinkBox @ RealDigitsString[Max @ arr, 2]}, {TealBox @ RealDigitsString[Min @ arr, 2]}}, RowSpacings -> 0];
 
-compBox[cmp_, a_, b_]           := RBox[a, changeStyle @ cmp, b];
-changeBox[prop_, a_, b_]        := RBox[propBox @ prop, ":", notSameBox[a, b]];
-plusBox[a_]                     := RBox[GreenBox @ BoldBox @ "+", " ", a];
-minusBox[a_]                    := RBox[RedBox @ BoldBox @ "-", " ", a];
-plusMinusBox[a_, b_]            := GridBox[{{GreenBox @ BoldBox @ "+", " ", a}, {RedBox @ BoldBox @ "-", " ", b}}];
+compBox[cmp_, a_, b_]     := RBox[a, changeStyle @ cmp, b];
+changeBox[prop_, a_, b_]  := RBox[propBox @ prop, ":", notSameBox[a, b]];
+plusBox[a_]               := RBox[GreenBox @ BoldBox @ "+", " ", a];
+minusBox[a_]              := RBox[RedBox @ BoldBox @ "-", " ", a];
+plusMinusBox[a_, b_]      := GridBox[{{GreenBox @ BoldBox @ "+", " ", a}, {RedBox @ BoldBox @ "-", " ", b}}];
 
-codeBox[a_]                     := StyleBox[a, "Code", Background -> None, FontColor -> Black];
-codeBox[HoldC[e_]]       := codeBox @ ToPrettifiedString[InternalHoldForm[e], MaxLength -> 20, MaxDepth -> 2, CompactRealNumbers -> 4];
+codeBox[a_]               := StyleBox[a, "Code", Background -> None, FontColor -> Black];
+codeBox[HoldC[e_]]        := codeBox @ ToPrettifiedString[InternalHoldForm[e], MaxLength -> 20, MaxDepth -> 2, CompactRealNumbers -> 4];
 
-keysBox[list_List]              := RowBox @ Riffle[Map[keyBox, list], ","];
-keyBox[HoldC[s_Symbol]]  := ItalicBox @ HoldSymbolName @ s;
-keyBox[h_]                      := codeBox[h];
-intBox[i_Int]                   := IntStr[i];
-dimsBox[dims_List]              := RowBox @ Riffle[Map[intBox, dims], "\[Times]"];
+keysBox[list_List]        := RowBox @ Riffle[Map[keyBox, list], ","];
+keyBox[HoldC[s_Symbol]]   := ItalicBox @ HoldSymbolName @ s;
+keyBox[h_]                := codeBox[h];
+intBox[i_Int]             := IntStr[i];
+dimsBox[dims_List]        := RowBox @ Riffle[Map[intBox, dims], "\[Times]"];
 
 (**************************************************************************************************)
 
@@ -137,8 +138,8 @@ _emitDiff := BadArguments[];
 
 (**************************************************************************************************)
 
-holdPart[e_HoldComplete, p_] := Extract[e, p, HoldC];
-holdPart[e_HoldComplete, p__] := Extract[e, {p}, HoldC];
+holdPart[e_HoldC, p_] := Extract[e, p, HoldC];
+holdPart[e_HoldC, p__] := Extract[e, {p}, HoldC];
 
 _holdPart := BadArguments[];
 
@@ -157,7 +158,7 @@ withSubCrumb[p_, c_, body_] := Block[{$pos = App[$pos, p], $crumbs = Insert[$cru
 
 (**************************************************************************************************)
 
-diffExpr[a_HoldComplete, b_HoldComplete] /; a === b := False;
+diffExpr[a_HoldC, b_HoldC] /; a === b := False;
 
 diffExpr[a:HoldC[_Assoc ? HoldAtomQ], b:HoldC[_Assoc ? HoldAtomQ]] :=
   diffAssoc[a, b];
@@ -182,7 +183,7 @@ diffExpr[
     ]
   ];
 
-diffExpr[a_HoldComplete, b_HoldComplete] :=
+diffExpr[a_HoldC, b_HoldC] :=
   emitAtomDiff[a, b];
 
 _diffExpr := BadArguments[];
@@ -212,7 +213,7 @@ toListHC[HoldC[a___]] := HoldC @ List[a];
 
 (**************************************************************************************************)
 
-diffArray[a_HoldComplete, b_HoldComplete] /; a === b := False;
+diffArray[a_HoldC, b_HoldC] /; a === b := False;
 
 (* these are packed and so we don't care about evaluation *)
 diffArray[HoldC[a_List], HoldC[b_List]] := Module[
@@ -247,9 +248,9 @@ diffScalar[{a_, b_}, pos_] := withSubCrumb[
 
 (**************************************************************************************************)
 
-diffArgs[args1_HoldComplete, args2_HoldComplete] /; args1 === args2 := False;
+diffArgs[args1_HoldC, args2_HoldC] /; args1 === args2 := False;
 
-diffArgs[args1_HoldComplete, args2_HoldComplete] := Module[
+diffArgs[args1_HoldC, args2_HoldC] := Module[
   {len1, len2},
   len1 = Len @ args1;
   len2 = Len @ args2;
@@ -279,7 +280,7 @@ _diffArgs := BadArguments[];
 
 (* these are valid associations and so don't need to be held *)
 
-diffAssoc[a_HoldComplete, b_HoldComplete] /; a === b := False;
+diffAssoc[a_HoldC, b_HoldC] /; a === b := False;
 
 diffAssoc[HoldC[a_Assoc], HoldC[b_Assoc]] :=
   withCrumb[
@@ -297,7 +298,7 @@ _diffAssoc := BadArguments[];
 
 (**************************************************************************************************)
 
-diffKeys[startIndex_, entries1_HoldComplete, entries2_HoldComplete] := Module[
+diffKeys[startIndex_, entries1_HoldC, entries2_HoldC] := Module[
   {len1, len2, keys1, keys2},
 
   len1 = Len @ entries1; keys1 = holdKeys @ entries1;

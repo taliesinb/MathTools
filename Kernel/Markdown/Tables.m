@@ -69,5 +69,5 @@ gridElementToMarkdown = Case[
   Cell[TextData[Cell[BoxData @ FormBox[boxes_, ___], ___], ___], ___] := inlineCellToMarkdown[boxes, False];
   Cell[text_, "Text"] := textToMarkdown @ text;
   str_Str := textToMarkdown @ str;
-  other_ := Print["UNKNOWN GRID ELEMENT: ", MsgExpr[other, 5, 40]];
+  other_ := Print["UNKNOWN GRID ELEMENT: ", MsgForm[other, 5, 40]];
 ];

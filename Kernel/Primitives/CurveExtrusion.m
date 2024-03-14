@@ -41,7 +41,7 @@ ExtrudeCurveToPolygon[curve_, r_] := Scope @ CachedInto[
     _Polygon,
       dilation,
     _,
-      Message[ExtrudeCurveToPolygon::failed, MsgExpr @ curve];
+      Message[ExtrudeCurveToPolygon::failed, curve];
   	  $Failed
   ]
 ];

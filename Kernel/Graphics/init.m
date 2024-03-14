@@ -38,3 +38,6 @@ PublicVariable[$ExtendedColorNames]
 
 $ExtendedColorNames = Keys @ $ExtendedColorsGrouped;
 
+(**************************************************************************************************)
+
+PublicSymbol[LeftRight, TopBottom, BeforeAfter]

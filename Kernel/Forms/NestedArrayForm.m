@@ -35,7 +35,7 @@ toAxisColor = Case[
   n_Int           := Part[SubAuto[$axisPaletteSpec, Range[9]], n];
   color_ ? ColorQ := color;
   None            := None;
-  other_          := ThrowMessage["badaxiscolor", other];
+  other_          := Msg::badaxiscolor[other];
 ];
 
 (**************************************************************************************************)
@@ -136,7 +136,7 @@ autoRightPadding[___] := 0;
 
 procNA[(t:"Row"|"SpanningRow"|"NormalRow") -> col_, rest___][array_] :=
   StringRow[
-    If[!ListQ[array], ThrowMessage["notlist", array, t]];
+    If[!ListQ[array], Msg::notlist[array, t]];
     vectorMapNA[procNA[rest], array, True],
     ColumnSpacings -> third[col, If[SeqLength[rest] == 0, 1, 0]],
     Frame -> $NestedArrayFrame, FrameStyle -> toAxisColor @ first[col, col],
@@ -147,7 +147,7 @@ procNA[(t:"Row"|"SpanningRow"|"NormalRow") -> col_, rest___][array_] :=
 
 procNA[(t:"Column"|"SpanningColumn"|"NormalColumn") -> col_, rest___][array_] :=
   StringColumn[
-    If[!ListQ[array], ThrowMessage["notlist", array, t]];
+    If[!ListQ[array], Msg::notlist[array, t]];
     vectorMapNA[procNA[rest], array, False],
     Frame -> $NestedArrayFrame, FrameStyle -> toAxisColor @ first[col, col],
     RowSpacings -> third[col, 0],
@@ -163,7 +163,7 @@ procNA[(t:"ReverseGrid"|"ReverseSpanningGrid"|"ReverseNormalGrid") -> spec_, res
 
 procNA[(t:"Grid"|"SpanningGrid"|"NormalGrid") -> {col1_, col2_, col3_:None}, rest___][array_] :=
   StringMatrix[
-    If[!AnyMatrixQ[array], ThrowMessage["notmatrix", array, t]];
+    If[!AnyMatrixQ[array], Msg::notmatrix[array, t]];
     matrixMapNA[procNA[rest], array],
     RowSpacings -> third[col1, 0],
     ColumnSpacings -> third[col2, If[SeqLength[rest] == 0, 1, 0]],
@@ -183,7 +183,7 @@ fourth[{a_, b_, c_, d_}, _] := d; fourth[_, e_] := e;
 procNA[][e_] := $itemFunction @ e;
 
 NestedArrayForm::badspec = "Unknown spec ``";
-procNA[spec_, ___][array_] := (Message[NestedArrayForm::badspec, MsgExpr @ spec]; "?");
+procNA[spec_, ___][array_] := (Message[NestedArrayForm::badspec, spec]; "?");
 
 vectorMapNA[f_, array_, isH_] := InheritedBlock[
   {$dims = App[$dims, Len @ array], $pos = App[$pos, 0], $hor = App[$hor, isH]},

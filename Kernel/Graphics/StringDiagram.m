@@ -96,7 +96,7 @@ $colorOrInt = $ColorPattern | _Int;
 StringDiagram[boxes_List, wires_List, opts___Rule] :=
   StringDiagram[boxes, wires, {}, opts];
 
-StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Scope[
+StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Scope @ CatchMessage[
   $boxSizes = $boxAliases = $wireAliases = UAssoc[];
   $fillRegions = {};
 
@@ -161,9 +161,7 @@ StringDiagram[boxes_List, wires_List, regions_List, opts:OptionsPattern[]] := Sc
   $fontFamily = SubAuto[tickLabelFontFamily, fontFamily];
 
   SetAuto[tickPosition, If[convention === RightToLeft, Left, Right]];
-  If[!MatchQ[tickPosition, Left | Right],
-    BadOptionSetting[StringDiagram, TickPosition, tickPosition];
-    ReturnFailed[]];
+  OptionMatchMsg[TickPosition, tickPosition, Left | Right];
   labelPosition = tickPosition; labelSpacing = tickLabelSpacing;
   tickPrims = Map[parseFrameTick, frameTicks];
 
@@ -275,7 +273,7 @@ parseFrameTick = Case[
   Interval[{pos1_, pos2_}] -> label_ := Scope[
     foo; (* TODO: figure out what this was supposed to be *)
   ];
-  other_ := (BadOptionSetting[StringDiagram, FrameTicks, other]; Nothing)
+  other_ := OptionMsg[FrameTicks, other];
 ]
 
 (**************************************************************************************************)
