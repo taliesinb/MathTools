@@ -148,6 +148,26 @@ ForceKatexCharBox[e_] := StyleBox[e, FontFamily -> "KaTeX_Main", PrivateFontOpti
 
 (**************************************************************************************************)
 
+PublicTypesettingBoxFunction[LeftSuperscriptBox, LeftSubscriptBox]
+
+LeftSuperscriptBox[a_, b_] := leftScriptBox[SuperscriptBox, a, b];
+LeftSubscriptBox[a_, b_] := leftScriptBox[SubscriptBox, a, b];
+
+leftScriptBox[fn_, a_, b_] := MarginBox[
+  OverlayBox[{fn["\[NegativeThinSpace]", b], a}, Alignment -> {Left, Baseline}],
+  {0.2,0},{0,0}
+];
+
+PublicTypesettingForm[LeftSuperscript, RightSuperscript]
+
+(* TODO: implement these as proper binary forms, since we will want katex impl. of them *)
+DefineStandardTraditionalForm[{
+  LeftSuperscript[a_, b_] :> LeftSuperscriptBox[a, b],
+  RightSuperscript[a_, b_] :> RightSuperscriptBox[a, b]
+}]
+
+(**************************************************************************************************)
+
 PublicTypesettingFormBox[RaiseForm, LowerForm]
 
 DefineStandardTraditionalForm[RaiseForm[e_, n_ ? NumericQ] :> RaiseBox[MakeTradBoxes @ e, n]];
@@ -181,13 +201,13 @@ $PipeBox = KBox["|", "\\middle|"];
 
 PrivateTypesettingBoxFunction[FunctionBox]
 
-FunctionBox[e_] := KBox[e, "op"[e]];
+FunctionBox[e_] := KBox[MathTextBox @ e, "op"[e]];
 
 (**************************************************************************************************)
 
 PrivateTypesettingBoxFunction[SansSerifFunctionBox]
 
-SansSerifFunctionBox[e_] := FunctionBox @ SansSerifBox @ e;
+SansSerifFunctionBox[e_] := KBox[SansSerifBox @ e, "op"[SansSerifBox @ e]];
 
 (**************************************************************************************************)
 

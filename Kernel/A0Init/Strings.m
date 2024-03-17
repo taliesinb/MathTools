@@ -158,10 +158,16 @@ IntStr2[n_] := IntStr[n, 10, 2];
 
 (**************************************************************************************************)
 
+PublicFunction[ToHexCharCode]
+
+ToHexCharCode[str_String] := ToHexStr[#, 4]& /@ ToCharCode[str];
+
+(**************************************************************************************************)
+
 PublicFunction[FromHexStr, ToHexStr]
 
 SetListable[FromHexStr];
 FromHexStr[s_Str] := FromDigits[s, 16];
 
 ToHexStr[n_]      := IntStr[n, 16];
-ToHexStr[n_, b_]  := IntStr[n, 16, b];
+ToHexStr[n_, l_]  := IntStr[n, 16, l];

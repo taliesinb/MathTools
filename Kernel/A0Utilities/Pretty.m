@@ -36,8 +36,17 @@ cpfString[expr_, ela_, opts___] := ToPrettifiedString[
   $compactOpts, ElideLargeArrays -> ela
 ];
 
+SetUsage @ "
+CompactPrettyForm[expr$] formats expr in a code-like way, eliding large expressions, truncating symbol contexts, etc.
+"
+
 Format[CompactPrettyForm[expr_, opts___Rule], OutputForm] := cpfString[expr, True, opts];
 CompactPrettyForm /: MakeBoxes[CompactPrettyForm[expr_, opts___Rule], StandardForm] := cpfString[expr, True, opts];
+
+
+SetUsage @ "
+CompactPrettyFullForm[expr$] formats expr in a code-like way.
+"
 
 Format[CompactPrettyFullForm[expr_, opts___Rule], OutputForm] := cpfString[expr, False, opts];
 CompactPrettyFullForm /: MakeBoxes[CompactPrettyFullForm[expr_, opts___Rule], StandardForm] := cpfString[expr, False, opts];

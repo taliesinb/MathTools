@@ -14,6 +14,16 @@ DefineStringLetterClass[
 
 (**************************************************************************************************)
 
+PublicStringPattern[CombiningMark, AccentMark, AccentLetter]
+
+DefineStringLetterClass[
+  CombiningMark  -> "\:0300-\:036f",
+  AccentMark  -> "\:0301-\:0304\:0306-\:0308\:030a-\:030c\:0326-\:0328",
+  AccentLetter -> "ÁÂÄ-ÇÉÍÎÑÓ-ÖØÚÜÝáâä-çéíîñó-öøúüýĂ-ćČ-đĘęĞğİıĹĺĽľŁ-ńŇňŐőŔŕŚśŞ-šŤťŰűŹ-žƵƶǢǣǼ-ǿȘ-țЁЇЎЙйёїў"
+]
+
+(**************************************************************************************************)
+
 PublicStringPattern[LetterClass, ExceptLetterClass]
 
 SetUsage @ "

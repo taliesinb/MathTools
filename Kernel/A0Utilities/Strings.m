@@ -13,6 +13,44 @@ StringFindDelimitedPosition[str_, {start_, mid_, stop_}] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[UnicodeCompose, UnicodeDecompose]
+
+  UnicodeCompose[s_] := CharacterNormalize[s, "NFC"];
+UnicodeDecompose[s_] := CharacterNormalize[s, "NFD"];
+
+(**************************************************************************************************)
+
+PublicFunction[ContainsAccentLetterQ, ContainsAccentMarkQ, ContainsCombiningMarkQ]
+
+ ContainsAccentLetterQ[str_Str] := SContainsQ[str, AccentLetter];
+   ContainsAccentMarkQ[str_Str] := SContainsQ[str, AccentMark];
+ContainsCombiningMarkQ[str_Str] := SContainsQ[str, CombiningMark];
+
+(**************************************************************************************************)
+
+PublicFunction[AccentMarksToLetters, AccentLettersToMarks]
+
+(* this comes up for macOS path normalization *)
+
+AccentMarksToLetters[str_Str ? (SFreeQ[AccentMark])] := str;
+AccentMarksToLetters[str_Str] := SRep[str, lm:(LetterCharacter ~~ AccentMark) :> am2l[lm]];
+am2l[s_] := am2l[s] = UnicodeCompose[s];
+
+AccentLettersToMarks[str_Str] := SRep[str, l:AccentLetter :> al2m[l]];
+al2m[s_] := al2m[s] = UnicodeDecompose[s];
+
+(**************************************************************************************************)
+
+PublicFunction[StringTakeUntil, StringDropUntil]
+
+StringTakeUntil[s_Str, patt_] := If[SFreeQ[s, patt], s, STake[s, Last @ Last @ SFind[s, patt, 1]]];
+StringTakeUntil[patt_][s_] := StringTakeUntil[s, patt];
+
+StringDropUntil[s_Str, patt_] := If[SFreeQ[s, patt], s, STake[s, Last @ Last @ SFind[s, patt, 1]]];
+StringDropUntil[patt_][s_] := StringDropUntil[s, patt];
+
+(**************************************************************************************************)
+
 PublicFunction[SelectStrings, DiscardStrings]
 
 SetUsage @ "

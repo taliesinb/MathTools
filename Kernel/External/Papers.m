@@ -230,12 +230,19 @@ DownloadPaper[assoc_Assoc, OptionsPattern[]] := Scope[
 
 (**************************************************************************************************)
 
+PublicFunction[NormalizePaperFileName]
+
+NormalizePaperFileName[authorsAndTitle_] :=
+  SRep[SRep[authorsAndTitle, ":" -> " - "], Repeated[" ", {2, Inf}] -> " "];
+
+(**************************************************************************************************)
+
 PrivateFunction[toPaperPDFPath]
 
 toPaperPDFPath[Auto, authorsAndTitle_] := toPaperPDFPath[$PDFPath, authorsAndTitle];
 
 toPaperPDFPath[pdfPath_, authorsAndTitle_] := Scope[
-  fileName = SRep[SRep[authorsAndTitle, ":" -> " - "], Repeated[" ", {2, Inf}] -> " "];
+  fileName = AccentLettersToMarks @ NormalizePaperFileName @ authorsAndTitle;
   PathJoin[pdfPath, fileName <> ".pdf"]
 ];
 

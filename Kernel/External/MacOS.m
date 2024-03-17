@@ -45,3 +45,21 @@ tell application "Finder" to reveal thePath
 activate application "Finder"
 """
 
+(**************************************************************************************************)
+
+PublicIOFunction[MacOSNormalizeFileNames]
+
+MacOSNormalizeFileNames[dir_] := Scope[
+  files = FileNames["*" ~~ AccentLetter ~~ "*", NormalizePath @ dir, Infinity];
+  Print[Length[files]];
+  Map[fixCMFile, files]
+];
+
+fixCMFile[f1_] := Scope[
+  f2 = f1 <> ".tmp";
+  f3 = AccentLettersToMarks @ f1;
+  If[f3 === f1, Return @ Nothing];
+  MoveFile[f1, f2];
+  MoveFile[f2, f3];
+  f3
+];

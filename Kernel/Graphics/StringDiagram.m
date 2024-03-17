@@ -458,6 +458,7 @@ toPos = Case[
   {Left, i_}               := doFlip @ {-$w, i};
   key:(_Int | _Str)        := Lookup[$boxAliases, key, Message[StringDiagram::nobox, key, Keys @ $boxAliases]; {0, 0}];
   Translate[pos_, off_]    := doFlip[off] + % @ pos;
+  Scaled[xy:{_, _}]        := doFlip @ {$w, $h} * xy;
   other_                   := doFlip @ other;
 ]
 

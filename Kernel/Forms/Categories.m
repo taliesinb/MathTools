@@ -14,8 +14,18 @@ DefineUnaryForm[PullbackStarForm, SuperscriptBox[$1, "*"]];
 (**************************************************************************************************)
 
 PublicTypesettingForm[DualObjectForm]
+PublicTypesettingForm[LeftDualObjectForm]
+PublicTypesettingForm[RightDualObjectForm]
 
 DefineUnaryForm[DualObjectForm, SuperscriptBox[$1, "*"]];
+(* DefineUnaryForm[LeftDualObjectForm, OverscriptBox[$1, "\[LeftArrow]"]];
+DefineUnaryForm[RightDualObjectForm, OverscriptBox[$1, "\[RightArrow]"]];
+
+DefineUnaryForm[LeftDualObjectForm, SuperscriptBox[$1, "\[FilledLeftTriangle]"]];
+DefineUnaryForm[RightDualObjectForm, SuperscriptBox[$1, "\[FilledRightTriangle]"]];
+*)
+DefineUnaryForm[RightDualObjectForm, SuperscriptBox[$1, "*"]];
+DefineUnaryForm[LeftDualObjectForm, LeftSuperscriptBox[$1, "*"]];
 
 (**************************************************************************************************)
 

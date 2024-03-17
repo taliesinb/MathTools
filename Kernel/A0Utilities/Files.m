@@ -324,7 +324,7 @@ PublicFunction[NormalizePath]
 NormalizePath = Case[
   ""       := "";
   None     := None;
-  path_Str := StringReplaceRepeated[path, $pathNormalizationRules];
+  path_Str := AccentLettersToMarks @ StringReplaceRepeated[path, $pathNormalizationRules];
 ];
 
 $pathNormalizationRules = {

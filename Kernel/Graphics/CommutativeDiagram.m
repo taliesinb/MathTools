@@ -385,7 +385,7 @@ parseDiagramColorRules2 = Case[
   other_               := Msg::badRecoloringElement[other];
 ];
 
-CommutativeDiagram::badRecoloringElement = "Bad recoloring rule element ``."
+General::badRecoloringElement = "Bad recoloring rule element ``."
 
 specialRecoloringRule[head_, "Rainbow"] :=
   RuleDelayed[z_head, RuleEval @ StyledForm[z, ToRainbowColor @ ToRainbowInteger @ F @ z]];

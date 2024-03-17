@@ -128,10 +128,24 @@ Options[TransformBearNote] = {
   TransformTitle -> False
 }
 
-TransformBearNote::notfound = "Cannot find existing note with ID or title \"``\".";
-TransformBearNote::badtresult = "Result of transform on \"``\" was not a string or issued messages.";
-TransformBearNote::corrupt = "Apparently corrupt result when transforming \"``\".";
-TransformBearNote::multiple = "Multiple notes with ID or title \"``\".";
+TransformBearNote::notfound = "Cannot find existing note with ID or title ``.";
+TransformBearNote::badtresult = "Result of transform on `` was not a string or issued messages.";
+TransformBearNote::corrupt = "Apparently corrupt result when transforming ``.";
+TransformBearNote::multiple = "Multiple notes with ID or title ``.";
+TransformBearNote::someNotTransformed = "Failure encountered. The following notes were not transformed: ``.";
+
+TransformBearNote[docList_List, fn_, opts:OptionsPattern[]] := Scope[
+  do = True;
+  Table[
+    If[do && FailureQ[TransformBearNote[Part[docList, i], fn, opts]],
+      do = False;
+      Message[TransformBearNote::someNotTransformed, Part[docList, i;;]];
+    ,
+      Nothing
+    ],
+    {i, Len @ docList}
+  ]
+];
 
 TransformBearNote[titleOrID_Str, fn_, OptionsPattern[]] := Scope[
   UnpackOptions[$verbose, $dryRun, verifyResult, transformTitle];
@@ -205,6 +219,12 @@ $TextReplaceBearNoteTemplate = StringFunction @ "bear://x-callback-url/add-text?
 
 (*************************************************************************************************)
 
+PublicFunction[ExtractBearTitle]
+
+ExtractBearTitle[text_Str] := First @ splitTitleBody @ text;
+
+(*************************************************************************************************)
+
 PublicIOFunction[FindDuplicateBearNotes]
 
 FindDuplicateBearNotes[] := Scope[
@@ -217,9 +237,9 @@ FindDuplicateBearNotes[] := Scope[
 
 PublicIOFunction[RenameBearNote]
 
-RenameBearNote::notfound = "Cannot find existing note with ID or title \"``\".";
-RenameBearNote::badtresult = "Result of transform on \"``\" was not a string or issued messages.";
-RenameBearNote::trimTitleFail = "Could not trim title from body for \"``\".";
+RenameBearNote::notfound = "Cannot find existing note with ID or title ``.";
+RenameBearNote::badtresult = "Result of transform on `` was not a string or issued messages.";
+RenameBearNote::trimTitleFail = "Could not trim title from body for ``.";
 
 RenameBearNote[old_Str, old_Str] := None;
 
@@ -260,7 +280,7 @@ Options[GlobalBearStringReplace] = {
 };
 
 GlobalBearStringReplace::badpatt = "Not a valid pattern: ``."
-GlobalBearStringReplace::notfound = "No notes containing regex pattern \"``\".";
+GlobalBearStringReplace::notfound = "No notes containing regex pattern ``.";
 GlobalBearStringReplace::failures = "The following `` notes failed the transform: ``.";
 
 GlobalBearStringReplace[rules_, opts:OptionsPattern[]] := Scope[
@@ -324,7 +344,7 @@ BearUUIDToTitle[ids_List] := Scope[
 
 PublicIOFunction[AppendToBearNote]
 
-AppendToBearNote::notfound = "Cannot find existing note with title \"``\"."
+AppendToBearNote::notfound = "Cannot find existing note with title ``."
 AppendToBearNote[titleOrID_Str, text_Str] := Scope[
   id = If[BearNoteUUIDQ[titleOrID], titleOrID, FindBearNote @ titleOrID];
   If[FailureQ[id], ReturnFailed["notfound", titleOrID]];
@@ -469,6 +489,8 @@ $OpenBearNoteTitleTemplate = StringFunction @ "bear://x-callback-url/open-note?t
 
 PublicIOFunction[BearNoteText]
 
+BearNoteText[list_List] := BearNoteLookup[list, "Text"];
+
 BearNoteText[titleOrID_Str] := Scope[
   res = EntityValue[toTitleOrIDQuery @ titleOrID, "ZTEXT"];
   If[!MatchQ[res, {_Str}], ReturnFailed[]];
@@ -555,6 +577,7 @@ BearNoteData[part_, field_, OptionsPattern[]] := Scope @ CatchMessage[
 
 $masterTagPrefix = Maybe["#meta/master" ~~ Maybe[" for"] ~~ WhitespaceCharacter..];
 
+(* TODO: there's a bug here in which "foo" ~~ " "... ~~ "\n" doesn't match "foo\n". why? *)
 toBearClass = Case[
   sp:(_Str | _SExpr | regexp)   := %["Text" -> StringContainsQ[sp]];
   list:{__Rule}                 := combineEntityFunctions @ Col2[Map[toBearClass, list]];
@@ -565,6 +588,7 @@ toBearClass = Case[
   "PrimaryTag" -> tag_          := %["Subtitle" -> SStartsQ[toRegexp[$masterTagPrefix ~~ toTagPatt[tag]]]];
   field_ -> True                := %[field -> 1];
   field_ -> False               := %[field -> 0];
+  field_ -> g_Str ? (SContainsQ["*"]) := %[field -> SContainsQ[SRep[g, "*" -> ___]]];
   field_ -> p_SExpr             := %[field -> checkLineRE @ ToRegex @ p];
   field_ -> r:regexp            := %[field -> SMatchQ[checkLineRE @ r]];
   field_ -> fn_Symbol           := makeFEC[field, fn[$Z]];
@@ -590,7 +614,7 @@ prefixTag[s_Str] := If[StringStartsQ[s, "#"], s, "#" <> s, s];
 
 badReQ[re_Str] := SContainsQ[SRep[re, "[^" -> "["], "^"|"$"];
 
-BearNoteData::badRegexp = "Regular expressions containing ^ and $ are not supported by SQLite: \"``\". Consider rewriting to newlines, which will not match exactly the same cases.";
+BearNoteData::badRegexp = "Regular expressions containing ^ and $ are not supported by SQLite: ``. Consider rewriting to newlines, which will not match exactly the same cases.";
 checkLineRE[RegularExpression[re_Str]] := (
   If[badReQ[re], Message[BearNoteData::badRegexp, re]];
   re
